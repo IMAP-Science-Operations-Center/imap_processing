@@ -1,0 +1,61 @@
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry]
+name = "imap-processing"
+version = "0.1.0"
+description = "IMAP Science Operations Center Processing"
+authors = ["IMAP SDC Developers <imap.sdc@lists.lasp.colorado.edu>"]
+readme = "README.md"
+license = "MIT"
+keywords = ["IMAP", "SDC", "SOC", "Science Operations"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Natural Language :: English",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Software Development",
+    "Topic :: Scientific/Engineering",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: POSIX",
+    "Operating System :: Unix",
+    "Operating System :: MacOS",
+]
+
+[tool.poetry.dependencies]
+python = ">=3.9,<3.12"
+space_packet_parser = ">=4.0.2,<5"
+
+
+
+black = {version="^23.1.0", optional=true}
+pre-commit = {version="^3.3.3,<4", optional=true}
+ruff = {version="^0.0.253", optional=true}
+pytest = {version=">=6.2.5,<7", optional=true}
+
+[tool.poetry.extras]
+dev = ["black", "pre-commit", "ruff"]
+test = ["pytest"]
+
+[project.urls]
+homepage = "https://github.com/IMAP-Science-Operations-Center"
+repository = "https://github.com/IMAP-Science-Operations-Center/imap_processing"
+
+[tool.pytest.ini_options]
+testpaths = [
+  "imap_processing",
+]
+addopts = "-ra"
+
+
+[tool.ruff]
+target-version = "py39"
+select = ["B", "E", "F", "I", "N", "S", "W", "PL", "PT", "UP", "RUF"]
+# Ignore import sorting for now until lines_after_imports is respected
+# by ruff and we can replace isort
+ignore = ["D203", "D212", "PLR0913", "PLR2004"]

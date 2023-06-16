@@ -1,0 +1,38 @@
+name: Tests
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [windows-2019, ubuntu-latest, macos-latest]
+        python-version: ['3.9', '3.10', '3.11']
+    defaults:
+      run:
+        shell: bash
+
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+      - uses: Gr1N/setup-poetry@v8
+
+
+      - name: Install dependencies and app
+        run: |
+          poetry install --extras "test"
+      
+      - name: Testing
+        id: test
+        run: |
+          # Ignore the network marks from the remote test environment
+          poetry run pytest --color=yes
