@@ -1,7 +1,7 @@
 import unittest
 from pathlib import Path
 
-from imap_processing.swe.decommutation_swe import decom_packet
+from imap_processing.swe.decom_swe import decom_swe_packets
 
 
 class TestSwePacketDecom(unittest.TestCase):
@@ -10,7 +10,7 @@ class TestSwePacketDecom(unittest.TestCase):
         """
         self.packet_file = Path('imap_processing/swe/tests/science_block_20221116_163611Z_idle.bin')
         self.xtce_document = Path('imap_processing/swe/swe_packet_definition.xml')
-        self.data_packet_list = decom_packet(self.packet_file, self.xtce_document)
+        self.data_packet_list = decom_swe_packets(self.packet_file, self.xtce_document)
 
     def test_total_packets_in_data_file(self):
         total_packets = 23

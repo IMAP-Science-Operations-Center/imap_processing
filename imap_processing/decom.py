@@ -1,7 +1,7 @@
 from space_packet_parser import parser, xtcedef
 
 
-def decom_packet(packet_file: str, xtce_packet_definition: str):
+def decom_packets(packet_file: str, xtce_packet_definition: str):
     """Unpack CCSDS data packet. In this function, we unpack and return data
     as it is. Data modification will not be done at this step.
 
@@ -19,11 +19,7 @@ def decom_packet(packet_file: str, xtce_packet_definition: str):
     """
     packet_definition = xtcedef.XtcePacketDefinition(xtce_packet_definition)
     my_parser = parser.PacketParser(packet_definition)
-    packet_list = []
 
     with packet_file.open(mode="rb") as binary_data:
         packet_generator = my_parser.generator(binary_data)
-        for packet in packet_generator:
-            # Add packet to list
-            packet_list.append(packet)
-    return packet_list
+        return list(packet_generator)
