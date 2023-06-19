@@ -1,0 +1,8 @@
+{
+    "manifest_type": "INPUT",
+    "files": [
+        {"filename": "/opt/data/source_data/filename_example_1.h5", "checksum": "b4c00c2b7c3a15f7c78343d77ee5f572"},
+        {"filename": "/opt/data/source_data/filename_example_2.h5", "checksum": "b4c00c2b7c3a15f7c78343d77ee5f572"}
+    ],
+    "configuration": null
+}

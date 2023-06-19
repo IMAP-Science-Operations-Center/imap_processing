@@ -1,0 +1,5 @@
+libera-utils
+numpy
+h5py
+pandas
+libera-utils[db,spice] == 2.0.0

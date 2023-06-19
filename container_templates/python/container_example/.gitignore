@@ -1,0 +1,8 @@
+# pyenv specific file
+.python-version
+
+# PyCharm config files
+.idea/
+
+# Remnants of Installing locally #
+*.egg-info

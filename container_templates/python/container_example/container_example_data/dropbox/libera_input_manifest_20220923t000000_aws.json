@@ -1,0 +1,8 @@
+{
+    "manifest_type": "INPUT",
+    "files": [
+        {"filename": "s3://bucket-path-dev/source-data/filename_example_1.h5", "checksum": "b4c00c2b7c3a15f7c78343d77ee5f572"},
+        {"filename": "s3://bucket-path-dev/source-data/filename_example_2.h5", "checksum": "b4c00c2b7c3a15f7c78343d77ee5f572"}
+    ],
+    "configuration": null
+}
