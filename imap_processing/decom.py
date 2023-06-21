@@ -18,8 +18,8 @@ def decom_packets(packet_file: str, xtce_packet_definition: str):
         List of all the unpacked data
     """
     packet_definition = xtcedef.XtcePacketDefinition(xtce_packet_definition)
-    my_parser = parser.PacketParser(packet_definition)
+    parser = parser.PacketParser(packet_definition)
 
     with packet_file.open(mode="rb") as binary_data:
-        packet_generator = my_parser.generator(binary_data)
+        packet_generator = parser.generator(binary_data)
         return list(packet_generator)

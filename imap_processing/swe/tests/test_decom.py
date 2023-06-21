@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from imap_processing import decom
+from imap_processing.swe import decom_swe
 
 
 @pytest.fixture(scope="session")
@@ -11,8 +11,7 @@ def decom_test_data():
     packet_file = Path(
         "imap_processing/swe/tests/science_block_20221116_163611Z_idle.bin"
     )
-    xtce_document = Path("imap_processing/swe/swe_packet_definition.xml")
-    data_packet_list = decom.decom_packets(packet_file, xtce_document)
+    data_packet_list = decom_swe.decom_packets(packet_file)
     return data_packet_list
 
 
