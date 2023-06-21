@@ -20,6 +20,6 @@ def decom_packets(packet_file: str, xtce_packet_definition: str):
     packet_definition = xtcedef.XtcePacketDefinition(xtce_packet_definition)
     packet_parser = parser.PacketParser(packet_definition)
 
-    with packet_file.open(mode="rb") as binary_data:
+    with open(packet_file, "rb") as binary_data:
         packet_generator = packet_parser.generator(binary_data)
         return list(packet_generator)
