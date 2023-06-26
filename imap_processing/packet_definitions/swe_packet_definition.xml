@@ -15,7 +15,7 @@
             In this case, the uint1 data type is an unsigned integer with a size of 1 bit.
 
             For fields that have meanings based on the values they evaluate to, enumerated data types need to be created.
-            
+
             Here's an example:
                 <xtce:EnumeratedParameterType name="cem_nominal_enum" signed="false">
                     <xtce:UnitSet/>
@@ -26,7 +26,7 @@
                     </xtce:EnumerationList>
                 </xtce:EnumeratedParameterType>
 
-            In this case, the cem_nominal_enum data type is an enumerated type with a size of 1 bit. It has two possible values: 
+            In this case, the cem_nominal_enum data type is an enumerated type with a size of 1 bit. It has two possible values:
                 "NOT_NOMINAL" with a value of 0 and "NOMINAL" with a value of 1.
 
             By defining the appropriate data types within the ParameterTypeSet, you ensure that the data fields in the packet definitions
@@ -148,7 +148,7 @@
             </xtce:Parameter>
             <xtce:Parameter name="CEM_NOMINAL_ONLY" parameterTypeRef="cem_nominal_enum">
                 <xtce:LongDescription>
-                    CEM Nominal status bit: 
+                    CEM Nominal status bit:
                     '1' -- nominal,
                     '0' -- not nomimal
                 </xtce:LongDescription>

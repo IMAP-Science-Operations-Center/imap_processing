@@ -58,4 +58,4 @@ target-version = "py39"
 select = ["B", "E", "F", "I", "N", "S", "W", "PL", "PT", "UP", "RUF"]
 # Ignore import sorting for now until lines_after_imports is respected
 # by ruff and we can replace isort
-ignore = ["D203", "D212", "PLR0913", "PLR2004"]
+ignore = ["D203", "D212", "PLR0913", "PLR2004", "S101"]

@@ -30,7 +30,7 @@ jobs:
       - name: Install dependencies and app
         run: |
           poetry install --extras "test"
-      
+
       - name: Testing
         id: test
         run: |

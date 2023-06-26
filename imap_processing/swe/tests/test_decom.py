@@ -1,4 +1,3 @@
-
 import pytest
 
 from imap_processing.swe import decom_swe
@@ -22,7 +21,8 @@ def test_ccsds_header(decom_test_data):
     """Test if packet header contains default CCSDS header
 
     These are the field required in CCSDS header:
-        'VERSION', 'TYPE', 'SEC_HDR_FLG', 'PKT_APID', 'SEG_FLGS', 'SRC_SEQ_CTR', 'PKT_LEN'
+        'VERSION', 'TYPE', 'SEC_HDR_FLG', 'PKT_APID',
+        'SEG_FLGS', 'SRC_SEQ_CTR', 'PKT_LEN'
     """
     # Required CCSDS header fields
     ccsds_header_keys = [
@@ -36,8 +36,8 @@ def test_ccsds_header(decom_test_data):
     ]
 
     # decom_test_data[0].header is one way to get the header data. Another way to get it
-    # is using list method. Eg. ccsds_header = decom_test_data[0][0]. Each packet's 0th index
-    # has header data and index 1 has data.
+    # is using list method. Eg. ccsds_header = decom_test_data[0][0].
+    # Each packet's 0th index has header data and index 1 has data.
 
     # First way to get header data
     ccsds_header = decom_test_data[0].header
