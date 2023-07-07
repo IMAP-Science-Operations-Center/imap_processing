@@ -14,18 +14,17 @@ The best method for contributing software to the `imap_processing` repository is
 a workflow that involves forking the repository, developing changes on "feature"
 branches, and opening pull requests through GitHub.
 
-The following diagram depicts this workflow:
+The following diagram depicts this workflow (credit to
+[Atlassian](https://www.atlassian.com/git/tutorials/comparing-workflows/gitflow-workflow):
 
-![workflow](https://wac-cdn.atlassian.com/dam/jcr:cc0b526e-adb7-4d45-874e-9bcea9898b4a/04%20Hotfix%20branches.svg?cdnVersion=1089)
+<img src="https://wac-cdn.atlassian.com/dam/jcr:cc0b526e-adb7-4d45-874e-9bcea9898b4a/04%20Hotfix%20branches.svg?cdnVersion=1089" alt="git and GitHub Workflow" width="300" height="300">
 
 As such, all feature branches should be branched off of and merged back into the
 `dev` branch.
 
 ### Contributing new features
 
-*Note: The steps shaded in gray need only to be done once.*
-
-<div style="background-color: #D3D3D3; padding: 10px;">
+*Note: Steps (1) through (4) only to be done once.*
 
 1. Create a personal fork of the `imap_processing` repository by visiting the
    repository main `IMAP-Science-Operations-Center` `imap_processing`
@@ -43,8 +42,6 @@ As such, all feature branches should be branched off of and merged back into the
 
        git fetch upstream
        git checkout -b dev upstream/dev
-
-</div>
 
 6. Create a feature branch off of the `dev` branch to develop changes on.
    Branch names should be short but descriptive (e.g.
