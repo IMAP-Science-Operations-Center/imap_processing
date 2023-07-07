@@ -23,6 +23,10 @@ As such, all feature branches should be branched off of and merged back into the
 
 ### Contributing new features
 
+*Note: The steps shaded in gray need only to be done once.*
+
+<div style="background-color: #D3D3D3; padding: 10px;">
+
 1. Create a personal fork of the `imap_processing` repository by visiting the
    repository main `IMAP-Science-Operations-Center` `imap_processing`
    [repository](https://github.com/IMAP-Science-Operations-Center/imap_processing)
@@ -40,23 +44,25 @@ As such, all feature branches should be branched off of and merged back into the
        git fetch upstream
        git checkout -b dev upstream/dev
 
-5. Create a feature branch off of the `dev` branch to develop changes on.
+</div>
+
+6. Create a feature branch off of the `dev` branch to develop changes on.
    Branch names should be short but descriptive (e.g.
    `update-codice-unit-tests`) and not too generic (e.g. `bug-fix`, `updates`).
    Consistent use of hyphens is encouraged.
 
         git checkout -b <branchname>
 
-6. Make changes to the branch using the nominal `git add`/`git commit` cycle:
+7. Make changes to the branch using the nominal `git add`/`git commit` cycle:
 
         git add <new or changed files you want to commit>
         git commit -m 'Explaination of the changes'
 
-7. Push the feature branch to your personal fork's GitHub repository:
+8. Push the feature branch to your personal fork's GitHub repository:
 
         git push origin <branchname>
 
-8. On the `IMAP-Science-Operations-Center` `imap_processing`
+9. On the `IMAP-Science-Operations-Center` `imap_processing`
    [repository](https://github.com/IMAP-Science-Operations-Center/imap_processing)
    create a new pull request.  Click on the "compare across forks" link to
    enable the pull request to use your fork.  Set the "base repository" to
@@ -67,12 +73,12 @@ As such, all feature branches should be branched off of and merged back into the
    "Reviewers" section, or add a "[WIP]" at the beginning of the pull request
    title to signify that the pull request is not ready to be merged.
 
-9. Assign at least one reviewer to the pull request.  They will review your
-   pull request and either accept the request or ask for additional changes.
-   If additional changes are needed, iterate through steps (6) and (7) until
-   you and the reviewer(s) are satisfied.
+10. Assign at least one reviewer to the pull request.  They will review your
+    pull request and either accept the request or ask for additional changes.
+    If additional changes are needed, iterate through steps (6) and (7) until
+    you and the reviewer(s) are satisfied.
 
-10. Once the pull request has been accepted, you can merge the pull request and
+11. Once the pull request has been accepted, you can merge the pull request and
     delete the feature branch.
 
 
@@ -115,6 +121,40 @@ that points to their fork, and use the nominal workflow for contributing:
     # Make some changes via add/commit cycle
     git push <username> <branchname>
 
+Python Coding
+-------------
+
+`imap_processing` code shall adhere to the [PEP8](https://www.python.org/dev/peps/pep-0008/)
+conventions save for the following exceptions:
+
+ - Lines of code need not be restricted to 79 characters.  However, it is
+encouraged to break up excessively long lines into several lines if it benefits
+the overall readability of the code
+
+ Additionally, the code shall adhere to the following special guidelines:
+
+ - Function and class definitions should be placed in alphabetical order in the
+module
+ - It is encouraged to annotate variables and functions using the
+[`typing`](https://docs.python.org/3/library/typing.html) library (see
+[PEP 483](https://www.python.org/dev/peps/pep-0483/),
+[PEP 484](https://www.python.org/dev/peps/pep-0484/), and
+[PEP 526](https://www.python.org/dev/peps/pep-0526/)).
+
+
+Documentation
+-------------
+
+`imap_processing` code shall adhere to the [PEP257](https://www.python.org/dev/peps/pep-0008/)
+and [numpydoc](https://numpydoc.readthedocs.io/en/latest/format.html) conventions.
+
+The following are further recommendations:
+
+- Each module should have at minimum a description, `Authors`, and `Use`
+sections.
+- Each function/method should have at minimum a description, `Parameters` (if
+necessary), and `Returns` (if necessary) sections.
+
 Versioning
 ----------
 
@@ -146,47 +186,6 @@ security risks, and should adhere to the
 [OWASP Top 10](https://www.owasp.org/images/7/72/OWASP_Top_10-2017_%28en%29.pdf.pdf)
 as much as possible.
 
-
-Python Coding
--------------
-
-`jwql` code shall adhere to the [PEP8](https://www.python.org/dev/peps/pep-0008/)
-conventions save for the following exceptions:
-
- - Lines of code need not be restricted to 79 characters.  However, it is
-encouraged to break up excessively long lines into several lines if it benefits
-the overall readability of the code
-
- Additionally, the code shall adhere to the following special guidelines:
-
- - Function and class definitions should be placed in alphabetical order in the
-module
- - It is encouraged to annotate variables and functions using the
-[`typing`](https://docs.python.org/3/library/typing.html) library (see
-[PEP 483](https://www.python.org/dev/peps/pep-0483/),
-[PEP 484](https://www.python.org/dev/peps/pep-0484/), and
-[PEP 526](https://www.python.org/dev/peps/pep-0526/)).
-
-
-Documentation
--------------
-
-`imap_processing` code shall adhere to the [PEP257](https://www.python.org/dev/peps/pep-0008/)
-and [numpydoc](https://numpydoc.readthedocs.io/en/latest/format.html) conventions.
-
-The following are further recommendations:
-
-- Each module should have at minimum a description, `Authors`, and `Use`
-sections.
-- Each function/method should have at minimum a description, `Parameters` (if
-necessary), and `Returns` (if necessary) sections.
-
-
-Logging
--------
-
-TBD
-
 Naming Conventions
 ------------------
 
@@ -195,7 +194,8 @@ TBD
 Tools and Library Recommendations
 ---------------------------------
 
-TBD
+- `spicepy` for using SPICE kernels
+- `space-packet-parser` to unpack CCSDS packets
 
 Releases
 --------
