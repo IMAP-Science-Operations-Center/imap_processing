@@ -7,8 +7,24 @@ should be checked against this guide, and any violation of the guide should be
 fixed before the code is committed to the `main` or `dev` branches.
 
 
-git & GitHub Workflow
----------------------
+## tl;dr
+
+The following is a short version of this style guide to be used as a quick
+reference.  Further details about each of these are provided in the guide.
+
+1. Use a [forking workflow](#git-&-github-workflow) for git/GitHub contributions.
+2. Update the [`poetry` environment](#poetry-environment) when dependencies
+   change.
+3. Use PEP8 for [python coding](#python-coding), with a few exceptions.
+4. Use PEP257 and `numpydocs` for [docstring conventions](#api-documentation),
+   with a few exceptions.
+5. Use nominal semantic versioning for [version numbers](#versioning).
+6. Be mindful of committing credentials and other [sensitive information](#security).
+7. Use specific [tools and libraries](#tools-and-library-recommendations) when
+   able to.
+
+
+## git & GitHub Workflow
 
 The best method for contributing software to the `imap_processing` repository is
 a workflow that involves forking the repository, developing changes on "feature"
@@ -119,8 +135,12 @@ that points to their fork, and use the nominal workflow for contributing:
     # Make some changes via add/commit cycle
     git push <username> <branchname>
 
-Python Coding
--------------
+## Poetry Environment
+
+TBD
+
+## Python Coding
+
 
 `imap_processing` code shall adhere to the [PEP8](https://peps.python.org/pep-0008/)
 conventions save for the following exceptions:
@@ -136,8 +156,7 @@ module
 [`typing`](https://docs.python.org/3/library/typing.html) library.
 
 
-API Documentation
------------------
+## API Documentation
 
 `imap_processing` code shall adhere to the [PEP257](https://peps.python.org/pep-0257/)
 and [numpydoc](https://numpydoc.readthedocs.io/en/latest/format.html) conventions.
@@ -148,8 +167,7 @@ The following are further recommendations:
 - Each function/method should have at minimum a description, `Parameters` (if
 necessary), and `Returns` (if necessary) sections.
 
-Versioning
-----------
+## Versioning
 
 Any changes pushed to the `main` branch should be tagged with a version number.
 The version number convention is `x.y.z`, where
@@ -159,8 +177,7 @@ The version number convention is `x.y.z`, where
     z = The hotfix number. Increase when change only contains bug fixes.
 
 
-Security
---------
+## Security
 
 The following items should never be committed in the `imap_processing` source
 code or GitHub issues/pull requests:
@@ -175,18 +192,15 @@ If `imap_processing` code needs access to this information, it should be stored
 in a configuration file that is not part of the repository.
 
 
-Naming Conventions
-------------------
+## Naming Conventions
 
 TBD
 
-Tools and Library Recommendations
----------------------------------
+## Tools and Library Recommendations
 
 - `spiceypy` for using SPICE kernels
 - `space-packet-parser` to unpack CCSDS packets
 
-Releases
---------
+## Releases
 
 TBD
