@@ -15,9 +15,9 @@ a workflow that involves forking the repository, developing changes on "feature"
 branches, and opening pull requests through GitHub.
 
 The following diagram depicts this workflow (credit to
-[Atlassian](https://www.atlassian.com/git/tutorials/comparing-workflows/gitflow-workflow):
+[Atlassian](https://www.atlassian.com/git/tutorials/comparing-workflows/gitflow-workflow)):
 
-<img src="https://wac-cdn.atlassian.com/dam/jcr:cc0b526e-adb7-4d45-874e-9bcea9898b4a/04%20Hotfix%20branches.svg?cdnVersion=1089" alt="git and GitHub Workflow" width="300" height="300">
+<img src="https://wac-cdn.atlassian.com/dam/jcr:cc0b526e-adb7-4d45-874e-9bcea9898b4a/04%20Hotfix%20branches.svg?cdnVersion=1089" alt="git and GitHub Workflow" width="500" height="500">
 
 As such, all feature branches should be branched off of and merged back into the
 `dev` branch.
@@ -36,7 +36,8 @@ As such, all feature branches should be branched off of and merged back into the
 3. Ensure that the personal fork is pointing to the `upstream` `imap_processing`
    repository:
 
-       git remote add upstream <url>
+       git remote add upstream https://github.com/IMAP-Science-Operations-Center/imap_processing.git  # for HTTPS
+       git remote add upstream git@github.com:IMAP-Science-Operations-Center/imap_processing.git  # for SSH
 
 4. Retrieve the `upstream` `dev` branch:
 
@@ -81,8 +82,8 @@ As such, all feature branches should be branched off of and merged back into the
 
 ### Making hotfixes
 
-As shown in the diagram above, sometimes hotfixes need to be directly to the
-`main` branch. The workflow for this scenario is as follows:
+As shown in the diagram above, sometimes hotfixes need to be made directly to
+the `main` branch. The workflow for this scenario is as follows:
 
 1. Assuming steps (1) through (3) in the previous section are already completed,
    create a new branch named `hotfix-<description>` off of the `main` branch,
@@ -121,34 +122,29 @@ that points to their fork, and use the nominal workflow for contributing:
 Python Coding
 -------------
 
-`imap_processing` code shall adhere to the [PEP8](https://www.python.org/dev/peps/pep-0008/)
+`imap_processing` code shall adhere to the [PEP8](https://peps.python.org/pep-0008/)
 conventions save for the following exceptions:
 
- - Lines of code need not be restricted to 79 characters.  However, it is
-encouraged to break up excessively long lines into several lines if it benefits
-the overall readability of the code
+ - Lines of code need to be restricted to 88 characters to adhere to the `black`
+code formatter.
 
- Additionally, the code shall adhere to the following special guidelines:
+Additionally, the code shall adhere to the following special guidelines:
 
  - Function and class definitions should be placed in alphabetical order in the
 module
  - It is encouraged to annotate variables and functions using the
-[`typing`](https://docs.python.org/3/library/typing.html) library (see
-[PEP 483](https://www.python.org/dev/peps/pep-0483/),
-[PEP 484](https://www.python.org/dev/peps/pep-0484/), and
-[PEP 526](https://www.python.org/dev/peps/pep-0526/)).
+[`typing`](https://docs.python.org/3/library/typing.html) library.
 
 
-Documentation
--------------
+API Documentation
+-----------------
 
-`imap_processing` code shall adhere to the [PEP257](https://www.python.org/dev/peps/pep-0008/)
+`imap_processing` code shall adhere to the [PEP257](https://peps.python.org/pep-0257/)
 and [numpydoc](https://numpydoc.readthedocs.io/en/latest/format.html) conventions.
 
 The following are further recommendations:
 
-- Each module should have at minimum a description, `Authors`, and `Use`
-sections.
+- Each module should have at minimum a description and a `Use` section.
 - Each function/method should have at minimum a description, `Parameters` (if
 necessary), and `Returns` (if necessary) sections.
 
@@ -178,10 +174,6 @@ credentials, etc.)
 If `imap_processing` code needs access to this information, it should be stored
 in a configuration file that is not part of the repository.
 
-Additionally, developers of this project should be mindful of application
-security risks, and should adhere to the
-[OWASP Top 10](https://www.owasp.org/images/7/72/OWASP_Top_10-2017_%28en%29.pdf.pdf)
-as much as possible.
 
 Naming Conventions
 ------------------
@@ -191,7 +183,7 @@ TBD
 Tools and Library Recommendations
 ---------------------------------
 
-- `spicepy` for using SPICE kernels
+- `spiceypy` for using SPICE kernels
 - `space-packet-parser` to unpack CCSDS packets
 
 Releases
