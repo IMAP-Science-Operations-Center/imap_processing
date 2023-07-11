@@ -1,3 +1,5 @@
+[![All Contributors](https://img.shields.io/github/all-contributors/IMAP-Science-Operations-Center/imap_processing?color=ee8449&style=flat-square)](#contributors)
+
 # IMAP (Interstellar Mapping and Acceleration Probe)
 The Interstellar Mapping and Acceleration Probe (IMAP) is an exciting project aimed at studying the interstellar medium and investigating the acceleration mechanisms of particles within our galaxy. IMAP utilizes cutting-edge technology and advanced instrumentation to gather valuable data and expand our understanding of space.
 
@@ -11,3 +13,15 @@ Join the IMAP Git repository to be part of an exciting scientific endeavor, cont
 
 # Credits
 [LASP (Laboratory of Atmospheric and Space Physics)](https://lasp.colorado.edu/)
+
+## Contributors
+
+<!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
+<!-- prettier-ignore-start -->
+<!-- markdownlint-disable -->
+
+<!-- markdownlint-restore -->
+<!-- prettier-ignore-end -->
+
+<!-- ALL-CONTRIBUTORS-LIST:END -->
+
