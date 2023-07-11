@@ -11,7 +11,7 @@ the code is committed to the `main` or `dev` branches.
 The following is a short version of this style guide to be used as a quick reference.  Further details about each of
 these items are provided below in the guide.
 
-1. Use a [forking workflow](#git-&-github-workflow) for git/GitHub contributions.
+1. Use a [forking workflow](#git-&amp-github-workflow) for git/GitHub contributions.
 2. Use `PEP8` for [python coding conventions](#python-coding), with a few exceptions.
 3. Use `PEP257` and `numpydocs` for [docstring conventions](#api-documentation), with a few exceptions.
 4. Update the [`poetry` environment](#poetry-environment) when dependencies change.
@@ -30,7 +30,7 @@ repository, developing changes on "feature" branches, and opening pull requests 
 The following diagram depicts this workflow (credit to
 [Atlassian](https://www.atlassian.com/git/tutorials/comparing-workflows/gitflow-workflow)):
 
-<img src="https://wac-cdn.atlassian.com/dam/jcr:cc0b526e-adb7-4d45-874e-9bcea9898b4a/04%20Hotfix%20branches.svg?cdnVersion=1089" alt="git and GitHub Workflow" width="600" height="600">
+<img src="https://wac-cdn.atlassian.com/dam/jcr:cc0b526e-adb7-4d45-874e-9bcea9898b4a/04%20Hotfix%20branches.svg?cdnVersion=1089" alt="git and GitHub Workflow" width="650" height="650">
 
 As such, all feature branches should be branched off of and merged back into the `dev` branch.
 
@@ -186,7 +186,7 @@ of the repository.
 
 ## Naming Conventions
 
-TBD
+*To be determined*
 
 
 ## Tools and Library Recommendations
@@ -211,15 +211,15 @@ Any changes pushed to the `main` branch should be tagged with a version number. 
 ## Release Workflow
 
 Any changes merged or pushed to the `main` branch should follow a specific release workflow which follows the diagram
-shown in the [git & GitHub Workflow](#git-&-github-workflow) section. This includes both 'nominal releases' (i.e. new
+shown in the [git & GitHub Workflow](#git-&amp-github-workflow) section. This includes both 'nominal releases' (i.e. new
 features being merged into `main`) and 'hotfixes' (i.e. bug fixes made directly to `main`). These workflows are
-described below. It is assumed that steps (1) through (4) in the [git & GitHub Workflow](#git-&-github-workflow) section
+described below. It is assumed that steps (1) through (4) in the [git & GitHub Workflow](#git-&amp-github-workflow) section
 are already completed.
 
 ### Nominal releases
 
 1. Make sure the `dev` branch is up-to-date with any changes you want included in the release (i.e. merge in any feature
-   branches using the nominal [git/GitHub workflow](#git-&-github-workflow)).
+   branches using the nominal [git/GitHub workflow](#git-&amp-github-workflow)).
 2. Create a new 'release' branch off of `dev`.  The name of the branch should match the version number to be used for
    the release, which should follow the [versioning](#versioning) conventions.
 3. Make any release-specific commits to the new release branch using the nominal `git add`/`git commit` cycle. This may
@@ -228,7 +228,7 @@ are already completed.
 5. In GitHub, create two pull requests: one that merges the release branch into `main`, and one that merges the release
    branch into `dev`. Proceed with the nominal review & merge process described in steps (10) and (11) in the 
 6. proceed with the nominal review & merge process described in steps (10) and (11) in the
-   [git/GitHub workflow](#git-&-github-workflow) section.
+   [git/GitHub workflow](#git-&amp-github-workflow) section.
 7. Once the changes are merged into the `main` branch, create a
    [new release](https://github.com/IMAP-Science-Operations-Center/imap_processing/releases) for the merge commit and
    assign the appropriate version number.
@@ -246,3 +246,62 @@ are already completed.
    [new release](https://github.com/IMAP-Science-Operations-Center/imap_processing/releases) or a
    [new tag](https://github.com/IMAP-Science-Operations-Center/imap_processing/tags) for the merge commit and assign the
    appropriate [version number](#versioning).
+
+
+## Checklist for Contributors and Reviewers of Pull Requests
+
+The following is a guide to be used for contributors and reviewers of `imap_processing` pull requests. Note that this is
+only a guide; it should not be treated as a fully comprehensive, foolproof list that must be used in all situations, and
+parts of it are subjective.
+
+If the contributor/reviewer can answer "yes" to all the following questions, then conceivably the proposed changes are
+acceptable and the PR can be reviewed and merged.
+
+### Checklist for Contributors
+
+#### Pertaining to the code:
+
+- Does the code conform to this style guide?
+- Is any of the code functionality not already available via native or third-party python libraries?
+- Does the code execute successfully?
+    - Do all the tests pass in the existing test suite?
+    - Does the newly added functionality run without errors?
+- Is the code documented and commented sufficiently such that it is easy to read and follow?
+    - Are docstrings included for all new modules, classes, and functions?
+    - Are in-line comments included to provide necessary context?
+- Have all debugging/print statements been removed?
+- Does the code contain sufficient exception handling?
+- Does the code contain no deprecation warnings?
+- Does the code include all necessary unit tests?
+
+#### Pertaining to the pull request:
+
+- Is the PR excessively long and/or covers multiple issues? If so, consider breaking it up into multiple PRs.
+- Does the PR have a concise, descriptive title?
+- Does the PR link to and close the relevant issue?
+- Does the PR have a sufficient description as to make it clear what the reasons for the changes are?
+- Is the PR merging into `upstream/dev` from `<username>/<branchname>` (in most cases)?
+- Are you listed as an assignee to the PR?
+- Does the PR have proper labels?
+- Do all the automated checks pass?
+
+
+### Checklist for Reviewers
+
+##### Pertaining to the pull request:
+
+- Does the PR have a concise, descriptive title?
+- Does the PR have a sufficient description as to make it clear what the reasons for the changes are?
+- Is the PR merging into `upstream/dev` from `<username>/<branchname>` (in most cases)?
+- Does the PR have at least one assignee?
+- Does the PR have proper labels?
+- Is the PR no longer a work in progress?
+- Do all the automated checks pass?
+
+#### Pertaining to the code:
+
+- Does the code conform to this style guide?
+- Is the code documented and commented sufficiently such that it is easy to read and follow?
+- Does the code contain sufficient exception handling?
+- Does the code contain no sensitive data or information?
+- Does the code contain any necessary unit tests?
