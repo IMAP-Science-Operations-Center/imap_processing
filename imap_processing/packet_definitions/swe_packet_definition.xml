@@ -1,0 +1,502 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<xtce:SpaceSystem xmlns:xtce="http://www.omg.org/space/xtce" name="SWE-SciPackets">
+    <xtce:Header date="2023-03-06T09:56:00MST" version="1.0" author="Tenzin Choedon"/>
+    <xtce:TelemetryMetaData>
+        <xtce:ParameterTypeSet>
+            <!-- In the ParameterTypeSet, define all the data types required for the data packets' definitions.
+            Each data field within the packet definition may have different lengths specified by the lengthInBits column.
+            Here, we define data types for all the unique values found in the lengthInBits column.
+
+            For example, consider the uint1 data type:
+                <xtce:IntegerParameterType name="uint1" signed="false">
+                    <xtce:UnitSet/>
+                    <xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned"/>
+                </xtce:IntegerParameterType>
+            In this case, the uint1 data type is an unsigned integer with a size of 1 bit.
+
+            For fields that have meanings based on the values they evaluate to, enumerated data types need to be created.
+
+            Here's an example:
+                <xtce:EnumeratedParameterType name="cem_nominal_enum" signed="false">
+                    <xtce:UnitSet/>
+                    <xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned"/>
+                    <xtce:EnumerationList>
+                        <xtce:Enumeration label="NOT_NOMINAL" value="0"/>
+                        <xtce:Enumeration label="NOMINAL" value="1"/>
+                    </xtce:EnumerationList>
+                </xtce:EnumeratedParameterType>
+
+            In this case, the cem_nominal_enum data type is an enumerated type with a size of 1 bit. It has two possible values:
+                "NOT_NOMINAL" with a value of 0 and "NOMINAL" with a value of 1.
+
+            By defining the appropriate data types within the ParameterTypeSet, you ensure that the data fields in the packet definitions
+            are properly represented and their meanings are correctly interpreted.
+            -->
+            <xtce:IntegerParameterType name="uint1" signed="false">
+                <xtce:UnitSet/>
+                <xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned"/>
+            </xtce:IntegerParameterType>
+            <xtce:IntegerParameterType name="uint2" signed="false">
+                <xtce:UnitSet/>
+                <xtce:IntegerDataEncoding sizeInBits="2" encoding="unsigned"/>
+            </xtce:IntegerParameterType>
+            <xtce:IntegerParameterType name="uint3" signed="false">
+                <xtce:UnitSet/>
+                <xtce:IntegerDataEncoding sizeInBits="3" encoding="unsigned"/>
+            </xtce:IntegerParameterType>
+            <xtce:IntegerParameterType name="uint6" signed="false">
+                <xtce:UnitSet/>
+                <xtce:IntegerDataEncoding sizeInBits="6" encoding="unsigned"/>
+            </xtce:IntegerParameterType>
+            <xtce:IntegerParameterType name="uint8" signed="false">
+                <xtce:UnitSet/>
+                <xtce:IntegerDataEncoding sizeInBits="8" encoding="unsigned"/>
+            </xtce:IntegerParameterType>
+            <xtce:IntegerParameterType name="uint11" signed="false">
+                <xtce:UnitSet/>
+                <xtce:IntegerDataEncoding sizeInBits="11" encoding="unsigned"/>
+            </xtce:IntegerParameterType>
+            <xtce:IntegerParameterType name="uint12" signed="false">
+                <xtce:UnitSet/>
+                <xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned"/>
+            </xtce:IntegerParameterType>
+            <xtce:IntegerParameterType name="uint14" signed="false">
+                <xtce:UnitSet/>
+                <xtce:IntegerDataEncoding sizeInBits="14" encoding="unsigned"/>
+            </xtce:IntegerParameterType>
+            <xtce:IntegerParameterType name="uint15" signed="false">
+                <xtce:UnitSet/>
+                <xtce:IntegerDataEncoding sizeInBits="15" encoding="unsigned"/>
+            </xtce:IntegerParameterType>
+            <xtce:IntegerParameterType name="uint16" signed="false">
+                <xtce:UnitSet/>
+                <xtce:IntegerDataEncoding sizeInBits="16" encoding="unsigned"/>
+            </xtce:IntegerParameterType>
+            <xtce:IntegerParameterType name="uint20" signed="false">
+                <xtce:UnitSet/>
+                <xtce:IntegerDataEncoding sizeInBits="20" encoding="unsigned"/>
+            </xtce:IntegerParameterType>
+            <xtce:IntegerParameterType name="uint32" signed="false">
+                <xtce:UnitSet/>
+                <xtce:IntegerDataEncoding sizeInBits="32" encoding="unsigned"/>
+            </xtce:IntegerParameterType>
+            <xtce:IntegerParameterType name="sciData" signed="false">
+                <xtce:UnitSet/>
+                <xtce:IntegerDataEncoding sizeInBits="10080" encoding="unsigned"/>
+            </xtce:IntegerParameterType>
+            <!-- Enumerated Data Types -->
+            <xtce:EnumeratedParameterType name="cem_nominal_enum" signed="false">
+                <xtce:UnitSet/>
+                <xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned"/>
+                <xtce:EnumerationList>
+                    <xtce:Enumeration label="NOT_NOMINAL" value="0"/>
+                    <xtce:Enumeration label="NOMINAL" value="1"/>
+                </xtce:EnumerationList>
+            </xtce:EnumeratedParameterType>
+            <xtce:EnumeratedParameterType name="spin_phase_validity_enum" signed="false">
+                <xtce:UnitSet/>
+                <xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned"/>
+                <xtce:EnumerationList>
+                    <xtce:Enumeration label="INVALID" value="0"/>
+                    <xtce:Enumeration label="VALID" value="1"/>
+                </xtce:EnumerationList>
+            </xtce:EnumeratedParameterType>
+            <xtce:EnumeratedParameterType name="spin_period_source_enum" signed="false">
+                <xtce:UnitSet/>
+                <xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned"/>
+                <xtce:EnumerationList>
+                    <xtce:Enumeration label="SAFING" value="0"/>
+                    <xtce:Enumeration label="NOMINAL" value="1"/>
+                </xtce:EnumerationList>
+            </xtce:EnumeratedParameterType>
+        </xtce:ParameterTypeSet>
+        <xtce:ParameterSet>
+            <!-- Within the ParameterSet, utilize the data types defined in the ParameterTypeSet to create variables
+            with their respective data types. -->
+
+            <!--CCSDS Header Elements-->
+            <xtce:Parameter name="VERSION" parameterTypeRef="uint3">
+                <xtce:LongDescription>CCSDS Packet Version Number</xtce:LongDescription>
+            </xtce:Parameter>
+            <xtce:Parameter name="TYPE" parameterTypeRef="uint1">
+                <xtce:LongDescription>CCSDS Packet Type Indicator</xtce:LongDescription>
+            </xtce:Parameter>
+            <xtce:Parameter name="SEC_HDR_FLG" parameterTypeRef="uint1">
+                <xtce:LongDescription>CCSDS Packet Secondary Header Flag</xtce:LongDescription>
+            </xtce:Parameter>
+            <xtce:Parameter name="PKT_APID" parameterTypeRef="uint11">
+                <xtce:LongDescription>CCSDS Packet Application Process ID</xtce:LongDescription>
+            </xtce:Parameter>
+            <xtce:Parameter name="SEG_FLGS" parameterTypeRef="uint2">
+                <xtce:LongDescription>CCSDS Packet Grouping Flag</xtce:LongDescription>
+            </xtce:Parameter>
+            <xtce:Parameter name="SRC_SEQ_CTR" parameterTypeRef="uint14">
+                <xtce:LongDescription>CCSDS Packet Sequence Count</xtce:LongDescription>
+            </xtce:Parameter>
+            <xtce:Parameter name="PKT_LEN" parameterTypeRef="uint16">
+                <xtce:LongDescription>CCSDS Packet length</xtce:LongDescription>
+            </xtce:Parameter>
+            <!-- Start SWE_SCIENCE metadata -->
+            <xtce:Parameter name="SHCOARSE" parameterTypeRef="uint32">
+                <xtce:LongDescription>Mission Elasped Time</xtce:LongDescription>
+            </xtce:Parameter>
+            <xtce:Parameter name="ACQ_START_COARSE" parameterTypeRef="uint32">
+                <xtce:LongDescription>Acquisition Start time coarse in seconds</xtce:LongDescription>
+            </xtce:Parameter>
+            <xtce:Parameter name="ACQ_START_FINE" parameterTypeRef="uint20">
+                <xtce:LongDescription>Acquisition Start time fine in microseconds</xtce:LongDescription>
+            </xtce:Parameter>
+            <xtce:Parameter name="CEM_NOMINAL_ONLY" parameterTypeRef="cem_nominal_enum">
+                <xtce:LongDescription>
+                    CEM Nominal status bit:
+                    '1' -- nominal,
+                    '0' -- not nomimal
+                </xtce:LongDescription>
+            </xtce:Parameter>
+            <xtce:Parameter name="SPIN_PHASE_VALIDITY" parameterTypeRef="spin_phase_validity_enum">
+                <xtce:LongDescription>
+                    Spin phase valid bit:
+                    '1' -- valid,
+                    '0' -- invalid
+                </xtce:LongDescription>
+            </xtce:Parameter>
+            <xtce:Parameter name="SPIN_PERIOD_SOURCE" parameterTypeRef="spin_period_source_enum">
+                <xtce:LongDescription>
+                Spin period source bit:
+                '1' -- sun sensor (safing),
+                '0' -- star tracker (nominal)
+            </xtce:LongDescription>
+            </xtce:Parameter>
+            <xtce:Parameter name="spare" parameterTypeRef="uint1">
+                <xtce:LongDescription>Spare</xtce:LongDescription>
+            </xtce:Parameter>
+            <xtce:Parameter name="SPIN_PHASE" parameterTypeRef="uint16">
+                <xtce:LongDescription>Spin phase</xtce:LongDescription>
+            </xtce:Parameter>
+            <xtce:Parameter name="SPIN_PERIOD" parameterTypeRef="uint16">
+                <xtce:LongDescription>Spin period</xtce:LongDescription>
+            </xtce:Parameter>
+            <xtce:Parameter name="ESA_STEPS" parameterTypeRef="uint8">
+                <xtce:LongDescription>ESA steps in packet</xtce:LongDescription>
+            </xtce:Parameter>
+            <xtce:Parameter name="ESA_TABLE_NUM" parameterTypeRef="uint8">
+                <xtce:LongDescription>ESA table identifier</xtce:LongDescription>
+            </xtce:Parameter>
+            <xtce:Parameter name="ESA_ACQ_CFG" parameterTypeRef="uint8">
+                <xtce:LongDescription>ESA acquisition configuration</xtce:LongDescription>
+            </xtce:Parameter>
+            <xtce:Parameter name="HVPS_RAMP_SETTLE" parameterTypeRef="uint16">
+                <xtce:LongDescription>HVPS settling duration</xtce:LongDescription>
+            </xtce:Parameter>
+            <xtce:Parameter name="ACQ_DURATION" parameterTypeRef="uint16">
+                <xtce:LongDescription>Acquisition duration</xtce:LongDescription>
+            </xtce:Parameter>
+            <xtce:Parameter name="THRESHOLD_DAC" parameterTypeRef="uint16">
+                <xtce:LongDescription>Threshold DAC value</xtce:LongDescription>
+            </xtce:Parameter>
+            <xtce:Parameter name="STIM_CFG_REG" parameterTypeRef="uint16">
+                <xtce:LongDescription>Stim pulse configuration register. Bits 0-3, period, 4-7, duration, 8-9 mode</xtce:LongDescription>
+            </xtce:Parameter>
+            <!-- SWE science data array -->
+            <xtce:Parameter name="SCIENCE_DATA" parameterTypeRef="sciData">
+                <xtce:LongDescription>
+                    Data for a science acquisiton quarter cycle.  (56 bit * 180 array)
+                    Seven consecutive bytes represent data for a single step:
+                    CEM1 - 8 bit counter
+                    CEM2 - 8 bit counter
+                    CEM3 - 8 bit counter
+                    CEM4 - 8 bit counter
+                    CEM5 - 8 bit counter
+                    CEM6 - 8 bit counter
+                    CEM7 - 8 bit counter
+                    180 steps are for the 180 ESA voltages used in a quarter cycle
+                </xtce:LongDescription>
+            </xtce:Parameter>
+            <!-- End SWE_SCIENCE metadata -->
+            <!-- Start SWE_APP_HK metadata -->
+            <xtce:Parameter name="APP_MODE" parameterTypeRef="uint8">
+                <xtce:LongDescription>Operation mode</xtce:LongDescription>
+            </xtce:Parameter>
+            <xtce:Parameter name="CMD_ACC_COUNT" parameterTypeRef="uint8">
+                <xtce:LongDescription>Command accumulation count</xtce:LongDescription>
+            </xtce:Parameter>
+            <xtce:Parameter name="CMD_REJ_COUNT" parameterTypeRef="uint8">
+                <xtce:LongDescription>Command reject count</xtce:LongDescription>
+            </xtce:Parameter>
+            <xtce:Parameter name="LAST_OPCODE" parameterTypeRef="uint16">
+                <xtce:LongDescription>Last opcode</xtce:LongDescription>
+            </xtce:Parameter>
+            <xtce:Parameter name="HV_DISABLE_PLUG" parameterTypeRef="uint1">
+                <xtce:LongDescription></xtce:LongDescription>
+            </xtce:Parameter>
+            <xtce:Parameter name="HV_LIMIT_PLUG" parameterTypeRef="uint1">
+                <xtce:LongDescription></xtce:LongDescription>
+            </xtce:Parameter>
+            <xtce:Parameter name="HVPS_ENABLE" parameterTypeRef="uint1">
+                <xtce:LongDescription></xtce:LongDescription>
+            </xtce:Parameter>
+            <xtce:Parameter name="HVPS_CEM_ENABLE" parameterTypeRef="uint1">
+                <xtce:LongDescription></xtce:LongDescription>
+            </xtce:Parameter>
+            <xtce:Parameter name="HVPS_ESA_ENABLE" parameterTypeRef="uint1">
+                <xtce:LongDescription></xtce:LongDescription>
+            </xtce:Parameter>
+            <xtce:Parameter name="HVPS_LOW_RANGE_ENABLE" parameterTypeRef="uint1">
+                <xtce:LongDescription></xtce:LongDescription>
+            </xtce:Parameter>
+            <xtce:Parameter name="HVPS_BULK_ENABLE" parameterTypeRef="uint1">
+                <xtce:LongDescription></xtce:LongDescription>
+            </xtce:Parameter>
+            <xtce:Parameter name="SENSOR_P12A_N12A_CTRL" parameterTypeRef="uint1">
+                <xtce:LongDescription></xtce:LongDescription>
+            </xtce:Parameter>
+            <xtce:Parameter name="SENSOR_P5A_N5A_CTRL" parameterTypeRef="uint1">
+                <xtce:LongDescription></xtce:LongDescription>
+            </xtce:Parameter>
+            <xtce:Parameter name="SENSOR_P3p3D_P5D_CTRL" parameterTypeRef="uint1">
+                <xtce:LongDescription></xtce:LongDescription>
+            </xtce:Parameter>
+            <xtce:Parameter name="spare0" parameterTypeRef="uint6">
+                <xtce:LongDescription></xtce:LongDescription>
+            </xtce:Parameter>
+            <xtce:Parameter name="HVPS_CEM_DAC" parameterTypeRef="uint16">
+                <xtce:LongDescription></xtce:LongDescription>
+            </xtce:Parameter>
+            <xtce:Parameter name="HVPS_ESA_DAC" parameterTypeRef="uint16">
+                <xtce:LongDescription></xtce:LongDescription>
+            </xtce:Parameter>
+            <xtce:Parameter name="THRESHHOLD" parameterTypeRef="uint16">
+                <xtce:LongDescription></xtce:LongDescription>
+            </xtce:Parameter>
+            <xtce:Parameter name="STIM_ENABLE" parameterTypeRef="uint1">
+                <xtce:LongDescription></xtce:LongDescription>
+            </xtce:Parameter>
+            <xtce:Parameter name="STIM_CONFIGURATION" parameterTypeRef="uint15">
+                <xtce:LongDescription></xtce:LongDescription>
+            </xtce:Parameter>
+            <xtce:Parameter name="HVPS_VBULK" parameterTypeRef="uint12">
+                <xtce:LongDescription></xtce:LongDescription>
+            </xtce:Parameter>
+            <xtce:Parameter name="HVPS_VCEM" parameterTypeRef="uint12">
+                <xtce:LongDescription></xtce:LongDescription>
+            </xtce:Parameter>
+            <xtce:Parameter name="HVPS_VESA" parameterTypeRef="uint12">
+                <xtce:LongDescription></xtce:LongDescription>
+            </xtce:Parameter>
+            <xtce:Parameter name="HVPS_VESA_LOW_RANGE" parameterTypeRef="uint12">
+                <xtce:LongDescription></xtce:LongDescription>
+            </xtce:Parameter>
+            <xtce:Parameter name="HVPS_ICEM" parameterTypeRef="uint12">
+                <xtce:LongDescription></xtce:LongDescription>
+            </xtce:Parameter>
+            <xtce:Parameter name="FEE_TEMP" parameterTypeRef="uint12">
+                <xtce:LongDescription></xtce:LongDescription>
+            </xtce:Parameter>
+            <xtce:Parameter name="SENSOR_TEMP" parameterTypeRef="uint12">
+                <xtce:LongDescription></xtce:LongDescription>
+            </xtce:Parameter>
+            <xtce:Parameter name="HVPS_TEMP" parameterTypeRef="uint12">
+                <xtce:LongDescription></xtce:LongDescription>
+            </xtce:Parameter>
+            <xtce:Parameter name="LVPS_TEMP1" parameterTypeRef="uint12">
+                <xtce:LongDescription></xtce:LongDescription>
+            </xtce:Parameter>
+            <xtce:Parameter name="LVPS_TEMP2" parameterTypeRef="uint12">
+                <xtce:LongDescription></xtce:LongDescription>
+            </xtce:Parameter>
+            <xtce:Parameter name="LVPS_TEMP3" parameterTypeRef="uint12">
+                <xtce:LongDescription></xtce:LongDescription>
+            </xtce:Parameter>
+            <xtce:Parameter name="LVPS_3_3V_VMON" parameterTypeRef="uint12">
+                <xtce:LongDescription></xtce:LongDescription>
+            </xtce:Parameter>
+            <xtce:Parameter name="LVPS_5V_P_VMON" parameterTypeRef="uint12">
+                <xtce:LongDescription></xtce:LongDescription>
+            </xtce:Parameter>
+            <xtce:Parameter name="LVPS_5V_N_VMON" parameterTypeRef="uint12">
+                <xtce:LongDescription></xtce:LongDescription>
+            </xtce:Parameter>
+            <xtce:Parameter name="LVPS_12V_P_VMON" parameterTypeRef="uint12">
+                <xtce:LongDescription></xtce:LongDescription>
+            </xtce:Parameter>
+            <xtce:Parameter name="LVPS_12V_N_VMON" parameterTypeRef="uint12">
+                <xtce:LongDescription></xtce:LongDescription>
+            </xtce:Parameter>
+            <xtce:Parameter name="LVPS_3_3V_IMON" parameterTypeRef="uint12">
+                <xtce:LongDescription></xtce:LongDescription>
+            </xtce:Parameter>
+            <xtce:Parameter name="LVPS_5V_P_IMON" parameterTypeRef="uint12">
+                <xtce:LongDescription></xtce:LongDescription>
+            </xtce:Parameter>
+            <xtce:Parameter name="LVPS_5V_N_IMON" parameterTypeRef="uint12">
+                <xtce:LongDescription></xtce:LongDescription>
+            </xtce:Parameter>
+            <xtce:Parameter name="LVPS_12V_P_IMON" parameterTypeRef="uint12">
+                <xtce:LongDescription></xtce:LongDescription>
+            </xtce:Parameter>
+            <xtce:Parameter name="LVPS_12V_N_IMON" parameterTypeRef="uint12">
+                <xtce:LongDescription></xtce:LongDescription>
+            </xtce:Parameter>
+            <xtce:Parameter name="CDH_TEMP1_to_add_to_FM_CDH" parameterTypeRef="uint12">
+                <xtce:LongDescription></xtce:LongDescription>
+            </xtce:Parameter>
+            <xtce:Parameter name="CDH_TEMP2_to_add_to_FM_CDH" parameterTypeRef="uint12">
+                <xtce:LongDescription></xtce:LongDescription>
+            </xtce:Parameter>
+            <xtce:Parameter name="CDH_TEMP3_to_add_to_FM_CDH" parameterTypeRef="uint12">
+                <xtce:LongDescription></xtce:LongDescription>
+            </xtce:Parameter>
+            <xtce:Parameter name="CDH_TEMP4_to_add_to_FM_CDH" parameterTypeRef="uint12">
+                <xtce:LongDescription></xtce:LongDescription>
+            </xtce:Parameter>
+            <xtce:Parameter name="CDH_1_5V" parameterTypeRef="uint12">
+                <xtce:LongDescription></xtce:LongDescription>
+            </xtce:Parameter>
+            <xtce:Parameter name="CDH_1_8V" parameterTypeRef="uint12">
+                <xtce:LongDescription></xtce:LongDescription>
+            </xtce:Parameter>
+            <xtce:Parameter name="CDH_3_3V" parameterTypeRef="uint12">
+                <xtce:LongDescription></xtce:LongDescription>
+            </xtce:Parameter>
+            <xtce:Parameter name="CDH_P12V" parameterTypeRef="uint12">
+                <xtce:LongDescription></xtce:LongDescription>
+            </xtce:Parameter>
+            <xtce:Parameter name="CDH_N12V" parameterTypeRef="uint12">
+                <xtce:LongDescription></xtce:LongDescription>
+            </xtce:Parameter>
+            <xtce:Parameter name="CDH_5V" parameterTypeRef="uint12">
+                <xtce:LongDescription></xtce:LongDescription>
+            </xtce:Parameter>
+            <xtce:Parameter name="CDH_Analog_Ref_Monitor" parameterTypeRef="uint12">
+                <xtce:LongDescription></xtce:LongDescription>
+            </xtce:Parameter>
+            <xtce:Parameter name="spare1" parameterTypeRef="uint8">
+                <xtce:LongDescription></xtce:LongDescription>
+            </xtce:Parameter>
+            <!-- End SWE_APP_HK metadata -->
+            <!-- checksum -->
+            <xtce:Parameter name="CKSUM" parameterTypeRef="uint16">
+                <xtce:LongDescription>Checksum</xtce:LongDescription>
+            </xtce:Parameter>
+        </xtce:ParameterSet>
+        <xtce:ContainerSet>
+            <!-- Create SequenceContainer for each packet that SDC will use. -->
+
+            <!-- Generate a `SequenceContainer` specifically for the CCSDSPacket header. Subsequently,
+            employ this `SequenceContainer` as the `BaseContainer` for all packets,as each packet
+            shares this common header. -->
+            <xtce:SequenceContainer name="CCSDSPacket">
+                <xtce:EntryList>
+                    <xtce:ParameterRefEntry parameterRef="VERSION"/>
+                    <xtce:ParameterRefEntry parameterRef="TYPE"/>
+                    <xtce:ParameterRefEntry parameterRef="SEC_HDR_FLG"/>
+                    <xtce:ParameterRefEntry parameterRef="PKT_APID"/>
+                    <xtce:ParameterRefEntry parameterRef="SEG_FLGS"/>
+                    <xtce:ParameterRefEntry parameterRef="SRC_SEQ_CTR"/>
+                    <xtce:ParameterRefEntry parameterRef="PKT_LEN"/>
+                </xtce:EntryList>
+            </xtce:SequenceContainer>
+
+            <!-- SWE_SCIENCE packet -->
+            <xtce:SequenceContainer name="SweSciencePacket">
+                <xtce:BaseContainer containerRef="CCSDSPacket">
+                    <!-- In this section, we introduce an if statement with the following logic:
+                    if `PKT_APID` is equal to a specific identifier, then the data will be unpacked using
+                    this particular packet definition. Same logic is used in all SequenceContainer after this. -->
+                    <xtce:RestrictionCriteria>
+                        <xtce:ComparisonList>
+                            <xtce:Comparison parameterRef="PKT_APID" value="1344" useCalibratedValue="false"/>
+                        </xtce:ComparisonList>
+                    </xtce:RestrictionCriteria>
+                </xtce:BaseContainer>
+                <xtce:EntryList>
+                    <xtce:ParameterRefEntry parameterRef="SHCOARSE"/>
+                    <xtce:ParameterRefEntry parameterRef="ACQ_START_COARSE"/>
+                    <xtce:ParameterRefEntry parameterRef="ACQ_START_FINE"/>
+                    <xtce:ParameterRefEntry parameterRef="CEM_NOMINAL_ONLY"/>
+                    <xtce:ParameterRefEntry parameterRef="SPIN_PHASE_VALIDITY"/>
+                    <xtce:ParameterRefEntry parameterRef="SPIN_PERIOD_SOURCE"/>
+                    <xtce:ParameterRefEntry parameterRef="spare"/>
+                    <xtce:ParameterRefEntry parameterRef="SPIN_PHASE"/>
+                    <xtce:ParameterRefEntry parameterRef="SPIN_PERIOD"/>
+                    <xtce:ParameterRefEntry parameterRef="ESA_STEPS"/>
+                    <xtce:ParameterRefEntry parameterRef="ESA_TABLE_NUM"/>
+                    <xtce:ParameterRefEntry parameterRef="ESA_ACQ_CFG"/>
+                    <xtce:ParameterRefEntry parameterRef="HVPS_RAMP_SETTLE"/>
+                    <xtce:ParameterRefEntry parameterRef="ACQ_DURATION"/>
+                    <xtce:ParameterRefEntry parameterRef="THRESHOLD_DAC"/>
+                    <xtce:ParameterRefEntry parameterRef="STIM_CFG_REG"/>
+                    <xtce:ParameterRefEntry parameterRef="SCIENCE_DATA"/>
+                    <xtce:ParameterRefEntry parameterRef="CKSUM"/>
+                </xtce:EntryList>
+            </xtce:SequenceContainer>
+            <!-- SWE_APP_HK packet -->
+            <xtce:SequenceContainer name="SweAppHkPacket">
+                <xtce:BaseContainer containerRef="CCSDSPacket">
+                    <xtce:RestrictionCriteria>
+                        <xtce:ComparisonList>
+                            <xtce:Comparison parameterRef="PKT_APID" value="1330" useCalibratedValue="false"/>
+                        </xtce:ComparisonList>
+                    </xtce:RestrictionCriteria>
+                </xtce:BaseContainer>
+                <xtce:EntryList>
+                    <xtce:ParameterRefEntry parameterRef="SHCOARSE"/>
+                    <xtce:ParameterRefEntry parameterRef="APP_MODE"/>
+                    <xtce:ParameterRefEntry parameterRef="CMD_ACC_COUNT"/>
+                    <xtce:ParameterRefEntry parameterRef="CMD_REJ_COUNT"/>
+                    <xtce:ParameterRefEntry parameterRef="LAST_OPCODE"/>
+                    <xtce:ParameterRefEntry parameterRef="HV_DISABLE_PLUG"/>
+                    <xtce:ParameterRefEntry parameterRef="HV_LIMIT_PLUG"/>
+                    <xtce:ParameterRefEntry parameterRef="HVPS_ENABLE"/>
+                    <xtce:ParameterRefEntry parameterRef="HVPS_CEM_ENABLE"/>
+                    <xtce:ParameterRefEntry parameterRef="HVPS_ESA_ENABLE"/>
+                    <xtce:ParameterRefEntry parameterRef="HVPS_LOW_RANGE_ENABLE"/>
+                    <xtce:ParameterRefEntry parameterRef="HVPS_BULK_ENABLE"/>
+                    <xtce:ParameterRefEntry parameterRef="SENSOR_P12A_N12A_CTRL"/>
+                    <xtce:ParameterRefEntry parameterRef="SENSOR_P5A_N5A_CTRL"/>
+                    <xtce:ParameterRefEntry parameterRef="SENSOR_P3p3D_P5D_CTRL"/>
+                    <xtce:ParameterRefEntry parameterRef="spare0"/>
+                    <xtce:ParameterRefEntry parameterRef="HVPS_CEM_DAC"/>
+                    <xtce:ParameterRefEntry parameterRef="HVPS_ESA_DAC"/>
+                    <xtce:ParameterRefEntry parameterRef="THRESHHOLD"/>
+                    <xtce:ParameterRefEntry parameterRef="STIM_ENABLE"/>
+                    <xtce:ParameterRefEntry parameterRef="STIM_CONFIGURATION"/>
+                    <xtce:ParameterRefEntry parameterRef="HVPS_VBULK"/>
+                    <xtce:ParameterRefEntry parameterRef="HVPS_VCEM"/>
+                    <xtce:ParameterRefEntry parameterRef="HVPS_VESA"/>
+                    <xtce:ParameterRefEntry parameterRef="HVPS_VESA_LOW_RANGE"/>
+                    <xtce:ParameterRefEntry parameterRef="HVPS_ICEM"/>
+                    <xtce:ParameterRefEntry parameterRef="FEE_TEMP"/>
+                    <xtce:ParameterRefEntry parameterRef="SENSOR_TEMP"/>
+                    <xtce:ParameterRefEntry parameterRef="HVPS_TEMP"/>
+                    <xtce:ParameterRefEntry parameterRef="LVPS_TEMP1"/>
+                    <xtce:ParameterRefEntry parameterRef="LVPS_TEMP2"/>
+                    <xtce:ParameterRefEntry parameterRef="LVPS_TEMP3"/>
+                    <xtce:ParameterRefEntry parameterRef="LVPS_3_3V_VMON"/>
+                    <xtce:ParameterRefEntry parameterRef="LVPS_5V_P_VMON"/>
+                    <xtce:ParameterRefEntry parameterRef="LVPS_5V_N_VMON"/>
+                    <xtce:ParameterRefEntry parameterRef="LVPS_12V_P_VMON"/>
+                    <xtce:ParameterRefEntry parameterRef="LVPS_12V_N_VMON"/>
+                    <xtce:ParameterRefEntry parameterRef="LVPS_3_3V_IMON"/>
+                    <xtce:ParameterRefEntry parameterRef="LVPS_5V_P_IMON"/>
+                    <xtce:ParameterRefEntry parameterRef="LVPS_5V_N_IMON"/>
+                    <xtce:ParameterRefEntry parameterRef="LVPS_12V_P_IMON"/>
+                    <xtce:ParameterRefEntry parameterRef="LVPS_12V_N_IMON"/>
+                    <xtce:ParameterRefEntry parameterRef="CDH_TEMP1_to_add_to_FM_CDH"/>
+                    <xtce:ParameterRefEntry parameterRef="CDH_TEMP2_to_add_to_FM_CDH"/>
+                    <xtce:ParameterRefEntry parameterRef="CDH_TEMP3_to_add_to_FM_CDH"/>
+                    <xtce:ParameterRefEntry parameterRef="CDH_TEMP4_to_add_to_FM_CDH"/>
+                    <xtce:ParameterRefEntry parameterRef="CDH_1_5V"/>
+                    <xtce:ParameterRefEntry parameterRef="CDH_1_8V"/>
+                    <xtce:ParameterRefEntry parameterRef="CDH_3_3V"/>
+                    <xtce:ParameterRefEntry parameterRef="CDH_P12V"/>
+                    <xtce:ParameterRefEntry parameterRef="CDH_N12V"/>
+                    <xtce:ParameterRefEntry parameterRef="CDH_5V"/>
+                    <xtce:ParameterRefEntry parameterRef="CDH_Analog_Ref_Monitor"/>
+                    <xtce:ParameterRefEntry parameterRef="spare1"/>
+                    <xtce:ParameterRefEntry parameterRef="CKSUM"/>
+                </xtce:EntryList>
+            </xtce:SequenceContainer>
+        </xtce:ContainerSet>
+    </xtce:TelemetryMetaData>
+</xtce:SpaceSystem>
