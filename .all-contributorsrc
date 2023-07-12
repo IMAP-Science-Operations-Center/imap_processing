@@ -8,20 +8,76 @@
   "commitConvention": "angular",
   "contributors": [
     {
+      "login": "greglucas",
+      "name": "Greg Lucas",
+      "avatar_url": "https://avatars.githubusercontent.com/u/12417828?v=4",
+      "profile": "http://greglucas.github.io",
+      "contributions": [
+        "code",
+        "doc",
+        "ideas",
+        "infra",
+        "maintenance"
+      ]
+    },
+    {
+      "login": "tech3371",
+      "name": "Tenzin Choedon",
+      "avatar_url": "https://avatars.githubusercontent.com/u/36522642?v=4",
+      "profile": "https://github.com/tech3371",
+      "contributions": [
+        "code",
+        "ideas",
+        "infra",
+        "example",
+        "maintenance"
+      ]
+    },
+    {
+      "login": "sdhoyt",
+      "name": "Sean Hoyt",
+      "avatar_url": "https://avatars.githubusercontent.com/u/7146374?v=4",
+      "profile": "https://github.com/sdhoyt",
+      "contributions": [
+        "code",
+        "ideas",
+        "infra"
+      ]
+    },
+    {
+      "login": "GFMoraga",
+      "name": "Gabriel M.",
+      "avatar_url": "https://avatars.githubusercontent.com/u/104743000?v=4",
+      "profile": "https://github.com/GFMoraga",
+      "contributions": [
+        "code",
+        "ideas",
+        "infra
+      ]
+    },
+    {
+      "login": "bourque",
+      "name": "Matthew Bourque",
+      "avatar_url": "https://avatars.githubusercontent.com/u/2250769?v=4",
+      "profile": "https://github.com/bourque",
+      "contributions": [
+        "code",
+        "doc",
+        "ideas",
+        "infra",
+      ]
+    },
+    {
       "login": "maxinelasp",
       "name": "Maxine Hartnett",
       "avatar_url": "https://avatars.githubusercontent.com/u/117409426?v=4",
       "profile": "https://github.com/maxinelasp",
       "contributions": [
         "code",
-        "bug",
-        "data",
-        "doc",
         "ideas",
         "infra",
-        "maintenance",
         "review"
-      ]
+       ]
     }
   ],
   "contributorsPerLine": 7,
