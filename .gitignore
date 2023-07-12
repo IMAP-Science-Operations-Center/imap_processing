@@ -1,3 +1,6 @@
+# Documentation ignore
+docs/source/reference/generated
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
