@@ -1,0 +1,32 @@
+{
+  "files": [
+    "README.md"
+  ],
+  "imageSize": 100,
+  "commit": false,
+  "commitType": "docs",
+  "commitConvention": "angular",
+  "contributors": [
+    {
+      "login": "greglucas",
+      "name": "Greg Lucas",
+      "avatar_url": "https://avatars.githubusercontent.com/u/12417828?v=4",
+      "profile": "http://greglucas.github.io",
+      "contributions": [
+        "code",
+        "bug",
+        "data",
+        "doc",
+        "ideas",
+        "infra",
+        "maintenance"
+      ]
+    }
+  ],
+  "contributorsPerLine": 7,
+  "skipCi": true,
+  "repoType": "github",
+  "repoHost": "https://github.com",
+  "projectName": "imap_processing",
+  "projectOwner": "IMAP-Science-Operations-Center"
+}
