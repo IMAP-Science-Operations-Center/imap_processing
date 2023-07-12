@@ -24,7 +24,7 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
 <table>
   <tbody>
     <tr>
-      <td align="center" valign="top" width="14.28%"><a href="https://github.com/bourque"><img src="https://avatars.githubusercontent.com/u/2250769?v=4?s=100" width="100px;" alt="Matthew Bourque"/><br /><sub><b>Matthew Bourque</b></sub></a><br /><a href="https://github.com/IMAP-Science-Operations-Center/imap_processing/commits?author=bourque" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/bourque"><img src="https://avatars.githubusercontent.com/u/2250769?v=4?s=100" width="100px;" alt="Matthew Bourque"/><br /><sub><b>Matthew Bourque</b></sub></a><br /><a href="https://github.com/IMAP-Science-Operations-Center/imap_processing/commits?author=bourque" title="Code">💻</a> <a href="https://github.com/IMAP-Science-Operations-Center/imap_processing/issues?q=author%3Abourque" title="Bug reports">🐛</a> <a href="#data-bourque" title="Data">🔣</a> <a href="https://github.com/IMAP-Science-Operations-Center/imap_processing/commits?author=bourque" title="Documentation">📖</a> <a href="#ideas-bourque" title="Ideas, Planning, & Feedback">🤔</a> <a href="#infra-bourque" title="Infrastructure (Hosting, Build-Tools, etc)">🚇</a> <a href="#maintenance-bourque" title="Maintenance">🚧</a></td>
     </tr>
   </tbody>
 </table>
