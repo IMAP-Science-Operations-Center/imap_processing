@@ -29,6 +29,7 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
   <tbody>
     <tr>
       <td align="center" valign="top" width="14.28%"><a href="http://greglucas.github.io"><img src="https://avatars.githubusercontent.com/u/12417828?v=4?s=100" width="100px;" alt="Greg Lucas"/><br /><sub><b>Greg Lucas</b></sub></a><br /><a href="https://github.com/IMAP-Science-Operations-Center/imap_processing/commits?author=greglucas" title="Code">💻</a> <a href="https://github.com/IMAP-Science-Operations-Center/imap_processing/commits?author=greglucas" title="Documentation">📖</a> <a href="#ideas-greglucas" title="Ideas, Planning, & Feedback">🤔</a> <a href="#infra-greglucas" title="Infrastructure (Hosting, Build-Tools, etc)">🚇</a> <a href="#maintenance-greglucas" title="Maintenance">🚧</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/tech3371"><img src="https://avatars.githubusercontent.com/u/36522642?v=4?s=100" width="100px;" alt="Tenzin Choedon"/><br /><sub><b>Tenzin Choedon</b></sub></a><br /><a href="https://github.com/IMAP-Science-Operations-Center/imap_processing/commits?author=tech3371" title="Code">💻</a> <a href="#ideas-tech3371" title="Ideas, Planning, & Feedback">🤔</a> <a href="#infra-tech3371" title="Infrastructure (Hosting, Build-Tools, etc)">🚇</a> <a href="#example-tech3371" title="Examples">💡</a> <a href="#maintenance-tech3371" title="Maintenance">🚧</a></td>
     </tr>
   </tbody>
 </table>
