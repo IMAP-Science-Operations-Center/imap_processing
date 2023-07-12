@@ -8,17 +8,28 @@
   "commitConvention": "angular",
   "contributors": [
     {
+      "login": "greglucas",
+      "name": "Greg Lucas",
+      "avatar_url": "https://avatars.githubusercontent.com/u/12417828?v=4",
+      "profile": "http://greglucas.github.io",
+      "contributions": [
+        "code",
+        "doc",
+        "ideas",
+        "infra",
+        "maintenance"
+      ]
+    },
+    {
       "login": "tech3371",
       "name": "Tenzin Choedon",
       "avatar_url": "https://avatars.githubusercontent.com/u/36522642?v=4",
       "profile": "https://github.com/tech3371",
       "contributions": [
         "code",
-        "bug",
-        "data",
-        "doc",
         "ideas",
         "infra",
+        "example",
         "maintenance"
       ]
     }
