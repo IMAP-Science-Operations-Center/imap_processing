@@ -4,9 +4,16 @@
 
 > **Specify: (optional)**
 
-### Algorithm Code Info: Data/Input/Output
+### Algorithm Code Information:
+> Input data:
+> > **Specify details:**
+> 
+> Algorithim steps/psuedocode:
+> > **Specify details:**
+> 
+> Output data:
+> > **Specify details:**
 
-> **Specify details:**
 
 ### Code:
 
@@ -14,13 +21,10 @@
 # Code
 ```
 
-### Requirements/ Dependencies:
+#### Specify if any dependicies were added
 
-- [ ] 
-    1. Yes
-- [ ] 
-    2. No
 
-### If yes, specify:
 
 ### Other Notes:
+
+### Related Issues/PRs:

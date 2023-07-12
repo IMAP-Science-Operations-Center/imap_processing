@@ -1,4 +1,4 @@
-    Where did it occur?
+## Description of the issue 
 
 ### Steps to reproduce the issue
 
@@ -16,10 +16,8 @@
 
 ### Actual behavior (What does happen)
 
-### Additional notes
+#### Additional notes
 
-### Did you try to fix the issue? (Yes/No)
+### Affected areas (code, data, or process)
 
-- [ ] Yes
-- [ ] No
-- [ ] I tried but I couldn't fix it
+### Suggested fix?
