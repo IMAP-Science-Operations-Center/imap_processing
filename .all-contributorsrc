@@ -66,6 +66,18 @@
         "ideas",
         "infra",
       ]
+    },
+    {
+      "login": "maxinelasp",
+      "name": "Maxine Hartnett",
+      "avatar_url": "https://avatars.githubusercontent.com/u/117409426?v=4",
+      "profile": "https://github.com/maxinelasp",
+      "contributions": [
+        "code",
+        "ideas",
+        "infra",
+        "review"
+       ]
     }
   ],
   "contributorsPerLine": 7,
