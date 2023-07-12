@@ -11,9 +11,10 @@ the code is committed to the `main` or `dev` branches.
 The following is a short version of this style guide to be used as a quick reference.  Further details about each of
 these items are provided below in the guide.
 
-1. Use a [forking workflow](#git-&amp-github-workflow) for git/GitHub contributions.
-2. Use `PEP8` for [python coding conventions](#python-coding), with a few exceptions.
-3. Use `PEP257` and `numpydocs` for [docstring conventions](#api-documentation), with a few exceptions.
+1. Use a [forking workflow](#git-and-github-workflow) for git/GitHub contributions.
+2. Use `PEP8` for [python coding conventions](#python-coding) (with a few exceptions).
+3. Use `PEP257` and `numpydocs` for [docstring conventions](#api-documentation) (with a few exceptions), and update the
+   documentation builds where applicable.
 4. Update the [`poetry` environment](#poetry-environment) when dependencies change.
 5. Be mindful of committing credentials and other [sensitive information](#security).
 6. Follow agreed-upon [naming conventions](#naming-conventions) where applicable.
@@ -22,7 +23,7 @@ these items are provided below in the guide.
 9. Follow a specific [release workflow](#release-workflow) when making releases.
 
 
-## git & GitHub Workflow
+## git and GitHub Workflow
 
 The best method for contributing software to the `imap_processing` repository is a workflow that involves forking the
 repository, developing changes on "feature" branches, and opening pull requests through GitHub.
@@ -37,9 +38,9 @@ As such, all feature branches should be branched off of and merged back into the
 ### Contributing new features
 
 Before contributing, it is generally encouraged to
-[open a GitHub issue](https://github.com/IMAP-Science-Operations-Center/imap_processing/issues/new)
-that describes the feature to be implemented, or the problem that is trying to be solved. This allows the contributor
-and the team as a whole to keep track of how the feature relates to the project and track its progress.  Any 
+[open a GitHub issue](https://github.com/IMAP-Science-Operations-Center/imap_processing/issues/new), if one does not
+already exist, that describes the feature to be implemented, or the problem that is trying to be solved. This allows the
+contributor and the team as a whole to keep track of how the feature relates to the project and track its progress.  Any 
 contributors to the feature should be assigned to the issue, and proper label(s) should also be assigned.
 
 *Note: Steps (1) through (5) only to be completed once.*
@@ -147,6 +148,9 @@ The following are further recommendations:
 - Each function/method should have at minimum a description, `Parameters` (if necessary), and `Returns` (if necessary)
   sections.
 
+When a new module is added to the repository, make sure to add the module to the appropriate `docs/source/*.rst` file,
+so that the API documentation can be part of the automated documentation build.
+
 
 ## Poetry Environment
 
@@ -156,7 +160,7 @@ Poetry is used for dependency management within this project. To update dependen
 If you do add dependencies, please make sure you define the version numbers mindfully. The best way to do this is to use
 [caret notation](https://python-poetry.org/docs/dependency-specification/#caret-requirements) to allow for minor version
 updates. For example, if you have tested the code using numpy version `1.24.2`, the best way to specify the dependency
-is to allow for updates to the left most version number:
+is to allow for updates to the right most version number:
     
     numpy = "^1.24"`
 
@@ -192,6 +196,7 @@ of the repository.
 ## Tools and Library Recommendations
 
 - `black` for checking python code formatting
+- `poetry` for dependency management and virtual environments
 - `pytest` for unit testing
 - `ruff` for checking docstring formatting
 - `spiceypy` for using SPICE kernels
@@ -211,29 +216,31 @@ Any changes pushed to the `main` branch should be tagged with a version number. 
 ## Release Workflow
 
 Any changes merged or pushed to the `main` branch should follow a specific release workflow which follows the diagram
-shown in the [git & GitHub Workflow](#git-&amp-github-workflow) section. This includes both 'nominal releases' (i.e. new
+shown in the [git & GitHub Workflow](#git-and-github-workflow) section. This includes both 'nominal releases' (i.e. new
 features being merged into `main`) and 'hotfixes' (i.e. bug fixes made directly to `main`). These workflows are
-described below. It is assumed that steps (1) through (4) in the [git & GitHub Workflow](#git-&amp-github-workflow) section
+described below. It is assumed that steps (1) through (4) in the [git & GitHub Workflow](#git-and-github-workflow) section
 are already completed.
 
 ### Nominal releases
 
 1. Make sure the `dev` branch is up-to-date with any changes you want included in the release (i.e. merge in any feature
-   branches using the nominal [git/GitHub workflow](#git-&amp-github-workflow)).
+   branches using the nominal [git/GitHub workflow](#git-and-github-workflow)).
 2. Create a new 'release' branch off of `dev`.  The name of the branch should match the version number to be used for
    the release, which should follow the [versioning](#versioning) conventions.
 3. Make any release-specific commits to the new release branch using the nominal `git add`/`git commit` cycle. This may
    include commits that add release notes, or update version numbers in various configurations.
 4. Push the release branch to the main `IMAP-Science-Operations-Center` `imap_processing` repo (i.e. `upstream`).
 5. In GitHub, create two pull requests: one that merges the release branch into `main`, and one that merges the release
-   branch into `dev`. Proceed with the nominal review & merge process described in steps (10) and (11) in the 
-6. proceed with the nominal review & merge process described in steps (10) and (11) in the
-   [git/GitHub workflow](#git-&amp-github-workflow) section.
-7. Once the changes are merged into the `main` branch, create a
+   branch into `dev`. Proceed with the nominal review & merge process described in steps (10) and (11) in the
+   [git/GitHub workflow](#git-and-github-workflow) section.
+6. Once the changes are merged into the `main` branch, create a
    [new release](https://github.com/IMAP-Science-Operations-Center/imap_processing/releases) for the merge commit and
    assign the appropriate version number.
 
 ### Making hotfixes
+
+*Note: A hotfix should generally be avoided unless there is some specific reason to bypass the nominal `dev` branch
+workflow; for example, if a bug fix is very time critical.*
 
 1. Create a new branch named `hotfix-<description>` off of the `main` branch, and commit any necessary changes following
    the nominal `git add`/`git commit` cycle.
@@ -241,7 +248,7 @@ are already completed.
    open two separate pull requests: one that merges the hotfix branch into the `main` branch, and one that merges the
    hotfix branch into the `dev` branch.
 3. For each of these pull requests, proceed with the nominal review & merge process described in steps (10) and (11) in
-   the previous section.
+   the [git/GitHub workflow](#git-and-github-workflow) section.
 4. Once the changes are merged into the `main` branch, create a
    [new release](https://github.com/IMAP-Science-Operations-Center/imap_processing/releases) or a
    [new tag](https://github.com/IMAP-Science-Operations-Center/imap_processing/tags) for the merge commit and assign the
@@ -269,10 +276,12 @@ acceptable and the PR can be reviewed and merged.
 - Is the code documented and commented sufficiently such that it is easy to read and follow?
     - Are docstrings included for all new modules, classes, and functions?
     - Are in-line comments included to provide necessary context?
+    - Are any documentation files in other locations updated?
 - Have all debugging/print statements been removed?
 - Does the code contain sufficient exception handling?
 - Does the code contain no deprecation warnings?
 - Does the code include all necessary unit tests?
+- Are any new dependencies correctly added to the `pyproject.toml` file?
 
 #### Pertaining to the pull request:
 
@@ -305,3 +314,4 @@ acceptable and the PR can be reviewed and merged.
 - Does the code contain sufficient exception handling?
 - Does the code contain no sensitive data or information?
 - Does the code contain any necessary unit tests?
+- If there are new dependencies, are they all necessary? Are they correctly added to the `pyproject.toml` file?
