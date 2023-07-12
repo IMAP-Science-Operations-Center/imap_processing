@@ -1,0 +1,32 @@
+{
+  "files": [
+    "README.md"
+  ],
+  "imageSize": 100,
+  "commit": false,
+  "commitType": "docs",
+  "commitConvention": "angular",
+  "contributors": [
+    {
+      "login": "GFMoraga",
+      "name": "Gabriel M.",
+      "avatar_url": "https://avatars.githubusercontent.com/u/104743000?v=4",
+      "profile": "https://github.com/GFMoraga",
+      "contributions": [
+        "code",
+        "bug",
+        "data",
+        "doc",
+        "ideas",
+        "infra",
+        "maintenance"
+      ]
+    }
+  ],
+  "contributorsPerLine": 7,
+  "skipCi": true,
+  "repoType": "github",
+  "repoHost": "https://github.com",
+  "projectName": "imap_processing",
+  "projectOwner": "IMAP-Science-Operations-Center"
+}
