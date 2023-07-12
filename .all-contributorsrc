@@ -54,6 +54,18 @@
         "ideas",
         "infra
       ]
+    },
+    {
+      "login": "bourque",
+      "name": "Matthew Bourque",
+      "avatar_url": "https://avatars.githubusercontent.com/u/2250769?v=4",
+      "profile": "https://github.com/bourque",
+      "contributions": [
+        "code",
+        "doc",
+        "ideas",
+        "infra",
+      ]
     }
   ],
   "contributorsPerLine": 7,
