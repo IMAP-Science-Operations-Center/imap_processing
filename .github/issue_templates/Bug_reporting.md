@@ -1,9 +1,9 @@
-## Description of the issue 
+## Description of the issue
 
 ### Steps to reproduce the issue
 
-    1. 
-    2. 
+    1.
+    2.
     3.
 
 ### Code Snippet:
