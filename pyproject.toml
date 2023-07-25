@@ -38,10 +38,11 @@ pydata-sphinx-theme = {version="*", optional=true}
 pytest = {version=">=6.2.5,<7", optional=true}
 ruff = {version="^0.0.253", optional=true}
 sphinx = {version="*", optional=true}
+myst-parser = {version="^2.0.0", optional=true}
 
 [tool.poetry.extras]
 dev = ["black", "pre-commit", "ruff"]
-doc = ["sphinx", "pydata-sphinx-theme"]
+doc = ["myst-parser", "pydata-sphinx-theme", "sphinx"]
 test = ["pytest"]
 
 [project.urls]
