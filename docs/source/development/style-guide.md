@@ -6,6 +6,7 @@ This document serves as a style guide for all `imap_processing` software develop
 the code is committed to the `main` or `dev` branches.
 
 
+(tl;dr)=
 ## tl;dr
 
 The following is a short version of this style guide to be used as a quick reference.  Further details about each of
@@ -23,6 +24,7 @@ these items are provided below in the guide.
 9. Follow a specific [release workflow](#release-workflow) when making releases.
 
 
+(git-and-gitHub-workflow)=
 ## git and GitHub Workflow
 
 The best method for contributing software to the `imap_processing` repository is a workflow that involves forking the
@@ -35,6 +37,7 @@ The following diagram depicts this workflow (credit to
 
 As such, all feature branches should be branched off of and merged back into the `dev` branch.
 
+(contributing-new-features)=
 ### Contributing new features
 
 Before contributing, it is generally encouraged to
@@ -103,6 +106,7 @@ contributors to the feature should be assigned to the issue, and proper label(s)
 
 11. Once the pull request has been accepted, you can merge the pull request and delete the feature branch.
 
+(keeping-your-fork-updated)=
 ### Keeping your fork updated
 
 You can keep your personal fork up-to-date with the `IMAP-Science-Operations-Center` `imap_processing` repository by
@@ -112,6 +116,7 @@ fetching and pulling the `upstream` remote:
     git fetch upstream dev
     git pull upstream/dev
 
+(collaborating-on-someone-elses-fork)=
 ### Collaborating on someone else's fork
 
 To contribute to a branch on another person's personal fork, add a new `remote` that points to their fork, and use the
@@ -124,6 +129,7 @@ nominal workflow for contributing:
     git push <username> <branchname>
 
 
+(python-coding)=
 ## Python Coding
 
 `imap_processing` code shall adhere to the [PEP8](https://peps.python.org/pep-0008/) conventions save for the following
@@ -137,6 +143,7 @@ exceptions:
    [`typing`](https://docs.python.org/3/library/typing.html) library.
 
 
+(API-Documentation)=
 ## API Documentation
 
 `imap_processing` code shall adhere to the [PEP257](https://peps.python.org/pep-0257/) and
@@ -152,6 +159,7 @@ When a new module is added to the repository, make sure to add the module to the
 so that the API documentation can be part of the automated documentation build.
 
 
+(Poetry-Environment)=
 ## Poetry Environment
 
 Poetry is used for dependency management within this project. To update dependencies, you can either update
@@ -175,6 +183,7 @@ dependency issues before the pre-commit hook, users should run `poetry lock` and
 of time. The `poetry.lock` file should be part of the files committed in this case.
 
 
+(Security)=
 ## Security
 
 The following items should never be committed in the `imap_processing` source code or GitHub issues/pull requests:
@@ -188,11 +197,13 @@ If `imap_processing` code needs access to this information, it should be stored 
 of the repository.
 
 
+(Naming-Conventions)=
 ## Naming Conventions
 
 *To be determined*
 
 
+(Tools-and-Library-Recommendations)=
 ## Tools and Library Recommendations
 
 - `black` for checking python code formatting
@@ -203,6 +214,7 @@ of the repository.
 - `space-packet-parser` to unpack CCSDS packets
 
 
+(Versioning)=
 ## Versioning
 
 Any changes pushed to the `main` branch should be tagged with a version number. The version number convention is
@@ -213,6 +225,7 @@ Any changes pushed to the `main` branch should be tagged with a version number. 
     z = The hotfix number. Increase when change only contains bug fixes.
 
 
+(Release-Workflow)=
 ## Release Workflow
 
 Any changes merged or pushed to the `main` branch should follow a specific release workflow which follows the diagram
@@ -221,6 +234,7 @@ features being merged into `main`) and 'hotfixes' (i.e. bug fixes made directly 
 described below. It is assumed that steps (1) through (4) in the [git & GitHub Workflow](#git-and-github-workflow) section
 are already completed.
 
+(Nominal-releases)=
 ### Nominal releases
 
 1. Make sure the `dev` branch is up-to-date with any changes you want included in the release (i.e. merge in any feature
@@ -237,6 +251,7 @@ are already completed.
    [new release](https://github.com/IMAP-Science-Operations-Center/imap_processing/releases) for the merge commit and
    assign the appropriate version number.
 
+(Making-hotfixes)=
 ### Making hotfixes
 
 *Note: A hotfix should generally be avoided unless there is some specific reason to bypass the nominal `dev` branch
@@ -255,6 +270,7 @@ workflow; for example, if a bug fix is very time critical.*
    appropriate [version number](#versioning).
 
 
+(Checklist-for-Contributors-and-Reviewers-of-Pull-Requests)=
 ## Checklist for Contributors and Reviewers of Pull Requests
 
 The following is a guide to be used for contributors and reviewers of `imap_processing` pull requests. Note that this is
@@ -264,8 +280,10 @@ parts of it are subjective.
 If the contributor/reviewer can answer "yes" to all the following questions, then conceivably the proposed changes are
 acceptable and the PR can be reviewed and merged.
 
+(Checklist-for-Contributors)=
 ### Checklist for Contributors
 
+(Pertaining-to-the-code)=
 #### Pertaining to the code:
 
 - Does the code conform to this style guide?
@@ -283,6 +301,7 @@ acceptable and the PR can be reviewed and merged.
 - Does the code include all necessary unit tests?
 - Are any new dependencies correctly added to the `pyproject.toml` file?
 
+(Pertaining-to-the-pull-request)=
 #### Pertaining to the pull request:
 
 - Is the PR excessively long and/or covers multiple issues? If so, consider breaking it up into multiple PRs.
@@ -295,9 +314,11 @@ acceptable and the PR can be reviewed and merged.
 - Do all the automated checks pass?
 
 
+(Checklist-for-Reviewers)=
 ### Checklist for Reviewers
 
-##### Pertaining to the pull request:
+(Pertaining-to-the-pull-request-review)=
+#### Pertaining to the pull request:
 
 - Does the PR have a concise, descriptive title?
 - Does the PR have a sufficient description as to make it clear what the reasons for the changes are?
@@ -307,6 +328,7 @@ acceptable and the PR can be reviewed and merged.
 - Is the PR no longer a work in progress?
 - Do all the automated checks pass?
 
+(Pertaining-to-the-code-review)=
 #### Pertaining to the code:
 
 - Does the code conform to this style guide?

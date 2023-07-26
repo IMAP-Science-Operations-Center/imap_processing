@@ -39,6 +39,7 @@ The explicit code interfaces and structure are described in the :ref:`api`.
 
    reference/index
    development/index
+   development/doc-overview
 
 If you make use of any imap_processing code, please consider citing it in your research.
 TODO: Add a Zenodo DOI badge here.

@@ -33,3 +33,9 @@ A typical development workflow might look like the following:
     git push -u origin my-cool-feature
 
     # Go to GitHub and open a pull request!
+
+.. toctree::
+    :maxdepth: 1
+
+    doc-overview
+    Style Guide <style-guide>
