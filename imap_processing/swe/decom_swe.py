@@ -1,4 +1,4 @@
-from imap_processing import decom
+from imap_processing import decom, packet_definition_directory
 
 
 def decom_packets(packet_file: str):
@@ -13,5 +13,5 @@ def decom_packets(packet_file: str):
     List
         List of all the unpacked data
     """
-    xtce_document = "imap_processing/packet_definitions/swe_packet_definition.xml"
+    xtce_document = f"{packet_definition_directory}/swe_packet_definition.xml"
     return decom.decom_packets(packet_file, xtce_document)
