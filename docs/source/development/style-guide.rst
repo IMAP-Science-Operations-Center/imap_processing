@@ -1,38 +1,43 @@
-``imap_processing`` Style Guide
-=============================
+Style Guide
+===========
 
-This document serves as a style guide for all ``imap_processing`` software development. Any potential contribution to
-the ``imap_processing`` repository should be checked against this guide, and any violation of the guide should be fixed
+This document serves as a style guide for all software development on the `imap-processing
+<https://github.com/IMAP-Science-Operations-Center/imap_processing>`_ and `sds-data-manager
+<https://github.com/IMAP-Science-Operations-Center/sds-data-manager>`_ repositories. Any potential contribution to
+the these repositories should be checked against this guide, and any violation of the guide should be fixed
 before the code is committed to the ``main`` or ``dev`` branches.
 
 
 .. _tl;dr:
+
 tl;dr
 -----
 
 The following is a short version of this style guide to be used as a quick reference. Further details about each of
 these items are provided below in the guide.
 
-1. Use a :ref:`forking workflow <git-and-github-workflow>` for git/GitHub contributions.
-2. Use ``PEP8`` for :ref:`python coding conventions <python-coding>` (with a few exceptions).
-3. Use ``PEP257`` and ``numpydocs`` for :ref:`docstring conventions <api-documentation>` (with a few exceptions), and
+#. Use a :ref:`forking workflow <git-and-github-workflow>` for git/GitHub contributions.
+#. Use ``PEP8`` for :ref:`python coding conventions <python-coding>` (with a few exceptions).
+#. Use ``PEP257`` and ``numpydocs`` for :ref:`docstring conventions <api-documentation>` (with a few exceptions), and
    update the documentation builds where applicable.
-4. Update the :ref:`poetry environment <poetry-environment>` when dependencies change.
-5. Be mindful of committing credentials and other :ref:`sensitive information <security>`.
-6. Follow agreed-upon :ref:`naming conventions <naming-conventions>` where applicable.
-7. Use specific :ref:`tools and libraries <tools-and-library-recommendations>` where applicable.
-8. Use nominal semantic :ref:`versioning <versioning>` for version numbers.
-9. Follow a specific :ref:`release workflow <release-workflow>` when making releases.
+#. Update the :ref:`poetry environment <poetry-environment>` when dependencies change.
+#. Be mindful of committing credentials and other :ref:`sensitive information <security>`.
+#. Follow agreed-upon :ref:`naming conventions <naming-conventions>` where applicable.
+#. Use specific :ref:`tools and libraries <tools-and-library-recommendations>` where applicable.
+#. Use nominal semantic :ref:`versioning <versioning>` for version numbers.
+#. Follow a specific :ref:`release workflow <release-workflow>` when making releases.
 
 
 .. _git-and-github-workflow:
+
 git and GitHub Workflow
 -----------------------
 
-The best method for contributing software to the ``imap_processing`` repository is a workflow that involves forking the
-repository, developing changes on "feature" branches, and opening pull requests through GitHub.
+The best method for contributing software to the repository is a workflow that involves forking the repository,
+developing changes on "feature" branches, and opening pull requests through GitHub.
 
-The following diagram depicts this workflow (credit to `Atlassian <https://www.atlassian.com/git/tutorials/comparing-workflows/gitflow-workflow>`_):
+The following diagram depicts this workflow (credit to `Atlassian
+<https://www.atlassian.com/git/tutorials/comparing-workflows/gitflow-workflow>`_):
 
 .. image:: https://wac-cdn.atlassian.com/dam/jcr:cc0b526e-adb7-4d45-874e-9bcea9898b4a/04%20Hotfix%20branches.svg?cdnVersion=1089
    :alt: git and GitHub Workflow
@@ -41,23 +46,29 @@ The following diagram depicts this workflow (credit to `Atlassian <https://www.a
 
 As such, all feature branches should be branched off of and merged back into the ``dev`` branch.
 
+
 .. _contributing-new-features:
+
 Contributing new features
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Before contributing, it is generally encouraged to `open a GitHub issue
-<https://github.com/IMAP-Science-Operations-Center/imap_processing/issues/new/choose>`_, if one does not already exist,
-that describes the feature to be implemented, or the problem that is trying to be solved. This allows the contributor
-and the team as a whole to keep track of how the feature relates to the project and track its progress. Any contributors
-to the feature should be assigned to the issue, and proper label(s) should also be assigned.
+Before contributing, it is generally encouraged to open a GitHub issue (`imap_processing
+<https://github.com/IMAP-Science-Operations-Center/imap_processing/issues/new/choose>`_, or `sds-data-manager
+<https://github.com/IMAP-Science-Operations-Center/sds-data-manager/issues/new/choose>`_), if one does not already
+exist, that describes the feature to be implemented, or the problem that is trying to be solved. This allows the
+contributor and the team as a whole to keep track of how the feature relates to the project and track its progress. Any
+contributors to the feature should be assigned to the issue, and proper label(s) should also be assigned.
+
+*Note: We use the 'imap_processing' repository as an example here, but this can be applied to 'sds-data-manager' as
+well.*
 
 *Note: Steps (1) through (5) only to be completed once.*
 
-1. Create a personal fork of the ``imap_processing`` repository by visiting the main ``IMAP-Science-Operations-Center``
+#. Create a personal fork of the ``imap_processing`` repository by visiting the main ``IMAP-Science-Operations-Center``
    ``imap_processing`` `repository <https://github.com/IMAP-Science-Operations-Center/imap_processing>`_ and clicking
    the ``Fork`` button near the top-right of the page. Follow the various steps to create a fork under your GitHub
    account.
-2. Make a local copy of your personal fork by cloning the repository, using the URL found by clicking the green "clone"
+#. Make a local copy of your personal fork by cloning the repository, using the URL found by clicking the green "clone"
    button:
 
    .. code-block:: bash
@@ -65,7 +76,7 @@ to the feature should be assigned to the issue, and proper label(s) should also 
        git clone https://github.com/<username>/imap_processing.git  # for HTTPS
        git clone git@github.com:<username>/imap_processing.git  # for SSH
 
-3. Ensure that the personal fork is pointing to the ``upstream`` ``imap_processing`` repository:
+#. Ensure that the personal fork is pointing to the ``upstream`` ``imap_processing`` repository:
 
    .. code-block:: bash
 
@@ -73,7 +84,7 @@ to the feature should be assigned to the issue, and proper label(s) should also 
        git remote add upstream git@github.com:IMAP-Science-Operations-Center/imap_processing.git  # for SSH
 
 
-4. Install the development dependencies and pre-commit hooks. These hooks will automatically run the tools
+#. Install the development dependencies and pre-commit hooks. These hooks will automatically run the tools
    `black <https://black.readthedocs.io/en/stable/>`_ and `ruff <https://beta.ruff.rs/docs/>`_ on your code changes
    before commits:
 
@@ -82,14 +93,14 @@ to the feature should be assigned to the issue, and proper label(s) should also 
        pip install .[dev]
        pre-commit install
 
-5. Retrieve the ``upstream`` ``dev`` branch:
+#. Retrieve the ``upstream`` ``dev`` branch:
 
    .. code-block:: bash
 
        git fetch upstream
        git checkout -b dev upstream/dev
 
-6. Create a feature branch off of the ``dev`` branch to develop changes on. Branch names should be short but
+#. Create a feature branch off of the ``dev`` branch to develop changes on. Branch names should be short but
    descriptive (e.g. ``update-codice-unit-tests``) and not too generic (e.g. ``bug-fix``, ``updates``). Consistent use
    of hyphens is encouraged.
 
@@ -97,7 +108,7 @@ to the feature should be assigned to the issue, and proper label(s) should also 
 
         git checkout -b <branchname>
 
-7. Make changes to the branch using the nominal ``git add``/``git commit`` cycle.
+#. Make changes to the branch using the nominal ``git add``/``git commit`` cycle.
 
    .. code-block:: bash
 
@@ -107,13 +118,13 @@ to the feature should be assigned to the issue, and proper label(s) should also 
    With the pre-commit hooks installed, you may need to make fixes to any warnings/errors reported by ``black`` and/or
    ``ruff`` and try committing your changes again.
 
-8. Push the feature branch to your personal fork's GitHub repository:
+#. Push the feature branch to your personal fork's GitHub repository:
 
    .. code-block:: bash
 
         git push origin <branchname>
 
-9. On the ``IMAP-Science-Operations-Center`` ``imap_processing`` `repository
+#. On the ``IMAP-Science-Operations-Center`` ``imap_processing`` `repository
    <https://github.com/IMAP-Science-Operations-Center/imap_processing>`_ create a new pull request. Click on the
    "compare across forks" link to enable the pull request to use your fork. Set the "base repository" to
    ``IMAP-Science-Operations-Center`` and "base" to ``dev``. Set the "head repository" to the ``imap_processing``
@@ -121,13 +132,15 @@ to the feature should be assigned to the issue, and proper label(s) should also 
    development, you can click the "Convert to draft" button under the "Reviewers" section, or add a "[WIP]" at the
    beginning of the pull request title to signify that the pull request is not ready to be merged.
 
-10. Assign at least one reviewer to the pull request, though two or more reviewers are highly encouraged, especially for
+#. Assign at least one reviewer to the pull request, though two or more reviewers are highly encouraged, especially for
     significant changes. They will review your pull request and either accept the request or ask for additional changes.
     If additional changes are needed, iterate through steps (7) and (8) until you and the reviewer(s) are satisfied.
 
-11. Once the pull request has been accepted, you can merge the pull request and delete the feature branch.
+#. Once the pull request has been accepted, you can merge the pull request and delete the feature branch.
+
 
 .. _keeping-your-fork-updated:
+
 Keeping your fork updated
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -140,7 +153,9 @@ fetching and pulling the ``upstream`` remote:
     git fetch upstream dev
     git pull upstream/dev
 
+
 .. _collaborating-on-someone-elses-fork:
+
 Collaborating on someone else's fork
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -157,11 +172,11 @@ nominal workflow for contributing:
 
 
 .. _python-coding:
+
 Python Coding
 -------------
 
-``imap_processing`` code shall adhere to the `PEP8 <https://peps.python.org/pep-0008/>`_ conventions save for the
-following exceptions:
+Code shall adhere to the `PEP8 <https://peps.python.org/pep-0008/>`_ conventions save for the following exceptions:
 
 * Lines of code need to be restricted to 88 characters to adhere to the ``black`` code formatter.
 * Avoid one-letter or unnecessarily-abbreviated variable names (e.g. use ``temperature`` instead of ``temp``,
@@ -172,10 +187,11 @@ following exceptions:
 
 
 .. _api-documentation:
+
 API Documentation
 -----------------
 
-``imap_processing`` code shall adhere to the `PEP257 <https://peps.python.org/pep-0257/>`_ and `numpydoc
+Documentation code shall adhere to the `PEP257 <https://peps.python.org/pep-0257/>`_ and `numpydoc
 <https://numpydoc.readthedocs.io/en/latest/format.html>`_ conventions.
 
 The following are further recommendations:
@@ -189,6 +205,7 @@ so that the API documentation can be part of the automated documentation build.
 
 
 .. _poetry-environment:
+
 Poetry Environment
 ------------------
 
@@ -216,25 +233,27 @@ of time. The ``poetry.lock`` file should be part of the files committed in this 
 
 
 .. _security:
+
 Security
 --------
 
-The following items should never be committed in the ``imap_processing`` source code or GitHub issues/pull requests:
+The following items should never be committed in the source code or GitHub issues/pull requests:
 
 * Account credentials of any kind (e.g. database usernames/passwords, AWS credentials, etc.)
 * Internal directory structures or filepaths
 * Machine names
 * Proprietary data
 
-If ``imap_processing`` code needs access to this information, it should be stored in a configuration file that is not
-part of the repository.
+If code needs access to this information, it should be stored in a configuration file that is not part of the
+repository.
 
 
 .. _naming-conventions:
+
 Naming Conventions
 ------------------
 
-The ``imap_processing`` repo shall adhere to specific naming conventions to allow for more consistency:
+The repository shall adhere to specific naming conventions to allow for more consistency:
 
 * Repositories shall have branches named ``main`` and ``dev``, instead of ``master`` and ``development``
 * Repositories shall be named with underscores instead of hyphens (e.g. ``imap_processing`` instead of
@@ -242,18 +261,20 @@ The ``imap_processing`` repo shall adhere to specific naming conventions to allo
 
 
 .. _tools-and-library-recommendations:
+
 Tools and Library Recommendations
 ---------------------------------
 
-* ``black`` for checking python code formatting
-* ``poetry`` for dependency management and virtual environments
-* ``pytest`` for unit testing
-* ``ruff`` for checking docstring formatting
-* ``spiceypy`` for using SPICE kernels
-* ``space-packet-parser`` to unpack CCSDS packets
+* `black <https://black.readthedocs.io/en/stable>`_ for checking python code formatting
+* `poetry <https://python-poetry.org/docs/>`_ for dependency management and virtual environments
+* `pytest <https://docs.pytest.org/en/7.1.x/contents.html>`_ for unit testing
+* `ruff <https://beta.ruff.rs/docs/>`_ for checking docstring formatting
+* `spiceypy <https://spiceypy.readthedocs.io/en/main/>`_ for using SPICE kernels
+* `space-packet-parser <https://space-packet-parser.readthedocs.io/en/latest/>`_ to unpack CCSDS packets
 
 
 .. _versioning:
+
 Versioning
 ----------
 
@@ -268,6 +289,7 @@ Any changes pushed to the ``main`` branch should be tagged with a version number
 
 
 .. _release-workflow:
+
 Release Workflow
 ----------------
 
@@ -277,45 +299,53 @@ features being merged into ``main``) and 'hotfixes' (i.e. bug fixes made directl
 described below. It is assumed that steps (1) through (4) in the :ref:`git & GitHub Workflow <git-and-github-workflow>`
 section are already completed.
 
+*Note: We use the 'imap_processing' repository as an example here, but this can be applied to 'sds-data-manager' as
+well.*
+
+
 .. _nominal-releases:
+
 Nominal releases
 ^^^^^^^^^^^^^^^^
 
-1. Make sure the ``dev`` branch is up-to-date with any changes you want included in the release (i.e. merge in any
+#. Make sure the ``dev`` branch is up-to-date with any changes you want included in the release (i.e. merge in any
    feature branches using the nominal :ref:`git & GitHub Workflow <git-and-github-workflow>`).
-2. Create a new 'release' branch off of ``dev``.  The name of the branch should match the version number to be used for
+#. Create a new 'release' branch off of ``dev``.  The name of the branch should match the version number to be used for
    the release, which should follow the :ref:`versioning <versioning>` conventions.
-3. Make any release-specific commits to the new release branch using the nominal ``git add``/``git commit`` cycle. This
+#. Make any release-specific commits to the new release branch using the nominal ``git add``/``git commit`` cycle. This
    may include commits that add release notes, or update version numbers in various configurations.
-4. Push the release branch to the main ``IMAP-Science-Operations-Center`` ``imap_processing`` repo (i.e. ``upstream``).
-5. In GitHub, create two pull requests: one that merges the release branch into ``main``, and one that merges the
+#. Push the release branch to the main ``IMAP-Science-Operations-Center`` ``imap_processing`` repo (i.e. ``upstream``).
+#. In GitHub, create two pull requests: one that merges the release branch into ``main``, and one that merges the
    release branch into ``dev``. Proceed with the nominal review & merge process described in steps (10) and (11) in the
    :ref:`git & GitHub Workflow <git-and-github-workflow>` section.
-6. Once the changes are merged into the ``main`` branch, create a `new release
+#. Once the changes are merged into the ``main`` branch, create a `new release
    <https://github.com/IMAP-Science-Operations-Center/imap_processing/releases>`_ for the merge commit and assign the
    appropriate version number.
 
+
 .. _Making-hotfixes:
+
 Making hotfixes
 ^^^^^^^^^^^^^^^
 
 *Note: A hotfix should generally be avoided unless there is some specific reason to bypass the nominal ``dev`` branch
 workflow; for example, if a bug fix is very time critical.*
 
-1. Create a new branch named ``hotfix-<description>`` off of the ``main`` branch, and commit any necessary changes
+#. Create a new branch named ``hotfix-<description>`` off of the ``main`` branch, and commit any necessary changes
    following the nominal ``git add``/``git commit`` cycle.
-2. Push the hotfix branch to the main ``IMAP-Science-Operations-Center`` ``imap_processing`` repo (i.e. ``upstream``),
+#. Push the hotfix branch to the main ``IMAP-Science-Operations-Center`` ``imap_processing`` repo (i.e. ``upstream``),
    and open two separate pull requests: one that merges the hotfix branch into the ``main`` branch, and one that merges
    the hotfix branch into the ``dev`` branch.
-3. For each of these pull requests, proceed with the nominal review & merge process described in steps (10) and (11) in
+#. For each of these pull requests, proceed with the nominal review & merge process described in steps (10) and (11) in
    the :ref:`git & GitHub Workflow <git-and-github-workflow>` section.
-4. Once the changes are merged into the ``main`` branch, create a `new release
+#. Once the changes are merged into the ``main`` branch, create a `new release
    <https://github.com/IMAP-Science-Operations-Center/imap_processing/releases>`_ or a `new tag
    <https://github.com/IMAP-Science-Operations-Center/imap_processing/tags>`_ for the merge commit and assign the
    appropriate :ref:`version number <versioning>`.
 
 
 .. _checklist-for-contributors-and-reviewers-of-pull-requests:
+
 Checklist for Contributors and Reviewers of Pull Requests
 ---------------------------------------------------------
 
@@ -326,11 +356,15 @@ and parts of it are subjective.
 If the contributor/reviewer can answer "yes" to all the following questions, then conceivably the proposed changes are
 acceptable and the PR can be reviewed and merged.
 
+
 .. _Checklist-for-Contributors:
+
 Checklist for Contributors
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+
 .. _Pertaining-to-the-code:
+
 Pertaining to the code:
 """""""""""""""""""""""
 
@@ -349,7 +383,9 @@ Pertaining to the code:
 * Does the code include all necessary unit tests?
 * Are any new dependencies correctly added to the ``pyproject.toml`` file?
 
+
 .. _pertaining-to-the-pull-request:
+
 Pertaining to the pull request:
 """""""""""""""""""""""""""""""
 
@@ -364,10 +400,13 @@ Pertaining to the pull request:
 
 
 .. _checklist-for-reviewers:
+
 Checklist for Reviewers
 ^^^^^^^^^^^^^^^^^^^^^^^
 
+
 .. _pertaining-to-the-pull-request-review:
+
 Pertaining to the pull request:
 """""""""""""""""""""""""""""""
 
@@ -379,7 +418,9 @@ Pertaining to the pull request:
 * Is the PR no longer a work in progress?
 * Do all the automated checks pass?
 
+
 .. _pertaining-to-the-code-review:
+
 Pertaining to the code:
 """""""""""""""""""""""
 
