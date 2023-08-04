@@ -389,4 +389,3 @@ Pertaining to the code:
 * Does the code contain no sensitive data or information?
 * Does the code contain any necessary unit tests?
 * If there are new dependencies, are they all necessary? Are they correctly added to the ``pyproject.toml`` file?
-* If there are new dependencies, are they all necessary? Are they correctly added to the ``pyproject.toml`` file?
