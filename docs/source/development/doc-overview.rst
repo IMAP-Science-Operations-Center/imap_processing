@@ -34,7 +34,7 @@ Before writing any section, double check that there isn't an existing document t
 
 You can link to other documents in these docs using the `"docs" role <https://www.sphinx-doc.org/en/master/usage/restructuredtext/roles.html#role-doc>`_.
 
-Basically, you can add a link using this synatx: ``:doc:`parrot```.
+Basically, you can add a link using this syntax: ``:doc:`parrot```.
 
 It is also useful to link to specific sections within documentation. If you have sections which may be useful to link to, you can add an internal `ref <https://www.sphinx-doc.org/en/master/usage/restructuredtext/roles.html#role-ref>`_ to allow other documents to link to your section. You can create this ref with ``.. _hyperlink-name:`` before the referenced text. You can use these internal links with the `ref <https://www.sphinx-doc.org/en/master/usage/restructuredtext/roles.html#role-ref>`_ role:
 
