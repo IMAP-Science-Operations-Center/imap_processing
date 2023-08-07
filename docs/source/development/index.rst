@@ -39,8 +39,4 @@ A typical development workflow might look like the following:
 
     doc-overview
     release-workflow
-
-.. toctree::
-    :maxdepth: 2
-
-    style-guide
+    style_guide/style-guide

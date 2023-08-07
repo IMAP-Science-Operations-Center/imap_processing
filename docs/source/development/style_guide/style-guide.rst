@@ -30,12 +30,15 @@ Contributors can refer to the :ref:`checklist for contributors and reviewers of 
 <checklist-for-contributors-and-reviewers-of-pull-requests>` for assistance in making sure pull requests are adhering
 to these conventions.
 
-.. include:: git-and-github-workflow.rst
-.. include:: python-coding.rst
-.. include:: api-documentation.rst
-.. include:: poetry-environment.rst
-.. include:: security.rst
-.. include:: naming-conventions.rst
-.. include:: tools-and-library-recommendations.rst
-.. include:: versioning.rst
-.. include:: checklist-for-pull-requests.rst
+.. toctree::
+    :maxdepth: 1
+
+    git-and-github-workflow
+    python-coding
+    api-documentation
+    poetry-environment
+    security
+    naming-conventions
+    tools-and-library-recommendations
+    versioning
+    checklist-for-pull-requests
