@@ -76,8 +76,9 @@
         "code",
         "ideas",
         "infra",
-        "review"
-       ]
+        "review",
+        "doc"
+      ]
     }
   ],
   "contributorsPerLine": 7,
