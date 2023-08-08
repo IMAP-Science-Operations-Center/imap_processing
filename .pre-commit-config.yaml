@@ -12,12 +12,14 @@ repos:
     - id: detect-private-key
     - id: mixed-line-ending
     - id: trailing-whitespace
+    - id: no-commit-to-branch
+      args: [--branch, main, --branch, dev]
   - repo: https://github.com/psf/black
     rev: 23.3.0
     hooks:
     - id: black
-  - repo: https://github.com/charliermarsh/ruff-pre-commit
-    rev: 'v0.0.276'
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: 'v0.0.277'
     hooks:
     - id: ruff
       args: [--fix]
@@ -26,3 +28,4 @@ repos:
     hooks:
       - id: poetry-check
       - id: poetry-lock
+        args: [--no-update]
