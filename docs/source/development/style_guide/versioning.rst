@@ -34,7 +34,7 @@ IMAP data products are versioned with the convention ``vXX.YY``, where:
 
 Version numbers are specific to an instrument. In other words, each IMAP instrument has their own version number that
 is only updated when that instrument's algorithm is changed, or that instrument's data are reprocessed. The version is
-updated independently of the other IMA1P instruments.
+updated independently of the other IMAP instruments.
 
 This convention was discussed and decided on in `this GitHub issue
 <https://github.com/IMAP-Science-Operations-Center/imap_processing/issues/48>`_.
