@@ -4,8 +4,8 @@ from space_packet_parser import parser, xtcedef
 
 
 # Define paths
-packet_file = Path('/Users/gamo6782/Desktop/RAW.bin')
-xtce_document = Path('/Users/gamo6782/Desktop/IMAP_xtce/xtce_repo/DEMO_decom/p_cod_aut_test.xml')
+packet_file = Path('RAW.bin')
+xtce_document = Path('L0/p_cod_aut_test.xml')
 
 packet_definition = xtcedef.XtcePacketDefinition(xtce_document)
 my_parser = parser.PacketParser(packet_definition, 0x460)

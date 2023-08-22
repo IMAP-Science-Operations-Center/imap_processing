@@ -194,4 +194,4 @@ ET.indent(tree, space="\t", level=0)
 
 # Save the XML document to a file
 ''' Important! tree.write will write the file, so make sure you use the correct name for the file you want to write.'''
-tree.write("p_cod_aut_test.xml", encoding="utf-8", xml_declaration=True)
+tree.write("L0/p_cod_aut_test.xml", encoding="utf-8", xml_declaration=True)

@@ -77,7 +77,7 @@ def extract_ccsds_header(packet_data):
                     4. The extracted CCSDS header fields are printed.'''
 
 if __name__ == "__main__":
-    bin_file_path = "/Users/gamo6782/Desktop/RAW.bin"  # Replace this with your .bin file path
+    bin_file_path = "../RAW.bin"  # Replace this with your .bin file path
 
     data = read_binary_file(bin_file_path)
     idx = find_packet_with_apid(data, target_apid=96)
