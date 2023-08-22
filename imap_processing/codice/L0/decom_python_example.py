@@ -1,18 +1,6 @@
 """
-Reads the contents of a binary file and returns the data as a bytes object.
-
-Parameters:
-    file_path (str): The path to the binary file to be read.
-    encoding (str, optional): The character encoding to use for decoding the binary data.
-
-Returns:
-    bytes or str: The binary data read from the file as a bytes object, or decoded to a string if an encoding is provided.
-
-Raises:
-    FileNotFoundError: If the specified file does not exist.
-    IOError: If an error occurs while reading the file.
-
-
+This script contains functions to extract and decommute parameters from a binary file containing packets.
+This is a hard coded version of the decom.py file. It is used to test the decom.py file.
 """
 
 
@@ -34,7 +22,6 @@ Parameters:
 
 Returns:
     int: The extracted value represented as an integer.
-
 
 """
 
@@ -68,14 +55,12 @@ Example:
     binary_data = bytes([0x12, 0x34, 0x56, 0x12, 0x78, 0x90])  # Example binary data
     target_apid = 0x1234  # Example target APID
     packet_index = find_packet_with_apid(binary_data, target_apid)
-    # In this example, the target APID 0x1234 is found at index 0 in the binary_data.
-    # Therefore, packet_index will be 0.
 """
 
 
 def find_packet_with_apid(bin_data, target_apid):
     # Search for the target APID in the binary data
-    target_apid_bytes = target_apid.to_bytes(2, byteorder='big')
+    target_apid_bytes = target_apid.to_bytes(2, byteorder="big")
     idx = bin_data.find(target_apid_bytes)
 
     return idx
@@ -98,21 +83,10 @@ Parameters:
             - "lengthInBits": Number of bits to extract for this parameter.
             - "dataType": Data type of the parameter, e.g., "unsigned_int", "float", etc.
 
-Returns:
-    dict: A dictionary containing extracted parameter values with their respective mnemonics as keys.
-
-Example:
-    packet_binary_data = bytes([0b11011010, 0b10101100, 0b01010101])  # Example packet binary data
-    decommutation_info = [
-        {"mnemonic": "PARAM1", "sequence": 1, "startByte": 0, "startBitInByte": 2, "lengthInBits": 6, "dataType": "unsigned_int"},
-        {"mnemonic": "PARAM2", "sequence": 2, "startByte": 1, "startBitInByte": 0, "lengthInBits": 8, "dataType": "unsigned_int"}
-    ]
-    decommuted_parameters = decommute_packet(packet_binary_data, decommutation_info)
-    # In this example, two parameters are extracted using the provided decommutation info.
-    # PARAM1 will be extracted from bits 2 to 7, and PARAM2 from bits 8 to 15 of the packet.
 """
 
 
+# Decommutation table variables may not all be the same
 def decommute_packet(packet_data, decomm_table):
     parameters = {}
 
@@ -143,9 +117,6 @@ Usage:
     3. Define the 'decomm_table' with the decommutation information for different parameters.
     4. Run the script to extract and print decommuted parameter values.
 
-Note:
-    - The 'read_binary_file', 'find_packet_with_apid', and 'decommute_packet' functions are assumed to be defined elsewhere.
-
 Example:
     Assuming 'read_binary_file' and other functions are defined:
     - Given a binary file at 'bin_file_path' and a desired 'target_apid':
@@ -164,7 +135,7 @@ if __name__ == "__main__":
             "startBitInByte": 0,
             "startBit": 48,
             "lengthInBits": 32,
-            "dataType": "UINT"
+            "dataType": "UINT",
         },
         {
             "mnemonic": "Spare",
@@ -173,7 +144,7 @@ if __name__ == "__main__":
             "startBitInByte": 0,
             "startBit": 80,
             "lengthInBits": 6,
-            "dataType": "UINT"
+            "dataType": "UINT",
         },
         {
             "mnemonic": "Power_Cycle_Rq",
@@ -182,7 +153,7 @@ if __name__ == "__main__":
             "startBitInByte": 6,
             "startBit": 86,
             "lengthInBits": 1,
-            "dataType": "UINT"
+            "dataType": "UINT",
         },
         {
             "mnemonic": "Power_Off_Rq",
@@ -191,7 +162,7 @@ if __name__ == "__main__":
             "startBitInByte": 7,
             "startBit": 87,
             "lengthInBits": 1,
-            "dataType": "UINT"
+            "dataType": "UINT",
         },
         {
             "mnemonic": "Heater_Control_Enabled",
@@ -200,7 +171,7 @@ if __name__ == "__main__":
             "startBitInByte": 0,
             "startBit": 88,
             "lengthInBits": 1,
-            "dataType": "UINT"
+            "dataType": "UINT",
         },
         {
             "mnemonic": "Heater_1_State",
@@ -209,7 +180,7 @@ if __name__ == "__main__":
             "startBitInByte": 1,
             "startBit": 89,
             "lengthInBits": 1,
-            "dataType": "UINT"
+            "dataType": "UINT",
         },
         {
             "mnemonic": "Heater_2_State",
@@ -218,7 +189,7 @@ if __name__ == "__main__":
             "startBitInByte": 2,
             "startBit": 90,
             "lengthInBits": 1,
-            "dataType": "UINT"
+            "dataType": "UINT",
         },
         {
             "mnemonic": "Spare2",
@@ -227,7 +198,7 @@ if __name__ == "__main__":
             "startBitInByte": 3,
             "startBit": 91,
             "lengthInBits": 5,
-            "dataType": "UINT"
+            "dataType": "UINT",
         },
     ]
 
@@ -242,3 +213,6 @@ if __name__ == "__main__":
             print(f"{mnemonic}: {value}")
     else:
         print("Packet with APID not found in the binary data.")
+
+# FileNotFoundError: If the specified file does not exist.
+# IOError: If an error occurs while reading the file.
