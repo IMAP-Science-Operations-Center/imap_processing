@@ -203,7 +203,7 @@ if __name__ == "__main__":
     tree.write(output_xml_path, encoding="utf-8", xml_declaration=True)
 
     # Read and modify the XML file contents
-    with open(output_xml_path, "r") as file:
+    with open(output_xml_path) as file:
         contents = file.read()
 
     modified_content = contents.replace(

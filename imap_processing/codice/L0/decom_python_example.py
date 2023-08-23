@@ -17,7 +17,7 @@ Example:
     - If no matching packet is found, a message indicating such is printed.
 """
 
-'''
+"""
 Parameters
 ----------
 bin_file_path : str
@@ -34,7 +34,9 @@ bin_file_path : str
         - "startBit": Overall starting bit index in the packet.
         - "lengthInBits": Number of bits to extract for this parameter.
         - "dataType": Data type of the parameter, e.g., "unsigned_int", "float", etc.
-        '''
+        """
+
+
 def read_binary_file(file_path):
     with open(file_path, "rb") as file:
         data = file.read()
@@ -128,12 +130,12 @@ def decommute_packet(packet_data, decomm_table):
 
     for entry in decomm_table:
         mnemonic = entry["mnemonic"]
-        sequence = entry["sequence"]
-        start_byte = entry["startByte"]
-        start_bit_in_byte = entry["startBitInByte"]
+        entry["sequence"]
+        entry["startByte"]
+        entry["startBitInByte"]
         start_bit = entry["startBit"]
         length_in_bits = entry["lengthInBits"]
-        data_type = entry["dataType"]
+        entry["dataType"]
 
         value = extract_bits(packet_data, start_bit, length_in_bits)
         parameters[mnemonic] = value
