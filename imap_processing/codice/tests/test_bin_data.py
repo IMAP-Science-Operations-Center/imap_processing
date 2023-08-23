@@ -5,7 +5,7 @@
 
 def test_bin_file_size():
     # Replace this path with the full path to your .bin file
-    bin_file_path = "/Users/gamo6782/Desktop/RAW.bin"
+    bin_file_path = "../RAW.bin"
 
     with open(bin_file_path, "rb") as file:
         data = file.read()
@@ -38,7 +38,7 @@ def binary_to_int(binary_data):
 
 if __name__ == "__main__":
     bin_file_path = (
-        "/Users/gamo6782/Desktop/RAW.bin"  # Replace this with your .bin file path
+        "../RAW.bin"  # Replace this with your .bin file path
     )
 
     data = read_binary_file(bin_file_path)

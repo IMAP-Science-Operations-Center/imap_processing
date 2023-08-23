@@ -1,86 +1,51 @@
-""" The module will take an Excel file and convert it into an XTCE formatted XML file.
+""" The module will take an Excel file and convert it into an XTCE formatted XML file. This is specific for CODICE L0,
+    but can be modified for other missions. This is the start of CODICE L0 data processing.
 
 """
 import xml.etree.ElementTree as ET
 
 import pandas as pd
 
-sheet_name = "P_COD_AUT"  # Assuming the sheet name is correct
+from imap_processing.codice.CcsdsHeaderXtceGenerator import CCSDSParameters
 
-# Create CCSDS Header parameters. This should be consistent for all CCSDS packets.
-ccsds_parameters = [
-    {
-        "name": "VERSION",
-        "parameterTypeRef": "uint3",
-        "description": "CCSDS Packet Version Number (always 0)",
-    },
-    {
-        "name": "TYPE",
-        "parameterTypeRef": "uint1",
-        "description": "CCSDS Packet Type Indicator (0=telemetry)",
-    },
-    {
-        "name": "SEC_HDR_FLG",
-        "parameterTypeRef": "uint1",
-        "description": "CCSDS Packet Secondary Header Flag (always 1)",
-    },
-    {
-        "name": "PKT_APID",
-        "parameterTypeRef": "uint11",
-        "description": "CCSDS Packet Application Process ID",
-    },
-    {
-        "name": "SEG_FLGS",
-        "parameterTypeRef": "uint2",
-        "description": "CCSDS Packet Grouping Flags (3=not part of group)",
-    },
-    {
-        "name": "SRC_SEQ_CTR",
-        "parameterTypeRef": "uint14",
-        "description": "CCSDS Packet Sequence Count (increments with each new packet)",
-    },
-    {
-        "name": "PKT_LEN",
-        "parameterTypeRef": "uint16",
-        "description": "CCSDS Packet Length (number of bytes after Packet length minus 1)",
-    },
-    {
-        "name": "SHCOARSE",
-        "parameterTypeRef": "uint32",
-        "description": "CCSDS Packet Time Stamp (coarse time)",
-    },
-]
+# Make sure the "sheet" name is correct. In an Excel file, there might be several "packets", which are "sheets"
+# within the file.This is case-sensitive.
+packet_name = "P_COD_AUT"  # This is the name of the packet (sheet) in the Excel file you want to convert to XML
+
+# This is the path to the Excel file you want to convert to XML
+path_to_excel_file = "/Users/gamo6782/Desktop/IMAP/TLM_COD_20230629-110638(update).xlsx"
+
+ccsds_parameters = CCSDSParameters().parameters
 
 if __name__ == "__main__":
-    # ET.register_namespace is important! Make sure you use the correct namespace for the xtce file you are using.This
-    # is the namespace for the IMAP xtce files currently.
+    # ET.register_namespace is important! Make sure you use the correct namespace for the xtce file you are using.
+    # This is the namespace for the IMAP xtce files currently.
 
-    ET.register_namespace("xtce", "http://www.omg.org/space")
+    ET.register_namespace(
+        "xtce", "http://www.omg.org/space"
+    )  # Update the namespace here
 
     # Load data from Excel file
-    # This is important! Use the xls PATH to the file you want to convert to XML.
-    # Also, make sure the "sheet" name is correct. Case sensitive.'''
-
-    xls = pd.ExcelFile(
-        "/Users/gamo6782/Desktop/IMAP/TLM_COD_20230629-110638(update).xlsx"
-    )
-    df = xls.parse(sheet_name)
+    xls = pd.ExcelFile(path_to_excel_file)
+    pkt = xls.parse(packet_name)
 
     # Fill missing values with '-*-'
-    df.fillna("", inplace=True)
+    pkt.fillna("", inplace=True)
 
     # Create the root element and add namespaces
     root = ET.Element(
         "{http://www.omg.org/space}SpaceSystem",
-        nsmap={"xtce": "http://www.omg.org/space"},
+        nsmap={"xtce": "http://www.omg.org/space/xtce"},
     )
-    root.attrib["name"] = "P_COD_AUT"
 
-    # Create the Header element
+    root.attrib["name"] = "packet_name"
+
+    # Create the Header element with attributes 'date', 'version', and 'author'
+    # Versioning is used to keep track of changes to the XML file.
     header = ET.SubElement(root, "{http://www.omg.org/space}Header")
     header.attrib["date"] = "2023-08-21"
     header.attrib["version"] = "1.0"
-    header.attrib["author"] = "Gabriel Moraga"
+    header.attrib["author"] = "IMAP SDC"
 
     """
     These lines of code create a structured XML hierarchy to represent data according to a defined XML schema:
@@ -119,7 +84,8 @@ if __name__ == "__main__":
         encoding = ET.SubElement(parameter_type, "xtce:IntegerDataEncoding")
         encoding.attrib["sizeInBits"] = str(size)
         encoding.attrib["encoding"] = "unsigned"
-
+        # unit_set is used to define the units for the parameter. This is not needed for CODICE L0.
+        # UnitSet will be used for CODICE L1. It can be used for other missions as well.
         unit_set = ET.SubElement(parameter_type, "xtce:UnitSet")
 
     """
@@ -201,7 +167,7 @@ if __name__ == "__main__":
     """
 
     # Process rows from 9 until the last available row in the DataFrame
-    for index, row in df.iterrows():
+    for index, row in pkt.iterrows():
         if index < 8:
             continue  # Skip rows before row 9
 
@@ -233,5 +199,18 @@ if __name__ == "__main__":
     ET.indent(tree, space="\t", level=0)
 
     # Save the XML document to a file
-    # Important! tree.write will write the file, so make sure you use the correct name for the file you want to write.
-    tree.write("L0/p_cod_aut_test.xml", encoding="utf-8", xml_declaration=True)
+    output_xml_path = "L0/p_cod_aut_test.xml"
+    tree.write(output_xml_path, encoding="utf-8", xml_declaration=True)
+
+    # Read and modify the XML file contents
+    with open(output_xml_path, "r") as file:
+        contents = file.read()
+
+    modified_content = contents.replace(
+        'xmlns:xtce="http://www.omg.org/space/"',
+        'xmlns:xtce="http://www.omg.org/space/xtce"',
+    )
+
+    # Write the modified content back to the file
+    with open(output_xml_path, "w") as file:
+        file.write(modified_content)

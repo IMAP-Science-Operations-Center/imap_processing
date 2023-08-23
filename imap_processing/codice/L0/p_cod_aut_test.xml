@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='utf-8'?>
-<xtce:SpaceSystem xmlns:xtce="http://www.omg.org/space/xtce" nsmap="{'xtce': 'http://www.omg.org/space'}" name="P_COD_AUT">
-	<xtce:Header date="2023-08-21" version="1.0" author="Gabriel Moraga" />
+<xtce:SpaceSystem xmlns:xtce="http://www.omg.org/space" nsmap="{'xtce': 'http://www.omg.org/space/xtce'}" name="packet_name">
+	<xtce:Header date="2023-08-21" version="1.0" author="IMAP SDC" />
 	<xtce:TelemetryMetaData>
 		<xtce:ParameterTypeSet>
 			<xtce:IntegerParameterType name="uint0" signed="false">

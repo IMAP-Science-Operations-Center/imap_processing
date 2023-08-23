@@ -1,9 +1,40 @@
 """
-This script contains functions to extract and decommute parameters from a binary file containing packets.
-This is a hard coded version of the decom.py file. It is used to test the decom.py file.
+Main script to extract and decommute parameters from a binary file containing packets.
+
+This script reads a binary file containing packet data, searches for a packet with a specific Application Process Identifier (APID),
+and then decommutes the packet's parameters using a provided decommutation table. The extracted parameter values are printed.
+
+Usage:
+    1. Set the 'bin_file_path' variable to the path of the binary file containing packet data.
+    2. Replace 'target_apid' with the desired APID to search for.
+    3. Define the 'decomm_table' with the decommutation information for different parameters.
+    4. Run the script to extract and print decommuted parameter values.
+
+Example:
+    Assuming 'read_binary_file' and other functions are defined:
+    - Given a binary file at 'bin_file_path' and a desired 'target_apid':
+    - If a packet with the 'target_apid' is found, its parameters are extracted and printed.
+    - If no matching packet is found, a message indicating such is printed.
 """
 
-
+'''
+Parameters
+----------
+bin_file_path : str
+    Path to the binary file containing packet data.
+    target_apid : int
+    APID of the packet to search for.
+    decomm_table : list
+    List of dictionaries, each containing decommutation information for a parameter.
+    Each dictionary should contain:
+        - "mnemonic": A unique identifier for the parameter.
+        - "sequence": An optional parameter sequence number.
+        - "startByte": Starting byte index in the packet.
+        - "startBitInByte": Starting bit index within the starting byte.
+        - "startBit": Overall starting bit index in the packet.
+        - "lengthInBits": Number of bits to extract for this parameter.
+        - "dataType": Data type of the parameter, e.g., "unsigned_int", "float", etc.
+        '''
 def read_binary_file(file_path):
     with open(file_path, "rb") as file:
         data = file.read()
@@ -15,12 +46,14 @@ Extracts a value from binary data by interpreting a specified range of bits.
 
 This function is used to extract a value from a sequence of binary data by specifying the starting bit position and the number of bits to consider. The bits are interpreted as an unsigned integer value.
 
-Parameters:
+Parameters
+----------
     data (bytes): The binary data from which the value will be extracted.
     start_bit (int): The index of the starting bit for extraction.
     length (int): The number of bits to extract.
 
-Returns:
+Returns
+-------
     int: The extracted value represented as an integer.
 
 """
@@ -44,11 +77,13 @@ Finds the index of the first occurrence of a packet with a specific APID in bina
 
 This function searches through a sequence of binary data to find the index of the first packet that matches the specified Application Process Identifier (APID). The APID is a unique identifier used in packet-based data communication protocols.
 
-Parameters:
+Parameters
+----------
     bin_data (bytes): The binary data to search within.
     target_apid (int): The target APID to search for.
 
-Returns:
+Returns
+-------
     int: The index of the first occurrence of the packet with the specified APID, or -1 if not found.
 
 Example:
@@ -71,7 +106,8 @@ Decommutes packet data using a provided decommutation table.
 
 This function takes a packet's binary data and a decommutation table as input, and returns a dictionary of parameter values extracted from the packet according to the table.
 
-Parameters:
+Parameters
+----------
     packet_data (bytes): Binary data of the packet to decommute.
     decomm_table (list): List of dictionaries, each containing decommutation information for a parameter.
         Each dictionary should contain:
@@ -105,27 +141,8 @@ def decommute_packet(packet_data, decomm_table):
     return parameters
 
 
-"""
-Main script to extract and decommute parameters from a binary file containing packets.
-
-This script reads a binary file containing packet data, searches for a packet with a specific Application Process Identifier (APID),
-and then decommutes the packet's parameters using a provided decommutation table. The extracted parameter values are printed.
-
-Usage:
-    1. Set the 'bin_file_path' variable to the path of the binary file containing packet data.
-    2. Replace 'target_apid' with the desired APID to search for.
-    3. Define the 'decomm_table' with the decommutation information for different parameters.
-    4. Run the script to extract and print decommuted parameter values.
-
-Example:
-    Assuming 'read_binary_file' and other functions are defined:
-    - Given a binary file at 'bin_file_path' and a desired 'target_apid':
-    - If a packet with the 'target_apid' is found, its parameters are extracted and printed.
-    - If no matching packet is found, a message indicating such is printed.
-"""
-
 if __name__ == "__main__":
-    bin_file_path = "/Users/gamo6782/Desktop/RAW.bin"
+    bin_file_path = "../RAW.bin"
     target_apid = 0x460  # Replace with the APID of the desired packet
     decomm_table = [
         {
