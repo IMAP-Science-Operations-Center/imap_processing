@@ -1,7 +1,9 @@
 """ This code is used to test the size of a binary file. It is not used in the actual decom.py file.
     It is used to test the size of the binary file that is used in the decom.py file.
     """
+import pytest
 
+@pytest.mark.skip(reason="This test is not used in the actual decom.py file.")
 
 def test_bin_file_size():
     # Replace this path with the full path to your .bin file
