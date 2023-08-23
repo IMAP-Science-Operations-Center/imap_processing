@@ -1,0 +1,15 @@
+Packet,ItemName,sequence,lengthInBits,startBit,DataType,APID,convertAs,units,source,shortDescription,longDescription
+U90_IMG_RAW_EVENTS,VERSION,0,3,0,U3,960,NONE,DN,U90_IMG_RAW_EVENTS,CCSD S Packet Version Number,CCSDS Packet Version Number
+U90_IMG_RAW_EVENTS,TYPE,1,1,3,U1,960,NONE,DN,U90_IMG_RAW_EVENTS,CCSDS Packet Type Indicator,CCSDS Packet Type Indicator
+U90_IMG_RAW_EVENTS,SEC_HDR_FLG,2,1,4,U1,960,NONE,DN,U90_IMG_RAW_EVENTS,CCSDS Packet Secondary Header Flag,CCSDS Packet Secondary Header Flag
+U90_IMG_RAW_EVENTS,PKT_APID,3,11,5,U11,960,NONE,DN,U90_IMG_RAW_EVENTS,CCSDS Packet Application Process ID,CCSDS Packet Application Process ID
+U90_IMG_RAW_EVENTS,SEG_FLGS,4,2,16,U2,960,NONE,DN,U90_IMG_RAW_EVENTS,CCSDS Packet Grouping Flags,CCSDS Packet Grouping Flags
+U90_IMG_RAW_EVENTS,SRC_SEQ_CTR,5,14,18,U14,960,NONE,DN,U90_IMG_RAW_EVENTS,CCSDS Packet Sequence Count,CCSDS Packet Sequence Count
+U90_IMG_RAW_EVENTS,PKT_LEN,6,16,32,U16,960,NONE,DN,U90_IMG_RAW_EVENTS,CCSDS Packet Length,CCSDS Packet Length
+U90_IMG_RAW_EVENTS,SHCOARSE,7,32,48,U32,960,NONE,DN,U90_IMG_RAW_EVENTS,CCSDS Packet  2nd Header Coarse Time,CCSDS Packet 2nd Header Coarse Time
+U90_IMG_RAW_EVENTS,SID,8,8,80,U8,960,NONE,DN,U90_IMG_RAW_EVENTS,Science ID,Science ID
+U90_IMG_RAW_EVENTS,SPIN,9,8,88,U8,960,NONE,DN,U90_IMG_RAW_EVENTS,Spin number at integration start,Spin number at integration start
+U90_IMG_RAW_EVENTS,ABORTFLAG,10,1,96,U1,960,NONE,DN,U90_IMG_RAW_EVENTS,Integration aborted?,Integration aborted?
+U90_IMG_RAW_EVENTS,STARTDELAY,11,15,97,U15,960,NONE,DN,U90_IMG_RAW_EVENTS,Integration start delay (ms),Integration start delay (ms)
+U90_IMG_RAW_EVENTS,COUNT,12,8,112,U8,960,NONE,DN,U90_IMG_RAW_EVENTS,Event Count,Event Count
+U90_IMG_RAW_EVENTS,EVENTDATA,13,16600,120,BYTE16600,960,NONE,DN,U90_IMG_RAW_EVENTS,Event Data,"Event Data, 166 bits per event"
