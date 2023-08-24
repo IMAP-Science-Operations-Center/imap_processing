@@ -26,11 +26,11 @@ medium and particle acceleration in our galaxy. Together, we can advance our
 knowledge of the cosmos and pave the way for future discoveries in space
 exploration.
 
-The [IMAP Website](https://imap.princeton.edu/) contains information about the
+The `IMAP Website <https://imap.princeton.edu/>`_ contains information about the
 entire mission, including the science goals, the spacecraft, and the instruments.
 The Science Operations Center (SOC) is responsible for the data processing on the
 IMAP mission and being developed at
-[LASP (Laboratory of Atmospheric and Space Physics)](https://lasp.colorado.edu/).
+`LASP (Laboratory of Atmospheric and Space Physics) <https://lasp.colorado.edu/>`_.
 
 The explicit code interfaces and structure are described in the :ref:`api`.
 

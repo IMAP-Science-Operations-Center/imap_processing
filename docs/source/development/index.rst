@@ -39,4 +39,5 @@ A typical development workflow might look like the following:
 
     doc-overview
     release-workflow
-    style_guide/style-guide
+    style-guide/style-guide
+    poetry
