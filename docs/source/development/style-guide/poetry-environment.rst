@@ -3,7 +3,7 @@
 Poetry Environment
 ------------------
 
-Poetry is used for dependency management within this project. To update dependencies, you can either update
+:ref:`_poetry-link <Poetry>` is used for dependency management within this project. To update dependencies, you can either update
 ``pyproject.toml`` manually, or use ``poetry add <dependency>``.
 
 If you do add dependencies, please make sure you define the version numbers mindfully. The best way to do this is to use
