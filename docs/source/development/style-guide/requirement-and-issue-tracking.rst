@@ -46,7 +46,8 @@ Overview of Managing Requirements in Github
 * All level 5 requirements will be managed as Github issues.
 * The status of the requirement issue ("Open" / "Closed") is an indication of both development and testing status, so a requirement is not "Closed" until it is implemented and has passed a SIT.
 * Requirement issues should track sub-issues that describe the implementation.
-   * Doing this allows to better track design history and append new SPIKEs and implementation issues to the requirement if a re-design is proposed.
+   * Unlike the L5 requirement issues, these issues close once the code is merged.
+   * Sub-issues allow for better tracking of how SPIKES, implementation issues, and requirements are related to each other.  They also allow the use of L5 requirements as a starting point to see the design history of each feature.
 * If a re-design is proposed that impacts an already tested requirement, that requirement issue should be re-opened and any new SPIKEs or implementation tasks should be appended to the original task list.
    * Doing this will keep a record of the evolution of implementation decisions that impacted the requirement and a record of the requirement status throughout the project.
    * This is useful for providing context to new team members or anyone who needs to remember why a particular design was chosen to satisfy a requirement vs another approach.
