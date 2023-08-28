@@ -96,7 +96,7 @@ The task list can be created as follows:
    :width: 583
    :height: 280
 
-In the tasks section of the L5 requirement issue the task checkbox is created using `- [ ] `, then typing the `#` character will bring up a selection window with different issue numbers. The selection options will narrow down as you add numbers. Type the issue number you want to link or select the issue from the selection window. If you click the preview tab, you can see the sub-issue is properly linked.
+In the tasks section of the L5 requirement issue the task checkbox is created using :code:`- [ ] `, then typing the :"code":`#` character will bring up a selection window with different issue numbers. The selection options will narrow down as you add numbers. Type the issue number you want to link or select the issue from the selection window. If you click the preview tab, you can see the sub-issue is properly linked.
 
 .. image:: ../../_static/sub-issue-preview.png
    :alt: Requirement decomposition diagram
