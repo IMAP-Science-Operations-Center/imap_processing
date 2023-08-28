@@ -3,14 +3,14 @@
 Pull Request and Review Standards
 ---------------------------------
 
-Before any code is merged into our code base, it will need to be put up for pull request (PR) and reviewed. The pull request should be created following
+Before any code is merged into the code base, it will need to be put up for pull request (PR) and reviewed. The pull request should be created following
 the :ref:`checklist for pull requests <checklist-for-contributors-and-reviewers-of-pull-requests>`.
 
-Before opening pull request
+Before opening a pull request
 ===========================
 
 Before you create the pull request, you should go through the :ref:`checklist for pull requests <checklist-for-contributors-and-reviewers-of-pull-requests>` to ensure
-the proposed changes are required and up to our standards.
+the proposed changes meet the repository standards.
 
 The PR should be as small as possible. However, the code included in the PR should be complete. It should complete an entire feature, but this doesn't necessarily mean it completes an entire issue.
 However, all code merged into the ``dev`` branch should be up to our standards and work sufficiently.
@@ -28,7 +28,7 @@ During review
 As a reviewer, please follow these rules of thumb:
 
 #. Comments should be clear in addressing why you want to see the change
-#. Comments should be polite, but straightfoward and candid
+#. Comments should be polite, but straightforward and candid
 #. If you leave a review, continue to follow up on replies to your questions or comments and review the changes you requested
 #. It is nice, but not required, to provide examples for suggestions (particularly for things like name changes)
 #. If you require a change to be addressed, add a "request changes" comment. If you make one of these comments, it means you are blocking the code review from merging until that change is addressed.
