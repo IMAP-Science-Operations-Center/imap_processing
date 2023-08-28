@@ -12,6 +12,9 @@ Before opening pull request
 Before you create the pull request, you should go through the :ref:`checklist for pull requests <checklist-for-contributors-and-reviewers-of-pull-requests>` to ensure
 the proposed changes are required and up to our standards.
 
+The PR should be as small as possible. However, the code included in the PR should be complete. It should complete an entire feature, but this doesn't necessarily mean it completes an entire issue.
+However, all code merged into the ``dev`` branch should be up to our standards and work sufficiently.
+
 If you want to work on the pull request or are not yet finished with the code, please indicate this by marking the pull request as a
 `draft or WIP <https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/about-pull-requests#draft-pull-requests>`_ PR.
 Anyone looking at the PR will be able to quickly see it is not yet ready for review.
@@ -28,11 +31,13 @@ As a reviewer, please follow these rules of thumb:
 #. Comments should be polite, but straightfoward and candid
 #. If you leave a review, continue to follow up on replies to your questions or comments and review the changes you requested
 #. It is polite, but not required, to provide examples for suggestions (particularly for things like name changes)
+#. If you require a change to be addressed, add a "request changes" comment. If you make one of these comments, it means you are blocking the code review from merging until that change is addressed.
+#. If you make a "request changes" comment, you must create a follow up review where you change that to an approving review. Please do this in a timely matter so you do not block the PR for longer than necessary
 
 As an author:
 
 #. If you would like to request a specific review from someone, make sure they are marked as a reviewer or called out in a comment on the review (by typing ``@<username>``)
-#.
+#. You can request a review from the entire team or from a specific instrument team using the team ``IMAP-Science-Operations-Center/imap-sdc``
 
 Before merging
 ==============
@@ -48,6 +53,7 @@ Although only one approval is required, you must follow these rules:
 #. You should go through the :ref:`pull request checklist <pertaining-to-the-code-review>`
 #. You should ensure ALL checks on the PR pass (tests are passing)
 #. If you have a lot of commits, clean up the commits by running a `rebase <https://git-scm.com/book/en/v2/Git-Branching-Rebasing>`_ and combining commits.
+#. At least one approval should come from the SDC team. Comments from external people should be treated the same way SDC comments are.
 
 
 After merging
