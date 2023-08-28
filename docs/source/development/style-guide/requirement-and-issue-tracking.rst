@@ -9,9 +9,9 @@ Definitions
 Name                Definition
 =================== ===================================================================================================================================================================================================================================================
 Level 4 requirement requirements that have been decomposed to the SDC level. Level 4 requirements have already been defined.
-Level 5 requirement requirements decomposed from the level 4 requirements that better define the how the SDC plans to satisfy the parent level 4 requirement, while not defining any implementation details.
-Implementation task Github issue that better defines how a certain feature will be implemented. Implementation tasks are tracked under the applicable level 5 requirement as a sub-task. Each implementation task should be small enough to be handled in a single PR.
-SPIKE               issue Github issue created to investigate different design approaches. Like implementation tasks, SPIKEs should be tracked under the applicable level 5 requirement as a sub-task.
+Level 5 requirement requirements decomposed from the level 4 requirements that better define how the SDC plans to satisfy the parent level 4 requirement, while not defining any implementation details. Example: Backup *Metadata* to AWS backup account vs. Backup *OpenSearch* to AWS backup account
+Implementation task Github issue that better defines how a certain feature will be implemented. Implementation tasks are tracked under the parent level 5 requirement as a sub-task. Each implementation task should be small enough to be handled in a single PR.
+SPIKE               Github issue created to investigate different architecture design approaches. Like implementation tasks, SPIKEs should be tracked under the applicable level 5 requirement as a sub-task.
 =================== ===================================================================================================================================================================================================================================================
 
 Requirements Overview
@@ -46,8 +46,8 @@ Overview of Managing Requirements in Github
 * All level 5 requirements will be managed as Github issues.
 * The status of the requirement issue ("Open" / "Closed") is an indication of both development and testing status, so a requirement is not "Closed" until it is implemented and has passed a SIT.
 * Requirement issues should track sub-issues that describe the implementation.
-   * Doing this allows to better track designs and append new SPIKEs and implementation issues to the requirement if a re-design is proposed.
-* If a re-design is proposed that impacts an already tested requirement, that requirement issue should be re-opened and any new SPIKEs or implementation tasks should be append to the original task list
+   * Doing this allows to better track design history and append new SPIKEs and implementation issues to the requirement if a re-design is proposed.
+* If a re-design is proposed that impacts an already tested requirement, that requirement issue should be re-opened and any new SPIKEs or implementation tasks should be appended to the original task list.
    * Doing this will keep a record of the evolution of implementation decisions that impacted the requirement and a record of the requirement status throughout the project.
    * This is useful for providing context to new team members or anyone who needs to remember why a particular design was chosen to satisfy a requirement vs another approach.
 * A backlog grooming will take place once per month to re-prioritize and clean up the issue board.
@@ -58,13 +58,13 @@ Level 5 Requirements in Github
 Creating level 5 requirements
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 * Level 5 requirements should be created using the "L5 Requirement" issue template.
-   * As part of this template, the L5 summary, Parent (Level 4) Requirement, and list of tasks (sub-issues) are filled in
+   * As part of this template, the L5 summary, Parent (Level 4) Requirement, and list of tasks (sub-issues) are filled in.
    * If you don't have sub-issues created to link in the task list, you can add text as a reminder or add them later. 
    * The task list should only be appended to for the lifetime of the project.
 * Upon creation a requirement should be given the following the tags:
    * "Requirement: Level 5" (you get this for free by selecting the "L5 Requirement" issue template)
    * The appropriate parent requirement category label (Ex. Parent Req: SDC Data Transfer Monitoring)
-   * "Untested"
+   * "Untested" (This describes the testing status of the requirement)
 * Each requirement should be added to the IMAP project board.
 * Each requirement should be assigned a SIT milestone.
 
