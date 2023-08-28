@@ -20,10 +20,10 @@ Requirements Overview
 Requriements Mapping
 ~~~~~~~~~~~~~~~~~~~~
 
-* Each level 4 requirement is mapped to at least one SIT
-* Each level 4 requirement relevant to the upcoming SIT is decomposed into level 5 requirements that, together, cover the testing requirements of the SIT
-* The level 5 requirement creation is incremental as we move through development for each SIT
-* Each Level 5 requirement will have implementation tasks (sub-issues) that fully cover the Level 5 requirement and contain implementation specific information
+* Each level 4 requirement is mapped to at least one SIT.
+* Each level 4 requirement relevant to the upcoming SIT is decomposed into level 5 requirements that, together, cover the testing requirements of the SIT.
+* The level 5 requirement creation is incremental as we move through development for each SIT.
+* Each Level 5 requirement will have implementation tasks (sub-issues) that fully cover the Level 5 requirement and contain implementation specific information.
 
 .. image:: ../../_static/req-decomposition.png
    :alt: Requirement decomposition diagram
@@ -43,7 +43,7 @@ The below image shows an example of the lifecycle of a Level 4 requirement over 
 Overview of Managing Requirements in Github
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-* All level 5 requirements will be managed as Github issues
+* All level 5 requirements will be managed as Github issues.
 * The status of the requirement issue ("Open" / "Closed") is an indication of both development and testing status, so a requirement is not "Closed" until it is implemented and has passed a SIT.
 * Requirement issues should track sub-issues that describe the implementation.
    * Doing this allows to better track designs and append new SPIKEs and implementation issues to the requirement if a re-design is proposed.
@@ -57,7 +57,7 @@ Level 5 Requirements in Github
 
 Creating level 5 requirements
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-* Level 5 requirements should be created using the "L5 Requirement" issue template
+* Level 5 requirements should be created using the "L5 Requirement" issue template.
    * As part of this template, the L5 summary, Parent (Level 4) Requirement, and list of tasks (sub-issues) are filled in
    * If you don't have sub-issues created to link in the task list, you can add text as a reminder or add them later. 
    * The task list should only be appended to for the lifetime of the project.
@@ -65,8 +65,8 @@ Creating level 5 requirements
    * "Requirement: Level 5" (you get this for free by selecting the "L5 Requirement" issue template)
    * The appropriate parent requirement category label (Ex. Parent Req: SDC Data Transfer Monitoring)
    * "Untested"
-* Each requirement should be added to the IMAP project board
-* Each requirement should be assigned a SIT milestone
+* Each requirement should be added to the IMAP project board.
+* Each requirement should be assigned a SIT milestone.
 
 Example:
 
@@ -108,8 +108,12 @@ Implementation issues in Github
 
 Creating implementation issues in Github
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-* Implementation issues should be created using the Feature template issue template
+* Implementation issues should be created using the Feature template issue template.
+* Implementation issues should be tracked in the corresponding level 5 requirement issue.
+* These issues should be tied to PRs.
 
 SPIKE issues in Github
-~~~~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^^^^
 * SPIKE issues should be created using the SPIKE issue template
+* SPIKE issues are created to investigate architecture/implementation approaches in preparation for a team discussion.
+* Following SPIKE issue resolution, at least one implementation issue should be created for developement of the agreed solution.
