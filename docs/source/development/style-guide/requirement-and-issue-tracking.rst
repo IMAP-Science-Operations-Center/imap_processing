@@ -17,7 +17,7 @@ SPIKE               Github issue created to investigate different architecture d
 Requirements Overview
 ^^^^^^^^^^^^^^^^^^^^^
 
-Requriements Mapping
+Requirements Mapping
 ~~~~~~~~~~~~~~~~~~~~
 
 * Each level 4 requirement is mapped to at least one SIT.
