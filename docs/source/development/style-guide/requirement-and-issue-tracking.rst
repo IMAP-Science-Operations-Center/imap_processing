@@ -22,7 +22,7 @@ Requirements Mapping
 
 * Each level 4 requirement is mapped to at least one SIT.
 * Each level 4 requirement relevant to the upcoming SIT is decomposed into level 5 requirements that, together, cover the testing requirements of the SIT.
-* The level 5 requirement creation is incremental as we move through development for each SIT.
+* The level 5 requirements are created as we move through development for each SIT.
 * Each Level 5 requirement will have implementation tasks (sub-issues) that fully cover the Level 5 requirement and contain implementation specific information.
 
 .. image:: ../../_static/req-decomposition.png
