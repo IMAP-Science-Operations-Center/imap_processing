@@ -62,7 +62,7 @@ Creating level 5 requirements
    * As part of this template, the L5 summary, Parent (Level 4) Requirement, and list of tasks (sub-issues) are filled in.
    * If you don't have sub-issues created to link in the task list, you can add text as a reminder or add them later. 
    * The task list should only be appended to for the lifetime of the project.
-* Upon creation a requirement should be given the following the tags:
+* Upon creation, a requirement should be given the following tags:
    * "Requirement: Level 5" (you get this for free by selecting the "L5 Requirement" issue template)
    * The appropriate parent requirement category label (Ex. Parent Req: SDC Data Transfer Monitoring)
    * "Untested" (This describes the testing status of the requirement)
