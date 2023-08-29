@@ -14,6 +14,7 @@ Start of development   SDC creates a SIT procedures page and adds/updates test s
 ~1 week prior to test  SDC conducts a Test Readiness Review (TRR) to review the final version of the test procedures 
 Test                   SDC conducts the SIT
 ~1 week after test     SDC reviews all failures and proposed fixes, decides on time for re-run of failed steps, and updates requirement test status
+~2 weeks after test    SDC finalizes the test report
 ====================== =============================================================================================================================
 
 Start of development
@@ -53,3 +54,8 @@ There can be multiple RFR instances. The respective run's dates and times are re
 ^^^^^^^^^^^^^^^^^^
 
 During the Post-Test Review, all completed test procedures with their respective reports and verified requirements are reviewed by all involved elements. All failures and issued problem reports are reviewed. The requirements verification scorecard is updated and presented to show the progression through the SOC L4 requirements verification. The team makes recommendations for a development fix and/or subsequent re-test or future regression testing if feasible.
+
+~2 weeks after test
+^^^^^^^^^^^^^^^^^^^
+
+The test report is finalized to include the outcome of re-tests of failed steps that were fixed after the SIT. The report specify any decisions made to push testing of specific steps to a later date and which requirements are affected.
