@@ -48,21 +48,22 @@ def extract_bits(data, start_bit, length):
     Extracts a value from binary data by interpreting a specified range of bits.
 
     This function is used to extract a value from a sequence of binary data by
-    specifyingthe starting bit position and the number of bits to consider.
+    specifying the starting bit position and the number of bits to consider.
     The bits are interpreted as an unsigned integer value.
 
     Parameters
     ----------
-        data : bytes
-            The binary data from which the value will be extracted.
-        start_bit : int
-            The index of the starting bit for extraction.
-        length : int
-            The number of bits to extract.
+    data : bytes
+        The binary data from which the value will be extracted.
+    start_bit : int
+        The index of the starting bit for extraction.
+    length : int
+        The number of bits to extract.
 
     Returns
     -------
-        int: The extracted value represented as an integer.
+    int
+        The extracted value represented as an integer.
     """
     byte_offset = start_bit // 8
     bit_shift = start_bit % 8
@@ -88,15 +89,15 @@ def find_packet_with_apid(bin_data, target_apid):
 
     Parameters
     ----------
-        bin_data : bytes
-            The binary data to search within.
-        target_apid : int
-            The target APID to search for.
+    bin_data : bytes
+        The binary data to search within.
+    target_apid : int
+        The target APID to search for.
 
     Returns
     -------
-        idx : int
-            The index of the first occurrence of the packet with the specified APID
+    idx : int
+        The index of the first occurrence of the packet with the specified APID
 
     Example:
         binary_data = bytes ([0x12, 0x34, 0x56, 0x12, 0x78, 0x90])
@@ -126,9 +127,12 @@ def decommute_packet(packet_data, decomm_table):
     packet_data : bytes
         Binary data of the packet to decommute.
     decomm_table : list
-        List of dictionaries, each containing decommutation
-    information for a parameter.
-        Each dictionary should contain:
+        List of dictionaries, each containing decommutation information for a parameter.
+
+    Returns
+    -------
+    parameters : dict
+        The decommuted parameters. Each dictionary should contain:
             - "mnemonic": A unique identifier for the parameter.
             - "sequence": An optional parameter sequence number.
             - "startByte": Starting byte index in the packet.
