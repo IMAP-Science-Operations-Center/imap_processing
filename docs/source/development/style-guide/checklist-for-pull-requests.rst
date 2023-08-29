@@ -10,7 +10,7 @@ and parts of it are subjective.
 If the contributor/reviewer can answer "yes" to all the following questions, then conceivably the proposed changes are
 acceptable and the PR can be reviewed.
 
-Before merging, make sure you have addressed all the comments in the review per our :ref:`PR standards <pull-request-review-standards>`.
+Before merging, make sure you have addressed all the comments in the review adhering to the :ref:`PR standards <pull-request-review-standards>`.
 
 
 .. _Checklist-for-Contributors:
