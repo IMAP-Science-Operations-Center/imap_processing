@@ -3,7 +3,7 @@
 SDC Software Integration Test (SIT) Plan
 ========================================
 
-The SDC test plan is based on the `SOC Test Plan <https://lasp.colorado.edu/galaxy/display/IMAP/IMAP+SOC+Test+Plan>`_, but makes the below customizations to help fit the needs of SDC specific testing. Planned SIT dates and which functionality is planned to be tested in each SIT can also be found in the linked SOC Test Plan.
+The SDC test plan is based on the `SOC Test Plan <https://lasp.colorado.edu/galaxy/display/IMAP/IMAP+SOC+Test+Plan>`_, but makes the below customizations to help fit the needs of SDC specific testing. Planned SIT dates and planned functionality tested can also be found in the linked SOC Test Plan.
 
 Software Inegration Test Timeline
 ---------------------------------
@@ -27,12 +27,12 @@ Over the course of development, the SDC adds steps to the SIT test procedures. T
 ~4 weeks prior to test
 ^^^^^^^^^^^^^^^^^^^^^^
 
-Finialization of test steps should begin about 4 weeks prior the the scheduled SIT. At this point, most of the features being tested in the SIT should be complete and the test steps should become mostly solidified. Finializing the test steps also requires a group effort among all SDC developers, but should be coordinated by the Test Director or Test Conductor.
+Finialization of test steps should begin about 4 weeks prior the the scheduled SIT. At this point, most of the features being tested in the SIT should be complete and the test steps should be mostly solidified. Finializing the test steps also requires a group effort among all SDC developers, but should be coordinated by the Test Director or Test Conductor.
 
 ~2 weeks prior to test
 ^^^^^^^^^^^^^^^^^^^^^^
 
-The Test Director or Test Conductor will dry run the test procedure and coordinate with any needed SDC developers. The approach is to fully complete the test procedure flow, not necessarily at one time, with developer support available for clarifications and guidelines. The dry run may include actual application execution, as needed to clarify specific test procedure steps and test case assumptions.
+The Test Director or Test Conductor will dry run the test procedures and coordinate with any needed SDC developers. The approach is to fully complete the test procedure flow, not necessarily at one time, with developer support available for clarifications and guidelines. The dry run may include actual application execution, as needed to clarify specific test procedure steps and test case assumptions.
 
 ~1 week prior to test
 ^^^^^^^^^^^^^^^^^^^^^
@@ -60,4 +60,4 @@ During the Post-Test Review, all completed test procedures with their respective
 ~2 weeks after test
 ^^^^^^^^^^^^^^^^^^^
 
-The test report is finalized to include the outcome of re-tests of failed steps that were fixed after the SIT. The report specify any decisions made to push testing of specific steps to a later date and which requirements are affected.
+The test report is finalized to include the outcome of re-tests of failed steps that were fixed after the SIT. The report specifies any decisions made to push testing of specific steps to a later date and which requirements are affected.
