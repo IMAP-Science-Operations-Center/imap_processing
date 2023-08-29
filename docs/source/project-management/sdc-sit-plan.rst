@@ -8,7 +8,7 @@ Software Inegration Test Timeline
 ====================== =============================================================================================================================
 Timeline               Step
 ====================== =============================================================================================================================
-Start of development   SDC creates a SIT template and adds/updates test steps throughout the development process
+Start of development   SDC creates a SIT procedures page and adds/updates test steps throughout the development process
 ~4 weeks prior to test SDC begins to finalize test steps
 ~2 weeks prior to test SDC conducts a dry run of the test procedures, makes any necessary fixes, test step updates
 ~1 week prior to test  SDC conducts a Test Readiness Review (TRR) to review the final version of the test procedures 
