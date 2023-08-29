@@ -1,4 +1,5 @@
-""" This code is used to test the size of a binary file. It is not used in the actual decom.py file.
+""" This code is used to test the size of a binary file.
+    It is not used in the actual decom.py file.
     It is used to test the size of the binary file that is used in the decom.py file.
     """
 import pytest
