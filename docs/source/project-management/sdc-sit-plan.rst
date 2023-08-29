@@ -3,7 +3,7 @@
 SDC Software Integration Test (SIT) Plan
 ========================================
 
-The SDC test plan is based on the :ref:`SOC Test Plan <https://lasp.colorado.edu/galaxy/display/IMAP/IMAP+SOC+Test+Plan>`_, but makes the below customizations to help fit the needs of SDC specific testing. Planned SIT dates and which functionality is planned to be tested in each SIT can also be found in the linked SOC Test Plan.
+The SDC test plan is based on the `SOC Test Plan <https://lasp.colorado.edu/galaxy/display/IMAP/IMAP+SOC+Test+Plan>`_, but makes the below customizations to help fit the needs of SDC specific testing. Planned SIT dates and which functionality is planned to be tested in each SIT can also be found in the linked SOC Test Plan.
 
 Software Inegration Test Timeline
 ---------------------------------
