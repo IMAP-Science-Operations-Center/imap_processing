@@ -7,7 +7,7 @@ Before any code is merged into the code base, it will need to be put up for pull
 the :ref:`checklist for pull requests <checklist-for-contributors-and-reviewers-of-pull-requests>`.
 
 Before opening a pull request
-===========================
+=============================
 
 Before you create the pull request, you should go through the :ref:`checklist for pull requests <checklist-for-contributors-and-reviewers-of-pull-requests>` to ensure
 the proposed changes meet the repository standards.
