@@ -19,17 +19,16 @@ Example:
 """
 
 
-
 def read_binary_file(file_path):
     """
     Parameters
     ----------
-    bin_file_path : str
+    file_path : str
         Path to the binary file containing packet data.
-        target_apid : int
-        APID of the packet to search for.
-        decomm_table : list
-        List of dictionaries, each containing decommutation information for a parameter.
+
+    Returns
+    --------
+    data : dict
         Each dictionary should contain:
             - "mnemonic": A unique identifier for the parameter.
             - "sequence": An optional parameter sequence number.
@@ -38,12 +37,10 @@ def read_binary_file(file_path):
             - "startBit": Overall starting bit index in the packet.
             - "lengthInBits": Number of bits to extract for this parameter.
             - "dataType": Data type of the parameter: "unsigned_int", "float", etc.
-            """
+    """
     with open(file_path, "rb") as file:
         data = file.read()
     return data
-
-
 
 
 def extract_bits(data, start_bit, length):
@@ -66,7 +63,6 @@ def extract_bits(data, start_bit, length):
     Returns
     -------
         int: The extracted value represented as an integer.
-
     """
     byte_offset = start_bit // 8
     bit_shift = start_bit % 8
@@ -78,7 +74,6 @@ def extract_bits(data, start_bit, length):
         value |= (byte >> bit_shift) << (i * 8)
 
     return value & mask
-
 
 
 def find_packet_with_apid(bin_data, target_apid):
@@ -100,8 +95,8 @@ def find_packet_with_apid(bin_data, target_apid):
 
     Returns
     -------
-        int: The index of the first occurrence of the packet with the specified APID
-         or -1 if not found.
+        idx : int
+            The index of the first occurrence of the packet with the specified APID
 
     Example:
         binary_data = bytes ([0x12, 0x34, 0x56, 0x12, 0x78, 0x90])
@@ -117,8 +112,6 @@ def find_packet_with_apid(bin_data, target_apid):
     return idx
 
 
-
-
 # Decommutation table variables may not all be the same
 def decommute_packet(packet_data, decomm_table):
     """
@@ -130,20 +123,19 @@ def decommute_packet(packet_data, decomm_table):
 
     Parameters
     ----------
-        packet_data : bytes
-            Binary data of the packet to decommute.
-        decomm_table : list
-            List of dictionaries, each containing decommutation
-        information for a parameter.
-            Each dictionary should contain:
-                - "mnemonic": A unique identifier for the parameter.
-                - "sequence": An optional parameter sequence number.
-                - "startByte": Starting byte index in the packet.
-                - "startBitInByte": Starting bit index within the starting byte.
-                - "startBit": Overall starting bit index in the packet.
-                - "lengthInBits": Number of bits to extract for this parameter.
-                - "dataType": Data type of the parameter: "unsigned_int", "float", etc.
-
+    packet_data : bytes
+        Binary data of the packet to decommute.
+    decomm_table : list
+        List of dictionaries, each containing decommutation
+    information for a parameter.
+        Each dictionary should contain:
+            - "mnemonic": A unique identifier for the parameter.
+            - "sequence": An optional parameter sequence number.
+            - "startByte": Starting byte index in the packet.
+            - "startBitInByte": Starting bit index within the starting byte.
+            - "startBit": Overall starting bit index in the packet.
+            - "lengthInBits": Number of bits to extract for this parameter.
+            - "dataType": Data type of the parameter: "unsigned_int", "float", etc.
     """
     parameters = {}
 
