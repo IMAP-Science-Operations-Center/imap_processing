@@ -13,7 +13,7 @@ Before you create the pull request, you should go through the :ref:`checklist fo
 the proposed changes meet the repository standards.
 
 The PR should be as small as possible. However, the code included in the PR should be complete. It should complete an entire feature, but this doesn't necessarily mean it completes an entire issue.
-However, all code merged into the ``dev`` branch should be up to our standards and work sufficiently.
+However, all code merged into the ``dev`` branch should meet the repository standards and work as expected.
 
 If you want to work on the pull request or are not yet finished with the code, please indicate this by marking the pull request as a
 `draft or WIP <https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/about-pull-requests#draft-pull-requests>`_ PR.
