@@ -1,19 +1,20 @@
 """
 Main script to extract and decommute parameters from a binary file containing packets.
 
-This script reads a binary file containing packet data, searches for a packet with a specific Application Process Identifier (APID),
-and then decommutes the packet's parameters using a provided decommutation table. The extracted parameter values are printed.
+This script reads a binary file containing packet data, searches for a packet with a
+specific Application Process Identifier (APID), and then decommutes the packet's
+parameters using a provided decommutation table. The extracted values are printed.
 
 Usage:
-    1. Set the 'bin_file_path' variable to the path of the binary file containing packet data.
+    1. Set the 'bin_file_path' variable to the path containing packet data.
     2. Replace 'target_apid' with the desired APID to search for.
-    3. Define the 'decomm_table' with the decommutation information for different parameters.
+    3. Define the 'decomm_table' with the decommutation info for different parameters.
     4. Run the script to extract and print decommuted parameter values.
 
 Example:
     Assuming 'read_binary_file' and other functions are defined:
     - Given a binary file at 'bin_file_path' and a desired 'target_apid':
-    - If a packet with the 'target_apid' is found, its parameters are extracted and printed.
+    - If a packet with the 'target_apid' is found, parameters are extracted and printed.
     - If no matching packet is found, a message indicating such is printed.
 """
 
@@ -46,7 +47,9 @@ def read_binary_file(file_path):
 """
 Extracts a value from binary data by interpreting a specified range of bits.
 
-This function is used to extract a value from a sequence of binary data by specifying the starting bit position and the number of bits to consider. The bits are interpreted as an unsigned integer value.
+This function is used to extract a value from a sequence of binary data by specifying
+the starting bit position and the number of bits to consider. The bits are interpreted
+as an unsigned integer value.
 
 Parameters
 ----------
@@ -77,7 +80,9 @@ def extract_bits(data, start_bit, length):
 """
 Finds the index of the first occurrence of a packet with a specific APID in binary data.
 
-This function searches through a sequence of binary data to find the index of the first packet that matches the specified Application Process Identifier (APID). The APID is a unique identifier used in packet-based data communication protocols.
+This function searches through a sequence of binary data to find the index of the first
+packet that matches the specified Application Process Identifier (APID).
+The APID is a unique identifier used in packet-based data communication protocols.
 
 Parameters
 ----------
@@ -86,7 +91,8 @@ Parameters
 
 Returns
 -------
-    int: The index of the first occurrence of the packet with the specified APID, or -1 if not found.
+    int: The index of the first occurrence of the packet with the specified APID
+     or -1 if not found.
 
 Example:
     binary_data = bytes([0x12, 0x34, 0x56, 0x12, 0x78, 0x90])  # Example binary data
@@ -106,12 +112,15 @@ def find_packet_with_apid(bin_data, target_apid):
 """
 Decommutes packet data using a provided decommutation table.
 
-This function takes a packet's binary data and a decommutation table as input, and returns a dictionary of parameter values extracted from the packet according to the table.
+This function takes a packet's binary data and a decommutation table as input, and
+returns a dictionary of parameter values extracted from the packet
+according to the table.
 
 Parameters
 ----------
     packet_data (bytes): Binary data of the packet to decommute.
-    decomm_table (list): List of dictionaries, each containing decommutation information for a parameter.
+    decomm_table (list): List of dictionaries, each containing decommutation
+    information for a parameter.
         Each dictionary should contain:
             - "mnemonic": A unique identifier for the parameter.
             - "sequence": An optional parameter sequence number.
@@ -119,7 +128,7 @@ Parameters
             - "startBitInByte": Starting bit index within the starting byte.
             - "startBit": Overall starting bit index in the packet.
             - "lengthInBits": Number of bits to extract for this parameter.
-            - "dataType": Data type of the parameter, e.g., "unsigned_int", "float", etc.
+            - "dataType": Data type of the parameter: "unsigned_int", "float", etc.
 
 """
 
