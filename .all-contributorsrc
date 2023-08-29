@@ -42,7 +42,7 @@
       "profile": "https://github.com/laspsandoval",
       "contributions": [
         "review"
-     ]
+      ]
     },
     {
       "login": "sdhoyt",
@@ -53,7 +53,8 @@
         "code",
         "ideas",
         "infra",
-        "review"
+        "review",
+        "doc"
       ]
     },
     {
