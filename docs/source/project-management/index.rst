@@ -20,6 +20,5 @@ The following pages are meant to answer the following questions:
 .. toctree::
     :maxdepth: 1
 
-    requirement-and-issue-tracking
     sdc-sit-plan
 
