@@ -2,7 +2,6 @@
 XTCE file specifically for the CODICE L0 data. This is a modified version of the
 example found in the 'space_packet_parser' module documentation.
 This is the start of CODICE L0 data processing.
-
 """
 
 from pathlib import Path
@@ -10,8 +9,8 @@ from pathlib import Path
 from space_packet_parser import parser, xtcedef
 
 # Define the APID. This is the APID for the CODICE L0 data that is in the
-# 'RAW.bin' file. Data bins like 'RAW.bin' will encompass multiple APIDs. This is why
-# we need to specify the APID.
+# 'RAW.bin' file. Data bins like 'RAW.bin' will encompass multiple APIDs.
+# This is why we need to specify the APID.
 # The APID should be in the packet definition file given by instrument team.
 apid = 0x460
 

@@ -1,7 +1,6 @@
 """ The module will take an Excel file and convert it into an XTCE formatted XML file.
 This is specific for CODICE L0, but can be modified for other missions. This is the
 start of CODICE L0 data processing.
-
 """
 import xml.etree.ElementTree as Et
 
@@ -53,11 +52,11 @@ if __name__ == "__main__":
     """
     These lines of code create a structured XML hierarchy to represent data according
     to a defined XML schema:
-    - The 'TelemetryMetaData' element is added under the 'root' element,
+    - The `TelemetryMetaData` element is added under the 'root' element,
     providing a namespace.
-    - Within 'TelemetryMetaData', the 'ParameterTypeSet' element is created
+    - Within `TelemetryMetaData`, the `ParameterTypeSet` element is created
     to define parameter types.
-    - Similarly, the 'ParameterSet' element is added to 'TelemetryMetaData'
+    - Similarly, the `ParameterSet` element is added to `TelemetryMetaData`
     to define specific parameters.
     These elements and their organization help organize and standardize
     data representation in XML format.
@@ -79,9 +78,9 @@ if __name__ == "__main__":
     define integer parameter types:
     - The loop iterates from 0 - 32, creating an 'IntegerParameterType' element for
     each number.
-    - In 'IntegerParameterType' element, attributes like 'name' and 'signed' are set.
-    - An 'IntegerDataEncoding' is added with attributes 'sizeInBits' and 'encoding'.
-    - Lastly, a 'UnitSet' element is added within each 'IntegerParameterType'.
+    - In `IntegerParameterType` element, attributes like `name` and `signed` are set.
+    - An `IntegerDataEncoding` is added with attributes `sizeInBits` and `encoding`.
+    - Lastly, a `UnitSet` element is added within each `IntegerParameterType`.
     This loop efficiently defines integer parameter types for a range of
     values in the XML structure.
     """
@@ -102,10 +101,10 @@ if __name__ == "__main__":
 
     """
     This loop generates XML elements to define CCSDS packet parameters:
-    - It iterates over a list of 'ccsds_parameters', each containing parameter data.
-    - For each parameter, an 'xtce:Parameter' element is added to the 'parameter_set'.
-    - Attributes like 'name' and 'parameterTypeRef' are set using the parameter data.
-    - A 'LongDescription' element is created with the description text.
+    - It iterates over a list of `ccsds_parameters`, each containing parameter data.
+    - For each parameter, an `xtce:Parameter` element is added to the 'parameter_set'.
+    - Attributes like `name` and `parameterTypeRef` are set using the parameter data.
+    - A `LongDescription` element is created with the description text.
     This loop effectively creates XML elements to define CCSDS packet parameters
     based on the given data.
     """
@@ -171,14 +170,14 @@ if __name__ == "__main__":
 
     """
     This loop processes rows from the DataFrame starting from the 9th row onwards:
-    - It iterates over the DataFrame rows using the 'iterrows()' function.
+    - It iterates over the DataFrame rows using the `iterrows()` function.
     - For each row, it checks if the row index is less than 8 (rows before the 9th row).
     - If the condition is met, the loop continues to the next iteration,
         skipping these rows.
-    - Otherwise, it creates an 'xtce:Parameter' element and adds it to
-        the 'parameter_set'.
-    - Attributes like 'name' and 'parameterTypeRef' are set based on row data.
-    - A 'LongDescription' element is created with the description text from the row.
+    - Otherwise, it creates an `xtce:Parameter` element and adds it to
+        the `parameter_set`.
+    - Attributes like `name` and `parameterTypeRef` are set based on row data.
+    - A `LongDescription` element is created with the description text from the row.
     This loop effectively generates XML elements for parameters starting from the
         9th row of the DataFrame.
     """
@@ -200,8 +199,8 @@ if __name__ == "__main__":
 
     """
     This section creates the final XML structure, indents it, then saves it to a file:
-    - The 'ET.ElementTree(root)' creates an ElementTree with the root element 'root'.
-    - 'ET.indent(tree, space="\t", level=0)' adds indentation for readability.
+    - The 'Et.ElementTree(root)' creates an ElementTree with the root element 'root'.
+    - 'Et.indent(tree, space="\t", level=0)' adds indentation for readability.
       - 'tree' is the ElementTree object.
       - 'space="\t"' specifies the character used for indentation (a tab in this case).
       - 'level=0' indicates the starting level of indentation.
