@@ -21,3 +21,4 @@ The following pages are meant to answer the following questions:
     :maxdepth: 1
 
     requirement-and-issue-tracking
+    sdc-sit-plan
