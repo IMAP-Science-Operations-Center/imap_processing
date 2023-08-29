@@ -12,9 +12,9 @@ The project management pages describe how the IMAP SDC project will be managed t
 
 The following pages are meant to answer the following questions:
 
-* How are requirements being tracked, implemented, and verified?
-* How are issues being managed in Github throughout the project's lifecycle?
-* What process does the SDC follow for its Software Integration Tests?
+- How are requirements being tracked, implemented, and verified?
+- How are issues being managed in Github throughout the project's lifecycle?
+- What process does the SDC follow for its Software Integration Tests?
 
 .. toctree::
     :maxdepth: 1
