@@ -17,7 +17,8 @@ However, all code merged into the ``dev`` branch should meet the repository stan
 
 If you want to work on the pull request or are not yet finished with the code, please indicate this by marking the pull request as a
 `draft or WIP <https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/about-pull-requests#draft-pull-requests>`_ PR.
-Anyone looking at the PR will be able to quickly see it is not yet ready for review.
+Anyone looking at the PR will be able to quickly see it is not final. Marking your PR as draft means you are asking someone for an initial review, or if you want to get comments on your
+initial design. If you put up a draft PR, indicate whether or not you are looking for initial reviews in the summary.
 
 Finally, if you are addressing an existing issue, make sure that issue is `linked <https://docs.github.com/en/issues/tracking-your-work-with-issues/linking-a-pull-request-to-an-issue#linking-a-pull-request-to-an-issue-using-a-keyword>`_ in your PR. If there is not an existing issue, then you should either create an issue or address WHY you are opening the PR specifically.
 If your PR addresses a `Level-5 requirement <https://github.com/orgs/IMAP-Science-Operations-Center/projects/2/views/2>`_, there **must** be a corresponding issue linked.
