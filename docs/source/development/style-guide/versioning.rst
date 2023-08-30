@@ -17,7 +17,7 @@ numbers should follow a convention of ``x.y.z``, where:
     z = The hotfix number. Increase when change only contains bug fixes.
 
 This convention was discussed and decided on in `this GitHub issue
-<https://github.com/IMAP-Science-Operations-Center/imap_processing/issues/43>`_.
+<https://github.com/IMAP-Science-Operations-Center/imap_processing/issues/43>`__.
 
 
 Data Product Versioning
@@ -37,4 +37,4 @@ is only updated when that instrument's algorithm is changed, or that instrument'
 updated independently of the other IMAP instruments.
 
 This convention was discussed and decided on in `this GitHub issue
-<https://github.com/IMAP-Science-Operations-Center/imap_processing/issues/48>`_.
+<https://github.com/IMAP-Science-Operations-Center/imap_processing/issues/48>`__.
