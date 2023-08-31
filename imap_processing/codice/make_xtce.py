@@ -6,7 +6,7 @@ import xml.etree.ElementTree as Et
 
 import pandas as pd
 
-from imap_processing.codice.ccsds_header_xtce_generator import CCSDSParameters
+from tools.xtce_generation.ccsds_header_xtce_generator import CCSDSParameters
 
 # Make sure the "sheet" name is correct. In an Excel file
 # There might be several "packets", which are "sheets" within the file.
@@ -76,7 +76,7 @@ if __name__ == "__main__":
     """
     The following loop creates a series of XML elements to
     define integer parameter types:
-    - The loop iterates from 0 - 32, creating an 'IntegerParameterType' element for
+    - The loop iterates from 0 - 32, creating an `IntegerParameterType` element for
     each number.
     - In `IntegerParameterType` element, attributes like `name` and `signed` are set.
     - An `IntegerDataEncoding` is added with attributes `sizeInBits` and `encoding`.
