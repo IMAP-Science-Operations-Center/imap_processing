@@ -3,12 +3,9 @@ import logging
 import bitstring
 import numpy as np
 
-# from lasp_packets import xtcedef, parser
 from space_packet_parser import parser, xtcedef
 
 from imap_processing import packet_definition_directory
-
-from .IDEXL1aTemplate import IDEXL1aTemplate
 
 TWENTY_MICROSECONDS = 20 * (10 ** (-6))
 
