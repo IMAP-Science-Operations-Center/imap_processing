@@ -48,7 +48,6 @@ openpyxl = ">=3.0.7,<4"
 dev = ["black", "pre-commit", "ruff"]
 doc = ["myst-parser", "pydata-sphinx-theme", "sphinx"]
 test = ["pytest", "pytest-cov"]
-test = ["pytest"]
 tools= ["pandas", "openpyxl"]
 
 [project.urls]
