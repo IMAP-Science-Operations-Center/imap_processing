@@ -80,10 +80,14 @@
                 <xtce:UnitSet/>
                 <xtce:IntegerDataEncoding sizeInBits="32" encoding="unsigned"/>
             </xtce:IntegerParameterType>
-            <xtce:IntegerParameterType name="sciData" signed="false">
+            <xtce:BinaryParameterType name="sciData">
                 <xtce:UnitSet/>
-                <xtce:IntegerDataEncoding sizeInBits="10080" encoding="unsigned"/>
-            </xtce:IntegerParameterType>
+                <xtce:BinaryDataEncoding bitOrder="mostSignificantBitFirst">
+                    <xtce:SizeInBits>
+                        <xtce:FixedValue>10080</xtce:FixedValue>
+                    </xtce:SizeInBits>
+                </xtce:BinaryDataEncoding>
+            </xtce:BinaryParameterType>
             <!-- Enumerated Data Types -->
             <xtce:EnumeratedParameterType name="cem_nominal_enum" signed="false">
                 <xtce:UnitSet/>
