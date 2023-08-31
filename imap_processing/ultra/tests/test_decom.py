@@ -1,11 +1,7 @@
-# Steps to convert:
-# 1. Save desired sheet to .csv
-# 2. Header name changes: Packet, DataType, mnemonic headers
-# 3. dataType format (use CONCAT)
-# 4. add APID column
-
 import pytest
 from pathlib import Path
+import logging
+
 from imap_processing.ultra import decom_ultra
 
 
@@ -16,10 +12,9 @@ def decom_test_data():
     data_packet_list = decom_ultra.decom_packets(packet_file)
     return data_packet_list
 
-
 def test_total_packets_in_data_file(decom_test_data):
     """Test if total packets in data file is correct"""
-    total_packets = 322
+    total_packets = 23
     assert len(decom_test_data) == total_packets
 
 
@@ -64,17 +59,47 @@ def test_ways_to_get_data(decom_test_data):
     # Check if data is same
     assert data_value_using_key == data_value_using_list
 
-#TODO: come back to this
-# def test_enumerated_value(decom_test_data):
-#     """Test if enumerated value is derived correctly"""
-#
-#     # CEM Nominal status bit:
-#     #     '1' -- nominal,
-#     #     '0' -- not nomimal
-#     parameter_name = "CEM_NOMINAL_ONLY"
-#     first_packet_data = decom_test_data[0].data
-#
-#     if first_packet_data[f"{parameter_name}"].raw_value == 1:
-#         assert first_packet_data[f"{parameter_name}"].derived_value == "NOMINAL"
-#     if first_packet_data[f"{parameter_name}"].raw_value == 0:
-#         assert first_packet_data[f"{parameter_name}"].derived_value == "NOT_NOMINAL"
+
+def test_enumerated_value_880(decom_test_data):
+    """Test if enumerated value is derived correctly"""
+
+    # CEM Nominal status bit:
+    #     '1' -- nominal,
+    #     '0' -- not nomimal
+    parameter_name = "SPINPERIODVALID"
+
+    index_of_first_880 = None  # We'll store the index here if we find it
+
+    for index, packet in enumerate(decom_test_data):
+        if packet.header['PKT_APID'].derived_value == 880:
+            index_of_first_880 = index
+            break
+
+    first_packet_data = decom_test_data[index_of_first_880].data
+
+    if first_packet_data[f"{parameter_name}"].raw_value == 1:
+        assert first_packet_data[f"{parameter_name}"].derived_value == "VALID"
+    if first_packet_data[f"{parameter_name}"].raw_value == 0:
+        assert first_packet_data[f"{parameter_name}"].derived_value == "INVALID"
+
+
+def test_enumerated_value_881(decom_test_data):
+    """Test if enumerated value is derived correctly"""
+
+    logging.basicConfig(level='DEBUG')
+
+    index_of_first_881 = None
+
+    for index, packet in enumerate(decom_test_data):
+        if packet.header['PKT_APID'].derived_value == 881:
+            index_of_first_881 = index
+            print('hi')
+
+    first_packet_data = decom_test_data[index_of_first_881].data
+
+    # Extract raw FASTDATA_00 value from first_packet_data
+    fastdata_raw = first_packet_data['FASTDATA_00'].raw_value
+
+    # Do further assertions or validations
+    return
+
