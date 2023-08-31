@@ -42,3 +42,4 @@ to these conventions.
     tools-and-library-recommendations
     versioning
     checklist-for-pull-requests
+    review-standards
