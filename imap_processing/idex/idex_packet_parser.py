@@ -3,7 +3,6 @@ import logging
 import bitstring
 import numpy as np
 import xarray as xr
-
 from space_packet_parser import parser, xtcedef
 
 from imap_processing import packet_definition_directory
