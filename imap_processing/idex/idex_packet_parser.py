@@ -2,6 +2,8 @@ import logging
 
 import bitstring
 import numpy as np
+import xarray as xr
+
 from space_packet_parser import parser, xtcedef
 
 from imap_processing import packet_definition_directory
@@ -36,13 +38,11 @@ class IDEXPacketParser:
             idex_packet_file (str):  The path and filename to the L0 file to read
 
         Returns:
-            Populates the {object}.data, where data is a dictionary in the form
-            data[(variable name)] = 1D or 2D array of data
-
-            Populates the {object}.coords, where these represent the coordinates that
-            the data uses.
+            Populates {object}.data, where data is an xarray DataSet
 
         Notes:
+            Currently assumes one L0 file will generate exactly one l1a file
+
             There are a few things that must be determined in the future:
             * high_sample_rate and low_sample_rate must be multiplied by
               some scale factor that will be decided upon in the future
@@ -56,10 +56,9 @@ class IDEXPacketParser:
         idex_binary_data = bitstring.ConstBitStream(filename=idex_packet_file)
         idex_packet_generator = idex_parser.generator(idex_binary_data)
 
-        epochs = {}
-
         self.coords = {}
         self.data = {}
+        self.dust_events = {}
         self.scitype_to_names = {
             2: "TOF_High",
             4: "TOF_Low",
@@ -74,62 +73,39 @@ class IDEXPacketParser:
                 scitype = packet.data["IDX__SCI0TYPE"].raw_value
                 event_number = packet.data["IDX__SCI0EVTNUM"].derived_value
                 if scitype == 1:
-                    epochs[event_number] = (
+                    time_of_impact = (
                         packet.data["SHCOARSE"].derived_value
                         + TWENTY_MICROSECONDS * packet.data["SHFINE"].derived_value
                     )
-                    self._log_packet_info(epochs, packet)  # These are for our logs
-                if scitype in self.scitype_to_names:
-                    if scitype not in self.data:
-                        self.data.update({scitype: {}})
-                    if event_number not in self.data[scitype]:
-                        self.data[scitype][event_number] = packet.data[
-                            "IDX__SCI0RAW"
-                        ].raw_value
-                    else:
-                        self.data[scitype][event_number] += packet.data[
-                            "IDX__SCI0RAW"
-                        ].raw_value
+                    self._log_packet_info(
+                        time_of_impact, packet
+                    )  # These are for our logs
+                    self.dust_events[event_number] = IDEXRawDustEvent(time_of_impact)
+                if (
+                    scitype in self.scitype_to_names
+                ):  # Populate the IDEXRawDustEvent with 1's and 0's
+                    raw_science_data = packet.data["IDX__SCI0RAW"].raw_value
+                    self.dust_events[event_number].append_raw_data(
+                        scitype, raw_science_data
+                    )
 
         # Parse the waveforms according to the scitype present
         # (high gain and low gain channels encode waveform data differently).
-        datastore = {}
-        low_sample_rate = []
-        high_sample_rate = []
-        for scitype in self.data:
-            datastore[self.scitype_to_names[scitype]] = []
-            for event in self.data[scitype]:
-                datastore[self.scitype_to_names[scitype]].append(
-                    self._parse_waveform_data(self.data[scitype][event], scitype)
-                )
-                if self.scitype_to_names[scitype] == "Target_Low":
-                    low_sample_rate.append(
-                        np.linspace(
-                            0,
-                            len(datastore["Target_Low"][0]),
-                            len(datastore["Target_Low"][0]),
-                        )
-                    )
-                if self.scitype_to_names[scitype] == "TOF_Low":
-                    high_sample_rate.append(
-                        np.linspace(
-                            0,
-                            len(datastore["TOF_Low"][0]),
-                            len(datastore["TOF_Low"][0]),
-                        )
-                    )
+        processed_dust_impact_list = []
+        for event_number in self.dust_events:
+            processed_dust_impact_list.append(self.dust_events[event_number].process())
 
-        self.coords["Epoch"] = list(epochs.values())
-        self.coords["Time_Low_SR"] = low_sample_rate
-        self.coords["Time_High_SR"] = high_sample_rate
-        self.data = datastore
-        self.epochs = epochs
+        self.data = xr.concat(processed_dust_impact_list, dim="Epoch")
 
-    def _log_packet_info(self, epochs, pkt):
+    def _log_packet_info(self, time_of_impact, pkt):
+        """
+        This function exists solely to log the parameters in the L0
+        packet, nothing here should affect the data
+        """
         event_num = pkt.data["IDX__SCI0EVTNUM"].derived_value
         logging.info(f"^*****Event header {event_num}******^")
         logging.info(
-            f"Timestamp = {epochs[event_num]} seconds since epoch \
+            f"Timestamp = {time_of_impact} seconds since epoch \
               (Midnight January 1st, 2012)"
         )
         # Extract the 17-22-bit integer (usually 8)
@@ -190,8 +166,29 @@ class IDEXPacketParser:
             f"Rice compression enabled = {bool(pkt.data['IDX__SCI0COMP'].raw_value)}"
         )
 
+
+class IDEXRawDustEvent:
+    def __init__(self, epoch: float):
+        """
+        This function initializes a raw dust event
+
+        Parameters:
+            epoch (float):  Impact time in seconds since January 1st 2012 Midnight UTC
+
+        """
+        self.impact_time = epoch
+        self.TOF_High_bits = ""
+        self.TOF_Mid_bits = ""
+        self.TOF_Low_bits = ""
+        self.Target_Low_bits = ""
+        self.Target_High_bits = ""
+        self.Ion_Grid_bits = ""
+
     def _parse_high_sample_waveform(self, waveform_raw: str):
-        """Parse a binary string representing a high gain waveform"""
+        """
+        Parse a binary string representing a high sample waveform
+        Data arrives in 10 bit chunks
+        """
         w = bitstring.ConstBitStream(bin=waveform_raw)
         ints = []
         while w.pos < len(w):
@@ -200,7 +197,10 @@ class IDEXPacketParser:
         return ints
 
     def _parse_low_sample_waveform(self, waveform_raw: str):
-        """Parse a binary string representing a low gain waveform"""
+        """
+        Parse a binary string representing a low sample waveform
+        Data arrives in 12 bit chunks
+        """
         w = bitstring.ConstBitStream(bin=waveform_raw)
         ints = []
         while w.pos < len(w):
@@ -208,13 +208,80 @@ class IDEXPacketParser:
             ints += w.readlist(["uint:12"] * 2)
         return ints
 
-    def _parse_waveform_data(self, waveform: str, scitype: int):
+    def append_raw_data(self, scitype, bits):
         """
-        Chooses waveform parsing function depending on the sample
-        rate of the variables
+        This function determines which variable to append the bits
+        to, given a specific scitype.
         """
-        logging.info(f"Parsing waveform for scitype={scitype}")
-        if self.scitype_to_names[scitype] in ("TOF_High", "TOF_Low", "TOF_Mid"):
-            return self._parse_high_sample_waveform(waveform)
-        else:
-            return self._parse_low_sample_waveform(waveform)
+        if scitype == 2:
+            self.TOF_High_bits += bits
+        elif scitype == 4:
+            self.TOF_Low_bits += bits
+        elif scitype == 8:
+            self.TOF_Mid_bits += bits
+        elif scitype == 16:
+            self.Target_Low_bits += bits
+        elif scitype == 32:
+            self.Target_High_bits += bits
+        elif scitype == 64:
+            self.Ion_Grid_bits += bits
+
+    def process(self):
+        # Process the 6 primary data variables
+        tof_high_xr = xr.DataArray(
+            name="TOF_High",
+            data=[self._parse_high_sample_waveform(self.TOF_High_bits)],
+            dims=("Epoch", "Time_High_SR_dim"),
+        )
+        tof_low_xr = xr.DataArray(
+            name="TOF_Low",
+            data=[self._parse_high_sample_waveform(self.TOF_Low_bits)],
+            dims=("Epoch", "Time_High_SR_dim"),
+        )
+        tof_mid_xr = xr.DataArray(
+            name="TOF_Mid",
+            data=[self._parse_high_sample_waveform(self.TOF_Mid_bits)],
+            dims=("Epoch", "Time_High_SR_dim"),
+        )
+        target_high_xr = xr.DataArray(
+            name="Target_High",
+            data=[self._parse_low_sample_waveform(self.Target_High_bits)],
+            dims=("Epoch", "Time_Low_SR_dim"),
+        )
+        target_low_xr = xr.DataArray(
+            name="Target_Low",
+            data=[self._parse_low_sample_waveform(self.Target_High_bits)],
+            dims=("Epoch", "Time_Low_SR_dim"),
+        )
+        ion_grid_xr = xr.DataArray(
+            name="Ion_Grid",
+            data=[self._parse_low_sample_waveform(self.Target_High_bits)],
+            dims=("Epoch", "Time_Low_SR_dim"),
+        )
+        # Determine the 3 coordinate variables
+        epoch_xr = xr.DataArray(name="Epoch", data=[self.impact_time], dims=("Epoch"))
+        time_low_sr_xr = xr.DataArray(  # name='Time_Low_SR',
+            data=[np.linspace(0, len(ion_grid_xr[0]), len(ion_grid_xr[0]))],
+            dims=("Epoch", "Time_Low_SR_dim"),
+        )
+        time_high_sr_xr = xr.DataArray(  # name='Time_High_SR',
+            data=[np.linspace(0, len(tof_low_xr[0]), len(tof_low_xr[0]))],
+            dims=("Epoch", "Time_High_SR_dim"),
+        )
+
+        # Return a DataSet object
+        return xr.Dataset(
+            data_vars={
+                "TOF_Low": tof_low_xr,
+                "TOF_High": tof_high_xr,
+                "TOF_Mid": tof_mid_xr,
+                "Target_High": target_high_xr,
+                "Target_Low": target_low_xr,
+                "Ion_Grid": ion_grid_xr,
+            },
+            coords={
+                "Epoch": epoch_xr,
+                "Time_Low_SR": time_low_sr_xr,
+                "Time_High_SR": time_high_sr_xr,
+            },
+        )
