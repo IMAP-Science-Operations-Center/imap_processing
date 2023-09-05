@@ -29,7 +29,7 @@ classifiers = [
 
 [tool.poetry.dependencies]
 python = ">=3.9,<3.12"
-xarray = '>=0.0.0'
+xarray = '>=2023.0.0'
 space_packet_parser = '>=4.1.0'
 
 # Optional dependencies
