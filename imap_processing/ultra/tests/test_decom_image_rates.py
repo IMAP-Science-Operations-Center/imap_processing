@@ -9,7 +9,7 @@ from imap_processing.ultra import decom_ultra
 def decom_test_data():
     """Read test data from file"""
     packet_file = Path('../test_data/Ultra45_EM_SwRI_Cal_Run7_ThetaScan_20220530T225054.CCSDS')
-    data_packet_list = decom_ultra.decom_packets(packet_file)
+    data_packet_list = decom_ultra.decom_packets(packet_file, "P_U45_IMAGE_RATES.xml")
     return data_packet_list
 
 def test_total_packets_in_data_file(decom_test_data):
