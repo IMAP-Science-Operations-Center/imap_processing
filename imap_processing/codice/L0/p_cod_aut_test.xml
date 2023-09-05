@@ -161,71 +161,26 @@
 			<xtce:Parameter name="SHCOARSE" parameterTypeRef="uint32">
 				<xtce:LongDescription>CCSDS Packet Time Stamp (coarse time)</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="ACQ_START_COARSE" parameterTypeRef="uint32">
-				<xtce:LongDescription>Acquisition start time coarse in seconds</xtce:LongDescription>
+			<xtce:Parameter name="Spare" parameterTypeRef="uint6">
+				<xtce:LongDescription>Spare - required per GI-ICD</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="ACQ_START_FINE" parameterTypeRef="uint20">
-				<xtce:LongDescription>Acquisition start time fine in microseconds</xtce:LongDescription>
+			<xtce:Parameter name="Power_Cycle_Rq" parameterTypeRef="uint1">
+				<xtce:LongDescription>Power Cycle Request</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="CEM_NOMINAL_ONLY" parameterTypeRef="uint1">
-				<xtce:LongDescription>CEM Nominal status bit
-'1' -- nominal
-'0' -- not nominal</xtce:LongDescription>
+			<xtce:Parameter name="Power_Off_Rq" parameterTypeRef="uint1">
+				<xtce:LongDescription>Power Off Request</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="SPIN_PHASE_VALIDITY" parameterTypeRef="uint1">
-				<xtce:LongDescription>Spin phase valid bit
-'1' -- valid
-'0' -- invalid</xtce:LongDescription>
+			<xtce:Parameter name="Heater_Control_Enabled" parameterTypeRef="uint1">
+				<xtce:LongDescription>Specifies whether the FSW bang-bang controller for the heaters is enabled.  If the controller is not enabled, both heaters should be OFF.  If control is enabled, heater outputs will vary as the control algorithm determines when to turn them ON or OFF.</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="SPIN_PERIOD_SOURCE" parameterTypeRef="uint1">
-				<xtce:LongDescription>Spin period source bit
-'1' -- sun sensor (safing)
-'0' -- star tracker (nominal)</xtce:LongDescription>
+			<xtce:Parameter name="Heater_1_State" parameterTypeRef="uint1">
+				<xtce:LongDescription>Current ON/OFF state of the heater 1 output</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="spare" parameterTypeRef="uint1">
-				<xtce:LongDescription>spare</xtce:LongDescription>
+			<xtce:Parameter name="Heater_2_State" parameterTypeRef="uint1">
+				<xtce:LongDescription>Current ON/OFF state of the heater 2 output</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="SPIN_PHASE" parameterTypeRef="uint16">
-				<xtce:LongDescription>Spin phase</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="SPIN_PERIOD" parameterTypeRef="uint16">
-				<xtce:LongDescription>Spin period</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="ESA_STEPS" parameterTypeRef="uint8">
-				<xtce:LongDescription>ESA steps in packet</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="ESA_TABLE_NUM" parameterTypeRef="uint8">
-				<xtce:LongDescription>ESA table identifier</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="ESA_ACQ_CFG" parameterTypeRef="uint8">
-				<xtce:LongDescription>ESA acquisition configuration</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="HVPS_RAMP_SETTLE" parameterTypeRef="uint16">
-				<xtce:LongDescription>HVPS settling duration</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="ACQ_DURATION" parameterTypeRef="uint16">
-				<xtce:LongDescription>Acquisition duration</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="THRESHOLD_DAC" parameterTypeRef="uint16">
-				<xtce:LongDescription>Threshold DAC value</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="STIM_CFG_REG" parameterTypeRef="uint16">
-				<xtce:LongDescription>Stim pulse configuration register. Bits 0-3, period, 4-7, duration, 8-9 mode</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="SCIENCE_DATA" parameterTypeRef="uint10080">
-				<xtce:LongDescription>Data for a science acquisiton quarter cycle.  (56 bit * 180 array)
-Seven consecutive bytes represent data for a single step:
-CEM1 - 8 bit counter
-CEM2 - 8 bit counter
-CEM3 - 8 bit counter
-CEM4 - 8 bit counter
-CEM5 - 8 bit counter
-CEM6 - 8 bit counter
-CEM7 - 8 bit counter
-180 steps are for the 180 ESA voltages used in a quarter cycle</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="CKSUM" parameterTypeRef="uint16">
-				<xtce:LongDescription>Checksum</xtce:LongDescription>
+			<xtce:Parameter name="Spare2" parameterTypeRef="uint5">
+				<xtce:LongDescription>Spare for alignment</xtce:LongDescription>
 			</xtce:Parameter>
 		</xtce:ParameterSet>
 		<xtce:ContainerSet>
@@ -248,22 +203,13 @@ CEM7 - 8 bit counter
 					</xtce:RestrictionCriteria>
 				</xtce:BaseContainer>
 				<xtce:EntryList>
-					<xtce:ParameterRefEntry parameterRef="ACQ_START_COARSE" />
-					<xtce:ParameterRefEntry parameterRef="ACQ_START_FINE" />
-					<xtce:ParameterRefEntry parameterRef="CEM_NOMINAL_ONLY" />
-					<xtce:ParameterRefEntry parameterRef="SPIN_PHASE_VALIDITY" />
-					<xtce:ParameterRefEntry parameterRef="SPIN_PERIOD_SOURCE" />
-					<xtce:ParameterRefEntry parameterRef="spare" />
-					<xtce:ParameterRefEntry parameterRef="SPIN_PHASE" />
-					<xtce:ParameterRefEntry parameterRef="SPIN_PERIOD" />
-					<xtce:ParameterRefEntry parameterRef="ESA_STEPS" />
-					<xtce:ParameterRefEntry parameterRef="ESA_TABLE_NUM" />
-					<xtce:ParameterRefEntry parameterRef="ESA_ACQ_CFG" />
-					<xtce:ParameterRefEntry parameterRef="HVPS_RAMP_SETTLE" />
-					<xtce:ParameterRefEntry parameterRef="ACQ_DURATION" />
-					<xtce:ParameterRefEntry parameterRef="THRESHOLD_DAC" />
-					<xtce:ParameterRefEntry parameterRef="STIM_CFG_REG" />
-					<xtce:ParameterRefEntry parameterRef="SCIENCE_DATA" />
+					<xtce:ParameterRefEntry parameterRef="Spare" />
+					<xtce:ParameterRefEntry parameterRef="Power_Cycle_Rq" />
+					<xtce:ParameterRefEntry parameterRef="Power_Off_Rq" />
+					<xtce:ParameterRefEntry parameterRef="Heater_Control_Enabled" />
+					<xtce:ParameterRefEntry parameterRef="Heater_1_State" />
+					<xtce:ParameterRefEntry parameterRef="Heater_2_State" />
+					<xtce:ParameterRefEntry parameterRef="Spare2" />
 				</xtce:EntryList>
 			</xtce:SequenceContainer>
 		</xtce:ContainerSet>

@@ -6,51 +6,17 @@ import xml.etree.ElementTree as Et
 
 import pandas as pd
 
-sheet_name = "P_SWE_SCIENCE"  # Assuming the sheet name is correct
+from tools.xtce_generation.ccsds_header_xtce_generator import CCSDSParameters
 
-# Create CCSDS Header parameters. This should be consistent for all CCSDS packets.
-ccsds_parameters = [
-    {
-        "name": "VERSION",
-        "parameterTypeRef": "uint3",
-        "description": "CCSDS Packet Version Number (always 0)",
-    },
-    {
-        "name": "TYPE",
-        "parameterTypeRef": "uint1",
-        "description": "CCSDS Packet Type Indicator (0=telemetry)",
-    },
-    {
-        "name": "SEC_HDR_FLG",
-        "parameterTypeRef": "uint1",
-        "description": "CCSDS Packet Secondary Header Flag (always 1)",
-    },
-    {
-        "name": "PKT_APID",
-        "parameterTypeRef": "uint11",
-        "description": "CCSDS Packet Application Process ID",
-    },
-    {
-        "name": "SEG_FLGS",
-        "parameterTypeRef": "uint2",
-        "description": "CCSDS Packet Grouping Flags (3=not part of group)",
-    },
-    {
-        "name": "SRC_SEQ_CTR",
-        "parameterTypeRef": "uint14",
-        "description": "CCSDS Packet Sequence Count (increments with each new packet)",
-    },
-    {
-        "name": "PKT_LEN",
-        "parameterTypeRef": "uint16",
-        "description": "CCSDS Packet Length (number of bytes after Packet length minus 1)",
-    },
-    {
-        "name": "SHCOARSE",
-        "parameterTypeRef": "uint32",
-        "description": "CCSDS Packet Time Stamp (coarse time)",
-    },
-]
+# Make sure the "sheet" name is correct. In an Excel file
+# There might be several "packets", which are "sheets" within the file.
+# This is case-sensitive.
+packet_name = "P_COD_AUT"  # This is the name of the packet (sheet) in the Excel file
+
+# This is the path to the Excel file you want to convert to XML
+path_to_excel_file = "/Users/gamo6782/Desktop/IMAP/TLM_COD_20230629-110638(update).xlsx"
+
+ccsds_parameters = CCSDSParameters().parameters
 
 if __name__ == "__main__":
     # ET.register_namespace is important!
@@ -62,13 +28,8 @@ if __name__ == "__main__":
     )  # Update the namespace here
 
     # Load data from Excel file
-    # This is important! Use the xls PATH to the file you want to convert to XML.
-    # Also, make sure the "sheet" name is correct. Case sensitive.'''
-
-    xls = pd.ExcelFile(
-        "TLM_SWE.xlsx"
-    )
-    df = xls.parse(sheet_name)
+    xls = pd.ExcelFile(path_to_excel_file)
+    pkt = xls.parse(packet_name)
 
     # Fill missing values with '-*-'
     pkt.fillna("", inplace=True)
@@ -78,7 +39,6 @@ if __name__ == "__main__":
         "{http://www.omg.org/space}SpaceSystem",
         nsmap={"xtce": "http://www.omg.org/space/xtce"},
     )
-    root.attrib["name"] = "P_SWE_SCIENCE"
 
     root.attrib["name"] = "packet_name"
 
@@ -193,22 +153,13 @@ if __name__ == "__main__":
     # This will be the list of parameters that will be included in the
     # CoDICE Science Packet after the CCSDS header'''
     parameter_refs = [
-        "ACQ_START_COARSE",
-        "ACQ_START_FINE",
-        "CEM_NOMINAL_ONLY",
-        "SPIN_PHASE_VALIDITY",
-        "SPIN_PERIOD_SOURCE",
-        "spare",
-        "SPIN_PHASE",
-        "SPIN_PERIOD",
-        "ESA_STEPS",
-        "ESA_TABLE_NUM",
-        "ESA_ACQ_CFG",
-        "HVPS_RAMP_SETTLE",
-        "ACQ_DURATION",
-        "THRESHOLD_DAC",
-        "STIM_CFG_REG",
-        "SCIENCE_DATA"
+        "Spare",
+        "Power_Cycle_Rq",
+        "Power_Off_Rq",
+        "Heater_Control_Enabled",
+        "Heater_1_State",
+        "Heater_2_State",
+        "Spare2",
     ]
 
     for parameter_ref in parameter_refs:
