@@ -6,9 +6,7 @@ from imap_processing.idex.idex_packet_parser import PacketParser
 
 @pytest.fixture(scope="session")
 def decom_test_data():
-    return PacketParser(
-        "imap_processing/idex/tests/imap_idex_l0_20230725_v01-00.pkts"
-    )
+    return PacketParser("imap_processing/idex/tests/imap_idex_l0_20230725_v01-00.pkts")
 
 
 def test_idex_decom_length(decom_test_data):
