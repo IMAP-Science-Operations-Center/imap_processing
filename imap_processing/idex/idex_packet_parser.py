@@ -246,6 +246,8 @@ class RawDustEvent:
             self.Target_High_bits += bits
         elif scitype == 64:
             self.Ion_Grid_bits += bits
+        else:
+            logging.warning("Unknown science type received: [%s]", scitype)
 
     def process(self):
         """
