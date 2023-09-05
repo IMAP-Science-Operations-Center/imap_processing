@@ -64,45 +64,58 @@ def calculate_step_power(index):
         return 0
 
 
-def get_swe_cem_counts():
+def swe_l1a():
     """SWE L1A algorithm steps:
-    - Read data from SWE packet file
-    - Uncompress data
-    - Store metadata and data in attrs and DataArray of xarray respectively
-    - Save complete data to cdf file
+        - Read data from SWE packet file
+        - Uncompress data
+        - Store metadata and data in attrs and DataArray of xarray respectively
+        - Save complete data to cdf file
+    Each L1A data will have this shape: 24 rows, 7 columns, and each cell in 24 x 7 table contains
+    30 element array. These dimension maps to this:
+        24 rows --> 24 energy steps
+        7 column --> 7 CEMs value
+        30 element --> 30 spin angles
     """
     packet_file = f"{packet_definition_directory}/../swe/tests/science_block_20221116_163611Z_idle.bin"
     decom_data = decom_swe.decom_packets(packet_file)
     dataset = xr.Dataset()
-    for each_raw_data in decom_data:
-        metadata = {}
-        for key, value in each_raw_data.header.items():
-            metadata[key] = value.raw_value
+    # To get one full data, we need to get data from four spins where each spin
+    # data is stored in one packet data. ESA_STEPS from metadata gives information about
+    # which spin data is stored in which packet.
+    # ESA_STEPS = 0 --> first spin data
+    # ESA_STEPS = 1 --> second spin data
+    # ESA_STEPS = 2 --> third spin data
+    # ESA_STEPS = 3 --> fourth spin data
 
-        for key, value in each_raw_data.data.items():
-            if key != "SCIENCE_DATA":
-                metadata[key] = (
-                    value.raw_value
-                    if value.derived_value is None
-                    else value.derived_value
-                )
+    # These indexes is where each spin's data goes in full data table.
+    # It's like putting a puzzle together. One full data table in the
+    # the algorithm document is of this shape ( 24, 30, 7). Once we
+    # have populated data table with all four spins, we can reshape
+    # it to what subsequent algorithm needs which is (24, 7, 30).
+    spin_one_indexes = [1,  5, 9, 13, 17,  21, 23, 19, 15, 11, 7, 3]
+    spin_two_indexes = [2,  6, 10, 14, 18,  22, 20, 16, 12, 8, 4, 0]
+    spin_three_indexes = [3,  7, 11, 15, 19,  23, 21, 17, 13, 9, 5, 1]
+    spin_four_indexes = [4,  8, 12, 16, 20,  24, 22, 18, 14, 10, 6, 2]
+
+    item_index = 0
+    while item_index < len(decom_data):
+        # If ESA_STEPS is 0, we need to get data from first spin
+        spin_number = decom_data[item_index].data["ESA_STEPS"].raw_value
+        if spin_number == 0:
+            # It should follow by 4 packets where each packet contains
+            # one spin's data.
+            one_full_data = np.zeros((24, 30, 7))
+
+        # TODO: get metadata of each data and stores. Find out how to combine four
+        # packet's metadata.
 
         # read raw data
-        binary_data = each_raw_data.data["SCIENCE_DATA"].raw_value
+        binary_data = decom_data[item_index].data["SCIENCE_DATA"].raw_value
         # read raw data as binary array using bitstring
         bit_array = bitstring.ConstBitStream(bin=binary_data)
-        # chunk binary into 1260 unit 8-bits
-        compressed_data = bit_array.readlist(["uint:8"] * 1260)
-        # for each data, uncompress it
-        uncompressed_data = [uncompress(i) for i in compressed_data]
-        # reshape the data to 3D array. Array shapes correspond to this:
-        # 7 (CEM_COUNTS) * 12 (STEPS_EACH_SECOND) * 15 (SECONDS)
-        unpacked_data = np.array(uncompressed_data).reshape(15, 12, 7)
-        xarray_data = xr.DataArray(
-            unpacked_data, dims=["seconds", "steps_each_second", "cem_counts"]
-        )
-        xarray_data.attrs = metadata
-        dataset.update({each_raw_data.data["ACQ_START_COARSE"].raw_value: xarray_data})
-
-
-get_swe_cem_counts()
+        # chunk binary into 1260 units each with 8-bits
+        byte_data = bit_array.readlist(["uint:8"] * 1260)
+        # for each data, uncompress it. uncompressed data is a list of 1260
+        # where 1260 = 15 seconds x 7 CEMs x 12 energy steps
+        uncompressed_data = [uncompress(i) for i in byte_data]
+        # TODO: find out how to populate full data array with four spins data.
