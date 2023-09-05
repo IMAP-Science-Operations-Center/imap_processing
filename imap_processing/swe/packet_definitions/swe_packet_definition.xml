@@ -118,6 +118,19 @@
                     <xtce:Enumeration label="NOMINAL" value="1"/>
                 </xtce:EnumerationList>
             </xtce:EnumeratedParameterType>
+            <xtce:BinaryParameterType name="spin_phase_eng_unit">
+                <xtce:UnitSet/>
+                <xtce:BinaryDataEncoding bitOrder="mostSignificantBitFirst">
+                    <xtce:SizeInBits>
+                        <xtce:DynamicValue>
+                            <xtce:ParameterInstanceRef parameterRef="SPIN_PHASE" useCalibratedValue="False"/>
+                            <!-- Convert raw value to engineering value using this formula from document.
+                                engineering value = (0.005493 * SPIN_PHASE) -->
+                            <xtce:LinearAdjustment slope="0.005493" intercept="0"/>
+                        </xtce:DynamicValue>
+                    </xtce:SizeInBits>
+                </xtce:BinaryDataEncoding>
+            </xtce:BinaryParameterType>
         </xtce:ParameterTypeSet>
         <xtce:ParameterSet>
             <!-- Within the ParameterSet, utilize the data types defined in the ParameterTypeSet to create variables
