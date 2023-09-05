@@ -39,9 +39,9 @@ class PacketParser:
      Examples
      ---------
         >>> # Print out the data in a L0 file
-        >>> from imap_processing.idex.idex_packet_parser import IDEXPacketParser
+        >>> from imap_processing.idex.idex_packet_parser import PacketParser
         >>> l0_file = "imap_processing/idex/tests/imap_idex_l0_20230725_v01-00.pkts"
-        >>> l0_data = IDEXPacketParser(l0_file)
+        >>> l0_data = PacketParser(l0_file)
         >>> print(l0_data.data)
 
     """
@@ -96,6 +96,9 @@ class PacketParser:
 
 
 class RawDustEvent:
+    HIGH_SAMPLE_FREQUENCY = 1 / 260
+    LOW_SAMPLE_FREQUENCY = 1 / 4.0625
+
     def __init__(self, header_packet):
         """
         This function initializes a raw dust event, with an FPGA Header Packet from IDEX
@@ -104,13 +107,36 @@ class RawDustEvent:
             header_packet:  The FPGA metadata event header
 
         """
+
+        # Calculate the impact time in seconds since Epoch
         self.impact_time = (
             header_packet.data["SHCOARSE"].derived_value
             + TWENTY_MICROSECONDS * header_packet.data["SHFINE"].derived_value
         )
+
+        # Calculate the high sample and low sample trigger times
+        tof_delay = (
+            header_packet.data["IDX__TXHDRSAMPDELAY"].raw_value >> 2
+        )  # First two bits are padding
+        mask = 0b1111111111
+        hgdelay = (tof_delay >> 20) & mask
+        lspretrigblocks = (
+            header_packet.data["IDX__TXHDRBLOCKS"].derived_value >> 16
+        ) & 0b1111
+        hspretrigblocks = (
+            header_packet.data["IDX__TXHDRBLOCKS"].derived_value >> 6
+        ) & 0b111111
+
+        self.lstriggertime = (
+            8 * self.LOW_SAMPLE_FREQUENCY * (lspretrigblocks + 1)
+            - self.HIGH_SAMPLE_FREQUENCY * hgdelay
+        )
+        self.hstriggertime = 512 * self.HIGH_SAMPLE_FREQUENCY * (hspretrigblocks + 1)
+
+        # Log the rest of the header
         self._log_packet_info(header_packet)
 
-        # Init the binary data received from future packets
+        # Initialize the binary data received from future packets
         self.TOF_High_bits = ""
         self.TOF_Mid_bits = ""
         self.TOF_Low_bits = ""
@@ -215,6 +241,20 @@ class RawDustEvent:
             ints += w.readlist(["uint:12"] * 2)
         return ints
 
+    def _calc_low_sample_resolution(self, num_samples: int):
+        time_low_sr_init = np.linspace(0, num_samples, num_samples)
+        time_low_sr_data = (
+            self.LOW_SAMPLE_FREQUENCY * time_low_sr_init - self.hstriggertime
+        )
+        return time_low_sr_data
+
+    def _calc_high_sample_resolution(self, num_samples: int):
+        time_high_sr_init = np.linspace(0, num_samples, num_samples)
+        time_high_sr_data = (
+            self.HIGH_SAMPLE_FREQUENCY * time_high_sr_init - self.lstriggertime
+        )
+        return time_high_sr_data
+
     def parse_packet(self, packet):
         """
         This function parses IDEX data packets to populate bit strings
@@ -260,11 +300,8 @@ class RawDustEvent:
         xarray.Dataset
             A Dataset object containing the data from a single impact
 
-        TODO
-        ----
-        * high_sample_rate and low_sample_rate must be multiplied by
-          some scale factor that will be decided upon in the future
         """
+
         # Process the 6 primary data variables
         tof_high_xr = xr.DataArray(
             name="TOF_High",
@@ -288,24 +325,26 @@ class RawDustEvent:
         )
         target_low_xr = xr.DataArray(
             name="Target_Low",
-            data=[self._parse_low_sample_waveform(self.Target_High_bits)],
+            data=[self._parse_low_sample_waveform(self.Target_Low_bits)],
             dims=("Epoch", "Time_Low_SR_dim"),
         )
         ion_grid_xr = xr.DataArray(
             name="Ion_Grid",
-            data=[self._parse_low_sample_waveform(self.Target_High_bits)],
+            data=[self._parse_low_sample_waveform(self.Ion_Grid_bits)],
             dims=("Epoch", "Time_Low_SR_dim"),
         )
         # Determine the 3 coordinate variables
         epoch_xr = xr.DataArray(name="Epoch", data=[self.impact_time], dims=("Epoch"))
+
         time_low_sr_xr = xr.DataArray(
             name="Time_Low_SR",
-            data=[np.linspace(0, len(ion_grid_xr[0]), len(ion_grid_xr[0]))],
+            data=[self._calc_low_sample_resolution(len(target_low_xr[0]))],
             dims=("Epoch", "Time_Low_SR_dim"),
         )
+
         time_high_sr_xr = xr.DataArray(
             name="Time_High_SR",
-            data=[np.linspace(0, len(tof_low_xr[0]), len(tof_low_xr[0]))],
+            data=[self._calc_high_sample_resolution(len(tof_low_xr[0]))],
             dims=("Epoch", "Time_High_SR_dim"),
         )
 
