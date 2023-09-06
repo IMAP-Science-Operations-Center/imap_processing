@@ -1,28 +1,34 @@
-""" The module will take an Excel file and convert it into an XTCE formatted XML file.
-This is specific for CODICE L0, but can be modified for other missions. This is the
-start of CODICE L0 data processing.
-"""
+"""This is the xtce generator for the P_COD_LO_PHA packet."""
+
 import xml.etree.ElementTree as Et
 
 import pandas as pd
 
 from tools.xtce_generation.ccsds_header_xtce_generator import CCSDSParameters
 
-# Make sure the "sheet" name is correct. In an Excel file
-# There might be several "packets", which are "sheets" within the file.
-# This is case-sensitive.
-packet_name = "P_COD_AUT"  # This is the name of the packet (sheet) in the Excel file
+"""
+Important Steps:
+- packet_name: This is the name of the packet (sheet) in the Excel file. This is
+case-sensitive.
+- path_to_excel_file: This is the path to the Excel file with packet definitions
+- ccsds_parameters: This is a list of dictionaries containing the CCSDS parameters
+- APID: This is the APID of the packet. This is used to filter the parameters
+in the CoDICE Science Packet.
+- sci_byte (optional): This is the BYTE number of lenghtInBits in the "Data" mnemonic
+in the CoDICE Science Packet.
 
-# This is the path to the Excel file you want to convert to XML
+"""
+
+packet_name = "P_COD_LO_PHA"
+
 path_to_excel_file = "/Users/gamo6782/Desktop/IMAP/TLM_COD_20230629-110638(update).xlsx"
 
+# Load CCSDS parameters from the CCSDSParameters class
 ccsds_parameters = CCSDSParameters().parameters
 
 if __name__ == "__main__":
     # ET.register_namespace is important!
-    # Make sure you use the correct namespace for the xtce file you are using.
     # This is the namespace for the IMAP xtce files currently.
-
     Et.register_namespace(
         "xtce", "http://www.omg.org/space"
     )  # Update the namespace here
@@ -31,21 +37,24 @@ if __name__ == "__main__":
     xls = pd.ExcelFile(path_to_excel_file)
     pkt = xls.parse(packet_name)
 
+    # Input the correct APID here
+    APID = "1153"
+
+    # sci_byte is the BYTE number of lenghtInBits in the "Data" mnemonic
+    sci_byte = 276480
+
     # Fill missing values with '-*-'
     pkt.fillna("", inplace=True)
 
     # Create the root element and add namespaces
-    root = Et.Element(
-        "{http://www.omg.org/space}SpaceSystem",
-        nsmap={"xtce": "http://www.omg.org/space/xtce"},
-    )
+    root = Et.Element("{http://www.omg.org/space}SpaceSystem")
 
-    root.attrib["name"] = "packet_name"
+    root.attrib["name"] = packet_name
 
     # Create the Header element with attributes 'date', 'version', and 'author'
     # Versioning is used to keep track of changes to the XML file.
     header = Et.SubElement(root, "{http://www.omg.org/space}Header")
-    header.attrib["date"] = "2023-08-21"
+    header.attrib["date"] = "2023-09"
     header.attrib["version"] = "1.0"
     header.attrib["author"] = "IMAP SDC"
 
@@ -73,20 +82,17 @@ if __name__ == "__main__":
     # Create the ParameterSet element
     parameter_set = Et.SubElement(telemetry_metadata, "xtce:ParameterSet")
 
-    """
-    The following loop creates a series of XML elements to
-    define integer parameter types:
-    - The loop iterates from 0 - 32, creating an `IntegerParameterType` element for
-    each number.
-    - In `IntegerParameterType` element, attributes like `name` and `signed` are set.
-    - An `IntegerDataEncoding` is added with attributes `sizeInBits` and `encoding`.
-    - Lastly, a `UnitSet` element is added within each `IntegerParameterType`.
-    This loop efficiently defines integer parameter types for a range of
-    values in the XML structure.
-    """
+    # Extract unique values from the 'lengthInBits' column
+    unique_lengths = pkt["lengthInBits"].unique()
+    # Handle the "Data" mnemonic separately
+    data_mnemonic = "Event_Data"
+    data_type = pkt[pkt["mnemonic"] == data_mnemonic]["dataType"].values[0]
 
-    # Create integer parameter types for all numbers between 0-32
-    for size in range(33):  # Range goes up to 33 to include 0-32
+    # Create parameter types based on 'dataType' for the unique 'lengthInBits' values
+    for size in unique_lengths:
+        if size == sci_byte and data_type == "BYTE":
+            continue  # Skip creating "IntegerParameterType" for "Data" with "BYTE" type
+
         parameter_type = Et.SubElement(parameter_type_set, "xtce:IntegerParameterType")
         parameter_type.attrib["name"] = f"uint{size}"
         parameter_type.attrib["signed"] = "false"
@@ -94,10 +100,17 @@ if __name__ == "__main__":
         encoding = Et.SubElement(parameter_type, "xtce:IntegerDataEncoding")
         encoding.attrib["sizeInBits"] = str(size)
         encoding.attrib["encoding"] = "unsigned"
-        # unit_set is used to define the units for the parameter.
-        # This is not needed for CODICE L0.
-        # UnitSet will be used for CODICE L1. It can be used for other missions as well.
-        unit_set = Et.SubElement(parameter_type, "xtce:UnitSet")
+
+    if data_type == "BYTE":
+        parameter_type = Et.SubElement(parameter_type_set, "xtce:ArrayParameterType")
+        parameter_type.attrib[
+            "name"
+        ] = "BYTE"  # Set the name to "BYTE" for "Data" mnemonic
+        parameter_type.attrib["signed"] = "false"
+
+        encoding = Et.SubElement(parameter_type, "xtce:IntegerDataEncoding")
+        encoding.attrib["sizeInBits"] = str(sci_byte)  # Specific to "Data" mnemonic
+        encoding.attrib["encoding"] = "unsigned"
 
     """
     This loop generates XML elements to define CCSDS packet parameters:
@@ -141,26 +154,20 @@ if __name__ == "__main__":
     restriction_criteria = Et.SubElement(base_container, "xtce:RestrictionCriteria")
     comparison = Et.SubElement(restriction_criteria, "xtce:Comparison")
     comparison.attrib["parameterRef"] = "PKT_APID"
-    comparison.attrib["value"] = "1120"
+    comparison.attrib["value"] = APID
     comparison.attrib["useCalibratedValue"] = "false"
 
     codice_science_entry_list = Et.SubElement(
         codice_science_container, "xtce:EntryList"
     )
 
-    # Add ParameterRefEntry elements for CoDICESciencePacket
-    # ******************************* NEED TO LOOK AT THIS: To pkt specific
-    # This will be the list of parameters that will be included in the
-    # CoDICE Science Packet after the CCSDS header'''
-    parameter_refs = [
-        "Spare",
-        "Power_Cycle_Rq",
-        "Power_Off_Rq",
-        "Heater_Control_Enabled",
-        "Heater_1_State",
-        "Heater_2_State",
-        "Spare2",
-    ]
+    """
+    Add ParameterRefEntry elements for CoDICESciencePacket. This will be the list of
+    parameters that will be included in the CoDICE Science Packet after the CCSDS
+    header.
+    """
+    # Get the 'mnemonic' values starting from row 10
+    parameter_refs = pkt.loc[9:, "mnemonic"].tolist()
 
     for parameter_ref in parameter_refs:
         parameter_ref_entry = Et.SubElement(
@@ -169,66 +176,45 @@ if __name__ == "__main__":
         parameter_ref_entry.attrib["parameterRef"] = parameter_ref
 
     """
-    This loop processes rows from the DataFrame starting from the 9th row onwards:
+    This loop processes rows from the DataFrame starting from the 10th row onwards:
     - It iterates over the DataFrame rows using the `iterrows()` function.
-    - For each row, it checks if the row index is less than 8 (rows before the 9th row).
+    - For each row, it checks if the row index is less than 9.
     - If the condition is met, the loop continues to the next iteration,
         skipping these rows.
     - Otherwise, it creates an `xtce:Parameter` element and adds it to
         the `parameter_set`.
     - Attributes like `name` and `parameterTypeRef` are set based on row data.
-    - A `LongDescription` element is created with the description text from the row.
+    - A `shortDescription` element is created with the description text from the row.
     This loop effectively generates XML elements for parameters starting from the
-        9th row of the DataFrame.
+        10th row of the DataFrame.
     """
 
-    # Process rows from 9 until the last available row in the DataFrame
+    # Process rows from 10 until the last available row in the DataFrame
     for index, row in pkt.iterrows():
-        if index < 8:
-            continue  # Skip rows before row 9
+        if index < 9:
+            continue  # Skip rows before row 10
 
         parameter = Et.SubElement(parameter_set, "{http://www.omg.org/space}Parameter")
         parameter.attrib["name"] = row["mnemonic"]
-        parameter_type_ref = f"uint{row['lengthInBits']}"
+        parameter_type_ref = ""
+
+        if row["mnemonic"] == "Event_Data":
+            parameter_type_ref = "BYTE"  # Use BYTE type for "Data" mnemonic
+        else:
+            parameter_type_ref = f"uint{row['lengthInBits']}"  # Use UINT for others
+
         parameter.attrib["parameterTypeRef"] = parameter_type_ref
 
         description = Et.SubElement(
             parameter, "{http://www.omg.org/space}LongDescription"
         )
-        description.text = row["longDescription"]
-
-    """
-    This section creates the final XML structure, indents it, then saves it to a file:
-    - The 'Et.ElementTree(root)' creates an ElementTree with the root element 'root'.
-    - 'Et.indent(tree, space="\t", level=0)' adds indentation for readability.
-      - 'tree' is the ElementTree object.
-      - 'space="\t"' specifies the character used for indentation (a tab in this case).
-      - 'level=0' indicates the starting level of indentation.
-    - 'tree.write("p_cod_aut_test.xml", encoding="utf-8", xml_declaration=True)'
-        writes the XML content to a file named "p_cod_aut_test.xml".
-      - 'encoding="utf-8"' specifies the character encoding for the file.
-      - 'xml_declaration=True' adds an XML declaration at the beginning of the file.
-    This section completes the XML generation process by creating a structured XML tree
-    formatting it with indentation, and saving it to a file.
-    """
+        description.text = row["shortDescription"]
 
     # Create the XML tree
     tree = Et.ElementTree(root)
     Et.indent(tree, space="\t", level=0)
 
-    # Save the XML document to a file
-    output_xml_path = "L0/example_xtce.xml"
+    # Save the XML document to a file in the current working directory
+    # imap_processing/packet_definitions/codice/
+    output_xml_path = "../../packet_definitions/codice/lo_pha.xml"
     tree.write(output_xml_path, encoding="utf-8", xml_declaration=True)
-
-    # Read and modify the XML file contents
-    with open(output_xml_path) as file:
-        contents = file.read()
-
-    modified_content = contents.replace(
-        'xmlns:xtce="http://www.omg.org/space/"',
-        'xmlns:xtce="http://www.omg.org/space/xtce"',
-    )
-
-    # Write the modified content back to the file
-    with open(output_xml_path, "w") as file:
-        file.write(modified_content)
