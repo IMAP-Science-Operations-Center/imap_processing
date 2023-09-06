@@ -1,12 +1,35 @@
-from imap_processing import decom
+# Standard
 import logging
+# Installed
 import xarray as xr
 import numpy as np
+# Local
+from imap_processing import decom
 
 logging.basicConfig(level=logging.INFO)
 
-def read_n_bits(binary, n, current_position):
-    """Read next n bits from binary string starting from current_position."""
+def read_n_bits(binary: str, n: int, current_position: int):
+    """
+    Extract a specified number of bits from a binary string, starting from a given position.
+
+    Parameters
+    ----------
+    binary : str
+        The binary string from which bits will be read.
+    n : int
+        Number of bits to read from the binary string.
+    current_position : int
+        The starting position in the binary string from which bits will be read.
+
+    Returns
+    -------
+    value : int
+        The integer representation of the read bits or None if the end of the string is reached
+        before reading 'n' bits.
+    current_position + n
+        - The updated position in the binary string after reading the bits.
+    """
+
     # Ensure we don't read past the end
     if current_position + n > len(binary):
         return None, current_position
@@ -14,8 +37,21 @@ def read_n_bits(binary, n, current_position):
     value = int(binary[current_position:current_position + n], 2)
     return value, current_position + n
 
-def log_decompression(value):
-    """Perform log decompression on a 16-bit value."""
+def log_decompression(value: int) -> int:
+
+    """
+    Perform logarithmic decompression on a 16-bit integer.
+
+    Parameters
+    ----------
+    value : int
+        A 16-bit integer comprised of a 4-bit exponent followed by a 12-bit mantissa.
+
+    Returns
+    -------
+    int
+        The decompressed integer value.
+    """
     # The exponent e, and mantissa, m are 4-bit and 12-bit unsigned integers respectively
     e = value >> 12  # Extract the 4 most significant bits for the exponent
     m = value & 0xFFF  # Extract the 12 least significant bits for the mantissa
@@ -26,8 +62,24 @@ def log_decompression(value):
         return (4096 + m) << (e - 1)
 
 
-def decompress_binary(binary):
-    """Decompress the given binary."""
+def decompress_binary(binary: str) -> list:
+    """
+    Decompress a binary string based on block-width encoding and logarithmic compression.
+
+    This function interprets a binary string where the first 'width_bit' bits
+    specifies the width of the following values. Each value is then extracted and
+    subjected to logarithmic decompression.
+
+    Parameters
+    ----------
+    binary : str
+        A binary string containing the compressed data.
+
+    Returns
+    -------
+    list
+        A list of decompressed values.
+    """
     current_position = 0
     decompressed_values = []
     width_bit = 5  # The bit width that describes the width of data in the block
@@ -48,7 +100,7 @@ def decompress_binary(binary):
 
             value, current_position = read_n_bits(binary, width, current_position)
 
-            # Log decompression and store the value
+            # Log decompression
             decompressed_values.append(log_decompression(value))
 
     return decompressed_values
@@ -56,21 +108,20 @@ def decompress_binary(binary):
 
 def decom_ultra_packets(packet_file: str, xtce: str):
     """
-    Unpack CCSDS data packet.
-
-    This function unpacks and returns data.
+    Unpack and decode ultra packets using CCSDS format and XTCE packet definitions.
 
     Parameters
     ----------
     packet_file : str
-        Path to the data packet file.
-    xtce_packet_definition : str
-        Path to the XTCE file with its filename.
+        Path to the CCSDS data packet file.
+    xtce : str
+        Path to the XTCE packet definition file.
 
     Returns
     -------
-    list
-        A list of all the unpacked data.
+    xr.Dataset
+        A dataset containing the decoded data fields with 'time' as the coordinating
+        dimension.
     """
 
     packets = decom.decom_packets(packet_file, xtce)
