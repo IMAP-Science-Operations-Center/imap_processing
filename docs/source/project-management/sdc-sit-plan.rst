@@ -12,7 +12,7 @@ Timeline                                        Step
 :ref:`Start of development <start-development>` Create a SIT procedures page and add/update test steps throughout the development process
 :ref:`~4 weeks prior to test <4-weeks-prior>`   Begin to finalize test steps
 :ref:`~2 weeks prior to test <2-weeks-prior>`   Conduct a dry run of the test procedures, makes any necessary fixes, test step updates
-:ref:`~1 week prior to test <1-week-prior>`     Conduct a Test Readiness Review (TRR) to review the final version of the test procedures 
+:ref:`~1 week prior to test <1-week-prior>`     Conduct a Test Readiness Review (TRR) to review the final version of the test procedures
 :ref:`Test <test>`                              Conducts the SIT
 :ref:`~1 week after test <1-week-after>`        Review all failures and proposed fixes, decide on time for re-run of failed steps, and update requirement test status
 :ref:`~2 weeks after test <2-weeks-after>`      Finalize the test report
@@ -48,7 +48,6 @@ The Test Readiness Review (TRR) brings all participants together in preparation 
 * Review test procedures and sequence of events
 * Personnel support, infrastructure, and networking resources
 * Overall test schedule and run-time coordination logistics
-
 
 .. _test:
 Test
