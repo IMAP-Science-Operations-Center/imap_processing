@@ -48,7 +48,7 @@ Overview of Managing Requirements in Github
    * Sub-issues allow for better tracking of how SPIKES, implementation issues, and requirements are related to each other.  They also allow the use of L5 requirements as a starting point to see the design history of each feature.
 * If a re-design is proposed that impacts an already tested requirement, the issue should be re-opened
    * In addition to re-opening the issue, the following steps should occur:
-      * The requirement issue should be re-opened 
+      * The requirement issue should be re-opened
       * Any new SPIKEs or implementation tasks should be appended to the original task list.
       * A comment should be added to the issue explaining why the issue was re-opened.
       * The "Passed" label should be changed to "Re-test"
@@ -63,7 +63,7 @@ Creating level 5 requirements
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 * Level 5 requirements should be created using the "L5 Requirement" issue template.
    * As part of this template, the L5 summary, Parent (Level 4) Requirement, and list of tasks (sub-issues) are filled in.
-   * If you don't have sub-issues created to link in the task list, you can add text as a reminder or add them later. 
+   * If you don't have sub-issues created to link in the task list, you can add text as a reminder or add them later.
    * The task list should only be appended to for the lifetime of the project.
 * Upon creation a requirement should be given the following the tags:
    * "Requirement: Level 5" (you get this for free by selecting the "L5 Requirement" issue template)
@@ -89,7 +89,7 @@ The following diagram gives an example of the general information a level 5 requ
 Adding and Tracking sub-issues
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Each level 5 requirement will track all of the SPIKE and implementation issues associated with the feature. The sub-issues will show up as check boxes that will automatically be checked off when the sub-issue is closed. 
+Each level 5 requirement will track all of the SPIKE and implementation issues associated with the feature. The sub-issues will show up as check boxes that will automatically be checked off when the sub-issue is closed.
 
 The task list can be created as follows:
 
