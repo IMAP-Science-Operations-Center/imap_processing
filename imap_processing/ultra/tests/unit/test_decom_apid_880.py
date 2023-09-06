@@ -1,10 +1,6 @@
 import pytest
-from pathlib import Path
-from imap_processing import decom, packet_definition_directory
-from imap_processing.ultra import decom_ultra
+from imap_processing import decom
 import pandas as pd
-import ast
-import numpy as np
 
 
 @pytest.fixture(scope="function")

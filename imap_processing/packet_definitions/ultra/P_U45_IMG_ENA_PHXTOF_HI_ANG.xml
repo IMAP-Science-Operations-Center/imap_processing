@@ -135,6 +135,14 @@
 				<xtce:IntegerDataEncoding sizeInBits="32" encoding="unsigned" />
 				<xtce:UnitSet />
 			</xtce:IntegerParameterType>
+			<xtce:BinaryParameterType name="packetdata">
+                <xtce:UnitSet/>
+                <xtce:BinaryDataEncoding bitOrder="mostSignificantBitFirst">
+                    <xtce:SizeInBits>
+                        <xtce:FixedValue>32688</xtce:FixedValue>
+                    </xtce:SizeInBits>
+                </xtce:BinaryDataEncoding>
+            </xtce:BinaryParameterType>
 		</xtce:ParameterTypeSet>
 		<xtce:ParameterSet>
 			<xtce:Parameter name="VERSION" parameterTypeRef="uint3">
@@ -158,10 +166,11 @@
 			<xtce:Parameter name="PKT_LEN" parameterTypeRef="uint16">
 				<xtce:LongDescription>CCSDS Packet Length (number of bytes after Packet length minus 1)</xtce:LongDescription>
 			</xtce:Parameter>
+			<!-- Start Ultra_IMG_ENA_PHXTOF_HI_ANG metadata -->
 			<xtce:Parameter name="SHCOARSE" parameterTypeRef="uint32">
 				<xtce:LongDescription>CCSDS Packet Time Stamp (coarse time)</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="PACKETDATA" parameterTypeRef="uint32688">
+			<xtce:Parameter name="PACKETDATA" parameterTypeRef="packetdata">
 				<xtce:LongDescription>Image Packet Data</xtce:LongDescription>
 			</xtce:Parameter>
 		</xtce:ParameterSet>
@@ -175,7 +184,6 @@
 					<xtce:ParameterRefEntry parameterRef="SEG_FLGS" />
 					<xtce:ParameterRefEntry parameterRef="SRC_SEQ_CTR" />
 					<xtce:ParameterRefEntry parameterRef="PKT_LEN" />
-					<xtce:ParameterRefEntry parameterRef="SHCOARSE" />
 				</xtce:EntryList>
 			</xtce:SequenceContainer>
 			<xtce:SequenceContainer name="UltraSciencePacket">
@@ -185,13 +193,8 @@
 					</xtce:RestrictionCriteria>
 				</xtce:BaseContainer>
 				<xtce:EntryList>
-					<xtce:ParameterRefEntry parameterRef="Spare" />
-					<xtce:ParameterRefEntry parameterRef="Power_Cycle_Rq" />
-					<xtce:ParameterRefEntry parameterRef="Power_Off_Rq" />
-					<xtce:ParameterRefEntry parameterRef="Heater_Control_Enabled" />
-					<xtce:ParameterRefEntry parameterRef="Heater_1_State" />
-					<xtce:ParameterRefEntry parameterRef="Heater_2_State" />
-					<xtce:ParameterRefEntry parameterRef="Spare2" />
+					<xtce:ParameterRefEntry parameterRef="SHCOARSE" />
+					<xtce:ParameterRefEntry parameterRef="PACKETDATA" />
 				</xtce:EntryList>
 			</xtce:SequenceContainer>
 		</xtce:ContainerSet>

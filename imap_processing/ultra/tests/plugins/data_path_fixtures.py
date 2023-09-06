@@ -37,6 +37,14 @@ def xtce_aux_path():
     return f"{packet_definition_directory}ultra/P_U45_AUXILIARY.xml"
 
 @pytest.fixture
+def xtce_image_raw_events_path():
+    """Returns the spice subdirectory of the test_data directory
+    This directory contains kernel that are either generated (SPK and CK) or dynamically downloaded.
+    Any kernels that are available directly in the libera_utils/data directory should be sourced from there.
+    """
+    return f"{packet_definition_directory}ultra/P_U45_IMG_RAW_EVENTS.xml"
+
+@pytest.fixture
 def xtce_image_rates_test_path(test_data_path):
     """Returns the spice subdirectory of the test_data directory
     This directory contains kernel that are either generated (SPK and CK) or dynamically downloaded.

@@ -224,12 +224,7 @@
 		</xtce:ParameterSet>
 				<!-- End Ultra_RAW_EVENTS metadata -->
 		<xtce:ContainerSet>
-			<!-- Create SequenceContainer for each packet that SDC will use. -->
-
-            <!-- Generate a `SequenceContainer` specifically for the CCSDSPacket header. Subsequently,
-            employ this `SequenceContainer` as the `BaseContainer` for all packets,as each packet
-            shares this common header. -->
-			<xtce:SequenceContainer name="CCSDSPacket">
+			<xtce:SequenceContainer name="CCSDSPacket" >
 				<xtce:EntryList>
 					<xtce:ParameterRefEntry parameterRef="VERSION" />
 					<xtce:ParameterRefEntry parameterRef="TYPE" />
@@ -242,19 +237,21 @@
 			</xtce:SequenceContainer>
 			<xtce:SequenceContainer name="UltraRawEventsPacket">
 				<xtce:BaseContainer containerRef="CCSDSPacket">
+					<!-- In this section, we introduce an if statement with the following logic:
+                    if `PKT_APID` is equal to a specific identifier, then the data will be unpacked using
+                    this particular packet definition. Same logic is used in all SequenceContainer after this. -->
 					<xtce:RestrictionCriteria>
 						<xtce:Comparison parameterRef="PKT_APID" value="896" useCalibratedValue="false" />
 					</xtce:RestrictionCriteria>
 				</xtce:BaseContainer>
 				<xtce:EntryList>
-					<xtce:ParameterRefEntry parameterRef="SHCOARSE"/>
-					<xtce:ParameterRefEntry parameterRef="Spare" />
-					<xtce:ParameterRefEntry parameterRef="Power_Cycle_Rq" />
-					<xtce:ParameterRefEntry parameterRef="Power_Off_Rq" />
-					<xtce:ParameterRefEntry parameterRef="Heater_Control_Enabled" />
-					<xtce:ParameterRefEntry parameterRef="Heater_1_State" />
-					<xtce:ParameterRefEntry parameterRef="Heater_2_State" />
-					<xtce:ParameterRefEntry parameterRef="Spare2" />
+					<xtce:ParameterRefEntry parameterRef="SHCOARSE" />
+					<xtce:ParameterRefEntry parameterRef="SID" />
+					<xtce:ParameterRefEntry parameterRef="SPIN" />
+					<xtce:ParameterRefEntry parameterRef="ABORTFLAG" />
+					<xtce:ParameterRefEntry parameterRef="STARTDELAY" />
+					<xtce:ParameterRefEntry parameterRef="COUNT" />
+					<xtce:ParameterRefEntry parameterRef="EVENTDATA" />
 				</xtce:EntryList>
 			</xtce:SequenceContainer>
 		</xtce:ContainerSet>
