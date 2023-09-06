@@ -17,14 +17,14 @@ def decom_ultra(ccsds_path, xtce_image_rates_path):
     data_packet_list = decom_ultra_packets(ccsds_path,  xtce_image_rates_path)
     return data_packet_list
 
-def test_ultra_decom_length(decom_test_data):
+def test_ultra_apid_881_length(decom_test_data):
     """Test if total packets in data file is correct"""
     total_packets = 22
     for packet in decom_test_data:
         print('hi')
     assert len(decom_test_data) == total_packets
 
-def test_ultra_counts(decom_ultra, xtce_image_rates_test_path):
+def test_ultra_apid_881(decom_ultra, xtce_image_rates_test_path):
     """Test if enumerated value is derived correctly"""
 
     df = pd.read_csv(xtce_image_rates_test_path, index_col='MET')

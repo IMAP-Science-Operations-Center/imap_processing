@@ -43,3 +43,11 @@ def xtce_image_rates_test_path(test_data_path):
     Any kernels that are available directly in the libera_utils/data directory should be sourced from there.
     """
     return test_data_path / 'L0' / 'ultra45_raw_sc_ultraimgrates_Ultra45_EM_SwRI_Cal_Run7_ThetaScan_20220530T225054.csv'
+
+@pytest.fixture
+def xtce_aux_test_path(test_data_path):
+    """Returns the spice subdirectory of the test_data directory
+    This directory contains kernel that are either generated (SPK and CK) or dynamically downloaded.
+    Any kernels that are available directly in the libera_utils/data directory should be sourced from there.
+    """
+    return test_data_path / 'L0' / 'ultra45_raw_sc_auxdata_Ultra45_EM_SwRI_Cal_Run7_ThetaScan_20220530T225054.csv'
