@@ -3,35 +3,6 @@
 	<xtce:Header date="2023-08-24T07:53:00MST" version="1.0" author="Laura Sandoval" />
 	<xtce:TelemetryMetaData>
 		<xtce:ParameterTypeSet>
-			<!-- In the ParameterTypeSet, define all the data types required for the data packets' definitions.
-            Each data field within the packet definition may have different lengths specified by the lengthInBits column.
-            Here, we define data types for all the unique values found in the lengthInBits column.
-
-            For example, consider the uint1 data type:
-                <xtce:IntegerParameterType name="uint1" signed="false">
-                    <xtce:UnitSet/>
-                    <xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned"/>
-                </xtce:IntegerParameterType>
-            In this case, the uint1 data type is an unsigned integer with a size of 1 bit.
-
-            For fields that have meanings based on the values they evaluate to, enumerated data types need to be created.
-
-            Here's an example:
-                <xtce:EnumeratedParameterType name="cem_nominal_enum" signed="false">
-                    <xtce:UnitSet/>
-                    <xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned"/>
-                    <xtce:EnumerationList>
-                        <xtce:Enumeration label="NOT_NOMINAL" value="0"/>
-                        <xtce:Enumeration label="NOMINAL" value="1"/>
-                    </xtce:EnumerationList>
-                </xtce:EnumeratedParameterType>
-
-            In this case, the cem_nominal_enum data type is an enumerated type with a size of 1 bit. It has two possible values:
-                "NOT_NOMINAL" with a value of 0 and "NOMINAL" with a value of 1.
-
-            By defining the appropriate data types within the ParameterTypeSet, you ensure that the data fields in the packet definitions
-            are properly represented and their meanings are correctly interpreted.
-            -->
 			<xtce:IntegerParameterType name="uint0" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="0" encoding="unsigned" />
 				<xtce:UnitSet />
@@ -174,9 +145,6 @@
             </xtce:BinaryParameterType>
 		</xtce:ParameterTypeSet>
 		<xtce:ParameterSet>
-			<!-- Within the ParameterSet, utilize the data types defined in the ParameterTypeSet to create variables
-            with their respective data types. -->
-
             <!--CCSDS Header Elements-->
 			<xtce:Parameter name="VERSION" parameterTypeRef="uint3">
 				<xtce:LongDescription>CCSDS Packet Version Number (always 0)</xtce:LongDescription>
@@ -199,7 +167,7 @@
 			<xtce:Parameter name="PKT_LEN" parameterTypeRef="uint16">
 				<xtce:LongDescription>CCSDS Packet Length (number of bytes after Packet length minus 1)</xtce:LongDescription>
 			</xtce:Parameter>
-			<!-- Start Ultra_Image_Rates metadata -->
+			<!-- Start metadata -->
 			<xtce:Parameter name="SHCOARSE" parameterTypeRef="uint32">
 				<xtce:LongDescription>CCSDS Packet Time Stamp (coarse time)</xtce:LongDescription>
 			</xtce:Parameter>
@@ -219,7 +187,7 @@
 				<xtce:LongDescription>Fast-compressed rate data</xtce:LongDescription>
 			</xtce:Parameter>
 		</xtce:ParameterSet>
-		<!-- End Ultra_IMAGE_RATES metadata -->
+		<!-- End metadata -->
 		<xtce:ContainerSet>
 			<xtce:SequenceContainer name="CCSDSPacket" abstract="true">
 				<xtce:EntryList>
@@ -234,9 +202,6 @@
 			</xtce:SequenceContainer>
 			<xtce:SequenceContainer name="UltraImageRatesPacket">
 				<xtce:BaseContainer containerRef="CCSDSPacket">
-					<!-- In this section, we introduce an if statement with the following logic:
-                    if `PKT_APID` is equal to a specific identifier, then the data will be unpacked using
-                    this particular packet definition. Same logic is used in all SequenceContainer after this. -->
 					<xtce:RestrictionCriteria>
 						<xtce:Comparison parameterRef="PKT_APID" value="881" useCalibratedValue="false" />
 					</xtce:RestrictionCriteria>

@@ -256,7 +256,7 @@
 			<xtce:Parameter name="PKT_LEN" parameterTypeRef="uint16">
 				<xtce:LongDescription>CCSDS Packet Length (number of bytes after Packet length minus 1)</xtce:LongDescription>
 			</xtce:Parameter>
-			<!-- Start Ultra_Image_Rates metadata -->
+			<!-- Start metadata -->
 			<xtce:Parameter name="SHCOARSE" parameterTypeRef="uint32">
 				<xtce:LongDescription>CCSDS Packet Time Stamp (coarse time)</xtce:LongDescription>
 			</xtce:Parameter>
@@ -356,10 +356,11 @@
 				<xtce:LongDescription>Spare</xtce:LongDescription>
 			</xtce:Parameter>
 		</xtce:ParameterSet>
-		<!-- End Ultra_IMAGE_RATES metadata -->
+		<!-- End metadata -->
 		<xtce:ContainerSet>
 			<xtce:SequenceContainer name="CCSDSPacket" abstract="true">
 				<xtce:EntryList>
+					<!--CCSDS Header Elements-->
 					<xtce:ParameterRefEntry parameterRef="VERSION" />
 					<xtce:ParameterRefEntry parameterRef="TYPE" />
 					<xtce:ParameterRefEntry parameterRef="SEC_HDR_FLG" />
@@ -371,9 +372,6 @@
 			</xtce:SequenceContainer>
 			<xtce:SequenceContainer name="UltraAuxiliaryPacket">
 				<xtce:BaseContainer containerRef="CCSDSPacket">
-					<!-- In this section, we introduce an if statement with the following logic:
-                    if `PKT_APID` is equal to a specific identifier, then the data will be unpacked using
-                    this particular packet definition. Same logic is used in all SequenceContainer after this. -->
 					<xtce:RestrictionCriteria>
 						<xtce:Comparison parameterRef="PKT_APID" value="880" useCalibratedValue="false" />
 					</xtce:RestrictionCriteria>

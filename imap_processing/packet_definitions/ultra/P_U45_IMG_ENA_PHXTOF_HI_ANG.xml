@@ -145,6 +145,7 @@
             </xtce:BinaryParameterType>
 		</xtce:ParameterTypeSet>
 		<xtce:ParameterSet>
+			<!--CCSDS Header Elements-->
 			<xtce:Parameter name="VERSION" parameterTypeRef="uint3">
 				<xtce:LongDescription>CCSDS Packet Version Number (always 0)</xtce:LongDescription>
 			</xtce:Parameter>
@@ -166,7 +167,7 @@
 			<xtce:Parameter name="PKT_LEN" parameterTypeRef="uint16">
 				<xtce:LongDescription>CCSDS Packet Length (number of bytes after Packet length minus 1)</xtce:LongDescription>
 			</xtce:Parameter>
-			<!-- Start Ultra_IMG_ENA_PHXTOF_HI_ANG metadata -->
+			<!-- Start metadata -->
 			<xtce:Parameter name="SHCOARSE" parameterTypeRef="uint32">
 				<xtce:LongDescription>CCSDS Packet Time Stamp (coarse time)</xtce:LongDescription>
 			</xtce:Parameter>
@@ -174,6 +175,7 @@
 				<xtce:LongDescription>Image Packet Data</xtce:LongDescription>
 			</xtce:Parameter>
 		</xtce:ParameterSet>
+		<!-- End metadata -->
 		<xtce:ContainerSet>
 			<xtce:SequenceContainer name="CCSDSPacket">
 				<xtce:EntryList>
