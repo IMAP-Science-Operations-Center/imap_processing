@@ -17,27 +17,25 @@ SPIKE               Github issue created to investigate different architecture d
 Requirements Overview
 ^^^^^^^^^^^^^^^^^^^^^
 
-Requriements Mapping
+Requirements Mapping
 ~~~~~~~~~~~~~~~~~~~~
 
-* Each level 4 requirement is mapped to at least one SIT.
-* Each level 4 requirement relevant to the upcoming SIT is decomposed into level 5 requirements that, together, cover the testing requirements of the SIT.
+* Each level 4 requirement is mapped to at least one Software Integration Test (SIT).
+* Each level 4 requirement mapped to the upcoming SIT is split into level 5 requirements. These level 5 requirements, taken together, should completely cover the parent level 4 requirements.
 * The level 5 requirement creation is incremental as we move through development for each SIT.
 * Each Level 5 requirement will have implementation tasks (sub-issues) that fully cover the Level 5 requirement and contain implementation specific information.
 
-.. image:: ../../_static/req-decomposition.png
+.. image:: ../_static/req-decomposition.png
    :alt: Requirement decomposition diagram
    :width: 1293
-   :height: 629
 
 Requirements Lifecycle
 ~~~~~~~~~~~~~~~~~~~~~~
 The below image shows an example of the lifecycle of a Level 4 requirement over the course of the project:
 
-.. image:: ../../_static/req-lifecycle.png
+.. image:: ../_static/req-lifecycle.png
    :alt: Requirement lifecycle diagram
    :width: 1631
-   :height: 621
 
 
 Overview of Managing Requirements in Github
@@ -48,7 +46,12 @@ Overview of Managing Requirements in Github
 * Requirement issues should track sub-issues that describe the implementation.
    * Unlike the L5 requirement issues, these issues close once the code is merged.
    * Sub-issues allow for better tracking of how SPIKES, implementation issues, and requirements are related to each other.  They also allow the use of L5 requirements as a starting point to see the design history of each feature.
-* If a re-design is proposed that impacts an already tested requirement, that requirement issue should be re-opened and any new SPIKEs or implementation tasks should be appended to the original task list.
+* If a re-design is proposed that impacts an already tested requirement, the issue should be re-opened
+   * In addition to re-opening the issue, the following steps should occur:
+      * The requirement issue should be re-opened 
+      * Any new SPIKEs or implementation tasks should be appended to the original task list.
+      * A comment should be added to the issue explaining why the issue was re-opened.
+      * The "Passed" label should be changed to "Re-test"
    * Doing this will keep a record of the evolution of implementation decisions that impacted the requirement and a record of the requirement status throughout the project.
    * This is useful for providing context to new team members or anyone who needs to remember why a particular design was chosen to satisfy a requirement vs another approach.
 * A backlog grooming will take place once per month to re-prioritize and clean up the issue board.
@@ -71,10 +74,9 @@ Creating level 5 requirements
 
 Example:
 
-.. image:: ../../_static/l5-label-example.png
+.. image:: ../_static/l5-label-example.png
    :alt: github requirement issue label example
    :width: 398
-   :height: 448
 
 Github Requirement Issue Lifecycle
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -83,7 +85,6 @@ The following diagram gives an example of the general information a level 5 requ
 .. image:: ../../_static/git-req-issue-lifecycle.png
    :alt: Git Requirement issue lifecycle diagram
    :width: 2161
-   :height: 901
 
 Adding and Tracking sub-issues
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -92,17 +93,16 @@ Each level 5 requirement will track all of the SPIKE and implementation issues a
 
 The task list can be created as follows:
 
-.. image:: ../../_static/sub-issue-selection.png
+.. image:: ../_static/sub-issue-selection.png
    :alt: Requirement decomposition diagram
    :width: 583
    :height: 280
 
 In the tasks section of the L5 requirement issue the task checkbox is created using :code:`- [ ]`, then typing the :code:`#` character will bring up a selection window with different issue numbers. The selection options will narrow down as you add numbers. Type the issue number you want to link or select the issue from the selection window. If you click the preview tab, you can see the sub-issue is properly linked.
 
-.. image:: ../../_static/sub-issue-preview.png
+.. image:: ../_static/sub-issue-preview.png
    :alt: Requirement decomposition diagram
    :width: 434
-   :height: 250
 
 Implementation issues in Github
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -117,4 +117,4 @@ SPIKE issues in Github
 ^^^^^^^^^^^^^^^^^^^^^^
 * SPIKE issues should be created using the SPIKE issue template
 * SPIKE issues are created to investigate architecture/implementation approaches in preparation for a team discussion.
-* Following SPIKE issue resolution, at least one implementation issue should be created for developement of the agreed solution.
+* Following SPIKE issue resolution, at least one implementation issue should be created for development of the agreed solution.
