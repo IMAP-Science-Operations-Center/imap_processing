@@ -29,12 +29,14 @@ class CCSDSParameters:
             {
                 "name": "SRC_SEQ_CTR",
                 "parameterTypeRef": "uint14",
-                "description": "CCSDS Packet Sequence Count (increments with each new packet)",
+                "description": "CCSDS Packet Sequence Count "
+                "(increments with each new packet)",
             },
             {
                 "name": "PKT_LEN",
                 "parameterTypeRef": "uint16",
-                "description": "CCSDS Packet Length (number of bytes after Packet length minus 1)",
+                "description": "CCSDS Packet Length "
+                "(number of bytes after Packet length minus 1)",
             },
             {
                 "name": "SHCOARSE",

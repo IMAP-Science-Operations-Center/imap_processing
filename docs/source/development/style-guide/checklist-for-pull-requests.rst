@@ -8,7 +8,9 @@ is only a guide; it should not be treated as a fully comprehensive, foolproof li
 and parts of it are subjective.
 
 If the contributor/reviewer can answer "yes" to all the following questions, then conceivably the proposed changes are
-acceptable and the PR can be reviewed and merged.
+acceptable and the PR can be reviewed.
+
+Before merging, make sure you have addressed all the comments in the review adhering to the :ref:`PR standards <pull-request-review-standards>`.
 
 
 .. _Checklist-for-Contributors:
@@ -71,6 +73,7 @@ Pertaining to the pull request:
 * Does the PR have proper labels?
 * Is the PR no longer a work in progress?
 * Do all the automated checks pass?
+* Does this post indicate the issue or explain the issue it is solving?
 
 
 .. _pertaining-to-the-code-review:
