@@ -98,6 +98,9 @@ class PacketParser:
 class RawDustEvent:
     HIGH_SAMPLE_FREQUENCY = 1 / 260
     LOW_SAMPLE_FREQUENCY = 1 / 4.0625
+    FOUR_BIT_MASK = 0b1111
+    SIX_BIT_MASK = 0b111111
+    TEN_BIT_MASK = 0b1111111111
 
     def __init__(self, header_packet):
         """
@@ -115,23 +118,32 @@ class RawDustEvent:
         )
 
         # Calculate the high sample and low sample trigger times
-        tof_delay = (
+        # This is a 32 bit number, consisting of:
+        # 2 bits padding
+        # 10 bits for low gain delay
+        # 10 bits for mid gain delay
+        # 10 bits for high gain delay
+        time_of_flight_sample_delay_field = (
             header_packet.data["IDX__TXHDRSAMPDELAY"].raw_value >> 2
-        )  # First two bits are padding
-        mask = 0b1111111111
-        hgdelay = (tof_delay >> 20) & mask
-        lspretrigblocks = (
-            header_packet.data["IDX__TXHDRBLOCKS"].derived_value >> 16
-        ) & 0b1111
-        hspretrigblocks = (
-            header_packet.data["IDX__TXHDRBLOCKS"].derived_value >> 6
-        ) & 0b111111
-
-        self.lstriggertime = (
-            8 * self.LOW_SAMPLE_FREQUENCY * (lspretrigblocks + 1)
-            - self.HIGH_SAMPLE_FREQUENCY * hgdelay
         )
-        self.hstriggertime = 512 * self.HIGH_SAMPLE_FREQUENCY * (hspretrigblocks + 1)
+        # Retrieve high gain delay
+        high_gain_delay = (time_of_flight_sample_delay_field >> 20) & self.TEN_BIT_MASK
+
+        num_low_sample_pretrigger_blocks = (
+            header_packet.data["IDX__TXHDRBLOCKS"].derived_value >> 16
+        ) & self.FOUR_BIT_MASK
+        num_high_sample_pretrigger_blocks = (
+            header_packet.data["IDX__TXHDRBLOCKS"].derived_value >> 6
+        ) & self.SIX_BIT_MASK
+
+        # Calculate the trigger times based on the above data
+        self.low_sample_trigger_time = (
+            8 * self.LOW_SAMPLE_FREQUENCY * (num_low_sample_pretrigger_blocks + 1)
+            - self.HIGH_SAMPLE_FREQUENCY * high_gain_delay
+        )
+        self.high_sample_trigger_time = (
+            512 * self.HIGH_SAMPLE_FREQUENCY * (num_high_sample_pretrigger_blocks + 1)
+        )
 
         # Log the rest of the header
         self._log_packet_info(header_packet)
@@ -149,109 +161,141 @@ class RawDustEvent:
         This function exists solely to log the parameters in the L0
         FPGA header packet for new dust events, nothing here should affect the data
         """
-        event_num = packet.data["IDX__SCI0EVTNUM"].derived_value
-        logging.debug(f"^*****Event header {event_num}******^")
+        event_number = packet.data["IDX__SCI0EVTNUM"].derived_value
+        logging.debug(f"^*****Event header {event_number}******^")
         logging.debug(
             f"Timestamp = {self.impact_time} seconds since epoch \
               (Midnight January 1st, 2012)"
         )
         # Extract the 17-22-bit integer (usually 8)
-        lspretrigblocks = (packet.data["IDX__TXHDRBLOCKS"].derived_value >> 16) & 0b1111
+        low_sample_pretrigger_blocks = (
+            packet.data["IDX__TXHDRBLOCKS"].derived_value >> 16
+        ) & self.FOUR_BIT_MASK
         # Extract the next 4-bit integer (usually 8)
-        lsposttrigblocks = (
+        low_sample_posttrigger_blocks = (
             packet.data["IDX__TXHDRBLOCKS"].derived_value >> 12
-        ) & 0b1111
+        ) & self.FOUR_BIT_MASK
         # Extract the next 6 bits integer (usually 32)
-        hspretrigblocks = (
+        high_sample_pretrigger_blocks = (
             packet.data["IDX__TXHDRBLOCKS"].derived_value >> 6
-        ) & 0b111111
+        ) & self.SIX_BIT_MASK
         # Extract the first 6 bits (usually 32)
-        hsposttrigblocks = (packet.data["IDX__TXHDRBLOCKS"].derived_value) & 0b111111
-        logging.debug("HS pre trig sampling blocks: " + str(hspretrigblocks))
-        logging.debug("LS pre trig sampling blocks: " + str(lspretrigblocks))
-        logging.debug("HS post trig sampling blocks: " + str(hsposttrigblocks))
-        logging.debug("LS post trig sampling blocks: " + str(lsposttrigblocks))
-        tof_delay = (
+        high_sample_posttrigger_blocks = (
+            packet.data["IDX__TXHDRBLOCKS"].derived_value
+        ) & self.SIX_BIT_MASK
+        logging.debug(
+            "High Sample pre trig sampling blocks: "
+            + str(high_sample_pretrigger_blocks)
+        )
+        logging.debug(
+            "Low Sample pre trig sampling blocks: " + str(low_sample_pretrigger_blocks)
+        )
+        logging.debug(
+            "High Sample post trig sampling blocks: "
+            + str(high_sample_posttrigger_blocks)
+        )
+        logging.debug(
+            "Low Sample post trig sampling blocks: "
+            + str(low_sample_posttrigger_blocks)
+        )
+
+        # Calculate the high sample and low sample trigger times
+        # This is a 32 bit number, consisting of:
+        # 2 bits padding
+        # 10 bits for low gain delay
+        # 10 bits for mid gain delay
+        # 10 bits for high gain delay
+        time_of_flight_sample_delay_field = (
             packet.data["IDX__TXHDRSAMPDELAY"].raw_value >> 2
-        )  # First two bits are padding
-        mask = 0b1111111111
-        lgdelay = (tof_delay) & mask
-        mgdelay = (tof_delay >> 10) & mask
-        hgdelay = (tof_delay >> 20) & mask
-        logging.debug(f"High gain delay = {hgdelay} samples.")
-        logging.debug(f"Mid gain delay = {mgdelay} samples.")
-        logging.debug(f"Low gain delay = {lgdelay} samples.")
-        if (
-            packet.data["IDX__TXHDRLSTRIGMODE"].derived_value != 0
-        ):  # If this was a LS (Target Low Gain) trigger
-            self.Triggerorigin = "LS"
+        )
+        # Retrieve the delays for the different triggers
+        low_gain_delay = (time_of_flight_sample_delay_field) & self.TEN_BIT_MASK
+        mid_gain_delay = (time_of_flight_sample_delay_field >> 10) & self.TEN_BIT_MASK
+        high_gain_delay = (time_of_flight_sample_delay_field >> 20) & self.TEN_BIT_MASK
+        logging.debug(f"High gain delay = {high_gain_delay} samples.")
+        logging.debug(f"Mid gain delay = {mid_gain_delay} samples.")
+        logging.debug(f"Low gain delay = {low_gain_delay} samples.")
+
+        # Determine which of the following triggered the dust event
+        low_sample_trigger_mode = packet.data["IDX__TXHDRLSTRIGMODE"].derived_value
+        low_gain_trigger_mode = packet.data["IDX__TXHDRLGTRIGMODE"].derived_value
+        mid_gain_trigger_mode = packet.data["IDX__TXHDRMGTRIGMODE"].derived_value
+        high_gain_trigger_mode = packet.data["IDX__TXHDRHGTRIGMODE"].derived_value
+        logging.debug("Packet low trigger mode = " + str(low_gain_trigger_mode))
+        logging.debug("Packet mid trigger mode = " + str(mid_gain_trigger_mode))
+        logging.debug("Packet high trigger mode = " + str(high_gain_trigger_mode))
+        if low_sample_trigger_mode:
             logging.debug("Low sampling trigger mode enabled.")
-        logging.debug(
-            "Packet low trigger mode = "
-            + str(packet.data["IDX__TXHDRLGTRIGMODE"].derived_value)
-        )
-        logging.debug(
-            "Packet mid trigger mode = "
-            + str(packet.data["IDX__TXHDRMGTRIGMODE"].derived_value)
-        )
-        logging.debug(
-            "Packet high trigger mode = "
-            + str(packet.data["IDX__TXHDRHGTRIGMODE"].derived_value)
-        )
-        if packet.data["IDX__TXHDRLGTRIGMODE"].derived_value != 0:
+        if low_gain_trigger_mode:
             logging.debug("Low gain TOF trigger mode enabled.")
-            self.Triggerorigin = "LG"
-        if packet.data["IDX__TXHDRMGTRIGMODE"].derived_value != 0:
+        if mid_gain_trigger_mode:
             logging.debug("Mid gain TOF trigger mode enabled.")
-            self.Triggerorigin = "MG"
-        if packet.data["IDX__TXHDRHGTRIGMODE"].derived_value != 0:
+        if high_gain_trigger_mode != 0:
             logging.debug("High gain trigger mode enabled.")
-            self.Triggerorigin = "HG"
-        logging.debug(
-            f"AID = {packet.data['IDX__SCI0AID'].derived_value}"
-        )  # Instrument event number
-        logging.debug(
-            f"Event number = {packet.data['IDX__SCI0EVTNUM'].raw_value}"
-        )  # Event number out of how many events constitute the file
-        logging.debug(
-            f"Rice compression enabled = {bool(packet.data['IDX__SCI0COMP'].raw_value)}"
-        )
+
+        # Determine unique event identifier
+        accountability_id = packet.data["IDX__SCI0AID"].derived_value
+        logging.debug(f"AID = {accountability_id}")
+        # Determine compression
+        compression = bool(packet.data["IDX__SCI0COMP"].raw_value)
+        logging.debug(f"Rice compression enabled = {compression}")
 
     def _parse_high_sample_waveform(self, waveform_raw: str):
         """
         Parse a binary string representing a high sample waveform
-        Data arrives in 10 bit chunks
+        Data arrives in 32 bit chunks, divided up into:
+            * 2 bits of padding
+            * 3x10 bits of integer data
+
+        The very last 4 numbers are bad usually, so remove those
         """
         w = bitstring.ConstBitStream(bin=waveform_raw)
         ints = []
         while w.pos < len(w):
             w.read("pad:2")  # skip 2
             ints += w.readlist(["uint:10"] * 3)
-        return ints[:-4]
+        return ints[:-4]  # Remove last 4 numbers
 
     def _parse_low_sample_waveform(self, waveform_raw: str):
         """
         Parse a binary string representing a low sample waveform
-        Data arrives in 12 bit chunks
+        Data arrives in 32 bit chunks, divided up into:
+            * 8 bits of padding
+            * 2x12 bits of integer data
         """
         w = bitstring.ConstBitStream(bin=waveform_raw)
         ints = []
         while w.pos < len(w):
-            w.read("pad:8")  # skip 2
+            w.read("pad:8")  # skip 8
             ints += w.readlist(["uint:12"] * 2)
         return ints
 
     def _calc_low_sample_resolution(self, num_samples: int):
+        """
+        Calculates the low sample time array based on the number
+        of samples of data taken
+
+        Multiply a linear array by the frequency
+        Subtract the calculated trigger time
+        """
         time_low_sr_init = np.linspace(0, num_samples, num_samples)
         time_low_sr_data = (
-            self.LOW_SAMPLE_FREQUENCY * time_low_sr_init - self.hstriggertime
+            self.LOW_SAMPLE_FREQUENCY * time_low_sr_init - self.high_sample_trigger_time
         )
         return time_low_sr_data
 
     def _calc_high_sample_resolution(self, num_samples: int):
+        """
+        Calculates the high sample time array based on the number
+        of samples of data taken
+
+        Multiply a linear array by the frequency
+        Subtract the calculated trigger time
+        """
         time_high_sr_init = np.linspace(0, num_samples, num_samples)
         time_high_sr_data = (
-            self.HIGH_SAMPLE_FREQUENCY * time_high_sr_init - self.lstriggertime
+            self.HIGH_SAMPLE_FREQUENCY * time_high_sr_init
+            - self.low_sample_trigger_time
         )
         return time_high_sr_data
 
