@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='UTF-8'?>
-<xtce:SpaceSystem xmlns:xtce="http://www.omg.org/space/xtce" name="Ultra-AuxPackets">
+<xtce:SpaceSystem xmlns:xtce="http://www.omg.org/space/xtce" name="P_U45_AUXILIARY">
 	<xtce:Header date="2023-08-24T07:53:00MST" version="1.0" author="Laura Sandoval" />
 	<xtce:TelemetryMetaData>
 		<xtce:ParameterTypeSet>

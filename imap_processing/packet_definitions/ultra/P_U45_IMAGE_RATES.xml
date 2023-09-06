@@ -234,6 +234,9 @@
 			</xtce:SequenceContainer>
 			<xtce:SequenceContainer name="UltraImageRatesPacket">
 				<xtce:BaseContainer containerRef="CCSDSPacket">
+					<!-- In this section, we introduce an if statement with the following logic:
+                    if `PKT_APID` is equal to a specific identifier, then the data will be unpacked using
+                    this particular packet definition. Same logic is used in all SequenceContainer after this. -->
 					<xtce:RestrictionCriteria>
 						<xtce:Comparison parameterRef="PKT_APID" value="881" useCalibratedValue="false" />
 					</xtce:RestrictionCriteria>

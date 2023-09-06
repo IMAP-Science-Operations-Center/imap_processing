@@ -168,7 +168,7 @@
                 <xtce:UnitSet/>
                 <xtce:BinaryDataEncoding bitOrder="mostSignificantBitFirst">
                     <xtce:SizeInBits>
-                        <xtce:FixedValue>166</xtce:FixedValue>
+                        <xtce:FixedValue>16600</xtce:FixedValue>
                     </xtce:SizeInBits>
                 </xtce:BinaryDataEncoding>
             </xtce:BinaryParameterType>
@@ -224,6 +224,11 @@
 		</xtce:ParameterSet>
 				<!-- End Ultra_RAW_EVENTS metadata -->
 		<xtce:ContainerSet>
+			<!-- Create SequenceContainer for each packet that SDC will use. -->
+
+            <!-- Generate a `SequenceContainer` specifically for the CCSDSPacket header. Subsequently,
+            employ this `SequenceContainer` as the `BaseContainer` for all packets,as each packet
+            shares this common header. -->
 			<xtce:SequenceContainer name="CCSDSPacket">
 				<xtce:EntryList>
 					<xtce:ParameterRefEntry parameterRef="VERSION" />
@@ -233,7 +238,6 @@
 					<xtce:ParameterRefEntry parameterRef="SEG_FLGS" />
 					<xtce:ParameterRefEntry parameterRef="SRC_SEQ_CTR" />
 					<xtce:ParameterRefEntry parameterRef="PKT_LEN" />
-					<xtce:ParameterRefEntry parameterRef="SHCOARSE" />
 				</xtce:EntryList>
 			</xtce:SequenceContainer>
 			<xtce:SequenceContainer name="UltraRawEventsPacket">
@@ -243,6 +247,7 @@
 					</xtce:RestrictionCriteria>
 				</xtce:BaseContainer>
 				<xtce:EntryList>
+					<xtce:ParameterRefEntry parameterRef="SHCOARSE"/>
 					<xtce:ParameterRefEntry parameterRef="Spare" />
 					<xtce:ParameterRefEntry parameterRef="Power_Cycle_Rq" />
 					<xtce:ParameterRefEntry parameterRef="Power_Off_Rq" />

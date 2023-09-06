@@ -1,8 +1,5 @@
-from imap_processing import decom, packet_definition_directory
+from imap_processing import decom
 import logging
-from bitstring import ReadError
-from space_packet_parser import parser, xtcedef
-import copy
 import xarray as xr
 import numpy as np
 
@@ -28,35 +25,34 @@ def log_decompression(value):
     else:
         return (4096 + m) << (e - 1)
 
+
 def decompress_binary(binary):
     """Decompress the given binary."""
     current_position = 0
     decompressed_values = []
+    width_bit = 5  # The bit width that describes the width of data in the block
 
     while current_position < len(binary):
         # Read the width of the block
-        width, current_position = read_n_bits(binary, 5, current_position)
+        width, current_position = read_n_bits(binary, width_bit, current_position)
 
         # If width is None, we don't have enough bits left
         if width is None:
             break
 
-        # Otherwise, keep reading values of size width until we've read a total of 16*width bits
-        # or until we reach the end of the binary.
-        total_bits_for_values = 16 * width
-        end_position = min(current_position + total_bits_for_values, len(binary))
-
-        while current_position < end_position:
-            # Make sure we have enough bits left to read the width
-            if end_position - current_position < width:
+        # For each block, read 16 values of the given width
+        for _ in range(16):
+            # Ensure there are enough bits left to read the width
+            if len(binary) - current_position < width:
                 break
+
             value, current_position = read_n_bits(binary, width, current_position)
 
-            # Log decompression
-            decompressed_value = log_decompression(value)
-            decompressed_values.append(decompressed_value)
+            # Log decompression and store the value
+            decompressed_values.append(log_decompression(value))
 
     return decompressed_values
+
 
 def decom_ultra_packets(packet_file: str, xtce: str):
     """
@@ -77,8 +73,7 @@ def decom_ultra_packets(packet_file: str, xtce: str):
         A list of all the unpacked data.
     """
 
-    xtce_document = f"{packet_definition_directory}ultra/{xtce}"
-    packets = decom.decom_packets(packet_file, xtce_document)
+    packets = decom.decom_packets(packet_file, xtce)
 
     met_data, sid_data, spin_data, abortflag_data, startdelay_data, fastdata_00_data = \
         [], [], [], [], [], []
@@ -91,18 +86,18 @@ def decom_ultra_packets(packet_file: str, xtce: str):
             abortflag_data.append(packet.data['ABORTFLAG'].derived_value)
             startdelay_data.append(packet.data['STARTDELAY'].derived_value)
             decompressed_data = decompress_binary(packet.data['FASTDATA_00'].raw_value)
-            fastdata_00_data.append(decompressed_data[:48])
+            fastdata_00_data.append(decompressed_data)
 
-    # Create Dataset directly with all data variables
+    fastdata_00_array = np.array(fastdata_00_data, dtype=object)
+
     ds = xr.Dataset({
         'sid_data': ('time', sid_data),
         'spin_data': ('time', spin_data),
         'abortflag_data': ('time', abortflag_data),
         'startdelay_data': ('time', startdelay_data),
-        'fastdata_00': (['time', 'measurement'], fastdata_00_data)
+        'fastdata_00': ('time', fastdata_00_array)
     }, coords={
         'time': met_data,
-        'measurement': np.arange(48)
     })
 
     return ds
