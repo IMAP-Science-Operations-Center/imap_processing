@@ -7,27 +7,26 @@ The SDC test plan is based on the `SOC Test Plan <https://lasp.colorado.edu/gala
 
 Software Inegration Test Timeline
 ---------------------------------
-====================== =============================================================================================================================
-Timeline               Step
-====================== =============================================================================================================================
-Start of development   SDC creates a SIT procedures page and adds/updates test steps throughout the development process
-~4 weeks prior to test SDC begins to finalize test steps
-~2 weeks prior to test SDC conducts a dry run of the test procedures, makes any necessary fixes, test step updates
-~1 week prior to test  SDC conducts a Test Readiness Review (TRR) to review the final version of the test procedures 
-Test                   SDC conducts the SIT
-~1 week after test     SDC reviews all failures and proposed fixes, decides on time for re-run of failed steps, and updates requirement test status
-~2 weeks after test    SDC finalizes the test report
-====================== =============================================================================================================================
+============================= =============================================================================================================================
+Timeline                      Step
+:ref:`Start of development`   Create a SIT procedures page and add/update test steps throughout the development process
+:ref:`~4 weeks prior to test` Begin to finalize test steps
+:ref:`~2 weeks prior to test` Conduct a dry run of the test procedures, makes any necessary fixes, test step updates
+:ref:`~1 week prior to test`  Conduct a Test Readiness Review (TRR) to review the final version of the test procedures 
+:ref:`Test`                   Conducts the SIT
+:ref:`~1 week after test`     Review all failures and proposed fixes, decide on time for re-run of failed steps, and update requirement test status
+:ref:`~2 weeks after test`    Finalize the test report
+============================= =============================================================================================================================
 
 Start of development
 ^^^^^^^^^^^^^^^^^^^^
 
-Over the course of development, the SDC adds steps to the SIT test procedures. This requires a coordinated effort among all SDC developers to document test steps as new features are introduced. Taking an incremental approach allows for better documentation as more complexity is added throughout the course of development. 
+Over the course of development, the SDC adds steps to the SIT test procedures. This requires a coordinated effort among all SDC developers to document test steps as new features are introduced. Taking an incremental approach allows for better documentation as more complexity is added throughout the course of development. For information on how the SDC tracks requirements in Github, please read the :ref:`Requirement and Issue Tracking <requirement-and-issue-tracking>` documentation.
 
 ~4 weeks prior to test
 ^^^^^^^^^^^^^^^^^^^^^^
 
-Finialization of test steps should begin about 4 weeks prior the the scheduled SIT. At this point, most of the features being tested in the SIT should be complete and the test steps should be mostly solidified. Finializing the test steps also requires a group effort among all SDC developers, but should be coordinated by the Test Director or Test Conductor.
+Finalization of test steps should begin about 4 weeks prior the the scheduled SIT. At this point, most of the features being tested in the SIT should be complete and the test steps should be mostly solidified. Finializing the test steps also requires a group effort among all SDC developers, but should be coordinated by the Test Director or Test Conductor.
 
 ~2 weeks prior to test
 ^^^^^^^^^^^^^^^^^^^^^^
