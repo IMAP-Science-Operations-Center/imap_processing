@@ -7,16 +7,16 @@ The SDC test plan is based on the `SOC Test Plan <https://lasp.colorado.edu/gala
 
 Software Inegration Test Timeline
 ---------------------------------
-============================= =============================================================================================================================
-Timeline                      Step
-`Start of development <start-development_>`   Create a SIT procedures page and add/update test steps throughout the development process
-`~4 weeks prior to test <4-weeks-prior_>` Begin to finalize test steps
-`~2 weeks prior to test <2-weeks-prior_>` Conduct a dry run of the test procedures, makes any necessary fixes, test step updates
-`~1 week prior to test <1-week-prior_>`  Conduct a Test Readiness Review (TRR) to review the final version of the test procedures 
-`Test <test_>`                   Conducts the SIT
-`~1 week after test <1-week-after_>`     Review all failures and proposed fixes, decide on time for re-run of failed steps, and update requirement test status
-`~2 weeks after test <2-weeks-after_>`    Finalize the test report
-============================= =============================================================================================================================
+=========================================== =============================================================================================================================
+Timeline                                    Step
+`Start of development <start-development_>` Create a SIT procedures page and add/update test steps throughout the development process
+`~4 weeks prior to test <4-weeks-prior_>`   Begin to finalize test steps
+`~2 weeks prior to test <2-weeks-prior_>`   Conduct a dry run of the test procedures, makes any necessary fixes, test step updates
+`~1 week prior to test <1-week-prior_>`     Conduct a Test Readiness Review (TRR) to review the final version of the test procedures 
+`Test <test_>`                              Conducts the SIT
+`~1 week after test <1-week-after_>`        Review all failures and proposed fixes, decide on time for re-run of failed steps, and update requirement test status
+`~2 weeks after test <2-weeks-after_>`      Finalize the test report
+=========================================== =============================================================================================================================
 
 .. _start-development
 Start of development
