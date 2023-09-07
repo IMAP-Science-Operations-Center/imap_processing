@@ -1,16 +1,20 @@
 # Standard
 import logging
+
+import numpy as np
+
 # Installed
 import xarray as xr
-import numpy as np
+
 # Local
 from imap_processing import decom
 
 logging.basicConfig(level=logging.INFO)
-
+#TODO: This is a work in progress. Hard-coded values will be removed.
 def read_n_bits(binary: str, n: int, current_position: int):
     """
-    Extract a specified number of bits from a binary string, starting from a given position.
+    Extract a specified number of bits from a binary string,
+    starting from a given position.
 
     Parameters
     ----------
@@ -24,8 +28,8 @@ def read_n_bits(binary: str, n: int, current_position: int):
     Returns
     -------
     value : int
-        The integer representation of the read bits or None if the end of the string is reached
-        before reading 'n' bits.
+        The integer representation of the read bits or None if the end of the
+        string is reached before reading 'n' bits.
     current_position + n
         - The updated position in the binary string after reading the bits.
     """
@@ -52,7 +56,8 @@ def log_decompression(value: int) -> int:
     int
         The decompressed integer value.
     """
-    # The exponent e, and mantissa, m are 4-bit and 12-bit unsigned integers respectively
+    # The exponent e, and mantissa, m are 4-bit and 12-bit unsigned integers
+    # respectively
     e = value >> 12  # Extract the 4 most significant bits for the exponent
     m = value & 0xFFF  # Extract the 12 least significant bits for the mantissa
 
@@ -64,7 +69,8 @@ def log_decompression(value: int) -> int:
 
 def decompress_binary(binary: str) -> list:
     """
-    Decompress a binary string based on block-width encoding and logarithmic compression.
+    Decompress a binary string based on block-width encoding and
+    logarithmic compression.
 
     This function interprets a binary string where the first 'width_bit' bits
     specifies the width of the following values. Each value is then extracted and

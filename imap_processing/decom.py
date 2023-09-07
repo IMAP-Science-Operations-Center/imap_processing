@@ -1,6 +1,10 @@
-from space_packet_parser import parser, xtcedef
+# Standard
 import logging
+
 from bitstring import ReadError
+
+# Installed
+from space_packet_parser import parser, xtcedef
 
 logging.basicConfig(level=logging.INFO)
 
@@ -9,7 +13,8 @@ def safe_packet_generator(packet_parser, binary_data):
     """
     Attempts to generate packets using the provided packet_parser.
     If a ReadError occurs during packet generation, logs the error and stops generation.
-    This could happen if we are reading off the end of the data (e.g. reading more bits than available)
+    This could happen if we are reading off the end of the data (e.g. reading more bits
+    than available)
 
     Parameters
     ----------
@@ -24,8 +29,7 @@ def safe_packet_generator(packet_parser, binary_data):
         The next packet parsed from the binary data.
     """
     try:
-        for packet in packet_parser.generator(binary_data):
-            yield packet
+        yield from packet_parser.generator(binary_data)
     except ReadError as e:
         logging.error(f"Error reading packet: {e}")
 
@@ -49,6 +53,7 @@ def decom_packets(packet_file: str, xtce_packet_definition: str):
     packet_parser = parser.PacketParser(packet_definition)
 
     with open(packet_file, "rb") as binary_data:
-        packets = [packet for packet in safe_packet_generator(packet_parser, binary_data)]
+        packets = [packet for packet in safe_packet_generator(
+            packet_parser, binary_data)]
 
     return packets
