@@ -133,24 +133,45 @@
 						<xtce:Comparison parameterRef="PKT_APID" value="1156" useCalibratedValue="false" />
 					</xtce:RestrictionCriteria>
 				</xtce:BaseContainer>
-				<xtce:EntryList>
-					<xtce:ParameterRefEntry parameterRef="Spin_Period" />
-					<xtce:ParameterRefEntry parameterRef="Acq_Start_Seconds" />
-					<xtce:ParameterRefEntry parameterRef="Acq_Start_Subseconds" />
-					<xtce:ParameterRefEntry parameterRef="Spare_00" />
-					<xtce:ParameterRefEntry parameterRef="Table_ID" />
-					<xtce:ParameterRefEntry parameterRef="Plan_ID" />
-					<xtce:ParameterRefEntry parameterRef="Plan_Step" />
-					<xtce:ParameterRefEntry parameterRef="View_ID" />
-					<xtce:ParameterRefEntry parameterRef="RGFO_Half_Spin" />
-					<xtce:ParameterRefEntry parameterRef="NSO_Half_Spin" />
-					<xtce:ParameterRefEntry parameterRef="Bias_Gain_Mode" />
-					<xtce:ParameterRefEntry parameterRef="Suspect" />
-					<xtce:ParameterRefEntry parameterRef="Compression" />
-					<xtce:ParameterRefEntry parameterRef="Byte_Count" />
-					<xtce:ParameterRefEntry parameterRef="Data" />
-				</xtce:EntryList>
+				<xtce:EntryList />
 			</xtce:SequenceContainer>
 		</xtce:ContainerSet>
+		<xtce:ContainerSet>
+			<xtce:SequenceContainer name="CCSDSPacket">
+				<xtce:EntryList>
+					<xtce:ParameterRefEntry parameterRef="VERSION" />
+					<xtce:ParameterRefEntry parameterRef="TYPE" />
+					<xtce:ParameterRefEntry parameterRef="SEC_HDR_FLG" />
+					<xtce:ParameterRefEntry parameterRef="PKT_APID" />
+					<xtce:ParameterRefEntry parameterRef="SEG_FLGS" />
+					<xtce:ParameterRefEntry parameterRef="SRC_SEQ_CTR" />
+					<xtce:ParameterRefEntry parameterRef="PKT_LEN" />
+					<xtce:ParameterRefEntry parameterRef="SHCOARSE" />
+				</xtce:EntryList>
+			</xtce:SequenceContainer>
+			<xtce:SequenceContainer name="CoDICESciencePacket">
+				<xtce:BaseContainer containerRef="CCSDSPacket">
+					<xtce:RestrictionCriteria>
+						<xtce:Comparison parameterRef="PKT_APID" value="1156" useCalibratedValue="false" />
+					</xtce:RestrictionCriteria>
+				</xtce:BaseContainer>
+				<xtce:EntryList />
+			</xtce:SequenceContainer>
+		</xtce:ContainerSet>
+		<xtce:ParameterRefEntry parameterRef="Spin_Period" />
+		<xtce:ParameterRefEntry parameterRef="Acq_Start_Seconds" />
+		<xtce:ParameterRefEntry parameterRef="Acq_Start_Subseconds" />
+		<xtce:ParameterRefEntry parameterRef="Spare_00" />
+		<xtce:ParameterRefEntry parameterRef="Table_ID" />
+		<xtce:ParameterRefEntry parameterRef="Plan_ID" />
+		<xtce:ParameterRefEntry parameterRef="Plan_Step" />
+		<xtce:ParameterRefEntry parameterRef="View_ID" />
+		<xtce:ParameterRefEntry parameterRef="RGFO_Half_Spin" />
+		<xtce:ParameterRefEntry parameterRef="NSO_Half_Spin" />
+		<xtce:ParameterRefEntry parameterRef="Bias_Gain_Mode" />
+		<xtce:ParameterRefEntry parameterRef="Suspect" />
+		<xtce:ParameterRefEntry parameterRef="Compression" />
+		<xtce:ParameterRefEntry parameterRef="Byte_Count" />
+		<xtce:ParameterRefEntry parameterRef="Data" />
 	</xtce:TelemetryMetaData>
 </xtce:SpaceSystem>
