@@ -173,13 +173,15 @@ class RawDustEvent:
 
         # Calculate the low and high sample trigger times based on the high gain delay
         # and the number of high sample/low sample pretrigger blocks
-        self.low_sample_trigger_time = (
+        low_sample_trigger_time = (
             8 * self.LOW_SAMPLE_RATE * (num_low_sample_pretrigger_blocks + 1)
             - self.HIGH_SAMPLE_RATE * high_gain_delay
         )
-        self.high_sample_trigger_time = (
+        high_sample_trigger_time = (
             512 * self.HIGH_SAMPLE_RATE * (num_high_sample_pretrigger_blocks + 1)
         )
+
+        return low_sample_trigger_time, high_sample_trigger_time
 
     def _log_packet_info(self, packet):
         """
