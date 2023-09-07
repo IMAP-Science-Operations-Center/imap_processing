@@ -36,6 +36,12 @@ def test_enumerated_apid_880(decom_test_data):
             assert packet.data["SPINPERIODSOURCE"].derived_value == 'NOMINAL'
         if packet.data["CATBEDHEATERFLAG"].raw_value == 0:
             assert packet.data["CATBEDHEATERFLAG"].derived_value == 'UNFLAGGED'
+
+
+def test_mode_apid_880(decom_test_data):
+    """Test if enumerated values derived correctly"""
+
+    for packet in decom_test_data:
         if packet.data["HWMODE"].raw_value == 0:
             assert packet.data["HWMODE"].derived_value == 'MODE0'
         elif packet.data["HWMODE"].raw_value == 1:
@@ -52,6 +58,7 @@ def test_enumerated_apid_880(decom_test_data):
             assert packet.data["RIGHTDEFLECTIONCHARGE"].derived_value == 'MODE0'
         elif packet.data["RIGHTDEFLECTIONCHARGE"].raw_value == 1:
             assert packet.data["RIGHTDEFLECTIONCHARGE"].derived_value == 'MODE1'
+
 
 def test_ultra_apid_880(decom_test_data, xtce_aux_test_path):
     """Test values for apid 880"""

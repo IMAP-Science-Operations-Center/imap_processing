@@ -45,12 +45,18 @@ def xtce_image_raw_events_path():
 def xtce_image_rates_test_path(test_data_path):
     """Returns the xtce image rates test data directory.
     """
-    return test_data_path / 'L0' / \
-        'ultra45_raw_sc_ultraimgrates_Ultra45_EM_SwRI_Cal_Run7_ThetaScan_20220530T225054.csv'
+    filename = (
+        "ultra45_raw_sc_ultraimgrates_Ultra45_EM_SwRI_Cal_Run7_ThetaScan_"
+        "20220530T225054.csv"
+    )
+    return test_data_path / 'L0' / filename
 
 @pytest.fixture()
 def xtce_aux_test_path(test_data_path):
     """Returns the xtce auxiliary test data directory.
     """
-    return test_data_path / 'L0' / \
-        'ultra45_raw_sc_auxdata_Ultra45_EM_SwRI_Cal_Run7_ThetaScan_20220530T225054.csv'
+    filename = (
+        "ultra45_raw_sc_auxdata_Ultra45_EM_SwRI_Cal_Run7_ThetaScan_"
+        "20220530T225054.csv"
+    )
+    return test_data_path / 'L0' / filename
