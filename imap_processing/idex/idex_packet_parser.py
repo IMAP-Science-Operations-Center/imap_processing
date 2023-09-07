@@ -3,8 +3,6 @@ import logging
 import bitstring
 import numpy as np
 import xarray as xr
-
-# from lasp_packets import xtcedef, parser
 from space_packet_parser import parser, xtcedef
 
 from imap_processing import packet_definition_directory
@@ -96,15 +94,23 @@ class PacketParser:
 
 
 class RawDustEvent:
-    HIGH_SAMPLE_FREQUENCY = 1 / 260
-    LOW_SAMPLE_FREQUENCY = 1 / 4.0625
+    # Constants
+    HIGH_SAMPLE_RATE = 1 / 260  # nanoseconds per sample
+    LOW_SAMPLE_RATE = 1 / 4.0625  # nanoseconds per sample
     FOUR_BIT_MASK = 0b1111
     SIX_BIT_MASK = 0b111111
     TEN_BIT_MASK = 0b1111111111
 
     def __init__(self, header_packet):
         """
-        This function initializes a raw dust event, with an FPGA Header Packet from IDEX
+        This function initializes a raw dust event, with an FPGA Header Packet from
+        IDEX.
+
+        The values we care about are:
+
+        self.impact_time - When the impact occured
+        self.low_sample_trigger_time - When the low sample stuff actually triggered
+        self.high_sample_trigger_time - When the high sample stuff actually triggered
 
         Parameters:
             header_packet:  The FPGA metadata event header
@@ -112,41 +118,12 @@ class RawDustEvent:
         """
 
         # Calculate the impact time in seconds since Epoch
-        self.impact_time = (
-            header_packet.data["SHCOARSE"].derived_value
-            + TWENTY_MICROSECONDS * header_packet.data["SHFINE"].derived_value
-        )
+        self.impact_time = self._calc_impact_time(header_packet)
 
-        # Calculate the high sample and low sample trigger times
-        # This is a 32 bit number, consisting of:
-        # 2 bits padding
-        # 10 bits for low gain delay
-        # 10 bits for mid gain delay
-        # 10 bits for high gain delay
-        time_of_flight_sample_delay_field = (
-            header_packet.data["IDX__TXHDRSAMPDELAY"].raw_value >> 2
-        )
-        # Retrieve high gain delay
-        high_gain_delay = (time_of_flight_sample_delay_field >> 20) & self.TEN_BIT_MASK
-
-        num_low_sample_pretrigger_blocks = (
-            header_packet.data["IDX__TXHDRBLOCKS"].derived_value >> 16
-        ) & self.FOUR_BIT_MASK
-        num_high_sample_pretrigger_blocks = (
-            header_packet.data["IDX__TXHDRBLOCKS"].derived_value >> 6
-        ) & self.SIX_BIT_MASK
-
-        # Calculate the trigger times based on the above data
-        self.low_sample_trigger_time = (
-            8 * self.LOW_SAMPLE_FREQUENCY * (num_low_sample_pretrigger_blocks + 1)
-            - self.HIGH_SAMPLE_FREQUENCY * high_gain_delay
-        )
-        self.high_sample_trigger_time = (
-            512 * self.HIGH_SAMPLE_FREQUENCY * (num_high_sample_pretrigger_blocks + 1)
-        )
-
-        # Log the rest of the header
-        self._log_packet_info(header_packet)
+        (
+            self.low_sample_trigger_time,
+            self.high_sample_trigger_time,
+        ) = self._calc_sample_trigger_times(header_packet)
 
         # Initialize the binary data received from future packets
         self.TOF_High_bits = ""
@@ -155,6 +132,54 @@ class RawDustEvent:
         self.Target_Low_bits = ""
         self.Target_High_bits = ""
         self.Ion_Grid_bits = ""
+
+        # Log the rest of the header
+        self._log_packet_info(header_packet)
+
+    def _calc_impact_time(self, packet):
+        """
+        This calculates the number of seconds since Jan 1 2012
+        """
+        # Number of seconds here
+        seconds_since_epoch = packet.data["SHCOARSE"].derived_value
+        # Number of 20 microsecond "ticks" since the last second
+        num_of_20_microseconds = packet.data["SHFINE"].derived_value
+
+        return seconds_since_epoch + TWENTY_MICROSECONDS * num_of_20_microseconds
+
+    def _calc_sample_trigger_times(self, packet):
+        """
+        Calculate the high sample and low sample trigger times from a header packet
+        """
+
+        # This is a 32 bit number, consisting of:
+        # 2 bits padding
+        # 10 bits for low gain delay
+        # 10 bits for mid gain delay
+        # 10 bits for high gain delay
+        time_of_flight_sample_delay_field = (
+            packet.data["IDX__TXHDRSAMPDELAY"].raw_value >> 2
+        )
+        # Retrieve high gain delay from above number
+        high_gain_delay = (time_of_flight_sample_delay_field >> 20) & self.TEN_BIT_MASK
+
+        # Retrieve number of low/high sample pretrigger blocks
+        num_low_sample_pretrigger_blocks = (
+            packet.data["IDX__TXHDRBLOCKS"].derived_value >> 6
+        ) & self.SIX_BIT_MASK
+        num_high_sample_pretrigger_blocks = (
+            packet.data["IDX__TXHDRBLOCKS"].derived_value >> 16
+        ) & self.FOUR_BIT_MASK
+
+        # Calculate the low and high sample trigger times based on the high gain delay
+        # and the number of high sample/low sample pretrigger blocks
+        self.low_sample_trigger_time = (
+            8 * self.LOW_SAMPLE_RATE * (num_low_sample_pretrigger_blocks + 1)
+            - self.HIGH_SAMPLE_RATE * high_gain_delay
+        )
+        self.high_sample_trigger_time = (
+            512 * self.HIGH_SAMPLE_RATE * (num_high_sample_pretrigger_blocks + 1)
+        )
 
     def _log_packet_info(self, packet):
         """
@@ -167,22 +192,20 @@ class RawDustEvent:
             f"Timestamp = {self.impact_time} seconds since epoch \
               (Midnight January 1st, 2012)"
         )
-        # Extract the 17-22-bit integer (usually 8)
-        low_sample_pretrigger_blocks = (
-            packet.data["IDX__TXHDRBLOCKS"].derived_value >> 16
-        ) & self.FOUR_BIT_MASK
-        # Extract the next 4-bit integer (usually 8)
+        # Extract the number of blocks, pre and post trigger
+        # Extract the first six bits
         low_sample_posttrigger_blocks = (
-            packet.data["IDX__TXHDRBLOCKS"].derived_value >> 12
-        ) & self.FOUR_BIT_MASK
-        # Extract the next 6 bits integer (usually 32)
-        high_sample_pretrigger_blocks = (
-            packet.data["IDX__TXHDRBLOCKS"].derived_value >> 6
-        ) & self.SIX_BIT_MASK
-        # Extract the first 6 bits (usually 32)
-        high_sample_posttrigger_blocks = (
             packet.data["IDX__TXHDRBLOCKS"].derived_value
         ) & self.SIX_BIT_MASK
+        low_sample_pretrigger_blocks = (
+            packet.data["IDX__TXHDRBLOCKS"].derived_value >> 6
+        ) & self.SIX_BIT_MASK
+        high_sample_posttrigger_blocks = (
+            packet.data["IDX__TXHDRBLOCKS"].derived_value >> 12
+        ) & self.FOUR_BIT_MASK
+        high_sample_pretrigger_blocks = (
+            packet.data["IDX__TXHDRBLOCKS"].derived_value >> 16
+        ) & self.FOUR_BIT_MASK
         logging.debug(
             "High Sample pre trig sampling blocks: "
             + str(high_sample_pretrigger_blocks)
@@ -275,12 +298,12 @@ class RawDustEvent:
         Calculates the low sample time array based on the number
         of samples of data taken
 
-        Multiply a linear array by the frequency
+        Multiply a linear array by the sample rate
         Subtract the calculated trigger time
         """
         time_low_sr_init = np.linspace(0, num_samples, num_samples)
         time_low_sr_data = (
-            self.LOW_SAMPLE_FREQUENCY * time_low_sr_init - self.high_sample_trigger_time
+            self.LOW_SAMPLE_RATE * time_low_sr_init - self.low_sample_trigger_time
         )
         return time_low_sr_data
 
@@ -289,13 +312,12 @@ class RawDustEvent:
         Calculates the high sample time array based on the number
         of samples of data taken
 
-        Multiply a linear array by the frequency
+        Multiply a linear array by the sample rate
         Subtract the calculated trigger time
         """
         time_high_sr_init = np.linspace(0, num_samples, num_samples)
         time_high_sr_data = (
-            self.HIGH_SAMPLE_FREQUENCY * time_high_sr_init
-            - self.low_sample_trigger_time
+            self.HIGH_SAMPLE_RATE * time_high_sr_init - self.high_sample_trigger_time
         )
         return time_high_sr_data
 
