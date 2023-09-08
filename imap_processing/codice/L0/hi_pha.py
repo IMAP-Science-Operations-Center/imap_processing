@@ -8,7 +8,7 @@ from tools.xtce_generation.telemetry_generator import TelemetryGenerator
 def main():
     packet_name = "P_COD_HI_PHA"
     path_to_excel_file = (
-        "/Users/gamo6782/Desktop/IMAP/TLM_COD_20230629-110638(update).xlsx"
+        "/Users/maha7656/Documents/code/imap/TLM_COD_20230629-110638.xlsx"
     )
     apid = "1169"
     sci_byte = 276480
@@ -23,7 +23,9 @@ def main():
     generator = TelemetryGenerator(packet_name, path_to_excel_file, apid, sci_byte, pkt)
 
     # Generate the telemetry XML with the provided output path
-    generator.generate_telemetry_xml(output_xml_path)
+    generator.generate_telemetry_xml(
+        output_xml_path, ["Data", "EventData"], "CoDICESciencePacket"
+    )
 
 
 if __name__ == "__main__":
