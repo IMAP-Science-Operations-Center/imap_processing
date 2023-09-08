@@ -3,42 +3,45 @@
 	<xtce:Header date="2023-09" version="1.0" author="IMAP SDC" />
 	<xtce:TelemetryMetaData>
 		<xtce:ParameterTypeSet>
-			<xtce:IntegerParameterType name="uint3" signed="false">
+			<xtce:ParameterType name="uint3" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="3" encoding="unsigned" />
-			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="uint1" signed="false">
+			</xtce:ParameterType>
+			<xtce:ParameterType name="uint1" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
-			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="uint11" signed="false">
+			</xtce:ParameterType>
+			<xtce:ParameterType name="uint11" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="11" encoding="unsigned" />
-			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="uint2" signed="false">
+			</xtce:ParameterType>
+			<xtce:ParameterType name="uint2" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="2" encoding="unsigned" />
-			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="uint14" signed="false">
+			</xtce:ParameterType>
+			<xtce:ParameterType name="uint14" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="14" encoding="unsigned" />
-			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="uint16" signed="false">
+			</xtce:ParameterType>
+			<xtce:ParameterType name="uint16" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="16" encoding="unsigned" />
-			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="uint32" signed="false">
+			</xtce:ParameterType>
+			<xtce:ParameterType name="uint32" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="32" encoding="unsigned" />
-			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="uint20" signed="false">
+			</xtce:ParameterType>
+			<xtce:ParameterType name="uint20" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="20" encoding="unsigned" />
-			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="uint12" signed="false">
+			</xtce:ParameterType>
+			<xtce:ParameterType name="uint12" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned" />
-			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="uint4" signed="false">
+			</xtce:ParameterType>
+			<xtce:ParameterType name="uint4" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="4" encoding="unsigned" />
-			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="uint6" signed="false">
+			</xtce:ParameterType>
+			<xtce:ParameterType name="uint6" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="6" encoding="unsigned" />
-			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="uint24" signed="false">
+			</xtce:ParameterType>
+			<xtce:ParameterType name="uint24" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="24" encoding="unsigned" />
-			</xtce:IntegerParameterType>
+			</xtce:ParameterType>
+			<xtce:ParameterType name="uint37748736" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="37748736" encoding="unsigned" />
+			</xtce:ParameterType>
 			<xtce:ArrayParameterType name="BYTE" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="37748736" encoding="unsigned" />
 			</xtce:ArrayParameterType>
@@ -133,24 +136,45 @@
 						<xtce:Comparison parameterRef="PKT_APID" value="1157" useCalibratedValue="false" />
 					</xtce:RestrictionCriteria>
 				</xtce:BaseContainer>
-				<xtce:EntryList>
-					<xtce:ParameterRefEntry parameterRef="Spin_Period" />
-					<xtce:ParameterRefEntry parameterRef="Acq_Start_Seconds" />
-					<xtce:ParameterRefEntry parameterRef="Acq_Start_Subseconds" />
-					<xtce:ParameterRefEntry parameterRef="Spare_00" />
-					<xtce:ParameterRefEntry parameterRef="Table_ID" />
-					<xtce:ParameterRefEntry parameterRef="Plan_ID" />
-					<xtce:ParameterRefEntry parameterRef="Plan_Step" />
-					<xtce:ParameterRefEntry parameterRef="View_ID" />
-					<xtce:ParameterRefEntry parameterRef="RGFO_Half_Spin" />
-					<xtce:ParameterRefEntry parameterRef="NSO_Half_Spin" />
-					<xtce:ParameterRefEntry parameterRef="Bias_Gain_Mode" />
-					<xtce:ParameterRefEntry parameterRef="Suspect" />
-					<xtce:ParameterRefEntry parameterRef="Compression" />
-					<xtce:ParameterRefEntry parameterRef="Byte_Count" />
-					<xtce:ParameterRefEntry parameterRef="Data" />
-				</xtce:EntryList>
+				<xtce:EntryList />
 			</xtce:SequenceContainer>
 		</xtce:ContainerSet>
+		<xtce:ContainerSet>
+			<xtce:SequenceContainer name="CCSDSPacket">
+				<xtce:EntryList>
+					<xtce:ParameterRefEntry parameterRef="VERSION" />
+					<xtce:ParameterRefEntry parameterRef="TYPE" />
+					<xtce:ParameterRefEntry parameterRef="SEC_HDR_FLG" />
+					<xtce:ParameterRefEntry parameterRef="PKT_APID" />
+					<xtce:ParameterRefEntry parameterRef="SEG_FLGS" />
+					<xtce:ParameterRefEntry parameterRef="SRC_SEQ_CTR" />
+					<xtce:ParameterRefEntry parameterRef="PKT_LEN" />
+					<xtce:ParameterRefEntry parameterRef="SHCOARSE" />
+				</xtce:EntryList>
+			</xtce:SequenceContainer>
+			<xtce:SequenceContainer name="CoDICESciencePacket">
+				<xtce:BaseContainer containerRef="CCSDSPacket">
+					<xtce:RestrictionCriteria>
+						<xtce:Comparison parameterRef="PKT_APID" value="1157" useCalibratedValue="false" />
+					</xtce:RestrictionCriteria>
+				</xtce:BaseContainer>
+				<xtce:EntryList />
+			</xtce:SequenceContainer>
+		</xtce:ContainerSet>
+		<xtce:ParameterRefEntry parameterRef="Spin_Period" />
+		<xtce:ParameterRefEntry parameterRef="Acq_Start_Seconds" />
+		<xtce:ParameterRefEntry parameterRef="Acq_Start_Subseconds" />
+		<xtce:ParameterRefEntry parameterRef="Spare_00" />
+		<xtce:ParameterRefEntry parameterRef="Table_ID" />
+		<xtce:ParameterRefEntry parameterRef="Plan_ID" />
+		<xtce:ParameterRefEntry parameterRef="Plan_Step" />
+		<xtce:ParameterRefEntry parameterRef="View_ID" />
+		<xtce:ParameterRefEntry parameterRef="RGFO_Half_Spin" />
+		<xtce:ParameterRefEntry parameterRef="NSO_Half_Spin" />
+		<xtce:ParameterRefEntry parameterRef="Bias_Gain_Mode" />
+		<xtce:ParameterRefEntry parameterRef="Suspect" />
+		<xtce:ParameterRefEntry parameterRef="Compression" />
+		<xtce:ParameterRefEntry parameterRef="Byte_Count" />
+		<xtce:ParameterRefEntry parameterRef="Data" />
 	</xtce:TelemetryMetaData>
 </xtce:SpaceSystem>
