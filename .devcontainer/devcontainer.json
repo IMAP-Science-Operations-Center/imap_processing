@@ -24,7 +24,7 @@
 
 				// use the active venv
 				// "python.defaultInterpreterPath": ".venv/bin/python3"
-			},
+			}
 		}
 	}
 }
