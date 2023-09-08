@@ -1,4 +1,5 @@
 import xml.etree.ElementTree as Et
+from datetime import datetime
 
 import pandas as pd
 
@@ -41,6 +42,9 @@ class TelemetryGenerator:
         # Fill missing values with '-*-'
         pkt.fillna("", inplace=True)
 
+        # Get the current date and time
+        current_date = datetime.now().strftime("%Y-%m")
+
         # Create the root element and add namespaces
         root = Et.Element("{http://www.omg.org/space}SpaceSystem")
         root.attrib["name"] = self.packet_name
@@ -48,7 +52,7 @@ class TelemetryGenerator:
         # Create the Header element with attributes 'date', 'version', and 'author'
         # Versioning is used to keep track of changes to the XML file.
         header = Et.SubElement(root, "{http://www.omg.org/space}Header")
-        header.attrib["date"] = "2023-09"
+        header.attrib["date"] = current_date
         header.attrib["version"] = "1.0"
         header.attrib["author"] = "IMAP SDC"
 
@@ -115,6 +119,8 @@ class TelemetryGenerator:
     ):
         """
         Create parameter types based on 'dataType' for the unique 'lengthInBits' values.
+        This will loop through the unique lengths and create a ParameterType element
+        for each length representing a UINT type.
 
         Parameters:
         - parameter_type_set: The ParameterTypeSet element where parameter types are.
@@ -151,19 +157,23 @@ class TelemetryGenerator:
             encoding.attrib["sizeInBits"] = str(size)
             encoding.attrib["encoding"] = "unsigned"
 
-            # Create ArrayParameterType if parameter_type_ref is "BYTE"
+            # Create BinaryParameterType if parameter_type_ref is "BYTE"
             if parameter_type_ref == "BYTE":
-                array_parameter_type = Et.SubElement(
-                    parameter_type_set, "xtce:ArrayParameterType"
+                binary_parameter_type = Et.SubElement(
+                    parameter_type_set, "xtce:BinaryParameterType"
                 )
-                array_parameter_type.attrib["name"] = parameter_type_ref
-                array_parameter_type.attrib["signed"] = "false"
+                binary_parameter_type.attrib["name"] = parameter_type_ref
 
-                encoding = Et.SubElement(
-                    array_parameter_type, "xtce:IntegerDataEncoding"
+                Et.SubElement(binary_parameter_type, "xtce:UnitSet")
+
+                binary_data_encoding = Et.SubElement(
+                    binary_parameter_type, "xtce:BinaryDataEncoding"
                 )
-                encoding.attrib["sizeInBits"] = str(sci_byte)
-                encoding.attrib["encoding"] = "unsigned"
+                binary_data_encoding.attrib["bitOrder"] = "mostSignificantBitFirst"
+
+                size_in_bits = Et.SubElement(binary_data_encoding, "xtce:SizeInBits")
+                fixed_value = Et.SubElement(size_in_bits, "xtce:FixedValue")
+                fixed_value.text = str(sci_byte)  # Set the size in bits to sci_byte
 
         return parameter_type_set
 
@@ -237,11 +247,9 @@ class TelemetryGenerator:
     def add_science_parameters(self, science_container, pkt):
         """
         Add ParameterRefEntry elements for SciencePacket.
-
         Parameters:
         - science_container: The SciencePacket SequenceContainer element.
         - pkt: The DataFrame containing packet data.
-
         Returns:
         - codice_science_container: The updated SciencePacket
         SequenceContainer element.
@@ -325,12 +333,8 @@ class TelemetryGenerator:
         telemetry_metadata = self.create_container_set(
             telemetry_metadata, CCSDSParameters().parameters, self.apid
         )
-        codice_science_container = self.create_container_set(
-            telemetry_metadata, CCSDSParameters().parameters, self.apid
-        )
-        codice_science_container = self.add_science_parameters(
-            codice_science_container, self.pkt
-        )
+        self.add_science_parameters(telemetry_metadata, self.pkt)
+
         parameter_set = self.create_parameters_from_dataframe(parameter_set, self.pkt)
 
         # Create the XML tree and save the document

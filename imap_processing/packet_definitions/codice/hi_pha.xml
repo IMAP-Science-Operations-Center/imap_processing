@@ -36,9 +36,14 @@
 			<xtce:ParameterType name="uint276480" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="276480" encoding="unsigned" />
 			</xtce:ParameterType>
-			<xtce:ArrayParameterType name="BYTE" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="276480" encoding="unsigned" />
-			</xtce:ArrayParameterType>
+			<xtce:BinaryParameterType name="BYTE">
+				<xtce:UnitSet />
+				<xtce:BinaryDataEncoding bitOrder="mostSignificantBitFirst">
+					<xtce:SizeInBits>
+						<xtce:FixedValue>276480</xtce:FixedValue>
+					</xtce:SizeInBits>
+				</xtce:BinaryDataEncoding>
+			</xtce:BinaryParameterType>
 		</xtce:ParameterTypeSet>
 		<xtce:ParameterSet>
 			<xtce:Parameter name="VERSION" parameterTypeRef="uint3">
@@ -99,28 +104,6 @@
 				<xtce:LongDescription>Event Data</xtce:LongDescription>
 			</xtce:Parameter>
 		</xtce:ParameterSet>
-		<xtce:ContainerSet>
-			<xtce:SequenceContainer name="CCSDSPacket">
-				<xtce:EntryList>
-					<xtce:ParameterRefEntry parameterRef="VERSION" />
-					<xtce:ParameterRefEntry parameterRef="TYPE" />
-					<xtce:ParameterRefEntry parameterRef="SEC_HDR_FLG" />
-					<xtce:ParameterRefEntry parameterRef="PKT_APID" />
-					<xtce:ParameterRefEntry parameterRef="SEG_FLGS" />
-					<xtce:ParameterRefEntry parameterRef="SRC_SEQ_CTR" />
-					<xtce:ParameterRefEntry parameterRef="PKT_LEN" />
-					<xtce:ParameterRefEntry parameterRef="SHCOARSE" />
-				</xtce:EntryList>
-			</xtce:SequenceContainer>
-			<xtce:SequenceContainer name="CoDICESciencePacket">
-				<xtce:BaseContainer containerRef="CCSDSPacket">
-					<xtce:RestrictionCriteria>
-						<xtce:Comparison parameterRef="PKT_APID" value="1169" useCalibratedValue="false" />
-					</xtce:RestrictionCriteria>
-				</xtce:BaseContainer>
-				<xtce:EntryList />
-			</xtce:SequenceContainer>
-		</xtce:ContainerSet>
 		<xtce:ContainerSet>
 			<xtce:SequenceContainer name="CCSDSPacket">
 				<xtce:EntryList>
