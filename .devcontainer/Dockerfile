@@ -2,7 +2,7 @@
 FROM mcr.microsoft.com/devcontainers/python:3.11
 RUN apt-get update && export DEBIAN_FRONTEND=noninteractive && apt-get install -y firefox-esr libgtk-3-dev
 
-RUN pip install poetry
+RUN pip install poetry ipython
 
 # use pyenv to install all the other versions as the vscode user
 ARG PYTHON_VERSIONS="3.9 3.10 3.11"
