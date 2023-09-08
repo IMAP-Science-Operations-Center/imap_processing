@@ -1,6 +1,6 @@
 import pytest
 
-from imap_processing.swe import decom_swe
+from imap_processing.swe.l0 import decom_swe
 
 
 @pytest.fixture(scope="session")
