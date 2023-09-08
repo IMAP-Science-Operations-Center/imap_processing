@@ -1,10 +1,7 @@
 {
-	"name": "Hello",
+	"name": "imap_processing",
  	"build": {
-		"dockerfile": "Dockerfile",
-		"args": {
-			"VARIANT": "bullseye"
-		}
+		"dockerfile": "Dockerfile"
 	},
 	"features": {
 		"ghcr.io/devcontainers/features/desktop-lite:1": {
@@ -19,7 +16,15 @@
 		"vscode": {
 			"extensions": [
 				"ms-python.python"
-			]
+			],
+			// Set *default* container specific settings.json values on container create.
+			"settings": {
+				// not using venvs? uncomment this
+				"python.defaultInterpreterPath": "/usr/local/bin/python"
+
+				// use the active venv
+				// "python.defaultInterpreterPath": ".venv/bin/python3"
+			},
 		}
 	}
 }
