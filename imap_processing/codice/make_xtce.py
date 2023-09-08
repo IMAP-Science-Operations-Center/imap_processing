@@ -217,7 +217,7 @@ if __name__ == "__main__":
     Et.indent(tree, space="\t", level=0)
 
     # Save the XML document to a file
-    output_xml_path = "L0/p_cod_aut_test.xml"
+    output_xml_path = "L0/example_xtce.xml"
     tree.write(output_xml_path, encoding="utf-8", xml_declaration=True)
 
     # Read and modify the XML file contents
