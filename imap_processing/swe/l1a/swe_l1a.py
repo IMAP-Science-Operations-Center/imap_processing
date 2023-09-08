@@ -42,14 +42,19 @@ def uncompress_counts(cem_count):
         12: {"base": 5120, "step_size": 256},
         13: {"base": 9216, "step_size": 512},
         14: {"base": 17408, "step_size": 1024},
-        15: {"base": 33792, "step_size": 2048}
+        15: {"base": 33792, "step_size": 2048},
     }
 
     # uncompression formula from SWE algorithm document CN102D-D0001 and page 16.
     # N = base[index] + multi * step_size[index] + (step_size[index] - 1) / 2
-    # NOTE: for (step_size[index] - 1) / 2, we only keep the whole number part of the quotient
+    # NOTE: for (step_size[index] - 1) / 2, we only keep the whole number part of
+    # the quotient
 
-    return uncompress_table[index]["base"] + (multi * uncompress_table[index]["step_size"]) + ((uncompress_table[index]["step_size"] - 1) // 2)
+    return (
+        uncompress_table[index]["base"]
+        + (multi * uncompress_table[index]["step_size"])
+        + ((uncompress_table[index]["step_size"] - 1) // 2)
+    )
 
 
 def read_metadata(data_packet):
@@ -71,9 +76,7 @@ def read_metadata(data_packet):
     for key, value in data_packet.data.items():
         if key != "SCIENCE_DATA":
             metadata[key] = (
-                value.raw_value
-                if value.derived_value is None
-                else value.derived_value
+                value.raw_value if value.derived_value is None else value.derived_value
             )
 
     return metadata
@@ -86,18 +89,21 @@ def swe_l1a(packet_file: str):
         - Store metadata and data in attrs and DataArray of xarray respectively
         - Save uncompress data to cdf file
 
-    SWE collects data for 15 seconds. In each second, it collect data for 12 energy steps and at each energy step,
-    it collects 7 data from each 7 CEMs.
+    SWE collects data for 15 seconds. In each second, it collect data for 12
+    energy steps and at each energy step, it collects 7 data from each 7 CEMs.
 
-    Each L1A data from each packet will have this shape: 15 rows, 12 columns, and each cell in 15 x 12 table contains
-    7 element array. These dimension maps to this:
+    Each L1A data from each packet will have this shape: 15 rows, 12 columns,
+    and each cell in 15 x 12 table contains 7 element array.
+    These dimension maps to this:
         15 rows --> 15 seconds
         12 column --> 12 energy steps in each second
         7 element --> 7 CEMs counts
 
-    In L1A, we don't do anything besides read raw data, uncompress counts data and store data in 15 x 12 x 7 array.
-    SWE want to keep all value as it is in L1A. Post L1A, we group data into full cycle and convert
-    raw data to engineering data as needed.
+    In L1A, we don't do anything besides read raw data, uncompress counts data and
+    store data in 15 x 12 x 7 array.
+
+    SWE want to keep all value as it is in L1A. Post L1A, we group data into full cycle
+    and convert raw data to engineering data as needed.
 
     Parameters
     ----------
@@ -129,20 +135,20 @@ def swe_l1a(packet_file: str):
         reshaped_data = np.array(uncompressed_data).reshape(15, 12, 7)
         # print(reshaped_data)
         data_array.append(reshaped_data)
-        metadata_dict[data_packet.data["SHCOARSE"].raw_value] = read_metadata(data_packet)
+        metadata_dict[data_packet.data["SHCOARSE"].raw_value] = read_metadata(
+            data_packet
+        )
 
     xarray_data = xr.DataArray(
         data_array,
         dims=["number_of_packets", "seconds", "energy_steps", "cem_counts"],
         attrs=metadata_dict,
     )
-    # print(xarray_data.shape)
-    # print(len(metadata_dict))
-    # print(xarray_data.data)
-    # print(xarray_data.attrs[406334173])
+
     return xr.Dataset({"data": xarray_data})
 
 
 if __name__ == "__main__":
-    packet_file = f"{packet_definition_directory}/../swe/tests/science_block_20221116_163611Z_idle.bin"
+    test_data = "tests/science_block_20221116_163611Z_idle.bin"
+    packet_file = f"{packet_definition_directory}/../swe/{test_data}"
     swe_l1a = swe_l1a(packet_file=packet_file)
