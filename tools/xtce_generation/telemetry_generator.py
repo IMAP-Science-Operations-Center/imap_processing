@@ -95,7 +95,7 @@ class TelemetryGenerator:
         parameter_type_set,
         unique_lengths,
         data_types,
-        sci_byte,
+        sci_byte=None,
     ):
         """
         Create parameter types based on 'dataType' for the unique 'lengthInBits' values.
