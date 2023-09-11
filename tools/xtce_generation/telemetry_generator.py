@@ -287,6 +287,14 @@ class TelemetryGenerator:
     def generate_telemetry_xml(
         self, output_xml_path, mnemonic_names, science_packet_name="SciencePacket"
     ):
+        """
+        Create and output an XTCE file based on the data within the class.
+        Parameters
+        ----------
+        output_xml_path: the path for the final xml file
+        mnemonic_names: a list or single name for mnemonics for extracting data types
+        science_packet_name: The name of the science packet in the output xml
+        """
         # Extract data information for "Data" and "Event_Data" mnemonics separately
         (unique_lengths_data, data_types) = self.extract_data_info(mnemonic_names)
 
@@ -319,9 +327,6 @@ class TelemetryGenerator:
 
         parameter_set = self.create_parameters_from_dataframe(parameter_set, self.pkt)
 
-        self.output_xml_file(output_xml_path, telemetry_xml_root)
-
-    def output_xml_file(self, output_xml_path, telemetry_xml_root):
         # Create the XML tree and save the document
         tree = Et.ElementTree(telemetry_xml_root)
         Et.indent(tree, space="\t", level=0)
