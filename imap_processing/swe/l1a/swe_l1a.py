@@ -1,8 +1,8 @@
 import bitstring
 import numpy as np
 import xarray as xr
+import logging
 
-from imap_processing import packet_definition_directory
 from imap_processing.swe.l0 import decom_swe
 
 
@@ -57,12 +57,31 @@ def uncompress_counts(cem_count):
     )
 
 
-def read_metadata(data_packet):
+def add_metadata_to_array(data_packet, metadata_arrays):
+    """This function add metadata to metadata_arrays.
+
+    Parameters
+    ----------
+    data_packet : space_packet_parser.parser.Packet
+        SWE data packet
+    metadata_arrays : dict
+        metadata arrays
+    """
+    for key, value in data_packet.header.items():
+        metadata_arrays[key].append(value.raw_value)
+
+    for key, value in data_packet.data.items():
+        if key != "SCIENCE_DATA":
+            metadata_arrays[key].append(value.raw_value)
+
+
+def init_metadata_array(data_packet):
     """This function read metadata from data packet.
 
     Parameters
     ----------
-    data_packet : SWE data packet
+    data_packet : space_packet_parser.parser.Packet
+        SWE data packet
 
     Returns
     -------
@@ -70,26 +89,24 @@ def read_metadata(data_packet):
         metadata
     """
     metadata = {}
-    for key, value in data_packet.header.items():
-        metadata[key] = value.raw_value
+    for key, _ in data_packet.header.items():
+        metadata[key] = []
 
-    for key, value in data_packet.data.items():
+    for key, _ in data_packet.data.items():
         if key != "SCIENCE_DATA":
-            metadata[key] = (
-                value.raw_value if value.derived_value is None else value.derived_value
-            )
+            metadata[key] = []
 
     return metadata
 
 
-def swe_l1a(packet_file: str):
+def swe_science(decom_data):
     """SWE L1A algorithm steps:
         - Read data from each SWE packet file
         - Uncompress counts data
         - Store metadata and data in attrs and DataArray of xarray respectively
         - Save uncompress data to cdf file
 
-    SWE collects data for 15 seconds. In each second, it collect data for 12
+    In each packet, SWE collects data for 15 seconds. In each second, it collect data for 12
     energy steps and at each energy step, it collects 7 data from each 7 CEMs.
 
     Each L1A data from each packet will have this shape: 15 rows, 12 columns,
@@ -113,13 +130,12 @@ def swe_l1a(packet_file: str):
     Returns
     -------
     xarray.Dataset
-        xarray dataset with data and metadata.
+        xarray dataset with data.
         data.shape = (number_of_packets, 15, 12, 7)
-        attrs = metadata of each packet.
     """
-    decom_data = decom_swe.decom_packets(packet_file)
-    data_array = []
-    metadata_dict = dict()
+    science_array = []
+
+    metadata_arrays = init_metadata_array(decom_data[0])
 
     for data_packet in decom_data:
         # read raw data
@@ -133,22 +149,40 @@ def swe_l1a(packet_file: str):
         # where 1260 = 15 seconds x 7 CEMs x 12 energy steps
         uncompressed_data = [uncompress_counts(i) for i in byte_data]
         reshaped_data = np.array(uncompressed_data).reshape(15, 12, 7)
-        # print(reshaped_data)
-        data_array.append(reshaped_data)
-        metadata_dict[data_packet.data["SHCOARSE"].raw_value] = read_metadata(
-            data_packet
-        )
 
-    xarray_data = xr.DataArray(
-        data_array,
+        # Save data with its metadata field to attrs and DataArray of xarray.
+        science_array.append(reshaped_data)
+        add_metadata_to_array(data_packet, metadata_arrays)
+
+    science_xarray = xr.DataArray(
+        science_array,
         dims=["number_of_packets", "seconds", "energy_steps", "cem_counts"],
-        attrs=metadata_dict,
     )
 
-    return xr.Dataset({"data": xarray_data})
+    dataset = xr.Dataset(
+        {"SCIENCE_DATA": science_xarray},
+        coords={"met_time": metadata_arrays["SHCOARSE"]})
+    # create xarray dataset for each metadata field
+    for key, value in metadata_arrays.items():
+
+        dataset[f"{key}"] = xr.DataArray(
+            value,
+            dims=["number_of_packets"],
+        )
+
+    print(dataset.data_vars)
+    return dataset
+
+
+def swe_l1a(packet_file):
+    decom_data = decom_swe.decom_packets(packet_file)
+    logging.info(f"Unpacking science data from {packet_file}")
+
+    # If appId is science, then the file should contain all data of science appId
+    if decom_data[0].header["PKT_APID"].raw_value == 1344:
+        swe_science(decom_data=decom_data)
 
 
 if __name__ == "__main__":
-    test_data = "tests/science_block_20221116_163611Z_idle.bin"
-    packet_file = f"{packet_definition_directory}/../swe/{test_data}"
-    swe_l1a = swe_l1a(packet_file=packet_file)
+    packet_file = "imap_processing/swe/tests/science_block_20221116_163611Z_idle.bin"
+    swe_l1a(packet_file)
