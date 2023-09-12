@@ -1,5 +1,7 @@
 from imap_processing import decom, imap_module_directory
 
+from imap_processing import decom
+
 
 def decom_packets(packet_file: str):
     """Decom SWE data packets using SWE packet definition
