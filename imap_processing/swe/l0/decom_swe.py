@@ -1,5 +1,6 @@
-from imap_processing import decom
 from pathlib import Path
+
+from imap_processing import decom
 
 
 def decom_packets(packet_file: str):
