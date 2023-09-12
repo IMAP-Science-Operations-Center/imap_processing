@@ -21,8 +21,3 @@ def swe_l1a(packet_file: str):
     if decom_data[0].header["PKT_APID"].raw_value == 1344:
         logging.info("Processing science data")
         swe_science(decom_data=decom_data)
-
-
-if __name__ == "__main__":
-    packet_file = "imap_processing/swe/tests/science_block_20221116_163611Z_idle.bin"
-    swe_l1a(packet_file)
