@@ -23,7 +23,9 @@ def main():
     generator = TelemetryGenerator(packet_name, path_to_excel_file, apid, sci_byte, pkt)
 
     # Generate the telemetry XML with the provided output path
-    generator.generate_telemetry_xml(output_xml_path)
+    generator.generate_telemetry_xml(
+        output_xml_path, ["Data", "EventData"], "CoDICESciencePacket"
+    )
 
 
 if __name__ == "__main__":

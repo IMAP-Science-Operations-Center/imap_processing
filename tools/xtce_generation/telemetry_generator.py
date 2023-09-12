@@ -1,8 +1,6 @@
 import xml.etree.ElementTree as Et
 from datetime import datetime
 
-import pandas as pd
-
 from tools.xtce_generation.ccsds_header_xtce_generator import CCSDSParameters
 
 
@@ -18,14 +16,6 @@ class TelemetryGenerator:
         """
         Create an XML representation of telemetry data based on input parameters.
 
-        Parameters:
-        - packet_name: The name of the packet (sheet) in the Excel file.
-        - path_to_excel_file: The path to the Excel file with packet definitions.
-        - APID: The APID of the packet used to filter the parameters.
-        - sci_byte (optional): The BYTE number of lengthInBits in the "Data" mnemonic
-          in the CoDICE Science Packet.
-        - pkt: The DataFrame containing packet data.
-
         Returns:
         - root: The root element of the generated XML tree.
         - parameter_type_set: The ParameterTypeSet element.
@@ -34,13 +24,6 @@ class TelemetryGenerator:
         """
         # Register the XML namespace
         Et.register_namespace("xtce", "http://www.omg.org/space")
-
-        # Load data from Excel file
-        xls = pd.ExcelFile(self.path_to_excel_file)
-        pkt = xls.parse(self.packet_name)
-
-        # Fill missing values with '-*-'
-        pkt.fillna("", inplace=True)
 
         # Get the current date and time
         current_date = datetime.now().strftime("%Y-%m")
@@ -69,54 +52,37 @@ class TelemetryGenerator:
 
         return root, parameter_type_set, parameter_set, telemetry_metadata
 
-    def extract_data_info(self):
+    def extract_data_info(self, mnemonic_names):
         """
-        Extract unique lengths from the 'lengthInBits' column and
-        handle the "Data" and "Event_Data" mnemonics separately.
+        Extract unique lengths from the 'lengthInBits' column and the
+        data types for the given mnemonic_names.
 
         Parameters:
-        - pkt: The DataFrame containing packet data.
+        - mnemonic_names: A list or single string of mnemonic names to
+        extract data types from
 
         Returns:
         - unique_lengths: Unique values from the 'lengthInBits' column.
-        - data_type_data: The data type for the "Data" mnemonic
-        - data_type_event_data: The data type for the "Event_Data" mnemonic
+        - data_types: a dictionary mapping the given mnemonic names to the
+        data types from the packet.
         """
         # Extract unique values from the 'lengthInBits' column
-        unique_lengths = self.pkt["lengthInBits"].unique()
+        unique_lengths = self.pkt["lengthInBits"].unique().astype(int)
 
-        # Handle the "Data" mnemonic separately
-        data_mnemonic_data = "Data"
-        data_rows_data = self.pkt[self.pkt["mnemonic"] == data_mnemonic_data]
+        # Create data dictionary for different mnemonics
+        data_types = {}
 
-        if data_rows_data.empty:
-            # Handle the case when the "Data" mnemonic is not found
-            data_type_data = "DefaultDataType"  # Set a default data type
-        else:
-            data_type_data = data_rows_data["dataType"].values[0]
+        for name in mnemonic_names:
+            # This is pretty generic and might not work for some instruments.
+            data_type = self.pkt[self.pkt["mnemonic"].str.contains(name)]["dataType"]
+            if data_type.empty:
+                data_types[name] = "DefaultDataType"
+            else:
+                data_types[name] = data_type.values[0]
 
-        # Handle the "Event_Data" mnemonic separately
-        data_mnemonic_event_data = "Event_Data"
-        data_rows_event_data = self.pkt[
-            self.pkt["mnemonic"] == data_mnemonic_event_data
-        ]
+        return unique_lengths, data_types
 
-        if data_rows_event_data.empty:
-            # Handle the case when the "Event_Data" mnemonic is not found
-            data_type_event_data = "DefaultDataType"  # Set a default data type
-        else:
-            data_type_event_data = data_rows_event_data["dataType"].values[0]
-
-        return unique_lengths, data_type_data, data_type_event_data
-
-    def create_parameter_types(
-        self,
-        parameter_type_set,
-        unique_lengths,
-        data_type_data,
-        data_type_event_data,
-        sci_byte,
-    ):
+    def create_parameter_types(self, parameter_type_set, unique_lengths, data_types):
         """
         Create parameter types based on 'dataType' for the unique 'lengthInBits' values.
         This will loop through the unique lengths and create a ParameterType element
@@ -125,29 +91,26 @@ class TelemetryGenerator:
         Parameters:
         - parameter_type_set: The ParameterTypeSet element where parameter types are.
         - unique_lengths: Unique values from the 'lengthInBits' column.
-        - data_type_data: The data type for the "Data" mnemonic.
-        - data_type_event_data: The data type for the "Event_Data" mnemonic.
-        - sci_byte: The BYTE number of lengthInBits in both "Data" and "Event_Data"
+        - data_types: a dictionary mapping the given mnemonic names to the
+        data types from the packet.
 
         Returns:
         - parameter_type_set: The updated ParameterTypeSet element.
         """
         for size in unique_lengths:
-            parameter_type_ref = None
+            parameter_type_ref = f"uint{size}"  # Use UINT for other sizes
 
-            if size == sci_byte:
+            if size == self.sci_byte:
                 parameter_type_ref = (
                     "BYTE"  # Use BYTE type for both "Data" and "Event_Data"
                 )
             elif size == self.sci_byte:
-                parameter_type_ref = (
-                    data_type_data  # Use data_type_data for "Data" mnemonic
-                )
-            elif size == self.sci_byte:
+                parameter_type_ref = data_types[
+                    "Data"
+                ]  # use dataType of "Data" in data_types dict
+            elif data_types["EventData"] and size == self.sci_byte:
                 # Use data_type_event_data for "Event_Data" mnemonic
-                parameter_type_ref = data_type_event_data
-            else:
-                parameter_type_ref = f"uint{size}"  # Use UINT for other sizes
+                parameter_type_ref = data_types["EventData"]
 
             parameter_type = Et.SubElement(parameter_type_set, "xtce:ParameterType")
             parameter_type.attrib["name"] = f"uint{size}"
@@ -173,7 +136,9 @@ class TelemetryGenerator:
 
                 size_in_bits = Et.SubElement(binary_data_encoding, "xtce:SizeInBits")
                 fixed_value = Et.SubElement(size_in_bits, "xtce:FixedValue")
-                fixed_value.text = str(sci_byte)  # Set the size in bits to sci_byte
+                fixed_value.text = str(
+                    self.sci_byte
+                )  # Set the size in bits to sci_byte
 
         return parameter_type_set
 
@@ -198,7 +163,9 @@ class TelemetryGenerator:
 
         return parameter_set
 
-    def create_container_set(self, telemetry_metadata, ccsds_parameters, apid):
+    def create_container_set(
+        self, telemetry_metadata, ccsds_parameters, apid, container_name
+    ):
         """
         Create XML elements for ContainerSet, CCSDSPacket SequenceContainer,
         and SciencePacket SequenceContainer.
@@ -229,7 +196,7 @@ class TelemetryGenerator:
 
         # Create CoDICESciencePacket SequenceContainer
         science_container = Et.SubElement(container_set, "xtce:SequenceContainer")
-        science_container.attrib["name"] = "CoDICESciencePacket"
+        science_container.attrib["name"] = container_name
 
         base_container = Et.SubElement(science_container, "xtce:BaseContainer")
         base_container.attrib["containerRef"] = "CCSDSPacket"
@@ -291,7 +258,9 @@ class TelemetryGenerator:
             if row["mnemonic"] in ["Data", "Event_Data"]:
                 parameter_type_ref = "BYTE"
             else:
-                parameter_type_ref = f"uint{row['lengthInBits']}"  # Use UINT for others
+                parameter_type_ref = (
+                    f"uint{int(row['lengthInBits'])}"  # Use UINT for others
+                )
 
             parameter.attrib["parameterTypeRef"] = parameter_type_ref
 
@@ -302,7 +271,20 @@ class TelemetryGenerator:
 
         return parameter_set
 
-    def generate_telemetry_xml(self, output_xml_path):
+    def generate_telemetry_xml(
+        self, output_xml_path, mnemonic_names, science_packet_name="SciencePacket"
+    ):
+        """
+        Create and output an XTCE file based on the data within the class.
+        Parameters
+        ----------
+        output_xml_path: the path for the final xml file
+        mnemonic_names: a list or single name for mnemonics for extracting data types
+        science_packet_name: The name of the science packet in the output xml
+        """
+        # Extract data information for "Data" and "Event_Data" mnemonics separately
+        (unique_lengths_data, data_types) = self.extract_data_info(mnemonic_names)
+
         # Call the functions in order to generate the XML
         (
             telemetry_xml_root,
@@ -311,27 +293,22 @@ class TelemetryGenerator:
             telemetry_metadata,
         ) = self.create_telemetry_xml()
 
-        # Extract data information for "Data" and "Event_Data" mnemonics separately
-        (
-            unique_lengths_data,
-            data_type_data,
-            data_type_event_data,
-        ) = self.extract_data_info()
-
         # Create parameter types for both "Data" and "Event_Data"
+        # Although this variable is not used, create_parameter_types has a side effect
         parameter_type_set = self.create_parameter_types(
             parameter_type_set,
             unique_lengths_data,
-            data_type_data,
-            data_type_event_data,
-            self.sci_byte,
+            data_types,
         )
 
         parameter_set = self.create_ccsds_packet_parameters(
             parameter_set, CCSDSParameters().parameters
         )
         telemetry_metadata = self.create_container_set(
-            telemetry_metadata, CCSDSParameters().parameters, self.apid
+            telemetry_metadata,
+            CCSDSParameters().parameters,
+            self.apid,
+            science_packet_name,
         )
         self.add_science_parameters(telemetry_metadata, self.pkt)
 
