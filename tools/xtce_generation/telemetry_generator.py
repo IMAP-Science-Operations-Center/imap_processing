@@ -1,7 +1,7 @@
 import xml.etree.ElementTree as Et
 from datetime import datetime
-import pandas as pd
 
+import pandas as pd
 from ccsds_header_xtce_generator import CCSDSParameters
 
 
@@ -56,11 +56,18 @@ class TelemetryGenerator:
         return root, parameter_type_set, parameter_set, telemetry_metadata
 
     def get_unique_bits_length(self):
-        """
-        Extract unique lengths from the 'lengthInBits' column
-
-        Returns:
-        - unique_lengths: Unique values from the 'lengthInBits' column.
+        """Get unique values from the 'lengthInBits' column and create dictionary
+        with key and value using the dataType and lengthInBits.
+        Eg.
+        {
+            'UINTt16': 16,
+            'UINT32': 32,
+            'BYTE13000': 13000,
+        }
+        Returns
+        -------
+        dict
+            dictionary containing all unique bits lengths
         """
         # Extract unique values from the 'lengthInBits' column
         length_in_bits = self.pkt["lengthInBits"]
@@ -73,21 +80,20 @@ class TelemetryGenerator:
             #     'UINT32': 32,
             #     'BYTE13000': 13000,
             # }
-            unique_lengths[f'{data_types[index]}{length_in_bits[index]}'] = length_in_bits[index]
-        print(unique_lengths)
+            unique_lengths[
+                f"{data_types[index]}{length_in_bits[index]}"
+            ] = length_in_bits[index]
         return unique_lengths
 
-    def create_parameter_types(self, parameter_type_set, unique_lengths, data_types=None):
+    def create_parameter_types(self, parameter_type_set, unique_lengths):
         """
         Create parameter types based on 'dataType' for the unique 'lengthInBits' values.
         This will loop through the unique lengths and create a ParameterType element
-        for each length representing a UINT type.
+        for each length representing a data type.
 
         Parameters:
         - parameter_type_set: The ParameterTypeSet element where parameter types are.
         - unique_lengths: Unique values from the 'lengthInBits' column.
-        - data_types: a dictionary mapping the given mnemonic names to the
-        data types from the packet.
 
         Returns:
         - parameter_type_set: The updated ParameterTypeSet element.
@@ -109,7 +115,6 @@ class TelemetryGenerator:
                 encoding = Et.SubElement(parameter_type, "xtce:IntegerDataEncoding")
                 encoding.attrib["sizeInBits"] = str(size)
                 encoding.attrib["encoding"] = "signed"
-            # Create BinaryParameterType if parameter_type_ref is "BYTE"
             elif "BYTE" in parameter_type_ref_name:
                 binary_parameter_type = Et.SubElement(
                     parameter_type_set, "xtce:BinaryParameterType"
@@ -125,9 +130,7 @@ class TelemetryGenerator:
 
                 size_in_bits = Et.SubElement(binary_data_encoding, "xtce:SizeInBits")
                 fixed_value = Et.SubElement(size_in_bits, "xtce:FixedValue")
-                fixed_value.text = str(
-                    size
-                )
+                fixed_value.text = str(size)
 
         return parameter_type_set
 
@@ -152,17 +155,14 @@ class TelemetryGenerator:
 
         return parameter_set
 
-    def create_container_set(
-        self, telemetry_metadata, ccsds_parameters, apid, container_name
-    ):
+    def create_container_set(self, telemetry_metadata, ccsds_parameters):
         """
         Create XML elements for ContainerSet, CCSDSPacket SequenceContainer,
-        and SciencePacket SequenceContainer.
+        and Packet SequenceContainer.
 
         Parameters:
         - telemetry_metadata: The TelemetryMetaData element where containers are.
         - ccsds_parameters: A list of dictionaries containing CCSDS parameter data.
-        - APID: The APID value used for comparison in SciencePacket.
 
         Returns:
         - telemetry_metadata: The updated TelemetryMetaData element.
@@ -187,7 +187,7 @@ class TelemetryGenerator:
         # Create Packet SequenceContainer that use CCSDSPacket SequenceContainer
         # as base container
         science_container = Et.SubElement(container_set, "xtce:SequenceContainer")
-        science_container.attrib["name"] = container_name
+        science_container.attrib["name"] = self.packet_name
 
         base_container = Et.SubElement(science_container, "xtce:BaseContainer")
         base_container.attrib["containerRef"] = "CCSDSPacket"
@@ -196,10 +196,10 @@ class TelemetryGenerator:
         restriction_criteria = Et.SubElement(base_container, "xtce:RestrictionCriteria")
         comparison = Et.SubElement(restriction_criteria, "xtce:Comparison")
         comparison.attrib["parameterRef"] = "PKT_APID"
-        comparison.attrib["value"] = f"{apid}"
+        comparison.attrib["value"] = f"{self.apid}"
         comparison.attrib["useCalibratedValue"] = "false"
 
-        # Populate packet EntryList for packet SequenceContainer
+        # Populate EntryList for packet SequenceContainer
         packet_entry_list = Et.SubElement(science_container, "xtce:EntryList")
         parameter_refs = self.pkt.loc[8:, "mnemonic"].tolist()
 
@@ -211,39 +211,18 @@ class TelemetryGenerator:
 
         return telemetry_metadata
 
-    def add_science_parameters(self, science_container):
+    def create_remaining_parameters(self, parameter_set):
         """
-        Add ParameterRefEntry elements for SciencePacket.
-        Parameters:
-        - science_container: The SciencePacket SequenceContainer element.
-        - pkt: The DataFrame containing packet data.
-        Returns:
-        - codice_science_container: The updated SciencePacket
-        SequenceContainer element.
-        """
-        # Get the 'mnemonic' values starting from row 10
-        parameter_refs = self.pkt.loc[9:, "mnemonic"].tolist()
-
-        for parameter_ref in parameter_refs:
-            parameter_ref_entry = Et.SubElement(
-                science_container, "xtce:ParameterRefEntry"
-            )
-            parameter_ref_entry.attrib["parameterRef"] = parameter_ref
-
-        return science_container
-
-    def create_parameters_from_dataframe(self, parameter_set):
-        """
-        Create XML elements for parameters based on DataFrame rows starting from row 10.
+        Create XML elements for parameters based on DataFrame rows starting
+        from SHCOARSE.
 
         Parameters:
         - parameter_set: The ParameterSet element where parameters will be added.
-        - pkt: The DataFrame containing packet data.
 
         Returns:
         - parameter_set: The updated ParameterSet element.
         """
-        # Process rows from 10 until the last available row in the DataFrame
+        # Process rows from SHCOARSE until the last available row in the DataFrame
         for index, row in self.pkt.iterrows():
             if index < 8:
                 continue  # Skip rows before row 10
@@ -259,6 +238,7 @@ class TelemetryGenerator:
             description = Et.SubElement(
                 parameter, "{http://www.omg.org/space}LongDescription"
             )
+
             try:
                 description.text = row["longDescription"]
             except KeyError:
@@ -266,9 +246,7 @@ class TelemetryGenerator:
 
         return parameter_set
 
-    def generate_telemetry_xml(
-        self, output_xml_path, packet_name
-    ):
+    def generate_telemetry_xml(self, output_xml_path):
         """
         Create and output an XTCE file based on the data within the class.
         Parameters
@@ -296,18 +274,14 @@ class TelemetryGenerator:
             parameter_set, CCSDSParameters().parameters
         )
         # Add remaining parameters to the ParameterSet element
-        parameter_set = self.create_parameters_from_dataframe(parameter_set)
+        parameter_set = self.create_remaining_parameters(parameter_set)
 
-        # Create ContainerSet, CCSDSPacket SequenceContainer, and packet SequenceContainer
+        # Create ContainerSet with CCSDSPacket SequenceContainer and packet
+        # SequenceContainer
         telemetry_metadata = self.create_container_set(
             telemetry_metadata,
             CCSDSParameters().parameters,
-            self.apid,
-            packet_name,
         )
-
-        # # Add EntryList to packet SequenceContainer
-        # self.add_science_parameters(telemetry_metadata)
 
         # Create the XML tree and save the document
         tree = Et.ElementTree(telemetry_xml_root)
