@@ -1,0 +1,110 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<xtce:SpaceSystem xmlns:xtce="http://www.omg.org/space/xtce" name="P_ILO_RAW_DE">
+	<xtce:Header date="2023-04-25T14:43:04UTC" version="1.0" author="Sean Hoyt"/>
+	<xtce:TelemetryMetaData>
+		<xtce:ParameterTypeSet>
+			<xtce:IntegerParameterType name="uint1" signed="false">
+				<xtce:UnitSet/>
+				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned"/>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint2" signed="false">
+				<xtce:UnitSet/>
+				<xtce:IntegerDataEncoding sizeInBits="2" encoding="unsigned"/>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint3" signed="false">
+				<xtce:UnitSet/>
+				<xtce:IntegerDataEncoding sizeInBits="3" encoding="unsigned"/>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint11" signed="false">
+				<xtce:UnitSet/>
+				<xtce:IntegerDataEncoding sizeInBits="11" encoding="unsigned"/>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint14" signed="false">
+				<xtce:UnitSet/>
+				<xtce:IntegerDataEncoding sizeInBits="14" encoding="unsigned"/>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint16" signed="false">
+				<xtce:UnitSet/>
+				<xtce:IntegerDataEncoding sizeInBits="16" encoding="unsigned"/>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint32" signed="false">
+				<xtce:UnitSet/>
+				<xtce:IntegerDataEncoding sizeInBits="32" encoding="unsigned"/>
+			</xtce:IntegerParameterType>
+			<xtce:BinaryParameterType name="byte102400" shortDescription="Binary data type">
+				<xtce:UnitSet/>
+				<xtce:BinaryDataEncoding bitOrder="mostSignificantBitFirst">
+					<xtce:SizeInBits>
+						<xtce:DynamicValue>
+							<xtce:ParameterInstanceRef parameterRef="PKT_LEN"/>
+              				<xtce:LinearAdjustment intercept="-112" slope="8"/>
+						</xtce:DynamicValue>
+					</xtce:SizeInBits>
+				</xtce:BinaryDataEncoding>
+			</xtce:BinaryParameterType>
+		</xtce:ParameterTypeSet>
+		<xtce:ParameterSet>
+			<xtce:Parameter name="VERSION" parameterTypeRef="uint3">
+				<xtce:LongDescription>CCSDS Packet Version Number</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="TYPE" parameterTypeRef="uint1">
+				<xtce:LongDescription>CCSDS Packet Type Indicator</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SEC_HDR_FLG" parameterTypeRef="uint1">
+				<xtce:LongDescription>CCSDS Packet Secondary Header Flag</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PKT_APID" parameterTypeRef="uint11">
+				<xtce:LongDescription>CCSDS Packet Application Process ID</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SEG_FLGS" parameterTypeRef="uint2">
+				<xtce:LongDescription>CCSDS Packet Grouping Flags</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SRC_SEQ_CTR" parameterTypeRef="uint14">
+				<xtce:LongDescription>CCSDS Packet Sequence Count</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PKT_LEN" parameterTypeRef="uint16">
+				<xtce:LongDescription>CCSDS Packet Length</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SHCOARSE" parameterTypeRef="uint32">
+				<xtce:LongDescription>CCSDS Secondary Header MET</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="COUNT" parameterTypeRef="uint16">
+				<xtce:LongDescription>Number of direct events</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DATA" parameterTypeRef="byte102400">
+				<xtce:LongDescription>TOF Direct Event Time Tagged data</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="CHKSUM" parameterTypeRef="uint16">
+				<xtce:LongDescription>16-bit CRC checksum</xtce:LongDescription>
+			</xtce:Parameter>
+		</xtce:ParameterSet>
+		<xtce:ContainerSet>
+			<xtce:SequenceContainer name="CCSDSPacket">
+				<xtce:EntryList>
+					<xtce:ParameterRefEntry parameterRef="VERSION"/>
+					<xtce:ParameterRefEntry parameterRef="TYPE"/>
+					<xtce:ParameterRefEntry parameterRef="SEC_HDR_FLG"/>
+					<xtce:ParameterRefEntry parameterRef="PKT_APID"/>
+					<xtce:ParameterRefEntry parameterRef="SEG_FLGS"/>
+					<xtce:ParameterRefEntry parameterRef="SRC_SEQ_CTR"/>
+					<xtce:ParameterRefEntry parameterRef="PKT_LEN"/>
+				</xtce:EntryList>
+			</xtce:SequenceContainer>
+			<xtce:SequenceContainer name="P_ILO_RAW_DE">
+				<xtce:EntryList>
+					<xtce:ParameterRefEntry parameterRef="SHCOARSE"/>
+					<xtce:ParameterRefEntry parameterRef="COUNT"/>
+					<xtce:ParameterRefEntry parameterRef="DATA"/>
+					<xtce:ParameterRefEntry parameterRef="CHKSUM"/>
+				</xtce:EntryList>
+				<xtce:BaseContainer containerRef="CCSDSPacket">
+                    <xtce:RestrictionCriteria>
+                        <xtce:ComparisonList>
+                            <xtce:Comparison parameterRef="PKT_APID" value="690" useCalibratedValue="false"/>
+                        </xtce:ComparisonList>
+                    </xtce:RestrictionCriteria>
+                </xtce:BaseContainer>
+			</xtce:SequenceContainer>
+		</xtce:ContainerSet>
+	</xtce:TelemetryMetaData>
+</xtce:SpaceSystem>

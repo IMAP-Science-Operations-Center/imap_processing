@@ -1,0 +1,176 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<xtce:SpaceSystem xmlns:xtce="http://www.omg.org/space/xtce" name="P_ILO_DIAG_TOF_BD">
+	<xtce:Header date="2023-04-25T14:43:04UTC" version="1.0" author="Sean Hoyt"/>
+	<xtce:TelemetryMetaData>
+		<xtce:ParameterTypeSet>
+			<xtce:IntegerParameterType name="uint1" signed="false">
+				<xtce:UnitSet/>
+				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned"/>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint2" signed="false">
+				<xtce:UnitSet/>
+				<xtce:IntegerDataEncoding sizeInBits="2" encoding="unsigned"/>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint3" signed="false">
+				<xtce:UnitSet/>
+				<xtce:IntegerDataEncoding sizeInBits="3" encoding="unsigned"/>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint8" signed="false">
+				<xtce:UnitSet/>
+				<xtce:IntegerDataEncoding sizeInBits="8" encoding="unsigned"/>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint11" signed="false">
+				<xtce:UnitSet/>
+				<xtce:IntegerDataEncoding sizeInBits="11" encoding="unsigned"/>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint14" signed="false">
+				<xtce:UnitSet/>
+				<xtce:IntegerDataEncoding sizeInBits="14" encoding="unsigned"/>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint16" signed="false">
+				<xtce:UnitSet/>
+				<xtce:IntegerDataEncoding sizeInBits="16" encoding="unsigned"/>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint32" signed="false">
+				<xtce:UnitSet/>
+				<xtce:IntegerDataEncoding sizeInBits="32" encoding="unsigned"/>
+			</xtce:IntegerParameterType>
+		</xtce:ParameterTypeSet>
+		<xtce:ParameterSet>
+			<xtce:Parameter name="VERSION" parameterTypeRef="uint3">
+				<xtce:LongDescription>CCSDS Packet Version Number</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="TYPE" parameterTypeRef="uint1">
+				<xtce:LongDescription>CCSDS Packet Type Indicator</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SEC_HDR_FLG" parameterTypeRef="uint1">
+				<xtce:LongDescription>CCSDS Packet Secondary Header Flag</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PKT_APID" parameterTypeRef="uint11">
+				<xtce:LongDescription>CCSDS Packet Application Process ID</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SEG_FLGS" parameterTypeRef="uint2">
+				<xtce:LongDescription>CCSDS Packet Grouping Flags</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SRC_SEQ_CTR" parameterTypeRef="uint14">
+				<xtce:LongDescription>CCSDS Packet Sequence Count</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PKT_LEN" parameterTypeRef="uint16">
+				<xtce:LongDescription>CCSDS Packet Length</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SHCOARSE" parameterTypeRef="uint32">
+				<xtce:LongDescription>CCSDS Secondary Header MET</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="CMD_ERROR" parameterTypeRef="uint8">
+				<xtce:LongDescription>ILO_DIAG_TOF_BD.CMD_ERROR</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="TOF_CFD_VM" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_DIAG_TOF_BD.TOF_CFD_VM</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="TOF_PRE_TM" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_DIAG_TOF_BD.TOF_PRE_TM</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="TOF_REG_TM" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_DIAG_TOF_BD.TOF_REG_TM</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="TOF_MCP_CM" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_DIAG_TOF_BD.TOF_MCP_CM</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="TOF_MCP_VM" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_DIAG_TOF_BD.TOF_MCP_VM</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="TOF_CM" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_DIAG_TOF_BD.TOF_CM</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="TOF_P5_VM" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_DIAG_TOF_BD.TOF_P5_VM</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="TOF_P6_VM" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_DIAG_TOF_BD.TOF_P6_VM</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="AN_A_THR_REG" parameterTypeRef="uint8">
+				<xtce:LongDescription>ILO_DIAG_TOF_BD.AN_A_THR_REG</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="AN_B0_THR_REG" parameterTypeRef="uint8">
+				<xtce:LongDescription>ILO_DIAG_TOF_BD.AN_B0_THR_REG</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="AN_B3_THR_REG" parameterTypeRef="uint8">
+				<xtce:LongDescription>ILO_DIAG_TOF_BD.AN_B3_THR_REG</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="AN_C_THR_REG" parameterTypeRef="uint8">
+				<xtce:LongDescription>ILO_DIAG_TOF_BD.AN_C_THR_REG</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="TOF_BD_CTRL_REG" parameterTypeRef="uint8">
+				<xtce:LongDescription>ILO_DIAG_TOF_BD.TOF_BD_CTRL_REG</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="STIM_CTRL_REG" parameterTypeRef="uint8">
+				<xtce:LongDescription>ILO_DIAG_TOF_BD.STIMULUS_CTRL_REG</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="STIM_CNFG_REG" parameterTypeRef="uint8">
+				<xtce:LongDescription>ILO_DIAG_TOF_BD.STIMULUS_CNFG_REG</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="AN_TOF3_THR_REG" parameterTypeRef="uint8">
+				<xtce:LongDescription>ILO_DIAG_TOF_BD.AN_TOF3_THR_REG</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="AN_TOF2_THR_REG" parameterTypeRef="uint8">
+				<xtce:LongDescription>ILO_DIAG_TOF_BD.AN_TOF2_THR_REG</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="AN_TOF1_THR_REG" parameterTypeRef="uint8">
+				<xtce:LongDescription>ILO_DIAG_TOF_BD.AN_TOF1_THR_REG</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="AN_TOF0_THR_REG" parameterTypeRef="uint8">
+				<xtce:LongDescription>ILO_DIAG_TOF_BD.AN_TOF0_THR_REG</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SPARE_REG" parameterTypeRef="uint8">
+				<xtce:LongDescription>ILO_DIAG_TOF_BD.SPARE_REG</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SPARE" parameterTypeRef="uint8">
+				<xtce:LongDescription>ILO_DIAG_TOF_BD.SPARE</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="CHKSUM" parameterTypeRef="uint16">
+				<xtce:LongDescription>16-bit CRC checksum</xtce:LongDescription>
+			</xtce:Parameter>
+		</xtce:ParameterSet>
+		<xtce:ContainerSet>
+			<xtce:SequenceContainer name="CCSDSPacket">
+				<xtce:EntryList>
+					<xtce:ParameterRefEntry parameterRef="VERSION"/>
+					<xtce:ParameterRefEntry parameterRef="TYPE"/>
+					<xtce:ParameterRefEntry parameterRef="SEC_HDR_FLG"/>
+					<xtce:ParameterRefEntry parameterRef="PKT_APID"/>
+					<xtce:ParameterRefEntry parameterRef="SEG_FLGS"/>
+					<xtce:ParameterRefEntry parameterRef="SRC_SEQ_CTR"/>
+					<xtce:ParameterRefEntry parameterRef="PKT_LEN"/>
+				</xtce:EntryList>
+			</xtce:SequenceContainer>
+			<xtce:SequenceContainer name="P_ILO_DIAG_TOF_BD">
+				<xtce:EntryList>
+					<xtce:ParameterRefEntry parameterRef="SHCOARSE"/>
+					<xtce:ParameterRefEntry parameterRef="CMD_ERROR"/>
+					<xtce:ParameterRefEntry parameterRef="TOF_CFD_VM"/>
+					<xtce:ParameterRefEntry parameterRef="TOF_PRE_TM"/>
+					<xtce:ParameterRefEntry parameterRef="TOF_REG_TM"/>
+					<xtce:ParameterRefEntry parameterRef="TOF_MCP_CM"/>
+					<xtce:ParameterRefEntry parameterRef="TOF_MCP_VM"/>
+					<xtce:ParameterRefEntry parameterRef="TOF_CM"/>
+					<xtce:ParameterRefEntry parameterRef="TOF_P5_VM"/>
+					<xtce:ParameterRefEntry parameterRef="TOF_P6_VM"/>
+					<xtce:ParameterRefEntry parameterRef="AN_A_THR_REG"/>
+					<xtce:ParameterRefEntry parameterRef="AN_B0_THR_REG"/>
+					<xtce:ParameterRefEntry parameterRef="AN_B3_THR_REG"/>
+					<xtce:ParameterRefEntry parameterRef="AN_C_THR_REG"/>
+					<xtce:ParameterRefEntry parameterRef="TOF_BD_CTRL_REG"/>
+					<xtce:ParameterRefEntry parameterRef="STIM_CTRL_REG"/>
+					<xtce:ParameterRefEntry parameterRef="STIM_CNFG_REG"/>
+					<xtce:ParameterRefEntry parameterRef="AN_TOF3_THR_REG"/>
+					<xtce:ParameterRefEntry parameterRef="AN_TOF2_THR_REG"/>
+					<xtce:ParameterRefEntry parameterRef="AN_TOF1_THR_REG"/>
+					<xtce:ParameterRefEntry parameterRef="AN_TOF0_THR_REG"/>
+					<xtce:ParameterRefEntry parameterRef="SPARE_REG"/>
+					<xtce:ParameterRefEntry parameterRef="SPARE"/>
+					<xtce:ParameterRefEntry parameterRef="CHKSUM"/>
+				</xtce:EntryList>
+			</xtce:SequenceContainer>
+		</xtce:ContainerSet>
+	</xtce:TelemetryMetaData>
+</xtce:SpaceSystem>

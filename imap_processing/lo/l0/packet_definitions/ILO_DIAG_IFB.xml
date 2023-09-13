@@ -1,0 +1,228 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<xtce:SpaceSystem xmlns:xtce="http://www.omg.org/space/xtce" name="P_ILO_DIAG_IFB">
+	<xtce:Header date="2023-04-25T14:43:04UTC" version="1.0" author="Sean Hoyt"/>
+	<xtce:TelemetryMetaData>
+		<xtce:ParameterTypeSet>
+			<xtce:IntegerParameterType name="uint1" signed="false">
+				<xtce:UnitSet/>
+				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned"/>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint2" signed="false">
+				<xtce:UnitSet/>
+				<xtce:IntegerDataEncoding sizeInBits="2" encoding="unsigned"/>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint3" signed="false">
+				<xtce:UnitSet/>
+				<xtce:IntegerDataEncoding sizeInBits="3" encoding="unsigned"/>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint8" signed="false">
+				<xtce:UnitSet/>
+				<xtce:IntegerDataEncoding sizeInBits="8" encoding="unsigned"/>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint11" signed="false">
+				<xtce:UnitSet/>
+				<xtce:IntegerDataEncoding sizeInBits="11" encoding="unsigned"/>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint14" signed="false">
+				<xtce:UnitSet/>
+				<xtce:IntegerDataEncoding sizeInBits="14" encoding="unsigned"/>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint16" signed="false">
+				<xtce:UnitSet/>
+				<xtce:IntegerDataEncoding sizeInBits="16" encoding="unsigned"/>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint32" signed="false">
+				<xtce:UnitSet/>
+				<xtce:IntegerDataEncoding sizeInBits="32" encoding="unsigned"/>
+			</xtce:IntegerParameterType>
+		</xtce:ParameterTypeSet>
+		<xtce:ParameterSet>
+			<xtce:Parameter name="VERSION" parameterTypeRef="uint3">
+				<xtce:LongDescription>CCSDS Packet Version Number</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="TYPE" parameterTypeRef="uint1">
+				<xtce:LongDescription>CCSDS Packet Type Indicator</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SEC_HDR_FLG" parameterTypeRef="uint1">
+				<xtce:LongDescription>CCSDS Packet Secondary Header Flag</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PKT_APID" parameterTypeRef="uint11">
+				<xtce:LongDescription>CCSDS Packet Application Process ID</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SEG_FLGS" parameterTypeRef="uint2">
+				<xtce:LongDescription>CCSDS Packet Grouping Flags</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SRC_SEQ_CTR" parameterTypeRef="uint14">
+				<xtce:LongDescription>CCSDS Packet Sequence Count</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PKT_LEN" parameterTypeRef="uint16">
+				<xtce:LongDescription>CCSDS Packet Length</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SHCOARSE" parameterTypeRef="uint32">
+				<xtce:LongDescription>CCSDS Secondary Header MET</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="FPGA_VERSION_REG" parameterTypeRef="uint8">
+				<xtce:LongDescription>ILO_DIAG_IFB.FPGA_VERSION_REG</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="IFB_STATUS_REG" parameterTypeRef="uint8">
+				<xtce:LongDescription>ILO_DIAG_IFB.IFB_STATUS_REG</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="CMD_COUNT_REG" parameterTypeRef="uint8">
+				<xtce:LongDescription>ILO_DIAG_IFB.CMD_COUNT_REG</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="IFB_CTRL_REG" parameterTypeRef="uint8">
+				<xtce:LongDescription>ILO_DIAG_IFB.IFB_CTRL_REG</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="IFB_DATA_INTERVAL_REG" parameterTypeRef="uint8">
+				<xtce:LongDescription>ILO_DIAG_IFB.IFB_DATA_INTERVAL_REG</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="TOF_HVPS_CTRL_REG" parameterTypeRef="uint8">
+				<xtce:LongDescription>ILO_DIAG_IFB.TOF_HVPS_CTRL_REG</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PAC_VSET_REG" parameterTypeRef="uint8">
+				<xtce:LongDescription>ILO_DIAG_IFB.PAC_VSET_REG</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PAC_OCP_REG" parameterTypeRef="uint8">
+				<xtce:LongDescription>ILO_DIAG_IFB.PAC_OCP_REG</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="MCP_VSET_REG" parameterTypeRef="uint8">
+				<xtce:LongDescription>ILO_DIAG_IFB.MCP_VSET_REG</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="MCP_OCP_REG" parameterTypeRef="uint8">
+				<xtce:LongDescription>ILO_DIAG_IFB.MCP_OCP_REG</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="STAR_OFFSET_ADJUST_REG" parameterTypeRef="uint8">
+				<xtce:LongDescription>ILO_DIAG_IFB.STAR_OFFSET_ADJUST_REG</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="OSCOPE_CH_SEL_REG" parameterTypeRef="uint8">
+				<xtce:LongDescription>ILO_DIAG_IFB.OSCOPE_CH_SEL_REG</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="STAR_BRIGHT" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_DIAG_IFB.STAR_BRIGHT</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="IFB_TEMP1" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_DIAG_IFB.IFB_TEMP1</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="IFB_TEMP0" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_DIAG_IFB.IFB_TEMP0</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="IFB_V5P0_VM" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_DIAG_IFB.IFB_V5P0_VM</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="IFB_V3P3_VM" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_DIAG_IFB.IFB_V3P3_VM</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="IFB_V12P0_VM" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_DIAG_IFB.IFB_V12P0_VM</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="IFB_V12N0_VM" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_DIAG_IFB.IFB_V12N0_VM</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="LV_CM" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_DIAG_IFB.LV_CM</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="LV_VM" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_DIAG_IFB.LV_VM</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="LV_TEMP" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_DIAG_IFB.LV_TEMP</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="MCP_CM" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_DIAG_IFB.MCP_CM</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="MCP_VM" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_DIAG_IFB.MCP_VM</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="MCP_TEMP" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_DIAG_IFB.MCP_TEMP</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PAC_CM" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_DIAG_IFB.PAC_CM</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PAC_VM" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_DIAG_IFB.PAC_VM</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PAC_TEMP" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_DIAG_IFB.PAC_TEMP</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="IFB_V5P0ANA_VM" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_DIAG_IFB.IFB_V5P0ANA_VM</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="IFB_V2P5_VM" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_DIAG_IFB.IFB_V2P5_VM</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="STAR_MON" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_DIAG_IFB.STAR_MON</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PAC_VSET_MON" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_DIAG_IFB.PAC_VSET_MON</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PAC_OCP_MON" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_DIAG_IFB.PAC_OCP_MON</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="MCP_VSET_MON" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_DIAG_IFB.MCP_VSET_MON</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="MCP_OCP_MON" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_DIAG_IFB.MCP_OCP_MON</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="CHKSUM" parameterTypeRef="uint16">
+				<xtce:LongDescription>16-bit CRC checksum</xtce:LongDescription>
+			</xtce:Parameter>
+		</xtce:ParameterSet>
+		<xtce:ContainerSet>
+			<xtce:SequenceContainer name="CCSDSPacket">
+				<xtce:EntryList>
+					<xtce:ParameterRefEntry parameterRef="VERSION"/>
+					<xtce:ParameterRefEntry parameterRef="TYPE"/>
+					<xtce:ParameterRefEntry parameterRef="SEC_HDR_FLG"/>
+					<xtce:ParameterRefEntry parameterRef="PKT_APID"/>
+					<xtce:ParameterRefEntry parameterRef="SEG_FLGS"/>
+					<xtce:ParameterRefEntry parameterRef="SRC_SEQ_CTR"/>
+					<xtce:ParameterRefEntry parameterRef="PKT_LEN"/>
+				</xtce:EntryList>
+			</xtce:SequenceContainer>
+			<xtce:SequenceContainer name="P_ILO_DIAG_IFB">
+				<xtce:EntryList>
+					<xtce:ParameterRefEntry parameterRef="SHCOARSE"/>
+					<xtce:ParameterRefEntry parameterRef="FPGA_VERSION_REG"/>
+					<xtce:ParameterRefEntry parameterRef="IFB_STATUS_REG"/>
+					<xtce:ParameterRefEntry parameterRef="CMD_COUNT_REG"/>
+					<xtce:ParameterRefEntry parameterRef="IFB_CTRL_REG"/>
+					<xtce:ParameterRefEntry parameterRef="IFB_DATA_INTERVAL_REG"/>
+					<xtce:ParameterRefEntry parameterRef="TOF_HVPS_CTRL_REG"/>
+					<xtce:ParameterRefEntry parameterRef="PAC_VSET_REG"/>
+					<xtce:ParameterRefEntry parameterRef="PAC_OCP_REG"/>
+					<xtce:ParameterRefEntry parameterRef="MCP_VSET_REG"/>
+					<xtce:ParameterRefEntry parameterRef="MCP_OCP_REG"/>
+					<xtce:ParameterRefEntry parameterRef="STAR_OFFSET_ADJUST_REG"/>
+					<xtce:ParameterRefEntry parameterRef="OSCOPE_CH_SEL_REG"/>
+					<xtce:ParameterRefEntry parameterRef="STAR_BRIGHT"/>
+					<xtce:ParameterRefEntry parameterRef="IFB_TEMP1"/>
+					<xtce:ParameterRefEntry parameterRef="IFB_TEMP0"/>
+					<xtce:ParameterRefEntry parameterRef="IFB_V5P0_VM"/>
+					<xtce:ParameterRefEntry parameterRef="IFB_V3P3_VM"/>
+					<xtce:ParameterRefEntry parameterRef="IFB_V12P0_VM"/>
+					<xtce:ParameterRefEntry parameterRef="IFB_V12N0_VM"/>
+					<xtce:ParameterRefEntry parameterRef="LV_CM"/>
+					<xtce:ParameterRefEntry parameterRef="LV_VM"/>
+					<xtce:ParameterRefEntry parameterRef="LV_TEMP"/>
+					<xtce:ParameterRefEntry parameterRef="MCP_CM"/>
+					<xtce:ParameterRefEntry parameterRef="MCP_VM"/>
+					<xtce:ParameterRefEntry parameterRef="MCP_TEMP"/>
+					<xtce:ParameterRefEntry parameterRef="PAC_CM"/>
+					<xtce:ParameterRefEntry parameterRef="PAC_VM"/>
+					<xtce:ParameterRefEntry parameterRef="PAC_TEMP"/>
+					<xtce:ParameterRefEntry parameterRef="IFB_V5P0ANA_VM"/>
+					<xtce:ParameterRefEntry parameterRef="IFB_V2P5_VM"/>
+					<xtce:ParameterRefEntry parameterRef="STAR_MON"/>
+					<xtce:ParameterRefEntry parameterRef="PAC_VSET_MON"/>
+					<xtce:ParameterRefEntry parameterRef="PAC_OCP_MON"/>
+					<xtce:ParameterRefEntry parameterRef="MCP_VSET_MON"/>
+					<xtce:ParameterRefEntry parameterRef="MCP_OCP_MON"/>
+					<xtce:ParameterRefEntry parameterRef="CHKSUM"/>
+				</xtce:EntryList>
+			</xtce:SequenceContainer>
+		</xtce:ContainerSet>
+	</xtce:TelemetryMetaData>
+</xtce:SpaceSystem>

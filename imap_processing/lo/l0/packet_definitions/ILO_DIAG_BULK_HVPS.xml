@@ -1,0 +1,196 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<xtce:SpaceSystem xmlns:xtce="http://www.omg.org/space/xtce" name="P_ILO_DIAG_BULK_HVPS">
+	<xtce:Header date="2023-04-25T14:43:04UTC" version="1.0" author="Sean Hoyt"/>
+	<xtce:TelemetryMetaData>
+		<xtce:ParameterTypeSet>
+			<xtce:IntegerParameterType name="uint1" signed="false">
+				<xtce:UnitSet/>
+				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned"/>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint2" signed="false">
+				<xtce:UnitSet/>
+				<xtce:IntegerDataEncoding sizeInBits="2" encoding="unsigned"/>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint3" signed="false">
+				<xtce:UnitSet/>
+				<xtce:IntegerDataEncoding sizeInBits="3" encoding="unsigned"/>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint11" signed="false">
+				<xtce:UnitSet/>
+				<xtce:IntegerDataEncoding sizeInBits="11" encoding="unsigned"/>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint14" signed="false">
+				<xtce:UnitSet/>
+				<xtce:IntegerDataEncoding sizeInBits="14" encoding="unsigned"/>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint16" signed="false">
+				<xtce:UnitSet/>
+				<xtce:IntegerDataEncoding sizeInBits="16" encoding="unsigned"/>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint32" signed="false">
+				<xtce:UnitSet/>
+				<xtce:IntegerDataEncoding sizeInBits="32" encoding="unsigned"/>
+			</xtce:IntegerParameterType>
+		</xtce:ParameterTypeSet>
+		<xtce:ParameterSet>
+			<xtce:Parameter name="VERSION" parameterTypeRef="uint3">
+				<xtce:LongDescription>CCSDS Packet Version Number</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="TYPE" parameterTypeRef="uint1">
+				<xtce:LongDescription>CCSDS Packet Type Indicator</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SEC_HDR_FLG" parameterTypeRef="uint1">
+				<xtce:LongDescription>CCSDS Packet Secondary Header Flag</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PKT_APID" parameterTypeRef="uint11">
+				<xtce:LongDescription>CCSDS Packet Application Process ID</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SEG_FLGS" parameterTypeRef="uint2">
+				<xtce:LongDescription>CCSDS Packet Grouping Flags</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SRC_SEQ_CTR" parameterTypeRef="uint14">
+				<xtce:LongDescription>CCSDS Packet Sequence Count</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PKT_LEN" parameterTypeRef="uint16">
+				<xtce:LongDescription>CCSDS Packet Length</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SHCOARSE" parameterTypeRef="uint32">
+				<xtce:LongDescription>CCSDS Secondary Header MET</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="VERSION_REG" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_DIAG_BULK_HVPS.VERSION_REG</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="STATUS_REG" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_DIAG_BULK_HVPS.STATUS_REG</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="MASTER_EN_REG" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_DIAG_BULK_HVPS.MASTER_EN_REG</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="GPO_REG" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_DIAG_BULK_HVPS.GPO_REG</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DAC0_REG" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_DIAG_BULK_HVPS.DAC0_REG</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DAC1_REG" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_DIAG_BULK_HVPS.DAC1_REG</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DAC2_REG" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_DIAG_BULK_HVPS.DAC2_REG</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DAC3_REG" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_DIAG_BULK_HVPS.DAC3_REG</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DAC4_REG" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_DIAG_BULK_HVPS.DAC4_REG</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="ADC_CTRL_STATUS_REG" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_DIAG_BULK_HVPS.ADC_CTRL_STATUS_REG</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="ADC1_WAIT_CNT_REG" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_DIAG_BULK_HVPS.ADC1_WAIT_CNT_REG</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="ADC2_WAIT_CNT_REG" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_DIAG_BULK_HVPS.ADC2_WAIT_CNT_REG</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="HVPS_BULK_VMON" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_DIAG_BULK_HVPS.HVPS_BULK_VMON</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="U_NEG_VMON" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_DIAG_BULK_HVPS.U_NEG_VMON</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="U_POS_VMON" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_DIAG_BULK_HVPS.U_POS_VMON</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DEF_NEG_VMON" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_DIAG_BULK_HVPS.DEF_NEG_VMON</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DEF_POS_VMON" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_DIAG_BULK_HVPS.DEF_POS_VMON</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PMT_VMON" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_DIAG_BULK_HVPS.PMT_VMON</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PMT_IMON" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_DIAG_BULK_HVPS.PMT_IMON</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="BULK_IMON" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_DIAG_BULK_HVPS.BULK_IMON</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DEF_NEG_IMON" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_DIAG_BULK_HVPS.DEF_NEG_IMON</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DEF_POS_IMON" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_DIAG_BULK_HVPS.DEF_POS_IMON</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="REF1_VMON" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_DIAG_BULK_HVPS.REF1_VMON</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="REF2_VMON" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_DIAG_BULK_HVPS.REF2_VMON</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="P12P0_VMON" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_DIAG_BULK_HVPS.P12P0_VMON</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="N12P0_VMON" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_DIAG_BULK_HVPS.N12P0_VMON</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="P3P3_VMON" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_DIAG_BULK_HVPS.P3P3_VMON</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="P1P5_VMON" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_DIAG_BULK_HVPS.P1P5_VMON</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="CHKSUM" parameterTypeRef="uint16">
+				<xtce:LongDescription>16-bit CRC checksum</xtce:LongDescription>
+			</xtce:Parameter>
+		</xtce:ParameterSet>
+		<xtce:ContainerSet>
+			<xtce:SequenceContainer name="CCSDSPacket">
+				<xtce:EntryList>
+					<xtce:ParameterRefEntry parameterRef="VERSION"/>
+					<xtce:ParameterRefEntry parameterRef="TYPE"/>
+					<xtce:ParameterRefEntry parameterRef="SEC_HDR_FLG"/>
+					<xtce:ParameterRefEntry parameterRef="PKT_APID"/>
+					<xtce:ParameterRefEntry parameterRef="SEG_FLGS"/>
+					<xtce:ParameterRefEntry parameterRef="SRC_SEQ_CTR"/>
+					<xtce:ParameterRefEntry parameterRef="PKT_LEN"/>
+				</xtce:EntryList>
+			</xtce:SequenceContainer>
+			<xtce:SequenceContainer name="P_ILO_DIAG_BULK_HVPS">
+				<xtce:EntryList>
+					<xtce:ParameterRefEntry parameterRef="SHCOARSE"/>
+					<xtce:ParameterRefEntry parameterRef="VERSION_REG"/>
+					<xtce:ParameterRefEntry parameterRef="STATUS_REG"/>
+					<xtce:ParameterRefEntry parameterRef="MASTER_EN_REG"/>
+					<xtce:ParameterRefEntry parameterRef="GPO_REG"/>
+					<xtce:ParameterRefEntry parameterRef="DAC0_REG"/>
+					<xtce:ParameterRefEntry parameterRef="DAC1_REG"/>
+					<xtce:ParameterRefEntry parameterRef="DAC2_REG"/>
+					<xtce:ParameterRefEntry parameterRef="DAC3_REG"/>
+					<xtce:ParameterRefEntry parameterRef="DAC4_REG"/>
+					<xtce:ParameterRefEntry parameterRef="ADC_CTRL_STATUS_REG"/>
+					<xtce:ParameterRefEntry parameterRef="ADC1_WAIT_CNT_REG"/>
+					<xtce:ParameterRefEntry parameterRef="ADC2_WAIT_CNT_REG"/>
+					<xtce:ParameterRefEntry parameterRef="HVPS_BULK_VMON"/>
+					<xtce:ParameterRefEntry parameterRef="U_NEG_VMON"/>
+					<xtce:ParameterRefEntry parameterRef="U_POS_VMON"/>
+					<xtce:ParameterRefEntry parameterRef="DEF_NEG_VMON"/>
+					<xtce:ParameterRefEntry parameterRef="DEF_POS_VMON"/>
+					<xtce:ParameterRefEntry parameterRef="PMT_VMON"/>
+					<xtce:ParameterRefEntry parameterRef="PMT_IMON"/>
+					<xtce:ParameterRefEntry parameterRef="BULK_IMON"/>
+					<xtce:ParameterRefEntry parameterRef="DEF_NEG_IMON"/>
+					<xtce:ParameterRefEntry parameterRef="DEF_POS_IMON"/>
+					<xtce:ParameterRefEntry parameterRef="REF1_VMON"/>
+					<xtce:ParameterRefEntry parameterRef="REF2_VMON"/>
+					<xtce:ParameterRefEntry parameterRef="P12P0_VMON"/>
+					<xtce:ParameterRefEntry parameterRef="N12P0_VMON"/>
+					<xtce:ParameterRefEntry parameterRef="P3P3_VMON"/>
+					<xtce:ParameterRefEntry parameterRef="P1P5_VMON"/>
+					<xtce:ParameterRefEntry parameterRef="CHKSUM"/>
+				</xtce:EntryList>
+			</xtce:SequenceContainer>
+		</xtce:ContainerSet>
+	</xtce:TelemetryMetaData>
+</xtce:SpaceSystem>

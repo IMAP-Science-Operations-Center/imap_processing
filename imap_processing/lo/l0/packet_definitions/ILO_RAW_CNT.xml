@@ -1,0 +1,193 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<xtce:SpaceSystem xmlns:xtce="http://www.omg.org/space/xtce" name="P_ILO_RAW_CNT">
+	<xtce:Header date="2023-04-25T14:43:04UTC" version="1.0" author="Sean Hoyt"/>
+	<xtce:TelemetryMetaData>
+		<xtce:ParameterTypeSet>
+			<xtce:IntegerParameterType name="uint1" signed="false">
+				<xtce:UnitSet/>
+				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned"/>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint2" signed="false">
+				<xtce:UnitSet/>
+				<xtce:IntegerDataEncoding sizeInBits="2" encoding="unsigned"/>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint3" signed="false">
+				<xtce:UnitSet/>
+				<xtce:IntegerDataEncoding sizeInBits="3" encoding="unsigned"/>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint11" signed="false">
+				<xtce:UnitSet/>
+				<xtce:IntegerDataEncoding sizeInBits="11" encoding="unsigned"/>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint14" signed="false">
+				<xtce:UnitSet/>
+				<xtce:IntegerDataEncoding sizeInBits="14" encoding="unsigned"/>
+			</xtce:IntegerParameterType>
+			<xtce:BinaryParameterType name="byte16" sizeInBits="16">
+				<xtce:UnitSet/>
+				<xtce:BinaryDataEncoding>
+    				<xtce:SizeInBits>
+						<xtce:FixedValue>16</xtce:FixedValue>
+					</xtce:SizeInBits>
+  				</xtce:BinaryDataEncoding>
+			</xtce:BinaryParameterType>
+			<xtce:IntegerParameterType name="uint16" signed="false">
+				<xtce:UnitSet/>
+				<xtce:IntegerDataEncoding sizeInBits="16" encoding="unsigned"/>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint32" signed="false">
+				<xtce:UnitSet/>
+				<xtce:IntegerDataEncoding sizeInBits="32" encoding="unsigned"/>
+			</xtce:IntegerParameterType>
+			<xtce:BinaryParameterType name="byte96" sizeInBits="96">
+				<xtce:UnitSet/>
+				<xtce:BinaryDataEncoding>
+    				<xtce:SizeInBits>
+						<xtce:FixedValue>96</xtce:FixedValue>
+					</xtce:SizeInBits>
+  				</xtce:BinaryDataEncoding>
+			</xtce:BinaryParameterType>
+			<xtce:BinaryParameterType name="byte960" sizeInBits="960">
+				<xtce:UnitSet/>
+				<xtce:BinaryDataEncoding>
+    				<xtce:SizeInBits>
+						<xtce:FixedValue>960</xtce:FixedValue>
+					</xtce:SizeInBits>
+  				</xtce:BinaryDataEncoding>
+			</xtce:BinaryParameterType>
+		</xtce:ParameterTypeSet>
+		<xtce:ParameterSet>
+			<xtce:Parameter name="VERSION" parameterTypeRef="uint3">
+				<xtce:LongDescription>CCSDS Packet Version Number</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="TYPE" parameterTypeRef="uint1">
+				<xtce:LongDescription>CCSDS Packet Type Indicator</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SEC_HDR_FLG" parameterTypeRef="uint1">
+				<xtce:LongDescription>CCSDS Packet Secondary Header Flag</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PKT_APID" parameterTypeRef="uint11">
+				<xtce:LongDescription>CCSDS Packet Application Process ID</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SEG_FLGS" parameterTypeRef="uint2">
+				<xtce:LongDescription>CCSDS Packet Grouping Flags</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SRC_SEQ_CTR" parameterTypeRef="uint14">
+				<xtce:LongDescription>CCSDS Packet Sequence Count</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PKT_LEN" parameterTypeRef="uint16">
+				<xtce:LongDescription>CCSDS Packet Length</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SHCOARSE" parameterTypeRef="uint32">
+				<xtce:LongDescription>CCSDS Secondary Header MET</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="MET_SUB" parameterTypeRef="uint16">
+				<xtce:LongDescription>Mission Elapsed Time subsecond</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="START_A" parameterTypeRef="byte96">
+				<xtce:LongDescription>Electron, anode A, single</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="START_C" parameterTypeRef="byte96">
+				<xtce:LongDescription>Electron, anode C, single</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="STOP_B0" parameterTypeRef="byte96">
+				<xtce:LongDescription>Ion, anode B0, single</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="STOP_B3" parameterTypeRef="byte96">
+				<xtce:LongDescription>Ion, anode B3, single</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="TOF0" parameterTypeRef="byte96">
+				<xtce:LongDescription>Electron anode A / Ion anode B0, TOF0</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="TOF1" parameterTypeRef="byte96">
+				<xtce:LongDescription>Electron anode C / Ion anode B3, TOF1</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="TOF2" parameterTypeRef="byte96">
+				<xtce:LongDescription>Electron anode A / Ion anode C, TOF2</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="TOF3" parameterTypeRef="byte16">
+				<xtce:LongDescription>Ion anode B0 / Ion anode B3, TOF3</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="ACCUM_MS" parameterTypeRef="byte960">
+				<xtce:LongDescription>Array for fast triples accumulation time</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="TOF0_TOF1" parameterTypeRef="byte960">
+				<xtce:LongDescription>Electron anode A / Ion anode B0
+Electron anode C / Ion anode B3</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="TOF0_TOF2" parameterTypeRef="byte960">
+				<xtce:LongDescription>Electron anode A / Ion anode B0
+Electron anode A / Electron anode C</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="TOF1_TOF2" parameterTypeRef="byte960">
+				<xtce:LongDescription>Electron anode C / Ion anode B3
+Electron anode A / Electron anode C</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SILVER_TRIPLE" parameterTypeRef="byte960">
+				<xtce:LongDescription>Electron anode A / Ion anode B0
+Electron anode C / Ion anode B3
+Electron anode A / Electron anode C
+Ion anode B0 / Ion anode B3</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DISC_TOF0" parameterTypeRef="byte96">
+				<xtce:LongDescription>TOF0 value less than TOF0 threshold setting</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DISC_TOF1" parameterTypeRef="byte96">
+				<xtce:LongDescription>TOF1 value less than TOF1 threshold setting</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DISC_TOF2" parameterTypeRef="byte96">
+				<xtce:LongDescription>TOF2 value less than TOF2 threshold setting</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DISC_TOF3" parameterTypeRef="byte96">
+				<xtce:LongDescription>TOF3 value less than TOF3 threshold setting</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="CHKSUM" parameterTypeRef="uint16">
+				<xtce:LongDescription>16-bit CRC checksum</xtce:LongDescription>
+			</xtce:Parameter>
+		</xtce:ParameterSet>
+		<xtce:ContainerSet>
+			<xtce:SequenceContainer name="CCSDSPacket">
+				<xtce:EntryList>
+					<xtce:ParameterRefEntry parameterRef="VERSION"/>
+					<xtce:ParameterRefEntry parameterRef="TYPE"/>
+					<xtce:ParameterRefEntry parameterRef="SEC_HDR_FLG"/>
+					<xtce:ParameterRefEntry parameterRef="PKT_APID"/>
+					<xtce:ParameterRefEntry parameterRef="SEG_FLGS"/>
+					<xtce:ParameterRefEntry parameterRef="SRC_SEQ_CTR"/>
+					<xtce:ParameterRefEntry parameterRef="PKT_LEN"/>
+				</xtce:EntryList>
+			</xtce:SequenceContainer>
+			<xtce:SequenceContainer abstract="true" name="P_ILO_RAW_CNT">
+				<xtce:EntryList>
+					<xtce:ParameterRefEntry parameterRef="SHCOARSE"/>
+					<xtce:ParameterRefEntry parameterRef="MET_SUB"/>
+					<xtce:ParameterRefEntry parameterRef="START_A"/>
+					<xtce:ParameterRefEntry parameterRef="START_C"/>
+					<xtce:ParameterRefEntry parameterRef="STOP_B0"/>
+					<xtce:ParameterRefEntry parameterRef="STOP_B3"/>
+					<xtce:ParameterRefEntry parameterRef="TOF0"/>
+					<xtce:ParameterRefEntry parameterRef="TOF1"/>
+					<xtce:ParameterRefEntry parameterRef="TOF2"/>
+					<xtce:ParameterRefEntry parameterRef="TOF3"/>
+					<xtce:ParameterRefEntry parameterRef="ACCUM_MS"/>
+					<xtce:ParameterRefEntry parameterRef="TOF0_TOF1"/>
+					<xtce:ParameterRefEntry parameterRef="TOF0_TOF2"/>
+					<xtce:ParameterRefEntry parameterRef="TOF1_TOF2"/>
+					<xtce:ParameterRefEntry parameterRef="SILVER_TRIPLE"/>
+					<xtce:ParameterRefEntry parameterRef="DISC_TOF0"/>
+					<xtce:ParameterRefEntry parameterRef="DISC_TOF1"/>
+					<xtce:ParameterRefEntry parameterRef="DISC_TOF2"/>
+					<xtce:ParameterRefEntry parameterRef="DISC_TOF3"/>
+					<xtce:ParameterRefEntry parameterRef="CHKSUM"/>
+				</xtce:EntryList>
+				<xtce:BaseContainer containerRef="CCSDSPacket">
+                    <xtce:RestrictionCriteria>
+                        <xtce:ComparisonList>
+                            <xtce:Comparison parameterRef="PKT_APID" value="689" useCalibratedValue="false"/>
+                        </xtce:ComparisonList>
+                    </xtce:RestrictionCriteria>
+                </xtce:BaseContainer>
+			</xtce:SequenceContainer>
+		</xtce:ContainerSet>
+	</xtce:TelemetryMetaData>
+</xtce:SpaceSystem>

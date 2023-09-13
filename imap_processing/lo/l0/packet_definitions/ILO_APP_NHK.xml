@@ -1,0 +1,732 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<xtce:SpaceSystem xmlns:xtce="http://www.omg.org/space/xtce" name="P_ILO_APP_NHK">
+	<xtce:Header date="2023-04-25T14:43:04UTC" version="1.0" author="Sean Hoyt"/>
+	<xtce:TelemetryMetaData>
+		<xtce:ParameterTypeSet>
+			<xtce:IntegerParameterType name="uint1" signed="false">
+				<xtce:UnitSet/>
+				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned"/>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint2" signed="false">
+				<xtce:UnitSet/>
+				<xtce:IntegerDataEncoding sizeInBits="2" encoding="unsigned"/>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint3" signed="false">
+				<xtce:UnitSet/>
+				<xtce:IntegerDataEncoding sizeInBits="3" encoding="unsigned"/>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint4" signed="false">
+				<xtce:UnitSet/>
+				<xtce:IntegerDataEncoding sizeInBits="4" encoding="unsigned"/>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint8" signed="false">
+				<xtce:UnitSet/>
+				<xtce:IntegerDataEncoding sizeInBits="8" encoding="unsigned"/>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint11" signed="false">
+				<xtce:UnitSet/>
+				<xtce:IntegerDataEncoding sizeInBits="11" encoding="unsigned"/>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint14" signed="false">
+				<xtce:UnitSet/>
+				<xtce:IntegerDataEncoding sizeInBits="14" encoding="unsigned"/>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint15" signed="false">
+				<xtce:UnitSet/>
+				<xtce:IntegerDataEncoding sizeInBits="15" encoding="unsigned"/>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint16" signed="false">
+				<xtce:UnitSet/>
+				<xtce:IntegerDataEncoding sizeInBits="16" encoding="unsigned"/>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint32" signed="false">
+				<xtce:UnitSet/>
+				<xtce:IntegerDataEncoding sizeInBits="32" encoding="unsigned"/>
+			</xtce:IntegerParameterType>
+		</xtce:ParameterTypeSet>
+		<xtce:ParameterSet>
+			<xtce:Parameter name="VERSION" parameterTypeRef="uint3">
+				<xtce:LongDescription>CCSDS Packet Version Number</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="TYPE" parameterTypeRef="uint1">
+				<xtce:LongDescription>CCSDS Packet Type Indicator</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SEC_HDR_FLG" parameterTypeRef="uint1">
+				<xtce:LongDescription>CCSDS Packet Secondary Header Flag</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PKT_APID" parameterTypeRef="uint11">
+				<xtce:LongDescription>CCSDS Packet Application Process ID</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SEG_FLGS" parameterTypeRef="uint2">
+				<xtce:LongDescription>CCSDS Packet Grouping Flags</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SRC_SEQ_CTR" parameterTypeRef="uint14">
+				<xtce:LongDescription>CCSDS Packet Sequence Count</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PKT_LEN" parameterTypeRef="uint16">
+				<xtce:LongDescription>CCSDS Packet Length</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SHCOARSE" parameterTypeRef="uint32">
+				<xtce:LongDescription>CCSDS Secondary Header MET</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="OP_MODE" parameterTypeRef="uint8">
+				<xtce:LongDescription>Current operating mode</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="MEM_OP_STATE" parameterTypeRef="uint4">
+				<xtce:LongDescription>ILO_APP_NHK.MEM_OP_STATE</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="MEM_DUMP_STATE" parameterTypeRef="uint4">
+				<xtce:LongDescription>ILO_APP_NHK.MEM_DUMP_STATE</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="CMD_EXE_CNT" parameterTypeRef="uint16">
+				<xtce:LongDescription>Accepted commands count</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="CMD_REJ_CNT" parameterTypeRef="uint16">
+				<xtce:LongDescription>Rejected commands count</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="CMD_EXE_OPC" parameterTypeRef="uint16">
+				<xtce:LongDescription>Accepted command opcode</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="ITF_ERR_CNT" parameterTypeRef="uint8">
+				<xtce:LongDescription>ILO_APP_NHK.ITF_ERR_CNT</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SPIN_CNT" parameterTypeRef="uint32">
+				<xtce:LongDescription>ILO_APP_NHK.SPIN_CNT</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="MISSED_PPS_CNT" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_APP_NHK.MISSED_PPS_CNT</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="CPU_UTIL" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_APP_NHK.CPU_UTIL</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="WATCHDOG" parameterTypeRef="uint8">
+				<xtce:LongDescription>ILO_APP_NHK.CDH_WATCHDOG</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SYS_TEMP1" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_APP_NHK.CDH_SYS_TEMP1</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SYS_TEMP2" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_APP_NHK.CDH_SYS_TEMP2</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SYS_TEMP3" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_APP_NHK.CDH_SYS_TEMP3</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="LO_TEMP" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_APP_NHK.CDH_LO_TEMP</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="LVPS_TEMP1" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_APP_NHK.LVPS_TEMP1</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="LVPS_TEMP2" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_APP_NHK.LVPS_TEMP2</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="LVPS_TEMP3" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_APP_NHK.LVPS_TEMP3</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="LVPS_V1" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_APP_NHK.LVPS_V1</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="LVPS_V2" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_APP_NHK.LVPS_V2</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="LVPS_V3" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_APP_NHK.LVPS_V3</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="LVPS_V4" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_APP_NHK.LVPS_V4</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="LVPS_V5" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_APP_NHK.LVPS_V5</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="LVPS_I1" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_APP_NHK.LVPS_I1</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="LVPS_I2" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_APP_NHK.LVPS_I2</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="LVPS_I3" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_APP_NHK.LVPS_I3</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="LVPS_I4" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_APP_NHK.LVPS_I4</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="LVPS_I5" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_APP_NHK.LVPS_I5</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="CDH_1P5V" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_APP_NHK.CDH_1P5V</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="CDH_1P8V" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_APP_NHK.CDH_1P8V</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="CDH_3P3V" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_APP_NHK.CDH_3P3V</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="CDH_12VP" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_APP_NHK.CDH_12VP</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="CDH_12VN" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_APP_NHK.CDH_12VN</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="CDH_5V" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_APP_NHK.CDH_5V</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="CDH_ANA_REF" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_APP_NHK.CDH_ANA_REF</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="CDH_TEMP1" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_APP_NHK.CDH_TEMP1</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="CDH_TEMP2" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_APP_NHK.CDH_TEMP2</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="CDH_TEMP3" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_APP_NHK.CDH_TEMP3</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="CDH_TEMP4" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_APP_NHK.CDH_TEMP4</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SC_CMD_FIFO_STATUS" parameterTypeRef="uint8">
+				<xtce:LongDescription>S/C Command FIFO error flags</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SC_TLM_FIFO_STATUS" parameterTypeRef="uint8">
+				<xtce:LongDescription>S/C Telemetry FIFO error flags</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SPIN_BIN_PERIOD" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_APP_NHK.SPIN_BIN_PERIOD</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SPIN_BIN_IDX" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_APP_NHK.SPIN_BIN_IDX</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SPIN_PERIOD" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_APP_NHK.SPIN_PERIOD</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SPIN_PERIOD_TIMER" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_APP_NHK.SPIN_PERIOD_TIMER</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SPIN_TIME_STAMP_SEC" parameterTypeRef="uint32">
+				<xtce:LongDescription>ILO_APP_NHK.SPIN_TIME_STAMP_SECONDS</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SPIN_TIME_STAMP_SUBSEC" parameterTypeRef="uint32">
+				<xtce:LongDescription>ILO_APP_NHK.SPIN_TIME_STAMP_SUBSECONDS</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="CDH_HEATER_STATUS" parameterTypeRef="uint4">
+				<xtce:LongDescription>ILO_APP_NHK.CDH_HEATER_STATUS</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="INSTR_PWR_STATUS" parameterTypeRef="uint4">
+				<xtce:LongDescription>ILO_APP_NHK.CDH_INSTR_PWR_STATUS</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="IFB_INTERFACE_CTRL_STATUS" parameterTypeRef="uint8">
+				<xtce:LongDescription>ILO_APP_NHK.CDH_IFB_INTERFACE_CTRL_STATUS</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="IFB_ADC_TLM_STATUS" parameterTypeRef="uint8">
+				<xtce:LongDescription>ILO_APP_NHK.CDH_IFB_ADC_TLM_STATUS</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="IFB_TLM_STATUS" parameterTypeRef="uint8">
+				<xtce:LongDescription>ILO_APP_NHK.CDH_IFB_TLM_STATUS</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="TOF_INTERFACE_STATUS" parameterTypeRef="uint8">
+				<xtce:LongDescription>ILO_APP_NHK.CDH_TOF_INTERFACE_STATUS</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DE_TIME_TAG_CTRL_STATUS" parameterTypeRef="uint4">
+				<xtce:LongDescription>ILO_APP_NHK.CDH_DE_TIME_TAG_CTRL_STATUS</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DE_FIFO_CTRL_STATUS" parameterTypeRef="uint4">
+				<xtce:LongDescription>ILO_APP_NHK.CDH_DE_FIFO_CTRL_STATUS</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="HVPS_STATUS" parameterTypeRef="uint32">
+				<xtce:LongDescription>ILO_APP_NHK.CDH_HVPS_STATUS</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PIVOT_INTERFACE_CTRL" parameterTypeRef="uint4">
+				<xtce:LongDescription>ILO_APP_NHK.CDH_PIVOT_INTERFACE_CTRL</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PIVOT_INTERFACE_STATUS" parameterTypeRef="uint4">
+				<xtce:LongDescription>ILO_APP_NHK.CDH_PIVOT_INTERFACE_STATUS</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="IFB_STATUS" parameterTypeRef="uint8">
+				<xtce:LongDescription>ILO_APP_NHK.IFB_STATUS</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="IFB_CMD_COUNT" parameterTypeRef="uint8">
+				<xtce:LongDescription>ILO_APP_NHK.CMD_COUNT</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="IFB_CTRL" parameterTypeRef="uint8">
+				<xtce:LongDescription>ILO_APP_NHK.IFB_CTRL</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="IFB_DATA_INTERVAL" parameterTypeRef="uint8">
+				<xtce:LongDescription>ILO_APP_NHK.IFB_DATA_INTERVAL</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="TOF_HVPS_CTRL" parameterTypeRef="uint8">
+				<xtce:LongDescription>ILO_APP_NHK.TOF_HVPS_CTRL</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PAC_VSET" parameterTypeRef="uint8">
+				<xtce:LongDescription>ILO_APP_NHK.PAC_VSET</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PAC_OCP" parameterTypeRef="uint8">
+				<xtce:LongDescription>ILO_APP_NHK.PAC_OCP</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="MCP_VSET" parameterTypeRef="uint8">
+				<xtce:LongDescription>ILO_APP_NHK.MCP_VSET</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="MCP_OCP" parameterTypeRef="uint8">
+				<xtce:LongDescription>ILO_APP_NHK.MCP_OCP</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="STAR_OFFSET_ADJUST" parameterTypeRef="uint8">
+				<xtce:LongDescription>ILO_APP_NHK.STAR_OFFSET_ADJUST</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="OSCOPE_CH_SEL" parameterTypeRef="uint8">
+				<xtce:LongDescription>ILO_APP_NHK.OSCOPE_CH_SEL</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="IFB_TEMP1" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_APP_NHK.IFB_TEMP1</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="IFB_TEMP0" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_APP_NHK.IFB_TEMP0</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="IFB_V5P0_VM" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_APP_NHK.IFB_V5P0_VM</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="IFB_V3P3_VM" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_APP_NHK.IFB_V3P3_VM</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="IFB_V12P0_VM" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_APP_NHK.IFB_V12P0_VM</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="IFB_V12N0_VM" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_APP_NHK.IFB_V12N0_VM</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="LV_CM" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_APP_NHK.LV_CM</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="LV_VM" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_APP_NHK.LV_VM</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="LV_TEMP" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_APP_NHK.LV_TEMP</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="MCP_CM" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_APP_NHK.MCP_CM</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="MCP_VM" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_APP_NHK.MCP_VM</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="MCP_TEMP" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_APP_NHK.MCP_TEMP</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PAC_CM" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_APP_NHK.PAC_CM</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PAC_VM" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_APP_NHK.PAC_VM</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PAC_TEMP" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_APP_NHK.PAC_TEMP</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="IFB_AUX_ADC" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_APP_NHK.IFB_AUX_ADC</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="TOF_CMD_ERROR" parameterTypeRef="uint8">
+				<xtce:LongDescription>ILO_APP_NHK.CMD_ERROR</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="TOF_CFD_VM" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_APP_NHK.TOF_CFD_VM</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="TOF_PRE_TM" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_APP_NHK.TOF_PRE_TM</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="TOF_TM" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_APP_NHK.TOF_TM</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="TOF_MCP_CM" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_APP_NHK.TOF_MCP_CM</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="TOF_MCP_VM" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_APP_NHK.TOF_MCP_VM</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="TOF_CM" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_APP_NHK.TOF_CM</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="TOF_P5_VM" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_APP_NHK.TOF_P5_VM</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="TOF_P6_VM" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_APP_NHK.TOF_P6_VM</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="AN_A_THR" parameterTypeRef="uint8">
+				<xtce:LongDescription>ILO_APP_NHK.AN_A_THR</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="AN_B0_THR" parameterTypeRef="uint8">
+				<xtce:LongDescription>ILO_APP_NHK.AN_B0_THR</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="AN_B3_THR" parameterTypeRef="uint8">
+				<xtce:LongDescription>ILO_APP_NHK.AN_B3_THR</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="AN_C_THR" parameterTypeRef="uint8">
+				<xtce:LongDescription>ILO_APP_NHK.AN_C_THR</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="TOF_BD_CTRL" parameterTypeRef="uint8">
+				<xtce:LongDescription>ILO_APP_NHK.TOF_BD_CTRL</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="STIM_CTRL" parameterTypeRef="uint8">
+				<xtce:LongDescription>ILO_APP_NHK.STIM_CTRL</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="STIM_CNFG" parameterTypeRef="uint8">
+				<xtce:LongDescription>ILO_APP_NHK.STIM_CNFG</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="AN_TOF3_THR" parameterTypeRef="uint8">
+				<xtce:LongDescription>ILO_APP_NHK.AN_TOF3_THR</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="AN_TOF2_THR" parameterTypeRef="uint8">
+				<xtce:LongDescription>ILO_APP_NHK.AN_TOF2_THR</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="AN_TOF1_THR" parameterTypeRef="uint8">
+				<xtce:LongDescription>ILO_APP_NHK.AN_TOF1_THR</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="AN_TOF0_THR" parameterTypeRef="uint8">
+				<xtce:LongDescription>ILO_APP_NHK.AN_TOF0_THR</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="BULK_HVPS_STATUS" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_APP_NHK.BULK_HVPS_STATUS</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="BULK_HVPS_GPO" parameterTypeRef="uint8">
+				<xtce:LongDescription>ILO_APP_NHK.BULK_HVPS_GPO</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="BULK_HVPS_DAC0" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_APP_NHK.BULK_HVPS_DAC0</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="BULK_HVPS_DAC1" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_APP_NHK.BULK_HVPS_DAC1</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="BULK_HVPS_DAC2" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_APP_NHK.BULK_HVPS_DAC2</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="BULK_HVPS_DAC3" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_APP_NHK.BULK_HVPS_DAC3</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="BULK_HVPS_DAC4" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_APP_NHK.BULK_HVPS_DAC4</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="BULK_HVPS_ADC_CTRL_STATUS" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_APP_NHK.BULK_HVPS_ADC_CTRL_STATUS</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="BULK_HVPS_HVPS_BULK_VMON" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_APP_NHK.BULK_HVPS_HVPS_BULK_VMON</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="BULK_HVPS_U_NEG_VMON" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_APP_NHK.BULK_HVPS_U_NEG_VMON</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="BULK_HVPS_U_POS_VMON" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_APP_NHK.BULK_HVPS_U_POS_VMON</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="BULK_HVPS_DEF_NEG_VMON" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_APP_NHK.BULK_HVPS_DEF_NEG_VMON</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="BULK_HVPS_DEF_POS_VMON" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_APP_NHK.BULK_HVPS_DEF_POS_VMON</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="BULK_HVPS_PMT_VMON" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_APP_NHK.BULK_HVPS_PMT_VMON</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="BULK_HVPS_PMT_IMON" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_APP_NHK.BULK_HVPS_PMT_IMON</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="BULK_HVPS_BULK_IMON" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_APP_NHK.BULK_HVPS_BULK_IMON</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="BULK_HVPS_DEF_NEG_IMON" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_APP_NHK.BULK_HVPS_DEF_NEG_IMON</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="BULK_HVPS_DEF_POS_IMON" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_APP_NHK.BULK_HVPS_DEF_POS_IMON</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="BULK_HVPS_REF1_VMON" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_APP_NHK.BULK_HVPS_REF1_VMON</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="BULK_HVPS_REF2_VMON" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_APP_NHK.BULK_HVPS_REF2_VMON</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="BULK_HVPS_P12P0_VMON" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_APP_NHK.BULK_HVPS_P12P0_VMON</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="BULK_HVPS_N12P0_VMON" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_APP_NHK.BULK_HVPS_N12P0_VMON</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="BULK_HVPS_P3P3_VMON" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_APP_NHK.BULK_HVPS_P3P3_VMON</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="BULK_HVPS_P1P5_VMON" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_APP_NHK.BULK_HVPS_P1P5_VMON</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PCC_COARSE_POT_PRI" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_APP_NHK.PCC_COARSE_POT_PRI</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PCC_FINE_POT_PRI" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_APP_NHK.PCC_FINE_POT_PRI</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PCC_COARSE_POT_RED" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_APP_NHK.PCC_COARSE_POT_RED</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PCC_FINE_POT_RED" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_APP_NHK.PCC_FINE_POT_RED</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PCC_ACTUATOR_TEMP" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_APP_NHK.PCC_ACTUATOR_TEMP</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PCC_PCC_BOARD_TEMP" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_APP_NHK.PCC_PCC_BOARD_TEMP</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PCC_MOTOR_CURRENT_PRI" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_APP_NHK.PCC_MOTOR_CURRENT_PRI</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PCC_MOTOR_CURRENT_RED" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_APP_NHK.PCC_MOTOR_CURRENT_RED</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PCC_CUMULATIVE_CNT_PRI" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_APP_NHK.PCC_CUMULATIVE_CNT_PRI</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PCC_CUMULATIVE_CNT_SGN_PRI" parameterTypeRef="uint8">
+				<xtce:LongDescription>ILO_APP_NHK.PCC_CUMULATIVE_CNT_SGN_PRI</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PCC_CUMULATIVE_CNT_RED" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_APP_NHK.PCC_CUMULATIVE_CNT_RED</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PCC_CUMULATIVE_CNT_SGN_RED" parameterTypeRef="uint8">
+				<xtce:LongDescription>ILO_APP_NHK.PCC_CUMULATIVE_CNT_SGN_RED</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PCC_CURRENT_STEP_CNT_PRI" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_APP_NHK.PCC_CURRENT_STEP_CNT_PRI</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PCC_CURRENT_STEP_CNT_RED" parameterTypeRef="uint16">
+				<xtce:LongDescription>ILO_APP_NHK.PCC_CURRENT_STEP_CNT_RED</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PCC_CURRENT_SETPT_PRI" parameterTypeRef="uint8">
+				<xtce:LongDescription>ILO_APP_NHK.PCC_CURRENT_SETPT_PRI</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PCC_CURRENT_SETPT_RED" parameterTypeRef="uint8">
+				<xtce:LongDescription>ILO_APP_NHK.PCC_CURRENT_SETPT_RED</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PCC_STATUS" parameterTypeRef="uint8">
+				<xtce:LongDescription>ILO_APP_NHK.PCC_STATUS</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="MACRO_STATUS" parameterTypeRef="uint32">
+				<xtce:LongDescription>TBD - Placeholder for Macro status</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="FDR_TRIGGER_CNT_CAT_1" parameterTypeRef="uint2">
+				<xtce:LongDescription>Indicates whether any CATEGORY 1 limits have triggered</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="FDR_TRIGGER_CNT_CAT_2" parameterTypeRef="uint2">
+				<xtce:LongDescription>Indicates whether any CATEGORY 2 limits have triggered</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="FDR_TRIGGER_CNT_CAT_3" parameterTypeRef="uint2">
+				<xtce:LongDescription>Indicates whether any CATEGORY 3 limits have triggered</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="FDR_TRIGGER_CNT_CAT_4" parameterTypeRef="uint2">
+				<xtce:LongDescription>Indicates whether any CATEGORY 4 limits have triggered</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="FDR_TRIGGER_CNT_CAT_5" parameterTypeRef="uint2">
+				<xtce:LongDescription>Indicates whether any CATEGORY 5 limits have triggered</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="FDR_TRIGGER_CNT_CAT_6" parameterTypeRef="uint2">
+				<xtce:LongDescription>Indicates whether any CATEGORY 6 limits have triggered</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="FDR_TRIGGER_CNT_CAT_7" parameterTypeRef="uint2">
+				<xtce:LongDescription>Indicates whether any CATEGORY 7 limits have triggered</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="FDR_TRIGGER_CNT_CAT_8" parameterTypeRef="uint2">
+				<xtce:LongDescription>Indicates whether any CATEGORY 8 limits have triggered</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="FDR_LAST_TRIGGER_MINMAX" parameterTypeRef="uint1">
+				<xtce:LongDescription>Indicates whether the most recent trigger was a minimum or maximum limit</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="FDR_LAST_TRIGGER_ID" parameterTypeRef="uint15">
+				<xtce:LongDescription>Indicates the ID of the most recent FDC trigger</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="FDR_LAST_TRIGGER_ACTION" parameterTypeRef="uint8">
+				<xtce:LongDescription>Indicates the action that was taken for the most recent FDC trigger</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SPARE" parameterTypeRef="uint8">
+				<xtce:LongDescription>ILO_APP_NHK.SPARE</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="CHKSUM" parameterTypeRef="uint16">
+				<xtce:LongDescription>CRC-16 Checksum</xtce:LongDescription>
+			</xtce:Parameter>
+		</xtce:ParameterSet>
+		<xtce:ContainerSet>
+			<xtce:SequenceContainer name="CCSDSPacket">
+				<xtce:EntryList>
+					<xtce:ParameterRefEntry parameterRef="VERSION"/>
+					<xtce:ParameterRefEntry parameterRef="TYPE"/>
+					<xtce:ParameterRefEntry parameterRef="SEC_HDR_FLG"/>
+					<xtce:ParameterRefEntry parameterRef="PKT_APID"/>
+					<xtce:ParameterRefEntry parameterRef="SEG_FLGS"/>
+					<xtce:ParameterRefEntry parameterRef="SRC_SEQ_CTR"/>
+					<xtce:ParameterRefEntry parameterRef="PKT_LEN"/>
+				</xtce:EntryList>
+			</xtce:SequenceContainer>
+			<xtce:SequenceContainer name="P_ILO_APP_NHK">
+				<xtce:EntryList>
+					<xtce:ParameterRefEntry parameterRef="SHCOARSE"/>
+					<xtce:ParameterRefEntry parameterRef="OP_MODE"/>
+					<xtce:ParameterRefEntry parameterRef="MEM_OP_STATE"/>
+					<xtce:ParameterRefEntry parameterRef="MEM_DUMP_STATE"/>
+					<xtce:ParameterRefEntry parameterRef="CMD_EXE_CNT"/>
+					<xtce:ParameterRefEntry parameterRef="CMD_REJ_CNT"/>
+					<xtce:ParameterRefEntry parameterRef="CMD_EXE_OPC"/>
+					<xtce:ParameterRefEntry parameterRef="ITF_ERR_CNT"/>
+					<xtce:ParameterRefEntry parameterRef="SPIN_CNT"/>
+					<xtce:ParameterRefEntry parameterRef="MISSED_PPS_CNT"/>
+					<xtce:ParameterRefEntry parameterRef="CPU_UTIL"/>
+					<xtce:ParameterRefEntry parameterRef="WATCHDOG"/>
+					<xtce:ParameterRefEntry parameterRef="SYS_TEMP1"/>
+					<xtce:ParameterRefEntry parameterRef="SYS_TEMP2"/>
+					<xtce:ParameterRefEntry parameterRef="SYS_TEMP3"/>
+					<xtce:ParameterRefEntry parameterRef="LO_TEMP"/>
+					<xtce:ParameterRefEntry parameterRef="LVPS_TEMP1"/>
+					<xtce:ParameterRefEntry parameterRef="LVPS_TEMP2"/>
+					<xtce:ParameterRefEntry parameterRef="LVPS_TEMP3"/>
+					<xtce:ParameterRefEntry parameterRef="LVPS_V1"/>
+					<xtce:ParameterRefEntry parameterRef="LVPS_V2"/>
+					<xtce:ParameterRefEntry parameterRef="LVPS_V3"/>
+					<xtce:ParameterRefEntry parameterRef="LVPS_V4"/>
+					<xtce:ParameterRefEntry parameterRef="LVPS_V5"/>
+					<xtce:ParameterRefEntry parameterRef="LVPS_I1"/>
+					<xtce:ParameterRefEntry parameterRef="LVPS_I2"/>
+					<xtce:ParameterRefEntry parameterRef="LVPS_I3"/>
+					<xtce:ParameterRefEntry parameterRef="LVPS_I4"/>
+					<xtce:ParameterRefEntry parameterRef="LVPS_I5"/>
+					<xtce:ParameterRefEntry parameterRef="CDH_1P5V"/>
+					<xtce:ParameterRefEntry parameterRef="CDH_1P8V"/>
+					<xtce:ParameterRefEntry parameterRef="CDH_3P3V"/>
+					<xtce:ParameterRefEntry parameterRef="CDH_12VP"/>
+					<xtce:ParameterRefEntry parameterRef="CDH_12VN"/>
+					<xtce:ParameterRefEntry parameterRef="CDH_5V"/>
+					<xtce:ParameterRefEntry parameterRef="CDH_ANA_REF"/>
+					<xtce:ParameterRefEntry parameterRef="CDH_TEMP1"/>
+					<xtce:ParameterRefEntry parameterRef="CDH_TEMP2"/>
+					<xtce:ParameterRefEntry parameterRef="CDH_TEMP3"/>
+					<xtce:ParameterRefEntry parameterRef="CDH_TEMP4"/>
+					<xtce:ParameterRefEntry parameterRef="SC_CMD_FIFO_STATUS"/>
+					<xtce:ParameterRefEntry parameterRef="SC_TLM_FIFO_STATUS"/>
+					<xtce:ParameterRefEntry parameterRef="SPIN_BIN_PERIOD"/>
+					<xtce:ParameterRefEntry parameterRef="SPIN_BIN_IDX"/>
+					<xtce:ParameterRefEntry parameterRef="SPIN_PERIOD"/>
+					<xtce:ParameterRefEntry parameterRef="SPIN_PERIOD_TIMER"/>
+					<xtce:ParameterRefEntry parameterRef="SPIN_TIME_STAMP_SEC"/>
+					<xtce:ParameterRefEntry parameterRef="SPIN_TIME_STAMP_SUBSEC"/>
+					<xtce:ParameterRefEntry parameterRef="CDH_HEATER_STATUS"/>
+					<xtce:ParameterRefEntry parameterRef="INSTR_PWR_STATUS"/>
+					<xtce:ParameterRefEntry parameterRef="IFB_INTERFACE_CTRL_STATUS"/>
+					<xtce:ParameterRefEntry parameterRef="IFB_ADC_TLM_STATUS"/>
+					<xtce:ParameterRefEntry parameterRef="IFB_TLM_STATUS"/>
+					<xtce:ParameterRefEntry parameterRef="TOF_INTERFACE_STATUS"/>
+					<xtce:ParameterRefEntry parameterRef="DE_TIME_TAG_CTRL_STATUS"/>
+					<xtce:ParameterRefEntry parameterRef="DE_FIFO_CTRL_STATUS"/>
+					<xtce:ParameterRefEntry parameterRef="HVPS_STATUS"/>
+					<xtce:ParameterRefEntry parameterRef="PIVOT_INTERFACE_CTRL"/>
+					<xtce:ParameterRefEntry parameterRef="PIVOT_INTERFACE_STATUS"/>
+					<xtce:ParameterRefEntry parameterRef="IFB_STATUS"/>
+					<xtce:ParameterRefEntry parameterRef="IFB_CMD_COUNT"/>
+					<xtce:ParameterRefEntry parameterRef="IFB_CTRL"/>
+					<xtce:ParameterRefEntry parameterRef="IFB_DATA_INTERVAL"/>
+					<xtce:ParameterRefEntry parameterRef="TOF_HVPS_CTRL"/>
+					<xtce:ParameterRefEntry parameterRef="PAC_VSET"/>
+					<xtce:ParameterRefEntry parameterRef="PAC_OCP"/>
+					<xtce:ParameterRefEntry parameterRef="MCP_VSET"/>
+					<xtce:ParameterRefEntry parameterRef="MCP_OCP"/>
+					<xtce:ParameterRefEntry parameterRef="STAR_OFFSET_ADJUST"/>
+					<xtce:ParameterRefEntry parameterRef="OSCOPE_CH_SEL"/>
+					<xtce:ParameterRefEntry parameterRef="IFB_TEMP1"/>
+					<xtce:ParameterRefEntry parameterRef="IFB_TEMP0"/>
+					<xtce:ParameterRefEntry parameterRef="IFB_V5P0_VM"/>
+					<xtce:ParameterRefEntry parameterRef="IFB_V3P3_VM"/>
+					<xtce:ParameterRefEntry parameterRef="IFB_V12P0_VM"/>
+					<xtce:ParameterRefEntry parameterRef="IFB_V12N0_VM"/>
+					<xtce:ParameterRefEntry parameterRef="LV_CM"/>
+					<xtce:ParameterRefEntry parameterRef="LV_VM"/>
+					<xtce:ParameterRefEntry parameterRef="LV_TEMP"/>
+					<xtce:ParameterRefEntry parameterRef="MCP_CM"/>
+					<xtce:ParameterRefEntry parameterRef="MCP_VM"/>
+					<xtce:ParameterRefEntry parameterRef="MCP_TEMP"/>
+					<xtce:ParameterRefEntry parameterRef="PAC_CM"/>
+					<xtce:ParameterRefEntry parameterRef="PAC_VM"/>
+					<xtce:ParameterRefEntry parameterRef="PAC_TEMP"/>
+					<xtce:ParameterRefEntry parameterRef="IFB_AUX_ADC"/>
+					<xtce:ParameterRefEntry parameterRef="TOF_CMD_ERROR"/>
+					<xtce:ParameterRefEntry parameterRef="TOF_CFD_VM"/>
+					<xtce:ParameterRefEntry parameterRef="TOF_PRE_TM"/>
+					<xtce:ParameterRefEntry parameterRef="TOF_TM"/>
+					<xtce:ParameterRefEntry parameterRef="TOF_MCP_CM"/>
+					<xtce:ParameterRefEntry parameterRef="TOF_MCP_VM"/>
+					<xtce:ParameterRefEntry parameterRef="TOF_CM"/>
+					<xtce:ParameterRefEntry parameterRef="TOF_P5_VM"/>
+					<xtce:ParameterRefEntry parameterRef="TOF_P6_VM"/>
+					<xtce:ParameterRefEntry parameterRef="AN_A_THR"/>
+					<xtce:ParameterRefEntry parameterRef="AN_B0_THR"/>
+					<xtce:ParameterRefEntry parameterRef="AN_B3_THR"/>
+					<xtce:ParameterRefEntry parameterRef="AN_C_THR"/>
+					<xtce:ParameterRefEntry parameterRef="TOF_BD_CTRL"/>
+					<xtce:ParameterRefEntry parameterRef="STIM_CTRL"/>
+					<xtce:ParameterRefEntry parameterRef="STIM_CNFG"/>
+					<xtce:ParameterRefEntry parameterRef="AN_TOF3_THR"/>
+					<xtce:ParameterRefEntry parameterRef="AN_TOF2_THR"/>
+					<xtce:ParameterRefEntry parameterRef="AN_TOF1_THR"/>
+					<xtce:ParameterRefEntry parameterRef="AN_TOF0_THR"/>
+					<xtce:ParameterRefEntry parameterRef="BULK_HVPS_STATUS"/>
+					<xtce:ParameterRefEntry parameterRef="BULK_HVPS_GPO"/>
+					<xtce:ParameterRefEntry parameterRef="BULK_HVPS_DAC0"/>
+					<xtce:ParameterRefEntry parameterRef="BULK_HVPS_DAC1"/>
+					<xtce:ParameterRefEntry parameterRef="BULK_HVPS_DAC2"/>
+					<xtce:ParameterRefEntry parameterRef="BULK_HVPS_DAC3"/>
+					<xtce:ParameterRefEntry parameterRef="BULK_HVPS_DAC4"/>
+					<xtce:ParameterRefEntry parameterRef="BULK_HVPS_ADC_CTRL_STATUS"/>
+					<xtce:ParameterRefEntry parameterRef="BULK_HVPS_HVPS_BULK_VMON"/>
+					<xtce:ParameterRefEntry parameterRef="BULK_HVPS_U_NEG_VMON"/>
+					<xtce:ParameterRefEntry parameterRef="BULK_HVPS_U_POS_VMON"/>
+					<xtce:ParameterRefEntry parameterRef="BULK_HVPS_DEF_NEG_VMON"/>
+					<xtce:ParameterRefEntry parameterRef="BULK_HVPS_DEF_POS_VMON"/>
+					<xtce:ParameterRefEntry parameterRef="BULK_HVPS_PMT_VMON"/>
+					<xtce:ParameterRefEntry parameterRef="BULK_HVPS_PMT_IMON"/>
+					<xtce:ParameterRefEntry parameterRef="BULK_HVPS_BULK_IMON"/>
+					<xtce:ParameterRefEntry parameterRef="BULK_HVPS_DEF_NEG_IMON"/>
+					<xtce:ParameterRefEntry parameterRef="BULK_HVPS_DEF_POS_IMON"/>
+					<xtce:ParameterRefEntry parameterRef="BULK_HVPS_REF1_VMON"/>
+					<xtce:ParameterRefEntry parameterRef="BULK_HVPS_REF2_VMON"/>
+					<xtce:ParameterRefEntry parameterRef="BULK_HVPS_P12P0_VMON"/>
+					<xtce:ParameterRefEntry parameterRef="BULK_HVPS_N12P0_VMON"/>
+					<xtce:ParameterRefEntry parameterRef="BULK_HVPS_P3P3_VMON"/>
+					<xtce:ParameterRefEntry parameterRef="BULK_HVPS_P1P5_VMON"/>
+					<xtce:ParameterRefEntry parameterRef="PCC_COARSE_POT_PRI"/>
+					<xtce:ParameterRefEntry parameterRef="PCC_FINE_POT_PRI"/>
+					<xtce:ParameterRefEntry parameterRef="PCC_COARSE_POT_RED"/>
+					<xtce:ParameterRefEntry parameterRef="PCC_FINE_POT_RED"/>
+					<xtce:ParameterRefEntry parameterRef="PCC_ACTUATOR_TEMP"/>
+					<xtce:ParameterRefEntry parameterRef="PCC_PCC_BOARD_TEMP"/>
+					<xtce:ParameterRefEntry parameterRef="PCC_MOTOR_CURRENT_PRI"/>
+					<xtce:ParameterRefEntry parameterRef="PCC_MOTOR_CURRENT_RED"/>
+					<xtce:ParameterRefEntry parameterRef="PCC_CUMULATIVE_CNT_PRI"/>
+					<xtce:ParameterRefEntry parameterRef="PCC_CUMULATIVE_CNT_SGN_PRI"/>
+					<xtce:ParameterRefEntry parameterRef="PCC_CUMULATIVE_CNT_RED"/>
+					<xtce:ParameterRefEntry parameterRef="PCC_CUMULATIVE_CNT_SGN_RED"/>
+					<xtce:ParameterRefEntry parameterRef="PCC_CURRENT_STEP_CNT_PRI"/>
+					<xtce:ParameterRefEntry parameterRef="PCC_CURRENT_STEP_CNT_RED"/>
+					<xtce:ParameterRefEntry parameterRef="PCC_CURRENT_SETPT_PRI"/>
+					<xtce:ParameterRefEntry parameterRef="PCC_CURRENT_SETPT_RED"/>
+					<xtce:ParameterRefEntry parameterRef="PCC_STATUS"/>
+					<xtce:ParameterRefEntry parameterRef="MACRO_STATUS"/>
+					<xtce:ParameterRefEntry parameterRef="FDR_TRIGGER_CNT_CAT_1"/>
+					<xtce:ParameterRefEntry parameterRef="FDR_TRIGGER_CNT_CAT_2"/>
+					<xtce:ParameterRefEntry parameterRef="FDR_TRIGGER_CNT_CAT_3"/>
+					<xtce:ParameterRefEntry parameterRef="FDR_TRIGGER_CNT_CAT_4"/>
+					<xtce:ParameterRefEntry parameterRef="FDR_TRIGGER_CNT_CAT_5"/>
+					<xtce:ParameterRefEntry parameterRef="FDR_TRIGGER_CNT_CAT_6"/>
+					<xtce:ParameterRefEntry parameterRef="FDR_TRIGGER_CNT_CAT_7"/>
+					<xtce:ParameterRefEntry parameterRef="FDR_TRIGGER_CNT_CAT_8"/>
+					<xtce:ParameterRefEntry parameterRef="FDR_LAST_TRIGGER_MINMAX"/>
+					<xtce:ParameterRefEntry parameterRef="FDR_LAST_TRIGGER_ID"/>
+					<xtce:ParameterRefEntry parameterRef="FDR_LAST_TRIGGER_ACTION"/>
+					<xtce:ParameterRefEntry parameterRef="SPARE"/>
+					<xtce:ParameterRefEntry parameterRef="CHKSUM"/>
+				</xtce:EntryList>
+			</xtce:SequenceContainer>
+		</xtce:ContainerSet>
+	</xtce:TelemetryMetaData>
+</xtce:SpaceSystem>
