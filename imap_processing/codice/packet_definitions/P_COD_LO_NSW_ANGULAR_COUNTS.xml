@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='utf-8'?>
-<xtce:SpaceSystem xmlns:xtce="http://www.omg.org/space/xtce" name="P_COD_HI_OMNI_SPECIES_COUNTS">
+<xtce:SpaceSystem xmlns:xtce="http://www.omg.org/space/xtce" name="P_COD_LO_NSW_ANGULAR_COUNTS">
 	<xtce:Header date="2023-09" version="1.0" author="IMAP SDC" />
 	<xtce:TelemetryMetaData>
 		<xtce:ParameterTypeSet>
@@ -39,11 +39,11 @@
 			<xtce:ParameterType name="UINT32" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="32" encoding="unsigned" />
 			</xtce:ParameterType>
-			<xtce:BinaryParameterType name="BYTE28704768">
+			<xtce:BinaryParameterType name="BYTE37748736">
 				<xtce:UnitSet />
 				<xtce:BinaryDataEncoding bitOrder="mostSignificantBitFirst">
 					<xtce:SizeInBits>
-						<xtce:FixedValue>28704768</xtce:FixedValue>
+						<xtce:FixedValue>37748736</xtce:FixedValue>
 					</xtce:SizeInBits>
 				</xtce:BinaryDataEncoding>
 			</xtce:BinaryParameterType>
@@ -118,7 +118,7 @@
 			<xtce:Parameter name="Byte_Count" parameterTypeRef="UINT24">
 				<xtce:LongDescription>Number of bytes in the Data array</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="Data" parameterTypeRef="BYTE28704768">
+			<xtce:Parameter name="Data" parameterTypeRef="BYTE37748736">
 				<xtce:LongDescription>Data Array</xtce:LongDescription>
 			</xtce:Parameter>
 		</xtce:ParameterSet>
@@ -135,10 +135,10 @@
 					<xtce:ParameterRefEntry parameterRef="SHCOARSE" />
 				</xtce:EntryList>
 			</xtce:SequenceContainer>
-			<xtce:SequenceContainer name="P_COD_HI_OMNI_SPECIES_COUNTS">
+			<xtce:SequenceContainer name="P_COD_LO_NSW_ANGULAR_COUNTS">
 				<xtce:BaseContainer containerRef="CCSDSPacket">
 					<xtce:RestrictionCriteria>
-						<xtce:Comparison parameterRef="PKT_APID" value="1172" useCalibratedValue="false" />
+						<xtce:Comparison parameterRef="PKT_APID" value="1159" useCalibratedValue="false" />
 					</xtce:RestrictionCriteria>
 				</xtce:BaseContainer>
 				<xtce:EntryList>
