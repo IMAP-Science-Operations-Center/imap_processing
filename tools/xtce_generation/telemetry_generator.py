@@ -246,9 +246,9 @@ class TelemetryGenerator:
 
             description = Et.SubElement(parameter, "xtce:LongDescription")
 
-            if row["longDescription"] is None and row["shortDescription"] is None:
+            if row.get("longDescription") is None and row.get("shortDescription") is None:
                 description.text = ""
-            elif row["shortDescription"]:
+            elif row.get("shortDescription"):
                 description.text = row["shortDescription"]
             else:
                 description.text = row["longDescription"]
