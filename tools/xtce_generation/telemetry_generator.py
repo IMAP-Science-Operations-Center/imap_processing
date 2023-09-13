@@ -7,14 +7,16 @@ from tools.xtce_generation.ccsds_header_xtce_generator import CCSDSParameters
 
 
 class TelemetryGenerator:
-    def __init__(self, packet_name, path_to_excel_file, apid, sci_byte=None, pkt=None):
+    def __init__(self, packet_name, path_to_excel_file, apid, pkt=None):
         self.packet_name = packet_name
         self.apid = apid
-        self.sci_byte = sci_byte
 
-        # Read excel sheet
-        xls = pd.ExcelFile(path_to_excel_file)
-        self.pkt = xls.parse(packet_name)
+        if pkt is None:
+            # Read excel sheet
+            xls = pd.ExcelFile(path_to_excel_file)
+            self.pkt = xls.parse(packet_name)
+        else:
+            self.pkt = pkt
 
     def create_telemetry_xml(self):
         """
@@ -84,6 +86,8 @@ class TelemetryGenerator:
             unique_lengths[
                 f"{data_types[index]}{length_in_bits[index]}"
             ] = length_in_bits[index]
+        # Sort the dictionary by the value (lengthInBits)
+        unique_lengths = dict(sorted(unique_lengths.items(), key=lambda item: item[1]))
         return unique_lengths
 
     def create_parameter_types(self, parameter_type_set, unique_lengths):
@@ -229,7 +233,9 @@ class TelemetryGenerator:
         # Process rows from SHCOARSE until the last available row in the DataFrame
         for index, row in self.pkt.iterrows():
             if index < 8:
-                continue  # Skip rows until SHCOARSE(also known as MET) which are part of CCSDS header
+                # Skip rows until SHCOARSE(also known as MET) which are
+                # part of CCSDS header
+                continue
 
             parameter = Et.SubElement(
                 parameter_set, "{http://www.omg.org/space}Parameter"
