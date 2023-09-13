@@ -10,6 +10,7 @@ class TelemetryGenerator:
     def __init__(self, packet_name, path_to_excel_file, apid, pkt=None):
         self.packet_name = packet_name
         self.apid = apid
+        self.source_link = "http://www.omg.org/space/xtce"
 
         if pkt is None:
             # Read excel sheet
@@ -29,25 +30,27 @@ class TelemetryGenerator:
         - telemetry_metadata: The TelemetryMetaData element.
         """
         # Register the XML namespace
-        Et.register_namespace("xtce", "http://www.omg.org/space")
+        Et.register_namespace("xtce", self.source_link)
 
         # Get the current date and time
         current_date = datetime.now().strftime("%Y-%m")
 
         # Create the root element and add namespaces
-        root = Et.Element("{http://www.omg.org/space}SpaceSystem")
+        root = Et.Element("xtce:SpaceSystem")
+        root.attrib["xmlns:xtce"] = f"{self.source_link}"
         root.attrib["name"] = self.packet_name
+        # xmlns:xtce="http://www.omg.org/space/xtce"
 
         # Create the Header element with attributes 'date', 'version', and 'author'
         # Versioning is used to keep track of changes to the XML file.
-        header = Et.SubElement(root, "{http://www.omg.org/space}Header")
+        header = Et.SubElement(root, "xtce:Header")
         header.attrib["date"] = current_date
         header.attrib["version"] = "1.0"
         header.attrib["author"] = "IMAP SDC"
 
         # Create the TelemetryMetaData element
         telemetry_metadata = Et.SubElement(
-            root, "{http://www.omg.org/space}TelemetryMetaData"
+            root, "xtce:TelemetryMetaData"
         )
 
         # Create the ParameterTypeSet element
@@ -63,7 +66,7 @@ class TelemetryGenerator:
         with key and value using the dataType and lengthInBits.
         Eg.
         {
-            'UINTt16': 16,
+            'UINT16': 16,
             'UINT32': 32,
             'BYTE13000': 13000,
         }
@@ -79,7 +82,7 @@ class TelemetryGenerator:
         for index in range(len(length_in_bits)):
             # Here, we are creating a dictionary like this:
             # {
-            #     'UINTt16': 16,
+            #     'UINT16': 16,
             #     'UINT32': 32,
             #     'BYTE13000': 13000,
             # }
@@ -238,7 +241,7 @@ class TelemetryGenerator:
                 continue
 
             parameter = Et.SubElement(
-                parameter_set, "{http://www.omg.org/space}Parameter"
+                parameter_set, "xtce:Parameter"
             )
             parameter.attrib["name"] = row["mnemonic"]
             parameter_type_ref = f"{row['dataType']}{row['lengthInBits']}"
@@ -246,13 +249,15 @@ class TelemetryGenerator:
             parameter.attrib["parameterTypeRef"] = parameter_type_ref
 
             description = Et.SubElement(
-                parameter, "{http://www.omg.org/space}LongDescription"
+                parameter, "xtce:LongDescription"
             )
 
-            try:
-                description.text = row["longDescription"]
-            except KeyError:
+            if row["longDescription"] is None and row["shortDescription"] is None:
+                description.text = ""
+            elif row["shortDescription"]:
                 description.text = row["shortDescription"]
+            else:
+                description.text = row["longDescription"]
 
         return parameter_set
 
