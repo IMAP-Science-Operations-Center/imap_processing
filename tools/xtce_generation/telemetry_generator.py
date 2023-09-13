@@ -2,7 +2,8 @@ import xml.etree.ElementTree as Et
 from datetime import datetime
 
 import pandas as pd
-from ccsds_header_xtce_generator import CCSDSParameters
+
+from tools.xtce_generation.ccsds_header_xtce_generator import CCSDSParameters
 
 
 class TelemetryGenerator:
@@ -155,7 +156,9 @@ class TelemetryGenerator:
 
         return parameter_set
 
-    def create_container_set(self, telemetry_metadata, ccsds_parameters):
+    def create_container_set(
+        self, telemetry_metadata, ccsds_parameters, container_name
+    ):
         """
         Create XML elements for ContainerSet, CCSDSPacket SequenceContainer,
         and Packet SequenceContainer.
@@ -163,6 +166,7 @@ class TelemetryGenerator:
         Parameters:
         - telemetry_metadata: The TelemetryMetaData element where containers are.
         - ccsds_parameters: A list of dictionaries containing CCSDS parameter data.
+        - container_name: The name of sequence container
 
         Returns:
         - telemetry_metadata: The updated TelemetryMetaData element.
@@ -187,7 +191,7 @@ class TelemetryGenerator:
         # Create Packet SequenceContainer that use CCSDSPacket SequenceContainer
         # as base container
         science_container = Et.SubElement(container_set, "xtce:SequenceContainer")
-        science_container.attrib["name"] = self.packet_name
+        science_container.attrib["name"] = container_name
 
         base_container = Et.SubElement(science_container, "xtce:BaseContainer")
         base_container.attrib["containerRef"] = "CCSDSPacket"
@@ -246,13 +250,13 @@ class TelemetryGenerator:
 
         return parameter_set
 
-    def generate_telemetry_xml(self, output_xml_path):
+    def generate_telemetry_xml(self, output_xml_path, container_name):
         """
         Create and output an XTCE file based on the data within the class.
         Parameters
         ----------
         output_xml_path: the path for the final xml file
-        packet_name: The name of the science packet in the output xml
+        container_name: The name of the sequence container in the output xml
         """
 
         unique_bits_lengths_data = self.get_unique_bits_length()
@@ -281,6 +285,7 @@ class TelemetryGenerator:
         telemetry_metadata = self.create_container_set(
             telemetry_metadata,
             CCSDSParameters().parameters,
+            container_name=container_name,
         )
 
         # Create the XML tree and save the document
