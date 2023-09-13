@@ -8,6 +8,3 @@ from pathlib import Path
 
 # Eg. imap_module_directory = /usr/local/lib/python3.11/site-packages/imap_processing
 imap_module_directory = Path(__file__).parent
-
-# Relative to imap_module_directory, set path of packet definitions directory.
-packet_definition_directory = f"{imap_module_directory}/packet_definitions/"
