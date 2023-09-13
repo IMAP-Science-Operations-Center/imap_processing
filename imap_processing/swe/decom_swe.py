@@ -1,6 +1,4 @@
-from pathlib import Path
-
-from imap_processing import decom
+from imap_processing import decom, packet_definition_directory
 
 
 def decom_packets(packet_file: str):
@@ -15,12 +13,5 @@ def decom_packets(packet_file: str):
     List
         List of all the unpacked data
     """
-
-    # This helps gets current directory of the file irrespective
-    # of where it is being called
-    current_directory = Path(__file__).parent
-
-    # Relative to current_directory, set path of packet definitions directory.
-    packet_definition_directory = f"{current_directory}/../packet_definitions/"
     xtce_document = f"{packet_definition_directory}/swe_packet_definition.xml"
     return decom.decom_packets(packet_file, xtce_document)
