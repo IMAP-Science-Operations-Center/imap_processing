@@ -49,9 +49,7 @@ class TelemetryGenerator:
         header.attrib["author"] = "IMAP SDC"
 
         # Create the TelemetryMetaData element
-        telemetry_metadata = Et.SubElement(
-            root, "xtce:TelemetryMetaData"
-        )
+        telemetry_metadata = Et.SubElement(root, "xtce:TelemetryMetaData")
 
         # Create the ParameterTypeSet element
         parameter_type_set = Et.SubElement(telemetry_metadata, "xtce:ParameterTypeSet")
@@ -240,17 +238,13 @@ class TelemetryGenerator:
                 # part of CCSDS header
                 continue
 
-            parameter = Et.SubElement(
-                parameter_set, "xtce:Parameter"
-            )
+            parameter = Et.SubElement(parameter_set, "xtce:Parameter")
             parameter.attrib["name"] = row["mnemonic"]
             parameter_type_ref = f"{row['dataType']}{row['lengthInBits']}"
 
             parameter.attrib["parameterTypeRef"] = parameter_type_ref
 
-            description = Et.SubElement(
-                parameter, "xtce:LongDescription"
-            )
+            description = Et.SubElement(parameter, "xtce:LongDescription")
 
             if row["longDescription"] is None and row["shortDescription"] is None:
                 description.text = ""
