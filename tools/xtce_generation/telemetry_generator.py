@@ -218,7 +218,7 @@ class TelemetryGenerator:
     def create_remaining_parameters(self, parameter_set):
         """
         Create XML elements for parameters based on DataFrame rows starting
-        from SHCOARSE.
+        from SHCOARSE (also known as MET).
 
         Parameters:
         - parameter_set: The ParameterSet element where parameters will be added.
@@ -229,7 +229,7 @@ class TelemetryGenerator:
         # Process rows from SHCOARSE until the last available row in the DataFrame
         for index, row in self.pkt.iterrows():
             if index < 8:
-                continue  # Skip rows before row 10
+                continue  # Skip rows until SHCOARSE(also known as MET) which are part of CCSDS header
 
             parameter = Et.SubElement(
                 parameter_set, "{http://www.omg.org/space}Parameter"
