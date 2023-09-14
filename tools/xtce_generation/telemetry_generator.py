@@ -106,7 +106,7 @@ class TelemetryGenerator:
         """
         for parameter_type_ref_name, size in unique_lengths.items():
             if "UINT" in parameter_type_ref_name:
-                parameter_type = Et.SubElement(parameter_type_set, "xtce:ParameterType")
+                parameter_type = Et.SubElement(parameter_type_set, "xtce:IntegerParameterType")
                 parameter_type.attrib["name"] = parameter_type_ref_name
                 parameter_type.attrib["signed"] = "false"
 
@@ -114,7 +114,7 @@ class TelemetryGenerator:
                 encoding.attrib["sizeInBits"] = str(size)
                 encoding.attrib["encoding"] = "unsigned"
             elif "SINT" in parameter_type_ref_name:
-                parameter_type = Et.SubElement(parameter_type_set, "xtce:ParameterType")
+                parameter_type = Et.SubElement(parameter_type_set, "xtce:IntegerParameterType")
                 parameter_type.attrib["name"] = parameter_type_ref_name
                 parameter_type.attrib["signed"] = "true"
 
@@ -298,4 +298,4 @@ class TelemetryGenerator:
         Et.indent(tree, space="\t", level=0)
 
         # Use the provided output_xml_path
-        tree.write(output_xml_path, encoding="utf-8", xml_declaration=True)
+        tree.write(output_xml_path, encoding="UTF-8", xml_declaration=True)
