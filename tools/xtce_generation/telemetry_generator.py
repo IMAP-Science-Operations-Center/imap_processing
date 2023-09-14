@@ -250,15 +250,19 @@ class TelemetryGenerator:
 
             description = Et.SubElement(parameter, "xtce:LongDescription")
 
-            row_long_description = str(row["longDescription"])
-            row_short_description = str(row["shortDescription"])
+            # handle nan floating point values and replace with empty strings
+            short_description = (
+                ""
+                if str(row.get("shortDescription")) == "nan"
+                else row.get("shortDescription")
+            )
+            long_description = (
+                ""
+                if str(row.get("longDescription")) == "nan"
+                else row.get("longDescription")
+            )
 
-            if row_long_description == "nan" and row_short_description == "nan":
-                description.text = ""
-            elif row_long_description != "nan":
-                description.text = row_long_description
-            else:
-                description.text = row_short_description
+            description.text = short_description or long_description or ""
 
         return parameter_set
 
