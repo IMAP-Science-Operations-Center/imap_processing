@@ -1,7 +1,8 @@
+import collections
+
 import bitstring
 import numpy as np
 import xarray as xr
-import collections
 
 
 def uncompress_counts(cem_count):
@@ -111,7 +112,8 @@ def swe_science(decom_data):
 
     metadata_arrays = collections.defaultdict(list)
 
-    # We know we can only have 8 bit numbers input, so iterate over all possibilities once up front
+    # We know we can only have 8 bit numbers input, so iterate over all
+    # possibilities once up front
     decompression_table = np.array([uncompress_counts(i) for i in range(256)])
 
     for data_packet in decom_data:
@@ -125,7 +127,8 @@ def swe_science(decom_data):
 
         # Uncompress counts. Uncompressed data is a list of 1260
         # where 1260 = 15 seconds x 12 energy steps x 7 CEMs
-        # Take the "raw_counts" indices/counts mapping from decompression_table and then reshape the return
+        # Take the "raw_counts" indices/counts mapping from
+        # decompression_table and then reshape the return
         uncompress_data = np.take(decompression_table, raw_counts).reshape(15, 12, 7)
 
         # Save data with its metadata field to attrs and DataArray of xarray.
