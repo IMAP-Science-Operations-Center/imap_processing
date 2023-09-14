@@ -1,6 +1,7 @@
 import bitstring
 import numpy as np
 import xarray as xr
+import collections
 
 
 def uncompress_counts(cem_count):
@@ -65,35 +66,11 @@ def add_metadata_to_array(data_packet, metadata_arrays):
         metadata arrays
     """
     for key, value in data_packet.header.items():
-        metadata_arrays[key].append(value.raw_value)
+        metadata_arrays.setdefault(key, []).append(value.raw_value)
 
     for key, value in data_packet.data.items():
         if key != "SCIENCE_DATA":
-            metadata_arrays[key].append(value.raw_value)
-
-
-def init_metadata_array(data_packet):
-    """This function read metadata from data packet.
-
-    Parameters
-    ----------
-    data_packet : space_packet_parser.parser.Packet
-        SWE data packet
-
-    Returns
-    -------
-    dict
-        metadata
-    """
-    metadata = {}
-    for key, _ in data_packet.header.items():
-        metadata[key] = []
-
-    for key, _ in data_packet.data.items():
-        if key != "SCIENCE_DATA":
-            metadata[key] = []
-
-    return metadata
+            metadata_arrays.setdefault(key, []).append(value.raw_value)
 
 
 def swe_science(decom_data):
@@ -132,7 +109,10 @@ def swe_science(decom_data):
     """
     science_array = []
 
-    metadata_arrays = init_metadata_array(decom_data[0])
+    metadata_arrays = collections.defaultdict(list)
+
+    # We know we can only have 8 bit numbers input, so iterate over all possibilities once up front
+    decompression_table = np.array([uncompress_counts(i) for i in range(256)])
 
     for data_packet in decom_data:
         # read raw data
@@ -141,14 +121,15 @@ def swe_science(decom_data):
         # Eg. "0b0101010111"
         bit_array = bitstring.ConstBitStream(bin=binary_data)
         # chunk bit array into 1260 units, each with 8-bits
-        byte_data = np.frombuffer(bit_array.bytes, dtype=np.uint8)
+        raw_counts = np.frombuffer(bit_array.bytes, dtype=np.uint8)
+
         # Uncompress counts. Uncompressed data is a list of 1260
-        # where 1260 = 15 seconds x 7 CEMs x 12 energy steps
-        uncompressed_data = [uncompress_counts(i) for i in byte_data]
-        reshaped_data = np.array(uncompressed_data).reshape(15, 12, 7)
+        # where 1260 = 15 seconds x 12 energy steps x 7 CEMs
+        # Take the "raw_counts" indices/counts mapping from decompression_table and then reshape the return
+        uncompress_data = np.take(decompression_table, raw_counts).reshape(15, 12, 7)
 
         # Save data with its metadata field to attrs and DataArray of xarray.
-        science_array.append(reshaped_data)
+        science_array.append(uncompress_data)
         add_metadata_to_array(data_packet, metadata_arrays)
 
     science_xarray = xr.DataArray(
@@ -156,9 +137,19 @@ def swe_science(decom_data):
         dims=["number_of_packets", "seconds", "energy_steps", "cem_counts"],
     )
 
+    met_time = xr.DataArray(
+        metadata_arrays["SHCOARSE"],
+        name="MET",
+        dims=["number_of_packets"],
+        attrs=dict(
+            description="Mission elapsed time",
+            units="seconds since start of the mission",
+        ),
+    )
+
     dataset = xr.Dataset(
         {"SCIENCE_DATA": science_xarray},
-        coords={"met_time": metadata_arrays["SHCOARSE"]},
+        coords={"met_time": met_time},
     )
 
     # create xarray dataset for each metadata field
@@ -166,7 +157,7 @@ def swe_science(decom_data):
         if key == "SHCOARSE":
             continue
 
-        dataset[f"{key}"] = xr.DataArray(
+        dataset[key] = xr.DataArray(
             value,
             dims=["number_of_packets"],
         )
