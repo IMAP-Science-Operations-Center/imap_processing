@@ -1,6 +1,5 @@
 import collections
 
-import bitstring
 import numpy as np
 import xarray as xr
 
@@ -119,11 +118,12 @@ def swe_science(decom_data):
     for data_packet in decom_data:
         # read raw data
         binary_data = data_packet.data["SCIENCE_DATA"].raw_value
-        # read raw data as binary array using bitstring
-        # Eg. "0b0101010111"
-        bit_array = bitstring.ConstBitStream(bin=binary_data)
-        # chunk bit array into 1260 units, each with 8-bits
-        raw_counts = np.frombuffer(bit_array.bytes, dtype=np.uint8)
+        # read binary string to an int and then convert it to
+        # bytes. This is to convert the string to bytes.
+        # Eg. "0000000011110011" --> b'\x00\xf3'
+        byte_data = int(binary_data, 2).to_bytes(1260, byteorder="big")
+        # convert bytes to numpy array of uint8
+        raw_counts = np.frombuffer(byte_data, dtype=np.uint8)
 
         # Uncompress counts. Uncompressed data is a list of 1260
         # where 1260 = 15 seconds x 12 energy steps x 7 CEMs
