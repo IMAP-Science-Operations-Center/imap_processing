@@ -106,7 +106,9 @@ class TelemetryGenerator:
         """
         for parameter_type_ref_name, size in unique_lengths.items():
             if "UINT" in parameter_type_ref_name:
-                parameter_type = Et.SubElement(parameter_type_set, "xtce:ParameterType")
+                parameter_type = Et.SubElement(
+                    parameter_type_set, "xtce:IntegerParameterType"
+                )
                 parameter_type.attrib["name"] = parameter_type_ref_name
                 parameter_type.attrib["signed"] = "false"
 
@@ -114,7 +116,9 @@ class TelemetryGenerator:
                 encoding.attrib["sizeInBits"] = str(size)
                 encoding.attrib["encoding"] = "unsigned"
             elif "SINT" in parameter_type_ref_name:
-                parameter_type = Et.SubElement(parameter_type_set, "xtce:ParameterType")
+                parameter_type = Et.SubElement(
+                    parameter_type_set, "xtce:IntegerParameterType"
+                )
                 parameter_type.attrib["name"] = parameter_type_ref_name
                 parameter_type.attrib["signed"] = "true"
 
@@ -246,12 +250,15 @@ class TelemetryGenerator:
 
             description = Et.SubElement(parameter, "xtce:LongDescription")
 
-            if row["longDescription"] is None and row["shortDescription"] is None:
+            row_long_description = str(row["longDescription"])
+            row_short_description = str(row["shortDescription"])
+
+            if row_long_description == "nan" and row_short_description == "nan":
                 description.text = ""
-            elif row["shortDescription"]:
-                description.text = row["shortDescription"]
+            elif row_long_description != "nan":
+                description.text = row_long_description
             else:
-                description.text = row["longDescription"]
+                description.text = row_short_description
 
         return parameter_set
 
