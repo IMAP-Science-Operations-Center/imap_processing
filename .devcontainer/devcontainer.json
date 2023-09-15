@@ -11,7 +11,8 @@
 		}
 	},
 	"forwardPorts": [6080],
-	"postCreateCommand": "bash -i 'poetry install && source $(poetry env info --path)/bin/activate'",
+	"postCreateCommand": "bash -i 'poetry install",
+	"postStartCommand": "bash -i 'source $(poetry env info --path)/bin/activate'"
 	"customizations": {
 		"vscode": {
 			"extensions": [
