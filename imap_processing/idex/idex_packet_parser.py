@@ -5,7 +5,7 @@ import numpy as np
 import xarray as xr
 from space_packet_parser import parser, xtcedef
 
-from imap_processing import packet_definition_directory
+from imap_processing import imap_module_directory
 
 TWENTY_MICROSECONDS = 20 * (10 ** (-6))
 
@@ -57,8 +57,8 @@ class PacketParser:
         -----
             Currently assumes one L0 file will generate exactly one l1a file
         """
-
-        xtce_file = f"{packet_definition_directory}/idex_packet_definition.xml"
+        xtce_filename = "idex_packet_definition.xml"
+        xtce_file = f"{imap_module_directory}/idex/packet_definitions/{xtce_filename}"
         packet_definition = xtcedef.XtcePacketDefinition(xtce_document=xtce_file)
         packet_parser = parser.PacketParser(packet_definition)
 
