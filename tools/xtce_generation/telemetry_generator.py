@@ -248,21 +248,13 @@ class TelemetryGenerator:
 
             parameter.attrib["parameterTypeRef"] = parameter_type_ref
 
-            description = Et.SubElement(parameter, "xtce:LongDescription")
-
-            # handle nan floating point values and replace with empty strings
-            short_description = (
-                ""
-                if str(row.get("shortDescription")) == "nan"
-                else row.get("shortDescription")
-            )
-            long_description = (
-                ""
-                if str(row.get("longDescription")) == "nan"
-                else row.get("longDescription")
-            )
-
-            description.text = short_description or long_description or ""
+            # Add descriptions if they exist
+            if pd.notna(row.get("shortDescription")):
+                description = Et.SubElement(parameter, "xtce:ShortDescription")
+                description.text = row.get("shortDescription")
+            if pd.notna(row.get("longDescription")):
+                description = Et.SubElement(parameter, "xtce:LongDescription")
+                description.text = row.get("longDescription")
 
         return parameter_set
 
