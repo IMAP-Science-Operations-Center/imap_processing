@@ -248,11 +248,13 @@ class TelemetryGenerator:
 
             parameter.attrib["parameterTypeRef"] = parameter_type_ref
 
-            description = Et.SubElement(parameter, "xtce:LongDescription")
-
-            description.text = (
-                row.get("shortDescription") or row.get("longDescription") or ""
-            )
+            # Add descriptions if they exist
+            if pd.notna(row.get("shortDescription")):
+                description = Et.SubElement(parameter, "xtce:ShortDescription")
+                description.text = row.get("shortDescription")
+            if pd.notna(row.get("longDescription")):
+                description = Et.SubElement(parameter, "xtce:LongDescription")
+                description.text = row.get("longDescription")
 
         return parameter_set
 
