@@ -1,7 +1,8 @@
 <?xml version='1.0' encoding='UTF-8'?>
-<xtce:SpaceSystem xmlns:xtce="http://www.omg.org/space/xtce" name="SWE-SciPackets">
-    <xtce:Header date="2023-03-06T09:56:00MST" version="1.0" author="Tenzin Choedon"/>
+<xtce:SpaceSystem xmlns:xtce="http://www.omg.org/space/xtce" name="SWE">
+    <xtce:Header date="2023-03-06T09:56:00MST" version="2.0" author="IMAP SDC"/>
     <xtce:TelemetryMetaData>
+        <!-- This packet definition maps to packet definition in TLM_SWE_20230904.xlsx -->
         <xtce:ParameterTypeSet>
             <!-- In the ParameterTypeSet, define all the data types required for the data packets' definitions.
             Each data field within the packet definition may have different lengths specified by the lengthInBits column.
@@ -72,6 +73,10 @@
                 <xtce:UnitSet/>
                 <xtce:IntegerDataEncoding sizeInBits="16" encoding="unsigned"/>
             </xtce:IntegerParameterType>
+            <xtce:IntegerParameterType name="uint17" signed="false">
+                <xtce:UnitSet/>
+                <xtce:IntegerDataEncoding sizeInBits="17" encoding="unsigned"/>
+            </xtce:IntegerParameterType>
             <xtce:IntegerParameterType name="uint20" signed="false">
                 <xtce:UnitSet/>
                 <xtce:IntegerDataEncoding sizeInBits="20" encoding="unsigned"/>
@@ -80,12 +85,16 @@
                 <xtce:UnitSet/>
                 <xtce:IntegerDataEncoding sizeInBits="32" encoding="unsigned"/>
             </xtce:IntegerParameterType>
-            <xtce:IntegerParameterType name="sciData" signed="false">
+            <xtce:BinaryParameterType name="sciData">
                 <xtce:UnitSet/>
-                <xtce:IntegerDataEncoding sizeInBits="10080" encoding="unsigned"/>
-            </xtce:IntegerParameterType>
+                <xtce:BinaryDataEncoding bitOrder="mostSignificantBitFirst">
+                    <xtce:SizeInBits>
+                        <xtce:FixedValue>10080</xtce:FixedValue>
+                    </xtce:SizeInBits>
+                </xtce:BinaryDataEncoding>
+            </xtce:BinaryParameterType>
             <!-- Enumerated Data Types -->
-            <xtce:EnumeratedParameterType name="cem_nominal_enum" signed="false">
+            <xtce:EnumeratedParameterType name="nominal_enum" signed="false">
                 <xtce:UnitSet/>
                 <xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned"/>
                 <xtce:EnumerationList>
@@ -93,7 +102,7 @@
                     <xtce:Enumeration label="NOMINAL" value="1"/>
                 </xtce:EnumerationList>
             </xtce:EnumeratedParameterType>
-            <xtce:EnumeratedParameterType name="spin_phase_validity_enum" signed="false">
+            <xtce:EnumeratedParameterType name="valid_enum" signed="false">
                 <xtce:UnitSet/>
                 <xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned"/>
                 <xtce:EnumerationList>
@@ -146,14 +155,21 @@
             <xtce:Parameter name="ACQ_START_FINE" parameterTypeRef="uint20">
                 <xtce:LongDescription>Acquisition Start time fine in microseconds</xtce:LongDescription>
             </xtce:Parameter>
-            <xtce:Parameter name="CEM_NOMINAL_ONLY" parameterTypeRef="cem_nominal_enum">
+            <xtce:Parameter name="CEM_NOMINAL_ONLY" parameterTypeRef="nominal_enum">
                 <xtce:LongDescription>
                     CEM Nominal status bit:
                     '1' -- nominal,
                     '0' -- not nomimal
                 </xtce:LongDescription>
             </xtce:Parameter>
-            <xtce:Parameter name="SPIN_PHASE_VALIDITY" parameterTypeRef="spin_phase_validity_enum">
+            <xtce:Parameter name="SPIN_PERIOD_VALIDITY" parameterTypeRef="valid_enum">
+                <xtce:LongDescription>
+                    "Spin period valid bit:
+                    '1' -- valid
+                    '0' -- invalid"
+                </xtce:LongDescription>
+            </xtce:Parameter>
+            <xtce:Parameter name="SPIN_PHASE_VALIDITY" parameterTypeRef="valid_enum">
                 <xtce:LongDescription>
                     Spin phase valid bit:
                     '1' -- valid,
@@ -167,8 +183,11 @@
                 '0' -- star tracker (nominal)
             </xtce:LongDescription>
             </xtce:Parameter>
-            <xtce:Parameter name="spare" parameterTypeRef="uint1">
-                <xtce:LongDescription>Spare</xtce:LongDescription>
+            <xtce:Parameter name="SETTLE_DURATION" parameterTypeRef="uint15">
+                <xtce:LongDescription>HVPS settling duration</xtce:LongDescription>
+            </xtce:Parameter>
+            <xtce:Parameter name="ACQ_DURATION" parameterTypeRef="uint17">
+                <xtce:LongDescription>Acquisition duration</xtce:LongDescription>
             </xtce:Parameter>
             <xtce:Parameter name="SPIN_PHASE" parameterTypeRef="uint16">
                 <xtce:LongDescription>Spin phase</xtce:LongDescription>
@@ -176,7 +195,21 @@
             <xtce:Parameter name="SPIN_PERIOD" parameterTypeRef="uint16">
                 <xtce:LongDescription>Spin period</xtce:LongDescription>
             </xtce:Parameter>
-            <xtce:Parameter name="ESA_STEPS" parameterTypeRef="uint8">
+            <xtce:Parameter name="THRUSTER_FIRING" parameterTypeRef="uint1">
+                <xtce:LongDescription>
+                Thruster fired during this quarter cycle
+                    '1' -- yes, thruster fired
+                    '0' -- no, thruster not fired"
+                </xtce:LongDescription>
+            </xtce:Parameter>
+            <xtce:Parameter name="HIGH_COUNT" parameterTypeRef="uint1">
+                <xtce:LongDescription>
+                High CEM count observed for at least one CEM during this quarter cycle
+                    '1' -- yes, high count occurred
+                    '0' -- no, no high count occurred
+                </xtce:LongDescription>
+            </xtce:Parameter>
+            <xtce:Parameter name="ESA_STEPS" parameterTypeRef="uint6">
                 <xtce:LongDescription>ESA steps in packet</xtce:LongDescription>
             </xtce:Parameter>
             <xtce:Parameter name="ESA_TABLE_NUM" parameterTypeRef="uint8">
@@ -184,12 +217,6 @@
             </xtce:Parameter>
             <xtce:Parameter name="ESA_ACQ_CFG" parameterTypeRef="uint8">
                 <xtce:LongDescription>ESA acquisition configuration</xtce:LongDescription>
-            </xtce:Parameter>
-            <xtce:Parameter name="HVPS_RAMP_SETTLE" parameterTypeRef="uint16">
-                <xtce:LongDescription>HVPS settling duration</xtce:LongDescription>
-            </xtce:Parameter>
-            <xtce:Parameter name="ACQ_DURATION" parameterTypeRef="uint16">
-                <xtce:LongDescription>Acquisition duration</xtce:LongDescription>
             </xtce:Parameter>
             <xtce:Parameter name="THRESHOLD_DAC" parameterTypeRef="uint16">
                 <xtce:LongDescription>Threshold DAC value</xtce:LongDescription>
@@ -414,16 +441,18 @@
                     <xtce:ParameterRefEntry parameterRef="ACQ_START_COARSE"/>
                     <xtce:ParameterRefEntry parameterRef="ACQ_START_FINE"/>
                     <xtce:ParameterRefEntry parameterRef="CEM_NOMINAL_ONLY"/>
+                    <xtce:ParameterRefEntry parameterRef="SPIN_PERIOD_VALIDITY"/>
                     <xtce:ParameterRefEntry parameterRef="SPIN_PHASE_VALIDITY"/>
                     <xtce:ParameterRefEntry parameterRef="SPIN_PERIOD_SOURCE"/>
-                    <xtce:ParameterRefEntry parameterRef="spare"/>
+                    <xtce:ParameterRefEntry parameterRef="SETTLE_DURATION"/>
+                    <xtce:ParameterRefEntry parameterRef="ACQ_DURATION"/>
                     <xtce:ParameterRefEntry parameterRef="SPIN_PHASE"/>
                     <xtce:ParameterRefEntry parameterRef="SPIN_PERIOD"/>
+                    <xtce:ParameterRefEntry parameterRef="THRUSTER_FIRING"/>
+                    <xtce:ParameterRefEntry parameterRef="HIGH_COUNT"/>
                     <xtce:ParameterRefEntry parameterRef="ESA_STEPS"/>
                     <xtce:ParameterRefEntry parameterRef="ESA_TABLE_NUM"/>
                     <xtce:ParameterRefEntry parameterRef="ESA_ACQ_CFG"/>
-                    <xtce:ParameterRefEntry parameterRef="HVPS_RAMP_SETTLE"/>
-                    <xtce:ParameterRefEntry parameterRef="ACQ_DURATION"/>
                     <xtce:ParameterRefEntry parameterRef="THRESHOLD_DAC"/>
                     <xtce:ParameterRefEntry parameterRef="STIM_CFG_REG"/>
                     <xtce:ParameterRefEntry parameterRef="SCIENCE_DATA"/>
