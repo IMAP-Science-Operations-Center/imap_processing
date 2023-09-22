@@ -90,7 +90,7 @@ def create_datasets(data):
 def group_apid_data(packets, apid):
     """
     Creates a dictionary of lists containing all the data for
-    the APID. If packets contains N of the same APIDs, the data
+    the APID. If packets contain N of the same APIDs, the data
     for those N matching APIDs will be grouped together into
     a dictionary of lists.
 
