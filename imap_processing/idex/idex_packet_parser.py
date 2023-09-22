@@ -113,15 +113,9 @@ class RawDustEvent:
     )
 
     # Bit masks, spelled out for readability
-    ONE_BIT_MASK = 0b1
-    TWO_BIT_MASK = 0b11
-    THREE_BIT_MASK = 0b111
     FOUR_BIT_MASK = 0b1111
     SIX_BIT_MASK = 0b111111
-    EIGHT_BIT_MASK = 0b11111111
     TEN_BIT_MASK = 0b1111111111
-    ELEVEN_BIT_MASK = 0b11111111111
-    TWELVE_BIT_MASK = 0b111111111111
 
     def __init__(self, header_packet):
         """
