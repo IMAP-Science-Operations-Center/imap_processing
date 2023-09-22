@@ -42,6 +42,9 @@ def decom_hit_packets(packet_file: str, xtce: str):
     # sort all the packets in the list by their spacecraft time
     sorted_packets = sorted(packets, key=lambda x: x.data["SHCOARSE"].derived_value)
 
+    # Store data for each apid
+    # unpacked_data =
+    #   {apid0: {var0: [item0, item1, ...], var1: [item0, item1, ...]}, ...}
     unpacked_data = {}
     for apid_name, apid in [(id.name, id.value) for id in HitAPID]:
         # TODO: if science packet, do decompression
