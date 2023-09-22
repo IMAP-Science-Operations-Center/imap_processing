@@ -339,28 +339,27 @@ class RawDustEvent:
                pulse triggering"""
 
         # Low Sample Trigger Info
-        ls_trigger_info = packet.data["IDX__TXHDRLSADC"].raw_value
-        trigger_dict["low_sample_coincidence_mode_blocks"] = (
-            ls_trigger_info >> 8 & self.THREE_BIT_MASK
-        )
+        trigger_dict["low_sample_coincidence_mode_blocks"] = packet.data[
+            "IDX__TXHDRLSTRIGCMBLOCKS"
+        ].raw_value
         trigger_notes_dict[
             "low_sample_coincidence_mode_blocks"
         ] = "Number of blocks coincidence window is enabled after low sample trigger"
-        trigger_dict["low_sample_trigger_polarity"] = (
-            ls_trigger_info >> 11 & self.ONE_BIT_MASK
-        )
+        trigger_dict["low_sample_trigger_polarity"] = packet.data[
+            "IDX__TXHDRLSTRIGPOL"
+        ].raw_value
         trigger_notes_dict[
             "low_sample_trigger_polarity"
         ] = "The trigger polarity for low sample (0 = normal, 1 = inverted)"
-        trigger_dict["low_sample_trigger_level"] = (
-            ls_trigger_info >> 12 & self.TWELVE_BIT_MASK
-        )
+        trigger_dict["low_sample_trigger_level"] = packet.data[
+            "IDX__TXHDRLSTRIGLVL"
+        ].raw_value
         trigger_notes_dict[
             "low_sample_trigger_level"
         ] = "Trigger level for the low sample"
-        trigger_dict["low_sample_trigger_num_min"] = (
-            ls_trigger_info >> 24 & self.EIGHT_BIT_MASK
-        )
+        trigger_dict["low_sample_trigger_num_min"] = packet.data[
+            "IDX__TXHDRLSTRIGNMIN"
+        ].raw_value
         trigger_notes_dict[
             "low_sample_trigger_num_min"
         ] = """The minimum number of samples above/below the trigger level for
@@ -392,44 +391,29 @@ class RawDustEvent:
         ] = """TOF Mid trigger mode (0=disabled, 1=threshold mode, 2=single pulse
                mode, 3=double pulse mode)"""
 
-        detector_sensor_voltage = packet.data["IDX__TXHDRHVPSHKCH01"].raw_value
-        trigger_dict["detector_voltage"] = (
-            detector_sensor_voltage >> 10 & self.TWELVE_BIT_MASK
-        )
+        trigger_dict["detector_voltage"] = packet.data["IDX__TXHDRHVPSHKCH0"].raw_value
         trigger_notes_dict[
             "detector_voltage"
         ] = "Last measurement in raw dN for processor board signal: Detector Voltage"
-        trigger_dict["sensor_voltage"] = (
-            detector_sensor_voltage >> 10 & self.TWELVE_BIT_MASK
-        )
+        trigger_dict["sensor_voltage"] = packet.data["IDX__TXHDRHVPSHKCH1"].raw_value
         trigger_notes_dict[
             "sensor_voltage"
         ] = "Last measurement in raw dN for processor board signal: Sensor Voltage"
-        target_reflectron_voltage = packet.data["IDX__TXHDRHVPSHKCH23"].raw_value
-        trigger_dict["target_voltage"] = (
-            target_reflectron_voltage >> 10 & self.TWELVE_BIT_MASK
-        )
+        trigger_dict["target_voltage"] = packet.data["IDX__TXHDRHVPSHKCH2"].raw_value
         trigger_notes_dict[
             "target_voltage"
         ] = "Last measurement in raw dN for processor board signal: Target Voltage"
-        trigger_dict["reflectron_voltage"] = (
-            target_reflectron_voltage >> 10 & self.TWELVE_BIT_MASK
-        )
+        trigger_dict["reflectron_voltage"] = packet.data[
+            "IDX__TXHDRHVPSHKCH3"
+        ].raw_value
         trigger_notes_dict[
             "reflectron_voltage"
         ] = "Last measurement in raw dN for processor board signal: Reflectron Voltage"
-        rejection_voltage_detector_current = packet.data[
-            "IDX__TXHDRHVPSHKCH45"
-        ].raw_value
-        trigger_dict["rejection_voltage"] = (
-            rejection_voltage_detector_current >> 10 & self.TWELVE_BIT_MASK
-        )
+        trigger_dict["rejection_voltage"] = packet.data["IDX__TXHDRHVPSHKCH4"].raw_value
         trigger_notes_dict[
             "rejection_voltage"
         ] = "Last measurement in raw dN for processor board signal: Rejection Voltage"
-        trigger_dict["detector_current"] = (
-            rejection_voltage_detector_current >> 10 & self.TWELVE_BIT_MASK
-        )
+        trigger_dict["detector_current"] = packet.data["IDX__TXHDRHVPSHKCH5"].raw_value
         trigger_notes_dict[
             "detector_current"
         ] = "Last measurement in raw dN for processor board signal: Detector Current"
