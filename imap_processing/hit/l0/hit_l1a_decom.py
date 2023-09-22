@@ -59,6 +59,7 @@ def decom_hit_packets(packet_file: str, xtce: str):
 def create_datasets(data):
     """
     Creates a dataset for each APID in the data
+    Parameters
     ----------
     data : dict
         A single dictionary containing data for all instances of an APID.
@@ -87,6 +88,7 @@ def group_apid_data(packets, apid):
     """
     Creates a list of dictionaries containing data for each instance
     of a specified APID
+    Parameters
     ----------
     packets: list
         List of all the unpacked data from decom.decom_packets()
