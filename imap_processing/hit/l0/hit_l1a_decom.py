@@ -42,7 +42,7 @@ def decom_hit_packets(packet_file: str, xtce: str):
     # sort all the packets in the list by their spacecraft time
     sorted_packets = sorted(packets, key=lambda x: x.data["SHCOARSE"].derived_value)
 
-    unpacked_data = defaultdict(list)
+    unpacked_data = {}
     for apid_name, apid in [(id.name, id.value) for id in HitAPID]:
         # TODO: if science packet, do decompression
         logging.info(f"Grouping packet values for {apid_name}:{apid}")
@@ -79,10 +79,9 @@ def create_datasets(data):
         # if data for the APID exists, create the dataset
         if data_dict != {}:
             epoch = xr.DataArray(
-                name="Epoch", data=data_dict["SHCOARSE"], dims=("Epoch")
+                name="Epoch", data=data_dict.pop("SHCOARSE"), dims=("Epoch")
             )
             dataset = xr.Dataset(data_vars={}, coords={"Epoch": epoch})
-            data_dict.pop("SHCOARSE")
             dataset_dict[apid] = dataset.assign(**data_dict)
 
     return dataset_dict
@@ -90,14 +89,16 @@ def create_datasets(data):
 
 def group_apid_data(packets, apid):
     """
-    Creates a list of dictionaries containing data for each instance
-    of a specified APID
+    Creates a dictionary of lists containing all the data for
+    the APID. If packets contains N of the same APIDs, the data
+    for those N matching APIDs will be grouped together into
+    a dictionary of lists.
 
     Parameters
     ----------
-    packets: list
+    packets : list
         List of all the unpacked data from decom.decom_packets()
-    apid: int
+    apid : int
         APID number for the data you want to group together
 
     Returns

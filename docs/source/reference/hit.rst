@@ -3,14 +3,14 @@
 HIT (High-energy Ion Telescope)
 ==========================
 
-.. currentmodule:: imap_processing.hit.l0
+.. currentmodule:: imap_processing.hit
 
-This is the SWE Instrument module, which contains the code for processing
-data from the SWE instrument.
+This is the HIT Instrument module, which contains the code for processing
+data from the HIT instrument.
 
 The L0 code to decommutate the CCSDS packet data can be found below.
 
 .. autosummary::
     :toctree: generated/
 
-    hit_l1a_decom
+    l0.hit_l1a_decom
