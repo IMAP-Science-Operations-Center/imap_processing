@@ -12,6 +12,12 @@ def decom_test_data():
 
 
 def test_glows_hist_decom(decom_test_data):
-    expected_len = 13011
+    expected_len = 505
 
     assert len(decom_test_data) == expected_len
+
+
+def test_glows_hist_contains_data(decom_test_data):
+    for data in decom_test_data:
+        for key in data:
+            assert data[key] is not None

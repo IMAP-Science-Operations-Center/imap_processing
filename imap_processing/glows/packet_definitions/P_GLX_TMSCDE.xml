@@ -3,25 +3,25 @@
 	<xtce:Header date="2023-09" version="1.0" author="IMAP SDC" />
 	<xtce:TelemetryMetaData>
 		<xtce:ParameterTypeSet>
-			<xtce:IntegerParameterType name="UINT1" signed="true">
+			<xtce:IntegerParameterType name="UINT1" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
 			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="UINT2" signed="true">
+			<xtce:IntegerParameterType name="UINT2" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="2" encoding="unsigned" />
 			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="UINT3" signed="true">
+			<xtce:IntegerParameterType name="UINT3" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="3" encoding="unsigned" />
 			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="UINT11" signed="true">
+			<xtce:IntegerParameterType name="UINT11" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="11" encoding="unsigned" />
 			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="UINT14" signed="true">
+			<xtce:IntegerParameterType name="UINT14" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="14" encoding="unsigned" />
 			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="UINT16" signed="true">
+			<xtce:IntegerParameterType name="UINT16" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="16" encoding="unsigned" />
 			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="UINT32" signed="true">
+			<xtce:IntegerParameterType name="UINT32" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="32" encoding="unsigned" />
 			</xtce:IntegerParameterType>
 			<xtce:IntegerParameterType name="INT32" signed="true">
