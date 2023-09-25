@@ -79,7 +79,7 @@
 			<xtce:SequenceContainer name="P_GLX_TMSCDE">
 				<xtce:BaseContainer containerRef="CCSDSPacket">
 					<xtce:RestrictionCriteria>
-						<xtce:Comparison parameterRef="PKT_APID" value="1480" useCalibratedValue="false" />
+						<xtce:Comparison parameterRef="PKT_APID" value="1481" useCalibratedValue="false" />
 					</xtce:RestrictionCriteria>
 				</xtce:BaseContainer>
 				<xtce:EntryList>

@@ -26,7 +26,7 @@ def main():
     #     "P_COD_HI_OMNI_SPECIES_COUNTS": 1172,
     # }
 
-    packets = {"P_GLX_TMSCHIST": 0x5C8, "P_GLX_TMSCDE": 0x5C8}
+    packets = {"P_GLX_TMSCHIST": 1480, "P_GLX_TMSCDE": 1481}
 
     for packet_name, app_id in packets.items():
         print(packet_name)
