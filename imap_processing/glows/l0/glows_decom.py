@@ -2,23 +2,30 @@ from pathlib import Path
 
 from bitstring import ReadError
 from space_packet_parser import parser, xtcedef
-from space_packet_parser.parser import ParsedDataItem
 
 from imap_processing import imap_module_directory
 
 
-def convert_histogram_data(raw_hist_data: int):
+def convert_histogram_data(bin_hist_data: str) -> list[int]:
+    """Convert the raw histogram data into a list by splitting up the raw value into
+    8-bit segments
+    Parameters
+    ----------
+    bin_hist_data: Raw data read from the packet, in binary format
+
+    Returns
+    -------
+    List of histogram data
+    """
     # Convert the histogram data from a large raw string into a list of 8 bit values
-    bin_hist_data = bin(raw_hist_data)[2:]
     histograms = []
-    for i in range(8, len(bin_hist_data) + 2, 8):
-        # print(bin_hist_data[i-8:i])
+    for i in range(8, len(bin_hist_data), 8):
         histograms.append(int(bin_hist_data[i - 8 : i], 2))
 
     if len(histograms) != 3599:
         raise ValueError(
             f"Histogram packet is lacking bins. Expected a count of 3599, "
-            f"actually recieved {len(histograms)}"
+            f"actually received {len(histograms)}"
         )
 
     return histograms
@@ -90,12 +97,13 @@ def decom_packets(packet_file: str) -> list[dict[str, int]]:
                 if packet.header["PKT_APID"].derived_value == hist_apid:
                     histdata_dict = {}
                     for key in histdata_keys:
-                        histdata_dict[key] = packet.data[key].derived_value
-                    histdata_dict["HISTOGRAM_DATA"] = convert_histogram_data(
-                        histdata_dict["HISTOGRAM_DATA"]
-                    )
+                        if key != "HISTOGRAM_DATA":
+                            histdata_dict[key] = packet.data[key].derived_value
+                        else:
+                            histdata_dict[key] = convert_histogram_data(
+                                packet.data[key].raw_value
+                            )
                     histdata.append(histdata_dict)
-
                 # if packet.header["PKT_APID"].derived_value == de_apid:
                 #     print(f"Decommed DE packet: {packet.header}")
         except ReadError as e:
@@ -104,11 +112,6 @@ def decom_packets(packet_file: str) -> list[dict[str, int]]:
 
         print(histdata[0]["HISTOGRAM_DATA"][:10])
         return histdata
-
-
-def process_packets(packet_list: list[ParsedDataItem]):
-    for packet in packet_list:
-        print(packet.derived_value)
 
 
 if __name__ == "__main__":
