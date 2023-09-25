@@ -82,7 +82,7 @@ Github Requirement Issue Lifecycle
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 The following diagram gives an example of the general information a level 5 requirement issue should contain as it evolves over the lifecycle of development and testing:
 
-.. image:: ../../_static/git-req-issue-lifecycle.png
+.. image:: ../_static/git-req-issue-lifecycle.png
    :alt: Git Requirement issue lifecycle diagram
    :width: 2161
 
