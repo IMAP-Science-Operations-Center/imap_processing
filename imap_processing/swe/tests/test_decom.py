@@ -72,3 +72,13 @@ def test_enumerated_value(decom_test_data):
         assert first_packet_data[f"{parameter_name}"].derived_value == "NOMINAL"
     if first_packet_data[f"{parameter_name}"].raw_value == 0:
         assert first_packet_data[f"{parameter_name}"].derived_value == "NOT_NOMINAL"
+
+
+def test_esa_steps_value(decom_test_data):
+    """Test if ESA_STEPS value is correct"""
+
+    parameter_name = "ESA_STEPS"
+
+    assert decom_test_data[0].data[f"{parameter_name}"].raw_value == 1
+    assert decom_test_data[1].data[f"{parameter_name}"].raw_value == 2
+    assert decom_test_data[2].data[f"{parameter_name}"].raw_value == 3
