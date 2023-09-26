@@ -72,6 +72,7 @@ Follow the format below.
         "your_packet_B": ####,
         # ... (other packet definitions)
     }
+    
 Generating Telemetry XML Files
 -------------------------------
 
