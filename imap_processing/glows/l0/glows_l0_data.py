@@ -1,7 +1,26 @@
-# TODO: Write pretty printing methods
-
-
 class GlowsHistL0:
+    """Data structure for storing GLOWS histogram packet data.
+    Parameters
+    ----------
+    packet : tuple[list]
+        Histogram packet yielded from space_packet_parser.generate_packets
+
+    Attributes
+    ----------
+    L0_KEYS : tuple[str]
+        Data names from the packet
+    data: dict
+        The data from the packet
+
+    Methods
+    -------
+    process_packet(packet)
+        Process the given packet into the data dictionary
+
+    _convert_histogram_data(binary_hist_data)
+        Process the binary histogram data into 8-bit bins, in a list.
+    """
+
     L0_KEYS: tuple[str] = (
         "SHCOARSE",
         "STARTID",
@@ -30,35 +49,50 @@ class GlowsHistL0:
         "HISTOGRAM_DATA",
     )
 
+    def __repr__(self):
+        return str(self.data)
+
     def __init__(self, packet):
         self.data = self.process_packet(packet)
 
-    def process_packet(self, packet):
+    def process_packet(self, packet) -> dict:
+        """Process the GLOWS histogram packet, which is yielded from space_packet_parser
+
+        Parameters
+        ----------
+        packet
+            Histogram packet from space_packet_parser
+        Returns
+        -------
+        data: dict
+            Data dictionary created from the packet, using L0_KEYS
+        """
         data = {}
         for key in self.L0_KEYS:
             if key != "HISTOGRAM_DATA":
                 data[key] = packet.data[key].derived_value
             else:
-                data[key] = self.convert_histogram_data(packet.data[key].raw_value)
+                data[key] = self._convert_histogram_data(packet.data[key].raw_value)
             if data[key] is None:
                 raise ValueError(f"Missing data for {key} in {packet.data}")
         return data
 
-    def convert_histogram_data(self, bin_hist_data: str) -> list[int]:
+    def _convert_histogram_data(self, binary_hist_data: str) -> list[int]:
         """Convert the raw histogram data into a list by splitting up the raw binary
         value into 8-bit segments
         Parameters
         ----------
-        bin_hist_data: Raw data read from the packet, in binary format
+        binary_hist_data: Raw data read from the packet, in binary format
 
         Returns
         -------
-        List of histogram data
+        histograms: list[int]
+            List of binned histogram data
         """
         # Convert the histogram data from a large raw string into a list of 8 bit values
         histograms = []
-        for i in range(8, len(bin_hist_data), 8):
-            histograms.append(int(bin_hist_data[i - 8 : i], 2))
+        for i in range(8, len(binary_hist_data), 8):
+            histograms.append(int(binary_hist_data[i - 8 : i], 2))
 
         if len(histograms) != 3599:
             raise ValueError(
@@ -70,12 +104,46 @@ class GlowsHistL0:
 
 
 class GlowsDeL0:
+    """Data structure for storing GLOWS direct event packet data.
+    Parameters
+    ----------
+    packet : tuple[list]
+        Direct event packet yielded from space_packet_parser.generate_packets
+
+    Attributes
+    ----------
+    L0_KEYS : tuple[str]
+        Data names from the packet
+    data: dict
+        The data from the packet
+
+    Methods
+    -------
+    process_packet(packet)
+        Process the given packet into the data dictionary
+    """
+
     L0_KEYS: tuple[str] = ("SHCOARSE", "SEC", "LEN", "SEQ")
+
+    def __repr__(self):
+        return str(self.data)
 
     def __init__(self, packet):
         self.data = self.process_packet(packet)
 
     def process_packet(self, packet):
+        """Process the GLOWS direct event packet, which is yielded from
+        space_packet_parser
+
+        Parameters
+        ----------
+        packet
+            Direct event packet from space_packet_parser
+        Returns
+        -------
+        data: dict
+            Data dictionary created from the packet, using L0_KEYS
+        """
         data = {}
         for key in self.L0_KEYS:
             data[key] = packet.data[key].derived_value

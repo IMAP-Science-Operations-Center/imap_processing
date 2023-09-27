@@ -1,13 +1,13 @@
 from pathlib import Path
 
 from bitstring import ReadError
-from glows_l0_data import GlowsDeL0, GlowsHistL0
 from space_packet_parser import parser, xtcedef
 
 from imap_processing import imap_module_directory
+from imap_processing.glows.l0.glows_l0_data import GlowsDeL0, GlowsHistL0
 
 
-def decom_packets(packet_file: str) -> list[GlowsHistL0]:
+def decom_packets(packet_file: str) -> tuple[list[GlowsHistL0], list[GlowsDeL0]]:
     """Decom GLOWS data packets using GLOWS packet definition
     Parameters
     ----------
@@ -16,19 +16,20 @@ def decom_packets(packet_file: str) -> list[GlowsHistL0]:
 
     Returns
     -------
-    List
-        List of all the unpacked data
+    data : tuple[list[GlowsHistL0], list[GlowsDeL0]]
+        A tuple with two pieces: one list of the GLOWS histogram data, in GlowsHistL0
+        instances, and one list of the GLOWS direct event data, in GlowsDeL0 instance
     """
-
+    hist_apid = 1480
     de_apid = 1481
 
     # Define paths
     xtce_document = Path(
-        f"{imap_module_directory}/glows/packet_definitions/P_GLX_TMSCDE.xml"
+        f"{imap_module_directory}/glows/packet_definitions/GLX_COMBINED.xml"
     )
 
     hist_packet_definition = xtcedef.XtcePacketDefinition(xtce_document)
-    histparser = parser.PacketParser(hist_packet_definition, de_apid)
+    histparser = parser.PacketParser(hist_packet_definition)
 
     histdata = []
     dedata = []
@@ -43,9 +44,9 @@ def decom_packets(packet_file: str) -> list[GlowsHistL0]:
 
             for packet in hist_packets:
                 # Do something with the packet data
-                # if packet.header["PKT_APID"].derived_value == hist_apid:
-                #     hist_l0 = GlowsHistL0(packet)
-                #     histdata.append(hist_l0)
+                if packet.header["PKT_APID"].derived_value == hist_apid:
+                    hist_l0 = GlowsHistL0(packet)
+                    histdata.append(hist_l0)
 
                 if packet.header["PKT_APID"].derived_value == de_apid:
                     de_l0 = GlowsDeL0(packet)
@@ -56,10 +57,3 @@ def decom_packets(packet_file: str) -> list[GlowsHistL0]:
             print("This may mean reaching the end of an incomplete packet.")
 
         return histdata, dedata
-
-
-if __name__ == "__main__":
-    histograms, direct_events = decom_packets(
-        "../tests/imap_l0_sci_glows_20230920_v00.pcts"
-    )
-    print(direct_events[0])
