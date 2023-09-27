@@ -5,7 +5,9 @@ from imap_processing.swe.l1a.swe_science import swe_science
 
 
 def swe_l1a(packet_file: str):
-    """This function receives all L0 data file. Based on appId, it
+    """Process SWE l0 data into l1a data.
+
+    Receive all L0 data file. Based on appId, it
     call its function to process. If appId is science, it requires more work
     than other appId such as appId of housekeeping.
 

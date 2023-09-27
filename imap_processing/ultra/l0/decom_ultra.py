@@ -20,14 +20,16 @@ class PacketProperties(NamedTuple):
 
 
 class UltraParams(Enum):
+    """Enumerated packet properties for ULTRA."""
+
     ULTRA_AUX = PacketProperties(apid=880, width=None, block=None, len_array=None)
     ULTRA_IMG_RATES = PacketProperties(apid=881, width=5, block=16, len_array=48)
 
 
 def read_n_bits(binary: str, n: int, current_position: int):
-    """
-    Extract a specified number of bits from a binary string,
-    starting from a given position. This is used twice.
+    """Extract the specified number of bits from a binary string.
+
+    Starting from the current position, it reads n bits. This is used twice.
     The first time it reads the first 5 bits to determine the width.
     The second time it uses the width to determine the value of the bitstring.
 
@@ -49,7 +51,6 @@ def read_n_bits(binary: str, n: int, current_position: int):
     current_position + n
         - The updated position in the binary string after reading the bits.
     """
-
     # Ensure we don't read past the end
     if current_position + n > len(binary):
         raise IndexError(
@@ -91,7 +92,8 @@ def log_decompression(value: int) -> int:
 
 
 def decompress_binary(binary: str, width_bit: int, block: int) -> list:
-    """
+    """Decompress a binary string.
+
     Decompress a binary string based on block-width encoding and
     logarithmic compression.
 
@@ -161,7 +163,6 @@ def decom_ultra_packets(packet_file: str, xtce: str):
         A dataset containing the decoded data fields with 'time' as the coordinating
         dimension.
     """
-
     packets = decom.decom_packets(packet_file, xtce)
 
     met_data, science_id, spin_data, abortflag_data, startdelay_data, fastdata_00 = (

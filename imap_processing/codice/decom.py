@@ -1,4 +1,6 @@
-""" This is an example of how to use the 'space_packet_parser' module to parse with a
+"""Decommutate CODICE L0 data.
+
+This is an example of how to use the 'space_packet_parser' module to parse with a
 XTCE file specifically for the CODICE L0 data. This is a modified version of the
 example found in the 'space_packet_parser' module documentation.
 This is the start of CODICE L0 data processing.
