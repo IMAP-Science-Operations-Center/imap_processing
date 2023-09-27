@@ -35,7 +35,8 @@ def read_n_bits(binary: str, n: int, current_position: int):
     Parameters
     ----------
     binary : str
-        The binary string from which bits will be read.
+        The string of binary data from which bits will be read.
+        This is a string of 0's and 1's.
     n : int
         Number of bits to read from the binary string.
     current_position : int
@@ -52,7 +53,9 @@ def read_n_bits(binary: str, n: int, current_position: int):
 
     # Ensure we don't read past the end
     if current_position + n > len(binary):
-        return None, current_position
+        raise IndexError(f"Attempted to read past the end of binary string. "
+                         f"Current position: {current_position}, "
+                         f"Requested bits: {n}, String length: {len(binary)}")
 
     value = int(binary[current_position:current_position + n], 2)
     return value, current_position + n
@@ -71,6 +74,9 @@ def log_decompression(value: int) -> int:
     -------
     int
         The decompressed integer value.
+
+    Note: Equations from Section 1.2.1.1 Data Compression and Decompression Algorithms
+    in Ultra_algorithm_doc_rev2.pdf.
     """
     # The exponent e, and mantissa, m are 4-bit and 12-bit unsigned integers
     # respectively
@@ -101,11 +107,13 @@ def decompress_binary(binary: str, width_bit: int, block: int) -> list:
     block : int
         Number of values in each block
 
-
     Returns
     -------
     list
         A list of decompressed values.
+
+    Note: Equations from Section 1.2.1.1 Data Compression and Decompression Algorithms
+    in Ultra_algorithm_doc_rev2.pdf.
     """
     current_position = 0
     decompressed_values = []

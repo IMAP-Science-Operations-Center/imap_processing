@@ -26,20 +26,22 @@ def ccsds_path(test_data_path):
 def xtce_image_rates_path():
     """Returns the xtce image rates directory.
     """
-    return f"{packet_definition_directory}ultra" \
-           f"/P_U45_IMAGE_RATES.xml"
+    return Path(packet_definition_directory) / "ultra" / \
+        "P_U45_IMAGE_RATES.xml"
 
 @pytest.fixture()
 def xtce_aux_path():
     """Returns the xtce auxilliary directory.
     """
-    return f"{packet_definition_directory}ultra/P_U45_AUXILIARY.xml"
+    return Path(packet_definition_directory) / "ultra" / \
+        "P_U45_AUXILIARY.xml"
 
 @pytest.fixture()
 def xtce_image_raw_events_path():
     """Returns the xtce image raw events directory.
     """
-    return f"{packet_definition_directory}ultra/P_U45_IMG_RAW_EVENTS.xml"
+    return Path(packet_definition_directory) / "ultra" / \
+        "P_U45_IMG_RAW_EVENTS.xml"
 
 @pytest.fixture()
 def xtce_image_rates_test_path(test_data_path):
