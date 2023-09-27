@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <xtce:SpaceSystem xmlns:xtce="http://www.omg.org/space/xtce" name="P_U45_AUXILIARY">
-	<xtce:Header date="2023-08-24T07:53:00MST" version="1.0" author="Laura Sandoval" />
+	<xtce:Header date="2023-08-24T07:53:00MST" version="1.0" author="IMAP SDC" />
 	<xtce:TelemetryMetaData>
 		<xtce:ParameterTypeSet>
 			<!-- In the ParameterTypeSet, define all the data types required for the data packets' definitions.

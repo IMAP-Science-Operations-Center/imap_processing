@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='utf-8'?>
 <xtce:SpaceSystem xmlns:xtce="http://www.omg.org/space" nsmap="{'xtce': 'http://www.omg.org/space'}" name="P_U45_IMG_ENA_PHXTOF_HI_ANG">
-	<xtce:Header date="2023-08-23" version="1.0" author="Laura Sandoval" />
+	<xtce:Header date="2023-08-23" version="1.0" author="IMAP SDC" />
 	<xtce:TelemetryMetaData>
 		<xtce:ParameterTypeSet>
 			<xtce:IntegerParameterType name="uint0" signed="false">

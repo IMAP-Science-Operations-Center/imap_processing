@@ -1,20 +1,36 @@
-# Standard
 import logging
+from enum import Enum
+from typing import NamedTuple
 
 import numpy as np
-
-# Installed
 import xarray as xr
 
-# Local
 from imap_processing import decom
 
 logging.basicConfig(level=logging.INFO)
-#TODO: This is a work in progress. Hard-coded values will be removed.
+
+
+class PacketProperties(NamedTuple):
+    """Class that represents properties of the ULTRA packet type."""
+    apid: int
+    width: int
+    block: int
+    len_array: int
+
+
+class UltraParams(Enum):
+    ULTRA_AUX = PacketProperties(apid=880, width=None, block=None,
+                                 len_array=None)
+    ULTRA_IMG_RATES = PacketProperties(apid=881, width=5, block=16,
+                                       len_array = 48)
+
+
 def read_n_bits(binary: str, n: int, current_position: int):
     """
     Extract a specified number of bits from a binary string,
-    starting from a given position.
+    starting from a given position. This is used twice.
+    The first time it reads the first 5 bits to determine the width.
+    The second time it uses the width to determine the value of the bitstring.
 
     Parameters
     ----------
@@ -41,8 +57,8 @@ def read_n_bits(binary: str, n: int, current_position: int):
     value = int(binary[current_position:current_position + n], 2)
     return value, current_position + n
 
-def log_decompression(value: int) -> int:
 
+def log_decompression(value: int) -> int:
     """
     Perform logarithmic decompression on a 16-bit integer.
 
@@ -67,7 +83,7 @@ def log_decompression(value: int) -> int:
         return (4096 + m) << (e - 1)
 
 
-def decompress_binary(binary: str) -> list:
+def decompress_binary(binary: str, width_bit: int, block: int) -> list:
     """
     Decompress a binary string based on block-width encoding and
     logarithmic compression.
@@ -80,6 +96,11 @@ def decompress_binary(binary: str) -> list:
     ----------
     binary : str
         A binary string containing the compressed data.
+    width_bit : int
+        The bit width that describes the width of data in the block
+    block : int
+        Number of values in each block
+
 
     Returns
     -------
@@ -88,18 +109,18 @@ def decompress_binary(binary: str) -> list:
     """
     current_position = 0
     decompressed_values = []
-    width_bit = 5  # The bit width that describes the width of data in the block
 
     while current_position < len(binary):
         # Read the width of the block
         width, current_position = read_n_bits(binary, width_bit, current_position)
-
-        # If width is None, we don't have enough bits left
-        if width is None:
+        # If width is 0 or None, we don't have enough bits left
+        if width is None or len(decompressed_values) >= \
+                UltraParams.ULTRA_IMG_RATES.value.len_array:
+            print('hi')
             break
 
         # For each block, read 16 values of the given width
-        for _ in range(16):
+        for _ in range(block):
             # Ensure there are enough bits left to read the width
             if len(binary) - current_position < width:
                 break
@@ -132,29 +153,32 @@ def decom_ultra_packets(packet_file: str, xtce: str):
 
     packets = decom.decom_packets(packet_file, xtce)
 
-    met_data, sid_data, spin_data, abortflag_data, startdelay_data, fastdata_00_data = \
+    met_data, science_id, spin_data, abortflag_data, startdelay_data, fastdata_00 = \
         [], [], [], [], [], []
 
     for packet in packets:
-        if packet.header['PKT_APID'].derived_value == 881:
+        if packet.header['PKT_APID'].derived_value == \
+                UltraParams.ULTRA_IMG_RATES.value.apid:
             met_data.append(packet.data['SHCOARSE'].derived_value)
-            sid_data.append(packet.data['SID'].derived_value)
+            science_id.append(packet.data['SID'].derived_value)
             spin_data.append(packet.data['SPIN'].derived_value)
             abortflag_data.append(packet.data['ABORTFLAG'].derived_value)
             startdelay_data.append(packet.data['STARTDELAY'].derived_value)
-            decompressed_data = decompress_binary(packet.data['FASTDATA_00'].raw_value)
-            fastdata_00_data.append(decompressed_data)
+            decompressed_data = decompress_binary(packet.data['FASTDATA_00'].raw_value,
+                                                  UltraParams.ULTRA_IMG_RATES.value.width,
+                                                  UltraParams.ULTRA_IMG_RATES.value.block)
+            fastdata_00.append(decompressed_data)
 
-    fastdata_00_array = np.array(fastdata_00_data, dtype=object)
+    array_data = np.array(fastdata_00)
 
     ds = xr.Dataset({
-        'sid_data': ('time', sid_data),
-        'spin_data': ('time', spin_data),
-        'abortflag_data': ('time', abortflag_data),
-        'startdelay_data': ('time', startdelay_data),
-        'fastdata_00': ('time', fastdata_00_array)
+        'science_id': ('epoch', science_id),
+        'spin_data': ('epoch', spin_data),
+        'abortflag_data': ('epoch', abortflag_data),
+        'startdelay_data': ('epoch', startdelay_data),
+        'fastdata_00': (('epoch', 'index'), array_data)
     }, coords={
-        'time': met_data,
+        'epoch': met_data,
     })
 
     return ds

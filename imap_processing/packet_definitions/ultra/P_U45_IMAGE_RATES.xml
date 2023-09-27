@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <xtce:SpaceSystem xmlns:xtce="http://www.omg.org/space/xtce" name="P_U45_IMAGE_RATES">
-	<xtce:Header date="2023-08-24T07:53:00MST" version="1.0" author="Laura Sandoval" />
+	<xtce:Header date="2023-08-24T07:53:00MST" version="1.0" author="IMAP SDC" />
 	<xtce:TelemetryMetaData>
 		<xtce:ParameterTypeSet>
 			<xtce:IntegerParameterType name="uint0" signed="false">
@@ -137,10 +137,14 @@
 			</xtce:IntegerParameterType>
 			<xtce:BinaryParameterType name="fastdata">
                 <xtce:UnitSet/>
-                <xtce:BinaryDataEncoding bitOrder="mostSignificantBitFirst">
+                <xtce:BinaryDataEncoding>
                     <xtce:SizeInBits>
-                        <xtce:FixedValue>848</xtce:FixedValue>
-                    </xtce:SizeInBits>
+            			<xtce:DynamicValue>
+              				<xtce:ParameterInstanceRef parameterRef="PKT_LEN"/>
+							<!--Equation: (PKT_LEN+7)*8-112 -->
+              				<xtce:LinearAdjustment intercept="-56" slope="8"/>
+            			</xtce:DynamicValue>
+          			</xtce:SizeInBits>
                 </xtce:BinaryDataEncoding>
             </xtce:BinaryParameterType>
 		</xtce:ParameterTypeSet>

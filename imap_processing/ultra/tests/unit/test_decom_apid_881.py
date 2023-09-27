@@ -1,4 +1,4 @@
-import ast
+import json
 
 import numpy as np
 import pandas as pd
@@ -14,29 +14,33 @@ def decom_test_data(ccsds_path, xtce_image_rates_path):
     data_packet_list = decom.decom_packets(ccsds_path, xtce_image_rates_path)
     return data_packet_list
 
+
 @pytest.fixture()
 def decom_ultra(ccsds_path, xtce_image_rates_path):
     """Data for decom_ultra"""
     data_packet_list = decom_ultra_packets(ccsds_path,  xtce_image_rates_path)
     return data_packet_list
 
-def test_ultra_apid_881_length(decom_test_data):
+
+def test_image_rate_length(decom_test_data):
     """Test if total packets in data file is correct"""
-    total_packets = 22
+    total_packets = 23
     assert len(decom_test_data) == total_packets
 
-def test_ultra_apid_881(decom_ultra, xtce_image_rates_test_path):
-    """Test values for apid 881"""
+
+def test_image_rate_decom(decom_ultra, xtce_image_rates_test_path):
+    """This function reads validation data and checks that decom data
+    matches validation data for image rate packet"""
 
     df = pd.read_csv(xtce_image_rates_test_path, index_col='MET')
 
-    for time in decom_ultra.time.values:
-        assert df.loc[time].SID == decom_ultra['sid_data'].sel(time=time)
-        assert df.loc[time].Spin == decom_ultra['spin_data'].sel(time=time)
-        assert df.loc[time].AbortFlag == decom_ultra['abortflag_data'].sel(time=time)
-        assert df.loc[time].StartDelay == decom_ultra['startdelay_data'].sel(time=time)
+    assert (df.SID == decom_ultra['science_id']).all()
+    assert (df.Spin == decom_ultra['spin_data']).all()
+    assert (df.AbortFlag == decom_ultra['abortflag_data']).all()
+    assert (df.StartDelay == decom_ultra['startdelay_data']).all()
 
-        arr1 = ast.literal_eval(df.loc[time].Counts)
-        arr2 = decom_ultra['fastdata_00'].sel(time=time).data
+    for time in decom_ultra.epoch.values:
 
-        np.testing.assert_array_equal(arr1, arr2.item()[0:48])
+        arr1 = json.loads(df.loc[time].Counts)
+        arr2 = decom_ultra['fastdata_00'].sel(epoch=time).data
+        np.testing.assert_array_equal(arr1, arr2)

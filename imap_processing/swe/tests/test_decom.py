@@ -1,4 +1,4 @@
-import os
+from pathlib import Path
 
 import pytest
 
@@ -8,10 +8,9 @@ from imap_processing.swe.l0 import decom_swe
 @pytest.fixture(scope="session")
 def decom_test_data():
     """Read test data from file"""
-    current_directory = os.path.dirname(os.path.abspath(__file__))
-    packet_file = os.path.join(
-        current_directory, "science_block_20221116_163611Z_idle.bin")
-    data_packet_list = decom_swe.decom_packets(packet_file)
+    current_directory = Path(__file__).resolve().parent
+    packet_file = current_directory / "science_block_20221116_163611Z_idle.bin"
+    data_packet_list = decom_swe.decom_packets(str(packet_file))
     return data_packet_list
 
 

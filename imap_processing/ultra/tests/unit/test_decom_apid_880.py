@@ -11,70 +11,50 @@ def decom_test_data(ccsds_path, xtce_aux_path):
     return data_packet_list
 
 
-def test_ultra_apid_880_length(decom_test_data):
+def test_aux_length(decom_test_data):
     """Test if total packets in data file is correct"""
     total_packets = 23
     assert len(decom_test_data) == total_packets
 
 
-def test_enumerated_apid_880(decom_test_data):
+def test_aux_enumerated(decom_test_data, xtce_aux_test_path):
     """Test if enumerated values derived correctly"""
 
     for packet in decom_test_data:
 
-        if packet.data["SPINPERIODVALID"].raw_value == 0:
-            assert packet.data["SPINPERIODVALID"].derived_value == 'INVALID'
-        elif packet.data["SPINPERIODVALID"].raw_value == 1:
-            assert packet.data["SPINPERIODVALID"].derived_value == 'VALID'
-        if packet.data["SPINPHASEVALID"].raw_value == 0:
-            assert packet.data["SPINPHASEVALID"].derived_value == 'INVALID'
-        elif packet.data["SPINPHASEVALID"].raw_value == 1:
-            assert packet.data["SPINPHASEVALID"].derived_value == 'VALID'
-        if packet.data["SPINPERIODSOURCE"].raw_value == 0:
-            assert packet.data["SPINPERIODSOURCE"].derived_value == 'SAFING'
-        elif packet.data["SPINPERIODSOURCE"].raw_value == 1:
-            assert packet.data["SPINPERIODSOURCE"].derived_value == 'NOMINAL'
-        if packet.data["CATBEDHEATERFLAG"].raw_value == 0:
-            assert packet.data["CATBEDHEATERFLAG"].derived_value == 'UNFLAGGED'
+        assert packet.data["SPINPERIODVALID"].derived_value == 'INVALID'
+        assert packet.data["SPINPHASEVALID"].derived_value == 'VALID'
+        assert packet.data["SPINPERIODSOURCE"].derived_value == 'NOMINAL'
+        assert packet.data["CATBEDHEATERFLAG"].derived_value == 'UNFLAGGED'
 
 
-def test_mode_apid_880(decom_test_data):
+def test_aux_mode(decom_test_data):
     """Test if enumerated values derived correctly"""
 
     for packet in decom_test_data:
-        if packet.data["HWMODE"].raw_value == 0:
-            assert packet.data["HWMODE"].derived_value == 'MODE0'
-        elif packet.data["HWMODE"].raw_value == 1:
-            assert packet.data["HWMODE"].derived_value == 'MODE1'
-        if packet.data["IMCENB"].raw_value == 0:
-            assert packet.data["IMCENB"].derived_value == 'MODE0'
-        elif packet.data["IMCENB"].raw_value == 1:
-            assert packet.data["IMCENB"].derived_value == 'MODE1'
-        if packet.data["LEFTDEFLECTIONCHARGE"].raw_value == 0:
-            assert packet.data["LEFTDEFLECTIONCHARGE"].derived_value == 'MODE0'
-        elif packet.data["LEFTDEFLECTIONCHARGE"].raw_value == 1:
-            assert packet.data["LEFTDEFLECTIONCHARGE"].derived_value == 'MODE1'
-        if packet.data["RIGHTDEFLECTIONCHARGE"].raw_value == 0:
-            assert packet.data["RIGHTDEFLECTIONCHARGE"].derived_value == 'MODE0'
-        elif packet.data["RIGHTDEFLECTIONCHARGE"].raw_value == 1:
-            assert packet.data["RIGHTDEFLECTIONCHARGE"].derived_value == 'MODE1'
+        assert packet.data["HWMODE"].derived_value == 'MODE0'
+        assert packet.data["IMCENB"].derived_value == 'MODE0'
+        assert packet.data["LEFTDEFLECTIONCHARGE"].derived_value == 'MODE0'
+        assert packet.data["RIGHTDEFLECTIONCHARGE"].derived_value == 'MODE0'
 
 
-def test_ultra_apid_880(decom_test_data, xtce_aux_test_path):
-    """Test values for apid 880"""
+def test_aux_decom(decom_test_data, xtce_aux_test_path):
+    """This function reads validation data and checks that
+    decom data matches validation data for auxiliary packet"""
 
     df = pd.read_csv(xtce_aux_test_path, index_col='MET')
 
     for packet in decom_test_data:
 
         time = packet.data['SHCOARSE'].derived_value
+        subdf = df.loc[time]
 
-        assert df.loc[time].SpinStartSeconds == \
+        assert subdf.SpinStartSeconds == \
                packet.data["TIMESPINSTART"].derived_value
-        assert df.loc[time].SpinStartSubseconds == \
+        assert subdf.SpinStartSubseconds == \
                packet.data["TIMESPINSTARTSUB"].derived_value
-        assert df.loc[time].SpinDuration == packet.data["DURATION"].derived_value
-        assert df.loc[time].SpinNumber == packet.data["SPINNUMBER"].derived_value
-        assert df.loc[time].SpinDataTime == packet.data["TIMESPINDATA"].derived_value
-        assert df.loc[time].SpinPeriod == packet.data["SPINPERIOD"].derived_value
-        assert df.loc[time].SpinPhase == packet.data["SPINPHASE"].derived_value
+        assert subdf.SpinDuration == packet.data["DURATION"].derived_value
+        assert subdf.SpinNumber == packet.data["SPINNUMBER"].derived_value
+        assert subdf.SpinDataTime == packet.data["TIMESPINDATA"].derived_value
+        assert subdf.SpinPeriod == packet.data["SPINPERIOD"].derived_value
+        assert subdf.SpinPhase == packet.data["SPINPHASE"].derived_value
