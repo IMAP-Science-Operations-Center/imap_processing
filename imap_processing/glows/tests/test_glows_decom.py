@@ -1,8 +1,11 @@
+import logging
 from pathlib import Path
 
 import pytest
 
 from imap_processing.glows.l0 import glows_decom
+
+logging.basicConfig(level=logging.ERROR)
 
 
 @pytest.fixture()

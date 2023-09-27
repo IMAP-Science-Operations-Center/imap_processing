@@ -38,7 +38,6 @@ def decom_packets(packet_file_path: str) -> tuple[list[GlowsHistL0], list[GlowsD
         try:
             hist_packets = histparser.generator(
                 binary_data,
-                parse_bad_pkts=False,
                 buffer_read_size_bytes=5790778,
             )
 
