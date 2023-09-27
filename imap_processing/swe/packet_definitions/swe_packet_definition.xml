@@ -80,8 +80,8 @@
                 <xtce:UnitSet/>
                 <xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned"/>
                 <xtce:EnumerationList>
-                    <xtce:Enumeration label="SAFING" value="0"/>
-                    <xtce:Enumeration label="NOMINAL" value="1"/>
+                    <xtce:Enumeration label="STAR_TRACKER" value="0"/>
+                    <xtce:Enumeration label="SUN_SENSOR" value="1"/>
                 </xtce:EnumerationList>
             </xtce:EnumeratedParameterType>
             <xtce:EnumeratedParameterType name="ACTIVE_ENUM" signed="false">
@@ -100,20 +100,96 @@
                     <xtce:Enumeration label="SAFED" value="1"/>
                 </xtce:EnumerationList>
             </xtce:EnumeratedParameterType>
+			<xtce:EnumeratedParameterType name="APP_MODE_ENUM" signed="false">
+                <xtce:UnitSet/>
+                <xtce:IntegerDataEncoding sizeInBits="4" encoding="unsigned"/>
+                <xtce:EnumerationList>
+                    <xtce:Enumeration label="OFF" value="0"/>
+                    <xtce:Enumeration label="BOOT" value="1"/>
+					<xtce:Enumeration label="MAINT" value="2"/>
+                    <xtce:Enumeration label="LVENG" value="3"/>
+					<xtce:Enumeration label="LVSCI" value="4"/>
+                    <xtce:Enumeration label="HVENG" value="5"/>
+					<xtce:Enumeration label="HVSCI" value="6"/>
+                </xtce:EnumerationList>
+            </xtce:EnumeratedParameterType>
+			<xtce:EnumeratedParameterType name="LAST_ACC_OPCODE_ENUM" signed="false">
+                <xtce:UnitSet/>
+                <xtce:IntegerDataEncoding sizeInBits="16" encoding="unsigned"/>
+                <xtce:EnumerationList>
+					 <xtce:Enumeration label="NONE" value="0"/>
+                    <xtce:Enumeration label="SWE_MEM_LOAD" value="1538"/>
+                    <xtce:Enumeration label="SWE_MEM_DUMP" value="1541"/>
+					<xtce:Enumeration label="SWE_STOP_MEM_DUMP" value="1543"/>
+                    <xtce:Enumeration label="SWE_MEM_CSUM" value="1545"/>
+					<xtce:Enumeration label="SWE_MRAM_WR" value="52352"/>
+                    <xtce:Enumeration label="SWE_MEM_COPY" value="52353"/>
+					<xtce:Enumeration label="SWE_MEM_POKE" value="52358"/>
+                    <xtce:Enumeration label="SWE_MEM_PEEK" value="52359"/>
+					<xtce:Enumeration label="SWE_EDAC" value="52363"/>
+                    <xtce:Enumeration label="SWE_INJECT_ERROR" value="52364"/>
+					<xtce:Enumeration label="SWE_SET_MARKER" value="53903"/>
+                    <xtce:Enumeration label="SWE_NOOP" value="52367"/>
+					<xtce:Enumeration label="SWE_RESET" value="52368"/>
+                    <xtce:Enumeration label="SWE_MODE" value="52369"/>
+					<xtce:Enumeration label="SWE_POWER_OFF_REQUEST" value="52374"/>
+                    <xtce:Enumeration label="SWE_CLEAR" value="52370"/>
+					<xtce:Enumeration label="SWE_SET_PARAMETER" value="53904"/>
+                    <xtce:Enumeration label="SWE_TLM_INT" value="52400"/>
+					<xtce:Enumeration label="SWE_SENSOR_POWER" value="53881"/>
+                    <xtce:Enumeration label="SWE_HVPS_CTRL" value="53882"/>
+					<xtce:Enumeration label="SWE_HV_BULK_CTRL" value="53880"/>
+                    <xtce:Enumeration label="SWE_HV_CEM_CTRL" value="53883"/>
+					<xtce:Enumeration label="SWE_HV_ESA_CTRL" value="53884"/>
+                    <xtce:Enumeration label="SWE_HV_CEM_LEVEL" value="53885"/>
+					<xtce:Enumeration label="SWE_HV_CEM_OP_LEVEL" value="53886"/>
+                    <xtce:Enumeration label="SWE_HV_CEM_RELA_LEVEL" value="53887"/>
+					<xtce:Enumeration label="SWE_HV_CEM_RAMP" value="53878"/>
+                    <xtce:Enumeration label="SWE_HV_ESA_LEVEL_RANGE" value="53888"/>
+					<xtce:Enumeration label="SWE_THRESH_LEVEL" value="53889"/>
+                    <xtce:Enumeration label="SWE_STIM_CTRL" value="53890"/>
+					<xtce:Enumeration label="SWE_STIM_CONFIG" value="53891"/>
+                    <xtce:Enumeration label="SWE_MACRO_EXEC" value="53892"/>
+					<xtce:Enumeration label="SWE_MACRO_ABORT" value="53893"/>
+                    <xtce:Enumeration label="SWE_ESA_TABLE" value="53896"/>
+					<xtce:Enumeration label="SWE_ACQ_ESA_SETTLE" value="53897"/>
+                    <xtce:Enumeration label="SWE_ACQ_DWELL" value="53898"/>
+					<xtce:Enumeration label="SWE_FDC_CONFIG" value="53912"/>
+                    <xtce:Enumeration label="SWE_SAFE_ME" value="53916"/>
+					<xtce:Enumeration label="SWE_EVR" value="52394"/>
+                    <xtce:Enumeration label="SWE_EVR_TRIGGER" value="53902"/>
+					<xtce:Enumeration label="SWE_TIME_AND_STATUS" value="65278"/>
+                    <xtce:Enumeration label="SWE_BOOT_NOOP" value="45056"/>
+					<xtce:Enumeration label="SWE_BOOT_MODE_SET" value="45057"/>
+                    <xtce:Enumeration label="SWE_BOOT_MEM_DUMP" value="45058"/>
+					<xtce:Enumeration label="SWE_BOOT_MEM_LOAD" value="45059"/>
+                    <xtce:Enumeration label="SWE_BOOT_MEM_CHECKSUM" value="45060"/>
+					<xtce:Enumeration label="SWE_BOOT_JUMP" value="45061"/>
+                    <xtce:Enumeration label="SWE_BOOT_BOOT_IMG" value="45062"/>
+                </xtce:EnumerationList>
+            </xtce:EnumeratedParameterType>
 			<xtce:EnumeratedParameterType name="PLUG_INSERTED_ENUM" signed="false">
                 <xtce:UnitSet/>
                 <xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned"/>
                 <xtce:EnumerationList>
-                    <xtce:Enumeration label="PLUG_NOT_INSERTED" value="0"/>
-                    <xtce:Enumeration label="PLUG_INSERTED" value="1"/>
+                    <xtce:Enumeration label="NOT_INSERTED" value="0"/>
+                    <xtce:Enumeration label="INSERTED" value="1"/>
                 </xtce:EnumerationList>
             </xtce:EnumeratedParameterType>
 			<xtce:EnumeratedParameterType name="ENABLE_ENUM" signed="false">
                 <xtce:UnitSet/>
                 <xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned"/>
                 <xtce:EnumerationList>
-                    <xtce:Enumeration label="NOT_ENABLE" value="0"/>
-                    <xtce:Enumeration label="ENABLE" value="1"/>
+                    <xtce:Enumeration label="NOT_ENABLED" value="0"/>
+                    <xtce:Enumeration label="ENABLED" value="1"/>
+                </xtce:EnumerationList>
+            </xtce:EnumeratedParameterType>
+			<xtce:EnumeratedParameterType name="DISABLE_ENUM" signed="false">
+                <xtce:UnitSet/>
+                <xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned"/>
+                <xtce:EnumerationList>
+                    <xtce:Enumeration label="DISABLED" value="0"/>
+                    <xtce:Enumeration label="ENABLED" value="1"/>
                 </xtce:EnumerationList>
             </xtce:EnumeratedParameterType>
 			<xtce:EnumeratedParameterType name="ESA_RANGE_ENUM" signed="false">
@@ -130,6 +206,83 @@
                 <xtce:EnumerationList>
                     <xtce:Enumeration label="MIN" value="0"/>
                     <xtce:Enumeration label="MAX" value="1"/>
+                </xtce:EnumerationList>
+            </xtce:EnumeratedParameterType>
+			<xtce:EnumeratedParameterType name="FDC_LAST_TRIGGER_ACTION_ENUM" signed="false">
+                <xtce:UnitSet/>
+                <xtce:IntegerDataEncoding sizeInBits="8" encoding="unsigned"/>
+                <xtce:EnumerationList>
+                    <xtce:Enumeration label="REPORT_ONLY" value="0"/>
+                    <xtce:Enumeration label="SOFT_SAFE" value="1"/>
+					<xtce:Enumeration label="HARD_SAFE" value="2"/>
+					<xtce:Enumeration label="RESERVED" value="128"/>
+                    <xtce:Enumeration label="MACRO_1" value="129"/>
+					<xtce:Enumeration label="MACRO_2" value="130"/>
+					<xtce:Enumeration label="MACRO_3" value="131"/>
+                    <xtce:Enumeration label="MACRO_4" value="132"/>
+					<xtce:Enumeration label="MACRO_5" value="133"/>
+					<xtce:Enumeration label="MACRO_6" value="134"/>
+                    <xtce:Enumeration label="MACRO_7" value="135"/>
+					<xtce:Enumeration label="MACRO_8" value="136"/>
+					<xtce:Enumeration label="MACRO_9" value="137"/>
+                    <xtce:Enumeration label="MACRO_10" value="138"/>
+					<xtce:Enumeration label="MACRO_11" value="139"/>
+					<xtce:Enumeration label="MACRO_12" value="140"/>
+                    <xtce:Enumeration label="MACRO_13" value="141"/>
+					<xtce:Enumeration label="MACRO_14" value="142"/>
+					<xtce:Enumeration label="MACRO_15" value="143"/>
+                    <xtce:Enumeration label="MACRO_16" value="144"/>
+                </xtce:EnumerationList>
+            </xtce:EnumeratedParameterType>
+			<xtce:EnumeratedParameterType name="ACTIVE_MACRO_ENUM" signed="false">
+                <xtce:UnitSet/>
+                <xtce:IntegerDataEncoding sizeInBits="5" encoding="unsigned"/>
+                <xtce:EnumerationList>
+                    <xtce:Enumeration label="NONE" value="0"/>
+                    <xtce:Enumeration label="MACRO_1" value="1"/>
+					<xtce:Enumeration label="MACRO_2" value="2"/>
+					<xtce:Enumeration label="MACRO_3" value="3"/>
+                    <xtce:Enumeration label="MACRO_4" value="4"/>
+					<xtce:Enumeration label="MACRO_5" value="5"/>
+					<xtce:Enumeration label="MACRO_6" value="6"/>
+                    <xtce:Enumeration label="MACRO_7" value="7"/>
+					<xtce:Enumeration label="MACRO_8" value="8"/>
+					<xtce:Enumeration label="MACRO_9" value="9"/>
+                    <xtce:Enumeration label="MACRO_10" value="10"/>
+					<xtce:Enumeration label="MACRO_11" value="11"/>
+					<xtce:Enumeration label="MACRO_12" value="12"/>
+                    <xtce:Enumeration label="MACRO_13" value="13"/>
+					<xtce:Enumeration label="MACRO_14" value="14"/>
+					<xtce:Enumeration label="MACRO_15" value="15"/>
+                    <xtce:Enumeration label="MACRO_16" value="16"/>
+                </xtce:EnumerationList>
+            </xtce:EnumeratedParameterType>
+			<xtce:EnumeratedParameterType name="ACTIVE_MACRO_TRIGGER_ENUM" signed="false">
+                <xtce:UnitSet/>
+                <xtce:IntegerDataEncoding sizeInBits="3" encoding="unsigned"/>
+                <xtce:EnumerationList>
+                    <xtce:Enumeration label="NONE" value="0"/>
+                    <xtce:Enumeration label="FDC" value="1"/>
+					<xtce:Enumeration label="SPACECRAFT" value="2"/>
+					<xtce:Enumeration label="USER" value="3"/>
+                </xtce:EnumerationList>
+            </xtce:EnumeratedParameterType>
+			<xtce:EnumeratedParameterType name="YES_NO_ENUM" signed="false">
+                <xtce:UnitSet/>
+                <xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned"/>
+                <xtce:EnumerationList>
+                    <xtce:Enumeration label="NO" value="0"/>
+                    <xtce:Enumeration label="YES" value="1"/>
+                </xtce:EnumerationList>
+            </xtce:EnumeratedParameterType>
+			<xtce:EnumeratedParameterType name="QUARTER_CYCLE_ENUM" signed="false">
+                <xtce:UnitSet/>
+                <xtce:IntegerDataEncoding sizeInBits="5" encoding="unsigned"/>
+                <xtce:EnumerationList>
+                    <xtce:Enumeration label="FIRST" value="0"/>
+                    <xtce:Enumeration label="SECOND" value="1"/>
+					<xtce:Enumeration label="THIRD" value="2"/>
+                    <xtce:Enumeration label="FORTH" value="3"/>
                 </xtce:EnumerationList>
             </xtce:EnumeratedParameterType>
         </xtce:ParameterTypeSet>
@@ -202,20 +355,23 @@
 			<xtce:Parameter name="SPIN_PERIOD" parameterTypeRef="UINT16">
 				<xtce:LongDescription>Spin period</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="THRUSTER_FIRING" parameterTypeRef="UINT1">
+			<xtce:Parameter name="REPOINT_WARNING" parameterTypeRef="YES_NO_ENUM">
 				<xtce:LongDescription>Thruster fired during this quarter cycle
 					'1' -- yes, thruster fired
 					'0' -- no, thruster not fired
 				</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="HIGH_COUNT" parameterTypeRef="UINT1">
+			<xtce:Parameter name="HIGH_COUNT" parameterTypeRef="YES_NO_ENUM">
 				<xtce:LongDescription>High CEM count observed for at least one CEM during this quarter cycle
 					'1' -- yes, high count occurred
 					'0' -- no, no high count occurred
 				</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="ESA_STEPS" parameterTypeRef="UINT6">
+			<xtce:Parameter name="STEM_ENABLED" parameterTypeRef="UINT1">
 				<xtce:LongDescription>ESA steps in packet</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="QUARTER_CYCLE" parameterTypeRef="QUARTER_CYCLE_ENUM">
+				<xtce:LongDescription>ESA acquisition configuration</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="ESA_TABLE_NUM" parameterTypeRef="UINT8">
 				<xtce:LongDescription>ESA table identifier</xtce:LongDescription>
@@ -244,7 +400,7 @@
 			</xtce:Parameter>
             <!-- End SWE_SCIENCE metadata -->
             <!-- Start SWE_APP_HK metadata -->
-            <xtce:Parameter name="APP_MODE" parameterTypeRef="UINT4">
+            <xtce:Parameter name="APP_MODE" parameterTypeRef="APP_MODE_ENUM">
 				<xtce:LongDescription>Operation Mode</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SAFED" parameterTypeRef="SAFED_ENUM">
@@ -262,7 +418,7 @@
 			<xtce:Parameter name="CMD_REJ_COUNT" parameterTypeRef="UINT8">
 				<xtce:LongDescription>Command reject count</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="LAST_ACC_OPCODE" parameterTypeRef="UINT16">
+			<xtce:Parameter name="LAST_ACC_OPCODE" parameterTypeRef="LAST_ACC_OPCODE_ENUM">
 				<xtce:LongDescription>Last accepted opcode</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="HV_DISABLE_PLUG" parameterTypeRef="PLUG_INSERTED_ENUM">
@@ -277,19 +433,19 @@
 					'0’ – Plug not inserted
 				</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="HVPS_ENABLE" parameterTypeRef="ENABLE_ENUM">
+			<xtce:Parameter name="HVPS_ENABLE" parameterTypeRef="DISABLE_ENUM">
 				<xtce:LongDescription>Master Enable.
 					'1' - enabled
 					'0' not enabled
 				</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="HVPS_CEM_ENABLE" parameterTypeRef="ENABLE_ENUM">
+			<xtce:Parameter name="HVPS_CEM_ENABLE" parameterTypeRef="DISABLE_ENUM">
 				<xtce:LongDescription>CEM Enable.
 					'1' - enabled
 					'0' -- not enabled
 				</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="HVPS_ESA_ENABLE" parameterTypeRef="ENABLE_ENUM">
+			<xtce:Parameter name="HVPS_ESA_ENABLE" parameterTypeRef="DISABLE_ENUM">
 				<xtce:LongDescription>ESA Disable
 					'1’ – ESA enabled
 					'0’ – ESA disabled
@@ -301,7 +457,7 @@
 					'0’ – ESA high range
 				</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="HVPS_BULK_ENABLE" parameterTypeRef="ENABLE_ENUM">
+			<xtce:Parameter name="HVPS_BULK_ENABLE" parameterTypeRef="DISABLE_ENUM">
 				<xtce:LongDescription>Enable 1.6kV bulk power supply.
 					1 - enabled
 					0 not enabled
@@ -337,7 +493,13 @@
 			<xtce:Parameter name="THRESHHOLD" parameterTypeRef="UINT12">
 				<xtce:LongDescription>CEM Front End Electronics Threshold</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="STIM_ENABLE" parameterTypeRef="ENABLE_ENUM">
+			<xtce:Parameter name="STIM_ENABLED" parameterTypeRef="DISABLE_ENUM">
+				<xtce:LongDescription>STIM Enable
+					'1': enabled
+					'0': disabled
+				</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="STIM_ENABLE" parameterTypeRef="DISABLE_ENUM">
 				<xtce:LongDescription>STIM Enable
 					'1': enabled
 					'0': disabled
@@ -463,7 +625,7 @@
 			<xtce:Parameter name="FDC_LAST_TRIGGER_INDEX" parameterTypeRef="UINT8">
 				<xtce:LongDescription>Index of FDC rule in ENG LUT that triggered last violation</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="FDC_LAST_TRIGGER_ACTION" parameterTypeRef="UINT8">
+			<xtce:Parameter name="FDC_LAST_TRIGGER_ACTION" parameterTypeRef="FDC_LAST_TRIGGER_ACTION_ENUM">
 				<xtce:LongDescription>Action taken to handle the last FDC violation</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="FDC_LAST_TRIGGER_MINMAX" parameterTypeRef="MIN_MAX_ENUM">
@@ -481,10 +643,10 @@
 			<xtce:Parameter name="MARKER" parameterTypeRef="UINT32">
 				<xtce:LongDescription>Marker value for user to write to for testing</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="ACTIVE_MACRO" parameterTypeRef="UINT5">
+			<xtce:Parameter name="ACTIVE_MACRO" parameterTypeRef="ACTIVE_MACRO_ENUM">
 				<xtce:LongDescription>1 based macro ID of the macro currently being executed</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="ACTIVE_MACRO_TRIGGER" parameterTypeRef="UINT3">
+			<xtce:Parameter name="ACTIVE_MACRO_TRIGGER" parameterTypeRef="ACTIVE_MACRO_TRIGGER_ENUM">
 				<xtce:LongDescription>Trigger that started the macro (1 is FDC, 2 is spacecraft, 3 is user)</xtce:LongDescription>
 			</xtce:Parameter>
             <!-- End SWE_APP_HK metadata -->
@@ -594,9 +756,10 @@
 					<xtce:ParameterRefEntry parameterRef="ACQ_DURATION" />
 					<xtce:ParameterRefEntry parameterRef="SPIN_PHASE" />
 					<xtce:ParameterRefEntry parameterRef="SPIN_PERIOD" />
-					<xtce:ParameterRefEntry parameterRef="THRUSTER_FIRING" />
+					<xtce:ParameterRefEntry parameterRef="REPOINT_WARNING" />
 					<xtce:ParameterRefEntry parameterRef="HIGH_COUNT" />
-					<xtce:ParameterRefEntry parameterRef="ESA_STEPS" />
+					<xtce:ParameterRefEntry parameterRef="STIM_ENABLED" />
+					<xtce:ParameterRefEntry parameterRef="QUARTER_CYCLE" />
 					<xtce:ParameterRefEntry parameterRef="ESA_TABLE_NUM" />
 					<xtce:ParameterRefEntry parameterRef="ESA_ACQ_CFG" />
 					<xtce:ParameterRefEntry parameterRef="THRESHOLD_DAC" />
