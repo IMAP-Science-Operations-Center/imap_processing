@@ -2,6 +2,8 @@ import pandas as pd
 import pytest
 
 from imap_processing import decom
+from imap_processing.ultra.tests.unit.data_path_fixtures import \
+    xtce_aux_test_path, ccsds_path, xtce_aux_path
 
 
 @pytest.fixture()
@@ -17,7 +19,7 @@ def test_aux_length(decom_test_data):
     assert len(decom_test_data) == total_packets
 
 
-def test_aux_enumerated(decom_test_data, xtce_aux_test_path):
+def test_aux_enumerated(decom_test_data):
     """Test if enumerated values derived correctly"""
 
     for packet in decom_test_data:
