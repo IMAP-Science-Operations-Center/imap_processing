@@ -18,10 +18,10 @@ def decom_test_data():
     # Packet 4 has spin 3's data
     # reorder to match the order of spin in the data
     packet_files = [
-        f"{imap_module_directory}/swe/tests/science_packets/20230927173253_SWE_SCIENCE_packet.bin",
-        f"{imap_module_directory}/swe/tests/science_packets/20230927173308_SWE_SCIENCE_packet.bin",
-        f"{imap_module_directory}/swe/tests/science_packets/20230927173323_SWE_SCIENCE_packet.bin",
-        f"{imap_module_directory}/swe/tests/science_packets/20230927173238_SWE_SCIENCE_packet.bin",
+        f"{imap_module_directory}/swe/tests/l0_data/20230927173253_SWE_SCIENCE_packet.bin",
+        f"{imap_module_directory}/swe/tests/l0_data/20230927173308_SWE_SCIENCE_packet.bin",
+        f"{imap_module_directory}/swe/tests/l0_data/20230927173323_SWE_SCIENCE_packet.bin",
+        f"{imap_module_directory}/swe/tests/l0_data/20230927173238_SWE_SCIENCE_packet.bin",
     ]
     data_list = []
     for packet_file in packet_files:
@@ -46,7 +46,7 @@ def test_uncompress_algorithm():
 def test_swe_raw_science_data(decom_test_data):
     """This test and validate raw and derived data of SWE science data."""
     # read validation data
-    test_data_path = f"{imap_module_directory}/swe/tests/science_packets"
+    test_data_path = f"{imap_module_directory}/swe/tests/l0_validation_data"
     raw_validation_data = pd.read_csv(
         f"{test_data_path}/idle_export_raw.SWE_SCIENCE_20230927_172708.csv",
         index_col="SHCOARSE",
@@ -70,7 +70,7 @@ def test_swe_raw_science_data(decom_test_data):
 def test_swe_derived_science_data(decom_test_data):
     """This test and validate raw and derived data of SWE science data."""
     # read validation data
-    test_data_path = f"{imap_module_directory}/swe/tests/science_packets"
+    test_data_path = f"{imap_module_directory}/swe/tests/l0_validation_data"
     derived_validation_data = pd.read_csv(
         f"{test_data_path}/idle_export_eu.SWE_SCIENCE_20230927_172708.csv",
         index_col="SHCOARSE",
@@ -118,7 +118,7 @@ def test_swe_science_algorithm(decom_test_data):
 
     # science data should have this shape, 15x12x7.
     science_data = processed_data["SCIENCE_DATA"].data[0]
-    assert science_data.shape == (15, 12, 7)
+    assert science_data.shape == (180, 7)
 
     # Test data has n packets, therefore, SPIN_PHASE should have that same length.
     spin_phase = processed_data["SPIN_PHASE"]

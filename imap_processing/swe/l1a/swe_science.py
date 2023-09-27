@@ -3,6 +3,12 @@ import collections
 import numpy as np
 import xarray as xr
 
+from imap_processing import cdf_utils
+from imap_processing.swe import swe_cdf_attrs
+from imap_processing.swe.utils.swe_utils import (
+    add_metadata_to_array,
+)
+
 
 def uncompress_counts(cem_count):
     """Uncompress counts from the CEMs.
@@ -53,24 +59,6 @@ def uncompress_counts(cem_count):
         + (multi * uncompress_table[index]["step_size"])
         + ((uncompress_table[index]["step_size"] - 1) // 2)
     )
-
-
-def add_metadata_to_array(data_packet, metadata_arrays):
-    """Add metadata to the metadata_arrays.
-
-    Parameters
-    ----------
-    data_packet : space_packet_parser.parser.Packet
-        SWE data packet
-    metadata_arrays : dict
-        metadata arrays
-    """
-    for key, value in data_packet.header.items():
-        metadata_arrays.setdefault(key, []).append(value.raw_value)
-
-    for key, value in data_packet.data.items():
-        if key != "SCIENCE_DATA":
-            metadata_arrays.setdefault(key, []).append(value.raw_value)
 
 
 def swe_science(decom_data):
@@ -130,50 +118,80 @@ def swe_science(decom_data):
         raw_counts = np.frombuffer(byte_data, dtype=np.uint8)
 
         # Uncompress counts. Uncompressed data is a list of 1260
-        # where 1260 = 15 seconds x 12 energy steps x 7 CEMs
+        # where 1260 = 180 x 7 CEMs
         # Take the "raw_counts" indices/counts mapping from
         # decompression_table and then reshape the return
-        uncompress_data = np.take(decompression_table, raw_counts).reshape(15, 12, 7)
-        raw_counts = raw_counts.reshape(15, 12, 7)
+        uncompress_data = np.take(decompression_table, raw_counts).reshape(180, 7)
+        # Save raw counts data as well
+        raw_counts = raw_counts.reshape(180, 7)
 
         # Save data with its metadata field to attrs and DataArray of xarray.
-        science_array.append(uncompress_data)
-        raw_science_array.append(raw_counts)
+        # Save data as np.int64 to be complaint with ISTP' FILLVAL
+        science_array.append(uncompress_data.astype(np.int64))
+        raw_science_array.append(raw_counts.astype(np.int64))
         add_metadata_to_array(data_packet, metadata_arrays)
 
-    met_time = xr.DataArray(
+    epoch_time = xr.DataArray(
         metadata_arrays["SHCOARSE"],
-        name="met_time",
-        dims=["met_time"],
-        attrs=dict(
-            description="Mission elapsed time",
-            units="seconds since start of the mission",
-        ),
+        name="Epoch",
+        dims=["Epoch"],
+        attrs=cdf_utils.epoch_attrs,
+    )
+
+    # TODO: refactor this better once we develop class inheritance
+    int_attrs = swe_cdf_attrs.int_attrs
+    int_attrs["CATDESC"] = int_attrs["FIELDNAM"] = int_attrs["LABLAXIS"] = "Energy"
+    int_attrs["VALIDMAX"] = np.int64(180)
+    energy = xr.DataArray(
+        np.arange(180),
+        name="Energy",
+        dims=["Energy"],
+        attrs=int_attrs,
+    )
+
+    int_attrs["CATDESC"] = int_attrs["FIELDNAM"] = int_attrs["LABLAXIS"] = "Counts"
+    int_attrs["VALIDMAX"] = np.int64(7)
+    counts = xr.DataArray(
+        np.arange(7),
+        name="Counts",
+        dims=["Counts"],
+        attrs=int_attrs,
     )
 
     science_xarray = xr.DataArray(
         science_array,
-        dims=["met_time", "seconds", "energy_steps", "cem_counts"],
+        dims=["Epoch", "Energy", "Counts"],
+        attrs=swe_cdf_attrs.l1a_science_attrs,
     )
+
     raw_science_xarray = xr.DataArray(
         raw_science_array,
-        dims=["met_time", "seconds", "energy_steps", "cem_counts"],
+        dims=["Epoch", "Energy", "Counts"],
+        attrs=swe_cdf_attrs.l1a_science_attrs,
     )
 
     dataset = xr.Dataset(
-        {"SCIENCE_DATA": science_xarray},
-        coords={"met_time": met_time},
+        coords={
+            "Epoch": epoch_time,
+            "Energy": energy,
+            "Counts": counts,
+        },
+        attrs=swe_cdf_attrs.swe_l1a_global_attrs,
     )
-
+    dataset["SCIENCE_DATA"] = science_xarray
     dataset["RAW_SCIENCE_DATA"] = raw_science_xarray
 
     # create xarray dataset for each metadata field
     for key, value in metadata_arrays.items():
         if key == "SHCOARSE":
             continue
+        int_attrs["CATDESC"] = int_attrs["FIELDNAM"] = int_attrs["LABLAXIS"] = key
+        # get int32's max since most of metadata is under 32-bits
+        int_attrs["VALIDMAX"] = np.iinfo(np.int32).max
         dataset[key] = xr.DataArray(
             value,
-            dims=["met_time"],
+            dims=["Epoch"],
+            attrs=int_attrs,
         )
 
     return dataset
