@@ -7,11 +7,11 @@ from imap_processing import imap_module_directory
 from imap_processing.glows.l0.glows_l0_data import GlowsDeL0, GlowsHistL0
 
 
-def decom_packets(packet_file: str) -> tuple[list[GlowsHistL0], list[GlowsDeL0]]:
+def decom_packets(packet_file_path: str) -> tuple[list[GlowsHistL0], list[GlowsDeL0]]:
     """Decom GLOWS data packets using GLOWS packet definition
     Parameters
     ----------
-    packet_file : str
+    packet_file_path : str
         Path to data packet path with filename
 
     Returns
@@ -34,7 +34,7 @@ def decom_packets(packet_file: str) -> tuple[list[GlowsHistL0], list[GlowsDeL0]]
     histdata = []
     dedata = []
 
-    with open(packet_file, "rb") as binary_data:
+    with open(packet_file_path, "rb") as binary_data:
         try:
             hist_packets = histparser.generator(
                 binary_data,
