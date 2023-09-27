@@ -5,7 +5,7 @@ import pandas as pd
 import pytest
 
 from imap_processing import decom
-from imap_processing.ultra.decom_ultra import decom_ultra_packets
+from imap_processing.ultra.l0.decom_ultra import decom_ultra_packets
 
 
 @pytest.fixture()
