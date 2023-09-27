@@ -3,48 +3,48 @@
 	<xtce:Header date="2023-09" version="1.0" author="IMAP SDC" />
 	<xtce:TelemetryMetaData>
 		<xtce:ParameterTypeSet>
-			<xtce:ParameterType name="UINT1" signed="false">
+			<xtce:IntegerParameterType name="UINT1" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
-			</xtce:ParameterType>
-			<xtce:ParameterType name="UINT2" signed="false">
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT2" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="2" encoding="unsigned" />
-			</xtce:ParameterType>
-			<xtce:ParameterType name="UINT3" signed="false">
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT3" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="3" encoding="unsigned" />
-			</xtce:ParameterType>
-			<xtce:ParameterType name="UINT4" signed="false">
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT4" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="4" encoding="unsigned" />
-			</xtce:ParameterType>
-			<xtce:ParameterType name="UINT8" signed="false">
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT8" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="8" encoding="unsigned" />
-			</xtce:ParameterType>
-			<xtce:ParameterType name="UINT9" signed="false">
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT9" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="9" encoding="unsigned" />
-			</xtce:ParameterType>
-			<xtce:ParameterType name="UINT11" signed="false">
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT11" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="11" encoding="unsigned" />
-			</xtce:ParameterType>
-			<xtce:ParameterType name="UINT12" signed="false">
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT12" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned" />
-			</xtce:ParameterType>
-			<xtce:ParameterType name="UINT14" signed="false">
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT14" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="14" encoding="unsigned" />
-			</xtce:ParameterType>
-			<xtce:ParameterType name="UINT15" signed="false">
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT15" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="15" encoding="unsigned" />
-			</xtce:ParameterType>
-			<xtce:ParameterType name="UINT16" signed="false">
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT16" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="16" encoding="unsigned" />
-			</xtce:ParameterType>
-			<xtce:ParameterType name="UINT20" signed="false">
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT20" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="20" encoding="unsigned" />
-			</xtce:ParameterType>
-			<xtce:ParameterType name="UINT28" signed="false">
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT28" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="28" encoding="unsigned" />
-			</xtce:ParameterType>
-			<xtce:ParameterType name="UINT32" signed="false">
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT32" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="32" encoding="unsigned" />
-			</xtce:ParameterType>
+			</xtce:IntegerParameterType>
 		</xtce:ParameterTypeSet>
 		<xtce:ParameterSet>
 			<xtce:Parameter name="VERSION" parameterTypeRef="UINT3">
@@ -72,366 +72,400 @@
 				<xtce:LongDescription>CCSDS Packet Time Stamp (coarse time)</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="Packet_Version" parameterTypeRef="UINT16">
-				<xtce:LongDescription>Packet Version</xtce:LongDescription>
+				<xtce:ShortDescription>Packet Version</xtce:ShortDescription>
+				<xtce:LongDescription>Packet version - this will be incremented each time the format of the packet changes.</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="CmdExe" parameterTypeRef="UINT8">
-				<xtce:LongDescription>Number of commands executed</xtce:LongDescription>
+				<xtce:ShortDescription>Number of commands executed</xtce:ShortDescription>
+				<xtce:LongDescription>Number of commands that have been executed. Counts 0-255, then rolls over to 0.  Reset via CLR_LATCHED_SINGLE(COMMAND_COUNTS) [also resets cmdjrct, cmdacc, itf_error counts)</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="CmdRjct" parameterTypeRef="UINT8">
-				<xtce:LongDescription>Number of commands rejected</xtce:LongDescription>
+				<xtce:ShortDescription>Number of commands rejected</xtce:ShortDescription>
+				<xtce:LongDescription>Number of commands that have been rejected. Counts 0-255, then rolls over to 0.  Reset via CLR_LATCHED_SINGLE(COMMAND_COUNTS) [also resets cmdexe, cmdacc, itf_error counts)</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="Last_Opcode" parameterTypeRef="UINT16">
-				<xtce:LongDescription>Last executed opcode</xtce:LongDescription>
+				<xtce:ShortDescription>Last executed opcode</xtce:ShortDescription>
+				<xtce:LongDescription>Opcode of the last executed command</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="Mode" parameterTypeRef="UINT4">
-				<xtce:LongDescription>Instrument Mode</xtce:LongDescription>
+				<xtce:ShortDescription>Instrument Mode</xtce:ShortDescription>
+				<xtce:LongDescription>Current operating mode</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="MemOp_State" parameterTypeRef="UINT4">
-				<xtce:LongDescription>Memory Operation State</xtce:LongDescription>
+				<xtce:ShortDescription>Memory Operation State</xtce:ShortDescription>
+				<xtce:LongDescription>State of the memory-operations handler</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="MemDump_State" parameterTypeRef="UINT4">
-				<xtce:LongDescription>Memory Dump State</xtce:LongDescription>
+				<xtce:ShortDescription>Memory Dump State</xtce:ShortDescription>
+				<xtce:LongDescription>State of the memory-dump handler (busy/idle)</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="ITF_Err_Cnt" parameterTypeRef="UINT2">
-				<xtce:LongDescription>Number of ITF errors encountered</xtce:LongDescription>
+				<xtce:ShortDescription>Number of ITF errors encountered</xtce:ShortDescription>
+				<xtce:LongDescription>Number of ITF Errors that have been detected; counts 0-3, then rolls over to 0.   Reset via CLR_LATCHED_SINGLE(COMMAND_COUNTS) [also resets cmdexe, cmdjrct, cmdacc counts)</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="Spin_Cnt" parameterTypeRef="UINT2">
+				<xtce:ShortDescription>Number of spin pulses received</xtce:ShortDescription>
 				<xtce:LongDescription>Number of spin pulses received</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="Missed_PPS_Cnt" parameterTypeRef="UINT2">
-				<xtce:LongDescription>Number of missed PPS pulses</xtce:LongDescription>
+				<xtce:ShortDescription>Number of missed PPS pulses</xtce:ShortDescription>
+				<xtce:LongDescription>Number of missed PPS pulses.  Counts 0-3, then freezes at 3.  Reset via CLR_LATCHED_SINGLE(PPS_STATS)</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="WDOG_Timeout_Cnt" parameterTypeRef="UINT4">
-				<xtce:LongDescription>Number of watchdog timeouts since last reset</xtce:LongDescription>
+				<xtce:ShortDescription>Number of watchdog timeouts since last reset</xtce:ShortDescription>
+				<xtce:LongDescription>Number of times the watchdog has timed out.</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="HV_Plug" parameterTypeRef="UINT2">
-				<xtce:LongDescription>Status of the HV Disable Plug</xtce:LongDescription>
+				<xtce:ShortDescription>Status of the HV Disable Plug</xtce:ShortDescription>
+				<xtce:LongDescription>Current status of the HV SAFE/DISABLE plugs:
+- SAFE: all HVPS outputs provide 1/10 the commanded voltage
+- DIS: all HVPS outputs provide 0V, regardless of commanded voltage
+- FULL: HVPS outputs provide the full commanded voltage</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="Cmd_FIFO_Overrun_Cnt" parameterTypeRef="UINT2">
-				<xtce:LongDescription>Number of Command FIFO Overruns</xtce:LongDescription>
+				<xtce:ShortDescription>Number of Command FIFO Overruns</xtce:ShortDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="Cmd_FIFO_Underrun_Cnt" parameterTypeRef="UINT2">
-				<xtce:LongDescription>Number of Command FIFO Underruns</xtce:LongDescription>
+				<xtce:ShortDescription>Number of Command FIFO Underruns</xtce:ShortDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="Cmd_FIFO_Parity_Err_Cnt" parameterTypeRef="UINT2">
-				<xtce:LongDescription>Number of Command FIFO Parity Errors</xtce:LongDescription>
+				<xtce:ShortDescription>Number of Command FIFO Parity Errors</xtce:ShortDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="Cmd_FIFO_Frame_Err_Cnt" parameterTypeRef="UINT2">
-				<xtce:LongDescription>Number of Command FIFO Frame Errors</xtce:LongDescription>
+				<xtce:ShortDescription>Number of Command FIFO Frame Errors</xtce:ShortDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="Tlm_FIFO_Overrun_Cnt" parameterTypeRef="UINT2">
-				<xtce:LongDescription>Number of Telemetry FIFO Overruns</xtce:LongDescription>
+				<xtce:ShortDescription>Number of Telemetry FIFO Overruns</xtce:ShortDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="Spin_Bin_Period" parameterTypeRef="UINT14">
-				<xtce:LongDescription>Spin Bin Period</xtce:LongDescription>
+				<xtce:ShortDescription>Spin Bin Period</xtce:ShortDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="Spin_Period" parameterTypeRef="UINT16">
-				<xtce:LongDescription>Current Spin Period</xtce:LongDescription>
+				<xtce:ShortDescription>Current Spin Period</xtce:ShortDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="Spin_Period_Timer" parameterTypeRef="UINT16">
-				<xtce:LongDescription>Spin Period Timer</xtce:LongDescription>
+				<xtce:ShortDescription>Spin Period Timer</xtce:ShortDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="Spin_Timestamp_Seconds" parameterTypeRef="UINT32">
-				<xtce:LongDescription>Full-seconds timestamp of the most recent spin pulse</xtce:LongDescription>
+				<xtce:ShortDescription>Full-seconds timestamp of the most recent spin pulse</xtce:ShortDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="Spin_Timestamp_SubSeconds" parameterTypeRef="UINT20">
-				<xtce:LongDescription>Sub-seconds timestamp of the most recent spin pulse</xtce:LongDescription>
+				<xtce:ShortDescription>Sub-seconds timestamp of the most recent spin pulse</xtce:ShortDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="Spin_Bin_Index" parameterTypeRef="UINT9">
-				<xtce:LongDescription>Spin Bin Index</xtce:LongDescription>
+				<xtce:ShortDescription>Spin Bin Index</xtce:ShortDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="Optics_HV_Cmd_Err_Cnt" parameterTypeRef="UINT2">
-				<xtce:LongDescription>Optics HV - Number of command errors</xtce:LongDescription>
+				<xtce:ShortDescription>Optics HV - Number of command errors</xtce:ShortDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="Spare_1" parameterTypeRef="UINT1">
-				<xtce:LongDescription>Spare for alignment</xtce:LongDescription>
+				<xtce:ShortDescription>Spare for alignment</xtce:ShortDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="Optics_HV_Arm_Err_Cnt" parameterTypeRef="UINT2">
-				<xtce:LongDescription>Optics HV - Number of arm errors</xtce:LongDescription>
+				<xtce:ShortDescription>Optics HV - Number of arm errors</xtce:ShortDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="Optics_HV_Master_Enable" parameterTypeRef="UINT1">
-				<xtce:LongDescription>Optics HV - Master Enable</xtce:LongDescription>
+				<xtce:ShortDescription>Optics HV - Master Enable</xtce:ShortDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="Optics_HV_n15KV_Enable" parameterTypeRef="UINT1">
-				<xtce:LongDescription>Optics HV - p15KV Enable</xtce:LongDescription>
+				<xtce:ShortDescription>Optics HV - p15KV Enable</xtce:ShortDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="Optics_HV_ESA_B_Enable" parameterTypeRef="UINT1">
-				<xtce:LongDescription>Optics HV - ESA B Enable</xtce:LongDescription>
+				<xtce:ShortDescription>Optics HV - ESA B Enable</xtce:ShortDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="Spare_2" parameterTypeRef="UINT1">
-				<xtce:LongDescription>Spare (was Optics HV - ESA B Range)</xtce:LongDescription>
+				<xtce:ShortDescription>Spare (was Optics HV - ESA B Range)</xtce:ShortDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="Optics_HV_ESA_A_Enable" parameterTypeRef="UINT1">
-				<xtce:LongDescription>Optics HV - ESA A Enable</xtce:LongDescription>
+				<xtce:ShortDescription>Optics HV - ESA A Enable</xtce:ShortDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="Spare_3" parameterTypeRef="UINT1">
-				<xtce:LongDescription>Spare (was Optics HV - ESA A Range)</xtce:LongDescription>
+				<xtce:ShortDescription>Spare (was Optics HV - ESA A Range)</xtce:ShortDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="Sensor_HV_Cmd_Err_Cnt" parameterTypeRef="UINT2">
-				<xtce:LongDescription>Sensor HV -  Number of command errors</xtce:LongDescription>
+				<xtce:ShortDescription>Sensor HV -  Number of command errors</xtce:ShortDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="Sensor_HV_Arm_Err_Cnt" parameterTypeRef="UINT2">
-				<xtce:LongDescription>Sensor HV - Number of Arm errors</xtce:LongDescription>
+				<xtce:ShortDescription>Sensor HV - Number of Arm errors</xtce:ShortDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="Sensor_HV_Master_Enable" parameterTypeRef="UINT1">
-				<xtce:LongDescription>Sensor HV - Master Enable</xtce:LongDescription>
+				<xtce:ShortDescription>Sensor HV - Master Enable</xtce:ShortDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="Sensor_HV_APD_Bias_Enable" parameterTypeRef="UINT1">
-				<xtce:LongDescription>Sensor HV - APD Bias Enable</xtce:LongDescription>
+				<xtce:ShortDescription>Sensor HV - APD Bias Enable</xtce:ShortDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="Sensor_HV_p6KV_Enable" parameterTypeRef="UINT1">
-				<xtce:LongDescription>Sensor HV - p6KV Enable</xtce:LongDescription>
+				<xtce:ShortDescription>Sensor HV - p6KV Enable</xtce:ShortDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="Sensor_HV_Stop_MCP_Enable" parameterTypeRef="UINT1">
-				<xtce:LongDescription>Sensor HV - Stop MCP Enable</xtce:LongDescription>
+				<xtce:ShortDescription>Sensor HV - Stop MCP Enable</xtce:ShortDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="Sensor_HV_Start_MCP_Enable" parameterTypeRef="UINT1">
-				<xtce:LongDescription>Sensor HV - Start MCP Enable</xtce:LongDescription>
+				<xtce:ShortDescription>Sensor HV - Start MCP Enable</xtce:ShortDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="Spare_4" parameterTypeRef="UINT3">
-				<xtce:LongDescription>Spare for alignment</xtce:LongDescription>
+				<xtce:ShortDescription>Spare for alignment</xtce:ShortDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="Optics_HV_DAC_ESA_A" parameterTypeRef="UINT12">
-				<xtce:LongDescription>Optics HV - ESA A DAC</xtce:LongDescription>
+				<xtce:ShortDescription>Optics HV - ESA A DAC</xtce:ShortDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="Optics_HV_DAC_ESA_B" parameterTypeRef="UINT12">
-				<xtce:LongDescription>Optics HV -  ESA B DAC</xtce:LongDescription>
+				<xtce:ShortDescription>Optics HV -  ESA B DAC</xtce:ShortDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="Optics_HV_DAC_IONBULK" parameterTypeRef="UINT12">
-				<xtce:LongDescription>Optics HV - Ion Bulk DAC</xtce:LongDescription>
+				<xtce:ShortDescription>Optics HV - Ion Bulk DAC</xtce:ShortDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="Sensor_HV_DAC_SSDO" parameterTypeRef="UINT12">
-				<xtce:LongDescription>Sensor HV - SSDO Enable</xtce:LongDescription>
+				<xtce:ShortDescription>Sensor HV - SSDO Enable</xtce:ShortDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="Sensor_HV_DAC_SSDB" parameterTypeRef="UINT12">
-				<xtce:LongDescription>Sensor HV - SSD Bias Enable</xtce:LongDescription>
+				<xtce:ShortDescription>Sensor HV - SSD Bias Enable</xtce:ShortDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="Sensor_HV_DAC_APDB" parameterTypeRef="UINT12">
-				<xtce:LongDescription>Sensor HV - ADP Bias Enable</xtce:LongDescription>
+				<xtce:ShortDescription>Sensor HV - ADP Bias Enable</xtce:ShortDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="Sensor_HV_DAC_APDB2" parameterTypeRef="UINT12">
-				<xtce:LongDescription>Sensor HV - ADP Bias 2 Enable</xtce:LongDescription>
+				<xtce:ShortDescription>Sensor HV - ADP Bias 2 Enable</xtce:ShortDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="Sensor_HV_DAC_Start_MCP" parameterTypeRef="UINT12">
-				<xtce:LongDescription>Sensor HV - Start MCP DAC</xtce:LongDescription>
+				<xtce:ShortDescription>Sensor HV - Start MCP DAC</xtce:ShortDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="Sensor_HV_DAC_Stop_MCP" parameterTypeRef="UINT12">
-				<xtce:LongDescription>Sensor HV - Stop MCP DAC</xtce:LongDescription>
+				<xtce:ShortDescription>Sensor HV - Stop MCP DAC</xtce:ShortDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="Sensor_HV_DAC_Stop_Optics_Grid" parameterTypeRef="UINT12">
-				<xtce:LongDescription>Sensor HV - Stop Optics Grid DAC</xtce:LongDescription>
+				<xtce:ShortDescription>Sensor HV - Stop Optics Grid DAC</xtce:ShortDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SBULK_VMON" parameterTypeRef="UINT12">
-				<xtce:LongDescription>HVPS – V1: Sensor Bulk Voltage Monitor</xtce:LongDescription>
+				<xtce:ShortDescription>HVPS – V1: Sensor Bulk Voltage Monitor</xtce:ShortDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SSDO_VMON" parameterTypeRef="UINT12">
-				<xtce:LongDescription>HVPS – V2: SSD Optics Voltage Monitor</xtce:LongDescription>
+				<xtce:ShortDescription>HVPS – V2: SSD Optics Voltage Monitor</xtce:ShortDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SSDB_VMON" parameterTypeRef="UINT12">
-				<xtce:LongDescription>HVPS – V3: SSD Bias Voltage Monitor</xtce:LongDescription>
+				<xtce:ShortDescription>HVPS – V3: SSD Bias Voltage Monitor</xtce:ShortDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="APDB1_VMON" parameterTypeRef="UINT12">
-				<xtce:LongDescription>HVPS – V4: APD1 Bias Voltage Monitor</xtce:LongDescription>
+				<xtce:ShortDescription>HVPS – V4: APD1 Bias Voltage Monitor</xtce:ShortDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="APDB2_VMON" parameterTypeRef="UINT12">
-				<xtce:LongDescription>HVPS – V5: APD1 Bias Voltage Monitor</xtce:LongDescription>
+				<xtce:ShortDescription>HVPS – V5: APD1 Bias Voltage Monitor</xtce:ShortDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="IOBULK_VMON" parameterTypeRef="UINT12">
-				<xtce:LongDescription>HVPS – V6: IO Bulk Voltage Monitor</xtce:LongDescription>
+				<xtce:ShortDescription>HVPS – V6: IO Bulk Voltage Monitor</xtce:ShortDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="ESAA_HI_VMON" parameterTypeRef="UINT12">
-				<xtce:LongDescription>HVPS – V7: ESA A High Range Voltage Monitor</xtce:LongDescription>
+				<xtce:ShortDescription>HVPS – V7: ESA A High Range Voltage Monitor</xtce:ShortDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SPARE_62" parameterTypeRef="UINT12">
-				<xtce:LongDescription>Spare (was ESAA_LO_VMON)</xtce:LongDescription>
+				<xtce:ShortDescription>Spare (was ESAA_LO_VMON)</xtce:ShortDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="STRMCP_VMON" parameterTypeRef="UINT12">
-				<xtce:LongDescription>HVPS – V9: Start MCP Voltage Monitor</xtce:LongDescription>
+				<xtce:ShortDescription>HVPS – V9: Start MCP Voltage Monitor</xtce:ShortDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="STPMCP_VMON" parameterTypeRef="UINT12">
-				<xtce:LongDescription>HVPS – V10: Stop MCP Voltage Monitor</xtce:LongDescription>
+				<xtce:ShortDescription>HVPS – V10: Stop MCP Voltage Monitor</xtce:ShortDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="STPOG_VMON" parameterTypeRef="UINT12">
-				<xtce:LongDescription>HVPS – V11: Stop Optics Grid Voltage Monitor</xtce:LongDescription>
+				<xtce:ShortDescription>HVPS – V11: Stop Optics Grid Voltage Monitor</xtce:ShortDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="APDB1_IMON" parameterTypeRef="UINT12">
-				<xtce:LongDescription>HVPS – V12: APD1 Bias Current Monitor</xtce:LongDescription>
+				<xtce:ShortDescription>HVPS – V12: APD1 Bias Current Monitor</xtce:ShortDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="ESAB_HI_VMON" parameterTypeRef="UINT12">
-				<xtce:LongDescription>HVPS – V13: ESA A High Range Voltage Monitor</xtce:LongDescription>
+				<xtce:ShortDescription>HVPS – V13: ESA A High Range Voltage Monitor</xtce:ShortDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SPARE_68" parameterTypeRef="UINT12">
-				<xtce:LongDescription>Spare (was ESAB_LO_VMON)</xtce:LongDescription>
+				<xtce:ShortDescription>Spare (was ESAB_LO_VMON)</xtce:ShortDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="APDB2_IMON" parameterTypeRef="UINT12">
-				<xtce:LongDescription>HVPS – V15: APD2 Bias Current Monitor</xtce:LongDescription>
+				<xtce:ShortDescription>HVPS – V15: APD2 Bias Current Monitor</xtce:ShortDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SSDB_IMON" parameterTypeRef="UINT12">
-				<xtce:LongDescription>HVPS – V16: SSD Bias Current Moniotr</xtce:LongDescription>
+				<xtce:ShortDescription>HVPS – V16: SSD Bias Current Moniotr</xtce:ShortDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="STPMCP_IMON" parameterTypeRef="UINT12">
-				<xtce:LongDescription>HVPS – I1: Stop MCP Current Monitor</xtce:LongDescription>
+				<xtce:ShortDescription>HVPS – I1: Stop MCP Current Monitor</xtce:ShortDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="IOBULK_IMON" parameterTypeRef="UINT12">
-				<xtce:LongDescription>HVPS – I2: IO Bulk CurrentMonitor</xtce:LongDescription>
+				<xtce:ShortDescription>HVPS – I2: IO Bulk CurrentMonitor</xtce:ShortDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="STRMCP_IMON" parameterTypeRef="UINT12">
-				<xtce:LongDescription>HVPS – I3: Start MCP Current Monitor</xtce:LongDescription>
+				<xtce:ShortDescription>HVPS – I3: Start MCP Current Monitor</xtce:ShortDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="MDM25P_14_T" parameterTypeRef="UINT12">
-				<xtce:LongDescription>System Temperature 1: MDM25P – 14 Temperature</xtce:LongDescription>
+				<xtce:ShortDescription>System Temperature 1: MDM25P – 14 Temperature</xtce:ShortDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="MDM25P_15_T" parameterTypeRef="UINT12">
-				<xtce:LongDescription>System Temperature 2: MDM25P – 15 Temperature</xtce:LongDescription>
+				<xtce:ShortDescription>System Temperature 2: MDM25P – 15 Temperature</xtce:ShortDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="MDM25P_16_T" parameterTypeRef="UINT12">
-				<xtce:LongDescription>System Temperature 3: MDM25P – 16 Temperature</xtce:LongDescription>
+				<xtce:ShortDescription>System Temperature 3: MDM25P – 16 Temperature</xtce:ShortDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="MDM51P_27_T" parameterTypeRef="UINT12">
-				<xtce:LongDescription>LO Temperature: MDM51P – 27 Temperature</xtce:LongDescription>
+				<xtce:ShortDescription>LO Temperature: MDM51P – 27 Temperature</xtce:ShortDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="IO_HVPS_T" parameterTypeRef="UINT12">
-				<xtce:LongDescription>HVPS Temperature: IO-HVPS Temperature</xtce:LongDescription>
+				<xtce:ShortDescription>HVPS Temperature: IO-HVPS Temperature</xtce:ShortDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="LVPS_12V_T" parameterTypeRef="UINT12">
-				<xtce:LongDescription>LVPS Temperature 1: LVPS – 12V Temperature</xtce:LongDescription>
+				<xtce:ShortDescription>LVPS Temperature 1: LVPS – 12V Temperature</xtce:ShortDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="LVPS_5V_T" parameterTypeRef="UINT12">
-				<xtce:LongDescription>LVPS Temperature 2: LVPS – 5V Temperature</xtce:LongDescription>
+				<xtce:ShortDescription>LVPS Temperature 2: LVPS – 5V Temperature</xtce:ShortDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="LVPS_3p3V_T" parameterTypeRef="UINT12">
-				<xtce:LongDescription>LVPS Temperature 3: LVPS – +3.3V Temperature</xtce:LongDescription>
+				<xtce:ShortDescription>LVPS Temperature 3: LVPS – +3.3V Temperature</xtce:ShortDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="LVPS_3p3V" parameterTypeRef="UINT12">
-				<xtce:LongDescription>LVPS – Digital V1: LVPS – +3.3V</xtce:LongDescription>
+				<xtce:ShortDescription>LVPS – Digital V1: LVPS – +3.3V</xtce:ShortDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="LVPS_5V" parameterTypeRef="UINT12">
-				<xtce:LongDescription>LVPS – Digital V2: LVPS – +5V</xtce:LongDescription>
+				<xtce:ShortDescription>LVPS – Digital V2: LVPS – +5V</xtce:ShortDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="LVPS_n5V" parameterTypeRef="UINT12">
-				<xtce:LongDescription>LVPS – Digital V3: LVPS – -5V</xtce:LongDescription>
+				<xtce:ShortDescription>LVPS – Digital V3: LVPS – -5V</xtce:ShortDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="LVPS_12V" parameterTypeRef="UINT12">
-				<xtce:LongDescription>LVPS – Digital V4: LVPS – +12V</xtce:LongDescription>
+				<xtce:ShortDescription>LVPS – Digital V4: LVPS – +12V</xtce:ShortDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="LVPS_n12V" parameterTypeRef="UINT12">
-				<xtce:LongDescription>LVPS – Digital V5: LVPS – -12V</xtce:LongDescription>
+				<xtce:ShortDescription>LVPS – Digital V5: LVPS – -12V</xtce:ShortDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="LVPS_3p3V_I" parameterTypeRef="UINT12">
-				<xtce:LongDescription>LVPS – Digital I1: LVPS – +3.3V Current</xtce:LongDescription>
+				<xtce:ShortDescription>LVPS – Digital I1: LVPS – +3.3V Current</xtce:ShortDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="LVPS_5V_I" parameterTypeRef="UINT12">
-				<xtce:LongDescription>LVPS – Digital I2: LVPS – +5V Current</xtce:LongDescription>
+				<xtce:ShortDescription>LVPS – Digital I2: LVPS – +5V Current</xtce:ShortDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="LVPS_n5V_I" parameterTypeRef="UINT12">
-				<xtce:LongDescription>LVPS – Digital I3: LVPS – -5V Current</xtce:LongDescription>
+				<xtce:ShortDescription>LVPS – Digital I3: LVPS – -5V Current</xtce:ShortDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="LVPS_12V_I" parameterTypeRef="UINT12">
-				<xtce:LongDescription>LVPS – Digital I4: LVPS – +12V Current</xtce:LongDescription>
+				<xtce:ShortDescription>LVPS – Digital I4: LVPS – +12V Current</xtce:ShortDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="LVPS_n12V_I" parameterTypeRef="UINT12">
-				<xtce:LongDescription>LVPS – Digital I5: LVPS – -12V Current</xtce:LongDescription>
+				<xtce:ShortDescription>LVPS – Digital I5: LVPS – -12V Current</xtce:ShortDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="CDH_1p5V" parameterTypeRef="UINT12">
-				<xtce:LongDescription>CDH – + 1.5V</xtce:LongDescription>
+				<xtce:ShortDescription>CDH – + 1.5V</xtce:ShortDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="CDH_1p8V" parameterTypeRef="UINT12">
-				<xtce:LongDescription>CDH – +1.8V</xtce:LongDescription>
+				<xtce:ShortDescription>CDH – +1.8V</xtce:ShortDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="CDH_3p3V" parameterTypeRef="UINT12">
-				<xtce:LongDescription>CDH – +3.3V</xtce:LongDescription>
+				<xtce:ShortDescription>CDH – +3.3V</xtce:ShortDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="CDH_12V" parameterTypeRef="UINT12">
-				<xtce:LongDescription>CDH – +12V</xtce:LongDescription>
+				<xtce:ShortDescription>CDH – +12V</xtce:ShortDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="CDH_n12V" parameterTypeRef="UINT12">
-				<xtce:LongDescription>CDH – -12V</xtce:LongDescription>
+				<xtce:ShortDescription>CDH – -12V</xtce:ShortDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="CDH_5V" parameterTypeRef="UINT12">
-				<xtce:LongDescription>CDH – +5V</xtce:LongDescription>
+				<xtce:ShortDescription>CDH – +5V</xtce:ShortDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="CDH_5V_ADC" parameterTypeRef="UINT12">
-				<xtce:LongDescription>CDH – Analog Ref: CDH – +5V ADC</xtce:LongDescription>
+				<xtce:ShortDescription>CDH – Analog Ref: CDH – +5V ADC</xtce:ShortDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="TBD_HVPS_1_IF_Err_Cnt" parameterTypeRef="UINT2">
-				<xtce:LongDescription>TBD - Placeholder for HVPS 1 Interface error counts</xtce:LongDescription>
+				<xtce:ShortDescription>TBD - Placeholder for HVPS 1 Interface error counts</xtce:ShortDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="TBD_HVPS_2_IF_Err_Cnt" parameterTypeRef="UINT2">
-				<xtce:LongDescription>TBD - Placeholder for HVPS 2 Interface error counts</xtce:LongDescription>
+				<xtce:ShortDescription>TBD - Placeholder for HVPS 2 Interface error counts</xtce:ShortDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="TBD_FEE_1_IF_Err_Cnt" parameterTypeRef="UINT2">
-				<xtce:LongDescription>TBD - Placeholder for FEE 1 Interface error counts</xtce:LongDescription>
+				<xtce:ShortDescription>TBD - Placeholder for FEE 1 Interface error counts</xtce:ShortDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="TBD_FEE_2_IF_Err_Cnt" parameterTypeRef="UINT2">
-				<xtce:LongDescription>TBD - Placeholder for FEE 2 Interface error counts</xtce:LongDescription>
+				<xtce:ShortDescription>TBD - Placeholder for FEE 2 Interface error counts</xtce:ShortDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="TBD_Macro_Status" parameterTypeRef="UINT28">
-				<xtce:LongDescription>TBD - Placeholder for Macro status</xtce:LongDescription>
+				<xtce:ShortDescription>TBD - Placeholder for Macro status</xtce:ShortDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="FDC_Trigger_Cnt_FSW" parameterTypeRef="UINT2">
-				<xtce:LongDescription>Indicates whether any CATEGORY 1 limits have triggered</xtce:LongDescription>
+				<xtce:ShortDescription>Indicates whether any CATEGORY 1 limits have triggered</xtce:ShortDescription>
+				<xtce:LongDescription>Indicates whether any CATEGORY 1 limits have triggered.
+
+  2 bits: 0: No triggers; 1: One trigger, 2: Two triggers, 3: More than two triggers</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="FDC_Trigger_Cnt_HVPS" parameterTypeRef="UINT2">
+				<xtce:ShortDescription>Indicates whether any CATEGORY 2 limits have triggered</xtce:ShortDescription>
 				<xtce:LongDescription>Indicates whether any CATEGORY 2 limits have triggered</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="FDC_Trigger_Cnt_CDH" parameterTypeRef="UINT2">
+				<xtce:ShortDescription>Indicates whether any CATEGORY 3 limits have triggered</xtce:ShortDescription>
 				<xtce:LongDescription>Indicates whether any CATEGORY 3 limits have triggered</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="FDC_Trigger_Cnt_FEE" parameterTypeRef="UINT2">
+				<xtce:ShortDescription>Indicates whether any CATEGORY 4 limits have triggered</xtce:ShortDescription>
 				<xtce:LongDescription>Indicates whether any CATEGORY 4 limits have triggered</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="FDC_Trigger_Cnt_SPARE1" parameterTypeRef="UINT2">
+				<xtce:ShortDescription>Indicates whether any CATEGORY 5 limits have triggered</xtce:ShortDescription>
 				<xtce:LongDescription>Indicates whether any CATEGORY 5 limits have triggered</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="FDC_Trigger_Cnt_SPARE2" parameterTypeRef="UINT2">
+				<xtce:ShortDescription>Indicates whether any CATEGORY 6 limits have triggered</xtce:ShortDescription>
 				<xtce:LongDescription>Indicates whether any CATEGORY 6 limits have triggered</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="FDC_Trigger_Cnt_SPARE3" parameterTypeRef="UINT2">
+				<xtce:ShortDescription>Indicates whether any CATEGORY 7 limits have triggered</xtce:ShortDescription>
 				<xtce:LongDescription>Indicates whether any CATEGORY 7 limits have triggered</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="FDC_Trigger_Cnt_SPARE4" parameterTypeRef="UINT2">
+				<xtce:ShortDescription>Indicates whether any CATEGORY 8 limits have triggered</xtce:ShortDescription>
 				<xtce:LongDescription>Indicates whether any CATEGORY 8 limits have triggered</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="FDC_Last_Trigger_MinMax" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Indicates whether the most recent trigger was a minimum or maximum limit</xtce:ShortDescription>
 				<xtce:LongDescription>Indicates whether the most recent trigger was a minimum or maximum limit</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="FDC_Last_Trigger_ID" parameterTypeRef="UINT15">
+				<xtce:ShortDescription>Indicates the ID of the most recent FDC trigger</xtce:ShortDescription>
 				<xtce:LongDescription>Indicates the ID of the most recent FDC trigger</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="FDC_Last_Trigger_Action" parameterTypeRef="UINT8">
+				<xtce:ShortDescription>Indicates the action that was taken for the most recent FDC trigger</xtce:ShortDescription>
 				<xtce:LongDescription>Indicates the action that was taken for the most recent FDC trigger</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="Round_Robin_Index" parameterTypeRef="UINT8">
-				<xtce:LongDescription>Round Robin Parameter Report Index</xtce:LongDescription>
+				<xtce:ShortDescription>Round Robin Parameter Report Index</xtce:ShortDescription>
+				<xtce:LongDescription>Current index for the Round Robin parameter reporting.  The Round Robin mechanism reports one value from the Parameter Table each time this packet is generated.</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="Round_Robin_Value" parameterTypeRef="UINT32">
-				<xtce:LongDescription>Round Robin Parameter Report Value</xtce:LongDescription>
+				<xtce:ShortDescription>Round Robin Parameter Report Value</xtce:ShortDescription>
+				<xtce:LongDescription>Parameter value corresponding to the current Round_Robin_Index value.</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="Heater_Control_State" parameterTypeRef="UINT1">
-				<xtce:LongDescription>State of the heater controller</xtce:LongDescription>
+				<xtce:ShortDescription>State of the heater controller</xtce:ShortDescription>
+				<xtce:LongDescription>Indicates whether FSW control of the operational heater is enabled</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="Heater_Output_State" parameterTypeRef="UINT1">
-				<xtce:LongDescription>State of the heater output</xtce:LongDescription>
+				<xtce:ShortDescription>State of the heater output</xtce:ShortDescription>
+				<xtce:LongDescription>Indicates the current state of the physical heater output</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="Spare_5" parameterTypeRef="UINT14">
+				<xtce:ShortDescription>Spare for alignment</xtce:ShortDescription>
 				<xtce:LongDescription>Spare for alignment</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="CDH_Processor_T" parameterTypeRef="UINT12">
-				<xtce:LongDescription>CDH – Processor Temp monitor</xtce:LongDescription>
+				<xtce:ShortDescription>CDH – Processor Temp monitor</xtce:ShortDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="CDH_1P8V_LDO_T" parameterTypeRef="UINT12">
-				<xtce:LongDescription>CDH – +1.8V LDO Temp monitor</xtce:LongDescription>
+				<xtce:ShortDescription>CDH – +1.8V LDO Temp monitor</xtce:ShortDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="CDH_1P5V_LDO_T" parameterTypeRef="UINT12">
-				<xtce:LongDescription>CDH – +1.5V LDO Temp monitor</xtce:LongDescription>
+				<xtce:ShortDescription>CDH – +1.5V LDO Temp monitor</xtce:ShortDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="CDH_SDRAM_T" parameterTypeRef="UINT12">
-				<xtce:LongDescription>CDH – SDRAM Temp monitor</xtce:LongDescription>
+				<xtce:ShortDescription>CDH – SDRAM Temp monitor</xtce:ShortDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SNSR_HVPS_T" parameterTypeRef="UINT12">
-				<xtce:LongDescription>CoDICE – Sensor HVPS Temp monitor</xtce:LongDescription>
+				<xtce:ShortDescription>CoDICE – Sensor HVPS Temp monitor</xtce:ShortDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="Spare_6" parameterTypeRef="UINT4">
+				<xtce:ShortDescription>Spare for alignment</xtce:ShortDescription>
 				<xtce:LongDescription>Spare for alignment</xtce:LongDescription>
 			</xtce:Parameter>
 		</xtce:ParameterSet>
