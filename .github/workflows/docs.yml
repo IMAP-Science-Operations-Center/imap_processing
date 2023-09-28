@@ -24,7 +24,9 @@ jobs:
 
     - name: Build documentation
       run: |
-        make -C docs html
+        # SPHINXOPTS="-W --keep-going -n" is used to turn warnings into errors
+        # but keep going, so we don't fail on the first one.
+        make -C docs html SPHINXOPTS="-W --keep-going -n"
 
     - uses: actions/upload-artifact@v2
       with:

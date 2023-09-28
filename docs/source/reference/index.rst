@@ -22,5 +22,6 @@ Utility functions can be found in modules within the top package level.
 
 .. autosummary::
     :toctree: generated/
+    :template: autosummary.rst
 
     decom
