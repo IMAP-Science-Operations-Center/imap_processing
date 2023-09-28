@@ -11,7 +11,7 @@ def decom_test_data():
 
 def test_idex_decom_length(decom_test_data):
     # Verify that there are 6 data variables in the output
-    assert len(decom_test_data.data) == 6
+    assert len(decom_test_data.data) == 42
 
 
 def test_idex_decom_event_num(decom_test_data):
