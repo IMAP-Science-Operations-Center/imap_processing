@@ -5,7 +5,7 @@ import xarray as xr
 
 
 def uncompress_counts(cem_count):
-    """This function uncompress counts data.
+    """Uncompress counts from the CEMs.
 
     Parameters
     ----------
@@ -56,7 +56,7 @@ def uncompress_counts(cem_count):
 
 
 def add_metadata_to_array(data_packet, metadata_arrays):
-    """This function add metadata to metadata_arrays.
+    """Add metadata to the metadata_arrays.
 
     Parameters
     ----------
@@ -74,11 +74,13 @@ def add_metadata_to_array(data_packet, metadata_arrays):
 
 
 def swe_science(decom_data):
-    """SWE L1A algorithm steps:
+    """SWE L1a science processing.
+
+    SWE L1A algorithm steps:
         - Read data from each SWE packet file
         - Uncompress counts data
         - Store metadata fields and data in DataArray of xarray
-        - Save data to dataset
+        - Save data to dataset.
 
     In each packet, SWE collects data for 15 seconds. In each second,
     it collect data for 12 energy steps and at each energy step,
