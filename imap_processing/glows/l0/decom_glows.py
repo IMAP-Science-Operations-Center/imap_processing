@@ -59,11 +59,14 @@ def decom_packets(
 
             for packet in glows_packets:
                 # Do something with the packet data
-                if packet.header["PKT_APID"].derived_value == GlowsParams.HIST_APID:
+                if (
+                    packet.header["PKT_APID"].derived_value
+                    == GlowsParams.HIST_APID.value
+                ):
                     hist_l0 = HistogramL0(packet)
                     histdata.append(hist_l0)
 
-                if packet.header["PKT_APID"].derived_value == GlowsParams.DE_APID:
+                if packet.header["PKT_APID"].derived_value == GlowsParams.DE_APID.value:
                     de_l0 = DirectEventL0(packet)
                     dedata.append(de_l0)
 
