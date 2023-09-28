@@ -4,12 +4,12 @@ class HistogramL0:
     Parameters
     ----------
     packet : tuple[list]
-    Histogram packet yielded from space_packet_parser.generate_packets.
+        Histogram packet yielded from space_packet_parser.generate_packets.
 
     Attributes
     ----------
-    L0_KEYS : tuple[str]
-    Data names from the packet
+    packet_keys : tuple[str]
+        Data names from the packet
     SHCOARSE : int
         CCSDS Packet Time Stamp (coarse time)
     STARTID : int
@@ -62,34 +62,6 @@ class HistogramL0:
         List of histogram data values
     """
 
-    L0_KEYS: tuple[str] = (
-        "SHCOARSE",
-        "STARTID",
-        "ENDID",
-        "FLAGS",
-        "SWVER",
-        "SEC",
-        "SUBSEC",
-        "OFFSETSEC",
-        "OFFSETSUBSEC",
-        "GLXSEC",
-        "GLXSUBSEC",
-        "GLXOFFSEC",
-        "GLXOFFSUBSEC",
-        "SPINS",
-        "NBINS",
-        "TEMPAVG",
-        "TEMPVAR",
-        "HVAVG",
-        "HVVAR",
-        "SPAVG",
-        "SPVAR",
-        "ELAVG",
-        "ELVAR",
-        "EVENTS",
-        "HISTOGRAM_DATA",
-    )
-
     def __repr__(self):
         """Print the data.
 
@@ -98,20 +70,19 @@ class HistogramL0:
         String representation of GlowsHistL0
         """
         output = "{"
-        for key in self.L0_KEYS:
+        for key in self.packet_keys:
             output += f"{key}: {getattr(self, key)}, "
         return output + "}"
 
     def __init__(self, packet):
-        for key in self.L0_KEYS:
+        self.packet_keys = []
+        for key, value in packet.data.items():
             if key != "HISTOGRAM_DATA":
-                setattr(self, key, packet.data[key].derived_value)
+                setattr(self, key, value.derived_value)
             else:
-                setattr(
-                    self, key, self._convert_histogram_data(packet.data[key].raw_value)
-                )
-            if getattr(self, key) is None:
-                raise ValueError(f"Missing data for {key} in {packet.data}")
+                setattr(self, key, self._convert_histogram_data(value.raw_value))
+
+            self.packet_keys.append(key)
 
     def _convert_histogram_data(self, binary_hist_data: str) -> list[int]:
         """Convert the raw histogram data into a list.
@@ -127,7 +98,7 @@ class HistogramL0:
         Returns
         -------
         histograms: list[int]
-        List of binned histogram data
+            List of binned histogram data
         """
         # Convert the histogram data from a large raw string into a list of 8 bit values
         histograms = []
@@ -153,7 +124,7 @@ class DirectEventL0:
 
     Attributes
     ----------
-    L0_KEYS : tuple[str]
+    packet_keys : tuple[str]
         Data names from the packet
     SHCOARSE : int
         CCSDS Packet Time Stamp (coarse time)
@@ -166,8 +137,6 @@ class DirectEventL0:
 
     """
 
-    L0_KEYS: tuple[str] = ("SHCOARSE", "SEC", "LEN", "SEQ")
-
     def __repr__(self):
         """Print the data.
 
@@ -176,12 +145,12 @@ class DirectEventL0:
         String representation of GlowsDeL0
         """
         output = "{"
-        for key in self.L0_KEYS:
+        for key in self.packet_keys:
             output += f"{key}: {getattr(self, key)}, "
         return output + "}"
 
     def __init__(self, packet):
-        for key in self.L0_KEYS:
-            setattr(self, key, packet.data[key].derived_value)
-            if getattr(self, key) is None:
-                raise ValueError(f"Missing data for {key} in {packet.data}")
+        self.packet_keys = []
+        for key, value in packet.data.items():
+            setattr(self, key, value.derived_value)
+            self.packet_keys.append(key)
