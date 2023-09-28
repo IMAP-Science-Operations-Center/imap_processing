@@ -18,25 +18,23 @@ def decom_test_data():
 
 
 def test_glows_decom_count(decom_test_data):
-    expected_hist_len = 61
-    expected_de_len = 311
+    expected_hist_packet_count = 61
+    expected_de_packet_count = 311
 
     assert len(decom_test_data) == 2
 
     # Histogram data
-    assert len(decom_test_data[0]) == expected_hist_len
+    assert len(decom_test_data[0]) == expected_hist_packet_count
 
     # Direct events data
-    assert len(decom_test_data[1]) == expected_de_len
+    assert len(decom_test_data[1]) == expected_de_packet_count
 
 
 def test_glows_hist_data(decom_test_data):
     for hist in decom_test_data[0]:
-        for key in hist.data:
-            assert hist.data[key] is not None
-        assert len(hist.data["HISTOGRAM_DATA"]) == 3599
-        assert min(hist.data["HISTOGRAM_DATA"]) > 10
-        assert max(hist.data["HISTOGRAM_DATA"]) < 170
+        assert len(hist.HISTOGRAM_DATA) == 3599
+        assert min(hist.HISTOGRAM_DATA) > 10
+        assert max(hist.HISTOGRAM_DATA) < 170
 
     expected_data = {
         "SHCOARSE": 54232338,
@@ -65,14 +63,10 @@ def test_glows_hist_data(decom_test_data):
         "EVENTS": 95978,
     }
     for key in expected_data.keys():
-        assert decom_test_data[0][0].data[key] == expected_data[key]
+        assert getattr(decom_test_data[0][0], key) == expected_data[key]
 
 
 def test_glows_de_data(decom_test_data):
-    for de in decom_test_data[1]:
-        for key in de.data:
-            assert de.data[key] is not None
-
     expected_data = {"SHCOARSE": 54233694, "SEC": 54232338, "LEN": 1, "SEQ": 0}
     for key in expected_data.keys():
-        assert decom_test_data[1][0].data[key] == expected_data[key]
+        assert getattr(decom_test_data[1][0], key) == expected_data[key]
