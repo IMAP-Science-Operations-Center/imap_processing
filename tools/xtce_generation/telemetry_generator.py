@@ -105,22 +105,18 @@ class TelemetryGenerator:
         - parameter_type_set: The updated ParameterTypeSet element.
         """
         for parameter_type_ref_name, size in unique_lengths.items():
-            if "UINT" or "INT" in parameter_type_ref_name:
+            if "UINT" in parameter_type_ref_name:
                 parameter_type = Et.SubElement(
                     parameter_type_set, "xtce:IntegerParameterType"
                 )
                 parameter_type.attrib["name"] = parameter_type_ref_name
-                parameter_type.attrib["signed"] = (
-                    "false" if "UINT" in parameter_type_ref_name else "true"
-                )
+                parameter_type.attrib["signed"] = false
 
                 encoding = Et.SubElement(parameter_type, "xtce:IntegerDataEncoding")
                 encoding.attrib["sizeInBits"] = str(size)
-                encoding.attrib["encoding"] = (
-                    "unsigned" if "UINT" in parameter_type_ref_name else "signed"
-                )
+                encoding.attrib["encoding"] = "unsigned"
 
-            elif "SINT" in parameter_type_ref_name:
+            elif "SINT" or "INT" in parameter_type_ref_name:
                 parameter_type = Et.SubElement(
                     parameter_type_set, "xtce:IntegerParameterType"
                 )
