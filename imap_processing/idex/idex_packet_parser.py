@@ -20,7 +20,7 @@ SCITYPE_MAPPING_TO_NAMES = {
 class PacketParser:
     """IDEX packet parsing class.
 
-    This class encapsulates the decom work needed to decom a daily file of IDEX data
+    Encapsulates the decom work needed to decom a daily file of IDEX data
     received from the POC.  The class is instantiated with a reference to a L0 file as
     it exists on the local file system.
 
@@ -54,7 +54,6 @@ class PacketParser:
         -----
             Currently assumes one L0 file will generate exactly one l1a file
         """
-
         xtce_filename = "idex_packet_definition.xml"
         xtce_file = f"{imap_module_directory}/idex/packet_definitions/{xtce_filename}"
         packet_definition = xtcedef.XtcePacketDefinition(xtce_document=xtce_file)
@@ -92,9 +91,23 @@ class PacketParser:
 
 
 class RawDustEvent:
-    """
-    This class encapsulates the work needed to convert a single dust event into a
-    processed XArray Dateset object
+    """Encapsulate IDEX Raw Dust Event.
+
+    Encapsulates the work needed to convert a single dust event into a
+    processed XArray Dateset object.
+
+    Attributes
+    ----------
+    None
+
+    Methods
+    -------
+    __init__(space_packet_parser.ParsedPacket):
+        Initialize a raw dust event, with an FPGA Header Packet from IDEX.
+    parse_packet(space_packet_parser.ParsedPacket):
+        Parse IDEX data packets to populate bit strings.
+    process():
+        Generates an xarray.Dataset object after all packets are parsed
     """
 
     # Constants
@@ -146,8 +159,9 @@ class RawDustEvent:
         self.Ion_Grid_bits = ""
 
     def _get_trigger_dicts(self, packet):
-        """
-        This function creates a large dictionary of values from the FPGA header
+        """Create trigger information dictionaries.
+
+        Creates a large dictionary of values from the FPGA header
         that need to be captured into the CDF file.  They are lumped together because
         they share similar attributes.
 
@@ -405,14 +419,15 @@ class RawDustEvent:
         return trigger_dict, trigger_notes_dict
 
     def _calc_impact_time(self, packet):
-        """
-        This calculates the unix timestamp from the FPGA header information
-        We are given the MET seconds, we need convert it to UTC
+        """Calculate the datetime64 from the FPGA header information.
+
+        We are given the MET seconds, we need convert it to UTC.
 
         Parameters
         ----------
             packet: space_packet_parser.ParsedPacket
                 The IDEX FPGA header packet
+
         Returns
         -------
             np.datetime64
@@ -422,8 +437,8 @@ class RawDustEvent:
         -----
         This conversion is temporary for now, and will need SPICE in the future.
         IDEX has set the time launch to Jan 1 2012 for calibration testing.
-        """
 
+        """
         # Number of seconds since epoch (nominally the launch time)
         seconds_since_launch = packet.data["SHCOARSE"].derived_value
         # Number of 20 microsecond "ticks" since the last second
@@ -440,8 +455,9 @@ class RawDustEvent:
         )
 
     def _calc_sample_trigger_times(self, packet):
-        """
-        Calculates how many samples of data are included before the dust impact
+        """Calculate the actual sample trigger time.
+
+        Determines how many samples of data are included before the dust impact
         triggered the insturment.
 
         Parameters
@@ -450,12 +466,13 @@ class RawDustEvent:
                 The IDEX FPGA header packet info
 
         Returns
-        --------
+        -------
             (int, int)
                 The actual trigger time for the low and high sample rate in
                 microseconds
+
         Notes
-        ------
+        -----
             A "sample" is one single data point.
 
             A "block" is ~1.969 microseconds of data collection (8/4.0625).
@@ -471,7 +488,6 @@ class RawDustEvent:
             rather than the number of samples before triggering.
 
         """
-
         # Retrieve the number of samples of high gain delay
         high_gain_delay = packet.data["IDX__TXHDRADC0IDELAY"].raw_value
 
