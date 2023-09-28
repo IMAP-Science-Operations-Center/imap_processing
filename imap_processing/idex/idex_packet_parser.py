@@ -1,5 +1,4 @@
 import logging
-from datetime import datetime, timezone
 
 import bitstring
 import numpy as np
@@ -7,8 +6,6 @@ import xarray as xr
 from space_packet_parser import parser, xtcedef
 
 from imap_processing import imap_module_directory
-
-TWENTY_MICROSECONDS = 20 * (10 ** (-6))
 
 SCITYPE_MAPPING_TO_NAMES = {
     2: "TOF_High",
@@ -28,7 +25,7 @@ class PacketParser:
 
     Attributes
     ----------
-        l1_data (xarray.Dataset): An object containing all of the relevant L1 data
+        data (xarray.Dataset): An object containing all of the relevant L1 data
 
     TODO
     ----
@@ -41,7 +38,7 @@ class PacketParser:
         >>> from imap_processing.idex.idex_packet_parser import PacketParser
         >>> l0_file = "imap_processing/idex/tests/imap_idex_l0_20230725_v01-00.pkts"
         >>> l1_data = PacketParser(l0_file)
-        >>> print(l1_data.l1_data)
+        >>> print(l1_data.data)
 
     """
 
@@ -92,7 +89,7 @@ class PacketParser:
             dust_event.process() for dust_event in dust_events.values()
         ]
 
-        self.l1_data = xr.concat(processed_dust_impact_list, dim="Epoch")
+        self.data = xr.concat(processed_dust_impact_list, dim="Epoch")
 
 
 class RawDustEvent:
@@ -111,11 +108,6 @@ class RawDustEvent:
     NUMBER_SAMPLES_PER_HIGH_SAMPLE_BLOCK = (
         512  # The number of samples in a "block" of high sample data
     )
-
-    # Bit masks, spelled out for readability
-    FOUR_BIT_MASK = 0b1111
-    SIX_BIT_MASK = 0b111111
-    TEN_BIT_MASK = 0b1111111111
 
     def __init__(self, header_packet):
         """
@@ -145,7 +137,9 @@ class RawDustEvent:
         self.trigger_values_dict, self.trigger_notes_dict = self._get_trigger_dicts(
             header_packet
         )
-        logging.debug(f"{self.trigger_values_dict}")  # Log values here in case of error
+        logging.debug(
+            f"trigger_values_dict:\n{self.trigger_values_dict}"
+        )  # Log values here in case of error
 
         # Initialize the binary data received from future packets
         self.TOF_High_bits = ""
@@ -417,64 +411,81 @@ class RawDustEvent:
     def _calc_impact_time(self, packet):
         """
         This calculates the unix timestamp from the FPGA header information
-        We are given the number of seconds since Jan 1 2012, we need seconds since 1970.
+        We are given the MET seconds, we need convert it to UTC
+
         Parameters
         ----------
-            packet: The IDEX FPGA header packet
+            packet: space_packet_parser.ParsedPacket
+                The IDEX FPGA header packet
         Returns
         -------
-            float
-                The unix timestamp
-        """
-        # Number of seconds just Jan 1 2012 here
-        seconds_since_2012 = packet.data["SHCOARSE"].derived_value
-        # Number of 20 microsecond "ticks" since the last second
-        num_of_20_microseconds_since_2012 = packet.data["SHFINE"].derived_value
-        # Convert the whole thing to seconds since 2012
-        seconds_since_2012 = (
-            seconds_since_2012 + TWENTY_MICROSECONDS * num_of_20_microseconds_since_2012
-        )
+            np.datetime64
+                The time of the event
 
-        # Get the unix timestamp of Jan 1 2012
-        datetime_2012 = datetime(2012, 1, 1, tzinfo=timezone.utc)
-        unix_time_2012 = int(datetime_2012.timestamp())
+        TODO
+        -----
+        This conversion is temporary for now, and will need SPICE in the future.
+        IDEX has set the time launch to Jan 1 2012 for calibration testing.
+        """
+
+        # Number of seconds since epoch (nominally the launch time)
+        seconds_since_launch = packet.data["SHCOARSE"].derived_value
+        # Number of 20 microsecond "ticks" since the last second
+        num_of_20_microsecond_increments = packet.data["SHFINE"].derived_value
+        # Number of microseconds since the last second
+        microseconds_since_last_second = 20 * num_of_20_microsecond_increments
+        # Get the datetime of Jan 1 2012 as the start date
+        launch_time = np.datetime64("2012-01-01")
 
         return (
-            unix_time_2012 + seconds_since_2012
-        )  # Return seconds between 1970 and 2012, and 2012 to present
+            launch_time
+            + np.timedelta64(seconds_since_launch, "s")
+            + np.timedelta64(microseconds_since_last_second, "us")
+        )
 
     def _calc_sample_trigger_times(self, packet):
         """
-        Calculate the high sample and low sample trigger times from a header packet
+        Calculates how many samples of data are included before the dust impact
+        triggered the insturment.
+
         Parameters
         ----------
-            packet : The IDEX FPGA header packet info
+            packet : space_packet_parser.ParsedPacket
+                The IDEX FPGA header packet info
 
         Returns
         --------
-            int
-                The actual trigger time for the low sample rate in microseconds
-            int
-                The actual trigger time for the high sample rate in microseconds
+            (int, int)
+                The actual trigger time for the low and high sample rate in
+                microseconds
+        Notes
+        ------
+            A "sample" is one single data point.
+
+            A "block" is ~1.969 microseconds of data collection (8/4.0625).
+            The only time that a block of data matters is in this function.
+
+            Because the low sample data are taken every 1/4.0625 microseconds,
+            there are 8 samples in one block of data.
+
+            Because the high sample data are taken every 1/260 microseconds,
+            there are 512 samples in one block of High Sample data.
+
+            The header has information about the number of blocks before triggering,
+            rather than the number of samples before triggering.
 
         """
 
-        # This is a 32 bit number, consisting of:
-        # 2 bits padding
-        # 10 bits for low gain delay
-        # 10 bits for mid gain delay
-        # 10 bits for high gain delay
-        high_gain_delay = (
-            packet.data["IDX__TXHDRSAMPDELAY"].raw_value >> 22
-        ) & self.TEN_BIT_MASK
+        # Retrieve the number of samples of high gain delay
+        high_gain_delay = packet.data["IDX__TXHDRADC0IDELAY"].raw_value
 
         # Retrieve number of low/high sample pretrigger blocks
-        num_low_sample_pretrigger_blocks = (
-            packet.data["IDX__TXHDRBLOCKS"].derived_value >> 6
-        ) & self.SIX_BIT_MASK
-        num_high_sample_pretrigger_blocks = (
-            packet.data["IDX__TXHDRBLOCKS"].derived_value >> 16
-        ) & self.FOUR_BIT_MASK
+        num_low_sample_pretrigger_blocks = packet.data[
+            "IDX__TXHDRLSPREBLOCKS"
+        ].derived_value
+        num_high_sample_pretrigger_blocks = packet.data[
+            "IDX__TXHDRHSPREBLOCKS"
+        ].derived_value
 
         # Calculate the low and high sample trigger times based on the high gain delay
         # and the number of high sample/low sample pretrigger blocks
