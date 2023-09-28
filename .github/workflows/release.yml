@@ -4,13 +4,10 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event.number }}-${{ github.event.ref }}
   cancel-in-progress: true
 
-# (Temporary) To test this, trigger on pull request
-on: [push, pull_request]
-
-#on:
-#  release:
-#    types:
-#      - published
+on:
+  release:
+    types:
+      - published
 
 jobs:
 
