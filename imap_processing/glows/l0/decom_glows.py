@@ -8,11 +8,12 @@ from imap_processing.glows.l0.glows_l0_data import GlowsDeL0, GlowsHistL0
 
 
 def decom_packets(packet_file_path: str) -> tuple[list[GlowsHistL0], list[GlowsDeL0]]:
-    """Decom GLOWS data packets using GLOWS packet definition
+    """Decom GLOWS data packets using GLOWS packet definition.
+
     Parameters
     ----------
     packet_file_path : str
-        Path to data packet path with filename
+        Path to data packet path with filename.
 
     Returns
     -------

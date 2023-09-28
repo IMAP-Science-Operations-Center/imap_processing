@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from imap_processing.glows.l0 import glows_decom
+from imap_processing.glows.l0 import decom_glows
 
 logging.basicConfig(level=logging.ERROR)
 
@@ -13,7 +13,7 @@ def decom_test_data():
     """Read test data from file"""
     current_directory = Path(__file__).parent
     packet_path = f"{current_directory}/glows_test_packet_20230920_v00.pkts"
-    data_packet_list = glows_decom.decom_packets(packet_path)
+    data_packet_list = decom_glows.decom_packets(packet_path)
     return data_packet_list
 
 

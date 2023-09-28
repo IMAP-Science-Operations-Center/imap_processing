@@ -1,9 +1,10 @@
 class GlowsHistL0:
     """Data structure for storing GLOWS histogram packet data.
+
     Parameters
     ----------
     packet : tuple[list]
-        Histogram packet yielded from space_packet_parser.generate_packets
+        Histogram packet yielded from space_packet_parser.generate_packets.
 
     Attributes
     ----------
@@ -11,14 +12,6 @@ class GlowsHistL0:
         Data names from the packet
     data: dict
         The data from the packet
-
-    Methods
-    -------
-    process_packet(packet)
-        Process the given packet into the data dictionary
-
-    _convert_histogram_data(binary_hist_data)
-        Process the binary histogram data into 8-bit bins, in a list.
     """
 
     L0_KEYS: tuple[str] = (
@@ -50,18 +43,25 @@ class GlowsHistL0:
     )
 
     def __repr__(self):
+        """Print the data.
+
+        Returns
+        -------
+        String representation of GlowsHistL0
+        """
         return str(self.data)
 
     def __init__(self, packet):
         self.data = self.process_packet(packet)
 
     def process_packet(self, packet) -> dict:
-        """Process the GLOWS histogram packet, which is yielded from space_packet_parser
+        """Process the GLOWS histogram packet yielded by space_packet_parser.
 
         Parameters
         ----------
         packet
             Histogram packet from space_packet_parser
+
         Returns
         -------
         data: dict
@@ -78,11 +78,14 @@ class GlowsHistL0:
         return data
 
     def _convert_histogram_data(self, binary_hist_data: str) -> list[int]:
-        """Convert the raw histogram data into a list by splitting up the raw binary
-        value into 8-bit segments
+        """Convert the raw histogram data into a list.
+
+         This method converts a binary number into a list of histogram values by
+         splitting up the raw binary value into 8-bit segments.
+
         Parameters
         ----------
-        binary_hist_data: Raw data read from the packet, in binary format
+        binary_hist_data: Raw data read from the packet, in binary format.
 
         Returns
         -------
@@ -105,10 +108,11 @@ class GlowsHistL0:
 
 class GlowsDeL0:
     """Data structure for storing GLOWS direct event packet data.
+
     Parameters
     ----------
     packet : tuple[list]
-        Direct event packet yielded from space_packet_parser.generate_packets
+        Direct event packet yielded from space_packet_parser.generate_packets.
 
     Attributes
     ----------
@@ -116,29 +120,30 @@ class GlowsDeL0:
         Data names from the packet
     data: dict
         The data from the packet
-
-    Methods
-    -------
-    process_packet(packet)
-        Process the given packet into the data dictionary
     """
 
     L0_KEYS: tuple[str] = ("SHCOARSE", "SEC", "LEN", "SEQ")
 
     def __repr__(self):
+        """Print the data.
+
+        Returns
+        -------
+        String representation of GlowsHistL0
+        """
         return str(self.data)
 
     def __init__(self, packet):
         self.data = self.process_packet(packet)
 
     def process_packet(self, packet):
-        """Process the GLOWS direct event packet, which is yielded from
-        space_packet_parser
+        """Process the GLOWS direct event packet, from space_packet_parser.
 
         Parameters
         ----------
         packet
             Direct event packet from space_packet_parser
+
         Returns
         -------
         data: dict
