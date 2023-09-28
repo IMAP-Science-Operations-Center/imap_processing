@@ -2,11 +2,12 @@ from imap_processing import decom, imap_module_directory
 
 
 def decom_packets(packet_file: str):
-    """Decom SWE data packets using SWE packet definition
+    """Decom SWE data packets using SWE packet definition.
+
     Parameters
     ----------
     packet_file : str
-        Path to data packet path with filename
+        Path to data packet path with filename.
 
     Returns
     -------

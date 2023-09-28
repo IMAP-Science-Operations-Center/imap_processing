@@ -2,7 +2,9 @@ from space_packet_parser import parser, xtcedef
 
 
 def decom_packets(packet_file: str, xtce_packet_definition: str):
-    """Unpack CCSDS data packet. In this function, we unpack and return data
+    """Unpack CCSDS data packet.
+
+    In this function, we unpack and return data
     as it is. Data modification will not be done at this step.
 
     Parameters
