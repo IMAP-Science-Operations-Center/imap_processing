@@ -12,6 +12,7 @@ logging.basicConfig(level=logging.INFO)
 
 class PacketProperties(NamedTuple):
     """Class that represents properties of the ULTRA packet type."""
+
     apid: int
     width: int
     block: int
@@ -19,10 +20,8 @@ class PacketProperties(NamedTuple):
 
 
 class UltraParams(Enum):
-    ULTRA_AUX = PacketProperties(apid=880, width=None, block=None,
-                                 len_array=None)
-    ULTRA_IMG_RATES = PacketProperties(apid=881, width=5, block=16,
-                                       len_array = 48)
+    ULTRA_AUX = PacketProperties(apid=880, width=None, block=None, len_array=None)
+    ULTRA_IMG_RATES = PacketProperties(apid=881, width=5, block=16, len_array=48)
 
 
 def read_n_bits(binary: str, n: int, current_position: int):
@@ -53,11 +52,13 @@ def read_n_bits(binary: str, n: int, current_position: int):
 
     # Ensure we don't read past the end
     if current_position + n > len(binary):
-        raise IndexError(f"Attempted to read past the end of binary string. "
-                         f"Current position: {current_position}, "
-                         f"Requested bits: {n}, String length: {len(binary)}")
+        raise IndexError(
+            f"Attempted to read past the end of binary string. "
+            f"Current position: {current_position}, "
+            f"Requested bits: {n}, String length: {len(binary)}"
+        )
 
-    value = int(binary[current_position:current_position + n], 2)
+    value = int(binary[current_position : current_position + n], 2)
     return value, current_position + n
 
 
@@ -122,9 +123,11 @@ def decompress_binary(binary: str, width_bit: int, block: int) -> list:
         # Read the width of the block
         width, current_position = read_n_bits(binary, width_bit, current_position)
         # If width is 0 or None, we don't have enough bits left
-        if width is None or len(decompressed_values) >= \
-                UltraParams.ULTRA_IMG_RATES.value.len_array:
-            print('hi')
+        if (
+            width is None
+            or len(decompressed_values) >= UltraParams.ULTRA_IMG_RATES.value.len_array
+        ):
+            print("hi")
             break
 
         # For each block, read 16 values of the given width
@@ -161,32 +164,45 @@ def decom_ultra_packets(packet_file: str, xtce: str):
 
     packets = decom.decom_packets(packet_file, xtce)
 
-    met_data, science_id, spin_data, abortflag_data, startdelay_data, fastdata_00 = \
-        [], [], [], [], [], []
+    met_data, science_id, spin_data, abortflag_data, startdelay_data, fastdata_00 = (
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+    )
 
     for packet in packets:
-        if packet.header['PKT_APID'].derived_value == \
-                UltraParams.ULTRA_IMG_RATES.value.apid:
-            met_data.append(packet.data['SHCOARSE'].derived_value)
-            science_id.append(packet.data['SID'].derived_value)
-            spin_data.append(packet.data['SPIN'].derived_value)
-            abortflag_data.append(packet.data['ABORTFLAG'].derived_value)
-            startdelay_data.append(packet.data['STARTDELAY'].derived_value)
-            decompressed_data = decompress_binary(packet.data['FASTDATA_00'].raw_value,
-                                                  UltraParams.ULTRA_IMG_RATES.value.width,
-                                                  UltraParams.ULTRA_IMG_RATES.value.block)
+        if (
+            packet.header["PKT_APID"].derived_value
+            == UltraParams.ULTRA_IMG_RATES.value.apid
+        ):
+            met_data.append(packet.data["SHCOARSE"].derived_value)
+            science_id.append(packet.data["SID"].derived_value)
+            spin_data.append(packet.data["SPIN"].derived_value)
+            abortflag_data.append(packet.data["ABORTFLAG"].derived_value)
+            startdelay_data.append(packet.data["STARTDELAY"].derived_value)
+            decompressed_data = decompress_binary(
+                packet.data["FASTDATA_00"].raw_value,
+                UltraParams.ULTRA_IMG_RATES.value.width,
+                UltraParams.ULTRA_IMG_RATES.value.block,
+            )
             fastdata_00.append(decompressed_data)
 
     array_data = np.array(fastdata_00)
 
-    ds = xr.Dataset({
-        'science_id': ('epoch', science_id),
-        'spin_data': ('epoch', spin_data),
-        'abortflag_data': ('epoch', abortflag_data),
-        'startdelay_data': ('epoch', startdelay_data),
-        'fastdata_00': (('epoch', 'index'), array_data)
-    }, coords={
-        'epoch': met_data,
-    })
+    ds = xr.Dataset(
+        {
+            "science_id": ("epoch", science_id),
+            "spin_data": ("epoch", spin_data),
+            "abortflag_data": ("epoch", abortflag_data),
+            "startdelay_data": ("epoch", startdelay_data),
+            "fastdata_00": (("epoch", "index"), array_data),
+        },
+        coords={
+            "epoch": met_data,
+        },
+    )
 
     return ds
