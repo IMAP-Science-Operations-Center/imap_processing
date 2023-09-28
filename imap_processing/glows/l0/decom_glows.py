@@ -1,3 +1,4 @@
+from enum import Enum
 from pathlib import Path
 
 from bitstring import ReadError
@@ -5,6 +6,21 @@ from space_packet_parser import parser, xtcedef
 
 from imap_processing import imap_module_directory
 from imap_processing.glows.l0.glows_l0_data import DirectEventL0, HistogramL0
+
+
+class GlowsParams(Enum):
+    """Enum class for Glows packet data.
+
+    Attributes
+    ----------
+    HIST_APID : int
+        Histogram packet APID
+    DE_APID : int
+        Direct event APID
+    """
+
+    HIST_APID = 1480
+    DE_APID = 1481
 
 
 def decom_packets(
@@ -23,34 +39,31 @@ def decom_packets(
         A tuple with two pieces: one list of the GLOWS histogram data, in GlowsHistL0
         instances, and one list of the GLOWS direct event data, in GlowsDeL0 instance
     """
-    hist_apid = 1480
-    de_apid = 1481
-
     # Define paths
     xtce_document = Path(
         f"{imap_module_directory}/glows/packet_definitions/GLX_COMBINED.xml"
     )
 
-    hist_packet_definition = xtcedef.XtcePacketDefinition(xtce_document)
-    histparser = parser.PacketParser(hist_packet_definition)
+    packet_definition = xtcedef.XtcePacketDefinition(xtce_document)
+    glows_parser = parser.PacketParser(packet_definition)
 
     histdata = []
     dedata = []
 
     with open(packet_file_path, "rb") as binary_data:
         try:
-            hist_packets = histparser.generator(
+            glows_packets = glows_parser.generator(
                 binary_data,
                 buffer_read_size_bytes=5790778,
             )
 
-            for packet in hist_packets:
+            for packet in glows_packets:
                 # Do something with the packet data
-                if packet.header["PKT_APID"].derived_value == hist_apid:
+                if packet.header["PKT_APID"].derived_value == GlowsParams.HIST_APID:
                     hist_l0 = HistogramL0(packet)
                     histdata.append(hist_l0)
 
-                if packet.header["PKT_APID"].derived_value == de_apid:
+                if packet.header["PKT_APID"].derived_value == GlowsParams.DE_APID:
                     de_l0 = DirectEventL0(packet)
                     dedata.append(de_l0)
 
