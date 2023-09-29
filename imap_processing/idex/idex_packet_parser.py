@@ -7,8 +7,6 @@ from space_packet_parser import parser, xtcedef
 
 from imap_processing import imap_module_directory
 
-TWENTY_MICROSECONDS = 20 * (10 ** (-6))
-
 SCITYPE_MAPPING_TO_NAMES = {
     2: "TOF_High",
     4: "TOF_Low",
@@ -22,26 +20,26 @@ SCITYPE_MAPPING_TO_NAMES = {
 class PacketParser:
     """IDEX packet parsing class.
 
-    This class encapsulates the decom work needed to decom a daily file of IDEX data
+    Encapsulates the decom work needed to decom a daily file of IDEX data
     received from the POC.  The class is instantiated with a reference to a L0 file as
     it exists on the local file system.
 
     Attributes
     ----------
-        data (xarray.Dataset): An object containing all of the relevant data in the file
+        data (xarray.Dataset): An object containing all of the relevant L1 data
 
     TODO
     ----
-        * Add method to generate l1a CDF
         * Add method to generate quicklook
+        * Add method to generate l1a CDF
 
     Examples
     --------
         >>> # Print out the data in a L0 file
         >>> from imap_processing.idex.idex_packet_parser import PacketParser
         >>> l0_file = "imap_processing/idex/tests/imap_idex_l0_20230725_v01-00.pkts"
-        >>> l0_data = PacketParser(l0_file)
-        >>> print(l0_data.data)
+        >>> l1_data = PacketParser(l0_file)
+        >>> print(l1_data.data)
 
     """
 
@@ -93,14 +91,35 @@ class PacketParser:
 
 
 class RawDustEvent:
-    """Store data for each raw dust event."""
+    """Encapsulate IDEX Raw Dust Event.
+
+    Encapsulates the work needed to convert a single dust event into a
+    processed XArray Dateset object.
+
+    Attributes
+    ----------
+    None
+
+    Methods
+    -------
+    __init__(space_packet_parser.ParsedPacket):
+        Initialize a raw dust event, with an FPGA Header Packet from IDEX.
+    parse_packet(space_packet_parser.ParsedPacket):
+        Parse IDEX data packets to populate bit strings.
+    process():
+        Generates an xarray.Dataset object after all packets are parsed
+    """
 
     # Constants
-    HIGH_SAMPLE_RATE = 1 / 260  # nanoseconds per sample
-    LOW_SAMPLE_RATE = 1 / 4.0625  # nanoseconds per sample
-    FOUR_BIT_MASK = 0b1111
-    SIX_BIT_MASK = 0b111111
-    TEN_BIT_MASK = 0b1111111111
+    HIGH_SAMPLE_RATE = 1 / 260  # microseconds per sample
+    LOW_SAMPLE_RATE = 1 / 4.0625  # microseconds per sample
+
+    NUMBER_SAMPLES_PER_LOW_SAMPLE_BLOCK = (
+        8  # The number of samples in a "block" of low sample data
+    )
+    NUMBER_SAMPLES_PER_HIGH_SAMPLE_BLOCK = (
+        512  # The number of samples in a "block" of high sample data
+    )
 
     def __init__(self, header_packet):
         """Initialize a raw dust event, with an FPGA Header Packet from IDEX.
@@ -124,6 +143,13 @@ class RawDustEvent:
             self.high_sample_trigger_time,
         ) = self._calc_sample_trigger_times(header_packet)
 
+        self.trigger_values_dict, self.trigger_notes_dict = self._get_trigger_dicts(
+            header_packet
+        )
+        logging.debug(
+            f"trigger_values_dict:\n{self.trigger_values_dict}"
+        )  # Log values here in case of error
+
         # Initialize the binary data received from future packets
         self.TOF_High_bits = ""
         self.TOF_Mid_bits = ""
@@ -132,133 +158,362 @@ class RawDustEvent:
         self.Target_High_bits = ""
         self.Ion_Grid_bits = ""
 
-        # Log the rest of the header
-        self._log_packet_info(header_packet)
+    def _get_trigger_dicts(self, packet):
+        """Create trigger information dictionaries.
+
+        Creates a large dictionary of values from the FPGA header
+        that need to be captured into the CDF file.  They are lumped together because
+        they share similar attributes.
+
+        Notes about the variables are set here, acting as comments and will also be
+        placed into the CDF in the VAR_NOTES attribute.
+
+        Parameters
+        ----------
+            packet : The IDEX FPGA Header Packet
+
+        Returns
+        -------
+            dict
+                A dictionary of (CDF variable name : value) pairs
+            dict
+                A dictionary of (CDF variable name : variable notes) pairs
+        """
+        trigger_dict = {}
+        trigger_notes_dict = {}
+
+        # Get Event Number
+        trigger_dict["event_number"] = packet.data["IDX__TXHDREVTNUM"].raw_value
+        trigger_notes_dict[
+            "event_number"
+        ] = "The unique number assigned to the impact by the FPGA"
+        # TOF High Trigger Info 1
+        trigger_dict["tof_high_trigger_level"] = packet.data[
+            "IDX__TXHDRHGTRIGLVL"
+        ].raw_value
+        trigger_notes_dict[
+            "tof_high_trigger_level"
+        ] = "Trigger level for the TOF High Channel"
+        trigger_dict["tof_high_trigger_num_max_1_2"] = packet.data[
+            "IDX__TXHDRHGTRIGNMAX12"
+        ].raw_value
+        trigger_notes_dict[
+            "tof_high_trigger_num_max_1_2"
+        ] = """Maximum number of samples between pulse 1 and 2 for TOF High double
+               pulse triggering"""
+        trigger_dict["tof_high_trigger_num_min_1_2"] = packet.data[
+            "IDX__TXHDRHGTRIGNMIN12"
+        ].raw_value
+        trigger_notes_dict[
+            "tof_high_trigger_num_min_1_2"
+        ] = """Minimum number of samples between pulse 1 and 2 for TOF High double
+            pulse triggering"""
+        # TOF High Trigger Info 2
+        trigger_dict["tof_high_trigger_num_min_1"] = packet.data[
+            "IDX__TXHDRHGTRIGNMIN1"
+        ].raw_value
+        trigger_notes_dict[
+            "tof_high_trigger_num_min_1"
+        ] = """Minimum number of samples for pulse 1 for TOF High single and double
+             pulse triggering"""
+        trigger_dict["tof_high_trigger_num_max_1"] = packet.data[
+            "IDX__TXHDRHGTRIGNMAX1"
+        ].raw_value
+        trigger_notes_dict[
+            "tof_high_trigger_num_max_1"
+        ] = """Maximum number of samples for pulse 1 for TOF High single and double
+               pulse triggering"""
+        trigger_dict["tof_high_trigger_num_min_2"] = packet.data[
+            "IDX__TXHDRHGTRIGNMIN2"
+        ].raw_value
+        trigger_notes_dict[
+            "tof_high_trigger_num_min_2"
+        ] = """Minimum number of samples for pulse 2 for TOF High single and double
+             pulse triggering"""
+        trigger_dict["tof_high_trigger_num_max_2"] = packet.data[
+            "IDX__TXHDRHGTRIGNMAX2"
+        ].raw_value
+        trigger_notes_dict[
+            "tof_high_trigger_num_max_2"
+        ] = """Maximum number of samples for pulse 2 for TOF High single and double
+               pulse triggering"""
+        trigger_dict["tof_low_trigger_level"] = packet.data[
+            "IDX__TXHDRLGTRIGLVL"
+        ].raw_value
+        trigger_notes_dict[
+            "tof_low_trigger_level"
+        ] = "Trigger level for the TOF Low Channel"
+        trigger_dict["tof_low_trigger_num_max_1_2"] = packet.data[
+            "IDX__TXHDRLGTRIGNMAX12"
+        ].raw_value
+        trigger_notes_dict[
+            "tof_low_trigger_num_max_1_2"
+        ] = """Maximum number of samples between pulse 1 and 2 for TOF Low double
+               pulse triggering"""
+        trigger_dict["tof_low_trigger_num_min_1_2"] = packet.data[
+            "IDX__TXHDRLGTRIGNMIN12"
+        ].raw_value
+        trigger_notes_dict[
+            "tof_low_trigger_num_min_1_2"
+        ] = """Minimum number of samples between pulse 1 and 2 for TOF Low double
+            pulse triggering"""
+        # TOF Low Trigger Info 2
+        trigger_dict["tof_low_trigger_num_min_1"] = packet.data[
+            "IDX__TXHDRLGTRIGNMIN1"
+        ].raw_value
+        trigger_notes_dict[
+            "tof_low_trigger_num_min_1"
+        ] = """Minimum number of samples for pulse 1 for TOF Low single and double
+             pulse triggering"""
+        trigger_dict["tof_low_trigger_num_max_1"] = packet.data[
+            "IDX__TXHDRLGTRIGNMAX1"
+        ].raw_value
+        trigger_notes_dict[
+            "tof_low_trigger_num_max_1"
+        ] = """Maximum number of samples for pulse 1 for TOF Low single and double
+               pulse triggering"""
+        trigger_dict["tof_low_trigger_num_min_2"] = packet.data[
+            "IDX__TXHDRLGTRIGNMIN2"
+        ].raw_value
+        trigger_notes_dict[
+            "tof_low_trigger_num_min_2"
+        ] = """Minimum number of samples for pulse 2 for TOF Low single and double
+             pulse triggering"""
+        trigger_dict["tof_low_trigger_num_max_2"] = packet.data[
+            "IDX__TXHDRLGTRIGNMAX2"
+        ].raw_value
+        trigger_notes_dict[
+            "tof_low_trigger_num_max_2"
+        ] = """Maximum number of samples for pulse 2 for TOF Low single and double
+               pulse triggering"""
+        trigger_dict["tof_mid_trigger_level"] = packet.data[
+            "IDX__TXHDRMGTRIGLVL"
+        ].raw_value
+        trigger_notes_dict[
+            "tof_mid_trigger_level"
+        ] = "Trigger level for the TOF Mid Channel"
+        trigger_dict["tof_mid_trigger_num_max_1_2"] = packet.data[
+            "IDX__TXHDRMGTRIGNMAX12"
+        ].raw_value
+        trigger_notes_dict[
+            "tof_mid_trigger_num_max_1_2"
+        ] = """Maximum number of samples between pulse 1 and 2 for TOF Mid double
+               pulse triggering"""
+        trigger_dict["tof_mid_trigger_num_min_1_2"] = packet.data[
+            "IDX__TXHDRMGTRIGNMIN12"
+        ].raw_value
+        trigger_notes_dict[
+            "tof_mid_trigger_num_min_1_2"
+        ] = """Minimum number of samples between pulse 1 and 2 for TOF Mid double
+            pulse triggering"""
+        # TOF Mid Trigger Info 2
+        trigger_dict["tof_mid_trigger_num_min_1"] = packet.data[
+            "IDX__TXHDRMGTRIGNMIN1"
+        ].raw_value
+        trigger_notes_dict[
+            "tof_mid_trigger_num_min_1"
+        ] = """Minimum number of samples for pulse 1 for TOF Mid single and double
+             pulse triggering"""
+        trigger_dict["tof_mid_trigger_num_max_1"] = packet.data[
+            "IDX__TXHDRMGTRIGNMAX1"
+        ].raw_value
+        trigger_notes_dict[
+            "tof_mid_trigger_num_max_1"
+        ] = """Maximum number of samples for pulse 1 for TOF Mid single and double
+               pulse triggering"""
+        trigger_dict["tof_mid_trigger_num_min_2"] = packet.data[
+            "IDX__TXHDRMGTRIGNMIN2"
+        ].raw_value
+        trigger_notes_dict[
+            "tof_mid_trigger_num_min_2"
+        ] = """Minimum number of samples for pulse 2 for TOF Mid single and double
+             pulse triggering"""
+        trigger_dict["tof_mid_trigger_num_max_2"] = packet.data[
+            "IDX__TXHDRMGTRIGNMAX2"
+        ].raw_value
+        trigger_notes_dict[
+            "tof_mid_trigger_num_max_2"
+        ] = """Maximum number of samples for pulse 2 for TOF Mid single and double
+               pulse triggering"""
+
+        # Low Sample Trigger Info
+        trigger_dict["low_sample_coincidence_mode_blocks"] = packet.data[
+            "IDX__TXHDRLSTRIGCMBLOCKS"
+        ].raw_value
+        trigger_notes_dict[
+            "low_sample_coincidence_mode_blocks"
+        ] = "Number of blocks coincidence window is enabled after low sample trigger"
+        trigger_dict["low_sample_trigger_polarity"] = packet.data[
+            "IDX__TXHDRLSTRIGPOL"
+        ].raw_value
+        trigger_notes_dict[
+            "low_sample_trigger_polarity"
+        ] = "The trigger polarity for low sample (0 = normal, 1 = inverted)"
+        trigger_dict["low_sample_trigger_level"] = packet.data[
+            "IDX__TXHDRLSTRIGLVL"
+        ].raw_value
+        trigger_notes_dict[
+            "low_sample_trigger_level"
+        ] = "Trigger level for the low sample"
+        trigger_dict["low_sample_trigger_num_min"] = packet.data[
+            "IDX__TXHDRLSTRIGNMIN"
+        ].raw_value
+        trigger_notes_dict[
+            "low_sample_trigger_num_min"
+        ] = """The minimum number of samples above/below the trigger level for
+               triggering the low sample"""
+        # Trigger modes
+        trigger_dict["low_sample_trigger_mode"] = packet.data[
+            "IDX__TXHDRLSTRIGMODE"
+        ].raw_value
+        trigger_notes_dict[
+            "low_sample_trigger_mode"
+        ] = "Low sample trigger mode (0=disabled, 1=enabled)"
+        trigger_dict["tof_low_trigger_mode"] = packet.data[
+            "IDX__TXHDRLSTRIGMODE"
+        ].raw_value
+        trigger_notes_dict[
+            "tof_low_trigger_mode"
+        ] = "TOF Low trigger mode (0=disabled, 1=enabled)"
+        trigger_dict["tof_mid_trigger_mode"] = packet.data[
+            "IDX__TXHDRMGTRIGMODE"
+        ].raw_value
+        trigger_notes_dict[
+            "tof_mid_trigger_mode"
+        ] = "TOF Mid trigger mode (0=disabled, 1=enabled)"
+        trigger_dict["tof_high_trigger_mode"] = packet.data[
+            "IDX__TXHDRHGTRIGMODE"
+        ].raw_value
+        trigger_notes_dict[
+            "tof_high_trigger_mode"
+        ] = """TOF Mid trigger mode (0=disabled, 1=threshold mode, 2=single pulse
+               mode, 3=double pulse mode)"""
+
+        trigger_dict["detector_voltage"] = packet.data["IDX__TXHDRHVPSHKCH0"].raw_value
+        trigger_notes_dict[
+            "detector_voltage"
+        ] = "Last measurement in raw dN for processor board signal: Detector Voltage"
+        trigger_dict["sensor_voltage"] = packet.data["IDX__TXHDRHVPSHKCH1"].raw_value
+        trigger_notes_dict[
+            "sensor_voltage"
+        ] = "Last measurement in raw dN for processor board signal: Sensor Voltage"
+        trigger_dict["target_voltage"] = packet.data["IDX__TXHDRHVPSHKCH2"].raw_value
+        trigger_notes_dict[
+            "target_voltage"
+        ] = "Last measurement in raw dN for processor board signal: Target Voltage"
+        trigger_dict["reflectron_voltage"] = packet.data[
+            "IDX__TXHDRHVPSHKCH3"
+        ].raw_value
+        trigger_notes_dict[
+            "reflectron_voltage"
+        ] = "Last measurement in raw dN for processor board signal: Reflectron Voltage"
+        trigger_dict["rejection_voltage"] = packet.data["IDX__TXHDRHVPSHKCH4"].raw_value
+        trigger_notes_dict[
+            "rejection_voltage"
+        ] = "Last measurement in raw dN for processor board signal: Rejection Voltage"
+        trigger_dict["detector_current"] = packet.data["IDX__TXHDRHVPSHKCH5"].raw_value
+        trigger_notes_dict[
+            "detector_current"
+        ] = "Last measurement in raw dN for processor board signal: Detector Current"
+
+        return trigger_dict, trigger_notes_dict
 
     def _calc_impact_time(self, packet):
-        """Calculate the number of seconds since Jan 1 2012."""
-        # Number of seconds here
-        seconds_since_epoch = packet.data["SHCOARSE"].derived_value
-        # Number of 20 microsecond "ticks" since the last second
-        num_of_20_microseconds = packet.data["SHFINE"].derived_value
+        """Calculate the datetime64 from the FPGA header information.
 
-        return seconds_since_epoch + TWENTY_MICROSECONDS * num_of_20_microseconds
+        We are given the MET seconds, we need convert it to UTC.
+
+        Parameters
+        ----------
+            packet: space_packet_parser.ParsedPacket
+                The IDEX FPGA header packet
+
+        Returns
+        -------
+            np.datetime64
+                The time of the event
+
+        TODO
+        -----
+        This conversion is temporary for now, and will need SPICE in the future.
+        IDEX has set the time launch to Jan 1 2012 for calibration testing.
+
+        """
+        # Number of seconds since epoch (nominally the launch time)
+        seconds_since_launch = packet.data["SHCOARSE"].derived_value
+        # Number of 20 microsecond "ticks" since the last second
+        num_of_20_microsecond_increments = packet.data["SHFINE"].derived_value
+        # Number of microseconds since the last second
+        microseconds_since_last_second = 20 * num_of_20_microsecond_increments
+        # Get the datetime of Jan 1 2012 as the start date
+        launch_time = np.datetime64("2012-01-01")
+
+        return (
+            launch_time
+            + np.timedelta64(seconds_since_launch, "s")
+            + np.timedelta64(microseconds_since_last_second, "us")
+        )
 
     def _calc_sample_trigger_times(self, packet):
-        """Calculate the high sample and low sample trigger times."""
-        # This is a 32 bit number, consisting of:
-        # 2 bits padding
-        # 10 bits for low gain delay
-        # 10 bits for mid gain delay
-        # 10 bits for high gain delay
-        time_of_flight_sample_delay_field = (
-            packet.data["IDX__TXHDRSAMPDELAY"].raw_value >> 2
-        )
-        # Retrieve high gain delay from above number
-        high_gain_delay = (time_of_flight_sample_delay_field >> 20) & self.TEN_BIT_MASK
+        """Calculate the actual sample trigger time.
+
+        Determines how many samples of data are included before the dust impact
+        triggered the insturment.
+
+        Parameters
+        ----------
+            packet : space_packet_parser.ParsedPacket
+                The IDEX FPGA header packet info
+
+        Returns
+        -------
+            (int, int)
+                The actual trigger time for the low and high sample rate in
+                microseconds
+
+        Notes
+        -----
+            A "sample" is one single data point.
+
+            A "block" is ~1.969 microseconds of data collection (8/4.0625).
+            The only time that a block of data matters is in this function.
+
+            Because the low sample data are taken every 1/4.0625 microseconds,
+            there are 8 samples in one block of data.
+
+            Because the high sample data are taken every 1/260 microseconds,
+            there are 512 samples in one block of High Sample data.
+
+            The header has information about the number of blocks before triggering,
+            rather than the number of samples before triggering.
+
+        """
+        # Retrieve the number of samples of high gain delay
+        high_gain_delay = packet.data["IDX__TXHDRADC0IDELAY"].raw_value
 
         # Retrieve number of low/high sample pretrigger blocks
-        num_low_sample_pretrigger_blocks = (
-            packet.data["IDX__TXHDRBLOCKS"].derived_value >> 6
-        ) & self.SIX_BIT_MASK
-        num_high_sample_pretrigger_blocks = (
-            packet.data["IDX__TXHDRBLOCKS"].derived_value >> 16
-        ) & self.FOUR_BIT_MASK
+        num_low_sample_pretrigger_blocks = packet.data[
+            "IDX__TXHDRLSPREBLOCKS"
+        ].derived_value
+        num_high_sample_pretrigger_blocks = packet.data[
+            "IDX__TXHDRHSPREBLOCKS"
+        ].derived_value
 
         # Calculate the low and high sample trigger times based on the high gain delay
         # and the number of high sample/low sample pretrigger blocks
         low_sample_trigger_time = (
-            8 * self.LOW_SAMPLE_RATE * (num_low_sample_pretrigger_blocks + 1)
+            self.LOW_SAMPLE_RATE
+            * (num_low_sample_pretrigger_blocks + 1)
+            * self.NUMBER_SAMPLES_PER_LOW_SAMPLE_BLOCK
             - self.HIGH_SAMPLE_RATE * high_gain_delay
         )
         high_sample_trigger_time = (
-            512 * self.HIGH_SAMPLE_RATE * (num_high_sample_pretrigger_blocks + 1)
+            self.HIGH_SAMPLE_RATE
+            * (num_high_sample_pretrigger_blocks + 1)
+            * self.NUMBER_SAMPLES_PER_HIGH_SAMPLE_BLOCK
         )
 
         return low_sample_trigger_time, high_sample_trigger_time
-
-    def _log_packet_info(self, packet):
-        """Packet logging routine.
-
-        This function exists solely to log the parameters in the L0
-        FPGA header packet for new dust events, nothing here should affect the data.
-        """
-        event_number = packet.data["IDX__SCI0EVTNUM"].derived_value
-        logging.debug(f"^*****Event header {event_number}******^")
-        logging.debug(
-            f"Timestamp = {self.impact_time} seconds since epoch \
-              (Midnight January 1st, 2012)"
-        )
-        # Extract the number of blocks, pre and post trigger
-        # Extract the first six bits
-        low_sample_posttrigger_blocks = (
-            packet.data["IDX__TXHDRBLOCKS"].derived_value
-        ) & self.SIX_BIT_MASK
-        low_sample_pretrigger_blocks = (
-            packet.data["IDX__TXHDRBLOCKS"].derived_value >> 6
-        ) & self.SIX_BIT_MASK
-        high_sample_posttrigger_blocks = (
-            packet.data["IDX__TXHDRBLOCKS"].derived_value >> 12
-        ) & self.FOUR_BIT_MASK
-        high_sample_pretrigger_blocks = (
-            packet.data["IDX__TXHDRBLOCKS"].derived_value >> 16
-        ) & self.FOUR_BIT_MASK
-        logging.debug(
-            "High Sample pre trig sampling blocks: "
-            + str(high_sample_pretrigger_blocks)
-        )
-        logging.debug(
-            "Low Sample pre trig sampling blocks: " + str(low_sample_pretrigger_blocks)
-        )
-        logging.debug(
-            "High Sample post trig sampling blocks: "
-            + str(high_sample_posttrigger_blocks)
-        )
-        logging.debug(
-            "Low Sample post trig sampling blocks: "
-            + str(low_sample_posttrigger_blocks)
-        )
-
-        # Calculate the high sample and low sample trigger times
-        # This is a 32 bit number, consisting of:
-        # 2 bits padding
-        # 10 bits for low gain delay
-        # 10 bits for mid gain delay
-        # 10 bits for high gain delay
-        time_of_flight_sample_delay_field = (
-            packet.data["IDX__TXHDRSAMPDELAY"].raw_value >> 2
-        )
-        # Retrieve the delays for the different triggers
-        low_gain_delay = (time_of_flight_sample_delay_field) & self.TEN_BIT_MASK
-        mid_gain_delay = (time_of_flight_sample_delay_field >> 10) & self.TEN_BIT_MASK
-        high_gain_delay = (time_of_flight_sample_delay_field >> 20) & self.TEN_BIT_MASK
-        logging.debug(f"High gain delay = {high_gain_delay} samples.")
-        logging.debug(f"Mid gain delay = {mid_gain_delay} samples.")
-        logging.debug(f"Low gain delay = {low_gain_delay} samples.")
-
-        # Determine which of the following triggered the dust event
-        low_sample_trigger_mode = packet.data["IDX__TXHDRLSTRIGMODE"].derived_value
-        low_gain_trigger_mode = packet.data["IDX__TXHDRLGTRIGMODE"].derived_value
-        mid_gain_trigger_mode = packet.data["IDX__TXHDRMGTRIGMODE"].derived_value
-        high_gain_trigger_mode = packet.data["IDX__TXHDRHGTRIGMODE"].derived_value
-        logging.debug("Packet low trigger mode = " + str(low_gain_trigger_mode))
-        logging.debug("Packet mid trigger mode = " + str(mid_gain_trigger_mode))
-        logging.debug("Packet high trigger mode = " + str(high_gain_trigger_mode))
-        if low_sample_trigger_mode:
-            logging.debug("Low sampling trigger mode enabled.")
-        if low_gain_trigger_mode:
-            logging.debug("Low gain TOF trigger mode enabled.")
-        if mid_gain_trigger_mode:
-            logging.debug("Mid gain TOF trigger mode enabled.")
-        if high_gain_trigger_mode != 0:
-            logging.debug("High gain trigger mode enabled.")
-
-        # Determine unique event identifier
-        accountability_id = packet.data["IDX__SCI0AID"].derived_value
-        logging.debug(f"AID = {accountability_id}")
-        # Determine compression
-        compression = bool(packet.data["IDX__SCI0COMP"].raw_value)
-        logging.debug(f"Rice compression enabled = {compression}")
 
     def _parse_high_sample_waveform(self, waveform_raw: str):
         """Process the high sample waveform.
@@ -368,6 +623,11 @@ class RawDustEvent:
             A Dataset object containing the data from a single impact
 
         """
+        # Gather the huge number of trigger info metadata
+        trigger_vars = {}
+        for var, value in self.trigger_values_dict.items():
+            trigger_vars[var] = xr.DataArray(name=var, data=[value], dims=("Epoch"))
+
         # Process the 6 primary data variables
         tof_high_xr = xr.DataArray(
             name="TOF_High",
@@ -399,6 +659,7 @@ class RawDustEvent:
             data=[self._parse_low_sample_waveform(self.Ion_Grid_bits)],
             dims=("Epoch", "Time_Low_SR_dim"),
         )
+
         # Determine the 3 coordinate variables
         epoch_xr = xr.DataArray(name="Epoch", data=[self.impact_time], dims=("Epoch"))
 
@@ -423,7 +684,8 @@ class RawDustEvent:
                 "Target_High": target_high_xr,
                 "Target_Low": target_low_xr,
                 "Ion_Grid": ion_grid_xr,
-            },
+            }
+            | trigger_vars,
             coords={
                 "Epoch": epoch_xr,
                 "Time_Low_SR": time_low_sr_xr,
