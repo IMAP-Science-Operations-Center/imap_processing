@@ -26,8 +26,9 @@ def decom_packets(packet_file, xtce_packet_definition):
     with open(packet_file, "r") as file:
         for line in file:
             if not line.startswith("#"):
-
-                hex_values = line.strip().split(";")  # Split the line by semicolons
+                # Split the line by semicolons
+                # Discard the first value since it is only a counter
+                hex_values = line.strip().split(";")[1::]
 
                 binary_values = ""
                 for h in hex_values:
@@ -44,10 +45,11 @@ def decom_packets(packet_file, xtce_packet_definition):
                     # Append the padded binary string to the final string
                     binary_values += bin_value_padded
 
-                packet = next(packet_parser.generator(bitstring.ConstBitStream(bin=binary_values)), None)
-                print('hi')
-                #if packet:
-                #    packets.append(packet)
+                packet_generator = packet_parser.generator(bitstring.ConstBitStream(bin=binary_values))
+
+                for packet in packet_generator:
+                    print('hi')
+                    packets.append(packet)
 
     return packets
 
