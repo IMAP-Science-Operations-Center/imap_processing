@@ -272,13 +272,13 @@
 			<xtce:Parameter name="PKT_LEN" parameterTypeRef="uint16">
 				<xtce:LongDescription>CCSDS Packet Length (number of bytes after Packet length minus 1)</xtce:LongDescription>
 			</xtce:Parameter>
+			<!-- Start metadata -->
 			<xtce:Parameter name="SCLK_SEC" parameterTypeRef="uint32">
 				<xtce:LongDescription>CCSDS Packet SCLK (sec)</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SCLK_SUB_SEC" parameterTypeRef="uint8">
 				<xtce:LongDescription>CCSDS Packet SCLK (subsec)</xtce:LongDescription>
 			</xtce:Parameter>
-			<!-- Start metadata -->
 			<xtce:Parameter name="SBC_ID" parameterTypeRef="uint2">
 				<xtce:LongDescription>SBC Physical ID</xtce:LongDescription>
 			</xtce:Parameter>
@@ -303,10 +303,10 @@
 			<xtce:Parameter name="HIT_STATUS" parameterTypeRef="status">
 				<xtce:LongDescription>HIT Status</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="CoDICE_STATUS" parameterTypeRef="status">
+			<xtce:Parameter name="CODICE_STATUS" parameterTypeRef="status">
 				<xtce:LongDescription>CoDICE Status</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="L0_STATUS" parameterTypeRef="status">
+			<xtce:Parameter name="LO_STATUS" parameterTypeRef="status">
 				<xtce:LongDescription>IMAP_LO Status</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="HI_45_STATUS" parameterTypeRef="status">
@@ -380,9 +380,11 @@
 			<xtce:Parameter name="SWAPI" parameterTypeRef="swapi">
 				<xtce:LongDescription>SWAPI</xtce:LongDescription>
 			</xtce:Parameter>
+			<!-- HIT -->
 			<xtce:Parameter name="HIT" parameterTypeRef="hit">
 				<xtce:LongDescription>HIT</xtce:LongDescription>
 			</xtce:Parameter>
+			<!-- HIT -->
 			<xtce:Parameter name="SWE" parameterTypeRef="swe">
 				<xtce:LongDescription>SWE</xtce:LongDescription>
 			</xtce:Parameter>
@@ -402,12 +404,17 @@
 					<xtce:ParameterRefEntry parameterRef="SEG_FLGS" />
 					<xtce:ParameterRefEntry parameterRef="SRC_SEQ_CTR" />
 					<xtce:ParameterRefEntry parameterRef="PKT_LEN" />
-					<xtce:ParameterRefEntry parameterRef="SCLK_SEC" />
-					<xtce:ParameterRefEntry parameterRef="SCLK_SUB_SEC" />
 				</xtce:EntryList>
 			</xtce:SequenceContainer>
-			<xtce:SequenceContainer name="IALIRTPacket">
+			<xtce:SequenceContainer name="IALiRTPacket">
+				<xtce:BaseContainer containerRef="CCSDSPacket">
+					<xtce:RestrictionCriteria>
+						<xtce:Comparison parameterRef="PKT_APID" value="478" useCalibratedValue="false" />
+					</xtce:RestrictionCriteria>
+				</xtce:BaseContainer>
 				<xtce:EntryList>
+					<xtce:ParameterRefEntry parameterRef="SCLK_SEC" />
+					<xtce:ParameterRefEntry parameterRef="SCLK_SUB_SEC" />
 					<xtce:ParameterRefEntry parameterRef="SBC_ID" />
 					<xtce:ParameterRefEntry parameterRef="SPARE_1"/>
 					<xtce:ParameterRefEntry parameterRef="FIRE_COUNT"/>
@@ -416,8 +423,8 @@
 					<xtce:ParameterRefEntry parameterRef="SWAPI_STATUS"/>
 					<xtce:ParameterRefEntry parameterRef="MAG_STATUS"/>
 					<xtce:ParameterRefEntry parameterRef="HIT_STATUS"/>
-					<xtce:ParameterRefEntry parameterRef="CoDICE_STATUS"/>
-					<xtce:ParameterRefEntry parameterRef="L0_STATUS"/>
+					<xtce:ParameterRefEntry parameterRef="CODICE_STATUS"/>
+					<xtce:ParameterRefEntry parameterRef="LO_STATUS"/>
 					<xtce:ParameterRefEntry parameterRef="HI_45_STATUS"/>
 					<xtce:ParameterRefEntry parameterRef="HI_90_STATUS"/>
 					<xtce:ParameterRefEntry parameterRef="ULTRA_45_STATUS"/>
@@ -439,7 +446,16 @@
 					<xtce:ParameterRefEntry parameterRef="CODICE_LO"/>
 					<xtce:ParameterRefEntry parameterRef="CODICE_HI"/>
 					<xtce:ParameterRefEntry parameterRef="SWAPI"/>
-					<xtce:ParameterRefEntry parameterRef="HIT"/>
+					<!-- HIT -->
+					<xtce:ParameterRefEntry parameterRef="HIT_MET"/>
+					<xtce:ParameterRefEntry parameterRef="HIT_STATUS"/>
+					<xtce:ParameterRefEntry parameterRef="HIT_RESERVED"/>
+					<xtce:ParameterRefEntry parameterRef="HIT_COUNTER"/>
+					<xtce:ParameterRefEntry parameterRef="FAST_RATE_1"/>
+					<xtce:ParameterRefEntry parameterRef="FAST_RATE_2"/>
+					<xtce:ParameterRefEntry parameterRef="SLOW_RATE"/>
+					<xtce:ParameterRefEntry parameterRef="EVENT_DATA"/>
+					<!-- HIT -->
 					<xtce:ParameterRefEntry parameterRef="SWE"/>
 					<xtce:ParameterRefEntry parameterRef="MAG"/>
 				</xtce:EntryList>

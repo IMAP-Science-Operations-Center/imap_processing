@@ -48,9 +48,6 @@ def decom_packets(packet_file, xtce_packet_definition):
                 packet_generator = packet_parser.generator(bitstring.ConstBitStream(bin=binary_values))
 
                 for packet in packet_generator:
-                    print('hi')
                     packets.append(packet)
 
     return packets
-
-decom_packets("IALiRT Raw Packet Telemetry.txt", "ialirt.xml")
