@@ -1,4 +1,4 @@
-from enum import Enum
+from enum import IntEnum
 from pathlib import Path
 
 from bitstring import ReadError
@@ -8,7 +8,7 @@ from imap_processing import imap_module_directory
 from imap_processing.glows.l0.glows_l0_data import DirectEventL0, HistogramL0
 
 
-class GlowsParams(Enum):
+class GlowsParams(IntEnum):
     """Enum class for Glows packet data.
 
     Attributes
@@ -59,14 +59,11 @@ def decom_packets(
 
             for packet in glows_packets:
                 # Do something with the packet data
-                if (
-                    packet.header["PKT_APID"].derived_value
-                    == GlowsParams.HIST_APID.value
-                ):
+                if packet.header["PKT_APID"].derived_value == GlowsParams.HIST_APID:
                     hist_l0 = HistogramL0(packet)
                     histdata.append(hist_l0)
 
-                if packet.header["PKT_APID"].derived_value == GlowsParams.DE_APID.value:
+                if packet.header["PKT_APID"].derived_value == GlowsParams.DE_APID:
                     de_l0 = DirectEventL0(packet)
                     dedata.append(de_l0)
 

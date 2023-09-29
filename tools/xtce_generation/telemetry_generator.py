@@ -110,7 +110,7 @@ class TelemetryGenerator:
                     parameter_type_set, "xtce:IntegerParameterType"
                 )
                 parameter_type.attrib["name"] = parameter_type_ref_name
-                parameter_type.attrib["signed"] = false
+                parameter_type.attrib["signed"] = "false"
 
                 encoding = Et.SubElement(parameter_type, "xtce:IntegerDataEncoding")
                 encoding.attrib["sizeInBits"] = str(size)
