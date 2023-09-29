@@ -11,7 +11,7 @@ from imap_processing.decom import decom_packets
 @pytest.fixture(scope="session")
 def decom_test_data():
     """Read test data from file"""
-    packet_file = "housekeeping_data.bin"
+    packet_file = Path(f"{imap_module_directory}/codice/tests/housekeeping_data.bin")
     xtce_document = Path(
         f"{imap_module_directory}/codice/packet_definitions/P_COD_NHK.xml"
     )
