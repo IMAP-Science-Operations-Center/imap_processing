@@ -1,6 +1,6 @@
 # IMAP (Interstellar Mapping and Acceleration Probe)
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-[![All Contributors](https://img.shields.io/badge/all_contributors-7-orange.svg?style=flat-square)](#contributors-)
+[![All Contributors](https://img.shields.io/badge/all_contributors-8-orange.svg?style=flat-square)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 [![readthedocs](https://readthedocs.org/projects/imap-processing/badge/?version=latest)](https://imap-processing.readthedocs.io/en/latest/)
 
@@ -35,6 +35,9 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/GFMoraga"><img src="https://avatars.githubusercontent.com/u/104743000?v=4?s=100" width="100px;" alt="Gabriel M."/><br /><sub><b>Gabriel M.</b></sub></a><br /><a href="https://github.com/IMAP-Science-Operations-Center/imap_processing/commits?author=GFMoraga" title="Code">💻</a> <a href="#ideas-GFMoraga" title="Ideas, Planning, & Feedback">🤔</a> <a href="#infra-GFMoraga" title="Infrastructure (Hosting, Build-Tools, etc)">🚇</a> <a href="https://github.com/IMAP-Science-Operations-Center/imap_processing/pulls?q=is%3Apr+reviewed-by%3AGFMoraga" title="Reviewed Pull Requests">👀</a> <a href="#maintenance-GFMoraga" title="Maintenance">🚧</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/bourque"><img src="https://avatars.githubusercontent.com/u/2250769?v=4?s=100" width="100px;" alt="Matthew Bourque"/><br /><sub><b>Matthew Bourque</b></sub></a><br /><a href="https://github.com/IMAP-Science-Operations-Center/imap_processing/commits?author=bourque" title="Code">💻</a> <a href="https://github.com/IMAP-Science-Operations-Center/imap_processing/commits?author=bourque" title="Documentation">📖</a> <a href="#ideas-bourque" title="Ideas, Planning, & Feedback">🤔</a> <a href="#infra-bourque" title="Infrastructure (Hosting, Build-Tools, etc)">🚇</a> <a href="https://github.com/IMAP-Science-Operations-Center/imap_processing/pulls?q=is%3Apr+reviewed-by%3Abourque" title="Reviewed Pull Requests">👀</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/maxinelasp"><img src="https://avatars.githubusercontent.com/u/117409426?v=4?s=100" width="100px;" alt="Maxine Hartnett"/><br /><sub><b>Maxine Hartnett</b></sub></a><br /><a href="https://github.com/IMAP-Science-Operations-Center/imap_processing/commits?author=maxinelasp" title="Code">💻</a> <a href="#ideas-maxinelasp" title="Ideas, Planning, & Feedback">🤔</a> <a href="#infra-maxinelasp" title="Infrastructure (Hosting, Build-Tools, etc)">🚇</a> <a href="https://github.com/IMAP-Science-Operations-Center/imap_processing/pulls?q=is%3Apr+reviewed-by%3Amaxinelasp" title="Reviewed Pull Requests">👀</a> <a href="https://github.com/IMAP-Science-Operations-Center/imap_processing/commits?author=maxinelasp" title="Documentation">📖</a></td>
+    </tr>
+    <tr>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/bryan-harter"><img src="https://avatars.githubusercontent.com/u/41062454?v=4?s=100" width="100px;" alt="Bryan Harter"/><br /><sub><b>Bryan Harter</b></sub></a><br /><a href="https://github.com/IMAP-Science-Operations-Center/imap_processing/commits?author=bryan-harter" title="Code">💻</a></td>
     </tr>
   </tbody>
 </table>
