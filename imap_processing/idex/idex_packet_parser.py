@@ -3,9 +3,13 @@ import logging
 import bitstring
 import numpy as np
 import xarray as xr
+from cdflib.xarray import xarray_to_cdf
 from space_packet_parser import parser, xtcedef
 
 from imap_processing import imap_module_directory
+
+from .. import common_cdf_attrs
+from . import idex_cdf_attrs
 
 SCITYPE_MAPPING_TO_NAMES = {
     2: "TOF_High",
@@ -88,6 +92,48 @@ class PacketParser:
         ]
 
         self.data = xr.concat(processed_dust_impact_list, dim="Epoch")
+
+    def write_l1_cdf(self, description: str = "", version: str = "01"):
+        """Write the contents of self.data to a CDF file.
+
+        The date in the file name is determined by the start time of the first event
+        in the file
+
+        Parameters
+        ----------
+            description (str): The description to insert into the file name after the
+                               orbit, before the SPICE field.  No underscores allowed.
+            version (str):  The version number to append to the file
+
+        Returns
+        -------
+            str
+                The name of the file created
+        """
+        # Set the global attributes in the xarray
+        self.data.attrs = idex_cdf_attrs.idex_l1_global_attrs
+
+        # Determine the start date of the data in the file,
+        # based on the time of the first dust impact
+        file_start_date = self.data["Epoch"][0].data
+        date_string = np.datetime_as_string(file_start_date, unit="D").replace("-", "")
+        if description:  # Just append an underscore to the description
+            description = f"_{description}"
+        # Set file name for IDEX L1 based on the date string above and the version
+        filename = f"imap_idx_l1_{date_string}_0000{description}_p_v{version}.cdf"
+
+        # Convert the xarray object to a CDF!
+
+        try:
+            xarray_to_cdf(
+                self.data, filename, terminate_on_warning=True
+            )  # Terminate if not ISTP compliant
+        except Exception as e:
+            logging.error("Error writing a CDF file! Aborting....")
+            logging.error(str(e))
+            return
+
+        return filename
 
 
 class RawDustEvent:
@@ -446,7 +492,7 @@ class RawDustEvent:
         # Number of microseconds since the last second
         microseconds_since_last_second = 20 * num_of_20_microsecond_increments
         # Get the datetime of Jan 1 2012 as the start date
-        launch_time = np.datetime64("2012-01-01")
+        launch_time = np.datetime64("2012-01-01T00:00:00.000000000")
 
         return (
             launch_time
@@ -626,53 +672,76 @@ class RawDustEvent:
         # Gather the huge number of trigger info metadata
         trigger_vars = {}
         for var, value in self.trigger_values_dict.items():
-            trigger_vars[var] = xr.DataArray(name=var, data=[value], dims=("Epoch"))
+            trigger_vars[var] = xr.DataArray(
+                name=var,
+                data=[value],
+                dims=("Epoch"),
+                attrs={
+                    "CATDESC": var,
+                    "FIELDNAM": var,
+                    "VAR_NOTES": self.trigger_notes_dict[var],
+                }
+                | idex_cdf_attrs.trigger_base,
+            )
 
         # Process the 6 primary data variables
         tof_high_xr = xr.DataArray(
             name="TOF_High",
             data=[self._parse_high_sample_waveform(self.TOF_High_bits)],
             dims=("Epoch", "Time_High_SR_dim"),
+            attrs=idex_cdf_attrs.tof_high_attrs,
         )
         tof_low_xr = xr.DataArray(
             name="TOF_Low",
             data=[self._parse_high_sample_waveform(self.TOF_Low_bits)],
             dims=("Epoch", "Time_High_SR_dim"),
+            attrs=idex_cdf_attrs.tof_low_attrs,
         )
         tof_mid_xr = xr.DataArray(
             name="TOF_Mid",
             data=[self._parse_high_sample_waveform(self.TOF_Mid_bits)],
             dims=("Epoch", "Time_High_SR_dim"),
+            attrs=idex_cdf_attrs.tof_mid_attrs,
         )
         target_high_xr = xr.DataArray(
             name="Target_High",
             data=[self._parse_low_sample_waveform(self.Target_High_bits)],
             dims=("Epoch", "Time_Low_SR_dim"),
+            attrs=idex_cdf_attrs.target_high_attrs,
         )
         target_low_xr = xr.DataArray(
             name="Target_Low",
             data=[self._parse_low_sample_waveform(self.Target_Low_bits)],
             dims=("Epoch", "Time_Low_SR_dim"),
+            attrs=idex_cdf_attrs.target_low_attrs,
         )
         ion_grid_xr = xr.DataArray(
             name="Ion_Grid",
             data=[self._parse_low_sample_waveform(self.Ion_Grid_bits)],
             dims=("Epoch", "Time_Low_SR_dim"),
+            attrs=idex_cdf_attrs.ion_grid_attrs,
         )
 
         # Determine the 3 coordinate variables
-        epoch_xr = xr.DataArray(name="Epoch", data=[self.impact_time], dims=("Epoch"))
+        epoch_xr = xr.DataArray(
+            name="Epoch",
+            data=[self.impact_time],
+            dims=("Epoch"),
+            attrs=common_cdf_attrs.epoch_attrs,
+        )
 
         time_low_sr_xr = xr.DataArray(
             name="Time_Low_SR",
             data=[self._calc_low_sample_resolution(len(target_low_xr[0]))],
             dims=("Epoch", "Time_Low_SR_dim"),
+            attrs=idex_cdf_attrs.low_sr_attrs,
         )
 
         time_high_sr_xr = xr.DataArray(
             name="Time_High_SR",
             data=[self._calc_high_sample_resolution(len(tof_low_xr[0]))],
             dims=("Epoch", "Time_High_SR_dim"),
+            attrs=idex_cdf_attrs.high_sr_attrs,
         )
 
         # Combine to return a dataset object

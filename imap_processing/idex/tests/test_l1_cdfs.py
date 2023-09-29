@@ -1,0 +1,79 @@
+import copy
+import os
+
+import numpy as np
+import pytest
+import xarray as xr
+from cdflib.xarray import cdf_to_xarray
+
+from imap_processing.idex.idex_packet_parser import PacketParser
+
+
+@pytest.fixture(scope="session")
+def decom_test_data():
+    return PacketParser("imap_processing/idex/tests/imap_idex_l0_20230725_v01-00.pkts")
+
+
+def test_idex_cdf_file(decom_test_data):
+    # Verify that a CDF file can be created with no errors thrown by xarray_to_cdf
+    file_name = decom_test_data.write_l1_cdf(version="01", description="")
+    assert file_name == "imap_idx_l1_20250724_0000_p_v01.cdf"
+    os.remove(file_name)
+
+
+def test_bad_cdf_attributes(decom_test_data):
+    # Deliberately mess up the attributes to verify that no CDF is created
+    copy_to_modify = copy.deepcopy(decom_test_data)
+    del copy_to_modify.data["TOF_High"].attrs["DEPEND_1"]
+    file_name = copy_to_modify.write_l1_cdf(version="01", description="")
+    assert file_name is None
+
+
+def test_bad_cdf_file_data(decom_test_data):
+    # Deliberately mess up the data to verify no CDF is created
+    copy_to_modify = copy.deepcopy(decom_test_data)
+    bad_data_attrs = {
+        "CATDESC": "Bad_Data",
+        "DEPEND_0": "Epoch",
+        "DISPLAY_TYPE": "no_plot",
+        "FIELDNAM": "Bad_Data",
+        "FILLVAL": "",
+        "FORMAT": "E12.2",
+        "LABLAXIS": "Bad_Data",
+        "UNITS": "",
+        "VALIDMIN": "1",
+        "VALIDMAX": "50",
+        "VAR_TYPE": "support_data",
+        "VAR_NOTES": "How did this data end up in here? The CDF creation better fail.",
+    }
+    bad_data_xr = xr.DataArray(
+        name="bad_data",
+        data=np.linspace(1, 50, 50),
+        dims=("bad_data"),
+        attrs=bad_data_attrs,
+    )
+    copy_to_modify.data["Bad_data"] = bad_data_xr
+    file_name = copy_to_modify.write_l1_cdf(version="01", description="")
+    assert file_name is None
+
+
+def test_descriptor_in_file_name(decom_test_data):
+    # Deliberately mess up the data to verify no CDF is created
+    file_name = decom_test_data.write_l1_cdf(
+        version="01", description="impact-lab-test001"
+    )
+    assert file_name == "imap_idx_l1_20250724_0000_impact-lab-test001_p_v01.cdf"
+    os.remove(file_name)
+
+
+def test_idex_tof_high_data_from_cdf(decom_test_data):
+    # Verify that a sample of the data is correct inside the CDF file
+    # impact_14_tof_high_data.txt has been verified correct by the IDEX team
+    with open("imap_processing/idex/tests/impact_14_tof_high_data.txt") as f:
+        data = np.array([int(line.rstrip("\n")) for line in f])
+    file_name = decom_test_data.write_l1_cdf(version="01", description="")
+    l1_data = cdf_to_xarray(
+        file_name
+    )  # Read in the data from the CDF file to an xarray object
+    assert (l1_data["TOF_High"][13].data == data).all()
+    os.remove(file_name)
