@@ -3,7 +3,7 @@ import numpy as np
 from imap_processing import common_cdf_attrs
 
 # Set IDEX software version here for now
-__version__ = 1
+__version__ = "1"
 
 # Global Attributes
 idex_l1_global_attrs = (
