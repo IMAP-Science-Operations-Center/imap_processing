@@ -41,7 +41,8 @@
       "avatar_url": "https://avatars.githubusercontent.com/u/46567335?v=4",
       "profile": "https://github.com/laspsandoval",
       "contributions": [
-        "review"
+        "review",
+        "code"
       ]
     },
     {
@@ -94,6 +95,15 @@
         "infra",
         "review",
         "doc"
+      ]
+    },
+    {
+      "login": "bryan-harter",
+      "name": "Bryan Harter",
+      "avatar_url": "https://avatars.githubusercontent.com/u/41062454?v=4",
+      "profile": "https://github.com/bryan-harter",
+      "contributions": [
+        "code"
       ]
     }
   ],
