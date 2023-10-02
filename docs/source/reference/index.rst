@@ -15,6 +15,7 @@ Instruments
 .. toctree::
    :maxdepth: 1
 
+   glows
    swe
 
 
