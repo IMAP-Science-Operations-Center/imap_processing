@@ -1,14 +1,16 @@
 import numpy as np
 
 global_base = {
-    "Project": ["STSP Cluster>Solar Terrestrial Science Programmes, Cluster"],
+    "Project": ["STP>Solar-Terrestrial Physics"],
     "Source_name": ["IMAP>Interstellar Mapping and Acceleration Probe"],
     "Discipline": ["Solar Physics>Heliospheric Physics"],
-    "Descriptor": ["IDEX>Interstellar Dust Experiment"],
-    "PI_name": ["Dave McComas"],
-    "PI_affiliation": ["Princeton"],
+    "PI_name": ["Dr. David J. McComas"],
+    "PI_affiliation": [
+        "Princeton Plasma Physics Laboratory",
+        "100 Stellarator Road, Princeton, NJ 08540",
+    ],
     "Instrument_type": ["Particles (space)"],
-    "Mission_group": ["IMAP"],
+    "Mission_group": ["IMAP>Interstellar Mapping and Acceleration Probe"],
 }
 
 epoch_attrs = {

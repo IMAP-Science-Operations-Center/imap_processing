@@ -1,27 +1,28 @@
 import numpy as np
 
-from .. import common_cdf_attrs
+from imap_processing import common_cdf_attrs
 
 # Set IDEX software version here for now
-software_version = "01"
+__version__ = 1
 
 # Global Attributes
 idex_l1_global_attrs = (
     {
-        "Data_type": ["l1"],
-        "Data_version": [software_version],
+        "Data_type": ["L1>Level-1"],
+        "Data_version": [__version__],
+        "Descriptor": ["IDEX>Interstellar Dust Experiment"],
         "TEXT": [
-            """Greg Newcomb, the flight software (FSW) engineer for the Interstellar
-          Dust Experiment (IDEX) aboard the Interstellar Mapping and Acceleration
-          Probe (IMAP) mission has passed a sawtooth function through IDEX's 6 channels
-          for the science data pipeline verification. """
+            """The Interstellar Dust Experiment (IDEX) is a time-of-flight (TOF)
+             dust impact ionization mass spectrometer on the IMAP mission that
+            provides the elemental composition, speed, and mass distributions
+            of interstellar dust and interplanetary dust particles. Each record
+            contains the data from a single dust impact. See
+            https://imap.princeton.edu/instruments/idex for more details."""
         ],
         "Mission_group": ["IMAP"],
-        "Logical_source": ["imap_idex_l1"],
-        "Logical_file_id": [f"imap_idex_l1_YYYYMMDD_v{software_version}"],
-        "Logical_source_description": [
-            "L1 files for the IDEX instrument on the IMAP mission"
-        ],
+        "Logical_source": ["imap_idx_l1"],
+        "Logical_file_id": ["FILL ME IN AT FILE CREATION"],
+        "Logical_source_description": ["IMAP Mission IDEX Instrument Level-1 Data.  "],
     }
     | common_cdf_attrs.global_base
 )
@@ -29,19 +30,19 @@ idex_l1_global_attrs = (
 idex_l2_global_attrs = (
     {
         "Data_type": ["l2"],
-        "Data_version": [software_version],
+        "Data_version": [__version__],
         "TEXT": [
-            """Greg Newcomb, the flight software (FSW) engineer for the Interstellar
-        Dust Experiment (IDEX) aboard the Interstellar Mapping and Acceleration
-        Probe (IMAP) mission has passed a sawtooth function through IDEX's 6 channels
-        for the science data pipeline verification. """
+            """The Interstellar Dust Experiment (IDEX) is a time-of-flight (TOF)
+             dust impact ionization mass spectrometer on the IMAP mission that
+            provides the elemental composition, speed, and mass distributions
+            of interstellar dust and interplanetary dust particles. Each record
+            contains the data from a single dust impact.  See
+            https://imap.princeton.edu/instruments/idex for more details."""
         ],
         "Mission_group": ["IMAP"],
-        "Logical_source": ["imap_idex_l2"],
-        "Logical_file_id": [f"imap_idex_l2_YYYYMMDD_v{software_version}"],
-        "Logical_source_description": [
-            "L2 files for the IDEX instrument on the IMAP mission"
-        ],
+        "Logical_source": ["imap_idx_l2"],
+        "Logical_file_id": ["FILL ME IN AT FILE CREATION"],
+        "Logical_source_description": ["IMAP Mission IDEX Instrument Level-2 Data"],
     }
     | common_cdf_attrs.global_base
 )
