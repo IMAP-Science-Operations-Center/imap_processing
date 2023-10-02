@@ -21,7 +21,7 @@ class HistogramL0:
     SWVER : int
         Version of SW used for generation
     SEC : int
-        Block start time (IMAP), seconds<
+        Block start time (IMAP), seconds
     SUBSEC : int
         Block start time (IMAP), subseconds
     OFFSETSEC : int
