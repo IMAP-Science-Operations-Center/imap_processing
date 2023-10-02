@@ -151,5 +151,7 @@ def test_decompress_counts(decom_test_data):
         )
 
         for i in range(7):
-            cem_decompressed_counts = instrument_uncompressed_counts[f"CEM {i+1}"].values
+            cem_decompressed_counts = instrument_uncompressed_counts[
+                f"CEM {i+1}"
+            ].values
             assert np.all(sdc_uncompressed_counts[:, i] == cem_decompressed_counts)
