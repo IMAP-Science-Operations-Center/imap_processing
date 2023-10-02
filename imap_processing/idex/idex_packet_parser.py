@@ -2,13 +2,13 @@ import logging
 import os
 
 import bitstring
-import idex_cdf_attrs
 import numpy as np
 import xarray as xr
 from cdflib.xarray import xarray_to_cdf
 from space_packet_parser import parser, xtcedef
 
 from imap_processing import common_cdf_attrs, imap_module_directory
+from imap_processing.idex import idex_cdf_attrs
 
 SCITYPE_MAPPING_TO_NAMES = {
     2: "TOF_High",
