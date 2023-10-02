@@ -40,7 +40,8 @@ def test_swe_raw_cem_data(decom_test_data):
     # compare raw values of housekeeping data
     for key, value in first_data.data.items():
         # check if the data is the same, for SHCOARSE we need the name of the column.
-        # This is done because pandas removed it from the main columns to make it the index.
+        # This is done because pandas removed it from the main columns to make it the
+        # index.
         assert value.raw_value == (
             validation_data[key] if key != "SHCOARSE" else validation_data.name
         )
