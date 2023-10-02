@@ -150,19 +150,6 @@ def test_decompress_counts(decom_test_data):
             uncompressed_data["SCIENCE_DATA"].data[index].reshape(180, 7)
         )
 
-        cem_1_decompresed_counts = instrument_uncompressed_counts["CEM 1"].values
-        cem_2_decompresed_counts = instrument_uncompressed_counts["CEM 2"].values
-        cem_3_decompresed_counts = instrument_uncompressed_counts["CEM 3"].values
-        cem_4_decompresed_counts = instrument_uncompressed_counts["CEM 4"].values
-        cem_5_decompresed_counts = instrument_uncompressed_counts["CEM 5"].values
-        cem_6_decompresed_counts = instrument_uncompressed_counts["CEM 6"].values
-        cem_7_decompresed_counts = instrument_uncompressed_counts["CEM 7"].values
-
-        # compare value of each CEM
-        assert np.all(sdc_uncompressed_counts[:, 0] == cem_1_decompresed_counts)
-        assert np.all(sdc_uncompressed_counts[:, 1] == cem_2_decompresed_counts)
-        assert np.all(sdc_uncompressed_counts[:, 2] == cem_3_decompresed_counts)
-        assert np.all(sdc_uncompressed_counts[:, 3] == cem_4_decompresed_counts)
-        assert np.all(sdc_uncompressed_counts[:, 4] == cem_5_decompresed_counts)
-        assert np.all(sdc_uncompressed_counts[:, 5] == cem_6_decompresed_counts)
-        assert np.all(sdc_uncompressed_counts[:, 6] == cem_7_decompresed_counts)
+        for i in range(7):
+            cem_decompressed_counts = instrument_uncompressed_counts[f"CEM {i+1}"].values
+            assert np.all(sdc_uncompressed_counts[:, i] == cem_decompressed_counts)
