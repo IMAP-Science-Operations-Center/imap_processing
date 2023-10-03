@@ -1,3 +1,7 @@
+from dataclasses import dataclass, fields
+
+
+@dataclass
 class HistogramL0:
     """Data structure for storing GLOWS histogram packet data.
 
@@ -8,8 +12,6 @@ class HistogramL0:
 
     Attributes
     ----------
-    packet_keys : tuple[str]
-        Data names from the packet
     SHCOARSE : int
         CCSDS Packet Time Stamp (coarse time)
     STARTID : int
@@ -62,58 +64,61 @@ class HistogramL0:
         List of histogram data values
     """
 
-    def __repr__(self):
-        """Print the data.
-
-        Returns
-        -------
-        String representation of GlowsHistL0
-        """
-        output = "{"
-        for key in self.packet_keys:
-            output += f"{key}: {getattr(self, key)}, "
-        return output + "}"
+    SHCOARSE: int
+    STARTID: int
+    ENDID: int
+    FLAGS: int
+    SWVER: int
+    SEC: int
+    SUBSEC: int
+    OFFSETSEC: int
+    OFFSETSUBSEC: int
+    GLXSEC: int
+    GLXSUBSEC: int
+    GLXOFFSEC: int
+    GLXOFFSUBSEC: int
+    SPINS: int
+    NBINS: int
+    TEMPAVG: int
+    TEMPVAR: int
+    HVAVG: int
+    HVVAR: int
+    SPAVG: int
+    SPVAR: int
+    ELAVG: int
+    ELVAR: int
+    EVENTS: int
+    HISTOGRAM_DATA: bin
 
     def __init__(self, packet):
-        self.packet_keys = []
-        for key, value in packet.data.items():
-            if key != "HISTOGRAM_DATA":
-                setattr(self, key, value.derived_value)
-            else:
-                setattr(self, key, self._convert_histogram_data(value.raw_value))
-
-            self.packet_keys.append(key)
-
-    def _convert_histogram_data(self, binary_hist_data: str) -> list[int]:
-        """Convert the raw histogram data into a list.
-
-        This method converts a binary number into a list of histogram values by
-        splitting up the raw binary value into 8-bit segments.
+        """Initialize data class with a packet of histogram data.
 
         Parameters
         ----------
-        binary_hist_data : str
-            Raw data read from the packet, in binary format.
-
-        Returns
-        -------
-        histograms: list[int]
-            List of binned histogram data
+        packet
+            Packet generated from space_packet_parser. Should be a type NamedTuple
+            with header and data fields.
         """
-        # Convert the histogram data from a large raw string into a list of 8 bit values
-        histograms = []
-        for i in range(8, len(binary_hist_data), 8):
-            histograms.append(int(binary_hist_data[i - 8 : i], 2))
+        # Loop through each attribute in the class
+        for field in fields(self):
+            key = field.name
+            # Look for the key in the packet, and assign it to the attribute
+            try:
+                item = packet.data[key]
+                value = (
+                    item.derived_value
+                    if item.derived_value is not None
+                    else item.raw_value
+                )
+                setattr(self, key, value)
+            except KeyError as err:
+                raise KeyError(
+                    f"Did not find expected field {key} in packet "
+                    f"{packet.header} for histogram L0 decom."
+                ) from err
 
-        if len(histograms) != 3599:
-            raise ValueError(
-                f"Histogram packet is lacking bins. Expected a count of 3599, "
-                f"actually received {len(histograms)}"
-            )
 
-        return histograms
-
-
+@dataclass
 class DirectEventL0:
     """Data structure for storing GLOWS direct event packet data.
 
@@ -124,8 +129,6 @@ class DirectEventL0:
 
     Attributes
     ----------
-    packet_keys : tuple[str]
-        Data names from the packet
     SHCOARSE : int
         CCSDS Packet Time Stamp (coarse time)
     SEC : int
@@ -137,20 +140,34 @@ class DirectEventL0:
 
     """
 
-    def __repr__(self):
-        """Print the data.
-
-        Returns
-        -------
-        String representation of GlowsDeL0
-        """
-        output = "{"
-        for key in self.packet_keys:
-            output += f"{key}: {getattr(self, key)}, "
-        return output + "}"
+    SHCOARSE: int
+    SEC: int
+    LEN: int
+    SEQ: int
 
     def __init__(self, packet):
-        self.packet_keys = []
-        for key, value in packet.data.items():
-            setattr(self, key, value.derived_value)
-            self.packet_keys.append(key)
+        """Initialize data class with a packet of direct event data.
+
+        Parameters
+        ----------
+        packet
+            Packet generated from space_packet_parser. Should be a type NamedTuple
+            with header and data fields.
+        """
+        # Loop through each attribute in the class
+        for field in fields(self):
+            key = field.name
+            # Look for the key in the packet, and assign it to the attribute
+            try:
+                item = packet.data[key]
+                value = (
+                    item.derived_value
+                    if item.derived_value is not None
+                    else item.raw_value
+                )
+                setattr(self, key, value)
+            except KeyError as err:
+                raise KeyError(
+                    f"Did not find expected field {key} in packet "
+                    f"{packet.header} for histogram L0 decom."
+                ) from err
