@@ -23,3 +23,5 @@ def swe_l1a(packet_file: str):
     if decom_data[0].header["PKT_APID"].raw_value == 1344:
         logging.info("Processing science data")
         return swe_science(decom_data=decom_data)
+    else:
+        return decom_data

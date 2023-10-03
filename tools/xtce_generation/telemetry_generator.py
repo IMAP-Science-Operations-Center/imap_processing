@@ -115,7 +115,8 @@ class TelemetryGenerator:
                 encoding = Et.SubElement(parameter_type, "xtce:IntegerDataEncoding")
                 encoding.attrib["sizeInBits"] = str(size)
                 encoding.attrib["encoding"] = "unsigned"
-            elif "SINT" in parameter_type_ref_name:
+
+            elif "SINT" or "INT" in parameter_type_ref_name:
                 parameter_type = Et.SubElement(
                     parameter_type_set, "xtce:IntegerParameterType"
                 )

@@ -26,10 +26,10 @@ def uncompress_counts(cem_count):
     # base and step_size to calculate the uncompressed count.
     uncompress_table = {
         0: {"base": 0, "step_size": 1},
-        1: {"base": 16, "step_size": 2},
-        2: {"base": 32, "step_size": 4},
-        3: {"base": 64, "step_size": 8},
-        4: {"base": 128, "step_size": 16},
+        1: {"base": 16, "step_size": 1},
+        2: {"base": 32, "step_size": 2},
+        3: {"base": 64, "step_size": 4},
+        4: {"base": 128, "step_size": 8},
         5: {"base": 256, "step_size": 16},
         6: {"base": 512, "step_size": 16},
         7: {"base": 768, "step_size": 16},
@@ -110,6 +110,7 @@ def swe_science(decom_data):
         xarray dataset with data.
     """
     science_array = []
+    raw_science_array = []
 
     metadata_arrays = collections.defaultdict(list)
 
@@ -133,9 +134,11 @@ def swe_science(decom_data):
         # Take the "raw_counts" indices/counts mapping from
         # decompression_table and then reshape the return
         uncompress_data = np.take(decompression_table, raw_counts).reshape(15, 12, 7)
+        raw_counts = raw_counts.reshape(15, 12, 7)
 
         # Save data with its metadata field to attrs and DataArray of xarray.
         science_array.append(uncompress_data)
+        raw_science_array.append(raw_counts)
         add_metadata_to_array(data_packet, metadata_arrays)
 
     met_time = xr.DataArray(
@@ -152,11 +155,18 @@ def swe_science(decom_data):
         science_array,
         dims=["met_time", "seconds", "energy_steps", "cem_counts"],
     )
+    raw_science_xarray = xr.DataArray(
+        raw_science_array,
+        dims=["met_time", "seconds", "energy_steps", "cem_counts"],
+    )
 
     dataset = xr.Dataset(
         {"SCIENCE_DATA": science_xarray},
         coords={"met_time": met_time},
     )
+
+    dataset["RAW_SCIENCE_DATA"] = raw_science_xarray
+
     # create xarray dataset for each metadata field
     for key, value in metadata_arrays.items():
         if key == "SHCOARSE":
