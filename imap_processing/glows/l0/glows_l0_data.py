@@ -1,8 +1,27 @@
 from dataclasses import dataclass, fields
 
+from imap_processing.ccsds.ccsds_data import CcsdsData
+
 
 @dataclass
-class HistogramL0:
+class GlowsL0:
+    """Data structure for common values across histogram and direct events data.
+
+    Attributes
+    ----------
+    ground_sw_version: str
+        Ground software version
+    packet_file_name: str
+        File name of the source packet
+    """
+
+    ground_sw_version: str
+    packet_file_name: str
+    ccsds_header: CcsdsData
+
+
+@dataclass
+class HistogramL0(GlowsL0):
     """Data structure for storing GLOWS histogram packet data.
 
     Parameters
@@ -62,6 +81,7 @@ class HistogramL0:
         Number of events
     HISTOGRAM_DATA : bin
         Raw binary format histogram data
+
     """
 
     SHCOARSE: int
@@ -90,7 +110,7 @@ class HistogramL0:
     EVENTS: int
     HISTOGRAM_DATA: bin
 
-    def __init__(self, packet):
+    def __init__(self, packet, software_version: str, packet_file_name: str):
         """Initialize data class with a packet of histogram data.
 
         Parameters
@@ -98,28 +118,31 @@ class HistogramL0:
         packet
             Packet generated from space_packet_parser. Should be a type NamedTuple
             with header and data fields.
+        software_version: str
+            The version of the ground software being used
+        packet_file_name: str
+            The filename of the packet
         """
-        # Loop through each attribute in the class
-        for field in fields(self):
-            key = field.name
-            # Look for the key in the packet, and assign it to the attribute
-            try:
-                item = packet.data[key]
-                value = (
-                    item.derived_value
-                    if item.derived_value is not None
-                    else item.raw_value
-                )
+        super().__init__(software_version, packet_file_name, CcsdsData(packet.header))
+
+        attributes = [field.name for field in fields(self)]
+
+        # For each item in packet, assign it to the matching attribute in the class.
+        for key, item in packet.data.items():
+            value = (
+                item.derived_value if item.derived_value is not None else item.raw_value
+            )
+            if key in attributes:
                 setattr(self, key, value)
-            except KeyError as err:
+            else:
                 raise KeyError(
-                    f"Did not find expected field {key} in packet "
-                    f"{packet.header} for histogram L0 decom."
-                ) from err
+                    f"Did not find matching attribute in Histogram data class for "
+                    f"{key}"
+                )
 
 
 @dataclass
-class DirectEventL0:
+class DirectEventL0(GlowsL0):
     """Data structure for storing GLOWS direct event packet data.
 
     Parameters
@@ -137,7 +160,6 @@ class DirectEventL0:
         Number of packets in data set.
     SEQ : int
         Packet sequence in data set.
-
     """
 
     SHCOARSE: int
@@ -145,7 +167,7 @@ class DirectEventL0:
     LEN: int
     SEQ: int
 
-    def __init__(self, packet):
+    def __init__(self, packet, software_version: str, packet_file_name: str):
         """Initialize data class with a packet of direct event data.
 
         Parameters
@@ -153,21 +175,24 @@ class DirectEventL0:
         packet
             Packet generated from space_packet_parser. Should be a type NamedTuple
             with header and data fields.
+        software_version: str
+            The version of the ground software being used
+        packet_file_name: str
+            The filename of the packet
         """
-        # Loop through each attribute in the class
-        for field in fields(self):
-            key = field.name
-            # Look for the key in the packet, and assign it to the attribute
-            try:
-                item = packet.data[key]
-                value = (
-                    item.derived_value
-                    if item.derived_value is not None
-                    else item.raw_value
-                )
+        super().__init__(software_version, packet_file_name, CcsdsData(packet.header))
+
+        attributes = [field.name for field in fields(self)]
+
+        # For each item in packet, assign it to the matching attribute in the class.
+        for key, item in packet.data.items():
+            value = (
+                item.derived_value if item.derived_value is not None else item.raw_value
+            )
+            if key in attributes:
                 setattr(self, key, value)
-            except KeyError as err:
+            else:
                 raise KeyError(
-                    f"Did not find expected field {key} in packet "
-                    f"{packet.header} for histogram L0 decom."
-                ) from err
+                    f"Did not find matching attribute in Direct events data class for "
+                    f"{key}"
+                )
