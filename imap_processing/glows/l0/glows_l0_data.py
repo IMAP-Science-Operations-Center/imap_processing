@@ -60,8 +60,8 @@ class HistogramL0:
         Variance of event-impulse length
     EVENTS : int
         Number of events
-    HISTOGRAM_DATA : int
-        List of histogram data values
+    HISTOGRAM_DATA : bin
+        Raw binary format histogram data
     """
 
     SHCOARSE: int
