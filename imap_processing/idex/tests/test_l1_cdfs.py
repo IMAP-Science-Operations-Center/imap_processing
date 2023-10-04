@@ -5,6 +5,7 @@ import numpy as np
 import pytest
 import xarray as xr
 from cdflib.xarray import cdf_to_xarray
+from cdflib.xarray.xarray_to_cdf import ISTPError
 
 from imap_processing.idex.idex_packet_parser import PacketParser
 
@@ -25,18 +26,16 @@ def test_idex_cdf_file(decom_test_data):
 
 
 def test_bad_cdf_attributes(decom_test_data):
-    # Deliberately mess up the attributes to verify that no CDF is created
+    # Deliberately mess up the attributes to verify that an ISTPError is raised
     with tempfile.TemporaryDirectory() as tmpdir:
         del decom_test_data.data["TOF_High"].attrs["DEPEND_1"]
-        file_name = decom_test_data.write_l1_cdf(
-            version="01", description="", directory=tmpdir
-        )
-        assert file_name is None
+        with pytest.raises(ISTPError):
+            decom_test_data.write_l1_cdf(version="01", description="", directory=tmpdir)
 
 
 def test_bad_cdf_file_data(decom_test_data):
     with tempfile.TemporaryDirectory() as tmpdir:
-        # Deliberately mess up the data to verify no CDF is created
+        # Deliberately mess up the data to verify that an ISTPError is raised
         bad_data_attrs = {
             "CATDESC": "Bad_Data",
             "DEPEND_0": "Epoch",
@@ -59,10 +58,9 @@ def test_bad_cdf_file_data(decom_test_data):
             attrs=bad_data_attrs,
         )
         decom_test_data.data["Bad_data"] = bad_data_xr
-        file_name = decom_test_data.write_l1_cdf(
-            version="01", description="", directory=tmpdir
-        )
-        assert file_name is None
+
+        with pytest.raises(ISTPError):
+            decom_test_data.write_l1_cdf(version="01", description="", directory=tmpdir)
 
 
 def test_descriptor_in_file_name(decom_test_data):

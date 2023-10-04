@@ -16,7 +16,7 @@ global_base = {
 epoch_attrs = {
     "CATDESC": "Default time",
     "FIELDNAM": "Epoch",
-    "FILLVAL": np.array([-9223372036854775808]),
+    "FILLVAL": np.iinfo(np.int64).min,
     "FORMAT": "a2",
     "LABLAXIS": "Epoch",
     "UNITS": "ns",

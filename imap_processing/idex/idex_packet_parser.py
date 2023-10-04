@@ -183,12 +183,16 @@ class RawDustEvent:
             self.low_sample_trigger_time,
             self.high_sample_trigger_time,
         ) = self._calc_sample_trigger_times(header_packet)
-
-        self.trigger_values_dict, self.trigger_notes_dict = self._get_trigger_dicts(
-            header_packet
-        )
+        (
+            self.trigger_values,
+            self.trigger_notes,
+            self.trigger_fields,
+            self.trigger_maxes,
+            self.trigger_labels,
+            self.trigger_units,
+        ) = self._get_trigger_dicts(header_packet)
         logging.debug(
-            f"trigger_values_dict:\n{self.trigger_values_dict}"
+            f"trigger_values:\n{self.trigger_values}"
         )  # Log values here in case of error
 
         # Initialize the binary data received from future packets
@@ -219,245 +223,385 @@ class RawDustEvent:
                 A dictionary of (CDF variable name : value) pairs
             dict
                 A dictionary of (CDF variable name : variable notes) pairs
+            dict
+                A dictionary of (CDF variable name : variable fields) pairs
+            dict
+                A dictionary of (CDF variable name : variable maxes) pairs
+            dict
+                A dictionary of (CDF variable name : variable labels) pairs
+            dict
+                A dictionary of (CDF variable name : variable units) pairs
         """
-        trigger_dict = {}
-        trigger_notes_dict = {}
+        trigger_values = {}
+        trigger_notes = {}
+        trigger_maxes = {}
+        trigger_fields = {}
+        trigger_labels = {}
+        trigger_units = {}
+
+        def _insert_into_dicts(name, value_name, num_bits, field, notes, label, units):
+            # Cleans up inserting the values into the dictionaries
+            trigger_values[name] = packet.data[value_name].raw_value
+            trigger_notes[name] = notes
+            trigger_maxes[name] = 2**num_bits - 1
+            trigger_fields[name] = field
+            trigger_labels[name] = label
+            trigger_units[name] = units
 
         # Get Event Number
-        trigger_dict["event_number"] = packet.data["IDX__TXHDREVTNUM"].raw_value
-        trigger_notes_dict[
-            "event_number"
-        ] = "The unique number assigned to the impact by the FPGA"
-        # TOF High Trigger Info 1
-        trigger_dict["tof_high_trigger_level"] = packet.data[
-            "IDX__TXHDRHGTRIGLVL"
-        ].raw_value
-        trigger_notes_dict[
-            "tof_high_trigger_level"
-        ] = "Trigger level for the TOF High Channel"
-        trigger_dict["tof_high_trigger_num_max_1_2"] = packet.data[
-            "IDX__TXHDRHGTRIGNMAX12"
-        ].raw_value
-        trigger_notes_dict[
-            "tof_high_trigger_num_max_1_2"
-        ] = """Maximum number of samples between pulse 1 and 2 for TOF High double
-               pulse triggering"""
-        trigger_dict["tof_high_trigger_num_min_1_2"] = packet.data[
-            "IDX__TXHDRHGTRIGNMIN12"
-        ].raw_value
-        trigger_notes_dict[
-            "tof_high_trigger_num_min_1_2"
-        ] = """Minimum number of samples between pulse 1 and 2 for TOF High double
-            pulse triggering"""
-        # TOF High Trigger Info 2
-        trigger_dict["tof_high_trigger_num_min_1"] = packet.data[
-            "IDX__TXHDRHGTRIGNMIN1"
-        ].raw_value
-        trigger_notes_dict[
-            "tof_high_trigger_num_min_1"
-        ] = """Minimum number of samples for pulse 1 for TOF High single and double
-             pulse triggering"""
-        trigger_dict["tof_high_trigger_num_max_1"] = packet.data[
-            "IDX__TXHDRHGTRIGNMAX1"
-        ].raw_value
-        trigger_notes_dict[
-            "tof_high_trigger_num_max_1"
-        ] = """Maximum number of samples for pulse 1 for TOF High single and double
-               pulse triggering"""
-        trigger_dict["tof_high_trigger_num_min_2"] = packet.data[
-            "IDX__TXHDRHGTRIGNMIN2"
-        ].raw_value
-        trigger_notes_dict[
-            "tof_high_trigger_num_min_2"
-        ] = """Minimum number of samples for pulse 2 for TOF High single and double
-             pulse triggering"""
-        trigger_dict["tof_high_trigger_num_max_2"] = packet.data[
-            "IDX__TXHDRHGTRIGNMAX2"
-        ].raw_value
-        trigger_notes_dict[
-            "tof_high_trigger_num_max_2"
-        ] = """Maximum number of samples for pulse 2 for TOF High single and double
-               pulse triggering"""
-        trigger_dict["tof_low_trigger_level"] = packet.data[
-            "IDX__TXHDRLGTRIGLVL"
-        ].raw_value
-        trigger_notes_dict[
-            "tof_low_trigger_level"
-        ] = "Trigger level for the TOF Low Channel"
-        trigger_dict["tof_low_trigger_num_max_1_2"] = packet.data[
-            "IDX__TXHDRLGTRIGNMAX12"
-        ].raw_value
-        trigger_notes_dict[
-            "tof_low_trigger_num_max_1_2"
-        ] = """Maximum number of samples between pulse 1 and 2 for TOF Low double
-               pulse triggering"""
-        trigger_dict["tof_low_trigger_num_min_1_2"] = packet.data[
-            "IDX__TXHDRLGTRIGNMIN12"
-        ].raw_value
-        trigger_notes_dict[
-            "tof_low_trigger_num_min_1_2"
-        ] = """Minimum number of samples between pulse 1 and 2 for TOF Low double
-            pulse triggering"""
-        # TOF Low Trigger Info 2
-        trigger_dict["tof_low_trigger_num_min_1"] = packet.data[
-            "IDX__TXHDRLGTRIGNMIN1"
-        ].raw_value
-        trigger_notes_dict[
-            "tof_low_trigger_num_min_1"
-        ] = """Minimum number of samples for pulse 1 for TOF Low single and double
-             pulse triggering"""
-        trigger_dict["tof_low_trigger_num_max_1"] = packet.data[
-            "IDX__TXHDRLGTRIGNMAX1"
-        ].raw_value
-        trigger_notes_dict[
-            "tof_low_trigger_num_max_1"
-        ] = """Maximum number of samples for pulse 1 for TOF Low single and double
-               pulse triggering"""
-        trigger_dict["tof_low_trigger_num_min_2"] = packet.data[
-            "IDX__TXHDRLGTRIGNMIN2"
-        ].raw_value
-        trigger_notes_dict[
-            "tof_low_trigger_num_min_2"
-        ] = """Minimum number of samples for pulse 2 for TOF Low single and double
-             pulse triggering"""
-        trigger_dict["tof_low_trigger_num_max_2"] = packet.data[
-            "IDX__TXHDRLGTRIGNMAX2"
-        ].raw_value
-        trigger_notes_dict[
-            "tof_low_trigger_num_max_2"
-        ] = """Maximum number of samples for pulse 2 for TOF Low single and double
-               pulse triggering"""
-        trigger_dict["tof_mid_trigger_level"] = packet.data[
-            "IDX__TXHDRMGTRIGLVL"
-        ].raw_value
-        trigger_notes_dict[
-            "tof_mid_trigger_level"
-        ] = "Trigger level for the TOF Mid Channel"
-        trigger_dict["tof_mid_trigger_num_max_1_2"] = packet.data[
-            "IDX__TXHDRMGTRIGNMAX12"
-        ].raw_value
-        trigger_notes_dict[
-            "tof_mid_trigger_num_max_1_2"
-        ] = """Maximum number of samples between pulse 1 and 2 for TOF Mid double
-               pulse triggering"""
-        trigger_dict["tof_mid_trigger_num_min_1_2"] = packet.data[
-            "IDX__TXHDRMGTRIGNMIN12"
-        ].raw_value
-        trigger_notes_dict[
-            "tof_mid_trigger_num_min_1_2"
-        ] = """Minimum number of samples between pulse 1 and 2 for TOF Mid double
-            pulse triggering"""
-        # TOF Mid Trigger Info 2
-        trigger_dict["tof_mid_trigger_num_min_1"] = packet.data[
-            "IDX__TXHDRMGTRIGNMIN1"
-        ].raw_value
-        trigger_notes_dict[
-            "tof_mid_trigger_num_min_1"
-        ] = """Minimum number of samples for pulse 1 for TOF Mid single and double
-             pulse triggering"""
-        trigger_dict["tof_mid_trigger_num_max_1"] = packet.data[
-            "IDX__TXHDRMGTRIGNMAX1"
-        ].raw_value
-        trigger_notes_dict[
-            "tof_mid_trigger_num_max_1"
-        ] = """Maximum number of samples for pulse 1 for TOF Mid single and double
-               pulse triggering"""
-        trigger_dict["tof_mid_trigger_num_min_2"] = packet.data[
-            "IDX__TXHDRMGTRIGNMIN2"
-        ].raw_value
-        trigger_notes_dict[
-            "tof_mid_trigger_num_min_2"
-        ] = """Minimum number of samples for pulse 2 for TOF Mid single and double
-             pulse triggering"""
-        trigger_dict["tof_mid_trigger_num_max_2"] = packet.data[
-            "IDX__TXHDRMGTRIGNMAX2"
-        ].raw_value
-        trigger_notes_dict[
-            "tof_mid_trigger_num_max_2"
-        ] = """Maximum number of samples for pulse 2 for TOF Mid single and double
-               pulse triggering"""
+        _insert_into_dicts(
+            "event_number",
+            "IDX__TXHDREVTNUM",
+            16,
+            "Event Number",
+            "The unique number assigned to the impact by the FPGA",
+            "Event #",
+            "",
+        )
+        _insert_into_dicts(
+            "tof_high_trigger_level",
+            "IDX__TXHDRHGTRIGLVL",
+            10,
+            "TOF High Trigger Level",
+            "Trigger level for the TOF High Channel",
+            "Level",
+            "",
+        )
+        _insert_into_dicts(
+            "tof_high_trigger_num_max_1_2",
+            "IDX__TXHDRHGTRIGNMAX12",
+            11,
+            "TOF High Double Pulse Max Samples",
+            """Maximum number of samples between pulse 1 and 2 for TOF
+                              High double pulse triggering""",
+            "# Samples",
+            "samples",
+        )
+        _insert_into_dicts(
+            "tof_high_trigger_num_min_1_2",
+            "IDX__TXHDRHGTRIGNMIN12",
+            11,
+            "TOF High Double Pulse Min Samples",
+            """Minimum number of samples between pulse 1 and 2 for TOF High double
+                              pulse triggering""",
+            "# Samples",
+            "samples",
+        )
+        _insert_into_dicts(
+            "tof_high_trigger_num_min_1",
+            "IDX__TXHDRHGTRIGNMIN1",
+            8,
+            "TOF High Pulse 1 Min Samples",
+            """Minimum number of samples for pulse 1 for TOF High single and double
+                              pulse triggering""",
+            "# Samples",
+            "samples",
+        )
+        _insert_into_dicts(
+            "tof_high_trigger_num_max_1",
+            "IDX__TXHDRHGTRIGNMAX1",
+            8,
+            "TOF High Pulse 1 Max Samples",
+            """Maximum number of samples for pulse 1 for TOF High single and double
+                              pulse triggering""",
+            "# Samples",
+            "samples",
+        )
+        _insert_into_dicts(
+            "tof_high_trigger_num_min_2",
+            "IDX__TXHDRHGTRIGNMIN2",
+            8,
+            "TOF High Pulse 2 Min Samples",
+            """Minimum number of samples for pulse 2 for TOF High single and double
+                              pulse triggering""",
+            "# Samples",
+            "samples",
+        )
+        _insert_into_dicts(
+            "tof_high_trigger_num_max_2",
+            "IDX__TXHDRHGTRIGNMAX2",
+            8,
+            "TOF High Pulse 2 Max Samples",
+            """Maximum number of samples for pulse 2 for TOF High single and double
+                              pulse triggering""",
+            "# Samples",
+            "samples",
+        )
+        _insert_into_dicts(
+            "tof_low_trigger_level",
+            "IDX__TXHDRLGTRIGLVL",
+            10,
+            "TOF Low Trigger Level",
+            "Trigger level for the TOF Low Channel",
+            "Level",
+            "samples",
+        )
+        _insert_into_dicts(
+            "tof_low_trigger_num_max_1_2",
+            "IDX__TXHDRLGTRIGNMAX12",
+            11,
+            "TOF Low Double Pulse Max Samples",
+            """Maximum number of samples between pulse 1 and 2 for TOF Low double
+                              pulse triggering""",
+            "# Samples",
+            "samples",
+        )
+        _insert_into_dicts(
+            "tof_low_trigger_num_min_1_2",
+            "IDX__TXHDRLGTRIGNMIN12",
+            11,
+            "TOF Low Double Pulse Min Samples",
+            """Minimum number of samples between pulse 1 and 2 for TOF Low double
+                              pulse triggering""",
+            "# Samples",
+            "samples",
+        )
+        _insert_into_dicts(
+            "tof_low_trigger_num_min_1",
+            "IDX__TXHDRLGTRIGNMIN1",
+            8,
+            "TOF Low Pulse 1 Min Samples",
+            """Minimum number of samples for pulse 1 for TOF Low single and double
+                              pulse triggering""",
+            "# Samples",
+            "samples",
+        )
+        _insert_into_dicts(
+            "tof_low_trigger_num_max_1",
+            "IDX__TXHDRLGTRIGNMAX1",
+            8,
+            "TOF Low Pulse 1 Max Samples",
+            """Maximum number of samples for pulse 1 for TOF Low single and double
+                              pulse triggering""",
+            "# Samples",
+            "samples",
+        )
+        _insert_into_dicts(
+            "tof_low_trigger_num_min_2",
+            "IDX__TXHDRLGTRIGNMIN2",
+            8,
+            "TOF Low Pulse 2 Min Samples",
+            """Minimum number of samples for pulse 2 for TOF Low single and double
+                              pulse triggering""",
+            "# Samples",
+            "samples",
+        )
+        _insert_into_dicts(
+            "tof_low_trigger_num_max_2",
+            "IDX__TXHDRLGTRIGNMAX2",
+            16,
+            "TOF Low Pulse 2 Max Samples",
+            """Maximum number of samples for pulse 2 for TOF Low single and double
+                              pulse triggering""",
+            "# Samples",
+            "samples",
+        )
+        _insert_into_dicts(
+            "tof_mid_trigger_level",
+            "IDX__TXHDRMGTRIGLVL",
+            10,
+            "TOF Mid Trigger Level",
+            "Trigger level for the TOF Mid Channel",
+            "Level",
+            "# Samples",
+        )
+        _insert_into_dicts(
+            "tof_mid_trigger_num_max_1_2",
+            "IDX__TXHDRMGTRIGNMAX12",
+            11,
+            "TOF Mid Double Pulse Max Samples",
+            """Maximum number of samples between pulse 1 and 2 for TOF Mid double
+                              pulse triggering""",
+            "# Samples",
+            "samples",
+        )
+        _insert_into_dicts(
+            "tof_mid_trigger_num_min_1_2",
+            "IDX__TXHDRMGTRIGNMIN12",
+            11,
+            "TOF Mid Double Pulse Min Samples",
+            """Minimum number of samples between pulse 1 and 2 for TOF Mid double
+                              pulse triggering""",
+            "# Samples",
+            "samples",
+        )
+        _insert_into_dicts(
+            "tof_mid_trigger_num_min_1",
+            "IDX__TXHDRMGTRIGNMIN1",
+            8,
+            "TOF Mid Pulse 1 Min Samples",
+            """Minimum number of samples for pulse 1 for TOF Mid single and double
+                              pulse triggering""",
+            "# Samples",
+            "samples",
+        )
+        _insert_into_dicts(
+            "tof_mid_trigger_num_max_1",
+            "IDX__TXHDRMGTRIGNMAX1",
+            8,
+            "TOF Mid Pulse 1 Max Samples",
+            """Maximum number of samples for pulse 1 for TOF Mid single and double
+                              pulse triggering""",
+            "# Samples",
+            "samples",
+        )
+        _insert_into_dicts(
+            "tof_mid_trigger_num_min_2",
+            "IDX__TXHDRMGTRIGNMIN2",
+            8,
+            "TOF Mid Pulse 2 Min Samples",
+            """Minimum number of samples for pulse 2 for TOF Mid single and double
+                              pulse triggering""",
+            "# Samples",
+            "samples",
+        )
+        _insert_into_dicts(
+            "tof_mid_trigger_num_max_2",
+            "IDX__TXHDRMGTRIGNMAX2",
+            8,
+            "TOF Mid Pulse 2 Max Samples",
+            """Maximum number of samples for pulse 2 for TOF Mid single and double
+                              pulse triggering""",
+            "# Samples",
+            "samples",
+        )
+        _insert_into_dicts(
+            "low_sample_coincidence_mode_blocks",
+            "IDX__TXHDRLSTRIGCMBLOCKS",
+            3,
+            "LS Coincidence Mode Blocks",
+            "Number of blocks coincidence window is enabled after low sample trigger",
+            "# Blocks",
+            "Blocks",
+        )
+        _insert_into_dicts(
+            "low_sample_trigger_polarity",
+            "IDX__TXHDRLSTRIGPOL",
+            1,
+            "LS Trigger Polarity",
+            "The trigger polarity for low sample (0 = normal, 1 = inverted)",
+            "Polarity",
+            "",
+        )
+        _insert_into_dicts(
+            "low_sample_trigger_level",
+            "IDX__TXHDRLSTRIGLVL",
+            12,
+            "LS Trigger Level",
+            "Trigger level for the low sample",
+            "Level",
+            "",
+        )
+        _insert_into_dicts(
+            "low_sample_trigger_num_min",
+            "IDX__TXHDRLSTRIGNMIN",
+            8,
+            "LS Trigger Min Num Samples",
+            """The minimum number of samples above/below the trigger level for
+                              triggering the low sample""",
+            "# Samples",
+            "samples",
+        )
+        _insert_into_dicts(
+            "low_sample_trigger_mode",
+            "IDX__TXHDRLSTRIGMODE",
+            1,
+            "LS Trigger Mode Enabled",
+            "Low sample trigger mode (0=disabled, 1=enabled)",
+            "Mode",
+            "",
+        )
+        _insert_into_dicts(
+            "tof_low_trigger_mode",
+            "IDX__TXHDRLSTRIGMODE",
+            1,
+            "TOF Low Trigger Mode Enabled",
+            "TOF Low trigger mode (0=disabled, 1=enabled)",
+            "Mode",
+            "",
+        )
+        _insert_into_dicts(
+            "tof_mid_trigger_mode",
+            "IDX__TXHDRMGTRIGMODE",
+            1,
+            "TOF Mid Trigger Mode Enabled",
+            "TOF Mid trigger mode (0=disabled, 1=enabled)",
+            "Mode",
+            "",
+        )
+        _insert_into_dicts(
+            "tof_high_trigger_mode",
+            "IDX__TXHDRHGTRIGMODE",
+            2,
+            "TOF High Trigger Mode Enabled",
+            """TOF High trigger mode (0=disabled, 1=threshold mode, 2=single pulse
+                              mode, 3=double pulse mode)""",
+            "Mode",
+            "",
+        )
+        _insert_into_dicts(
+            "detector_voltage",
+            "IDX__TXHDRHVPSHKCH0",
+            12,
+            "Detector Volatage",
+            "Last measurement in raw dN for processor board signal: Detector Voltage",
+            "Voltage",
+            "dN",
+        )
+        _insert_into_dicts(
+            "sensor_voltage",
+            "IDX__TXHDRHVPSHKCH1",
+            12,
+            "Sensor Voltage",
+            "Last measurement in raw dN for processor board signal: Sensor Voltage",
+            "Voltage",
+            "dN",
+        )
+        _insert_into_dicts(
+            "target_voltage",
+            "IDX__TXHDRHVPSHKCH2",
+            12,
+            "Target Voltage",
+            "Last measurement in raw dN for processor board signal: Target Voltage",
+            "Voltage",
+            "dN",
+        )
+        _insert_into_dicts(
+            "reflectron_voltage",
+            "IDX__TXHDRHVPSHKCH3",
+            12,
+            "Reflectron Voltage",
+            "Last measurement in raw dN for processor board signal: Reflectron Voltage",
+            "Voltage",
+            "dN",
+        )
+        _insert_into_dicts(
+            "rejection_voltage",
+            "IDX__TXHDRHVPSHKCH4",
+            12,
+            "Rejection Voltage",
+            "Last measurement in raw dN for processor board signal: Rejection Voltage",
+            "Voltage",
+            "dN",
+        )
+        _insert_into_dicts(
+            "detector_current",
+            "IDX__TXHDRHVPSHKCH5",
+            12,
+            "Detector Current",
+            "Last measurement in raw dN for processor board signal: Detector Current",
+            "Current",
+            "dN",
+        )
 
-        # Low Sample Trigger Info
-        trigger_dict["low_sample_coincidence_mode_blocks"] = packet.data[
-            "IDX__TXHDRLSTRIGCMBLOCKS"
-        ].raw_value
-        trigger_notes_dict[
-            "low_sample_coincidence_mode_blocks"
-        ] = "Number of blocks coincidence window is enabled after low sample trigger"
-        trigger_dict["low_sample_trigger_polarity"] = packet.data[
-            "IDX__TXHDRLSTRIGPOL"
-        ].raw_value
-        trigger_notes_dict[
-            "low_sample_trigger_polarity"
-        ] = "The trigger polarity for low sample (0 = normal, 1 = inverted)"
-        trigger_dict["low_sample_trigger_level"] = packet.data[
-            "IDX__TXHDRLSTRIGLVL"
-        ].raw_value
-        trigger_notes_dict[
-            "low_sample_trigger_level"
-        ] = "Trigger level for the low sample"
-        trigger_dict["low_sample_trigger_num_min"] = packet.data[
-            "IDX__TXHDRLSTRIGNMIN"
-        ].raw_value
-        trigger_notes_dict[
-            "low_sample_trigger_num_min"
-        ] = """The minimum number of samples above/below the trigger level for
-               triggering the low sample"""
-        # Trigger modes
-        trigger_dict["low_sample_trigger_mode"] = packet.data[
-            "IDX__TXHDRLSTRIGMODE"
-        ].raw_value
-        trigger_notes_dict[
-            "low_sample_trigger_mode"
-        ] = "Low sample trigger mode (0=disabled, 1=enabled)"
-        trigger_dict["tof_low_trigger_mode"] = packet.data[
-            "IDX__TXHDRLSTRIGMODE"
-        ].raw_value
-        trigger_notes_dict[
-            "tof_low_trigger_mode"
-        ] = "TOF Low trigger mode (0=disabled, 1=enabled)"
-        trigger_dict["tof_mid_trigger_mode"] = packet.data[
-            "IDX__TXHDRMGTRIGMODE"
-        ].raw_value
-        trigger_notes_dict[
-            "tof_mid_trigger_mode"
-        ] = "TOF Mid trigger mode (0=disabled, 1=enabled)"
-        trigger_dict["tof_high_trigger_mode"] = packet.data[
-            "IDX__TXHDRHGTRIGMODE"
-        ].raw_value
-        trigger_notes_dict[
-            "tof_high_trigger_mode"
-        ] = """TOF Mid trigger mode (0=disabled, 1=threshold mode, 2=single pulse
-               mode, 3=double pulse mode)"""
-
-        trigger_dict["detector_voltage"] = packet.data["IDX__TXHDRHVPSHKCH0"].raw_value
-        trigger_notes_dict[
-            "detector_voltage"
-        ] = "Last measurement in raw dN for processor board signal: Detector Voltage"
-        trigger_dict["sensor_voltage"] = packet.data["IDX__TXHDRHVPSHKCH1"].raw_value
-        trigger_notes_dict[
-            "sensor_voltage"
-        ] = "Last measurement in raw dN for processor board signal: Sensor Voltage"
-        trigger_dict["target_voltage"] = packet.data["IDX__TXHDRHVPSHKCH2"].raw_value
-        trigger_notes_dict[
-            "target_voltage"
-        ] = "Last measurement in raw dN for processor board signal: Target Voltage"
-        trigger_dict["reflectron_voltage"] = packet.data[
-            "IDX__TXHDRHVPSHKCH3"
-        ].raw_value
-        trigger_notes_dict[
-            "reflectron_voltage"
-        ] = "Last measurement in raw dN for processor board signal: Reflectron Voltage"
-        trigger_dict["rejection_voltage"] = packet.data["IDX__TXHDRHVPSHKCH4"].raw_value
-        trigger_notes_dict[
-            "rejection_voltage"
-        ] = "Last measurement in raw dN for processor board signal: Rejection Voltage"
-        trigger_dict["detector_current"] = packet.data["IDX__TXHDRHVPSHKCH5"].raw_value
-        trigger_notes_dict[
-            "detector_current"
-        ] = "Last measurement in raw dN for processor board signal: Detector Current"
-
-        return trigger_dict, trigger_notes_dict
+        return (
+            trigger_values,
+            trigger_notes,
+            trigger_fields,
+            trigger_maxes,
+            trigger_labels,
+            trigger_units,
+        )
 
     def _calc_impact_time(self, packet):
         """Calculate the datetime64 from the FPGA header information.
@@ -666,15 +810,18 @@ class RawDustEvent:
         """
         # Gather the huge number of trigger info metadata
         trigger_vars = {}
-        for var, value in self.trigger_values_dict.items():
+        for var, value in self.trigger_values.items():
             trigger_vars[var] = xr.DataArray(
                 name=var,
                 data=[value],
                 dims=("Epoch"),
                 attrs={
-                    "CATDESC": var,
-                    "FIELDNAM": var,
-                    "VAR_NOTES": self.trigger_notes_dict[var],
+                    "CATDESC": self.trigger_notes[var],
+                    "FIELDNAM": self.trigger_fields[var],
+                    "VAR_NOTES": self.trigger_notes[var],
+                    "VALIDMAX": self.trigger_maxes[var],
+                    "LABLAXIS": self.trigger_labels[var],
+                    "UNITS": self.trigger_units[var],
                 }
                 | idex_cdf_attrs.trigger_base,
             )

@@ -51,99 +51,127 @@ idex_l2_global_attrs = (
 l1_data_base = {
     "DEPEND_0": "Epoch",
     "DISPLAY_TYPE": "spectrogram",
-    "FILLVAL": np.array([-1.0e31], dtype=np.float32),
+    "FILLVAL": np.float32(-1.0e31),
     "FORMAT": "E12.2",
     "UNITS": "dN",
-    "VALIDMIN": np.array([-1.0e31], dtype=np.float32),
-    "VALIDMAX": np.array([1.0e31], dtype=np.float32),
+    "VALIDMIN": np.float32(0),
+    "VALIDMAX": np.float32(4096),
     "VAR_TYPE": "data",
     "SCALETYP": "linear",
 }
 
-l1_tof_base = {"DEPEND_1": "Time_High_SR", "LABLAXIS": "Time_[dN]"} | l1_data_base
+l1_tof_base = {"DEPEND_1": "Time_High_SR", "LABLAXIS": "Amplitude"} | l1_data_base
 
 l1_target_base = {
     "DEPEND_1": "Time_Low_SR",
-    "LABLAXIS": "Amplitude_[dN]",
+    "LABLAXIS": "Amplitude",
 } | l1_data_base
 
 sample_rate_base = {
     "DEPEND_0": "Epoch",
-    "FILLVAL": np.array([-1.0e31], dtype=np.float32),
+    "FILLVAL": np.float32(-1.0e31),
     "FORMAT": "E12.2",
-    "LABLAXIS": "Time_[dN]",
+    "LABLAXIS": "Time",
     "UNITS": "microseconds",
-    "VALIDMIN": np.array([-1.0e31], dtype=np.float32),
-    "VALIDMAX": np.array([1.0e31], dtype=np.float32),
+    "VALIDMIN": np.float32(-500),
+    "VALIDMAX": np.float32(500),
     "VAR_TYPE": "support_data",
     "SCALETYP": "linear",
 }
 
 trigger_base = {
     "DEPEND_0": "Epoch",
-    "DISPLAY_TYPE": "no_plot",
-    "FILLVAL": np.array([-1.0e31], dtype=np.float32),
+    "FILLVAL": np.iinfo(np.int64).min,
     "FORMAT": "E12.2",
-    "LABLAXIS": "Trigger_Info",
-    "UNITS": "",
     "VALIDMIN": 0,
-    "VALIDMAX": np.array([1.0e31], dtype=np.float32),
-    "VAR_TYPE": "metadata",
+    "VAR_TYPE": "support_data",
 }
 
 # L1 Attribute Dictionaries
 low_sr_attrs = (
     {
-        "CATDESC": "Time_Low_SR",
-        "FIELDNAM": "Time_Low_SR",
-        "VAR_NOTES": """The Low sample rate in microseconds.
-                    Steps are approximately 1/4.025 nanoseconds in duration.""",
+        "CATDESC": "Low sample rate time steps for a dust event.",
+        "FIELDNAM": "Low Sample Rate Time",
+        "VAR_NOTES": """The low sample rate in microseconds.
+                    Steps are approximately 1/4.025 microseconds in duration.
+                    Used by the Ion_Grid, Target_Low, and Target_High variables""",
     }
     | sample_rate_base
 )
 
 high_sr_attrs = (
     {
-        "CATDESC": "Time_High_SR",
-        "FIELDNAM": "Time_High_SR",
-        "VAR_NOTES": """The High sample rate in microseconds.
-                    Steps are approximately 1/260 nanoseconds in duration.""",
+        "CATDESC": "High sample rate time steps for a dust event.",
+        "FIELDNAM": "High Sample Rate Time",
+        "VAR_NOTES": """The high sample rate in microseconds.
+                    Steps are approximately 1/260 microseconds in duration.
+                    Used by the TOF_High, TOF_Mid, and TOF_Low variables""",
     }
     | sample_rate_base
 )
 
-tof_high_attrs = {
-    "CATDESC": "TOF_High",
-    "FIELDNAM": "TOF_High",
-    "VAR_NOTES": "This is the high gain channel of the time-of-flight signal.",
-} | l1_tof_base
+tof_high_attrs = (
+    {
+        "CATDESC": "Time of flight waveform on the high-gain channel",
+        "FIELDNAM": "High Gain Time of Flight",
+        "VAR_NOTES": """High gain channel of the time-of-flight signal.
+                    Sampled at 260 Megasamples per second, with a 10-bit resolution.
+                    Data is used to quantify dust composition.""",
+    }
+    | l1_tof_base
+)
 
-tof_mid_attrs = {
-    "CATDESC": "TOF_Mid",
-    "FIELDNAM": "TOF_Mid",
-    "VAR_NOTES": "This is the mid gain channel of the time-of-flight signal.",
-} | l1_tof_base
+tof_mid_attrs = (
+    {
+        "CATDESC": "Time of flight waveform on the mid-gain channel",
+        "FIELDNAM": "Mid Gain Time of Flight",
+        "VAR_NOTES": """Mid gain channel of the time-of-flight signal.
+                    Sampled at 260 Megasamples per second, with a 10-bit resolution.
+                    Data is used to quantify dust composition.""",
+    }
+    | l1_tof_base
+)
 
-tof_low_attrs = {
-    "CATDESC": "TOF_Low",
-    "FIELDNAM": "TOF_Low",
-    "VAR_NOTES": "This is the low gain channel of the time-of-flight signal.",
-} | l1_tof_base
+tof_low_attrs = (
+    {
+        "CATDESC": "Time of flight waveform on the low-gain channel",
+        "FIELDNAM": "Low Gain Time of Flight",
+        "VAR_NOTES": """Low gain channel of the time-of-flight signal.
+                    Sampled at 260 Megasamples per second, with a 10-bit resolution.
+                    Data is used to quantify dust composition.""",
+    }
+    | l1_tof_base
+)
 
-target_low_attrs = {
-    "CATDESC": "Target_Low",
-    "FIELDNAM": "Target_Low",
-    "VAR_NOTES": "This is the low gain channel of IDEX's target signal.",
-} | l1_target_base
+target_low_attrs = (
+    {
+        "CATDESC": "Target low charge sensitive amplifier waveform",
+        "FIELDNAM": "Low Target Signal",
+        "VAR_NOTES": """This is the low gain channel of IDEX's target signal.
+                    Sampled at 3.75 Msps with 12-bit resolution.
+                    Data is used to quantify dust charge.""",
+    }
+    | l1_target_base
+)
 
-target_high_attrs = {
-    "CATDESC": "Target_High",
-    "FIELDNAM": "Target_High",
-    "VAR_NOTES": "This is the high gain channel of IDEX's target signal.",
-} | l1_target_base
+target_high_attrs = (
+    {
+        "CATDESC": "Ion grid charge sensitive amplifier waveform",
+        "FIELDNAM": "High Target Signal",
+        "VAR_NOTES": """This is the high gain channel of IDEX's target signal.
+                    Sampled at 3.75 Msps with 12-bit resolution.
+                    Data is used to quantify dust charge.""",
+    }
+    | l1_target_base
+)
 
-ion_grid_attrs = {
-    "CATDESC": "Ion_Grid",
-    "FIELDNAM": "Ion_Grid",
-    "VAR_NOTES": "This is the ion grid signal from IDEX.",
-} | l1_target_base
+ion_grid_attrs = (
+    {
+        "CATDESC": "Ion grid charge sensitive amplifier waveform data",
+        "FIELDNAM": "Ion Grid Signal",
+        "VAR_NOTES": """This is the ion grid signal from IDEX.
+                    Sampled at 3.75 Msps with 12-bit resolution.
+                    Data is used to quantify dust charge.""",
+    }
+    | l1_target_base
+)
