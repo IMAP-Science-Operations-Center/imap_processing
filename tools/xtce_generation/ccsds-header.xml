@@ -45,7 +45,7 @@
 			<xtce:Parameter name="PKT_APID" parameterTypeRef="uint11">
 				<xtce:LongDescription>CCSDS Packet Application Process ID</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="SEG_FLGS" parameterTypeRef="uint2">
+			<xtce:Parameter name="SEQ_FLGS" parameterTypeRef="uint2">
 				<xtce:LongDescription>CCSDS Packet Grouping Flags (3=not part of group)</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SRC_SEQ_CTR" parameterTypeRef="uint14">
