@@ -41,7 +41,7 @@ class PacketParser:
         >>> from imap_processing.idex.idex_packet_parser import PacketParser
         >>> l0_file = "imap_processing/idex/tests/imap_idex_l0_20230725_v01-00.pkts"
         >>> l1_data = PacketParser(l0_file)
-        >>> print(l1_data.data)
+        >>> l1_data.write_l1_cdf()
 
     """
 
@@ -272,8 +272,10 @@ class RawDustEvent:
             "IDX__TXHDRHGTRIGNMAX12",
             11,
             "TOF High Double Pulse Max Samples",
-            """Maximum number of samples between pulse 1 and 2 for TOF
-                              High double pulse triggering""",
+            (
+                "Maximum number of samples between pulse 1 and 2 for TOF"
+                "High double pulse triggering"
+            ),
             "# Samples",
             "samples",
         )
@@ -282,8 +284,10 @@ class RawDustEvent:
             "IDX__TXHDRHGTRIGNMIN12",
             11,
             "TOF High Double Pulse Min Samples",
-            """Minimum number of samples between pulse 1 and 2 for TOF High double
-                              pulse triggering""",
+            (
+                "Minimum number of samples between pulse 1 and 2 for TOF High double"
+                "pulse triggering"
+            ),
             "# Samples",
             "samples",
         )
@@ -292,8 +296,10 @@ class RawDustEvent:
             "IDX__TXHDRHGTRIGNMIN1",
             8,
             "TOF High Pulse 1 Min Samples",
-            """Minimum number of samples for pulse 1 for TOF High single and double
-                              pulse triggering""",
+            (
+                "Minimum number of samples for pulse 1 for TOF High single and double"
+                "pulse triggering"
+            ),
             "# Samples",
             "samples",
         )
@@ -302,8 +308,10 @@ class RawDustEvent:
             "IDX__TXHDRHGTRIGNMAX1",
             8,
             "TOF High Pulse 1 Max Samples",
-            """Maximum number of samples for pulse 1 for TOF High single and double
-                              pulse triggering""",
+            (
+                "Maximum number of samples for pulse 1 for TOF High single and double"
+                "pulse triggering"
+            ),
             "# Samples",
             "samples",
         )
@@ -312,8 +320,10 @@ class RawDustEvent:
             "IDX__TXHDRHGTRIGNMIN2",
             8,
             "TOF High Pulse 2 Min Samples",
-            """Minimum number of samples for pulse 2 for TOF High single and double
-                              pulse triggering""",
+            (
+                "Minimum number of samples for pulse 2 for TOF High single and double"
+                "pulse triggering"
+            ),
             "# Samples",
             "samples",
         )
@@ -322,8 +332,10 @@ class RawDustEvent:
             "IDX__TXHDRHGTRIGNMAX2",
             8,
             "TOF High Pulse 2 Max Samples",
-            """Maximum number of samples for pulse 2 for TOF High single and double
-                              pulse triggering""",
+            (
+                "Maximum number of samples for pulse 2 for TOF High single and double"
+                "pulse triggering"
+            ),
             "# Samples",
             "samples",
         )
@@ -341,8 +353,10 @@ class RawDustEvent:
             "IDX__TXHDRLGTRIGNMAX12",
             11,
             "TOF Low Double Pulse Max Samples",
-            """Maximum number of samples between pulse 1 and 2 for TOF Low double
-                              pulse triggering""",
+            (
+                "Maximum number of samples between pulse 1 and 2 for TOF Low double"
+                "pulse triggering"
+            ),
             "# Samples",
             "samples",
         )
@@ -351,8 +365,10 @@ class RawDustEvent:
             "IDX__TXHDRLGTRIGNMIN12",
             11,
             "TOF Low Double Pulse Min Samples",
-            """Minimum number of samples between pulse 1 and 2 for TOF Low double
-                              pulse triggering""",
+            (
+                "Minimum number of samples between pulse 1 and 2 for TOF Low double"
+                "pulse triggering"
+            ),
             "# Samples",
             "samples",
         )
@@ -361,8 +377,10 @@ class RawDustEvent:
             "IDX__TXHDRLGTRIGNMIN1",
             8,
             "TOF Low Pulse 1 Min Samples",
-            """Minimum number of samples for pulse 1 for TOF Low single and double
-                              pulse triggering""",
+            (
+                "Minimum number of samples for pulse 1 for TOF Low single and double"
+                "pulse triggering"
+            ),
             "# Samples",
             "samples",
         )
@@ -371,8 +389,10 @@ class RawDustEvent:
             "IDX__TXHDRLGTRIGNMAX1",
             8,
             "TOF Low Pulse 1 Max Samples",
-            """Maximum number of samples for pulse 1 for TOF Low single and double
-                              pulse triggering""",
+            (
+                "Maximum number of samples for pulse 1 for TOF Low single and double"
+                "pulse triggering"
+            ),
             "# Samples",
             "samples",
         )
@@ -381,8 +401,10 @@ class RawDustEvent:
             "IDX__TXHDRLGTRIGNMIN2",
             8,
             "TOF Low Pulse 2 Min Samples",
-            """Minimum number of samples for pulse 2 for TOF Low single and double
-                              pulse triggering""",
+            (
+                "Minimum number of samples for pulse 2 for TOF Low single and double"
+                "pulse triggering"
+            ),
             "# Samples",
             "samples",
         )
@@ -391,8 +413,10 @@ class RawDustEvent:
             "IDX__TXHDRLGTRIGNMAX2",
             16,
             "TOF Low Pulse 2 Max Samples",
-            """Maximum number of samples for pulse 2 for TOF Low single and double
-                              pulse triggering""",
+            (
+                "Maximum number of samples for pulse 2 for TOF Low single and double"
+                "pulse triggering"
+            ),
             "# Samples",
             "samples",
         )
@@ -410,8 +434,10 @@ class RawDustEvent:
             "IDX__TXHDRMGTRIGNMAX12",
             11,
             "TOF Mid Double Pulse Max Samples",
-            """Maximum number of samples between pulse 1 and 2 for TOF Mid double
-                              pulse triggering""",
+            (
+                "Maximum number of samples between pulse 1 and 2 for TOF Mid double"
+                "pulse triggering"
+            ),
             "# Samples",
             "samples",
         )
@@ -420,8 +446,10 @@ class RawDustEvent:
             "IDX__TXHDRMGTRIGNMIN12",
             11,
             "TOF Mid Double Pulse Min Samples",
-            """Minimum number of samples between pulse 1 and 2 for TOF Mid double
-                              pulse triggering""",
+            (
+                "Minimum number of samples between pulse 1 and 2 for TOF Mid double"
+                "pulse triggering"
+            ),
             "# Samples",
             "samples",
         )
@@ -430,8 +458,10 @@ class RawDustEvent:
             "IDX__TXHDRMGTRIGNMIN1",
             8,
             "TOF Mid Pulse 1 Min Samples",
-            """Minimum number of samples for pulse 1 for TOF Mid single and double
-                              pulse triggering""",
+            (
+                "Minimum number of samples for pulse 1 for TOF Mid single and double"
+                "pulse triggering"
+            ),
             "# Samples",
             "samples",
         )
@@ -440,8 +470,10 @@ class RawDustEvent:
             "IDX__TXHDRMGTRIGNMAX1",
             8,
             "TOF Mid Pulse 1 Max Samples",
-            """Maximum number of samples for pulse 1 for TOF Mid single and double
-                              pulse triggering""",
+            (
+                "Maximum number of samples for pulse 1 for TOF Mid single and double"
+                "pulse triggering"
+            ),
             "# Samples",
             "samples",
         )
@@ -450,8 +482,10 @@ class RawDustEvent:
             "IDX__TXHDRMGTRIGNMIN2",
             8,
             "TOF Mid Pulse 2 Min Samples",
-            """Minimum number of samples for pulse 2 for TOF Mid single and double
-                              pulse triggering""",
+            (
+                "Minimum number of samples for pulse 2 for TOF Mid single and double"
+                "pulse triggering"
+            ),
             "# Samples",
             "samples",
         )
@@ -460,8 +494,10 @@ class RawDustEvent:
             "IDX__TXHDRMGTRIGNMAX2",
             8,
             "TOF Mid Pulse 2 Max Samples",
-            """Maximum number of samples for pulse 2 for TOF Mid single and double
-                              pulse triggering""",
+            (
+                "Maximum number of samples for pulse 2 for TOF Mid single and double"
+                "pulse triggering"
+            ),
             "# Samples",
             "samples",
         )
@@ -497,8 +533,10 @@ class RawDustEvent:
             "IDX__TXHDRLSTRIGNMIN",
             8,
             "LS Trigger Min Num Samples",
-            """The minimum number of samples above/below the trigger level for
-                              triggering the low sample""",
+            (
+                "The minimum number of samples above/below the trigger level for"
+                "triggering the low sample"
+            ),
             "# Samples",
             "samples",
         )
@@ -534,8 +572,10 @@ class RawDustEvent:
             "IDX__TXHDRHGTRIGMODE",
             2,
             "TOF High Trigger Mode Enabled",
-            """TOF High trigger mode (0=disabled, 1=threshold mode, 2=single pulse
-                              mode, 3=double pulse mode)""",
+            (
+                "TOF High trigger mode (0=disabled, 1=threshold mode, 2=single pulse"
+                "mode, 3=double pulse mode)"
+            ),
             "Mode",
             "",
         )
@@ -543,7 +583,7 @@ class RawDustEvent:
             "detector_voltage",
             "IDX__TXHDRHVPSHKCH0",
             12,
-            "Detector Volatage",
+            "Detector Voltage",
             "Last measurement in raw dN for processor board signal: Detector Voltage",
             "Voltage",
             "dN",
