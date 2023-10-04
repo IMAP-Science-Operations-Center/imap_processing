@@ -71,7 +71,7 @@ ccsds_parameters = [
         "description": "CCSDS Packet Application Process ID",
     },
     {
-        "name": "SEG_FLGS",
+        "name": "SEQ_FLGS",
         "parameterTypeRef": "uint2",
         "description": "CCSDS Packet Grouping Flags (3=not part of group)",
     },

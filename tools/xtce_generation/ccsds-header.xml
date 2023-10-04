@@ -62,7 +62,7 @@
 					<xtce:ParameterRefEntry parameterRef="TYPE" />
 					<xtce:ParameterRefEntry parameterRef="SEC_HDR_FLG" />
 					<xtce:ParameterRefEntry parameterRef="PKT_APID" />
-					<xtce:ParameterRefEntry parameterRef="SEG_FLGS" />
+					<xtce:ParameterRefEntry parameterRef="SEQ_FLGS" />
 					<xtce:ParameterRefEntry parameterRef="SRC_SEQ_CTR" />
 					<xtce:ParameterRefEntry parameterRef="PKT_LEN" />
 				</xtce:EntryList>
