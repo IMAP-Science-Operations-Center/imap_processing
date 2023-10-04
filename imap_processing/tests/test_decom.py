@@ -33,7 +33,7 @@ def test_ccsds_header(xtce_document):
         ("TYPE", "UINT1"),
         ("SEC_HDR_FLG", "UINT1"),
         ("PKT_APID", "UINT11"),
-        ("SEG_FLGS", "UINT2"),
+        ("SEQ_FLGS", "UINT2"),
         ("SRC_SEQ_CTR", "UINT14"),
         ("PKT_LEN", "UINT16"),
     ]
@@ -45,10 +45,9 @@ def test_ccsds_header(xtce_document):
         '                    <xtce:ParameterRefEntry parameterRef="TYPE" />'
         '                    <xtce:ParameterRefEntry parameterRef="SEC_HDR_FLG" />'
         '                    <xtce:ParameterRefEntry parameterRef="PKT_APID" />'
-        '                    <xtce:ParameterRefEntry parameterRef="SEG_FLGS" />'
+        '                    <xtce:ParameterRefEntry parameterRef="SEQ_FLGS" />'
         '                    <xtce:ParameterRefEntry parameterRef="SRC_SEQ_CTR" />'
         '                    <xtce:ParameterRefEntry parameterRef="PKT_LEN" />'
-        '                    <xtce:ParameterRefEntry parameterRef="SHCOARSE" />'
         "            </xtce:EntryList>"
         "    </xtce:SequenceContainer>"
     )
