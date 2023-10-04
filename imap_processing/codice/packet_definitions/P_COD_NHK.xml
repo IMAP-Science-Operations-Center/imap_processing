@@ -69,7 +69,8 @@
 				<xtce:LongDescription>CCSDS Packet Length (number of bytes after Packet length minus 1)</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SHCOARSE" parameterTypeRef="UINT32">
-				<xtce:LongDescription>CCSDS Packet Time Stamp (coarse time)</xtce:LongDescription>
+				<xtce:ShortDescription>S/C Time - Seconds</xtce:ShortDescription>
+				<xtce:LongDescription>Europa Clipper Secondary Header - Whole-seconds part of SCLK</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="Packet_Version" parameterTypeRef="UINT16">
 				<xtce:ShortDescription>Packet Version</xtce:ShortDescription>
@@ -479,7 +480,6 @@
 					<xtce:ParameterRefEntry parameterRef="SEQ_FLGS" />
 					<xtce:ParameterRefEntry parameterRef="SRC_SEQ_CTR" />
 					<xtce:ParameterRefEntry parameterRef="PKT_LEN" />
-					<xtce:ParameterRefEntry parameterRef="SHCOARSE" />
 				</xtce:EntryList>
 			</xtce:SequenceContainer>
 			<xtce:SequenceContainer name="P_COD_NHK">
@@ -489,6 +489,7 @@
 					</xtce:RestrictionCriteria>
 				</xtce:BaseContainer>
 				<xtce:EntryList>
+					<xtce:ParameterRefEntry parameterRef="SHCOARSE" />
 					<xtce:ParameterRefEntry parameterRef="Packet_Version" />
 					<xtce:ParameterRefEntry parameterRef="CmdExe" />
 					<xtce:ParameterRefEntry parameterRef="CmdRjct" />

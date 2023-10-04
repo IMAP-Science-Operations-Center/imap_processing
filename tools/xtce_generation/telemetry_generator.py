@@ -215,7 +215,7 @@ class TelemetryGenerator:
 
         # Populate EntryList for packet SequenceContainer
         packet_entry_list = Et.SubElement(science_container, "xtce:EntryList")
-        parameter_refs = self.pkt.loc[8:, "mnemonic"].tolist()
+        parameter_refs = self.pkt.loc[7:, "mnemonic"].tolist()
 
         for parameter_ref in parameter_refs:
             parameter_ref_entry = Et.SubElement(
@@ -238,9 +238,9 @@ class TelemetryGenerator:
         """
         # Process rows from SHCOARSE until the last available row in the DataFrame
         for index, row in self.pkt.iterrows():
-            if index < 8:
+            if index < 7:
                 # Skip rows until SHCOARSE(also known as MET) which are
-                # part of CCSDS header
+                # not part of CCSDS header
                 continue
 
             parameter = Et.SubElement(parameter_set, "xtce:Parameter")

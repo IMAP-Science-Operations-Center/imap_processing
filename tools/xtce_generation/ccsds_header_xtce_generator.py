@@ -38,11 +38,6 @@ class CCSDSParameters:
                 "description": "CCSDS Packet Length "
                 "(number of bytes after Packet length minus 1)",
             },
-            {
-                "name": "SHCOARSE",
-                "parameterTypeRef": "UINT32",
-                "description": "CCSDS Packet Time Stamp (coarse time)",
-            },
         ]
 
 

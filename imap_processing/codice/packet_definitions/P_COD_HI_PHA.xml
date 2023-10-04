@@ -60,7 +60,8 @@
 				<xtce:LongDescription>CCSDS Packet Length (number of bytes after Packet length minus 1)</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SHCOARSE" parameterTypeRef="UINT32">
-				<xtce:LongDescription>CCSDS Packet Time Stamp (coarse time)</xtce:LongDescription>
+				<xtce:ShortDescription>S/C Time - Seconds</xtce:ShortDescription>
+				<xtce:LongDescription>Secondary Header - Whole-seconds part of SCLK</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="Packet_Version" parameterTypeRef="UINT16">
 				<xtce:ShortDescription>Packet Version</xtce:ShortDescription>
@@ -137,7 +138,6 @@ TBD: Events may be tightly packed, or may have spares added to keep each event b
 					<xtce:ParameterRefEntry parameterRef="SEQ_FLGS" />
 					<xtce:ParameterRefEntry parameterRef="SRC_SEQ_CTR" />
 					<xtce:ParameterRefEntry parameterRef="PKT_LEN" />
-					<xtce:ParameterRefEntry parameterRef="SHCOARSE" />
 				</xtce:EntryList>
 			</xtce:SequenceContainer>
 			<xtce:SequenceContainer name="P_COD_HI_PHA">
@@ -147,6 +147,7 @@ TBD: Events may be tightly packed, or may have spares added to keep each event b
 					</xtce:RestrictionCriteria>
 				</xtce:BaseContainer>
 				<xtce:EntryList>
+					<xtce:ParameterRefEntry parameterRef="SHCOARSE" />
 					<xtce:ParameterRefEntry parameterRef="Packet_Version" />
 					<xtce:ParameterRefEntry parameterRef="Spin_Period" />
 					<xtce:ParameterRefEntry parameterRef="Acq_Start_Seconds" />
