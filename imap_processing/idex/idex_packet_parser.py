@@ -273,7 +273,7 @@ class RawDustEvent:
             11,
             "TOF High Double Pulse Max Samples",
             (
-                "Maximum number of samples between pulse 1 and 2 for TOF"
+                "Maximum number of samples between pulse 1 and 2 for TOF "
                 "High double pulse triggering"
             ),
             "# Samples",
@@ -285,7 +285,7 @@ class RawDustEvent:
             11,
             "TOF High Double Pulse Min Samples",
             (
-                "Minimum number of samples between pulse 1 and 2 for TOF High double"
+                "Minimum number of samples between pulse 1 and 2 for TOF High double "
                 "pulse triggering"
             ),
             "# Samples",
@@ -297,7 +297,7 @@ class RawDustEvent:
             8,
             "TOF High Pulse 1 Min Samples",
             (
-                "Minimum number of samples for pulse 1 for TOF High single and double"
+                "Minimum number of samples for pulse 1 for TOF High single and double "
                 "pulse triggering"
             ),
             "# Samples",
@@ -309,7 +309,7 @@ class RawDustEvent:
             8,
             "TOF High Pulse 1 Max Samples",
             (
-                "Maximum number of samples for pulse 1 for TOF High single and double"
+                "Maximum number of samples for pulse 1 for TOF High single and double "
                 "pulse triggering"
             ),
             "# Samples",
@@ -321,7 +321,7 @@ class RawDustEvent:
             8,
             "TOF High Pulse 2 Min Samples",
             (
-                "Minimum number of samples for pulse 2 for TOF High single and double"
+                "Minimum number of samples for pulse 2 for TOF High single and double "
                 "pulse triggering"
             ),
             "# Samples",
@@ -333,7 +333,7 @@ class RawDustEvent:
             8,
             "TOF High Pulse 2 Max Samples",
             (
-                "Maximum number of samples for pulse 2 for TOF High single and double"
+                "Maximum number of samples for pulse 2 for TOF High single and double "
                 "pulse triggering"
             ),
             "# Samples",
@@ -354,7 +354,7 @@ class RawDustEvent:
             11,
             "TOF Low Double Pulse Max Samples",
             (
-                "Maximum number of samples between pulse 1 and 2 for TOF Low double"
+                "Maximum number of samples between pulse 1 and 2 for TOF Low double "
                 "pulse triggering"
             ),
             "# Samples",
@@ -366,7 +366,7 @@ class RawDustEvent:
             11,
             "TOF Low Double Pulse Min Samples",
             (
-                "Minimum number of samples between pulse 1 and 2 for TOF Low double"
+                "Minimum number of samples between pulse 1 and 2 for TOF Low double "
                 "pulse triggering"
             ),
             "# Samples",
@@ -378,7 +378,7 @@ class RawDustEvent:
             8,
             "TOF Low Pulse 1 Min Samples",
             (
-                "Minimum number of samples for pulse 1 for TOF Low single and double"
+                "Minimum number of samples for pulse 1 for TOF Low single and double "
                 "pulse triggering"
             ),
             "# Samples",
@@ -390,7 +390,7 @@ class RawDustEvent:
             8,
             "TOF Low Pulse 1 Max Samples",
             (
-                "Maximum number of samples for pulse 1 for TOF Low single and double"
+                "Maximum number of samples for pulse 1 for TOF Low single and double "
                 "pulse triggering"
             ),
             "# Samples",
@@ -402,7 +402,7 @@ class RawDustEvent:
             8,
             "TOF Low Pulse 2 Min Samples",
             (
-                "Minimum number of samples for pulse 2 for TOF Low single and double"
+                "Minimum number of samples for pulse 2 for TOF Low single and double "
                 "pulse triggering"
             ),
             "# Samples",
@@ -414,7 +414,7 @@ class RawDustEvent:
             16,
             "TOF Low Pulse 2 Max Samples",
             (
-                "Maximum number of samples for pulse 2 for TOF Low single and double"
+                "Maximum number of samples for pulse 2 for TOF Low single and double "
                 "pulse triggering"
             ),
             "# Samples",
@@ -435,7 +435,7 @@ class RawDustEvent:
             11,
             "TOF Mid Double Pulse Max Samples",
             (
-                "Maximum number of samples between pulse 1 and 2 for TOF Mid double"
+                "Maximum number of samples between pulse 1 and 2 for TOF Mid double "
                 "pulse triggering"
             ),
             "# Samples",
@@ -447,7 +447,7 @@ class RawDustEvent:
             11,
             "TOF Mid Double Pulse Min Samples",
             (
-                "Minimum number of samples between pulse 1 and 2 for TOF Mid double"
+                "Minimum number of samples between pulse 1 and 2 for TOF Mid double "
                 "pulse triggering"
             ),
             "# Samples",
@@ -459,7 +459,7 @@ class RawDustEvent:
             8,
             "TOF Mid Pulse 1 Min Samples",
             (
-                "Minimum number of samples for pulse 1 for TOF Mid single and double"
+                "Minimum number of samples for pulse 1 for TOF Mid single and double "
                 "pulse triggering"
             ),
             "# Samples",
@@ -471,7 +471,7 @@ class RawDustEvent:
             8,
             "TOF Mid Pulse 1 Max Samples",
             (
-                "Maximum number of samples for pulse 1 for TOF Mid single and double"
+                "Maximum number of samples for pulse 1 for TOF Mid single and double "
                 "pulse triggering"
             ),
             "# Samples",
@@ -483,7 +483,7 @@ class RawDustEvent:
             8,
             "TOF Mid Pulse 2 Min Samples",
             (
-                "Minimum number of samples for pulse 2 for TOF Mid single and double"
+                "Minimum number of samples for pulse 2 for TOF Mid single and double "
                 "pulse triggering"
             ),
             "# Samples",
@@ -495,7 +495,7 @@ class RawDustEvent:
             8,
             "TOF Mid Pulse 2 Max Samples",
             (
-                "Maximum number of samples for pulse 2 for TOF Mid single and double"
+                "Maximum number of samples for pulse 2 for TOF Mid single and double "
                 "pulse triggering"
             ),
             "# Samples",
@@ -506,7 +506,7 @@ class RawDustEvent:
             "IDX__TXHDRLSTRIGCMBLOCKS",
             3,
             "LS Coincidence Mode Blocks",
-            "Number of blocks coincidence window is enabled after low sample trigger",
+            "Number of blocks coincidence window is enabled after low sample trigger ",
             "# Blocks",
             "Blocks",
         )
@@ -515,7 +515,7 @@ class RawDustEvent:
             "IDX__TXHDRLSTRIGPOL",
             1,
             "LS Trigger Polarity",
-            "The trigger polarity for low sample (0 = normal, 1 = inverted)",
+            "The trigger polarity for low sample (0 = normal, 1 = inverted) ",
             "Polarity",
             "",
         )
@@ -534,7 +534,7 @@ class RawDustEvent:
             8,
             "LS Trigger Min Num Samples",
             (
-                "The minimum number of samples above/below the trigger level for"
+                "The minimum number of samples above/below the trigger level for "
                 "triggering the low sample"
             ),
             "# Samples",
@@ -573,7 +573,7 @@ class RawDustEvent:
             2,
             "TOF High Trigger Mode Enabled",
             (
-                "TOF High trigger mode (0=disabled, 1=threshold mode, 2=single pulse"
+                "TOF High trigger mode (0=disabled, 1=threshold mode, 2=single pulse "
                 "mode, 3=double pulse mode)"
             ),
             "Mode",
@@ -584,7 +584,7 @@ class RawDustEvent:
             "IDX__TXHDRHVPSHKCH0",
             12,
             "Detector Voltage",
-            "Last measurement in raw dN for processor board signal: Detector Voltage",
+            "Last measurement in raw dN for processor board signal: Detector Voltage ",
             "Voltage",
             "dN",
         )
@@ -593,7 +593,7 @@ class RawDustEvent:
             "IDX__TXHDRHVPSHKCH1",
             12,
             "Sensor Voltage",
-            "Last measurement in raw dN for processor board signal: Sensor Voltage",
+            "Last measurement in raw dN for processor board signal: Sensor Voltage ",
             "Voltage",
             "dN",
         )
@@ -602,7 +602,7 @@ class RawDustEvent:
             "IDX__TXHDRHVPSHKCH2",
             12,
             "Target Voltage",
-            "Last measurement in raw dN for processor board signal: Target Voltage",
+            "Last measurement in raw dN for processor board signal: Target Voltage ",
             "Voltage",
             "dN",
         )
@@ -611,7 +611,10 @@ class RawDustEvent:
             "IDX__TXHDRHVPSHKCH3",
             12,
             "Reflectron Voltage",
-            "Last measurement in raw dN for processor board signal: Reflectron Voltage",
+            (
+                "Last measurement in raw dN for processor board signal: "
+                "Reflectron Voltage"
+            ),
             "Voltage",
             "dN",
         )
@@ -620,7 +623,7 @@ class RawDustEvent:
             "IDX__TXHDRHVPSHKCH4",
             12,
             "Rejection Voltage",
-            "Last measurement in raw dN for processor board signal: Rejection Voltage",
+            "Last measurement in raw dN for processor board signal: Rejection Voltage ",
             "Voltage",
             "dN",
         )
@@ -629,7 +632,7 @@ class RawDustEvent:
             "IDX__TXHDRHVPSHKCH5",
             12,
             "Detector Current",
-            "Last measurement in raw dN for processor board signal: Detector Current",
+            "Last measurement in raw dN for processor board signal: Detector Current ",
             "Current",
             "dN",
         )
