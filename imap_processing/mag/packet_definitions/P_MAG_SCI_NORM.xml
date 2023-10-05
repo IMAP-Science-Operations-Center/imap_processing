@@ -30,11 +30,16 @@
 			<xtce:IntegerParameterType name="UINT32" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="32" encoding="unsigned" />
 			</xtce:IntegerParameterType>
+			<!--As a variable length packet, this needs to subtract the fixed size of the other parameters.-->
 			<xtce:BinaryParameterType name="BYTE3200">
 				<xtce:UnitSet />
 				<xtce:BinaryDataEncoding bitOrder="mostSignificantBitFirst">
 					<xtce:SizeInBits>
-						<xtce:FixedValue>3200</xtce:FixedValue>
+						<xtce:DynamicValue>
+						  <xtce:ParameterInstanceRef parameterRef="PKT_LEN"/>
+							<!-- the Burst and Norm packets have the same intercept (224) -->
+						  <xtce:LinearAdjustment intercept="224" slope="8"/>
+						</xtce:DynamicValue>
 					</xtce:SizeInBits>
 				</xtce:BinaryDataEncoding>
 			</xtce:BinaryParameterType>
