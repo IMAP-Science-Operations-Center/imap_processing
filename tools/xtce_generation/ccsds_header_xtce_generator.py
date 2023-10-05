@@ -22,7 +22,7 @@ class CCSDSParameters:
                 "description": "CCSDS Packet Application Process ID",
             },
             {
-                "name": "SEG_FLGS",
+                "name": "SEQ_FLGS",
                 "parameterTypeRef": "UINT2",
                 "description": "CCSDS Packet Grouping Flags (3=not part of group)",
             },
@@ -37,11 +37,6 @@ class CCSDSParameters:
                 "parameterTypeRef": "UINT16",
                 "description": "CCSDS Packet Length "
                 "(number of bytes after Packet length minus 1)",
-            },
-            {
-                "name": "SHCOARSE",
-                "parameterTypeRef": "UINT32",
-                "description": "CCSDS Packet Time Stamp (coarse time)",
             },
         ]
 

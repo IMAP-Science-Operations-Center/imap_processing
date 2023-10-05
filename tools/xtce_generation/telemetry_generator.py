@@ -116,16 +116,16 @@ class TelemetryGenerator:
                 encoding.attrib["sizeInBits"] = str(size)
                 encoding.attrib["encoding"] = "unsigned"
 
-            elif "SINT" or "INT" in parameter_type_ref_name:
+            elif any(x in parameter_type_ref_name for x in ["SINT", "INT"]):
                 parameter_type = Et.SubElement(
                     parameter_type_set, "xtce:IntegerParameterType"
                 )
                 parameter_type.attrib["name"] = parameter_type_ref_name
                 parameter_type.attrib["signed"] = "true"
-
                 encoding = Et.SubElement(parameter_type, "xtce:IntegerDataEncoding")
                 encoding.attrib["sizeInBits"] = str(size)
                 encoding.attrib["encoding"] = "signed"
+
             elif "BYTE" in parameter_type_ref_name:
                 binary_parameter_type = Et.SubElement(
                     parameter_type_set, "xtce:BinaryParameterType"
@@ -215,7 +215,7 @@ class TelemetryGenerator:
 
         # Populate EntryList for packet SequenceContainer
         packet_entry_list = Et.SubElement(science_container, "xtce:EntryList")
-        parameter_refs = self.pkt.loc[8:, "mnemonic"].tolist()
+        parameter_refs = self.pkt.loc[7:, "mnemonic"].tolist()
 
         for parameter_ref in parameter_refs:
             parameter_ref_entry = Et.SubElement(
@@ -238,9 +238,9 @@ class TelemetryGenerator:
         """
         # Process rows from SHCOARSE until the last available row in the DataFrame
         for index, row in self.pkt.iterrows():
-            if index < 8:
+            if index < 7:
                 # Skip rows until SHCOARSE(also known as MET) which are
-                # part of CCSDS header
+                # not part of CCSDS header
                 continue
 
             parameter = Et.SubElement(parameter_set, "xtce:Parameter")
