@@ -34,7 +34,6 @@
 				<xtce:IntegerDataEncoding sizeInBits="32" encoding="signed" />
 			</xtce:IntegerParameterType>
 			<xtce:BinaryParameterType name="BYTE28800">
-				<xtce:UnitSet />
 				<xtce:BinaryDataEncoding bitOrder="mostSignificantBitFirst">
 					<xtce:SizeInBits>
 						<xtce:FixedValue>28800</xtce:FixedValue>

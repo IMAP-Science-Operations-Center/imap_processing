@@ -132,8 +132,6 @@ class TelemetryGenerator:
                 )
                 binary_parameter_type.attrib["name"] = parameter_type_ref_name
 
-                Et.SubElement(binary_parameter_type, "xtce:UnitSet")
-
                 binary_data_encoding = Et.SubElement(
                     binary_parameter_type, "xtce:BinaryDataEncoding"
                 )
