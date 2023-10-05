@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='utf-8'?>
 <xtce:SpaceSystem xmlns:xtce="http://www.omg.org/space/xtce" name="P_GLX_TMSCHIST">
-	<xtce:Header date="2023-09" version="1.0" author="IMAP SDC" />
+	<xtce:Header date="2023-10" version="1.0" author="IMAP SDC" />
 	<xtce:TelemetryMetaData>
 		<xtce:ParameterTypeSet>
 			<xtce:IntegerParameterType name="UINT1" signed="false">
@@ -34,6 +34,7 @@
 				<xtce:IntegerDataEncoding sizeInBits="32" encoding="signed" />
 			</xtce:IntegerParameterType>
 			<xtce:BinaryParameterType name="BYTE28800">
+				<xtce:UnitSet />
 				<xtce:BinaryDataEncoding bitOrder="mostSignificantBitFirst">
 					<xtce:SizeInBits>
 						<xtce:FixedValue>28800</xtce:FixedValue>
@@ -54,7 +55,7 @@
 			<xtce:Parameter name="PKT_APID" parameterTypeRef="UINT11">
 				<xtce:LongDescription>CCSDS Packet Application Process ID</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="SEG_FLGS" parameterTypeRef="UINT2">
+			<xtce:Parameter name="SEQ_FLGS" parameterTypeRef="UINT2">
 				<xtce:LongDescription>CCSDS Packet Grouping Flags (3=not part of group)</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SRC_SEQ_CTR" parameterTypeRef="UINT14">
@@ -63,80 +64,105 @@
 			<xtce:Parameter name="PKT_LEN" parameterTypeRef="UINT16">
 				<xtce:LongDescription>CCSDS Packet Length (number of bytes after Packet length minus 1)</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="SHCOARSE" parameterTypeRef="UINT32">
-				<xtce:LongDescription>CCSDS Packet Time Stamp (coarse time)</xtce:LongDescription>
+			<xtce:Parameter name="MET" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>CCSDS Packet  2nd Header Coarse Time</xtce:ShortDescription>
+				<xtce:LongDescription>CCSDS Packet 2nd Header Coarse Time (seconds)</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="STARTID" parameterTypeRef="INT32">
-				<xtce:LongDescription>Histogram Start ID</xtce:LongDescription>
+				<xtce:ShortDescription>Histogram Start ID</xtce:ShortDescription>
+				<xtce:LongDescription>Ordinal number of the first IMAP spin in the block.</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="ENDID" parameterTypeRef="UINT16">
-				<xtce:LongDescription>Histogram End ID</xtce:LongDescription>
+				<xtce:ShortDescription>Histogram End ID</xtce:ShortDescription>
+				<xtce:LongDescription>Ordinal number of the last IMAP spin in the block, offset from STARTID.</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="FLAGS" parameterTypeRef="UINT16">
-				<xtce:LongDescription>Histogram flags</xtce:LongDescription>
+				<xtce:ShortDescription>Histogram flags</xtce:ShortDescription>
+				<xtce:LongDescription>Status flags indicating the quality of the produced histograms.</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWVER" parameterTypeRef="UINT24">
-				<xtce:LongDescription>Version of SW used for generation</xtce:LongDescription>
+				<xtce:ShortDescription>Version of SW used for generation</xtce:ShortDescription>
+				<xtce:LongDescription>GLOWS AppSW version number.</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SEC" parameterTypeRef="INT32">
-				<xtce:LongDescription>Block start time (IMAP), seconds</xtce:LongDescription>
+				<xtce:ShortDescription>Block start time (IMAP), seconds</xtce:ShortDescription>
+				<xtce:LongDescription>Start time, seconds field, of the histogram block. Specified as a number of IMAP seconds (since start from IMAP epoch as defined in GI ICD).</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SUBSEC" parameterTypeRef="UINT24">
-				<xtce:LongDescription>Block start time (IMAP), subseconds</xtce:LongDescription>
+				<xtce:ShortDescription>Block start time (IMAP), subseconds</xtce:ShortDescription>
+				<xtce:LongDescription>Start time, subseconds field, of the histogram block. This value is obtained in linear interpolation from PPS data and is converted to internal SCIENCE format, where Subseconds timer wraps at 2000000 (2MHz counter).</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="OFFSETSEC" parameterTypeRef="UINT16">
-				<xtce:LongDescription>Block end time (IMAP), seconds</xtce:LongDescription>
+				<xtce:ShortDescription>Block end time (IMAP), seconds</xtce:ShortDescription>
+				<xtce:LongDescription>Stop time, seconds field, of the histogram block, offset. Specified as a number of IMAP seconds (since start time of the histogram block).</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="OFFSETSUBSEC" parameterTypeRef="UINT24">
-				<xtce:LongDescription>Block end time (IMAP), subseconds</xtce:LongDescription>
+				<xtce:ShortDescription>Block end time (IMAP), subseconds</xtce:ShortDescription>
+				<xtce:LongDescription>Stop time, subseconds field, of the histogram block, offset. This value is obtained in linear interpolation from PPS data and is converted to internal SCIENCE format, where Subseconds timer wraps at 2000000 (2MHz counter).</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="GLXSEC" parameterTypeRef="INT32">
-				<xtce:LongDescription>Block start time (GLOWS), seconds</xtce:LongDescription>
+				<xtce:ShortDescription>Block start time (GLOWS), seconds</xtce:ShortDescription>
+				<xtce:LongDescription>Start time, seconds field, of the histogram block. Specified as a number of seconds (since start from IMAP epoch as defined in GI ICD). Value based on readouts from internal SCIENCE timer which is synchronized to IMAP only on power on/reset</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="GLXSUBSEC" parameterTypeRef="UINT24">
-				<xtce:LongDescription>Block start time (GLOWS), Subseconds</xtce:LongDescription>
+				<xtce:ShortDescription>Block start time (GLOWS), Subseconds</xtce:ShortDescription>
+				<xtce:LongDescription>Start time, subseconds field, of the histogram block. Value read from internal SCIENCE timer. Subseconds timer wraps at 2000000 (2MHz counter).</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="GLXOFFSEC" parameterTypeRef="UINT16">
-				<xtce:LongDescription>Block end time (GLOWS), seconds</xtce:LongDescription>
+				<xtce:ShortDescription>Block end time (GLOWS), seconds</xtce:ShortDescription>
+				<xtce:LongDescription>Stop time, seconds field, of the histogram block, offset. Specified as a number of IMAP seconds (since start from IMAP epoch as defined in GI ICD). Value based on readouts from internal SCIENCE timer, which is synchronized to IMAP clock only on power on/reset.</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="GLXOFFSUBSEC" parameterTypeRef="UINT24">
-				<xtce:LongDescription>Block end time (GLOWS), subseconds</xtce:LongDescription>
+				<xtce:ShortDescription>Block end time (GLOWS), subseconds</xtce:ShortDescription>
+				<xtce:LongDescription>Stop time, subseconds field, of the histogram block, offset. Value read from internal SCIENCE timer. Subseconds timers wraps at 2000000 (2MHz counter).</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SPINS" parameterTypeRef="UINT8">
-				<xtce:LongDescription>Number of spins</xtce:LongDescription>
+				<xtce:ShortDescription>Number of spins</xtce:ShortDescription>
+				<xtce:LongDescription>Number of spins the SCIENCE block (histogram) is composed of minus 1 (0 - 1 spins, 1 - 2 spins, ...)</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="NBINS" parameterTypeRef="UINT16">
-				<xtce:LongDescription>Number of bins</xtce:LongDescription>
+				<xtce:ShortDescription>Number of bins</xtce:ShortDescription>
+				<xtce:LongDescription>Number of bins the SCIENCE histogram is composed of.</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="TEMPAVG" parameterTypeRef="UINT8">
-				<xtce:LongDescription>Mean filter temperature </xtce:LongDescription>
+				<xtce:ShortDescription>Mean filter temperature </xtce:ShortDescription>
+				<xtce:LongDescription>Average GLOWS Optical filter temperature observed during data collection for transmitted histograms.</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="TEMPVAR" parameterTypeRef="UINT16">
-				<xtce:LongDescription>Variance of filter temperature </xtce:LongDescription>
+				<xtce:ShortDescription>Variance of filter temperature </xtce:ShortDescription>
+				<xtce:LongDescription>Variance observed on the GLOWS Optical filter temperature during data collection for transmitted histograms.</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="HVAVG" parameterTypeRef="UINT16">
-				<xtce:LongDescription>Mean CEM voltage</xtce:LongDescription>
+				<xtce:ShortDescription>Mean CEM voltage</xtce:ShortDescription>
+				<xtce:LongDescription>Average CEM High Voltage bias observed during data collection for transmitted histograms.</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="HVVAR" parameterTypeRef="INT32">
-				<xtce:LongDescription>Variance of CEM voltage </xtce:LongDescription>
+				<xtce:ShortDescription>Variance of CEM voltage </xtce:ShortDescription>
+				<xtce:LongDescription>Variance observed on the CEM High Voltage bias during data collection for transmitted histograms.</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SPAVG" parameterTypeRef="UINT16">
-				<xtce:LongDescription>Mean spin period </xtce:LongDescription>
+				<xtce:ShortDescription>Mean spin period </xtce:ShortDescription>
+				<xtce:LongDescription>Average spin period observed during data collection for transmitted histograms.</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SPVAR" parameterTypeRef="INT32">
-				<xtce:LongDescription>Variance of spin period </xtce:LongDescription>
+				<xtce:ShortDescription>Variance of spin period </xtce:ShortDescription>
+				<xtce:LongDescription>Variance observed on the spin period during data collection for transmitted histograms.</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="ELAVG" parameterTypeRef="UINT8">
-				<xtce:LongDescription>Mean length of event impulse</xtce:LongDescription>
+				<xtce:ShortDescription>Mean length of event impulse</xtce:ShortDescription>
+				<xtce:LongDescription>Average event length observed during data collection for transmitted histograms.</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="ELVAR" parameterTypeRef="UINT16">
-				<xtce:LongDescription>Variance of event-impulse length</xtce:LongDescription>
+				<xtce:ShortDescription>Variance of event-impulse length</xtce:ShortDescription>
+				<xtce:LongDescription>Variance observed on the event length during data collection for transmitted histograms.</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="EVENTS" parameterTypeRef="UINT32">
-				<xtce:LongDescription>Number of events</xtce:LongDescription>
+				<xtce:ShortDescription>Number of events</xtce:ShortDescription>
+				<xtce:LongDescription>Number of event in all bins (sum) of this histogram.</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="HISTOGRAM_DATA" parameterTypeRef="BYTE28800">
-				<xtce:LongDescription>Histogram Counts</xtce:LongDescription>
+				<xtce:ShortDescription>Histogram Counts</xtce:ShortDescription>
+				<xtce:LongDescription>Total histogram data counts. Each bin has 8 bits of data, with 3600 total bins.</xtce:LongDescription>
 			</xtce:Parameter>
 		</xtce:ParameterSet>
 		<xtce:ContainerSet>
@@ -146,10 +172,9 @@
 					<xtce:ParameterRefEntry parameterRef="TYPE" />
 					<xtce:ParameterRefEntry parameterRef="SEC_HDR_FLG" />
 					<xtce:ParameterRefEntry parameterRef="PKT_APID" />
-					<xtce:ParameterRefEntry parameterRef="SEG_FLGS" />
+					<xtce:ParameterRefEntry parameterRef="SEQ_FLGS" />
 					<xtce:ParameterRefEntry parameterRef="SRC_SEQ_CTR" />
 					<xtce:ParameterRefEntry parameterRef="PKT_LEN" />
-					<xtce:ParameterRefEntry parameterRef="SHCOARSE" />
 				</xtce:EntryList>
 			</xtce:SequenceContainer>
 			<xtce:SequenceContainer name="P_GLX_TMSCHIST">
@@ -159,6 +184,7 @@
 					</xtce:RestrictionCriteria>
 				</xtce:BaseContainer>
 				<xtce:EntryList>
+					<xtce:ParameterRefEntry parameterRef="MET" />
 					<xtce:ParameterRefEntry parameterRef="STARTID" />
 					<xtce:ParameterRefEntry parameterRef="ENDID" />
 					<xtce:ParameterRefEntry parameterRef="FLAGS" />
