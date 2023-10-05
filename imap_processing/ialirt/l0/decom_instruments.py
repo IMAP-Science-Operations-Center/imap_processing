@@ -141,7 +141,7 @@ def decompress_binary(binary: str, width_bit: int, block: int) -> list:
     return decompressed_values
 
 
-def decom_hit_packets(packet_file: str, xtce: str):
+def decom_instrument_packets(packet_file: str, xtce: str):
     """
     Unpack and decode hit packets using CCSDS format and XTCE packet definitions.
 
@@ -161,30 +161,34 @@ def decom_hit_packets(packet_file: str, xtce: str):
 
     packets = decom_ialirt.decom_packets(packet_file, xtce)
 
-    met_data, science_id, spin_data, abortflag_data, startdelay_data, fastdata_00 = \
-        [], [], [], [], [], []
+    hit_storage = {}
 
     for packet in packets:
-        met_data.append(packet.data['HIT'].derived_value)
-        science_id.append(packet.data['SID'].derived_value)
-        spin_data.append(packet.data['SPIN'].derived_value)
-        abortflag_data.append(packet.data['ABORTFLAG'].derived_value)
-        startdelay_data.append(packet.data['STARTDELAY'].derived_value)
-        decompressed_data = decompress_binary(packet.data['FASTDATA_00'].raw_value,
-                                              UltraParams.ULTRA_IMG_RATES.value.width,
-                                              UltraParams.ULTRA_IMG_RATES.value.block)
-        fastdata_00.append(decompressed_data)
+        for key, value in packet.data.items():
+            if key.startswith('HIT'):
+                if key not in hit_storage:
+                    hit_storage[key] = []
+                hit_storage[key].append(value.derived_value)
 
-    array_data = np.array(fastdata_00)
-
-    ds = xr.Dataset({
-        'science_id': ('epoch', science_id),
-        'spin_data': ('epoch', spin_data),
-        'abortflag_data': ('epoch', abortflag_data),
-        'startdelay_data': ('epoch', startdelay_data),
-        'fastdata_00': (('epoch', 'index'), array_data)
+    hit_ds = xr.Dataset({
+        'status': ('met', hit_storage['HIT_STATUS']),
+        'reserved': ('met', hit_storage['HIT_RESERVED']),
+        'counter': ('met', hit_storage['HIT_COUNTER']),
+        'fast_rate_1': ('met', hit_storage['HIT_FAST_RATE_1']),
+        'fast_rate_2': ('met', hit_storage['HIT_FAST_RATE_2']),
+        'slow_rate': ('met', hit_storage['HIT_SLOW_RATE']),
+        'event_data_01': ('met', hit_storage['HIT_EVENT_DATA_01']),
+        'event_data_02': ('met', hit_storage['HIT_EVENT_DATA_02']),
+        'event_data_03': ('met', hit_storage['HIT_EVENT_DATA_03']),
+        'event_data_04': ('met', hit_storage['HIT_EVENT_DATA_04']),
+        'event_data_05': ('met', hit_storage['HIT_EVENT_DATA_05']),
+        'event_data_06': ('met', hit_storage['HIT_EVENT_DATA_06']),
+        'event_data_07': ('met', hit_storage['HIT_EVENT_DATA_07']),
+        'event_data_08': ('met', hit_storage['HIT_EVENT_DATA_08']),
+        'event_data_09': ('met', hit_storage['HIT_EVENT_DATA_09']),
+        'event_data_10': ('met', hit_storage['HIT_EVENT_DATA_10']),
     }, coords={
-        'epoch': met_data,
+        'met': hit_storage['HIT_MET'],
     })
 
-    return ds
+    return hit_ds
