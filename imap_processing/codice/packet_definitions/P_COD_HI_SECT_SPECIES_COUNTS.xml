@@ -39,9 +39,14 @@
 			<xtce:IntegerParameterType name="UINT32" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="32" encoding="unsigned" />
 			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="BYTE9043968" signed="true">
-				<xtce:IntegerDataEncoding sizeInBits="9043968" encoding="signed" />
-			</xtce:IntegerParameterType>
+			<xtce:BinaryParameterType name="BYTE9043968">
+				<xtce:UnitSet />
+				<xtce:BinaryDataEncoding bitOrder="mostSignificantBitFirst">
+					<xtce:SizeInBits>
+						<xtce:FixedValue>9043968</xtce:FixedValue>
+					</xtce:SizeInBits>
+				</xtce:BinaryDataEncoding>
+			</xtce:BinaryParameterType>
 		</xtce:ParameterTypeSet>
 		<xtce:ParameterSet>
 			<xtce:Parameter name="VERSION" parameterTypeRef="UINT3">
