@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, fields
 from enum import Enum
 
 
@@ -110,3 +110,29 @@ class MagL0:
     VECTORS: bin
     FILL: int
     packet_type: MagApid
+
+    def __init__(self, packet, packet_type: MagApid):
+        """Set the attributes in the dataclass based on the packet and the type.
+
+        Parameters
+        ----------
+        packet
+            Space_packet_parser packet, consisting of a tuple with [header, data]
+        packet_type: MagApid
+            the type of the packet
+        """
+        self.packet_type = packet_type
+        attributes = [field.name for field in fields(self)]
+
+        # For each item in packet, assign it to the matching attribute in the class.
+        for key, item in packet.data.items():
+            value = (
+                item.derived_value if item.derived_value is not None else item.raw_value
+            )
+            if key in attributes:
+                setattr(self, key, value)
+            else:
+                raise KeyError(
+                    f"Did not find matching attribute in Histogram data class for "
+                    f"{key}"
+                )

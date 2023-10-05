@@ -41,9 +41,9 @@ def decom_packets(packet_file_path: str) -> list[MagL0]:
 
             for packet in mag_packets:
                 apid = packet.header["PKT_APID"].derived_value
-                # Do something with the packet data
-                if any(apid == val for val in MagApid):
-                    data_list.append(MagL0())
+                for enum_val in MagApid:
+                    if apid == enum_val.value:
+                        data_list.append(MagL0(packet, enum_val))
 
         except ReadError as e:
             print(e)
