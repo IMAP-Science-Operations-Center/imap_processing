@@ -1,4 +1,6 @@
 <?xml version='1.0' encoding='utf-8'?>
+<!-- This file was created by manually combining the SequenceContainerSets of
+P_GLX_TMSCDE.xml and P_GLX_TMSHIST.xml to process both packet APIDs -->
 <xtce:SpaceSystem xmlns:xtce="http://www.omg.org/space/xtce" name="P_GLX_TMSCHIST">
 	<xtce:Header date="2023-10" version="1.0" author="IMAP SDC" />
 	<xtce:TelemetryMetaData>

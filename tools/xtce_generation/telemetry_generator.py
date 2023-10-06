@@ -7,6 +7,25 @@ from tools.xtce_generation.ccsds_header_xtce_generator import CCSDSParameters
 
 
 class TelemetryGenerator:
+    """This class will automatically generate XTCE files from excel definition files.
+
+    The excel file should have the following columns: mnemonic, sequence, lengthInBits,
+    startBit, dataType, convertAs, units, source, and either shortDescription or
+    longDescription.
+
+    This class will correctly generate a CCSDS header and the provided data types.
+    It doesn't handle the following cases:
+    - Enum generation
+    - Variable packet lengths
+    - Multiple APIDs or complex APID comparison
+
+    It is intended for use as a first pass of XTCE generation, and most cases, the
+    packet definitions will require manual updates.
+
+    Use generate_telemetry_xml to create XML files.
+
+    """
+
     def __init__(self, packet_name, path_to_excel_file, apid, pkt=None):
         self.packet_name = packet_name
         self.apid = apid
@@ -131,6 +150,8 @@ class TelemetryGenerator:
                     parameter_type_set, "xtce:BinaryParameterType"
                 )
                 binary_parameter_type.attrib["name"] = parameter_type_ref_name
+
+                Et.SubElement(binary_parameter_type, "xtce:UnitSet")
 
                 binary_data_encoding = Et.SubElement(
                     binary_parameter_type, "xtce:BinaryDataEncoding"
