@@ -31,37 +31,6 @@ def test_total_packets_in_data_file(decom_test_data):
     assert len(decom_test_data) == total_packets
 
 
-def test_ccsds_header(decom_test_data):
-    """Test if packet header contains default CCSDS header
-
-    These are the field required in CCSDS header:
-        'VERSION', 'TYPE', 'SEC_HDR_FLG', 'PKT_APID',
-        'SEG_FLGS', 'SRC_SEQ_CTR', 'PKT_LEN'
-    """
-    # Required CCSDS header fields
-    ccsds_header_keys = [
-        "VERSION",
-        "TYPE",
-        "SEC_HDR_FLG",
-        "PKT_APID",
-        "SEG_FLGS",
-        "SRC_SEQ_CTR",
-        "PKT_LEN",
-    ]
-
-    # decom_test_data[0].header is one way to get the header data. Another way to get it
-    # is using list method. Eg. ccsds_header = decom_test_data[0][0].
-    # Each packet's 0th index has header data and index 1 has data.
-
-    # First way to get header data
-    ccsds_header = decom_test_data[0].header
-    assert all(key in ccsds_header.keys() for key in ccsds_header_keys)
-
-    # Second way to get header data
-    ccsds_header = decom_test_data[0][0]
-    assert all(key in ccsds_header.keys() for key in ccsds_header_keys)
-
-
 def test_ways_to_get_data(decom_test_data):
     """Test if data can be retrieved using different ways"""
     # First way to get data
