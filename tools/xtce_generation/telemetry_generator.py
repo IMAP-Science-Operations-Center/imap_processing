@@ -7,6 +7,25 @@ from tools.xtce_generation.ccsds_header_xtce_generator import CCSDSParameters
 
 
 class TelemetryGenerator:
+    """This class will automatically generate XTCE files from excel definition files.
+
+    The excel file should have the following columns: mnemonic, sequence, lengthInBits,
+    startBit, dataType, convertAs, units, source, and either shortDescription or
+    longDescription.
+
+    This class will correctly generate a CCSDS header and the provided data types.
+    It doesn't handle the following cases:
+    - Enum generation
+    - Variable packet lengths
+    - Multiple APIDs or complex APID comparison
+
+    It is intended for use as a first pass of XTCE generation, and most cases, the
+    packet definitions will require manual updates.
+
+    Use generate_telemetry_xml to create XML files.
+
+    """
+
     def __init__(self, packet_name, path_to_excel_file, apid, pkt=None):
         self.packet_name = packet_name
         self.apid = apid
@@ -116,16 +135,16 @@ class TelemetryGenerator:
                 encoding.attrib["sizeInBits"] = str(size)
                 encoding.attrib["encoding"] = "unsigned"
 
-            elif "SINT" or "INT" in parameter_type_ref_name:
+            elif any(x in parameter_type_ref_name for x in ["SINT", "INT"]):
                 parameter_type = Et.SubElement(
                     parameter_type_set, "xtce:IntegerParameterType"
                 )
                 parameter_type.attrib["name"] = parameter_type_ref_name
                 parameter_type.attrib["signed"] = "true"
-
                 encoding = Et.SubElement(parameter_type, "xtce:IntegerDataEncoding")
                 encoding.attrib["sizeInBits"] = str(size)
                 encoding.attrib["encoding"] = "signed"
+
             elif "BYTE" in parameter_type_ref_name:
                 binary_parameter_type = Et.SubElement(
                     parameter_type_set, "xtce:BinaryParameterType"
@@ -215,7 +234,7 @@ class TelemetryGenerator:
 
         # Populate EntryList for packet SequenceContainer
         packet_entry_list = Et.SubElement(science_container, "xtce:EntryList")
-        parameter_refs = self.pkt.loc[8:, "mnemonic"].tolist()
+        parameter_refs = self.pkt.loc[7:, "mnemonic"].tolist()
 
         for parameter_ref in parameter_refs:
             parameter_ref_entry = Et.SubElement(
@@ -238,9 +257,9 @@ class TelemetryGenerator:
         """
         # Process rows from SHCOARSE until the last available row in the DataFrame
         for index, row in self.pkt.iterrows():
-            if index < 8:
+            if index < 7:
                 # Skip rows until SHCOARSE(also known as MET) which are
-                # part of CCSDS header
+                # not part of CCSDS header
                 continue
 
             parameter = Et.SubElement(parameter_set, "xtce:Parameter")

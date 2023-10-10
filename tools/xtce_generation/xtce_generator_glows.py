@@ -4,20 +4,29 @@ from tools.xtce_generation.telemetry_generator import TelemetryGenerator
 
 
 def main():
-    """This function can be used by any instrument to generate XTCE
-    for certain number of packets. Change values where TODO is
+    """This function is used to generate the GLOWS XTCE files for packet processing.
+
+    This will create two XML files, P_GLX_TMSCDE.xml and P_GLX_TMSCHIST.xml. For
+    processing, these need to be manually combined into one file: GLX_COMBINED.xml.
+
+    To do this, first duplicate P_GLX_TMSCHIST into a new file GLX_COMBINED.xml.
+
+    Copy the DE specific parameter entries out of P_GLX_TMSCDE.xml. ALl the non-CCSDS
+    entries need to be copied into the combined XML file. This should go under the
+    combined ParameterSet tag. Then, remove the "SEC" entry, as this is a duplicate.
+
+    Finally, copy the SequenceContainer named "P_GLX_TMSCDE" out of P_GLX_TMSCDE.xml
+    into the ContainerSet in GLX_COMBINED. Then, delete the "SEC" entry. This is a
+    duplicate and will cause an error.
+
     """
 
-    # TODO: change instrument name
     instrument_name = "glows"
     current_directory = Path(__file__).parent
     module_path = f"{current_directory}/../../imap_processing"
     packet_definition_path = f"{module_path}/{instrument_name}/packet_definitions"
-    # TODO: Copy packet definition to tools/xtce_generation/ folder
     path_to_excel_file = f"{current_directory}/tlm_glx_2023_06_22-edited.xlsx"
-    # path_to_excel_file = f"{current_directory}/TLM_GLX_2023_05_22.xlsx"
 
-    # TODO: update packets dictionary with packet name and appId
     # Eg.
     # packets = {
     #     "P_COD_HI_PHA": 1169,
