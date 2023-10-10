@@ -161,34 +161,29 @@ def decom_instrument_packets(packet_file: str, xtce: str):
 
     packets = decom_ialirt.decom_packets(packet_file, xtce)
 
-    hit_storage = {}
+    # List of instruments and their corresponding MET keys
+    instruments = ['HIT', 'MAG', 'COD_LO', 'COD_HI', 'SWE', 'SWAPI']
+    instrument_coords = ['HIT_SC_TICK', 'MAG_ACQ', 'COD_LO_ACQ', 'COD_HI_ACQ', 'SWE_ACQ_SEC', 'SWAPI_ACQ']
+
+    # Create a dictionary mapping each instrument to its MET key
+    met_keys = dict(zip(instruments, instrument_coords))
+
+    # Initialize storage dictionary
+    data_storage = {inst: {} for inst in instruments}
 
     for packet in packets:
         for key, value in packet.data.items():
-            if key.startswith('HIT'):
-                if key not in hit_storage:
-                    hit_storage[key] = []
-                hit_storage[key].append(value.derived_value)
+            for inst in instruments:
+                if key.startswith(inst):
+                    if key not in data_storage[inst]:
+                        data_storage[inst][key] = []
+                    data_storage[inst][key].append(value.derived_value)
+                    break  # Break once a matching instrument is found
 
-    hit_ds = xr.Dataset({
-        'status': ('met', hit_storage['HIT_STATUS']),
-        'reserved': ('met', hit_storage['HIT_RESERVED']),
-        'counter': ('met', hit_storage['HIT_COUNTER']),
-        'fast_rate_1': ('met', hit_storage['HIT_FAST_RATE_1']),
-        'fast_rate_2': ('met', hit_storage['HIT_FAST_RATE_2']),
-        'slow_rate': ('met', hit_storage['HIT_SLOW_RATE']),
-        'event_data_01': ('met', hit_storage['HIT_EVENT_DATA_01']),
-        'event_data_02': ('met', hit_storage['HIT_EVENT_DATA_02']),
-        'event_data_03': ('met', hit_storage['HIT_EVENT_DATA_03']),
-        'event_data_04': ('met', hit_storage['HIT_EVENT_DATA_04']),
-        'event_data_05': ('met', hit_storage['HIT_EVENT_DATA_05']),
-        'event_data_06': ('met', hit_storage['HIT_EVENT_DATA_06']),
-        'event_data_07': ('met', hit_storage['HIT_EVENT_DATA_07']),
-        'event_data_08': ('met', hit_storage['HIT_EVENT_DATA_08']),
-        'event_data_09': ('met', hit_storage['HIT_EVENT_DATA_09']),
-        'event_data_10': ('met', hit_storage['HIT_EVENT_DATA_10']),
-    }, coords={
-        'met': hit_storage['HIT_MET'],
-    })
+    # Generate datasets
+    datasets = {}
+    for inst in instruments:
+        dataset_dict = {key: ('ACQ', value) for key, value in data_storage[inst].items() if key != met_keys[inst]}
+        datasets[inst] = xr.Dataset(dataset_dict, coords={'ACQ': data_storage[inst][met_keys[inst]]})
 
-    return hit_ds
+    return datasets

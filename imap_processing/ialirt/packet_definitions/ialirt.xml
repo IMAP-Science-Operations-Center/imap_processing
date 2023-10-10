@@ -164,6 +164,10 @@
 				<xtce:IntegerDataEncoding sizeInBits="32" encoding="unsigned" />
 				<xtce:UnitSet />
 			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint48" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="48" encoding="unsigned" />
+				<xtce:UnitSet />
+			</xtce:IntegerParameterType>
 						<!-- Enumerated Data Types -->
 			<xtce:EnumeratedParameterType name="status" signed="false">
                 <xtce:UnitSet/>
@@ -515,10 +519,10 @@
 			<xtce:Parameter name="COD_HI_ACQ" parameterTypeRef="uint32">
 				<xtce:LongDescription>CODICE HI Acquisition Time</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="COD_HI_Status" parameterTypeRef="uint8">
+			<xtce:Parameter name="COD_HI_STATUS" parameterTypeRef="uint8">
 				<xtce:LongDescription>CODICE HI Status</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="COD_HI_Counter" parameterTypeRef="uint8">
+			<xtce:Parameter name="COD_HI_COUNTER" parameterTypeRef="uint8">
 				<xtce:LongDescription>CODICE HI Status</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="COD_HI_DATA_00" parameterTypeRef="uint8">
@@ -544,63 +548,63 @@
 			<xtce:Parameter name="COD_LO_ACQ" parameterTypeRef="uint32">
 				<xtce:LongDescription>CODICE LO Acquisition Time</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="COD_LO_Status" parameterTypeRef="uint16">
+			<xtce:Parameter name="COD_LO_STATUS" parameterTypeRef="uint8">
 				<xtce:LongDescription>CODICE LO Status</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="COD_LO_Counter" parameterTypeRef="uint16">
+			<xtce:Parameter name="COD_LO_COUNTER" parameterTypeRef="uint8">
 				<xtce:LongDescription>CODICE LO Counter</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="COD_LO_DATA_00" parameterTypeRef="uint16">
+			<xtce:Parameter name="COD_LO_DATA_00" parameterTypeRef="uint8">
 				<xtce:LongDescription>CODICE LO Data_00</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="COD_LO_DATA_01" parameterTypeRef="uint16">
+			<xtce:Parameter name="COD_LO_DATA_01" parameterTypeRef="uint8">
 				<xtce:LongDescription>CODICE LO Data_01</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="COD_LO_DATA_02" parameterTypeRef="uint16">
+			<xtce:Parameter name="COD_LO_DATA_02" parameterTypeRef="uint8">
 				<xtce:LongDescription>CODICE LO Data_02</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="COD_LO_DATA_03" parameterTypeRef="uint16">
+			<xtce:Parameter name="COD_LO_DATA_03" parameterTypeRef="uint8">
 				<xtce:LongDescription>CODICE LO Data_03</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="COD_LO_DATA_04" parameterTypeRef="uint16">
+			<xtce:Parameter name="COD_LO_DATA_04" parameterTypeRef="uint8">
 				<xtce:LongDescription>CODICE LO Data_04</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="COD_LO_DATA_05" parameterTypeRef="uint16">
+			<xtce:Parameter name="COD_LO_DATA_05" parameterTypeRef="uint8">
 				<xtce:LongDescription>CODICE LO Data_05</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="COD_LO_DATA_06" parameterTypeRef="uint16">
+			<xtce:Parameter name="COD_LO_DATA_06" parameterTypeRef="uint8">
 				<xtce:LongDescription>CODICE LO Data_06</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="COD_LO_DATA_07" parameterTypeRef="uint16">
+			<xtce:Parameter name="COD_LO_DATA_07" parameterTypeRef="uint8">
 				<xtce:LongDescription>CODICE LO Data_07</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="COD_LO_DATA_08" parameterTypeRef="uint16">
+			<xtce:Parameter name="COD_LO_DATA_08" parameterTypeRef="uint8">
 				<xtce:LongDescription>CODICE LO Data_08</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="COD_LO_DATA_09" parameterTypeRef="uint16">
+			<xtce:Parameter name="COD_LO_DATA_09" parameterTypeRef="uint8">
 				<xtce:LongDescription>CODICE LO Data_09</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="COD_LO_DATA_10" parameterTypeRef="uint16">
+			<xtce:Parameter name="COD_LO_DATA_10" parameterTypeRef="uint8">
 				<xtce:LongDescription>CODICE LO Data_10</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="COD_LO_DATA_11" parameterTypeRef="uint16">
+			<xtce:Parameter name="COD_LO_DATA_11" parameterTypeRef="uint8">
 				<xtce:LongDescription>CODICE LO Data_11</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="COD_LO_DATA_12" parameterTypeRef="uint16">
+			<xtce:Parameter name="COD_LO_DATA_12" parameterTypeRef="uint8">
 				<xtce:LongDescription>CODICE LO Data_12</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="COD_LO_DATA_13" parameterTypeRef="uint16">
+			<xtce:Parameter name="COD_LO_DATA_13" parameterTypeRef="uint8">
 				<xtce:LongDescription>CODICE LO Data_13</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="COD_LO_DATA_14" parameterTypeRef="uint16">
+			<xtce:Parameter name="COD_LO_DATA_14" parameterTypeRef="uint8">
 				<xtce:LongDescription>CODICE LO Data_14</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="COD_LO_SPARE_0" parameterTypeRef="uint16">
+			<xtce:Parameter name="COD_LO_SPARE_0" parameterTypeRef="uint8">
 				<xtce:LongDescription>CODICE LO Spare 0</xtce:LongDescription>
 			</xtce:Parameter>
 			<!-- CoDICE LO -->
 			<!-- HIT -->
-			<xtce:Parameter name="HIT_MET" parameterTypeRef="uint32">
+			<xtce:Parameter name="HIT_SC_TICK" parameterTypeRef="uint32">
 				<xtce:LongDescription>Mission Elapsed Time in Seconds</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="HIT_STATUS" parameterTypeRef="hit_status">
@@ -655,12 +659,6 @@
 				<xtce:LongDescription>event data 10</xtce:LongDescription>
 			</xtce:Parameter>
 			<!-- HIT -->
-			<xtce:Parameter name="SWE" parameterTypeRef="swe">
-				<xtce:LongDescription>SWE</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="MAG" parameterTypeRef="mag">
-				<xtce:LongDescription>MAG</xtce:LongDescription>
-			</xtce:Parameter>
 		</xtce:ParameterSet>
 		<!-- End metadata -->
 		<xtce:ContainerSet>
@@ -736,8 +734,8 @@
 					<!-- SWAPI -->
 					<!-- CoDICE HI -->
 					<xtce:ParameterRefEntry parameterRef="COD_HI_ACQ"/>
-					<xtce:ParameterRefEntry parameterRef="COD_HI_Status"/>
-					<xtce:ParameterRefEntry parameterRef="COD_HI_Counter"/>
+					<xtce:ParameterRefEntry parameterRef="COD_HI_STATUS"/>
+					<xtce:ParameterRefEntry parameterRef="COD_HI_COUNTER"/>
 					<xtce:ParameterRefEntry parameterRef="COD_HI_DATA_00"/>
 					<xtce:ParameterRefEntry parameterRef="COD_HI_DATA_01"/>
 					<xtce:ParameterRefEntry parameterRef="COD_HI_DATA_02"/>
@@ -767,7 +765,7 @@
 					<xtce:ParameterRefEntry parameterRef="COD_LO_SPARE_0"/>
 					<!-- CoDICE LO -->
 					<!-- HIT -->
-					<xtce:ParameterRefEntry parameterRef="HIT_MET"/>
+					<xtce:ParameterRefEntry parameterRef="HIT_SC_TICK"/>
 					<xtce:ParameterRefEntry parameterRef="HIT_STATUS"/>
 					<xtce:ParameterRefEntry parameterRef="HIT_RESERVED"/>
 					<xtce:ParameterRefEntry parameterRef="HIT_COUNTER"/>
