@@ -7,9 +7,6 @@ import pytest
 from imap_processing import decom
 from imap_processing.ultra.l0.decom_ultra import decom_ultra_packets
 
-from imap_processing.ultra.tests.unit.data_path_fixtures import \
-    ccsds_path, xtce_image_rates_path, xtce_image_rates_test_path
-
 
 @pytest.fixture()
 def decom_test_data(ccsds_path, xtce_image_rates_path):
