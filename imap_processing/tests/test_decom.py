@@ -51,11 +51,10 @@ def test_ccsds_header(xtce_document):
         document = f.read()
 
     # Check that each header key is defined as a Parameter
-    for header_key in header_keys:
+    for key in header_keys:
         assert (
-            f'<xtce:Parameter name="{header_key[0]}" parameterTypeRef="{header_key[1]}"'
-            in document
-            or f'<xtce:Parameter name="{header_key[0]}" parameterTypeRef="{header_key[1].lower()}"'
+            f'<xtce:Parameter name="{key[0]}" parameterTypeRef="{key[1]}"' in document
+            or f'<xtce:Parameter name="{key[0]}" parameterTypeRef="{key[1].lower()}"'
             in document
         )
 
