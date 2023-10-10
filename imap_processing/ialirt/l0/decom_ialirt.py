@@ -10,13 +10,13 @@ logger = logging.getLogger(__name__)
 
 
 class PacketLength(Enum):
-    EXPECTED_LENGTH = 1464
+    """Class that represents properties of the IALiRT packet."""
 
+    EXPECTED_LENGTH = 1464
 
 def decom_packets(packet_file, xtce_packet_definition):
     """
-    Unpack data packet. In this function, we unpack and return data
-    as it is. Data modification will not be done at this step.
+    Unpack data packet. In this function, we unpack and return data.
 
     Parameters
     ----------
@@ -27,10 +27,9 @@ def decom_packets(packet_file, xtce_packet_definition):
 
     Returns
     -------
-    List
+    packets : list
         List of all the unpacked data
     """
-
     packet_definition = xtcedef.XtcePacketDefinition(xtce_packet_definition)
     packet_parser = parser.PacketParser(packet_definition)
 
@@ -93,7 +92,6 @@ def generate_xarray(packet_file: str, xtce: str):
         A dataset containing the decoded data fields with 'time' as the coordinating
         dimension.
     """
-
     try:
         packets = decom_packets(packet_file, xtce)
     except Exception as e:
