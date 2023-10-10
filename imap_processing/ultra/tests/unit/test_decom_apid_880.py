@@ -2,6 +2,8 @@ import pandas as pd
 import pytest
 
 from imap_processing import decom
+from imap_processing.ultra.tests.unit.data_path_fixtures import \
+    xtce_aux_test_path, ccsds_path, xtce_aux_path
 
 
 @pytest.fixture()
