@@ -5,25 +5,19 @@ import pytest
 from imap_processing import imap_module_directory
 
 # Scrape the repo for all packet definition XML files
-xtce_documents = list(imap_module_directory.glob("*/packet_definitions/*.xml"))
-
-# (Temporary) Mark IDEX as expected fail until packet definition is fixed
-idex_document = (
-    imap_module_directory / "idex" / "packet_definitions" / "idex_packet_definition.xml"
-)
-# Need to remove IDEX from the list in order to append it again with proper marking
-xtce_documents = [item for item in xtce_documents if item != idex_document]
-xtce_documents.append(
-    pytest.param(
-        idex_document,
-        marks=pytest.mark.xfail(
-            reason="Packet Definition does not include properly formatted CCSDS Header"
-        ),
-    )
-)
+xtce_document_list = imap_module_directory.glob("*/packet_definitions/*.xml")
 
 
-@pytest.mark.parametrize("xtce_document", xtce_documents)
+@pytest.fixture(params=xtce_document_list, scope="session")
+def xtce_document(request):
+    if "idex" in str(request.param):
+        pytest.xfail(
+            "Packet Definition does not include properly formatted CCSDS Header"
+        )
+    else:
+        return request.param
+
+
 def test_ccsds_header(xtce_document):
     """Test if the XTCE document contains the proper CCSDS header information"""
 
