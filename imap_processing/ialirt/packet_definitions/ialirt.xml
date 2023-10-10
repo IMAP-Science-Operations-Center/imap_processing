@@ -201,18 +201,7 @@
                     <xtce:Enumeration label="SUNSENSOR" value="1"/>
                 </xtce:EnumerationList>
             </xtce:EnumeratedParameterType>
-			<!-- HIT -->
-			<xtce:EnumeratedParameterType name="hit_status" signed="false">
-                <xtce:UnitSet/>
-                <xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned"/>
-                <xtce:EnumerationList>
-                    <xtce:Enumeration label="OFF-NOMINAL" value="0"/>
-                    <xtce:Enumeration label="NOMINAL" value="1"/>
-                </xtce:EnumerationList>
-            </xtce:EnumeratedParameterType>
-			<!-- HIT -->
-			<!-- SWE -->
-			<xtce:EnumeratedParameterType name="swe_nom_flag" signed="false">
+			<xtce:EnumeratedParameterType name="instrument_status" signed="false">
                 <xtce:UnitSet/>
                 <xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned"/>
                 <xtce:EnumerationList>
@@ -228,17 +217,6 @@
                     <xtce:Enumeration label="HVSCI" value="1"/>
                 </xtce:EnumerationList>
             </xtce:EnumeratedParameterType>
-			<!-- SWE -->
-			<!-- SWAPI -->
-			<xtce:EnumeratedParameterType name="swapi_flag" signed="false">
-                <xtce:UnitSet/>
-                <xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned"/>
-                <xtce:EnumerationList>
-                    <xtce:Enumeration label="OFF-NOMINAL" value="0"/>
-                    <xtce:Enumeration label="NOMINAL" value="1"/>
-                </xtce:EnumerationList>
-            </xtce:EnumeratedParameterType>
-			<!-- SWAPI -->
 		</xtce:ParameterTypeSet>
         <xtce:ParameterSet>
             <!-- Within the ParameterSet, utilize the data types defined in the ParameterTypeSet to create variables
@@ -266,7 +244,7 @@
 			<xtce:Parameter name="PKT_LEN" parameterTypeRef="uint16">
 				<xtce:LongDescription>CCSDS Packet Length (number of bytes after Packet length minus 1)</xtce:LongDescription>
 			</xtce:Parameter>
-			<!-- Start metadata -->
+			<!-- Spacecraft -->
 			<xtce:Parameter name="SC_SCLK_SEC" parameterTypeRef="uint32">
 				<xtce:LongDescription>CCSDS Packet SCLK (sec)</xtce:LongDescription>
 			</xtce:Parameter>
@@ -365,6 +343,7 @@
 			<xtce:Parameter name="SC_SPARE_3" parameterTypeRef="uint11">
 				<xtce:LongDescription>Spare 3</xtce:LongDescription>
 			</xtce:Parameter>
+			<!-- Spacecraft -->
 			<!-- SWE -->
 			<xtce:Parameter name="SWE_ACQ_SEC" parameterTypeRef="uint32">
 				<xtce:LongDescription>SWE Acquisition Time (sec)</xtce:LongDescription>
@@ -372,7 +351,7 @@
 			<xtce:Parameter name="SWE_ACQ_SUB" parameterTypeRef="uint24">
 				<xtce:LongDescription>SWE Acquisition Time (sub sec)</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="SWE_NOM_FLAG" parameterTypeRef="swe_nom_flag">
+			<xtce:Parameter name="SWE_NOM_FLAG" parameterTypeRef="instrument_status">
 				<xtce:LongDescription>1 = nominal, 0 = off-nominal</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWE_OPS_FLAG" parameterTypeRef="swe_ops_flag">
@@ -481,7 +460,7 @@
 			<xtce:Parameter name="SWAPI_ACQ" parameterTypeRef="uint32">
 				<xtce:LongDescription>SWAPI Acquisition Time</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="SWAPI_FLAG" parameterTypeRef="swapi_flag">
+			<xtce:Parameter name="SWAPI_FLAG" parameterTypeRef="instrument_status">
 				<xtce:LongDescription>1 = nominal, 0 = off-nominal</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWAPI_RESERVED" parameterTypeRef="uint15">
@@ -605,9 +584,9 @@
 			<!-- CoDICE LO -->
 			<!-- HIT -->
 			<xtce:Parameter name="HIT_SC_TICK" parameterTypeRef="uint32">
-				<xtce:LongDescription>Mission Elapsed Time in Seconds</xtce:LongDescription>
+				<xtce:LongDescription>Spacecraft tick</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="HIT_STATUS" parameterTypeRef="hit_status">
+			<xtce:Parameter name="HIT_STATUS" parameterTypeRef="instrument_status">
 				<xtce:LongDescription>1 = nominal, 0 = off-nominal</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="HIT_RESERVED" parameterTypeRef="uint1">
