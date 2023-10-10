@@ -32,18 +32,17 @@ def test_ccsds_header(xtce_document):
         ("PKT_LEN", "UINT16"),
     ]
     header_container_set = (
-        "<xtce:ContainerSet>"
-        '    <xtce:SequenceContainer name="CCSDSPacket">'
-        "            <xtce:EntryList>"
-        '                    <xtce:ParameterRefEntry parameterRef="VERSION" />'
-        '                    <xtce:ParameterRefEntry parameterRef="TYPE" />'
-        '                    <xtce:ParameterRefEntry parameterRef="SEC_HDR_FLG" />'
-        '                    <xtce:ParameterRefEntry parameterRef="PKT_APID" />'
-        '                    <xtce:ParameterRefEntry parameterRef="SEQ_FLGS" />'
-        '                    <xtce:ParameterRefEntry parameterRef="SRC_SEQ_CTR" />'
-        '                    <xtce:ParameterRefEntry parameterRef="PKT_LEN" />'
-        "            </xtce:EntryList>"
-        "    </xtce:SequenceContainer>"
+        '<xtce:SequenceContainer name="CCSDSPacket">'
+        "        <xtce:EntryList>"
+        '                <xtce:ParameterRefEntry parameterRef="VERSION" />'
+        '                <xtce:ParameterRefEntry parameterRef="TYPE" />'
+        '                <xtce:ParameterRefEntry parameterRef="SEC_HDR_FLG" />'
+        '                <xtce:ParameterRefEntry parameterRef="PKT_APID" />'
+        '                <xtce:ParameterRefEntry parameterRef="SEQ_FLGS" />'
+        '                <xtce:ParameterRefEntry parameterRef="SRC_SEQ_CTR" />'
+        '                <xtce:ParameterRefEntry parameterRef="PKT_LEN" />'
+        "        </xtce:EntryList>"
+        "</xtce:SequenceContainer>"
     )
 
     # Read in the XTCE document
