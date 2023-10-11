@@ -24,6 +24,44 @@ def decom_test_data():
 
     return data_packet_list
 
+@pytest.fixture(scope="session")
+def validataion_data():
+    """Read in validation data from the CSV file
+
+    Returns
+    -------
+    validatation_data : pandas Dataframe?
+        The validation data read from the CSV, cleaned up and ready to compare
+        the decommutated packet with
+    """
+
+    # Read in the CSV file (perhaps to a pandas dataframe?)
+
+    # Remove the timestamp column and data
+
+    # Return the data
+
+    pass
+
+
+def test_housekeeping_data(decom_test_data, validataion_data):
+    """Compare the decommutated housekeeping data and compare it to the
+    validataion data to make sure they are the same.
+
+    Parameters
+    ----------
+    decom_test_data : dict
+        The decommuated housekeeping packet data
+    validatation_data : pandas Dataframe?
+        The validation data to compare against
+    """
+
+    # May need to apply Analog Conversions to specific mnemonics first?
+
+    # Compare keywords and values, similar to how SWE does it (i.e. test_swe_housekeeping.py)
+
+    pass
+
 
 def test_total_packets_in_data_file(decom_test_data):
     """Test if total packets in data file is correct"""
