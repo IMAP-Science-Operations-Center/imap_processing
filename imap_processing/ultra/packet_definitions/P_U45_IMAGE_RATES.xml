@@ -193,7 +193,7 @@
 		</xtce:ParameterSet>
 		<!-- End metadata -->
 		<xtce:ContainerSet>
-			<xtce:SequenceContainer name="CCSDSPacket">
+			<xtce:SequenceContainer name="CCSDSPacket" abstract="true">
 				<xtce:EntryList>
 					<xtce:ParameterRefEntry parameterRef="VERSION" />
 					<xtce:ParameterRefEntry parameterRef="TYPE" />

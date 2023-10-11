@@ -31,18 +31,16 @@ def test_ccsds_header(xtce_document):
         ("SRC_SEQ_CTR", "UINT14"),
         ("PKT_LEN", "UINT16"),
     ]
-    header_container_set = (
-        '<xtce:SequenceContainer name="CCSDSPacket">'
-        "        <xtce:EntryList>"
-        '                <xtce:ParameterRefEntry parameterRef="VERSION" />'
-        '                <xtce:ParameterRefEntry parameterRef="TYPE" />'
-        '                <xtce:ParameterRefEntry parameterRef="SEC_HDR_FLG" />'
-        '                <xtce:ParameterRefEntry parameterRef="PKT_APID" />'
-        '                <xtce:ParameterRefEntry parameterRef="SEQ_FLGS" />'
-        '                <xtce:ParameterRefEntry parameterRef="SRC_SEQ_CTR" />'
-        '                <xtce:ParameterRefEntry parameterRef="PKT_LEN" />'
-        "        </xtce:EntryList>"
-        "</xtce:SequenceContainer>"
+    header_entry_list = (
+        "<xtce:EntryList>"
+        '        <xtce:ParameterRefEntry parameterRef="VERSION" />'
+        '        <xtce:ParameterRefEntry parameterRef="TYPE" />'
+        '        <xtce:ParameterRefEntry parameterRef="SEC_HDR_FLG" />'
+        '        <xtce:ParameterRefEntry parameterRef="PKT_APID" />'
+        '        <xtce:ParameterRefEntry parameterRef="SEQ_FLGS" />'
+        '        <xtce:ParameterRefEntry parameterRef="SRC_SEQ_CTR" />'
+        '        <xtce:ParameterRefEntry parameterRef="PKT_LEN" />'
+        "</xtce:EntryList>"
     )
 
     # Read in the XTCE document
@@ -59,8 +57,8 @@ def test_ccsds_header(xtce_document):
 
     # Check that the header is defined as a SequenceContainer in the XTCE file
     # First remove discrepancies in whitespace, tabs, and newlines
-    header_container_set = (
-        header_container_set.replace(" ", "").replace("\t", "").replace("\n", "")
+    header_entry_list = (
+        header_entry_list.replace(" ", "").replace("\t", "").replace("\n", "")
     )
     document = document.replace(" ", "").replace("\t", "").replace("\n", "")
-    assert header_container_set in document
+    assert header_entry_list in document
