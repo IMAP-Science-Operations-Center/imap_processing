@@ -52,7 +52,6 @@
 				<xtce:IntegerDataEncoding sizeInBits="32" encoding="unsigned" />
 			</xtce:IntegerParameterType>
 			<xtce:BinaryParameterType name="BYTE10080">
-				<xtce:UnitSet />
 				<xtce:BinaryDataEncoding bitOrder="mostSignificantBitFirst">
 					<xtce:SizeInBits>
 						<xtce:FixedValue>10080</xtce:FixedValue>
@@ -61,7 +60,6 @@
 			</xtce:BinaryParameterType>
 			<!-- ENUM Parameter Types -->
 			<xtce:EnumeratedParameterType name="NOMINAL_ENUM" signed="false">
-                <xtce:UnitSet/>
                 <xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned"/>
                 <xtce:EnumerationList>
                     <xtce:Enumeration label="NOT_NOMINAL" value="0"/>
@@ -69,7 +67,6 @@
                 </xtce:EnumerationList>
             </xtce:EnumeratedParameterType>
             <xtce:EnumeratedParameterType name="VALID_ENUM" signed="false">
-                <xtce:UnitSet/>
                 <xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned"/>
                 <xtce:EnumerationList>
                     <xtce:Enumeration label="INVALID" value="0"/>
@@ -77,7 +74,6 @@
                 </xtce:EnumerationList>
             </xtce:EnumeratedParameterType>
             <xtce:EnumeratedParameterType name="SPIN_PERIOD_SOURCE_ENUM" signed="false">
-                <xtce:UnitSet/>
                 <xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned"/>
                 <xtce:EnumerationList>
                     <xtce:Enumeration label="STAR_TRACKER" value="0"/>
@@ -85,7 +81,6 @@
                 </xtce:EnumerationList>
             </xtce:EnumeratedParameterType>
             <xtce:EnumeratedParameterType name="ACTIVE_ENUM" signed="false">
-                <xtce:UnitSet/>
                 <xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned"/>
                 <xtce:EnumerationList>
                     <xtce:Enumeration label="INACTIVE" value="0"/>
@@ -93,7 +88,6 @@
                 </xtce:EnumerationList>
             </xtce:EnumeratedParameterType>
 			<xtce:EnumeratedParameterType name="SAFED_ENUM" signed="false">
-                <xtce:UnitSet/>
                 <xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned"/>
                 <xtce:EnumerationList>
                     <xtce:Enumeration label="NOT_SAFED" value="0"/>
@@ -101,7 +95,6 @@
                 </xtce:EnumerationList>
             </xtce:EnumeratedParameterType>
 			<xtce:EnumeratedParameterType name="APP_MODE_ENUM" signed="false">
-                <xtce:UnitSet/>
                 <xtce:IntegerDataEncoding sizeInBits="4" encoding="unsigned"/>
                 <xtce:EnumerationList>
                     <xtce:Enumeration label="OFF" value="0"/>
@@ -114,7 +107,6 @@
                 </xtce:EnumerationList>
             </xtce:EnumeratedParameterType>
 			<xtce:EnumeratedParameterType name="LAST_ACC_OPCODE_ENUM" signed="false">
-                <xtce:UnitSet/>
                 <xtce:IntegerDataEncoding sizeInBits="16" encoding="unsigned"/>
                 <xtce:EnumerationList>
 					 <xtce:Enumeration label="NONE" value="0"/>
@@ -169,7 +161,6 @@
                 </xtce:EnumerationList>
             </xtce:EnumeratedParameterType>
 			<xtce:EnumeratedParameterType name="PLUG_INSERTED_ENUM" signed="false">
-                <xtce:UnitSet/>
                 <xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned"/>
                 <xtce:EnumerationList>
                     <xtce:Enumeration label="NOT_INSERTED" value="0"/>
@@ -177,7 +168,6 @@
                 </xtce:EnumerationList>
             </xtce:EnumeratedParameterType>
 			<xtce:EnumeratedParameterType name="ENABLE_ENUM" signed="false">
-                <xtce:UnitSet/>
                 <xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned"/>
                 <xtce:EnumerationList>
                     <xtce:Enumeration label="NOT_ENABLED" value="0"/>
@@ -185,7 +175,6 @@
                 </xtce:EnumerationList>
             </xtce:EnumeratedParameterType>
 			<xtce:EnumeratedParameterType name="DISABLE_ENUM" signed="false">
-                <xtce:UnitSet/>
                 <xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned"/>
                 <xtce:EnumerationList>
                     <xtce:Enumeration label="DISABLED" value="0"/>
@@ -193,7 +182,6 @@
                 </xtce:EnumerationList>
             </xtce:EnumeratedParameterType>
 			<xtce:EnumeratedParameterType name="ESA_RANGE_ENUM" signed="false">
-                <xtce:UnitSet/>
                 <xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned"/>
                 <xtce:EnumerationList>
                     <xtce:Enumeration label="HIGH_RANGE" value="0"/>
@@ -201,7 +189,6 @@
                 </xtce:EnumerationList>
             </xtce:EnumeratedParameterType>
 			<xtce:EnumeratedParameterType name="MIN_MAX_ENUM" signed="false">
-                <xtce:UnitSet/>
                 <xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned"/>
                 <xtce:EnumerationList>
                     <xtce:Enumeration label="MIN" value="0"/>
@@ -209,7 +196,6 @@
                 </xtce:EnumerationList>
             </xtce:EnumeratedParameterType>
 			<xtce:EnumeratedParameterType name="FDC_LAST_TRIGGER_ACTION_ENUM" signed="false">
-                <xtce:UnitSet/>
                 <xtce:IntegerDataEncoding sizeInBits="8" encoding="unsigned"/>
                 <xtce:EnumerationList>
                     <xtce:Enumeration label="REPORT_ONLY" value="0"/>
@@ -235,7 +221,6 @@
                 </xtce:EnumerationList>
             </xtce:EnumeratedParameterType>
 			<xtce:EnumeratedParameterType name="ACTIVE_MACRO_ENUM" signed="false">
-                <xtce:UnitSet/>
                 <xtce:IntegerDataEncoding sizeInBits="5" encoding="unsigned"/>
                 <xtce:EnumerationList>
                     <xtce:Enumeration label="NONE" value="0"/>
@@ -258,7 +243,6 @@
                 </xtce:EnumerationList>
             </xtce:EnumeratedParameterType>
 			<xtce:EnumeratedParameterType name="ACTIVE_MACRO_TRIGGER_ENUM" signed="false">
-                <xtce:UnitSet/>
                 <xtce:IntegerDataEncoding sizeInBits="3" encoding="unsigned"/>
                 <xtce:EnumerationList>
                     <xtce:Enumeration label="NONE" value="0"/>
@@ -268,7 +252,6 @@
                 </xtce:EnumerationList>
             </xtce:EnumeratedParameterType>
 			<xtce:EnumeratedParameterType name="YES_NO_ENUM" signed="false">
-                <xtce:UnitSet/>
                 <xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned"/>
                 <xtce:EnumerationList>
                     <xtce:Enumeration label="NO" value="0"/>
@@ -276,7 +259,6 @@
                 </xtce:EnumerationList>
             </xtce:EnumeratedParameterType>
 			<xtce:EnumeratedParameterType name="QUARTER_CYCLE_ENUM" signed="false">
-                <xtce:UnitSet/>
                 <xtce:IntegerDataEncoding sizeInBits="5" encoding="unsigned"/>
                 <xtce:EnumerationList>
                     <xtce:Enumeration label="FIRST" value="0"/>
@@ -300,7 +282,7 @@
 			<xtce:Parameter name="PKT_APID" parameterTypeRef="UINT11">
 				<xtce:LongDescription>CCSDS Packet Application Process ID</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="SEG_FLGS" parameterTypeRef="UINT2">
+			<xtce:Parameter name="SEQ_FLGS" parameterTypeRef="UINT2">
 				<xtce:LongDescription>CCSDS Packet Grouping Flags (3=not part of group)</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SRC_SEQ_CTR" parameterTypeRef="UINT14">
@@ -731,10 +713,9 @@
                     <xtce:ParameterRefEntry parameterRef="TYPE"/>
                     <xtce:ParameterRefEntry parameterRef="SEC_HDR_FLG"/>
                     <xtce:ParameterRefEntry parameterRef="PKT_APID"/>
-                    <xtce:ParameterRefEntry parameterRef="SEG_FLGS"/>
+                    <xtce:ParameterRefEntry parameterRef="SEQ_FLGS"/>
                     <xtce:ParameterRefEntry parameterRef="SRC_SEQ_CTR"/>
                     <xtce:ParameterRefEntry parameterRef="PKT_LEN"/>
-                    <xtce:ParameterRefEntry parameterRef="SHCOARSE" />
                 </xtce:EntryList>
             </xtce:SequenceContainer>
 
@@ -746,6 +727,7 @@
 					</xtce:RestrictionCriteria>
 				</xtce:BaseContainer>
 				<xtce:EntryList>
+					<xtce:ParameterRefEntry parameterRef="SHCOARSE" />
 					<xtce:ParameterRefEntry parameterRef="ACQ_START_COARSE" />
 					<xtce:ParameterRefEntry parameterRef="ACQ_START_FINE" />
 					<xtce:ParameterRefEntry parameterRef="CEM_NOMINAL_ONLY" />
@@ -776,6 +758,7 @@
 					</xtce:RestrictionCriteria>
 				</xtce:BaseContainer>
 				<xtce:EntryList>
+					<xtce:ParameterRefEntry parameterRef="SHCOARSE" />
 					<xtce:ParameterRefEntry parameterRef="APP_MODE" />
 					<xtce:ParameterRefEntry parameterRef="SAFED" />
 					<xtce:ParameterRefEntry parameterRef="ITF_ERR_CNT" />
@@ -855,6 +838,7 @@
 					</xtce:RestrictionCriteria>
 				</xtce:BaseContainer>
 				<xtce:EntryList>
+					<xtce:ParameterRefEntry parameterRef="SHCOARSE" />
 					<xtce:ParameterRefEntry parameterRef="THRESHOLD_DAC" />
 					<xtce:ParameterRefEntry parameterRef="STIM_CFG_REG" />
 					<xtce:ParameterRefEntry parameterRef="CEM1_COUNTS" />
@@ -875,6 +859,7 @@
 					</xtce:RestrictionCriteria>
 				</xtce:BaseContainer>
 				<xtce:EntryList>
+					<xtce:ParameterRefEntry parameterRef="SHCOARSE" />
 					<xtce:ParameterRefEntry parameterRef="QMSG_CNT" />
 					<xtce:ParameterRefEntry parameterRef="EVENT_TIME_COARSE_LO8" />
 					<xtce:ParameterRefEntry parameterRef="EVENT_TIME_FINE_HI8" />
