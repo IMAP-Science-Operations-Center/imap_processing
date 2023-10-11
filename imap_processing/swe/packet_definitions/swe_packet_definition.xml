@@ -81,7 +81,6 @@
                 </xtce:EnumerationList>
             </xtce:EnumeratedParameterType>
             <xtce:EnumeratedParameterType name="ACTIVE_ENUM" signed="false">
-
                 <xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned"/>
                 <xtce:EnumerationList>
                     <xtce:Enumeration label="INACTIVE" value="0"/>
