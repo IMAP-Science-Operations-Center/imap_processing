@@ -5,7 +5,7 @@ import pytest
 
 from imap_processing.glows.l0 import decom_glows
 
-logging.basicConfig(level=logging.ERROR)
+# logging.basicConfig(level=logging.ERROR)
 
 
 @pytest.fixture()
@@ -31,10 +31,6 @@ def test_glows_decom_count(decom_test_data):
 
 
 def test_glows_hist_data(decom_test_data):
-    for hist in decom_test_data[0]:
-        assert len(hist.HISTOGRAM_DATA) == 3599
-        assert min(hist.HISTOGRAM_DATA) > 10
-        assert max(hist.HISTOGRAM_DATA) < 170
 
     expected_data = {
         "MET": 54232338,

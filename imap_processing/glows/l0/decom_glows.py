@@ -50,6 +50,11 @@ def decom_packets(
     histdata = []
     dedata = []
 
+    filename = packet_file_path.split("/")[-1]
+
+    # TODO: get this version from an offical source
+    version = "0.1"
+
     with open(packet_file_path, "rb") as binary_data:
         try:
             glows_packets = glows_parser.generator(
@@ -61,11 +66,11 @@ def decom_packets(
                 apid = packet.header["PKT_APID"].derived_value
                 # Do something with the packet data
                 if apid == GlowsParams.HIST_APID.value:
-                    hist_l0 = HistogramL0(packet)
+                    hist_l0 = HistogramL0(packet, version, filename)
                     histdata.append(hist_l0)
 
                 if apid == GlowsParams.DE_APID.value:
-                    de_l0 = DirectEventL0(packet)
+                    de_l0 = DirectEventL0(packet, version, filename)
                     dedata.append(de_l0)
 
         except ReadError as e:
