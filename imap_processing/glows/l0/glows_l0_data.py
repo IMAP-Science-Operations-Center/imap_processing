@@ -31,7 +31,7 @@ class HistogramL0(GlowsL0):
 
     Attributes
     ----------
-    SHCOARSE : int
+    MET : int
         CCSDS Packet Time Stamp (coarse time)
     STARTID : int
         Histogram Start ID
@@ -84,7 +84,7 @@ class HistogramL0(GlowsL0):
 
     """
 
-    SHCOARSE: int
+    MET: int
     STARTID: int
     ENDID: int
     FLAGS: int
@@ -152,7 +152,7 @@ class DirectEventL0(GlowsL0):
 
     Attributes
     ----------
-    SHCOARSE : int
+    MET : int
         CCSDS Packet Time Stamp (coarse time)
     SEC : int
         Data timestamp, seconds counter.
@@ -162,7 +162,7 @@ class DirectEventL0(GlowsL0):
         Packet sequence in data set.
     """
 
-    SHCOARSE: int
+    MET: int
     SEC: int
     LEN: int
     SEQ: int
