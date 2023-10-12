@@ -30,9 +30,14 @@ def test_glows_decom_count(decom_test_data):
     assert len(decom_test_data[1]) == expected_de_packet_count
 
 
-def test_glows_data(decom_test_data):
+def test_glows_hist_data(decom_test_data):
+    for hist in decom_test_data[0]:
+        assert len(hist.HISTOGRAM_DATA) == 3599
+        assert min(hist.HISTOGRAM_DATA) > 10
+        assert max(hist.HISTOGRAM_DATA) < 170
+
     expected_data = {
-        "SHCOARSE": 54232338,
+        "MET": 54232338,
         "STARTID": 0,
         "ENDID": 0,
         "FLAGS": 64,
@@ -62,6 +67,6 @@ def test_glows_data(decom_test_data):
 
 
 def test_glows_de_data(decom_test_data):
-    expected_data = {"SHCOARSE": 54233694, "SEC": 54232338, "LEN": 1, "SEQ": 0}
+    expected_data = {"MET": 54233694, "SEC": 54232338, "LEN": 1, "SEQ": 0}
     for key in expected_data.keys():
         assert getattr(decom_test_data[1][0], key) == expected_data[key]
