@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, fields
 
 
 @dataclass
@@ -32,4 +32,16 @@ class CcsdsData:
     PKT_LEN: int
 
     def __init__(self, packet_header: dict):
-        print(packet_header)
+        attributes = [field.name for field in fields(self)]
+
+        for key, item in packet_header.items():
+            value = (
+                item.derived_value if item.derived_value is not None else item.raw_value
+            )
+            if key in attributes:
+                setattr(self, key, value)
+            else:
+                raise KeyError(
+                    f"Did not find matching attribute in Histogram data class for "
+                    f"{key}"
+                )
