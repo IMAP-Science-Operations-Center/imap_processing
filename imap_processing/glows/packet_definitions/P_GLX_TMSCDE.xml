@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='utf-8'?>
 <xtce:SpaceSystem xmlns:xtce="http://www.omg.org/space/xtce" name="P_GLX_TMSCDE">
-	<xtce:Header date="2023-09" version="1.0" author="IMAP SDC" />
+	<xtce:Header date="2023-10" version="1.0" author="IMAP SDC" />
 	<xtce:TelemetryMetaData>
 		<xtce:ParameterTypeSet>
 			<xtce:IntegerParameterType name="UINT1" signed="false">
@@ -41,7 +41,7 @@
 			<xtce:Parameter name="PKT_APID" parameterTypeRef="UINT11">
 				<xtce:LongDescription>CCSDS Packet Application Process ID</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="SEG_FLGS" parameterTypeRef="UINT2">
+			<xtce:Parameter name="SEQ_FLGS" parameterTypeRef="UINT2">
 				<xtce:LongDescription>CCSDS Packet Grouping Flags (3=not part of group)</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SRC_SEQ_CTR" parameterTypeRef="UINT14">
@@ -50,17 +50,21 @@
 			<xtce:Parameter name="PKT_LEN" parameterTypeRef="UINT16">
 				<xtce:LongDescription>CCSDS Packet Length (number of bytes after Packet length minus 1)</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="SHCOARSE" parameterTypeRef="UINT32">
-				<xtce:LongDescription>CCSDS Packet Time Stamp (coarse time)</xtce:LongDescription>
+			<xtce:Parameter name="MET" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>CCSDS Packet  2nd Header Coarse Time</xtce:ShortDescription>
+				<xtce:LongDescription>CCSDS Packet 2nd Header Coarse Time (seconds)</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SEC" parameterTypeRef="INT32">
-				<xtce:LongDescription>Data timestamp, seconds counter.</xtce:LongDescription>
+				<xtce:ShortDescription>Data timestamp, seconds counter.</xtce:ShortDescription>
+				<xtce:LongDescription>Start time (subseconds by default set to 0) of the direct event dump. Specified as a number of IMAP seconds (since start from IMAP epoch as defined in GI ICD).</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="LEN" parameterTypeRef="UINT16">
-				<xtce:LongDescription>Number of packets in data set.</xtce:LongDescription>
+				<xtce:ShortDescription>Number of packets in data set.</xtce:ShortDescription>
+				<xtce:LongDescription>Number of GLX_TMSCDE packets the block of Direct event data is composed of. </xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SEQ" parameterTypeRef="UINT16">
-				<xtce:LongDescription>Packet sequence in data set.</xtce:LongDescription>
+				<xtce:ShortDescription>Packet sequence in data set.</xtce:ShortDescription>
+				<xtce:LongDescription>Sequence number for this packet in the series of GLX_TMSCDE packets the block of Direct event data is composed of. </xtce:LongDescription>
 			</xtce:Parameter>
 		</xtce:ParameterSet>
 		<xtce:ContainerSet>
@@ -70,10 +74,9 @@
 					<xtce:ParameterRefEntry parameterRef="TYPE" />
 					<xtce:ParameterRefEntry parameterRef="SEC_HDR_FLG" />
 					<xtce:ParameterRefEntry parameterRef="PKT_APID" />
-					<xtce:ParameterRefEntry parameterRef="SEG_FLGS" />
+					<xtce:ParameterRefEntry parameterRef="SEQ_FLGS" />
 					<xtce:ParameterRefEntry parameterRef="SRC_SEQ_CTR" />
 					<xtce:ParameterRefEntry parameterRef="PKT_LEN" />
-					<xtce:ParameterRefEntry parameterRef="SHCOARSE" />
 				</xtce:EntryList>
 			</xtce:SequenceContainer>
 			<xtce:SequenceContainer name="P_GLX_TMSCDE">
@@ -83,6 +86,7 @@
 					</xtce:RestrictionCriteria>
 				</xtce:BaseContainer>
 				<xtce:EntryList>
+					<xtce:ParameterRefEntry parameterRef="MET" />
 					<xtce:ParameterRefEntry parameterRef="SEC" />
 					<xtce:ParameterRefEntry parameterRef="LEN" />
 					<xtce:ParameterRefEntry parameterRef="SEQ" />
