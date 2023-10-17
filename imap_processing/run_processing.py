@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """Serves as a command line utility to run the processing for a specific
 instrument and data level.
 
@@ -7,6 +8,8 @@ Use
 """
 
 import argparse
+import sys
+from abc import ABC, abstractmethod
 
 from imap_processing import instruments, processing_levels
 
@@ -25,17 +28,14 @@ def _parse_args():
         '"python run_processing swe l1a".'
     )
 
-    instrument_help = (
-        "The instrument to process. Acceptable values are: " '"swe", and "codice".'
-    )
+    instrument_help = f"The instrument to process. Acceptable values are: {instruments}"
     level_help = (
-        "The data level to process. Acceptable values are: "
-        '"l0", "l1a", "l1b", "l1c", and "l2".'
+        f"The data level to process. Acceptable values are: {processing_levels}"
     )
 
     parser = argparse.ArgumentParser(description=description)
-    parser.add_argument("instrument", type=str, help=instrument_help)
-    parser.add_argument("level", type=str, help=level_help)
+    parser.add_argument("--instrument", type=str, required=True, help=instrument_help)
+    parser.add_argument("--level", type=str, required=True, help=level_help)
 
     args = parser.parse_args()
 
@@ -51,16 +51,18 @@ def _validate_args(args):
     args : argparse.Namespace
         An object containing the parsed arguments and their values
     """
-    assert (
-        args.instrument in instruments
-    ), f"{args.instrument} is not a supported instrument"
-    assert (
-        args.level in processing_levels[args.instrument]
-    ), f"{args.level} is not a supported data level"
+    if args.instrument not in instruments:
+        raise ValueError(
+            f"{args.instrument} is not in the supported instrument list: {instruments}"
+        )
+    if args.level not in processing_levels[args.instrument]:
+        raise ValueError(
+            f"{args.level} is not a supported data level for the {args.instrument} instrument, valid levels are: {processing_levels[args.instrument]}"
+        )
 
 
-class ProcessInstrument:
-    """A class containing methods to process each instrument.
+class ProcessInstrument(ABC):
+    """An abstract base class containing a method to process an instrument.
 
     Attributes
     ----------
@@ -68,48 +70,90 @@ class ProcessInstrument:
         The data level to process (e.g. ``l1a``)
     """
 
-    def __init__(self, level):
-        self.level = level
+    @abstractmethod
+    def process(level):
+        """Perform instrument specific processing."""
+        raise NotImplementedError
 
-    def process_codice(self):
+
+class Codice(ProcessInstrument):
+    """Process CoDICE."""
+
+    def process(level):
         """Perform CoDICE specific processing."""
-        print(f"Processing CoDICE {self.level}")
+        print(f"Processing CoDICE {level}")
 
-    def process_glows(self):
+
+class Glows(ProcessInstrument):
+    """Process GLOWS."""
+
+    def process(level):
         """Perform GLOWS specific processing."""
-        print(f"Processing GLOWS {self.level}")
+        print(f"Processing GLOWS {level}")
 
-    def process_hi(self):
+
+class Hi(ProcessInstrument):
+    """Process IMAP-Hi."""
+
+    def process(level):
         """Perform IMAP-Hi specific processing."""
-        print(f"Processing IMAP-Hi {self.level}")
+        print(f"Processing IMAP-Hi {level}")
 
-    def process_hit(self):
+
+class Hit(ProcessInstrument):
+    """Process HIT."""
+
+    def process(level):
         """Perform HIT specific processing."""
-        print(f"Processing HIT {self.level}")
+        print(f"Processing HIT {level}")
 
-    def process_idex(self):
+
+class Idex(ProcessInstrument):
+    """Process IDEX."""
+
+    def process(level):
         """Perform IDEX specific processing."""
-        print(f"Processing IDEX {self.level}")
+        print(f"Processing IDEX {level}")
 
-    def process_lo(self):
+
+class Lo(ProcessInstrument):
+    """Process IMAP-Lo."""
+
+    def process(level):
         """Perform IMAP-Lo specific processing."""
-        print(f"Processing IMAP-Lo {self.level}")
+        print(f"Processing IMAP-Lo {level}")
 
-    def process_mag(self):
+
+class Mag(ProcessInstrument):
+    """Process MAG."""
+
+    def process(level):
         """Perform MAG specific processing."""
-        print(f"Processing MAG {self.level}")
+        print(f"Processing MAG {level}")
 
-    def process_swapi(self):
+
+class Swapi(ProcessInstrument):
+    """Process SWAPI."""
+
+    def process(level):
         """Perform SWAPI specific processing."""
-        print(f"Processing SWAPI {self.level}")
+        print(f"Processing SWAPI {level}")
 
-    def process_swe(self):
+
+class Swe(ProcessInstrument):
+    """Process SWE."""
+
+    def process(level):
         """Perform SWE specific processing."""
-        print(f"Processing swe {self.level}")
+        print(f"Processing SWE {level}")
 
-    def process_ultra(self):
+
+class Ultra(ProcessInstrument):
+    """Process IMAP-Ultra."""
+
+    def process(level):
         """Perform IMAP-Ultra specific processing."""
-        print(f"Processing IMAP-Ultra {self.level}")
+        print(f"Processing IMAP-Ultra {level}")
 
 
 if __name__ == "__main__":
@@ -117,6 +161,5 @@ if __name__ == "__main__":
     _validate_args(args)
 
     # Determine which function to invoke
-    process = ProcessInstrument(args.level)
-    method = getattr(process, f"process_{args.instrument}")
-    method()
+    cls = getattr(sys.modules[__name__], args.instrument.capitalize())
+    cls.process(args.level)
