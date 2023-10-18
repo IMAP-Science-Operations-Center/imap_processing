@@ -15,5 +15,5 @@ The L0 code to decommutate the CCSDS packet data can be found below.
     :template: autosummary.rst
     :recursive:
 
-    imap_processing.glows.l0.decom_glows
-    imap_processing.glows.l0.glows_l0_data
+    l0.decom_glows
+    l0.glows_l0_data
