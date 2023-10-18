@@ -3,6 +3,16 @@
 GLOWS (Global Solar Wind Structure)
 ===================================
 
+.. currentmodule:: imap_processing.ccsds
+
+.. autosummary::
+    :toctree: generated/
+    :template: autosummary.rst
+    :recursive:
+
+    ccsds_data
+
+
 .. currentmodule:: imap_processing.glows
 
 This is the GLOWS Instrument module, which contains the code for processing
