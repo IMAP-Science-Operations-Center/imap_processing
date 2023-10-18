@@ -1,4 +1,3 @@
-import logging
 from pathlib import Path
 
 import pytest
@@ -31,7 +30,6 @@ def test_glows_decom_count(decom_test_data):
 
 
 def test_glows_hist_data(decom_test_data):
-
     expected_data = {
         "MET": 54232338,
         "STARTID": 0,
