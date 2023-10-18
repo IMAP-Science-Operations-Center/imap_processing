@@ -83,7 +83,12 @@ class HistogramL0(GlowsL0):
         Number of events
     HISTOGRAM_DATA : bytes
         Raw binary format histogram data
-
+    ground_sw_version : str
+        Ground software version
+    packet_file_name : str
+        File name of the source packet
+    ccsds_header : CcsdsData
+        CCSDS header data
     """
 
     MET: int
@@ -162,6 +167,12 @@ class DirectEventL0(GlowsL0):
         Number of packets in data set.
     SEQ : int
         Packet sequence in data set.
+    ground_sw_version : str
+        Ground software version
+    packet_file_name : str
+        File name of the source packet
+    ccsds_header : CcsdsData
+        CCSDS header data
     """
 
     MET: int
