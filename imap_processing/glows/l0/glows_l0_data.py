@@ -9,10 +9,12 @@ class GlowsL0:
 
     Attributes
     ----------
-    ground_sw_version: str
+    ground_sw_version : str
         Ground software version
-    packet_file_name: str
+    packet_file_name : str
         File name of the source packet
+    ccsds_header : CcsdsData
+        CCSDS header data
     """
 
     ground_sw_version: str
@@ -79,7 +81,7 @@ class HistogramL0(GlowsL0):
         Variance of event-impulse length
     EVENTS : int
         Number of events
-    HISTOGRAM_DATA : bin
+    HISTOGRAM_DATA : bytes
         Raw binary format histogram data
 
     """
@@ -108,7 +110,7 @@ class HistogramL0(GlowsL0):
     ELAVG: int
     ELVAR: int
     EVENTS: int
-    HISTOGRAM_DATA: bin
+    HISTOGRAM_DATA: bytes
 
     def __init__(self, packet, software_version: str, packet_file_name: str):
         """Initialize data class with a packet of histogram data.
