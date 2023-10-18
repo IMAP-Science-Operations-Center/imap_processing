@@ -1,12 +1,11 @@
 import numpy as np
 
 from imap_processing import common_cdf_attrs
-
-# Set IDEX software version here for now
-__version__ = "1"
+from imap_processing.idex import __version__
 
 # Global Attributes
-idex_l1_global_attrs = {
+
+idex_global_base = {
     "Data_type": ["L1>Level-1"],
     "Data_version": [__version__],
     "Descriptor": ["IDEX>Interstellar Dust Experiment"],
@@ -20,40 +19,30 @@ idex_l1_global_attrs = {
             "https://imap.princeton.edu/instruments/idex for more details."
         )
     ],
-    "Mission_group": ["IMAP"],
-    "Logical_source": ["imap_idx_l1"],
     "Logical_file_id": ["FILL ME IN AT FILE CREATION"],
-    "Logical_source_description": ["IMAP Mission IDEX Instrument Level-1 Data."],
 } | common_cdf_attrs.global_base
 
+idex_l1_global_attrs = {
+    "Data_type": ["L1>Level-1"],
+    "Logical_source": ["imap_idx_l1"],
+    "Logical_source_description": ["IMAP Mission IDEX Instrument Level-1 Data."],
+} | idex_global_base
+
 idex_l2_global_attrs = {
-    "Data_type": ["l2"],
-    "Data_version": [__version__],
-    "TEXT": [
-        (
-            "The Interstellar Dust Experiment (IDEX) is a time-of-flight (TOF) "
-            "dust impact ionization mass spectrometer on the IMAP mission that "
-            "provides the elemental composition, speed, and mass distributions "
-            "of interstellar dust and interplanetary dust particles. Each record "
-            "contains the data from a single dust impact. See "
-            "https://imap.princeton.edu/instruments/idex for more details. "
-        )
-    ],
-    "Mission_group": ["IMAP"],
+    "Data_type": ["L2>Level-2"],
     "Logical_source": ["imap_idx_l2"],
-    "Logical_file_id": ["FILL ME IN AT FILE CREATION"],
     "Logical_source_description": ["IMAP Mission IDEX Instrument Level-2 Data"],
-} | common_cdf_attrs.global_base
+} | idex_global_base
 
 # L1 variables base dictionaries (these are not complete)
 l1_data_base = {
     "DEPEND_0": "Epoch",
     "DISPLAY_TYPE": "spectrogram",
-    "FILLVAL": np.float32(-1.0e31),
-    "FORMAT": "E12.2",
+    "FILLVAL": common_cdf_attrs.INT_FILLVAL,
+    "FORMAT": "I12",
     "UNITS": "dN",
-    "VALIDMIN": np.float32(0),
-    "VALIDMAX": np.float32(4096),
+    "VALIDMIN": np.int64(0),
+    "VALIDMAX": np.int64(4096),
     "VAR_TYPE": "data",
     "SCALETYP": "linear",
 }
@@ -67,8 +56,8 @@ l1_target_base = {
 
 sample_rate_base = {
     "DEPEND_0": "Epoch",
-    "FILLVAL": np.float32(-1.0e31),
-    "FORMAT": "E12.2",
+    "FILLVAL": common_cdf_attrs.DOUBLE_FILLVAL,
+    "FORMAT": "F12.5",
     "LABLAXIS": "Time",
     "UNITS": "microseconds",
     "VALIDMIN": np.float32(-500),
@@ -79,8 +68,8 @@ sample_rate_base = {
 
 trigger_base = {
     "DEPEND_0": "Epoch",
-    "FILLVAL": np.iinfo(np.int64).min,
-    "FORMAT": "E12.2",
+    "FILLVAL": common_cdf_attrs.INT_FILLVAL,
+    "FORMAT": "I12",
     "VALIDMIN": 0,
     "VAR_TYPE": "support_data",
 }

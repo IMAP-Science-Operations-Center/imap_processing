@@ -1,5 +1,8 @@
 import numpy as np
 
+INT_FILLVAL = np.iinfo(np.int64).min
+DOUBLE_FILLVAL = np.float64(-1.0e-31)
+
 global_base = {
     "Project": ["STP>Solar-Terrestrial Physics"],
     "Source_name": ["IMAP>Interstellar Mapping and Acceleration Probe"],
@@ -16,12 +19,12 @@ global_base = {
 epoch_attrs = {
     "CATDESC": "Default time",
     "FIELDNAM": "Epoch",
-    "FILLVAL": np.iinfo(np.int64).min,
+    "FILLVAL": INT_FILLVAL,
     "FORMAT": "a2",
     "LABLAXIS": "Epoch",
     "UNITS": "ns",
-    "VALIDMIN": np.array([-315575942816000000]),
-    "VALIDMAX": np.array([946728069183000000]),
+    "VALIDMIN": np.int64(-315575942816000000),
+    "VALIDMAX": np.int64(946728069183000000),
     "VAR_TYPE": "support_data",
     "SCALETYP": "linear",
     "MONOTON": "INCREASE",
