@@ -26,11 +26,6 @@ class GlowsL0:
 class HistogramL0(GlowsL0):
     """Data structure for storing GLOWS histogram packet data.
 
-    Parameters
-    ----------
-    packet : tuple[list]
-        Histogram packet yielded from space_packet_parser.generate_packets.
-
     Attributes
     ----------
     MET : int
@@ -151,11 +146,6 @@ class HistogramL0(GlowsL0):
 @dataclass
 class DirectEventL0(GlowsL0):
     """Data structure for storing GLOWS direct event packet data.
-
-    Parameters
-    ----------
-        packet : tuple[list]
-            Direct event packet yielded from space_packet_parser.generate_packets.
 
     Attributes
     ----------

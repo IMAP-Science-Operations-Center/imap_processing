@@ -5,6 +5,7 @@ from bitstring import ReadError
 from space_packet_parser import parser, xtcedef
 
 from imap_processing import imap_module_directory
+from imap_processing.glows import version
 from imap_processing.glows.l0.glows_l0_data import DirectEventL0, HistogramL0
 
 
@@ -50,10 +51,7 @@ def decom_packets(
     histdata = []
     dedata = []
 
-    filename = packet_file_path.split("/")[-1]
-
-    # TODO: get this version from an offical source
-    version = "0.1"
+    filename = Path(packet_file_path).name
 
     with open(packet_file_path, "rb") as binary_data:
         try:
