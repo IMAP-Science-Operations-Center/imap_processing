@@ -5,7 +5,10 @@ from imap_processing.decom import decom_packets
 
 if __name__ == "__main__":
     # Define paths
-    packet_file = Path("housekeeping_data.bin")
+    packet_file = Path(
+        f"{imap_module_directory}/codice/tests/data/"
+        f"raw_ccsds_20230822_122700Z_idle.bin"
+    )
     xtce_document = Path(
         f"{imap_module_directory}/codice/packet_definitions/P_COD_NHK.xml"
     )
