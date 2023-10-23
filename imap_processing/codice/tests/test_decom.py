@@ -45,7 +45,7 @@ def validation_data():
         f"{imap_module_directory}/codice/tests/data/"
         f"idle_export_raw.COD_NHK_20230822_122700.csv"
     )
-    validation_data = pd.read_csv(validation_file)
+    validation_data = pd.read_csv(validation_file, index_col="SHCOARSE")
     # Remove the timestamp column and data
     if "timestamp" in validation_data.columns:
         validation_data = validation_data.drop(columns=["timestamp"])
@@ -59,7 +59,7 @@ def test_housekeeping_data(decom_test_data, validation_data):
 
     Parameters
     ----------
-    decom_test_data : List
+    decom_test_data : List[Packet]
         The decommuted housekeeping packet data
     validation_data : pandas DataFrame
         The validation data to compare against
@@ -77,13 +77,7 @@ def test_housekeeping_data(decom_test_data, validation_data):
             # Compare SHCOARSE value
             assert value.raw_value == validation_row.name
             continue
-
-        # Check if the key is present in validation_row
-        if key not in validation_row.index:
-            print(f"Key '{key}' not found in validation_row. Skipping comparison.")
-            continue
-
-        # Check if the data is the same
+        # Compare raw values of other housekeeping data
         assert value.raw_value == validation_row[key]
 
 
