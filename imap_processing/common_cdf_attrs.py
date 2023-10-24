@@ -1,7 +1,7 @@
 import numpy as np
 
 INT_FILLVAL = np.iinfo(np.int64).min
-DOUBLE_FILLVAL = np.float64(-1.0e-31)
+DOUBLE_FILLVAL = np.float64(-1.0e31)
 
 global_base = {
     "Project": ["STP>Solar-Terrestrial Physics"],
