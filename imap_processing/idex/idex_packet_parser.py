@@ -113,9 +113,13 @@ class PacketParser:
         # based on the time of the first dust impact
         file_start_date = self.data["Epoch"][0].data
         date_string = np.datetime_as_string(file_start_date, unit="D").replace("-", "")
-        description = description if description.startswith("_") else f"_{description}"
+        description = (
+            description
+            if (description.startswith("_") or not description)
+            else f"_{description}"
+        )
         # Set file name for IDEX L1 based on the date string above and the version
-        filename = f"imap_idx_l1_{date_string}_0000{description}_p_v{version}.cdf"
+        filename = f"imap_idx_l1_{date_string}{description}_v{version}.cdf"
         filename_and_path = os.path.join(directory, filename)
         # Set the global attributes in the xarray
         self.data.attrs = idex_cdf_attrs.idex_l1_global_attrs
