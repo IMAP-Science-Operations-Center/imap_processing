@@ -63,6 +63,7 @@ html_theme = "pydata_sphinx_theme"
 html_logo = "_static/imap-mark-hor-multicolor-dark.png"
 
 html_theme_options = {
+    "navigation_with_keys": True,
     "github_url": "https://github.com/IMAP-Science-Operations-Center/imap_processing",
 }
 
