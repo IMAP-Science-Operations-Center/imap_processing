@@ -6,13 +6,12 @@ git and GitHub Workflow
 The best method for contributing software to the repository is a workflow that involves forking the repository,
 developing changes on "feature" branches, and opening pull requests through GitHub.
 
-The following diagram depicts this workflow (credit to `Atlassian
-<https://www.atlassian.com/git/tutorials/comparing-workflows/gitflow-workflow>`_):
+The following diagram depicts this workflow:
 
-.. image:: https://wac-cdn.atlassian.com/dam/jcr:cc0b526e-adb7-4d45-874e-9bcea9898b4a/04%20Hotfix%20branches.svg?cdnVersion=1089
+.. image:: ../../_static/git-workflow.png
    :alt: git and GitHub Workflow
-   :width: 650
-   :height: 650
+   :width: 700
+   :height: 550
 
 As such, all feature branches should be branched off of and merged back into the ``dev`` branch.
 
