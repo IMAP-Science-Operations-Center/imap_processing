@@ -1,22 +1,18 @@
-from pathlib import Path
+from imap_processing import decom, imap_module_directory
 
-from imap_processing import imap_module_directory
-from imap_processing.decom import decom_packets
 
-if __name__ == "__main__":
-    # Define paths
-    packet_file = Path(
-        f"{imap_module_directory}/codice/tests/data/"
-        f"raw_ccsds_20230822_122700Z_idle.bin"
-    )
-    xtce_document = Path(
-        f"{imap_module_directory}/codice/packet_definitions/P_COD_NHK.xml"
-    )
+def decom_packets(packet_file: str):
+    """Decom CoDICE data packets using CoDICE packet definition.
 
-    # Decommutated packets
-    decomposed_packets = decom_packets(packet_file, xtce_document)
+    Parameters
+    ----------
+    packet_file : str
+        Path to data packet path with filename.
 
-    # Print decommutated packets
-    for packet in decomposed_packets:
-        if packet.header["PKT_APID"].raw_value == 1136:
-            print(packet.data)
+    Returns
+    -------
+    list : list
+        all the unpacked data.
+    """
+    xtce_document = f"{imap_module_directory}/codice/packet_definitions/P_COD_NHK.xml"
+    return decom.decom_packets(packet_file, xtce_document)

@@ -6,7 +6,7 @@ import pandas as pd
 import pytest
 
 from imap_processing import imap_module_directory
-from imap_processing.decom import decom_packets
+from imap_processing.codice.l0 import decom_codice
 
 
 @pytest.fixture(scope="session")
@@ -16,10 +16,8 @@ def decom_test_data():
         f"{imap_module_directory}/codice/tests/data/"
         f"raw_ccsds_20230822_122700Z_idle.bin"
     )
-    xtce_document = Path(
-        f"{imap_module_directory}/codice/packet_definitions/P_COD_NHK.xml"
-    )
-    data_packet_list = decom_packets(packet_file, xtce_document)
+    Path(f"{imap_module_directory}/codice/packet_definitions/P_COD_NHK.xml")
+    data_packet_list = decom_codice.decom_packets(packet_file)
     data_packet_list = [
         packet
         for packet in data_packet_list
@@ -48,7 +46,7 @@ def validation_data():
     validation_data = pd.read_csv(validation_file, index_col="SHCOARSE")
     # Remove the timestamp column and data
     if "timestamp" in validation_data.columns:
-        validation_data = validation_data.drop(columns=["timestamp"])
+        validation_data.drop(columns=["timestamp"], inplace=True, errors="ignore")
 
     # Return the data
     return validation_data
