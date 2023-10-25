@@ -119,7 +119,7 @@ class PacketParser:
             else f"_{description}"
         )
         # Set file name for IDEX L1 based on the date string above and the version
-        filename = f"imap_idx_l1_{date_string}{description}_v{version}.cdf"
+        filename = f"imap_idex_l1_{date_string}{description}_v{version}.cdf"
         filename_and_path = os.path.join(directory, filename)
         # Set the global attributes in the xarray
         self.data.attrs = idex_cdf_attrs.idex_l1_global_attrs
@@ -128,7 +128,10 @@ class PacketParser:
 
         # Convert the xarray object to a CDF!
         xarray_to_cdf(
-            self.data, filename_and_path, terminate_on_warning=True
+            self.data,
+            filename_and_path,
+            datetime64_to_cdftt2000=True,
+            terminate_on_warning=True,
         )  # Terminate if not ISTP compliant
 
         return filename_and_path

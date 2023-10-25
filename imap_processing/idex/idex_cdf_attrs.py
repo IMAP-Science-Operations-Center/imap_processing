@@ -47,12 +47,9 @@ l1_data_base = {
     "SCALETYP": "linear",
 }
 
-l1_tof_base = {"DEPEND_1": "Time_High_SR", "LABLAXIS": "Amplitude"} | l1_data_base
+l1_tof_base = {"DEPEND_1": "Time_High_SR"} | l1_data_base
 
-l1_target_base = {
-    "DEPEND_1": "Time_Low_SR",
-    "LABLAXIS": "Amplitude",
-} | l1_data_base
+l1_target_base = {"DEPEND_1": "Time_Low_SR"} | l1_data_base
 
 sample_rate_base = {
     "DEPEND_0": "Epoch",
@@ -64,6 +61,11 @@ sample_rate_base = {
     "VALIDMAX": np.float32(500),
     "VAR_TYPE": "support_data",
     "SCALETYP": "linear",
+    "VAR_NOTES": (
+        "The number of microseconds since the event.  "
+        "0 is the start of data collection, negative "
+        "numbers represent data collected prior to a dust event"
+    ),
 }
 
 trigger_base = {
@@ -71,7 +73,8 @@ trigger_base = {
     "FILLVAL": common_cdf_attrs.INT_FILLVAL,
     "FORMAT": "I12",
     "VALIDMIN": 0,
-    "VAR_TYPE": "support_data",
+    "VAR_TYPE": "data",
+    "DISPLAY_TYPE": "no_plot",
 }
 
 # L1 Attribute Dictionaries
@@ -98,6 +101,7 @@ high_sr_attrs = {
 tof_high_attrs = {
     "CATDESC": "Time of flight waveform on the high-gain channel",
     "FIELDNAM": "High Gain Time of Flight",
+    "LABLAXIS": "TOF High Ampl.",
     "VAR_NOTES": (
         "High gain channel of the time-of-flight signal. "
         "Sampled at 260 Megasamples per second, with a 10-bit resolution. "
@@ -108,6 +112,7 @@ tof_high_attrs = {
 tof_mid_attrs = {
     "CATDESC": "Time of flight waveform on the mid-gain channel",
     "FIELDNAM": "Mid Gain Time of Flight",
+    "LABLAXIS": "TOF Mid Ampl.",
     "VAR_NOTES": (
         "Mid gain channel of the time-of-flight signal. "
         "Sampled at 260 Megasamples per second, with a 10-bit resolution. "
@@ -118,6 +123,7 @@ tof_mid_attrs = {
 tof_low_attrs = {
     "CATDESC": "Time of flight waveform on the low-gain channel",
     "FIELDNAM": "Low Gain Time of Flight",
+    "LABLAXIS": "TOF Low Ampl.",
     "VAR_NOTES": (
         "Low gain channel of the time-of-flight signal. "
         "Sampled at 260 Megasamples per second, with a 10-bit resolution. "
@@ -128,8 +134,9 @@ tof_low_attrs = {
 target_low_attrs = {
     "CATDESC": "Target low charge sensitive amplifier waveform",
     "FIELDNAM": "Low Target Signal",
+    "LABLAXIS": "Low Target Ampl.",
     "VAR_NOTES": (
-        "This is the low gain channel of IDEX's target signal. "
+        "Low gain channel of IDEX's target signal. "
         "Sampled at 3.75 Msps with 12-bit resolution. "
         "Data is used to quantify dust charge. "
     ),
@@ -138,8 +145,9 @@ target_low_attrs = {
 target_high_attrs = {
     "CATDESC": "Ion grid charge sensitive amplifier waveform",
     "FIELDNAM": "High Target Signal",
+    "LABLAXIS": "High Target Ampl.",
     "VAR_NOTES": (
-        "This is the high gain channel of IDEX's target signal. "
+        "High gain channel of IDEX's target signal. "
         "Sampled at 3.75 Msps with 12-bit resolution. "
         "Data is used to quantify dust charge."
     ),
@@ -148,6 +156,7 @@ target_high_attrs = {
 ion_grid_attrs = {
     "CATDESC": "Ion grid charge sensitive amplifier waveform data",
     "FIELDNAM": "Ion Grid Signal",
+    "LABLAXIS": "Ion Grid Ampl.",
     "VAR_NOTES": (
         "This is the ion grid signal from IDEX. "
         "Sampled at 3.75 Msps with 12-bit resolution. "
