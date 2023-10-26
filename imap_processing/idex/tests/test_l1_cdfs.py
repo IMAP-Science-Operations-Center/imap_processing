@@ -21,7 +21,7 @@ def test_idex_cdf_file(decom_test_data):
         file_name = decom_test_data.write_l1_cdf(
             version="01", description="", directory=tmpdir
         )
-        assert file_name == os.path.join(tmpdir, "imap_idx_l1_20250724_v01.cdf")
+        assert file_name == os.path.join(tmpdir, "imap_idex_l1_20250724_v01.cdf")
         os.remove(file_name)
 
 
@@ -70,7 +70,7 @@ def test_descriptor_in_file_name(decom_test_data):
             version="01", description="impact-lab-test001", directory=tmpdir
         )
         assert file_name == os.path.join(
-            tmpdir, "imap_idx_l1_20250724_impact-lab-test001_v01.cdf"
+            tmpdir, "imap_idex_l1_20250724_impact-lab-test001_v01.cdf"
         )
         os.remove(file_name)
 
