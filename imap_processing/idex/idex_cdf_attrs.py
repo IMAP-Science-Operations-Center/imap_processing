@@ -30,11 +30,12 @@ idex_l1_global_attrs = {
 
 idex_l2_global_attrs = {
     "Data_type": ["L2>Level-2"],
-    "Logical_source": ["imap_idx_l2"],
+    "Logical_source": ["imap_idex_l2"],
     "Logical_source_description": ["IMAP Mission IDEX Instrument Level-2 Data"],
 } | idex_global_base
 
-# L1 variables base dictionaries (these are not complete)
+# L1 variables base dictionaries
+# (these need to be filled in by the variable dictionaries below)
 l1_data_base = {
     "DEPEND_0": "Epoch",
     "DISPLAY_TYPE": "spectrogram",
@@ -45,6 +46,8 @@ l1_data_base = {
     "VALIDMAX": np.int64(4096),
     "VAR_TYPE": "data",
     "SCALETYP": "linear",
+    # "VARIABLE_PURPOSE" tells CDAWeb which variables are worth plotting
+    "VARIABLE_PURPOSE": "PRIMARY",
 }
 
 l1_tof_base = {"DEPEND_1": "Time_High_SR"} | l1_data_base
