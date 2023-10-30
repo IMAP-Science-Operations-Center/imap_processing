@@ -38,6 +38,7 @@ release = imap_processing.__version__
 extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.autosummary",
+    "sphinx.ext.intersphinx",  # Link to other projects' documentation
     "sphinx.ext.githubpages",  # Helpful for publishing to gh-pages
     "sphinx.ext.napoleon",
     "myst_parser",
@@ -63,6 +64,7 @@ html_theme = "pydata_sphinx_theme"
 html_logo = "_static/imap-mark-hor-multicolor-dark.png"
 
 html_theme_options = {
+    "navigation_with_keys": True,
     "github_url": "https://github.com/IMAP-Science-Operations-Center/imap_processing",
 }
 
@@ -73,3 +75,11 @@ html_static_path = ["_static"]
 
 # Autosummary
 autosummary_generate = True
+
+intersphinx_mapping = {
+    "numpy": ("https://numpy.org/doc/stable/", None),
+    "pandas": ("https://pandas.pydata.org/pandas-docs/stable/", None),
+    "pytest": ("https://pytest.org/en/stable/", None),
+    "python": ("https://docs.python.org/3/", None),
+    "xarray": ("https://docs.xarray.dev/en/stable/", None),
+}
