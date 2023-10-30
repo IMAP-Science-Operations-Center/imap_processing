@@ -1,8 +1,17 @@
 from imap_processing import cdf_utils
 from imap_processing.idex import __version__
 
-# Global Attributes
+# Valid min/maxes
 
+# Data is in a 12 bit unsigned INT
+DATA_MIN = 0  # It could go down to 0 in theory
+DATA_MAX = 4096  # It cannot exceed 4096 (2^12)
+
+# Samples span 130 microseconds at the most, and values are allowed to be negative
+SAMPLE_RATE_MIN = -130  # All might be negative
+SAMPLE_RATE_MAX = 130  # All might be positive
+
+# Global Attributes
 idex_global_base = {
     "Data_type": "L1>Level-1",
     "Data_version": __version__,
@@ -38,8 +47,8 @@ l1_data_base = {
     "FILLVAL": cdf_utils.INT_FILLVAL,
     "FORMAT": "I12",
     "UNITS": "dN",
-    "VALIDMIN": 0,
-    "VALIDMAX": 4096,
+    "VALIDMIN": DATA_MIN,
+    "VALIDMAX": DATA_MAX,
     "VAR_TYPE": "data",
     "SCALETYP": "linear",
     # "VARIABLE_PURPOSE" tells CDAWeb which variables are worth plotting
@@ -56,8 +65,8 @@ sample_rate_base = {
     "FORMAT": "F12.5",
     "LABLAXIS": "Time",
     "UNITS": "microseconds",
-    "VALIDMIN": -500,
-    "VALIDMAX": 500,
+    "VALIDMIN": SAMPLE_RATE_MIN,
+    "VALIDMAX": SAMPLE_RATE_MAX,
     "VAR_TYPE": "support_data",
     "SCALETYP": "linear",
     "VAR_NOTES": (
@@ -71,7 +80,7 @@ trigger_base = {
     "DEPEND_0": "Epoch",
     "FILLVAL": cdf_utils.INT_FILLVAL,
     "FORMAT": "I12",
-    "VALIDMIN": 0,
+    "VALIDMIN": 0,  # All values are positive integers or 0 by design
     "VAR_TYPE": "data",
     "DISPLAY_TYPE": "no_plot",
 }

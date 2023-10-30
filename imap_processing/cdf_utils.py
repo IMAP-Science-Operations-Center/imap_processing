@@ -4,8 +4,13 @@ import numpy as np
 import xarray as xr
 from cdflib.xarray import xarray_to_cdf
 
+# Recommended FILLVAL for all integers
 INT_FILLVAL = np.iinfo(np.int64).min
+# Recommended FILLVALL for all floats
 DOUBLE_FILLVAL = np.float64(-1.0e31)
+# Recommended min/max Epoch based on MMS approved values
+MIN_EPOCH = -315575942816000000
+MAX_EPOCH = 946728069183000000
 
 global_base = {
     "Project": "STP>Solar-Terrestrial Physics",
@@ -27,8 +32,8 @@ epoch_attrs = {
     "FORMAT": "a2",
     "LABLAXIS": "Epoch",
     "UNITS": "ns",
-    "VALIDMIN": np.int64(-315575942816000000),
-    "VALIDMAX": np.int64(946728069183000000),
+    "VALIDMIN": MIN_EPOCH,
+    "VALIDMAX": MAX_EPOCH,
     "VAR_TYPE": "support_data",
     "SCALETYP": "linear",
     "MONOTON": "INCREASE",
@@ -64,12 +69,15 @@ def write_cdf(data: xr.Dataset, description: str = "", directory: str = ""):
     # based on the time of the first dust impact
     file_start_date = data["Epoch"][0].data
     date_string = np.datetime_as_string(file_start_date, unit="D").replace("-", "")
+
+    # Determine the optional "description" field
     description = (
         description
         if (description.startswith("_") or not description)
         else f"_{description}"
     )
-    # Set file name for IDEX L1 based on the date string above and the version
+
+    # Determine the file name based on the attributes in the xarray
     filename = (
         data.attrs["Logical_source"]
         + "_"
@@ -78,10 +86,12 @@ def write_cdf(data: xr.Dataset, description: str = "", directory: str = ""):
         + f"_v{data.attrs['Data_version']}.cdf"
     )
     filename_and_path = os.path.join(directory, filename)
+
+    # Insert the final attribute:
     # The Logical_file_id is always the name of the file without the extension
     data.attrs["Logical_file_id"] = filename.split(".")[0]
 
-    # Convert the xarray object to a CDF!
+    # Convert the xarray object to a CDF
     xarray_to_cdf(
         data,
         filename_and_path,
