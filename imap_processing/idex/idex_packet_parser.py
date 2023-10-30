@@ -1,14 +1,12 @@
 import logging
-import os
 from collections import namedtuple
 
 import bitstring
 import numpy as np
 import xarray as xr
-from cdflib.xarray import xarray_to_cdf
 from space_packet_parser import parser, xtcedef
 
-from imap_processing import common_cdf_attrs, imap_module_directory
+from imap_processing import cdf_utils, imap_module_directory
 from imap_processing.idex import idex_cdf_attrs
 
 SCITYPE_MAPPING_TO_NAMES = {
@@ -91,51 +89,7 @@ class PacketParser:
         ]
 
         self.data = xr.concat(processed_dust_impact_list, dim="Epoch")
-
-    def write_l1_cdf(self, description: str = "", version: str = "01", directory=""):
-        """Write the contents of self.data to a CDF file.
-
-        The date in the file name is determined by the start time of the first event
-        in the file
-
-        Parameters
-        ----------
-            description (str): The description to insert into the file name after the
-                               orbit, before the SPICE field.  No underscores allowed.
-            version (str):  The version number to append to the file
-            directory (str): The directory to write the file to
-
-        Returns
-        -------
-            str
-                The name of the file created
-        """
-        # Determine the start date of the data in the file,
-        # based on the time of the first dust impact
-        file_start_date = self.data["Epoch"][0].data
-        date_string = np.datetime_as_string(file_start_date, unit="D").replace("-", "")
-        description = (
-            description
-            if (description.startswith("_") or not description)
-            else f"_{description}"
-        )
-        # Set file name for IDEX L1 based on the date string above and the version
-        filename = f"imap_idex_l1_{date_string}{description}_v{version}.cdf"
-        filename_and_path = os.path.join(directory, filename)
-        # Set the global attributes in the xarray
         self.data.attrs = idex_cdf_attrs.idex_l1_global_attrs
-        # The Logical_file_id is always the name of the file without the extension
-        self.data.attrs["Logical_file_id"] = filename.split(".")[0]
-
-        # Convert the xarray object to a CDF!
-        xarray_to_cdf(
-            self.data,
-            filename_and_path,
-            datetime64_to_cdftt2000=True,
-            terminate_on_warning=True,
-        )  # Terminate if not ISTP compliant
-
-        return filename_and_path
 
 
 class RawDustEvent:
@@ -1018,7 +972,7 @@ class RawDustEvent:
             name="Epoch",
             data=[self.impact_time],
             dims=("Epoch"),
-            attrs=common_cdf_attrs.epoch_attrs,
+            attrs=cdf_utils.epoch_attrs,
         )
 
         time_low_sr_xr = xr.DataArray(

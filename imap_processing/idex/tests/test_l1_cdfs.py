@@ -7,6 +7,8 @@ import xarray as xr
 from cdflib.xarray import cdf_to_xarray
 from cdflib.xarray.xarray_to_cdf import ISTPError
 
+from imap_processing import idex
+from imap_processing.cdf_utils import write_cdf
 from imap_processing.idex.idex_packet_parser import PacketParser
 
 
@@ -22,17 +24,20 @@ def temp_path(tmp_path_factory):
 
 def test_idex_cdf_file(decom_test_data, temp_path):
     # Verify that a CDF file can be created with no errors thrown by xarray_to_cdf
-    file_name = decom_test_data.write_l1_cdf(
-        version="01", description="", directory=temp_path
+    file_name = write_cdf(decom_test_data.data, description="", directory=temp_path)
+    date_to_test = "20250724"
+    assert file_name == os.path.join(
+        temp_path,
+        f"{decom_test_data.data.attrs['Logical_source']}_{date_to_test}_v{idex.__version__}.cdf",
     )
-    assert file_name == os.path.join(temp_path, "imap_idex_l1_20250724_v01.cdf")
+    assert Path(file_name).exists()
 
 
 def test_bad_cdf_attributes(decom_test_data, temp_path):
     # Deliberately mess up the attributes to verify that an ISTPError is raised
     del decom_test_data.data["TOF_High"].attrs["DEPEND_1"]
     with pytest.raises(ISTPError):
-        decom_test_data.write_l1_cdf(version="01", description="", directory=temp_path)
+        write_cdf(decom_test_data.data, description="", directory=temp_path)
 
 
 def test_bad_cdf_file_data(decom_test_data, temp_path):
@@ -61,16 +66,18 @@ def test_bad_cdf_file_data(decom_test_data, temp_path):
     decom_test_data.data["Bad_data"] = bad_data_xr
 
     with pytest.raises(ISTPError):
-        decom_test_data.write_l1_cdf(version="01", description="", directory=temp_path)
+        write_cdf(decom_test_data.data, description="", directory=temp_path)
 
 
 def test_descriptor_in_file_name(decom_test_data, temp_path):
     # Deliberately mess up the data to verify no CDF is created
-    file_name = decom_test_data.write_l1_cdf(
-        version="01", description="impact-lab-test001", directory=temp_path
+    file_name = write_cdf(
+        decom_test_data.data, description="impact-lab-test001", directory=temp_path
     )
+    date_to_test = "20250724"
     assert file_name == os.path.join(
-        temp_path, "imap_idex_l1_20250724_impact-lab-test001_v01.cdf"
+        temp_path,
+        f"{decom_test_data.data.attrs['Logical_source']}_{date_to_test}_impact-lab-test001_v{idex.__version__}.cdf",
     )
     assert Path(file_name).exists()
 
@@ -79,11 +86,9 @@ def test_idex_tof_high_data_from_cdf(decom_test_data, temp_path):
     # Verify that a sample of the data is correct inside the CDF file
     # impact_14_tof_high_data.txt has been verified correct by the IDEX team
     with open("imap_processing/idex/tests/impact_14_tof_high_data.txt") as f:
-        data = np.array([int(line.rstrip("\n")) for line in f])
+        data = np.array([int(line.rstrip()) for line in f])
 
-    file_name = decom_test_data.write_l1_cdf(
-        version="01", description="", directory=temp_path
-    )
+    file_name = write_cdf(decom_test_data.data, description="", directory=temp_path)
     l1_data = cdf_to_xarray(
         file_name
     )  # Read in the data from the CDF file to an xarray object
