@@ -147,24 +147,20 @@ def test_swe_l1b(decom_test_data):
         assert round(hk_l1b[field].data[1], 5) == round(validation_data[field], 5)
 
 
-def test_cdf_creation(decom_test_data, l1a_test_data, cdf_data):
-    grouped_data = group_by_apid(decom_test_data)
-    # Process science to l1a before passing into l1b.
-    # Since test data being in the wrong
-    # order, we need to manually re-sort data
-    # into order.
-    sorted_packets = sorted(
-        grouped_data[SWEAPID.SWE_SCIENCE.value],
-        key=lambda x: x.data["QUARTER_CYCLE"].raw_value,
-    )
-    swe_science(sorted_packets)
+def test_cdf_creation(l1a_test_data, cdf_data):
     sci_l1b_filepath = swe_l1b(l1a_test_data)
 
     # process hk data to l1b
-    hk_l1b_filepath = swe_l1b(cdf_data[0])
+    hk_data = [
+        ds for ds in cdf_data if ds["PKT_APID"].data[0] == SWEAPID.SWE_APP_HK.value
+    ]
+    hk_l1b_filepath = swe_l1b(hk_data[0])
 
     # process evtmsg data to l1b
-    evtmsg_l1b_filepath = swe_l1b(cdf_data[1])
+    evtmsg_data = [
+        ds for ds in cdf_data if ds["PKT_APID"].data[0] == SWEAPID.SWE_EVTMSG.value
+    ]
+    evtmsg_l1b_filepath = swe_l1b(evtmsg_data[0])
 
     assert os.path.basename(sci_l1b_filepath) == "imap_swe_l1b_20230927_sci_v01.cdf"
     assert os.path.basename(hk_l1b_filepath) == "imap_swe_l1b_20230927_lveng_hk_v01.cdf"
