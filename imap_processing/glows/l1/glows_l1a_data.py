@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 
-from imap_processing.glows.l0.glows_l0_data import HistogramL0
+from imap_processing.glows import version
+from imap_processing.glows.l0.glows_l0_data import DirectEventL0, HistogramL0
 
 
 @dataclass
@@ -65,14 +66,15 @@ class HistogramL1A:
         """Create the block header using software version info."""
         self.block_header = {
             "flight_software_version": self.l0.SWVER,
-            "ground_software_version": self.l0.ground_sw_version,
+            "ground_software_version": version,
             "pkts_file_name": self.l0.packet_file_name,
             # note: packet number is seq_count (per apid!) field in CCSDS header
             "seq_count_in_pkts_file": self.l0.ccsds_header.SRC_SEQ_CTR,
         }
 
-    def __post_init__(self):
+    def __init__(self, level0: HistogramL0):
         """Convert the level 0 histogram data into a usable L1A list."""
+        self.l0 = level0
         self.histograms = self._convert_histogram_data(self.l0.HISTOGRAM_DATA)
         self._set_l1a_data()
         self._set_block_header()
@@ -105,3 +107,28 @@ class HistogramL1A:
             )
 
         return histograms
+
+
+@dataclass
+class DirectEventL1A:
+    """Data structure for GLOWS Histogram Level 1A data.
+
+    Attributes
+    ----------
+    l0: DirectEventL0
+    header: dict
+    imap_start_time_seconds: int
+    packet_count: int
+    seq_number: int
+    de_data: bin
+    """
+
+    l0: DirectEventL0
+    header: dict
+    imap_start_time_seconds: int
+    packet_count: int
+    seq_number: int
+    de_data: bin
+
+    def __init__(self, level0: DirectEventL0):
+        self.l0 = level0

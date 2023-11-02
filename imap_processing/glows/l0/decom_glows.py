@@ -78,3 +78,6 @@ def decom_packets(
             print("This may mean reaching the end of an incomplete packet.")
 
         return histdata, dedata
+
+
+# TODO: Output to CDF
