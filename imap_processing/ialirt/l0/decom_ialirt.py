@@ -1,78 +1,10 @@
 import logging
-from enum import Enum
-
-import bitstring
 import xarray as xr
-from space_packet_parser import parser, xtcedef
+import collections
+from imap_processing.decom import decom_packets
 
 logging.basicConfig(level=logging.ERROR)
 logger = logging.getLogger(__name__)
-
-
-class PacketLength(Enum):
-    """Class that represents properties of the IALiRT packet."""
-
-    EXPECTED_LENGTH = 1464
-
-def decom_packets(packet_file, xtce_packet_definition):
-    """
-    Unpack data packet. In this function, we unpack and return data.
-
-    Parameters
-    ----------
-    packet_file : str
-        Path to data packet path with filename
-    xtce_packet_definition : str
-        Path to XTCE file with filename
-
-    Returns
-    -------
-    packets : list
-        List of all the unpacked data
-    """
-    packet_definition = xtcedef.XtcePacketDefinition(xtce_packet_definition)
-    packet_parser = parser.PacketParser(packet_definition)
-
-    packets = []
-
-    with open(packet_file) as file:
-        for line_number, line in enumerate(file, 1):
-            if not line.startswith("#"):
-                # Split the line by semicolons
-                # Discard the first value since it is only a counter
-                hex_values = line.strip().split(";")[1::]
-
-                binary_values = ""
-                for h in hex_values:
-                    # Convert hex to integer
-                    # 16 is the base of hexadecimal
-                    int_value = int(h, 16)
-
-                    # Convert integer to binary and remove the '0b' prefix
-                    bin_value = bin(int_value)[2:]
-
-                    # Make sure each binary string is 8 bits long
-                    bin_value_padded = bin_value.zfill(8)
-
-                    # Append the padded binary string to the final string
-                    binary_values += bin_value_padded
-
-                # Check the length of binary_values
-                if len(binary_values) != PacketLength.EXPECTED_LENGTH.value:
-                    error_message = f"Error on line {line_number}: " \
-                                    f"Length of binary_values (" \
-                                    f"{len(binary_values)}) does not equal " \
-                                    f"{PacketLength.EXPECTED_LENGTH.value}."
-                    logger.error(error_message)
-                    raise ValueError(error_message)
-
-                packet_generator = packet_parser.generator(
-                    bitstring.ConstBitStream(bin=binary_values))
-
-                for packet in packet_generator:
-                    packets.append(packet)
-
-    return packets
 
 
 def generate_xarray(packet_file: str, xtce: str):
@@ -98,45 +30,45 @@ def generate_xarray(packet_file: str, xtce: str):
         logger.error(f"Error during packet decomposition: {str(e)}")
         return
 
-    if not packets:
-        logger.warning(f"No packets found in {packet_file}.")
-        return
+    logger.info(f"Decommutated {len(packets)} packets from {packet_file}.")
 
-    logger.info(f"Decomposed {len(packets)} packets from {packet_file}.")
+    time_keys = {
+        "SC": "SC_SCLK_SEC",
+        "HIT": "HIT_SC_TICK",
+        "MAG": "MAG_ACQ",
+        "COD_LO": "COD_LO_ACQ",
+        "COD_HI": "COD_HI_ACQ",
+        "SWE": "SWE_ACQ_SEC",
+        "SWAPI": "SWAPI_ACQ"
+    }
 
-    # List of instruments and their corresponding MET keys
-    instruments = ['SC', 'HIT', 'MAG', 'COD_LO', 'COD_HI', 'SWE', 'SWAPI']
-    instrument_coords = ['SC_SCLK_SEC', 'HIT_SC_TICK', 'MAG_ACQ', 'COD_LO_ACQ',
-                         'COD_HI_ACQ', 'SWE_ACQ_SEC', 'SWAPI_ACQ']
+    instruments = list(time_keys.keys())
 
-    # Create a dictionary mapping each instrument to its time-dimension key
-    time_keys = dict(zip(instruments, instrument_coords))
-
-    # Initialize storage dictionary
-    data_storage = {inst: {} for inst in instruments}
+    # Initialize storage dictionary using defaultdict
+    data_storage = {inst: collections.defaultdict(list) for inst in instruments}
 
     for packet in packets:
         for key, value in packet.data.items():
+            key_matched = False
             for inst in instruments:
                 if key.startswith(inst):
-                    if key not in data_storage[inst]:
-                        data_storage[inst][key] = []
+                    # Directly append to the list without checking if the key exists
                     data_storage[inst][key].append(value.derived_value)
+                    key_matched = True
                     break
-            else:
-                logger.warning(f"Unexpected key '{key}' found in packet data.")
 
-    logger.info("Generating datasets for each instrument.")
+        if not key_matched:
+            # If after checking all instruments, none match, then log a warning
+            logger.warning(f"Unexpected key '{key}' found in packet data.")
+
+    logger.debug("Generating datasets for each instrument.")
 
     # Generate xarray dataset for each instrument and spacecraft
     datasets = {}
     for inst in instruments:
-        dataset_dict = {key: (time_keys[inst], value)
-                        for key, value in data_storage[inst].items() if
-                        key != time_keys[inst]}
+        dataset_dict = {key: (time_keys[inst], data_storage[inst][key])
+                        for key in data_storage[inst] if key != time_keys[inst]}
         datasets[inst] = xr.Dataset(dataset_dict, coords={
             time_keys[inst]: data_storage[inst][time_keys[inst]]})
-
-    logger.info(f"Generated datasets for {len(datasets)} instruments.")
 
     return datasets
