@@ -1,6 +1,8 @@
-import logging
-import xarray as xr
 import collections
+import logging
+
+import xarray as xr
+
 from imap_processing.decom import decom_packets
 
 logging.basicConfig(level=logging.ERROR)
@@ -39,7 +41,7 @@ def generate_xarray(packet_file: str, xtce: str):
         "COD_LO": "COD_LO_ACQ",
         "COD_HI": "COD_HI_ACQ",
         "SWE": "SWE_ACQ_SEC",
-        "SWAPI": "SWAPI_ACQ"
+        "SWAPI": "SWAPI_ACQ",
     }
 
     instruments = list(time_keys.keys())
@@ -66,9 +68,13 @@ def generate_xarray(packet_file: str, xtce: str):
     # Generate xarray dataset for each instrument and spacecraft
     datasets = {}
     for inst in instruments:
-        dataset_dict = {key: (time_keys[inst], data_storage[inst][key])
-                        for key in data_storage[inst] if key != time_keys[inst]}
-        datasets[inst] = xr.Dataset(dataset_dict, coords={
-            time_keys[inst]: data_storage[inst][time_keys[inst]]})
+        dataset_dict = {
+            key: (time_keys[inst], data_storage[inst][key])
+            for key in data_storage[inst]
+            if key != time_keys[inst]
+        }
+        datasets[inst] = xr.Dataset(
+            dataset_dict, coords={time_keys[inst]: data_storage[inst][time_keys[inst]]}
+        )
 
     return datasets
