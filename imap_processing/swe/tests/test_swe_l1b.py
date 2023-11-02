@@ -83,7 +83,7 @@ def test_swe_l1b(decom_test_data):
     )
     science_l1a_ds = swe_science(sorted_packets)
     # convert value from raw to engineering units as needed
-    convertion_table_path = (
+    conversion_table_path = (
         f"{imap_module_directory}/swe/l1b/engineering_unit_convert_table.csv"
     )
     # Look up packet name from APID
@@ -91,7 +91,7 @@ def test_swe_l1b(decom_test_data):
     # Convert raw data to engineering units as needed
     science_l1b = convert_raw_to_eu(
         science_l1a_ds,
-        convertion_table_path=convertion_table_path,
+        conversion_table_path=conversion_table_path,
         packet_name=packet_name,
     )
 
@@ -117,7 +117,7 @@ def test_swe_l1b(decom_test_data):
     # process housekeeping data to l1a and create l1b
     hk_l1a_ds = create_dataset(grouped_data[1330])
     hk_l1b = convert_raw_to_eu(
-        hk_l1a_ds, convertion_table_path, SWEAPID.SWE_APP_HK.name
+        hk_l1a_ds, conversion_table_path, SWEAPID.SWE_APP_HK.name
     )
 
     # read housekeeping validation data

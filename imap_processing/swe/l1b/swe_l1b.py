@@ -20,7 +20,7 @@ def swe_l1b(l1a_dataset):
     current_dir = Path(__file__).parent
 
     # convert value from raw to engineering units as needed
-    convertion_table_path = (
+    conversion_table_path = (
         f"{imap_module_directory}/swe/l1b/engineering_unit_convert_table.csv"
     )
     # Look up packet name from APID
@@ -28,7 +28,7 @@ def swe_l1b(l1a_dataset):
     # Convert raw data to engineering units as needed
     eu_data = convert_raw_to_eu(
         l1a_dataset,
-        convertion_table_path=convertion_table_path,
+        conversion_table_path=conversion_table_path,
         packet_name=packet_name.name,
     )
 
