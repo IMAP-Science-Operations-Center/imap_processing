@@ -309,9 +309,17 @@
           <xtce:Enumeration value="1" label="NEG"/>
         </xtce:EnumerationList>
       </xtce:EnumeratedParameterType>
+      <xtce:EnumeratedParameterType name="IDX__TXHDRSTIMPULSE_Type">
+        <xtce:UnitSet/>
+        <xtce:IntegerDataEncoding encoding="unsigned" sizeInBits="1"/>
+        <xtce:EnumerationList>
+          <xtce:Enumeration value="0" label="POS"/>
+          <xtce:Enumeration value="1" label="NEG"/>
+        </xtce:EnumerationList>
+      </xtce:EnumeratedParameterType>
       <xtce:IntegerParameterType name="IDX__TXHDRSP04_Type">
         <xtce:UnitSet/>
-        <xtce:IntegerDataEncoding encoding="unsigned" sizeInBits="22"/>
+        <xtce:IntegerDataEncoding encoding="unsigned" sizeInBits="21"/>
       </xtce:IntegerParameterType>
       <xtce:EnumeratedParameterType name="IDX__TXHDRPOLCTRL_Type">
         <xtce:UnitSet/>
@@ -1527,6 +1535,13 @@
         <xtce:AliasSet>
           <xtce:Alias alias="IDX" nameSpace="externalElement"/>
           <xtce:Alias alias="TXHDRPOLSTAT" nameSpace="itemName"/>
+        </xtce:AliasSet>
+        <xtce:ParameterProperties dataSource="telemetered"/>
+      </xtce:Parameter>
+      <xtce:Parameter name="IDX__TXHDRSTIMPULSE" parameterTypeRef="IDX__TXHDRSTIMPULSE_Type" shortDescription="Stim Pulse Enabled (1) or disabled (0)">
+        <xtce:AliasSet>
+          <xtce:Alias alias="IDX" nameSpace="externalElement"/>
+          <xtce:Alias alias="TXHDRSTIMPULSE" nameSpace="itemName"/>
         </xtce:AliasSet>
         <xtce:ParameterProperties dataSource="telemetered"/>
       </xtce:Parameter>
@@ -2859,41 +2874,42 @@
           <xtce:ParameterRefEntry parameterRef="IDX__TXHDRSP02"/>
           <xtce:ParameterRefEntry parameterRef="IDX__TXHDRTRIGID"/>
           <xtce:ParameterRefEntry parameterRef="IDX__TXHDREVTNUM"/>
-          <xtce:ParameterRefEntry parameterRef="IDX__TXHDRLSPOSTBLOCKS"/>
-          <xtce:ParameterRefEntry parameterRef="IDX__TXHDRLSPREBLOCKS"/>
-          <xtce:ParameterRefEntry parameterRef="IDX__TXHDRHSPOSTBLOCKS"/>
-          <xtce:ParameterRefEntry parameterRef="IDX__TXHDRHSPREBLOCKS"/>
-          <xtce:ParameterRefEntry parameterRef="IDX__TXHDRDEADBLOCKSSHIFT"/>
-          <xtce:ParameterRefEntry parameterRef="IDX__TXHDRDEADBLOCKSBASE"/>
-          <xtce:ParameterRefEntry parameterRef="IDX__TXHDRLSBLOCKSERROR"/>
           <xtce:ParameterRefEntry parameterRef="IDX__TXHDRHSBLOCKSERROR"/>
+          <xtce:ParameterRefEntry parameterRef="IDX__TXHDRLSBLOCKSERROR"/>
+          <xtce:ParameterRefEntry parameterRef="IDX__TXHDRDEADBLOCKSBASE"/>
+          <xtce:ParameterRefEntry parameterRef="IDX__TXHDRDEADBLOCKSSHIFT"/>
+          <xtce:ParameterRefEntry parameterRef="IDX__TXHDRHSPREBLOCKS"/>
+          <xtce:ParameterRefEntry parameterRef="IDX__TXHDRHSPOSTBLOCKS"/>
+          <xtce:ParameterRefEntry parameterRef="IDX__TXHDRLSPREBLOCKS"/>
+          <xtce:ParameterRefEntry parameterRef="IDX__TXHDRLSPOSTBLOCKS"/>
           <xtce:ParameterRefEntry parameterRef="IDX__TXHDRHGTRIGLVL"/>
           <xtce:ParameterRefEntry parameterRef="IDX__TXHDRHGTRIGNMAX12"/>
           <xtce:ParameterRefEntry parameterRef="IDX__TXHDRHGTRIGNMIN12"/>
-          <xtce:ParameterRefEntry parameterRef="IDX__TXHDRHGTRIGNMIN1"/>
-          <xtce:ParameterRefEntry parameterRef="IDX__TXHDRHGTRIGNMAX1"/>
-          <xtce:ParameterRefEntry parameterRef="IDX__TXHDRHGTRIGNMIN2"/>
           <xtce:ParameterRefEntry parameterRef="IDX__TXHDRHGTRIGNMAX2"/>
+          <xtce:ParameterRefEntry parameterRef="IDX__TXHDRHGTRIGNMIN2"/>
+          <xtce:ParameterRefEntry parameterRef="IDX__TXHDRHGTRIGNMAX1"/>
+          <xtce:ParameterRefEntry parameterRef="IDX__TXHDRHGTRIGNMIN1"/>
           <xtce:ParameterRefEntry parameterRef="IDX__TXHDRLGTRIGLVL"/>
           <xtce:ParameterRefEntry parameterRef="IDX__TXHDRLGTRIGNMAX12"/>
           <xtce:ParameterRefEntry parameterRef="IDX__TXHDRLGTRIGNMIN12"/>
-          <xtce:ParameterRefEntry parameterRef="IDX__TXHDRLGTRIGNMIN1"/>
-          <xtce:ParameterRefEntry parameterRef="IDX__TXHDRLGTRIGNMAX1"/>
-          <xtce:ParameterRefEntry parameterRef="IDX__TXHDRLGTRIGNMIN2"/>
           <xtce:ParameterRefEntry parameterRef="IDX__TXHDRLGTRIGNMAX2"/>
+          <xtce:ParameterRefEntry parameterRef="IDX__TXHDRLGTRIGNMIN2"/>
+          <xtce:ParameterRefEntry parameterRef="IDX__TXHDRLGTRIGNMAX1"/>
+          <xtce:ParameterRefEntry parameterRef="IDX__TXHDRLGTRIGNMIN1"/>
           <xtce:ParameterRefEntry parameterRef="IDX__TXHDRMGTRIGLVL"/>
           <xtce:ParameterRefEntry parameterRef="IDX__TXHDRMGTRIGNMAX12"/>
           <xtce:ParameterRefEntry parameterRef="IDX__TXHDRMGTRIGNMIN12"/>
-          <xtce:ParameterRefEntry parameterRef="IDX__TXHDRMGTRIGNMIN1"/>
-          <xtce:ParameterRefEntry parameterRef="IDX__TXHDRMGTRIGNMAX1"/>
-          <xtce:ParameterRefEntry parameterRef="IDX__TXHDRMGTRIGNMIN2"/>
           <xtce:ParameterRefEntry parameterRef="IDX__TXHDRMGTRIGNMAX2"/>
+          <xtce:ParameterRefEntry parameterRef="IDX__TXHDRMGTRIGNMIN2"/>
+          <xtce:ParameterRefEntry parameterRef="IDX__TXHDRMGTRIGNMAX1"/>
+          <xtce:ParameterRefEntry parameterRef="IDX__TXHDRMGTRIGNMIN1"/>
           <xtce:ParameterRefEntry parameterRef="IDX__TXHDRSP03"/>
           <xtce:ParameterRefEntry parameterRef="IDX__TXHDRLSTRIGCMBLOCKS"/>
           <xtce:ParameterRefEntry parameterRef="IDX__TXHDRLSTRIGPOL"/>
           <xtce:ParameterRefEntry parameterRef="IDX__TXHDRLSTRIGLVL"/>
           <xtce:ParameterRefEntry parameterRef="IDX__TXHDRLSTRIGNMIN"/>
           <xtce:ParameterRefEntry parameterRef="IDX__TXHDRPOLSTAT"/>
+          <xtce:ParameterRefEntry parameterRef="IDX__TXHDRSTIMPULSE"/>
           <xtce:ParameterRefEntry parameterRef="IDX__TXHDRSP04"/>
           <xtce:ParameterRefEntry parameterRef="IDX__TXHDRPOLCTRL"/>
           <xtce:ParameterRefEntry parameterRef="IDX__TXHDRCOINENA"/>
@@ -2912,9 +2928,9 @@
           <xtce:ParameterRefEntry parameterRef="IDX__TXHDRLS2MAXMIN"/>
           <xtce:ParameterRefEntry parameterRef="IDX__TXHDRFIFODELAY"/>
           <xtce:ParameterRefEntry parameterRef="IDX__TXHDRSP19"/>
-          <xtce:ParameterRefEntry parameterRef="IDX__TXHDRADC1QDELAY"/>
-          <xtce:ParameterRefEntry parameterRef="IDX__TXHDRADC0QDELAY"/>
           <xtce:ParameterRefEntry parameterRef="IDX__TXHDRADC0IDELAY"/>
+          <xtce:ParameterRefEntry parameterRef="IDX__TXHDRADC0QDELAY"/>
+          <xtce:ParameterRefEntry parameterRef="IDX__TXHDRADC1QDELAY"/>
           <xtce:ParameterRefEntry parameterRef="IDX__TXHDRTRANSCNT"/>
           <xtce:ParameterRefEntry parameterRef="IDX__TXHDRPROCHKCH01"/>
           <xtce:ParameterRefEntry parameterRef="IDX__TXHDRPROCHKCH23"/>

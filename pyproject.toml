@@ -32,6 +32,7 @@ python = ">=3.9,<3.12"
 xarray = '>=2023.0.0'
 space_packet_parser = ">=4.1.0,<5"
 bitstring = ">=4.0.1,<5"
+cdflib = "^1.2.3"
 
 # Optional dependencies
 black = {version="^23.1.0", optional=true}
