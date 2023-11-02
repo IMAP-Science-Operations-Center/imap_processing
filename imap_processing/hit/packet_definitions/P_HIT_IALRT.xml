@@ -53,7 +53,7 @@
 			<xtce:Parameter name="PKT_LEN" parameterTypeRef="UINT16">
 				<xtce:LongDescription>CCSDS Packet Length (number of bytes after Packet length minus 1)</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="SC_TICK" parameterTypeRef="UINT32">
+			<xtce:Parameter name="SHCOARSE" parameterTypeRef="UINT32">
 				<xtce:ShortDescription>CCSDS Packet Sec Header</xtce:ShortDescription>
 				<xtce:LongDescription>Spacecraft tick</xtce:LongDescription>
 			</xtce:Parameter>
@@ -61,11 +61,11 @@
 				<xtce:ShortDescription>status</xtce:ShortDescription>
 				<xtce:LongDescription>1 = HIT Instrument is operating nominally, 0 = off-nominal operation</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="IALRT_SPARE" parameterTypeRef="FILL1" />
 			<xtce:Parameter name="SUBCOM" parameterTypeRef="UINT6">
 				<xtce:ShortDescription>subcom counter</xtce:ShortDescription>
 				<xtce:LongDescription>seconds counter</xtce:LongDescription>
 			</xtce:Parameter>
+			<xtce:Parameter name="SPARE" parameterTypeRef="UINT1" />
 			<xtce:Parameter name="FAST_RATE_1" parameterTypeRef="UINT16">
 				<xtce:ShortDescription>fast rate 1</xtce:ShortDescription>
 				<xtce:LongDescription>4 second cadence</xtce:LongDescription>
@@ -138,14 +138,14 @@
 			<xtce:SequenceContainer name="P_HIT_IALRT">
 				<xtce:BaseContainer containerRef="CCSDSPacket">
 					<xtce:RestrictionCriteria>
-						<xtce:Comparison parameterRef="PKT_APID" value="1252" useCalibratedValue="false" />
+						<xtce:Comparison parameterRef="PKT_APID" value="1253" useCalibratedValue="false" />
 					</xtce:RestrictionCriteria>
 				</xtce:BaseContainer>
 				<xtce:EntryList>
-					<xtce:ParameterRefEntry parameterRef="SC_TICK" />
+					<xtce:ParameterRefEntry parameterRef="SHCOARSE" />
 					<xtce:ParameterRefEntry parameterRef="STATUS" />
-					<xtce:ParameterRefEntry parameterRef="IALRT_SPARE" />
 					<xtce:ParameterRefEntry parameterRef="SUBCOM" />
+					<xtce:ParameterRefEntry parameterRef="SPARE" />
 					<xtce:ParameterRefEntry parameterRef="FAST_RATE_1" />
 					<xtce:ParameterRefEntry parameterRef="FAST_RATE_2" />
 					<xtce:ParameterRefEntry parameterRef="SLOW_RATE" />

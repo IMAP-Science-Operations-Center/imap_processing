@@ -40,7 +40,7 @@ def decom_hit_packets(packet_file: str, xtce: str):
     logging.info(f"Unpacking {packet_file} using xtce definitions in {xtce}")
     packets = decom.decom_packets(packet_file, xtce)
     logging.info(f"{packet_file} unpacked")
-
+    # print(packets[0])
     # sort all the packets in the list by their spacecraft time
     sorted_packets = sorted(packets, key=lambda x: x.data["SHCOARSE"].derived_value)
 
