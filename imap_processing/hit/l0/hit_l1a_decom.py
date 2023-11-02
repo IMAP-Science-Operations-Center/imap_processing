@@ -10,7 +10,22 @@ logging.basicConfig(level=logging.INFO)
 
 
 class HitAPID(IntEnum):
-    """HIT APID Mappings."""
+    """
+    HIT APID Mappings.
+
+    Attributes
+    ----------
+    HIT_AUT : int
+        Autonomy
+    HIT_HSKP: int
+        Housekeeping
+    HIT_SCIENCE : int
+        Science
+    HIT_IALRT : int
+        I-ALiRT
+    HIT_MEMDUMP : int
+        Memory dump
+    """
 
     HIT_AUT = 1250  # Autonomy
     HIT_HSKP = 1251  # Housekeeping
