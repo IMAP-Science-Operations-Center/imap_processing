@@ -16,8 +16,8 @@ Instruments
    :maxdepth: 1
 
    glows
-   swe
    hit
+   swe
 
 
 Utility functions can be found in modules within the top package level.
