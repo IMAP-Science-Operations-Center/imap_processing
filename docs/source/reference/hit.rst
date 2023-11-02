@@ -1,7 +1,7 @@
 .. _hit:
 
 HIT (High-energy Ion Telescope)
-==========================
+===============================
 
 .. currentmodule:: imap_processing.hit
 
