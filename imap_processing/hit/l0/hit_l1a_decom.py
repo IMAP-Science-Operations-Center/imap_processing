@@ -80,7 +80,7 @@ def decom_hit_packets(packet_file: str, xtce: str):
 
 def create_datasets(data):
     """
-    Creates a dataset for each APID in the data.
+    Create a dataset for each APID in the data.
 
     Parameters
     ----------
@@ -92,7 +92,7 @@ def create_datasets(data):
     dict
         A dictionary containing xr.Dataset for each APID. each dataset in the
         dictionary will be converted to a CDF.
-    """  # noqa: D401
+    """
     dataset_dict = defaultdict(list)
     # create one dataset for each APID in the data
     for apid, data_dict in data.items():
@@ -109,8 +109,7 @@ def create_datasets(data):
 
 def group_apid_data(packets, apid):
     """
-    Creates a dictionary of lists containing all the data for
-    the APID.
+    Create a dictionary of lists containing all the data for the APID.
 
     If packets contain N of the same APIDs, the data
     for those N matching APIDs will be grouped together into
@@ -129,7 +128,7 @@ def group_apid_data(packets, apid):
         A dictionary where each field in the specified APID
         is a key, and the value for that key is a list of
         that fields values in all packets within the CCSDS file
-    """  # noqa: D401, D205
+    """
     data_dict = defaultdict(list)
     for packet in packets:
         if packet.header["PKT_APID"].derived_value == apid:
