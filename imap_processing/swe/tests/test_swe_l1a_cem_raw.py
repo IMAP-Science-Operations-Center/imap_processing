@@ -8,12 +8,9 @@ from imap_processing.swe.l0 import decom_swe
 @pytest.fixture(scope="session")
 def decom_test_data():
     """Read test data from file"""
-    packet_1_file = (
-        f"{imap_module_directory}/swe/tests/l0_data/20230927100425_SWE_CEM_RAW_packet.bin"
-    )
-    packet_2_file = (
-        f"{imap_module_directory}/swe/tests/l0_data/20230927100426_SWE_CEM_RAW_packet.bin"
-    )
+    test_folder_path = f"{imap_module_directory}/swe/tests/l0_data"
+    packet_1_file = f"{test_folder_path}/20230927100425_SWE_CEM_RAW_packet.bin"
+    packet_2_file = f"{test_folder_path}/20230927100426_SWE_CEM_RAW_packet.bin"
     first_data = decom_swe.decom_packets(packet_1_file)
     second_data = decom_swe.decom_packets(packet_2_file)
 

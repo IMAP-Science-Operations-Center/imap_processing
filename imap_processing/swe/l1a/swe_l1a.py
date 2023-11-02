@@ -9,7 +9,7 @@ from imap_processing.swe.utils.swe_utils import (
     get_descriptor,
 )
 from imap_processing.write_to_cdf import write_to_cdf
-from imap_processing.utils import group_by_apid, sort_by_met_time
+from imap_processing.utils import group_by_apid, sort_by_time
 
 
 def swe_l1a(packets):
@@ -38,14 +38,14 @@ def swe_l1a(packets):
         # If appId is science, then the file should contain all data of science appId
         if apid == SWEAPID.SWE_SCIENCE.value:
             # sort data by acquisition time
-            sorted_packets = sort_by_met_time(grouped_data[apid], "ACQ_START_COARSE")
+            sorted_packets = sort_by_time(grouped_data[apid], "ACQ_START_COARSE")
             logging.debug(
                 "Processing science data for [%s] packets", len(sorted_packets)
             )
             data = swe_science(decom_data=sorted_packets)
         else:
             # If it's not science, we unpack, organize and save it as a dataset.
-            sorted_packets = sort_by_met_time(grouped_data[apid], "SHCOARSE")
+            sorted_packets = sort_by_time(grouped_data[apid], "SHCOARSE")
             data = create_dataset(packets=sorted_packets)
 
         current_dir = Path(__file__).parent
