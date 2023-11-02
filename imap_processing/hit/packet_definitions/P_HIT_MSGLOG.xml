@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='utf-8'?>
 <xtce:SpaceSystem xmlns:xtce="http://www.omg.org/space/xtce" name="P_HIT_MSGLOG">
-	<xtce:Header date="2023-09" version="1.0" author="IMAP SDC" />
+	<xtce:Header date="2023-11" version="1.0" author="IMAP SDC" />
 	<xtce:TelemetryMetaData>
 		<xtce:ParameterTypeSet>
 			<xtce:IntegerParameterType name="UINT1" signed="false">
@@ -38,7 +38,7 @@
 			<xtce:Parameter name="PKT_APID" parameterTypeRef="UINT11">
 				<xtce:LongDescription>CCSDS Packet Application Process ID</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="SEG_FLGS" parameterTypeRef="UINT2">
+			<xtce:Parameter name="SEQ_FLGS" parameterTypeRef="UINT2">
 				<xtce:LongDescription>CCSDS Packet Grouping Flags (3=not part of group)</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SRC_SEQ_CTR" parameterTypeRef="UINT14">
@@ -47,10 +47,19 @@
 			<xtce:Parameter name="PKT_LEN" parameterTypeRef="UINT16">
 				<xtce:LongDescription>CCSDS Packet Length (number of bytes after Packet length minus 1)</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="SHCOARSE" parameterTypeRef="UINT32">
-				<xtce:LongDescription>CCSDS Packet Time Stamp (coarse time)</xtce:LongDescription>
+			<xtce:Parameter name="SC_TICK" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>CCSDS Packet Sec Header</xtce:ShortDescription>
+				<xtce:LongDescription>Spacecraft tick</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="TEXT" parameterTypeRef="STRING2880">
+			<xtce:Parameter name="TEXT1" parameterTypeRef="STRING960">
+				<xtce:ShortDescription>Log message text</xtce:ShortDescription>
+				<xtce:LongDescription>Message log text, in ASCII with newline characters (0x10) separating lines. Last byte is always NUL (0), and packet is padded with zeros if no more messages.</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="TEXT2" parameterTypeRef="STRING960">
+				<xtce:ShortDescription>Log message text</xtce:ShortDescription>
+				<xtce:LongDescription>Message log text, in ASCII with newline characters (0x10) separating lines. Last byte is always NUL (0), and packet is padded with zeros if no more messages.</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="TEXT3" parameterTypeRef="STRING960">
 				<xtce:ShortDescription>Log message text</xtce:ShortDescription>
 				<xtce:LongDescription>Message log text, in ASCII with newline characters (0x10) separating lines. Last byte is always NUL (0), and packet is padded with zeros if no more messages.</xtce:LongDescription>
 			</xtce:Parameter>
@@ -62,10 +71,9 @@
 					<xtce:ParameterRefEntry parameterRef="TYPE" />
 					<xtce:ParameterRefEntry parameterRef="SEC_HDR_FLG" />
 					<xtce:ParameterRefEntry parameterRef="PKT_APID" />
-					<xtce:ParameterRefEntry parameterRef="SEG_FLGS" />
+					<xtce:ParameterRefEntry parameterRef="SEQ_FLGS" />
 					<xtce:ParameterRefEntry parameterRef="SRC_SEQ_CTR" />
 					<xtce:ParameterRefEntry parameterRef="PKT_LEN" />
-					<xtce:ParameterRefEntry parameterRef="SHCOARSE" />
 				</xtce:EntryList>
 			</xtce:SequenceContainer>
 			<xtce:SequenceContainer name="P_HIT_MSGLOG">
@@ -75,7 +83,10 @@
 					</xtce:RestrictionCriteria>
 				</xtce:BaseContainer>
 				<xtce:EntryList>
-					<xtce:ParameterRefEntry parameterRef="TEXT" />
+					<xtce:ParameterRefEntry parameterRef="SC_TICK" />
+					<xtce:ParameterRefEntry parameterRef="TEXT1" />
+					<xtce:ParameterRefEntry parameterRef="TEXT2" />
+					<xtce:ParameterRefEntry parameterRef="TEXT3" />
 				</xtce:EntryList>
 			</xtce:SequenceContainer>
 		</xtce:ContainerSet>
