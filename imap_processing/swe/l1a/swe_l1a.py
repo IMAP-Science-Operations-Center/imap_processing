@@ -8,8 +8,8 @@ from imap_processing.swe.utils.swe_utils import (
     create_dataset,
     get_descriptor,
 )
-from imap_processing.write_to_cdf import write_to_cdf
 from imap_processing.utils import group_by_apid, sort_by_time
+from imap_processing.write_to_cdf import write_to_cdf
 
 
 def swe_l1a(packets):
