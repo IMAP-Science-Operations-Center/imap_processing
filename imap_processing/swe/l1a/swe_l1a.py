@@ -6,7 +6,7 @@ from imap_processing.swe.l1a.swe_science import swe_science
 from imap_processing.swe.utils.swe_utils import (
     SWEAPID,
     create_dataset,
-    get_descriptor,
+    filename_descriptors,
 )
 from imap_processing.utils import group_by_apid, sort_by_time
 from imap_processing.write_to_cdf import write_to_cdf
@@ -36,7 +36,7 @@ def swe_l1a(packets):
 
     for apid in grouped_data.keys():
         # If appId is science, then the file should contain all data of science appId
-        if apid == SWEAPID.SWE_SCIENCE.value:
+        if apid == SWEAPID.SWE_SCIENCE:
             # sort data by acquisition time
             sorted_packets = sort_by_time(grouped_data[apid], "ACQ_START_COARSE")
             logging.debug(
@@ -50,22 +50,12 @@ def swe_l1a(packets):
 
         current_dir = Path(__file__).parent
         # write data to CDF
-        if apid == SWEAPID.SWE_APP_HK.value:
-            return write_to_cdf(
-                data,
-                "swe",
-                "l1a",
-                version=__version__,
-                mode=f"{data['APP_MODE'].data[0]}",
-                description=get_descriptor(apid),
-                directory=current_dir,
-            )
-        else:
-            return write_to_cdf(
-                data,
-                "swe",
-                "l1a",
-                version=__version__,
-                description=get_descriptor(apid),
-                directory=current_dir,
-            )
+        return write_to_cdf(
+            data,
+            "swe",
+            "l1a",
+            version=__version__,
+            mode=f"{data['APP_MODE'].data[0]}" if apid == SWEAPID.SWE_APP_HK else "",
+            description=filename_descriptors.get(apid),
+            directory=current_dir,
+        )

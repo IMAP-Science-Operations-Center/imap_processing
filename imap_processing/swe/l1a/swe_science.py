@@ -129,7 +129,7 @@ def swe_science(decom_data):
         # Save data as np.int64 to be complaint with ISTP' FILLVAL
         science_array.append(uncompress_data.astype(np.int64))
         raw_science_array.append(raw_counts.astype(np.int64))
-        add_metadata_to_array(data_packet, metadata_arrays)
+        metadata_arrays = add_metadata_to_array(data_packet, metadata_arrays)
 
     epoch_time = xr.DataArray(
         metadata_arrays["SHCOARSE"],

@@ -57,6 +57,8 @@ def add_metadata_to_array(data_packet, metadata_arrays):
         else:
             metadata_arrays.setdefault(key, []).append(value.raw_value)
 
+    return metadata_arrays
+
 
 def create_dataset(packets):
     """Create dataset for each metadata field.

@@ -3,7 +3,7 @@ from pathlib import Path
 from imap_processing import imap_module_directory
 from imap_processing.swe import __version__
 from imap_processing.swe.l1b.swe_l1b_science import swe_l1b_science
-from imap_processing.swe.utils.swe_utils import SWEAPID, get_descriptor
+from imap_processing.swe.utils.swe_utils import SWEAPID, filename_descriptors
 from imap_processing.utils import convert_raw_to_eu
 from imap_processing.write_to_cdf import write_to_cdf
 
@@ -40,7 +40,7 @@ def swe_l1b(l1a_dataset):
             "l1b",
             version=__version__,
             mode=f"{eu_data['APP_MODE'].data[0]}",
-            description=get_descriptor(apid),
+            description=filename_descriptors.get(apid),
             directory=current_dir,
         )
     elif apid == SWEAPID.SWE_SCIENCE.value:
@@ -50,7 +50,7 @@ def swe_l1b(l1a_dataset):
             "swe",
             "l1b",
             version=__version__,
-            description=get_descriptor(apid),
+            description=filename_descriptors.get(apid),
             directory=current_dir,
         )
     else:
