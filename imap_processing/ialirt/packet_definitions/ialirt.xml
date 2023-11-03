@@ -641,9 +641,8 @@
 		</xtce:ParameterSet>
 		<!-- End metadata -->
 		<xtce:ContainerSet>
-			<xtce:SequenceContainer name="CCSDSPacket" abstract="true">
+			<xtce:SequenceContainer name="CCSDSPacket" >
 				<xtce:EntryList>
-					<!--CCSDS Header Elements-->
 					<xtce:ParameterRefEntry parameterRef="VERSION" />
 					<xtce:ParameterRefEntry parameterRef="TYPE" />
 					<xtce:ParameterRefEntry parameterRef="SEC_HDR_FLG" />
