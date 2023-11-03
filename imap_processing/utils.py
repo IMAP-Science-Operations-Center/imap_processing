@@ -45,14 +45,14 @@ def group_by_apid(packets: list):
     return grouped_packets
 
 
-def convert_raw_to_eu(dataset: xr.Dataset, convertion_table_path, packet_name):
+def convert_raw_to_eu(dataset: xr.Dataset, conversion_table_path, packet_name):
     """Convert raw data to engineering unit.
 
     Parameters
     ----------
     dataset : xr.Dataset
         Raw data.
-    convertion_table_path : str
+    conversion_table_path : str
         Path to engineering unit conversion table.
         Eg:
         f"{imap_module_directory}/swe/l1b/engineering_unit_convert_table.csv"
@@ -67,7 +67,7 @@ def convert_raw_to_eu(dataset: xr.Dataset, convertion_table_path, packet_name):
     # Make sure there is column called "index" with unique
     # value such as 0, 1, 2, 3, ...
     eu_conversion_table = pd.read_csv(
-        convertion_table_path,
+        conversion_table_path,
         index_col="index",
     )
 
