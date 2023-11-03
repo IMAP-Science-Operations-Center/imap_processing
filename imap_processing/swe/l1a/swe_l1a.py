@@ -1,7 +1,7 @@
 import logging
 from pathlib import Path
 
-from imap_processing.swe import __version__
+from imap_processing.cdf_utils import write_cdf
 from imap_processing.swe.l1a.swe_science import swe_science
 from imap_processing.swe.utils.swe_utils import (
     SWEAPID,
@@ -9,7 +9,6 @@ from imap_processing.swe.utils.swe_utils import (
     filename_descriptors,
 )
 from imap_processing.utils import group_by_apid, sort_by_time
-from imap_processing.write_to_cdf import write_to_cdf
 
 
 def swe_l1a(packets):
@@ -50,11 +49,8 @@ def swe_l1a(packets):
 
         current_dir = Path(__file__).parent
         # write data to CDF
-        return write_to_cdf(
+        return write_cdf(
             data,
-            "swe",
-            "l1a",
-            version=__version__,
             mode=f"{data['APP_MODE'].data[0]}" if apid == SWEAPID.SWE_APP_HK else "",
             description=filename_descriptors.get(apid),
             directory=current_dir,

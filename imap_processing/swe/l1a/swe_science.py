@@ -188,6 +188,7 @@ def swe_science(decom_data):
         int_attrs["CATDESC"] = int_attrs["FIELDNAM"] = int_attrs["LABLAXIS"] = key
         # get int32's max since most of metadata is under 32-bits
         int_attrs["VALIDMAX"] = np.iinfo(np.int32).max
+        int_attrs["DEPEND_O"] = "Epoch"
         dataset[key] = xr.DataArray(
             value,
             dims=["Epoch"],

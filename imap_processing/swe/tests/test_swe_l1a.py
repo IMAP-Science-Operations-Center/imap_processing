@@ -51,5 +51,5 @@ def test_cdf_creation(decom_test_data):
     grouped_data = group_by_apid(decom_test_data)
     sci_cdf_filepath = swe_l1a(grouped_data[SWEAPID.SWE_SCIENCE.value])
     hk_cdf_filepath = swe_l1a(grouped_data[SWEAPID.SWE_APP_HK.value])
-    assert os.path.basename(sci_cdf_filepath) == "imap_swe_l1a_20230927_sci_v01.cdf"
-    assert os.path.basename(hk_cdf_filepath) == "imap_swe_l1a_20230927_lveng_hk_v01.cdf"
+    assert os.path.basename(sci_cdf_filepath) == "imap_swe_l1a_sci_20230927_v01.cdf"
+    assert os.path.basename(hk_cdf_filepath) == "imap_swe_l1a_lveng_hk_20230927_v01.cdf"

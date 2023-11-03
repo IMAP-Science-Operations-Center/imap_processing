@@ -162,6 +162,6 @@ def test_cdf_creation(l1a_test_data, cdf_data):
     ]
     evtmsg_l1b_filepath = swe_l1b(evtmsg_data[0])
 
-    assert os.path.basename(sci_l1b_filepath) == "imap_swe_l1b_20230927_sci_v01.cdf"
-    assert os.path.basename(hk_l1b_filepath) == "imap_swe_l1b_20230927_lveng_hk_v01.cdf"
+    assert os.path.basename(sci_l1b_filepath) == "imap_swe_l1b_sci_20230927_v01.cdf"
+    assert os.path.basename(hk_l1b_filepath) == "imap_swe_l1b_lveng_hk_20230927_v01.cdf"
     assert evtmsg_l1b_filepath is None

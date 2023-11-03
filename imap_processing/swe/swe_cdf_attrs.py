@@ -22,7 +22,7 @@ xr.Dataset.attrs:
 
     - Then, we add instrument specific information such as
         "Data_type": ["L1>Level-1"],
-        "Data_version": [__version__],
+        "Data_version": __version__,
         "Descriptor": ["SWE>Solar Wind Electron"],
         "TEXT": [
             (
@@ -36,8 +36,8 @@ xr.Dataset.attrs:
                 "https://imap.princeton.edu/instruments/swe for more details."
             )
         ],
-        "Logical_file_id": ["FILL ME IN AT FILE CREATION"],
-        "Logical_source": ["imap_swe_l1"],
+        "Logical_file_id": "FILL ME IN AT FILE CREATION",
+        "Logical_source": "imap_swe_l1a",
         "Logical_source_description": ["IMAP Mission SWE Instrument Level-1 Data"],
 
 
@@ -93,23 +93,26 @@ from imap_processing import cdf_utils
 from imap_processing.swe import __version__
 
 # Global Attributes for different level
-swe_global_base = {
-    "Data_version": [__version__],
-    "Descriptor": ["SWE>Solar Wind Electron"],
-    "TEXT": [
-        (
-            "The Solar Wind Electron (SWE) instrument measures the 3D "
-            "distribution of highly energetic electrons found in the solar "
-            "wind. SWE is optimized to measure in situ solar wind electrons "
-            "at L1 to provide context for the ENA measurements and perform  "
-            "the in situ solar wind observations necessary to understand the"
-            "local structures that can affect acceleration and transport of "
-            "these particles. See"
-            "https://imap.princeton.edu/instruments/swe for more details."
-        )
-    ],
-    "Logical_file_id": ["FILL ME IN AT FILE CREATION"],
-} | cdf_utils.global_base
+swe_global_base = cdf_utils.global_base.copy()
+swe_global_base.update(
+    {
+        "Data_version": __version__,
+        "Descriptor": ["SWE>Solar Wind Electron"],
+        "TEXT": [
+            (
+                "The Solar Wind Electron (SWE) instrument measures the 3D "
+                "distribution of highly energetic electrons found in the solar "
+                "wind. SWE is optimized to measure in situ solar wind electrons "
+                "at L1 to provide context for the ENA measurements and perform  "
+                "the in situ solar wind observations necessary to understand the"
+                "local structures that can affect acceleration and transport of "
+                "these particles. See"
+                "https://imap.princeton.edu/instruments/swe for more details."
+            )
+        ],
+        "Logical_file_id": "FILL ME IN AT FILE CREATION",
+    }
+)
 
 
 # Required attrs for data type of
@@ -168,17 +171,24 @@ string_attrs = {
 
 
 # For each data level, create global attrs
-swe_l1a_global_attrs = {
-    "Data_type": "L1A>Level-1A",
-    "Logical_source": "imap_idex_l1a",
-    "Logical_source_description": "IMAP Mission SWE Instrument Level-1A Data.",
-} | swe_global_base
+swe_l1a_global_attrs = swe_global_base.copy()
+swe_l1a_global_attrs.update(
+    {
+        "Data_type": "L1A>Level-1A",
+        "Logical_source": "imap_swe_l1a",
+        "Logical_source_description": "IMAP Mission SWE Instrument Level-1A Data.",
+    }
+)
 
-swe_l1b_global_attrs = {
-    "Data_type": "L1B>Level-1B",
-    "Logical_source": "imap_idex_l1b",
-    "Logical_source_description": "IMAP Mission SWE Instrument Level-1B Data.",
-} | swe_global_base
+
+swe_l1b_global_attrs = swe_global_base.copy()
+swe_l1b_global_attrs.update(
+    {
+        "Data_type": "L1B>Level-1B",
+        "Logical_source": "imap_swe_l1b",
+        "Logical_source_description": "IMAP Mission SWE Instrument Level-1B Data.",
+    }
+)
 
 
 l1a_science_attrs = {

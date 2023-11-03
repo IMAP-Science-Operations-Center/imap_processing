@@ -475,10 +475,11 @@ def swe_l1b_science(l1a_data):
         int_attrs["CATDESC"] = int_attrs["FIELDNAM"] = int_attrs["LABLAXIS"] = key
         # get int32's max since most of metadata is under 32-bits
         int_attrs["VALIDMAX"] = np.iinfo(np.int32).max
+        int_attrs["DEPEND_O"] = "Epoch"
+        int_attrs["DEPEND_2"] = "Cycle"
         dataset[key] = xr.DataArray(
             value.data.reshape(-1, 4),
             dims=["Epoch", "Cycle"],
             attrs=int_attrs,
         )
-
     return dataset

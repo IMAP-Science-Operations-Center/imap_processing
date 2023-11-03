@@ -6,7 +6,6 @@ from imap_processing.swe.l0 import decom_swe
 from imap_processing.swe.l1a.swe_science import swe_science
 from imap_processing.swe.l1b.swe_l1b_science import (
     get_indices_of_full_cycles,
-    swe_l1b_science,
 )
 
 
@@ -32,10 +31,6 @@ def l1a_test_data():
     # Get unpacked science data
     unpacked_data = swe_science(data)
     return unpacked_data
-
-
-def test_swe_l1b(l1a_test_data):
-    swe_l1b_science(l1a_test_data)
 
 
 def test_get_full_cycle_data_indices():

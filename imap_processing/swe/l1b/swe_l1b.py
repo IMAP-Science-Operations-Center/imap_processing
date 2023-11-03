@@ -1,11 +1,11 @@
 from pathlib import Path
 
 from imap_processing import imap_module_directory
-from imap_processing.swe import __version__
+from imap_processing.cdf_utils import write_cdf
+from imap_processing.swe import __version__, swe_cdf_attrs
 from imap_processing.swe.l1b.swe_l1b_science import swe_l1b_science
 from imap_processing.swe.utils.swe_utils import SWEAPID, filename_descriptors
 from imap_processing.utils import convert_raw_to_eu
-from imap_processing.write_to_cdf import write_to_cdf
 
 
 def swe_l1b(l1a_dataset):
@@ -32,28 +32,21 @@ def swe_l1b(l1a_dataset):
         packet_name=packet_name.name,
     )
 
-    if apid == SWEAPID.SWE_APP_HK.value:
-        # Save to cdf
-        return write_to_cdf(
-            eu_data,
-            "swe",
-            "l1b",
-            version=__version__,
-            mode=f"{eu_data['APP_MODE'].data[0]}",
-            description=filename_descriptors.get(apid),
-            directory=current_dir,
-        )
-    elif apid == SWEAPID.SWE_SCIENCE.value:
+    if apid == SWEAPID.SWE_SCIENCE:
         data = swe_l1b_science(eu_data)
-        return write_to_cdf(
-            data,
-            "swe",
-            "l1b",
-            version=__version__,
-            description=filename_descriptors.get(apid),
-            directory=current_dir,
-        )
     else:
-        # Don't process other data further
-        # TODO log it
-        return None
+        data = eu_data
+        data.attrs.update(swe_cdf_attrs.l1b_science_attrs)
+        # TODO: find out why logical source was coming out
+        # as below at this point in hk processing
+        # {
+        #     "logical_source": ["imap_swe_l1"]
+        # }
+        data.attrs["Logical_source"] = "imap_swe_l1b"
+        data.attrs["Data_version"] = __version__
+    return write_cdf(
+        data,
+        mode=f"{data['APP_MODE'].data[0]}" if apid == SWEAPID.SWE_APP_HK else "",
+        description=filename_descriptors.get(apid),
+        directory=current_dir,
+    )
