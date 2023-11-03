@@ -22,27 +22,12 @@ class SWEAPID(IntEnum):
     SWE_SCIENCE = 1344
 
 
-def get_descriptor(apid: int):
-    """Get descriptor for the output filename.
-
-    Parameters
-    ----------
-    apid : int
-        Packet apid
-
-    Returns
-    -------
-    str
-        Filename description
-    """
-    filename_descriptors = {
-        SWEAPID.SWE_APP_HK.value: "hk",
-        SWEAPID.SWE_EVTMSG.value: "evtmsg",
-        SWEAPID.SWE_CEM_RAW.value: "cemraw",
-        SWEAPID.SWE_SCIENCE.value: "sci",
-    }
-
-    return filename_descriptors[apid]
+filename_descriptors = {
+    SWEAPID.SWE_APP_HK: "hk",
+    SWEAPID.SWE_EVTMSG: "evtmsg",
+    SWEAPID.SWE_CEM_RAW: "cemraw",
+    SWEAPID.SWE_SCIENCE: "sci",
+}
 
 
 def add_metadata_to_array(data_packet, metadata_arrays):
