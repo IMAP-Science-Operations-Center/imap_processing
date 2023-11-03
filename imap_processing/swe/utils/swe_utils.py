@@ -35,17 +35,14 @@ def get_descriptor(apid: int):
     str
         Filename description
     """
-    if apid == SWEAPID.SWE_APP_HK.value:
-        description = "hk"
-    elif apid == SWEAPID.SWE_EVTMSG.value:
-        description = "evtmsg"
-    elif apid == SWEAPID.SWE_CEM_RAW.value:
-        description = "cemraw"
-    elif apid == SWEAPID.SWE_SCIENCE.value:
-        description = "sci"
-    else:
-        return None
-    return description
+    filename_descriptors = {
+        SWEAPID.SWE_APP_HK.value: "hk",
+        SWEAPID.SWE_EVTMSG.value: "evtmsg",
+        SWEAPID.SWE_CEM_RAW.value: "cemraw",
+        SWEAPID.SWE_SCIENCE.value: "sci",
+    }
+
+    return filename_descriptors[apid]
 
 
 def add_metadata_to_array(data_packet, metadata_arrays):
