@@ -197,3 +197,23 @@ def test_generate_xarray(binary_packet_path, xtce_ialirt_path, decom_packets_dat
     for instrument in instruments:
         dimension_name = next(iter(xarray_data[instrument].dims))
         assert len(xarray_data[instrument].coords[dimension_name].values) == 32
+
+
+def test_unexpected_key(binary_packet_path, xtce_ialirt_path, decom_packets_data):
+    """
+    This function tests that a ValueError is raised when an unexpected
+    key is encountered.
+    """
+
+    time_keys = {
+        "UNEXPECTED": "SC_SCLK_SEC",
+        "HIT": "HIT_SC_TICK",
+        "MAG": "MAG_ACQ",
+        "COD_LO": "COD_LO_ACQ",
+        "COD_HI": "COD_HI_ACQ",
+        "SWE": "SWE_ACQ_SEC",
+        "SWAPI": "SWAPI_ACQ",
+    }
+
+    with pytest.raises(ValueError, match=r"Unexpected key '.*' found in packet data."):
+        generate_xarray(binary_packet_path, xtce_ialirt_path, time_keys=time_keys)

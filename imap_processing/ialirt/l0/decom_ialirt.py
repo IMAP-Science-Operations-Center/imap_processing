@@ -9,7 +9,7 @@ logging.basicConfig(level=logging.ERROR)
 logger = logging.getLogger(__name__)
 
 
-def generate_xarray(packet_file: str, xtce: str):
+def generate_xarray(packet_file: str, xtce: str, time_keys=None):
     """
     Generate xarray from unpacked data.
 
@@ -19,6 +19,8 @@ def generate_xarray(packet_file: str, xtce: str):
         Path to the CCSDS data packet file.
     xtce : str
         Path to the XTCE packet definition file.
+    time_keys : dict
+        Keys used for creating xarray dataset
 
     Returns
     -------
@@ -50,15 +52,16 @@ def generate_xarray(packet_file: str, xtce: str):
 
     logger.info(f"Decommutated {len(packets)} packets from {packet_file}.")
 
-    time_keys = {
-        "SC": "SC_SCLK_SEC",
-        "HIT": "HIT_SC_TICK",
-        "MAG": "MAG_ACQ",
-        "COD_LO": "COD_LO_ACQ",
-        "COD_HI": "COD_HI_ACQ",
-        "SWE": "SWE_ACQ_SEC",
-        "SWAPI": "SWAPI_ACQ",
-    }
+    if time_keys is None:
+        time_keys = {
+            "SC": "SC_SCLK_SEC",
+            "HIT": "HIT_SC_TICK",
+            "MAG": "MAG_ACQ",
+            "COD_LO": "COD_LO_ACQ",
+            "COD_HI": "COD_HI_ACQ",
+            "SWE": "SWE_ACQ_SEC",
+            "SWAPI": "SWAPI_ACQ",
+        }
 
     instruments = list(time_keys.keys())
 
