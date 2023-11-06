@@ -53,32 +53,11 @@ def binary_packet_path():
 @pytest.fixture(scope="session")
 def empty_binary_packet_path():
     """
-    Creates a empty binary file from the text packet data, which is more representative
-    of the actual operational environment. The binary file is deleted after the
-    test session.
+    Creates an empty binary file, representative of a scenario
+    in which no packet data is available.
     """
-    empty_packet_path = (
-        imap_module_directory
-        / "ialirt"
-        / "tests"
-        / "test_data"
-        / "l0"
-        / "Empty IALiRT Raw Packet Telemetry.txt"
-    )
-
     with tempfile.NamedTemporaryFile(delete=False) as tmp_file:
         binary_file_path = Path(tmp_file.name)
-
-    with open(empty_packet_path) as text_file, open(
-        binary_file_path, "wb"
-    ) as binary_file:
-        for line in text_file:
-            # Split the line by semicolons
-            # Discard the first value since it is only a counter
-            hex_values = line.strip().split(";")[1:]
-            # Convert hex to binary
-            binary_data = bytearray.fromhex("".join(hex_values))
-            binary_file.write(binary_data)
 
     yield binary_file_path
 
