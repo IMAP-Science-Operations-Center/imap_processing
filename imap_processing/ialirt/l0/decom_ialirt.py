@@ -29,7 +29,7 @@ def generate_xarray(packet_file: str, xtce: str):
     try:
         packets = decom_packets(packet_file, xtce)
     except Exception as e:
-        logger.error(f"Error during packet decomposition: {str(e)}")
+        logger.error(f"Error during packet decomposition: {e!s}")
         return
 
     logger.info(f"Decommutated {len(packets)} packets from {packet_file}.")
