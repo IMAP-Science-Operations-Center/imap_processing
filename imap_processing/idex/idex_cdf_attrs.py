@@ -1,7 +1,7 @@
 import dataclasses
 
+from imap_processing.cdfutils.defaults import GlobalConstants, IdexConstants
 from imap_processing.cdfutils.global_base import (
-    Constants,
     DataLevelBase,
     FloatBase,
     InstrumentBase,
@@ -9,16 +9,6 @@ from imap_processing.cdfutils.global_base import (
     ScienceBase,
 )
 from imap_processing.idex import __version__
-
-# Valid min/maxes
-
-# Data is in a 12 bit unsigned INT
-DATA_MIN = 0  # It could go down to 0 in theory
-DATA_MAX = 4096  # It cannot exceed 4096 (2^12)
-
-# Samples span 130 microseconds at the most, and values are allowed to be negative
-SAMPLE_RATE_MIN = -130  # All might be negative
-SAMPLE_RATE_MAX = 130  # All might be positive
 
 # Global Attributes
 text = (
@@ -31,20 +21,6 @@ text = (
 )
 
 idex_base = InstrumentBase(__version__, "IDEX>Interstellar Dust Experiment", text)
-# idex_global_base = {
-#     "Data_type": "L1>Level-1",
-#     "Data_version": __version__,
-#     "Descriptor": "IDEX>Interstellar Dust Experiment",
-#     "TEXT": (
-#         "The Interstellar Dust Experiment (IDEX) is a time-of-flight (TOF) "
-#         "dust impact ionization mass spectrometer on the IMAP mission that "
-#         "provides the elemental composition, speed, and mass distributions "
-#         "of interstellar dust and interplanetary dust particles. Each record "
-#         "contains the data from a single dust impact. See "
-#         "https://imap.princeton.edu/instruments/idex for more details."
-#     ),
-#     "Logical_file_id": "FILL ME IN AT FILE CREATION",
-# } | GlobalBase.global_base
 
 idex_l1_global_attrs = DataLevelBase(
     "L1>Level-1",
@@ -58,8 +34,8 @@ idex_l2_global_attrs = DataLevelBase(
 )
 
 l1_data_base = ScienceBase(
-    DATA_MIN,
-    DATA_MAX,
+    IdexConstants.DATA_MIN,
+    IdexConstants.DATA_MAX,
     display_type="spectrogram",
     depend_0="Epoch",
     format="I12",
@@ -70,27 +46,12 @@ l1_data_base = ScienceBase(
 
 # L1 variables base dictionaries
 # (these need to be filled in by the variable dictionaries below)
-# l1_data_base = {
-#     "DEPEND_0": "Epoch",
-#     "DISPLAY_TYPE": "spectrogram",
-#     "FILLVAL": Constants.INT_FILLVAL,
-#     "FORMAT": "I12",
-#     "UNITS": "dN",
-#     "VALIDMIN": DATA_MIN,
-#     "VALIDMAX": DATA_MAX,
-#     "VAR_TYPE": "data",
-#     "SCALETYP": "linear",
-#     # "VARIABLE_PURPOSE" tells CDAWeb which variables are worth plotting
-#     "VARIABLE_PURPOSE": "PRIMARY",
-# }
-
 l1_tof_base = dataclasses.replace(l1_data_base, depend_1="Time_High_SR")
-
 l1_target_base = dataclasses.replace(l1_data_base, depend_1="Time_Low_SR")
 
 sample_rate_base = FloatBase(
-    SAMPLE_RATE_MIN,
-    SAMPLE_RATE_MAX,
+    IdexConstants.SAMPLE_RATE_MIN,
+    IdexConstants.SAMPLE_RATE_MAX,
     depend_0="Epoch",
     format="F12.5",
     label_axis="Time",
@@ -105,7 +66,7 @@ sample_rate_base = FloatBase(
 # TODO: is "VALIDMAX" not required here? Added INT_MAXVAL, incl the existing CDF for ref
 trigger_base = IntBase(
     0,
-    Constants.INT_MAXVAL,
+    GlobalConstants.INT_MAXVAL,
     depend_0="Epoch",
     format="I12",
     var_type="data",
