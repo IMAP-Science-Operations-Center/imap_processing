@@ -16,6 +16,7 @@ Instruments
    :maxdepth: 1
 
    glows
+   hit
    swe
 
 
