@@ -1,3 +1,4 @@
+import dataclasses
 import logging
 from collections import namedtuple
 
@@ -6,7 +7,8 @@ import numpy as np
 import xarray as xr
 from space_packet_parser import parser, xtcedef
 
-from imap_processing import cdf_utils, imap_module_directory
+from imap_processing import imap_module_directory
+from imap_processing.cdfutils.global_base import Epoch
 from imap_processing.idex import idex_cdf_attrs
 
 SCITYPE_MAPPING_TO_NAMES = {
@@ -89,7 +91,7 @@ class PacketParser:
         ]
 
         self.data = xr.concat(processed_dust_impact_list, dim="Epoch")
-        self.data.attrs = idex_cdf_attrs.idex_l1_global_attrs
+        self.data.attrs = idex_cdf_attrs.idex_l1_global_attrs.output()
 
 
 class RawDustEvent:
@@ -918,15 +920,15 @@ class RawDustEvent:
                 name=var,
                 data=[value],
                 dims=("Epoch"),
-                attrs={
-                    "CATDESC": self.trigger_notes[var],
-                    "FIELDNAM": self.trigger_fields[var],
-                    "VAR_NOTES": self.trigger_notes[var],
-                    "VALIDMAX": self.trigger_maxes[var],
-                    "LABLAXIS": self.trigger_labels[var],
-                    "UNITS": self.trigger_units[var],
-                }
-                | idex_cdf_attrs.trigger_base,
+                attrs=dataclasses.replace(
+                    idex_cdf_attrs.trigger_base,
+                    catdesc=self.trigger_notes[var],
+                    fieldname=self.trigger_fields[var],
+                    var_notes=self.trigger_notes[var],
+                    validmax=self.trigger_maxes[var],
+                    label_axis=self.trigger_labels[var],
+                    units=self.trigger_units[var],
+                ).output(),
             )
 
         # Process the 6 primary data variables
@@ -934,37 +936,37 @@ class RawDustEvent:
             name="TOF_High",
             data=[self._parse_high_sample_waveform(self.TOF_High_bits)],
             dims=("Epoch", "Time_High_SR_dim"),
-            attrs=idex_cdf_attrs.tof_high_attrs,
+            attrs=idex_cdf_attrs.tof_high_attrs.output(),
         )
         tof_low_xr = xr.DataArray(
             name="TOF_Low",
             data=[self._parse_high_sample_waveform(self.TOF_Low_bits)],
             dims=("Epoch", "Time_High_SR_dim"),
-            attrs=idex_cdf_attrs.tof_low_attrs,
+            attrs=idex_cdf_attrs.tof_low_attrs.output(),
         )
         tof_mid_xr = xr.DataArray(
             name="TOF_Mid",
             data=[self._parse_high_sample_waveform(self.TOF_Mid_bits)],
             dims=("Epoch", "Time_High_SR_dim"),
-            attrs=idex_cdf_attrs.tof_mid_attrs,
+            attrs=idex_cdf_attrs.tof_mid_attrs.output(),
         )
         target_high_xr = xr.DataArray(
             name="Target_High",
             data=[self._parse_low_sample_waveform(self.Target_High_bits)],
             dims=("Epoch", "Time_Low_SR_dim"),
-            attrs=idex_cdf_attrs.target_high_attrs,
+            attrs=idex_cdf_attrs.target_high_attrs.output(),
         )
         target_low_xr = xr.DataArray(
             name="Target_Low",
             data=[self._parse_low_sample_waveform(self.Target_Low_bits)],
             dims=("Epoch", "Time_Low_SR_dim"),
-            attrs=idex_cdf_attrs.target_low_attrs,
+            attrs=idex_cdf_attrs.target_low_attrs.output(),
         )
         ion_grid_xr = xr.DataArray(
             name="Ion_Grid",
             data=[self._parse_low_sample_waveform(self.Ion_Grid_bits)],
             dims=("Epoch", "Time_Low_SR_dim"),
-            attrs=idex_cdf_attrs.ion_grid_attrs,
+            attrs=idex_cdf_attrs.ion_grid_attrs.output(),
         )
 
         # Determine the 3 coordinate variables
@@ -972,21 +974,21 @@ class RawDustEvent:
             name="Epoch",
             data=[self.impact_time],
             dims=("Epoch"),
-            attrs=cdf_utils.epoch_attrs,
+            attrs=Epoch.output(),
         )
 
         time_low_sr_xr = xr.DataArray(
             name="Time_Low_SR",
             data=[self._calc_low_sample_resolution(len(target_low_xr[0]))],
             dims=("Epoch", "Time_Low_SR_dim"),
-            attrs=idex_cdf_attrs.low_sr_attrs,
+            attrs=idex_cdf_attrs.low_sr_attrs.output(),
         )
 
         time_high_sr_xr = xr.DataArray(
             name="Time_High_SR",
             data=[self._calc_high_sample_resolution(len(tof_low_xr[0]))],
             dims=("Epoch", "Time_High_SR_dim"),
-            attrs=idex_cdf_attrs.high_sr_attrs,
+            attrs=idex_cdf_attrs.high_sr_attrs.output(),
         )
 
         # Combine to return a dataset object

@@ -8,7 +8,7 @@ from cdflib.xarray import cdf_to_xarray
 from cdflib.xarray.xarray_to_cdf import ISTPError
 
 from imap_processing import idex
-from imap_processing.cdf_utils import write_cdf
+from imap_processing.cdfutils.cdf_utils import write_cdf
 from imap_processing.idex.idex_packet_parser import PacketParser
 
 
