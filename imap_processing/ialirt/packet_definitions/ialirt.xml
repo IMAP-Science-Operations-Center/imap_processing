@@ -3,34 +3,8 @@
 	<xtce:Header date="2023-08-24T07:53:00MST" version="1.0" author="IMAP SDC" />
 	<xtce:TelemetryMetaData>
 		<xtce:ParameterTypeSet>
-			<!-- In the ParameterTypeSet, define all the data types required for the data packets' definitions.
-            Each data field within the packet definition may have different lengths specified by the lengthInBits column.
-            Here, we define data types for all the unique values found in the lengthInBits column.
-
-            For example, consider the uint1 data type:
-                <xtce:IntegerParameterType name="uint1" signed="false">
-                    <xtce:UnitSet/>
-                    <xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned"/>
-                </xtce:IntegerParameterType>
-            In this case, the uint1 data type is an unsigned integer with a size of 1 bit.
-
-            For fields that have meanings based on the values they evaluate to, enumerated data types need to be created.
-
-            Here's an example:
-                <xtce:EnumeratedParameterType name="cem_nominal_enum" signed="false">
-                    <xtce:UnitSet/>
-                    <xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned"/>
-                    <xtce:EnumerationList>
-                        <xtce:Enumeration label="NOT_NOMINAL" value="0"/>
-                        <xtce:Enumeration label="NOMINAL" value="1"/>
-                    </xtce:EnumerationList>
-                </xtce:EnumeratedParameterType>
-
-            In this case, the cem_nominal_enum data type is an enumerated type with a size of 1 bit. It has two possible values:
-                "NOT_NOMINAL" with a value of 0 and "NOMINAL" with a value of 1.
-
-            By defining the appropriate data types within the ParameterTypeSet, you ensure that the data fields in the packet definitions
-            are properly represented and their meanings are correctly interpreted.
+			<!-- This file was manually created using content from:
+			I-ALiRT Packet Definitions: https://lasp.colorado.edu/galaxy/x/44nKCQ
             -->
 			<xtce:IntegerParameterType name="uint0" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="0" encoding="unsigned" />
