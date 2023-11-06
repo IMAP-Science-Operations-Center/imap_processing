@@ -73,13 +73,12 @@ def empty_binary_packet_path():
         binary_file_path, "wb"
     ) as binary_file:
         for line in text_file:
-            if not line.startswith("#"):
-                # Split the line by semicolons
-                # Discard the first value since it is only a counter
-                hex_values = line.strip().split(";")[1:]
-                # Convert hex to binary
-                binary_data = bytearray.fromhex("".join(hex_values))
-                binary_file.write(binary_data)
+            # Split the line by semicolons
+            # Discard the first value since it is only a counter
+            hex_values = line.strip().split(";")[1:]
+            # Convert hex to binary
+            binary_data = bytearray.fromhex("".join(hex_values))
+            binary_file.write(binary_data)
 
     yield binary_file_path
 
