@@ -101,9 +101,8 @@ def test_length(decom_packets_data):
 
 def test_binary_value_length():
     """
-    Creates a binary file from the text packet data, which is more representative
-    of the actual operational environment. The binary file is deleted after the
-    test session.
+    Validates the length of binary data converted
+    from a text file containing hexadecimal packet data.
     """
     packet_path = (
         imap_module_directory

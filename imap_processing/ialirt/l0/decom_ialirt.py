@@ -25,6 +25,22 @@ def generate_xarray(packet_file: str, xtce: str):
     xr.Dataset
         A dataset containing the decoded data fields with 'time' as the coordinating
         dimension.
+
+    Example Output:
+    ---------------
+    # This is an example of what the xarray dataset might look like
+    # after being processed by this function.
+
+    <xarray.Dataset>
+    Dimensions:       (SC_SCLK_SEC: 5)
+    Coordinates:
+      * SC_SCLK_SEC   (SC_SCLK_SEC) int64 322168 322169 322170 322171 322172
+    Data variables:
+        SC_MAG_STATUS (SC_SCLK_SEC) int64 0 1 0 1 0
+        SC_HIT_STATUS (SC_SCLK_SEC) int64 1 0 1 0 1
+
+    This example shows a dataset with 'SC_SCLK_SEC' as the coordinate
+    and two data variables 'SC_MAG_STATUS' and 'SC_HIT_STATUS'.
     """
     try:
         packets = decom_packets(packet_file, xtce)
@@ -54,16 +70,16 @@ def generate_xarray(packet_file: str, xtce: str):
             key_matched = False
             for inst in instruments:
                 if key.startswith(inst):
-                    # Directly append to the list without checking if the key exists
+                    # Directly append to the list
                     data_storage[inst][key].append(value.derived_value)
                     key_matched = True
                     break
 
-        if not key_matched:
-            # If after checking all instruments, none match, then log a warning
-            logger.warning(f"Unexpected key '{key}' found in packet data.")
+            if not key_matched:
+                # If after checking all instruments, none match, raise an error.
+                raise ValueError(f"Unexpected key '{key}' found in packet data.")
 
-    logger.debug("Generating datasets for each instrument.")
+    logger.info("Generating datasets for each instrument.")
 
     # Generate xarray dataset for each instrument and spacecraft
     datasets = {}
