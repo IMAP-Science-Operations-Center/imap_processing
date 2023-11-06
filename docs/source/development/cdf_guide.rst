@@ -11,28 +11,28 @@ Introduction
 
 What are CDF Files?
 ====================
-CDF files are binary files which require special libraries to create and manipulate. Goddard Space Flight Center (GSFC) maintains these CDF libraries, and is the shepherd of the file format.  
+CDF files are binary files which require special libraries to create and manipulate. Goddard Space Flight Center (GSFC) maintains these CDF libraries, and is the shepherd of the file format.
 
 The GSFC describes CDF files as a "self-describing data format for the storage of scalar and multidimensional data in a platform- and discipline-independent way".
 
-IMAP is archiving its science data with the `Space Physics Data Facility (SPDF) <https://spdf.gsfc.nasa.gov/>`_, and they require data to be in the CDF file format.  
+IMAP is archiving its science data with the `Space Physics Data Facility (SPDF) <https://spdf.gsfc.nasa.gov/>`_, and they require data to be in the CDF file format.
 
 CDF Ecosystem
 --------------
-**CDF** refers to more than just the ".cdf" files themselves, but the entire toolkit surrounding those files.  The official toolkits are available in IDL, C, Fortran and MATLAB.  
+**CDF** refers to more than just the ".cdf" files themselves, but the entire toolkit surrounding those files.  The official toolkits are available in IDL, C, Fortran and MATLAB.
 
 For python implementations, there is **pycdf**, which is a part of **spacepy**.  Pycdf wraps the C libraries, and also includes various bells and whistles that help make the files a litle more python friendly.
 
-There is also **cdflib**, which is a pure-python implementation of the CDF libraries. **cdflib** doesn't require installing the C libraries, and also contains the functions "xarray_to_cdf" and "cdf_to_xarray" to convert between xarray Dataset objects in python and the CDF file formats.  
+There is also **cdflib**, which is a pure-python implementation of the CDF libraries. **cdflib** doesn't require installing the C libraries, and also contains the functions "xarray_to_cdf" and "cdf_to_xarray" to convert between xarray Dataset objects in python and the CDF file formats.
 
 What's in a CDF file?
 ======================
 
-There are two parts of a CDF file that a scientist using the files would care about: Variables and Attributes.  
+There are two parts of a CDF file that a scientist using the files would care about: Variables and Attributes.
 
-The way these are actually stored in the file are somewhat complex, but it doesn't matter to the end user.  The CDF libraries enable users to easily list and extract the variables and attributes within the CDF files.  
+The way these are actually stored in the file are somewhat complex, but it doesn't matter to the end user.  The CDF libraries enable users to easily list and extract the variables and attributes within the CDF files.
 
-In case you have several spare hours, the internal format of CDF files are described `here <https://cdaweb.gsfc.nasa.gov/pub/software/cdf/doc/cdf391/cdf39ifd.pdf>`_. 
+In case you have several spare hours, the internal format of CDF files are described `here <https://cdaweb.gsfc.nasa.gov/pub/software/cdf/doc/cdf391/cdf39ifd.pdf>`_.
 
 Variables
 ----------
@@ -44,37 +44,36 @@ Variables are the actual data used within a file.  They have a few key character
 * Name
    * The Name of the variable
 * Size
-   * The shape of the data, i.e. the number and the size of the dimensions.  In the picture above, zVariable 1 is 5x5, and zVariable 2 is 5x2.  
+   * The shape of the data, i.e. the number and the size of the dimensions.  In the picture above, zVariable 1 is 5x5, and zVariable 2 is 5x2.
 * Data types
    * Describes what the binary data actually is, i.e. -
       * Integers (1-8 bytes)
       * Floats (1-8 bytes)
       * Characters (1 byte)
       * "Time" data
-         *  For IMAP, the main time variable we'll be using is CDF_EPOCH_TT2000, which is nanoseconds since the year 2000.  More detail can be found in below sections.  
+         *  For IMAP, the main time variable we'll be using is CDF_EPOCH_TT2000, which is nanoseconds since the year 2000.  More detail can be found in below sections.
 * Records
-   * Variables can span across multiple records.  This is essentially another dimension of the data, but the idea is that each record represents 1 unique physical measurement from an instrument.  In the above diagram, both variables have 3 records shown.   
+   * Variables can span across multiple records.  This is essentially another dimension of the data, but the idea is that each record represents 1 unique physical measurement from an instrument.  In the above diagram, both variables have 3 records shown.
 
-  
-.. note:: For IMAP instruments, each "Record" is always a unit of time.  If a varible does not vary over time, it will only span 1 record.    
+.. note:: For IMAP instruments, each "Record" is always a unit of time.  If a varible does not vary over time, it will only span 1 record.
 
 Attributes
 -----------
 
-Attributes are essentially key:value pairs inside the CDF, similar to a python dictionary object.  For example: MISSION:IMAP, or INSTRUMENT:IDEX.  
+Attributes are essentially key:value pairs inside the CDF, similar to a python dictionary object.  For example: MISSION:IMAP, or INSTRUMENT:IDEX.
 
 Attributes can be attached to a Variable if they describe a particular data variable.  If they are not attached to a variable, they are considered "global" attributes, and the describe the file as a whole.
 
 ISTP Compliance
 ===============
 
-ISTP compliance is a standard set of attributes to use when creating CDF files.  The goal of ISTP is that others users and programs of your CDF file will know where to look for information about the data inside.  A large part of these requirements are driven by the SPDF's display tool, `CDAWeb <https://cdaweb.gsfc.nasa.gov/cdaweb/>`_.   
+ISTP compliance is a standard set of attributes to use when creating CDF files.  The goal of ISTP is that others users and programs of your CDF file will know where to look for information about the data inside.  A large part of these requirements are driven by the SPDF's display tool, `CDAWeb <https://cdaweb.gsfc.nasa.gov/cdaweb/>`_.
 
 .. image:: images/2d_spectrogram_1.gif
 
-The image above is taken from CDAWeb. Several of the attributes inside the CDF file are used to help generate these plots.  
+The image above is taken from CDAWeb. Several of the attributes inside the CDF file are used to help generate these plots.
 
-In order to archive at the SPDF, we must ensure files are ISTP compliant.  The SPDF will reject files that do not conform to their standards.  
+In order to archive at the SPDF, we must ensure files are ISTP compliant.  The SPDF will reject files that do not conform to their standards.
 
 A guide to SPDF can be found here: `https://spdf.gsfc.nasa.gov/istp_guide/istp_guide.html <https://spdf.gsfc.nasa.gov/istp_guide/istp_guide.html>`_
 
@@ -82,20 +81,20 @@ A guide to SPDF can be found here: `https://spdf.gsfc.nasa.gov/istp_guide/istp_g
 cdflib.xarray_to_cdf
 *****************************
 
-The Python library `cdflib <https://github.com/MAVENSDC/cdflib>`_ is a pure-python implementation of the CDF libraries.  Of particular note is the function `xarray_to_cdf <https://cdflib.readthedocs.io/en/latest/api/cdflib.xarray.xarray_to_cdf.html#cdflib.xarray.xarray_to_cdf>`_.  
+The Python library `cdflib <https://github.com/MAVENSDC/cdflib>`_ is a pure-python implementation of the CDF libraries.  Of particular note is the function `xarray_to_cdf <https://cdflib.readthedocs.io/en/latest/api/cdflib.xarray.xarray_to_cdf.html#cdflib.xarray.xarray_to_cdf>`_.
 
-**IMAP L0-L2 processing will be using this function to generate all CDF files**.  
+**IMAP L0-L2 processing will be using this function to generate all CDF files**.
 
-This function takes an `xarray.Dataset <https://docs.xarray.dev/en/stable/generated/xarray.Dataset.html>`_ object as input, and will output a CDF file.  Further details about how it works are below.  
+This function takes an `xarray.Dataset <https://docs.xarray.dev/en/stable/generated/xarray.Dataset.html>`_ object as input, and will output a CDF file.  Further details about how it works are below.
 
 Brief Xarray Intro
 ===================
 
-xarray is a powerful python library for handling multi-dimensional data.  It has a strong connection with the netCDF file format.  The developers intended xaray to be an "in-memory" representation of a netCDF file.  
+xarray is a powerful python library for handling multi-dimensional data.  It has a strong connection with the netCDF file format.  The developers intended xaray to be an "in-memory" representation of a netCDF file.
 
 .. note:: the netCDF file format was created by NOAA a few years after the CDF file format to plug in some of the shortfallings of the CDF file format.  These days, the orginal reasons for the split between the two formats have largely disappeared.
 
-Perhaps the largest difference between netCDF and CDF is that netCDF has built-in methods to attach *dimensions* and *coordinates* to data.  Similarly, xarray Datasets have this capability as well.  
+Perhaps the largest difference between netCDF and CDF is that netCDF has built-in methods to attach *dimensions* and *coordinates* to data.  Similarly, xarray Datasets have this capability as well.
 Full documentation about xarray Dataset objects are located here `https://docs.xarray.dev/en/stable/generated/xarray.Dataset.html <https://docs.xarray.dev/en/stable/generated/xarray.Dataset.html>`_
 
 Within a CDF file, there is no inherent way to attach coordinates to a variable.  CDF is a simpler format, and only has the concept of Attributes and Variables.  The "CDF-native" way of specifying dimensions to a variable is to use "DEPEND" attributes (see the above section on ISTP compliance).
@@ -103,7 +102,7 @@ Within a CDF file, there is no inherent way to attach coordinates to a variable.
 xarray_to_cdf
 ==============
 
-The following is a minimal example of working with xarray_to_cdf - 
+The following is a minimal example of working with xarray_to_cdf -
 
 .. code-block:: python
 
@@ -116,27 +115,27 @@ The following is a minimal example of working with xarray_to_cdf -
    ds = xr.Dataset(data_vars={'data': data, 'epoch': epoch})
    xarray_to_cdf(ds, 'hello.cdf')
 
-The xarray_to_cdf function converts an xarray.Dataset object into a CDF file.  
+The xarray_to_cdf function converts an xarray.Dataset object into a CDF file.
 
 For IMAP, we will be using the following flags on xarray_to_cdf
 
 * datetime64_to_cdftt2000
-   * Working with numpy datetime64 objects for time is recommended because of the precision afforded, as well as the speed of calculations  
+   * Working with numpy datetime64 objects for time is recommended because of the precision afforded, as well as the speed of calculations
 * istp
-   * Enabled by default.  This flag will perform some checks to verify that the function is able to make ISTP compliant CDF files from the Dataset object.  
+   * Enabled by default.  This flag will perform some checks to verify that the function is able to make ISTP compliant CDF files from the Dataset object.
 * terminate_on_warning
-   * This flag ensures that the function terminates if there are any issues found, so we can avoid creating incomplete or non-compliant files.  
+   * This flag ensures that the function terminates if there are any issues found, so we can avoid creating incomplete or non-compliant files.
 
 xarray_to_cdf with the above flags will perform the following steps -
 
 Verification Steps
 -------------------
 
-#. Verifies that required global attributes are present to meet ISTP compliance 
+#. Verifies that required global attributes are present to meet ISTP compliance
 #. Verifies that variables have a VAR_TYPE attribute of either "data", "support_data", or "metadata"
 #. Verifies that all variables have the appropriate number of DEPEND_{i} attributes, based on the number of dimensions of the variable
-#. Verfies that the DEPEND_{i} attributes point to variables that are the size and shape expected to act as coordinates 
-#. Verifies that each variable has the expected variable attributes to be ISTP compliant 
+#. Verfies that the DEPEND_{i} attributes point to variables that are the size and shape expected to act as coordinates
+#. Verifies that each variable has the expected variable attributes to be ISTP compliant
 
 Conversion Steps
 -----------------
@@ -153,9 +152,9 @@ Conversion Steps
 Shortcomings
 ------------
 
-* This code does not check the values *within* the attributes (except VAR_TYPE and DEPEND_{i}), only that the attributes exist! 
+* This code does not check the values *within* the attributes (except VAR_TYPE and DEPEND_{i}), only that the attributes exist!
 * This function does not put the "Epoch" variable as the first thing in the file, which was recommended (but not required) by the SPDF
-* This code creates variables in a row-major format.  Column-major is recommended (but not required) by the SPDF.  
+* This code creates variables in a row-major format.  Column-major is recommended (but not required) by the SPDF.
 
 
 ******************************
@@ -178,27 +177,27 @@ This attribute identifies the version of a particular CDF data file.
 
 Descriptor
 ================
-This attribute identifies the name of the instrument or sensor that collected the data.  Both a long name and a short name are given.  For any data file, only a single value is allowed.  
+This attribute identifies the name of the instrument or sensor that collected the data.  Both a long name and a short name are given.  For any data file, only a single value is allowed.
 
 For IMAP, the following are valid:
-* IDEX>Interstellar Dust Experiment 
+* IDEX>Interstellar Dust Experiment
 * SWE>Solar Wind Electrons
 * SWAPI>Solar wind and Pickup Ions
 * CoDICE>Compact Dual Ion Compoition Experiment
 * MAG>Magnetometer
 * HIT>High-energy Ion Teleccope
 * GLOWS>GLObal Solar Wind Structure
-* IMAP-Hi>Interstellar Mapping and Acceleration Probe High 
+* IMAP-Hi>Interstellar Mapping and Acceleration Probe High
 * IMAP-Lo>Interstellar Mapping and Acceleration Probe Low
 * IMAP-Ultra>Interstellar Mapping and Acceleration Probe Ultra
 
 Discipline
 ================
-For IMAP, this value should always be “Space Physics>Heliospheric Physics.”. This attribute describes both the science discipline and sub discipline. 
+For IMAP, this value should always be “Space Physics>Heliospheric Physics.”. This attribute describes both the science discipline and sub discipline.
 
 Generation_date
 ================
-Date stamps the creation of the file using the syntax yyyymmdd, e.g. 20150923. 
+Date stamps the creation of the file using the syntax yyyymmdd, e.g. 20150923.
 
 Instrument_type
 ================
@@ -228,7 +227,7 @@ This attribute writes out the full words associated with the encrypted Logical_s
 
 Mission_group
 ================
-This attribute has a single value and is used to facilitate making choices of source through CDAWeb.  This value should be "IMAP".  
+This attribute has a single value and is used to facilitate making choices of source through CDAWeb.  This value should be "IMAP".
 
 PI_affiliation
 ================
@@ -244,7 +243,7 @@ This attribute value should include the IMAP mission PI affiliation followed by 
 
 PI_name
 ================
-This attribute value should include first initial and last name of the MMS mission PI followed by a comma-separated list of any Co-Is that are responsible for this particular dataset. For example, a single PI entry in this attribute would be: "Dr. David J. McComas". 
+This attribute value should include first initial and last name of the MMS mission PI followed by a comma-separated list of any Co-Is that are responsible for this particular dataset. For example, a single PI entry in this attribute would be: "Dr. David J. McComas".
 
 Project
 ================
@@ -283,10 +282,10 @@ Required Epoch Variable
 ------------------------
 All IMAP CDF Data files must contain at least one cariable of data type CDF_TIME_TT2000 named "Epoch".  All time varying variables in the CDF data set will depend on either this "Epoch" or another variable of type CDF_TIME_TT2000.  More than one CDF_TIME_TT2000 variable is allowed in a data set to allow for more than one time resolution.  It is recommended that all such time variable use "Epoch" within their variable name.
 
-.. note:: 
-   In the xarray_to_cdf function described above, all variables with "epoch" in their name will be converted to CDF_TT2000 if the flag "istp=True" is given.  
+.. note::
+   In the xarray_to_cdf function described above, all variables with "epoch" in their name will be converted to CDF_TT2000 if the flag "istp=True" is given.
 
-For ISTP compliance, the time value of a record refers to the **center** of the accumulation period if the measurement is not an instantaneous one. 
+For ISTP compliance, the time value of a record refers to the **center** of the accumulation period if the measurement is not an instantaneous one.
 
 CDF_TT2000 is defined as an 8-byte signed integer with the following characteristics:
 
@@ -313,7 +312,7 @@ Explicitly ties a data variable to the time variable on which it depends. All va
 
 DEPEND_i
 ^^^^^^^^^^^^^^^^
-Ties a dimensional data variable to a SUPPORT_DATA variable on which the i-th dimension of the data variable depends. The number of DEPEND attributes must match the dimensionality of the variable, i.e., a one-dimensional variable must have a DEPEND_1, a two-dimensional variable must have a DEPEND_1 and a DEPEND_2 attribute, etc. The value of the attribute must be a variable in the same CDF data set. It is strongly recommended that DEPEND_i variables hold values in physical units. DEPEND_i variables also require their own attributes, as described in the following sections.  
+Ties a dimensional data variable to a SUPPORT_DATA variable on which the i-th dimension of the data variable depends. The number of DEPEND attributes must match the dimensionality of the variable, i.e., a one-dimensional variable must have a DEPEND_1, a two-dimensional variable must have a DEPEND_1 and a DEPEND_2 attribute, etc. The value of the attribute must be a variable in the same CDF data set. It is strongly recommended that DEPEND_i variables hold values in physical units. DEPEND_i variables also require their own attributes, as described in the following sections.
 
 DISPLAY_TYPE
 ^^^^^^^^^^^^^^^^
@@ -348,8 +347,8 @@ ISTP standard fill values are listed below
 * EPOCH16 ---- -1.0E31 (9999-12-31:23:59:59.999999999999)
 * TT2000 ---- -9223372036854775808LL (9999-12-31:23:59:59.999999999999)
 
-.. note:: 
-   Using xarray_to_cdf, these values are automatically cast to be the same type of data as the CDF variable they are attached to.  For example, if your data is REAL4 and you specify your VALIDMIN=0, the function will know to store the "0" as a REAL4 type as well.  
+.. note::
+   Using xarray_to_cdf, these values are automatically cast to be the same type of data as the CDF variable they are attached to.  For example, if your data is REAL4 and you specify your VALIDMIN=0, the function will know to store the "0" as a REAL4 type as well.
 
 FORMAT
 ^^^^^^^^^^^^^^^^
@@ -367,15 +366,15 @@ VALIDMIN
 ^^^^^^^^^^^^^^^^
 The minimum value for a particular variable that is expected over the lifetime of the mission. Used by application software to filter out values that are out of range. The value must match the data type of the variable.
 
-.. note:: 
-   Using xarray_to_cdf, these values are automatically cast to be the same type of data as the CDF variable they are attached to 
+.. note::
+   Using xarray_to_cdf, these values are automatically cast to be the same type of data as the CDF variable they are attached to
 
 VALIDMAX
 ^^^^^^^^^^^^^^^^
 The maximum value for a particular variable that is expected over the lifetime of the mission. Used by application software to filter out values that are out of range. The value must match the data type of the variable.
 
-.. note:: 
-   Using xarray_to_cdf, these values are automatically cast to be the same type of data as the CDF variable they are attached to 
+.. note::
+   Using xarray_to_cdf, these values are automatically cast to be the same type of data as the CDF variable they are attached to
 
 VAR_TYPE
 ^^^^^^^^^^^^^^^^
@@ -430,11 +429,11 @@ instrument_parameter[_coordinateSystem][_parameterQualifier][_subModeLevel][_Mod
 
 An underscore is used to separate different fields in the variable name.  It is strongly recommended that variable named employ further fields, qualifiers, and information designed to identify unambiguously the nature of the variable, instrument mode, and data processing level, with sufficient detail to lead the user to the unique source file which containers the variable.  It is recommended to follow the order shown below
 
-These variable names may only include lower-case letters, numbers, underscores, and hyphens.  No upper-case letter or other special characters are allowed.   
+These variable names may only include lower-case letters, numbers, underscores, and hyphens.  No upper-case letter or other special characters are allowed.
 
 Required
 ---------
-* instrument - the instrument acronym 
+* instrument - the instrument acronym
 * parameter - a short representation of the physical parameter held in the variable
 
 Optional
@@ -442,7 +441,7 @@ Optional
 * coordinateSystem - an acronym for the coordinate system in which the parameter is set
 * parameterQualifier - parameter descriptor, which may include multiple components separated by a "_" as needed (e.g. "pa_0" indicates a pitch angle of 0)
 * subModeLevel - Qualifiers to include mode and data level information supplementary to the next to fields
-* mode - The mode of the instrument 
+* mode - The mode of the instrument
 * dataLevel - The data level in the "Data_type" attribute field
 
 
@@ -462,34 +461,34 @@ where...
 
 * mission - "imap"
 * instrumentId
-   * idex 
-   * swe 
-   * swapi 
+   * idex
+   * swe
+   * swapi
    * imap-lo
    * imap-hi
    * imap-ultra
-   * hit 
+   * hit
    * glows
    * codice
-   * swe 
+   * swe
    * mag
 * dataLevel
-   * "l1a", "l1b", "l2", "ql", "l2pre" "l3", etc 
-* mode (optional) 
+   * "l1a", "l1b", "l2", "ql", "l2pre" "l3", etc
+* mode (optional)
    * "fast", "slow", "brst", "srvy"
 * descriptor (optional)
    * identifiers should be short (e.g. 3-8 character) descriptors that are helpful to end-users. If a descriptor contains multiple components, hyphens are used to separate those components. For instance, an optional time span may be specified as "-2s" to represent a data file that spans two seconds. In this case, "10s" and "-5m" are other expected values that correspond with ten seconds and 5 minutes respectively.
-* startTime 
-   * YYYYMMDD format 
-   * This is the date that the data in the file *starts*.  Files are almost always 24 hours in duration.  
+* startTime
+   * YYYYMMDD format
+   * This is the date that the data in the file *starts*.  Files are almost always 24 hours in duration.
 * vXX-YY
-   * A 2-part version number as described below.  
-   * Increments of XX represents a significant change to the processing software and/or the CDF file structure.  Users should consult the appropriate metadata or changelogs to determine what has changed before working with newer versions of the data.  
+   * A 2-part version number as described below.
+   * Increments of XX represents a significant change to the processing software and/or the CDF file structure.  Users should consult the appropriate metadata or changelogs to determine what has changed before working with newer versions of the data.
       * This should match what is in the global "Data_version" attribute
-   * Increments of YY represent reprocessing because of new/updated inputs, or updated calibration.  New files on the SDC will automatically be given a new version if their checksum is different from the previous 
+   * Increments of YY represent reprocessing because of new/updated inputs, or updated calibration.  New files on the SDC will automatically be given a new version if their checksum is different from the previous
 
-.. note:: 
-   It is expected that the file name can be generated from the contents of the file. The "Logical_source" global attribute should contain the mission, instrumentId, dataLevel and mode (if applicable.)  Start_time is the date of the first data point (record) in the file, and the version is the Data_version global attribute.  
+.. note::
+   It is expected that the file name can be generated from the contents of the file. The "Logical_source" global attribute should contain the mission, instrumentId, dataLevel and mode (if applicable.)  Start_time is the date of the first data point (record) in the file, and the version is the Data_version global attribute.
 
 ******************************
 SKTeditor
@@ -508,7 +507,7 @@ Summary and Final Example
 
 In summary, the IMAP mission will be using the python ``cdflib.xarray_to_cdf`` tool to create ISTP-compliant CDF files.  Certain attributes are required to exist in the file, which can be filled in as xarray attributes / python dictionary objects.
 
-As an example, suppose there is an instrument on IMAP named JIM that took 3 samples of ions at 3 different energies, such that the data looks like the following - 
+As an example, suppose there is an instrument on IMAP named JIM that took 3 samples of ions at 3 different energies, such that the data looks like the following -
 
 +------------------------+------------+------------+------------+
 | Time \                 | 0.5-1.5 eV | 1.5-2.5 eV | 2.5-3.5 eV |
@@ -529,15 +528,15 @@ The following python code is the **minimum** code you'd need to store this data 
    import numpy as np
    import xarray as xr
 
-   
+
    INT_FILLVAL = np.iinfo(np.int64).min # Recommended FILLVAL for all integers
    DOUBLE_FILLVAL = np.float64(-1.0e31) # Recommended FILLVALL for all floats
    MIN_EPOCH = -315575942816000000 # Recommended min/max Epoch
    MAX_EPOCH = 946728069183000000 # Recommended min/max Epoch
 
    global_attrs = {
-      # Project, Source_name, Descipline, Mission Group, and PI info will all 
-      # stay the same for all instruments on IMAP. 
+      # Project, Source_name, Descipline, Mission Group, and PI info will all
+      # stay the same for all instruments on IMAP.
       "Project": "STP>Solar-Terrestrial Physics",
       "Source_name": "IMAP>Interstellar Mapping and Acceleration Probe",
       "Discipline": "Solar Physics>Heliospheric Physics",
@@ -547,7 +546,7 @@ The following python code is the **minimum** code you'd need to store this data 
          "Princeton Plasma Physics Laboratory",
          "100 Stellarator Road, Princeton, NJ 08540",
       ],
-      # The following attributes are specific to JIM.  
+      # The following attributes are specific to JIM.
       "Instrument_type": "Particles (space)",
       "Data_type": "L1_Mode_Description>Level-1 Mode Description",
       "Data_version": "01",
@@ -581,7 +580,7 @@ The following python code is the **minimum** code you'd need to store this data 
       "REFERENCE_POSITION": "Rotating Earth Geoid",
    }
 
-   # Describes a variable that holds the energy bins for the real data 
+   # Describes a variable that holds the energy bins for the real data
    energy_bins_attrs = {
       "CATDESC": "The energy bins for the JIM instrument",
       "FIELDNAM": "Energy bins",
@@ -611,7 +610,7 @@ The following python code is the **minimum** code you'd need to store this data 
       "DISPLAY_TYPE": "spectrogram",
       "FILLVAL": INT_FILLVAL,
       "FORMAT": "I12", # Display up to 12 numbers of an integer
-      "UNITS": "counts", 
+      "UNITS": "counts",
       "VALIDMIN": 0, # Fabricated value
       "VALIDMAX": 5000, # Fabricated value
       "VAR_TYPE": "data",
@@ -662,4 +661,4 @@ The following python code is the **minimum** code you'd need to store this data 
          "imap_jim_l1_mode_description_20250101_v01.cdf",
          datetime64_to_cdftt2000=True,
          terminate_on_warning=True,
-      )  
+      )
