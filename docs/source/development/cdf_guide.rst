@@ -2,15 +2,12 @@
 
 
 ##############################
-Generating CDF Files for IMAP
+Generating CDF Files
 ##############################
 
 ******************************
-Introduction
+CDF Files Introduction
 ******************************
-
-What are CDF Files?
-====================
 CDF files are binary files which require special libraries to create and manipulate. Goddard Space Flight Center (GSFC) maintains these CDF libraries, and is the shepherd of the file format.
 
 The GSFC describes CDF files as a "self-describing data format for the storage of scalar and multidimensional data in a platform- and discipline-independent way".
@@ -18,7 +15,7 @@ The GSFC describes CDF files as a "self-describing data format for the storage o
 IMAP is archiving its science data with the `Space Physics Data Facility (SPDF) <https://spdf.gsfc.nasa.gov/>`_, and they require data to be in the CDF file format.
 
 CDF Ecosystem
---------------
+===============
 **CDF** refers to more than just the ".cdf" files themselves, but the entire toolkit surrounding those files.  The official toolkits are available in IDL, C, Fortran and MATLAB.
 
 For python implementations, there is **pycdf**, which is a part of **spacepy**.  Pycdf wraps the C libraries, and also includes various bells and whistles that help make the files a litle more python friendly.
@@ -37,7 +34,7 @@ In case you have several spare hours, the internal format of CDF files are descr
 Variables
 ----------
 
-.. image:: images/cdf_variables.png
+.. image:: ../_static/cdf_variables.png
 
 Variables are the actual data used within a file.  They have a few key characteristics
 
@@ -69,7 +66,7 @@ ISTP Compliance
 
 ISTP compliance is a standard set of attributes to use when creating CDF files.  The goal of ISTP is that others users and programs of your CDF file will know where to look for information about the data inside.  A large part of these requirements are driven by the SPDF's display tool, `CDAWeb <https://cdaweb.gsfc.nasa.gov/cdaweb/>`_.
 
-.. image:: images/2d_spectrogram_1.gif
+.. image:: ../_static/2d_spectrogram_1.gif
 
 The image above is taken from CDAWeb. Several of the attributes inside the CDF file are used to help generate these plots.
 
@@ -87,7 +84,7 @@ The Python library `cdflib <https://github.com/MAVENSDC/cdflib>`_ is a pure-pyth
 
 This function takes an `xarray.Dataset <https://docs.xarray.dev/en/stable/generated/xarray.Dataset.html>`_ object as input, and will output a CDF file.  Further details about how it works are below.
 
-Brief Xarray Intro
+Xarray Introduction
 ===================
 
 xarray is a powerful python library for handling multi-dimensional data.  It has a strong connection with the netCDF file format.  The developers intended xaray to be an "in-memory" representation of a netCDF file.
@@ -179,7 +176,8 @@ Descriptor
 ================
 This attribute identifies the name of the instrument or sensor that collected the data.  Both a long name and a short name are given.  For any data file, only a single value is allowed.
 
-For IMAP, the following are valid:
+For IMAP, the following are valid -
+
 * IDEX>Interstellar Dust Experiment
 * SWE>Solar Wind Electrons
 * SWAPI>Solar wind and Pickup Ions
@@ -494,11 +492,26 @@ where...
 SKTeditor
 ******************************
 
+After CDF files are generated, it is helpful to check for any compliance errors using the `SKTeditor <https://spdf.gsfc.nasa.gov/skteditor/>`_ tool.
+
+You can download this tool from the link above, and open the created file there.  You can click "Show Messages" in the lower right-hand corner, and it will provide details about any ISTP compliance errors that the code may have missed.
+
 
 ******************************
 SPDF Validation
 ******************************
 
+As a final validation step, the SPDF will review all completed data produts.  They will run the CDF file through the SKTeditor as a first pass, and also ensure that the auto-generated plots look nice on CDAWeb using the IDL tool `https://cdaweb.gsfc.nasa.gov/cdfx/ <https://cdaweb.gsfc.nasa.gov/cdfx/>`_.
+
+They will also perform a final check on all of the attribute values to ensure they make sense from a user perspective. Some examples of errors caught so far include:
+
+* The "TEXT" global attribute needs to be longer
+* VALIDMIN and VALIDMAX need to be reasonable numbers
+* FIELDNAM and CATDESC need to be more descriptive
+* Logical_source_description needs to be more formal, like "Low gain channel of the time-of-flight signal" instead of "This is the variable for...."
+* "Metadata" fields from the CCSDS packet should be made into "VAR_YPE=data" rather than "support_data" or "metadata"
+   * support_data is reserved for coordinate data, i.e. the variable that other "DEPEND_{i}" attributes point to
+   * metadata is reserved for text-based variable, like pointers to text labels
 
 
 ******************************
