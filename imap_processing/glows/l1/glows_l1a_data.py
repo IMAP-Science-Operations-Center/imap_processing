@@ -50,6 +50,13 @@ class HistogramL1A:
         # use start ID and offset to calculate the last spin ID in the block
         self.last_spin_id = self.l0.STARTID + self.l0.ENDID
 
+        # TODO: This sanity check should probably exist in the final code. However,
+        # the emulator code does not properly set these values.
+        # if self.l0.ENDID != self.l0.SPINS:
+        #     raise ValueError(f"Inconsistency between L0 spin-numbering field ENDID "
+        #                      f"[{self.l0.ENDID}] and histogram parameter field SPINS "
+        #                      f"[{self.l0.SPINS}]")
+
         # Create time tuples based on second and subsecond pairs
         self.imap_start_time = (self.l0.SEC, self.l0.SUBSEC)
         self.imap_end_time_offset = (self.l0.OFFSETSEC, self.l0.OFFSETSUBSEC)
@@ -100,10 +107,10 @@ class HistogramL1A:
         for i in range(8, len(binary_hist_data), 8):
             histograms.append(int(binary_hist_data[i - 8 : i], 2))
 
-        if len(histograms) != 3599:
+        if len(histograms) != self.l0.EVENTS:
             raise ValueError(
-                f"Histogram packet is lacking bins. Expected a count of 3599, "
-                f"actually received {len(histograms)}"
+                f"Histogram packet is lacking bins. Expected a count of "
+                f"{self.l0.EVENTS}, actually received {len(histograms)}"
             )
 
         return histograms
