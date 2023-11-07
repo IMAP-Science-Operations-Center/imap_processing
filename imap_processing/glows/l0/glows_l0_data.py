@@ -155,7 +155,7 @@ class DirectEventL0(GlowsL0):
     MET : int
         CCSDS Packet Time Stamp (coarse time)
     SEC : int
-        Data timestamp, seconds counter.
+        Data IMAP timestamp, seconds counter.
     LEN : int
         Number of packets in data set.
     SEQ : int
@@ -166,6 +166,7 @@ class DirectEventL0(GlowsL0):
     SEC: int
     LEN: int
     SEQ: int
+    DE_DATA: bin
 
     def __init__(self, packet, software_version: str, packet_file_name: str):
         """Initialize data class with a packet of direct event data.
@@ -196,3 +197,27 @@ class DirectEventL0(GlowsL0):
                     f"Did not find matching attribute in Direct events data class for "
                     f"{key}"
                 )
+
+    def sequence_match_check(self, de_l0):
+        """
+        Compare fields for L0 which should be the same for packets within one sequence.
+
+        This method compares the IMAP time (MET) and packet length (LEN) fields.
+
+        Parameters
+        ----------
+        de_l0
+            Another instance of DirectEventL0 to compare to.
+
+        Returns
+        -------
+        True if the MET and LEN fields match, False otherwise.
+        """
+        if not isinstance(de_l0, DirectEventL0):
+            return False
+
+        # Time and overall packet length should match
+        if self.MET == de_l0.MET and self.LEN == de_l0.LEN:
+            return True
+
+        return False
