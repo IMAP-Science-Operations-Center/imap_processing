@@ -8,42 +8,43 @@ Generating CDF Files
 ******************************
 CDF Files Introduction
 ******************************
-CDF files are binary files which require special libraries to create and manipulate. Goddard Space Flight Center (GSFC) maintains these CDF libraries, and is the shepherd of the file format.
+CDF files are binary files which require custom libraries to create and manipulate. Goddard Space Flight Center (GSFC) maintains these CDF libraries, and is the shepherd of the file format.
 
 The GSFC describes CDF files as a "self-describing data format for the storage of scalar and multidimensional data in a platform- and discipline-independent way".
 
-IMAP is archiving its science data with the `Space Physics Data Facility (SPDF) <https://spdf.gsfc.nasa.gov/>`_, and they require data to be in the CDF file format.
+IMAP is archiving its science data with the `Space Physics Data Facility (SPDF) <https://spdf.gsfc.nasa.gov/>`_, which requires that data be in the CDF file format.
 
 CDF Ecosystem
 ===============
-**CDF** refers to more than just the ".cdf" files themselves, but the entire toolkit surrounding those files.  The official toolkits are available in IDL, C, Fortran and MATLAB.
+**CDF** refers to more than just the files themselves, but the entire toolkit surrounding those files.  The official toolkits are available in IDL, C, Fortran and MATLAB.
 
-For python implementations, there is **pycdf**, which is a part of **spacepy**.  Pycdf wraps the C libraries, and also includes various bells and whistles that help make the files a litle more python friendly.
+For python implementations, there is **cdflib**, which is a pure-python implementation of the CDF libraries. **cdflib** doesn't require installing the C libraries, and also contains the functions "xarray_to_cdf" and "cdf_to_xarray" to convert between xarray Dataset objects in python and the CDF file formats.
 
-There is also **cdflib**, which is a pure-python implementation of the CDF libraries. **cdflib** doesn't require installing the C libraries, and also contains the functions "xarray_to_cdf" and "cdf_to_xarray" to convert between xarray Dataset objects in python and the CDF file formats.
+The other main python library is **pycdf**, which is a part of **spacepy**.  Pycdf wraps the C libraries, and also includes various bells and whistles that help make the files a litle more python friendly.  However, because the L0-L2 processing will be making heavy use of "xarray", it will also be using "cdflib.xarray_to_cdf" to create the ".cdf" files.
 
 What's in a CDF file?
 ======================
 
-There are two parts of a CDF file that a scientist using the files would care about: Variables and Attributes.
+There are two parts of a CDF file that a user of the file ultimately cares about: Variables and Attributes.
 
-The way these are actually stored in the file are somewhat complex, but it doesn't matter to the end user.  The CDF libraries enable users to easily list and extract the variables and attributes within the CDF files.
+The way these are astored in the file are somewhat complex, but that information is abstracted away from the end user.  The CDF libraries have functions to easily list and extract the variables and attributes within the CDF files.
 
-In case you have several spare hours, the internal format of CDF files are described `here <https://cdaweb.gsfc.nasa.gov/pub/software/cdf/doc/cdf391/cdf39ifd.pdf>`_.
+The internal format of CDF files are described `here <https://cdaweb.gsfc.nasa.gov/pub/software/cdf/doc/cdf391/cdf39ifd.pdf>`_.
 
 Variables
 ----------
 
 .. image:: ../_static/cdf_variables.png
 
-Variables are the actual data used within a file.  They have a few key characteristics
+
+Variables are the data stored within a file.  They have a few key characteristics -
 
 * Name
-   * The Name of the variable
-* Size
-   * The shape of the data, i.e. the number and the size of the dimensions.  In the picture above, zVariable 1 is 5x5, and zVariable 2 is 5x2.
+   * Variables are given a unique name
+* Shape
+   * The the number and the size of the dimensions.  In the picture above, "zVariable 1" is 5x5, and "zVariable 2" is 5x2.
 * Data types
-   * Describes what the binary data actually is, i.e. -
+   * Describes what the data actually represents, some options include -
       * Integers (1-8 bytes)
       * Floats (1-8 bytes)
       * Characters (1 byte)
@@ -57,9 +58,13 @@ Variables are the actual data used within a file.  They have a few key character
 Attributes
 -----------
 
-Attributes are essentially key:value pairs inside the CDF, similar to a python dictionary object.  For example: MISSION:IMAP, or INSTRUMENT:IDEX.
+Attributes are essentially key:value pairs inside the CDF, similar to a python dictionary object.  For example - Mission=IMAP, or Instrument=IDEX.
 
-Attributes can be attached to a Variable if they describe a particular data variable.  If they are not attached to a variable, they are considered "global" attributes, and the describe the file as a whole.
+Attributes come in two forms:
+
+* **Variable Attributes** - Attributes can be attached to a Variable if they only describe a particular data variable.
+* **Global Attributes** - If they are not attached to a variable, they describe the file in it's entirety.
+
 
 ISTP Compliance
 ===============
@@ -68,9 +73,10 @@ ISTP compliance is a standard set of attributes to use when creating CDF files. 
 
 .. image:: ../_static/2d_spectrogram_1.gif
 
+
 The image above is taken from CDAWeb. Several of the attributes inside the CDF file are used to help generate these plots.
 
-In order to archive at the SPDF, we must ensure files are ISTP compliant.  The SPDF will reject files that do not conform to their standards.
+To archive at the SPDF, files must be ISTP compliant.  The SPDF will reject files that do not conform to their standards.
 
 A guide to SPDF can be found here: `https://spdf.gsfc.nasa.gov/istp_guide/istp_guide.html <https://spdf.gsfc.nasa.gov/istp_guide/istp_guide.html>`_
 
@@ -87,14 +93,14 @@ This function takes an `xarray.Dataset <https://docs.xarray.dev/en/stable/genera
 Xarray Introduction
 ===================
 
-xarray is a powerful python library for handling multi-dimensional data.  It has a strong connection with the netCDF file format.  The developers intended xaray to be an "in-memory" representation of a netCDF file.
-
-.. note:: the netCDF file format was created by NOAA a few years after the CDF file format to plug in some of the shortfallings of the CDF file format.  These days, the orginal reasons for the split between the two formats have largely disappeared.
+Xarray is a powerful python library for handling multi-dimensional data.  It has a strong connection with the netCDF file format.  The developers intended xaray to be an "in-memory" representation of a netCDF file.
 
 Perhaps the largest difference between netCDF and CDF is that netCDF has built-in methods to attach *dimensions* and *coordinates* to data.  Similarly, xarray Datasets have this capability as well.
 Full documentation about xarray Dataset objects are located here `https://docs.xarray.dev/en/stable/generated/xarray.Dataset.html <https://docs.xarray.dev/en/stable/generated/xarray.Dataset.html>`_
 
-Within a CDF file, there is no inherent way to attach coordinates to a variable.  CDF is a simpler format, and only has the concept of Attributes and Variables.  The "CDF-native" way of specifying dimensions to a variable is to use "DEPEND" attributes (see the above section on ISTP compliance).
+Within a CDF file, there is no inherent way to attach coordinates to a variable.  CDF is a simpler format, and only has the concept of Attributes and Variables.  The "CDF-native" way of specifying dimensions to a variable is to use "DEPEND" attributes (see sections :ref:`ISTP compliance` and :ref:`DEPEND_i`).
+
+.. note:: the netCDF file format was created by NOAA a few years after the CDF file format to plug in some of the shortfallings of the CDF file format.  These days, the orginal reasons for the split between the two formats have largely disappeared.
 
 xarray_to_cdf
 ==============
@@ -125,8 +131,8 @@ For IMAP, we will be using the following flags on xarray_to_cdf
 
 xarray_to_cdf with the above flags will perform the following steps -
 
-Verification Steps
--------------------
+Verification
+-------------
 
 #. Verifies that required global attributes are present to meet ISTP compliance
 #. Verifies that variables have a VAR_TYPE attribute of either "data", "support_data", or "metadata"
@@ -134,8 +140,8 @@ Verification Steps
 #. Verfies that the DEPEND_{i} attributes point to variables that are the size and shape expected to act as coordinates
 #. Verifies that each variable has the expected variable attributes to be ISTP compliant
 
-Conversion Steps
------------------
+Conversion
+-----------
 
 #. Converts all variables with the word "epoch" in their name from datetime64 objects into the CDF native time format of CDF_TT2000 (nanoseconds since the year 2000)
 #. Converts all other data into one of the following CDF native formats - CDF_INT8, CDF_DOUBLE, CDF_UINT4, or CDF_CHAR
@@ -146,8 +152,10 @@ Conversion Steps
    * Any variable with DEPEND_0 = Epoch as an attribute will be set to vary across records in the CDF file.  Otherwise, the data will be contained within a single record.
 #. Writes the attributes attached to the Dataset Variables to the file
 
+
 Shortcomings
-------------
+-------------
+While the above steps get a CDF file a large way towards ISTP compliance, there are several important caveats to take note of -
 
 * This code does not check the values *within* the attributes (except VAR_TYPE and DEPEND_{i}), only that the attributes exist!
 * This function does not put the "Epoch" variable as the first thing in the file, which was recommended (but not required) by the SPDF
@@ -157,6 +165,7 @@ Shortcomings
 ******************************
 Global Attributes
 ******************************
+
 Global attributes are used to provide information about the data set as an entity. Together with variables and variable attributes, the global attributes make the data correctly and independently usable by someone not connected with the instrument team, and hence, a good archive product.
 
 Global attributes that have been identified for use with IMAP data products are listed below. Additional Global attributes can be defined but they must start with a letter and can otherwise contain letters, numbers and the underscore character (no other special characters allowed). Note that CDF attributes are case-sensitive and must exactly follow what is shown here.
@@ -241,7 +250,7 @@ This attribute value should include the IMAP mission PI affiliation followed by 
 
 PI_name
 ================
-This attribute value should include first initial and last name of the MMS mission PI followed by a comma-separated list of any Co-Is that are responsible for this particular dataset. For example, a single PI entry in this attribute would be: "Dr. David J. McComas".
+This attribute value should include first initial and last name of the IMAP mission PI followed by a comma-separated list of any Co-Is that are responsible for this particular dataset. For example, a single PI entry in this attribute would be: "Dr. David J. McComas".
 
 Project
 ================
@@ -268,7 +277,7 @@ Variables
 ******************************
 There are three types of variables that should be included in CDF files: data, support data, and metadata. Additionally, required attributes are listed with each variable type listed below.
 
-To facilitate data exchange and software development, variable names should be consistent across the MMS instruments and four spacecraft. Additionally, it is preferable that data types are consistent throughout all IMAP data products (e.g. all real variables are CDF_REAL4, all integer variables are CDF_INT4, and flag/status variables are UINT4).
+To facilitate data exchange and software development, variable names should be consistent across the IMAP instruments. Additionally, it is preferable that data types are consistent throughout all IMAP data products (e.g. all real variables are CDF_REAL4, all integer variables are CDF_INT4, and flag/status variables are UINT4).
 This is not to imply that only these data types are allowable within IMAP CDF files. All CDF supported data types are available for use by IMAP. For detailed information and examples, please see the following ISTP/IACG webpage:
 `http://spdf.gsfc.nasa.gov/istp_guide/variables.html <http://spdf.gsfc.nasa.gov/istp_guide/variables.html>`_
 
@@ -457,7 +466,8 @@ mission_instrumentId_dataLevel[_mode][_descriptor]_startTime_vXX-YY.cdf
 
 where...
 
-* mission - "imap"
+* mission
+   * imap
 * instrumentId
    * idex
    * swe
@@ -482,7 +492,6 @@ where...
 * vXX-YY
    * A 2-part version number as described below.
    * Increments of XX represents a significant change to the processing software and/or the CDF file structure.  Users should consult the appropriate metadata or changelogs to determine what has changed before working with newer versions of the data.
-      * This should match what is in the global "Data_version" attribute
    * Increments of YY represent reprocessing because of new/updated inputs, or updated calibration.  New files on the SDC will automatically be given a new version if their checksum is different from the previous
 
 .. note::
