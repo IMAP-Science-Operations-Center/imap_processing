@@ -273,8 +273,9 @@ Parents
 This attribute lists the parent data files for files of derived and merged data sets. The syntax for a CDF parent is: "CDF>logical_file_id". Multiple entry values are used for multiple parents. This attribute is required for any MMS data products that are derived from 2 or more data sources and the file names of parent data should be clearly identified. CDF parents may include source files with non-cdf extensions.
 
 ******************************
-Variables
+IMAP Variables
 ******************************
+
 There are three types of variables that should be included in CDF files: data, support data, and metadata. Additionally, required attributes are listed with each variable type listed below.
 
 To facilitate data exchange and software development, variable names should be consistent across the IMAP instruments. Additionally, it is preferable that data types are consistent throughout all IMAP data products (e.g. all real variables are CDF_REAL4, all integer variables are CDF_INT4, and flag/status variables are UINT4).
@@ -306,8 +307,8 @@ Given a current list of leap seconds, conversion between TT and UTC is straightf
 
 It is proposed that the required data variables VALIDMIN and VALIDMAX are given values corresponding to the dates 1990-01-01T00:00:00 and 2100-01-01T00:00:00 as these are well outside any expected valid times.
 
-Required Attributes
----------------------
+Required Data Attributes
+--------------------------
 
 CATDESC
 ^^^^^^^^^^^^^^^^
@@ -393,10 +394,7 @@ Used in CDAWeb to indicate if the data should be used directly by users. Possibl
 
 Support Data
 ==============
-These are variables of secondary importance employed as DEPEND_i variables as
-described in section 5.1.3.3 (e.g., time, energy_bands associated with particle flux), but
-they may also be used for housekeeping or other information not normally used for
-scientific analysis.
+These are variables of secondary importance employed as DEPEND_i variables, but they may also be used for housekeeping or other information not normally used for scientific analysis.
 
 DELTA_PLUS_VAR and DELTA_MINUS_VAR
 -------------------------------------
@@ -407,8 +405,8 @@ For example, for a variable energy_level that is the DEPEND_i of a particle dist
 
 In the case of the DEPEND_0 timetag variable, DELTA_PLUS_VAR and DELTA_MINUS_VAR together with the timetag identify the time interval over which the data was sampled, integrated, or otherwise regarded as representative of. DELTA_PLUS_VAR and DELTA_MINUS_VAR variables require FIELDNAM, UNITS and SI_CONVERSION attributes; in principle, these could differ from those of the DEPEND_i parent. They also require VAR_TYPE=SUPPORT_DATA. Other standard attributes might be helpful.
 
-Required Attributes
---------------------
+Required Support Attributes
+----------------------------
 Variables appearing in a data variable's DEPEND_i attribute require a minimal set of their own attributes to fulfill their role in supporting the data variable.
 
 * CATDESC
@@ -428,8 +426,9 @@ These attributes are otherwise the same as described in the above section for da
 Variable Naming Convention
 ******************************
 
-Data
-=============
+Data Variables
+===============
+
 IMAP data variables must adhere to the following naming conventions:
 
 instrument_parameter[_coordinateSystem][_parameterQualifier][_subModeLevel][_Mode][_DataLevel]
@@ -452,8 +451,9 @@ Optional
 * dataLevel - The data level in the "Data_type" attribute field
 
 
-Support Data
-================
+Support Data Variables
+=======================
+
 Support data variable names must begin with a letter and can contain numbers and underscores, but no other special characters. Support data variable names need not follow the same naming convention as Data Variables (5.1.1) but may be shortened for convenience.
 
 
