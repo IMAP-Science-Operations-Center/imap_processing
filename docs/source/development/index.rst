@@ -1,5 +1,3 @@
-.. _development:
-
 Development
 ===========
 
@@ -42,3 +40,4 @@ A typical development workflow might look like the following:
     style-guide/style-guide
     tools/index
     poetry
+    cdf_guide

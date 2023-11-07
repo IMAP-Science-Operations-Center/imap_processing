@@ -1,14 +1,14 @@
 .. _cdf_guide:
 
 
-##############################
-Generating CDF Files
-##############################
+#########
+CDF Guide
+#########
 
 ******************************
 CDF Files Introduction
 ******************************
-CDF files are binary files which require custom libraries to create and manipulate. Goddard Space Flight Center (GSFC) maintains these CDF libraries, and is the shepherd of the file format.
+The Common Data Format, or CDF files, are binary files which require custom libraries to create and manipulate. Goddard Space Flight Center (GSFC) maintains these CDF libraries, and is the shepherd of the file format.
 
 The GSFC describes CDF files as a "self-describing data format for the storage of scalar and multidimensional data in a platform- and discipline-independent way".
 
@@ -71,7 +71,7 @@ ISTP Compliance
 
 ISTP compliance is a standard set of attributes to use when creating CDF files.  The goal of ISTP is that others users and programs of your CDF file will know where to look for information about the data inside.  A large part of these requirements are driven by the SPDF's display tool, `CDAWeb <https://cdaweb.gsfc.nasa.gov/cdaweb/>`_.
 
-.. image:: ../_static/2d_spectrogram_1.gif
+.. image:: https://spdf.gsfc.nasa.gov/istp_guide/1d_spectrogram.GIF
 
 
 The image above is taken from CDAWeb. Several of the attributes inside the CDF file are used to help generate these plots.
