@@ -18,9 +18,11 @@ CDF Ecosystem
 ===============
 **CDF** refers to more than just the files themselves, but the entire toolkit surrounding those files.  The official toolkits are available in IDL, C, Fortran and MATLAB.
 
-For python implementations, there is **cdflib**, which is a pure-python implementation of the CDF libraries. **cdflib** doesn't require installing the C libraries, and also contains the functions "xarray_to_cdf" and "cdf_to_xarray" to convert between xarray Dataset objects in python and the CDF file formats.
+For python implementations, there is `**cdflib** <https://github.com/MAVENSDC/cdflib>`_, which is a pure-python implementation of the CDF specification. **cdflib** contains the functions "xarray_to_cdf" and "cdf_to_xarray" to convert between xarray Dataset objects in python and the CDF file formats.
 
-The other main python library is **pycdf**, which is a part of **spacepy**.  Pycdf wraps the C libraries, and also includes various bells and whistles that help make the files a litle more python friendly.  However, because the L0-L2 processing will be making heavy use of "xarray", it will also be using "cdflib.xarray_to_cdf" to create the ".cdf" files.
+The other main python library is `**pycdf** <https://spacepy.github.io/pycdf.html>`_, which is a part of **spacepy**.  Pycdf wraps the C libraries, and therefore it requires downloading the C libraries.  Because it is a part of Spacepy, Pycdf requires downloading and installing Spacepy.  Pycdf includes various bells and whistles that help make the files more python friendly, and includes functions for checking for ISTP compliance.
+
+Because the L0->L2 processing on IMAP will be making heavy use of "xarray", it will also be using "cdflib.xarray_to_cdf" to create the ".cdf" files.
 
 What's in a CDF file?
 ======================
@@ -29,7 +31,7 @@ There are two parts of a CDF file that a user of the file ultimately cares about
 
 The way these are astored in the file are somewhat complex, but that information is abstracted away from the end user.  The CDF libraries have functions to easily list and extract the variables and attributes within the CDF files.
 
-The internal format of CDF files are described `here <https://cdaweb.gsfc.nasa.gov/pub/software/cdf/doc/cdf391/cdf39ifd.pdf>`_.
+The internal format of CDF files are described `cdf specification <https://cdaweb.gsfc.nasa.gov/pub/software/cdf/doc/cdf391/cdf39ifd.pdf>`_.
 
 Variables
 ----------
@@ -69,7 +71,7 @@ Attributes come in two forms:
 ISTP Compliance
 ===============
 
-ISTP compliance is a standard set of attributes to use when creating CDF files.  The goal of ISTP is that others users and programs of your CDF file will know where to look for information about the data inside.  A large part of these requirements are driven by the SPDF's display tool, `CDAWeb <https://cdaweb.gsfc.nasa.gov/cdaweb/>`_.
+ISTP (International Solar-Terrestrial Physics) compliance is a standard set of attributes to use when creating CDF files.  The goal of ISTP is that others users and programs of your CDF file will know where to look for information about the data inside.  A large part of these requirements are driven by the SPDF's display tool, `CDAWeb <https://cdaweb.gsfc.nasa.gov/cdaweb/>`_.
 
 .. image:: https://spdf.gsfc.nasa.gov/istp_guide/1d_spectrogram.GIF
 
@@ -84,9 +86,8 @@ A guide to SPDF can be found here: `https://spdf.gsfc.nasa.gov/istp_guide/istp_g
 cdflib.xarray_to_cdf
 *****************************
 
-The Python library `cdflib <https://github.com/MAVENSDC/cdflib>`_ is a pure-python implementation of the CDF libraries.  Of particular note is the function `xarray_to_cdf <https://cdflib.readthedocs.io/en/latest/api/cdflib.xarray.xarray_to_cdf.html#cdflib.xarray.xarray_to_cdf>`_.
-
-**IMAP L0-L2 processing will be using this function to generate all CDF files**.
+The Python library `cdflib <https://github.com/MAVENSDC/cdflib>`_ is a pure-python implementation of the CDF specification.  Of particular note is the function `xarray_to_cdf <https://cdflib.readthedocs.io/en/latest/api/cdflib.xarray.xarray_to_cdf.html#cdflib.xarray.xarray_to_cdf>`_.
+Because IMAP L0->L2 processing is using xarray for internal data representation, **IMAP L0->L2 processing will be using this function to generate all CDF files**.
 
 This function takes an `xarray.Dataset <https://docs.xarray.dev/en/stable/generated/xarray.Dataset.html>`_ object as input, and will output a CDF file.  Further details about how it works are below.
 
@@ -185,7 +186,7 @@ Descriptor
 ================
 This attribute identifies the name of the instrument or sensor that collected the data.  Both a long name and a short name are given.  For any data file, only a single value is allowed.
 
-For IMAP, the following are valid -
+For IMAP, one of the following must be used -
 
 * IDEX>Interstellar Dust Experiment
 * SWE>Solar Wind Electrons
