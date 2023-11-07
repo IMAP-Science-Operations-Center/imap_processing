@@ -1,4 +1,6 @@
 from dataclasses import dataclass
+from typing import List
+import struct
 
 from imap_processing.glows import version
 from imap_processing.glows.l0.glows_l0_data import DirectEventL0, HistogramL0
@@ -118,7 +120,10 @@ class HistogramL1A:
 
 @dataclass
 class DirectEventL1A:
-    """Data structure for GLOWS Histogram Level 1A data.
+    """Data structure for GLOWS Histogram Level 1A data. This assumes that the
+    multi-part DE packets are merged together into a single DirectEventL1A instance.
+
+    This means there may be multiple DirectEventL0 packets.
 
     Attributes
     ----------
@@ -132,10 +137,60 @@ class DirectEventL1A:
 
     l0: DirectEventL0
     header: dict
-    imap_start_time_seconds: int
-    packet_count: int
-    seq_number: int
-    de_data: bin
+    de_data: bytearray
+    most_recent_seq: int
+    missing_seq: List[int]
+    data_every_second: dict
 
     def __init__(self, level0: DirectEventL0):
         self.l0 = level0
+        self._set_block_header()
+        self.most_recent_seq = self.l0.SEQ
+        self.de_data = bytearray(level0.DE_DATA)
+
+        if level0.LEN == 1:
+            self._process_de_data()
+
+    def __post_init__(self):
+        self.missing_seq = []
+
+    def merge_multi_event_packets(
+        self, secondl0: DirectEventL0, current_seq_counter: int
+    ):
+        # Track any missing sequence counts
+        if current_seq_counter != self.most_recent_seq + 1:
+            self.missing_seq.extend(
+                range(self.most_recent_seq + 1, current_seq_counter)
+            )
+
+        # Determine if new L0 packet matches existing L0 packet
+        match = self.l0.sequence_match_check(secondl0)
+
+        # TODO: Should this raise an error? Log? something else?
+        if not match:
+            raise ValueError(
+                f"While attempting to merge L0 packet {secondl0} "
+                f"into L1A packet {self.__repr__()}, mismatched values "
+                f"were found. "
+            )
+
+        self.de_data.extend(bytearray(secondl0.DE_DATA))
+
+        # if this is the last packet in the sequence, process the DE data
+        # TODO: What if the last packet never arrives?
+        if self.l0.LEN == current_seq_counter - 1:
+            self._process_de_data()
+
+    def _process_de_data(self):
+       return
+
+    def _set_block_header(self):
+        """Create the block header using software version info."""
+        self.block_header = {
+            "ground_software_version": version,
+            "pkts_file_name": self.l0.packet_file_name,
+            # note: packet number is seq_count (per apid!) field in CCSDS header
+            "seq_count_in_pkts_file": self.l0.ccsds_header.SRC_SEQ_CTR,
+        }
+
+
