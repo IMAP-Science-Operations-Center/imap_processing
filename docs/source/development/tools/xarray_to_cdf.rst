@@ -78,9 +78,9 @@ While the above steps get a CDF file a large way towards ISTP compliance, there 
 * This function does not put the "Epoch" variable as the first thing in the file, which was recommended (but not required) by the SPDF
 * This code creates variables in a row-major format.  Column-major is recommended (but not required) by the SPDF.
 
-******************************
-Summary and Final Example
-******************************
+***************************
+IMAP xarray_to_cdf Example
+***************************
 
 In summary, the IMAP mission will be using the python ``cdflib.xarray_to_cdf`` tool to create ISTP-compliant CDF files.  Certain attributes are required to exist in the file, which can be filled in as xarray attributes / python dictionary objects.
 

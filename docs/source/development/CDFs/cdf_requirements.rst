@@ -6,6 +6,8 @@ The following page describes the necessary contents inside of a CDF file generat
 
 For a more general introduction to CDF files, see :ref:`CDF Introduction`.
 
+For sample code that will generate a file that matches the below guidelines, see :ref:`IMAP xarray_to_cdf Example`
+
 ******************************
 Global Attributes
 ******************************
@@ -15,7 +17,6 @@ Global attributes are used to provide information about the data set as an entit
 Global attributes that have been identified for use with IMAP data products are listed below. Additional Global attributes can be defined but they must start with a letter and can otherwise contain letters, numbers and the underscore character (no other special characters allowed). Note that CDF attributes are case-sensitive and must exactly follow what is shown here.
 
 ISTP Compliant Global Attributes are listed here: `https://spdf.gsfc.nasa.gov/istp_guide/gattributes.html <https://spdf.gsfc.nasa.gov/istp_guide/gattributes.html>`_, and notes about how they are used on IMAP are below -
-
 
 Data_type
 ==========
