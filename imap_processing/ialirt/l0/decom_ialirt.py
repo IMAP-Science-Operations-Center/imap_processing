@@ -44,11 +44,7 @@ def generate_xarray(packet_file: str, xtce: str, time_keys=None):
     This example shows a dataset with 'SC_SCLK_SEC' as the coordinate
     and two data variables 'SC_MAG_STATUS' and 'SC_HIT_STATUS'.
     """
-    try:
-        packets = decom_packets(packet_file, xtce)
-    except Exception as e:
-        logger.error(f"Error during packet decomposition: {e!s}")
-        return
+    packets = decom_packets(packet_file, xtce)
 
     logger.info(f"Decommutated {len(packets)} packets from {packet_file}.")
 

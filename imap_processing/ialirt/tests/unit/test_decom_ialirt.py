@@ -1,6 +1,3 @@
-import tempfile
-from pathlib import Path
-
 import pytest
 
 from imap_processing import imap_module_directory
@@ -16,8 +13,8 @@ def xtce_ialirt_path():
     return imap_module_directory / "ialirt" / "packet_definitions" / "ialirt.xml"
 
 
-@pytest.fixture(scope="session")
-def binary_packet_path():
+@pytest.fixture()
+def binary_packet_path(tmp_path):
     """
     Creates a binary file from the text packet data, which is more representative
     of the actual operational environment. The binary file is deleted after the
@@ -32,8 +29,7 @@ def binary_packet_path():
         / "IALiRT Raw Packet Telemetry.txt"
     )
 
-    with tempfile.NamedTemporaryFile(delete=False) as tmp_file:
-        binary_file_path = Path(tmp_file.name)
+    binary_file_path = tmp_path / "file.ccsds"
 
     with open(packet_path) as text_file, open(binary_file_path, "wb") as binary_file:
         for line in text_file:
@@ -44,27 +40,14 @@ def binary_packet_path():
                 # Convert hex to binary
                 binary_data = bytearray.fromhex("".join(hex_values))
                 binary_file.write(binary_data)
+                assert len(binary_data) * 8 == IALIRT_PACKET_LENGTH
 
     yield binary_file_path
 
-    binary_file_path.unlink()
+    return binary_file_path
 
 
-@pytest.fixture(scope="session")
-def empty_binary_packet_path():
-    """
-    Creates an empty binary file, representative of a scenario
-    in which no packet data is available.
-    """
-    with tempfile.NamedTemporaryFile(delete=False) as tmp_file:
-        binary_file_path = Path(tmp_file.name)
-
-    yield binary_file_path
-
-    binary_file_path.unlink()
-
-
-@pytest.fixture(scope="session")
+@pytest.fixture()
 def decom_packets_data(binary_packet_path, xtce_ialirt_path):
     """Read packet data from file using decom_packets"""
     data_packet_list = decom_packets(binary_packet_path, xtce_ialirt_path)
@@ -77,41 +60,18 @@ def test_length(decom_packets_data):
     assert len(decom_packets_data) == total_packets
 
 
-def test_binary_value_length():
-    """
-    Validates the length of binary data converted
-    from a text file containing hexadecimal packet data.
-    """
-    packet_path = (
-        imap_module_directory
-        / "ialirt"
-        / "tests"
-        / "test_data"
-        / "l0"
-        / "IALiRT Raw Packet Telemetry.txt"
+def test_generate_xarray_empty_file(tmp_path, xtce_ialirt_path):
+    """Test that an error is raised if an empty file is passed to generate_xarray."""
+
+    binary_file_path = tmp_path / "empty.ccsds"
+    binary_file_path.touch()
+
+    expected_error_msg = (
+        "Reading off the end of the data. "
+        "Tried to read .* bits when only 0 available."
     )
-
-    with tempfile.NamedTemporaryFile(delete=False) as tmp_file:
-        binary_file_path = Path(tmp_file.name)
-
-    with open(packet_path) as text_file, open(binary_file_path, "wb"):
-        for line in text_file:
-            if not line.startswith("#"):
-                # Split the line by semicolons
-                # Discard the first value since it is only a counter
-                hex_values = line.strip().split(";")[1:]
-                # Convert hex to binary
-                binary_data = bytearray.fromhex("".join(hex_values))
-                assert len(binary_data) * 8 == IALIRT_PACKET_LENGTH
-
-
-def test_generate_xarray_empty_file(empty_binary_packet_path, xtce_ialirt_path, caplog):
-    """Test that an error is logged if an empty file is passed to generate_xarray."""
-
-    result = generate_xarray(empty_binary_packet_path, xtce_ialirt_path)
-
-    assert "Error during packet decomposition" in caplog.text
-    assert result is None
+    with pytest.raises(Exception, match=expected_error_msg):
+        generate_xarray(binary_file_path, xtce_ialirt_path)
 
 
 def test_enumerated(decom_packets_data):
@@ -173,8 +133,8 @@ def test_generate_xarray(binary_packet_path, xtce_ialirt_path, decom_packets_dat
     # Check that all the dimensions are the correct length
     # example:len(xarray_data['HIT'].coords['HIT_SC_TICK'].values) == 32
     for instrument in instruments:
-        dimension_name = next(iter(xarray_data[instrument].dims))
-        assert len(xarray_data[instrument].coords[dimension_name].values) == 32
+        for dimension_name in xarray_data[instrument].dims:
+            assert len(xarray_data[instrument].coords[dimension_name].values) == 32
 
 
 def test_unexpected_key(binary_packet_path, xtce_ialirt_path, decom_packets_data):
