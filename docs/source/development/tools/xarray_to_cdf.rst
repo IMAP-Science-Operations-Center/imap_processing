@@ -82,9 +82,7 @@ While the above steps get a CDF file a large way towards ISTP compliance, there 
 IMAP xarray_to_cdf Example
 ***************************
 
-In summary, the IMAP mission will be using the python ``cdflib.xarray_to_cdf`` tool to create ISTP-compliant CDF files.  Certain attributes are required to exist in the file, which can be filled in as xarray attributes / python dictionary objects.
-
-As an example, suppose there is an instrument on IMAP named JIM that took 3 samples of ions at 3 different energies, such that the data looks like the following -
+Suppose there is an instrument on IMAP named JIM that took 3 samples of ions at 3 different energies, such that the data looks like the following -
 
 +------------------------+------------+------------+------------+
 | Time \                 | 0.5-1.5 eV | 1.5-2.5 eV | 2.5-3.5 eV |
@@ -97,7 +95,7 @@ As an example, suppose there is an instrument on IMAP named JIM that took 3 samp
 | 2025-01-01T00:00:03    | 7          | 8          | 9          |
 +------------------------+------------+------------+------------+
 
-The following python code is the **minimum** code you'd need to store this data in a CDF file that is fully compliant with the above documentation -
+The following python code is the **minimum** code you'd need to store this data in a CDF file that is fully compliant with the documentation in :ref:`CDF File Requirements` -
 
 .. code-block:: python
 
