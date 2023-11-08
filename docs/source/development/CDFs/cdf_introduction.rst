@@ -15,6 +15,9 @@ CDF Ecosystem
 
 For python implementations, there is `**cdflib** <https://github.com/MAVENSDC/cdflib>`_, which is a pure-python implementation of the CDF specification. **cdflib** contains the functions "xarray_to_cdf" and "cdf_to_xarray" to convert between xarray Dataset objects in python and the CDF file formats.
 
+.. note::
+   The L0->L2 processing will be using cdflib to generate CDF files on IMAP.  For more information about cdflib and the xarray_to_cdf function, see :ref:`cdflib.xarray_to_cdf`
+
 The other main python library is `**pycdf** <https://spacepy.github.io/pycdf.html>`_, which is a part of **spacepy**.  Pycdf wraps the C libraries, and therefore it requires downloading the C libraries.  Because it is a part of Spacepy, Pycdf requires downloading and installing Spacepy.  Pycdf includes various bells and whistles that help make the files more python friendly, and includes functions for checking for ISTP compliance.
 
 Because the L0->L2 processing on IMAP will be making heavy use of "xarray", it will also be using "cdflib.xarray_to_cdf" to create the ".cdf" files.
