@@ -71,10 +71,10 @@ class HistogramL1A:
     histograms: list[int]
     block_header: dict
     last_spin_id: int
-    imap_start_time: tuple[int, int]
-    imap_end_time_offset: tuple[int, int]
-    glows_start_time: tuple[int, int]
-    glows_end_time_offset: tuple[int, int]
+    imap_start_time: TimeTuple
+    imap_end_time_offset: TimeTuple
+    glows_start_time: TimeTuple
+    glows_end_time_offset: TimeTuple
     flags: dict
 
     def _set_l1a_data(self):
@@ -94,10 +94,10 @@ class HistogramL1A:
         #                      f"[{self.l0.SPINS}]")
 
         # Create time tuples based on second and subsecond pairs
-        self.imap_start_time = (self.l0.SEC, self.l0.SUBSEC)
-        self.imap_end_time_offset = (self.l0.OFFSETSEC, self.l0.OFFSETSUBSEC)
-        self.glows_start_time = (self.l0.GLXSEC, self.l0.GLXSUBSEC)
-        self.glows_end_time_offset = (self.l0.GLXOFFSEC, self.l0.GLXOFFSUBSEC)
+        self.imap_start_time = TimeTuple(self.l0.SEC, self.l0.SUBSEC)
+        self.imap_end_time_offset = TimeTuple(self.l0.OFFSETSEC, self.l0.OFFSETSUBSEC)
+        self.glows_start_time = TimeTuple(self.l0.GLXSEC, self.l0.GLXSUBSEC)
+        self.glows_end_time_offset = TimeTuple(self.l0.GLXOFFSEC, self.l0.GLXOFFSUBSEC)
 
         # Flags
         self.flags = {
@@ -154,18 +154,16 @@ class HistogramL1A:
 
 @dataclass
 class DirectEventL1A:
-    """Data structure for GLOWS Histogram Level 1A data. This assumes that the
-    multi-part DE packets are merged together into a single DirectEventL1A instance.
+    """Data structure for GLOWS Histogram Level 1A data.
 
-    This means there may be multiple DirectEventL0 packets.
+    This includes steps for merging multiple Direct Event packets into one class,
+    so this class may span multiple packets. This is determined by the SEQ and LEN,
+    by each packet having an incremental SEQ until LEN number of packets.
 
     Attributes
     ----------
     l0: DirectEventL0
     header: dict
-    imap_start_time_seconds: int
-    packet_count: int
-    seq_number: int
     de_data: bin
     """
 
@@ -173,54 +171,86 @@ class DirectEventL1A:
     header: dict
     de_data: bytearray
     most_recent_seq: int
-    missing_seq: List[int]
+    missing_seq: list[int]
     data_every_second: dict
+    direct_events: list[DirectEvent]
 
     def __init__(self, level0: DirectEventL0):
         self.l0 = level0
-        self._set_block_header()
         self.most_recent_seq = self.l0.SEQ
         self.de_data = bytearray(level0.DE_DATA)
+
+        self.block_header = {
+            "ground_software_version": version,
+            "pkts_file_name": self.l0.packet_file_name,
+            # note: packet number is seq_count (per apid!) field in CCSDS header
+            "seq_count_in_pkts_file": self.l0.ccsds_header.SRC_SEQ_CTR,
+        }
 
         if level0.LEN == 1:
             self._process_de_data()
 
     def __post_init__(self):
+        """Initialize mutable attribute."""
         self.missing_seq = []
 
-    def merge_multi_event_packets(
-        self, secondl0: DirectEventL0, current_seq_counter: int
-    ):
-        # Track any missing sequence counts
-        if current_seq_counter != self.most_recent_seq + 1:
-            self.missing_seq.extend(
-                range(self.most_recent_seq + 1, current_seq_counter)
+    def append(self, second_l0: DirectEventL0):
+        """Merge an additional direct event packet to this DirectEventL1A class.
+
+        Direct event data can span multiple packets, as marked by the SEQ and LEN
+        attributes. This method will add the next piece of data in the sequence
+        to this data class. The two packets are compared with
+        DirectEventL0.sequence_match_check. If they don't match, the method throws
+        a ValueError.
+
+        If the sequence is broken, the missing sequence numbers are added to
+        missing_seq. Once the last value in the sequence is reached, the data is
+        processed from raw bytes to useful information.
+
+        Parameters
+        ----------
+        second_l0: DirectEventL0
+            Additional L0 packet to add to the DirectEventL1A class
+        """
+        # if SEQ is missing or if the sequence is out of order, do not continue.
+        if not second_l0.SEQ or second_l0.SEQ < self.most_recent_seq:
+            raise ValueError(
+                f"Sequence for direct event L1A is out of order or "
+                f"incorrect. Attempted to append sequence counter "
+                f"{second_l0.SEQ} after {self.most_recent_seq}."
             )
 
+        # Track any missing sequence counts
+        if second_l0.SEQ != self.most_recent_seq + 1:
+            self.missing_seq.extend(range(self.most_recent_seq + 1, second_l0.SEQ))
+
         # Determine if new L0 packet matches existing L0 packet
-        match = self.l0.sequence_match_check(secondl0)
+        match = self.l0.sequence_match_check(second_l0)
 
         # TODO: Should this raise an error? Log? something else?
         if not match:
             raise ValueError(
-                f"While attempting to merge L0 packet {secondl0} "
+                f"While attempting to merge L0 packet {second_l0} "
                 f"into L1A packet {self.__repr__()}, mismatched values "
                 f"were found. "
             )
 
-        self.de_data.extend(bytearray(secondl0.DE_DATA))
+        self.de_data.extend(bytearray(second_l0.DE_DATA))
 
+        self.most_recent_seq = second_l0.SEQ
         # if this is the last packet in the sequence, process the DE data
         # TODO: What if the last packet never arrives?
-        if self.l0.LEN == current_seq_counter - 1:
+        if self.l0.LEN == self.most_recent_seq + 1:
             self._process_de_data()
 
     def _process_de_data(self):
-        """
+        self._generate_date_every_second()
+        self._generate_direct_events()
 
-        Returns
-        -------
+    def _generate_date_every_second(self):
+        """Once all the packets are in the dataclass, process the dataclass.
 
+        This sets all the values for the data_every_second attribute.
         """
         # Copied from GLOWS code provided 11/6. Author: Marek Strumik <maro@cbk.waw.pl>
         self.data_every_second = dict()
