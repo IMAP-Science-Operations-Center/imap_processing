@@ -60,11 +60,17 @@ def write_cdf(
     """
     # Determine the start date of the data in the file,
     # based on the time of the first dust impact
+    file_start_date = None
     if "idex" in data.attrs["Logical_source"]:
         file_start_date = data["Epoch"][0].data
     elif "swe" in data.attrs["Logical_source"]:
         start_time = data["Epoch"].data[0]
         file_start_date = calc_start_time(start_time)
+    if file_start_date is None:
+        raise ValueError(
+            "Unable to determine file start date. Check Logical_source value"
+        )
+
     date_string = np.datetime_as_string(file_start_date, unit="D").replace("-", "")
 
     # Determine the optional "description" field
@@ -77,7 +83,8 @@ def write_cdf(
 
     # Determine the file name based on the attributes in the xarray
     # Set file name based on this convention:
-    # imap_<instrument>_<datalevel>_<mode>_<descriptor>_<startdate>_<version>.cdf
+    # imap_<instrument>_<datalevel>_<mode>_<descriptor>_<startdate>_
+    # <version>.cdf
     # data.attrs["Logical_source"] has the mission, instrument, and level
     # like this:
     #   imap_idex_l1

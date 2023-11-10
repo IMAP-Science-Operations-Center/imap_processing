@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from imap_processing import imap_module_directory
-from imap_processing.cdf_utils import write_cdf
+from imap_processing.cdfutils.cdf_utils import write_cdf
 from imap_processing.swe import __version__, swe_cdf_attrs
 from imap_processing.swe.l1b.swe_l1b_science import swe_l1b_science
 from imap_processing.swe.utils.swe_utils import SWEAPID, filename_descriptors
@@ -36,12 +36,14 @@ def swe_l1b(l1a_dataset):
         data = swe_l1b_science(eu_data)
     else:
         data = eu_data
-        data.attrs.update(swe_cdf_attrs.l1b_science_attrs)
+        data.attrs.update(swe_cdf_attrs.l1b_science_attrs.output())
         # TODO: find out why logical source was coming out
         # as below at this point in hk processing
         # {
         #     "logical_source": ["imap_swe_l1"]
         # }
+        # Investivate why version is coming back as list too.
+        # Could be due to how we manipulate dictionary.
         data.attrs["Logical_source"] = "imap_swe_l1b"
         data.attrs["Data_version"] = __version__
     return write_cdf(

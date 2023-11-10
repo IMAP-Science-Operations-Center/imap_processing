@@ -2,7 +2,8 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
-from imap_processing import cdf_utils, imap_module_directory
+from imap_processing import imap_module_directory
+from imap_processing.cdfutils.global_base import Epoch
 from imap_processing.swe import swe_cdf_attrs
 
 # ESA voltage and index in the final data table
@@ -338,6 +339,8 @@ def swe_l1b_science(l1a_data):
     """
     total_packets = len(l1a_data["SCIENCE_DATA"].data)
 
+    # Array to store list of table populated with data
+    # of full cycles
     all_data = []
     packet_index = 0
     l1a_data_copy = l1a_data.copy(deep=True)
@@ -389,7 +392,7 @@ def swe_l1b_science(l1a_data):
         l1a_data["Epoch"].data[full_cycle_data_indices].reshape(-1, 4)[:, 0],
         name="Epoch",
         dims=["Epoch"],
-        attrs=cdf_utils.epoch_attrs,
+        attrs=Epoch.output(),
     )
 
     int_attrs = swe_cdf_attrs.int_attrs
@@ -454,30 +457,32 @@ def swe_l1b_science(l1a_data):
             "Rates": rates,
             "Cycle": cycle,
         },
-        attrs=swe_cdf_attrs.swe_l1b_global_attrs,
+        attrs=swe_cdf_attrs.swe_l1b_global_attrs.output(),
     )
 
     dataset["SCIENCE_DATA"] = xr.DataArray(
         all_data,
         dims=["Epoch", "Energy", "Angle", "Rates"],
-        attrs=swe_cdf_attrs.l1b_science_attrs,
+        attrs=swe_cdf_attrs.l1b_science_attrs.output(),
     )
 
+    metadata_attrs = swe_cdf_attrs.l1b_metadata_attrs.output()
     # create xarray dataset for each metadata field
     for key, value in l1a_data_copy.items():
         if key == "SCIENCE_DATA":
             continue
-        # if key == "SPIN_PHASE":
-        #     print(key, value)
 
-        int_attrs["CATDESC"] = int_attrs["FIELDNAM"] = int_attrs["LABLAXIS"] = key
-        # get int32's max since most of metadata is under 32-bits
-        int_attrs["VALIDMAX"] = np.iinfo(np.int32).max
-        int_attrs["DEPEND_O"] = "Epoch"
-        int_attrs["DEPEND_2"] = "Cycle"
+        # TODO: figure out how to add more descriptive
+        # description for each metadata field
+        #
+        # int_attrs["CATDESC"] = int_attrs["FIELDNAM"] = int_attrs["LABLAXIS"] = key
+        # # get int32's max since most of metadata is under 32-bits
+        # int_attrs["VALIDMAX"] = np.iinfo(np.int32).max
+        # int_attrs["DEPEND_O"] = "Epoch"
+        # int_attrs["DEPEND_2"] = "Cycle"
         dataset[key] = xr.DataArray(
-            value.data.reshape(-1, 4),
+            value.data[full_cycle_data_indices].reshape(-1, 4),
             dims=["Epoch", "Cycle"],
-            attrs=int_attrs,
+            attrs=metadata_attrs,
         )
     return dataset

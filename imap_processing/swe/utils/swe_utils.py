@@ -4,7 +4,7 @@ from enum import IntEnum
 import numpy as np
 import xarray as xr
 
-from imap_processing import cdf_utils
+from imap_processing.cdfutils.global_base import Epoch
 from imap_processing.swe import swe_cdf_attrs
 
 
@@ -82,12 +82,12 @@ def create_dataset(packets):
         metadata_arrays["SHCOARSE"],
         name="Epoch",
         dims=["Epoch"],
-        attrs=cdf_utils.epoch_attrs,
+        attrs=Epoch.output(),
     )
 
     dataset = xr.Dataset(
         coords={"Epoch": epoch_time},
-        attrs=swe_cdf_attrs.swe_l1a_global_attrs,
+        attrs=swe_cdf_attrs.swe_l1a_global_attrs.output(),
     )
 
     # create xarray dataset for each metadata field

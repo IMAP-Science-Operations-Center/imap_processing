@@ -3,7 +3,7 @@ import collections
 import numpy as np
 import xarray as xr
 
-from imap_processing import cdf_utils
+from imap_processing.cdfutils.global_base import Epoch
 from imap_processing.swe import swe_cdf_attrs
 from imap_processing.swe.utils.swe_utils import (
     add_metadata_to_array,
@@ -135,7 +135,7 @@ def swe_science(decom_data):
         metadata_arrays["SHCOARSE"],
         name="Epoch",
         dims=["Epoch"],
-        attrs=cdf_utils.epoch_attrs,
+        attrs=Epoch.output(),
     )
 
     # TODO: refactor this better once we develop class inheritance
@@ -176,23 +176,27 @@ def swe_science(decom_data):
             "Energy": energy,
             "Counts": counts,
         },
-        attrs=swe_cdf_attrs.swe_l1a_global_attrs,
+        attrs=swe_cdf_attrs.swe_l1a_global_attrs.output(),
     )
     dataset["SCIENCE_DATA"] = science_xarray
     dataset["RAW_SCIENCE_DATA"] = raw_science_xarray
 
+    metadata_attrs = swe_cdf_attrs.l1a_metadata_attrs.output()
     # create xarray dataset for each metadata field
     for key, value in metadata_arrays.items():
         if key == "SHCOARSE":
             continue
-        int_attrs["CATDESC"] = int_attrs["FIELDNAM"] = int_attrs["LABLAXIS"] = key
-        # get int32's max since most of metadata is under 32-bits
-        int_attrs["VALIDMAX"] = np.iinfo(np.int32).max
-        int_attrs["DEPEND_0"] = "Epoch"
+        # TODO: figure out how to add more descriptive
+        # description for each metadata field
+        #
+        # int_attrs["CATDESC"] = int_attrs["FIELDNAM"] = int_attrs["LABLAXIS"] = key
+        # # get int32's max since most of metadata is under 32-bits
+        # int_attrs["VALIDMAX"] = np.iinfo(np.int32).max
+        # int_attrs["DEPEND_0"] = "Epoch"
         dataset[key] = xr.DataArray(
             value,
             dims=["Epoch"],
-            attrs=int_attrs,
+            attrs=metadata_attrs,
         )
 
     return dataset

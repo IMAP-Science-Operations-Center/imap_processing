@@ -250,6 +250,7 @@ class ScienceAttrs(AttrBase):
     depend_0: str = None
     depend_1: str = None
     depend_2: str = None
+    depend_3: str = None
     variable_purpose: str = None
     var_notes: str = None
 
@@ -275,6 +276,9 @@ class ScienceAttrs(AttrBase):
 
         if self.depend_2 is not None:
             endval["DEPEND_2"] = self.depend_2
+
+        if self.depend_3 is not None:
+            endval["DEPEND_3"] = self.depend_3
 
         if self.variable_purpose is not None:
             endval["VARIABLE_PURPOSE"] = self.variable_purpose

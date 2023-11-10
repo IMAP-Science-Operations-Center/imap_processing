@@ -87,33 +87,47 @@ Per SPDF contacts, we can ignore this warning:
 Warning: CDF is set for row major array variables and column major is recommended.
 """
 
+
 import numpy as np
 
-from imap_processing import cdf_utils
+from imap_processing.cdfutils.defaults import GlobalConstants, IdexConstants
+from imap_processing.cdfutils.global_base import (
+    DataLevelBase,
+    InstrumentBase,
+    ScienceBase,
+)
 from imap_processing.swe import __version__
 
-# Global Attributes for different level
-swe_global_base = cdf_utils.global_base.copy()
-swe_global_base.update(
-    {
-        "Data_version": __version__,
-        "Descriptor": ["SWE>Solar Wind Electron"],
-        "TEXT": [
-            (
-                "The Solar Wind Electron (SWE) instrument measures the 3D "
-                "distribution of highly energetic electrons found in the solar "
-                "wind. SWE is optimized to measure in situ solar wind electrons "
-                "at L1 to provide context for the ENA measurements and perform  "
-                "the in situ solar wind observations necessary to understand the"
-                "local structures that can affect acceleration and transport of "
-                "these particles. See"
-                "https://imap.princeton.edu/instruments/swe for more details."
-            )
-        ],
-        "Logical_file_id": "FILL ME IN AT FILE CREATION",
-    }
+descriptor = "SWE>Solar Wind Electron"
+swe_description_text = (
+    "The Solar Wind Electron (SWE) instrument measures the 3D "
+    "distribution of highly energetic electrons found in the solar "
+    "wind. SWE is optimized to measure in situ solar wind electrons "
+    "at L1 to provide context for the ENA measurements and perform  "
+    "the in situ solar wind observations necessary to understand the"
+    "local structures that can affect acceleration and transport of "
+    "these particles. See"
+    "https://imap.princeton.edu/instruments/swe for more details."
 )
 
+swe_base = InstrumentBase(
+    version=__version__, descriptor=descriptor, text=swe_description_text
+)
+
+
+swe_l1a_global_attrs = DataLevelBase(
+    data_type="L1A->Level-1A",
+    logical_source="imap_swe_l1a",
+    logical_source_desc="IMAP Mission SWE Instrument Level-1A Data",
+    instrument_base=swe_base,
+)
+
+swe_l1b_global_attrs = DataLevelBase(
+    data_type="L1B->Level-1B",
+    logical_source="imap_swe_l1b",
+    logical_source_desc="IMAP Mission SWE Instrument Level-1B Data",
+    instrument_base=swe_base,
+)
 
 # Required attrs for data type of
 # number, int and float.
@@ -127,7 +141,7 @@ int_attrs = {
     "CATDESC": None,
     "DISPLAY_TYPE": "spectrogram",
     "FIELDNAM": None,
-    "FILLVAL": cdf_utils.INT_FILLVAL,
+    "FILLVAL": GlobalConstants.INT_FILLVAL,
     "FORMAT": "I18",
     "LABLAXIS": None,
     "UNITS": "int",
@@ -147,7 +161,7 @@ float_attrs = {
     "CATDESC": None,
     "DISPLAY_TYPE": "spectrogram",
     "FIELDNAM": None,
-    "FILLVAL": cdf_utils.DOUBLE_FILLVAL,
+    "FILLVAL": GlobalConstants.DOUBLE_FILLVAL,
     "FORMAT": "F64.5",
     "LABLAXIS": None,
     "UNITS": "float",
@@ -157,6 +171,42 @@ float_attrs = {
     "SCALETYP": "linear",
 }
 
+l1a_metadata_attrs = ScienceBase(
+    IdexConstants.DATA_MIN,
+    IdexConstants.DATA_MAX,
+    display_type="spectrogram",
+    depend_0="Epoch",
+    format="I12",
+    units="dN",
+    var_type="support_data",
+    variable_purpose="PRIMARY",
+)
+
+l1b_metadata_attrs = ScienceBase(
+    IdexConstants.DATA_MIN,
+    IdexConstants.DATA_MAX,
+    display_type="spectrogram",
+    depend_0="Epoch",
+    depend_1="Cycle",
+    format="I12",
+    units="dN",
+    var_type="support_data",
+    variable_purpose="PRIMARY",
+)
+
+l1b_science_attrs = ScienceBase(
+    IdexConstants.DATA_MIN,
+    IdexConstants.DATA_MAX,
+    display_type="spectrogram",
+    depend_0="Epoch",
+    depend_1="Cycle",
+    depend_2="Angle",
+    depend_3="Rates",
+    format="I12",
+    units="dN",
+    var_type="support_data",
+    variable_purpose="PRIMARY",
+)
 # Housekeeping mode data array is stored as string.
 # Required attrs for string data type,
 # meaning array with string.
@@ -169,28 +219,6 @@ string_attrs = {
     "VAR_TYPE": "metadata",
 }
 
-
-# For each data level, create global attrs
-swe_l1a_global_attrs = swe_global_base.copy()
-swe_l1a_global_attrs.update(
-    {
-        "Data_type": "L1A>Level-1A",
-        "Logical_source": "imap_swe_l1a",
-        "Logical_source_description": "IMAP Mission SWE Instrument Level-1A Data.",
-    }
-)
-
-
-swe_l1b_global_attrs = swe_global_base.copy()
-swe_l1b_global_attrs.update(
-    {
-        "Data_type": "L1B>Level-1B",
-        "Logical_source": "imap_swe_l1b",
-        "Logical_source_description": "IMAP Mission SWE Instrument Level-1B Data.",
-    }
-)
-
-
 l1a_science_attrs = {
     "CATDESC": "Science Data",
     "DEPEND_0": "Epoch",
@@ -198,30 +226,12 @@ l1a_science_attrs = {
     "DEPEND_2": "Counts",
     "DISPLAY_TYPE": "time_series",
     "FIELDNAM": "Counts",
-    "FILLVAL": cdf_utils.INT_FILLVAL,
+    "FILLVAL": GlobalConstants.INT_FILLVAL,
     "FORMAT": "I18",
     "LABLAXIS": "Counts",
     "UNITS": "dN",
     "VALIDMIN": np.int64(0),
     "VALIDMAX": np.int64(65536),
-    "VAR_TYPE": "support_data",
-    "SCALETYP": "linear",
-}
-
-l1b_science_attrs = {
-    "CATDESC": "Science Data",
-    "DEPEND_0": "Epoch",
-    "DEPEND_1": "Energy",
-    "DEPEND_2": "Angle",
-    "DEPEND_3": "Rates",
-    "DISPLAY_TYPE": "time_series",
-    "FIELDNAM": "Counts",
-    "FILLVAL": cdf_utils.DOUBLE_FILLVAL,
-    "FORMAT": "F64.5",
-    "LABLAXIS": "Counts",
-    "UNITS": "dN",
-    "VALIDMIN": np.float64(-800000),
-    "VALIDMAX": np.float64(800000),
     "VAR_TYPE": "support_data",
     "SCALETYP": "linear",
 }

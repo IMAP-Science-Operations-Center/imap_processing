@@ -1,7 +1,7 @@
 import logging
 from pathlib import Path
 
-from imap_processing.cdf_utils import write_cdf
+from imap_processing.cdfutils.cdf_utils import write_cdf
 from imap_processing.swe.l1a.swe_science import swe_science
 from imap_processing.swe.utils.swe_utils import (
     SWEAPID,
