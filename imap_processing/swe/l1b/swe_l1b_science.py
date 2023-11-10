@@ -57,7 +57,7 @@ def read_lookup_table(table_index_value: int):
     raise ValueError("Error: Invalid table index value")
 
 
-def deadtime_correction(counts: np.array, tsampl: int):
+def deadtime_correction(counts: np.array, acq_duration: int):
     """Calculate deadtime correction.
 
     Deadtime correction is a technique used in various fields, including
@@ -81,13 +81,11 @@ def deadtime_correction(counts: np.array, tsampl: int):
     analysis in fields where event detection rates are high and where every
     detected event is critical for understanding physical processes.
 
-
-
     Parameters
     ----------
     counts : np.array
         counts data before deadtime corrections
-    tsampl : int
+    acq_duration : int
         This is ACQ_DURATION from science packet
 
     Returns
@@ -100,31 +98,31 @@ def deadtime_correction(counts: np.array, tsampl: int):
     # will give new one once they have it ready.
     # TODO: update deadtime when we get new number
     deadtime = 1.5e-6
-    correct = 1.0 - (deadtime * counts / tsampl)
+    correct = 1.0 - (deadtime * counts / acq_duration)
     correct = np.maximum(0.1, correct)
     corrected_count = np.divide(counts, correct)
     return corrected_count
 
 
-def convert_counts_to_rate(data: np.array, tsampl: int):
+def convert_counts_to_rate(data: np.array, acq_duration: int):
     """Convert counts to rate using sampling time.
 
-    tsampl is ACQ_DURATION from science packet.
+    acq_duration is ACQ_DURATION from science packet.
 
 
     Parameters
     ----------
     data : np.array
         counts data
-    tsampl : int
-        Acquisition duration. tsample is in millieseconds
+    acq_duration : int
+        Acquisition duration. acq_duration is in millieseconds
 
     Returns
     -------
     np.array
         Count rates array in seconds
     """
-    return np.divide(data, tsampl)
+    return np.divide(data, acq_duration)
 
 
 def calculate_calibration_factor(time):
@@ -221,10 +219,10 @@ def populate_full_cycle_data(
         for index in range(4):
             uncompressed_counts = l1a_data["SCIENCE_DATA"].data[packet_index + index]
             # Do deadtime correction
-            tsampl = l1a_data["ACQ_DURATION"].data[packet_index + index]
-            corrected_counts = deadtime_correction(uncompressed_counts, tsampl)
+            acq_duration = l1a_data["ACQ_DURATION"].data[packet_index + index]
+            corrected_counts = deadtime_correction(uncompressed_counts, acq_duration)
             # Convert counts to rate
-            counts_rate = convert_counts_to_rate(corrected_counts, tsampl)
+            counts_rate = convert_counts_to_rate(corrected_counts, acq_duration)
 
             # Go through each quarter cycle's 180 ESA measurements
             # and put counts rate in full cycle data array
