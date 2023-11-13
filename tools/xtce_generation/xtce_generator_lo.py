@@ -7,15 +7,11 @@ def main():
     """This function can be used by any instrument to generate XTCE
     for certain number of packets. Change values where TODO is
     """
-
-    # TODO: change instrument name
     instrument_name = "lo"
     current_directory = Path(__file__).parent
     module_path = f"{current_directory}/../../imap_processing"
     packet_definition_path = f"{module_path}/{instrument_name}/packet_definitions"
     path_to_excel_file = f"{current_directory}/telem_def_lo_modified.xls"
-
-    # TODO: update packets dictionary with packet name and appId
 
     # Lo packets
     packets = {
