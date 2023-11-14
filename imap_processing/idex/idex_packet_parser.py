@@ -8,7 +8,7 @@ import xarray as xr
 from space_packet_parser import parser, xtcedef
 
 from imap_processing import imap_module_directory
-from imap_processing.cdfutils.global_base import Epoch
+from imap_processing.cdf.global_attrs import ConstantCoordinates
 from imap_processing.idex import idex_cdf_attrs
 
 SCITYPE_MAPPING_TO_NAMES = {
@@ -974,7 +974,7 @@ class RawDustEvent:
             name="Epoch",
             data=[self.impact_time],
             dims=("Epoch"),
-            attrs=Epoch.output(),
+            attrs=ConstantCoordinates.EPOCH,
         )
 
         time_low_sr_xr = xr.DataArray(

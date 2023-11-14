@@ -1,74 +1,75 @@
 from dataclasses import dataclass
+from typing import ClassVar, Union
 
 import numpy as np
 
-from imap_processing.cdfutils.defaults import GlobalConstants
+from imap_processing.cdf.defaults import GlobalConstants
+
+"""
+This module contains common attribute classes to use as a base for CDF files.
+
+All the classes with "Global" in their name are intended for use for global attributes
+in CDF files. The rest are attributes for individual data fields within the CDF file.
+
+The attributes classes generally contain intelligent defaults, but currently do not
+check if all the attributes are valid of if all the required attributes are present.
+This check occurs during the xarray_to_cdf step, which has an example in
+imap_processing/cdf/utils.py.
+
+Additional examples on how to use these dataclasses are in
+imap_processing/idex/idex_cdf_attrs.py and imap_processing/idex/idex_packet_parser.py.
+"""
 
 
-class Epoch:
-    """Shared attributes for the Epoch coordinate variables."""
-
-    @staticmethod
-    def output():
-        """
-        Return a dictionary with global base attributes.
-
-        Returns
-        -------
-         Dictionary of epoch attributes
-        """
-        return {
-            "CATDESC": "Default time",
-            "FIELDNAM": "Epoch",
-            "FILLVAL": GlobalConstants.INT_FILLVAL,
-            "FORMAT": "a2",
-            "LABLAXIS": "Epoch",
-            "UNITS": "ns",
-            "VALIDMIN": GlobalConstants.MIN_EPOCH,
-            "VALIDMAX": GlobalConstants.MAX_EPOCH,
-            "VAR_TYPE": "support_data",
-            "SCALETYP": "linear",
-            "MONOTON": "INCREASE",
-            "TIME_BASE": "J2000",
-            "TIME_SCALE": "Terrestrial Time",
-            "REFERENCE_POSITION": "Rotating Earth Geoid",
-        }
-
-
-class GlobalBase:
+class GlobalConstantAttrs:
     """
     Global base of attributes for all CDF files.
 
     This is automatically included in InstrumentBase.
     """
 
-    @staticmethod
-    def output():
-        """
-        Return a dictionary with global base attributes.
+    """
+    Global file attributes, including project, source_name, discipline, PI_name,
+    PI_affiliation, instrument_type, and mission_group. This should be the same
+    for all instruments.
+    """
+    GLOBAL_BASE: ClassVar[dict] = {
+        "Project": "STP>Solar-Terrestrial Physics",
+        "Source_name": "IMAP>Interstellar Mapping and Acceleration Probe",
+        "Discipline": "Solar Physics>Heliospheric Physics",
+        "PI_name": "Dr. David J. McComas",
+        "PI_affiliation": [
+            "Princeton Plasma Physics Laboratory",
+            "100 Stellarator Road, Princeton, NJ 08540",
+        ],
+        "Instrument_type": "Particles (space)",
+        "Mission_group": "IMAP>Interstellar Mapping and Acceleration Probe",
+    }
 
-        Returns
-        -------
-        Global file attributes, including project, source_name, discipline, PI_name,
-        PI_affiliation, instrument_type, and mission_group. This should be the same
-        for all instruments.
-        """
-        return {
-            "Project": "STP>Solar-Terrestrial Physics",
-            "Source_name": "IMAP>Interstellar Mapping and Acceleration Probe",
-            "Discipline": "Solar Physics>Heliospheric Physics",
-            "PI_name": "Dr. David J. McComas",
-            "PI_affiliation": [
-                "Princeton Plasma Physics Laboratory",
-                "100 Stellarator Road, Princeton, NJ 08540",
-            ],
-            "Instrument_type": "Particles (space)",
-            "Mission_group": "IMAP>Interstellar Mapping and Acceleration Probe",
-        }
+
+class ConstantCoordinates:
+    """Return a dictionary with global base attributes."""
+
+    EPOCH: ClassVar[dict] = {
+        "CATDESC": "Default time",
+        "FIELDNAM": "Epoch",
+        "FILLVAL": GlobalConstants.INT_FILLVAL,
+        "FORMAT": "a2",
+        "LABLAXIS": "Epoch",
+        "UNITS": "ns",
+        "VALIDMIN": GlobalConstants.MIN_EPOCH,
+        "VALIDMAX": GlobalConstants.MAX_EPOCH,
+        "VAR_TYPE": "support_data",
+        "SCALETYP": "linear",
+        "MONOTON": "INCREASE",
+        "TIME_BASE": "J2000",
+        "TIME_SCALE": "Terrestrial Time",
+        "REFERENCE_POSITION": "Rotating Earth Geoid",
+    }
 
 
 @dataclass
-class InstrumentBase(GlobalBase):
+class GlobalInstrumentAttrs:
     """Each instrument should extend this class and replace the info as needed.
 
     Attributes
@@ -95,16 +96,15 @@ class InstrumentBase(GlobalBase):
         dictionary of correctly formatted values for the data_version, descriptor, text,
          and logical_file_id, added on to the global attributes from GlobalBase
         """
-        return {
+        return GlobalConstantAttrs.GLOBAL_BASE | {
             "Data_version": self.version,
             "Descriptor": [self.descriptor],
             "TEXT": [self.text],
-            "Logical_file_id": ["FILL ME IN AT FILE CREATION"],
-        } | GlobalBase.output()
+        }
 
 
 @dataclass
-class DataLevelBase:
+class GlobalDataLevelAttrs:
     """
     Class for all the attributes for the data level base.
 
@@ -119,14 +119,14 @@ class DataLevelBase:
         The source of the data, ex "imap_idex_l1"
     logical_source_desc: str
         The description of the data, ex "IMAP Mission IDEX Instrument Level-1 Data."
-    instrument_base: InstrumentBase
+    instrument_base: GlobalInstrumentAttrs
         The InstrumentBase object describing the basic instrument information
     """
 
     data_type: str
     logical_source: str
     logical_source_desc: str
-    instrument_base: InstrumentBase
+    instrument_base: GlobalInstrumentAttrs
 
     def output(self):
         """
@@ -137,15 +137,17 @@ class DataLevelBase:
         dictionary of correctly formatted values for the attributes in the class and
         the attributes from InstrumentBase
         """
-        return {
+        return self.instrument_base.output() | {
+            # TODO: rework cdf_utils.write_cdf to leverage dataclasses
+            "Logical_file_id": ["FILL ME IN AT FILE CREATION"],
             "Data_type": self.data_type,
             "Logical_source": self.logical_source,
             "Logical_source_description": self.logical_source_desc,
-        } | self.instrument_base.output()
+        }
 
 
 @dataclass
-class TypeBase:
+class AttrBase:
     """
     The general class for attributes, with some reasonable defaults.
 
@@ -175,8 +177,8 @@ class TypeBase:
         The units of the data
     """
 
-    validmin: np.float64 | np.int64
-    validmax: np.float64 | np.int64
+    validmin: Union[np.float64, np.int64]
+    validmax: Union[np.float64, np.int64]
     display_type: str = None
     catdesc: str = None
     fieldname: str = None
@@ -185,7 +187,7 @@ class TypeBase:
     scale_type: str = "linear"
     label_axis: str = None
     format: str = None
-    units: str = None
+    units: str = ""
 
     def output(self):
         """
@@ -199,7 +201,7 @@ class TypeBase:
             "CATDESC": self.catdesc,
             "DISPLAY_TYPE": self.display_type,
             "FIELDNAM": self.fieldname,
-            "FILLVAL": GlobalConstants.INT_FILLVAL,
+            "FILLVAL": self.fill_val,
             "FORMAT": self.format,
             "LABLAXIS": self.label_axis,
             "UNITS": self.units,
@@ -211,7 +213,7 @@ class TypeBase:
 
 
 @dataclass
-class ScienceBase(TypeBase):
+class ScienceAttrs(AttrBase):
     """
     The class for Science attributes, in particular with depend_0 attributes.
 
@@ -239,6 +241,11 @@ class ScienceBase(TypeBase):
     variable_purpose: str = None
     var_notes: str = None
 
+    def __post_init__(self):
+        """If depend_0 is not set, raise an error, as this attribute is required."""
+        if self.depend_0 is None:
+            raise TypeError("ScienceBase requires depend_0 attribute.")
+
     def output(self):
         """
         Generate the output for the data level as a dictionary.
@@ -249,9 +256,6 @@ class ScienceBase(TypeBase):
         If the optional parameters are not defined, they are not included as attributes
         in the output.
         """
-        if self.depend_0 is None:
-            raise TypeError("ScienceBase requires depend_0 attribute.")
-
         endval = {"DEPEND_0": self.depend_0}
         if self.depend_1 is not None:
             endval["DEPEND_1"] = self.depend_1
@@ -264,28 +268,11 @@ class ScienceBase(TypeBase):
 
         if self.var_notes is not None:
             endval["VAR_NOTES"] = self.var_notes
-        return endval | super().output()
+        return super().output() | endval
 
 
 @dataclass
-class IntBase(ScienceBase):
-    """
-    The Int version of ScienceBase with defaults to use for int-based data.
-
-    Attributes
-    ----------
-    format: str, default="I18"
-        The format of the data, in Fortran format
-    units: str, default="int"
-        The units of the data
-    """
-
-    format: str = "I18"
-    units: str = "int"
-
-
-@dataclass
-class FloatBase(ScienceBase):
+class FloatAttrs(ScienceAttrs):
     """
     The float version of ScienceBase with defaults to use for float-based data.
 
@@ -301,11 +288,10 @@ class FloatBase(ScienceBase):
 
     format: str = "F64.5"
     fill_val: np.float64 = GlobalConstants.DOUBLE_FILLVAL
-    units: str = "float"
 
 
 @dataclass
-class StringBase:
+class StringAttrs:
     """
     A base for String-based data, with string based defaults.
 

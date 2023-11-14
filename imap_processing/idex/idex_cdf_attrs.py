@@ -1,14 +1,14 @@
 import dataclasses
 
-from imap_processing.cdfutils.defaults import GlobalConstants, IdexConstants
-from imap_processing.cdfutils.global_base import (
-    DataLevelBase,
-    FloatBase,
-    InstrumentBase,
-    IntBase,
-    ScienceBase,
+from imap_processing.cdf.defaults import GlobalConstants
+from imap_processing.cdf.global_attrs import (
+    FloatAttrs,
+    GlobalDataLevelAttrs,
+    GlobalInstrumentAttrs,
+    ScienceAttrs,
 )
 from imap_processing.idex import __version__
+from imap_processing.idex.idex_constants import IdexConstants
 
 # Global Attributes
 text = (
@@ -20,20 +20,22 @@ text = (
     "https://imap.princeton.edu/instruments/idex for more details."
 )
 
-idex_base = InstrumentBase(__version__, "IDEX>Interstellar Dust Experiment", text)
+idex_base = GlobalInstrumentAttrs(
+    __version__, "IDEX>Interstellar Dust Experiment", text
+)
 
-idex_l1_global_attrs = DataLevelBase(
+idex_l1_global_attrs = GlobalDataLevelAttrs(
     "L1>Level-1",
     "imap_idex_l1",
     "IMAP Mission IDEX Instrument Level-1 Data.",
     idex_base,
 )
 
-idex_l2_global_attrs = DataLevelBase(
+idex_l2_global_attrs = GlobalDataLevelAttrs(
     "L2>Level-2", "imap_idex_l2", "IMAP Mission IDEX Instrument Level-2 Data", idex_base
 )
 
-l1_data_base = ScienceBase(
+l1_data_base = ScienceAttrs(
     IdexConstants.DATA_MIN,
     IdexConstants.DATA_MAX,
     display_type="spectrogram",
@@ -49,7 +51,7 @@ l1_data_base = ScienceBase(
 l1_tof_base = dataclasses.replace(l1_data_base, depend_1="Time_High_SR")
 l1_target_base = dataclasses.replace(l1_data_base, depend_1="Time_Low_SR")
 
-sample_rate_base = FloatBase(
+sample_rate_base = FloatAttrs(
     IdexConstants.SAMPLE_RATE_MIN,
     IdexConstants.SAMPLE_RATE_MAX,
     depend_0="Epoch",
@@ -64,7 +66,7 @@ sample_rate_base = FloatBase(
 )
 
 # TODO: is "VALIDMAX" not required here? Added INT_MAXVAL, incl the existing CDF for ref
-trigger_base = IntBase(
+trigger_base = ScienceAttrs(
     0,
     GlobalConstants.INT_MAXVAL,
     depend_0="Epoch",
