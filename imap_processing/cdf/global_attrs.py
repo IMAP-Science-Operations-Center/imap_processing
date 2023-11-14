@@ -26,13 +26,16 @@ class GlobalConstantAttrs:
     Global base of attributes for all CDF files.
 
     This is automatically included in InstrumentBase.
-    """
+
+    Attributes
+    ----------
+    GLOBAL_BASE:
+        Global file attributes, including project, source_name, discipline, PI_name,
+        PI_affiliation, instrument_type, and mission_group. This should be the same
+        for all instruments.
 
     """
-    Global file attributes, including project, source_name, discipline, PI_name,
-    PI_affiliation, instrument_type, and mission_group. This should be the same
-    for all instruments.
-    """
+
     GLOBAL_BASE: ClassVar[dict] = {
         "Project": "STP>Solar-Terrestrial Physics",
         "Source_name": "IMAP>Interstellar Mapping and Acceleration Probe",
@@ -48,7 +51,13 @@ class GlobalConstantAttrs:
 
 
 class ConstantCoordinates:
-    """Return a dictionary with global base attributes."""
+    """Return a dictionary with global base attributes.
+
+    Attributes
+    ----------
+    EPOCH:
+        Default values for "Epoch" coordinate value
+    """
 
     EPOCH: ClassVar[dict] = {
         "CATDESC": "Default time",
@@ -93,8 +102,9 @@ class GlobalInstrumentAttrs:
 
         Returns
         -------
-        dictionary of correctly formatted values for the data_version, descriptor, text,
-         and logical_file_id, added on to the global attributes from GlobalBase
+        dict
+            dictionary of correctly formatted values for the data_version, descriptor,
+            text, and logical_file_id, added on to the global attributes from GlobalBase
         """
         return GlobalConstantAttrs.GLOBAL_BASE | {
             "Data_version": self.version,
@@ -134,8 +144,9 @@ class GlobalDataLevelAttrs:
 
         Returns
         -------
-        dictionary of correctly formatted values for the attributes in the class and
-        the attributes from InstrumentBase
+        dict
+            dictionary of correctly formatted values for the attributes in the class and
+            the attributes from InstrumentBase
         """
         return self.instrument_base.output() | {
             # TODO: rework cdf_utils.write_cdf to leverage dataclasses
@@ -195,7 +206,8 @@ class AttrBase:
 
         Returns
         -------
-        Dictionary of correctly formatted values for the attributes in the class
+        dict
+            Dictionary of correctly formatted values for the attributes in the class
         """
         return {
             "CATDESC": self.catdesc,
@@ -252,9 +264,10 @@ class ScienceAttrs(AttrBase):
 
         Returns
         -------
-        Dictionary of correctly formatted values for the attributes in the class.
-        If the optional parameters are not defined, they are not included as attributes
-        in the output.
+        dict
+            Dictionary of correctly formatted values for the attributes in the class.
+            If the optional parameters are not defined, they are not included as
+            attributes in the output.
         """
         endval = {"DEPEND_0": self.depend_0}
         if self.depend_1 is not None:
@@ -327,7 +340,8 @@ class StringAttrs:
 
         Returns
         -------
-        Dictionary of correctly formatted values for the attributes in the class.
+        dict
+            Dictionary of correctly formatted values for the attributes in the class.
         """
         return {
             "CATDESC": self.catdesc,
