@@ -31,25 +31,25 @@ def test_group_by_apid(decom_test_data):
     grouped_data = group_by_apid(decom_test_data)
 
     # check total dataset for swe science
-    total_science_data = grouped_data[SWEAPID.SWE_SCIENCE.value]
+    total_science_data = grouped_data[SWEAPID.SWE_SCIENCE]
     assert len(total_science_data) == 4
 
     # check total dataset for cem raw
-    total_cem_raw_data = grouped_data[SWEAPID.SWE_CEM_RAW.value]
+    total_cem_raw_data = grouped_data[SWEAPID.SWE_CEM_RAW]
     assert len(total_cem_raw_data) == 2
 
     # check total dataset for housekeeping
-    grouped_data[SWEAPID.SWE_APP_HK.value]
+    grouped_data[SWEAPID.SWE_APP_HK]
     assert len(total_cem_raw_data) == 2
 
     # check total dataset for event message
-    total_event_message_data = grouped_data[SWEAPID.SWE_EVTMSG.value]
+    total_event_message_data = grouped_data[SWEAPID.SWE_EVTMSG]
     assert len(total_event_message_data) == 15
 
 
 def test_cdf_creation(decom_test_data):
     grouped_data = group_by_apid(decom_test_data)
-    sci_cdf_filepath = swe_l1a(grouped_data[SWEAPID.SWE_SCIENCE.value])
-    hk_cdf_filepath = swe_l1a(grouped_data[SWEAPID.SWE_APP_HK.value])
+    sci_cdf_filepath = swe_l1a(grouped_data[SWEAPID.SWE_SCIENCE])
+    hk_cdf_filepath = swe_l1a(grouped_data[SWEAPID.SWE_APP_HK])
     assert os.path.basename(sci_cdf_filepath) == "imap_swe_l1a_sci_20230927_v01.cdf"
     assert os.path.basename(hk_cdf_filepath) == "imap_swe_l1a_lveng_hk_20230927_v01.cdf"

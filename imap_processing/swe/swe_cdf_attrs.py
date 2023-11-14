@@ -88,13 +88,13 @@ Warning: CDF is set for row major array variables and column major is recommende
 """
 
 
-import numpy as np
-
-from imap_processing.cdfutils.defaults import GlobalConstants, IdexConstants
+from imap_processing.cdfutils.defaults import GlobalConstants
 from imap_processing.cdfutils.global_base import (
     DataLevelBase,
     InstrumentBase,
     ScienceBase,
+    StringBase,
+    TypeBase,
 )
 from imap_processing.swe import __version__
 
@@ -129,52 +129,38 @@ swe_l1b_global_attrs = DataLevelBase(
     instrument_base=swe_base,
 )
 
-# Required attrs for data type of
-# number, int and float.
-# We can create one attrs dict for both
-# with their default values.
+# Uses TypeBase because because IntBase and FloatBase
+# requires depend_0 since it inherits from ScienceBase.
+# Below int_base and float_base is used to defined attrs
+# for coordinates systems that doesn't have depend_0.
 
-# For SWE, max range for uncompressed counts is
-# 65536. Therefore, I initialized it with that
-# value.
-int_attrs = {
-    "CATDESC": None,
-    "DISPLAY_TYPE": "spectrogram",
-    "FIELDNAM": None,
-    "FILLVAL": GlobalConstants.INT_FILLVAL,
-    "FORMAT": "I18",
-    "LABLAXIS": None,
-    "UNITS": "int",
-    "VALIDMIN": np.int64(0),
-    "VALIDMAX": np.int64(65536),
-    "VAR_TYPE": "support_data",
-    "SCALETYP": "linear",
-}
+int_base = TypeBase(
+    validmin=0,
+    validmax=GlobalConstants.INT_MAXVAL,
+    format="I12",
+    var_type="support_data",
+    display_type="no_plot",
+)
 
-# For SWE, max range for uncompressed rates is
-# less than 800,000 when uncompressed count is
-# divided by 0.083 second.
-# TODO: check with SWE team if they want to keep
-# range in millieseconds or seconds and update this
-# max range accordingly.
-float_attrs = {
-    "CATDESC": None,
-    "DISPLAY_TYPE": "spectrogram",
-    "FIELDNAM": None,
-    "FILLVAL": GlobalConstants.DOUBLE_FILLVAL,
-    "FORMAT": "F64.5",
-    "LABLAXIS": None,
-    "UNITS": "float",
-    "VALIDMIN": np.float64(-800000),
-    "VALIDMAX": np.float64(800000),
-    "VAR_TYPE": "support_data",
-    "SCALETYP": "linear",
-}
+float_base = TypeBase(
+    validmin=0,
+    validmax=GlobalConstants.INT_MAXVAL,
+    format="I12",
+    var_type="support_data",
+    display_type="no_plot",
+)
 
-l1a_metadata_attrs = ScienceBase(
-    IdexConstants.DATA_MIN,
-    IdexConstants.DATA_MAX,
-    display_type="spectrogram",
+# Housekeeping mode data array is stored as string.
+# Required attrs for string data type,
+# meaning array with string.
+string_base = StringBase(
+    depend_0="Epoch",
+)
+
+swe_metadata_attrs = ScienceBase(
+    validmin=0,
+    validmax=GlobalConstants.INT_MAXVAL,
+    display_type="no_plot",
     depend_0="Epoch",
     format="I12",
     units="dN",
@@ -182,56 +168,31 @@ l1a_metadata_attrs = ScienceBase(
     variable_purpose="PRIMARY",
 )
 
-l1b_metadata_attrs = ScienceBase(
-    IdexConstants.DATA_MIN,
-    IdexConstants.DATA_MAX,
+# TODO: ask SWE team about valid min and max values of
+# these data
+l1a_science_attrs = ScienceBase(
+    validmin=0,
+    validmax=GlobalConstants.INT_MAXVAL,
     display_type="spectrogram",
     depend_0="Epoch",
-    depend_1="Cycle",
+    depend_1="Energy",
+    depend_2="Counts",
     format="I12",
     units="dN",
-    var_type="support_data",
+    var_type="data",
     variable_purpose="PRIMARY",
 )
 
 l1b_science_attrs = ScienceBase(
-    IdexConstants.DATA_MIN,
-    IdexConstants.DATA_MAX,
+    validmin=0,
+    validmax=GlobalConstants.INT_MAXVAL,
     display_type="spectrogram",
     depend_0="Epoch",
-    depend_1="Cycle",
+    depend_1="Energy",
     depend_2="Angle",
     depend_3="Rates",
     format="I12",
     units="dN",
-    var_type="support_data",
+    var_type="data",
     variable_purpose="PRIMARY",
 )
-# Housekeeping mode data array is stored as string.
-# Required attrs for string data type,
-# meaning array with string.
-string_attrs = {
-    "CATDESC": None,
-    "DEPEND_0": "Epoch",
-    "FORMAT": "A80",
-    "DISPLAY_TYPE": "no_plot",
-    "FIELDNAM": None,
-    "VAR_TYPE": "metadata",
-}
-
-l1a_science_attrs = {
-    "CATDESC": "Science Data",
-    "DEPEND_0": "Epoch",
-    "DEPEND_1": "Energy",
-    "DEPEND_2": "Counts",
-    "DISPLAY_TYPE": "time_series",
-    "FIELDNAM": "Counts",
-    "FILLVAL": GlobalConstants.INT_FILLVAL,
-    "FORMAT": "I18",
-    "LABLAXIS": "Counts",
-    "UNITS": "dN",
-    "VALIDMIN": np.int64(0),
-    "VALIDMAX": np.int64(65536),
-    "VAR_TYPE": "support_data",
-    "SCALETYP": "linear",
-}

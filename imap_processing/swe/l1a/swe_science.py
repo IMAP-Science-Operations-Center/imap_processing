@@ -1,4 +1,5 @@
 import collections
+import dataclasses
 
 import numpy as np
 import xarray as xr
@@ -138,36 +139,43 @@ def swe_science(decom_data):
         attrs=Epoch.output(),
     )
 
-    # TODO: refactor this better once we develop class inheritance
-    int_attrs = swe_cdf_attrs.int_attrs
-    int_attrs["CATDESC"] = int_attrs["FIELDNAM"] = int_attrs["LABLAXIS"] = "Energy"
-    int_attrs["VALIDMAX"] = np.int64(180)
+    # TODO: add more descriptive description
     energy = xr.DataArray(
         np.arange(180),
         name="Energy",
         dims=["Energy"],
-        attrs=int_attrs,
+        attrs=dataclasses.replace(
+            swe_cdf_attrs.int_base,
+            catdesc="Energy",
+            fieldname="Energy",
+            label_axis="Energy",
+            units="keV",
+        ).output(),
     )
 
-    int_attrs["CATDESC"] = int_attrs["FIELDNAM"] = int_attrs["LABLAXIS"] = "Counts"
-    int_attrs["VALIDMAX"] = np.int64(7)
     counts = xr.DataArray(
         np.arange(7),
         name="Counts",
         dims=["Counts"],
-        attrs=int_attrs,
+        attrs=dataclasses.replace(
+            swe_cdf_attrs.int_base,
+            catdesc="Counts",
+            fieldname="Counts",
+            label_axis="Counts",
+            units="int",
+        ).output(),
     )
 
     science_xarray = xr.DataArray(
         science_array,
         dims=["Epoch", "Energy", "Counts"],
-        attrs=swe_cdf_attrs.l1a_science_attrs,
+        attrs=swe_cdf_attrs.l1a_science_attrs.output(),
     )
 
     raw_science_xarray = xr.DataArray(
         raw_science_array,
         dims=["Epoch", "Energy", "Counts"],
-        attrs=swe_cdf_attrs.l1a_science_attrs,
+        attrs=swe_cdf_attrs.l1a_science_attrs.output(),
     )
 
     dataset = xr.Dataset(
@@ -181,7 +189,6 @@ def swe_science(decom_data):
     dataset["SCIENCE_DATA"] = science_xarray
     dataset["RAW_SCIENCE_DATA"] = raw_science_xarray
 
-    metadata_attrs = swe_cdf_attrs.l1a_metadata_attrs.output()
     # create xarray dataset for each metadata field
     for key, value in metadata_arrays.items():
         if key == "SHCOARSE":
@@ -196,7 +203,13 @@ def swe_science(decom_data):
         dataset[key] = xr.DataArray(
             value,
             dims=["Epoch"],
-            attrs=metadata_attrs,
+            attrs=dataclasses.replace(
+                swe_cdf_attrs.swe_metadata_attrs,
+                catdesc=key,
+                fieldname=key,
+                label_axis=key,
+                depend_0="Epoch",
+            ).output(),
         )
 
     return dataset

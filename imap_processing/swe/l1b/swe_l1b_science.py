@@ -1,3 +1,5 @@
+import dataclasses
+
 import numpy as np
 import pandas as pd
 import xarray as xr
@@ -395,43 +397,56 @@ def swe_l1b_science(l1a_data):
         attrs=Epoch.output(),
     )
 
-    int_attrs = swe_cdf_attrs.int_attrs
-    int_attrs["CATDESC"] = int_attrs["FIELDNAM"] = int_attrs["LABLAXIS"] = "Energy"
-    int_attrs["VALIDMAX"] = np.int64(24)
+    # TODO: add more descriptive description
     energy = xr.DataArray(
         np.arange(24),
         name="Energy",
         dims=["Energy"],
-        attrs=int_attrs,
+        attrs=dataclasses.replace(
+            swe_cdf_attrs.int_base,
+            catdesc="Energy",
+            fieldname="Energy",
+            label_axis="Energy",
+            units="keV",
+        ).output(),
     )
 
-    int_attrs["CATDESC"] = int_attrs["FIELDNAM"] = int_attrs["LABLAXIS"] = "Angle"
-    int_attrs["VALIDMAX"] = np.int64(30)
     angle = xr.DataArray(
         np.arange(30),
         name="Angle",
         dims=["Angle"],
-        attrs=int_attrs,
+        attrs=dataclasses.replace(
+            swe_cdf_attrs.int_base,
+            catdesc="Angle",
+            fieldname="Angle",
+            label_axis="Angle",
+            units="Degree",
+        ).output(),
     )
 
-    int_attrs["CATDESC"] = int_attrs["FIELDNAM"] = int_attrs[
-        "LABLAXIS"
-    ] = "Quarter Cycle"
-    int_attrs["VALIDMAX"] = np.int64(180)
     cycle = xr.DataArray(
         np.arange(4),
         name="Cycle",
         dims=["Cycle"],
-        attrs=int_attrs,
+        attrs=dataclasses.replace(
+            swe_cdf_attrs.int_base,
+            catdesc="Quarter Cycle",
+            fieldname="Quarter Cycle",
+            label_axis="Quarter Cycle",
+        ).output(),
     )
 
-    float_attrs = swe_cdf_attrs.float_attrs
-    float_attrs["CATDESC"] = float_attrs["FIELDNAM"] = float_attrs["LABLAXIS"] = "Rates"
     rates = xr.DataArray(
         np.arange(7, dtype=np.float64),
         name="Rates",
         dims=["Rates"],
-        attrs=float_attrs,
+        attrs=dataclasses.replace(
+            swe_cdf_attrs.float_base,
+            catdesc="Rates",
+            fieldname="Rates",
+            label_axis="Rates",
+            units="float",
+        ).output(),
     )
 
     # Add science data and it's associated metadata into dataset.
@@ -466,7 +481,6 @@ def swe_l1b_science(l1a_data):
         attrs=swe_cdf_attrs.l1b_science_attrs.output(),
     )
 
-    metadata_attrs = swe_cdf_attrs.l1b_metadata_attrs.output()
     # create xarray dataset for each metadata field
     for key, value in l1a_data_copy.items():
         if key == "SCIENCE_DATA":
@@ -483,6 +497,13 @@ def swe_l1b_science(l1a_data):
         dataset[key] = xr.DataArray(
             value.data[full_cycle_data_indices].reshape(-1, 4),
             dims=["Epoch", "Cycle"],
-            attrs=metadata_attrs,
+            attrs=dataclasses.replace(
+                swe_cdf_attrs.swe_metadata_attrs,
+                catdesc=key,
+                fieldname=key,
+                label_axis=key,
+                depend_0="Epoch",
+                depend_1="Cycle",
+            ).output(),
         )
     return dataset

@@ -1,7 +1,7 @@
 import collections
+import dataclasses
 from enum import IntEnum
 
-import numpy as np
 import xarray as xr
 
 from imap_processing.cdfutils.global_base import Epoch
@@ -95,21 +95,25 @@ def create_dataset(packets):
         if key == "SHCOARSE":
             continue
         elif key == "APP_MODE":
-            string_attrs = swe_cdf_attrs.string_attrs
-            string_attrs["CATDESC"] = string_attrs["FIELDNAM"] = "APP_MODE"
             dataset[key] = xr.DataArray(
                 value,
                 dims=["Epoch"],
-                attrs=string_attrs,
+                attrs=dataclasses.replace(
+                    swe_cdf_attrs.string_base,
+                    catdesc=key,
+                    fieldname=key,
+                ).output(),
             )
         else:
-            int_attrs = swe_cdf_attrs.int_attrs
-            int_attrs["CATDESC"] = int_attrs["FIELDNAM"] = int_attrs["LABLAXIS"] = key
-            # get int32's max since most of metadata is under 32-bits
-            int_attrs["VALIDMAX"] = np.iinfo(np.int32).max
             dataset[key] = xr.DataArray(
                 value,
                 dims=["Epoch"],
-                attrs=int_attrs,
+                attrs=dataclasses.replace(
+                    swe_cdf_attrs.swe_metadata_attrs,
+                    catdesc=key,
+                    fieldname=key,
+                    label_axis=key,
+                    depend_0="Epoch",
+                ).output(),
             )
     return dataset
