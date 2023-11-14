@@ -1,3 +1,30 @@
+
+
+# function to get case number
+# use case number and data to parse the bits into their respective values
+# function to get the hex value and turn the into binary
+# get the hex value and determine which values are kept in the second table
+# get product sum of the TOF and the kept values in the second table
+
+# decompression:
+# compressed data
+# uncompressed data
+# case number
+#
+# fine_case_number
+# parse_data
+# get_hex
+# 
+import dataclasses
+#TODO import SCI DE class
+@data_class
+class Decompression:
+
+    compressed_data: list
+    case_number =  
+
+
+
 # From IMAP-Lo algorithm document
 # UNH-IMAP-Lo-27850-6002-Data-Product-Algorithms & Rev 1 Page 104
 event_packing_table = {
