@@ -1,24 +1,24 @@
-#######################
+######################
 Verifying CDF contents
-#######################
+######################
 
 The following page describes methods for verifying CDF files after they are created by IMAP processing software.
 
 
-******************************
+*********
 SKTeditor
-******************************
+*********
 
 After CDF files are generated, it is helpful to check for any compliance errors using the `SKTeditor <https://spdf.gsfc.nasa.gov/skteditor/>`_ tool.
 
 You can download this tool from the link above, and open the created file there.  You can click "Show Messages" in the lower right-hand corner, and it will provide details about any ISTP compliance errors that the code may have missed.
 
 
-******************************
+***************
 SPDF Validation
-******************************
+***************
 
-As a final validation step, the SPDF will review all completed data produts.  They will run the CDF file through the SKTeditor as a first pass, and also ensure that the auto-generated plots look nice on CDAWeb using the IDL tool `https://cdaweb.gsfc.nasa.gov/cdfx/ <https://cdaweb.gsfc.nasa.gov/cdfx/>`_.
+As a final validation step, the SPDF will review all completed data products.  They will run the CDF file through the SKTeditor as a first pass, and also ensure that the auto-generated plots look nice on CDAWeb using the IDL tool `https://cdaweb.gsfc.nasa.gov/cdfx/ <https://cdaweb.gsfc.nasa.gov/cdfx/>`_.
 
 They will also perform a final check on all of the attribute values to ensure they make sense from a user perspective. Some examples of errors caught so far include:
 

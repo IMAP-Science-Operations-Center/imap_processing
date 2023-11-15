@@ -8,9 +8,9 @@ For a more general introduction to CDF files, see :ref:`CDF Introduction`.
 
 For sample code that will generate a file that matches the below guidelines, see :ref:`IMAP xarray_to_cdf Example`
 
-******************************
+*****************
 Global Attributes
-******************************
+*****************
 
 Global attributes are used to provide information about the data set as an entity. Together with variables and variable attributes, the global attributes make the data correctly and independently usable by someone not connected with the instrument team, and hence, a good archive product.
 
@@ -23,11 +23,11 @@ Data_type
 This attribute is used by CDF file writing software to create a filename. It is a combination of the following filename components: mode, data level, and optional data product descriptor.
 
 Data_version
-================
+============
 This attribute identifies the version of a particular CDF data file.
 
 Descriptor
-================
+==========
 This attribute identifies the name of the instrument or sensor that collected the data.  Both a long name and a short name are given.  For any data file, only a single value is allowed.
 
 For IMAP, one of the following must be used -
@@ -35,24 +35,24 @@ For IMAP, one of the following must be used -
 * IDEX>Interstellar Dust Experiment
 * SWE>Solar Wind Electrons
 * SWAPI>Solar wind and Pickup Ions
-* CoDICE>Compact Dual Ion Compoition Experiment
+* CoDICE>Compact Dual Ion Composition Experiment
 * MAG>Magnetometer
-* HIT>High-energy Ion Teleccope
+* HIT>High-energy Ion Telescope
 * GLOWS>GLObal Solar Wind Structure
 * IMAP-Hi>Interstellar Mapping and Acceleration Probe High
 * IMAP-Lo>Interstellar Mapping and Acceleration Probe Low
 * IMAP-Ultra>Interstellar Mapping and Acceleration Probe Ultra
 
 Discipline
-================
+==========
 For IMAP, this value should always be “Space Physics>Heliospheric Physics.”. This attribute describes both the science discipline and sub discipline.
 
 Generation_date
-================
+===============
 Date stamps the creation of the file using the syntax yyyymmdd, e.g. 20150923.
 
 Instrument_type
-================
+===============
 This attribute is used to facilitate making choices of instrument type. More than one entry is allowed.  Valid IMAP values include:
 
 * Electric Fields (space)
@@ -62,11 +62,11 @@ This attribute is used to facilitate making choices of instrument type. More tha
 * Ephemeris
 
 Logical_file_id
-================
+===============
 This attribute stores the name of the CDF file as described in Section 3.1 but without the file extension or version (e.g. ".cdf"). This attribute is required to avoid loss of the original source in the case of accidental (or intentional) renaming. This attribute must be manually set by the user during creation.
 
 Logical_source
-================
+===============
 This attribute determines the file naming convention and is used by CDA Web.  It is composed of the following other attributes:
 
 * Source_name - (e.g. "imap")
@@ -74,15 +74,15 @@ This attribute determines the file naming convention and is used by CDA Web.  It
 * Data_type - (e.g. the mode, data level, and descriptor)
 
 Logical_source_description
-===========================
+==========================
 This attribute writes out the full words associated with the encrypted Logical_source above, e.g., "Level 1 Dual Electron Spectrometer Survey Data". Users on CDAWeb see this value on their website.
 
 Mission_group
-================
+=============
 This attribute has a single value and is used to facilitate making choices of source through CDAWeb.  This value should be "IMAP".
 
 PI_affiliation
-================
+==============
 This attribute value should include the IMAP mission PI affiliation followed by a comma separated list of any Co-I affiliations that are responsible for this particular dataset. The following are valid IMAP values, of which the abbreviations should be used exclusively within this attribute value, and the full text of the affiliation included in the general text attribute as it is used solely in plot labels.
 
 * JHU/APL - Applied Physics Laboratory
@@ -94,32 +94,32 @@ This attribute value should include the IMAP mission PI affiliation followed by 
 * UNH - University of New Hampshire
 
 PI_name
-================
+=======
 This attribute value should include first initial and last name of the IMAP mission PI followed by a comma-separated list of any Co-Is that are responsible for this particular dataset. For example, a single PI entry in this attribute would be: "Dr. David J. McComas".
 
 Project
-================
+=======
 This attribute identifies the name of the project and indicates ownership. For IMAP, this value should be “STP>Solar-Terrestrial Physics”.
 
 Source_name
-================
+===========
 This attribute identifies the observatory where the data originated. For IMAP, this should simply be "IMAP"
 
 TEXT
-================
+====
 This attribute is an SPDF standard global attribute, which is a text description of the experiment whose data is included in the CDF. A reference to a journal article(s) or to a World Wide Web page describing the experiment is essential, and constitutes the minimum requirement. A written description of the data set is also desirable. This attribute can have as many entries as necessary to contain the desired information. Typically, this attribute is about a paragraph in length and is not shown on CDAWeb.
 
 MODS
-================
-This attribute is an SPDF standard global attribute, which is used to denote the history of modifications made to the CDF data set. The MODS attribute should contain a description of all significant changes to the data set, essentially capturing a log of highlevel release notes. This attribute can have as many entries as necessary and should be updated if the "X" value of the version number changes.
+====
+This attribute is an SPDF standard global attribute, which is used to denote the history of modifications made to the CDF data set. The MODS attribute should contain a description of all significant changes to the data set, essentially capturing a log of high-level release notes. This attribute can have as many entries as necessary and should be updated if the "X" value of the version number changes.
 
 Parents
-================
+=======
 This attribute lists the parent data files for files of derived and merged data sets. The syntax for a CDF parent is: "CDF>logical_file_id". Multiple entry values are used for multiple parents. This attribute is required for any MMS data products that are derived from 2 or more data sources and the file names of parent data should be clearly identified. CDF parents may include source files with non-cdf extensions.
 
-******************************
+***************
 IMAP Variables
-******************************
+***************
 
 There are three types of variables that should be included in CDF files: data, support data, and metadata. Additionally, required attributes are listed with each variable type listed below.
 
@@ -128,12 +128,12 @@ This is not to imply that only these data types are allowable within IMAP CDF fi
 `http://spdf.gsfc.nasa.gov/istp_guide/variables.html <http://spdf.gsfc.nasa.gov/istp_guide/variables.html>`_
 
 Data
-==============
+====
 These are variables of primary importance (e.g., density, magnetic field, particle flux). Data is always time (record) varying, but can be of any dimensionality or CDF supported data type. Real or Integer data are always defined as having one element.
 
 Required Epoch Variable
-------------------------
-All IMAP CDF Data files must contain at least one cariable of data type CDF_TIME_TT2000 named "Epoch".  All time varying variables in the CDF data set will depend on either this "Epoch" or another variable of type CDF_TIME_TT2000.  More than one CDF_TIME_TT2000 variable is allowed in a data set to allow for more than one time resolution.  It is recommended that all such time variable use "Epoch" within their variable name.
+-----------------------
+All IMAP CDF Data files must contain at least one variable of data type CDF_TIME_TT2000 named "Epoch".  All time varying variables in the CDF data set will depend on either this "Epoch" or another variable of type CDF_TIME_TT2000.  More than one CDF_TIME_TT2000 variable is allowed in a data set to allow for more than one time resolution.  It is recommended that all such time variable use "Epoch" within their variable name.
 
 .. note::
    In the xarray_to_cdf function described in :ref:`cdflib.xarray_to_cdf`, all variables with "epoch" in their name will be converted to CDF_TT2000 if the flag "istp=True" is given.
@@ -153,22 +153,22 @@ Given a current list of leap seconds, conversion between TT and UTC is straightf
 It is proposed that the required data variables VALIDMIN and VALIDMAX are given values corresponding to the dates 1990-01-01T00:00:00 and 2100-01-01T00:00:00 as these are well outside any expected valid times.
 
 Required Data Attributes
---------------------------
+------------------------
 
 CATDESC
-^^^^^^^^^^^^^^^^
+^^^^^^^
 This is a human readable description of the data variable. Generally, this is an 80-character string which describes the variable and what it depends on.
 
 DEPEND_0
-^^^^^^^^^^^^^^^^
+^^^^^^^^
 Explicitly ties a data variable to the time variable on which it depends. All variables which change with time must have a DEPEND_0 attribute defined.
 
 DEPEND_i
-^^^^^^^^^^^^^^^^
+^^^^^^^^
 Ties a dimensional data variable to a SUPPORT_DATA variable on which the i-th dimension of the data variable depends. The number of DEPEND attributes must match the dimensionality of the variable, i.e., a one-dimensional variable must have a DEPEND_1, a two-dimensional variable must have a DEPEND_1 and a DEPEND_2 attribute, etc. The value of the attribute must be a variable in the same CDF data set. It is strongly recommended that DEPEND_i variables hold values in physical units. DEPEND_i variables also require their own attributes, as described in the following sections.
 
 DISPLAY_TYPE
-^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^
 This tells automated software, such as CDAWEB, how the data should be displayed.
 Examples of valid values include
 
@@ -178,11 +178,11 @@ Examples of valid values include
 * image
 
 FIELDNAM
-^^^^^^^^^^^^^^^^
+^^^^^^^^
 A shortened version of CATDESC which can be used to label a plot axis or as a data listing heading. This is a string, up to ~30 characters in length.
 
 FILLVAL
-^^^^^^^^^^^^^^^^
+^^^^^^^
 Identifies the fill value used where data values are known to be bad or missing.
 FILLVAL is required for time-varying variables. Fill data are always non-valid data. The
 ISTP standard fill values are listed below
@@ -204,33 +204,33 @@ ISTP standard fill values are listed below
    Using xarray_to_cdf, these values are automatically cast to be the same type of data as the CDF variable they are attached to.  For example, if your data is REAL4 and you specify your VALIDMIN=0, the function will know to store the "0" as a REAL4 type as well.
 
 FORMAT
-^^^^^^^^^^^^^^^^
+^^^^^^
 This field allows software to properly format the associated data when displayed on a screen or output to a file. Format can be specified using either Fortran or C format codes. For instance, "F10.3" indicates that the data should be displayed across 10 characters where 3 of those characters are to the right of the decimal.
 
 LABLAXIS
-^^^^^^^^^^^^^^^^
+^^^^^^^^
 Used to label a plot axis or to provide a heading for a data listing. This field is generally 6-10 characters.
 
 UNITS
-^^^^^^^^^^^^^^^^
+^^^^^
 A 6-20 character string that identifies the units of the variable (e.g. nT for magnetic field). Use a blank character, rather than "None" or "unitless", for variables that have no units (e.g., a ratio or a direction cosine).
 
 VALIDMIN
-^^^^^^^^^^^^^^^^
+^^^^^^^^
 The minimum value for a particular variable that is expected over the lifetime of the mission. Used by application software to filter out values that are out of range. The value must match the data type of the variable.
 
 .. note::
    Using xarray_to_cdf, these values are automatically cast to be the same type of data as the CDF variable they are attached to
 
 VALIDMAX
-^^^^^^^^^^^^^^^^
+^^^^^^^^
 The maximum value for a particular variable that is expected over the lifetime of the mission. Used by application software to filter out values that are out of range. The value must match the data type of the variable.
 
 .. note::
    Using xarray_to_cdf, these values are automatically cast to be the same type of data as the CDF variable they are attached to
 
 VAR_TYPE
-^^^^^^^^^^^^^^^^
+^^^^^^^^
 Used in CDAWeb to indicate if the data should be used directly by users. Possible values:
 * "data" - integer or real numbers that are plottable
 * "support_data" - integer or real "attached" or secondary data variables
@@ -238,11 +238,11 @@ Used in CDAWeb to indicate if the data should be used directly by users. Possibl
 * "ignore_data" - placeholders
 
 Support Data
-==============
+============
 These are variables of secondary importance employed as DEPEND_i variables, but they may also be used for housekeeping or other information not normally used for scientific analysis.
 
 DELTA_PLUS_VAR and DELTA_MINUS_VAR
--------------------------------------
+----------------------------------
 
 DEPEND_i variables are typically physical values along the corresponding i-th dimension of the parent data variable, such as energy levels or spectral frequencies. The discreet set of values are located with respect to the sampling bin by DELTA_PLUS_VAR and DELTA_MINUS_VAR, which hold the variable name containing the distance from the value to the bin edge. It is strongly recommended that IMAP DEPEND_i variables include DELTA_PLUS_VAR and DELTA_MINUS_VAR attributes that point to the appropriate variable(s) located elsewhere in the CDF file.
 
@@ -267,9 +267,9 @@ Variables appearing in a data variable's DEPEND_i attribute require a minimal se
 
 These attributes are otherwise the same as described in the above section for data variables
 
-******************************
+**************************
 Variable Naming Convention
-******************************
+**************************
 
 Data Variables
 ===============
@@ -297,14 +297,14 @@ Optional
 
 
 Support Data Variables
-=======================
+======================
 
 Support data variable names must begin with a letter and can contain numbers and underscores, but no other special characters. Support data variable names need not follow the same naming convention as Data Variables (5.1.1) but may be shortened for convenience.
 
 
-******************************
+**********************
 File Naming Convention
-******************************
+***********************
 CDF data files have names of the following form:
 
 mission_instrumentId_dataLevel[_mode][_descriptor]_startTime_vXX-YY.cdf

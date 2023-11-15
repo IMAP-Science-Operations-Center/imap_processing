@@ -49,7 +49,7 @@ For IMAP, we will be using the following flags on xarray_to_cdf
 xarray_to_cdf with the above flags will perform the following steps -
 
 Verification
--------------
+------------
 
 #. Verifies that required global attributes are present to meet ISTP compliance
 #. Verifies that variables have a VAR_TYPE attribute of either "data", "support_data", or "metadata"
@@ -58,7 +58,7 @@ Verification
 #. Verifies that each variable has the expected variable attributes to be ISTP compliant
 
 Conversion
------------
+----------
 
 #. Converts all variables with the word "epoch" in their name from datetime64 objects into the CDF native time format of CDF_TT2000 (nanoseconds since the year 2000)
 #. Converts all other data into one of the following CDF native formats - CDF_INT8, CDF_DOUBLE, CDF_UINT4, or CDF_CHAR
@@ -78,9 +78,9 @@ While the above steps get a CDF file a large way towards ISTP compliance, there 
 * This function does not put the "Epoch" variable as the first thing in the file, which was recommended (but not required) by the SPDF
 * This code creates variables in a row-major format.  Column-major is recommended (but not required) by the SPDF.
 
-***************************
+**************************
 IMAP xarray_to_cdf Example
-***************************
+**************************
 
 Suppose there is an instrument on IMAP named JIM that took 3 samples of ions at 3 different energies, such that the data looks like the following -
 
@@ -173,7 +173,7 @@ The following python code is the **minimum** code you'd need to store this data 
          "These are used by the variable imap_jim_counts_(mode)_(description)"
          "Ideally we would actually have additional variables that describe "
          "the minimum and the maximum values in each of these bins, but for our "
-         "purposes of creating a minimal example, we'll leave extra varaibles out. "
+         "purposes of creating a minimal example, we'll leave extra variables out. "
          "Longer notes about the variable can be placed into this attribute."
       ),
    }

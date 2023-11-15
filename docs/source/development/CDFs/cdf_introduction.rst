@@ -10,17 +10,16 @@ The GSFC describes CDF files as a "self-describing data format for the storage o
 IMAP is archiving its science data with the `Space Physics Data Facility (SPDF) <https://spdf.gsfc.nasa.gov/>`_, which requires that data be in the CDF file format.
 
 CDF Ecosystem
-===============
+=============
 **CDF** refers to more than just the files themselves, but the entire toolkit surrounding those files.  The official toolkits are available in IDL, C, Fortran and MATLAB.
 
-For python implementations, there is `**cdflib** <https://github.com/MAVENSDC/cdflib>`_, which is a pure-python implementation of the CDF specification. **cdflib** contains the functions "xarray_to_cdf" and "cdf_to_xarray" to convert between xarray Dataset objects in python and the CDF file formats.
+For python implementations, there is `cdflib <https://github.com/MAVENSDC/cdflib>`_, which is a pure-python implementation of the CDF specification. **cdflib** contains the functions "xarray_to_cdf" and "cdf_to_xarray" to convert between xarray Dataset objects in python and the CDF file formats.
 
 .. note::
    The L0->L2 processing will be using cdflib to generate CDF files on IMAP.  For more information about cdflib and the xarray_to_cdf function, see :ref:`cdflib.xarray_to_cdf`
 
-The other main python library is `**pycdf** <https://spacepy.github.io/pycdf.html>`_, which is a part of **spacepy**.  Pycdf wraps the C libraries, and therefore it requires downloading the C libraries.  Because it is a part of Spacepy, Pycdf requires downloading and installing Spacepy.  Pycdf includes various bells and whistles that help make the files more python friendly, and includes functions for checking for ISTP compliance.
+The other main python library is `pycdf <https://spacepy.github.io/pycdf.html>`_, which is a part of **spacepy**.  Pycdf wraps the C libraries, and therefore it requires downloading the C libraries.  Because it is a part of Spacepy, Pycdf requires downloading and installing Spacepy.  Pycdf includes various bells and whistles that help make the files more python friendly, and includes functions for checking for ISTP compliance.
 
-Because the L0->L2 processing on IMAP will be making heavy use of "xarray", it will also be using "cdflib.xarray_to_cdf" to create the ".cdf" files.
 
 What's in a CDF file?
 ======================
@@ -28,9 +27,9 @@ What's in a CDF file?
 There are two parts of a CDF file that a user of the file ultimately cares about: Variables and Attributes.
 
 The way these are astored in the file are somewhat complex, but that information is abstracted away from the end user.  The CDF libraries have functions to easily list and extract the variables and attributes within the CDF files.
-
+The way these are stored in the file are somewhat complex, but that information is abstracted away from the end user.  The CDF libraries have functions to easily list and extract the variables and attributes within the CDF files.
 The internal format of CDF files are described `cdf specification <https://cdaweb.gsfc.nasa.gov/pub/software/cdf/doc/cdf391/cdf39ifd.pdf>`_.
-
+The internal format of CDF files are described in the `cdf specification <https://cdaweb.gsfc.nasa.gov/pub/software/cdf/doc/cdf391/cdf39ifd.pdf>`_.
 Variables
 ----------
 
@@ -43,7 +42,7 @@ Variables are the data stored within a file.  They have a few key characteristic
    * Variables are given a unique name
 * Shape
    * The the number and the size of the dimensions.  In the picture above, "zVariable 1" is 5x5, and "zVariable 2" is 5x2.
-* Data types
+   * The number and the size of the dimensions.  In the picture above, "zVariable 1" is 5x5, and "zVariable 2" is 5x2.
    * Describes what the data actually represents, some options include -
       * Integers (1-8 bytes)
       * Floats (1-8 bytes)
@@ -56,9 +55,9 @@ Variables are the data stored within a file.  They have a few key characteristic
 .. note:: For IMAP instruments, each "Record" is always a unit of time.  If a varible does not vary over time, it will only span 1 record.
 
 Attributes
------------
+----------
 
-Attributes are essentially key:value pairs inside the CDF, similar to a python dictionary object.  For example - Mission=IMAP, or Instrument=IDEX.
+Attributes are essentially (key=value) pairs inside the CDF, similar to a python dictionary object.  For example - Mission=IMAP, or Instrument=IDEX.
 
 Attributes come in two forms:
 
@@ -78,4 +77,4 @@ The image above is taken from CDAWeb. Several of the attributes inside the CDF f
 
 To archive at the SPDF, files must be ISTP compliant.  The SPDF will reject files that do not conform to their standards.
 
-A guide to SPDF can be found here: `https://spdf.gsfc.nasa.gov/istp_guide/istp_guide.html <https://spdf.gsfc.nasa.gov/istp_guide/istp_guide.html>`_
+A guide to SPDF can be found `on the SPDF website. <https://spdf.gsfc.nasa.gov/istp_guide/istp_guide.html>`_
