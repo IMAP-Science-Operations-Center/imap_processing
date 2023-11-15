@@ -1436,6 +1436,28 @@ lint = ["docutils-stubs", "flake8", "mypy"]
 test = ["pytest"]
 
 [[package]]
+name = "spiceypy"
+version = "5.1.2"
+description = "A Python Wrapper for the NAIF CSPICE Toolkit"
+optional = false
+python-versions = "<4,>=3.6"
+files = [
+    {file = "spiceypy-5.1.2-py3-none-macosx_10_9_x86_64.whl", hash = "sha256:925fc11691f831ddee236421b94f0d56b713ea65f719d114452fe174998da1c2"},
+    {file = "spiceypy-5.1.2-py3-none-macosx_11_0_arm64.whl", hash = "sha256:58ae68f2a6d1c0db710f4a3c73dfdb4f6d86a39b60d7b2e6effb9a0e2001dba1"},
+    {file = "spiceypy-5.1.2-py3-none-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:62cf3d1c9cbe79d83a5d6557dcdd5328171048c83ce35a59f697f92b7a810f63"},
+    {file = "spiceypy-5.1.2-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:2d36ef0031c5f07f1e7778a8d7801a2777c7f70753bf12a527008379c3d0fe81"},
+    {file = "spiceypy-5.1.2-py3-none-win_amd64.whl", hash = "sha256:9b73c73cf39b88093a9d327a78256fa875b7c99fdff6eb0c52f87f0496f9a27c"},
+    {file = "spiceypy-5.1.2.tar.gz", hash = "sha256:c99fe70d3e81ba62a57164f9d0371a88c28adfdf92798dded14e3884938ac082"},
+]
+
+[package.dependencies]
+numpy = ">=1.17.0"
+
+[package.extras]
+dev = ["black", "build", "codecov (>=2.1.0)", "coverage (>=5.1.0)", "numpy (>=1.17.0)", "pandas (>=0.24.0)", "pytest (>=7.0.0)", "twine (>=3.3.0)", "wheel"]
+tests = ["numpy (>=1.17.0)", "pandas (>=0.24.0)", "pytest (>=7.0.0)"]
+
+[[package]]
 name = "tabulate"
 version = "0.9.0"
 description = "Pretty-print tabular data"
@@ -1576,4 +1598,4 @@ tools = ["openpyxl", "pandas"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9,<3.12"
-content-hash = "3b790d434201384518afe381fa164c39c2e57c5842061e9b5c490e4227334752"
+content-hash = "5f71915d1de3bddbe3fcb116b07471c2754ed706153f2abd728ca20ba8689d2c"
