@@ -13,8 +13,7 @@ logger = logging.getLogger(__name__)
 
 
 class SpiceKernelManager:
-    """
-    Manages the loading and handling of SPICE kernels.
+    """Manages the loading and handling of SPICE kernels.
 
     Parameters
     ----------
@@ -53,8 +52,7 @@ class SpiceKernelManager:
 
 
 def ls_kernels(extensions=None) -> list:
-    """
-    List furnished spice kernels, optionally filtered by specific extensions.
+    """List furnished spice kernels, optionally filtered by specific extensions.
 
     Parameters
     ----------
@@ -82,8 +80,7 @@ def ls_kernels(extensions=None) -> list:
 
 
 def ls_spice_constants() -> dict:
-    """
-    List all constants in the Spice constant pool.
+    """List all constants in the Spice constant pool.
 
     Returns
     -------
@@ -116,8 +113,7 @@ def ls_spice_constants() -> dict:
 
 
 def ls_attitude_coverage(custom_pattern=None) -> tuple:
-    """
-    Process attitude kernels to extract and convert dates to UTC format.
+    """Process attitude kernels to extract and convert dates to UTC format.
 
     Parameters
     ----------
