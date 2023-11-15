@@ -19,10 +19,10 @@ Checklist for Contributors
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 
-.. _Pertaining-to-the-code:
+.. _contributing-to-the-code:
 
-Pertaining to the code:
-"""""""""""""""""""""""
+Contributing to the code:
+"""""""""""""""""""""""""
 
 * Does the code conform to this style guide?
 * Is any of the code functionality not already available via native or third-party python libraries?
@@ -40,10 +40,10 @@ Pertaining to the code:
 * Are any new dependencies correctly added to the ``pyproject.toml`` file?
 
 
-.. _pertaining-to-the-pull-request:
+.. _contributing-to-the-pull-request:
 
-Pertaining to the pull request:
-"""""""""""""""""""""""""""""""
+Contributing to the pull request:
+"""""""""""""""""""""""""""""""""
 
 * Is the PR excessively long and/or covers multiple issues? If so, consider breaking it up into multiple PRs.
 * Does the PR have a concise, descriptive title?
@@ -63,8 +63,8 @@ Checklist for Reviewers
 
 .. _pertaining-to-the-pull-request-review:
 
-Pertaining to the pull request:
-"""""""""""""""""""""""""""""""
+Reviewing the pull request:
+""""""""""""""""""""""""""""
 
 * Does the PR have a concise, descriptive title?
 * Does the PR have a sufficient description as to make it clear what the reasons for the changes are?
@@ -78,8 +78,8 @@ Pertaining to the pull request:
 
 .. _pertaining-to-the-code-review:
 
-Pertaining to the code:
-"""""""""""""""""""""""
+Reviewing the code:
+""""""""""""""""""""
 
 * Does the code conform to this style guide?
 * Is the code documented and commented sufficiently such that it is easy to read and follow?

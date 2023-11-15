@@ -8,8 +8,6 @@ the these repositories should be checked against this guide, and any violation o
 before the code is committed to the ``main`` or ``dev`` branches.
 
 
-.. _tl;dr:
-
 tl;dr
 -----
 

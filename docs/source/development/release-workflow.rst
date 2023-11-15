@@ -39,8 +39,6 @@ Nominal releases
    process described in steps (10) and (11) in the :ref:`git & GitHub Workflow <git-and-github-workflow>` section.
 
 
-.. _patches:
-
 Patches
 """""""
 
