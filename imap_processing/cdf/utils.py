@@ -4,44 +4,6 @@ import numpy as np
 import xarray as xr
 from cdflib.xarray import xarray_to_cdf
 
-# Recommended FILLVAL for all integers
-INT_FILLVAL = np.iinfo(np.int64).min
-# Recommended FILLVALL for all floats
-DOUBLE_FILLVAL = np.float64(-1.0e31)
-# Recommended min/max Epoch based on MMS approved values
-MIN_EPOCH = -315575942816000000
-MAX_EPOCH = 946728069183000000
-
-global_base = {
-    "Project": "STP>Solar-Terrestrial Physics",
-    "Source_name": "IMAP>Interstellar Mapping and Acceleration Probe",
-    "Discipline": "Solar Physics>Heliospheric Physics",
-    "PI_name": "Dr. David J. McComas",
-    "PI_affiliation": [
-        "Princeton Plasma Physics Laboratory",
-        "100 Stellarator Road, Princeton, NJ 08540",
-    ],
-    "Instrument_type": "Particles (space)",
-    "Mission_group": "IMAP>Interstellar Mapping and Acceleration Probe",
-}
-
-epoch_attrs = {
-    "CATDESC": "Default time",
-    "FIELDNAM": "Epoch",
-    "FILLVAL": INT_FILLVAL,
-    "FORMAT": "a2",
-    "LABLAXIS": "Epoch",
-    "UNITS": "ns",
-    "VALIDMIN": MIN_EPOCH,
-    "VALIDMAX": MAX_EPOCH,
-    "VAR_TYPE": "support_data",
-    "SCALETYP": "linear",
-    "MONOTON": "INCREASE",
-    "TIME_BASE": "J2000",
-    "TIME_SCALE": "Terrestrial Time",
-    "REFERENCE_POSITION": "Rotating Earth Geoid",
-}
-
 
 def write_cdf(data: xr.Dataset, description: str = "", directory: str = ""):
     """Write the contents of "data" to a CDF file using cdflib.xarray_to_cdf.
