@@ -8,7 +8,7 @@ from imap_processing.codice.l0.decompress_codice import decompress
 from imap_processing.codice.utils.codice_utils import CoDICECompression
 
 # Test the algorithms using input value of 234 (picked randomly)
-LZMA_EXAMPLE = lzma.compress((234).to_bytes())
+LZMA_EXAMPLE = lzma.compress((234).to_bytes(1, byteorder="big"))
 TEST_DATA = [
     (234, CoDICECompression.NO_COMPRESSION, 234),
     (234, CoDICECompression.LOSSY_A, 221184),
