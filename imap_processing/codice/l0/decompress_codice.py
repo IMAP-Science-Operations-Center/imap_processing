@@ -25,7 +25,8 @@ References
 
 import lzma
 
-from imap_processing.codice.constants import LOSSY_A_TABLE, LOSSY_B_TABLE
+from imap_processing.codice.utils.codice_utils import CoDICECompression
+from imap_processing.codice.utils.constants import LOSSY_A_TABLE, LOSSY_B_TABLE
 
 
 def _apply_lossy_a(compressed_value):
@@ -103,18 +104,18 @@ def decompress(compressed_value, algorithm):
     decompressed_value : int
         The 24- or 32-bit decompressed value
     """
-    if algorithm == "no compression":
+    if algorithm == CoDICECompression.NO_COMPRESSION:
         decompressed_value = compressed_value
-    elif algorithm == "lossyA":
+    elif algorithm == CoDICECompression.LOSSY_A:
         decompressed_value = _apply_lossy_a(compressed_value)
-    elif algorithm == "lossyB":
+    elif algorithm == CoDICECompression.LOSSY_B:
         decompressed_value = _apply_lossy_b(compressed_value)
-    elif algorithm == "lossless":
+    elif algorithm == CoDICECompression.LOSSLESS:
         decompressed_value = _apply_lzma_lossless(compressed_value)
-    elif algorithm == "lossyA+lossless":
+    elif algorithm == CoDICECompression.LOSSY_A_LOSSLESS:
         decompressed_value = _apply_lzma_lossless(compressed_value)
         decompressed_value = _apply_lossy_a(decompressed_value)
-    elif algorithm == "lossyB+lossless":
+    elif algorithm == CoDICECompression.LOSSY_B_LOSSLESS:
         decompressed_value = _apply_lzma_lossless(compressed_value)
         decompressed_value = _apply_lossy_b(decompressed_value)
     else:
