@@ -20,10 +20,14 @@ def l1a_test_data():
     # Packet 4 has spin 3's data
     # moved packet 1 to bottom to show data in order.
     packet_files = [
-        f"{imap_module_directory}/swe/tests/l0_data/20230927173253_SWE_SCIENCE_packet.bin",
-        f"{imap_module_directory}/swe/tests/l0_data/20230927173308_SWE_SCIENCE_packet.bin",
-        f"{imap_module_directory}/swe/tests/l0_data/20230927173323_SWE_SCIENCE_packet.bin",
-        f"{imap_module_directory}/swe/tests/l0_data/20230927173238_SWE_SCIENCE_packet.bin",
+        imap_module_directory
+        / "swe/tests/l0_data/20230927173253_SWE_SCIENCE_packet.bin",
+        imap_module_directory
+        / "swe/tests/l0_data/20230927173308_SWE_SCIENCE_packet.bin",
+        imap_module_directory
+        / "swe/tests/l0_data/20230927173323_SWE_SCIENCE_packet.bin",
+        imap_module_directory
+        / "swe/tests/l0_data/20230927173238_SWE_SCIENCE_packet.bin",
     ]
     data = []
     for packet_file in packet_files:

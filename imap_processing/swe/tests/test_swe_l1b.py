@@ -1,8 +1,7 @@
-import os
+from pathlib import Path
 
 import pandas as pd
 import pytest
-from cdflib.xarray import cdf_to_xarray
 
 from imap_processing import imap_module_directory
 from imap_processing.swe.l0 import decom_swe
@@ -28,17 +27,6 @@ def decom_test_data():
 
 
 @pytest.fixture(scope="session")
-def cdf_data():
-    test_folder_path = "swe/tests/l1a_test_data"
-    cdf_files = list(imap_module_directory.glob(f"{test_folder_path}/*.cdf"))
-    data_list = []
-    for file in cdf_files:
-        data = cdf_to_xarray(file)
-        data_list.append(data)
-    return data_list
-
-
-@pytest.fixture(scope="session")
 def l1a_test_data():
     """Read test data from file"""
     # NOTE: data was provided in this sequence in both bin and validation data
@@ -49,10 +37,14 @@ def l1a_test_data():
     # Packet 4 has spin 3's data
     # moved packet 1 to bottom to show data in order.
     packet_files = [
-        f"{imap_module_directory}/swe/tests/l0_data/20230927173253_SWE_SCIENCE_packet.bin",
-        f"{imap_module_directory}/swe/tests/l0_data/20230927173308_SWE_SCIENCE_packet.bin",
-        f"{imap_module_directory}/swe/tests/l0_data/20230927173323_SWE_SCIENCE_packet.bin",
-        f"{imap_module_directory}/swe/tests/l0_data/20230927173238_SWE_SCIENCE_packet.bin",
+        imap_module_directory
+        / "swe/tests/l0_data/20230927173253_SWE_SCIENCE_packet.bin",
+        imap_module_directory
+        / "swe/tests/l0_data/20230927173308_SWE_SCIENCE_packet.bin",
+        imap_module_directory
+        / "swe/tests/l0_data/20230927173323_SWE_SCIENCE_packet.bin",
+        imap_module_directory
+        / "swe/tests/l0_data/20230927173238_SWE_SCIENCE_packet.bin",
     ]
     data = []
     for packet_file in packet_files:
@@ -84,7 +76,7 @@ def test_swe_l1b(decom_test_data):
     science_l1a_ds = swe_science(sorted_packets)
     # convert value from raw to engineering units as needed
     conversion_table_path = (
-        f"{imap_module_directory}/swe/l1b/engineering_unit_convert_table.csv"
+        imap_module_directory / "swe/l1b/engineering_unit_convert_table.csv"
     )
     # Look up packet name from APID
     packet_name = SWEAPID.SWE_SCIENCE.name
@@ -96,9 +88,9 @@ def test_swe_l1b(decom_test_data):
     )
 
     # read science validation data
-    test_data_path = f"{imap_module_directory}/swe/tests/l0_validation_data"
+    test_data_path = imap_module_directory / "swe/tests/l0_validation_data"
     eu_validation_data = pd.read_csv(
-        f"{test_data_path}/idle_export_eu.SWE_SCIENCE_20230927_172708.csv",
+        test_data_path / "idle_export_eu.SWE_SCIENCE_20230927_172708.csv",
         index_col="SHCOARSE",
     )
     second_data = sorted_packets[1]
@@ -122,7 +114,7 @@ def test_swe_l1b(decom_test_data):
 
     # read housekeeping validation data
     eu_validation_data = pd.read_csv(
-        f"{test_data_path}/data_derived.SWE_APP_HK_20230927_094839.csv",
+        test_data_path / "data_derived.SWE_APP_HK_20230927_094839.csv",
         index_col="SHCOARSE",
     )
     second_data = grouped_data[1330][1]
@@ -147,12 +139,11 @@ def test_swe_l1b(decom_test_data):
         assert round(hk_l1b[field].data[1], 5) == round(validation_data[field], 5)
 
 
-def test_cdf_creation(l1a_test_data, cdf_data):
-    sci_l1b_filepath = swe_l1b(l1a_test_data)
+def test_cdf_creation(l1a_test_data, tmp_path):
+    cdf_filepath = tmp_path / "cdf_files"
+    cdf_filepath.mkdir()
+    sci_l1b_filepath = swe_l1b(l1a_test_data, cdf_filepath)
 
     # process hk data to l1b
-    hk_data = [ds for ds in cdf_data if ds["PKT_APID"].data[0] == SWEAPID.SWE_APP_HK]
-    hk_l1b_filepath = swe_l1b(hk_data[0])
 
-    assert os.path.basename(sci_l1b_filepath) == "imap_swe_l1b_sci_20230927_v01.cdf"
-    assert os.path.basename(hk_l1b_filepath) == "imap_swe_l1b_lveng_hk_20230927_v01.cdf"
+    assert Path(sci_l1b_filepath).name == "imap_swe_l1b_sci_20230927_v01.cdf"

@@ -1,5 +1,4 @@
 import logging
-from pathlib import Path
 
 from imap_processing.cdfutils.cdf_utils import write_cdf
 from imap_processing.swe.l1a.swe_science import swe_science
@@ -11,7 +10,7 @@ from imap_processing.swe.utils.swe_utils import (
 from imap_processing.utils import group_by_apid, sort_by_time
 
 
-def swe_l1a(packets):
+def swe_l1a(packets, cdf_filepath):
     """Process SWE l0 data into l1a data.
 
     Receive all L0 data file. Based on appId, it
@@ -22,6 +21,8 @@ def swe_l1a(packets):
     ----------
     packets: list
         Decom data list that contains all appIds
+    cdf_filepath: str
+        Folder path of where to write CDF file
 
     Returns
     -------
@@ -47,11 +48,10 @@ def swe_l1a(packets):
             sorted_packets = sort_by_time(grouped_data[apid], "SHCOARSE")
             data = create_dataset(packets=sorted_packets)
 
-        current_dir = Path(__file__).parent
         # write data to CDF
         return write_cdf(
             data,
             mode=f"{data['APP_MODE'].data[0]}" if apid == SWEAPID.SWE_APP_HK else "",
             description=filename_descriptors.get(apid),
-            directory=current_dir,
+            directory=cdf_filepath,
         )

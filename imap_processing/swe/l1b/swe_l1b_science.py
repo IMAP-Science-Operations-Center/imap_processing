@@ -45,7 +45,8 @@ def read_lookup_table(table_index_value: int):
     table_index_value : int
         ESA table index number
     """
-    lookup_table_filepath = f"{imap_module_directory}/swe/l1b/swe_esa_lookup_table.csv"
+    # This is equivalent of os.path.join in Path
+    lookup_table_filepath = imap_module_directory / "swe/l1b/swe_esa_lookup_table.csv"
     lookup_table = pd.read_csv(
         lookup_table_filepath,
         index_col="e_step",
@@ -53,18 +54,17 @@ def read_lookup_table(table_index_value: int):
 
     if table_index_value == 0:
         return lookup_table.loc[lookup_table["table_index"] == 0]
-
-    if table_index_value == 1:
+    elif table_index_value == 1:
         return lookup_table.loc[lookup_table["table_index"] == 1]
-
-    raise ValueError("Error: Invalid table index value")
+    else:
+        raise ValueError("Error: Invalid table index value")
 
 
 def deadtime_correction(counts: np.array, acq_duration: int):
     """Calculate deadtime correction.
 
     Deadtime correction is a technique used in various fields, including
-    nuclear physics,radiation detection, and particle counting, to compensate
+    nuclear physics, radiation detection, and particle counting, to compensate
     for the effects of the time period during which a detector is not able to
     record new events or measurements after detecting a previous event.
     This "deadtime" is essentially the time during which the detector is
@@ -125,7 +125,9 @@ def convert_counts_to_rate(data: np.array, acq_duration: int):
     np.array
         Count rates array in seconds
     """
-    return np.divide(data, acq_duration)
+    # convert milliseconds to seconds
+    acq_duration = acq_duration / 1000.0
+    return data / acq_duration
 
 
 def calculate_calibration_factor(time):
@@ -220,10 +222,10 @@ def populate_full_cycle_data(
 
         # Go through four quarter cycle data packets
         for index in range(4):
-            uncompressed_counts = l1a_data["SCIENCE_DATA"].data[packet_index + index]
+            decompressed_counts = l1a_data["SCIENCE_DATA"].data[packet_index + index]
             # Do deadtime correction
             acq_duration = l1a_data["ACQ_DURATION"].data[packet_index + index]
-            corrected_counts = deadtime_correction(uncompressed_counts, acq_duration)
+            corrected_counts = deadtime_correction(decompressed_counts, acq_duration)
             # Convert counts to rate
             counts_rate = convert_counts_to_rate(corrected_counts, acq_duration)
 
@@ -332,12 +334,17 @@ def filter_full_cycle_data(full_cycle_data_indices: np.array, l1a_data: xr.Datas
 
 
 def swe_l1b_science(l1a_data):
-    """In this function, we cap.
+    """SWE l1b science processing.
 
     Parameters
     ----------
-    l1a_data : xr.dataset
-        L1A data
+    l1a_data : xr.Dataset
+        Input data
+
+    Returns
+    -------
+    xr.Dataset
+        Processed l1b data
     """
     total_packets = len(l1a_data["SCIENCE_DATA"].data)
 
@@ -404,10 +411,10 @@ def swe_l1b_science(l1a_data):
         dims=["Energy"],
         attrs=dataclasses.replace(
             swe_cdf_attrs.int_base,
-            catdesc="Energy",
-            fieldname="Energy",
-            label_axis="Energy",
-            units="keV",
+            catdesc="Energy's index value in lookup table",
+            fieldname="Energy Bins",
+            label_axis="Energy Bins",
+            units="int",
         ).output(),
     )
 
@@ -417,9 +424,9 @@ def swe_l1b_science(l1a_data):
         dims=["Angle"],
         attrs=dataclasses.replace(
             swe_cdf_attrs.int_base,
-            catdesc="Angle",
-            fieldname="Angle",
-            label_axis="Angle",
+            catdesc="Spin Angle",
+            fieldname="Spin Angle",
+            label_axis="Spin Angle",
             units="Degree",
         ).output(),
     )
@@ -430,9 +437,10 @@ def swe_l1b_science(l1a_data):
         dims=["Cycle"],
         attrs=dataclasses.replace(
             swe_cdf_attrs.int_base,
-            catdesc="Quarter Cycle",
+            catdesc="Full cycle data takes 4 spins' data",
             fieldname="Quarter Cycle",
             label_axis="Quarter Cycle",
+            units="int",
         ).output(),
     )
 
@@ -442,10 +450,10 @@ def swe_l1b_science(l1a_data):
         dims=["Rates"],
         attrs=dataclasses.replace(
             swe_cdf_attrs.float_base,
-            catdesc="Rates",
+            catdesc="Counts converted to rates",
             fieldname="Rates",
             label_axis="Rates",
-            units="float",
+            units="Counts/seconds",
         ).output(),
     )
 

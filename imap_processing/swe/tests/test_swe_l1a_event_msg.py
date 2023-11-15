@@ -28,10 +28,10 @@ def test_number_of_packets(decom_test_data):
 def test_swe_event_msg_data(decom_test_data):
     """This test and validate raw data of SWE event message data."""
     # read validation data
-    test_data_path = f"{imap_module_directory}/swe/tests/l0_validation_data"
+    test_data_path = imap_module_directory / "swe/tests/l0_validation_data"
 
     raw_validation_data = pd.read_csv(
-        f"{test_data_path}/idle_export_raw.SWE_EVTMSG_20231004_140149.csv",
+        test_data_path / "idle_export_raw.SWE_EVTMSG_20231004_140149.csv",
         index_col="SHCOARSE",
     )
 

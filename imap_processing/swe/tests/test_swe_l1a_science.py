@@ -4,7 +4,7 @@ import pytest
 
 from imap_processing import imap_module_directory
 from imap_processing.swe.l0 import decom_swe
-from imap_processing.swe.l1a.swe_science import swe_science, uncompress_counts
+from imap_processing.swe.l1a.swe_science import decompressed_counts, swe_science
 
 
 @pytest.fixture(scope="session")
@@ -18,10 +18,14 @@ def decom_test_data():
     # Packet 4 has spin 3's data
     # reorder to match the order of spin in the data
     packet_files = [
-        f"{imap_module_directory}/swe/tests/l0_data/20230927173253_SWE_SCIENCE_packet.bin",
-        f"{imap_module_directory}/swe/tests/l0_data/20230927173308_SWE_SCIENCE_packet.bin",
-        f"{imap_module_directory}/swe/tests/l0_data/20230927173323_SWE_SCIENCE_packet.bin",
-        f"{imap_module_directory}/swe/tests/l0_data/20230927173238_SWE_SCIENCE_packet.bin",
+        imap_module_directory
+        / "swe/tests/l0_data/20230927173253_SWE_SCIENCE_packet.bin",
+        imap_module_directory
+        / "swe/tests/l0_data/20230927173308_SWE_SCIENCE_packet.bin",
+        imap_module_directory
+        / "swe/tests/l0_data/20230927173323_SWE_SCIENCE_packet.bin",
+        imap_module_directory
+        / "swe/tests/l0_data/20230927173238_SWE_SCIENCE_packet.bin",
     ]
     data_list = []
     for packet_file in packet_files:
@@ -35,20 +39,20 @@ def test_number_of_packets(decom_test_data):
     assert len(decom_test_data) == expected_number_of_packets
 
 
-def test_uncompress_algorithm():
-    """Test that we get correct uncompressed counts from the algorithm."""
+def test_decompress_algorithm():
+    """Test that we get correct decompressed counts from the algorithm."""
     expected_value = 24063
     input_count = 230
-    returned_value = uncompress_counts(input_count)
+    returned_value = decompressed_counts(input_count)
     assert expected_value == returned_value
 
 
 def test_swe_raw_science_data(decom_test_data):
     """This test and validate raw and derived data of SWE science data."""
     # read validation data
-    test_data_path = f"{imap_module_directory}/swe/tests/l0_validation_data"
+    test_data_path = imap_module_directory / "swe/tests/l0_validation_data"
     raw_validation_data = pd.read_csv(
-        f"{test_data_path}/idle_export_raw.SWE_SCIENCE_20230927_172708.csv",
+        test_data_path / "idle_export_raw.SWE_SCIENCE_20230927_172708.csv",
         index_col="SHCOARSE",
     )
 
@@ -70,9 +74,9 @@ def test_swe_raw_science_data(decom_test_data):
 def test_swe_derived_science_data(decom_test_data):
     """This test and validate raw and derived data of SWE science data."""
     # read validation data
-    test_data_path = f"{imap_module_directory}/swe/tests/l0_validation_data"
+    test_data_path = imap_module_directory / "swe/tests/l0_validation_data"
     derived_validation_data = pd.read_csv(
-        f"{test_data_path}/idle_export_eu.SWE_SCIENCE_20230927_172708.csv",
+        test_data_path / "idle_export_eu.SWE_SCIENCE_20230927_172708.csv",
         index_col="SHCOARSE",
     )
 
@@ -128,30 +132,30 @@ def test_swe_science_algorithm(decom_test_data):
 
 def test_decompress_counts(decom_test_data):
     """Test decompress counts."""
-    test_data_path = f"{imap_module_directory}/swe/tests/decompressed"
+    test_data_path = imap_module_directory / "swe/tests/decompressed"
     filepaths = [
         "20230927173253_1st_quarter_decompressed.csv",
         "20230927173308_2nd_quarter_decompressed.csv",
         "20230927173323_3rd_quarter_decompressed.csv",
         "20230927173238_4th_quarter_decompressed.csv",
     ]
-    uncompressed_data = swe_science(decom_test_data)
+    decompressed_data = swe_science(decom_test_data)
 
     for index in range(len(filepaths)):
-        instrument_uncompressed_counts = pd.read_csv(
-            f"{test_data_path}/{filepaths[index]}", index_col="Index"
+        instrument_decompressed_counts = pd.read_csv(
+            test_data_path / f"{filepaths[index]}", index_col="Index"
         )
 
         assert (
-            uncompressed_data["QUARTER_CYCLE"].data[index]
+            decompressed_data["QUARTER_CYCLE"].data[index]
             == decom_test_data[index].data["QUARTER_CYCLE"].raw_value
         )
-        sdc_uncompressed_counts = (
-            uncompressed_data["SCIENCE_DATA"].data[index].reshape(180, 7)
+        sdc_decompressed_counts = (
+            decompressed_data["SCIENCE_DATA"].data[index].reshape(180, 7)
         )
 
         for i in range(7):
-            cem_decompressed_counts = instrument_uncompressed_counts[
+            cem_decompressed_counts = instrument_decompressed_counts[
                 f"CEM {i+1}"
             ].values
-            assert np.all(sdc_uncompressed_counts[:, i] == cem_decompressed_counts)
+            assert np.all(sdc_decompressed_counts[:, i] == cem_decompressed_counts)

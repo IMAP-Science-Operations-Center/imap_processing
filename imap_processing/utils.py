@@ -1,17 +1,4 @@
-"""
-Current File contains functions that every instrument can use.
-
-1. sort_by_time function
-    Sorts data packets list by time. It takes packets list
-    and time key as input. Then sorts packets by time key input
-2. group_by_apid function
-    Group packets by apid. It takes packets list as input.
-3. convert_raw_to_eu function
-    Convert raw data to engineering unit. It read conversion
-    table from the given input path and reads current
-    packet name's metadata fields. Then it converts raw data
-    to engineering unit.
-"""
+"""Common functions that every instrument can use."""
 import collections
 
 import numpy as np

@@ -11,8 +11,8 @@ from imap_processing.swe.utils.swe_utils import (
 )
 
 
-def uncompress_counts(cem_count):
-    """Uncompress counts from the CEMs.
+def decompressed_counts(cem_count):
+    """Decompressed counts from the CEMs.
 
     Parameters
     ----------
@@ -22,7 +22,7 @@ def uncompress_counts(cem_count):
     Returns
     -------
     int
-        uncompressed count. Eg. 40959
+        decompressed count. Eg. 40959
     """
     # index is the first four bits of input data
     # multi is the last four bits of input data
@@ -30,8 +30,8 @@ def uncompress_counts(cem_count):
     multi = cem_count % 16
 
     # This is look up table for the index to get
-    # base and step_size to calculate the uncompressed count.
-    uncompress_table = {
+    # base and step_size to calculate the decompressed count.
+    decompress_table = {
         0: {"base": 0, "step_size": 1},
         1: {"base": 16, "step_size": 1},
         2: {"base": 32, "step_size": 2},
@@ -50,15 +50,15 @@ def uncompress_counts(cem_count):
         15: {"base": 33792, "step_size": 2048},
     }
 
-    # uncompression formula from SWE algorithm document CN102D-D0001 and page 16.
+    # decompression formula from SWE algorithm document CN102D-D0001 and page 16.
     # N = base[index] + multi * step_size[index] + (step_size[index] - 1) / 2
     # NOTE: for (step_size[index] - 1) / 2, we only keep the whole number part of
     # the quotient
 
     return (
-        uncompress_table[index]["base"]
-        + (multi * uncompress_table[index]["step_size"])
-        + ((uncompress_table[index]["step_size"] - 1) // 2)
+        decompress_table[index]["base"]
+        + (multi * decompress_table[index]["step_size"])
+        + ((decompress_table[index]["step_size"] - 1) // 2)
     )
 
 
@@ -105,7 +105,7 @@ def swe_science(decom_data):
 
     # We know we can only have 8 bit numbers input, so iterate over all
     # possibilities once up front
-    decompression_table = np.array([uncompress_counts(i) for i in range(256)])
+    decompression_table = np.array([decompressed_counts(i) for i in range(256)])
 
     for data_packet in decom_data:
         # read raw data
@@ -118,7 +118,7 @@ def swe_science(decom_data):
         # convert bytes to numpy array of uint8
         raw_counts = np.frombuffer(byte_data, dtype=np.uint8)
 
-        # Uncompress counts. Uncompressed data is a list of 1260
+        # Uncompress counts. Decompressed data is a list of 1260
         # where 1260 = 180 x 7 CEMs
         # Take the "raw_counts" indices/counts mapping from
         # decompression_table and then reshape the return
@@ -146,10 +146,10 @@ def swe_science(decom_data):
         dims=["Energy"],
         attrs=dataclasses.replace(
             swe_cdf_attrs.int_base,
-            catdesc="Energy",
-            fieldname="Energy",
-            label_axis="Energy",
-            units="keV",
+            catdesc="Energy's index value in the lookup table",
+            fieldname="Energy Bins",
+            label_axis="Energy Bins",
+            units="int",
         ).output(),
     )
 
