@@ -304,7 +304,7 @@ Support data variable names must begin with a letter and can contain numbers and
 
 **********************
 File Naming Convention
-***********************
+**********************
 CDF data files have names of the following form:
 
 mission_instrumentId_dataLevel[_mode][_descriptor]_startTime_vXX-YY.cdf
