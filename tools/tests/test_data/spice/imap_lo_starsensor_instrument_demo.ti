@@ -5,7 +5,7 @@ Insterstellar Mapping and Acceleration Probe - Star Sensor Instrument Kernel
 
    This instrument kernel contains the instrument field of view for the
    IMAP-Lo Star Sensor instrument.
-   
+
 Version and Date
 ========================================================================
 
@@ -23,16 +23,16 @@ Version and Date
                                                      |
                                                      V
                                                 ENTRY DATE
-   Define the instrument kernel for the normal FOV.  
+   Define the instrument kernel for the normal FOV.
    See build_ultra_fov_boundary.m
 
    \begindata
 
    NAIF_BODY_NAME += ( 'IMAP_LO_SS1' )
-   NAIF_BODY_CODE += ( -43031 )  
+   NAIF_BODY_CODE += ( -43031 )
 
    NAIF_BODY_NAME += ( 'IMAP_LO_SS2' )
-   NAIF_BODY_CODE += ( -43032 )  
+   NAIF_BODY_CODE += ( -43032 )
 
 
    INS-43031_FOV_SHAPE 			= 'POLYGON'
@@ -216,22 +216,22 @@ References
    2. 'Kernel Pool Required Reading'
 
    3. 'C-Kernel Required Reading'
-   
+
    4. 'IMAP Mapping.pdf', received from Matina G., JHU/APL
 
-   
+
 Contact Information
 ========================================================================
 
-   Lillian Nguyen, JHU/APL, 
+   Lillian Nguyen, JHU/APL,
    (443)778-5477, Lillian.Nguyen@jhuapl.edu
-   
+
    Scott Turner, JHU/APL
    (443)778-1693, Scott.Turner@jhuapl.edu
-   
-   M. Alexandra Matiella Novak, JHU/APL, 
+
+   M. Alexandra Matiella Novak, JHU/APL,
    (443)802-1417, Alexandra.Matiella.Novak@jhuapl.edu
-   
+
    Wen-Jong Shyong, JHU/APL
    (443)778-8564, Wen-Jong.Shyong@jhuapl.edu
 
@@ -262,24 +262,24 @@ Implementation Notes
          cspice_furnsh ( frame_kernel_name )
 
    This file was created and may be updated with a text editor or word
-   processor.   
-   
-   
+   processor.
+
+
 IMAP Frames
-========================================================================   
+========================================================================
 
    The ID codes -96900 to -96999 have been reserved for the Parker Solar
    Probe dynamics frames kernel [12] and are not utilized in this file.
-   
+
    The following frames are defined in this kernel file:
 
       Frame Name                Relative To              Type      NAIF ID
       =======================   ===================      =======   =======
-      
+
       Spacecraft Frames:
       ------------------
       IMAP_SPACECRAFT           ECLIPJ2000               CK        -43000
-      
+
       Spacecraft ENA Inst Frames:
       -----------------------
       IMAP_ULTRA90              IMAP_SPACECRAFT          FIXED     -43002
@@ -287,14 +287,14 @@ IMAP Frames
       IMAP_HI_90                IMAP_SPACECRAFT          FIXED     -43061
       IMAP_HI_45                IMAP_SPACECRAFT          FIXED     -43062
       IMAP_LO     		IMAP_SPACECRAFT 	 FIXED 	   -43030
-            
+
       MAG Frames (TBD):
       -------------
       ID codes -43200  to -43299
-      
+
       SWE Frames (TBD):
       --------------------
-      ID codes -43300  to -43399 
+      ID codes -43300  to -43399
 
       SWAPI Frames (TBD):
       --------------------
@@ -303,10 +303,10 @@ IMAP Frames
       CODICE Frames (TBD):
       --------------------
       ID codes -43500  to -43599
-                  
+
       HIT Frames (TBD):
       --------------------
-      ID codes -43600  to -43699 
+      ID codes -43600  to -43699
 
       IDEX Frames (TBD):
       --------------------
@@ -315,7 +315,7 @@ IMAP Frames
       GLOWS Frames (TBD):
       --------------------
       ID codes -43800  to -43899
-      
-   
+
+
 
 

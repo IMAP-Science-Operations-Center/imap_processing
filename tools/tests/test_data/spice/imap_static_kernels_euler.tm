@@ -9,7 +9,7 @@ Meta kernel that loads the arecibo configuration kernels into the sarbeta progra
 
 
    KERNELS_TO_LOAD += ( '$IMAP/naif0012.tls'
-                        '$IMAP/imap_frames_demo_euler.tf' 
+                        '$IMAP/imap_frames_demo_euler.tf'
                         '$IMAP/imap_ultra_instrument_demo.ti'
                         '$IMAP/de440.bsp' )
 

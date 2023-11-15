@@ -5,7 +5,7 @@ Insterstellar Mapping and Acceleration Probe Frames Kernel
 
    This frames kernel contains the current set of coordinate frame
    definitions for the IMAP spacecraft, and Ultra Instruments.
-   
+
 Version and Date
 ========================================================================
 
@@ -29,9 +29,9 @@ Version and Date
    \begindata
 
    TEXT_KERNEL_ID += 'IMAP_FRAMES V1.0.0 23-DEC-2022 FK'
-   
+
    NAIF_BODY_NAME += ( 'IMAP' )
-   NAIF_BODY_CODE += ( -43 )   
+   NAIF_BODY_CODE += ( -43 )
 
    \begintext
 
@@ -50,22 +50,22 @@ References
    2. 'Kernel Pool Required Reading'
 
    3. 'C-Kernel Required Reading'
-   
+
    4. 'IMAP Mapping.pdf', received from Matina G., JHU/APL
 
-   
+
 Contact Information
 ========================================================================
 
-   Lillian Nguyen, JHU/APL, 
+   Lillian Nguyen, JHU/APL,
    (443)778-5477, Lillian.Nguyen@jhuapl.edu
-   
+
    Scott Turner, JHU/APL
    (443)778-1693, Scott.Turner@jhuapl.edu
-   
-   M. Alexandra Matiella Novak, JHU/APL, 
+
+   M. Alexandra Matiella Novak, JHU/APL,
    (443)802-1417, Alexandra.Matiella.Novak@jhuapl.edu
-   
+
    Wen-Jong Shyong, JHU/APL
    (443)778-8564, Wen-Jong.Shyong@jhuapl.edu
 
@@ -96,24 +96,24 @@ Implementation Notes
          cspice_furnsh ( frame_kernel_name )
 
    This file was created and may be updated with a text editor or word
-   processor.   
-   
-   
+   processor.
+
+
 IMAP Frames
-========================================================================   
+========================================================================
 
    The ID codes -43000 to -43999 have been reserved for the Interstellar
    Mapping and Acceleration Probe frames kernel.
-   
+
    The following frames are defined in this kernel file:
 
       Frame Name                Relative To              Type      NAIF ID
       =======================   ===================      =======   =======
-      
+
       Spacecraft Frames:
       ------------------
       IMAP_BODY                 ECLIPJ2000               CK        -43000
-      
+
       ULTRA Inst Frames:
       ------------------
       IMAP_ULTRA90              IMAP_BODY                FIXED     -43002
@@ -127,14 +127,14 @@ IMAP Frames
       Lo Inst Frames:
       ---------------
       IMAP_LO                  IMAP_BODY                 FIXED     -43030
-            
+
       MAG Frames (TBD):
       -------------
       ID codes -43200  to -43299
-      
+
       SWE Frames (TBD):
       --------------------
-      ID codes -43300  to -43399 
+      ID codes -43300  to -43399
 
       SWAPI Frames (TBD):
       --------------------
@@ -143,10 +143,10 @@ IMAP Frames
       CODICE Frames (TBD):
       --------------------
       ID codes -43500  to -43599
-                  
+
       HIT Frames (TBD):
       --------------------
-      ID codes -43600  to -43699 
+      ID codes -43600  to -43699
 
       IDEX Frames (TBD):
       --------------------
@@ -156,32 +156,32 @@ IMAP Frames
       --------------------
       ID codes -43800  to -43899
 
-      
-   
+
+
 IMAP Frame Tree
 ========================================================================
 
    The diagram below illustrates the IMAP frame hierarchy:
-   
+
    TBD
-          
+
 
 Spacecraft Frames
 ========================================================================
 
    The orientation of the spacecraft body frame with respect to an inertial
-   frame, for IMAP - ECLIPJ2000, is provided by a C-kernel (see [3] 
+   frame, for IMAP - ECLIPJ2000, is provided by a C-kernel (see [3]
    for details).
-   
+
    This frame specifies the rotating X,Y and pointing Z coordinate body
    frame.
-     
+
    \begindata
 
    FRAME_IMAP_BODY              = -43000
    FRAME_-43000_NAME           = 'IMAP_BODY'
    FRAME_-43000_CLASS          = 4
-   FRAME_-43000_CLASS_ID       = -43000   
+   FRAME_-43000_CLASS_ID       = -43000
    FRAME_-43000_CENTER         = -43
    CK_-43000_SCLK              = -43
    CK_-43000_SPK               = -43
@@ -201,13 +201,13 @@ Spacecraft Frames
 
 Euler / Spinning Frame definition
 ==================================================================
-   
-   Euler definition assuming nominal 4 rpm rotation 
+
+   Euler definition assuming nominal 4 rpm rotation
    (15 seconds per rotation); no nutation.  We rotate 24 degrees
-   per second about the +Z axis in the right-handed sense (CCW if 
+   per second about the +Z axis in the right-handed sense (CCW if
    looking in the -Z direction).
 
-   Initial Freeze epoch is given in TDB.  The value is 
+   Initial Freeze epoch is given in TDB.  The value is
    2025-APR-15/00:00:00.0 in UTC
 
    \begindata
@@ -240,7 +240,7 @@ in UTC
          FRAME_-43006_NAME             = 'IMAP_SUN'
          FRAME_-43006_CLASS            = 5
          FRAME_-43006_CLASS_ID         = -43006
-         FRAME_-43006_CENTER           = -43	
+         FRAME_-43006_CENTER           = -43
          FRAME_-43006_RELATIVE         = 'ECLIPJ2000'
          FRAME_-43006_DEF_STYLE        = 'PARAMETERIZED'
          FRAME_-43006_FAMILY           = 'TWO-VECTOR'
@@ -284,24 +284,24 @@ ULTRA 90
 
    IMAP Ultra 90 Nominal Alignment [ref: IMAP Mapping Doc]
 
-   Ultra 90's boresight is in the IMAP Body X-Y plane and 168 degrees 
-   from the +Y body axis.  We define its frame orientation by a series of 
+   Ultra 90's boresight is in the IMAP Body X-Y plane and 168 degrees
+   from the +Y body axis.  We define its frame orientation by a series of
    Euler Angle rotations.
-   
-   In the body frame, +Z points into the page, X and Y are 90 degrees 
+
+   In the body frame, +Z points into the page, X and Y are 90 degrees
    apart in a plane perpendicular to the Z axis.
 
-   The first rotation is 90 degrees about the body +X direction CW 
+   The first rotation is 90 degrees about the body +X direction CW
    if looking in the -X direction.  This orients the +Z' angle with the
    body frame +Y and +Y' pointing out of the page.  The next rotation
-   is about the +Y' axis by the offset angle 168 degrees and aligns 
+   is about the +Y' axis by the offset angle 168 degrees and aligns
    +Z'' with the instrument boresight and offsets +X' = +X by 168 degrees
    as well.  The Final rotation is about the +Z'', again CW if looking in
    the -Z'' direction, about 90 degrees to put the +Y'' and +X'' in the
-   proper instrument frame orientation. +Y''' points in the opposite 
+   proper instrument frame orientation. +Y''' points in the opposite
    direction of the spacecrafts rotation.
 
-     
+
    \begindata
 
    FRAME_IMAP_ULTRA90          = -43002
@@ -316,27 +316,27 @@ ULTRA 90
    TKFRAME_-43002_RELATIVE     = 'IMAP_BODY'
 
    \begintext
-      
+
 ULTRA 45
 ========================================================================
 
-  
+
    IMAP Ultra 45 Nominal Alignment [ref: IMAP Mapping Doc]
 
-   Ultra 45's boresight is 45 degrees off of the IMAP Body X-Y plane and 
-   -12 degrees from the +Y body axis.  
-   
+   Ultra 45's boresight is 45 degrees off of the IMAP Body X-Y plane and
+   -12 degrees from the +Y body axis.
+
    We define its frame orientation by a series of Euler Angle rotations.
-   
-   In the body frame, +Z points into the page, X and Y are 90 degrees 
+
+   In the body frame, +Z points into the page, X and Y are 90 degrees
    apart in a plane perpendicular to the Z axis.
 
-   The first rotation is 12 degrees about the body +Z direction CW 
+   The first rotation is 12 degrees about the body +Z direction CW
    if looking in the -Z direction.  This orients the +Y' angle 12 degrees
-   off the with the body frame +Y and +X' 12 degrees off of the body frame 
-   +X.  The next rotation is about the +X' axis by the offset 135 degrees 
-   and aligns +Z'' with the instrument boresight. The Final rotation is 
-   about the +Z'', CW if looking in the -Z'' direction, 90 degrees to put 
+   off the with the body frame +Y and +X' 12 degrees off of the body frame
+   +X.  The next rotation is about the +X' axis by the offset 135 degrees
+   and aligns +Z'' with the instrument boresight. The Final rotation is
+   about the +Z'', CW if looking in the -Z'' direction, 90 degrees to put
    the +Y'''' and +X'''' in the proper instrument frame orientation. +Y'''
    points in the opposite direction of the spacecrafts rotation.
 
@@ -353,12 +353,12 @@ ULTRA 45
    TKFRAME_-43003_UNITS        = 'DEGREES'
    TKFRAME_-43003_RELATIVE     = 'IMAP_BODY'
 
-   
+
    \begintext
-   
+
 
 IMAP-Hi90 Frames
-===========================================================================   
+===========================================================================
 
 TBD
 

@@ -22,7 +22,7 @@ Meta kernel that loads the arecibo configuration kernels into the sarbeta progra
                         '$GENERIC/earth_assoc_itrf93.tf'
                         '$GENERIC/naif0012.tls' )
 
-   KERNELS_TO_LOAD += ( '$IMAP/imap_frames_demo_0000.tf' 
+   KERNELS_TO_LOAD += ( '$IMAP/imap_frames_demo_0000.tf'
                         '$IMAP/imap_ultra_instrument_demo.ti'
                         '$IMAP/de440.bsp' )
 
