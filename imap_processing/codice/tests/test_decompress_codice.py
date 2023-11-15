@@ -5,16 +5,17 @@ import lzma
 import pytest
 
 from imap_processing.codice.l0.decompress_codice import decompress
+from imap_processing.codice.utils.codice_utils import CoDICECompression
 
 # Test the algorithms using input value of 234 (picked randomly)
 LZMA_EXAMPLE = lzma.compress((234).to_bytes())
 TEST_DATA = [
-    (234, "no compression", 234),
-    (234, "lossyA", 221184),
-    (234, "lossyB", 1441792),
-    (LZMA_EXAMPLE, "lossless", 234),
-    (LZMA_EXAMPLE, "lossyA+lossless", 221184),
-    (LZMA_EXAMPLE, "lossyB+lossless", 1441792),
+    (234, CoDICECompression.NO_COMPRESSION, 234),
+    (234, CoDICECompression.LOSSY_A, 221184),
+    (234, CoDICECompression.LOSSY_B, 1441792),
+    (LZMA_EXAMPLE, CoDICECompression.LOSSLESS, 234),
+    (LZMA_EXAMPLE, CoDICECompression.LOSSY_A_LOSSLESS, 221184),
+    (LZMA_EXAMPLE, CoDICECompression.LOSSY_B_LOSSLESS, 1441792),
     pytest.param(None, "some_unsupported_algorithm", None, marks=pytest.mark.xfail()),
 ]
 
