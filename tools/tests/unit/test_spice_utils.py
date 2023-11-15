@@ -73,7 +73,7 @@ def test_ls_kernels(kernel_object):
     kernel_object.furnsh()
     result = ls_kernels()
 
-    expected = [str(directory / "de440.bsp"), str(directory / "imap_spk_demo.bsp")]
+    expected = [str(directory / "imap_spk_demo.bsp")]
 
     assert sorted(result) == sorted(expected)
 
