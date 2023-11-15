@@ -108,8 +108,8 @@ class GlobalInstrumentAttrs:
         """
         return GlobalConstantAttrs.GLOBAL_BASE | {
             "Data_version": self.version,
-            "Descriptor": [self.descriptor],
-            "TEXT": [self.text],
+            "Descriptor": self.descriptor,
+            "TEXT": self.text,
         }
 
 
