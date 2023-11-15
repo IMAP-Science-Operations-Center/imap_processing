@@ -138,8 +138,8 @@ def ls_attitude_coverage(custom_pattern=None) -> tuple:
 
         # Historical attitude kernels only
         if custom_pattern is None:
-            pattern = rf"imap_(\d{{4}})_(\d{{3}})_(\d{{4}})_(\
-            \d{{3}})_(\d{{2}})(\.ah\{extension})"
+            pattern = (r'imap_(\d{4})_(\d{3})_(\d{4})_(\d{3})_' +
+                       rf'(\d{{2}})(\.ah\{extension})')
         else:
             pattern = custom_pattern
 
