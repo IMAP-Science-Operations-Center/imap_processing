@@ -71,3 +71,11 @@ def test_bad_header():
     bad_data["test"].derived_value = "test"
     with pytest.raises(KeyError, match="Did not find matching"):
         CcsdsData(bad_data)
+
+
+def test_bytearrays(decom_test_data):
+    for hist_test_data in decom_test_data[0]:
+        assert isinstance(hist_test_data.HISTOGRAM_DATA, bytearray)
+
+    for de_test_data in decom_test_data[1]:
+        assert isinstance(de_test_data.DE_DATA, bytearray)

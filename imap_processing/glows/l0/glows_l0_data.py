@@ -24,30 +24,6 @@ class GlowsL0:
 
 @dataclass
 class HistogramL0(GlowsL0):
-from dataclasses import dataclass, fields
-
-from imap_processing.ccsds.ccsds_data import CcsdsData
-
-
-@dataclass
-class GlowsL0:
-    """Data structure for common values across histogram and direct events data.
-
-    Attributes
-    ----------
-    ground_sw_version: str
-        Ground software version
-    packet_file_name: str
-        File name of the source packet
-    """
-
-    ground_sw_version: str
-    packet_file_name: str
-    ccsds_header: CcsdsData
-
-
-@dataclass
-class HistogramL0(GlowsL0):
     """Data structure for storing GLOWS histogram packet data.
 
     Attributes
@@ -165,6 +141,18 @@ class HistogramL0(GlowsL0):
                     f"Did not find matching attribute in Histogram data class for "
                     f"{key}"
                 )
+        self.__post_init__()
+
+    def __post_init__(self):
+        """Convert HISTOGRAM_DATA attribute from string to bytearray if needed."""
+        if isinstance(self.HISTOGRAM_DATA, str):
+            # Convert string output from space_packet_parser to bytearray
+            self.HISTOGRAM_DATA = bytearray(
+                int(self.HISTOGRAM_DATA, 2).to_bytes(
+                    len(self.HISTOGRAM_DATA) // 8, "big"
+                )
+            )
+            print(f"AFTER POSTINIT: {type(self.HISTOGRAM_DATA)}")
 
 
 @dataclass
@@ -187,7 +175,7 @@ class DirectEventL0(GlowsL0):
     SEC: int
     LEN: int
     SEQ: int
-    DE_DATA: bin
+    DE_DATA: bytearray
 
     def __init__(self, packet, software_version: str, packet_file_name: str):
         """Initialize data class with a packet of direct event data.
@@ -218,6 +206,15 @@ class DirectEventL0(GlowsL0):
                     f"Did not find matching attribute in Direct events data class for "
                     f"{key}"
                 )
+        self.__post_init__()
+
+    def __post_init__(self):
+        """Convert from string to bytearray if DE_DATA is a string of ones and zeros."""
+        if isinstance(self.DE_DATA, str):
+            # Convert string output from space_packet_parser to bytearray
+            self.DE_DATA = bytearray(
+                int(self.DE_DATA, 2).to_bytes(len(self.DE_DATA) // 8, "big")
+            )
 
     def sequence_match_check(self, de_l0):
         """
