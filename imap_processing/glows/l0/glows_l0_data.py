@@ -152,7 +152,6 @@ class HistogramL0(GlowsL0):
                     len(self.HISTOGRAM_DATA) // 8, "big"
                 )
             )
-            print(f"AFTER POSTINIT: {type(self.HISTOGRAM_DATA)}")
 
 
 @dataclass
