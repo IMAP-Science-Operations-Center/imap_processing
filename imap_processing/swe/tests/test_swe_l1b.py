@@ -2,9 +2,11 @@ from pathlib import Path
 
 import pandas as pd
 import pytest
+from cdflib.xarray import cdf_to_xarray
 
 from imap_processing import imap_module_directory
 from imap_processing.swe.l0 import decom_swe
+from imap_processing.swe.l1a.swe_l1a import swe_l1a
 from imap_processing.swe.l1a.swe_science import swe_science
 from imap_processing.swe.l1b.swe_l1b import swe_l1b
 from imap_processing.swe.utils.swe_utils import (
@@ -139,11 +141,18 @@ def test_swe_l1b(decom_test_data):
         assert round(hk_l1b[field].data[1], 5) == round(validation_data[field], 5)
 
 
-def test_cdf_creation(l1a_test_data, tmp_path):
+def test_cdf_creation(decom_test_data, l1a_test_data, tmp_path):
     cdf_filepath = tmp_path / "cdf_files"
     cdf_filepath.mkdir()
     sci_l1b_filepath = swe_l1b(l1a_test_data, cdf_filepath)
 
-    # process hk data to l1b
+    # process hk data to l1a and then pass to l1b
+    grouped_data = group_by_apid(decom_test_data)
+    # writes data to CDF file
+    hk_l1a_filepath = swe_l1a(grouped_data[SWEAPID.SWE_APP_HK], cdf_filepath)
+    # reads data from CDF file and passes to l1b
+    l1a_dataset = cdf_to_xarray(hk_l1a_filepath)
+    hk_l1b_filepath = swe_l1b(l1a_dataset, cdf_filepath)
 
+    assert Path(hk_l1b_filepath).name == "imap_swe_l1b_lveng_hk_20230927_v01.cdf"
     assert Path(sci_l1b_filepath).name == "imap_swe_l1b_sci_20230927_v01.cdf"
