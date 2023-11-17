@@ -1,5 +1,5 @@
 from imap_processing import imap_module_directory
-from imap_processing.cdfutils.cdf_utils import write_cdf
+from imap_processing.cdf.utils import write_cdf
 from imap_processing.swe import swe_cdf_attrs
 from imap_processing.swe.l1b.swe_l1b_science import swe_l1b_science
 from imap_processing.swe.utils.swe_utils import SWEAPID, filename_descriptors

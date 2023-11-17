@@ -4,7 +4,7 @@ import dataclasses
 import numpy as np
 import xarray as xr
 
-from imap_processing.cdfutils.global_base import Epoch
+from imap_processing.cdf.global_attrs import ConstantCoordinates
 from imap_processing.swe import swe_cdf_attrs
 from imap_processing.swe.utils.swe_utils import (
     add_metadata_to_array,
@@ -136,7 +136,7 @@ def swe_science(decom_data):
         metadata_arrays["SHCOARSE"],
         name="Epoch",
         dims=["Epoch"],
-        attrs=Epoch.output(),
+        attrs=ConstantCoordinates.EPOCH,
     )
 
     # TODO: add more descriptive description

@@ -5,7 +5,7 @@ import pandas as pd
 import xarray as xr
 
 from imap_processing import imap_module_directory
-from imap_processing.cdfutils.global_base import Epoch
+from imap_processing.cdf.global_attrs import ConstantCoordinates
 from imap_processing.swe import swe_cdf_attrs
 
 # ESA voltage and index in the final data table
@@ -401,7 +401,7 @@ def swe_l1b_science(l1a_data):
         l1a_data["Epoch"].data[full_cycle_data_indices].reshape(-1, 4)[:, 0],
         name="Epoch",
         dims=["Epoch"],
-        attrs=Epoch.output(),
+        attrs=ConstantCoordinates.EPOCH,
     )
 
     # TODO: add more descriptive description

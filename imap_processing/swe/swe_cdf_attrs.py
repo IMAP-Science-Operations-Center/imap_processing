@@ -88,13 +88,13 @@ Warning: CDF is set for row major array variables and column major is recommende
 """
 
 
-from imap_processing.cdfutils.defaults import GlobalConstants
-from imap_processing.cdfutils.global_base import (
-    DataLevelBase,
-    InstrumentBase,
-    ScienceBase,
-    StringBase,
-    TypeBase,
+from imap_processing.cdf.defaults import GlobalConstants
+from imap_processing.cdf.global_attrs import (
+    AttrBase,
+    GlobalDataLevelAttrs,
+    GlobalInstrumentAttrs,
+    ScienceAttrs,
+    StringAttrs,
 )
 from imap_processing.swe import __version__
 
@@ -110,19 +110,19 @@ swe_description_text = (
     "https://imap.princeton.edu/instruments/swe for more details."
 )
 
-swe_base = InstrumentBase(
+swe_base = GlobalInstrumentAttrs(
     version=__version__, descriptor=descriptor, text=swe_description_text
 )
 
 
-swe_l1a_global_attrs = DataLevelBase(
+swe_l1a_global_attrs = GlobalDataLevelAttrs(
     data_type="L1A->Level-1A",
     logical_source="imap_swe_l1a",
     logical_source_desc="IMAP Mission SWE Instrument Level-1A Data",
     instrument_base=swe_base,
 )
 
-swe_l1b_global_attrs = DataLevelBase(
+swe_l1b_global_attrs = GlobalDataLevelAttrs(
     data_type="L1B->Level-1B",
     logical_source="imap_swe_l1b",
     logical_source_desc="IMAP Mission SWE Instrument Level-1B Data",
@@ -134,7 +134,7 @@ swe_l1b_global_attrs = DataLevelBase(
 # Below int_base and float_base is used to defined attrs
 # for coordinates systems that doesn't have depend_0.
 
-int_base = TypeBase(
+int_base = AttrBase(
     validmin=0,
     validmax=GlobalConstants.INT_MAXVAL,
     format="I12",
@@ -142,7 +142,7 @@ int_base = TypeBase(
     display_type="no_plot",
 )
 
-float_base = TypeBase(
+float_base = AttrBase(
     validmin=0,
     validmax=GlobalConstants.INT_MAXVAL,
     format="I12",
@@ -153,11 +153,11 @@ float_base = TypeBase(
 # Housekeeping mode data array is stored as string.
 # Required attrs for string data type,
 # meaning array with string.
-string_base = StringBase(
+string_base = StringAttrs(
     depend_0="Epoch",
 )
 
-swe_metadata_attrs = ScienceBase(
+swe_metadata_attrs = ScienceAttrs(
     validmin=0,
     validmax=GlobalConstants.INT_MAXVAL,
     display_type="no_plot",
@@ -170,7 +170,7 @@ swe_metadata_attrs = ScienceBase(
 
 # TODO: ask SWE team about valid min and max values of
 # these data
-l1a_science_attrs = ScienceBase(
+l1a_science_attrs = ScienceAttrs(
     validmin=0,
     validmax=GlobalConstants.INT_MAXVAL,
     display_type="spectrogram",
@@ -183,7 +183,7 @@ l1a_science_attrs = ScienceBase(
     variable_purpose="PRIMARY",
 )
 
-l1b_science_attrs = ScienceBase(
+l1b_science_attrs = ScienceAttrs(
     validmin=0,
     validmax=GlobalConstants.INT_MAXVAL,
     display_type="spectrogram",

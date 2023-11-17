@@ -1,6 +1,6 @@
 import logging
 
-from imap_processing.cdfutils.cdf_utils import write_cdf
+from imap_processing.cdf.utils import write_cdf
 from imap_processing.swe.l1a.swe_science import swe_science
 from imap_processing.swe.utils.swe_utils import (
     SWEAPID,
