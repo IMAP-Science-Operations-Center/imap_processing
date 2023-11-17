@@ -414,7 +414,7 @@ def swe_l1b_science(l1a_data):
             catdesc="Energy's index value in lookup table",
             fieldname="Energy Bins",
             label_axis="Energy Bins",
-            units="int",
+            units="",
         ).output(),
     )
 

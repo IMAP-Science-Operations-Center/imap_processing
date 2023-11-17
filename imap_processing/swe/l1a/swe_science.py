@@ -149,7 +149,7 @@ def swe_science(decom_data):
             catdesc="Energy's index value in the lookup table",
             fieldname="Energy Bins",
             label_axis="Energy Bins",
-            units="int",
+            units="",
         ).output(),
     )
 
