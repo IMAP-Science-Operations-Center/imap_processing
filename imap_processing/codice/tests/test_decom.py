@@ -54,6 +54,7 @@ def validation_data():
     return validation_data
 
 
+@pytest.fixture(scope="session")
 def eu_csv_data():
     """Read EU data from a CSV file and filter the DataFrame to keep only columns
     that match the mnemonics_to_process"""
@@ -125,7 +126,10 @@ def eu_csv_data():
         "SNSR_HVPS_T",
     ]
 
-    filename_eu = "idle_export_eu.COD_NHK_20230822_122700.csv"
+    filename_eu = Path(
+        f"{imap_module_directory}/codice/tests/data/idle_export_eu"
+        f".COD_NHK_20230822_122700 2.csv"
+    )
     eu_csv = pd.read_csv(filename_eu)
 
     # Filter the DataFrame to keep only columns that match the mnemonics_to process
@@ -134,15 +138,59 @@ def eu_csv_data():
     return filtered_eu_data
 
 
-def validate_unit_conversion(validation_data, filtered_analog):
+@pytest.fixture(scope="session")
+def read_and_filter_analog_data():
+    """Read and filter analog data from an Excel file.
+
+    Returns
+    -------
+    filtered_analog_data : pandas DataFrame
+        The filtered analog data
+    """
+
+    # TODO: Change the path to the Excel file once the new TEL document is updated
+    excel_file_path = Path(
+        "/Users/gamo6782/Desktop/repos/imap_processing/tools"
+        "/xtce_generation/TLM_COD.xlsx"
+    )
+
+    # Read analog data from an Excel file into a pandas DataFrame
+    analog = pd.read_excel(excel_file_path, sheet_name="AnalogConversions")
+
+    # Filterd analog data to keep only rows with 'packetName' as 'COD_NHK'
+    filtered_analog = analog[analog["packetName"] == "COD_NHK"].copy()
+
+    # List of columns to remove
+    columns_to_remove = [
+        "packetName",
+        "convertAs",
+        "segNumber",
+        "lowValue",
+        "highValue",
+    ]
+
+    # Drop the specified columns
+    filtered_analog.drop(columns=columns_to_remove, inplace=True)
+
+    # Convert all string columns to uppercase
+    # TODO: This will be replaced once the new TEL document is updated
+    filtered_analog = filtered_analog.applymap(
+        lambda x: x.upper() if isinstance(x, str) else x
+    )
+
+    return filtered_analog
+
+
+@pytest.fixture(scope="session")
+def validate_unit_conversion(validation_data, filtered_analog_data):
     """Convert validation data to engineering units using the coefficients from the
-    AnalogConversions packet and compare it with filtered_eu_data.
+    AnalogConversions packet and compare it with filtered_analog_data.
 
     Parameters
     ----------
     validation_data : pandas DataFrame
         The validation data with raw values
-    filtered_analog : pandas DataFrame
+    filtered_analog_data : pandas DataFrame
         The DataFrame containing coefficients for unit conversion
 
     Returns
@@ -155,7 +203,7 @@ def validate_unit_conversion(validation_data, filtered_analog):
     )
 
     for mnemonic in validation_data.columns:
-        matching_row = filtered_analog[filtered_analog["mnemonic"] == mnemonic]
+        matching_row = filtered_analog_data[filtered_analog_data.index == mnemonic]
 
         if not matching_row.empty:
             coefficients = matching_row[
@@ -163,18 +211,20 @@ def validate_unit_conversion(validation_data, filtered_analog):
             ].values[0]
 
             raw_data = validation_data[mnemonic]
-            engineering_unit_data = (
-                coefficients[0]
-                + coefficients[1] * raw_data
-                + coefficients[2] * raw_data**2
-                + coefficients[3] * raw_data**3
-                + coefficients[4] * raw_data**4
-                + coefficients[5] * raw_data**5
-                + coefficients[6] * raw_data**6
-                + coefficients[7] * raw_data**7
-            )
 
-            engineering_data[mnemonic] = engineering_unit_data
+            # Handle NaN values by excluding them from the calculations
+            mask = ~np.isnan(raw_data)
+
+            # Create a polynomial using the coefficients
+            poly = np.polynomial.Polynomial(coefficients)
+
+            # Evaluate the polynomial on the raw data
+            engineering_unit_data = poly(raw_data[mask])
+
+            # Assign the result to the engineering_data DataFrame
+            engineering_data.loc[mask, mnemonic] = engineering_unit_data
+
+            print(f"Converted {mnemonic} to engineering units")
 
     return engineering_data
 
@@ -223,19 +273,41 @@ def test_ways_to_get_data(decom_test_data):
     assert data_value_using_key == data_value_using_list
 
 
-def test_unit_conversion(validation_data, filtered_analog):
-    """Test if unit conversion is correct"""
-    # Call the function to perform unit conversion on the validation data
-    engineering_data = validate_unit_conversion(validation_data, filtered_analog)
+# TODO: Add test for unit conversion of engineering data and eu data
+def test_unit_conversion_coefficients(filtered_analog_data, validation_data):
+    """Test if the coefficients in engineering data match the units in EU data
+    by mnemonics.
 
-    # Assert that both DataFrames have the same shape
-    assert engineering_data.shape == validation_data.shape
+    Parameters
+    ----------
+    filtered_analog_data : pandas DataFrame
+        The DataFrame containing coefficients for unit conversion
+    validation_data : pandas DataFrame
+        The validation data with raw values
+    """
+    # TODO: Call the function to perform unit conversion
+    engineering_data = validate_unit_conversion(validation_data, filtered_analog_data)
 
-    # Define a tolerance for floating-point precision
-    tolerance = 1e-6  # Adjust this tolerance as needed
+    # Ensure that the engineering data has the same mnemonics as filtered_eu_data
+    assert set(engineering_data.columns) == set(filtered_analog_data.index)
 
-    # Loop through each column and each row to compare the values
-    for column in validation_data.columns:
-        for index, row in validation_data.iterrows():
-            # Compare each value in the column
-            assert abs(engineering_data.at[index, column] - row[column]) < tolerance
+    # Check if coefficients in engineering data match the units in EU data by mnemonics
+    for mnemonic in engineering_data.columns:
+        # Get the corresponding row in filtered_analog_data based on the mnemonic
+        matching_row = filtered_analog_data[filtered_analog_data.index == mnemonic]
+
+        # Check if the row is not empty
+        assert not matching_row.empty
+
+        # Extract coefficients from filtered_analog_data
+        coefficients_from_filtered_analog = matching_row[
+            ["c0", "c1", "c2", "c3", "c4", "c5", "c6", "c7"]
+        ].values[0]
+
+        # Extract coefficients from engineering_data
+        coefficients_from_engineering_data = engineering_data.loc[:, mnemonic].values
+
+        # Check if the coefficients match
+        np.testing.assert_array_almost_equal(
+            coefficients_from_engineering_data, coefficients_from_filtered_analog
+        )
