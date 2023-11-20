@@ -1,6 +1,7 @@
 """Tests the decompression algorithms for CoDICE science data"""
 
 import lzma
+from enum import IntEnum
 
 import pytest
 
@@ -23,8 +24,18 @@ TEST_DATA = [
 @pytest.mark.parametrize(
     ("compressed_value", "algorithm", "expected_result"), TEST_DATA
 )
-def test_decompress(compressed_value, algorithm, expected_result):
-    """Tests the ``decompress`` function"""
+def test_decompress(compressed_value: int, algorithm: IntEnum, expected_result: int):
+    """Tests the ``decompress`` function
+
+    Parameters
+    ----------
+    compressed_value : int
+        The compressed value to test decompression on
+    algorithm : IntEnum
+        The algorithm to use in decompression
+    expected_result : int
+        The expected, decompressed value
+    """
 
     decompressed_value = decompress(compressed_value, algorithm)
     assert decompressed_value == expected_result

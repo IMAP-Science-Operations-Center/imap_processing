@@ -24,12 +24,13 @@ References
 """
 
 import lzma
+from enum import IntEnum
 
 from imap_processing.codice.utils.codice_utils import CoDICECompression
 from imap_processing.codice.utils.constants import LOSSY_A_TABLE, LOSSY_B_TABLE
 
 
-def _apply_lossy_a(compressed_value):
+def _apply_lossy_a(compressed_value: int):
     """Apply 8-bit to 32-bit Lossy A decompression algorithm.
 
     The Lossy A algorithm uses a lookup table imported into this module.
@@ -47,7 +48,7 @@ def _apply_lossy_a(compressed_value):
     return LOSSY_A_TABLE[compressed_value]
 
 
-def _apply_lossy_b(compressed_value):
+def _apply_lossy_b(compressed_value: int):
     """Apply 8-bit to 32-bit Lossy B decompression algorithm.
 
     The Lossy B algorithm uses a lookup table imported into this module.
@@ -65,7 +66,7 @@ def _apply_lossy_b(compressed_value):
     return LOSSY_B_TABLE[compressed_value]
 
 
-def _apply_lzma_lossless(compressed_value):
+def _apply_lzma_lossless(compressed_value: int):
     """Apply LZMA lossless decompression algorithm.
 
     Parameters
@@ -84,7 +85,7 @@ def _apply_lzma_lossless(compressed_value):
     return decompressed_value
 
 
-def decompress(compressed_value, algorithm):
+def decompress(compressed_value: int, algorithm: IntEnum):
     """Decompress the value.
 
     Apply the appropriate decompression algorithm(s) based on the value
@@ -95,9 +96,9 @@ def decompress(compressed_value, algorithm):
     ----------
     compressed_value : int
         The 8-bit compressed value to decompress
-    algorithm : str
-        The algorithm to apply. Supported algorithms include 'no compression',
-        'lossyA', 'lossyB', 'lossless', 'lossyA+lossless', and 'lossyB+lossless'
+    algorithm : IntEnum
+        The algorithm to apply. Supported algorithms are provided in the
+        ``codice_utils.CoDICECompression`` class
 
     Returns
     -------
