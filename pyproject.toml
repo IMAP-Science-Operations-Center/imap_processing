@@ -76,6 +76,7 @@ ignore = ["D100", "D104", "PLR2004", "S101"]
 # TODO: Too many statements, this could be refactored and removed
 # by creating a loop over a predefined mapping
 "imap_processing/idex/idex_packet_parser.py" = ["PLR0915"]
+"imap_processing/write_to_cdf.py" = ["PLR0913"]
 
 [tool.ruff.pydocstyle]
 convention = "numpy"
