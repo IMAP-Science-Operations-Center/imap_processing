@@ -60,7 +60,7 @@ def read_lookup_table(table_index_value: int):
         raise ValueError("Error: Invalid table index value")
 
 
-def deadtime_correction(counts: np.array, acq_duration: int):
+def deadtime_correction(counts: np.ndarray, acq_duration: int):
     """Calculate deadtime correction.
 
     Deadtime correction is a technique used in various fields, including
@@ -86,14 +86,14 @@ def deadtime_correction(counts: np.array, acq_duration: int):
 
     Parameters
     ----------
-    counts : np.array
+    counts : numpy.ndarray
         counts data before deadtime corrections
     acq_duration : int
         This is ACQ_DURATION from science packet
 
     Returns
     -------
-    np.array
+    numpy.ndarray
         Corrected counts
     """
     # deadtime will be constant once it's defined.
@@ -107,7 +107,7 @@ def deadtime_correction(counts: np.array, acq_duration: int):
     return corrected_count
 
 
-def convert_counts_to_rate(data: np.array, acq_duration: int):
+def convert_counts_to_rate(data: np.ndarray, acq_duration: int):
     """Convert counts to rate using sampling time.
 
     acq_duration is ACQ_DURATION from science packet.
@@ -115,14 +115,14 @@ def convert_counts_to_rate(data: np.array, acq_duration: int):
 
     Parameters
     ----------
-    data : np.array
+    data : numpy.ndarray
         counts data
     acq_duration : int
         Acquisition duration. acq_duration is in millieseconds
 
     Returns
     -------
-    np.array
+    numpy.ndarray
         Count rates array in seconds
     """
     # convert milliseconds to seconds
@@ -139,28 +139,28 @@ def calculate_calibration_factor(time):
     3. Linear interpolate between those two nearest time and get factor for input time.
 
     What this function is doing:
-    1. **Reading Calibration Data**: The function first reads a file containing
-        calibration data for electron measurements over time. This data helps
-        adjust or correct the measurements based on changes in the instrument's
-        sensitivity.
+    | 1. **Reading Calibration Data**: The function first reads a file containing
+    |     calibration data for electron measurements over time. This data helps
+    |     adjust or correct the measurements based on changes in the instrument's
+    |     sensitivity.
 
-    2. **Interpolating Calibration Factors**: Imagine you have several points on
-        a graph, and you want to estimate values between those points. In our case,
-        these points represent calibration measurements taken at different times.
-        The function figures out which two calibration points are closest in time
-        to the specific measurement time you're interested in.
+    | 2. **Interpolating Calibration Factors**: Imagine you have several points on
+    |     a graph, and you want to estimate values between those points. In our case,
+    |     these points represent calibration measurements taken at different times.
+    |     The function figures out which two calibration points are closest in time
+    |     to the specific measurement time you're interested in.
 
-    3. **Calculating Factors**: Once it finds these two nearby calibration points,
-        the function calculates a correction factor by drawing a straight line
-        between them (linear interpolation). This factor helps adjust the measurement
-        to make it more accurate, considering how the instrument's sensitivity changed
-        between those two calibration points.
+    | 3. **Calculating Factors**: Once it finds these two nearby calibration points,
+    |     the function calculates a correction factor by drawing a straight line
+    |     between them (linear interpolation). This factor helps adjust the measurement
+    |     to make it more accurate, considering how the instrument's sensitivity changed
+    |     between those two calibration points.
 
-    4. **Returning the Correction Factor**: Finally, the function returns this
-        correction factor. You can then use this factor to adjust or calibrate your
-        measurements at the specific time you're interested in. This ensures that
-        your measurements are as accurate as possible, taking into account the
-        instrument's changing sensitivity over time.
+    | 4. **Returning the Correction Factor**: Finally, the function returns this
+    |     correction factor. You can then use this factor to adjust or calibrate your
+    |     measurements at the specific time you're interested in. This ensures that
+    |     your measurements are as accurate as possible, taking into account the
+    |     instrument's changing sensitivity over time.
     """
     # NOTE: waiting on fake calibration data to write this.
     pass
@@ -175,8 +175,8 @@ def apply_in_flight_calibration(data):
 
     Parameters
     ----------
-    data : _type_
-        _description_
+    data : numpy.ndarray
+        full cycle data array
     """
     # calculate calibration factor
     # Apply to all data
@@ -190,7 +190,7 @@ def populate_full_cycle_data(
 
     Parameters
     ----------
-    l1a_data : xr.Dataset
+    l1a_data : xarray.Dataset
         L1a data with full cycle data only
     packet_index : int
         Index of current packet in the whole packet list.
@@ -199,7 +199,7 @@ def populate_full_cycle_data(
 
     Returns
     -------
-    np.array
+    numpy.ndarray
         Array with full cycle data populated
     """
     esa_lookup_table = read_lookup_table(esa_table_num)
@@ -255,19 +255,19 @@ def populate_full_cycle_data(
     return full_cycle_data
 
 
-def find_cycle_starts(cycles: np.array):
+def find_cycle_starts(cycles: np.ndarray):
     """Find index of where new cycle started.
 
     Brandon Stone helped developed this algorithm.
 
     Parameters
     ----------
-    cycles : np.array
+    cycles : numpy.ndarray
         Array that contains quarter cycle information.
 
     Returns
     -------
-    np.array
+    numpy.ndarray
         Array of indices of start cycle
     """
     if cycles.size < 4:
@@ -289,17 +289,17 @@ def find_cycle_starts(cycles: np.array):
     return np.where(valid)[0]
 
 
-def get_indices_of_full_cycles(quarter_cycle: np.array):
+def get_indices_of_full_cycles(quarter_cycle: np.ndarray):
     """Get indices of full cycles.
 
     Parameters
     ----------
-    quarter_cycle : np.array
+    quarter_cycle : numpy.ndarray
         Array that contains quarter cycles informations.
 
     Returns
     -------
-    np.array
+    numpy.ndarray
         1D array with indices of full cycle data.
     """
     indices_of_start = find_cycle_starts(quarter_cycle)
@@ -313,19 +313,19 @@ def get_indices_of_full_cycles(quarter_cycle: np.array):
     return full_cycles_indices.reshape(-1)
 
 
-def filter_full_cycle_data(full_cycle_data_indices: np.array, l1a_data: xr.Dataset):
+def filter_full_cycle_data(full_cycle_data_indices: np.ndarray, l1a_data: xr.Dataset):
     """Filter metadata and science of packets that makes full cycles.
 
     Parameters
     ----------
-    full_cycle_data_indices : np.array
+    full_cycle_data_indices : numpy.ndarray
         Array with indices of full cycles.
-    l1a_data : xr.dataset
+    l1a_data : xarray.Dataset
         L1A dataset
 
     Returns
     -------
-    xr.dataset
+    xarray.Dataset
         L1A dataset with filtered metadata.
     """
     for key, value in l1a_data.items():
@@ -338,12 +338,12 @@ def swe_l1b_science(l1a_data):
 
     Parameters
     ----------
-    l1a_data : xr.Dataset
+    l1a_data : xarray.Dataset
         Input data
 
     Returns
     -------
-    xr.Dataset
+    xarray.Dataset
         Processed l1b data
     """
     total_packets = len(l1a_data["SCIENCE_DATA"].data)

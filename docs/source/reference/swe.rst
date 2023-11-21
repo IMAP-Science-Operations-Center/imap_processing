@@ -27,7 +27,7 @@ The L1A code to unpack electron counts can be found below.
     l1a.swe_l1a
     l1a.swe_science
 
-The L1A code to process electron counts to rates and then
+The L1B code to process electron counts to rates and then
 organize data by voltage step and spin angle can be
 found below.
 
