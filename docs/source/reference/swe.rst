@@ -16,3 +16,25 @@ The L0 code to decommutate the CCSDS packet data can be found below.
     :recursive:
 
     l0.decom_swe
+
+The L1A code to unpack electron counts can be found below.
+
+.. autosummary::
+    :toctree: generated/
+    :template: autosummary.rst
+    :recursive:
+
+    l1a.swe_l1a
+    l1a.swe_science
+
+The L1B code to process electron counts to rates and then
+organize data by voltage step and spin angle can be
+found below.
+
+.. autosummary::
+    :toctree: generated/
+    :template: autosummary.rst
+    :recursive:
+
+    l1b.swe_l1b
+    l1b.swe_l1b_science

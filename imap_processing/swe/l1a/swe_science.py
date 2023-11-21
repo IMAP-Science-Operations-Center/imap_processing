@@ -78,9 +78,10 @@ def swe_science(decom_data):
     Each L1A data from each packet will have this shape: 15 rows, 12 columns,
     and each cell in 15 x 12 table contains 7 element array.
     These dimension maps to this:
-        15 rows --> 15 seconds
-        12 column --> 12 energy steps in each second
-        7 element --> 7 CEMs counts
+
+    |     15 rows --> 15 seconds
+    |     12 column --> 12 energy steps in each second
+    |     7 element --> 7 CEMs counts
 
     In L1A, we don't do anything besides read raw data, uncompress counts data and
     store data in 15 x 12 x 7 array.

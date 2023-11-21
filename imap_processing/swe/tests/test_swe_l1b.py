@@ -62,8 +62,8 @@ def test_swe_l1b(decom_test_data):
 
     Parameters
     ----------
-    decom_test_data : _type_
-        _description_
+    decom_test_data : list
+        List of packets
     """
     # SWE_APP_HK = 1330
     # SWE_SCIENCE = 1344

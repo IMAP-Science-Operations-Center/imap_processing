@@ -1,3 +1,5 @@
+import xarray as xr
+
 from imap_processing import imap_module_directory
 from imap_processing.cdf.utils import write_cdf
 from imap_processing.swe import swe_cdf_attrs
@@ -6,19 +8,19 @@ from imap_processing.swe.utils.swe_utils import SWEAPID, filename_descriptors
 from imap_processing.utils import convert_raw_to_eu
 
 
-def swe_l1b(l1a_dataset, cdf_filepath):
+def swe_l1b(l1a_dataset: xr.Dataset, cdf_filepath: str):
     """Process data to L1B.
 
     Parameters
     ----------
-    l1a_dataset : xr.dataset
+    l1a_dataset : xarray.Dataset
         l1a data input
     cdf_filepath: str
         Folder path of where to write CDF file
 
     Returns
     -------
-    Path
+    str
         Path to the L1B file.
 
     Raises
