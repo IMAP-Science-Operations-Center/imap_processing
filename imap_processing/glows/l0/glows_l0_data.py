@@ -1,4 +1,4 @@
-from dataclasses import dataclass, fields
+from dataclasses import dataclass
 
 from imap_processing.ccsds.ccsds_data import CcsdsData
 
@@ -112,37 +112,6 @@ class HistogramL0(GlowsL0):
     EVENTS: int
     HISTOGRAM_DATA: bytearray
 
-    def __init__(self, packet, software_version: str, packet_file_name: str):
-        """Initialize data class with a packet of histogram data.
-
-        Parameters
-        ----------
-        packet
-            Packet generated from space_packet_parser. Should be a type NamedTuple
-            with header and data fields.
-        software_version: str
-            The version of the ground software being used
-        packet_file_name: str
-            The filename of the packet
-        """
-        super().__init__(software_version, packet_file_name, CcsdsData(packet.header))
-
-        attributes = [field.name for field in fields(self)]
-
-        # For each item in packet, assign it to the matching attribute in the class.
-        for key, item in packet.data.items():
-            value = (
-                item.derived_value if item.derived_value is not None else item.raw_value
-            )
-            if key in attributes:
-                setattr(self, key, value)
-            else:
-                raise KeyError(
-                    f"Did not find matching attribute in Histogram data class for "
-                    f"{key}"
-                )
-        self.__post_init__()
-
     def __post_init__(self):
         """Convert HISTOGRAM_DATA attribute from string to bytearray if needed."""
         if isinstance(self.HISTOGRAM_DATA, str):
@@ -175,37 +144,6 @@ class DirectEventL0(GlowsL0):
     LEN: int
     SEQ: int
     DE_DATA: bytearray
-
-    def __init__(self, packet, software_version: str, packet_file_name: str):
-        """Initialize data class with a packet of direct event data.
-
-        Parameters
-        ----------
-        packet
-            Packet generated from space_packet_parser. Should be a type NamedTuple
-            with header and data fields.
-        software_version: str
-            The version of the ground software being used
-        packet_file_name: str
-            The filename of the packet
-        """
-        super().__init__(software_version, packet_file_name, CcsdsData(packet.header))
-
-        attributes = [field.name for field in fields(self)]
-
-        # For each item in packet, assign it to the matching attribute in the class.
-        for key, item in packet.data.items():
-            value = (
-                item.derived_value if item.derived_value is not None else item.raw_value
-            )
-            if key in attributes:
-                setattr(self, key, value)
-            else:
-                raise KeyError(
-                    f"Did not find matching attribute in Direct events data class for "
-                    f"{key}"
-                )
-        self.__post_init__()
 
     def __post_init__(self):
         """Convert from string to bytearray if DE_DATA is a string of ones and zeros."""
