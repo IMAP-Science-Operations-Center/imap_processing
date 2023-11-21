@@ -27,7 +27,7 @@ The L1A code to process unpack counts per ESA step can be found below.
     l1a.swe_l1a
     l1a.swe_science
 
-The L1A code to process counts to rates and organize by voltage step and spin angle can be found below.
+The L1A code to process counts to rates and then organize data by voltage step and spin angle can be found below.
 
 .. autosummary::
     :toctree: generated/
