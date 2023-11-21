@@ -1,0 +1,1241 @@
+<?xml version='1.0' encoding='utf-8'?>
+<xtce:SpaceSystem xmlns:xtce="http://www.omg.org/space/xtce" name="P_ILO_SPIN">
+	<xtce:Header date="2023-11" version="1.0" author="IMAP SDC" />
+	<xtce:TelemetryMetaData>
+		<xtce:ParameterTypeSet>
+			<xtce:IntegerParameterType name="UINT1" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT2" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="2" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT3" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="3" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT4" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="4" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT5" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="5" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT11" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="11" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT12" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT14" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="14" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT16" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="16" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT20" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="20" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT32" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="32" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+		</xtce:ParameterTypeSet>
+		<xtce:ParameterSet>
+			<xtce:Parameter name="VERSION" parameterTypeRef="UINT3">
+				<xtce:LongDescription>CCSDS Packet Version Number (always 0)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="TYPE" parameterTypeRef="UINT1">
+				<xtce:LongDescription>CCSDS Packet Type Indicator (0=telemetry)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SEC_HDR_FLG" parameterTypeRef="UINT1">
+				<xtce:LongDescription>CCSDS Packet Secondary Header Flag (always 1)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PKT_APID" parameterTypeRef="UINT11">
+				<xtce:LongDescription>CCSDS Packet Application Process ID</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SEQ_FLGS" parameterTypeRef="UINT2">
+				<xtce:LongDescription>CCSDS Packet Grouping Flags (3=not part of group)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SRC_SEQ_CTR" parameterTypeRef="UINT14">
+				<xtce:LongDescription>CCSDS Packet Sequence Count (increments with each new packet)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PKT_LEN" parameterTypeRef="UINT16">
+				<xtce:LongDescription>CCSDS Packet Length (number of bytes after Packet length minus 1)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SHCOARSE" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>CCSDS Secondary Header MET</xtce:ShortDescription>
+				<xtce:LongDescription>CCSDS Secondary Header MET</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="NUM_COMPLETED" parameterTypeRef="UINT5">
+				<xtce:ShortDescription>Number of spins completed</xtce:ShortDescription>
+				<xtce:LongDescription>Number of spins completed</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SPARE1" parameterTypeRef="UINT3">
+				<xtce:ShortDescription>Spare for alignment</xtce:ShortDescription>
+				<xtce:LongDescription>Spare for alignment</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="ACQ_END_SEC" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Acquisition end whole seconds</xtce:ShortDescription>
+				<xtce:LongDescription>Acquisition end whole seconds</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="ACQ_END_SUBSEC" parameterTypeRef="UINT20">
+				<xtce:ShortDescription>Acquisition end subseconds</xtce:ShortDescription>
+				<xtce:LongDescription>Acquisition end subseconds</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SPARE2" parameterTypeRef="UINT4">
+				<xtce:ShortDescription>Spare for alignment</xtce:ShortDescription>
+				<xtce:LongDescription>Spare for alignment</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SPIN_SECOND_00" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Spin Start Whole Seconds, index 0</xtce:ShortDescription>
+				<xtce:LongDescription>Spin Start Whole Seconds, index 0</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SPIN_SUBSEC_00" parameterTypeRef="UINT20">
+				<xtce:ShortDescription>Spin Start Sub Seconds, index 0</xtce:ShortDescription>
+				<xtce:LongDescription>Spin Start Sub Seconds, index 0</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="ESA_P_DAC_00" parameterTypeRef="UINT12">
+				<xtce:ShortDescription>ESA_P DAC, index 0</xtce:ShortDescription>
+				<xtce:LongDescription>ESA_P DAC, index 0</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="ESA_N_DAC_00" parameterTypeRef="UINT12">
+				<xtce:ShortDescription>ESA_N DAC, index 0</xtce:ShortDescription>
+				<xtce:LongDescription>ESA_N DAC, index 0</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="VAL_PERIOD_00" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Valid Spin Period, index 0</xtce:ShortDescription>
+				<xtce:LongDescription>Valid Spin Period, index 0</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="VAL_SPIN_00" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Valid Spin Phase, index 0</xtce:ShortDescription>
+				<xtce:LongDescription>Valid Spin Phase, index 0</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SOURCE_00" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Spin Period Source, index 0</xtce:ShortDescription>
+				<xtce:LongDescription>Spin Period Source, index 0</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="RESERVED_00" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Reserved, index 0</xtce:ShortDescription>
+				<xtce:LongDescription>Reserved, index 0</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SPIN_SECOND_01" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Spin Start Whole Seconds, index 1</xtce:ShortDescription>
+				<xtce:LongDescription>Spin Start Whole Seconds, index 1</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SPIN_SUBSEC_01" parameterTypeRef="UINT20">
+				<xtce:ShortDescription>Spin Start Sub Seconds, index 1</xtce:ShortDescription>
+				<xtce:LongDescription>Spin Start Sub Seconds, index 1</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="ESA_P_DAC_01" parameterTypeRef="UINT12">
+				<xtce:ShortDescription>ESA_P DAC, index 1</xtce:ShortDescription>
+				<xtce:LongDescription>ESA_P DAC, index 1</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="ESA_N_DAC_01" parameterTypeRef="UINT12">
+				<xtce:ShortDescription>ESA_N DAC, index 1</xtce:ShortDescription>
+				<xtce:LongDescription>ESA_N DAC, index 1</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="VAL_PERIOD_01" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Valid Spin Period, index 1</xtce:ShortDescription>
+				<xtce:LongDescription>Valid Spin Period, index 1</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="VAL_SPIN_01" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Valid Spin Phase, index 1</xtce:ShortDescription>
+				<xtce:LongDescription>Valid Spin Phase, index 1</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SOURCE_01" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Spin Period Source, index 1</xtce:ShortDescription>
+				<xtce:LongDescription>Spin Period Source, index 1</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="RESERVED_01" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Reserved, index 1</xtce:ShortDescription>
+				<xtce:LongDescription>Reserved, index 1</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SPIN_SECOND_02" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Spin Start Whole Seconds, index 2</xtce:ShortDescription>
+				<xtce:LongDescription>Spin Start Whole Seconds, index 2</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SPIN_SUBSEC_02" parameterTypeRef="UINT20">
+				<xtce:ShortDescription>Spin Start Sub Seconds, index 2</xtce:ShortDescription>
+				<xtce:LongDescription>Spin Start Sub Seconds, index 2</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="ESA_P_DAC_02" parameterTypeRef="UINT12">
+				<xtce:ShortDescription>ESA_P DAC, index 2</xtce:ShortDescription>
+				<xtce:LongDescription>ESA_P DAC, index 2</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="ESA_N_DAC_02" parameterTypeRef="UINT12">
+				<xtce:ShortDescription>ESA_N DAC, index 2</xtce:ShortDescription>
+				<xtce:LongDescription>ESA_N DAC, index 2</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="VAL_PERIOD_02" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Valid Spin Period, index 2</xtce:ShortDescription>
+				<xtce:LongDescription>Valid Spin Period, index 2</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="VAL_SPIN_02" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Valid Spin Phase, index 2</xtce:ShortDescription>
+				<xtce:LongDescription>Valid Spin Phase, index 2</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SOURCE_02" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Spin Period Source, index 2</xtce:ShortDescription>
+				<xtce:LongDescription>Spin Period Source, index 2</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="RESERVED_02" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Reserved, index 2</xtce:ShortDescription>
+				<xtce:LongDescription>Reserved, index 2</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SPIN_SECOND_03" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Spin Start Whole Seconds, index 3</xtce:ShortDescription>
+				<xtce:LongDescription>Spin Start Whole Seconds, index 3</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SPIN_SUBSEC_03" parameterTypeRef="UINT20">
+				<xtce:ShortDescription>Spin Start Sub Seconds, index 3</xtce:ShortDescription>
+				<xtce:LongDescription>Spin Start Sub Seconds, index 3</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="ESA_P_DAC_03" parameterTypeRef="UINT12">
+				<xtce:ShortDescription>ESA_P DAC, index 3</xtce:ShortDescription>
+				<xtce:LongDescription>ESA_P DAC, index 3</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="ESA_N_DAC_03" parameterTypeRef="UINT12">
+				<xtce:ShortDescription>ESA_N DAC, index 3</xtce:ShortDescription>
+				<xtce:LongDescription>ESA_N DAC, index 3</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="VAL_PERIOD_03" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Valid Spin Period, index 3</xtce:ShortDescription>
+				<xtce:LongDescription>Valid Spin Period, index 3</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="VAL_SPIN_03" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Valid Spin Phase, index 3</xtce:ShortDescription>
+				<xtce:LongDescription>Valid Spin Phase, index 3</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SOURCE_03" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Spin Period Source, index 3</xtce:ShortDescription>
+				<xtce:LongDescription>Spin Period Source, index 3</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="RESERVED_03" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Reserved, index 3</xtce:ShortDescription>
+				<xtce:LongDescription>Reserved, index 3</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SPIN_SECOND_04" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Spin Start Whole Seconds, index 4</xtce:ShortDescription>
+				<xtce:LongDescription>Spin Start Whole Seconds, index 4</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SPIN_SUBSEC_04" parameterTypeRef="UINT20">
+				<xtce:ShortDescription>Spin Start Sub Seconds, index 4</xtce:ShortDescription>
+				<xtce:LongDescription>Spin Start Sub Seconds, index 4</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="ESA_P_DAC_04" parameterTypeRef="UINT12">
+				<xtce:ShortDescription>ESA_P DAC, index 4</xtce:ShortDescription>
+				<xtce:LongDescription>ESA_P DAC, index 4</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="ESA_N_DAC_04" parameterTypeRef="UINT12">
+				<xtce:ShortDescription>ESA_N DAC, index 4</xtce:ShortDescription>
+				<xtce:LongDescription>ESA_N DAC, index 4</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="VAL_PERIOD_04" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Valid Spin Period, index 4</xtce:ShortDescription>
+				<xtce:LongDescription>Valid Spin Period, index 4</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="VAL_SPIN_04" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Valid Spin Phase, index 4</xtce:ShortDescription>
+				<xtce:LongDescription>Valid Spin Phase, index 4</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SOURCE_04" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Spin Period Source, index 4</xtce:ShortDescription>
+				<xtce:LongDescription>Spin Period Source, index 4</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="RESERVED_04" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Reserved, index 4</xtce:ShortDescription>
+				<xtce:LongDescription>Reserved, index 4</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SPIN_SECOND_05" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Spin Start Whole Seconds, index 5</xtce:ShortDescription>
+				<xtce:LongDescription>Spin Start Whole Seconds, index 5</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SPIN_SUBSEC_05" parameterTypeRef="UINT20">
+				<xtce:ShortDescription>Spin Start Sub Seconds, index 5</xtce:ShortDescription>
+				<xtce:LongDescription>Spin Start Sub Seconds, index 5</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="ESA_P_DAC_05" parameterTypeRef="UINT12">
+				<xtce:ShortDescription>ESA_P DAC, index 5</xtce:ShortDescription>
+				<xtce:LongDescription>ESA_P DAC, index 5</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="ESA_N_DAC_05" parameterTypeRef="UINT12">
+				<xtce:ShortDescription>ESA_N DAC, index 5</xtce:ShortDescription>
+				<xtce:LongDescription>ESA_N DAC, index 5</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="VAL_PERIOD_05" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Valid Spin Period, index 5</xtce:ShortDescription>
+				<xtce:LongDescription>Valid Spin Period, index 5</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="VAL_SPIN_05" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Valid Spin Phase, index 5</xtce:ShortDescription>
+				<xtce:LongDescription>Valid Spin Phase, index 5</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SOURCE_05" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Spin Period Source, index 5</xtce:ShortDescription>
+				<xtce:LongDescription>Spin Period Source, index 5</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="RESERVED_05" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Reserved, index 5</xtce:ShortDescription>
+				<xtce:LongDescription>Reserved, index 5</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SPIN_SECOND_06" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Spin Start Whole Seconds, index 6</xtce:ShortDescription>
+				<xtce:LongDescription>Spin Start Whole Seconds, index 6</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SPIN_SUBSEC_06" parameterTypeRef="UINT20">
+				<xtce:ShortDescription>Spin Start Sub Seconds, index 6</xtce:ShortDescription>
+				<xtce:LongDescription>Spin Start Sub Seconds, index 6</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="ESA_P_DAC_06" parameterTypeRef="UINT12">
+				<xtce:ShortDescription>ESA_P DAC, index 6</xtce:ShortDescription>
+				<xtce:LongDescription>ESA_P DAC, index 6</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="ESA_N_DAC_06" parameterTypeRef="UINT12">
+				<xtce:ShortDescription>ESA_N DAC, index 6</xtce:ShortDescription>
+				<xtce:LongDescription>ESA_N DAC, index 6</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="VAL_PERIOD_06" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Valid Spin Period, index 6</xtce:ShortDescription>
+				<xtce:LongDescription>Valid Spin Period, index 6</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="VAL_SPIN_06" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Valid Spin Phase, index 6</xtce:ShortDescription>
+				<xtce:LongDescription>Valid Spin Phase, index 6</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SOURCE_06" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Spin Period Source, index 6</xtce:ShortDescription>
+				<xtce:LongDescription>Spin Period Source, index 6</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="RESERVED_06" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Reserved, index 6</xtce:ShortDescription>
+				<xtce:LongDescription>Reserved, index 6</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SPIN_SECOND_07" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Spin Start Whole Seconds, index 7</xtce:ShortDescription>
+				<xtce:LongDescription>Spin Start Whole Seconds, index 7</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SPIN_SUBSEC_07" parameterTypeRef="UINT20">
+				<xtce:ShortDescription>Spin Start Sub Seconds, index 7</xtce:ShortDescription>
+				<xtce:LongDescription>Spin Start Sub Seconds, index 7</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="ESA_P_DAC_07" parameterTypeRef="UINT12">
+				<xtce:ShortDescription>ESA_P DAC, index 7</xtce:ShortDescription>
+				<xtce:LongDescription>ESA_P DAC, index 7</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="ESA_N_DAC_07" parameterTypeRef="UINT12">
+				<xtce:ShortDescription>ESA_N DAC, index 7</xtce:ShortDescription>
+				<xtce:LongDescription>ESA_N DAC, index 7</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="VAL_PERIOD_07" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Valid Spin Period, index 7</xtce:ShortDescription>
+				<xtce:LongDescription>Valid Spin Period, index 7</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="VAL_SPIN_07" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Valid Spin Phase, index 7</xtce:ShortDescription>
+				<xtce:LongDescription>Valid Spin Phase, index 7</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SOURCE_07" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Spin Period Source, index 7</xtce:ShortDescription>
+				<xtce:LongDescription>Spin Period Source, index 7</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="RESERVED_07" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Reserved, index 7</xtce:ShortDescription>
+				<xtce:LongDescription>Reserved, index 7</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SPIN_SECOND_08" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Spin Start Whole Seconds, index 8</xtce:ShortDescription>
+				<xtce:LongDescription>Spin Start Whole Seconds, index 8</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SPIN_SUBSEC_08" parameterTypeRef="UINT20">
+				<xtce:ShortDescription>Spin Start Sub Seconds, index 8</xtce:ShortDescription>
+				<xtce:LongDescription>Spin Start Sub Seconds, index 8</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="ESA_P_DAC_08" parameterTypeRef="UINT12">
+				<xtce:ShortDescription>ESA_P DAC, index 8</xtce:ShortDescription>
+				<xtce:LongDescription>ESA_P DAC, index 8</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="ESA_N_DAC_08" parameterTypeRef="UINT12">
+				<xtce:ShortDescription>ESA_N DAC, index 8</xtce:ShortDescription>
+				<xtce:LongDescription>ESA_N DAC, index 8</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="VAL_PERIOD_08" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Valid Spin Period, index 8</xtce:ShortDescription>
+				<xtce:LongDescription>Valid Spin Period, index 8</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="VAL_SPIN_08" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Valid Spin Phase, index 8</xtce:ShortDescription>
+				<xtce:LongDescription>Valid Spin Phase, index 8</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SOURCE_08" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Spin Period Source, index 8</xtce:ShortDescription>
+				<xtce:LongDescription>Spin Period Source, index 8</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="RESERVED_08" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Reserved, index 8</xtce:ShortDescription>
+				<xtce:LongDescription>Reserved, index 8</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SPIN_SECOND_09" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Spin Start Whole Seconds, index 9</xtce:ShortDescription>
+				<xtce:LongDescription>Spin Start Whole Seconds, index 9</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SPIN_SUBSEC_09" parameterTypeRef="UINT20">
+				<xtce:ShortDescription>Spin Start Sub Seconds, index 9</xtce:ShortDescription>
+				<xtce:LongDescription>Spin Start Sub Seconds, index 9</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="ESA_P_DAC_09" parameterTypeRef="UINT12">
+				<xtce:ShortDescription>ESA_P DAC, index 9</xtce:ShortDescription>
+				<xtce:LongDescription>ESA_P DAC, index 9</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="ESA_N_DAC_09" parameterTypeRef="UINT12">
+				<xtce:ShortDescription>ESA_N DAC, index 9</xtce:ShortDescription>
+				<xtce:LongDescription>ESA_N DAC, index 9</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="VAL_PERIOD_09" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Valid Spin Period, index 9</xtce:ShortDescription>
+				<xtce:LongDescription>Valid Spin Period, index 9</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="VAL_SPIN_09" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Valid Spin Phase, index 9</xtce:ShortDescription>
+				<xtce:LongDescription>Valid Spin Phase, index 9</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SOURCE_09" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Spin Period Source, index 9</xtce:ShortDescription>
+				<xtce:LongDescription>Spin Period Source, index 9</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="RESERVED_09" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Reserved, index 9</xtce:ShortDescription>
+				<xtce:LongDescription>Reserved, index 9</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SPIN_SECOND_10" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Spin Start Whole Seconds, index 10</xtce:ShortDescription>
+				<xtce:LongDescription>Spin Start Whole Seconds, index 10</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SPIN_SUBSEC_10" parameterTypeRef="UINT20">
+				<xtce:ShortDescription>Spin Start Sub Seconds, index 10</xtce:ShortDescription>
+				<xtce:LongDescription>Spin Start Sub Seconds, index 10</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="ESA_P_DAC_10" parameterTypeRef="UINT12">
+				<xtce:ShortDescription>ESA_P DAC, index 10</xtce:ShortDescription>
+				<xtce:LongDescription>ESA_P DAC, index 10</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="ESA_N_DAC_10" parameterTypeRef="UINT12">
+				<xtce:ShortDescription>ESA_N DAC, index 10</xtce:ShortDescription>
+				<xtce:LongDescription>ESA_N DAC, index 10</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="VAL_PERIOD_10" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Valid Spin Period, index 10</xtce:ShortDescription>
+				<xtce:LongDescription>Valid Spin Period, index 10</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="VAL_SPIN_10" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Valid Spin Phase, index 10</xtce:ShortDescription>
+				<xtce:LongDescription>Valid Spin Phase, index 10</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SOURCE_10" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Spin Period Source, index 10</xtce:ShortDescription>
+				<xtce:LongDescription>Spin Period Source, index 10</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="RESERVED_10" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Reserved, index 10</xtce:ShortDescription>
+				<xtce:LongDescription>Reserved, index 10</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SPIN_SECOND_11" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Spin Start Whole Seconds, index 11</xtce:ShortDescription>
+				<xtce:LongDescription>Spin Start Whole Seconds, index 11</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SPIN_SUBSEC_11" parameterTypeRef="UINT20">
+				<xtce:ShortDescription>Spin Start Sub Seconds, index 11</xtce:ShortDescription>
+				<xtce:LongDescription>Spin Start Sub Seconds, index 11</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="ESA_P_DAC_11" parameterTypeRef="UINT12">
+				<xtce:ShortDescription>ESA_P DAC, index 11</xtce:ShortDescription>
+				<xtce:LongDescription>ESA_P DAC, index 11</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="ESA_N_DAC_11" parameterTypeRef="UINT12">
+				<xtce:ShortDescription>ESA_N DAC, index 11</xtce:ShortDescription>
+				<xtce:LongDescription>ESA_N DAC, index 11</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="VAL_PERIOD_11" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Valid Spin Period, index 11</xtce:ShortDescription>
+				<xtce:LongDescription>Valid Spin Period, index 11</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="VAL_SPIN_11" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Valid Spin Phase, index 11</xtce:ShortDescription>
+				<xtce:LongDescription>Valid Spin Phase, index 11</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SOURCE_11" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Spin Period Source, index 11</xtce:ShortDescription>
+				<xtce:LongDescription>Spin Period Source, index 11</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="RESERVED_11" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Reserved, index 11</xtce:ShortDescription>
+				<xtce:LongDescription>Reserved, index 11</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SPIN_SECOND_12" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Spin Start Whole Seconds, index 12</xtce:ShortDescription>
+				<xtce:LongDescription>Spin Start Whole Seconds, index 12</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SPIN_SUBSEC_12" parameterTypeRef="UINT20">
+				<xtce:ShortDescription>Spin Start Sub Seconds, index 12</xtce:ShortDescription>
+				<xtce:LongDescription>Spin Start Sub Seconds, index 12</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="ESA_P_DAC_12" parameterTypeRef="UINT12">
+				<xtce:ShortDescription>ESA_P DAC, index 12</xtce:ShortDescription>
+				<xtce:LongDescription>ESA_P DAC, index 12</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="ESA_N_DAC_12" parameterTypeRef="UINT12">
+				<xtce:ShortDescription>ESA_N DAC, index 12</xtce:ShortDescription>
+				<xtce:LongDescription>ESA_N DAC, index 12</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="VAL_PERIOD_12" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Valid Spin Period, index 12</xtce:ShortDescription>
+				<xtce:LongDescription>Valid Spin Period, index 12</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="VAL_SPIN_12" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Valid Spin Phase, index 12</xtce:ShortDescription>
+				<xtce:LongDescription>Valid Spin Phase, index 12</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SOURCE_12" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Spin Period Source, index 12</xtce:ShortDescription>
+				<xtce:LongDescription>Spin Period Source, index 12</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="RESERVED_12" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Reserved, index 12</xtce:ShortDescription>
+				<xtce:LongDescription>Reserved, index 12</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SPIN_SECOND_13" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Spin Start Whole Seconds, index 13</xtce:ShortDescription>
+				<xtce:LongDescription>Spin Start Whole Seconds, index 13</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SPIN_SUBSEC_13" parameterTypeRef="UINT20">
+				<xtce:ShortDescription>Spin Start Sub Seconds, index 13</xtce:ShortDescription>
+				<xtce:LongDescription>Spin Start Sub Seconds, index 13</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="ESA_P_DAC_13" parameterTypeRef="UINT12">
+				<xtce:ShortDescription>ESA_P DAC, index 13</xtce:ShortDescription>
+				<xtce:LongDescription>ESA_P DAC, index 13</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="ESA_N_DAC_13" parameterTypeRef="UINT12">
+				<xtce:ShortDescription>ESA_N DAC, index 13</xtce:ShortDescription>
+				<xtce:LongDescription>ESA_N DAC, index 13</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="VAL_PERIOD_13" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Valid Spin Period, index 13</xtce:ShortDescription>
+				<xtce:LongDescription>Valid Spin Period, index 13</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="VAL_SPIN_13" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Valid Spin Phase, index 13</xtce:ShortDescription>
+				<xtce:LongDescription>Valid Spin Phase, index 13</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SOURCE_13" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Spin Period Source, index 13</xtce:ShortDescription>
+				<xtce:LongDescription>Spin Period Source, index 13</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="RESERVED_13" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Reserved, index 13</xtce:ShortDescription>
+				<xtce:LongDescription>Reserved, index 13</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SPIN_SECOND_14" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Spin Start Whole Seconds, index 14</xtce:ShortDescription>
+				<xtce:LongDescription>Spin Start Whole Seconds, index 14</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SPIN_SUBSEC_14" parameterTypeRef="UINT20">
+				<xtce:ShortDescription>Spin Start Sub Seconds, index 14</xtce:ShortDescription>
+				<xtce:LongDescription>Spin Start Sub Seconds, index 14</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="ESA_P_DAC_14" parameterTypeRef="UINT12">
+				<xtce:ShortDescription>ESA_P DAC, index 14</xtce:ShortDescription>
+				<xtce:LongDescription>ESA_P DAC, index 14</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="ESA_N_DAC_14" parameterTypeRef="UINT12">
+				<xtce:ShortDescription>ESA_N DAC, index 14</xtce:ShortDescription>
+				<xtce:LongDescription>ESA_N DAC, index 14</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="VAL_PERIOD_14" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Valid Spin Period, index 14</xtce:ShortDescription>
+				<xtce:LongDescription>Valid Spin Period, index 14</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="VAL_SPIN_14" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Valid Spin Phase, index 14</xtce:ShortDescription>
+				<xtce:LongDescription>Valid Spin Phase, index 14</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SOURCE_14" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Spin Period Source, index 14</xtce:ShortDescription>
+				<xtce:LongDescription>Spin Period Source, index 14</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="RESERVED_14" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Reserved, index 14</xtce:ShortDescription>
+				<xtce:LongDescription>Reserved, index 14</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SPIN_SECOND_15" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Spin Start Whole Seconds, index 15</xtce:ShortDescription>
+				<xtce:LongDescription>Spin Start Whole Seconds, index 15</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SPIN_SUBSEC_15" parameterTypeRef="UINT20">
+				<xtce:ShortDescription>Spin Start Sub Seconds, index 15</xtce:ShortDescription>
+				<xtce:LongDescription>Spin Start Sub Seconds, index 15</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="ESA_P_DAC_15" parameterTypeRef="UINT12">
+				<xtce:ShortDescription>ESA_P DAC, index 15</xtce:ShortDescription>
+				<xtce:LongDescription>ESA_P DAC, index 15</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="ESA_N_DAC_15" parameterTypeRef="UINT12">
+				<xtce:ShortDescription>ESA_N DAC, index 15</xtce:ShortDescription>
+				<xtce:LongDescription>ESA_N DAC, index 15</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="VAL_PERIOD_15" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Valid Spin Period, index 15</xtce:ShortDescription>
+				<xtce:LongDescription>Valid Spin Period, index 15</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="VAL_SPIN_15" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Valid Spin Phase, index 15</xtce:ShortDescription>
+				<xtce:LongDescription>Valid Spin Phase, index 15</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SOURCE_15" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Spin Period Source, index 15</xtce:ShortDescription>
+				<xtce:LongDescription>Spin Period Source, index 15</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="RESERVED_15" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Reserved, index 15</xtce:ShortDescription>
+				<xtce:LongDescription>Reserved, index 15</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SPIN_SECOND_16" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Spin Start Whole Seconds, index 16</xtce:ShortDescription>
+				<xtce:LongDescription>Spin Start Whole Seconds, index 16</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SPIN_SUBSEC_16" parameterTypeRef="UINT20">
+				<xtce:ShortDescription>Spin Start Sub Seconds, index 16</xtce:ShortDescription>
+				<xtce:LongDescription>Spin Start Sub Seconds, index 16</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="ESA_P_DAC_16" parameterTypeRef="UINT12">
+				<xtce:ShortDescription>ESA_P DAC, index 16</xtce:ShortDescription>
+				<xtce:LongDescription>ESA_P DAC, index 16</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="ESA_N_DAC_16" parameterTypeRef="UINT12">
+				<xtce:ShortDescription>ESA_N DAC, index 16</xtce:ShortDescription>
+				<xtce:LongDescription>ESA_N DAC, index 16</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="VAL_PERIOD_16" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Valid Spin Period, index 16</xtce:ShortDescription>
+				<xtce:LongDescription>Valid Spin Period, index 16</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="VAL_SPIN_16" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Valid Spin Phase, index 16</xtce:ShortDescription>
+				<xtce:LongDescription>Valid Spin Phase, index 16</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SOURCE_16" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Spin Period Source, index 16</xtce:ShortDescription>
+				<xtce:LongDescription>Spin Period Source, index 16</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="RESERVED_16" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Reserved, index 16</xtce:ShortDescription>
+				<xtce:LongDescription>Reserved, index 16</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SPIN_SECOND_17" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Spin Start Whole Seconds, index 17</xtce:ShortDescription>
+				<xtce:LongDescription>Spin Start Whole Seconds, index 17</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SPIN_SUBSEC_17" parameterTypeRef="UINT20">
+				<xtce:ShortDescription>Spin Start Sub Seconds, index 17</xtce:ShortDescription>
+				<xtce:LongDescription>Spin Start Sub Seconds, index 17</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="ESA_P_DAC_17" parameterTypeRef="UINT12">
+				<xtce:ShortDescription>ESA_P DAC, index 17</xtce:ShortDescription>
+				<xtce:LongDescription>ESA_P DAC, index 17</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="ESA_N_DAC_17" parameterTypeRef="UINT12">
+				<xtce:ShortDescription>ESA_N DAC, index 17</xtce:ShortDescription>
+				<xtce:LongDescription>ESA_N DAC, index 17</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="VAL_PERIOD_17" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Valid Spin Period, index 17</xtce:ShortDescription>
+				<xtce:LongDescription>Valid Spin Period, index 17</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="VAL_SPIN_17" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Valid Spin Phase, index 17</xtce:ShortDescription>
+				<xtce:LongDescription>Valid Spin Phase, index 17</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SOURCE_17" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Spin Period Source, index 17</xtce:ShortDescription>
+				<xtce:LongDescription>Spin Period Source, index 17</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="RESERVED_17" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Reserved, index 17</xtce:ShortDescription>
+				<xtce:LongDescription>Reserved, index 17</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SPIN_SECOND_18" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Spin Start Whole Seconds, index 18</xtce:ShortDescription>
+				<xtce:LongDescription>Spin Start Whole Seconds, index 18</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SPIN_SUBSEC_18" parameterTypeRef="UINT20">
+				<xtce:ShortDescription>Spin Start Sub Seconds, index 18</xtce:ShortDescription>
+				<xtce:LongDescription>Spin Start Sub Seconds, index 18</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="ESA_P_DAC_18" parameterTypeRef="UINT12">
+				<xtce:ShortDescription>ESA_P DAC, index 18</xtce:ShortDescription>
+				<xtce:LongDescription>ESA_P DAC, index 18</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="ESA_N_DAC_18" parameterTypeRef="UINT12">
+				<xtce:ShortDescription>ESA_N DAC, index 18</xtce:ShortDescription>
+				<xtce:LongDescription>ESA_N DAC, index 18</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="VAL_PERIOD_18" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Valid Spin Period, index 18</xtce:ShortDescription>
+				<xtce:LongDescription>Valid Spin Period, index 18</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="VAL_SPIN_18" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Valid Spin Phase, index 18</xtce:ShortDescription>
+				<xtce:LongDescription>Valid Spin Phase, index 18</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SOURCE_18" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Spin Period Source, index 18</xtce:ShortDescription>
+				<xtce:LongDescription>Spin Period Source, index 18</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="RESERVED_18" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Reserved, index 18</xtce:ShortDescription>
+				<xtce:LongDescription>Reserved, index 18</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SPIN_SECOND_19" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Spin Start Whole Seconds, index 19</xtce:ShortDescription>
+				<xtce:LongDescription>Spin Start Whole Seconds, index 19</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SPIN_SUBSEC_19" parameterTypeRef="UINT20">
+				<xtce:ShortDescription>Spin Start Sub Seconds, index 19</xtce:ShortDescription>
+				<xtce:LongDescription>Spin Start Sub Seconds, index 19</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="ESA_P_DAC_19" parameterTypeRef="UINT12">
+				<xtce:ShortDescription>ESA_P DAC, index 19</xtce:ShortDescription>
+				<xtce:LongDescription>ESA_P DAC, index 19</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="ESA_N_DAC_19" parameterTypeRef="UINT12">
+				<xtce:ShortDescription>ESA_N DAC, index 19</xtce:ShortDescription>
+				<xtce:LongDescription>ESA_N DAC, index 19</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="VAL_PERIOD_19" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Valid Spin Period, index 19</xtce:ShortDescription>
+				<xtce:LongDescription>Valid Spin Period, index 19</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="VAL_SPIN_19" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Valid Spin Phase, index 19</xtce:ShortDescription>
+				<xtce:LongDescription>Valid Spin Phase, index 19</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SOURCE_19" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Spin Period Source, index 19</xtce:ShortDescription>
+				<xtce:LongDescription>Spin Period Source, index 19</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="RESERVED_19" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Reserved, index 19</xtce:ShortDescription>
+				<xtce:LongDescription>Reserved, index 19</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SPIN_SECOND_20" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Spin Start Whole Seconds, index 20</xtce:ShortDescription>
+				<xtce:LongDescription>Spin Start Whole Seconds, index 20</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SPIN_SUBSEC_20" parameterTypeRef="UINT20">
+				<xtce:ShortDescription>Spin Start Sub Seconds, index 20</xtce:ShortDescription>
+				<xtce:LongDescription>Spin Start Sub Seconds, index 20</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="ESA_P_DAC_20" parameterTypeRef="UINT12">
+				<xtce:ShortDescription>ESA_P DAC, index 20</xtce:ShortDescription>
+				<xtce:LongDescription>ESA_P DAC, index 20</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="ESA_N_DAC_20" parameterTypeRef="UINT12">
+				<xtce:ShortDescription>ESA_N DAC, index 20</xtce:ShortDescription>
+				<xtce:LongDescription>ESA_N DAC, index 20</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="VAL_PERIOD_20" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Valid Spin Period, index 20</xtce:ShortDescription>
+				<xtce:LongDescription>Valid Spin Period, index 20</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="VAL_SPIN_20" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Valid Spin Phase, index 20</xtce:ShortDescription>
+				<xtce:LongDescription>Valid Spin Phase, index 20</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SOURCE_20" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Spin Period Source, index 20</xtce:ShortDescription>
+				<xtce:LongDescription>Spin Period Source, index 20</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="RESERVED_20" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Reserved, index 20</xtce:ShortDescription>
+				<xtce:LongDescription>Reserved, index 20</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SPIN_SECOND_21" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Spin Start Whole Seconds, index 21</xtce:ShortDescription>
+				<xtce:LongDescription>Spin Start Whole Seconds, index 21</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SPIN_SUBSEC_21" parameterTypeRef="UINT20">
+				<xtce:ShortDescription>Spin Start Sub Seconds, index 21</xtce:ShortDescription>
+				<xtce:LongDescription>Spin Start Sub Seconds, index 21</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="ESA_P_DAC_21" parameterTypeRef="UINT12">
+				<xtce:ShortDescription>ESA_P DAC, index 21</xtce:ShortDescription>
+				<xtce:LongDescription>ESA_P DAC, index 21</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="ESA_N_DAC_21" parameterTypeRef="UINT12">
+				<xtce:ShortDescription>ESA_N DAC, index 21</xtce:ShortDescription>
+				<xtce:LongDescription>ESA_N DAC, index 21</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="VAL_PERIOD_21" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Valid Spin Period, index 21</xtce:ShortDescription>
+				<xtce:LongDescription>Valid Spin Period, index 21</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="VAL_SPIN_21" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Valid Spin Phase, index 21</xtce:ShortDescription>
+				<xtce:LongDescription>Valid Spin Phase, index 21</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SOURCE_21" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Spin Period Source, index 21</xtce:ShortDescription>
+				<xtce:LongDescription>Spin Period Source, index 21</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="RESERVED_21" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Reserved, index 21</xtce:ShortDescription>
+				<xtce:LongDescription>Reserved, index 21</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SPIN_SECOND_22" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Spin Start Whole Seconds, index 22</xtce:ShortDescription>
+				<xtce:LongDescription>Spin Start Whole Seconds, index 22</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SPIN_SUBSEC_22" parameterTypeRef="UINT20">
+				<xtce:ShortDescription>Spin Start Sub Seconds, index 22</xtce:ShortDescription>
+				<xtce:LongDescription>Spin Start Sub Seconds, index 22</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="ESA_P_DAC_22" parameterTypeRef="UINT12">
+				<xtce:ShortDescription>ESA_P DAC, index 22</xtce:ShortDescription>
+				<xtce:LongDescription>ESA_P DAC, index 22</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="ESA_N_DAC_22" parameterTypeRef="UINT12">
+				<xtce:ShortDescription>ESA_N DAC, index 22</xtce:ShortDescription>
+				<xtce:LongDescription>ESA_N DAC, index 22</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="VAL_PERIOD_22" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Valid Spin Period, index 22</xtce:ShortDescription>
+				<xtce:LongDescription>Valid Spin Period, index 22</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="VAL_SPIN_22" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Valid Spin Phase, index 22</xtce:ShortDescription>
+				<xtce:LongDescription>Valid Spin Phase, index 22</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SOURCE_22" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Spin Period Source, index 22</xtce:ShortDescription>
+				<xtce:LongDescription>Spin Period Source, index 22</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="RESERVED_22" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Reserved, index 22</xtce:ShortDescription>
+				<xtce:LongDescription>Reserved, index 22</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SPIN_SECOND_23" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Spin Start Whole Seconds, index 23</xtce:ShortDescription>
+				<xtce:LongDescription>Spin Start Whole Seconds, index 23</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SPIN_SUBSEC_23" parameterTypeRef="UINT20">
+				<xtce:ShortDescription>Spin Start Sub Seconds, index 23</xtce:ShortDescription>
+				<xtce:LongDescription>Spin Start Sub Seconds, index 23</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="ESA_P_DAC_23" parameterTypeRef="UINT12">
+				<xtce:ShortDescription>ESA_P DAC, index 23</xtce:ShortDescription>
+				<xtce:LongDescription>ESA_P DAC, index 23</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="ESA_N_DAC_23" parameterTypeRef="UINT12">
+				<xtce:ShortDescription>ESA_N DAC, index 23</xtce:ShortDescription>
+				<xtce:LongDescription>ESA_N DAC, index 23</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="VAL_PERIOD_23" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Valid Spin Period, index 23</xtce:ShortDescription>
+				<xtce:LongDescription>Valid Spin Period, index 23</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="VAL_SPIN_23" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Valid Spin Phase, index 23</xtce:ShortDescription>
+				<xtce:LongDescription>Valid Spin Phase, index 23</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SOURCE_23" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Spin Period Source, index 23</xtce:ShortDescription>
+				<xtce:LongDescription>Spin Period Source, index 23</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="RESERVED_23" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Reserved, index 23</xtce:ShortDescription>
+				<xtce:LongDescription>Reserved, index 23</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SPIN_SECOND_24" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Spin Start Whole Seconds, index 24</xtce:ShortDescription>
+				<xtce:LongDescription>Spin Start Whole Seconds, index 24</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SPIN_SUBSEC_24" parameterTypeRef="UINT20">
+				<xtce:ShortDescription>Spin Start Sub Seconds, index 24</xtce:ShortDescription>
+				<xtce:LongDescription>Spin Start Sub Seconds, index 24</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="ESA_P_DAC_24" parameterTypeRef="UINT12">
+				<xtce:ShortDescription>ESA_P DAC, index 24</xtce:ShortDescription>
+				<xtce:LongDescription>ESA_P DAC, index 24</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="ESA_N_DAC_24" parameterTypeRef="UINT12">
+				<xtce:ShortDescription>ESA_N DAC, index 24</xtce:ShortDescription>
+				<xtce:LongDescription>ESA_N DAC, index 24</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="VAL_PERIOD_24" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Valid Spin Period, index 24</xtce:ShortDescription>
+				<xtce:LongDescription>Valid Spin Period, index 24</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="VAL_SPIN_24" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Valid Spin Phase, index 24</xtce:ShortDescription>
+				<xtce:LongDescription>Valid Spin Phase, index 24</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SOURCE_24" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Spin Period Source, index 24</xtce:ShortDescription>
+				<xtce:LongDescription>Spin Period Source, index 24</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="RESERVED_24" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Reserved, index 24</xtce:ShortDescription>
+				<xtce:LongDescription>Reserved, index 24</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SPIN_SECOND_25" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Spin Start Whole Seconds, index 25</xtce:ShortDescription>
+				<xtce:LongDescription>Spin Start Whole Seconds, index 25</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SPIN_SUBSEC_25" parameterTypeRef="UINT20">
+				<xtce:ShortDescription>Spin Start Sub Seconds, index 25</xtce:ShortDescription>
+				<xtce:LongDescription>Spin Start Sub Seconds, index 25</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="ESA_P_DAC_25" parameterTypeRef="UINT12">
+				<xtce:ShortDescription>ESA_P DAC, index 25</xtce:ShortDescription>
+				<xtce:LongDescription>ESA_P DAC, index 25</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="ESA_N_DAC_25" parameterTypeRef="UINT12">
+				<xtce:ShortDescription>ESA_N DAC, index 25</xtce:ShortDescription>
+				<xtce:LongDescription>ESA_N DAC, index 25</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="VAL_PERIOD_25" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Valid Spin Period, index 25</xtce:ShortDescription>
+				<xtce:LongDescription>Valid Spin Period, index 25</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="VAL_SPIN_25" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Valid Spin Phase, index 25</xtce:ShortDescription>
+				<xtce:LongDescription>Valid Spin Phase, index 25</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SOURCE_25" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Spin Period Source, index 25</xtce:ShortDescription>
+				<xtce:LongDescription>Spin Period Source, index 25</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="RESERVED_25" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Reserved, index 25</xtce:ShortDescription>
+				<xtce:LongDescription>Reserved, index 25</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SPIN_SECOND_26" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Spin Start Whole Seconds, index 26</xtce:ShortDescription>
+				<xtce:LongDescription>Spin Start Whole Seconds, index 26</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SPIN_SUBSEC_26" parameterTypeRef="UINT20">
+				<xtce:ShortDescription>Spin Start Sub Seconds, index 26</xtce:ShortDescription>
+				<xtce:LongDescription>Spin Start Sub Seconds, index 26</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="ESA_P_DAC_26" parameterTypeRef="UINT12">
+				<xtce:ShortDescription>ESA_P DAC, index 26</xtce:ShortDescription>
+				<xtce:LongDescription>ESA_P DAC, index 26</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="ESA_N_DAC_26" parameterTypeRef="UINT12">
+				<xtce:ShortDescription>ESA_N DAC, index 26</xtce:ShortDescription>
+				<xtce:LongDescription>ESA_N DAC, index 26</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="VAL_PERIOD_26" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Valid Spin Period, index 26</xtce:ShortDescription>
+				<xtce:LongDescription>Valid Spin Period, index 26</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="VAL_SPIN_26" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Valid Spin Phase, index 26</xtce:ShortDescription>
+				<xtce:LongDescription>Valid Spin Phase, index 26</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SOURCE_26" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Spin Period Source, index 26</xtce:ShortDescription>
+				<xtce:LongDescription>Spin Period Source, index 26</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="RESERVED_26" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Reserved, index 26</xtce:ShortDescription>
+				<xtce:LongDescription>Reserved, index 26</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SPIN_SECOND_27" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Spin Start Whole Seconds, index 27</xtce:ShortDescription>
+				<xtce:LongDescription>Spin Start Whole Seconds, index 27</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SPIN_SUBSEC_27" parameterTypeRef="UINT20">
+				<xtce:ShortDescription>Spin Start Sub Seconds, index 27</xtce:ShortDescription>
+				<xtce:LongDescription>Spin Start Sub Seconds, index 27</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="ESA_P_DAC_27" parameterTypeRef="UINT12">
+				<xtce:ShortDescription>ESA_P DAC, index 27</xtce:ShortDescription>
+				<xtce:LongDescription>ESA_P DAC, index 27</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="ESA_N_DAC_27" parameterTypeRef="UINT12">
+				<xtce:ShortDescription>ESA_N DAC, index 27</xtce:ShortDescription>
+				<xtce:LongDescription>ESA_N DAC, index 27</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="VAL_PERIOD_27" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Valid Spin Period, index 27</xtce:ShortDescription>
+				<xtce:LongDescription>Valid Spin Period, index 27</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="VAL_SPIN_27" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Valid Spin Phase, index 27</xtce:ShortDescription>
+				<xtce:LongDescription>Valid Spin Phase, index 27</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SOURCE_27" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Spin Period Source, index 27</xtce:ShortDescription>
+				<xtce:LongDescription>Spin Period Source, index 27</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="RESERVED_27" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Reserved, index 27</xtce:ShortDescription>
+				<xtce:LongDescription>Reserved, index 27</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="CHKSUM" parameterTypeRef="UINT16">
+				<xtce:ShortDescription>16-bit CRC checksum</xtce:ShortDescription>
+				<xtce:LongDescription>16-bit CRC checksum</xtce:LongDescription>
+			</xtce:Parameter>
+		</xtce:ParameterSet>
+		<xtce:ContainerSet>
+			<xtce:SequenceContainer name="CCSDSPacket">
+				<xtce:EntryList>
+					<xtce:ParameterRefEntry parameterRef="VERSION" />
+					<xtce:ParameterRefEntry parameterRef="TYPE" />
+					<xtce:ParameterRefEntry parameterRef="SEC_HDR_FLG" />
+					<xtce:ParameterRefEntry parameterRef="PKT_APID" />
+					<xtce:ParameterRefEntry parameterRef="SEQ_FLGS" />
+					<xtce:ParameterRefEntry parameterRef="SRC_SEQ_CTR" />
+					<xtce:ParameterRefEntry parameterRef="PKT_LEN" />
+				</xtce:EntryList>
+			</xtce:SequenceContainer>
+			<xtce:SequenceContainer name="P_ILO_SPIN">
+				<xtce:BaseContainer containerRef="CCSDSPacket">
+					<xtce:RestrictionCriteria>
+						<xtce:Comparison parameterRef="PKT_APID" value="708" useCalibratedValue="false" />
+					</xtce:RestrictionCriteria>
+				</xtce:BaseContainer>
+				<xtce:EntryList>
+					<xtce:ParameterRefEntry parameterRef="SHCOARSE" />
+					<xtce:ParameterRefEntry parameterRef="NUM_COMPLETED" />
+					<xtce:ParameterRefEntry parameterRef="SPARE1" />
+					<xtce:ParameterRefEntry parameterRef="ACQ_END_SEC" />
+					<xtce:ParameterRefEntry parameterRef="ACQ_END_SUBSEC" />
+					<xtce:ParameterRefEntry parameterRef="SPARE2" />
+					<xtce:ParameterRefEntry parameterRef="SPIN_SECOND_00" />
+					<xtce:ParameterRefEntry parameterRef="SPIN_SUBSEC_00" />
+					<xtce:ParameterRefEntry parameterRef="ESA_P_DAC_00" />
+					<xtce:ParameterRefEntry parameterRef="ESA_N_DAC_00" />
+					<xtce:ParameterRefEntry parameterRef="VAL_PERIOD_00" />
+					<xtce:ParameterRefEntry parameterRef="VAL_SPIN_00" />
+					<xtce:ParameterRefEntry parameterRef="SOURCE_00" />
+					<xtce:ParameterRefEntry parameterRef="RESERVED_00" />
+					<xtce:ParameterRefEntry parameterRef="SPIN_SECOND_01" />
+					<xtce:ParameterRefEntry parameterRef="SPIN_SUBSEC_01" />
+					<xtce:ParameterRefEntry parameterRef="ESA_P_DAC_01" />
+					<xtce:ParameterRefEntry parameterRef="ESA_N_DAC_01" />
+					<xtce:ParameterRefEntry parameterRef="VAL_PERIOD_01" />
+					<xtce:ParameterRefEntry parameterRef="VAL_SPIN_01" />
+					<xtce:ParameterRefEntry parameterRef="SOURCE_01" />
+					<xtce:ParameterRefEntry parameterRef="RESERVED_01" />
+					<xtce:ParameterRefEntry parameterRef="SPIN_SECOND_02" />
+					<xtce:ParameterRefEntry parameterRef="SPIN_SUBSEC_02" />
+					<xtce:ParameterRefEntry parameterRef="ESA_P_DAC_02" />
+					<xtce:ParameterRefEntry parameterRef="ESA_N_DAC_02" />
+					<xtce:ParameterRefEntry parameterRef="VAL_PERIOD_02" />
+					<xtce:ParameterRefEntry parameterRef="VAL_SPIN_02" />
+					<xtce:ParameterRefEntry parameterRef="SOURCE_02" />
+					<xtce:ParameterRefEntry parameterRef="RESERVED_02" />
+					<xtce:ParameterRefEntry parameterRef="SPIN_SECOND_03" />
+					<xtce:ParameterRefEntry parameterRef="SPIN_SUBSEC_03" />
+					<xtce:ParameterRefEntry parameterRef="ESA_P_DAC_03" />
+					<xtce:ParameterRefEntry parameterRef="ESA_N_DAC_03" />
+					<xtce:ParameterRefEntry parameterRef="VAL_PERIOD_03" />
+					<xtce:ParameterRefEntry parameterRef="VAL_SPIN_03" />
+					<xtce:ParameterRefEntry parameterRef="SOURCE_03" />
+					<xtce:ParameterRefEntry parameterRef="RESERVED_03" />
+					<xtce:ParameterRefEntry parameterRef="SPIN_SECOND_04" />
+					<xtce:ParameterRefEntry parameterRef="SPIN_SUBSEC_04" />
+					<xtce:ParameterRefEntry parameterRef="ESA_P_DAC_04" />
+					<xtce:ParameterRefEntry parameterRef="ESA_N_DAC_04" />
+					<xtce:ParameterRefEntry parameterRef="VAL_PERIOD_04" />
+					<xtce:ParameterRefEntry parameterRef="VAL_SPIN_04" />
+					<xtce:ParameterRefEntry parameterRef="SOURCE_04" />
+					<xtce:ParameterRefEntry parameterRef="RESERVED_04" />
+					<xtce:ParameterRefEntry parameterRef="SPIN_SECOND_05" />
+					<xtce:ParameterRefEntry parameterRef="SPIN_SUBSEC_05" />
+					<xtce:ParameterRefEntry parameterRef="ESA_P_DAC_05" />
+					<xtce:ParameterRefEntry parameterRef="ESA_N_DAC_05" />
+					<xtce:ParameterRefEntry parameterRef="VAL_PERIOD_05" />
+					<xtce:ParameterRefEntry parameterRef="VAL_SPIN_05" />
+					<xtce:ParameterRefEntry parameterRef="SOURCE_05" />
+					<xtce:ParameterRefEntry parameterRef="RESERVED_05" />
+					<xtce:ParameterRefEntry parameterRef="SPIN_SECOND_06" />
+					<xtce:ParameterRefEntry parameterRef="SPIN_SUBSEC_06" />
+					<xtce:ParameterRefEntry parameterRef="ESA_P_DAC_06" />
+					<xtce:ParameterRefEntry parameterRef="ESA_N_DAC_06" />
+					<xtce:ParameterRefEntry parameterRef="VAL_PERIOD_06" />
+					<xtce:ParameterRefEntry parameterRef="VAL_SPIN_06" />
+					<xtce:ParameterRefEntry parameterRef="SOURCE_06" />
+					<xtce:ParameterRefEntry parameterRef="RESERVED_06" />
+					<xtce:ParameterRefEntry parameterRef="SPIN_SECOND_07" />
+					<xtce:ParameterRefEntry parameterRef="SPIN_SUBSEC_07" />
+					<xtce:ParameterRefEntry parameterRef="ESA_P_DAC_07" />
+					<xtce:ParameterRefEntry parameterRef="ESA_N_DAC_07" />
+					<xtce:ParameterRefEntry parameterRef="VAL_PERIOD_07" />
+					<xtce:ParameterRefEntry parameterRef="VAL_SPIN_07" />
+					<xtce:ParameterRefEntry parameterRef="SOURCE_07" />
+					<xtce:ParameterRefEntry parameterRef="RESERVED_07" />
+					<xtce:ParameterRefEntry parameterRef="SPIN_SECOND_08" />
+					<xtce:ParameterRefEntry parameterRef="SPIN_SUBSEC_08" />
+					<xtce:ParameterRefEntry parameterRef="ESA_P_DAC_08" />
+					<xtce:ParameterRefEntry parameterRef="ESA_N_DAC_08" />
+					<xtce:ParameterRefEntry parameterRef="VAL_PERIOD_08" />
+					<xtce:ParameterRefEntry parameterRef="VAL_SPIN_08" />
+					<xtce:ParameterRefEntry parameterRef="SOURCE_08" />
+					<xtce:ParameterRefEntry parameterRef="RESERVED_08" />
+					<xtce:ParameterRefEntry parameterRef="SPIN_SECOND_09" />
+					<xtce:ParameterRefEntry parameterRef="SPIN_SUBSEC_09" />
+					<xtce:ParameterRefEntry parameterRef="ESA_P_DAC_09" />
+					<xtce:ParameterRefEntry parameterRef="ESA_N_DAC_09" />
+					<xtce:ParameterRefEntry parameterRef="VAL_PERIOD_09" />
+					<xtce:ParameterRefEntry parameterRef="VAL_SPIN_09" />
+					<xtce:ParameterRefEntry parameterRef="SOURCE_09" />
+					<xtce:ParameterRefEntry parameterRef="RESERVED_09" />
+					<xtce:ParameterRefEntry parameterRef="SPIN_SECOND_10" />
+					<xtce:ParameterRefEntry parameterRef="SPIN_SUBSEC_10" />
+					<xtce:ParameterRefEntry parameterRef="ESA_P_DAC_10" />
+					<xtce:ParameterRefEntry parameterRef="ESA_N_DAC_10" />
+					<xtce:ParameterRefEntry parameterRef="VAL_PERIOD_10" />
+					<xtce:ParameterRefEntry parameterRef="VAL_SPIN_10" />
+					<xtce:ParameterRefEntry parameterRef="SOURCE_10" />
+					<xtce:ParameterRefEntry parameterRef="RESERVED_10" />
+					<xtce:ParameterRefEntry parameterRef="SPIN_SECOND_11" />
+					<xtce:ParameterRefEntry parameterRef="SPIN_SUBSEC_11" />
+					<xtce:ParameterRefEntry parameterRef="ESA_P_DAC_11" />
+					<xtce:ParameterRefEntry parameterRef="ESA_N_DAC_11" />
+					<xtce:ParameterRefEntry parameterRef="VAL_PERIOD_11" />
+					<xtce:ParameterRefEntry parameterRef="VAL_SPIN_11" />
+					<xtce:ParameterRefEntry parameterRef="SOURCE_11" />
+					<xtce:ParameterRefEntry parameterRef="RESERVED_11" />
+					<xtce:ParameterRefEntry parameterRef="SPIN_SECOND_12" />
+					<xtce:ParameterRefEntry parameterRef="SPIN_SUBSEC_12" />
+					<xtce:ParameterRefEntry parameterRef="ESA_P_DAC_12" />
+					<xtce:ParameterRefEntry parameterRef="ESA_N_DAC_12" />
+					<xtce:ParameterRefEntry parameterRef="VAL_PERIOD_12" />
+					<xtce:ParameterRefEntry parameterRef="VAL_SPIN_12" />
+					<xtce:ParameterRefEntry parameterRef="SOURCE_12" />
+					<xtce:ParameterRefEntry parameterRef="RESERVED_12" />
+					<xtce:ParameterRefEntry parameterRef="SPIN_SECOND_13" />
+					<xtce:ParameterRefEntry parameterRef="SPIN_SUBSEC_13" />
+					<xtce:ParameterRefEntry parameterRef="ESA_P_DAC_13" />
+					<xtce:ParameterRefEntry parameterRef="ESA_N_DAC_13" />
+					<xtce:ParameterRefEntry parameterRef="VAL_PERIOD_13" />
+					<xtce:ParameterRefEntry parameterRef="VAL_SPIN_13" />
+					<xtce:ParameterRefEntry parameterRef="SOURCE_13" />
+					<xtce:ParameterRefEntry parameterRef="RESERVED_13" />
+					<xtce:ParameterRefEntry parameterRef="SPIN_SECOND_14" />
+					<xtce:ParameterRefEntry parameterRef="SPIN_SUBSEC_14" />
+					<xtce:ParameterRefEntry parameterRef="ESA_P_DAC_14" />
+					<xtce:ParameterRefEntry parameterRef="ESA_N_DAC_14" />
+					<xtce:ParameterRefEntry parameterRef="VAL_PERIOD_14" />
+					<xtce:ParameterRefEntry parameterRef="VAL_SPIN_14" />
+					<xtce:ParameterRefEntry parameterRef="SOURCE_14" />
+					<xtce:ParameterRefEntry parameterRef="RESERVED_14" />
+					<xtce:ParameterRefEntry parameterRef="SPIN_SECOND_15" />
+					<xtce:ParameterRefEntry parameterRef="SPIN_SUBSEC_15" />
+					<xtce:ParameterRefEntry parameterRef="ESA_P_DAC_15" />
+					<xtce:ParameterRefEntry parameterRef="ESA_N_DAC_15" />
+					<xtce:ParameterRefEntry parameterRef="VAL_PERIOD_15" />
+					<xtce:ParameterRefEntry parameterRef="VAL_SPIN_15" />
+					<xtce:ParameterRefEntry parameterRef="SOURCE_15" />
+					<xtce:ParameterRefEntry parameterRef="RESERVED_15" />
+					<xtce:ParameterRefEntry parameterRef="SPIN_SECOND_16" />
+					<xtce:ParameterRefEntry parameterRef="SPIN_SUBSEC_16" />
+					<xtce:ParameterRefEntry parameterRef="ESA_P_DAC_16" />
+					<xtce:ParameterRefEntry parameterRef="ESA_N_DAC_16" />
+					<xtce:ParameterRefEntry parameterRef="VAL_PERIOD_16" />
+					<xtce:ParameterRefEntry parameterRef="VAL_SPIN_16" />
+					<xtce:ParameterRefEntry parameterRef="SOURCE_16" />
+					<xtce:ParameterRefEntry parameterRef="RESERVED_16" />
+					<xtce:ParameterRefEntry parameterRef="SPIN_SECOND_17" />
+					<xtce:ParameterRefEntry parameterRef="SPIN_SUBSEC_17" />
+					<xtce:ParameterRefEntry parameterRef="ESA_P_DAC_17" />
+					<xtce:ParameterRefEntry parameterRef="ESA_N_DAC_17" />
+					<xtce:ParameterRefEntry parameterRef="VAL_PERIOD_17" />
+					<xtce:ParameterRefEntry parameterRef="VAL_SPIN_17" />
+					<xtce:ParameterRefEntry parameterRef="SOURCE_17" />
+					<xtce:ParameterRefEntry parameterRef="RESERVED_17" />
+					<xtce:ParameterRefEntry parameterRef="SPIN_SECOND_18" />
+					<xtce:ParameterRefEntry parameterRef="SPIN_SUBSEC_18" />
+					<xtce:ParameterRefEntry parameterRef="ESA_P_DAC_18" />
+					<xtce:ParameterRefEntry parameterRef="ESA_N_DAC_18" />
+					<xtce:ParameterRefEntry parameterRef="VAL_PERIOD_18" />
+					<xtce:ParameterRefEntry parameterRef="VAL_SPIN_18" />
+					<xtce:ParameterRefEntry parameterRef="SOURCE_18" />
+					<xtce:ParameterRefEntry parameterRef="RESERVED_18" />
+					<xtce:ParameterRefEntry parameterRef="SPIN_SECOND_19" />
+					<xtce:ParameterRefEntry parameterRef="SPIN_SUBSEC_19" />
+					<xtce:ParameterRefEntry parameterRef="ESA_P_DAC_19" />
+					<xtce:ParameterRefEntry parameterRef="ESA_N_DAC_19" />
+					<xtce:ParameterRefEntry parameterRef="VAL_PERIOD_19" />
+					<xtce:ParameterRefEntry parameterRef="VAL_SPIN_19" />
+					<xtce:ParameterRefEntry parameterRef="SOURCE_19" />
+					<xtce:ParameterRefEntry parameterRef="RESERVED_19" />
+					<xtce:ParameterRefEntry parameterRef="SPIN_SECOND_20" />
+					<xtce:ParameterRefEntry parameterRef="SPIN_SUBSEC_20" />
+					<xtce:ParameterRefEntry parameterRef="ESA_P_DAC_20" />
+					<xtce:ParameterRefEntry parameterRef="ESA_N_DAC_20" />
+					<xtce:ParameterRefEntry parameterRef="VAL_PERIOD_20" />
+					<xtce:ParameterRefEntry parameterRef="VAL_SPIN_20" />
+					<xtce:ParameterRefEntry parameterRef="SOURCE_20" />
+					<xtce:ParameterRefEntry parameterRef="RESERVED_20" />
+					<xtce:ParameterRefEntry parameterRef="SPIN_SECOND_21" />
+					<xtce:ParameterRefEntry parameterRef="SPIN_SUBSEC_21" />
+					<xtce:ParameterRefEntry parameterRef="ESA_P_DAC_21" />
+					<xtce:ParameterRefEntry parameterRef="ESA_N_DAC_21" />
+					<xtce:ParameterRefEntry parameterRef="VAL_PERIOD_21" />
+					<xtce:ParameterRefEntry parameterRef="VAL_SPIN_21" />
+					<xtce:ParameterRefEntry parameterRef="SOURCE_21" />
+					<xtce:ParameterRefEntry parameterRef="RESERVED_21" />
+					<xtce:ParameterRefEntry parameterRef="SPIN_SECOND_22" />
+					<xtce:ParameterRefEntry parameterRef="SPIN_SUBSEC_22" />
+					<xtce:ParameterRefEntry parameterRef="ESA_P_DAC_22" />
+					<xtce:ParameterRefEntry parameterRef="ESA_N_DAC_22" />
+					<xtce:ParameterRefEntry parameterRef="VAL_PERIOD_22" />
+					<xtce:ParameterRefEntry parameterRef="VAL_SPIN_22" />
+					<xtce:ParameterRefEntry parameterRef="SOURCE_22" />
+					<xtce:ParameterRefEntry parameterRef="RESERVED_22" />
+					<xtce:ParameterRefEntry parameterRef="SPIN_SECOND_23" />
+					<xtce:ParameterRefEntry parameterRef="SPIN_SUBSEC_23" />
+					<xtce:ParameterRefEntry parameterRef="ESA_P_DAC_23" />
+					<xtce:ParameterRefEntry parameterRef="ESA_N_DAC_23" />
+					<xtce:ParameterRefEntry parameterRef="VAL_PERIOD_23" />
+					<xtce:ParameterRefEntry parameterRef="VAL_SPIN_23" />
+					<xtce:ParameterRefEntry parameterRef="SOURCE_23" />
+					<xtce:ParameterRefEntry parameterRef="RESERVED_23" />
+					<xtce:ParameterRefEntry parameterRef="SPIN_SECOND_24" />
+					<xtce:ParameterRefEntry parameterRef="SPIN_SUBSEC_24" />
+					<xtce:ParameterRefEntry parameterRef="ESA_P_DAC_24" />
+					<xtce:ParameterRefEntry parameterRef="ESA_N_DAC_24" />
+					<xtce:ParameterRefEntry parameterRef="VAL_PERIOD_24" />
+					<xtce:ParameterRefEntry parameterRef="VAL_SPIN_24" />
+					<xtce:ParameterRefEntry parameterRef="SOURCE_24" />
+					<xtce:ParameterRefEntry parameterRef="RESERVED_24" />
+					<xtce:ParameterRefEntry parameterRef="SPIN_SECOND_25" />
+					<xtce:ParameterRefEntry parameterRef="SPIN_SUBSEC_25" />
+					<xtce:ParameterRefEntry parameterRef="ESA_P_DAC_25" />
+					<xtce:ParameterRefEntry parameterRef="ESA_N_DAC_25" />
+					<xtce:ParameterRefEntry parameterRef="VAL_PERIOD_25" />
+					<xtce:ParameterRefEntry parameterRef="VAL_SPIN_25" />
+					<xtce:ParameterRefEntry parameterRef="SOURCE_25" />
+					<xtce:ParameterRefEntry parameterRef="RESERVED_25" />
+					<xtce:ParameterRefEntry parameterRef="SPIN_SECOND_26" />
+					<xtce:ParameterRefEntry parameterRef="SPIN_SUBSEC_26" />
+					<xtce:ParameterRefEntry parameterRef="ESA_P_DAC_26" />
+					<xtce:ParameterRefEntry parameterRef="ESA_N_DAC_26" />
+					<xtce:ParameterRefEntry parameterRef="VAL_PERIOD_26" />
+					<xtce:ParameterRefEntry parameterRef="VAL_SPIN_26" />
+					<xtce:ParameterRefEntry parameterRef="SOURCE_26" />
+					<xtce:ParameterRefEntry parameterRef="RESERVED_26" />
+					<xtce:ParameterRefEntry parameterRef="SPIN_SECOND_27" />
+					<xtce:ParameterRefEntry parameterRef="SPIN_SUBSEC_27" />
+					<xtce:ParameterRefEntry parameterRef="ESA_P_DAC_27" />
+					<xtce:ParameterRefEntry parameterRef="ESA_N_DAC_27" />
+					<xtce:ParameterRefEntry parameterRef="VAL_PERIOD_27" />
+					<xtce:ParameterRefEntry parameterRef="VAL_SPIN_27" />
+					<xtce:ParameterRefEntry parameterRef="SOURCE_27" />
+					<xtce:ParameterRefEntry parameterRef="RESERVED_27" />
+					<xtce:ParameterRefEntry parameterRef="CHKSUM" />
+				</xtce:EntryList>
+			</xtce:SequenceContainer>
+		</xtce:ContainerSet>
+	</xtce:TelemetryMetaData>
+</xtce:SpaceSystem>

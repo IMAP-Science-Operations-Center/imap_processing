@@ -1,0 +1,125 @@
+<?xml version='1.0' encoding='utf-8'?>
+<xtce:SpaceSystem xmlns:xtce="http://www.omg.org/space/xtce" name="P_ILO_AUTO">
+	<xtce:Header date="2023-11" version="1.0" author="IMAP SDC" />
+	<xtce:TelemetryMetaData>
+		<xtce:ParameterTypeSet>
+			<xtce:IntegerParameterType name="UINT1" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT2" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="2" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT3" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="3" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT5" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="5" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT6" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="6" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT11" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="11" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT14" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="14" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT16" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="16" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT32" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="32" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+		</xtce:ParameterTypeSet>
+		<xtce:ParameterSet>
+			<xtce:Parameter name="VERSION" parameterTypeRef="UINT3">
+				<xtce:LongDescription>CCSDS Packet Version Number (always 0)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="TYPE" parameterTypeRef="UINT1">
+				<xtce:LongDescription>CCSDS Packet Type Indicator (0=telemetry)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SEC_HDR_FLG" parameterTypeRef="UINT1">
+				<xtce:LongDescription>CCSDS Packet Secondary Header Flag (always 1)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PKT_APID" parameterTypeRef="UINT11">
+				<xtce:LongDescription>CCSDS Packet Application Process ID</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SEQ_FLGS" parameterTypeRef="UINT2">
+				<xtce:LongDescription>CCSDS Packet Grouping Flags (3=not part of group)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SRC_SEQ_CTR" parameterTypeRef="UINT14">
+				<xtce:LongDescription>CCSDS Packet Sequence Count (increments with each new packet)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PKT_LEN" parameterTypeRef="UINT16">
+				<xtce:LongDescription>CCSDS Packet Length (number of bytes after Packet length minus 1)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SHCOARSE" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>CCSDS Secondary Header MET</xtce:ShortDescription>
+				<xtce:LongDescription>CCSDS Secondary Header MET</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SPARE" parameterTypeRef="UINT6">
+				<xtce:ShortDescription>spare</xtce:ShortDescription>
+				<xtce:LongDescription>spare</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="POWER_CYCLE_REQ" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Power cycle request</xtce:ShortDescription>
+				<xtce:LongDescription>Power cycle request</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="POWER_OFF_REQ" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Power off request</xtce:ShortDescription>
+				<xtce:LongDescription>Power off request</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="HEATER_CTRL_EN" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Whether FSW heater control is enabled</xtce:ShortDescription>
+				<xtce:LongDescription>Whether FSW heater control is enabled</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="HEATER_1_STATE" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Current state of Heater 1 output</xtce:ShortDescription>
+				<xtce:LongDescription>Current state of Heater 1 output</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="HEATER_2_STATE" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Current state of Heater 1 output</xtce:ShortDescription>
+				<xtce:LongDescription>Current state of Heater 1 output</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SPARE2" parameterTypeRef="UINT5">
+				<xtce:ShortDescription>spare</xtce:ShortDescription>
+				<xtce:LongDescription>spare</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="CHKSUM" parameterTypeRef="UINT16">
+				<xtce:ShortDescription>16-bit CRC checksum</xtce:ShortDescription>
+				<xtce:LongDescription>CRC-16 Checksum</xtce:LongDescription>
+			</xtce:Parameter>
+		</xtce:ParameterSet>
+		<xtce:ContainerSet>
+			<xtce:SequenceContainer name="CCSDSPacket">
+				<xtce:EntryList>
+					<xtce:ParameterRefEntry parameterRef="VERSION" />
+					<xtce:ParameterRefEntry parameterRef="TYPE" />
+					<xtce:ParameterRefEntry parameterRef="SEC_HDR_FLG" />
+					<xtce:ParameterRefEntry parameterRef="PKT_APID" />
+					<xtce:ParameterRefEntry parameterRef="SEQ_FLGS" />
+					<xtce:ParameterRefEntry parameterRef="SRC_SEQ_CTR" />
+					<xtce:ParameterRefEntry parameterRef="PKT_LEN" />
+				</xtce:EntryList>
+			</xtce:SequenceContainer>
+			<xtce:SequenceContainer name="P_ILO_AUTO">
+				<xtce:BaseContainer containerRef="CCSDSPacket">
+					<xtce:RestrictionCriteria>
+						<xtce:Comparison parameterRef="PKT_APID" value="672" useCalibratedValue="false" />
+					</xtce:RestrictionCriteria>
+				</xtce:BaseContainer>
+				<xtce:EntryList>
+					<xtce:ParameterRefEntry parameterRef="SHCOARSE" />
+					<xtce:ParameterRefEntry parameterRef="SPARE" />
+					<xtce:ParameterRefEntry parameterRef="POWER_CYCLE_REQ" />
+					<xtce:ParameterRefEntry parameterRef="POWER_OFF_REQ" />
+					<xtce:ParameterRefEntry parameterRef="HEATER_CTRL_EN" />
+					<xtce:ParameterRefEntry parameterRef="HEATER_1_STATE" />
+					<xtce:ParameterRefEntry parameterRef="HEATER_2_STATE" />
+					<xtce:ParameterRefEntry parameterRef="SPARE2" />
+					<xtce:ParameterRefEntry parameterRef="CHKSUM" />
+				</xtce:EntryList>
+			</xtce:SequenceContainer>
+		</xtce:ContainerSet>
+	</xtce:TelemetryMetaData>
+</xtce:SpaceSystem>

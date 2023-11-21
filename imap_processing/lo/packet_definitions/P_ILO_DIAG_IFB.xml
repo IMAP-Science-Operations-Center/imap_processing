@@ -1,0 +1,431 @@
+<?xml version='1.0' encoding='utf-8'?>
+<xtce:SpaceSystem xmlns:xtce="http://www.omg.org/space/xtce" name="P_ILO_DIAG_IFB">
+	<xtce:Header date="2023-11" version="1.0" author="IMAP SDC" />
+	<xtce:TelemetryMetaData>
+		<xtce:ParameterTypeSet>
+			<xtce:IntegerParameterType name="UINT1" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT2" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="2" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT3" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="3" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT4" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="4" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT7" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="7" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT8" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="8" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT11" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="11" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT14" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="14" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT16" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="16" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT23" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="23" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT32" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="32" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+		</xtce:ParameterTypeSet>
+		<xtce:ParameterSet>
+			<xtce:Parameter name="VERSION" parameterTypeRef="UINT3">
+				<xtce:LongDescription>CCSDS Packet Version Number (always 0)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="TYPE" parameterTypeRef="UINT1">
+				<xtce:LongDescription>CCSDS Packet Type Indicator (0=telemetry)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SEC_HDR_FLG" parameterTypeRef="UINT1">
+				<xtce:LongDescription>CCSDS Packet Secondary Header Flag (always 1)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PKT_APID" parameterTypeRef="UINT11">
+				<xtce:LongDescription>CCSDS Packet Application Process ID</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SEQ_FLGS" parameterTypeRef="UINT2">
+				<xtce:LongDescription>CCSDS Packet Grouping Flags (3=not part of group)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SRC_SEQ_CTR" parameterTypeRef="UINT14">
+				<xtce:LongDescription>CCSDS Packet Sequence Count (increments with each new packet)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PKT_LEN" parameterTypeRef="UINT16">
+				<xtce:LongDescription>CCSDS Packet Length (number of bytes after Packet length minus 1)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SHCOARSE" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>CCSDS Secondary Header MET</xtce:ShortDescription>
+				<xtce:LongDescription>CCSDS Secondary Header MET</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="IF_CONTROL_SPARE1" parameterTypeRef="UINT7">
+				<xtce:ShortDescription>spare</xtce:ShortDescription>
+				<xtce:LongDescription>spare</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="IF_CONTROL_CMD_ERR" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>IFB Command register write error</xtce:ShortDescription>
+				<xtce:LongDescription>A set bit indicates that an attempt was made to write to the IFB Command register when the
+interface was not ready to accept new commands. The bit is cleared by a write of ‘1’ to the bit
+location. An attempted write may compromise previously written command.</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="IF_CONTROL_SPARE2" parameterTypeRef="UINT23">
+				<xtce:ShortDescription>spare</xtce:ShortDescription>
+				<xtce:LongDescription>spare</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="IF_CONTROL_EN" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>ILO Interface is enabled</xtce:ShortDescription>
+				<xtce:LongDescription>A set bit indicates that the LO Interface is enabled. A clear bit puts the interface in the reset
+state and could be used as a soft reset for the interface logic.</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="REG_IF_SPARE1" parameterTypeRef="UINT3">
+				<xtce:ShortDescription>spare</xtce:ShortDescription>
+				<xtce:LongDescription>spare</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="REG_IF_PKT_RCVD" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>IFB register data interface status packet received</xtce:ShortDescription>
+				<xtce:LongDescription>IFB register data interface status packet received</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="REG_IF_SPARE2" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>spare</xtce:ShortDescription>
+				<xtce:LongDescription>spare</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="REG_IF_TO_ERR" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>IFB register data interface status time out error</xtce:ShortDescription>
+				<xtce:LongDescription>IFB register data interface status time out error</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="REG_IF_ID_ERR" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>IFB register data interface status ID error</xtce:ShortDescription>
+				<xtce:LongDescription>IFB register data interface status ID error</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="REG_IF_FRM_ERR" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>IFB register data interface status framing error</xtce:ShortDescription>
+				<xtce:LongDescription>IFB register data interface status framing error</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="ADC_IF_STATUS_SPARE1" parameterTypeRef="UINT3">
+				<xtce:ShortDescription>spare</xtce:ShortDescription>
+				<xtce:LongDescription>spare</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="ADC_IF_STATUS_SS_UN" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Star sensor FIFOunderflow flag</xtce:ShortDescription>
+				<xtce:LongDescription>Star sensor FIFOunderflow flag</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="ADC_IF_STATUS_SS_OV" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Star sensor FIFO overflow flag</xtce:ShortDescription>
+				<xtce:LongDescription>Star sensor FIFO overflow flag</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="ADC_IF_STATUS_SS_FF" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Star sensor FIFO full flag</xtce:ShortDescription>
+				<xtce:LongDescription>Star sensor FIFO full flag</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="ADC_IF_STATUS_SS_HF" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Star sensor FIFO half-full flag</xtce:ShortDescription>
+				<xtce:LongDescription>Star sensor FIFO half-full flag</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="ADC_IF_STATUS_SS_FE" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Star sensor FIFO emplty flag</xtce:ShortDescription>
+				<xtce:LongDescription>Star sensor FIFO emplty flag</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="ADC_IF_STATUS_SPARE2" parameterTypeRef="UINT3">
+				<xtce:ShortDescription>spare</xtce:ShortDescription>
+				<xtce:LongDescription>spare</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="ADC_IF_STATUS_PKT_RCVD" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Valid packet received</xtce:ShortDescription>
+				<xtce:LongDescription>Valid packet received</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="ADC_IF_STATUS_SPARE3" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>spare</xtce:ShortDescription>
+				<xtce:LongDescription>spare</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="ADC_IF_STATUS_TO_ERR" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Entire packet has not been received within a 1 ms window</xtce:ShortDescription>
+				<xtce:LongDescription>Entire packet has not been received within a 1 ms window</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="ADC_IF_STATUS_ID_ERR" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Packet with an incorrect ID has been received</xtce:ShortDescription>
+				<xtce:LongDescription>Packet with an incorrect ID has been received</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="ADC_IF_STATUS_FRM_ERR" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Framing error detected</xtce:ShortDescription>
+				<xtce:LongDescription>Framing error detected</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="FPGA_VERSION" parameterTypeRef="UINT8">
+				<xtce:ShortDescription>FPGA version (hard-coded constant)</xtce:ShortDescription>
+				<xtce:LongDescription>FPGA version (hard-coded constant)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SPARE1" parameterTypeRef="UINT2">
+				<xtce:ShortDescription>spare</xtce:ShortDescription>
+				<xtce:LongDescription>spare</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="HV_DISABLE" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Status of HV disable plug signal</xtce:ShortDescription>
+				<xtce:LongDescription>Status of HV disable plug signal</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="HV_LIMIT" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Status of HV limit signal</xtce:ShortDescription>
+				<xtce:LongDescription>Status of HV limit signal</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="BOARD_ID" parameterTypeRef="UINT4">
+				<xtce:ShortDescription>Status of IFB jumper field</xtce:ShortDescription>
+				<xtce:LongDescription>Status of IFB jumper field</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="CMD_COUNT" parameterTypeRef="UINT8">
+				<xtce:ShortDescription>Roll over counter of every command received</xtce:ShortDescription>
+				<xtce:LongDescription>Roll over counter of every command received</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SPARE2" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>spare</xtce:ShortDescription>
+				<xtce:LongDescription>spare</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="ADC_AUX_MUX" parameterTypeRef="UINT3">
+				<xtce:ShortDescription>Selects the auxiliary ADC internal 8-channel mux input</xtce:ShortDescription>
+				<xtce:LongDescription>Selects the auxiliary ADC internal 8-channel mux input</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="ADC_CLK_DIS" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>1' to deassert adc_sclk and adc_cs_n signals. '0' for normal ADC operation</xtce:ShortDescription>
+				<xtce:LongDescription>'1' to deassert adc_sclk and adc_cs_n signals. '0' for normal ADC operation.</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="OSCOPE_EN" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>'1' to select oscope mode. '0' for normal operation.</xtce:ShortDescription>
+				<xtce:LongDescription>'1' to select oscope mode. '0' for normal operation.</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="STAR_SYNC" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Spin_pulse synchronization from ICE</xtce:ShortDescription>
+				<xtce:LongDescription>1' to synchronize IFB ADC Telemetry to spin_pulse from ICE. '0' to ignore state of spin_pulse.</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="IFB_DATA_EN" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>IFB ADC and REG Telemetry to ICE enable</xtce:ShortDescription>
+				<xtce:LongDescription>'1' to enable IFB ADC and REG Telemetry to ICE. '0' to disable IFB ADC and REG Telemetry to ICE.</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="IFB_DATA_INTERVAL" parameterTypeRef="UINT8">
+				<xtce:ShortDescription>Sets the IFB ADC telemetry primary cadence interval</xtce:ShortDescription>
+				<xtce:LongDescription>Sets the IFB ADC telemetry primary cadence interval</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SYNC_CLK_MSB" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>11' to disable TOF HVPS sync clock</xtce:ShortDescription>
+				<xtce:LongDescription>11' to disable TOF HVPS sync clock</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PAC_EN_MSB" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>11' to enable PAC HV Supply</xtce:ShortDescription>
+				<xtce:LongDescription>11' to enable PAC HV Supply</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="MCP_EN_MSB" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>11' to enable MCP HV Supply</xtce:ShortDescription>
+				<xtce:LongDescription>11' to enable MCP HV Supply</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="LV_EN_MSB" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>11' to enable TOF Board LV Supply</xtce:ShortDescription>
+				<xtce:LongDescription>11' to enable TOF Board LV Supply</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SYNC_CLK_LSB" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>11' to disable TOF HVPS sync clock</xtce:ShortDescription>
+				<xtce:LongDescription>11' to disable TOF HVPS sync clock</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PAC_EN_LSB" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>11' to enable PAC HV Supply</xtce:ShortDescription>
+				<xtce:LongDescription>11' to enable PAC HV Supply</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="MCP_EN_LSB" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>11' to enable MCP HV Supply</xtce:ShortDescription>
+				<xtce:LongDescription>11' to enable MCP HV Supply</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="LV_EN_LSB" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>11' to enable TOF Board LV Supply</xtce:ShortDescription>
+				<xtce:LongDescription>11' to enable TOF Board LV Supply</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PAC_VSET" parameterTypeRef="UINT8">
+				<xtce:ShortDescription>Enables 5V reference to PAC HV supply</xtce:ShortDescription>
+				<xtce:LongDescription>Enables 5V reference to PAC HV supply</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PAC_OCP" parameterTypeRef="UINT8">
+				<xtce:ShortDescription>Enables 5V reference to PAC HV supply</xtce:ShortDescription>
+				<xtce:LongDescription>Enables 5V reference to PAC HV supply</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="MCP_VSET" parameterTypeRef="UINT8">
+				<xtce:ShortDescription>Enables 5V reference to MCP HV supply</xtce:ShortDescription>
+				<xtce:LongDescription>Enables 5V reference to MCP HV supply</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="MCP_OCP" parameterTypeRef="UINT8">
+				<xtce:ShortDescription>Enables 5V reference to MCP HV supply</xtce:ShortDescription>
+				<xtce:LongDescription>Enables 5V reference to MCP HV supply</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="STAR_OFFSET_ADJUST" parameterTypeRef="UINT8">
+				<xtce:ShortDescription>Star sensor offset adjust</xtce:ShortDescription>
+				<xtce:LongDescription>Star sensor offset adjust</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="OSCOPE_CHANNEL_1" parameterTypeRef="UINT4">
+				<xtce:ShortDescription>Oscope channel 1 ADC channel select</xtce:ShortDescription>
+				<xtce:LongDescription>Oscope channel 1 ADC channel select</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="OSCOPE_CHANNEL_0" parameterTypeRef="UINT4">
+				<xtce:ShortDescription>Oscope channel 0 ADC channel select</xtce:ShortDescription>
+				<xtce:LongDescription>Oscope channel 0 ADC channel select</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="STAR_BRIGHT" parameterTypeRef="UINT16" />
+			<xtce:Parameter name="IFB_TEMP1" parameterTypeRef="UINT16">
+				<xtce:ShortDescription>IFB temperature (hot spot between FPGA and 2.5V regulator)</xtce:ShortDescription>
+				<xtce:LongDescription>IFB temperature (hot spot between FPGA and 2.5V regulator)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="IFB_TEMP0" parameterTypeRef="UINT16">
+				<xtce:ShortDescription>IFB temperature (cold spot at board corner between J1 and J2)</xtce:ShortDescription>
+				<xtce:LongDescription>IFB temperature (cold spot at board corner between J1 and J2)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="IFB_V5P0_VM" parameterTypeRef="UINT16">
+				<xtce:ShortDescription>IFB +5V voltage monitor</xtce:ShortDescription>
+				<xtce:LongDescription>IFB +5V voltage monitor</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="IFB_V3P3_VM" parameterTypeRef="UINT16">
+				<xtce:ShortDescription>IFB +3.3V voltage monitor</xtce:ShortDescription>
+				<xtce:LongDescription>IFB +3.3V voltage monitor</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="IFB_V12P0_VM" parameterTypeRef="UINT16">
+				<xtce:ShortDescription>IFB +12V voltage monitor</xtce:ShortDescription>
+				<xtce:LongDescription>IFB +12V voltage monitor</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="IFB_V12N0_VM" parameterTypeRef="UINT16">
+				<xtce:ShortDescription>IFB -12V voltage monitor</xtce:ShortDescription>
+				<xtce:LongDescription>IFB -12V voltage monitor</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="LV_CM" parameterTypeRef="UINT16">
+				<xtce:ShortDescription>LV supply primary side current</xtce:ShortDescription>
+				<xtce:LongDescription>LV supply primary side current</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="LV_VM" parameterTypeRef="UINT16">
+				<xtce:ShortDescription>LV supply primary side voltage</xtce:ShortDescription>
+				<xtce:LongDescription>LV supply primary side voltage</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="LV_TEMP" parameterTypeRef="UINT16">
+				<xtce:ShortDescription>LV temperature</xtce:ShortDescription>
+				<xtce:LongDescription>LV temperature</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="MCP_CM" parameterTypeRef="UINT16">
+				<xtce:ShortDescription>MCP primary side current</xtce:ShortDescription>
+				<xtce:LongDescription>MCP primary side current</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="MCP_VM" parameterTypeRef="UINT16">
+				<xtce:ShortDescription>MCP primary side voltage</xtce:ShortDescription>
+				<xtce:LongDescription>MCP primary side voltage</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="MCP_TEMP" parameterTypeRef="UINT16">
+				<xtce:ShortDescription>MCP temperature</xtce:ShortDescription>
+				<xtce:LongDescription>MCP temperature</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PAC_CM" parameterTypeRef="UINT16">
+				<xtce:ShortDescription>PAC primary side current</xtce:ShortDescription>
+				<xtce:LongDescription>PAC primary side current</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PAC_VM" parameterTypeRef="UINT16">
+				<xtce:ShortDescription>PAC primary side voltage</xtce:ShortDescription>
+				<xtce:LongDescription>PAC primary side voltage</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PAC_TEMP" parameterTypeRef="UINT16">
+				<xtce:ShortDescription>PAC temperature</xtce:ShortDescription>
+				<xtce:LongDescription>PAC temperature</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SPARE3" parameterTypeRef="UINT8">
+				<xtce:ShortDescription>spare</xtce:ShortDescription>
+				<xtce:LongDescription>spare</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="CHKSUM" parameterTypeRef="UINT16">
+				<xtce:ShortDescription>packet checksum</xtce:ShortDescription>
+				<xtce:LongDescription>packet checksum</xtce:LongDescription>
+			</xtce:Parameter>
+		</xtce:ParameterSet>
+		<xtce:ContainerSet>
+			<xtce:SequenceContainer name="CCSDSPacket">
+				<xtce:EntryList>
+					<xtce:ParameterRefEntry parameterRef="VERSION" />
+					<xtce:ParameterRefEntry parameterRef="TYPE" />
+					<xtce:ParameterRefEntry parameterRef="SEC_HDR_FLG" />
+					<xtce:ParameterRefEntry parameterRef="PKT_APID" />
+					<xtce:ParameterRefEntry parameterRef="SEQ_FLGS" />
+					<xtce:ParameterRefEntry parameterRef="SRC_SEQ_CTR" />
+					<xtce:ParameterRefEntry parameterRef="PKT_LEN" />
+				</xtce:EntryList>
+			</xtce:SequenceContainer>
+			<xtce:SequenceContainer name="P_ILO_DIAG_IFB">
+				<xtce:BaseContainer containerRef="CCSDSPacket">
+					<xtce:RestrictionCriteria>
+						<xtce:Comparison parameterRef="PKT_APID" value="722" useCalibratedValue="false" />
+					</xtce:RestrictionCriteria>
+				</xtce:BaseContainer>
+				<xtce:EntryList>
+					<xtce:ParameterRefEntry parameterRef="SHCOARSE" />
+					<xtce:ParameterRefEntry parameterRef="IF_CONTROL_SPARE1" />
+					<xtce:ParameterRefEntry parameterRef="IF_CONTROL_CMD_ERR" />
+					<xtce:ParameterRefEntry parameterRef="IF_CONTROL_SPARE2" />
+					<xtce:ParameterRefEntry parameterRef="IF_CONTROL_EN" />
+					<xtce:ParameterRefEntry parameterRef="REG_IF_SPARE1" />
+					<xtce:ParameterRefEntry parameterRef="REG_IF_PKT_RCVD" />
+					<xtce:ParameterRefEntry parameterRef="REG_IF_SPARE2" />
+					<xtce:ParameterRefEntry parameterRef="REG_IF_TO_ERR" />
+					<xtce:ParameterRefEntry parameterRef="REG_IF_ID_ERR" />
+					<xtce:ParameterRefEntry parameterRef="REG_IF_FRM_ERR" />
+					<xtce:ParameterRefEntry parameterRef="ADC_IF_STATUS_SPARE1" />
+					<xtce:ParameterRefEntry parameterRef="ADC_IF_STATUS_SS_UN" />
+					<xtce:ParameterRefEntry parameterRef="ADC_IF_STATUS_SS_OV" />
+					<xtce:ParameterRefEntry parameterRef="ADC_IF_STATUS_SS_FF" />
+					<xtce:ParameterRefEntry parameterRef="ADC_IF_STATUS_SS_HF" />
+					<xtce:ParameterRefEntry parameterRef="ADC_IF_STATUS_SS_FE" />
+					<xtce:ParameterRefEntry parameterRef="ADC_IF_STATUS_SPARE2" />
+					<xtce:ParameterRefEntry parameterRef="ADC_IF_STATUS_PKT_RCVD" />
+					<xtce:ParameterRefEntry parameterRef="ADC_IF_STATUS_SPARE3" />
+					<xtce:ParameterRefEntry parameterRef="ADC_IF_STATUS_TO_ERR" />
+					<xtce:ParameterRefEntry parameterRef="ADC_IF_STATUS_ID_ERR" />
+					<xtce:ParameterRefEntry parameterRef="ADC_IF_STATUS_FRM_ERR" />
+					<xtce:ParameterRefEntry parameterRef="FPGA_VERSION" />
+					<xtce:ParameterRefEntry parameterRef="SPARE1" />
+					<xtce:ParameterRefEntry parameterRef="HV_DISABLE" />
+					<xtce:ParameterRefEntry parameterRef="HV_LIMIT" />
+					<xtce:ParameterRefEntry parameterRef="BOARD_ID" />
+					<xtce:ParameterRefEntry parameterRef="CMD_COUNT" />
+					<xtce:ParameterRefEntry parameterRef="SPARE2" />
+					<xtce:ParameterRefEntry parameterRef="ADC_AUX_MUX" />
+					<xtce:ParameterRefEntry parameterRef="ADC_CLK_DIS" />
+					<xtce:ParameterRefEntry parameterRef="OSCOPE_EN" />
+					<xtce:ParameterRefEntry parameterRef="STAR_SYNC" />
+					<xtce:ParameterRefEntry parameterRef="IFB_DATA_EN" />
+					<xtce:ParameterRefEntry parameterRef="IFB_DATA_INTERVAL" />
+					<xtce:ParameterRefEntry parameterRef="SYNC_CLK_MSB" />
+					<xtce:ParameterRefEntry parameterRef="PAC_EN_MSB" />
+					<xtce:ParameterRefEntry parameterRef="MCP_EN_MSB" />
+					<xtce:ParameterRefEntry parameterRef="LV_EN_MSB" />
+					<xtce:ParameterRefEntry parameterRef="SYNC_CLK_LSB" />
+					<xtce:ParameterRefEntry parameterRef="PAC_EN_LSB" />
+					<xtce:ParameterRefEntry parameterRef="MCP_EN_LSB" />
+					<xtce:ParameterRefEntry parameterRef="LV_EN_LSB" />
+					<xtce:ParameterRefEntry parameterRef="PAC_VSET" />
+					<xtce:ParameterRefEntry parameterRef="PAC_OCP" />
+					<xtce:ParameterRefEntry parameterRef="MCP_VSET" />
+					<xtce:ParameterRefEntry parameterRef="MCP_OCP" />
+					<xtce:ParameterRefEntry parameterRef="STAR_OFFSET_ADJUST" />
+					<xtce:ParameterRefEntry parameterRef="OSCOPE_CHANNEL_1" />
+					<xtce:ParameterRefEntry parameterRef="OSCOPE_CHANNEL_0" />
+					<xtce:ParameterRefEntry parameterRef="STAR_BRIGHT" />
+					<xtce:ParameterRefEntry parameterRef="IFB_TEMP1" />
+					<xtce:ParameterRefEntry parameterRef="IFB_TEMP0" />
+					<xtce:ParameterRefEntry parameterRef="IFB_V5P0_VM" />
+					<xtce:ParameterRefEntry parameterRef="IFB_V3P3_VM" />
+					<xtce:ParameterRefEntry parameterRef="IFB_V12P0_VM" />
+					<xtce:ParameterRefEntry parameterRef="IFB_V12N0_VM" />
+					<xtce:ParameterRefEntry parameterRef="LV_CM" />
+					<xtce:ParameterRefEntry parameterRef="LV_VM" />
+					<xtce:ParameterRefEntry parameterRef="LV_TEMP" />
+					<xtce:ParameterRefEntry parameterRef="MCP_CM" />
+					<xtce:ParameterRefEntry parameterRef="MCP_VM" />
+					<xtce:ParameterRefEntry parameterRef="MCP_TEMP" />
+					<xtce:ParameterRefEntry parameterRef="PAC_CM" />
+					<xtce:ParameterRefEntry parameterRef="PAC_VM" />
+					<xtce:ParameterRefEntry parameterRef="PAC_TEMP" />
+					<xtce:ParameterRefEntry parameterRef="SPARE3" />
+					<xtce:ParameterRefEntry parameterRef="CHKSUM" />
+				</xtce:EntryList>
+			</xtce:SequenceContainer>
+		</xtce:ContainerSet>
+	</xtce:TelemetryMetaData>
+</xtce:SpaceSystem>

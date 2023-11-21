@@ -1,0 +1,425 @@
+<?xml version='1.0' encoding='utf-8'?>
+<xtce:SpaceSystem xmlns:xtce="http://www.omg.org/space/xtce" name="P_ILO_DIAG_CDH">
+	<xtce:Header date="2023-11" version="1.0" author="IMAP SDC" />
+	<xtce:TelemetryMetaData>
+		<xtce:ParameterTypeSet>
+			<xtce:IntegerParameterType name="UINT1" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT2" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="2" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT3" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="3" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT8" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="8" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT11" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="11" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT14" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="14" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT16" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="16" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT32" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="32" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+		</xtce:ParameterTypeSet>
+		<xtce:ParameterSet>
+			<xtce:Parameter name="VERSION" parameterTypeRef="UINT3">
+				<xtce:LongDescription>CCSDS Packet Version Number (always 0)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="TYPE" parameterTypeRef="UINT1">
+				<xtce:LongDescription>CCSDS Packet Type Indicator (0=telemetry)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SEC_HDR_FLG" parameterTypeRef="UINT1">
+				<xtce:LongDescription>CCSDS Packet Secondary Header Flag (always 1)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PKT_APID" parameterTypeRef="UINT11">
+				<xtce:LongDescription>CCSDS Packet Application Process ID</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SEQ_FLGS" parameterTypeRef="UINT2">
+				<xtce:LongDescription>CCSDS Packet Grouping Flags (3=not part of group)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SRC_SEQ_CTR" parameterTypeRef="UINT14">
+				<xtce:LongDescription>CCSDS Packet Sequence Count (increments with each new packet)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PKT_LEN" parameterTypeRef="UINT16">
+				<xtce:LongDescription>CCSDS Packet Length (number of bytes after Packet length minus 1)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SHCOARSE" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>CCSDS Secondary Header MET</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="JUMPER_REG" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>CDH Control registers - Jumper</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="RESET_REG" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>CDH Control registers - Reset</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="WATCHDOG_REG" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>CDH Control registers - Watchdog</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="CTRL_STATUS_REG" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>CDH Control registers - Control and Status (lower two bytes)</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SCRATCHPAD_1_REG" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>CDH Scratchpad registers - 1</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SCRATCHPAD_2_REG" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>CDH Scratchpad registers - 2</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="CPU_UART_CLOCK_BAUD_REG" parameterTypeRef="UINT16">
+				<xtce:ShortDescription>CDH CPU UART Clock Buad</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="TICK_TIMER_CTRL_STATUS_REG" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>CDH Tick Timers - Tick Timers Control and Status</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="TICK_TIMER_RELOAD_COUNT_REG" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>CDH Tick Timers - Tick Timer n Reload Count</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="TICK_TIMER_COUNTER_REG" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>CDH Tick Timers - Tick Timer n Counter</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="MET_CTRL_REG" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>CDH MET Control - MET Control</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="MET_STATUS_REG" parameterTypeRef="UINT16">
+				<xtce:ShortDescription>CDH MET Control - MET Status</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="MET_COARSE_COUNTER_REG" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>CDH MET Control - MET Coarse Counter</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="MET_FINE_COUNTER_REG" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>CDH MET Control - MET Fine Counter</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="MDM25P_14_T" parameterTypeRef="UINT16">
+				<xtce:ShortDescription>MDM25P_14_T</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="MDM25P_15_T" parameterTypeRef="UINT16">
+				<xtce:ShortDescription>MDM25P_15_T</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="MDM25P_16_T" parameterTypeRef="UINT16">
+				<xtce:ShortDescription>MDM25P_16_T</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="LO_T" parameterTypeRef="UINT16">
+				<xtce:ShortDescription>LO_T</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="HVPS_T" parameterTypeRef="UINT16">
+				<xtce:ShortDescription>HVPS_T</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="LVPS_12V_T" parameterTypeRef="UINT16">
+				<xtce:ShortDescription>LVPS_12V_T</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="LVPS_5V_T" parameterTypeRef="UINT16">
+				<xtce:ShortDescription>LVPS_5V_T</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="LVPS_3P3V_T" parameterTypeRef="UINT16">
+				<xtce:ShortDescription>LVPS_3P3V_T</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="LVPS_3P3V" parameterTypeRef="UINT16">
+				<xtce:ShortDescription>LVPS_3P3V</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="LVPS_5V" parameterTypeRef="UINT16">
+				<xtce:ShortDescription>LVPS_5V</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="LVPS_N5V" parameterTypeRef="UINT16">
+				<xtce:ShortDescription>LVPS_N5V</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="LVPS_12V" parameterTypeRef="UINT16">
+				<xtce:ShortDescription>LVPS_12V</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="LVPS_N12V" parameterTypeRef="UINT16">
+				<xtce:ShortDescription>LVPS_N12V</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="LVPS_3P3V_I" parameterTypeRef="UINT16">
+				<xtce:ShortDescription>LVPS_3P3V_I</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="LVPS_5V_I" parameterTypeRef="UINT16">
+				<xtce:ShortDescription>LVPS_5V_I</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="LVPS_N5V_I" parameterTypeRef="UINT16">
+				<xtce:ShortDescription>LVPS_N5V_I</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="LVPS_12V_I" parameterTypeRef="UINT16">
+				<xtce:ShortDescription>LVPS_12V_I</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="LVPS_N12V_I" parameterTypeRef="UINT16">
+				<xtce:ShortDescription>LVPS_N12V_I</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="CDH_1P5V" parameterTypeRef="UINT16">
+				<xtce:ShortDescription>CDH_1P5V</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="CDH_1P8V" parameterTypeRef="UINT16">
+				<xtce:ShortDescription>CDH_1P8V</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="CDH_3P3V" parameterTypeRef="UINT16">
+				<xtce:ShortDescription>CDH_3P3V</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="CDH_12V" parameterTypeRef="UINT16">
+				<xtce:ShortDescription>CDH_12V</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="CDH_N12V" parameterTypeRef="UINT16">
+				<xtce:ShortDescription>CDH_N12V</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="CDH_5V" parameterTypeRef="UINT16">
+				<xtce:ShortDescription>CDH_5V</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="CDH_5V_ADC" parameterTypeRef="UINT16">
+				<xtce:ShortDescription>CDH_5V_ADC</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="CDH_PROCESSOR_T" parameterTypeRef="UINT16">
+				<xtce:ShortDescription>CDH_PROCESSOR_T</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="CDH_1P8V_LDO_T" parameterTypeRef="UINT16">
+				<xtce:ShortDescription>CDH_1P8V_LDO_T</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="CDH_1P5V_LDO_T" parameterTypeRef="UINT16">
+				<xtce:ShortDescription>CDH_1P5V_LDO_T</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="CDH_SDRAM_T" parameterTypeRef="UINT16">
+				<xtce:ShortDescription>CDH_SDRAM_T</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="ADC_CTRL_STATUS_REG" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>CDH ADC Control and Status</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SC_CMD_FIFO_CTRL_STATUS_REG" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>CDH Spacecraft Data Interface - Spacecraft Command FIFO Control and Status</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SC_TLM_FIFO_CTRL_STATUS_REG" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>CDH Spacecraft Data Interface - Spacecraft Telemetry FIFO Control and Status</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="INTERRUPT_LEVEL_REG" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>CDH Interrupts - Interrupt Level</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="INTERRUPT_PENDING_REG" parameterTypeRef="UINT16">
+				<xtce:ShortDescription>CDH Interrupts - Interrupt Pending</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="INTERRUPT_ENABLE_REG" parameterTypeRef="UINT16">
+				<xtce:ShortDescription>CDH Interrupts - Interrupt Enable</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SPIN_ENABLE_AND_STATUS_REG" parameterTypeRef="UINT16">
+				<xtce:ShortDescription>CDH Spin - Spin Enable and Status</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SPIN_BIN_PERIOD_REG" parameterTypeRef="UINT16">
+				<xtce:ShortDescription>CDH Spin - Spin Bin Period</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SPIN_BIN_INDEX_REG" parameterTypeRef="UINT16">
+				<xtce:ShortDescription>CDH Spin - Spin Bin Index</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SPIN_PERIOD_REG" parameterTypeRef="UINT16">
+				<xtce:ShortDescription>CDH Spin - Spin Period</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SPIN_PERIOD_TIMER_REG" parameterTypeRef="UINT16">
+				<xtce:ShortDescription>CDH Spin - Spin Period Timer</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SPIN_PERIOD_TIMER_AT_NXT_PPS_REG" parameterTypeRef="UINT16">
+				<xtce:ShortDescription>CDH Spin - Spin Period Timer at Next 1PPS</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SPIN_TIME_STAMP_SECONDS_REG" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>CDH Spin - Spin Time Stamp Seconds</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SPIN_TIME_STAMP_SUBSECONDS_REG" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>CDH Spin - Spin Time Stamp Subseconds</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="LOOPBACK_CTRL_REG" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>CDH External Loopback - Loopback Control</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="LOOPBACK_STATUS_REG" parameterTypeRef="UINT16">
+				<xtce:ShortDescription>CDH External Loopback - Loopback Status</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="LOOPBACK_TX_REG" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>CDH External Loopback - Loopback Transmit</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="LOOPBACK_RX_REG" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>CDH External Loopback - Loopback Receive</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DISCRETE_IO_REG" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>CDH Discrete IO</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="HEATER_CTRL_REG" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>CDH Heater Control - Heater Control</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="HEATER_STATUS_REG" parameterTypeRef="UINT8">
+				<xtce:ShortDescription>CDH Heater Control - Heater Status</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="INSTR_PWR_CTRL_REG" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>CDH Instrument Power Control - Instrument Power Control</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="INSTR_PWR_STATUS_REG" parameterTypeRef="UINT8">
+				<xtce:ShortDescription>CDH Instrument Power Control - Instrument Power Status</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="IFB_INTERFACE_CTRL_STATUS_REG" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>ILO_DIAG_CDH.IFB_INTERFACE_CTRL_STATUS_REG</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="IFB_INTERFACE_CMD_REG" parameterTypeRef="UINT16">
+				<xtce:ShortDescription>ILO_DIAG_CDH.IFB_INTERFACE_CMD_REG</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="IFB_ADC_TLM_STATUS_REG" parameterTypeRef="UINT16">
+				<xtce:ShortDescription>ILO_DIAG_CDH.IFB_ADC_TLM_STATUS_REG</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="IFB_REG_TLM_STATUS_REG" parameterTypeRef="UINT8">
+				<xtce:ShortDescription>ILO_DIAG_CDH.IFB_REG_TLM_STATUS_REG</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="TOF_INTERFACE_STATUS_REG" parameterTypeRef="UINT16">
+				<xtce:ShortDescription>ILO_DIAG_CDH.TOF_INTERFACE_STATUS_REG</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DE_TIME_TAG_RESOLUTION_REG" parameterTypeRef="UINT8">
+				<xtce:ShortDescription>ILO_DIAG_CDH.DE_TIME_TAG_RESOLUTION_REG</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DE_TIME_TAG_CTRL_STATUS_REG" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>ILO_DIAG_CDH.DE_TIME_TAG_CTRL_STATUS_REG</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DE_FIFO_CTRL_STATUS_REG" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>ILO_DIAG_CDH.DE_FIFO_CTRL_STATUS_REG</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="FEE_RESET_STATUS_REG" parameterTypeRef="UINT8">
+				<xtce:ShortDescription>ILO_DIAG_CDH.FEE_RESET_STATUS_REG</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="FEE_RESET_CMD_REG" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>ILO_DIAG_CDH.FEE_RESET_CMD_REG</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="FEE_RESET_DURATION_REG" parameterTypeRef="UINT16">
+				<xtce:ShortDescription>ILO_DIAG_CDH.FEE_RESET_DURATION_REG</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SPIN_PULSE_DURATION_REG" parameterTypeRef="UINT16">
+				<xtce:ShortDescription>ILO_DIAG_CDH.SPIN_PULSE_DURATION_REG</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="HVPS_CTRL_REG" parameterTypeRef="UINT8">
+				<xtce:ShortDescription>ILO_DIAG_CDH.HVPS_CTRL_REG</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="HVPS_STATUS_REG" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>ILO_DIAG_CDH.HVPS_STATUS_REG</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="HVPS_CMD_REG" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>ILO_DIAG_CDH.HVPS_CMD_REG</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PIVOT_INTERFACE_CTRL_REG" parameterTypeRef="UINT8">
+				<xtce:ShortDescription>ILO_DIAG_CDH.PIVOT_INTERFACE_CTRL_REG</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PIVOT_INTERFACE_STATUS_REG" parameterTypeRef="UINT8">
+				<xtce:ShortDescription>ILO_DIAG_CDH.PIVOT_INTERFACE_STATUS_REG</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PIVOT_CMD_DATA_REG" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>ILO_DIAG_CDH.PIVOT_CMD_DATA_REG</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PIVOT_CMD_OPCODE_REG" parameterTypeRef="UINT16">
+				<xtce:ShortDescription>ILO_DIAG_CDH.PIVOT_CMD_OPCODE_REG</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="CHKSUM" parameterTypeRef="UINT16">
+				<xtce:ShortDescription>16-bit CRC checksum</xtce:ShortDescription>
+			</xtce:Parameter>
+		</xtce:ParameterSet>
+		<xtce:ContainerSet>
+			<xtce:SequenceContainer name="CCSDSPacket">
+				<xtce:EntryList>
+					<xtce:ParameterRefEntry parameterRef="VERSION" />
+					<xtce:ParameterRefEntry parameterRef="TYPE" />
+					<xtce:ParameterRefEntry parameterRef="SEC_HDR_FLG" />
+					<xtce:ParameterRefEntry parameterRef="PKT_APID" />
+					<xtce:ParameterRefEntry parameterRef="SEQ_FLGS" />
+					<xtce:ParameterRefEntry parameterRef="SRC_SEQ_CTR" />
+					<xtce:ParameterRefEntry parameterRef="PKT_LEN" />
+				</xtce:EntryList>
+			</xtce:SequenceContainer>
+			<xtce:SequenceContainer name="P_ILO_DIAG_CDH">
+				<xtce:BaseContainer containerRef="CCSDSPacket">
+					<xtce:RestrictionCriteria>
+						<xtce:Comparison parameterRef="PKT_APID" value="721" useCalibratedValue="false" />
+					</xtce:RestrictionCriteria>
+				</xtce:BaseContainer>
+				<xtce:EntryList>
+					<xtce:ParameterRefEntry parameterRef="SHCOARSE" />
+					<xtce:ParameterRefEntry parameterRef="JUMPER_REG" />
+					<xtce:ParameterRefEntry parameterRef="RESET_REG" />
+					<xtce:ParameterRefEntry parameterRef="WATCHDOG_REG" />
+					<xtce:ParameterRefEntry parameterRef="CTRL_STATUS_REG" />
+					<xtce:ParameterRefEntry parameterRef="SCRATCHPAD_1_REG" />
+					<xtce:ParameterRefEntry parameterRef="SCRATCHPAD_2_REG" />
+					<xtce:ParameterRefEntry parameterRef="CPU_UART_CLOCK_BAUD_REG" />
+					<xtce:ParameterRefEntry parameterRef="TICK_TIMER_CTRL_STATUS_REG" />
+					<xtce:ParameterRefEntry parameterRef="TICK_TIMER_RELOAD_COUNT_REG" />
+					<xtce:ParameterRefEntry parameterRef="TICK_TIMER_COUNTER_REG" />
+					<xtce:ParameterRefEntry parameterRef="MET_CTRL_REG" />
+					<xtce:ParameterRefEntry parameterRef="MET_STATUS_REG" />
+					<xtce:ParameterRefEntry parameterRef="MET_COARSE_COUNTER_REG" />
+					<xtce:ParameterRefEntry parameterRef="MET_FINE_COUNTER_REG" />
+					<xtce:ParameterRefEntry parameterRef="MDM25P_14_T" />
+					<xtce:ParameterRefEntry parameterRef="MDM25P_15_T" />
+					<xtce:ParameterRefEntry parameterRef="MDM25P_16_T" />
+					<xtce:ParameterRefEntry parameterRef="LO_T" />
+					<xtce:ParameterRefEntry parameterRef="HVPS_T" />
+					<xtce:ParameterRefEntry parameterRef="LVPS_12V_T" />
+					<xtce:ParameterRefEntry parameterRef="LVPS_5V_T" />
+					<xtce:ParameterRefEntry parameterRef="LVPS_3P3V_T" />
+					<xtce:ParameterRefEntry parameterRef="LVPS_3P3V" />
+					<xtce:ParameterRefEntry parameterRef="LVPS_5V" />
+					<xtce:ParameterRefEntry parameterRef="LVPS_N5V" />
+					<xtce:ParameterRefEntry parameterRef="LVPS_12V" />
+					<xtce:ParameterRefEntry parameterRef="LVPS_N12V" />
+					<xtce:ParameterRefEntry parameterRef="LVPS_3P3V_I" />
+					<xtce:ParameterRefEntry parameterRef="LVPS_5V_I" />
+					<xtce:ParameterRefEntry parameterRef="LVPS_N5V_I" />
+					<xtce:ParameterRefEntry parameterRef="LVPS_12V_I" />
+					<xtce:ParameterRefEntry parameterRef="LVPS_N12V_I" />
+					<xtce:ParameterRefEntry parameterRef="CDH_1P5V" />
+					<xtce:ParameterRefEntry parameterRef="CDH_1P8V" />
+					<xtce:ParameterRefEntry parameterRef="CDH_3P3V" />
+					<xtce:ParameterRefEntry parameterRef="CDH_12V" />
+					<xtce:ParameterRefEntry parameterRef="CDH_N12V" />
+					<xtce:ParameterRefEntry parameterRef="CDH_5V" />
+					<xtce:ParameterRefEntry parameterRef="CDH_5V_ADC" />
+					<xtce:ParameterRefEntry parameterRef="CDH_PROCESSOR_T" />
+					<xtce:ParameterRefEntry parameterRef="CDH_1P8V_LDO_T" />
+					<xtce:ParameterRefEntry parameterRef="CDH_1P5V_LDO_T" />
+					<xtce:ParameterRefEntry parameterRef="CDH_SDRAM_T" />
+					<xtce:ParameterRefEntry parameterRef="ADC_CTRL_STATUS_REG" />
+					<xtce:ParameterRefEntry parameterRef="SC_CMD_FIFO_CTRL_STATUS_REG" />
+					<xtce:ParameterRefEntry parameterRef="SC_TLM_FIFO_CTRL_STATUS_REG" />
+					<xtce:ParameterRefEntry parameterRef="INTERRUPT_LEVEL_REG" />
+					<xtce:ParameterRefEntry parameterRef="INTERRUPT_PENDING_REG" />
+					<xtce:ParameterRefEntry parameterRef="INTERRUPT_ENABLE_REG" />
+					<xtce:ParameterRefEntry parameterRef="SPIN_ENABLE_AND_STATUS_REG" />
+					<xtce:ParameterRefEntry parameterRef="SPIN_BIN_PERIOD_REG" />
+					<xtce:ParameterRefEntry parameterRef="SPIN_BIN_INDEX_REG" />
+					<xtce:ParameterRefEntry parameterRef="SPIN_PERIOD_REG" />
+					<xtce:ParameterRefEntry parameterRef="SPIN_PERIOD_TIMER_REG" />
+					<xtce:ParameterRefEntry parameterRef="SPIN_PERIOD_TIMER_AT_NXT_PPS_REG" />
+					<xtce:ParameterRefEntry parameterRef="SPIN_TIME_STAMP_SECONDS_REG" />
+					<xtce:ParameterRefEntry parameterRef="SPIN_TIME_STAMP_SUBSECONDS_REG" />
+					<xtce:ParameterRefEntry parameterRef="LOOPBACK_CTRL_REG" />
+					<xtce:ParameterRefEntry parameterRef="LOOPBACK_STATUS_REG" />
+					<xtce:ParameterRefEntry parameterRef="LOOPBACK_TX_REG" />
+					<xtce:ParameterRefEntry parameterRef="LOOPBACK_RX_REG" />
+					<xtce:ParameterRefEntry parameterRef="DISCRETE_IO_REG" />
+					<xtce:ParameterRefEntry parameterRef="HEATER_CTRL_REG" />
+					<xtce:ParameterRefEntry parameterRef="HEATER_STATUS_REG" />
+					<xtce:ParameterRefEntry parameterRef="INSTR_PWR_CTRL_REG" />
+					<xtce:ParameterRefEntry parameterRef="INSTR_PWR_STATUS_REG" />
+					<xtce:ParameterRefEntry parameterRef="IFB_INTERFACE_CTRL_STATUS_REG" />
+					<xtce:ParameterRefEntry parameterRef="IFB_INTERFACE_CMD_REG" />
+					<xtce:ParameterRefEntry parameterRef="IFB_ADC_TLM_STATUS_REG" />
+					<xtce:ParameterRefEntry parameterRef="IFB_REG_TLM_STATUS_REG" />
+					<xtce:ParameterRefEntry parameterRef="TOF_INTERFACE_STATUS_REG" />
+					<xtce:ParameterRefEntry parameterRef="DE_TIME_TAG_RESOLUTION_REG" />
+					<xtce:ParameterRefEntry parameterRef="DE_TIME_TAG_CTRL_STATUS_REG" />
+					<xtce:ParameterRefEntry parameterRef="DE_FIFO_CTRL_STATUS_REG" />
+					<xtce:ParameterRefEntry parameterRef="FEE_RESET_STATUS_REG" />
+					<xtce:ParameterRefEntry parameterRef="FEE_RESET_CMD_REG" />
+					<xtce:ParameterRefEntry parameterRef="FEE_RESET_DURATION_REG" />
+					<xtce:ParameterRefEntry parameterRef="SPIN_PULSE_DURATION_REG" />
+					<xtce:ParameterRefEntry parameterRef="HVPS_CTRL_REG" />
+					<xtce:ParameterRefEntry parameterRef="HVPS_STATUS_REG" />
+					<xtce:ParameterRefEntry parameterRef="HVPS_CMD_REG" />
+					<xtce:ParameterRefEntry parameterRef="PIVOT_INTERFACE_CTRL_REG" />
+					<xtce:ParameterRefEntry parameterRef="PIVOT_INTERFACE_STATUS_REG" />
+					<xtce:ParameterRefEntry parameterRef="PIVOT_CMD_DATA_REG" />
+					<xtce:ParameterRefEntry parameterRef="PIVOT_CMD_OPCODE_REG" />
+					<xtce:ParameterRefEntry parameterRef="CHKSUM" />
+				</xtce:EntryList>
+			</xtce:SequenceContainer>
+		</xtce:ContainerSet>
+	</xtce:TelemetryMetaData>
+</xtce:SpaceSystem>
