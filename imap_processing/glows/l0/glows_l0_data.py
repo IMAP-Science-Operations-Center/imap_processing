@@ -110,7 +110,7 @@ class HistogramL0(GlowsL0):
     ELAVG: int
     ELVAR: int
     EVENTS: int
-    HISTOGRAM_DATA: bytes
+    HISTOGRAM_DATA: bytearray
 
     def __init__(self, packet, software_version: str, packet_file_name: str):
         """Initialize data class with a packet of histogram data.
