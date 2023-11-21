@@ -1,5 +1,3 @@
-.. _development:
-
 Development
 ===========
 
@@ -41,4 +39,5 @@ A typical development workflow might look like the following:
     release-workflow
     style-guide/style-guide
     tools/index
+    CDFs/index
     poetry

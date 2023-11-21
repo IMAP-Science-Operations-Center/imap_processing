@@ -9,10 +9,10 @@ from imap_processing.swe.l0 import decom_swe
 def decom_test_data():
     """Read test data from file"""
     packet_1_file = (
-        f"{imap_module_directory}/swe/tests/20230927100248_SWE_HK_packet.bin"
+        imap_module_directory / "swe/tests/l0_data/20230927100248_SWE_HK_packet.bin"
     )
     packet_2_file = (
-        f"{imap_module_directory}/swe/tests/20230927100412_SWE_HK_packet.bin"
+        imap_module_directory / "swe/tests/l0_data/20230927100412_SWE_HK_packet.bin"
     )
     first_data = decom_swe.decom_packets(packet_1_file)
     second_data = decom_swe.decom_packets(packet_2_file)
@@ -29,9 +29,9 @@ def test_number_of_packets(decom_test_data):
 def test_swe_raw_housekeeping_data(decom_test_data):
     """This test and validate raw and derived data of SWE housekeeping data."""
     # read validation data
-    test_data_path = f"{imap_module_directory}/swe/tests"
+    test_data_path = imap_module_directory / "swe/tests/l0_validation_data"
     raw_validation_data = pd.read_csv(
-        f"{test_data_path}/data_raw.SWE_APP_HK_20230927_094839.csv",
+        test_data_path / "data_raw.SWE_APP_HK_20230927_094839.csv",
         index_col="SHCOARSE",
     )
 
@@ -51,9 +51,9 @@ def test_swe_raw_housekeeping_data(decom_test_data):
 def test_swe_derived_housekeeping_data(decom_test_data):
     """This test and validate derived data of SWE housekeeping data."""
     # read validation data
-    test_data_path = f"{imap_module_directory}/swe/tests"
+    test_data_path = imap_module_directory / "swe/tests/l0_validation_data"
     derived_validation_data = pd.read_csv(
-        f"{test_data_path}/data_derived.SWE_APP_HK_20230927_094839.csv",
+        test_data_path / "data_derived.SWE_APP_HK_20230927_094839.csv",
         index_col="SHCOARSE",
     )
     second_data = decom_test_data[1]

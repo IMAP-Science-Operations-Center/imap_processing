@@ -18,6 +18,7 @@ Instruments
    glows
    hit
    swe
+   hi
 
 
 Utility functions can be found in modules within the top package level.
