@@ -134,11 +134,13 @@ def calculate_calibration_factor(time):
     """Calculate calibration factor.
 
     Steps to calculate calibration factor:
+
     1. Convert input time to match time format in the calibration data file.
     2. Find the nearest in time calibration data point.
     3. Linear interpolate between those two nearest time and get factor for input time.
 
     What this function is doing:
+
     | 1. **Reading Calibration Data**: The function first reads a file containing
     |     calibration data for electron measurements over time. This data helps
     |     adjust or correct the measurements based on changes in the instrument's
