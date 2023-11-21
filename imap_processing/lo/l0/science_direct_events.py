@@ -1,8 +1,9 @@
 from dataclasses import dataclass
 
+import imap_processing.lo.l0.compression_tables as ct
 from imap_processing.ccsds.ccsds_data import CcsdsData
 from imap_processing.lo.l0.lol0 import LoL0
-import imap_processing.lo.l0.compression_tables as ct
+
 
 @dataclass
 class ScienceDirectEvents(LoL0):
@@ -20,9 +21,8 @@ class ScienceDirectEvents(LoL0):
     tof_decoder: list
 
     def __init__(self, packet, software_version: str, packet_file_name: str):
-            super().__init__(software_version, packet_file_name, CcsdsData(packet.header))
-            self.parse_data(packet)
-
+        super().__init__(software_version, packet_file_name, CcsdsData(packet.header))
+        self.parse_data(packet)
 
     def decompress_data(self):
         self._find_decompression_case()
@@ -33,21 +33,19 @@ class ScienceDirectEvents(LoL0):
         parse_bits = {}
         bit_start = 0
         for field, bit_length in self.tof_decoder.items():
-             parse_bits[field] = self.DATA[bit_start:bit_length]
-             bit_start = bit_start + bit_length
-
-        
-
-
-
-        
+            parse_bits[field] = self.DATA[bit_start:bit_length]
+            bit_start = bit_start + bit_length
 
     def _find_bit_length_for_case(self):
-        self. tof_decoder = ct.tof_bit_length_table[self.case_number]
+        self.tof_decoder = ct.tof_bit_length_table[self.case_number]
 
     def _find_binary_strings(self):
         hex_strings = ct.other_decoder[self.case_number]
-        self.binary_strings = [self._hexadecimal_to_binary(hex_string) for hex_string in hex_strings if hex_string is not '']
+        self.binary_strings = [
+            self._hexadecimal_to_binary(hex_string)
+            for hex_string in hex_strings
+            if hex_string != ""
+        ]
 
     def _hexadecimal_to_binary(self, hex_string: str):
         return bin(int(hex_string))[2:]
