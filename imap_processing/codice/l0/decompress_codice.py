@@ -1,18 +1,20 @@
 """Decompress CoDICE science data.
 
 For CoDICE, there are 3 forms of compression:
-    1. Table-based lossy compression A (24- or 32-bit -> 8-bit)
-    2. Table-based lossy compression B (24- or 32-bit -> 8 bit)
-    3. LZMA lossless compression
+
+    | 1. Table-based lossy compression A (24- or 32-bit -> 8-bit)
+    | 2. Table-based lossy compression B (24- or 32-bit -> 8 bit)
+    | 3. LZMA lossless compression
 
 Only one lossy option can be selected in cases of lossy + lossless compression.
 Thus, there are 6 possibly compression algorithms:
-    1. No compression
-    2. Lossy A only
-    3. Lossy B only
-    4. Lossless only
-    5. Lossy A + lossless
-    6. Lossy B + lossless
+
+    | 1. No compression
+    | 2. Lossy A only
+    | 3. Lossy B only
+    | 4. Lossless only
+    | 5. Lossy A + lossless
+    | 6. Lossy B + lossless
 
 In the case of (5) and (6), the data is first run through lossy compression, and
 then the result is run through lossless compression. Thus, to decompress, one
@@ -96,7 +98,7 @@ def decompress(compressed_value: int, algorithm: IntEnum):
     ----------
     compressed_value : int
         The 8-bit compressed value to decompress
-    algorithm : IntEnum
+    algorithm : int
         The algorithm to apply. Supported algorithms are provided in the
         ``codice_utils.CoDICECompression`` class
 
