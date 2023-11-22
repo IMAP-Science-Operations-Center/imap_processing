@@ -84,3 +84,12 @@ intersphinx_mapping = {
     "python": ("https://docs.python.org/3/", None),
     "xarray": ("https://docs.xarray.dev/en/stable/", None),
 }
+
+# Reference targets not found
+nitpicky = True
+# IntEnum inherited method targets aren't found through intershpinx
+nitpick_ignore_regex = [(r"py:.*", r".*APID\..*")]
+# Ignore the inherited members from the HitAPID IntEnum class
+numpydoc_show_inherited_class_members = {
+    "imap_processing.hit.l0.hit_l1a_decom.HitAPID": False
+}
