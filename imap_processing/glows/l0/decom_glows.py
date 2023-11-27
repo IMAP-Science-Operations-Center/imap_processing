@@ -1,4 +1,3 @@
-import logging
 from enum import Enum
 from pathlib import Path
 
@@ -95,10 +94,3 @@ def decom_packets(
             print("This may mean reaching the end of an incomplete packet.")
 
         return histdata, dedata
-
-
-if __name__ == "__main__":
-    logging.basicConfig(level=logging.ERROR)
-    current_directory = Path(__file__).parent
-    packet_path = f"{current_directory}/../tests/glows_test_packet_20230920_v00.pkts"
-    data_packet_list = decom_packets(packet_path)
