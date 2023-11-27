@@ -77,7 +77,7 @@ def test_descriptor_in_file_name(decom_test_data, temp_path):
     date_to_test = "20250724"
     assert file_name == os.path.join(
         temp_path,
-        f"{decom_test_data.data.attrs['Logical_source']}_{date_to_test}_impact-lab-test001_v{idex.__version__}.cdf",
+        f"{decom_test_data.data.attrs['Logical_source']}_impact-lab-test001_{date_to_test}_v{idex.__version__}.cdf",
     )
     assert Path(file_name).exists()
 
