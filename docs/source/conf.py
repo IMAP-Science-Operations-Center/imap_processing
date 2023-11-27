@@ -76,6 +76,8 @@ html_static_path = ["_static"]
 
 # Autosummary
 autosummary_generate = True
+# Do not generate separate pages for class methods
+numpydoc_show_class_members = False
 
 intersphinx_mapping = {
     "numpy": ("https://numpy.org/doc/stable/", None),

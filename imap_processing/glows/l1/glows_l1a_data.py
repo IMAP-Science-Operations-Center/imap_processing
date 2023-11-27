@@ -132,8 +132,28 @@ class DirectEventL1A:
     Attributes
     ----------
     l0: DirectEventL0
-    header: dict
-    de_data: bin
+        Level 0 data. In the case of multiple L0 direct events, this is the first L0
+        data class in the sequence.
+    block_header: dict
+        Block header data structure containing versioning, sequence, and file names
+    de_data: bytearray
+        Bytearray of raw DirectEvent data, which is converted into direct_events
+    most_recent_seq: int
+        The most recent sequence added to the L1A dataclass - for counting gaps
+    missing_seq: list[int]
+        Any missing sequence counts in the data. Should be an empty array in normal
+        operation
+    status_data: dict
+        Dictionary of the status data, with names defined by DataEverySecond. Defaults
+        to None.
+    direct_events: list[DirectEvent]
+        List of DirectEvent objects, which is created when the final level 0 packet in
+        the sequence is added to de_data. Defaults to None.
+
+    Methods
+    -------
+    append
+        Add another Level0 instance
     """
 
     l0: DirectEventL0
@@ -224,7 +244,7 @@ class DirectEventL1A:
 
         This sets all the values for the data_every_second attribute.
 
-        Attributes
+        Parameters
         ----------
         general_data_subset: bytearray
             40 bytes containing the information for general data (data_every_second)
@@ -249,7 +269,7 @@ class DirectEventL1A:
         the event is processed from the following 7 bytes. If it is 1, it is compressed
         to two bytes, and if it is 2, the direct event is compressed to 3 bytes.
 
-        Attributes
+        Parameters
         ----------
         direct_events: bytearray
             bytearray containing direct event data
@@ -322,6 +342,10 @@ class DirectEventL1A:
 
         Parameters
         ----------
+        raw: bytearray
+            Raw 2 or 3 byte compressed data to process
+        oldest_diff: int
+            last 6 bits of the byte immediately before raw
         previous_time: TimeTuple
             The previous timestamp to build off of
 

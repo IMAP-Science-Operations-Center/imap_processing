@@ -137,6 +137,20 @@ class DirectEventL0(GlowsL0):
         Number of packets in data set.
     SEQ : int
         Packet sequence in data set.
+    DE_DATA : bytearray
+        Raw direct event data (compressed)
+    ground_sw_version : str
+        Ground software version
+    packet_file_name : str
+        File name of the source packet
+    ccsds_header : CcsdsData
+        CCSDS header data
+
+    Methods
+    -------
+    sequence_match_check
+        Compare two DirectEventL0 objects and see if MET and LEN are equal
+
     """
 
     MET: int

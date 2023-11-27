@@ -1,8 +1,19 @@
 from collections import namedtuple
 from dataclasses import dataclass
 
-# Spacecraft clock time, a float divided into seconds and subseconds
 TimeTuple = namedtuple("TimeTuple", "seconds subseconds")
+"""
+Spacecraft clock time, a float divided into seconds and subseconds
+
+.. py:attribute:: seconds
+    Seconds value
+.. py:attribute:: subseconds
+    Subseconds of clock
+.. py:attribute:: index
+    Namedtuple builtin
+.. py:attribute:: count
+    Namedtuple builtin
+"""
 
 
 @dataclass(frozen=True)
@@ -29,6 +40,15 @@ class DirectEvent:
     DirectEvent() class for IMAP/GLOWS.
 
     Authors: Marek Strumik, maro@cbk.waw.pl, Maxine Hartnett
+
+    Attributes
+    ----------
+    timestamp: TimeTuple
+        Timestamp for the direct event
+    impulse_length: int
+        Direct event data
+    multi_event: bool
+        If the event was a multi event. Defaults to False.
     """
 
     timestamp: TimeTuple
