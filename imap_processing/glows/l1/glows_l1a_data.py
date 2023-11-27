@@ -210,8 +210,14 @@ class DirectEventL1A:
             self._process_de_data()
 
     def _process_de_data(self):
+        """
+        Process direct event bytes.
+
+        Once the packets are complete, create the status data table from the first 40
+        bytes in de_data, and the direct events from the remaining bytes.
+        """
         self.status_data = self._generate_status_data(self.de_data[:40])
-        self._generate_direct_events(self.de_data[40:])
+        self.direct_events = self._generate_direct_events(self.de_data[40:])
 
     def _generate_status_data(self, general_data_subset: bytearray):
         """Once all the packets are in the dataclass, process the dataclass.
@@ -223,7 +229,6 @@ class DirectEventL1A:
         general_data_subset: bytearray
             40 bytes containing the information for general data (data_every_second)
         """
-        # Copied from GLOWS code provided 11/6. Author: Marek Strumik <maro@cbk.waw.pl>
         data_every_second = dict()
         prev_byte = 0
         for item in DataEverySecond.mapping.items():
@@ -236,10 +241,28 @@ class DirectEventL1A:
         # data every second has padding, so it is exactly 40 bytes
 
     def _generate_direct_events(self, direct_events: bytearray):
-        """Generate the list of direct events from the raw bytearray."""
+        """Generate the list of direct events from the raw bytearray.
+
+        First, the starting timestamp is created from the first 8 bytes in the direct
+        event array. Then, the remaining events are processed based on a marker in the
+        first two bits of each section. If the marker is 0, it is uncompressed, and
+        the event is processed from the following 7 bytes. If it is 1, it is compressed
+        to two bytes, and if it is 2, the direct event is compressed to 3 bytes.
+
+        Attributes
+        ----------
+        direct_events: bytearray
+            bytearray containing direct event data
+
+        Returns
+        -------
+        processed_events: list[DirectEvent]
+            An array containing DirectEvent objects
+
+        """
         # read the first direct event, which is always uncompressed
         current_event = self._build_uncompressed_event(direct_events[:8])
-        self.direct_events = [current_event]
+        processed_events = [current_event]
 
         i = 8
         while i < len(direct_events) - 1:
@@ -276,16 +299,16 @@ class DirectEventL1A:
 
             else:  # wrong-marker or hitting-the-buffer-end case
                 raise Exception(
-                    "error create_l1a_from_l0_data(): unexpected marker %d or end of "
+                    "error: unexpected marker %d or end of "
                     "data stream %d %d" % (marker, i, len(direct_events))
                 )
 
             # sanity check
             assert current_event.timestamp.subseconds < GlowsConstants.SUBSECOND_LIMIT
 
-            self.direct_events.append(current_event)
+            processed_events.append(current_event)
 
-        # TODO: Generate direct events from the rest of de_data
+        return processed_events
 
     def _build_compressed_event(
         self, raw: bytearray, oldest_diff: int, previous_time: TimeTuple
@@ -328,8 +351,8 @@ class DirectEventL1A:
         seconds = previous_time.seconds
 
         if subseconds >= GlowsConstants.SUBSECOND_LIMIT:
-            seconds += 1
-            subseconds -= GlowsConstants.SUBSECOND_LIMIT
+            seconds += subseconds // GlowsConstants.SUBSECOND_LIMIT
+            subseconds = subseconds % GlowsConstants.SUBSECOND_LIMIT
 
         return DirectEvent(TimeTuple(seconds, subseconds), length, False)
 

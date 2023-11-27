@@ -129,11 +129,11 @@ def test_direct_events_two_bytes_compressed(decom_test_data):
 def test_direct_events_three_bytes_compressed(decom_test_data):
     de0 = decom_test_data[1][0]
     de1a = DirectEventL1A(de0)
-    first_byte = int("0x67", 0)
+    first_byte = int("0xE7", 0)
     three_bytes = bytearray.fromhex("620687")
 
     expected = DirectEvent(
-        TimeTuple(seconds=54232338, subseconds=2578806),
+        TimeTuple(seconds=54232339, subseconds=578806),
         impulse_length=135,
         multi_event=False,
     )
@@ -148,13 +148,39 @@ def test_direct_events_three_bytes_compressed(decom_test_data):
     assert expected == output
 
     bad_input = bytearray.fromhex("11111111")
-    with pytest.raises(ValueError, match="Sequence for direct event"):
+    with pytest.raises(ValueError, match="Incorrect length"):
         de1a._build_compressed_event(bad_input, oldest_diff, previous_time)
+
+
+def test_generate_direct_events(decom_test_data):
+    de0 = decom_test_data[1][0]
+    de1a = DirectEventL1A(de0)
+    first_uncompressed_event = bytearray.fromhex("033b8511061e7bf0")
+    two_bytes = bytearray.fromhex("876106")
+    three_bytes = bytearray.fromhex("E7620687")
+
+    test_data = first_uncompressed_event + two_bytes + three_bytes
+    output = de1a._generate_direct_events(test_data)
+
+    expected = [
+        DirectEvent(TimeTuple(54232337, 1997808), impulse_length=6, multi_event=False),
+        DirectEvent(
+            TimeTuple(seconds=54232337, subseconds=1999697),
+            impulse_length=6,
+            multi_event=False,
+        ),
+        DirectEvent(
+            TimeTuple(seconds=54232339, subseconds=580695),
+            impulse_length=135,
+            multi_event=False,
+        ),
+    ]
+
+    assert output == expected
 
 
 def test_combine_direct_events(decom_test_data):
     de0 = decom_test_data[1][0]
-    print(de0)
     de0_first = dataclasses.replace(de0, LEN=2, SEQ=0, DE_DATA=de0.DE_DATA[:100])
     de0_second = dataclasses.replace(de0, LEN=2, SEQ=1, DE_DATA=de0.DE_DATA[100:])
 
@@ -178,7 +204,6 @@ def test_combine_direct_events(decom_test_data):
 
 def test_combine_direct_events_with_missing(decom_test_data):
     de0 = decom_test_data[1][0]
-    print(de0)
     de0_first = dataclasses.replace(de0, LEN=3, SEQ=0, DE_DATA=de0.DE_DATA[:100])
     de0_second = dataclasses.replace(de0, LEN=3, SEQ=2, DE_DATA=de0.DE_DATA[100:])
 
