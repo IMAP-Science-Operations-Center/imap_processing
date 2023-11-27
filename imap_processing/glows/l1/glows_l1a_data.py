@@ -137,17 +137,18 @@ class DirectEventL1A:
     """
 
     l0: DirectEventL0
-    header: dict
+    block_header: dict
     de_data: bytearray
     most_recent_seq: int
     missing_seq: list[int]
-    status_data: dict
-    direct_events: list[DirectEvent]
+    status_data: dict = None
+    direct_events: list[DirectEvent] = None
 
     def __init__(self, level0: DirectEventL0):
         self.l0 = level0
         self.most_recent_seq = self.l0.SEQ
         self.de_data = bytearray(level0.DE_DATA)
+        self.missing_seq = []
 
         self.block_header = {
             "ground_software_version": version,
@@ -158,10 +159,6 @@ class DirectEventL1A:
 
         if level0.LEN == 1:
             self._process_de_data()
-
-    def __post_init__(self):
-        """Initialize mutable attribute."""
-        self.missing_seq = []
 
     def append(self, second_l0: DirectEventL0):
         """Merge an additional direct event packet to this DirectEventL1A class.
@@ -296,7 +293,9 @@ class DirectEventL1A:
         """Build direct event from data with timestamps compressed as timedeltas.
 
         This process requires adding onto a previous timestamp to create a new
-        timestamp.
+        timestamp. If raw is three bytes, the three byte method of compression is used,
+        if raw is two bytes, then the two byte method is used. Any other length raises
+        a ValueError.
 
         Parameters
         ----------
