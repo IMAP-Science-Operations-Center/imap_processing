@@ -43,6 +43,7 @@
 			</xtce:BinaryParameterType>
 		</xtce:ParameterTypeSet>
 		<xtce:ParameterSet>
+		<!-- MAG includes some ESA Header values as well as the standard NASA headers-->
 			<xtce:Parameter name="VERSION" parameterTypeRef="UINT3">
 				<xtce:LongDescription>CCSDS Packet Version Number (always 0)</xtce:LongDescription>
 			</xtce:Parameter>
@@ -63,6 +64,27 @@
 			</xtce:Parameter>
 			<xtce:Parameter name="PKT_LEN" parameterTypeRef="UINT16">
 				<xtce:LongDescription>CCSDS Packet Length (number of bytes after Packet length minus 1)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PHVERNO" parameterTypeRef="UINT3">
+				<xtce:ShortDescription>ESA CCSDS Packet Version Number</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PHTYPE" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>ESA CCSDS Packet Type Indicator</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PHSHF" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>ESA CCSDS Packet Secondary Header Flag</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PHAPID" parameterTypeRef="UINT11">
+				<xtce:ShortDescription>ESA CCSDS Packet Application Process ID</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PHGROUPF" parameterTypeRef="UINT2">
+				<xtce:ShortDescription>ESA CCSDS Packet Grouping Flags</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PHSEQCNT" parameterTypeRef="UINT14">
+				<xtce:ShortDescription>ESA CCSDS Packet Sequence Count</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PHDLEN" parameterTypeRef="UINT16">
+				<xtce:ShortDescription>ESA CCSDS Packet Length</xtce:ShortDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SHCOARSE" parameterTypeRef="UINT32">
 				<xtce:ShortDescription>Mission elapsed time</xtce:ShortDescription>
@@ -156,26 +178,56 @@
 					<xtce:ParameterRefEntry parameterRef="PKT_LEN" />
 				</xtce:EntryList>
 			</xtce:SequenceContainer>
-			<xtce:SequenceContainer name="MAG_SCI">
+			<xtce:SequenceContainer name="P_MAG_SCI_NORM">
 				<xtce:BaseContainer containerRef="CCSDSPacket">
-                    <!-- Since the science packets are the same except for length, we
-                    can use the same XTCE for both of them.-->
 					<xtce:RestrictionCriteria>
-						<xtce:ORedConditions>
-							<xtce:Condition>
-								<xtce:ParameterInstanceRef parameterRef="PKT_APID"/>
-								<xtce:ComparisonOperator>==</xtce:ComparisonOperator>
-								<xtce:Value>1068</xtce:Value>
-							</xtce:Condition>
-							<xtce:Condition>
-								<xtce:ParameterInstanceRef parameterRef="PKT_APID"/>
-								<xtce:ComparisonOperator>==</xtce:ComparisonOperator>
-								<xtce:Value>1052</xtce:Value>
-							</xtce:Condition>
-						</xtce:ORedConditions>
+						<xtce:Comparison parameterRef="PKT_APID" value="1052" useCalibratedValue="false" />
 					</xtce:RestrictionCriteria>
 				</xtce:BaseContainer>
 				<xtce:EntryList>
+					<xtce:ParameterRefEntry parameterRef="PHVERNO" />
+					<xtce:ParameterRefEntry parameterRef="PHTYPE" />
+					<xtce:ParameterRefEntry parameterRef="PHSHF" />
+					<xtce:ParameterRefEntry parameterRef="PHAPID" />
+					<xtce:ParameterRefEntry parameterRef="PHGROUPF" />
+					<xtce:ParameterRefEntry parameterRef="PHSEQCNT" />
+					<xtce:ParameterRefEntry parameterRef="PHDLEN" />
+					<xtce:ParameterRefEntry parameterRef="SHCOARSE" />
+					<xtce:ParameterRefEntry parameterRef="PUS_SPARE1" />
+					<xtce:ParameterRefEntry parameterRef="PUS_VERSION" />
+					<xtce:ParameterRefEntry parameterRef="PUS_SPARE2" />
+					<xtce:ParameterRefEntry parameterRef="PUS_STYPE" />
+					<xtce:ParameterRefEntry parameterRef="PUS_SSUBTYPE" />
+					<xtce:ParameterRefEntry parameterRef="COMPRESSION" />
+					<xtce:ParameterRefEntry parameterRef="FOB_ACT" />
+					<xtce:ParameterRefEntry parameterRef="FIB_ACT" />
+					<xtce:ParameterRefEntry parameterRef="PRI_SENS" />
+					<xtce:ParameterRefEntry parameterRef="SPARE1" />
+					<xtce:ParameterRefEntry parameterRef="PRI_VECSEC" />
+					<xtce:ParameterRefEntry parameterRef="SEC_VECSEC" />
+					<xtce:ParameterRefEntry parameterRef="SPARE2" />
+					<xtce:ParameterRefEntry parameterRef="PRI_COARSETM" />
+					<xtce:ParameterRefEntry parameterRef="PRI_FNTM" />
+					<xtce:ParameterRefEntry parameterRef="SEC_COARSETM" />
+					<xtce:ParameterRefEntry parameterRef="SEC_FNTM" />
+					<xtce:ParameterRefEntry parameterRef="VECTORS" />
+					<xtce:ParameterRefEntry parameterRef="FILL" />
+				</xtce:EntryList>
+			</xtce:SequenceContainer>
+			<xtce:SequenceContainer name="P_MAG_SCI_BURST">
+				<xtce:BaseContainer containerRef="CCSDSPacket">
+					<xtce:RestrictionCriteria>
+						<xtce:Comparison parameterRef="PKT_APID" value="1068" useCalibratedValue="false" />
+					</xtce:RestrictionCriteria>
+				</xtce:BaseContainer>
+				<xtce:EntryList>
+					<xtce:ParameterRefEntry parameterRef="PHVERNO" />
+					<xtce:ParameterRefEntry parameterRef="PHTYPE" />
+					<xtce:ParameterRefEntry parameterRef="PHSHF" />
+					<xtce:ParameterRefEntry parameterRef="PHAPID" />
+					<xtce:ParameterRefEntry parameterRef="PHGROUPF" />
+					<xtce:ParameterRefEntry parameterRef="PHSEQCNT" />
+					<xtce:ParameterRefEntry parameterRef="PHDLEN" />
 					<xtce:ParameterRefEntry parameterRef="SHCOARSE" />
 					<xtce:ParameterRefEntry parameterRef="PUS_SPARE1" />
 					<xtce:ParameterRefEntry parameterRef="PUS_VERSION" />
