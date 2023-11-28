@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='utf-8'?>
-<xtce:SpaceSystem xmlns:xtce="http://www.omg.org/space/xtce" name="P_MAG_SCI_BURST">
-	<xtce:Header date="2023-10" version="1.0" author="IMAP SDC" />
+<xtce:SpaceSystem xmlns:xtce="http://www.omg.org/space/xtce" name="P_MAG_SCI_NORM">
+	<xtce:Header date="2023-11" version="1.0" author="IMAP SDC" />
 	<xtce:TelemetryMetaData>
 		<xtce:ParameterTypeSet>
 			<xtce:IntegerParameterType name="UINT1" signed="false">
@@ -30,7 +30,7 @@
 			<xtce:IntegerParameterType name="UINT32" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="32" encoding="unsigned" />
 			</xtce:IntegerParameterType>
-			<xtce:BinaryParameterType name="BYTE25600">
+			<xtce:BinaryParameterType name="VAR_BYTE">
 				<xtce:UnitSet />
 				<xtce:BinaryDataEncoding bitOrder="mostSignificantBitFirst">
 					<xtce:SizeInBits>
@@ -136,9 +136,8 @@
 				<xtce:ShortDescription>Secondary Fine Time</xtce:ShortDescription>
 				<xtce:LongDescription>Secondary Fine Time</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="VECTORS" parameterTypeRef="BYTE25600">
-				<xtce:ShortDescription>MAG Science Vectors </xtce:ShortDescription>
-				<xtce:LongDescription>MAG Science Vectors </xtce:LongDescription>
+			<xtce:Parameter name="VECTORS" parameterTypeRef="VAR_BYTE">
+				<xtce:ShortDescription>MAG Science Vectors</xtce:ShortDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="FILL" parameterTypeRef="UINT8">
 				<xtce:ShortDescription>Filler byte</xtce:ShortDescription>
@@ -157,9 +156,10 @@
 					<xtce:ParameterRefEntry parameterRef="PKT_LEN" />
 				</xtce:EntryList>
 			</xtce:SequenceContainer>
-			<xtce:SequenceContainer name="P_MAG_SCI_BURST">
+			<xtce:SequenceContainer name="MAG_SCI">
 				<xtce:BaseContainer containerRef="CCSDSPacket">
-					<!-- Since the burst and normal packets are the same except for the variable size field, we can use the same BaseContainer for both -->
+                    <!-- Since the science packets are the same except for length, we
+                    can use the same XTCE for both of them.-->
 					<xtce:RestrictionCriteria>
 						<xtce:ORedConditions>
 							<xtce:Condition>

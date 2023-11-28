@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='utf-8'?>
 <xtce:SpaceSystem xmlns:xtce="http://www.omg.org/space/xtce" name="P_MAG_SCI_BURST">
-	<xtce:Header date="2023-10" version="1.0" author="IMAP SDC" />
+	<xtce:Header date="2023-11" version="1.0" author="IMAP SDC" />
 	<xtce:TelemetryMetaData>
 		<xtce:ParameterTypeSet>
 			<xtce:IntegerParameterType name="UINT1" signed="false">
@@ -34,11 +34,7 @@
 				<xtce:UnitSet />
 				<xtce:BinaryDataEncoding bitOrder="mostSignificantBitFirst">
 					<xtce:SizeInBits>
-						<xtce:DynamicValue>
-						  <xtce:ParameterInstanceRef parameterRef="PKT_LEN"/>
-							<!-- the Burst and Norm packets have the same intercept (224) -->
-						  <xtce:LinearAdjustment intercept="224" slope="8"/>
-						</xtce:DynamicValue>
+						<xtce:FixedValue>25600</xtce:FixedValue>
 					</xtce:SizeInBits>
 				</xtce:BinaryDataEncoding>
 			</xtce:BinaryParameterType>
