@@ -15,8 +15,11 @@ Instruments
 .. toctree::
    :maxdepth: 1
 
+   codice
    glows
+   hit
    swe
+   hi
 
 
 Utility functions can be found in modules within the top package level.

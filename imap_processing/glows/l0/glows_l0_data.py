@@ -1,16 +1,34 @@
-class HistogramL0:
-    """Data structure for storing GLOWS histogram packet data.
+from dataclasses import dataclass, fields
 
-    Parameters
-    ----------
-    packet : tuple[list]
-        Histogram packet yielded from space_packet_parser.generate_packets.
+from imap_processing.ccsds.ccsds_data import CcsdsData
+
+
+@dataclass
+class GlowsL0:
+    """Data structure for common values across histogram and direct events data.
 
     Attributes
     ----------
-    packet_keys : tuple[str]
-        Data names from the packet
-    SHCOARSE : int
+    ground_sw_version : str
+        Ground software version
+    packet_file_name : str
+        File name of the source packet
+    ccsds_header : CcsdsData
+        CCSDS header data
+    """
+
+    ground_sw_version: str
+    packet_file_name: str
+    ccsds_header: CcsdsData
+
+
+@dataclass
+class HistogramL0(GlowsL0):
+    """Data structure for storing GLOWS histogram packet data.
+
+    Attributes
+    ----------
+    MET : int
         CCSDS Packet Time Stamp (coarse time)
     STARTID : int
         Histogram Start ID
@@ -58,75 +76,80 @@ class HistogramL0:
         Variance of event-impulse length
     EVENTS : int
         Number of events
-    HISTOGRAM_DATA : int
-        List of histogram data values
+    HISTOGRAM_DATA : bytes
+        Raw binary format histogram data
+    ground_sw_version : str
+        Ground software version
+    packet_file_name : str
+        File name of the source packet
+    ccsds_header : CcsdsData
+        CCSDS header data
     """
 
-    def __repr__(self):
-        """Print the data.
+    MET: int
+    STARTID: int
+    ENDID: int
+    FLAGS: int
+    SWVER: int
+    SEC: int
+    SUBSEC: int
+    OFFSETSEC: int
+    OFFSETSUBSEC: int
+    GLXSEC: int
+    GLXSUBSEC: int
+    GLXOFFSEC: int
+    GLXOFFSUBSEC: int
+    SPINS: int
+    NBINS: int
+    TEMPAVG: int
+    TEMPVAR: int
+    HVAVG: int
+    HVVAR: int
+    SPAVG: int
+    SPVAR: int
+    ELAVG: int
+    ELVAR: int
+    EVENTS: int
+    HISTOGRAM_DATA: bytes
 
-        Returns
-        -------
-        String representation of GlowsHistL0
-        """
-        output = "{"
-        for key in self.packet_keys:
-            output += f"{key}: {getattr(self, key)}, "
-        return output + "}"
-
-    def __init__(self, packet):
-        self.packet_keys = []
-        for key, value in packet.data.items():
-            if key != "HISTOGRAM_DATA":
-                setattr(self, key, value.derived_value)
-            else:
-                setattr(self, key, self._convert_histogram_data(value.raw_value))
-
-            self.packet_keys.append(key)
-
-    def _convert_histogram_data(self, binary_hist_data: str) -> list[int]:
-        """Convert the raw histogram data into a list.
-
-        This method converts a binary number into a list of histogram values by
-        splitting up the raw binary value into 8-bit segments.
+    def __init__(self, packet, software_version: str, packet_file_name: str):
+        """Initialize data class with a packet of histogram data.
 
         Parameters
         ----------
-        binary_hist_data : str
-            Raw data read from the packet, in binary format.
-
-        Returns
-        -------
-        histograms: list[int]
-            List of binned histogram data
+        packet
+            Packet generated from space_packet_parser. Should be a type NamedTuple
+            with header and data fields.
+        software_version: str
+            The version of the ground software being used
+        packet_file_name: str
+            The filename of the packet
         """
-        # Convert the histogram data from a large raw string into a list of 8 bit values
-        histograms = []
-        for i in range(8, len(binary_hist_data), 8):
-            histograms.append(int(binary_hist_data[i - 8 : i], 2))
+        super().__init__(software_version, packet_file_name, CcsdsData(packet.header))
 
-        if len(histograms) != 3599:
-            raise ValueError(
-                f"Histogram packet is lacking bins. Expected a count of 3599, "
-                f"actually received {len(histograms)}"
+        attributes = [field.name for field in fields(self)]
+
+        # For each item in packet, assign it to the matching attribute in the class.
+        for key, item in packet.data.items():
+            value = (
+                item.derived_value if item.derived_value is not None else item.raw_value
             )
+            if key in attributes:
+                setattr(self, key, value)
+            else:
+                raise KeyError(
+                    f"Did not find matching attribute in Histogram data class for "
+                    f"{key}"
+                )
 
-        return histograms
 
-
-class DirectEventL0:
+@dataclass
+class DirectEventL0(GlowsL0):
     """Data structure for storing GLOWS direct event packet data.
-
-    Parameters
-    ----------
-        packet : tuple[list]
-            Direct event packet yielded from space_packet_parser.generate_packets.
 
     Attributes
     ----------
-    packet_keys : tuple[str]
-        Data names from the packet
-    SHCOARSE : int
+    MET : int
         CCSDS Packet Time Stamp (coarse time)
     SEC : int
         Data timestamp, seconds counter.
@@ -134,23 +157,45 @@ class DirectEventL0:
         Number of packets in data set.
     SEQ : int
         Packet sequence in data set.
-
+    ground_sw_version : str
+        Ground software version
+    packet_file_name : str
+        File name of the source packet
+    ccsds_header : CcsdsData
+        CCSDS header data
     """
 
-    def __repr__(self):
-        """Print the data.
+    MET: int
+    SEC: int
+    LEN: int
+    SEQ: int
 
-        Returns
-        -------
-        String representation of GlowsDeL0
+    def __init__(self, packet, software_version: str, packet_file_name: str):
+        """Initialize data class with a packet of direct event data.
+
+        Parameters
+        ----------
+        packet
+            Packet generated from space_packet_parser. Should be a type NamedTuple
+            with header and data fields.
+        software_version: str
+            The version of the ground software being used
+        packet_file_name: str
+            The filename of the packet
         """
-        output = "{"
-        for key in self.packet_keys:
-            output += f"{key}: {getattr(self, key)}, "
-        return output + "}"
+        super().__init__(software_version, packet_file_name, CcsdsData(packet.header))
 
-    def __init__(self, packet):
-        self.packet_keys = []
-        for key, value in packet.data.items():
-            setattr(self, key, value.derived_value)
-            self.packet_keys.append(key)
+        attributes = [field.name for field in fields(self)]
+
+        # For each item in packet, assign it to the matching attribute in the class.
+        for key, item in packet.data.items():
+            value = (
+                item.derived_value if item.derived_value is not None else item.raw_value
+            )
+            if key in attributes:
+                setattr(self, key, value)
+            else:
+                raise KeyError(
+                    f"Did not find matching attribute in Direct events data class for "
+                    f"{key}"
+                )

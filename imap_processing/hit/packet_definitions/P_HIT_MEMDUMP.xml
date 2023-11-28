@@ -1,0 +1,540 @@
+<?xml version='1.0' encoding='utf-8'?>
+<xtce:SpaceSystem xmlns:xtce="http://www.omg.org/space/xtce" name="P_HIT_MEMDUMP">
+	<xtce:Header date="2023-11" version="1.0" author="IMAP SDC" />
+	<xtce:TelemetryMetaData>
+		<xtce:ParameterTypeSet>
+			<xtce:IntegerParameterType name="UINT1" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT2" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="2" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT3" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="3" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT8" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="8" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT11" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="11" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT14" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="14" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT16" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="16" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT24" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="24" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT32" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="32" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+		</xtce:ParameterTypeSet>
+		<xtce:ParameterSet>
+			<xtce:Parameter name="VERSION" parameterTypeRef="UINT3">
+				<xtce:LongDescription>CCSDS Packet Version Number (always 0)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="TYPE" parameterTypeRef="UINT1">
+				<xtce:LongDescription>CCSDS Packet Type Indicator (0=telemetry)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SEC_HDR_FLG" parameterTypeRef="UINT1">
+				<xtce:LongDescription>CCSDS Packet Secondary Header Flag (always 1)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PKT_APID" parameterTypeRef="UINT11">
+				<xtce:LongDescription>CCSDS Packet Application Process ID</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SEQ_FLGS" parameterTypeRef="UINT2">
+				<xtce:LongDescription>CCSDS Packet Grouping Flags (3=not part of group)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SRC_SEQ_CTR" parameterTypeRef="UINT14">
+				<xtce:LongDescription>CCSDS Packet Sequence Count (increments with each new packet)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PKT_LEN" parameterTypeRef="UINT16">
+				<xtce:LongDescription>CCSDS Packet Length (number of bytes after Packet length minus 1)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SHCOARSE" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>CCSDS Packet Sec Header</xtce:ShortDescription>
+				<xtce:LongDescription>Spacecraft tick</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="TYPE" parameterTypeRef="UINT8">
+				<xtce:ShortDescription>Packet type</xtce:ShortDescription>
+				<xtce:LongDescription>0=first packet, 1=continuation, 2=last, 3=standalone</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="ADDRESS" parameterTypeRef="UINT24">
+				<xtce:ShortDescription>Start address</xtce:ShortDescription>
+				<xtce:LongDescription>Memory address where packet data starts</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DATA_00" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Memory data</xtce:ShortDescription>
+				<xtce:LongDescription>Array of 4-byte fields</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DATA_01" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Memory data</xtce:ShortDescription>
+				<xtce:LongDescription>Array of 4-byte fields</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DATA_02" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Memory data</xtce:ShortDescription>
+				<xtce:LongDescription>Array of 4-byte fields</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DATA_03" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Memory data</xtce:ShortDescription>
+				<xtce:LongDescription>Array of 4-byte fields</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DATA_04" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Memory data</xtce:ShortDescription>
+				<xtce:LongDescription>Array of 4-byte fields</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DATA_05" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Memory data</xtce:ShortDescription>
+				<xtce:LongDescription>Array of 4-byte fields</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DATA_06" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Memory data</xtce:ShortDescription>
+				<xtce:LongDescription>Array of 4-byte fields</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DATA_07" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Memory data</xtce:ShortDescription>
+				<xtce:LongDescription>Array of 4-byte fields</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DATA_08" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Memory data</xtce:ShortDescription>
+				<xtce:LongDescription>Array of 4-byte fields</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DATA_09" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Memory data</xtce:ShortDescription>
+				<xtce:LongDescription>Array of 4-byte fields</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DATA_10" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Memory data</xtce:ShortDescription>
+				<xtce:LongDescription>Array of 4-byte fields</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DATA_11" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Memory data</xtce:ShortDescription>
+				<xtce:LongDescription>Array of 4-byte fields</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DATA_12" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Memory data</xtce:ShortDescription>
+				<xtce:LongDescription>Array of 4-byte fields</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DATA_13" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Memory data</xtce:ShortDescription>
+				<xtce:LongDescription>Array of 4-byte fields</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DATA_14" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Memory data</xtce:ShortDescription>
+				<xtce:LongDescription>Array of 4-byte fields</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DATA_15" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Memory data</xtce:ShortDescription>
+				<xtce:LongDescription>Array of 4-byte fields</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DATA_16" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Memory data</xtce:ShortDescription>
+				<xtce:LongDescription>Array of 4-byte fields</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DATA_17" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Memory data</xtce:ShortDescription>
+				<xtce:LongDescription>Array of 4-byte fields</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DATA_18" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Memory data</xtce:ShortDescription>
+				<xtce:LongDescription>Array of 4-byte fields</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DATA_19" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Memory data</xtce:ShortDescription>
+				<xtce:LongDescription>Array of 4-byte fields</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DATA_20" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Memory data</xtce:ShortDescription>
+				<xtce:LongDescription>Array of 4-byte fields</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DATA_21" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Memory data</xtce:ShortDescription>
+				<xtce:LongDescription>Array of 4-byte fields</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DATA_22" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Memory data</xtce:ShortDescription>
+				<xtce:LongDescription>Array of 4-byte fields</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DATA_23" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Memory data</xtce:ShortDescription>
+				<xtce:LongDescription>Array of 4-byte fields</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DATA_24" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Memory data</xtce:ShortDescription>
+				<xtce:LongDescription>Array of 4-byte fields</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DATA_25" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Memory data</xtce:ShortDescription>
+				<xtce:LongDescription>Array of 4-byte fields</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DATA_26" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Memory data</xtce:ShortDescription>
+				<xtce:LongDescription>Array of 4-byte fields</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DATA_27" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Memory data</xtce:ShortDescription>
+				<xtce:LongDescription>Array of 4-byte fields</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DATA_28" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Memory data</xtce:ShortDescription>
+				<xtce:LongDescription>Array of 4-byte fields</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DATA_29" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Memory data</xtce:ShortDescription>
+				<xtce:LongDescription>Array of 4-byte fields</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DATA_30" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Memory data</xtce:ShortDescription>
+				<xtce:LongDescription>Array of 4-byte fields</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DATA_31" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Memory data</xtce:ShortDescription>
+				<xtce:LongDescription>Array of 4-byte fields</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DATA_32" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Memory data</xtce:ShortDescription>
+				<xtce:LongDescription>Array of 4-byte fields</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DATA_33" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Memory data</xtce:ShortDescription>
+				<xtce:LongDescription>Array of 4-byte fields</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DATA_34" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Memory data</xtce:ShortDescription>
+				<xtce:LongDescription>Array of 4-byte fields</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DATA_35" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Memory data</xtce:ShortDescription>
+				<xtce:LongDescription>Array of 4-byte fields</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DATA_36" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Memory data</xtce:ShortDescription>
+				<xtce:LongDescription>Array of 4-byte fields</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DATA_37" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Memory data</xtce:ShortDescription>
+				<xtce:LongDescription>Array of 4-byte fields</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DATA_38" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Memory data</xtce:ShortDescription>
+				<xtce:LongDescription>Array of 4-byte fields</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DATA_39" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Memory data</xtce:ShortDescription>
+				<xtce:LongDescription>Array of 4-byte fields</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DATA_40" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Memory data</xtce:ShortDescription>
+				<xtce:LongDescription>Array of 4-byte fields</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DATA_41" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Memory data</xtce:ShortDescription>
+				<xtce:LongDescription>Array of 4-byte fields</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DATA_42" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Memory data</xtce:ShortDescription>
+				<xtce:LongDescription>Array of 4-byte fields</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DATA_43" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Memory data</xtce:ShortDescription>
+				<xtce:LongDescription>Array of 4-byte fields</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DATA_44" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Memory data</xtce:ShortDescription>
+				<xtce:LongDescription>Array of 4-byte fields</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DATA_45" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Memory data</xtce:ShortDescription>
+				<xtce:LongDescription>Array of 4-byte fields</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DATA_46" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Memory data</xtce:ShortDescription>
+				<xtce:LongDescription>Array of 4-byte fields</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DATA_47" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Memory data</xtce:ShortDescription>
+				<xtce:LongDescription>Array of 4-byte fields</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DATA_48" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Memory data</xtce:ShortDescription>
+				<xtce:LongDescription>Array of 4-byte fields</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DATA_49" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Memory data</xtce:ShortDescription>
+				<xtce:LongDescription>Array of 4-byte fields</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DATA_50" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Memory data</xtce:ShortDescription>
+				<xtce:LongDescription>Array of 4-byte fields</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DATA_51" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Memory data</xtce:ShortDescription>
+				<xtce:LongDescription>Array of 4-byte fields</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DATA_52" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Memory data</xtce:ShortDescription>
+				<xtce:LongDescription>Array of 4-byte fields</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DATA_53" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Memory data</xtce:ShortDescription>
+				<xtce:LongDescription>Array of 4-byte fields</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DATA_54" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Memory data</xtce:ShortDescription>
+				<xtce:LongDescription>Array of 4-byte fields</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DATA_55" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Memory data</xtce:ShortDescription>
+				<xtce:LongDescription>Array of 4-byte fields</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DATA_56" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Memory data</xtce:ShortDescription>
+				<xtce:LongDescription>Array of 4-byte fields</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DATA_57" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Memory data</xtce:ShortDescription>
+				<xtce:LongDescription>Array of 4-byte fields</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DATA_58" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Memory data</xtce:ShortDescription>
+				<xtce:LongDescription>Array of 4-byte fields</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DATA_59" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Memory data</xtce:ShortDescription>
+				<xtce:LongDescription>Array of 4-byte fields</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DATA_60" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Memory data</xtce:ShortDescription>
+				<xtce:LongDescription>Array of 4-byte fields</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DATA_61" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Memory data</xtce:ShortDescription>
+				<xtce:LongDescription>Array of 4-byte fields</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DATA_62" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Memory data</xtce:ShortDescription>
+				<xtce:LongDescription>Array of 4-byte fields</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DATA_63" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Memory data</xtce:ShortDescription>
+				<xtce:LongDescription>Array of 4-byte fields</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DATA_64" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Memory data</xtce:ShortDescription>
+				<xtce:LongDescription>Array of 4-byte fields</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DATA_65" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Memory data</xtce:ShortDescription>
+				<xtce:LongDescription>Array of 4-byte fields</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DATA_66" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Memory data</xtce:ShortDescription>
+				<xtce:LongDescription>Array of 4-byte fields</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DATA_67" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Memory data</xtce:ShortDescription>
+				<xtce:LongDescription>Array of 4-byte fields</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DATA_68" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Memory data</xtce:ShortDescription>
+				<xtce:LongDescription>Array of 4-byte fields</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DATA_69" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Memory data</xtce:ShortDescription>
+				<xtce:LongDescription>Array of 4-byte fields</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DATA_70" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Memory data</xtce:ShortDescription>
+				<xtce:LongDescription>Array of 4-byte fields</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DATA_71" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Memory data</xtce:ShortDescription>
+				<xtce:LongDescription>Array of 4-byte fields</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DATA_72" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Memory data</xtce:ShortDescription>
+				<xtce:LongDescription>Array of 4-byte fields</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DATA_73" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Memory data</xtce:ShortDescription>
+				<xtce:LongDescription>Array of 4-byte fields</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DATA_74" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Memory data</xtce:ShortDescription>
+				<xtce:LongDescription>Array of 4-byte fields</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DATA_75" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Memory data</xtce:ShortDescription>
+				<xtce:LongDescription>Array of 4-byte fields</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DATA_76" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Memory data</xtce:ShortDescription>
+				<xtce:LongDescription>Array of 4-byte fields</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DATA_77" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Memory data</xtce:ShortDescription>
+				<xtce:LongDescription>Array of 4-byte fields</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DATA_78" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Memory data</xtce:ShortDescription>
+				<xtce:LongDescription>Array of 4-byte fields</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DATA_79" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Memory data</xtce:ShortDescription>
+				<xtce:LongDescription>Array of 4-byte fields</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DATA_80" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Memory data</xtce:ShortDescription>
+				<xtce:LongDescription>Array of 4-byte fields</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DATA_81" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Memory data</xtce:ShortDescription>
+				<xtce:LongDescription>Array of 4-byte fields</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DATA_82" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Memory data</xtce:ShortDescription>
+				<xtce:LongDescription>Array of 4-byte fields</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DATA_83" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Memory data</xtce:ShortDescription>
+				<xtce:LongDescription>Array of 4-byte fields</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DATA_84" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Memory data</xtce:ShortDescription>
+				<xtce:LongDescription>Array of 4-byte fields</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DATA_85" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Memory data</xtce:ShortDescription>
+				<xtce:LongDescription>Array of 4-byte fields</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DATA_86" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Memory data</xtce:ShortDescription>
+				<xtce:LongDescription>Array of 4-byte fields</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DATA_87" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Memory data</xtce:ShortDescription>
+				<xtce:LongDescription>Array of 4-byte fields</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DATA_88" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Memory data</xtce:ShortDescription>
+				<xtce:LongDescription>Array of 4-byte fields</xtce:LongDescription>
+			</xtce:Parameter>
+		</xtce:ParameterSet>
+		<xtce:ContainerSet>
+			<xtce:SequenceContainer name="CCSDSPacket">
+				<xtce:EntryList>
+					<xtce:ParameterRefEntry parameterRef="VERSION" />
+					<xtce:ParameterRefEntry parameterRef="TYPE" />
+					<xtce:ParameterRefEntry parameterRef="SEC_HDR_FLG" />
+					<xtce:ParameterRefEntry parameterRef="PKT_APID" />
+					<xtce:ParameterRefEntry parameterRef="SEQ_FLGS" />
+					<xtce:ParameterRefEntry parameterRef="SRC_SEQ_CTR" />
+					<xtce:ParameterRefEntry parameterRef="PKT_LEN" />
+				</xtce:EntryList>
+			</xtce:SequenceContainer>
+			<xtce:SequenceContainer name="P_HIT_MEMDUMP">
+				<xtce:BaseContainer containerRef="CCSDSPacket">
+					<xtce:RestrictionCriteria>
+						<xtce:Comparison parameterRef="PKT_APID" value="1255" useCalibratedValue="false" />
+					</xtce:RestrictionCriteria>
+				</xtce:BaseContainer>
+				<xtce:EntryList>
+					<xtce:ParameterRefEntry parameterRef="SHCOARSE" />
+					<xtce:ParameterRefEntry parameterRef="TYPE" />
+					<xtce:ParameterRefEntry parameterRef="ADDRESS" />
+					<xtce:ParameterRefEntry parameterRef="DATA_00" />
+					<xtce:ParameterRefEntry parameterRef="DATA_01" />
+					<xtce:ParameterRefEntry parameterRef="DATA_02" />
+					<xtce:ParameterRefEntry parameterRef="DATA_03" />
+					<xtce:ParameterRefEntry parameterRef="DATA_04" />
+					<xtce:ParameterRefEntry parameterRef="DATA_05" />
+					<xtce:ParameterRefEntry parameterRef="DATA_06" />
+					<xtce:ParameterRefEntry parameterRef="DATA_07" />
+					<xtce:ParameterRefEntry parameterRef="DATA_08" />
+					<xtce:ParameterRefEntry parameterRef="DATA_09" />
+					<xtce:ParameterRefEntry parameterRef="DATA_10" />
+					<xtce:ParameterRefEntry parameterRef="DATA_11" />
+					<xtce:ParameterRefEntry parameterRef="DATA_12" />
+					<xtce:ParameterRefEntry parameterRef="DATA_13" />
+					<xtce:ParameterRefEntry parameterRef="DATA_14" />
+					<xtce:ParameterRefEntry parameterRef="DATA_15" />
+					<xtce:ParameterRefEntry parameterRef="DATA_16" />
+					<xtce:ParameterRefEntry parameterRef="DATA_17" />
+					<xtce:ParameterRefEntry parameterRef="DATA_18" />
+					<xtce:ParameterRefEntry parameterRef="DATA_19" />
+					<xtce:ParameterRefEntry parameterRef="DATA_20" />
+					<xtce:ParameterRefEntry parameterRef="DATA_21" />
+					<xtce:ParameterRefEntry parameterRef="DATA_22" />
+					<xtce:ParameterRefEntry parameterRef="DATA_23" />
+					<xtce:ParameterRefEntry parameterRef="DATA_24" />
+					<xtce:ParameterRefEntry parameterRef="DATA_25" />
+					<xtce:ParameterRefEntry parameterRef="DATA_26" />
+					<xtce:ParameterRefEntry parameterRef="DATA_27" />
+					<xtce:ParameterRefEntry parameterRef="DATA_28" />
+					<xtce:ParameterRefEntry parameterRef="DATA_29" />
+					<xtce:ParameterRefEntry parameterRef="DATA_30" />
+					<xtce:ParameterRefEntry parameterRef="DATA_31" />
+					<xtce:ParameterRefEntry parameterRef="DATA_32" />
+					<xtce:ParameterRefEntry parameterRef="DATA_33" />
+					<xtce:ParameterRefEntry parameterRef="DATA_34" />
+					<xtce:ParameterRefEntry parameterRef="DATA_35" />
+					<xtce:ParameterRefEntry parameterRef="DATA_36" />
+					<xtce:ParameterRefEntry parameterRef="DATA_37" />
+					<xtce:ParameterRefEntry parameterRef="DATA_38" />
+					<xtce:ParameterRefEntry parameterRef="DATA_39" />
+					<xtce:ParameterRefEntry parameterRef="DATA_40" />
+					<xtce:ParameterRefEntry parameterRef="DATA_41" />
+					<xtce:ParameterRefEntry parameterRef="DATA_42" />
+					<xtce:ParameterRefEntry parameterRef="DATA_43" />
+					<xtce:ParameterRefEntry parameterRef="DATA_44" />
+					<xtce:ParameterRefEntry parameterRef="DATA_45" />
+					<xtce:ParameterRefEntry parameterRef="DATA_46" />
+					<xtce:ParameterRefEntry parameterRef="DATA_47" />
+					<xtce:ParameterRefEntry parameterRef="DATA_48" />
+					<xtce:ParameterRefEntry parameterRef="DATA_49" />
+					<xtce:ParameterRefEntry parameterRef="DATA_50" />
+					<xtce:ParameterRefEntry parameterRef="DATA_51" />
+					<xtce:ParameterRefEntry parameterRef="DATA_52" />
+					<xtce:ParameterRefEntry parameterRef="DATA_53" />
+					<xtce:ParameterRefEntry parameterRef="DATA_54" />
+					<xtce:ParameterRefEntry parameterRef="DATA_55" />
+					<xtce:ParameterRefEntry parameterRef="DATA_56" />
+					<xtce:ParameterRefEntry parameterRef="DATA_57" />
+					<xtce:ParameterRefEntry parameterRef="DATA_58" />
+					<xtce:ParameterRefEntry parameterRef="DATA_59" />
+					<xtce:ParameterRefEntry parameterRef="DATA_60" />
+					<xtce:ParameterRefEntry parameterRef="DATA_61" />
+					<xtce:ParameterRefEntry parameterRef="DATA_62" />
+					<xtce:ParameterRefEntry parameterRef="DATA_63" />
+					<xtce:ParameterRefEntry parameterRef="DATA_64" />
+					<xtce:ParameterRefEntry parameterRef="DATA_65" />
+					<xtce:ParameterRefEntry parameterRef="DATA_66" />
+					<xtce:ParameterRefEntry parameterRef="DATA_67" />
+					<xtce:ParameterRefEntry parameterRef="DATA_68" />
+					<xtce:ParameterRefEntry parameterRef="DATA_69" />
+					<xtce:ParameterRefEntry parameterRef="DATA_70" />
+					<xtce:ParameterRefEntry parameterRef="DATA_71" />
+					<xtce:ParameterRefEntry parameterRef="DATA_72" />
+					<xtce:ParameterRefEntry parameterRef="DATA_73" />
+					<xtce:ParameterRefEntry parameterRef="DATA_74" />
+					<xtce:ParameterRefEntry parameterRef="DATA_75" />
+					<xtce:ParameterRefEntry parameterRef="DATA_76" />
+					<xtce:ParameterRefEntry parameterRef="DATA_77" />
+					<xtce:ParameterRefEntry parameterRef="DATA_78" />
+					<xtce:ParameterRefEntry parameterRef="DATA_79" />
+					<xtce:ParameterRefEntry parameterRef="DATA_80" />
+					<xtce:ParameterRefEntry parameterRef="DATA_81" />
+					<xtce:ParameterRefEntry parameterRef="DATA_82" />
+					<xtce:ParameterRefEntry parameterRef="DATA_83" />
+					<xtce:ParameterRefEntry parameterRef="DATA_84" />
+					<xtce:ParameterRefEntry parameterRef="DATA_85" />
+					<xtce:ParameterRefEntry parameterRef="DATA_86" />
+					<xtce:ParameterRefEntry parameterRef="DATA_87" />
+					<xtce:ParameterRefEntry parameterRef="DATA_88" />
+				</xtce:EntryList>
+			</xtce:SequenceContainer>
+		</xtce:ContainerSet>
+	</xtce:TelemetryMetaData>
+</xtce:SpaceSystem>
