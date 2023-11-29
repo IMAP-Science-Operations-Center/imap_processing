@@ -12,17 +12,21 @@ Use
     cdf_filename = codice_l1a(packets)
 """
 
+import space_packet_parser
+
 from imap_processing.cdf.utils import write_cdf
 from imap_processing.codice.utils.codice_utils import CODICEAPID, create_dataset
 from imap_processing.utils import group_by_apid, sort_by_time
 
 
-def codice_l1a(packets, cdf_directory):
+def codice_l1a(
+    packets: list[space_packet_parser.parser.Packet], cdf_directory: str
+) -> str:
     """Process CoDICE l0 data to create l1a data products.
 
     Parameters
     ----------
-    packets : list
+    packets : list[space_packet_parser.parser.Packet]
         Decom data list that contains all APIDs
     cdf_directory : str
         The directory in which to write the output CDF file.

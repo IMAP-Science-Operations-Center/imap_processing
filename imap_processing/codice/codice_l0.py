@@ -18,7 +18,7 @@ Use
 from imap_processing import decom, imap_module_directory
 
 
-def decom_packets(packet_file: str):
+def decom_packets(packet_file: str) -> list:
     """Decom CoDICE data packets using CoDICE packet definition.
 
     Parameters

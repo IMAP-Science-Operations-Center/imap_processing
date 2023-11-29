@@ -3,6 +3,7 @@
 from pathlib import Path
 
 import pytest
+import space_packet_parser
 
 from imap_processing import imap_module_directory
 from imap_processing.codice.codice_l0 import decom_packets
@@ -10,8 +11,15 @@ from imap_processing.codice.codice_l1a import codice_l1a
 
 
 @pytest.fixture(scope="session")
-def l0_test_data():
-    """Decom some packets to be used for testing"""
+def l0_test_data() -> list:
+    """Decom some packets to be used for testing
+
+    Returns
+    -------
+    packets : list[space_packet_parser.parser.Packet]
+        A list of decommutated packets for testing
+    """
+
     packet_file = Path(
         f"{imap_module_directory}/codice/tests/data/"
         f"raw_ccsds_20230822_122700Z_idle.bin"
@@ -21,9 +29,15 @@ def l0_test_data():
     return packets
 
 
-def test_codice_l1a(l0_test_data):
+def test_codice_l1a(l0_test_data: list[space_packet_parser.parser.Packet]) -> str:
     """Tests the ``codice_l1a`` function and ensured that a proper CDF file
-    was created"""
+    was created
+
+    Parameters
+    ----------
+    l0_test_data : list[space_packet_parser.parser.Packet]
+        A list of packets to process
+    """
 
     cdf_filename = codice_l1a(l0_test_data, "")
 
