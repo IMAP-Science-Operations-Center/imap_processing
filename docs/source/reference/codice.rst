@@ -27,5 +27,5 @@ and L1a processing:
     :template: autosummary.rst
     :recursive:
 
-    utils.codice_utils
-    utils.decompress
+    utils
+    decompress
