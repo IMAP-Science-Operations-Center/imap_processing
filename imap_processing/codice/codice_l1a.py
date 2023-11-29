@@ -12,6 +12,8 @@ Use
     cdf_filename = codice_l1a(packets)
 """
 
+import logging
+
 import space_packet_parser
 
 from imap_processing.cdf.utils import write_cdf
@@ -44,7 +46,7 @@ def codice_l1a(
             sorted_packets = sort_by_time(grouped_data[apid], "SHCOARSE")
             data = create_dataset(packets=sorted_packets)
         else:
-            pass
+            logging.debug(f"{apid} is currently not supported")
 
     # Write data to CDF
     cdf_filename = write_cdf(

@@ -94,10 +94,10 @@ def add_metadata_to_array(
         if key in CONVERT_TO_EU_LIST:
             # TODO: Convert value to engineering units
             # For now, just use the raw value
-            converted_value = value.raw_value
-            metadata_arrays.setdefault(key, []).append(converted_value)
+            final_value = value.raw_value
         else:
-            metadata_arrays.setdefault(key, []).append(value.raw_value)
+            final_value = value.raw_value
+        metadata_arrays.setdefault(key, []).append(final_value)
 
     return metadata_arrays
 
