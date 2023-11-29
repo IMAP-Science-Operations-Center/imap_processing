@@ -12,7 +12,7 @@ import space_packet_parser
 import xarray as xr
 
 from imap_processing.cdf.global_attrs import ConstantCoordinates
-from imap_processing.codice import codice_cdf_attrs
+from imap_processing.codice import cdf_attrs
 
 # Placeholder for the list of mnemonics to convert from analog to engineering units
 CONVERT_TO_EU_LIST = []
@@ -129,7 +129,7 @@ def create_dataset(packets: list[space_packet_parser.parser.Packet]) -> xr.Datas
 
     dataset = xr.Dataset(
         coords={"Epoch": epoch_time},
-        attrs=codice_cdf_attrs.codice_l1a_global_attrs.output(),
+        attrs=cdf_attrs.codice_l1a_global_attrs.output(),
     )
 
     for key, value in metadata_arrays.items():
@@ -140,7 +140,7 @@ def create_dataset(packets: list[space_packet_parser.parser.Packet]) -> xr.Datas
                 value,
                 dims=["Epoch"],
                 attrs=dataclasses.replace(
-                    codice_cdf_attrs.codice_metadata_attrs,
+                    cdf_attrs.codice_metadata_attrs,
                     catdesc=key,
                     fieldname=key,
                     label_axis=key,

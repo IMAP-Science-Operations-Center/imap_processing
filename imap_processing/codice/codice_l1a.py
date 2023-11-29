@@ -15,7 +15,7 @@ Use
 import space_packet_parser
 
 from imap_processing.cdf.utils import write_cdf
-from imap_processing.codice.utils.codice_utils import CODICEAPID, create_dataset
+from imap_processing.codice.utils import CODICEAPID, create_dataset
 from imap_processing.utils import group_by_apid, sort_by_time
 
 

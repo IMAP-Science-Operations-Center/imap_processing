@@ -28,8 +28,8 @@ References
 import lzma
 from enum import IntEnum
 
-from imap_processing.codice.utils.codice_utils import CoDICECompression
-from imap_processing.codice.utils.constants import LOSSY_A_TABLE, LOSSY_B_TABLE
+from imap_processing.codice.constants import LOSSY_A_TABLE, LOSSY_B_TABLE
+from imap_processing.codice.utils import CoDICECompression
 
 
 def _apply_lossy_a(compressed_value: int) -> int:

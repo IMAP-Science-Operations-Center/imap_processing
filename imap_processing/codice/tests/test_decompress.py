@@ -5,8 +5,8 @@ from enum import IntEnum
 
 import pytest
 
-from imap_processing.codice.utils.codice_utils import CoDICECompression
-from imap_processing.codice.utils.decompress import decompress
+from imap_processing.codice.decompress import decompress
+from imap_processing.codice.utils import CoDICECompression
 
 # Test the algorithms using input value of 234 (picked randomly)
 LZMA_EXAMPLE = lzma.compress((234).to_bytes(1, byteorder="big"))
