@@ -25,7 +25,7 @@ def test_codice_l1a(l0_test_data):
     """Tests the ``codice_l1a`` function and ensured that a proper CDF file
     was created"""
 
-    cdf_filename = codice_l1a(l0_test_data)
+    cdf_filename = codice_l1a(l0_test_data, "")
 
     assert Path(cdf_filename).name == "imap_codice_l1a_hk_20100101_v01.cdf"
 

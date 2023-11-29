@@ -17,13 +17,15 @@ from imap_processing.codice.utils.codice_utils import CODICEAPID, create_dataset
 from imap_processing.utils import group_by_apid, sort_by_time
 
 
-def codice_l1a(packets):
+def codice_l1a(packets, cdf_directory):
     """Process CoDICE l0 data to create l1a data products.
 
     Parameters
     ----------
     packets : list
         Decom data list that contains all APIDs
+    cdf_directory : str
+        The directory in which to write the output CDF file.
 
     Returns
     -------
@@ -45,7 +47,7 @@ def codice_l1a(packets):
         data,
         mode="",
         description="hk",
-        directory="/Users/mabo8927/Desktop/repositories/imap_processing/imap_processing/codice/tests/data/",
+        directory=cdf_directory,
     )
 
     return cdf_filename
