@@ -90,12 +90,11 @@ intersphinx_mapping = {
 # Reference targets not found
 nitpicky = True
 
-# Some inherited method targets aren't found through intershpinx
+# Some inherited method targets aren't found through intersphinx
 nitpick_ignore_regex = [
     (r"py:.*", r".*APID\..*"),
     (r"py:.*", r".*IntEnum.*"),
     (r"py:.*", r".*space_packet_parser.*"),
-    (r"py:.*", r".*xr.Dataset.*"),
     (r"py:.*", r".*CoDICECompression.*"),
 ]
 
@@ -106,4 +105,6 @@ numpydoc_show_inherited_class_members = {
 }
 
 # Suppress specific warnings
-suppress_warnings = ["autosectionlabel.*"]  # Duplicate label use
+suppress_warnings = [
+    "autosectionlabel.*"
+]  # Duplicate label use (e.g. imap_processing.codice.codice_l0)

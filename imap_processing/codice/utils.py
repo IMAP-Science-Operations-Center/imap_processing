@@ -112,7 +112,7 @@ def create_dataset(packets: list[space_packet_parser.parser.Packet]) -> xr.Datas
 
     Returns
     -------
-    xr.Dataset
+    xarray.Dataset
         xarray dataset containing the metadata
     """
     metadata_arrays = collections.defaultdict(list)
