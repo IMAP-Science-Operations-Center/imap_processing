@@ -1,20 +1,22 @@
-from dataclasses import dataclass, fields
-from enum import Enum
+from dataclasses import dataclass
+from enum import IntEnum
+
+from imap_processing.ccsds.ccsds_data import CcsdsData
 
 
-class MagApid(Enum):
-    """Enum class for Glows packet data.
+class Mode(IntEnum):
+    """Enum class for MAG mode.
 
     Attributes
     ----------
-    HIST_APID : int
-        Histogram packet APID
-    DE_APID : int
-        Direct event APID
+    BURST : int
+        APID for Burst mode data
+    NORM : int
+        ApID for Normal mode data
     """
 
-    BURST_APID = 1068
-    NORM_APID = 1052
+    BURST = 1068
+    NORM = 1052
 
 
 @dataclass
@@ -24,24 +26,12 @@ class MagL0:
 
     Attributes
     ----------
-    PHVERNO: int
-        CCSDS Packet Version Number
-    PHTYPE: int
-        CCSDS Packet Type Indicator
-    PHSHF: int
-        CCSDS Packet Secondary Header Flag
-    PHAPID: int
-        CCSDS Packet Application Process ID
-    PHGROUPF: int
-        CCSDS Packet Grouping Flags
-    PHSEQCNT: int
-        CCSDS Packet Sequence Count
-    PHDLEN: int
-        CCSDS Packet Length
+    ccsds_header: CcsdsData
+        CCSDS Header data
     SHCOARSE: int
         Mission elapsed time
     PUS_SPARE1: int
-        PUS Spare 1
+        ESA standard headers, PUS Spare 1
     PUS_VERSION: int
         PUS Version Number
     PUS_SPARE2: int
@@ -49,46 +39,38 @@ class MagL0:
     PUS_STYPE: int
         PUS Service Type
     PUS_SSUBTYPE: int
-        PUS Service Subtype
+        PUS Service Subtype - tells number of seconds of data
     COMPRESSION: int
-        Science Data Compression Flag
-    FOB_ACT: int
-        FOB Active Status
-    FIB_ACT: int
-        FIB Active Status
+        Science Data Compression Flag - indicates if the data compressed - throw error
+        if 1
+    MAGO_ACT: int
+        MAGO Active Status - if MAGo is active. May also be referred to as "FOB"
+    MAGI_ACT: int
+        MAGI Active Status - if MAGi is active.  May also be referred to as "FIB"
     PRI_SENS: int
-        Primary Sensor
+        Primary Sensor - 0 is MAGo, 1 is MAGi
     SPARE1: int
         Spare
     PRI_VECSEC: int
-        Primary Vectors per Second
+        Primary Vectors per Second - lookup for L1b
     SEC_VECSEC: int
         Secondary Vectors per second
     SPARE2: int
         Spare
     PRI_COARSETM: int
-        Primary Coarse Time
+        Primary Coarse Time for first vector, seconds
     PRI_FNTM: int
-        Primary Fine Time
+        Primary Fine Time for first vector, subseconds
     SEC_COARSETM: int
-        Secondary Coarse Time
+        Secondary Coarse Time for first vector, seconds
     SEC_FNTM: int
-        Secondary Fine Time
-    VECTORS: int
-        MAG Science Vectors
-    FILL: int
-        Filler byte
-    packet_type: MagApid
-        Indicates whether the packet is a Burst or Norm packet.
+        Secondary Fine Time for first vector, subseconds
+    VECTORS: bin
+        MAG Science Vectors - divide based on PRI_VECSEC and PUS_SSUBTYPE for vector
+        counts
     """
 
-    PHVERNO: int
-    PHTYPE: int
-    PHSHF: int
-    PHAPID: int
-    PHGROUPF: int
-    PHSEQCNT: int
-    PHDLEN: int
+    ccsds_header: CcsdsData
     SHCOARSE: int
     PUS_SPARE1: int
     PUS_VERSION: int
@@ -96,8 +78,8 @@ class MagL0:
     PUS_STYPE: int
     PUS_SSUBTYPE: int
     COMPRESSION: int
-    FOB_ACT: int
-    FIB_ACT: int
+    MAGO_ACT: int
+    MAGI_ACT: int
     PRI_SENS: int
     SPARE1: int
     PRI_VECSEC: int
@@ -107,32 +89,12 @@ class MagL0:
     PRI_FNTM: int
     SEC_COARSETM: int
     SEC_FNTM: int
-    VECTORS: bin
-    FILL: int
-    packet_type: MagApid
+    VECTORS: bytearray
 
-    def __init__(self, packet, packet_type: MagApid):
-        """Set the attributes in the dataclass based on the packet and the type.
-
-        Parameters
-        ----------
-        packet
-            Space_packet_parser packet, consisting of a tuple with [header, data]
-        packet_type: MagApid
-            the type of the packet
-        """
-        self.packet_type = packet_type
-        attributes = [field.name for field in fields(self)]
-
-        # For each item in packet, assign it to the matching attribute in the class.
-        for key, item in packet.data.items():
-            value = (
-                item.derived_value if item.derived_value is not None else item.raw_value
+    def __post_init__(self):
+        """Convert HISTOGRAM_DATA attribute from string to bytearray if needed."""
+        if isinstance(self.VECTORS, str):
+            # Convert string output from space_packet_parser to bytearray
+            self.VECTORS = bytearray(
+                int(self.VECTORS, 2).to_bytes(len(self.VECTORS) // 8, "big")
             )
-            if key in attributes:
-                setattr(self, key, value)
-            else:
-                raise KeyError(
-                    f"Did not find matching attribute in Histogram data class for "
-                    f"{key}"
-                )

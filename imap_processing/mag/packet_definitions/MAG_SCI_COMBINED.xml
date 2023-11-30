@@ -36,7 +36,7 @@
 					<xtce:SizeInBits>
 						<xtce:DynamicValue>
 						  <xtce:ParameterInstanceRef parameterRef="PKT_LEN"/>
-						  <xtce:LinearAdjustment intercept="-224" slope="8"/>
+						  <xtce:LinearAdjustment intercept="-216" slope="8"/>
 						</xtce:DynamicValue>
 					</xtce:SizeInBits>
 				</xtce:BinaryDataEncoding>
@@ -114,13 +114,13 @@
 				<xtce:ShortDescription>Science Data Compression Flag</xtce:ShortDescription>
 				<xtce:LongDescription>Science Data Compression Flag</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="FOB_ACT" parameterTypeRef="UINT1">
-				<xtce:ShortDescription>FOB Active Status</xtce:ShortDescription>
-				<xtce:LongDescription>FOB Active Status</xtce:LongDescription>
+			<xtce:Parameter name="MAGO_ACT" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>MAGO Active Status</xtce:ShortDescription>
+				<xtce:LongDescription>MAGO Active Status</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="FIB_ACT" parameterTypeRef="UINT1">
-				<xtce:ShortDescription>FIB Active Status</xtce:ShortDescription>
-				<xtce:LongDescription>FIB Active Status</xtce:LongDescription>
+			<xtce:Parameter name="MAGI_ACT" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>MAGI Active Status</xtce:ShortDescription>
+				<xtce:LongDescription>MAGI Active Status</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="PRI_SENS" parameterTypeRef="UINT1">
 				<xtce:ShortDescription>Primary Sensor</xtce:ShortDescription>
@@ -161,10 +161,6 @@
 			<xtce:Parameter name="VECTORS" parameterTypeRef="VAR_BYTE">
 				<xtce:ShortDescription>MAG Science Vectors</xtce:ShortDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="FILL" parameterTypeRef="UINT8">
-				<xtce:ShortDescription>Filler byte</xtce:ShortDescription>
-				<xtce:LongDescription>Filler byte</xtce:LongDescription>
-			</xtce:Parameter>
 		</xtce:ParameterSet>
 		<xtce:ContainerSet>
 			<xtce:SequenceContainer name="CCSDSPacket">
@@ -185,13 +181,6 @@
 					</xtce:RestrictionCriteria>
 				</xtce:BaseContainer>
 				<xtce:EntryList>
-					<xtce:ParameterRefEntry parameterRef="PHVERNO" />
-					<xtce:ParameterRefEntry parameterRef="PHTYPE" />
-					<xtce:ParameterRefEntry parameterRef="PHSHF" />
-					<xtce:ParameterRefEntry parameterRef="PHAPID" />
-					<xtce:ParameterRefEntry parameterRef="PHGROUPF" />
-					<xtce:ParameterRefEntry parameterRef="PHSEQCNT" />
-					<xtce:ParameterRefEntry parameterRef="PHDLEN" />
 					<xtce:ParameterRefEntry parameterRef="SHCOARSE" />
 					<xtce:ParameterRefEntry parameterRef="PUS_SPARE1" />
 					<xtce:ParameterRefEntry parameterRef="PUS_VERSION" />
@@ -199,8 +188,8 @@
 					<xtce:ParameterRefEntry parameterRef="PUS_STYPE" />
 					<xtce:ParameterRefEntry parameterRef="PUS_SSUBTYPE" />
 					<xtce:ParameterRefEntry parameterRef="COMPRESSION" />
-					<xtce:ParameterRefEntry parameterRef="FOB_ACT" />
-					<xtce:ParameterRefEntry parameterRef="FIB_ACT" />
+					<xtce:ParameterRefEntry parameterRef="MAGO_ACT" />
+					<xtce:ParameterRefEntry parameterRef="MAGI_ACT" />
 					<xtce:ParameterRefEntry parameterRef="PRI_SENS" />
 					<xtce:ParameterRefEntry parameterRef="SPARE1" />
 					<xtce:ParameterRefEntry parameterRef="PRI_VECSEC" />
@@ -211,7 +200,6 @@
 					<xtce:ParameterRefEntry parameterRef="SEC_COARSETM" />
 					<xtce:ParameterRefEntry parameterRef="SEC_FNTM" />
 					<xtce:ParameterRefEntry parameterRef="VECTORS" />
-					<xtce:ParameterRefEntry parameterRef="FILL" />
 				</xtce:EntryList>
 			</xtce:SequenceContainer>
 			<xtce:SequenceContainer name="P_MAG_SCI_BURST">
@@ -221,13 +209,6 @@
 					</xtce:RestrictionCriteria>
 				</xtce:BaseContainer>
 				<xtce:EntryList>
-					<xtce:ParameterRefEntry parameterRef="PHVERNO" />
-					<xtce:ParameterRefEntry parameterRef="PHTYPE" />
-					<xtce:ParameterRefEntry parameterRef="PHSHF" />
-					<xtce:ParameterRefEntry parameterRef="PHAPID" />
-					<xtce:ParameterRefEntry parameterRef="PHGROUPF" />
-					<xtce:ParameterRefEntry parameterRef="PHSEQCNT" />
-					<xtce:ParameterRefEntry parameterRef="PHDLEN" />
 					<xtce:ParameterRefEntry parameterRef="SHCOARSE" />
 					<xtce:ParameterRefEntry parameterRef="PUS_SPARE1" />
 					<xtce:ParameterRefEntry parameterRef="PUS_VERSION" />
@@ -235,8 +216,8 @@
 					<xtce:ParameterRefEntry parameterRef="PUS_STYPE" />
 					<xtce:ParameterRefEntry parameterRef="PUS_SSUBTYPE" />
 					<xtce:ParameterRefEntry parameterRef="COMPRESSION" />
-					<xtce:ParameterRefEntry parameterRef="FOB_ACT" />
-					<xtce:ParameterRefEntry parameterRef="FIB_ACT" />
+					<xtce:ParameterRefEntry parameterRef="MAGO_ACT" />
+					<xtce:ParameterRefEntry parameterRef="MAGI_ACT" />
 					<xtce:ParameterRefEntry parameterRef="PRI_SENS" />
 					<xtce:ParameterRefEntry parameterRef="SPARE1" />
 					<xtce:ParameterRefEntry parameterRef="PRI_VECSEC" />
@@ -247,7 +228,6 @@
 					<xtce:ParameterRefEntry parameterRef="SEC_COARSETM" />
 					<xtce:ParameterRefEntry parameterRef="SEC_FNTM" />
 					<xtce:ParameterRefEntry parameterRef="VECTORS" />
-					<xtce:ParameterRefEntry parameterRef="FILL" />
 				</xtce:EntryList>
 			</xtce:SequenceContainer>
 		</xtce:ContainerSet>
