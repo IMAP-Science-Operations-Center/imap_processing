@@ -14,9 +14,6 @@ import xarray as xr
 from imap_processing.cdf.global_attrs import ConstantCoordinates
 from imap_processing.codice import cdf_attrs
 
-# Placeholder for the list of mnemonics to convert from analog to engineering units
-CONVERT_TO_EU_LIST = []
-
 
 class CODICEAPID(IntEnum):
     """Create ENUM for CoDICE APIDs.
@@ -91,13 +88,7 @@ def add_metadata_to_array(
         metadata_arrays.setdefault(key, []).append(value.raw_value)
 
     for key, value in packet.data.items():
-        if key in CONVERT_TO_EU_LIST:
-            # TODO: Convert value to engineering units
-            # For now, just use the raw value
-            final_value = value.raw_value
-        else:
-            final_value = value.raw_value
-        metadata_arrays.setdefault(key, []).append(final_value)
+        metadata_arrays.setdefault(key, []).append(value.raw_value)
 
     return metadata_arrays
 
