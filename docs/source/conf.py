@@ -76,6 +76,8 @@ html_static_path = ["_static"]
 
 # Autosummary
 autosummary_generate = True
+# Do not generate separate pages for class methods
+numpydoc_show_class_members = False
 
 intersphinx_mapping = {
     "numpy": ("https://numpy.org/doc/stable/", None),
@@ -87,9 +89,22 @@ intersphinx_mapping = {
 
 # Reference targets not found
 nitpicky = True
-# IntEnum inherited method targets aren't found through intershpinx
-nitpick_ignore_regex = [(r"py:.*", r".*APID\..*")]
-# Ignore the inherited members from the HitAPID IntEnum class
+
+# Some inherited method targets aren't found through intersphinx
+nitpick_ignore_regex = [
+    (r"py:.*", r".*APID\..*"),
+    (r"py:.*", r".*IntEnum.*"),
+    (r"py:.*", r".*space_packet_parser.*"),
+    (r"py:.*", r".*CoDICECompression.*"),
+]
+
+# Ignore the inherited members from the <instrument>APID IntEnum class
 numpydoc_show_inherited_class_members = {
-    "imap_processing.hit.l0.hit_l1a_decom.HitAPID": False
+    "imap_processing.hit.l0.hit_l1a_decom.HitAPID": False,
+    "imap_processing.codice.utils.CODICEAPID": False,
 }
+
+# Suppress specific warnings
+suppress_warnings = [
+    "autosectionlabel.*"
+]  # Duplicate label use (e.g. imap_processing.codice.codice_l0)

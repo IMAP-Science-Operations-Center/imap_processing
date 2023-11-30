@@ -8,21 +8,24 @@ CoDICE (Compact Dual Ion Composition Experiment)
 This is the CoDICE Instrument module, which contains the code for processing
 data from the CoDICE instrument.
 
-The L0 code to decommutate the CCSDS packet data can be found below:
+The processing code to decommutate the CCSDS packets (L0) and create L1a data
+products can be found below:
 
 .. autosummary::
     :toctree: generated/
     :template: autosummary.rst
     :recursive:
 
-    l0.decom_codice
+    codice_l0
+    codice_l1a
 
-The code below is used to decompress an 8 bit science value to a 24- or 32-bit
-uncompressed value:
+The modules below contain various utility classes and functions to support L0
+and L1a processing:
 
 .. autosummary::
     :toctree: generated/
     :template: autosummary.rst
     :recursive:
 
-    l0.decompress_codice
+    utils
+    decompress
