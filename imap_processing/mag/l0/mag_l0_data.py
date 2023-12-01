@@ -92,9 +92,16 @@ class MagL0:
     VECTORS: bytearray
 
     def __post_init__(self):
-        """Convert HISTOGRAM_DATA attribute from string to bytearray if needed."""
+        """Convert Vectors attribute from string to bytearray if needed.
+
+        Also convert encoded "VECSEC" (vectors per second) into proper vectors per
+        second values
+        """
         if isinstance(self.VECTORS, str):
             # Convert string output from space_packet_parser to bytearray
             self.VECTORS = bytearray(
                 int(self.VECTORS, 2).to_bytes(len(self.VECTORS) // 8, "big")
             )
+
+        self.PRI_VECSEC = 2**self.PRI_VECSEC
+        self.SEC_VECSEC = 2**self.SEC_VECSEC

@@ -49,7 +49,7 @@ def decom_packets(packet_file_path: str) -> list[MagL0]:
                         else item.raw_value
                         for item in packet.data.values()
                     ]
-
+                    print(packet.header)
                     data_list.append(MagL0(CcsdsData(packet.header), *values))
         except ReadError as e:
             print(e)
