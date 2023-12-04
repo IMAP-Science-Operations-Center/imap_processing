@@ -5,7 +5,11 @@ import pytest
 
 from imap_processing.glows import version
 from imap_processing.glows.l0 import decom_glows
-from imap_processing.glows.l1.glows_l1a_data import DirectEventL1A, HistogramL1A
+from imap_processing.glows.l1.glows_l1a_data import (
+    DirectEventL1A,
+    HistogramL1A,
+    StatusData,
+)
 from imap_processing.glows.utils.constants import DirectEvent, TimeTuple
 
 
@@ -19,6 +23,7 @@ def decom_test_data():
 
 
 def test_histogram_list(decom_test_data):
+    """Test size of histogram data"""
     histl0 = decom_test_data[0][0]
     hist = HistogramL1A(histl0)
 
@@ -27,6 +32,7 @@ def test_histogram_list(decom_test_data):
 
 
 def test_histogram_attributes(decom_test_data):
+    """Test other data in histogram packet"""
     histl0 = decom_test_data[0][0]
     hist = HistogramL1A(histl0)
 
@@ -41,21 +47,17 @@ def test_histogram_attributes(decom_test_data):
     assert hist.last_spin_id == 0
 
     assert hist.imap_start_time == TimeTuple(54232215, 0)
-    assert hist.imap_end_time_offset == TimeTuple(120, 0)
+    assert hist.imap_time_offset == TimeTuple(120, 0)
     assert hist.glows_start_time == TimeTuple(54232214, 1997263)
-    assert hist.glows_end_time_offset == TimeTuple(119, 1998758)
+    assert hist.glows_time_offset == TimeTuple(119, 1998758)
     assert hist.flags == {"flags_set_onboard": 64, "is_generated_on_ground": False}
 
 
 def test_direct_event_every_second(decom_test_data):
+    """Test that Level 1A direct events generate correct status data table"""
     de0 = decom_test_data[1][0]
 
-    # From first test packet, first 40 bytes
-    data_every_second_bytes = bytearray.fromhex(
-        "033b8512033b8511001e74d6033b851300010100b71b444400372b0109cb07d70101010000000000"
-    )
-
-    # Manually created dictionary:
+    # Manually created dictionary from first test packet
     data_every_second = {
         "imap_sclk_last_pps": 54232338,
         "glows_sclk_last_pps": 54232337,
@@ -81,12 +83,11 @@ def test_direct_event_every_second(decom_test_data):
 
     de = DirectEventL1A(de0)
 
-    output = de._generate_status_data(data_every_second_bytes)
-
-    assert output == data_every_second
+    assert dataclasses.asdict(de.status_data) == data_every_second
 
 
 def test_direct_events_uncompressed(decom_test_data):
+    """test building of uncompressed events"""
     de0 = decom_test_data[1][0]
     de1a = DirectEventL1A(de0)
     first_uncompressed_event = bytearray.fromhex("033b8511061e7bf0")
@@ -98,6 +99,7 @@ def test_direct_events_uncompressed(decom_test_data):
 
 
 def test_direct_events_two_bytes_compressed(decom_test_data):
+    """Test two byte compression for direct events"""
     de0 = decom_test_data[1][0]
     de1a = DirectEventL1A(de0)
     first_byte = int("0x87", 0)
@@ -127,6 +129,7 @@ def test_direct_events_two_bytes_compressed(decom_test_data):
 
 
 def test_direct_events_three_bytes_compressed(decom_test_data):
+    """test 3 byte compression for direct events"""
     de0 = decom_test_data[1][0]
     de1a = DirectEventL1A(de0)
     first_byte = int("0xE7", 0)
@@ -153,6 +156,9 @@ def test_direct_events_three_bytes_compressed(decom_test_data):
 
 
 def test_generate_direct_events(decom_test_data):
+    """test multiple types of compression
+
+    first byte uncompressed, then 2 byte compressed, then 3 byte compressed"""
     de0 = decom_test_data[1][0]
     de1a = DirectEventL1A(de0)
     first_uncompressed_event = bytearray.fromhex("033b8511061e7bf0")
@@ -180,6 +186,7 @@ def test_generate_direct_events(decom_test_data):
 
 
 def test_combine_direct_events(decom_test_data):
+    """Test having multiple direct events across different level 0 instances"""
     de0 = decom_test_data[1][0]
     de0_first = dataclasses.replace(de0, LEN=2, SEQ=0, DE_DATA=de0.DE_DATA[:100])
     de0_second = dataclasses.replace(de0, LEN=2, SEQ=1, DE_DATA=de0.DE_DATA[100:])
@@ -203,6 +210,7 @@ def test_combine_direct_events(decom_test_data):
 
 
 def test_combine_direct_events_with_missing(decom_test_data):
+    """test for missing direct events in the sequence"""
     de0 = decom_test_data[1][0]
     de0_first = dataclasses.replace(de0, LEN=3, SEQ=0, DE_DATA=de0.DE_DATA[:100])
     de0_second = dataclasses.replace(de0, LEN=3, SEQ=2, DE_DATA=de0.DE_DATA[100:])
@@ -218,3 +226,88 @@ def test_combine_direct_events_with_missing(decom_test_data):
     # Missing one value
     assert de1.missing_seq == [1]
     assert de1.direct_events == expected.direct_events
+
+
+def test_generate_status_data():
+    """Test if status data is correctly generated from 40 byte input"""
+    input_bytes = bytearray.fromhex(
+        "00000010"
+        "0007F737"
+        "0007FAF9"
+        "00004330"
+        "01"
+        "01"
+        "00"
+        "01"
+        "03DE"
+        "08F3"
+        "0022F917"
+        "1DE6"
+        "0076"
+        "0100"
+        "01"
+        "01"
+        "00"
+        "00"
+        "01"
+        "00"
+    )
+
+    # completely fabricated
+    test_data = {
+        "imap_sclk_last_pps": 16,
+        "glows_sclk_last_pps": 522039,
+        "glows_ssclk_last_pps": 523001,
+        "imap_sclk_next_pps": 17200,
+        "catbed_heater_active": 1,
+        "spin_period_valid": 1,
+        "spin_phase_at_next_pps_valid": 0,
+        "spin_period_source": 1,
+        "spin_period": 990,
+        "spin_phase_at_next_pps": 2291,
+        "number_of_completed_spins": 2291991,
+        "filter_temperature": 7654,
+        "hv_voltage": 118,
+        "glows_time_on_pps_valid": 1,
+        "time_status_valid": 0,
+        "housekeeping_valid": 1,
+        "is_pps_autogenerated": 1,
+        "hv_test_in_progress": 0,
+        "pulse_test_in_progress": 0,
+        "memory_error_detected": 1,
+    }
+
+    output = StatusData(input_bytes)
+    assert dataclasses.asdict(output) == test_data
+
+    # real data
+    # From first test packet, first 40 bytes
+    test2 = bytearray.fromhex(
+        "033b8512033b8511001e74d6033b851300010100b71b444400372b0109cb07d70101010000000000"
+    )
+
+    expected = {
+        "imap_sclk_last_pps": 54232338,
+        "glows_sclk_last_pps": 54232337,
+        "glows_ssclk_last_pps": 1995990,
+        "imap_sclk_next_pps": 54232339,
+        "catbed_heater_active": 0,
+        "spin_period_valid": 1,
+        "spin_phase_at_next_pps_valid": 1,
+        "spin_period_source": 0,
+        "spin_period": 46875,
+        "spin_phase_at_next_pps": 17476,
+        "number_of_completed_spins": 3615489,
+        "filter_temperature": 2507,
+        "hv_voltage": 2007,
+        "glows_time_on_pps_valid": 1,
+        "time_status_valid": 1,
+        "housekeeping_valid": 1,
+        "is_pps_autogenerated": 0,
+        "hv_test_in_progress": 0,
+        "pulse_test_in_progress": 0,
+        "memory_error_detected": 0,
+    }
+
+    output = StatusData(test2)
+    assert dataclasses.asdict(output) == expected

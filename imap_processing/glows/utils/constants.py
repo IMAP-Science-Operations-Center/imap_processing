@@ -1,19 +1,30 @@
-from collections import namedtuple
 from dataclasses import dataclass
 
-TimeTuple = namedtuple("TimeTuple", "seconds subseconds")
-"""
-Spacecraft clock time, a float divided into seconds and subseconds
 
-.. py:attribute:: seconds
-    Seconds value
-.. py:attribute:: subseconds
-    Subseconds of clock
-.. py:attribute:: index
-    Namedtuple builtin
-.. py:attribute:: count
-    Namedtuple builtin
-"""
+@dataclass()
+class TimeTuple:
+    """
+    Spacecraft clock time, a float divided into seconds and subseconds.
+
+    Attributes
+    ----------
+    seconds: int
+        Seconds of clock, integer
+    subseconds: int
+        Subseconds of clock, defined as 1/SUB_SECOND_LIMIT th of a second. Will
+        always be less than SUB_SECOND_LIMIT. If the class is initialized with a
+        subsecond value above SUB_SECOND_LIMIT, the subseconds above the limit will be
+        converted to seconds.
+    """
+
+    seconds: int
+    subseconds: int
+
+    def __post_init__(self):
+        """Add any subseconds over the limit into the seconds field."""
+        if self.subseconds >= GlowsConstants.SUBSECOND_LIMIT:
+            self.seconds += self.subseconds // GlowsConstants.SUBSECOND_LIMIT
+            self.subseconds = self.subseconds % GlowsConstants.SUBSECOND_LIMIT
 
 
 @dataclass(frozen=True)

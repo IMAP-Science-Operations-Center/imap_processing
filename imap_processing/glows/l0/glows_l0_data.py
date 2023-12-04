@@ -148,8 +148,9 @@ class DirectEventL0(GlowsL0):
 
     Methods
     -------
-    sequence_match_check
-        Compare two DirectEventL0 objects and see if MET and LEN are equal
+    within_same_sequence
+        Compare two DirectEventL0 objects and see if MET and LEN are equal (meaning they
+        are in the same sequence)
 
     """
 
@@ -167,7 +168,7 @@ class DirectEventL0(GlowsL0):
                 int(self.DE_DATA, 2).to_bytes(len(self.DE_DATA) // 8, "big")
             )
 
-    def sequence_match_check(self, de_l0):
+    def within_same_sequence(self, other):
         """
         Compare fields for L0 which should be the same for packets within one sequence.
 
@@ -175,18 +176,18 @@ class DirectEventL0(GlowsL0):
 
         Parameters
         ----------
-        de_l0
+        other
             Another instance of DirectEventL0 to compare to.
 
         Returns
         -------
         True if the MET and LEN fields match, False otherwise.
         """
-        if not isinstance(de_l0, DirectEventL0):
+        if not isinstance(other, DirectEventL0):
             return False
 
         # Time and overall packet length should match
-        if self.MET == de_l0.MET and self.LEN == de_l0.LEN:
+        if self.MET == other.MET and self.LEN == other.LEN:
             return True
 
         return False
