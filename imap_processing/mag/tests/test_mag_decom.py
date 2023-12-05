@@ -10,7 +10,7 @@ def test_burst_decom():
     print(current_directory)
     print(burst_test_file)
     print("Test")
-    l0 = decom_packets(burst_test_file.name)[0]
+    l0 = decom_packets(str(burst_test_file))[0]
 
     assert l0.ccsds_header.PKT_APID == 1068
     assert l0.ccsds_header.SRC_SEQ_CTR == 1
@@ -41,7 +41,7 @@ def test_norm_decom():
     print(current_directory)
     print(burst_test_file)
     print("Test")
-    l0 = decom_packets(burst_test_file.name)[0]
+    l0 = decom_packets(str(burst_test_file))[0]
 
     assert l0.ccsds_header.PKT_APID == 1052
     assert l0.ccsds_header.SRC_SEQ_CTR == 16
@@ -64,3 +64,15 @@ def test_norm_decom():
         SEC_FNTM=64582,
     )
     assert l0 == expected
+
+
+def test_mag_decom():
+    """Testing multiple packets"""
+    current_directory = Path(__file__).parent
+    burst_test_file = current_directory / "mag_multiple_packets.pkts"
+    l0 = decom_packets(str(burst_test_file))
+
+    assert len(l0) == 125
+    for val in l0:
+        assert val.ccsds_header.PKT_APID == 1052
+        assert len(val.VECTORS) > 0
