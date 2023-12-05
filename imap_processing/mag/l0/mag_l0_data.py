@@ -21,7 +21,6 @@ class Mode(IntEnum):
 
 @dataclass
 class MagL0:
-    # TODO: Are burst and norm similar enough to share dataclass?
     """Data class for MAG Level 0 data.
 
     Attributes
