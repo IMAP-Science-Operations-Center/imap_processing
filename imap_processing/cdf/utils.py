@@ -63,7 +63,7 @@ def write_cdf(
     file_start_date = None
     if "idex" in data.attrs["Logical_source"]:
         file_start_date = data["Epoch"][0].data
-    elif "swe" in data.attrs["Logical_source"]:
+    else:
         start_time = data["Epoch"].data[0]
         file_start_date = calc_start_time(start_time)
     if file_start_date is None:
