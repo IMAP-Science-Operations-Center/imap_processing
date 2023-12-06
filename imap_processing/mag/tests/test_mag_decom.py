@@ -7,9 +7,6 @@ from imap_processing.mag.l0.decom_mag import decom_packets
 def test_burst_decom():
     current_directory = Path(__file__).parent
     burst_test_file = current_directory / "mag_single_burst.pkts"
-    print(current_directory)
-    print(burst_test_file)
-    print("Test")
     l0 = decom_packets(str(burst_test_file))[0]
 
     assert l0.ccsds_header.PKT_APID == 1068
@@ -38,9 +35,6 @@ def test_burst_decom():
 def test_norm_decom():
     current_directory = Path(__file__).parent
     burst_test_file = current_directory / "mag_single_norm.pkts"
-    print(current_directory)
-    print(burst_test_file)
-    print("Test")
     l0 = decom_packets(str(burst_test_file))[0]
 
     assert l0.ccsds_header.PKT_APID == 1052
