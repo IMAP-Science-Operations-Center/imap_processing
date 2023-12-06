@@ -8,15 +8,12 @@ def main():
     for certain number of packets. Change values where TODO is
     """
 
-    # TODO: change instrument name
     instrument_name = "mag"
     current_directory = Path(__file__).parent
     module_path = f"{current_directory}/../../imap_processing"
     packet_definition_path = f"{module_path}/{instrument_name}/packet_definitions"
-    # TODO: Copy packet definition to tools/xtce_generation/ folder
     path_to_excel_file = f"{current_directory}/TLM_MAG_SCI.xls"
 
-    # TODO: update packets dictionary with packet name and appId
     # Eg.
     # packets = {
     #     "P_COD_HI_PHA": 1169,
