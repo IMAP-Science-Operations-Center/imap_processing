@@ -473,7 +473,7 @@ def process_swapi_science(sci_dataset):
             scem_comp,
             coin_comp,
         ) = create_full_sweep_data(full_sweep_sci, sweep_index)
-        print(swp_pcem_counts)
+
         swp_pcem_counts.append(pcem_counts)
         swp_scem_counts.append(scem_counts)
         swp_coin_counts.append(coin_counts)
@@ -499,15 +499,25 @@ def process_swapi_science(sci_dataset):
         "PLAN_ID": full_sweep_sci["PLAN_ID_SCIENCE"].data[m],
     }
 
-    # Had to create new xr.Dataset because Epoch shape and new data variables shapes was
-    # different.
-    # Get Epoch value of full sweep data
-    epoch_time = sci_dataset["Epoch"].data[full_sweep_indices]
-    xr.DataArray(epoch_time, dims=["Epoch"])
-    xr.Dataset(
-        coords={"Epoch": sci_dataset["Epoch"].data[full_sweep_indices]},
+    # Get Epoch time of full sweep data and then reshape it to
+    # (n, 12) where n = total number of full sweep data and 12 = 12
+    # sequence data's metadata. For Epoch's data, we take the first element
+    # of each 12 sequence data's metadata.
+    epoch_time = xr.DataArray(
+        sci_dataset["Epoch"].data[full_sweep_indices].reshape(-1, 12)[:, 0],
+        name="Epoch",
+        dims=["Epoch"],
+    )
+    counts = xr.DataArray(np.arange(72), name="Counts", dims=["Counts"])
+    dataset = xr.Dataset(
+        coords={"Epoch": epoch_time, "Counts": counts},
         attrs=attrs,
     )
+
+    dataset["SWP_PCEM_COUNTS"] = xr.DataArray(swp_pcem_counts, dims=["Epoch", "Counts"])
+    dataset["SWP_SCEM_COUNTS"] = xr.DataArray(swp_scem_counts, dims=["Epoch", "Counts"])
+    dataset["SWP_COIN_COUNTS"] = xr.DataArray(swp_coin_counts, dims=["Epoch", "Counts"])
+    return dataset
 
 
 def swapi_l1(packets):
