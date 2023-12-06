@@ -1,7 +1,7 @@
-.. _api:
+.. _code-documentation:
 
-API reference
-=============
+Code Documentation
+==================
 
 .. currentmodule:: imap_processing
 
@@ -24,8 +24,10 @@ Instruments
 
 Utility functions can be found in modules within the top package level.
 
-.. autosummary::
-    :toctree: generated/
-    :template: autosummary.rst
+Tools
+-----
 
-    decom
+.. toctree::
+   :maxdepth: 2
+
+   tools/index
