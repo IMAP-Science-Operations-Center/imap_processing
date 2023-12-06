@@ -1,3 +1,4 @@
+import logging
 from pathlib import Path
 
 from bitstring import ReadError
@@ -6,6 +7,9 @@ from space_packet_parser import parser, xtcedef
 from imap_processing import imap_module_directory
 from imap_processing.ccsds.ccsds_data import CcsdsData
 from imap_processing.mag.l0.mag_l0_data import MagL0, Mode
+
+logging.basicConfig(level=logging.ERROR)
+logger = logging.getLogger(__name__)
 
 
 # TODO: write the output of this into a file
@@ -49,17 +53,11 @@ def decom_packets(packet_file_path: str) -> list[MagL0]:
                         else item.raw_value
                         for item in packet.data.values()
                     ]
-                    print(packet.header)
                     data_list.append(MagL0(CcsdsData(packet.header), *values))
         except ReadError as e:
-            print(e)
-            print("This may mean reaching the end of an incomplete packet.")
+            logger.warning(
+                f"Found error: {e}\n This may mean reaching the end of an "
+                f"incomplete packet."
+            )
 
         return data_list
-
-
-if __name__ == "__main__":
-    packet_name = "PREFLIGHT_raw_record_2023_313_16_41_02_apid1052.pkts"
-
-    output = decom_packets(packet_name)
-    print(len(output))
