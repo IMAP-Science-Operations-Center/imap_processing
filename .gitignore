@@ -1,5 +1,5 @@
 # Documentation ignore
-docs/source/reference/generated
+docs/source/instrument-documentation/generated
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
