@@ -1,0 +1,208 @@
+<?xml version='1.0' encoding='utf-8'?>
+<xtce:SpaceSystem xmlns:xtce="http://www.omg.org/space/xtce" name="P_ILO_APP_SHK">
+	<xtce:Header date="2023-11" version="1.0" author="IMAP SDC" />
+	<xtce:TelemetryMetaData>
+		<xtce:ParameterTypeSet>
+			<xtce:IntegerParameterType name="UINT1" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT2" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="2" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT3" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="3" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT8" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="8" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT11" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="11" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT14" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="14" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT16" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="16" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT32" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="32" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:BinaryParameterType name="BYTE352">
+				<xtce:UnitSet />
+				<xtce:BinaryDataEncoding bitOrder="mostSignificantBitFirst">
+					<xtce:SizeInBits>
+						<xtce:FixedValue>352</xtce:FixedValue>
+					</xtce:SizeInBits>
+				</xtce:BinaryDataEncoding>
+			</xtce:BinaryParameterType>
+			<xtce:BinaryParameterType name="BYTE432">
+				<xtce:UnitSet />
+				<xtce:BinaryDataEncoding bitOrder="mostSignificantBitFirst">
+					<xtce:SizeInBits>
+						<xtce:FixedValue>432</xtce:FixedValue>
+					</xtce:SizeInBits>
+				</xtce:BinaryDataEncoding>
+			</xtce:BinaryParameterType>
+		</xtce:ParameterTypeSet>
+		<xtce:ParameterSet>
+			<xtce:Parameter name="VERSION" parameterTypeRef="UINT3">
+				<xtce:LongDescription>CCSDS Packet Version Number (always 0)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="TYPE" parameterTypeRef="UINT1">
+				<xtce:LongDescription>CCSDS Packet Type Indicator (0=telemetry)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SEC_HDR_FLG" parameterTypeRef="UINT1">
+				<xtce:LongDescription>CCSDS Packet Secondary Header Flag (always 1)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PKT_APID" parameterTypeRef="UINT11">
+				<xtce:LongDescription>CCSDS Packet Application Process ID</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SEQ_FLGS" parameterTypeRef="UINT2">
+				<xtce:LongDescription>CCSDS Packet Grouping Flags (3=not part of group)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SRC_SEQ_CTR" parameterTypeRef="UINT14">
+				<xtce:LongDescription>CCSDS Packet Sequence Count (increments with each new packet)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PKT_LEN" parameterTypeRef="UINT16">
+				<xtce:LongDescription>CCSDS Packet Length (number of bytes after Packet length minus 1)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SHCOARSE" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>CCSDS Secondary Header MET</xtce:ShortDescription>
+				<xtce:LongDescription>CCSDS Secondary Header MET</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="BOARD_TYPE" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>ILO_APP_SHK.BOARD_TYPE</xtce:ShortDescription>
+				<xtce:LongDescription>ILO_APP_SHK.CDH_JUMPER_REG</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="RESET_REASON_SOFT" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>ILO_APP_SHK.RESET_REASON_SOFT</xtce:ShortDescription>
+				<xtce:LongDescription>ILO_APP_SHK.RESET_REASON_SOFT</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="RESET_REASON_FPGA_WDOG" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>ILO_APP_SHK.RESET_REASON_FPGA_WDOG</xtce:ShortDescription>
+				<xtce:LongDescription>ILO_APP_SHK.RESET_REASON_FPGA_WDOG</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="RESET_REASON_CPU_WDOG" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>ILO_APP_SHK.RESET_REASON_CPU_WDOG</xtce:ShortDescription>
+				<xtce:LongDescription>ILO_APP_SHK.RESET_REASON_CPU_WDOG</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="RESET_REASON_PFO" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>ILO_APP_SHK.RESET_REASON_PFO</xtce:ShortDescription>
+				<xtce:LongDescription>ILO_APP_SHK.RESET_REASON_PFO</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="RESET_REASON_POR" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>ILO_APP_SHK.RESET_REASON_PFO</xtce:ShortDescription>
+				<xtce:LongDescription>ILO_APP_SHK.RESET_REASON_PFO</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="CPU_WDOG_STATE" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>ILO_APP_SHK.CPU_WDOG_STATE</xtce:ShortDescription>
+				<xtce:LongDescription>ILO_APP_SHK.CPU_WDOG_STATE</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="FPGA_WDOG_STATE" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>ILO_APP_SHK.FPGA_WDOG_STATE</xtce:ShortDescription>
+				<xtce:LongDescription>ILO_APP_SHK.FPGA_WDOG_STATE</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="WDOG_CNT" parameterTypeRef="UINT8">
+				<xtce:ShortDescription>ILO_APP_SHK.WDOG_CNT</xtce:ShortDescription>
+				<xtce:LongDescription>ILO_APP_SHK.WDOG_CNT</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="INSTR_ID" parameterTypeRef="UINT8">
+				<xtce:ShortDescription>ILO_APP_SHK.INSTR_ID</xtce:ShortDescription>
+				<xtce:LongDescription>ILO_APP_SHK.INSTR_ID</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="CDH_FPGA_VERSION" parameterTypeRef="UINT8">
+				<xtce:ShortDescription>ILO_APP_SHK.CDH_FPGA_VERSION</xtce:ShortDescription>
+				<xtce:LongDescription>ILO_APP_SHK.CDH_FPGA_VERSION</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="IFB_FPGA_VERSION" parameterTypeRef="UINT8">
+				<xtce:ShortDescription>ILO_APP_SHK.IFB_FPGA_VERSION</xtce:ShortDescription>
+				<xtce:LongDescription>ILO_APP_SHK.IFB_FPGA_VERSION</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="BULK_HVPS_VERSION" parameterTypeRef="UINT16">
+				<xtce:ShortDescription>ILO_APP_SHK.BULK_HVPS_VERSION</xtce:ShortDescription>
+				<xtce:LongDescription>ILO_APP_SHK.BULK_HVPS_VERSION</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="FSW_VERSION" parameterTypeRef="UINT8">
+				<xtce:ShortDescription>ILO_APP_SHK.FSW_VERSION</xtce:ShortDescription>
+				<xtce:LongDescription>ILO_APP_SHK.FSW_VERSION</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="ENG_LUT_VERSION" parameterTypeRef="UINT8">
+				<xtce:ShortDescription>ILO_APP_SHK.TABLE_VERSION</xtce:ShortDescription>
+				<xtce:LongDescription>ILO_APP_SHK.TABLE_VERSION</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SCI_LUT_VERSION" parameterTypeRef="UINT8">
+				<xtce:ShortDescription>ILO_APP_SHK.SCI_LUT_VERSION</xtce:ShortDescription>
+				<xtce:LongDescription>ILO_APP_SHK.SCI_LUT_VERSION</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SELECTED_IMG" parameterTypeRef="UINT8">
+				<xtce:ShortDescription>ILO_APP_SHK.SELECTED_IMG</xtce:ShortDescription>
+				<xtce:LongDescription>ILO_APP_SHK.SELECTED_IMG</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="FSW_VERSION_STR" parameterTypeRef="BYTE352">
+				<xtce:ShortDescription>ILO_APP_SHK.FSW_VERSION_STR</xtce:ShortDescription>
+				<xtce:LongDescription>ILO_APP_SHK.FSW_VERSION_STR</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="ENG_LUT_VERSION_STR" parameterTypeRef="BYTE432">
+				<xtce:ShortDescription>ILO_APP_SHK.ENG_LUT_VERSION_STR</xtce:ShortDescription>
+				<xtce:LongDescription>ILO_APP_SHK.ENG_LUT_VERSION_STR</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SCI_LUT_VERSION_STR" parameterTypeRef="BYTE432">
+				<xtce:ShortDescription>ILO_APP_SHK.SCI_LUT_VERSION_STR</xtce:ShortDescription>
+				<xtce:LongDescription>ILO_APP_SHK.SCI_LUT_VERSION_STR</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SPARE" parameterTypeRef="UINT8">
+				<xtce:ShortDescription>ILO_APP_SHK.SPARE</xtce:ShortDescription>
+				<xtce:LongDescription>ILO_APP_SHK.SPARE</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="CHKSUM" parameterTypeRef="UINT16">
+				<xtce:ShortDescription>ILO_APP_SHK.CHKSUM</xtce:ShortDescription>
+				<xtce:LongDescription>ILO_APP_SHK.CHKSUM</xtce:LongDescription>
+			</xtce:Parameter>
+		</xtce:ParameterSet>
+		<xtce:ContainerSet>
+			<xtce:SequenceContainer name="CCSDSPacket">
+				<xtce:EntryList>
+					<xtce:ParameterRefEntry parameterRef="VERSION" />
+					<xtce:ParameterRefEntry parameterRef="TYPE" />
+					<xtce:ParameterRefEntry parameterRef="SEC_HDR_FLG" />
+					<xtce:ParameterRefEntry parameterRef="PKT_APID" />
+					<xtce:ParameterRefEntry parameterRef="SEQ_FLGS" />
+					<xtce:ParameterRefEntry parameterRef="SRC_SEQ_CTR" />
+					<xtce:ParameterRefEntry parameterRef="PKT_LEN" />
+				</xtce:EntryList>
+			</xtce:SequenceContainer>
+			<xtce:SequenceContainer name="P_ILO_APP_SHK">
+				<xtce:BaseContainer containerRef="CCSDSPacket">
+					<xtce:RestrictionCriteria>
+						<xtce:Comparison parameterRef="PKT_APID" value="676" useCalibratedValue="false" />
+					</xtce:RestrictionCriteria>
+				</xtce:BaseContainer>
+				<xtce:EntryList>
+					<xtce:ParameterRefEntry parameterRef="SHCOARSE" />
+					<xtce:ParameterRefEntry parameterRef="BOARD_TYPE" />
+					<xtce:ParameterRefEntry parameterRef="RESET_REASON_SOFT" />
+					<xtce:ParameterRefEntry parameterRef="RESET_REASON_FPGA_WDOG" />
+					<xtce:ParameterRefEntry parameterRef="RESET_REASON_CPU_WDOG" />
+					<xtce:ParameterRefEntry parameterRef="RESET_REASON_PFO" />
+					<xtce:ParameterRefEntry parameterRef="RESET_REASON_POR" />
+					<xtce:ParameterRefEntry parameterRef="CPU_WDOG_STATE" />
+					<xtce:ParameterRefEntry parameterRef="FPGA_WDOG_STATE" />
+					<xtce:ParameterRefEntry parameterRef="WDOG_CNT" />
+					<xtce:ParameterRefEntry parameterRef="INSTR_ID" />
+					<xtce:ParameterRefEntry parameterRef="CDH_FPGA_VERSION" />
+					<xtce:ParameterRefEntry parameterRef="IFB_FPGA_VERSION" />
+					<xtce:ParameterRefEntry parameterRef="BULK_HVPS_VERSION" />
+					<xtce:ParameterRefEntry parameterRef="FSW_VERSION" />
+					<xtce:ParameterRefEntry parameterRef="ENG_LUT_VERSION" />
+					<xtce:ParameterRefEntry parameterRef="SCI_LUT_VERSION" />
+					<xtce:ParameterRefEntry parameterRef="SELECTED_IMG" />
+					<xtce:ParameterRefEntry parameterRef="FSW_VERSION_STR" />
+					<xtce:ParameterRefEntry parameterRef="ENG_LUT_VERSION_STR" />
+					<xtce:ParameterRefEntry parameterRef="SCI_LUT_VERSION_STR" />
+					<xtce:ParameterRefEntry parameterRef="SPARE" />
+					<xtce:ParameterRefEntry parameterRef="CHKSUM" />
+				</xtce:EntryList>
+			</xtce:SequenceContainer>
+		</xtce:ContainerSet>
+	</xtce:TelemetryMetaData>
+</xtce:SpaceSystem>

@@ -1,0 +1,349 @@
+<?xml version='1.0' encoding='utf-8'?>
+<xtce:SpaceSystem xmlns:xtce="http://www.omg.org/space/xtce" name="P_ILO_DIAG_TOF_BD">
+	<xtce:Header date="2023-11" version="1.0" author="IMAP SDC" />
+	<xtce:TelemetryMetaData>
+		<xtce:ParameterTypeSet>
+			<xtce:IntegerParameterType name="UINT1" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT2" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="2" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT3" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="3" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT4" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="4" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT6" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="6" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT7" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="7" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT8" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="8" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT10" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="10" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT11" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="11" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT14" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="14" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT16" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="16" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT32" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="32" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+		</xtce:ParameterTypeSet>
+		<xtce:ParameterSet>
+			<xtce:Parameter name="VERSION" parameterTypeRef="UINT3">
+				<xtce:LongDescription>CCSDS Packet Version Number (always 0)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="TYPE" parameterTypeRef="UINT1">
+				<xtce:LongDescription>CCSDS Packet Type Indicator (0=telemetry)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SEC_HDR_FLG" parameterTypeRef="UINT1">
+				<xtce:LongDescription>CCSDS Packet Secondary Header Flag (always 1)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PKT_APID" parameterTypeRef="UINT11">
+				<xtce:LongDescription>CCSDS Packet Application Process ID</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SEQ_FLGS" parameterTypeRef="UINT2">
+				<xtce:LongDescription>CCSDS Packet Grouping Flags (3=not part of group)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SRC_SEQ_CTR" parameterTypeRef="UINT14">
+				<xtce:LongDescription>CCSDS Packet Sequence Count (increments with each new packet)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PKT_LEN" parameterTypeRef="UINT16">
+				<xtce:LongDescription>CCSDS Packet Length (number of bytes after Packet length minus 1)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SHCOARSE" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>CCSDS Secondary Header MET</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="TOF_IF_STATUS_SPARE1" parameterTypeRef="UINT7">
+				<xtce:ShortDescription>Spare</xtce:ShortDescription>
+				<xtce:LongDescription>Spare</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="TOF_IF_STATUS_PKT_RCVD" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>A set bit indicates that a packet has been received over the TOF interface</xtce:ShortDescription>
+				<xtce:LongDescription>A set bit indicates that a packet has been received over the TOF interface</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="TOF_IF_STATUS_ADC_PKT" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>A set bit indicates that a valid TOF packet containing ADC data has been received</xtce:ShortDescription>
+				<xtce:LongDescription>A set bit indicates that a valid TOF packet containing ADC data has been received</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="TOF_IF_STATUS_REG_PKT" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>A set bit indicates that a valid TOF register packet has been received</xtce:ShortDescription>
+				<xtce:LongDescription>A set bit indicates that a valid TOF register packet has been received</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="TOF_IF_STATUS_CNT_PKT" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>A set bit indicates that a valid TOF rate count packet has been received</xtce:ShortDescription>
+				<xtce:LongDescription>A set bit indicates that a valid TOF rate count packet has been received</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="TOF_IF_STATUS_DE_PKT" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>A set bit indicates that a valid TOF direct event packet has been received</xtce:ShortDescription>
+				<xtce:LongDescription>A set bit indicates that a valid TOF direct event packet has been received</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="TOF_IF_STATUS_SPARE2" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Spare</xtce:ShortDescription>
+				<xtce:LongDescription>Spare</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="TOF_IF_STATUS_TO_ERR" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>A set bit indicates that entire packet has not been received within a 1 ms window</xtce:ShortDescription>
+				<xtce:LongDescription>A set bit indicates that entire packet has not been received within a 1 ms window</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="TOF_IF_STATUS_ID_ERR" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>A set bit indicates that a packet with an incorrect ID has been received</xtce:ShortDescription>
+				<xtce:LongDescription>A set bit indicates that a packet with an incorrect ID has been received</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="TOF_IF_STATUS_FRM_ERR" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>A set bit indicates that a framing error has been detected</xtce:ShortDescription>
+				<xtce:LongDescription>Sets anonde threshold</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="CMD_ERROR" parameterTypeRef="UINT6">
+				<xtce:ShortDescription>A TOF Board 6-bit cmd_error counter resides in the TOF Board FPGA and is incremented with the
+occurrence of a greater than 1ms timeout between a potential address/data pair. The counter rolls-over
+and is only reset at power up. The counter resides in the tof_id 0x80 TOF Board Telemetry packet.</xtce:ShortDescription>
+				<xtce:LongDescription>A TOF Board 6-bit cmd_error counter resides in the TOF Board FPGA and is incremented with the
+occurrence of a greater than 1ms timeout between a potential address/data pair. The counter rolls-over
+and is only reset at power up. The counter resides in the tof_id 0x80 TOF Board Telemetry packet.</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="CFD_VM" parameterTypeRef="UINT10">
+				<xtce:ShortDescription>TOF Board Constant Fraction Discriminator monitor</xtce:ShortDescription>
+				<xtce:LongDescription>TOF Board Constant Fraction Discriminator monitor</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PRE_TM" parameterTypeRef="UINT16">
+				<xtce:ShortDescription>TOF Board preamp temperature</xtce:ShortDescription>
+				<xtce:LongDescription>TOF Board preamp temperature</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="REG_TM" parameterTypeRef="UINT16">
+				<xtce:ShortDescription>TOF Board regulator temperature</xtce:ShortDescription>
+				<xtce:LongDescription>TOF Board regulator temperature</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="MCP_CM" parameterTypeRef="UINT16">
+				<xtce:ShortDescription>TOF Board monitor of MCP Current</xtce:ShortDescription>
+				<xtce:LongDescription>TOF Board monitor of MCP Current</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="MCP_VM" parameterTypeRef="UINT16">
+				<xtce:ShortDescription>TOF Board monitor of MCP Voltage</xtce:ShortDescription>
+				<xtce:LongDescription>TOF Board monitor of MCP Voltage</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="CM" parameterTypeRef="UINT16">
+				<xtce:ShortDescription>TOF Board current monitor</xtce:ShortDescription>
+				<xtce:LongDescription>TOF Board current monitor</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="P5_VM" parameterTypeRef="UINT16">
+				<xtce:ShortDescription>TOF Board +5V voltage monitor</xtce:ShortDescription>
+				<xtce:LongDescription>TOF Board +5V voltage monitor</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="P6_VM" parameterTypeRef="UINT16">
+				<xtce:ShortDescription>TOF Board +6V voltage monitor</xtce:ShortDescription>
+				<xtce:LongDescription>TOF Board +6V voltage monitor</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="AN_A_THR" parameterTypeRef="UINT8">
+				<xtce:ShortDescription>Sets anode A threshold</xtce:ShortDescription>
+				<xtce:LongDescription>Sets anonde threshold</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="AN_B0_THR" parameterTypeRef="UINT8">
+				<xtce:ShortDescription>Sets anode B0 threshold</xtce:ShortDescription>
+				<xtce:LongDescription>Sets anonde threshold</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="AN_B3_THR" parameterTypeRef="UINT8">
+				<xtce:ShortDescription>Sets anode B3 threshold</xtce:ShortDescription>
+				<xtce:LongDescription>Sets anonde threshold</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="AN_C_THR" parameterTypeRef="UINT8">
+				<xtce:ShortDescription>Sets anode C threshold</xtce:ShortDescription>
+				<xtce:LongDescription>Sets anonde threshold</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="TOF_BD_TLM_EN" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>1' to enable TOF Board Telemetry to ICE. '0' to disable all TOF Board Telemetry to ICE.</xtce:ShortDescription>
+				<xtce:LongDescription>1' to enable TOF Board Telemetry to ICE. '0' to disable all TOF Board Telemetry to ICE.</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DIRECT_EVENT_TLM_EN" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>1' to enable TOF Board Direct Event Telemetry to ICE. '0' to disable all TOF Board Direct Event Telemetry to ICE</xtce:ShortDescription>
+				<xtce:LongDescription>1' to enable TOF Board Direct Event Telemetry to ICE. '0' to disable all TOF Board Direct Event Telemetry to ICE</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SPARE1" parameterTypeRef="UINT2">
+				<xtce:ShortDescription>Spare</xtce:ShortDescription>
+				<xtce:LongDescription>Spare</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="TOF3_REQUIRED" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>If tof_reqd bit = '1' then the tof chip must have valid time-of-flight for a Direct Event to be processed</xtce:ShortDescription>
+				<xtce:LongDescription>If tof_reqd bit = '1' then the tof chip must have valid time-of-flight for a Direct Event to be processed</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="TOF2_REQUIRED" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>If tof_reqd bit = '1' then the tof chip must have valid time-of-flight for a Direct Event to be processed</xtce:ShortDescription>
+				<xtce:LongDescription>If tof_reqd bit = '1' then the tof chip must have valid time-of-flight for a Direct Event to be processed</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="TOF1_REQUIRED" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>If tof_reqd bit = '1' then the tof chip must have valid time-of-flight for a Direct Event to be processed</xtce:ShortDescription>
+				<xtce:LongDescription>If tof_reqd bit = '1' then the tof chip must have valid time-of-flight for a Direct Event to be processed</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="TOF0_REQUIRED" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>If tof_reqd bit = '1' then the tof chip must have valid time-of-flight for a Direct Event to be processed</xtce:ShortDescription>
+				<xtce:LongDescription>If tof_reqd bit = '1' then the tof chip must have valid time-of-flight for a Direct Event to be processed</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="STIM_ANODE_C_EN" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>1' to enable anode C stimulation</xtce:ShortDescription>
+				<xtce:LongDescription>'1' to enable anode stimulation</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="STIM_ANODE_C_SRC" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>'1" to generate a "start" pulse. '0' to generate a "stop" pulse.</xtce:ShortDescription>
+				<xtce:LongDescription>'1" to generate a "start" pulse. '0' to generate a "stop" pulse.</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="STIM_ANODE_B3_EN" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>1' to enable anode B3 stimulation</xtce:ShortDescription>
+				<xtce:LongDescription>'1' to enable anode stimulation</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="STIM_ANODE_B3_SRC" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>'1" to generate a "start" pulse. '0' to generate a "stop" pulse.</xtce:ShortDescription>
+				<xtce:LongDescription>'1" to generate a "start" pulse. '0' to generate a "stop" pulse.</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="STIM_ANODE_B0_EN" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>1' to enable anode B0 stimulation</xtce:ShortDescription>
+				<xtce:LongDescription>'1' to enable anode stimulation</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="STIM_ANODE_B0_SRC" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>'1" to generate a "start" pulse. '0' to generate a "stop" pulse.</xtce:ShortDescription>
+				<xtce:LongDescription>'1" to generate a "start" pulse. '0' to generate a "stop" pulse.</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="STIM_ANODE_A_EN" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>1' to enable anode A stimulation</xtce:ShortDescription>
+				<xtce:LongDescription>'1' to enable anode stimulation</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="STIM_ANODE_A_SRC" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>'1" to generate a "start" pulse. '0' to generate a "stop" pulse.</xtce:ShortDescription>
+				<xtce:LongDescription>'1" to generate a "start" pulse. '0' to generate a "stop" pulse.</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="STIM_FREQ" parameterTypeRef="UINT4">
+				<xtce:ShortDescription>Sets stimulation frequency</xtce:ShortDescription>
+				<xtce:LongDescription>Sets stimulation frequency
+stim freq [events/s] = stim_freq reg value + 1 0x0 = 1event/s 0x8 = 9events/s 0xF = 16events/s</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="STIM_DELAY" parameterTypeRef="UINT4">
+				<xtce:ShortDescription>Sets time-of-flight</xtce:ShortDescription>
+				<xtce:LongDescription>Sets time-of-flight
+stim delay [ns] = stim_delay reg value * 20.8ns 0x0 = 0ns 0x8 = 166.4ns 0xF = 312ns</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="TOF3_THR" parameterTypeRef="UINT8">
+				<xtce:ShortDescription>TOF3 values greater than the registered value are suppressed from further processing</xtce:ShortDescription>
+				<xtce:LongDescription>TOF3 values greater than the registered value are suppressed from further processing</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="TOF2_THR" parameterTypeRef="UINT8">
+				<xtce:ShortDescription>TOF2 values greater than the registered value are suppressed from further processing</xtce:ShortDescription>
+				<xtce:LongDescription>TOF2 values greater than the registered value are suppressed from further processing</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="TOF1_THR" parameterTypeRef="UINT8">
+				<xtce:ShortDescription>TOF1 values greater than the registered value are suppressed from further processing</xtce:ShortDescription>
+				<xtce:LongDescription>TOF1 values greater than the registered value are suppressed from further processing</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="TOF0_THR" parameterTypeRef="UINT8">
+				<xtce:ShortDescription>TOF0 values greater than the registered value are suppressed from further processing</xtce:ShortDescription>
+				<xtce:LongDescription>TOF0 values greater than the registered value are suppressed from further processing</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SPARE2" parameterTypeRef="UINT4">
+				<xtce:ShortDescription>Spare</xtce:ShortDescription>
+				<xtce:LongDescription>Spare</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="TOF3_VETO" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>TOF3 alone vetoed when enabled</xtce:ShortDescription>
+				<xtce:LongDescription>TOF3 alone vetoed when enabled</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="TOF2_VETO" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>TOF2 alone vetoed when enabled</xtce:ShortDescription>
+				<xtce:LongDescription>TOF2 alone vetoed when enabled</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="TOF1_VETO" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>TOF1 alone vetoed when enabled</xtce:ShortDescription>
+				<xtce:LongDescription>TOF1 alone vetoed when enabled</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="TOF0_VETO" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>TOF0 alone vetoed when enabled</xtce:ShortDescription>
+				<xtce:LongDescription>TOF0 alone vetoed when enabled</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="CHKSUM" parameterTypeRef="UINT16">
+				<xtce:ShortDescription>Checksum</xtce:ShortDescription>
+				<xtce:LongDescription>Checksum</xtce:LongDescription>
+			</xtce:Parameter>
+		</xtce:ParameterSet>
+		<xtce:ContainerSet>
+			<xtce:SequenceContainer name="CCSDSPacket">
+				<xtce:EntryList>
+					<xtce:ParameterRefEntry parameterRef="VERSION" />
+					<xtce:ParameterRefEntry parameterRef="TYPE" />
+					<xtce:ParameterRefEntry parameterRef="SEC_HDR_FLG" />
+					<xtce:ParameterRefEntry parameterRef="PKT_APID" />
+					<xtce:ParameterRefEntry parameterRef="SEQ_FLGS" />
+					<xtce:ParameterRefEntry parameterRef="SRC_SEQ_CTR" />
+					<xtce:ParameterRefEntry parameterRef="PKT_LEN" />
+				</xtce:EntryList>
+			</xtce:SequenceContainer>
+			<xtce:SequenceContainer name="P_ILO_DIAG_TOF_BD">
+				<xtce:BaseContainer containerRef="CCSDSPacket">
+					<xtce:RestrictionCriteria>
+						<xtce:Comparison parameterRef="PKT_APID" value="723" useCalibratedValue="false" />
+					</xtce:RestrictionCriteria>
+				</xtce:BaseContainer>
+				<xtce:EntryList>
+					<xtce:ParameterRefEntry parameterRef="SHCOARSE" />
+					<xtce:ParameterRefEntry parameterRef="TOF_IF_STATUS_SPARE1" />
+					<xtce:ParameterRefEntry parameterRef="TOF_IF_STATUS_PKT_RCVD" />
+					<xtce:ParameterRefEntry parameterRef="TOF_IF_STATUS_ADC_PKT" />
+					<xtce:ParameterRefEntry parameterRef="TOF_IF_STATUS_REG_PKT" />
+					<xtce:ParameterRefEntry parameterRef="TOF_IF_STATUS_CNT_PKT" />
+					<xtce:ParameterRefEntry parameterRef="TOF_IF_STATUS_DE_PKT" />
+					<xtce:ParameterRefEntry parameterRef="TOF_IF_STATUS_SPARE2" />
+					<xtce:ParameterRefEntry parameterRef="TOF_IF_STATUS_TO_ERR" />
+					<xtce:ParameterRefEntry parameterRef="TOF_IF_STATUS_ID_ERR" />
+					<xtce:ParameterRefEntry parameterRef="TOF_IF_STATUS_FRM_ERR" />
+					<xtce:ParameterRefEntry parameterRef="CMD_ERROR" />
+					<xtce:ParameterRefEntry parameterRef="CFD_VM" />
+					<xtce:ParameterRefEntry parameterRef="PRE_TM" />
+					<xtce:ParameterRefEntry parameterRef="REG_TM" />
+					<xtce:ParameterRefEntry parameterRef="MCP_CM" />
+					<xtce:ParameterRefEntry parameterRef="MCP_VM" />
+					<xtce:ParameterRefEntry parameterRef="CM" />
+					<xtce:ParameterRefEntry parameterRef="P5_VM" />
+					<xtce:ParameterRefEntry parameterRef="P6_VM" />
+					<xtce:ParameterRefEntry parameterRef="AN_A_THR" />
+					<xtce:ParameterRefEntry parameterRef="AN_B0_THR" />
+					<xtce:ParameterRefEntry parameterRef="AN_B3_THR" />
+					<xtce:ParameterRefEntry parameterRef="AN_C_THR" />
+					<xtce:ParameterRefEntry parameterRef="TOF_BD_TLM_EN" />
+					<xtce:ParameterRefEntry parameterRef="DIRECT_EVENT_TLM_EN" />
+					<xtce:ParameterRefEntry parameterRef="SPARE1" />
+					<xtce:ParameterRefEntry parameterRef="TOF3_REQUIRED" />
+					<xtce:ParameterRefEntry parameterRef="TOF2_REQUIRED" />
+					<xtce:ParameterRefEntry parameterRef="TOF1_REQUIRED" />
+					<xtce:ParameterRefEntry parameterRef="TOF0_REQUIRED" />
+					<xtce:ParameterRefEntry parameterRef="STIM_ANODE_C_EN" />
+					<xtce:ParameterRefEntry parameterRef="STIM_ANODE_C_SRC" />
+					<xtce:ParameterRefEntry parameterRef="STIM_ANODE_B3_EN" />
+					<xtce:ParameterRefEntry parameterRef="STIM_ANODE_B3_SRC" />
+					<xtce:ParameterRefEntry parameterRef="STIM_ANODE_B0_EN" />
+					<xtce:ParameterRefEntry parameterRef="STIM_ANODE_B0_SRC" />
+					<xtce:ParameterRefEntry parameterRef="STIM_ANODE_A_EN" />
+					<xtce:ParameterRefEntry parameterRef="STIM_ANODE_A_SRC" />
+					<xtce:ParameterRefEntry parameterRef="STIM_FREQ" />
+					<xtce:ParameterRefEntry parameterRef="STIM_DELAY" />
+					<xtce:ParameterRefEntry parameterRef="TOF3_THR" />
+					<xtce:ParameterRefEntry parameterRef="TOF2_THR" />
+					<xtce:ParameterRefEntry parameterRef="TOF1_THR" />
+					<xtce:ParameterRefEntry parameterRef="TOF0_THR" />
+					<xtce:ParameterRefEntry parameterRef="SPARE2" />
+					<xtce:ParameterRefEntry parameterRef="TOF3_VETO" />
+					<xtce:ParameterRefEntry parameterRef="TOF2_VETO" />
+					<xtce:ParameterRefEntry parameterRef="TOF1_VETO" />
+					<xtce:ParameterRefEntry parameterRef="TOF0_VETO" />
+					<xtce:ParameterRefEntry parameterRef="CHKSUM" />
+				</xtce:EntryList>
+			</xtce:SequenceContainer>
+		</xtce:ContainerSet>
+	</xtce:TelemetryMetaData>
+</xtce:SpaceSystem>
