@@ -1,5 +1,10 @@
+.. _versioning:
+
 Versioning
 ----------
+
+
+.. _software-versioning:
 
 Software Versioning
 ^^^^^^^^^^^^^^^^^^^
@@ -17,6 +22,8 @@ numbers should follow a convention of ``x.y.z``, where:
 This convention was discussed and decided on in `this GitHub issue
 <https://github.com/IMAP-Science-Operations-Center/imap_processing/issues/43>`__.
 
+
+.. _data-product-versioning:
 
 Data Product Versioning
 ^^^^^^^^^^^^^^^^^^^^^^^
