@@ -20,20 +20,22 @@ The general filename convention is as follows::
 * ``<datalevel>`` is the data level for the data product.  Acceptable values depend on the instrument:
 
   * ``codice``: ``l0``, ``l1a``, ``l1b``, ``l2``, ``l3``
-  * ``glows``: TBD
-  * ``hi-45``: TBD
-  * ``hi-90``: TBD
-  * ``hit``: TBD
-  * ``idex``: TBD
-  * ``lo``: TBD
-  * ``mag``: TBD
-  * ``swapi``: TBD
-  * ``swe``: TBD
-  * ``ultra-45``: TBD
-  * ``ultra-90``: TBD
+  * ``glows``: ``l0``, ``l1a``, ``l1b``, ``l2``, ``l3a``, ``l3b``, ``l3c``, ``l3d``
+  * ``hi-45``: ``l0``, ``l1a``, ``l1b``, ``l1c``, ``l2``, ``l3``
+  * ``hi-90``: ``l0``, ``l1a``, ``l1b``, ``l1c``, ``l2``, ``l3``
+  * ``hit``: ``l0``, ``l1a``, ``l1b``, ``l2``, ``l3``
+  * ``idex``: ``l0``, ``l1a``, ``l1b``, ``l1c``, ``l2``, ``l3``
+  * ``lo``: ``l0``, ``l1a``, ``l1b``, ``l1c``, ``l2``
+  * ``mag``: ``l0``, ``l1a``, ``l1b``, ``l1c``, ``l2pre``, ``l2``
+  * ``swapi``: ``l0``, ``l1``, ``l2``, ``l3a``, ``l3b``
+  * ``swe``: ``l0``, ``l1a``, ``l1b``, ``l2``, ``l3``
+  * ``ultra-45``: ``l0``, ``l1a``, ``l1b``, ``l1c``, ``l1d``, ``l2``, ``l3``
+  * ``ultra-90``: ``l0``, ``l1a``, ``l1b``, ``l1c``, ``l1d``, ``l2``, ``l3``
 
 * ``<descriptor>`` stores information specific to the instrument and can store any information that is relevant. For
-  example, it could store the orbit number, pointing number, or data product name.
+  example, it will typically contain the data product name, and additionally may contain the pointing number (e.g.
+  ``burst-7`` for 'burst' mode and the 7th repointing). This field can have any text or numbers as long as it doesn't
+  include underscores.
 * ``<startdate>`` is the date of the 'earliest' data within the data product, in the format of ``YYYYMMDD``.
 * ``<enddate>`` is the date of the 'latest' data within the data product if the data product spans more than one day.
   If the data does not span multiple days, then the ``<enddate>`` will be the same as the ``<startdate>``. The format
@@ -45,8 +47,19 @@ The general filename convention is as follows::
 
 Here are a few examples of acceptable filenames:
 
+* ``imap_idex_l0_20261206_20261206_v01-01.pkts``
+
+  An IDEX L0 packet file containing data from the single day of ``2026-12-06``
+
 * ``imap_codice_l1a_lo_20261206_20261207_v01-01.cdf``
+
+  A version ``01-01`` CoDICE L1a data product called ``lo`` containing data from ``2026-12-06`` to ``2026-12-07``
+
 * ``imap_swe_l2_descriptor_20261206_20261206_v01-02.cdf``
+
+  A MAG L1c data product for 'burst' mode containing a single day's worth of data on ``2026-12-06``. The version ``01-02``
+  indicates the software/algorithm version is ``01`` and the data dependency information has been updated once to
+  make the data version ``02``
 
 
 Repository Naming Conventions
