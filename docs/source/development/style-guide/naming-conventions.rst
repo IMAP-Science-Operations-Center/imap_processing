@@ -41,7 +41,7 @@ The general filename convention is as follows::
   If the data does not span multiple days, then the ``<enddate>`` will be the same as the ``<startdate>``. The format
   is also ``YYYYMMDD``.
 * ``<version>`` stores the version of the data product in the format is ``vXX-YY``.  See the versioning conventions
-  described in the :ref:`data product versioning <data-product-versioning>` documentation for further details.
+  described in the :ref:`data product versioning <Data Product Versioning>` documentation for further details.
 * ``<format>`` is the data format. For ``l0`` data products, the format is ``pkts``. For data levels ``l1`` and higher,
   the format is ``cdf``.
 
