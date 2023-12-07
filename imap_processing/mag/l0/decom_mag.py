@@ -8,7 +8,6 @@ from imap_processing import imap_module_directory
 from imap_processing.ccsds.ccsds_data import CcsdsData
 from imap_processing.mag.l0.mag_l0_data import MagL0, Mode
 
-logging.basicConfig(level=logging.ERROR)
 logger = logging.getLogger(__name__)
 
 
@@ -46,7 +45,7 @@ def decom_packets(packet_file_path: str) -> list[MagL0]:
 
             for packet in mag_packets:
                 apid = packet.header["PKT_APID"].derived_value
-                if apid in (Mode.BURST, Mode.NORM):
+                if apid in (Mode.BURST, Mode.NORMAL):
                     values = [
                         item.derived_value
                         if item.derived_value is not None
@@ -55,7 +54,7 @@ def decom_packets(packet_file_path: str) -> list[MagL0]:
                     ]
                     data_list.append(MagL0(CcsdsData(packet.header), *values))
         except ReadError as e:
-            logger.warning(
+            logger.error(
                 f"Found error: {e}\n This may mean reaching the end of an "
                 f"incomplete packet."
             )
