@@ -481,24 +481,6 @@ def process_swapi_science(sci_dataset):
         swp_scem_comp.append(scem_comp)
         swp_coin_comp.append(coin_comp)
 
-    # TODO: create xr.Dataset for full sweep data
-    attrs = {
-        "Instrument": "swapi",
-        "dataLevel": "l1",
-        "startTime": full_sweep_sci["Epoch"].data[m],
-        "orbnum": -41,
-        "mode": full_sweep_sci["MODE"].data[m],
-        "dataProductDescriptor": "",
-        "predict/reconstruct": "p/r",
-        "versionInfo": "",
-        "filetype": "cdf",
-        "SWP_HK.LUT_CHOICE": "",
-        "SWP_HK.FPGA_TYPE": "",
-        "SWP_HK.FPGA_REV": "",
-        "SWEEP_TABLE": full_sweep_sci["SWEEP_TABLE"].data[m],
-        "PLAN_ID": full_sweep_sci["PLAN_ID_SCIENCE"].data[m],
-    }
-
     # Get Epoch time of full sweep data and then reshape it to
     # (n, 12) where n = total number of full sweep data and 12 = 12
     # sequence data's metadata. For Epoch's data, we take the first element
@@ -509,6 +491,22 @@ def process_swapi_science(sci_dataset):
         dims=["Epoch"],
     )
     counts = xr.DataArray(np.arange(72), name="Counts", dims=["Counts"])
+    print(epoch_time.data)
+    attrs = {
+        "Instrument": "swapi",
+        "dataLevel": "l1",
+        "startTime": epoch_time.data[0],
+        "endTime": epoch_time.data[-1],
+        "dataProductDescriptor": "counts",
+        "versionInfo": "v01-01",  # TODO: change this once we defined version tracking
+        "filetype": "cdf",
+        "SWEEP_TABLE": sci_dataset["SWEEP_TABLE"]
+        .data[full_sweep_indices]
+        .reshape(-1, 12)[:, 0],
+        "PLAN_ID": sci_dataset["PLAN_ID_SCIENCE"]
+        .data[full_sweep_indices]
+        .reshape(-1, 12)[:, 0],
+    }
     dataset = xr.Dataset(
         coords={"Epoch": epoch_time, "Counts": counts},
         attrs=attrs,
@@ -517,6 +515,31 @@ def process_swapi_science(sci_dataset):
     dataset["SWP_PCEM_COUNTS"] = xr.DataArray(swp_pcem_counts, dims=["Epoch", "Counts"])
     dataset["SWP_SCEM_COUNTS"] = xr.DataArray(swp_scem_counts, dims=["Epoch", "Counts"])
     dataset["SWP_COIN_COUNTS"] = xr.DataArray(swp_coin_counts, dims=["Epoch", "Counts"])
+
+    # Uncertainty in counts formula:
+    # Uncertainty is quantified for the PCEM, SCEM, and COIN counts.
+    # The Poisson contribution is
+    # uncertainty = sqrt(count)
+    dataset["SWP_PCEM_ERR"] = xr.DataArray(
+        np.sqrt(swp_pcem_counts), dims=["Epoch", "Counts"]
+    )
+    dataset["SWP_SCEM_ERR"] = xr.DataArray(
+        np.sqrt(swp_scem_counts), dims=["Epoch", "Counts"]
+    )
+    dataset["SWP_COIN_ERR"] = xr.DataArray(
+        np.sqrt(swp_coin_counts), dims=["Epoch", "Counts"]
+    )
+
+    # L1A quality flags
+    dataset["SWP_PCEM_RNG_ST_COMP"] = xr.DataArray(
+        swp_pcem_comp, dims=["Epoch", "Counts"]
+    )
+    dataset["SWP_SCEM_RNG_ST_COMP"] = xr.DataArray(
+        swp_scem_comp, dims=["Epoch", "Counts"]
+    )
+    dataset["SWP_COIN_RNG_ST_COMP"] = xr.DataArray(
+        swp_coin_comp, dims=["Epoch", "Counts"]
+    )
     return dataset
 
 
@@ -537,5 +560,6 @@ def swapi_l1(packets):
         ds_data = create_dataset(sorted_packets)
 
         if apid == SWAPIAPID.SWP_SCI.value:
-            process_swapi_science(ds_data)
+            data = process_swapi_science(ds_data)
+            print(data)
             # TODO: save full sweep data to CDF
