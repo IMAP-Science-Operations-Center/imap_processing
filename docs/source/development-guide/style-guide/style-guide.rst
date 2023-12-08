@@ -1,3 +1,5 @@
+.. _style-guide-overview:
+
 Style Guide
 ===========
 
