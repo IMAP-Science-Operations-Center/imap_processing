@@ -103,9 +103,24 @@ def test_housekeeping_data(
         # Compare raw values of other housekeeping data
         assert value.raw_value == validation_row[key]
 
-    # Compare EU values of housekeeping data
-    for field in eu_hk_data:
-        assert round(eu_hk_data[field].data[1], 5) == round(validation_data[field], 5)
+    # Determine the number of CCSDS header fields
+    num_ccsds_header_fields = 7
+
+    # Compare EU values of housekeeping data, skipping CCSDS header fields
+    for idx, field in enumerate(eu_hk_data):
+        # Skip the first num_ccsds_header_fields fields
+        if idx < num_ccsds_header_fields:
+            continue
+
+        # Extract the specific EU values for the field
+        eu_values = eu_hk_data[field].data
+
+        # Extract the corresponding validation data for the field
+        validation_values = validation_data[field].values
+
+        # Compare each individual element
+        for eu_val, validation_val in zip(eu_values, validation_values):
+            assert round(eu_val, 5) == round(validation_val, 5)
 
 
 def test_total_packets_in_data_file(
