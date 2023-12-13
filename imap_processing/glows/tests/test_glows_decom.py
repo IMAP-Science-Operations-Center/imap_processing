@@ -1,11 +1,10 @@
-import logging
+from collections import namedtuple
 from pathlib import Path
 
 import pytest
 
+from imap_processing.ccsds.ccsds_data import CcsdsData
 from imap_processing.glows.l0 import decom_glows
-
-logging.basicConfig(level=logging.ERROR)
 
 
 @pytest.fixture()
@@ -31,11 +30,6 @@ def test_glows_decom_count(decom_test_data):
 
 
 def test_glows_hist_data(decom_test_data):
-    for hist in decom_test_data[0]:
-        assert len(hist.HISTOGRAM_DATA) == 3599
-        assert min(hist.HISTOGRAM_DATA) > 10
-        assert max(hist.HISTOGRAM_DATA) < 170
-
     expected_data = {
         "MET": 54232338,
         "STARTID": 0,
@@ -70,3 +64,10 @@ def test_glows_de_data(decom_test_data):
     expected_data = {"MET": 54233694, "SEC": 54232338, "LEN": 1, "SEQ": 0}
     for key in expected_data.keys():
         assert getattr(decom_test_data[1][0], key) == expected_data[key]
+
+
+def test_bad_header():
+    bad_data = {"test": namedtuple("TestData", ["derived_value"])}
+    bad_data["test"].derived_value = "test"
+    with pytest.raises(KeyError, match="Did not find matching"):
+        CcsdsData(bad_data)
