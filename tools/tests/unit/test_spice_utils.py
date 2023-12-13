@@ -1,5 +1,3 @@
-import logging
-import os
 from datetime import datetime
 from pathlib import Path
 
@@ -7,85 +5,82 @@ import pytest
 import spiceypy as spice
 
 from tools.spice.spice_utils import (
-    SpiceKernelManager,
-    ls_attitude_coverage,
-    ls_kernels,
-    ls_spice_constants,
+    list_all_constants,
+    list_attitude_coverage,
+    list_files_with_extensions,
+    list_loaded_kernels,
 )
 
 
 @pytest.fixture()
-def kernel_object():
-    """Data for decom"""
+def kernels():
+    """Return the SPICE kernels used for testing"""
     directory = Path(__file__).parent.parent / "test_data" / "spice"
-    extensions = [".bpc", ".bsp", ".ti", ".tf", ".tls", ".tsc"]
-    kernels = SpiceKernelManager(directory, extensions)
+    kernels = list_files_with_extensions(directory, [".bsp", ".ti"])
     return kernels
 
 
-def test_furnsh(kernel_object):
-    kernel_object.furnsh()
-    n_files_loaded = spice.ktotal("ALL")
+def test_list_files_with_extensions(kernels):
+    """Tests the list_files_with_extensions function."""
 
-    extensions = [".bpc", ".bsp", ".ti", ".tf", ".tls", ".tsc"]
+    directory = Path(__file__).parent.parent / "test_data" / "spice"
 
-    files = [
-        file
-        for file in os.listdir(kernel_object.kernel_path)
-        if file.endswith(tuple(extensions))
+    # Test listing files with specified extensions
+    result = list_files_with_extensions(directory, [".bsp", ".ti"])
+    expected_files = [
+        str(directory / "imap_lo_starsensor_instrument_demo.ti"),
+        str(directory / "imap_spk_demo.bsp"),
+        str(directory / "imap_ultra_instrument_demo.ti"),
     ]
+    assert sorted(result) == sorted(expected_files)
 
-    n_test_files = len(files)
+    # Test case sensitivity in extensions
+    result_case_sensitive = list_files_with_extensions(directory, [".BSP", ".TI"])
+    assert result_case_sensitive == expected_files
 
-    assert n_files_loaded == n_test_files
+    # Test with non-matching extensions (should return an empty list)
+    result_non_matching = list_files_with_extensions(directory, [".xyz"])
+    assert result_non_matching == []
 
 
-def test_clear(kernel_object):
-    # Ensure some kernels are loaded first
-    kernel_object.furnsh()
-    n_files_before_clear = spice.ktotal("ALL")
-    assert n_files_before_clear > 0
+def test_furnsh(kernels):
+    """Tests the loading of kernels via the ``furnsh`` method in KernelPool"""
 
-    # Clear loaded kernels and verify
-    kernel_object.clear()
+    with spice.KernelPool(kernels):
+        num_files_loaded = spice.ktotal("ALL")
+
+    num_test_files = len(kernels)
     n_files_loaded_after_clear = spice.ktotal("ALL")
+
+    assert num_files_loaded == num_test_files
     assert n_files_loaded_after_clear == 0
 
 
-def test_furnsh_type(caplog):
-    caplog.set_level(logging.DEBUG)
+def test_list_loaded_kernels(kernels):
+    """Tests the ``ls_kernels`` function"""
     directory = Path(__file__).parent.parent / "test_data" / "spice"
-    kernel_object = SpiceKernelManager(directory, [".dog"])
 
-    kernel_object.furnsh()
+    with spice.KernelPool(kernels):
+        result = list_loaded_kernels()
 
-    expected_error_msg = "Invalid kernel_type extension:"
-    assert any(expected_error_msg in message for message in caplog.messages)
+    expected = [
+        str(directory / "imap_lo_starsensor_instrument_demo.ti"),
+        str(directory / "imap_spk_demo.bsp"),
+        str(directory / "imap_ultra_instrument_demo.ti"),
+    ]
 
-    kernel_object.clear()
-
-
-def test_ls_kernels(kernel_object):
-    directory = Path(__file__).parent.parent / "test_data" / "spice"
-    extensions = [".bsp"]
-    kernel_object = SpiceKernelManager(directory, extensions)
-
-    kernel_object.furnsh()
-    result = ls_kernels()
-
-    expected = [str(directory / "imap_spk_demo.bsp")]
-
-    assert sorted(result) == sorted(expected)
+    assert result == expected
 
 
-def test_ls_spice_constants(kernel_object):
+def test_list_all_constants():
+    """Tests the ``ls_spice_constants`` function"""
+
     # Set up the test environment
     directory = Path(__file__).parent.parent / "test_data" / "spice"
-    extensions = [".tls"]
-    kernel_object = SpiceKernelManager(directory, extensions)
-    kernel_object.furnsh()
+    kernels = list_files_with_extensions(directory, [".tls"])
 
-    result = ls_spice_constants()
+    with spice.KernelPool(kernels):
+        result = list_all_constants()
 
     # Expected keys
     expected_keys = [
@@ -101,25 +96,25 @@ def test_ls_spice_constants(kernel_object):
     assert list(result.keys()) == expected_keys
 
 
-def test_ls_attitude_coverage(kernel_object):
+def test_list_attitude_coverage():
+    """Tests the ``ls_attitude_coverage`` function"""
+
     # Set up the test environment
     directory = Path(__file__).parent.parent / "test_data" / "spice"
-    extensions = [".ah.bc", ".ah.a"]
-    kernel_object = SpiceKernelManager(directory, extensions)
-    kernel_object.furnsh()
+    kernels = list_files_with_extensions(directory, [".ah.bc", ".ah.a"])
 
-    # Test with valid extensions
-    result = ls_attitude_coverage()
-    assert result is not None
+    with spice.KernelPool(kernels):
+        # Test with valid extensions
+        result = list_attitude_coverage()
+
+        # Test with invalid custom pattern
+        with pytest.raises(ValueError, match=r"Invalid pattern: .*"):
+            list_attitude_coverage(r"invalid")
+
     assert isinstance(result, tuple)
     assert len(result) == 2
     assert all(isinstance(date, datetime) for date in result)
 
-    # Test with invalid custom pattern
-    with pytest.raises(ValueError, match=r"Invalid pattern: .*"):
-        ls_attitude_coverage(r"invalid")
-
     # Test with an empty directory
-    kernel_object.clear()
-    empty_result = ls_attitude_coverage()
-    assert empty_result is None
+    empty_result = list_attitude_coverage()
+    assert empty_result is tuple()

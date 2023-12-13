@@ -1,11 +1,11 @@
 KPL/MK
 
-Meta kernel that loads the arecibo configuration kernels into the sarbeta program.
+Meta kernel that loads the IMAP configuration kernels.
 
 \begindata
 
    PATH_SYMBOLS += ( 'IMAP' )
-   PATH_VALUES  += ( '/Users/lasa6858/Desktop/ultra/ultra_prototype_v1/kernels' )
+   PATH_VALUES  += ( '.' )
 
 
    KERNELS_TO_LOAD += ( '$IMAP/naif0012.tls'

@@ -2,61 +2,52 @@ import logging
 import os
 import re
 from datetime import datetime, timedelta
-from pathlib import Path
-from typing import Optional
 
 import spiceypy as spice
-from spiceypy.utils.exceptions import NotFoundError
 
 logging.basicConfig(level=logging.ERROR)
 logger = logging.getLogger(__name__)
 
 
-class SpiceKernelManager:
-    """Manages the loading and handling of SPICE kernels.
+def list_files_with_extensions(directory: str, extensions=None) -> list[str]:
+    """
+    List all files in a given directory that have one of the specified extensions.
 
     Parameters
     ----------
-    kernel_path : Path
-        The local directory path where the SPICE kernel files are stored.
-    extensions : list of str, optional
-        A list of file extensions to be considered as valid SPICE kernel files.
+    directory : str
+        The directory to search in.
+    extensions : list[str], (optional)
+        A list of file extensions to filter the files.
+
+    Returns
+    -------
+    matching_files : list[str]
+        A list of file paths in the specified directory
+        that match the given extensions.
     """
+    # Default set of extensions
+    if extensions is None:
+        extensions = [".bpc", ".bsp", ".ti", ".tf", ".tls", ".tsc"]
+    else:
+        extensions = [ext.lower() for ext in extensions]
 
-    def __init__(self, kernel_path: Path, extensions: Optional[list[str]] = None):
-        self.kernel_path = kernel_path
-        if extensions is None:
-            self.extensions = [".bpc", ".bsp", ".ti", ".tf", ".tls", ".tsc"]
+    matching_files = []
+    for file in os.listdir(directory):
+        if any(file.endswith(ext) for ext in extensions):
+            matching_files.append(os.path.join(directory, file))
         else:
-            self.extensions = extensions
+            logger.debug(f"Skipping file {file}.")
 
-    def furnsh(self):
-        """Load a kernel file into the SPICE system."""
-        self.clear()
-        files_loaded = []
-
-        for filename in os.listdir(self.kernel_path):
-            if filename.endswith(tuple(self.extensions)):
-                filepath = os.path.join(self.kernel_path, filename)
-                spice.furnsh(filepath)
-                files_loaded.append(filename)
-            else:
-                logger.info(f"Invalid kernel_type extension: {filename}.")
-
-        return files_loaded
-
-    def clear(self):
-        """Clear the SPICE kernel pool."""
-        logger.info("Clearing SPICE kernel pool.")
-        spice.kclear()
+    return matching_files
 
 
-def ls_kernels(extensions=None) -> list:
+def list_loaded_kernels(extensions=None) -> list:
     """List furnished spice kernels, optionally filtered by specific extensions.
 
     Parameters
     ----------
-    extensions: list of str, optional
+    extensions: list of str or None, optional
         Extensions to filter the kernels. If None, list all kernels.
 
     Returns
@@ -79,7 +70,7 @@ def ls_kernels(extensions=None) -> list:
     return result
 
 
-def ls_spice_constants() -> dict:
+def list_all_constants() -> dict:
     """List all constants in the Spice constant pool.
 
     Returns
@@ -87,33 +78,31 @@ def ls_spice_constants() -> dict:
     : dict
         Dictionary of kernel constants
     """
-    try:
-        # retrieve names of kernel variables
-        # * means matches all variables
-        # 0 : starting from first match
-        # 1000 : num variable names retrieved in call
-        # 81 : max len of variable name
-        kervars = spice.gnpool("*", 0, 1000, 81)
-    except NotFoundError:  # Happens if there are no constants in the pool
-        return {}
+    # retrieve names of kernel variables using below inputs per
+    # https://naif.jpl.nasa.gov/pub/naif/toolkit_docs/C/cspice/gdpool_c.html
+    # name = '*', means name of the variable whose value is to be returned.
+    # start = 0, Which component to start retrieving for `name'.
+    # room = 1000, The largest number of values to return.
+    # n = 81, Number of values returned for `name'.
+    kernel_vars = spice.gnpool("*", 0, 1000, 81)
 
     result = {}
-    for kervar in sorted(kervars):
+    for kernel_var in sorted(kernel_vars):
         # retrieve data about a kernel variable
-        n, kernel_type = spice.dtpool(kervar)  # pylint: disable=W0632
+        n, kernel_type = spice.dtpool(kernel_var)
         # numerical data type
         if kernel_type == "N":
-            values = spice.gdpool(kervar, 0, n)
-            result[kervar] = values
+            values = spice.gdpool(kernel_var, 0, n)
+            result[kernel_var] = values
         # character data type
         elif kernel_type == "C":
-            values = spice.gcpool(kervar, 0, n, 81)
-            result[kervar] = values
+            values = spice.gcpool(kernel_var, 0, n, 81)
+            result[kernel_var] = values
     return result
 
 
-def ls_attitude_coverage(custom_pattern=None) -> tuple:
-    """Process attitude kernels to extract and convert dates to UTC format.
+def list_attitude_coverage(custom_pattern=None) -> tuple:
+    """Select the date of the most recent historical attitude kernel.
 
     Parameters
     ----------
@@ -124,11 +113,15 @@ def ls_attitude_coverage(custom_pattern=None) -> tuple:
     -------
     : tuple
         Tuple giving the most recent start and end time in ET.
+
+    # TODO: it is possible that symlink can be used to point to the latest
+    # historical attitude kernel. If so, this function should be updated
+    # or removed
     """
-    att_kernels = ls_kernels([".ah.bc", ".ah.a"])
+    attitude_kernels = list_loaded_kernels([".ah.bc", ".ah.a"])
     filtered_files = []
 
-    for filedir in att_kernels:
+    for filedir in attitude_kernels:
         basename = os.path.basename(filedir)
         _, extension = os.path.splitext(basename)
 
@@ -140,7 +133,8 @@ def ls_attitude_coverage(custom_pattern=None) -> tuple:
             )
         else:
             pattern = custom_pattern
-
+        # Check if the file name matches the specified pattern
+        # If it does, parse the dates from the file name
         matching_pattern = re.match(pattern, basename)
         if matching_pattern:
             parts = matching_pattern.groups()
@@ -153,7 +147,7 @@ def ls_attitude_coverage(custom_pattern=None) -> tuple:
             raise ValueError(f"Invalid pattern: {pattern}.")
 
     if not filtered_files:
-        return None
+        return tuple()
 
     max_tuple = max(filtered_files, key=lambda x: x[1])
     return max_tuple

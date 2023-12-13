@@ -31,7 +31,7 @@ classifiers = [
 python = ">=3.9,<3.12"
 xarray = '>=2023.0.0'
 space_packet_parser = ">=4.1.0,<5"
-spiceypy = "^5.0.0"
+spiceypy = "^6.0.0"
 bitstring = ">=4.0.1,<5"
 cdflib = "^1.2.3"
 
