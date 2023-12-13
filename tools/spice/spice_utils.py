@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 def list_files_with_extensions(directory: str, extensions=None) -> list[str]:
     """
-    List all files in a given directory that have one of the specified extensions.
+    List all files in a given directory that have the specified extensions.
 
     Parameters
     ----------

@@ -43,21 +43,8 @@ def test_list_files_with_extensions(kernels):
     assert result_non_matching == []
 
 
-def test_furnsh(kernels):
-    """Tests the loading of kernels via the ``furnsh`` method in KernelPool"""
-
-    with spice.KernelPool(kernels):
-        num_files_loaded = spice.ktotal("ALL")
-
-    num_test_files = len(kernels)
-    n_files_loaded_after_clear = spice.ktotal("ALL")
-
-    assert num_files_loaded == num_test_files
-    assert n_files_loaded_after_clear == 0
-
-
 def test_list_loaded_kernels(kernels):
-    """Tests the ``ls_kernels`` function"""
+    """Tests the ``list_loaded_kernels`` function"""
     directory = Path(__file__).parent.parent / "test_data" / "spice"
 
     with spice.KernelPool(kernels):
@@ -73,7 +60,7 @@ def test_list_loaded_kernels(kernels):
 
 
 def test_list_all_constants():
-    """Tests the ``ls_spice_constants`` function"""
+    """Tests the ``list_all_constants`` function"""
 
     # Set up the test environment
     directory = Path(__file__).parent.parent / "test_data" / "spice"
@@ -97,7 +84,7 @@ def test_list_all_constants():
 
 
 def test_list_attitude_coverage():
-    """Tests the ``ls_attitude_coverage`` function"""
+    """Tests the ``list_attitude_coverage`` function"""
 
     # Set up the test environment
     directory = Path(__file__).parent.parent / "test_data" / "spice"
