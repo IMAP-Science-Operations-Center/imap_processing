@@ -15,7 +15,7 @@ import sys
 from abc import ABC, abstractmethod
 
 from imap_processing import instruments, processing_levels
-from imap_processing.io import ois_ingest
+from imap_processing.ois import ois_ingest
 
 
 def _parse_args():
@@ -37,7 +37,7 @@ def _parse_args():
         f"The data level to process. Acceptable values are: {processing_levels}"
     )
 
-    parser = argparse.ArgumentParser(description=description)
+    parser = argparse.ArgumentParser(prog="imap-process", description=description)
     subparsers = parser.add_subparsers(description="sub-commands for cli")
 
     # ois-ingest
@@ -53,7 +53,6 @@ def _parse_args():
     instr_process_parser = subparsers.add_parser(
         "instr-process", help="process instruments"
     )
-
     instr_process_parser.add_argument(
         "--instrument", type=str, required=True, help=instrument_help
     )
@@ -185,9 +184,14 @@ class Ultra(ProcessInstrument):
 
 if __name__ == "__main__":
     args = _parse_args()
-    _validate_args(args)
 
-    # Determine which function to invoke
-    cls = getattr(sys.modules[__name__], args.instrument.capitalize())
-    instrument = cls(args.level)
-    instrument.process()
+    # Check if the sub-command is 'instr-process'
+    if hasattr(args, "instrument") and hasattr(args, "level"):
+        _validate_args(args)
+
+        # Determine which instrument class to invoke
+        cls = getattr(sys.modules[__name__], args.instrument.capitalize())
+        instrument = cls(args.level)
+        instrument.process()
+    elif hasattr(args, "ccsds"):
+        args.func(args.ccsds)
