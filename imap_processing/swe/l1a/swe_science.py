@@ -1,3 +1,5 @@
+"""Contains code to perform SWE L1a science processing."""
+
 import collections
 import dataclasses
 

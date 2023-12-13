@@ -1,3 +1,5 @@
+"""Contains data classes to support GLOWS L0 processing."""
+
 from dataclasses import dataclass, fields
 
 from imap_processing.ccsds.ccsds_data import CcsdsData

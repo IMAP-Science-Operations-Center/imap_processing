@@ -1,3 +1,5 @@
+"""Decommutate GLOWS CCSDS packets using GLOWS packet definitions."""
+
 from enum import Enum
 from pathlib import Path
 
