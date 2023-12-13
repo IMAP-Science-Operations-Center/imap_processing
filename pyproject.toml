@@ -80,3 +80,6 @@ ignore = ["D100", "D104", "PLR2004", "S101"]
 
 [tool.ruff.pydocstyle]
 convention = "numpy"
+
+[project.scripts]
+imap_processing = "imap_processing.run_processing"
