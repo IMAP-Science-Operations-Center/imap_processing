@@ -1,0 +1,156 @@
+\begintext
+
+FILENAME = "imap_0000.tsc"
+CREATION_DATE = "5-January-2021"
+
+
+IMAP Spacecraft Clock Kernel (SCLK)
+===========================================================================
+
+     This file is a SPICE spacecraft clock (SCLK) kernel containing
+     information required for time conversions involving the on-board
+     IMAP spacecraft clock.
+
+Version
+--------------------------------------------------------
+
+     IMAP SCLK Kernel Version:
+
+     IMAP version 0.3 - April 22, 2022 -- Mike Ruffolo
+        Updated to use NAIF SC ID 43
+
+     IMAP Version 0.2 - June 2, 2021 -- Caroline Cocca
+         Updated to use temporary spacecraft id of 225
+
+     IMAP Version 0.1 - March 6, 2015 -- Eric Melin
+         Updated text to replace references to RBSP with SPP
+
+     IMAP Version 0.0 - August 7, 2014 -- Eric Melin
+        The initial SPP spice kernel.
+        This file was created by using RBSPA initial kernel and
+        modifying the spacecraft ID.
+
+
+Usage
+--------------------------------------------------------
+
+     This file is used by the SPICE system as follows: programs that
+     make use of this SCLK kernel must 'load' the kernel, normally
+     during program initialization.  Loading the kernel associates
+     the data items with their names in a data structure called the
+     'kernel pool'.  The SPICELIB routine FURNSH loads text kernel
+     files, such as this one, into the pool as shown below:
+
+        FORTRAN:
+
+                  CALL FURNSH ( SCLK_kernel_name )
+
+        C:
+
+                  furnsh_c ( SCLK_kernel_name );
+
+     Once loaded, the SCLK time conversion routines will be able to
+     access the necessary data located in this kernel for their
+     designed purposes.
+
+References
+--------------------------------------------------------
+
+         1.   "SCLK Required Reading"
+
+Inquiries
+--------------------------------------------------------
+
+     If you have any questions regarding this file or its usage,
+     contact:
+
+           Scott Turner
+           (443)778-1693
+           Scott.Turner@jhuapl.edu
+
+Kernel Data
+--------------------------------------------------------
+
+     The first block of keyword equals value assignments define the
+     type, parallel time system, and format of the spacecraft clock.
+     These fields are invariant from SCLK kernel update to SCLK
+     kernel update.
+
+     The IMAP spacecraft clock is represented by the SPICE
+     type 1 SCLK kernel.  It uses TDT, Terrestrial Dynamical Time,
+     as its parallel time system.
+
+\begindata
+
+SCLK_KERNEL_ID             = ( @2009-07-09T12:20:32 )
+SCLK_DATA_TYPE_43          = (        1 )
+SCLK01_TIME_SYSTEM_43      = (        2 )
+
+
+\begintext
+
+     In a particular partition of the IMAP spacecraft clock,
+     the clock read-out consists of two separate stages:
+
+                           1/18424652:24251
+
+     The first stage, a 32 bit field, represents the spacecraft
+     clock seconds count.  The second, a 16 bit field, represents
+     counts of 20 microsecond increments of the spacecraft clock.
+
+     The following keywords and their values establish this structure:
+
+\begindata
+
+SCLK01_N_FIELDS_43         = (            2 )
+SCLK01_MODULI_43           = (   4294967296       50000 )
+SCLK01_OFFSETS_43          = (            0           0 )
+SCLK01_OUTPUT_DELIM_43     = (            2 )
+
+
+\begintext
+
+     This concludes the invariant portion of the SCLK kernel data.  The
+     remaining sections of the kernel may require updates as the clock
+     correlation coefficients evolve in time.  The first section below
+     establishes the clock partitions.  The data in this section consists
+     of two parallel arrays, which denote the start and end values in
+     ticks of each partition of the spacecraft clock.
+
+     SPICE utilizes these two arrays to map from spacecraft clock ticks,
+     determined with the usual modulo arithmetic, to encoded SCLK--the
+     internal, monotonically increasing sequence used to tag various
+     data sources with spacecraft clock.
+
+\begindata
+
+SCLK_PARTITION_START_43    = ( 0.00000000000000e+00 )
+
+SCLK_PARTITION_END_43      = ( 2.14748364799999e+14 )
+
+\begintext
+
+     The remaining section of the SCLK kernel defines the clock correlation
+     coefficients.  Each line contains a 'coefficient triple':
+
+         Encoded SCLK at which Rate is introduced.
+         Corresponding TDT Epoch at which Rate is introduced.
+         Rate in TDT (seconds) / most significant clock count (~seconds).
+
+     SPICE uses linear extrapolation to convert between the parallel time
+     system and encoded SCLK.  The triples are stored in the array defined
+     below.
+
+     The first time triplet below was entered manually and represents the
+     approximate time (in TDT) at which SCLK = zero.  The current plan for
+     IMAP is that the given epoch will be used for both Observatory I&T
+     and launch.  Note that the conversion from UTC to TDT used 34 leap
+     seconds.
+
+\begindata
+
+SCLK01_COEFFICIENTS_43     = (
+
+                   0     @01-JAN-2010-00:01:06.184000     1.00000000000
+
+)

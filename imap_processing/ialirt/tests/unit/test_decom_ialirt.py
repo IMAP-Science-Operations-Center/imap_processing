@@ -42,8 +42,6 @@ def binary_packet_path(tmp_path):
                 binary_file.write(binary_data)
                 assert len(binary_data) * 8 == IALIRT_PACKET_LENGTH
 
-    yield binary_file_path
-
     return binary_file_path
 
 
