@@ -1,2 +1,2 @@
-def ingest():
+def ingest(ccsds):
     print("hi")
