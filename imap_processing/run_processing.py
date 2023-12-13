@@ -15,6 +15,7 @@ import sys
 from abc import ABC, abstractmethod
 
 from imap_processing import instruments, processing_levels
+from imap_processing.io import ois_ingest
 
 
 def _parse_args():
@@ -37,8 +38,28 @@ def _parse_args():
     )
 
     parser = argparse.ArgumentParser(description=description)
-    parser.add_argument("--instrument", type=str, required=True, help=instrument_help)
-    parser.add_argument("--level", type=str, required=True, help=level_help)
+    subparsers = parser.add_subparsers(description="sub-commands for cli")
+
+    # ois-ingest
+    ois_ingest_parser = subparsers.add_parser(
+        "ois-ingest", help="write l0 data to dynamodb"
+    )
+    ois_ingest_parser.set_defaults(func=ois_ingest.ingest)
+    ois_ingest_parser.add_argument(
+        "--ccsds", type=str, required=True, help=instrument_help
+    )
+
+    # instr-process
+    instr_process_parser = subparsers.add_parser(
+        "instr-process", help="process instruments"
+    )
+
+    instr_process_parser.add_argument(
+        "--instrument", type=str, required=True, help=instrument_help
+    )
+    instr_process_parser.add_argument(
+        "--level", type=str, required=True, help=level_help
+    )
 
     args = parser.parse_args()
 
