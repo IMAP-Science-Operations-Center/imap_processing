@@ -36,5 +36,6 @@ A typical development workflow might look like the following:
     :maxdepth: 1
 
     doc-overview
+    docker.rst
     release-workflow
     style-guide/style-guide
