@@ -7,17 +7,12 @@ a user-supplied instrument and data level.
 
 Use
 ---
-    python run_processing.py <instrument> <data_level>
+    python cli.py <instrument> <data_level>
 """
 
 import argparse
-import os
+import sys
 from abc import ABC, abstractmethod
-
-print("hhhhhhhhhhhh")
-
-print(os.getcwd())
-
 from typing import Optional
 
 from imap_processing import instruments, processing_levels
@@ -43,7 +38,7 @@ def _parse_args(cli_args: list):
         f"The data level to process. Acceptable values are: {processing_levels}"
     )
 
-    parser = argparse.ArgumentParser(prog="imap-process", description=description)
+    parser = argparse.ArgumentParser(prog="imap-processing", description=description)
     subparsers = parser.add_subparsers(description="sub-commands for cli")
 
     # ois-ingest
@@ -189,24 +184,16 @@ class Ultra(ProcessInstrument):
 
 
 def main(cli_args: Optional[list] = None):
-    """Main CLI entrypoint that runs the function inferred from the specified subcommand."""
+    """Create CLI entrypoint."""
     args = _parse_args(cli_args)
-    args.func(args)
 
+    # Check if the sub-command is 'instr-process'
+    if hasattr(args, "instrument") and hasattr(args, "level"):
+        _validate_args(args)
 
-# if __name__ == "__main__":
-#     main()
-
-# if __name__ == "__main__":
-#     args = _parse_args()
-#
-#     # Check if the sub-command is 'instr-process'
-#     if hasattr(args, "instrument") and hasattr(args, "level"):
-#         _validate_args(args)
-#
-#         # Determine which instrument class to invoke
-#         cls = getattr(sys.modules[__name__], args.instrument.capitalize())
-#         instrument = cls(args.level)
-#         instrument.process()
-#     elif hasattr(args, "ccsds"):
-#         args.func(args.ccsds)
+        # Determine which instrument class to invoke
+        cls = getattr(sys.modules[__name__], args.instrument.capitalize())
+        instrument = cls(args.level)
+        instrument.process()
+    elif hasattr(args, "ccsds"):
+        args.func(args.ccsds)

@@ -1,2 +1,7 @@
+"""Simply used for test. Will add to this later."""
+
+
 def ingest(ccsds):
-    print("hi")
+    """Ingest CCSDS data."""
+    print("test")
+    print(ccsds)

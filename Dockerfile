@@ -30,21 +30,13 @@ ENV PATH="$PATH:/root/.local/bin"
 
 # Copy necessary files over
 COPY imap_processing $IMAP_PROCESS_DIRECTORY/imap_processing
-COPY pyproject.toml $IMAP_PROCESS_DIRECTORY/
+COPY README.md $IMAP_PROCESS_DIRECTORY
+COPY pyproject.toml $IMAP_PROCESS_DIRECTORY
+COPY LICENSE $IMAP_PROCESS_DIRECTORY
 
-# Update this line to copy run_processing.py from the correct location
-COPY imap_processing/run_processing.py /opt/imap/
+# Install libera_utils and all its (non-dev) dependencies according to pyproject.toml
+RUN poetry install --only main
 
-# Install imap_processing and all its dependencies according to pyproject.toml
-RUN poetry install
-
-# Make the script executable
-RUN chmod +x $IMAP_PROCESS_DIRECTORY/run_processing.py
-
-# Set the working directory to the directory containing the script
-WORKDIR $IMAP_PROCESS_DIRECTORY
-
-# Define the entrypoint and default command
-ENTRYPOINT ["python", "run_processing.py"]
-#CMD ["run_processing.py"]
-
+# Define the entrypoint of the container. Passing arguments when running the
+# container will be passed as arguments to the function
+ENTRYPOINT ["imap-processing"]

@@ -11,8 +11,7 @@ and --rm to remove intermediate containers after the build is done.
 
 `docker build -t my-image --rm .`
 
-Now we can run our image using bind mounting. In our example, we will name the container ‘my_app’.
-Adding --rm option will remove the container automatically after the container exits.
+Now we can run our image. Example below runs the image and executes the ois-ingest command with the str option.
 
 `docker run --rm -it my-image:latest ois-ingest --ccsds str`
 

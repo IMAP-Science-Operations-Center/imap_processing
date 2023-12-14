@@ -1,5 +1,5 @@
 [build-system]
-requires = ["poetry-core"]
+requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
@@ -82,8 +82,5 @@ ignore = ["D104", "PLR2004", "S101"]
 [tool.ruff.pydocstyle]
 convention = "numpy"
 
-#[project.scripts]
-#imap_processing = "imap_processing.run_processing"
-
 [tool.poetry.scripts]
-imap-processing = 'imap_processing.run_processing:main'
+imap-processing = 'imap_processing.cli:main'
