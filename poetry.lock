@@ -4,6 +4,7 @@
 name = "accessible-pygments"
 version = "0.0.4"
 description = "A collection of accessible pygments styles"
+category = "main"
 optional = true
 python-versions = "*"
 files = [
@@ -18,6 +19,7 @@ pygments = ">=1.5"
 name = "alabaster"
 version = "0.7.13"
 description = "A configurable sidebar-enabled Sphinx theme"
+category = "main"
 optional = true
 python-versions = ">=3.6"
 files = [
@@ -29,6 +31,7 @@ files = [
 name = "atomicwrites"
 version = "1.4.1"
 description = "Atomic file writes."
+category = "main"
 optional = true
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 files = [
@@ -39,6 +42,7 @@ files = [
 name = "attrs"
 version = "23.1.0"
 description = "Classes Without Boilerplate"
+category = "main"
 optional = true
 python-versions = ">=3.7"
 files = [
@@ -57,6 +61,7 @@ tests-no-zope = ["cloudpickle", "hypothesis", "mypy (>=1.1.1)", "pympler", "pyte
 name = "babel"
 version = "2.14.0"
 description = "Internationalization utilities"
+category = "main"
 optional = true
 python-versions = ">=3.7"
 files = [
@@ -71,6 +76,7 @@ dev = ["freezegun (>=1.0,<2.0)", "pytest (>=6.0)", "pytest-cov"]
 name = "beautifulsoup4"
 version = "4.12.2"
 description = "Screen-scraping library"
+category = "main"
 optional = true
 python-versions = ">=3.6.0"
 files = [
@@ -89,6 +95,7 @@ lxml = ["lxml"]
 name = "bitarray"
 version = "2.8.5"
 description = "efficient arrays of booleans -- C extension"
+category = "main"
 optional = false
 python-versions = "*"
 files = [
@@ -220,6 +227,7 @@ files = [
 name = "bitstring"
 version = "4.1.4"
 description = "Simple construction, analysis and modification of binary data."
+category = "main"
 optional = false
 python-versions = ">=3.7"
 files = [
@@ -234,6 +242,7 @@ bitarray = ">=2.8.0,<3.0.0"
 name = "black"
 version = "23.12.0"
 description = "The uncompromising code formatter."
+category = "main"
 optional = true
 python-versions = ">=3.8"
 files = [
@@ -280,6 +289,7 @@ uvloop = ["uvloop (>=0.15.2)"]
 name = "cdflib"
 version = "1.2.3"
 description = "A python CDF reader toolkit"
+category = "main"
 optional = false
 python-versions = ">=3.6"
 files = [
@@ -298,6 +308,7 @@ tests = ["astropy", "hypothesis", "pytest (>=3.9)", "pytest-cov", "pytest-remote
 name = "certifi"
 version = "2023.11.17"
 description = "Python package for providing Mozilla's CA Bundle."
+category = "main"
 optional = true
 python-versions = ">=3.6"
 files = [
@@ -309,6 +320,7 @@ files = [
 name = "cfgv"
 version = "3.4.0"
 description = "Validate configuration and produce human readable error messages."
+category = "main"
 optional = true
 python-versions = ">=3.8"
 files = [
@@ -320,6 +332,7 @@ files = [
 name = "charset-normalizer"
 version = "3.3.2"
 description = "The Real First Universal Charset Detector. Open, modern and actively maintained alternative to Chardet."
+category = "main"
 optional = true
 python-versions = ">=3.7.0"
 files = [
@@ -419,6 +432,7 @@ files = [
 name = "click"
 version = "8.1.7"
 description = "Composable command line interface toolkit"
+category = "main"
 optional = true
 python-versions = ">=3.7"
 files = [
@@ -433,6 +447,7 @@ colorama = {version = "*", markers = "platform_system == \"Windows\""}
 name = "colorama"
 version = "0.4.6"
 description = "Cross-platform colored terminal text."
+category = "main"
 optional = true
 python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*,!=3.5.*,!=3.6.*,>=2.7"
 files = [
@@ -444,6 +459,7 @@ files = [
 name = "coverage"
 version = "7.3.2"
 description = "Code coverage measurement for Python"
+category = "main"
 optional = true
 python-versions = ">=3.8"
 files = [
@@ -511,6 +527,7 @@ toml = ["tomli"]
 name = "distlib"
 version = "0.3.8"
 description = "Distribution utilities"
+category = "main"
 optional = true
 python-versions = "*"
 files = [
@@ -522,6 +539,7 @@ files = [
 name = "docutils"
 version = "0.20.1"
 description = "Docutils -- Python Documentation Utilities"
+category = "main"
 optional = true
 python-versions = ">=3.7"
 files = [
@@ -533,6 +551,7 @@ files = [
 name = "et-xmlfile"
 version = "1.1.0"
 description = "An implementation of lxml.xmlfile for the standard library"
+category = "main"
 optional = true
 python-versions = ">=3.6"
 files = [
@@ -544,6 +563,7 @@ files = [
 name = "filelock"
 version = "3.13.1"
 description = "A platform independent file lock."
+category = "main"
 optional = true
 python-versions = ">=3.8"
 files = [
@@ -560,6 +580,7 @@ typing = ["typing-extensions (>=4.8)"]
 name = "identify"
 version = "2.5.33"
 description = "File identification library for Python"
+category = "main"
 optional = true
 python-versions = ">=3.8"
 files = [
@@ -574,6 +595,7 @@ license = ["ukkonen"]
 name = "idna"
 version = "3.6"
 description = "Internationalized Domain Names in Applications (IDNA)"
+category = "main"
 optional = true
 python-versions = ">=3.5"
 files = [
@@ -585,6 +607,7 @@ files = [
 name = "imagesize"
 version = "1.4.1"
 description = "Getting image size from png/jpeg/jpeg2000/gif file"
+category = "main"
 optional = true
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 files = [
@@ -596,6 +619,7 @@ files = [
 name = "importlib-metadata"
 version = "7.0.0"
 description = "Read metadata from Python packages"
+category = "main"
 optional = true
 python-versions = ">=3.8"
 files = [
@@ -615,6 +639,7 @@ testing = ["flufl.flake8", "importlib-resources (>=1.3)", "packaging", "pyfakefs
 name = "iniconfig"
 version = "2.0.0"
 description = "brain-dead simple config-ini parsing"
+category = "main"
 optional = true
 python-versions = ">=3.7"
 files = [
@@ -626,6 +651,7 @@ files = [
 name = "jinja2"
 version = "3.1.2"
 description = "A very fast and expressive template engine."
+category = "main"
 optional = true
 python-versions = ">=3.7"
 files = [
@@ -643,6 +669,7 @@ i18n = ["Babel (>=2.7)"]
 name = "markdown-it-py"
 version = "3.0.0"
 description = "Python port of markdown-it. Markdown parsing, done right!"
+category = "main"
 optional = true
 python-versions = ">=3.8"
 files = [
@@ -667,6 +694,7 @@ testing = ["coverage", "pytest", "pytest-cov", "pytest-regressions"]
 name = "markupsafe"
 version = "2.1.3"
 description = "Safely add untrusted strings to HTML/XML markup."
+category = "main"
 optional = true
 python-versions = ">=3.7"
 files = [
@@ -736,6 +764,7 @@ files = [
 name = "mdit-py-plugins"
 version = "0.4.0"
 description = "Collection of plugins for markdown-it-py"
+category = "main"
 optional = true
 python-versions = ">=3.8"
 files = [
@@ -755,6 +784,7 @@ testing = ["coverage", "pytest", "pytest-cov", "pytest-regressions"]
 name = "mdurl"
 version = "0.1.2"
 description = "Markdown URL utilities"
+category = "main"
 optional = true
 python-versions = ">=3.7"
 files = [
@@ -766,6 +796,7 @@ files = [
 name = "mypy-extensions"
 version = "1.0.0"
 description = "Type system extensions for programs checked with the mypy type checker."
+category = "main"
 optional = true
 python-versions = ">=3.5"
 files = [
@@ -777,6 +808,7 @@ files = [
 name = "myst-parser"
 version = "2.0.0"
 description = "An extended [CommonMark](https://spec.commonmark.org/) compliant parser,"
+category = "main"
 optional = true
 python-versions = ">=3.8"
 files = [
@@ -803,6 +835,7 @@ testing-docutils = ["pygments", "pytest (>=7,<8)", "pytest-param-files (>=0.3.4,
 name = "nodeenv"
 version = "1.8.0"
 description = "Node.js virtual environment builder"
+category = "main"
 optional = true
 python-versions = ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*,!=3.5.*,!=3.6.*"
 files = [
@@ -817,6 +850,7 @@ setuptools = "*"
 name = "numpy"
 version = "1.26.2"
 description = "Fundamental package for array computing in Python"
+category = "main"
 optional = false
 python-versions = ">=3.9"
 files = [
@@ -862,6 +896,7 @@ files = [
 name = "numpydoc"
 version = "1.6.0"
 description = "Sphinx extension to support docstrings in Numpy format"
+category = "main"
 optional = true
 python-versions = ">=3.8"
 files = [
@@ -884,6 +919,7 @@ test = ["matplotlib", "pytest", "pytest-cov"]
 name = "openpyxl"
 version = "3.1.2"
 description = "A Python library to read/write Excel 2010 xlsx/xlsm files"
+category = "main"
 optional = true
 python-versions = ">=3.6"
 files = [
@@ -898,6 +934,7 @@ et-xmlfile = "*"
 name = "packaging"
 version = "23.2"
 description = "Core utilities for Python packages"
+category = "main"
 optional = false
 python-versions = ">=3.7"
 files = [
@@ -909,6 +946,7 @@ files = [
 name = "pandas"
 version = "2.1.4"
 description = "Powerful data structures for data analysis, time series, and statistics"
+category = "main"
 optional = false
 python-versions = ">=3.9"
 files = [
@@ -976,6 +1014,7 @@ xml = ["lxml (>=4.8.0)"]
 name = "pathspec"
 version = "0.12.1"
 description = "Utility library for gitignore style pattern matching of file paths."
+category = "main"
 optional = true
 python-versions = ">=3.8"
 files = [
@@ -987,6 +1026,7 @@ files = [
 name = "platformdirs"
 version = "4.1.0"
 description = "A small Python package for determining appropriate platform-specific dirs, e.g. a \"user data dir\"."
+category = "main"
 optional = true
 python-versions = ">=3.8"
 files = [
@@ -1002,6 +1042,7 @@ test = ["appdirs (==1.4.4)", "covdefaults (>=2.3)", "pytest (>=7.4)", "pytest-co
 name = "pluggy"
 version = "1.3.0"
 description = "plugin and hook calling mechanisms for python"
+category = "main"
 optional = true
 python-versions = ">=3.8"
 files = [
@@ -1017,6 +1058,7 @@ testing = ["pytest", "pytest-benchmark"]
 name = "pre-commit"
 version = "3.6.0"
 description = "A framework for managing and maintaining multi-language pre-commit hooks."
+category = "main"
 optional = true
 python-versions = ">=3.9"
 files = [
@@ -1035,6 +1077,7 @@ virtualenv = ">=20.10.0"
 name = "py"
 version = "1.11.0"
 description = "library with cross-python path, ini-parsing, io, code, log facilities"
+category = "main"
 optional = true
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
 files = [
@@ -1046,6 +1089,7 @@ files = [
 name = "pydata-sphinx-theme"
 version = "0.14.4"
 description = "Bootstrap-based Sphinx theme from the PyData community"
+category = "main"
 optional = true
 python-versions = ">=3.8"
 files = [
@@ -1073,6 +1117,7 @@ test = ["pytest", "pytest-cov", "pytest-regressions"]
 name = "pygments"
 version = "2.17.2"
 description = "Pygments is a syntax highlighting package written in Python."
+category = "main"
 optional = true
 python-versions = ">=3.7"
 files = [
@@ -1088,6 +1133,7 @@ windows-terminal = ["colorama (>=0.4.6)"]
 name = "pytest"
 version = "6.2.5"
 description = "pytest: simple powerful testing with Python"
+category = "main"
 optional = true
 python-versions = ">=3.6"
 files = [
@@ -1112,6 +1158,7 @@ testing = ["argcomplete", "hypothesis (>=3.56)", "mock", "nose", "requests", "xm
 name = "pytest-cov"
 version = "4.1.0"
 description = "Pytest plugin for measuring coverage."
+category = "main"
 optional = true
 python-versions = ">=3.7"
 files = [
@@ -1130,6 +1177,7 @@ testing = ["fields", "hunter", "process-tests", "pytest-xdist", "six", "virtuale
 name = "python-dateutil"
 version = "2.8.2"
 description = "Extensions to the standard Python datetime module"
+category = "main"
 optional = false
 python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,>=2.7"
 files = [
@@ -1144,6 +1192,7 @@ six = ">=1.5"
 name = "pytz"
 version = "2023.3.post1"
 description = "World timezone definitions, modern and historical"
+category = "main"
 optional = false
 python-versions = "*"
 files = [
@@ -1155,6 +1204,7 @@ files = [
 name = "pyyaml"
 version = "6.0.1"
 description = "YAML parser and emitter for Python"
+category = "main"
 optional = true
 python-versions = ">=3.6"
 files = [
@@ -1214,6 +1264,7 @@ files = [
 name = "requests"
 version = "2.31.0"
 description = "Python HTTP for Humans."
+category = "main"
 optional = true
 python-versions = ">=3.7"
 files = [
@@ -1235,6 +1286,7 @@ use-chardet-on-py3 = ["chardet (>=3.0.2,<6)"]
 name = "ruff"
 version = "0.0.253"
 description = "An extremely fast Python linter, written in Rust."
+category = "main"
 optional = true
 python-versions = ">=3.7"
 files = [
@@ -1261,6 +1313,7 @@ files = [
 name = "setuptools"
 version = "69.0.2"
 description = "Easily download, build, install, upgrade, and uninstall Python packages"
+category = "main"
 optional = true
 python-versions = ">=3.8"
 files = [
@@ -1277,6 +1330,7 @@ testing-integration = ["build[virtualenv] (>=1.0.3)", "filelock (>=3.4.0)", "jar
 name = "six"
 version = "1.16.0"
 description = "Python 2 and 3 compatibility utilities"
+category = "main"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*"
 files = [
@@ -1288,6 +1342,7 @@ files = [
 name = "snowballstemmer"
 version = "2.2.0"
 description = "This package provides 29 stemmers for 28 languages generated from Snowball algorithms."
+category = "main"
 optional = true
 python-versions = "*"
 files = [
@@ -1299,6 +1354,7 @@ files = [
 name = "soupsieve"
 version = "2.5"
 description = "A modern CSS selector implementation for Beautiful Soup."
+category = "main"
 optional = true
 python-versions = ">=3.8"
 files = [
@@ -1310,6 +1366,7 @@ files = [
 name = "space-packet-parser"
 version = "4.1.0"
 description = "A CCSDS telemetry packet decoding library based on the XTCE packet format description standard."
+category = "main"
 optional = false
 python-versions = ">=3.8,<3.12"
 files = [
@@ -1324,6 +1381,7 @@ bitstring = ">=3.0.0,<4.2"
 name = "sphinx"
 version = "7.2.6"
 description = "Python documentation generator"
+category = "main"
 optional = true
 python-versions = ">=3.9"
 files = [
@@ -1359,6 +1417,7 @@ test = ["cython (>=3.0)", "filelock", "html5lib", "pytest (>=4.6)", "setuptools 
 name = "sphinxcontrib-applehelp"
 version = "1.0.7"
 description = "sphinxcontrib-applehelp is a Sphinx extension which outputs Apple help books"
+category = "main"
 optional = true
 python-versions = ">=3.9"
 files = [
@@ -1377,6 +1436,7 @@ test = ["pytest"]
 name = "sphinxcontrib-devhelp"
 version = "1.0.5"
 description = "sphinxcontrib-devhelp is a sphinx extension which outputs Devhelp documents"
+category = "main"
 optional = true
 python-versions = ">=3.9"
 files = [
@@ -1395,6 +1455,7 @@ test = ["pytest"]
 name = "sphinxcontrib-htmlhelp"
 version = "2.0.4"
 description = "sphinxcontrib-htmlhelp is a sphinx extension which renders HTML help files"
+category = "main"
 optional = true
 python-versions = ">=3.9"
 files = [
@@ -1413,6 +1474,7 @@ test = ["html5lib", "pytest"]
 name = "sphinxcontrib-jsmath"
 version = "1.0.1"
 description = "A sphinx extension which renders display math in HTML via JavaScript"
+category = "main"
 optional = true
 python-versions = ">=3.5"
 files = [
@@ -1427,6 +1489,7 @@ test = ["flake8", "mypy", "pytest"]
 name = "sphinxcontrib-qthelp"
 version = "1.0.6"
 description = "sphinxcontrib-qthelp is a sphinx extension which outputs QtHelp documents"
+category = "main"
 optional = true
 python-versions = ">=3.9"
 files = [
@@ -1445,6 +1508,7 @@ test = ["pytest"]
 name = "sphinxcontrib-serializinghtml"
 version = "1.1.9"
 description = "sphinxcontrib-serializinghtml is a sphinx extension which outputs \"serialized\" HTML files (json and pickle)"
+category = "main"
 optional = true
 python-versions = ">=3.9"
 files = [
@@ -1485,6 +1549,7 @@ tests = ["numpy (>=1.17.0)", "pandas (>=0.24.0)", "pytest (>=7.0.0)"]
 name = "tabulate"
 version = "0.9.0"
 description = "Pretty-print tabular data"
+category = "main"
 optional = true
 python-versions = ">=3.7"
 files = [
@@ -1499,6 +1564,7 @@ widechars = ["wcwidth"]
 name = "toml"
 version = "0.10.2"
 description = "Python Library for Tom's Obvious, Minimal Language"
+category = "main"
 optional = true
 python-versions = ">=2.6, !=3.0.*, !=3.1.*, !=3.2.*"
 files = [
@@ -1510,6 +1576,7 @@ files = [
 name = "tomli"
 version = "2.0.1"
 description = "A lil' TOML parser"
+category = "main"
 optional = true
 python-versions = ">=3.7"
 files = [
@@ -1521,6 +1588,7 @@ files = [
 name = "typing-extensions"
 version = "4.9.0"
 description = "Backported and Experimental Type Hints for Python 3.8+"
+category = "main"
 optional = true
 python-versions = ">=3.8"
 files = [
@@ -1532,6 +1600,7 @@ files = [
 name = "tzdata"
 version = "2023.3"
 description = "Provider of IANA time zone data"
+category = "main"
 optional = false
 python-versions = ">=2"
 files = [
@@ -1543,6 +1612,7 @@ files = [
 name = "urllib3"
 version = "2.1.0"
 description = "HTTP library with thread-safe connection pooling, file post, and more."
+category = "main"
 optional = true
 python-versions = ">=3.8"
 files = [
@@ -1559,6 +1629,7 @@ zstd = ["zstandard (>=0.18.0)"]
 name = "virtualenv"
 version = "20.25.0"
 description = "Virtual Python Environment builder"
+category = "main"
 optional = true
 python-versions = ">=3.7"
 files = [
@@ -1579,6 +1650,7 @@ test = ["covdefaults (>=2.3)", "coverage (>=7.2.7)", "coverage-enable-subprocess
 name = "xarray"
 version = "2023.12.0"
 description = "N-D labeled arrays and datasets in Python"
+category = "main"
 optional = false
 python-versions = ">=3.9"
 files = [
@@ -1602,6 +1674,7 @@ viz = ["matplotlib", "nc-time-axis", "seaborn"]
 name = "zipp"
 version = "3.17.0"
 description = "Backport of pathlib-compatible object wrapper for zip files"
+category = "main"
 optional = true
 python-versions = ">=3.8"
 files = [

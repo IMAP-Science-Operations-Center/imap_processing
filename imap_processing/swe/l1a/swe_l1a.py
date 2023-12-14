@@ -1,3 +1,5 @@
+"""Contains code to perform SWE L1a processing."""
+
 import logging
 
 from imap_processing.cdf.utils import write_cdf

@@ -1,3 +1,5 @@
+"""Various utility functions to support the use of SPICE kernels."""
+
 import logging
 import os
 import re
