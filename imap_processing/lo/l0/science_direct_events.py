@@ -7,6 +7,10 @@ from imap_processing.lo.l0.lol0 import LoL0
 
 # TODO: Talk to Colin to get better names for tables
 
+# 2nd table could be called TOF calculation table
+# direct event unpacking scheme table for hex table
+# unpack into arrays for repeating patterns
+
 
 @dataclass
 class ScienceDirectEvents(LoL0):
@@ -34,14 +38,24 @@ class ScienceDirectEvents(LoL0):
     TIME: int
         time tag for the direct event
         #TODO: Is this different than the SHCOARSE?
+        # This is related to the spin. Colin will double check
     ENERGY: int
         energy of the direct event ENA.
     POS: int
         Position of the direct event ENA
         #TODO: Is this the position on the final detector?
+        # stop position. there's 4 quadrants on the stop
+        # it's compressing the TOF3 value into 2 bits
     CKSM: int
         #TODO: There's a checksum in the packet and another in
         the dedcompressed data? Are these different?
+        # This is checksum defined relative to the TOFs
+        # condition for golden triples. If golden triples are below
+        # threshold in checksum it's considered golden, otherwise,
+        # it's considered a silver triple. Important for the compression
+        # for golden triples because it's used to recover TOF1 because
+        # compression scheme to save space on golden triples doesn't send
+        # down TOF1 so it's recovered on the ground using the checksum
 
     Methods
     -------
@@ -109,6 +123,7 @@ class ScienceDirectEvents(LoL0):
 
     def _find_decompression_case(self):
         # TODO: Do I read the binary left to right or right to left?
+        # left to right
         self.case_number = ct.tof_case_table[self.DATA[0:4]]
 
     def _find_remaining_bits(self):
@@ -117,6 +132,7 @@ class ScienceDirectEvents(LoL0):
             bit_list = [bool(int(bit)) for bit in list(binary_string)]
             second_tof_table = ct.another_tof_table
             # TODO: Temporary: Need to figure out how to handle different lengths
+            # read binary from right to left
             if bit_list != []:
                 bit_list = bit_list[-12:]
             ########
@@ -135,6 +151,7 @@ class ScienceDirectEvents(LoL0):
             # TODO: Temporary - figure out how to handled lengths not matching
             # TODO: What about TIME with 16bits and there are only 12 possible remaining
             # bits columns in the second table?
+            # ignore this issue. Will get more info on TIME
             remaining_bits = self.remaining_bits[field][-len(bits) :]
             bit_list = [int(bit) for bit in list(bits)]
             decompressed_data = sum(
