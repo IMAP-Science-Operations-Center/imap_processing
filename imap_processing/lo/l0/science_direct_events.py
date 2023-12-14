@@ -11,6 +11,10 @@ from imap_processing.lo.l0.lol0 import LoL0
 # direct event unpacking scheme table for hex table
 # unpack into arrays for repeating patterns
 
+# if Bronze = 1, use table as is
+# if Bronze = 0, position not transmitted, TOF3 is transmitted
+# ENERGY first 3, TOF0 next 10, TOF3 next 6, TIME next 12
+
 
 @dataclass
 class ScienceDirectEvents(LoL0):
@@ -105,11 +109,32 @@ class ScienceDirectEvents(LoL0):
         # The case number determines which bit length table to use.
         # This table shows how the TOF bits should be parsed in the
         # binary data.
-        self.tof_decoder = ct.tof_bit_length_table[self.case_number]
+
+        # Case 0 can either be a gold or silver triple. Gold triples do
+        # not send down the TOF1 value and instead recover the TOF1 value
+        # on the ground using the checksum
+        if self.case_number == 0:
+            gold_or_silver = self.DATA[4]
+            self.tof_decoder = ct.tof_bit_length_table[self.case_number][gold_or_silver]
+
+        # Cases 4, 6, 10, 12, 13 may be Bronze triples. If it's not a bronze triple,
+        # the Position is not transmitted, but TOF3 is.
+        elif self.case_number in [4, 6, 10, 12, 13]:
+            is_bronze = self.DATA[4]
+            self.tof_decoder = ct.tof_bit_length_table[self.case_number]
+            # TODO: maybe I should just add a sub-dictionary to the tof decoder table
+            # instead of changing the values here.
+            if is_bronze:
+                self.tof_decoder["POS"] = 0
+                self.tof_decoder["TOF3"] = 6
+        # We're not expecting to recieve data for the rest of the cases, but need
+        # to handle them in case things change in the future.
+        else:
+            self.tof_decoder = ct.tof_bit_length_table[self.case_number]
 
     def _find_binary_strings(self):
-        # TODO: Not sure how I can describe the "hex_table" better.
-        # Ask Colin for a better name suggestions for this table.
+        # The case numebr determines what hex value is needed to help
+        # calculate the TOF values
         hex_strings = ct.hex_table[self.case_number]
         self.binary_strings = {
             field: self._hexadecimal_to_binary(hex_string) if hex_string else ""
@@ -122,8 +147,10 @@ class ScienceDirectEvents(LoL0):
         return bin(int(hex_string, 16))[2:].zfill(16)
 
     def _find_decompression_case(self):
-        # TODO: Do I read the binary left to right or right to left?
-        # left to right
+        # The first 4 bits of the binary data are used to
+        # determine which case number we are working with.
+        # The case number is used to determine how to
+        # decompress the TOF values.
         self.case_number = ct.tof_case_table[self.DATA[0:4]]
 
     def _find_remaining_bits(self):
@@ -131,11 +158,10 @@ class ScienceDirectEvents(LoL0):
         for field, binary_string in self.binary_strings.items():
             bit_list = [bool(int(bit)) for bit in list(binary_string)]
             second_tof_table = ct.another_tof_table
-            # TODO: Temporary: Need to figure out how to handle different lengths
-            # read binary from right to left
-            if bit_list != []:
-                bit_list = bit_list[-12:]
-            ########
+            # We only need the last 12 bits from the converted hex values
+            bit_list = bit_list[-12:]
+            # the converted hex values (bit list) are used to determine which values
+            # from the tof calculate table should be used when
             self.remaining_bits[field] = list(compress(second_tof_table, bit_list))
 
     def _parse_binary(self):
