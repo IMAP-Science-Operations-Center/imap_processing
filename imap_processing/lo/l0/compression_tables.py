@@ -192,7 +192,6 @@ hex_table = {
     0: {
         "TIME": "0x0FFF",
         "ENERGY": "0x0003",
-        "MODE": "0x0001",
         "TOF0": "0x07FE",
         "TOF1": "",
         "TOF2": "0x03FE",
@@ -203,9 +202,8 @@ hex_table = {
     1: {
         "TIME": "0x0FFF",
         "ENERGY": "0x0003",
-        "MODE": "0x0001",
         "TOF0": "0x07FE",
-        "TOF1": "0x07FE",
+        "TOF1": "0x03FE",
         "TOF2": "0x03FE",
         "TOF3": "",
         "POS": "",
@@ -214,7 +212,6 @@ hex_table = {
     2: {
         "TIME": "0x0FFF",
         "ENERGY": "0x0FFF",
-        "MODE": "0x0001",
         "TOF0": "0x07FC",
         "TOF1": "0x07FE",
         "TOF2": "",
@@ -225,7 +222,6 @@ hex_table = {
     3: {
         "TIME": "0x0FFF",
         "ENERGY": "0x0003",
-        "MODE": "0x0001",
         "TOF0": "0x07FE",
         "TOF1": "0x07FE",
         "TOF2": "",
@@ -236,7 +232,6 @@ hex_table = {
     4: {
         "TIME": "0x0FFF",
         "ENERGY": "0x0003",
-        "MODE": "0x0001",
         "TOF0": "0x07FC",
         "TOF1": "",
         "TOF2": "0x03FE",
@@ -247,7 +242,6 @@ hex_table = {
     5: {
         "TIME": "0x0FFF",
         "ENERGY": "0x0003",
-        "MODE": "0x0001",
         "TOF0": "0x07FE",
         "TOF1": "",
         "TOF2": "0x03FE",
@@ -258,7 +252,6 @@ hex_table = {
     6: {
         "TIME": "0x0FFF",
         "ENERGY": "0x0003",
-        "MODE": "0x0001",
         "TOF0": "0x07FE",
         "TOF1": "",
         "TOF2": "",
@@ -279,7 +272,6 @@ hex_table = {
     8: {
         "TIME": "0x0FFF",
         "ENERGY": "0x0003",
-        "MODE": "0x0001",
         "TOF0": "",
         "TOF1": "0x07FE",
         "TOF2": "0x03FE",
@@ -290,7 +282,6 @@ hex_table = {
     9: {
         "TIME": "0x0FFF",
         "ENERGY": "0x0003",
-        "MODE": "0x0001",
         "TOF0": "",
         "TOF1": "0x07FE",
         "TOF2": "0x03FF",
@@ -301,7 +292,6 @@ hex_table = {
     10: {
         "TIME": "0x0FFF",
         "ENERGY": "0x0003",
-        "MODE": "0x0001",
         "TOF0": "",
         "TOF1": "0x07FE",
         "TOF2": "",
@@ -312,7 +302,6 @@ hex_table = {
     11: {
         "TIME": "0x0FFF",
         "ENERGY": "0x0003",
-        "MODE": "0x0001",
         "TOF0": "",
         "TOF1": "0x07FE",
         "TOF2": "",
@@ -323,7 +312,6 @@ hex_table = {
     12: {
         "TIME": "0x0FFF",
         "ENERGY": "0x0003",
-        "MODE": "0x0001",
         "TOF0": "",
         "TOF1": "",
         "TOF2": "0x03FF",
@@ -334,7 +322,6 @@ hex_table = {
     13: {
         "TIME": "0x0FFF",
         "ENERGY": "0x0003",
-        "MODE": "0x0001",
         "TOF0": "",
         "TOF1": "",
         "TOF2": "0x07FE",
@@ -344,7 +331,7 @@ hex_table = {
     },
 }
 
-another_tof_table = [
+tof_coefficient_table = [
     327.68,
     163.84,
     81.82,

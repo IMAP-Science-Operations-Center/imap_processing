@@ -42,7 +42,7 @@ def test_find_bit_length_for_case():
         "TOF2": 9,
         "TOF3": 0,
         "CKSM": 0,
-        "TIME": 16,
+        "TIME": 12,
     }
     de._find_decompression_case()
 
@@ -61,8 +61,9 @@ def test_find_binary_strings():
     de._find_decompression_case()
     binary_strings_expected = {
         "TIME": "0000111111111111",
+        "ENERGY": "0000000000000011",
         "TOF0": "0000011111111110",
-        "TOF1": "0000011111111100",
+        "TOF1": "0000001111111110",
         "TOF2": "0000001111111110",
         "TOF3": "",
         "POS": "",
@@ -98,6 +99,10 @@ def test_find_remaining_bits():
             0.32,
             0.16,
         ],
+        "ENERGY": [
+            0.32,
+            0.16,
+        ],
         "TOF0": [
             163.84,
             81.82,
@@ -111,7 +116,6 @@ def test_find_remaining_bits():
             0.32,
         ],
         "TOF1": [
-            163.84,
             81.82,
             40.96,
             20.48,
@@ -120,6 +124,7 @@ def test_find_remaining_bits():
             2.56,
             1.28,
             0.64,
+            0.32,
         ],
         "TOF2": [
             81.82,
@@ -148,7 +153,7 @@ def test_find_remaining_bits():
 def test_parse_binary():
     # Arrange
     de = ScienceDirectEvents("fake_packet", "0", "fakepacketname")
-    de.DATA = "00010001010100110101110011110011101110100110100"
+    de.DATA = "0001000101010011010111001111001110111010011"
     de._find_decompression_case()
     de._find_bit_length_for_case()
     de._find_binary_strings()
@@ -160,7 +165,7 @@ def test_parse_binary():
         "TOF2": "001111001",
         "TOF3": "",
         "CKSM": "",
-        "TIME": "1101110100110100",
+        "TIME": "110111010011",
     }
 
     # Act

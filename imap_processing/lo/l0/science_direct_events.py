@@ -2,7 +2,6 @@ from dataclasses import dataclass
 from itertools import compress
 
 import imap_processing.lo.l0.compression_tables as ct
-from imap_processing.ccsds.ccsds_data import CcsdsData
 from imap_processing.lo.l0.lol0 import LoL0
 
 # TODO: Talk to Colin to get better names for tables
@@ -93,8 +92,9 @@ class ScienceDirectEvents(LoL0):
     parsed_bits: list
 
     def __init__(self, packet, software_version: str, packet_file_name: str):
-        super().__init__(software_version, packet_file_name, CcsdsData(packet.header))
-        self.parse_data(packet)
+        # super().__init__(software_version, packet_file_name, CcsdsData(packet.header))
+        # self.parse_data(packet)
+        pass
 
     def decompress_data(self):
         """Decompress the Lo Science Direct Events data."""
@@ -112,7 +112,7 @@ class ScienceDirectEvents(LoL0):
 
         # Case 0 can either be a gold or silver triple. Gold triples do
         # not send down the TOF1 value and instead recover the TOF1 value
-        # on the ground using the checksum
+        # on the ground using the decompressed checksum
         if self.case_number == 0:
             gold_or_silver = self.DATA[4]
             self.tof_decoder = ct.tof_bit_length_table[self.case_number][gold_or_silver]
@@ -123,7 +123,7 @@ class ScienceDirectEvents(LoL0):
             is_bronze = self.DATA[4]
             self.tof_decoder = ct.tof_bit_length_table[self.case_number]
             # TODO: maybe I should just add a sub-dictionary to the tof decoder table
-            # instead of changing the values here.
+            # instead of changing the values here?
             if is_bronze:
                 self.tof_decoder["POS"] = 0
                 self.tof_decoder["TOF3"] = 6
@@ -142,8 +142,7 @@ class ScienceDirectEvents(LoL0):
         }
 
     def _hexadecimal_to_binary(self, hex_string: str):
-        # TODO: Is 16 bits accurate here? Will this change depending
-        # on the Row/Column of the hex?
+        # convert the hexadecimal table to binary
         return bin(int(hex_string, 16))[2:].zfill(16)
 
     def _find_decompression_case(self):
@@ -157,7 +156,7 @@ class ScienceDirectEvents(LoL0):
         self.remaining_bits = {}
         for field, binary_string in self.binary_strings.items():
             bit_list = [bool(int(bit)) for bit in list(binary_string)]
-            second_tof_table = ct.another_tof_table
+            second_tof_table = ct.tof_coefficient_table
             # We only need the last 12 bits from the converted hex values
             bit_list = bit_list[-12:]
             # the converted hex values (bit list) are used to determine which values
@@ -174,10 +173,6 @@ class ScienceDirectEvents(LoL0):
 
     def _decode_fields(self):
         for field, bits in self.parsed_bits.items():
-            # TODO: Temporary - figure out how to handled lengths not matching
-            # TODO: What about TIME with 16bits and there are only 12 possible remaining
-            # bits columns in the second table?
-            # ignore this issue. Will get more info on TIME
             remaining_bits = self.remaining_bits[field][-len(bits) :]
             bit_list = [int(bit) for bit in list(bits)]
             decompressed_data = sum(
