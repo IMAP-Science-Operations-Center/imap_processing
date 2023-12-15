@@ -1,20 +1,7 @@
-# function to get case number
-# use case number and data to parse the bits into their respective values
-# function to get the hex value and turn the into binary
-# get the hex value and determine which values are kept in the second table
-# get product sum of the TOF and the kept values in the second table
-
-# decompression:
-# compressed data
-# uncompressed data
-# case number
-#
-# fine_case_number
-# parse_data
-# get_hex
-#
-
+"""Compression tables for decompompressing Lo L0 data."""
 tof_case_table = {
+    # keys: first 4 bits of a compressed binary
+    # values: case number
     "0000": 0,
     "0001": 1,
     "0010": 2,
@@ -32,7 +19,7 @@ tof_case_table = {
 }
 
 tof_decoder_table = {
-    # Case: Energy, Pos, TOF0, TOF1, TOF2, TOF3, CkSm, Time
+    # First level of keys are the case numbers
     0: {
         1: {
             "ENERGY": 3,
@@ -188,7 +175,7 @@ tof_decoder_table = {
 }
 
 tof_calculation_table = {
-    # Case: Time, TOF0, TOF1, TOF2, TOF3, Pos, CkSm
+    # First level of keys are the case numbers
     0: {
         "TIME": "0x0FFF",
         "ENERGY": "0x0003",
@@ -347,7 +334,6 @@ tof_coefficient_table = [
 ]
 
 
-# From IMAP-Lo Compression Tables
 bit12_to_bit16 = {
     0: 0,
     1: 1,
@@ -607,7 +593,6 @@ bit12_to_bit16 = {
     255: 65353,
 }
 
-# From IMAP-Lo Compression Tables
 bit8_to_bit12 = {
     0: 0,
     1: 1,

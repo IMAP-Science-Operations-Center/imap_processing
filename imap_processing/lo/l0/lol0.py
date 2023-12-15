@@ -1,3 +1,4 @@
+"""General Lo L0 data class used for parsing data and setting attributes."""
 from dataclasses import dataclass, fields
 
 from imap_processing.ccsds.ccsds_data import CcsdsData
@@ -22,6 +23,14 @@ class LoL0:
     ccsds_header: CcsdsData
 
     def parse_data(self, packet):
+        """Parse Lo L0 packet data.
+
+        Parameters
+        ----------
+        packet : dict
+            A single Lo L0 packet from space packet parser.
+
+        """
         attributes = [field.name for field in fields(self)]
 
         # For each item in packet, assign it to the matching attribute in the class.
@@ -34,6 +43,6 @@ class LoL0:
                 setattr(self, key, value)
             else:
                 raise KeyError(
-                    f"Did not find matching attribute in {self.__class__} data class for "
-                    f"{key}"
+                    f"Did not find matching attribute in {self.__class__} data class"
+                    f"for {key}"
                 )

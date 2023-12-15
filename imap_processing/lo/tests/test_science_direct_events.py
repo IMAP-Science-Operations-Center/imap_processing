@@ -66,7 +66,7 @@ def test_read_tof_calculation_table():
 
     # Act
     de._read_tof_calculation_table()
-    binary_strings_true = de.tof_calculation_values
+    binary_strings_true = de.tof_calculation_binary
 
     # Assert
     assert binary_strings_true == binary_strings_expected
