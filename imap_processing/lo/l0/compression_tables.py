@@ -31,7 +31,7 @@ tof_case_table = {
     "1101": 13,
 }
 
-tof_bit_length_table = {
+tof_decoder_table = {
     # Case: Energy, Pos, TOF0, TOF1, TOF2, TOF3, CkSm, Time
     0: {
         1: {
@@ -187,7 +187,7 @@ tof_bit_length_table = {
     },
 }
 
-hex_table = {
+tof_calculation_table = {
     # Case: Time, TOF0, TOF1, TOF2, TOF3, Pos, CkSm
     0: {
         "TIME": "0x0FFF",
