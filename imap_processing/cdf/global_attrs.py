@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import ClassVar, Union
+from typing import ClassVar, Union, Final
 
 import numpy as np
 
@@ -31,24 +31,31 @@ class GlobalConstantAttrs:
     ----------
     GLOBAL_BASE:
         Global file attributes, including project, source_name, discipline, PI_name,
-        PI_affiliation, instrument_type, and mission_group. This should be the same
+        PI_affiliation, and mission_group. This should be the same
         for all instruments.
 
     """
 
-    GLOBAL_BASE: ClassVar[dict] = {
+    GLOBAL_BASE: Final[dict] = {
         "Project": "STP>Solar-Terrestrial Physics",
         "Source_name": "IMAP>Interstellar Mapping and Acceleration Probe",
         "Discipline": "Solar Physics>Heliospheric Physics",
-        "PI_name": "Dr. David J. McComas",
-        "PI_affiliation": [
-            "Princeton Plasma Physics Laboratory",
-            "100 Stellarator Road, Princeton, NJ 08540",
-        ],
-        "Instrument_type": "Particles (space)",
+        # TODO: CDF docs say this value should be "IMAP"
         "Mission_group": "IMAP>Interstellar Mapping and Acceleration Probe",
     }
 
+    pi_name = ["Dr. David J. McComas"]
+    pi_affiliation = [
+        "Princeton Plasma Physics Laboratory",
+        "100 Stellarator Road, Princeton, NJ 08540",
+    ]
+
+    def output(self, pi_names: list[str] = None, pi_affiliations: list[str] = None):
+        output_name = self.pi_name + pi_names if pi_names else self.pi_name
+        output_affiliation = self.pi_affiliation + pi_affiliations if pi_affiliations else self.pi_affiliation
+
+        return self.GLOBAL_BASE | {"PI_name": output_name,
+                                   "PI_affiliation": output_affiliation}
 
 class ConstantCoordinates:
     """Return a dictionary with global base attributes.
@@ -89,12 +96,22 @@ class GlobalInstrumentAttrs:
         Descriptor of the instrument (Ex: "IDEX>Interstellar Dust Experiment")
     text: str
         Explanation of the instrument, usually as a paragraph.
+    instrument_type: str default="Particles (space)"
+        This attribute is used to facilitate making choices of instrument type. More
+        than one entry is allowed. Valid IMAP values include:
+        [Electric Fields (space), Magnetic Fields (space), Particles (space),
+        Plasma and Solar Wind, Ephemeris]
+
 
     """
 
     version: str
     descriptor: str
     text: str
+    instrument_type: str = "Particles (space)"
+    pi_affiliation: list[str] = None
+    pi_name: list[str] = None
+
 
     def output(self):
         """
@@ -106,10 +123,14 @@ class GlobalInstrumentAttrs:
             dictionary of correctly formatted values for the data_version, descriptor,
             text, and logical_file_id, added on to the global attributes from GlobalBase
         """
-        return GlobalConstantAttrs.GLOBAL_BASE | {
+        global_base_updated = GlobalConstantAttrs.GLOBAL_BASE.copy()
+
+        return GlobalConstantAttrs().output(pi_names=self.pi_name,
+                                          pi_affiliations=self.pi_affiliation) | {
             "Data_version": self.version,
             "Descriptor": self.descriptor,
             "TEXT": self.text,
+            "Instrument_type": self.instrument_type
         }
 
 
@@ -355,3 +376,23 @@ class StringAttrs:
             "FIELDNAM": self.fieldname,
             "VAR_TYPE": self.var_type,
         }
+
+@dataclass
+class CoordinateAttrs(AttrBase):
+    # "CATDESC": "Default time",
+    # "FIELDNAM": "Epoch",
+    # "FILLVAL": GlobalConstants.INT_FILLVAL,
+    # "FORMAT": "a2",
+    # "LABLAXIS": "Epoch",
+    # "UNITS": "ns",
+    # "VALIDMIN": GlobalConstants.MIN_EPOCH,
+    # "VALIDMAX": GlobalConstants.MAX_EPOCH,
+    # "VAR_TYPE": "support_data",
+    # "SCALETYP": "linear",
+    lablaxis: str = None
+
+    def output(self):
+        return super().output() | {
+            "LABLAXIS": self.lablaxis
+        }
+
