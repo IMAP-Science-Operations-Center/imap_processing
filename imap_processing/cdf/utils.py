@@ -1,3 +1,5 @@
+"""Various utility functions to support creation of CDF files."""
+
 import os
 
 import numpy as np

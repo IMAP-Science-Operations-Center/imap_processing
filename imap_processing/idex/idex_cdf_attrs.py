@@ -1,3 +1,5 @@
+"""Contains CDF attribute definitions for IDEX."""
+
 import dataclasses
 
 from imap_processing.cdf.defaults import GlobalConstants

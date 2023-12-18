@@ -1,3 +1,5 @@
+"""Decommutates i-alert packets and creates L1 data products."""
+
 import collections
 import logging
 

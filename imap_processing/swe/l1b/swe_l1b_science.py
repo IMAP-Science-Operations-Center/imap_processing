@@ -1,3 +1,5 @@
+"""Contains code to perform SWE L1b science processing."""
+
 import dataclasses
 
 import numpy as np

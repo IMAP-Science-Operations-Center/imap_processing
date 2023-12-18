@@ -8,7 +8,31 @@ mechanisms of particles within our galaxy. IMAP utilizes cutting-edge
 technology and advanced instrumentation to gather valuable data and expand
 our understanding of space.
 
-The IMAP project's Git repository serves as a centralized hub for collaboration
+The `IMAP Website <https://imap.princeton.edu/>`_ contains information about the
+entire mission, including the science goals, the spacecraft, and the instruments.
+The Science Operations Center (SOC) is responsible for the data processing on the
+IMAP mission and being developed at
+`LASP (Laboratory of Atmospheric and Space Physics) <https://lasp.colorado.edu/>`_.
+
+The explicit code interfaces and structure are described in the :ref:`code-documentation`.
+
+.. toctree::
+   :maxdepth: 1
+
+   code-documentation/index
+   development-guide/index
+   project-management/index
+   external-tools/index
+
+If you make use of any imap_processing code, please consider citing it in your research.
+TODO: Add a Zenodo DOI badge here.
+
+Contributing to IMAP
+--------------------
+
+We welcome contributions to the IMAP project.
+
+The IMAP project's `Git repository <https://github.com/IMAP-Science-Operations-Center/imap_processing>`_ serves as a centralized hub for collaboration
 among researchers, scientists, and developers involved in the project.
 It provides a platform for version control, code sharing, issue tracking,
 and documentation, fostering a collaborative environment for advancing
@@ -26,21 +50,7 @@ medium and particle acceleration in our galaxy. Together, we can advance our
 knowledge of the cosmos and pave the way for future discoveries in space
 exploration.
 
-The `IMAP Website <https://imap.princeton.edu/>`_ contains information about the
-entire mission, including the science goals, the spacecraft, and the instruments.
-The Science Operations Center (SOC) is responsible for the data processing on the
-IMAP mission and being developed at
-`LASP (Laboratory of Atmospheric and Space Physics) <https://lasp.colorado.edu/>`_.
+Before contributing, please read through our :ref:`style-guide-overview`.
 
-The explicit code interfaces and structure are described in the :ref:`api`.
+For more information on contributing to open science initiatives and to learn about tools and technologies, you can look to the NASA TOPS `Open Science 101 <https://nasa.github.io/Transform-to-Open-Science/take-os101/>`_ for free classes on Open Science and open source projects.
 
-.. toctree::
-   :maxdepth: 1
-
-   reference/index
-   development/index
-   development/doc-overview
-   project-management/index
-
-If you make use of any imap_processing code, please consider citing it in your research.
-TODO: Add a Zenodo DOI badge here.

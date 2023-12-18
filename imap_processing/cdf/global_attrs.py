@@ -1,12 +1,4 @@
-from dataclasses import dataclass
-from typing import ClassVar, Final, Optional, Union
-
-import numpy as np
-
-from imap_processing.cdf.defaults import GlobalConstants
-
-"""
-This module contains common attribute classes to use as a base for CDF files.
+"""Contains common attribute classes to use as a base for CDF files.
 
 All the classes with "Global" in their name are intended for use for global attributes
 in CDF files. The rest are attributes for individual data fields within the CDF file.
@@ -19,6 +11,13 @@ imap_processing/cdf/utils.py.
 Additional examples on how to use these dataclasses are in
 imap_processing/idex/idex_cdf_attrs.py and imap_processing/idex/idex_packet_parser.py.
 """
+
+from dataclasses import dataclass
+from typing import ClassVar, Final, Optional, Union
+
+import numpy as np
+
+from imap_processing.cdf.defaults import GlobalConstants
 
 
 class GlobalConstantAttrs:
