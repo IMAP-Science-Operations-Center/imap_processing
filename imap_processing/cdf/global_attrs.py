@@ -49,7 +49,11 @@ class GlobalConstantAttrs:
         "100 Stellarator Road, Princeton, NJ 08540",
     ]
 
-    def output(self, pi_names: Optional[list[str]] = None, pi_affiliations: Optional[list[str]] = None):
+    def output(
+        self,
+        pi_names: Optional[list[str]] = None,
+        pi_affiliations: Optional[list[str]] = None,
+    ):
         output_name = self.pi_name + pi_names if pi_names else self.pi_name
         output_affiliation = (
             self.pi_affiliation + pi_affiliations
