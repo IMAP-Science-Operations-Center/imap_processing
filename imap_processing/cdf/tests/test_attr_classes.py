@@ -12,12 +12,14 @@ from imap_processing.cdf.global_attrs import (
 
 
 def test_global_attrs():
-    inst = GlobalInstrumentAttrs(version="1",
-                                 descriptor="2",
-                                 text="3",
-                                 instrument_type="4",
-                                 pi_name=["Miles O'Brien"],
-                                 pi_affiliation=["Deep Space 9", "Bajoran System"])
+    inst = GlobalInstrumentAttrs(
+        version="1",
+        descriptor="2",
+        text="3",
+        instrument_type="4",
+        pi_name=["Miles O'Brien"],
+        pi_affiliation=["Deep Space 9", "Bajoran System"],
+    )
     expected_global_base = GlobalConstantAttrs().output()
     expected = expected_global_base | {
         "PI_name": ["Dr. David J. McComas", "Miles O'Brien"],
@@ -25,12 +27,12 @@ def test_global_attrs():
             "Princeton Plasma Physics Laboratory",
             "100 Stellarator Road, Princeton, NJ 08540",
             "Deep Space 9",
-            "Bajoran System"
+            "Bajoran System",
         ],
         "Data_version": "1",
         "Descriptor": "2",
         "TEXT": "3",
-        "Instrument_type": "4"
+        "Instrument_type": "4",
     }
     print(expected)
     assert inst.output() == expected
@@ -45,7 +47,6 @@ def test_global_attrs():
         "Logical_source_description": "3",
     }
     assert data_level.output() == expected_level
-
 
 
 def test_science_attr():

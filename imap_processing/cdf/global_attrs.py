@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import ClassVar, Union, Final
+from typing import ClassVar, Final, Optional, Union
 
 import numpy as np
 
@@ -50,12 +50,19 @@ class GlobalConstantAttrs:
         "100 Stellarator Road, Princeton, NJ 08540",
     ]
 
-    def output(self, pi_names: list[str] = None, pi_affiliations: list[str] = None):
+    def output(self, pi_names: Optional[list[str]] = None, pi_affiliations: Optional[list[str]] = None):
         output_name = self.pi_name + pi_names if pi_names else self.pi_name
-        output_affiliation = self.pi_affiliation + pi_affiliations if pi_affiliations else self.pi_affiliation
+        output_affiliation = (
+            self.pi_affiliation + pi_affiliations
+            if pi_affiliations
+            else self.pi_affiliation
+        )
 
-        return self.GLOBAL_BASE | {"PI_name": output_name,
-                                   "PI_affiliation": output_affiliation}
+        return self.GLOBAL_BASE | {
+            "PI_name": output_name,
+            "PI_affiliation": output_affiliation,
+        }
+
 
 class ConstantCoordinates:
     """Return a dictionary with global base attributes.
@@ -112,7 +119,6 @@ class GlobalInstrumentAttrs:
     pi_affiliation: list[str] = None
     pi_name: list[str] = None
 
-
     def output(self):
         """
         Generate the output for the instrument as a dictionary.
@@ -123,14 +129,15 @@ class GlobalInstrumentAttrs:
             dictionary of correctly formatted values for the data_version, descriptor,
             text, and logical_file_id, added on to the global attributes from GlobalBase
         """
-        global_base_updated = GlobalConstantAttrs.GLOBAL_BASE.copy()
+        GlobalConstantAttrs.GLOBAL_BASE.copy()
 
-        return GlobalConstantAttrs().output(pi_names=self.pi_name,
-                                          pi_affiliations=self.pi_affiliation) | {
+        return GlobalConstantAttrs().output(
+            pi_names=self.pi_name, pi_affiliations=self.pi_affiliation
+        ) | {
             "Data_version": self.version,
             "Descriptor": self.descriptor,
             "TEXT": self.text,
-            "Instrument_type": self.instrument_type
+            "Instrument_type": self.instrument_type,
         }
 
 
@@ -377,6 +384,7 @@ class StringAttrs:
             "VAR_TYPE": self.var_type,
         }
 
+
 @dataclass
 class CoordinateAttrs(AttrBase):
     # "CATDESC": "Default time",
@@ -392,7 +400,4 @@ class CoordinateAttrs(AttrBase):
     lablaxis: str = None
 
     def output(self):
-        return super().output() | {
-            "LABLAXIS": self.lablaxis
-        }
-
+        return super().output() | {"LABLAXIS": self.lablaxis}

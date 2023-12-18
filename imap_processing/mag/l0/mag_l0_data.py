@@ -18,6 +18,7 @@ class Mode(IntEnum):
     BURST = 1068
     NORM = 1052
 
+
 @dataclass
 class Sensor:
     active: bool
@@ -26,7 +27,6 @@ class Sensor:
     vecsec: int
     coarse_time: int
     fine_time: int
-
 
 
 @dataclass
@@ -114,4 +114,3 @@ class MagL0:
 
         self.PRI_VECSEC = 2**self.PRI_VECSEC
         self.SEC_VECSEC = 2**self.SEC_VECSEC
-
