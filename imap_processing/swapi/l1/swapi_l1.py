@@ -142,14 +142,28 @@ def filter_full_cycle_data(full_cycle_data_indices: np.ndarray, l1a_data: xr.Dat
     return full_sweep_dataset
 
 
-def uncompress_count(count_data: np.ndarray, compress_indicator: np.ndarray = None):
+def decompress_count(count_data: np.ndarray, compression_flag: np.ndarray = None):
     """Uncompress counts based on compression indicators.
+
+    Decompression algorithm:
+    There are 3 compression regions:
+        1) 0 <= value <=65535
+        2) 65536 <= value <= 1,048,575
+        3) 1,048,576 <= value
+
+        Pseudocode:
+        if XXX_RNG_ST0 == 0:          # Uncompressed
+            actual_value = XXX_CNT0
+        elif (XXX_RNG_ST0==1 && XXX_CNT0==0xFFFF):    # Overflow
+            actual_value = <some constant that indicates overflow>
+        elif (XXX_RNG_ST0==1 && XXX_CNT0!=0xFFFF):
+            actual_value = XXX_CNT0 * 16
 
     Parameters
     ----------
     count_data : numpy.ndarray
         Array with counts.
-    compress_indicator : numpy.ndarray
+    compression_flag : numpy.ndarray
         Array with compression indicators.
 
     Returns
@@ -161,7 +175,7 @@ def uncompress_count(count_data: np.ndarray, compress_indicator: np.ndarray = No
     # If 0, value is already uncompressed. If 1, value is compressed.
     # If 1 and count is 0xFFFF, value is overflow.
     new_count = copy.deepcopy(count_data)
-    compressed_count_indices = np.where(compress_indicator == 1)[0]
+    compressed_count_indices = np.where(compression_flag == 1)[0]
 
     for index in compressed_count_indices:
         if count_data[index] == 0xFFFF:  # Overflow
@@ -211,18 +225,6 @@ def create_full_sweep_data(full_sweep_sci, sweep_index):
             SWP_SCI.COIN_RNG_ST0 through SWP_SCI.COIN_RNG_ST5 as indicators
             of compressed count ranges that should be converted to raw format.
 
-            i. Note: There are 3 compression regions:
-                1) 0 <= value <=65535
-                2) 65536 <= value <= 1,048,575
-                3) 1,048,576 <= value
-
-                Pseudocode:
-                if XXX_RNG_ST0 == 0:          # Uncompressed
-                    actual_value = XXX_CNT0
-                elif (XXX_RNG_ST0==1 && XXX_CNT0==0xFFFF):    # Overflow
-                    actual_value = <some constant that indicates overflow>
-                elif (XXX_RNG_ST0==1 && XXX_CNT0!=0xFFFF):
-                    actual_value = XXX_CNT0 * 16
 
     In other word, data from each packet comes like this:
         SEQ_NUMBER
@@ -330,65 +332,14 @@ def create_full_sweep_data(full_sweep_sci, sweep_index):
     coin_rng_val : list
         List of COIN compression indicator.
     """
-    # Arrays to store 1x72 values
-    pcem_count = []
-    scem_count = []
-    coin_count = []
-    pcem_rng_val = []
-    scem_rng_val = []
-    coin_rng_val = []
-    seq_num = []
-
+    # current sweep start and end index
     m = sweep_index
     n = sweep_index + 12
 
-    # This for loop is going through each data field.
-    # For example,
-    # at range 0, we get one full sweep data from
-    # PCEM_CNT0, SCEM_CNT0, COIN_CNT0, PCEM_RNG_ST0, SCEM_RNG_ST0
-    # COIN_RNG_ST0
-    # at range 1, we get one full sweep data from
-    # PCEM_CNT1, SCEM_CNT1, COIN_CNT1, PCEM_RNG_ST1, SCEM_RNG_ST1
-    # ...
-    # at range 5, we get one full sweep data from
-    # PCEM_CNT5, SCEM_CNT5, COIN_CNT5, PCEM_RNG_ST5, SCEM_RNG_ST5
-    for step in range(6):
-        seq_num.append(list(full_sweep_sci["SEQ_NUMBER"].data[m:n][:]))
-        # Using list(value) to convert xarray.DataArray to list
-        # for easier manipulation later
-
-        # For each step, read full sweep data for each
-        # PCEM, SCEM, and COIN. Uncompressed counts as needed
-        pcem_raw_count = list(full_sweep_sci[f"PCEM_CNT{step}"].data[m:n])
-        scem_raw_count = list(full_sweep_sci[f"SCEM_CNT{step}"].data[m:n])
-        coin_raw_count = list(full_sweep_sci[f"COIN_CNT{step}"].data[m:n])
-
-        # Compression indicators
-        # XXX_RNG_ST{step} --> 0: uncompressed, 1: compressed
-        pcem_compressed = list(full_sweep_sci[f"SCEM_RNG_ST{step}"].data[m:n])
-        scem_compressed = list(full_sweep_sci[f"SCEM_RNG_ST{step}"].data[m:n])
-        coin_compressed = list(full_sweep_sci[f"COIN_RNG_ST{step}"].data[m:n])
-
-        # Append compression indicators to 1x72 arrays
-        # We are adding 12 data at a time and in this order
-        # 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11
-        pcem_rng_val.append(pcem_compressed)
-        scem_rng_val.append(scem_compressed)
-        coin_rng_val.append(coin_compressed)
-
-        # Uncompress counts based on compression indicators
-        pcem_counts = uncompress_count(pcem_raw_count, pcem_compressed)
-        scem_counts = uncompress_count(scem_raw_count, scem_compressed)
-        coin_counts = uncompress_count(coin_raw_count, coin_compressed)
-
-        # Append uncompressed counts to 1x72 arrays
-        # We are adding 12 data at a time and in this order
-        # 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11
-        pcem_count.append(pcem_counts)
-        scem_count.append(scem_counts)
-        coin_count.append(coin_counts)
-
-    # Flatten array in the correct order of sequence number.
+    # For each PCEM, SCEM, COIN, and their quality flags, the data
+    # is in sequence order. But in final sweep data, we need to
+    # flatten array in the correct order of sequence number.
+    # Eg.
     # Here, we reorder data from this:
     # [
     #   [ 0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11],
@@ -414,20 +365,83 @@ def create_full_sweep_data(full_sweep_sci, sweep_index):
     #   10 10 10 10 10 10
     #   11 11 11 11 11 11
     # ]
+    raw_pcem_count = np.vstack(
+        (
+            full_sweep_sci["PCEM_CNT0"].data[m:n],
+            full_sweep_sci["PCEM_CNT1"].data[m:n],
+            full_sweep_sci["PCEM_CNT2"].data[m:n],
+            full_sweep_sci["PCEM_CNT3"].data[m:n],
+            full_sweep_sci["PCEM_CNT4"].data[m:n],
+            full_sweep_sci["PCEM_CNT5"].data[m:n],
+        )
+    ).T.reshape(1, 72)[0]
 
-    pcem_count = np.ravel(pcem_count, order="F")
-    pcem_compressed = np.ravel(pcem_rng_val, order="F")
-    scem_count = np.ravel(scem_count, order="F")
-    scem_compressed = np.ravel(scem_rng_val, order="F")
-    coin_count = np.ravel(coin_count, order="F")
-    coin_compressed = np.ravel(coin_rng_val, order="F")
+    raw_scem_count = np.vstack(
+        (
+            full_sweep_sci["SCEM_CNT0"].data[m:n],
+            full_sweep_sci["SCEM_CNT1"].data[m:n],
+            full_sweep_sci["SCEM_CNT2"].data[m:n],
+            full_sweep_sci["SCEM_CNT3"].data[m:n],
+            full_sweep_sci["SCEM_CNT4"].data[m:n],
+            full_sweep_sci["SCEM_CNT5"].data[m:n],
+        )
+    ).T.reshape(1, 72)[0]
+    raw_coin_count = np.vstack(
+        (
+            full_sweep_sci["COIN_CNT0"].data[m:n],
+            full_sweep_sci["COIN_CNT1"].data[m:n],
+            full_sweep_sci["COIN_CNT2"].data[m:n],
+            full_sweep_sci["COIN_CNT3"].data[m:n],
+            full_sweep_sci["COIN_CNT4"].data[m:n],
+            full_sweep_sci["COIN_CNT5"].data[m:n],
+        )
+    ).T.reshape(1, 72)[0]
+
+    # Compression indicators
+    # XXX_RNG_ST{step} --> 0: uncompressed, 1: compressed
+    pcem_compression_flag = np.vstack(
+        (
+            full_sweep_sci["PCEM_RNG_ST0"].data[m:n],
+            full_sweep_sci["PCEM_RNG_ST1"].data[m:n],
+            full_sweep_sci["PCEM_RNG_ST2"].data[m:n],
+            full_sweep_sci["PCEM_RNG_ST3"].data[m:n],
+            full_sweep_sci["PCEM_RNG_ST4"].data[m:n],
+            full_sweep_sci["PCEM_RNG_ST5"].data[m:n],
+        )
+    ).T.reshape(1, 72)[0]
+    scem_compression_flag = np.vstack(
+        (
+            full_sweep_sci["SCEM_RNG_ST0"].data[m:n],
+            full_sweep_sci["SCEM_RNG_ST1"].data[m:n],
+            full_sweep_sci["SCEM_RNG_ST2"].data[m:n],
+            full_sweep_sci["SCEM_RNG_ST3"].data[m:n],
+            full_sweep_sci["SCEM_RNG_ST4"].data[m:n],
+            full_sweep_sci["SCEM_RNG_ST5"].data[m:n],
+        )
+    ).T.reshape(1, 72)[0]
+    coin_compression_flag = np.vstack(
+        (
+            full_sweep_sci["COIN_RNG_ST0"].data[m:n],
+            full_sweep_sci["COIN_RNG_ST1"].data[m:n],
+            full_sweep_sci["COIN_RNG_ST2"].data[m:n],
+            full_sweep_sci["COIN_RNG_ST3"].data[m:n],
+            full_sweep_sci["COIN_RNG_ST4"].data[m:n],
+            full_sweep_sci["COIN_RNG_ST5"].data[m:n],
+        )
+    ).T.reshape(1, 72)[0]
+
+    # Uncompress counts using compression flags
+    pcem_count = decompress_count(raw_pcem_count, pcem_compression_flag)
+    scem_count = decompress_count(raw_scem_count, scem_compression_flag)
+    coin_count = decompress_count(raw_coin_count, coin_compression_flag)
+
     return (
         pcem_count,
         scem_count,
         coin_count,
-        pcem_compressed,
-        scem_compressed,
-        coin_compressed,
+        pcem_compression_flag,
+        scem_compression_flag,
+        coin_compression_flag,
     )
 
 
@@ -441,15 +455,17 @@ def process_swapi_science(sci_dataset):
     """
     full_sweep_indices = get_indices_of_full_sweep(sci_dataset["SEQ_NUMBER"].data)
     full_sweep_sci = filter_full_cycle_data(full_sweep_indices, sci_dataset)
-    swp_pcem_counts = []
-    swp_scem_counts = []
-    swp_coin_counts = []
-    swp_pcem_comp = []
-    swp_scem_comp = []
-    swp_coin_comp = []
-    collections.defaultdict(list)
-
     total_packets = len(full_sweep_sci["SEQ_NUMBER"].data)
+    # It takes 12 sequence data to make one full sweep
+    total_sequence = 12
+    total_full_sweeps = total_packets // total_sequence
+    swp_pcem_counts = np.zeros((total_full_sweeps, 72))
+    swp_scem_counts = np.zeros((total_full_sweeps, 72))
+    swp_coin_counts = np.zeros((total_full_sweeps, 72))
+    swp_pcem_comp = np.zeros((total_full_sweeps, 72))
+    swp_scem_comp = np.zeros((total_full_sweeps, 72))
+    swp_coin_comp = np.zeros((total_full_sweeps, 72))
+    collections.defaultdict(list)
 
     # Step through each twelve packets that makes full sweep
     for sweep_index in range(0, total_packets, 12):
@@ -463,24 +479,18 @@ def process_swapi_science(sci_dataset):
             # TODO: add log here
             continue
         # TODO: add other checks for bad data
-        # Process good data.
-        # full data will be of
+        idx = sweep_index // 12
+
         (
-            pcem_counts,
-            scem_counts,
-            coin_counts,
-            pcem_comp,
-            scem_comp,
-            coin_comp,
+            swp_pcem_counts[idx],
+            swp_scem_counts[idx],
+            swp_coin_counts[idx],
+            swp_pcem_comp[idx],
+            swp_scem_comp[idx],
+            swp_coin_comp[idx],
         ) = create_full_sweep_data(full_sweep_sci, sweep_index)
 
-        swp_pcem_counts.append(pcem_counts)
-        swp_scem_counts.append(scem_counts)
-        swp_coin_counts.append(coin_counts)
-        swp_pcem_comp.append(pcem_comp)
-        swp_scem_comp.append(scem_comp)
-        swp_coin_comp.append(coin_comp)
-
+    print(swp_pcem_counts)
     # Get Epoch time of full sweep data and then reshape it to
     # (n, 12) where n = total number of full sweep data and 12 = 12
     # sequence data's metadata. For Epoch's data, we take the first element
@@ -491,25 +501,9 @@ def process_swapi_science(sci_dataset):
         dims=["Epoch"],
     )
     counts = xr.DataArray(np.arange(72), name="Counts", dims=["Counts"])
-    print(epoch_time.data)
-    attrs = {
-        "Instrument": "swapi",
-        "dataLevel": "l1",
-        "startTime": epoch_time.data[0],
-        "endTime": epoch_time.data[-1],
-        "dataProductDescriptor": "counts",
-        "versionInfo": "v01-01",  # TODO: change this once we defined version tracking
-        "filetype": "cdf",
-        "SWEEP_TABLE": sci_dataset["SWEEP_TABLE"]
-        .data[full_sweep_indices]
-        .reshape(-1, 12)[:, 0],
-        "PLAN_ID": sci_dataset["PLAN_ID_SCIENCE"]
-        .data[full_sweep_indices]
-        .reshape(-1, 12)[:, 0],
-    }
+
     dataset = xr.Dataset(
         coords={"Epoch": epoch_time, "Counts": counts},
-        attrs=attrs,
     )
 
     dataset["SWP_PCEM_COUNTS"] = xr.DataArray(swp_pcem_counts, dims=["Epoch", "Counts"])
