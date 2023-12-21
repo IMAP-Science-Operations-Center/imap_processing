@@ -1,11 +1,12 @@
 """SWAPI level-1 processing code."""
 import collections
 import copy
+import logging
 
 import numpy as np
 import xarray as xr
 
-from imap_processing.swapi.swapi_utils import SWAPIAPID, create_dataset
+from imap_processing.swapi.swapi_utils import SWAPIAPID, SWAPIMODE, create_dataset
 from imap_processing.utils import group_by_apid, sort_by_time
 
 
@@ -260,8 +261,92 @@ def process_cem_data(full_sweep_sci, cem_prefix, m, n):
 def process_full_sweep_data(full_sweep_sci, sweep_start_index, sweep_end_index):
     """Process full sweep data.
 
-    Twelve consecutive seconds of science data correspond to a single sweep,
-    which is the unit of L1a data and downstream products.
+    Twelve consecutive seconds of science data correspond to a single(full)
+    sweep, which is the unit of L1a data and downstream products.
+
+    In other word, data from each packet comes like this:
+        SEQ_NUMBER
+        .
+        PCEM_RNG_ST0
+        SCEM_RNG_ST0
+        COIN_RNG_ST0
+        PCEM_RNG_ST1
+        SCEM_RNG_ST1
+        COIN_RNG_ST1
+        PCEM_RNG_ST2
+        SCEM_RNG_ST2
+        COIN_RNG_ST2
+        PCEM_RNG_ST3
+        SCEM_RNG_ST3
+        COIN_RNG_ST3
+        PCEM_RNG_ST4
+        SCEM_RNG_ST4
+        COIN_RNG_ST4
+        PCEM_RNG_ST5
+        SCEM_RNG_ST5
+        COIN_RNG_ST5
+        PCEM_CNT0
+        SCEM_CNT0
+        COIN_CNT0
+        PCEM_CNT1
+        SCEM_CNT1
+        COIN_CNT1
+        PCEM_CNT2
+        SCEM_CNT2
+        COIN_CNT2
+        PCEM_CNT3
+        SCEM_CNT3
+        COIN_CNT3
+        PCEM_CNT4
+        SCEM_CNT4
+        COIN_CNT4
+        PCEM_CNT5
+        SCEM_CNT5
+        COIN_CNT5
+    When we read all packets and store data for above fields, it
+    looks like this:
+        SEQ_NUMBER   -> [0, 1, 2, 3, 4,..., 11, 1, 2, ......, 9, 10, 11]
+        PCEM_RNG_ST0 -> [x, x, x, x, x,..., x, x, x, ..., x, x, x]
+        SCEM_RNG_ST0 -> [x, x, x, x, x,..., x, x, x, ..., x, x, x]
+        COIN_RNG_ST0 -> [x, x, x, x, x,..., x, x, x, ..., x, x, x]
+        PCEM_RNG_ST1 -> [x, x, x, x, x,..., x, x, x, ..., x, x, x]
+        SCEM_RNG_ST1 -> [x, x, x, x, x,..., x, x, x, ..., x, x, x]
+        COIN_RNG_ST1 -> [x, x, x, x, x,..., x, x, x, ..., x, x, x]
+        ....
+        PCEM_RNG_ST5 -> [x, x, x, x, x,..., x, x, x, ..., x, x, x]
+        SCEM_RNG_ST5 -> [x, x, x, x, x,..., x, x, x, ..., x, x, x]
+        PCEM_CNT_0   -> [x, x, x, x, x,..., x, x, x, ..., x, x, x]
+        SCEM_CNT_0   -> [x, x, x, x, x,..., x, x, x, ..., x, x, x]
+        COIN_CNT_0   -> [x, x, x, x, x,..., x, x, x, ..., x, x, x]
+        ....
+        PCEM_CNT_5   -> [x, x, x, x, x,..., x, x, x, ..., x, x, x]
+        SCEM_CNT_5   -> [x, x, x, x, x,..., x, x, x, ..., x, x, x]
+        COIN_CNT_5   -> [x, x, x, x, x,..., x, x, x, ..., x, x, x]
+
+    This function reads one current sweep data in this order:
+        PCEM_CNT0 --> 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11
+        PCEM_CNT1 --> 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11
+        PCEM_CNT2 --> 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11
+        PCEM_CNT3 --> 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11
+        PCEM_CNT4 --> 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11
+        PCEM_CNT5 --> 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11
+
+    This example show for PCEM_CNT but same logic applies
+    to SCEM_CNT, COIN_CNT, PCEM_RNG, SCEM_RNG, and COIN_RNG.
+
+    In the final L1A product of 1x72 array where we store
+    final PCEM, SCEM, COIN counts or compression indicator
+    such as PCEM_RNG, SCEM_RNG, COIN_RNG,
+    we want data in this order. Transpose of above layout
+    0, 0, 0, 0, 0, 0,
+    1, 1, 1, 1, 1, 1,
+    2, 2, 2, 2, 2, 2,
+    3, 3, 3, 3, 3, 3,
+    ....,
+    11, 11, 11, 11, 11, 11.
+    Reordering in this order is reordering all data of
+    sequence 0 first, then sequence 1, then sequence 2,
+    and so on until sequence 11.
 
     Parameters
     ----------
@@ -322,24 +407,10 @@ def check_for_bad_data(full_sweep_sci, sweep_start_index, sweep_end_index):
     """Check for bad data.
 
     Bad data indicator:
-    SWP_HK.CHKSUM is wrong
-    SWAPI mode (SWP_SCI.MODE) is not HVSCI
-    Check for saturation. If count rates exceed 4.0 MHz using SWP_SCI.PCEM_CNT0
-    through SWP_SCI.PCEM_CNT5 or SWP_SCI.SCEM_CNT0 through
-    SWP_SCI.SCEM_CNT5 the sweep may later be discarded.
-     SWP_HK.PCEM_RATE_ST = 1 at any point during the sweep. The count rate threshold
-    for the PCEM counter has been exceeded once and has continued to be exceeded despite
-    measures by FSW
-     SWP_HK.SCEM_RATE_ST = 1 at any point during the sweep. The count rate threshold
-    for the SCEM counter has been exceeded once and has continued to be exceeded despite
-    measures by FSW
-    Note: The FSW automatically transitions to SAFE if:
-    PCEM current or voltage, SCEM current or voltage, or temperature, current, or
-    voltage
-    sensors experience two consecutive samples out-of-limit
-    PCEM count rate or SCEM count rate experience six or more consecutive
-    samples out-oflimit
-    (note: count rate limit is 4.0 MHz for PCEM and SCEM).
+        SWP_HK.CHKSUM is wrong
+        SWAPI mode (SWP_SCI.MODE) is not HVSCI
+        PLAN_ID for current sweep should all be one value
+        SWEEP_TABLE should all be one value.
 
     Parameters
     ----------
@@ -361,12 +432,23 @@ def check_for_bad_data(full_sweep_sci, sweep_start_index, sweep_end_index):
 
     # If PLAN_ID and SWEEP_TABLE is not same, the discard the
     # sweep data. PLAN_ID and SWEEP_TABLE should match
-    if not np.all(full_sweep_sci["PLAN_ID_SCIENCE"].data[m:n]) and np.all(
-        full_sweep_sci["SWEEP_TABLE"].data[m:n]
+    # meaing PLAN_ID for current sweep should all be one value and
+    # SWEEP_TABLE should all be one value.
+    plan_id = full_sweep_sci["PLAN_ID_SCIENCE"].data
+    sweep_table = full_sweep_sci["SWEEP_TABLE"].data
+    mode = full_sweep_sci["MODE"].data
+
+    if not np.all(plan_id[m:n] == plan_id[m]) and np.all(
+        sweep_table[m:n] == sweep_table[m]
     ):
-        # TODO: add log here
+        logging.debug("PLAN_ID and SWEEP_TABLE is not same")
         return True
-    # TODO: add other checks for bad data
+
+    # TODO: change comparison to SWAPIMODE.HVSCI
+    if not np.all(mode[m:n] == SWAPIMODE.HVENG):
+        logging.debug("MODE is not HVSCI")
+        return True
+    # TODO: add checks for checksum
     return False
 
 
@@ -388,16 +470,17 @@ def process_swapi_science(sci_dataset):
     # Step 2: Process full sweep data
     # ====================================================
     total_packets = len(full_sweep_sci["SEQ_NUMBER"].data)
-    # It takes 12 sequence data to make one full sweep
-    total_sequence = 12
-    total_full_sweeps = total_packets // total_sequence
-    swp_pcem_counts = np.zeros((total_full_sweeps, 72))
-    swp_scem_counts = np.zeros((total_full_sweeps, 72))
-    swp_coin_counts = np.zeros((total_full_sweeps, 72))
-    swp_pcem_comp = np.zeros((total_full_sweeps, 72))
-    swp_scem_comp = np.zeros((total_full_sweeps, 72))
-    swp_coin_comp = np.zeros((total_full_sweeps, 72))
-    collections.defaultdict(list)
+    # These array will be of size (number of good sweep, 72)
+    # but didn't initialized it because we could remove
+    # bad sweep data based on data checks
+    swp_pcem_counts = []
+    swp_scem_counts = []
+    swp_coin_counts = []
+    swp_pcem_comp = []
+    swp_scem_comp = []
+    swp_coin_comp = []
+
+    epoch_time = []
 
     # Step through each twelve packets that makes full sweep
     for sweep_index in range(0, total_packets, 12):
@@ -405,33 +488,40 @@ def process_swapi_science(sci_dataset):
         m = sweep_index
         # current sweep end index
         n = sweep_index + 12
+        # current sweep data is not good, don't process it
+        if check_for_bad_data(full_sweep_sci, m, n):
+            continue
 
-        # Index in the final data array
-        idx = sweep_index // 12
+        # Store the earliest time of current sweep
+        epoch_time.append(full_sweep_sci["Epoch"].data[m])
         (
-            swp_pcem_counts[idx],
-            swp_scem_counts[idx],
-            swp_coin_counts[idx],
-            swp_pcem_comp[idx],
-            swp_scem_comp[idx],
-            swp_coin_comp[idx],
+            pcem_counts,
+            scem_counts,
+            coin_counts,
+            pcem_comp,
+            scem_comp,
+            coin_comp,
         ) = process_full_sweep_data(
             full_sweep_sci=full_sweep_sci, sweep_start_index=m, sweep_end_index=n
         )
+        swp_pcem_counts.append(pcem_counts)
+        swp_scem_counts.append(scem_counts)
+        swp_coin_counts.append(coin_counts)
+        swp_pcem_comp.append(pcem_comp)
+        swp_scem_comp.append(scem_comp)
+        swp_coin_comp.append(coin_comp)
 
     # ===================================================================
     # Step 3: Create xarray.Dataset
     # ===================================================================
 
-    # Get Epoch time of full sweep data and then reshape it to
-    # (n, 12) where n = total number of full sweep data and 12 = 12
-    # sequence data's metadata. For Epoch's data, we take the first element
-    # of each 12 sequence data's metadata.
+    # Epoch time. Should be same dimension as number of good sweeps
     epoch_time = xr.DataArray(
-        sci_dataset["Epoch"].data[full_sweep_indices].reshape(-1, 12)[:, 0],
+        epoch_time,
         name="Epoch",
         dims=["Epoch"],
     )
+
     # There are 72 energy steps
     energy = xr.DataArray(np.arange(72), name="Energy", dims=["Energy"])
 

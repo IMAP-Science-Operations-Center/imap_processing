@@ -22,6 +22,20 @@ class SWAPIAPID(IntEnum):
     SWP_AUT = 1192
 
 
+class SWAPIMODE(IntEnum):
+    """Create ENUM for apid.
+
+    Parameters
+    ----------
+    IntEnum : IntEnum.
+    """
+
+    LVENG = 0
+    LVSCI = 1
+    HVENG = 2
+    HVSCI = 3
+
+
 def add_metadata_to_array(data_packet, metadata_arrays):
     """Add metadata to the metadata_arrays.
 
