@@ -399,6 +399,17 @@ def process_swapi_science(sci_dataset):
     dataset["SWP_SCEM_COUNTS"] = xr.DataArray(swp_scem_counts, dims=["Epoch", "Counts"])
     dataset["SWP_COIN_COUNTS"] = xr.DataArray(swp_coin_counts, dims=["Epoch", "Counts"])
 
+    # L1 quality flags
+    dataset["SWP_PCEM_RNG_ST_COMP"] = xr.DataArray(
+        swp_pcem_comp, dims=["Epoch", "Counts"]
+    )
+    dataset["SWP_SCEM_RNG_ST_COMP"] = xr.DataArray(
+        swp_scem_comp, dims=["Epoch", "Counts"]
+    )
+    dataset["SWP_COIN_RNG_ST_COMP"] = xr.DataArray(
+        swp_coin_comp, dims=["Epoch", "Counts"]
+    )
+
     # Uncertainty in counts formula:
     # Uncertainty is quantified for the PCEM, SCEM, and COIN counts.
     # The Poisson contribution is
@@ -411,17 +422,6 @@ def process_swapi_science(sci_dataset):
     )
     dataset["SWP_COIN_ERR"] = xr.DataArray(
         np.sqrt(swp_coin_counts), dims=["Epoch", "Counts"]
-    )
-
-    # L1A quality flags
-    dataset["SWP_PCEM_RNG_ST_COMP"] = xr.DataArray(
-        swp_pcem_comp, dims=["Epoch", "Counts"]
-    )
-    dataset["SWP_SCEM_RNG_ST_COMP"] = xr.DataArray(
-        swp_scem_comp, dims=["Epoch", "Counts"]
-    )
-    dataset["SWP_COIN_RNG_ST_COMP"] = xr.DataArray(
-        swp_coin_comp, dims=["Epoch", "Counts"]
     )
     return dataset
 
