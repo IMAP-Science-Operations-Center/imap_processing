@@ -1,5 +1,4 @@
 """SWAPI level-1 processing code."""
-import collections
 import copy
 import logging
 
@@ -10,25 +9,124 @@ from imap_processing.swapi.swapi_utils import SWAPIAPID, SWAPIMODE, create_datas
 from imap_processing.utils import group_by_apid, sort_by_time
 
 
-def group_full_sweep_data(packets):
-    """Group data by PLAN_ID and SWEEP_TABLE.
+def check_for_bad_data(full_sweep_sci, sweep_start_index, sweep_end_index):
+    """Check for bad data.
+
+    Bad data indicator:
+
+    |    1. SWP_HK.CHKSUM is wrong
+    |    2. SWAPI mode (SWP_SCI.MODE) is not HVSCI
+    |    3. PLAN_ID for current sweep should all be one value
+    |    4. SWEEP_TABLE should all be one value.
 
     Parameters
     ----------
-    packets : list
-        packet list
+    full_sweep_sci : xarray.Dataset
+        Science data that only contains full sweep data.
+    sweep_start_index : int
+        Start index of current sweep.
+    sweep_end_index: int
+        End index of current sweep.
 
     Returns
     -------
-    dict
-        grouped data by PLAN_ID and SWEEP_TABLE.
+    bool
+        True if bad data is found, False otherwise.
     """
-    grouped_data = collections.defaultdict(list)
-    for packet in packets:
-        plan_id = packet.data["PLAN_ID_SCIENCE"]
-        sweep_table = packet.data["SWEEP_TABLE"]
-        grouped_data.setdefault(f"{plan_id}_{sweep_table}", []).append(packet)
-    return grouped_data
+    # current sweep start and end index
+    m = sweep_start_index
+    n = sweep_end_index
+
+    # If PLAN_ID and SWEEP_TABLE is not same, the discard the
+    # sweep data. PLAN_ID and SWEEP_TABLE should match
+    # meaing PLAN_ID for current sweep should all be one value and
+    # SWEEP_TABLE should all be one value.
+    plan_id = full_sweep_sci["PLAN_ID_SCIENCE"].data
+    sweep_table = full_sweep_sci["SWEEP_TABLE"].data
+    mode = full_sweep_sci["MODE"].data
+
+    if not np.all(plan_id[m:n] == plan_id[m]) and np.all(
+        sweep_table[m:n] == sweep_table[m]
+    ):
+        logging.debug("PLAN_ID and SWEEP_TABLE is not same")
+        return True
+
+    # TODO: change comparison to SWAPIMODE.HVSCI once we have
+    # some HVSCI data
+    if not np.all(mode[m:n] == SWAPIMODE.HVENG):
+        logging.debug("MODE is not HVSCI")
+        return True
+    # TODO: add checks for checksum
+    return False
+
+
+def decompress_count(count_data: np.ndarray, compression_flag: np.ndarray = None):
+    """Decompress counts based on compression indicators.
+
+    Decompression algorithm:
+    There are 3 compression regions:
+
+    |    1) 0 <= value <=65535
+    |    2) 65536 <= value <= 1,048,575
+    |    3) 1,048,576 <= value
+
+    Pseudocode:
+
+    | if XXX_RNG_ST0 == 0:          # Not compressed
+    |    actual_value = XXX_CNT0
+    | elif (XXX_RNG_ST0==1 && XXX_CNT0==0xFFFF):    # Overflow
+    |    actual_value = <some constant that indicates overflow>
+    | elif (XXX_RNG_ST0==1 && XXX_CNT0!=0xFFFF):
+    |    actual_value = XXX_CNT0 * 16
+
+    Parameters
+    ----------
+    count_data : numpy.ndarray
+        Array with counts.
+    compression_flag : numpy.ndarray
+        Array with compression indicators.
+
+    Returns
+    -------
+    numpy.ndarray
+        Array with decompressed counts.
+    """
+    # Decompress counts based on compression indicators
+    # If 0, value is already decompressed. If 1, value is compressed.
+    # If 1 and count is 0xFFFF, value is overflow.
+    new_count = copy.deepcopy(count_data)
+    compressed_count_indices = np.where(compression_flag == 1)[0]
+    for index in compressed_count_indices:
+        if count_data[index] == 0xFFFF:  # Overflow
+            new_count[index] = -1
+        elif count_data[index] != 0xFFFF:
+            new_count[index] = count_data[index] * 16
+    return new_count
+
+
+def filter_full_cycle_data(full_cycle_data_indices: np.ndarray, l1a_data: xr.Dataset):
+    """Filter metadata and science of packets that makes full cycles.
+
+    Parameters
+    ----------
+    full_cycle_data_indices : numpy.ndarray
+        Array with indices of full cycles.
+    l1a_data : xarray.Dataset
+        L1A dataset
+
+    Returns
+    -------
+    xarray.Dataset
+        L1A dataset with filtered metadata.
+    """
+    # Had to create new xr.Dataset because Epoch shape and new data variables shapes was
+    # different.
+    full_sweep_dataset = xr.Dataset(
+        coords={"Epoch": l1a_data["Epoch"].data[full_cycle_data_indices]}
+    )
+    for key, value in l1a_data.items():
+        full_sweep_dataset[key] = xr.DataArray(value.data[full_cycle_data_indices])
+    return full_sweep_dataset
 
 
 def find_sweep_starts(sweep: np.ndarray):
@@ -116,75 +214,6 @@ def get_indices_of_full_sweep(seq_number: np.ndarray):
     #   Eg. [[3, 4, 5, 6,...14], [8, 9, 10, 11, ..., 19]]
     full_cycles_indices = indices_of_start[..., None] + np.arange(12)[None, ...]
     return full_cycles_indices.reshape(-1)
-
-
-def filter_full_cycle_data(full_cycle_data_indices: np.ndarray, l1a_data: xr.Dataset):
-    """Filter metadata and science of packets that makes full cycles.
-
-    Parameters
-    ----------
-    full_cycle_data_indices : numpy.ndarray
-        Array with indices of full cycles.
-    l1a_data : xarray.Dataset
-        L1A dataset
-
-    Returns
-    -------
-    xarray.Dataset
-        L1A dataset with filtered metadata.
-    """
-    # Had to create new xr.Dataset because Epoch shape and new data variables shapes was
-    # different.
-    full_sweep_dataset = xr.Dataset(
-        coords={"Epoch": l1a_data["Epoch"].data[full_cycle_data_indices]}
-    )
-    for key, value in l1a_data.items():
-        full_sweep_dataset[key] = xr.DataArray(value.data[full_cycle_data_indices])
-    return full_sweep_dataset
-
-
-def decompress_count(count_data: np.ndarray, compression_flag: np.ndarray = None):
-    """Decompress counts based on compression indicators.
-
-    Decompression algorithm:
-    There are 3 compression regions:
-
-    |    1) 0 <= value <=65535
-    |    2) 65536 <= value <= 1,048,575
-    |    3) 1,048,576 <= value
-
-    Pseudocode:
-
-    | if XXX_RNG_ST0 == 0:          # Not compressed
-    |    actual_value = XXX_CNT0
-    | elif (XXX_RNG_ST0==1 && XXX_CNT0==0xFFFF):    # Overflow
-    |    actual_value = <some constant that indicates overflow>
-    | elif (XXX_RNG_ST0==1 && XXX_CNT0!=0xFFFF):
-    |    actual_value = XXX_CNT0 * 16
-
-    Parameters
-    ----------
-    count_data : numpy.ndarray
-        Array with counts.
-    compression_flag : numpy.ndarray
-        Array with compression indicators.
-
-    Returns
-    -------
-    numpy.ndarray
-        Array with decompressed counts.
-    """
-    # Decompress counts based on compression indicators
-    # If 0, value is already decompressed. If 1, value is compressed.
-    # If 1 and count is 0xFFFF, value is overflow.
-    new_count = copy.deepcopy(count_data)
-    compressed_count_indices = np.where(compression_flag == 1)[0]
-    for index in compressed_count_indices:
-        if count_data[index] == 0xFFFF:  # Overflow
-            new_count[index] = -1
-        elif count_data[index] != 0xFFFF:
-            new_count[index] = count_data[index] * 16
-    return new_count
 
 
 def process_cem_data(full_sweep_sci, cem_prefix, m, n):
@@ -307,6 +336,7 @@ def process_full_sweep_data(full_sweep_sci, sweep_start_index, sweep_end_index):
     |    PCEM_CNT5
     |    SCEM_CNT5
     |    COIN_CNT5
+
     When we read all packets and store data for above fields, it
     looks like this:
 
@@ -409,57 +439,6 @@ def process_full_sweep_data(full_sweep_sci, sweep_start_index, sweep_end_index):
         scem_compression_flag,
         coin_compression_flag,
     )
-
-
-def check_for_bad_data(full_sweep_sci, sweep_start_index, sweep_end_index):
-    """Check for bad data.
-
-    Bad data indicator:
-
-    |    1. SWP_HK.CHKSUM is wrong
-    |    2. SWAPI mode (SWP_SCI.MODE) is not HVSCI
-    |    3. PLAN_ID for current sweep should all be one value
-    |    4. SWEEP_TABLE should all be one value.
-
-    Parameters
-    ----------
-    full_sweep_sci : xarray.Dataset
-        Science data that only contains full sweep data.
-    sweep_start_index : int
-        Start index of current sweep.
-    sweep_end_index: int
-        End index of current sweep.
-
-    Returns
-    -------
-    bool
-        True if bad data is found, False otherwise.
-    """
-    # current sweep start and end index
-    m = sweep_start_index
-    n = sweep_end_index
-
-    # If PLAN_ID and SWEEP_TABLE is not same, the discard the
-    # sweep data. PLAN_ID and SWEEP_TABLE should match
-    # meaing PLAN_ID for current sweep should all be one value and
-    # SWEEP_TABLE should all be one value.
-    plan_id = full_sweep_sci["PLAN_ID_SCIENCE"].data
-    sweep_table = full_sweep_sci["SWEEP_TABLE"].data
-    mode = full_sweep_sci["MODE"].data
-
-    if not np.all(plan_id[m:n] == plan_id[m]) and np.all(
-        sweep_table[m:n] == sweep_table[m]
-    ):
-        logging.debug("PLAN_ID and SWEEP_TABLE is not same")
-        return True
-
-    # TODO: change comparison to SWAPIMODE.HVSCI once we have
-    # some HVSCI data
-    if not np.all(mode[m:n] == SWAPIMODE.HVENG):
-        logging.debug("MODE is not HVSCI")
-        return True
-    # TODO: add checks for checksum
-    return False
 
 
 def process_swapi_science(sci_dataset):
