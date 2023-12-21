@@ -114,13 +114,13 @@ Keeping your fork updated
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
 You can keep your personal fork up-to-date with the ``IMAP-Science-Operations-Center`` ``imap_processing`` repository by
-fetching and pulling the ``upstream`` remote:
+fetching and rebasing with the ``upstream`` remote:
 
 .. code-block:: bash
 
     git checkout dev
-    git fetch upstream dev
-    git pull upstream/dev
+    git fetch upstream
+    git rebase -i upstream/dev
 
 
 .. _collaborating-on-someone-elses-fork:
