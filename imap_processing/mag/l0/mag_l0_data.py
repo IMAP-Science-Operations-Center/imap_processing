@@ -21,16 +21,6 @@ class Mode(IntEnum):
 
 
 @dataclass
-class Sensor:
-    active: bool
-    is_mago: bool
-    is_primary: bool
-    vecsec: int
-    coarse_time: int
-    fine_time: int
-
-
-@dataclass
 class MagL0:
     """Data class for MAG Level 0 data.
 
