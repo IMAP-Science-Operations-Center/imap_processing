@@ -171,7 +171,7 @@ def decompress_count(count_data: np.ndarray, compression_flag: np.ndarray = None
     numpy.ndarray
         Array with decompressed counts.
     """
-    # Uncompress counts based on compression indicators
+    # Decompress counts based on compression indicators
     # If 0, value is already decompressed. If 1, value is compressed.
     # If 1 and count is 0xFFFF, value is overflow.
     new_count = copy.deepcopy(count_data)
@@ -191,7 +191,7 @@ def process_cem_data(full_sweep_sci, cem_prefix, m, n):
     Here, it combines certain CEM's data or their flag
     data and then apply transformation to get
     data in the correct sequence order and in the final
-    data shape needed by SWAPI.
+    data shape required by SWAPI.
 
     Parameters
     ----------
@@ -303,7 +303,7 @@ def process_full_sweep_data(full_sweep_sci, sweep_start_index, sweep_end_index):
     scem_compression_flag = process_cem_data(full_sweep_sci, "SCEM_RNG_ST", m, n)
     coin_compression_flag = process_cem_data(full_sweep_sci, "COIN_RNG_ST", m, n)
 
-    # Uncompress counts using compression flags
+    # Decompress counts using compression flags
     pcem_count = decompress_count(raw_pcem_count, pcem_compression_flag)
     scem_count = decompress_count(raw_scem_count, scem_compression_flag)
     coin_count = decompress_count(raw_coin_count, coin_compression_flag)
@@ -316,6 +316,58 @@ def process_full_sweep_data(full_sweep_sci, sweep_start_index, sweep_end_index):
         scem_compression_flag,
         coin_compression_flag,
     )
+
+
+def check_for_bad_data(full_sweep_sci, sweep_start_index, sweep_end_index):
+    """Check for bad data.
+
+    Bad data indicator:
+    SWP_HK.CHKSUM is wrong
+    SWAPI mode (SWP_SCI.MODE) is not HVSCI
+    Check for saturation. If count rates exceed 4.0 MHz using SWP_SCI.PCEM_CNT0
+    through SWP_SCI.PCEM_CNT5 or SWP_SCI.SCEM_CNT0 through
+    SWP_SCI.SCEM_CNT5 the sweep may later be discarded.
+     SWP_HK.PCEM_RATE_ST = 1 at any point during the sweep. The count rate threshold
+    for the PCEM counter has been exceeded once and has continued to be exceeded despite
+    measures by FSW
+     SWP_HK.SCEM_RATE_ST = 1 at any point during the sweep. The count rate threshold
+    for the SCEM counter has been exceeded once and has continued to be exceeded despite
+    measures by FSW
+    Note: The FSW automatically transitions to SAFE if:
+    PCEM current or voltage, SCEM current or voltage, or temperature, current, or
+    voltage
+    sensors experience two consecutive samples out-of-limit
+    PCEM count rate or SCEM count rate experience six or more consecutive
+    samples out-oflimit
+    (note: count rate limit is 4.0 MHz for PCEM and SCEM).
+
+    Parameters
+    ----------
+    full_sweep_sci : xarray.Dataset
+        Science data that only contains full sweep data.
+    sweep_start_index : int
+        Start index of current sweep.
+    sweep_end_index: int
+        End index of current sweep.
+
+    Returns
+    -------
+    bool
+        True if bad data is found, False otherwise.
+    """
+    # current sweep start and end index
+    m = sweep_start_index
+    n = sweep_end_index
+
+    # If PLAN_ID and SWEEP_TABLE is not same, the discard the
+    # sweep data. PLAN_ID and SWEEP_TABLE should match
+    if not np.all(full_sweep_sci["PLAN_ID_SCIENCE"].data[m:n]) and np.all(
+        full_sweep_sci["SWEEP_TABLE"].data[m:n]
+    ):
+        # TODO: add log here
+        return True
+    # TODO: add other checks for bad data
+    return False
 
 
 def process_swapi_science(sci_dataset):
@@ -354,15 +406,6 @@ def process_swapi_science(sci_dataset):
         # current sweep end index
         n = sweep_index + 12
 
-        # If PLAN_ID and SWEEP_TABLE is not same, the discard the
-        # sweep data. PLAN_ID and SWEEP_TABLE should match
-        if np.all(full_sweep_sci["PLAN_ID_SCIENCE"].data[m:n]) and np.all(
-            full_sweep_sci["SWEEP_TABLE"].data[m:n]
-        ):
-            # TODO: add log here
-            continue
-        # TODO: add other checks for bad data
-
         # Index in the final data array
         idx = sweep_index // 12
         (
@@ -389,25 +432,26 @@ def process_swapi_science(sci_dataset):
         name="Epoch",
         dims=["Epoch"],
     )
-    counts = xr.DataArray(np.arange(72), name="Counts", dims=["Counts"])
+    # There are 72 energy steps
+    energy = xr.DataArray(np.arange(72), name="Energy", dims=["Energy"])
 
     dataset = xr.Dataset(
-        coords={"Epoch": epoch_time, "Counts": counts},
+        coords={"Epoch": epoch_time, "Energy": energy},
     )
 
-    dataset["SWP_PCEM_COUNTS"] = xr.DataArray(swp_pcem_counts, dims=["Epoch", "Counts"])
-    dataset["SWP_SCEM_COUNTS"] = xr.DataArray(swp_scem_counts, dims=["Epoch", "Counts"])
-    dataset["SWP_COIN_COUNTS"] = xr.DataArray(swp_coin_counts, dims=["Epoch", "Counts"])
+    dataset["SWP_PCEM_COUNTS"] = xr.DataArray(swp_pcem_counts, dims=["Epoch", "Energy"])
+    dataset["SWP_SCEM_COUNTS"] = xr.DataArray(swp_scem_counts, dims=["Epoch", "Energy"])
+    dataset["SWP_COIN_COUNTS"] = xr.DataArray(swp_coin_counts, dims=["Epoch", "Energy"])
 
     # L1 quality flags
     dataset["SWP_PCEM_RNG_ST_COMP"] = xr.DataArray(
-        swp_pcem_comp, dims=["Epoch", "Counts"]
+        swp_pcem_comp, dims=["Epoch", "Energy"]
     )
     dataset["SWP_SCEM_RNG_ST_COMP"] = xr.DataArray(
-        swp_scem_comp, dims=["Epoch", "Counts"]
+        swp_scem_comp, dims=["Epoch", "Energy"]
     )
     dataset["SWP_COIN_RNG_ST_COMP"] = xr.DataArray(
-        swp_coin_comp, dims=["Epoch", "Counts"]
+        swp_coin_comp, dims=["Epoch", "Energy"]
     )
 
     # Uncertainty in counts formula:
@@ -415,13 +459,13 @@ def process_swapi_science(sci_dataset):
     # The Poisson contribution is
     # uncertainty = sqrt(count)
     dataset["SWP_PCEM_ERR"] = xr.DataArray(
-        np.sqrt(swp_pcem_counts), dims=["Epoch", "Counts"]
+        np.sqrt(swp_pcem_counts), dims=["Epoch", "Energy"]
     )
     dataset["SWP_SCEM_ERR"] = xr.DataArray(
-        np.sqrt(swp_scem_counts), dims=["Epoch", "Counts"]
+        np.sqrt(swp_scem_counts), dims=["Epoch", "Energy"]
     )
     dataset["SWP_COIN_ERR"] = xr.DataArray(
-        np.sqrt(swp_coin_counts), dims=["Epoch", "Counts"]
+        np.sqrt(swp_coin_counts), dims=["Epoch", "Energy"]
     )
     return dataset
 
