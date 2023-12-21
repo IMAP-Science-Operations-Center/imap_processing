@@ -125,12 +125,12 @@ def filter_full_cycle_data(full_cycle_data_indices: np.ndarray, l1a_data: xr.Dat
     ----------
     full_cycle_data_indices : numpy.ndarray
         Array with indices of full cycles.
-    l1a_data : xarray.dataset
+    l1a_data : xarray.Dataset
         L1A dataset
 
     Returns
     -------
-    xarray.dataset
+    xarray.Dataset
         L1A dataset with filtered metadata.
     """
     # Had to create new xr.Dataset because Epoch shape and new data variables shapes was
@@ -148,17 +148,19 @@ def decompress_count(count_data: np.ndarray, compression_flag: np.ndarray = None
 
     Decompression algorithm:
     There are 3 compression regions:
-        1) 0 <= value <=65535
-        2) 65536 <= value <= 1,048,575
-        3) 1,048,576 <= value
 
-        Pseudocode:
-        if XXX_RNG_ST0 == 0:          # Not compressed
-            actual_value = XXX_CNT0
-        elif (XXX_RNG_ST0==1 && XXX_CNT0==0xFFFF):    # Overflow
-            actual_value = <some constant that indicates overflow>
-        elif (XXX_RNG_ST0==1 && XXX_CNT0!=0xFFFF):
-            actual_value = XXX_CNT0 * 16
+    |    1) 0 <= value <=65535
+    |    2) 65536 <= value <= 1,048,575
+    |    3) 1,048,576 <= value
+
+    Pseudocode:
+
+    | if XXX_RNG_ST0 == 0:          # Not compressed
+    |    actual_value = XXX_CNT0
+    | elif (XXX_RNG_ST0==1 && XXX_CNT0==0xFFFF):    # Overflow
+    |    actual_value = <some constant that indicates overflow>
+    | elif (XXX_RNG_ST0==1 && XXX_CNT0!=0xFFFF):
+    |    actual_value = XXX_CNT0 * 16
 
     Parameters
     ----------
@@ -198,44 +200,45 @@ def process_cem_data(full_sweep_sci, cem_prefix, m, n):
     flatten array in the correct order of sequence number.
     Eg.
     Here, we reorder data from this:
-    [
-      [ 0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11],
-      [ 0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11],
-      [ 0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11],
-      [ 0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11],
-      [ 0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11],
-      [ 0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11]
-    ]
+
+    | [
+    |   [ 0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11],
+    |   [ 0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11],
+    |   [ 0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11],
+    |   [ 0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11],
+    |   [ 0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11],
+    |   [ 0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11]
+    | ]
 
     to this:
-    [
-      0  0  0  0  0  0
-      1  1  1  1  1  1
-      2  2  2  2  2  2
-      3  3  3  3  3  3
-      4  4  4  4  4  4
-      5  5  5  5  5  5
-      6  6  6  6  6  6
-      7  7  7  7  7  7
-      8  8  8  8  8  8
-      9  9  9  9  9  9
-      10 10 10 10 10 10
-      11 11 11 11 11 11
-    ]
+
+    |   [
+    |       0,  0,  0,  0,  0,  0,
+    |       1,  1,  1,  1,  1,  1,
+    |       2,  2,  2,  2,  2,  2,
+    |       3,  3,  3,  3,  3,  3,
+    |       4,  4,  4,  4,  4,  4,
+    |       5,  5,  5,  5,  5,  5,
+    |       6, 6,  6,  6,  6,  6,
+    |       7,  7,  7,  7,  7,  7,
+    |       8,  8,  8,  8,  8,  8,
+    |       9,  9,  9,  9,  9,  9,
+    |       10, 10, 10, 10, 10, 10,
+    |       11, 11, 11, 11, 11, 11
+    |   ]
 
     Parameters
     ----------
     full_sweep_sci : xarray.Dataset
         Full dataset
     cem_prefix : str
-        This will indicate which CEM or its flag we are processing.
-        Options are:
-            PCEM_CNT
-            SCEM_CNT
-            COIN_CNT
-            PCEM_RNG_ST
-            SCEM_RNG_ST
-            COIN_RNG_ST
+        Indicate which CEM or its flag we are processing. Options are:
+        |    PCEM_CNT
+        |    SCEM_CNT
+        |    COIN_CNT
+        |    PCEM_RNG_ST
+        |    SCEM_RNG_ST
+        |    COIN_RNG_ST
     m : int
         Start index of current sweep.
     n : int
@@ -265,71 +268,74 @@ def process_full_sweep_data(full_sweep_sci, sweep_start_index, sweep_end_index):
     sweep, which is the unit of L1a data and downstream products.
 
     In other word, data from each packet comes like this:
-        SEQ_NUMBER
-        .
-        PCEM_RNG_ST0
-        SCEM_RNG_ST0
-        COIN_RNG_ST0
-        PCEM_RNG_ST1
-        SCEM_RNG_ST1
-        COIN_RNG_ST1
-        PCEM_RNG_ST2
-        SCEM_RNG_ST2
-        COIN_RNG_ST2
-        PCEM_RNG_ST3
-        SCEM_RNG_ST3
-        COIN_RNG_ST3
-        PCEM_RNG_ST4
-        SCEM_RNG_ST4
-        COIN_RNG_ST4
-        PCEM_RNG_ST5
-        SCEM_RNG_ST5
-        COIN_RNG_ST5
-        PCEM_CNT0
-        SCEM_CNT0
-        COIN_CNT0
-        PCEM_CNT1
-        SCEM_CNT1
-        COIN_CNT1
-        PCEM_CNT2
-        SCEM_CNT2
-        COIN_CNT2
-        PCEM_CNT3
-        SCEM_CNT3
-        COIN_CNT3
-        PCEM_CNT4
-        SCEM_CNT4
-        COIN_CNT4
-        PCEM_CNT5
-        SCEM_CNT5
-        COIN_CNT5
+
+    |    SEQ_NUMBER
+    |    .
+    |    PCEM_RNG_ST0
+    |    SCEM_RNG_ST0
+    |    COIN_RNG_ST0
+    |    PCEM_RNG_ST1
+    |    SCEM_RNG_ST1
+    |    COIN_RNG_ST1
+    |    PCEM_RNG_ST2
+    |    SCEM_RNG_ST2
+    |    COIN_RNG_ST2
+    |    PCEM_RNG_ST3
+    |    SCEM_RNG_ST3
+    |    COIN_RNG_ST3
+    |    PCEM_RNG_ST4
+    |    SCEM_RNG_ST4
+    |    COIN_RNG_ST4
+    |    PCEM_RNG_ST5
+    |    SCEM_RNG_ST5
+    |    COIN_RNG_ST5
+    |    PCEM_CNT0
+    |    SCEM_CNT0
+    |    COIN_CNT0
+    |    PCEM_CNT1
+    |    SCEM_CNT1
+    |    COIN_CNT1
+    |    PCEM_CNT2
+    |    SCEM_CNT2
+    |    COIN_CNT2
+    |    PCEM_CNT3
+    |    SCEM_CNT3
+    |    COIN_CNT3
+    |    PCEM_CNT4
+    |    SCEM_CNT4
+    |    COIN_CNT4
+    |    PCEM_CNT5
+    |    SCEM_CNT5
+    |    COIN_CNT5
     When we read all packets and store data for above fields, it
     looks like this:
-        SEQ_NUMBER   -> [0, 1, 2, 3, 4,..., 11, 1, 2, ......, 9, 10, 11]
-        PCEM_RNG_ST0 -> [x, x, x, x, x,..., x, x, x, ..., x, x, x]
-        SCEM_RNG_ST0 -> [x, x, x, x, x,..., x, x, x, ..., x, x, x]
-        COIN_RNG_ST0 -> [x, x, x, x, x,..., x, x, x, ..., x, x, x]
-        PCEM_RNG_ST1 -> [x, x, x, x, x,..., x, x, x, ..., x, x, x]
-        SCEM_RNG_ST1 -> [x, x, x, x, x,..., x, x, x, ..., x, x, x]
-        COIN_RNG_ST1 -> [x, x, x, x, x,..., x, x, x, ..., x, x, x]
-        ....
-        PCEM_RNG_ST5 -> [x, x, x, x, x,..., x, x, x, ..., x, x, x]
-        SCEM_RNG_ST5 -> [x, x, x, x, x,..., x, x, x, ..., x, x, x]
-        PCEM_CNT_0   -> [x, x, x, x, x,..., x, x, x, ..., x, x, x]
-        SCEM_CNT_0   -> [x, x, x, x, x,..., x, x, x, ..., x, x, x]
-        COIN_CNT_0   -> [x, x, x, x, x,..., x, x, x, ..., x, x, x]
-        ....
-        PCEM_CNT_5   -> [x, x, x, x, x,..., x, x, x, ..., x, x, x]
-        SCEM_CNT_5   -> [x, x, x, x, x,..., x, x, x, ..., x, x, x]
-        COIN_CNT_5   -> [x, x, x, x, x,..., x, x, x, ..., x, x, x]
+
+    |    SEQ_NUMBER   -> [0, 1, 2, 3, 4,..., 11, 1, 2, ......, 9, 10, 11]
+    |    PCEM_RNG_ST0 -> [x, x, x, x, x,..., x, x, x, ..., x, x, x]
+    |    SCEM_RNG_ST0 -> [x, x, x, x, x,..., x, x, x, ..., x, x, x]
+    |    COIN_RNG_ST0 -> [x, x, x, x, x,..., x, x, x, ..., x, x, x]
+    |    PCEM_RNG_ST1 -> [x, x, x, x, x,..., x, x, x, ..., x, x, x]
+    |    SCEM_RNG_ST1 -> [x, x, x, x, x,..., x, x, x, ..., x, x, x]
+    |    COIN_RNG_ST1 -> [x, x, x, x, x,..., x, x, x, ..., x, x, x]
+    |    ....
+    |    PCEM_RNG_ST5 -> [x, x, x, x, x,..., x, x, x, ..., x, x, x]
+    |    SCEM_RNG_ST5 -> [x, x, x, x, x,..., x, x, x, ..., x, x, x]
+    |    PCEM_CNT_0   -> [x, x, x, x, x,..., x, x, x, ..., x, x, x]
+    |    SCEM_CNT_0   -> [x, x, x, x, x,..., x, x, x, ..., x, x, x]
+    |    COIN_CNT_0   -> [x, x, x, x, x,..., x, x, x, ..., x, x, x]
+    |    ....
+    |    PCEM_CNT_5   -> [x, x, x, x, x,..., x, x, x, ..., x, x, x]
+    |    SCEM_CNT_5   -> [x, x, x, x, x,..., x, x, x, ..., x, x, x]
+    |    COIN_CNT_5   -> [x, x, x, x, x,..., x, x, x, ..., x, x, x]
 
     This function reads one current sweep data in this order:
-        PCEM_CNT0 --> 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11
-        PCEM_CNT1 --> 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11
-        PCEM_CNT2 --> 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11
-        PCEM_CNT3 --> 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11
-        PCEM_CNT4 --> 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11
-        PCEM_CNT5 --> 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11
+
+    |    PCEM_CNT0 --> 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11
+    |    PCEM_CNT1 --> 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11
+    |    PCEM_CNT2 --> 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11
+    |    PCEM_CNT3 --> 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11
+    |    PCEM_CNT4 --> 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11
+    |    PCEM_CNT5 --> 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11
 
     This example show for PCEM_CNT but same logic applies
     to SCEM_CNT, COIN_CNT, PCEM_RNG, SCEM_RNG, and COIN_RNG.
@@ -338,12 +344,14 @@ def process_full_sweep_data(full_sweep_sci, sweep_start_index, sweep_end_index):
     final PCEM, SCEM, COIN counts or compression indicator
     such as PCEM_RNG, SCEM_RNG, COIN_RNG,
     we want data in this order. Transpose of above layout
-    0, 0, 0, 0, 0, 0,
-    1, 1, 1, 1, 1, 1,
-    2, 2, 2, 2, 2, 2,
-    3, 3, 3, 3, 3, 3,
-    ....,
-    11, 11, 11, 11, 11, 11.
+
+    |   0, 0, 0, 0, 0, 0,
+    |   1, 1, 1, 1, 1, 1,
+    |   2, 2, 2, 2, 2, 2,
+    |   3, 3, 3, 3, 3, 3,
+    |   ....,
+    |   11, 11, 11, 11, 11, 11.
+
     Reordering in this order is reordering all data of
     sequence 0 first, then sequence 1, then sequence 2,
     and so on until sequence 11.
@@ -407,10 +415,11 @@ def check_for_bad_data(full_sweep_sci, sweep_start_index, sweep_end_index):
     """Check for bad data.
 
     Bad data indicator:
-        SWP_HK.CHKSUM is wrong
-        SWAPI mode (SWP_SCI.MODE) is not HVSCI
-        PLAN_ID for current sweep should all be one value
-        SWEEP_TABLE should all be one value.
+
+    |    1. SWP_HK.CHKSUM is wrong
+    |    2. SWAPI mode (SWP_SCI.MODE) is not HVSCI
+    |    3. PLAN_ID for current sweep should all be one value
+    |    4. SWEEP_TABLE should all be one value.
 
     Parameters
     ----------
