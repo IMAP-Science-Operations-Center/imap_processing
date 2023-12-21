@@ -1,6 +1,7 @@
+"""Shared attribute values for MAG CDF files."""
 from imap_processing.cdf.defaults import GlobalConstants
 from imap_processing.cdf.global_attrs import (
-    CoordinateAttrs,
+    AttrBase,
     GlobalDataLevelAttrs,
     GlobalInstrumentAttrs,
     ScienceAttrs,
@@ -50,18 +51,40 @@ mag_l1c_attrs = GlobalDataLevelAttrs(
 # TODO: Supporting data attributes?
 
 # TODO: display type, catdesc, units, format, label_axis
+
 mag_vector_attrs = ScienceAttrs(
     validmin=GlobalConstants.INT_FILLVAL,
     validmax=GlobalConstants.INT_MAXVAL,
+    catdesc="Magnetic field vectors",
     depend_0="Epoch",
     depend_1="Direction",
     display_type="time_series",
     fieldname="Magnetic Field Vector",
-    fill_val=GlobalConstants.INT_FILLVAL,
-    format="F64.5",
+    label_axis="Magnetic field vector",
+    fill_val=GlobalConstants.INT_MAXVAL,
+    format="I3",
     units="counts",
     var_type="data",
 )
+
+mag_support_attrs = ScienceAttrs(
+    validmin=GlobalConstants.INT_FILLVAL,
+    validmax=GlobalConstants.INT_MAXVAL,
+    depend_0="Epoch",
+    display_type="time_series",
+    fill_val=GlobalConstants.INT_FILLVAL,
+    format="I12",
+    var_type="support_data",
+)
+
+mag_metadata_attrs = AttrBase(
+    validmin=GlobalConstants.INT_FILLVAL,
+    validmax=GlobalConstants.INT_MAXVAL,
+    display_type="time_series",
+    fill_val=GlobalConstants.INT_FILLVAL,
+    var_type="metadata",
+)
+
 
 mag_flag_attrs = ScienceAttrs(
     validmin=0,
@@ -72,40 +95,11 @@ mag_flag_attrs = ScienceAttrs(
     format="I1",
 )
 
-direction_attrs = CoordinateAttrs(
+direction_attrs = AttrBase(
     validmin=GlobalConstants.INT_FILLVAL,
     validmax=GlobalConstants.INT_MAXVAL,
     catdesc="Magnetic field vector",
     fieldname="[x,y,z] magnetic field vector",
-    format="F64.5",
+    format="I3",
     var_type="support_data",
-    lablaxis="Magnetic field vector",
 )
-
-
-# "FEE_ICU_IO_STATUS": {
-#             "dims": [
-#                 "dim_empty"
-#             ],
-#             "attrs": {
-#                 "CATDESC": "Sensor Front End Electronics Instrument Control Unit Input Output Status",
-#                 "DEPEND_0": "EPOCH",
-#                 "DETECTOR": "OBS>Outboard Sensor",
-#                 "DISPLAY_TYPE": "time_series",
-#                 "FIELDNAM": "Sensor Front End Electronics ICU IO Status",
-#                 "FILLVAL": 255,
-#                 "FORMAT": "I1",
-#                 "LABLAXIS": "FEE ICU IO Status",
-#                 "SCALEMAX": 1,
-#                 "SCALEMIN": 0,
-#                 "SCALETYP": "linear",
-#                 "UNITS": "None",
-#                 "VALIDMAX": 1,
-#                 "VALIDMIN": 0,
-#                 "VAR_TYPE": "metadata",
-#                 "standard_name": "Sensor Front End Electronics ICU IO Status",
-#                 "long_name": "FEE ICU IO Status",
-#                 "units": "None"
-#             },
-#             "data": []
-#         },

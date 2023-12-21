@@ -8,6 +8,9 @@ check if all the attributes are valid of if all the required attributes are pres
 This check occurs during the xarray_to_cdf step, which has an example in
 imap_processing/cdf/utils.py.
 
+For more information on attributes, refer to the SPDF documentation at:
+https://spdf.gsfc.nasa.gov/istp_guide/vattributes.html
+
 Additional examples on how to use these dataclasses are in
 imap_processing/idex/idex_cdf_attrs.py and imap_processing/idex/idex_packet_parser.py.
 """
@@ -43,19 +46,40 @@ class GlobalConstantAttrs:
         "Mission_group": "IMAP>Interstellar Mapping and Acceleration Probe",
     }
 
-    pi_name = ["Dr. David J. McComas"]
-    pi_affiliation = [
+    pi_name: tuple[str] = ("Dr. David J. McComas",)
+    pi_affiliation: tuple[str, str] = (
         "Princeton Plasma Physics Laboratory",
         "100 Stellarator Road, Princeton, NJ 08540",
-    ]
+    )
 
     def output(
         self,
-        pi_names: Optional[list[str]] = None,
-        pi_affiliations: Optional[list[str]] = None,
+        pi_names: Optional[tuple] = None,
+        pi_affiliations: Optional[tuple] = None,
     ):
-        output_name = self.pi_name + pi_names if pi_names else self.pi_name
-        output_affiliation = (
+        """
+        Generate the output for the global attributes as a dictionary.
+
+        If pi_names or pi_affiliations are included, they are added to the output (in
+        addition to the global IMAP PI information.)
+
+        Parameters
+        ----------
+        pi_names: tuple
+            A tuple of names of instrument PIs to include in the global attributes of
+            the file. Can be any length
+        pi_affiliations: tuple
+            A tuple of affilitations for each PI. This should include univeristy
+            information. Can be any length
+
+        Returns
+        -------
+        dict
+            Global base attributes, plus pi_names and pi_attributes from the default
+            values and any provided keywords
+        """
+        output_name = list(self.pi_name + pi_names if pi_names else self.pi_name)
+        output_affiliation = list(
             self.pi_affiliation + pi_affiliations
             if pi_affiliations
             else self.pi_affiliation
@@ -119,8 +143,8 @@ class GlobalInstrumentAttrs:
     descriptor: str
     text: str
     instrument_type: str = "Particles (space)"
-    pi_affiliation: list[str] = None
-    pi_name: list[str] = None
+    pi_affiliations: tuple = None
+    pi_names: tuple = None
 
     def output(self):
         """
@@ -135,7 +159,7 @@ class GlobalInstrumentAttrs:
         GlobalConstantAttrs.GLOBAL_BASE.copy()
 
         return GlobalConstantAttrs().output(
-            pi_names=self.pi_name, pi_affiliations=self.pi_affiliation
+            pi_names=self.pi_names, pi_affiliations=self.pi_affiliations
         ) | {
             "Data_version": self.version,
             "Descriptor": self.descriptor,
@@ -284,6 +308,7 @@ class ScienceAttrs(AttrBase):
     depend_3: str = None
     variable_purpose: str = None
     var_notes: str = None
+    labl_ptr: str = None
 
     def __post_init__(self):
         """If depend_0 is not set, raise an error, as this attribute is required."""
@@ -316,6 +341,10 @@ class ScienceAttrs(AttrBase):
 
         if self.var_notes is not None:
             endval["VAR_NOTES"] = self.var_notes
+
+        if self.labl_ptr is not None:
+            endval["LABL_PTR_1"] = self.labl_ptr
+
         return super().output() | endval
 
 
@@ -386,21 +415,3 @@ class StringAttrs:
             "FIELDNAM": self.fieldname,
             "VAR_TYPE": self.var_type,
         }
-
-
-@dataclass
-class CoordinateAttrs(AttrBase):
-    # "CATDESC": "Default time",
-    # "FIELDNAM": "Epoch",
-    # "FILLVAL": GlobalConstants.INT_FILLVAL,
-    # "FORMAT": "a2",
-    # "LABLAXIS": "Epoch",
-    # "UNITS": "ns",
-    # "VALIDMIN": GlobalConstants.MIN_EPOCH,
-    # "VALIDMAX": GlobalConstants.MAX_EPOCH,
-    # "VAR_TYPE": "support_data",
-    # "SCALETYP": "linear",
-    lablaxis: str = None
-
-    def output(self):
-        return super().output() | {"LABLAXIS": self.lablaxis}

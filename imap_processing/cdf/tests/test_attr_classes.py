@@ -17,11 +17,14 @@ def test_global_attrs():
         descriptor="2",
         text="3",
         instrument_type="4",
-        pi_name=["Miles O'Brien"],
-        pi_affiliation=["Deep Space 9", "Bajoran System"],
+        pi_names=("Miles O'Brien",),
+        pi_affiliations=(
+            "Deep Space 9",
+            "Bajoran System",
+        ),
     )
-    expected_global_base = GlobalConstantAttrs().output()
-    expected = expected_global_base | {
+
+    expected = GlobalConstantAttrs().output() | {
         "PI_name": ["Dr. David J. McComas", "Miles O'Brien"],
         "PI_affiliation": [
             "Princeton Plasma Physics Laboratory",
@@ -34,7 +37,7 @@ def test_global_attrs():
         "TEXT": "3",
         "Instrument_type": "4",
     }
-    print(expected)
+
     assert inst.output() == expected
 
     data_level = GlobalDataLevelAttrs(

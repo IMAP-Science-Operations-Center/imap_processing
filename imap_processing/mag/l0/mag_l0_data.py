@@ -1,3 +1,4 @@
+"""Dataclasses for Level 0 MAG data."""
 from dataclasses import dataclass
 from enum import IntEnum
 
@@ -17,16 +18,6 @@ class Mode(IntEnum):
 
     BURST = 1068
     NORM = 1052
-
-
-@dataclass
-class Sensor:
-    active: bool
-    is_mago: bool
-    is_primary: bool
-    vecsec: int
-    coarse_time: int
-    fine_time: int
 
 
 @dataclass

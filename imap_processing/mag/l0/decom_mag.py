@@ -1,4 +1,7 @@
+"""Methods for processing raw MAG packets into CDF files for level 0 and level 1a."""
+import dataclasses
 import logging
+from collections import defaultdict
 from pathlib import Path
 
 import numpy as np
@@ -67,31 +70,32 @@ def decom_packets(packet_file_path: str) -> list[MagL0]:
         return data_list
 
 
-def export_to_xarray(l1a_data: list[MagL0]):
-    """Mag outputs "RAW" CDF files just after decomming. These are the same as the L1A
-    CDF data files, but with raw binary data for the vectors instead of a list of
-    vector values.
+def export_to_xarray(l0_data: list[MagL0]):
+    """Generate xarray files for "raw" MAG CDF files from MagL0 data.
+
+    Mag outputs "RAW" CDF files just after decomming. These have the immediately
+    post-decom data, with raw binary data for the vectors instead of vector values.
+
+    Parameters
+    ----------
+    l0_data: list[MagL0]
+        A list of MagL0 datapoints
     """
     # TODO split by mago and magi using primary sensor
     # TODO split by norm and burst
-    norm_data = {"SHCOARSE": [], "raw_vectors": []}
+    norm_data = defaultdict(
+        list
+    )  # dict.fromkeys(dataclasses.asdict(l1a_data[0]).keys(), [])
     burst_data = norm_data.copy()
 
-    for datapoint in l1a_data:
+    for datapoint in l0_data:
         if datapoint.ccsds_header.PKT_APID == Mode.NORM:
-            norm_data["SHCOARSE"].append(datapoint.SHCOARSE)
-            norm_data["raw_vectors"].append(datapoint.VECTORS)
-
+            for key, value in dataclasses.asdict(datapoint).items():
+                if key != "ccsds_header":
+                    norm_data[key].append(value)
         if datapoint.ccsds_header.PKT_APID == Mode.BURST:
             burst_data["SHCOARSE"].append(datapoint.SHCOARSE)
             burst_data["raw_vectors"].append(datapoint.VECTORS)
-
-    xr.DataArray(
-        norm_data["SHCOARSE"],
-        name="Epoch",
-        dims=["Epoch"],
-        attrs=ConstantCoordinates.EPOCH,
-    )
 
     # Used in L1A vectors
     direction = xr.DataArray(
@@ -102,7 +106,6 @@ def export_to_xarray(l1a_data: list[MagL0]):
     )
 
     # print(direction)
-    print(mag_cdf_attrs.direction_attrs.output())
     norm_epoch_time = xr.DataArray(
         norm_data["SHCOARSE"],
         name="Epoch",
@@ -112,8 +115,8 @@ def export_to_xarray(l1a_data: list[MagL0]):
 
     # TODO: raw vectors units
     norm_raw_vectors = xr.DataArray(
-        norm_data["raw_vectors"],
-        name="Raw Vectors",
+        norm_data["VECTORS"],
+        name="Raw_Vectors",
         dims=["Epoch", "Direction"],
         attrs=mag_cdf_attrs.mag_vector_attrs.output(),
     )
@@ -124,8 +127,24 @@ def export_to_xarray(l1a_data: list[MagL0]):
         attrs=mag_cdf_attrs.mag_l1a_attrs.output(),
     )
 
-    norm_dataset["RAW-VECTORS"] = norm_raw_vectors
-    # vectors
-    # flags
+    norm_dataset["RAW_VECTORS"] = norm_raw_vectors
+
+    # TODO: retrieve the doc for the CDF description
+    print(getattr(MagL0, "__doc__", {}))
+
+    for key, value in norm_data.items():
+        # Time varying values
+        if key not in ["SHCOARSE", "VECTORS"]:
+            norm_datarray = xr.DataArray(
+                value,
+                name=key,
+                dims=["Epoch"],
+                attrs=dataclasses.replace(
+                    mag_cdf_attrs.mag_support_attrs,
+                    catdesc=f"Raw {key} values varying by time",
+                    fieldname=f"{key}",
+                ).output(),
+            )
+            norm_dataset[key] = norm_datarray
 
     return norm_dataset
