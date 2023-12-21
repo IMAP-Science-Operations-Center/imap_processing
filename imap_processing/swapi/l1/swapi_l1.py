@@ -177,7 +177,6 @@ def decompress_count(count_data: np.ndarray, compression_flag: np.ndarray = None
     # If 1 and count is 0xFFFF, value is overflow.
     new_count = copy.deepcopy(count_data)
     compressed_count_indices = np.where(compression_flag == 1)[0]
-    print("index", compressed_count_indices)
     for index in compressed_count_indices:
         if count_data[index] == 0xFFFF:  # Overflow
             new_count[index] = -1
@@ -193,6 +192,36 @@ def process_cem_data(full_sweep_sci, cem_prefix, m, n):
     data and then apply transformation to get
     data in the correct sequence order and in the final
     data shape required by SWAPI.
+
+    For Example, each PCEM or SCEM or COIN or their quality flags,
+    the data is in sequence order. But in final sweep data, we need to
+    flatten array in the correct order of sequence number.
+    Eg.
+    Here, we reorder data from this:
+    [
+      [ 0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11],
+      [ 0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11],
+      [ 0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11],
+      [ 0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11],
+      [ 0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11],
+      [ 0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11]
+    ]
+
+    to this:
+    [
+      0  0  0  0  0  0
+      1  1  1  1  1  1
+      2  2  2  2  2  2
+      3  3  3  3  3  3
+      4  4  4  4  4  4
+      5  5  5  5  5  5
+      6  6  6  6  6  6
+      7  7  7  7  7  7
+      8  8  8  8  8  8
+      9  9  9  9  9  9
+      10 10 10 10 10 10
+      11 11 11 11 11 11
+    ]
 
     Parameters
     ----------
@@ -217,35 +246,6 @@ def process_cem_data(full_sweep_sci, cem_prefix, m, n):
     numpy.ndarray
         Array with data in the correct sequence order.
     """
-    # For each PCEM, SCEM, COIN, and their quality flags, the data
-    # is in sequence order. But in final sweep data, we need to
-    # flatten array in the correct order of sequence number.
-    # Eg.
-    # Here, we reorder data from this:
-    # [
-    #   [ 0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11],
-    #   [ 0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11],
-    #   [ 0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11],
-    #   [ 0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11],
-    #   [ 0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11],
-    #   [ 0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11]
-    # ]
-    #
-    # to this:
-    # [
-    #   0  0  0  0  0  0
-    #   1  1  1  1  1  1
-    #   2  2  2  2  2  2
-    #   3  3  3  3  3  3
-    #   4  4  4  4  4  4
-    #   5  5  5  5  5  5
-    #   6  6  6  6  6  6
-    #   7  7  7  7  7  7
-    #   8  8  8  8  8  8
-    #   9  9  9  9  9  9
-    #   10 10 10 10 10 10
-    #   11 11 11 11 11 11
-    # ]
     return np.vstack(
         (
             full_sweep_sci[f"{cem_prefix}0"].data[m:n],
@@ -365,11 +365,11 @@ def process_full_sweep_data(full_sweep_sci, sweep_start_index, sweep_end_index):
         List of decompressed SCEM counts.
     coin_count : numpy.ndarray
         List of decompressedCOIN counts.
-    pcem_rng_val : numpy.ndarray
+    pcem_compression_flag : numpy.ndarray
         List of PCEM compression indicator.
-    scem_rng_val : numpy.ndarray
+    scem_compression_flag : numpy.ndarray
         List of SCEM compression indicator.
-    coin_rng_val : numpy.ndarray
+    coin_compression_flag : numpy.ndarray
         List of COIN compression indicator.
     """
     # current sweep start and end index
@@ -444,7 +444,8 @@ def check_for_bad_data(full_sweep_sci, sweep_start_index, sweep_end_index):
         logging.debug("PLAN_ID and SWEEP_TABLE is not same")
         return True
 
-    # TODO: change comparison to SWAPIMODE.HVSCI
+    # TODO: change comparison to SWAPIMODE.HVSCI once we have
+    # some HVSCI data
     if not np.all(mode[m:n] == SWAPIMODE.HVENG):
         logging.debug("MODE is not HVSCI")
         return True
@@ -476,9 +477,9 @@ def process_swapi_science(sci_dataset):
     swp_pcem_counts = []
     swp_scem_counts = []
     swp_coin_counts = []
-    swp_pcem_comp = []
-    swp_scem_comp = []
-    swp_coin_comp = []
+    pcem_compression_flags = []
+    scem_compression_flags = []
+    coin_compression_flags = []
 
     epoch_time = []
 
@@ -488,28 +489,30 @@ def process_swapi_science(sci_dataset):
         m = sweep_index
         # current sweep end index
         n = sweep_index + 12
-        # current sweep data is not good, don't process it
+        # If current sweep data is not good, don't process it
         if check_for_bad_data(full_sweep_sci, m, n):
             continue
 
         # Store the earliest time of current sweep
         epoch_time.append(full_sweep_sci["Epoch"].data[m])
+
+        # Process good data
         (
             pcem_counts,
             scem_counts,
             coin_counts,
-            pcem_comp,
-            scem_comp,
-            coin_comp,
+            pcem_flags,
+            scem_flags,
+            coin_flags,
         ) = process_full_sweep_data(
             full_sweep_sci=full_sweep_sci, sweep_start_index=m, sweep_end_index=n
         )
         swp_pcem_counts.append(pcem_counts)
         swp_scem_counts.append(scem_counts)
         swp_coin_counts.append(coin_counts)
-        swp_pcem_comp.append(pcem_comp)
-        swp_scem_comp.append(scem_comp)
-        swp_coin_comp.append(coin_comp)
+        pcem_compression_flags.append(pcem_flags)
+        scem_compression_flags.append(scem_flags)
+        coin_compression_flags.append(coin_flags)
 
     # ===================================================================
     # Step 3: Create xarray.Dataset
@@ -534,20 +537,20 @@ def process_swapi_science(sci_dataset):
     dataset["SWP_COIN_COUNTS"] = xr.DataArray(swp_coin_counts, dims=["Epoch", "Energy"])
 
     # L1 quality flags
-    dataset["SWP_PCEM_RNG_ST_COMP"] = xr.DataArray(
-        swp_pcem_comp, dims=["Epoch", "Energy"]
+    dataset["SWP_PCEM_FLAGS"] = xr.DataArray(
+        pcem_compression_flags, dims=["Epoch", "Energy"]
     )
-    dataset["SWP_SCEM_RNG_ST_COMP"] = xr.DataArray(
-        swp_scem_comp, dims=["Epoch", "Energy"]
+    dataset["SWP_SCEM_FLAGS"] = xr.DataArray(
+        scem_compression_flags, dims=["Epoch", "Energy"]
     )
-    dataset["SWP_COIN_RNG_ST_COMP"] = xr.DataArray(
-        swp_coin_comp, dims=["Epoch", "Energy"]
+    dataset["SWP_COIN_FLAGS"] = xr.DataArray(
+        coin_compression_flags, dims=["Epoch", "Energy"]
     )
 
     # Uncertainty in counts formula:
     # Uncertainty is quantified for the PCEM, SCEM, and COIN counts.
     # The Poisson contribution is
-    # uncertainty = sqrt(count)
+    #   uncertainty = sqrt(count)
     dataset["SWP_PCEM_ERR"] = xr.DataArray(
         np.sqrt(swp_pcem_counts), dims=["Epoch", "Energy"]
     )
