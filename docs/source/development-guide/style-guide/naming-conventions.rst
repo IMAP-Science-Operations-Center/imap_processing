@@ -25,7 +25,7 @@ The general filename convention is as follows::
   * IDEX: ``l0``, ``l1a``, ``l1b``, ``l1c``, ``l2``, ``l3``
   * IMAP-Hi: ``l0``, ``l1a``, ``l1b``, ``l1c``, ``l2``, ``l3``
   * IMAP-Lo: ``l0``, ``l1a``, ``l1b``, ``l1c``, ``l2``
-  * IMAP-Ultra: ``l0``, ``l1a``, ``l1b``, ``l1c``, ``l1d``, ``l2``, ``l3``
+  * IMAP-Ultra: ``l0``, ``l1a``, ``l1b``, ``l1ca``, ``l1cb``, ``l1c``, ``l1d``, ``l2``, ``l3``
   * MAG: ``l0``, ``l1a``, ``l1b``, ``l1c``, ``l2pre``, ``l2``
   * SWAPI: ``l0``, ``l1``, ``l2``, ``l3a``, ``l3b``
   * SWE: ``l0``, ``l1a``, ``l1b``, ``l2``, ``l3``
@@ -36,13 +36,13 @@ The general filename convention is as follows::
   include underscores. The following is a list of expected descriptors for each instrument:
 
   * CoDICE: ``hi``, ``lo``
-  * GLOWS: TBD
+  * GLOWS: ``histogram``, ``de``, ``<pointing number>``
   * HIT: TBD
   * IDEX: TBD
   * IMAP-Hi: TBD
   * IMAP-Lo: TBD
-  * IMAP-Ultra: TBD
-  * MAG: TBD
+  * IMAP-Ultra: ``<pointing number>``
+  * MAG: ``normal``, ``burst``
   * SWAPI: TBD
   * SWE: TBD
 
