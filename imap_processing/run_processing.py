@@ -187,11 +187,9 @@ class Ultra(ProcessInstrument):
         print(f"Processing IMAP-Ultra {self.level}")
 
 
-if __name__ == "__main__":
+def main():
     args = _parse_args()
     _validate_args(args)
-
-    # Determine which function to invoke
     cls = getattr(sys.modules[__name__], args.instrument.capitalize())
     instrument = cls(args.level)
     instrument.process()
