@@ -95,12 +95,16 @@ def decompress_count(count_data: np.ndarray, compression_flag: np.ndarray = None
     # If 0, value is already decompressed. If 1, value is compressed.
     # If 1 and count is 0xFFFF, value is overflow.
     new_count = copy.deepcopy(count_data)
-    compressed_count_indices = np.where(compression_flag == 1)[0]
-    for index in compressed_count_indices:
-        if count_data[index] == 0xFFFF:  # Overflow
-            new_count[index] = -1
-        elif count_data[index] != 0xFFFF:
-            new_count[index] = count_data[index] * 16
+    # This below line gives back row and column index for
+    # compressed flags. Eg.
+    # (array([0, 1, 2, 2]), array([ 4,  1, 20, 51]))
+    compressed_count_indices = np.where(compression_flag == 1)
+
+    for row, col in zip(*compressed_count_indices):
+        if count_data[row, col] == 0xFFFF:  # Overflow
+            new_count[row, col] = -1
+        elif count_data[row, col] != 0xFFFF:
+            new_count[row, col] = count_data[row, col] * 16
     return new_count
 
 
@@ -216,87 +220,10 @@ def get_indices_of_full_sweep(seq_number: np.ndarray):
     return full_cycles_indices.reshape(-1)
 
 
-def process_cem_data(full_sweep_sci, cem_prefix, m, n):
-    """Combine certain CEM's data or their flag.
-
-    Here, it combines certain CEM's data or their flag
-    data and then apply transformation to get
-    data in the correct sequence order and in the final
-    data shape required by SWAPI.
-
-    For Example, each PCEM or SCEM or COIN or their quality flags,
-    the data is in sequence order. But in final sweep data, we need to
-    flatten array in the correct order of sequence number.
-    Eg.
-    Here, we reorder data from this:
-
-    | [
-    |   [ 0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11],
-    |   [ 0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11],
-    |   [ 0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11],
-    |   [ 0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11],
-    |   [ 0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11],
-    |   [ 0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11]
-    | ]
-
-    to this:
-
-    |   [
-    |       0,  0,  0,  0,  0,  0,
-    |       1,  1,  1,  1,  1,  1,
-    |       2,  2,  2,  2,  2,  2,
-    |       3,  3,  3,  3,  3,  3,
-    |       4,  4,  4,  4,  4,  4,
-    |       5,  5,  5,  5,  5,  5,
-    |       6, 6,  6,  6,  6,  6,
-    |       7,  7,  7,  7,  7,  7,
-    |       8,  8,  8,  8,  8,  8,
-    |       9,  9,  9,  9,  9,  9,
-    |       10, 10, 10, 10, 10, 10,
-    |       11, 11, 11, 11, 11, 11
-    |   ]
-
-    Parameters
-    ----------
-    full_sweep_sci : xarray.Dataset
-        Full dataset
-    cem_prefix : str
-        Indicate which CEM or its flag we are processing. Options are:
-        |    PCEM_CNT
-        |    SCEM_CNT
-        |    COIN_CNT
-        |    PCEM_RNG_ST
-        |    SCEM_RNG_ST
-        |    COIN_RNG_ST
-    m : int
-        Start index of current sweep.
-    n : int
-        End index of current sweep.
-
-    Returns
-    -------
-    numpy.ndarray
-        Array with data in the correct sequence order.
-    """
-    return np.vstack(
-        (
-            full_sweep_sci[f"{cem_prefix}0"].data[m:n],
-            full_sweep_sci[f"{cem_prefix}1"].data[m:n],
-            full_sweep_sci[f"{cem_prefix}2"].data[m:n],
-            full_sweep_sci[f"{cem_prefix}3"].data[m:n],
-            full_sweep_sci[f"{cem_prefix}4"].data[m:n],
-            full_sweep_sci[f"{cem_prefix}5"].data[m:n],
-        )
-    ).T.reshape(1, 72)[0]
-
-
-def process_full_sweep_data(full_sweep_sci, sweep_start_index, sweep_end_index):
+def process_sweep_data(full_sweep_sci, cem_prefix, total_full_sweeps):
     """Process full sweep data.
 
-    Twelve consecutive seconds of science data correspond to a single(full)
-    sweep, which is the unit of L1a data and downstream products.
-
-    In other word, data from each packet comes like this:
+    Data from each packet comes like this:
 
     |    SEQ_NUMBER
     |    .
@@ -358,7 +285,7 @@ def process_full_sweep_data(full_sweep_sci, sweep_start_index, sweep_end_index):
     |    SCEM_CNT_5   -> [x, x, x, x, x,..., x, x, x, ..., x, x, x]
     |    COIN_CNT_5   -> [x, x, x, x, x,..., x, x, x, ..., x, x, x]
 
-    This function reads one current sweep data in this order:
+    This function reads each sweep data in this order:
 
     |    PCEM_CNT0 --> 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11
     |    PCEM_CNT1 --> 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11
@@ -370,8 +297,8 @@ def process_full_sweep_data(full_sweep_sci, sweep_start_index, sweep_end_index):
     This example show for PCEM_CNT but same logic applies
     to SCEM_CNT, COIN_CNT, PCEM_RNG, SCEM_RNG, and COIN_RNG.
 
-    In the final L1A product of 1x72 array where we store
-    final PCEM, SCEM, COIN counts or compression indicator
+    In the final L1A product of (total_number_of_sweep x 72) array where
+    we store final PCEM, SCEM, COIN counts or compression indicator
     such as PCEM_RNG, SCEM_RNG, COIN_RNG,
     we want data in this order. Transpose of above layout
 
@@ -389,56 +316,96 @@ def process_full_sweep_data(full_sweep_sci, sweep_start_index, sweep_end_index):
     Parameters
     ----------
     full_sweep_sci : xarray.Dataset
-        Science data that only contains full sweep data.
-    sweep_start_index : int
-        Start index of current sweep.
-    sweep_end_index: int
-        End index of current sweep.
+        Full dataset
+    cem_prefix : str
+        Indicate which CEM or its flag we are processing. Options are:
 
-    Returns
-    -------
-    pcem_count : numpy.ndarray
-        List of decompressed PCEM counts.
-    scem_count : numpy.ndarray
-        List of decompressed SCEM counts.
-    coin_count : numpy.ndarray
-        List of decompressedCOIN counts.
-    pcem_compression_flag : numpy.ndarray
-        List of PCEM compression indicator.
-    scem_compression_flag : numpy.ndarray
-        List of SCEM compression indicator.
-    coin_compression_flag : numpy.ndarray
-        List of COIN compression indicator.
+        |    PCEM_CNT
+        |    SCEM_CNT
+        |    COIN_CNT
+        |    PCEM_RNG_ST
+        |    SCEM_RNG_ST
+        |    COIN_RNG_ST
+    total_full_sweeps: int
+        Total number of sweeps
     """
-    # current sweep start and end index
-    m = sweep_start_index
-    n = sweep_end_index
+    all_cem_data = np.zeros((total_full_sweeps, 72))
 
-    # All of these count and compression flag is 1x72 array
-
-    raw_pcem_count = process_cem_data(full_sweep_sci, "PCEM_CNT", m, n)
-    raw_scem_count = process_cem_data(full_sweep_sci, "SCEM_CNT", m, n)
-    raw_coin_count = process_cem_data(full_sweep_sci, "COIN_CNT", m, n)
-
-    # Compression indicators
-    # XXX_RNG_ST{step} --> 0: not compressed, 1: compressed
-    pcem_compression_flag = process_cem_data(full_sweep_sci, "PCEM_RNG_ST", m, n)
-    scem_compression_flag = process_cem_data(full_sweep_sci, "SCEM_RNG_ST", m, n)
-    coin_compression_flag = process_cem_data(full_sweep_sci, "COIN_RNG_ST", m, n)
-
-    # Decompress counts using compression flags
-    pcem_count = decompress_count(raw_pcem_count, pcem_compression_flag)
-    scem_count = decompress_count(raw_scem_count, scem_compression_flag)
-    coin_count = decompress_count(raw_coin_count, coin_compression_flag)
-
-    return (
-        pcem_count,
-        scem_count,
-        coin_count,
-        pcem_compression_flag,
-        scem_compression_flag,
-        coin_compression_flag,
+    # First, concat all PCEM data
+    current_cem_counts = np.concatenate(
+        (
+            full_sweep_sci[f"{cem_prefix}0"],
+            full_sweep_sci[f"{cem_prefix}1"],
+            full_sweep_sci[f"{cem_prefix}2"],
+            full_sweep_sci[f"{cem_prefix}3"],
+            full_sweep_sci[f"{cem_prefix}4"],
+            full_sweep_sci[f"{cem_prefix}5"],
+        ),
+        axis=0,
     )
+
+    # Next:
+    # Reshape data by CEM, number of sweeps and sequence counts.
+    # Therefore, the data shape is 6 x total_full_sweeps x 12
+    # Output looks like this:
+    # [
+    # [[ 0  1  2  3  4  5  6  7  8  9 10 11]
+    # [ 1  2  3  4  5  6  7  8  9  10  11  12]
+    # [ 2  3  4  5  6  7  8  9  10  11  12  13]]
+
+    # [[ 0  1  2  3  4  5  6  7  8  9 10 11]
+    # [ 1  2  3  4  5  6  7  8  9  10  11  12]
+    # [ 2  3  4  5  6  7  8  9  10  11  12  13]]
+
+    # [[ 0  1  2  3  4  5  6  7  8  9 10 11]
+    # [ 1  2  3  4  5  6  7  8  9  10  11  12]
+    # [ 2  3  4  5  6  7  8  9  10  11  12  13]]
+
+    # [[ 0  1  2  3  4  5  6  7  8  9 10 11]
+    # [ 1  2  3  4  5  6  7  8  9  10  11  12]
+    # [ 2  3  4  5  6  7  8  9  10  11  12  13]]
+
+    # [[ 0  1  2  3  4  5  6  7  8  9 10 11]
+    # [ 1  2  3  4  5  6  7  8  9  10  11  12]
+    # [ 2  3  4  5  6  7  8  9  10  11  12  13]]
+
+    # [[ 0  1  2  3  4  5  6  7  8  9 10 11]
+    # [ 1  2  3  4  5  6  7  8  9  10  11  12]
+    # [ 2  3  4  5  6  7  8  9  10  11  12  13]]]
+    # In other word, we grouped each cem's
+    # data by full sweep.
+    current_cem_counts = current_cem_counts.reshape(6, total_full_sweeps, 12)
+
+    # Then, we go from above to
+    # to this final output:
+    # [
+    # [[0  0  0  0  0  0]
+    # [1  1  1  1  1  1]
+    # [2  2  2  2  2  2]
+    # [3  3  3  3  3  3]
+    # [4  4  4  4  4  4]
+    # [5  5  5  5  5  5]
+    # [6  6  6  6  6  6]
+    # [7  7  7  7  7  7]
+    # [8  8  8  8  8  8]
+    # [9  9  9  9  9  9]
+    # [10 10 10 10 10 10]
+    # [11 11 11 11 11 11]],
+    # [[1  1  1  1  1  1]
+    # [2  2  2  2  2  2]
+    # [3  3  3  3  3  3]
+    # ...
+    # [12  12  12  12  12  12]],
+    # [[2  2  2  2  2  2]
+    # [3  3  3  3  3  3]
+    # ...
+    # [13  13  13  13  13  13]]
+    # ]
+    all_cem_data = np.stack(current_cem_counts, axis=-1)
+    # This line just flatten the inner most array to
+    # (total_full_sweeps x 72)
+    all_cem_data = all_cem_data.reshape(total_full_sweeps, 72)
+    return all_cem_data
 
 
 def process_swapi_science(sci_dataset):
@@ -454,59 +421,41 @@ def process_swapi_science(sci_dataset):
     # ====================================================
     full_sweep_indices = get_indices_of_full_sweep(sci_dataset["SEQ_NUMBER"].data)
     full_sweep_sci = filter_full_cycle_data(full_sweep_indices, sci_dataset)
+    # TODO: check for bad data
 
     # ====================================================
     # Step 2: Process full sweep data
     # ====================================================
     total_packets = len(full_sweep_sci["SEQ_NUMBER"].data)
+
+    # It takes 12 sequence data to make one full sweep
+    total_sequence = 12
+    total_full_sweeps = total_packets // total_sequence
     # These array will be of size (number of good sweep, 72)
-    # but didn't initialized it because we could remove
-    # bad sweep data based on data checks
-    swp_pcem_counts = []
-    swp_scem_counts = []
-    swp_coin_counts = []
-    pcem_compression_flags = []
-    scem_compression_flags = []
-    coin_compression_flags = []
+    raw_pcem_count = process_sweep_data(full_sweep_sci, "PCEM_CNT", total_full_sweeps)
+    raw_scem_count = process_sweep_data(full_sweep_sci, "SCEM_CNT", total_full_sweeps)
+    raw_coin_count = process_sweep_data(full_sweep_sci, "COIN_CNT", total_full_sweeps)
+    pcem_compression_flags = process_sweep_data(
+        full_sweep_sci, "PCEM_RNG_ST", total_full_sweeps
+    )
+    scem_compression_flags = process_sweep_data(
+        full_sweep_sci, "SCEM_RNG_ST", total_full_sweeps
+    )
+    coin_compression_flags = process_sweep_data(
+        full_sweep_sci, "COIN_RNG_ST", total_full_sweeps
+    )
 
-    epoch_time = []
-
-    # Step through each twelve packets that makes full sweep
-    for sweep_index in range(0, total_packets, 12):
-        # current sweep start index
-        m = sweep_index
-        # current sweep end index
-        n = sweep_index + 12
-        # If current sweep data is not good, don't process it
-        if check_for_bad_data(full_sweep_sci, m, n):
-            continue
-
-        # Store the earliest time of current sweep
-        epoch_time.append(full_sweep_sci["Epoch"].data[m])
-
-        # Process good data
-        (
-            pcem_counts,
-            scem_counts,
-            coin_counts,
-            pcem_flags,
-            scem_flags,
-            coin_flags,
-        ) = process_full_sweep_data(
-            full_sweep_sci=full_sweep_sci, sweep_start_index=m, sweep_end_index=n
-        )
-        swp_pcem_counts.append(pcem_counts)
-        swp_scem_counts.append(scem_counts)
-        swp_coin_counts.append(coin_counts)
-        pcem_compression_flags.append(pcem_flags)
-        scem_compression_flags.append(scem_flags)
-        coin_compression_flags.append(coin_flags)
+    print(raw_pcem_count)
+    swp_pcem_counts = decompress_count(raw_pcem_count, pcem_compression_flags)
+    swp_scem_counts = decompress_count(raw_scem_count, scem_compression_flags)
+    swp_coin_counts = decompress_count(raw_coin_count, coin_compression_flags)
 
     # ===================================================================
     # Step 3: Create xarray.Dataset
     # ===================================================================
 
     # Epoch time. Should be same dimension as number of good sweeps
+    epoch_time = full_sweep_sci["Epoch"].data.reshape(total_full_sweeps, 12)[:, 0]
     epoch_time = xr.DataArray(
         epoch_time,
         name="Epoch",
@@ -535,6 +484,9 @@ def process_swapi_science(sci_dataset):
         coin_compression_flags, dims=["Epoch", "Energy"]
     )
 
+    # ===================================================================
+    # Step 4: Calculate uncertainty
+    # ===================================================================
     # Uncertainty in counts formula:
     # Uncertainty is quantified for the PCEM, SCEM, and COIN counts.
     # The Poisson contribution is
@@ -552,7 +504,7 @@ def process_swapi_science(sci_dataset):
 
 
 def swapi_l1(packets):
-    """Process SWAPI L0 data to level 1.
+    """Based on APID, process SWAPI L0 data to level 1.
 
     Parameters
     ----------
@@ -568,6 +520,5 @@ def swapi_l1(packets):
         ds_data = create_dataset(sorted_packets)
 
         if apid == SWAPIAPID.SWP_SCI.value:
-            data = process_swapi_science(ds_data)
-            print(data)
+            process_swapi_science(ds_data)
             # TODO: save full sweep data to CDF

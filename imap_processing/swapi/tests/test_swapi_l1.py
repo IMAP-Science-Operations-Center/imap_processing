@@ -2,8 +2,9 @@ import pytest
 
 from imap_processing import imap_module_directory
 from imap_processing.decom import decom_packets
-from imap_processing.swapi.l1.swapi_l1 import SWAPIAPID, swapi_l1
-from imap_processing.utils import group_by_apid
+from imap_processing.swapi.l1.swapi_l1 import SWAPIAPID, process_swapi_science
+from imap_processing.swapi.swapi_utils import create_dataset
+from imap_processing.utils import group_by_apid, sort_by_time
 
 
 @pytest.fixture(scope="session")
@@ -22,6 +23,7 @@ def decom_test_data():
 
 def test_decom_swapi_algorithm(decom_test_data):
     grouped_data = group_by_apid(decom_test_data)
-    science_data = grouped_data[SWAPIAPID.SWP_SCI.value]
-    print(len(science_data))
-    swapi_l1(decom_test_data)
+    science_data = grouped_data[SWAPIAPID.SWP_SCI]
+    sorted_packets = sort_by_time(science_data, "SHCOARSE")
+    ds_data = create_dataset(sorted_packets)
+    process_swapi_science(ds_data)
