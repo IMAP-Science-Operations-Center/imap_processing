@@ -13,10 +13,12 @@ Use
 import argparse
 import sys
 from abc import ABC, abstractmethod
+import spiceypy as spice
 
 from imap_processing import instruments, processing_levels
+from tools.spice.spice_utils import list_loaded_kernels
 
-# Constants for symlink paths
+# Constants for symlink
 LATEST_ATTITUDE_KERNEL_PATH = "/mnt/spice/latest_attitude_kernel.ah.a"
 LATEST_EPHEMERIS_KERNEL_PATH = "/mnt/spice/latest_ephemeris_kernel.bsp"
 
@@ -88,13 +90,11 @@ class ProcessInstrument(ABC):
     @staticmethod
     def get_latest_data():
         """Get the latest ephemeris and attitude data."""
-        with open(LATEST_ATTITUDE_KERNEL_PATH) as attitude_file:
-            attitude_data = attitude_file.read()
-
-        with open(LATEST_EPHEMERIS_KERNEL_PATH) as ephemeris_file:
-            ephemeris_data = ephemeris_file.read()
-
-        return attitude_data, ephemeris_data
+        with spice.KernelPool(LATEST_ATTITUDE_KERNEL_PATH):
+            attitude = list_loaded_kernels()
+        with spice.KernelPool(LATEST_EPHEMERIS_KERNEL_PATH):
+            ephemeris = list_loaded_kernels()
+        return attitude, ephemeris
 
 
 class Codice(ProcessInstrument):
@@ -102,89 +102,89 @@ class Codice(ProcessInstrument):
 
     def process(self):
         """Perform CoDICE specific processing."""
-        ephemeris_data, attitude_data = ProcessInstrument.get_latest_data()
-        print(f"Processing CoDICE {self.level} with latest data")
+        attitude, ephemeris = ProcessInstrument.get_latest_data()
+        print(f"Processing CoDICE {self.level} using {attitude} and {ephemeris}")
 
 
 class Glows(ProcessInstrument):
     """Process GLOWS."""
 
     def process(self):
-        ephemeris_data, attitude_data = ProcessInstrument.get_latest_data()
+        attitude, ephemeris = ProcessInstrument.get_latest_data()
         """Perform GLOWS specific processing."""
-        print(f"Processing GLOWS {self.level}")
+        print(f"Processing GLOWS {self.level} using {self.level} using {attitude} and {ephemeris}")
 
 
 class Hi(ProcessInstrument):
     """Process IMAP-Hi."""
 
     def process(self):
-        ephemeris_data, attitude_data = ProcessInstrument.get_latest_data()
+        attitude, ephemeris = ProcessInstrument.get_latest_data()
         """Perform IMAP-Hi specific processing."""
-        print(f"Processing IMAP-Hi {self.level}")
+        print(f"Processing IMAP-Hi {self.level} using {attitude} and {ephemeris}")
 
 
 class Hit(ProcessInstrument):
     """Process HIT."""
 
     def process(self):
-        ephemeris_data, attitude_data = ProcessInstrument.get_latest_data()
+        attitude, ephemeris = ProcessInstrument.get_latest_data()
         """Perform HIT specific processing."""
-        print(f"Processing HIT {self.level}")
+        print(f"Processing HIT {self.level} using {attitude} and {ephemeris}")
 
 
 class Idex(ProcessInstrument):
     """Process IDEX."""
 
     def process(self):
-        ephemeris_data, attitude_data = ProcessInstrument.get_latest_data()
+        attitude, ephemeris = ProcessInstrument.get_latest_data()
         """Perform IDEX specific processing."""
-        print(f"Processing IDEX {self.level}")
+        print(f"Processing IDEX {self.level} using {attitude} and {ephemeris}")
 
 
 class Lo(ProcessInstrument):
     """Process IMAP-Lo."""
 
     def process(self):
-        ephemeris_data, attitude_data = ProcessInstrument.get_latest_data()
+        attitude, ephemeris = ProcessInstrument.get_latest_data()
         """Perform IMAP-Lo specific processing."""
-        print(f"Processing IMAP-Lo {self.level}")
+        print(f"Processing IMAP-Lo {self.level} using {attitude} and {ephemeris}")
 
 
 class Mag(ProcessInstrument):
     """Process MAG."""
 
     def process(self):
-        ephemeris_data, attitude_data = ProcessInstrument.get_latest_data()
+        attitude, ephemeris = ProcessInstrument.get_latest_data()
         """Perform MAG specific processing."""
-        print(f"Processing MAG {self.level}")
+        print(f"Processing MAG {self.level} using {attitude} and {ephemeris}")
 
 
 class Swapi(ProcessInstrument):
     """Process SWAPI."""
 
     def process(self):
-        ephemeris_data, attitude_data = ProcessInstrument.get_latest_data()
+        attitude, ephemeris = ProcessInstrument.get_latest_data()
         """Perform SWAPI specific processing."""
-        print(f"Processing SWAPI {self.level}")
+        print(f"Processing SWAPI {self.level} using {attitude} and {ephemeris}")
 
 
 class Swe(ProcessInstrument):
     """Process SWE."""
 
     def process(self):
-        eephemeris_data, attitude_data = ProcessInstrument.get_latest_data()
+        attitude, ephemeris = ProcessInstrument.get_latest_data()
         """Perform SWE specific processing."""
-        print(f"Processing SWE {self.level}")
+        print(f"Processing SWE {self.level} using {attitude} and {ephemeris}")
 
 
 class Ultra(ProcessInstrument):
     """Process IMAP-Ultra."""
 
     def process(self):
-        ephemeris_data, attitude_data = ProcessInstrument.get_latest_data()
+        attitude, ephemeris = ProcessInstrument.get_latest_data()
         """Perform IMAP-Ultra specific processing."""
-        print(f"Processing IMAP-Ultra {self.level}")
+        print(f"Processing IMAP-Ultra {self.level} using {attitude} and {ephemeris}")
 
 
 def main():

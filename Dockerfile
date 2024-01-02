@@ -29,8 +29,13 @@ RUN curl -sSL https://install.python-poetry.org | python -
 # Add poetry to path
 ENV PATH="$PATH:/root/.local/bin"
 
+# Create the /mnt/spice directory
+RUN mkdir -p /mnt/spice
+
 # Copy necessary files over
+# TODO: RUN pip install imap_processing once it is published to PyPI
 COPY imap_processing $IMAP_PROCESS_DIRECTORY/imap_processing
+COPY tools $IMAP_PROCESS_DIRECTORY/tools
 COPY README.md $IMAP_PROCESS_DIRECTORY
 COPY pyproject.toml $IMAP_PROCESS_DIRECTORY
 COPY LICENSE $IMAP_PROCESS_DIRECTORY
