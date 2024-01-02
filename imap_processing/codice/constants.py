@@ -1,5 +1,85 @@
 """Contains constants variables to support CoDICE processing."""
 
+# ESA Sweep table ID lookup table
+# The combination of plan_id and plan_step determine the ESA sweep Table to use
+# Currently, ESA sweep table 0 is used for every plan_id/plan_step combination,
+# but may change in the future. These values are provided in the SCI-LUT excel
+# spreadsheet
+ESA_SWEEP_TABLE = {
+    (0, 0): 0,
+    (0, 1): 0,
+    (0, 2): 0,
+    (0, 3): 0,
+    (1, 0): 0,
+    (1, 1): 0,
+    (1, 2): 0,
+    (1, 3): 0,
+    (2, 0): 0,
+    (2, 1): 0,
+    (2, 2): 0,
+    (2, 3): 0,
+    (3, 0): 0,
+    (3, 1): 0,
+    (3, 2): 0,
+    (3, 3): 0,
+    (4, 0): 0,
+    (4, 1): 0,
+    (4, 2): 0,
+    (4, 3): 0,
+    (5, 0): 0,
+    (5, 1): 0,
+    (5, 2): 0,
+    (5, 3): 0,
+    (6, 0): 0,
+    (6, 1): 0,
+    (6, 2): 0,
+    (6, 3): 0,
+    (7, 0): 0,
+    (7, 1): 0,
+    (7, 2): 0,
+    (7, 3): 0,
+}
+
+# Lo Stepping table ID lookup table
+# The combination of plan_id and plan_step determine the Lo Stepping Table to
+# use. Currently, LO Stepping table 0 is used for every plan_id/plan_step
+# combination, but may change in the future. These values are provided in the
+# SCI-LUT excel spreadsheet
+LO_STEPPING_TABLE = {
+    (0, 0): 0,
+    (0, 1): 0,
+    (0, 2): 0,
+    (0, 3): 0,
+    (1, 0): 0,
+    (1, 1): 0,
+    (1, 2): 0,
+    (1, 3): 0,
+    (2, 0): 0,
+    (2, 1): 0,
+    (2, 2): 0,
+    (2, 3): 0,
+    (3, 0): 0,
+    (3, 1): 0,
+    (3, 2): 0,
+    (3, 3): 0,
+    (4, 0): 0,
+    (4, 1): 0,
+    (4, 2): 0,
+    (4, 3): 0,
+    (5, 0): 0,
+    (5, 1): 0,
+    (5, 2): 0,
+    (5, 3): 0,
+    (6, 0): 0,
+    (6, 1): 0,
+    (6, 2): 0,
+    (6, 3): 0,
+    (7, 0): 0,
+    (7, 1): 0,
+    (7, 2): 0,
+    (7, 3): 0,
+}
+
 # Lookup tables for Lossy decompression algorithms "A" and "B"
 # These were provided by Greg Dunn via his sohis_cdh_utils.v script and then
 # transformed into python dictionaries. The values in these tables are subject
