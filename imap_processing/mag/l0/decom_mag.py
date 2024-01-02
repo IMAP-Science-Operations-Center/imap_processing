@@ -73,9 +73,7 @@ def export_to_xarray(l0_data: list[MagL0]):
     """
     # TODO split by mago and magi using primary sensor
     # TODO split by norm and burst
-    norm_data = defaultdict(
-        list
-    )  # dict.fromkeys(dataclasses.asdict(l1a_data[0]).keys(), [])
+    norm_data = defaultdict(list)
     burst_data = norm_data.copy()
 
     for datapoint in l0_data:
