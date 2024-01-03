@@ -9,7 +9,7 @@ from imap_processing.swapi.swapi_utils import SWAPIAPID, SWAPIMODE, create_datas
 from imap_processing.utils import group_by_apid, sort_by_time
 
 
-def check_for_bad_data(full_sweep_sci, sweep_start_index, sweep_end_index):
+def check_for_bad_data(full_sweep_sci):
     """Check for bad data.
 
     Bad data indicator:
@@ -23,41 +23,51 @@ def check_for_bad_data(full_sweep_sci, sweep_start_index, sweep_end_index):
     ----------
     full_sweep_sci : xarray.Dataset
         Science data that only contains full sweep data.
-    sweep_start_index : int
-        Start index of current sweep.
-    sweep_end_index: int
-        End index of current sweep.
 
     Returns
     -------
-    bool
-        True if bad data is found, False otherwise.
+    List
+        List of sweep indices of bad data
     """
-    # current sweep start and end index
-    m = sweep_start_index
-    n = sweep_end_index
-
     # If PLAN_ID and SWEEP_TABLE is not same, the discard the
-    # sweep data. PLAN_ID and SWEEP_TABLE should match
-    # meaing PLAN_ID for current sweep should all be one value and
+    # sweep data. PLAN_ID and SWEEP_TABLE should match. In other word,
+    # PLAN_ID for current sweep should all be one value and
     # SWEEP_TABLE should all be one value.
-    plan_id = full_sweep_sci["PLAN_ID_SCIENCE"].data
-    sweep_table = full_sweep_sci["SWEEP_TABLE"].data
-    mode = full_sweep_sci["MODE"].data
+    plan_id = full_sweep_sci["PLAN_ID_SCIENCE"].data.reshape(-1, 12)
+    sweep_table = full_sweep_sci["SWEEP_TABLE"].data.reshape(-1, 12)
+    # plan_id[1][0] = 1
+    mode = full_sweep_sci["MODE"].data.reshape(-1, 12)
 
-    if not np.all(plan_id[m:n] == plan_id[m]) and np.all(
-        sweep_table[m:n] == sweep_table[m]
-    ):
-        logging.debug("PLAN_ID and SWEEP_TABLE is not same")
-        return True
+    bad_data_start_indices = []
+    for index in range(len(plan_id)):
+        # print(np.all(sweep_table[index] != sweep_table[index][0]))
+        if not np.all(sweep_table[index] == sweep_table[index][0]):
+            logging.debug("SWEEP_TABLE is not same")
+            bad_data_start_indices.append(index)
 
-    # TODO: change comparison to SWAPIMODE.HVSCI once we have
-    # some HVSCI data
-    if not np.all(mode[m:n] == SWAPIMODE.HVENG):
-        logging.debug("MODE is not HVSCI")
-        return True
+        if not np.all(plan_id[index] == plan_id[index][0]):
+            logging.debug("PLAN_ID is not same")
+            bad_data_start_indices.append(index)
+
+        # TODO: change comparison to SWAPIMODE.HVSCI once we have
+        # some HVSCI data
+        if not np.all(mode[index] == SWAPIMODE.HVENG):
+            logging.debug("MODE is not HVSCI")
+            bad_data_start_indices.append(index)
     # TODO: add checks for checksum
-    return False
+
+    # Get bad data sweep start indices and create
+    # sweep indices.
+    # Eg.
+    # From this: [0 1]
+    # To this: [[ 0  1  2  3  4  5  6  7  8  9 10 11]
+    # [12 13 14 15 16 17 18 19 20 21 22 23]]
+    cycle_start_indices = np.unique(bad_data_start_indices)
+    cycle_indices = np.array(
+        [np.arange(n * 12, (n + 1) * 12) for n in cycle_start_indices]
+    ).reshape(-1)
+    print(cycle_indices)
+    return cycle_indices
 
 
 def decompress_count(count_data: np.ndarray, compression_flag: np.ndarray = None):
@@ -422,6 +432,12 @@ def process_swapi_science(sci_dataset):
     full_sweep_indices = get_indices_of_full_sweep(sci_dataset["SEQ_NUMBER"].data)
     full_sweep_sci = filter_full_cycle_data(full_sweep_indices, sci_dataset)
     # TODO: check for bad data
+    # Find indices of bad sweep cycles
+    bad_data_indices = check_for_bad_data(full_sweep_sci)
+    if len(bad_data_indices) > 0:
+        logging.info("Bad data detected")
+        logging.info(bad_data_indices)
+        # TODO: filter out bad data
 
     # ====================================================
     # Step 2: Process full sweep data
