@@ -38,8 +38,10 @@ def check_for_bad_data(full_sweep_sci):
     # plan_id[1][0] = 1
     mode = full_sweep_sci["MODE"].data.reshape(-1, 12)
 
+    total_sweeps = len(plan_id)
+
     bad_data_start_indices = []
-    for index in range(len(plan_id)):
+    for index in range(total_sweeps):
         # print(np.all(sweep_table[index] != sweep_table[index][0]))
         if not np.all(sweep_table[index] == sweep_table[index][0]):
             logging.debug("SWEEP_TABLE is not same")
@@ -63,11 +65,10 @@ def check_for_bad_data(full_sweep_sci):
     # To this: [[ 0  1  2  3  4  5  6  7  8  9 10 11]
     # [12 13 14 15 16 17 18 19 20 21 22 23]]
     cycle_start_indices = np.unique(bad_data_start_indices)
-    cycle_indices = np.array(
+    bad_cycle_indices = np.array(
         [np.arange(n * 12, (n + 1) * 12) for n in cycle_start_indices]
     ).reshape(-1)
-    print(cycle_indices)
-    return cycle_indices
+    return bad_cycle_indices
 
 
 def decompress_count(count_data: np.ndarray, compression_flag: np.ndarray = None):
@@ -138,8 +139,8 @@ def filter_full_cycle_data(full_cycle_data_indices: np.ndarray, l1a_data: xr.Dat
     full_sweep_dataset = xr.Dataset(
         coords={"Epoch": l1a_data["Epoch"].data[full_cycle_data_indices]}
     )
-    for key, value in l1a_data.items():
-        full_sweep_dataset[key] = xr.DataArray(value.data[full_cycle_data_indices])
+    for key, _value in l1a_data.items():
+        full_sweep_dataset[key] = l1a_data[key][full_cycle_data_indices]
     return full_sweep_dataset
 
 
@@ -437,7 +438,9 @@ def process_swapi_science(sci_dataset):
     if len(bad_data_indices) > 0:
         logging.info("Bad data detected")
         logging.info(bad_data_indices)
-        # TODO: filter out bad data
+        # TODO: filter out bad data from full_sweep_sci
+        # NOTE: may be use bad_data_indices to get good data indices
+        # and pass to filter_full_cycle_data?
 
     # ====================================================
     # Step 2: Process full sweep data
