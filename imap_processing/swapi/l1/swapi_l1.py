@@ -144,7 +144,7 @@ def filter_full_cycle_data(full_cycle_data_indices: np.ndarray, l1a_data: xr.Dat
     return full_sweep_dataset
 
 
-def find_sweep_starts(sweep: np.ndarray):
+def find_sweep_starts(packets: xr.Dataset):
     """Find index of where new cycle started.
 
     Beginning of a sweep is marked by SWP_SCI.SEQ_NUMBER=0
@@ -156,19 +156,19 @@ def find_sweep_starts(sweep: np.ndarray):
 
     Parameters
     ----------
-    sweep : numpy.ndarray
-        Array that contains quarter cycle information.
+    packets : xarray.Dataset
+        Dataset that contains SWP_SCI packets.
 
     Returns
     -------
     numpy.ndarray
         Array of indices of start cycle.
     """
-    if sweep.size < 12:
+    if packets["Epoch"].size < 12:
         return np.array([], np.int64)
 
-    # calculate difference between consecutive sweep
-    diff = sweep[1:] - sweep[:-1]
+    # calculate time difference between consecutive sweep
+    diff = packets["Epoch"].data[1:] - packets["Epoch"].data[:-1]
 
     # This uses sliding window to find index where cycle starts.
     # This is what this below code line is doing:
@@ -182,7 +182,7 @@ def find_sweep_starts(sweep: np.ndarray):
     ione = diff == 1
 
     valid = (
-        (sweep == 0)[:-11]
+        (packets["SEQ_NUMBER"] == 0)[:-11]
         & ione[:-10]
         & ione[1:-9]
         & ione[2:-8]
@@ -198,7 +198,7 @@ def find_sweep_starts(sweep: np.ndarray):
     return np.where(valid)[0]
 
 
-def get_indices_of_full_sweep(seq_number: np.ndarray):
+def get_indices_of_full_sweep(packets: xr.Dataset):
     """Get indices of full cycles.
 
     Beginning of a sweep is marked by SWP_SCI.SEQ_NUMBER=0
@@ -211,8 +211,8 @@ def get_indices_of_full_sweep(seq_number: np.ndarray):
 
     Parameters
     ----------
-    seq_number : numpy.ndarray
-        Array that contains SEQ_NUMBER data informations.
+    packets : xarray.Dataset
+        Dataset that contains SEQ_NUMBER data informations.
         Eg. sci_dataset["SEQ_NUMBER"].data
 
     Returns
@@ -220,7 +220,7 @@ def get_indices_of_full_sweep(seq_number: np.ndarray):
     numpy.ndarray
         1D array with indices of full cycle data.
     """
-    indices_of_start = find_sweep_starts(seq_number)
+    indices_of_start = find_sweep_starts(packets)
     # find_sweep_starts[..., None] creates array of shape(n, 1).
     #   Eg. [[3], [8]]
     # np.arange(12)[None, ...] creates array of shape(1, 12)
@@ -430,7 +430,7 @@ def process_swapi_science(sci_dataset):
     # ====================================================
     # Step 1: Filter full cycle data
     # ====================================================
-    full_sweep_indices = get_indices_of_full_sweep(sci_dataset["SEQ_NUMBER"].data)
+    full_sweep_indices = get_indices_of_full_sweep(sci_dataset)
     full_sweep_sci = filter_full_cycle_data(full_sweep_indices, sci_dataset)
     # TODO: check for bad data
     # Find indices of bad sweep cycles
