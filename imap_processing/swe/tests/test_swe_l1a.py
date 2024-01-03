@@ -1,5 +1,3 @@
-import os
-
 import pytest
 
 from imap_processing import imap_module_directory
@@ -47,11 +45,9 @@ def test_group_by_apid(decom_test_data):
     assert len(total_event_message_data) == 15
 
 
-def test_cdf_creation(decom_test_data, tmp_path):
-    cdf_filepath = tmp_path / "cdf_files"
-    cdf_filepath.mkdir()
+def test_cdf_creation(decom_test_data):
     grouped_data = group_by_apid(decom_test_data)
-    sci_cdf_filepath = swe_l1a(grouped_data[SWEAPID.SWE_SCIENCE], cdf_filepath)
-    hk_cdf_filepath = swe_l1a(grouped_data[SWEAPID.SWE_APP_HK], cdf_filepath)
-    assert os.path.basename(sci_cdf_filepath) == "imap_swe_l1a_sci_20230927_v01.cdf"
-    assert os.path.basename(hk_cdf_filepath) == "imap_swe_l1a_lveng_hk_20230927_v01.cdf"
+    sci_cdf_filepath = swe_l1a(grouped_data[SWEAPID.SWE_SCIENCE])
+    hk_cdf_filepath = swe_l1a(grouped_data[SWEAPID.SWE_APP_HK])
+    assert sci_cdf_filepath.name == "imap_swe_l1a_sci_20230927_v01.cdf"
+    assert hk_cdf_filepath.name == "imap_swe_l1a_lveng-hk_20230927_v01.cdf"
