@@ -10,7 +10,7 @@ from imap_processing.utils import group_by_apid, sort_by_time
 
 
 def check_for_bad_data(full_sweep_sci):
-    """Check for bad data.
+    """Find bad data sweep indices.
 
     Bad data indicator:
 
@@ -204,7 +204,7 @@ def get_indices_of_full_sweep(packets: xr.Dataset):
 
 
 def process_sweep_data(full_sweep_sci, cem_prefix, total_full_sweeps):
-    """Process full sweep data.
+    """Group full sweep data into correct sequence order.
 
     Data from each packet comes like this:
 
@@ -392,7 +392,7 @@ def process_sweep_data(full_sweep_sci, cem_prefix, total_full_sweeps):
 
 
 def process_swapi_science(sci_dataset):
-    """Process SWAPI science data.
+    """Process SWAPI science data and create CDF file.
 
     Parameters
     ----------
