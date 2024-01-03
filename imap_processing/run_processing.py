@@ -13,14 +13,8 @@ Use
 import argparse
 import sys
 from abc import ABC, abstractmethod
-import spiceypy as spice
 
 from imap_processing import instruments, processing_levels
-from tools.spice.spice_utils import list_loaded_kernels
-
-# Constants for symlink
-LATEST_ATTITUDE_KERNEL_PATH = "/mnt/spice/latest_attitude_kernel.ah.a"
-LATEST_EPHEMERIS_KERNEL_PATH = "/mnt/spice/latest_ephemeris_kernel.bsp"
 
 
 def _parse_args():
@@ -87,109 +81,92 @@ class ProcessInstrument(ABC):
         """Perform instrument specific processing."""
         raise NotImplementedError
 
-    @staticmethod
-    def get_latest_data():
-        """Get the latest ephemeris and attitude data."""
-        with spice.KernelPool(LATEST_ATTITUDE_KERNEL_PATH):
-            attitude = list_loaded_kernels()
-        with spice.KernelPool(LATEST_EPHEMERIS_KERNEL_PATH):
-            ephemeris = list_loaded_kernels()
-        return attitude, ephemeris
-
 
 class Codice(ProcessInstrument):
     """Process CoDICE."""
 
     def process(self):
         """Perform CoDICE specific processing."""
-        attitude, ephemeris = ProcessInstrument.get_latest_data()
-        print(f"Processing CoDICE {self.level} using {attitude} and {ephemeris}")
+        print(f"Processing CoDICE {self.level}")
 
 
 class Glows(ProcessInstrument):
     """Process GLOWS."""
 
     def process(self):
-        attitude, ephemeris = ProcessInstrument.get_latest_data()
         """Perform GLOWS specific processing."""
-        print(f"Processing GLOWS {self.level} using {self.level} using {attitude} and {ephemeris}")
+        print(f"Processing GLOWS {self.level}")
 
 
 class Hi(ProcessInstrument):
     """Process IMAP-Hi."""
 
     def process(self):
-        attitude, ephemeris = ProcessInstrument.get_latest_data()
         """Perform IMAP-Hi specific processing."""
-        print(f"Processing IMAP-Hi {self.level} using {attitude} and {ephemeris}")
+        print(f"Processing IMAP-Hi {self.level}")
 
 
 class Hit(ProcessInstrument):
     """Process HIT."""
 
     def process(self):
-        attitude, ephemeris = ProcessInstrument.get_latest_data()
         """Perform HIT specific processing."""
-        print(f"Processing HIT {self.level} using {attitude} and {ephemeris}")
+        print(f"Processing HIT {self.level}")
 
 
 class Idex(ProcessInstrument):
     """Process IDEX."""
 
     def process(self):
-        attitude, ephemeris = ProcessInstrument.get_latest_data()
         """Perform IDEX specific processing."""
-        print(f"Processing IDEX {self.level} using {attitude} and {ephemeris}")
+        print(f"Processing IDEX {self.level}")
 
 
 class Lo(ProcessInstrument):
     """Process IMAP-Lo."""
 
     def process(self):
-        attitude, ephemeris = ProcessInstrument.get_latest_data()
         """Perform IMAP-Lo specific processing."""
-        print(f"Processing IMAP-Lo {self.level} using {attitude} and {ephemeris}")
+        print(f"Processing IMAP-Lo {self.level}")
 
 
 class Mag(ProcessInstrument):
     """Process MAG."""
 
     def process(self):
-        attitude, ephemeris = ProcessInstrument.get_latest_data()
         """Perform MAG specific processing."""
-        print(f"Processing MAG {self.level} using {attitude} and {ephemeris}")
+        print(f"Processing MAG {self.level}")
 
 
 class Swapi(ProcessInstrument):
     """Process SWAPI."""
 
     def process(self):
-        attitude, ephemeris = ProcessInstrument.get_latest_data()
         """Perform SWAPI specific processing."""
-        print(f"Processing SWAPI {self.level} using {attitude} and {ephemeris}")
+        print(f"Processing SWAPI {self.level}")
 
 
 class Swe(ProcessInstrument):
     """Process SWE."""
 
     def process(self):
-        attitude, ephemeris = ProcessInstrument.get_latest_data()
         """Perform SWE specific processing."""
-        print(f"Processing SWE {self.level} using {attitude} and {ephemeris}")
+        print(f"Processing SWE {self.level}")
 
 
 class Ultra(ProcessInstrument):
     """Process IMAP-Ultra."""
 
     def process(self):
-        attitude, ephemeris = ProcessInstrument.get_latest_data()
         """Perform IMAP-Ultra specific processing."""
-        print(f"Processing IMAP-Ultra {self.level} using {attitude} and {ephemeris}")
+        print(f"Processing IMAP-Ultra {self.level}")
 
 
-def main():
+if __name__ == "__main__":
     args = _parse_args()
     _validate_args(args)
+
+    # Determine which function to invoke
     cls = getattr(sys.modules[__name__], args.instrument.capitalize())
     instrument = cls(args.level)
     instrument.process()
