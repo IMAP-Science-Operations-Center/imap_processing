@@ -29,20 +29,17 @@ def check_for_bad_data(full_sweep_sci):
     List
         List of sweep indices of bad data
     """
-    # If PLAN_ID and SWEEP_TABLE is not same, the discard the
-    # sweep data. PLAN_ID and SWEEP_TABLE should match. In other word,
     # PLAN_ID for current sweep should all be one value and
     # SWEEP_TABLE should all be one value.
     plan_id = full_sweep_sci["PLAN_ID_SCIENCE"].data.reshape(-1, 12)
     sweep_table = full_sweep_sci["SWEEP_TABLE"].data.reshape(-1, 12)
-    # plan_id[1][0] = 1
+
     mode = full_sweep_sci["MODE"].data.reshape(-1, 12)
 
     total_sweeps = len(plan_id)
-
     bad_data_start_indices = []
+
     for index in range(total_sweeps):
-        # print(np.all(sweep_table[index] != sweep_table[index][0]))
         if not np.all(sweep_table[index] == sweep_table[index][0]):
             logging.debug("SWEEP_TABLE is not same")
             bad_data_start_indices.append(index)
@@ -117,31 +114,6 @@ def decompress_count(count_data: np.ndarray, compression_flag: np.ndarray = None
         elif count_data[row, col] != 0xFFFF:
             new_count[row, col] = count_data[row, col] * 16
     return new_count
-
-
-def filter_full_cycle_data(full_cycle_data_indices: np.ndarray, l1a_data: xr.Dataset):
-    """Filter metadata and science of packets that makes full cycles.
-
-    Parameters
-    ----------
-    full_cycle_data_indices : numpy.ndarray
-        Array with indices of full cycles.
-    l1a_data : xarray.Dataset
-        L1A dataset
-
-    Returns
-    -------
-    xarray.Dataset
-        L1A dataset with filtered metadata.
-    """
-    # Had to create new xr.Dataset because Epoch shape and new data variables shapes was
-    # different.
-    full_sweep_dataset = xr.Dataset(
-        coords={"Epoch": l1a_data["Epoch"].data[full_cycle_data_indices]}
-    )
-    for key, _value in l1a_data.items():
-        full_sweep_dataset[key] = l1a_data[key][full_cycle_data_indices]
-    return full_sweep_dataset
 
 
 def find_sweep_starts(packets: xr.Dataset):
@@ -342,7 +314,7 @@ def process_sweep_data(full_sweep_sci, cem_prefix, total_full_sweeps):
     """
     all_cem_data = np.zeros((total_full_sweeps, 72))
 
-    # First, concat all PCEM data
+    # First, concat all CEM data
     current_cem_counts = np.concatenate(
         (
             full_sweep_sci[f"{cem_prefix}0"],
@@ -431,40 +403,45 @@ def process_swapi_science(sci_dataset):
     # Step 1: Filter full cycle data
     # ====================================================
     full_sweep_indices = get_indices_of_full_sweep(sci_dataset)
-    full_sweep_sci = filter_full_cycle_data(full_sweep_indices, sci_dataset)
-    # TODO: check for bad data
+
+    # Filter full sweep data using indices returned from above line
+    full_sweep_sci = sci_dataset.isel({"Epoch": full_sweep_indices})
+
     # Find indices of bad sweep cycles
     bad_data_indices = check_for_bad_data(full_sweep_sci)
     if len(bad_data_indices) > 0:
-        logging.info("Bad data detected")
+        logging.info("Bad data found.")
         logging.info(bad_data_indices)
-        # TODO: filter out bad data from full_sweep_sci
-        # NOTE: may be use bad_data_indices to get good data indices
-        # and pass to filter_full_cycle_data?
+        # Use bad data indices to find all good data indices.
+        # Then use that good data indices to filter good sweep data.
+        all_indices = np.arange(len(full_sweep_sci["Epoch"]))
+        good_data_indices = np.setdiff1d(all_indices, bad_data_indices)
+        good_sweep_sci = full_sweep_sci.isel({"Epoch": good_data_indices})
+    else:
+        good_sweep_sci = full_sweep_sci
 
     # ====================================================
-    # Step 2: Process full sweep data
+    # Step 2: Process good sweep data
     # ====================================================
-    total_packets = len(full_sweep_sci["SEQ_NUMBER"].data)
+    total_packets = len(good_sweep_sci["SEQ_NUMBER"].data)
 
     # It takes 12 sequence data to make one full sweep
     total_sequence = 12
     total_full_sweeps = total_packets // total_sequence
     # These array will be of size (number of good sweep, 72)
-    raw_pcem_count = process_sweep_data(full_sweep_sci, "PCEM_CNT", total_full_sweeps)
-    raw_scem_count = process_sweep_data(full_sweep_sci, "SCEM_CNT", total_full_sweeps)
-    raw_coin_count = process_sweep_data(full_sweep_sci, "COIN_CNT", total_full_sweeps)
+    raw_pcem_count = process_sweep_data(good_sweep_sci, "PCEM_CNT", total_full_sweeps)
+    raw_scem_count = process_sweep_data(good_sweep_sci, "SCEM_CNT", total_full_sweeps)
+    raw_coin_count = process_sweep_data(good_sweep_sci, "COIN_CNT", total_full_sweeps)
     pcem_compression_flags = process_sweep_data(
-        full_sweep_sci, "PCEM_RNG_ST", total_full_sweeps
+        good_sweep_sci, "PCEM_RNG_ST", total_full_sweeps
     )
     scem_compression_flags = process_sweep_data(
-        full_sweep_sci, "SCEM_RNG_ST", total_full_sweeps
+        good_sweep_sci, "SCEM_RNG_ST", total_full_sweeps
     )
     coin_compression_flags = process_sweep_data(
-        full_sweep_sci, "COIN_RNG_ST", total_full_sweeps
+        good_sweep_sci, "COIN_RNG_ST", total_full_sweeps
     )
 
-    print(raw_pcem_count)
     swp_pcem_counts = decompress_count(raw_pcem_count, pcem_compression_flags)
     swp_scem_counts = decompress_count(raw_scem_count, scem_compression_flags)
     swp_coin_counts = decompress_count(raw_coin_count, coin_compression_flags)
@@ -474,7 +451,7 @@ def process_swapi_science(sci_dataset):
     # ===================================================================
 
     # Epoch time. Should be same dimension as number of good sweeps
-    epoch_time = full_sweep_sci["Epoch"].data.reshape(total_full_sweeps, 12)[:, 0]
+    epoch_time = good_sweep_sci["Epoch"].data.reshape(total_full_sweeps, 12)[:, 0]
     epoch_time = xr.DataArray(
         epoch_time,
         name="Epoch",
