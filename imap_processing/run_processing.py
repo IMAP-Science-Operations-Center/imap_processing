@@ -11,10 +11,14 @@ Use
 """
 
 import argparse
+import os
 import sys
 from abc import ABC, abstractmethod
 
+import spiceypy as spice
+
 from imap_processing import instruments, processing_levels
+from tools.spice.spice_utils import list_files_with_extensions, list_loaded_kernels
 
 
 def _parse_args():
@@ -160,6 +164,15 @@ class Ultra(ProcessInstrument):
     def process(self):
         """Perform IMAP-Ultra specific processing."""
         print(f"Processing IMAP-Ultra {self.level}")
+
+        # Example of using the spice_utils module
+        directory = os.getenv("SPICE_DIRECTORY")
+        kernels = list_files_with_extensions(directory, [".ah.a", ".bsp"])
+
+        with spice.KernelPool(kernels):
+            result = list_loaded_kernels()
+
+        print(result)
 
 
 if __name__ == "__main__":
