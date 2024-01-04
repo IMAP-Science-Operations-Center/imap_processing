@@ -83,4 +83,4 @@ ignore = ["D104", "PLR2004", "S101"]
 convention = "numpy"
 
 [tool.poetry.scripts]
-imap-processing = 'imap_processing.cli:main'
+imap_cli = 'imap_processing.cli:main'
