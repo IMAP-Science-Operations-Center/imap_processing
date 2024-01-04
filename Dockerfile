@@ -19,14 +19,14 @@ RUN pip install --upgrade pip
 # Install imap_processing
 #RUN pip install imap_processing
 # TODO: delete this section once new version released for imap_processing
-RUN pip install git+https://github.com/IMAP-Science-Operations-Center/imap_processing.git@dev
+RUN pip install git+https://github.com/laspsandoval/imap_processing.git@dev
 
 # Copy over only the necessary scripts
-COPY imap_processing/run_processing.py $IMAP_PROCESS_DIRECTORY/run_processing.py
-COPY tools $IMAP_PROCESS_DIRECTORY/tools
+#COPY imap_processing/cli.py $IMAP_PROCESS_DIRECTORY/cli.py
 
 # Create the /mnt/spice directory
 RUN mkdir -p /mnt/spice
 
 # Define the entrypoint of the container
-ENTRYPOINT ["python", "/opt/imap/run_processing.py"]
+ENTRYPOINT ["imap_cli"]
+#ENTRYPOINT ["python", "/opt/imap/cli.py"]
