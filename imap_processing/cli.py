@@ -7,7 +7,7 @@ a user-supplied instrument and data level.
 
 Use
 ---
-    python cli.py <instrument> <data_level>
+    imap_cli --instrument <instrument> --level <data_level>
 """
 
 import argparse
@@ -171,3 +171,7 @@ def main(cli_args: Optional[list] = None):
     cls = getattr(sys.modules[__name__], args.instrument.capitalize())
     instrument = cls(args.level)
     instrument.process()
+
+
+if __name__ == "__main__":
+    main()
