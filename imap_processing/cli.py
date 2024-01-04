@@ -7,7 +7,7 @@ a user-supplied instrument and data level.
 
 Use
 ---
-    python run_processing.py <instrument> <data_level>
+    python cli.py <instrument> <data_level>
 """
 
 import argparse
