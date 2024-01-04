@@ -36,10 +36,9 @@ def _parse_args(cli_args: list):
         f"The data level to process. Acceptable values are: {processing_levels}"
     )
 
-    parser = argparse.ArgumentParser(description=description)
+    parser = argparse.ArgumentParser(prog="imap_cli", description=description)
     parser.add_argument("--instrument", type=str, required=True, help=instrument_help)
     parser.add_argument("--level", type=str, required=True, help=level_help)
-
     args = parser.parse_args(cli_args)
 
     return args

@@ -28,7 +28,7 @@ Login to the ECR.
 
 Build the Docker image.
 
-    `docker build -t <image name> .`
+    `docker build -t <image name> . --no-cache`
 
 Tag the image and push to the ECR.
 
