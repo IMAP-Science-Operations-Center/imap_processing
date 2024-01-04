@@ -9,11 +9,11 @@ Building and Running a Docker Image Locally
 To build the image run the following command from the directory containing the Dockerfile. You might add -t option to tag your image
 and --rm to remove intermediate containers after the build is done.
 
-    `docker build -t <image name> --rm .`
+    `docker build -t <image name>:<tag name> --rm .`
 
 Now we can run our image.
 
-    `docker run --rm -it --volume="$(pwd)/imap_processing/efs:/mnt/spice" <image name> --instrument <instrument> --level <level>`
+    `docker run --rm -it --volume="$(pwd)/imap_processing/efs:/mnt/spice" <image name>:<tag name> --instrument <instrument> --level <level>`
 
 Building and running a docker image in AWS
 """""""""""""""""""""""""""""""""""""""""""
