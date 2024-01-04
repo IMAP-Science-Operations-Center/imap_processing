@@ -13,6 +13,7 @@ Use
 import argparse
 import sys
 from abc import ABC, abstractmethod
+from typing import Optional
 
 from imap_processing import instruments, processing_levels
 
@@ -161,7 +162,7 @@ class Ultra(ProcessInstrument):
         print(f"Processing IMAP-Ultra {self.level}")
 
 
-def main(cli_args):
+def main(cli_args: Optional[list] = None):
     """Create CLI entrypoint."""
     args = _parse_args(cli_args)
 
