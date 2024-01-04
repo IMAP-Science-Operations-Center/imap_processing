@@ -17,7 +17,7 @@ from abc import ABC, abstractmethod
 from imap_processing import instruments, processing_levels
 
 
-def _parse_args():
+def _parse_args(cli_args: list):
     """Parse the command line arguments.
 
     Returns
@@ -40,7 +40,7 @@ def _parse_args():
     parser.add_argument("--instrument", type=str, required=True, help=instrument_help)
     parser.add_argument("--level", type=str, required=True, help=level_help)
 
-    args = parser.parse_args()
+    args = parser.parse_args(cli_args)
 
     return args
 
