@@ -68,7 +68,7 @@ def check_for_bad_data(full_sweep_sci):
     return bad_cycle_indices
 
 
-def decompress_count(count_data: np.ndarray, compression_flag: np.ndarray = None):
+def decompress_count(count_data: np.ndarray, compression_flag: np.ndarray):
     """Decompress counts based on compression indicators.
 
     Decompression algorithm:
