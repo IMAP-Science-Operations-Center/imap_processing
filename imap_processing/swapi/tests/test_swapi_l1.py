@@ -6,8 +6,8 @@ from imap_processing import imap_module_directory
 from imap_processing.decom import decom_packets
 from imap_processing.swapi.l1.swapi_l1 import (
     SWAPIAPID,
-    check_for_bad_data,
     decompress_count,
+    filter_good_data,
     find_sweep_starts,
     get_indices_of_full_sweep,
     process_swapi_science,
@@ -31,7 +31,7 @@ def decom_test_data():
     return data_list
 
 
-def test_check_for_bad_data():
+def test_filter_good_data():
     """Test for bad data"""
     # create test data for this test
     total_sweeps = 3
@@ -40,85 +40,40 @@ def test_check_for_bad_data():
             "PLAN_ID_SCIENCE": xr.DataArray(np.full((total_sweeps * 12), 1)),
             "SWEEP_TABLE": xr.DataArray(np.repeat(np.arange(total_sweeps), 12)),
             "MODE": xr.DataArray(np.full((total_sweeps * 12), 2)),
-        }
+        },
+        coords={"Epoch": np.arange(total_sweeps * 12)},
     )
 
     # Check for no bad data
-    bad_data_indices = check_for_bad_data(ds)
-    assert len(bad_data_indices) == 0
+    bad_data_indices = filter_good_data(ds)
+    assert len(bad_data_indices) == 36
 
     # Check for bad MODE data.
     # This test returns this indices because MODE has 0, 1 values
     # for the first two sweeps.
     # TODO: update test when we update MODE from HVENG to HVSCI
     ds["MODE"] = xr.DataArray(np.repeat(np.arange(total_sweeps), 12))
-    bad_data_indices = check_for_bad_data(ds)
-    np.testing.assert_array_equal(bad_data_indices, np.arange(0, 24))
+    bad_data_indices = filter_good_data(ds)
+    np.testing.assert_array_equal(bad_data_indices, np.arange(24, 36))
 
     # Check for bad SWEEP_TABLE data.
     # Reset MODE data and create first sweep to be mixed value
     ds["MODE"] = xr.DataArray(np.full((total_sweeps * 12), 2))
     ds["SWEEP_TABLE"][:12] = np.arange(0, 12)
-    np.testing.assert_array_equal(check_for_bad_data(ds), np.arange(0, 12))
+    np.testing.assert_array_equal(filter_good_data(ds), np.arange(12, 36))
 
     ds["SWEEP_TABLE"][24:] = np.arange(0, 12)
-    expected = [
-        0,
-        1,
-        2,
-        3,
-        4,
-        5,
-        6,
-        7,
-        8,
-        9,
-        10,
-        11,
-        24,
-        25,
-        26,
-        27,
-        28,
-        29,
-        30,
-        31,
-        32,
-        33,
-        34,
-        35,
-    ]
-    np.testing.assert_array_equal(check_for_bad_data(ds), expected)
+    expected = [12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23]
+    np.testing.assert_array_equal(filter_good_data(ds), expected)
 
     # Check for bad PLAN_ID_SCIENCE data.
     ds["SWEEP_TABLE"] = xr.DataArray(np.repeat(np.arange(total_sweeps), 12))
     ds["PLAN_ID_SCIENCE"][24 : total_sweeps * 12] = np.arange(0, 12)
-    np.testing.assert_array_equal(check_for_bad_data(ds), np.arange(24, 36))
+    np.testing.assert_array_equal(filter_good_data(ds), np.arange(0, 24))
 
 
 def test_decompress_count():
     """Test for decompress count"""
-    # Test compressed and not overflow case
-    raw_value = np.array([[12]])
-    compression_flag = np.array([[1]])
-    expected_value = raw_value[0][0] * 16
-    returned_value = decompress_count(raw_value, compression_flag)
-    assert returned_value[0][0] == expected_value
-
-    # Test compressed and overflow case
-    raw_value = np.array([[0xFFFF]])
-    compression_flag = np.array([[1]])
-    expected_value = -1
-    returned_value = decompress_count(raw_value, compression_flag)
-    assert returned_value[0][0] == expected_value
-
-    # Test not compressed case
-    raw_value = np.array([[12]])
-    compression_flag = np.array([[0]])
-    expected_value = 12
-    returned_value = decompress_count(raw_value, compression_flag)
-    assert returned_value[0][0] == expected_value
-
     # compressed + no-overflow, compressed + overflow, no compression
     raw_values = np.array([[12, 0xFFFF, 12]])
     compression_flag = np.array([[1, 1, 0]])
@@ -140,6 +95,8 @@ def test_find_sweep_starts():
     start_indices = find_sweep_starts(ds)
     np.testing.assert_array_equal(start_indices, [12])
 
+    # Creating test data that doesn't have start sequence.
+    # Sequence number range is 0-11.
     ds["SEQ_NUMBER"] = np.arange(3, 29)
     start_indices = find_sweep_starts(ds)
     np.testing.assert_array_equal(start_indices, [])
@@ -342,3 +299,10 @@ def test_process_swapi_science(decom_test_data):
     np.testing.assert_array_equal(
         np.sqrt(processed_data["SWP_PCEM_COUNTS"][0]), processed_data["SWP_PCEM_ERR"][0]
     )
+
+    # make PLAN_ID data incorrect
+    ds_data["PLAN_ID_SCIENCE"][:12] = np.arange(12)
+    processed_data = process_swapi_science(ds_data)
+
+    # Test dataset dimensions
+    assert processed_data.sizes == {"Epoch": 2, "Energy": 72}

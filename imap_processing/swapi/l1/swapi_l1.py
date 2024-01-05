@@ -1,6 +1,5 @@
 """SWAPI level-1 processing code."""
 import copy
-import logging
 
 import numpy as np
 import xarray as xr
@@ -9,8 +8,8 @@ from imap_processing.swapi.swapi_utils import SWAPIAPID, SWAPIMODE, create_datas
 from imap_processing.utils import group_by_apid, sort_by_time
 
 
-def check_for_bad_data(full_sweep_sci):
-    """Find bad data sweep indices.
+def filter_good_data(full_sweep_sci):
+    """Filter out bad data sweep indices.
 
     Bad data indicator:
 
@@ -26,8 +25,8 @@ def check_for_bad_data(full_sweep_sci):
 
     Returns
     -------
-    List
-        List of sweep indices of bad data
+    numpy.ndarray
+        Good data sweep indices
     """
     # PLAN_ID for current sweep should all be one value and
     # SWEEP_TABLE should all be one value.
@@ -53,9 +52,16 @@ def check_for_bad_data(full_sweep_sci):
     # To this: [[ 0  1  2  3  4  5  6  7  8  9 10 11]
     # [24 25 26 27 28 29 30 31 32 33 34 35]]
     cycle_start_indices = np.where(bad_data_indices == 0)[0] * 12
-    bad_cycle_indices = cycle_start_indices[..., None] + np.arange(12)[None, ...]
+    bad_cycle_indices = cycle_start_indices[..., None] + np.arange(12)[
+        None, ...
+    ].reshape(-1)
 
-    return bad_cycle_indices.reshape(-1)
+    # Use bad data cycle indices to find all good data indices.
+    # Then that will used to filter good sweep data.
+    all_indices = np.arange(len(full_sweep_sci["Epoch"].data))
+    good_data_indices = np.setdiff1d(all_indices, bad_cycle_indices)
+
+    return good_data_indices
 
 
 def decompress_count(count_data: np.ndarray, compression_flag: np.ndarray):
@@ -398,18 +404,10 @@ def process_swapi_science(sci_dataset):
     # Filter full sweep data using indices returned from above line
     full_sweep_sci = sci_dataset.isel({"Epoch": full_sweep_indices})
 
-    # Find indices of bad sweep cycles
-    bad_data_indices = check_for_bad_data(full_sweep_sci)
-    if len(bad_data_indices) > 0:
-        logging.info("Bad data found.")
-        logging.info(bad_data_indices)
-        # Use bad data indices to find all good data indices.
-        # Then use that good data indices to filter good sweep data.
-        all_indices = np.arange(len(full_sweep_sci["Epoch"]))
-        good_data_indices = np.setdiff1d(all_indices, bad_data_indices)
-        good_sweep_sci = full_sweep_sci.isel({"Epoch": good_data_indices})
-    else:
-        good_sweep_sci = full_sweep_sci
+    # Find indices of good sweep cycles
+    good_data_indices = filter_good_data(full_sweep_sci)
+
+    good_sweep_sci = full_sweep_sci.isel({"Epoch": good_data_indices})
 
     # ====================================================
     # Step 2: Process good sweep data
