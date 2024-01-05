@@ -19,7 +19,7 @@ from imap_processing.utils import convert_raw_to_eu, group_by_apid
 @pytest.fixture(scope="session")
 def decom_test_data():
     """Read test data from test folder"""
-    test_folder_path = "swe/tests/l0_data"
+    test_folder_path = "tests/swe/l0_data"
     packet_files = list(imap_module_directory.glob(f"{test_folder_path}/*.bin"))
 
     data_list = []
@@ -40,13 +40,13 @@ def l1a_test_data():
     # moved packet 1 to bottom to show data in order.
     packet_files = [
         imap_module_directory
-        / "swe/tests/l0_data/20230927173253_SWE_SCIENCE_packet.bin",
+        / "tests/swe/l0_data/20230927173253_SWE_SCIENCE_packet.bin",
         imap_module_directory
-        / "swe/tests/l0_data/20230927173308_SWE_SCIENCE_packet.bin",
+        / "tests/swe/l0_data/20230927173308_SWE_SCIENCE_packet.bin",
         imap_module_directory
-        / "swe/tests/l0_data/20230927173323_SWE_SCIENCE_packet.bin",
+        / "tests/swe/l0_data/20230927173323_SWE_SCIENCE_packet.bin",
         imap_module_directory
-        / "swe/tests/l0_data/20230927173238_SWE_SCIENCE_packet.bin",
+        / "tests/swe/l0_data/20230927173238_SWE_SCIENCE_packet.bin",
     ]
     data = []
     for packet_file in packet_files:
@@ -90,7 +90,7 @@ def test_swe_l1b(decom_test_data):
     )
 
     # read science validation data
-    test_data_path = imap_module_directory / "swe/tests/l0_validation_data"
+    test_data_path = imap_module_directory / "tests/swe/l0_validation_data"
     eu_validation_data = pd.read_csv(
         test_data_path / "idle_export_eu.SWE_SCIENCE_20230927_172708.csv",
         index_col="SHCOARSE",

@@ -8,7 +8,7 @@ from imap_processing.swe.l0 import decom_swe
 @pytest.fixture(scope="session")
 def decom_test_data():
     """Read test data from file"""
-    test_folder_path = "swe/tests/l0_data"
+    test_folder_path = "tests/swe/l0_data"
     event_file_list = list(
         imap_module_directory.glob(f"{test_folder_path}/*SWE_EVTMSG_packet.bin")
     )
@@ -28,7 +28,7 @@ def test_number_of_packets(decom_test_data):
 def test_swe_event_msg_data(decom_test_data):
     """This test and validate raw data of SWE event message data."""
     # read validation data
-    test_data_path = imap_module_directory / "swe/tests/l0_validation_data"
+    test_data_path = imap_module_directory / "tests/swe/l0_validation_data"
 
     raw_validation_data = pd.read_csv(
         test_data_path / "idle_export_raw.SWE_EVTMSG_20231004_140149.csv",
