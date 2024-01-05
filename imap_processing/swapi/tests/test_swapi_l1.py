@@ -52,18 +52,47 @@ def test_check_for_bad_data():
     # TODO: update test when we update MODE from HVENG to HVSCI
     ds["MODE"] = xr.DataArray(np.repeat(np.arange(total_sweeps), 12))
     bad_data_indices = check_for_bad_data(ds)
-    assert np.all(bad_data_indices == np.arange(0, 24))
+    np.testing.assert_array_equal(bad_data_indices, np.arange(0, 24))
 
     # Check for bad SWEEP_TABLE data.
     # Reset MODE data and create first sweep to be mixed value
     ds["MODE"] = xr.DataArray(np.full((total_sweeps * 12), 2))
     ds["SWEEP_TABLE"][:12] = np.arange(0, 12)
-    assert np.all(check_for_bad_data(ds) == np.arange(0, 12))
+    np.testing.assert_array_equal(check_for_bad_data(ds), np.arange(0, 12))
+
+    ds["SWEEP_TABLE"][24:] = np.arange(0, 12)
+    expected = [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+    ]
+    np.testing.assert_array_equal(check_for_bad_data(ds), expected)
 
     # Check for bad PLAN_ID_SCIENCE data.
     ds["SWEEP_TABLE"] = xr.DataArray(np.repeat(np.arange(total_sweeps), 12))
     ds["PLAN_ID_SCIENCE"][24 : total_sweeps * 12] = np.arange(0, 12)
-    assert np.all(check_for_bad_data(ds) == np.arange(24, total_sweeps * 12))
+    np.testing.assert_array_equal(check_for_bad_data(ds), np.arange(24, 36))
 
 
 def test_decompress_count():
@@ -89,6 +118,13 @@ def test_decompress_count():
     returned_value = decompress_count(raw_value, compression_flag)
     assert returned_value[0][0] == expected_value
 
+    # compressed + no-overflow, compressed + overflow, no compression
+    raw_values = np.array([[12, 0xFFFF, 12]])
+    compression_flag = np.array([[1, 1, 0]])
+    expected = np.array([[12 * 16, -1, 12]])
+    returned_value = decompress_count(raw_values, compression_flag)
+    np.testing.assert_array_equal(returned_value, expected)
+
 
 def test_find_sweep_starts():
     """Test for find sweep starts"""
@@ -97,25 +133,25 @@ def test_find_sweep_starts():
     ds = xr.Dataset({"SEQ_NUMBER": sequence_number}, coords={"Epoch": time})
 
     start_indices = find_sweep_starts(ds)
-    assert np.all(start_indices == [0, 12])
+    np.testing.assert_array_equal(start_indices, [0, 12])
 
     ds["SEQ_NUMBER"].data[:12] = np.arange(3, 15)
     start_indices = find_sweep_starts(ds)
-    assert np.all(start_indices == [12])
+    np.testing.assert_array_equal(start_indices, [12])
 
     ds["SEQ_NUMBER"] = np.arange(3, 29)
     start_indices = find_sweep_starts(ds)
-    assert np.all(start_indices == [])
+    np.testing.assert_array_equal(start_indices, [])
 
 
 def test_get_full_indices():
     """Test for correct full sweep indices"""
-    time = np.arange(14)
+    time = np.arange(26)
     sequence_number = time % 12
     ds = xr.Dataset({"SEQ_NUMBER": sequence_number}, coords={"Epoch": time})
 
     sweep_indices = get_indices_of_full_sweep(ds)
-    assert np.all(sweep_indices == np.arange(0, 12))
+    np.testing.assert_array_equal(sweep_indices, np.arange(0, 24))
 
 
 def test_swapi_algorithm(decom_test_data):
@@ -130,7 +166,7 @@ def test_swapi_algorithm(decom_test_data):
     # It takes 12 sequence data to make one full sweep
     total_sequence = 12
     total_full_sweeps = total_packets // total_sequence
-    pcem_counts = process_sweep_data(full_sweep_sci, "PCEM_CNT", total_full_sweeps)
+    pcem_counts = process_sweep_data(full_sweep_sci, "PCEM_CNT")
     # check that return value has correct shape
     assert pcem_counts.shape == (total_full_sweeps, 72)
     expected_count = [
@@ -208,4 +244,4 @@ def test_swapi_algorithm(decom_test_data):
         34,
     ]
 
-    assert np.all(pcem_counts == expected_count)
+    np.testing.assert_array_equal(pcem_counts[0], expected_count)
