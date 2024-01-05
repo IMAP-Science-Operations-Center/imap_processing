@@ -218,7 +218,7 @@ def test_process_swapi_science(decom_test_data):
     # Test Epoch data is correct
     np.testing.assert_array_equal(processed_data["Epoch"].data, [48, 60, 72])
 
-    expected_count = expected_count = [
+    expected_count = [
         0,
         0,
         0,
