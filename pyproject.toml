@@ -19,6 +19,7 @@ classifiers = [
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
     "Topic :: Software Development",
     "Topic :: Scientific/Engineering",
     "Operating System :: Microsoft :: Windows",
@@ -28,24 +29,24 @@ classifiers = [
 ]
 
 [tool.poetry.dependencies]
-python = ">=3.9,<3.12"
+python = ">=3.9,<4"
 xarray = '>=2023.0.0'
-space_packet_parser = ">=4.1.0,<5"
-spiceypy = "^6.0.0"
-bitstring = ">=4.0.1,<5"
+space_packet_parser = ">=4.1.0"
+spiceypy = ">=6.0.0"
+bitstring = ">=4.0.1"
 cdflib = "^1.2.3"
 
 # Optional dependencies
-pre-commit = {version="^3.3.3,<4", optional=true}
+pre-commit = {version="^3.3.3", optional=true}
 pydata-sphinx-theme = {version="*", optional=true}
-pytest = {version=">=6.2.5,<7", optional=true}
+pytest = {version=">=6.2.5", optional=true}
 pytest-cov = {version="^4.0.0", optional=true}
 ruff = {version=">=0.1.7", optional=true}
 sphinx = {version="*", optional=true}
 myst-parser = {version="^2.0.0", optional=true}
 numpydoc = {version="^1.5.0", optional=true}
-pandas = {version=">=2.0.0,<3", optional=true}
-openpyxl = {version=">=3.0.7,<4", optional=true}
+pandas = {version=">=2.0.0", optional=true}
+openpyxl = {version=">=3.0.7", optional=true}
 
 
 [tool.poetry.extras]
@@ -76,7 +77,6 @@ ignore = ["D104", "PLR2004", "S101"]
 # TODO: Too many statements, this could be refactored and removed
 # by creating a loop over a predefined mapping
 "imap_processing/idex/idex_packet_parser.py" = ["PLR0915"]
-"imap_processing/write_to_cdf.py" = ["PLR0913"]
 
 [tool.ruff.pydocstyle]
 convention = "numpy"
