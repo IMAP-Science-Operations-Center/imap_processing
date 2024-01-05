@@ -36,36 +36,26 @@ def check_for_bad_data(full_sweep_sci):
 
     mode = full_sweep_sci["MODE"].data.reshape(-1, 12)
 
-    total_sweeps = len(plan_id)
-    bad_data_start_indices = []
+    sweep_indices = (sweep_table == sweep_table[:, 0, None]).all(axis=1)
+    plan_id_indices = (plan_id == plan_id[:, 0, None]).all(axis=1)
+    # TODO: change comparison to SWAPIMODE.HVSCI once we have
+    # some HVSCI data
+    # MODE should be HVSCI
+    mode_indices = (mode == SWAPIMODE.HVENG).all(axis=1)
+    bad_data_indices = sweep_indices & plan_id_indices & mode_indices
 
-    for index in range(total_sweeps):
-        if not np.all(sweep_table[index] == sweep_table[index][0]):
-            logging.debug("SWEEP_TABLE is not same")
-            bad_data_start_indices.append(index)
-
-        if not np.all(plan_id[index] == plan_id[index][0]):
-            logging.debug("PLAN_ID is not same")
-            bad_data_start_indices.append(index)
-
-        # TODO: change comparison to SWAPIMODE.HVSCI once we have
-        # some HVSCI data
-        if not np.all(mode[index] == SWAPIMODE.HVENG):
-            logging.debug("MODE is not HVSCI")
-            bad_data_start_indices.append(index)
     # TODO: add checks for checksum
 
     # Get bad data sweep start indices and create
     # sweep indices.
     # Eg.
-    # From this: [0 1]
+    # From this: [0 24]
     # To this: [[ 0  1  2  3  4  5  6  7  8  9 10 11]
-    # [12 13 14 15 16 17 18 19 20 21 22 23]]
-    cycle_start_indices = np.unique(bad_data_start_indices)
-    bad_cycle_indices = np.array(
-        [np.arange(n * 12, (n + 1) * 12) for n in cycle_start_indices]
-    ).reshape(-1)
-    return bad_cycle_indices
+    # [24 25 26 27 28 29 30 31 32 33 34 35]]
+    cycle_start_indices = np.where(bad_data_indices == 0)[0] * 12
+    bad_cycle_indices = cycle_start_indices[..., None] + np.arange(12)[None, ...]
+
+    return bad_cycle_indices.reshape(-1)
 
 
 def decompress_count(count_data: np.ndarray, compression_flag: np.ndarray):
@@ -103,16 +93,17 @@ def decompress_count(count_data: np.ndarray, compression_flag: np.ndarray):
     # If 0, value is already decompressed. If 1, value is compressed.
     # If 1 and count is 0xFFFF, value is overflow.
     new_count = copy.deepcopy(count_data)
-    # This below line gives back row and column index for
-    # compressed flags. Eg.
-    # (array([0, 1, 2, 2]), array([ 4,  1, 20, 51]))
-    compressed_count_indices = np.where(compression_flag == 1)
 
-    for row, col in zip(*compressed_count_indices):
-        if count_data[row, col] == 0xFFFF:  # Overflow
-            new_count[row, col] = -1
-        elif count_data[row, col] != 0xFFFF:
-            new_count[row, col] = count_data[row, col] * 16
+    # If data is compressed, decompress it
+    compressed_indices = compression_flag == 1
+    new_count[compressed_indices] *= 16
+    # TODO: add data type check here.
+    # If the data was compressed and the count was 0xFFFF, mark it as an overflow
+    if np.any(count_data < 0):
+        raise ValueError(
+            "Count data type must be unsigned int and should not contain negative value"
+        )
+    new_count[compressed_indices & (count_data == 0xFFFF)] = -1
     return new_count
 
 
@@ -203,7 +194,7 @@ def get_indices_of_full_sweep(packets: xr.Dataset):
     return full_cycles_indices.reshape(-1)
 
 
-def process_sweep_data(full_sweep_sci, cem_prefix, total_full_sweeps):
+def process_sweep_data(full_sweep_sci, cem_prefix):
     """Group full sweep data into correct sequence order.
 
     Data from each packet comes like this:
@@ -309,11 +300,7 @@ def process_sweep_data(full_sweep_sci, cem_prefix, total_full_sweeps):
         |    PCEM_RNG_ST
         |    SCEM_RNG_ST
         |    COIN_RNG_ST
-    total_full_sweeps: int
-        Total number of sweeps
     """
-    all_cem_data = np.zeros((total_full_sweeps, 72))
-
     # First, concat all CEM data
     current_cem_counts = np.concatenate(
         (
@@ -357,7 +344,7 @@ def process_sweep_data(full_sweep_sci, cem_prefix, total_full_sweeps):
     # [ 2  3  4  5  6  7  8  9  10  11  12  13]]]
     # In other word, we grouped each cem's
     # data by full sweep.
-    current_cem_counts = current_cem_counts.reshape(6, total_full_sweeps, 12)
+    current_cem_counts = current_cem_counts.reshape(6, -1, 12)
 
     # Then, we go from above to
     # to this final output:
@@ -374,20 +361,24 @@ def process_sweep_data(full_sweep_sci, cem_prefix, total_full_sweeps):
     # [9  9  9  9  9  9]
     # [10 10 10 10 10 10]
     # [11 11 11 11 11 11]],
+    #
     # [[1  1  1  1  1  1]
     # [2  2  2  2  2  2]
     # [3  3  3  3  3  3]
     # ...
     # [12  12  12  12  12  12]],
+    #
     # [[2  2  2  2  2  2]
     # [3  3  3  3  3  3]
     # ...
     # [13  13  13  13  13  13]]
     # ]
+    # In other word, we grouped by sequence. The shape
+    # of this transformed array is total_full_sweeps x 12 x 6
     all_cem_data = np.stack(current_cem_counts, axis=-1)
     # This line just flatten the inner most array to
     # (total_full_sweeps x 72)
-    all_cem_data = all_cem_data.reshape(total_full_sweeps, 72)
+    all_cem_data = all_cem_data.reshape(-1, 72)
     return all_cem_data
 
 
@@ -429,18 +420,12 @@ def process_swapi_science(sci_dataset):
     total_sequence = 12
     total_full_sweeps = total_packets // total_sequence
     # These array will be of size (number of good sweep, 72)
-    raw_pcem_count = process_sweep_data(good_sweep_sci, "PCEM_CNT", total_full_sweeps)
-    raw_scem_count = process_sweep_data(good_sweep_sci, "SCEM_CNT", total_full_sweeps)
-    raw_coin_count = process_sweep_data(good_sweep_sci, "COIN_CNT", total_full_sweeps)
-    pcem_compression_flags = process_sweep_data(
-        good_sweep_sci, "PCEM_RNG_ST", total_full_sweeps
-    )
-    scem_compression_flags = process_sweep_data(
-        good_sweep_sci, "SCEM_RNG_ST", total_full_sweeps
-    )
-    coin_compression_flags = process_sweep_data(
-        good_sweep_sci, "COIN_RNG_ST", total_full_sweeps
-    )
+    raw_pcem_count = process_sweep_data(good_sweep_sci, "PCEM_CNT")
+    raw_scem_count = process_sweep_data(good_sweep_sci, "SCEM_CNT")
+    raw_coin_count = process_sweep_data(good_sweep_sci, "COIN_CNT")
+    pcem_compression_flags = process_sweep_data(good_sweep_sci, "PCEM_RNG_ST")
+    scem_compression_flags = process_sweep_data(good_sweep_sci, "SCEM_RNG_ST")
+    coin_compression_flags = process_sweep_data(good_sweep_sci, "COIN_RNG_ST")
 
     swp_pcem_counts = decompress_count(raw_pcem_count, pcem_compression_flags)
     swp_scem_counts = decompress_count(raw_scem_count, scem_compression_flags)
