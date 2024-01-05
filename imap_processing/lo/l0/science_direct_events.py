@@ -85,7 +85,7 @@ class ScienceDirectEvents(LoBase):
     ENERGY: float
     POS: float
 
-    def __post_init__(self, packet, software_version: str, packet_file_name: str):
+    def __init__(self, packet, software_version: str, packet_file_name: str):
         """Post intialization method for Science Direct Events Data class.
 
         This method will run following the built-in init method for the class.
@@ -147,8 +147,16 @@ class ScienceDirectEvents(LoBase):
                 # if Bronze = 1, use table as is
                 # if Bronze = 0, position not transmitted, TOF3 is transmitted
                 # and will be six bits long
-                tof_decoder.POS = 0
-                tof_decoder.TOF3 = 6
+                tof_decoder = decompress_tables.TOFData(
+                    tof_decoder.ENERGY,
+                    0,
+                    tof_decoder.TOF0,
+                    tof_decoder.TOF1,
+                    tof_decoder.TOF2,
+                    6,
+                    tof_decoder.CKSM,
+                    tof_decoder.TIME,
+                )
         # We're not expecting to recieve data for the rest of the cases, but need
         # to handle them in case things change in the future.
         else:
@@ -203,24 +211,33 @@ class ScienceDirectEvents(LoBase):
             bit_start = 4
         # Use the TOF decoder to chunk the data binary into its componenets
         # TOF0, TOF1, TOF2, etc.
-        for field, bit_length in tof_decoder.asdict().items():
+        for field, bit_length in tof_decoder._asdict().items():
             parsed_bits[field] = self.DATA[bit_start : bit_start + bit_length]
             bit_start = bit_start + bit_length
 
         return parsed_bits
 
-    def _decode_fields(self, remaining_bits, parsed_bits):
+    def _decode_fields(self, remaining_bit_coefficients, parsed_bits):
         """Use the parsed data and TOF coefficients to decode the binary."""
         for field, tof_bits in parsed_bits.items():
-            needed_bits = tof_bits[-len(remaining_bits[field]) :]
+            needed_bits = tof_bits[-len(remaining_bit_coefficients[field]) :]
             # Use the TOF coefficients and the bits for the current field to
             # calculate the decompressed value. Also round to 2 because the TOF
             # coefficients only have 2 decimals.
+            print(f"NEEDED BITS: { bitarray(needed_bits).tolist()}")
+            print(f"COEFFS: {remaining_bit_coefficients[field]}")
+            print(
+                (bit[0], bit[1])
+                for bit in zip(
+                    bitarray(needed_bits).tolist(), remaining_bit_coefficients[field]
+                )
+            )
             decompressed_data = round(
                 sum(
                     bit[0] * bit[1]
                     for bit in zip(
-                        bitarray(needed_bits).tolist(), remaining_bits[field]
+                        bitarray(needed_bits).tolist(),
+                        remaining_bit_coefficients[field],
                     )
                 ),
                 2,

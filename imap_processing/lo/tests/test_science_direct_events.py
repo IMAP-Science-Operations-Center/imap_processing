@@ -1,3 +1,5 @@
+from collections import namedtuple
+
 import bitstring
 import pytest
 
@@ -15,69 +17,68 @@ def de():
     return de
 
 
+@pytest.fixture()
+def tof_data():
+    TOFData = namedtuple(
+        "TOFData", ["ENERGY", "POS", "TOF0", "TOF1", "TOF2", "TOF3", "CKSM", "TIME"]
+    )
+    return TOFData
+
+
 def test_find_decompression_case(de):
     # Arrange
     de.DATA = bitstring.Bits(bin="000100010101")
     case_number_expected = 1
 
     # Act
-    de._find_decompression_case()
+    case_number = de._find_decompression_case()
 
     # Assert
-    assert de.case_number == case_number_expected
+    assert case_number == case_number_expected
 
 
-def test_find_tof_decoder_for_case(de):
+def test_find_tof_decoder_for_case(de, tof_data):
     # Arrange
     de.DATA = bitstring.Bits(bin="000100010101")
-    tof_decoder_expected = {
-        "ENERGY": 3,
-        "POS": 0,
-        "TOF0": 10,
-        "TOF1": 9,
-        "TOF2": 9,
-        "TOF3": 0,
-        "CKSM": 0,
-        "TIME": 12,
-    }
-    de._find_decompression_case()
+    tof_decoder_expected = tof_data(3, 0, 10, 9, 9, 0, 0, 12)
+
+    case_number = de._find_decompression_case()
 
     # Act
-    de._find_tof_decoder_for_case()
+    tof_decoder = de._find_tof_decoder_for_case(case_number)
 
     # Assert
-    assert de.tof_decoder == tof_decoder_expected
+    assert tof_decoder == tof_decoder_expected
 
 
 def test_read_tof_calculation_table(de):
     # Arrange
     de.DATA = bitstring.Bits(bin="000100010101")
-    de._find_decompression_case()
+    case_number = de._find_decompression_case()
     binary_strings_expected = {
-        "TIME": bitstring.Bits(bin="0000111111111111"),
         "ENERGY": bitstring.Bits(bin="0000000000000011"),
+        "POS": bitstring.Bits(bin=""),
         "TOF0": bitstring.Bits(bin="0000011111111110"),
         "TOF1": bitstring.Bits(bin="0000001111111110"),
         "TOF2": bitstring.Bits(bin="0000001111111110"),
         "TOF3": bitstring.Bits(bin=""),
-        "POS": bitstring.Bits(bin=""),
         "CKSM": bitstring.Bits(bin=""),
+        "TIME": bitstring.Bits(bin="0000111111111111"),
     }
 
     # Act
-    de._read_tof_calculation_table()
+    tof_calc_bin = de._read_tof_calculation_table(case_number)
 
     # Assert
-    assert de.tof_calculation_binary == binary_strings_expected
+    assert tof_calc_bin == binary_strings_expected
 
 
 def test_find_remaining_bits(de):
     # Arrange
     de.DATA = bitstring.Bits(bin="000100010101")
-    de._find_decompression_case()
-    de._find_tof_decoder_for_case()
-    de._read_tof_calculation_table()
-    remaining_bits_expected = {
+    case_number = de._find_decompression_case()
+    tof_calc = de._read_tof_calculation_table(case_number)
+    remaining_coeff_expected = {
         "TIME": [
             327.68,
             163.84,
@@ -136,18 +137,17 @@ def test_find_remaining_bits(de):
     }
 
     # Act
-    de._find_remaining_bits()
+    remaining_coeff = de._find_remaining_bit_coefficients(tof_calc)
 
     # Assert
-    assert de.remaining_bits == remaining_bits_expected
+    assert remaining_coeff == remaining_coeff_expected
 
 
 def test_parse_binary_for_gold_triple(de):
     # Arrange
     de.DATA = bitstring.Bits(bin="000010010101001101011100111100111011101001111101")
-    de._find_decompression_case()
-    de._find_tof_decoder_for_case()
-    de._read_tof_calculation_table()
+    case_number = de._find_decompression_case()
+    tof_decoder = de._find_tof_decoder_for_case(case_number)
     parsed_bits_expected = {
         "ENERGY": bitstring.Bits(bin="001"),
         "POS": bitstring.Bits(bin=""),
@@ -160,10 +160,10 @@ def test_parse_binary_for_gold_triple(de):
     }
 
     # Act
-    de._parse_binary()
+    parsed_bits = de._parse_binary(case_number, tof_decoder)
 
     # Assert
-    assert de.parsed_bits == parsed_bits_expected
+    assert parsed_bits == parsed_bits_expected
 
 
 def test_parse_binary_for_silver_triple(de):
@@ -171,9 +171,8 @@ def test_parse_binary_for_silver_triple(de):
     de.DATA = bitstring.Bits(
         bin="000000010101001101011100111100111011101001111101101101"
     )
-    de._find_decompression_case()
-    de._find_tof_decoder_for_case()
-    de._read_tof_calculation_table()
+    case_number = de._find_decompression_case()
+    tof_decoder = de._find_tof_decoder_for_case(case_number)
     parsed_bits_expected = {
         "ENERGY": bitstring.Bits(bin="001"),
         "POS": bitstring.Bits(bin=""),
@@ -186,18 +185,17 @@ def test_parse_binary_for_silver_triple(de):
     }
 
     # Act
-    de._parse_binary()
+    parsed_bits = de._parse_binary(case_number, tof_decoder)
 
     # Assert
-    assert de.parsed_bits == parsed_bits_expected
+    assert parsed_bits == parsed_bits_expected
 
 
 def test_parse_binary_for_bronze_triple(de):
     # Arrange
     de.DATA = bitstring.Bits(bin="0100100101010011010111001111001")
-    de._find_decompression_case()
-    de._find_tof_decoder_for_case()
-    de._read_tof_calculation_table()
+    case_number = de._find_decompression_case()
+    tof_decoder = de._find_tof_decoder_for_case(case_number)
     parsed_bits_expected = {
         "ENERGY": bitstring.Bits(bin="001"),
         "POS": bitstring.Bits(bin="01"),
@@ -210,18 +208,17 @@ def test_parse_binary_for_bronze_triple(de):
     }
 
     # Act
-    de._parse_binary()
+    parsed_bits = de._parse_binary(case_number, tof_decoder)
 
     # Assert
-    assert de.parsed_bits == parsed_bits_expected
+    assert parsed_bits == parsed_bits_expected
 
 
 def test_parse_binary_for_not_bronze_triple(de):
     # Arrange
     de.DATA = bitstring.Bits(bin="010000010101001101011100111100101110")
-    de._find_decompression_case()
-    de._find_tof_decoder_for_case()
-    de._read_tof_calculation_table()
+    case_number = de._find_decompression_case()
+    tof_decoder = de._find_tof_decoder_for_case(case_number)
     parsed_bits_expected = {
         "ENERGY": bitstring.Bits(bin="001"),
         "POS": bitstring.Bits(bin=""),
@@ -234,20 +231,20 @@ def test_parse_binary_for_not_bronze_triple(de):
     }
 
     # Act
-    de._parse_binary()
+    parsed_bits = de._parse_binary(case_number, tof_decoder)
 
     # Assert
-    assert de.parsed_bits == parsed_bits_expected
+    assert parsed_bits == parsed_bits_expected
 
 
 def test_decode_fields(de):
     # Arrange
     de.DATA = bitstring.Bits(bin="000010010101001101011100111100111011101001111101")
-    de._find_decompression_case()
-    de._find_tof_decoder_for_case()
-    de._read_tof_calculation_table()
-    de._find_remaining_bits()
-    de._parse_binary()
+    case_number = de._find_decompression_case()
+    tof_decoder = de._find_tof_decoder_for_case(case_number)
+    tof_calc = de._read_tof_calculation_table(case_number)
+    remaining_coeffs = de._find_remaining_bit_coefficients(tof_calc)
+    parsed_bits = de._parse_binary(case_number, tof_decoder)
 
     energy_expected = 0.16
     position_expected = 0
@@ -258,7 +255,7 @@ def test_decode_fields(de):
     time_expected = 429.5
 
     # Act
-    de._decode_fields()
+    de._decode_fields(remaining_coeffs, parsed_bits)
 
     # Assert
     assert de.ENERGY == energy_expected
