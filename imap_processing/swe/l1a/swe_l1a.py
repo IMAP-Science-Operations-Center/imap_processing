@@ -12,7 +12,7 @@ from imap_processing.swe.utils.swe_utils import (
 from imap_processing.utils import group_by_apid, sort_by_time
 
 
-def swe_l1a(packets, cdf_filepath):
+def swe_l1a(packets):
     """Process SWE l0 data into l1a data.
 
     Receive all L0 data file. Based on appId, it
@@ -23,13 +23,11 @@ def swe_l1a(packets, cdf_filepath):
     ----------
     packets: list
         Decom data list that contains all appIds
-    cdf_filepath: str
-        Folder path of where to write CDF file
 
     Returns
     -------
-    str
-        Path name of where CDF file was created.
+    pathlib.Path
+        Path to where the CDF file was created.
         This is used to upload file from local to s3.
         TODO: test this later.
     """
@@ -51,9 +49,8 @@ def swe_l1a(packets, cdf_filepath):
             data = create_dataset(packets=sorted_packets)
 
         # write data to CDF
+        mode = f"{data['APP_MODE'].data[0]}-" if apid == SWEAPID.SWE_APP_HK else ""
         return write_cdf(
             data,
-            mode=f"{data['APP_MODE'].data[0]}" if apid == SWEAPID.SWE_APP_HK else "",
-            description=filename_descriptors.get(apid),
-            directory=cdf_filepath,
+            description=f"{mode}{filename_descriptors.get(apid)}",
         )
