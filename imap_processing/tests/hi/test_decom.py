@@ -8,7 +8,7 @@ from imap_processing.decom import decom_packets
 @pytest.fixture(scope="session")
 def decom_nhk_data():
     """Read test housekeeping data from test folder"""
-    test_folder_path = "hi/tests/l0_test_data"
+    test_folder_path = "tests/hi/l0_test_data"
     packet_file = imap_module_directory / f"{test_folder_path}/20231030_H45_APP_NHK.bin"
     packet_def_file = imap_module_directory / "hi/packet_definitions/H45_APP_NHK.xml"
     return decom_packets(packet_file, packet_def_file)
@@ -17,7 +17,7 @@ def decom_nhk_data():
 @pytest.fixture(scope="session")
 def nhk_validation_data():
     """Read in validation data from the CSV file"""
-    test_data_path = imap_module_directory / "hi/tests/l0_validation_data"
+    test_data_path = imap_module_directory / "tests/hi/l0_validation_data"
     raw_validation_data = pd.read_csv(
         test_data_path / "20231030_H45_APP_NHK.csv",
         index_col="CCSDS_MET",
@@ -28,7 +28,7 @@ def nhk_validation_data():
 @pytest.fixture(scope="session")
 def decom_sci_de_data():
     """Read science direct event data from test folder"""
-    test_folder_path = "hi/tests/l0_test_data"
+    test_folder_path = "tests/hi/l0_test_data"
     packet_file = imap_module_directory / f"{test_folder_path}/20231030_H45_SCI_DE.bin"
     packet_def_file = imap_module_directory / "hi/packet_definitions/H45_SCI_DE.xml"
     return decom_packets(packet_file, packet_def_file)
@@ -37,7 +37,7 @@ def decom_sci_de_data():
 @pytest.fixture(scope="session")
 def decom_sci_cnt_data():
     """Read science count data from test folder"""
-    test_folder_path = "hi/tests/l0_test_data"
+    test_folder_path = "tests/hi/l0_test_data"
     packet_file = imap_module_directory / f"{test_folder_path}/20231030_H45_SCI_CNT.bin"
     packet_def_file = imap_module_directory / "hi/packet_definitions/H45_SCI_CNT.xml"
     return decom_packets(packet_file, packet_def_file)

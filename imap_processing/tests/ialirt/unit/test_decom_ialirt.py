@@ -22,8 +22,8 @@ def binary_packet_path(tmp_path):
     """
     packet_path = (
         imap_module_directory
-        / "ialirt"
         / "tests"
+        / "ialirt"
         / "test_data"
         / "l0"
         / "IALiRT Raw Packet Telemetry.txt"
