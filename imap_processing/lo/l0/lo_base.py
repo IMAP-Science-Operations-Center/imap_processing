@@ -5,7 +5,7 @@ from imap_processing.ccsds.ccsds_data import CcsdsData
 
 
 @dataclass
-class LoL0:
+class LoBase:
     """Data structure for common values across histogram and direct events data.
 
     Attributes
@@ -38,11 +38,9 @@ class LoL0:
             value = (
                 item.derived_value if item.derived_value is not None else item.raw_value
             )
-            print(value)
-            if key in attributes:
-                setattr(self, key, value)
-            else:
+            if key not in attributes:
                 raise KeyError(
                     f"Did not find matching attribute in {self.__class__} data class"
                     f"for {key}"
                 )
+            setattr(self, key, value)

@@ -1,32 +1,34 @@
 import bitstring
+import pytest
 
 from imap_processing.lo.l0.science_direct_events import ScienceDirectEvents
 
-# TODO: These unit tests don't call the public function for the ScienceDirectEvents
-# class and are also only able to run if the contects of __init__ are commented out
-# because I currently don't have any compressed DE data. As a workaround, I am
-# directly setting the DATA attribute and calling and testing the private methods
-# as needed. These tests will be updated when data becomes available. When that happens
+# TODO: Because I currently don't have any compressed DE data, the decompress method
+# needs to be commented out and the private methods need to be called directly for
+# testing. When DE data does become available, these tests will be updated and
 # the need for the bitstring import will also go away.
 
 
-def test_find_decompression_case():
-    # Arrange
+@pytest.fixture()
+def de():
     de = ScienceDirectEvents("fake_packet", "0", "fakepacketname")
+    return de
+
+
+def test_find_decompression_case(de):
+    # Arrange
     de.DATA = bitstring.Bits(bin="000100010101")
     case_number_expected = 1
 
     # Act
     de._find_decompression_case()
-    case_number_true = de.case_number
 
     # Assert
-    assert case_number_true == case_number_expected
+    assert de.case_number == case_number_expected
 
 
-def test_find_tof_decoder_for_case():
+def test_find_tof_decoder_for_case(de):
     # Arrange
-    de = ScienceDirectEvents("fake_packet", "0", "fakepacketname")
     de.DATA = bitstring.Bits(bin="000100010101")
     tof_decoder_expected = {
         "ENERGY": 3,
@@ -42,15 +44,13 @@ def test_find_tof_decoder_for_case():
 
     # Act
     de._find_tof_decoder_for_case()
-    tof_decoder_true = de.tof_decoder
 
     # Assert
-    assert tof_decoder_true == tof_decoder_expected
+    assert de.tof_decoder == tof_decoder_expected
 
 
-def test_read_tof_calculation_table():
+def test_read_tof_calculation_table(de):
     # Arrange
-    de = ScienceDirectEvents("fake_packet", "0", "fakepacketname")
     de.DATA = bitstring.Bits(bin="000100010101")
     de._find_decompression_case()
     binary_strings_expected = {
@@ -66,15 +66,13 @@ def test_read_tof_calculation_table():
 
     # Act
     de._read_tof_calculation_table()
-    binary_strings_true = de.tof_calculation_binary
 
     # Assert
-    assert binary_strings_true == binary_strings_expected
+    assert de.tof_calculation_binary == binary_strings_expected
 
 
-def test_find_remaining_bits():
+def test_find_remaining_bits(de):
     # Arrange
-    de = ScienceDirectEvents("fake_packet", "0", "fakepacketname")
     de.DATA = bitstring.Bits(bin="000100010101")
     de._find_decompression_case()
     de._find_tof_decoder_for_case()
@@ -139,15 +137,13 @@ def test_find_remaining_bits():
 
     # Act
     de._find_remaining_bits()
-    remaining_bits_true = de.remaining_bits
 
     # Assert
-    assert remaining_bits_true == remaining_bits_expected
+    assert de.remaining_bits == remaining_bits_expected
 
 
-def test_parse_binary_for_gold_triple():
+def test_parse_binary_for_gold_triple(de):
     # Arrange
-    de = ScienceDirectEvents("fake_packet", "0", "fakepacketname")
     de.DATA = bitstring.Bits(bin="000010010101001101011100111100111011101001111101")
     de._find_decompression_case()
     de._find_tof_decoder_for_case()
@@ -165,15 +161,13 @@ def test_parse_binary_for_gold_triple():
 
     # Act
     de._parse_binary()
-    parsed_bits_true = de.parsed_bits
 
     # Assert
-    assert parsed_bits_true == parsed_bits_expected
+    assert de.parsed_bits == parsed_bits_expected
 
 
-def test_parse_binary_for_silver_triple():
+def test_parse_binary_for_silver_triple(de):
     # Arrange
-    de = ScienceDirectEvents("fake_packet", "0", "fakepacketname")
     de.DATA = bitstring.Bits(
         bin="000000010101001101011100111100111011101001111101101101"
     )
@@ -193,15 +187,13 @@ def test_parse_binary_for_silver_triple():
 
     # Act
     de._parse_binary()
-    parsed_bits_true = de.parsed_bits
 
     # Assert
-    assert parsed_bits_true == parsed_bits_expected
+    assert de.parsed_bits == parsed_bits_expected
 
 
-def test_parse_binary_for_bronze_triple():
+def test_parse_binary_for_bronze_triple(de):
     # Arrange
-    de = ScienceDirectEvents("fake_packet", "0", "fakepacketname")
     de.DATA = bitstring.Bits(bin="0100100101010011010111001111001")
     de._find_decompression_case()
     de._find_tof_decoder_for_case()
@@ -219,15 +211,13 @@ def test_parse_binary_for_bronze_triple():
 
     # Act
     de._parse_binary()
-    parsed_bits_true = de.parsed_bits
 
     # Assert
-    assert parsed_bits_true == parsed_bits_expected
+    assert de.parsed_bits == parsed_bits_expected
 
 
-def test_parse_binary_for_not_bronze_triple():
+def test_parse_binary_for_not_bronze_triple(de):
     # Arrange
-    de = ScienceDirectEvents("fake_packet", "0", "fakepacketname")
     de.DATA = bitstring.Bits(bin="010000010101001101011100111100101110")
     de._find_decompression_case()
     de._find_tof_decoder_for_case()
@@ -245,15 +235,13 @@ def test_parse_binary_for_not_bronze_triple():
 
     # Act
     de._parse_binary()
-    parsed_bits_true = de.parsed_bits
 
     # Assert
-    assert parsed_bits_true == parsed_bits_expected
+    assert de.parsed_bits == parsed_bits_expected
 
 
-def test_decode_fields():
+def test_decode_fields(de):
     # Arrange
-    de = ScienceDirectEvents("fake_packet", "0", "fakepacketname")
     de.DATA = bitstring.Bits(bin="000010010101001101011100111100111011101001111101")
     de._find_decompression_case()
     de._find_tof_decoder_for_case()
@@ -272,19 +260,11 @@ def test_decode_fields():
     # Act
     de._decode_fields()
 
-    energy_true = de.ENERGY
-    position_true = de.POS
-    tof0_true = de.TOF0
-    tof1_true = de.TOF1
-    tof2_true = de.TOF2
-    tof3_true = de.TOF3
-    time_true = de.TIME
-
     # Assert
-    assert energy_true == energy_expected
-    assert position_true == position_expected
-    assert tof0_true == tof0_expected
-    assert tof1_true == tof1_expected
-    assert tof2_true == tof2_expected
-    assert tof3_true == tof3_expected
-    assert time_true == time_expected
+    assert de.ENERGY == energy_expected
+    assert de.POS == position_expected
+    assert de.TOF0 == tof0_expected
+    assert de.TOF1 == tof1_expected
+    assert de.TOF2 == tof2_expected
+    assert de.TOF3 == tof3_expected
+    assert de.TIME == time_expected
