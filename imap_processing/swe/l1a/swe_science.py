@@ -1,11 +1,20 @@
+"""Contains code to perform SWE L1a science processing."""
+
 import collections
+import dataclasses
 
 import numpy as np
 import xarray as xr
 
+from imap_processing.cdf.global_attrs import ConstantCoordinates
+from imap_processing.swe import swe_cdf_attrs
+from imap_processing.swe.utils.swe_utils import (
+    add_metadata_to_array,
+)
 
-def uncompress_counts(cem_count):
-    """Uncompress counts from the CEMs.
+
+def decompressed_counts(cem_count):
+    """Decompressed counts from the CEMs.
 
     Parameters
     ----------
@@ -15,7 +24,7 @@ def uncompress_counts(cem_count):
     Returns
     -------
     int
-        uncompressed count. Eg. 40959
+        decompressed count. Eg. 40959
     """
     # index is the first four bits of input data
     # multi is the last four bits of input data
@@ -23,8 +32,8 @@ def uncompress_counts(cem_count):
     multi = cem_count % 16
 
     # This is look up table for the index to get
-    # base and step_size to calculate the uncompressed count.
-    uncompress_table = {
+    # base and step_size to calculate the decompressed count.
+    decompress_table = {
         0: {"base": 0, "step_size": 1},
         1: {"base": 16, "step_size": 1},
         2: {"base": 32, "step_size": 2},
@@ -43,34 +52,16 @@ def uncompress_counts(cem_count):
         15: {"base": 33792, "step_size": 2048},
     }
 
-    # uncompression formula from SWE algorithm document CN102D-D0001 and page 16.
+    # decompression formula from SWE algorithm document CN102D-D0001 and page 16.
     # N = base[index] + multi * step_size[index] + (step_size[index] - 1) / 2
     # NOTE: for (step_size[index] - 1) / 2, we only keep the whole number part of
     # the quotient
 
     return (
-        uncompress_table[index]["base"]
-        + (multi * uncompress_table[index]["step_size"])
-        + ((uncompress_table[index]["step_size"] - 1) // 2)
+        decompress_table[index]["base"]
+        + (multi * decompress_table[index]["step_size"])
+        + ((decompress_table[index]["step_size"] - 1) // 2)
     )
-
-
-def add_metadata_to_array(data_packet, metadata_arrays):
-    """Add metadata to the metadata_arrays.
-
-    Parameters
-    ----------
-    data_packet : space_packet_parser.parser.Packet
-        SWE data packet
-    metadata_arrays : dict
-        metadata arrays
-    """
-    for key, value in data_packet.header.items():
-        metadata_arrays.setdefault(key, []).append(value.raw_value)
-
-    for key, value in data_packet.data.items():
-        if key != "SCIENCE_DATA":
-            metadata_arrays.setdefault(key, []).append(value.raw_value)
 
 
 def swe_science(decom_data):
@@ -89,9 +80,10 @@ def swe_science(decom_data):
     Each L1A data from each packet will have this shape: 15 rows, 12 columns,
     and each cell in 15 x 12 table contains 7 element array.
     These dimension maps to this:
-        15 rows --> 15 seconds
-        12 column --> 12 energy steps in each second
-        7 element --> 7 CEMs counts
+
+    |     15 rows --> 15 seconds
+    |     12 column --> 12 energy steps in each second
+    |     7 element --> 7 CEMs counts
 
     In L1A, we don't do anything besides read raw data, uncompress counts data and
     store data in 15 x 12 x 7 array.
@@ -116,7 +108,7 @@ def swe_science(decom_data):
 
     # We know we can only have 8 bit numbers input, so iterate over all
     # possibilities once up front
-    decompression_table = np.array([uncompress_counts(i) for i in range(256)])
+    decompression_table = np.array([decompressed_counts(i) for i in range(256)])
 
     for data_packet in decom_data:
         # read raw data
@@ -129,51 +121,98 @@ def swe_science(decom_data):
         # convert bytes to numpy array of uint8
         raw_counts = np.frombuffer(byte_data, dtype=np.uint8)
 
-        # Uncompress counts. Uncompressed data is a list of 1260
-        # where 1260 = 15 seconds x 12 energy steps x 7 CEMs
+        # Uncompress counts. Decompressed data is a list of 1260
+        # where 1260 = 180 x 7 CEMs
         # Take the "raw_counts" indices/counts mapping from
         # decompression_table and then reshape the return
-        uncompress_data = np.take(decompression_table, raw_counts).reshape(15, 12, 7)
-        raw_counts = raw_counts.reshape(15, 12, 7)
+        uncompress_data = np.take(decompression_table, raw_counts).reshape(180, 7)
+        # Save raw counts data as well
+        raw_counts = raw_counts.reshape(180, 7)
 
         # Save data with its metadata field to attrs and DataArray of xarray.
-        science_array.append(uncompress_data)
-        raw_science_array.append(raw_counts)
-        add_metadata_to_array(data_packet, metadata_arrays)
+        # Save data as np.int64 to be complaint with ISTP' FILLVAL
+        science_array.append(uncompress_data.astype(np.int64))
+        raw_science_array.append(raw_counts.astype(np.int64))
+        metadata_arrays = add_metadata_to_array(data_packet, metadata_arrays)
 
-    met_time = xr.DataArray(
+    epoch_time = xr.DataArray(
         metadata_arrays["SHCOARSE"],
-        name="met_time",
-        dims=["met_time"],
-        attrs=dict(
-            description="Mission elapsed time",
-            units="seconds since start of the mission",
-        ),
+        name="Epoch",
+        dims=["Epoch"],
+        attrs=ConstantCoordinates.EPOCH,
+    )
+
+    # TODO: add more descriptive description
+    energy = xr.DataArray(
+        np.arange(180),
+        name="Energy",
+        dims=["Energy"],
+        attrs=dataclasses.replace(
+            swe_cdf_attrs.int_base,
+            catdesc="Energy's index value in the lookup table",
+            fieldname="Energy Bins",
+            label_axis="Energy Bins",
+            units="",
+        ).output(),
+    )
+
+    counts = xr.DataArray(
+        np.arange(7),
+        name="Counts",
+        dims=["Counts"],
+        attrs=dataclasses.replace(
+            swe_cdf_attrs.int_base,
+            catdesc="Counts",
+            fieldname="Counts",
+            label_axis="Counts",
+            units="int",
+        ).output(),
     )
 
     science_xarray = xr.DataArray(
         science_array,
-        dims=["met_time", "seconds", "energy_steps", "cem_counts"],
+        dims=["Epoch", "Energy", "Counts"],
+        attrs=swe_cdf_attrs.l1a_science_attrs.output(),
     )
+
     raw_science_xarray = xr.DataArray(
         raw_science_array,
-        dims=["met_time", "seconds", "energy_steps", "cem_counts"],
+        dims=["Epoch", "Energy", "Counts"],
+        attrs=swe_cdf_attrs.l1a_science_attrs.output(),
     )
 
     dataset = xr.Dataset(
-        {"SCIENCE_DATA": science_xarray},
-        coords={"met_time": met_time},
+        coords={
+            "Epoch": epoch_time,
+            "Energy": energy,
+            "Counts": counts,
+        },
+        attrs=swe_cdf_attrs.swe_l1a_global_attrs.output(),
     )
-
+    dataset["SCIENCE_DATA"] = science_xarray
     dataset["RAW_SCIENCE_DATA"] = raw_science_xarray
 
     # create xarray dataset for each metadata field
     for key, value in metadata_arrays.items():
         if key == "SHCOARSE":
             continue
+        # TODO: figure out how to add more descriptive
+        # description for each metadata field
+        #
+        # int_attrs["CATDESC"] = int_attrs["FIELDNAM"] = int_attrs["LABLAXIS"] = key
+        # # get int32's max since most of metadata is under 32-bits
+        # int_attrs["VALIDMAX"] = np.iinfo(np.int32).max
+        # int_attrs["DEPEND_0"] = "Epoch"
         dataset[key] = xr.DataArray(
             value,
-            dims=["met_time"],
+            dims=["Epoch"],
+            attrs=dataclasses.replace(
+                swe_cdf_attrs.swe_metadata_attrs,
+                catdesc=key,
+                fieldname=key,
+                label_axis=key,
+                depend_0="Epoch",
+            ).output(),
         )
 
     return dataset

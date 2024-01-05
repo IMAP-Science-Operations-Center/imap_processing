@@ -1,0 +1,268 @@
+KPL/IK
+
+Insterstellar Mapping and Acceleration Probe - Ultra Instrument Kernel
+========================================================================
+
+   This instrument kernel contains the instrument field of view for the
+   IMAP-Ultra instrument.
+
+Version and Date
+========================================================================
+
+   The TEXT_KERNEL_ID stores version information of loaded project text
+   kernels. Each entry associated with the keyword is a string that consists
+   of four parts: the kernel name, version, entry date, and type. For example,
+   the frames kernel might have an entry as follows:
+
+           TEXT_KERNEL_ID += 'SPP_FRAMES V1.0.0 25-JUNE-2018 FK'
+                                  |         |        |        |
+                                  |         |        |        |
+              KERNEL NAME <-------+         |        |        |
+                                            |        |        V
+                             VERSION <------+        |   KERNEL TYPE
+                                                     |
+                                                     V
+                                                ENTRY DATE
+   Define the instrument kernel for the normal FOV.
+   See build_ultra_fov_boundary.m
+
+   \begindata
+
+   NAIF_BODY_NAME += ( 'IMAP_ULTRA90' )
+   NAIF_BODY_CODE += ( -43002 )
+
+   NAIF_BODY_NAME += ( 'IMAP_ULTRA45' )
+   NAIF_BODY_CODE += ( -43003 )
+
+
+   INS-43002_FOV_SHAPE 			= 'POLYGON'
+   INS-43002_FOV_CLASS_SPEC 		= 'CORNERS'
+   INS-43002_FOV_FRAME 			= 'IMAP_ULTRA90'
+   INS-43002_BORESIGHT 			= (0.0, 0.0, 1.0)
+   INS-43002_FOV_BOUNDARY_CORNERS 	= (0.72139, -0.59975, 0.34627,
+	0.74009, -0.55089, 0.38574,
+	0.75402, -0.50318, 0.42222,
+	0.76463, -0.45571, 0.45571,
+	0.77286, -0.4079, 0.48612,
+	0.77929, -0.35944, 0.51334,
+	0.78432, -0.31018, 0.53724,
+	0.78824, -0.26006, 0.55771,
+	0.79124, -0.20915, 0.57462,
+	0.79346, -0.15752, 0.58789,
+	0.79498, -0.10534, 0.59742,
+	0.79587, -0.05277, 0.60316,
+	0.79616, 0, 0.60508,
+	0.79587, 0.05277, 0.60316,
+	0.79498, 0.10534, 0.59742,
+	0.79346, 0.15752, 0.58789,
+	0.79124, 0.20915, 0.57462,
+	0.78824, 0.26006, 0.55771,
+	0.78432, 0.31018, 0.53724,
+	0.77929, 0.35944, 0.51334,
+	0.77286, 0.4079, 0.48612,
+	0.76463, 0.45571, 0.45571,
+	0.75402, 0.50318, 0.42222,
+	0.74009, 0.55089, 0.38574,
+	0.72139, 0.59975, 0.34627,
+	-0.72139, 0.59975, 0.34627,
+	-0.74009, 0.55089, 0.38574,
+	-0.75402, 0.50318, 0.42222,
+	-0.76463, 0.45571, 0.45571,
+	-0.77286, 0.4079, 0.48612,
+	-0.77929, 0.35944, 0.51334,
+	-0.78432, 0.31018, 0.53724,
+	-0.78824, 0.26006, 0.55771,
+	-0.79124, 0.20915, 0.57462,
+	-0.79346, 0.15752, 0.58789,
+	-0.79498, 0.10534, 0.59742,
+	-0.79587, 0.05277, 0.60316,
+	-0.79616, 0, 0.60508,
+	-0.79587, -0.05277, 0.60316,
+	-0.79498, -0.10534, 0.59742,
+	-0.79346, -0.15752, 0.58789,
+	-0.79124, -0.20915, 0.57462,
+	-0.78824, -0.26006, 0.55771,
+	-0.78432, -0.31018, 0.53724,
+	-0.77929, -0.35944, 0.51334,
+	-0.77286, -0.4079, 0.48612,
+	-0.76463, -0.45571, 0.45571,
+	-0.75402, -0.50318, 0.42222,
+	-0.74009, -0.55089, 0.38574,
+	-0.72139, -0.59975, 0.34627)
+
+
+
+INS-43003_FOV_SHAPE 			= 'POLYGON'
+   INS-43003_FOV_CLASS_SPEC 		= 'CORNERS'
+   INS-43003_FOV_FRAME 			= 'IMAP_ULTRA45'
+   INS-43003_BORESIGHT 			= (0.0, 0.0, 1.0)
+   INS-43003_FOV_BOUNDARY_CORNERS 	= (0.72139, -0.59975, 0.34627,
+	0.74009, -0.55089, 0.38574,
+	0.75402, -0.50318, 0.42222,
+	0.76463, -0.45571, 0.45571,
+	0.77286, -0.4079, 0.48612,
+	0.77929, -0.35944, 0.51334,
+	0.78432, -0.31018, 0.53724,
+	0.78824, -0.26006, 0.55771,
+	0.79124, -0.20915, 0.57462,
+	0.79346, -0.15752, 0.58789,
+	0.79498, -0.10534, 0.59742,
+	0.79587, -0.05277, 0.60316,
+	0.79616, 0, 0.60508,
+	0.79587, 0.05277, 0.60316,
+	0.79498, 0.10534, 0.59742,
+	0.79346, 0.15752, 0.58789,
+	0.79124, 0.20915, 0.57462,
+	0.78824, 0.26006, 0.55771,
+	0.78432, 0.31018, 0.53724,
+	0.77929, 0.35944, 0.51334,
+	0.77286, 0.4079, 0.48612,
+	0.76463, 0.45571, 0.45571,
+	0.75402, 0.50318, 0.42222,
+	0.74009, 0.55089, 0.38574,
+	0.72139, 0.59975, 0.34627,
+	-0.72139, 0.59975, 0.34627,
+	-0.74009, 0.55089, 0.38574,
+	-0.75402, 0.50318, 0.42222,
+	-0.76463, 0.45571, 0.45571,
+	-0.77286, 0.4079, 0.48612,
+	-0.77929, 0.35944, 0.51334,
+	-0.78432, 0.31018, 0.53724,
+	-0.78824, 0.26006, 0.55771,
+	-0.79124, 0.20915, 0.57462,
+	-0.79346, 0.15752, 0.58789,
+	-0.79498, 0.10534, 0.59742,
+	-0.79587, 0.05277, 0.60316,
+	-0.79616, 0, 0.60508,
+	-0.79587, -0.05277, 0.60316,
+	-0.79498, -0.10534, 0.59742,
+	-0.79346, -0.15752, 0.58789,
+	-0.79124, -0.20915, 0.57462,
+	-0.78824, -0.26006, 0.55771,
+	-0.78432, -0.31018, 0.53724,
+	-0.77929, -0.35944, 0.51334,
+	-0.77286, -0.4079, 0.48612,
+	-0.76463, -0.45571, 0.45571,
+	-0.75402, -0.50318, 0.42222,
+	-0.74009, -0.55089, 0.38574,
+	-0.72139, -0.59975, 0.34627)
+
+   \begintext
+
+
+   Version 0.0.1 -- Dec. 05, 2022 -- Nick Dutton, JHU/APL
+
+
+       Initial Version
+
+
+References
+========================================================================
+
+   1. 'Frames Required Reading'
+
+   2. 'Kernel Pool Required Reading'
+
+   3. 'C-Kernel Required Reading'
+
+   4. 'IMAP Mapping.pdf', received from Matina G., JHU/APL
+
+
+Contact Information
+========================================================================
+
+   Lillian Nguyen, JHU/APL,
+   (443)778-5477, Lillian.Nguyen@jhuapl.edu
+
+   Scott Turner, JHU/APL
+   (443)778-1693, Scott.Turner@jhuapl.edu
+
+   M. Alexandra Matiella Novak, JHU/APL,
+   (443)802-1417, Alexandra.Matiella.Novak@jhuapl.edu
+
+   Wen-Jong Shyong, JHU/APL
+   (443)778-8564, Wen-Jong.Shyong@jhuapl.edu
+
+
+Implementation Notes
+========================================================================
+
+   This file is used by the SPICE system as follows: programs that make
+   use of this frame kernel must `load' the kernel, normally during
+   program initialization. Loading the kernel associates the data items with
+   their names in a data structure called the `kernel pool'.  The SPICELIB
+   routine FURNSH loads a kernel into the pool as shown below:
+
+      FORTRAN: (SPICELIB)
+
+         CALL FURNSH ( frame_kernel_name )
+
+      C: (CSPICE)
+
+         furnsh_c ( frame_kernel_name );
+
+      IDL: (ICY)
+
+         cspice_furnsh, frame_kernel_name
+
+      MATLAB: (MICE)
+
+         cspice_furnsh ( frame_kernel_name )
+
+   This file was created and may be updated with a text editor or word
+   processor.
+
+
+IMAP Frames
+========================================================================
+
+   The ID codes -96900 to -96999 have been reserved for the Parker Solar
+   Probe dynamics frames kernel [12] and are not utilized in this file.
+
+   The following frames are defined in this kernel file:
+
+      Frame Name                Relative To              Type      NAIF ID
+      =======================   ===================      =======   =======
+
+      Spacecraft Frames:
+      ------------------
+      IMAP_SPACECRAFT           ECLIPJ2000               CK        -43000
+
+      Spacecraft ENA Inst Frames:
+      -----------------------
+      IMAP_ULTRA90              IMAP_SPACECRAFT          FIXED     -43002
+      IMAP_ULTRA 45             IMAP_SPACECRAFT          FIXED     -43003
+      IMAP_HI_90                IMAP_SPACECRAFT          FIXED     -43061
+      IMAP_HI_45                IMAP_SPACECRAFT          FIXED     -43062
+
+      MAG Frames (TBD):
+      -------------
+      ID codes -43200  to -43299
+
+      SWE Frames (TBD):
+      --------------------
+      ID codes -43300  to -43399
+
+      SWAPI Frames (TBD):
+      --------------------
+      ID codes -43400  to -43499
+
+      CODICE Frames (TBD):
+      --------------------
+      ID codes -43500  to -43599
+
+      HIT Frames (TBD):
+      --------------------
+      ID codes -43600  to -43699
+
+      IDEX Frames (TBD):
+      --------------------
+      ID codes -43700  to -43799
+
+      GLOWS Frames (TBD):
+      --------------------
+      ID codes -43800  to -43899
+
+
+
+

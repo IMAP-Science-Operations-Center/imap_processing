@@ -1,3 +1,9 @@
+"""Decommutate a packet file using a given packet definition.
+
+This module contains a common function that can be used by multiple instruments
+to decommutate CCSDS packet data using a given XTCE packet definition.
+"""
+
 from space_packet_parser import parser, xtcedef
 
 

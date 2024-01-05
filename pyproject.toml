@@ -31,6 +31,7 @@ classifiers = [
 python = ">=3.9,<3.12"
 xarray = '>=2023.0.0'
 space_packet_parser = ">=4.1.0,<5"
+spiceypy = "^6.0.0"
 bitstring = ">=4.0.1,<5"
 cdflib = "^1.2.3"
 
@@ -68,7 +69,7 @@ addopts = "-ra"
 [tool.ruff]
 target-version = "py39"
 select = ["B", "D", "E", "F", "I", "N", "S", "W", "PL", "PT", "UP", "RUF"]
-ignore = ["D100", "D104", "PLR2004", "S101"]
+ignore = ["D104", "PLR2004", "S101"]
 
 [tool.ruff.per-file-ignores]
 "*/tests/*" = ["D"]
@@ -76,6 +77,10 @@ ignore = ["D100", "D104", "PLR2004", "S101"]
 # TODO: Too many statements, this could be refactored and removed
 # by creating a loop over a predefined mapping
 "imap_processing/idex/idex_packet_parser.py" = ["PLR0915"]
+"imap_processing/write_to_cdf.py" = ["PLR0913"]
 
 [tool.ruff.pydocstyle]
 convention = "numpy"
+
+[project.scripts]
+imap_processing = "imap_processing.run_processing"

@@ -656,16 +656,16 @@
 			</xtce:Parameter>
             <!-- End SWE_CEM_RAW metadata -->
             <!-- Start SWE_EVTMSG metadata -->
-            <xtce:Parameter name="QMSG_CNT" parameterTypeRef="UINT8">
+            <xtce:Parameter name="QMSG_CNT" parameterTypeRef="UINT16">
 				<xtce:LongDescription>Number of queued event messages</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="EVENT_TIME_COARSE_LO8" parameterTypeRef="UINT8">
+			<xtce:Parameter name="EVENT_TIME_COARSE" parameterTypeRef="UINT32">
 				<xtce:LongDescription>Event time seconds</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="EVENT_TIME_FINE_HI8" parameterTypeRef="UINT8">
+			<xtce:Parameter name="EVENT_TIME_FINE" parameterTypeRef="UINT32">
 				<xtce:LongDescription>Event time subseconds</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="EVENT_ID" parameterTypeRef="UINT8">
+			<xtce:Parameter name="EVENT_ID" parameterTypeRef="UINT16">
 				<xtce:LongDescription>Describes an unusual or unexpected occurrence, completion of a required action, or a one-time informative packet</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="PARAM_1" parameterTypeRef="UINT32">
@@ -861,8 +861,8 @@
 				<xtce:EntryList>
 					<xtce:ParameterRefEntry parameterRef="SHCOARSE" />
 					<xtce:ParameterRefEntry parameterRef="QMSG_CNT" />
-					<xtce:ParameterRefEntry parameterRef="EVENT_TIME_COARSE_LO8" />
-					<xtce:ParameterRefEntry parameterRef="EVENT_TIME_FINE_HI8" />
+					<xtce:ParameterRefEntry parameterRef="EVENT_TIME_COARSE" />
+					<xtce:ParameterRefEntry parameterRef="EVENT_TIME_FINE" />
 					<xtce:ParameterRefEntry parameterRef="EVENT_ID" />
 					<xtce:ParameterRefEntry parameterRef="PARAM_1" />
 					<xtce:ParameterRefEntry parameterRef="PARAM_2" />
