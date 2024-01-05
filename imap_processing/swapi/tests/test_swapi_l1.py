@@ -10,6 +10,7 @@ from imap_processing.swapi.l1.swapi_l1 import (
     decompress_count,
     find_sweep_starts,
     get_indices_of_full_sweep,
+    process_swapi_science,
     process_sweep_data,
 )
 from imap_processing.swapi.swapi_utils import create_dataset
@@ -245,3 +246,99 @@ def test_swapi_algorithm(decom_test_data):
     ]
 
     np.testing.assert_array_equal(pcem_counts[0], expected_count)
+
+
+def test_process_swapi_science(decom_test_data):
+    """Test process swapi science"""
+    grouped_data = group_by_apid(decom_test_data)
+    science_data = grouped_data[SWAPIAPID.SWP_SCI]
+    sorted_packets = sort_by_time(science_data, "SHCOARSE")
+    ds_data = create_dataset(sorted_packets)
+    processed_data = process_swapi_science(ds_data)
+
+    # Test dataset dimensions
+    assert processed_data.sizes == {"Epoch": 3, "Energy": 72}
+    # Test Epoch data is correct
+    np.testing.assert_array_equal(processed_data["Epoch"].data, [48, 60, 72])
+
+    expected_count = expected_count = [
+        0,
+        0,
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        31,
+        30,
+        29,
+        28,
+        27,
+        26,
+        25,
+        24,
+        23,
+        22,
+        21,
+        20,
+        19,
+        18,
+        17,
+        16,
+        15,
+        14,
+        13,
+        12,
+        11,
+        10,
+        9,
+        8,
+        7,
+        6,
+        5,
+        4,
+        18,
+        20,
+        22,
+        24,
+        26,
+        28,
+        30,
+        32,
+        34,
+    ]
+    # Test that we got expected counts and datashape
+    np.testing.assert_array_equal(processed_data["SWP_PCEM_COUNTS"][0], expected_count)
+    assert processed_data["SWP_PCEM_COUNTS"].shape == (3, 72)
+    # Test that we calculated uncertainty correctly
+    np.testing.assert_array_equal(
+        np.sqrt(processed_data["SWP_PCEM_COUNTS"][0]), processed_data["SWP_PCEM_ERR"][0]
+    )
