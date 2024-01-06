@@ -821,11 +821,15 @@ class RawDustEvent:
 
         The very last 4 numbers are bad usually, so remove those
         """
-        w = bitstring.ConstBitStream(bin=waveform_raw)
         ints = []
-        while w.pos < len(w):
-            w.read("pad:2")  # skip 2
-            ints += w.readlist(["uint:10"] * 3)
+        for i in range(0, len(waveform_raw), 32):
+            # 32 bit chunks, divided up into 2, 10, 10, 10
+            # skip first two bits
+            ints += [
+                int(waveform_raw[i + 2 : i + 12], 2),
+                int(waveform_raw[i + 12 : i + 22], 2),
+                int(waveform_raw[i + 22 : i + 32], 2),
+            ]
         return ints[:-4]  # Remove last 4 numbers
 
     def _parse_low_sample_waveform(self, waveform_raw: str):
@@ -836,11 +840,12 @@ class RawDustEvent:
             * 8 bits of padding
             * 2x12 bits of integer data.
         """
-        w = bitstring.ConstBitStream(bin=waveform_raw)
         ints = []
-        while w.pos < len(w):
-            w.read("pad:8")  # skip 8
-            ints += w.readlist(["uint:12"] * 2)
+        for i in range(0, len(waveform_raw), 32):
+            ints += [
+                int(waveform_raw[i + 8 : i + 20], 2),
+                int(waveform_raw[i + 20 : i + 32], 2),
+            ]
         return ints
 
     def _calc_low_sample_resolution(self, num_samples: int):
