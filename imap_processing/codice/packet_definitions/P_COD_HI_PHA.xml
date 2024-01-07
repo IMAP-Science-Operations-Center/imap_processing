@@ -68,51 +68,51 @@
 				<xtce:ShortDescription>S/C Time - Seconds</xtce:ShortDescription>
 				<xtce:LongDescription>Secondary Header - Whole-seconds part of SCLK</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="Packet_Version" parameterTypeRef="UINT16">
+			<xtce:Parameter name="PACKET_VERSION" parameterTypeRef="UINT16">
 				<xtce:ShortDescription>Packet Version</xtce:ShortDescription>
 				<xtce:LongDescription>Packet version - this will be incremented each time the format of the packet changesCOD_LO_PHA.</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="Spin_Period" parameterTypeRef="UINT16">
+			<xtce:Parameter name="SPIN_PERIOD" parameterTypeRef="UINT16">
 				<xtce:ShortDescription>Spin Period reported by the Spacecraft</xtce:ShortDescription>
 				<xtce:LongDescription>Spin period reported by the Spacecraft in the Time and Status message.  Reported period is the period that was active when the 16-spin acquisition cycle started.</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="Acq_Start_Seconds" parameterTypeRef="UINT32">
+			<xtce:Parameter name="ACQ_START_SECONDS" parameterTypeRef="UINT32">
 				<xtce:ShortDescription>Acquisition Start Time (Seconds)</xtce:ShortDescription>
 				<xtce:LongDescription>Full-seconds portion of the time at which the 16-spin cycle started</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="Acq_Start_Subseconds" parameterTypeRef="UINT20">
+			<xtce:Parameter name="ACQ_START_SUBSECONDS" parameterTypeRef="UINT20">
 				<xtce:ShortDescription>Acquisition Start Time (Subseconds)</xtce:ShortDescription>
 				<xtce:LongDescription>Sub-seconds portion of the time at which the 16-spin cycle started</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="Spare_1" parameterTypeRef="UINT12">
+			<xtce:Parameter name="SPARE_1" parameterTypeRef="UINT12">
 				<xtce:ShortDescription>Spare for alignment</xtce:ShortDescription>
 				<xtce:LongDescription>Spare for alignment</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="Total_TCR_Count" parameterTypeRef="UINT32">
+			<xtce:Parameter name="TOTAL_TCR_COUNT" parameterTypeRef="UINT32">
 				<xtce:ShortDescription>Total number of TCR events</xtce:ShortDescription>
 				<xtce:LongDescription>Total number of TCR events that occurred during the collection cycle</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="Total_DCR_Count" parameterTypeRef="UINT32">
+			<xtce:Parameter name="TOTAL_DCR_COUNT" parameterTypeRef="UINT32">
 				<xtce:ShortDescription>Total number of DCR events</xtce:ShortDescription>
 				<xtce:LongDescription>Total number of DCR events that occurred during the collection cycle</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="Total_SSD_Count" parameterTypeRef="UINT32">
+			<xtce:Parameter name="TOTAL_SSD_COUNT" parameterTypeRef="UINT32">
 				<xtce:ShortDescription>Total number of APD-Only events</xtce:ShortDescription>
 				<xtce:LongDescription>Total number of APD-Only events that occurred during the collection cycle</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="Num_Events" parameterTypeRef="UINT32">
+			<xtce:Parameter name="NUM_EVENTS" parameterTypeRef="UINT32">
 				<xtce:ShortDescription>Number of events included in this packet</xtce:ShortDescription>
 				<xtce:LongDescription>Number of events selected for downlink (i.e. number of events in the Event_Data array)</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="Compressed" parameterTypeRef="UINT1">
+			<xtce:Parameter name="COMPRESSED" parameterTypeRef="UINT1">
 				<xtce:ShortDescription>Whether the event data is compressed</xtce:ShortDescription>
 				<xtce:LongDescription>Whether the event data is compressed.  If 1/Yes, Event_Data array is compressed using the Rice compression algorithm.</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="Byte_Count" parameterTypeRef="UINT31">
+			<xtce:Parameter name="BYTE_COUNT" parameterTypeRef="UINT31">
 				<xtce:ShortDescription>Number of bytes in the Event Data array</xtce:ShortDescription>
 				<xtce:LongDescription>Number of bytes in the Event_Data array.  If compressed, this value represents the length of the compressed data.</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="Event_Data" parameterTypeRef="BYTE276480">
+			<xtce:Parameter name="EVENT_DATA" parameterTypeRef="BYTE276480">
 				<xtce:ShortDescription>Event Data</xtce:ShortDescription>
 				<xtce:LongDescription>Optionally compressed array of Event Data
 
@@ -153,18 +153,18 @@ TBD: Events may be tightly packed, or may have spares added to keep each event b
 				</xtce:BaseContainer>
 				<xtce:EntryList>
 					<xtce:ParameterRefEntry parameterRef="SHCOARSE" />
-					<xtce:ParameterRefEntry parameterRef="Packet_Version" />
-					<xtce:ParameterRefEntry parameterRef="Spin_Period" />
-					<xtce:ParameterRefEntry parameterRef="Acq_Start_Seconds" />
-					<xtce:ParameterRefEntry parameterRef="Acq_Start_Subseconds" />
-					<xtce:ParameterRefEntry parameterRef="Spare_1" />
-					<xtce:ParameterRefEntry parameterRef="Total_TCR_Count" />
-					<xtce:ParameterRefEntry parameterRef="Total_DCR_Count" />
-					<xtce:ParameterRefEntry parameterRef="Total_SSD_Count" />
-					<xtce:ParameterRefEntry parameterRef="Num_Events" />
-					<xtce:ParameterRefEntry parameterRef="Compressed" />
-					<xtce:ParameterRefEntry parameterRef="Byte_Count" />
-					<xtce:ParameterRefEntry parameterRef="Event_Data" />
+					<xtce:ParameterRefEntry parameterRef="PACKET_VERSION" />
+					<xtce:ParameterRefEntry parameterRef="SPIN_PERIOD" />
+					<xtce:ParameterRefEntry parameterRef="ACQ_START_SECONDS" />
+					<xtce:ParameterRefEntry parameterRef="ACQ_START_SUBSECONDS" />
+					<xtce:ParameterRefEntry parameterRef="SPARE_1" />
+					<xtce:ParameterRefEntry parameterRef="TOTAL_TCR_COUNT" />
+					<xtce:ParameterRefEntry parameterRef="TOTAL_DCR_COUNT" />
+					<xtce:ParameterRefEntry parameterRef="TOTAL_SSD_COUNT" />
+					<xtce:ParameterRefEntry parameterRef="NUM_EVENTS" />
+					<xtce:ParameterRefEntry parameterRef="COMPRESSED" />
+					<xtce:ParameterRefEntry parameterRef="BYTE_COUNT" />
+					<xtce:ParameterRefEntry parameterRef="EVENT_DATA" />
 				</xtce:EntryList>
 			</xtce:SequenceContainer>
 		</xtce:ContainerSet>

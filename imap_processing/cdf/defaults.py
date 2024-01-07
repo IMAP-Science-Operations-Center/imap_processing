@@ -1,10 +1,8 @@
+"""Stores default values which can be used across instrument CDF files."""
+
 from dataclasses import dataclass
 
 import numpy as np
-
-"""
-This module is used for default values which can be used across instrument CDF files.
-"""
 
 
 @dataclass

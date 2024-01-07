@@ -1,3 +1,5 @@
+"""Decommutates Ultra CCSDS packets."""
+
 import logging
 from enum import Enum
 from typing import NamedTuple

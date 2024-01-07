@@ -1,3 +1,5 @@
+"""Contains a data class for CCSDS data."""
+
 from dataclasses import dataclass, fields
 
 

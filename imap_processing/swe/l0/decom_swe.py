@@ -1,3 +1,5 @@
+"""Decommutates SWE CCSDS data packets."""
+
 from imap_processing import decom, imap_module_directory
 
 

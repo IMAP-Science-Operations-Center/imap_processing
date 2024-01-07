@@ -1,3 +1,5 @@
+"""Contains dataclasses to support IDEX processing."""
+
 from dataclasses import dataclass
 
 

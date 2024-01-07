@@ -1,3 +1,9 @@
+"""Decommutates IDEX CCSDS packets.
+
+This module contains code to decommutate IDEX packets and creates xarrays to
+support creation of L1 data products.
+"""
+
 import dataclasses
 import logging
 from collections import namedtuple
