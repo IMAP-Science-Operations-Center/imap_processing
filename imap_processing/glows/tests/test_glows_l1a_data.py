@@ -17,48 +17,61 @@ from imap_processing.glows.utils.constants import DirectEvent, TimeTuple
 def decom_test_data():
     """Read test data from file"""
     current_directory = Path(__file__).parent
-    packet_path = f"{current_directory}/glows_test_packet_20230920_v00.pkts"
+    packet_path = current_directory / "glows_test_packet_20110921_v01.pkts"
     data_packet_list = decom_glows.decom_packets(packet_path)
     return data_packet_list
 
 
-def test_histogram_list(decom_test_data):
+@pytest.fixture()
+def histogram_test_data(decom_test_data):
+    histl0 = decom_test_data[0][0]
+    hist = HistogramL1A(histl0)
+    return hist
+
+
+@pytest.fixture()
+def de_test_data(decom_test_data):
+    del0 = decom_test_data[1][0]
+    de = DirectEventL1A(del0)
+    return de
+
+
+def test_histogram_list(histogram_test_data, decom_test_data):
     """Test size of histogram data"""
     histl0 = decom_test_data[0][0]
-    hist = HistogramL1A(histl0)
 
-    assert len(hist.histograms) == 3600
-    assert sum(hist.histograms) == histl0.EVENTS
+    assert len(histogram_test_data.histograms) == 3600
+    assert sum(histogram_test_data.histograms) == histl0.EVENTS
 
 
-def test_histogram_attributes(decom_test_data):
+def test_histogram_attributes(histogram_test_data):
     """Test other data in histogram packet"""
-    histl0 = decom_test_data[0][0]
-    hist = HistogramL1A(histl0)
 
     expected_block_header = {
         "flight_software_version": 131329,
         "ground_software_version": version,
-        "pkts_file_name": "glows_test_packet_20230920_v00.pkts",
+        "pkts_file_name": "glows_test_packet_20110921_v01.pkts",
         "seq_count_in_pkts_file": 0,
     }
 
-    assert hist.block_header == expected_block_header
-    assert hist.last_spin_id == 0
+    assert histogram_test_data.block_header == expected_block_header
+    assert histogram_test_data.last_spin_id == 0
 
-    assert hist.imap_start_time == TimeTuple(54232215, 0)
-    assert hist.imap_time_offset == TimeTuple(120, 0)
-    assert hist.glows_start_time == TimeTuple(54232214, 1997263)
-    assert hist.glows_time_offset == TimeTuple(119, 1998758)
-    assert hist.flags == {"flags_set_onboard": 64, "is_generated_on_ground": False}
+    assert histogram_test_data.imap_start_time == TimeTuple(54232215, 0)
+    assert histogram_test_data.imap_time_offset == TimeTuple(120, 0)
+    assert histogram_test_data.glows_start_time == TimeTuple(54232214, 1997263)
+    assert histogram_test_data.glows_time_offset == TimeTuple(119, 1998758)
+    assert histogram_test_data.flags == {
+        "flags_set_onboard": 64,
+        "is_generated_on_ground": False,
+    }
 
 
-def test_direct_event_every_second(decom_test_data):
+def test_direct_event_every_second(de_test_data):
     """Test that Level 1A direct events generate correct status data table"""
-    de0 = decom_test_data[1][0]
 
     # Manually created dictionary from first test packet
-    data_every_second = {
+    expected_data_every_second = {
         "imap_sclk_last_pps": 54232338,
         "glows_sclk_last_pps": 54232337,
         "glows_ssclk_last_pps": 1995990,
@@ -81,27 +94,25 @@ def test_direct_event_every_second(decom_test_data):
         "memory_error_detected": 0,
     }
 
-    de = DirectEventL1A(de0)
-
-    assert dataclasses.asdict(de.status_data) == data_every_second
+    assert dataclasses.asdict(de_test_data.status_data) == expected_data_every_second
 
 
-def test_direct_events_uncompressed(decom_test_data):
+def test_direct_events_uncompressed(de_test_data):
     """test building of uncompressed events"""
-    de0 = decom_test_data[1][0]
-    de1a = DirectEventL1A(de0)
+
     first_uncompressed_event = bytearray.fromhex("033b8511061e7bf0")
-    processed_uncompressed = de1a._build_uncompressed_event(first_uncompressed_event)
+    processed_uncompressed = de_test_data._build_uncompressed_event(
+        first_uncompressed_event
+    )
     expected = DirectEvent(
         TimeTuple(54232337, 1997808), impulse_length=6, multi_event=False
     )
     assert processed_uncompressed == expected
 
 
-def test_direct_events_two_bytes_compressed(decom_test_data):
+def test_direct_events_two_bytes_compressed(de_test_data):
     """Test two byte compression for direct events"""
-    de0 = decom_test_data[1][0]
-    de1a = DirectEventL1A(de0)
+
     first_byte = int("0x87", 0)
     two_bytes = bytearray.fromhex("6106")
 
@@ -112,31 +123,31 @@ def test_direct_events_two_bytes_compressed(decom_test_data):
     )
     # Required for processing
     previous_time = TimeTuple(54232337, 1997808)
-
     oldest_diff = first_byte & 0x3F
 
-    output = de1a._build_compressed_event(two_bytes, oldest_diff, previous_time)
+    output = de_test_data._build_compressed_event(two_bytes, oldest_diff, previous_time)
+    second = de_test_data._build_compressed_event(
+        bytearray.fromhex("d806"), 7, output.timestamp
+    )
 
-    final_expected = DirectEvent(
-        TimeTuple(seconds=54232338, subseconds=1988562),
+    second_expected = DirectEvent(
+        TimeTuple(seconds=54232338, subseconds=1705),
         impulse_length=6,
         multi_event=False,
     )
 
     assert expected == output
-    assert expected == de1a.direct_events[1]
-    assert final_expected == de1a.direct_events[-1]
+    assert expected == de_test_data.direct_events[1]
+    assert second_expected == second
 
 
-def test_direct_events_three_bytes_compressed(decom_test_data):
+def test_direct_events_three_bytes_compressed(de_test_data):
     """test 3 byte compression for direct events"""
-    de0 = decom_test_data[1][0]
-    de1a = DirectEventL1A(de0)
     first_byte = int("0xE7", 0)
     three_bytes = bytearray.fromhex("620687")
 
     expected = DirectEvent(
-        TimeTuple(seconds=54232339, subseconds=578806),
+        TimeTuple(54232339, 578806),
         impulse_length=135,
         multi_event=False,
     )
@@ -146,37 +157,76 @@ def test_direct_events_three_bytes_compressed(decom_test_data):
 
     oldest_diff = first_byte & 0x3F
 
-    output = de1a._build_compressed_event(three_bytes, oldest_diff, previous_time)
+    output = de_test_data._build_compressed_event(
+        three_bytes, oldest_diff, previous_time
+    )
 
     assert expected == output
 
     bad_input = bytearray.fromhex("11111111")
     with pytest.raises(ValueError, match="Incorrect length"):
-        de1a._build_compressed_event(bad_input, oldest_diff, previous_time)
+        de_test_data._build_compressed_event(bad_input, oldest_diff, previous_time)
 
 
-def test_generate_direct_events(decom_test_data):
+def test_sequential_direct_events(decom_test_data):
+    """test output of the first level 0 direct event packet"""
+
+    # First, an uncompressed event, then 3 2-bit compressed events (876106), then 3
+    # 3-bit compressed events (E7620687)
+    test_list = bytearray.fromhex(
+        "033b8511061e7bf0"  # uncompressed
+        "876106876106876106"  # 2 bit compressed
+        "E7620687E7620687E7620687"
+    )  # 3 bit compressed
+
+    de_second_val = DirectEventL1A(decom_test_data[1][1])
+
+    list_events = de_second_val._generate_direct_events(test_list)
+
+    assert len(list_events) == 7
+
+    first_expected = DirectEvent(
+        TimeTuple(seconds=54232338, subseconds=1996127),
+        impulse_length=6,
+        multi_event=False,
+    )
+
+    final_expected = DirectEvent(
+        TimeTuple(seconds=54232339, subseconds=1993947),
+        impulse_length=6,
+        multi_event=False,
+    )
+    second_to_last = DirectEvent(
+        TimeTuple(seconds=54232339, subseconds=1990921),
+        impulse_length=6,
+        multi_event=False,
+    )
+    assert de_second_val.direct_events[0] == first_expected
+    assert len(de_second_val.direct_events) == 721
+    assert de_second_val.direct_events[-1] == final_expected
+    assert de_second_val.direct_events[-2] == second_to_last
+
+
+def test_generate_direct_events(de_test_data):
     """test multiple types of compression
 
     first byte uncompressed, then 2 byte compressed, then 3 byte compressed"""
-    de0 = decom_test_data[1][0]
-    de1a = DirectEventL1A(de0)
     first_uncompressed_event = bytearray.fromhex("033b8511061e7bf0")
     two_bytes = bytearray.fromhex("876106")
     three_bytes = bytearray.fromhex("E7620687")
 
     test_data = first_uncompressed_event + two_bytes + three_bytes
-    output = de1a._generate_direct_events(test_data)
+    output = de_test_data._generate_direct_events(test_data)
 
     expected = [
         DirectEvent(TimeTuple(54232337, 1997808), impulse_length=6, multi_event=False),
         DirectEvent(
-            TimeTuple(seconds=54232337, subseconds=1999697),
+            TimeTuple(54232337, 1999697),
             impulse_length=6,
             multi_event=False,
         ),
         DirectEvent(
-            TimeTuple(seconds=54232339, subseconds=580695),
+            TimeTuple(54232339, 580695),
             impulse_length=135,
             multi_event=False,
         ),

@@ -8,10 +8,16 @@ from imap_processing.glows.utils.constants import DirectEvent, TimeTuple
 
 @dataclass
 class StatusData:
-    """Mapping of name to byte for dataeverysecond structure in GLOWS L1A.
+    """ Data structure for GLOWS status data, also known as "data_every_second".
 
     This is used to generate the housekeeping info for each direct event from the
     compressed structure in the first 40 bytes of each direct event data field.
+
+    Each DirectEventL1A instance covers one second of direct events data. Each second
+    has metadata associated with it, which is described in this class. The first 40
+    bytes of each direct event grouping is used to create this class. A second of
+    direct events data may span multiple packets, but each second only has one set of
+    StatusData attributes.
 
     Attributes must match byte_attribute_mapping in generate_status_data.
 
@@ -451,7 +457,12 @@ class DirectEventL1A:
         -------
         DirectEvent object built from raw
         """
-        assert len(raw) == 8
+        if len(raw) != 8:
+            raise ValueError(
+                f"Incorrect length {len(raw)} for {raw}, expecting 8 bytes of "
+                f"uncompressed direct event data"
+            )
+
         values = struct.unpack(">II", raw)
 
         seconds = values[0]

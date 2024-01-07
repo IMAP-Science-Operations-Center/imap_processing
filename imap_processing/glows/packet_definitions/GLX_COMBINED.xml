@@ -47,7 +47,8 @@ P_GLX_TMSCDE.xml and P_GLX_TMSHIST.xml to process both packet APIDs -->
 					<xtce:SizeInBits>
 						<xtce:DynamicValue>
 						  <xtce:ParameterInstanceRef parameterRef="PKT_LEN"/>
-						  <xtce:LinearAdjustment intercept="-144" slope="8"/>
+<!--To find the rest of the packet, this intercept is -(32 + 32 + 16 + 16) = 96 for MET, SEC, LEN, and SEQ values in DE packet. Then +8 because PKT_LEN is zero indexed, resulting in an offset of -88. -->
+						  <xtce:LinearAdjustment intercept="-88" slope="8"/>
 						</xtce:DynamicValue>
 					</xtce:SizeInBits>
 				</xtce:BinaryDataEncoding>

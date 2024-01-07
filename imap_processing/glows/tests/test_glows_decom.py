@@ -12,14 +12,14 @@ from imap_processing.glows.l0 import decom_glows
 def decom_test_data():
     """Read test data from file"""
     current_directory = Path(__file__).parent
-    packet_path = current_directory / "glows_test_packet_20230920_v00.pkts"
+    packet_path = current_directory / "glows_test_packet_20110921_v01.pkts"
     data_packet_list = decom_glows.decom_packets(str(packet_path))
     return data_packet_list
 
 
 def test_glows_decom_count(decom_test_data):
-    expected_hist_packet_count = 61
-    expected_de_packet_count = 311
+    expected_hist_packet_count = 505
+    expected_de_packet_count = 1088
 
     assert len(decom_test_data) == 2
 
@@ -88,7 +88,6 @@ def test_header(decom_test_data):
     )
 
     assert expected_hist == decom_test_data[0][0].ccsds_header
-
     expected_de = CcsdsData(
         {
             "VERSION": ParsedDataItem("VERSION", 0, unit=None),
@@ -125,3 +124,10 @@ def test_bytearrays(decom_test_data):
     )
 
     assert decom_test_data[1][0].DE_DATA[:32] == expected_value_de_partial
+
+
+def test_de_byte_length(decom_test_data):
+    """Test expected byte length for direct event data"""
+    assert len(decom_test_data[1][0].DE_DATA) == 2764
+    assert len(decom_test_data[1][1].DE_DATA) == 2208
+    assert len(decom_test_data[1][2].DE_DATA) == 1896
