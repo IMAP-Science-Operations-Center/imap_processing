@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
 
-@dataclass()
+@dataclass(frozen=True)
 class TimeTuple:
     """
     Spacecraft clock time, a float divided into seconds and subseconds.
@@ -22,9 +22,14 @@ class TimeTuple:
 
     def __post_init__(self):
         """Add any subseconds over the limit into the seconds field."""
-        if self.subseconds >= GlowsConstants.SUBSECOND_LIMIT:
-            self.seconds += self.subseconds // GlowsConstants.SUBSECOND_LIMIT
-            self.subseconds = self.subseconds % GlowsConstants.SUBSECOND_LIMIT
+        final_seconds = self.seconds
+        final_subseconds = self.subseconds
+        if final_subseconds >= GlowsConstants.SUBSECOND_LIMIT:
+            final_seconds += self.subseconds // GlowsConstants.SUBSECOND_LIMIT
+            final_subseconds = self.subseconds % GlowsConstants.SUBSECOND_LIMIT
+
+        object.__setattr__(self, "seconds", final_seconds)
+        object.__setattr__(self, "subseconds", final_subseconds)
 
 
 @dataclass(frozen=True)
