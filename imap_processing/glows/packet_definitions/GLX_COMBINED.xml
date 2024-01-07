@@ -42,6 +42,17 @@ P_GLX_TMSCDE.xml and P_GLX_TMSHIST.xml to process both packet APIDs -->
 					</xtce:SizeInBits>
 				</xtce:BinaryDataEncoding>
 			</xtce:BinaryParameterType>
+			<xtce:BinaryParameterType name="BYTEDE">
+				<xtce:BinaryDataEncoding bitOrder="mostSignificantBitFirst">
+					<xtce:SizeInBits>
+						<xtce:DynamicValue>
+						  <xtce:ParameterInstanceRef parameterRef="PKT_LEN"/>
+<!--To find the rest of the packet, this intercept is -(32 + 32 + 16 + 16) = 96 for MET, SEC, LEN, and SEQ values in DE packet. Then +8 because PKT_LEN is zero indexed, resulting in an offset of -88. -->
+						  <xtce:LinearAdjustment intercept="-88" slope="8"/>
+						</xtce:DynamicValue>
+					</xtce:SizeInBits>
+				</xtce:BinaryDataEncoding>
+			</xtce:BinaryParameterType>
 		</xtce:ParameterTypeSet>
 		<xtce:ParameterSet>
 			<xtce:Parameter name="VERSION" parameterTypeRef="UINT3">
@@ -174,6 +185,9 @@ P_GLX_TMSCDE.xml and P_GLX_TMSHIST.xml to process both packet APIDs -->
 				<xtce:ShortDescription>Packet sequence in data set.</xtce:ShortDescription>
 				<xtce:LongDescription>Sequence number for this packet in the series of GLX_TMSCDE packets the block of Direct event data is composed of. </xtce:LongDescription>
 			</xtce:Parameter>
+			<xtce:Parameter name="DE_DATA" parameterTypeRef="BYTEDE">
+				<xtce:ShortDescription>Direct events data</xtce:ShortDescription>
+			</xtce:Parameter>
 		</xtce:ParameterSet>
 		<xtce:ContainerSet>
 			<xtce:SequenceContainer name="CCSDSPacket">
@@ -232,6 +246,7 @@ P_GLX_TMSCDE.xml and P_GLX_TMSHIST.xml to process both packet APIDs -->
 					<xtce:ParameterRefEntry parameterRef="SEC" />
 					<xtce:ParameterRefEntry parameterRef="LEN" />
 					<xtce:ParameterRefEntry parameterRef="SEQ" />
+					<xtce:ParameterRefEntry parameterRef="DE_DATA"/>
 				</xtce:EntryList>
 			</xtce:SequenceContainer>
 		</xtce:ContainerSet>
