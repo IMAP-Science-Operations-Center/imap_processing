@@ -1,3 +1,5 @@
+"""Decom MAG data packets using MAG packet definition."""
+
 import logging
 from pathlib import Path
 
