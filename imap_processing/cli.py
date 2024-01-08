@@ -18,7 +18,7 @@ from typing import Optional
 from imap_processing import instruments, processing_levels
 
 
-def _parse_args(cli_args: list):
+def _parse_args():
     """Parse the command line arguments.
 
     Returns
@@ -40,7 +40,7 @@ def _parse_args(cli_args: list):
     parser = argparse.ArgumentParser(prog="imap_cli", description=description)
     parser.add_argument("--instrument", type=str, required=True, help=instrument_help)
     parser.add_argument("--level", type=str, required=True, help=level_help)
-    args = parser.parse_args(cli_args)
+    args = parser.parse_args()
 
     return args
 
@@ -162,9 +162,9 @@ class Ultra(ProcessInstrument):
         print(f"Processing IMAP-Ultra {self.level}")
 
 
-def main(cli_args: Optional[list] = None):
+def main():
     """Create CLI entrypoint."""
-    args = _parse_args(cli_args)
+    args = _parse_args()
 
     _validate_args(args)
 
