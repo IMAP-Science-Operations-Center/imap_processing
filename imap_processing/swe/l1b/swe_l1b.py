@@ -1,3 +1,5 @@
+"""Contains code to perform SWE L1b processing."""
+
 import xarray as xr
 
 from imap_processing import imap_module_directory

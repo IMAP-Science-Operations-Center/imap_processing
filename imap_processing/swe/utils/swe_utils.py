@@ -1,3 +1,5 @@
+"""Various utility classes and functions to support SWE processing."""
+
 import collections
 import dataclasses
 from enum import IntEnum

@@ -1,3 +1,5 @@
+"""Decommutates HIT CCSDS data and creates L1a data products."""
+
 import logging
 from collections import defaultdict
 from enum import IntEnum

@@ -1,3 +1,5 @@
+"""Contains constants variables to support CoDICE processing."""
+
 # Lookup tables for Lossy decompression algorithms "A" and "B"
 # These were provided by Greg Dunn via his sohis_cdh_utils.v script and then
 # transformed into python dictionaries. The values in these tables are subject
