@@ -13,7 +13,6 @@ Use
 import argparse
 import sys
 from abc import ABC, abstractmethod
-from typing import Optional
 
 from imap_processing import instruments, processing_levels
 
