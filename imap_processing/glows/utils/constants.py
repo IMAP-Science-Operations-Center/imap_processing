@@ -1,3 +1,5 @@
+"""Module for constants and useful shared classes used in GLOWS."""
+
 from dataclasses import dataclass
 
 

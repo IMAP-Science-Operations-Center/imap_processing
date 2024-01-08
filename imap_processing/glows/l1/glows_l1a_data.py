@@ -1,3 +1,5 @@
+"""Contains data classes to support GLOWS L1A processing."""
+
 import struct
 from dataclasses import dataclass
 
@@ -8,7 +10,7 @@ from imap_processing.glows.utils.constants import DirectEvent, TimeTuple
 
 @dataclass
 class StatusData:
-    """ Data structure for GLOWS status data, also known as "data_every_second".
+    """Data structure for GLOWS status data, also known as "data_every_second".
 
     This is used to generate the housekeeping info for each direct event from the
     compressed structure in the first 40 bytes of each direct event data field.
