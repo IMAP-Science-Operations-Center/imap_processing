@@ -7,7 +7,7 @@ a user-supplied instrument and data level.
 
 Use
 ---
-    python run_processing.py <instrument> <data_level>
+    imap_cli --instrument <instrument> --level <data_level>
 """
 
 import argparse
@@ -36,10 +36,9 @@ def _parse_args():
         f"The data level to process. Acceptable values are: {processing_levels}"
     )
 
-    parser = argparse.ArgumentParser(description=description)
+    parser = argparse.ArgumentParser(prog="imap_cli", description=description)
     parser.add_argument("--instrument", type=str, required=True, help=instrument_help)
     parser.add_argument("--level", type=str, required=True, help=level_help)
-
     args = parser.parse_args()
 
     return args
@@ -162,11 +161,16 @@ class Ultra(ProcessInstrument):
         print(f"Processing IMAP-Ultra {self.level}")
 
 
-if __name__ == "__main__":
+def main():
+    """Create CLI entrypoint."""
     args = _parse_args()
+
     _validate_args(args)
 
-    # Determine which function to invoke
     cls = getattr(sys.modules[__name__], args.instrument.capitalize())
     instrument = cls(args.level)
     instrument.process()
+
+
+if __name__ == "__main__":
+    main()
