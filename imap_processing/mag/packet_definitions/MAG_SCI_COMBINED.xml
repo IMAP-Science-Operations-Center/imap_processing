@@ -1,0 +1,235 @@
+<?xml version='1.0' encoding='utf-8'?>
+<xtce:SpaceSystem xmlns:xtce="http://www.omg.org/space/xtce" name="P_MAG_SCI_NORM">
+	<xtce:Header date="2023-11" version="1.0" author="IMAP SDC" />
+	<xtce:TelemetryMetaData>
+		<xtce:ParameterTypeSet>
+			<xtce:IntegerParameterType name="UINT1" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT2" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="2" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT3" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="3" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT4" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="4" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT8" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="8" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT11" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="11" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT14" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="14" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT16" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="16" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT32" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="32" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:BinaryParameterType name="VAR_BYTE">
+				<xtce:UnitSet />
+				<xtce:BinaryDataEncoding bitOrder="mostSignificantBitFirst">
+					<xtce:SizeInBits>
+						<xtce:DynamicValue>
+						  <xtce:ParameterInstanceRef parameterRef="PKT_LEN"/>
+						  <xtce:LinearAdjustment intercept="-216" slope="8"/>
+						</xtce:DynamicValue>
+					</xtce:SizeInBits>
+				</xtce:BinaryDataEncoding>
+			</xtce:BinaryParameterType>
+		</xtce:ParameterTypeSet>
+		<xtce:ParameterSet>
+		<!-- MAG includes some ESA Header values as well as the standard NASA headers-->
+			<xtce:Parameter name="VERSION" parameterTypeRef="UINT3">
+				<xtce:LongDescription>CCSDS Packet Version Number (always 0)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="TYPE" parameterTypeRef="UINT1">
+				<xtce:LongDescription>CCSDS Packet Type Indicator (0=telemetry)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SEC_HDR_FLG" parameterTypeRef="UINT1">
+				<xtce:LongDescription>CCSDS Packet Secondary Header Flag (always 1)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PKT_APID" parameterTypeRef="UINT11">
+				<xtce:LongDescription>CCSDS Packet Application Process ID</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SEQ_FLGS" parameterTypeRef="UINT2">
+				<xtce:LongDescription>CCSDS Packet Grouping Flags (3=not part of group)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SRC_SEQ_CTR" parameterTypeRef="UINT14">
+				<xtce:LongDescription>CCSDS Packet Sequence Count (increments with each new packet)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PKT_LEN" parameterTypeRef="UINT16">
+				<xtce:LongDescription>CCSDS Packet Length (number of bytes after Packet length minus 1)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PHVERNO" parameterTypeRef="UINT3">
+				<xtce:ShortDescription>ESA CCSDS Packet Version Number</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PHTYPE" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>ESA CCSDS Packet Type Indicator</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PHSHF" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>ESA CCSDS Packet Secondary Header Flag</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PHAPID" parameterTypeRef="UINT11">
+				<xtce:ShortDescription>ESA CCSDS Packet Application Process ID</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PHGROUPF" parameterTypeRef="UINT2">
+				<xtce:ShortDescription>ESA CCSDS Packet Grouping Flags</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PHSEQCNT" parameterTypeRef="UINT14">
+				<xtce:ShortDescription>ESA CCSDS Packet Sequence Count</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PHDLEN" parameterTypeRef="UINT16">
+				<xtce:ShortDescription>ESA CCSDS Packet Length</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SHCOARSE" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Mission elapsed time</xtce:ShortDescription>
+				<xtce:LongDescription>CCSDS Packet 2nd Header Coarse Time</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PUS_SPARE1" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>PUS Spare 1</xtce:ShortDescription>
+				<xtce:LongDescription>PUS Spare 1</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PUS_VERSION" parameterTypeRef="UINT3">
+				<xtce:ShortDescription>PUS Version Number</xtce:ShortDescription>
+				<xtce:LongDescription>PUS Version Number</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PUS_SPARE2" parameterTypeRef="UINT4">
+				<xtce:ShortDescription>PUS Spare 2</xtce:ShortDescription>
+				<xtce:LongDescription>PUS Spare 2</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PUS_STYPE" parameterTypeRef="UINT8">
+				<xtce:ShortDescription>PUS Service Type</xtce:ShortDescription>
+				<xtce:LongDescription>PUS Service Type</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PUS_SSUBTYPE" parameterTypeRef="UINT8">
+				<xtce:ShortDescription>PUS Service Subtype</xtce:ShortDescription>
+				<xtce:LongDescription>PUS Service Subtype</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="COMPRESSION" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Science Data Compression Flag</xtce:ShortDescription>
+				<xtce:LongDescription>Science Data Compression Flag</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="MAGO_ACT" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>MAGO Active Status</xtce:ShortDescription>
+				<xtce:LongDescription>MAGO Active Status</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="MAGI_ACT" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>MAGI Active Status</xtce:ShortDescription>
+				<xtce:LongDescription>MAGI Active Status</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PRI_SENS" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Primary Sensor</xtce:ShortDescription>
+				<xtce:LongDescription>Primary Sensor</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SPARE1" parameterTypeRef="UINT4">
+				<xtce:ShortDescription>Spare</xtce:ShortDescription>
+				<xtce:LongDescription>Spare</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PRI_VECSEC" parameterTypeRef="UINT3">
+				<xtce:ShortDescription>Primary Vectors per Second</xtce:ShortDescription>
+				<xtce:LongDescription>Primary Vectors per Second</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SEC_VECSEC" parameterTypeRef="UINT3">
+				<xtce:ShortDescription>Secondary Vectors per second</xtce:ShortDescription>
+				<xtce:LongDescription>Secondary Vectors per second</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SPARE2" parameterTypeRef="UINT2">
+				<xtce:ShortDescription>Spare</xtce:ShortDescription>
+				<xtce:LongDescription>Spare</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PRI_COARSETM" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Primary Coarse Time</xtce:ShortDescription>
+				<xtce:LongDescription>Primary Coarse Time</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PRI_FNTM" parameterTypeRef="UINT16">
+				<xtce:ShortDescription>Primary Fine Time</xtce:ShortDescription>
+				<xtce:LongDescription>Primary Fine Time</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SEC_COARSETM" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Secondary Coarse Time</xtce:ShortDescription>
+				<xtce:LongDescription>Secondary Coarse Time</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SEC_FNTM" parameterTypeRef="UINT16">
+				<xtce:ShortDescription>Secondary Fine Time</xtce:ShortDescription>
+				<xtce:LongDescription>Secondary Fine Time</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="VECTORS" parameterTypeRef="VAR_BYTE">
+				<xtce:ShortDescription>MAG Science Vectors</xtce:ShortDescription>
+			</xtce:Parameter>
+		</xtce:ParameterSet>
+		<xtce:ContainerSet>
+			<xtce:SequenceContainer name="CCSDSPacket">
+				<xtce:EntryList>
+					<xtce:ParameterRefEntry parameterRef="VERSION" />
+					<xtce:ParameterRefEntry parameterRef="TYPE" />
+					<xtce:ParameterRefEntry parameterRef="SEC_HDR_FLG" />
+					<xtce:ParameterRefEntry parameterRef="PKT_APID" />
+					<xtce:ParameterRefEntry parameterRef="SEQ_FLGS" />
+					<xtce:ParameterRefEntry parameterRef="SRC_SEQ_CTR" />
+					<xtce:ParameterRefEntry parameterRef="PKT_LEN" />
+				</xtce:EntryList>
+			</xtce:SequenceContainer>
+			<xtce:SequenceContainer name="P_MAG_SCI_NORM">
+				<xtce:BaseContainer containerRef="CCSDSPacket">
+					<xtce:RestrictionCriteria>
+						<xtce:Comparison parameterRef="PKT_APID" value="1052" useCalibratedValue="false" />
+					</xtce:RestrictionCriteria>
+				</xtce:BaseContainer>
+				<xtce:EntryList>
+					<xtce:ParameterRefEntry parameterRef="SHCOARSE" />
+					<xtce:ParameterRefEntry parameterRef="PUS_SPARE1" />
+					<xtce:ParameterRefEntry parameterRef="PUS_VERSION" />
+					<xtce:ParameterRefEntry parameterRef="PUS_SPARE2" />
+					<xtce:ParameterRefEntry parameterRef="PUS_STYPE" />
+					<xtce:ParameterRefEntry parameterRef="PUS_SSUBTYPE" />
+					<xtce:ParameterRefEntry parameterRef="COMPRESSION" />
+					<xtce:ParameterRefEntry parameterRef="MAGO_ACT" />
+					<xtce:ParameterRefEntry parameterRef="MAGI_ACT" />
+					<xtce:ParameterRefEntry parameterRef="PRI_SENS" />
+					<xtce:ParameterRefEntry parameterRef="SPARE1" />
+					<xtce:ParameterRefEntry parameterRef="PRI_VECSEC" />
+					<xtce:ParameterRefEntry parameterRef="SEC_VECSEC" />
+					<xtce:ParameterRefEntry parameterRef="SPARE2" />
+					<xtce:ParameterRefEntry parameterRef="PRI_COARSETM" />
+					<xtce:ParameterRefEntry parameterRef="PRI_FNTM" />
+					<xtce:ParameterRefEntry parameterRef="SEC_COARSETM" />
+					<xtce:ParameterRefEntry parameterRef="SEC_FNTM" />
+					<xtce:ParameterRefEntry parameterRef="VECTORS" />
+				</xtce:EntryList>
+			</xtce:SequenceContainer>
+			<xtce:SequenceContainer name="P_MAG_SCI_BURST">
+				<xtce:BaseContainer containerRef="CCSDSPacket">
+					<xtce:RestrictionCriteria>
+						<xtce:Comparison parameterRef="PKT_APID" value="1068" useCalibratedValue="false" />
+					</xtce:RestrictionCriteria>
+				</xtce:BaseContainer>
+				<xtce:EntryList>
+					<xtce:ParameterRefEntry parameterRef="SHCOARSE" />
+					<xtce:ParameterRefEntry parameterRef="PUS_SPARE1" />
+					<xtce:ParameterRefEntry parameterRef="PUS_VERSION" />
+					<xtce:ParameterRefEntry parameterRef="PUS_SPARE2" />
+					<xtce:ParameterRefEntry parameterRef="PUS_STYPE" />
+					<xtce:ParameterRefEntry parameterRef="PUS_SSUBTYPE" />
+					<xtce:ParameterRefEntry parameterRef="COMPRESSION" />
+					<xtce:ParameterRefEntry parameterRef="MAGO_ACT" />
+					<xtce:ParameterRefEntry parameterRef="MAGI_ACT" />
+					<xtce:ParameterRefEntry parameterRef="PRI_SENS" />
+					<xtce:ParameterRefEntry parameterRef="SPARE1" />
+					<xtce:ParameterRefEntry parameterRef="PRI_VECSEC" />
+					<xtce:ParameterRefEntry parameterRef="SEC_VECSEC" />
+					<xtce:ParameterRefEntry parameterRef="SPARE2" />
+					<xtce:ParameterRefEntry parameterRef="PRI_COARSETM" />
+					<xtce:ParameterRefEntry parameterRef="PRI_FNTM" />
+					<xtce:ParameterRefEntry parameterRef="SEC_COARSETM" />
+					<xtce:ParameterRefEntry parameterRef="SEC_FNTM" />
+					<xtce:ParameterRefEntry parameterRef="VECTORS" />
+				</xtce:EntryList>
+			</xtce:SequenceContainer>
+		</xtce:ContainerSet>
+	</xtce:TelemetryMetaData>
+</xtce:SpaceSystem>
