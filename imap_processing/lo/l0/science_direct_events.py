@@ -6,6 +6,7 @@ import bitstring
 from bitarray import bitarray
 
 import imap_processing.lo.l0.decompression_tables as decompress_tables
+from imap_processing.ccsds.ccsds_data import CcsdsData
 from imap_processing.lo.l0.lo_base import LoBase
 
 
@@ -64,8 +65,8 @@ class ScienceDirectEvents(LoBase):
 
     Methods
     -------
-    __post_init__(packet, software_vesion, packet_file_name):
-        Post Initialization, uses the CCSDS packet, version of the software, and
+    __init__(packet, software_vesion, packet_file_name):
+        Uses the CCSDS packet, version of the software, and
         the name of the packet file to parse and store information about
         the Direct Event packet data.
     decompress_data():
@@ -86,15 +87,10 @@ class ScienceDirectEvents(LoBase):
     POS: float
 
     def __init__(self, packet, software_version: str, packet_file_name: str):
-        """Post intialization method for Science Direct Events Data class.
-
-        This method will run following the built-in init method for the class.
-
-
-        """
-        # super().__init__(software_version, packet_file_name, CcsdsData(packet.header))
-        # self.parse_data(packet)
-        # self._decompress_data()
+        """Intialization method for Science Direct Events Data class."""
+        super().__init__(software_version, packet_file_name, CcsdsData(packet.header))
+        self.parse_data(packet)
+        self._decompress_data()
 
     def _decompress_data(self):
         """Decompress the Lo Science Direct Events data."""
