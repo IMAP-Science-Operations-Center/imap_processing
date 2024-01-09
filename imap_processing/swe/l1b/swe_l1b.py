@@ -10,19 +10,17 @@ from imap_processing.swe.utils.swe_utils import SWEAPID, filename_descriptors
 from imap_processing.utils import convert_raw_to_eu
 
 
-def swe_l1b(l1a_dataset: xr.Dataset, cdf_filepath: str):
+def swe_l1b(l1a_dataset: xr.Dataset):
     """Process data to L1B.
 
     Parameters
     ----------
     l1a_dataset : xarray.Dataset
         l1a data input
-    cdf_filepath: str
-        Folder path of where to write CDF file
 
     Returns
     -------
-    str
+    pathlib.Path
         Path to the L1B file.
 
     Raises
@@ -50,10 +48,8 @@ def swe_l1b(l1a_dataset: xr.Dataset, cdf_filepath: str):
         data = eu_data
         # Update global attributes to l1b global attributes
         data.attrs.update(swe_cdf_attrs.swe_l1b_global_attrs.output())
-
+    mode = f"{data['APP_MODE'].data[0]}-" if apid == SWEAPID.SWE_APP_HK else ""
     return write_cdf(
         data,
-        mode=f"{data['APP_MODE'].data[0]}" if apid == SWEAPID.SWE_APP_HK else "",
-        description=filename_descriptors.get(apid),
-        directory=cdf_filepath,
+        description=f"{mode}{filename_descriptors.get(apid)}",
     )

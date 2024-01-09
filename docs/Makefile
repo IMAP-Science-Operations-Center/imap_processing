@@ -14,7 +14,7 @@ help:
 
 clean:
 	-rm -rf $(BUILDDIR)/*
-	-rm -rf source/reference/generated
+	-rm -rf source/code-documentation/generated
 
 .PHONY: help Makefile
 

@@ -13,8 +13,9 @@ Use
 import argparse
 import sys
 from abc import ABC, abstractmethod
+from pathlib import Path
 
-from imap_processing import instruments, processing_levels
+import imap_processing
 
 
 def _parse_args():
@@ -28,15 +29,25 @@ def _parse_args():
     description = (
         "This command line program invokes the processing pipeline "
         "for a specific instrument and data level. Example usage: "
-        '"python run_processing swe l1a".'
+        '"python run_processing --instrument swe --level l1a".'
     )
-
-    instrument_help = f"The instrument to process. Acceptable values are: {instruments}"
+    data_dir_help = (
+        "Directory to use for reading and writing IMAP data. "
+        "The default is an 'imap-data/' folder in the "
+        "current working directory. This can also be "
+        "set using the IMAP_DATA_DIR environment variable."
+    )
+    instrument_help = (
+        "The instrument to process. Acceptable values are: "
+        f"{imap_processing.INSTRUMENTS}"
+    )
     level_help = (
-        f"The data level to process. Acceptable values are: {processing_levels}"
+        "The data level to process. Acceptable values are: "
+        f"{imap_processing.PROCESSING_LEVELS}"
     )
 
     parser = argparse.ArgumentParser(prog="imap_cli", description=description)
+    parser.add_argument("--data-dir", type=str, required=False, help=data_dir_help)
     parser.add_argument("--instrument", type=str, required=True, help=instrument_help)
     parser.add_argument("--level", type=str, required=True, help=level_help)
     args = parser.parse_args()
@@ -52,15 +63,23 @@ def _validate_args(args):
     args : argparse.Namespace
         An object containing the parsed arguments and their values
     """
-    if args.instrument not in instruments:
+    if args.instrument not in imap_processing.INSTRUMENTS:
         raise ValueError(
-            f"{args.instrument} is not in the supported instrument list: {instruments}"
+            f"{args.instrument} is not in the supported instrument list: "
+            f"{imap_processing.INSTRUMENTS}"
         )
-    if args.level not in processing_levels[args.instrument]:
+    if args.level not in imap_processing.PROCESSING_LEVELS[args.instrument]:
         raise ValueError(
             f"{args.level} is not a supported data level for the {args.instrument}"
-            f" instrument, valid levels are: {processing_levels[args.instrument]}"
+            " instrument, valid levels are: "
+            f"{imap_processing.PROCESSING_LEVELS[args.instrument]}"
         )
+    if args.data_dir:
+        data_path = Path(args.data_dir)
+        if not data_path.exists():
+            raise ValueError(f"Data directory {args.data_dir} does not exist")
+        # Set the data directory to the user-supplied value
+        imap_processing.config["DATA_DIR"] = data_path
 
 
 class ProcessInstrument(ABC):
@@ -162,7 +181,13 @@ class Ultra(ProcessInstrument):
 
 
 def main():
-    """Create CLI entrypoint."""
+    """Run the processing for a specific instrument & data level.
+
+    Set up the command line arguments, parse them, and then invoke the
+    appropriate instrument processing function.
+    """
+    # NOTE: This is to allow the cli script to be installed and reference
+    #       this function for an entrypoint.
     args = _parse_args()
 
     _validate_args(args)

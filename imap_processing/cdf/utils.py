@@ -1,10 +1,14 @@
 """Various utility functions to support creation of CDF files."""
 
-import os
+import logging
+from pathlib import Path
+from typing import Optional
 
 import numpy as np
 import xarray as xr
 from cdflib.xarray import xarray_to_cdf
+
+import imap_processing
 
 
 def calc_start_time(shcoarse_time: int):
@@ -36,7 +40,9 @@ def calc_start_time(shcoarse_time: int):
 
 
 def write_cdf(
-    data: xr.Dataset, description: str = "", mode: str = "", directory: str = ""
+    data: xr.Dataset,
+    description: str = "",
+    directory: Optional[Path] = None,
 ):
     """Write the contents of "data" to a CDF file using cdflib.xarray_to_cdf.
 
@@ -49,16 +55,19 @@ def write_cdf(
 
     Parameters
     ----------
-        data (xarray.Dataset): The dataset object to convert to a CDF
-        description (str): The description to insert into the file name after the
+        data : xarray.Dataset
+            The dataset object to convert to a CDF
+        description : str, optional
+            The description to insert into the file name after the
                             orbit, before the SPICE field.  No underscores allowed.
-        mode (str): Instrument mode
-        directory (str): The directory to write the file to
+        directory : pathlib.Path
+            The directory to write the file to. The default is obtained
+            from the global imap_processing.config["DATA_DIR"].
 
     Returns
     -------
-        str
-            The name of the file created
+        pathlib.Path
+            Path to the file created
     """
     # Determine the start date of the data in the file,
     # based on the time of the first dust impact
@@ -81,24 +90,37 @@ def write_cdf(
         if (description.startswith("_") or not description)
         else f"_{description}"
     )
-    mode = mode if (mode.startswith("_") or not mode) else f"_{mode}"
 
     # Determine the file name based on the attributes in the xarray
     # Set file name based on this convention:
-    # imap_<instrument>_<datalevel>_<mode>_<descriptor>_<startdate>_
+    # imap_<instrument>_<datalevel>_<descriptor>_<startdate>_
     # <version>.cdf
     # data.attrs["Logical_source"] has the mission, instrument, and level
     # like this:
     #   imap_idex_l1
     filename = (
         data.attrs["Logical_source"]
-        + mode
         + description
         + "_"
         + date_string
         + f"_v{data.attrs['Data_version']}.cdf"
     )
-    filename_and_path = os.path.join(directory, filename)
+
+    if directory is None:
+        # Storage directory
+        # mission/instrument/data_level/year/month/filename
+        # /<directory | DATA_DIR>/<instrument>/<data_level>/<year>/<month>
+        _, instrument, data_level = data.attrs["Logical_source"].split("_")
+        directory = imap_processing.config["DATA_DIR"] / instrument / data_level
+        directory /= date_string[:4]
+        directory /= date_string[4:6]
+    filename_and_path = Path(directory)
+    if not filename_and_path.exists():
+        logging.info(
+            "The directory does not exist, creating directory %s", filename_and_path
+        )
+        filename_and_path.mkdir(parents=True)
+    filename_and_path /= filename
 
     # Insert the final attribute:
     # The Logical_file_id is always the name of the file without the extension

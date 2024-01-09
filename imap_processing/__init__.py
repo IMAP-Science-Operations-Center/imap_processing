@@ -13,12 +13,25 @@ __version__ = "0.1.0"
 # packet definitions directory path.
 #
 # This directory is used by the imap_processing package to find the packet definitions.
+import os
 from pathlib import Path
+
+# NOTE: Use a config dictionary, so it is a mutable global object,
+#       otherwise updating previous imports from other modules
+#       wouldn't have been updated globally (for example if referencing a string).
+config = {"DATA_DIR": Path(os.getenv("IMAP_DATA_DIR") or Path.cwd() / "imap-data")}
+"""imap_processing configuration dictionary.
+
+DATA_DIR : This is where the file data is stored and organized by instrument and level.
+    The default location is in the current working directory, but can be
+    set on the command line using the --data-dir option, or through
+    the environment variable IMAP_DATA_DIR.
+"""
 
 # Eg. imap_module_directory = /usr/local/lib/python3.11/site-packages/imap_processing
 imap_module_directory = Path(__file__).parent
 
-instruments = [
+INSTRUMENTS = [
     "codice",
     "glows",
     "hi",
@@ -31,7 +44,7 @@ instruments = [
     "ultra",
 ]
 
-processing_levels = {
+PROCESSING_LEVELS = {
     "codice": ["l0", "l1a", "l1b", "l2"],
     "glows": ["l0", "l1a", "l1b", "l2"],
     "hi": ["l0", "l1a", "l1b", "l1c", "l2"],
