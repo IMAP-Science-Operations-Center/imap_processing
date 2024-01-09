@@ -13,7 +13,7 @@ from imap_processing.glows.l1.glows_l1a_data import (
 from imap_processing.glows.utils.constants import DirectEvent, TimeTuple
 
 
-@pytest.fixture()
+@pytest.fixture(scope="module")
 def decom_test_data():
     """Read test data from file"""
     current_directory = Path(__file__).parent
