@@ -15,15 +15,12 @@ repos:
     - id: trailing-whitespace
     - id: no-commit-to-branch
       args: [--branch, main, --branch, dev]
-  - repo: https://github.com/psf/black
-    rev: 23.12.1
-    hooks:
-    - id: black
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: 'v0.1.9'
+    rev: 'v0.1.11'
     hooks:
     - id: ruff
       args: [--fix]
+    - id: ruff-format
   - repo: https://github.com/python-poetry/poetry
     rev: '1.7.0'  # add version here
     hooks:
