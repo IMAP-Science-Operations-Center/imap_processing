@@ -58,10 +58,7 @@ def decom_packets(
 
     with open(packet_file_path, "rb") as binary_data:
         try:
-            glows_packets = glows_parser.generator(
-                binary_data,
-                buffer_read_size_bytes=5790778,
-            )
+            glows_packets = glows_parser.generator(binary_data)
 
             for packet in glows_packets:
                 apid = packet.header["PKT_APID"].derived_value

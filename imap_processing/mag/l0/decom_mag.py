@@ -40,10 +40,7 @@ def decom_packets(packet_file_path: str) -> list[MagL0]:
 
     with open(packet_file_path, "rb") as binary_data:
         try:
-            mag_packets = mag_parser.generator(
-                binary_data,
-                buffer_read_size_bytes=5790778,  # Todo: what size?
-            )
+            mag_packets = mag_parser.generator(binary_data)
 
             for packet in mag_packets:
                 apid = packet.header["PKT_APID"].derived_value
