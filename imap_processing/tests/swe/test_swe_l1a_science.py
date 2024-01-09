@@ -19,13 +19,13 @@ def decom_test_data():
     # reorder to match the order of spin in the data
     packet_files = [
         imap_module_directory
-        / "swe/tests/l0_data/20230927173253_SWE_SCIENCE_packet.bin",
+        / "tests/swe/l0_data/20230927173253_SWE_SCIENCE_packet.bin",
         imap_module_directory
-        / "swe/tests/l0_data/20230927173308_SWE_SCIENCE_packet.bin",
+        / "tests/swe/l0_data/20230927173308_SWE_SCIENCE_packet.bin",
         imap_module_directory
-        / "swe/tests/l0_data/20230927173323_SWE_SCIENCE_packet.bin",
+        / "tests/swe/l0_data/20230927173323_SWE_SCIENCE_packet.bin",
         imap_module_directory
-        / "swe/tests/l0_data/20230927173238_SWE_SCIENCE_packet.bin",
+        / "tests/swe/l0_data/20230927173238_SWE_SCIENCE_packet.bin",
     ]
     data_list = []
     for packet_file in packet_files:
@@ -50,7 +50,7 @@ def test_decompress_algorithm():
 def test_swe_raw_science_data(decom_test_data):
     """This test and validate raw and derived data of SWE science data."""
     # read validation data
-    test_data_path = imap_module_directory / "swe/tests/l0_validation_data"
+    test_data_path = imap_module_directory / "tests/swe/l0_validation_data"
     raw_validation_data = pd.read_csv(
         test_data_path / "idle_export_raw.SWE_SCIENCE_20230927_172708.csv",
         index_col="SHCOARSE",
@@ -74,7 +74,7 @@ def test_swe_raw_science_data(decom_test_data):
 def test_swe_derived_science_data(decom_test_data):
     """This test and validate raw and derived data of SWE science data."""
     # read validation data
-    test_data_path = imap_module_directory / "swe/tests/l0_validation_data"
+    test_data_path = imap_module_directory / "tests/swe/l0_validation_data"
     derived_validation_data = pd.read_csv(
         test_data_path / "idle_export_eu.SWE_SCIENCE_20230927_172708.csv",
         index_col="SHCOARSE",
@@ -132,7 +132,7 @@ def test_swe_science_algorithm(decom_test_data):
 
 def test_decompress_counts(decom_test_data):
     """Test decompress counts."""
-    test_data_path = imap_module_directory / "swe/tests/decompressed"
+    test_data_path = imap_module_directory / "tests/swe/decompressed"
     filepaths = [
         "20230927173253_1st_quarter_decompressed.csv",
         "20230927173308_2nd_quarter_decompressed.csv",

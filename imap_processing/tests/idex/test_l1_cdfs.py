@@ -14,7 +14,7 @@ from imap_processing.idex.idex_packet_parser import PacketParser
 
 @pytest.fixture()
 def decom_test_data():
-    return PacketParser("imap_processing/idex/tests/imap_idex_l0_20230725_v01-00.pkts")
+    return PacketParser("imap_processing/tests/idex/imap_idex_l0_20230725_v01-00.pkts")
 
 
 @pytest.fixture()
@@ -85,7 +85,7 @@ def test_descriptor_in_file_name(decom_test_data, temp_path):
 def test_idex_tof_high_data_from_cdf(decom_test_data, temp_path):
     # Verify that a sample of the data is correct inside the CDF file
     # impact_14_tof_high_data.txt has been verified correct by the IDEX team
-    with open("imap_processing/idex/tests/impact_14_tof_high_data.txt") as f:
+    with open("imap_processing/tests/idex/impact_14_tof_high_data.txt") as f:
         data = np.array([int(line.rstrip()) for line in f])
 
     file_name = write_cdf(decom_test_data.data, description="", directory=temp_path)

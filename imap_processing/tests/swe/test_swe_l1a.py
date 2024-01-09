@@ -14,7 +14,7 @@ from imap_processing.utils import group_by_apid
 @pytest.fixture(scope="session")
 def decom_test_data():
     """Read test data from test folder"""
-    test_folder_path = "swe/tests/l0_data"
+    test_folder_path = "tests/swe/l0_data"
     packet_files = list(imap_module_directory.glob(f"{test_folder_path}/*.bin"))
 
     data_list = []

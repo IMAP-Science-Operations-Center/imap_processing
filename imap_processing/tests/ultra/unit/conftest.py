@@ -10,8 +10,8 @@ def ccsds_path():
     """Returns the ccsds directory."""
     return (
         Path(sys.modules[__name__.split(".")[0]].__file__).parent
-        / "ultra"
         / "tests"
+        / "ultra"
         / "test_data"
         / "l0"
         / "Ultra45_EM_SwRI_Cal_Run7_ThetaScan_20220530T225054.CCSDS"
@@ -60,8 +60,8 @@ def xtce_image_rates_test_path():
     )
     return (
         Path(sys.modules[__name__.split(".")[0]].__file__).parent
-        / "ultra"
         / "tests"
+        / "ultra"
         / "test_data"
         / "l0"
         / filename
@@ -77,8 +77,8 @@ def xtce_aux_test_path():
     )
     return (
         Path(sys.modules[__name__.split(".")[0]].__file__).parent
-        / "ultra"
         / "tests"
+        / "ultra"
         / "test_data"
         / "l0"
         / filename

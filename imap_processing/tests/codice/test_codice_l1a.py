@@ -21,7 +21,7 @@ def l0_test_data() -> list:
     """
 
     packet_file = Path(
-        f"{imap_module_directory}/codice/tests/data/"
+        f"{imap_module_directory}/tests/codice/data/"
         f"raw_ccsds_20230822_122700Z_idle.bin"
     )
     packets = decom_packets(packet_file)
