@@ -8,7 +8,7 @@ from imap_processing.ccsds.ccsds_data import CcsdsData
 from imap_processing.glows.l0 import decom_glows
 
 
-@pytest.fixture()
+@pytest.fixture(scope="module")
 def decom_test_data():
     """Read test data from file"""
     current_directory = Path(__file__).parent
