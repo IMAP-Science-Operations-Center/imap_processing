@@ -7,6 +7,7 @@ support creation of L1 data products.
 import dataclasses
 import logging
 from collections import namedtuple
+from enum import IntEnum
 
 import bitstring
 import numpy as np
@@ -17,14 +18,18 @@ from imap_processing import imap_module_directory
 from imap_processing.cdf.global_attrs import ConstantCoordinates
 from imap_processing.idex import idex_cdf_attrs
 
-SCITYPE_MAPPING_TO_NAMES = {
-    2: "TOF_High",
-    4: "TOF_Low",
-    8: "TOF_Mid",
-    16: "Target_Low",
-    32: "Target_High",
-    64: "Ion_Grid",
-}
+
+class Scitype(IntEnum):
+    """IDEX Science Type."""
+
+    FIRST_PACKET = 1
+    TOF_HIGH = 2
+    TOF_LOW = 4
+    TOF_MID = 8
+    TARGET_LOW = 16
+    TARGET_HIGH = 32
+    ION_GRID = 64
+
 
 """
 Creates a large dictionary of values from the FPGA header
@@ -500,7 +505,7 @@ class PacketParser:
             if "IDX__SCI0TYPE" in packet.data:
                 scitype = packet.data["IDX__SCI0TYPE"].raw_value
                 event_number = packet.data["IDX__SCI0EVTNUM"].derived_value
-                if scitype == 1:
+                if scitype == Scitype.FIRST_PACKET:
                     # Initial packet for new dust event
                     # Further packets will fill in data
                     dust_events[event_number] = RawDustEvent(packet)
@@ -763,17 +768,17 @@ class RawDustEvent:
         This function determines which variable to append the bits
         to, given a specific scitype.
         """
-        if scitype == 2:
+        if scitype == Scitype.TOF_HIGH:
             self.TOF_High_bits += bits
-        elif scitype == 4:
+        elif scitype == Scitype.TOF_LOW:
             self.TOF_Low_bits += bits
-        elif scitype == 8:
+        elif scitype == Scitype.TOF_MID:
             self.TOF_Mid_bits += bits
-        elif scitype == 16:
+        elif scitype == Scitype.TARGET_LOW:
             self.Target_Low_bits += bits
-        elif scitype == 32:
+        elif scitype == Scitype.TARGET_HIGH:
             self.Target_High_bits += bits
-        elif scitype == 64:
+        elif scitype == Scitype.ION_GRID:
             self.Ion_Grid_bits += bits
         else:
             logging.warning("Unknown science type received: [%s]", scitype)
