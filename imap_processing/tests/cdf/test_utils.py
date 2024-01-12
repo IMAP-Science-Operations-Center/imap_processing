@@ -23,18 +23,18 @@ def test_write_cdf(tmp_path):
     )
     dataset["Epoch"].attrs = ConstantCoordinates.EPOCH
 
-    fname = write_cdf(dataset, description="test-description")
+    fname = write_cdf(dataset, descriptor="test-descriptor")
     assert fname.exists()
-    assert fname.name == "imap_test_l1_test-description_20100101_v01.cdf"
+    assert fname.name == "imap_test_l1_test-descriptor_20100101_v01.cdf"
     # Created automatically for us
     dir_structure = fname.parts[-5:-1]
     # instrument, level, year, month
     assert dir_structure == ("test", "l1", "2010", "01")
 
     # Test an explicit directory doesn't create that structure
-    filename = write_cdf(dataset, description="test-description", directory=tmp_path)
+    filename = write_cdf(dataset, descriptor="test-descriptor", directory=tmp_path)
     assert filename.exists()
-    assert filename.name == "imap_test_l1_test-description_20100101_v01.cdf"
+    assert filename.name == "imap_test_l1_test-descriptor_20100101_v01.cdf"
     # Created automatically for us
     dir_structure = filename.parts[-5:-1]
     # It should be the same as the tmp_path structure (minus the file name)
