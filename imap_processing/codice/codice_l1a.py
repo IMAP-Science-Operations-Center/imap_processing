@@ -47,7 +47,7 @@ def codice_l1a(packets: list[space_packet_parser.parser.Packet]) -> str:
     # Write data to CDF
     cdf_filename = write_cdf(
         data,
-        description="hk",
+        descriptor="hk",
     )
 
     return cdf_filename

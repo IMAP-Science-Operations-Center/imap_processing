@@ -41,7 +41,7 @@ def calc_start_time(shcoarse_time: int):
 
 def write_cdf(
     data: xr.Dataset,
-    description: str = "",
+    descriptor: str,
     directory: Optional[Path] = None,
 ):
     """Write the contents of "data" to a CDF file using cdflib.xarray_to_cdf.
@@ -57,10 +57,10 @@ def write_cdf(
     ----------
         data : xarray.Dataset
             The dataset object to convert to a CDF
-        description : str, optional
-            The description to insert into the file name after the
-                            orbit, before the SPICE field.  No underscores allowed.
-        directory : pathlib.Path
+        descriptor : str
+            The descriptor to insert into the file name after the
+            orbit, before the SPICE field.  No underscores allowed.
+        directory : pathlib.Path, optional
             The directory to write the file to. The default is obtained
             from the global imap_processing.config["DATA_DIR"].
 
@@ -84,13 +84,6 @@ def write_cdf(
 
     date_string = np.datetime_as_string(file_start_date, unit="D").replace("-", "")
 
-    # Determine the optional "description" field
-    description = (
-        description
-        if (description.startswith("_") or not description)
-        else f"_{description}"
-    )
-
     # Determine the file name based on the attributes in the xarray
     # Set file name based on this convention:
     # imap_<instrument>_<datalevel>_<descriptor>_<startdate>_
@@ -99,11 +92,10 @@ def write_cdf(
     # like this:
     #   imap_idex_l1
     filename = (
-        data.attrs["Logical_source"]
-        + description
-        + "_"
-        + date_string
-        + f"_v{data.attrs['Data_version']}.cdf"
+        f"{data.attrs['Logical_source']}"
+        f"_{descriptor}"
+        f"_{date_string}"
+        f"_v{data.attrs['Data_version']}.cdf"
     )
 
     if directory is None:

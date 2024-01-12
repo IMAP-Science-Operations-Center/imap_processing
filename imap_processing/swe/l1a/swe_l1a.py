@@ -52,5 +52,5 @@ def swe_l1a(packets):
         mode = f"{data['APP_MODE'].data[0]}-" if apid == SWEAPID.SWE_APP_HK else ""
         return write_cdf(
             data,
-            description=f"{mode}{filename_descriptors.get(apid)}",
+            descriptor=f"{mode}{filename_descriptors.get(apid)}",
         )
