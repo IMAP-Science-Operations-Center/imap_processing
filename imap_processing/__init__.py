@@ -19,9 +19,13 @@ from pathlib import Path
 # NOTE: Use a config dictionary, so it is a mutable global object,
 #       otherwise updating previous imports from other modules
 #       wouldn't have been updated globally (for example if referencing a string).
-config = {"DATA_DIR": Path(os.getenv("IMAP_DATA_DIR") or Path.cwd() / "imap-data")}
+config = {
+    "API_URL": "https://api.dev.imap-mission.com",
+    "DATA_DIR": Path(os.getenv("IMAP_DATA_DIR") or Path.cwd() / "imap-data"),
+}
 """imap_processing configuration dictionary.
 
+API_URL : This is the URL of the data archive API.
 DATA_DIR : This is where the file data is stored and organized by instrument and level.
     The default location is in the current working directory, but can be
     set on the command line using the --data-dir option, or through
