@@ -1,0 +1,166 @@
+openapi: 3.0.0
+servers:
+  - description: Development IMAP SDC Server
+host: https://api.dev.imap-mission.com/
+info:
+  version: "0.1.0"
+  title: IMAP SDC API
+  description: Describes the API endpoints for interacting with the IMAP SDC
+paths:
+
+  '/upload/{filename}':
+    get:
+      tags:
+        - Upload
+      summary: Upload a file to the SDC
+      operationId: upload_file
+      parameters:
+        - name: filename
+          in: path
+          required: true
+          description: |
+            The filename to upload. Must be a valid IMAP filename that follows the conventions described
+            `here <https://imap-processing.readthedocs.io/en/latest/development-guide/style-guide/naming-conventions.html#data-product-file-naming-conventions>`_,
+            *e.g.* ``imap_codice_l1a_lo_20260101_20260102_v01-01.cdf``
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful upload
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                  format: uri
+                  example: 's3://bucket-name/filepath/filename.pkts'
+        '400':
+          description: Invalid or missing filename
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                  example: 'A pre-signed URL could not be generated. Please ensure that the file name matches mission file naming conventions.'
+
+
+  '/download/{filename_uri}':
+    get:
+      tags:
+        - Download
+      summary: Download files from the SDC
+      operationId: download
+      parameters:
+        - in: path
+          name: s3_uri
+          description: The filename to download from the S3 bucket (i.e. ``s3://{bucket_name}/{filepath}/{filename}``)
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful download
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                  format: uri
+                  example: 'Success'
+        '302':
+          description: Redirect needed
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                  format: uri
+                  example: '{"download_url": "{pre_signed_url}"}'
+        '400':
+          description: Unsuccessful download
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                  format: uri
+                  example: 'Not a valid S3 URI.  Example input: s3://bucket/path/file.ext'
+
+  '/query':
+    get:
+      tags:
+        - Query
+      summary: Query for file metadata
+      operationId: query
+      parameters:
+        - in: query
+          name: mission
+          description: The mission of interest (currently only ``imap`` is supported)
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: level
+          description: |
+            The level of data product (e.g. ``l1a``), or ``*`` for all levels. Supported levels are listed
+            `here <https://imap-processing.readthedocs.io/en/latest/development-guide/style-guide/naming-conventions.html#data-product-file-naming-conventions>`_.
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: instrument
+          description: |
+            The instrument of interest (e.g. ``mag``), or ``*`` for all instruments. Supported instruments are listed
+            `here <https://imap-processing.readthedocs.io/en/latest/development-guide/style-guide/naming-conventions.html#data-product-file-naming-conventions>`_.
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: date
+          description: The date of observation in the format ``YYYYMMDD``, or ``*`` for all dates.
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: version
+          description: The version of data product in the format ``vXX-YY`` (e.g. ``v01-01``), or ``*`` for all versions.
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: extension
+          description: |
+            The file extension of interest (e.g. ``pkts``), or ``*`` for all extensions. Supported extensions include
+            ``pkts`` and ``cdf``.
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful query
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                  format: uri
+                  example: {
+                    "_index": "test_data",
+                    "_type": "_doc",
+                    "_id": "1",
+                    "_score": 0.2876821,
+                    "_source": {
+                      "mission": "imap",
+                      "level": "l0",
+                      "instrument": "mag",
+                      "date": "20230112",
+                      "version": "*",
+                      "extension": "pkts",
+                  },
+            }

@@ -37,11 +37,12 @@ release = imap_processing.__version__
 # ones.
 extensions = [
     "sphinx.ext.autodoc",
+    "sphinx.ext.autosectionlabel",
     "sphinx.ext.autosummary",
     "sphinx.ext.intersphinx",  # Link to other projects' documentation
     "sphinx.ext.githubpages",  # Helpful for publishing to gh-pages
     "sphinx.ext.napoleon",
-    "sphinx.ext.autosectionlabel",
+    "sphinxcontrib.openapi",
     "myst_parser",
     "numpydoc",
 ]
