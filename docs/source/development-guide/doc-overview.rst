@@ -9,8 +9,6 @@ To add a new documentation file, create a new ``.rst`` file under :file:`docs/so
 
 For more information on restructured text, Sphinx has `extensive documentation <https://www.sphinx-doc.org/en/master/usage/index.html>`_.
 
-You can also use Markdown for documentation. Restructured text is the preferred format for documentation, but if you're more comfortable with markdown, that is also acceptable. Markdown documents will use the `MyST parser <https://myst-parser.readthedocs.io/en/latest/index.html>`_.
-
 Documentation Style
 -------------------
 Here are the main rules for documentation in IMAP:
