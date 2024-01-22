@@ -60,18 +60,8 @@ paths:
           schema:
             type: string
       responses:
-        '200':
-          description: Successful download
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  type: string
-                  format: uri
-                  example: 'Success'
         '302':
-          description: Redirect needed
+          description: Successful download
           content:
             application/json:
               schema:
