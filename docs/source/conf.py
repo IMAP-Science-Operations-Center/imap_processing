@@ -43,7 +43,6 @@ extensions = [
     "sphinx.ext.githubpages",  # Helpful for publishing to gh-pages
     "sphinx.ext.napoleon",
     "sphinxcontrib.openapi",
-    "myst_parser",
     "numpydoc",
 ]
 

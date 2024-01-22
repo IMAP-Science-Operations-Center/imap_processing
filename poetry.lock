@@ -1730,7 +1730,7 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 
 [extras]
 dev = ["pre-commit", "ruff"]
-doc = ["myst-parser", "numpydoc", "pydata-sphinx-theme", "sphinx"]
+doc = ["numpydoc", "pydata-sphinx-theme", "sphinx"]
 test = ["pytest", "pytest-cov"]
 tools = ["openpyxl", "pandas"]
 
