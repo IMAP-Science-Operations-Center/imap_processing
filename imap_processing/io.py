@@ -49,7 +49,7 @@ def download(filepath: str) -> Path:
 
     # encode the query parameters
     url = f"{imap_processing.config['DATA_ACCESS_API_URL']}"
-    url += f"/download?{urlencode({'filename': filepath})}"
+    url += f"/download/{filepath}"
     logger.info("Downloading file %s from %s to %s", filepath, url, destination)
 
     # Create a request with the provided URL
@@ -79,22 +79,24 @@ def query(
     Parameters
     ----------
     instrument : str, optional
-        Instrument name
-    level : str, optional
-        Data level
+        Instrument name (e.g. ``mag``)
+    data_level : str, optional
+        Data level (e.g. ``l1a``)
     descriptor : str, optional
-        Descriptor of the data product / product name
-    startdate : str, optional
+        Descriptor of the data product / product name (e.g. ``burst``)
+    start_date : str, optional
         Start date in YYYYMMDD format. Note this is to search for all files
         with start dates on or after this value.
-    enddate : str, optional
+    end_date : str, optional
         End date in YYYYMMDD format. Note this is to search for all files
         with start dates before the enddate, not the enddate of the file.
         For example, if a file spans three months 20100101 to 20100330,
         and the enddate query was 20100201, the file would still be returned
         because the startdate is within the query range.
     version : str, optional
-        Data version
+        Data version in the format ``vXX-YY``
+    extension : str, optional
+        File extension (``cdf``, ``pkts``)
 
     Returns
     -------
@@ -143,7 +145,8 @@ def upload(filepath: Path) -> None:
     upload_name = str(filepath.relative_to(imap_processing.config["DATA_DIR"]))
 
     url = f"{imap_processing.config['DATA_ACCESS_API_URL']}"
-    url += f"/upload?{urlencode({'filename': upload_name})}"
+    # The upload name needs to be given as a path parameter
+    url += f"/upload/science/{upload_name}"
     logger.debug("Uploading file %s to %s", filepath, url)
 
     # We send a GET request with the filename and the server

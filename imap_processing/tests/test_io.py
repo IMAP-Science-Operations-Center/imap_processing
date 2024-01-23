@@ -60,9 +60,8 @@ def test_download(mock_urlopen, filepath, destination):
     # We pass a Request object, so need to get that with args[0]
     request_sent = urlopen_calls[0].args[0]
     called_url = request_sent.full_url
-    expected_url_encoded = (
-        f'https://api.test.com/download?{urlencode({"filename": filepath})}'
-    )
+    # url should be provided as path parameters
+    expected_url_encoded = f"https://api.test.com/download/{filepath}"
     assert called_url == expected_url_encoded
     assert request_sent.method == "GET"
 
@@ -162,9 +161,7 @@ def test_upload(mock_urlopen):
     urlopen_call = mock_calls[0]
     request_sent = urlopen_call.args[0]
     called_url = request_sent.full_url
-    expected_url_encoded = (
-        f'https://api.test.com/upload?{urlencode({"filename": "test-file.txt"})}'
-    )
+    expected_url_encoded = "https://api.test.com/upload/science/test-file.txt"
     assert called_url == expected_url_encoded
     assert request_sent.method == "GET"
 
