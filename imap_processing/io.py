@@ -48,7 +48,7 @@ def download(filepath: str) -> Path:
         return destination
 
     # encode the query parameters
-    url = f"{imap_processing.config['API_URL']}"
+    url = f"{imap_processing.config['DATA_ACCESS_API_URL']}"
     url += f"/download?{urlencode({'filename': filepath})}"
     logger.info("Downloading file %s from %s to %s", filepath, url, destination)
 
@@ -106,7 +106,8 @@ def query(
     query_params = {key: value for key, value in locals().items() if value is not None}
     if not query_params:
         raise ValueError("At least one query parameter must be provided")
-    url = f"{imap_processing.config['API_URL']}/query?{urlencode(query_params)}"
+    url = f"{imap_processing.config['DATA_ACCESS_API_URL']}"
+    url += f"/query?{urlencode(query_params)}"
 
     logger.debug("Querying data archive for %s with url %s", query_params, url)
     request = urllib.request.Request(url, method="GET")
@@ -141,7 +142,7 @@ def upload(filepath: Path) -> None:
     # Strip off the data directory to get the upload path + name
     upload_name = str(filepath.relative_to(imap_processing.config["DATA_DIR"]))
 
-    url = f"{imap_processing.config['API_URL']}"
+    url = f"{imap_processing.config['DATA_ACCESS_API_URL']}"
     url += f"/upload?{urlencode({'filename': upload_name})}"
     logger.debug("Uploading file %s to %s", filepath, url)
 
