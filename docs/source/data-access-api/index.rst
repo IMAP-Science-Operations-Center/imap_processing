@@ -1,4 +1,4 @@
-.. _sdc-api:
+.. _data-access-api:
 
 Data Access API
 ===============
@@ -12,13 +12,13 @@ The API can be accessed from the following URL: https://api.dev.imap-mission.com
 
 .. openapi:: openapi.yml
    :group:
-   :include: /upload
+   :include: /upload/science
 
 **Example Usage:**
 
 .. code-block:: bash
 
-   curl -X GET -H "Accept: application/json" https://api.dev.imap-mission.com/upload/imap_codice_l1a_lo_20260101_20260102_v01-01.cdf
+   curl -X GET -H "Accept: application/json" https://api.dev.imap-mission.com/upload/codice/l1a/2026/01/imap_codice_l1a_lo_20260101_20260102_v01-01.cdf
 
 **Possible Responses:**
 
@@ -36,7 +36,8 @@ The API can be accessed from the following URL: https://api.dev.imap-mission.com
 
 .. code-block:: bash
 
-   curl -X GET -H "Accept: application/json" https://api.dev.imap-mission.com/download?s3_uri=s3://sds-data/imap/codice/l1a/2026/01/imap_codice_l1a_lo_20260101_20260102_v01-01.cdf
+   curl -X GET -H "Accept: application/json" /codice/l1a/2026/01/imap_codice_l1a_lo_20260101_20260102_v01-01.cdf
+   curl -X GET -H "Accept: application/json" imap_codice_l1a_lo_20260101_20260102_v01-01.cdf
 
 **Possible Responses:**
 

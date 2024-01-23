@@ -6,22 +6,23 @@ info:
   version: "0.1.0"
   title: IMAP SDC API
   description: Describes the API endpoints for interacting with the IMAP SDC
+
 paths:
 
-  '/upload/{filename}':
+  '/upload/science/{filepath}':
     get:
       tags:
         - Upload
-      summary: Upload a file to the SDC
-      operationId: upload_file
+      summary: Upload a science file to the SDC
       parameters:
-        - name: filename
+        - name: filepath
           in: path
           required: true
           description: |
-            The filename to upload. Must be a valid IMAP filename that follows the conventions described
-            `here <https://imap-processing.readthedocs.io/en/latest/development-guide/style-guide/naming-conventions.html#data-product-file-naming-conventions>`_,
-            *e.g.* ``imap_codice_l1a_lo_20260101_20260102_v01-01.cdf``
+            The full path to the file to upload, relative to the ``IMAP_DATA_DIR`` environment variable or the user's
+            current working directory. (e.g. ``{IMAP_DATA_DIR}/codice/l1a/2026/01/imap_codice_l1a_lo_20260101_20260102_v01-01.cdf``).
+            The filename must be a valid IMAP filename that follows the conventions described
+            `here <https://imap-processing.readthedocs.io/en/latest/development-guide/style-guide/naming-conventions.html#data-product-file-naming-conventions>`_.
           schema:
             type: string
       responses:
@@ -34,7 +35,6 @@ paths:
                 items:
                   type: string
                   format: uri
-                  example: 's3://bucket-name/filepath/filename.pkts'
         '400':
           description: Invalid or missing filename
           content:
@@ -43,19 +43,21 @@ paths:
                 type: array
                 items:
                   type: string
-                  example: 'A pre-signed URL could not be generated. Please ensure that the file name matches mission file naming conventions.'
 
-
-  '/download/{filename_uri}':
+  '/download/{filepath-or-filename}':
     get:
       tags:
         - Download
-      summary: Download files from the SDC
+      summary: Download a file from the SDC
       operationId: download
       parameters:
         - in: path
-          name: s3_uri
-          description: The filename to download from the S3 bucket (i.e. ``s3://{bucket_name}/{filepath}/{filename}``)
+          name: filepath-or-filename
+          description: |
+            The filename to download (e.g. ``imap_codice_l1a_lo_20260101_20260102_v01-01.cdf``, optionally including the
+            full filepath (e.g. ``codice/l1a/2026/01/imap_codice_l1a_lo_20260101_20260102_v01-01.cdf``). The filename
+            must be a valid IMAP filename that follows the conventions described
+            `here <https://imap-processing.readthedocs.io/en/latest/development-guide/style-guide/naming-conventions.html#data-product-file-naming-conventions>`_.
           required: true
           schema:
             type: string
@@ -69,7 +71,6 @@ paths:
                 items:
                   type: string
                   format: uri
-                  example: '{"download_url": "{pre_signed_url}"}'
         '400':
           description: Unsuccessful download
           content:
@@ -79,7 +80,6 @@ paths:
                 items:
                   type: string
                   format: uri
-                  example: 'Not a valid S3 URI.  Example input: s3://bucket/path/file.ext'
 
   '/query':
     get:
@@ -140,17 +140,3 @@ paths:
                 items:
                   type: string
                   format: uri
-                  example: {
-                    "_index": "test_data",
-                    "_type": "_doc",
-                    "_id": "1",
-                    "_score": 0.2876821,
-                    "_source": {
-                      "mission": "imap",
-                      "level": "l0",
-                      "instrument": "mag",
-                      "date": "20230112",
-                      "version": "*",
-                      "extension": "pkts",
-                  },
-            }
