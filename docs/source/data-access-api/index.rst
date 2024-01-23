@@ -43,7 +43,7 @@ The API can be accessed from the following URL: https://api.dev.imap-mission.com
 
 .. code-block:: json
 
-   {"statusCode": 302, "body": {"download_url": "s3://sds-data/imap/codice/l1a/2026/01/imap_codice_l1a_lo_20260101_20260102_v01-01"}}
+   {"statusCode": 302, "headers": {"Content-Type": "text/html", "Location": "s3://sds-data/imap/codice/l1a/2026/01/imap_codice_l1a_lo_20260101_20260102_v01-01"}, "body": {"download_url": "s3://sds-data/imap/codice/l1a/2026/01/imap_codice_l1a_lo_20260101_20260102_v01-01"}}
    {"statusCode": 400, "body": "Not a valid S3 URI.  Example input: s3://bucket/path/file.ext"}
 
 
@@ -55,10 +55,11 @@ The API can be accessed from the following URL: https://api.dev.imap-mission.com
 
 .. code-block:: bash
 
-   curl -X GET -H "Accept: application/json" https://api.dev.imap-mission.com/query?mission=imap&level=l0&instrument=mag&date=20230112&version=*&extension=pkts
+   curl -X GET -H "Accept: application/json" https://api.dev.imap-mission.com/query?instrument=mag&data_level=l0&descriptor=burst&start_date=20230112&end_date=20230113&version=*&extension=pkts
 
 **Possible Responses:**
 
 .. code-block:: json
 
-   {"statusCode": 200, "body": {"mission": "imap", "level": "l0", "instrument": "mag", "date": "20230112", "version": "*", "extension": "pkts"}}
+   {"statusCode": 200, "headers": {"Content-Type": "application/json", "Access-Control-Allow-Origin": "*"}, "body": "[('mag', 'l0', 'burst', '20230112', '20230113', 'v01-01', 'pkts'), ('mag', 'l0', 'burst', '20230112', '20230113', 'v01-02', 'pkts')]"}
+   {"statusCode": 400, "headers": {"Content-Type": "application/json", "Access-Control-Allow-Origin": "*"}, "body": "<param> is not a valid query parameter. Valid query parameters are: <valid parameters>"}

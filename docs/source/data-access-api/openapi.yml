@@ -89,36 +89,44 @@ paths:
       operationId: query
       parameters:
         - in: query
-          name: mission
-          description: The mission of interest (currently only ``imap`` is supported)
-          required: false
-          schema:
-            type: string
-        - in: query
-          name: level
-          description: |
-            The level of data product (e.g. ``l1a``), or ``*`` for all levels. Supported levels are listed
-            `here <https://imap-processing.readthedocs.io/en/latest/development-guide/style-guide/naming-conventions.html#data-product-file-naming-conventions>`_.
-          required: false
-          schema:
-            type: string
-        - in: query
           name: instrument
           description: |
-            The instrument of interest (e.g. ``mag``), or ``*`` for all instruments. Supported instruments are listed
+            The instrument of interest (e.g. ``mag``). Supported instruments are listed
             `here <https://imap-processing.readthedocs.io/en/latest/development-guide/style-guide/naming-conventions.html#data-product-file-naming-conventions>`_.
           required: false
           schema:
             type: string
         - in: query
-          name: date
-          description: The date of observation in the format ``YYYYMMDD``, or ``*`` for all dates.
+          name: data_level
+          description: |
+            The level of data product (e.g. ``l1a``). Supported levels are listed
+            `here <https://imap-processing.readthedocs.io/en/latest/development-guide/style-guide/naming-conventions.html#data-product-file-naming-conventions>`_.
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: descriptor
+          description: |
+            The descriptor of interest (e.g. ``burst``). Supported descriptors are listed
+            `here <https://imap-processing.readthedocs.io/en/latest/development-guide/style-guide/naming-conventions.html#data-product-file-naming-conventions>`_.
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: start_date
+          description: The start date of observation in the format ``YYYYMMDD``.
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: end_date
+          description: The end date of observation in the format ``YYYYMMDD``.
           required: false
           schema:
             type: string
         - in: query
           name: version
-          description: The version of data product in the format ``vXX-YY`` (e.g. ``v01-01``), or ``*`` for all versions.
+          description: The version of data product in the format ``vXX-YY`` (e.g. ``v01-01``).
           required: false
           schema:
             type: string
@@ -133,6 +141,15 @@ paths:
       responses:
         '200':
           description: Successful query
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                  format: uri
+        '400':
+          description: Unsuccessful query
           content:
             application/json:
               schema:
