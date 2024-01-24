@@ -86,14 +86,15 @@ def test_download_already_exists(mock_urlopen):
         # All parameters should send full query
         {
             "instrument": "test-instrument",
-            "level": "test-level",
+            "data_level": "test-level",
             "descriptor": "test-description",
-            "startdate": "20100101",
-            "enddate": "20100102",
+            "start_date": "20100101",
+            "end_date": "20100102",
             "version": "00-00",
+            "extension": "pkts",
         },
         # Make sure not all query params are sent if they are missing
-        {"instrument": "test-instrument", "level": "test-level"},
+        {"instrument": "test-instrument", "data_level": "test-level"},
     ],
 )
 def test_query(mock_urlopen, query_params):
@@ -114,6 +115,13 @@ def test_query(mock_urlopen, query_params):
 def test_query_no_params(mock_urlopen):
     with pytest.raises(ValueError, match="At least one query"):
         imap_processing.io.query()
+    # Should not have made any calls to urlopen
+    assert mock_urlopen.call_count == 0
+
+
+def test_query_bad_params(mock_urlopen):
+    with pytest.raises(TypeError, match="got an unexpected"):
+        imap_processing.io.query(bad_param="test")
     # Should not have made any calls to urlopen
     assert mock_urlopen.call_count == 0
 

@@ -68,11 +68,12 @@ def download(filepath: str) -> Path:
 def query(
     *,
     instrument: Optional[str] = None,
-    level: Optional[str] = None,
+    data_level: Optional[str] = None,
     descriptor: Optional[str] = None,
-    startdate: Optional[str] = None,
-    enddate: Optional[str] = None,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
     version: Optional[str] = None,
+    extension: Optional[str] = None,
 ):
     """Query the data archive for files matching the parameters.
 
