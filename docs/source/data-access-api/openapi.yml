@@ -114,13 +114,13 @@ paths:
             type: string
         - in: query
           name: start_date
-          description: The start date of observation in the format ``YYYYMMDD``.
+          description: Search for all files with a start date on or after this time, in the format ``YYYYMMDD``.
           required: false
           schema:
             type: string
         - in: query
           name: end_date
-          description: The end date of observation in the format ``YYYYMMDD``.
+          description: Search for all files with a start date on or before this time, in the format ``YYYYMMDD``.
           required: false
           schema:
             type: string
@@ -132,9 +132,7 @@ paths:
             type: string
         - in: query
           name: extension
-          description: |
-            The file extension of interest (e.g. ``pkts``), or ``*`` for all extensions. Supported extensions include
-            ``pkts`` and ``cdf``.
+          description: The file extension of interest (e.g. ``cdf``). Supported extensions include ``pkts`` and ``cdf``.
           required: false
           schema:
             type: string
