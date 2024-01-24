@@ -23,7 +23,7 @@ sys.path.insert(0, Path("../../imap_processing").resolve())
 # -- Project information -----------------------------------------------------
 
 project = "imap_processing"
-copyright = "2023, Regents of the University of Colorado"
+copyright = "2024, Regents of the University of Colorado"
 author = "IMAP Science Operations Center"
 
 # The full version, including alpha/beta/rc tags
