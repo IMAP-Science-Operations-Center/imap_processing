@@ -220,14 +220,6 @@ class ScienceDirectEvents(LoBase):
             # Use the TOF coefficients and the bits for the current field to
             # calculate the decompressed value. Also round to 2 because the TOF
             # coefficients only have 2 decimals.
-            print(f"NEEDED BITS: { bitarray(needed_bits).tolist()}")
-            print(f"COEFFS: {remaining_bit_coefficients[field]}")
-            print(
-                (bit[0], bit[1])
-                for bit in zip(
-                    bitarray(needed_bits).tolist(), remaining_bit_coefficients[field]
-                )
-            )
             decompressed_data = round(
                 sum(
                     bit[0] * bit[1]
