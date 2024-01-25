@@ -25,7 +25,7 @@ class ScienceDirectEvents(LoBase):
         Number of direct events.
     CHKSUM: int
         Checksum for the packet.
-    DATA: bitstring.Bits
+    DATA: str
         Compressed TOF Direct Event time tagged data.
     TOF0: int
         Time of Flight 0 value for direct event.
