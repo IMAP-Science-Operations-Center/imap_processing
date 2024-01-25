@@ -20,6 +20,7 @@ Instruments
    hit
    swe
    hi
+   lo
    swapi
 
 Utility functions can be found in modules within the top package level.

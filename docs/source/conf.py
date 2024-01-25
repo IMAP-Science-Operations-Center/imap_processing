@@ -85,6 +85,7 @@ intersphinx_mapping = {
     "pytest": ("https://pytest.org/en/stable/", None),
     "python": ("https://docs.python.org/3/", None),
     "xarray": ("https://docs.xarray.dev/en/stable/", None),
+    "bitstring": ("https://bitstring.readthedocs.io/en/stable/", None),
 }
 
 # Reference targets not found
@@ -96,6 +97,8 @@ nitpick_ignore_regex = [
     (r"py:.*", r".*IntEnum.*"),
     (r"py:.*", r".*space_packet_parser.*"),
     (r"py:.*", r".*CoDICECompression.*"),
+    (r"py:.*", r".*LoBase.*"),
+    (r"py:.*", r".*ScienceDirectEvents.*"),
 ]
 
 # Ignore the inherited members from the <instrument>APID IntEnum class
