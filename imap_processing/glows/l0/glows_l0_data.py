@@ -1,6 +1,6 @@
 """Contains data classes to support GLOWS L0 processing."""
 
-from dataclasses import dataclass, fields
+from dataclasses import dataclass
 
 from imap_processing.ccsds.ccsds_data import CcsdsData
 
@@ -112,37 +112,17 @@ class HistogramL0(GlowsL0):
     ELAVG: int
     ELVAR: int
     EVENTS: int
-    HISTOGRAM_DATA: bytes
+    HISTOGRAM_DATA: bytearray
 
-    def __init__(self, packet, software_version: str, packet_file_name: str):
-        """Initialize data class with a packet of histogram data.
-
-        Parameters
-        ----------
-        packet
-            Packet generated from space_packet_parser. Should be a type NamedTuple
-            with header and data fields.
-        software_version: str
-            The version of the ground software being used
-        packet_file_name: str
-            The filename of the packet
-        """
-        super().__init__(software_version, packet_file_name, CcsdsData(packet.header))
-
-        attributes = [field.name for field in fields(self)]
-
-        # For each item in packet, assign it to the matching attribute in the class.
-        for key, item in packet.data.items():
-            value = (
-                item.derived_value if item.derived_value is not None else item.raw_value
-            )
-            if key in attributes:
-                setattr(self, key, value)
-            else:
-                raise KeyError(
-                    f"Did not find matching attribute in Histogram data class for "
-                    f"{key}"
+    def __post_init__(self):
+        """Convert HISTOGRAM_DATA attribute from string to bytearray if needed."""
+        if isinstance(self.HISTOGRAM_DATA, str):
+            # Convert string output from space_packet_parser to bytearray
+            self.HISTOGRAM_DATA = bytearray(
+                int(self.HISTOGRAM_DATA, 2).to_bytes(
+                    len(self.HISTOGRAM_DATA) // 8, "big"
                 )
+            )
 
 
 @dataclass
@@ -154,50 +134,62 @@ class DirectEventL0(GlowsL0):
     MET : int
         CCSDS Packet Time Stamp (coarse time)
     SEC : int
-        Data timestamp, seconds counter.
+        Data IMAP timestamp, seconds counter.
     LEN : int
         Number of packets in data set.
     SEQ : int
         Packet sequence in data set.
+    DE_DATA : bytearray
+        Raw direct event data (compressed)
     ground_sw_version : str
         Ground software version
     packet_file_name : str
         File name of the source packet
     ccsds_header : CcsdsData
         CCSDS header data
+
+    Methods
+    -------
+    within_same_sequence
+        Compare two DirectEventL0 objects and see if MET and LEN are equal (meaning they
+        are in the same sequence)
+
     """
 
     MET: int
     SEC: int
     LEN: int
     SEQ: int
+    DE_DATA: bytearray
 
-    def __init__(self, packet, software_version: str, packet_file_name: str):
-        """Initialize data class with a packet of direct event data.
+    def __post_init__(self):
+        """Convert from string to bytearray if DE_DATA is a string of ones and zeros."""
+        if isinstance(self.DE_DATA, str):
+            # Convert string output from space_packet_parser to bytearray
+            self.DE_DATA = bytearray(
+                int(self.DE_DATA, 2).to_bytes(len(self.DE_DATA) // 8, "big")
+            )
+
+    def within_same_sequence(self, other):
+        """
+        Compare fields for L0 which should be the same for packets within one sequence.
+
+        This method compares the IMAP time (MET) and packet length (LEN) fields.
 
         Parameters
         ----------
-        packet
-            Packet generated from space_packet_parser. Should be a type NamedTuple
-            with header and data fields.
-        software_version: str
-            The version of the ground software being used
-        packet_file_name: str
-            The filename of the packet
+        other
+            Another instance of DirectEventL0 to compare to.
+
+        Returns
+        -------
+        True if the MET and LEN fields match, False otherwise.
         """
-        super().__init__(software_version, packet_file_name, CcsdsData(packet.header))
+        if not isinstance(other, DirectEventL0):
+            return False
 
-        attributes = [field.name for field in fields(self)]
+        # Time and overall packet length should match
+        if self.MET == other.MET and self.LEN == other.LEN:
+            return True
 
-        # For each item in packet, assign it to the matching attribute in the class.
-        for key, item in packet.data.items():
-            value = (
-                item.derived_value if item.derived_value is not None else item.raw_value
-            )
-            if key in attributes:
-                setattr(self, key, value)
-            else:
-                raise KeyError(
-                    f"Did not find matching attribute in Direct events data class for "
-                    f"{key}"
-                )
+        return False

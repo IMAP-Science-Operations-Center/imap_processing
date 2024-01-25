@@ -6,7 +6,7 @@ build-backend = "poetry.core.masonry.api"
 name = "imap-processing"
 version = "0.1.0"
 description = "IMAP Science Operations Center Processing"
-authors = ["IMAP SDC Developers <imap.sdc@lists.lasp.colorado.edu>"]
+authors = ["IMAP SDC Developers <imap-sdc@lists.lasp.colorado.edu>"]
 readme = "README.md"
 license = "MIT"
 keywords = ["IMAP", "SDC", "SOC", "Science Operations"]
@@ -19,6 +19,7 @@ classifiers = [
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
     "Topic :: Software Development",
     "Topic :: Scientific/Engineering",
     "Operating System :: Microsoft :: Windows",
@@ -28,30 +29,28 @@ classifiers = [
 ]
 
 [tool.poetry.dependencies]
-python = ">=3.9,<3.12"
+bitstring = ">=4.0.1"
+cdflib = ">=1.2.3"
+python = ">=3.9,<4"
+space_packet_parser = ">=4.1.0"
+spiceypy = ">=6.0.0"
 xarray = '>=2023.0.0'
-space_packet_parser = ">=4.1.0,<5"
-spiceypy = "^6.0.0"
-bitstring = ">=4.0.1,<5"
-cdflib = "^1.2.3"
 
 # Optional dependencies
-black = {version="^23.1.0", optional=true}
-pre-commit = {version="^3.3.3,<4", optional=true}
-pydata-sphinx-theme = {version="*", optional=true}
-pytest = {version=">=6.2.5,<7", optional=true}
-pytest-cov = {version="^4.0.0", optional=true}
-ruff = {version="^0.0.253", optional=true}
-sphinx = {version="*", optional=true}
-myst-parser = {version="^2.0.0", optional=true}
 numpydoc = {version="^1.5.0", optional=true}
-pandas = {version=">=2.0.0,<3", optional=true}
-openpyxl = {version=">=3.0.7,<4", optional=true}
-
+openpyxl = {version=">=3.0.7", optional=true}
+pandas = {version=">=2.0.0", optional=true}
+pre-commit = {version="^3.3.3", optional=true}
+pydata-sphinx-theme = {version="*", optional=true}
+pytest = {version=">=6.2.5", optional=true}
+pytest-cov = {version="^4.0.0", optional=true}
+ruff = {version=">=0.1.7", optional=true}
+sphinx = {version="*", optional=true}
+sphinxcontrib-openapi = "^0.8.3"
 
 [tool.poetry.extras]
-dev = ["black", "pre-commit", "ruff"]
-doc = ["myst-parser", "numpydoc", "pydata-sphinx-theme", "sphinx"]
+dev = ["pre-commit", "ruff"]
+doc = ["numpydoc", "pydata-sphinx-theme", "sphinx"]
 test = ["pytest", "pytest-cov"]
 tools= ["pandas", "openpyxl"]
 
@@ -61,7 +60,7 @@ repository = "https://github.com/IMAP-Science-Operations-Center/imap_processing"
 
 [tool.pytest.ini_options]
 testpaths = [
-  "imap_processing",
+  "imap_processing/tests",
 ]
 addopts = "-ra"
 
@@ -69,18 +68,18 @@ addopts = "-ra"
 [tool.ruff]
 target-version = "py39"
 select = ["B", "D", "E", "F", "I", "N", "S", "W", "PL", "PT", "UP", "RUF"]
-ignore = ["D104", "PLR2004", "S101"]
+# D104: Missing docstring in public package
+# PLR2004: Magic value in comparison
+# RUF200: pyproject missing field (poetry doesn't follow the spec)
+ignore = ["D104", "PLR2004", "RUF200"]
 
 [tool.ruff.per-file-ignores]
-"*/tests/*" = ["D"]
+# S603 unchecked input in subprocess call is fine in our tests
+"*/tests/*" = ["D", "S101", "S603"]
 "tools/xtce*" = ["D"]
-# TODO: Too many statements, this could be refactored and removed
-# by creating a loop over a predefined mapping
-"imap_processing/idex/idex_packet_parser.py" = ["PLR0915"]
-"imap_processing/write_to_cdf.py" = ["PLR0913"]
 
 [tool.ruff.pydocstyle]
 convention = "numpy"
 
-[project.scripts]
-imap_processing = "imap_processing.run_processing"
+[tool.poetry.scripts]
+imap_cli = 'imap_processing.cli:main'
