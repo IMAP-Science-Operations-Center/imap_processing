@@ -20,7 +20,7 @@ class LoBase:
     Methods
     -------
     parse_data(packet):
-        Parse the packet data and assign to fields using the xtce definied named.
+        Parse the packet and assign to class variable using the xtce defined named.
     """
 
     ground_sw_version: str
