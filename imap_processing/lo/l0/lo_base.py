@@ -16,6 +16,11 @@ class LoBase:
         File name of the source packet
     ccsds_header : CcsdsData
         CCSDS header data
+
+    Methods
+    -------
+    parse_data(packet):
+        Parse the packet data and assign to fields using the xtce definied named.
     """
 
     ground_sw_version: str
