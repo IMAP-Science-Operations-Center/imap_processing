@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from bitstring import BitArray
+from bitstring import ConstBitStream
 
 from imap_processing.ccsds.ccsds_data import CcsdsData
 from imap_processing.lo.l0.lol0 import LoL0
@@ -7,7 +7,7 @@ from imap_processing.lo.l0.utils.loApid import LoAPID
 from imap_processing.lo.l0.utils.bit_decompression import Decompress, decompress_int
 
 @dataclass
-class StarSensor(LoL0):
+class StarSensor(LoBase):
     """L1A Start Sensor data.
     
     The Start Sensor class handles the parsing
@@ -45,7 +45,7 @@ class StarSensor(LoL0):
             LoAPID.ILO_STAR,
         )
         self.parse_data(packet)
-        self._make_data_list()
+        self._decompress_data()
 
     def _decompress_data(self):
         """
@@ -56,22 +56,19 @@ class StarSensor(LoL0):
         is compressed to 8 bits. The data fields need to be extracted from
         binary, decompressed, and stored in a list.
         """
-        # Star Sensor data fields start at bit 96.
-        # See Telem definition sheet for more information.
-        start_bit = 96
         # Star Sensor data fields have a bit length of 8.
         # See Telem definition sheet for more information.
         bit_length = 8
 
-        # make a bit array containing the binary for the entire
-        # chunk of Start packet data
-        bits = BitArray(bin=self.DATA_COMPRESSED)
-
-        # Extract the 8 bit long field from the binary chunk and get the integer
-        extracted_integer = bits[start_bit: start_bit + bit_length].uint
-        # The Star Sensor packet uses a 12 to 8 bit compression
-        decompressed_integer = decompress_int(
-            extracted_integer,
-            Decompress.DECOMPRESS8TO12
-            )
-        self.DATA.append(decompressed_integer)
+        # make a bit stream containing the binary for the entire
+        # chunk of Star packet data
+        bitstream = ConstBitStream(bin=self.DATA_COMPRESSED)
+        while bitstream.pos < len(bitstream):
+            # Extract the 8 bit long field from the binary chunk and get the integer
+            extracted_integer = bitstream.read(bit_length).uint
+            # The Star Sensor packet uses a 12 to 8 bit compression
+            decompressed_integer = decompress_int(
+                extracted_integer,
+                Decompress.DECOMPRESS8TO12
+                )
+            self.DATA.append(decompressed_integer)
