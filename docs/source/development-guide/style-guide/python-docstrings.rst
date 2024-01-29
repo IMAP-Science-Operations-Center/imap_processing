@@ -1,9 +1,9 @@
-.. _api-documentation:
+.. _python-docstrings:
 
-API Documentation
+Python Docstrings
 -----------------
 
-Documentation code shall adhere to the `PEP257 <https://peps.python.org/pep-0257/>`_ and `numpydoc
+Python code documentation shall adhere to the `PEP257 <https://peps.python.org/pep-0257/>`_ and `numpydoc
 <https://numpydoc.readthedocs.io/en/latest/format.html>`_ conventions.
 
 The following are further recommendations:

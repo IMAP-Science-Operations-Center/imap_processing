@@ -35,7 +35,7 @@ to these conventions.
 
     git-and-github-workflow
     python-coding
-    api-documentation
+    python-docstrings
     poetry-environment
     security
     naming-conventions
