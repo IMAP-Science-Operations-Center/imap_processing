@@ -5,9 +5,9 @@ from itertools import compress
 import bitstring
 from bitarray import bitarray
 
-import imap_processing.lo.l0.decompression_tables as decompress_tables
+import imap_processing.lo.l0.decompression_tables.decompression_tables as decompress_tables
 from imap_processing.ccsds.ccsds_data import CcsdsData
-from imap_processing.lo.l0.lo_base import LoBase
+from imap_processing.lo.l0.utils.lo_base import LoBase
 
 
 @dataclass
@@ -67,11 +67,8 @@ class ScienceDirectEvents(LoBase):
     -------
     __init__(packet, software_vesion, packet_file_name):
         Uses the CCSDS packet, version of the software, and
-        the name of the packet file to parse and store information about
-        the Direct Event packet data.
-    decompress_data():
-        Decompresses the Science Direct Event TOF data.
-
+        the name of the packet file to parse and store data for
+        the Direct Event packet.
     """
 
     SHCOARSE: int

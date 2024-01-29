@@ -3,7 +3,7 @@ from collections import namedtuple
 import bitstring
 import pytest
 
-from imap_processing.lo.l0.science_direct_events import ScienceDirectEvents
+from imap_processing.lo.l0.data_classes.science_direct_events import ScienceDirectEvents
 
 # TODO: Because I currently don't have any compressed DE data, the decompress method
 # needs to be commented out and the private methods need to be called directly for
