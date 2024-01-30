@@ -24,7 +24,7 @@ def decompress_int(compressed_value, decompression):
     decompressed : int
         The decompressed integer.
     """
-    valid_decompression = [Decompress.DECOMPRESS8TO12, Decompress.DECOMPRESS8TO12, Decompress.DECOMPRESS8TO12]
+    valid_decompression = [Decompress.DECOMPRESS8TO12, Decompress.DECOMPRESS8TO16, Decompress.DECOMPRESS12TO16]
     if decompression not in valid_decompression:
         raise ValueError("Invalid decompression method. Must be one of the following Enums: " +
                          "Decompress.DECOMPRESS8TO12, Decompress.DECOMPRESS8TO12, Decompress.DECOMPRESS8TO12")

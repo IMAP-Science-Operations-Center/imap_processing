@@ -73,3 +73,4 @@ class StarSensor(LoBase):
                 Decompress.DECOMPRESS8TO12
                 )
             self.DATA.append(decompressed_integer)
+            bitstream.pos += bit_length
