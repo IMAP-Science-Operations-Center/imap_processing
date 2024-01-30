@@ -3,7 +3,8 @@ from pathlib import Path
 from enum import Enum
 
 class Decompress(Enum):
-    """Decompression options"""
+    """Decompression options."""
+
     DECOMPRESS8TO12 = "8_to_12"
     DECOMPRESS8TO16 = "8_to_16"
     DECOMPRESS12TO16 = "12_to_16"
