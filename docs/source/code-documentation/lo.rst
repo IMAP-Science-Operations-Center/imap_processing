@@ -16,4 +16,6 @@ The L0 code to decommutate the CCSDS packet data can be found below.
     :recursive:
 
     l0.lo_base
-    l0.science_direct_events
+    l0.data_classes.science_direct_events
+    l0.data_classes.science_counts
+    l0.data_classes.star_sensor
