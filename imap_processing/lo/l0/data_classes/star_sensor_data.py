@@ -1,10 +1,12 @@
+"""L1A Star Sensor data class."""
 from dataclasses import dataclass
+
 from bitstring import ConstBitStream
 
 from imap_processing.ccsds.ccsds_data import CcsdsData
-from imap_processing.lo.l0.lol0 import LoBase
-from imap_processing.lo.l0.utils.loApid import LoAPID
 from imap_processing.lo.l0.utils.bit_decompression import Decompress, decompress_int
+from imap_processing.lo.l0.utils.lo_base import LoBase
+
 
 @dataclass
 class StarSensor(LoBase):

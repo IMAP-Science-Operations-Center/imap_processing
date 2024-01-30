@@ -1,11 +1,12 @@
+"""L1A Science Counts data class."""
 from dataclasses import dataclass
+
 import numpy as np
 from bitstring import ConstBitStream
 
 from imap_processing.ccsds.ccsds_data import CcsdsData
-from imap_processing.lo.l0.lol0 import LoBase
-from imap_processing.lo.l0.utils.loApid import LoAPID
 from imap_processing.lo.l0.utils.bit_decompression import Decompress, decompress_int
+from imap_processing.lo.l0.utils.lo_base import LoBase
 
 
 @dataclass
@@ -111,7 +112,7 @@ class ScienceCounts(LoBase):
 
 
     def _parse_binary(self):
-        """Parse the science count binary chunk for each section of data"""
+        """Parse the science count binary chunk for each section of data."""
         # make a bit stream containing the binary for the entire
         # chunk of Science Count packet data
         bitstream = ConstBitStream(bin=self.SCI_CNT)
