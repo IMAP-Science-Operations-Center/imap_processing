@@ -2,13 +2,13 @@ from dataclasses import dataclass
 from bitstring import ConstBitStream
 
 from imap_processing.ccsds.ccsds_data import CcsdsData
-from imap_processing.lo.l0.lol0 import LoL0
+from imap_processing.lo.l0.lol0 import LoBase
 from imap_processing.lo.l0.utils.loApid import LoAPID
 from imap_processing.lo.l0.utils.bit_decompression import Decompress, decompress_int
 
 @dataclass
 class StarSensor(LoBase):
-    """L1A Start Sensor data.
+    """L1A Star Sensor data class.
     
     The Start Sensor class handles the parsing
     and decompression of L0 to L1A data.
