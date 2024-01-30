@@ -2,7 +2,7 @@ from random import choice
 
 import pytest
 
-from imap_processing.lo.l0.data_classes.star_sensor_data import StarSensor
+from imap_processing.lo.l0.data_classes.star_sensor import StarSensor
 
 
 # Going to wait until validation data is available to test that
