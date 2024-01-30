@@ -22,54 +22,54 @@ class ScienceCounts(LoBase):
         Spacecraft time.
     SCI_CNT: str
         science count compressed binary data
-    START_A: np.array
+    START_A: numpy.array
         Single rates for electon, anode A. 2D array Azimuth(6), Energy(7)
-    START_C: np.array
+    START_C: numpy.array
         Single rates for electron, anode C. 2D array Azimuth(6), Energy(7)
-    STOP_B0: np.array
+    STOP_B0: numpy.array
         Single rates for Ion, anode B0. 2D array Azimuth(6), Energy(7)
-    STOP_B3: np.array
+    STOP_B3: numpy.array
         Single rates for Ion, anode B3. 2D array Azimuth(6), Energy(7)
-    TOF0: np.array
+    TOF0: numpy.array
         TOF rates for Electron anode A / Ion anode B0. 2D array Azimuth(6), Energy(7)
-    TOF1: np.array
+    TOF1: numpy.array
         TOF rates for Electron anode C / Ion anode B3. 2D array Azimuth(6), Energy(7)
-    TOF2: np.array
+    TOF2: numpy.array
         TOF rates for Electron anode A / Ion anode C. 2D array Azimuth(6), Energy(7)
-    TOF3: np.array
+    TOF3: numpy.array
         TOF Rates for Ion anode B0 / Ion anode B. 2D array Azimuth(60), Energy(7)
-    TOF0_TOF1: np.array
+    TOF0_TOF1: numpy.array
         Triple coincidence rates for TOF0 and TOF1. 2D array Azimuth(60), Energy(7)
-    TOF0_TOF2: np.array
+    TOF0_TOF2: numpy.array
         Triple coincidence rates for TOF0 and TOF2. 2D array Azimuth(60), Energy(7)
-    TOF1_TOF2: np.array
+    TOF1_TOF2: numpy.array
         Triple coincidence rates for TOF1 and TOF2. 2D array Azimuth(60), Energy(7)
-    SILVER: np.array
+    SILVER: numpy.array
         Triple coincidence rates for TOF0, TOF1, TOF2 and TOF3.
         2D array Azimuth(60), Energy(7)
-    DISC_TOF0: np.array
+    DISC_TOF0: numpy.array
         Discarded rates for TOF0 value less than TOF0 threshold setting.
         2D array Azimuth(6), Energy(7)
-    DISC_TOF1: np.array
+    DISC_TOF1: numpy.array
         Discarded rates for TOF1 value less than TOF1 threshold setting.
         2D array Azimuth(6), Energy(7)
-    DISC_TOF2: np.array
+    DISC_TOF2: numpy.array
         Discarded rates for TOF2 value less than TOF2 threshold setting.
         2D array Azimuth(6), Energy(7)
-    DISC_TOF3: np.array
+    DISC_TOF3: numpy.array
         Discarded rates for TOF3 value less than TOF3 threshold setting.
         2D array Azimuth(6), Energy(7)
-    POS0: np.array
+    POS0: numpy.array
         Postition rate counts for Ion anode B0. 2D array Azimuth(6), Energy(7)
-    POS1: np.array
+    POS1: numpy.array
         Position rate counts for Ion anode B1. 2D array Azimuth(6), Energy(7)
-    POS2: np.array
+    POS2: numpy.array
         Position rate counts for Ion anode B2. 2D array Azimuth(6), Energy(7)
-    POS3: np.array
+    POS3: numpy.array
         Position rate counts for Ion anode B3. 2D array Azimuth(6), Energy(7)
-    HYDROGEN: np.array
+    HYDROGEN: numpy.array
         Hydrogen species histogram. 2D array Azimuth(60), Energy(7)
-    OXYGEN: np.array
+    OXYGEN: numpy.array
         Oxygen species histogram. 2D array Azimuth(60), Energy(7)
 
     Methods
