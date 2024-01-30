@@ -1,6 +1,9 @@
-import numpy as np
-from pathlib import Path
+"""Decompression for 8 to 12, 8 to 16, and 12 to 16 bits."""
 from enum import Enum
+from pathlib import Path
+
+import numpy as np
+
 
 class Decompress(Enum):
     """Decompression options."""
@@ -8,6 +11,7 @@ class Decompress(Enum):
     DECOMPRESS8TO12 = "8_to_12"
     DECOMPRESS8TO16 = "8_to_16"
     DECOMPRESS12TO16 = "12_to_16"
+
 
 def decompress_int(compressed_value, decompression):
     """
@@ -25,11 +29,23 @@ def decompress_int(compressed_value, decompression):
     decompressed : int
         The decompressed integer.
     """
-    valid_decompression = [Decompress.DECOMPRESS8TO12, Decompress.DECOMPRESS8TO16, Decompress.DECOMPRESS12TO16]
+    valid_decompression = [
+        Decompress.DECOMPRESS8TO12,
+        Decompress.DECOMPRESS8TO16,
+        Decompress.DECOMPRESS12TO16,
+    ]
     if decompression not in valid_decompression:
-        raise ValueError("Invalid decompression method. Must be one of the following Enums: " +
-                         "Decompress.DECOMPRESS8TO12, Decompress.DECOMPRESS8TO12, Decompress.DECOMPRESS8TO12")
+        raise ValueError(
+            "Invalid decompression method. Must be one of the following Enums: "
+            + "Decompress.DECOMPRESS8TO12, Decompress.DECOMPRESS8TO12, "
+            + "Decompress.DECOMPRESS8TO12"
+        )
 
     # load the decompression table for the method specified
-    data = np.loadtxt(Path(__file__).parent / f'../decompression_tables/{decompression.value}_bit.csv', delimiter=',', skiprows=1)
+    data = np.loadtxt(
+        Path(__file__).parent
+        / f"../decompression_tables/{decompression.value}_bit.csv",
+        delimiter=",",
+        skiprows=1,
+    )
     return int(data[compressed_value][1])
