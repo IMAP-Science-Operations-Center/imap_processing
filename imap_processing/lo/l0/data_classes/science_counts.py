@@ -270,9 +270,11 @@ class ScienceCounts(LoBase):
         return data_array.reshape(data_shape[0], data_shape[1])
 
 
-    def _extract_binary(self, bitstream, bit_stop, bit_length, decompression):
+    def _extract_binary(self, bitstream, section_length, bit_length, decompression):
         """Extract and decompress science count binary data section."""
         data_list = list()
+        # stop the bitstream once you reach the end of the data section.
+        bit_stop = bitstream.pos + section_length
         while bitstream.pos < bit_stop:
             # Extract the 12 bit long field from the binary chunk and get the integer
             extracted_integer = bitstream.read(bit_length).uint
@@ -281,6 +283,7 @@ class ScienceCounts(LoBase):
                 extracted_integer,
                 decompression
                 )
+            bitstream.pos += bit_length
             data_list.append(decompressed_integer)
         return np.array(data_list)
 
