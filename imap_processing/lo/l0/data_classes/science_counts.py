@@ -22,54 +22,54 @@ class ScienceCounts(LoBase):
         Spacecraft time.
     SCI_CNT: str
         science count compressed binary data
-    START_A: numpy.array
+    START_A: numpy.ndarray
         Single rates for electon, anode A. 2D array Azimuth(6), Energy(7)
-    START_C: numpy.array
+    START_C: numpy.ndarray
         Single rates for electron, anode C. 2D array Azimuth(6), Energy(7)
-    STOP_B0: numpy.array
+    STOP_B0: numpy.ndarray
         Single rates for Ion, anode B0. 2D array Azimuth(6), Energy(7)
-    STOP_B3: numpy.array
+    STOP_B3: numpy.ndarray
         Single rates for Ion, anode B3. 2D array Azimuth(6), Energy(7)
-    TOF0: numpy.array
+    TOF0: numpy.ndarray
         TOF rates for Electron anode A / Ion anode B0. 2D array Azimuth(6), Energy(7)
-    TOF1: numpy.array
+    TOF1: numpy.ndarray
         TOF rates for Electron anode C / Ion anode B3. 2D array Azimuth(6), Energy(7)
-    TOF2: numpy.array
+    TOF2: numpy.ndarray
         TOF rates for Electron anode A / Ion anode C. 2D array Azimuth(6), Energy(7)
-    TOF3: numpy.array
+    TOF3: numpy.ndarray
         TOF Rates for Ion anode B0 / Ion anode B. 2D array Azimuth(60), Energy(7)
-    TOF0_TOF1: numpy.array
+    TOF0_TOF1: numpy.ndarray
         Triple coincidence rates for TOF0 and TOF1. 2D array Azimuth(60), Energy(7)
-    TOF0_TOF2: numpy.array
+    TOF0_TOF2: numpy.ndarray
         Triple coincidence rates for TOF0 and TOF2. 2D array Azimuth(60), Energy(7)
-    TOF1_TOF2: numpy.array
+    TOF1_TOF2: numpy.ndarray
         Triple coincidence rates for TOF1 and TOF2. 2D array Azimuth(60), Energy(7)
-    SILVER: numpy.array
+    SILVER: numpy.ndarray
         Triple coincidence rates for TOF0, TOF1, TOF2 and TOF3.
         2D array Azimuth(60), Energy(7)
-    DISC_TOF0: numpy.array
+    DISC_TOF0: numpy.ndarray
         Discarded rates for TOF0 value less than TOF0 threshold setting.
         2D array Azimuth(6), Energy(7)
-    DISC_TOF1: numpy.array
+    DISC_TOF1: numpy.ndarray
         Discarded rates for TOF1 value less than TOF1 threshold setting.
         2D array Azimuth(6), Energy(7)
-    DISC_TOF2: numpy.array
+    DISC_TOF2: numpy.ndarray
         Discarded rates for TOF2 value less than TOF2 threshold setting.
         2D array Azimuth(6), Energy(7)
-    DISC_TOF3: numpy.array
+    DISC_TOF3: numpy.ndarray
         Discarded rates for TOF3 value less than TOF3 threshold setting.
         2D array Azimuth(6), Energy(7)
-    POS0: numpy.array
+    POS0: numpy.ndarray
         Postition rate counts for Ion anode B0. 2D array Azimuth(6), Energy(7)
-    POS1: numpy.array
+    POS1: numpy.ndarray
         Position rate counts for Ion anode B1. 2D array Azimuth(6), Energy(7)
-    POS2: numpy.array
+    POS2: numpy.ndarray
         Position rate counts for Ion anode B2. 2D array Azimuth(6), Energy(7)
-    POS3: numpy.array
+    POS3: numpy.ndarray
         Position rate counts for Ion anode B3. 2D array Azimuth(6), Energy(7)
-    HYDROGEN: numpy.array
+    HYDROGEN: numpy.ndarray
         Hydrogen species histogram. 2D array Azimuth(60), Energy(7)
-    OXYGEN: numpy.array
+    OXYGEN: numpy.ndarray
         Oxygen species histogram. 2D array Azimuth(60), Energy(7)
 
     Methods
@@ -82,28 +82,28 @@ class ScienceCounts(LoBase):
 
     SHCOARSE: int
     SCI_CNT: str
-    START_A: np.array
-    START_C: np.array
-    STOP_B0: np.array
-    STOP_B3: np.array
-    TOF0: np.array
-    TOF1: np.array
-    TOF2: np.array
-    TOF3: np.array
-    TOF0_TOF1: np.array
-    TOF0_TOF2: np.array
-    TOF1_TOF2: np.array
-    SILVER: np.array
-    DISC_TOF0: np.array
-    DISC_TOF1: np.array
-    DISC_TOF2: np.array
-    DISC_TOF3: np.array
-    POS0: np.array
-    POS1: np.array
-    POS2: np.array
-    POS3: np.array
-    HYDROGEN: np.array
-    OXYGEN: np.array
+    START_A: np.ndarray
+    START_C: np.ndarray
+    STOP_B0: np.ndarray
+    STOP_B3: np.ndarray
+    TOF0: np.ndarray
+    TOF1: np.ndarray
+    TOF2: np.ndarray
+    TOF3: np.ndarray
+    TOF0_TOF1: np.ndarray
+    TOF0_TOF2: np.ndarray
+    TOF1_TOF2: np.ndarray
+    SILVER: np.ndarray
+    DISC_TOF0: np.ndarray
+    DISC_TOF1: np.ndarray
+    DISC_TOF2: np.ndarray
+    DISC_TOF3: np.ndarray
+    POS0: np.ndarray
+    POS1: np.ndarray
+    POS2: np.ndarray
+    POS3: np.ndarray
+    HYDROGEN: np.ndarray
+    OXYGEN: np.ndarray
 
     def __init__(self, packet, software_version: str, packet_file_name: str):
         super().__init__(software_version, packet_file_name, CcsdsData(packet.header))
