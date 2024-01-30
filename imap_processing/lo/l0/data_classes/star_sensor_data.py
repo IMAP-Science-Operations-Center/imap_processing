@@ -11,10 +11,10 @@ from imap_processing.lo.l0.utils.lo_base import LoBase
 @dataclass
 class StarSensor(LoBase):
     """L1A Star Sensor data class.
-    
+
     The Start Sensor class handles the parsing
     and decompression of L0 to L1A data.
-    
+
     Attributes
     ----------
     SHCOARSE: int
@@ -43,8 +43,7 @@ class StarSensor(LoBase):
         super().__init__(
             software_version,
             packet_file_name,
-            CcsdsData(packet.header),
-            LoAPID.ILO_STAR,
+            CcsdsData(packet.header)
         )
         self.parse_data(packet)
         self._decompress_data()
