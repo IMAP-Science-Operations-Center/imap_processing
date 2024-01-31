@@ -32,7 +32,8 @@
         "infra",
         "example",
         "maintenance",
-        "review"
+        "review",
+        "doc"
       ]
     },
     {
@@ -42,7 +43,9 @@
       "profile": "https://github.com/laspsandoval",
       "contributions": [
         "review",
-        "code"
+        "code",
+        "infra",
+        "ideas"
       ]
     },
     {
