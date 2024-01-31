@@ -12,14 +12,16 @@ Use
 
 import argparse
 import json
+import os
 import sys
 from abc import ABC, abstractmethod
 from pathlib import Path
 
-import cdflib
 import imap_data_access
+from cdflib.xarray import cdf_to_xarray
 
 import imap_processing
+from imap_processing.cdf.utils import write_cdf
 from imap_processing.swe.l1a.swe_l1a import swe_l1a
 from imap_processing.swe.l1b.swe_l1b import swe_l1b
 
@@ -188,21 +190,36 @@ class Swe(ProcessInstrument):
 
     def process(self):
         """Perform SWE specific processing."""
-        # Download file
-        output_path = imap_data_access.download(self.file_path)
-        print("downloaded data file to ", output_path)
+        # self.file_path example:
+        # imap/swe/l1a/2023/09/imap_swe_l1a_sci_20230927_20230927_v01-00.cdf
         print(f"Processing SWE {self.level}")
         if self.level == "l1a":
-            processed_files_path = swe_l1a(output_path)
-            for file_path in processed_files_path:
-                print("upload paths - ", file_path)
-                imap_data_access.upload(file_path)
-        if self.level == "l1b":
+            # create download path
+            download_path = self.file_path.replace("l1a", "l0").replace("cdf", "pkts")
+            print(f"download_path: {download_path}")
+            output_path = imap_data_access.download(download_path)
+            processed_data = swe_l1a(output_path)
+            for data in processed_data:
+                # write data to cdf
+                cdf_file_path = write_cdf(
+                    data=data["data"], descriptor=data["descriptor"]
+                )
+                imap_data_access.upload(cdf_file_path)
+                print(f"uploaded {cdf_file_path}")
+        elif self.level == "l1b":
+            # create download path
+            download_path = self.file_path.replace("l1b", "l1a")
+            print(f"download_path: {download_path}")
+            output_path = imap_data_access.download(download_path)
             # read CDF file
-            l1a_dataset = cdflib.xarray.cdf_to_xarray(output_path, to_unixtime=True)
-            processed_file_path = swe_l1b(l1a_dataset)
+            l1a_dataset = cdf_to_xarray(output_path)
+            processed_data = swe_l1b(l1a_dataset)
+            descriptor = os.path.basename(self.file_path).split("_")[3]
+            processed_file_path = write_cdf(data=processed_data, descriptor=descriptor)
             imap_data_access.upload(processed_file_path)
-            print("finished uploading")
+            print(f"finished uploading - {processed_file_path}")
+        else:
+            print("No code to process this level")
 
 
 class Ultra(ProcessInstrument):

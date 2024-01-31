@@ -76,9 +76,7 @@ def write_cdf(
         file_start_date = data["Epoch"][0].data
     else:
         start_time = data["Epoch"].data[0]
-        print("type of l1b time ", type(start_time), start_time)
-        # TODO: figure out how to calculate start date for l1b
-        file_start_date = calc_start_time(int(start_time))
+        file_start_date = calc_start_time(start_time)
     if file_start_date is None:
         raise ValueError(
             "Unable to determine file start date. Check Logical_source value"

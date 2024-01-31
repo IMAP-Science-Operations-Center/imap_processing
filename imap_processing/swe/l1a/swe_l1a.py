@@ -3,7 +3,6 @@
 import logging
 
 from imap_processing import imap_module_directory
-from imap_processing.cdf.utils import write_cdf
 from imap_processing.swe.l0 import decom_swe
 from imap_processing.swe.l1a.swe_science import swe_science
 from imap_processing.swe.utils.swe_utils import (
@@ -41,14 +40,11 @@ def swe_l1a(file_path):
     Returns
     -------
     List
-        List of pathlib.Path
-        Path to where the CDF file was created.
-        This is used to upload file from local to s3.
-        TODO: test this later.
+        List of xarray.Dataset
     """
     # TODO: figure out how to do this better after demo
     packets = decom_data(file_path)
-    cdf_files = []
+    processed_data = []
     # group data by appId
     grouped_data = group_by_apid(packets)
 
@@ -70,10 +66,5 @@ def swe_l1a(file_path):
         mode = f"{data['APP_MODE'].data[0]}-" if apid == SWEAPID.SWE_APP_HK else ""
         descriptor = f"{mode}{filename_descriptors.get(apid)}"
 
-        cdf_files.append(
-            write_cdf(
-                data,
-                descriptor=descriptor,
-            )
-        )
-    return cdf_files
+        processed_data.append({"data": data, "descriptor": descriptor})
+    return processed_data
