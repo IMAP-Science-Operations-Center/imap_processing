@@ -105,6 +105,15 @@
       "contributions": [
         "code"
       ]
+    },
+    {
+      "login": "mstrumik",
+      "name": "mstrumik",
+      "avatar_url": "https://avatars.githubusercontent.com/u/142874888?v=4",
+      "profile": "https://github.com/mstrumik",
+      "contributions": [
+        "review"
+      ]
     }
   ],
   "contributorsPerLine": 7,
