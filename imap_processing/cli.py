@@ -207,6 +207,11 @@ class Swe(ProcessInstrument):
                 cdf_file_path = write_cdf(
                     data=data["data"], descriptor=data["descriptor"]
                 )
+                # TODO: undo this after demo. overwrite version with
+                # what was passed.
+                current_version = cdf_file_path.split(".")[0][-6:]
+                new_version = output_path.split(".")[0][-6:]
+                cdf_file_path = cdf_file_path.replace(current_version, new_version)
                 imap_data_access.upload(cdf_file_path)
                 print(f"uploaded {cdf_file_path}")
         elif self.level == "l1b":
@@ -221,6 +226,11 @@ class Swe(ProcessInstrument):
             descriptor = os.path.basename(self.file_path).split("_")[3]
             processed_file_path = write_cdf(data=processed_data, descriptor=descriptor)
             print(f"processed file path: {processed_file_path}")
+            # TODO: undo this after demo. overwrite version with
+            # what was passed.
+            current_version = processed_file_path.split(".")[0][-6:]
+            new_version = output_path.split(".")[0][-6:]
+            cdf_file_path = cdf_file_path.replace(current_version, new_version)
             imap_data_access.upload(processed_file_path)
             print(f"finished uploading - {processed_file_path}")
         else:
