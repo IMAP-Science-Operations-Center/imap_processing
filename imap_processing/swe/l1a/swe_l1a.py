@@ -2,7 +2,9 @@
 
 import logging
 
+from imap_processing import imap_module_directory
 from imap_processing.cdf.utils import write_cdf
+from imap_processing.swe.l0 import decom_swe
 from imap_processing.swe.l1a.swe_science import swe_science
 from imap_processing.swe.utils.swe_utils import (
     SWEAPID,
@@ -12,7 +14,19 @@ from imap_processing.swe.utils.swe_utils import (
 from imap_processing.utils import group_by_apid, sort_by_time
 
 
-def swe_l1a(packets):
+def decom_data(file_path):
+    """Read test data from test folder."""
+    # TODO: replace test folder after demo
+    test_folder_path = "tests/swe/l0_data"
+    packet_files = list(imap_module_directory.glob(f"{test_folder_path}/*.bin"))
+
+    data_list = []
+    for packet_file in packet_files:
+        data_list.extend(decom_swe.decom_packets(packet_file))
+    return data_list
+
+
+def swe_l1a(file_path):
     """Process SWE l0 data into l1a data.
 
     Receive all L0 data file. Based on appId, it
@@ -21,16 +35,20 @@ def swe_l1a(packets):
 
     Parameters
     ----------
-    packets: list
-        Decom data list that contains all appIds
+    file_path: pathlib.Path
+        Path where data is downloaded
 
     Returns
     -------
-    pathlib.Path
+    List
+        List of pathlib.Path
         Path to where the CDF file was created.
         This is used to upload file from local to s3.
         TODO: test this later.
     """
+    # TODO: figure out how to do this better after demo
+    packets = decom_data(file_path)
+    cdf_files = []
     # group data by appId
     grouped_data = group_by_apid(packets)
 
@@ -50,7 +68,12 @@ def swe_l1a(packets):
 
         # write data to CDF
         mode = f"{data['APP_MODE'].data[0]}-" if apid == SWEAPID.SWE_APP_HK else ""
-        return write_cdf(
-            data,
-            descriptor=f"{mode}{filename_descriptors.get(apid)}",
+        descriptor = f"{mode}{filename_descriptors.get(apid)}"
+
+        cdf_files.append(
+            write_cdf(
+                data,
+                descriptor=descriptor,
+            )
         )
+    return cdf_files

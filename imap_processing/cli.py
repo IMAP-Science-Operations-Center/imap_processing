@@ -11,11 +11,15 @@ Use
 """
 
 import argparse
+import json
 import sys
 from abc import ABC, abstractmethod
 from pathlib import Path
 
+import imap_data_access
+
 import imap_processing
+from imap_processing.swe.l1a.swe_l1a import swe_l1a
 
 
 def _parse_args():
@@ -47,9 +51,21 @@ def _parse_args():
     )
 
     parser = argparse.ArgumentParser(prog="imap_cli", description=description)
-    parser.add_argument("--data-dir", type=str, required=False, help=data_dir_help)
     parser.add_argument("--instrument", type=str, required=True, help=instrument_help)
     parser.add_argument("--level", type=str, required=True, help=level_help)
+    parser.add_argument(
+        "--file_path",
+        type=str,
+        required=True,
+        help="Full path to the file in the S3 bucket.",
+    )
+    parser.add_argument(
+        "--dependency",
+        type=json.loads,
+        required=True,
+        help="Dependency information in JSON format.",
+    )
+    parser.add_argument("--data-dir", type=str, required=False, help=data_dir_help)
     args = parser.parse_args()
 
     return args
@@ -91,8 +107,9 @@ class ProcessInstrument(ABC):
         The data level to process (e.g. ``l1a``)
     """
 
-    def __init__(self, level):
+    def __init__(self, level, file_path):
         self.level = level
+        self.file_path = file_path
 
     @abstractmethod
     def process(self):
@@ -169,6 +186,13 @@ class Swe(ProcessInstrument):
 
     def process(self):
         """Perform SWE specific processing."""
+        # Download file
+        output_path = imap_data_access.download(self.file_path)
+        if self.level == "l1a":
+            processed_files_path = swe_l1a(output_path)
+            for file_path in processed_files_path:
+                print("upload paths - ", file_path)
+                imap_data_access.upload(file_path)
         print(f"Processing SWE {self.level}")
 
 
@@ -193,7 +217,7 @@ def main():
     _validate_args(args)
 
     cls = getattr(sys.modules[__name__], args.instrument.capitalize())
-    instrument = cls(args.level)
+    instrument = cls(args.level, args.file_path)
     instrument.process()
 
 
