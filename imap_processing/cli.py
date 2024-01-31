@@ -209,9 +209,12 @@ class Swe(ProcessInstrument):
                 )
                 # TODO: undo this after demo. overwrite version with
                 # what was passed.
-                current_version = cdf_file_path.split(".")[0][-6:]
-                new_version = output_path.split(".")[0][-6:]
-                cdf_file_path = cdf_file_path.replace(current_version, new_version)
+                current_version = str(cdf_file_path).split(".")[0][-6:]
+                new_version = str(output_path).split(".")[0][-6:]
+                cdf_file_path = Path.replace(
+                    cdf_file_path,
+                    str(cdf_file_path).replace(current_version, new_version),
+                )
                 imap_data_access.upload(cdf_file_path)
                 print(f"uploaded {cdf_file_path}")
         elif self.level == "l1b":
@@ -228,9 +231,12 @@ class Swe(ProcessInstrument):
             print(f"processed file path: {processed_file_path}")
             # TODO: undo this after demo. overwrite version with
             # what was passed.
-            current_version = processed_file_path.split(".")[0][-6:]
-            new_version = output_path.split(".")[0][-6:]
-            cdf_file_path = cdf_file_path.replace(current_version, new_version)
+            current_version = str(processed_file_path).split(".")[0][-6:]
+            new_version = str(output_path).split(".")[0][-6:]
+            processed_file_path = Path.replace(
+                processed_file_path,
+                str(processed_file_path).replace(current_version, new_version),
+            )
             imap_data_access.upload(processed_file_path)
             print(f"finished uploading - {processed_file_path}")
         else:
