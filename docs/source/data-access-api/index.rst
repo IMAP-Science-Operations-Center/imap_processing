@@ -62,11 +62,11 @@ The API can be accessed from the following URL: https://api.dev.imap-mission.com
 
 .. code-block:: bash
 
-   curl -X GET -H "Accept: application/json" https://api.dev.imap-mission.com/query?instrument=swe&data_level=l0&descriptor=sci&start_date=20240105&end_date=20240105&version=*&extension=pkts
+   curl -X GET -H "Accept: application/json" https://api.dev.imap-mission.com/query?instrument=swe&data_level=l0&descriptor=sci&start_date=20240105&end_date=20240105&extension=pkts
 
 **Possible Responses:**
 
 .. code-block:: json
 
-   {"statusCode": 200, "headers": {"Content-Type": "application/json", "Access-Control-Allow-Origin": "*"}, "body": "[('mag', 'l0', 'burst', '20230112', '20230113', 'v01-01', 'pkts'), ('mag', 'l0', 'burst', '20230112', '20230113', 'v01-02', 'pkts')]"}
+   {"statusCode": 200, "headers": {"Content-Type": "application/json", "Access-Control-Allow-Origin": "*"}, "body": [{"file_path": "imap/swe/l0/2024/01/imap_swe_l0_sci_20240105_20240105_v00-05.pkts", "instrument": "swe", "data_level": "l0", "descriptor": "sci", "start_date": "20240105", "end_date": "20240105", "version": "v00-05", "extension": "pkts"}]}
    {"statusCode": 400, "headers": {"Content-Type": "application/json", "Access-Control-Allow-Origin": "*"}, "body": "<param> is not a valid query parameter. Valid query parameters are: ['file_path', 'instrument', 'data_level', 'descriptor', 'start_date', 'end_date', 'version', 'extension']"}
