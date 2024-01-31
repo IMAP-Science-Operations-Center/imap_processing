@@ -11,7 +11,6 @@ Use
 """
 
 import argparse
-import json
 import os
 import sys
 from abc import ABC, abstractmethod
@@ -53,6 +52,10 @@ def _parse_args():
         "The data level to process. Acceptable values are: "
         f"{imap_processing.PROCESSING_LEVELS}"
     )
+    depdency_help = (
+        "Dependency information in str format."
+        "Example: '[{instrument: swe, level: l0, version: v00-01}]'"
+    )
 
     parser = argparse.ArgumentParser(prog="imap_cli", description=description)
     parser.add_argument("--instrument", type=str, required=True, help=instrument_help)
@@ -65,9 +68,9 @@ def _parse_args():
     )
     parser.add_argument(
         "--dependency",
-        type=json.loads,
+        type=str,
         required=True,
-        help="Dependency information in JSON format.",
+        help=depdency_help,
     )
     parser.add_argument("--data-dir", type=str, required=False, help=data_dir_help)
     args = parser.parse_args()
