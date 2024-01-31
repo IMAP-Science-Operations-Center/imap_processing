@@ -44,6 +44,9 @@ def swe_l1b(l1a_dataset: xr.Dataset):
     )
     if apid == SWEAPID.SWE_SCIENCE:
         data = swe_l1b_science(eu_data)
+        if data is None:
+            print("No data to write to CDF")
+            return None
     else:
         data = eu_data
         # Update global attributes to l1b global attributes

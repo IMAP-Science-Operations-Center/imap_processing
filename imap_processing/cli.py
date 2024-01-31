@@ -16,10 +16,12 @@ import sys
 from abc import ABC, abstractmethod
 from pathlib import Path
 
+import cdflib
 import imap_data_access
 
 import imap_processing
 from imap_processing.swe.l1a.swe_l1a import swe_l1a
+from imap_processing.swe.l1b.swe_l1b import swe_l1b
 
 
 def _parse_args():
@@ -188,12 +190,19 @@ class Swe(ProcessInstrument):
         """Perform SWE specific processing."""
         # Download file
         output_path = imap_data_access.download(self.file_path)
+        print("downloaded data file to ", output_path)
+        print(f"Processing SWE {self.level}")
         if self.level == "l1a":
             processed_files_path = swe_l1a(output_path)
             for file_path in processed_files_path:
                 print("upload paths - ", file_path)
                 imap_data_access.upload(file_path)
-        print(f"Processing SWE {self.level}")
+        if self.level == "l1b":
+            # read CDF file
+            l1a_dataset = cdflib.xarray.cdf_to_xarray(output_path, to_unixtime=True)
+            processed_file_path = swe_l1b(l1a_dataset)
+            imap_data_access.upload(processed_file_path)
+            print("finished uploading")
 
 
 class Ultra(ProcessInstrument):
