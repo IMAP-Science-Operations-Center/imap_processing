@@ -211,11 +211,13 @@ class Swe(ProcessInstrument):
             download_path = self.file_path.replace("l1b", "l1a")
             print(f"download_path: {download_path}")
             output_path = imap_data_access.download(download_path)
+            print(f"downloaded folder {output_path}")
             # read CDF file
             l1a_dataset = cdf_to_xarray(output_path)
             processed_data = swe_l1b(l1a_dataset)
             descriptor = os.path.basename(self.file_path).split("_")[3]
             processed_file_path = write_cdf(data=processed_data, descriptor=descriptor)
+            print(f"processed file path: {processed_file_path}")
             imap_data_access.upload(processed_file_path)
             print(f"finished uploading - {processed_file_path}")
         else:
