@@ -1,5 +1,3 @@
-from random import choice
-
 import pytest
 
 from imap_processing.lo.l0.data_classes.science_counts import ScienceCounts
@@ -13,7 +11,7 @@ def test_science_counts():
     """Test the science counts parsing, decompression, and shaping."""
     ## Arrange
     sc = ScienceCounts("fake_packet", "version", "packet_name")
-    sc.SCI_CNT = "".join(choice("01") for _ in range(26880))  # noqa: S311
+    sc.SCI_CNT = "0" * 26880
 
     ## Act
     sc._parse_binary()

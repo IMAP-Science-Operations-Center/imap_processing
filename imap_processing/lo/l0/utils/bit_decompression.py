@@ -13,7 +13,20 @@ class Decompress(Enum):
     DECOMPRESS12TO16 = "12_to_16"
 
 
-def decompress_int(compressed_value, decompression):
+def decompression_tables():
+    """Load all decompression tables into a dictionary."""
+    # load all decompression tables
+    return {
+        enum: np.loadtxt(
+            Path(__file__).parent.parent / f"decompression_tables/{enum.value}_bit.csv",
+            delimiter=",",
+            skiprows=1,
+        )
+        for enum in Decompress
+    }
+
+
+def decompress_int(compressed_value, decompression, decompression_lookup):
     """
     Decompress a data field using a specified bit conversion.
 
@@ -21,8 +34,10 @@ def decompress_int(compressed_value, decompression):
     ----------
     compressed_value : int
         A compressed integer.
-    decompression: Decompress
+    decompression : Decompress
         The decompression to use.
+    decompression_lookup : dict
+        dictionary containing all the decompression tables
 
     Returns
     -------
@@ -40,12 +55,5 @@ def decompress_int(compressed_value, decompression):
             + "Decompress.DECOMPRESS8TO12, Decompress.DECOMPRESS8TO12, "
             + "Decompress.DECOMPRESS8TO12"
         )
-
-    # load the decompression table for the method specified
-    data = np.loadtxt(
-        Path(__file__).parent
-        / f"../decompression_tables/{decompression.value}_bit.csv",
-        delimiter=",",
-        skiprows=1,
-    )
+    data = decompression_lookup[decompression]
     return int(data[compressed_value][1])

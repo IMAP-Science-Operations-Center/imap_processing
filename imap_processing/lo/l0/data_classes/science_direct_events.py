@@ -23,28 +23,28 @@ class ScienceDirectEvents(LoBase):
     ----------
     SHCOARSE : int
         Spacecraft time.
-    COUNT: int
+    COUNT : int
         Number of direct events.
-    CHKSUM: int
+    CHKSUM : int
         Checksum for the packet.
-    DATA: bitstring.Bits
+    DATA : bitstring.Bits
         Compressed TOF Direct Event time tagged data.
-    TOF0: int
+    TOF0 : int
         Time of Flight 0 value for direct event.
-    TOF1: int
+    TOF1 : int
         Time of Flight 1 value for direct event.
-    TOF2: int
+    TOF2 : int
         Time of Flight 2 value for direct event.
-    TOF3: int
+    TOF3 : int
         Time of Flight 3 value for direct event.
-    TIME: int
+    TIME : int
         time tag for the direct event
-    ENERGY: int
+    ENERGY : int
         energy of the direct event ENA.
-    POS: int
+    POS : int
         Stop position for the direct event. There are 4 quadrants
         on the at the stop position.
-    CKSM: int
+    CKSM : int
         This is checksum defined relative to the TOFs
         condition for golden triples. If golden triples are below
         a certain threshold in checksum it's considered golden, otherwise,
@@ -52,17 +52,17 @@ class ScienceDirectEvents(LoBase):
         for golden triples because it's used to recover TOF1 because
         compression scheme to save space on golden triples doesn't send
         down TOF1 so it's recovered on the ground using the checksum
-    case_number: int
+    case_number : int
         The compression case number for the direct event. The case number
         determines how the bits are arranged in the compressed data.
-    tof_calculation_binary: dict
+    tof_calculation_binary : dict
         Binary used to determine which TOF coefficients should be used
         for decompressing the binary.
-    tof_decoder: list
+    tof_decoder : list
         Shows how the fields in the binary are split up by bit length and order.
-    remaining_bits: dict
+    remaining_bits : dict
         The TOF coefficients that should be used for decompression
-    parsed_bits: dict
+    parsed_bits : dict
         The binary bits split up by TOF field.
 
     Methods

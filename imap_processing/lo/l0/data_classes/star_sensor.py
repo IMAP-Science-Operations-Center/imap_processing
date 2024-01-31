@@ -5,8 +5,14 @@ import numpy as np
 from bitstring import ConstBitStream
 
 from imap_processing.ccsds.ccsds_data import CcsdsData
-from imap_processing.lo.l0.utils.bit_decompression import Decompress, decompress_int
+from imap_processing.lo.l0.utils.bit_decompression import (
+    Decompress,
+    decompress_int,
+    decompression_tables,
+)
 from imap_processing.lo.l0.utils.lo_base import LoBase
+
+decompression_lookup = decompression_tables()
 
 
 @dataclass
@@ -67,7 +73,7 @@ class StarSensor(LoBase):
             extracted_integer = bitstream.read(bit_length).uint
             # The Star Sensor packet uses a 12 to 8 bit compression
             decompressed_integer = decompress_int(
-                extracted_integer, Decompress.DECOMPRESS8TO12
+                extracted_integer, Decompress.DECOMPRESS8TO12, decompression_lookup
             )
             data_list.append(decompressed_integer)
         self.DATA = np.array(data_list)
