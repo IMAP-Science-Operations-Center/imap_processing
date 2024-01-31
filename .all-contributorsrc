@@ -32,7 +32,8 @@
         "infra",
         "example",
         "maintenance",
-        "review"
+        "review",
+        "doc"
       ]
     },
     {
