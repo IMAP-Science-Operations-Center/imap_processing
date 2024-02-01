@@ -86,8 +86,7 @@ def write_cdf(
 
     # Determine the file name based on the attributes in the xarray
     # Set file name based on this convention:
-    # imap_<instrument>_<datalevel>_<descriptor>_<startdate>_
-    # <enddate>_<version>.cdf
+    # imap_<instrument>_<datalevel>_<descriptor>_<startdate>_<enddate>_<version>.cdf
     # data.attrs["Logical_source"] has the mission, instrument, and level
     # like this:
     #   imap_idex_l1

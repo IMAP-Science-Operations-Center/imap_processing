@@ -20,6 +20,15 @@ import imap_data_access
 from cdflib.xarray import cdf_to_xarray
 
 import imap_processing
+
+# TODO: change how we import things and also folder
+# structure may?
+# From this:
+#   from imap_processing.cdf.utils import write_cdf
+# To this:
+#   from imap_processing import cdf
+# In code:
+#   call cdf.utils.write_cdf
 from imap_processing.cdf.utils import write_cdf
 from imap_processing.swe.l1a.swe_l1a import swe_l1a
 from imap_processing.swe.l1b.swe_l1b import swe_l1b
@@ -60,6 +69,15 @@ def _parse_args():
     parser = argparse.ArgumentParser(prog="imap_cli", description=description)
     parser.add_argument("--instrument", type=str, required=True, help=instrument_help)
     parser.add_argument("--level", type=str, required=True, help=level_help)
+    # TODO: change this to be this:
+    # And then make sure places that uses
+    # self.file_path to use it as Path object.
+    # parser.add_argument(
+    #     "--file_path",
+    #     type=Path,
+    #     required=True,
+    #     help="Full path to the file in the S3 bucket.",
+    # )
     parser.add_argument(
         "--file_path",
         type=str,
@@ -197,6 +215,8 @@ class Swe(ProcessInstrument):
         # imap/swe/l1a/2023/09/imap_swe_l1a_sci_20230927_20230927_v01-00.cdf
         print(f"Processing SWE {self.level}")
         if self.level == "l1a":
+            # TODO: change this after we have updated dependency or download
+            # path from Batch Job command.
             # create download path
             download_path = self.file_path.replace("l1a", "l0").replace("cdf", "pkts")
             print(f"download_path: {download_path}")
