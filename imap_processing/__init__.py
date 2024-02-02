@@ -7,7 +7,7 @@ contains code for each processing level.
 There are utilities to read and write IMAP data files in
 the CDF file format, and to interact with the SPICE toolkit.
 """
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
 # When imap_processing is installed using pip, we need to be able to find the
 # packet definitions directory path.
