@@ -20,7 +20,7 @@ def test_idex_cdf_file(decom_test_data):
     date_to_test = "20250724"
     assert file_name.name == (
         f"{decom_test_data.data.attrs['Logical_source']}_test_"
-        f"{date_to_test}_v{idex.__version__}.cdf"
+        f"{date_to_test}_{date_to_test}_v{idex.__version__}.cdf"
     )
     assert file_name.exists()
 
@@ -67,7 +67,7 @@ def test_descriptor_in_file_name(decom_test_data):
     date_to_test = "20250724"
     assert file_name.name == (
         f"{decom_test_data.data.attrs['Logical_source']}_"
-        f"impact-lab-test001_{date_to_test}_v{idex.__version__}.cdf"
+        f"impact-lab-test001_{date_to_test}_{date_to_test}_v{idex.__version__}.cdf"
     )
     assert file_name.exists()
 
