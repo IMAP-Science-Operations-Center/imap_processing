@@ -33,6 +33,7 @@ The API can be accessed from the following URL: https://api.dev.imap-mission.com
    {"statusCode": 400, "body": "Invalid end date format. Please use YYYYMMDD format."}
    {"statusCode": 400, "body": "Invalid version format. Please use vxx-xx format."}
    {"statusCode": 400, "body": "Invalid extension. Extension should be pkts for data level l0 and cdf for data level higher than l0"}
+   {"statusCode": 409, "body": "https://sds-data-<aws_account_number>.s3.amazon.com/imap/swe/l0/2024/01/imap_swe_l0_sci_20240105_20240105_v00-01.pkts already exists."}
 
 
 .. openapi:: openapi.yml
