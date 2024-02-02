@@ -11,7 +11,7 @@ provided by the SPDF <https://spdf.gsfc.nasa.gov/guidelines/filenaming_recommend
 
 The general filename convention is as follows::
 
-    imap_<instrument>_<datalevel>_<descriptor>_<startdate>_<enddate>_<version>.<format>
+    imap_<instrument>_<datalevel>_<descriptor>_<startdate>_<enddate>_<version>.<extension>
 
 * ``<instrument>`` is the IMAP instrument associated with the data product. Acceptable values include: ``codice``,
   ``glows``, ``hi-45``, ``hi-90``, ``hit``, ``idex``, ``lo``, ``mag``, ``swapi``, ``swe``, ``ultra-45``, and
@@ -52,8 +52,8 @@ The general filename convention is as follows::
   is also ``YYYYMMDD``.
 * ``<version>`` stores the version of the data product in the format is ``vXX-YY``.  See the versioning conventions
   described in the :ref:`data product versioning <Data Product Versioning>` documentation for further details.
-* ``<format>`` is the data format. For ``l0`` data products, the format is ``pkts``. For data levels ``l1`` and higher,
-  the format is ``cdf``.
+* ``<extension>`` is the data extension. For ``l0`` data products, the extension is ``pkts``. For data levels ``l1`` and
+  higher, the extension is ``cdf``.
 
 Here are a few examples of acceptable filenames:
 
