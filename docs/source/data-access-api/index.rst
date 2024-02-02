@@ -44,8 +44,7 @@ The API can be accessed from the following URL: https://api.dev.imap-mission.com
 
 .. code-block:: bash
 
-   curl -X GET -H "Accept: application/json" https://api.dev.imap-mission.com/download/swe/l0/2024/01/imap_swe_l0_sci_20240105_20240105_v00-01.pkts
-   curl -X GET -H "Accept: application/json" https://api.dev.imap-mission.com/download/imap_swe_l0_sci_20240105_20240105_v00-01.pkts
+   curl -X GET -H "Accept: application/json" https://api.dev.imap-mission.com/download/imap/swe/l0/2024/01/imap_swe_l0_sci_20240105_20240105_v00-01.pkts
 
 **Possible Responses:**
 

@@ -20,7 +20,7 @@ paths:
           required: true
           description: |
             The full path to the file to upload, relative to the ``IMAP_DATA_DIR`` environment variable or the user's
-            current working directory. (e.g. ``{IMAP_DATA_DIR}/swe/l0/2024/01/imap_swe_l0_sci_20240105_20240105_v00-01.pkts``).
+            current working directory. (e.g. ``{IMAP_DATA_DIR}/imap/swe/l0/2024/01/imap_swe_l0_sci_20240105_20240105_v00-01.pkts``).
             The filename must be a valid IMAP filename that follows the conventions described
             `here <https://imap-processing.readthedocs.io/en/latest/development-guide/style-guide/naming-conventions.html#data-product-file-naming-conventions>`_.
           schema:
@@ -54,9 +54,9 @@ paths:
         - in: path
           name: filepath-or-filename
           description: |
-            The filename to download (e.g. ``imap_swe_l0_sci_20240105_20240105_v00-01.pkts``, optionally including the
-            full filepath (e.g. ``swe/l0/2024/01/imap_swe_l0_sci_20240105_20240105_v00-01.pkts``). The filename
-            must be a valid IMAP filename that follows the conventions described
+            The full path to the file to download (e.g.
+            ``imap/swe/l0/2024/01/imap_swe_l0_sci_20240105_20240105_v00-01.pkts``). The filename must be a valid IMAP
+            filename that follows the conventions described
             `here <https://imap-processing.readthedocs.io/en/latest/development-guide/style-guide/naming-conventions.html#data-product-file-naming-conventions>`_.
           required: true
           schema:
