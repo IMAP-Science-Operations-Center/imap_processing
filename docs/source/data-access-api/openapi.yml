@@ -43,6 +43,14 @@ paths:
                 type: array
                 items:
                   type: string
+        '409':
+          description: File already exists
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
 
   '/download/{filepath}':
     get:
@@ -72,7 +80,16 @@ paths:
                   type: string
                   format: uri
         '400':
-          description: Unsuccessful download
+          description: Missing filename
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                  format: uri
+        '404':
+          description: File not found
           content:
             application/json:
               schema:

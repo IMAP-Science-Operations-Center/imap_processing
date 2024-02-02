@@ -55,7 +55,8 @@ interacting with the API.
 .. code-block:: json
 
    {"statusCode": 302, "headers": {"Content-Type": "text/html", "Location": "s3://sds-data/imap/swe/l0/2024/01/imap_swe_l0_sci_20240105_20240105_v00-01"}, "body": {"download_url": "s3://sds-data/imap/swe/l0/2024/01/imap_swe_l0_sci_20240105_20240105_v00-01"}}
-   {"statusCode": 400, "body": "Not a valid S3 URI.  Example input: s3://bucket/path/file.ext"}
+   {"statusCode": 400, "body": "No file requested for download. Please provide a filename in the path. Eg. /download/path/to/file/filename.pkts"}
+   {"statusCode": 404, "body": "File not found, make sure you include the full path to the file in the request, e.g. /download/path/to/file/filename.pkts"}
 
 
 .. openapi:: openapi.yml
