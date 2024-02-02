@@ -1,5 +1,3 @@
-.. _codice:
-
 IMAP Data Access
 ================
 
