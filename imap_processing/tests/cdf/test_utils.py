@@ -25,7 +25,7 @@ def test_write_cdf(tmp_path):
 
     fname = write_cdf(dataset, descriptor="test-descriptor")
     assert fname.exists()
-    assert fname.name == "imap_test_l1_test-descriptor_20100101_v01.cdf"
+    assert fname.name == "imap_test_l1_test-descriptor_20100101_20100101_v01.cdf"
     # Created automatically for us
     dir_structure = fname.parts[-5:-1]
     # instrument, level, year, month
@@ -34,7 +34,7 @@ def test_write_cdf(tmp_path):
     # Test an explicit directory doesn't create that structure
     filename = write_cdf(dataset, descriptor="test-descriptor", directory=tmp_path)
     assert filename.exists()
-    assert filename.name == "imap_test_l1_test-descriptor_20100101_v01.cdf"
+    assert filename.name == "imap_test_l1_test-descriptor_20100101_20100101_v01.cdf"
     # Created automatically for us
     dir_structure = filename.parts[-5:-1]
     # It should be the same as the tmp_path structure (minus the file name)
