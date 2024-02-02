@@ -9,6 +9,10 @@ various endpoints that are supported and how to use them.
 
 The API can be accessed from the following URL: https://api.dev.imap-mission.com
 
+The `imap-data-access <https://github.com/IMAP-Science-Operations-Center/imap-data-access>`_
+repository also provides programmatic access and a command-line utility for
+interacting with the API.
+
 
 .. openapi:: openapi.yml
    :group:
