@@ -44,7 +44,7 @@ paths:
                 items:
                   type: string
 
-  '/download/{filepath-or-filename}':
+  '/download/{filepath}':
     get:
       tags:
         - Download
@@ -52,7 +52,7 @@ paths:
       operationId: download
       parameters:
         - in: path
-          name: filepath-or-filename
+          name: filepath
           description: |
             The full path to the file to download (e.g.
             ``imap/swe/l0/2024/01/imap_swe_l0_sci_20240105_20240105_v00-01.pkts``). The filename must be a valid IMAP
