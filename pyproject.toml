@@ -47,11 +47,11 @@ pytest = {version=">=6.2.5", optional=true}
 pytest-cov = {version="^4.0.0", optional=true}
 ruff = {version=">=0.1.7", optional=true}
 sphinx = {version="*", optional=true}
-sphinxcontrib-openapi = "^0.8.3"
+sphinxcontrib-openapi = {version="^0.8.3", optional=true}
 
 [tool.poetry.extras]
 dev = ["pre-commit", "ruff"]
-doc = ["numpydoc", "pydata-sphinx-theme", "sphinx"]
+doc = ["numpydoc", "pydata-sphinx-theme", "sphinx", "sphinxcontrib-openapi"]
 test = ["pytest", "pytest-cov"]
 tools= ["pandas", "openpyxl"]
 
