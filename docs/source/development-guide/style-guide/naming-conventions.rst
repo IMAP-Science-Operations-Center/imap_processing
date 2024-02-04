@@ -14,8 +14,8 @@ The general filename convention is as follows::
     imap_<instrument>_<datalevel>_<descriptor>_<startdate>_<enddate>_<version>.<extension>
 
 * ``<instrument>`` is the IMAP instrument associated with the data product. Acceptable values include: ``codice``,
-  ``glows``, ``hi-45``, ``hi-90``, ``hit``, ``idex``, ``lo``, ``mag``, ``swapi``, ``swe``, ``ultra-45``, and
-  ``ultra-90``
+  ``codice-hi``, ``codice-lo``, ``glows``, ``hi-45``, ``hi-90``, ``hit``, ``idex``, ``lo``, ``mag``, ``swapi``, ``swe``,
+  ``ultra-45``, and ``ultra-90``
 
 * ``<datalevel>`` is the data level for the data product.  Acceptable values depend on the instrument:
 
@@ -35,7 +35,7 @@ The general filename convention is as follows::
   ``burst-7`` for 'burst' mode and the 7th repointing). This field can have any text or numbers as long as it doesn't
   include underscores. The following is a list of expected descriptors for each instrument:
 
-  * CoDICE: ``hi``, ``lo``
+  * CoDICE: ``priority``, ``sw-angular``, ``nsw-angular``, ``hskp``, ``eng``, ``pha``, ``sw-species``, ``nsw-species``, ``omni``, ``sectored``
   * GLOWS: ``histogram``, ``de``, ``<pointing number>``
   * HIT: TBD
   * IDEX: TBD
@@ -61,9 +61,9 @@ Here are a few examples of acceptable filenames:
 
   An IDEX L0 packet file containing data from the single day of ``2026-12-06``
 
-* ``imap_codice_l1a_lo_20261206_20261207_v01-01.cdf``
+* ``imap_codice-lo_l1a_pha_20261206_20261207_v01-01.cdf``
 
-  A version ``01-01`` CoDICE L1a data product called ``lo`` containing data from ``2026-12-06`` to ``2026-12-07``
+  A version ``01-01`` CoDICE-Lo L1a data product called ``pha`` containing data from ``2026-12-06`` to ``2026-12-07``
 
 * ``imap_swe_l2_burst_20261206_20261206_v01-02.cdf``
 
