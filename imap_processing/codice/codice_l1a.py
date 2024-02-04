@@ -59,7 +59,7 @@ class CoDICEL1a:
         length : int
             The number of bits to generate
         """
-        return [random.randomint(0, 1) for _ in range(length)]
+        return [random.randint(0, 1) for _ in range(length)]
 
     def decompress_science_data(self):
         """Decompress the compressed science values.

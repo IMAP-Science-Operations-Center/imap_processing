@@ -24,7 +24,7 @@ def decom_test_data() -> list:
     """
 
     packet_file = Path(
-        f"{imap_module_directory}/codice/tests/data/"
+        f"{imap_module_directory}/codice/data/"
         f"raw_ccsds_20230822_122700Z_idle.bin"
     )
     Path(f"{imap_module_directory}/codice/packet_definitions/P_COD_NHK.xml")
@@ -51,7 +51,7 @@ def validation_data() -> pd.core.frame.DataFrame:
 
     # Read in the CSV file
     validation_file = Path(
-        f"{imap_module_directory}/codice/tests/data/"
+        f"{imap_module_directory}/codice/data/"
         f"idle_export_raw.COD_NHK_20230822_122700.csv"
     )
     validation_data = pd.read_csv(validation_file, index_col="SHCOARSE")
@@ -79,7 +79,7 @@ def test_eu_hk_data(
     l1a_hk_ds = create_dataset(decom_test_data)
     eu_hk_data = convert_raw_to_eu(
         l1a_hk_ds,
-        imap_module_directory / "codice/tests/data/eu_unit_lookup_table.csv",
+        imap_module_directory / "codice/data/eu_unit_lookup_table.csv",
         "P_COD_NHK",
     )
     first_data = decom_test_data[0]

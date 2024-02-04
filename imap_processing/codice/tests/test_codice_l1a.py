@@ -7,7 +7,7 @@ import space_packet_parser
 
 from imap_processing import imap_module_directory
 from imap_processing.codice.codice_l0 import decom_packets
-from imap_processing.codice.codice_l1a import codice_l1a
+from imap_processing.codice.codice_l1a import process_codice_l1a
 
 
 @pytest.fixture(scope="session")
@@ -21,7 +21,7 @@ def l0_test_data() -> list:
     """
 
     packet_file = Path(
-        f"{imap_module_directory}/codice/tests/data/"
+        f"{imap_module_directory}/codice/data/"
         f"raw_ccsds_20230822_122700Z_idle.bin"
     )
     packets = decom_packets(packet_file)
@@ -43,6 +43,6 @@ def test_codice_l1a(
         pytest fixture used to provide a temporary directory during testing
     """
 
-    cdf_filename = codice_l1a(l0_test_data, tmp_path)
+    cdf_filename = process_codice_l1a(l0_test_data, tmp_path)
 
     assert Path(cdf_filename).name == "imap_codice_l1a_hk_20100101_v01.cdf"
