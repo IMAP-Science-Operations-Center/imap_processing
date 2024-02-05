@@ -12,8 +12,10 @@ Use
 
 import argparse
 import os
+import re
 import sys
 from abc import ABC, abstractmethod
+from json import loads
 from pathlib import Path
 
 import imap_data_access
@@ -30,12 +32,61 @@ import imap_processing
 # In code:
 #   call cdf.utils.write_cdf
 from imap_processing.cdf.utils import write_cdf
+from imap_processing.mag.l1a.mag_l1a import mag_l1a
 from imap_processing.swe.l1a.swe_l1a import swe_l1a
 from imap_processing.swe.l1b.swe_l1b import swe_l1b
+
+# todo: does the existing api work now?
+
+
+def extract_filename_components(filename: str):
+    """
+    Extract all components from filename.
+
+    Parameters
+    ----------
+    filename : str
+        Path of dependency data.
+
+    Returns
+    -------
+    components : dict
+        Dictionary containing components.
+
+    """
+    pattern = (
+        r"^imap_"
+        r"(?P<instrument>[^_]+)_"
+        r"(?P<datalevel>[^_]+)_"
+        r"(?P<descriptor>[^_]*)_?"  # optional
+        r"(?P<startdate>\d{8})_"
+        r"(?P<enddate>\d{8})_"
+        r"(?P<version>v\d{2}-\d{2})"
+        r"\.(cdf|pkts)$"
+    )
+    match = re.match(pattern, filename)
+    if match is None:
+        return
+    components = match.groupdict()
+    return components
 
 
 def _parse_args():
     """Parse the command line arguments.
+
+    The expected input format is:
+    "Command": [
+        "--instrument",
+        "swe",
+        "--level",
+        "l1b",
+        "--time",
+        "(2023-09-27, 2023-09-27)",
+        "--file_path",
+        "imap/swe/l1b/2023/09/imap_swe_l1b_lveng-hk_20230927_20230927_v01-00.cdf",
+        "--dependency",
+        "[{'instrument': 'swe', 'level': 'l0', 'version': 'v00-01'}]"
+      ]
 
     Returns
     -------
@@ -61,9 +112,13 @@ def _parse_args():
         "The data level to process. Acceptable values are: "
         f"{imap_processing.PROCESSING_LEVELS}"
     )
-    depdency_help = (
+    time_help = (
+        'The time range to process. This is a string in the format: "(start_time, '
+        'end_time)", or "(start_time)" if only one time is provided.'
+    )
+    dependency_help = (
         "Dependency information in str format."
-        "Example: '[{instrument: swe, level: l0, version: v00-01}]'"
+        "Example: '[{'instrument': 'swe', 'level': 'l0', 'version': 'v00-01'}]'"
     )
 
     parser = argparse.ArgumentParser(prog="imap_cli", description=description)
@@ -82,13 +137,20 @@ def _parse_args():
         "--file_path",
         type=str,
         required=True,
-        help="Full path to the file in the S3 bucket.",
+        help="Full path to the output file in the S3 bucket.",
+    )
+    # TODO: update batch-starter to include this argument
+    parser.add_argument(
+        "--time",
+        type=str,
+        required=False,
+        help=time_help,
     )
     parser.add_argument(
         "--dependency",
         type=str,
         required=True,
-        help=depdency_help,
+        help=dependency_help,
     )
     parser.add_argument("--data-dir", type=str, required=False, help=data_dir_help)
     args = parser.parse_args()
@@ -130,11 +192,44 @@ class ProcessInstrument(ABC):
     ----------
     level : str
         The data level to process (e.g. ``l1a``)
+    file_path : str
+        The full path to the output file in the S3 bucket
+    dependencies : list[dict]
+        A list of dictionaries containing the dependencies for the instrument in the
+        format: "[{'instrument': 'swe', 'level': 'l0', 'version': 'v00-01'}]"
     """
 
-    def __init__(self, level, file_path):
+    def __init__(self, level: str, file_path: str, dependency_str: str) -> None:
         self.level = level
         self.file_path = file_path
+        # Convert string into a dictionary
+        self.dependencies = loads(dependency_str.replace("'", '"'))
+
+    def download_dependencies(self):
+        """Download the dependencies for the instrument.
+
+        Returns
+        -------
+        file_list: list[str]
+            A list of file paths to the downloaded dependencies.
+        """
+        file_list = []
+        for dep in self.dependencies:
+            val = imap_data_access.query(
+                instrument=dep["instrument"],
+                data_level=dep["level"],
+                version=dep["version"],
+            )
+            if not val:
+                raise FileNotFoundError(
+                    f"File not found for required dependency "
+                    f"{dep} while attempting to create file "
+                    f"{self.file_path}. This should never occur"
+                    f"in real processing."
+                )
+
+            file_list.append(imap_data_access.download(val[0]["file_path"]))
+        return file_list
 
     @abstractmethod
     def process(self):
@@ -196,6 +291,19 @@ class Mag(ProcessInstrument):
     def process(self):
         """Perform MAG specific processing."""
         print(f"Processing MAG {self.level}")
+        file_paths = self.download_dependencies()
+
+        if self.level == "l1a":
+            # File path is expected output file path
+            if len(file_paths) > 1:
+                raise ValueError(
+                    f"Unexpected dependencies found for MAG L1A:"
+                    f"{file_paths}. Expected only one dependency."
+                )
+            print(f"Creating mag L1A file in {self.file_path}")
+            mag_l1a(file_paths[0], self.file_path)
+        print(self.file_path)
+        imap_data_access.upload(self.file_path)
 
 
 class Swapi(ProcessInstrument):
@@ -204,6 +312,8 @@ class Swapi(ProcessInstrument):
     def process(self):
         """Perform SWAPI specific processing."""
         print(f"Processing SWAPI {self.level}")
+        # for dep in self.dependency:
+        #     imap_data_access.query()
 
 
 class Swe(ProcessInstrument):
@@ -282,9 +392,8 @@ def main():
     args = _parse_args()
 
     _validate_args(args)
-
     cls = getattr(sys.modules[__name__], args.instrument.capitalize())
-    instrument = cls(args.level, args.file_path)
+    instrument = cls(args.level, args.file_path, args.dependency)
     instrument.process()
 
 
