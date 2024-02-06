@@ -36,8 +36,6 @@ from imap_processing.mag.l1a.mag_l1a import mag_l1a
 from imap_processing.swe.l1a.swe_l1a import swe_l1a
 from imap_processing.swe.l1b.swe_l1b import swe_l1b
 
-# todo: does the existing api work now?
-
 
 def extract_filename_components(filename: str):
     """
@@ -112,10 +110,6 @@ def _parse_args():
         "The data level to process. Acceptable values are: "
         f"{imap_processing.PROCESSING_LEVELS}"
     )
-    time_help = (
-        'The time range to process. This is a string in the format: "(start_time, '
-        'end_time)", or "(start_time)" if only one time is provided.'
-    )
     dependency_help = (
         "Dependency information in str format."
         "Example: '[{'instrument': 'swe', 'level': 'l0', 'version': 'v00-01'}]'"
@@ -139,13 +133,7 @@ def _parse_args():
         required=True,
         help="Full path to the output file in the S3 bucket.",
     )
-    # TODO: update batch-starter to include this argument
-    parser.add_argument(
-        "--time",
-        type=str,
-        required=False,
-        help=time_help,
-    )
+
     parser.add_argument(
         "--dependency",
         type=str,
@@ -300,9 +288,8 @@ class Mag(ProcessInstrument):
                     f"Unexpected dependencies found for MAG L1A:"
                     f"{file_paths}. Expected only one dependency."
                 )
-            print(f"Creating mag L1A file in {self.file_path}")
             mag_l1a(file_paths[0], self.file_path)
-        print(self.file_path)
+
         imap_data_access.upload(self.file_path)
 
 
