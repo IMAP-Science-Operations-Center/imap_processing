@@ -2,6 +2,7 @@ import pandas as pd
 import pytest
 
 from imap_processing import decom
+from imap_processing.ultra.l0.decom_ultra import decom_ultra_aux_packets
 
 
 @pytest.fixture()
@@ -37,22 +38,18 @@ def test_aux_mode(decom_test_data):
         assert packet.data["RIGHTDEFLECTIONCHARGE"].derived_value == "MODE0"
 
 
-def test_aux_decom(decom_test_data, xtce_aux_test_path):
+def test_aux_decom(ccsds_path, xtce_aux_path, aux_test_path):
     """This function reads validation data and checks that
     decom data matches validation data for auxiliary packet"""
 
-    df = pd.read_csv(xtce_aux_test_path, index_col="MET")
+    decom_ultra = decom_ultra_aux_packets(ccsds_path, xtce_aux_path)
+    df = pd.read_csv(aux_test_path, index_col="MET")
 
-    for packet in decom_test_data:
-        time = packet.data["SHCOARSE"].derived_value
-        subdf = df.loc[time]
-
-        assert subdf.SpinStartSeconds == packet.data["TIMESPINSTART"].derived_value
-        assert (
-            subdf.SpinStartSubseconds == packet.data["TIMESPINSTARTSUB"].derived_value
-        )
-        assert subdf.SpinDuration == packet.data["DURATION"].derived_value
-        assert subdf.SpinNumber == packet.data["SPINNUMBER"].derived_value
-        assert subdf.SpinDataTime == packet.data["TIMESPINDATA"].derived_value
-        assert subdf.SpinPeriod == packet.data["SPINPERIOD"].derived_value
-        assert subdf.SpinPhase == packet.data["SPINPHASE"].derived_value
+    assert (df.SpinStartSeconds == decom_ultra["time_spin_start"]).all()
+    assert (df.SpinStartSeconds == decom_ultra["time_spin_start"]).all()
+    assert (df.SpinStartSubseconds == decom_ultra["time_spin_start_sub"]).all()
+    assert (df.SpinDuration == decom_ultra["duration"]).all()
+    assert (df.SpinNumber == decom_ultra["spin_number"]).all()
+    assert (df.SpinDataTime == decom_ultra["time_spin_data"]).all()
+    assert (df.SpinPeriod == decom_ultra["spin_period"]).all()
+    assert (df.SpinPhase == decom_ultra["spin_phase"]).all()

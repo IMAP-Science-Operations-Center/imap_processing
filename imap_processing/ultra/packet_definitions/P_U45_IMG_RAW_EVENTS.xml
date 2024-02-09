@@ -137,10 +137,14 @@
 			</xtce:IntegerParameterType>
 			<xtce:BinaryParameterType name="eventdata">
                 <xtce:UnitSet/>
-                <xtce:BinaryDataEncoding bitOrder="mostSignificantBitFirst">
+                <xtce:BinaryDataEncoding>
                     <xtce:SizeInBits>
-                        <xtce:FixedValue>16600</xtce:FixedValue>
-                    </xtce:SizeInBits>
+            			<xtce:DynamicValue>
+              				<xtce:ParameterInstanceRef parameterRef="COUNT"/>
+							<!--Equation: (COUNT)*166 -->
+              				<xtce:LinearAdjustment intercept="0" slope="166"/>
+            			</xtce:DynamicValue>
+          			</xtce:SizeInBits>
                 </xtce:BinaryDataEncoding>
             </xtce:BinaryParameterType>
 		</xtce:ParameterTypeSet>

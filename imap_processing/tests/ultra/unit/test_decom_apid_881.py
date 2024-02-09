@@ -5,7 +5,7 @@ import pandas as pd
 import pytest
 
 from imap_processing import decom
-from imap_processing.ultra.l0.decom_ultra import decom_ultra_packets
+from imap_processing.ultra.l0.decom_ultra import decom_ultra_img_rates_packets
 
 
 @pytest.fixture()
@@ -18,8 +18,8 @@ def decom_test_data(ccsds_path, xtce_image_rates_path):
 @pytest.fixture()
 def decom_ultra(ccsds_path, xtce_image_rates_path):
     """Data for decom_ultra"""
-    data_packet_list = decom_ultra_packets(ccsds_path, xtce_image_rates_path)
-    return data_packet_list
+    data_packets = decom_ultra_img_rates_packets(ccsds_path, xtce_image_rates_path)
+    return data_packets
 
 
 def test_image_rate_length(decom_test_data):
@@ -28,11 +28,11 @@ def test_image_rate_length(decom_test_data):
     assert len(decom_test_data) == total_packets
 
 
-def test_image_rate_decom(decom_ultra, xtce_image_rates_test_path):
+def test_image_rate_decom(decom_ultra, image_rates_test_path):
     """This function reads validation data and checks that decom data
     matches validation data for image rate packet"""
 
-    df = pd.read_csv(xtce_image_rates_test_path, index_col="MET")
+    df = pd.read_csv(image_rates_test_path, index_col="MET")
 
     assert (df.SID == decom_ultra["science_id"]).all()
     assert (df.Spin == decom_ultra["spin_data"]).all()
