@@ -28,6 +28,14 @@ def decom_packets(packet_file: str, xtce_packet_definition: str):
     packet_definition = xtcedef.XtcePacketDefinition(xtce_packet_definition)
     packet_parser = parser.PacketParser(packet_definition)
 
+    count = 0
+
     with open(packet_file, "rb") as binary_data:
         packet_generator = packet_parser.generator(binary_data)
+
+        for packet in packet_generator:
+            if packet.header["PKT_APID"].derived_value == 896:
+                count += 1
+                print(packet.header["SRC_SEQ_CTR"].derived_value)
+
         return list(packet_generator)
