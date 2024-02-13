@@ -120,7 +120,7 @@ def _validate_args(args):
         if not data_path.exists():
             raise ValueError(f"Data directory {args.data_dir} does not exist")
         # Set the data directory to the user-supplied value
-        imap_processing.config["DATA_DIR"] = data_path
+        imap_data_access.config["DATA_DIR"] = data_path
 
 
 class ProcessInstrument(ABC):
