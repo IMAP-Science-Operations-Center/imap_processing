@@ -1,17 +1,24 @@
+"""Tests the L1 processing for decommutated IDEX data"""
+
+from pathlib import Path
+
 import numpy as np
 import pytest
 import xarray as xr
 from cdflib.xarray import cdf_to_xarray
 from cdflib.xarray.xarray_to_cdf import ISTPError
 
-from imap_processing import idex
+from imap_processing import idex, imap_module_directory
 from imap_processing.cdf.utils import write_cdf
 from imap_processing.idex.idex_packet_parser import PacketParser
 
 
 @pytest.fixture()
 def decom_test_data():
-    return PacketParser("imap_processing/tests/idex/imap_idex_l0_20230725_v01-00.pkts")
+    test_file = Path(
+        f"{imap_module_directory}/tests/idex/imap_idex_l0_raw_20230725_20230725_v01-00.pkts"
+    )
+    return PacketParser(test_file)
 
 
 def test_idex_cdf_file(decom_test_data):
@@ -75,7 +82,7 @@ def test_descriptor_in_file_name(decom_test_data):
 def test_idex_tof_high_data_from_cdf(decom_test_data):
     # Verify that a sample of the data is correct inside the CDF file
     # impact_14_tof_high_data.txt has been verified correct by the IDEX team
-    with open("imap_processing/tests/idex/impact_14_tof_high_data.txt") as f:
+    with open(f"{imap_module_directory}/tests/idex/impact_14_tof_high_data.txt") as f:
         data = np.array([int(line.rstrip()) for line in f])
 
     file_name = write_cdf(decom_test_data.data, descriptor="test")
