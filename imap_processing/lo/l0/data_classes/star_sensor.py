@@ -6,13 +6,11 @@ from bitstring import ConstBitStream
 
 from imap_processing.ccsds.ccsds_data import CcsdsData
 from imap_processing.lo.l0.utils.bit_decompression import (
+    DECOMPRESSION_TABLES,
     Decompress,
     decompress_int,
-    decompression_tables,
 )
 from imap_processing.lo.l0.utils.lo_base import LoBase
-
-decompression_lookup = decompression_tables()
 
 
 @dataclass
@@ -24,13 +22,13 @@ class StarSensor(LoBase):
 
     Attributes
     ----------
-    SHCOARSE: int
+    SHCOARSE : int
         Spacecraft time.
-    COUNT: int
+    COUNT : int
         number of star sensor samples
-    DATA_COMPRESSED: str
+    DATA_COMPRESSED : str
         star sensor compressed binary data
-    DATA: list(int)
+    DATA : list(int)
         decompressed star sensor data list
 
     Methods
@@ -46,6 +44,8 @@ class StarSensor(LoBase):
     DATA_COMPRESSED: str
     DATA: np.array
 
+    # TODO: Because test data does not currently exist, the init function contents
+    # must be commented out for the unit tests to run properly
     def __init__(self, packet, software_version: str, packet_file_name: str):
         super().__init__(software_version, packet_file_name, CcsdsData(packet.header))
         self.parse_data(packet)
@@ -73,7 +73,7 @@ class StarSensor(LoBase):
             extracted_integer = bitstream.read(bit_length).uint
             # The Star Sensor packet uses a 12 to 8 bit compression
             decompressed_integer = decompress_int(
-                extracted_integer, Decompress.DECOMPRESS8TO12, decompression_lookup
+                extracted_integer, Decompress.DECOMPRESS8TO12, DECOMPRESSION_TABLES
             )
             data_list.append(decompressed_integer)
         self.DATA = np.array(data_list)

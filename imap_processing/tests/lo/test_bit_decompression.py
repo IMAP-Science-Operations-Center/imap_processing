@@ -1,9 +1,9 @@
 import pytest
 
 from imap_processing.lo.l0.utils.bit_decompression import (
+    DECOMPRESSION_TABLES,
     Decompress,
     decompress_int,
-    decompression_tables,
 )
 
 
@@ -20,7 +20,7 @@ def test_decompress_int(decompression, compressed_value, expected_decompressed_i
 
     ## Act
     decompressed_int = decompress_int(
-        compressed_value, decompression, decompression_tables()
+        compressed_value, decompression, DECOMPRESSION_TABLES
     )
 
     ## Assert
@@ -35,4 +35,4 @@ def test_decompress_int_invalid_decompression():
 
     ## Act / Assert
     with pytest.raises(ValueError, match="Invalid decompression method"):
-        decompress_int(compressed_value, decompression, decompression_tables())
+        decompress_int(compressed_value, decompression, DECOMPRESSION_TABLES)

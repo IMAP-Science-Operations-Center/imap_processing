@@ -4,14 +4,13 @@ from dataclasses import dataclass
 import numpy as np
 from bitstring import ConstBitStream
 
+from imap_processing.ccsds.ccsds_data import CcsdsData
 from imap_processing.lo.l0.utils.bit_decompression import (
+    DECOMPRESSION_TABLES,
     Decompress,
     decompress_int,
-    decompression_tables,
 )
 from imap_processing.lo.l0.utils.lo_base import LoBase
-
-decompression_lookup = decompression_tables()
 
 
 @dataclass
@@ -110,11 +109,12 @@ class ScienceCounts(LoBase):
     HYDROGEN: np.ndarray
     OXYGEN: np.ndarray
 
+    # TODO: Because test data does not currently exist, the init function contents
+    # must be commented out for the unit tests to run properly
     def __init__(self, packet, software_version: str, packet_file_name: str):
-        # super().__init__(software_version, packet_file_name, CcsdsData(packet.header))
-        # self.parse_data(packet)
-        # self._parse_binary()
-        pass
+        super().__init__(software_version, packet_file_name, CcsdsData(packet.header))
+        self.parse_data(packet)
+        self._parse_binary()
 
     def _parse_binary(self):
         """Parse the science count binary chunk for each section of data."""
@@ -272,7 +272,7 @@ class ScienceCounts(LoBase):
             # decompression look up is passed in rather than being accessed within this
             # function to avoid reading the csvs each time this function is used.
             decompressed_integer = decompress_int(
-                extracted_integer, decompression, decompression_lookup
+                extracted_integer, decompression, DECOMPRESSION_TABLES
             )
             data_list.append(decompressed_integer)
         return np.array(data_list)
