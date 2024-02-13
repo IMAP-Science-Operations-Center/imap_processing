@@ -3,10 +3,9 @@
 import xarray as xr
 
 from imap_processing import imap_module_directory
-from imap_processing.cdf.utils import write_cdf
 from imap_processing.swe import swe_cdf_attrs
 from imap_processing.swe.l1b.swe_l1b_science import swe_l1b_science
-from imap_processing.swe.utils.swe_utils import SWEAPID, filename_descriptors
+from imap_processing.swe.utils.swe_utils import SWEAPID
 from imap_processing.utils import convert_raw_to_eu
 
 
@@ -20,8 +19,8 @@ def swe_l1b(l1a_dataset: xr.Dataset):
 
     Returns
     -------
-    pathlib.Path
-        Path to the L1B file.
+    xarray.Dataset
+        Processed data
 
     Raises
     ------
@@ -44,12 +43,11 @@ def swe_l1b(l1a_dataset: xr.Dataset):
     )
     if apid == SWEAPID.SWE_SCIENCE:
         data = swe_l1b_science(eu_data)
+        if data is None:
+            print("No data to write to CDF")
+            return
     else:
         data = eu_data
         # Update global attributes to l1b global attributes
         data.attrs.update(swe_cdf_attrs.swe_l1b_global_attrs.output())
-    mode = f"{data['APP_MODE'].data[0]}-" if apid == SWEAPID.SWE_APP_HK else ""
-    return write_cdf(
-        data,
-        descriptor=f"{mode}{filename_descriptors.get(apid)}",
-    )
+    return data

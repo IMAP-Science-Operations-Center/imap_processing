@@ -4,7 +4,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "imap-processing"
-version = "0.1.0"
+version = "0.2.0"
 description = "IMAP Science Operations Center Processing"
 authors = ["IMAP SDC Developers <imap-sdc@lists.lasp.colorado.edu>"]
 readme = "README.md"
@@ -31,6 +31,7 @@ classifiers = [
 [tool.poetry.dependencies]
 bitstring = ">=4.0.1"
 cdflib = ">=1.2.3"
+imap-data-access = ">=0.2.0"
 python = ">=3.9,<4"
 space_packet_parser = ">=4.1.0"
 spiceypy = ">=6.0.0"
@@ -46,11 +47,11 @@ pytest = {version=">=6.2.5", optional=true}
 pytest-cov = {version="^4.0.0", optional=true}
 ruff = {version=">=0.1.7", optional=true}
 sphinx = {version="*", optional=true}
-sphinxcontrib-openapi = "^0.8.3"
+sphinxcontrib-openapi = {version="^0.8.3", optional=true}
 
 [tool.poetry.extras]
 dev = ["pre-commit", "ruff"]
-doc = ["numpydoc", "pydata-sphinx-theme", "sphinx"]
+doc = ["numpydoc", "pydata-sphinx-theme", "sphinx", "sphinxcontrib-openapi"]
 test = ["pytest", "pytest-cov"]
 tools= ["pandas", "openpyxl"]
 

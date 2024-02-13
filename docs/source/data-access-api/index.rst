@@ -9,23 +9,35 @@ various endpoints that are supported and how to use them.
 
 The API can be accessed from the following URL: https://api.dev.imap-mission.com
 
+The `imap-data-access <https://github.com/IMAP-Science-Operations-Center/imap-data-access>`_
+repository also provides programmatic access and a command-line utility for
+interacting with the API.
+
 
 .. openapi:: openapi.yml
    :group:
-   :include: /upload/science
+   :include: /upload
 
 **Example Usage:**
 
 .. code-block:: bash
 
-   curl -X GET -H "Accept: application/json" https://api.dev.imap-mission.com/upload/codice/l1a/2026/01/imap_codice_l1a_lo_20260101_20260102_v01-01.cdf
+   curl -X GET -H "Accept: application/json" https://api.dev.imap-mission.com/upload/imap/swe/l0/2024/01/imap_swe_l0_sci_20240105_20240105_v00-01.pkts
 
 **Possible Responses:**
 
 .. code-block:: json
 
-   {"statusCode": 200, "body": "https://sds-data.s3.amazon.com/imap/codice/l1a/2026/01/imap_codice_l1a_lo_20260101_20260102_v01-01.cdf?<credentials-string>"}
-   {"statusCode": 400, "body": "A pre-signed URL could not be generated. Please ensure that the file name matches mission file naming conventions."}
+   {"statusCode": 200, "body": "https://sds-data-<aws_account_number>.s3.amazon.com/imap/swe/l0/2024/01/imap_swe_l0_sci_20240105_20240105_v00-01.pkts?<credentials-string>"}
+   {"statusCode": 400, "body": "Invalid filename. Expected - <mission>_<instrument>_<datalevel>_<descriptor>_<startdate>_<enddate>_<version>.<extension>"}
+   {"statusCode": 400, "body": "Invalid mission."}
+   {"statusCode": 400, "body": "Invalid instrument. Please choose from {'ultra-45', 'codice', 'glows', 'hit', 'lo', 'mag', 'swe', 'hi-45', 'idex', 'ultra-90', 'hi-90', 'swapi'}"}
+   {"statusCode": 400, "body": "Invalid data level. Please choose from {'l0', 'l1', 'l1a', 'l1b', 'l1c', 'l1d', 'l2'}"}
+   {"statusCode": 400, "body": "Invalid start date format. Please use YYYYMMDD format."}
+   {"statusCode": 400, "body": "Invalid end date format. Please use YYYYMMDD format."}
+   {"statusCode": 400, "body": "Invalid version format. Please use vxx-xx format."}
+   {"statusCode": 400, "body": "Invalid extension. Extension should be pkts for data level l0 and cdf for data level higher than l0"}
+   {"statusCode": 409, "body": "https://sds-data-<aws_account_number>.s3.amazon.com/imap/swe/l0/2024/01/imap_swe_l0_sci_20240105_20240105_v00-01.pkts already exists."}
 
 
 .. openapi:: openapi.yml
@@ -36,15 +48,15 @@ The API can be accessed from the following URL: https://api.dev.imap-mission.com
 
 .. code-block:: bash
 
-   curl -X GET -H "Accept: application/json" /codice/l1a/2026/01/imap_codice_l1a_lo_20260101_20260102_v01-01.cdf
-   curl -X GET -H "Accept: application/json" imap_codice_l1a_lo_20260101_20260102_v01-01.cdf
+   curl -X GET -H "Accept: application/json" https://api.dev.imap-mission.com/download/imap/swe/l0/2024/01/imap_swe_l0_sci_20240105_20240105_v00-01.pkts
 
 **Possible Responses:**
 
 .. code-block:: json
 
-   {"statusCode": 302, "headers": {"Content-Type": "text/html", "Location": "s3://sds-data/imap/codice/l1a/2026/01/imap_codice_l1a_lo_20260101_20260102_v01-01"}, "body": {"download_url": "s3://sds-data/imap/codice/l1a/2026/01/imap_codice_l1a_lo_20260101_20260102_v01-01"}}
-   {"statusCode": 400, "body": "Not a valid S3 URI.  Example input: s3://bucket/path/file.ext"}
+   {"statusCode": 302, "headers": {"Content-Type": "text/html", "Location": "s3://sds-data/imap/swe/l0/2024/01/imap_swe_l0_sci_20240105_20240105_v00-01"}, "body": {"download_url": "s3://sds-data/imap/swe/l0/2024/01/imap_swe_l0_sci_20240105_20240105_v00-01"}}
+   {"statusCode": 400, "body": "No file requested for download. Please provide a filename in the path. Eg. /download/path/to/file/filename.pkts"}
+   {"statusCode": 404, "body": "File not found, make sure you include the full path to the file in the request, e.g. /download/path/to/file/filename.pkts"}
 
 
 .. openapi:: openapi.yml
@@ -55,11 +67,11 @@ The API can be accessed from the following URL: https://api.dev.imap-mission.com
 
 .. code-block:: bash
 
-   curl -X GET -H "Accept: application/json" https://api.dev.imap-mission.com/query?instrument=mag&data_level=l0&descriptor=burst&start_date=20230112&end_date=20230113&version=*&extension=pkts
+   curl -X GET -H "Accept: application/json" https://api.dev.imap-mission.com/query?instrument=swe&data_level=l0&descriptor=sci&start_date=20240105&end_date=20240105&extension=pkts
 
 **Possible Responses:**
 
 .. code-block:: json
 
-   {"statusCode": 200, "headers": {"Content-Type": "application/json", "Access-Control-Allow-Origin": "*"}, "body": "[('mag', 'l0', 'burst', '20230112', '20230113', 'v01-01', 'pkts'), ('mag', 'l0', 'burst', '20230112', '20230113', 'v01-02', 'pkts')]"}
-   {"statusCode": 400, "headers": {"Content-Type": "application/json", "Access-Control-Allow-Origin": "*"}, "body": "<param> is not a valid query parameter. Valid query parameters are: <valid parameters>"}
+   {"statusCode": 200, "headers": {"Content-Type": "application/json", "Access-Control-Allow-Origin": "*"}, "body": [{"file_path": "imap/swe/l0/2024/01/imap_swe_l0_sci_20240105_20240105_v00-05.pkts", "instrument": "swe", "data_level": "l0", "descriptor": "sci", "start_date": "20240105", "end_date": "20240105", "version": "v00-05", "extension": "pkts"}]}
+   {"statusCode": 400, "headers": {"Content-Type": "application/json", "Access-Control-Allow-Origin": "*"}, "body": "<param> is not a valid query parameter. Valid query parameters are: ['file_path', 'instrument', 'data_level', 'descriptor', 'start_date', 'end_date', 'version', 'extension']"}

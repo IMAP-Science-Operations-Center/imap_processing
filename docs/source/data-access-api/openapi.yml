@@ -9,7 +9,7 @@ info:
 
 paths:
 
-  '/upload/science/{filepath}':
+  '/upload/{filepath}':
     get:
       tags:
         - Upload
@@ -20,7 +20,7 @@ paths:
           required: true
           description: |
             The full path to the file to upload, relative to the ``IMAP_DATA_DIR`` environment variable or the user's
-            current working directory. (e.g. ``{IMAP_DATA_DIR}/codice/l1a/2026/01/imap_codice_l1a_lo_20260101_20260102_v01-01.cdf``).
+            current working directory. (e.g. ``{IMAP_DATA_DIR}/imap/swe/l0/2024/01/imap_swe_l0_sci_20240105_20240105_v00-01.pkts``).
             The filename must be a valid IMAP filename that follows the conventions described
             `here <https://imap-processing.readthedocs.io/en/latest/development-guide/style-guide/naming-conventions.html#data-product-file-naming-conventions>`_.
           schema:
@@ -43,8 +43,16 @@ paths:
                 type: array
                 items:
                   type: string
+        '409':
+          description: File already exists
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
 
-  '/download/{filepath-or-filename}':
+  '/download/{filepath}':
     get:
       tags:
         - Download
@@ -52,11 +60,11 @@ paths:
       operationId: download
       parameters:
         - in: path
-          name: filepath-or-filename
+          name: filepath
           description: |
-            The filename to download (e.g. ``imap_codice_l1a_lo_20260101_20260102_v01-01.cdf``, optionally including the
-            full filepath (e.g. ``codice/l1a/2026/01/imap_codice_l1a_lo_20260101_20260102_v01-01.cdf``). The filename
-            must be a valid IMAP filename that follows the conventions described
+            The full path to the file to download (e.g.
+            ``imap/swe/l0/2024/01/imap_swe_l0_sci_20240105_20240105_v00-01.pkts``). The filename must be a valid IMAP
+            filename that follows the conventions described
             `here <https://imap-processing.readthedocs.io/en/latest/development-guide/style-guide/naming-conventions.html#data-product-file-naming-conventions>`_.
           required: true
           schema:
@@ -72,7 +80,16 @@ paths:
                   type: string
                   format: uri
         '400':
-          description: Unsuccessful download
+          description: Missing filename
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                  format: uri
+        '404':
+          description: File not found
           content:
             application/json:
               schema:

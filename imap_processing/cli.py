@@ -11,11 +11,27 @@ Use
 """
 
 import argparse
+import os
 import sys
 from abc import ABC, abstractmethod
 from pathlib import Path
 
+import imap_data_access
+from cdflib.xarray import cdf_to_xarray
+
 import imap_processing
+
+# TODO: change how we import things and also folder
+# structure may?
+# From this:
+#   from imap_processing.cdf.utils import write_cdf
+# To this:
+#   from imap_processing import cdf
+# In code:
+#   call cdf.utils.write_cdf
+from imap_processing.cdf.utils import write_cdf
+from imap_processing.swe.l1a.swe_l1a import swe_l1a
+from imap_processing.swe.l1b.swe_l1b import swe_l1b
 
 
 def _parse_args():
@@ -45,11 +61,36 @@ def _parse_args():
         "The data level to process. Acceptable values are: "
         f"{imap_processing.PROCESSING_LEVELS}"
     )
+    depdency_help = (
+        "Dependency information in str format."
+        "Example: '[{instrument: swe, level: l0, version: v00-01}]'"
+    )
 
     parser = argparse.ArgumentParser(prog="imap_cli", description=description)
-    parser.add_argument("--data-dir", type=str, required=False, help=data_dir_help)
     parser.add_argument("--instrument", type=str, required=True, help=instrument_help)
     parser.add_argument("--level", type=str, required=True, help=level_help)
+    # TODO: change this to be this:
+    # And then make sure places that uses
+    # self.file_path to use it as Path object.
+    # parser.add_argument(
+    #     "--file_path",
+    #     type=Path,
+    #     required=True,
+    #     help="Full path to the file in the S3 bucket.",
+    # )
+    parser.add_argument(
+        "--file_path",
+        type=str,
+        required=True,
+        help="Full path to the file in the S3 bucket.",
+    )
+    parser.add_argument(
+        "--dependency",
+        type=str,
+        required=True,
+        help=depdency_help,
+    )
+    parser.add_argument("--data-dir", type=str, required=False, help=data_dir_help)
     args = parser.parse_args()
 
     return args
@@ -79,7 +120,7 @@ def _validate_args(args):
         if not data_path.exists():
             raise ValueError(f"Data directory {args.data_dir} does not exist")
         # Set the data directory to the user-supplied value
-        imap_processing.config["DATA_DIR"] = data_path
+        imap_data_access.config["DATA_DIR"] = data_path
 
 
 class ProcessInstrument(ABC):
@@ -91,8 +132,9 @@ class ProcessInstrument(ABC):
         The data level to process (e.g. ``l1a``)
     """
 
-    def __init__(self, level):
+    def __init__(self, level, file_path):
         self.level = level
+        self.file_path = file_path
 
     @abstractmethod
     def process(self):
@@ -169,7 +211,56 @@ class Swe(ProcessInstrument):
 
     def process(self):
         """Perform SWE specific processing."""
+        # self.file_path example:
+        # imap/swe/l1a/2023/09/imap_swe_l1a_sci_20230927_20230927_v01-00.cdf
         print(f"Processing SWE {self.level}")
+        if self.level == "l1a":
+            # TODO: change this after we have updated dependency or download
+            # path from Batch Job command.
+            # create download path
+            download_path = self.file_path.replace("l1a", "l0").replace("cdf", "pkts")
+            print(f"download_path: {download_path}")
+            output_path = imap_data_access.download(download_path)
+            processed_data = swe_l1a(output_path)
+            for data in processed_data:
+                # write data to cdf
+                cdf_file_path = write_cdf(
+                    data=data["data"], descriptor=data["descriptor"]
+                )
+                # TODO: undo this after demo. overwrite version with
+                # what was passed.
+                current_version = str(cdf_file_path).split(".")[0][-6:]
+                new_version = str(output_path).split(".")[0][-6:]
+                cdf_file_path = Path.replace(
+                    cdf_file_path,
+                    str(cdf_file_path).replace(current_version, new_version),
+                )
+                imap_data_access.upload(cdf_file_path)
+                print(f"uploaded {cdf_file_path}")
+        elif self.level == "l1b":
+            # create download path
+            download_path = self.file_path.replace("l1b", "l1a")
+            print(f"download_path: {download_path}")
+            output_path = imap_data_access.download(download_path)
+            print(f"downloaded folder {output_path}")
+            # read CDF file
+            l1a_dataset = cdf_to_xarray(output_path)
+            processed_data = swe_l1b(l1a_dataset)
+            descriptor = os.path.basename(self.file_path).split("_")[3]
+            processed_file_path = write_cdf(data=processed_data, descriptor=descriptor)
+            print(f"processed file path: {processed_file_path}")
+            # TODO: undo this after demo. overwrite version with
+            # what was passed.
+            current_version = str(processed_file_path).split(".")[0][-6:]
+            new_version = str(output_path).split(".")[0][-6:]
+            processed_file_path = Path.replace(
+                processed_file_path,
+                str(processed_file_path).replace(current_version, new_version),
+            )
+            imap_data_access.upload(processed_file_path)
+            print(f"finished uploading - {processed_file_path}")
+        else:
+            print("No code to process this level")
 
 
 class Ultra(ProcessInstrument):
@@ -193,7 +284,7 @@ def main():
     _validate_args(args)
 
     cls = getattr(sys.modules[__name__], args.instrument.capitalize())
-    instrument = cls(args.level)
+    instrument = cls(args.level, args.file_path)
     instrument.process()
 
 

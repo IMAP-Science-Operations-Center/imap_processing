@@ -1,0 +1,10 @@
+# Dockerfile that installs imap_processing and its dependencies
+FROM public.ecr.aws/docker/library/python:3.10-slim
+RUN pip install imap_processing
+
+# Create the /mnt/spice directory
+WORKDIR /app/data
+ENV IMAP_DATA_DIR /app/data
+
+# Define the entrypoint of the container
+ENTRYPOINT ["imap_cli"]
