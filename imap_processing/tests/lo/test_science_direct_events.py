@@ -11,14 +11,15 @@ from imap_processing.lo.l0.science_direct_events import ScienceDirectEvents
 # the need for the bitstring import will also go away.
 
 
-@pytest.mark.skip(reason="no data to initialize with")
+# @pytest.mark.skip(reason="no data to initialize with")
 @pytest.fixture()
 def de():
     de = ScienceDirectEvents("fake_packet", "0", "fakepacketname")
+    de.COUNT = 1
     return de
 
 
-@pytest.mark.skip(reason="no data to initialize with")
+# @pytest.mark.skip(reason="no data to initialize with")
 @pytest.fixture()
 def tof_data():
     TOFData = namedtuple(
@@ -27,39 +28,42 @@ def tof_data():
     return TOFData
 
 
-@pytest.mark.skip(reason="no data to initialize with")
+# @pytest.mark.skip(reason="no data to initialize with")
 def test_find_decompression_case(de):
     # Arrange
-    de.DATA = bitstring.Bits(bin="000100010101")
+    de.DATA = "000100010101"
+    bitstream = bitstring.ConstBitStream(bin=de.DATA)
     case_number_expected = 1
 
     # Act
-    case_number = de._find_decompression_case()
+    case_number = de._find_decompression_case(bitstream)
 
     # Assert
     assert case_number == case_number_expected
 
 
-@pytest.mark.skip(reason="no data to initialize with")
+# @pytest.mark.skip(reason="no data to initialize with")
 def test_find_tof_decoder_for_case(de, tof_data):
     # Arrange
-    de.DATA = bitstring.Bits(bin="000100010101")
+    de.DATA = "000100010101"
+    bitstream = bitstring.ConstBitStream(bin=de.DATA)
     tof_decoder_expected = tof_data(3, 0, 10, 9, 9, 0, 0, 12)
 
-    case_number = de._find_decompression_case()
+    case_number = de._find_decompression_case(bitstream)
 
     # Act
-    tof_decoder = de._find_tof_decoder_for_case(case_number)
+    tof_decoder = de._find_tof_decoder_for_case(case_number, bitstream)
 
     # Assert
     assert tof_decoder == tof_decoder_expected
 
 
-@pytest.mark.skip(reason="no data to initialize with")
+# @pytest.mark.skip(reason="no data to initialize with")
 def test_read_tof_calculation_table(de):
     # Arrange
-    de.DATA = bitstring.Bits(bin="000100010101")
-    case_number = de._find_decompression_case()
+    de.DATA = "000100010101"
+    bitstream = bitstring.ConstBitStream(bin=de.DATA)
+    case_number = de._find_decompression_case(bitstream)
     binary_strings_expected = {
         "ENERGY": bitstring.Bits(bin="0000000000000011"),
         "POS": bitstring.Bits(bin=""),
@@ -78,11 +82,12 @@ def test_read_tof_calculation_table(de):
     assert tof_calc_bin == binary_strings_expected
 
 
-@pytest.mark.skip(reason="no data to initialize with")
+# @pytest.mark.skip(reason="no data to initialize with")
 def test_find_remaining_bits(de):
     # Arrange
-    de.DATA = bitstring.Bits(bin="000100010101")
-    case_number = de._find_decompression_case()
+    de.DATA = "000100010101"
+    bitstream = bitstring.ConstBitStream(bin=de.DATA)
+    case_number = de._find_decompression_case(bitstream)
     tof_calc = de._read_tof_calculation_table(case_number)
     remaining_coeff_expected = {
         "TIME": [
@@ -149,12 +154,13 @@ def test_find_remaining_bits(de):
     assert remaining_coeff == remaining_coeff_expected
 
 
-@pytest.mark.skip(reason="no data to initialize with")
+# @pytest.mark.skip(reason="no data to initialize with")
 def test_parse_binary_for_gold_triple(de):
     # Arrange
-    de.DATA = bitstring.Bits(bin="000010010101001101011100111100111011101001111101")
-    case_number = de._find_decompression_case()
-    tof_decoder = de._find_tof_decoder_for_case(case_number)
+    de.DATA = "000010010101001101011100111100111011101001111101"
+    bitstream = bitstring.ConstBitStream(bin=de.DATA)
+    case_number = de._find_decompression_case(bitstream)
+    tof_decoder = de._find_tof_decoder_for_case(case_number, bitstream)
     parsed_bits_expected = {
         "ENERGY": bitstring.Bits(bin="001"),
         "POS": bitstring.Bits(bin=""),
@@ -167,20 +173,19 @@ def test_parse_binary_for_gold_triple(de):
     }
 
     # Act
-    parsed_bits = de._parse_binary(case_number, tof_decoder)
-
+    parsed_bits = de._parse_binary(case_number, tof_decoder, bitstream)
     # Assert
     assert parsed_bits == parsed_bits_expected
 
 
-@pytest.mark.skip(reason="no data to initialize with")
+# @pytest.mark.skip(reason="no data to initialize with")
 def test_parse_binary_for_silver_triple(de):
     # Arrange
-    de.DATA = bitstring.Bits(
-        bin="000000010101001101011100111100111011101001111101101101"
-    )
-    case_number = de._find_decompression_case()
-    tof_decoder = de._find_tof_decoder_for_case(case_number)
+
+    de.DATA = "000000010101001101011100111100111011101001111101101101"
+    bitstream = bitstring.ConstBitStream(bin=de.DATA)
+    case_number = de._find_decompression_case(bitstream)
+    tof_decoder = de._find_tof_decoder_for_case(case_number, bitstream)
     parsed_bits_expected = {
         "ENERGY": bitstring.Bits(bin="001"),
         "POS": bitstring.Bits(bin=""),
@@ -193,18 +198,19 @@ def test_parse_binary_for_silver_triple(de):
     }
 
     # Act
-    parsed_bits = de._parse_binary(case_number, tof_decoder)
+    parsed_bits = de._parse_binary(case_number, tof_decoder, bitstream)
 
     # Assert
     assert parsed_bits == parsed_bits_expected
 
 
-@pytest.mark.skip(reason="no data to initialize with")
+# @pytest.mark.skip(reason="no data to initialize with")
 def test_parse_binary_for_bronze_triple(de):
     # Arrange
-    de.DATA = bitstring.Bits(bin="0100100101010011010111001111001")
-    case_number = de._find_decompression_case()
-    tof_decoder = de._find_tof_decoder_for_case(case_number)
+    de.DATA = "01001001010100110101110011110010"
+    bitstream = bitstring.ConstBitStream(bin=de.DATA)
+    case_number = de._find_decompression_case(bitstream)
+    tof_decoder = de._find_tof_decoder_for_case(case_number, bitstream)
     parsed_bits_expected = {
         "ENERGY": bitstring.Bits(bin="001"),
         "POS": bitstring.Bits(bin="01"),
@@ -213,22 +219,24 @@ def test_parse_binary_for_bronze_triple(de):
         "TOF2": bitstring.Bits(bin=""),
         "TOF3": bitstring.Bits(bin=""),
         "CKSM": bitstring.Bits(bin=""),
-        "TIME": bitstring.Bits(bin="11001111001"),
+        "TIME": bitstring.Bits(bin="110011110010"),
     }
 
     # Act
-    parsed_bits = de._parse_binary(case_number, tof_decoder)
+    parsed_bits = de._parse_binary(case_number, tof_decoder, bitstream)
+    print(parsed_bits)
 
     # Assert
     assert parsed_bits == parsed_bits_expected
 
 
-@pytest.mark.skip(reason="no data to initialize with")
+# @pytest.mark.skip(reason="no data to initialize with")
 def test_parse_binary_for_not_bronze_triple(de):
     # Arrange
-    de.DATA = bitstring.Bits(bin="010000010101001101011100111100101110")
-    case_number = de._find_decompression_case()
-    tof_decoder = de._find_tof_decoder_for_case(case_number)
+    de.DATA = "010000010101001101011100111100101110"
+    bitstream = bitstring.ConstBitStream(bin=de.DATA)
+    case_number = de._find_decompression_case(bitstream)
+    tof_decoder = de._find_tof_decoder_for_case(case_number, bitstream)
     parsed_bits_expected = {
         "ENERGY": bitstring.Bits(bin="001"),
         "POS": bitstring.Bits(bin=""),
@@ -241,21 +249,22 @@ def test_parse_binary_for_not_bronze_triple(de):
     }
 
     # Act
-    parsed_bits = de._parse_binary(case_number, tof_decoder)
+    parsed_bits = de._parse_binary(case_number, tof_decoder, bitstream)
 
     # Assert
     assert parsed_bits == parsed_bits_expected
 
 
-@pytest.mark.skip(reason="no data to initialize with")
+# @pytest.mark.skip(reason="no data to initialize with")
 def test_decode_fields(de):
     # Arrange
-    de.DATA = bitstring.Bits(bin="000010010101001101011100111100111011101001111101")
-    case_number = de._find_decompression_case()
-    tof_decoder = de._find_tof_decoder_for_case(case_number)
+    de.DATA = "000010010101001101011100111100111011101001111101"
+    bitstream = bitstring.ConstBitStream(bin=de.DATA)
+    case_number = de._find_decompression_case(bitstream)
+    tof_decoder = de._find_tof_decoder_for_case(case_number, bitstream)
     tof_calc = de._read_tof_calculation_table(case_number)
     remaining_coeffs = de._find_remaining_bit_coefficients(tof_calc)
-    parsed_bits = de._parse_binary(case_number, tof_decoder)
+    parsed_bits = de._parse_binary(case_number, tof_decoder, bitstream)
 
     energy_expected = 0.16
     position_expected = 0
