@@ -225,8 +225,6 @@ def process_codice_l1a(packets, cdf_directory: str) -> str:
     ----------
     packets : list[space_packet_parser.parser.Packet]
         Decom data list that contains all APIDs
-    cdf_directory : str
-        The directory in which to write the output CDF file.
 
     Returns
     -------
@@ -259,9 +257,7 @@ def process_codice_l1a(packets, cdf_directory: str) -> str:
     # Write data to CDF
     cdf_filename = write_cdf(
         data,
-        mode="",
-        description="hk",
-        directory=cdf_directory,
+        descriptor="hk",
     )
 
     return cdf_filename

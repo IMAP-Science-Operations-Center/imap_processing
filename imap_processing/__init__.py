@@ -1,4 +1,13 @@
-__version__ = "0.1.0"
+"""Interstellar Mapping and Acceleration Probe (IMAP) data processing package.
+
+This package contains the IMAP data processing software. The package is
+organized into submodules for each instrument. Each instrument submodule
+contains code for each processing level.
+
+There are utilities to read and write IMAP data files in
+the CDF file format, and to interact with the SPICE toolkit.
+"""
+__version__ = "0.2.0"
 
 # When imap_processing is installed using pip, we need to be able to find the
 # packet definitions directory path.
@@ -9,7 +18,7 @@ from pathlib import Path
 # Eg. imap_module_directory = /usr/local/lib/python3.11/site-packages/imap_processing
 imap_module_directory = Path(__file__).parent
 
-instruments = [
+INSTRUMENTS = [
     "codice",
     "glows",
     "hi",
@@ -22,7 +31,7 @@ instruments = [
     "ultra",
 ]
 
-processing_levels = {
+PROCESSING_LEVELS = {
     "codice": ["l0", "l1a", "l1b", "l2"],
     "glows": ["l0", "l1a", "l1b", "l2"],
     "hi": ["l0", "l1a", "l1b", "l1c", "l2"],
