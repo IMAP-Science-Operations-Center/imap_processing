@@ -237,10 +237,14 @@ def decom_ultra_img_rates_packets(packet_file: str, xtce: str):
 
 def process_image(pp, binary_data, rows, cols, blocks_per_row, pixels_per_block):
     # p[53][179]
-    p = [[0 for _ in range(cols)] for _ in range(rows)]  # Initialize the pixel matrix
+    p = [[0 for _ in range(cols)] for _ in range(rows)]
+    final = [
+        [0 for _ in range(cols)] for _ in range(rows)
+    ]  # Initialize the pixel matrix
     pos = 0  # Starting position in the binary string
 
     for i in range(rows):
+        print("hi")
         for j in range(blocks_per_row):
             w, pos = read_n_bits(binary_data, 4, pos)  # Read the width for the block
             for k in range(pixels_per_block):
@@ -264,10 +268,11 @@ def process_image(pp, binary_data, rows, cols, blocks_per_row, pixels_per_block)
                 # keeps only the last 8 bits of the result of pp - delta_f and discards all other higher bits
                 # This operation ensures that the result is within the range of an 8-bit byte (0-255)
                 p[i][column_index] = (pp - delta_f) & 0xFF
+                final[i][column_index] = log_decompression_8bit(p[i][column_index])
                 pp = p[i][column_index]
         pp = p[i][0]
 
-    return p
+    return final
 
 
 def decom_image_ena_phxtof_hi_ang_packets(packet_file: str, xtce: str):

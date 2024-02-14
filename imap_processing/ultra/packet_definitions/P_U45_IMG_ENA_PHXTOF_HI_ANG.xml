@@ -190,7 +190,7 @@
 				<xtce:LongDescription>Integration start delay (ms)</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="P00" parameterTypeRef="uint8">
-				<xtce:LongDescription>Integration start delay (ms)</xtce:LongDescription>
+				<xtce:LongDescription>Starting pixel</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="PACKETDATA" parameterTypeRef="packetdata">
 				<xtce:LongDescription>Image Packet Data</xtce:LongDescription>
