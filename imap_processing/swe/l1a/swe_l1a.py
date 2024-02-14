@@ -2,7 +2,8 @@
 
 import logging
 
-from imap_processing.cdf.utils import write_cdf
+from imap_processing import imap_module_directory
+from imap_processing.swe.l0 import decom_swe
 from imap_processing.swe.l1a.swe_science import swe_science
 from imap_processing.swe.utils.swe_utils import (
     SWEAPID,
@@ -12,7 +13,19 @@ from imap_processing.swe.utils.swe_utils import (
 from imap_processing.utils import group_by_apid, sort_by_time
 
 
-def swe_l1a(packets, cdf_filepath):
+def decom_data(file_path):
+    """Read test data from test folder."""
+    # TODO: replace test folder after demo
+    test_folder_path = "tests/swe/l0_data"
+    packet_files = list(imap_module_directory.glob(f"{test_folder_path}/*.bin"))
+
+    data_list = []
+    for packet_file in packet_files:
+        data_list.extend(decom_swe.decom_packets(packet_file))
+    return data_list
+
+
+def swe_l1a(file_path):
     """Process SWE l0 data into l1a data.
 
     Receive all L0 data file. Based on appId, it
@@ -21,18 +34,17 @@ def swe_l1a(packets, cdf_filepath):
 
     Parameters
     ----------
-    packets: list
-        Decom data list that contains all appIds
-    cdf_filepath: str
-        Folder path of where to write CDF file
+    file_path: pathlib.Path
+        Path where data is downloaded
 
     Returns
     -------
-    str
-        Path name of where CDF file was created.
-        This is used to upload file from local to s3.
-        TODO: test this later.
+    List
+        List of xarray.Dataset
     """
+    # TODO: figure out how to do this better after demo
+    packets = decom_data(file_path)
+    processed_data = []
     # group data by appId
     grouped_data = group_by_apid(packets)
 
@@ -51,9 +63,8 @@ def swe_l1a(packets, cdf_filepath):
             data = create_dataset(packets=sorted_packets)
 
         # write data to CDF
-        return write_cdf(
-            data,
-            mode=f"{data['APP_MODE'].data[0]}" if apid == SWEAPID.SWE_APP_HK else "",
-            description=filename_descriptors.get(apid),
-            directory=cdf_filepath,
-        )
+        mode = f"{data['APP_MODE'].data[0]}-" if apid == SWEAPID.SWE_APP_HK else ""
+        descriptor = f"{mode}{filename_descriptors.get(apid)}"
+
+        processed_data.append({"data": data, "descriptor": descriptor})
+    return processed_data

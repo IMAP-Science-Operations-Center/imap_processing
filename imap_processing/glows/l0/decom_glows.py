@@ -7,6 +7,7 @@ from bitstring import ReadError
 from space_packet_parser import parser, xtcedef
 
 from imap_processing import imap_module_directory
+from imap_processing.ccsds.ccsds_data import CcsdsData
 from imap_processing.glows import version
 from imap_processing.glows.l0.glows_l0_data import DirectEventL0, HistogramL0
 
@@ -57,20 +58,34 @@ def decom_packets(
 
     with open(packet_file_path, "rb") as binary_data:
         try:
-            glows_packets = glows_parser.generator(
-                binary_data,
-                buffer_read_size_bytes=5790778,
-            )
+            glows_packets = glows_parser.generator(binary_data)
 
             for packet in glows_packets:
                 apid = packet.header["PKT_APID"].derived_value
                 # Do something with the packet data
                 if apid == GlowsParams.HIST_APID.value:
-                    hist_l0 = HistogramL0(packet, version, filename)
+                    values = [
+                        item.derived_value
+                        if item.derived_value is not None
+                        else item.raw_value
+                        for item in packet.data.values()
+                    ]
+                    hist_l0 = HistogramL0(
+                        version, filename, CcsdsData(packet.header), *values
+                    )
                     histdata.append(hist_l0)
 
                 if apid == GlowsParams.DE_APID.value:
-                    de_l0 = DirectEventL0(packet, version, filename)
+                    values = [
+                        item.derived_value
+                        if item.derived_value is not None
+                        else item.raw_value
+                        for item in packet.data.values()
+                    ]
+
+                    de_l0 = DirectEventL0(
+                        version, filename, CcsdsData(packet.header), *values
+                    )
                     dedata.append(de_l0)
 
         except ReadError as e:

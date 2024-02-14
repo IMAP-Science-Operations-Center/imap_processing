@@ -18,7 +18,7 @@ these items are provided below in the guide.
 
 #. Use a :ref:`forking workflow <git-and-github-workflow>` for git/GitHub contributions.
 #. Use ``PEP8`` for :ref:`python coding conventions <python-coding>` (with a few exceptions).
-#. Use ``PEP257`` and ``numpydocs`` for :ref:`docstring conventions <api-documentation>` (with a few exceptions), and
+#. Use ``PEP257`` and ``numpydocs`` for :ref:`docstring conventions <python-docstrings>` (with a few exceptions), and
    update the documentation builds where applicable.
 #. Update the :ref:`poetry environment <poetry-environment>` when dependencies change.
 #. Be mindful of committing credentials and other :ref:`sensitive information <security>`.
@@ -35,7 +35,7 @@ to these conventions.
 
     git-and-github-workflow
     python-coding
-    api-documentation
+    python-docstrings
     poetry-environment
     security
     naming-conventions

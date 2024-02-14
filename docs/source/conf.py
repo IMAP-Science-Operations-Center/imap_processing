@@ -23,7 +23,7 @@ sys.path.insert(0, Path("../../imap_processing").resolve())
 # -- Project information -----------------------------------------------------
 
 project = "imap_processing"
-copyright = "2023, Regents of the University of Colorado"
+copyright = "2024, Regents of the University of Colorado"
 author = "IMAP Science Operations Center"
 
 # The full version, including alpha/beta/rc tags
@@ -37,12 +37,12 @@ release = imap_processing.__version__
 # ones.
 extensions = [
     "sphinx.ext.autodoc",
+    "sphinx.ext.autosectionlabel",
     "sphinx.ext.autosummary",
     "sphinx.ext.intersphinx",  # Link to other projects' documentation
     "sphinx.ext.githubpages",  # Helpful for publishing to gh-pages
     "sphinx.ext.napoleon",
-    "sphinx.ext.autosectionlabel",
-    "myst_parser",
+    "sphinxcontrib.openapi",
     "numpydoc",
 ]
 
@@ -85,6 +85,7 @@ intersphinx_mapping = {
     "pytest": ("https://pytest.org/en/stable/", None),
     "python": ("https://docs.python.org/3/", None),
     "xarray": ("https://docs.xarray.dev/en/stable/", None),
+    "bitstring": ("https://bitstring.readthedocs.io/en/stable/", None),
 }
 
 # Reference targets not found
@@ -96,6 +97,8 @@ nitpick_ignore_regex = [
     (r"py:.*", r".*IntEnum.*"),
     (r"py:.*", r".*space_packet_parser.*"),
     (r"py:.*", r".*CoDICECompression.*"),
+    (r"py:.*", r".*LoBase.*"),
+    (r"py:.*", r".*ScienceDirectEvents.*"),
 ]
 
 # Ignore the inherited members from the <instrument>APID IntEnum class

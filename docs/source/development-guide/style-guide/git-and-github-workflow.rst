@@ -53,8 +53,8 @@ well.*
        git remote add upstream git@github.com:IMAP-Science-Operations-Center/imap_processing.git  # for SSH
 
 
-#. Install the development dependencies and pre-commit hooks. These hooks will automatically run the tools
-   `black <https://black.readthedocs.io/en/stable/>`_ and `ruff <https://beta.ruff.rs/docs/>`_ on your code changes
+#. Install the development dependencies and pre-commit hooks. These hooks will automatically run the
+   `ruff <https://beta.ruff.rs/docs/>`_ formatter and linter on your code changes
    before commits:
 
    .. code-block:: bash
@@ -84,7 +84,7 @@ well.*
         git add <new or changed files you want to commit>
         git commit -m 'Explanation of the changes'
 
-   With the pre-commit hooks installed, you may need to make fixes to any warnings/errors reported by ``black`` and/or
+   With the pre-commit hooks installed, you may need to make fixes to any warnings/errors reported by
    ``ruff`` and try committing your changes again.
 
 #. Push the feature branch to your personal fork's GitHub repository:
@@ -114,11 +114,18 @@ Keeping your fork updated
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
 You can keep your personal fork up-to-date with the ``IMAP-Science-Operations-Center`` ``imap_processing`` repository by
-fetching and pulling the ``upstream`` remote:
+either fetching and rebasing with the ``upstream`` remote, or fetching and pulling with the ``upstream`` remote:
 
 .. code-block:: bash
 
     git checkout dev
+    git fetch upstream
+    git rebase -i upstream/dev
+
+or
+
+.. code-block:: bash
+
     git fetch upstream dev
     git pull upstream/dev
 

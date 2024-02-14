@@ -23,8 +23,9 @@ The explicit code interfaces and structure are described in the :ref:`code-docum
    development-guide/index
    project-management/index
    external-tools/index
+   data-access-api/index
 
-If you make use of any imap_processing code, please consider citing it in your research.
+If you make use of any ``imap_processing`` code, please consider citing it in your research.
 TODO: Add a Zenodo DOI badge here.
 
 Contributing to IMAP
@@ -53,4 +54,3 @@ exploration.
 Before contributing, please read through our :ref:`style-guide-overview`.
 
 For more information on contributing to open science initiatives and to learn about tools and technologies, you can look to the NASA TOPS `Open Science 101 <https://nasa.github.io/Transform-to-Open-Science/take-os101/>`_ for free classes on Open Science and open source projects.
-

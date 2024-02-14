@@ -32,7 +32,8 @@
         "infra",
         "example",
         "maintenance",
-        "review"
+        "review",
+        "doc"
       ]
     },
     {
@@ -42,7 +43,9 @@
       "profile": "https://github.com/laspsandoval",
       "contributions": [
         "review",
-        "code"
+        "code",
+        "infra",
+        "ideas"
       ]
     },
     {
@@ -55,7 +58,8 @@
         "ideas",
         "infra",
         "review",
-        "doc"
+        "doc",
+        "maintenance"
       ]
     },
     {
@@ -68,7 +72,8 @@
         "ideas",
         "infra",
         "review",
-        "maintenance"
+        "maintenance",
+        "doc"
       ]
     },
     {
@@ -81,7 +86,8 @@
         "doc",
         "ideas",
         "infra",
-        "review"
+        "review",
+        "maintenance"
       ]
     },
     {
@@ -94,7 +100,8 @@
         "ideas",
         "infra",
         "review",
-        "doc"
+        "doc",
+        "maintenance"
       ]
     },
     {
@@ -103,7 +110,17 @@
       "avatar_url": "https://avatars.githubusercontent.com/u/41062454?v=4",
       "profile": "https://github.com/bryan-harter",
       "contributions": [
-        "code"
+        "code",
+        "doc"
+      ]
+    },
+    {
+      "login": "mstrumik",
+      "name": "mstrumik",
+      "avatar_url": "https://avatars.githubusercontent.com/u/142874888?v=4",
+      "profile": "https://github.com/mstrumik",
+      "contributions": [
+        "review"
       ]
     }
   ],
