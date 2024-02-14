@@ -1,6 +1,6 @@
-<?xml version='1.0' encoding='utf-8'?>
-<xtce:SpaceSystem xmlns:xtce="http://www.omg.org/space" nsmap="{'xtce': 'http://www.omg.org/space'}" name="P_U45_IMG_ENA_PHXTOF_HI_ANG">
-	<xtce:Header date="2023-08-23" version="1.0" author="IMAP SDC" />
+<?xml version='1.0' encoding='UTF-8'?>
+<xtce:SpaceSystem xmlns:xtce="http://www.omg.org/space/xtce" name="P_U45_IMG_ENA_PHXTOF_HI_ANG">
+	<xtce:Header date="2024-02-24T07:53:00MST" version="1.0" author="IMAP SDC" />
 	<xtce:TelemetryMetaData>
 		<xtce:ParameterTypeSet>
 			<xtce:IntegerParameterType name="uint0" signed="false">
@@ -137,15 +137,21 @@
 			</xtce:IntegerParameterType>
 			<xtce:BinaryParameterType name="packetdata">
                 <xtce:UnitSet/>
-                <xtce:BinaryDataEncoding bitOrder="mostSignificantBitFirst">
+                <xtce:BinaryDataEncoding>
                     <xtce:SizeInBits>
-                        <xtce:FixedValue>32688</xtce:FixedValue>
-                    </xtce:SizeInBits>
+            			<xtce:DynamicValue>
+              				<xtce:ParameterInstanceRef parameterRef="PKT_LEN"/>
+							<!--Equation: (PKT_LEN+7)*8-120 -->
+							<!--7: packet header + 1 -->
+							<!--120: start bit -->
+              				<xtce:LinearAdjustment intercept="-64" slope="8"/>
+            			</xtce:DynamicValue>
+          			</xtce:SizeInBits>
                 </xtce:BinaryDataEncoding>
             </xtce:BinaryParameterType>
 		</xtce:ParameterTypeSet>
 		<xtce:ParameterSet>
-			<!--CCSDS Header Elements-->
+            <!--CCSDS Header Elements-->
 			<xtce:Parameter name="VERSION" parameterTypeRef="uint3">
 				<xtce:LongDescription>CCSDS Packet Version Number (always 0)</xtce:LongDescription>
 			</xtce:Parameter>
@@ -171,13 +177,28 @@
 			<xtce:Parameter name="SHCOARSE" parameterTypeRef="uint32">
 				<xtce:LongDescription>CCSDS Packet Time Stamp (coarse time)</xtce:LongDescription>
 			</xtce:Parameter>
+			<xtce:Parameter name="SID" parameterTypeRef="uint8">
+				<xtce:LongDescription>Science ID</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SPIN" parameterTypeRef="uint8">
+				<xtce:LongDescription>Spin number at integration start</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="ABORTFLAG" parameterTypeRef="uint1">
+				<xtce:LongDescription>Integration aborted?</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="STARTDELAY" parameterTypeRef="uint15">
+				<xtce:LongDescription>Integration start delay (ms)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="P00" parameterTypeRef="uint8">
+				<xtce:LongDescription>Integration start delay (ms)</xtce:LongDescription>
+			</xtce:Parameter>
 			<xtce:Parameter name="PACKETDATA" parameterTypeRef="packetdata">
 				<xtce:LongDescription>Image Packet Data</xtce:LongDescription>
 			</xtce:Parameter>
 		</xtce:ParameterSet>
 		<!-- End metadata -->
 		<xtce:ContainerSet>
-			<xtce:SequenceContainer name="CCSDSPacket">
+			<xtce:SequenceContainer name="CCSDSPacket" abstract="true">
 				<xtce:EntryList>
 					<xtce:ParameterRefEntry parameterRef="VERSION" />
 					<xtce:ParameterRefEntry parameterRef="TYPE" />
@@ -188,7 +209,7 @@
 					<xtce:ParameterRefEntry parameterRef="PKT_LEN" />
 				</xtce:EntryList>
 			</xtce:SequenceContainer>
-			<xtce:SequenceContainer name="UltraSciencePacket">
+			<xtce:SequenceContainer name="UltraPHXTOFPacket">
 				<xtce:BaseContainer containerRef="CCSDSPacket">
 					<xtce:RestrictionCriteria>
 						<xtce:Comparison parameterRef="PKT_APID" value="883" useCalibratedValue="false" />
@@ -196,6 +217,11 @@
 				</xtce:BaseContainer>
 				<xtce:EntryList>
 					<xtce:ParameterRefEntry parameterRef="SHCOARSE" />
+					<xtce:ParameterRefEntry parameterRef="SID" />
+					<xtce:ParameterRefEntry parameterRef="SPIN" />
+					<xtce:ParameterRefEntry parameterRef="ABORTFLAG" />
+					<xtce:ParameterRefEntry parameterRef="STARTDELAY" />
+					<xtce:ParameterRefEntry parameterRef="P00" />
 					<xtce:ParameterRefEntry parameterRef="PACKETDATA" />
 				</xtce:EntryList>
 			</xtce:SequenceContainer>

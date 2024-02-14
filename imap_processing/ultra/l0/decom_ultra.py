@@ -5,6 +5,7 @@ from enum import Enum
 from typing import NamedTuple
 
 import numpy as np
+import pandas as pd
 import xarray as xr
 
 from imap_processing import decom
@@ -27,7 +28,7 @@ class UltraParams(Enum):
     ULTRA_AUX = PacketProperties(apid=880, width=None, block=None, len_array=None)
     ULTRA_IMG_RATES = PacketProperties(apid=881, width=5, block=16, len_array=48)
     ULTRA_IMG_ENA_PHXTOF_HI_ANG = PacketProperties(
-        apid=883, width=None, block=None, len_array=None
+        apid=883, width=4, block=15, len_array=None
     )
     ULTRA_IMG_RAW_EVENTS = PacketProperties(
         apid=896, width=None, block=None, len_array=None
@@ -99,7 +100,32 @@ def log_decompression(value: int) -> int:
         return (4096 + m) << (e - 1)
 
 
-def decompress_binary(binary: str, width_bit: int, block: int) -> list:
+def log_decompression_8bit(value: int) -> int:
+    """
+    Perform logarithmic decompression on an 8-bit integer based on a 4-bit exponent
+    and a 4-bit mantissa. The exponent is always less than 13.
+
+    Parameters
+    ----------
+    value : int
+        An 8-bit integer comprised of a 4-bit exponent followed by a 4-bit mantissa.
+
+    Returns
+    -------
+    int
+        The decompressed integer value.
+    """
+    # The exponent e is 4 bits, and the mantissa m is 4 bits
+    e = value >> 4  # Extract the 4 most significant bits for the exponent
+    m = value & 0x0F  # Extract the 4 least significant bits for the mantissa
+
+    if e == 0:
+        return m
+    else:
+        return (16 + m) << (e - 1)
+
+
+def decompress_binary(binary: str, width_bit: int, block: int, len_array) -> list:
     """Decompress a binary string.
 
     Decompress a binary string based on block-width encoding and
@@ -133,10 +159,7 @@ def decompress_binary(binary: str, width_bit: int, block: int) -> list:
         # Read the width of the block
         width, current_position = read_n_bits(binary, width_bit, current_position)
         # If width is 0 or None, we don't have enough bits left
-        if (
-            width is None
-            or len(decompressed_values) >= UltraParams.ULTRA_IMG_RATES.value.len_array
-        ):
+        if width is None or len(decompressed_values) >= len_array:
             break
 
         # For each block, read 16 values of the given width
@@ -190,6 +213,7 @@ def decom_ultra_img_rates_packets(packet_file: str, xtce: str):
                 packet.data["FASTDATA_00"].raw_value,
                 UltraParams.ULTRA_IMG_RATES.value.width,
                 UltraParams.ULTRA_IMG_RATES.value.block,
+                UltraParams.ULTRA_IMG_RATES.value.len_array,
             )
             fastdata_00.append(decompressed_data)
 
@@ -205,6 +229,97 @@ def decom_ultra_img_rates_packets(packet_file: str, xtce: str):
         },
         coords={
             "epoch": met_data,
+        },
+    )
+
+    return ds
+
+
+def process_image(pp, binary_data, rows, cols, blocks_per_row, pixels_per_block):
+    # p[53][179]
+    p = [[0 for _ in range(cols)] for _ in range(rows)]  # Initialize the pixel matrix
+    pos = 0  # Starting position in the binary string
+
+    for i in range(rows):
+        for j in range(blocks_per_row):
+            w, pos = read_n_bits(binary_data, 4, pos)  # Read the width for the block
+            for k in range(pixels_per_block):
+                if w == 0:  # Handle the special case where read(0) should return 0
+                    value = 0
+                else:
+                    value, pos = read_n_bits(
+                        binary_data, w, pos
+                    )  # Read the Δcode using the width w
+
+                if value & 0x01:  # if the least significant bit of value is set (odd)
+                    # value >> 1: shifts bits of value one place to the right
+                    # ~: bitwise NOT operator (flips bits)
+                    delta_f = ~(value >> 1)
+                else:
+                    delta_f = value >> 1
+
+                # Calculate the new pixel value and update pp
+                column_index = j * pixels_per_block + k
+                # 0xff is the hexadecimal representation of the number 255,
+                # keeps only the last 8 bits of the result of pp - delta_f and discards all other higher bits
+                # This operation ensures that the result is within the range of an 8-bit byte (0-255)
+                p[i][column_index] = (pp - delta_f) & 0xFF
+                pp = p[i][column_index]
+        pp = p[i][0]
+
+    return p
+
+
+def decom_image_ena_phxtof_hi_ang_packets(packet_file: str, xtce: str):
+    packets = decom.decom_packets(packet_file, xtce)
+
+    (
+        met_data,
+        science_id,
+        spin_data,
+        abortflag_data,
+        startdelay_data,
+        p00_data,
+        packetdata,
+    ) = ([] for _ in range(7))
+
+    for packet in packets:
+        if (
+            packet.header["PKT_APID"].derived_value
+            == UltraParams.ULTRA_IMG_ENA_PHXTOF_HI_ANG.value.apid
+        ):
+            met_data.append(packet.data["SHCOARSE"].derived_value)
+            science_id.append(packet.data["SID"].derived_value)
+            spin_data.append(packet.data["SPIN"].derived_value)
+            abortflag_data.append(packet.data["ABORTFLAG"].derived_value)
+            startdelay_data.append(packet.data["STARTDELAY"].derived_value)
+            p00_data.append(packet.data["P00"].derived_value)
+            decompressed_data = process_image(
+                packet.data["P00"].derived_value,
+                packet.data["PACKETDATA"].raw_value,
+                54,
+                180,
+                int(180 / 15),
+                15,
+            )
+            packetdata.append(decompressed_data)
+
+    array_data = np.array(packetdata)
+
+    multi_index = pd.MultiIndex.from_arrays(
+        [met_data, science_id], names=("epoch", "science_id")
+    )
+
+    ds = xr.Dataset(
+        {
+            "spin_data": ("measurement", spin_data),
+            "abortflag_data": ("measurement", abortflag_data),
+            "startdelay_data": ("measurement", startdelay_data),
+            "p00_data": ("measurement", p00_data),
+            "packetdata": (("measurement", "row", "col"), array_data),
+        },
+        coords={
+            "measurement": multi_index,
         },
     )
 
@@ -506,8 +621,3 @@ def decom_image_raw_events_packets(packet_file: str, xtce: str):
     )
 
     return ds
-
-
-def decom_image_ena_phxtof_hi_ang_packets(packet_file: str, xtce: str):
-    packets = decom.decom_packets(packet_file, xtce)
-    print("hi")

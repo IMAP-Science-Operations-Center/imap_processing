@@ -40,7 +40,7 @@ def ccsds_path_image_ena_phxtof_hi_ang():
         / "ultra"
         / "test_data"
         / "l0"
-        / "FM45_UltraFM45Extra_TV_Tests_2024-01-22T0930_20240122T093008.CCSDS"
+        / "FM45_TV_Cycle6_Hot_Ops_Front212_20240124T063837.CCSDS"
     )
 
 
@@ -139,7 +139,7 @@ def image_raw_events_test_path():
 @pytest.fixture()
 def image_ena_phxtof_hi_ang_test_path():
     """Returns the xtce auxiliary test data directory."""
-    filename = "ultra45_raw_sc_enaextofhangimg_FM45_UltraFM45Extra_TV_Tests_2024-01-22T0930_20240122T093008.csv"
+    filename = "ultra45_raw_sc_enaphxtofhangimg_FM45_TV_Cycle6_Hot_Ops_Front212_20240124T063837.csv"
     return (
         Path(sys.modules[__name__.split(".")[0]].__file__).parent
         / "tests"
