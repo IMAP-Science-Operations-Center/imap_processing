@@ -1,9 +1,11 @@
-import pytest
 import pathlib
-import pandas as pd
+
 import numpy as np
-import imap_processing.decom as decom
+import pandas as pd
+
+from imap_processing import decom
 from imap_processing.hit.l0.data_classes.housekeeping import Housekeeping
+
 
 def test_houskeeping():
     # The HK validation data's first row was not in the CCSDS file sent, so that has
@@ -13,10 +15,13 @@ def test_houskeeping():
     # this test. These issues were discovered / confirmed with the HIT Ops
     # engineer who delivered the data.
     test_file = pathlib.Path(__file__).parent / "test_data/hskp_sample.ccsds"
-    validation_file = \
+    validation_file = (
         pathlib.Path(__file__).parent / "validation_data/hskp_sample_raw.csv"
-    xtce_file = \
-        pathlib.Path(__file__).parent.parent.parent / "hit/packet_definitions/P_HIT_HSKP.xml"
+    )
+    xtce_file = (
+        pathlib.Path(__file__).parent.parent.parent
+        / "hit/packet_definitions/P_HIT_HSKP.xml"
+    )
 
     validation_data = pd.read_csv(validation_file)
     leak_columns = [col for col in validation_data.columns if col.startswith("LEAK")]
@@ -51,7 +56,9 @@ def test_houskeeping():
         assert hk.CODE_CHECKSUM == validation_data["CODE_CHECKSUM"][pkt_idx]
         assert hk.SPIN_PERIOD_SHORT == validation_data["SPIN_PERIOD_SHORT"][pkt_idx]
         assert hk.SPIN_PERIOD_LONG == validation_data["SPIN_PERIOD_LONG"][pkt_idx]
-        assert (hk.LEAK_I == np.array(validation_data.loc[pkt_idx, leak_columns].tolist())).all()
+        assert (
+            hk.LEAK_I == np.array(validation_data.loc[pkt_idx, leak_columns].tolist())
+        ).all()
         assert hk.PHASIC_STAT == validation_data["PHASIC_STAT"][pkt_idx]
         assert hk.ACTIVE_HEATER == validation_data["ACTIVE_HEATER"][pkt_idx]
         assert hk.HEATER_ON == validation_data["HEATER_ON"][pkt_idx]
@@ -82,4 +89,4 @@ def test_houskeeping():
         assert hk.L34A_BIAS == validation_data["L34A_BIAS"][pkt_idx]
         assert hk.L34B_BIAS == validation_data["L34B_BIAS"][pkt_idx]
         assert hk.EBOX_P2D0VD == validation_data["EBOX_P2D0VD"][pkt_idx]
-        pkt_idx+=1
+        pkt_idx += 1
