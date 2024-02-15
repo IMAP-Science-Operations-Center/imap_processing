@@ -5,9 +5,6 @@ import numpy as np
 import imap_processing.decom as decom
 from imap_processing.hit.l0.data_classes.housekeeping import Housekeeping
 from space_packet_parser import parser, xtcedef
-#@pytest.fixture()
-#def validation_data():
-#    pass
 
 def test_houskeeping():
     # The HK validation data's first row was not in the CCSDS file sent, so that has been manually

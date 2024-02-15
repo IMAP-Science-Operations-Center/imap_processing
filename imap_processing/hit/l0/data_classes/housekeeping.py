@@ -3,11 +3,142 @@ from dataclasses import dataclass
 import bitstring
 import numpy as np
 from imap_processing.ccsds.ccsds_data import CcsdsData
-from imap_processing.hit.l0.hit_base import HITBase
+from imap_processing.hit.l0.utils.hit_base import HITBase
 
 @dataclass
 class Housekeeping(HITBase):
+    """L1A HIT Housekeeping data.
 
+    The HIT Housekeeping data class handles the decommutation
+    and parsing of L0 to L1A data.
+
+    Attributes
+    ----------
+    SHCOARSE : int
+        Spacecraft time.
+    MODE : int
+        Mode (0=boot, 1=maint, 2=stdby, 3=science)
+    FSW_VERSION_A : int
+        FSW version number (A.B.C bits)
+    FSW_VERSION_B : int
+        FSW version number (A.B.C bits)
+    FSW_VERSION_C : int
+        FSW version number (A.B.C bits)
+    NUM_GOOD_CMDS : int
+        Number of good commands
+    LAST_GOOD_CMD : int
+        Last good command
+    LAST_GOOD_SEQ_NUM : int
+        Last good sequence number
+    NUM_BAD_CMDS : int
+        Number of bad commands
+    LAST_BAD_CMD : int
+        Last bad command
+    LAST_BAD_SEQ_NUM : int
+        Last bad sequence number
+    FEE_RUNNING : int
+        FEE running (1) or reset (0)
+    MRAM_DISABLED : int
+        MRAM disabled (1) or enabled (0)
+    ENABLE_50KHZ : int
+        50kHz enabled (1) or disabled (0)
+    ENABLE_HVPS : int
+        HVPS enabled (1) or disabled (0)
+    TABLE_STATUS : int
+        Table status  OK (1) or error (0)
+    HEATER_CONTROL : int
+        Heater control (0=none, 1=pri, 2=sec)
+    ADC_MODE : int
+        ADC mode (0=quiet, 1=normal, 2=adcstim, 3=adcThreshold?)
+    DYN_THRESH_LVL : int
+        Dynamic threshold level (0-3)
+    NUM_EVNT_LAST_HK : int
+        Number of events since last HK update
+    NUM_ERRORS : int
+        Number of errors
+    LAST_ERROR_NUM : int
+        Last error number
+    CODE_CHECKSUM : int
+        Code checksum
+    SPIN_PERIOD_SHORT : int
+        Spin period at t=0
+    SPIN_PERIOD_LONG : int
+        Spin period at t=0
+    LEAK_I_RAW : str
+        Raw binary for Leakage current [V]
+    LEAK_I : np.ndarray
+        Leakage currents [V] formatted as (64, 1) array
+    PHASIC_STAT : int
+        PHASIC status
+    ACTIVE_HEATER : int
+        Active heater
+    HEATER_ON : int
+        Heater on/off
+    TEST_PULSER_ON : int
+        Test pulser on/off
+    DAC0_ENABLE : int
+        DAC_0 enable
+    DAC1_ENABLE : int
+        DAC_1 enable
+    PREAMP_L234A : int
+        Preamp L234A
+    PREAMP_L1A : int
+        Preamp L1A
+    PREAMP_L1B : int
+        Preamp L1B
+    PREAMP_L234B : int
+        Preamp L234B
+    TEMP0 : int
+        FEE LDO Regulator
+    TEMP1 : int
+        Primary Heater
+    TEMP2 : int
+        FEE FPGA
+    TEMP3 : int
+        Secondary Heater
+    ANALOG_TEMP : int
+        Chassis temp
+    HVPS_TEMP : int
+        Board temp
+    IDPU_TEMP : int
+        LDO Temp
+    LVPS_TEMP : int
+        Board temp
+    EBOX_3D4VD : int
+        3.4VD Ebox (digital)
+    EBOX_5D1VD : int
+        5.1VD Ebox (digital)
+    EBOX_P12VA : int
+        +12VA Ebox (analog)
+    EBOX_M12VA : int
+        -12VA Ebox (analog)
+    EBOX_P5D7VA : int
+        +5.7VA Ebox (analog)
+    EBOX_M5D7VA : int
+        -5.7VA Ebox (analog)
+    REF_P5V : int
+        +5Vref
+    L1AB_BIAS : int
+        L1A/B Bias
+    L2AB_BIAS : int
+        L2A/B Bias
+    L34A_BIAS : int
+        L3/4A Bias
+    L34B_BIAS : int
+        L3/4B Bias
+    EBOX_P2D0VD : int
+        +2.0VD Ebox (digital)
+
+    Methods
+    -------
+    __init__(packet, software_vesion, packet_file_name):
+        Uses the CCSDS packet, version of the software, and
+        the name of the packet file to parse and store information about
+        the Houskeeping packet data.
+    _parse_leak():
+        Parse each current leakage field and put into an array.
+
+    """
     SHCOARSE: int
     MODE: int
     FSW_VERSION_A: int
@@ -73,6 +204,7 @@ class Housekeeping(HITBase):
         self._parse_leak()
     
     def _parse_leak(self):
+        """Parse each current leakage field and put into an array."""
         leak_i_list = list()
         leak_bits = bitstring.Bits(bin=self.LEAK_I_RAW)
         index_bit_length = 10
