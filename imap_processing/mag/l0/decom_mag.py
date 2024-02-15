@@ -6,7 +6,6 @@ from pathlib import Path
 
 import numpy as np
 import xarray as xr
-from bitstring import ReadError
 from space_packet_parser import parser, xtcedef
 
 from imap_processing import imap_module_directory
@@ -15,11 +14,9 @@ from imap_processing.cdf.global_attrs import ConstantCoordinates
 from imap_processing.mag import mag_cdf_attrs
 from imap_processing.mag.l0.mag_l0_data import MagL0, Mode
 
-logging.basicConfig(level=logging.ERROR)
 logger = logging.getLogger(__name__)
 
 
-# TODO: write the output of this into a file
 def decom_packets(packet_file_path: str) -> list[MagL0]:
     """Decom MAG data packets using MAG packet definition.
 
@@ -45,27 +42,18 @@ def decom_packets(packet_file_path: str) -> list[MagL0]:
     data_list = []
 
     with open(packet_file_path, "rb") as binary_data:
-        try:
-            mag_packets = mag_parser.generator(
-                binary_data,
-                buffer_read_size_bytes=5790778,  # Todo: what size?
-            )
+        mag_packets = mag_parser.generator(binary_data)
 
-            for packet in mag_packets:
-                apid = packet.header["PKT_APID"].derived_value
-                if apid in (Mode.BURST, Mode.NORM):
-                    values = [
-                        item.derived_value
-                        if item.derived_value is not None
-                        else item.raw_value
-                        for item in packet.data.values()
-                    ]
-                    data_list.append(MagL0(CcsdsData(packet.header), *values))
-        except ReadError as e:
-            logger.warning(
-                f"Found error: {e}\n This may mean reaching the end of an "
-                f"incomplete packet."
-            )
+        for packet in mag_packets:
+            apid = packet.header["PKT_APID"].derived_value
+            if apid in (Mode.BURST, Mode.NORM):
+                values = [
+                    item.derived_value
+                    if item.derived_value is not None
+                    else item.raw_value
+                    for item in packet.data.values()
+                ]
+                data_list.append(MagL0(CcsdsData(packet.header), *values))
 
         return data_list
 
@@ -105,7 +93,6 @@ def export_to_xarray(l0_data: list[MagL0]):
         attrs=mag_cdf_attrs.direction_attrs.output(),
     )
 
-    # print(direction)
     norm_epoch_time = xr.DataArray(
         norm_data["SHCOARSE"],
         name="Epoch",
@@ -129,8 +116,7 @@ def export_to_xarray(l0_data: list[MagL0]):
 
     norm_dataset["RAW_VECTORS"] = norm_raw_vectors
 
-    # TODO: retrieve the doc for the CDF description
-    print(getattr(MagL0, "__doc__", {}))
+    # TODO: retrieve the doc for the CDF description (etattr(MagL0, "__doc__", {}))
 
     for key, value in norm_data.items():
         # Time varying values

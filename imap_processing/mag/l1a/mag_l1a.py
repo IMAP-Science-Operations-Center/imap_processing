@@ -1,6 +1,5 @@
 """Methods for decomming packets, processing to level 1A, and writing CDFs for MAG."""
 
-from pathlib import Path
 
 from imap_processing.cdf.utils import write_cdf
 from imap_processing.mag.l0 import decom_mag
@@ -21,10 +20,4 @@ def mag_l1a(packet_filepath, cdf_directory):
 
     mag_datasets = decom_mag.export_to_xarray(mag_l0)
 
-    write_cdf(mag_datasets, mode="norm", directory=cdf_directory)
-
-
-if __name__ == "__main__":
-    current_directory = Path(__file__).parent
-    packets = current_directory.parent / "tests" / "mag_multiple_packets.pkts"
-    mag_l1a(packets, current_directory / "cdf_files")
+    write_cdf(mag_datasets, descriptor="norm", directory=cdf_directory)
