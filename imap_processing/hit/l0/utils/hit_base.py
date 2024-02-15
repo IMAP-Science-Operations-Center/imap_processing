@@ -45,7 +45,7 @@ class HITBase:
             )
             if "SPARE" in key:
                 continue
-            if key not in attributes and "SPARE" not in key:
+            if key not in attributes:
                 raise KeyError(
                     f"Did not find matching attribute in {self.__class__} data class"
                     f"for {key}"

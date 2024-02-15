@@ -1,9 +1,11 @@
 """L1A HIT Housekeeping data class."""
 from dataclasses import dataclass
-import bitstring
+
 import numpy as np
+
 from imap_processing.ccsds.ccsds_data import CcsdsData
 from imap_processing.hit.l0.utils.hit_base import HITBase
+
 
 @dataclass
 class Housekeeping(HITBase):
@@ -139,6 +141,7 @@ class Housekeeping(HITBase):
         Parse each current leakage field and put into an array.
 
     """
+
     SHCOARSE: int
     MODE: int
     FSW_VERSION_A: int
@@ -202,18 +205,20 @@ class Housekeeping(HITBase):
         super().__init__(software_version, packet_file_name, CcsdsData(packet.header))
         self.parse_data(packet)
         self._parse_leak()
-    
+
     def _parse_leak(self):
         """Parse each current leakage field and put into an array."""
-        leak_list = list()
-        leak_bits = bitstring.Bits(bin=self.LEAK_I_RAW)
         # Each Leak field is 10 bits long
         leak_bit_length = 10
         # There are 64 leak fields
         num_leak_fields = 64
+        self.LEAK_I = np.empty(num_leak_fields, dtype=np.uint16)
         # The leak fields appear in the packet in ascending order, so to append
-        # the leak fields in the correct order, the binary will be parsed 
+        # the leak fields in the correct order, the binary will be parsed
         # from right to left.
-        for leak_idx in range(leak_bit_length * num_leak_fields, 0, -leak_bit_length):
-            leak_list.append(leak_bits[leak_idx - leak_bit_length:leak_idx].uint)
-        self.LEAK_I = np.array(leak_list)
+        for i, leak_idx in enumerate(
+            range(leak_bit_length * num_leak_fields, 0, -leak_bit_length)
+        ):
+            self.LEAK_I[i] = int(
+                self.LEAK_I_RAW[leak_idx - leak_bit_length : leak_idx], 2
+            )

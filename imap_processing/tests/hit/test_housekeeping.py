@@ -1,9 +1,7 @@
-import pathlib
-
 import numpy as np
 import pandas as pd
 
-from imap_processing import decom
+from imap_processing import decom, imap_module_directory
 from imap_processing.hit.l0.data_classes.housekeeping import Housekeeping
 
 
@@ -14,22 +12,17 @@ def test_houskeeping():
     # the validation file, so the last packet in the CCSDS file is removed for
     # this test. These issues were discovered / confirmed with the HIT Ops
     # engineer who delivered the data.
-    test_file = pathlib.Path(__file__).parent / "test_data/hskp_sample.ccsds"
+    test_file = imap_module_directory / "tests/hit/test_data/hskp_sample.ccsds"
     validation_file = (
-        pathlib.Path(__file__).parent / "validation_data/hskp_sample_raw.csv"
+        imap_module_directory / "tests/hit/validation_data/hskp_sample_raw.csv"
     )
-    xtce_file = (
-        pathlib.Path(__file__).parent.parent.parent
-        / "hit/packet_definitions/P_HIT_HSKP.xml"
-    )
+    xtce_file = imap_module_directory / "hit/packet_definitions/P_HIT_HSKP.xml"
 
     validation_data = pd.read_csv(validation_file)
     leak_columns = [col for col in validation_data.columns if col.startswith("LEAK")]
-    packets = decom.decom_packets(test_file.resolve(), xtce_file.resolve())
-    del packets[-1]
-    pkt_idx = 0
+    packets = decom.decom_packets(test_file.resolve(), xtce_file.resolve())[:-1]
 
-    for packet in packets:
+    for pkt_idx, packet in enumerate(packets):
         hk = Housekeeping(packet, "0.0", "hskp_sample.ccsds")
         assert hk.SHCOARSE == validation_data["SC_TICK"][pkt_idx]
         assert hk.MODE == validation_data["MODE"][pkt_idx]
@@ -89,4 +82,3 @@ def test_houskeeping():
         assert hk.L34A_BIAS == validation_data["L34A_BIAS"][pkt_idx]
         assert hk.L34B_BIAS == validation_data["L34B_BIAS"][pkt_idx]
         assert hk.EBOX_P2D0VD == validation_data["EBOX_P2D0VD"][pkt_idx]
-        pkt_idx += 1
