@@ -205,10 +205,15 @@ class Housekeeping(HITBase):
     
     def _parse_leak(self):
         """Parse each current leakage field and put into an array."""
-        leak_i_list = list()
+        leak_list = list()
         leak_bits = bitstring.Bits(bin=self.LEAK_I_RAW)
-        index_bit_length = 10
-        for leak_idx in range(640, 0, -index_bit_length):
-            leak_i_list.append(leak_bits[leak_idx - index_bit_length:leak_idx].uint)
-        self.LEAK_I = np.array(leak_i_list)
-
+        # Each Leak field is 10 bits long
+        leak_bit_length = 10
+        # There are 64 leak fields
+        num_leak_fields = 64
+        # The leak fields appear in the packet in ascending order, so to append
+        # the leak fields in the correct order, the binary will be parsed 
+        # from right to left.
+        for leak_idx in range(leak_bit_length * num_leak_fields, 0, -leak_bit_length):
+            leak_list.append(leak_bits[leak_idx - leak_bit_length:leak_idx].uint)
+        self.LEAK_I = np.array(leak_list)
