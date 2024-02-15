@@ -6,14 +6,17 @@ import imap_processing.decom as decom
 from imap_processing.hit.l0.data_classes.housekeeping import Housekeeping
 
 def test_houskeeping():
-    # The HK validation data's first row was not in the CCSDS file sent, so that has been manually
-    # removed from the validation file on the SDC end. The last packet in the CCSDS file also does not
-    # correspond to any of the rows in the validation file, so the last packet in the CCSDS file is
-    # removed for this test. These issues were discovered / confirmed with the HIT Ops engineer who
-    # delivered the data.
+    # The HK validation data's first row was not in the CCSDS file sent, so that has
+    # been manually removed from the validation file on the SDC end. The last
+    # packet in the CCSDS file also does not correspond to any of the rows in
+    # the validation file, so the last packet in the CCSDS file is removed for
+    # this test. These issues were discovered / confirmed with the HIT Ops
+    # engineer who delivered the data.
     test_file = pathlib.Path(__file__).parent / "test_data/hskp_sample.ccsds"
-    validation_file = pathlib.Path(__file__).parent / "validation_data/hskp_sample_raw.csv"
-    xtce_file = pathlib.Path(__file__).parent.parent.parent / "hit/packet_definitions/P_HIT_HSKP.xml"
+    validation_file = \
+        pathlib.Path(__file__).parent / "validation_data/hskp_sample_raw.csv"
+    xtce_file = \
+        pathlib.Path(__file__).parent.parent.parent / "hit/packet_definitions/P_HIT_HSKP.xml"
 
     validation_data = pd.read_csv(validation_file)
     leak_columns = [col for col in validation_data.columns if col.startswith("LEAK")]
