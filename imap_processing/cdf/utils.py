@@ -4,11 +4,10 @@ import logging
 from pathlib import Path
 from typing import Optional
 
+import imap_data_access
 import numpy as np
 import xarray as xr
 from cdflib.xarray import xarray_to_cdf
-
-import imap_processing
 
 
 def calc_start_time(shcoarse_time: int):
@@ -62,7 +61,7 @@ def write_cdf(
             orbit, before the SPICE field.  No underscores allowed.
         directory : pathlib.Path, optional
             The directory to write the file to. The default is obtained
-            from the global imap_processing.config["DATA_DIR"].
+            from the global imap_data_access.config["DATA_DIR"].
 
     Returns
     -------
@@ -86,14 +85,15 @@ def write_cdf(
 
     # Determine the file name based on the attributes in the xarray
     # Set file name based on this convention:
-    # imap_<instrument>_<datalevel>_<descriptor>_<startdate>_
-    # <version>.cdf
+    # imap_<instrument>_<datalevel>_<descriptor>_<startdate>_<enddate>_<version>.cdf
     # data.attrs["Logical_source"] has the mission, instrument, and level
     # like this:
     #   imap_idex_l1
+    # TODO: add logics for adding endate
     filename = (
         f"{data.attrs['Logical_source']}"
         f"_{descriptor}"
+        f"_{date_string}"
         f"_{date_string}"
         f"_v{data.attrs['Data_version']}.cdf"
     )
@@ -103,7 +103,7 @@ def write_cdf(
         # mission/instrument/data_level/year/month/filename
         # /<directory | DATA_DIR>/<instrument>/<data_level>/<year>/<month>
         _, instrument, data_level = data.attrs["Logical_source"].split("_")
-        directory = imap_processing.config["DATA_DIR"] / instrument / data_level
+        directory = imap_data_access.config["DATA_DIR"] / instrument / data_level
         directory /= date_string[:4]
         directory /= date_string[4:6]
     filename_and_path = Path(directory)
