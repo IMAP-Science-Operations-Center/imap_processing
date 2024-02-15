@@ -19,11 +19,11 @@ def test_image_rate_decom(decom_ultra, image_raw_events_test_path):
 
     df = pd.read_csv(image_raw_events_test_path, index_col="MET")
 
-    assert (df["SID"].values == decom_ultra["science_id"].values).all()
-    assert (df["Spin"].values == decom_ultra["spin_data"].values).all()
-    assert (df["AbortFlag"].values == decom_ultra["abortflag_data"].values).all()
-    assert (df["StartDelay"].values == decom_ultra["startdelay_data"].values).all()
-    assert (df["Count"].values == decom_ultra["count_data"].values).all()
+    assert (df["SID"].values == decom_ultra["SID"].values).all()
+    assert (df["Spin"].values == decom_ultra["SPIN"].values).all()
+    assert (df["AbortFlag"].values == decom_ultra["ABORTFLAG"].values).all()
+    assert (df["StartDelay"].values == decom_ultra["STARTDELAY"].values).all()
+    assert (df["Count"].values == decom_ultra["COUNT"].values).all()
     assert (df["CoinType"].values == decom_ultra["coin_type"].values).all()
     assert (df["StartType"].values == decom_ultra["start_type"].values).all()
     assert (df["StopType"].values == decom_ultra["stop_type"].values).all()
