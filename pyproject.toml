@@ -45,7 +45,7 @@ pre-commit = {version="^3.3.3", optional=true}
 pydata-sphinx-theme = {version="*", optional=true}
 pytest = {version=">=6.2.5", optional=true}
 pytest-cov = {version="^4.0.0", optional=true}
-ruff = {version=">=0.1.7", optional=true}
+ruff = {version="==0.2.1", optional=true}
 sphinx = {version="*", optional=true}
 sphinxcontrib-openapi = {version="^0.8.3", optional=true}
 
@@ -68,18 +68,18 @@ addopts = "-ra"
 
 [tool.ruff]
 target-version = "py39"
-select = ["B", "D", "E", "F", "I", "N", "S", "W", "PL", "PT", "UP", "RUF"]
+lint.select = ["B", "D", "E", "F", "I", "N", "S", "W", "PL", "PT", "UP", "RUF"]
 # D104: Missing docstring in public package
 # PLR2004: Magic value in comparison
 # RUF200: pyproject missing field (poetry doesn't follow the spec)
-ignore = ["D104", "PLR2004", "RUF200"]
+lint.ignore = ["D104", "PLR2004", "RUF200"]
 
-[tool.ruff.per-file-ignores]
+[tool.ruff.lint.per-file-ignores]
 # S603 unchecked input in subprocess call is fine in our tests
 "*/tests/*" = ["D", "S101", "S603"]
 "tools/xtce*" = ["D"]
 
-[tool.ruff.pydocstyle]
+[tool.ruff.lint.pydocstyle]
 convention = "numpy"
 
 [tool.poetry.scripts]
