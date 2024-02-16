@@ -1,8 +1,6 @@
-import numpy as np
 import pandas as pd
 
 from imap_processing import decom, imap_module_directory
-from imap_processing.hit.l0.data_classes.message_log import MessageLog
 
 
 def test_houskeeping():
@@ -20,7 +18,6 @@ def test_houskeeping():
 
     validation_data = pd.read_csv(validation_file)
     packets = decom.decom_packets(test_file.resolve(), xtce_file.resolve())
-
 
     for pkt_idx, packet in enumerate(packets):
         print(packet)

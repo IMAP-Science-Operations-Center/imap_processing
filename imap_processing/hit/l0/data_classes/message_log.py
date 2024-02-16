@@ -1,8 +1,6 @@
 """L1A HIT Message Log data class."""
 from dataclasses import dataclass
 
-import numpy as np
-
 from imap_processing.ccsds.ccsds_data import CcsdsData
 from imap_processing.hit.l0.utils.hit_base import HITBase
 
