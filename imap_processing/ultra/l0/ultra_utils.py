@@ -2,6 +2,7 @@
 from enum import IntEnum
 from imap_processing.ccsds.ccsds_data import CcsdsData
 from dataclasses import fields
+from imap_processing.cdf.defaults import GlobalConstants
 
 
 class ULTRAAPID(IntEnum):
@@ -82,13 +83,13 @@ class EventParser:
             "bin": (148, 156),
             "phase_angle": (156, 166),
         }
-        self.scalar_fields = {'SHCOARSE', 'SID', 'SPIN', 'ABORTFLAG', 'STARTDELAY', 'COUNT'}
+        self.event_scalar_fields = {'SHCOARSE', 'SID', 'SPIN', 'ABORTFLAG', 'STARTDELAY', 'COUNT'}
         self.ccsds_fields = [field.name for field in fields(CcsdsData)]
 
     def initialize_event_data(self, header):
         """Initializes and returns the data structure for storing event data."""
         event_data = {field: [] for field in self.field_ranges}
-        for scalar_field in self.scalar_fields:
+        for scalar_field in self.event_scalar_fields:
             event_data[scalar_field] = []
 
         ccsds_data = CcsdsData(header)
@@ -100,10 +101,10 @@ class EventParser:
         return event_data
 
     def append_negative_one(self, event_data):
-        """Appends -1 to all event fields except for specified scalar and CCSDS fields."""
+        """Appends fillvalue to all event fields except for specified scalar and CCSDS fields."""
         for key in event_data:
-            if key not in self.scalar_fields and key not in self.ccsds_fields:
-                event_data[key].append(-1)
+            if key not in self.event_scalar_fields and key not in self.ccsds_fields:
+                event_data[key].append(GlobalConstants.INT_FILLVAL)
 
     def parse_event(self, event_binary):
         """Parses a binary string representing a single event."""
@@ -114,7 +115,7 @@ class EventParser:
 
     def append_values(self, event_data, packet):
         """Appends scalar fields and CCSDS fields to event_data."""
-        for key in self.scalar_fields:
+        for key in self.event_scalar_fields:
             event_data[key].append(packet.data[key].raw_value)
 
         ccsds_data = CcsdsData(packet.header)

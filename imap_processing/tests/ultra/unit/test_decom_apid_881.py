@@ -5,7 +5,7 @@ import pandas as pd
 import pytest
 
 from imap_processing import decom
-from imap_processing.ultra.l0.decom_ultra import decom_ultra_img_rates_packets
+from imap_processing.ultra.l0.decom_ultra import decom_image_raw_events_packets
 
 
 @pytest.fixture()
@@ -18,7 +18,7 @@ def decom_test_data(ccsds_path, xtce_image_rates_path):
 @pytest.fixture()
 def decom_ultra(ccsds_path, xtce_image_rates_path):
     """Data for decom_ultra"""
-    data_packets = decom_ultra_img_rates_packets(ccsds_path, xtce_image_rates_path)
+    data_packets = decom_image_raw_events_packets(ccsds_path, xtce_image_rates_path)
     return data_packets
 
 

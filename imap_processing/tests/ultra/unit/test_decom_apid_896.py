@@ -2,13 +2,16 @@ import pandas as pd
 import pytest
 
 from imap_processing.ultra.l0.decom_ultra import decom_image_raw_events_packets
+from imap_processing.cdf.defaults import GlobalConstants
+from imap_processing.ultra.l0.ultra_utils import ULTRAAPID
 
 
 @pytest.fixture()
 def decom_ultra(ccsds_path_image_raw_events, xtce_image_raw_events_path):
     """Data for decom_ultra"""
     data_packet_list = decom_image_raw_events_packets(
-        ccsds_path_image_raw_events, xtce_image_raw_events_path
+        ccsds_path_image_raw_events, xtce_image_raw_events_path,
+        ULTRAAPID.ULTRA_EVENTS_45.value
     )
     return data_packet_list
 
@@ -18,6 +21,7 @@ def test_image_rate_decom(decom_ultra, image_raw_events_test_path):
     matches validation data for image rate packet"""
 
     df = pd.read_csv(image_raw_events_test_path, index_col="MET")
+    df.replace(-1, GlobalConstants.INT_FILLVAL, inplace=True)
 
     assert (df["SID"].values == decom_ultra["SID"].values).all()
     assert (df["Spin"].values == decom_ultra["SPIN"].values).all()

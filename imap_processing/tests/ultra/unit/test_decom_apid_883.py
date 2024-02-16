@@ -4,13 +4,13 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from imap_processing.ultra.l0.decom_ultra import decom_image_ena_phxtof_hi_ang_packets
+from imap_processing.ultra.l0.decom_ultra import decom_image_raw_events_packets
 
 
 @pytest.fixture()
 def decom_ultra(ccsds_path_image_ena_phxtof_hi_ang, xtce_image_ena_phxtof_hi_ang_path):
     """Data for decom_ultra"""
-    data_packet_list = decom_image_ena_phxtof_hi_ang_packets(
+    data_packet_list = decom_image_raw_events_packets(
         ccsds_path_image_ena_phxtof_hi_ang, xtce_image_ena_phxtof_hi_ang_path
     )
     return data_packet_list
