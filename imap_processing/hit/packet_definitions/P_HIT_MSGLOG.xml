@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='utf-8'?>
 <xtce:SpaceSystem xmlns:xtce="http://www.omg.org/space/xtce" name="P_HIT_MSGLOG">
-	<xtce:Header date="2023-11" version="1.0" author="IMAP SDC" />
+	<xtce:Header date="2024-02" version="1.0" author="IMAP SDC" />
 	<xtce:TelemetryMetaData>
 		<xtce:ParameterTypeSet>
 			<xtce:IntegerParameterType name="UINT1" signed="false">
@@ -24,16 +24,17 @@
 			<xtce:IntegerParameterType name="UINT32" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="32" encoding="unsigned" />
 			</xtce:IntegerParameterType>
-			<StringParameterType name="STRING2880">
-				<StringDataEncoding encoding="UTF-8">
-					<SizeInBits>
-						<Fixed>
-							<FixedValue>2880</FixedValue>
-						</Fixed>
-						<TerminationChar>00</TerminationChar>
-					</SizeInBits>
-				</StringDataEncoding>
-			</StringParameterType>
+			<xtce:BinaryParameterType name="BYTE2880">
+				<xtce:UnitSet/>
+				<xtce:BinaryDataEncoding>
+				<xtce:SizeInBits>
+					<xtce:DynamicValue>
+					<xtce:ParameterInstanceRef parameterRef="PKT_LEN"/>
+					<xtce:LinearAdjustment intercept="-80" slope="8"/>
+					</xtce:DynamicValue>
+				</xtce:SizeInBits>
+				</xtce:BinaryDataEncoding>
+      		</xtce:BinaryParameterType>
 		</xtce:ParameterTypeSet>
 		<xtce:ParameterSet>
 			<xtce:Parameter name="VERSION" parameterTypeRef="UINT3">
@@ -58,10 +59,10 @@
 				<xtce:LongDescription>CCSDS Packet Length (number of bytes after Packet length minus 1)</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SHCOARSE" parameterTypeRef="UINT32">
-				<xtce:ShortDescription>CCSDS Packet Sec Header</xtce:ShortDescription>
+				<xtce:ShortDescription>Spacecraft tick</xtce:ShortDescription>
 				<xtce:LongDescription>Spacecraft tick</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="TEXT" parameterTypeRef="STRING2880">
+			<xtce:Parameter name="TEXT" parameterTypeRef="BYTE2880">
 				<xtce:ShortDescription>Log message text</xtce:ShortDescription>
 				<xtce:LongDescription>Message log text, in ASCII with newline characters (0x10) separating lines. Last byte is always NUL (0), and packet is padded with zeros if no more messages.</xtce:LongDescription>
 			</xtce:Parameter>

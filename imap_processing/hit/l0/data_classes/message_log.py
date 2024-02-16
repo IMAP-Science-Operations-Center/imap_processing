@@ -17,9 +17,7 @@ class MessageLog(HITBase):
     SHCOARSE : int
         Spacecraft time.
     TEXT: str
-        Message log text in ASCII with newline characters (0x10) separating
-        lines. Last byte is always NULL (0), and packet is padded with zeros if
-        no more messages.
+        Message log left in binary from packet.
 
     Methods
     -------
