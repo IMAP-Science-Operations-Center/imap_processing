@@ -17,4 +17,4 @@ The L0 code to decommutate the CCSDS packet data can be found below.
 
     l0.data_classes
     l0.utils
-    l0.hit_l1a_decom.py
+    l0.hit_l1a_decom

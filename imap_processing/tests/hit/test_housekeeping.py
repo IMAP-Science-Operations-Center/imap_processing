@@ -49,7 +49,6 @@ def test_houskeeping():
         "CODE_CHECKSUM",
         "SPIN_PERIOD_SHORT",
         "SPIN_PERIOD_LONG",
-        "LEAK_I",
         "PHASIC_STAT",
         "ACTIVE_HEATER",
         "HEATER_ON",
@@ -85,12 +84,8 @@ def test_houskeeping():
     for pkt_idx, packet in enumerate(packets):
         hk = Housekeeping(packet, "0.0", "hskp_sample.ccsds")
         for field in hk_fields:
-            if field == "LEAK_I":
-                # Need to create an array out of the separate leak columns in the
-                # validation data
-                assert (
-                    hk.LEAK_I
-                    == np.array(validation_data.loc[pkt_idx, leak_columns].tolist())
-                ).all()
-            else:
-                assert getattr(hk, field) == validation_data[field][pkt_idx]
+            assert getattr(hk, field) == validation_data[field][pkt_idx]
+
+    np.testing.assert_array_equal(
+        hk.LEAK_I, np.array(validation_data.loc[pkt_idx, leak_columns].tolist())
+    )
