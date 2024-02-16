@@ -24,6 +24,16 @@
 			<xtce:IntegerParameterType name="UINT32" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="32" encoding="unsigned" />
 			</xtce:IntegerParameterType>
+			<StringParameterType name="STRING2880">
+				<StringDataEncoding encoding="UTF-8">
+					<SizeInBits>
+						<Fixed>
+							<FixedValue>2880</FixedValue>
+						</Fixed>
+						<TerminationChar>00</TerminationChar>
+					</SizeInBits>
+				</StringDataEncoding>
+			</StringParameterType>
 		</xtce:ParameterTypeSet>
 		<xtce:ParameterSet>
 			<xtce:Parameter name="VERSION" parameterTypeRef="UINT3">
