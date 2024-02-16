@@ -2,13 +2,16 @@ from pathlib import Path
 
 from telemetry_generator import TelemetryGenerator
 
+from imap_processing import imap_module_directory
+
 
 def main():
     """HIT XTCE generator"""
     instrument_name = "hit"
     current_directory = Path(__file__).parent
-    module_path = f"{current_directory}/../../imap_processing"
-    packet_definition_path = f"{module_path}/{instrument_name}/packet_definitions"
+    packet_definition_path = (
+        f"{imap_module_directory}/{instrument_name}/packet_definitions"
+    )
     path_to_excel_file = f"{current_directory}/TLM_HIT_modified.xls"
 
     # Lo packets
