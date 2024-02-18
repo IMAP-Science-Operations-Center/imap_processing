@@ -3,7 +3,6 @@
 from enum import Enum
 from pathlib import Path
 
-from bitstring import ReadError
 from space_packet_parser import parser, xtcedef
 
 from imap_processing import imap_module_directory
@@ -57,39 +56,34 @@ def decom_packets(
     filename = Path(packet_file_path).name
 
     with open(packet_file_path, "rb") as binary_data:
-        try:
-            glows_packets = glows_parser.generator(binary_data)
+        glows_packets = glows_parser.generator(binary_data)
 
-            for packet in glows_packets:
-                apid = packet.header["PKT_APID"].derived_value
-                # Do something with the packet data
-                if apid == GlowsParams.HIST_APID.value:
-                    values = [
-                        item.derived_value
-                        if item.derived_value is not None
-                        else item.raw_value
-                        for item in packet.data.values()
-                    ]
-                    hist_l0 = HistogramL0(
-                        version, filename, CcsdsData(packet.header), *values
-                    )
-                    histdata.append(hist_l0)
+        for packet in glows_packets:
+            apid = packet.header["PKT_APID"].derived_value
+            # Do something with the packet data
+            if apid == GlowsParams.HIST_APID.value:
+                values = [
+                    item.derived_value
+                    if item.derived_value is not None
+                    else item.raw_value
+                    for item in packet.data.values()
+                ]
+                hist_l0 = HistogramL0(
+                    version, filename, CcsdsData(packet.header), *values
+                )
+                histdata.append(hist_l0)
 
-                if apid == GlowsParams.DE_APID.value:
-                    values = [
-                        item.derived_value
-                        if item.derived_value is not None
-                        else item.raw_value
-                        for item in packet.data.values()
-                    ]
+            if apid == GlowsParams.DE_APID.value:
+                values = [
+                    item.derived_value
+                    if item.derived_value is not None
+                    else item.raw_value
+                    for item in packet.data.values()
+                ]
 
-                    de_l0 = DirectEventL0(
-                        version, filename, CcsdsData(packet.header), *values
-                    )
-                    dedata.append(de_l0)
-
-        except ReadError as e:
-            print(e)
-            print("This may mean reaching the end of an incomplete packet.")
+                de_l0 = DirectEventL0(
+                    version, filename, CcsdsData(packet.header), *values
+                )
+                dedata.append(de_l0)
 
         return histdata, dedata
