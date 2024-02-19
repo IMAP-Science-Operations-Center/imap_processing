@@ -1,7 +1,9 @@
+import bitstring
+import pandas as pd
+
 from imap_processing import decom, imap_module_directory
 from imap_processing.hit.l0.data_classes.message_log import MessageLog
-import pandas as pd
-import bitstring
+
 
 def test_message_log():
     test_file = imap_module_directory / "tests/hit/test_data/msglog_sample.ccsds"
@@ -16,4 +18,3 @@ def test_message_log():
     for pkt_idx, packet in enumerate(packets):
         msg_log = MessageLog(packet, "0.0", "mslog_sample.ccsds")
         assert msg_log.TEXT == bitstring.Bits(hex=validation_data["TEXT"][pkt_idx]).bin
-        
