@@ -14,7 +14,8 @@ def test_message_log():
 
     validation_data = pd.read_csv(validation_file)
     packets = decom.decom_packets(test_file.resolve(), xtce_file.resolve())
-    failure_count = 0
+
     for pkt_idx, packet in enumerate(packets):
         msg_log = MessageLog(packet, "0.0", "mslog_sample.ccsds")
+        assert msg_log.SHCOARSE == validation_data["SHCOARSE"][pkt_idx]
         assert msg_log.TEXT == bitstring.Bits(hex=validation_data["TEXT"][pkt_idx]).bin
