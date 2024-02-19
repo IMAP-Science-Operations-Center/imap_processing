@@ -30,7 +30,7 @@
 				<xtce:SizeInBits>
 					<xtce:DynamicValue>
 					<xtce:ParameterInstanceRef parameterRef="PKT_LEN"/>
-					<xtce:LinearAdjustment intercept="-80" slope="8"/>
+					<xtce:LinearAdjustment intercept="-24" slope="8"/>
 					</xtce:DynamicValue>
 				</xtce:SizeInBits>
 				</xtce:BinaryDataEncoding>
