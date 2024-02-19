@@ -6,6 +6,9 @@ from imap_processing.hit.l0.data_classes.message_log import MessageLog
 
 
 def test_message_log():
+    # HIT is referring to SHCOARSE as SC_TICK, so I manually updated the name of that
+    # field in the validation data from SC_TICK -> SHCOARSE.
+    # No other changes to the data were made.
     test_file = imap_module_directory / "tests/hit/test_data/msglog_sample.ccsds"
     validation_file = (
         imap_module_directory / "tests/hit/validation_data/msglog_sample_raw.csv"
