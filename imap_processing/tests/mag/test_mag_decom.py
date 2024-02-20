@@ -7,11 +7,10 @@ from imap_processing.mag.l0.decom_mag import decom_packets
 
 def test_mag_decom():
     current_directory = Path(__file__).parent
-    # burst_test_file = current_directory / "science_data_test_REAL.pkts"
     burst_test_file = current_directory / "mag_l0_test_data.pkts"
     l0 = decom_packets(str(burst_test_file))
 
-    expected_output = pd.read_csv("mag_l0_test_output.csv")
+    expected_output = pd.read_csv(current_directory / "mag_l0_test_output.csv")
 
     index = 0
     for test in l0:
