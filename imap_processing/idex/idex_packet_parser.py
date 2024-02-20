@@ -9,7 +9,6 @@ import logging
 from collections import namedtuple
 from enum import IntEnum
 
-import bitstring
 import numpy as np
 import xarray as xr
 from space_packet_parser import parser, xtcedef
@@ -496,29 +495,27 @@ class PacketParser:
         packet_definition = xtcedef.XtcePacketDefinition(xtce_document=xtce_file)
         packet_parser = parser.PacketParser(packet_definition)
 
-        binary_data = bitstring.ConstBitStream(filename=packet_file)
-        packet_generator = packet_parser.generator(binary_data)
-
         dust_events = {}
-
-        for packet in packet_generator:
-            if "IDX__SCI0TYPE" in packet.data:
-                scitype = packet.data["IDX__SCI0TYPE"].raw_value
-                event_number = packet.data["IDX__SCI0EVTNUM"].derived_value
-                if scitype == Scitype.FIRST_PACKET:
-                    # Initial packet for new dust event
-                    # Further packets will fill in data
-                    dust_events[event_number] = RawDustEvent(packet)
-                elif event_number not in dust_events:
-                    raise KeyError(
-                        f"Have not receive header information from event number\
-                              {event_number}.  Packets are possibly out of order!"
-                    )
+        with open(packet_file, "rb") as binary_data:
+            packet_generator = packet_parser.generator(binary_data)
+            for packet in packet_generator:
+                if "IDX__SCI0TYPE" in packet.data:
+                    scitype = packet.data["IDX__SCI0TYPE"].raw_value
+                    event_number = packet.data["IDX__SCI0EVTNUM"].derived_value
+                    if scitype == Scitype.FIRST_PACKET:
+                        # Initial packet for new dust event
+                        # Further packets will fill in data
+                        dust_events[event_number] = RawDustEvent(packet)
+                    elif event_number not in dust_events:
+                        raise KeyError(
+                            f"Have not receive header information from event number\
+                                {event_number}.  Packets are possibly out of order!"
+                        )
+                    else:
+                        # Populate the IDEXRawDustEvent with 1's and 0's
+                        dust_events[event_number].parse_packet(packet)
                 else:
-                    # Populate the IDEXRawDustEvent with 1's and 0's
-                    dust_events[event_number].parse_packet(packet)
-            else:
-                logging.warning(f"Unhandled packet received: {packet}")
+                    logging.warning(f"Unhandled packet received: {packet}")
 
         processed_dust_impact_list = [
             dust_event.process() for dust_event in dust_events.values()
