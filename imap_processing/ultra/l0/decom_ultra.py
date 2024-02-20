@@ -115,7 +115,7 @@ def log_decompression(value: int, mantissa_bit_length) -> int:
         return (base_value + m) << (e - 1)
 
 
-def decompress_binary(binary: str, width_bit: int, block: int, len_array) -> list:
+def decompress_binary(binary: str, width_bit: int, block: int, len_array, mantissa_bit_length) -> list:
     """Decompress a binary string.
 
     Decompress a binary string based on block-width encoding and
@@ -133,6 +133,10 @@ def decompress_binary(binary: str, width_bit: int, block: int, len_array) -> lis
         The bit width that describes the width of data in the block
     block : int
         Number of values in each block
+    len_array : int
+        The length of the array to be decompressed.
+    mantissa_bit_length : int
+        The bit length of the mantissa.
 
     Returns
     -------
@@ -162,31 +166,68 @@ def decompress_binary(binary: str, width_bit: int, block: int, len_array) -> lis
 
             # Log decompression
             decompressed_values.append(log_decompression(value,
-                                                         UltraParams.ULTRA_IMG_RATES.value.mantissa_bit_length))
+                                                         mantissa_bit_length))
 
     return decompressed_values
 
 
-def process_image(pp, binary_data, rows, cols, blocks_per_row, pixels_per_block):
-    # p[53][179]
+def decompress_image(pp, binary_data, width_bit, mantissa_bit_length,
+                  rows=54, cols=180, pixels_per_block=15):
+    """
+    "Decompresses a binary string representing an image into a matrix of pixel values.
+    It starts with an initial pixel value and decompresses the rest of the image using
+    block-wise decompression and logarithmic decompression based on provided bit widths and lengths.
+
+    Parameters
+    ----------
+    pp : int
+        The first, unmodified pixel p0,0.
+    binary_data : str
+        Binary string.
+    width_bit : int
+        The bit width that describes the width of data in the block
+    mantissa_bit_length : int
+        The bit length of the mantissa.
+    rows : int (Optional)
+        Number of rows.
+    cols : int (Optional)
+        Number of columns.
+    pixels_per_block : int (Optional)
+        Number of pixels per block.
+
+    Returns
+    -------
+    p_decom : List of lists.
+        Decompressed pixel matrix.
+
+    Notes
+    -----
+    This process is described starting on page 168 in IMAP-Ultra Flight
+    Software Specification document.
+    """
+    blocks_per_row = int(cols / pixels_per_block)
+
+    # Compressed pixel matrix
     p = [[0 for _ in range(cols)] for _ in range(rows)]
-    final = [
-        [0 for _ in range(cols)] for _ in range(rows)
-    ]  # Initialize the pixel matrix
+    # Decompressed pixel matrix
+    p_decom = [[0 for _ in range(cols)] for _ in range(rows)]
+
     pos = 0  # Starting position in the binary string
 
     for i in range(rows):
         for j in range(blocks_per_row):
-            w, pos = read_n_bits(binary_data, 4, pos)  # Read the width for the block
+            # Read the width for the block.
+            w, pos = read_n_bits(binary_data, width_bit, pos)
             for k in range(pixels_per_block):
-                if w == 0:  # Handle the special case where read(0) should return 0
+                # Handle the special case in which the width is 0
+                if w == 0:
                     value = 0
                 else:
-                    value, pos = read_n_bits(
-                        binary_data, w, pos
-                    )  # Read the Δcode using the width w
+                    # Find the value of each pixel in the block
+                    value, pos = read_n_bits(binary_data, w, pos)
 
-                if value & 0x01:  # if the least significant bit of value is set (odd)
+                # if the least significant bit of value is set (odd)
+                if value & 0x01:
                     # value >> 1: shifts bits of value one place to the right
                     # ~: bitwise NOT operator (flips bits)
                     delta_f = ~(value >> 1)
@@ -196,15 +237,16 @@ def process_image(pp, binary_data, rows, cols, blocks_per_row, pixels_per_block)
                 # Calculate the new pixel value and update pp
                 column_index = j * pixels_per_block + k
                 # 0xff is the hexadecimal representation of the number 255,
-                # keeps only the last 8 bits of the result of pp - delta_f and discards all other higher bits
+                # Keeps only the last 8 bits of the result of pp - delta_f
                 # This operation ensures that the result is within the range of an 8-bit byte (0-255)
                 p[i][column_index] = (pp - delta_f) & 0xFF
-                final[i][column_index] = log_decompression(p[i][column_index],
-                                                                UltraParams.ULTRA_IMG_ENA_PHXTOF_HI_ANG.value.mantissa_bit_length)
+                # Perform logarithmic decompression on the pixel value
+                p_decom[i][column_index] = log_decompression(p[i][column_index],
+                                                             mantissa_bit_length)
                 pp = p[i][column_index]
         pp = p[i][0]
 
-    return final
+    return p_decom
 
 
 def read_image_raw_events_binary(packet, events_data=None):
@@ -252,7 +294,7 @@ def read_image_raw_events_binary(packet, events_data=None):
     return events_data
 
 
-def decom_image_raw_events_packets(packet_file: str, xtce: str, test_apid: int = None):
+def decom_ultra_apids(packet_file: str, xtce: str, test_apid: int = None):
     """
     Unpack and decode ultra packets using CCSDS format and XTCE packet definitions.
 
@@ -262,6 +304,8 @@ def decom_image_raw_events_packets(packet_file: str, xtce: str, test_apid: int =
         Path to the CCSDS data packet file.
     xtce : str
         Path to the XTCE packet definition file.
+    test_apid : int
+        The APID to test. If None, all APIDs are processed.
 
     Returns
     -------
@@ -270,10 +314,13 @@ def decom_image_raw_events_packets(packet_file: str, xtce: str, test_apid: int =
         dimension.
     """
     packets = decom.decom_packets(packet_file, xtce)
-    grouped_data = group_by_apid(packets) # Initialize to None for the first event packet
+    grouped_data = group_by_apid(packets)
+
+    if test_apid:
+        grouped_data = {test_apid: grouped_data[test_apid]}
 
     for apid in grouped_data.keys():
-        apid = test_apid
+
         if (apid == ULTRAAPID.ULTRA_EVENTS_45.value or apid == ULTRAAPID.ULTRA_EVENTS_90.value):
             decom_data = None
             sorted_packets = sort_by_time(grouped_data[apid], "SHCOARSE")
@@ -301,11 +348,13 @@ def decom_image_raw_events_packets(packet_file: str, xtce: str, test_apid: int =
             sorted_packets = sort_by_time(grouped_data[apid], "SHCOARSE")
 
             for packet in sorted_packets:
-                decompressed_data = process_image(
+                decompressed_data = decompress_image(
                     packet.data["P00"].derived_value,
                     packet.data["PACKETDATA"].raw_value,
-                    54, 180, int(180 / 15), 15,
-                )
+                    UltraParams.ULTRA_IMG_ENA_PHXTOF_HI_ANG
+                    .value.width,
+                    UltraParams.ULTRA_IMG_ENA_PHXTOF_HI_ANG
+                    .value.mantissa_bit_length)
 
                 for key, item in packet.data.items():
                     if key not in decom_data:
@@ -334,6 +383,7 @@ def decom_image_raw_events_packets(packet_file: str, xtce: str, test_apid: int =
                     UltraParams.ULTRA_IMG_RATES.value.width,
                     UltraParams.ULTRA_IMG_RATES.value.block,
                     UltraParams.ULTRA_IMG_RATES.value.len_array,
+                    UltraParams.ULTRA_IMG_RATES.value.mantissa_bit_length,
                 )
 
                 for key, item in packet.data.items():

@@ -4,19 +4,19 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from imap_processing.ultra.l0.decom_ultra import decom_image_raw_events_packets
+from imap_processing.ultra.l0.decom_ultra import decom_ultra_apids
 
 
 @pytest.fixture()
 def decom_ultra(ccsds_path_image_ena_phxtof_hi_ang, xtce_image_ena_phxtof_hi_ang_path):
     """Data for decom_ultra"""
-    data_packet_list = decom_image_raw_events_packets(
+    data_packet_list = decom_ultra_apids(
         ccsds_path_image_ena_phxtof_hi_ang, xtce_image_ena_phxtof_hi_ang_path
     )
     return data_packet_list
 
 
-def test_image_rate_decom(decom_ultra, image_ena_phxtof_hi_ang_test_path):
+def test_image_ena_phxtof_hi_ang_decom(decom_ultra, image_ena_phxtof_hi_ang_test_path):
     """This function reads validation data and checks that decom data
     matches validation data for image rate packet"""
 

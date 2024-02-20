@@ -2,7 +2,7 @@ import pandas as pd
 import pytest
 
 from imap_processing import decom
-from imap_processing.ultra.l0.decom_ultra import decom_image_raw_events_packets
+from imap_processing.ultra.l0.decom_ultra import decom_ultra_apids
 
 
 @pytest.fixture()
@@ -42,7 +42,7 @@ def test_aux_decom(ccsds_path, xtce_aux_path, aux_test_path):
     """This function reads validation data and checks that
     decom data matches validation data for auxiliary packet"""
 
-    decom_ultra = decom_image_raw_events_packets(ccsds_path, xtce_aux_path)
+    decom_ultra = decom_ultra_apids(ccsds_path, xtce_aux_path)
     df = pd.read_csv(aux_test_path, index_col="MET")
 
     assert (df.SpinStartSeconds == decom_ultra["TIMESPINSTART"]).all()
