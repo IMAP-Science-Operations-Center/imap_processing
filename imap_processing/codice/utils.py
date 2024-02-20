@@ -12,6 +12,7 @@ import space_packet_parser
 import xarray as xr
 
 from imap_processing.cdf.global_attrs import ConstantCoordinates
+from imap_processing.cdf.utils import calc_start_time
 from imap_processing.codice import cdf_attrs
 
 
@@ -112,7 +113,7 @@ def create_dataset(packets: list[space_packet_parser.parser.Packet]) -> xr.Datas
         add_metadata_to_array(packet, metadata_arrays)
 
     epoch_time = xr.DataArray(
-        metadata_arrays["SHCOARSE"],
+        [calc_start_time(shcoarse) for shcoarse in metadata_arrays["SHCOARSE"]],
         name="Epoch",
         dims=["Epoch"],
         attrs=ConstantCoordinates.EPOCH,

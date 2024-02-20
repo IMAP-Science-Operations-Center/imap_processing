@@ -100,4 +100,6 @@ direction_attrs = AttrBase(
     fieldname="[x,y,z] magnetic field vector",
     format="I3",
     var_type="support_data",
+    display_type="time_series",
+    label_axis="Magnetic field vector",
 )

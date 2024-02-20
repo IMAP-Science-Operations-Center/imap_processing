@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import numpy as np
 import xarray as xr
 
@@ -17,25 +19,20 @@ def test_write_cdf(tmp_path):
     # Set up a fake dataset
     # lots of requirements on attributes, so depend on SWE for now
     dataset = xr.Dataset(
-        {"Epoch": ("Epoch", [1, 2, 3])},
+        {
+            "Epoch": (
+                "Epoch",
+                [
+                    np.datetime64("2010-01-01T00:01:01", "ns"),
+                    np.datetime64("2010-01-01T00:01:02", "ns"),
+                    np.datetime64("2010-01-01T00:01:03", "ns"),
+                ],
+            )
+        },
         attrs=swe_l1a_global_attrs.output()
         | {"Logical_source": "imap_test_l1", "Data_version": "01"},
     )
     dataset["Epoch"].attrs = ConstantCoordinates.EPOCH
-
-    fname = write_cdf(dataset, descriptor="test-descriptor")
+    test_name = Path("imap_swe_l1_test_20100101_20100101_v01.cdf")
+    fname = write_cdf(dataset, tmp_path / test_name)
     assert fname.exists()
-    assert fname.name == "imap_test_l1_test-descriptor_20100101_20100101_v01.cdf"
-    # Created automatically for us
-    dir_structure = fname.parts[-5:-1]
-    # instrument, level, year, month
-    assert dir_structure == ("test", "l1", "2010", "01")
-
-    # Test an explicit directory doesn't create that structure
-    filename = write_cdf(dataset, descriptor="test-descriptor", directory=tmp_path)
-    assert filename.exists()
-    assert filename.name == "imap_test_l1_test-descriptor_20100101_20100101_v01.cdf"
-    # Created automatically for us
-    dir_structure = filename.parts[-5:-1]
-    # It should be the same as the tmp_path structure (minus the file name)
-    assert dir_structure == tmp_path.parts[-4:]

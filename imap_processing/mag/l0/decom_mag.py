@@ -13,6 +13,7 @@ from space_packet_parser import parser, xtcedef
 from imap_processing import imap_module_directory
 from imap_processing.ccsds.ccsds_data import CcsdsData
 from imap_processing.cdf.global_attrs import ConstantCoordinates
+from imap_processing.cdf.utils import calc_start_time
 from imap_processing.mag import mag_cdf_attrs
 from imap_processing.mag.l0.mag_l0_data import MagL0, Mode
 
@@ -94,7 +95,7 @@ def export_to_xarray(l0_data: list[MagL0]):
     )
 
     norm_epoch_time = xr.DataArray(
-        norm_data["SHCOARSE"],
+        [calc_start_time(shcoarse) for shcoarse in norm_data["SHCOARSE"]],
         name="Epoch",
         dims=["Epoch"],
         attrs=ConstantCoordinates.EPOCH,
@@ -129,6 +130,8 @@ def export_to_xarray(l0_data: list[MagL0]):
                     mag_cdf_attrs.mag_support_attrs,
                     catdesc=f"Raw {key} values varying by time",
                     fieldname=f"{key}",
+                    label_axis=key,
+                    display_type="no_plot",
                 ).output(),
             )
             norm_dataset[key] = norm_datarray

@@ -98,14 +98,14 @@ def _parse_args():
     )
 
     parser.add_argument(
-        "--start-date",
+        "--start_date",
         type=str,
         required=True,
         help="Start time for the output data. Format: YYYY-MM-DD",
     )
 
     parser.add_argument(
-        "--end-date",
+        "--end_date",
         type=str,
         required=False,
         help="End time for the output data. If not provided, start_time will be used "
@@ -127,7 +127,7 @@ def _parse_args():
     )
 
     parser.add_argument(
-        "--use-remote",
+        "--upload_to_sdc",
         action="store_true",
         required=False,
         help="Upload completed output files to IMAP API.",
@@ -186,7 +186,7 @@ class ProcessInstrument(ABC):
         start_date: str,
         end_date: str,
         version: str,
-        use_remote: bool,
+        upload_to_sdc: bool,
     ) -> None:
         self.level = level
 
@@ -200,7 +200,7 @@ class ProcessInstrument(ABC):
             print(f"Setting end time to start time: {start_date}")
 
         self.version = version
-        self.use_remote = use_remote
+        self.upload_to_sdc = upload_to_sdc
 
     def download_dependencies(self):
         """Download the dependencies for the instrument.
@@ -312,7 +312,7 @@ class Mag(ProcessInstrument):
             mag_l1a(file_paths[0], filename.construct_path())
             print(f"Generated file: {filename.construct_path()}")
 
-            if self.use_remote:
+            if self.upload_to_sdc:
                 print(f"Uploading file from: {filename.construct_path()}")
                 # TODO: figure out data_dir, because now this fails.
                 #  Should switch to using IMAP_DATA_DIR env var.
@@ -360,7 +360,7 @@ class Swe(ProcessInstrument):
 
                 print(f"processed file path: {cdf_file_path}")
 
-                if self.use_remote:
+                if self.upload_to_sdc:
                     imap_data_access.upload(cdf_file_path)
                     print(f"Uploading file: {cdf_file_path}")
 
@@ -378,7 +378,7 @@ class Swe(ProcessInstrument):
                 data=processed_data, filepath=file.construct_path()
             )
             print(f"processed file path: {cdf_file_path}")
-            if self.use_remote:
+            if self.upload_to_sdc:
                 imap_data_access.upload(cdf_file_path)
                 print(f"Uploading file: {cdf_file_path}")
 
@@ -412,7 +412,7 @@ def main():
         args.start_date,
         args.end_date,
         args.version,
-        args.use_remote,
+        args.upload_to_sdc,
     )
     instrument.process()
 
