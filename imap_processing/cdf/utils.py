@@ -24,7 +24,7 @@ def calc_start_time(shcoarse_time: int):
     np.datetime64
         The time of the event
 
-    TODO
+    TODO - move this into imap-data-access? How should it be used?
     -----
     This conversion is temporary for now, and will need SPICE in the future.
     Nick Dutton mentioned that s/c clock start epoch is

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-
+# ruff: noqa: PLR0913
 """Run the processing for a specific instrument & data level.
 
 This module serves as a command line utility to invoke the processing for
@@ -46,7 +46,7 @@ def _parse_args():
     --start_date "20231212"
     --end_date "20231212"
     --version "v00-01"
-    --dependency \"[
+    --dependency "[
         {
             'instrument': 'mag',
             'data_level': 'l0',
@@ -54,7 +54,7 @@ def _parse_args():
             'version': 'v00-01',
             'start_date': '20231212',
             'end_date': '20231212'
-        }]\"
+        }]"
     --use-remote
 
     Returns
@@ -77,27 +77,24 @@ def _parse_args():
     )
     dependency_help = (
         "Dependency information in str format."
-        "Example: '[{'instrument': 'swe', 'level': 'l0', 'version': 'v00-01'}]'"
+        "Example: '[{'instrument': 'mag',"
+        "'data_level': 'l0',"
+        "'descriptor': 'sci',"
+        "'version': 'v00-01',"
+        "'start_date': '20231212',"
+        "'end_date': '20231212'}]"
     )
 
     parser = argparse.ArgumentParser(prog="imap_cli", description=description)
     parser.add_argument("--instrument", type=str, required=True, help=instrument_help)
     parser.add_argument("--level", type=str, required=True, help=level_help)
-    # TODO: change this to be this:
-    # And then make sure places that uses
-    # self.file_path to use it as Path object.
-    # parser.add_argument(
-    #     "--file_path",
-    #     type=Path,
-    #     required=True,
-    #     help="Full path to the file in the S3 bucket.",
-    # )
+
     # TODO: Remove this dependency from batch_starter, then remove it from here.
     parser.add_argument(
         "--file_path",
         type=str,
         required=False,
-        help="Full path to the output file in the S3 bucket.",
+        help="DEPRECATED: Full path to the output file in the S3 bucket.",
     )
 
     parser.add_argument(
@@ -172,7 +169,14 @@ class ProcessInstrument(ABC):
         The full path to the output file in the S3 bucket
     dependencies : list[dict]
         A list of dictionaries containing the dependencies for the instrument in the
-        format: "[{'instrument': 'swe', 'level': 'l0', 'version': 'v00-01'}]"
+        format: "[{
+            'instrument': 'mag',
+            'data_level': 'l0',
+            'descriptor': 'sci',
+            'version': 'v00-01',
+            'start_date': '20231212',
+            'end_date': '20231212'
+        }]"
     """
 
     def __init__(
