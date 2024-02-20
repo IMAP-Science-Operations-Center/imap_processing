@@ -16,7 +16,7 @@ def decom_ultra(ccsds_path_image_raw_events, xtce_image_raw_events_path):
     return data_packet_list
 
 
-def test_image_rate_decom(decom_ultra, image_raw_events_test_path):
+def test_image_raw_events_decom(decom_ultra, image_raw_events_test_path):
     """This function reads validation data and checks that decom data
     matches validation data for image rate packet"""
 

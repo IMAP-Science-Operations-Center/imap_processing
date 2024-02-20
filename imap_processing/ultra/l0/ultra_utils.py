@@ -1,7 +1,5 @@
 """Data class for Ultra Level 0 data."""
 from enum import IntEnum
-from imap_processing.ccsds.ccsds_data import CcsdsData
-from dataclasses import fields
 from imap_processing.cdf.defaults import GlobalConstants
 
 
@@ -40,26 +38,22 @@ class EventParser:
         bit positions within a binary event string.
     scalar_fields : set
         A set containing the names of scalar fields that are relevant to the event data.
-    ccsds_fields : list
-        A list of field names extracted from the CcsdsData dataclass, representing
-        the CCSDS header fields.
 
     Methods
     -------
     initialize_event_data(header: dict) -> dict:
-        Initializes the data structure for storing event data, including event fields,
-        scalar fields, and CCSDS header fields based on the provided header information.
+        Initializes the data structure for storing event data.
 
-    append_negative_one(event_data: dict) -> None:
-        Appends -1 to all event fields except for specified scalar fields and CCSDS
-        fields, indicating missing or uninitialized data.
+    append_fillval(event_data: dict) -> None:
+        Appends fill values to all event fields
+        indicating missing or uninitialized data.
 
     parse_event(event_binary: str) -> dict:
         Parses a binary string representing a single event, extracting and converting
         event field values based on predefined field ranges.
 
     append_values(event_data: dict, packet: dict) -> None:
-        Appends actual values to event fields, scalar fields, and CCSDS fields for a
+        Appends actual values to event fields and scalar fields for a
         given packet, updating the event data structure.
     """
     def __init__(self):
@@ -84,7 +78,6 @@ class EventParser:
             "phase_angle": (156, 166),
         }
         self.event_scalar_fields = {'SHCOARSE', 'SID', 'SPIN', 'ABORTFLAG', 'STARTDELAY', 'COUNT'}
-        self.ccsds_fields = [field.name for field in fields(CcsdsData)]
 
     def initialize_event_data(self, header):
         """Initializes and returns the data structure for storing event data."""
@@ -92,18 +85,12 @@ class EventParser:
         for scalar_field in self.event_scalar_fields:
             event_data[scalar_field] = []
 
-        ccsds_data = CcsdsData(header)
-        keys = [field.name for field in fields(ccsds_data)]
-
-        for key in keys:
-            event_data[key] = []
-
         return event_data
 
-    def append_negative_one(self, event_data):
+    def append_fillval(self, event_data):
         """Appends fillvalue to all event fields except for specified scalar and CCSDS fields."""
         for key in event_data:
-            if key not in self.event_scalar_fields and key not in self.ccsds_fields:
+            if key not in self.event_scalar_fields:
                 event_data[key].append(GlobalConstants.INT_FILLVAL)
 
     def parse_event(self, event_binary):
@@ -114,11 +101,6 @@ class EventParser:
         }
 
     def append_values(self, event_data, packet):
-        """Appends scalar fields and CCSDS fields to event_data."""
+        """Appends scalar fields to event_data."""
         for key in self.event_scalar_fields:
             event_data[key].append(packet.data[key].raw_value)
-
-        ccsds_data = CcsdsData(packet.header)
-
-        for ccsds_key in self.ccsds_fields:
-            event_data[ccsds_key].append(getattr(ccsds_data, ccsds_key))

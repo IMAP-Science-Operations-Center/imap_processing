@@ -275,9 +275,9 @@ def read_image_raw_events_binary(packet, events_data=None):
     if events_data is None:
         events_data = parser.initialize_event_data(packet.header)
 
-    # Uses -1 for all packets that do not contain event data.
+    # Uses fill value for all packets that do not contain event data.
     if count == 0:
-        parser.append_negative_one(events_data)
+        parser.append_fillval(events_data)
         parser.append_values(events_data, packet)
     # For all packets with event data, parses the binary string
     # and appends the other packet values
@@ -327,6 +327,16 @@ def decom_ultra_apids(packet_file: str, xtce: str, test_apid: int = None):
 
             for packet in sorted_packets:
                 decom_data = read_image_raw_events_binary(packet, decom_data)
+                count = packet.data["COUNT"].derived_value
+
+                for i in range(count):
+                    ccsds_data = CcsdsData(packet.header)
+                    for field in fields(CcsdsData):
+                        ccsds_key = field.name
+                        if ccsds_key not in decom_data:
+                            decom_data[ccsds_key] = []
+                        decom_data[ccsds_key].append(getattr(ccsds_data, ccsds_key))
+
         elif (apid == ULTRAAPID.ULTRA_AUX_45.value or apid == ULTRAAPID.ULTRA_AUX_90.value):
             decom_data = {}
             sorted_packets = sort_by_time(grouped_data[apid], "SHCOARSE")
