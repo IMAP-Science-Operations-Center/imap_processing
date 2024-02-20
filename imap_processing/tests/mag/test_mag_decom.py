@@ -2,7 +2,8 @@ from pathlib import Path
 
 import pandas as pd
 
-from imap_processing.mag.l0.decom_mag import decom_packets
+from imap_processing.cdf import global_attrs
+from imap_processing.mag.l0.decom_mag import decom_packets, export_to_xarray
 
 
 def test_mag_decom():
@@ -35,3 +36,19 @@ def test_mag_decom():
         index += 1
 
     assert len(l0) == len(expected_output.index)
+
+
+def test_mag_raw_cdf():
+    current_directory = Path(__file__).parent
+    burst_test_file = current_directory / "mag_l0_test_data.pkts"
+    l0 = decom_packets(str(burst_test_file))
+
+    output_data = export_to_xarray(l0)
+    required_attrs = list(
+        global_attrs.GlobalInstrumentAttrs("", "", "").output().keys()
+    )
+    print(required_attrs)
+    print(output_data.attrs)
+
+    assert all([item in list(output_data.attrs.keys()) for item in required_attrs])
+    assert all([item is not None for _, item in output_data.attrs.items()])

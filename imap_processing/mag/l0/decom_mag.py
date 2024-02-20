@@ -86,8 +86,8 @@ def export_to_xarray(l0_data: list[MagL0]):
             burst_data["raw_vectors"].append(datapoint.VECTORS)
 
     # Used in L1A vectors
-    direction = xr.DataArray(
-        np.arange(194),
+    direction_norm = xr.DataArray(
+        np.arange(len(norm_data["VECTORS"][0])),
         name="Direction",
         dims=["Direction"],
         attrs=mag_cdf_attrs.direction_attrs.output(),
@@ -110,7 +110,7 @@ def export_to_xarray(l0_data: list[MagL0]):
 
     # TODO add norm to attrs somehow
     norm_dataset = xr.Dataset(
-        coords={"Epoch": norm_epoch_time, "Direction": direction},
+        coords={"Epoch": norm_epoch_time, "Direction": direction_norm},
         attrs=mag_cdf_attrs.mag_l1a_attrs.output(),
     )
 
