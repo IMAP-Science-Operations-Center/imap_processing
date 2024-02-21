@@ -40,11 +40,10 @@ def _parse_args():
     """Parse the command line arguments.
 
     The expected input format is:
-    TODO: should dependency dict use file path, or instrument/datalevel/version/date?
     --instrument "mag"
-    --data_level "l1a"
-    --start_date "20231212"
-    --end_date "20231212"
+    --data-level "l1a"
+    --start-date "20231212"
+    --end-date "20231212"
     --version "v00-01"
     --dependency "[
         {
@@ -55,7 +54,7 @@ def _parse_args():
             'start_date': '20231212',
             'end_date': '20231212'
         }]"
-    --use-remote
+    --upload-to-sdc
 
     Returns
     -------
@@ -65,7 +64,19 @@ def _parse_args():
     description = (
         "This command line program invokes the processing pipeline "
         "for a specific instrument and data level. Example usage: "
-        '"python run_processing --instrument swe --data_level l1a".'
+        '"imap_cli --instrument "mag" '
+        '--data-level "l1a"'
+        ' --start-date "20231212"'
+        '--end-date "20231212"'
+        '--version "v00-01"'
+        '--dependency "['
+        '   {"instrument": "mag",'
+        '   "data_level": "l0"',
+        '   "descriptor": "sci"',
+        '   "version": "v00-01"',
+        '   "start_date": "0231212"',
+        '   "end_date": "20231212"',
+        '}]" --upload-to-sdc"',
     )
     instrument_help = (
         "The instrument to process. Acceptable values are: "
@@ -87,25 +98,25 @@ def _parse_args():
 
     parser = argparse.ArgumentParser(prog="imap_cli", description=description)
     parser.add_argument("--instrument", type=str, required=True, help=instrument_help)
-    parser.add_argument("--data_level", type=str, required=True, help=level_help)
+    parser.add_argument("--data-level", type=str, required=True, help=level_help)
 
     # TODO: Remove this dependency from batch_starter, then remove it from here.
     parser.add_argument(
-        "--file_path",
+        "--file-path",
         type=str,
         required=False,
         help="DEPRECATED: Full path to the output file in the S3 bucket.",
     )
 
     parser.add_argument(
-        "--start_date",
+        "--start-date",
         type=str,
         required=True,
         help="Start time for the output data. Format: YYYY-MM-DD",
     )
 
     parser.add_argument(
-        "--end_date",
+        "--end-date",
         type=str,
         required=False,
         help="End time for the output data. If not provided, start_time will be used "
@@ -127,7 +138,7 @@ def _parse_args():
     )
 
     parser.add_argument(
-        "--upload_to_sdc",
+        "--upload-to-sdc",
         action="store_true",
         required=False,
         help="Upload completed output files to IMAP API.",
@@ -403,6 +414,8 @@ def main():
     # NOTE: This is to allow the cli script to be installed and reference
     #       this function for an entrypoint.
     args = _parse_args()
+
+    print(args)
 
     _validate_args(args)
     cls = getattr(sys.modules[__name__], args.instrument.capitalize())
