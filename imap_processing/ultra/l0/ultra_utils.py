@@ -1,8 +1,9 @@
 """Contains data classes to support Ultra L0 processing."""
+from dataclasses import fields
 from enum import Enum
 from typing import NamedTuple
+
 from imap_processing.cdf.defaults import GlobalConstants
-from dataclasses import fields
 
 
 class PacketProperties(NamedTuple):
@@ -19,43 +20,51 @@ class UltraParams(Enum):
     """Enumerated packet properties for ULTRA."""
 
     ULTRA_AUX = PacketProperties(
-        apid=[880,994], width=None, block=None, len_array=None, mantissa_bit_length=None)
+        apid=[880, 994],
+        width=None,
+        block=None,
+        len_array=None,
+        mantissa_bit_length=None,
+    )
     ULTRA_RATES = PacketProperties(
-        apid=[881,945], width=5, block=16, len_array=48, mantissa_bit_length=12)
+        apid=[881, 945], width=5, block=16, len_array=48, mantissa_bit_length=12
+    )
     ULTRA_TOF = PacketProperties(
-        apid=[883,947], width=4, block=15, len_array=None, mantissa_bit_length=4)
+        apid=[883, 947], width=4, block=15, len_array=None, mantissa_bit_length=4
+    )
     ULTRA_EVENTS = PacketProperties(
-        apid=[896,960], width=None, block=None, len_array=None, mantissa_bit_length=None)
+        apid=[896, 960],
+        width=None,
+        block=None,
+        len_array=None,
+        mantissa_bit_length=None,
+    )
 
 
 class ParserHelper:
-    """Data class for parsing Ultra Level 0 event data from binary packets.
+    """
+    A utility class for parsing Ultra Level 0 data.
 
     Attributes
     ----------
     event_field_ranges : dict
-        A dictionary mapping event field names to their respective start and end
-        bit positions within a binary event string.
-    scalar_fields : set
-        A set containing the names of scalar fields that are relevant to the event data.
+        Maps event field names to tuples indicating their start and end bit positions in a binary event string.
 
     Methods
     -------
-    initialize_event_data(header: dict) -> dict:
-        Initializes the data structure for storing event data.
+    initialize_event_data() -> dict:
+        Creates and returns a dictionary with keys for each event field and empty lists as values, ready for data storage.
 
-    append_fillval(event_data: dict) -> None:
-        Appends fill values to all event fields
-        indicating missing or uninitialized data.
+    append_fillval(decom_data: dict, packet) -> None:
+        Inserts fill values into `decom_data` for any fields not present in `packet.header` or `packet.data`, indicating missing or uninitialized data.
 
     parse_event(event_binary: str) -> dict:
-        Parses a binary string representing a single event, extracting and converting
-        event field values based on predefined field ranges.
+        Converts a binary string `event_binary` into a dictionary of event fields and values, based on the field ranges defined in `event_field_ranges`.
 
-    append_values(event_data: dict, packet: dict) -> None:
-        Appends actual values to event fields and scalar fields for a
-        given packet, updating the event data structure.
+    append_ccsds_fields(decom_data: dict, ccsds_data_object) -> None:
+        Adds data from a CCSDS data object to `decom_data`, expanding the event data with additional fields.
     """
+
     def __init__(self):
         self.event_field_ranges = {
             "coin_type": (0, 2),
@@ -77,38 +86,34 @@ class ParserHelper:
             "bin": (148, 156),
             "phase_angle": (156, 166),
         }
-        self.scalar_fields = {'SHCOARSE', 'SID', 'SPIN', 'ABORTFLAG', 'STARTDELAY', 'COUNT'}
 
-    def initialize_event_data(self):
-        """Initializes and returns the data structure for storing event data."""
-        event_data = {field: [] for field in self.event_field_ranges}
-        for scalar_field in self.scalar_fields:
-            event_data[scalar_field] = []
+    def initialize_event_data(self, decom_data):
+        """Updates the existing decom_data dictionary by adding new keys with empty lists
+        for those not already present.
+        """
+        for field in self.event_field_ranges:
+            if field not in decom_data:
+                decom_data[field] = []
+        return decom_data
 
-        return event_data
-
-    def append_fillval(self, event_data):
-        """Appends fillvalue to all event fields except for specified scalar and CCSDS fields."""
-        for key in event_data:
-            if key not in self.scalar_fields:
-                event_data[key].append(GlobalConstants.INT_FILLVAL)
+    def append_fillval(self, decom_data, packet):
+        """Appends fillvalue to all fields except for specified scalar and CCSDS fields."""
+        for key in decom_data:
+            if (key not in packet.header.keys()) and (key not in packet.data.keys()):
+                decom_data[key].append(GlobalConstants.INT_FILLVAL)
 
     def parse_event(self, event_binary):
         """Parses a binary string representing a single event."""
         return {
+            # 2 is the base for binary conversion
             field: int(event_binary[start:end], 2)
             for field, (start, end) in self.event_field_ranges.items()
         }
 
-    def append_values(self, event_data, packet):
-        """Appends scalar fields to event_data."""
-        for key in self.scalar_fields:
-            event_data[key].append(packet.data[key].raw_value)
-
-    def append_ccsds_fields(self, event_data, ccsds_data_object):
+    def append_ccsds_fields(self, decom_data, ccsds_data_object):
         """Appends ccsds fields to event_data."""
         for field in fields(ccsds_data_object.__class__):
             ccsds_key = field.name
-            if ccsds_key not in event_data:
-                event_data[ccsds_key] = []
-            event_data[ccsds_key].append(getattr(ccsds_data_object, ccsds_key))
+            if ccsds_key not in decom_data:
+                decom_data[ccsds_key] = []
+            decom_data[ccsds_key].append(getattr(ccsds_data_object, ccsds_key))

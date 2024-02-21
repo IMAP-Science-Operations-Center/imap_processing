@@ -1,0 +1,502 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<xtce:SpaceSystem xmlns:xtce="http://www.omg.org/space/xtce" name="P_U45_AUXILIARY">
+	<xtce:Header date="2023-08-24T07:53:00MST" version="1.0" author="IMAP SDC" />
+	<xtce:TelemetryMetaData>
+		<xtce:ParameterTypeSet>
+			<xtce:IntegerParameterType name="uint0" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="0" encoding="unsigned" />
+				<xtce:UnitSet />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint1" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
+				<xtce:UnitSet />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint2" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="2" encoding="unsigned" />
+				<xtce:UnitSet />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint3" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="3" encoding="unsigned" />
+				<xtce:UnitSet />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint4" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="4" encoding="unsigned" />
+				<xtce:UnitSet />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint5" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="5" encoding="unsigned" />
+				<xtce:UnitSet />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint6" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="6" encoding="unsigned" />
+				<xtce:UnitSet />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint7" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="7" encoding="unsigned" />
+				<xtce:UnitSet />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint8" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="8" encoding="unsigned" />
+				<xtce:UnitSet />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint9" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="9" encoding="unsigned" />
+				<xtce:UnitSet />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint10" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="10" encoding="unsigned" />
+				<xtce:UnitSet />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint11" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="11" encoding="unsigned" />
+				<xtce:UnitSet />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint12" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned" />
+				<xtce:UnitSet />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint13" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="13" encoding="unsigned" />
+				<xtce:UnitSet />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint14" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="14" encoding="unsigned" />
+				<xtce:UnitSet />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint15" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="15" encoding="unsigned" />
+				<xtce:UnitSet />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint16" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="16" encoding="unsigned" />
+				<xtce:UnitSet />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint17" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="17" encoding="unsigned" />
+				<xtce:UnitSet />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint18" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="18" encoding="unsigned" />
+				<xtce:UnitSet />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint19" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="19" encoding="unsigned" />
+				<xtce:UnitSet />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint20" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="20" encoding="unsigned" />
+				<xtce:UnitSet />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint21" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="21" encoding="unsigned" />
+				<xtce:UnitSet />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint22" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="22" encoding="unsigned" />
+				<xtce:UnitSet />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint23" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="23" encoding="unsigned" />
+				<xtce:UnitSet />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint24" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="24" encoding="unsigned" />
+				<xtce:UnitSet />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint25" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="25" encoding="unsigned" />
+				<xtce:UnitSet />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint26" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="26" encoding="unsigned" />
+				<xtce:UnitSet />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint27" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="27" encoding="unsigned" />
+				<xtce:UnitSet />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint28" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="28" encoding="unsigned" />
+				<xtce:UnitSet />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint29" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="29" encoding="unsigned" />
+				<xtce:UnitSet />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint30" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="30" encoding="unsigned" />
+				<xtce:UnitSet />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint31" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="31" encoding="unsigned" />
+				<xtce:UnitSet />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint32" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="32" encoding="unsigned" />
+				<xtce:UnitSet />
+			</xtce:IntegerParameterType>
+			<xtce:BinaryParameterType name="fastdata">
+                <xtce:UnitSet/>
+                <xtce:BinaryDataEncoding>
+                    <xtce:SizeInBits>
+            			<xtce:DynamicValue>
+              				<xtce:ParameterInstanceRef parameterRef="PKT_LEN"/>
+							<!--Equation: (PKT_LEN+7)*8-112 -->
+              				<xtce:LinearAdjustment intercept="-56" slope="8"/>
+            			</xtce:DynamicValue>
+          			</xtce:SizeInBits>
+                </xtce:BinaryDataEncoding>
+            </xtce:BinaryParameterType>
+			<xtce:BinaryParameterType name="packetdata">
+                <xtce:UnitSet/>
+                <xtce:BinaryDataEncoding>
+                    <xtce:SizeInBits>
+            			<xtce:DynamicValue>
+              				<xtce:ParameterInstanceRef parameterRef="PKT_LEN"/>
+							<!--Equation: (PKT_LEN+7)*8-120 -->
+							<!--7: packet header + 1 -->
+							<!--120: start bit -->
+              				<xtce:LinearAdjustment intercept="-64" slope="8"/>
+            			</xtce:DynamicValue>
+          			</xtce:SizeInBits>
+                </xtce:BinaryDataEncoding>
+            </xtce:BinaryParameterType>
+			<xtce:BinaryParameterType name="eventdata">
+                <xtce:UnitSet/>
+                <xtce:BinaryDataEncoding>
+                    <xtce:SizeInBits>
+            			<xtce:DynamicValue>
+              				<xtce:ParameterInstanceRef parameterRef="COUNT"/>
+							<!--Equation: (COUNT)*166 -->
+              				<xtce:LinearAdjustment intercept="0" slope="166"/>
+            			</xtce:DynamicValue>
+          			</xtce:SizeInBits>
+                </xtce:BinaryDataEncoding>
+            </xtce:BinaryParameterType>
+			<!-- Enumerated Data Types -->
+            <xtce:EnumeratedParameterType name="spin_period_validity_enum" signed="false">
+                <xtce:UnitSet/>
+                <xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned"/>
+                <xtce:EnumerationList>
+                    <xtce:Enumeration label="INVALID" value="0"/>
+                    <xtce:Enumeration label="VALID" value="1"/>
+                </xtce:EnumerationList>
+            </xtce:EnumeratedParameterType>
+            <xtce:EnumeratedParameterType name="spin_phase_validity_enum" signed="false">
+                <xtce:UnitSet/>
+                <xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned"/>
+                <xtce:EnumerationList>
+                    <xtce:Enumeration label="INVALID" value="0"/>
+                    <xtce:Enumeration label="VALID" value="1"/>
+                </xtce:EnumerationList>
+            </xtce:EnumeratedParameterType>
+            <xtce:EnumeratedParameterType name="spin_period_source_enum" signed="false">
+                <xtce:UnitSet/>
+                <xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned"/>
+                <xtce:EnumerationList>
+                    <xtce:Enumeration label="SAFING" value="0"/>
+                    <xtce:Enumeration label="NOMINAL" value="1"/>
+                </xtce:EnumerationList>
+            </xtce:EnumeratedParameterType>
+			<xtce:EnumeratedParameterType name="catbed_heater_enum" signed="false">
+                <xtce:UnitSet/>
+                <xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned"/>
+                <xtce:EnumerationList>
+                    <xtce:Enumeration label="UNFLAGGED" value="0"/>
+                    <xtce:Enumeration label="FLAGGED" value="1"/>
+                </xtce:EnumerationList>
+            </xtce:EnumeratedParameterType>
+			<xtce:EnumeratedParameterType name="hwmode_enum" signed="false">
+                <xtce:UnitSet/>
+                <xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned"/>
+                <xtce:EnumerationList>
+                    <xtce:Enumeration label="MODE0" value="0"/>
+                    <xtce:Enumeration label="MODE1" value="1"/>
+                </xtce:EnumerationList>
+            </xtce:EnumeratedParameterType>
+						<xtce:EnumeratedParameterType name="imcenb_enum" signed="false">
+                <xtce:UnitSet/>
+                <xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned"/>
+                <xtce:EnumerationList>
+                    <xtce:Enumeration label="MODE0" value="0"/>
+                    <xtce:Enumeration label="MODE1" value="1"/>
+                </xtce:EnumerationList>
+            </xtce:EnumeratedParameterType>
+						<xtce:EnumeratedParameterType name="leftdeflect_enum" signed="false">
+                <xtce:UnitSet/>
+                <xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned"/>
+                <xtce:EnumerationList>
+                    <xtce:Enumeration label="MODE0" value="0"/>
+                    <xtce:Enumeration label="MODE1" value="1"/>
+                </xtce:EnumerationList>
+            </xtce:EnumeratedParameterType>
+						<xtce:EnumeratedParameterType name="rightdeflect_enum" signed="false">
+                <xtce:UnitSet/>
+                <xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned"/>
+                <xtce:EnumerationList>
+                    <xtce:Enumeration label="MODE0" value="0"/>
+                    <xtce:Enumeration label="MODE1" value="1"/>
+                </xtce:EnumerationList>
+            </xtce:EnumeratedParameterType>
+        </xtce:ParameterTypeSet>
+        <xtce:ParameterSet>
+            <!-- Within the ParameterSet, utilize the data types defined in the ParameterTypeSet to create variables
+            with their respective data types. -->
+
+            <!--CCSDS Header Elements-->
+			<xtce:Parameter name="VERSION" parameterTypeRef="uint3">
+				<xtce:LongDescription>CCSDS Packet Version Number (always 0)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="TYPE" parameterTypeRef="uint1">
+				<xtce:LongDescription>CCSDS Packet Type Indicator (0=telemetry)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SEC_HDR_FLG" parameterTypeRef="uint1">
+				<xtce:LongDescription>CCSDS Packet Secondary Header Flag (always 1)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PKT_APID" parameterTypeRef="uint11">
+				<xtce:LongDescription>CCSDS Packet Application Process ID</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SEQ_FLGS" parameterTypeRef="uint2">
+				<xtce:LongDescription>CCSDS Packet Grouping Flags (3=not part of group)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SRC_SEQ_CTR" parameterTypeRef="uint14">
+				<xtce:LongDescription>CCSDS Packet Sequence Count (increments with each new packet)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PKT_LEN" parameterTypeRef="uint16">
+				<xtce:LongDescription>CCSDS Packet Length (number of bytes after Packet length minus 1)</xtce:LongDescription>
+			</xtce:Parameter>
+			<!-- Start metadata -->
+			<xtce:Parameter name="SHCOARSE" parameterTypeRef="uint32">
+				<xtce:LongDescription>CCSDS Packet Time Stamp (coarse time)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="TIMESPINSTART" parameterTypeRef="uint32">
+				<xtce:LongDescription>Spin Start Seconds</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="TIMESPINSTARTSUB" parameterTypeRef="uint16">
+				<xtce:LongDescription>Spin Start Subseconds</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DURATION" parameterTypeRef="uint16">
+				<xtce:LongDescription>Spin Duration</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SPINNUMBER" parameterTypeRef="uint32">
+				<xtce:LongDescription>Spin Number</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="TIMESPINDATA" parameterTypeRef="uint32">
+				<xtce:LongDescription>Spin DataTime</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SPINPERIOD" parameterTypeRef="uint16">
+				<xtce:LongDescription>Spin Period</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SPINPHASE" parameterTypeRef="uint16">
+				<xtce:LongDescription>Spin Phase</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SPINPERIODVALID" parameterTypeRef="spin_period_validity_enum">
+				<xtce:LongDescription>
+                    Spin period valid bit:
+                    '1' -- valid,
+                    '0' -- invalid
+                </xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SPINPHASEVALID" parameterTypeRef="spin_phase_validity_enum">
+				<xtce:LongDescription>
+                    Spin phase valid bit:
+                    '1' -- valid,
+                    '0' -- invalid
+                </xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SPINPERIODSOURCE" parameterTypeRef="spin_period_source_enum">
+				<xtce:LongDescription>
+                Spin period source bit:
+                '1' -- sun sensor (safing),
+                '0' -- star tracker (nominal)
+            	</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="CATBEDHEATERFLAG" parameterTypeRef="catbed_heater_enum">
+				<xtce:LongDescription>
+                    Catbead heater flag:
+                    '1' -- flagged,
+                    '0' -- unflagged
+                </xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SPARE1" parameterTypeRef="uint4">
+				<xtce:LongDescription>Spare</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="INTS" parameterTypeRef="uint8">
+				<xtce:LongDescription>Spins</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="INTN1" parameterTypeRef="uint8">
+				<xtce:LongDescription>Integration Multiplier 1</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="INTN2" parameterTypeRef="uint8">
+				<xtce:LongDescription>Integration Multiplier 2</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SPARE2" parameterTypeRef="uint4">
+				<xtce:LongDescription>Reserved</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="HWMODE" parameterTypeRef="hwmode_enum">
+				<xtce:LongDescription>
+                    Hardware mode:
+                    '1' -- mode1,
+                    '0' -- mode0
+                </xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="IMCENB" parameterTypeRef="imcenb_enum">
+				<xtce:LongDescription>
+                    IMCENB mode:
+                    '1' -- mode1,
+                    '0' -- mode0
+                </xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="LEFTDEFLECTIONCHARGE" parameterTypeRef="leftdeflect_enum">
+				<xtce:LongDescription>
+                    LEFTDEFLECTIONCHARGE mode:
+                    '1' -- mode1,
+                    '0' -- mode0
+                </xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="RIGHTDEFLECTIONCHARGE" parameterTypeRef="rightdeflect_enum">
+				<xtce:LongDescription>
+                    RIGHTDEFLECTIONCHARGE mode:
+                    '1' -- mode1,
+                    '0' -- mode0
+                </xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SPARE3" parameterTypeRef="uint8">
+				<xtce:LongDescription>Spare</xtce:LongDescription>
+			</xtce:Parameter>
+			<!-- Unique to Image Rates -->
+			<xtce:Parameter name="SID" parameterTypeRef="uint8">
+				<xtce:LongDescription>Science ID</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SPIN" parameterTypeRef="uint8">
+				<xtce:LongDescription>Spin number at integration start</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="ABORTFLAG" parameterTypeRef="uint1">
+				<xtce:LongDescription>Integration aborted?</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="STARTDELAY" parameterTypeRef="uint15">
+				<xtce:LongDescription>Integration start delay (ms)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="FASTDATA_00" parameterTypeRef="fastdata">
+				<xtce:LongDescription>Fast-compressed rate data</xtce:LongDescription>
+			</xtce:Parameter>
+			<!-- Unique to TOF -->
+			<xtce:Parameter name="P00" parameterTypeRef="uint8">
+				<xtce:LongDescription>Starting pixel</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PACKETDATA" parameterTypeRef="packetdata">
+				<xtce:LongDescription>Image Packet Data</xtce:LongDescription>
+			</xtce:Parameter>
+			<!-- Unique to Raw Events -->
+			<xtce:Parameter name="COUNT" parameterTypeRef="uint8">
+				<xtce:LongDescription>Event Count</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="EVENTDATA" parameterTypeRef="eventdata">
+				<xtce:LongDescription>Event Data, 166 bits per event</xtce:LongDescription>
+			</xtce:Parameter>
+		</xtce:ParameterSet>
+		<!-- End metadata -->
+		<xtce:ContainerSet>
+			<!--CCSDS Header Elements-->
+			<xtce:SequenceContainer name="CCSDSPacket">
+				<xtce:EntryList>
+					<xtce:ParameterRefEntry parameterRef="VERSION" />
+					<xtce:ParameterRefEntry parameterRef="TYPE" />
+					<xtce:ParameterRefEntry parameterRef="SEC_HDR_FLG" />
+					<xtce:ParameterRefEntry parameterRef="PKT_APID" />
+					<xtce:ParameterRefEntry parameterRef="SEQ_FLGS" />
+					<xtce:ParameterRefEntry parameterRef="SRC_SEQ_CTR" />
+					<xtce:ParameterRefEntry parameterRef="PKT_LEN" />
+				</xtce:EntryList>
+			</xtce:SequenceContainer>
+			<xtce:SequenceContainer name="UltraAuxiliaryPacket">
+				<xtce:BaseContainer containerRef="CCSDSPacket">
+					<xtce:RestrictionCriteria>
+						<xtce:OR>
+							<xtce:Comparison parameterRef="PKT_APID" value="880" useCalibratedValue="false" />
+							<xtce:Comparison parameterRef="PKT_APID" value="994" useCalibratedValue="false" />
+						</xtce:OR>
+					</xtce:RestrictionCriteria>
+				</xtce:BaseContainer>
+				<xtce:EntryList>
+					<xtce:ParameterRefEntry parameterRef="SHCOARSE" />
+					<xtce:ParameterRefEntry parameterRef="TIMESPINSTART"/>
+					<xtce:ParameterRefEntry parameterRef="TIMESPINSTARTSUB"/>
+					<xtce:ParameterRefEntry parameterRef="DURATION"/>
+					<xtce:ParameterRefEntry parameterRef="SPINNUMBER"/>
+					<xtce:ParameterRefEntry parameterRef="TIMESPINDATA"/>
+					<xtce:ParameterRefEntry parameterRef="SPINPERIOD"/>
+					<xtce:ParameterRefEntry parameterRef="SPINPHASE"/>
+					<xtce:ParameterRefEntry parameterRef="SPINPERIODVALID"/>
+					<xtce:ParameterRefEntry parameterRef="SPINPHASEVALID"/>
+					<xtce:ParameterRefEntry parameterRef="SPINPERIODSOURCE"/>
+					<xtce:ParameterRefEntry parameterRef="CATBEDHEATERFLAG"/>
+					<xtce:ParameterRefEntry parameterRef="SPARE1"/>
+					<xtce:ParameterRefEntry parameterRef="INTS"/>
+					<xtce:ParameterRefEntry parameterRef="INTN1"/>
+					<xtce:ParameterRefEntry parameterRef="INTN2"/>
+					<xtce:ParameterRefEntry parameterRef="SPARE2"/>
+					<xtce:ParameterRefEntry parameterRef="HWMODE"/>
+					<xtce:ParameterRefEntry parameterRef="IMCENB"/>
+					<xtce:ParameterRefEntry parameterRef="LEFTDEFLECTIONCHARGE"/>
+					<xtce:ParameterRefEntry parameterRef="RIGHTDEFLECTIONCHARGE"/>
+					<xtce:ParameterRefEntry parameterRef="SPARE3"/>
+				</xtce:EntryList>
+			</xtce:SequenceContainer>
+			<xtce:SequenceContainer name="UltraImageRatesPacket">
+				<xtce:BaseContainer containerRef="CCSDSPacket">
+						<xtce:OR>
+							<xtce:Comparison parameterRef="PKT_APID" value="881" useCalibratedValue="false" />
+							<xtce:Comparison parameterRef="PKT_APID" value="945" useCalibratedValue="false" />
+						</xtce:OR>
+				</xtce:BaseContainer>
+				<xtce:EntryList>
+					<xtce:ParameterRefEntry parameterRef="SHCOARSE" />
+					<xtce:ParameterRefEntry parameterRef="SID" />
+					<xtce:ParameterRefEntry parameterRef="SPIN" />
+					<xtce:ParameterRefEntry parameterRef="ABORTFLAG" />
+					<xtce:ParameterRefEntry parameterRef="STARTDELAY" />
+					<xtce:ParameterRefEntry parameterRef="FASTDATA_00" />
+				</xtce:EntryList>
+			</xtce:SequenceContainer>
+			<xtce:SequenceContainer name="UltraPHXTOFPacket">
+				<xtce:BaseContainer containerRef="CCSDSPacket">
+					<xtce:RestrictionCriteria>
+						<xtce:OR>
+							<xtce:Comparison parameterRef="PKT_APID" value="883" useCalibratedValue="false" />
+							<xtce:Comparison parameterRef="PKT_APID" value="947" useCalibratedValue="false" />
+						</xtce:OR>
+					</xtce:RestrictionCriteria>
+				</xtce:BaseContainer>
+				<xtce:EntryList>
+					<xtce:ParameterRefEntry parameterRef="SHCOARSE" />
+					<xtce:ParameterRefEntry parameterRef="SID" />
+					<xtce:ParameterRefEntry parameterRef="SPIN" />
+					<xtce:ParameterRefEntry parameterRef="ABORTFLAG" />
+					<xtce:ParameterRefEntry parameterRef="STARTDELAY" />
+					<xtce:ParameterRefEntry parameterRef="P00" />
+					<xtce:ParameterRefEntry parameterRef="PACKETDATA" />
+				</xtce:EntryList>
+			</xtce:SequenceContainer>
+			<xtce:SequenceContainer name="UltraRawEventsPacket">
+				<xtce:BaseContainer containerRef="CCSDSPacket">
+					<xtce:RestrictionCriteria>
+						<xtce:OR>
+							<xtce:Comparison parameterRef="PKT_APID" value="896" useCalibratedValue="false" />
+							<xtce:Comparison parameterRef="PKT_APID" value="960" useCalibratedValue="false" />
+						</xtce:OR>
+					</xtce:RestrictionCriteria>
+				</xtce:BaseContainer>
+				<xtce:EntryList>
+					<xtce:ParameterRefEntry parameterRef="SHCOARSE" />
+					<xtce:ParameterRefEntry parameterRef="SID" />
+					<xtce:ParameterRefEntry parameterRef="SPIN" />
+					<xtce:ParameterRefEntry parameterRef="ABORTFLAG" />
+					<xtce:ParameterRefEntry parameterRef="STARTDELAY" />
+					<xtce:ParameterRefEntry parameterRef="COUNT" />
+					<xtce:ParameterRefEntry parameterRef="EVENTDATA" />
+				</xtce:EntryList>
+			</xtce:SequenceContainer>
+		</xtce:ContainerSet>
+	</xtce:TelemetryMetaData>
+</xtce:SpaceSystem>

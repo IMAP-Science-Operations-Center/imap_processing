@@ -1,6 +1,6 @@
 """Ultra Decompression Tools."""
-
 from imap_processing.ultra.l0.ultra_utils import ParserHelper
+
 
 def read_n_bits(binary: str, n: int, current_position: int):
     """Extract the specified number of bits from a binary string.
@@ -76,7 +76,9 @@ def log_decompression(value: int, mantissa_bit_length) -> int:
         return (base_value + m) << (e - 1)
 
 
-def decompress_binary(binary: str, width_bit: int, block: int, len_array, mantissa_bit_length) -> list:
+def decompress_binary(
+    binary: str, width_bit: int, block: int, len_array, mantissa_bit_length
+) -> list:
     """Decompress a binary string.
 
     Decompress a binary string based on block-width encoding and
@@ -126,14 +128,20 @@ def decompress_binary(binary: str, width_bit: int, block: int, len_array, mantis
             value, current_position = read_n_bits(binary, width, current_position)
 
             # Log decompression
-            decompressed_values.append(log_decompression(value,
-                                                         mantissa_bit_length))
+            decompressed_values.append(log_decompression(value, mantissa_bit_length))
 
     return decompressed_values
 
 
-def decompress_image(pp, binary_data, width_bit, mantissa_bit_length,
-                  rows=54, cols=180, pixels_per_block=15):
+def decompress_image(
+    pp,
+    binary_data,
+    width_bit,
+    mantissa_bit_length,
+    rows=54,
+    cols=180,
+    pixels_per_block=15,
+):
     """
     "Decompresses a binary string representing an image into a matrix of pixel values.
     It starts with an initial pixel value and decompresses the rest of the image using
@@ -202,15 +210,16 @@ def decompress_image(pp, binary_data, width_bit, mantissa_bit_length,
                 # This operation ensures that the result is within the range of an 8-bit byte (0-255)
                 p[i][column_index] = (pp - delta_f) & 0xFF
                 # Perform logarithmic decompression on the pixel value
-                p_decom[i][column_index] = log_decompression(p[i][column_index],
-                                                             mantissa_bit_length)
+                p_decom[i][column_index] = log_decompression(
+                    p[i][column_index], mantissa_bit_length
+                )
                 pp = p[i][column_index]
         pp = p[i][0]
 
     return p_decom
 
 
-def read_image_raw_events_binary(packet, events_data):
+def read_image_raw_events_binary(packet, decom_data):
     """
     Converts contents of binary string "EVENTDATA" into values.
 
@@ -218,12 +227,12 @@ def read_image_raw_events_binary(packet, events_data):
     ----------
     packet : space_packet_parser.parser.Packet
         Packet.
-    events_data : dict
+    decom_data : dict
         Parsed data.
 
     Returns
     -------
-    events_data : dict
+    decom_data : dict
         Each for loop appends to the existing dictionary.
     """
     binary = packet.data["EVENTDATA"].raw_value
@@ -232,24 +241,25 @@ def read_image_raw_events_binary(packet, events_data):
 
     parser = ParserHelper()
 
-    # Initialize or use the existing events_data structure
-    if not events_data:
-        events_data = parser.initialize_event_data()
+    # Initialize data structure if required keys not found
+    required_keys = set(parser.event_field_ranges.keys())
+    decom_data_keys = set(decom_data.keys())
+
+    if not required_keys.issubset(decom_data_keys):
+        decom_data = parser.initialize_event_data(decom_data)
 
     # Uses fill value for all packets that do not contain event data.
     if count == 0:
-        parser.append_fillval(events_data)
-        parser.append_values(events_data, packet)
+        parser.append_fillval(decom_data, packet)
+
     # For all packets with event data, parses the binary string
-    # and appends the other packet values
     else:
         for i in range(count):
             start_index = i * event_length
-            event_binary = binary[start_index:start_index + event_length]
+            event_binary = binary[start_index : start_index + event_length]
             event_data = parser.parse_event(event_binary)
 
             for key, value in event_data.items():
-                events_data[key].append(value)
-            parser.append_values(events_data, packet)
+                decom_data[key].append(value)
 
-    return events_data
+    return decom_data
