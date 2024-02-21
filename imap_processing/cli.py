@@ -100,19 +100,11 @@ def _parse_args():
     parser.add_argument("--instrument", type=str, required=True, help=instrument_help)
     parser.add_argument("--data-level", type=str, required=True, help=level_help)
 
-    # TODO: Remove this dependency from batch_starter, then remove it from here.
-    parser.add_argument(
-        "--file-path",
-        type=str,
-        required=False,
-        help="DEPRECATED: Full path to the output file in the S3 bucket.",
-    )
-
     parser.add_argument(
         "--start-date",
         type=str,
         required=True,
-        help="Start time for the output data. Format: YYYY-MM-DD",
+        help="Start time for the output data. Format: YYYYMMDD",
     )
 
     parser.add_argument(
@@ -120,7 +112,7 @@ def _parse_args():
         type=str,
         required=False,
         help="End time for the output data. If not provided, start_time will be used "
-        "for end_time. Format: YYYY-MM-DD",
+        "for end_time. Format: YYYYMMDD",
     )
     # TODO: Will need to add some way of including pointing numbers
 
@@ -128,7 +120,7 @@ def _parse_args():
         "--version",
         type=str,
         required=True,
-        help="Version of the data",
+        help="Version of the data. Format: vxx-xx",
     )
     parser.add_argument(
         "--dependency",
@@ -176,10 +168,8 @@ class ProcessInstrument(ABC):
     ----------
     data_level : str
         The data level to process (e.g. ``l1a``)
-    file_path : str
-        The full path to the output file in the S3 bucket
-    dependencies : list[dict]
-        A list of dictionaries containing the dependencies for the instrument in the
+    dependency_str : str
+        A string representation of the dependencies for the instrument in the
         format: "[{
             'instrument': 'mag',
             'data_level': 'l0',
@@ -188,6 +178,14 @@ class ProcessInstrument(ABC):
             'start_date': '20231212',
             'end_date': '20231212'
         }]"
+    start_date : str
+        The start date for the output data. Format: YYYYMMDD
+    end_date : str
+        The end date for the output data. Format: YYYYMMDD
+    version : str
+        The version of the data. Format: vxx-xx
+    upload_to_sdc : bool
+        A flag indicating whether to upload the output file to the SDC.
     """
 
     def __init__(
@@ -222,30 +220,30 @@ class ProcessInstrument(ABC):
             A list of file paths to the downloaded dependencies.
         """
         file_list = []
-        for dep in self.dependencies:
+        for dependency in self.dependencies:
             try:
                 # TODO: Validate dep dict
                 # TODO: determine what dependency information is optional
-                val = imap_data_access.query(
-                    instrument=dep["instrument"],
-                    data_level=dep["data_level"],
-                    version=dep["version"],
-                    start_date=dep["start_date"],
-                    end_date=dep["end_date"],
-                    descriptor=dep["descriptor"],
+                return_query = imap_data_access.query(
+                    instrument=dependency["instrument"],
+                    data_level=dependency["data_level"],
+                    version=dependency["version"],
+                    start_date=dependency["start_date"],
+                    end_date=dependency["end_date"],
+                    descriptor=dependency["descriptor"],
                 )
             except HTTPError as e:
-                raise ValueError(f"Unable to download files from {dep}") from e
+                raise ValueError(f"Unable to download files from {dependency}") from e
 
-            if not val:
+            if not return_query:
                 raise FileNotFoundError(
                     f"File not found for required dependency "
-                    f"{dep} while attempting to create file."
+                    f"{dependency} while attempting to create file."
                     f"This should never occur "
                     f"in normal processing."
                 )
 
-            file_list.append(imap_data_access.download(val[0]["file_path"]))
+            file_list.append(imap_data_access.download(return_query[0]["file_path"]))
         return file_list
 
     @abstractmethod
@@ -318,7 +316,7 @@ class Mag(ProcessInstrument):
                     f"{file_paths}. Expected only one dependency."
                 )
             filename = imap_data_access.ScienceFilePath.generate_from_inputs(
-                "mag", "l1a", "raw", self.start_date, self.end_date, "v01-01"
+                "mag", "l1a", "raw", self.start_date, self.end_date, self.version
             )
             mag_l1a(file_paths[0], filename.construct_path())
             print(f"Generated file: {filename.construct_path()}")
@@ -414,8 +412,6 @@ def main():
     # NOTE: This is to allow the cli script to be installed and reference
     #       this function for an entrypoint.
     args = _parse_args()
-
-    print(args)
 
     _validate_args(args)
     cls = getattr(sys.modules[__name__], args.instrument.capitalize())
