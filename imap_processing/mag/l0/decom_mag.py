@@ -48,7 +48,7 @@ def decom_packets(packet_file_path: str | Path) -> list[MagL0]:
 
         for packet in mag_packets:
             apid = packet.header["PKT_APID"].derived_value
-            if apid in (Mode.BURST, Mode.NORM):
+            if apid in (Mode.BURST, Mode.NORMAL):
                 values = [
                     item.derived_value
                     if item.derived_value is not None
@@ -79,7 +79,7 @@ def export_to_xarray(l0_data: list[MagL0]):
     burst_data = norm_data.copy()
 
     for datapoint in l0_data:
-        if datapoint.ccsds_header.PKT_APID == Mode.NORM:
+        if datapoint.ccsds_header.PKT_APID == Mode.NORMAL:
             for key, value in dataclasses.asdict(datapoint).items():
                 if key != "ccsds_header":
                     norm_data[key].append(value)

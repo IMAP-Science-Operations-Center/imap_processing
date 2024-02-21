@@ -12,12 +12,12 @@ class Mode(IntEnum):
     ----------
     BURST : int
         APID for Burst mode data
-    NORM : int
+    NORMAL : int
         ApID for Normal mode data
     """
 
     BURST = 1068
-    NORM = 1052
+    NORMAL = 1052
 
 
 @dataclass
