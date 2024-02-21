@@ -130,6 +130,7 @@ def export_to_xarray(l0_data: list[MagL0]):
                     mag_cdf_attrs.mag_support_attrs,
                     catdesc=f"Raw {key} values varying by time",
                     fieldname=f"{key}",
+                    # TODO: label_axis should be as close to 6 letters as possible
                     label_axis=key,
                     display_type="no_plot",
                 ).output(),
