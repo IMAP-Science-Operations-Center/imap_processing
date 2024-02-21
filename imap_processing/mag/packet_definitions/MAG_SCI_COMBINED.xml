@@ -181,49 +181,6 @@
 					</xtce:RestrictionCriteria>
 				</xtce:BaseContainer>
 				<xtce:EntryList>
-					<xtce:ParameterRefEntry parameterRef="PHVERNO" />
-					<xtce:ParameterRefEntry parameterRef="PHTYPE" />
-					<xtce:ParameterRefEntry parameterRef="PHSHF" />
-					<xtce:ParameterRefEntry parameterRef="PHAPID" />
-					<xtce:ParameterRefEntry parameterRef="PHGROUPF" />
-					<xtce:ParameterRefEntry parameterRef="PHSEQCNT" />
-					<xtce:ParameterRefEntry parameterRef="PHDLEN" />
-					<xtce:ParameterRefEntry parameterRef="SHCOARSE" />
-					<xtce:ParameterRefEntry parameterRef="PUS_SPARE1" />
-					<xtce:ParameterRefEntry parameterRef="PUS_VERSION" />
-					<xtce:ParameterRefEntry parameterRef="PUS_SPARE2" />
-					<xtce:ParameterRefEntry parameterRef="PUS_STYPE" />
-					<xtce:ParameterRefEntry parameterRef="PUS_SSUBTYPE" />
-					<xtce:ParameterRefEntry parameterRef="COMPRESSION" />
-					<xtce:ParameterRefEntry parameterRef="FOB_ACT" />
-					<xtce:ParameterRefEntry parameterRef="FIB_ACT" />
-					<xtce:ParameterRefEntry parameterRef="PRI_SENS" />
-					<xtce:ParameterRefEntry parameterRef="SPARE1" />
-					<xtce:ParameterRefEntry parameterRef="PRI_VECSEC" />
-					<xtce:ParameterRefEntry parameterRef="SEC_VECSEC" />
-					<xtce:ParameterRefEntry parameterRef="SPARE2" />
-					<xtce:ParameterRefEntry parameterRef="PRI_COARSETM" />
-					<xtce:ParameterRefEntry parameterRef="PRI_FNTM" />
-					<xtce:ParameterRefEntry parameterRef="SEC_COARSETM" />
-					<xtce:ParameterRefEntry parameterRef="SEC_FNTM" />
-					<xtce:ParameterRefEntry parameterRef="VECTORS" />
-					<xtce:ParameterRefEntry parameterRef="FILL" />
-				</xtce:EntryList>
-			</xtce:SequenceContainer>
-			<xtce:SequenceContainer name="P_MAG_SCI_BURST">
-				<xtce:BaseContainer containerRef="CCSDSPacket">
-					<xtce:RestrictionCriteria>
-						<xtce:Comparison parameterRef="PKT_APID" value="1068" useCalibratedValue="false" />
-					</xtce:RestrictionCriteria>
-				</xtce:BaseContainer>
-				<xtce:EntryList>
-					<xtce:ParameterRefEntry parameterRef="PHVERNO" />
-					<xtce:ParameterRefEntry parameterRef="PHTYPE" />
-					<xtce:ParameterRefEntry parameterRef="PHSHF" />
-					<xtce:ParameterRefEntry parameterRef="PHAPID" />
-					<xtce:ParameterRefEntry parameterRef="PHGROUPF" />
-					<xtce:ParameterRefEntry parameterRef="PHSEQCNT" />
-					<xtce:ParameterRefEntry parameterRef="PHDLEN" />
 					<xtce:ParameterRefEntry parameterRef="SHCOARSE" />
 					<xtce:ParameterRefEntry parameterRef="PUS_SPARE1" />
 					<xtce:ParameterRefEntry parameterRef="PUS_VERSION" />
