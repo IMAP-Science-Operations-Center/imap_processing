@@ -224,13 +224,11 @@ class ProcessInstrument(ABC):
             try:
                 # TODO: Validate dep dict
                 # TODO: determine what dependency information is optional
+                # TODO: Add in timestamps and descriptor to query
                 return_query = imap_data_access.query(
                     instrument=dependency["instrument"],
                     data_level=dependency["data_level"],
                     version=dependency["version"],
-                    start_date=dependency["start_date"],
-                    end_date=dependency["end_date"],
-                    descriptor=dependency["descriptor"],
                 )
             except HTTPError as e:
                 raise ValueError(f"Unable to download files from {dependency}") from e
