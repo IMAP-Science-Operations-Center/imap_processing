@@ -3,7 +3,7 @@ import pytest
 
 from imap_processing.ultra.l0.decom_ultra import decom_ultra_apids
 from imap_processing.cdf.defaults import GlobalConstants
-from imap_processing.ultra.l0.ultra_utils import ULTRAAPID
+from imap_processing.ultra.l0.ultra_utils import UltraParams
 
 
 @pytest.fixture()
@@ -11,7 +11,7 @@ def decom_ultra(ccsds_path_image_raw_events, xtce_image_raw_events_path):
     """Data for decom_ultra"""
     data_packet_list = decom_ultra_apids(
         ccsds_path_image_raw_events, xtce_image_raw_events_path,
-        ULTRAAPID.ULTRA_EVENTS_45.value
+        UltraParams.ULTRA_EVENTS.value.apid[0]
     )
     return data_packet_list
 
