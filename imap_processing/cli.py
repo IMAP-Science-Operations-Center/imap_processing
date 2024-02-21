@@ -42,7 +42,7 @@ def _parse_args():
     The expected input format is:
     TODO: should dependency dict use file path, or instrument/datalevel/version/date?
     --instrument "mag"
-    --level "l1a"
+    --data_level "l1a"
     --start_date "20231212"
     --end_date "20231212"
     --version "v00-01"
@@ -65,7 +65,7 @@ def _parse_args():
     description = (
         "This command line program invokes the processing pipeline "
         "for a specific instrument and data level. Example usage: "
-        '"python run_processing --instrument swe --level l1a".'
+        '"python run_processing --instrument swe --data_level l1a".'
     )
     instrument_help = (
         "The instrument to process. Acceptable values are: "
@@ -87,7 +87,7 @@ def _parse_args():
 
     parser = argparse.ArgumentParser(prog="imap_cli", description=description)
     parser.add_argument("--instrument", type=str, required=True, help=instrument_help)
-    parser.add_argument("--level", type=str, required=True, help=level_help)
+    parser.add_argument("--data_level", type=str, required=True, help=level_help)
 
     # TODO: Remove this dependency from batch_starter, then remove it from here.
     parser.add_argument(
@@ -150,9 +150,9 @@ def _validate_args(args):
             f"{args.instrument} is not in the supported instrument list: "
             f"{imap_processing.INSTRUMENTS}"
         )
-    if args.level not in imap_processing.PROCESSING_LEVELS[args.instrument]:
+    if args.data_level not in imap_processing.PROCESSING_LEVELS[args.instrument]:
         raise ValueError(
-            f"{args.level} is not a supported data level for the {args.instrument}"
+            f"{args.data_level} is not a supported data level for the {args.instrument}"
             " instrument, valid levels are: "
             f"{imap_processing.PROCESSING_LEVELS[args.instrument]}"
         )
@@ -163,7 +163,7 @@ class ProcessInstrument(ABC):
 
     Attributes
     ----------
-    level : str
+    data_level : str
         The data level to process (e.g. ``l1a``)
     file_path : str
         The full path to the output file in the S3 bucket
@@ -181,14 +181,14 @@ class ProcessInstrument(ABC):
 
     def __init__(
         self,
-        level: str,
+        data_level: str,
         dependency_str: str,
         start_date: str,
         end_date: str,
         version: str,
         upload_to_sdc: bool,
     ) -> None:
-        self.level = level
+        self.data_level = data_level
 
         # Convert string into a dictionary
         self.dependencies = loads(dependency_str.replace("'", '"'))
@@ -217,7 +217,7 @@ class ProcessInstrument(ABC):
                 # TODO: determine what dependency information is optional
                 val = imap_data_access.query(
                     instrument=dep["instrument"],
-                    data_level=dep["level"],
+                    data_level=dep["data_level"],
                     version=dep["version"],
                     start_date=dep["start_date"],
                     end_date=dep["end_date"],
@@ -248,7 +248,7 @@ class Codice(ProcessInstrument):
 
     def process(self):
         """Perform CoDICE specific processing."""
-        print(f"Processing CoDICE {self.level}")
+        print(f"Processing CoDICE {self.data_level}")
 
 
 class Glows(ProcessInstrument):
@@ -256,7 +256,7 @@ class Glows(ProcessInstrument):
 
     def process(self):
         """Perform GLOWS specific processing."""
-        print(f"Processing GLOWS {self.level}")
+        print(f"Processing GLOWS {self.data_level}")
 
 
 class Hi(ProcessInstrument):
@@ -264,7 +264,7 @@ class Hi(ProcessInstrument):
 
     def process(self):
         """Perform IMAP-Hi specific processing."""
-        print(f"Processing IMAP-Hi {self.level}")
+        print(f"Processing IMAP-Hi {self.data_level}")
 
 
 class Hit(ProcessInstrument):
@@ -272,7 +272,7 @@ class Hit(ProcessInstrument):
 
     def process(self):
         """Perform HIT specific processing."""
-        print(f"Processing HIT {self.level}")
+        print(f"Processing HIT {self.data_level}")
 
 
 class Idex(ProcessInstrument):
@@ -280,7 +280,7 @@ class Idex(ProcessInstrument):
 
     def process(self):
         """Perform IDEX specific processing."""
-        print(f"Processing IDEX {self.level}")
+        print(f"Processing IDEX {self.data_level}")
 
 
 class Lo(ProcessInstrument):
@@ -288,7 +288,7 @@ class Lo(ProcessInstrument):
 
     def process(self):
         """Perform IMAP-Lo specific processing."""
-        print(f"Processing IMAP-Lo {self.level}")
+        print(f"Processing IMAP-Lo {self.data_level}")
 
 
 class Mag(ProcessInstrument):
@@ -296,10 +296,10 @@ class Mag(ProcessInstrument):
 
     def process(self):
         """Perform MAG specific processing."""
-        print(f"Processing MAG {self.level}")
+        print(f"Processing MAG {self.data_level}")
         file_paths = self.download_dependencies()
 
-        if self.level == "l1a":
+        if self.data_level == "l1a":
             # File path is expected output file path
             if len(file_paths) > 1:
                 raise ValueError(
@@ -324,7 +324,7 @@ class Swapi(ProcessInstrument):
 
     def process(self):
         """Perform SWAPI specific processing."""
-        print(f"Processing SWAPI {self.level}")
+        print(f"Processing SWAPI {self.data_level}")
         # for dep in self.dependency:
         #     imap_data_access.query()
 
@@ -337,11 +337,11 @@ class Swe(ProcessInstrument):
         # self.file_path example:
         # imap/swe/l1a/2023/09/imap_swe_l1a_sci_20230927_20230927_v01-00.cdf
         dependencies = self.download_dependencies()
-        print(f"Processing SWE {self.level}")
+        print(f"Processing SWE {self.data_level}")
 
         # TODO: currently assumes just the first path returned is the one to use
 
-        if self.level == "l1a":
+        if self.data_level == "l1a":
             processed_data = swe_l1a(Path(dependencies[0]))
             for data in processed_data:
                 # write data to cdf
@@ -364,7 +364,7 @@ class Swe(ProcessInstrument):
                     imap_data_access.upload(cdf_file_path)
                     print(f"Uploading file: {cdf_file_path}")
 
-        elif self.level == "l1b":
+        elif self.data_level == "l1b":
             # read CDF file
             l1a_dataset = cdf_to_xarray(dependencies[0])
             processed_data = swe_l1b(l1a_dataset)
@@ -391,7 +391,7 @@ class Ultra(ProcessInstrument):
 
     def process(self):
         """Perform IMAP-Ultra specific processing."""
-        print(f"Processing IMAP-Ultra {self.level}")
+        print(f"Processing IMAP-Ultra {self.data_level}")
 
 
 def main():
@@ -407,7 +407,7 @@ def main():
     _validate_args(args)
     cls = getattr(sys.modules[__name__], args.instrument.capitalize())
     instrument = cls(
-        args.level,
+        args.data_level,
         args.dependency,
         args.start_date,
         args.end_date,
