@@ -17,21 +17,14 @@ def test_global_attrs():
         descriptor="2",
         text="3",
         instrument_type="4",
-        pi_names=("Miles O'Brien",),
-        pi_affiliations=(
-            "Deep Space 9",
-            "Bajoran System",
-        ),
     )
 
     expected = GlobalConstantAttrs().output() | {
-        "PI_name": ["Dr. David J. McComas", "Miles O'Brien"],
-        "PI_affiliation": [
+        "PI_name": ("Dr. David J. McComas"),
+        "PI_affiliation": (
             "Princeton Plasma Physics Laboratory",
             "100 Stellarator Road, Princeton, NJ 08540",
-            "Deep Space 9",
-            "Bajoran System",
-        ],
+        ),
         "Data_version": "1",
         "Descriptor": "2",
         "TEXT": "3",

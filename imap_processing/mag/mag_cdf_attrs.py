@@ -23,8 +23,6 @@ mag_base = GlobalInstrumentAttrs(
     "MAG>Magnetometer",
     text,
     "Magnetic Fields (space)",
-    pi_names=("Tim Horbury",),
-    pi_affiliations=("The Blackett Laboratory", "Imperial College London"),
 )
 
 mag_l1a_attrs = GlobalDataLevelAttrs(

@@ -16,7 +16,7 @@ imap_processing/idex/idex_cdf_attrs.py and imap_processing/idex/idex_packet_pars
 """
 
 from dataclasses import dataclass
-from typing import ClassVar, Final, Optional, Union
+from typing import ClassVar, Final, Union
 
 import numpy as np
 
@@ -44,51 +44,25 @@ class GlobalConstantAttrs:
         "Discipline": "Solar Physics>Heliospheric Physics",
         # TODO: CDF docs say this value should be "IMAP"
         "Mission_group": "IMAP>Interstellar Mapping and Acceleration Probe",
+        "PI_name": "Dr. David J. McComas",
+        "PI_affiliation": (
+            "Princeton Plasma Physics Laboratory",
+            "100 Stellarator Road, Princeton, NJ 08540",
+        ),
     }
 
-    pi_name: tuple[str] = ("Dr. David J. McComas",)
-    pi_affiliation: tuple[str, str] = (
-        "Princeton Plasma Physics Laboratory",
-        "100 Stellarator Road, Princeton, NJ 08540",
-    )
-
-    def output(
-        self,
-        pi_names: Optional[tuple] = None,
-        pi_affiliations: Optional[tuple] = None,
-    ):
+    def output(self):
         """
         Generate the output for the global attributes as a dictionary.
 
-        If pi_names or pi_affiliations are included, they are added to the output (in
-        addition to the global IMAP PI information.)
-
-        Parameters
-        ----------
-        pi_names : tuple
-            A tuple of names of instrument PIs to include in the global attributes of
-            the file. Can be any length
-        pi_affiliations : tuple
-            A tuple of affilitations for each PI. This should include univeristy
-            information. Can be any length
+        This returns the contents of the GLOBAL_BASE attribute.
 
         Returns
         -------
         dict
-            Global base attributes, plus pi_names and pi_attributes from the default
-            values and any provided keywords
+            Global base attributes
         """
-        output_name = list(self.pi_name + pi_names if pi_names else self.pi_name)
-        output_affiliation = list(
-            self.pi_affiliation + pi_affiliations
-            if pi_affiliations
-            else self.pi_affiliation
-        )
-
-        return self.GLOBAL_BASE | {
-            "PI_name": output_name,
-            "PI_affiliation": output_affiliation,
-        }
+        return self.GLOBAL_BASE
 
 
 class ConstantCoordinates:
@@ -143,8 +117,6 @@ class GlobalInstrumentAttrs:
     descriptor: str
     text: str
     instrument_type: str = "Particles (space)"
-    pi_affiliations: tuple = None
-    pi_names: tuple = None
 
     def output(self):
         """
@@ -156,11 +128,7 @@ class GlobalInstrumentAttrs:
             dictionary of correctly formatted values for the data_version, descriptor,
             text, and logical_file_id, added on to the global attributes from GlobalBase
         """
-        GlobalConstantAttrs.GLOBAL_BASE.copy()
-
-        return GlobalConstantAttrs().output(
-            pi_names=self.pi_names, pi_affiliations=self.pi_affiliations
-        ) | {
+        return GlobalConstantAttrs().output() | {
             "Data_version": self.version,
             "Descriptor": self.descriptor,
             "TEXT": self.text,
