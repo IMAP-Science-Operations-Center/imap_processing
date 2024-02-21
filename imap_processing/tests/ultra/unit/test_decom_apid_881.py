@@ -34,12 +34,13 @@ def test_image_rate_decom(decom_ultra, image_rates_test_path):
 
     df = pd.read_csv(image_rates_test_path, index_col="MET")
 
-    assert (df.SID == decom_ultra["science_id"]).all()
-    assert (df.Spin == decom_ultra["spin_data"]).all()
-    assert (df.AbortFlag == decom_ultra["abortflag_data"]).all()
-    assert (df.StartDelay == decom_ultra["startdelay_data"]).all()
+    assert (df.SID == decom_ultra["SID"]).all()
+    assert (df.Spin == decom_ultra["SPIN"]).all()
+    assert (df.AbortFlag == decom_ultra["ABORTFLAG"]).all()
+    assert (df.StartDelay == decom_ultra["STARTDELAY"]).all()
 
-    for time in decom_ultra.epoch.values:
+    for time in decom_ultra['SHCOARSE']:
         arr1 = json.loads(df.loc[time].Counts)
-        arr2 = decom_ultra["fastdata_00"].sel(epoch=time).data
+        index = decom_ultra['SHCOARSE'].index(time)
+        arr2 = decom_ultra['FASTDATA_00'][index]
         np.testing.assert_array_equal(arr1, arr2)

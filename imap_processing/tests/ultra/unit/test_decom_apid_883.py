@@ -22,19 +22,17 @@ def test_image_ena_phxtof_hi_ang_decom(decom_ultra, image_ena_phxtof_hi_ang_test
 
     df = pd.read_csv(image_ena_phxtof_hi_ang_test_path, index_col="SequenceCount")
 
-    assert (df["Spin"].values == decom_ultra["spin_data"].values).all()
-    assert (df["AbortFlag"].values == decom_ultra["abortflag_data"].values).all()
-    assert (df["StartDelay"].values == decom_ultra["startdelay_data"].values).all()
-    assert json.loads(df["P00s"].values[0]) == decom_ultra["p00_data"].values[0]
+    assert (df.Spin == decom_ultra["SPIN"]).all()
+    assert (df.AbortFlag == decom_ultra["ABORTFLAG"]).all()
+    assert (df.StartDelay == decom_ultra["STARTDELAY"]).all()
+    assert json.loads(df["P00s"].values[0])[0] == decom_ultra["P00"][0]
 
     for count in df.index.get_level_values("SequenceCount").values:
-        sid = df[df.index.get_level_values("SequenceCount") == count].SID.values[0]
-        epoch = df[df.index.get_level_values("SequenceCount") == count].MET.values[0]
         df_data = df[df.index.get_level_values("SequenceCount") == count].Images.values[
             0
         ]
-
-        decom_data = decom_ultra.sel(measurement={"epoch": epoch, "science_id": sid})
+        index = decom_ultra['SRC_SEQ_CTR'].index(count)
+        decom_data = decom_ultra['PACKETDATA'][index]
         df_data_array = np.array(json.loads(df_data)[0])
 
-        assert (df_data_array == decom_data["packetdata"].data).all()
+        assert (df_data_array == decom_data).all()

@@ -1,12 +1,6 @@
 """Decommutates Ultra CCSDS packets."""
 
 import logging
-from enum import Enum
-from typing import NamedTuple
-
-import numpy as np
-import pandas as pd
-import xarray as xr
 
 from imap_processing import decom
 from imap_processing.ultra.l0.ultra_utils import ParserHelper
@@ -17,6 +11,38 @@ from imap_processing.ultra.l0.decom_tools import decompress_binary, decompress_i
 
 logging.basicConfig(level=logging.INFO)
 
+
+def append_params(decom_data, packet, excluded_data=None, excluded_key=None):
+    """
+    Unpack and decode ultra packets using CCSDS format and XTCE packet definitions.
+
+    Parameters
+    ----------
+    decom_data : dict
+        Path to the CCSDS data packet file.
+    packet : str
+        Path to the XTCE packet definition file.
+    test_apid : int
+        The APID to test. If None, all APIDs are processed.
+
+    Returns
+    -------
+    decom_data : dict
+        A dictionary containing the decoded data.
+    """
+    parser_helper = ParserHelper()
+
+    for key, item in packet.data.items():
+        # Initialize the list for the first time
+        if key not in decom_data:
+            decom_data[key] = []
+        if key != excluded_key:
+            decom_data[key].append(item.derived_value)
+        else:
+            decom_data[key].append(excluded_data)
+
+    ccsds_data = CcsdsData(packet.header)
+    parser_helper.append_ccsds_fields(decom_data, ccsds_data)
 
 def decom_ultra_apids(packet_file: str, xtce: str, test_apid: int = None):
     """
@@ -33,9 +59,8 @@ def decom_ultra_apids(packet_file: str, xtce: str, test_apid: int = None):
 
     Returns
     -------
-    xr.Dataset
-        A dataset containing the decoded data fields with 'time' as the coordinating
-        dimension.
+    decom_data : dict
+        A dictionary containing the decoded data.
     """
     packets = decom.decom_packets(packet_file, xtce)
     grouped_data = group_by_apid(packets)
@@ -46,11 +71,10 @@ def decom_ultra_apids(packet_file: str, xtce: str, test_apid: int = None):
         grouped_data = {test_apid: grouped_data[test_apid]}
 
     for apid in grouped_data.keys():
+        sorted_packets = sort_by_time(grouped_data[apid], "SHCOARSE")
 
-        if apid in UltraParams.ULTRA_EVENTS.value.apid:
-            sorted_packets = sort_by_time(grouped_data[apid], "SHCOARSE")
-
-            for packet in sorted_packets:
+        for packet in sorted_packets:
+            if apid in UltraParams.ULTRA_EVENTS.value.apid:
                 decom_data = read_image_raw_events_binary(packet, decom_data)
                 count = packet.data["COUNT"].derived_value
 
@@ -58,23 +82,12 @@ def decom_ultra_apids(packet_file: str, xtce: str, test_apid: int = None):
                     ccsds_data = CcsdsData(packet.header)
                     parser_helper.append_ccsds_fields(decom_data, ccsds_data)
 
-        elif apid in UltraParams.ULTRA_AUX.value.apid:
-            sorted_packets = sort_by_time(grouped_data[apid], "SHCOARSE")
+            elif apid in UltraParams.ULTRA_AUX.value.apid:
 
-            for packet in sorted_packets:
-                for key, item in packet.data.items():
-                    if key not in decom_data:
-                        # Initialize the list for the first time
-                        decom_data[key] = []
-                    decom_data[key].append(item.derived_value)
+                append_params(decom_data, packet)
 
-                ccsds_data = CcsdsData(packet.header)
-                parser_helper.append_ccsds_fields(decom_data, ccsds_data)
+            elif apid in UltraParams.ULTRA_TOF.value.apid:
 
-        elif apid in UltraParams.ULTRA_TOF.value.apid:
-            sorted_packets = sort_by_time(grouped_data[apid], "SHCOARSE")
-
-            for packet in sorted_packets:
                 decompressed_data = decompress_image(
                     packet.data["P00"].derived_value,
                     packet.data["PACKETDATA"].raw_value,
@@ -83,23 +96,9 @@ def decom_ultra_apids(packet_file: str, xtce: str, test_apid: int = None):
                     UltraParams.ULTRA_TOF
                     .value.mantissa_bit_length)
 
-                for key, item in packet.data.items():
-                    # Initialize the list for the first time
-                    if key not in decom_data:
-                        decom_data[key] = []
-                    if key != "PACKETDATA":
-                        decom_data[key].append(item.derived_value)
-                    else:
-                        decom_data[key].append(decompressed_data)
+                append_params(decom_data, packet, excluded_data=decompressed_data, excluded_key="PACKETDATA")
 
-                ccsds_data = CcsdsData(packet.header)
-                parser_helper.append_ccsds_fields(decom_data, ccsds_data)
-
-        elif apid in UltraParams.ULTRA_RATES.value.apid:
-
-            sorted_packets = sort_by_time(grouped_data[apid], "SHCOARSE")
-
-            for packet in sorted_packets:
+            elif apid in UltraParams.ULTRA_RATES.value.apid:
 
                 decompressed_data = decompress_binary(
                     packet.data["FASTDATA_00"].raw_value,
@@ -109,19 +108,9 @@ def decom_ultra_apids(packet_file: str, xtce: str, test_apid: int = None):
                     UltraParams.ULTRA_RATES.value.mantissa_bit_length,
                 )
 
-                for key, item in packet.data.items():
-                    # Initialize the list for the first time
-                    if key not in decom_data:
-                        decom_data[key] = []
-                    if key != "FASTDATA_00":
-                        decom_data[key].append(item.derived_value)
-                    else:
-                        decom_data[key].append(decompressed_data)
+                append_params(decom_data, packet, excluded_data=decompressed_data, excluded_key="FASTDATA_00")
 
-                ccsds_data = CcsdsData(packet.header)
-                parser_helper.append_ccsds_fields(decom_data, ccsds_data)
-
-        else:
-            logging.info(f"{apid} is currently not supported")
+            else:
+                logging.info(f"{apid} is currently not supported")
 
         return decom_data
