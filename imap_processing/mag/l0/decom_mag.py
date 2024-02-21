@@ -1,4 +1,6 @@
 """Methods for processing raw MAG packets into CDF files for level 0 and level 1a."""
+from __future__ import annotations
+
 import dataclasses
 import logging
 from collections import defaultdict
@@ -17,7 +19,7 @@ from imap_processing.mag.l0.mag_l0_data import MagL0, Mode
 logger = logging.getLogger(__name__)
 
 
-def decom_packets(packet_file_path: str) -> list[MagL0]:
+def decom_packets(packet_file_path: str | Path) -> list[MagL0]:
     """Decom MAG data packets using MAG packet definition.
 
     Parameters

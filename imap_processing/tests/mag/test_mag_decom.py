@@ -9,12 +9,11 @@ from imap_processing.mag.l0.decom_mag import decom_packets, export_to_xarray
 def test_mag_decom():
     current_directory = Path(__file__).parent
     burst_test_file = current_directory / "mag_l0_test_data.pkts"
-    l0 = decom_packets(str(burst_test_file))
+    l0 = decom_packets(burst_test_file)
 
     expected_output = pd.read_csv(current_directory / "mag_l0_test_output.csv")
 
-    index = 0
-    for test in l0:
+    for index, test in enumerate(l0):
         assert test.ccsds_header.PKT_APID == expected_output["PHAPID"][index]
         assert test.ccsds_header.SRC_SEQ_CTR == expected_output["PHSEQCNT"][index]
         assert test.ccsds_header.PKT_LEN == expected_output["PHDLEN"][index]
@@ -33,8 +32,6 @@ def test_mag_decom():
         assert test.SEC_COARSETM == expected_output["SEC_COARSETM"][index]
         assert test.SEC_FNTM == expected_output["SEC_FNTM"][index]
 
-        index += 1
-
     assert len(l0) == len(expected_output.index)
 
 
@@ -47,8 +44,6 @@ def test_mag_raw_cdf():
     required_attrs = list(
         global_attrs.GlobalInstrumentAttrs("", "", "").output().keys()
     )
-    print(required_attrs)
-    print(output_data.attrs)
 
     assert all([item in list(output_data.attrs.keys()) for item in required_attrs])
     assert all([item is not None for _, item in output_data.attrs.items()])
