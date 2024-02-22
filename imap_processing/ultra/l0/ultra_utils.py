@@ -48,21 +48,25 @@ class ParserHelper:
     Attributes
     ----------
     event_field_ranges : dict
-        Maps event field names to tuples indicating their start and end bit positions in a binary event string.
+        Maps event field names to tuples indicating their
+        start and end bit positions in a binary event string.
 
     Methods
     -------
     initialize_event_data() -> dict:
-        Creates and returns a dictionary with keys for each event field and empty lists as values, ready for data storage.
+        Creates and returns a dictionary with keys for
+        each event field and empty lists as values.
 
     append_fillval(decom_data: dict, packet) -> None:
-        Inserts fill values into `decom_data` for any fields not present in `packet.header` or `packet.data`, indicating missing or uninitialized data.
+        Inserts fill values into `decom_data` for any fields not
+        present, indicating missing data.
 
     parse_event(event_binary: str) -> dict:
-        Converts a binary string `event_binary` into a dictionary of event fields and values, based on the field ranges defined in `event_field_ranges`.
+        Converts a binary string `event_binary` into a
+        dictionary of event fields and values.
 
     append_ccsds_fields(decom_data: dict, ccsds_data_object) -> None:
-        Adds data from a CCSDS data object to `decom_data`, expanding the event data with additional fields.
+        Adds data from a CCSDS data object to `decom_data`.
     """
 
     def __init__(self):
@@ -88,8 +92,9 @@ class ParserHelper:
         }
 
     def initialize_event_data(self, decom_data):
-        """Updates the existing decom_data dictionary by adding new keys with empty lists
-        for those not already present.
+        """Initialize the decom_data dictionary with empty lists for new keys.
+
+        Adds new keys with empty lists for those not already present.
         """
         for field in self.event_field_ranges:
             if field not in decom_data:
@@ -97,13 +102,13 @@ class ParserHelper:
         return decom_data
 
     def append_fillval(self, decom_data, packet):
-        """Appends fillvalue to all fields except for specified scalar and CCSDS fields."""
+        """Append fill values to all fields."""
         for key in decom_data:
             if (key not in packet.header.keys()) and (key not in packet.data.keys()):
                 decom_data[key].append(GlobalConstants.INT_FILLVAL)
 
     def parse_event(self, event_binary):
-        """Parses a binary string representing a single event."""
+        """Parse a binary string representing a single event."""
         return {
             # 2 is the base for binary conversion
             field: int(event_binary[start:end], 2)
@@ -111,7 +116,7 @@ class ParserHelper:
         }
 
     def append_ccsds_fields(self, decom_data, ccsds_data_object):
-        """Appends ccsds fields to event_data."""
+        """Append ccsds fields to event_data."""
         for field in fields(ccsds_data_object.__class__):
             ccsds_key = field.name
             if ccsds_key not in decom_data:

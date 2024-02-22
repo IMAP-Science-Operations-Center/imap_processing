@@ -217,7 +217,7 @@ def decompress_image(
     return p_decom
 
 
-def read_image_raw_events_binary(packet, decom_data):
+def read_image_raw_events_binary(packet, decom_data: dict):
     """Convert contents of binary string 'EVENTDATA' into values.
 
     Parameters
