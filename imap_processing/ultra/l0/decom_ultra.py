@@ -1,6 +1,7 @@
 """Decommutates Ultra CCSDS packets."""
 
 import logging
+from typing import Optional
 
 from imap_processing import decom
 from imap_processing.ccsds.ccsds_data import CcsdsData
@@ -15,16 +16,18 @@ from imap_processing.utils import group_by_apid, sort_by_time
 logging.basicConfig(level=logging.INFO)
 
 
-def append_params(decom_data, packet, decompressed_data=None, decompressed_key=None):
+def append_params(
+    decom_data: dict, packet, decompressed_data=None, decompressed_key=None
+):
     """
-    Appends parameters.
+    Append parsed items to a dictionary, including decompressed data if available.
 
     Parameters
     ----------
     decom_data : dict
-        Path to the CCSDS data packet file.
+        Dictionary to which the data is appended.
     packet : space_packet_parser.parser.Packet
-        Individual pack.
+        Individual packet.
     decompressed_data : list
         Data that has been decompressed.
     decompressed_key : str
@@ -45,9 +48,9 @@ def append_params(decom_data, packet, decompressed_data=None, decompressed_key=N
     parser_helper.append_ccsds_fields(decom_data, ccsds_data)
 
 
-def decom_ultra_apids(packet_file: str, xtce: str, test_apid: int = None):
+def decom_ultra_apids(packet_file: str, xtce: str, test_apid: Optional[int] = None):
     """
-    Unpack and decode ultra packets using CCSDS format and XTCE packet definitions.
+    Unpack and decode Ultra packets using CCSDS format and XTCE packet definitions.
 
     Parameters
     ----------
@@ -55,7 +58,7 @@ def decom_ultra_apids(packet_file: str, xtce: str, test_apid: int = None):
         Path to the CCSDS data packet file.
     xtce : str
         Path to the XTCE packet definition file.
-    test_apid : int
+    test_apid : Optional[int]
         The APID to test. If None, all APIDs are processed.
 
     Returns
@@ -86,15 +89,17 @@ def decom_ultra_apids(packet_file: str, xtce: str, test_apid: int = None):
         sorted_packets = sort_by_time(grouped_data[apid], "SHCOARSE")
 
         for packet in sorted_packets:
+            # Here there are multiple images in a single packet,
+            # so we need to loop through each image and decompress it.
             if apid in UltraParams.ULTRA_EVENTS.value.apid:
                 decom_data = read_image_raw_events_binary(packet, decom_data)
                 count = packet.data["COUNT"].derived_value
 
-                # Event data filled with fill values but scalar fields are filled with actual values
                 if count == 0:
                     append_params(decom_data, packet)
                 else:
                     for i in range(count):
+                        logging.info(f"Appending image #{i}")
                         append_params(decom_data, packet)
 
             elif apid in UltraParams.ULTRA_AUX.value.apid:
@@ -130,8 +135,5 @@ def decom_ultra_apids(packet_file: str, xtce: str, test_apid: int = None):
                     decompressed_data=decompressed_data,
                     decompressed_key="FASTDATA_00",
                 )
-
-            else:
-                logging.info(f"{apid} is currently not supported")
 
     return decom_data
