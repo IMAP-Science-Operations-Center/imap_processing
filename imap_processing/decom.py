@@ -37,5 +37,4 @@ def decom_packets(
 
     with open(packet_file, "rb") as binary_data:
         packet_generator = packet_parser.generator(binary_data)
-
         return list(packet_generator)
