@@ -74,7 +74,7 @@ def _parse_args():
         '   "data_level": "l0"',
         '   "descriptor": "sci"',
         '   "version": "v00-01"',
-        '   "start_date": "0231212"',
+        '   "start_date": "20231212"',
         '   "end_date": "20231212"',
         '}]" --upload-to-sdc"',
     )
@@ -133,7 +133,7 @@ def _parse_args():
         "--upload-to-sdc",
         action="store_true",
         required=False,
-        help="Upload completed output files to IMAP API.",
+        help="Upload completed output files to the IMAP SDC.",
     )
     args = parser.parse_args()
 
