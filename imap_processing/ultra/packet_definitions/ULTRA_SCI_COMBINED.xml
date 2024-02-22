@@ -411,12 +411,22 @@
 			</xtce:SequenceContainer>
 			<xtce:SequenceContainer name="UltraAuxiliaryPacket">
 				<xtce:BaseContainer containerRef="CCSDSPacket">
-					<xtce:RestrictionCriteria>
-						<xtce:OR>
-							<xtce:Comparison parameterRef="PKT_APID" value="880" useCalibratedValue="false" />
-							<xtce:Comparison parameterRef="PKT_APID" value="994" useCalibratedValue="false" />
-						</xtce:OR>
-					</xtce:RestrictionCriteria>
+                    <xtce:RestrictionCriteria>
+                        <xtce:BooleanExpression>
+                            <xtce:ORedConditions>
+                                <xtce:Condition>
+                                    <xtce:ParameterInstanceRef parameterRef="PKT_APID" useCalibratedValue="false"/>
+                                    <xtce:ComparisonOperator>==</xtce:ComparisonOperator>
+                                    <xtce:Value>880</xtce:Value>
+                                </xtce:Condition>
+                                <xtce:Condition>
+                                    <xtce:ParameterInstanceRef parameterRef="PKT_APID"  useCalibratedValue="false"/>
+                                    <xtce:ComparisonOperator>==</xtce:ComparisonOperator>
+                                    <xtce:Value>994</xtce:Value>
+                                </xtce:Condition>
+                            </xtce:ORedConditions>
+                        </xtce:BooleanExpression>
+                    </xtce:RestrictionCriteria>
 				</xtce:BaseContainer>
 				<xtce:EntryList>
 					<xtce:ParameterRefEntry parameterRef="SHCOARSE" />
@@ -445,10 +455,22 @@
 			</xtce:SequenceContainer>
 			<xtce:SequenceContainer name="UltraImageRatesPacket">
 				<xtce:BaseContainer containerRef="CCSDSPacket">
-						<xtce:OR>
-							<xtce:Comparison parameterRef="PKT_APID" value="881" useCalibratedValue="false" />
-							<xtce:Comparison parameterRef="PKT_APID" value="945" useCalibratedValue="false" />
-						</xtce:OR>
+                    <xtce:RestrictionCriteria>
+                        <xtce:BooleanExpression>
+                            <xtce:ORedConditions>
+                                <xtce:Condition>
+                                    <xtce:ParameterInstanceRef parameterRef="PKT_APID" useCalibratedValue="false"/>
+                                    <xtce:ComparisonOperator>==</xtce:ComparisonOperator>
+                                    <xtce:Value>881</xtce:Value>
+                                </xtce:Condition>
+                                <xtce:Condition>
+                                    <xtce:ParameterInstanceRef parameterRef="PKT_APID"  useCalibratedValue="false"/>
+                                    <xtce:ComparisonOperator>==</xtce:ComparisonOperator>
+                                    <xtce:Value>945</xtce:Value>
+                                </xtce:Condition>
+                            </xtce:ORedConditions>
+                        </xtce:BooleanExpression>
+                    </xtce:RestrictionCriteria>
 				</xtce:BaseContainer>
 				<xtce:EntryList>
 					<xtce:ParameterRefEntry parameterRef="SHCOARSE" />
@@ -461,12 +483,22 @@
 			</xtce:SequenceContainer>
 			<xtce:SequenceContainer name="UltraPHXTOFPacket">
 				<xtce:BaseContainer containerRef="CCSDSPacket">
-					<xtce:RestrictionCriteria>
-						<xtce:OR>
-							<xtce:Comparison parameterRef="PKT_APID" value="883" useCalibratedValue="false" />
-							<xtce:Comparison parameterRef="PKT_APID" value="947" useCalibratedValue="false" />
-						</xtce:OR>
-					</xtce:RestrictionCriteria>
+                    <xtce:RestrictionCriteria>
+                        <xtce:BooleanExpression>
+                            <xtce:ORedConditions>
+                                <xtce:Condition>
+                                    <xtce:ParameterInstanceRef parameterRef="PKT_APID" useCalibratedValue="false"/>
+                                    <xtce:ComparisonOperator>==</xtce:ComparisonOperator>
+                                    <xtce:Value>883</xtce:Value>
+                                </xtce:Condition>
+                                <xtce:Condition>
+                                    <xtce:ParameterInstanceRef parameterRef="PKT_APID"  useCalibratedValue="false"/>
+                                    <xtce:ComparisonOperator>==</xtce:ComparisonOperator>
+                                    <xtce:Value>947</xtce:Value>
+                                </xtce:Condition>
+                            </xtce:ORedConditions>
+                        </xtce:BooleanExpression>
+                    </xtce:RestrictionCriteria>
 				</xtce:BaseContainer>
 				<xtce:EntryList>
 					<xtce:ParameterRefEntry parameterRef="SHCOARSE" />
@@ -480,12 +512,22 @@
 			</xtce:SequenceContainer>
 			<xtce:SequenceContainer name="UltraRawEventsPacket">
 				<xtce:BaseContainer containerRef="CCSDSPacket">
-					<xtce:RestrictionCriteria>
-						<xtce:OR>
-							<xtce:Comparison parameterRef="PKT_APID" value="896" useCalibratedValue="false" />
-							<xtce:Comparison parameterRef="PKT_APID" value="960" useCalibratedValue="false" />
-						</xtce:OR>
-					</xtce:RestrictionCriteria>
+                    <xtce:RestrictionCriteria>
+                        <xtce:BooleanExpression>
+                            <xtce:ORedConditions>
+                                <xtce:Condition>
+                                    <xtce:ParameterInstanceRef parameterRef="PKT_APID" useCalibratedValue="false"/>
+                                    <xtce:ComparisonOperator>==</xtce:ComparisonOperator>
+                                    <xtce:Value>896</xtce:Value>
+                                </xtce:Condition>
+                                <xtce:Condition>
+                                    <xtce:ParameterInstanceRef parameterRef="PKT_APID"  useCalibratedValue="false"/>
+                                    <xtce:ComparisonOperator>==</xtce:ComparisonOperator>
+                                    <xtce:Value>960</xtce:Value>
+                                </xtce:Condition>
+                            </xtce:ORedConditions>
+                        </xtce:BooleanExpression>
+                    </xtce:RestrictionCriteria>
 				</xtce:BaseContainer>
 				<xtce:EntryList>
 					<xtce:ParameterRefEntry parameterRef="SHCOARSE" />

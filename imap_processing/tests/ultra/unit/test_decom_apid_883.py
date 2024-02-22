@@ -5,12 +5,15 @@ import pandas as pd
 import pytest
 
 from imap_processing.ultra.l0.decom_ultra import decom_ultra_apids
+from imap_processing.ultra.l0.ultra_utils import UltraParams
 
 
 @pytest.fixture()
-def decom_ultra(ccsds_path_tof, xtce_tof_path):
+def decom_ultra(ccsds_path_tof, xtce_path):
     """Data for decom_ultra"""
-    data_packet_list = decom_ultra_apids(ccsds_path_tof, xtce_tof_path)
+    data_packet_list = decom_ultra_apids(
+        ccsds_path_tof, xtce_path, UltraParams.ULTRA_TOF.value.apid[0]
+    )
     return data_packet_list
 
 

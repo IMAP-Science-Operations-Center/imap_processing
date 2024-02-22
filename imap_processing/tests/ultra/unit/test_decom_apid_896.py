@@ -7,10 +7,10 @@ from imap_processing.ultra.l0.ultra_utils import UltraParams
 
 
 @pytest.fixture()
-def decom_ultra(ccsds_path_events, xtce_events_path):
+def decom_ultra(ccsds_path_events, xtce_path):
     """Data for decom_ultra"""
     data_packet_list = decom_ultra_apids(
-        ccsds_path_events, xtce_events_path, UltraParams.ULTRA_EVENTS.value.apid[0]
+        ccsds_path_events, xtce_path, UltraParams.ULTRA_EVENTS.value.apid[0]
     )
     return data_packet_list
 
