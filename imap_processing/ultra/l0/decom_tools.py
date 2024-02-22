@@ -39,10 +39,11 @@ def read_n_bits(binary: str, n: int, current_position: int):
     return value, current_position + n
 
 
-def log_decompression(value: int, mantissa_bit_length) -> int:
-    """
-    Perform logarithmic decompression on an integer, supporting both 16-bit and 8-bit
-    formats based on the specified mantissa bit length.
+def log_decompression(value: int, mantissa_bit_length: int) -> int:
+    """Perform logarithmic decompression on an integer.
+
+    Supports both 16-bit and 8-bit formats based on the specified
+    mantissa bit length.
 
     Parameters
     ----------
@@ -77,7 +78,7 @@ def log_decompression(value: int, mantissa_bit_length) -> int:
 
 
 def decompress_binary(
-    binary: str, width_bit: int, block: int, len_array, mantissa_bit_length
+    binary: str, width_bit: int, block: int, len_array: int, mantissa_bit_length: int
 ) -> list:
     """Decompress a binary string.
 
@@ -134,18 +135,16 @@ def decompress_binary(
 
 
 def decompress_image(
-    pp,
-    binary_data,
-    width_bit,
-    mantissa_bit_length,
-    rows=54,
-    cols=180,
-    pixels_per_block=15,
+    pp: int,
+    binary_data: str,
+    width_bit: int,
+    mantissa_bit_length: int,
 ):
-    """
-    "Decompresses a binary string representing an image into a matrix of pixel values.
+    """Decompresses a binary string representing an image into a matrix of pixel values.
+
     It starts with an initial pixel value and decompresses the rest of the image using
-    block-wise decompression and logarithmic decompression based on provided bit widths and lengths.
+    block-wise decompression and logarithmic decompression based on provided bit widths
+    and lengths.
 
     Parameters
     ----------
@@ -157,12 +156,6 @@ def decompress_image(
         The bit width that describes the width of data in the block
     mantissa_bit_length : int
         The bit length of the mantissa.
-    rows : int (Optional)
-        Number of rows.
-    cols : int (Optional)
-        Number of columns.
-    pixels_per_block : int (Optional)
-        Number of pixels per block.
 
     Returns
     -------
@@ -174,6 +167,10 @@ def decompress_image(
     This process is described starting on page 168 in IMAP-Ultra Flight
     Software Specification document.
     """
+    rows = 54
+    cols = 180
+    pixels_per_block = 15
+
     blocks_per_row = int(cols / pixels_per_block)
 
     # Compressed pixel matrix
@@ -207,7 +204,8 @@ def decompress_image(
                 column_index = j * pixels_per_block + k
                 # 0xff is the hexadecimal representation of the number 255,
                 # Keeps only the last 8 bits of the result of pp - delta_f
-                # This operation ensures that the result is within the range of an 8-bit byte (0-255)
+                # This operation ensures that the result is within the range
+                # of an 8-bit byte (0-255)
                 p[i][column_index] = (pp - delta_f) & 0xFF
                 # Perform logarithmic decompression on the pixel value
                 p_decom[i][column_index] = log_decompression(
@@ -220,8 +218,7 @@ def decompress_image(
 
 
 def read_image_raw_events_binary(packet, decom_data):
-    """
-    Converts contents of binary string "EVENTDATA" into values.
+    """Convert contents of binary string 'EVENTDATA' into values.
 
     Parameters
     ----------
