@@ -332,8 +332,6 @@ class Swapi(ProcessInstrument):
     def process(self):
         """Perform SWAPI specific processing."""
         print(f"Processing SWAPI {self.data_level}")
-        # for dep in self.dependency:
-        #     imap_data_access.query()
 
 
 class Swe(ProcessInstrument):
