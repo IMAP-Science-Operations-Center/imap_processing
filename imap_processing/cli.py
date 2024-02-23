@@ -11,6 +11,7 @@ Use
 """
 
 import argparse
+import logging
 import sys
 from abc import ABC, abstractmethod
 from json import loads
@@ -34,6 +35,8 @@ from imap_processing.cdf.utils import write_cdf
 from imap_processing.mag.l1a.mag_l1a import mag_l1a
 from imap_processing.swe.l1a.swe_l1a import swe_l1a
 from imap_processing.swe.l1b.swe_l1b import swe_l1b
+
+logger = logging.getLogger(__name__)
 
 
 def _parse_args():
@@ -313,17 +316,23 @@ class Mag(ProcessInstrument):
                     f"Unexpected dependencies found for MAG L1A:"
                     f"{file_paths}. Expected only one dependency."
                 )
-            filename = imap_data_access.ScienceFilePath.generate_from_inputs(
-                "mag", "l1a", "raw", self.start_date, self.end_date, self.version
-            )
-            mag_l1a(file_paths[0], filename.construct_path())
-            print(f"Generated file: {filename.construct_path()}")
+            filename_norm = imap_data_access.ScienceFilePath.generate_from_inputs(
+                "mag", "l1a", "raw-norm", self.start_date, self.end_date, self.version
+            ).construct_path()
+            filename_burst = imap_data_access.ScienceFilePath.generate_from_inputs(
+                "mag", "l1a", "raw-burst", self.start_date, self.end_date, self.version
+            ).construct_path()
+            mag_l1a(file_paths[0], filename_norm, filename_burst)
 
             if self.upload_to_sdc:
-                print(f"Uploading file from: {filename.construct_path()}")
                 # TODO: figure out data_dir, because now this fails.
                 #  Should switch to using IMAP_DATA_DIR env var.
-                imap_data_access.upload(filename.construct_path())
+                if filename_norm.exists():
+                    logging.info(f"Uploading file: {filename_norm}")
+                    imap_data_access.upload(filename_norm)
+                if filename_burst.exists():
+                    logging.info(f"Uploading file: {filename_burst}")
+                    imap_data_access.upload(filename_burst)
 
 
 class Swapi(ProcessInstrument):

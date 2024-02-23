@@ -71,58 +71,117 @@ def export_to_xarray(l0_data: list[MagL0]):
     ----------
     l0_data: list[MagL0]
         A list of MagL0 datapoints
+
+    Returns
+    -------
+    norm_data : xr.Dataset
+        xarray dataset for generating burst data CDFs
+    burst_data : xr.Dataset
+        xarray dataset for generating burst data CDFs
     """
     # TODO split by mago and magi using primary sensor
-    # TODO split by norm and burst
-    norm_data = defaultdict(list)
-    burst_data = norm_data.copy()
+    norm_data = []
+    burst_data = []
 
-    for datapoint in l0_data:
-        if datapoint.ccsds_header.PKT_APID == Mode.NORMAL:
-            for key, value in dataclasses.asdict(datapoint).items():
-                if key != "ccsds_header":
-                    norm_data[key].append(value)
-        if datapoint.ccsds_header.PKT_APID == Mode.BURST:
-            burst_data["SHCOARSE"].append(datapoint.SHCOARSE)
-            burst_data["raw_vectors"].append(datapoint.VECTORS)
+    for packet in l0_data:
+        if packet.ccsds_header.PKT_APID == Mode.NORMAL:
+            norm_data.append(packet)
+        if packet.ccsds_header.PKT_APID == Mode.BURST:
+            burst_data.append(packet)
+
+    norm_dataset = None
+    burst_dataset = None
+
+    if len(norm_data) > 0:
+        norm_dataset = generate_dataset(norm_data)
+    if len(burst_data) > 0:
+        burst_dataset = generate_dataset(burst_data)
+
+    return norm_dataset, burst_dataset
+
+
+def generate_dataset(l0_data: list[MagL0]):
+    """
+    Generate a CDF dataset from the sorted L0 MAG data.
+
+    Used to create 2 similar datasets, for norm and burst data.
+
+    Parameters
+    ----------
+    l0_data : list[MagL0]
+        List of sorted L0 MAG data.
+
+    Returns
+    -------
+    dataset : xr.Dataset
+        xarray dataset with proper CDF attributes and shape.
+    """
+    vector_data = np.zeros((len(l0_data), len(l0_data[0].VECTORS)))
+    shcoarse_data = np.zeros(len(l0_data))
+
+    support_data = defaultdict(list)
+
+    for index, datapoint in enumerate(l0_data):
+        vector_len = len(datapoint.VECTORS)
+        if vector_len > vector_data.shape[1]:
+            # If the new vector is longer than the existing shape, first reshape
+            # vector_data and pad the existing vectors with zeros.
+            vector_data = np.pad(
+                vector_data,
+                (
+                    (
+                        0,
+                        0,
+                    ),
+                    (0, vector_len - vector_data.shape[1]),
+                ),
+                "constant",
+                constant_values=(0,),
+            )
+        vector_data[index, :vector_len] = datapoint.VECTORS
+
+        shcoarse_data[index] = calc_start_time(datapoint.SHCOARSE)
+
+        # Add remaining pieces to arrays
+        for key, value in dataclasses.asdict(datapoint).items():
+            if key not in ("ccsds_header", "VECTORS", "SHCOARSE"):
+                support_data[key].append(value)
 
     # Used in L1A vectors
-    direction_norm = xr.DataArray(
-        np.arange(len(norm_data["VECTORS"][0])),
+    direction = xr.DataArray(
+        np.arange(vector_data.shape[1]),
         name="Direction",
         dims=["Direction"],
         attrs=mag_cdf_attrs.direction_attrs.output(),
     )
 
-    norm_epoch_time = xr.DataArray(
-        [calc_start_time(shcoarse) for shcoarse in norm_data["SHCOARSE"]],
+    epoch_time = xr.DataArray(
+        shcoarse_data,
         name="Epoch",
         dims=["Epoch"],
         attrs=ConstantCoordinates.EPOCH,
     )
 
     # TODO: raw vectors units
-    norm_raw_vectors = xr.DataArray(
-        norm_data["VECTORS"],
+    raw_vectors = xr.DataArray(
+        vector_data,
         name="Raw_Vectors",
         dims=["Epoch", "Direction"],
         attrs=mag_cdf_attrs.mag_vector_attrs.output(),
     )
 
     # TODO add norm to attrs somehow
-    norm_dataset = xr.Dataset(
-        coords={"Epoch": norm_epoch_time, "Direction": direction_norm},
+    output = xr.Dataset(
+        coords={"Epoch": epoch_time, "Direction": direction},
         attrs=mag_cdf_attrs.mag_l1a_attrs.output(),
     )
 
-    norm_dataset["RAW_VECTORS"] = norm_raw_vectors
+    output["RAW_VECTORS"] = raw_vectors
 
-    # TODO: retrieve the doc for the CDF description (etattr(MagL0, "__doc__", {}))
-
-    for key, value in norm_data.items():
+    for key, value in support_data.items():
         # Time varying values
         if key not in ["SHCOARSE", "VECTORS"]:
-            norm_datarray = xr.DataArray(
+            output[key] = xr.DataArray(
                 value,
                 name=key,
                 dims=["Epoch"],
@@ -135,6 +194,5 @@ def export_to_xarray(l0_data: list[MagL0]):
                     display_type="no_plot",
                 ).output(),
             )
-            norm_dataset[key] = norm_datarray
 
-    return norm_dataset
+    return output
