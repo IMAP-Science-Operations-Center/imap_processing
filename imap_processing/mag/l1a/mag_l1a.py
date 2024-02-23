@@ -21,7 +21,6 @@ def mag_l1a(packet_filepath, cdf_filepath_norm, cdf_filepath_burst):
     """
     mag_l0 = decom_mag.decom_packets(packet_filepath)
 
-    print(mag_l0[0])
     mag_norm, mag_burst = decom_mag.export_to_xarray(mag_l0)
 
     if mag_norm is not None:
