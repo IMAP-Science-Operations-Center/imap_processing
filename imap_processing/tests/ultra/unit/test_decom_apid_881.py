@@ -33,10 +33,10 @@ def test_image_rate_decom(decom_ultra, rates_test_path):
     count = 0
     total_packets = 23
 
-    assert (df.SID == decom_ultra["SID"]).all()
-    assert (df.Spin == decom_ultra["SPIN"]).all()
-    assert (df.AbortFlag == decom_ultra["ABORTFLAG"]).all()
-    assert (df.StartDelay == decom_ultra["STARTDELAY"]).all()
+    np.testing.assert_array_equal(df.SID, decom_ultra["SID"])
+    np.testing.assert_array_equal(df.Spin, decom_ultra["SPIN"])
+    np.testing.assert_array_equal(df.AbortFlag, decom_ultra["ABORTFLAG"])
+    np.testing.assert_array_equal(df.StartDelay, decom_ultra["STARTDELAY"])
 
     for time in decom_ultra["SHCOARSE"]:
         arr1 = json.loads(df.loc[time].Counts)

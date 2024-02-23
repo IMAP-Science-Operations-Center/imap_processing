@@ -84,9 +84,35 @@ class ParserHelper:
             "coin_discrete_tdc": (85, 96),
             "energy_ph": (96, 108),
             "pulse_width": (108, 119),
-            "event_flags": (119, 123),
-            "ssd_flags": (123, 131),
-            "cfd_flags": (131, 148),
+            "event_flag_cnt": (119, 120),
+            "event_flag_phcmpsl": (120, 121),
+            "event_flag_phcmpsr": (121, 122),
+            "event_flag_phcmpcd": (122, 123),
+            "ssd_flag_7": (123, 124),
+            "ssd_flag_6": (124, 125),
+            "ssd_flag_5": (125, 126),
+            "ssd_flag_4": (126, 127),
+            "ssd_flag_3": (127, 128),
+            "ssd_flag_2": (128, 129),
+            "ssd_flag_1": (129, 130),
+            "ssd_flag_0": (130, 131),
+            "cfd_flag_cointn": (131, 132),
+            "cfd_flag_coinbn": (132, 133),
+            "cfd_flag_coints": (133, 134),
+            "cfd_flag_coinbs": (134, 135),
+            "cfd_flag_coind": (135, 136),
+            "cfd_flag_startrf": (136, 137),
+            "cfd_flag_startlf": (137, 138),
+            "cfd_flag_startrp": (138, 139),
+            "cfd_flag_startlp": (139, 140),
+            "cfd_flag_stoptn": (140, 141),
+            "cfd_flag_stopbn": (141, 142),
+            "cfd_flag_stopte": (142, 143),
+            "cfd_flag_stopbe": (143, 144),
+            "cfd_flag_stopts": (144, 145),
+            "cfd_flag_stopbs": (145, 146),
+            "cfd_flag_stoptw": (146, 147),
+            "cfd_flag_stopbw": (147, 148),
             "bin": (148, 156),
             "phase_angle": (156, 166),
         }
@@ -109,11 +135,12 @@ class ParserHelper:
 
     def parse_event(self, event_binary):
         """Parse a binary string representing a single event."""
-        return {
-            # 2 is the base for binary conversion
-            field: int(event_binary[start:end], 2)
-            for field, (start, end) in self.event_field_ranges.items()
-        }
+        fields_dict = {}
+        for field, (start, end) in self.event_field_ranges.items():
+            field_value = int(event_binary[start:end], 2)
+
+            fields_dict[field] = field_value
+        return fields_dict
 
     def append_ccsds_fields(self, decom_data, ccsds_data_object):
         """Append ccsds fields to event_data."""

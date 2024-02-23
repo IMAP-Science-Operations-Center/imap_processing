@@ -2,7 +2,7 @@
 from imap_processing.ultra.l0.ultra_utils import ParserHelper
 
 
-def read_n_bits(binary: str, n: int, current_position: int):
+def read_and_advance(binary_data: str, n: int, current_position: int):
     """Extract the specified number of bits from a binary string.
 
     Starting from the current position, it reads n bits. This is used twice.
@@ -11,7 +11,7 @@ def read_n_bits(binary: str, n: int, current_position: int):
 
     Parameters
     ----------
-    binary : str
+    binary_data : str
         The string of binary data from which bits will be read.
         This is a string of 0's and 1's.
     n : int
@@ -28,14 +28,14 @@ def read_n_bits(binary: str, n: int, current_position: int):
         - The updated position in the binary string after reading the bits.
     """
     # Ensure we don't read past the end
-    if current_position + n > len(binary):
+    if current_position + n > len(binary_data):
         raise IndexError(
             f"Attempted to read past the end of binary string. "
             f"Current position: {current_position}, "
-            f"Requested bits: {n}, String length: {len(binary)}"
+            f"Requested bits: {n}, String length: {len(binary_data)}"
         )
 
-    value = int(binary[current_position : current_position + n], 2)
+    value = int(binary_data[current_position : current_position + n], 2)
     return value, current_position + n
 
 
@@ -78,14 +78,14 @@ def log_decompression(value: int, mantissa_bit_length: int) -> int:
 
 
 def decompress_binary(
-    binary: str, width_bit: int, block: int, len_array: int, mantissa_bit_length: int
+    binary: str, width_bit: int, block: int, array_length: int, mantissa_bit_length: int
 ) -> list:
     """Decompress a binary string.
 
     Decompress a binary string based on block-width encoding and
     logarithmic compression.
 
-    This function interprets a binary string where the first 'width_bit' bits
+    This function interprets a binary string where the value of 'width_bits'
     specifies the width of the following values. Each value is then extracted and
     subjected to logarithmic decompression.
 
@@ -97,7 +97,7 @@ def decompress_binary(
         The bit width that describes the width of data in the block
     block : int
         Number of values in each block
-    len_array : int
+    array_length : int
         The length of the array to be decompressed.
     mantissa_bit_length : int
         The bit length of the mantissa.
@@ -115,9 +115,10 @@ def decompress_binary(
 
     while current_position < len(binary):
         # Read the width of the block
-        width, current_position = read_n_bits(binary, width_bit, current_position)
+        width, current_position = read_and_advance(binary, width_bit, current_position)
         # If width is 0 or None, we don't have enough bits left
-        if width is None or len(decompressed_values) >= len_array:
+        if width is None or len(decompressed_values) >= array_length:
+            print("hi")
             break
 
         # For each block, read 16 values of the given width
@@ -126,7 +127,7 @@ def decompress_binary(
             if len(binary) - current_position < width:
                 break
 
-            value, current_position = read_n_bits(binary, width, current_position)
+            value, current_position = read_and_advance(binary, width, current_position)
 
             # Log decompression
             decompressed_values.append(log_decompression(value, mantissa_bit_length))
@@ -183,14 +184,14 @@ def decompress_image(
     for i in range(rows):
         for j in range(blocks_per_row):
             # Read the width for the block.
-            w, pos = read_n_bits(binary_data, width_bit, pos)
+            w, pos = read_and_advance(binary_data, width_bit, pos)
             for k in range(pixels_per_block):
                 # Handle the special case in which the width is 0
                 if w == 0:
                     value = 0
                 else:
                     # Find the value of each pixel in the block
-                    value, pos = read_n_bits(binary_data, w, pos)
+                    value, pos = read_and_advance(binary_data, w, pos)
 
                 # if the least significant bit of value is set (odd)
                 if value & 0x01:

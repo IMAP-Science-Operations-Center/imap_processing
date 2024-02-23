@@ -17,15 +17,15 @@ def decom_ultra(ccsds_path_tof, xtce_path):
     return data_packet_list
 
 
-def test_image_ena_phxtof_hi_ang_decom(decom_ultra, tof_test_path):
+def test_tof_decom(decom_ultra, tof_test_path):
     """This function reads validation data and checks that decom data
     matches validation data for image rate packet"""
 
     df = pd.read_csv(tof_test_path, index_col="SequenceCount")
 
-    assert (df.Spin == decom_ultra["SPIN"]).all()
-    assert (df.AbortFlag == decom_ultra["ABORTFLAG"]).all()
-    assert (df.StartDelay == decom_ultra["STARTDELAY"]).all()
+    np.testing.assert_array_equal(df.Spin, decom_ultra["SPIN"])
+    np.testing.assert_array_equal(df.AbortFlag, decom_ultra["ABORTFLAG"])
+    np.testing.assert_array_equal(df.StartDelay, decom_ultra["STARTDELAY"])
     assert json.loads(df["P00s"].values[0])[0] == decom_ultra["P00"][0]
 
     for count in df.index.get_level_values("SequenceCount").values:
@@ -36,4 +36,4 @@ def test_image_ena_phxtof_hi_ang_decom(decom_ultra, tof_test_path):
         decom_data = decom_ultra["PACKETDATA"][index]
         df_data_array = np.array(json.loads(df_data)[0])
 
-        assert (df_data_array == decom_data).all()
+        np.testing.assert_array_equal(df_data_array, decom_data)
