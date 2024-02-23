@@ -82,7 +82,7 @@ def decom_ultra_apids(packet_file: str, xtce: str, apid: Optional[int] = None):
 
     for apid in grouped_data:
         if not any(
-            apid in category.value.apid
+            apid in category.apid
             for category in [
                 ULTRA_EVENTS,
                 ULTRA_AUX,
@@ -98,7 +98,7 @@ def decom_ultra_apids(packet_file: str, xtce: str, apid: Optional[int] = None):
         for packet in sorted_packets:
             # Here there are multiple images in a single packet,
             # so we need to loop through each image and decompress it.
-            if apid in ULTRA_EVENTS.value.apid:
+            if apid in ULTRA_EVENTS.apid:
                 decom_data = read_image_raw_events_binary(packet, decom_data)
                 count = packet.data["COUNT"].derived_value
 
@@ -109,15 +109,15 @@ def decom_ultra_apids(packet_file: str, xtce: str, apid: Optional[int] = None):
                         logging.info(f"Appending image #{i}")
                         append_params(decom_data, packet)
 
-            elif apid in ULTRA_AUX.value.apid:
+            elif apid in ULTRA_AUX.apid:
                 append_params(decom_data, packet)
 
-            elif apid in ULTRA_TOF.value.apid:
+            elif apid in ULTRA_TOF.apid:
                 decompressed_data = decompress_image(
                     packet.data["P00"].derived_value,
                     packet.data["PACKETDATA"].raw_value,
-                    ULTRA_TOF.value.width,
-                    ULTRA_TOF.value.mantissa_bit_length,
+                    ULTRA_TOF.width,
+                    ULTRA_TOF.mantissa_bit_length,
                 )
 
                 append_params(
@@ -127,13 +127,13 @@ def decom_ultra_apids(packet_file: str, xtce: str, apid: Optional[int] = None):
                     decompressed_key="PACKETDATA",
                 )
 
-            elif apid in ULTRA_RATES.value.apid:
+            elif apid in ULTRA_RATES.apid:
                 decompressed_data = decompress_binary(
                     packet.data["FASTDATA_00"].raw_value,
-                    ULTRA_RATES.value.width,
-                    ULTRA_RATES.value.block,
-                    ULTRA_RATES.value.len_array,
-                    ULTRA_RATES.value.mantissa_bit_length,
+                    ULTRA_RATES.width,
+                    ULTRA_RATES.block,
+                    ULTRA_RATES.len_array,
+                    ULTRA_RATES.mantissa_bit_length,
                 )
 
                 append_params(

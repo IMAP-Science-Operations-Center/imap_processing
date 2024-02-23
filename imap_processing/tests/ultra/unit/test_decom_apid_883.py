@@ -11,9 +11,7 @@ from imap_processing.ultra.l0.ultra_utils import ULTRA_TOF
 @pytest.fixture()
 def decom_ultra(ccsds_path_tof, xtce_path):
     """Data for decom_ultra"""
-    data_packet_list = decom_ultra_apids(
-        ccsds_path_tof, xtce_path, ULTRA_TOF.value.apid[0]
-    )
+    data_packet_list = decom_ultra_apids(ccsds_path_tof, xtce_path, ULTRA_TOF.apid[0])
     return data_packet_list
 
 

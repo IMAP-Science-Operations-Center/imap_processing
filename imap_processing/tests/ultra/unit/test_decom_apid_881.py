@@ -19,7 +19,7 @@ def decom_test_data(ccsds_path, xtce_path):
 @pytest.fixture()
 def decom_ultra(ccsds_path, xtce_path):
     """Data for decom_ultra"""
-    data_packets = decom_ultra_apids(ccsds_path, xtce_path, ULTRA_RATES.value.apid[0])
+    data_packets = decom_ultra_apids(ccsds_path, xtce_path, ULTRA_RATES.apid[0])
     return data_packets
 
 
