@@ -1,5 +1,7 @@
 """Ultra Decompression Tools."""
-from imap_processing.ultra.l0.ultra_utils import ParserHelper
+import numpy as np
+
+from imap_processing.ultra.l0.ultra_utils import append_fillval, parse_event
 
 
 def read_and_advance(binary_data: str, n: int, current_position: int):
@@ -118,7 +120,6 @@ def decompress_binary(
         width, current_position = read_and_advance(binary, width_bit, current_position)
         # If width is 0 or None, we don't have enough bits left
         if width is None or len(decompressed_values) >= array_length:
-            print("hi")
             break
 
         # For each block, read 16 values of the given width
@@ -136,7 +137,7 @@ def decompress_binary(
 
 
 def decompress_image(
-    pp: int,
+    pixel0: int,
     binary_data: str,
     width_bit: int,
     mantissa_bit_length: int,
@@ -149,7 +150,7 @@ def decompress_image(
 
     Parameters
     ----------
-    pp : int
+    pixel0 : int
         The first, unmodified pixel p0,0.
     binary_data : str
         Binary string.
@@ -172,12 +173,12 @@ def decompress_image(
     cols = 180
     pixels_per_block = 15
 
-    blocks_per_row = int(cols / pixels_per_block)
+    blocks_per_row = cols // pixels_per_block
 
     # Compressed pixel matrix
-    p = [[0 for _ in range(cols)] for _ in range(rows)]
+    p = np.zeros((rows, cols), dtype=np.uint16)
     # Decompressed pixel matrix
-    p_decom = [[0 for _ in range(cols)] for _ in range(rows)]
+    p_decom = np.zeros((rows, cols), dtype=np.uint16)
 
     pos = 0  # Starting position in the binary string
 
@@ -201,19 +202,19 @@ def decompress_image(
                 else:
                     delta_f = value >> 1
 
-                # Calculate the new pixel value and update pp
+                # Calculate the new pixel value and update pixel0
                 column_index = j * pixels_per_block + k
                 # 0xff is the hexadecimal representation of the number 255,
-                # Keeps only the last 8 bits of the result of pp - delta_f
+                # Keeps only the last 8 bits of the result of pixel0 - delta_f
                 # This operation ensures that the result is within the range
                 # of an 8-bit byte (0-255)
-                p[i][column_index] = (pp - delta_f) & 0xFF
+                p[i][column_index] = (pixel0 - delta_f) & 0xFF
                 # Perform logarithmic decompression on the pixel value
                 p_decom[i][column_index] = log_decompression(
                     p[i][column_index], mantissa_bit_length
                 )
-                pp = p[i][column_index]
-        pp = p[i][0]
+                pixel0 = p[i][column_index]
+        pixel0 = p[i][0]
 
     return p_decom
 
@@ -237,25 +238,16 @@ def read_image_raw_events_binary(packet, decom_data: dict):
     count = packet.data["COUNT"].derived_value
     event_length = int(len(binary) / count) if count else 0
 
-    parser = ParserHelper()
-
-    # Initialize data structure if required keys not found
-    required_keys = set(parser.event_field_ranges.keys())
-    decom_data_keys = set(decom_data.keys())
-
-    if not required_keys.issubset(decom_data_keys):
-        decom_data = parser.initialize_event_data(decom_data)
-
     # Uses fill value for all packets that do not contain event data.
     if count == 0:
-        parser.append_fillval(decom_data, packet)
+        append_fillval(decom_data, packet)
 
     # For all packets with event data, parses the binary string
     else:
         for i in range(count):
             start_index = i * event_length
             event_binary = binary[start_index : start_index + event_length]
-            event_data = parser.parse_event(event_binary)
+            event_data = parse_event(event_binary)
 
             for key, value in event_data.items():
                 decom_data[key].append(value)
