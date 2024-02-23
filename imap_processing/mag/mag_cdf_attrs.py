@@ -26,7 +26,9 @@ mag_base = GlobalInstrumentAttrs(
 )
 
 mag_l1a_attrs = GlobalDataLevelAttrs(
+    # TODO: data type should include "norm" and "burst" L1A-norm>Level-1A-normal-rate
     "L1A>Level-1A",
+    # Should also include data type
     logical_source="imap_mag_l1a",
     logical_source_desc="IMAP Mission MAG Instrument Level-1A Data.",
     instrument_base=mag_base,
@@ -50,6 +52,8 @@ mag_l1c_attrs = GlobalDataLevelAttrs(
 
 # TODO: display type, catdesc, units, format, label_axis
 
+# TODO: update descriptor to be more accurate for L1A raw
+# TODO: does raw value need "counts"
 mag_vector_attrs = ScienceAttrs(
     validmin=GlobalConstants.INT_FILLVAL,
     validmax=GlobalConstants.INT_MAXVAL,
