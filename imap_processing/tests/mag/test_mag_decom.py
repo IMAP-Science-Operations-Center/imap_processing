@@ -53,7 +53,6 @@ def test_mag_raw_xarray():
     assert all([item is not None for _, item in burst_data.attrs.items()])
 
     expected_norm_len = 17
-    print(norm_data.dims["Epoch"])
     assert norm_data.dims["Epoch"] == expected_norm_len
 
     expected_burst_len = 19
@@ -69,16 +68,18 @@ def test_mag_raw_cdf_generation(tmp_path):
 
     test_data_path_norm = tmp_path / "mag_l1a_raw-normal_20210101_20210102_v01-01.cdf"
 
+    assert not test_data_path_norm.exists()
     output = write_cdf(norm_data, test_data_path_norm)
-    assert Path.exists(test_data_path_norm)
+    assert test_data_path_norm.exists()
 
     input_xarray = cdf_to_xarray(output)
     assert input_xarray.attrs.keys() == norm_data.attrs.keys()
 
     test_data_path_burst = tmp_path / "mag_l1a_raw-burst_20210101_20210102_v01-01.cdf"
 
+    assert not test_data_path_burst.exists()
     output = write_cdf(burst_data, test_data_path_burst)
-    assert Path.exists(test_data_path_burst)
+    assert test_data_path_burst.exists()
 
     input_xarray = cdf_to_xarray(output)
     assert input_xarray.attrs.keys() == burst_data.attrs.keys()

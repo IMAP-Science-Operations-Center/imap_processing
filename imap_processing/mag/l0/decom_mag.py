@@ -80,15 +80,14 @@ def export_to_xarray(l0_data: list[MagL0]):
         xarray dataset for generating burst data CDFs
     """
     # TODO split by mago and magi using primary sensor
-    # TODO split by norm and burst
     norm_data = []
     burst_data = []
 
-    for datapoint in l0_data:
-        if datapoint.ccsds_header.PKT_APID == Mode.NORMAL:
-            norm_data.append(datapoint)
-        if datapoint.ccsds_header.PKT_APID == Mode.BURST:
-            burst_data.append(datapoint)
+    for packet in l0_data:
+        if packet.ccsds_header.PKT_APID == Mode.NORMAL:
+            norm_data.append(packet)
+        if packet.ccsds_header.PKT_APID == Mode.BURST:
+            burst_data.append(packet)
 
     norm_dataset = None
     burst_dataset = None

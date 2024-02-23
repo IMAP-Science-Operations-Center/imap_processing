@@ -23,8 +23,6 @@ from cdflib.xarray import cdf_to_xarray
 
 import imap_processing
 
-__logger__ = logging.getLogger(__name__)
-
 # TODO: change how we import things and also folder
 # structure may?
 # From this:
@@ -37,6 +35,8 @@ from imap_processing.cdf.utils import write_cdf
 from imap_processing.mag.l1a.mag_l1a import mag_l1a
 from imap_processing.swe.l1a.swe_l1a import swe_l1a
 from imap_processing.swe.l1b.swe_l1b import swe_l1b
+
+logger = logging.getLogger(__name__)
 
 
 def _parse_args():

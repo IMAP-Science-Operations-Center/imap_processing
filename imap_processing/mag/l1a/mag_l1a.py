@@ -5,7 +5,7 @@ from pathlib import Path
 from imap_processing.cdf.utils import write_cdf
 from imap_processing.mag.l0 import decom_mag
 
-__logger__ = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 
 def mag_l1a(packet_filepath, output_filepath_norm, ouptput_filepath_burst):
