@@ -204,7 +204,7 @@ class AttrBase:
     scale_type : str, default="linear"
         The scale of the axis, "SCALETYP" attribute
     label_axis : str, default=None
-        Axis label, "LABLAXIS" attribute
+        Axis label, "LABLAXIS" attribute. Required. Should be close to 6 letters.
     format : str, default=None
         The format of the data, in Fortran format
     units : str, default=None
@@ -259,6 +259,7 @@ class ScienceAttrs(AttrBase):
     depend_0 : str = None
         The first degree of dependent coordinate variables.
         Although this is an optional keyword, it is required for every instance.
+        This should be the "Epoch" dimension, and should be type datetime64.
     depend_1 : str = None, optional
         The second degree of dependent coordinate variables. This is used for 2d data.
     depend_2 : str = None, optional
