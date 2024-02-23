@@ -6,7 +6,7 @@ import pytest
 
 from imap_processing import decom
 from imap_processing.ultra.l0.decom_ultra import decom_ultra_apids
-from imap_processing.ultra.l0.ultra_utils import UltraParams
+from imap_processing.ultra.l0.ultra_utils import ULTRA_RATES
 
 
 @pytest.fixture()
@@ -19,9 +19,7 @@ def decom_test_data(ccsds_path, xtce_path):
 @pytest.fixture()
 def decom_ultra(ccsds_path, xtce_path):
     """Data for decom_ultra"""
-    data_packets = decom_ultra_apids(
-        ccsds_path, xtce_path, UltraParams.ULTRA_RATES.value.apid[0]
-    )
+    data_packets = decom_ultra_apids(ccsds_path, xtce_path, ULTRA_RATES.value.apid[0])
     return data_packets
 
 

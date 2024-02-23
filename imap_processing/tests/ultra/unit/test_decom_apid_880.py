@@ -4,7 +4,7 @@ import pytest
 
 from imap_processing import decom
 from imap_processing.ultra.l0.decom_ultra import decom_ultra_apids
-from imap_processing.ultra.l0.ultra_utils import UltraParams
+from imap_processing.ultra.l0.ultra_utils import ULTRA_AUX
 from imap_processing.utils import group_by_apid
 
 
@@ -49,9 +49,7 @@ def test_aux_decom(ccsds_path, xtce_path, aux_test_path):
     """This function reads validation data and checks that
     decom data matches validation data for auxiliary packet"""
 
-    decom_ultra = decom_ultra_apids(
-        ccsds_path, xtce_path, UltraParams.ULTRA_AUX.value.apid[0]
-    )
+    decom_ultra = decom_ultra_apids(ccsds_path, xtce_path, ULTRA_AUX.value.apid[0])
     df = pd.read_csv(aux_test_path, index_col="MET")
 
     np.testing.assert_array_equal(df.SpinStartSeconds, decom_ultra["TIMESPINSTART"])
