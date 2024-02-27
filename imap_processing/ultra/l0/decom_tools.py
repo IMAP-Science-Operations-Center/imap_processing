@@ -88,7 +88,7 @@ def decompress_binary(
     logarithmic compression.
 
     This function interprets a binary string where the value of 'width_bits'
-    specifies the width of the following values. Each value is then extracted and
+    specifies the width of the following bits. Each value is then extracted and
     subjected to logarithmic decompression.
 
     Parameters
@@ -161,13 +161,14 @@ def decompress_image(
 
     Returns
     -------
-    p_decom : List of lists.
-        Decompressed pixel matrix.
+    p_decom : numpy.ndarray
+        A 2D numpy array representing pixel values.
+        Each pixel is stored as an unsigned 16-bit integer (uint16).
 
     Notes
     -----
     This process is described starting on page 168 in IMAP-Ultra Flight
-    Software Specification document.
+    Software Specification document (7523-9009_Rev_-.pdf).
     """
     rows = 54
     cols = 180
