@@ -3,35 +3,6 @@
 	<xtce:Header date="2023-08-24T07:53:00MST" version="1.0" author="IMAP SDC" />
 	<xtce:TelemetryMetaData>
 		<xtce:ParameterTypeSet>
-			<!-- In the ParameterTypeSet, define all the data types required for the data packets' definitions.
-            Each data field within the packet definition may have different lengths specified by the lengthInBits column.
-            Here, we define data types for all the unique values found in the lengthInBits column.
-
-            For example, consider the uint1 data type:
-                <xtce:IntegerParameterType name="uint1" signed="false">
-                    <xtce:UnitSet/>
-                    <xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned"/>
-                </xtce:IntegerParameterType>
-            In this case, the uint1 data type is an unsigned integer with a size of 1 bit.
-
-            For fields that have meanings based on the values they evaluate to, enumerated data types need to be created.
-
-            Here's an example:
-                <xtce:EnumeratedParameterType name="cem_nominal_enum" signed="false">
-                    <xtce:UnitSet/>
-                    <xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned"/>
-                    <xtce:EnumerationList>
-                        <xtce:Enumeration label="NOT_NOMINAL" value="0"/>
-                        <xtce:Enumeration label="NOMINAL" value="1"/>
-                    </xtce:EnumerationList>
-                </xtce:EnumeratedParameterType>
-
-            In this case, the cem_nominal_enum data type is an enumerated type with a size of 1 bit. It has two possible values:
-                "NOT_NOMINAL" with a value of 0 and "NOMINAL" with a value of 1.
-
-            By defining the appropriate data types within the ParameterTypeSet, you ensure that the data fields in the packet definitions
-            are properly represented and their meanings are correctly interpreted.
-            -->
 			<xtce:IntegerParameterType name="uint0" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="0" encoding="unsigned" />
 				<xtce:UnitSet />
@@ -164,6 +135,44 @@
 				<xtce:IntegerDataEncoding sizeInBits="32" encoding="unsigned" />
 				<xtce:UnitSet />
 			</xtce:IntegerParameterType>
+			<xtce:BinaryParameterType name="fastdata">
+                <xtce:UnitSet/>
+                <xtce:BinaryDataEncoding>
+                    <xtce:SizeInBits>
+            			<xtce:DynamicValue>
+              				<xtce:ParameterInstanceRef parameterRef="PKT_LEN"/>
+							<!--Equation: (PKT_LEN+7)*8-112 -->
+              				<xtce:LinearAdjustment intercept="-56" slope="8"/>
+            			</xtce:DynamicValue>
+          			</xtce:SizeInBits>
+                </xtce:BinaryDataEncoding>
+            </xtce:BinaryParameterType>
+			<xtce:BinaryParameterType name="packetdata">
+                <xtce:UnitSet/>
+                <xtce:BinaryDataEncoding>
+                    <xtce:SizeInBits>
+            			<xtce:DynamicValue>
+              				<xtce:ParameterInstanceRef parameterRef="PKT_LEN"/>
+							<!--Equation: (PKT_LEN+7)*8-120 -->
+							<!--7: packet header + 1 -->
+							<!--120: start bit -->
+              				<xtce:LinearAdjustment intercept="-64" slope="8"/>
+            			</xtce:DynamicValue>
+          			</xtce:SizeInBits>
+                </xtce:BinaryDataEncoding>
+            </xtce:BinaryParameterType>
+			<xtce:BinaryParameterType name="eventdata">
+                <xtce:UnitSet/>
+                <xtce:BinaryDataEncoding>
+                    <xtce:SizeInBits>
+            			<xtce:DynamicValue>
+              				<xtce:ParameterInstanceRef parameterRef="COUNT"/>
+							<!--Equation: (COUNT)*166 -->
+              				<xtce:LinearAdjustment intercept="0" slope="166"/>
+            			</xtce:DynamicValue>
+          			</xtce:SizeInBits>
+                </xtce:BinaryDataEncoding>
+            </xtce:BinaryParameterType>
 			<!-- Enumerated Data Types -->
             <xtce:EnumeratedParameterType name="spin_period_validity_enum" signed="false">
                 <xtce:UnitSet/>
@@ -355,11 +364,41 @@
 			<xtce:Parameter name="SPARE3" parameterTypeRef="uint8">
 				<xtce:LongDescription>Spare</xtce:LongDescription>
 			</xtce:Parameter>
+			<!-- Unique to Image Rates -->
+			<xtce:Parameter name="SID" parameterTypeRef="uint8">
+				<xtce:LongDescription>Science ID</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SPIN" parameterTypeRef="uint8">
+				<xtce:LongDescription>Spin number at integration start</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="ABORTFLAG" parameterTypeRef="uint1">
+				<xtce:LongDescription>Integration aborted?</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="STARTDELAY" parameterTypeRef="uint15">
+				<xtce:LongDescription>Integration start delay (ms)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="FASTDATA_00" parameterTypeRef="fastdata">
+				<xtce:LongDescription>Fast-compressed rate data</xtce:LongDescription>
+			</xtce:Parameter>
+			<!-- Unique to TOF -->
+			<xtce:Parameter name="P00" parameterTypeRef="uint8">
+				<xtce:LongDescription>Starting pixel</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PACKETDATA" parameterTypeRef="packetdata">
+				<xtce:LongDescription>Image Packet Data</xtce:LongDescription>
+			</xtce:Parameter>
+			<!-- Unique to Raw Events -->
+			<xtce:Parameter name="COUNT" parameterTypeRef="uint8">
+				<xtce:LongDescription>Event Count</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="EVENTDATA" parameterTypeRef="eventdata">
+				<xtce:LongDescription>Event Data, 166 bits per event</xtce:LongDescription>
+			</xtce:Parameter>
 		</xtce:ParameterSet>
 		<!-- End metadata -->
 		<xtce:ContainerSet>
 			<!--CCSDS Header Elements-->
-			<xtce:SequenceContainer name="CCSDSPacket" abstract="true">
+			<xtce:SequenceContainer name="CCSDSPacket">
 				<xtce:EntryList>
 					<xtce:ParameterRefEntry parameterRef="VERSION" />
 					<xtce:ParameterRefEntry parameterRef="TYPE" />
@@ -372,9 +411,22 @@
 			</xtce:SequenceContainer>
 			<xtce:SequenceContainer name="UltraAuxiliaryPacket">
 				<xtce:BaseContainer containerRef="CCSDSPacket">
-					<xtce:RestrictionCriteria>
-						<xtce:Comparison parameterRef="PKT_APID" value="880" useCalibratedValue="false" />
-					</xtce:RestrictionCriteria>
+                    <xtce:RestrictionCriteria>
+                        <xtce:BooleanExpression>
+                            <xtce:ORedConditions>
+                                <xtce:Condition>
+                                    <xtce:ParameterInstanceRef parameterRef="PKT_APID" useCalibratedValue="false"/>
+                                    <xtce:ComparisonOperator>==</xtce:ComparisonOperator>
+                                    <xtce:Value>880</xtce:Value>
+                                </xtce:Condition>
+                                <xtce:Condition>
+                                    <xtce:ParameterInstanceRef parameterRef="PKT_APID"  useCalibratedValue="false"/>
+                                    <xtce:ComparisonOperator>==</xtce:ComparisonOperator>
+                                    <xtce:Value>994</xtce:Value>
+                                </xtce:Condition>
+                            </xtce:ORedConditions>
+                        </xtce:BooleanExpression>
+                    </xtce:RestrictionCriteria>
 				</xtce:BaseContainer>
 				<xtce:EntryList>
 					<xtce:ParameterRefEntry parameterRef="SHCOARSE" />
@@ -399,6 +451,92 @@
 					<xtce:ParameterRefEntry parameterRef="LEFTDEFLECTIONCHARGE"/>
 					<xtce:ParameterRefEntry parameterRef="RIGHTDEFLECTIONCHARGE"/>
 					<xtce:ParameterRefEntry parameterRef="SPARE3"/>
+				</xtce:EntryList>
+			</xtce:SequenceContainer>
+			<xtce:SequenceContainer name="UltraImageRatesPacket">
+				<xtce:BaseContainer containerRef="CCSDSPacket">
+                    <xtce:RestrictionCriteria>
+                        <xtce:BooleanExpression>
+                            <xtce:ORedConditions>
+                                <xtce:Condition>
+                                    <xtce:ParameterInstanceRef parameterRef="PKT_APID" useCalibratedValue="false"/>
+                                    <xtce:ComparisonOperator>==</xtce:ComparisonOperator>
+                                    <xtce:Value>881</xtce:Value>
+                                </xtce:Condition>
+                                <xtce:Condition>
+                                    <xtce:ParameterInstanceRef parameterRef="PKT_APID"  useCalibratedValue="false"/>
+                                    <xtce:ComparisonOperator>==</xtce:ComparisonOperator>
+                                    <xtce:Value>945</xtce:Value>
+                                </xtce:Condition>
+                            </xtce:ORedConditions>
+                        </xtce:BooleanExpression>
+                    </xtce:RestrictionCriteria>
+				</xtce:BaseContainer>
+				<xtce:EntryList>
+					<xtce:ParameterRefEntry parameterRef="SHCOARSE" />
+					<xtce:ParameterRefEntry parameterRef="SID" />
+					<xtce:ParameterRefEntry parameterRef="SPIN" />
+					<xtce:ParameterRefEntry parameterRef="ABORTFLAG" />
+					<xtce:ParameterRefEntry parameterRef="STARTDELAY" />
+					<xtce:ParameterRefEntry parameterRef="FASTDATA_00" />
+				</xtce:EntryList>
+			</xtce:SequenceContainer>
+			<xtce:SequenceContainer name="UltraPHXTOFPacket">
+				<xtce:BaseContainer containerRef="CCSDSPacket">
+                    <xtce:RestrictionCriteria>
+                        <xtce:BooleanExpression>
+                            <xtce:ORedConditions>
+                                <xtce:Condition>
+                                    <xtce:ParameterInstanceRef parameterRef="PKT_APID" useCalibratedValue="false"/>
+                                    <xtce:ComparisonOperator>==</xtce:ComparisonOperator>
+                                    <xtce:Value>883</xtce:Value>
+                                </xtce:Condition>
+                                <xtce:Condition>
+                                    <xtce:ParameterInstanceRef parameterRef="PKT_APID"  useCalibratedValue="false"/>
+                                    <xtce:ComparisonOperator>==</xtce:ComparisonOperator>
+                                    <xtce:Value>947</xtce:Value>
+                                </xtce:Condition>
+                            </xtce:ORedConditions>
+                        </xtce:BooleanExpression>
+                    </xtce:RestrictionCriteria>
+				</xtce:BaseContainer>
+				<xtce:EntryList>
+					<xtce:ParameterRefEntry parameterRef="SHCOARSE" />
+					<xtce:ParameterRefEntry parameterRef="SID" />
+					<xtce:ParameterRefEntry parameterRef="SPIN" />
+					<xtce:ParameterRefEntry parameterRef="ABORTFLAG" />
+					<xtce:ParameterRefEntry parameterRef="STARTDELAY" />
+					<xtce:ParameterRefEntry parameterRef="P00" />
+					<xtce:ParameterRefEntry parameterRef="PACKETDATA" />
+				</xtce:EntryList>
+			</xtce:SequenceContainer>
+			<xtce:SequenceContainer name="UltraRawEventsPacket">
+				<xtce:BaseContainer containerRef="CCSDSPacket">
+                    <xtce:RestrictionCriteria>
+                        <xtce:BooleanExpression>
+                            <xtce:ORedConditions>
+                                <xtce:Condition>
+                                    <xtce:ParameterInstanceRef parameterRef="PKT_APID" useCalibratedValue="false"/>
+                                    <xtce:ComparisonOperator>==</xtce:ComparisonOperator>
+                                    <xtce:Value>896</xtce:Value>
+                                </xtce:Condition>
+                                <xtce:Condition>
+                                    <xtce:ParameterInstanceRef parameterRef="PKT_APID"  useCalibratedValue="false"/>
+                                    <xtce:ComparisonOperator>==</xtce:ComparisonOperator>
+                                    <xtce:Value>960</xtce:Value>
+                                </xtce:Condition>
+                            </xtce:ORedConditions>
+                        </xtce:BooleanExpression>
+                    </xtce:RestrictionCriteria>
+				</xtce:BaseContainer>
+				<xtce:EntryList>
+					<xtce:ParameterRefEntry parameterRef="SHCOARSE" />
+					<xtce:ParameterRefEntry parameterRef="SID" />
+					<xtce:ParameterRefEntry parameterRef="SPIN" />
+					<xtce:ParameterRefEntry parameterRef="ABORTFLAG" />
+					<xtce:ParameterRefEntry parameterRef="STARTDELAY" />
+					<xtce:ParameterRefEntry parameterRef="COUNT" />
+					<xtce:ParameterRefEntry parameterRef="EVENTDATA" />
 				</xtce:EntryList>
 			</xtce:SequenceContainer>
 		</xtce:ContainerSet>
