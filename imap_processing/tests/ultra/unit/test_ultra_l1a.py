@@ -39,7 +39,6 @@ def test_xarray_aux(decom_ultra_aux, aux_test_path):
         ultra_cdf_attrs.ultra_support_attrs,
         catdesc="VERSION",
         fieldname="VERSION",
-        label_axis="VERSION",
     ).output()
 
     assert version_list == decom_ultra_aux["VERSION"]
