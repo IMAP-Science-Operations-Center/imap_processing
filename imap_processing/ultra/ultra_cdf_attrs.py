@@ -39,6 +39,7 @@ ultra_support_attrs = AttrBase(
     fill_val=GlobalConstants.INT_FILLVAL,
     format="I12",
     var_type="support_data",
+    label_axis="none",
 )
 
 ultra_metadata_attrs = ScienceAttrs(
@@ -51,7 +52,6 @@ ultra_metadata_attrs = ScienceAttrs(
     var_type="metadata",
 )
 
-# Housekeeping mode data array is stored as string.
 # Required attrs for string data type,
 # meaning array with string.
 string_base = StringAttrs(

@@ -23,7 +23,7 @@ def xarray_aux(decom_ultra_aux: dict):
 
     Returns
     -------
-    dataset : xr.Dataset
+    dataset : xarray.Dataset
         Data in xarray format.
     """
     # Converted time
@@ -57,7 +57,6 @@ def xarray_aux(decom_ultra_aux: dict):
                 ultra_cdf_attrs.ultra_support_attrs,
                 catdesc=key,  # TODO: short and long descriptions
                 fieldname=key,
-                label_axis=key,
             ).output()
         elif key in [
             "SPINPERIODVALID",
