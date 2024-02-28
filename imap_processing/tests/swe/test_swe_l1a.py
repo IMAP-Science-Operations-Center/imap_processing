@@ -1,6 +1,9 @@
+from pathlib import Path
+
 import pytest
 
 from imap_processing import imap_module_directory
+from imap_processing.cdf.utils import write_cdf
 from imap_processing.swe.l0 import decom_swe
 from imap_processing.swe.l1a.swe_l1a import swe_l1a
 from imap_processing.swe.utils.swe_utils import (
@@ -45,10 +48,27 @@ def test_group_by_apid(decom_test_data):
     assert len(total_event_message_data) == 15
 
 
-@pytest.mark.xfail(reason="Need to update after refactor of function returns.")
 def test_cdf_creation(decom_test_data):
     grouped_data = group_by_apid(decom_test_data)
-    sci_cdf_filepath = swe_l1a(grouped_data[SWEAPID.SWE_SCIENCE])
-    hk_cdf_filepath = swe_l1a(grouped_data[SWEAPID.SWE_APP_HK])
-    assert sci_cdf_filepath.name == "imap_swe_l1a_sci_20230927_v01.cdf"
-    assert hk_cdf_filepath.name == "imap_swe_l1a_lveng-hk_20230927_v01.cdf"
+    processed_data = swe_l1a(grouped_data[SWEAPID.SWE_SCIENCE])
+
+    expected_cdf_filename = [
+        "imap_swe_l1a_evtmsg_20230927_20230927_v01.cdf",
+        "imap_swe_l1a_lveng-hk_20230927_20230927_v01.cdf",
+        "imap_swe_l1a_cemraw_20230927_20230927_v01.cdf",
+        "imap_swe_l1a_sci_20230927_20230927_v01.cdf",
+    ]
+    returned_cdf_filename = []
+    current_directory = Path(__file__).parent
+    for data in processed_data:
+        filepath = (
+            current_directory
+            / f"imap_swe_l1a_{data['descriptor']}_20230927_20230927_v01.cdf"
+        )
+        cdf_filepath = write_cdf(data["data"], filepath)
+        returned_cdf_filename.append(cdf_filepath.name)
+
+    assert expected_cdf_filename == returned_cdf_filename
+    # cleanup files created
+    for file in expected_cdf_filename:
+        Path.unlink(current_directory / file)
