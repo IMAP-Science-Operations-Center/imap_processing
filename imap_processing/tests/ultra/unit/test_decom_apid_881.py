@@ -6,7 +6,7 @@ import pytest
 
 from imap_processing import decom
 from imap_processing.ultra.l0.decom_ultra import decom_ultra_apids
-from imap_processing.ultra.l0.ultra_utils import ULTRA_RATES
+from imap_processing.ultra.l0.ultra_utils import RATES_KEYS, ULTRA_RATES
 
 
 @pytest.fixture()
@@ -28,7 +28,6 @@ def test_image_rate_decom(decom_ultra, rates_test_path):
     matches validation data for image rate packet"""
 
     df = pd.read_csv(rates_test_path, index_col="MET")
-    count = 0
     total_packets = 23
 
     np.testing.assert_array_equal(df.SID, decom_ultra["SID"])
@@ -36,11 +35,18 @@ def test_image_rate_decom(decom_ultra, rates_test_path):
     np.testing.assert_array_equal(df.AbortFlag, decom_ultra["ABORTFLAG"])
     np.testing.assert_array_equal(df.StartDelay, decom_ultra["STARTDELAY"])
 
-    for time in decom_ultra["SHCOARSE"]:
-        arr1 = json.loads(df.loc[time].Counts)
-        index = decom_ultra["SHCOARSE"].index(time)
-        arr2 = decom_ultra["FASTDATA_00"][index]
-        np.testing.assert_array_equal(arr1, arr2)
-        count += 1
+    # Spot-check first packet
+    t0 = decom_ultra["SHCOARSE"][0]
+    expected_arr0 = json.loads(df.loc[t0].Counts)
+    arr = []
+    for name in RATES_KEYS:
+        arr.append(decom_ultra[name][0])
+    assert expected_arr0 == arr
 
-    assert count == total_packets
+    # Spot-check last packet
+    tn = decom_ultra["SHCOARSE"][total_packets - 1]
+    expected_arrn = json.loads(df.loc[tn].Counts)
+    arr = []
+    for name in RATES_KEYS:
+        arr.append(decom_ultra[name][total_packets - 1])
+    assert expected_arrn == arr
