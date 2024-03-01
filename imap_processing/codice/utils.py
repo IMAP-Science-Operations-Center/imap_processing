@@ -12,6 +12,7 @@ import space_packet_parser
 import xarray as xr
 
 from imap_processing.cdf.global_attrs import ConstantCoordinates
+from imap_processing.cdf.utils import calc_start_time
 from imap_processing.codice import cdf_attrs
 
 
@@ -111,8 +112,11 @@ def create_dataset(packets: list[space_packet_parser.parser.Packet]) -> xr.Datas
     for packet in packets:
         add_metadata_to_array(packet, metadata_arrays)
 
+    # Convert to datetime64 and normalize by launch date
+    epoch_times = [calc_start_time(item) for item in metadata_arrays["SHCOARSE"]]
+
     epoch_time = xr.DataArray(
-        metadata_arrays["SHCOARSE"],
+        epoch_times,
         name="Epoch",
         dims=["Epoch"],
         attrs=ConstantCoordinates.EPOCH,
@@ -124,19 +128,16 @@ def create_dataset(packets: list[space_packet_parser.parser.Packet]) -> xr.Datas
     )
 
     for key, value in metadata_arrays.items():
-        if key == "SHCOARSE":
-            continue
-        else:
-            dataset[key] = xr.DataArray(
-                value,
-                dims=["Epoch"],
-                attrs=dataclasses.replace(
-                    cdf_attrs.codice_metadata_attrs,
-                    catdesc=key,
-                    fieldname=key,
-                    label_axis=key,
-                    depend_0="Epoch",
-                ).output(),
-            )
+        dataset[key] = xr.DataArray(
+            value,
+            dims=["Epoch"],
+            attrs=dataclasses.replace(
+                cdf_attrs.codice_metadata_attrs,
+                catdesc=key,
+                fieldname=key,
+                label_axis=key,
+                depend_0="Epoch",
+            ).output(),
+        )
 
     return dataset
