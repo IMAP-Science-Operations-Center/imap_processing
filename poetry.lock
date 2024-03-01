@@ -226,13 +226,13 @@ bitarray = ">=2.8.0,<3.0.0"
 
 [[package]]
 name = "cdflib"
-version = "1.2.3"
+version = "1.2.4"
 description = "A python CDF reader toolkit"
 optional = false
 python-versions = ">=3.6"
 files = [
-    {file = "cdflib-1.2.3-py3-none-any.whl", hash = "sha256:1d4ae2ae2c623357999f0187ea6d86bc636723e28d20dceed708e9a5e9d1568e"},
-    {file = "cdflib-1.2.3.tar.gz", hash = "sha256:199b8cbec273fefcd2d6d489b3836fb6537569629066cac0c498c0259fbb2795"},
+    {file = "cdflib-1.2.4-py3-none-any.whl", hash = "sha256:0069ff8c4107d08e7937f0893e6ec339df93f83fed4eca4d1076aaaff23bb339"},
+    {file = "cdflib-1.2.4.tar.gz", hash = "sha256:e1288ace2192eb9c5110d332c1e8ce7e8d86004218ef7a609aaf12f1d0d423cc"},
 ]
 
 [package.dependencies]
@@ -1699,4 +1699,4 @@ tools = ["openpyxl", "pandas"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9,<4"
-content-hash = "084d974056c19407b322ab2028d47cc1750f4ba1f8d36bded564db59ff1c865f"
+content-hash = "6c19c15b244cd6c733528af5179e0cc99be3609fb64e1ec08292e852f551ee2e"

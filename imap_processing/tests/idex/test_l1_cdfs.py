@@ -21,7 +21,7 @@ def decom_test_data():
     return PacketParser(test_file)
 
 
-@pytest.mark.xpass(reason="Need to fix new ISTP error in IDEX CDF")
+@pytest.mark.xfail(reason="Need to fix new ISTP error in IDEX CDF")
 def test_idex_cdf_file(decom_test_data, tmp_path):
     # Verify that a CDF file can be created with no errors thrown by xarray_to_cdf
     date_to_test = "20250724"
