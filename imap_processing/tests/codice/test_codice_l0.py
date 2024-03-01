@@ -93,6 +93,9 @@ def test_eu_hk_data(
         # Skip the first num_ccsds_header_fields fields
         if idx < num_ccsds_header_fields:
             continue
+        # Skip SHCOARSE
+        if field == "SHCOARSE":
+            continue
 
         eu_values = eu_hk_data[field].data
         validation_values = validation_row[field]

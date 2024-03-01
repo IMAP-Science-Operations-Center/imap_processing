@@ -128,19 +128,16 @@ def create_dataset(packets: list[space_packet_parser.parser.Packet]) -> xr.Datas
     )
 
     for key, value in metadata_arrays.items():
-        if key == "SHCOARSE":
-            continue
-        else:
-            dataset[key] = xr.DataArray(
-                value,
-                dims=["Epoch"],
-                attrs=dataclasses.replace(
-                    cdf_attrs.codice_metadata_attrs,
-                    catdesc=key,
-                    fieldname=key,
-                    label_axis=key,
-                    depend_0="Epoch",
-                ).output(),
-            )
+        dataset[key] = xr.DataArray(
+            value,
+            dims=["Epoch"],
+            attrs=dataclasses.replace(
+                cdf_attrs.codice_metadata_attrs,
+                catdesc=key,
+                fieldname=key,
+                label_axis=key,
+                depend_0="Epoch",
+            ).output(),
+        )
 
     return dataset
