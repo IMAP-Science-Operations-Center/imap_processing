@@ -1,7 +1,13 @@
 # Dockerfile that installs imap_processing and its dependencies
 FROM public.ecr.aws/docker/library/python:3.10-slim
-RUN pip install imap_processing
 
+# TODO: delete this section once imap_processing is released
+ARG DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && apt-get install -y git
+RUN pip install git+https://github.com/IMAP-Science-Operations-Center/imap_processing.git@dev
+
+# Uncomment this once imap_processing is released
+# RUN pip install imap_processing
 # Create the /mnt/spice directory
 WORKDIR /app/data
 ENV IMAP_DATA_DIR /app/data
