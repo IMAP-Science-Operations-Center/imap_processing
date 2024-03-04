@@ -61,7 +61,7 @@ def decom_ultra_apids(packet_file: str, xtce: str, apid: int):
     xtce : str
         Path to the XTCE packet definition file.
     apid : int
-        The APID to test. If None, all APIDs are processed.
+        The APID to process.
 
     Returns
     -------
