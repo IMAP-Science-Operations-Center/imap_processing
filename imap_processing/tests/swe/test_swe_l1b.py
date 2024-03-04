@@ -125,10 +125,14 @@ def test_cdf_creation(decom_test_data):
     hk_l1a_cdf_file_path = (
         current_directory / "imap_swe_l1a_lveng-hk_20230927_20230927_v01.cdf"
     )
+    print(f"l1a data - {hk_l1a_dataset[0]['data']}")
     hk_l1a_filepath = write_cdf(hk_l1a_dataset[0]["data"], hk_l1a_cdf_file_path)
+
+    assert hk_l1a_filepath.name == "imap_swe_l1a_lveng-hk_20230927_20230927_v01.cdf"
 
     # reads data from CDF file and passes to l1b
     l1a_dataset = cdf_to_xarray(hk_l1a_filepath, to_datetime=True)
+    print(f"l1a data from CDF - {l1a_dataset}")
     l1b_dataset = swe_l1b(l1a_dataset)
     cdf_file_path = (
         current_directory / "imap_swe_l1b_lveng-hk_20230927_20230927_v01.cdf"
