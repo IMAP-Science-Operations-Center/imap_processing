@@ -2,6 +2,7 @@
 
 import logging
 from collections import defaultdict
+from pathlib import Path
 
 from imap_processing import decom
 from imap_processing.ccsds.ccsds_data import CcsdsData
@@ -49,15 +50,15 @@ def append_params(
     append_ccsds_fields(decom_data, ccsds_data)
 
 
-def decom_ultra_apids(packet_file: str, xtce: str, apid: int):
+def decom_ultra_apids(packet_file: Path, xtce: Path, apid: int):
     """
     Unpack and decode Ultra packets using CCSDS format and XTCE packet definitions.
 
     Parameters
     ----------
-    packet_file : str
+    packet_file : Path
         Path to the CCSDS data packet file.
-    xtce : str
+    xtce : Path
         Path to the XTCE packet definition file.
     apid : int
         The APID to process.
