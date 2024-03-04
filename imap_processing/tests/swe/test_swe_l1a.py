@@ -49,8 +49,8 @@ def test_group_by_apid(decom_test_data):
 
 
 def test_cdf_creation(decom_test_data):
-    grouped_data = group_by_apid(decom_test_data)
-    processed_data = swe_l1a(grouped_data[SWEAPID.SWE_SCIENCE])
+    test_data_path = "tests/swe/l0_data/"
+    processed_data = swe_l1a(test_data_path)
 
     expected_cdf_filename = [
         "imap_swe_l1a_evtmsg_20230927_20230927_v01.cdf",

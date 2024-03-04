@@ -118,30 +118,31 @@ def test_cdf_creation(decom_test_data):
     """Test that CDF file is created and has the correct name."""
     current_directory = Path(__file__).parent
 
-    # process hk data to l1a and then pass to l1b
-    grouped_data = group_by_apid(decom_test_data)
-    # writes data to CDF file
-    hk_l1a_dataset = swe_l1a(grouped_data[SWEAPID.SWE_APP_HK])
+    test_data_path = "tests/swe/l0_data/"
+    l1a_datasets = swe_l1a(test_data_path)
     hk_l1a_cdf_file_path = (
         current_directory / "imap_swe_l1a_lveng-hk_20230927_20230927_v01.cdf"
     )
-    print(f"l1a data - {hk_l1a_dataset[0]['data']}")
-    hk_l1a_filepath = write_cdf(hk_l1a_dataset[0]["data"], hk_l1a_cdf_file_path)
+
+    for i in range(len(l1a_datasets)):
+        if l1a_datasets[i]["descriptor"] == "lveng-hk":
+            hk_l1a_data = l1a_datasets[i]["data"]
+            break
+
+    hk_l1a_filepath = write_cdf(hk_l1a_data, hk_l1a_cdf_file_path)
 
     assert hk_l1a_filepath.name == "imap_swe_l1a_lveng-hk_20230927_20230927_v01.cdf"
 
     # reads data from CDF file and passes to l1b
-    l1a_dataset = cdf_to_xarray(hk_l1a_filepath, to_datetime=True)
-    print(f"l1a data from CDF - {l1a_dataset}")
-    l1b_dataset = swe_l1b(l1a_dataset)
+    l1a_cdf_dataset = cdf_to_xarray(hk_l1a_filepath, to_datetime=True)
+    l1b_dataset = swe_l1b(l1a_cdf_dataset)
     cdf_file_path = (
         current_directory / "imap_swe_l1b_lveng-hk_20230927_20230927_v01.cdf"
     )
 
-    print(f"l1b data - {l1b_dataset}")
     hk_l1b_filepath = write_cdf(l1b_dataset, cdf_file_path)
 
     assert hk_l1b_filepath.name == "imap_swe_l1b_lveng-hk_20230927_20230927_v01.cdf"
-    # remove the file after reading
+    # remove the file after reading for local testing
     Path.unlink(hk_l1a_filepath)
     Path.unlink(hk_l1b_filepath)

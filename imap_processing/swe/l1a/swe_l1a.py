@@ -15,9 +15,8 @@ from imap_processing.utils import group_by_apid, sort_by_time
 
 def decom_data(file_path):
     """Read test data from test folder."""
-    # TODO: replace test folder after demo
-    test_folder_path = "tests/swe/l0_data"
-    packet_files = list(imap_module_directory.glob(f"{test_folder_path}/*.bin"))
+    # TODO: remove this once we get one file with all packets in it.
+    packet_files = list(imap_module_directory.glob(f"{file_path}/*.bin"))
 
     data_list = []
     for packet_file in packet_files:
@@ -42,8 +41,12 @@ def swe_l1a(file_path):
     List
         List of xarray.Dataset
     """
-    # TODO: figure out how to do this better after demo
+    # Uncommnet this once we get one file with all packets in it.
+    # packets = decom_swe.decom_packets(file_path)
+
+    # TODO: remove this once we get one file with all packets in it.
     packets = decom_data(file_path)
+
     processed_data = []
     # group data by appId
     grouped_data = group_by_apid(packets)
