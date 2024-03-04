@@ -2,7 +2,6 @@
 
 import logging
 from collections import defaultdict
-from typing import Optional
 
 from imap_processing import decom
 from imap_processing.ccsds.ccsds_data import CcsdsData
@@ -12,6 +11,7 @@ from imap_processing.ultra.l0.decom_tools import (
     read_image_raw_events_binary,
 )
 from imap_processing.ultra.l0.ultra_utils import (
+    RATES_KEYS,
     ULTRA_AUX,
     ULTRA_EVENTS,
     ULTRA_RATES,
@@ -50,7 +50,7 @@ def append_params(
     append_ccsds_fields(decom_data, ccsds_data)
 
 
-def decom_ultra_apids(packet_file: str, xtce: str, apid: Optional[int] = None):
+def decom_ultra_apids(packet_file: str, xtce: str, apid: int):
     """
     Unpack and decode Ultra packets using CCSDS format and XTCE packet definitions.
 
@@ -60,8 +60,8 @@ def decom_ultra_apids(packet_file: str, xtce: str, apid: Optional[int] = None):
         Path to the CCSDS data packet file.
     xtce : str
         Path to the XTCE packet definition file.
-    apid : Optional[int]
-        The APID to test. If None, all APIDs are processed.
+    apid : int
+        The APID to process.
 
     Returns
     -------
@@ -70,6 +70,7 @@ def decom_ultra_apids(packet_file: str, xtce: str, apid: Optional[int] = None):
     """
     packets = decom.decom_packets(packet_file, xtce)
     grouped_data = group_by_apid(packets)
+    data = {apid: grouped_data[apid]}
 
     decom_data = defaultdict(list)
 
@@ -77,10 +78,7 @@ def decom_ultra_apids(packet_file: str, xtce: str, apid: Optional[int] = None):
     if not isinstance(decom_data, defaultdict):
         decom_data = defaultdict(list, decom_data)
 
-    if apid:
-        grouped_data = {apid: grouped_data[apid]}
-
-    for apid in grouped_data:
+    for apid in data:
         if not any(
             apid in category.apid
             for category in [
@@ -93,7 +91,7 @@ def decom_ultra_apids(packet_file: str, xtce: str, apid: Optional[int] = None):
             logger.info(f"{apid} is currently not supported")
             continue
 
-        sorted_packets = sort_by_time(grouped_data[apid], "SHCOARSE")
+        sorted_packets = sort_by_time(data[apid], "SHCOARSE")
 
         for packet in sorted_packets:
             # Here there are multiple images in a single packet,
@@ -136,11 +134,9 @@ def decom_ultra_apids(packet_file: str, xtce: str, apid: Optional[int] = None):
                     ULTRA_RATES.mantissa_bit_length,
                 )
 
-                append_params(
-                    decom_data,
-                    packet,
-                    decompressed_data=decompressed_data,
-                    decompressed_key="FASTDATA_00",
-                )
+                for index in range(ULTRA_RATES.len_array):
+                    decom_data[RATES_KEYS[index]].append(decompressed_data[index])
+
+                append_params(decom_data, packet)
 
     return decom_data
