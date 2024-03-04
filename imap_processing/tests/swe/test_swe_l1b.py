@@ -138,6 +138,7 @@ def test_cdf_creation(decom_test_data):
         current_directory / "imap_swe_l1b_lveng-hk_20230927_20230927_v01.cdf"
     )
 
+    print(f"l1b data - {l1b_dataset}")
     hk_l1b_filepath = write_cdf(l1b_dataset, cdf_file_path)
 
     assert hk_l1b_filepath.name == "imap_swe_l1b_lveng-hk_20230927_20230927_v01.cdf"
