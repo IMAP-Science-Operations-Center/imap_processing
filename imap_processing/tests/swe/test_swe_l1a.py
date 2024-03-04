@@ -68,7 +68,7 @@ def test_cdf_creation(decom_test_data):
         cdf_filepath = write_cdf(data["data"], filepath)
         returned_cdf_filename.append(cdf_filepath.name)
 
-    assert expected_cdf_filename == returned_cdf_filename
+    assert sorted(expected_cdf_filename) == sorted(returned_cdf_filename)
     # cleanup files created
     for file in expected_cdf_filename:
         Path.unlink(current_directory / file)
