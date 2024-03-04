@@ -29,34 +29,6 @@ def decom_test_data():
     return data_list
 
 
-@pytest.fixture(scope="session")
-def l1a_test_data():
-    """Read test data from file"""
-    # NOTE: data was provided in this sequence in both bin and validation data
-    # from instrument team.
-    # Packet 1 has spin 4's data
-    # Packet 2 has spin 1's data
-    # Packet 3 has spin 2's data
-    # Packet 4 has spin 3's data
-    # moved packet 1 to bottom to show data in order.
-    packet_files = [
-        imap_module_directory
-        / "tests/swe/l0_data/20230927173253_SWE_SCIENCE_packet.bin",
-        imap_module_directory
-        / "tests/swe/l0_data/20230927173308_SWE_SCIENCE_packet.bin",
-        imap_module_directory
-        / "tests/swe/l0_data/20230927173323_SWE_SCIENCE_packet.bin",
-        imap_module_directory
-        / "tests/swe/l0_data/20230927173238_SWE_SCIENCE_packet.bin",
-    ]
-    data = []
-    for packet_file in packet_files:
-        data.extend(decom_swe.decom_packets(packet_file))
-    # Get unpacked science data
-    unpacked_data = swe_science(data)
-    return unpacked_data
-
-
 def test_swe_l1b(decom_test_data):
     """Test that calculate engineering unit(EU) is
     matches validation data.
@@ -142,7 +114,8 @@ def test_swe_l1b(decom_test_data):
         assert round(hk_l1b[field].data[1], 5) == round(validation_data[field], 5)
 
 
-def test_cdf_creation(decom_test_data, l1a_test_data):
+def test_cdf_creation(decom_test_data):
+    """Test that CDF file is created and has the correct name."""
     current_directory = Path(__file__).parent
 
     # process hk data to l1a and then pass to l1b
@@ -153,23 +126,17 @@ def test_cdf_creation(decom_test_data, l1a_test_data):
         current_directory / "imap_swe_l1a_lveng-hk_20230927_20230927_v01.cdf"
     )
     hk_l1a_filepath = write_cdf(hk_l1a_dataset[0]["data"], hk_l1a_cdf_file_path)
+
     # reads data from CDF file and passes to l1b
     l1a_dataset = cdf_to_xarray(hk_l1a_filepath, to_datetime=True)
-    # print(l1a_dataset)
-    # remove the file after reading
-    Path.unlink(hk_l1a_filepath)
     l1b_dataset = swe_l1b(l1a_dataset)
-    print(l1b_dataset)
     cdf_file_path = (
         current_directory / "imap_swe_l1b_lveng-hk_20230927_20230927_v01.cdf"
     )
 
-    print(cdf_file_path)
-    # l1b_dataset["Epoch"] = l1b_dataset["Epoch"].astype(str)
-    print(type(l1b_dataset["Epoch"].data[0]))
-    print(l1b_dataset["Epoch"])
-    # TODO: fix this test
-    # hk_l1b_filepath = write_cdf(l1b_dataset, cdf_file_path)
+    hk_l1b_filepath = write_cdf(l1b_dataset, cdf_file_path)
 
-    # assert hk_l1b_filepath.name == "imap_swe_l1b_lveng-hk_20230927_20230927_v01.cdf"
-    # Path.unlink(hk_l1b_filepath)
+    assert hk_l1b_filepath.name == "imap_swe_l1b_lveng-hk_20230927_20230927_v01.cdf"
+    # remove the file after reading
+    Path.unlink(hk_l1a_filepath)
+    Path.unlink(hk_l1b_filepath)

@@ -31,10 +31,8 @@ def calc_start_time(shcoarse_time: int):
         jan-1-2010-00:01:06.184 ET
     We will use this for now.
     """
-    # TODO: ask Bryan why "ns" shift time from 2023 -> 2010
     # Get the datetime of Jan 1 2010 as the start date
     launch_time = np.datetime64("2010-01-01T00:01:06.184")
-    # TODO: Convert to nanosecond precision
     return launch_time + np.timedelta64(shcoarse_time, "s")
 
 
@@ -66,23 +64,14 @@ def write_cdf(data: xr.Dataset, filepath: Path):
 
     # Insert the final attribute:
     # The Logical_file_id is always the name of the file without the extension
-    # print(f"data attrs: {data.attrs}")
     data.attrs["Logical_file_id"] = filepath.stem
 
-    if "l1a" in data.attrs["Logical_source"]:
-        # Convert the xarray object to a CDF
-        xarray_to_cdf(
-            data,
-            str(filepath),
-            datetime64_to_cdftt2000=True,
-            terminate_on_warning=True,
-        )  # Terminate if not ISTP compliant
-    else:
-        # Convert the xarray object to a CDF
-        xarray_to_cdf(
-            data,
-            str(filepath),
-            datetime64_to_cdftt2000=True,
-            terminate_on_warning=True,
-        )
+    # Convert the xarray object to a CDF
+    xarray_to_cdf(
+        data,
+        str(filepath),
+        datetime64_to_cdftt2000=True,
+        terminate_on_warning=True,
+    )  # Terminate if not ISTP compliant
+
     return filepath
