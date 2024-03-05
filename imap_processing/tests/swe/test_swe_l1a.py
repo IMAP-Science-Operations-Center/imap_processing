@@ -49,26 +49,15 @@ def test_group_by_apid(decom_test_data):
 
 
 def test_cdf_creation(decom_test_data):
-    test_data_path = "tests/swe/l0_data/"
-    processed_data = swe_l1a(test_data_path)
+    test_data_path = "tests/swe/l0_data/20230927100425_SWE_CEM_RAW_packet.bin"
+    processed_data = swe_l1a(imap_module_directory / test_data_path)
 
-    expected_cdf_filename = [
-        "imap_swe_l1a_evtmsg_20230927_20230927_v01.cdf",
-        "imap_swe_l1a_lveng-hk_20230927_20230927_v01.cdf",
-        "imap_swe_l1a_cemraw_20230927_20230927_v01.cdf",
-        "imap_swe_l1a_sci_20230927_20230927_v01.cdf",
-    ]
-    returned_cdf_filename = []
+    l1a_cdf_filename = "imap_swe_l1a_cemraw_20230927_20230927_v01.cdf"
     current_directory = Path(__file__).parent
-    for data in processed_data:
-        filepath = (
-            current_directory
-            / f"imap_swe_l1a_{data['descriptor']}_20230927_20230927_v01.cdf"
-        )
-        cdf_filepath = write_cdf(data["data"], filepath)
-        returned_cdf_filename.append(cdf_filepath.name)
 
-    assert sorted(expected_cdf_filename) == sorted(returned_cdf_filename)
-    # cleanup files created
-    for file in expected_cdf_filename:
-        Path.unlink(current_directory / file)
+    cdf_filepath = current_directory / l1a_cdf_filename
+    cem_raw_cdf_filepath = write_cdf(processed_data[0]["data"], cdf_filepath)
+
+    assert cem_raw_cdf_filepath.name == l1a_cdf_filename
+
+    Path.unlink(cem_raw_cdf_filepath)

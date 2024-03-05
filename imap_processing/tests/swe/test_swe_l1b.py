@@ -118,8 +118,8 @@ def test_cdf_creation(decom_test_data):
     """Test that CDF file is created and has the correct name."""
     current_directory = Path(__file__).parent
 
-    test_data_path = "tests/swe/l0_data/"
-    l1a_datasets = swe_l1a(test_data_path)
+    test_data_path = "tests/swe/l0_data/20230927100248_SWE_HK_packet.bin"
+    l1a_datasets = swe_l1a(imap_module_directory / test_data_path)
     hk_l1a_cdf_file_path = (
         current_directory / "imap_swe_l1a_lveng-hk_20230927_20230927_v01.cdf"
     )
