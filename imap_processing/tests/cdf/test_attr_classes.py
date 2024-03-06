@@ -12,11 +12,23 @@ from imap_processing.cdf.global_attrs import (
 
 
 def test_global_attrs():
-    inst = GlobalInstrumentAttrs(version="1", descriptor="2", text="3")
-    expected = GlobalConstantAttrs.GLOBAL_BASE | {
+    inst = GlobalInstrumentAttrs(
+        version="1",
+        descriptor="2",
+        text="3",
+        instrument_type="4",
+    )
+
+    expected = GlobalConstantAttrs().output() | {
+        "PI_name": ("Dr. David J. McComas"),
+        "PI_affiliation": (
+            "Princeton Plasma Physics Laboratory",
+            "100 Stellarator Road, Princeton, NJ 08540",
+        ),
         "Data_version": "1",
         "Descriptor": "2",
         "TEXT": "3",
+        "Instrument_type": "4",
     }
 
     assert inst.output() == expected

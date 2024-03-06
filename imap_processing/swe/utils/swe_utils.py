@@ -7,6 +7,7 @@ from enum import IntEnum
 import xarray as xr
 
 from imap_processing.cdf.global_attrs import ConstantCoordinates
+from imap_processing.cdf.utils import calc_start_time
 from imap_processing.swe import swe_cdf_attrs
 
 
@@ -80,8 +81,11 @@ def create_dataset(packets):
     for data_packet in packets:
         add_metadata_to_array(data_packet, metadata_arrays)
 
+    epoch_converted_time = [
+        calc_start_time(sc_time) for sc_time in metadata_arrays["SHCOARSE"]
+    ]
     epoch_time = xr.DataArray(
-        metadata_arrays["SHCOARSE"],
+        epoch_converted_time,
         name="Epoch",
         dims=["Epoch"],
         attrs=ConstantCoordinates.EPOCH,

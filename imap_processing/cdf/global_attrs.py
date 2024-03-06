@@ -8,12 +8,15 @@ check if all the attributes are valid of if all the required attributes are pres
 This check occurs during the xarray_to_cdf step, which has an example in
 imap_processing/cdf/utils.py.
 
+For more information on attributes, refer to the SPDF documentation at:
+https://spdf.gsfc.nasa.gov/istp_guide/vattributes.html
+
 Additional examples on how to use these dataclasses are in
 imap_processing/idex/idex_cdf_attrs.py and imap_processing/idex/idex_packet_parser.py.
 """
 
 from dataclasses import dataclass
-from typing import ClassVar, Union
+from typing import ClassVar, Final, Union
 
 import numpy as np
 
@@ -30,23 +33,36 @@ class GlobalConstantAttrs:
     ----------
     GLOBAL_BASE:
         Global file attributes, including project, source_name, discipline, PI_name,
-        PI_affiliation, instrument_type, and mission_group. This should be the same
+        PI_affiliation, and mission_group. This should be the same
         for all instruments.
 
     """
 
-    GLOBAL_BASE: ClassVar[dict] = {
+    GLOBAL_BASE: Final[dict] = {
         "Project": "STP>Solar-Terrestrial Physics",
         "Source_name": "IMAP>Interstellar Mapping and Acceleration Probe",
         "Discipline": "Solar Physics>Heliospheric Physics",
+        # TODO: CDF docs say this value should be "IMAP"
+        "Mission_group": "IMAP>Interstellar Mapping and Acceleration Probe",
         "PI_name": "Dr. David J. McComas",
-        "PI_affiliation": [
+        "PI_affiliation": (
             "Princeton Plasma Physics Laboratory",
             "100 Stellarator Road, Princeton, NJ 08540",
-        ],
-        "Instrument_type": "Particles (space)",
-        "Mission_group": "IMAP>Interstellar Mapping and Acceleration Probe",
+        ),
     }
+
+    def output(self):
+        """
+        Generate the output for the global attributes as a dictionary.
+
+        This returns the contents of the GLOBAL_BASE attribute.
+
+        Returns
+        -------
+        dict
+            Global base attributes
+        """
+        return self.GLOBAL_BASE
 
 
 class ConstantCoordinates:
@@ -82,18 +98,25 @@ class GlobalInstrumentAttrs:
 
     Attributes
     ----------
-    version: str
+    version : str
         The software version
-    descriptor: str
+    descriptor : str
         Descriptor of the instrument (Ex: "IDEX>Interstellar Dust Experiment")
-    text: str
+    text : str
         Explanation of the instrument, usually as a paragraph.
+    instrument_type : str default="Particles (space)"
+        This attribute is used to facilitate making choices of instrument type. More
+        than one entry is allowed. Valid IMAP values include:
+        [Electric Fields (space), Magnetic Fields (space), Particles (space),
+        Plasma and Solar Wind, Ephemeris]
+
 
     """
 
     version: str
     descriptor: str
     text: str
+    instrument_type: str = "Particles (space)"
 
     def output(self):
         """
@@ -105,10 +128,11 @@ class GlobalInstrumentAttrs:
             dictionary of correctly formatted values for the data_version, descriptor,
             text, and logical_file_id, added on to the global attributes from GlobalBase
         """
-        return GlobalConstantAttrs.GLOBAL_BASE | {
+        return GlobalConstantAttrs().output() | {
             "Data_version": self.version,
             "Descriptor": self.descriptor,
             "TEXT": self.text,
+            "Instrument_type": self.instrument_type,
         }
 
 
@@ -122,13 +146,13 @@ class GlobalDataLevelAttrs:
 
     Attributes
     ----------
-    data_type: str
+    data_type : str
         The level of data, ex "L1>Level-1"
-    logical_source: str
+    logical_source : str
         The source of the data, ex "imap_idex_l1"
-    logical_source_desc: str
+    logical_source_desc : str
         The description of the data, ex "IMAP Mission IDEX Instrument Level-1 Data."
-    instrument_base: GlobalInstrumentAttrs
+    instrument_base : GlobalInstrumentAttrs
         The InstrumentBase object describing the basic instrument information
     """
 
@@ -163,27 +187,27 @@ class AttrBase:
 
     Attributes
     ----------
-    validmin: np.float64 | np.int64
+    validmin : np.float64 | np.int64
         The valid minimum value, required
-    validmax: np.float64 | np.int64
+    validmax : np.float64 | np.int64
         The valid maximum value, required
-    display_type: str default=None
+    display_type : str default=None
         The display type of the plot (ex "no_plot"), required
-    catdesc: str, default=None
+    catdesc : str, default=None
         The category description, "CATDESC" attribute, required
-    fieldname: str, default=None
+    fieldname : str, default=None
         The fieldname, "FIELDNAM" attribute
-    var_type: str, default="support_data"
+    var_type : str, default="support_data"
         The type of data
-    fill_val: np.int64, default=Constants.INT_FILLVAL
+    fill_val : np.int64, default=Constants.INT_FILLVAL
         The values for filling data
-    scale_type: str, default="linear"
+    scale_type : str, default="linear"
         The scale of the axis, "SCALETYP" attribute
-    label_axis: str, default=None
-        Axis label, "LABLAXIS" attribute
-    format: str, default=None
+    label_axis : str, default=None
+        Axis label, "LABLAXIS" attribute. Required. Should be close to 6 letters.
+    format : str, default=None
         The format of the data, in Fortran format
-    units: str, default=None
+    units : str, default=None
         The units of the data
     """
 
@@ -232,17 +256,18 @@ class ScienceAttrs(AttrBase):
 
     Attributes
     ----------
-    depend_0: str = None
+    depend_0 : str = None
         The first degree of dependent coordinate variables.
         Although this is an optional keyword, it is required for every instance.
-    depend_1: str = None, optional
+        This should be the "Epoch" dimension, and should be type datetime64.
+    depend_1 : str = None, optional
         The second degree of dependent coordinate variables. This is used for 2d data.
-    depend_2: str = None, optional
+    depend_2 : str = None, optional
         The third degree of dependent coordinate variables. This is used for 3d data.
         If this variable is used, there must also be a depend_1 value.
-    variable_purpose: str = None, optional
+    variable_purpose : str = None, optional
         The variable purpose attribute tells which variables are worth plotting.
-    var_notes: str = None, optional
+    var_notes : str = None, optional
         Notes on the variable
     """
 
@@ -252,6 +277,7 @@ class ScienceAttrs(AttrBase):
     depend_3: str = None
     variable_purpose: str = None
     var_notes: str = None
+    labl_ptr: str = None
 
     def __post_init__(self):
         """If depend_0 is not set, raise an error, as this attribute is required."""
@@ -284,6 +310,10 @@ class ScienceAttrs(AttrBase):
 
         if self.var_notes is not None:
             endval["VAR_NOTES"] = self.var_notes
+
+        if self.labl_ptr is not None:
+            endval["LABL_PTR_1"] = self.labl_ptr
+
         return super().output() | endval
 
 
@@ -294,11 +324,11 @@ class FloatAttrs(ScienceAttrs):
 
     Attributes
     ----------
-    format: str, default="F64.5"
+    format : str, default="F64.5"
         The format of the data, in Fortran format
-    fill_val: np.float64, default=Constants.DOUBLE_FILLVAL
+    fill_val : np.float64, default=Constants.DOUBLE_FILLVAL
         The values for filling data
-    units: str, default="float"
+    units : str, default="float"
         The units of the data
     """
 
@@ -316,17 +346,17 @@ class StringAttrs:
 
     Attributes
     ----------
-    depend_0: str
+    depend_0 : str
         The first degree of dependent coordinate variables.
-    catdesc: str, default=None
+    catdesc : str, default=None
         The category description, "CATDESC" attribute, required
-    fieldname: str, default=None
+    fieldname : str, default=None
         The fieldname, "FIELDNAM" attribute
-    format: str, default="A80"
+    format : str, default="A80"
         The format of the data, in Fortran format
-    var_type: str, default="metadata"
+    var_type : str, default="metadata"
         The type of data
-    display_type: str, default="no_plot"
+    display_type : str, default="no_plot"
         The display type of the plot
     """
 

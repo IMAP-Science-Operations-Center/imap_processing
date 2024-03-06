@@ -16,6 +16,7 @@ import logging
 import random
 from pathlib import Path
 
+import imap_data_access
 import pandas as pd
 import xarray as xr
 
@@ -59,7 +60,7 @@ class CoDICEL1a:
         length : int
             The number of bits to generate
         """
-        return [random.randint(0, 1) for _ in range(length)]
+        return [random.randint(0, 1) for _ in range(length)]  # noqa
 
     def decompress_science_data(self):
         """Decompress the compressed science values.
@@ -254,11 +255,11 @@ def process_codice_l1a(packets, cdf_directory: str) -> str:
         else:
             logging.debug(f"{apid} is currently not supported")
 
-    # Write data to CDF
-    cdf_filename = write_cdf(
-        data,
-        descriptor="hk",
+    file = imap_data_access.ScienceFilePath.generate_from_inputs(
+        "codice", "l1a", "hk", "20210101", "20210102", "v01-01"
     )
+    # Write data to CDF
+    cdf_filename = write_cdf(data, file.construct_path())
 
     return cdf_filename
 

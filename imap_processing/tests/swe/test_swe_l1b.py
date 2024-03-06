@@ -1,8 +1,11 @@
+from pathlib import Path
+
 import pandas as pd
 import pytest
 from cdflib.xarray import cdf_to_xarray
 
 from imap_processing import imap_module_directory
+from imap_processing.cdf.utils import write_cdf
 from imap_processing.swe.l0 import decom_swe
 from imap_processing.swe.l1a.swe_l1a import swe_l1a
 from imap_processing.swe.l1a.swe_science import swe_science
@@ -24,34 +27,6 @@ def decom_test_data():
     for packet_file in packet_files:
         data_list.extend(decom_swe.decom_packets(packet_file))
     return data_list
-
-
-@pytest.fixture(scope="session")
-def l1a_test_data():
-    """Read test data from file"""
-    # NOTE: data was provided in this sequence in both bin and validation data
-    # from instrument team.
-    # Packet 1 has spin 4's data
-    # Packet 2 has spin 1's data
-    # Packet 3 has spin 2's data
-    # Packet 4 has spin 3's data
-    # moved packet 1 to bottom to show data in order.
-    packet_files = [
-        imap_module_directory
-        / "tests/swe/l0_data/20230927173253_SWE_SCIENCE_packet.bin",
-        imap_module_directory
-        / "tests/swe/l0_data/20230927173308_SWE_SCIENCE_packet.bin",
-        imap_module_directory
-        / "tests/swe/l0_data/20230927173323_SWE_SCIENCE_packet.bin",
-        imap_module_directory
-        / "tests/swe/l0_data/20230927173238_SWE_SCIENCE_packet.bin",
-    ]
-    data = []
-    for packet_file in packet_files:
-        data.extend(decom_swe.decom_packets(packet_file))
-    # Get unpacked science data
-    unpacked_data = swe_science(data)
-    return unpacked_data
 
 
 def test_swe_l1b(decom_test_data):
@@ -139,17 +114,35 @@ def test_swe_l1b(decom_test_data):
         assert round(hk_l1b[field].data[1], 5) == round(validation_data[field], 5)
 
 
-@pytest.mark.xfail(reason="Need to update after refactor of function returns.")
-def test_cdf_creation(decom_test_data, l1a_test_data):
-    sci_l1b_filepath = swe_l1b(l1a_test_data)
+def test_cdf_creation(decom_test_data):
+    """Test that CDF file is created and has the correct name."""
+    current_directory = Path(__file__).parent
 
-    # process hk data to l1a and then pass to l1b
-    grouped_data = group_by_apid(decom_test_data)
-    # writes data to CDF file
-    hk_l1a_filepath = swe_l1a(grouped_data[SWEAPID.SWE_APP_HK])
+    test_data_path = "tests/swe/l0_data/20230927100248_SWE_HK_packet.bin"
+    l1a_datasets = swe_l1a(imap_module_directory / test_data_path)
+    hk_l1a_cdf_file_path = (
+        current_directory / "imap_swe_l1a_lveng-hk_20230927_20230927_v01.cdf"
+    )
+
+    for i in range(len(l1a_datasets)):
+        if l1a_datasets[i]["descriptor"] == "lveng-hk":
+            hk_l1a_data = l1a_datasets[i]["data"]
+            break
+
+    hk_l1a_filepath = write_cdf(hk_l1a_data, hk_l1a_cdf_file_path)
+
+    assert hk_l1a_filepath.name == "imap_swe_l1a_lveng-hk_20230927_20230927_v01.cdf"
+
     # reads data from CDF file and passes to l1b
-    l1a_dataset = cdf_to_xarray(hk_l1a_filepath)
-    hk_l1b_filepath = swe_l1b(l1a_dataset)
+    l1a_cdf_dataset = cdf_to_xarray(hk_l1a_filepath, to_datetime=True)
+    l1b_dataset = swe_l1b(l1a_cdf_dataset)
+    cdf_file_path = (
+        current_directory / "imap_swe_l1b_lveng-hk_20230927_20230927_v01.cdf"
+    )
 
-    assert hk_l1b_filepath.name == "imap_swe_l1b_lveng-hk_20230927_v01.cdf"
-    assert sci_l1b_filepath.name == "imap_swe_l1b_sci_20230927_v01.cdf"
+    hk_l1b_filepath = write_cdf(l1b_dataset, cdf_file_path)
+
+    assert hk_l1b_filepath.name == "imap_swe_l1b_lveng-hk_20230927_20230927_v01.cdf"
+    # remove the file after reading for local testing
+    Path.unlink(hk_l1a_filepath)
+    Path.unlink(hk_l1b_filepath)

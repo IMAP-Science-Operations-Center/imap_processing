@@ -57,6 +57,13 @@
                     <xtce:Enumeration label="HVSCI" value="3"/>
                 </xtce:EnumerationList>
             </xtce:EnumeratedParameterType>
+			<xtce:EnumeratedParameterType name="COMPRESSION_ENUM" signed="false">
+                <xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned"/>
+                <xtce:EnumerationList>
+                    <xtce:Enumeration label="RAW" value="0"/>
+                    <xtce:Enumeration label="COMP" value="1"/>
+                </xtce:EnumerationList>
+            </xtce:EnumeratedParameterType>
 		</xtce:ParameterTypeSet>
 		<xtce:ParameterSet>
 			<xtce:Parameter name="VERSION" parameterTypeRef="UINT3">
@@ -107,58 +114,58 @@
 			<xtce:Parameter name="SPARE_2_SCIENCE" parameterTypeRef="UINT9">
 				<xtce:LongDescription>Spare</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="PCEM_RNG_ST0" parameterTypeRef="UINT1">
+			<xtce:Parameter name="PCEM_RNG_ST0" parameterTypeRef="COMPRESSION_ENUM">
 				<xtce:LongDescription>PCEM count range during first 1/6-second: raw or compressed</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="SCEM_RNG_ST0" parameterTypeRef="UINT1">
+			<xtce:Parameter name="SCEM_RNG_ST0" parameterTypeRef="COMPRESSION_ENUM">
 				<xtce:LongDescription>SCEM count range during first 1/6-second: raw or compressed</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="COIN_RNG_ST0" parameterTypeRef="UINT1">
+			<xtce:Parameter name="COIN_RNG_ST0" parameterTypeRef="COMPRESSION_ENUM">
 				<xtce:LongDescription>Coincidence count range during first 1/6-second: raw or compressed</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="PCEM_RNG_ST1" parameterTypeRef="UINT1">
+			<xtce:Parameter name="PCEM_RNG_ST1" parameterTypeRef="COMPRESSION_ENUM">
 				<xtce:LongDescription>PCEM count range during second 1/6-second: raw or compressed</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="SCEM_RNG_ST1" parameterTypeRef="UINT1">
+			<xtce:Parameter name="SCEM_RNG_ST1" parameterTypeRef="COMPRESSION_ENUM">
 				<xtce:LongDescription>SCEM count range during second 1/6-second: raw or compressed</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="COIN_RNG_ST1" parameterTypeRef="UINT1">
+			<xtce:Parameter name="COIN_RNG_ST1" parameterTypeRef="COMPRESSION_ENUM">
 				<xtce:LongDescription>Coincidence count range during second 1/6-second: raw or compressed</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="PCEM_RNG_ST2" parameterTypeRef="UINT1">
+			<xtce:Parameter name="PCEM_RNG_ST2" parameterTypeRef="COMPRESSION_ENUM">
 				<xtce:LongDescription>PCEM count range during third 1/6-second: raw or compressed</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="SCEM_RNG_ST2" parameterTypeRef="UINT1">
+			<xtce:Parameter name="SCEM_RNG_ST2" parameterTypeRef="COMPRESSION_ENUM">
 				<xtce:LongDescription>SCEM count range during third 1/6-second: raw or compressed</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="COIN_RNG_ST2" parameterTypeRef="UINT1">
+			<xtce:Parameter name="COIN_RNG_ST2" parameterTypeRef="COMPRESSION_ENUM">
 				<xtce:LongDescription>Coincidence count range during third 1/6-second: raw or compressed</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="PCEM_RNG_ST3" parameterTypeRef="UINT1">
+			<xtce:Parameter name="PCEM_RNG_ST3" parameterTypeRef="COMPRESSION_ENUM">
 				<xtce:LongDescription>PCEM count range during fourth 1/6-second: raw or compressed</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="SCEM_RNG_ST3" parameterTypeRef="UINT1">
+			<xtce:Parameter name="SCEM_RNG_ST3" parameterTypeRef="COMPRESSION_ENUM">
 				<xtce:LongDescription>SCEM count range during fourth 1/6-second: raw or compressed</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="COIN_RNG_ST3" parameterTypeRef="UINT1">
+			<xtce:Parameter name="COIN_RNG_ST3" parameterTypeRef="COMPRESSION_ENUM">
 				<xtce:LongDescription>Coincidence count range during fourth 1/6-second: raw or compressed</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="PCEM_RNG_ST4" parameterTypeRef="UINT1">
+			<xtce:Parameter name="PCEM_RNG_ST4" parameterTypeRef="COMPRESSION_ENUM">
 				<xtce:LongDescription>PCEM count range during fifth 1/6-second: raw or compressed</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="SCEM_RNG_ST4" parameterTypeRef="UINT1">
+			<xtce:Parameter name="SCEM_RNG_ST4" parameterTypeRef="COMPRESSION_ENUM">
 				<xtce:LongDescription>SCEM count range during fifth 1/6-second: raw or compressed</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="COIN_RNG_ST4" parameterTypeRef="UINT1">
+			<xtce:Parameter name="COIN_RNG_ST4" parameterTypeRef="COMPRESSION_ENUM">
 				<xtce:LongDescription>Coincidence count range during fifth 1/6-second: raw or compressed</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="PCEM_RNG_ST5" parameterTypeRef="UINT1">
+			<xtce:Parameter name="PCEM_RNG_ST5" parameterTypeRef="COMPRESSION_ENUM">
 				<xtce:LongDescription>PCEM count range during sixth 1/6-second: raw or compressed</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="SCEM_RNG_ST5" parameterTypeRef="UINT1">
+			<xtce:Parameter name="SCEM_RNG_ST5" parameterTypeRef="COMPRESSION_ENUM">
 				<xtce:LongDescription>SCEM count range during sixth 1/6-second: raw or compressed</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="COIN_RNG_ST5" parameterTypeRef="UINT1">
+			<xtce:Parameter name="COIN_RNG_ST5" parameterTypeRef="COMPRESSION_ENUM">
 				<xtce:LongDescription>Coincidence count range during sixth 1/6-second: raw or compressed</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="PCEM_CNT0" parameterTypeRef="UINT16">
