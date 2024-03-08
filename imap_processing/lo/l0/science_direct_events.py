@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from itertools import compress
 
 import bitstring
+import numpy as np
 from bitarray import bitarray
 
 import imap_processing.lo.l0.decompression_tables as decompress_tables
@@ -25,21 +26,21 @@ class ScienceDirectEvents(LoBase):
         Number of direct events.
     CHKSUM: int
         Checksum for the packet.
-    DATA: bitstring.Bits
+    DATA: str
         Compressed TOF Direct Event time tagged data.
-    TOF0: int
+    TOF0: numpy.ndarray
         Time of Flight 0 value for direct event.
-    TOF1: int
+    TOF1: numpy.ndarray
         Time of Flight 1 value for direct event.
-    TOF2: int
+    TOF2: numpy.ndarray
         Time of Flight 2 value for direct event.
-    TOF3: int
+    TOF3: numpy.ndarray
         Time of Flight 3 value for direct event.
-    TIME: int
+    TIME: numpy.ndarray
         time tag for the direct event
-    ENERGY: int
+    ENERGY: numpy.ndarray
         energy of the direct event ENA.
-    POS: int
+    POS: numpy.ndarray
         Stop position for the direct event. There are 4 quadrants
         on the at the stop position.
     CKSM: int
@@ -50,18 +51,6 @@ class ScienceDirectEvents(LoBase):
         for golden triples because it's used to recover TOF1 because
         compression scheme to save space on golden triples doesn't send
         down TOF1 so it's recovered on the ground using the checksum
-    case_number: int
-        The compression case number for the direct event. The case number
-        determines how the bits are arranged in the compressed data.
-    tof_calculation_binary: dict
-        Binary used to determine which TOF coefficients should be used
-        for decompressing the binary.
-    tof_decoder: list
-        Shows how the fields in the binary are split up by bit length and order.
-    remaining_bits: dict
-        The TOF coefficients that should be used for decompression
-    parsed_bits: dict
-        The binary bits split up by TOF field.
 
     Methods
     -------
@@ -76,35 +65,44 @@ class ScienceDirectEvents(LoBase):
 
     SHCOARSE: int
     COUNT: int
-    DATA: bitstring.Bits
+    DATA: str
     CHKSUM: int
-    TOF0: float
-    TOF1: float
-    TOF2: float
-    TOF3: float
-    TIME: float
-    ENERGY: float
-    POS: float
+    TOF0: np.ndarray
+    TOF1: np.ndarray
+    TOF2: np.ndarray
+    TOF3: np.ndarray
+    TIME: np.ndarray
+    ENERGY: np.ndarray
+    POS: np.ndarray
 
     def __init__(self, packet, software_version: str, packet_file_name: str):
         """Intialization method for Science Direct Events Data class."""
         super().__init__(software_version, packet_file_name, CcsdsData(packet.header))
         self.parse_data(packet)
+        self.TOF0 = np.array([])
+        self.TOF1 = np.array([])
+        self.TOF2 = np.array([])
+        self.TOF3 = np.array([])
+        self.TIME = np.array([])
+        self.ENERGY = np.array([])
+        self.POS = np.array([])
         self._decompress_data()
 
     def _decompress_data(self):
         """Decompress the Lo Science Direct Events data."""
-        case_number = self._find_decompression_case()
-        tof_decoder = self._find_tof_decoder_for_case(case_number)
-        tof_calculation_binary = self._read_tof_calculation_table(case_number)
-        remaining_bit_coefficients = self._find_remaining_bit_coefficients(
-            tof_calculation_binary
-        )
-        parsed_bits = self._parse_binary(case_number, tof_decoder)
-        # decode_fields will set the TOF class variables
-        self._decode_fields(remaining_bit_coefficients, parsed_bits)
+        bitstream = bitstring.ConstBitStream(bin=self.DATA)
+        for _ in self.COUNT:
+            case_number = self._find_decompression_case(bitstream)
+            tof_decoder = self._find_tof_decoder_for_case(case_number, bitstream)
+            tof_calculation_binary = self._read_tof_calculation_table(case_number)
+            remaining_bit_coefficients = self._find_remaining_bit_coefficients(
+                tof_calculation_binary
+            )
+            parsed_bits = self._parse_binary(case_number, tof_decoder, bitstream)
+            # decode_fields will set the TOF class variables
+            self._decode_fields(remaining_bit_coefficients, parsed_bits)
 
-    def _find_decompression_case(self):
+    def _find_decompression_case(self, bitstream):
         """Find the decompression case for this DE.
 
         The first 4 bits of the binary data are used to
@@ -112,9 +110,9 @@ class ScienceDirectEvents(LoBase):
         The case number is used to determine how to
         decompress the TOF values.
         """
-        return int(self.DATA[0:4].bin, 2)
+        return bitstream.read(4).uint
 
-    def _find_tof_decoder_for_case(self, case_number):
+    def _find_tof_decoder_for_case(self, case_number, bitstream):
         """Get the TOF decoder for this DE's case number.
 
         The case number determines wich TOF decoder to use.
@@ -130,13 +128,13 @@ class ScienceDirectEvents(LoBase):
         but TOF3 was transmitted.
         """
         if case_number == 0:
-            gold_or_silver = int(self.DATA.bin[4])
+            gold_or_silver = int(bitstream.read(1).bin)
             tof_decoder = decompress_tables.tof_decoder_table[case_number][
                 gold_or_silver
             ]
 
         elif case_number in [4, 6, 10, 12, 13]:
-            is_bronze = int(self.DATA.bin[4])
+            is_bronze = int(bitstream.read(1).bin)
             tof_decoder = decompress_tables.tof_decoder_table[case_number]
 
             if not is_bronze:
@@ -190,7 +188,7 @@ class ScienceDirectEvents(LoBase):
 
         return remaining_bit_coefficients
 
-    def _parse_binary(self, case_number, tof_decoder):
+    def _parse_binary(self, case_number, tof_decoder, bitstream):
         """Use the TOF decoder to split up the data bits into its TOF fields.
 
         The first few binary bits are only used for determining the case number
@@ -199,35 +197,70 @@ class ScienceDirectEvents(LoBase):
         """
         # separate the binary data into its parts
         parsed_bits = {}
-        # check whether the first 4 or 5 bits were needed for the
-        # case determination
-        if case_number in [0, 4, 6, 10, 12, 14]:
-            bit_start = 5
-        else:
-            bit_start = 4
+
         # Use the TOF decoder to chunk the data binary into its componenets
         # TOF0, TOF1, TOF2, etc.
         for field, bit_length in tof_decoder._asdict().items():
-            parsed_bits[field] = self.DATA[bit_start : bit_start + bit_length]
-            bit_start = bit_start + bit_length
-
+            parsed_bits[field] = bitstream.read(bit_length)
         return parsed_bits
 
-    def _decode_fields(self, remaining_bit_coefficients, parsed_bits):
+    def _decode_fields(self, remaining_bit_coefficients, field, tof_bits):
         """Use the parsed data and TOF coefficients to decode the binary."""
-        for field, tof_bits in parsed_bits.items():
-            needed_bits = tof_bits[-len(remaining_bit_coefficients[field]) :]
-            # Use the TOF coefficients and the bits for the current field to
-            # calculate the decompressed value. Also round to 2 because the TOF
-            # coefficients only have 2 decimals.
-            decompressed_data = round(
-                sum(
-                    bit[0] * bit[1]
-                    for bit in zip(
-                        bitarray(needed_bits).tolist(),
-                        remaining_bit_coefficients[field],
-                    )
-                ),
-                2,
-            )
-            setattr(self, field, decompressed_data)
+        needed_bits = tof_bits[-len(remaining_bit_coefficients[field]) :]
+        # Use the TOF coefficients and the bits for the current field to
+        # calculate the decompressed value. Also round to 2 because the TOF
+        # coefficients only have 2 decimals.
+        decompressed_data = round(
+            sum(
+                bit[0] * bit[1]
+                for bit in zip(
+                    bitarray(needed_bits).tolist(),
+                    remaining_bit_coefficients[field],
+                )
+            ),
+            2,
+        )
+        return decompressed_data
+
+    def _set_tofs(self, remaining_bit_coefficients, parsed_bits):
+        """Set the TOF values after decoding the binary field."""
+        self.TOF0 = np.append(
+            self.TOF0,
+            self._decode_fields(
+                remaining_bit_coefficients, "TOF0", parsed_bits["TOF0"]
+            ),
+        )
+        self.TOF1 = np.append(
+            self.TOF1,
+            self._decode_fields(
+                remaining_bit_coefficients, "TOF1", parsed_bits["TOF1"]
+            ),
+        )
+        self.TOF2 = np.append(
+            self.TOF2,
+            self._decode_fields(
+                remaining_bit_coefficients, "TOF2", parsed_bits["TOF2"]
+            ),
+        )
+        self.TOF3 = np.append(
+            self.TOF3,
+            self._decode_fields(
+                remaining_bit_coefficients, "TOF3", parsed_bits["TOF3"]
+            ),
+        )
+        self.TIME = np.append(
+            self.TIME,
+            self._decode_fields(
+                remaining_bit_coefficients, "TIME", parsed_bits["TIME"]
+            ),
+        )
+        self.ENERGY = np.append(
+            self.ENERGY,
+            self._decode_fields(
+                remaining_bit_coefficients, "ENERGY", parsed_bits["ENERGY"]
+            ),
+        )
+        self.POS = np.append(
+            self.POS,
+            self._decode_fields(remaining_bit_coefficients, "POS", parsed_bits["POS"]),
+        )
