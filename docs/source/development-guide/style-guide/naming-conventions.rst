@@ -39,7 +39,7 @@ The general filename convention is as follows::
   * GLOWS: ``histogram``, ``de``
   * HIT: TBD
   * IDEX: TBD
-  * IMAP-Hi: ``45sensor-counts``, ``90sensor-counts``, ``45sensor-flux-3month-map`` (more TBD)
+  * IMAP-Hi: ``45sensor-counts``, ``90sensor-counts``, ``45sensor-flux-map-3month`` (more TBD)
   * IMAP-Lo: TBD
   * IMAP-Ultra: ``45sensor-counts``, ``90sensor-counts`` (more TBD)
   * MAG: ``normal``, ``burst``
@@ -47,8 +47,8 @@ The general filename convention is as follows::
   * SWE: TBD
 
 * ``<startdate>`` is the date of the 'earliest' data within the data product, in the format of ``YYYYMMDD``.
-* ``<repointing>`` is an optional component that describes the repointing number, in the format of ``repoint-<num>``,
-  where ``<num>`` is a 5 digit integer (e.g. ``00001``).
+* ``<repointing>`` is an optional component that describes the repointing number, in the format of ``repoint<num>``,
+  where ``<num>`` is a 5 digit integer (e.g. ``repoint00001``).
 * ``<version>`` stores the version of the data product in the format is ``v<num>``, where ``<num>`` is a 3 digit
   integer (e.g. ``v001``).  See the versioning conventions described in the
   :ref:`data product versioning <Data Product Versioning>` documentation for further details.
@@ -70,7 +70,7 @@ Here are a few examples of acceptable filenames:
   A version ``001`` GLOWS L1a data product for ``counts`` containing data from ``2026-12-06`` taken from repointing
   position ``00002``
 
-* ``imap_ultra_l2_45sensor-flux-3month-map_20261206_v001.cdf``
+* ``imap_ultra_l2_45sensor-flux-map-3month_20261206_v001.cdf``
 
   A version ``001`` ULTRA L2 flux map for the 45 sensor head for data taken over a 3 month span starting on ``20261206``
 
