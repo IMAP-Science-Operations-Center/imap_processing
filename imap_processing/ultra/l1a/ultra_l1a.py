@@ -52,14 +52,14 @@ def initiate_data_arrays(decom_ultra: dict, apid: int):
 
     epoch_time = xr.DataArray(
         time_converted,
-        name="epoch",
-        dims=["epoch"],
+        name="Epoch",
+        dims=["Epoch"],
         attrs=ConstantCoordinates.EPOCH,
     )
 
     if apid != ULTRA_TOF.apid[0]:
         dataset = xr.Dataset(
-            coords={"epoch": epoch_time},
+            coords={"Epoch": epoch_time},
             attrs=ultra_cdf_attrs.ultra_l1a_attrs.output(),
         )
     else:
@@ -100,7 +100,7 @@ def initiate_data_arrays(decom_ultra: dict, apid: int):
         )
 
         dataset = xr.Dataset(
-            coords={"epoch": epoch_time, "sid": sid, "row": row, "column": column},
+            coords={"Epoch": epoch_time, "sid": sid, "row": row, "column": column},
             attrs=ultra_cdf_attrs.ultra_l1a_attrs.output(),
         )
 
@@ -201,7 +201,7 @@ def create_dataset(decom_ultra_dict: dict):
                 label_axis=key.lower(),
                 depend_1="sid",
             ).output()
-            dims = ["epoch", "sid"]
+            dims = ["Epoch", "sid"]
         # AUX enums require string attibutes
         elif key in [
             "SPINPERIODVALID",
@@ -217,9 +217,9 @@ def create_dataset(decom_ultra_dict: dict):
                 ultra_cdf_attrs.string_base,
                 catdesc=key.lower(),  # TODO: short and long descriptions
                 fieldname=key.lower(),
-                depend_0="epoch",
+                depend_0="Epoch",
             ).output()
-            dims = ["epoch"]
+            dims = ["Epoch"]
         # TOF packetdata has multiple dimensions
         elif key == "PACKETDATA":
             attrs = dataclasses.replace(
@@ -233,7 +233,7 @@ def create_dataset(decom_ultra_dict: dict):
                 units="pixels",
                 variable_purpose="primary_var",
             ).output()
-            dims = ["epoch", "sid", "row", "column"]
+            dims = ["Epoch", "sid", "row", "column"]
         # Use metadata with a single dimension for
         # all other data products
         else:
@@ -243,11 +243,11 @@ def create_dataset(decom_ultra_dict: dict):
                 fieldname=key.lower(),
                 label_axis=key.lower(),
             ).output()
-            dims = ["epoch"]
+            dims = ["Epoch"]
 
         dataset[key] = xr.DataArray(
             value,
-            name=key.lower(),
+            name=key if key == "Epoch" else key.lower(),
             dims=dims,
             attrs=attrs,
         )
@@ -255,7 +255,7 @@ def create_dataset(decom_ultra_dict: dict):
     return dataset
 
 
-def ultra_l1a(packet_file: dict, xtce: Path, output_filepath: Path):
+def ultra_l1a(packet_file: Path, xtce: Path):
     """
     Process ULTRA L0 data into L1A CDF files at output_filepath.
 
@@ -265,8 +265,6 @@ def ultra_l1a(packet_file: dict, xtce: Path, output_filepath: Path):
         Dictionary containing paid and path to the CCSDS data packet file.
     xtce : Path
         Path to the XTCE packet definition file.
-    output_filepath : Path
-        Full directory and filename for CDF file
     """
     if ULTRA_EVENTS.apid[0] in packet_file.keys():
         # For events data we need aux data to calculate event times
@@ -284,5 +282,6 @@ def ultra_l1a(packet_file: dict, xtce: Path, output_filepath: Path):
         decom_ultra_dict = {apid: decom_ultra_apids(packet_file[apid], xtce, apid)}
 
     dataset = create_dataset(decom_ultra_dict)
-    write_cdf(dataset, Path(output_filepath))
+    output_filepath = write_cdf(dataset)
     logging.info(f"Created CDF file at {output_filepath}")
+    return output_filepath

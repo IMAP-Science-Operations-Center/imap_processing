@@ -27,7 +27,7 @@ ultra_base = GlobalInstrumentAttrs(
 
 ultra_l1a_attrs = GlobalDataLevelAttrs(
     data_type="L1A->Level-1A",
-    logical_source="imap_ultra_l1a",
+    logical_source="imap_ultra_l1a_sci",
     logical_source_desc="IMAP Mission ULTRA Instrument Level-1A Data",
     instrument_base=ultra_base,
 )
@@ -40,7 +40,7 @@ ultra_support_attrs = ScienceAttrs(
     format="I12",
     var_type="support_data",
     label_axis="none",
-    depend_0="epoch",
+    depend_0="Epoch",
 )
 
 ultra_metadata_attrs = AttrBase(
@@ -56,5 +56,5 @@ ultra_metadata_attrs = AttrBase(
 # Required attrs for string data type,
 # meaning array with string.
 string_base = StringAttrs(
-    depend_0="epoch",
+    depend_0="Epoch",
 )

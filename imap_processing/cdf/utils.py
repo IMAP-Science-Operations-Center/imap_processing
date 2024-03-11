@@ -2,7 +2,9 @@
 
 import logging
 from pathlib import Path
+from typing import Optional
 
+import imap_data_access
 import numpy as np
 import xarray as xr
 from cdflib.xarray import xarray_to_cdf
@@ -39,7 +41,7 @@ def calc_start_time(shcoarse_time: int):
     return launch_time + time_delta
 
 
-def write_cdf(data: xr.Dataset, filepath: Path):
+def write_cdf(dataset: xr.Dataset, directory: Optional[Path] = None):
     """Write the contents of "data" to a CDF file using cdflib.xarray_to_cdf.
 
     This function determines the file name to use from the global attributes,
@@ -51,7 +53,7 @@ def write_cdf(data: xr.Dataset, filepath: Path):
 
     Parameters
     ----------
-        data : xarray.Dataset
+        dataset : xarray.Dataset
             The dataset object to convert to a CDF
         filepath: Path
             The output path, including filename, to write the CDF to.
@@ -61,20 +63,39 @@ def write_cdf(data: xr.Dataset, filepath: Path):
         pathlib.Path
             Path to the file created
     """
-    if not filepath.parent.exists():
-        logger.info("The directory does not exist, creating directory %s", filepath)
-        filepath.parent.mkdir(parents=True)
+    # Use the directory if provided, otherwise use the default
+    directory = directory or imap_data_access.config["DATA_DIR"]
 
+    # Create the filename from the global attributes
+    # Logical_source looks like "imap_swe_l2_counts-1min"
+    instrument, data_level, descriptor = dataset.attrs["Logical_source"].split("_")[1:]
+    start_time = np.datetime_as_string(dataset["Epoch"].values[0], unit="D").replace(
+        "-", ""
+    )
+    version = f"v{int(dataset.attrs['Data_version']):03d}"  # vXXX
+    repointing = dataset.attrs.get("Repointing", None)
+    science_file = imap_data_access.ScienceFilePath.generate_from_inputs(
+        instrument=instrument,
+        data_level=data_level,
+        descriptor=descriptor,
+        start_time=start_time,
+        version=version,
+        repointing=repointing,
+    )
+    file_path = directory / science_file.construct_path()
+    if not file_path.parent.exists():
+        logger.info("The directory does not exist, creating directory %s", directory)
+        file_path.parent.mkdir(parents=True)
     # Insert the final attribute:
     # The Logical_file_id is always the name of the file without the extension
-    data.attrs["Logical_file_id"] = filepath.stem
+    dataset.attrs["Logical_file_id"] = file_path.stem
 
     # Convert the xarray object to a CDF
     xarray_to_cdf(
-        data,
-        str(filepath),
+        dataset,
+        str(file_path),
         datetime64_to_cdftt2000=True,
         terminate_on_warning=True,
     )  # Terminate if not ISTP compliant
 
-    return filepath
+    return file_path

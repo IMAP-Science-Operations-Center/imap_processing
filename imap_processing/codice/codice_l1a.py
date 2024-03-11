@@ -14,7 +14,6 @@ Use
 
 import logging
 
-import imap_data_access
 import space_packet_parser
 
 from imap_processing.cdf.utils import write_cdf
@@ -47,10 +46,7 @@ def codice_l1a(packets: list[space_packet_parser.parser.Packet]) -> str:
         else:
             logger.debug(f"{apid} is currently not supported")
 
-    file = imap_data_access.ScienceFilePath.generate_from_inputs(
-        "codice", "l1a", "hk", "20210101", "20210102", "v01-01"
-    )
     # Write data to CDF
-    cdf_filename = write_cdf(data, file.construct_path())
+    cdf_filename = write_cdf(data)
 
     return cdf_filename

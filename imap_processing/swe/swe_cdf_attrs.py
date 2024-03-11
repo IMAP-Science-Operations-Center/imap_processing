@@ -37,7 +37,7 @@ xr.Dataset.attrs:
             )
         ],
         "Logical_file_id": "FILL ME IN AT FILE CREATION",
-        "Logical_source": "imap_swe_l1a",
+        "Logical_source": "imap_swe_l1a_sci",
         "Logical_source_description": ["IMAP Mission SWE Instrument Level-1 Data"],
 
 
@@ -117,14 +117,14 @@ swe_base = GlobalInstrumentAttrs(
 
 swe_l1a_global_attrs = GlobalDataLevelAttrs(
     data_type="L1A->Level-1A",
-    logical_source="imap_swe_l1a",
+    logical_source="imap_swe_l1a_sci",
     logical_source_desc="IMAP Mission SWE Instrument Level-1A Data",
     instrument_base=swe_base,
 )
 
 swe_l1b_global_attrs = GlobalDataLevelAttrs(
     data_type="L1B->Level-1B",
-    logical_source="imap_swe_l1b",
+    logical_source="imap_swe_l1b_sci",
     logical_source_desc="IMAP Mission SWE Instrument Level-1B Data",
     instrument_base=swe_base,
 )

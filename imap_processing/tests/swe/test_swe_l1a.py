@@ -46,13 +46,10 @@ def test_group_by_apid(decom_test_data):
     assert len(total_event_message_data) == 15
 
 
-def test_cdf_creation(decom_test_data, tmp_path):
+def test_cdf_creation():
     test_data_path = "tests/swe/l0_data/20230927100425_SWE_CEM_RAW_packet.bin"
     processed_data = swe_l1a(imap_module_directory / test_data_path)
 
-    l1a_cdf_filename = "imap_swe_l1a_cemraw_20230927_20230927_v01.cdf"
+    cem_raw_cdf_filepath = write_cdf(processed_data[0]["data"])
 
-    cdf_filepath = tmp_path / l1a_cdf_filename
-    cem_raw_cdf_filepath = write_cdf(processed_data[0]["data"], cdf_filepath)
-
-    assert cem_raw_cdf_filepath.name == l1a_cdf_filename
+    assert cem_raw_cdf_filepath.name == "imap_swe_l1a_sci_20230927_v001.cdf"

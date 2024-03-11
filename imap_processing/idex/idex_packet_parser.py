@@ -473,11 +473,12 @@ class PacketParser:
 
     Examples
     --------
-        >>> # Print out the data in a L0 file
-        >>> from imap_processing.idex.idex_packet_parser import PacketParser
-        >>> l0_file = "imap_processing/tests/idex/imap_idex_l0_20230725_v01-00.pkts"
-        >>> l1_data = PacketParser(l0_file)
-        >>> l1_data.write_l1_cdf()
+    .. code-block:: python
+        # Print out the data in a L0 file
+        from imap_processing.idex.idex_packet_parser import PacketParser
+        l0_file = "imap_processing/tests/idex/imap_idex_l0_20230725_v001.pkts"
+        l1_data = PacketParser(l0_file)
+        l1_data.write_l1_cdf()
 
     """
 

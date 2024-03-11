@@ -126,7 +126,7 @@ The following python code is the **minimum** code you'd need to store this data 
       # The following attributes are specific to JIM.
       "Instrument_type": "Particles (space)",
       "Data_type": "L1_Mode_Description>Level-1 Mode Description",
-      "Data_version": "01",
+      "Data_version": "001",
       "Descriptor": "JIM>Just an Ion Monitor",
       "TEXT": (
          "JIM is a fictitious instrument that counts ions at 3 different energies on "
@@ -134,7 +134,7 @@ The following python code is the **minimum** code you'd need to store this data 
          "goes, as well as the type of data in the file.  For example, if a (mode) "
          "or (descriptor) exist they can be described here."
       ),
-      "Logical_file_id": "imap_jim_l1_mode_description_20250101_v01",
+      "Logical_file_id": "imap_jim_l1_mode_description_20250101_v001",
       "Logical_source": "imap_jim_l1_mode_description",
       "Logical_source_description": "IMAP Mission JIM Instrument Level-1 (mode) (description) Data.",
    }

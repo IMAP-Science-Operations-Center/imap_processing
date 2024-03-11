@@ -54,7 +54,7 @@ def test_xarray_aux(decom_ultra_aux, aux_test_path):
     spin_period_valid_list = dataset.variables["SPINPERIODVALID"].values.tolist()
     spin_period_valid_attr = dataset.variables["SPINPERIODVALID"].attrs
     expected_spin_period_valid_attr = ultra_cdf_attrs.StringAttrs(
-        depend_0="epoch", catdesc="spinperiodvalid", fieldname="spinperiodvalid"
+        depend_0="Epoch", catdesc="spinperiodvalid", fieldname="spinperiodvalid"
     )
 
     assert spin_period_valid_list == decom_ultra_aux["SPINPERIODVALID"]
@@ -88,14 +88,14 @@ def test_xarray_aux(decom_ultra_aux, aux_test_path):
     assert shcoarse_attr == expected_shcoarse_attr
 
 
-def test_xarray_rates(decom_ultra_rates, rates_test_path):
+def test_xarray_rates(decom_ultra_rates):
     """This function checks that a xarray was
     successfully created from the decom_ultra_rates data."""
 
     dataset = create_dataset({ULTRA_RATES.apid[0]: decom_ultra_rates})
 
     # Spot check metadata data and attributes
-    specific_epoch_data = dataset.sel(epoch="2022-05-30T22:52:00.184000")["START_RF"]
+    specific_epoch_data = dataset.sel(Epoch="2022-05-30T22:52:00.184000")["START_RF"]
     startrf_list = specific_epoch_data.values.tolist()
     startrf_attr = dataset.variables["START_RF"].attrs
 
@@ -110,14 +110,14 @@ def test_xarray_rates(decom_ultra_rates, rates_test_path):
     assert startrf_attr == expected_startrf_attr
 
 
-def test_xarray_tof(decom_ultra_tof, tof_test_path):
+def test_xarray_tof(decom_ultra_tof):
     """This function checks that a xarray was
     successfully created from the decom_ultra_tof data."""
 
     dataset = create_dataset({ULTRA_TOF.apid[0]: decom_ultra_tof})
 
     # Spot check metadata data and attributes
-    specific_epoch_data = dataset.sel(epoch="2024-01-24T11:39:21.184000", sid=0)[
+    specific_epoch_data = dataset.sel(Epoch="2024-01-24T11:39:21.184000", sid=0)[
         "PACKETDATA"
     ]
     packetdata_attr = dataset.variables["PACKETDATA"].attrs
@@ -157,7 +157,7 @@ def test_xarray_events(decom_ultra_events, decom_ultra_aux, events_test_path):
     )
 
     # Spot check metadata data and attributes
-    specific_epoch_data = dataset.sel(epoch="2023-08-21T16:14:10.917929")["COIN_TYPE"]
+    specific_epoch_data = dataset.sel(Epoch="2023-08-21T16:14:10.917929")["COIN_TYPE"]
     cointype_list = specific_epoch_data.values.tolist()
     cointype_attr = dataset.variables["COIN_TYPE"].attrs
 
@@ -175,19 +175,16 @@ def test_xarray_events(decom_ultra_events, decom_ultra_aux, events_test_path):
 def test_cdf_aux(
     ccsds_path,
     xtce_path,
-    tmp_path,
     decom_ultra_aux,
 ):
     """Tests that CDF file is created and contains same attributes as xarray."""
-    # TODO: change test filename with new naming convention
-    test_data_path_aux = tmp_path / "ultra_l1a_aux_20210101-20210102_v01-01.cdf"
-    assert not test_data_path_aux.exists()
 
-    ultra_l1a({ULTRA_AUX.apid[0]: ccsds_path}, xtce_path, test_data_path_aux)
-    assert test_data_path_aux.exists()
+    test_data_path = ultra_l1a({ULTRA_AUX.apid[0]: ccsds_path}, xtce_path)
+    assert test_data_path.exists()
+    assert test_data_path.name == "imap_ultra_l1a_sci_20220530_v001.cdf"
 
     dataset_aux = create_dataset({ULTRA_AUX.apid[0]: decom_ultra_aux})
-    input_xarray_aux = cdf_to_xarray(test_data_path_aux)
+    input_xarray_aux = cdf_to_xarray(test_data_path)
 
     assert input_xarray_aux.attrs.keys() == dataset_aux.attrs.keys()
 
@@ -195,19 +192,16 @@ def test_cdf_aux(
 def test_cdf_rates(
     ccsds_path,
     xtce_path,
-    tmp_path,
     decom_ultra_rates,
 ):
     """Tests that CDF file is created and contains same attributes as xarray."""
-    # TODO: change test filename with new naming convention
-    test_data_path_rates = tmp_path / "ultra_l1a_rates_20210101-20210102_v01-01.cdf"
-    assert not test_data_path_rates.exists()
 
-    ultra_l1a({ULTRA_RATES.apid[0]: ccsds_path}, xtce_path, test_data_path_rates)
-    assert test_data_path_rates.exists()
+    test_data_path = ultra_l1a({ULTRA_RATES.apid[0]: ccsds_path}, xtce_path)
+    assert test_data_path.exists()
+    assert test_data_path.name == "imap_ultra_l1a_sci_20220530_v001.cdf"
 
     dataset_rates = create_dataset({ULTRA_RATES.apid[0]: decom_ultra_rates})
-    input_xarray_rates = cdf_to_xarray(test_data_path_rates)
+    input_xarray_rates = cdf_to_xarray(test_data_path)
 
     assert input_xarray_rates.attrs.keys() == dataset_rates.attrs.keys()
 
@@ -215,19 +209,14 @@ def test_cdf_rates(
 def test_cdf_tof(
     ccsds_path_tof,
     xtce_path,
-    tmp_path,
     decom_ultra_tof,
 ):
     """Tests that CDF file is created and contains same attributes as xarray."""
-    # TODO: change test filename with new naming convention
-    test_data_path_tof = tmp_path / "ultra_l1a_tof_20210101-20210102_v01-01.cdf"
-    assert not test_data_path_tof.exists()
-
-    ultra_l1a({ULTRA_TOF.apid[0]: ccsds_path_tof}, xtce_path, test_data_path_tof)
-    assert test_data_path_tof.exists()
+    test_data_path = ultra_l1a({ULTRA_TOF.apid[0]: ccsds_path_tof}, xtce_path)
+    assert test_data_path.name == "imap_ultra_l1a_sci_20240124_v001.cdf"
 
     dataset_tof = create_dataset({ULTRA_TOF.apid[0]: decom_ultra_tof})
-    input_xarray_tof = cdf_to_xarray(test_data_path_tof)
+    input_xarray_tof = cdf_to_xarray(test_data_path)
 
     assert input_xarray_tof.attrs.keys() == dataset_tof.attrs.keys()
 
@@ -236,25 +225,20 @@ def test_cdf_events(
     ccsds_path,
     ccsds_path_events,
     xtce_path,
-    tmp_path,
     decom_ultra_events,
 ):
     """Tests that CDF file is created and contains same attributes as xarray."""
-    # TODO: change test filename with new naming convention
-    test_data_path_events = tmp_path / "ultra_l1a_events_20210101-20210102_v01-01.cdf"
-    assert not test_data_path_events.exists()
-
-    ultra_l1a(
+    test_data_path = ultra_l1a(
         {ULTRA_AUX.apid[0]: ccsds_path, ULTRA_EVENTS.apid[0]: ccsds_path_events},
         xtce_path,
-        test_data_path_events,
     )
-    assert test_data_path_events.exists()
+    assert test_data_path.exists()
+    assert test_data_path.name == "imap_ultra_l1a_sci_20220530_v001.cdf"
 
     decom_ultra_aux = decom_ultra_apids(ccsds_path, xtce_path, ULTRA_AUX.apid[0])
     dataset_events = create_dataset(
         {ULTRA_EVENTS.apid[0]: decom_ultra_events, ULTRA_AUX.apid[0]: decom_ultra_aux}
     )
-    input_xarray_events = cdf_to_xarray(test_data_path_events)
+    input_xarray_events = cdf_to_xarray(test_data_path)
 
     assert input_xarray_events.attrs.keys() == dataset_events.attrs.keys()
