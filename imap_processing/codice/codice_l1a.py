@@ -13,6 +13,7 @@ Use
 
 import collections
 import logging
+import lzma
 import random
 from pathlib import Path
 
@@ -24,7 +25,12 @@ from imap_processing import imap_module_directory
 from imap_processing.cdf.global_attrs import ConstantCoordinates
 from imap_processing.cdf.utils import write_cdf
 from imap_processing.codice.cdf_attrs import codice_l1a_global_attrs
-from imap_processing.codice.constants import ESA_SWEEP_TABLE, LO_STEPPING_TABLE
+from imap_processing.codice.constants import (
+    ESA_SWEEP_TABLE_ID_LOOKUP,
+    LO_COLLAPSE_TABLE_ID_LOOKUP,
+    LO_COMPRESSION_ID_LOOKUP,
+    LO_STEPPING_TABLE_ID_LOOKUP,
+)
 from imap_processing.codice.decompress import decompress
 from imap_processing.codice.utils import (
     CODICEAPID,
@@ -52,29 +58,35 @@ class CoDICEL1a:
         self.plan_step = plan_step
         self.view_id = view_id
 
-    def _get_random_bits(self, length):
-        """Return a list of random bits of given length.
+    def _get_random_bytes(self, length_in_bits):
+        """Return a list of random bytes to provide simulated science data.
+
+        This method is used as a workaround to simulate science data in the
+        absence of real data to test with.
 
         Parameters
         ----------
-        length : int
-            The number of bits to generate
+        length_in_bits : int
+            The number of bits used to generate the list of bytes. For example,
+            a ``length_in_bits`` of 80 yields a list of 10 bytes.
         """
-        return [random.randint(0, 1) for _ in range(length)]  # noqa
-
-    def decompress_science_data(self):
-        """Decompress the compressed science values.
-
-        The science values are decompressed based on the compression algorithm
-        that was used in the creation of the data packet.
-        """
-        # The compression algorithm can be derived from the packet data
-        # For now, simulate which algorithm to use
-        compression_algorithm = CoDICECompression.LOSSY_A
-
-        # Get the science values
-        compressed_values = self._get_random_bits(1179648)
-        self.science_values = decompress(compressed_values, compression_algorithm)
+        bit_string = "".join([str(random.randint(0, 1)) for _ in range(length_in_bits)])  # noqa
+        random_bytes_str = [bit_string[i : i + 8] for i in range(0, len(bit_string), 8)]
+        random_bytes_int = [int(item, 2) for item in random_bytes_str]
+        random_bytes_int = [
+            254 if item == 255 else item for item in random_bytes_int
+        ]  # Avoid 255 values as they are not supported
+        requires_compression = [
+            CoDICECompression.LOSSLESS,
+            CoDICECompression.LOSSY_A_LOSSLESS,
+            CoDICECompression.LOSSY_B_LOSSLESS,
+        ]
+        if self.compression_algorithm in requires_compression:
+            random_bytes = [item.to_bytes(1, "big") for item in random_bytes_int]
+            random_bytes = [lzma.compress(item) for item in random_bytes]
+            return random_bytes
+        else:
+            return random_bytes_int
 
     def get_acquisition_times(self):
         """Retrieve the acquisition times via the Lo stepping table.
@@ -95,9 +107,12 @@ class CoDICEL1a:
         lo_stepping_data = pd.read_csv(lo_stepping_data_file)
 
         # Determine which Lo stepping table is needed
-        lo_stepping_table_id = LO_STEPPING_TABLE[(self.plan_id, self.plan_step)]
+        lo_stepping_table_id = LO_STEPPING_TABLE_ID_LOOKUP[
+            (self.plan_id, self.plan_step)
+        ]
 
         # Get the appropriate values
+        # TODO: update lo_stepping_values.csv with updated data
         lo_stepping_values = lo_stepping_data[
             lo_stepping_data["table_num"] == lo_stepping_table_id
         ]
@@ -130,12 +145,18 @@ class CoDICEL1a:
         sweep_data = pd.read_csv(esa_sweep_data_file)
 
         # Determine which ESA sweep table is needed
-        sweep_table_id = ESA_SWEEP_TABLE[(self.plan_id, self.plan_step)]
+        sweep_table_id = ESA_SWEEP_TABLE_ID_LOOKUP[(self.plan_id, self.plan_step)]
 
         # Get the appropriate values
         self.esa_sweep_values = sweep_data[sweep_data["table_idx"] == sweep_table_id]
 
         # TODO: Only select the esa_v values from the dataframe?
+
+    def get_lo_data_products(self):
+        """Retrieve the lo data products table."""
+        # TODO: implement this
+
+        pass
 
     def make_cdf_data(self):
         """Create the ``xarray`` datasets needed for the L1a CDF file.
@@ -183,8 +204,24 @@ class CoDICEL1a:
 
         TODO: Describe the data product in more detail
         """
-        # TODO: Implement this
-        pass
+        print("Unpacking science data")
+
+        self.compression_algorithm = LO_COMPRESSION_ID_LOOKUP[self.view_id]
+        self.collapse_table = LO_COLLAPSE_TABLE_ID_LOOKUP[self.view_id]
+
+        # Generate simulated science data
+        compressed_values = self._get_random_bytes(100000)
+
+        # Decompress the science data
+        print(
+            f"Decompressing science data using {self.compression_algorithm.name} algorithm"  # noqa
+        )
+        self.science_values = [
+            decompress(compressed_value, self.compression_algorithm)
+            for compressed_value in compressed_values
+        ]
+
+        # Extract the data
 
 
 def get_params(packets):
@@ -214,7 +251,7 @@ def get_params(packets):
     table_id = 1
     plan_id = 1
     plan_step = 1
-    view_id = 1
+    view_id = 5
 
     return table_id, plan_id, plan_step, view_id
 
@@ -233,32 +270,40 @@ def process_codice_l1a(packets, cdf_directory: str) -> str:
         The path to the CDF file that was created
     """
     # Group data by APID and sort by time
+    print("Grouping the data by APID")
     grouped_data = group_by_apid(packets)
-    grouped_data = {1154: []}
+    grouped_data = {1154: [], 1156: []}
 
     for apid in grouped_data.keys():
         if apid == CODICEAPID.COD_NHK:
+            print(f"processing {apid} packet")
             sorted_packets = sort_by_time(grouped_data[apid], "SHCOARSE")
             data = create_dataset(packets=sorted_packets)
+            file = imap_data_access.ScienceFilePath.generate_from_inputs(
+                "codice", "l1a", "hk", "20210101", "20210102", "v01-01"
+            )
 
-        elif apid == CODICEAPID.COD_LO_INSTRUMENT_COUNTERS:
+        elif apid == CODICEAPID.COD_LO_SW_SPECIES_COUNTS:
+            print(f"processing {apid} packet")
             packets = grouped_data[apid]
             table_id, plan_id, plan_step, view_id = get_params(packets)
 
             pipeline = CoDICEL1a(table_id, plan_id, plan_step, view_id)
             pipeline.get_esa_sweep_values()
             pipeline.get_acquisition_times()
-            pipeline.decompress_science_data()
+            pipeline.get_lo_data_products()
             pipeline.unpack_science_data()
+
             data = pipeline.make_cdf_data()
+            file = imap_data_access.ScienceFilePath.generate_from_inputs(
+                "codice", "l1a", "lo-sw-species", "20210101", "20210102", "v01-01"
+            )
 
         else:
             logging.debug(f"{apid} is currently not supported")
 
-    file = imap_data_access.ScienceFilePath.generate_from_inputs(
-        "codice", "l1a", "hk", "20210101", "20210102", "v01-01"
-    )
     # Write data to CDF
+    print(f"Writing data to CDF: {file.construct_path()}")
     cdf_filename = write_cdf(data, file.construct_path())
 
     return cdf_filename

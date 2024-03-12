@@ -27,7 +27,6 @@ def decom_test_data() -> list:
         f"{imap_module_directory}/tests/codice/data/"
         f"raw_ccsds_20230822_122700Z_idle.bin"
     )
-    Path(f"{imap_module_directory}/codice/packet_definitions/P_COD_NHK.xml")
     data_packet_list = codice_l0.decom_packets(packet_file)
     data_packet_list = [
         packet

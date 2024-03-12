@@ -29,7 +29,9 @@ def l0_test_data() -> list:
     return packets
 
 
-def test_codice_l1a(l0_test_data: list[space_packet_parser.parser.Packet]) -> str:
+def test_codice_l1a(
+    l0_test_data: list[space_packet_parser.parser.Packet], tmp_path
+) -> str:
     """Tests the ``codice_l1a`` function and ensured that a proper CDF file
     was created
 
@@ -41,6 +43,6 @@ def test_codice_l1a(l0_test_data: list[space_packet_parser.parser.Packet]) -> st
         pytest fixture used to provide a temporary directory during testing
     """
 
-    cdf_filename = process_codice_l1a(l0_test_data)
+    cdf_filename = process_codice_l1a(l0_test_data, tmp_path)
 
     assert Path(cdf_filename).name == "imap_codice_l1a_hk_20210101_20210102_v01-01.cdf"

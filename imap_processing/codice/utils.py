@@ -59,12 +59,12 @@ class CoDICECompression(IntEnum):
     IntEnum : IntEnum
     """
 
-    NO_COMPRESSION = 1
-    LOSSY_A = 2
-    LOSSY_B = 3
-    LOSSLESS = 4
-    LOSSY_A_LOSSLESS = 5
-    LOSSY_B_LOSSLESS = 6
+    NO_COMPRESSION = 0
+    LOSSY_A = 1
+    LOSSY_B = 2
+    LOSSLESS = 3
+    LOSSY_A_LOSSLESS = 4
+    LOSSY_B_LOSSLESS = 5
 
 
 def add_metadata_to_array(packet, metadata_arrays: dict) -> dict:
