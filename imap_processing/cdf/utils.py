@@ -35,7 +35,8 @@ def calc_start_time(shcoarse_time: int):
     """
     # Get the datetime of Jan 1 2010 as the start date
     launch_time = np.datetime64("2010-01-01T00:01:06.184")
-    return launch_time + np.timedelta64(shcoarse_time, "s")
+    time_delta = np.timedelta64(int(shcoarse_time * 1e9), "ns")
+    return launch_time + time_delta
 
 
 def write_cdf(data: xr.Dataset, filepath: Path):
