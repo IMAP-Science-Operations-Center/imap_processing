@@ -74,7 +74,7 @@ def append_tof_params(
             if key != "SHCOARSE":
                 stacked_dict[key].append(np.stack(data_dict[key]))
                 data_dict[key].clear()
-        for key in packet.data.keys():
+        for key in packet.header.keys():
             stacked_dict[key].append(np.stack(data_dict[key]))
             data_dict[key].clear()
 
