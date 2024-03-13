@@ -234,6 +234,7 @@ class CoDICEL1a:
         self.collapse_table_id = LO_COLLAPSE_TABLE_ID_LOOKUP[self.view_id]
 
         # Generate simulated science data
+        # TODO: Take hard coded bit length value out and use variable instead
         if self.use_simulated_data:
             self.science_values = self._generate_simulated_data(37748736)
         else:
@@ -247,6 +248,7 @@ class CoDICEL1a:
                 for compressed_value in compressed_values
             ]
 
+        # TODO: Figure out how to properly unpack the data
         # 128 e/q steps of 12 spin sectors x 5 positions
         # Chunk the data by energy steps
         num_bytes = len(self.science_values)
@@ -283,6 +285,8 @@ def get_params(packets):
     view_id : int
         Provides information about how data was collapsed and/or compressed
     """
+    # TODO: Once all APIDs are supported, these numbers could be randomized for
+    # testing purposes
     # These can be derived from the packet, but for now just simulate the values
     table_id = 1
     plan_id = 1
@@ -308,7 +312,7 @@ def process_codice_l1a(packets, cdf_directory: str) -> str:
     # Group data by APID and sort by time
     print("Grouping the data by APID")
     grouped_data = group_by_apid(packets)
-    grouped_data = {1154: [], 1156: []}
+    grouped_data = {1154: [], 1156: []}  # Temporary during development
 
     for apid in grouped_data.keys():
         if apid == CODICEAPID.COD_NHK:
@@ -347,5 +351,7 @@ def process_codice_l1a(packets, cdf_directory: str) -> str:
     return filename
 
 
+# Make module command-line executable during development to make testing easier
+# TODO: Eventually remove this
 if __name__ == "__main__":
     process_codice_l1a([], "")
