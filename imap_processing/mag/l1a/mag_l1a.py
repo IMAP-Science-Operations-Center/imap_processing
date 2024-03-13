@@ -27,8 +27,8 @@ def mag_l1a(packet_filepath, output_filepath_norm, ouptput_filepath_burst):
 
     if mag_norm is not None:
         write_cdf(mag_norm, Path(output_filepath_norm))
-        logging.info(f"Created CDF file at {output_filepath_norm}")
+        logger.info(f"Created CDF file at {output_filepath_norm}")
 
     if mag_burst is not None:
         write_cdf(mag_burst, Path(ouptput_filepath_burst))
-        logging.info(f"Created CDF file at {output_filepath_norm}")
+        logger.info(f"Created CDF file at {output_filepath_norm}")

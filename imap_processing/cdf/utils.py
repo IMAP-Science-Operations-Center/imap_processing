@@ -7,6 +7,8 @@ import numpy as np
 import xarray as xr
 from cdflib.xarray import xarray_to_cdf
 
+logger = logging.getLogger(__name__)
+
 
 def calc_start_time(shcoarse_time: int):
     """Calculate the datetime64 from the CCSDS secondary header information.
@@ -59,7 +61,7 @@ def write_cdf(data: xr.Dataset, filepath: Path):
             Path to the file created
     """
     if not filepath.parent.exists():
-        logging.info("The directory does not exist, creating directory %s", filepath)
+        logger.info("The directory does not exist, creating directory %s", filepath)
         filepath.parent.mkdir(parents=True)
 
     # Insert the final attribute:

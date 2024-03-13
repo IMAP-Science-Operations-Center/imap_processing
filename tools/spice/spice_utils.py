@@ -7,7 +7,6 @@ from datetime import datetime, timedelta
 
 import spiceypy as spice
 
-logging.basicConfig(level=logging.ERROR)
 logger = logging.getLogger(__name__)
 
 

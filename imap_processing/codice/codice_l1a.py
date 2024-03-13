@@ -21,6 +21,8 @@ from imap_processing.cdf.utils import write_cdf
 from imap_processing.codice.utils import CODICEAPID, create_dataset
 from imap_processing.utils import group_by_apid, sort_by_time
 
+logger = logging.getLogger(__name__)
+
 
 def codice_l1a(packets: list[space_packet_parser.parser.Packet]) -> str:
     """Process CoDICE l0 data to create l1a data products.
@@ -43,7 +45,7 @@ def codice_l1a(packets: list[space_packet_parser.parser.Packet]) -> str:
             sorted_packets = sort_by_time(grouped_data[apid], "SHCOARSE")
             data = create_dataset(packets=sorted_packets)
         else:
-            logging.debug(f"{apid} is currently not supported")
+            logger.debug(f"{apid} is currently not supported")
 
     file = imap_data_access.ScienceFilePath.generate_from_inputs(
         "codice", "l1a", "hk", "20210101", "20210102", "v01-01"

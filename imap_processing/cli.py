@@ -328,10 +328,10 @@ class Mag(ProcessInstrument):
                 # TODO: figure out data_dir, because now this fails.
                 #  Should switch to using IMAP_DATA_DIR env var.
                 if filename_norm.exists():
-                    logging.info(f"Uploading file: {filename_norm}")
+                    logger.info(f"Uploading file: {filename_norm}")
                     imap_data_access.upload(filename_norm)
                 if filename_burst.exists():
-                    logging.info(f"Uploading file: {filename_burst}")
+                    logger.info(f"Uploading file: {filename_burst}")
                     imap_data_access.upload(filename_burst)
 
 
