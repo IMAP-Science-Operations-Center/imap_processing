@@ -1,5 +1,3 @@
-from pathlib import Path
-
 import pandas as pd
 import pytest
 from cdflib.xarray import cdf_to_xarray
@@ -114,15 +112,12 @@ def test_swe_l1b(decom_test_data):
         assert round(hk_l1b[field].data[1], 5) == round(validation_data[field], 5)
 
 
-def test_cdf_creation(decom_test_data):
+def test_cdf_creation(decom_test_data, tmp_path):
     """Test that CDF file is created and has the correct name."""
-    current_directory = Path(__file__).parent
 
     test_data_path = "tests/swe/l0_data/20230927100248_SWE_HK_packet.bin"
     l1a_datasets = swe_l1a(imap_module_directory / test_data_path)
-    hk_l1a_cdf_file_path = (
-        current_directory / "imap_swe_l1a_lveng-hk_20230927_20230927_v01.cdf"
-    )
+    hk_l1a_cdf_file_path = tmp_path / "imap_swe_l1a_lveng-hk_20230927_20230927_v01.cdf"
 
     for i in range(len(l1a_datasets)):
         if l1a_datasets[i]["descriptor"] == "lveng-hk":
@@ -136,13 +131,8 @@ def test_cdf_creation(decom_test_data):
     # reads data from CDF file and passes to l1b
     l1a_cdf_dataset = cdf_to_xarray(hk_l1a_filepath, to_datetime=True)
     l1b_dataset = swe_l1b(l1a_cdf_dataset)
-    cdf_file_path = (
-        current_directory / "imap_swe_l1b_lveng-hk_20230927_20230927_v01.cdf"
-    )
+    cdf_file_path = tmp_path / "imap_swe_l1b_lveng-hk_20230927_20230927_v01.cdf"
 
     hk_l1b_filepath = write_cdf(l1b_dataset, cdf_file_path)
 
     assert hk_l1b_filepath.name == "imap_swe_l1b_lveng-hk_20230927_20230927_v01.cdf"
-    # remove the file after reading for local testing
-    Path.unlink(hk_l1a_filepath)
-    Path.unlink(hk_l1b_filepath)
