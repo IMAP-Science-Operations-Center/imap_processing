@@ -70,6 +70,8 @@ class CoDICEL1a:
         Retrieve the acquisition times via the Lo stepping table.
     get_esa_sweep_values()
         Retrieve the ESA sweep values.
+    get_lo_data_products()
+        Retrieve the lo data products.
     make_cdf_data()
         Create the ``xarray`` datasets needed for the L1a CDF file.
     unpack_science_data()
