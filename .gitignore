@@ -1,3 +1,6 @@
+# Possible data directory files
+data/imap/
+
 # Documentation ignore
 docs/source/code-documentation/generated
 
