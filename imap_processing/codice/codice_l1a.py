@@ -11,19 +11,19 @@ Use
     cdf_filename = codice_l1a(packets)
 """
 
-import collections
+# TODO: Change print statements to logging
+
 import logging
-import lzma
 import random
 from pathlib import Path
 
 import imap_data_access
+import numpy as np
 import pandas as pd
 import xarray as xr
 
 from imap_processing import imap_module_directory
 from imap_processing.cdf.global_attrs import ConstantCoordinates
-from imap_processing.cdf.utils import write_cdf
 from imap_processing.codice.cdf_attrs import codice_l1a_global_attrs
 from imap_processing.codice.constants import (
     ESA_SWEEP_TABLE_ID_LOOKUP,
@@ -34,7 +34,6 @@ from imap_processing.codice.constants import (
 from imap_processing.codice.decompress import decompress
 from imap_processing.codice.utils import (
     CODICEAPID,
-    CoDICECompression,
     create_dataset,
 )
 from imap_processing.utils import group_by_apid, sort_by_time
@@ -45,20 +44,47 @@ class CoDICEL1a:
 
     Attributes
     ----------
-    TODO: Fill in documentation here
+    table_id : int
+        A unique ID assigned to a specific table configuration. This field is
+        used to link the overall acquisition and processing settings to a
+        specific table configuration
+    plan_id : int
+        The plan table that was in use.  In conjunction with ``plan_step``,
+        describes which counters are included in the data packet
+    plan_step : int
+        Plan step that was active when the data was acquired and processed. In
+        conjunction with ``plan_id``, describes which counters are included
+        in the data packet
+    view_id : int
+        Provides information about how data was collapsed and/or compressed
+    use_simulated_data : bool
+        When ``True``, simulated science data is generated and used in the
+        processing pipeline. This is useful for development and testing in the
+        absence of actual CoDICE testing data.
 
     Methods
     -------
-    TODO: Fill in documentation here
+    _generate_simulated_data(length_in_bits)
+        Return a list of random bytes to provide simulated science data.
+    get_acquisition_times()
+        Retrieve the acquisition times via the Lo stepping table.
+    get_esa_sweep_values()
+        Retrieve the ESA sweep values.
+    make_cdf_data()
+        Create the ``xarray`` datasets needed for the L1a CDF file.
+    unpack_science_data()
+        Make 4D L1a data product from the decompressed science data.
     """
 
     def __init__(self, table_id, plan_id, plan_step, view_id):
+        """Initialize a ``CoDICEL1a`` class instance."""
         self.table_id = table_id
         self.plan_id = plan_id
         self.plan_step = plan_step
         self.view_id = view_id
+        self.use_simulated_data = True
 
-    def _get_random_bytes(self, length_in_bits):
+    def _generate_simulated_data(self, length_in_bits):
         """Return a list of random bytes to provide simulated science data.
 
         This method is used as a workaround to simulate science data in the
@@ -69,24 +95,24 @@ class CoDICEL1a:
         length_in_bits : int
             The number of bits used to generate the list of bytes. For example,
             a ``length_in_bits`` of 80 yields a list of 10 bytes.
+
+        Returns
+        -------
+        random_bytes : bytes
+            A list of random bytes to be used as simulated science data
         """
-        bit_string = "".join([str(random.randint(0, 1)) for _ in range(length_in_bits)])  # noqa
+        # Generate string of random bits of proper length
+        bit_string = bin(random.getrandbits(length_in_bits))[2:]
+        bit_string = bit_string.zfill(length_in_bits)
+        print(f"Length of data in bits: {len(bit_string)}")
+
+        # Convert list of random bits into byte-size list of integers
         random_bytes_str = [bit_string[i : i + 8] for i in range(0, len(bit_string), 8)]
         random_bytes_int = [int(item, 2) for item in random_bytes_str]
-        random_bytes_int = [
-            254 if item == 255 else item for item in random_bytes_int
-        ]  # Avoid 255 values as they are not supported
-        requires_compression = [
-            CoDICECompression.LOSSLESS,
-            CoDICECompression.LOSSY_A_LOSSLESS,
-            CoDICECompression.LOSSY_B_LOSSLESS,
-        ]
-        if self.compression_algorithm in requires_compression:
-            random_bytes = [item.to_bytes(1, "big") for item in random_bytes_int]
-            random_bytes = [lzma.compress(item) for item in random_bytes]
-            return random_bytes
-        else:
-            return random_bytes_int
+        random_bytes = bytes(random_bytes_int)
+        print(f"Length of data in bytes: {len(random_bytes)}")
+
+        return random_bytes
 
     def get_acquisition_times(self):
         """Retrieve the acquisition times via the Lo stepping table.
@@ -148,9 +174,8 @@ class CoDICEL1a:
         sweep_table_id = ESA_SWEEP_TABLE_ID_LOOKUP[(self.plan_id, self.plan_step)]
 
         # Get the appropriate values
-        self.esa_sweep_values = sweep_data[sweep_data["table_idx"] == sweep_table_id]
-
-        # TODO: Only select the esa_v values from the dataframe?
+        sweep_table = sweep_data[sweep_data["table_idx"] == sweep_table_id]
+        self.esa_sweep_values = sweep_table["esa_v"].values
 
     def get_lo_data_products(self):
         """Retrieve the lo data products table."""
@@ -166,33 +191,30 @@ class CoDICEL1a:
         dataset : xr.Dataset
             The dataset used in the L1a CDF file
         """
-        metadata_arrays = collections.defaultdict(list)
+        # TODO: Properly implement this
 
+        # metadata_arrays = collections.defaultdict(list)
+        #
         epoch_time = xr.DataArray(
-            metadata_arrays["SHCOARSE"],
+            [np.datetime64("2010-01-01T00:01:06.184")],
             name="Epoch",
             dims=["Epoch"],
             attrs=ConstantCoordinates.EPOCH,
         )
 
-        energy = xr.Dataset(
-            self.esa_sweep_values, name="Energy", dims=["Energy"], attrs="TBD"
-        )
-
-        times = xr.Dataset(
-            self.acquisition_times, name="Times", dims=["Times"], attrs="TBD"
-        )
+        # energy = xr.DataArray(self.esa_sweep_values, name="Energy", dims=["Energy"])
+        # times = xr.DataArray(self.acquisition_times, name="Times", dims=["Times"])
 
         dataset = xr.Dataset(
             coords={
                 "Epoch": epoch_time,
-                "Energy": energy,
-                "Times": times,
+                # "Energy": energy,
+                # "Times": times,
             },
             attrs=codice_l1a_global_attrs.output(),
         )
 
-        dataset["SCIENCE_DATA"] = self.science_values
+        # dataset["SCIENCE_DATA"] = self.science_values
 
         return dataset
 
@@ -202,26 +224,38 @@ class CoDICEL1a:
         Take the decompressed science data and reorganize the bytes to
         create a four-dimensional data product
 
-        TODO: Describe the data product in more detail
+        TODO: Describe the data product in more detail in docstring
         """
         print("Unpacking science data")
 
         self.compression_algorithm = LO_COMPRESSION_ID_LOOKUP[self.view_id]
-        self.collapse_table = LO_COLLAPSE_TABLE_ID_LOOKUP[self.view_id]
+        self.collapse_table_id = LO_COLLAPSE_TABLE_ID_LOOKUP[self.view_id]
 
         # Generate simulated science data
-        compressed_values = self._get_random_bytes(100000)
+        if self.use_simulated_data:
+            self.science_values = self._generate_simulated_data(37748736)
+        else:
+            # Decompress the science data
+            compressed_values = None
+            print(
+                f"Decompressing science data using {self.compression_algorithm.name} algorithm"  # noqa
+            )
+            self.science_values = [
+                decompress(compressed_value, self.compression_algorithm)
+                for compressed_value in compressed_values
+            ]
 
-        # Decompress the science data
-        print(
-            f"Decompressing science data using {self.compression_algorithm.name} algorithm"  # noqa
-        )
-        self.science_values = [
-            decompress(compressed_value, self.compression_algorithm)
-            for compressed_value in compressed_values
+        # 128 e/q steps of 12 spin sectors x 5 positions
+        # Chunk the data by energy steps
+        num_bytes = len(self.science_values)
+        energy_steps = 128
+        chunk_size = len(self.science_values) // energy_steps
+        data = [
+            self.science_values[i : i + chunk_size]
+            for i in range(0, num_bytes, chunk_size)
         ]
 
-        # Extract the data
+        return data
 
 
 def get_params(packets):
@@ -303,10 +337,12 @@ def process_codice_l1a(packets, cdf_directory: str) -> str:
             logging.debug(f"{apid} is currently not supported")
 
     # Write data to CDF
-    print(f"Writing data to CDF: {file.construct_path()}")
-    cdf_filename = write_cdf(data, file.construct_path())
+    filename = file.construct_path()
+    print(data)
+    print(f"Writing data to CDF: {filename}")
+    # cdf_filename = write_cdf(data, filename)
 
-    return cdf_filename
+    return filename
 
 
 if __name__ == "__main__":
