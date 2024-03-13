@@ -109,4 +109,4 @@ def ultra_l1a(packet_file: Path, xtce: Path, output_filepath: Path):
     if decom_ultra_aux:
         dataset = xarray_aux(decom_ultra_aux)
         write_cdf(dataset, Path(output_filepath))
-        logging.info(f"Created CDF file at {output_filepath}")
+        logger.info(f"Created CDF file at {output_filepath}")

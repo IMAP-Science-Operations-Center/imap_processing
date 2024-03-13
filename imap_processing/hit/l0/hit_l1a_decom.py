@@ -8,7 +8,7 @@ import xarray as xr
 
 from imap_processing import decom
 
-logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 
 class HitAPID(IntEnum):
@@ -54,9 +54,9 @@ def decom_hit_packets(packet_file: str, xtce: str):
         dictionary will be converted to a CDF.
     """
     # TODO: XTCE Files need to be combined
-    logging.info(f"Unpacking {packet_file} using xtce definitions in {xtce}")
+    logger.info(f"Unpacking {packet_file} using xtce definitions in {xtce}")
     packets = decom.decom_packets(packet_file, xtce)
-    logging.info(f"{packet_file} unpacked")
+    logger.info(f"{packet_file} unpacked")
     # print(packets[0])
     # sort all the packets in the list by their spacecraft time
     sorted_packets = sorted(packets, key=lambda x: x.data["SHCOARSE"].derived_value)
@@ -67,16 +67,16 @@ def decom_hit_packets(packet_file: str, xtce: str):
     unpacked_data = {}
     for apid_name, apid in [(id.name, id.value) for id in HitAPID]:
         # TODO: if science packet, do decompression
-        logging.info(f"Grouping packet values for {apid_name}:{apid}")
+        logger.info(f"Grouping packet values for {apid_name}:{apid}")
         # get all the packets for this apid and groups them together in a
         # dictionary
         unpacked_data[apid_name] = group_apid_data(sorted_packets, apid)
-        logging.info(f"Finished grouping {apid_name}:{apid} packet values")
+        logger.info(f"Finished grouping {apid_name}:{apid} packet values")
 
     # create datasets
-    logging.info("Creating a dataset for HIT L1A data")
+    logger.info("Creating a dataset for HIT L1A data")
     dataset_dict = create_datasets(unpacked_data)
-    logging.info("HIT L1A dataset created")
+    logger.info("HIT L1A dataset created")
     return dataset_dict
 
 

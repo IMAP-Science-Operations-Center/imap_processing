@@ -7,7 +7,6 @@ import xarray as xr
 
 from imap_processing.decom import decom_packets
 
-logging.basicConfig(level=logging.ERROR)
 logger = logging.getLogger(__name__)
 
 

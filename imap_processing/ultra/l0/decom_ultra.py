@@ -20,7 +20,6 @@ from imap_processing.ultra.l0.ultra_utils import (
 )
 from imap_processing.utils import group_by_apid, sort_by_time
 
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
@@ -104,7 +103,7 @@ def decom_ultra_apids(packet_file: str, xtce: str, apid: int):
                     append_params(decom_data, packet)
                 else:
                     for i in range(count):
-                        logging.info(f"Appending image #{i}")
+                        logger.info(f"Appending image #{i}")
                         append_params(decom_data, packet)
 
             elif apid in ULTRA_AUX.apid:

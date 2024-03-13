@@ -17,6 +17,8 @@ from imap_processing import imap_module_directory
 from imap_processing.cdf.global_attrs import ConstantCoordinates
 from imap_processing.idex import idex_cdf_attrs
 
+logger = logging.getLogger(__name__)
+
 
 class Scitype(IntEnum):
     """IDEX Science Type."""
@@ -515,7 +517,7 @@ class PacketParser:
                         # Populate the IDEXRawDustEvent with 1's and 0's
                         dust_events[event_number].parse_packet(packet)
                 else:
-                    logging.warning(f"Unhandled packet received: {packet}")
+                    logger.warning(f"Unhandled packet received: {packet}")
 
         processed_dust_impact_list = [
             dust_event.process() for dust_event in dust_events.values()
@@ -584,7 +586,7 @@ class RawDustEvent:
             trigger.name: header_packet.data[trigger.packet_name].raw_value
             for trigger in trigger_description_dict.values()
         }
-        logging.debug(
+        logger.debug(
             f"trigger_values:\n{self.trigger_values}"
         )  # Log values here in case of error
 
@@ -778,7 +780,7 @@ class RawDustEvent:
         elif scitype == Scitype.ION_GRID:
             self.Ion_Grid_bits += bits
         else:
-            logging.warning("Unknown science type received: [%s]", scitype)
+            logger.warning("Unknown science type received: [%s]", scitype)
 
     def process(self):
         """Process the raw data into a xarray.Dataset.

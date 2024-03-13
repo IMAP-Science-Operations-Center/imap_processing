@@ -11,6 +11,8 @@ from imap_processing.swe.utils.swe_utils import (
 )
 from imap_processing.utils import group_by_apid, sort_by_time
 
+logger = logging.getLogger(__name__)
+
 
 def swe_l1a(file_path):
     """Process SWE l0 data into l1a data.
@@ -40,7 +42,7 @@ def swe_l1a(file_path):
         if apid == SWEAPID.SWE_SCIENCE:
             # sort data by acquisition time
             sorted_packets = sort_by_time(grouped_data[apid], "ACQ_START_COARSE")
-            logging.debug(
+            logger.debug(
                 "Processing science data for [%s] packets", len(sorted_packets)
             )
             data = swe_science(decom_data=sorted_packets)
