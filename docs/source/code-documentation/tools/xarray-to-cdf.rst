@@ -134,8 +134,8 @@ The following python code is the **minimum** code you'd need to store this data 
          "goes, as well as the type of data in the file.  For example, if a (mode) "
          "or (descriptor) exist they can be described here."
       ),
-      "Logical_file_id": "imap_jim_l1_mode_description_20250101_v001",
-      "Logical_source": "imap_jim_l1_mode_description",
+      "Logical_file_id": "imap_jim_l1_mode-description_20250101_v001",
+      "Logical_source": "imap_jim_l1_mode-description",
       "Logical_source_description": "IMAP Mission JIM Instrument Level-1 (mode) (description) Data.",
    }
 

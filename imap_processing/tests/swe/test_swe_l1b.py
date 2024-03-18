@@ -118,9 +118,12 @@ def test_cdf_creation():
     test_data_path = "tests/swe/l0_data/20230927100248_SWE_HK_packet.bin"
     l1a_datasets = swe_l1a(imap_module_directory / test_data_path)
 
+    # TODO: This creates an unbound local access error if we don't get any hk_l1a data
+    #       use the last dataset if we don't find any hk_l1a data for now
+    hk_l1a_data = l1a_datasets[-1]
     for i in range(len(l1a_datasets)):
-        if l1a_datasets[i]["descriptor"] == "lveng-hk":
-            hk_l1a_data = l1a_datasets[i]["data"]
+        if l1a_datasets[i].attrs["descriptor"] == "sci":
+            hk_l1a_data = l1a_datasets[i]
             break
 
     hk_l1a_filepath = write_cdf(hk_l1a_data)

@@ -50,6 +50,6 @@ def test_cdf_creation():
     test_data_path = "tests/swe/l0_data/20230927100425_SWE_CEM_RAW_packet.bin"
     processed_data = swe_l1a(imap_module_directory / test_data_path)
 
-    cem_raw_cdf_filepath = write_cdf(processed_data[0]["data"])
+    cem_raw_cdf_filepath = write_cdf(processed_data[0])
 
     assert cem_raw_cdf_filepath.name == "imap_swe_l1a_sci_20230927_v001.cdf"

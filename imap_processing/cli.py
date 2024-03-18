@@ -353,19 +353,7 @@ class Swe(ProcessInstrument):
         if self.data_level == "l1a":
             processed_data = swe_l1a(Path(dependencies[0]))
             for data in processed_data:
-                # write data to cdf
-                file = imap_data_access.ScienceFilePath.generate_from_inputs(
-                    "swe",
-                    "l1a",
-                    data["descriptor"],
-                    self.start_date,
-                    self.version,
-                )
-
-                cdf_file_path = write_cdf(
-                    data=data["data"], filepath=file.construct_path()
-                )
-
+                cdf_file_path = write_cdf(data)
                 print(f"processed file path: {cdf_file_path}")
 
                 if self.upload_to_sdc:

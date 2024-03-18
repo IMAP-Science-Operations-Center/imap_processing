@@ -51,7 +51,7 @@ codice_l1a_global_attrs = GlobalDataLevelAttrs(
 
 codice_l1b_global_attrs = GlobalDataLevelAttrs(
     data_type="L1B->Level-1B",
-    logical_source="imap_cpdice_l1b_sci",
+    logical_source="imap_codice_l1b_sci",
     logical_source_desc="IMAP Mission CoDICE Instrument Level-1B Data",
     instrument_base=codice_base,
 )

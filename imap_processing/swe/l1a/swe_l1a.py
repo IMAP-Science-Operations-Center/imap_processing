@@ -54,6 +54,8 @@ def swe_l1a(file_path):
         # write data to CDF
         mode = f"{data['APP_MODE'].data[0]}-" if apid == SWEAPID.SWE_APP_HK else ""
         descriptor = f"{mode}{filename_descriptors.get(apid)}"
+        # Update the global descriptor
+        data.attrs["descriptor"] = descriptor
 
-        processed_data.append({"data": data, "descriptor": descriptor})
+        processed_data.append(data)
     return processed_data
