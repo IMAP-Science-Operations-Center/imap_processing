@@ -51,6 +51,7 @@ def swe_l1a(file_path):
             sorted_packets = sort_by_time(grouped_data[apid], "SHCOARSE")
             data = create_dataset(packets=sorted_packets)
 
+        # TODO: add this mode and descriptor into the global attributes directly
         # write data to CDF
         mode = f"{data['APP_MODE'].data[0]}-" if apid == SWEAPID.SWE_APP_HK else ""
         descriptor = f"{mode}{filename_descriptors.get(apid)}"

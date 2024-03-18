@@ -43,4 +43,5 @@ def test_codice_l1a(l0_test_data: list[space_packet_parser.parser.Packet]) -> st
 
     cdf_filename = codice_l1a(l0_test_data)
 
+    # TODO: replace "sci" with proper descriptor (previously was hk)
     assert cdf_filename.name == "imap_codice_l1a_sci_20100101_v001.cdf"

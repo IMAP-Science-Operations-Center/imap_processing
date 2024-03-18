@@ -128,6 +128,7 @@ def test_cdf_creation():
 
     hk_l1a_filepath = write_cdf(hk_l1a_data)
 
+    # TODO: replace "sci" with proper descriptor (previously lveng-hk)
     assert hk_l1a_filepath.name == "imap_swe_l1a_sci_20230927_v001.cdf"
 
     # reads data from CDF file and passes to l1b
@@ -136,4 +137,5 @@ def test_cdf_creation():
 
     hk_l1b_filepath = write_cdf(l1b_dataset)
 
+    # TODO: replace "sci" with proper descriptor (previously lveng-hk)
     assert hk_l1b_filepath.name == "imap_swe_l1b_sci_20230927_v001.cdf"

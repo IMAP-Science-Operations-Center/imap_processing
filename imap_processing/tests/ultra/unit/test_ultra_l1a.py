@@ -181,6 +181,7 @@ def test_cdf_aux(
 
     test_data_path = ultra_l1a({ULTRA_AUX.apid[0]: ccsds_path}, xtce_path)
     assert test_data_path.exists()
+    # TODO: replace "sci" with proper descriptor (previously aux)
     assert test_data_path.name == "imap_ultra_l1a_sci_20220530_v001.cdf"
 
     dataset_aux = create_dataset({ULTRA_AUX.apid[0]: decom_ultra_aux})
@@ -198,6 +199,7 @@ def test_cdf_rates(
 
     test_data_path = ultra_l1a({ULTRA_RATES.apid[0]: ccsds_path}, xtce_path)
     assert test_data_path.exists()
+    # TODO: replace "sci" with proper descriptor (previously rates)
     assert test_data_path.name == "imap_ultra_l1a_sci_20220530_v001.cdf"
 
     dataset_rates = create_dataset({ULTRA_RATES.apid[0]: decom_ultra_rates})
@@ -213,6 +215,7 @@ def test_cdf_tof(
 ):
     """Tests that CDF file is created and contains same attributes as xarray."""
     test_data_path = ultra_l1a({ULTRA_TOF.apid[0]: ccsds_path_tof}, xtce_path)
+    # TODO: replace "sci" with proper descriptor (previously tof)
     assert test_data_path.name == "imap_ultra_l1a_sci_20240124_v001.cdf"
 
     dataset_tof = create_dataset({ULTRA_TOF.apid[0]: decom_ultra_tof})
@@ -233,6 +236,7 @@ def test_cdf_events(
         xtce_path,
     )
     assert test_data_path.exists()
+    # TODO: replace "sci" with proper descriptor (previously events)
     assert test_data_path.name == "imap_ultra_l1a_sci_20220530_v001.cdf"
 
     decom_ultra_aux = decom_ultra_apids(ccsds_path, xtce_path, ULTRA_AUX.apid[0])

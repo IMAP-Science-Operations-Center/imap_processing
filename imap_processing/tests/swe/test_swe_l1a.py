@@ -52,4 +52,5 @@ def test_cdf_creation():
 
     cem_raw_cdf_filepath = write_cdf(processed_data[0])
 
+    # TODO: replace "sci" with proper descriptor (previously was cemraw)
     assert cem_raw_cdf_filepath.name == "imap_swe_l1a_sci_20230927_v001.cdf"

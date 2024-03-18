@@ -27,6 +27,7 @@ ultra_base = GlobalInstrumentAttrs(
 
 ultra_l1a_attrs = GlobalDataLevelAttrs(
     data_type="L1A->Level-1A",
+    # TODO: update descriptor "sci" field with proper descriptor
     logical_source="imap_ultra_l1a_sci",
     logical_source_desc="IMAP Mission ULTRA Instrument Level-1A Data",
     instrument_base=ultra_base,
