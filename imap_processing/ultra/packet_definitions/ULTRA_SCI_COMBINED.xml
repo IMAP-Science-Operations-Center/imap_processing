@@ -166,9 +166,12 @@
                 <xtce:BinaryDataEncoding>
                     <xtce:SizeInBits>
             			<xtce:DynamicValue>
-              				<xtce:ParameterInstanceRef parameterRef="COUNT"/>
-							<!--Equation: (COUNT)*166 -->
-              				<xtce:LinearAdjustment intercept="0" slope="166"/>
+              				<xtce:ParameterInstanceRef parameterRef="PKT_LEN"/>
+							<!--Explanation: fixed length data (including the header) is 72bits (32+8+8+1+15+8). -->
+							<!-- PKT_LEN field counts from 0-->
+							<!--8 * (PKT_LEN + 1) - 72-->
+							<!--Equation: 8 * PKT_LEN - 64 -->
+              				<xtce:LinearAdjustment intercept="-64" slope="8"/>
             			</xtce:DynamicValue>
           			</xtce:SizeInBits>
                 </xtce:BinaryDataEncoding>
@@ -398,7 +401,7 @@
 		<!-- End metadata -->
 		<xtce:ContainerSet>
 			<!--CCSDS Header Elements-->
-			<xtce:SequenceContainer name="CCSDSPacket">
+			<xtce:SequenceContainer name="CCSDSPacket" abstract="true">
 				<xtce:EntryList>
 					<xtce:ParameterRefEntry parameterRef="VERSION" />
 					<xtce:ParameterRefEntry parameterRef="TYPE" />
