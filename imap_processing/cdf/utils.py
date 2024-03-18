@@ -9,6 +9,8 @@ import numpy as np
 import xarray as xr
 from cdflib.xarray import xarray_to_cdf
 
+from imap_processing import launch_time
+
 logger = logging.getLogger(__name__)
 
 
@@ -36,7 +38,6 @@ def calc_start_time(shcoarse_time: int):
     We will use this for now.
     """
     # Get the datetime of Jan 1 2010 as the start date
-    launch_time = np.datetime64("2010-01-01T00:01:06.184")
     time_delta = np.timedelta64(int(shcoarse_time * 1e9), "ns")
     return launch_time + time_delta
 
