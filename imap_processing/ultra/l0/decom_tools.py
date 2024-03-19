@@ -237,7 +237,8 @@ def read_image_raw_events_binary(packet, decom_data: dict):
     """
     binary = packet.data["EVENTDATA"].raw_value
     count = packet.data["COUNT"].derived_value
-    event_length = int(len(binary) / count) if count else 0
+    # 166 bits per event
+    event_length = 166 if count else 0
 
     # Uses fill value for all packets that do not contain event data.
     if count == 0:
