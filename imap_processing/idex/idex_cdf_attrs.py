@@ -28,13 +28,16 @@ idex_base = GlobalInstrumentAttrs(
 
 idex_l1_global_attrs = GlobalDataLevelAttrs(
     "L1>Level-1",
-    "imap_idex_l1",
+    "imap_idex_l1_sci",
     "IMAP Mission IDEX Instrument Level-1 Data.",
     idex_base,
 )
 
 idex_l2_global_attrs = GlobalDataLevelAttrs(
-    "L2>Level-2", "imap_idex_l2", "IMAP Mission IDEX Instrument Level-2 Data", idex_base
+    "L2>Level-2",
+    "imap_idex_l2_sci",
+    "IMAP Mission IDEX Instrument Level-2 Data",
+    idex_base,
 )
 
 l1_data_base = ScienceAttrs(

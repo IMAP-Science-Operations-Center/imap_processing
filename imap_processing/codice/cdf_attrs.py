@@ -44,14 +44,14 @@ codice_base = GlobalInstrumentAttrs(
 
 codice_l1a_global_attrs = GlobalDataLevelAttrs(
     data_type="L1A->Level-1A",
-    logical_source="imap_codice_l1a",
+    logical_source="imap_codice_l1a_sci",
     logical_source_desc="IMAP Mission CoDICE Instrument Level-1A Data",
     instrument_base=codice_base,
 )
 
 codice_l1b_global_attrs = GlobalDataLevelAttrs(
     data_type="L1B->Level-1B",
-    logical_source="imap_cpdice_l1b",
+    logical_source="imap_codice_l1b_sci",
     logical_source_desc="IMAP Mission CoDICE Instrument Level-1B Data",
     instrument_base=codice_base,
 )

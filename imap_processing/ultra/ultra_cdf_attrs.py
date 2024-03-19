@@ -27,28 +27,30 @@ ultra_base = GlobalInstrumentAttrs(
 
 ultra_l1a_attrs = GlobalDataLevelAttrs(
     data_type="L1A->Level-1A",
-    logical_source="imap_ultra_l1a",
+    # TODO: update descriptor "sci" field with proper descriptor
+    logical_source="imap_ultra_l1a_sci",
     logical_source_desc="IMAP Mission ULTRA Instrument Level-1A Data",
     instrument_base=ultra_base,
 )
 
-ultra_support_attrs = AttrBase(
+ultra_support_attrs = ScienceAttrs(
     validmin=GlobalConstants.INT_FILLVAL,
     validmax=GlobalConstants.INT_MAXVAL,
-    display_type="no_plot",
+    display_type="time_series",
     fill_val=GlobalConstants.INT_FILLVAL,
     format="I12",
     var_type="support_data",
     label_axis="none",
+    depend_0="Epoch",
 )
 
-ultra_metadata_attrs = ScienceAttrs(
+ultra_metadata_attrs = AttrBase(
     validmin=GlobalConstants.INT_FILLVAL,
     validmax=GlobalConstants.INT_MAXVAL,
-    depend_0="Epoch",
-    display_type="no_plot",
+    display_type="time_series",
     fill_val=GlobalConstants.INT_FILLVAL,
     format="I12",
+    label_axis="none",
     var_type="metadata",
 )
 

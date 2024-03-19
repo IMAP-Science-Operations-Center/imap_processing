@@ -20,6 +20,7 @@ from pathlib import Path
 import imap_data_access
 import numpy as np
 import pandas as pd
+import space_packet_parser
 import xarray as xr
 
 from imap_processing import imap_module_directory
@@ -37,6 +38,8 @@ from imap_processing.codice.utils import (
     create_dataset,
 )
 from imap_processing.utils import sort_by_time
+
+logger = logging.getLogger(__name__)
 
 
 class CoDICEL1aPipeline:
@@ -327,9 +330,6 @@ def process_codice_l1a(packets, cdf_directory: str) -> str:
         if apid == CODICEAPID.COD_NHK:
             sorted_packets = sort_by_time(grouped_data[apid], "SHCOARSE")
             data = create_dataset(packets=sorted_packets)
-            file = imap_data_access.ScienceFilePath.generate_from_inputs(
-                "codice", "l1a", "hk", "20210101", "20210102", "v01-01"
-            )
 
         elif apid == CODICEAPID.COD_LO_SW_SPECIES_COUNTS:
             packets = grouped_data[apid]
@@ -342,50 +342,43 @@ def process_codice_l1a(packets, cdf_directory: str) -> str:
             pipeline.unpack_science_data()
 
             data = pipeline.make_cdf_data()
-            file = imap_data_access.ScienceFilePath.generate_from_inputs(
-                "codice", "l1a", "lo-sw-species", "20210101", "20210102", "v01-01"
-            )
 
         elif apid == CODICEAPID.COD_LO_PHA:
-            logging.debug(f"{apid} is currently not supported")
+            logger.debug(f"{apid} is currently not supported")
             continue
 
         elif apid == CODICEAPID.COD_LO_PRIORITY_COUNTS:
-            logging.debug(f"{apid} is currently not supported")
+            logger.debug(f"{apid} is currently not supported")
             continue
 
         elif apid == CODICEAPID.COD_LO_NSW_SPECIES_COUNTS:
-            logging.debug(f"{apid} is currently not supported")
+            logger.debug(f"{apid} is currently not supported")
             continue
 
         elif apid == CODICEAPID.COD_LO_SW_ANGULAR_COUNTS:
-            logging.debug(f"{apid} is currently not supported")
+            logger.debug(f"{apid} is currently not supported")
             continue
 
         elif apid == CODICEAPID.COD_LO_NSW_ANGULAR_COUNTS:
-            logging.debug(f"{apid} is currently not supported")
+            logger.debug(f"{apid} is currently not supported")
             continue
 
         elif apid == CODICEAPID.COD_HI_PHA:
-            logging.debug(f"{apid} is currently not supported")
+            logger.debug(f"{apid} is currently not supported")
             continue
 
         elif apid == CODICEAPID.COD_HI_OMNI_SPECIES_COUNTS:
-            logging.debug(f"{apid} is currently not supported")
+            logger.debug(f"{apid} is currently not supported")
             continue
 
         elif apid == CODICEAPID.COD_HI_SECT_SPECIES_COUNTS:
-            logging.debug(f"{apid} is currently not supported")
+            logger.debug(f"{apid} is currently not supported")
             continue
 
     # Write data to CDF
-    filename = file.construct_path()
-    print(data)
-    print(f"Writing data to CDF: {filename}")
-    # cdf_filename = write_cdf(data, filename)
+    # cdf_filename = write_cdf(data)
 
     return filename
-
 
 # Make module command-line executable during development to make testing easier
 # TODO: Eventually remove this

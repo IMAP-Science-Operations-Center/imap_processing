@@ -44,9 +44,5 @@ def test_codice_l1a(
     """
 
     cdf_filename = process_codice_l1a(l0_test_data, tmp_path)
-    print(cdf_filename)
 
-    assert (
-        Path(cdf_filename).name
-        == "imap_codice_l1a_lo-sw-species_20210101_20210102_v01-01.cdf"
-    )
+    assert cdf_filename.name == "imap_codice_l1a_lo-sw-species_20100101_v001.cdf"

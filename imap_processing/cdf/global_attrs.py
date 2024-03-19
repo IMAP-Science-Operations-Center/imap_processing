@@ -149,7 +149,7 @@ class GlobalDataLevelAttrs:
     data_type : str
         The level of data, ex "L1>Level-1"
     logical_source : str
-        The source of the data, ex "imap_idex_l1"
+        The source of the data, ex "imap_idex_l1_sci"
     logical_source_desc : str
         The description of the data, ex "IMAP Mission IDEX Instrument Level-1 Data."
     instrument_base : GlobalInstrumentAttrs
