@@ -36,10 +36,10 @@ from imap_processing.codice.utils import (
     CODICEAPID,
     create_dataset,
 )
-from imap_processing.utils import group_by_apid, sort_by_time
+from imap_processing.utils import sort_by_time
 
 
-class CoDICEL1a:
+class CoDICEL1aPipeline:
     """Contains methods for processing L0 data and creating L1a data products.
 
     Attributes
@@ -79,7 +79,7 @@ class CoDICEL1a:
     """
 
     def __init__(self, table_id, plan_id, plan_step, view_id):
-        """Initialize a ``CoDICEL1a`` class instance."""
+        """Initialize a ``CoDICEL1aPipeline`` class instance."""
         self.table_id = table_id
         self.plan_id = plan_id
         self.plan_step = plan_step
@@ -269,6 +269,10 @@ def get_params(packets):
     are used to create CoDICE L1a data products and what steps are needed in
     the pipeline algorithm.
 
+    This function is intended to serve as a temporary workaround until proper
+    testing data is acquired. These values should be able to be derived in the
+    test data.
+
     Returns
     -------
     table_id : int
@@ -287,7 +291,7 @@ def get_params(packets):
     """
     # TODO: Once all APIDs are supported, these numbers could be randomized for
     # testing purposes
-    # These can be derived from the packet, but for now just simulate the values
+
     table_id = 1
     plan_id = 1
     plan_step = 1
@@ -311,12 +315,16 @@ def process_codice_l1a(packets, cdf_directory: str) -> str:
     """
     # Group data by APID and sort by time
     print("Grouping the data by APID")
-    grouped_data = group_by_apid(packets)
-    grouped_data = {1154: [], 1156: []}  # Temporary during development
+    # TODO: Turn this on once test data is acquired
+    # grouped_data = group_by_apid(packets)
+    grouped_data = {
+        CODICEAPID.COD_NHK: [],
+        CODICEAPID.COD_LO_SW_SPECIES_COUNTS: [],
+    }  # Temporary during development
 
     for apid in grouped_data.keys():
+        print(f"processing {apid} packet")
         if apid == CODICEAPID.COD_NHK:
-            print(f"processing {apid} packet")
             sorted_packets = sort_by_time(grouped_data[apid], "SHCOARSE")
             data = create_dataset(packets=sorted_packets)
             file = imap_data_access.ScienceFilePath.generate_from_inputs(
@@ -324,11 +332,10 @@ def process_codice_l1a(packets, cdf_directory: str) -> str:
             )
 
         elif apid == CODICEAPID.COD_LO_SW_SPECIES_COUNTS:
-            print(f"processing {apid} packet")
             packets = grouped_data[apid]
             table_id, plan_id, plan_step, view_id = get_params(packets)
 
-            pipeline = CoDICEL1a(table_id, plan_id, plan_step, view_id)
+            pipeline = CoDICEL1aPipeline(table_id, plan_id, plan_step, view_id)
             pipeline.get_esa_sweep_values()
             pipeline.get_acquisition_times()
             pipeline.get_lo_data_products()
@@ -339,8 +346,37 @@ def process_codice_l1a(packets, cdf_directory: str) -> str:
                 "codice", "l1a", "lo-sw-species", "20210101", "20210102", "v01-01"
             )
 
-        else:
+        elif apid == CODICEAPID.COD_LO_PHA:
             logging.debug(f"{apid} is currently not supported")
+            continue
+
+        elif apid == CODICEAPID.COD_LO_PRIORITY_COUNTS:
+            logging.debug(f"{apid} is currently not supported")
+            continue
+
+        elif apid == CODICEAPID.COD_LO_NSW_SPECIES_COUNTS:
+            logging.debug(f"{apid} is currently not supported")
+            continue
+
+        elif apid == CODICEAPID.COD_LO_SW_ANGULAR_COUNTS:
+            logging.debug(f"{apid} is currently not supported")
+            continue
+
+        elif apid == CODICEAPID.COD_LO_NSW_ANGULAR_COUNTS:
+            logging.debug(f"{apid} is currently not supported")
+            continue
+
+        elif apid == CODICEAPID.COD_HI_PHA:
+            logging.debug(f"{apid} is currently not supported")
+            continue
+
+        elif apid == CODICEAPID.COD_HI_OMNI_SPECIES_COUNTS:
+            logging.debug(f"{apid} is currently not supported")
+            continue
+
+        elif apid == CODICEAPID.COD_HI_SECT_SPECIES_COUNTS:
+            logging.debug(f"{apid} is currently not supported")
+            continue
 
     # Write data to CDF
     filename = file.construct_path()

@@ -8,6 +8,7 @@ import collections
 import dataclasses
 from enum import IntEnum
 
+import space_packet_parser
 import xarray as xr
 
 from imap_processing.cdf.global_attrs import ConstantCoordinates
@@ -67,7 +68,9 @@ class CoDICECompression(IntEnum):
     LOSSY_B_LOSSLESS = 5
 
 
-def add_metadata_to_array(packet, metadata_arrays: dict) -> dict:
+def add_metadata_to_array(
+    packet: space_packet_parser.parser.Packet, metadata_arrays: dict
+) -> dict:
     """Add metadata to the metadata_arrays.
 
     Parameters
