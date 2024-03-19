@@ -46,8 +46,12 @@ def swe_l1b(l1a_dataset: xr.Dataset):
         if data is None:
             print("No data to write to CDF")
             return
+        # TODO: replace "sci" with proper descriptor, or add to global attributes
+        data.attrs["descriptor"] = "sci"
     else:
         data = eu_data
         # Update global attributes to l1b global attributes
         data.attrs.update(swe_cdf_attrs.swe_l1b_global_attrs.output())
+        # TODO: replace "sci" with proper descriptor, or add to global attributes
+        data.attrs["descriptor"] = "sci"
     return data

@@ -1,5 +1,3 @@
-from pathlib import Path
-
 import numpy as np
 import xarray as xr
 
@@ -15,7 +13,7 @@ def test_calc_start_time():
     assert calc_start_time(1) == launch_time + np.timedelta64(1, "s")
 
 
-def test_write_cdf(tmp_path):
+def test_write_cdf():
     # Set up a fake dataset
     # lots of requirements on attributes, so depend on SWE for now
     dataset = xr.Dataset(
@@ -30,9 +28,10 @@ def test_write_cdf(tmp_path):
             )
         },
         attrs=swe_l1a_global_attrs.output()
-        | {"Logical_source": "imap_test_l1", "Data_version": "01"},
+        | {"Logical_source": "imap_swe_l1_sci", "Data_version": "001"},
     )
     dataset["Epoch"].attrs = ConstantCoordinates.EPOCH
-    test_name = Path("imap_swe_l1_test_20100101_20100101_v01.cdf")
-    fname = write_cdf(dataset, tmp_path / test_name)
-    assert fname.exists()
+
+    file_path = write_cdf(dataset)
+    assert file_path.exists()
+    assert file_path.name == "imap_swe_l1_sci_20100101_v001.cdf"

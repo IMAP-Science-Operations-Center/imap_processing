@@ -53,9 +53,8 @@ def _parse_args():
             'instrument': 'mag',
             'data_level': 'l0',
             'descriptor': 'sci',
-            'version': 'v00-01',
-            'start_date': '20231212',
-            'end_date': '20231212'
+            'version': 'v001',
+            'start_date': '20231212'
         }]"
     --upload-to-sdc
 
@@ -70,15 +69,13 @@ def _parse_args():
         '"imap_cli --instrument "mag" '
         '--data-level "l1a"'
         ' --start-date "20231212"'
-        '--end-date "20231212"'
-        '--version "v00-01"'
+        '--version "v001"'
         '--dependency "['
         '   {"instrument": "mag",'
         '   "data_level": "l0"',
         '   "descriptor": "sci"',
-        '   "version": "v00-01"',
+        '   "version": "v001"',
         '   "start_date": "20231212"',
-        '   "end_date": "20231212"',
         '}]" --upload-to-sdc"',
     )
     instrument_help = (
@@ -94,9 +91,8 @@ def _parse_args():
         "Example: '[{'instrument': 'mag',"
         "'data_level': 'l0',"
         "'descriptor': 'sci',"
-        "'version': 'v00-01',"
-        "'start_date': '20231212',"
-        "'end_date': '20231212'}]"
+        "'version': 'v001',"
+        "'start_date': '20231212'}]"
     )
 
     parser = argparse.ArgumentParser(prog="imap_cli", description=description)
@@ -123,7 +119,7 @@ def _parse_args():
         "--version",
         type=str,
         required=True,
-        help="Version of the data. Format: vxx-xx",
+        help="Version of the data. Format: vXXX",
     )
     parser.add_argument(
         "--dependency",
@@ -154,7 +150,7 @@ def _validate_args(args):
     if args.instrument not in imap_data_access.VALID_INSTRUMENTS:
         raise ValueError(
             f"{args.instrument} is not in the supported instrument list: "
-            f"{imap_processing.INSTRUMENTS}"
+            f"{imap_data_access.VALID_INSTRUMENTS}"
         )
     if args.data_level not in imap_processing.PROCESSING_LEVELS[args.instrument]:
         raise ValueError(
@@ -178,15 +174,14 @@ class ProcessInstrument(ABC):
             'data_level': 'l0',
             'descriptor': 'sci',
             'version': 'v00-01',
-            'start_date': '20231212',
-            'end_date': '20231212'
+            'start_date': '20231212'
         }]"
     start_date : str
         The start date for the output data. Format: YYYYMMDD
     end_date : str
         The end date for the output data. Format: YYYYMMDD
     version : str
-        The version of the data. Format: vxx-xx
+        The version of the data. Format: vXXX
     upload_to_sdc : bool
         A flag indicating whether to upload the output file to the SDC.
     """
@@ -317,10 +312,10 @@ class Mag(ProcessInstrument):
                     f"{file_paths}. Expected only one dependency."
                 )
             filename_norm = imap_data_access.ScienceFilePath.generate_from_inputs(
-                "mag", "l1a", "raw-norm", self.start_date, self.end_date, self.version
+                "mag", "l1a", "raw-norm", self.start_date, self.version
             ).construct_path()
             filename_burst = imap_data_access.ScienceFilePath.generate_from_inputs(
-                "mag", "l1a", "raw-burst", self.start_date, self.end_date, self.version
+                "mag", "l1a", "raw-burst", self.start_date, self.version
             ).construct_path()
             mag_l1a(file_paths[0], filename_norm, filename_burst)
 
@@ -349,7 +344,7 @@ class Swe(ProcessInstrument):
     def process(self):
         """Perform SWE specific processing."""
         # self.file_path example:
-        # imap/swe/l1a/2023/09/imap_swe_l1a_sci_20230927_20230927_v01-00.cdf
+        # imap/swe/l1a/2023/09/imap_swe_l1a_sci_20230927_v001.cdf
         dependencies = self.download_dependencies()
         print(f"Processing SWE {self.data_level}")
 
@@ -358,20 +353,7 @@ class Swe(ProcessInstrument):
         if self.data_level == "l1a":
             processed_data = swe_l1a(Path(dependencies[0]))
             for data in processed_data:
-                # write data to cdf
-                file = imap_data_access.ScienceFilePath.generate_from_inputs(
-                    "swe",
-                    "l1a",
-                    data["descriptor"],
-                    self.start_date,
-                    self.end_date,
-                    self.version,
-                )
-
-                cdf_file_path = write_cdf(
-                    data=data["data"], filepath=file.construct_path()
-                )
-
+                cdf_file_path = write_cdf(data)
                 print(f"processed file path: {cdf_file_path}")
 
                 if self.upload_to_sdc:
@@ -385,7 +367,7 @@ class Swe(ProcessInstrument):
             # TODO: Update this descriptor
             descriptor = "test"
             file = imap_data_access.ScienceFilePath.generate_from_inputs(
-                "swe", "l1b", descriptor, self.start_date, self.end_date, self.version
+                "swe", "l1b", descriptor, self.start_date, self.version
             )
 
             cdf_file_path = write_cdf(
