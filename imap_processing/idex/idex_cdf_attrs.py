@@ -44,7 +44,7 @@ l1_data_base = ScienceAttrs(
     IdexConstants.DATA_MIN,
     IdexConstants.DATA_MAX,
     display_type="spectrogram",
-    depend_0="Epoch",
+    depend_0="epoch",
     format="I12",
     units="dN",
     var_type="data",
@@ -59,7 +59,7 @@ l1_target_base = dataclasses.replace(l1_data_base, depend_1="Time_Low_SR")
 sample_rate_base = FloatAttrs(
     IdexConstants.SAMPLE_RATE_MIN,
     IdexConstants.SAMPLE_RATE_MAX,
-    depend_0="Epoch",
+    depend_0="epoch",
     format="F12.5",
     label_axis="Time",
     units="microseconds",
@@ -74,13 +74,13 @@ sample_rate_base = FloatAttrs(
 trigger_base = ScienceAttrs(
     0,
     GlobalConstants.INT_MAXVAL,
-    depend_0="Epoch",
+    depend_0="epoch",
     format="I12",
     var_type="data",
     display_type="no_plot",
 )
 #     {
-#     "DEPEND_0": "Epoch",
+#     "DEPEND_0": "epoch",
 #     "FILLVAL": Constants.INT_FILLVAL,
 #     "FORMAT": "I12",
 #     "VALIDMIN": 0,  # All values are positive integers or 0 by design

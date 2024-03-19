@@ -71,15 +71,15 @@ class ConstantCoordinates:
     Attributes
     ----------
     EPOCH:
-        Default values for "Epoch" coordinate value
+        Default values for "epoch" coordinate value
     """
 
     EPOCH: ClassVar[dict] = {
         "CATDESC": "Default time",
-        "FIELDNAM": "Epoch",
+        "FIELDNAM": "epoch",
         "FILLVAL": GlobalConstants.INT_FILLVAL,
         "FORMAT": "a2",
-        "LABLAXIS": "Epoch",
+        "LABLAXIS": "epoch",
         "UNITS": "ns",
         "VALIDMIN": GlobalConstants.MIN_EPOCH,
         "VALIDMAX": GlobalConstants.MAX_EPOCH,
@@ -259,7 +259,7 @@ class ScienceAttrs(AttrBase):
     depend_0 : str = None
         The first degree of dependent coordinate variables.
         Although this is an optional keyword, it is required for every instance.
-        This should be the "Epoch" dimension, and should be type datetime64.
+        This should be the "epoch" dimension, and should be type datetime64.
     depend_1 : str = None, optional
         The second degree of dependent coordinate variables. This is used for 2d data.
     depend_2 : str = None, optional

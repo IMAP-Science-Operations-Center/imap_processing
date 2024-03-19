@@ -46,7 +46,7 @@ dimension information. xr.DataArray could be one or two or three dimension.
 Based on that, the attrs setup could be different. Let's walk through some
 scenario:
 
-One of the ISTP requirement is to have 'Epoch' as first dimension.
+One of the ISTP requirement is to have 'epoch' as first dimension.
 Any additional dimension, such as 'Energy' and 'Counts', we should create
 xr.DataArray with some default value and add its attributes. Then
 we add it to xr.Dataset as coordinates. Note that dimension's default
@@ -59,18 +59,18 @@ Eg.
         attrs=int_attrs,
     )
 
-Now, if xr.DataArray uses two demensions such as Epoch and Energy,
+Now, if xr.DataArray uses two demensions such as epoch and Energy,
 eg.
-    xr.DataArray(data, dims=["Epoch", "Energy"])
+    xr.DataArray(data, dims=["epoch", "Energy"])
 Then your attrs would add this in addition to basic required attrs:
-    "DEPEND_0": "Epoch",
+    "DEPEND_0": "epoch",
     "DEPEND_1": "Energy",
 
-Now if xr.DataArray uses three demensions such as Epoch, Energy, and
+Now if xr.DataArray uses three demensions such as epoch, Energy, and
 Counts, eg.
-    xr.DataArray(data, dims=["Epoch", "Energy", "Counts"])
+    xr.DataArray(data, dims=["epoch", "Energy", "Counts"])
 Then your attrs would add this in addition to basic required attrs:
-    "DEPEND_0": "Epoch",
+    "DEPEND_0": "epoch",
     "DEPEND_1": "Energy",
     "DEPEND_2": "Counts",
 
@@ -156,14 +156,14 @@ float_base = AttrBase(
 # Required attrs for string data type,
 # meaning array with string.
 string_base = StringAttrs(
-    depend_0="Epoch",
+    depend_0="epoch",
 )
 
 swe_metadata_attrs = ScienceAttrs(
     validmin=0,
     validmax=GlobalConstants.INT_MAXVAL,
     display_type="no_plot",
-    depend_0="Epoch",
+    depend_0="epoch",
     format="I12",
     units="dN",
     var_type="support_data",
@@ -176,7 +176,7 @@ l1a_science_attrs = ScienceAttrs(
     validmin=0,
     validmax=GlobalConstants.INT_MAXVAL,
     display_type="spectrogram",
-    depend_0="Epoch",
+    depend_0="epoch",
     depend_1="Energy",
     depend_2="Counts",
     format="I12",
@@ -189,7 +189,7 @@ l1b_science_attrs = ScienceAttrs(
     validmin=0,
     validmax=GlobalConstants.INT_MAXVAL,
     display_type="spectrogram",
-    depend_0="Epoch",
+    depend_0="epoch",
     depend_1="Energy",
     depend_2="Angle",
     depend_3="Rates",

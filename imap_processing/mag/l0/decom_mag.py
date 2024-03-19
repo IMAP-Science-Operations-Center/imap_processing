@@ -157,8 +157,8 @@ def generate_dataset(l0_data: list[MagL0]):
 
     epoch_time = xr.DataArray(
         shcoarse_data,
-        name="Epoch",
-        dims=["Epoch"],
+        name="epoch",
+        dims=["epoch"],
         attrs=ConstantCoordinates.EPOCH,
     )
 
@@ -166,13 +166,13 @@ def generate_dataset(l0_data: list[MagL0]):
     raw_vectors = xr.DataArray(
         vector_data,
         name="Raw_Vectors",
-        dims=["Epoch", "Direction"],
+        dims=["epoch", "Direction"],
         attrs=mag_cdf_attrs.mag_vector_attrs.output(),
     )
 
     # TODO add norm to attrs somehow
     output = xr.Dataset(
-        coords={"Epoch": epoch_time, "Direction": direction},
+        coords={"epoch": epoch_time, "Direction": direction},
         attrs=mag_cdf_attrs.mag_l1a_attrs.output(),
     )
 
@@ -184,7 +184,7 @@ def generate_dataset(l0_data: list[MagL0]):
             output[key] = xr.DataArray(
                 value,
                 name=key,
-                dims=["Epoch"],
+                dims=["epoch"],
                 attrs=dataclasses.replace(
                     mag_cdf_attrs.mag_support_attrs,
                     catdesc=f"Raw {key} values varying by time",

@@ -117,26 +117,26 @@ def create_dataset(packets: list[space_packet_parser.parser.Packet]) -> xr.Datas
 
     epoch_time = xr.DataArray(
         epoch_times,
-        name="Epoch",
-        dims=["Epoch"],
+        name="epoch",
+        dims=["epoch"],
         attrs=ConstantCoordinates.EPOCH,
     )
 
     dataset = xr.Dataset(
-        coords={"Epoch": epoch_time},
+        coords={"epoch": epoch_time},
         attrs=cdf_attrs.codice_l1a_global_attrs.output(),
     )
 
     for key, value in metadata_arrays.items():
         dataset[key] = xr.DataArray(
             value,
-            dims=["Epoch"],
+            dims=["epoch"],
             attrs=dataclasses.replace(
                 cdf_attrs.codice_metadata_attrs,
                 catdesc=key,
                 fieldname=key,
                 label_axis=key,
-                depend_0="Epoch",
+                depend_0="epoch",
             ).output(),
         )
 
