@@ -75,3 +75,11 @@ interacting with the API.
 
    {"statusCode": 200, "headers": {"Content-Type": "application/json", "Access-Control-Allow-Origin": "*"}, "body": [{"file_path": "imap/swe/l0/2024/01/imap_swe_l0_sci_20240105_20240105_v00-05.pkts", "instrument": "swe", "data_level": "l0", "descriptor": "sci", "start_date": "20240105", "end_date": "20240105", "version": "v00-05", "extension": "pkts"}]}
    {"statusCode": 400, "headers": {"Content-Type": "application/json", "Access-Control-Allow-Origin": "*"}, "body": "<param> is not a valid query parameter. Valid query parameters are: ['file_path', 'instrument', 'data_level', 'descriptor', 'start_date', 'end_date', 'version', 'extension']"}
+
+Other pages
+===========
+
+.. toctree::
+    :maxdepth: 1
+
+    calibration-files
