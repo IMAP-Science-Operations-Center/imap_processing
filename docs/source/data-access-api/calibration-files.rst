@@ -23,7 +23,7 @@ File Naming Convention
 File overview
 ^^^^^^^^^^^^^^
 
-In this document, I describe two main kinds of calibration files:
+In this document, there are two main kinds of calibration files:
 
 #. Universal calibration files
 #. Time window calibration files
