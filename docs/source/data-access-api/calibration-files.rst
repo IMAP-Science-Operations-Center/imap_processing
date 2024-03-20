@@ -44,7 +44,7 @@ either category, that's okay. The main thing is that all files should try and fo
 Specific examples
 ^^^^^^^^^^^^^^^^^
 
-As an example, we will be looking at the Mag calibration files. These are supplemental files provided by the instrument team for use in
+As an example, we will be looking at the MAG calibration files. These are supplemental files provided by the instrument team for use in
 L1 and L2 processing.
 
 The first file (L1B rotation matrices) is expected to change rarely,
