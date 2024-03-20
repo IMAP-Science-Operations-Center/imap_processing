@@ -46,7 +46,7 @@ def write_cdf(dataset: xr.Dataset, directory: Optional[Path] = None):
 
     This function determines the file name to use from the global attributes,
     fills in the final attributes, and converts the whole dataset to a CDF.
-    The date in the file name is determined by the time of the first Epoch in the
+    The date in the file name is determined by the time of the first epoch in the
     xarray Dataset.  The first 3 file name fields (mission, instrument, level) are
     determined by the "Logical_source" attribute.  The version is determiend from
     "Data_version".
@@ -69,7 +69,7 @@ def write_cdf(dataset: xr.Dataset, directory: Optional[Path] = None):
     # Create the filename from the global attributes
     # Logical_source looks like "imap_swe_l2_counts-1min"
     instrument, data_level, descriptor = dataset.attrs["Logical_source"].split("_")[1:]
-    start_time = np.datetime_as_string(dataset["Epoch"].values[0], unit="D").replace(
+    start_time = np.datetime_as_string(dataset["epoch"].values[0], unit="D").replace(
         "-", ""
     )
     version = f"v{int(dataset.attrs['Data_version']):03d}"  # vXXX

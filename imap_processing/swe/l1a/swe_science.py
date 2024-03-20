@@ -141,8 +141,8 @@ def swe_science(decom_data):
     ]
     epoch_time = xr.DataArray(
         epoch_converted_time,
-        name="Epoch",
-        dims=["Epoch"],
+        name="epoch",
+        dims=["epoch"],
         attrs=ConstantCoordinates.EPOCH,
     )
 
@@ -182,7 +182,7 @@ def swe_science(decom_data):
     )
     science_xarray = xr.DataArray(
         science_array,
-        dims=["Epoch", "Energy", "Counts"],
+        dims=["epoch", "Energy", "Counts"],
         attrs=science_attrs.output(),
     )
 
@@ -195,13 +195,13 @@ def swe_science(decom_data):
     )
     raw_science_xarray = xr.DataArray(
         raw_science_array,
-        dims=["Epoch", "Energy", "Counts"],
+        dims=["epoch", "Energy", "Counts"],
         attrs=raw_science_attrs.output(),
     )
 
     dataset = xr.Dataset(
         coords={
-            "Epoch": epoch_time,
+            "epoch": epoch_time,
             "Energy": energy,
             "Counts": counts,
         },
@@ -218,16 +218,16 @@ def swe_science(decom_data):
         # int_attrs["CATDESC"] = int_attrs["FIELDNAM"] = int_attrs["LABLAXIS"] = key
         # # get int32's max since most of metadata is under 32-bits
         # int_attrs["VALIDMAX"] = np.iinfo(np.int32).max
-        # int_attrs["DEPEND_0"] = "Epoch"
+        # int_attrs["DEPEND_0"] = "epoch"
         dataset[key] = xr.DataArray(
             value,
-            dims=["Epoch"],
+            dims=["epoch"],
             attrs=dataclasses.replace(
                 swe_cdf_attrs.swe_metadata_attrs,
                 catdesc=key,
                 fieldname=key,
                 label_axis=key,
-                depend_0="Epoch",
+                depend_0="epoch",
             ).output(),
         )
 

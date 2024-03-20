@@ -52,14 +52,14 @@ def initiate_data_arrays(decom_ultra: dict, apid: int):
 
     epoch_time = xr.DataArray(
         time_converted,
-        name="Epoch",
-        dims=["Epoch"],
+        name="epoch",
+        dims=["epoch"],
         attrs=ConstantCoordinates.EPOCH,
     )
 
     if apid != ULTRA_TOF.apid[0]:
         dataset = xr.Dataset(
-            coords={"Epoch": epoch_time},
+            coords={"epoch": epoch_time},
             attrs=ultra_cdf_attrs.ultra_l1a_attrs.output(),
         )
     else:
@@ -100,7 +100,7 @@ def initiate_data_arrays(decom_ultra: dict, apid: int):
         )
 
         dataset = xr.Dataset(
-            coords={"Epoch": epoch_time, "sid": sid, "row": row, "column": column},
+            coords={"epoch": epoch_time, "sid": sid, "row": row, "column": column},
             attrs=ultra_cdf_attrs.ultra_l1a_attrs.output(),
         )
 
@@ -201,7 +201,7 @@ def create_dataset(decom_ultra_dict: dict):
                 label_axis=key.lower(),
                 depend_1="sid",
             ).output()
-            dims = ["Epoch", "sid"]
+            dims = ["epoch", "sid"]
         # AUX enums require string attibutes
         elif key in [
             "SPINPERIODVALID",
@@ -217,9 +217,9 @@ def create_dataset(decom_ultra_dict: dict):
                 ultra_cdf_attrs.string_base,
                 catdesc=key.lower(),  # TODO: short and long descriptions
                 fieldname=key.lower(),
-                depend_0="Epoch",
+                depend_0="epoch",
             ).output()
-            dims = ["Epoch"]
+            dims = ["epoch"]
         # TOF packetdata has multiple dimensions
         elif key == "PACKETDATA":
             attrs = dataclasses.replace(
@@ -233,7 +233,7 @@ def create_dataset(decom_ultra_dict: dict):
                 units="pixels",
                 variable_purpose="primary_var",
             ).output()
-            dims = ["Epoch", "sid", "row", "column"]
+            dims = ["epoch", "sid", "row", "column"]
         # Use metadata with a single dimension for
         # all other data products
         else:
@@ -243,11 +243,11 @@ def create_dataset(decom_ultra_dict: dict):
                 fieldname=key.lower(),
                 label_axis=key.lower(),
             ).output()
-            dims = ["Epoch"]
+            dims = ["epoch"]
 
         dataset[key] = xr.DataArray(
             value,
-            name=key if key == "Epoch" else key.lower(),
+            name=key if key == "epoch" else key.lower(),
             dims=dims,
             attrs=attrs,
         )

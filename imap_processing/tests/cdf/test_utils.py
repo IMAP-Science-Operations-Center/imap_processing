@@ -18,8 +18,8 @@ def test_write_cdf():
     # lots of requirements on attributes, so depend on SWE for now
     dataset = xr.Dataset(
         {
-            "Epoch": (
-                "Epoch",
+            "epoch": (
+                "epoch",
                 [
                     np.datetime64("2010-01-01T00:01:01", "ns"),
                     np.datetime64("2010-01-01T00:01:02", "ns"),
@@ -30,7 +30,7 @@ def test_write_cdf():
         attrs=swe_l1a_global_attrs.output()
         | {"Logical_source": "imap_swe_l1_sci", "Data_version": "001"},
     )
-    dataset["Epoch"].attrs = ConstantCoordinates.EPOCH
+    dataset["epoch"].attrs = ConstantCoordinates.EPOCH
 
     file_path = write_cdf(dataset)
     assert file_path.exists()

@@ -73,14 +73,14 @@ float_base = AttrBase(
 )
 
 string_base = StringAttrs(
-    depend_0="Epoch",
+    depend_0="epoch",
 )
 
 codice_metadata_attrs = ScienceAttrs(
     validmin=0,
     validmax=GlobalConstants.INT_MAXVAL,
     display_type="no_plot",
-    depend_0="Epoch",
+    depend_0="epoch",
     format="I12",
     units="dN",
     var_type="support_data",
@@ -92,7 +92,7 @@ l1a_science_attrs = ScienceAttrs(
     validmin=0,
     validmax=GlobalConstants.INT_MAXVAL,
     display_type="spectrogram",
-    depend_0="Epoch",
+    depend_0="epoch",
     depend_1="Energy",
     depend_2="Counts",
     format="I12",
@@ -105,7 +105,7 @@ l1b_science_attrs = ScienceAttrs(
     validmin=0,
     validmax=GlobalConstants.INT_MAXVAL,
     display_type="spectrogram",
-    depend_0="Epoch",
+    depend_0="epoch",
     depend_1="Energy",
     depend_2="Angle",
     depend_3="Rates",

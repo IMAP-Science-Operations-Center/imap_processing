@@ -20,4 +20,4 @@ def test_total_datasets(decom_test_data):
 
 def test_dataset_dims_length(decom_test_data):
     """Test if the time dimension length in the dataset is correct"""
-    # assert decom_test_data["HIT_SCIENCE"].dims["Epoch"] == num_packet_times
+    # assert decom_test_data["HIT_SCIENCE"].dims["epoch"] == num_packet_times
