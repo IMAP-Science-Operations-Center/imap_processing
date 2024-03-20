@@ -17,9 +17,6 @@ can follow any format that is convenient for the instrument team and the SDC.
 This document lays out the requirements for calibration files in the SDC and the expected file naming
 convention.
 
-File Naming Convention
-----------------------
-
 File overview
 ^^^^^^^^^^^^^^
 
@@ -60,12 +57,12 @@ they are time window calibration files.
 These two cases cover the two main types of calibration files. They both will be uploaded to the SDC
 with the API, and the correct file to use will be determined by the filename at processing time.
 
-File name format
-^^^^^^^^^^^^^^^^
+File naming convention
+^^^^^^^^^^^^^^^^^^^^^^
 
 The file name for each file should be the following format::
 
-    <instrument>_<calibration_name>_<start_date>_<end_date>_<version>.<extension>
+    imap_<instrument>_<calibration_name>_<start_date>_<end_date>_<version>.<extension>
 
 Since these names are only used in instrument processing, they are flexible and can be adapted to
 accommodate different needs. This is more of a rule of thumb than a strict requirement.
@@ -88,16 +85,16 @@ File naming examples
 
 An L1B MAG rotation matrix calibration file:
 
-* ``mag_l1b-rotation-calibration-file_v001.cdf``
+* ``imap_mag_l1b-rotation-calibration-file_v001.cdf``
 
 This file is assumed to be valid for all times.
 
 An L1B MAG rotation matrix calibration file with a start date:
 
-* ``mag_l1b-rotation-calibration-file_20250101_v002.cdf``
+* ``imap_mag_l1b-rotation-calibration-file_20250101_v002.cdf``
 
 This file is only valid after 2025-01-01. If both of these files were uploaded, the second file would be used
-for all times after 2025-01-01, since the version is higher than ``mag_l1b-rotation-calibration-file_v001.cdf``. However,
+for all times after 2025-01-01, since the version is higher than ``imap_mag_l1b-rotation-calibration-file_v001.cdf``. However,
 dates before 2025-01-01 would use the first file.
 
 Most global calibration files should be applied to all time ranges, but there may be cases where a file should
@@ -106,26 +103,26 @@ all data after that date, but does not affect data before that date.
 
 An L2 MAG time window calibration file:
 
-* ``mag_l2-calibration_20250101_20250201_v001.cdf``
+* ``imap_mag_l2-calibration_20250101_20250201_v001.cdf``
 
-This is valid between 2025-01-01 and 2025-02-01.
+This is valid between 2025-01-01 and 2025-02-01, inclusive.
 
-* ``mag_l2-calibration_20250201_v002.cdf``
+* ``imap_mag_l2-calibration_20250201_v002.cdf``
 
 This is valid starting at 2025-02-01, and is assumed to be valid until a new file without an end date is uploaded.
 
 If there is a file in the time range with a higher version, then that file should be used. Say we have
 an additional file uploaded:
 
-``mag_l2-calibration_20250301_20250302_v003.cdf``
+``imap_mag_l2-calibration_20250301_20250302_v003.cdf``
 
 For all data between 2025-03-01 and 2025-03-02, this file would be used. However, for data after 2025-03-02,
-``mag_l2-calibration_20250201_v002.cdf`` would be used, because that is still the highest version file for that time range.
+``imap_mag_l2-calibration_20250201_v002.cdf`` would be used, because that is still the highest version file for that time range.
 
 This way, it is possible to upload corrections for smaller time ranges without affecting the long term calibration files.
 
 .. note::
-    The versions increment for all new `mag_l2-calibration` files, not just those with overlapping time spans.
+    The versions increment for all new `imap_mag_l2-calibration` files, not just those with overlapping time spans.
     This helps make it clear in every case which file is newer and should be used. This requirement should be
     enforced by the SDC API.
 
@@ -133,14 +130,14 @@ This way, it is possible to upload corrections for smaller time ranges without a
 
 If a new file is uploaded, with the intent that it should be used indefinitely into the future:
 
-``mag_l2-calibration_20250301_v004.cdf``
+``imap_mag_l2-calibration_20250301_v004.cdf``
 
-Then, the previous file with no end date ``mag_l2-calibration_20250201_v002.cdf`` would be used for all data between 2025-02-01 and 2025-03-01,
-and all data after 2025-03-01 would use ``mag_l2-calibration_20250301_v004.cdf``.
+Then, the previous file with no end date ``imap_mag_l2-calibration_20250201_v002.cdf`` would be used for all data between 2025-02-01 and 2025-03-01,
+and all data after 2025-03-01 would use ``imap_mag_l2-calibration_20250301_v004.cdf``.
 
 .. note::
     We haven't decided if uploading a new file with no end date should cause the previous file to be renamed
-    (so, moving ``mag_l2-calibration_20250201_v002.cdf`` to ``mag_l2-calibration_20250201_20250301_v002.cdf`` in
+    (so, moving ``imap_mag_l2-calibration_20250201_v002.cdf`` to ``imap_mag_l2-calibration_20250201_20250301_v002.cdf`` in
     the previous example).
 
 
