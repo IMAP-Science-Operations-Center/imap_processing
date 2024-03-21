@@ -7,7 +7,7 @@ import space_packet_parser
 
 from imap_processing import imap_module_directory
 from imap_processing.codice.codice_l0 import decom_packets
-from imap_processing.codice.codice_l1a import codice_l1a
+from imap_processing.codice.codice_l1a import process_codice_l1a
 
 
 @pytest.fixture(scope="session")
@@ -37,11 +37,8 @@ def test_codice_l1a(l0_test_data: list[space_packet_parser.parser.Packet]) -> st
     ----------
     l0_test_data : list[space_packet_parser.parser.Packet]
         A list of packets to process
-    tmp_path : pathlib.PosixPath
-        pytest fixture used to provide a temporary directory during testing
     """
 
-    cdf_filename = codice_l1a(l0_test_data)
+    cdf_filename = process_codice_l1a(l0_test_data)
 
-    # TODO: replace "sci" with proper descriptor (previously was hk)
-    assert cdf_filename.name == "imap_codice_l1a_sci_20100101_v001.cdf"
+    assert cdf_filename.name == "imap_codice_l1a_lo-sw-species_20100101_v001.cdf"

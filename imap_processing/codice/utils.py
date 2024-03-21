@@ -8,7 +8,6 @@ import collections
 import dataclasses
 from enum import IntEnum
 
-import space_packet_parser
 import xarray as xr
 
 from imap_processing.cdf.global_attrs import ConstantCoordinates
@@ -46,7 +45,7 @@ class CODICEAPID(IntEnum):
     COD_LO_NSW_ANGULAR_COUNTS = 1159
     COD_HI_IAL = 1168
     COD_HI_PHA = 1169
-    COD_HI_INSTRUMENTCOUNTERS = 1170
+    COD_HI_INSTRUMENT_COUNTERS = 1170
     COD_HI_OMNI_SPECIES_COUNTS = 1172
     COD_HI_SECT_SPECIES_COUNTS = 1173
     COD_CSTOL_CONFIG = 2457
@@ -60,17 +59,15 @@ class CoDICECompression(IntEnum):
     IntEnum : IntEnum
     """
 
-    NO_COMPRESSION = 1
-    LOSSY_A = 2
-    LOSSY_B = 3
-    LOSSLESS = 4
-    LOSSY_A_LOSSLESS = 5
-    LOSSY_B_LOSSLESS = 6
+    NO_COMPRESSION = 0
+    LOSSY_A = 1
+    LOSSY_B = 2
+    LOSSLESS = 3
+    LOSSY_A_LOSSLESS = 4
+    LOSSY_B_LOSSLESS = 5
 
 
-def add_metadata_to_array(
-    packet: space_packet_parser.parser.Packet, metadata_arrays: dict
-) -> dict:
+def add_metadata_to_array(packet, metadata_arrays: dict) -> dict:
     """Add metadata to the metadata_arrays.
 
     Parameters
@@ -94,7 +91,7 @@ def add_metadata_to_array(
     return metadata_arrays
 
 
-def create_dataset(packets: list[space_packet_parser.parser.Packet]) -> xr.Dataset:
+def create_dataset(packets) -> xr.Dataset:
     """Create dataset for each metadata field.
 
     Parameters

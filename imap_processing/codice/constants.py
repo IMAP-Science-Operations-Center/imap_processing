@@ -1,4 +1,140 @@
-"""Contains constants variables to support CoDICE processing."""
+"""Contains constants variables to support CoDICE processing.
+
+The ``plan_id``, ``plan_step``, and ``view_id`` mentioned in this module are
+derived from the packet data.
+"""
+
+from imap_processing.codice.utils import CoDICECompression
+
+# Compression ID lookup table for Lo data products
+# The key is the view_id and the value is the ID for the compression algorithm
+# (see utils.CoDICECompression to see how the values correspond)
+LO_COMPRESSION_ID_LOOKUP = {
+    0: CoDICECompression.LOSSY_A_LOSSLESS,
+    1: CoDICECompression.LOSSY_B_LOSSLESS,
+    2: CoDICECompression.LOSSY_B_LOSSLESS,
+    3: CoDICECompression.LOSSY_A_LOSSLESS,
+    4: CoDICECompression.LOSSY_A_LOSSLESS,
+    5: CoDICECompression.LOSSY_A_LOSSLESS,
+    6: CoDICECompression.LOSSY_A_LOSSLESS,
+    7: CoDICECompression.LOSSY_A_LOSSLESS,
+    8: CoDICECompression.LOSSY_A_LOSSLESS,
+}
+
+# Compression ID lookup table for Hi data products
+# The key is the view_id and the value is the ID for the compression algorithm
+# (see utils.CoDICECompression to see how the values correspond)
+HI_COMPRESSION_ID_LOOKUP = {
+    0: CoDICECompression.LOSSY_A,
+    1: CoDICECompression.LOSSY_A,
+    2: CoDICECompression.LOSSY_A,
+    3: CoDICECompression.LOSSY_B_LOSSLESS,
+    4: CoDICECompression.LOSSY_B_LOSSLESS,
+    5: CoDICECompression.LOSSY_A_LOSSLESS,
+    6: CoDICECompression.LOSSY_A_LOSSLESS,
+    7: CoDICECompression.LOSSY_A_LOSSLESS,
+    8: CoDICECompression.LOSSY_A_LOSSLESS,
+    9: CoDICECompression.LOSSY_A_LOSSLESS,
+}
+
+# Collapse table ID lookup table for Lo data products
+# The key is the view_id and the value is the ID for the collapse table
+LO_COLLAPSE_TABLE_ID_LOOKUP = {0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6, 7: 7, 8: 8}
+
+# Collapse table ID lookup table for Hi data products
+# The key is the view_id and the value is the ID for the collapse table
+Hi_COLLAPSE_TABLE_ID_LOOKUP = {
+    0: 8,
+    1: 9,
+    2: 10,
+    3: 0,
+    4: 1,
+    5: 2,
+    6: 4,
+    7: 5,
+    8: 6,
+    9: 7,
+}
+
+# ESA Sweep table ID lookup table
+# The combination of plan_id and plan_step determine the ESA sweep Table to use
+# Currently, ESA sweep table 0 is used for every plan_id/plan_step combination,
+# but may change in the future. These values are provided in the SCI-LUT excel
+# spreadsheet
+ESA_SWEEP_TABLE_ID_LOOKUP = {
+    (0, 0): 0,
+    (0, 1): 0,
+    (0, 2): 0,
+    (0, 3): 0,
+    (1, 0): 0,
+    (1, 1): 0,
+    (1, 2): 0,
+    (1, 3): 0,
+    (2, 0): 0,
+    (2, 1): 0,
+    (2, 2): 0,
+    (2, 3): 0,
+    (3, 0): 0,
+    (3, 1): 0,
+    (3, 2): 0,
+    (3, 3): 0,
+    (4, 0): 0,
+    (4, 1): 0,
+    (4, 2): 0,
+    (4, 3): 0,
+    (5, 0): 0,
+    (5, 1): 0,
+    (5, 2): 0,
+    (5, 3): 0,
+    (6, 0): 0,
+    (6, 1): 0,
+    (6, 2): 0,
+    (6, 3): 0,
+    (7, 0): 0,
+    (7, 1): 0,
+    (7, 2): 0,
+    (7, 3): 0,
+}
+
+# Lo Stepping table ID lookup table
+# The combination of plan_id and plan_step determine the Lo Stepping Table to
+# use. Currently, LO Stepping table 0 is used for every plan_id/plan_step
+# combination, but may change in the future. These values are provided in the
+# SCI-LUT excel spreadsheet
+LO_STEPPING_TABLE_ID_LOOKUP = {
+    (0, 0): 0,
+    (0, 1): 0,
+    (0, 2): 0,
+    (0, 3): 0,
+    (1, 0): 0,
+    (1, 1): 0,
+    (1, 2): 0,
+    (1, 3): 0,
+    (2, 0): 0,
+    (2, 1): 0,
+    (2, 2): 0,
+    (2, 3): 0,
+    (3, 0): 0,
+    (3, 1): 0,
+    (3, 2): 0,
+    (3, 3): 0,
+    (4, 0): 0,
+    (4, 1): 0,
+    (4, 2): 0,
+    (4, 3): 0,
+    (5, 0): 0,
+    (5, 1): 0,
+    (5, 2): 0,
+    (5, 3): 0,
+    (6, 0): 0,
+    (6, 1): 0,
+    (6, 2): 0,
+    (6, 3): 0,
+    (7, 0): 0,
+    (7, 1): 0,
+    (7, 2): 0,
+    (7, 3): 0,
+}
 
 # Lookup tables for Lossy decompression algorithms "A" and "B"
 # These were provided by Greg Dunn via his sohis_cdh_utils.v script and then

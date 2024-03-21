@@ -25,6 +25,9 @@ References
     This information was provided via email from Greg Dunn on Oct 23, 2023
 """
 
+# TODO: Add support for performing decompression of a list of values instead of
+# a single value
+
 import lzma
 from enum import IntEnum
 
