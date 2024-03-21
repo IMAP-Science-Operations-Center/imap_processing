@@ -1353,17 +1353,17 @@ files = [
 
 [[package]]
 name = "space-packet-parser"
-version = "4.1.1"
+version = "4.2.0rc3"
 description = "A CCSDS telemetry packet decoding library based on the XTCE packet format description standard."
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "space_packet_parser-4.1.1-py3-none-any.whl", hash = "sha256:ede93753e5c1fb21d0041a36eddbc5b1e7672a1b93851d405f2f176146a768c2"},
-    {file = "space_packet_parser-4.1.1.tar.gz", hash = "sha256:522778e01c6188b1f4861fd0ba8ba98e9b7f85c655e0fa88286bdf31fd4c68c5"},
+    {file = "space_packet_parser-4.2.0rc3-py3-none-any.whl", hash = "sha256:4d6685a01620b483c8e29a398516ee53b882a8c81728c26bd6cc0f57c0b4f096"},
+    {file = "space_packet_parser-4.2.0rc3.tar.gz", hash = "sha256:b349981832ac2edf1fa8213639870ba1cbabd0f292a9ad3009da9790350d9517"},
 ]
 
 [package.dependencies]
-bitstring = ">=3.0.0"
+bitstring = ">=4.0.1"
 
 [[package]]
 name = "sphinx"
@@ -1699,4 +1699,4 @@ tools = ["openpyxl", "pandas"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9,<4"
-content-hash = "be0b588f2b7ad258924d05b78493f082aff52f27c8203376114368bccb00cc82"
+content-hash = "faf45bc2caa9f511612474cd14bfd3cbc3d9e59baf36d9e796542aac17f4b9d6"
