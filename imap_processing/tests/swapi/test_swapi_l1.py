@@ -41,7 +41,7 @@ def test_filter_good_data():
             "SWEEP_TABLE": xr.DataArray(np.repeat(np.arange(total_sweeps), 12)),
             "MODE": xr.DataArray(np.full((total_sweeps * 12), 2)),
         },
-        coords={"Epoch": np.arange(total_sweeps * 12)},
+        coords={"epoch": np.arange(total_sweeps * 12)},
     )
 
     # Check for no bad data
@@ -86,7 +86,7 @@ def test_find_sweep_starts():
     """Test for find sweep starts"""
     time = np.arange(26)
     sequence_number = time % 12
-    ds = xr.Dataset({"SEQ_NUMBER": sequence_number}, coords={"Epoch": time})
+    ds = xr.Dataset({"SEQ_NUMBER": sequence_number}, coords={"epoch": time})
 
     start_indices = find_sweep_starts(ds)
     np.testing.assert_array_equal(start_indices, [0, 12])
@@ -106,7 +106,7 @@ def test_get_full_indices():
     """Test for correct full sweep indices"""
     time = np.arange(26)
     sequence_number = time % 12
-    ds = xr.Dataset({"SEQ_NUMBER": sequence_number}, coords={"Epoch": time})
+    ds = xr.Dataset({"SEQ_NUMBER": sequence_number}, coords={"epoch": time})
 
     sweep_indices = get_indices_of_full_sweep(ds)
     np.testing.assert_array_equal(sweep_indices, np.arange(0, 24))
@@ -119,7 +119,7 @@ def test_swapi_algorithm(decom_test_data):
     sorted_packets = sort_by_time(science_data, "SHCOARSE")
     ds_data = create_dataset(sorted_packets)
     full_sweep_indices = get_indices_of_full_sweep(ds_data)
-    full_sweep_sci = ds_data.isel({"Epoch": full_sweep_indices})
+    full_sweep_sci = ds_data.isel({"epoch": full_sweep_indices})
     total_packets = len(full_sweep_sci["SEQ_NUMBER"].data)
     # It takes 12 sequence data to make one full sweep
     total_sequence = 12
@@ -214,9 +214,9 @@ def test_process_swapi_science(decom_test_data):
     processed_data = process_swapi_science(ds_data)
 
     # Test dataset dimensions
-    assert processed_data.sizes == {"Epoch": 3, "Energy": 72}
-    # Test Epoch data is correct
-    np.testing.assert_array_equal(processed_data["Epoch"].data, [48, 60, 72])
+    assert processed_data.sizes == {"epoch": 3, "Energy": 72}
+    # Test epoch data is correct
+    np.testing.assert_array_equal(processed_data["epoch"].data, [48, 60, 72])
 
     expected_count = [
         0,
@@ -305,4 +305,4 @@ def test_process_swapi_science(decom_test_data):
     processed_data = process_swapi_science(ds_data)
 
     # Test dataset dimensions
-    assert processed_data.sizes == {"Epoch": 2, "Energy": 72}
+    assert processed_data.sizes == {"epoch": 2, "Energy": 72}

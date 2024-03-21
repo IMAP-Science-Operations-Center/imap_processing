@@ -524,7 +524,7 @@ class PacketParser:
             dust_event.process() for dust_event in dust_events.values()
         ]
 
-        self.data = xr.concat(processed_dust_impact_list, dim="Epoch")
+        self.data = xr.concat(processed_dust_impact_list, dim="epoch")
         self.data.attrs = idex_cdf_attrs.idex_l1_global_attrs.output()
 
 
@@ -573,7 +573,7 @@ class RawDustEvent:
             header_packet:  The FPGA metadata event header
 
         """
-        # Calculate the impact time in seconds since Epoch
+        # Calculate the impact time in seconds since epoch
         self.impact_time = 0
         self._set_impact_time(header_packet)
 
@@ -803,7 +803,7 @@ class RawDustEvent:
             trigger_vars[var] = xr.DataArray(
                 name=var,
                 data=[value],
-                dims=("Epoch"),
+                dims=("epoch"),
                 attrs=dataclasses.replace(
                     idex_cdf_attrs.trigger_base,
                     catdesc=trigger_description.notes,
@@ -819,59 +819,59 @@ class RawDustEvent:
         tof_high_xr = xr.DataArray(
             name="TOF_High",
             data=[self._parse_high_sample_waveform(self.TOF_High_bits)],
-            dims=("Epoch", "Time_High_SR_dim"),
+            dims=("epoch", "Time_High_SR_dim"),
             attrs=idex_cdf_attrs.tof_high_attrs.output(),
         )
         tof_low_xr = xr.DataArray(
             name="TOF_Low",
             data=[self._parse_high_sample_waveform(self.TOF_Low_bits)],
-            dims=("Epoch", "Time_High_SR_dim"),
+            dims=("epoch", "Time_High_SR_dim"),
             attrs=idex_cdf_attrs.tof_low_attrs.output(),
         )
         tof_mid_xr = xr.DataArray(
             name="TOF_Mid",
             data=[self._parse_high_sample_waveform(self.TOF_Mid_bits)],
-            dims=("Epoch", "Time_High_SR_dim"),
+            dims=("epoch", "Time_High_SR_dim"),
             attrs=idex_cdf_attrs.tof_mid_attrs.output(),
         )
         target_high_xr = xr.DataArray(
             name="Target_High",
             data=[self._parse_low_sample_waveform(self.Target_High_bits)],
-            dims=("Epoch", "Time_Low_SR_dim"),
+            dims=("epoch", "Time_Low_SR_dim"),
             attrs=idex_cdf_attrs.target_high_attrs.output(),
         )
         target_low_xr = xr.DataArray(
             name="Target_Low",
             data=[self._parse_low_sample_waveform(self.Target_Low_bits)],
-            dims=("Epoch", "Time_Low_SR_dim"),
+            dims=("epoch", "Time_Low_SR_dim"),
             attrs=idex_cdf_attrs.target_low_attrs.output(),
         )
         ion_grid_xr = xr.DataArray(
             name="Ion_Grid",
             data=[self._parse_low_sample_waveform(self.Ion_Grid_bits)],
-            dims=("Epoch", "Time_Low_SR_dim"),
+            dims=("epoch", "Time_Low_SR_dim"),
             attrs=idex_cdf_attrs.ion_grid_attrs.output(),
         )
 
         # Determine the 3 coordinate variables
         epoch_xr = xr.DataArray(
-            name="Epoch",
+            name="epoch",
             data=[self.impact_time],
-            dims=("Epoch"),
+            dims=("epoch"),
             attrs=ConstantCoordinates.EPOCH,
         )
 
         time_low_sr_xr = xr.DataArray(
             name="Time_Low_SR",
             data=[self._calc_low_sample_resolution(len(target_low_xr[0]))],
-            dims=("Epoch", "Time_Low_SR_dim"),
+            dims=("epoch", "Time_Low_SR_dim"),
             attrs=idex_cdf_attrs.low_sr_attrs.output(),
         )
 
         time_high_sr_xr = xr.DataArray(
             name="Time_High_SR",
             data=[self._calc_high_sample_resolution(len(tof_low_xr[0]))],
-            dims=("Epoch", "Time_High_SR_dim"),
+            dims=("epoch", "Time_High_SR_dim"),
             attrs=idex_cdf_attrs.high_sr_attrs.output(),
         )
 
@@ -887,7 +887,7 @@ class RawDustEvent:
             }
             | trigger_vars,
             coords={
-                "Epoch": epoch_xr,
+                "epoch": epoch_xr,
                 "Time_Low_SR": time_low_sr_xr,
                 "Time_High_SR": time_high_sr_xr,
             },

@@ -54,7 +54,7 @@ def test_xarray_aux(decom_ultra_aux, aux_test_path):
     spin_period_valid_list = dataset.variables["SPINPERIODVALID"].values.tolist()
     spin_period_valid_attr = dataset.variables["SPINPERIODVALID"].attrs
     expected_spin_period_valid_attr = ultra_cdf_attrs.StringAttrs(
-        depend_0="Epoch", catdesc="spinperiodvalid", fieldname="spinperiodvalid"
+        depend_0="epoch", catdesc="spinperiodvalid", fieldname="spinperiodvalid"
     )
 
     assert spin_period_valid_list == decom_ultra_aux["SPINPERIODVALID"]
@@ -95,7 +95,7 @@ def test_xarray_rates(decom_ultra_rates):
     dataset = create_dataset({ULTRA_RATES.apid[0]: decom_ultra_rates})
 
     # Spot check metadata data and attributes
-    specific_epoch_data = dataset.sel(Epoch="2022-05-30T22:52:00.184000")["START_RF"]
+    specific_epoch_data = dataset.sel(epoch="2022-05-30T22:52:00.184000")["START_RF"]
     startrf_list = specific_epoch_data.values.tolist()
     startrf_attr = dataset.variables["START_RF"].attrs
 
@@ -117,7 +117,7 @@ def test_xarray_tof(decom_ultra_tof):
     dataset = create_dataset({ULTRA_TOF.apid[0]: decom_ultra_tof})
 
     # Spot check metadata data and attributes
-    specific_epoch_data = dataset.sel(Epoch="2024-01-24T11:39:21.184000", sid=0)[
+    specific_epoch_data = dataset.sel(epoch="2024-01-24T11:39:21.184000", sid=0)[
         "PACKETDATA"
     ]
     packetdata_attr = dataset.variables["PACKETDATA"].attrs
@@ -157,7 +157,7 @@ def test_xarray_events(decom_ultra_events, decom_ultra_aux, events_test_path):
     )
 
     # Spot check metadata data and attributes
-    specific_epoch_data = dataset.sel(Epoch="2023-08-21T16:14:10.917929")["COIN_TYPE"]
+    specific_epoch_data = dataset.sel(epoch="2023-08-21T16:14:10.917929")["COIN_TYPE"]
     cointype_list = specific_epoch_data.values.tolist()
     cointype_attr = dataset.variables["COIN_TYPE"].attrs
 

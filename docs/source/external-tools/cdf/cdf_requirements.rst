@@ -133,7 +133,7 @@ These are variables of primary importance (e.g., density, magnetic field, partic
 
 Required Epoch Variable
 -----------------------
-All IMAP CDF Data files must contain at least one variable of data type CDF_TIME_TT2000 named "Epoch".  All time varying variables in the CDF data set will depend on either this "Epoch" or another variable of type CDF_TIME_TT2000.  More than one CDF_TIME_TT2000 variable is allowed in a data set to allow for more than one time resolution.  It is recommended that all such time variable use "Epoch" within their variable name.
+All IMAP CDF Data files must contain at least one variable of data type CDF_TIME_TT2000 named "epoch".  All time varying variables in the CDF data set will depend on either this "epoch" or another variable of type CDF_TIME_TT2000.  More than one CDF_TIME_TT2000 variable is allowed in a data set to allow for more than one time resolution.  It is recommended that all such time variable use "epoch" within their variable name.
 
 .. note::
    In the xarray_to_cdf function described in :ref:`cdflib.xarray_to_cdf`, all variables with "epoch" in their name will be converted to CDF_TT2000 if the flag "istp=True" is given.

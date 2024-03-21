@@ -58,7 +58,7 @@ def filter_good_data(full_sweep_sci):
 
     # Use bad data cycle indices to find all good data indices.
     # Then that will used to filter good sweep data.
-    all_indices = np.arange(len(full_sweep_sci["Epoch"].data))
+    all_indices = np.arange(len(full_sweep_sci["epoch"].data))
     good_data_indices = np.setdiff1d(all_indices, bad_cycle_indices)
 
     return good_data_indices
@@ -133,11 +133,11 @@ def find_sweep_starts(packets: xr.Dataset):
     numpy.ndarray
         Array of indices of start cycle.
     """
-    if packets["Epoch"].size < 12:
+    if packets["epoch"].size < 12:
         return np.array([], np.int64)
 
     # calculate time difference between consecutive sweep
-    diff = packets["Epoch"].data[1:] - packets["Epoch"].data[:-1]
+    diff = packets["epoch"].data[1:] - packets["epoch"].data[:-1]
 
     # This uses sliding window to find index where cycle starts.
     # This is what this below code line is doing:
@@ -402,12 +402,12 @@ def process_swapi_science(sci_dataset):
     full_sweep_indices = get_indices_of_full_sweep(sci_dataset)
 
     # Filter full sweep data using indices returned from above line
-    full_sweep_sci = sci_dataset.isel({"Epoch": full_sweep_indices})
+    full_sweep_sci = sci_dataset.isel({"epoch": full_sweep_indices})
 
     # Find indices of good sweep cycles
     good_data_indices = filter_good_data(full_sweep_sci)
 
-    good_sweep_sci = full_sweep_sci.isel({"Epoch": good_data_indices})
+    good_sweep_sci = full_sweep_sci.isel({"epoch": good_data_indices})
 
     # ====================================================
     # Step 2: Process good sweep data
@@ -433,34 +433,34 @@ def process_swapi_science(sci_dataset):
     # Step 3: Create xarray.Dataset
     # ===================================================================
 
-    # Epoch time. Should be same dimension as number of good sweeps
-    epoch_time = good_sweep_sci["Epoch"].data.reshape(total_full_sweeps, 12)[:, 0]
+    # epoch time. Should be same dimension as number of good sweeps
+    epoch_time = good_sweep_sci["epoch"].data.reshape(total_full_sweeps, 12)[:, 0]
     epoch_time = xr.DataArray(
         epoch_time,
-        name="Epoch",
-        dims=["Epoch"],
+        name="epoch",
+        dims=["epoch"],
     )
 
     # There are 72 energy steps
     energy = xr.DataArray(np.arange(72), name="Energy", dims=["Energy"])
 
     dataset = xr.Dataset(
-        coords={"Epoch": epoch_time, "Energy": energy},
+        coords={"epoch": epoch_time, "Energy": energy},
     )
 
-    dataset["SWP_PCEM_COUNTS"] = xr.DataArray(swp_pcem_counts, dims=["Epoch", "Energy"])
-    dataset["SWP_SCEM_COUNTS"] = xr.DataArray(swp_scem_counts, dims=["Epoch", "Energy"])
-    dataset["SWP_COIN_COUNTS"] = xr.DataArray(swp_coin_counts, dims=["Epoch", "Energy"])
+    dataset["SWP_PCEM_COUNTS"] = xr.DataArray(swp_pcem_counts, dims=["epoch", "Energy"])
+    dataset["SWP_SCEM_COUNTS"] = xr.DataArray(swp_scem_counts, dims=["epoch", "Energy"])
+    dataset["SWP_COIN_COUNTS"] = xr.DataArray(swp_coin_counts, dims=["epoch", "Energy"])
 
     # L1 quality flags
     dataset["SWP_PCEM_FLAGS"] = xr.DataArray(
-        pcem_compression_flags, dims=["Epoch", "Energy"]
+        pcem_compression_flags, dims=["epoch", "Energy"]
     )
     dataset["SWP_SCEM_FLAGS"] = xr.DataArray(
-        scem_compression_flags, dims=["Epoch", "Energy"]
+        scem_compression_flags, dims=["epoch", "Energy"]
     )
     dataset["SWP_COIN_FLAGS"] = xr.DataArray(
-        coin_compression_flags, dims=["Epoch", "Energy"]
+        coin_compression_flags, dims=["epoch", "Energy"]
     )
 
     # ===================================================================
@@ -471,13 +471,13 @@ def process_swapi_science(sci_dataset):
     # The Poisson contribution is
     #   uncertainty = sqrt(count)
     dataset["SWP_PCEM_ERR"] = xr.DataArray(
-        np.sqrt(swp_pcem_counts), dims=["Epoch", "Energy"]
+        np.sqrt(swp_pcem_counts), dims=["epoch", "Energy"]
     )
     dataset["SWP_SCEM_ERR"] = xr.DataArray(
-        np.sqrt(swp_scem_counts), dims=["Epoch", "Energy"]
+        np.sqrt(swp_scem_counts), dims=["epoch", "Energy"]
     )
     dataset["SWP_COIN_ERR"] = xr.DataArray(
-        np.sqrt(swp_coin_counts), dims=["Epoch", "Energy"]
+        np.sqrt(swp_coin_counts), dims=["epoch", "Energy"]
     )
     return dataset
 

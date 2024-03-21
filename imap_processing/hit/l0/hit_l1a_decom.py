@@ -101,9 +101,9 @@ def create_datasets(data):
         # if data for the APID exists, create the dataset
         if data_dict != {}:
             epoch = xr.DataArray(
-                name="Epoch", data=data_dict.pop("SHCOARSE"), dims=("Epoch")
+                name="epoch", data=data_dict.pop("SHCOARSE"), dims=("epoch")
             )
-            dataset = xr.Dataset(data_vars={}, coords={"Epoch": epoch})
+            dataset = xr.Dataset(data_vars={}, coords={"epoch": epoch})
             dataset_dict[apid] = dataset.assign(**data_dict)
 
     return dataset_dict

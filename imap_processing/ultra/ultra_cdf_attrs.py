@@ -41,7 +41,7 @@ ultra_support_attrs = ScienceAttrs(
     format="I12",
     var_type="support_data",
     label_axis="none",
-    depend_0="Epoch",
+    depend_0="epoch",
 )
 
 ultra_metadata_attrs = AttrBase(
@@ -57,5 +57,5 @@ ultra_metadata_attrs = AttrBase(
 # Required attrs for string data type,
 # meaning array with string.
 string_base = StringAttrs(
-    depend_0="Epoch",
+    depend_0="epoch",
 )

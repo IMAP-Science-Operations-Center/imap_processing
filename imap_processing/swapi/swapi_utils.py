@@ -70,22 +70,22 @@ def create_dataset(packets):
 
     epoch_time = xr.DataArray(
         metadata_arrays["SHCOARSE"],
-        name="Epoch",
-        dims=["Epoch"],
+        name="epoch",
+        dims=["epoch"],
         attrs=dict(
             description="Mission elapsed time",
             units="seconds since start of the mission",
         ),
     )
     data_vars = {
-        key: xr.DataArray(value, dims=["Epoch"])
+        key: xr.DataArray(value, dims=["epoch"])
         for key, value in metadata_arrays.items()
         if key != "SHCOARSE"
     }
 
     dataset = xr.Dataset(
         data_vars=data_vars,
-        coords={"Epoch": epoch_time},
+        coords={"epoch": epoch_time},
     )
 
     return dataset

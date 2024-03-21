@@ -270,8 +270,7 @@ class TelemetryGenerator:
 
             # Add descriptions if they exist
             if pd.notna(row.get("shortDescription")):
-                description = Et.SubElement(parameter, "xtce:ShortDescription")
-                description.text = row.get("shortDescription")
+                parameter.attrib["shortDescription"] = row.get("shortDescription")
             if pd.notna(row.get("longDescription")):
                 description = Et.SubElement(parameter, "xtce:LongDescription")
                 description.text = row.get("longDescription")

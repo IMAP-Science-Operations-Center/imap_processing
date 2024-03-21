@@ -9,6 +9,8 @@ import numpy as np
 import xarray as xr
 from cdflib.xarray import xarray_to_cdf
 
+from imap_processing import launch_time
+
 logger = logging.getLogger(__name__)
 
 
@@ -36,7 +38,6 @@ def calc_start_time(shcoarse_time: int):
     We will use this for now.
     """
     # Get the datetime of Jan 1 2010 as the start date
-    launch_time = np.datetime64("2010-01-01T00:01:06.184")
     time_delta = np.timedelta64(int(shcoarse_time * 1e9), "ns")
     return launch_time + time_delta
 
@@ -46,7 +47,7 @@ def write_cdf(dataset: xr.Dataset, directory: Optional[Path] = None):
 
     This function determines the file name to use from the global attributes,
     fills in the final attributes, and converts the whole dataset to a CDF.
-    The date in the file name is determined by the time of the first Epoch in the
+    The date in the file name is determined by the time of the first epoch in the
     xarray Dataset.  The first 3 file name fields (mission, instrument, level) are
     determined by the "Logical_source" attribute.  The version is determiend from
     "Data_version".
@@ -69,7 +70,7 @@ def write_cdf(dataset: xr.Dataset, directory: Optional[Path] = None):
     # Create the filename from the global attributes
     # Logical_source looks like "imap_swe_l2_counts-1min"
     instrument, data_level, descriptor = dataset.attrs["Logical_source"].split("_")[1:]
-    start_time = np.datetime_as_string(dataset["Epoch"].values[0], unit="D").replace(
+    start_time = np.datetime_as_string(dataset["epoch"].values[0], unit="D").replace(
         "-", ""
     )
     version = f"v{int(dataset.attrs['Data_version']):03d}"  # vXXX

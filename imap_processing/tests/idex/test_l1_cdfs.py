@@ -42,7 +42,7 @@ def test_bad_cdf_file_data(decom_test_data):
     # Deliberately mess up the data to verify that an ISTPError is raised
     bad_data_attrs = {
         "CATDESC": "Bad_Data",
-        "DEPEND_0": "Epoch",
+        "DEPEND_0": "epoch",
         "DISPLAY_TYPE": "no_plot",
         "FIELDNAM": "Bad_Data",
         "FILLVAL": "",

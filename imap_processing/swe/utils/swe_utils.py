@@ -86,13 +86,13 @@ def create_dataset(packets):
     ]
     epoch_time = xr.DataArray(
         epoch_converted_time,
-        name="Epoch",
-        dims=["Epoch"],
+        name="epoch",
+        dims=["epoch"],
         attrs=ConstantCoordinates.EPOCH,
     )
 
     dataset = xr.Dataset(
-        coords={"Epoch": epoch_time},
+        coords={"epoch": epoch_time},
         attrs=swe_cdf_attrs.swe_l1a_global_attrs.output(),
     )
 
@@ -103,7 +103,7 @@ def create_dataset(packets):
         elif key == "APP_MODE":
             dataset[key] = xr.DataArray(
                 value,
-                dims=["Epoch"],
+                dims=["epoch"],
                 attrs=dataclasses.replace(
                     swe_cdf_attrs.string_base,
                     catdesc=key,
@@ -113,13 +113,13 @@ def create_dataset(packets):
         else:
             dataset[key] = xr.DataArray(
                 value,
-                dims=["Epoch"],
+                dims=["epoch"],
                 attrs=dataclasses.replace(
                     swe_cdf_attrs.swe_metadata_attrs,
                     catdesc=key,
                     fieldname=key,
                     label_axis=key,
-                    depend_0="Epoch",
+                    depend_0="epoch",
                 ).output(),
             )
     return dataset
