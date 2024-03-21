@@ -103,6 +103,20 @@ tof_attrs = AttrBase(
     var_type="metadata",
 )
 
+ccsds_met_attrs = AttrBase(
+    validmin=GlobalConstants.INT_FILLVAL,
+    validmax=GlobalConstants.INT_MAXVAL,
+    display_type="time_series",
+    catdesc=(
+        "CCSDS MET. "
+        "It's a 32-bits integer value that represents the "
+        "CCSDS Mission Elapsed Time (MET) in seconds."
+    ),
+    fieldname="CCSDS MET",
+    fill_val=GlobalConstants.INT_FILLVAL,
+    var_type="metadata",
+)
+
 # Note from SPDF about Logical_source_id breakdown:
 # source_name: imap - This is in global attributes
 # descriptor: instrument name - This is in global attributes

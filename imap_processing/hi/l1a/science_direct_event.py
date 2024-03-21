@@ -161,13 +161,15 @@ def break_into_bits_size(binary_data: str):
     return [binary_data[i : i + 48] for i in range(0, len(binary_data), 48)]
 
 
-def create_dataset(de_data_list: list):
+def create_dataset(de_data_list: list, packet_met_time: list):
     """Create xarray dataset.
 
     Parameters
     ----------
     de_data_list : list
         Parsed direct event data list
+    packet_met_time : list
+        List of packet MET time
 
     Returns
     -------
@@ -182,6 +184,7 @@ def create_dataset(de_data_list: list):
     tof_2 = []
     tof_3 = []
     de_tag = []
+    ccsds_met = []
 
     # How to handle if first event is not metaevent? This
     # means that current data file started with direct event.
@@ -201,8 +204,9 @@ def create_dataset(de_data_list: list):
         # Discard all direct events until we see next metaevent
         # TODO: log a warning
         de_data_list = de_data_list[first_metaevent_index:]
+        packet_met_time = packet_met_time[first_metaevent_index:]
 
-    for event in de_data_list:
+    for index, event in enumerate(de_data_list):
         if event["start_bitmask_data"] == 0:
             # metaevent is a way to store information
             # about bigger portion of time information. Eg.
@@ -241,6 +245,8 @@ def create_dataset(de_data_list: list):
         tof_3.append(event["tof_3"])
         # IMAP-Hi like to keep de_tag value for diagnostic purposes
         de_tag.append(event["de_tag"])
+        # add packet time to ccsds_met list
+        ccsds_met.append(packet_met_time[index])
 
     epoch_time = xr.DataArray(
         de_met_time,
@@ -272,7 +278,9 @@ def create_dataset(de_data_list: list):
     dataset["de_tag"] = xr.DataArray(
         de_tag, dims="epoch", attrs=hi_cdf_attrs.de_tag_attrs.output()
     )
-    # TODO: add packet time too.
+    dataset["ccsds_met"] = xr.DataArray(
+        ccsds_met, dims="epoch", attrs=hi_cdf_attrs.ccsds_met_attrs.output()
+    )
     # TODO: figure out how to store information about
     # input data(one or more) it used to produce this dataset
     return dataset
@@ -297,6 +305,7 @@ def science_direct_event(packets_data: list):
         xarray dataset
     """
     de_data_list = []
+    packet_met_time = []
     # TODO: ask Paul if he wants MET time in the dataset
     # If so, get MET time of every packets
 
@@ -309,6 +318,10 @@ def science_direct_event(packets_data: list):
         event_48bits_list = break_into_bits_size(data.data["DE_TOF"].raw_value)
         # parse 48-bits into meaningful data such as metaevent or direct event
         de_data_list.extend([parse_direct_event(event) for event in event_48bits_list])
+        # add packet time to packet_met_time
+        packet_met_time.extend(
+            [data.data["CCSDS_MET"].raw_value] * len(event_48bits_list)
+        )
 
     # create dataset
-    return create_dataset(de_data_list)
+    return create_dataset(de_data_list, packet_met_time)
