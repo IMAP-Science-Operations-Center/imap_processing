@@ -1,4 +1,8 @@
-"""Contains constants variables to support CoDICE processing."""
+"""Contains constants variables to support CoDICE processing.
+
+The ``plan_id``, ``plan_step``, and ``view_id`` mentioned in this module are
+derived from the packet data.
+"""
 
 from imap_processing.codice.utils import CoDICECompression
 

@@ -29,9 +29,7 @@ def l0_test_data() -> list:
     return packets
 
 
-def test_codice_l1a(
-    l0_test_data: list[space_packet_parser.parser.Packet], tmp_path
-) -> str:
+def test_codice_l1a(l0_test_data: list[space_packet_parser.parser.Packet]) -> str:
     """Tests the ``codice_l1a`` function and ensured that a proper CDF file
     was created
 
@@ -39,10 +37,8 @@ def test_codice_l1a(
     ----------
     l0_test_data : list[space_packet_parser.parser.Packet]
         A list of packets to process
-    tmp_path : pathlib.PosixPath
-        pytest fixture used to provide a temporary directory during testing
     """
 
-    cdf_filename = process_codice_l1a(l0_test_data, tmp_path)
+    cdf_filename = process_codice_l1a(l0_test_data)
 
     assert cdf_filename.name == "imap_codice_l1a_lo-sw-species_20100101_v001.cdf"

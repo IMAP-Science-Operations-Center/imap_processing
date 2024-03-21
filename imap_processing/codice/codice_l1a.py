@@ -17,14 +17,12 @@ import logging
 import random
 from pathlib import Path
 
-import imap_data_access
-import numpy as np
 import pandas as pd
-import space_packet_parser
 import xarray as xr
 
-from imap_processing import imap_module_directory
+from imap_processing import imap_module_directory, launch_time
 from imap_processing.cdf.global_attrs import ConstantCoordinates
+from imap_processing.cdf.utils import write_cdf
 from imap_processing.codice.cdf_attrs import codice_l1a_global_attrs
 from imap_processing.codice.constants import (
     ESA_SWEEP_TABLE_ID_LOOKUP,
@@ -63,7 +61,8 @@ class CoDICEL1aPipeline:
     use_simulated_data : bool
         When ``True``, simulated science data is generated and used in the
         processing pipeline. This is useful for development and testing in the
-        absence of actual CoDICE testing data.
+        absence of actual CoDICE testing data., and is intended to be removed
+        once simulated science data is no longer needed.
 
     Methods
     -------
@@ -92,8 +91,8 @@ class CoDICEL1aPipeline:
     def _generate_simulated_data(self, length_in_bits):
         """Return a list of random bytes to provide simulated science data.
 
-        This method is used as a workaround to simulate science data in the
-        absence of real data to test with.
+        This method is used as a temporary workaround to simulate science data
+        in the absence of real data to test with.
 
         Parameters
         ----------
@@ -201,7 +200,7 @@ class CoDICEL1aPipeline:
         # metadata_arrays = collections.defaultdict(list)
         #
         epoch_time = xr.DataArray(
-            [np.datetime64("2010-01-01T00:01:06.184")],
+            [launch_time],
             name="Epoch",
             dims=["Epoch"],
             attrs=ConstantCoordinates.EPOCH,
@@ -254,6 +253,7 @@ class CoDICEL1aPipeline:
         # TODO: Figure out how to properly unpack the data
         # 128 e/q steps of 12 spin sectors x 5 positions
         # Chunk the data by energy steps
+        # dims = (12 x 5 x 128)
         num_bytes = len(self.science_values)
         energy_steps = 128
         chunk_size = len(self.science_values) // energy_steps
@@ -341,7 +341,7 @@ def process_codice_l1a(packets, cdf_directory: str) -> str:
             pipeline.get_lo_data_products()
             pipeline.unpack_science_data()
 
-            data = pipeline.make_cdf_data()
+            # data = pipeline.make_cdf_data()
 
         elif apid == CODICEAPID.COD_LO_PHA:
             logger.debug(f"{apid} is currently not supported")
@@ -376,9 +376,11 @@ def process_codice_l1a(packets, cdf_directory: str) -> str:
             continue
 
     # Write data to CDF
-    # cdf_filename = write_cdf(data)
+    # Currently not working until CDF attributes can be properly built
+    cdf_filename = write_cdf(data)
 
-    return filename
+    return cdf_filename
+
 
 # Make module command-line executable during development to make testing easier
 # TODO: Eventually remove this

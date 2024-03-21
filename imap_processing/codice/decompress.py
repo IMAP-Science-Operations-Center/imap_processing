@@ -84,7 +84,6 @@ def _apply_lzma_lossless(compressed_value: int) -> int:
     decompressed_value : int
         The 24- or 32-bit decompressed value
     """
-    print(compressed_value)
     decompressed_value = lzma.decompress(compressed_value)
     decompressed_value = int.from_bytes(decompressed_value, byteorder="big")
 
