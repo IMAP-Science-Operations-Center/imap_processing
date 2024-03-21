@@ -4,7 +4,9 @@ import numpy as np
 import pytest
 
 from imap_processing import imap_module_directory
+from imap_processing.cdf.utils import write_cdf
 from imap_processing.hi.l1a.hi_l1a import hi_l1a
+from imap_processing.hi.utils import HIAPID
 from imap_processing.tests.conftest import ccsds_header_data, check_sum
 
 
@@ -129,7 +131,15 @@ def test_app_nhk_decom():
     test_path = imap_module_directory / "tests/hi/l0_test_data"
     bin_data_path = test_path / "20231030_H45_APP_NHK.bin"
     processed_data = hi_l1a(packet_file_path=bin_data_path)
-    print(processed_data)
 
-    # assert processed_data[0]["descriptor"] == "app-nhk"
-    # assert processed_data[0]["data"]["Epoch"].shape[0] == expected_number_of_packets
+    assert np.unique(processed_data[0]["pkt_apid"].values) == HIAPID.H45_APP_NHK.value
+    assert processed_data[0].attrs["Logical_source"] == "imap_hi_l1a_hk"
+    assert processed_data[0].attrs["Data_version"] == "001"
+    # TODO: compare with validation data once we have it
+
+    # Write CDF
+    cem_raw_cdf_filepath = write_cdf(processed_data[0])
+
+    # TODO: ask Vivek about this date mismatch between the file name
+    # and the data. May get resolved when we have good sample data.
+    assert cem_raw_cdf_filepath.name == "imap_hi_l1a_hk_20310824_v001.cdf"
