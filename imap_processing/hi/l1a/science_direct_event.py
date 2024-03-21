@@ -306,8 +306,6 @@ def science_direct_event(packets_data: list):
     """
     de_data_list = []
     packet_met_time = []
-    # TODO: ask Paul if he wants MET time in the dataset
-    # If so, get MET time of every packets
 
     # Because DE_TOF is a variable length data,
     # I am using extend to add another list to the
