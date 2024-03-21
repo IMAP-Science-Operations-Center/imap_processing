@@ -7,6 +7,13 @@ from imap_processing import launch_time
 from imap_processing.cdf.global_attrs import ConstantCoordinates
 from imap_processing.hi import hi_cdf_attrs
 
+# TODO: read LOOKED_UP_DURATION_OF_TICK from
+# instrument status summary later. This value
+# is rarely change but want to be able to change
+# it if needed. It stores information about how
+# fast the time was ticking. It is in microseconds.
+LOOKED_UP_DURATION_OF_TICK = 3999
+
 
 def get_direct_event_time(met_seconds: int, met_subseconds: int, de_tag: int):
     """Create MET(Mission Elapsed Time) time using input times.
@@ -18,7 +25,7 @@ def get_direct_event_time(met_seconds: int, met_subseconds: int, de_tag: int):
     met_subseconds : int
         MET subseconds in milliseconds
     de_tag : int
-        Direct event time tag
+        Direct event time tag in ticks
 
     Returns
     -------
@@ -29,26 +36,14 @@ def get_direct_event_time(met_seconds: int, met_subseconds: int, de_tag: int):
     #   seconds (from metaevent)
     #   subseconds (milliseconds) (from metaevent)
     #   de_tag (milliseconds) (from direct event)
-    #   looked_up_duration_of_tick (milliseconds)
-    # TODO: read looked_up_duration_of_tick from
-    # instrument status summary later.
-    # NOTE: note from Paul:
-    # The actual tick duration is to be stored in
-    # the instrument status summary.  It is settable on
-    # the instrument (currently only by poking memory)
-    # but at present there is no way to query what tick
-    # duration is in use.  I am attempting to fix that
-    # issue. It looks like the raw units of tick
-    # duration are very close to 1 us increments
-    # (3999 corresponds to 4 ms).
-    # TODO: ask what value should this be for now.
-    looked_up_duration_of_tick = 3999  # ??
+    #   LOOKED_UP_DURATION_OF_TICK (milliseconds)
+
     time_in_ns = (
         met_seconds * 1e9
         + met_subseconds * 1e6
-        + de_tag * 1e6
-        + looked_up_duration_of_tick * 1e3
+        + de_tag * LOOKED_UP_DURATION_OF_TICK * 1e3
     )
+
     met_datetime = launch_time + np.timedelta64(int(time_in_ns), "ns")
 
     return met_datetime
@@ -180,38 +175,62 @@ def create_dataset(de_data_list: list):
         xarray dataset
     """
     # These are the variables that we will store in the dataset
-    met_subseconds = []
-    met_seconds = []
+    de_met_time = []
     esa_step = []
     trigger_id = []
     tof_1 = []
     tof_2 = []
     tof_3 = []
     de_tag = []
+
+    # How to handle if first event is not metaevent? This
+    # means that current data file started with direct event.
+    # Per Paul, log a warning and discard all direct events
+    # until we see next metaevent because it could mean
+    # that the instrument was turned off during repoint.
+
+    # Find the index of the first occurrence of the metaevent
+    first_metaevent_index = next(
+        (i for i, d in enumerate(de_data_list) if d.get("start_bitmask_data") == 0),
+        None,
+    )
+
+    if first_metaevent_index is None:
+        return None
+    elif first_metaevent_index != 0:
+        # Discard all direct events until we see next metaevent
+        # TODO: log a warning
+        de_data_list = de_data_list[first_metaevent_index:]
+
     for event in de_data_list:
-        # TODO: how to check for fist event?
-        # metaevent.
-        # How to handle if first event is not
-        # metaevent? This means that current
-        # data file started with direct event.
-        # metaevent is a way to store information
-        # about bigger portion of time information. Eg.
-        # metaevent stores information about, let's say
-        # "20240319T09:30:01". Then direct event time
-        # tag stores information of time ticks since
-        # that time. Then we use those two to combine and
-        # get exact time information of each event.
         if event["start_bitmask_data"] == 0:
+            # metaevent is a way to store information
+            # about bigger portion of time information. Eg.
+            # metaevent stores information about, let's say
+            # "20240319T09:30:01.000". Then direct event time
+            # tag stores information of time ticks since
+            # that time. Then we use those two to combine and
+            # get exact time information of each event.
+
             # set time and esa step values to
             # be used for direct event followed by
             # this metaevent
             int_subseconds = event["subseconds"]
             int_seconds = event["seconds"]
             current_esa_step = event["esa_step"]
+            # Add half a tick once per algorithm document
+            # and Paul Janzen.
+            haf_tick = LOOKED_UP_DURATION_OF_TICK // 2
+            # convert microseconds to millieseconds to
+            # match subseconds time format
+            half_tick_ms = haf_tick // 1e3
+            int_subseconds += half_tick_ms
             continue
 
-        met_subseconds.append(int_subseconds)
-        met_seconds.append(int_seconds)
+        # calculate direct event time using time information from metaevent
+        # and de_tag. epoch in this dataset uses this time of the event
+        de_time = get_direct_event_time(int_seconds, int_subseconds, event["de_tag"])
+        de_met_time.append(de_time)
         esa_step.append(current_esa_step)
         # start_bitmask_data is 1, 2, 3 for detector A, B, C
         # respectively. This is used to identify which detector
@@ -220,16 +239,11 @@ def create_dataset(de_data_list: list):
         tof_1.append(event["tof_1"])
         tof_2.append(event["tof_2"])
         tof_3.append(event["tof_3"])
+        # IMAP-Hi like to keep de_tag value for diagnostic purposes
         de_tag.append(event["de_tag"])
 
-    # calculate direct event time using time information from metaevent
-    # and de_tag. epoch in this dataset is the time of the event
-    epoch_datetime = [
-        get_direct_event_time(met_seconds[i], met_subseconds[i], de_tag[i])
-        for i in range(len(met_seconds))
-    ]
     epoch_time = xr.DataArray(
-        epoch_datetime,
+        de_met_time,
         name="epoch",
         dims=["epoch"],
         attrs=ConstantCoordinates.EPOCH,
@@ -240,12 +254,6 @@ def create_dataset(de_data_list: list):
         attrs=hi_cdf_attrs.hi_de_l1a_attrs.output(),
     )
 
-    dataset["met_subseconds"] = xr.DataArray(
-        met_subseconds, dims="epoch", attrs=hi_cdf_attrs.met_subseconds_attrs.output()
-    )
-    dataset["met_seconds"] = xr.DataArray(
-        met_seconds, dims="epoch", attrs=hi_cdf_attrs.met_seconds_attrs.output()
-    )
     dataset["esa_step"] = xr.DataArray(
         esa_step, dims="epoch", attrs=hi_cdf_attrs.esa_step_attrs.output()
     )
@@ -264,6 +272,7 @@ def create_dataset(de_data_list: list):
     dataset["de_tag"] = xr.DataArray(
         de_tag, dims="epoch", attrs=hi_cdf_attrs.de_tag_attrs.output()
     )
+    # TODO: add packet time too.
     # TODO: figure out how to store information about
     # input data(one or more) it used to produce this dataset
     return dataset
