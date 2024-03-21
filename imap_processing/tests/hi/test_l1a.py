@@ -3,6 +3,7 @@ import random
 import numpy as np
 import pytest
 
+from imap_processing import imap_module_directory
 from imap_processing.hi.l1a.hi_l1a import hi_l1a
 from imap_processing.tests.conftest import ccsds_header_data, check_sum
 
@@ -119,3 +120,16 @@ def test_sci_de_decom(create_de_data, tmp_path):
     assert processed_data[0]["tof_2"].max() <= 1023
     assert processed_data[0]["tof_3"].min() >= 0
     assert processed_data[0]["tof_3"].max() <= 1023
+
+
+def test_app_nhk_decom():
+    """Test housekeeping data"""
+
+    # Unpack housekeeping data
+    test_path = imap_module_directory / "tests/hi/l0_test_data"
+    bin_data_path = test_path / "20231030_H45_APP_NHK.bin"
+    processed_data = hi_l1a(packet_file_path=bin_data_path)
+    print(processed_data)
+
+    # assert processed_data[0]["descriptor"] == "app-nhk"
+    # assert processed_data[0]["data"]["Epoch"].shape[0] == expected_number_of_packets

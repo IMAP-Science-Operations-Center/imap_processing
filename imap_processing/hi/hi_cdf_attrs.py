@@ -4,6 +4,7 @@ from imap_processing.cdf.global_attrs import (
     AttrBase,
     GlobalDataLevelAttrs,
     GlobalInstrumentAttrs,
+    ScienceAttrs,
 )
 from imap_processing.hi import __version__
 
@@ -141,4 +142,15 @@ hi_de_l1a_attrs = GlobalDataLevelAttrs(
     logical_source="imap_hi_l1a_de",
     logical_source_desc=("IMAP-HI Instrument Level-1A Direct Event Data."),
     instrument_base=hi_base,
+)
+
+hi_hk_l1a_attrs = ScienceAttrs(
+    validmin=0,
+    validmax=GlobalConstants.INT_MAXVAL,
+    display_type="no_plot",
+    depend_0="epoch",
+    format="I12",
+    units="None",
+    var_type="support_data",
+    variable_purpose="PRIMARY",
 )
