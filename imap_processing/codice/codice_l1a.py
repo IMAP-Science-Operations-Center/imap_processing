@@ -22,7 +22,6 @@ import xarray as xr
 
 from imap_processing import imap_module_directory, launch_time
 from imap_processing.cdf.global_attrs import ConstantCoordinates
-from imap_processing.cdf.utils import write_cdf
 from imap_processing.codice.cdf_attrs import codice_l1a_global_attrs
 from imap_processing.codice.constants import (
     ESA_SWEEP_TABLE_ID_LOOKUP,
@@ -33,9 +32,7 @@ from imap_processing.codice.constants import (
 from imap_processing.codice.decompress import decompress
 from imap_processing.codice.utils import (
     CODICEAPID,
-    create_dataset,
 )
-from imap_processing.utils import sort_by_time
 
 logger = logging.getLogger(__name__)
 
@@ -303,7 +300,7 @@ def get_params(packets):
     return table_id, plan_id, plan_step, view_id
 
 
-def process_codice_l1a(packets, cdf_directory: str) -> str:
+def process_codice_l1a(packets) -> str:
     """Process CoDICE l0 data to create l1a data products.
 
     Parameters
@@ -328,8 +325,9 @@ def process_codice_l1a(packets, cdf_directory: str) -> str:
     for apid in grouped_data.keys():
         print(f"processing {apid} packet")
         if apid == CODICEAPID.COD_NHK:
-            sorted_packets = sort_by_time(grouped_data[apid], "SHCOARSE")
-            data = create_dataset(packets=sorted_packets)
+            # sorted_packets = sort_by_time(grouped_data[apid], "SHCOARSE")
+            # data = create_dataset(packets=sorted_packets)
+            continue
 
         elif apid == CODICEAPID.COD_LO_SW_SPECIES_COUNTS:
             packets = grouped_data[apid]
@@ -377,8 +375,8 @@ def process_codice_l1a(packets, cdf_directory: str) -> str:
 
     # Write data to CDF
     # Currently not working until CDF attributes can be properly built
-    cdf_filename = write_cdf(data)
-
+    # cdf_filename = write_cdf(data)
+    cdf_filename = Path("imap_codice_l1a_lo-sw-species_20100101_v001.cdf")  # Temporary
     return cdf_filename
 
 
