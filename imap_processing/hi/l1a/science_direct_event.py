@@ -38,10 +38,14 @@ def get_direct_event_time(met_seconds: int, met_subseconds: int, de_tag: int):
     #   de_tag (milliseconds) (from direct event)
     #   LOOKED_UP_DURATION_OF_TICK (milliseconds)
 
+    seconds_to_ns = 1e9
+    millisecond_to_ns = 1e6
+    microsecond_to_ns = 1e3
+
     time_in_ns = (
-        met_seconds * 1e9
-        + met_subseconds * 1e6
-        + de_tag * LOOKED_UP_DURATION_OF_TICK * 1e3
+        met_seconds * seconds_to_ns
+        + met_subseconds * millisecond_to_ns
+        + de_tag * LOOKED_UP_DURATION_OF_TICK * microsecond_to_ns
     )
 
     met_datetime = launch_time + np.timedelta64(int(time_in_ns), "ns")
@@ -122,25 +126,38 @@ def parse_direct_event(event_data: str):
     dict
         Parsed event data
     """
-    if int(event_data[:2]) == 0:
+    event_type = int(event_data[:2])
+    metaevent = 0
+    if event_type == metaevent:
         # parse metaevent
-        metaevent = {
-            "start_bitmask_data": int(event_data[:2], 2),
-            "esa_step": int(event_data[2:6], 2),
-            "subseconds": int(event_data[6:16], 2),
-            "seconds": int(event_data[16:], 2),
+        event_type = event_data[:2]
+        esa_step = event_data[2:6]
+        subseconds = event_data[6:16]
+        seconds = event_data[16:]
+
+        # return parsed metaevent data
+        return {
+            "start_bitmask_data": int(event_type, 2),
+            "esa_step": int(esa_step, 2),
+            "subseconds": int(subseconds, 2),
+            "seconds": int(seconds, 2),
         }
-        return metaevent
 
     # parse direct event
-    direct_event = {
-        "start_bitmask_data": int(event_data[:2], 2),
-        "tof_1": int(event_data[2:12], 2),
-        "tof_2": int(event_data[12:22], 2),
-        "tof_3": int(event_data[22:32], 2),
-        "de_tag": int(event_data[32:], 2),
+    trigger_id = event_data[:2]
+    tof_1 = event_data[2:12]
+    tof_2 = event_data[12:22]
+    tof_3 = event_data[22:32]
+    de_tag = event_data[32:]
+
+    # return parsed direct event data
+    return {
+        "start_bitmask_data": int(trigger_id, 2),
+        "tof_1": int(tof_1, 2),
+        "tof_2": int(tof_2, 2),
+        "tof_3": int(tof_3, 2),
+        "de_tag": int(de_tag, 2),
     }
-    return direct_event
 
 
 def break_into_bits_size(binary_data: str):
@@ -158,7 +175,11 @@ def break_into_bits_size(binary_data: str):
     """
     # TODO: ask Paul what to do if the length of
     # binary_data is not a multiple of 48
-    return [binary_data[i : i + 48] for i in range(0, len(binary_data), 48)]
+    field_bit_length = 48
+    return [
+        binary_data[i : i + field_bit_length]
+        for i in range(0, len(binary_data), field_bit_length)
+    ]
 
 
 def create_dataset(de_data_list: list, packet_met_time: list):
@@ -224,10 +245,10 @@ def create_dataset(de_data_list: list, packet_met_time: list):
             current_esa_step = event["esa_step"]
             # Add half a tick once per algorithm document
             # and Paul Janzen.
-            haf_tick = LOOKED_UP_DURATION_OF_TICK // 2
+            half_tick = LOOKED_UP_DURATION_OF_TICK // 2
             # convert microseconds to millieseconds to
             # match subseconds time format
-            half_tick_ms = haf_tick // 1e3
+            half_tick_ms = half_tick // 1e3
             int_subseconds += half_tick_ms
             continue
 
