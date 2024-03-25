@@ -28,10 +28,3 @@ def mag_l1a(packet_filepath):
     if mag_burst is not None:
         file = write_cdf(mag_burst)
         logger.info(f"Created CDF file at {file}")
-
-
-if __name__ == "__main__":
-    filepath_burst = Path("mag_IT_data/MAG_SCI_BURST.bin")
-    filepath_norm = Path("mag_IT_data/MAG_SCI_NORM.bin")
-    mag_l1a(filepath_norm)
-    mag_l1a(filepath_burst)
