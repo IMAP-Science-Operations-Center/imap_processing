@@ -93,14 +93,18 @@ def export_to_xarray(l0_data: list[MagL0]):
     burst_dataset = None
 
     if len(norm_data) > 0:
-        norm_dataset = generate_dataset(norm_data)
+        norm_dataset = generate_dataset(
+            norm_data, mag_cdf_attrs.mag_l1a_norm_raw_attrs.output()
+        )
     if len(burst_data) > 0:
-        burst_dataset = generate_dataset(burst_data)
+        burst_dataset = generate_dataset(
+            burst_data, mag_cdf_attrs.mag_l1a_burst_raw_attrs.output()
+        )
 
     return norm_dataset, burst_dataset
 
 
-def generate_dataset(l0_data: list[MagL0]):
+def generate_dataset(l0_data: list[MagL0], dataset_attrs: dict) -> xr.Dataset:
     """
     Generate a CDF dataset from the sorted L0 MAG data.
 
@@ -111,13 +115,16 @@ def generate_dataset(l0_data: list[MagL0]):
     l0_data : list[MagL0]
         List of sorted L0 MAG data.
 
+    dataset_attrs : dict
+        Global attributes for the dataset.
+
     Returns
     -------
     dataset : xr.Dataset
         xarray dataset with proper CDF attributes and shape.
     """
     vector_data = np.zeros((len(l0_data), len(l0_data[0].VECTORS)))
-    shcoarse_data = np.zeros(len(l0_data))
+    shcoarse_data = np.zeros(len(l0_data), dtype="datetime64[ns]")
 
     support_data = defaultdict(list)
 
@@ -141,7 +148,6 @@ def generate_dataset(l0_data: list[MagL0]):
         vector_data[index, :vector_len] = datapoint.VECTORS
 
         shcoarse_data[index] = calc_start_time(datapoint.SHCOARSE)
-
         # Add remaining pieces to arrays
         for key, value in dataclasses.asdict(datapoint).items():
             if key not in ("ccsds_header", "VECTORS", "SHCOARSE"):
@@ -150,8 +156,8 @@ def generate_dataset(l0_data: list[MagL0]):
     # Used in L1A vectors
     direction = xr.DataArray(
         np.arange(vector_data.shape[1]),
-        name="Direction",
-        dims=["Direction"],
+        name="direction",
+        dims=["direction"],
         attrs=mag_cdf_attrs.direction_attrs.output(),
     )
 
@@ -161,29 +167,27 @@ def generate_dataset(l0_data: list[MagL0]):
         dims=["epoch"],
         attrs=ConstantCoordinates.EPOCH,
     )
-
     # TODO: raw vectors units
     raw_vectors = xr.DataArray(
         vector_data,
-        name="Raw_Vectors",
-        dims=["epoch", "Direction"],
+        name="raw_vectors",
+        dims=["epoch", "direction"],
         attrs=mag_cdf_attrs.mag_vector_attrs.output(),
     )
 
-    # TODO add norm to attrs somehow
     output = xr.Dataset(
-        coords={"epoch": epoch_time, "Direction": direction},
-        attrs=mag_cdf_attrs.mag_l1a_attrs.output(),
+        coords={"epoch": epoch_time, "direction": direction},
+        attrs=dataset_attrs,
     )
 
-    output["RAW_VECTORS"] = raw_vectors
+    output["raw_vectors"] = raw_vectors
 
     for key, value in support_data.items():
         # Time varying values
         if key not in ["SHCOARSE", "VECTORS"]:
             output[key] = xr.DataArray(
                 value,
-                name=key,
+                name=key.lower(),
                 dims=["epoch"],
                 attrs=dataclasses.replace(
                     mag_cdf_attrs.mag_support_attrs,

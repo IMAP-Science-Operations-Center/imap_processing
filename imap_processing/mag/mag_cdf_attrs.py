@@ -25,15 +25,22 @@ mag_base = GlobalInstrumentAttrs(
     "Magnetic Fields (space)",
 )
 
-mag_l1a_attrs = GlobalDataLevelAttrs(
-    # TODO: data type should include "norm" and "burst" L1A-norm>Level-1A-normal-rate
-    "L1A>Level-1A",
+mag_l1a_norm_raw_attrs = GlobalDataLevelAttrs(
+    "L1A-raw-norm>Level-1A-raw-normal-rate",
     # Should also include data type
-    # TODO: replace "sci" with descriptor "norm" / "burst"
-    logical_source="imap_mag_l1a_sci",
+    logical_source="imap_mag_l1a_norm-raw",
     logical_source_desc="IMAP Mission MAG Instrument Level-1A Data.",
     instrument_base=mag_base,
 )
+
+mag_l1a_burst_raw_attrs = GlobalDataLevelAttrs(
+    "L1A-raw-burst>Level-1A-raw-burst-rate",
+    # Should also include data type
+    logical_source="imap_mag_l1a_burst-raw",
+    logical_source_desc="IMAP Mission MAG Instrument Level-1A Data.",
+    instrument_base=mag_base,
+)
+
 
 mag_l1b_attrs = GlobalDataLevelAttrs(
     "L1A>Level-1B",
@@ -62,7 +69,7 @@ mag_vector_attrs = ScienceAttrs(
     validmax=GlobalConstants.INT_MAXVAL,
     catdesc="Magnetic field vectors",
     depend_0="epoch",
-    depend_1="Direction",
+    depend_1="direction",
     display_type="time_series",
     fieldname="Magnetic Field Vector",
     label_axis="Magnetic field vector",
