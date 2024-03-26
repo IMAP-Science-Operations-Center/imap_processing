@@ -26,31 +26,18 @@ def create_dataset(packets):
         dataset with all metadata field data in xr.DataArray
     """
     metadata_arrays = collections.defaultdict(list)
-    description_arrays = collections.defaultdict(list)
+    description_arrays = {}
 
     for data_packet in packets:
         # Add metadata to array
-        for key, value in data_packet.header.items():
+        for key, value in (data_packet.header | data_packet.data).items():
             # convert key to lower case to match SPDF requirement
             data_key = key.lower()
-            metadata_arrays.setdefault(data_key, []).append(value.raw_value)
-            # add it once since description should be same for all packets
-            if data_key not in description_arrays:
-                description_arrays[data_key] = (
-                    value.long_description
-                    if value.long_description
-                    else value.short_description
-                )
-        for key, value in data_packet.data.items():
-            data_key = key.lower()
-            metadata_arrays.setdefault(data_key, []).append(value.raw_value)
-            # add it once since description should be same for all packets
-            if data_key not in description_arrays:
-                description_arrays[data_key] = (
-                    value.long_description
-                    if value.long_description
-                    else value.short_description
-                )
+            metadata_arrays[data_key].append(value.raw_value)
+            # description should be same for all packets
+            description_arrays[data_key] = (
+                value.long_description or value.short_description
+            )
 
     epoch_converted_time = [
         calc_start_time(sc_time) for sc_time in metadata_arrays["ccsds_met"]
