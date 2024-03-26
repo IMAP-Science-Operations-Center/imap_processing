@@ -273,26 +273,23 @@ Variable Naming Convention
 Data Variables
 ==============
 
-IMAP data variables must adhere to the following naming conventions:
+IMAP data variables should adhere to the following naming conventions:
 
-instrument_parameter[_coordinateSystem][_parameterQualifier][_subModeLevel][_Mode][_DataLevel]
+``parameter[_coordinateSystem][_timeInterval]``
 
-An underscore is used to separate different fields in the variable name.  It is strongly recommended that variable named employ further fields, qualifiers, and information designed to identify unambiguously the nature of the variable, instrument mode, and data processing level, with sufficient detail to lead the user to the unique source file which containers the variable.  It is recommended to follow the order shown below
+An underscore is used to separate different fields in the variable name.
+It is strongly recommended that variable name employ further fields, qualifiers, and information designed to identify unambiguously the nature of the variable, and instrument mode.
+These variable names may only include lowercase letters, numbers, and underscores.  No upper-case letters, hyphens, or other special characters are allowed.
 
-These variable names may only include lower-case letters, numbers, underscores, and hyphens.  No upper-case letter or other special characters are allowed.
 
 Required
---------
-* instrument - the instrument acronym
-* parameter - a short representation of the physical parameter held in the variable
+---------
+* parameter - a short representation of the physical parameter held in the variable. (e.g. ``density``, ``temperature``, ``energy``)
 
 Optional
---------
-* coordinateSystem - an acronym for the coordinate system in which the parameter is set
-* parameterQualifier - parameter descriptor, which may include multiple components separated by a "_" as needed (e.g. "pa_0" indicates a pitch angle of 0)
-* subModeLevel - Qualifiers to include mode and data level information supplementary to the next to fields
-* mode - The mode of the instrument
-* dataLevel - The data level in the "Data_type" attribute field
+---------
+* coordinateSystem - an identifier for the coordinate system in which the parameter is set (e.g. ``gse``, ``gsm``, ``rtn``)
+* timeInterval - an identifier for the time interval over which the parameter is valid (e.g. ``1sec``, ``10sec``, ``1min``, ``1hour``)
 
 
 Support Data Variables
@@ -304,39 +301,5 @@ Support data variable names must begin with a letter and can contain numbers and
 **********************
 File Naming Convention
 **********************
-CDF data files have names of the following form:
 
-mission_instrumentId_dataLevel[_mode][_descriptor]_startTime_vXX-YY.cdf
-
-where...
-
-* mission
-   * imap
-* instrumentId
-   * idex
-   * swe
-   * swapi
-   * imap-lo
-   * imap-hi
-   * imap-ultra
-   * hit
-   * glows
-   * codice
-   * swe
-   * mag
-* dataLevel
-   * "l1a", "l1b", "l2", "ql", "l2pre" "l3", etc
-* mode (optional)
-   * "fast", "slow", "brst", "srvy"
-* descriptor (optional)
-   * identifiers should be short (e.g. 3-8 character) descriptors that are helpful to end-users. If a descriptor contains multiple components, hyphens are used to separate those components. For instance, an optional time span may be specified as "-2s" to represent a data file that spans two seconds. In this case, "10s" and "-5m" are other expected values that correspond with ten seconds and 5 minutes respectively.
-* startTime
-   * YYYYMMDD format
-   * This is the date that the data in the file *starts*.  Files are almost always 24 hours in duration.
-* vXX-YY
-   * A 2-part version number as described below.
-   * Increments of XX represents a significant change to the processing software and/or the CDF file structure.  Users should consult the appropriate metadata or changelogs to determine what has changed before working with newer versions of the data.
-   * Increments of YY represent reprocessing because of new/updated inputs, or updated calibration.  New files on the SDC will automatically be given a new version if their checksum is different from the previous
-
-.. note::
-   It is expected that the file name can be generated from the contents of the file. The "Logical_source" global attribute should contain the mission, instrumentId, dataLevel and mode (if applicable.)  Start_time is the date of the first data point (record) in the file, and the version is the Data_version global attribute.
+See :ref:`naming-conventions` for a description of the file naming convention for IMAP CDF files.
