@@ -17,12 +17,16 @@ import logging
 import random
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 import xarray as xr
 
 from imap_processing import imap_module_directory, launch_time
 from imap_processing.cdf.global_attrs import ConstantCoordinates
+from imap_processing.cdf.utils import write_cdf
+from imap_processing.codice import __version__
 from imap_processing.codice.cdf_attrs import codice_l1a_global_attrs
+from imap_processing.codice.codice_l0 import decom_packets
 from imap_processing.codice.constants import (
     ESA_SWEEP_TABLE_ID_LOOKUP,
     LO_COLLAPSE_TABLE_ID_LOOKUP,
@@ -30,9 +34,8 @@ from imap_processing.codice.constants import (
     LO_STEPPING_TABLE_ID_LOOKUP,
 )
 from imap_processing.codice.decompress import decompress
-from imap_processing.codice.utils import (
-    CODICEAPID,
-)
+from imap_processing.codice.utils import CODICEAPID, create_hskp_dataset
+from imap_processing.utils import group_by_apid, sort_by_time
 
 logger = logging.getLogger(__name__)
 
@@ -315,19 +318,20 @@ def process_codice_l1a(packets) -> str:
     """
     # Group data by APID and sort by time
     print("Grouping the data by APID")
-    # TODO: Turn this on once test data is acquired
-    # grouped_data = group_by_apid(packets)
-    grouped_data = {
-        CODICEAPID.COD_NHK: [],
-        CODICEAPID.COD_LO_SW_SPECIES_COUNTS: [],
-    }  # Temporary during development
+    grouped_data = group_by_apid(packets)
 
     for apid in grouped_data.keys():
-        print(f"processing {apid} packet")
         if apid == CODICEAPID.COD_NHK:
-            # sorted_packets = sort_by_time(grouped_data[apid], "SHCOARSE")
-            # data = create_dataset(packets=sorted_packets)
-            continue
+            print("Processing COD_NHK packet")
+            sorted_packets = sort_by_time(grouped_data[apid], "SHCOARSE")
+            data = create_hskp_dataset(packets=sorted_packets)
+            start_time = np.datetime_as_string(
+                data["epoch"].values[0], unit="D"
+            ).replace("-", "")
+            data.attrs[
+                "Logical_file_id"
+            ] = f"imap_codice_l1a_hskp_{start_time}_v{__version__}"
+            data.attrs["Logical_source"] = "imap_codice_l1a_hskp"
 
         elif apid == CODICEAPID.COD_LO_SW_SPECIES_COUNTS:
             packets = grouped_data[apid]
@@ -338,7 +342,7 @@ def process_codice_l1a(packets) -> str:
             pipeline.get_acquisition_times()
             pipeline.get_lo_data_products()
             pipeline.unpack_science_data()
-
+            data = None
             # data = pipeline.make_cdf_data()
 
         elif apid == CODICEAPID.COD_LO_PHA:
@@ -374,13 +378,19 @@ def process_codice_l1a(packets) -> str:
             continue
 
     # Write data to CDF
-    # Currently not working until CDF attributes can be properly built
-    # cdf_filename = write_cdf(data)
-    cdf_filename = Path("imap_codice_l1a_lo-sw-species_20100101_v001.cdf")  # Temporary
+    cdf_filename = write_cdf(data)
+    print(f"Created CDF file: {cdf_filename}")
     return cdf_filename
 
 
 # Make module command-line executable during development to make testing easier
 # TODO: Eventually remove this
 if __name__ == "__main__":
-    process_codice_l1a([], "")
+    # Get housekeeping data to develope with
+    raw_data = Path(
+        f"{imap_module_directory}/tests/codice/data/"
+        f"raw_ccsds_20230822_122700Z_idle.bin"
+    )
+    packet_list = decom_packets(raw_data)
+
+    process_codice_l1a(packet_list)

@@ -41,4 +41,4 @@ def test_codice_l1a(l0_test_data: list[space_packet_parser.parser.Packet]) -> st
 
     cdf_filename = process_codice_l1a(l0_test_data)
 
-    assert cdf_filename.name == "imap_codice_l1a_lo-sw-species_20100101_v001.cdf"
+    assert cdf_filename.name == "imap_codice_l1a_hskp_20100101_v001.cdf"

@@ -9,7 +9,7 @@ import space_packet_parser
 
 from imap_processing import imap_module_directory
 from imap_processing.codice import codice_l0
-from imap_processing.codice.utils import create_dataset
+from imap_processing.codice.utils import create_hskp_dataset
 from imap_processing.utils import convert_raw_to_eu
 
 
@@ -75,7 +75,7 @@ def test_eu_hk_data(
         The validation data to compare against
     """
 
-    l1a_hk_ds = create_dataset(decom_test_data)
+    l1a_hk_ds = create_hskp_dataset(decom_test_data)
     eu_hk_data = convert_raw_to_eu(
         l1a_hk_ds,
         imap_module_directory / "tests/codice/data/eu_unit_lookup_table.csv",
