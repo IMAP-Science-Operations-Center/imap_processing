@@ -26,7 +26,7 @@ def create_dataset(packets):
         dataset with all metadata field data in xr.DataArray
     """
     metadata_arrays = collections.defaultdict(list)
-    description_arrays = {}
+    description_dict = {}
 
     for data_packet in packets:
         # Add metadata to array
@@ -35,7 +35,7 @@ def create_dataset(packets):
             data_key = key.lower()
             metadata_arrays[data_key].append(value.raw_value)
             # description should be same for all packets
-            description_arrays[data_key] = (
+            description_dict[data_key] = (
                 value.long_description or value.short_description
             )
 
@@ -65,7 +65,7 @@ def create_dataset(packets):
         # replace description and fieldname
         data_attrs = dataclasses.replace(
             hi_hk_l1a_metadata_attrs,
-            catdesc=description_arrays[key],
+            catdesc=description_dict[key],
             fieldname=key,
             label_axis=key,
             depend_0="epoch",
