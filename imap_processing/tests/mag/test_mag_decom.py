@@ -59,30 +59,23 @@ def test_mag_raw_xarray():
     assert burst_data.sizes["epoch"] == expected_burst_len
 
 
-def test_mag_raw_cdf_generation(tmp_path):
+def test_mag_raw_cdf_generation():
     current_directory = Path(__file__).parent
     test_file = current_directory / "mag_l0_test_data.pkts"
     l0 = decom_packets(str(test_file))
 
-    output_path = tmp_path / "imap" / "mag" / "l1a" / "2023" / "10"
-
     norm_data, burst_data = export_to_xarray(l0)
 
-    test_data_path_norm = output_path / "imap_mag_l1a_norm-raw_20231025_v001.cdf"
-
-    assert not test_data_path_norm.exists()
-    output = write_cdf(norm_data, test_data_path_norm)
-    assert test_data_path_norm.exists()
+    output = write_cdf(norm_data)
+    assert output.exists()
+    assert output.name == "imap_mag_l1a_norm-raw_20231025_v001.cdf"
 
     input_xarray = cdf_to_xarray(output)
     assert input_xarray.attrs.keys() == norm_data.attrs.keys()
 
-    test_data_path_burst = output_path / "imap_mag_l1a_burst-raw_20231025_v001.cdf"
-
-    assert not test_data_path_burst.exists()
-    output = write_cdf(burst_data, test_data_path_burst)
-    print(output)
-    assert test_data_path_burst.exists()
+    output = write_cdf(burst_data)
+    assert output.exists()
+    assert output.name == "imap_mag_l1a_burst-raw_20231025_v001.cdf"
 
     input_xarray = cdf_to_xarray(output)
     assert input_xarray.attrs.keys() == burst_data.attrs.keys()
