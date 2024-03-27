@@ -191,7 +191,7 @@ class AttrBase:
         The valid minimum value, required
     validmax : np.float64 | np.int64
         The valid maximum value, required
-    display_type : str default=None
+    display_type : str default="no_plot"
         The display type of the plot (ex "no_plot"), required
     catdesc : str, default=None
         The category description, "CATDESC" attribute, required
@@ -213,7 +213,7 @@ class AttrBase:
 
     validmin: Union[np.float64, np.int64]
     validmax: Union[np.float64, np.int64]
-    display_type: str = None
+    display_type: str = "no_plot"
     catdesc: str = None
     fieldname: str = None
     var_type: str = "support_data"
