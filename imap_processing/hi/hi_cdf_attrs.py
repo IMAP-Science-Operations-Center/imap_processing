@@ -45,35 +45,6 @@ hi_base = GlobalInstrumentAttrs(
 )
 
 # Direct event attrs
-# TODO: combine these two based on feedback from Paul
-met_subseconds_attrs = AttrBase(
-    validmin=GlobalConstants.INT_FILLVAL,
-    validmax=1023,
-    display_type="time_series",
-    catdesc=(
-        "Integer millisecond of MET(aka subseconds). "
-        "It's a 10-bits integer value that represents the "
-        "subseconds of the MET time. Max value is 1023."
-    ),
-    fieldname="MET subseconds",
-    fill_val=GlobalConstants.INT_FILLVAL,
-    var_type="metadata",
-)
-
-met_seconds_attrs = AttrBase(
-    validmin=GlobalConstants.INT_FILLVAL,
-    validmax=GlobalConstants.INT_MAXVAL,
-    display_type="time_series",
-    catdesc=(
-        "integer MET(seconds). "
-        "It's a 32-bits integer value that represents the "
-        "seconds of the MET time. Max value is 2^32-1."
-    ),
-    fieldname="MET seconds",
-    fill_val=GlobalConstants.INT_FILLVAL,
-    var_type="metadata",
-)
-
 esa_step_attrs = AttrBase(
     validmin=0,
     validmax=10,
@@ -128,6 +99,20 @@ tof_attrs = AttrBase(
         " used to indicate no event was registered."
     ),
     fieldname="Time of flight",
+    fill_val=GlobalConstants.INT_FILLVAL,
+    var_type="metadata",
+)
+
+ccsds_met_attrs = AttrBase(
+    validmin=GlobalConstants.INT_FILLVAL,
+    validmax=GlobalConstants.INT_MAXVAL,
+    display_type="time_series",
+    catdesc=(
+        "CCSDS MET. "
+        "It's a 32-bits integer value that represents the "
+        "CCSDS Mission Elapsed Time (MET) in seconds."
+    ),
+    fieldname="CCSDS MET",
     fill_val=GlobalConstants.INT_FILLVAL,
     var_type="metadata",
 )

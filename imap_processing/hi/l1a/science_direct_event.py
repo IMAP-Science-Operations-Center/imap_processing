@@ -7,48 +7,31 @@ from imap_processing import launch_time
 from imap_processing.cdf.global_attrs import ConstantCoordinates
 from imap_processing.hi import hi_cdf_attrs
 
+# TODO: read LOOKED_UP_DURATION_OF_TICK from
+# instrument status summary later. This value
+# is rarely change but want to be able to change
+# it if needed. It stores information about how
+# fast the time was ticking. It is in microseconds.
+LOOKED_UP_DURATION_OF_TICK = 3999
 
-def get_direct_event_time(met_seconds: int, met_subseconds: int, de_tag: int):
+SECOND_TO_NS = 1e9
+MILLISECOND_TO_NS = 1e6
+MICROSECOND_TO_NS = 1e3
+
+
+def get_direct_event_time(time_in_ns):
     """Create MET(Mission Elapsed Time) time using input times.
 
     Parameters
     ----------
-    met_seconds : int
-        MET time in seconds
-    met_subseconds : int
-        MET subseconds in milliseconds
-    de_tag : int
-        Direct event time tag
+    time_in_ns : int
+        Time in nanoseconds
 
     Returns
     -------
     met_datetime : numpy.datetime64
         Human-readable MET time
     """
-    # Combine these direct event times to DE MET time:
-    #   seconds (from metaevent)
-    #   subseconds (milliseconds) (from metaevent)
-    #   de_tag (milliseconds) (from direct event)
-    #   looked_up_duration_of_tick (milliseconds)
-    # TODO: read looked_up_duration_of_tick from
-    # instrument status summary later.
-    # NOTE: note from Paul:
-    # The actual tick duration is to be stored in
-    # the instrument status summary.  It is settable on
-    # the instrument (currently only by poking memory)
-    # but at present there is no way to query what tick
-    # duration is in use.  I am attempting to fix that
-    # issue. It looks like the raw units of tick
-    # duration are very close to 1 us increments
-    # (3999 corresponds to 4 ms).
-    # TODO: ask what value should this be for now.
-    looked_up_duration_of_tick = 3999  # ??
-    time_in_ns = (
-        met_seconds * 1e9
-        + met_subseconds * 1e6
-        + de_tag * 1e6
-        + looked_up_duration_of_tick * 1e3
-    )
     met_datetime = launch_time + np.timedelta64(int(time_in_ns), "ns")
 
     return met_datetime
@@ -127,25 +110,38 @@ def parse_direct_event(event_data: str):
     dict
         Parsed event data
     """
-    if int(event_data[:2]) == 0:
+    event_type = int(event_data[:2])
+    metaevent = 0
+    if event_type == metaevent:
         # parse metaevent
-        metaevent = {
-            "start_bitmask_data": int(event_data[:2], 2),
-            "esa_step": int(event_data[2:6], 2),
-            "subseconds": int(event_data[6:16], 2),
-            "seconds": int(event_data[16:], 2),
+        event_type = event_data[:2]
+        esa_step = event_data[2:6]
+        subseconds = event_data[6:16]
+        seconds = event_data[16:]
+
+        # return parsed metaevent data
+        return {
+            "start_bitmask_data": int(event_type, 2),
+            "esa_step": int(esa_step, 2),
+            "subseconds": int(subseconds, 2),
+            "seconds": int(seconds, 2),
         }
-        return metaevent
 
     # parse direct event
-    direct_event = {
-        "start_bitmask_data": int(event_data[:2], 2),
-        "tof_1": int(event_data[2:12], 2),
-        "tof_2": int(event_data[12:22], 2),
-        "tof_3": int(event_data[22:32], 2),
-        "de_tag": int(event_data[32:], 2),
+    trigger_id = event_data[:2]
+    tof_1 = event_data[2:12]
+    tof_2 = event_data[12:22]
+    tof_3 = event_data[22:32]
+    de_tag = event_data[32:]
+
+    # return parsed direct event data
+    return {
+        "start_bitmask_data": int(trigger_id, 2),
+        "tof_1": int(tof_1, 2),
+        "tof_2": int(tof_2, 2),
+        "tof_3": int(tof_3, 2),
+        "de_tag": int(de_tag, 2),
     }
-    return direct_event
 
 
 def break_into_bits_size(binary_data: str):
@@ -163,16 +159,22 @@ def break_into_bits_size(binary_data: str):
     """
     # TODO: ask Paul what to do if the length of
     # binary_data is not a multiple of 48
-    return [binary_data[i : i + 48] for i in range(0, len(binary_data), 48)]
+    field_bit_length = 48
+    return [
+        binary_data[i : i + field_bit_length]
+        for i in range(0, len(binary_data), field_bit_length)
+    ]
 
 
-def create_dataset(de_data_list: list):
+def create_dataset(de_data_list: list, packet_met_time: list):
     """Create xarray dataset.
 
     Parameters
     ----------
     de_data_list : list
         Parsed direct event data list
+    packet_met_time : list
+        List of packet MET time
 
     Returns
     -------
@@ -180,38 +182,74 @@ def create_dataset(de_data_list: list):
         xarray dataset
     """
     # These are the variables that we will store in the dataset
-    met_subseconds = []
-    met_seconds = []
+    de_met_time = []
     esa_step = []
     trigger_id = []
     tof_1 = []
     tof_2 = []
     tof_3 = []
     de_tag = []
-    for event in de_data_list:
-        # TODO: how to check for fist event?
-        # metaevent.
-        # How to handle if first event is not
-        # metaevent? This means that current
-        # data file started with direct event.
-        # metaevent is a way to store information
-        # about bigger portion of time information. Eg.
-        # metaevent stores information about, let's say
-        # "20240319T09:30:01". Then direct event time
-        # tag stores information of time ticks since
-        # that time. Then we use those two to combine and
-        # get exact time information of each event.
+    ccsds_met = []
+
+    # How to handle if first event is not metaevent? This
+    # means that current data file started with direct event.
+    # Per Paul, log a warning and discard all direct events
+    # until we see next metaevent because it could mean
+    # that the instrument was turned off during repoint.
+
+    # Find the index of the first occurrence of the metaevent
+    first_metaevent_index = next(
+        (i for i, d in enumerate(de_data_list) if d.get("start_bitmask_data") == 0),
+        None,
+    )
+
+    if first_metaevent_index is None:
+        return None
+    elif first_metaevent_index != 0:
+        # Discard all direct events until we see next metaevent
+        # TODO: log a warning
+        de_data_list = de_data_list[first_metaevent_index:]
+        packet_met_time = packet_met_time[first_metaevent_index:]
+
+    for index, event in enumerate(de_data_list):
         if event["start_bitmask_data"] == 0:
+            # metaevent is a way to store information
+            # about bigger portion of time information. Eg.
+            # metaevent stores information about, let's say
+            # "20240319T09:30:01.000". Then direct event time
+            # tag stores information of time ticks since
+            # that time. Then we use those two to combine and
+            # get exact time information of each event.
+
             # set time and esa step values to
             # be used for direct event followed by
             # this metaevent
             int_subseconds = event["subseconds"]
             int_seconds = event["seconds"]
             current_esa_step = event["esa_step"]
+
+            metaevent_time_in_ns = (
+                int_seconds * SECOND_TO_NS + int_subseconds * MILLISECOND_TO_NS
+            )
+
+            # Add half a tick once per algorithm document(
+            # section 2.2.5 and second last bullet point)
+            # and Paul Janzen.
+            half_tick = LOOKED_UP_DURATION_OF_TICK / 2
+            # convert microseconds to nanosecond to
+            # match other time format
+            half_tick_ns = half_tick * MICROSECOND_TO_NS
+            metaevent_time_in_ns += half_tick_ns
             continue
 
-        met_subseconds.append(int_subseconds)
-        met_seconds.append(int_seconds)
+        # calculate direct event time using time information from metaevent
+        # and de_tag. epoch in this dataset uses this time of the event
+        de_time_in_ns = (
+            metaevent_time_in_ns
+            + event["de_tag"] * LOOKED_UP_DURATION_OF_TICK * MICROSECOND_TO_NS
+        )
+        de_time = get_direct_event_time(de_time_in_ns)
+        de_met_time.append(de_time)
         esa_step.append(current_esa_step)
         # start_bitmask_data is 1, 2, 3 for detector A, B, C
         # respectively. This is used to identify which detector
@@ -220,16 +258,13 @@ def create_dataset(de_data_list: list):
         tof_1.append(event["tof_1"])
         tof_2.append(event["tof_2"])
         tof_3.append(event["tof_3"])
+        # IMAP-Hi like to keep de_tag value for diagnostic purposes
         de_tag.append(event["de_tag"])
+        # add packet time to ccsds_met list
+        ccsds_met.append(packet_met_time[index])
 
-    # calculate direct event time using time information from metaevent
-    # and de_tag. epoch in this dataset is the time of the event
-    epoch_datetime = [
-        get_direct_event_time(met_seconds[i], met_subseconds[i], de_tag[i])
-        for i in range(len(met_seconds))
-    ]
     epoch_time = xr.DataArray(
-        epoch_datetime,
+        de_met_time,
         name="epoch",
         dims=["epoch"],
         attrs=ConstantCoordinates.EPOCH,
@@ -240,12 +275,6 @@ def create_dataset(de_data_list: list):
         attrs=hi_cdf_attrs.hi_de_l1a_attrs.output(),
     )
 
-    dataset["met_subseconds"] = xr.DataArray(
-        met_subseconds, dims="epoch", attrs=hi_cdf_attrs.met_subseconds_attrs.output()
-    )
-    dataset["met_seconds"] = xr.DataArray(
-        met_seconds, dims="epoch", attrs=hi_cdf_attrs.met_seconds_attrs.output()
-    )
     dataset["esa_step"] = xr.DataArray(
         esa_step, dims="epoch", attrs=hi_cdf_attrs.esa_step_attrs.output()
     )
@@ -263,6 +292,9 @@ def create_dataset(de_data_list: list):
     )
     dataset["de_tag"] = xr.DataArray(
         de_tag, dims="epoch", attrs=hi_cdf_attrs.de_tag_attrs.output()
+    )
+    dataset["ccsds_met"] = xr.DataArray(
+        ccsds_met, dims="epoch", attrs=hi_cdf_attrs.ccsds_met_attrs.output()
     )
     # TODO: figure out how to store information about
     # input data(one or more) it used to produce this dataset
@@ -288,8 +320,7 @@ def science_direct_event(packets_data: list):
         xarray dataset
     """
     de_data_list = []
-    # TODO: ask Paul if he wants MET time in the dataset
-    # If so, get MET time of every packets
+    packet_met_time = []
 
     # Because DE_TOF is a variable length data,
     # I am using extend to add another list to the
@@ -300,6 +331,10 @@ def science_direct_event(packets_data: list):
         event_48bits_list = break_into_bits_size(data.data["DE_TOF"].raw_value)
         # parse 48-bits into meaningful data such as metaevent or direct event
         de_data_list.extend([parse_direct_event(event) for event in event_48bits_list])
+        # add packet time to packet_met_time
+        packet_met_time.extend(
+            [data.data["CCSDS_MET"].raw_value] * len(event_48bits_list)
+        )
 
     # create dataset
-    return create_dataset(de_data_list)
+    return create_dataset(de_data_list, packet_met_time)
