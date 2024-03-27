@@ -3,35 +3,31 @@
   <xtce:Header classification="BuildType=FLIGHT,CreatedBy=XTCEEditor" date="Created=2023/01/12 15:27:45" version="DocumentVersion=FSW Build ,DocumentVersion=20190109v1,LASPXTCESchemaVersion=1.2,XTCEEditorVersion=0.47"/>
   <xtce:TelemetryMetaData>
     <xtce:ParameterTypeSet>
-      <xtce:IntegerParameterType signed="false" name="VERSION_Type">
+      <xtce:IntegerParameterType signed="false" name="UINT3">
         <xtce:UnitSet/>
         <xtce:IntegerDataEncoding encoding="unsigned" sizeInBits="3"/>
       </xtce:IntegerParameterType>
-      <xtce:IntegerParameterType signed="false" name="TYPE_Type">
+      <xtce:IntegerParameterType signed="false" name="UINT1">
         <xtce:UnitSet/>
         <xtce:IntegerDataEncoding encoding="unsigned" sizeInBits="1"/>
       </xtce:IntegerParameterType>
-      <xtce:IntegerParameterType signed="false" name="SEC_HDR_FLG_Type">
-        <xtce:UnitSet/>
-        <xtce:IntegerDataEncoding encoding="unsigned" sizeInBits="1"/>
-      </xtce:IntegerParameterType>
-      <xtce:IntegerParameterType signed="false" name="PKT_APID_Type">
+      <xtce:IntegerParameterType signed="false" name="UINT11">
         <xtce:UnitSet/>
         <xtce:IntegerDataEncoding encoding="unsigned" sizeInBits="11"/>
       </xtce:IntegerParameterType>
-      <xtce:IntegerParameterType signed="false" name="SEQ_FLGS_Type">
+      <xtce:IntegerParameterType signed="false" name="UINT2">
         <xtce:UnitSet/>
         <xtce:IntegerDataEncoding encoding="unsigned" sizeInBits="2"/>
       </xtce:IntegerParameterType>
-      <xtce:IntegerParameterType signed="false" name="SRC_SEQ_CTR_Type">
+      <xtce:IntegerParameterType signed="false" name="UINT14">
         <xtce:UnitSet/>
         <xtce:IntegerDataEncoding encoding="unsigned" sizeInBits="14"/>
       </xtce:IntegerParameterType>
-      <xtce:IntegerParameterType signed="false" name="PKT_LEN_Type">
+      <xtce:IntegerParameterType signed="false" name="UINT16">
         <xtce:UnitSet/>
         <xtce:IntegerDataEncoding encoding="unsigned" sizeInBits="16"/>
       </xtce:IntegerParameterType>
-      <xtce:FloatParameterType name="SHCOARSE_Type">
+      <xtce:FloatParameterType name="UINT32">
         <xtce:UnitSet>
           <xtce:Unit>dn</xtce:Unit>
         </xtce:UnitSet>
@@ -1081,20 +1077,31 @@
       </xtce:IntegerParameterType>
     </xtce:ParameterTypeSet>
     <xtce:ParameterSet>
-      <xtce:Parameter name="VERSION" parameterTypeRef="VERSION_Type"/>
-      <xtce:Parameter name="TYPE" parameterTypeRef="TYPE_Type"/>
-      <xtce:Parameter name="SEC_HDR_FLG" parameterTypeRef="SEC_HDR_FLG_Type"/>
-      <xtce:Parameter name="PKT_APID" parameterTypeRef="PKT_APID_Type"/>
-      <xtce:Parameter name="SEQ_FLGS" parameterTypeRef="SEQ_FLGS_Type"/>
-      <xtce:Parameter name="SRC_SEQ_CTR" parameterTypeRef="SRC_SEQ_CTR_Type"/>
-      <xtce:Parameter name="PKT_LEN" parameterTypeRef="PKT_LEN_Type"/>
-      <xtce:Parameter shortDescription="Secondary Header Coarse Time" name="SHCOARSE" parameterTypeRef="SHCOARSE_Type">
-        <xtce:LongDescription>CCSDS Packet 2nd Header Coarse Time</xtce:LongDescription>
-        <xtce:AliasSet>
-          <xtce:Alias nameSpace="itemName" alias="SHCOARSE"/>
-        </xtce:AliasSet>
-        <xtce:ParameterProperties dataSource="telemetered"/>
-      </xtce:Parameter>
+      <!--CCSDS Header Elements-->
+      <xtce:Parameter name="VERSION" parameterTypeRef="UINT3">
+				<xtce:LongDescription>CCSDS Packet Version Number (always 0)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="TYPE" parameterTypeRef="UINT1">
+				<xtce:LongDescription>CCSDS Packet Type Indicator (0=telemetry)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SEC_HDR_FLG" parameterTypeRef="UINT1">
+				<xtce:LongDescription>CCSDS Packet Secondary Header Flag (always 1)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PKT_APID" parameterTypeRef="UINT11">
+				<xtce:LongDescription>CCSDS Packet Application Process ID</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SEQ_FLGS" parameterTypeRef="UINT2">
+				<xtce:LongDescription>CCSDS Packet Grouping Flags (3=not part of group)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SRC_SEQ_CTR" parameterTypeRef="UINT14">
+				<xtce:LongDescription>CCSDS Packet Sequence Count (increments with each new packet)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PKT_LEN" parameterTypeRef="UINT16">
+				<xtce:LongDescription>CCSDS Packet Length (number of bytes after Packet length minus 1)</xtce:LongDescription>
+			</xtce:Parameter>
+            <xtce:Parameter name="SHCOARSE" parameterTypeRef="UINT32">
+				<xtce:LongDescription>CCSDS Packet Time Stamp (coarse time)</xtce:LongDescription>
+			</xtce:Parameter>
       <xtce:Parameter shortDescription="Secondary Header Fine Time" name="SHFINE" parameterTypeRef="SHFINE_Type">
         <xtce:LongDescription>CCSDS Packet 2nd Header Fine Time</xtce:LongDescription>
         <xtce:AliasSet>
