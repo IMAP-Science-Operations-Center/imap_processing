@@ -14,40 +14,24 @@ from imap_processing.hi import hi_cdf_attrs
 # fast the time was ticking. It is in microseconds.
 LOOKED_UP_DURATION_OF_TICK = 3999
 
+SECOND_TO_NS = 1e9
+MILLISECOND_TO_NS = 1e6
+MICROSECOND_TO_NS = 1e3
 
-def get_direct_event_time(met_seconds: int, met_subseconds: int, de_tag: int):
+
+def get_direct_event_time(time_in_ns):
     """Create MET(Mission Elapsed Time) time using input times.
 
     Parameters
     ----------
-    met_seconds : int
-        MET time in seconds
-    met_subseconds : int
-        MET subseconds in milliseconds
-    de_tag : int
-        Direct event time tag in ticks
+    time_in_ns : int
+        Time in nanoseconds
 
     Returns
     -------
     met_datetime : numpy.datetime64
         Human-readable MET time
     """
-    # Combine these direct event times to DE MET time:
-    #   seconds (from metaevent)
-    #   subseconds (milliseconds) (from metaevent)
-    #   de_tag (milliseconds) (from direct event)
-    #   LOOKED_UP_DURATION_OF_TICK (milliseconds)
-
-    seconds_to_ns = 1e9
-    millisecond_to_ns = 1e6
-    microsecond_to_ns = 1e3
-
-    time_in_ns = (
-        met_seconds * seconds_to_ns
-        + met_subseconds * millisecond_to_ns
-        + de_tag * LOOKED_UP_DURATION_OF_TICK * microsecond_to_ns
-    )
-
     met_datetime = launch_time + np.timedelta64(int(time_in_ns), "ns")
 
     return met_datetime
@@ -243,18 +227,28 @@ def create_dataset(de_data_list: list, packet_met_time: list):
             int_subseconds = event["subseconds"]
             int_seconds = event["seconds"]
             current_esa_step = event["esa_step"]
-            # Add half a tick once per algorithm document
+
+            metaevent_time_in_ns = (
+                int_seconds * SECOND_TO_NS + int_subseconds * MILLISECOND_TO_NS
+            )
+
+            # Add half a tick once per algorithm document(
+            # section 2.2.5 and second last bullet point)
             # and Paul Janzen.
-            half_tick = LOOKED_UP_DURATION_OF_TICK // 2
-            # convert microseconds to millieseconds to
-            # match subseconds time format
-            half_tick_ms = half_tick // 1e3
-            int_subseconds += half_tick_ms
+            half_tick = LOOKED_UP_DURATION_OF_TICK / 2
+            # convert microseconds to nanosecond to
+            # match other time format
+            half_tick_ns = half_tick * MICROSECOND_TO_NS
+            metaevent_time_in_ns += half_tick_ns
             continue
 
         # calculate direct event time using time information from metaevent
         # and de_tag. epoch in this dataset uses this time of the event
-        de_time = get_direct_event_time(int_seconds, int_subseconds, event["de_tag"])
+        de_time_in_ns = (
+            metaevent_time_in_ns
+            + event["de_tag"] * LOOKED_UP_DURATION_OF_TICK * MICROSECOND_TO_NS
+        )
+        de_time = get_direct_event_time(de_time_in_ns)
         de_met_time.append(de_time)
         esa_step.append(current_esa_step)
         # start_bitmask_data is 1, 2, 3 for detector A, B, C
