@@ -33,6 +33,13 @@ def test_mag_decom():
         assert test.SEC_COARSETM == expected_output["SEC_COARSETM"][index]
         assert test.SEC_FNTM == expected_output["SEC_FNTM"][index]
 
+        # Remove bytes for header and previous attributes from CCSDS_HEX,
+        # remaining bytes are vectors
+        assert (
+            test.VECTORS.tobytes().hex()
+            == expected_output["CCSDS_HEX"][index][54:].lower()
+        )
+
     assert len(l0) == len(expected_output.index)
 
 

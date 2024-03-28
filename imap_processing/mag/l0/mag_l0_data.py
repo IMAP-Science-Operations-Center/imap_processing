@@ -3,6 +3,8 @@
 from dataclasses import dataclass
 from enum import IntEnum
 
+import numpy as np
+
 from imap_processing.ccsds.ccsds_data import CcsdsData
 
 
@@ -90,7 +92,7 @@ class MagL0:
     PRI_FNTM: int
     SEC_COARSETM: int
     SEC_FNTM: int
-    VECTORS: bytearray
+    VECTORS: np.ndarray
 
     def __post_init__(self):
         """Convert Vectors attribute from string to bytearray if needed.
@@ -100,9 +102,17 @@ class MagL0:
         """
         if isinstance(self.VECTORS, str):
             # Convert string output from space_packet_parser to bytearray
-            self.VECTORS = bytearray(
-                int(self.VECTORS, 2).to_bytes(len(self.VECTORS) // 8, "big")
+            self.VECTORS = np.frombuffer(
+                int(self.VECTORS, 2).to_bytes(len(self.VECTORS) // 8, "big"),
+                dtype=np.dtype(">b"),
             )
+
+        if isinstance(self.VECTORS, bytearray):
+            self.VECTORS = np.array(self.VECTORS, dtype=np.dtype(">b"))
+
+        # Remove buffer from end of vectors
+        if len(self.VECTORS) % 2:
+            self.VECTORS = self.VECTORS[:-1]
 
         self.PRI_VECSEC = 2**self.PRI_VECSEC
         self.SEC_VECSEC = 2**self.SEC_VECSEC
