@@ -4,7 +4,12 @@ import pandas as pd
 
 from imap_processing.mag.l0.decom_mag import decom_packets
 from imap_processing.mag.l1a.mag_l1a import process_vector_data
-from imap_processing.mag.l1a.mag_l1a_data import MAX_FINE_TIME, TimeTuple
+from imap_processing.mag.l1a.mag_l1a_data import (
+    MAX_FINE_TIME,
+    MagL1a,
+    TimeTuple,
+    Vector,
+)
 
 
 def test_process_vector_data():
@@ -54,3 +59,22 @@ def test_time_tuple():
     test_add = test_time_tuple + (1000 / MAX_FINE_TIME)
 
     assert test_add == TimeTuple(439067319, 83)
+
+
+def test_vector_time():
+    # TODO finish writing this
+    test_data = MagL1a(
+        True,
+        True,
+        TimeTuple(10000, 0),
+        2,  # 2 vectors per second
+        4,
+        2,
+        0,
+        [(1, 2, 3, 4), (1, 2, 3, 4), (2, 2, 2, 3), (3, 3, 3, 4)],
+    )
+
+    assert test_data.vectors[0] == Vector((1, 2, 3, 4), TimeTuple(10000, 0))
+    assert test_data.vectors[1] == Vector((1, 2, 3, 4), TimeTuple(10000, 32768))
+    assert test_data.vectors[2] == Vector((2, 2, 2, 3), TimeTuple(10001, 1))
+    assert test_data.vectors[3] == Vector((3, 3, 3, 4), TimeTuple(10001, 32769))

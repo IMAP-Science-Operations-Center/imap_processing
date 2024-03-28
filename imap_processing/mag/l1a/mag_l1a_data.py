@@ -17,7 +17,7 @@ class TimeTuple:
     coarse_time: int
     fine_time: int
 
-    def __add__(self, seconds: int):
+    def __add__(self, seconds: float):
         """
         Add a number of seconds to the time tuple.
 
@@ -61,9 +61,9 @@ class Vector:
     timestamp: TimeTuple
     vectors: tuple[int, int, int, int]
 
-    def __init__(self, vectors, previous_time, time_step):
+    def __init__(self, vectors, time: TimeTuple):
         self.vectors = vectors
-        self.timestamp = previous_time + time_step
+        self.timestamp = time
 
 
 @dataclass
@@ -87,7 +87,7 @@ class MagL1a:
         Number of seconds of data
     SHCOARSE : int
         Mission elapsed time
-    vector_samples : list[Vector]
+    vectors : list[Vector]
         List of magnetic vector samples, starting at start_time
 
     """
@@ -99,7 +99,25 @@ class MagL1a:
     expected_vector_count: int
     seconds_of_data: int
     SHCOARSE: int
-    vector_samples: list
+    vectors: list
 
-    # def __post_init__(self):
-    # TODO: Assign timestamps to vectors, convert list to Vector type
+    def __post_init__(self):
+        """
+        Convert the vector list to a vector list with timestamps associated.
+
+        The first vector starts at start_time, then each subsequent vector time is
+        computed by adding 1/vectors_per_second to the previous vector's time.
+
+        This replaces self.vectors with a list of Vector objects.
+        """
+        sample_time_interval = 1 / self.vectors_per_second
+        previous_time = self.start_time
+        for index, vector in enumerate(self.vectors):
+            if index == 0:
+                new_vector = Vector(vector, self.start_time)
+            else:
+                new_vector = Vector(vector, previous_time + sample_time_interval)
+
+            previous_time = new_vector.timestamp
+
+            self.vectors[index] = new_vector
