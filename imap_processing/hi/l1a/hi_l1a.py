@@ -2,9 +2,12 @@
 import logging
 
 from imap_processing.hi.l0 import decom_hi
+from imap_processing.hi.l1a.housekeeping import create_dataset
 from imap_processing.hi.l1a.science_direct_event import science_direct_event
 from imap_processing.hi.utils import HIAPID
 from imap_processing.utils import group_by_apid
+
+logger = logging.getLogger(__name__)
 
 
 def hi_l1a(packet_file_path: str):
@@ -32,14 +35,17 @@ def hi_l1a(packet_file_path: str):
             # TODO: Add processing for science count data
             continue
         elif apid == HIAPID.H45_SCI_DE:
-            logging.debug(
+            logger.info(
                 "Processing direct event data for [%s] packets", HIAPID.H45_SCI_CNT.name
             )
 
             data = science_direct_event(grouped_data[apid])
             processed_data.append(data)
         elif apid == HIAPID.H45_APP_NHK:
-            # TODO: Add processing for housekeeping data
-            continue
+            logger.info(
+                "Processing housekeeping data for [%s] packets", HIAPID.H45_APP_NHK.name
+            )
+            data = create_dataset(grouped_data[apid])
+            processed_data.append(data)
 
     return processed_data
