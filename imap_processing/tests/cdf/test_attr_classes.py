@@ -55,7 +55,7 @@ def test_science_attr():
 
     expected = {
         "CATDESC": None,
-        "DISPLAY_TYPE": None,
+        "DISPLAY_TYPE": "no_plot",
         "FIELDNAM": "1",
         "FILLVAL": GlobalConstants.INT_FILLVAL,
         "FORMAT": None,

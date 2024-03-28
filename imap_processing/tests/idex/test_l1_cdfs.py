@@ -21,13 +21,13 @@ def decom_test_data():
     return PacketParser(test_file).data
 
 
-@pytest.mark.xfail(reason="Need to fix new ISTP error in IDEX CDF")
 def test_idex_cdf_file(decom_test_data):
     # Verify that a CDF file can be created with no errors thrown by xarray_to_cdf
 
     file_name = write_cdf(decom_test_data)
 
     assert file_name.exists()
+    assert file_name.name == "imap_idex_l1_sci_20250724_v001.cdf"
 
 
 def test_bad_cdf_attributes(decom_test_data):
@@ -67,7 +67,6 @@ def test_bad_cdf_file_data(decom_test_data):
         write_cdf(decom_test_data)
 
 
-@pytest.mark.skip(reason="Need to fix new ISTP error in IDEX CDF")
 def test_idex_tof_high_data_from_cdf(decom_test_data):
     # Verify that a sample of the data is correct inside the CDF file
     # impact_14_tof_high_data.txt has been verified correct by the IDEX team
