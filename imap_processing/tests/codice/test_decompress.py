@@ -43,5 +43,5 @@ def test_decompress(compressed_value: int, algorithm: IntEnum, expected_result: 
 def test_decompress_raises():
     """Tests that the ``decompress`` function raises with an unknown algorithm"""
 
-    with pytest.raises(ValueError, match="some_unsupported_algorithm is not"):
+    with pytest.raises(ValueError, match="some_unsupported_algorithm"):
         decompress(234, "some_unsupported_algorithm")
