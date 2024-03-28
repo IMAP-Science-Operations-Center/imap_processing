@@ -20,7 +20,7 @@ ISTP Compliant Global Attributes are listed here: `https://spdf.gsfc.nasa.gov/is
 
 ``Data_type``
 =============
-This attribute is used by CDF file writing software to create a filename. It is a combination of the following filename components: ``mode``, ``data level``, and optional data product ``descriptor`` (e.g. ``L1A-norm>Level-1A-normal-rate``)
+This attribute is used by CDF file writing software to create a filename. It is a combination of the following filename components: ``mode``, ``data level``, and optional data product ``descriptor``.  It contains both the short form and the long form of the name, separated by a '>' (e.g. ``L1A-norm>Level-1A normal rate``)
 
 ``Data_version``
 ================
@@ -161,7 +161,9 @@ This is a human readable description of the data variable. Generally, this is an
 
 ``DEPEND_0``
 ^^^^^^^^^^^^
-Explicitly ties a data variable to the time variable on which it depends. All variables which change with time must have a ``DEPEND_0`` attribute defined.
+Explicitly ties a data variable to the time variable on which it depends (i.e. - the `epoch` variable). All variables which change with time must have a ``DEPEND_0`` attribute defined. 
+
+Even if there is no time dependency of the data *within* the CDF file, SPDF has stated it would still be ideal to include a DEPEND_0 for each variable to ensure continuity *between* CDF files.  
 
 ``DEPEND_i``
 ^^^^^^^^^^^^
@@ -208,7 +210,19 @@ This field allows software to properly format the associated data when displayed
 
 ``LABLAXIS``
 ^^^^^^^^^^^^
+Required if not using LABL_PTR_i.  
+
 Used to label a plot axis or to provide a heading for a data listing. This field is generally 6-10 characters.
+
+``LABL_PTR_i``
+^^^^^^^^^^^^^^
+Required if not using LABLAXIS.
+
+Used to label a dimensional variable when one value of LABLAXIS is not sufficient to describe the variable or to label all the axes. LABL_PTR_i is used instead of LABLAXIS, where i can take on any value from 1 to n where n is the total number of dimensions of the original variable. 
+
+The value of LABL_PTR_1 is another variable within the same CDF, which will contain the short character strings to describe the first dimension of the original variable.
+
+An example of how LABL_PTR_i can be used is found at this following link: `https://spdf.gsfc.nasa.gov/istp_guide/variables.html#data_eg2 <https://spdf.gsfc.nasa.gov/istp_guide/variables.html#data_eg2>`_
 
 ``UNITS``
 ^^^^^^^^^
@@ -231,10 +245,11 @@ The maximum value for a particular variable that is expected over the lifetime o
 ``VAR_TYPE``
 ^^^^^^^^^^^^
 Used in CDAWeb to indicate if the data should be used directly by users. Possible values:
+
 * ``data`` - integer or real numbers that are plottable
 * ``support_data`` - integer or real "attached" or secondary data variables
 * ``metadata`` - labels or character variables
-* ``ignore_data`` - placeholders
+* ``ignore_data`` - data that can be ignored by CDAWeb plots. For example, packet header info.  
 
 Support Data
 ============
