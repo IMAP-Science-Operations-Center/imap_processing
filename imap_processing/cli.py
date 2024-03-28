@@ -364,15 +364,8 @@ class Swe(ProcessInstrument):
             # read CDF file
             l1a_dataset = cdf_to_xarray(dependencies[0])
             processed_data = swe_l1b(l1a_dataset)
-            # TODO: Update this descriptor
-            descriptor = "test"
-            file = imap_data_access.ScienceFilePath.generate_from_inputs(
-                "swe", "l1b", descriptor, self.start_date, self.version
-            )
-
-            cdf_file_path = write_cdf(
-                data=processed_data, filepath=file.construct_path()
-            )
+            # TODO: Pass in the proper version and descriptor
+            cdf_file_path = write_cdf(data=processed_data)
             print(f"processed file path: {cdf_file_path}")
             if self.upload_to_sdc:
                 imap_data_access.upload(cdf_file_path)
