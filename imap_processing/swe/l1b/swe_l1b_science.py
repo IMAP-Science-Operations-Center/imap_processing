@@ -299,7 +299,7 @@ def get_indices_of_full_cycles(quarter_cycle: np.ndarray):
     Parameters
     ----------
     quarter_cycle : numpy.ndarray
-        Array that contains quarter cycles informations.
+        Array that contains quarter cycles information.
 
     Returns
     -------

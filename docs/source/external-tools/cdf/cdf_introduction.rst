@@ -50,7 +50,7 @@ Variables are the data stored within a file.  They have a few key characteristic
 * Records
    * Variables can span across multiple records.  This is essentially another dimension of the data, but the idea is that each record represents 1 unique physical measurement from an instrument.  In the above diagram, both variables have 3 records shown.
 
-.. note:: For IMAP instruments, each "Record" is always a unit of time.  If a varible does not vary over time, it will only span 1 record.
+.. note:: For IMAP instruments, each "Record" is always a unit of time.  If a variable does not vary over time, it will only span 1 record.
 
 Attributes
 ----------

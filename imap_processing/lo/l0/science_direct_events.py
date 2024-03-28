@@ -76,7 +76,7 @@ class ScienceDirectEvents(LoBase):
     POS: np.ndarray
 
     def __init__(self, packet, software_version: str, packet_file_name: str):
-        """Intialization method for Science Direct Events Data class."""
+        """Science Direct Events initialization method."""
         super().__init__(software_version, packet_file_name, CcsdsData(packet.header))
         self.parse_data(packet)
         self.TOF0 = np.array([])
@@ -115,7 +115,7 @@ class ScienceDirectEvents(LoBase):
     def _find_tof_decoder_for_case(self, case_number, bitstream):
         """Get the TOF decoder for this DE's case number.
 
-        The case number determines wich TOF decoder to use.
+        The case number determines which TOF decoder to use.
         The TOF decoder table shows how the TOF bits should be
         parsed in the binary data.
 
@@ -151,7 +151,7 @@ class ScienceDirectEvents(LoBase):
                     tof_decoder.CKSM,
                     tof_decoder.TIME,
                 )
-        # We're not expecting to recieve data for the rest of the cases, but need
+        # We're not expecting to receive data for the rest of the cases, but need
         # to handle them in case things change in the future.
         else:
             tof_decoder = decompress_tables.tof_decoder_table[case_number]
@@ -198,7 +198,7 @@ class ScienceDirectEvents(LoBase):
         # separate the binary data into its parts
         parsed_bits = {}
 
-        # Use the TOF decoder to chunk the data binary into its componenets
+        # Use the TOF decoder to chunk the data binary into its components
         # TOF0, TOF1, TOF2, etc.
         for field, bit_length in tof_decoder._asdict().items():
             parsed_bits[field] = bitstream.read(bit_length)
