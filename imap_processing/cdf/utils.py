@@ -1,8 +1,6 @@
 """Various utility functions to support creation of CDF files."""
 
 import logging
-from pathlib import Path
-from typing import Optional
 
 import imap_data_access
 import numpy as np
@@ -42,7 +40,7 @@ def calc_start_time(shcoarse_time: int):
     return launch_time + time_delta
 
 
-def write_cdf(dataset: xr.Dataset, directory: Optional[Path] = None):
+def write_cdf(dataset: xr.Dataset):
     """Write the contents of "data" to a CDF file using cdflib.xarray_to_cdf.
 
     This function determines the file name to use from the global attributes,
@@ -56,17 +54,12 @@ def write_cdf(dataset: xr.Dataset, directory: Optional[Path] = None):
     ----------
         dataset : xarray.Dataset
             The dataset object to convert to a CDF
-        filepath: Path
-            The output path, including filename, to write the CDF to.
 
     Returns
     -------
         pathlib.Path
             Path to the file created
     """
-    # Use the directory if provided, otherwise use the default
-    directory = directory or imap_data_access.config["DATA_DIR"]
-
     # Create the filename from the global attributes
     # Logical_source looks like "imap_swe_l2_counts-1min"
     instrument, data_level, descriptor = dataset.attrs["Logical_source"].split("_")[1:]
@@ -83,9 +76,11 @@ def write_cdf(dataset: xr.Dataset, directory: Optional[Path] = None):
         version=version,
         repointing=repointing,
     )
-    file_path = directory / science_file.construct_path()
+    file_path = science_file.construct_path()
     if not file_path.parent.exists():
-        logger.info("The directory does not exist, creating directory %s", directory)
+        logger.info(
+            "The directory does not exist, creating directory %s", file_path.parent
+        )
         file_path.parent.mkdir(parents=True)
     # Insert the final attribute:
     # The Logical_file_id is always the name of the file without the extension

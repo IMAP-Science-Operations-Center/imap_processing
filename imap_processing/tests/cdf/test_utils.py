@@ -1,3 +1,4 @@
+import imap_data_access
 import numpy as np
 import xarray as xr
 
@@ -34,3 +35,4 @@ def test_write_cdf():
     file_path = write_cdf(dataset)
     assert file_path.exists()
     assert file_path.name == "imap_swe_l1_sci_20100101_v001.cdf"
+    assert file_path.relative_to(imap_data_access.config["DATA_DIR"])
