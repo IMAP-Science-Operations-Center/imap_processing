@@ -16,9 +16,11 @@ def test_compare_validation_data():
     current_directory = Path(__file__).parent
     test_file = current_directory / "mag_l1_test_data.pkts"
     # Test file contains only normal packets
-    l0, _ = decom_packets(str(test_file))
+    l0 = decom_packets(str(test_file))
 
-    l1_mago, l1_magi = process_packets(l0)
+    l1 = process_packets(l0["norm"])
+    l1_mago = l1["mago"]
+    l1_magi = l1["magi"]
 
     assert len(l1_mago) == 6
     assert len(l1_magi) == 6
@@ -54,7 +56,7 @@ def test_process_vector_data():
     test_file = current_directory / "mag_l1_test_data.pkts"
     l0 = decom_packets(str(test_file))
 
-    mag_l0 = l0[0][0]
+    mag_l0 = l0["norm"][0]
 
     # TODO rewrite this test with reverse-calculated unsigned 16 bit ints
 

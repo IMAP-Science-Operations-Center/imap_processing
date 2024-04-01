@@ -12,9 +12,9 @@ from imap_processing.mag.l0.decom_mag import decom_packets, generate_dataset
 def test_mag_decom():
     current_directory = Path(__file__).parent
     burst_test_file = current_directory / "mag_l0_test_data.pkts"
-    norm, burst = decom_packets(burst_test_file)
+    packets = decom_packets(str(burst_test_file))
 
-    l0 = burst + norm
+    l0 = packets["burst"] + packets["norm"]
 
     expected_output = pd.read_csv(current_directory / "mag_l0_test_output.csv")
     for index, test in enumerate(l0):
@@ -49,7 +49,9 @@ def test_mag_decom():
 def test_mag_raw_xarray():
     current_directory = Path(__file__).parent
     burst_test_file = current_directory / "mag_l0_test_data.pkts"
-    l0_norm, l0_burst = decom_packets(str(burst_test_file))
+    packets = decom_packets(str(burst_test_file))
+    l0_norm = packets["norm"]
+    l0_burst = packets["burst"]
 
     norm_data = generate_dataset(l0_norm, mag_cdf_attrs.mag_l1a_norm_raw_attrs.output())
     burst_data = generate_dataset(
@@ -76,7 +78,9 @@ def test_mag_raw_xarray():
 def test_mag_raw_cdf_generation():
     current_directory = Path(__file__).parent
     test_file = current_directory / "mag_l0_test_data.pkts"
-    l0_norm, l0_burst = decom_packets(str(test_file))
+    packets = decom_packets(str(test_file))
+    l0_norm = packets["norm"]
+    l0_burst = packets["burst"]
 
     norm_data = generate_dataset(l0_norm, mag_cdf_attrs.mag_l1a_norm_raw_attrs.output())
     burst_data = generate_dataset(

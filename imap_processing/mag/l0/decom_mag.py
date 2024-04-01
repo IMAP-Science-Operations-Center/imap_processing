@@ -21,7 +21,7 @@ from imap_processing.mag.l0.mag_l0_data import MagL0, Mode
 logger = logging.getLogger(__name__)
 
 
-def decom_packets(packet_file_path: str | Path) -> (list[MagL0], list[MagL0]):
+def decom_packets(packet_file_path: str | Path) -> dict[str, list[MagL0]]:
     """Decom MAG data packets using MAG packet definition.
 
     Parameters
@@ -31,9 +31,9 @@ def decom_packets(packet_file_path: str | Path) -> (list[MagL0], list[MagL0]):
 
     Returns
     -------
-    data : list[MagL0], list[MagL0]
-        2 lists of MAG L0 data classes, one containing normal mode packets, one
-        containing burst mode packets. [norm, burst]
+    data_dict : dict[str, list[MagL0]]
+        A dict with 2 keys pointing to lists of MAG L0 data classes. "norm" corresponds
+        to  normal mode packets, "burst" corresponds to burst mode packets.
     """
     # Define paths
     xtce_document = Path(
@@ -63,7 +63,7 @@ def decom_packets(packet_file_path: str | Path) -> (list[MagL0], list[MagL0]):
                 else:
                     burst_data.append(MagL0(CcsdsData(packet.header), *values))
 
-    return norm_data, burst_data
+    return {"norm": norm_data, "burst": burst_data}
 
 
 def generate_dataset(l0_data: list[MagL0], dataset_attrs: dict) -> xr.Dataset:

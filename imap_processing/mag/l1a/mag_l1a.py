@@ -20,7 +20,10 @@ def mag_l1a(packet_filepath):
     packet_filepath :
         Packet files for processing
     """
-    norm_data, burst_data = decom_mag.decom_packets(packet_filepath)
+    packets = decom_mag.decom_packets(packet_filepath)
+
+    norm_data = packets["norm"]
+    burst_data = packets["burst"]
 
     if norm_data is not None:
         mag_norm_raw = decom_mag.generate_dataset(
@@ -28,8 +31,6 @@ def mag_l1a(packet_filepath):
         )
         file = write_cdf(mag_norm_raw)
         logger.info(f"Created RAW CDF file at {file}")
-
-        mago_norm, magi_norm = process_packets(norm_data)
 
     if burst_data is not None:
         mag_burst_raw = decom_mag.generate_dataset(
@@ -39,7 +40,7 @@ def mag_l1a(packet_filepath):
         logger.info(f"Created RAW CDF file at {file}")
 
 
-def process_packets(mag_l0_list: list[MagL0]):
+def process_packets(mag_l0_list: list[MagL0]) -> dict[str, list[MagL1a]]:
     """
     Given a list of MagL0 packets, process them into MagO and MagI L1A data classes.
 
@@ -50,8 +51,9 @@ def process_packets(mag_l0_list: list[MagL0]):
 
     Returns
     -------
-    mago, magi: (list[MagL1a], list[MagL1a])
-        Tuple containing MagO and MagI L1A data classes
+    packet_dict: dict[str, list[MagL1a]]
+        Dictionary containing two keys: "mago" which points to a list of mago MagL1A
+        objects, and "magi" which points to a list of magi MagL1A objects.
 
     """
     magi = []
@@ -129,4 +131,4 @@ def process_packets(mag_l0_list: list[MagL0]):
         mago.append(mago_l1a)
         magi.append(magi_l1a)
 
-    return mago, magi
+    return {"mago": mago, "magi": magi}
