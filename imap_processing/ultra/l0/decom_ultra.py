@@ -1,4 +1,5 @@
 """Decommutates Ultra CCSDS packets."""
+
 import collections
 import logging
 from collections import defaultdict

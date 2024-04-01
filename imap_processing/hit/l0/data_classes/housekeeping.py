@@ -1,4 +1,5 @@
 """L1A HIT Housekeeping data class."""
+
 from dataclasses import dataclass
 
 import numpy as np

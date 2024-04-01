@@ -103,9 +103,9 @@ class TelemetryGenerator:
             #     'UINT32': 32,
             #     'BYTE13000': 13000,
             # }
-            unique_lengths[
-                f"{data_types[index]}{length_in_bits[index]}"
-            ] = length_in_bits[index]
+            unique_lengths[f"{data_types[index]}{length_in_bits[index]}"] = (
+                length_in_bits[index]
+            )
         # Sort the dictionary by the value (lengthInBits)
         unique_lengths = dict(sorted(unique_lengths.items(), key=lambda item: item[1]))
         return unique_lengths

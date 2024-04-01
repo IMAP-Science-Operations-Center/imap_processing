@@ -1,4 +1,5 @@
 """Compression tables for decompompressing Lo L0 data."""
+
 from collections import namedtuple
 
 TOFData = namedtuple(

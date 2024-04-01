@@ -1,4 +1,5 @@
 """Global pytest configuration for the package."""
+
 import imap_data_access
 import pytest
 

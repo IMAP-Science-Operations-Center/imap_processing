@@ -1,4 +1,5 @@
 """IMAP-HI L1A processing module."""
+
 import logging
 
 from imap_processing.hi.l0 import decom_hi

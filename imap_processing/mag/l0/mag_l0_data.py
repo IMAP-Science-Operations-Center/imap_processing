@@ -1,4 +1,5 @@
 """Dataclasses for Level 0 MAG data."""
+
 from dataclasses import dataclass
 from enum import IntEnum
 

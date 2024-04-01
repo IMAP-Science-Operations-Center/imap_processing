@@ -1,4 +1,5 @@
 """Contains data classes to support Ultra L0 processing."""
+
 from dataclasses import fields
 from typing import NamedTuple
 
