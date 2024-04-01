@@ -153,7 +153,6 @@ hi_hk_l1a_attrs = GlobalDataLevelAttrs(
 hi_hk_l1a_metadata_attrs = ScienceAttrs(
     validmin=0,
     validmax=GlobalConstants.INT_MAXVAL,
-    display_type="no_plot",
     depend_0="epoch",
     format="I12",
     units="int",
