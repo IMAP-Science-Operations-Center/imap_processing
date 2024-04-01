@@ -48,7 +48,7 @@ def create_de_data(tmp_path):
         # Random length for direct events. It could be empty
         num_directevents = random.randint(0, 10)
         for _ in range(num_directevents):
-            # We don't always get triple conincidence. To make data
+            # We don't always get triple coincidence. To make data
             # more realistic, we will use random.choices.
             # This line will select a random integer between 0 and 1023
             # with a probability of 0.xx and the value 1023 with a

@@ -59,14 +59,14 @@ Eg.
         attrs=int_attrs,
     )
 
-Now, if xr.DataArray uses two demensions such as epoch and Energy,
+Now, if xr.DataArray uses two dimensions such as epoch and Energy,
 eg.
     xr.DataArray(data, dims=["epoch", "Energy"])
 Then your attrs would add this in addition to basic required attrs:
     "DEPEND_0": "epoch",
     "DEPEND_1": "Energy",
 
-Now if xr.DataArray uses three demensions such as epoch, Energy, and
+Now if xr.DataArray uses three dimensions such as epoch, Energy, and
 Counts, eg.
     xr.DataArray(data, dims=["epoch", "Energy", "Counts"])
 Then your attrs would add this in addition to basic required attrs:
