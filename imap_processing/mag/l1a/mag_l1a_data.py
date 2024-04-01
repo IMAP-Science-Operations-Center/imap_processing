@@ -168,6 +168,12 @@ class MagL1a:
         primary_vectors = []
         secondary_vectors = []
 
+        # Since the vectors are stored as 50 bit chunks but accessed via hex (4 bit
+        # chunks) there is some shifting required for processing the bytes.
+        # However, from a bit processing perspective, the first 48 bits of each 50 bit
+        # chunk corresponds to 3 16 bit signed integers. The last 2 bits are the sensor
+        # range.
+
         for i in range(primary_count + secondary_count):  # 0..63 say
             x, y, z, rng = 0, 0, 0, 0
             if i % 4 == 0:  # start at bit 0, take 8 bits + 8bits

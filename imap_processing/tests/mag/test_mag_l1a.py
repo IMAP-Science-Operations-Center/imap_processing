@@ -1,5 +1,6 @@
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 
 from imap_processing.mag.l0.decom_mag import decom_packets
@@ -52,36 +53,31 @@ def test_compare_validation_data():
 
 
 def test_process_vector_data():
-    current_directory = Path(__file__).parent
-    test_file = current_directory / "mag_l1_test_data.pkts"
-    l0 = decom_packets(str(test_file))
+    expected_vector_data = [[1001, 1002, -3001, 3], [2001, -2002, -3333, 1]]
 
-    mag_l0 = l0["norm"][0]
+    # 100 bits, created by hand by appending all bits from expected_vector_data into one
+    # hex string, with range being 2 bits (so the second half is offset from the hex
+    # values)
+    hex_string = "03E903EAF447C1F47E0BBCBED0"
+    input_data = np.frombuffer(bytes.fromhex(hex_string), dtype=np.dtype(">b"))
 
-    # TODO rewrite this test with reverse-calculated unsigned 16 bit ints
-
-    total_primary_vectors = (mag_l0.PUS_SSUBTYPE + 1) * mag_l0.PRI_VECSEC
-    total_secondary_vectors = (mag_l0.PUS_SSUBTYPE + 1) * mag_l0.SEC_VECSEC
-
-    test_vectors = mag_l0.VECTORS
+    total_primary_vectors = 1
+    total_secondary_vectors = 1
 
     # 36 bytes
     (primary_vectors, secondary_vectors) = MagL1a.process_vector_data(
-        test_vectors, total_primary_vectors, total_secondary_vectors
+        input_data, total_primary_vectors, total_secondary_vectors
     )
 
-    validation_data = pd.read_csv(current_directory / "mag_l1a_test_output.csv")
+    assert primary_vectors[0][0] == expected_vector_data[0][0]
+    assert primary_vectors[0][1] == expected_vector_data[0][1]
+    assert primary_vectors[0][2] == expected_vector_data[0][2]
+    assert primary_vectors[0][3] == expected_vector_data[0][3]
 
-    for index in range(total_primary_vectors):
-        assert primary_vectors[index][0] == validation_data.iloc[index]["x_pri"]
-        assert primary_vectors[index][1] == validation_data.iloc[index]["y_pri"]
-        assert primary_vectors[index][2] == validation_data.iloc[index]["z_pri"]
-        assert primary_vectors[index][3] == validation_data.iloc[index]["rng_pri"]
-
-        assert secondary_vectors[index][0] == validation_data.iloc[index]["x_sec"]
-        assert secondary_vectors[index][1] == validation_data.iloc[index]["y_sec"]
-        assert secondary_vectors[index][2] == validation_data.iloc[index]["z_sec"]
-        assert secondary_vectors[index][3] == validation_data.iloc[index]["rng_sec"]
+    assert secondary_vectors[0][0] == expected_vector_data[1][0]
+    assert secondary_vectors[0][1] == expected_vector_data[1][1]
+    assert secondary_vectors[0][2] == expected_vector_data[1][2]
+    assert secondary_vectors[0][3] == expected_vector_data[1][3]
 
 
 def test_time_tuple():
