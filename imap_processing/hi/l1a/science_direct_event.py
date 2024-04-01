@@ -2,6 +2,7 @@
 
 import numpy as np
 import xarray as xr
+from space_packet_parser.parser import Packet
 
 from imap_processing import launch_time
 from imap_processing.cdf.global_attrs import ConstantCoordinates
@@ -19,7 +20,7 @@ MILLISECOND_TO_NS = 1e6
 MICROSECOND_TO_NS = 1e3
 
 
-def get_direct_event_time(time_in_ns):
+def get_direct_event_time(time_in_ns: int) -> np.datetime64:
     """Create MET(Mission Elapsed Time) time using input times.
 
     Parameters
@@ -37,7 +38,7 @@ def get_direct_event_time(time_in_ns):
     return met_datetime
 
 
-def parse_direct_event(event_data: str):
+def parse_direct_event(event_data: str) -> dict:
     """Parse event data.
 
     IMAP-Hi direct event data information is stored in
@@ -144,7 +145,7 @@ def parse_direct_event(event_data: str):
     }
 
 
-def break_into_bits_size(binary_data: str):
+def break_into_bits_size(binary_data: str) -> list:
     """Break binary stream data into 48-bits.
 
     Parameters
@@ -166,7 +167,7 @@ def break_into_bits_size(binary_data: str):
     ]
 
 
-def create_dataset(de_data_list: list, packet_met_time: list):
+def create_dataset(de_data_list: list, packet_met_time: list) -> xr.Dataset:
     """Create xarray dataset.
 
     Parameters
@@ -301,7 +302,7 @@ def create_dataset(de_data_list: list, packet_met_time: list):
     return dataset
 
 
-def science_direct_event(packets_data: list):
+def science_direct_event(packets_data: list[Packet]) -> xr.Dataset:
     """Unpack IMAP-Hi direct event data.
 
     Processing step:
@@ -311,7 +312,7 @@ def science_direct_event(packets_data: list):
 
     Parameters
     ----------
-    packets_data : list
+    packets_data : list[Packet]
         List of packets data
 
     Returns
