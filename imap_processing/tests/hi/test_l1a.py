@@ -3,6 +3,7 @@ import random
 import numpy as np
 import pytest
 
+from imap_processing.cdf.utils import write_cdf
 from imap_processing.hi.l1a.hi_l1a import hi_l1a
 from imap_processing.tests.conftest import ccsds_header_data, check_sum
 
@@ -119,3 +120,9 @@ def test_sci_de_decom(create_de_data, tmp_path):
     assert processed_data[0]["tof_2"].max() <= 1023
     assert processed_data[0]["tof_3"].min() >= 0
     assert processed_data[0]["tof_3"].max() <= 1023
+
+    # Write to CDF
+    cdf_filename = "imap_hi_l1a_de_20230927_v001.cdf"
+    cdf_filepath = write_cdf(processed_data[0])
+
+    assert cdf_filepath.name == cdf_filename

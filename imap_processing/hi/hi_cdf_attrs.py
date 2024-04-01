@@ -1,9 +1,9 @@
 """Shared attribute values for IMAP-Hi CDF files."""
 from imap_processing.cdf.defaults import GlobalConstants
 from imap_processing.cdf.global_attrs import (
-    AttrBase,
     GlobalDataLevelAttrs,
     GlobalInstrumentAttrs,
+    ScienceAttrs,
 )
 from imap_processing.hi import __version__
 
@@ -45,9 +45,11 @@ hi_base = GlobalInstrumentAttrs(
 )
 
 # Direct event attrs
-esa_step_attrs = AttrBase(
+esa_step_attrs = ScienceAttrs(
     validmin=0,
     validmax=10,
+    format="I2",
+    label_axis="ESA step",
     display_type="time_series",
     catdesc=(
         "ESA step. "
@@ -59,11 +61,14 @@ esa_step_attrs = AttrBase(
     fieldname="ESA step",
     fill_val=GlobalConstants.INT_FILLVAL,
     var_type="metadata",
+    depend_0="epoch",
 )
 
-de_tag_attrs = AttrBase(
+de_tag_attrs = ScienceAttrs(
     validmin=GlobalConstants.INT_FILLVAL,
     validmax=GlobalConstants.INT_MAXVAL,
+    format="I6",
+    label_axis="Direct event time tag",
     display_type="time_series",
     catdesc=(
         "Direct event tag. "
@@ -73,11 +78,14 @@ de_tag_attrs = AttrBase(
     fieldname="Direct event tag",
     fill_val=GlobalConstants.INT_FILLVAL,
     var_type="metadata",
+    depend_0="epoch",
 )
 
-trigger_id_attrs = AttrBase(
+trigger_id_attrs = ScienceAttrs(
     validmin=GlobalConstants.INT_FILLVAL,
     validmax=3,
+    format="I1",
+    label_axis="Trigger ID",
     display_type="time_series",
     catdesc=(
         "Trigger ID is a 2-bits. It represents the trigger "
@@ -87,11 +95,14 @@ trigger_id_attrs = AttrBase(
     fieldname="Trigger ID",
     fill_val=GlobalConstants.INT_FILLVAL,
     var_type="metadata",
+    depend_0="epoch",
 )
 
-tof_attrs = AttrBase(
+tof_attrs = ScienceAttrs(
     validmin=GlobalConstants.INT_FILLVAL,
     validmax=1023,
+    format="I4",
+    label_axis="Time of flight",
     display_type="time_series",
     catdesc=(
         "Time of flight is 10-bits integer value that represents "
@@ -101,11 +112,14 @@ tof_attrs = AttrBase(
     fieldname="Time of flight",
     fill_val=GlobalConstants.INT_FILLVAL,
     var_type="metadata",
+    depend_0="epoch",
 )
 
-ccsds_met_attrs = AttrBase(
+ccsds_met_attrs = ScienceAttrs(
     validmin=GlobalConstants.INT_FILLVAL,
     validmax=GlobalConstants.INT_MAXVAL,
+    format="I12",
+    label_axis="CCSDS MET",
     display_type="time_series",
     catdesc=(
         "CCSDS MET. "
@@ -115,6 +129,7 @@ ccsds_met_attrs = AttrBase(
     fieldname="CCSDS MET",
     fill_val=GlobalConstants.INT_FILLVAL,
     var_type="metadata",
+    depend_0="epoch",
 )
 
 # Note from SPDF about Logical_source_id breakdown:
