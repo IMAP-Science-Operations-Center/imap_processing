@@ -5,13 +5,16 @@ from cdflib.xarray import cdf_to_xarray
 
 from imap_processing.cdf import global_attrs
 from imap_processing.cdf.utils import write_cdf
-from imap_processing.mag.l0.decom_mag import decom_packets, export_to_xarray
+from imap_processing.mag import mag_cdf_attrs
+from imap_processing.mag.l0.decom_mag import decom_packets, generate_dataset
 
 
 def test_mag_decom():
     current_directory = Path(__file__).parent
     burst_test_file = current_directory / "mag_l0_test_data.pkts"
-    l0 = decom_packets(burst_test_file)
+    norm, burst = decom_packets(burst_test_file)
+
+    l0 = burst + norm
 
     expected_output = pd.read_csv(current_directory / "mag_l0_test_output.csv")
     for index, test in enumerate(l0):
@@ -46,9 +49,13 @@ def test_mag_decom():
 def test_mag_raw_xarray():
     current_directory = Path(__file__).parent
     burst_test_file = current_directory / "mag_l0_test_data.pkts"
-    l0 = decom_packets(str(burst_test_file))
+    l0_norm, l0_burst = decom_packets(str(burst_test_file))
 
-    norm_data, burst_data = export_to_xarray(l0)
+    norm_data = generate_dataset(l0_norm, mag_cdf_attrs.mag_l1a_norm_raw_attrs.output())
+    burst_data = generate_dataset(
+        l0_burst, mag_cdf_attrs.mag_l1a_burst_raw_attrs.output()
+    )
+
     required_attrs = list(
         global_attrs.GlobalInstrumentAttrs("", "", "").output().keys()
     )
@@ -69,9 +76,12 @@ def test_mag_raw_xarray():
 def test_mag_raw_cdf_generation():
     current_directory = Path(__file__).parent
     test_file = current_directory / "mag_l0_test_data.pkts"
-    l0 = decom_packets(str(test_file))
+    l0_norm, l0_burst = decom_packets(str(test_file))
 
-    norm_data, burst_data = export_to_xarray(l0)
+    norm_data = generate_dataset(l0_norm, mag_cdf_attrs.mag_l1a_norm_raw_attrs.output())
+    burst_data = generate_dataset(
+        l0_burst, mag_cdf_attrs.mag_l1a_burst_raw_attrs.output()
+    )
 
     output = write_cdf(norm_data)
     assert output.exists()
