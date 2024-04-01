@@ -8,29 +8,44 @@ from imap_processing.lo.l0.data_classes.science_direct_events import (
 )
 from imap_processing.lo.l0.utils.binary_string import BinaryString
 
-# TODO: Because I currently don't have any compressed DE data, the decompress method
-# needs to be commented out and the private methods need to be called directly for
-# testing. When DE data does become available, these tests will be updated and
-# the need for the bitstring import will also go away.
 
-
-@pytest.mark.skip(reason="no data to initialize with")
 @pytest.fixture()
-def single_de():
-    de = ScienceDirectEventsPacket("fake_packet", "0", "fakepacketname")
+def fake_packet_data():
+    fake_data_type = namedtuple("fake_data_cats", ["header", "data"])
+    fake_data_field = namedtuple("fake_packet", ["raw_value", "derived_value"])
+    return fake_data_type(
+        {
+            "VERSION": fake_data_field(0, 0),
+            "TYPE": fake_data_field(0, 0),
+            "SEC_HDR_FLG": fake_data_field(0, 0),
+            "PKT_APID": fake_data_field(0, 0),
+            "SEQ_FLGS": fake_data_field(0, 0),
+            "SRC_SEQ_CTR": fake_data_field(0, 0),
+            "PKT_LEN": fake_data_field(0, 0),
+        },
+        {
+            "SHCOARSE": fake_data_field(0, 0),
+            "COUNT": fake_data_field(0, 0),
+            "DATA": fake_data_field("00", "00"),
+            "CHKSUM": fake_data_field(0, 0),
+        },
+    )
+
+
+@pytest.fixture()
+def single_de(fake_packet_data):
+    de = ScienceDirectEventsPacket(fake_packet_data, "0", "fakepacketname")
     de.COUNT = 1
     return de
 
 
-@pytest.mark.skip(reason="no data to initialize with")
 @pytest.fixture()
-def multi_de():
-    de = ScienceDirectEventsPacket("fake_packet", "0", "fakepacketname")
+def multi_de(fake_packet_data):
+    de = ScienceDirectEventsPacket(fake_packet_data, "0", "fakepacketname")
     de.COUNT = 2
     return de
 
 
-@pytest.mark.skip(reason="no data to initialize with")
 @pytest.fixture()
 def tof_data():
     TOFData = namedtuple(
@@ -39,7 +54,6 @@ def tof_data():
     return TOFData
 
 
-@pytest.mark.skip(reason="no data to initialize with")
 def test_decompression_case(single_de):
     # Arrange
     single_de.DATA = "000100010101"
@@ -53,7 +67,6 @@ def test_decompression_case(single_de):
     assert case_number == case_number_expected
 
 
-@pytest.mark.skip(reason="no data to initialize with")
 def test_case_decoder_variant_1(single_de, tof_data):
     # Arrange
     single_de.DATA = "000010010101"
@@ -71,7 +84,6 @@ def test_case_decoder_variant_1(single_de, tof_data):
     assert tof_decoder == tof_decoder_expected
 
 
-@pytest.mark.skip(reason="no data to initialize with")
 def test_case_decoder_variant_0(single_de, tof_data):
     # Arrange
     single_de.DATA = "000000010101"
@@ -89,7 +101,6 @@ def test_case_decoder_variant_0(single_de, tof_data):
     assert tof_decoder == tof_decoder_expected
 
 
-# @pytest.mark.skip(reason="no data to initialize with")
 def test_decompress_existing_field(single_de):
     # Arrange
     single_de.DATA = "00001001"
@@ -110,7 +121,6 @@ def test_decompress_existing_field(single_de):
     assert decompressed_field == decompressed_field_expected
 
 
-# @pytest.mark.skip(reason="no data to initialize with")
 def test_decompress_non_existing_field(single_de):
     # Arrange
     single_de.DATA = "00001001"
@@ -131,7 +141,6 @@ def test_decompress_non_existing_field(single_de):
     assert decompressed_field == decompressed_field_expected
 
 
-# @pytest.mark.skip(reason="no data to initialize with")
 def test_single_de_parse_case(single_de, tof_data):
     # Arrange
     single_de.DATA = "000010010000000011000000011000001001000000000001"

@@ -6,8 +6,9 @@ import numpy as np
 from imap_processing.ccsds.ccsds_data import CcsdsData
 from imap_processing.cdf.defaults import GlobalConstants
 from imap_processing.lo.l0.decompression_tables.decompression_tables import (
+    BIT_SHIFT,
     CASE_DECODER,
-    SIGNIFICANT_BITS,
+    DATA_BITS,
 )
 from imap_processing.lo.l0.utils.binary_string import BinaryString
 from imap_processing.lo.l0.utils.set_dataclass_attr import set_attributes
@@ -19,6 +20,38 @@ class ScienceDirectEventsPacket:
 
     The Science Direct Events class handles the parsing and
     decompression of L0 to L1A data.
+
+
+    The TOF data in the binary is in the following order:
+    ABSENT, TIME, ENERGY, MODE, TOF0, TOF1, TOF2, TOF3, CKSM, POS
+
+    ABSENT, TIME, ENERGY, and MODE will be present for every type of DE.
+
+    ABSENT: signals the case number for the DE (4 bits).
+    TIME: the time of the DE (12 bits).
+    ENERGY: Energy step (3 bits).
+    MODE: Signals how the data is packed. If MODE is 1, then the TOF1
+    (for case 1a) will need to be calculated using the checksum and other TOFs
+    <add equation here>.
+    If MODE is 0, then there was no compression and all TOFs are transmitted.
+
+    The presence of TOF0, TOF1, TOF2, TOF3, CKSM, and POS depend on the
+    case number.
+
+    - Case 0 can either be a gold or silver triple. Gold triples do
+    not send down the TOF1 value and instead recover the TOF1 value
+    on the ground using the decompressed checksum.
+    - Cases 4, 6, 10, 12, 13 may be Bronze. If it's not a bronze,
+    the Position is not transmitted, but TOF3 is. If it is bronze, the table
+    should be used as is. If it's not bronze, position was not transmitted,
+    but TOF3 was transmitted.
+
+    Bit Shifting:
+    TOF0, TOF1, TOF2, TOF3, and CKSM all must be shifted by one bit to the
+    left. All other fields do not need to be bit shifted.
+
+    The raw values are computed for L1A and will be converted to
+    engineering units in L1B.
 
     Attributes
     ----------
@@ -80,19 +113,20 @@ class ScienceDirectEventsPacket:
 
     def __init__(self, packet, software_version: str, packet_file_name: str):
         """Intialization method for Science Direct Events Data class."""
+        set_attributes(self, packet)
         self.software_version = software_version
         self.packet_file_name = packet_file_name
         self.ccsds_header = CcsdsData(packet.header)
-        # TODO: Is there a better way to do this?
+        # TODO: Is there a better way to initialize these arrays?
+        self.TIME = np.array([])
+        self.ENERGY = np.array([])
+        self.MODE = np.array([])
         self.TOF0 = np.array([])
         self.TOF1 = np.array([])
         self.TOF2 = np.array([])
         self.TOF3 = np.array([])
-        self.TIME = np.array([])
-        self.ENERGY = np.array([])
-        self.POS = np.array([])
         self.CKSM = np.array([])
-        set_attributes(self, packet)
+        self.POS = np.array([])
         self._decompress_data()
 
     def _decompress_data(self):
@@ -100,6 +134,7 @@ class ScienceDirectEventsPacket:
         data = BinaryString(self.DATA)
         for _ in range(self.COUNT):
             case_number = self._decompression_case(data)
+            self._parse_data(case_number, data)
             case_decoder = self._case_decoder(case_number, data)
             self._parse_case(data, case_decoder)
 
@@ -113,28 +148,38 @@ class ScienceDirectEventsPacket:
         """
         return int(data.next_bits(4), 2)
 
-    def _case_decoder(self, case_number, data):
-        """Get the TOF decoder for this DE's case number.
+    def _parse_data(self, case_number: int, data: BinaryString):
+        time = int(data.next_bits(DATA_BITS.TIME))
+        energy = int(data.next_bits(DATA_BITS.ENERGY))
+        mode = int(data.next_bits(DATA_BITS.MODE))
 
-        The case number determines wich TOF decoder to use.
-        The TOF decoder table shows how the TOF bits should be
-        parsed in the binary data.
+        case_decoder = CASE_DECODER[(case_number, mode)]
 
-        Case 0 can either be a gold or silver triple. Gold triples do
-        not send down the TOF1 value and instead recover the TOF1 value
-        on the ground using the decompressed checksum.
-        Cases 4, 6, 10, 12, 13 may be Bronze triples. If it's not a bronze triple,
-        the Position is not transmitted, but TOF3 is. If it is bronze, the table
-        should be used as is. If it's not bronze, position was not transmitted,
-        but TOF3 was transmitted.
-        """
-        case_variant = 0
-        # the other cases do no have variants
-        if case_number in [0, 4, 6, 10, 12, 13]:
-            case_variant = int(data.next_bits(1))
-        return CASE_DECODER[(case_number, case_variant)]
+        # Check the case decoder to see if the TOF field was
+        # transmitted for this case. Then grab the bits from
+        # the binary and perform a bit shift to the left. The
+        # data was packed using a right bit shift (1 bit), so
+        # needs to be bit shifted to the left (1 bit) during
+        # unpacking.
+        if case_decoder.TOF0:
+            tof0 = int(data.next_bits(DATA_BITS.TOF0)) << BIT_SHIFT
+        if case_decoder.TOF1:
+            tof1 = int(data.next_bits(DATA_BITS.TOF1)) << BIT_SHIFT
+        if case_decoder.TOF2:
+            tof2 = int(data.next_bits(DATA_BITS.TOF2)) << BIT_SHIFT
+        if case_decoder.TOF3:
+            tof3 = int(data.next_bits(DATA_BITS.TOF3)) << BIT_SHIFT
+        if case_decoder.CKSM:
+            cksm = int(data.next_bits(DATA_BITS.CKSM)) << BIT_SHIFT
+        if case_decoder.POS:
+            pos = int(data.next_bits(DATA_BITS.POS)) << BIT_SHIFT
 
     def _parse_case(self, data, case_decoder):
+        self.TIME = np.append(
+            self.TIME,
+            self._decompress_field(data, case_decoder.TIME),
+        )
+
         """Parse out the values for each DE data field."""
         self.ENERGY = np.append(
             self.ENERGY,
@@ -169,11 +214,6 @@ class ScienceDirectEventsPacket:
         self.CKSM = np.append(
             self.CKSM,
             self._decompress_field(data, case_decoder.CKSM, SIGNIFICANT_BITS.CKSM),
-        )
-
-        self.TIME = np.append(
-            self.TIME,
-            self._decompress_field(data, case_decoder.TIME, SIGNIFICANT_BITS.TIME),
         )
 
     def _decompress_field(self, data, field_length, sig_bits):

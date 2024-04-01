@@ -1,274 +1,70 @@
 """Compression tables for decompompressing Lo L0 data."""
 from collections import namedtuple
 
-import numpy as np
+# All TOFs and Checksum values that exist for a case
+# must be shifted by 1 bit to the left
+BIT_SHIFT = 1
 
-TOFData = namedtuple(
-    "TOFData", ["ENERGY", "POS", "TOF0", "TOF1", "TOF2", "TOF3", "CKSM", "TIME"]
+DataFields = namedtuple(
+    "DataFields",
+    [
+        "TIME",
+        "ENERGY",
+        "MODE",
+        "TOF0",
+        "TOF1",
+        "TOF2",
+        "TOF3",
+        "CKSM",
+        "POS",
+    ],
+)
+# the bit length for each field
+DATA_BITS = DataFields(12, 3, 1, 10, 9, 9, 6, 3, 1)
+
+TOFFields = namedtuple(
+    "TOFFields",
+    [
+        "TOF0",
+        "TOF1",
+        "TOF2",
+        "TOF3",
+        "CKSM",
+        "POS",
+    ],
 )
 
-SIGNIFICANT_BITS = TOFData(
-    np.array([0, 0.32, 0.16]),
-    np.array([0.32, 0.16]),
-    np.array(
-        [
-            163.84,
-            81.92,
-            40.9,
-            20.48,
-            10.24,
-            5.12,
-            2.56,
-            1.28,
-            0.64,
-            0.32,
-        ]
-    ),
-    np.array(
-        [
-            81.92,
-            40.9,
-            20.48,
-            10.24,
-            5.12,
-            2.56,
-            1.28,
-            0.64,
-            0.32,
-        ]
-    ),
-    np.array(
-        [
-            81.92,
-            40.9,
-            20.48,
-            10.24,
-            5.12,
-            2.56,
-            1.28,
-            0.64,
-            0.32,
-        ]
-    ),
-    np.array(
-        [
-            10.24,
-            5.12,
-            2.56,
-            1.28,
-            0.64,
-            0.32,
-        ]
-    ),
-    np.array([1.28, 0.64, 0.32]),
-    np.array(
-        [327.68, 163.84, 81.92, 40.9, 20.48, 10.24, 5.12, 2.56, 1.28, 0.64, 0.32, 0.16]
-    ),
-)
+# TODO:
+# For case 0 if mode = 1 TOF1 is not transmitted and is calculated using the checksum
+# For case 0 if mode = 0 TOF1 is transmitted
+# For cases 4, 6, 10, 12 if mode = 1 TOF3 is not transmitted, but can be calculated
+# from the position which is transmitted
+# For cases 4, 6, 10, 12 if mode = 0 TOF3 is trasmitted, position is not
+# No mode = 1 for case 13? Green highlight?
+# No mode = 1 for cases 2, 3, 5, 7, 8, 9, 11
 
-# Cases 4, 6, 10, 12, 13
-# if Bronze = 1, use table as is
-# if Bronze = 0, position not transmitted, TOF3 is transmitted
-# and will be six bits long
+# (case, mode): the TOF fields that are transmitted that case/mode.
 CASE_DECODER = {
-    (0, 1): TOFData(
-        3,
-        0,
-        10,
-        0,
-        9,
-        6,
-        3,
-        12,
-    ),
-    (0, 0): TOFData(
-        3,
-        0,
-        10,
-        9,
-        9,
-        6,
-        0,
-        12,
-    ),
-    (1, 0): TOFData(
-        3,
-        0,
-        10,
-        9,
-        9,
-        0,
-        0,
-        12,
-    ),
-    (2, 0): TOFData(
-        3,
-        2,
-        9,
-        9,
-        0,
-        0,
-        0,
-        12,
-    ),
-    (3, 0): TOFData(
-        3,
-        0,
-        11,
-        0,
-        0,
-        0,
-        0,
-        12,
-    ),
-    (4, 1): TOFData(
-        3,
-        2,
-        10,
-        0,
-        0,
-        0,
-        0,
-        12,
-    ),
-    (4, 0): TOFData(
-        3,
-        0,
-        10,
-        0,
-        0,
-        6,
-        0,
-        12,
-    ),
-    (5, 0): TOFData(
-        3,
-        0,
-        11,
-        0,
-        9,
-        0,
-        0,
-        12,
-    ),
-    (6, 1): TOFData(
-        3,
-        2,
-        10,
-        0,
-        0,
-        0,
-        0,
-        12,
-    ),
-    (6, 0): TOFData(
-        3,
-        0,
-        10,
-        0,
-        0,
-        6,
-        0,
-        12,
-    ),
-    (7, 0): TOFData(
-        3,
-        0,
-        11,
-        0,
-        0,
-        0,
-        0,
-        12,
-    ),
-    (8, 0): TOFData(
-        3,
-        2,
-        0,
-        9,
-        9,
-        0,
-        0,
-        12,
-    ),
-    (9, 0): TOFData(
-        3,
-        0,
-        0,
-        10,
-        10,
-        0,
-        0,
-        12,
-    ),
-    (10, 1): TOFData(
-        3,
-        2,
-        0,
-        10,
-        0,
-        0,
-        0,
-        12,
-    ),
-    (10, 0): TOFData(
-        3,
-        0,
-        0,
-        10,
-        0,
-        6,
-        0,
-        12,
-    ),
-    (11, 0): TOFData(
-        3,
-        0,
-        0,
-        11,
-        0,
-        0,
-        0,
-        12,
-    ),
-    (12, 1): TOFData(
-        3,
-        2,
-        0,
-        0,
-        10,
-        0,
-        0,
-        12,
-    ),
-    (12, 0): TOFData(
-        3,
-        0,
-        0,
-        0,
-        10,
-        6,
-        0,
-        12,
-    ),
-    (13, 1): TOFData(
-        3,
-        0,
-        0,
-        0,
-        11,
-        0,
-        0,
-        12,
-    ),
-    (13, 0): TOFData(
-        3,
-        0,
-        0,
-        0,
-        11,
-        6,
-        0,
-        12,
-    ),
+    (0, 1): TOFFields(True, False, True, True, True, False),
+    (0, 0): TOFFields(True, True, True, True, False, False),
+    (1, 0): TOFFields(True, True, True, False, False, False),
+    (2, 0): TOFFields(True, True, False, False, False, True),
+    (3, 0): TOFFields(True, False, False, False, False, False),
+    (4, 1): TOFFields(True, False, False, False, False, True),
+    (4, 0): TOFFields(True, False, False, True, False, False),
+    (5, 0): TOFFields(True, False, True, False, False, False),
+    # TODO: 4 and 6 are packed the same?
+    (6, 1): TOFFields(True, False, False, True, False, False),
+    (6, 0): TOFFields(True, False, False, True, False, False),
+    (7, 0): TOFFields(True, False, False, False, False, False),
+    (8, 0): TOFFields(False, True, True, False, False, True),
+    (9, 0): TOFFields(False, True, True, False, False, False),
+    (10, 1): TOFFields(False, True, False, False, False, True),
+    (10, 0): TOFFields(False, True, False, True, False, False),
+    (11, 0): TOFFields(False, True, False, False, False, False),
+    (12, 1): TOFFields(False, False, True, False, False, True),
+    (12, 0): TOFFields(False, False, True, True, False, False),
+    # TODO: Never 1 for mode?
+    (13, 1): TOFFields(),
+    (13, 0): TOFFields(False, False, True, False, False, False),
 }
