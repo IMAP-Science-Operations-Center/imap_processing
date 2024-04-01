@@ -129,6 +129,7 @@ def test_sci_de_decom(create_de_data, tmp_path):
 
     assert cdf_filepath.name == cdf_filename
 
+
 def test_app_nhk_decom():
     """Test housekeeping data"""
 
