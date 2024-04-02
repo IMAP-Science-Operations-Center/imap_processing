@@ -1,4 +1,5 @@
 """Common functions that every instrument can use."""
+
 import collections
 
 import numpy as np

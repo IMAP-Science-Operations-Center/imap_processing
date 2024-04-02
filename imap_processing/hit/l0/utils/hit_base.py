@@ -1,4 +1,5 @@
 """General HIT L0 data class used for parsing data and setting attributes."""
+
 from dataclasses import dataclass, fields
 
 from imap_processing.ccsds.ccsds_data import CcsdsData

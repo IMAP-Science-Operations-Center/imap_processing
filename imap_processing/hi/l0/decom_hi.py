@@ -1,4 +1,5 @@
 """Decom IMAP-Hi data."""
+
 from imap_processing import decom, imap_module_directory
 
 

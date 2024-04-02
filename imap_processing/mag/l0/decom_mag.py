@@ -1,4 +1,5 @@
 """Methods for processing raw MAG packets into CDF files for level 0 and level 1a."""
+
 from __future__ import annotations
 
 import dataclasses

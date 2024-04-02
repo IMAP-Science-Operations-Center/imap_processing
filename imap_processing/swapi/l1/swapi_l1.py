@@ -1,4 +1,5 @@
 """SWAPI level-1 processing code."""
+
 import copy
 
 import numpy as np

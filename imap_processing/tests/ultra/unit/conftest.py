@@ -1,4 +1,5 @@
 """Pytest plugin module for test data paths"""
+
 import sys
 from pathlib import Path
 

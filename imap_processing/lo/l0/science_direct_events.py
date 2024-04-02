@@ -1,4 +1,5 @@
 """L1A Science Direct Events data class."""
+
 from dataclasses import dataclass
 from itertools import compress
 

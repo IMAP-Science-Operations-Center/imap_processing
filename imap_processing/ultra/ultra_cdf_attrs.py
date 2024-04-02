@@ -1,4 +1,5 @@
 """Shared attribute values for ULTRA CDF files."""
+
 from imap_processing.cdf.defaults import GlobalConstants
 from imap_processing.cdf.global_attrs import (
     AttrBase,

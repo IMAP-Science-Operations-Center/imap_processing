@@ -1,4 +1,5 @@
 """Methods for decomming packets, processing to level 1A, and writing CDFs for MAG."""
+
 import logging
 
 from imap_processing.cdf.utils import write_cdf

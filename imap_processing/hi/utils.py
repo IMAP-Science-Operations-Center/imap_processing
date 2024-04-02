@@ -1,4 +1,5 @@
 """IMAP-Hi utils functions."""
+
 from enum import IntEnum
 
 

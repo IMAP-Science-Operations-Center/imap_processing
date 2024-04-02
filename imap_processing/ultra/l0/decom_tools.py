@@ -1,4 +1,5 @@
 """Ultra Decompression Tools."""
+
 import numpy as np
 
 from imap_processing.ultra.l0.ultra_utils import append_fillval, parse_event

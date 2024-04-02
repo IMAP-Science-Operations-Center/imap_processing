@@ -87,7 +87,6 @@ Per SPDF contacts, we can ignore this warning:
 Warning: CDF is set for row major array variables and column major is recommended.
 """
 
-
 from imap_processing.cdf.defaults import GlobalConstants
 from imap_processing.cdf.global_attrs import (
     AttrBase,
