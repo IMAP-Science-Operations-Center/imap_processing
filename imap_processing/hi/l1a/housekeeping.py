@@ -1,4 +1,5 @@
 """Unpack IMAP-Hi housekeeping data."""
+
 import collections
 import dataclasses
 
