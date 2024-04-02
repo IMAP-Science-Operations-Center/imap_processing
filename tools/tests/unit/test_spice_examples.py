@@ -74,6 +74,7 @@ def test_get_attitude_timerange(kernels, kernel_directory):
     assert start, end == (802094470.1857615, 802105267.1857585)
 
 
+@pytest.mark.xfail(reason="Add de430.bsp to test/test_data/spice")
 def test_get_particle_velocity(direct_events, kernels, kernel_directory):
     """Tests the get_particle_velocity function."""
 
@@ -88,6 +89,7 @@ def test_get_particle_velocity(direct_events, kernels, kernel_directory):
     spice.kclear()
 
 
+@pytest.mark.xfail(reason="Add de430.bsp to test/test_data/spice")
 def test_build_annotated_events(direct_events, kernels, kernel_directory):
     """Tests the build_annotated_events function."""
     spice.kclear()
