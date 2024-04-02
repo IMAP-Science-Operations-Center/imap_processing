@@ -53,10 +53,10 @@ def test_mag_raw_xarray():
     assert all([item is not None for _, item in burst_data.attrs.items()])
 
     expected_norm_len = 17
-    assert norm_data.dims["epoch"] == expected_norm_len
+    assert norm_data.sizes["epoch"] == expected_norm_len
 
     expected_burst_len = 19
-    assert burst_data.dims["epoch"] == expected_burst_len
+    assert burst_data.sizes["epoch"] == expected_burst_len
 
 
 def test_mag_raw_cdf_generation():
