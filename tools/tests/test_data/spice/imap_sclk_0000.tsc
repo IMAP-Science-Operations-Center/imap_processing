@@ -1,7 +1,7 @@
 \begintext
 
 FILENAME = "imap_0000.tsc"
-CREATION_DATE = "5-January-2021"
+CREATION_DATE = "2-October-2018"
 
 
 IMAP Spacecraft Clock Kernel (SCLK)
@@ -16,18 +16,9 @@ Version
 
      IMAP SCLK Kernel Version:
 
-     IMAP version 0.3 - April 22, 2022 -- Mike Ruffolo
-        Updated to use NAIF SC ID 43
-
-     IMAP Version 0.2 - June 2, 2021 -- Caroline Cocca
-         Updated to use temporary spacecraft id of 225
-
-     IMAP Version 0.1 - March 6, 2015 -- Eric Melin
-         Updated text to replace references to RBSP with SPP
-
-     IMAP Version 0.0 - August 7, 2014 -- Eric Melin
-        The initial SPP spice kernel.
-        This file was created by using RBSPA initial kernel and
+     IMAP Version 0.0 - April 12, 2023 -- Ian W. Murphy
+        The initial IMAP spice kernel.
+        This file was created by using DART initial kernel and
         modifying the spacecraft ID.
 
 
@@ -82,10 +73,10 @@ Kernel Data
 
 \begindata
 
-SCLK_KERNEL_ID             = ( @2009-07-09T12:20:32 )
-SCLK_DATA_TYPE_43          = (        1 )
-SCLK01_TIME_SYSTEM_43      = (        2 )
-
+SCLK_KERNEL_ID              = ( @2009-07-09T12:20:32 )
+SCLK_DATA_TYPE_43           = (        1 )
+SCLK_DATA_TYPE_43000        = (        1 )
+SCLK01_TIME_SYSTEM_43       = (        2 )
 
 \begintext
 
@@ -102,10 +93,10 @@ SCLK01_TIME_SYSTEM_43      = (        2 )
 
 \begindata
 
-SCLK01_N_FIELDS_43         = (            2 )
-SCLK01_MODULI_43           = (   4294967296       50000 )
-SCLK01_OFFSETS_43          = (            0           0 )
-SCLK01_OUTPUT_DELIM_43     = (            2 )
+SCLK01_N_FIELDS_43          = (            2 )
+SCLK01_MODULI_43            = (   4294967296       50000 )
+SCLK01_OFFSETS_43           = (            0           0 )
+SCLK01_OUTPUT_DELIM_43      = (            2 )
 
 
 \begintext
@@ -124,9 +115,9 @@ SCLK01_OUTPUT_DELIM_43     = (            2 )
 
 \begindata
 
-SCLK_PARTITION_START_43    = ( 0.00000000000000e+00 )
+SCLK_PARTITION_START_43     = ( 0.00000000000000e+00 )
 
-SCLK_PARTITION_END_43      = ( 2.14748364799999e+14 )
+SCLK_PARTITION_END_43       = ( 2.14748364799999e+14 )
 
 \begintext
 
@@ -142,14 +133,14 @@ SCLK_PARTITION_END_43      = ( 2.14748364799999e+14 )
      below.
 
      The first time triplet below was entered manually and represents the
-     approximate time (in TDT) at which SCLK = zero.  The current plan for
+     approximate time (in TDT) at which MET = zero.  The current plan for
      IMAP is that the given epoch will be used for both Observatory I&T
      and launch.  Note that the conversion from UTC to TDT used 34 leap
      seconds.
 
 \begindata
 
-SCLK01_COEFFICIENTS_43     = (
+SCLK01_COEFFICIENTS_43      = (
 
                    0     @01-JAN-2010-00:01:06.184000     1.00000000000
 
