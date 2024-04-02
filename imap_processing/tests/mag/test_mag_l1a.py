@@ -17,7 +17,7 @@ def test_compare_validation_data():
     current_directory = Path(__file__).parent
     test_file = current_directory / "mag_l1_test_data.pkts"
     # Test file contains only normal packets
-    l0 = decom_packets(str(test_file))
+    l0 = decom_packets(test_file)
 
     l1 = process_packets(l0["norm"])
     l1_mago = l1["mago"]

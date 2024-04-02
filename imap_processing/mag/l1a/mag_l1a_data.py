@@ -25,7 +25,7 @@ class TimeTuple:
 
         Parameters
         ----------
-        seconds : int
+        seconds : float
             Number of seconds to add
 
         Returns
@@ -119,16 +119,10 @@ class MagL1a:
         This replaces self.vectors with a list of Vector objects.
         """
         sample_time_interval = 1 / self.vectors_per_second
-        previous_time = self.start_time
+        current_time = self.start_time
         for index, vector in enumerate(self.vectors):
-            if index == 0:
-                new_vector = Vector(vector, self.start_time)
-            else:
-                new_vector = Vector(vector, previous_time + sample_time_interval)
-
-            previous_time = new_vector.timestamp
-
-            self.vectors[index] = new_vector
+            self.vectors[index] = Vector(vector, current_time)
+            current_time = self.vectors[index].timestamp + sample_time_interval
 
     @staticmethod
     def process_vector_data(

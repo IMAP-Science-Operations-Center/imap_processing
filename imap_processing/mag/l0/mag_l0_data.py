@@ -1,4 +1,5 @@
 """Dataclasses for Level 0 MAG data."""
+from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import IntEnum
@@ -92,7 +93,7 @@ class MagL0:
     PRI_FNTM: int
     SEC_COARSETM: int
     SEC_FNTM: int
-    VECTORS: np.ndarray
+    VECTORS: np.ndarray | str
 
     def __post_init__(self):
         """Convert Vectors attribute from string to bytearray if needed.
@@ -100,15 +101,12 @@ class MagL0:
         Also convert encoded "VECSEC" (vectors per second) into proper vectors per
         second values
         """
-        if isinstance(self.VECTORS, str):
-            # Convert string output from space_packet_parser to bytearray
-            self.VECTORS = np.frombuffer(
-                int(self.VECTORS, 2).to_bytes(len(self.VECTORS) // 8, "big"),
-                dtype=np.dtype(">b"),
-            )
-
-        if isinstance(self.VECTORS, bytearray):
-            self.VECTORS = np.array(self.VECTORS, dtype=np.dtype(">b"))
+        # Convert string output from space_packet_parser to numpy array of
+        # big-endian bytes
+        self.VECTORS = np.frombuffer(
+            int(self.VECTORS, 2).to_bytes(len(self.VECTORS) // 8, "big"),
+            dtype=np.dtype(">b"),
+        )
 
         # Remove buffer from end of vectors
         if len(self.VECTORS) % 2:
