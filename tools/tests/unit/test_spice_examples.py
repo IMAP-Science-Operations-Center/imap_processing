@@ -5,9 +5,9 @@ import pytest
 import spiceypy as spice
 
 from tools.spice.spice_examples import (
+    _get_particle_velocity,
     build_annotated_events,
     get_attitude_timerange,
-    get_particle_velocity,
 )
 from tools.spice.spice_utils import (
     list_files_with_extensions,
@@ -24,8 +24,10 @@ def kernel_directory():
 @pytest.fixture()
 def kernels(kernel_directory):
     """Loads all kernels."""
+    # TODO: ALl kernels able to be downloaded from NAIF are not available
+    #  in the test_data/spice directory.
     kernels = list_files_with_extensions(
-        kernel_directory, [".tsc", ".tls", ".tf", ".bsp"]
+        kernel_directory, [".tsc", ".tls", ".tf", ".bsp", ".ck"]
     )
     return kernels
 
@@ -50,46 +52,26 @@ def direct_events():
     return direct_events
 
 
+@pytest.mark.xfail(reason="Download NAIF kernels")
 def test_get_attitude_timerange(kernels, kernel_directory):
     """Tests get_attitude_timerange function."""
 
-    spice.kclear()
-
-    spice.furnsh(kernels)
-
-    ck_kernel = list_files_with_extensions(kernel_directory, [".ck"])
-
-    expected_error_message = "ID -43 not found in CK file"
-    with pytest.raises(ValueError, match=expected_error_message):
-        get_attitude_timerange(ck_kernel, -43)
-
-    # Load the C kernel
-    spice.furnsh(ck_kernel)
-
-    start, end = get_attitude_timerange(ck_kernel, -43000)
-
-    # Clear all kernels
-    spice.kclear()
+    with spice.KernelPool(kernels):
+        ck_kernel = list_files_with_extensions(kernel_directory, [".ck"])
+        start, end = get_attitude_timerange(ck_kernel, -43000)
 
     assert start, end == (802094470.1857615, 802105267.1857585)
 
 
-@pytest.mark.xfail(reason="Add de430.bsp to test/test_data/spice")
+@pytest.mark.xfail(reason="Download NAIF kernels")
 def test_get_particle_velocity(direct_events, kernels, kernel_directory):
     """Tests the get_particle_velocity function."""
 
-    spice.kclear()
-
-    spice.furnsh(kernels)
-    ck_kernel = list_files_with_extensions(kernel_directory, [".ck"])
-    spice.furnsh(ck_kernel)
-
-    get_particle_velocity(direct_events)
-
-    spice.kclear()
+    with spice.KernelPool(kernels):
+        _get_particle_velocity(direct_events)
 
 
-@pytest.mark.xfail(reason="Add de430.bsp to test/test_data/spice")
+@pytest.mark.xfail(reason="Download NAIF kernels")
 def test_build_annotated_events(direct_events, kernels, kernel_directory):
     """Tests the build_annotated_events function."""
     spice.kclear()

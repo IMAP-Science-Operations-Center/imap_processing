@@ -13,6 +13,8 @@ from tools.spice.spice_utils import (
 @pytest.fixture()
 def kernels():
     """Return the SPICE kernels used for testing"""
+    # TODO: ALl kernels able to be downloaded from NAIF are not available
+    #  in the test_data/spice directory.
     directory = Path(__file__).parent.parent / "test_data" / "spice"
     kernels = list_files_with_extensions(directory, [".bsp", ".tf"])
     return kernels
@@ -39,7 +41,7 @@ def test_list_files_with_extensions(kernels):
     assert result_non_matching == []
 
 
-@pytest.mark.xfail(reason="Add de430.bsp to test/test_data/spice")
+@pytest.mark.xfail(reason="Download NAIF kernels")
 def test_list_loaded_kernels(kernels):
     """Tests the ``list_loaded_kernels`` function"""
     directory = Path(__file__).parent.parent / "test_data" / "spice"
@@ -62,18 +64,24 @@ def test_list_all_constants():
 
     # Set up the test environment
     directory = Path(__file__).parent.parent / "test_data" / "spice"
-    kernels = list_files_with_extensions(directory, [".tls"])
+    kernels = list_files_with_extensions(directory, [".tsc"])
 
     with spice.KernelPool(kernels):
         result = list_all_constants()
 
     # Expected keys
     expected_keys = [
-        "DELTET/DELTA_AT",
-        "DELTET/DELTA_T_A",
-        "DELTET/EB",
-        "DELTET/K",
-        "DELTET/M",
+        "SCLK01_COEFFICIENTS_43",
+        "SCLK01_MODULI_43",
+        "SCLK01_N_FIELDS_43",
+        "SCLK01_OFFSETS_43",
+        "SCLK01_OUTPUT_DELIM_43",
+        "SCLK01_TIME_SYSTEM_43",
+        "SCLK_DATA_TYPE_43",
+        "SCLK_DATA_TYPE_43000",
+        "SCLK_KERNEL_ID",
+        "SCLK_PARTITION_END_43",
+        "SCLK_PARTITION_START_43",
     ]
 
     # Assertions
