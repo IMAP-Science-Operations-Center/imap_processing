@@ -1,4 +1,5 @@
 """Data classes for storing and processing MAG Level 1A data."""
+
 from dataclasses import dataclass
 from math import floor
 

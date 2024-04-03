@@ -1,4 +1,5 @@
 """Dataclasses for Level 0 MAG data."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
