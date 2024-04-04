@@ -68,14 +68,14 @@ class CoDICEL1aPipeline:
     -------
     _generate_simulated_data(length_in_bits)
         Return a list of random bytes to provide simulated science data.
+    create_science_dataset()
+        Create an ``xarray`` dataset for the unpacked science data.
     get_acquisition_times()
         Retrieve the acquisition times via the Lo stepping table.
     get_esa_sweep_values()
         Retrieve the ESA sweep values.
     get_lo_data_products()
         Retrieve the lo data products.
-    make_cdf_data()
-        Create the ``xarray`` datasets needed for the L1a CDF file.
     unpack_science_data()
         Make 4D L1a data product from the decompressed science data.
     """
@@ -303,7 +303,7 @@ def get_params(apid):
 
     Parameters
     ----------
-    apid : enum
+    apid : IntEnum
         The APID of interest
 
     Returns
