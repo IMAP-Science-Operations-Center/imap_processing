@@ -20,6 +20,7 @@ def kernels():
     return kernels
 
 
+@pytest.mark.xfail(reason="Download NAIF kernels")
 def test_list_files_with_extensions(kernels):
     """Tests the list_files_with_extensions function."""
 
@@ -59,6 +60,7 @@ def test_list_loaded_kernels(kernels):
     assert sorted(result) == sorted(expected)
 
 
+@pytest.mark.xfail(reason="Download NAIF kernels")
 def test_list_all_constants():
     """Tests the ``list_all_constants`` function"""
 
