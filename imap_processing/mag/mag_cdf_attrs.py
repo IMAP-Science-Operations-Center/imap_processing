@@ -27,7 +27,7 @@ mag_base = GlobalInstrumentAttrs(
 )
 
 mag_l1a_norm_raw_attrs = GlobalDataLevelAttrs(
-    "L1A-raw-norm>Level-1A-raw-normal-rate",
+    "L1A_raw-norm>Level-1A raw normal rate",
     # Should also include data type
     logical_source="imap_mag_l1a_norm-raw",
     logical_source_desc="IMAP Mission MAG Instrument Level-1A Data.",
@@ -35,7 +35,7 @@ mag_l1a_norm_raw_attrs = GlobalDataLevelAttrs(
 )
 
 mag_l1a_burst_raw_attrs = GlobalDataLevelAttrs(
-    "L1A-raw-burst>Level-1A-raw-burst-rate",
+    "L1A_raw-burst>Level-1A raw burst rate",
     # Should also include data type
     logical_source="imap_mag_l1a_burst-raw",
     logical_source_desc="IMAP Mission MAG Instrument Level-1A Data.",
@@ -44,7 +44,7 @@ mag_l1a_burst_raw_attrs = GlobalDataLevelAttrs(
 
 
 mag_l1b_attrs = GlobalDataLevelAttrs(
-    "L1A>Level-1B",
+    "L1B_SCI>Level-1B Science Data",
     # TODO: replace "sci" with descriptor "norm" / "burst"
     logical_source="imap_mag_l1b_sci",
     logical_source_desc="IMAP Mission MAG Instrument Level-1B Data.",
@@ -52,7 +52,7 @@ mag_l1b_attrs = GlobalDataLevelAttrs(
 )
 
 mag_l1c_attrs = GlobalDataLevelAttrs(
-    "L1A>Level-1C",
+    "L1A_SCI>Level-1C Science Data",
     # TODO: replace "sci" with descriptor "norm" / "burst"
     logical_source="imap_mag_l1c_sci",
     logical_source_desc="IMAP Mission MAG Instrument Level-1C Data.",
