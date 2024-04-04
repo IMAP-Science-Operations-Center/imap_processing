@@ -13,6 +13,7 @@ Use
 
 # TODO: Change print statements to logging
 
+import dataclasses
 import logging
 import random
 from pathlib import Path
@@ -131,25 +132,19 @@ class CoDICEL1aPipeline:
         # TODO: Pull out common code and put in codice.utils alongside
         # create_hskp_dataset()
         """
-        species_attrs = {
-            "CATDESC": "The species bins",
-            "FIELDNAM": "Species bins",
-            "FILLVAL": np.float64(-1.0e31),  # TODO: Doublecheck this
-            "FORMAT": "I12",  # Display up to 12 numbers of an integer
-            "LABLAXIS": "Species data",
-            "DISPLAY_TYPE": "None",  # TODO: Doublecheck this
-            "UNITS": "None",  # TODO: Doublecheck this
-            "VALIDMIN": 1,
-            "VALIDMAX": 255,
-            "VAR_TYPE": "data",
-            "SCALETYP": "linear",
-            "VAR_NOTES": (
-                "Species data."  # TODO: Be more descriptive here
-            ),
-        }
-
         # Temporary workaround to get epoch in correct dimensions
         epoch_times = [launch_time for index in range(len(self.data))]
+
+        # Define the attributes specific to species data
+        species_attrs = dataclasses.replace(
+            cdf_attrs.l1a_science_attrs,
+            depend_0="species",
+            depend_1=None,
+            depend_2=None,
+            catdesc="TBD",
+            fieldname="TBD",
+            label_axis="TBD",
+        ).output()
 
         epoch_time = xr.DataArray(
             epoch_times,
@@ -177,19 +172,7 @@ class CoDICEL1aPipeline:
                 name=species_name,
                 data=species_data_int,
                 dims=("species"),
-                attrs={
-                    "CATDESC": species_name,
-                    "FIELDNAM": species_name,
-                    "LABLAXIS": species_name,
-                    "DISPLAY_TYPE": "None",  # TODO: Doublecheck this
-                    "FORMAT": "I12",  # TODO: Doublecheck this
-                    "UNITS": "keV",  # TODO: Doublecheck this
-                    "FILLVAL": np.float64(-1.0e31),  # TODO: Doublecheck this
-                    "VALIDMIN": 1,
-                    "VALIDMAX": 255,
-                    "VAR_TYPE": "data",
-                    "DEPEND_0": "species",
-                },
+                attrs=species_attrs,
             )
             dataset[species_name] = data
 

@@ -9,7 +9,6 @@ For further details, see the documentation provided at
 https://imap-processing.readthedocs.io/en/latest/development/CDFs/cdf_requirements.html
 """
 
-
 from imap_processing.cdf.defaults import GlobalConstants
 from imap_processing.cdf.global_attrs import (
     AttrBase,
@@ -87,7 +86,6 @@ codice_metadata_attrs = ScienceAttrs(
     variable_purpose="PRIMARY",
 )
 
-# TODO: ask CoDICE team about valid min and max values of these data
 l1a_science_attrs = ScienceAttrs(
     validmin=0,
     validmax=GlobalConstants.INT_MAXVAL,
