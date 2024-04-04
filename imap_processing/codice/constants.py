@@ -6,6 +6,26 @@ derived from the packet data.
 
 from imap_processing.codice.utils import CoDICECompression
 
+# CDF-friendly variable names for lo-sw-species-counts data product
+LO_SW_SPECIES_NAMES = [
+    "hplus",
+    "heplusplus",
+    "cplus4",
+    "cplus5",
+    "cplus6",
+    "oplus5",
+    "oplus6",
+    "oplus7",
+    "oplus8",
+    "ne",
+    "mg",
+    "si",
+    "fe-loq",
+    "fe-hiq",
+    "heplus",
+    "cnoplus",
+]
+
 # Compression ID lookup table for Lo data products
 # The key is the view_id and the value is the ID for the compression algorithm
 # (see utils.CoDICECompression to see how the values correspond)

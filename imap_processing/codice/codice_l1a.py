@@ -25,12 +25,12 @@ from imap_processing import imap_module_directory, launch_time
 from imap_processing.cdf.global_attrs import ConstantCoordinates
 from imap_processing.cdf.utils import write_cdf
 from imap_processing.codice import __version__, cdf_attrs
-from imap_processing.codice.codice_l0 import decom_packets
 from imap_processing.codice.constants import (
     ESA_SWEEP_TABLE_ID_LOOKUP,
     LO_COLLAPSE_TABLE_ID_LOOKUP,
     LO_COMPRESSION_ID_LOOKUP,
     LO_STEPPING_TABLE_ID_LOOKUP,
+    LO_SW_SPECIES_NAMES,
 )
 from imap_processing.codice.decompress import decompress
 from imap_processing.codice.utils import CODICEAPID, create_hskp_dataset
@@ -170,25 +170,7 @@ class CoDICEL1aPipeline:
         )
 
         # Create a data variable for each species
-        species_names = [
-            "hplus",
-            "heplusplus",
-            "cplus4",
-            "cplus5",
-            "cplus6",
-            "oplus5",
-            "oplus6",
-            "oplus7",
-            "oplus8",
-            "ne",
-            "mg",
-            "si",
-            "fe-loq",
-            "fe-hiq",
-            "heplus",
-            "cnoplus",
-        ]
-        for species_data, species_name in zip(self.data, species_names):
+        for species_data, species_name in zip(self.data, LO_SW_SPECIES_NAMES):
             species_data_int = [byte for byte in species_data]
 
             data = xr.DataArray(
@@ -201,7 +183,7 @@ class CoDICEL1aPipeline:
                     "LABLAXIS": species_name,
                     "DISPLAY_TYPE": "None",  # TODO: Doublecheck this
                     "FORMAT": "I12",  # TODO: Doublecheck this
-                    "UNITS": "eV",  # TODO: Doublecheck this
+                    "UNITS": "keV",  # TODO: Doublecheck this
                     "FILLVAL": np.float64(-1.0e31),  # TODO: Doublecheck this
                     "VALIDMIN": 1,
                     "VALIDMAX": 255,
@@ -459,23 +441,7 @@ def process_codice_l1a(packets) -> str:
             continue
 
     # Write dataset to CDF
+    print(f"\nFinal data product:\n{dataset}\n")
     cdf_filename = write_cdf(dataset)
     print(f"Created CDF file: {cdf_filename}")
     return cdf_filename
-
-
-# Make module command-line executable during development to make playing around
-# with things easier
-# TODO: Eventually remove this
-if __name__ == "__main__":
-    raw_data_with_housekeeping = Path(
-        f"{imap_module_directory}/tests/codice/data/"
-        f"raw_ccsds_20230822_122700Z_idle.bin"
-    )
-    raw_data_with_science_data = Path(
-        f"{imap_module_directory}/tests/codice/data/" f"sample_science_data.bin"
-    )
-    packet_list = decom_packets(raw_data_with_science_data)
-    # packet_list = decom_packets(raw_data_with_housekeeping)
-
-    process_codice_l1a(packet_list)
