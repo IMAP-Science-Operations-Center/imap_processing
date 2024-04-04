@@ -8,12 +8,11 @@ import collections
 import dataclasses
 from enum import IntEnum
 
-import numpy as np
 import xarray as xr
 
 from imap_processing.cdf.global_attrs import ConstantCoordinates
 from imap_processing.cdf.utils import calc_start_time
-from imap_processing.codice import __version__, cdf_attrs
+from imap_processing.codice import cdf_attrs
 
 
 class CODICEAPID(IntEnum):
@@ -124,11 +123,8 @@ def create_hskp_dataset(packets) -> xr.Dataset:
     for packet in packets:
         add_metadata_to_array(packet, metadata_arrays)
 
-    # Convert to datetime64 and normalize by launch date
-    epochs = [calc_start_time(item) for item in metadata_arrays["SHCOARSE"]]
-
     epoch = xr.DataArray(
-        epochs,
+        [calc_start_time(item) for item in metadata_arrays["SHCOARSE"]],
         name="epoch",
         dims=["epoch"],
         attrs=ConstantCoordinates.EPOCH,
@@ -152,12 +148,6 @@ def create_hskp_dataset(packets) -> xr.Dataset:
             ).output(),
         )
 
-    start_time = np.datetime_as_string(dataset["epoch"].values[0], unit="D").replace(
-        "-", ""
-    )
-    dataset.attrs[
-        "Logical_file_id"
-    ] = f"imap_codice_l1a_hskp_{start_time}_v{__version__}"
     dataset.attrs["Logical_source"] = "imap_codice_l1a_hskp"
 
     return dataset

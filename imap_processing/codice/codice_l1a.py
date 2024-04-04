@@ -25,7 +25,7 @@ import xarray as xr
 from imap_processing import imap_module_directory, launch_time
 from imap_processing.cdf.global_attrs import ConstantCoordinates
 from imap_processing.cdf.utils import write_cdf
-from imap_processing.codice import __version__, cdf_attrs
+from imap_processing.codice import cdf_attrs
 from imap_processing.codice.constants import (
     ESA_SWEEP_TABLE_ID_LOOKUP,
     LO_COLLAPSE_TABLE_ID_LOOKUP,
@@ -105,7 +105,7 @@ class CoDICEL1aPipeline:
         random_bytes : bytes
             A list of random bytes to be used as simulated science data
         """
-        print("\tUsing simulated data")
+        logger.info("\tUsing simulated data")
         # Generate string of random bits of proper length
         bit_string = bin(random.getrandbits(length_in_bits))[2:]
         bit_string = bit_string.zfill(length_in_bits)
@@ -132,9 +132,6 @@ class CoDICEL1aPipeline:
         # TODO: Pull out common code and put in codice.utils alongside
         # create_hskp_dataset()
         """
-        # Temporary workaround to get epoch in correct dimensions
-        epoch_times = [launch_time for index in range(len(self.data))]
-
         # Define the attributes specific to species data
         species_attrs = dataclasses.replace(
             cdf_attrs.l1a_science_attrs,
@@ -147,11 +144,14 @@ class CoDICEL1aPipeline:
         ).output()
 
         epoch_time = xr.DataArray(
-            epoch_times,
+            [
+                launch_time for i in range(len(self.data))
+            ],  # Temporary workaround to get epoch in correct dimensions
             name="epoch",
             dims=["epoch"],
             attrs=ConstantCoordinates.EPOCH,
         )
+
         species_array = xr.DataArray(
             name="species",
             data=np.zeros(36864),
@@ -166,22 +166,14 @@ class CoDICEL1aPipeline:
 
         # Create a data variable for each species
         for species_data, species_name in zip(self.data, LO_SW_SPECIES_NAMES):
-            species_data_int = [byte for byte in species_data]
-
             data = xr.DataArray(
                 name=species_name,
-                data=species_data_int,
+                data=list(species_data),
                 dims=("species"),
                 attrs=species_attrs,
             )
             dataset[species_name] = data
 
-        start_time = np.datetime_as_string(
-            dataset["epoch"].values[0], unit="D"
-        ).replace("-", "")
-        dataset.attrs[
-            "Logical_file_id"
-        ] = f"imap_codice_l1a_lo-sw-species-counts_{start_time}_v{__version__}"
         dataset.attrs["Logical_source"] = "imap_codice_l1a_lo-sw-species-counts"
 
         # TODO: Add in the ESA sweep values and acquisition times? (Confirm with Joey)
