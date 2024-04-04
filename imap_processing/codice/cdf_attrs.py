@@ -60,7 +60,7 @@ int_base = AttrBase(
     validmin=0,
     validmax=GlobalConstants.INT_MAXVAL,
     format="I12",
-    var_type="support_data",
+    var_type="data",
     display_type="no_plot",
 )
 
@@ -68,7 +68,7 @@ float_base = AttrBase(
     validmin=0,
     validmax=GlobalConstants.INT_MAXVAL,
     format="I12",
-    var_type="support_data",
+    var_type="data",
     display_type="no_plot",
 )
 
@@ -83,7 +83,7 @@ codice_metadata_attrs = ScienceAttrs(
     depend_0="epoch",
     format="I12",
     units="dN",
-    var_type="support_data",
+    var_type="data",
     variable_purpose="PRIMARY",
 )
 

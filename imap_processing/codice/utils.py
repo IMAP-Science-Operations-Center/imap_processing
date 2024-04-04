@@ -8,11 +8,12 @@ import collections
 import dataclasses
 from enum import IntEnum
 
+import numpy as np
 import xarray as xr
 
 from imap_processing.cdf.global_attrs import ConstantCoordinates
 from imap_processing.cdf.utils import calc_start_time
-from imap_processing.codice import cdf_attrs
+from imap_processing.codice import __version__, cdf_attrs
 
 
 class CODICEAPID(IntEnum):
@@ -82,11 +83,22 @@ def add_metadata_to_array(packet, metadata_arrays: dict) -> dict:
     metadata_arrays : dict
         Updated metadata arrays with values
     """
+    ignore_list = [
+        "SPARE_1",
+        "SPARE_2",
+        "SPARE_3",
+        "SPARE_4",
+        "SPARE_5",
+        "SPARE_6",
+        "CHECKSUM",
+    ]
+
     for key, value in packet.header.items():
         metadata_arrays.setdefault(key, []).append(value.raw_value)
 
     for key, value in packet.data.items():
-        metadata_arrays.setdefault(key, []).append(value.raw_value)
+        if key not in ignore_list:
+            metadata_arrays.setdefault(key, []).append(value.raw_value)
 
     return metadata_arrays
 
@@ -104,6 +116,9 @@ def create_hskp_dataset(packets) -> xr.Dataset:
     xarray.Dataset
         xarray dataset containing the metadata
     """
+    # TODO: If SHCOARSE is 0, skip the packet
+    # (This problem may fix itself with valid testing data)
+
     metadata_arrays = collections.defaultdict(list)
 
     for packet in packets:
@@ -136,5 +151,13 @@ def create_hskp_dataset(packets) -> xr.Dataset:
                 depend_0="epoch",
             ).output(),
         )
+
+    start_time = np.datetime_as_string(dataset["epoch"].values[0], unit="D").replace(
+        "-", ""
+    )
+    dataset.attrs[
+        "Logical_file_id"
+    ] = f"imap_codice_l1a_hskp_{start_time}_v{__version__}"
+    dataset.attrs["Logical_source"] = "imap_codice_l1a_hskp"
 
     return dataset
