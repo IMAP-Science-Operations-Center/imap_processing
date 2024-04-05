@@ -52,7 +52,7 @@ mag_l1b_attrs = GlobalDataLevelAttrs(
 )
 
 mag_l1c_attrs = GlobalDataLevelAttrs(
-    "L1A_SCI>Level-1C Science Data",
+    "L1C_SCI>Level-1C Science Data",
     # TODO: replace "sci" with descriptor "norm" / "burst"
     logical_source="imap_mag_l1c_sci",
     logical_source_desc="IMAP Mission MAG Instrument Level-1C Data.",
