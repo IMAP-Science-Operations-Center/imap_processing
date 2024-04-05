@@ -8,7 +8,7 @@ message: 'If you use this software, please cite the software
   each version is available on Zenodo'
 type: software
 authors:
-  - name: IMAP Science Operations Center
+  - name: IMAP Science Data Center Developers
 repository-code: >-
   https://github.com/IMAP-Science-Operations-Center/imap_processing
 url: 'https://imap-processing.readthedocs.io/en/latest/'
@@ -18,16 +18,24 @@ abstract: >-
   investigating the acceleration mechanisms of particles
   within our galaxy. IMAP utilizes cutting-edge technology
   and advanced instrumentation to gather valuable data and
-  expand our understanding of space. The Science Operations
-  Center (SOC) is located at the Laboratory of Atmospheric and Space Physics (LASP)
+  expand our understanding of space. The Science Data Center
+  (SDC) is under the Science Operations Center (SOC), located
+  at the Laboratory for Atmospheric and Space Physics (LASP),
   and is responsible for the data processing on the IMAP mission.
 keywords:
   - IMAP
-  - SOC
   - LASP
   - NASA
   - open science
   - Python
   - data processing
-  - science operations center
+  - Science Operations Center (SOC)
+  - Science Data Center (SDC)
+  - heliophysics
+  - interstellar mapping
+  - heliosphere
+  - solar wind
+  - energetic particles
+  - acceleration probe
+  - interstellar medium
 license: MIT
