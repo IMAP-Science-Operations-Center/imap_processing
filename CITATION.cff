@@ -23,19 +23,19 @@ abstract: >-
   at the Laboratory for Atmospheric and Space Physics (LASP),
   and is responsible for the data processing on the IMAP mission.
 keywords:
-  - IMAP
+  - Interstellar Mapping and Acceleration Probe (IMAP)
   - LASP
   - NASA
+  - Science Operations Center (SOC)
+  - Science Data Center (SDC)
   - open science
   - Python
   - data processing
-  - Science Operations Center (SOC)
-  - Science Data Center (SDC)
+  - algorithm development
   - heliophysics
-  - interstellar mapping
   - heliosphere
   - solar wind
   - energetic particles
-  - acceleration probe
   - interstellar medium
+  - Energetic Neutral Atom (ENA)
 license: MIT
