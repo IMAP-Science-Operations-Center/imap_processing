@@ -158,7 +158,7 @@ class GlobalDataLevelAttrs:
     ----------
     data_type : str
         The data level and descriptor separated by underscore.
-        Eg. "L1A_DE>Level-1 Direct Event"
+        Eg. "L1A_DE>Level-1A Direct Event"
     logical_source : str
         The source of the data, ex "imap_idex_l1_sci"
     logical_source_desc : str
