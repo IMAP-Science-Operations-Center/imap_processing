@@ -38,12 +38,16 @@ class GlobalConstantAttrs:
 
     """
 
-    # TODO: ask about how to add optional parameter in File_naming_convention
-    # Especially for date range and repoint number.
+    # TODO: ask about how to add optional parameter in File_naming_convention.
+    # Need optional parameter for date range and repoint number.
     # If File_naming_convention was not set, it uses default setting:
     #   source_datatype_descriptor_yyyyMMdd
     # which would result in a file name like:
-    #  imap_l1_sci_imap_20220101_v001.cdf
+    #   imap_l1_sci_idex_20220101_v001.cdf
+    # For IMAP naming convention, it should be:
+    #   source_descriptor_datatype_yyyyMMdd_vNNN
+    # which would result in a file name like:
+    #   imap_idex_l1_sci_20220101_v001.cdf
     GLOBAL_BASE: Final[dict] = {
         "Project": "STP>Solar-Terrestrial Physics",
         "Source_name": "IMAP>Interstellar Mapping and Acceleration Probe",
