@@ -28,4 +28,5 @@ class GlobalConstants:
     INT_MAXVAL = np.iinfo(np.int64).max
     DOUBLE_FILLVAL = np.float64(-1.0e31)
     MIN_EPOCH = -315575942816000000
+    # TODO: This is set to 2029, should be further out. Determine the correct value.
     MAX_EPOCH = 946728069183000000

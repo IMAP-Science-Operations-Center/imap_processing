@@ -2,14 +2,15 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+import pytest
 
+from imap_processing.cdf.utils import calc_start_time
 from imap_processing.mag.l0.decom_mag import decom_packets
 from imap_processing.mag.l1a.mag_l1a import process_packets
 from imap_processing.mag.l1a.mag_l1a_data import (
     MAX_FINE_TIME,
     MagL1a,
     TimeTuple,
-    Vector,
 )
 
 
@@ -98,18 +99,43 @@ def test_time_tuple():
 
 
 def test_vector_time():
-    test_data = MagL1a(
-        True,
-        True,
-        TimeTuple(10000, 0),
-        2,  # 2 vectors per second
-        4,
-        2,
-        0,
-        [(1, 2, 3, 4), (1, 2, 3, 4), (2, 2, 2, 3), (3, 3, 3, 4)],
-    )
+    # test_data = MagL1a(
+    #     True,
+    #     True,
+    #     TimeTuple(10000, 0),
+    #     2,  # 2 vectors per second
+    #     4,
+    #     2,
+    #     0,
+    #     [(1, 2, 3, 4), (1, 2, 3, 4), (2, 2, 2, 3), (3, 3, 3, 4)],
+    # )
+    #
+    # assert test_data.vectors[0] == Vector((1, 2, 3, 4), TimeTuple(10000, 0))
+    # assert test_data.vectors[1] == Vector((1, 2, 3, 4), TimeTuple(10000, 32768))
+    # assert test_data.vectors[2] == Vector((2, 2, 2, 3), TimeTuple(10001, 1))
+    # assert test_data.vectors[3] == Vector((3, 3, 3, 4), TimeTuple(10001, 32769))
+    pytest.fail("Not implemented")
 
-    assert test_data.vectors[0] == Vector((1, 2, 3, 4), TimeTuple(10000, 0))
-    assert test_data.vectors[1] == Vector((1, 2, 3, 4), TimeTuple(10000, 32768))
-    assert test_data.vectors[2] == Vector((2, 2, 2, 3), TimeTuple(10001, 1))
-    assert test_data.vectors[3] == Vector((3, 3, 3, 4), TimeTuple(10001, 32769))
+
+def test_calculate_vector_time():
+    test_vectors = np.array(
+        [[1, 2, 3], [4, 5, 6], [7, 8, 9], [10, 11, 12]], dtype=np.uint
+    )
+    test_vecsec = 2
+    start_time = TimeTuple(10000, 0)
+
+    test_data = MagL1a.calculate_vector_time(test_vectors, test_vecsec, start_time)
+
+    converted_start_time_ns = calc_start_time(start_time.to_seconds())
+
+    skips_ns = np.timedelta64(int(1 / test_vecsec * 1e9), "ns")
+    print(skips_ns)
+    expected_data = np.array(
+        [
+            [1, 2, 3, int(converted_start_time_ns)],
+            [4, 5, 6, int(converted_start_time_ns + skips_ns)],
+            [7, 8, 9, int(converted_start_time_ns + skips_ns * 2)],
+            [10, 11, 12, int(converted_start_time_ns + skips_ns * 3)],
+        ]
+    )
+    assert (test_data == expected_data).all()
