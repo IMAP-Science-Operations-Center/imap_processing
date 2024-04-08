@@ -123,6 +123,7 @@ class MagL1a:
         timedelta = np.timedelta64(int(1 / vectors_per_second * 1e9), "ns")
 
         start_time_ns = calc_start_time(start_time.to_seconds())
+
         # Calculate time skips for each vector in ns
         times = np.reshape(
             np.arange(
@@ -134,7 +135,7 @@ class MagL1a:
             ),
             (vectors.shape[0], -1),
         )
-        vector_objects = np.concatenate([vectors, times], axis=1, dtype=np.uint)
+        vector_objects = np.concatenate([vectors, times], axis=1, dtype=np.int64)
         return vector_objects
 
     @staticmethod
@@ -264,6 +265,6 @@ class MagL1a:
                 secondary_vectors.append(vector)
 
         return (
-            np.array(primary_vectors, dtype=np.uint),
-            np.array(secondary_vectors, dtype=np.uint),
+            np.array(primary_vectors, dtype=np.int64),
+            np.array(secondary_vectors, dtype=np.int64),
         )

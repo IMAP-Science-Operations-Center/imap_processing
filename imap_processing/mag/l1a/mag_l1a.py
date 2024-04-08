@@ -96,7 +96,9 @@ def process_and_write_data(
     return generated_files
 
 
-def process_packets(mag_l0_list: list[MagL0]) -> dict[str, dict[np.datetime64, MagL1a]]:
+def process_packets(
+    mag_l0_list: list[MagL0],
+) -> dict[str, dict[np.datetime64, list[MagL1a]]]:
     """
     Given a list of MagL0 packets, process them into MagO and MagI L1A data classes.
 
@@ -128,8 +130,6 @@ def process_packets(mag_l0_list: list[MagL0]) -> dict[str, dict[np.datetime64, M
         secondary_day = calc_start_time(secondary_start_time.to_seconds()).astype(
             "datetime64[D]"
         )
-
-        print(primary_day)
 
         # seconds of data in this packet is the SUBTYPE plus 1
         seconds_per_packet = mag_l0.PUS_SSUBTYPE + 1
@@ -228,10 +228,7 @@ def generate_dataset(mag_l1a: MagL1a, dataset_attrs: dict):
         One xarray dataset with proper CDF attributes and shape containing MAG L1A data.
     """
     # TODO: Just leave time in datetime64 type with vector as dtype object to avoid this
-    print(mag_l1a.vectors[:, 4])
     time_data = mag_l1a.vectors[:, 4].astype(np.dtype("datetime64[ns]"), copy=False)
-    print("0000")
-    print(time_data)
 
     direction = xr.DataArray(
         np.arange(4),
@@ -264,30 +261,5 @@ def generate_dataset(mag_l1a: MagL1a, dataset_attrs: dict):
     output["vectors"] = vectors
 
     # TODO: Put is_mago and active in the header
-    # output["is_mago"] = xr.DataArray(
-    #     [mag_l1a.is_mago],
-    #     name="is_mago",
-    #     attrs=dataclasses.replace(mag_cdf_attrs.mag_support_attrs,
-    #                               catdesc=
-    #                               mag_cdf_attrs.catdesc_fieldname_l1a["is_mago"][0],
-    #                               fieldname=
-    #                               mag_cdf_attrs.catdesc_fieldname_l1a["is_mago"][1],
-    #                               label_axis="is_mago",
-    #                               display_type="no_plot").output()
-    #
-    # )
-    #
-    # output["active"] = xr.DataArray(
-    #     [mag_l1a.active],
-    #     name="active",
-    #     attrs=dataclasses.replace(mag_cdf_attrs.mag_support_attrs,
-    #                               catdesc=
-    #                               mag_cdf_attrs.catdesc_fieldname_l1a["active"][0],
-    #                               fieldname=
-    #                               mag_cdf_attrs.catdesc_fieldname_l1a["active"][1],
-    #                               label_axis="active",
-    #                               display_type="no_plot").output()
-    #
-    # )
 
     return output
