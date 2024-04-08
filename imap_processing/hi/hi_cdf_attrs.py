@@ -39,10 +39,10 @@ text = (
 )
 
 hi_base = GlobalInstrumentAttrs(
-    __version__,
-    "IMAP-Hi>IMAP High-Energy Energetic Neutral Atom Imager",
-    text,
-    "Particles (space)",
+    version=__version__,
+    descriptor="Hi>IMAP High-Energy (IMAP-Hi) Energetic Neutral Atom Imager",
+    text=text,
+    instrument_type="Particles (space)",
 )
 
 # Direct event attrs
@@ -134,18 +134,16 @@ ccsds_met_attrs = ScienceAttrs(
 )
 
 # Note from SPDF about Logical_source_id breakdown:
-# source_name: imap - This is in global attributes
-# descriptor: instrument name - This is in global attributes
 # data_type: <data_level>_<descriptor> - this is here in DataLevelAttrs
 hi_de_l1a_attrs = GlobalDataLevelAttrs(
-    data_type="L1A-de>Level-1A Direct Event",
+    data_type="L1A_DE>Level-1A Direct Event",
     logical_source="imap_hi_l1a_de",
     logical_source_desc=("IMAP-HI Instrument Level-1A Direct Event Data."),
     instrument_base=hi_base,
 )
 
 hi_hk_l1a_attrs = GlobalDataLevelAttrs(
-    data_type="L1A-hk>Level-1A Housekeeping",
+    data_type="L1A_HK>Level-1A Housekeeping",
     logical_source="imap_hi_l1a_hk",
     logical_source_desc=("IMAP-HI Instrument Level-1A Housekeeping Data."),
     instrument_base=hi_base,

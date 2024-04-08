@@ -38,6 +38,16 @@ class GlobalConstantAttrs:
 
     """
 
+    # TODO: ask about how to add optional parameter in File_naming_convention.
+    # Need optional parameter for date range and repoint number.
+    # If File_naming_convention was not set, it uses default setting:
+    #   source_datatype_descriptor_yyyyMMdd
+    # which would result in a file name like:
+    #   imap_l1_sci_idex_20220101_v001.cdf
+    # For IMAP naming convention, it should be:
+    #   source_descriptor_datatype_yyyyMMdd_vNNN
+    # which would result in a file name like:
+    #   imap_idex_l1_sci_20220101_v001.cdf
     GLOBAL_BASE: Final[dict] = {
         "Project": "STP>Solar-Terrestrial Physics",
         "Source_name": "IMAP>Interstellar Mapping and Acceleration Probe",
@@ -49,6 +59,7 @@ class GlobalConstantAttrs:
             "Princeton Plasma Physics Laboratory",
             "100 Stellarator Road, Princeton, NJ 08540",
         ),
+        "File_naming_convention": "source_descriptor_datatype_yyyyMMdd_vNNN",
     }
 
     def output(self):
@@ -102,6 +113,9 @@ class GlobalInstrumentAttrs:
         The software version
     descriptor : str
         Descriptor of the instrument (Ex: "IDEX>Interstellar Dust Experiment")
+        NOTE:
+        Instrument name on the left side of the ">" will need to match what it
+        appears in the filename.
     text : str
         Explanation of the instrument, usually as a paragraph.
     instrument_type : str default="Particles (space)"
@@ -147,7 +161,8 @@ class GlobalDataLevelAttrs:
     Attributes
     ----------
     data_type : str
-        The level of data, ex "L1>Level-1"
+        The data level and descriptor separated by underscore.
+        Eg. "L1A_DE>Level-1A Direct Event"
     logical_source : str
         The source of the data, ex "imap_idex_l1_sci"
     logical_source_desc : str
