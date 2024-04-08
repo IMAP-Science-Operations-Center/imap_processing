@@ -115,7 +115,7 @@ swe_base = GlobalInstrumentAttrs(
 
 
 swe_l1a_global_attrs = GlobalDataLevelAttrs(
-    data_type="L1A->Level-1A",
+    data_type="L1A_SCI>Level-1A Science Data",
     # TODO: replace "sci" with proper descriptor
     logical_source="imap_swe_l1a_sci",
     logical_source_desc="IMAP Mission SWE Instrument Level-1A Data",
@@ -123,7 +123,7 @@ swe_l1a_global_attrs = GlobalDataLevelAttrs(
 )
 
 swe_l1b_global_attrs = GlobalDataLevelAttrs(
-    data_type="L1B->Level-1B",
+    data_type="L1B_SCI>Level-1B Science Data",
     # TODO: replace "sci" with proper descriptor
     logical_source="imap_swe_l1b_sci",
     logical_source_desc="IMAP Mission SWE Instrument Level-1B Data",
