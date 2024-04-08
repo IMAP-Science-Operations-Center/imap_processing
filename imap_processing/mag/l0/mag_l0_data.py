@@ -1,4 +1,5 @@
 """Dataclasses for Level 0 MAG data."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -69,9 +70,10 @@ class MagL0:
         Secondary Coarse Time for first vector, seconds
     SEC_FNTM: int
         Secondary Fine Time for first vector, subseconds
-    VECTORS: bin
+    VECTORS: np.ndarray | str
         MAG Science Vectors - divide based on PRI_VECSEC and PUS_SSUBTYPE for vector
-        counts
+        counts. There is a post init call to convert a string into a numpy array -
+        the only place it is a string is in the class initialization.
     """
 
     ccsds_header: CcsdsData

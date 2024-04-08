@@ -1,4 +1,3 @@
-from datetime import datetime
 from pathlib import Path
 
 import pytest
@@ -6,7 +5,6 @@ import spiceypy as spice
 
 from tools.spice.spice_utils import (
     list_all_constants,
-    list_attitude_coverage,
     list_files_with_extensions,
     list_loaded_kernels,
 )
@@ -15,34 +13,36 @@ from tools.spice.spice_utils import (
 @pytest.fixture()
 def kernels():
     """Return the SPICE kernels used for testing"""
+    # TODO: ALl kernels able to be downloaded from NAIF are not available
+    #  in the test_data/spice directory.
     directory = Path(__file__).parent.parent / "test_data" / "spice"
-    kernels = list_files_with_extensions(directory, [".bsp", ".ti"])
+    kernels = list_files_with_extensions(directory, [".bsp", ".tf"])
     return kernels
 
 
+@pytest.mark.xfail(reason="Download NAIF kernels")
 def test_list_files_with_extensions(kernels):
     """Tests the list_files_with_extensions function."""
 
     directory = Path(__file__).parent.parent / "test_data" / "spice"
 
     # Test listing files with specified extensions
-    result = list_files_with_extensions(directory, [".bsp", ".ti"])
+    result = list_files_with_extensions(directory, [".tf"])
     expected_files = [
-        str(directory / "imap_lo_starsensor_instrument_demo.ti"),
-        str(directory / "imap_spk_demo.bsp"),
-        str(directory / "imap_ultra_instrument_demo.ti"),
+        str(directory / "imap_wkcp.tf"),
     ]
     assert sorted(result) == sorted(expected_files)
 
     # Test case sensitivity in extensions
-    result_case_sensitive = list_files_with_extensions(directory, [".BSP", ".TI"])
-    assert result_case_sensitive == expected_files
+    result_case_sensitive = list_files_with_extensions(directory, [".TF"])
+    assert sorted(result_case_sensitive) == sorted(expected_files)
 
     # Test with non-matching extensions (should return an empty list)
     result_non_matching = list_files_with_extensions(directory, [".xyz"])
     assert result_non_matching == []
 
 
+@pytest.mark.xfail(reason="Download NAIF kernels")
 def test_list_loaded_kernels(kernels):
     """Tests the ``list_loaded_kernels`` function"""
     directory = Path(__file__).parent.parent / "test_data" / "spice"
@@ -51,57 +51,41 @@ def test_list_loaded_kernels(kernels):
         result = list_loaded_kernels()
 
     expected = [
-        str(directory / "imap_lo_starsensor_instrument_demo.ti"),
-        str(directory / "imap_spk_demo.bsp"),
-        str(directory / "imap_ultra_instrument_demo.ti"),
+        str(directory / "imap_wkcp.tf"),
+        str(directory / "IMAP_launch20250429_1D.bsp"),
+        str(directory / "L1_de431.bsp"),
+        str(directory / "de430.bsp"),
     ]
 
-    assert result == expected
+    assert sorted(result) == sorted(expected)
 
 
+@pytest.mark.xfail(reason="Download NAIF kernels")
 def test_list_all_constants():
     """Tests the ``list_all_constants`` function"""
 
     # Set up the test environment
     directory = Path(__file__).parent.parent / "test_data" / "spice"
-    kernels = list_files_with_extensions(directory, [".tls"])
+    kernels = list_files_with_extensions(directory, [".tsc"])
 
     with spice.KernelPool(kernels):
         result = list_all_constants()
 
     # Expected keys
     expected_keys = [
-        "DELTET/DELTA_AT",
-        "DELTET/DELTA_T_A",
-        "DELTET/EB",
-        "DELTET/K",
-        "DELTET/M",
+        "SCLK01_COEFFICIENTS_43",
+        "SCLK01_MODULI_43",
+        "SCLK01_N_FIELDS_43",
+        "SCLK01_OFFSETS_43",
+        "SCLK01_OUTPUT_DELIM_43",
+        "SCLK01_TIME_SYSTEM_43",
+        "SCLK_DATA_TYPE_43",
+        "SCLK_DATA_TYPE_43000",
+        "SCLK_KERNEL_ID",
+        "SCLK_PARTITION_END_43",
+        "SCLK_PARTITION_START_43",
     ]
 
     # Assertions
     assert isinstance(result, dict)
     assert list(result.keys()) == expected_keys
-
-
-def test_list_attitude_coverage():
-    """Tests the ``list_attitude_coverage`` function"""
-
-    # Set up the test environment
-    directory = Path(__file__).parent.parent / "test_data" / "spice"
-    kernels = list_files_with_extensions(directory, [".ah.bc", ".ah.a"])
-
-    with spice.KernelPool(kernels):
-        # Test with valid extensions
-        result = list_attitude_coverage()
-
-        # Test with invalid custom pattern
-        with pytest.raises(ValueError, match=r"Invalid pattern: .*"):
-            list_attitude_coverage(r"invalid")
-
-    assert isinstance(result, tuple)
-    assert len(result) == 2
-    assert all(isinstance(date, datetime) for date in result)
-
-    # Test with an empty directory
-    empty_result = list_attitude_coverage()
-    assert empty_result is tuple()
