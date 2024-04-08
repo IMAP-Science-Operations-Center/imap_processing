@@ -21,7 +21,7 @@ from imap_processing.mag.l0.mag_l0_data import MagL0, Mode
 logger = logging.getLogger(__name__)
 
 
-def decom_packets(packet_file_path: str | Path) -> list[MagL0]:
+def decom_packets(packet_file_path: str | Path) -> dict[str, list[MagL0]]:
     """Decom MAG data packets using MAG packet definition.
 
     Parameters
@@ -31,9 +31,9 @@ def decom_packets(packet_file_path: str | Path) -> list[MagL0]:
 
     Returns
     -------
-    data : list[MagL0]
-        A list of MAG L0 data classes, including both burst and normal packets. (the
-        packet type is defined in each instance of L0.)
+    data_dict : dict[str, list[MagL0]]
+        A dict with 2 keys pointing to lists of MAG L0 data classes. "norm" corresponds
+        to  normal mode packets, "burst" corresponds to burst mode packets.
     """
     # Define paths
     xtce_document = Path(
@@ -43,7 +43,8 @@ def decom_packets(packet_file_path: str | Path) -> list[MagL0]:
     packet_definition = xtcedef.XtcePacketDefinition(xtce_document)
     mag_parser = parser.PacketParser(packet_definition)
 
-    data_list = []
+    norm_data = []
+    burst_data = []
 
     with open(packet_file_path, "rb") as binary_data:
         mag_packets = mag_parser.generator(binary_data)
@@ -57,59 +58,17 @@ def decom_packets(packet_file_path: str | Path) -> list[MagL0]:
                     else item.raw_value
                     for item in packet.data.values()
                 ]
-                data_list.append(MagL0(CcsdsData(packet.header), *values))
+                if apid == Mode.NORMAL:
+                    norm_data.append(MagL0(CcsdsData(packet.header), *values))
+                else:
+                    burst_data.append(MagL0(CcsdsData(packet.header), *values))
 
-        return data_list
-
-
-def export_to_xarray(l0_data: list[MagL0]):
-    """Generate xarray files for "raw" MAG CDF files from MagL0 data.
-
-    Mag outputs "RAW" CDF files just after decomming. These have the immediately
-    post-decom data, with raw binary data for the vectors instead of vector values.
-
-    Parameters
-    ----------
-    l0_data: list[MagL0]
-        A list of MagL0 datapoints
-
-    Returns
-    -------
-    norm_data : xr.Dataset
-        xarray dataset for generating burst data CDFs
-    burst_data : xr.Dataset
-        xarray dataset for generating burst data CDFs
-    """
-    # TODO split by mago and magi using primary sensor
-    norm_data = []
-    burst_data = []
-
-    for packet in l0_data:
-        if packet.ccsds_header.PKT_APID == Mode.NORMAL:
-            norm_data.append(packet)
-        if packet.ccsds_header.PKT_APID == Mode.BURST:
-            burst_data.append(packet)
-
-    norm_dataset = None
-    burst_dataset = None
-
-    if len(norm_data) > 0:
-        norm_dataset = generate_dataset(
-            norm_data, mag_cdf_attrs.mag_l1a_norm_raw_attrs.output()
-        )
-    if len(burst_data) > 0:
-        burst_dataset = generate_dataset(
-            burst_data, mag_cdf_attrs.mag_l1a_burst_raw_attrs.output()
-        )
-
-    return norm_dataset, burst_dataset
+    return {"norm": norm_data, "burst": burst_data}
 
 
 def generate_dataset(l0_data: list[MagL0], dataset_attrs: dict) -> xr.Dataset:
     """
-    Generate a CDF dataset from the sorted L0 MAG data.
-
-    Used to create 2 similar datasets, for norm and burst data.
+    Generate a CDF dataset from the sorted raw L0 MAG data.
 
     Parameters
     ----------
@@ -124,6 +83,8 @@ def generate_dataset(l0_data: list[MagL0], dataset_attrs: dict) -> xr.Dataset:
     dataset : xr.Dataset
         xarray dataset with proper CDF attributes and shape.
     """
+    # TODO: Correct CDF attributes from email
+
     vector_data = np.zeros((len(l0_data), len(l0_data[0].VECTORS)))
     shcoarse_data = np.zeros(len(l0_data), dtype="datetime64[ns]")
 
