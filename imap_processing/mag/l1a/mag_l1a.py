@@ -69,7 +69,7 @@ def process_packets(mag_l0_list: list[MagL0]) -> dict[str, list[MagL1a]]:
         # seconds of data in this packet is the SUBTYPE plus 1
         seconds_per_packet = mag_l0.PUS_SSUBTYPE + 1
 
-        # now we know the number of secs of data in the packet, and the data rates of
+        # now we know the number of seconds of data in the packet, and the data rates of
         # each sensor, we can calculate how much data is in this packet and where the
         # byte boundaries are.
 
