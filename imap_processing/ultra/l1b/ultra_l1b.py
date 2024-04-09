@@ -1,4 +1,4 @@
-"""Calculates Annotated Events for ULTRA L1b."""
+"""Calculates Extended Raw Events for ULTRA L1b."""
 
 # TODO: Decide on consistent fill values.
 import logging
