@@ -27,8 +27,10 @@ lo_description_text = (
 )
 
 lo_base = GlobalInstrumentAttrs(
-    version=__version__, descriptor=descriptor, text=lo_description_text,
-    instrument_type="Particles (space)"
+    version=__version__,
+    descriptor=descriptor,
+    text=lo_description_text,
+    instrument_type="Particles (space)",
 )
 
 lo_de_l1a_attrs = GlobalDataLevelAttrs(

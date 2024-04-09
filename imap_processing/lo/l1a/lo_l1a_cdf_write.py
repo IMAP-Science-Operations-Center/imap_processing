@@ -32,8 +32,8 @@ def write_lo_scide_cdf(scide:list):
         np.concatenate([sci_de_data.POS for sci_de_data in scide]), dims="epoch",attrs=lo_cdf_attrs.lo_tof_attrs.output()
     )
 
-    #TODO: getting sci_de_times beacuse it's used in both the data time field and epoch. 
-    # Need to figure out if this is needed and if a conversion needs to happen to 
+    #TODO: getting sci_de_times beacuse it's used in both the data time field and epoch.
+    # Need to figure out if this is needed and if a conversion needs to happen to
     # get the epoch time.
     sci_de_times = np.concatenate([sci_de_data.TIME for sci_de_data in scide])
 
