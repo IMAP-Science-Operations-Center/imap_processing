@@ -109,9 +109,11 @@ def process_packets(
 
     Returns
     -------
-    packet_dict: dict[str, list[MagL1a]]
-        Dictionary containing two keys: "mago" which points to a list of mago MagL1A
-        objects, and "magi" which points to a list of magi MagL1A objects.
+    packet_dict: dict[str, dict[np.datetime64, MagL1a]]
+        Dictionary containing two keys: "mago" which points to a dictionary of mago
+         MagL1A objects, and "magi" which points to a dictionary of magi MagL1A objects.
+         Each dictionary has keys of days and values of MagL1A objects, so each day
+         corresponds to one MagL1A object.
 
     """
     magi = {}
