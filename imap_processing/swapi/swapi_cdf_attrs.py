@@ -98,7 +98,7 @@ compression_attrs = ScienceAttrs(
 
 swapi_l1_sci_attrs = GlobalDataLevelAttrs(
     data_type="L1_sci-1min>Level-1 Science data in 1 minute resolution",
-    logical_source="imap_swapi_l1a_sci-1min",
+    logical_source="imap_swapi_l1_sci-1min",
     logical_source_desc=(
         "SWAPI Instrument Level-1 Science Data in 1 minute resolution."
     ),

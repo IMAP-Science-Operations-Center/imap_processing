@@ -316,6 +316,6 @@ def test_process_swapi_science(decom_test_data):
     # Test CDF File
     # This time mismatch is because of sample data. Sample data has
     # SHCOARSE time as 48, 60, 72. That's why time is different.
-    cdf_filename = "imap_swapi_l1a_sci-1min_20100101_v001.cdf"
+    cdf_filename = "imap_swapi_l1_sci-1min_20100101_v001.cdf"
     cdf_path = write_cdf(processed_data)
     assert cdf_path.name == cdf_filename
