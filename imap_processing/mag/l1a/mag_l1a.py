@@ -98,7 +98,7 @@ def process_and_write_data(
 
 def process_packets(
     mag_l0_list: list[MagL0],
-) -> dict[str, dict[np.datetime64, list[MagL1a]]]:
+) -> dict[str, dict[np.datetime64, MagL1a]]:
     """
     Given a list of MagL0 packets, process them into MagO and MagI L1A data classes.
 

@@ -130,7 +130,7 @@ class MagL1a:
                 start_time_ns,
                 start_time_ns + timedelta * vectors.shape[0],
                 timedelta,
-                dtype=np.uint,
+                dtype=np.int64,
                 like=vectors,
             ),
             (vectors.shape[0], -1),
