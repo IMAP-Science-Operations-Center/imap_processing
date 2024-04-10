@@ -88,5 +88,3 @@ def test_write_lo_l1a_cdfs(direct_events):
     created_file_paths = write_lo_l1a_cdfs(lo_data)
 
     assert created_file_paths[0].name == "imap_lo_l1a_scide_20240410_v001.cdf"
-
-    print(created_file_paths[0])
