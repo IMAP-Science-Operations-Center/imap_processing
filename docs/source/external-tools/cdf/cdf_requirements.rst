@@ -163,7 +163,7 @@ This is a human readable description of the data variable. Generally, this is an
 ^^^^^^^^^^^^
 Explicitly ties a data variable to the time variable on which it depends (i.e. - the `epoch` variable). All variables which change with time must have a ``DEPEND_0`` attribute defined. 
 
-Even if there is no time dependency of the data *within* the CDF file, SPDF has stated it would still be ideal to include a DEPEND_0 for each variable to ensure continuity *between* CDF files.  
+Even if there is no time dependency of the data *within* the CDF file, SPDF has stated it would still be ideal to include a ``DEPEND_0`` for each variable to ensure continuity *between* CDF files.  
 
 ``DEPEND_i``
 ^^^^^^^^^^^^
