@@ -222,7 +222,7 @@ Used to label a dimensional variable when one value of ``LABLAXIS`` is not suffi
 
 The value of ``LABL_PTR_1`` is another variable within the same CDF, which will contain the short character strings to describe the first dimension of the original variable.
 
-An example of how LABL_PTR_i can be used is found at this following link: `https://spdf.gsfc.nasa.gov/istp_guide/variables.html#data_eg2 <https://spdf.gsfc.nasa.gov/istp_guide/variables.html#data_eg2>`_
+An example of how ``LABL_PTR_i`` can be used is found at this following link: `https://spdf.gsfc.nasa.gov/istp_guide/variables.html#data_eg2 <https://spdf.gsfc.nasa.gov/istp_guide/variables.html#data_eg2>`_
 
 ``UNITS``
 ^^^^^^^^^
