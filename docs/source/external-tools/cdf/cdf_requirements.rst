@@ -210,7 +210,7 @@ This field allows software to properly format the associated data when displayed
 
 ``LABLAXIS``
 ^^^^^^^^^^^^
-Required if not using LABL_PTR_i.  
+Required if not using ``LABL_PTR_i``.  
 
 Used to label a plot axis or to provide a heading for a data listing. This field is generally 6-10 characters.
 
