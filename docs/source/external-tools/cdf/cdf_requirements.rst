@@ -216,7 +216,7 @@ Used to label a plot axis or to provide a heading for a data listing. This field
 
 ``LABL_PTR_i``
 ^^^^^^^^^^^^^^
-Required if not using LABLAXIS.
+Required if not using ``LABLAXIS``.
 
 Used to label a dimensional variable when one value of LABLAXIS is not sufficient to describe the variable or to label all the axes. LABL_PTR_i is used instead of LABLAXIS, where i can take on any value from 1 to n where n is the total number of dimensions of the original variable. 
 
