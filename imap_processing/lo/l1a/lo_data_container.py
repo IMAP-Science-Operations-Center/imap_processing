@@ -8,7 +8,7 @@ class LoContainer:
     """IMAP-Lo Level 0 data container class.
 
     The IMAP-Lo Level 0 data container class is used to store
-    data for all 19 IMAP-Lo L0 unpacked data allow filtering
+    data for all 19 IMAP-Lo L0 unpacked data to allow filtering
     by APID.
 
     Attributes
@@ -19,8 +19,8 @@ class LoContainer:
 
     Methods
     -------
-    append():
-        Appends another data class to the container
+    add():
+        Adds another data class to the container
 
     filter_apid():
         Filters the container and returns a list of
@@ -34,9 +34,9 @@ class LoContainer:
 
     # TODO: How do I write the parameter type in the docstring when it can be
     # multiple different kinds of types (any Lo dataclass)?
-    def append(self, data):
+    def add(self, data):
         """
-        Append data class to the container after confirming that the APID is valid.
+        Add data class to the container after confirming that the APID is valid.
 
         Parameters
         ----------
