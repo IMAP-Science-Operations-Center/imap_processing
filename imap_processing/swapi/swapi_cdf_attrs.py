@@ -46,13 +46,13 @@ energy_dim_attrs = AttrBase(
     format="I2",
     var_type="support_data",
     fieldname="Energy Step",
-    catdesc="Energy step number.",
+    catdesc="Energy step id in lookup table.",
     label_axis="Energy Step",
 )
 
 # science data attributes
 counts_attrs = ScienceAttrs(
-    validmin=GlobalConstants.INT_FILLVAL,
+    validmin=0,
     validmax=GlobalConstants.INT_MAXVAL,
     format="I12",
     units="Counts",
@@ -72,7 +72,7 @@ uncertainty_attrs = ScienceAttrs(
     validmin=GlobalConstants.DOUBLE_FILLVAL,
     validmax=GlobalConstants.INT_MAXVAL,
     format="E13.5",
-    label_axis="Counts Uncertainty",
+    label_axis="Uncertainty",
     display_type="spectrogram",
     catdesc=("Uncertainty in the counts."),
     fieldname="Counts Uncertainty",
@@ -86,7 +86,7 @@ compression_attrs = ScienceAttrs(
     validmin=0,
     validmax=1,
     format="I1",
-    label_axis="Compression Flag",
+    label_axis="Flag",
     display_type="spectrogram",
     catdesc=("Data compression flag. 0 if no compression, 1 if compressed."),
     fieldname="Compression Flag",
