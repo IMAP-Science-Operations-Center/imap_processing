@@ -1,4 +1,5 @@
 """Compression tables for decompompressing Lo L0 data."""
+
 from collections import namedtuple
 
 # All TOFs and Checksum values that exist for a case
@@ -39,7 +40,7 @@ TOFFields = namedtuple(
 # For case 0 if mode = 0 TOF1 is transmitted
 # For cases 4, 6, 10, 12 if mode = 1 TOF3 is not transmitted, but can be calculated
 # from the position which is transmitted
-# For cases 4, 6, 8, 10, 12 if mode = 0 TOF3 is trasmitted, position is not
+# For cases 4, 6, 8, 10, 12 if mode = 0 TOF3 is transmitted, position is not
 # No mode = 1 for case 13? Green highlight?
 # No mode = 1 for cases 2, 3, 5, 7, 9, 11
 
