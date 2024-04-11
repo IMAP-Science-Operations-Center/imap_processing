@@ -1,6 +1,5 @@
 """IMAP-Lo CDF Attributes."""
 
-# TODO: Need to add version to init
 from imap_processing.cdf.defaults import GlobalConstants
 from imap_processing.cdf.global_attrs import (
     GlobalDataLevelAttrs,
