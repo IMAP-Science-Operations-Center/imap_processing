@@ -5,6 +5,15 @@ import copy
 import numpy as np
 import xarray as xr
 
+from imap_processing.cdf.global_attrs import ConstantCoordinates
+from imap_processing.cdf.utils import calc_start_time
+from imap_processing.swapi.swapi_cdf_attrs import (
+    compression_attrs,
+    counts_attrs,
+    energy_dim_attrs,
+    swapi_l1_sci_attrs,
+    uncertainty_attrs,
+)
 from imap_processing.swapi.swapi_utils import SWAPIAPID, SWAPIMODE, create_dataset
 from imap_processing.utils import group_by_apid, sort_by_time
 
@@ -31,10 +40,10 @@ def filter_good_data(full_sweep_sci):
     """
     # PLAN_ID for current sweep should all be one value and
     # SWEEP_TABLE should all be one value.
-    plan_id = full_sweep_sci["PLAN_ID_SCIENCE"].data.reshape(-1, 12)
-    sweep_table = full_sweep_sci["SWEEP_TABLE"].data.reshape(-1, 12)
+    plan_id = full_sweep_sci["plan_id_science"].data.reshape(-1, 12)
+    sweep_table = full_sweep_sci["sweep_table"].data.reshape(-1, 12)
 
-    mode = full_sweep_sci["MODE"].data.reshape(-1, 12)
+    mode = full_sweep_sci["mode"].data.reshape(-1, 12)
 
     sweep_indices = (sweep_table == sweep_table[:, 0, None]).all(axis=1)
     plan_id_indices = (plan_id == plan_id[:, 0, None]).all(axis=1)
@@ -152,7 +161,7 @@ def find_sweep_starts(packets: xr.Dataset):
     ione = diff == 1
 
     valid = (
-        (packets["SEQ_NUMBER"] == 0)[:-11]
+        (packets["seq_number"] == 0)[:-11]
         & ione[:-10]
         & ione[1:-9]
         & ione[2:-8]
@@ -413,18 +422,18 @@ def process_swapi_science(sci_dataset):
     # ====================================================
     # Step 2: Process good sweep data
     # ====================================================
-    total_packets = len(good_sweep_sci["SEQ_NUMBER"].data)
+    total_packets = len(good_sweep_sci["seq_number"].data)
 
     # It takes 12 sequence data to make one full sweep
     total_sequence = 12
     total_full_sweeps = total_packets // total_sequence
     # These array will be of size (number of good sweep, 72)
-    raw_pcem_count = process_sweep_data(good_sweep_sci, "PCEM_CNT")
-    raw_scem_count = process_sweep_data(good_sweep_sci, "SCEM_CNT")
-    raw_coin_count = process_sweep_data(good_sweep_sci, "COIN_CNT")
-    pcem_compression_flags = process_sweep_data(good_sweep_sci, "PCEM_RNG_ST")
-    scem_compression_flags = process_sweep_data(good_sweep_sci, "SCEM_RNG_ST")
-    coin_compression_flags = process_sweep_data(good_sweep_sci, "COIN_RNG_ST")
+    raw_pcem_count = process_sweep_data(good_sweep_sci, "pcem_cnt")
+    raw_scem_count = process_sweep_data(good_sweep_sci, "scem_cnt")
+    raw_coin_count = process_sweep_data(good_sweep_sci, "coin_cnt")
+    pcem_compression_flags = process_sweep_data(good_sweep_sci, "pcem_rng_st")
+    scem_compression_flags = process_sweep_data(good_sweep_sci, "scem_rng_st")
+    coin_compression_flags = process_sweep_data(good_sweep_sci, "coin_rng_st")
 
     swp_pcem_counts = decompress_count(raw_pcem_count, pcem_compression_flags)
     swp_scem_counts = decompress_count(raw_scem_count, scem_compression_flags)
@@ -436,32 +445,54 @@ def process_swapi_science(sci_dataset):
 
     # epoch time. Should be same dimension as number of good sweeps
     epoch_time = good_sweep_sci["epoch"].data.reshape(total_full_sweeps, 12)[:, 0]
+    epoch_converted_time = [calc_start_time(time) for time in epoch_time]
     epoch_time = xr.DataArray(
-        epoch_time,
+        epoch_converted_time,
         name="epoch",
         dims=["epoch"],
+        attrs=ConstantCoordinates.EPOCH,
     )
 
     # There are 72 energy steps
-    energy = xr.DataArray(np.arange(72), name="Energy", dims=["Energy"])
+    energy = xr.DataArray(
+        np.arange(72), name="energy", dims=["energy"], attrs=energy_dim_attrs.output()
+    )
+
+    # Add other global attributes
+    sci_l1_attrs = swapi_l1_sci_attrs.output()
+    sci_l1_attrs["sweep_table"] = f"{sci_dataset['sweep_table'].data[0]}"
+    sci_l1_attrs["plan_id"] = f"{sci_dataset['plan_id_science'].data[0]}"
 
     dataset = xr.Dataset(
-        coords={"epoch": epoch_time, "Energy": energy},
+        coords={"epoch": epoch_time, "energy": energy},
+        attrs=sci_l1_attrs,
     )
 
-    dataset["SWP_PCEM_COUNTS"] = xr.DataArray(swp_pcem_counts, dims=["epoch", "Energy"])
-    dataset["SWP_SCEM_COUNTS"] = xr.DataArray(swp_scem_counts, dims=["epoch", "Energy"])
-    dataset["SWP_COIN_COUNTS"] = xr.DataArray(swp_coin_counts, dims=["epoch", "Energy"])
+    dataset["swp_pcem_counts"] = xr.DataArray(
+        swp_pcem_counts, dims=["epoch", "energy"], attrs=counts_attrs.output()
+    )
+    dataset["swp_scem_counts"] = xr.DataArray(
+        swp_scem_counts, dims=["epoch", "energy"], attrs=counts_attrs.output()
+    )
+    dataset["swp_coin_counts"] = xr.DataArray(
+        swp_coin_counts, dims=["epoch", "energy"], attrs=counts_attrs.output()
+    )
 
     # L1 quality flags
-    dataset["SWP_PCEM_FLAGS"] = xr.DataArray(
-        pcem_compression_flags, dims=["epoch", "Energy"]
+    dataset["swp_pcem_flags"] = xr.DataArray(
+        pcem_compression_flags,
+        dims=["epoch", "energy"],
+        attrs=compression_attrs.output(),
     )
-    dataset["SWP_SCEM_FLAGS"] = xr.DataArray(
-        scem_compression_flags, dims=["epoch", "Energy"]
+    dataset["swp_scem_flags"] = xr.DataArray(
+        scem_compression_flags,
+        dims=["epoch", "energy"],
+        attrs=compression_attrs.output(),
     )
-    dataset["SWP_COIN_FLAGS"] = xr.DataArray(
-        coin_compression_flags, dims=["epoch", "Energy"]
+    dataset["swp_coin_flags"] = xr.DataArray(
+        coin_compression_flags,
+        dims=["epoch", "energy"],
+        attrs=compression_attrs.output(),
     )
 
     # ===================================================================
@@ -471,15 +502,25 @@ def process_swapi_science(sci_dataset):
     # Uncertainty is quantified for the PCEM, SCEM, and COIN counts.
     # The Poisson contribution is
     #   uncertainty = sqrt(count)
-    dataset["SWP_PCEM_ERR"] = xr.DataArray(
-        np.sqrt(swp_pcem_counts), dims=["epoch", "Energy"]
+    dataset["swp_pcem_err"] = xr.DataArray(
+        np.sqrt(swp_pcem_counts),
+        dims=["epoch", "energy"],
+        attrs=uncertainty_attrs.output(),
     )
-    dataset["SWP_SCEM_ERR"] = xr.DataArray(
-        np.sqrt(swp_scem_counts), dims=["epoch", "Energy"]
+    dataset["swp_scem_err"] = xr.DataArray(
+        np.sqrt(swp_scem_counts),
+        dims=["epoch", "energy"],
+        attrs=uncertainty_attrs.output(),
     )
-    dataset["SWP_COIN_ERR"] = xr.DataArray(
-        np.sqrt(swp_coin_counts), dims=["epoch", "Energy"]
+    dataset["swp_coin_err"] = xr.DataArray(
+        np.sqrt(swp_coin_counts),
+        dims=["epoch", "energy"],
+        attrs=uncertainty_attrs.output(),
     )
+    # TODO: when SWAPI gives formula to calculate this scenario:
+    # Compression of counts also contributes to the uncertainty.
+    # an empirical expression to estimate the error.
+
     return dataset
 
 
@@ -492,6 +533,7 @@ def swapi_l1(packets):
         List of decom packets
     """
     grouped_packets = group_by_apid(packets)
+    processed_data = []
     for apid in grouped_packets.keys():
         # Right now, we only process SWP_HK and SWP_SCI
         # other packets are not process in this processing pipeline
@@ -500,5 +542,6 @@ def swapi_l1(packets):
         ds_data = create_dataset(sorted_packets)
 
         if apid == SWAPIAPID.SWP_SCI.value:
-            process_swapi_science(ds_data)
-            # TODO: save full sweep data to CDF
+            data = process_swapi_science(ds_data)
+            processed_data.append(data)
+    return processed_data

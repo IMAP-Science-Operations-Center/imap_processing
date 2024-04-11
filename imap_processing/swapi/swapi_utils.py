@@ -9,6 +9,8 @@ from enum import IntEnum
 
 import xarray as xr
 
+from imap_processing.cdf.global_attrs import ConstantCoordinates
+
 
 class SWAPIAPID(IntEnum):
     """Create ENUM for apid.
@@ -24,7 +26,7 @@ class SWAPIAPID(IntEnum):
 
 
 class SWAPIMODE(IntEnum):
-    """Create ENUM for apid.
+    """Create ENUM for MODE.
 
     Parameters
     ----------
@@ -73,13 +75,11 @@ def create_dataset(packets):
         metadata_arrays["SHCOARSE"],
         name="epoch",
         dims=["epoch"],
-        attrs=dict(
-            description="Mission elapsed time",
-            units="seconds since start of the mission",
-        ),
+        attrs=ConstantCoordinates.EPOCH,
     )
+
     data_vars = {
-        key: xr.DataArray(value, dims=["epoch"])
+        key.lower(): xr.DataArray(value, dims=["epoch"])
         for key, value in metadata_arrays.items()
         if key != "SHCOARSE"
     }
