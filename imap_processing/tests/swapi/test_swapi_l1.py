@@ -13,9 +13,9 @@ from imap_processing.swapi.l1.swapi_l1 import (
     get_indices_of_full_sweep,
     process_swapi_science,
     process_sweep_data,
+    swapi_l1,
 )
-from imap_processing.swapi.swapi_utils import create_dataset
-from imap_processing.utils import group_by_apid, sort_by_time
+from imap_processing.utils import create_dataset, group_by_apid, sort_by_time
 
 
 @pytest.fixture(scope="session")
@@ -318,4 +318,16 @@ def test_process_swapi_science(decom_test_data):
     # SHCOARSE time as 48, 60, 72. That's why time is different.
     cdf_filename = "imap_swapi_l1_sci-1min_20100101_v001.cdf"
     cdf_path = write_cdf(processed_data)
+    assert cdf_path.name == cdf_filename
+
+
+def test_swapi_l1_hk(decom_test_data):
+    """Test housekeeping processing and CDF file creation"""
+    grouped_data = group_by_apid(decom_test_data)
+    processed_data = swapi_l1(grouped_data[SWAPIAPID.SWP_HK])
+
+    # Test CDF File
+    cdf_filename = "imap_swapi_l1_hk_20100101_v001.cdf"
+    cdf_path = write_cdf(processed_data[0])
+
     assert cdf_path.name == cdf_filename
