@@ -6,7 +6,7 @@ def test_binary_string_init():
 
     data = BinaryString(binary)
 
-    assert data.data == "00101"
+    assert data.bin == "00101"
     assert data.bit_pos == 0
 
 
