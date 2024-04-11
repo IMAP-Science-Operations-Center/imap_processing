@@ -17,9 +17,12 @@ def write_lo_l1a_cdfs(data: LoContainer):
     Parameters
     ----------
     data : LoContainer
-        The Lo data container contaings all available Lo dataclass objects.
+        The Lo data container contaings all available Lo dataclass objects
+        for one pointing.
     """
     created_filepaths = []
+
+    # Write Science Direct Events CDF if available
     science_direct_events = data.filter_apid(LoAPID.ILO_SCI_DE.value)
     if science_direct_events:
         scide_dataset = create_lo_scide_dataset(science_direct_events)

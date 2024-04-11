@@ -1,3 +1,5 @@
+"""IMAP-Lo CDF Attributes."""
+
 # TODO: Need to add version to init
 from imap_processing.cdf.defaults import GlobalConstants
 from imap_processing.cdf.global_attrs import (
@@ -40,20 +42,10 @@ lo_de_l1a_attrs = GlobalDataLevelAttrs(
     instrument_base=lo_base,
 )
 
-lo_l1b_global_attrs = GlobalDataLevelAttrs(
-    data_type="L1B->Level-1B",
-    logical_source="imap_lo_l1b",
-    logical_source_desc="IMAP Mission IMAP-Lo Instrument Level-1B Data",
-    instrument_base=lo_base,
-)
+# TODO: Add rest of data products for L1A, L1B, L1C
 
-lo_l1c_global_attrs = GlobalDataLevelAttrs(
-    data_type="L1C->Level-1C",
-    logical_source="imap_lo_l1c",
-    logical_source_desc="IMAP Mission IMAP-Lo Instrument Level-1C Data",
-    instrument_base=lo_base,
-)
-
+# TODO: Figure out what attributes I need for the
+# energy, time, mode, checksum, and position fields
 lo_tof_attrs = ScienceAttrs(
     validmin=0,
     validmax=GlobalConstants.INT_MAXVAL,
