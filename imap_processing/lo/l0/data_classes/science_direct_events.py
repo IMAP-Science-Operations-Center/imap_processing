@@ -1,4 +1,5 @@
 """L1A Science Direct Events data class."""
+
 from dataclasses import dataclass
 
 import numpy as np
@@ -46,7 +47,7 @@ class ScienceDirectEvents:
     should be used as is. If it's not bronze, position was not transmitted,
     but TOF3 was transmitted.
     - Cases 1, 2, 3, 5, 7, 9, 13 will always have a MODE of 0, so the same
-    fields will always be trasmitted.
+    fields will always be transmitted.
 
     Bit Shifting:
     TOF0, TOF1, TOF2, TOF3, and CKSM all must be shifted by one bit to the
@@ -61,10 +62,14 @@ class ScienceDirectEvents:
         Spacecraft time.
     COUNT: int
         Number of direct events.
-    CHKSUM: int
-        Checksum for the packet.
     DATA: str
         Compressed TOF Direct Event time tagged data.
+    TIME: numpy.ndarray
+        time tag for the direct event
+    ENERGY: numpy.ndarray
+        energy of the direct event ENA.
+    MODE: numpy.ndarray
+        Indication of how the data is packed.
     TOF0: numpy.ndarray
         Time of Flight 0 value for direct event.
     TOF1: numpy.ndarray
@@ -73,13 +78,6 @@ class ScienceDirectEvents:
         Time of Flight 2 value for direct event.
     TOF3: numpy.ndarray
         Time of Flight 3 value for direct event.
-    TIME: numpy.ndarray
-        time tag for the direct event
-    ENERGY: numpy.ndarray
-        energy of the direct event ENA.
-    POS: numpy.ndarray
-        Stop position for the direct event. There are 4 quadrants
-        on the at the stop position.
     CKSM: numpy.ndarray
         This is checksum defined relative to the TOFs
         condition for golden triples. If golden triples are below
@@ -88,6 +86,9 @@ class ScienceDirectEvents:
         for golden triples because it's used to recover TOF1 because
         compression scheme to save space on golden triples doesn't send
         down TOF1 so it's recovered on the ground using the checksum
+    POS: numpy.ndarray
+        Stop position for the direct event. There are 4 quadrants
+        on the at the stop position.
 
     Methods
     -------
@@ -114,7 +115,7 @@ class ScienceDirectEvents:
     POS: np.ndarray
 
     def __init__(self, packet, software_version: str, packet_file_name: str):
-        """Intialization method for Science Direct Events Data class."""
+        """Initialize Science Direct Events Data class."""
         set_attributes(self, packet)
         self.software_version = software_version
         self.packet_file_name = packet_file_name
@@ -154,7 +155,7 @@ class ScienceDirectEvents:
         # decompress the TOF values.
         case_number = int(data.next_bits(4), 2)
 
-        # time, energy, and mode are always trasmitted.
+        # time, energy, and mode are always transmitted.
         time = int(data.next_bits(DATA_BITS.TIME), 2)
         self.TIME = np.append(self.TIME, time)
 
@@ -165,7 +166,7 @@ class ScienceDirectEvents:
         self.MODE = np.append(self.MODE, mode)
 
         # Case decoder indicates which parts of the data
-        # are trasmitted for each case.
+        # are transmitted for each case.
         case_decoder = CASE_DECODER[(case_number, mode)]
 
         # TOF values are not transmitted for certain
@@ -207,5 +208,6 @@ class ScienceDirectEvents:
         self.CKSM = np.append(self.CKSM, cksm)
 
         if case_decoder.POS:
-            pos = int(data.next_bits(DATA_BITS.POS), 2) << DE_BIT_SHIFT
+            # no bit shift for POS
+            pos = int(data.next_bits(DATA_BITS.POS), 2)
         self.POS = np.append(self.POS, pos)
