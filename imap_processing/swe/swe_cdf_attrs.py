@@ -59,14 +59,14 @@ Eg.
         attrs=int_attrs,
     )
 
-Now, if xr.DataArray uses two demensions such as epoch and Energy,
+Now, if xr.DataArray uses two dimensions such as epoch and Energy,
 eg.
     xr.DataArray(data, dims=["epoch", "Energy"])
 Then your attrs would add this in addition to basic required attrs:
     "DEPEND_0": "epoch",
     "DEPEND_1": "Energy",
 
-Now if xr.DataArray uses three demensions such as epoch, Energy, and
+Now if xr.DataArray uses three dimensions such as epoch, Energy, and
 Counts, eg.
     xr.DataArray(data, dims=["epoch", "Energy", "Counts"])
 Then your attrs would add this in addition to basic required attrs:
@@ -86,7 +86,6 @@ means use up to 12 characters to display the integer
 Per SPDF contacts, we can ignore this warning:
 Warning: CDF is set for row major array variables and column major is recommended.
 """
-
 
 from imap_processing.cdf.defaults import GlobalConstants
 from imap_processing.cdf.global_attrs import (
@@ -116,7 +115,7 @@ swe_base = GlobalInstrumentAttrs(
 
 
 swe_l1a_global_attrs = GlobalDataLevelAttrs(
-    data_type="L1A->Level-1A",
+    data_type="L1A_SCI>Level-1A Science Data",
     # TODO: replace "sci" with proper descriptor
     logical_source="imap_swe_l1a_sci",
     logical_source_desc="IMAP Mission SWE Instrument Level-1A Data",
@@ -124,7 +123,7 @@ swe_l1a_global_attrs = GlobalDataLevelAttrs(
 )
 
 swe_l1b_global_attrs = GlobalDataLevelAttrs(
-    data_type="L1B->Level-1B",
+    data_type="L1B_SCI>Level-1B Science Data",
     # TODO: replace "sci" with proper descriptor
     logical_source="imap_swe_l1b_sci",
     logical_source_desc="IMAP Mission SWE Instrument Level-1B Data",

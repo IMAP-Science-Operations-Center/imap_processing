@@ -1,4 +1,5 @@
 """Contains code to perform ULTRA L1a cdf generation."""
+
 # TODO: Evaluate naming conventions for fields and variables
 # TODO: Improved short and long descriptions for each variable
 # TODO: Improved var_notes for each variable
@@ -202,7 +203,7 @@ def create_dataset(decom_ultra_dict: dict):
                 depend_1="sid",
             ).output()
             dims = ["epoch", "sid"]
-        # AUX enums require string attibutes
+        # AUX enums require string attributes
         elif key in [
             "SPINPERIODVALID",
             "SPINPHASEVALID",

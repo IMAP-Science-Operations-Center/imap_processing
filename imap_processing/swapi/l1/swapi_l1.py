@@ -1,4 +1,5 @@
 """SWAPI level-1 processing code."""
+
 import copy
 
 import numpy as np
@@ -181,7 +182,7 @@ def get_indices_of_full_sweep(packets: xr.Dataset):
     Parameters
     ----------
     packets : xarray.Dataset
-        Dataset that contains SEQ_NUMBER data informations.
+        Dataset that contains SEQ_NUMBER data information.
         Eg. sci_dataset["SEQ_NUMBER"].data
 
     Returns

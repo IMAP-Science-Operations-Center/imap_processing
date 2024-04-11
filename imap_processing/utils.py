@@ -1,4 +1,5 @@
 """Common functions that every instrument can use."""
+
 import collections
 
 import numpy as np
@@ -82,7 +83,7 @@ def convert_raw_to_eu(dataset: xr.Dataset, conversion_table_path, packet_name):
         metadata_field = metadata_list.loc[field]["mnemonic"]
         # On this line, we are getting the coefficients from the
         # table and then reverse them because the np.polyval is
-        # expecting coefficient in decending order
+        # expecting coefficient in descending order
         coeff_values = metadata_list.loc[
             metadata_list["mnemonic"] == metadata_field
         ].values[0][6:][::-1]

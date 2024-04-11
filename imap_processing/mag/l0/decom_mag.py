@@ -1,4 +1,5 @@
 """Methods for processing raw MAG packets into CDF files for level 0 and level 1a."""
+
 from __future__ import annotations
 
 import dataclasses
@@ -20,7 +21,7 @@ from imap_processing.mag.l0.mag_l0_data import MagL0, Mode
 logger = logging.getLogger(__name__)
 
 
-def decom_packets(packet_file_path: str | Path) -> list[MagL0]:
+def decom_packets(packet_file_path: str | Path) -> dict[str, list[MagL0]]:
     """Decom MAG data packets using MAG packet definition.
 
     Parameters
@@ -30,9 +31,9 @@ def decom_packets(packet_file_path: str | Path) -> list[MagL0]:
 
     Returns
     -------
-    data : list[MagL0]
-        A list of MAG L0 data classes, including both burst and normal packets. (the
-        packet type is defined in each instance of L0.)
+    data_dict : dict[str, list[MagL0]]
+        A dict with 2 keys pointing to lists of MAG L0 data classes. "norm" corresponds
+        to  normal mode packets, "burst" corresponds to burst mode packets.
     """
     # Define paths
     xtce_document = Path(
@@ -42,7 +43,8 @@ def decom_packets(packet_file_path: str | Path) -> list[MagL0]:
     packet_definition = xtcedef.XtcePacketDefinition(xtce_document)
     mag_parser = parser.PacketParser(packet_definition)
 
-    data_list = []
+    norm_data = []
+    burst_data = []
 
     with open(packet_file_path, "rb") as binary_data:
         mag_packets = mag_parser.generator(binary_data)
@@ -56,68 +58,35 @@ def decom_packets(packet_file_path: str | Path) -> list[MagL0]:
                     else item.raw_value
                     for item in packet.data.values()
                 ]
-                data_list.append(MagL0(CcsdsData(packet.header), *values))
+                if apid == Mode.NORMAL:
+                    norm_data.append(MagL0(CcsdsData(packet.header), *values))
+                else:
+                    burst_data.append(MagL0(CcsdsData(packet.header), *values))
 
-        return data_list
+    return {"norm": norm_data, "burst": burst_data}
 
 
-def export_to_xarray(l0_data: list[MagL0]):
-    """Generate xarray files for "raw" MAG CDF files from MagL0 data.
-
-    Mag outputs "RAW" CDF files just after decomming. These have the immediately
-    post-decom data, with raw binary data for the vectors instead of vector values.
-
-    Parameters
-    ----------
-    l0_data: list[MagL0]
-        A list of MagL0 datapoints
-
-    Returns
-    -------
-    norm_data : xr.Dataset
-        xarray dataset for generating burst data CDFs
-    burst_data : xr.Dataset
-        xarray dataset for generating burst data CDFs
+def generate_dataset(l0_data: list[MagL0], dataset_attrs: dict) -> xr.Dataset:
     """
-    # TODO split by mago and magi using primary sensor
-    norm_data = []
-    burst_data = []
-
-    for packet in l0_data:
-        if packet.ccsds_header.PKT_APID == Mode.NORMAL:
-            norm_data.append(packet)
-        if packet.ccsds_header.PKT_APID == Mode.BURST:
-            burst_data.append(packet)
-
-    norm_dataset = None
-    burst_dataset = None
-
-    if len(norm_data) > 0:
-        norm_dataset = generate_dataset(norm_data)
-    if len(burst_data) > 0:
-        burst_dataset = generate_dataset(burst_data)
-
-    return norm_dataset, burst_dataset
-
-
-def generate_dataset(l0_data: list[MagL0]):
-    """
-    Generate a CDF dataset from the sorted L0 MAG data.
-
-    Used to create 2 similar datasets, for norm and burst data.
+    Generate a CDF dataset from the sorted raw L0 MAG data.
 
     Parameters
     ----------
     l0_data : list[MagL0]
         List of sorted L0 MAG data.
 
+    dataset_attrs : dict
+        Global attributes for the dataset.
+
     Returns
     -------
     dataset : xr.Dataset
         xarray dataset with proper CDF attributes and shape.
     """
+    # TODO: Correct CDF attributes from email
+
     vector_data = np.zeros((len(l0_data), len(l0_data[0].VECTORS)))
-    shcoarse_data = np.zeros(len(l0_data))
+    shcoarse_data = np.zeros(len(l0_data), dtype="datetime64[ns]")
 
     support_data = defaultdict(list)
 
@@ -141,7 +110,6 @@ def generate_dataset(l0_data: list[MagL0]):
         vector_data[index, :vector_len] = datapoint.VECTORS
 
         shcoarse_data[index] = calc_start_time(datapoint.SHCOARSE)
-
         # Add remaining pieces to arrays
         for key, value in dataclasses.asdict(datapoint).items():
             if key not in ("ccsds_header", "VECTORS", "SHCOARSE"):
@@ -150,8 +118,8 @@ def generate_dataset(l0_data: list[MagL0]):
     # Used in L1A vectors
     direction = xr.DataArray(
         np.arange(vector_data.shape[1]),
-        name="Direction",
-        dims=["Direction"],
+        name="direction",
+        dims=["direction"],
         attrs=mag_cdf_attrs.direction_attrs.output(),
     )
 
@@ -161,29 +129,27 @@ def generate_dataset(l0_data: list[MagL0]):
         dims=["epoch"],
         attrs=ConstantCoordinates.EPOCH,
     )
-
     # TODO: raw vectors units
     raw_vectors = xr.DataArray(
         vector_data,
-        name="Raw_Vectors",
-        dims=["epoch", "Direction"],
+        name="raw_vectors",
+        dims=["epoch", "direction"],
         attrs=mag_cdf_attrs.mag_vector_attrs.output(),
     )
 
-    # TODO add norm to attrs somehow
     output = xr.Dataset(
-        coords={"epoch": epoch_time, "Direction": direction},
-        attrs=mag_cdf_attrs.mag_l1a_attrs.output(),
+        coords={"epoch": epoch_time, "direction": direction},
+        attrs=dataset_attrs,
     )
 
-    output["RAW_VECTORS"] = raw_vectors
+    output["raw_vectors"] = raw_vectors
 
     for key, value in support_data.items():
         # Time varying values
         if key not in ["SHCOARSE", "VECTORS"]:
             output[key] = xr.DataArray(
                 value,
-                name=key,
+                name=key.lower(),
                 dims=["epoch"],
                 attrs=dataclasses.replace(
                     mag_cdf_attrs.mag_support_attrs,

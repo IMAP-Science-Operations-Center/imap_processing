@@ -8,16 +8,7 @@ from imap_processing import imap_module_directory
 xtce_document_list = imap_module_directory.glob("*/packet_definitions/*.xml")
 
 
-@pytest.fixture(params=xtce_document_list, scope="session")
-def xtce_document(request):
-    if "idex" in str(request.param):
-        pytest.xfail(
-            "Packet Definition does not include properly formatted CCSDS Header"
-        )
-    else:
-        return request.param
-
-
+@pytest.mark.parametrize("xtce_document", xtce_document_list)
 def test_ccsds_header(xtce_document):
     """Test if the XTCE document contains the proper CCSDS header information"""
 

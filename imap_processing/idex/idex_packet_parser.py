@@ -564,7 +564,7 @@ class RawDustEvent:
 
         The values we care about are:
 
-        self.impact_time - When the impact occured
+        self.impact_time - When the impact occurred
         self.low_sample_trigger_time - When the low sample stuff actually triggered
         self.high_sample_trigger_time - When the high sample stuff actually triggered
 
@@ -634,7 +634,7 @@ class RawDustEvent:
         """Calculate the actual sample trigger time.
 
         Determines how many samples of data are included before the dust impact
-        triggered the insturment.
+        triggered the instrument.
 
         Parameters
         ----------

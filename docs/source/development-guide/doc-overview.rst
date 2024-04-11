@@ -22,7 +22,7 @@ Here are the main rules for documentation in IMAP:
 
 Keep it short and simple
 ^^^^^^^^^^^^^^^^^^^^^^^^
-Keep documentation to the minimal length that is required. You want to keep the documention to the point so it is easy to link to specific topics. This prevents duplicate info, which helps keep documentation clear and up to date. In general, if there's doubt that a particular section is directly relevant to the overall page, split it out to its own page and link it. Additionally, if the section might be useful to other documents, please put it into its own document.
+Keep documentation to the minimal length that is required. You want to keep the documentation to the point so it is easy to link to specific topics. This prevents duplicate info, which helps keep documentation clear and up to date. In general, if there's doubt that a particular section is directly relevant to the overall page, split it out to its own page and link it. Additionally, if the section might be useful to other documents, please put it into its own document.
 
 .. _doc-rule-link:
 

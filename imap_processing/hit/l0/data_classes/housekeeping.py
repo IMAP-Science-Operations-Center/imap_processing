@@ -1,4 +1,5 @@
 """L1A HIT Housekeeping data class."""
+
 from dataclasses import dataclass
 
 import numpy as np
@@ -136,7 +137,7 @@ class Housekeeping(HITBase):
     __init__(packet, software_vesion, packet_file_name):
         Uses the CCSDS packet, version of the software, and
         the name of the packet file to parse and store information about
-        the Houskeeping packet data.
+        the Housekeeping packet data.
     _parse_leak():
         Parse each current leakage field and put into an array.
 
@@ -201,7 +202,7 @@ class Housekeeping(HITBase):
     EBOX_P2D0VD: int
 
     def __init__(self, packet, software_version: str, packet_file_name: str):
-        """Intialization method for Housekeeping Data class."""
+        """Housekeeping Data class initialization method."""
         super().__init__(software_version, packet_file_name, CcsdsData(packet.header))
         self.parse_data(packet)
         self._parse_leak()

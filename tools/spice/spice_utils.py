@@ -2,8 +2,6 @@
 
 import logging
 import os
-import re
-from datetime import datetime, timedelta
 
 import spiceypy as spice
 
@@ -100,55 +98,3 @@ def list_all_constants() -> dict:
             values = spice.gcpool(kernel_var, 0, n, 81)
             result[kernel_var] = values
     return result
-
-
-def list_attitude_coverage(custom_pattern=None) -> tuple:
-    """Select the date of the most recent historical attitude kernel.
-
-    Parameters
-    ----------
-    custom_pattern : str, optional
-        A custom regular expression pattern to match file names.
-
-    Returns
-    -------
-    : tuple
-        Tuple giving the most recent start and end time in ET.
-
-    # TODO: it is possible that symlink can be used to point to the latest
-    # historical attitude kernel. If so, this function should be updated
-    # or removed
-    """
-    attitude_kernels = list_loaded_kernels([".ah.bc", ".ah.a"])
-    filtered_files = []
-
-    for filedir in attitude_kernels:
-        basename = os.path.basename(filedir)
-        _, extension = os.path.splitext(basename)
-
-        # Historical attitude kernels only
-        if custom_pattern is None:
-            pattern = (
-                r"imap_(\d{4})_(\d{3})_(\d{4})_(\d{3})_"
-                + rf"(\d{{2}})(\.ah\{extension})"
-            )
-        else:
-            pattern = custom_pattern
-        # Check if the file name matches the specified pattern
-        # If it does, parse the dates from the file name
-        matching_pattern = re.match(pattern, basename)
-        if matching_pattern:
-            parts = matching_pattern.groups()
-            start_date_utc = datetime(int(parts[0]), 1, 1) + timedelta(
-                int(parts[1]) - 1
-            )
-            end_date_utc = datetime(int(parts[2]), 1, 1) + timedelta(int(parts[3]) - 1)
-            filtered_files.append((start_date_utc, end_date_utc))
-        else:
-            raise ValueError(f"Invalid pattern: {pattern}.")
-
-    if not filtered_files:
-        return tuple()
-
-    max_tuple = max(filtered_files, key=lambda x: x[1])
-    return max_tuple

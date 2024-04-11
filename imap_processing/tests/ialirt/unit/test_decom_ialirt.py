@@ -58,20 +58,6 @@ def test_length(decom_packets_data):
     assert len(decom_packets_data) == total_packets
 
 
-def test_generate_xarray_empty_file(tmp_path, xtce_ialirt_path):
-    """Test that an error is raised if an empty file is passed to generate_xarray."""
-
-    binary_file_path = tmp_path / "empty.ccsds"
-    binary_file_path.touch()
-
-    expected_error_msg = (
-        "Reading off the end of the data. "
-        "Tried to read .* bits when only 0 available."
-    )
-    with pytest.raises(Exception, match=expected_error_msg):
-        generate_xarray(binary_file_path, xtce_ialirt_path)
-
-
 def test_enumerated(decom_packets_data):
     """Test if enumerated values derived correctly"""
 

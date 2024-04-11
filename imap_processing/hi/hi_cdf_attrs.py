@@ -1,9 +1,10 @@
 """Shared attribute values for IMAP-Hi CDF files."""
+
 from imap_processing.cdf.defaults import GlobalConstants
 from imap_processing.cdf.global_attrs import (
-    AttrBase,
     GlobalDataLevelAttrs,
     GlobalInstrumentAttrs,
+    ScienceAttrs,
 )
 from imap_processing.hi import __version__
 
@@ -38,45 +39,18 @@ text = (
 )
 
 hi_base = GlobalInstrumentAttrs(
-    __version__,
-    "IMAP-Hi>IMAP High-Energy Energetic Neutral Atom Imager",
-    text,
-    "Particles (space)",
+    version=__version__,
+    descriptor="Hi>IMAP High-Energy (IMAP-Hi) Energetic Neutral Atom Imager",
+    text=text,
+    instrument_type="Particles (space)",
 )
 
 # Direct event attrs
-# TODO: combine these two based on feedback from Paul
-met_subseconds_attrs = AttrBase(
-    validmin=GlobalConstants.INT_FILLVAL,
-    validmax=1023,
-    display_type="time_series",
-    catdesc=(
-        "Integer millisecond of MET(aka subseconds). "
-        "It's a 10-bits integer value that represents the "
-        "subseconds of the MET time. Max value is 1023."
-    ),
-    fieldname="MET subseconds",
-    fill_val=GlobalConstants.INT_FILLVAL,
-    var_type="metadata",
-)
-
-met_seconds_attrs = AttrBase(
-    validmin=GlobalConstants.INT_FILLVAL,
-    validmax=GlobalConstants.INT_MAXVAL,
-    display_type="time_series",
-    catdesc=(
-        "integer MET(seconds). "
-        "It's a 32-bits integer value that represents the "
-        "seconds of the MET time. Max value is 2^32-1."
-    ),
-    fieldname="MET seconds",
-    fill_val=GlobalConstants.INT_FILLVAL,
-    var_type="metadata",
-)
-
-esa_step_attrs = AttrBase(
+esa_step_attrs = ScienceAttrs(
     validmin=0,
     validmax=10,
+    format="I2",
+    label_axis="ESA step",
     display_type="time_series",
     catdesc=(
         "ESA step. "
@@ -88,11 +62,14 @@ esa_step_attrs = AttrBase(
     fieldname="ESA step",
     fill_val=GlobalConstants.INT_FILLVAL,
     var_type="metadata",
+    depend_0="epoch",
 )
 
-de_tag_attrs = AttrBase(
+de_tag_attrs = ScienceAttrs(
     validmin=GlobalConstants.INT_FILLVAL,
     validmax=GlobalConstants.INT_MAXVAL,
+    format="I6",
+    label_axis="Direct event time tag",
     display_type="time_series",
     catdesc=(
         "Direct event tag. "
@@ -102,11 +79,14 @@ de_tag_attrs = AttrBase(
     fieldname="Direct event tag",
     fill_val=GlobalConstants.INT_FILLVAL,
     var_type="metadata",
+    depend_0="epoch",
 )
 
-trigger_id_attrs = AttrBase(
+trigger_id_attrs = ScienceAttrs(
     validmin=GlobalConstants.INT_FILLVAL,
     validmax=3,
+    format="I1",
+    label_axis="Trigger ID",
     display_type="time_series",
     catdesc=(
         "Trigger ID is a 2-bits. It represents the trigger "
@@ -116,11 +96,14 @@ trigger_id_attrs = AttrBase(
     fieldname="Trigger ID",
     fill_val=GlobalConstants.INT_FILLVAL,
     var_type="metadata",
+    depend_0="epoch",
 )
 
-tof_attrs = AttrBase(
+tof_attrs = ScienceAttrs(
     validmin=GlobalConstants.INT_FILLVAL,
     validmax=1023,
+    format="I4",
+    label_axis="Time of flight",
     display_type="time_series",
     catdesc=(
         "Time of flight is 10-bits integer value that represents "
@@ -130,15 +113,48 @@ tof_attrs = AttrBase(
     fieldname="Time of flight",
     fill_val=GlobalConstants.INT_FILLVAL,
     var_type="metadata",
+    depend_0="epoch",
+)
+
+ccsds_met_attrs = ScienceAttrs(
+    validmin=GlobalConstants.INT_FILLVAL,
+    validmax=GlobalConstants.INT_MAXVAL,
+    format="I12",
+    label_axis="CCSDS MET",
+    display_type="time_series",
+    catdesc=(
+        "CCSDS MET. "
+        "It's a 32-bits integer value that represents the "
+        "CCSDS Mission Elapsed Time (MET) in seconds."
+    ),
+    fieldname="CCSDS MET",
+    fill_val=GlobalConstants.INT_FILLVAL,
+    var_type="metadata",
+    depend_0="epoch",
 )
 
 # Note from SPDF about Logical_source_id breakdown:
-# source_name: imap - This is in global attributes
-# descriptor: instrument name - This is in global attributes
 # data_type: <data_level>_<descriptor> - this is here in DataLevelAttrs
 hi_de_l1a_attrs = GlobalDataLevelAttrs(
-    data_type="L1A>l1a_de",
+    data_type="L1A_DE>Level-1A Direct Event",
     logical_source="imap_hi_l1a_de",
     logical_source_desc=("IMAP-HI Instrument Level-1A Direct Event Data."),
     instrument_base=hi_base,
+)
+
+hi_hk_l1a_attrs = GlobalDataLevelAttrs(
+    data_type="L1A_HK>Level-1A Housekeeping",
+    logical_source="imap_hi_l1a_hk",
+    logical_source_desc=("IMAP-HI Instrument Level-1A Housekeeping Data."),
+    instrument_base=hi_base,
+)
+
+hi_hk_l1a_metadata_attrs = ScienceAttrs(
+    validmin=0,
+    validmax=GlobalConstants.INT_MAXVAL,
+    depend_0="epoch",
+    format="I12",
+    units="int",
+    var_type="support_data",
+    variable_purpose="PRIMARY",
 )

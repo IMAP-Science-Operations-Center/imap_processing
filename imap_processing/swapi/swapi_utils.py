@@ -3,6 +3,7 @@
 This module contains utility classes and functions that are used by various
 other SWAPI processing modules.
 """
+
 import collections
 from enum import IntEnum
 

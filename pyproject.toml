@@ -33,7 +33,7 @@ bitstring = ">=4.0.1"
 cdflib = "==1.2.6"
 imap-data-access = ">=0.5.0"
 python = ">=3.9,<4"
-space_packet_parser = ">=4.1.0"
+space_packet_parser = ">=4.2.0"
 spiceypy = ">=6.0.0"
 xarray = '>=2023.0.0'
 

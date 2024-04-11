@@ -82,17 +82,28 @@ def add_metadata_to_array(packet, metadata_arrays: dict) -> dict:
     metadata_arrays : dict
         Updated metadata arrays with values
     """
+    ignore_list = [
+        "SPARE_1",
+        "SPARE_2",
+        "SPARE_3",
+        "SPARE_4",
+        "SPARE_5",
+        "SPARE_6",
+        "CHECKSUM",
+    ]
+
     for key, value in packet.header.items():
         metadata_arrays.setdefault(key, []).append(value.raw_value)
 
     for key, value in packet.data.items():
-        metadata_arrays.setdefault(key, []).append(value.raw_value)
+        if key not in ignore_list:
+            metadata_arrays.setdefault(key, []).append(value.raw_value)
 
     return metadata_arrays
 
 
-def create_dataset(packets) -> xr.Dataset:
-    """Create dataset for each metadata field.
+def create_hskp_dataset(packets) -> xr.Dataset:
+    """Create dataset for each metadata field for housekeeping data.
 
     Parameters
     ----------
@@ -104,23 +115,23 @@ def create_dataset(packets) -> xr.Dataset:
     xarray.Dataset
         xarray dataset containing the metadata
     """
+    # TODO: If SHCOARSE is 0, skip the packet
+    # (This problem may fix itself with valid testing data)
+
     metadata_arrays = collections.defaultdict(list)
 
     for packet in packets:
         add_metadata_to_array(packet, metadata_arrays)
 
-    # Convert to datetime64 and normalize by launch date
-    epoch_times = [calc_start_time(item) for item in metadata_arrays["SHCOARSE"]]
-
-    epoch_time = xr.DataArray(
-        epoch_times,
+    epoch = xr.DataArray(
+        [calc_start_time(item) for item in metadata_arrays["SHCOARSE"]],
         name="epoch",
         dims=["epoch"],
         attrs=ConstantCoordinates.EPOCH,
     )
 
     dataset = xr.Dataset(
-        coords={"epoch": epoch_time},
+        coords={"epoch": epoch},
         attrs=cdf_attrs.codice_l1a_global_attrs.output(),
     )
 
@@ -136,5 +147,7 @@ def create_dataset(packets) -> xr.Dataset:
                 depend_0="epoch",
             ).output(),
         )
+
+    dataset.attrs["Logical_source"] = "imap_codice_l1a_hskp"
 
     return dataset

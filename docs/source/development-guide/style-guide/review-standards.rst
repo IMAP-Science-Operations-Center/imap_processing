@@ -55,7 +55,7 @@ Although only one approval is required, you must follow these rules:
 
 #. If there is someone with a particular expertise or vested interest in your changes, **do not merge or close the pull request until they get a chance to review.**
 #. Do not merge until you have addressed all the comments on your review, even if you have an approval from someone.
-#. Make sure you have left the review open for a sufficent amount of time to allow people to review - usually 3-5 days is enough.
+#. Make sure you have left the review open for a sufficient amount of time to allow people to review - usually 3-5 days is enough.
 #. If someone asked for changes beyond a nitpick, do not merge until you have an approval or thumbs up from them. This does not mean you need to change your code if you don't agree with them, but you should explain why you will not be making the changes and make sure they are ok with merging anyway.
 #. You should go through the :ref:`pull request checklist <pertaining-to-the-code-review>`
 #. You should ensure ALL checks on the PR pass (tests are passing)
