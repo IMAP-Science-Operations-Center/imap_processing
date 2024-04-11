@@ -3,8 +3,9 @@ from collections import namedtuple
 import numpy as np
 import pytest
 
+from imap_processing.cdf.defaults import GlobalConstants
 from imap_processing.lo.l0.data_classes.science_direct_events import (
-    ScienceDirectEventsPacket,
+    ScienceDirectEvents,
 )
 from imap_processing.lo.l0.utils.binary_string import BinaryString
 
@@ -34,14 +35,14 @@ def fake_packet_data():
 
 @pytest.fixture()
 def single_de(fake_packet_data):
-    de = ScienceDirectEventsPacket(fake_packet_data, "0", "fakepacketname")
+    de = ScienceDirectEvents(fake_packet_data, "0", "fakepacketname")
     de.COUNT = 1
     return de
 
 
 @pytest.fixture()
 def multi_de(fake_packet_data):
-    de = ScienceDirectEventsPacket(fake_packet_data, "0", "fakepacketname")
+    de = ScienceDirectEvents(fake_packet_data, "0", "fakepacketname")
     de.COUNT = 2
     return de
 
@@ -54,157 +55,149 @@ def tof_data():
     return TOFData
 
 
-def test_decompression_case(single_de):
+def test_parse_data_case_0(single_de):
     # Arrange
-    single_de.DATA = "000100010101"
-    case_number_expected = 1
+    absent = "0000"  # case 0
+    time = "000001100100"  # 100
+    energy = "010"  # 2
+    mode = "1"
+    tof0 = "0000000000"
+    # TOF1 not trasmitted
+    tof2 = "000000010"  # 2
+    tof3 = "000011"  # 3
+    cksm = "000"  # 0
+    # POS not trasmitted
+    single_de.DATA = absent + time + energy + mode + tof0 + tof2 + tof3 + cksm
     data = BinaryString(single_de.DATA)
 
+    expected_time = np.array([100])
+    expected_energy = np.array([2])
+    expected_mode = np.array([1])
+    # tofs and cksm are bit shifted to the left by 1 during decompression
+    expected_tof0 = np.array([0 << 1])
+    expected_tof1 = np.array([GlobalConstants.DOUBLE_FILLVAL])
+    expected_tof2 = np.array([2 << 1])
+    expected_tof3 = np.array([3 << 1])
+    expected_cksm = np.array([0 << 1])
+    expected_pos = np.array([GlobalConstants.DOUBLE_FILLVAL])
+
     # Act
-    case_number = single_de._decompression_case(data)
+    single_de._parse_data(data)
 
     # Assert
-    assert case_number == case_number_expected
+    np.testing.assert_array_equal(single_de.TIME, expected_time)
+    np.testing.assert_array_equal(single_de.ENERGY, expected_energy)
+    np.testing.assert_array_equal(single_de.MODE, expected_mode)
+    np.testing.assert_array_equal(single_de.TOF0, expected_tof0)
+    np.testing.assert_array_equal(single_de.TOF1, expected_tof1)
+    np.testing.assert_array_equal(single_de.TOF2, expected_tof2)
+    np.testing.assert_array_equal(single_de.TOF3, expected_tof3)
+    np.testing.assert_array_equal(single_de.CKSM, expected_cksm)
+    np.testing.assert_array_equal(single_de.POS, expected_pos)
 
 
-def test_case_decoder_variant_1(single_de, tof_data):
+def test_parse_data_case_10(single_de):
     # Arrange
-    single_de.DATA = "000010010101"
+    absent = "1010"  # case 10
+    time = "000001100100"  # 100
+    energy = "010"  # 2
+    mode = "1"
+    # TOF0 not trasmitted
+    tof1 = "000000001"  # 1
+    # TOF2, TOF3, CKSM not trasmitted
+    pos = "00"  # 0
+    single_de.DATA = absent + time + energy + mode + tof1 + pos
     data = BinaryString(single_de.DATA)
-    # at this point, the first 4 bits will have already been read
-    # to get the case number
-    data.bit_pos = 4
-    tof_decoder_expected = tof_data(3, 0, 10, 0, 9, 6, 3, 12)
-    case_number = 0
+
+    expected_time = np.array([100])
+    expected_energy = np.array([2])
+    expected_mode = np.array([1])
+    expected_tof0 = np.array([GlobalConstants.DOUBLE_FILLVAL])
+    # tofs and cksm are bit shifted to the left by 1 during decompression
+    expected_tof1 = np.array([1 << 1])
+    expected_tof2 = np.array([GlobalConstants.DOUBLE_FILLVAL])
+    expected_tof3 = np.array([GlobalConstants.DOUBLE_FILLVAL])
+    expected_cksm = np.array([GlobalConstants.DOUBLE_FILLVAL])
+    expected_pos = np.array([0])
 
     # Act
-    tof_decoder = single_de._case_decoder(case_number, data)
+    single_de._parse_data(data)
 
     # Assert
-    assert tof_decoder == tof_decoder_expected
+    np.testing.assert_array_equal(single_de.TIME, expected_time)
+    np.testing.assert_array_equal(single_de.ENERGY, expected_energy)
+    np.testing.assert_array_equal(single_de.MODE, expected_mode)
+    np.testing.assert_array_equal(single_de.TOF0, expected_tof0)
+    np.testing.assert_array_equal(single_de.TOF1, expected_tof1)
+    np.testing.assert_array_equal(single_de.TOF2, expected_tof2)
+    np.testing.assert_array_equal(single_de.TOF3, expected_tof3)
+    np.testing.assert_array_equal(single_de.CKSM, expected_cksm)
+    np.testing.assert_array_equal(single_de.POS, expected_pos)
 
 
-def test_case_decoder_variant_0(single_de, tof_data):
+def test_decompress_data_multi_de(multi_de):
     # Arrange
-    single_de.DATA = "000000010101"
-    data = BinaryString(single_de.DATA)
-    # at this point, the first 4 bits will have already been read
-    # to get the case number
-    data.bit_pos = 4
-    tof_decoder_expected = tof_data(3, 0, 10, 9, 9, 6, 0, 12)
-    case_number = 0
 
-    # Act
-    tof_decoder = single_de._case_decoder(case_number, data)
+    # DE One
+    absent_1 = "0000"  # case 0
+    time_1 = "000001100100"  # 100
+    energy_1 = "010"  # 2
+    mode_1 = "1"
+    tof0_1 = "0000000000"
+    # TOF1 not trasmitted
+    tof2_1 = "000000010"  # 2
+    tof3_1 = "000011"  # 3
+    cksm_1 = "000"  # 0
+    # POS not trasmitted
 
-    # Assert
-    assert tof_decoder == tof_decoder_expected
+    # DE Two
+    absent_2 = "1010"  # case 10
+    time_2 = "000001100100"  # 100
+    energy_2 = "010"  # 2
+    mode_2 = "1"
+    # TOF0 not trasmitted
+    tof1_2 = "000000001"  # 1
+    # TOF2, TOF3, CKSM not trasmitted
+    pos_2 = "00"  # 0
 
-
-def test_decompress_existing_field(single_de):
-    # Arrange
-    single_de.DATA = "00001001"
-    data = BinaryString(single_de.DATA)
-    data.bit_pos = 5
-    # the energy field is packed immediately after the case and variant bits
-    # so the bit_pos will be at index 5
-    energy_field_length = 3
-    sig_bits = np.array([0, 0.32, 0.16])
-    decompressed_field_expected = 0.16
-
-    # Act
-    decompressed_field = single_de._decompress_field(
-        data, energy_field_length, sig_bits
-    )
-
-    # Assert
-    assert decompressed_field == decompressed_field_expected
-
-
-def test_decompress_non_existing_field(single_de):
-    # Arrange
-    single_de.DATA = "00001001"
-    data = BinaryString(single_de.DATA)
-    # this is testing the position field in the binary, so the bit_pos
-    # will be at position 7. Note: the bit pos is different than the position field.
-    # the position field is a direct event field and the bit_pos is the current bit
-    # position during the parsing of the binary string.
-    data.bit_pos = 7
-    pos_field_length = 0
-    sig_bits = np.array([0.32, 0.16])
-    decompressed_field_expected = np.float64(-1.0e31)
-
-    # Act
-    decompressed_field = single_de._decompress_field(data, pos_field_length, sig_bits)
-
-    # Assert
-    assert decompressed_field == decompressed_field_expected
-
-
-def test_single_de_parse_case(single_de, tof_data):
-    # Arrange
-    single_de.DATA = "000010010000000011000000011000001001000000000001"
-    data = BinaryString(single_de.DATA)
-    # parse_case is run after the case and variant are checked,
-    # so the bit_pos will be at index 5
-    data.bit_pos = 5
-    case_decoder = tof_data(
-        3,
-        0,
-        10,
-        0,
-        9,
-        6,
-        3,
-        12,
-    )
-    energy_expected = np.array([0.16])
-    pos_expected = np.array([np.float64(-1.0e31)])
-    tof0_expected = np.array([0.96])
-    tof1_expected = np.array([np.float64(-1.0e31)])
-    tof2_expected = np.array([0.96])
-    tof3_expected = np.array([0.32])
-    cksm_expected = np.array([0.32])
-    time_expected = np.array([0.16])
-
-    # Act
-    single_de._parse_case(data, case_decoder)
-
-    # Assert
-    np.testing.assert_array_equal(single_de.ENERGY, energy_expected)
-    np.testing.assert_array_equal(single_de.POS, pos_expected)
-    np.testing.assert_array_equal(single_de.TOF0, tof0_expected)
-    np.testing.assert_array_equal(single_de.TOF1, tof1_expected)
-    np.testing.assert_array_equal(single_de.TOF2, tof2_expected)
-    np.testing.assert_array_equal(single_de.TOF3, tof3_expected)
-    np.testing.assert_array_equal(single_de.CKSM, cksm_expected)
-    np.testing.assert_array_equal(single_de.TIME, time_expected)
-
-
-def test_decompress_data(multi_de, tof_data):
-    # Arrange
     multi_de.DATA = (
-        "0000100100000000110000000110000010010"
-        + "00000000001000010010000000011000000011000001001000000000001"
+        absent_1
+        + time_1
+        + energy_1
+        + mode_1
+        + tof0_1
+        + tof2_1
+        + tof3_1
+        + cksm_1
+        + absent_2
+        + time_2
+        + energy_2
+        + mode_2
+        + tof1_2
+        + pos_2
     )
-    energy_expected = np.array([0.16, 0.16])
-    pos_expected = np.array([np.float64(-1.0e31), np.float64(-1.0e31)])
-    tof0_expected = np.array([0.96, 0.96])
-    tof1_expected = np.array([np.float64(-1.0e31), np.float64(-1.0e31)])
-    tof2_expected = np.array([0.96, 0.96])
-    tof3_expected = np.array([0.32, 0.32])
-    cksm_expected = np.array([0.32, 0.32])
-    time_expected = np.array([0.16, 0.16])
+
+    expected_time = np.array([100, 100])
+    expected_energy = np.array([2, 2])
+    expected_mode = np.array([1, 1])
+    # tofs and cksm are bit shifted to the left by 1 during decompression
+    expected_tof0 = np.array([0 << 1, GlobalConstants.DOUBLE_FILLVAL])
+    expected_tof1 = np.array([GlobalConstants.DOUBLE_FILLVAL, 1 << 1])
+    expected_tof2 = np.array([2 << 1, GlobalConstants.DOUBLE_FILLVAL])
+    expected_tof3 = np.array([3 << 1, GlobalConstants.DOUBLE_FILLVAL])
+    expected_cksm = np.array([0 << 1, GlobalConstants.DOUBLE_FILLVAL])
+    expected_pos = np.array([GlobalConstants.DOUBLE_FILLVAL, 0])
 
     # Act
     multi_de._decompress_data()
 
     # Assert
-    np.testing.assert_array_equal(multi_de.ENERGY, energy_expected)
-    np.testing.assert_array_equal(multi_de.POS, pos_expected)
-    np.testing.assert_array_equal(multi_de.TOF0, tof0_expected)
-    np.testing.assert_array_equal(multi_de.TOF1, tof1_expected)
-    np.testing.assert_array_equal(multi_de.TOF2, tof2_expected)
-    np.testing.assert_array_equal(multi_de.TOF3, tof3_expected)
-    np.testing.assert_array_equal(multi_de.CKSM, cksm_expected)
-    np.testing.assert_array_equal(multi_de.TIME, time_expected)
+    np.testing.assert_array_equal(multi_de.TIME, expected_time)
+    np.testing.assert_array_equal(multi_de.ENERGY, expected_energy)
+    np.testing.assert_array_equal(multi_de.MODE, expected_mode)
+    np.testing.assert_array_equal(multi_de.TOF0, expected_tof0)
+    np.testing.assert_array_equal(multi_de.TOF1, expected_tof1)
+    np.testing.assert_array_equal(multi_de.TOF2, expected_tof2)
+    np.testing.assert_array_equal(multi_de.TOF3, expected_tof3)
+    np.testing.assert_array_equal(multi_de.CKSM, expected_cksm)
+    np.testing.assert_array_equal(multi_de.POS, expected_pos)

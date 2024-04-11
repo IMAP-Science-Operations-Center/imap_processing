@@ -15,7 +15,7 @@ def set_attributes(data, packet):
     # For each item in packet, assign it to the matching attribute in the class.
     for key, item in packet.data.items():
         value = item.derived_value if item.derived_value is not None else item.raw_value
-        if "SPARE" in key:
+        if "SPARE" in key or "CHKSUM" in key:
             continue
         if key not in attributes:
             raise KeyError(

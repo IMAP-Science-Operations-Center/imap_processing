@@ -6,16 +6,16 @@ import numpy as np
 from imap_processing.ccsds.ccsds_data import CcsdsData
 from imap_processing.cdf.defaults import GlobalConstants
 from imap_processing.lo.l0.decompression_tables.decompression_tables import (
-    BIT_SHIFT,
     CASE_DECODER,
     DATA_BITS,
+    DE_BIT_SHIFT,
 )
 from imap_processing.lo.l0.utils.binary_string import BinaryString
 from imap_processing.lo.l0.utils.set_dataclass_attr import set_attributes
 
 
 @dataclass
-class ScienceDirectEventsPacket:
+class ScienceDirectEvents:
     """L1A Science Direct Events data.
 
     The Science Direct Events class handles the parsing and
@@ -32,7 +32,7 @@ class ScienceDirectEventsPacket:
     ENERGY: Energy step (3 bits).
     MODE: Signals how the data is packed. If MODE is 1, then the TOF1
     (for case 1a) will need to be calculated using the checksum and other TOFs
-    <add equation here>.
+    in the L1B data product.
     If MODE is 0, then there was no compression and all TOFs are transmitted.
 
     The presence of TOF0, TOF1, TOF2, TOF3, CKSM, and POS depend on the
@@ -45,6 +45,8 @@ class ScienceDirectEventsPacket:
     the Position is not transmitted, but TOF3 is. If it is bronze, the table
     should be used as is. If it's not bronze, position was not transmitted,
     but TOF3 was transmitted.
+    - Cases 1, 2, 3, 5, 7, 9, 13 will always have a MODE of 0, so the same
+    fields will always be trasmitted.
 
     Bit Shifting:
     TOF0, TOF1, TOF2, TOF3, and CKSM all must be shifted by one bit to the
@@ -95,21 +97,21 @@ class ScienceDirectEventsPacket:
         the Direct Event packet data.
     """
 
+    software_version: str
+    packet_file_name: str
+    ccsds_header: CcsdsData
     SHCOARSE: int
     COUNT: int
     DATA: str
-    CHKSUM: int
+    TIME: np.ndarray
+    ENERGY: np.ndarray
+    MODE: np.ndarray
     TOF0: np.ndarray
     TOF1: np.ndarray
     TOF2: np.ndarray
     TOF3: np.ndarray
-    TIME: np.ndarray
-    ENERGY: np.ndarray
-    POS: np.ndarray
     CKSM: np.ndarray
-    software_version: str
-    packet_file_name: str
-    ccsds_header: CcsdsData
+    POS: np.ndarray
 
     def __init__(self, packet, software_version: str, packet_file_name: str):
         """Intialization method for Science Direct Events Data class."""
@@ -133,27 +135,49 @@ class ScienceDirectEventsPacket:
         """Decompress the Lo Science Direct Events data."""
         data = BinaryString(self.DATA)
         for _ in range(self.COUNT):
-            case_number = self._decompression_case(data)
-            self._parse_data(case_number, data)
-            case_decoder = self._case_decoder(case_number, data)
-            self._parse_case(data, case_decoder)
+            self._parse_data(data)
 
-    def _decompression_case(self, data: BinaryString):
-        """Find the decompression case for this DE.
+    def _parse_data(self, data: BinaryString):
+        """Parse the TOF data.
 
-        The first 4 bits of the binary data are used to
-        determine which case number we are working with.
-        The case number is used to determine how to
-        decompress the TOF values.
+        TOF data is parsed and the direct event data class
+        attributes are set.
+
+        Parameters
+        ----------
+        data : BinaryString
+            BinaryString object containing the TOF binary.
         """
-        return int(data.next_bits(4), 2)
+        # The first 4 bits of the binary data are used to
+        # determine which case number we are working with.
+        # The case number is used to determine how to
+        # decompress the TOF values.
+        case_number = int(data.next_bits(4), 2)
 
-    def _parse_data(self, case_number: int, data: BinaryString):
-        time = int(data.next_bits(DATA_BITS.TIME))
-        energy = int(data.next_bits(DATA_BITS.ENERGY))
-        mode = int(data.next_bits(DATA_BITS.MODE))
+        # time, energy, and mode are always trasmitted.
+        time = int(data.next_bits(DATA_BITS.TIME), 2)
+        self.TIME = np.append(self.TIME, time)
 
+        energy = int(data.next_bits(DATA_BITS.ENERGY), 2)
+        self.ENERGY = np.append(self.ENERGY, energy)
+
+        mode = int(data.next_bits(DATA_BITS.MODE), 2)
+        self.MODE = np.append(self.MODE, mode)
+
+        # Case decoder indicates which parts of the data
+        # are trasmitted for each case.
         case_decoder = CASE_DECODER[(case_number, mode)]
+
+        # TOF values are not transmitted for certain
+        # cases, so these can be initialized to the
+        # CDF fill val and stored with this value for
+        # those cases.
+        tof0 = GlobalConstants.DOUBLE_FILLVAL
+        tof1 = GlobalConstants.DOUBLE_FILLVAL
+        tof2 = GlobalConstants.DOUBLE_FILLVAL
+        tof3 = GlobalConstants.DOUBLE_FILLVAL
+        cksm = GlobalConstants.DOUBLE_FILLVAL
+        pos = GlobalConstants.DOUBLE_FILLVAL
 
         # Check the case decoder to see if the TOF field was
         # transmitted for this case. Then grab the bits from
@@ -162,68 +186,26 @@ class ScienceDirectEventsPacket:
         # needs to be bit shifted to the left (1 bit) during
         # unpacking.
         if case_decoder.TOF0:
-            tof0 = int(data.next_bits(DATA_BITS.TOF0)) << BIT_SHIFT
+            tof0 = int(data.next_bits(DATA_BITS.TOF0), 2) << DE_BIT_SHIFT
+        self.TOF0 = np.append(self.TOF0, tof0)
+
         if case_decoder.TOF1:
-            tof1 = int(data.next_bits(DATA_BITS.TOF1)) << BIT_SHIFT
+            tof1 = int(data.next_bits(DATA_BITS.TOF1), 2) << DE_BIT_SHIFT
+        self.TOF1 = np.append(self.TOF1, tof1)
+
         if case_decoder.TOF2:
-            tof2 = int(data.next_bits(DATA_BITS.TOF2)) << BIT_SHIFT
+            tof2 = int(data.next_bits(DATA_BITS.TOF2), 2) << DE_BIT_SHIFT
+            print(tof2)
+        self.TOF2 = np.append(self.TOF2, tof2)
+
         if case_decoder.TOF3:
-            tof3 = int(data.next_bits(DATA_BITS.TOF3)) << BIT_SHIFT
+            tof3 = int(data.next_bits(DATA_BITS.TOF3), 2) << DE_BIT_SHIFT
+        self.TOF3 = np.append(self.TOF3, tof3)
+
         if case_decoder.CKSM:
-            cksm = int(data.next_bits(DATA_BITS.CKSM)) << BIT_SHIFT
+            cksm = int(data.next_bits(DATA_BITS.CKSM), 2) << DE_BIT_SHIFT
+        self.CKSM = np.append(self.CKSM, cksm)
+
         if case_decoder.POS:
-            pos = int(data.next_bits(DATA_BITS.POS)) << BIT_SHIFT
-
-    def _parse_case(self, data, case_decoder):
-        self.TIME = np.append(
-            self.TIME,
-            self._decompress_field(data, case_decoder.TIME),
-        )
-
-        """Parse out the values for each DE data field."""
-        self.ENERGY = np.append(
-            self.ENERGY,
-            self._decompress_field(data, case_decoder.ENERGY, SIGNIFICANT_BITS.ENERGY),
-        )
-
-        self.POS = np.append(
-            self.POS,
-            self._decompress_field(data, case_decoder.POS, SIGNIFICANT_BITS.ENERGY),
-        )
-
-        self.TOF0 = np.append(
-            self.TOF0,
-            self._decompress_field(data, case_decoder.TOF0, SIGNIFICANT_BITS.TOF0),
-        )
-
-        self.TOF1 = np.append(
-            self.TOF1,
-            self._decompress_field(data, case_decoder.TOF1, SIGNIFICANT_BITS.TOF1),
-        )
-
-        self.TOF2 = np.append(
-            self.TOF2,
-            self._decompress_field(data, case_decoder.TOF2, SIGNIFICANT_BITS.TOF2),
-        )
-
-        self.TOF3 = np.append(
-            self.TOF3,
-            self._decompress_field(data, case_decoder.TOF3, SIGNIFICANT_BITS.TOF3),
-        )
-
-        self.CKSM = np.append(
-            self.CKSM,
-            self._decompress_field(data, case_decoder.CKSM, SIGNIFICANT_BITS.CKSM),
-        )
-
-    def _decompress_field(self, data, field_length, sig_bits):
-        """Decompress the DE field."""
-        # If the field length is 0 then that field is not
-        # present in this type of Direct Event case
-        if field_length == 0:
-            return GlobalConstants.DOUBLE_FILLVAL
-        field_bits = data.next_bits(field_length)
-        field_array = np.array([int(bit) for bit in field_bits])
-        # The dot product of the binary and the significant bits arrays
-        # is used to calculate the decompressed field value
-        return np.dot(sig_bits, field_array)
+            pos = int(data.next_bits(DATA_BITS.POS), 2) << DE_BIT_SHIFT
+        self.POS = np.append(self.POS, pos)
