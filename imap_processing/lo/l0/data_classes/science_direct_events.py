@@ -6,7 +6,7 @@ import numpy as np
 
 from imap_processing.ccsds.ccsds_data import CcsdsData
 from imap_processing.cdf.defaults import GlobalConstants
-from imap_processing.lo.l0.decompression_tables import (
+from imap_processing.lo.l0.decompression_tables.decompression_tables import (
     CASE_DECODER,
     DATA_BITS,
     DE_BIT_SHIFT,
