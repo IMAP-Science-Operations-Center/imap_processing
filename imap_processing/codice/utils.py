@@ -115,9 +115,6 @@ def create_hskp_dataset(packets) -> xr.Dataset:
     xarray.Dataset
         xarray dataset containing the metadata
     """
-    # TODO: If SHCOARSE is 0, skip the packet
-    # (This problem may fix itself with valid testing data)
-
     metadata_arrays = collections.defaultdict(list)
 
     for packet in packets:
@@ -132,7 +129,7 @@ def create_hskp_dataset(packets) -> xr.Dataset:
 
     dataset = xr.Dataset(
         coords={"epoch": epoch},
-        attrs=cdf_attrs.codice_l1a_global_attrs.output(),
+        attrs=cdf_attrs.l1a_hskp_attrs.output(),
     )
 
     for key, value in metadata_arrays.items():
@@ -147,7 +144,5 @@ def create_hskp_dataset(packets) -> xr.Dataset:
                 depend_0="epoch",
             ).output(),
         )
-
-    dataset.attrs["Logical_source"] = "imap_codice_l1a_hskp"
 
     return dataset

@@ -12,28 +12,29 @@ Use
 """
 
 # TODO: Change print statements to logging
+# TODO: Add type hints
 
 import dataclasses
 import logging
-import random
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 import xarray as xr
 
-from imap_processing import imap_module_directory, launch_time
+from imap_processing import imap_module_directory
 from imap_processing.cdf.global_attrs import ConstantCoordinates
-from imap_processing.cdf.utils import write_cdf
+from imap_processing.cdf.utils import calc_start_time, write_cdf
 from imap_processing.codice import cdf_attrs
+from imap_processing.codice.codice_l0 import decom_packets
 from imap_processing.codice.constants import (
     ESA_SWEEP_TABLE_ID_LOOKUP,
     LO_COLLAPSE_TABLE_ID_LOOKUP,
     LO_COMPRESSION_ID_LOOKUP,
     LO_STEPPING_TABLE_ID_LOOKUP,
-    LO_SW_SPECIES_NAMES,
+    LO_SW_SPECIES_FIELDNAMES,
+    LO_SW_SPECIES_VARNAMES,
 )
-from imap_processing.codice.decompress import decompress
 from imap_processing.codice.utils import CODICEAPID, create_hskp_dataset
 from imap_processing.utils import group_by_apid, sort_by_time
 
@@ -58,16 +59,9 @@ class CoDICEL1aPipeline:
         in the data packet
     view_id : int
         Provides information about how data was collapsed and/or compressed
-    use_simulated_data : bool
-        When ``True``, simulated science data is generated and used in the
-        processing pipeline. This is useful for development and testing in the
-        absence of actual CoDICE testing data., and is intended to be removed
-        once simulated science data is no longer needed.
 
     Methods
     -------
-    _generate_simulated_data(length_in_bits)
-        Return a list of random bytes to provide simulated science data.
     create_science_dataset()
         Create an ``xarray`` dataset for the unpacked science data.
     get_acquisition_times()
@@ -86,38 +80,6 @@ class CoDICEL1aPipeline:
         self.plan_id = plan_id
         self.plan_step = plan_step
         self.view_id = view_id
-        self.use_simulated_data = True
-
-    def _generate_simulated_data(self, length_in_bits):
-        """Return a list of random bytes to provide simulated science data.
-
-        This method is used as a temporary workaround to simulate science data
-        in the absence of real data to test with.
-
-        Parameters
-        ----------
-        length_in_bits : int
-            The number of bits used to generate the list of bytes. For example,
-            a ``length_in_bits`` of 80 yields a list of 10 bytes.
-
-        Returns
-        -------
-        random_bytes : bytes
-            A list of random bytes to be used as simulated science data
-        """
-        logger.info("\tUsing simulated data")
-        # Generate string of random bits of proper length
-        bit_string = bin(random.getrandbits(length_in_bits))[2:]
-        bit_string = bit_string.zfill(length_in_bits)
-        print(f"\tLength of data in bits: {len(bit_string)}")
-
-        # Convert list of random bits into byte-size list of integers
-        random_bytes_str = [bit_string[i : i + 8] for i in range(0, len(bit_string), 8)]
-        random_bytes_int = [int(item, 2) for item in random_bytes_str]
-        random_bytes = bytes(random_bytes_int)
-        print(f"\tLength of data in bytes: {len(random_bytes)}")
-
-        return random_bytes
 
     def create_science_dataset(self):
         """Create an ``xarray`` dataset for the unpacked science data.
@@ -132,49 +94,49 @@ class CoDICEL1aPipeline:
         # TODO: Pull out common code and put in codice.utils alongside
         # create_hskp_dataset()
         """
-        # Define the attributes specific to species data
-        species_attrs = dataclasses.replace(
-            cdf_attrs.l1a_science_attrs,
-            depend_0="species",
-            depend_1=None,
-            depend_2=None,
-            catdesc="TBD",
-            fieldname="TBD",
-            label_axis="TBD",
-        ).output()
+        # # Define the attributes specific to species data variable
+        # species_attrs = dataclasses.replace(
+        #     cdf_attrs.species_attrs,
+        #     depend_0="species",
+        #     depend_1=None,
+        #     depend_2=None,
+        #     catdesc="TBD",
+        #     fieldname="TBD",
+        #     label_axis="TBD",
+        # ).output()
 
-        epoch_time = xr.DataArray(
-            [
-                launch_time for i in range(len(self.data))
-            ],  # Temporary workaround to get epoch in correct dimensions
+        epoch = xr.DataArray(
+            [calc_start_time(item.data["SHCOARSE"].raw_value) for item in packets],
             name="epoch",
             dims=["epoch"],
             attrs=ConstantCoordinates.EPOCH,
         )
 
-        species_array = xr.DataArray(
-            name="species",
-            data=np.zeros(36864),
-            dims=("species"),
-            attrs=species_attrs,
+        energy = xr.DataArray(
+            np.arange(128),
+            name="energy",
+            dims=["energy"],
+            attrs=cdf_attrs.energy_attrs.output(),
         )
 
         dataset = xr.Dataset(
-            coords={"epoch": epoch_time, "species": species_array},
-            attrs=cdf_attrs.codice_l1a_global_attrs.output(),
+            coords={"epoch": epoch, "energy": energy},
+            attrs=cdf_attrs.l1a_lo_sw_species_attrs.output(),
         )
 
         # Create a data variable for each species
-        for species_data, species_name in zip(self.data, LO_SW_SPECIES_NAMES):
-            data = xr.DataArray(
-                name=species_name,
-                data=list(species_data),
-                dims=("species"),
-                attrs=species_attrs,
+        for species_data, varname, fieldname in zip(
+            self.data, LO_SW_SPECIES_VARNAMES, LO_SW_SPECIES_FIELDNAMES
+        ):
+            reshaped_data = np.array(list(species_data)).reshape(-1, 128)
+            dataset[varname] = xr.DataArray(
+                reshaped_data,
+                name=varname,
+                dims=["epoch", "energy"],
+                attrs=dataclasses.replace(
+                    cdf_attrs.counts_attrs, fieldname=fieldname
+                ).output(),
             )
-            dataset[species_name] = data
-
-        dataset.attrs["Logical_source"] = "imap_codice_l1a_lo-sw-species-counts"
 
         # TODO: Add in the ESA sweep values and acquisition times? (Confirm with Joey)
 
@@ -250,37 +212,24 @@ class CoDICEL1aPipeline:
         pass
 
     def unpack_science_data(self):
-        """Make 4D L1a data product from the decompressed science data.
+        """Unpack the science data from the packet.
 
-        Take the decompressed science data and reorganize the bytes to
-        create a four-dimensional data product
+        For LO SW Species Counts data, the science data within the packet is a
+        blob of compressed values of length 2048 bits (16 species * 128 energy
+        levels). These data need to be divided up by species so that each
+        species can have their own data variable in the L1A CDF file.
 
-        TODO: Describe the data product in more detail in docstring
+        TODO: Make this method more generalized for other APIDs
+        TODO: Check to see if we expect to have multiple packets?
         """
         print("Unpacking science data")
 
         self.compression_algorithm = LO_COMPRESSION_ID_LOOKUP[self.view_id]
         self.collapse_table_id = LO_COLLAPSE_TABLE_ID_LOOKUP[self.view_id]
 
-        # Generate simulated science data
-        # TODO: Take hard coded bit length value out and use variable instead
-        if self.use_simulated_data:
-            science_values = self._generate_simulated_data(
-                4718592
-            )  # 16 species * 128 energies * 24 positions * 12 spin angles * 8 bits
-        else:
-            # Decompress the science data
-            compressed_values = None
-            print(
-                f"Decompressing science data using {self.compression_algorithm.name} algorithm"  # noqa
-            )
-            science_values = [
-                decompress(compressed_value, self.compression_algorithm)
-                for compressed_value in compressed_values
-            ]
+        science_values = self.packets[0].data["DATA"].raw_value
 
-        # TODO: Confirm with joey that I am unpacking this correctly
-        # Chunk of the data by the number of species
+        # Divide up the data by the number of species
         num_bytes = len(science_values)
         num_species = 16
         chunk_size = len(science_values) // num_species
@@ -289,22 +238,17 @@ class CoDICEL1aPipeline:
         ]
 
 
-def get_params(apid):
+def get_params(packet):
     """Return the four 'main' parameters used for l1a processing.
 
     The combination of these parameters largely determines what steps/values
     are used to create CoDICE L1a data products and what steps are needed in
     the pipeline algorithm.
 
-    This function is intended to serve as a temporary workaround until proper
-    testing data are acquired. These values should be able to be derived in the
-    test data. Once proper testing data are acquired, this function will grab
-    the values from the CCSDS packet.
-
     Parameters
     ----------
-    apid : IntEnum
-        The APID of interest
+    packet : space_packet_parser.parser.Packet
+        A packet for the APID of interest
 
     Returns
     -------
@@ -322,19 +266,10 @@ def get_params(apid):
     view_id : int
         Provides information about how data was collapsed and/or compressed
     """
-    # table_id will likely always be 1
-    table_id = 1
-
-    if apid == CODICEAPID.COD_LO_SW_SPECIES_COUNTS:
-        plan_id = 1
-        plan_step = 1
-        view_id = 5
-
-    # Default values
-    else:
-        plan_id = 1
-        plan_step = 1
-        view_id = 1
+    table_id = packet.data["TABLE_ID"].raw_value
+    plan_id = packet.data["PLAN_ID"].raw_value
+    plan_step = packet.data["PLAN_STEP"].raw_value
+    view_id = packet.data["VIEW_ID"].raw_value
 
     return table_id, plan_id, plan_step, view_id
 
@@ -366,17 +301,14 @@ def process_codice_l1a(packets) -> str:
         elif apid == CODICEAPID.COD_LO_SW_SPECIES_COUNTS:
             print("Processing COD_LO_SW_SPECIES_COUNTS packet")
 
-            # These are currently commented out because the test data does not
-            # have SHCOARSE
-            # TODO: Turn these "on" once proper testing data is acquired
-            # packets = grouped_data[apid]
-            # sorted_packets = sort_by_time(packets, "SHCOARSE")
+            packets = sort_by_time(grouped_data[apid], "SHCOARSE")
 
             # Get the four "main" parameters for processing
-            table_id, plan_id, plan_step, view_id = get_params(apid)
+            table_id, plan_id, plan_step, view_id = get_params(packets[0])
 
             # Run the pipeline to create a dataset for the product
             pipeline = CoDICEL1aPipeline(table_id, plan_id, plan_step, view_id)
+            pipeline.packets = packets
             pipeline.get_esa_sweep_values()
             pipeline.get_acquisition_times()
             pipeline.get_lo_data_products()
@@ -416,7 +348,18 @@ def process_codice_l1a(packets) -> str:
             continue
 
     # Write dataset to CDF
+    print(dataset.hplus)
     print(f"\nFinal data product:\n{dataset}\n")
     cdf_filename = write_cdf(dataset)
     print(f"Created CDF file: {cdf_filename}")
     return cdf_filename
+
+
+if __name__ == "__main__":
+    test_file = Path(
+        f"{imap_module_directory}/tests/codice/data/lo_fsw_view_5_ccsds.bin"
+    )
+    file = "P_COD_LO_SW_SPECIES_COUNTS.xml"
+    xtce_document = f"{imap_module_directory}/codice/packet_definitions/{file}"
+    packets = decom_packets(test_file, xtce_document)
+    process_codice_l1a(packets)

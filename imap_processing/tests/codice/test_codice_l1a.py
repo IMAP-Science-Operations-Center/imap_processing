@@ -16,7 +16,7 @@ TEST_DATA = [
         "imap_codice_l1a_hskp_20100101_v001.cdf",
     ),
     (
-        Path(f"{imap_module_directory}/tests/codice/data/sample_science_data.bin"),
+        Path(f"{imap_module_directory}/tests/codice/data/lo_fsw_view_5_ccsds.bin"),
         "imap_codice_l1a_lo-sw-species-counts_20100101_v001.cdf",
     ),
 ]

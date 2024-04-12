@@ -6,8 +6,28 @@ derived from the packet data.
 
 from imap_processing.codice.utils import CoDICECompression
 
+# CDF-friendly FIELDNAMES for lo-sw-species-counts data product
+LO_SW_SPECIES_FIELDNAMES = [
+    "SW - H+",
+    "SW - He++",
+    "SW - C+4",
+    "SW - C+5",
+    "SW - C+6",
+    "SW - O+5",
+    "SW - O+6",
+    "SW - O+7",
+    "SW - O+8",
+    "SW - Ne",
+    "SW - Mg",
+    "SW - Si",
+    "SW - Fe lowQ",
+    "SW - Fe highQ",
+    "SW - He+ (PUI)",
+    "SW - CNO+ (PUI)",
+]
+
 # CDF-friendly variable names for lo-sw-species-counts data product
-LO_SW_SPECIES_NAMES = [
+LO_SW_SPECIES_VARNAMES = [
     "hplus",
     "heplusplus",
     "cplus4",
