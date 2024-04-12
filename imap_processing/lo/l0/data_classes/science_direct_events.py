@@ -6,7 +6,7 @@ import numpy as np
 
 from imap_processing.ccsds.ccsds_data import CcsdsData
 from imap_processing.cdf.defaults import GlobalConstants
-from imap_processing.lo.l0.decompression_tables.decompression_tables import (
+from imap_processing.lo.l0.decompression_tables import (
     CASE_DECODER,
     DATA_BITS,
     DE_BIT_SHIFT,
@@ -120,16 +120,20 @@ class ScienceDirectEvents:
         self.software_version = software_version
         self.packet_file_name = packet_file_name
         self.ccsds_header = CcsdsData(packet.header)
-        # TODO: Is there a better way to initialize these arrays?
-        self.TIME = np.array([])
-        self.ENERGY = np.array([])
-        self.MODE = np.array([])
-        self.TOF0 = np.array([])
-        self.TOF1 = np.array([])
-        self.TOF2 = np.array([])
-        self.TOF3 = np.array([])
-        self.CKSM = np.array([])
-        self.POS = np.array([])
+
+        # TOF values are not transmitted for certain
+        # cases, so these can be initialized to the
+        # CDF fill val and stored with this value for
+        # those cases.
+        self.TIME = np.ones(self.COUNT) * GlobalConstants.DOUBLE_FILLVAL
+        self.ENERGY = np.ones(self.COUNT) * GlobalConstants.DOUBLE_FILLVAL
+        self.MODE = np.ones(self.COUNT) * GlobalConstants.DOUBLE_FILLVAL
+        self.TOF0 = np.ones(self.COUNT) * GlobalConstants.DOUBLE_FILLVAL
+        self.TOF1 = np.ones(self.COUNT) * GlobalConstants.DOUBLE_FILLVAL
+        self.TOF2 = np.ones(self.COUNT) * GlobalConstants.DOUBLE_FILLVAL
+        self.TOF3 = np.ones(self.COUNT) * GlobalConstants.DOUBLE_FILLVAL
+        self.CKSM = np.ones(self.COUNT) * GlobalConstants.DOUBLE_FILLVAL
+        self.POS = np.ones(self.COUNT) * GlobalConstants.DOUBLE_FILLVAL
         self._decompress_data()
 
     def _decompress_data(self):
@@ -169,20 +173,10 @@ class ScienceDirectEvents:
         # are transmitted for each case.
         case_decoder = CASE_DECODER[(case_number, mode)]
 
-        # TOF values are not transmitted for certain
-        # cases, so these can be initialized to the
-        # CDF fill val and stored with this value for
-        # those cases.
-        tof0 = GlobalConstants.DOUBLE_FILLVAL
-        tof1 = GlobalConstants.DOUBLE_FILLVAL
-        tof2 = GlobalConstants.DOUBLE_FILLVAL
-        tof3 = GlobalConstants.DOUBLE_FILLVAL
-        cksm = GlobalConstants.DOUBLE_FILLVAL
-        pos = GlobalConstants.DOUBLE_FILLVAL
-
         # Check the case decoder to see if the TOF field was
         # transmitted for this case. Then grab the bits from
-        # the binary and perform a bit shift to the left. The
+        # the binary turn these into an integer, and perform
+        # a bit shift to the left on that integer value. The
         # data was packed using a right bit shift (1 bit), so
         # needs to be bit shifted to the left (1 bit) during
         # unpacking.

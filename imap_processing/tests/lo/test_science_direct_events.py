@@ -62,11 +62,11 @@ def test_parse_data_case_0(single_de):
     energy = "010"  # 2
     mode = "1"
     tof0 = "0000000000"
-    # TOF1 not trasmitted
+    # TOF1 not transmitted
     tof2 = "000000010"  # 2
     tof3 = "000011"  # 3
     cksm = "000"  # 0
-    # POS not trasmitted
+    # POS not transmitted
     single_de.DATA = absent + time + energy + mode + tof0 + tof2 + tof3 + cksm
     data = BinaryString(single_de.DATA)
 
@@ -102,9 +102,9 @@ def test_parse_data_case_10(single_de):
     time = "000001100100"  # 100
     energy = "010"  # 2
     mode = "1"
-    # TOF0 not trasmitted
+    # TOF0 not transmitted
     tof1 = "000000001"  # 1
-    # TOF2, TOF3, CKSM not trasmitted
+    # TOF2, TOF3, CKSM not transmitted
     pos = "00"  # 0
     single_de.DATA = absent + time + energy + mode + tof1 + pos
     data = BinaryString(single_de.DATA)
@@ -144,20 +144,20 @@ def test_decompress_data_multi_de(multi_de):
     energy_1 = "010"  # 2
     mode_1 = "1"
     tof0_1 = "0000000000"
-    # TOF1 not trasmitted
+    # TOF1 not transmitted
     tof2_1 = "000000010"  # 2
     tof3_1 = "000011"  # 3
     cksm_1 = "000"  # 0
-    # POS not trasmitted
+    # POS not transmitted
 
     # DE Two
     absent_2 = "1010"  # case 10
     time_2 = "000001100100"  # 100
     energy_2 = "010"  # 2
     mode_2 = "1"
-    # TOF0 not trasmitted
+    # TOF0 not transmitted
     tof1_2 = "000000001"  # 1
-    # TOF2, TOF3, CKSM not trasmitted
+    # TOF2, TOF3, CKSM not transmitted
     pos_2 = "00"  # 0
 
     multi_de.DATA = (
