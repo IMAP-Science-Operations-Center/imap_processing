@@ -49,13 +49,12 @@ lo_tof_attrs = ScienceAttrs(
     validmin=0,
     validmax=GlobalConstants.INT_MAXVAL,
     catdesc="Time of Flight",
-    # TODO: Not sure if depend_0 and display type are right
     depend_0="epoch",
     display_type="time_series",
     fill_val=GlobalConstants.INT_FILLVAL,
-    fieldname="tof",
+    fieldname="Time of Flight",
     format="I12",
     var_type="data",
     units="seconds",
-    label_axis="Time of Flight",
+    label_axis="ToF",
 )

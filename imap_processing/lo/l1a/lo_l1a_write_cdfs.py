@@ -34,7 +34,7 @@ def write_lo_l1a_cdfs(data: LoContainer):
     return created_filepaths
 
 
-def create_lo_scide_dataset(scide: list):
+def create_lo_scide_dataset(sci_de: list):
     """
     Create Lo L1A Science Direct Event Dataset from the ScienceDirectEvent dataclasses.
 
@@ -51,7 +51,7 @@ def create_lo_scide_dataset(scide: list):
     # TODO: getting sci_de_times because it's used in both the data time field
     # and epoch. Need to figure out if this is needed and if a conversion needs
     # to happen to get the epoch time.
-    sci_de_times = np.concatenate([sci_de_data.TIME for sci_de_data in scide])
+    sci_de_times = np.concatenate([sci_de_data.TIME for sci_de_data in sci_de])
     sci_de_time = xr.DataArray(
         sci_de_times, dims="epoch", attrs=lo_cdf_attrs.lo_tof_attrs.output()
     )
@@ -62,42 +62,42 @@ def create_lo_scide_dataset(scide: list):
         attrs=ConstantCoordinates.EPOCH,
     )
     sci_de_energy = xr.DataArray(
-        np.concatenate([sci_de_data.ENERGY for sci_de_data in scide]),
+        np.concatenate([sci_de_data.ENERGY for sci_de_data in sci_de]),
         dims="epoch",
         attrs=lo_cdf_attrs.lo_tof_attrs.output(),
     )
     sci_de_mode = xr.DataArray(
-        np.concatenate([sci_de_data.MODE for sci_de_data in scide]),
+        np.concatenate([sci_de_data.MODE for sci_de_data in sci_de]),
         dims="epoch",
         attrs=lo_cdf_attrs.lo_tof_attrs.output(),
     )
     sci_de_tof0 = xr.DataArray(
-        np.concatenate([sci_de_data.TOF0 for sci_de_data in scide]),
+        np.concatenate([sci_de_data.TOF0 for sci_de_data in sci_de]),
         dims="epoch",
         attrs=lo_cdf_attrs.lo_tof_attrs.output(),
     )
     sci_de_tof1 = xr.DataArray(
-        np.concatenate([sci_de_data.TOF1 for sci_de_data in scide]),
+        np.concatenate([sci_de_data.TOF1 for sci_de_data in sci_de]),
         dims="epoch",
         attrs=lo_cdf_attrs.lo_tof_attrs.output(),
     )
     sci_de_tof2 = xr.DataArray(
-        np.concatenate([sci_de_data.TOF2 for sci_de_data in scide]),
+        np.concatenate([sci_de_data.TOF2 for sci_de_data in sci_de]),
         dims="epoch",
         attrs=lo_cdf_attrs.lo_tof_attrs.output(),
     )
     sci_de_tof3 = xr.DataArray(
-        np.concatenate([sci_de_data.TOF3 for sci_de_data in scide]),
+        np.concatenate([sci_de_data.TOF3 for sci_de_data in sci_de]),
         dims="epoch",
         attrs=lo_cdf_attrs.lo_tof_attrs.output(),
     )
     sci_de_checksum = xr.DataArray(
-        np.concatenate([sci_de_data.CKSM for sci_de_data in scide]),
+        np.concatenate([sci_de_data.CKSM for sci_de_data in sci_de]),
         dims="epoch",
         attrs=lo_cdf_attrs.lo_tof_attrs.output(),
     )
     sci_de_pos = xr.DataArray(
-        np.concatenate([sci_de_data.POS for sci_de_data in scide]),
+        np.concatenate([sci_de_data.POS for sci_de_data in sci_de]),
         dims="epoch",
         attrs=lo_cdf_attrs.lo_tof_attrs.output(),
     )
@@ -105,7 +105,7 @@ def create_lo_scide_dataset(scide: list):
     # Create the full dataset
     sci_de_dataset = xr.Dataset(
         data_vars={
-            "time": sci_de_time,
+            "de_time": sci_de_time,
             "energy": sci_de_energy,
             "mode": sci_de_mode,
             "tof0": sci_de_tof0,

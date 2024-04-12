@@ -67,7 +67,7 @@ def test_create_lo_scide_dataset(direct_events):
     dataset = create_lo_scide_dataset(direct_events)
 
     assert (
-        dataset["time"].data
+        dataset["de_time"].data
         == [1712787078, 1712787090, 1712787100, 1712787150, 1712787170, 1712787200]
     ).all()
     assert (dataset["energy"].data == [0, 0, 0, 0, 0, 0]).all()
