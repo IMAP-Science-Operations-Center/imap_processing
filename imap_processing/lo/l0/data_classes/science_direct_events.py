@@ -22,7 +22,6 @@ class ScienceDirectEvents(LoBase):
     The Science Direct Events class handles the parsing and
     decompression of L0 to L1A data.
 
-
     The TOF data in the binary is in the following order:
     ABSENT, TIME, ENERGY, MODE, TOF0, TOF1, TOF2, TOF3, CKSM, POS
 
@@ -42,10 +41,12 @@ class ScienceDirectEvents(LoBase):
     - Case 0 can either be a gold or silver triple. Gold triples do
     not send down the TOF1 value and instead recover the TOF1 value
     on the ground using the decompressed checksum.
+
     - Cases 4, 6, 10, 12, 13 may be Bronze. If it's not a bronze,
     the Position is not transmitted, but TOF3 is. If it is bronze, the table
     should be used as is. If it's not bronze, position was not transmitted,
     but TOF3 was transmitted.
+
     - Cases 1, 2, 3, 5, 7, 9, 13 will always have a MODE of 0, so the same
     fields will always be transmitted.
 
