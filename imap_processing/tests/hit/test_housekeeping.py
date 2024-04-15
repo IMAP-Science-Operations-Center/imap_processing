@@ -82,7 +82,6 @@ def test_houskeeping():
     ]
 
     for pkt_idx, packet in enumerate(packets):
-        print(packet)
         hk = Housekeeping(packet, "0.0", "hskp_sample.ccsds")
         for field in hk_fields:
             assert getattr(hk, field) == validation_data[field][pkt_idx]

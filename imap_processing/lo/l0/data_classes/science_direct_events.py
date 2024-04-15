@@ -115,7 +115,18 @@ class ScienceDirectEvents:
     POS: np.ndarray
 
     def __init__(self, packet, software_version: str, packet_file_name: str):
-        """Initialize Science Direct Events Data class."""
+        """Initialize Science Direct Events Data class.
+
+        Parameters
+        ----------
+        packet: dict
+            single packet from space_packet_parser.
+        software_version: str
+            current version of IMAP-Lo processing.
+        packet_file_name: str
+            name of the CCSDS file where the packet
+            originated.
+        """
         set_attributes(self, packet)
         self.software_version = software_version
         self.packet_file_name = packet_file_name
@@ -137,71 +148,62 @@ class ScienceDirectEvents:
         self._decompress_data()
 
     def _decompress_data(self):
-        """Decompress the Lo Science Direct Events data."""
+        """Decompress the Lo Science Direct Events data.
+
+        TOF data is decompressed and the direct event data class
+        attributes are set.
+        """
         data = BinaryString(self.DATA)
         for _ in range(self.COUNT):
-            self._parse_data(data)
+            # The first 4 bits of the binary data are used to
+            # determine which case number we are working with.
+            # The case number is used to determine how to
+            # decompress the TOF values.
+            case_number = int(data.next_bits(4), 2)
 
-    def _parse_data(self, data: BinaryString):
-        """Parse the TOF data.
+            # time, energy, and mode are always transmitted.
+            time = int(data.next_bits(DATA_BITS.TIME), 2)
+            self.TIME = np.append(self.TIME, time)
 
-        TOF data is parsed and the direct event data class
-        attributes are set.
+            energy = int(data.next_bits(DATA_BITS.ENERGY), 2)
+            self.ENERGY = np.append(self.ENERGY, energy)
 
-        Parameters
-        ----------
-        data : BinaryString
-            BinaryString object containing the TOF binary.
-        """
-        # The first 4 bits of the binary data are used to
-        # determine which case number we are working with.
-        # The case number is used to determine how to
-        # decompress the TOF values.
-        case_number = int(data.next_bits(4), 2)
+            mode = int(data.next_bits(DATA_BITS.MODE), 2)
+            self.MODE = np.append(self.MODE, mode)
 
-        # time, energy, and mode are always transmitted.
-        time = int(data.next_bits(DATA_BITS.TIME), 2)
-        self.TIME = np.append(self.TIME, time)
+            # Case decoder indicates which parts of the data
+            # are transmitted for each case.
+            case_decoder = CASE_DECODER[(case_number, mode)]
 
-        energy = int(data.next_bits(DATA_BITS.ENERGY), 2)
-        self.ENERGY = np.append(self.ENERGY, energy)
+            # Check the case decoder to see if the TOF field was
+            # transmitted for this case. Then grab the bits from
+            # the binary turn these into an integer, and perform
+            # a bit shift to the left on that integer value. The
+            # data was packed using a right bit shift (1 bit), so
+            # needs to be bit shifted to the left (1 bit) during
+            # unpacking.
+            if case_decoder.TOF0:
+                tof0 = int(data.next_bits(DATA_BITS.TOF0), 2) << DE_BIT_SHIFT
+            self.TOF0 = np.append(self.TOF0, tof0)
 
-        mode = int(data.next_bits(DATA_BITS.MODE), 2)
-        self.MODE = np.append(self.MODE, mode)
+            if case_decoder.TOF1:
+                tof1 = int(data.next_bits(DATA_BITS.TOF1), 2) << DE_BIT_SHIFT
+            self.TOF1 = np.append(self.TOF1, tof1)
 
-        # Case decoder indicates which parts of the data
-        # are transmitted for each case.
-        case_decoder = CASE_DECODER[(case_number, mode)]
+            if case_decoder.TOF2:
+                tof2 = int(data.next_bits(DATA_BITS.TOF2), 2) << DE_BIT_SHIFT
+                print(tof2)
+            self.TOF2 = np.append(self.TOF2, tof2)
 
-        # Check the case decoder to see if the TOF field was
-        # transmitted for this case. Then grab the bits from
-        # the binary turn these into an integer, and perform
-        # a bit shift to the left on that integer value. The
-        # data was packed using a right bit shift (1 bit), so
-        # needs to be bit shifted to the left (1 bit) during
-        # unpacking.
-        if case_decoder.TOF0:
-            tof0 = int(data.next_bits(DATA_BITS.TOF0), 2) << DE_BIT_SHIFT
-        self.TOF0 = np.append(self.TOF0, tof0)
+            if case_decoder.TOF3:
+                tof3 = int(data.next_bits(DATA_BITS.TOF3), 2) << DE_BIT_SHIFT
+            self.TOF3 = np.append(self.TOF3, tof3)
 
-        if case_decoder.TOF1:
-            tof1 = int(data.next_bits(DATA_BITS.TOF1), 2) << DE_BIT_SHIFT
-        self.TOF1 = np.append(self.TOF1, tof1)
+            if case_decoder.CKSM:
+                cksm = int(data.next_bits(DATA_BITS.CKSM), 2) << DE_BIT_SHIFT
+            self.CKSM = np.append(self.CKSM, cksm)
 
-        if case_decoder.TOF2:
-            tof2 = int(data.next_bits(DATA_BITS.TOF2), 2) << DE_BIT_SHIFT
-            print(tof2)
-        self.TOF2 = np.append(self.TOF2, tof2)
-
-        if case_decoder.TOF3:
-            tof3 = int(data.next_bits(DATA_BITS.TOF3), 2) << DE_BIT_SHIFT
-        self.TOF3 = np.append(self.TOF3, tof3)
-
-        if case_decoder.CKSM:
-            cksm = int(data.next_bits(DATA_BITS.CKSM), 2) << DE_BIT_SHIFT
-        self.CKSM = np.append(self.CKSM, cksm)
-
-        if case_decoder.POS:
-            # no bit shift for POS
-            pos = int(data.next_bits(DATA_BITS.POS), 2)
-        self.POS = np.append(self.POS, pos)
+            if case_decoder.POS:
+                # no bit shift for POS
+                pos = int(data.next_bits(DATA_BITS.POS), 2)
+            self.POS = np.append(self.POS, pos)
