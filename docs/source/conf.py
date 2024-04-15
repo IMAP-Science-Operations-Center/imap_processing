@@ -97,8 +97,8 @@ nitpick_ignore_regex = [
     (r"py:.*", r".*IntEnum.*"),
     (r"py:.*", r".*space_packet_parser.*"),
     (r"py:.*", r".*CoDICECompression.*"),
-    (r"py:.*", r".*LoBase.*"),
-    (r"py:.*", r".*ScienceDirectEvents.*"),
+    (r"py:.*", r".*.lo.l0.utils.*"),
+    (r"py:.*", r".*.lo.l0.data_classes.*"),
     (r"py:.*", r".*.hit.l0.utils.*"),
     (r"py:.*", r".*.hit.l0.data_classes.*"),
 ]
