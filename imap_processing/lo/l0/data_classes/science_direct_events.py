@@ -12,11 +12,11 @@ from imap_processing.lo.l0.decompression_tables.decompression_tables import (
     DE_BIT_SHIFT,
 )
 from imap_processing.lo.l0.utils.binary_string import BinaryString
-from imap_processing.lo.l0.utils.set_dataclass_attr import set_attributes
+from imap_processing.lo.l0.utils.lo_base import LoBase
 
 
 @dataclass
-class ScienceDirectEvents:
+class ScienceDirectEvents(LoBase):
     """L1A Science Direct Events data.
 
     The Science Direct Events class handles the parsing and
@@ -98,9 +98,6 @@ class ScienceDirectEvents:
         the Direct Event packet data.
     """
 
-    software_version: str
-    packet_file_name: str
-    ccsds_header: CcsdsData
     SHCOARSE: int
     COUNT: int
     DATA: str
@@ -127,11 +124,8 @@ class ScienceDirectEvents:
             name of the CCSDS file where the packet
             originated.
         """
-        set_attributes(self, packet)
-        self.software_version = software_version
-        self.packet_file_name = packet_file_name
-        self.ccsds_header = CcsdsData(packet.header)
-
+        super().__init__(software_version, packet_file_name, CcsdsData(packet.header))
+        self.set_attributes(packet)
         # TOF values are not transmitted for certain
         # cases, so these can be initialized to the
         # CDF fill val and stored with this value for
@@ -154,7 +148,7 @@ class ScienceDirectEvents:
         attributes are set.
         """
         data = BinaryString(self.DATA)
-        for _ in range(self.COUNT):
+        for de_idx in range(self.COUNT):
             # The first 4 bits of the binary data are used to
             # determine which case number we are working with.
             # The case number is used to determine how to
@@ -162,18 +156,13 @@ class ScienceDirectEvents:
             case_number = int(data.next_bits(4), 2)
 
             # time, energy, and mode are always transmitted.
-            time = int(data.next_bits(DATA_BITS.TIME), 2)
-            self.TIME = np.append(self.TIME, time)
-
-            energy = int(data.next_bits(DATA_BITS.ENERGY), 2)
-            self.ENERGY = np.append(self.ENERGY, energy)
-
-            mode = int(data.next_bits(DATA_BITS.MODE), 2)
-            self.MODE = np.append(self.MODE, mode)
+            self.TIME[de_idx] = int(data.next_bits(DATA_BITS.TIME), 2)
+            self.ENERGY[de_idx] = int(data.next_bits(DATA_BITS.ENERGY), 2)
+            self.MODE[de_idx] = int(data.next_bits(DATA_BITS.MODE), 2)
 
             # Case decoder indicates which parts of the data
             # are transmitted for each case.
-            case_decoder = CASE_DECODER[(case_number, mode)]
+            case_decoder = CASE_DECODER[(case_number, self.MODE[de_idx])]
 
             # Check the case decoder to see if the TOF field was
             # transmitted for this case. Then grab the bits from
@@ -183,27 +172,25 @@ class ScienceDirectEvents:
             # needs to be bit shifted to the left (1 bit) during
             # unpacking.
             if case_decoder.TOF0:
-                tof0 = int(data.next_bits(DATA_BITS.TOF0), 2) << DE_BIT_SHIFT
-            self.TOF0 = np.append(self.TOF0, tof0)
-
+                self.TOF0[de_idx] = (
+                    int(data.next_bits(DATA_BITS.TOF0), 2) << DE_BIT_SHIFT
+                )
             if case_decoder.TOF1:
-                tof1 = int(data.next_bits(DATA_BITS.TOF1), 2) << DE_BIT_SHIFT
-            self.TOF1 = np.append(self.TOF1, tof1)
-
+                self.TOF1[de_idx] = (
+                    int(data.next_bits(DATA_BITS.TOF1), 2) << DE_BIT_SHIFT
+                )
             if case_decoder.TOF2:
-                tof2 = int(data.next_bits(DATA_BITS.TOF2), 2) << DE_BIT_SHIFT
-                print(tof2)
-            self.TOF2 = np.append(self.TOF2, tof2)
-
+                self.TOF2[de_idx] = (
+                    int(data.next_bits(DATA_BITS.TOF2), 2) << DE_BIT_SHIFT
+                )
             if case_decoder.TOF3:
-                tof3 = int(data.next_bits(DATA_BITS.TOF3), 2) << DE_BIT_SHIFT
-            self.TOF3 = np.append(self.TOF3, tof3)
-
+                self.TOF3[de_idx] = (
+                    int(data.next_bits(DATA_BITS.TOF3), 2) << DE_BIT_SHIFT
+                )
             if case_decoder.CKSM:
-                cksm = int(data.next_bits(DATA_BITS.CKSM), 2) << DE_BIT_SHIFT
-            self.CKSM = np.append(self.CKSM, cksm)
-
+                self.CKSM[de_idx] = (
+                    int(data.next_bits(DATA_BITS.CKSM), 2) << DE_BIT_SHIFT
+                )
             if case_decoder.POS:
                 # no bit shift for POS
-                pos = int(data.next_bits(DATA_BITS.POS), 2)
-            self.POS = np.append(self.POS, pos)
+                self.POS[de_idx] = int(data.next_bits(DATA_BITS.POS), 2)

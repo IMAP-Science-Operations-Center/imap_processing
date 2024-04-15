@@ -7,7 +7,6 @@ from imap_processing.cdf.defaults import GlobalConstants
 from imap_processing.lo.l0.data_classes.science_direct_events import (
     ScienceDirectEvents,
 )
-from imap_processing.lo.l0.utils.binary_string import BinaryString
 
 
 @pytest.fixture()
@@ -37,6 +36,15 @@ def fake_packet_data():
 def single_de(fake_packet_data):
     de = ScienceDirectEvents(fake_packet_data, "0", "fakepacketname")
     de.COUNT = 1
+    de.TIME = np.ones(de.COUNT) * GlobalConstants.DOUBLE_FILLVAL
+    de.ENERGY = np.ones(de.COUNT) * GlobalConstants.DOUBLE_FILLVAL
+    de.MODE = np.ones(de.COUNT) * GlobalConstants.DOUBLE_FILLVAL
+    de.TOF0 = np.ones(de.COUNT) * GlobalConstants.DOUBLE_FILLVAL
+    de.TOF1 = np.ones(de.COUNT) * GlobalConstants.DOUBLE_FILLVAL
+    de.TOF2 = np.ones(de.COUNT) * GlobalConstants.DOUBLE_FILLVAL
+    de.TOF3 = np.ones(de.COUNT) * GlobalConstants.DOUBLE_FILLVAL
+    de.CKSM = np.ones(de.COUNT) * GlobalConstants.DOUBLE_FILLVAL
+    de.POS = np.ones(de.COUNT) * GlobalConstants.DOUBLE_FILLVAL
     return de
 
 
@@ -44,6 +52,15 @@ def single_de(fake_packet_data):
 def multi_de(fake_packet_data):
     de = ScienceDirectEvents(fake_packet_data, "0", "fakepacketname")
     de.COUNT = 2
+    de.TIME = np.ones(de.COUNT) * GlobalConstants.DOUBLE_FILLVAL
+    de.ENERGY = np.ones(de.COUNT) * GlobalConstants.DOUBLE_FILLVAL
+    de.MODE = np.ones(de.COUNT) * GlobalConstants.DOUBLE_FILLVAL
+    de.TOF0 = np.ones(de.COUNT) * GlobalConstants.DOUBLE_FILLVAL
+    de.TOF1 = np.ones(de.COUNT) * GlobalConstants.DOUBLE_FILLVAL
+    de.TOF2 = np.ones(de.COUNT) * GlobalConstants.DOUBLE_FILLVAL
+    de.TOF3 = np.ones(de.COUNT) * GlobalConstants.DOUBLE_FILLVAL
+    de.CKSM = np.ones(de.COUNT) * GlobalConstants.DOUBLE_FILLVAL
+    de.POS = np.ones(de.COUNT) * GlobalConstants.DOUBLE_FILLVAL
     return de
 
 
@@ -68,7 +85,6 @@ def test_parse_data_case_0(single_de):
     cksm = "000"  # 0
     # POS not transmitted
     single_de.DATA = absent + time + energy + mode + tof0 + tof2 + tof3 + cksm
-    data = BinaryString(single_de.DATA)
 
     expected_time = np.array([100])
     expected_energy = np.array([2])
@@ -82,7 +98,7 @@ def test_parse_data_case_0(single_de):
     expected_pos = np.array([GlobalConstants.DOUBLE_FILLVAL])
 
     # Act
-    single_de._parse_data(data)
+    single_de._decompress_data()
 
     # Assert
     np.testing.assert_array_equal(single_de.TIME, expected_time)
@@ -107,7 +123,6 @@ def test_parse_data_case_10(single_de):
     # TOF2, TOF3, CKSM not transmitted
     pos = "00"  # 0
     single_de.DATA = absent + time + energy + mode + tof1 + pos
-    data = BinaryString(single_de.DATA)
 
     expected_time = np.array([100])
     expected_energy = np.array([2])
@@ -121,7 +136,7 @@ def test_parse_data_case_10(single_de):
     expected_pos = np.array([0])
 
     # Act
-    single_de._parse_data(data)
+    single_de._decompress_data()
 
     # Assert
     np.testing.assert_array_equal(single_de.TIME, expected_time)
