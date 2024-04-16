@@ -1,4 +1,5 @@
 """Decompression for 8 to 12, 8 to 16, and 12 to 16 bits."""
+
 from enum import Enum
 from pathlib import Path
 
