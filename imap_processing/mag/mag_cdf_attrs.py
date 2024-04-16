@@ -28,49 +28,43 @@ mag_base = GlobalInstrumentAttrs(
 
 mag_l1a_norm_raw_attrs = GlobalDataLevelAttrs(
     "L1A_raw-norm>Level-1A raw normal rate",
-    # Should also include data type
     logical_source="imap_mag_l1a_norm-raw",
-    logical_source_desc="IMAP Mission MAG Instrument Level-1A Data.",
+    logical_source_desc="IMAP Mission MAG Normal Rate Instrument Level-1A Data.",
     instrument_base=mag_base,
 )
 
 mag_l1a_burst_raw_attrs = GlobalDataLevelAttrs(
     "L1A_raw-burst>Level-1A raw burst rate",
-    # Should also include data type
     logical_source="imap_mag_l1a_burst-raw",
-    logical_source_desc="IMAP Mission MAG Instrument Level-1A Data.",
+    logical_source_desc="IMAP Mission MAG Burst Rate Instrument Level-1A Data.",
     instrument_base=mag_base,
 )
 
 mag_l1a_norm_mago_attrs = GlobalDataLevelAttrs(
-    "L1A-raw-norm-mago>Level 1A MAGo normal rate",
-    # Should also include data type
+    "L1A_raw-norm-mago>Level 1A MAGo normal rate",
     logical_source="imap_mag_l1a_norm-mago",
-    logical_source_desc="IMAP Mission MAG Instrument Level-1A Data.",
+    logical_source_desc="IMAP Mission MAGo Normal Rate Instrument Level-1A Data.",
     instrument_base=mag_base,
 )
 
 mag_l1a_norm_magi_attrs = GlobalDataLevelAttrs(
-    "L1A-raw-norm-magi>Level 1A MAGi normal rate",
-    # Should also include data type
+    "L1A_raw-norm-magi>Level 1A MAGi normal rate",
     logical_source="imap_mag_l1a_norm-magi",
-    logical_source_desc="IMAP Mission MAG Instrument Level-1A Data.",
+    logical_source_desc="IMAP Mission MAGi Normal Rate Instrument Level-1A Data.",
     instrument_base=mag_base,
 )
 
 mag_l1a_burst_mago_attrs = GlobalDataLevelAttrs(
-    "L1A-raw-burst-mago>Level 1A MAGo burst rate",
-    # Should also include data type
+    "L1A_raw-burst-mago>Level 1A MAGo burst rate",
     logical_source="imap_mag_l1a_burst-mago",
-    logical_source_desc="IMAP Mission MAG Instrument Level-1A Data.",
+    logical_source_desc="IMAP Mission MAGo Burst Rate Instrument Level-1A Data.",
     instrument_base=mag_base,
 )
 
 mag_l1a_burst_magi_attrs = GlobalDataLevelAttrs(
-    "L1A-raw-burst-magi>Level 1A MAGi burst rate",
-    # Should also include data type
+    "L1A_raw-burst-magi>Level 1A MAGi burst rate",
     logical_source="imap_mag_l1a_burst-magi",
-    logical_source_desc="IMAP Mission MAG Instrument Level-1A Data.",
+    logical_source_desc="IMAP Mission MAGi Burst Rate Instrument Level-1A Data.",
     instrument_base=mag_base,
 )
 

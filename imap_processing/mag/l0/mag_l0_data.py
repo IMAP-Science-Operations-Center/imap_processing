@@ -110,7 +110,8 @@ class MagL0:
             dtype=np.dtype(">b"),
         )
 
-        # Remove buffer from end of vectors
+        # Remove buffer from end of vectors. Vector data needs to be in 50 bit chunks,
+        # and may have an extra byte at the end from CCSDS padding.
         if len(self.VECTORS) % 2:
             self.VECTORS = self.VECTORS[:-1]
 

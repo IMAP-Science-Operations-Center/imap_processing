@@ -76,18 +76,18 @@ def test_process_vector_data():
 
 
 def test_time_tuple():
-    ex_time_tuple = TimeTuple(439067318, 64618)
+    example_time_tuple = TimeTuple(439067318, 64618)
 
-    test_add = ex_time_tuple + 2
+    test_add = example_time_tuple + 2
 
     assert test_add == TimeTuple(439067320, 64618)
 
     # 1 / MAX_FINE_TIME
-    test_add = ex_time_tuple + 1 / MAX_FINE_TIME
+    test_add = example_time_tuple + 1 / MAX_FINE_TIME
 
     assert test_add == TimeTuple(439067318, 64619)
 
-    test_add = ex_time_tuple + (1000 / MAX_FINE_TIME)
+    test_add = example_time_tuple + (1000 / MAX_FINE_TIME)
 
     assert test_add == TimeTuple(439067319, 83)
 
@@ -104,7 +104,6 @@ def test_calculate_vector_time():
     converted_start_time_ns = calc_start_time(start_time.to_seconds())
 
     skips_ns = np.timedelta64(int(1 / test_vecsec * 1e9), "ns")
-    print(skips_ns)
     expected_data = np.array(
         [
             [1, 2, 3, int(converted_start_time_ns)],

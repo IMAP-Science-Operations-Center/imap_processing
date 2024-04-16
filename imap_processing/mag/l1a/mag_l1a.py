@@ -1,6 +1,7 @@
 """Methods for decomming packets, processing to level 1A, and writing CDFs for MAG."""
 
 import logging
+from pathlib import Path
 
 import numpy as np
 import xarray as xr
@@ -15,7 +16,7 @@ from imap_processing.mag.l1a.mag_l1a_data import MagL1a, TimeTuple
 logger = logging.getLogger(__name__)
 
 
-def mag_l1a(packet_filepath):
+def mag_l1a(packet_filepath) -> list[Path]:
     """
     Process MAG L0 data into L1A CDF files at cdf_filepath.
 
@@ -23,6 +24,11 @@ def mag_l1a(packet_filepath):
     ----------
     packet_filepath :
         Packet files for processing
+
+    Returns
+    -------
+    generated_files: list[Path]
+        A list of generated filenames
     """
     packets = decom_mag.decom_packets(packet_filepath)
 
@@ -47,7 +53,7 @@ def mag_l1a(packet_filepath):
 
 def process_and_write_data(
     packet_data: list[MagL0], raw_attrs: dict, mago_attrs: dict, magi_attrs: dict
-):
+) -> list[Path]:
     """
     Process MAG L0 data into L1A, then create and write out CDF files.
 
@@ -66,7 +72,7 @@ def process_and_write_data(
 
     Returns
     -------
-    generated_files: list[str]
+    generated_files: list[Path]
         A list of generated filenames
     """
     if not packet_data:
@@ -74,24 +80,24 @@ def process_and_write_data(
 
     mag_raw = decom_mag.generate_dataset(packet_data, raw_attrs)
 
-    file = write_cdf(mag_raw)
-    logger.info(f"Created RAW CDF file at {file}")
+    filepath = write_cdf(mag_raw)
+    logger.info(f"Created RAW CDF file at {filepath}")
 
-    generated_files = [file]
+    generated_files = [filepath]
 
     l1a = process_packets(packet_data)
 
     for _, mago in l1a["mago"].items():
         norm_mago_output = generate_dataset(mago, mago_attrs)
-        file = write_cdf(norm_mago_output)
-        logger.info(f"Created L1a MAGo CDF file at {file}")
-        generated_files.append(file)
+        filepath = write_cdf(norm_mago_output)
+        logger.info(f"Created L1a MAGo CDF file at {filepath}")
+        generated_files.append(filepath)
 
     for _, magi in l1a["magi"].items():
         norm_magi_output = generate_dataset(magi, magi_attrs)
-        file = write_cdf(norm_magi_output)
-        logger.info(f"Created L1a MAGi CDF file at {file}")
-        generated_files.append(file)
+        filepath = write_cdf(norm_magi_output)
+        logger.info(f"Created L1a MAGi CDF file at {filepath}")
+        generated_files.append(filepath)
 
     return generated_files
 
@@ -207,7 +213,7 @@ def process_packets(
     return {"mago": mago, "magi": magi}
 
 
-def generate_dataset(mag_l1a: MagL1a, dataset_attrs: dict):
+def generate_dataset(single_file_l1a: MagL1a, dataset_attrs: dict) -> xr.Dataset:
     """
     Generate a Xarray dataset for L1A data to output to CDF files.
 
@@ -219,7 +225,7 @@ def generate_dataset(mag_l1a: MagL1a, dataset_attrs: dict):
 
     Parameters
     ----------
-    mag_l1a: MagL1a
+    single_file_l1a: MagL1a
         L1A data covering one day to process into a xarray dataset.
     dataset_attrs: dict
         Global attributes for the dataset, as created by mag_attrs
@@ -230,7 +236,10 @@ def generate_dataset(mag_l1a: MagL1a, dataset_attrs: dict):
         One xarray dataset with proper CDF attributes and shape containing MAG L1A data.
     """
     # TODO: Just leave time in datetime64 type with vector as dtype object to avoid this
-    time_data = mag_l1a.vectors[:, 4].astype(np.dtype("datetime64[ns]"), copy=False)
+    # Get the timestamp from the end of the vector
+    time_data = single_file_l1a.vectors[:, 4].astype(
+        np.dtype("datetime64[ns]"), copy=False
+    )
 
     direction = xr.DataArray(
         np.arange(4),
@@ -249,7 +258,7 @@ def generate_dataset(mag_l1a: MagL1a, dataset_attrs: dict):
     )
 
     vectors = xr.DataArray(
-        mag_l1a.vectors[:, :4],
+        single_file_l1a.vectors[:, :4],
         name="vectors",
         dims=["epoch", "direction"],
         attrs=mag_cdf_attrs.vector_attrs.output(),

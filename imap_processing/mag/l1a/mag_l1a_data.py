@@ -48,7 +48,7 @@ class TimeTuple:
 
         return TimeTuple(coarse, fine)
 
-    def to_seconds(self):
+    def to_seconds(self) -> float:
         """
         Convert time tuple into seconds (float).
 
@@ -97,7 +97,7 @@ class MagL1a:
     vectors: np.array
 
     @staticmethod
-    def calculate_vector_time(vectors, vectors_per_second, start_time):
+    def calculate_vector_time(vectors, vectors_per_second, start_time) -> np.array:
         """
         Add timestamps to the vector list, turning the shape from (n, 4) to (n, 5).
 
