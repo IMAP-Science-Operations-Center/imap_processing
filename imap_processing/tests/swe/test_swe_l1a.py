@@ -1,6 +1,7 @@
 import pytest
 
 from imap_processing import imap_module_directory
+from imap_processing.cdf.utils import write_cdf
 from imap_processing.swe.l0 import decom_swe
 from imap_processing.swe.l1a.swe_l1a import swe_l1a
 from imap_processing.swe.utils.swe_utils import (
@@ -45,10 +46,11 @@ def test_group_by_apid(decom_test_data):
     assert len(total_event_message_data) == 15
 
 
-@pytest.mark.xfail(reason="Need to update after refactor of function returns.")
-def test_cdf_creation(decom_test_data):
-    grouped_data = group_by_apid(decom_test_data)
-    sci_cdf_filepath = swe_l1a(grouped_data[SWEAPID.SWE_SCIENCE])
-    hk_cdf_filepath = swe_l1a(grouped_data[SWEAPID.SWE_APP_HK])
-    assert sci_cdf_filepath.name == "imap_swe_l1a_sci_20230927_v01.cdf"
-    assert hk_cdf_filepath.name == "imap_swe_l1a_lveng-hk_20230927_v01.cdf"
+def test_cdf_creation():
+    test_data_path = "tests/swe/l0_data/20230927100425_SWE_CEM_RAW_packet.bin"
+    processed_data = swe_l1a(imap_module_directory / test_data_path)
+
+    cem_raw_cdf_filepath = write_cdf(processed_data[0])
+
+    # TODO: replace "sci" with proper descriptor (previously was cemraw)
+    assert cem_raw_cdf_filepath.name == "imap_swe_l1a_sci_20230927_v001.cdf"

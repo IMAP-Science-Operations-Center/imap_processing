@@ -7,6 +7,7 @@ import numpy as np
 import xarray as xr
 
 from imap_processing.cdf.global_attrs import ConstantCoordinates
+from imap_processing.cdf.utils import calc_start_time
 from imap_processing.swe import swe_cdf_attrs
 from imap_processing.swe.utils.swe_utils import (
     add_metadata_to_array,
@@ -135,10 +136,13 @@ def swe_science(decom_data):
         raw_science_array.append(raw_counts.astype(np.int64))
         metadata_arrays = add_metadata_to_array(data_packet, metadata_arrays)
 
+    epoch_converted_time = [
+        calc_start_time(sc_time) for sc_time in metadata_arrays["SHCOARSE"]
+    ]
     epoch_time = xr.DataArray(
-        metadata_arrays["SHCOARSE"],
-        name="Epoch",
-        dims=["Epoch"],
+        epoch_converted_time,
+        name="epoch",
+        dims=["epoch"],
         attrs=ConstantCoordinates.EPOCH,
     )
 
@@ -169,21 +173,35 @@ def swe_science(decom_data):
         ).output(),
     )
 
+    science_attrs = dataclasses.replace(
+        swe_cdf_attrs.l1a_science_attrs,
+        catdesc="Uncompressed counts from SWE",
+        fieldname="Uncompressed counts from SWE",
+        label_axis="Uncompressed counts from SWE",
+        units="counts",
+    )
     science_xarray = xr.DataArray(
         science_array,
-        dims=["Epoch", "Energy", "Counts"],
-        attrs=swe_cdf_attrs.l1a_science_attrs.output(),
+        dims=["epoch", "Energy", "Counts"],
+        attrs=science_attrs.output(),
     )
 
+    raw_science_attrs = dataclasses.replace(
+        swe_cdf_attrs.l1a_science_attrs,
+        catdesc="Raw counts from SWE",
+        fieldname="Raw counts from SWE",
+        label_axis="Raw counts from SWE",
+        units="counts",
+    )
     raw_science_xarray = xr.DataArray(
         raw_science_array,
-        dims=["Epoch", "Energy", "Counts"],
-        attrs=swe_cdf_attrs.l1a_science_attrs.output(),
+        dims=["epoch", "Energy", "Counts"],
+        attrs=raw_science_attrs.output(),
     )
 
     dataset = xr.Dataset(
         coords={
-            "Epoch": epoch_time,
+            "epoch": epoch_time,
             "Energy": energy,
             "Counts": counts,
         },
@@ -194,24 +212,22 @@ def swe_science(decom_data):
 
     # create xarray dataset for each metadata field
     for key, value in metadata_arrays.items():
-        if key == "SHCOARSE":
-            continue
         # TODO: figure out how to add more descriptive
         # description for each metadata field
         #
         # int_attrs["CATDESC"] = int_attrs["FIELDNAM"] = int_attrs["LABLAXIS"] = key
         # # get int32's max since most of metadata is under 32-bits
         # int_attrs["VALIDMAX"] = np.iinfo(np.int32).max
-        # int_attrs["DEPEND_0"] = "Epoch"
+        # int_attrs["DEPEND_0"] = "epoch"
         dataset[key] = xr.DataArray(
             value,
-            dims=["Epoch"],
+            dims=["epoch"],
             attrs=dataclasses.replace(
                 swe_cdf_attrs.swe_metadata_attrs,
                 catdesc=key,
                 fieldname=key,
                 label_axis=key,
-                depend_0="Epoch",
+                depend_0="epoch",
             ).output(),
         )
 

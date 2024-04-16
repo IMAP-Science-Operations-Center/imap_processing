@@ -17,9 +17,9 @@ Xarray is a powerful python library for handling multi-dimensional data.  It has
 Perhaps the largest difference between netCDF and CDF is that netCDF has built-in methods to attach *dimensions* and *coordinates* to data.  Similarly, xarray Datasets have this capability as well.
 Full documentation about xarray Dataset objects are located here `https://docs.xarray.dev/en/stable/generated/xarray.Dataset.html <https://docs.xarray.dev/en/stable/generated/xarray.Dataset.html>`_
 
-Within a CDF file, there is no inherent way to attach coordinates to a variable.  CDF is a simpler format, and only has the concept of Attributes and Variables.  The "CDF-native" way of specifying dimensions to a variable is to use "DEPEND" attributes (see sections :ref:`ISTP Compliance` and :ref:`DEPEND_i`).
+Within a CDF file, there is no inherent way to attach coordinates to a variable.  CDF is a simpler format, and only has the concept of Attributes and Variables.  The "CDF-native" way of specifying dimensions to a variable is to use "DEPEND" attributes (see sections :ref:`ISTP Compliance` and :ref:```DEPEND_i```).
 
-.. note:: the netCDF file format was created by NOAA a few years after the CDF file format to plug in some of the shortfallings of the CDF file format.  These days, the orginal reasons for the split between the two formats have largely disappeared.
+.. note:: the netCDF file format was created by NOAA a few years after the CDF file format to plug in some of the shortfallings of the CDF file format.  These days, the original reasons for the split between the two formats have largely disappeared.
 
 xarray_to_cdf
 =============
@@ -56,7 +56,7 @@ Verification
 #. Verifies that required global attributes are present to meet ISTP compliance
 #. Verifies that variables have a VAR_TYPE attribute of either "data", "support_data", or "metadata"
 #. Verifies that all variables have the appropriate number of DEPEND_{i} attributes, based on the number of dimensions of the variable
-#. Verfies that the DEPEND_{i} attributes point to variables that are the size and shape expected to act as coordinates
+#. Verifies that the DEPEND_{i} attributes point to variables that are the size and shape expected to act as coordinates
 #. Verifies that each variable has the expected variable attributes to be ISTP compliant
 
 Conversion
@@ -65,10 +65,10 @@ Conversion
 #. Converts all variables with the word "epoch" in their name from datetime64 objects into the CDF native time format of CDF_TT2000 (nanoseconds since the year 2000)
 #. Converts all other data into one of the following CDF native formats - CDF_INT8, CDF_DOUBLE, CDF_UINT4, or CDF_CHAR
 #. Converts the attributes VALIDMIN, VALIDMAX, and FILLVAL to have the same data type as the data they are attached to
-   * For example, if you specify the attribute VALIDMIN=5 for a variable named Epoch, it will be converted to a CDF_TT2000 data type when written to the file
+   * For example, if you specify the attribute VALIDMIN=5 for a variable named epoch, it will be converted to a CDF_TT2000 data type when written to the file
 #. Writes the Dataset attributes to the CDF file as the CDF's Global Attributes
 #. Writes the Dataset's variables to the CDF file
-   * Any variable with DEPEND_0 = Epoch as an attribute will be set to vary across records in the CDF file.  Otherwise, the data will be contained within a single record.
+   * Any variable with DEPEND_0 = epoch as an attribute will be set to vary across records in the CDF file.  Otherwise, the data will be contained within a single record.
 #. Writes the attributes attached to the Dataset Variables to the file
 
 
@@ -77,7 +77,7 @@ Shortcomings
 While the above steps get a CDF file a large way towards ISTP compliance, there are several important caveats to take note of -
 
 * This code does not check the values *within* the attributes (except VAR_TYPE and DEPEND_{i}), only that the attributes exist!
-* This function does not put the "Epoch" variable as the first thing in the file, which was recommended (but not required) by the SPDF
+* This function does not put the "epoch" variable as the first thing in the file, which was recommended (but not required) by the SPDF
 * This code creates variables in a row-major format.  Column-major is recommended (but not required) by the SPDF.
 
 **************************
@@ -108,8 +108,8 @@ The following python code is the **minimum** code you'd need to store this data 
 
    INT_FILLVAL = np.iinfo(np.int64).min # Recommended FILLVAL for all integers
    DOUBLE_FILLVAL = np.float64(-1.0e31) # Recommended FILLVALL for all floats
-   MIN_EPOCH = -315575942816000000 # Recommended min/max Epoch
-   MAX_EPOCH = 946728069183000000 # Recommended min/max Epoch
+   MIN_EPOCH = -315575942816000000 # Recommended min/max epoch
+   MAX_EPOCH = 946728069183000000 # Recommended min/max epoch
 
    global_attrs = {
       # Project, Source_name, Descipline, Mission Group, and PI info will all
@@ -126,7 +126,7 @@ The following python code is the **minimum** code you'd need to store this data 
       # The following attributes are specific to JIM.
       "Instrument_type": "Particles (space)",
       "Data_type": "L1_Mode_Description>Level-1 Mode Description",
-      "Data_version": "01",
+      "Data_version": "001",
       "Descriptor": "JIM>Just an Ion Monitor",
       "TEXT": (
          "JIM is a fictitious instrument that counts ions at 3 different energies on "
@@ -134,15 +134,15 @@ The following python code is the **minimum** code you'd need to store this data 
          "goes, as well as the type of data in the file.  For example, if a (mode) "
          "or (descriptor) exist they can be described here."
       ),
-      "Logical_file_id": "imap_jim_l1_mode_description_20250101_v01",
-      "Logical_source": "imap_jim_l1_mode_description",
+      "Logical_file_id": "imap_jim_l1_mode-description_20250101_v001",
+      "Logical_source": "imap_jim_l1_mode-description",
       "Logical_source_description": "IMAP Mission JIM Instrument Level-1 (mode) (description) Data.",
    }
 
    # These epoch attributes will remain the same across all instruments
    epoch_attrs = {
       "CATDESC": "Default time",
-      "FIELDNAM": "Epoch",
+      "FIELDNAM": "epoch",
       "FILLVAL": INT_FILLVAL,
       "FORMAT": "a2",
       "LABLAXIS": "Epoch",
@@ -182,8 +182,8 @@ The following python code is the **minimum** code you'd need to store this data 
 
    # Describes a variable that holds the "counts" data
    counts_attrs = {
-      "DEPEND_0": "Epoch",
-      "DEPEND_1": "Energy",
+      "DEPEND_0": "epoch",
+      "DEPEND_1": "energy",
       "DISPLAY_TYPE": "spectrogram",
       "FILLVAL": INT_FILLVAL,
       "FORMAT": "I12", # Display up to 12 numbers of an integer
@@ -205,21 +205,21 @@ The following python code is the **minimum** code you'd need to store this data 
 
    # Create 3 data arrays, one for time, one for the energies, and one for the real data
    epoch_xr = xr.DataArray(
-                  name="Epoch",
+                  name="epoch",
                   data=[np.datetime64("2025-01-01T00:00:01"), np.datetime64("2025-01-01T00:00:02"), np.datetime64("2025-01-01T00:00:03")],
-                  dims=("Epoch"),
+                  dims=("epoch"),
                   attrs=epoch_attrs,
                )
    energy_xr = xr.DataArray(
-                  name="Energy",
+                  name="energy",
                   data=[1,2,3], # Fabricated energy bins
-                  dims=("Energy_dim"),
+                  dims=("energy_dim"),
                   attrs=energy_bins_attrs,
                )
    counts_xr = xr.DataArray(
                name="imap_jim_counts_(mode)_(descriptor)",
                data=[[1,2,3], [4,5,6], [7,8,9]], # Fabricated data
-               dims=("Epoch", "Energy_dim"),
+               dims=("epoch", "energy_dim"),
                attrs=counts_attrs,
          )
    # Combine the data into an xarray.Dataset object
@@ -227,8 +227,8 @@ The following python code is the **minimum** code you'd need to store this data 
                            "imap_jim_counts_mode_descriptor": counts_xr,
                      },
                      coords={
-                           "Epoch": epoch_xr,
-                           "Energy": energy_xr
+                           "epoch": epoch_xr,
+                           "energy": energy_xr
                      },
                      attrs=global_attrs
                   )

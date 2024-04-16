@@ -21,14 +21,9 @@ This convention was discussed and decided on in `this GitHub issue
 Data Product Versioning
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-IMAP data products are versioned with the convention ``vXX.YY``, where:
-
-::
-
-    XX = The major version. Increase when any change to the processing algorithm is made.
-    YY = The minor version. Increase when data are reprocessed with the same algorithm, but with different ancillary
-         files or calibrations (for example, updated SPICE kernels). The minor version is also reset to 0 whenever the
-         major version number is updated.
+IMAP data products are versioned with the convention ``v<num>``, where ``<num>`` is a 3 digit integer. The data version
+is increased when data are reprocessed due to changes in the processing algorithm, or changes in ancillary files or
+calibrations (for example, updated SPICE kernels).
 
 Version numbers are specific to an instrument. In other words, each IMAP instrument has their own version number that
 is only updated when that instrument's algorithm is changed, or that instrument's data are reprocessed. The version is

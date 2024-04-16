@@ -1,0 +1,41 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: imap_processing
+message: 'If you use this software, please cite the software
+  version you used by its version-specific DOI. The DOI for
+  each version is available on Zenodo'
+type: software
+authors:
+  - name: IMAP Science Data Center Developers
+repository-code: >-
+  https://github.com/IMAP-Science-Operations-Center/imap_processing
+url: 'https://imap-processing.readthedocs.io/en/latest/'
+abstract: >-
+  The Interstellar Mapping and Acceleration Probe (IMAP) is
+  a project aimed at studying the interstellar medium and
+  investigating the acceleration mechanisms of particles
+  within our galaxy. IMAP utilizes cutting-edge technology
+  and advanced instrumentation to gather valuable data and
+  expand our understanding of space. The Science Data Center
+  (SDC) is under the Science Operations Center (SOC), located
+  at the Laboratory for Atmospheric and Space Physics (LASP),
+  and is responsible for the data processing on the IMAP mission.
+keywords:
+  - Interstellar Mapping and Acceleration Probe (IMAP)
+  - LASP
+  - NASA
+  - Science Operations Center (SOC)
+  - Science Data Center (SDC)
+  - open science
+  - Python
+  - data processing
+  - algorithm development
+  - heliophysics
+  - heliosphere
+  - solar wind
+  - energetic particles
+  - interstellar medium
+  - Energetic Neutral Atom (ENA)
+license: MIT

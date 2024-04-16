@@ -1,211 +1,274 @@
 """Decommutates Ultra CCSDS packets."""
 
+import collections
 import logging
-from enum import Enum
-from typing import NamedTuple
+from collections import defaultdict
+from pathlib import Path
 
 import numpy as np
-import xarray as xr
 
 from imap_processing import decom
+from imap_processing.ccsds.ccsds_data import CcsdsData
+from imap_processing.ultra.l0.decom_tools import (
+    decompress_binary,
+    decompress_image,
+    read_image_raw_events_binary,
+)
+from imap_processing.ultra.l0.ultra_utils import (
+    RATES_KEYS,
+    ULTRA_AUX,
+    ULTRA_EVENTS,
+    ULTRA_RATES,
+    ULTRA_TOF,
+    append_ccsds_fields,
+)
+from imap_processing.utils import group_by_apid, sort_by_time
 
 logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 
-class PacketProperties(NamedTuple):
-    """Class that represents properties of the ULTRA packet type."""
-
-    apid: int
-    width: int
-    block: int
-    len_array: int
-
-
-class UltraParams(Enum):
-    """Enumerated packet properties for ULTRA."""
-
-    ULTRA_AUX = PacketProperties(apid=880, width=None, block=None, len_array=None)
-    ULTRA_IMG_RATES = PacketProperties(apid=881, width=5, block=16, len_array=48)
-
-
-def read_n_bits(binary: str, n: int, current_position: int):
-    """Extract the specified number of bits from a binary string.
-
-    Starting from the current position, it reads n bits. This is used twice.
-    The first time it reads the first 5 bits to determine the width.
-    The second time it uses the width to determine the value of the bitstring.
+def append_tof_params(
+    decom_data: dict,
+    packet,
+    decompressed_data: list,
+    data_dict: dict,
+    stacked_dict: dict,
+):
+    """
+    Append parsed items to a dictionary, including decompressed data if available.
 
     Parameters
     ----------
-    binary : str
-        The string of binary data from which bits will be read.
-        This is a string of 0's and 1's.
-    n : int
-        Number of bits to read from the binary string.
-    current_position : int
-        The starting position in the binary string from which bits will be read.
-
-    Returns
-    -------
-    value : int
-        The integer representation of the read bits or None if the end of the
-        string is reached before reading 'n' bits.
-    current_position + n
-        - The updated position in the binary string after reading the bits.
+    decom_data : dict
+        Dictionary to which the data is appended.
+    packet : space_packet_parser.parser.Packet
+        Individual packet.
+    decompressed_data : list
+        Data that has been decompressed.
+    data_dict : dict
+        Dictionary used for stacking in SID dimension.
+    stacked_dict : dict
+        Dictionary used for stacking in time dimension.
     """
-    # Ensure we don't read past the end
-    if current_position + n > len(binary):
-        raise IndexError(
-            f"Attempted to read past the end of binary string. "
-            f"Current position: {current_position}, "
-            f"Requested bits: {n}, String length: {len(binary)}"
-        )
+    # TODO: add error handling to make certain every timestamp has 8 SID values
+    shcoarse = packet.data["SHCOARSE"].derived_value
 
-    value = int(binary[current_position : current_position + n], 2)
-    return value, current_position + n
+    for key in packet.data.keys():
+        # Keep appending packet data until SID = 7
+        if key == "PACKETDATA":
+            data_dict[key].append(decompressed_data)
+        # SHCOARSE should be unique
+        elif key == "SHCOARSE" and shcoarse not in decom_data["SHCOARSE"]:
+            decom_data[key].append(packet.data[key].derived_value)
+        # Keep appending all other data until SID = 7
+        else:
+            data_dict[key].append(packet.data[key].derived_value)
+
+    # Append CCSDS fields to the dictionary
+    ccsds_data = CcsdsData(packet.header)
+    append_ccsds_fields(data_dict, ccsds_data)
+
+    # Once "SID" reaches 7, we have all the images and data for the single timestamp
+    if packet.data["SID"].derived_value == 7:
+        for key in packet.data.keys():
+            if key != "SHCOARSE":
+                stacked_dict[key].append(np.stack(data_dict[key]))
+                data_dict[key].clear()
+        for key in packet.header.keys():
+            stacked_dict[key].append(np.stack(data_dict[key]))
+            data_dict[key].clear()
 
 
-def log_decompression(value: int) -> int:
+def append_params(decom_data: dict, packet):
     """
-    Perform logarithmic decompression on a 16-bit integer.
+    Append parsed items to a dictionary, including decompressed data if available.
 
     Parameters
     ----------
-    value : int
-        A 16-bit integer comprised of a 4-bit exponent followed by a 12-bit mantissa.
-
-    Returns
-    -------
-    int
-        The decompressed integer value.
-
-    Note: Equations from Section 1.2.1.1 Data Compression and Decompression Algorithms
-    in Ultra_algorithm_doc_rev2.pdf.
+    decom_data : dict
+        Dictionary to which the data is appended.
+    packet : space_packet_parser.parser.Packet
+        Individual packet.
     """
-    # The exponent e, and mantissa, m are 4-bit and 12-bit unsigned integers
-    # respectively
-    e = value >> 12  # Extract the 4 most significant bits for the exponent
-    m = value & 0xFFF  # Extract the 12 least significant bits for the mantissa
+    for key, item in packet.data.items():
+        decom_data[key].append(item.derived_value)
 
-    if e == 0:
-        return m
-    else:
-        return (4096 + m) << (e - 1)
+    ccsds_data = CcsdsData(packet.header)
+    append_ccsds_fields(decom_data, ccsds_data)
 
 
-def decompress_binary(binary: str, width_bit: int, block: int) -> list:
-    """Decompress a binary string.
-
-    Decompress a binary string based on block-width encoding and
-    logarithmic compression.
-
-    This function interprets a binary string where the first 'width_bit' bits
-    specifies the width of the following values. Each value is then extracted and
-    subjected to logarithmic decompression.
+def decom_ultra_apids(packet_file: Path, xtce: Path, apid: int):
+    """
+    Unpack and decode Ultra packets using CCSDS format and XTCE packet definitions.
 
     Parameters
     ----------
-    binary : str
-        A binary string containing the compressed data.
-    width_bit : int
-        The bit width that describes the width of data in the block
-    block : int
-        Number of values in each block
-
-    Returns
-    -------
-    list
-        A list of decompressed values.
-
-    Note: Equations from Section 1.2.1.1 Data Compression and Decompression Algorithms
-    in Ultra_algorithm_doc_rev2.pdf.
-    """
-    current_position = 0
-    decompressed_values = []
-
-    while current_position < len(binary):
-        # Read the width of the block
-        width, current_position = read_n_bits(binary, width_bit, current_position)
-        # If width is 0 or None, we don't have enough bits left
-        if (
-            width is None
-            or len(decompressed_values) >= UltraParams.ULTRA_IMG_RATES.value.len_array
-        ):
-            print("hi")
-            break
-
-        # For each block, read 16 values of the given width
-        for _ in range(block):
-            # Ensure there are enough bits left to read the width
-            if len(binary) - current_position < width:
-                break
-
-            value, current_position = read_n_bits(binary, width, current_position)
-
-            # Log decompression
-            decompressed_values.append(log_decompression(value))
-
-    return decompressed_values
-
-
-def decom_ultra_packets(packet_file: str, xtce: str):
-    """
-    Unpack and decode ultra packets using CCSDS format and XTCE packet definitions.
-
-    Parameters
-    ----------
-    packet_file : str
+    packet_file : Path
         Path to the CCSDS data packet file.
-    xtce : str
+    xtce : Path
         Path to the XTCE packet definition file.
+    apid : int
+        The APID to process.
 
     Returns
     -------
-    xr.Dataset
-        A dataset containing the decoded data fields with 'time' as the coordinating
-        dimension.
+    decom_data : dict
+        A dictionary containing the decoded data.
     """
     packets = decom.decom_packets(packet_file, xtce)
+    grouped_data = group_by_apid(packets)
+    data = {apid: grouped_data[apid]}
 
-    met_data, science_id, spin_data, abortflag_data, startdelay_data, fastdata_00 = (
-        [],
-        [],
-        [],
-        [],
-        [],
-        [],
+    # Strategy dict maps APIDs to their respective processing functions
+    strategy_dict = {
+        ULTRA_TOF.apid[0]: process_ultra_tof,
+        ULTRA_EVENTS.apid[0]: process_ultra_events,
+        ULTRA_AUX.apid[0]: process_ultra_aux,
+        ULTRA_RATES.apid[0]: process_ultra_rates,
+    }
+
+    sorted_packets = sort_by_time(data[apid], "SHCOARSE")
+
+    process_function = strategy_dict.get(apid)
+    decom_data = process_function(sorted_packets, defaultdict(list))
+
+    return decom_data
+
+
+def process_ultra_tof(sorted_packets: list, decom_data: collections.defaultdict):
+    """
+    Unpack and decode Ultra TOF packets.
+
+    Parameters
+    ----------
+    sorted_packets : list
+        TOF packets sorted by time.
+    decom_data : collections.defaultdict
+        Empty dictionary.
+
+    Returns
+    -------
+    decom_data : dict
+        A dictionary containing the decoded data.
+    """
+    stacked_dict = defaultdict(list)
+    data_dict = defaultdict(list)
+
+    # For TOF we need to sort by time and then SID
+    sorted_packets = sorted(
+        sorted_packets,
+        key=lambda x: (x.data["SHCOARSE"].raw_value, x.data["SID"].raw_value),
     )
 
-    for packet in packets:
-        if (
-            packet.header["PKT_APID"].derived_value
-            == UltraParams.ULTRA_IMG_RATES.value.apid
-        ):
-            met_data.append(packet.data["SHCOARSE"].derived_value)
-            science_id.append(packet.data["SID"].derived_value)
-            spin_data.append(packet.data["SPIN"].derived_value)
-            abortflag_data.append(packet.data["ABORTFLAG"].derived_value)
-            startdelay_data.append(packet.data["STARTDELAY"].derived_value)
-            decompressed_data = decompress_binary(
-                packet.data["FASTDATA_00"].raw_value,
-                UltraParams.ULTRA_IMG_RATES.value.width,
-                UltraParams.ULTRA_IMG_RATES.value.block,
-            )
-            fastdata_00.append(decompressed_data)
+    for packet in sorted_packets:
+        # Decompress the image data
+        decompressed_data = decompress_image(
+            packet.data["P00"].derived_value,
+            packet.data["PACKETDATA"].raw_value,
+            ULTRA_TOF.width,
+            ULTRA_TOF.mantissa_bit_length,
+        )
 
-    array_data = np.array(fastdata_00)
+        # Append the decompressed data and other derived data
+        # to the dictionary
+        append_tof_params(
+            decom_data,
+            packet,
+            decompressed_data=decompressed_data,
+            data_dict=data_dict,
+            stacked_dict=stacked_dict,
+        )
 
-    ds = xr.Dataset(
-        {
-            "science_id": ("epoch", science_id),
-            "spin_data": ("epoch", spin_data),
-            "abortflag_data": ("epoch", abortflag_data),
-            "startdelay_data": ("epoch", startdelay_data),
-            "fastdata_00": (("epoch", "index"), array_data),
-        },
-        coords={
-            "epoch": met_data,
-        },
-    )
+    # Stack the data to create required dimensions
+    for key in stacked_dict.keys():
+        decom_data[key] = np.stack(stacked_dict[key])
 
-    return ds
+    return decom_data
+
+
+def process_ultra_events(sorted_packets: list, decom_data: dict):
+    """
+    Unpack and decode Ultra EVENTS packets.
+
+    Parameters
+    ----------
+    sorted_packets : list
+        TOF packets sorted by time.
+    decom_data : collections.defaultdict
+        Empty dictionary.
+
+    Returns
+    -------
+    decom_data : dict
+        A dictionary containing the decoded data.
+    """
+    for packet in sorted_packets:
+        # Here there are multiple images in a single packet,
+        # so we need to loop through each image and decompress it.
+        decom_data = read_image_raw_events_binary(packet, decom_data)
+        count = packet.data["COUNT"].derived_value
+
+        if count == 0:
+            append_params(decom_data, packet)
+        else:
+            for i in range(count):
+                logging.info(f"Appending image #{i}")
+                append_params(decom_data, packet)
+
+    return decom_data
+
+
+def process_ultra_aux(sorted_packets: list, decom_data: dict):
+    """
+    Unpack and decode Ultra AUX packets.
+
+    Parameters
+    ----------
+    sorted_packets : list
+        TOF packets sorted by time.
+    decom_data : collections.defaultdict
+        Empty dictionary.
+
+    Returns
+    -------
+    decom_data : dict
+        A dictionary containing the decoded data.
+    """
+    for packet in sorted_packets:
+        append_params(decom_data, packet)
+
+    return decom_data
+
+
+def process_ultra_rates(sorted_packets: list, decom_data: dict):
+    """
+    Unpack and decode Ultra RATES packets.
+
+    Parameters
+    ----------
+    sorted_packets : list
+        TOF packets sorted by time.
+    decom_data : collections.defaultdict
+        Empty dictionary.
+
+    Returns
+    -------
+    decom_data : dict
+        A dictionary containing the decoded data.
+    """
+    for packet in sorted_packets:
+        decompressed_data = decompress_binary(
+            packet.data["FASTDATA_00"].raw_value,
+            ULTRA_RATES.width,
+            ULTRA_RATES.block,
+            ULTRA_RATES.len_array,
+            ULTRA_RATES.mantissa_bit_length,
+        )
+
+        for index in range(ULTRA_RATES.len_array):
+            decom_data[RATES_KEYS[index]].append(decompressed_data[index])
+
+        append_params(decom_data, packet)
+
+    return decom_data

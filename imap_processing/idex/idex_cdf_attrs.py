@@ -27,21 +27,24 @@ idex_base = GlobalInstrumentAttrs(
 )
 
 idex_l1_global_attrs = GlobalDataLevelAttrs(
-    "L1>Level-1",
-    "imap_idex_l1",
+    "L1_SCI>Level-1 Science Data",
+    "imap_idex_l1_sci",
     "IMAP Mission IDEX Instrument Level-1 Data.",
     idex_base,
 )
 
 idex_l2_global_attrs = GlobalDataLevelAttrs(
-    "L2>Level-2", "imap_idex_l2", "IMAP Mission IDEX Instrument Level-2 Data", idex_base
+    "L2_SCI>Level-2 Science Data",
+    "imap_idex_l2_sci",
+    "IMAP Mission IDEX Instrument Level-2 Data",
+    idex_base,
 )
 
 l1_data_base = ScienceAttrs(
     IdexConstants.DATA_MIN,
     IdexConstants.DATA_MAX,
     display_type="spectrogram",
-    depend_0="Epoch",
+    depend_0="epoch",
     format="I12",
     units="dN",
     var_type="data",
@@ -56,7 +59,7 @@ l1_target_base = dataclasses.replace(l1_data_base, depend_1="Time_Low_SR")
 sample_rate_base = FloatAttrs(
     IdexConstants.SAMPLE_RATE_MIN,
     IdexConstants.SAMPLE_RATE_MAX,
-    depend_0="Epoch",
+    depend_0="epoch",
     format="F12.5",
     label_axis="Time",
     units="microseconds",
@@ -71,13 +74,13 @@ sample_rate_base = FloatAttrs(
 trigger_base = ScienceAttrs(
     0,
     GlobalConstants.INT_MAXVAL,
-    depend_0="Epoch",
+    depend_0="epoch",
     format="I12",
     var_type="data",
     display_type="no_plot",
 )
 #     {
-#     "DEPEND_0": "Epoch",
+#     "DEPEND_0": "epoch",
 #     "FILLVAL": Constants.INT_FILLVAL,
 #     "FORMAT": "I12",
 #     "VALIDMIN": 0,  # All values are positive integers or 0 by design

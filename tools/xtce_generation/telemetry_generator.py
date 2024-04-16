@@ -103,9 +103,9 @@ class TelemetryGenerator:
             #     'UINT32': 32,
             #     'BYTE13000': 13000,
             # }
-            unique_lengths[
-                f"{data_types[index]}{length_in_bits[index]}"
-            ] = length_in_bits[index]
+            unique_lengths[f"{data_types[index]}{length_in_bits[index]}"] = (
+                length_in_bits[index]
+            )
         # Sort the dictionary by the value (lengthInBits)
         unique_lengths = dict(sorted(unique_lengths.items(), key=lambda item: item[1]))
         return unique_lengths
@@ -270,8 +270,7 @@ class TelemetryGenerator:
 
             # Add descriptions if they exist
             if pd.notna(row.get("shortDescription")):
-                description = Et.SubElement(parameter, "xtce:ShortDescription")
-                description.text = row.get("shortDescription")
+                parameter.attrib["shortDescription"] = row.get("shortDescription")
             if pd.notna(row.get("longDescription")):
                 description = Et.SubElement(parameter, "xtce:LongDescription")
                 description.text = row.get("longDescription")

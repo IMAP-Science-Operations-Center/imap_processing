@@ -299,7 +299,7 @@ def get_indices_of_full_cycles(quarter_cycle: np.ndarray):
     Parameters
     ----------
     quarter_cycle : numpy.ndarray
-        Array that contains quarter cycles informations.
+        Array that contains quarter cycles information.
 
     Returns
     -------
@@ -397,14 +397,14 @@ def swe_l1b_science(l1a_data):
     # ------------------------------------------------------------------
     # Save data to dataset.
 
-    # Get Epoch time of full cycle data and then reshape it to
+    # Get epoch time of full cycle data and then reshape it to
     # (n, 4) where n = total number of full cycles and 4 = four
-    # quarter cycle data metadata. For Epoch's data, we take the first element
+    # quarter cycle data metadata. For epoch's data, we take the first element
     # of each quarter cycle data metadata.
     epoch_time = xr.DataArray(
-        l1a_data["Epoch"].data[full_cycle_data_indices].reshape(-1, 4)[:, 0],
-        name="Epoch",
-        dims=["Epoch"],
+        l1a_data["epoch"].data[full_cycle_data_indices].reshape(-1, 4)[:, 0],
+        name="epoch",
+        dims=["epoch"],
         attrs=ConstantCoordinates.EPOCH,
     )
 
@@ -478,7 +478,7 @@ def swe_l1b_science(l1a_data):
     # Create the dataset
     dataset = xr.Dataset(
         coords={
-            "Epoch": epoch_time,
+            "epoch": epoch_time,
             "Energy": energy,
             "Angle": angle,
             "Rates": rates,
@@ -489,7 +489,7 @@ def swe_l1b_science(l1a_data):
 
     dataset["SCIENCE_DATA"] = xr.DataArray(
         all_data,
-        dims=["Epoch", "Energy", "Angle", "Rates"],
+        dims=["epoch", "Energy", "Angle", "Rates"],
         attrs=swe_cdf_attrs.l1b_science_attrs.output(),
     )
 
@@ -504,17 +504,17 @@ def swe_l1b_science(l1a_data):
         # int_attrs["CATDESC"] = int_attrs["FIELDNAM"] = int_attrs["LABLAXIS"] = key
         # # get int32's max since most of metadata is under 32-bits
         # int_attrs["VALIDMAX"] = np.iinfo(np.int32).max
-        # int_attrs["DEPEND_O"] = "Epoch"
+        # int_attrs["DEPEND_O"] = "epoch"
         # int_attrs["DEPEND_2"] = "Cycle"
         dataset[key] = xr.DataArray(
             value.data[full_cycle_data_indices].reshape(-1, 4),
-            dims=["Epoch", "Cycle"],
+            dims=["epoch", "Cycle"],
             attrs=dataclasses.replace(
                 swe_cdf_attrs.swe_metadata_attrs,
                 catdesc=key,
                 fieldname=key,
                 label_axis=key,
-                depend_0="Epoch",
+                depend_0="epoch",
                 depend_1="Cycle",
             ).output(),
         )

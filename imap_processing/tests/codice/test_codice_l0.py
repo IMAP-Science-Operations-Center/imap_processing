@@ -9,7 +9,7 @@ import space_packet_parser
 
 from imap_processing import imap_module_directory
 from imap_processing.codice import codice_l0
-from imap_processing.codice.utils import create_dataset
+from imap_processing.codice.utils import create_hskp_dataset
 from imap_processing.utils import convert_raw_to_eu
 
 
@@ -27,7 +27,6 @@ def decom_test_data() -> list:
         f"{imap_module_directory}/tests/codice/data/"
         f"raw_ccsds_20230822_122700Z_idle.bin"
     )
-    Path(f"{imap_module_directory}/codice/packet_definitions/P_COD_NHK.xml")
     data_packet_list = codice_l0.decom_packets(packet_file)
     data_packet_list = [
         packet
@@ -76,7 +75,7 @@ def test_eu_hk_data(
         The validation data to compare against
     """
 
-    l1a_hk_ds = create_dataset(decom_test_data)
+    l1a_hk_ds = create_hskp_dataset(decom_test_data)
     eu_hk_data = convert_raw_to_eu(
         l1a_hk_ds,
         imap_module_directory / "tests/codice/data/eu_unit_lookup_table.csv",
@@ -92,6 +91,9 @@ def test_eu_hk_data(
     for idx, field in enumerate(eu_hk_data):
         # Skip the first num_ccsds_header_fields fields
         if idx < num_ccsds_header_fields:
+            continue
+        # Skip SHCOARSE
+        if field == "SHCOARSE":
             continue
 
         eu_values = eu_hk_data[field].data

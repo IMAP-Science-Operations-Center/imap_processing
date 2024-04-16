@@ -1,13 +1,15 @@
 """Various utility functions to support creation of CDF files."""
 
 import logging
-from pathlib import Path
-from typing import Optional
 
 import imap_data_access
 import numpy as np
 import xarray as xr
 from cdflib.xarray import xarray_to_cdf
+
+from imap_processing import launch_time
+
+logger = logging.getLogger(__name__)
 
 
 def calc_start_time(shcoarse_time: int):
@@ -26,7 +28,7 @@ def calc_start_time(shcoarse_time: int):
     np.datetime64
         The time of the event
 
-    TODO
+    TODO - move this into imap-data-access? How should it be used?
     -----
     This conversion is temporary for now, and will need SPICE in the future.
     Nick Dutton mentioned that s/c clock start epoch is
@@ -34,96 +36,62 @@ def calc_start_time(shcoarse_time: int):
     We will use this for now.
     """
     # Get the datetime of Jan 1 2010 as the start date
-    launch_time = np.datetime64("2010-01-01T00:01:06.184")
-    return launch_time + np.timedelta64(shcoarse_time, "s")
+    time_delta = np.timedelta64(int(shcoarse_time * 1e9), "ns")
+    return launch_time + time_delta
 
 
-def write_cdf(
-    data: xr.Dataset,
-    descriptor: str,
-    directory: Optional[Path] = None,
-):
+def write_cdf(dataset: xr.Dataset):
     """Write the contents of "data" to a CDF file using cdflib.xarray_to_cdf.
 
     This function determines the file name to use from the global attributes,
-    fills in the the final attributes, and converts the whole dataset to a CDF.
-    The date in the file name is determined by the time of the first Epoch in the
+    fills in the final attributes, and converts the whole dataset to a CDF.
+    The date in the file name is determined by the time of the first epoch in the
     xarray Dataset.  The first 3 file name fields (mission, instrument, level) are
     determined by the "Logical_source" attribute.  The version is determiend from
     "Data_version".
 
     Parameters
     ----------
-        data : xarray.Dataset
+        dataset : xarray.Dataset
             The dataset object to convert to a CDF
-        descriptor : str
-            The descriptor to insert into the file name after the
-            orbit, before the SPICE field.  No underscores allowed.
-        directory : pathlib.Path, optional
-            The directory to write the file to. The default is obtained
-            from the global imap_data_access.config["DATA_DIR"].
 
     Returns
     -------
         pathlib.Path
             Path to the file created
     """
-    # Determine the start date of the data in the file,
-    # based on the time of the first dust impact
-    file_start_date = None
-    if "idex" in data.attrs["Logical_source"]:
-        file_start_date = data["Epoch"][0].data
-    else:
-        start_time = data["Epoch"].data[0]
-        file_start_date = calc_start_time(start_time)
-    if file_start_date is None:
-        raise ValueError(
-            "Unable to determine file start date. Check Logical_source value"
-        )
-
-    date_string = np.datetime_as_string(file_start_date, unit="D").replace("-", "")
-
-    # Determine the file name based on the attributes in the xarray
-    # Set file name based on this convention:
-    # imap_<instrument>_<datalevel>_<descriptor>_<startdate>_<enddate>_<version>.cdf
-    # data.attrs["Logical_source"] has the mission, instrument, and level
-    # like this:
-    #   imap_idex_l1
-    # TODO: add logics for adding endate
-    filename = (
-        f"{data.attrs['Logical_source']}"
-        f"_{descriptor}"
-        f"_{date_string}"
-        f"_{date_string}"
-        f"_v{data.attrs['Data_version']}.cdf"
+    # Create the filename from the global attributes
+    # Logical_source looks like "imap_swe_l2_counts-1min"
+    instrument, data_level, descriptor = dataset.attrs["Logical_source"].split("_")[1:]
+    start_time = np.datetime_as_string(dataset["epoch"].values[0], unit="D").replace(
+        "-", ""
     )
-
-    if directory is None:
-        # Storage directory
-        # mission/instrument/data_level/year/month/filename
-        # /<directory | DATA_DIR>/<instrument>/<data_level>/<year>/<month>
-        _, instrument, data_level = data.attrs["Logical_source"].split("_")
-        directory = imap_data_access.config["DATA_DIR"] / instrument / data_level
-        directory /= date_string[:4]
-        directory /= date_string[4:6]
-    filename_and_path = Path(directory)
-    if not filename_and_path.exists():
-        logging.info(
-            "The directory does not exist, creating directory %s", filename_and_path
+    version = f"v{int(dataset.attrs['Data_version']):03d}"  # vXXX
+    repointing = dataset.attrs.get("Repointing", None)
+    science_file = imap_data_access.ScienceFilePath.generate_from_inputs(
+        instrument=instrument,
+        data_level=data_level,
+        descriptor=descriptor,
+        start_time=start_time,
+        version=version,
+        repointing=repointing,
+    )
+    file_path = science_file.construct_path()
+    if not file_path.parent.exists():
+        logger.info(
+            "The directory does not exist, creating directory %s", file_path.parent
         )
-        filename_and_path.mkdir(parents=True)
-    filename_and_path /= filename
-
+        file_path.parent.mkdir(parents=True)
     # Insert the final attribute:
     # The Logical_file_id is always the name of the file without the extension
-    data.attrs["Logical_file_id"] = filename.split(".")[0]
+    dataset.attrs["Logical_file_id"] = file_path.stem
 
     # Convert the xarray object to a CDF
     xarray_to_cdf(
-        data,
-        filename_and_path,
+        dataset,
+        str(file_path),
         datetime64_to_cdftt2000=True,
         terminate_on_warning=True,
     )  # Terminate if not ISTP compliant
 
-    return filename_and_path
+    return file_path

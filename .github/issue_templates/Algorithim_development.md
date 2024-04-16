@@ -8,7 +8,7 @@
 > Input data:
 > > **Specify details:**
 >
-> Algorithim steps/psuedocode:
+> Algorithm steps/pseudocode:
 > > **Specify details:**
 >
 > Output data:
@@ -21,7 +21,7 @@
 # Code
 ```
 
-#### Specify if any dependicies were added
+#### Specify if any dependencies were added
 
 
 

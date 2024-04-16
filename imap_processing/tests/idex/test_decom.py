@@ -1,12 +1,20 @@
+"""Tests the decommutation process for IDEX CCSDS Packets."""
+
+from pathlib import Path
+
 import numpy as np
 import pytest
 
+from imap_processing import imap_module_directory
 from imap_processing.idex.idex_packet_parser import PacketParser
 
 
 @pytest.fixture(scope="session")
 def decom_test_data():
-    return PacketParser("imap_processing/tests/idex/imap_idex_l0_20230725_v01-00.pkts")
+    test_file = Path(
+        f"{imap_module_directory}/tests/idex/imap_idex_l0_raw_20230725_20230725_v01-00.pkts"
+    )
+    return PacketParser(test_file)
 
 
 def test_idex_decom_length(decom_test_data):
@@ -23,6 +31,7 @@ def test_idex_decom_event_num(decom_test_data):
 def test_idex_tof_high_data(decom_test_data):
     # Verify that a sample of the data is correct
     # impact_14_tof_high_data.txt has been verified correct by the IDEX team
-    with open("imap_processing/tests/idex/impact_14_tof_high_data.txt") as f:
+
+    with open(f"{imap_module_directory}/tests/idex/impact_14_tof_high_data.txt") as f:
         data = np.array([int(line.rstrip("\n")) for line in f])
     assert (decom_test_data.data["TOF_High"][13].data == data).all()

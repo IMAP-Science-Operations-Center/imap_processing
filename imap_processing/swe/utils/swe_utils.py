@@ -7,6 +7,7 @@ from enum import IntEnum
 import xarray as xr
 
 from imap_processing.cdf.global_attrs import ConstantCoordinates
+from imap_processing.cdf.utils import calc_start_time
 from imap_processing.swe import swe_cdf_attrs
 
 
@@ -80,15 +81,18 @@ def create_dataset(packets):
     for data_packet in packets:
         add_metadata_to_array(data_packet, metadata_arrays)
 
+    epoch_converted_time = [
+        calc_start_time(sc_time) for sc_time in metadata_arrays["SHCOARSE"]
+    ]
     epoch_time = xr.DataArray(
-        metadata_arrays["SHCOARSE"],
-        name="Epoch",
-        dims=["Epoch"],
+        epoch_converted_time,
+        name="epoch",
+        dims=["epoch"],
         attrs=ConstantCoordinates.EPOCH,
     )
 
     dataset = xr.Dataset(
-        coords={"Epoch": epoch_time},
+        coords={"epoch": epoch_time},
         attrs=swe_cdf_attrs.swe_l1a_global_attrs.output(),
     )
 
@@ -99,7 +103,7 @@ def create_dataset(packets):
         elif key == "APP_MODE":
             dataset[key] = xr.DataArray(
                 value,
-                dims=["Epoch"],
+                dims=["epoch"],
                 attrs=dataclasses.replace(
                     swe_cdf_attrs.string_base,
                     catdesc=key,
@@ -109,13 +113,13 @@ def create_dataset(packets):
         else:
             dataset[key] = xr.DataArray(
                 value,
-                dims=["Epoch"],
+                dims=["epoch"],
                 attrs=dataclasses.replace(
                     swe_cdf_attrs.swe_metadata_attrs,
                     catdesc=key,
                     fieldname=key,
                     label_axis=key,
-                    depend_0="Epoch",
+                    depend_0="epoch",
                 ).output(),
             )
     return dataset

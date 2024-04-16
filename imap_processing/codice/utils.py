@@ -8,10 +8,10 @@ import collections
 import dataclasses
 from enum import IntEnum
 
-import space_packet_parser
 import xarray as xr
 
 from imap_processing.cdf.global_attrs import ConstantCoordinates
+from imap_processing.cdf.utils import calc_start_time
 from imap_processing.codice import cdf_attrs
 
 
@@ -45,7 +45,7 @@ class CODICEAPID(IntEnum):
     COD_LO_NSW_ANGULAR_COUNTS = 1159
     COD_HI_IAL = 1168
     COD_HI_PHA = 1169
-    COD_HI_INSTRUMENTCOUNTERS = 1170
+    COD_HI_INSTRUMENT_COUNTERS = 1170
     COD_HI_OMNI_SPECIES_COUNTS = 1172
     COD_HI_SECT_SPECIES_COUNTS = 1173
     COD_CSTOL_CONFIG = 2457
@@ -59,17 +59,15 @@ class CoDICECompression(IntEnum):
     IntEnum : IntEnum
     """
 
-    NO_COMPRESSION = 1
-    LOSSY_A = 2
-    LOSSY_B = 3
-    LOSSLESS = 4
-    LOSSY_A_LOSSLESS = 5
-    LOSSY_B_LOSSLESS = 6
+    NO_COMPRESSION = 0
+    LOSSY_A = 1
+    LOSSY_B = 2
+    LOSSLESS = 3
+    LOSSY_A_LOSSLESS = 4
+    LOSSY_B_LOSSLESS = 5
 
 
-def add_metadata_to_array(
-    packet: space_packet_parser.parser.Packet, metadata_arrays: dict
-) -> dict:
+def add_metadata_to_array(packet, metadata_arrays: dict) -> dict:
     """Add metadata to the metadata_arrays.
 
     Parameters
@@ -84,17 +82,28 @@ def add_metadata_to_array(
     metadata_arrays : dict
         Updated metadata arrays with values
     """
+    ignore_list = [
+        "SPARE_1",
+        "SPARE_2",
+        "SPARE_3",
+        "SPARE_4",
+        "SPARE_5",
+        "SPARE_6",
+        "CHECKSUM",
+    ]
+
     for key, value in packet.header.items():
         metadata_arrays.setdefault(key, []).append(value.raw_value)
 
     for key, value in packet.data.items():
-        metadata_arrays.setdefault(key, []).append(value.raw_value)
+        if key not in ignore_list:
+            metadata_arrays.setdefault(key, []).append(value.raw_value)
 
     return metadata_arrays
 
 
-def create_dataset(packets: list[space_packet_parser.parser.Packet]) -> xr.Dataset:
-    """Create dataset for each metadata field.
+def create_hskp_dataset(packets) -> xr.Dataset:
+    """Create dataset for each metadata field for housekeeping data.
 
     Parameters
     ----------
@@ -106,37 +115,39 @@ def create_dataset(packets: list[space_packet_parser.parser.Packet]) -> xr.Datas
     xarray.Dataset
         xarray dataset containing the metadata
     """
+    # TODO: If SHCOARSE is 0, skip the packet
+    # (This problem may fix itself with valid testing data)
+
     metadata_arrays = collections.defaultdict(list)
 
     for packet in packets:
         add_metadata_to_array(packet, metadata_arrays)
 
-    epoch_time = xr.DataArray(
-        metadata_arrays["SHCOARSE"],
-        name="Epoch",
-        dims=["Epoch"],
+    epoch = xr.DataArray(
+        [calc_start_time(item) for item in metadata_arrays["SHCOARSE"]],
+        name="epoch",
+        dims=["epoch"],
         attrs=ConstantCoordinates.EPOCH,
     )
 
     dataset = xr.Dataset(
-        coords={"Epoch": epoch_time},
+        coords={"epoch": epoch},
         attrs=cdf_attrs.codice_l1a_global_attrs.output(),
     )
 
     for key, value in metadata_arrays.items():
-        if key == "SHCOARSE":
-            continue
-        else:
-            dataset[key] = xr.DataArray(
-                value,
-                dims=["Epoch"],
-                attrs=dataclasses.replace(
-                    cdf_attrs.codice_metadata_attrs,
-                    catdesc=key,
-                    fieldname=key,
-                    label_axis=key,
-                    depend_0="Epoch",
-                ).output(),
-            )
+        dataset[key] = xr.DataArray(
+            value,
+            dims=["epoch"],
+            attrs=dataclasses.replace(
+                cdf_attrs.codice_metadata_attrs,
+                catdesc=key,
+                fieldname=key,
+                label_axis=key,
+                depend_0="epoch",
+            ).output(),
+        )
+
+    dataset.attrs["Logical_source"] = "imap_codice_l1a_hskp"
 
     return dataset

@@ -3,44 +3,38 @@
 from pathlib import Path
 
 import pytest
-import space_packet_parser
 
 from imap_processing import imap_module_directory
 from imap_processing.codice.codice_l0 import decom_packets
-from imap_processing.codice.codice_l1a import codice_l1a
+from imap_processing.codice.codice_l1a import process_codice_l1a
+
+TEST_DATA = [
+    (
+        Path(
+            f"{imap_module_directory}/tests/codice/data/raw_ccsds_20230822_122700Z_idle.bin"
+        ),
+        "imap_codice_l1a_hskp_20100101_v001.cdf",
+    ),
+    (
+        Path(f"{imap_module_directory}/tests/codice/data/sample_science_data.bin"),
+        "imap_codice_l1a_lo-sw-species-counts_20100101_v001.cdf",
+    ),
+]
 
 
-@pytest.fixture(scope="session")
-def l0_test_data() -> list:
-    """Decom some packets to be used for testing
-
-    Returns
-    -------
-    packets : list[space_packet_parser.parser.Packet]
-        A list of decommutated packets for testing
-    """
-
-    packet_file = Path(
-        f"{imap_module_directory}/tests/codice/data/"
-        f"raw_ccsds_20230822_122700Z_idle.bin"
-    )
-    packets = decom_packets(packet_file)
-
-    return packets
-
-
-def test_codice_l1a(l0_test_data: list[space_packet_parser.parser.Packet]) -> str:
-    """Tests the ``codice_l1a`` function and ensured that a proper CDF file
-    was created
+@pytest.mark.parametrize(("test_file", "expected_filename"), TEST_DATA)
+def test_codice_l1a(test_file, expected_filename):
+    """Tests the ``process_codice_l1a`` function and ensure that a proper CDF
+    files are created.
 
     Parameters
     ----------
-    l0_test_data : list[space_packet_parser.parser.Packet]
-        A list of packets to process
-    tmp_path : pathlib.PosixPath
-        pytest fixture used to provide a temporary directory during testing
+    test_file : Path
+        The file containing test data
+    expected_filename : str
+        The filename of the generated CDF file
     """
 
-    cdf_filename = codice_l1a(l0_test_data)
-
-    assert Path(cdf_filename).name == "imap_codice_l1a_hk_20100101_20100101_v01.cdf"
+    packets = decom_packets(test_file)
+    cdf_filename = process_codice_l1a(packets)
+    assert cdf_filename.name == expected_filename

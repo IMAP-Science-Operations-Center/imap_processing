@@ -17,7 +17,6 @@ TEST_DATA = [
     (LZMA_EXAMPLE, CoDICECompression.LOSSLESS, 234),
     (LZMA_EXAMPLE, CoDICECompression.LOSSY_A_LOSSLESS, 221184),
     (LZMA_EXAMPLE, CoDICECompression.LOSSY_B_LOSSLESS, 1441792),
-    pytest.param(None, "some_unsupported_algorithm", None, marks=pytest.mark.xfail()),
 ]
 
 
@@ -39,3 +38,10 @@ def test_decompress(compressed_value: int, algorithm: IntEnum, expected_result: 
 
     decompressed_value = decompress(compressed_value, algorithm)
     assert decompressed_value == expected_result
+
+
+def test_decompress_raises():
+    """Tests that the ``decompress`` function raises with an unknown algorithm"""
+
+    with pytest.raises(ValueError, match="some_unsupported_algorithm"):
+        decompress(234, "some_unsupported_algorithm")

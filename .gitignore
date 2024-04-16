@@ -1,5 +1,8 @@
+# Possible data directory files
+data/imap/
+
 # Documentation ignore
-docs/source/code-documentation/generated
+docs/source/**/generated
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

@@ -9,7 +9,6 @@ import logging
 from collections import namedtuple
 from enum import IntEnum
 
-import bitstring
 import numpy as np
 import xarray as xr
 from space_packet_parser import parser, xtcedef
@@ -17,6 +16,8 @@ from space_packet_parser import parser, xtcedef
 from imap_processing import imap_module_directory
 from imap_processing.cdf.global_attrs import ConstantCoordinates
 from imap_processing.idex import idex_cdf_attrs
+
+logger = logging.getLogger(__name__)
 
 
 class Scitype(IntEnum):
@@ -472,11 +473,12 @@ class PacketParser:
 
     Examples
     --------
-        >>> # Print out the data in a L0 file
-        >>> from imap_processing.idex.idex_packet_parser import PacketParser
-        >>> l0_file = "imap_processing/tests/idex/imap_idex_l0_20230725_v01-00.pkts"
-        >>> l1_data = PacketParser(l0_file)
-        >>> l1_data.write_l1_cdf()
+    .. code-block:: python
+        # Print out the data in a L0 file
+        from imap_processing.idex.idex_packet_parser import PacketParser
+        l0_file = "imap_processing/tests/idex/imap_idex_l0_sci_20230725_v001.pkts"
+        l1_data = PacketParser(l0_file)
+        l1_data.write_l1_cdf()
 
     """
 
@@ -496,35 +498,33 @@ class PacketParser:
         packet_definition = xtcedef.XtcePacketDefinition(xtce_document=xtce_file)
         packet_parser = parser.PacketParser(packet_definition)
 
-        binary_data = bitstring.ConstBitStream(filename=packet_file)
-        packet_generator = packet_parser.generator(binary_data)
-
         dust_events = {}
-
-        for packet in packet_generator:
-            if "IDX__SCI0TYPE" in packet.data:
-                scitype = packet.data["IDX__SCI0TYPE"].raw_value
-                event_number = packet.data["IDX__SCI0EVTNUM"].derived_value
-                if scitype == Scitype.FIRST_PACKET:
-                    # Initial packet for new dust event
-                    # Further packets will fill in data
-                    dust_events[event_number] = RawDustEvent(packet)
-                elif event_number not in dust_events:
-                    raise KeyError(
-                        f"Have not receive header information from event number\
-                              {event_number}.  Packets are possibly out of order!"
-                    )
+        with open(packet_file, "rb") as binary_data:
+            packet_generator = packet_parser.generator(binary_data)
+            for packet in packet_generator:
+                if "IDX__SCI0TYPE" in packet.data:
+                    scitype = packet.data["IDX__SCI0TYPE"].raw_value
+                    event_number = packet.data["IDX__SCI0EVTNUM"].derived_value
+                    if scitype == Scitype.FIRST_PACKET:
+                        # Initial packet for new dust event
+                        # Further packets will fill in data
+                        dust_events[event_number] = RawDustEvent(packet)
+                    elif event_number not in dust_events:
+                        raise KeyError(
+                            f"Have not receive header information from event number\
+                                {event_number}.  Packets are possibly out of order!"
+                        )
+                    else:
+                        # Populate the IDEXRawDustEvent with 1's and 0's
+                        dust_events[event_number].parse_packet(packet)
                 else:
-                    # Populate the IDEXRawDustEvent with 1's and 0's
-                    dust_events[event_number].parse_packet(packet)
-            else:
-                logging.warning(f"Unhandled packet received: {packet}")
+                    logger.warning(f"Unhandled packet received: {packet}")
 
         processed_dust_impact_list = [
             dust_event.process() for dust_event in dust_events.values()
         ]
 
-        self.data = xr.concat(processed_dust_impact_list, dim="Epoch")
+        self.data = xr.concat(processed_dust_impact_list, dim="epoch")
         self.data.attrs = idex_cdf_attrs.idex_l1_global_attrs.output()
 
 
@@ -564,7 +564,7 @@ class RawDustEvent:
 
         The values we care about are:
 
-        self.impact_time - When the impact occured
+        self.impact_time - When the impact occurred
         self.low_sample_trigger_time - When the low sample stuff actually triggered
         self.high_sample_trigger_time - When the high sample stuff actually triggered
 
@@ -573,7 +573,7 @@ class RawDustEvent:
             header_packet:  The FPGA metadata event header
 
         """
-        # Calculate the impact time in seconds since Epoch
+        # Calculate the impact time in seconds since epoch
         self.impact_time = 0
         self._set_impact_time(header_packet)
 
@@ -587,7 +587,7 @@ class RawDustEvent:
             trigger.name: header_packet.data[trigger.packet_name].raw_value
             for trigger in trigger_description_dict.values()
         }
-        logging.debug(
+        logger.debug(
             f"trigger_values:\n{self.trigger_values}"
         )  # Log values here in case of error
 
@@ -634,7 +634,7 @@ class RawDustEvent:
         """Calculate the actual sample trigger time.
 
         Determines how many samples of data are included before the dust impact
-        triggered the insturment.
+        triggered the instrument.
 
         Parameters
         ----------
@@ -781,7 +781,7 @@ class RawDustEvent:
         elif scitype == Scitype.ION_GRID:
             self.Ion_Grid_bits += bits
         else:
-            logging.warning("Unknown science type received: [%s]", scitype)
+            logger.warning("Unknown science type received: [%s]", scitype)
 
     def process(self):
         """Process the raw data into a xarray.Dataset.
@@ -803,7 +803,7 @@ class RawDustEvent:
             trigger_vars[var] = xr.DataArray(
                 name=var,
                 data=[value],
-                dims=("Epoch"),
+                dims=("epoch"),
                 attrs=dataclasses.replace(
                     idex_cdf_attrs.trigger_base,
                     catdesc=trigger_description.notes,
@@ -819,59 +819,59 @@ class RawDustEvent:
         tof_high_xr = xr.DataArray(
             name="TOF_High",
             data=[self._parse_high_sample_waveform(self.TOF_High_bits)],
-            dims=("Epoch", "Time_High_SR_dim"),
+            dims=("epoch", "Time_High_SR_dim"),
             attrs=idex_cdf_attrs.tof_high_attrs.output(),
         )
         tof_low_xr = xr.DataArray(
             name="TOF_Low",
             data=[self._parse_high_sample_waveform(self.TOF_Low_bits)],
-            dims=("Epoch", "Time_High_SR_dim"),
+            dims=("epoch", "Time_High_SR_dim"),
             attrs=idex_cdf_attrs.tof_low_attrs.output(),
         )
         tof_mid_xr = xr.DataArray(
             name="TOF_Mid",
             data=[self._parse_high_sample_waveform(self.TOF_Mid_bits)],
-            dims=("Epoch", "Time_High_SR_dim"),
+            dims=("epoch", "Time_High_SR_dim"),
             attrs=idex_cdf_attrs.tof_mid_attrs.output(),
         )
         target_high_xr = xr.DataArray(
             name="Target_High",
             data=[self._parse_low_sample_waveform(self.Target_High_bits)],
-            dims=("Epoch", "Time_Low_SR_dim"),
+            dims=("epoch", "Time_Low_SR_dim"),
             attrs=idex_cdf_attrs.target_high_attrs.output(),
         )
         target_low_xr = xr.DataArray(
             name="Target_Low",
             data=[self._parse_low_sample_waveform(self.Target_Low_bits)],
-            dims=("Epoch", "Time_Low_SR_dim"),
+            dims=("epoch", "Time_Low_SR_dim"),
             attrs=idex_cdf_attrs.target_low_attrs.output(),
         )
         ion_grid_xr = xr.DataArray(
             name="Ion_Grid",
             data=[self._parse_low_sample_waveform(self.Ion_Grid_bits)],
-            dims=("Epoch", "Time_Low_SR_dim"),
+            dims=("epoch", "Time_Low_SR_dim"),
             attrs=idex_cdf_attrs.ion_grid_attrs.output(),
         )
 
         # Determine the 3 coordinate variables
         epoch_xr = xr.DataArray(
-            name="Epoch",
+            name="epoch",
             data=[self.impact_time],
-            dims=("Epoch"),
+            dims=("epoch"),
             attrs=ConstantCoordinates.EPOCH,
         )
 
         time_low_sr_xr = xr.DataArray(
             name="Time_Low_SR",
             data=[self._calc_low_sample_resolution(len(target_low_xr[0]))],
-            dims=("Epoch", "Time_Low_SR_dim"),
+            dims=("epoch", "Time_Low_SR_dim"),
             attrs=idex_cdf_attrs.low_sr_attrs.output(),
         )
 
         time_high_sr_xr = xr.DataArray(
             name="Time_High_SR",
             data=[self._calc_high_sample_resolution(len(tof_low_xr[0]))],
-            dims=("Epoch", "Time_High_SR_dim"),
+            dims=("epoch", "Time_High_SR_dim"),
             attrs=idex_cdf_attrs.high_sr_attrs.output(),
         )
 
@@ -887,7 +887,7 @@ class RawDustEvent:
             }
             | trigger_vars,
             coords={
-                "Epoch": epoch_xr,
+                "epoch": epoch_xr,
                 "Time_Low_SR": time_low_sr_xr,
                 "Time_High_SR": time_high_sr_xr,
             },

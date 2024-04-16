@@ -27,7 +27,7 @@ Over the course of development, the SDC adds steps to the SIT test procedures. T
 ~4 weeks prior to test
 ^^^^^^^^^^^^^^^^^^^^^^
 
-Finalization of test steps should begin about 4 weeks prior the the scheduled SIT. At this point, most of the features being tested in the SIT should be complete and the test steps should be mostly solidified. Finializing the test steps also requires a group effort among all SDC developers, but should be coordinated by the Test Director or Test Conductor.
+Finalization of test steps should begin about 4 weeks prior the the scheduled SIT. At this point, most of the features being tested in the SIT should be complete and the test steps should be mostly solidified. Finalizing the test steps also requires a group effort among all SDC developers, but should be coordinated by the Test Director or Test Conductor.
 
 ~2 weeks prior to test
 ^^^^^^^^^^^^^^^^^^^^^^

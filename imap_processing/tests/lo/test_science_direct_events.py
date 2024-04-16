@@ -1,24 +1,69 @@
 from collections import namedtuple
 
-import bitstring
+import numpy as np
 import pytest
 
-from imap_processing.lo.l0.data_classes.science_direct_events import ScienceDirectEvents
-
-# TODO: Because I currently don't have any compressed DE data, the decompress method
-# needs to be commented out and the private methods need to be called directly for
-# testing. When DE data does become available, these tests will be updated and
-# the need for the bitstring import will also go away.
+from imap_processing.cdf.defaults import GlobalConstants
+from imap_processing.lo.l0.data_classes.science_direct_events import (
+    ScienceDirectEvents,
+)
 
 
-@pytest.mark.skip(reason="no data to initialize with")
 @pytest.fixture()
-def de():
-    de = ScienceDirectEvents("fake_packet", "0", "fakepacketname")
+def fake_packet_data():
+    fake_data_type = namedtuple("fake_data_cats", ["header", "data"])
+    fake_data_field = namedtuple("fake_packet", ["raw_value", "derived_value"])
+    return fake_data_type(
+        {
+            "VERSION": fake_data_field(0, 0),
+            "TYPE": fake_data_field(0, 0),
+            "SEC_HDR_FLG": fake_data_field(0, 0),
+            "PKT_APID": fake_data_field(0, 0),
+            "SEQ_FLGS": fake_data_field(0, 0),
+            "SRC_SEQ_CTR": fake_data_field(0, 0),
+            "PKT_LEN": fake_data_field(0, 0),
+        },
+        {
+            "SHCOARSE": fake_data_field(0, 0),
+            "COUNT": fake_data_field(0, 0),
+            "DATA": fake_data_field("00", "00"),
+            "CHKSUM": fake_data_field(0, 0),
+        },
+    )
+
+
+@pytest.fixture()
+def single_de(fake_packet_data):
+    de = ScienceDirectEvents(fake_packet_data, "0", "fakepacketname")
+    de.COUNT = 1
+    de.TIME = np.ones(de.COUNT) * GlobalConstants.DOUBLE_FILLVAL
+    de.ENERGY = np.ones(de.COUNT) * GlobalConstants.DOUBLE_FILLVAL
+    de.MODE = np.ones(de.COUNT) * GlobalConstants.DOUBLE_FILLVAL
+    de.TOF0 = np.ones(de.COUNT) * GlobalConstants.DOUBLE_FILLVAL
+    de.TOF1 = np.ones(de.COUNT) * GlobalConstants.DOUBLE_FILLVAL
+    de.TOF2 = np.ones(de.COUNT) * GlobalConstants.DOUBLE_FILLVAL
+    de.TOF3 = np.ones(de.COUNT) * GlobalConstants.DOUBLE_FILLVAL
+    de.CKSM = np.ones(de.COUNT) * GlobalConstants.DOUBLE_FILLVAL
+    de.POS = np.ones(de.COUNT) * GlobalConstants.DOUBLE_FILLVAL
     return de
 
 
-@pytest.mark.skip(reason="no data to initialize with")
+@pytest.fixture()
+def multi_de(fake_packet_data):
+    de = ScienceDirectEvents(fake_packet_data, "0", "fakepacketname")
+    de.COUNT = 2
+    de.TIME = np.ones(de.COUNT) * GlobalConstants.DOUBLE_FILLVAL
+    de.ENERGY = np.ones(de.COUNT) * GlobalConstants.DOUBLE_FILLVAL
+    de.MODE = np.ones(de.COUNT) * GlobalConstants.DOUBLE_FILLVAL
+    de.TOF0 = np.ones(de.COUNT) * GlobalConstants.DOUBLE_FILLVAL
+    de.TOF1 = np.ones(de.COUNT) * GlobalConstants.DOUBLE_FILLVAL
+    de.TOF2 = np.ones(de.COUNT) * GlobalConstants.DOUBLE_FILLVAL
+    de.TOF3 = np.ones(de.COUNT) * GlobalConstants.DOUBLE_FILLVAL
+    de.CKSM = np.ones(de.COUNT) * GlobalConstants.DOUBLE_FILLVAL
+    de.POS = np.ones(de.COUNT) * GlobalConstants.DOUBLE_FILLVAL
+    return de
+
+
 @pytest.fixture()
 def tof_data():
     TOFData = namedtuple(
@@ -27,252 +72,147 @@ def tof_data():
     return TOFData
 
 
-@pytest.mark.skip(reason="no data to initialize with")
-def test_find_decompression_case(de):
+def test_parse_data_case_0(single_de):
     # Arrange
-    de.DATA = bitstring.Bits(bin="000100010101")
-    case_number_expected = 1
+    absent = "0000"  # case 0
+    time = "000001100100"  # 100
+    energy = "010"  # 2
+    mode = "1"
+    tof0 = "0000000000"
+    # TOF1 not transmitted
+    tof2 = "000000010"  # 2
+    tof3 = "000011"  # 3
+    cksm = "000"  # 0
+    # POS not transmitted
+    single_de.DATA = absent + time + energy + mode + tof0 + tof2 + tof3 + cksm
+
+    expected_time = np.array([100])
+    expected_energy = np.array([2])
+    expected_mode = np.array([1])
+    # tofs and cksm are bit shifted to the left by 1 during decompression
+    expected_tof0 = np.array([0 << 1])
+    expected_tof1 = np.array([GlobalConstants.DOUBLE_FILLVAL])
+    expected_tof2 = np.array([2 << 1])
+    expected_tof3 = np.array([3 << 1])
+    expected_cksm = np.array([0 << 1])
+    expected_pos = np.array([GlobalConstants.DOUBLE_FILLVAL])
 
     # Act
-    case_number = de._find_decompression_case()
+    single_de._decompress_data()
 
     # Assert
-    assert case_number == case_number_expected
+    np.testing.assert_array_equal(single_de.TIME, expected_time)
+    np.testing.assert_array_equal(single_de.ENERGY, expected_energy)
+    np.testing.assert_array_equal(single_de.MODE, expected_mode)
+    np.testing.assert_array_equal(single_de.TOF0, expected_tof0)
+    np.testing.assert_array_equal(single_de.TOF1, expected_tof1)
+    np.testing.assert_array_equal(single_de.TOF2, expected_tof2)
+    np.testing.assert_array_equal(single_de.TOF3, expected_tof3)
+    np.testing.assert_array_equal(single_de.CKSM, expected_cksm)
+    np.testing.assert_array_equal(single_de.POS, expected_pos)
 
 
-@pytest.mark.skip(reason="no data to initialize with")
-def test_find_tof_decoder_for_case(de, tof_data):
+def test_parse_data_case_10(single_de):
     # Arrange
-    de.DATA = bitstring.Bits(bin="000100010101")
-    tof_decoder_expected = tof_data(3, 0, 10, 9, 9, 0, 0, 12)
+    absent = "1010"  # case 10
+    time = "000001100100"  # 100
+    energy = "010"  # 2
+    mode = "1"
+    # TOF0 not transmitted
+    tof1 = "000000001"  # 1
+    # TOF2, TOF3, CKSM not transmitted
+    pos = "00"  # 0
+    single_de.DATA = absent + time + energy + mode + tof1 + pos
 
-    case_number = de._find_decompression_case()
+    expected_time = np.array([100])
+    expected_energy = np.array([2])
+    expected_mode = np.array([1])
+    expected_tof0 = np.array([GlobalConstants.DOUBLE_FILLVAL])
+    # tofs and cksm are bit shifted to the left by 1 during decompression
+    expected_tof1 = np.array([1 << 1])
+    expected_tof2 = np.array([GlobalConstants.DOUBLE_FILLVAL])
+    expected_tof3 = np.array([GlobalConstants.DOUBLE_FILLVAL])
+    expected_cksm = np.array([GlobalConstants.DOUBLE_FILLVAL])
+    expected_pos = np.array([0])
 
     # Act
-    tof_decoder = de._find_tof_decoder_for_case(case_number)
+    single_de._decompress_data()
 
     # Assert
-    assert tof_decoder == tof_decoder_expected
+    np.testing.assert_array_equal(single_de.TIME, expected_time)
+    np.testing.assert_array_equal(single_de.ENERGY, expected_energy)
+    np.testing.assert_array_equal(single_de.MODE, expected_mode)
+    np.testing.assert_array_equal(single_de.TOF0, expected_tof0)
+    np.testing.assert_array_equal(single_de.TOF1, expected_tof1)
+    np.testing.assert_array_equal(single_de.TOF2, expected_tof2)
+    np.testing.assert_array_equal(single_de.TOF3, expected_tof3)
+    np.testing.assert_array_equal(single_de.CKSM, expected_cksm)
+    np.testing.assert_array_equal(single_de.POS, expected_pos)
 
 
-@pytest.mark.skip(reason="no data to initialize with")
-def test_read_tof_calculation_table(de):
+def test_decompress_data_multi_de(multi_de):
     # Arrange
-    de.DATA = bitstring.Bits(bin="000100010101")
-    case_number = de._find_decompression_case()
-    binary_strings_expected = {
-        "ENERGY": bitstring.Bits(bin="0000000000000011"),
-        "POS": bitstring.Bits(bin=""),
-        "TOF0": bitstring.Bits(bin="0000011111111110"),
-        "TOF1": bitstring.Bits(bin="0000001111111110"),
-        "TOF2": bitstring.Bits(bin="0000001111111110"),
-        "TOF3": bitstring.Bits(bin=""),
-        "CKSM": bitstring.Bits(bin=""),
-        "TIME": bitstring.Bits(bin="0000111111111111"),
-    }
 
-    # Act
-    tof_calc_bin = de._read_tof_calculation_table(case_number)
+    # DE One
+    absent_1 = "0000"  # case 0
+    time_1 = "000001100100"  # 100
+    energy_1 = "010"  # 2
+    mode_1 = "1"
+    tof0_1 = "0000000000"
+    # TOF1 not transmitted
+    tof2_1 = "000000010"  # 2
+    tof3_1 = "000011"  # 3
+    cksm_1 = "000"  # 0
+    # POS not transmitted
 
-    # Assert
-    assert tof_calc_bin == binary_strings_expected
+    # DE Two
+    absent_2 = "1010"  # case 10
+    time_2 = "000001100100"  # 100
+    energy_2 = "010"  # 2
+    mode_2 = "1"
+    # TOF0 not transmitted
+    tof1_2 = "000000001"  # 1
+    # TOF2, TOF3, CKSM not transmitted
+    pos_2 = "00"  # 0
 
-
-@pytest.mark.skip(reason="no data to initialize with")
-def test_find_remaining_bits(de):
-    # Arrange
-    de.DATA = bitstring.Bits(bin="000100010101")
-    case_number = de._find_decompression_case()
-    tof_calc = de._read_tof_calculation_table(case_number)
-    remaining_coeff_expected = {
-        "TIME": [
-            327.68,
-            163.84,
-            81.82,
-            40.96,
-            20.48,
-            10.24,
-            5.12,
-            2.56,
-            1.28,
-            0.64,
-            0.32,
-            0.16,
-        ],
-        "ENERGY": [
-            0.32,
-            0.16,
-        ],
-        "TOF0": [
-            163.84,
-            81.82,
-            40.96,
-            20.48,
-            10.24,
-            5.12,
-            2.56,
-            1.28,
-            0.64,
-            0.32,
-        ],
-        "TOF1": [
-            81.82,
-            40.96,
-            20.48,
-            10.24,
-            5.12,
-            2.56,
-            1.28,
-            0.64,
-            0.32,
-        ],
-        "TOF2": [
-            81.82,
-            40.96,
-            20.48,
-            10.24,
-            5.12,
-            2.56,
-            1.28,
-            0.64,
-            0.32,
-        ],
-        "TOF3": [],
-        "POS": [],
-        "CKSM": [],
-    }
-
-    # Act
-    remaining_coeff = de._find_remaining_bit_coefficients(tof_calc)
-
-    # Assert
-    assert remaining_coeff == remaining_coeff_expected
-
-
-@pytest.mark.skip(reason="no data to initialize with")
-def test_parse_binary_for_gold_triple(de):
-    # Arrange
-    de.DATA = bitstring.Bits(bin="000010010101001101011100111100111011101001111101")
-    case_number = de._find_decompression_case()
-    tof_decoder = de._find_tof_decoder_for_case(case_number)
-    parsed_bits_expected = {
-        "ENERGY": bitstring.Bits(bin="001"),
-        "POS": bitstring.Bits(bin=""),
-        "TOF0": bitstring.Bits(bin="0101001101"),
-        "TOF1": bitstring.Bits(bin=""),
-        "TOF2": bitstring.Bits(bin="011100111"),
-        "TOF3": bitstring.Bits(bin="100111"),
-        "CKSM": bitstring.Bits(bin="011"),
-        "TIME": bitstring.Bits(bin="101001111101"),
-    }
-
-    # Act
-    parsed_bits = de._parse_binary(case_number, tof_decoder)
-
-    # Assert
-    assert parsed_bits == parsed_bits_expected
-
-
-@pytest.mark.skip(reason="no data to initialize with")
-def test_parse_binary_for_silver_triple(de):
-    # Arrange
-    de.DATA = bitstring.Bits(
-        bin="000000010101001101011100111100111011101001111101101101"
+    multi_de.DATA = (
+        absent_1
+        + time_1
+        + energy_1
+        + mode_1
+        + tof0_1
+        + tof2_1
+        + tof3_1
+        + cksm_1
+        + absent_2
+        + time_2
+        + energy_2
+        + mode_2
+        + tof1_2
+        + pos_2
     )
-    case_number = de._find_decompression_case()
-    tof_decoder = de._find_tof_decoder_for_case(case_number)
-    parsed_bits_expected = {
-        "ENERGY": bitstring.Bits(bin="001"),
-        "POS": bitstring.Bits(bin=""),
-        "TOF0": bitstring.Bits(bin="0101001101"),
-        "TOF1": bitstring.Bits(bin="011100111"),
-        "TOF2": bitstring.Bits(bin="100111011"),
-        "TOF3": bitstring.Bits(bin="101001"),
-        "CKSM": bitstring.Bits(bin=""),
-        "TIME": bitstring.Bits(bin="111101101101"),
-    }
+
+    expected_time = np.array([100, 100])
+    expected_energy = np.array([2, 2])
+    expected_mode = np.array([1, 1])
+    # tofs and cksm are bit shifted to the left by 1 during decompression
+    expected_tof0 = np.array([0 << 1, GlobalConstants.DOUBLE_FILLVAL])
+    expected_tof1 = np.array([GlobalConstants.DOUBLE_FILLVAL, 1 << 1])
+    expected_tof2 = np.array([2 << 1, GlobalConstants.DOUBLE_FILLVAL])
+    expected_tof3 = np.array([3 << 1, GlobalConstants.DOUBLE_FILLVAL])
+    expected_cksm = np.array([0 << 1, GlobalConstants.DOUBLE_FILLVAL])
+    expected_pos = np.array([GlobalConstants.DOUBLE_FILLVAL, 0])
 
     # Act
-    parsed_bits = de._parse_binary(case_number, tof_decoder)
+    multi_de._decompress_data()
 
     # Assert
-    assert parsed_bits == parsed_bits_expected
-
-
-@pytest.mark.skip(reason="no data to initialize with")
-def test_parse_binary_for_bronze_triple(de):
-    # Arrange
-    de.DATA = bitstring.Bits(bin="0100100101010011010111001111001")
-    case_number = de._find_decompression_case()
-    tof_decoder = de._find_tof_decoder_for_case(case_number)
-    parsed_bits_expected = {
-        "ENERGY": bitstring.Bits(bin="001"),
-        "POS": bitstring.Bits(bin="01"),
-        "TOF0": bitstring.Bits(bin="0100110101"),
-        "TOF1": bitstring.Bits(bin=""),
-        "TOF2": bitstring.Bits(bin=""),
-        "TOF3": bitstring.Bits(bin=""),
-        "CKSM": bitstring.Bits(bin=""),
-        "TIME": bitstring.Bits(bin="11001111001"),
-    }
-
-    # Act
-    parsed_bits = de._parse_binary(case_number, tof_decoder)
-
-    # Assert
-    assert parsed_bits == parsed_bits_expected
-
-
-@pytest.mark.skip(reason="no data to initialize with")
-def test_parse_binary_for_not_bronze_triple(de):
-    # Arrange
-    de.DATA = bitstring.Bits(bin="010000010101001101011100111100101110")
-    case_number = de._find_decompression_case()
-    tof_decoder = de._find_tof_decoder_for_case(case_number)
-    parsed_bits_expected = {
-        "ENERGY": bitstring.Bits(bin="001"),
-        "POS": bitstring.Bits(bin=""),
-        "TOF0": bitstring.Bits(bin="0101001101"),
-        "TOF1": bitstring.Bits(bin=""),
-        "TOF2": bitstring.Bits(bin=""),
-        "TOF3": bitstring.Bits(bin="011100"),
-        "CKSM": bitstring.Bits(bin=""),
-        "TIME": bitstring.Bits(bin="111100101110"),
-    }
-
-    # Act
-    parsed_bits = de._parse_binary(case_number, tof_decoder)
-
-    # Assert
-    assert parsed_bits == parsed_bits_expected
-
-
-@pytest.mark.skip(reason="no data to initialize with")
-def test_decode_fields(de):
-    # Arrange
-    de.DATA = bitstring.Bits(bin="000010010101001101011100111100111011101001111101")
-    case_number = de._find_decompression_case()
-    tof_decoder = de._find_tof_decoder_for_case(case_number)
-    tof_calc = de._read_tof_calculation_table(case_number)
-    remaining_coeffs = de._find_remaining_bit_coefficients(tof_calc)
-    parsed_bits = de._parse_binary(case_number, tof_decoder)
-
-    energy_expected = 0.16
-    position_expected = 0
-    tof0_expected = 106.46
-    tof1_expected = 0
-    tof2_expected = 73.92
-    tof3_expected = 12.48
-    time_expected = 429.5
-
-    # Act
-    de._decode_fields(remaining_coeffs, parsed_bits)
-
-    # Assert
-    assert de.ENERGY == energy_expected
-    assert de.POS == position_expected
-    assert de.TOF0 == tof0_expected
-    assert de.TOF1 == tof1_expected
-    assert de.TOF2 == tof2_expected
-    assert de.TOF3 == tof3_expected
-    assert de.TIME == time_expected
+    np.testing.assert_array_equal(multi_de.TIME, expected_time)
+    np.testing.assert_array_equal(multi_de.ENERGY, expected_energy)
+    np.testing.assert_array_equal(multi_de.MODE, expected_mode)
+    np.testing.assert_array_equal(multi_de.TOF0, expected_tof0)
+    np.testing.assert_array_equal(multi_de.TOF1, expected_tof1)
+    np.testing.assert_array_equal(multi_de.TOF2, expected_tof2)
+    np.testing.assert_array_equal(multi_de.TOF3, expected_tof3)
+    np.testing.assert_array_equal(multi_de.CKSM, expected_cksm)
+    np.testing.assert_array_equal(multi_de.POS, expected_pos)

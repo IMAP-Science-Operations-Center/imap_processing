@@ -1,4 +1,4 @@
-Epoch,MET,Type,SequenceCount,SpinStartSeconds,SpinStartSubseconds,SpinDuration,SpinNumber,SpinDataTime,SpinPeriod,SpinPhase,SpinPeriodValid,SpinPhaseValid,SpinPeriodSource,CatbedHeater,Spins,IntegrationMultiplier1,IntegrationMultiplier2,HardwareMode,IMCEnb,LeftDeflection,RightDeflection
+epoch,MET,Type,SequenceCount,SpinStartSeconds,SpinStartSubseconds,SpinDuration,SpinNumber,SpinDataTime,SpinPeriod,SpinPhase,SpinPeriodValid,SpinPhaseValid,SpinPeriodSource,CatbedHeater,Spins,IntegrationMultiplier1,IntegrationMultiplier2,HardwareMode,IMCEnb,LeftDeflection,RightDeflection
 2022-150T22:50:52.000, 391647054,AuxiliaryData,794,391647054,836,14001,26109934,391647055,43750,766,0,1,1,0,1,1,1,0,0,0,0
 2022-150T22:51:06.000, 391647068,AuxiliaryData,795,391647068,837,13999,26109935,391647069,43750,766,0,1,1,0,1,1,1,0,0,0,0
 2022-150T22:51:20.000, 391647082,AuxiliaryData,796,391647082,836,13999,26109936,391647083,43750,766,0,1,1,0,1,1,1,0,0,0,0

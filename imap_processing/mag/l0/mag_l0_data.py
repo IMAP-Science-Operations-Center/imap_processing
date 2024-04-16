@@ -1,6 +1,11 @@
-"""Data class for MAG Level 0 data."""
+"""Dataclasses for Level 0 MAG data."""
+
+from __future__ import annotations
+
 from dataclasses import dataclass
 from enum import IntEnum
+
+import numpy as np
 
 from imap_processing.ccsds.ccsds_data import CcsdsData
 
@@ -65,9 +70,10 @@ class MagL0:
         Secondary Coarse Time for first vector, seconds
     SEC_FNTM: int
         Secondary Fine Time for first vector, subseconds
-    VECTORS: bin
+    VECTORS: np.ndarray | str
         MAG Science Vectors - divide based on PRI_VECSEC and PUS_SSUBTYPE for vector
-        counts
+        counts. There is a post init call to convert a string into a numpy array -
+        the only place it is a string is in the class initialization.
     """
 
     ccsds_header: CcsdsData
@@ -89,7 +95,7 @@ class MagL0:
     PRI_FNTM: int
     SEC_COARSETM: int
     SEC_FNTM: int
-    VECTORS: bytearray
+    VECTORS: np.ndarray | str
 
     def __post_init__(self):
         """Convert Vectors attribute from string to bytearray if needed.
@@ -97,11 +103,17 @@ class MagL0:
         Also convert encoded "VECSEC" (vectors per second) into proper vectors per
         second values
         """
-        if isinstance(self.VECTORS, str):
-            # Convert string output from space_packet_parser to bytearray
-            self.VECTORS = bytearray(
-                int(self.VECTORS, 2).to_bytes(len(self.VECTORS) // 8, "big")
-            )
+        # Convert string output from space_packet_parser to numpy array of
+        # big-endian bytes
+        self.VECTORS = np.frombuffer(
+            int(self.VECTORS, 2).to_bytes(len(self.VECTORS) // 8, "big"),
+            dtype=np.dtype(">b"),
+        )
+
+        # Remove buffer from end of vectors. Vector data needs to be in 50 bit chunks,
+        # and may have an extra byte at the end from CCSDS padding.
+        if len(self.VECTORS) % 2:
+            self.VECTORS = self.VECTORS[:-1]
 
         self.PRI_VECSEC = 2**self.PRI_VECSEC
         self.SEC_VECSEC = 2**self.SEC_VECSEC
