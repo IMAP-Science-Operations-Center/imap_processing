@@ -41,10 +41,16 @@ lo_de_l1a_attrs = GlobalDataLevelAttrs(
     instrument_base=lo_base,
 )
 
+lo_sci_cnt_l1a_attrs = GlobalDataLevelAttrs(
+    data_type="L1A_SCICNT>Level-1A Science Counts",
+    logical_source="imap_lo_l1a_scicnt",
+    logical_source_desc="IMAP Mission IMAP-Lo Instrument Level-1A Data",
+    instrument_base=lo_base,
+)
+
 # TODO: Add rest of data products for L1A, L1B, L1C
 
-# TODO: Figure out what attributes I need for the
-# energy, time, mode, checksum, and position fields
+## Science Direct Events Attributes ##
 lo_tof_attrs = ScienceAttrs(
     validmin=0,
     validmax=GlobalConstants.INT_MAXVAL,
@@ -57,4 +63,110 @@ lo_tof_attrs = ScienceAttrs(
     var_type="data",
     units="seconds",
     label_axis="ToF",
+)
+
+### Science Counts Attributes ###
+lo_anode_rate_attrs = ScienceAttrs(
+    validmin=0,
+    validmax=GlobalConstants.INT_FILLVAL,
+    catdesc="Anode Single Rate",
+    depend_0="epoch",
+    display_type="time_series",
+    fill_val=GlobalConstants.INT_FILLVAL,
+    fieldname="Anode Single Rate",
+    format="I12",
+    var_type="data",
+    units="seconds",
+    label_axis="anode single rate",
+)
+lo_ion_rate_attrs = ScienceAttrs(
+    validmin=0,
+    validmax=GlobalConstants.INT_FILLVAL,
+    catdesc="Ion Single Rate",
+    depend_0="epoch",
+    display_type="time_series",
+    fill_val=GlobalConstants.INT_FILLVAL,
+    fieldname="Ion Single Rate",
+    format="I12",
+    var_type="data",
+    units="seconds",
+    label_axis="ion single rate",
+)
+lo_tof_rate_attrs = ScienceAttrs(
+    validmin=0,
+    validmax=GlobalConstants.INT_FILLVAL,
+    catdesc="Time of Flight Rate",
+    depend_0="epoch",
+    display_type="time_series",
+    fill_val=GlobalConstants.INT_FILLVAL,
+    fieldname="Time of Flight Rate",
+    format="I12",
+    var_type="data",
+    units="seconds",
+    label_axis="ToF rate",
+)
+lo_trip_coin_rate_attrs = ScienceAttrs(
+    validmin=0,
+    validmax=GlobalConstants.INT_FILLVAL,
+    catdesc="Triple Coincidence Rate",
+    depend_0="epoch",
+    display_type="time_series",
+    fill_val=GlobalConstants.INT_FILLVAL,
+    fieldname="Triple Coincidence Rate",
+    format="I12",
+    var_type="data",
+    units="seconds",
+    label_axis="triple coincidence rate",
+)
+lo_disc_rate_attrs = ScienceAttrs(
+    validmin=0,
+    validmax=GlobalConstants.INT_FILLVAL,
+    catdesc="Discarded Rate",
+    depend_0="epoch",  # TODO: Not sure if this is right
+    display_type="time_series",
+    fill_val=GlobalConstants.INT_FILLVAL,
+    fieldname="Discarded Rate",
+    format="I12",
+    var_type="data",
+    units="seconds",
+    label_axis="discarded rate",
+)
+lo_pos_rate_attrs = ScienceAttrs(
+    validmin=0,
+    validmax=GlobalConstants.INT_FILLVAL,
+    catdesc="Position Rate",
+    depend_0="epoch",
+    display_type="time_series",
+    fill_val=GlobalConstants.INT_FILLVAL,
+    fieldname="Position Rate",
+    format="I12",
+    var_type="data",
+    units="seconds",
+    label_axis="position rate",
+)
+lo_hydrogen_rate_attrs = ScienceAttrs(
+    validmin=0,
+    validmax=GlobalConstants.INT_FILLVAL,
+    catdesc="Hydrogen Rate",
+    depend_0="epoch",
+    display_type="time_series",
+    fill_val=GlobalConstants.INT_FILLVAL,
+    fieldname="Hydrogen Rate",
+    format="I12",
+    var_type="data",
+    units="seconds",
+    label_axis="hydrogen rate",
+)
+lo_oxygen_rate_attrs = ScienceAttrs(
+    validmin=0,
+    validmax=GlobalConstants.INT_FILLVAL,
+    catdesc="Oxygen Rate",
+    depend_0="epoch",
+    display_type="time_series",
+    fill_val=GlobalConstants.INT_FILLVAL,
+    fieldname="Oxygen Rate",
+    format="I12",
+    var_type="data",
+    units="seconds",
+    label_axis="oxygen rate",
 )
