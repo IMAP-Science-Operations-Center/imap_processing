@@ -75,7 +75,7 @@ def science_counts():
             "VERSION": fake_data_field(0, 0),
             "TYPE": fake_data_field(0, 0),
             "SEC_HDR_FLG": fake_data_field(0, 0),
-            "PKT_APID": fake_data_field(706, 706),
+            "PKT_APID": fake_data_field(705, 705),
             "SEQ_FLGS": fake_data_field(0, 0),
             "SRC_SEQ_CTR": fake_data_field(0, 0),
             "PKT_LEN": fake_data_field(0, 0),
@@ -87,7 +87,7 @@ def science_counts():
             "VERSION": fake_data_field(0, 0),
             "TYPE": fake_data_field(0, 0),
             "SEC_HDR_FLG": fake_data_field(0, 0),
-            "PKT_APID": fake_data_field(706, 706),
+            "PKT_APID": fake_data_field(705, 705),
             "SEQ_FLGS": fake_data_field(0, 0),
             "SRC_SEQ_CTR": fake_data_field(0, 0),
             "PKT_LEN": fake_data_field(0, 0),
@@ -125,6 +125,16 @@ def science_counts():
         setattr(scicnt2, field, np.array([0, 0, 0]))
 
     return [scicnt1, scicnt2]
+
+
+def test_write_lo_l1a_cdfs_sci_de(direct_events):
+    lo_data = LoContainer()
+    lo_data.add(direct_events[0])
+    lo_data.add(direct_events[1])
+
+    created_file_paths = write_lo_l1a_cdfs(lo_data)
+
+    assert created_file_paths[0].name == "imap_lo_l1a_scide_20240410_v001.cdf"
 
 
 def test_create_lo_scide_dataset(direct_events):
@@ -185,11 +195,11 @@ def test_create_lo_scicnt_dataset(science_counts):
         assert (dataset[field].data == [0, 0, 0, 0, 0, 0]).all()
 
 
-def test_write_lo_l1a_cdfs(direct_events):
+def test_write_lo_l1a_cdfs_sci_cnt(science_counts):
     lo_data = LoContainer()
-    lo_data.add(direct_events[0])
-    lo_data.add(direct_events[1])
+    lo_data.add(science_counts[0])
+    lo_data.add(science_counts[1])
 
     created_file_paths = write_lo_l1a_cdfs(lo_data)
 
-    assert created_file_paths[0].name == "imap_lo_l1a_scide_20240410_v001.cdf"
+    assert created_file_paths[0].name == "imap_lo_l1a_scicnt_20240410_v001.cdf"
