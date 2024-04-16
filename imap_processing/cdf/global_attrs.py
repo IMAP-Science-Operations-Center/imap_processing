@@ -86,11 +86,15 @@ class ConstantCoordinates:
     """
 
     EPOCH: ClassVar[dict] = {
-        "CATDESC": "Default time",
+        # By default the time is assumed to correspond to instantaneous time or
+        # center of accumulation/measurement period. But if, for some good reason,
+        # time corresponds to the beginning or end or any other part of
+        # accumulation/measurement period, that has to be stated in CATDESC.
+        "CATDESC": "Time, number of nanoseconds since J2000 with leap seconds included",
         "FIELDNAM": "epoch",
         "FILLVAL": GlobalConstants.INT_FILLVAL,
-        "FORMAT": "a2",
         "LABLAXIS": "epoch",
+        "FORMAT": "",  # Supposedly not required, fails in xarray_to_cdf
         "UNITS": "ns",
         "VALIDMIN": GlobalConstants.MIN_EPOCH,
         "VALIDMAX": GlobalConstants.MAX_EPOCH,
