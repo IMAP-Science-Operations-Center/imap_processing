@@ -104,3 +104,10 @@ swapi_l1_sci_attrs = GlobalDataLevelAttrs(
     ),
     instrument_base=swapi_base,
 )
+
+swapi_l1_hk_attrs = GlobalDataLevelAttrs(
+    data_type="L1_hk>Level-1 housekeeping data",
+    logical_source="imap_swapi_l1_hk",
+    logical_source_desc=("SWAPI Instrument Level-1 housekeeping Data"),
+    instrument_base=swapi_base,
+)

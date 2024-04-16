@@ -11,11 +11,12 @@ from imap_processing.swapi.swapi_cdf_attrs import (
     compression_attrs,
     counts_attrs,
     energy_dim_attrs,
+    swapi_l1_hk_attrs,
     swapi_l1_sci_attrs,
     uncertainty_attrs,
 )
-from imap_processing.swapi.swapi_utils import SWAPIAPID, SWAPIMODE, create_dataset
-from imap_processing.utils import group_by_apid, sort_by_time
+from imap_processing.swapi.swapi_utils import SWAPIAPID, SWAPIMODE
+from imap_processing.utils import create_dataset, group_by_apid, sort_by_time
 
 
 def filter_good_data(full_sweep_sci):
@@ -544,4 +545,22 @@ def swapi_l1(packets):
         if apid == SWAPIAPID.SWP_SCI.value:
             data = process_swapi_science(ds_data)
             processed_data.append(data)
+        if apid == SWAPIAPID.SWP_HK.value:
+            # convert epoch to datetime
+            epoch_converted_time = [
+                calc_start_time(time) for time in ds_data["epoch"].data
+            ]
+            # add attrs back to epoch
+            epoch = xr.DataArray(
+                epoch_converted_time,
+                name="epoch",
+                dims=["epoch"],
+                attrs=ConstantCoordinates.EPOCH,
+            )
+            ds_data = ds_data.assign_coords(epoch=epoch)
+
+            # Add datalevel attrs
+            ds_data.attrs.update(swapi_l1_hk_attrs.output())
+            processed_data.append(ds_data)
+
     return processed_data
