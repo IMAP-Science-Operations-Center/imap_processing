@@ -1,4 +1,5 @@
 """L1A Science Counts data class."""
+
 from dataclasses import dataclass
 
 import numpy as np
@@ -27,7 +28,7 @@ class ScienceCounts(LoBase):
     SCI_CNT : str
         science count compressed binary data
     START_A : numpy.ndarray
-        Single rates for electon, anode A. 2D array Azimuth(6), Energy(7)
+        Single rates for electron, anode A. 2D array Azimuth(6), Energy(7)
     START_C : numpy.ndarray
         Single rates for electron, anode C. 2D array Azimuth(6), Energy(7)
     STOP_B0 : numpy.ndarray
@@ -64,7 +65,7 @@ class ScienceCounts(LoBase):
         Discarded rates for TOF3 value less than TOF3 threshold setting.
         2D array Azimuth(6), Energy(7)
     POS0 : numpy.ndarray
-        Postition rate counts for Ion anode B0. 2D array Azimuth(6), Energy(7)
+        Position rate counts for Ion anode B0. 2D array Azimuth(6), Energy(7)
     POS1 : numpy.ndarray
         Position rate counts for Ion anode B1. 2D array Azimuth(6), Energy(7)
     POS2 : numpy.ndarray
@@ -113,7 +114,7 @@ class ScienceCounts(LoBase):
     # must be commented out for the unit tests to run properly
     def __init__(self, packet, software_version: str, packet_file_name: str):
         super().__init__(software_version, packet_file_name, CcsdsData(packet.header))
-        self.parse_data(packet)
+        self.set_attributes(packet)
         self._parse_binary()
 
     def _parse_binary(self):
