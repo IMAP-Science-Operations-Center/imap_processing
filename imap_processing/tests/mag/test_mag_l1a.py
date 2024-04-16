@@ -3,13 +3,13 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
+from imap_processing.cdf.utils import calc_start_time
 from imap_processing.mag.l0.decom_mag import decom_packets
 from imap_processing.mag.l1a.mag_l1a import process_packets
 from imap_processing.mag.l1a.mag_l1a_data import (
     MAX_FINE_TIME,
     MagL1a,
     TimeTuple,
-    Vector,
 )
 
 
@@ -20,36 +20,31 @@ def test_compare_validation_data():
     l0 = decom_packets(test_file)
 
     l1 = process_packets(l0["norm"])
-    l1_mago = l1["mago"]
-    l1_magi = l1["magi"]
+    # Should have one day of data
+    expected_day = np.datetime64("2023-11-30")
 
-    assert len(l1_mago) == 6
-    assert len(l1_magi) == 6
+    l1_mago = l1["mago"][expected_day]
+    l1_magi = l1["magi"][expected_day]
+
+    assert len(l1_mago.vectors) == 96
+    assert len(l1_magi.vectors) == 96
 
     validation_data = pd.read_csv(current_directory / "mag_l1a_test_output.csv")
-
-    vector_index = 0
 
     # Validation data does not have differing timestamps
     for index in validation_data.index:
         # Sequence in validation data starts at 5
         # Mago is primary, Magi is secondary in test data
-        l1_pri = l1_mago[validation_data["sequence"][index] - 5]
-        l1_sec = l1_magi[validation_data["sequence"][index] - 5]
 
-        assert l1_pri.vectors[vector_index].x == validation_data["x_pri"][index]
-        assert l1_pri.vectors[vector_index].y == validation_data["y_pri"][index]
-        assert l1_pri.vectors[vector_index].z == validation_data["z_pri"][index]
-        assert l1_pri.vectors[vector_index].rng == validation_data["rng_pri"][index]
+        assert l1_mago.vectors[index][0] == validation_data["x_pri"][index]
+        assert l1_mago.vectors[index][1] == validation_data["y_pri"][index]
+        assert l1_mago.vectors[index][2] == validation_data["z_pri"][index]
+        assert l1_mago.vectors[index][3] == validation_data["rng_pri"][index]
 
-        assert l1_sec.vectors[vector_index].x == validation_data["x_sec"][index]
-        assert l1_sec.vectors[vector_index].y == validation_data["y_sec"][index]
-        assert l1_sec.vectors[vector_index].z == validation_data["z_sec"][index]
-        assert l1_sec.vectors[vector_index].rng == validation_data["rng_sec"][index]
-
-        vector_index = (
-            0 if vector_index == l1_pri.expected_vector_count - 1 else vector_index + 1
-        )
+        assert l1_magi.vectors[index][0] == validation_data["x_sec"][index]
+        assert l1_magi.vectors[index][1] == validation_data["y_sec"][index]
+        assert l1_magi.vectors[index][2] == validation_data["z_sec"][index]
+        assert l1_magi.vectors[index][3] == validation_data["rng_sec"][index]
 
 
 def test_process_vector_data():
@@ -81,35 +76,40 @@ def test_process_vector_data():
 
 
 def test_time_tuple():
-    test_time_tuple = TimeTuple(439067318, 64618)
+    example_time_tuple = TimeTuple(439067318, 64618)
 
-    test_add = test_time_tuple + 2
+    test_add = example_time_tuple + 2
 
     assert test_add == TimeTuple(439067320, 64618)
 
     # 1 / MAX_FINE_TIME
-    test_add = test_time_tuple + 1 / MAX_FINE_TIME
+    test_add = example_time_tuple + 1 / MAX_FINE_TIME
 
     assert test_add == TimeTuple(439067318, 64619)
 
-    test_add = test_time_tuple + (1000 / MAX_FINE_TIME)
+    test_add = example_time_tuple + (1000 / MAX_FINE_TIME)
 
     assert test_add == TimeTuple(439067319, 83)
 
 
-def test_vector_time():
-    test_data = MagL1a(
-        True,
-        True,
-        TimeTuple(10000, 0),
-        2,  # 2 vectors per second
-        4,
-        2,
-        0,
-        [(1, 2, 3, 4), (1, 2, 3, 4), (2, 2, 2, 3), (3, 3, 3, 4)],
+def test_calculate_vector_time():
+    test_vectors = np.array(
+        [[1, 2, 3], [4, 5, 6], [7, 8, 9], [10, 11, 12]], dtype=np.uint
     )
+    test_vecsec = 2
+    start_time = TimeTuple(10000, 0)
 
-    assert test_data.vectors[0] == Vector((1, 2, 3, 4), TimeTuple(10000, 0))
-    assert test_data.vectors[1] == Vector((1, 2, 3, 4), TimeTuple(10000, 32768))
-    assert test_data.vectors[2] == Vector((2, 2, 2, 3), TimeTuple(10001, 1))
-    assert test_data.vectors[3] == Vector((3, 3, 3, 4), TimeTuple(10001, 32769))
+    test_data = MagL1a.calculate_vector_time(test_vectors, test_vecsec, start_time)
+
+    converted_start_time_ns = calc_start_time(start_time.to_seconds())
+
+    skips_ns = np.timedelta64(int(1 / test_vecsec * 1e9), "ns")
+    expected_data = np.array(
+        [
+            [1, 2, 3, int(converted_start_time_ns)],
+            [4, 5, 6, int(converted_start_time_ns + skips_ns)],
+            [7, 8, 9, int(converted_start_time_ns + skips_ns * 2)],
+            [10, 11, 12, int(converted_start_time_ns + skips_ns * 3)],
+        ]
+    )
+    assert (test_data == expected_data).all()

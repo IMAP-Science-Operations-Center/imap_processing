@@ -12,7 +12,7 @@ from imap_processing import launch_time
 logger = logging.getLogger(__name__)
 
 
-def calc_start_time(shcoarse_time: int):
+def calc_start_time(shcoarse_time: float) -> np.datetime64:
     """Calculate the datetime64 from the CCSDS secondary header information.
 
     Since all instrument has SHCOARSE or MET seconds, we need convert it to
@@ -20,7 +20,7 @@ def calc_start_time(shcoarse_time: int):
 
     Parameters
     ----------
-    shcoarse_time: int
+    shcoarse_time: float
         Number of seconds since epoch (nominally the launch time)
 
     Returns

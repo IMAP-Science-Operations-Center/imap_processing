@@ -27,5 +27,7 @@ class GlobalConstants:
     INT_FILLVAL = np.iinfo(np.int64).min
     INT_MAXVAL = np.iinfo(np.int64).max
     DOUBLE_FILLVAL = np.float64(-1.0e31)
+    # 1900-01-01T00:00:00
     MIN_EPOCH = -315575942816000000
-    MAX_EPOCH = 946728069183000000
+    # 2100-01-01T00:00:00
+    MAX_EPOCH = 3155630469184000000

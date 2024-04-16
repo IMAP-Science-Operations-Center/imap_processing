@@ -5,6 +5,8 @@ from math import floor
 
 import numpy as np
 
+from imap_processing.cdf.utils import calc_start_time
+
 MAX_FINE_TIME = 65535  # maximum 16 bit unsigned int
 
 
@@ -46,33 +48,16 @@ class TimeTuple:
 
         return TimeTuple(coarse, fine)
 
+    def to_seconds(self) -> float:
+        """
+        Convert time tuple into seconds (float).
 
-@dataclass
-class Vector:
-    """
-    Data class for storing MAG vector data.
-
-    Attributes
-    ----------
-    timestamp : TimeTuple
-        Time of the vector sample
-    vectors : tuple[int, int, int, int]
-        Vector sample, containing x,y,z,range
-    """
-
-    # TODO: This timestamp should be in J2000/datetime64
-    timestamp: TimeTuple
-    x: int
-    y: int
-    z: int
-    rng: int
-
-    def __init__(self, vectors, time: TimeTuple):
-        self.timestamp = time
-        self.x = vectors[0]
-        self.y = vectors[1]
-        self.z = vectors[2]
-        self.rng = vectors[3]
+        Returns
+        -------
+        seconds: float
+            Time in seconds
+        """
+        return self.coarse_time + self.fine_time / MAX_FINE_TIME
 
 
 @dataclass
@@ -80,50 +65,78 @@ class MagL1a:
     """
     Data class for MAG Level 1A data.
 
+    TODO: This object should end up having 1 days worth of data.
+
+    One MAG L1A object corresponds to part of one MAG L0 packet, which corresponds to
+    one packet of data from the MAG instrument. Each L0 packet consists of data from
+    two sensors, MAGO (outboard) and MAGI (inboard). One of these sensors is designated
+    as the primary sensor (first part of data stream), and one as the secondary.
+
+    We expect the primary sensor to be MAGO, and the secondary to be MAGI, but this is
+    not guaranteed. Each MagL1A object contains data from one sensor. The
+    primary/secondary construct is only used to sort the vectors into MAGo and MAGi
+    data, and therefore is not used at higher levels.
+
     Attributes
     ----------
     is_mago : bool
         True if the data is from MagO, False if data is from MagI
     active : bool
         True if the sensor is active
-    start_time : TimeTuple
-        The coarse and fine time for the sensor
-    vectors_per_second : int
-        Number of vectors per second
-    expected_vector_count : int
-        Expected number of vectors (vectors_per_second * seconds_of_data)
-    seconds_of_data : int
-        Number of seconds of data
     SHCOARSE : int
         Mission elapsed time
-    vectors : list[Vector]
-        List of magnetic vector samples, starting at start_time
+    vectors : np.array[4]
+        List of magnetic vector samples, starting at start_time. [x, y, z, range, time],
+        where time is np.datetime64[ns]
 
     """
 
     is_mago: bool
     active: bool
-    start_time: TimeTuple
-    vectors_per_second: int
-    expected_vector_count: int
-    seconds_of_data: int
     SHCOARSE: int
-    vectors: list
+    vectors: np.array
 
-    def __post_init__(self):
+    @staticmethod
+    def calculate_vector_time(vectors, vectors_per_second, start_time) -> np.array:
         """
-        Convert the vector list to a vector list with timestamps associated.
+        Add timestamps to the vector list, turning the shape from (n, 4) to (n, 5).
 
         The first vector starts at start_time, then each subsequent vector time is
         computed by adding 1/vectors_per_second to the previous vector's time.
 
-        This replaces self.vectors with a list of Vector objects.
+        Parameters
+        ----------
+        vectors : np.array
+            List of magnetic vector samples, starting at start_time. Shape of (n, 4)
+        vectors_per_second : int
+            Number of vectors per second
+        start_time : TimeTuple
+            The coarse and fine time for the sensor
+
+        Returns
+        -------
+        vector_objects
+            vectors with timestamps added in seconds, calculated from
+            cdf.utils.calc_start_time.
+            TODO: Move timestamps to J2000
         """
-        sample_time_interval = 1 / self.vectors_per_second
-        current_time = self.start_time
-        for index, vector in enumerate(self.vectors):
-            self.vectors[index] = Vector(vector, current_time)
-            current_time = self.vectors[index].timestamp + sample_time_interval
+        timedelta = np.timedelta64(int(1 / vectors_per_second * 1e9), "ns")
+
+        start_time_ns = calc_start_time(start_time.to_seconds())
+
+        # Calculate time skips for each vector in ns
+        times = np.reshape(
+            np.arange(
+                start_time_ns,
+                start_time_ns + timedelta * vectors.shape[0],
+                timedelta,
+                dtype=np.int64,
+                like=vectors,
+            ),
+            (vectors.shape[0], -1),
+        )
+        vector_objects = np.concatenate([vectors, times], axis=1, dtype=np.int64)
+        return vector_objects
 
     @staticmethod
     def process_vector_data(
@@ -251,4 +264,7 @@ class MagL1a:
             else:
                 secondary_vectors.append(vector)
 
-        return (primary_vectors, secondary_vectors)
+        return (
+            np.array(primary_vectors, dtype=np.int64),
+            np.array(secondary_vectors, dtype=np.int64),
+        )

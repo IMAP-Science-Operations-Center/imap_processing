@@ -48,4 +48,4 @@ PROCESSING_LEVELS = {
 }
 
 # Reference start time (launch time or epoch)
-launch_time = np.datetime64("2010-01-01T00:01:06.184")
+launch_time = np.datetime64("2010-01-01T00:01:06.184", "ns")

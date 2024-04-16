@@ -120,9 +120,10 @@ def generate_dataset(l0_data: list[MagL0], dataset_attrs: dict) -> xr.Dataset:
         np.arange(vector_data.shape[1]),
         name="direction",
         dims=["direction"],
-        attrs=mag_cdf_attrs.direction_attrs.output(),
+        attrs=mag_cdf_attrs.raw_direction_attrs.output(),
     )
-
+    # TODO: Epoch here refers to the start of the sample. Confirm that this is
+    # what mag is expecting, and if it is, CATDESC needs to be updated.
     epoch_time = xr.DataArray(
         shcoarse_data,
         name="epoch",
@@ -134,7 +135,7 @@ def generate_dataset(l0_data: list[MagL0], dataset_attrs: dict) -> xr.Dataset:
         vector_data,
         name="raw_vectors",
         dims=["epoch", "direction"],
-        attrs=mag_cdf_attrs.mag_vector_attrs.output(),
+        attrs=mag_cdf_attrs.mag_raw_vector_attrs.output(),
     )
 
     output = xr.Dataset(
@@ -153,8 +154,8 @@ def generate_dataset(l0_data: list[MagL0], dataset_attrs: dict) -> xr.Dataset:
                 dims=["epoch"],
                 attrs=dataclasses.replace(
                     mag_cdf_attrs.mag_support_attrs,
-                    catdesc=f"Raw {key} values varying by time",
-                    fieldname=f"{key}",
+                    catdesc=mag_cdf_attrs.catdesc_fieldname_l0[key][0],
+                    fieldname=mag_cdf_attrs.catdesc_fieldname_l0[key][1],
                     # TODO: label_axis should be as close to 6 letters as possible
                     label_axis=key,
                     display_type="no_plot",
