@@ -1,19 +1,35 @@
+from collections import namedtuple
+
 import pytest
 
+from imap_processing.ccsds.ccsds_data import CcsdsData
 from imap_processing.lo.l0.data_classes.star_sensor import StarSensor
 
 
-# Going to wait until validation data is available to test that
-# the values are correct. Currently only check for the shape
-# of the resulting data.
-@pytest.mark.skip(reason="no data to initialize with")
-def test_science_counts():
+@pytest.fixture()
+def star_sensor():
+    fake_data_field = namedtuple("fake_packet", ["raw_value", "derived_value"])
+    star_sensor = StarSensor.__new__(StarSensor)
+    star_sensor.ccsds_header = CcsdsData(
+        {
+            "VERSION": fake_data_field(0, 0),
+            "TYPE": fake_data_field(0, 0),
+            "SEC_HDR_FLG": fake_data_field(0, 0),
+            "PKT_APID": fake_data_field(706, 706),
+            "SEQ_FLGS": fake_data_field(0, 0),
+            "SRC_SEQ_CTR": fake_data_field(0, 0),
+            "PKT_LEN": fake_data_field(0, 0),
+        }
+    )
+    return star_sensor
+
+
+def test_science_counts(star_sensor):
     ## Arrange
-    sc = StarSensor("fake_packet", "version", "packet_name")
-    sc.DATA_COMPRESSED = "0" * 5760
+    star_sensor.DATA_COMPRESSED = "0" * 5760
 
     ## Act
-    sc._decompress_data()
+    star_sensor._decompress_data()
 
     ## Assert
-    assert sc.DATA.shape == (720,)
+    assert star_sensor.DATA.shape == (720,)

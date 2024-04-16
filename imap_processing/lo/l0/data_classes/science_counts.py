@@ -3,9 +3,9 @@
 from dataclasses import dataclass
 
 import numpy as np
-from bitstring import ConstBitStream
 
 from imap_processing.ccsds.ccsds_data import CcsdsData
+from imap_processing.lo.l0.utils.binary_string import BinaryString
 from imap_processing.lo.l0.utils.bit_decompression import (
     DECOMPRESSION_TABLES,
     Decompress,
@@ -115,132 +115,148 @@ class ScienceCounts(LoBase):
     def __init__(self, packet, software_version: str, packet_file_name: str):
         super().__init__(software_version, packet_file_name, CcsdsData(packet.header))
         self.set_attributes(packet)
-        self._parse_binary()
+        self._decompress_data()
 
-    def _parse_binary(self):
+    def _decompress_data(self):
         """Parse the science count binary chunk for each section of data."""
         # make a bit stream containing the binary for the entire
         # chunk of Science Count packet data
-        bitstream = ConstBitStream(bin=self.SCI_CNT)
+        binary_string = BinaryString(self.SCI_CNT)
 
         # The START_A data in the binary is 504 bits long and each field is
         # compressed to 12 bits. This data uses 12 to 16 bit decompression.
         # START_A is a 6, 7 matrix containing Azimuth (6) and Energy (7)
         self.START_A = self._parse_section(
-            bitstream, Decompress.DECOMPRESS12TO16, (6, 7)
+            binary_string, Decompress.DECOMPRESS12TO16, (6, 7)
         )
         # The START_C data in the binary is 492 bits long and each field is
         # compressed to 12 bits. This data uses 12 to 16 bit decompression.
         # START_C is a 6, 7 matrix containing Azimuth (6) and Energy (7)
         self.START_C = self._parse_section(
-            bitstream, Decompress.DECOMPRESS12TO16, (6, 7)
+            binary_string, Decompress.DECOMPRESS12TO16, (6, 7)
         )
         # The STOP_B0 data in the binary is 504 bits long and each field is
         # compressed to 12 bits. This data uses 12 to 16 bit decompression.
         # START_B0 is a 6, 7 matrix containing Azimuth (6) and Energy (7)
         self.STOP_B0 = self._parse_section(
-            bitstream, Decompress.DECOMPRESS12TO16, (6, 7)
+            binary_string, Decompress.DECOMPRESS12TO16, (6, 7)
         )
         # The STOP_B3 data in the binary is 504 bits long and each field is
         # compressed to 12 bits. This data uses 12 to 16 bit decompression.
         # START_B3 is a 6, 7 matrix containing Azimuth (6) and Energy (7)
         self.STOP_B3 = self._parse_section(
-            bitstream, Decompress.DECOMPRESS12TO16, (6, 7)
+            binary_string, Decompress.DECOMPRESS12TO16, (6, 7)
         )
         # The TOF0 data in the binary is 336 bits long and each field is
         # compressed to 8 bits. This data uses 8 to 16 bit decompression.
         # TOF0 is a 6, 7 matrix containing Azimuth (6) and Energy (7)
-        self.TOF0 = self._parse_section(bitstream, Decompress.DECOMPRESS8TO16, (6, 7))
+        self.TOF0 = self._parse_section(
+            binary_string, Decompress.DECOMPRESS8TO16, (6, 7)
+        )
         # The TOF1 data in the binary is 336 bits long and each field is
         # compressed to 8 bits. This data uses 8 to 16 bit decompression.
         # TOF1 is a 6, 7 matrix containing Azimuth (6) and Energy (7)
-        self.TOF1 = self._parse_section(bitstream, Decompress.DECOMPRESS8TO16, (6, 7))
+        self.TOF1 = self._parse_section(
+            binary_string, Decompress.DECOMPRESS8TO16, (6, 7)
+        )
         # The TOF2 data in the binary is 336 bits long and each field is
         # compressed to 8 bits. This data uses 8 to 16 bit decompression.
         # TOF2 is a 6, 7 matrix containing Azimuth (6) and Energy (7)
-        self.TOF2 = self._parse_section(bitstream, Decompress.DECOMPRESS8TO16, (6, 7))
+        self.TOF2 = self._parse_section(
+            binary_string, Decompress.DECOMPRESS8TO16, (6, 7)
+        )
         # The TOF3 data in the binary is 336 bits long and each field is
         # compressed to 8 bits. This data uses 8 to 16 bit decompression.
         # TOF3 is a 6, 7 matrix containing Azimuth (6) and Energy (7)
-        self.TOF3 = self._parse_section(bitstream, Decompress.DECOMPRESS8TO16, (6, 7))
+        self.TOF3 = self._parse_section(
+            binary_string, Decompress.DECOMPRESS8TO16, (6, 7)
+        )
         # The TOF0_TOF1 data in the binary is 3360 bits long and each field is
         # compressed to 8 bits. This data uses 8 to 16 bit decompression.
         # TOF0_TOF1 is a 60, 7 matrix containing Azimuth (60) and Energy (7)
         self.TOF0_TOF1 = self._parse_section(
-            bitstream, Decompress.DECOMPRESS8TO16, (60, 7)
+            binary_string, Decompress.DECOMPRESS8TO16, (60, 7)
         )
         # The TOF0_TOF2 data in the binary is 3360 bits long and each field is
         # compressed to 8 bits. This data uses 8 to 16 bit decompression.
         # TOF0_TOF2 is a 60, 7 matrix containing Azimuth (60) and Energy (7)
         self.TOF0_TOF2 = self._parse_section(
-            bitstream, Decompress.DECOMPRESS8TO16, (60, 7)
+            binary_string, Decompress.DECOMPRESS8TO16, (60, 7)
         )
         # The TOF1_TOF2 data in the binary is 3360 bits long and each field is
         # compressed to 8 bits. This data uses 8 to 16 bit decompression.
         # TOF1_TOF2 is a 60, 7 matrix containing Azimuth (60) and Energy (7)
         self.TOF1_TOF2 = self._parse_section(
-            bitstream, Decompress.DECOMPRESS8TO16, (60, 7)
+            binary_string, Decompress.DECOMPRESS8TO16, (60, 7)
         )
         # The SILVER data in the binary is 3360 bits long and each field is
         # compressed to 8 bits. This data uses 8 to 16 bit decompression.
         # SILVER is a 60, 7 matrix containing Azimuth (60) and Energy (7)
         self.SILVER = self._parse_section(
-            bitstream, Decompress.DECOMPRESS8TO16, (60, 7)
+            binary_string, Decompress.DECOMPRESS8TO16, (60, 7)
         )
         # The DISC_TOF0 data in the binary is 336 bits long and each field is
         # compressed to 8 bits. This data uses 8 to 16 bit decompression.
         # DISC_TOF0 is a 6, 7 matrix containing Azimuth (6) and Energy (7)
         self.DISC_TOF0 = self._parse_section(
-            bitstream, Decompress.DECOMPRESS8TO16, (6, 7)
+            binary_string, Decompress.DECOMPRESS8TO16, (6, 7)
         )
         # The DISC_TOF1 data in the binary is 336 bits long and each field is
         # compressed to 8 bits. This data uses 8 to 16 bit decompression.
         # DISC_TOF1 is a 6, 7 matrix containing Azimuth (6) and Energy (7)
         self.DISC_TOF1 = self._parse_section(
-            bitstream, Decompress.DECOMPRESS8TO16, (6, 7)
+            binary_string, Decompress.DECOMPRESS8TO16, (6, 7)
         )
         # The DISC_TOF2 data in the binary is 336 bits long and each field is
         # compressed to 8 bits. This data uses 8 to 16 bit decompression.
         # DISC_TOF2 is a 6, 7 matrix containing Azimuth (6) and Energy (7)
         self.DISC_TOF2 = self._parse_section(
-            bitstream, Decompress.DECOMPRESS8TO16, (6, 7)
+            binary_string, Decompress.DECOMPRESS8TO16, (6, 7)
         )
         # The DISC_TOF3 data in the binary is 336 bits long and each field is
         # compressed to 8 bits. This data uses 8 to 16 bit decompression.
         # DISC_TOF3 is a 6, 7 matrix containing Azimuth (6) and Energy (7)
         self.DISC_TOF3 = self._parse_section(
-            bitstream, Decompress.DECOMPRESS8TO16, (6, 7)
+            binary_string, Decompress.DECOMPRESS8TO16, (6, 7)
         )
         # The POS0 data in the binary is 504 bits long and each field is
         # compressed to 12 bits. This data uses 12 to 16 bit decompression.
         # POS0 is a 6, 7 matrix containing Azimuth (6) and Energy (7)
-        self.POS0 = self._parse_section(bitstream, Decompress.DECOMPRESS12TO16, (6, 7))
+        self.POS0 = self._parse_section(
+            binary_string, Decompress.DECOMPRESS12TO16, (6, 7)
+        )
         # The POS1 data in the binary is 504 bits long and each field is
         # compressed to 12 bits. This data uses 12 to 16 bit decompression.
         # POS1 is a 6, 7 matrix containing Azimuth (6) and Energy (7)
-        self.POS1 = self._parse_section(bitstream, Decompress.DECOMPRESS12TO16, (6, 7))
+        self.POS1 = self._parse_section(
+            binary_string, Decompress.DECOMPRESS12TO16, (6, 7)
+        )
         # The POS2 data in the binary is 504 bits long and each field is
         # compressed to 12 bits. This data uses 12 to 16 bit decompression.
         # POS2 is a 6, 7 matrix containing Azimuth (6) and Energy (7)
-        self.POS2 = self._parse_section(bitstream, Decompress.DECOMPRESS12TO16, (6, 7))
+        self.POS2 = self._parse_section(
+            binary_string, Decompress.DECOMPRESS12TO16, (6, 7)
+        )
         # The POS3 data in the binary is 504 bits long and each field is
         # compressed to 12 bits. This data uses 12 to 16 bit decompression.
         # POS3 is a 6, 7 matrix containing Azimuth (6) and Energy (7)
-        self.POS3 = self._parse_section(bitstream, Decompress.DECOMPRESS12TO16, (6, 7))
+        self.POS3 = self._parse_section(
+            binary_string, Decompress.DECOMPRESS12TO16, (6, 7)
+        )
         # The HYDROGEN data in the binary is 3360 bits long and each field is
         # compressed to 8 bits. This data uses 8 to 16 bit decompression.
         # HYDROGEN is a 60, 7 matrix containing Azimuth (60) and Energy (7)
         self.HYDROGEN = self._parse_section(
-            bitstream, Decompress.DECOMPRESS8TO16, (60, 7)
+            binary_string, Decompress.DECOMPRESS8TO16, (60, 7)
         )
         # The OXYGEN data in the binary is 3360 bits long and each field is
         # compressed to 8 bits. This data uses 8 to 16 bit decompression.
         # OXYGEN is a 60, 7 matrix containing Azimuth (60) and Energy (7)
         self.OXYGEN = self._parse_section(
-            bitstream, Decompress.DECOMPRESS8TO16, (60, 7)
+            binary_string, Decompress.DECOMPRESS8TO16, (60, 7)
         )
 
-    def _parse_section(self, bitstream, decompression, data_shape):
+    def _parse_section(self, binary_string, decompression, data_shape):
         """Parse a single section of data in the science counts data binary."""
         # Use the decompression method to get the bit length
         # for this section.
@@ -257,19 +273,19 @@ class ScienceCounts(LoBase):
         section_length = bit_length * data_shape[0] * data_shape[1]
         # Extract the section of binary for this data
         data_array = self._extract_binary(
-            bitstream, section_length, bit_length, decompression
+            binary_string, section_length, bit_length, decompression
         )
         # Reshape the data array. Data shapes are specified in the
         # telemetry definition sheet.
         return data_array.reshape(data_shape[0], data_shape[1])
 
-    def _extract_binary(self, bitstream, section_length, bit_length, decompression):
+    def _extract_binary(self, binary_string, section_length, bit_length, decompression):
         """Extract and decompress science count binary data section."""
         data_list = list()
-        # stop the bitstream once you reach the end of the data section.
-        bit_stop = bitstream.pos + section_length
-        while bitstream.pos < bit_stop:
-            extracted_integer = bitstream.read(bit_length).uint
+        # stop the binary_string once you reach the end of the data section.
+        bit_stop = binary_string.bit_pos + section_length
+        while binary_string.bit_pos < bit_stop:
+            extracted_integer = int(binary_string.next_bits(bit_length), 2)
             # decompression look up is passed in rather than being accessed within this
             # function to avoid reading the csvs each time this function is used.
             decompressed_integer = decompress_int(

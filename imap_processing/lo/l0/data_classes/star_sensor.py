@@ -1,10 +1,11 @@
 """L1A Star Sensor data class."""
+
 from dataclasses import dataclass
 
 import numpy as np
-from bitstring import ConstBitStream
 
 from imap_processing.ccsds.ccsds_data import CcsdsData
+from imap_processing.lo.l0.utils.binary_string import BinaryString
 from imap_processing.lo.l0.utils.bit_decompression import (
     DECOMPRESSION_TABLES,
     Decompress,
@@ -48,7 +49,7 @@ class StarSensor(LoBase):
     # must be commented out for the unit tests to run properly
     def __init__(self, packet, software_version: str, packet_file_name: str):
         super().__init__(software_version, packet_file_name, CcsdsData(packet.header))
-        self.parse_data(packet)
+        self.set_attributes(packet)
         self._decompress_data()
 
     def _decompress_data(self):
@@ -67,10 +68,10 @@ class StarSensor(LoBase):
         # make a bit stream containing the binary for the entire
         # chunk of Star packet data
         data_list = list()
-        bitstream = ConstBitStream(bin=self.DATA_COMPRESSED)
-        while bitstream.pos < len(bitstream):
+        binary_string = BinaryString(self.DATA_COMPRESSED)
+        while binary_string.bit_pos < len(binary_string.bin):
             # Extract the 8 bit long field from the binary chunk and get the integer
-            extracted_integer = bitstream.read(bit_length).uint
+            extracted_integer = int(binary_string.next_bits(bit_length), 2)
             # The Star Sensor packet uses a 12 to 8 bit compression
             decompressed_integer = decompress_int(
                 extracted_integer, Decompress.DECOMPRESS8TO12, DECOMPRESSION_TABLES

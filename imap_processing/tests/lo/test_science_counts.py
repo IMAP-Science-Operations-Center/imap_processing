@@ -7,28 +7,7 @@ from imap_processing.lo.l0.data_classes.science_counts import ScienceCounts
 
 
 @pytest.fixture()
-def fake_packet_data():
-    fake_data_type = namedtuple("fake_data_cats", ["header", "data"])
-    fake_data_field = namedtuple("fake_packet", ["raw_value", "derived_value"])
-    return fake_data_type(
-        {
-            "VERSION": fake_data_field(0, 0),
-            "TYPE": fake_data_field(0, 0),
-            "SEC_HDR_FLG": fake_data_field(0, 0),
-            "PKT_APID": fake_data_field(0, 0),
-            "SEQ_FLGS": fake_data_field(0, 0),
-            "SRC_SEQ_CTR": fake_data_field(0, 0),
-            "PKT_LEN": fake_data_field(0, 0),
-        },
-        {
-            "SHCOARSE": fake_data_field(0, 0),
-            "SCI_CNT": fake_data_field("000000000000", "0000000000000"),
-        },
-    )
-
-
-@pytest.fixture()
-def science_count(fake_packet_data):
+def science_count():
     fake_data_field = namedtuple("fake_packet", ["raw_value", "derived_value"])
     sc = ScienceCounts.__new__(ScienceCounts)
     sc.ccsds_header = CcsdsData(
@@ -52,7 +31,7 @@ def test_science_counts(science_count):
     science_count.SCI_CNT = "0" * 26880
 
     ## Act
-    science_count._parse_binary()
+    science_count._decompress_data()
 
     ## Assert
     assert science_count.START_A.shape == (6, 7)
