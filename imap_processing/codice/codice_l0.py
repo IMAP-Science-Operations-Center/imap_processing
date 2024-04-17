@@ -26,7 +26,7 @@ def decom_packets(packet_file: str, xtce_document) -> list:
     packet_file : str
         Path to data packet path with filename.
     xtce_document : str
-        Path the the XTCE document file.
+        Path to the XTCE document file.
 
     Returns
     -------

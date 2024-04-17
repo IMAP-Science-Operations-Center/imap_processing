@@ -26,7 +26,6 @@ from imap_processing import imap_module_directory
 from imap_processing.cdf.global_attrs import ConstantCoordinates
 from imap_processing.cdf.utils import calc_start_time, write_cdf
 from imap_processing.codice import cdf_attrs
-from imap_processing.codice.codice_l0 import decom_packets
 from imap_processing.codice.constants import (
     ESA_SWEEP_TABLE_ID_LOOKUP,
     LO_COLLAPSE_TABLE_ID_LOOKUP,
@@ -94,19 +93,8 @@ class CoDICEL1aPipeline:
         # TODO: Pull out common code and put in codice.utils alongside
         # create_hskp_dataset()
         """
-        # # Define the attributes specific to species data variable
-        # species_attrs = dataclasses.replace(
-        #     cdf_attrs.species_attrs,
-        #     depend_0="species",
-        #     depend_1=None,
-        #     depend_2=None,
-        #     catdesc="TBD",
-        #     fieldname="TBD",
-        #     label_axis="TBD",
-        # ).output()
-
         epoch = xr.DataArray(
-            [calc_start_time(item.data["SHCOARSE"].raw_value) for item in packets],
+            [calc_start_time(self.packets[0].data["SHCOARSE"].raw_value)],
             name="epoch",
             dims=["epoch"],
             attrs=ConstantCoordinates.EPOCH,
@@ -128,9 +116,10 @@ class CoDICEL1aPipeline:
         for species_data, varname, fieldname in zip(
             self.data, LO_SW_SPECIES_VARNAMES, LO_SW_SPECIES_FIELDNAMES
         ):
-            reshaped_data = np.array(list(species_data)).reshape(-1, 128)
+            species_data_arr = [int(item) for item in species_data]
+            species_data_arr = np.array(species_data_arr).reshape(-1, 128)
             dataset[varname] = xr.DataArray(
-                reshaped_data,
+                species_data_arr,
                 name=varname,
                 dims=["epoch", "energy"],
                 attrs=dataclasses.replace(
@@ -348,18 +337,7 @@ def process_codice_l1a(packets) -> str:
             continue
 
     # Write dataset to CDF
-    print(dataset.hplus)
     print(f"\nFinal data product:\n{dataset}\n")
     cdf_filename = write_cdf(dataset)
     print(f"Created CDF file: {cdf_filename}")
     return cdf_filename
-
-
-if __name__ == "__main__":
-    test_file = Path(
-        f"{imap_module_directory}/tests/codice/data/lo_fsw_view_5_ccsds.bin"
-    )
-    file = "P_COD_LO_SW_SPECIES_COUNTS.xml"
-    xtce_document = f"{imap_module_directory}/codice/packet_definitions/{file}"
-    packets = decom_packets(test_file, xtce_document)
-    process_codice_l1a(packets)
