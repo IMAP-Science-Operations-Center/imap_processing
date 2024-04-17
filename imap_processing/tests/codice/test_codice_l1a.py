@@ -13,19 +13,21 @@ TEST_DATA = [
         Path(
             f"{imap_module_directory}/tests/codice/data/raw_ccsds_20230822_122700Z_idle.bin"
         ),
-        f"{imap_module_directory}/codice/packet_definitions/P_COD_NHK.xml",
+        Path(f"{imap_module_directory}/codice/packet_definitions/P_COD_NHK.xml"),
         "imap_codice_l1a_hskp_20100101_v001.cdf",
     ),
     (
         Path(f"{imap_module_directory}/tests/codice/data/lo_fsw_view_5_ccsds.bin"),
-        f"{imap_module_directory}/codice/packet_definitions/P_COD_LO_SW_SPECIES_COUNTS.xml",
+        Path(
+            f"{imap_module_directory}/codice/packet_definitions/P_COD_LO_SW_SPECIES_COUNTS.xml"
+        ),
         "imap_codice_l1a_lo-sw-species-counts_20240319_v001.cdf",
     ),
 ]
 
 
 @pytest.mark.parametrize(("test_file", "xtce_document", "expected_filename"), TEST_DATA)
-def test_codice_l1a(test_file, xtce_document, expected_filename):
+def test_codice_l1a(test_file: Path, xtce_document: Path, expected_filename: str):
     """Tests the ``process_codice_l1a`` function and ensure that a proper CDF
     files are created.
 

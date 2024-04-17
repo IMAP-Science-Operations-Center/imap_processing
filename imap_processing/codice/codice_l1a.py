@@ -73,21 +73,21 @@ class CoDICEL1aPipeline:
         Make 4D L1a data product from the decompressed science data.
     """
 
-    def __init__(self, table_id, plan_id, plan_step, view_id):
+    def __init__(self, table_id: int, plan_id: int, plan_step: int, view_id: int):
         """Initialize a ``CoDICEL1aPipeline`` class instance."""
         self.table_id = table_id
         self.plan_id = plan_id
         self.plan_step = plan_step
         self.view_id = view_id
 
-    def create_science_dataset(self):
+    def create_science_dataset(self) -> xr.Dataset:
         """Create an ``xarray`` dataset for the unpacked science data.
 
         The dataset can then be written to a CDF file.
 
         Returns
         -------
-        xarray.Dataset
+        xr.Dataset
             xarray dataset containing the science data and supporting metadata
 
         # TODO: Pull out common code and put in codice.utils alongside
@@ -227,7 +227,7 @@ class CoDICEL1aPipeline:
         ]
 
 
-def get_params(packet):
+def get_params(packet) -> tuple[int, int, int, int]:
     """Return the four 'main' parameters used for l1a processing.
 
     The combination of these parameters largely determines what steps/values
