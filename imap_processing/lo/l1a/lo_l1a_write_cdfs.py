@@ -45,7 +45,7 @@ def create_lo_scide_dataset(sci_de: list):
 
     Parameters
     ----------
-    scide: list
+    sci_de: list
         List of ScienceDirectEvent data class objects.
 
     Returns
@@ -134,7 +134,7 @@ def create_lo_scicnt_dataset(sci_cnt: list):
 
     Parameters
     ----------
-    scide: list
+    sci_cnt: list
         List of ScienceCounts data class objects.
 
     Returns
