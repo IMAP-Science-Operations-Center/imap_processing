@@ -311,7 +311,7 @@ class Mag(ProcessInstrument):
                     f"Unexpected dependencies found for MAG L1A:"
                     f"{file_paths}. Expected only one dependency."
                 )
-            output_files = mag_l1a(file_paths[0])
+            output_files = mag_l1a(file_paths[0], data_version=self.version)
             if self.upload_to_sdc:
                 if len(output_files) == 0:
                     print("No files to upload.")
