@@ -29,7 +29,7 @@ def decom_packets(packet_file: Path) -> list:
 
     Parameters
     ----------
-    packet_file : Path
+    packet_file : pathlib.Path
         Path to data packet path with filename.
 
     Returns
