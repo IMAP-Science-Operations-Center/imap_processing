@@ -301,7 +301,7 @@ class Mag(ProcessInstrument):
 
     def process(self):
         """Perform MAG specific processing."""
-        print(f"Processing MAG {self.data_level}")
+        logger.info(f"Processing MAG {self.data_level}")
         file_paths = self.download_dependencies()
 
         if self.data_level == "l1a":
@@ -313,8 +313,8 @@ class Mag(ProcessInstrument):
                 )
             output_files = mag_l1a(file_paths[0])
             if self.upload_to_sdc:
-                # TODO: figure out data_dir, because now this fails.
-                #  Should switch to using IMAP_DATA_DIR env var.
+                if len(output_files) == 0:
+                    logger.info("No files to upload.")
                 for filename in output_files:
                     logger.info(f"Uploading file: {filename}")
                     imap_data_access.upload(filename)
