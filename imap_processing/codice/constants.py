@@ -2,48 +2,35 @@
 
 The ``plan_id``, ``plan_step``, and ``view_id`` mentioned in this module are
 derived from the packet data.
+
+Acronyms
+--------
+SW = SunWard
+NSW = Non-SunWard
+PUI = PickUp Ion
+ESA = ElectroStatic Analyzer
 """
 
 from imap_processing.codice.utils import CoDICECompression
 
-# CDF-friendly FIELDNAMES for lo-sw-species-counts data product
-LO_SW_SPECIES_FIELDNAMES = [
-    "SW - H+",
-    "SW - He++",
-    "SW - C+4",
-    "SW - C+5",
-    "SW - C+6",
-    "SW - O+5",
-    "SW - O+6",
-    "SW - O+7",
-    "SW - O+8",
-    "SW - Ne",
-    "SW - Mg",
-    "SW - Si",
-    "SW - Fe lowQ",
-    "SW - Fe highQ",
-    "SW - He+ (PUI)",
-    "SW - CNO+ (PUI)",
-]
-
-# CDF-friendly variable names for lo-sw-species-counts data product
-LO_SW_SPECIES_VARNAMES = [
-    "hplus",
-    "heplusplus",
-    "cplus4",
-    "cplus5",
-    "cplus6",
-    "oplus5",
-    "oplus6",
-    "oplus7",
-    "oplus8",
-    "ne",
-    "mg",
-    "si",
-    "fe-loq",
-    "fe-hiq",
-    "heplus",
-    "cnoplus",
+# CDF-friendly FIELDNAMES and VARNAMES for lo-sw-species-counts data product
+LO_SW_SPECIES_NAMES = [
+    ("hplus", "SW - H+"),
+    ("heplusplus", "SW - He++"),
+    ("cplus4", "SW - C+4"),
+    ("cplus5", "SW - C+5"),
+    ("cplus6", "SW - C+6"),
+    ("oplus5", "SW - O+5"),
+    ("oplus6", "SW - O+6"),
+    ("oplus7", "SW - O+7"),
+    ("oplus8", "SW - O+8"),
+    ("ne", "SW - Ne"),
+    ("mg", "SW - Mg"),
+    ("si", "SW - Si"),
+    ("fe-loq", "SW - Fe lowQ"),
+    ("fe-hiq", "SW - Fe highQ"),
+    ("heplus", "SW - He+ (PUI)"),
+    ("cnoplus", "SW - CNO+ (PUI)"),
 ]
 
 # Compression ID lookup table for Lo data products

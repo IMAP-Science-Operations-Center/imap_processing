@@ -51,21 +51,21 @@ codice_metadata_attrs = ScienceAttrs(
 l1a_hskp_attrs = GlobalDataLevelAttrs(
     data_type="L1A_SCI->Level-1A Science Data",
     logical_source="imap_codice_l1a_hskp",
-    logical_source_desc="IMAP Mission CoDICE Instrument Level-1A Data",
+    logical_source_desc="IMAP Mission CoDICE Instrument Level-1A Housekeeping Data",
     instrument_base=codice_base,
 )
 
 l1a_lo_sw_species_attrs = GlobalDataLevelAttrs(
     data_type="L1A_SCI->Level-1A Science Data",
     logical_source="imap_codice_l1a_lo-sw-species-counts",
-    logical_source_desc="IMAP Mission CoDICE Instrument Level-1A Data",
+    logical_source_desc="IMAP Mission CoDICE Instrument Level-1A Lo Sunward Species Data",  # noqa
     instrument_base=codice_base,
 )
 
 energy_attrs = AttrBase(
     validmin=0,
     validmax=127,
-    format="I12",
+    format="I3",
     var_type="support_data",
     fieldname="Energy Step",
     catdesc="TBD",

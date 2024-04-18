@@ -11,26 +11,33 @@ Use
 
     from imap_processing.codice.codice_l0 import decom_packets
     packet_file = '/path/to/raw_ccsds_20230822_122700Z_idle.bin'
-    xtce_document = '/path/to/P_COD_NHK.xml'
-    packet_list = decom_packets(packet_file, xtce_document)
+    packet_list = decom_packets(packet_file)
 """
 
-from imap_processing import decom
+from pathlib import Path
+
+from imap_processing import decom, imap_module_directory
+
+PACKET_TO_XTCE_MAPPING = {
+    "raw_ccsds_20230822_122700Z_idle.bin": "P_COD_NHK.xml",
+    "lo_fsw_view_5_ccsds.bin": "P_COD_LO_SW_SPECIES_COUNTS.xml",
+}
 
 
-def decom_packets(packet_file: str, xtce_document) -> list:
+def decom_packets(packet_file: Path) -> list:
     """Decom CoDICE data packets using CoDICE packet definition.
 
     Parameters
     ----------
-    packet_file : str
+    packet_file : Path
         Path to data packet path with filename.
-    xtce_document : str
-        Path to the XTCE document file.
 
     Returns
     -------
     list : list
         all the unpacked data.
     """
+    xtce_document = Path(
+        f"{imap_module_directory}/codice/packet_definitions/{PACKET_TO_XTCE_MAPPING[packet_file.name]}"
+    )
     return decom.decom_packets(packet_file, xtce_document)

@@ -7,12 +7,11 @@ Use
 
     from imap_processing.codice.codice_l0 import decom_packets
     from imap_processing.codice.codice_l1a import codice_l1a
-    packets = decom_packets(packet_file, xtce_document)
+    packets = decom_packets(packet_file)
     cdf_filename = codice_l1a(packets)
 """
 
 # TODO: Change print statements to logging
-# TODO: Add type hints
 
 import dataclasses
 import logging
@@ -31,8 +30,7 @@ from imap_processing.codice.constants import (
     LO_COLLAPSE_TABLE_ID_LOOKUP,
     LO_COMPRESSION_ID_LOOKUP,
     LO_STEPPING_TABLE_ID_LOOKUP,
-    LO_SW_SPECIES_FIELDNAMES,
-    LO_SW_SPECIES_VARNAMES,
+    LO_SW_SPECIES_NAMES,
 )
 from imap_processing.codice.utils import CODICEAPID, create_hskp_dataset
 from imap_processing.utils import group_by_apid, sort_by_time
@@ -80,10 +78,15 @@ class CoDICEL1aPipeline:
         self.plan_step = plan_step
         self.view_id = view_id
 
-    def create_science_dataset(self) -> xr.Dataset:
+    def create_science_dataset(self, packets: list) -> xr.Dataset:
         """Create an ``xarray`` dataset for the unpacked science data.
 
         The dataset can then be written to a CDF file.
+
+        Parameters
+        ----------
+        packet : list[space_packet_parser.parser.Packet]
+            List of packets for the APID of interest
 
         Returns
         -------
@@ -94,13 +97,13 @@ class CoDICEL1aPipeline:
         # create_hskp_dataset()
         """
         epoch = xr.DataArray(
-            [calc_start_time(self.packets[0].data["SHCOARSE"].raw_value)],
+            [calc_start_time(packets[0].data["SHCOARSE"].raw_value)],
             name="epoch",
             dims=["epoch"],
             attrs=ConstantCoordinates.EPOCH,
         )
 
-        energy = xr.DataArray(
+        energy_steps = xr.DataArray(
             np.arange(128),
             name="energy",
             dims=["energy"],
@@ -108,16 +111,16 @@ class CoDICEL1aPipeline:
         )
 
         dataset = xr.Dataset(
-            coords={"epoch": epoch, "energy": energy},
+            coords={"epoch": epoch, "energy": energy_steps},
             attrs=cdf_attrs.l1a_lo_sw_species_attrs.output(),
         )
 
         # Create a data variable for each species
-        for species_data, varname, fieldname in zip(
-            self.data, LO_SW_SPECIES_VARNAMES, LO_SW_SPECIES_FIELDNAMES
-        ):
+        for species_data, name in zip(self.data, LO_SW_SPECIES_NAMES):
+            varname, fieldname = name
             species_data_arr = [int(item) for item in species_data]
             species_data_arr = np.array(species_data_arr).reshape(-1, 128)
+
             dataset[varname] = xr.DataArray(
                 species_data_arr,
                 name=varname,
@@ -200,13 +203,18 @@ class CoDICEL1aPipeline:
 
         pass
 
-    def unpack_science_data(self):
+    def unpack_science_data(self, packets: list):
         """Unpack the science data from the packet.
 
         For LO SW Species Counts data, the science data within the packet is a
         blob of compressed values of length 2048 bits (16 species * 128 energy
         levels). These data need to be divided up by species so that each
         species can have their own data variable in the L1A CDF file.
+
+        Parameters
+        ----------
+        packet : list[space_packet_parser.parser.Packet]
+            List of packets for the APID of interest
 
         TODO: Make this method more generalized for other APIDs
         TODO: Check to see if we expect to have multiple packets?
@@ -216,7 +224,7 @@ class CoDICEL1aPipeline:
         self.compression_algorithm = LO_COMPRESSION_ID_LOOKUP[self.view_id]
         self.collapse_table_id = LO_COLLAPSE_TABLE_ID_LOOKUP[self.view_id]
 
-        science_values = self.packets[0].data["DATA"].raw_value
+        science_values = packets[0].data["DATA"].raw_value
 
         # Divide up the data by the number of species
         num_bytes = len(science_values)
@@ -297,12 +305,11 @@ def process_codice_l1a(packets) -> str:
 
             # Run the pipeline to create a dataset for the product
             pipeline = CoDICEL1aPipeline(table_id, plan_id, plan_step, view_id)
-            pipeline.packets = packets
             pipeline.get_esa_sweep_values()
             pipeline.get_acquisition_times()
             pipeline.get_lo_data_products()
-            pipeline.unpack_science_data()
-            dataset = pipeline.create_science_dataset()
+            pipeline.unpack_science_data(packets)
+            dataset = pipeline.create_science_dataset(packets)
 
         elif apid == CODICEAPID.COD_LO_PHA:
             print(f"{apid} is currently not supported")
