@@ -173,12 +173,15 @@ class GlobalDataLevelAttrs:
         The description of the data, ex "IMAP Mission IDEX Instrument Level-1 Data."
     instrument_base : GlobalInstrumentAttrs
         The InstrumentBase object describing the basic instrument information
+    additional_attrs : dict, default=None
+        Any additional attributes that are data level specific
     """
 
     data_type: str
     logical_source: str
     logical_source_desc: str
     instrument_base: GlobalInstrumentAttrs
+    additional_attrs: dict = None
 
     def output(self):
         """
@@ -190,13 +193,17 @@ class GlobalDataLevelAttrs:
             dictionary of correctly formatted values for the attributes in the class and
             the attributes from InstrumentBase
         """
-        return self.instrument_base.output() | {
-            # TODO: rework cdf_utils.write_cdf to leverage dataclasses
-            "Logical_file_id": ["FILL ME IN AT FILE CREATION"],
-            "Data_type": self.data_type,
-            "Logical_source": self.logical_source,
-            "Logical_source_description": self.logical_source_desc,
-        }
+        return (
+            self.instrument_base.output()
+            | {
+                # TODO: rework cdf_utils.write_cdf to leverage dataclasses
+                "Logical_file_id": ["FILL ME IN AT FILE CREATION"],
+                "Data_type": self.data_type,
+                "Logical_source": self.logical_source,
+                "Logical_source_description": self.logical_source_desc,
+            }
+            | (self.additional_attrs or {})
+        )
 
 
 @dataclass

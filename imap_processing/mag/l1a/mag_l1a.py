@@ -12,6 +12,7 @@ from imap_processing.mag import mag_cdf_attrs
 from imap_processing.mag.l0 import decom_mag
 from imap_processing.mag.l0.mag_l0_data import MagL0
 from imap_processing.mag.l1a.mag_l1a_data import MagL1a, TimeTuple
+from imap_processing.mag.mag_cdf_attrs import DataMode, MagGlobalCdfAttributes, Sensor
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +23,7 @@ def mag_l1a(packet_filepath, data_version: str) -> list[Path]:
 
     Parameters
     ----------
-    packet_filepath :
+    packet_filepath : Path
         Packet files for processing
 
     Returns
@@ -35,30 +36,20 @@ def mag_l1a(packet_filepath, data_version: str) -> list[Path]:
     norm_data = packets["norm"]
     burst_data = packets["burst"]
 
+    input_files = [packet_filepath.name]
+
     generated_files = process_and_write_data(
         norm_data,
-        mag_cdf_attrs.mag_l1a_norm_raw_attrs.output(),
-        mag_cdf_attrs.mag_l1a_norm_mago_attrs.output(),
-        mag_cdf_attrs.mag_l1a_norm_magi_attrs.output(),
-        data_version,
+        DataMode.NORM,
+        input_files,
     )
-    generated_files += process_and_write_data(
-        burst_data,
-        mag_cdf_attrs.mag_l1a_burst_raw_attrs.output(),
-        mag_cdf_attrs.mag_l1a_burst_mago_attrs.output(),
-        mag_cdf_attrs.mag_l1a_burst_magi_attrs.output(),
-        data_version,
-    )
+    generated_files += process_and_write_data(burst_data, DataMode.BURST, input_files)
 
     return generated_files
 
 
 def process_and_write_data(
-    packet_data: list[MagL0],
-    raw_attrs: dict,
-    mago_attrs: dict,
-    magi_attrs: dict,
-    data_version: str,
+    packet_data: list[MagL0], data_mode: DataMode, input_files: list[str]
 ) -> list[Path]:
     """
     Process MAG L0 data into L1A, then create and write out CDF files.
@@ -69,12 +60,10 @@ def process_and_write_data(
     ----------
     packet_data: list[MagL0]
         List of MagL0 packets to process, containing primary and secondary sensor data
-    raw_attrs
-        Attributes for MagL1A raw CDF files
-    mago_attrs
-        Attributes for MagL1A MAGo CDF files
-    magi_attrs
-        Attributes for MagL1A MAGi CDF files
+    data_mode: DataMode
+        Enum for distinguishing between norm and burst mode data
+    input_files: list[str]
+        List of dependent filenames for generating the CDF files.
 
     Returns
     -------
@@ -84,12 +73,14 @@ def process_and_write_data(
     if not packet_data:
         return []
 
-    # TODO: Rework attrs to be better
-    raw_attrs["Data_version"] = data_version
-    magi_attrs["Data_version"] = data_version
-    mago_attrs["Data_version"] = data_version
+    generation_date = np.datetime64("now", dtype="datetime64[d]").astype(str)
 
-    mag_raw = decom_mag.generate_dataset(packet_data, raw_attrs)
+    mag_raw = decom_mag.generate_dataset(
+        packet_data,
+        MagGlobalCdfAttributes(
+            data_mode, Sensor.RAW, generation_date, input_files
+        ).attribute_dict,
+    )
 
     filepath = write_cdf(mag_raw)
     logger.info(f"Created RAW CDF file at {filepath}")
@@ -98,14 +89,25 @@ def process_and_write_data(
 
     l1a = process_packets(packet_data)
 
+    # TODO: Rearrange generate_dataset to combine these two for loops
     for _, mago in l1a["mago"].items():
-        norm_mago_output = generate_dataset(mago, mago_attrs)
+        norm_mago_output = generate_dataset(
+            mago,
+            MagGlobalCdfAttributes(
+                data_mode, Sensor.MAGO, generation_date, input_files
+            ).attribute_dict,
+        )
         filepath = write_cdf(norm_mago_output)
         logger.info(f"Created L1a MAGo CDF file at {filepath}")
         generated_files.append(filepath)
 
     for _, magi in l1a["magi"].items():
-        norm_magi_output = generate_dataset(magi, magi_attrs)
+        norm_magi_output = generate_dataset(
+            magi,
+            MagGlobalCdfAttributes(
+                data_mode, Sensor.MAGI, generation_date, input_files
+            ).attribute_dict,
+        )
         filepath = write_cdf(norm_magi_output)
         logger.info(f"Created L1a MAGi CDF file at {filepath}")
         generated_files.append(filepath)

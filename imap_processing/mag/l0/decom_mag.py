@@ -76,7 +76,8 @@ def generate_dataset(l0_data: list[MagL0], dataset_attrs: dict) -> xr.Dataset:
         List of sorted L0 MAG data.
 
     dataset_attrs : dict
-        Global attributes for the dataset.
+        Global attributes for the dataset. Method will add day of data and day of
+        generation.
 
     Returns
     -------
@@ -114,6 +115,9 @@ def generate_dataset(l0_data: list[MagL0], dataset_attrs: dict) -> xr.Dataset:
         for key, value in dataclasses.asdict(datapoint).items():
             if key not in ("ccsds_header", "VECTORS", "SHCOARSE"):
                 support_data[key].append(value)
+            if key == "ccsds_header":
+                for ccsds_key, ccsds_value in value.items():
+                    support_data[ccsds_key].append(ccsds_value)
 
     # Used in L1A vectors
     direction = xr.DataArray(
@@ -122,6 +126,7 @@ def generate_dataset(l0_data: list[MagL0], dataset_attrs: dict) -> xr.Dataset:
         dims=["direction"],
         attrs=mag_cdf_attrs.raw_direction_attrs.output(),
     )
+
     # TODO: Epoch here refers to the start of the sample. Confirm that this is
     # what mag is expecting, and if it is, CATDESC needs to be updated.
     epoch_time = xr.DataArray(

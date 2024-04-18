@@ -1,5 +1,10 @@
 """Shared attribute values for MAG CDF files."""
 
+from __future__ import annotations
+
+from dataclasses import InitVar, dataclass, field
+from enum import Enum
+
 from imap_processing.cdf.defaults import GlobalConstants
 from imap_processing.cdf.global_attrs import (
     AttrBase,
@@ -19,7 +24,69 @@ text = (
     "https://imap.princeton.edu/instruments/mag for more details."
 )
 
+
+class DataMode(Enum):
+    BURST = "BURST"
+    NORM = "NORM"
+
+
+class Sensor(Enum):
+    MAGO = "MAGO"
+    MAGI = "MAGI"
+    RAW = "RAW"
+
+
+@dataclass
+class MagGlobalCdfAttributes:
+    """
+    # TODO add tests for this
+    Organize attributes for different kinds of L1A CDF files.
+
+    Generation_date and input_files are added to the raw, mago, and magi attributes.
+    The attributes are set based on the data_mode and sensor values.
+
+    Attributes
+    ----------
+    data_mode : DataMode
+        The data mode of the CDF file. This is only used in __init__ and cannot be
+        accessed from instances.
+    sensor : Sensor
+        The sensor type of the CDF file. This is only used in __init__ and cannot be
+        accessed from instances.
+    generation_date : str
+        The date the CDF file was generated, in yyyy-mm-dd format.
+    input_files : list[str]
+        The input files used to generate the CDF file.
+    attribute_dict : dict
+        The attribute dictionary for the CDF file. This is not initialized in __init__
+        and is set from the combination of data_mode and sensor.
+    """
+
+    data_mode: InitVar[DataMode]
+    sensor: InitVar[Sensor]
+    generation_date: str
+    input_files: list[str]
+    attribute_dict: dict = field(init=False)
+
+    def __post_init__(self, data_mode, sensor):
+        if data_mode == DataMode.NORM:
+            if sensor == Sensor.RAW:
+                self.attribute_dict = mag_l1a_norm_raw_attrs.output()
+            elif sensor == Sensor.MAGO:
+                self.attribute_dict = mag_l1a_norm_mago_attrs.output()
+            elif sensor == Sensor.MAGI:
+                self.attribute_dict = mag_l1a_norm_magi_attrs.output()
+        elif data_mode == DataMode.BURST:
+            if sensor == Sensor.RAW:
+                self.attribute_dict = mag_l1a_burst_raw_attrs.output()
+            elif sensor == Sensor.MAGO:
+                self.attribute_dict = mag_l1a_burst_mago_attrs.output()
+            elif sensor == Sensor.MAGI:
+                self.attribute_dict = mag_l1a_burst_magi_attrs.output()
+
+
 mag_base = GlobalInstrumentAttrs(
+    # TODO: This should be the _data version_, not the package version.
     __version__,
     "MAG>Magnetometer",
     text,
@@ -31,6 +98,10 @@ mag_l1a_norm_raw_attrs = GlobalDataLevelAttrs(
     logical_source="imap_mag_l1a_norm-raw",
     logical_source_desc="IMAP Mission MAG Normal Rate Instrument Level-1A Data.",
     instrument_base=mag_base,
+    additional_attrs={
+        "software_version": __version__,
+        "rules_of_use": "Not for publication",
+    },
 )
 
 mag_l1a_burst_raw_attrs = GlobalDataLevelAttrs(
@@ -67,7 +138,6 @@ mag_l1a_burst_magi_attrs = GlobalDataLevelAttrs(
     logical_source_desc="IMAP Mission MAGi Burst Rate Instrument Level-1A Data.",
     instrument_base=mag_base,
 )
-
 
 mag_l1b_attrs = GlobalDataLevelAttrs(
     "L1B_SCI>Level-1B Science Data",
@@ -139,7 +209,6 @@ mag_metadata_attrs = AttrBase(
     var_type="metadata",
 )
 
-
 mag_flag_attrs = ScienceAttrs(
     validmin=0,
     validmax=1,
@@ -174,7 +243,19 @@ direction_attrs = AttrBase(
 # Catdesc (<80 chars), Fieldnam (<30 chars)
 
 catdesc_fieldname_l0 = {
-    # TODO: Don't include PUS_SPARE1?
+    "VERSION": ["CCSDS Packet Version Number", "Packet Version Number"],
+    "TYPE": ["CCSDS Packet Type Indicator", "Packet Type Indicator"],
+    "SEC_HDR_FLG": [
+        "CCSDS Packet Secondary Header Flag",
+        "Packet Secondary Header Flag",
+    ],
+    "PKT_APID": [
+        "CCSDS Packet Application Process ID",
+        "Packet Application Process ID",
+    ],
+    "SEQ_FLGS": ["CCSDS Packet Grouping Flags", "Packet Grouping Flags"],
+    "SRC_SEQ_CTR": ["CCSDS Packet Sequence Count", "Packet Sequence Count"],
+    "PKT_LEN": ["CCSDS Packet Length", "Packet Length"],
     "PUS_SPARE1": ["Spare header from ESA Standard", "Spare header"],
     "PUS_VERSION": ["PUS Version number", "PUS Version number"],
     "PUS_SPARE2": ["Spare header from ESA Standard", "Spare header"],
