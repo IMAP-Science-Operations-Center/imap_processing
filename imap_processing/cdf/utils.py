@@ -1,6 +1,7 @@
 """Various utility functions to support creation of CDF files."""
 
 import logging
+import re
 
 import imap_data_access
 import numpy as np
@@ -66,7 +67,11 @@ def write_cdf(dataset: xr.Dataset):
     start_time = np.datetime_as_string(dataset["epoch"].values[0], unit="D").replace(
         "-", ""
     )
-    version = f"v{int(dataset.attrs['Data_version']):03d}"  # vXXX
+    r = re.compile(r"v\d{3}")
+    if r.match(dataset.attrs["Data_version"]) is None:
+        version = f"v{int(dataset.attrs['Data_version']):03d}"  # vXXX
+    else:
+        version = dataset.attrs["Data_version"]
     repointing = dataset.attrs.get("Repointing", None)
     science_file = imap_data_access.ScienceFilePath.generate_from_inputs(
         instrument=instrument,

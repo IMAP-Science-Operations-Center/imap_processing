@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 
 from imap_processing.ccsds.ccsds_data import CcsdsData
-from imap_processing.lo.l0.science_direct_events import ScienceDirectEvents
+from imap_processing.lo.l0.data_classes.science_direct_events import ScienceDirectEvents
 from imap_processing.lo.l1a.lo_data_container import LoContainer
 from imap_processing.lo.l1a.lo_l1a_write_cdfs import (
     create_lo_scide_dataset,

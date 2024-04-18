@@ -2,7 +2,7 @@ import pandas as pd
 import pytest
 
 from imap_processing import imap_module_directory
-from imap_processing.decom import decom_packets
+from imap_processing.hi.l0.decom_hi import decom_packets
 
 
 @pytest.fixture(scope="session")
@@ -10,8 +10,7 @@ def decom_nhk_data():
     """Read test housekeeping data from test folder"""
     test_folder_path = "tests/hi/l0_test_data"
     packet_file = imap_module_directory / f"{test_folder_path}/20231030_H45_APP_NHK.bin"
-    packet_def_file = imap_module_directory / "hi/packet_definitions/H45_APP_NHK.xml"
-    return decom_packets(packet_file, packet_def_file)
+    return decom_packets(packet_file)
 
 
 @pytest.fixture(scope="session")
@@ -30,8 +29,7 @@ def decom_sci_de_data():
     """Read science direct event data from test folder"""
     test_folder_path = "tests/hi/l0_test_data"
     packet_file = imap_module_directory / f"{test_folder_path}/20231030_H45_SCI_DE.bin"
-    packet_def_file = imap_module_directory / "hi/packet_definitions/H45_SCI_DE.xml"
-    return decom_packets(packet_file, packet_def_file)
+    return decom_packets(packet_file)
 
 
 @pytest.fixture(scope="session")
@@ -39,8 +37,7 @@ def decom_sci_cnt_data():
     """Read science count data from test folder"""
     test_folder_path = "tests/hi/l0_test_data"
     packet_file = imap_module_directory / f"{test_folder_path}/20231030_H45_SCI_CNT.bin"
-    packet_def_file = imap_module_directory / "hi/packet_definitions/H45_SCI_CNT.xml"
-    return decom_packets(packet_file, packet_def_file)
+    return decom_packets(packet_file)
 
 
 def test_app_nhk_decom(decom_nhk_data):

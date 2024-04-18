@@ -311,23 +311,13 @@ class Mag(ProcessInstrument):
                     f"Unexpected dependencies found for MAG L1A:"
                     f"{file_paths}. Expected only one dependency."
                 )
-            filename_norm = imap_data_access.ScienceFilePath.generate_from_inputs(
-                "mag", "l1a", "raw-norm", self.start_date, self.version
-            ).construct_path()
-            filename_burst = imap_data_access.ScienceFilePath.generate_from_inputs(
-                "mag", "l1a", "raw-burst", self.start_date, self.version
-            ).construct_path()
-            mag_l1a(file_paths[0], filename_norm, filename_burst)
-
+            output_files = mag_l1a(file_paths[0], data_version=self.version)
             if self.upload_to_sdc:
-                # TODO: figure out data_dir, because now this fails.
-                #  Should switch to using IMAP_DATA_DIR env var.
-                if filename_norm.exists():
-                    logger.info(f"Uploading file: {filename_norm}")
-                    imap_data_access.upload(filename_norm)
-                if filename_burst.exists():
-                    logger.info(f"Uploading file: {filename_burst}")
-                    imap_data_access.upload(filename_burst)
+                if len(output_files) == 0:
+                    print("No files to upload.")
+                for filename in output_files:
+                    print(f"Uploading file: {filename}")
+                    imap_data_access.upload(filename)
 
 
 class Swapi(ProcessInstrument):
