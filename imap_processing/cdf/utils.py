@@ -67,8 +67,13 @@ def write_cdf(dataset: xr.Dataset):
     start_time = np.datetime_as_string(dataset["epoch"].values[0], unit="D").replace(
         "-", ""
     )
+
+    # Will now accept vXXX or XXX formats, as batch starter sends versions as vXXX.
     r = re.compile(r"v\d{3}")
-    if r.match(dataset.attrs["Data_version"]) is None:
+    if (
+        not isinstance(dataset.attrs["Data_version"], str)
+        or r.match(dataset.attrs["Data_version"]) is None
+    ):
         version = f"v{int(dataset.attrs['Data_version']):03d}"  # vXXX
     else:
         version = dataset.attrs["Data_version"]
