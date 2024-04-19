@@ -8,6 +8,7 @@ from imap_processing.cdf.global_attrs import (
 )
 from imap_processing.hi import __version__
 
+# TODO: add more information about dataset
 text = (
     "IMAP-Hi consists of two identical, single-pixel"
     "high-energy energetic neutral atom (ENA) imagers"
@@ -15,27 +16,9 @@ text = (
     "relative to the spacecraft spin axis. These "
     "imagers measure neutral atoms entering our solar "
     "system from the outer edge of the heliosphere as "
-    "they move towards the Sun. The ENA imagers collect"
-    " the neutral atoms, sort them by type, and then map "
-    "their incident direction from the outer heliosphere. "
-    "IMAP-Hi uses a time-of-flight (TOF) section to "
-    "identify hydrogen (H) and helium (He) and heavier "
-    "atoms such as carbon (C), nitrogen (N), oxygen (O), "
-    "and neon (Ne). With each spin of the spacecraft, the "
-    "imagers sample swaths in the sky that include the "
-    "ecliptic poles and four additional locations in the "
-    "ecliptic plane. Some low latitude regions, that "
-    "contain ENA emissions from the nose and tail of the "
-    "heliosphere, as well as most of the IBEX Ribbon and "
-    "Belt, are sampled twice within as little as 1.5 "
-    "months which allows it to explore short ENA "
-    "variability."
-    "IMAP-Hi's design and assembly is led by Los Alamos "
-    "National Laboratory (LANL) in collaboration with "
-    "Southwest Research Institute (SwRI), University of "
-    "New Hampshire (UNH), and University of Bern (UBe)."
-    "See https://imap.princeton.edu/instruments/hi for "
-    "more details."
+    "they move towards the Sun. "
+    "See https://imap.princeton.edu/instruments/imap-hi for "
+    "more details. "
 )
 
 hi_base = GlobalInstrumentAttrs(
@@ -50,87 +33,102 @@ esa_step_attrs = ScienceAttrs(
     validmin=0,
     validmax=10,
     format="I2",
-    label_axis="ESA step",
+    label_axis="Energy Step",
     display_type="time_series",
     catdesc=(
-        "ESA step. "
+        "ESA step (0-10), nominally 9, but possibly 8 or 10,"
+        " 0 is likely a background test"
+    ),
+    var_notes=(
+        "ESA (electrostatic analyzer) step. "
         "It's a 4-bits integer value that represents the "
         "ESA step. ESA step value range from 0-10. "
         "nominally 9 ESA steps, but possibly 8 or 10. "
-        "'Step 0' is likely to refer to a background test."
+        "'Step 0' is likely to refer to a background test. "
+        "This value is used to look up the actual energy "
+        "value from its lookup table."
     ),
-    fieldname="ESA step",
+    fieldname="ESA step number (0-10)",
     fill_val=GlobalConstants.INT_FILLVAL,
-    var_type="metadata",
+    var_type="support_data",
     depend_0="epoch",
 )
 
 de_tag_attrs = ScienceAttrs(
-    validmin=GlobalConstants.INT_FILLVAL,
-    validmax=GlobalConstants.INT_MAXVAL,
-    format="I6",
-    label_axis="Direct event time tag",
+    validmin=0,
+    validmax=GlobalConstants.UBIT16_MAXVAL,
+    format="I5",
+    label_axis="Time Tag",
     display_type="time_series",
-    catdesc=(
+    catdesc=("Direct event time tag value"),
+    var_notes=(
         "Direct event tag. "
         "It's a 16-bits integer value that represents the "
         "direct event time tag."
     ),
-    fieldname="Direct event tag",
+    fieldname="Direct Event Time Tag",
     fill_val=GlobalConstants.INT_FILLVAL,
-    var_type="metadata",
+    var_type="support_data",
     depend_0="epoch",
 )
 
 trigger_id_attrs = ScienceAttrs(
-    validmin=GlobalConstants.INT_FILLVAL,
+    validmin=1,
     validmax=3,
     format="I1",
-    label_axis="Trigger ID",
+    label_axis="ID",
     display_type="time_series",
     catdesc=(
+        "Trigger ID of which detector was hit first. 1,2,3 for detector A,B,C resp"
+    ),
+    var_notes=(
         "Trigger ID is a 2-bits. It represents the trigger "
         "which detector was hit first. It can be 1, 2, 3 for "
         "detector A, B, C respectively."
     ),
     fieldname="Trigger ID",
     fill_val=GlobalConstants.INT_FILLVAL,
-    var_type="metadata",
+    var_type="data",
     depend_0="epoch",
 )
 
 tof_attrs = ScienceAttrs(
-    validmin=GlobalConstants.INT_FILLVAL,
+    validmin=0,
     validmax=1023,
     format="I4",
-    label_axis="Time of flight",
+    label_axis="<replaced-in-code>",
     display_type="time_series",
-    catdesc=(
+    catdesc="Time of flight of direct event, 1023 indicates no event registered",
+    var_notes=(
         "Time of flight is 10-bits integer value that represents "
         "the time of flight of the direct event. 1023 is the value"
         " used to indicate no event was registered."
     ),
-    fieldname="Time of flight",
+    fieldname="<replaced-in-code>",
     fill_val=GlobalConstants.INT_FILLVAL,
-    var_type="metadata",
+    var_type="data",
     depend_0="epoch",
 )
 
+# TODO: find out what is min MET time for this mission.
+# This is different from the min epoch time.
 ccsds_met_attrs = ScienceAttrs(
-    validmin=GlobalConstants.INT_FILLVAL,
-    validmax=GlobalConstants.INT_MAXVAL,
-    format="I12",
-    label_axis="CCSDS MET",
+    validmin=0,
+    validmax=GlobalConstants.UBIT32_MAXVAL,
+    format="I10",
+    label_axis="MET",
     display_type="time_series",
-    catdesc=(
-        "CCSDS MET. "
+    catdesc="CCSDS mission elapsed time (MET)",
+    var_notes=(
+        "CCSDS mission elapsed time (MET). "
         "It's a 32-bits integer value that represents the "
         "CCSDS Mission Elapsed Time (MET) in seconds."
     ),
-    fieldname="CCSDS MET",
+    fieldname="Mission Elapse Time(MET)",
     fill_val=GlobalConstants.INT_FILLVAL,
-    var_type="metadata",
+    var_type="support_data",
     depend_0="epoch",
+    units="seconds",
 )
 
 # Note from SPDF about Logical_source_id breakdown:

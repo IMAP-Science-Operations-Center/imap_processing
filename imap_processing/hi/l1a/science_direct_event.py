@@ -1,5 +1,7 @@
 """IMAP-Hi direct event processing."""
 
+import dataclasses
+
 import numpy as np
 import xarray as xr
 from space_packet_parser.parser import Packet
@@ -283,13 +285,31 @@ def create_dataset(de_data_list: list, packet_met_time: list) -> xr.Dataset:
         trigger_id, dims="epoch", attrs=hi_cdf_attrs.trigger_id_attrs.output()
     )
     dataset["tof_1"] = xr.DataArray(
-        tof_1, dims="epoch", attrs=hi_cdf_attrs.tof_attrs.output()
+        tof_1,
+        dims="epoch",
+        attrs=dataclasses.replace(
+            hi_cdf_attrs.tof_attrs,
+            fieldname="Time of Flight(TOF) 1",
+            label_axis="TOF1",
+        ).output(),
     )
     dataset["tof_2"] = xr.DataArray(
-        tof_2, dims="epoch", attrs=hi_cdf_attrs.tof_attrs.output()
+        tof_2,
+        dims="epoch",
+        attrs=dataclasses.replace(
+            hi_cdf_attrs.tof_attrs,
+            fieldname="Time of Flight(TOF) 2",
+            label_axis="TOF2",
+        ).output(),
     )
     dataset["tof_3"] = xr.DataArray(
-        tof_3, dims="epoch", attrs=hi_cdf_attrs.tof_attrs.output()
+        tof_3,
+        dims="epoch",
+        attrs=dataclasses.replace(
+            hi_cdf_attrs.tof_attrs,
+            fieldname="Time of Flight(TOF) 3",
+            label_axis="TOF3",
+        ).output(),
     )
     dataset["de_tag"] = xr.DataArray(
         de_tag, dims="epoch", attrs=hi_cdf_attrs.de_tag_attrs.output()
