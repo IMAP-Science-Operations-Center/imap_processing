@@ -16,7 +16,7 @@ from imap_processing.mag.l1a.mag_l1a_data import MagL1a, TimeTuple
 logger = logging.getLogger(__name__)
 
 
-def mag_l1a(packet_filepath) -> list[Path]:
+def mag_l1a(packet_filepath, data_version: str) -> list[Path]:
     """
     Process MAG L0 data into L1A CDF files at cdf_filepath.
 
@@ -40,19 +40,25 @@ def mag_l1a(packet_filepath) -> list[Path]:
         mag_cdf_attrs.mag_l1a_norm_raw_attrs.output(),
         mag_cdf_attrs.mag_l1a_norm_mago_attrs.output(),
         mag_cdf_attrs.mag_l1a_norm_magi_attrs.output(),
+        data_version,
     )
     generated_files += process_and_write_data(
         burst_data,
         mag_cdf_attrs.mag_l1a_burst_raw_attrs.output(),
         mag_cdf_attrs.mag_l1a_burst_mago_attrs.output(),
         mag_cdf_attrs.mag_l1a_burst_magi_attrs.output(),
+        data_version,
     )
 
     return generated_files
 
 
 def process_and_write_data(
-    packet_data: list[MagL0], raw_attrs: dict, mago_attrs: dict, magi_attrs: dict
+    packet_data: list[MagL0],
+    raw_attrs: dict,
+    mago_attrs: dict,
+    magi_attrs: dict,
+    data_version: str,
 ) -> list[Path]:
     """
     Process MAG L0 data into L1A, then create and write out CDF files.
@@ -77,6 +83,11 @@ def process_and_write_data(
     """
     if not packet_data:
         return []
+
+    # TODO: Rework attrs to be better
+    raw_attrs["Data_version"] = data_version
+    magi_attrs["Data_version"] = data_version
+    mago_attrs["Data_version"] = data_version
 
     mag_raw = decom_mag.generate_dataset(packet_data, raw_attrs)
 
