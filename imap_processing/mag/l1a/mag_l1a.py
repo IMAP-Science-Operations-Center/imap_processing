@@ -23,6 +23,8 @@ def mag_l1a(packet_filepath, data_version: str) -> list[Path]:
 
     Parameters
     ----------
+    data_version: str
+        Version of the CDF file to output, in the format "vXXX"
     packet_filepath : Path
         Packet files for processing
 
@@ -39,17 +41,20 @@ def mag_l1a(packet_filepath, data_version: str) -> list[Path]:
     input_files = [packet_filepath.name]
 
     generated_files = process_and_write_data(
-        norm_data,
-        DataMode.NORM,
-        input_files,
+        norm_data, DataMode.NORM, input_files, data_version
     )
-    generated_files += process_and_write_data(burst_data, DataMode.BURST, input_files)
+    generated_files += process_and_write_data(
+        burst_data, DataMode.BURST, input_files, data_version
+    )
 
     return generated_files
 
 
 def process_and_write_data(
-    packet_data: list[MagL0], data_mode: DataMode, input_files: list[str]
+    packet_data: list[MagL0],
+    data_mode: DataMode,
+    input_files: list[str],
+    data_version: str,
 ) -> list[Path]:
     """
     Process MAG L0 data into L1A, then create and write out CDF files.
@@ -58,6 +63,8 @@ def process_and_write_data(
 
     Parameters
     ----------
+    data_version: str
+        Version of the CDF file to output, in the format "vXXX"
     packet_data: list[MagL0]
         List of MagL0 packets to process, containing primary and secondary sensor data
     data_mode: DataMode
@@ -73,12 +80,14 @@ def process_and_write_data(
     if not packet_data:
         return []
 
-    generation_date = np.datetime64("now", dtype="datetime64[d]").astype(str)
+    generation_date = np.datetime64(
+        "now",
+    ).astype(str)
 
     mag_raw = decom_mag.generate_dataset(
         packet_data,
         MagGlobalCdfAttributes(
-            data_mode, Sensor.RAW, generation_date, input_files
+            data_mode, Sensor.RAW, generation_date, input_files, data_version
         ).attribute_dict,
     )
 
@@ -94,7 +103,7 @@ def process_and_write_data(
         norm_mago_output = generate_dataset(
             mago,
             MagGlobalCdfAttributes(
-                data_mode, Sensor.MAGO, generation_date, input_files
+                data_mode, Sensor.MAGO, generation_date, input_files, data_version
             ).attribute_dict,
         )
         filepath = write_cdf(norm_mago_output)
@@ -105,7 +114,7 @@ def process_and_write_data(
         norm_magi_output = generate_dataset(
             magi,
             MagGlobalCdfAttributes(
-                data_mode, Sensor.MAGI, generation_date, input_files
+                data_mode, Sensor.MAGI, generation_date, input_files, data_version
             ).attribute_dict,
         )
         filepath = write_cdf(norm_magi_output)
