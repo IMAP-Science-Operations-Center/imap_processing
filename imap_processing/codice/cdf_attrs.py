@@ -1,10 +1,5 @@
 """CDF attrs for CoDICE.
 
-This website provides information about what variables are required and what
-their value should be:
-
-https://spdf.gsfc.nasa.gov/istp_guide/istp_guide.html
-
 For further details, see the documentation provided at
 https://imap-processing.readthedocs.io/en/latest/development/CDFs/cdf_requirements.html
 """
@@ -15,11 +10,9 @@ from imap_processing.cdf.global_attrs import (
     GlobalDataLevelAttrs,
     GlobalInstrumentAttrs,
     ScienceAttrs,
-    StringAttrs,
 )
 from imap_processing.codice import __version__
 
-descriptor = "CoDICE>Compact Dual Ion Composition Experiment"
 codice_description_text = (
     "The Compact Dual Ion Composition Experiment (CoDICE) will measure the "
     "distributions and composition of interstellar pickup ions (PUIs), "
@@ -38,41 +31,10 @@ codice_description_text = (
 )
 
 codice_base = GlobalInstrumentAttrs(
-    version=__version__, descriptor=descriptor, text=codice_description_text
-)
-
-codice_l1a_global_attrs = GlobalDataLevelAttrs(
-    data_type="L1A_SCI->Level-1A Science Data",
-    logical_source="imap_codice_l1a_sci",
-    logical_source_desc="IMAP Mission CoDICE Instrument Level-1A Data",
-    instrument_base=codice_base,
-)
-
-codice_l1b_global_attrs = GlobalDataLevelAttrs(
-    data_type="L1B_SCI->Level-1B Science Data",
-    logical_source="imap_codice_l1b_sci",
-    logical_source_desc="IMAP Mission CoDICE Instrument Level-1B Data",
-    instrument_base=codice_base,
-)
-
-int_base = AttrBase(
-    validmin=0,
-    validmax=GlobalConstants.INT_MAXVAL,
-    format="I12",
-    var_type="data",
-    display_type="no_plot",
-)
-
-float_base = AttrBase(
-    validmin=0,
-    validmax=GlobalConstants.INT_MAXVAL,
-    format="I12",
-    var_type="data",
-    display_type="no_plot",
-)
-
-string_base = StringAttrs(
-    depend_0="epoch",
+    __version__,
+    "CoDICE>Compact Dual Ion Composition Experiment",
+    codice_description_text,
+    "Particles (space)",
 )
 
 codice_metadata_attrs = ScienceAttrs(
@@ -86,29 +48,41 @@ codice_metadata_attrs = ScienceAttrs(
     variable_purpose="PRIMARY",
 )
 
-l1a_science_attrs = ScienceAttrs(
-    validmin=0,
-    validmax=GlobalConstants.INT_MAXVAL,
-    display_type="TBD",
-    depend_0="epoch",
-    depend_1="Energy",
-    depend_2="Counts",
-    format="I12",
-    units="dN",
-    var_type="data",
-    variable_purpose="PRIMARY",
+l1a_hskp_attrs = GlobalDataLevelAttrs(
+    data_type="L1A_SCI->Level-1A Science Data",
+    logical_source="imap_codice_l1a_hskp",
+    logical_source_desc="IMAP Mission CoDICE Instrument Level-1A Housekeeping Data",
+    instrument_base=codice_base,
 )
 
-l1b_science_attrs = ScienceAttrs(
+l1a_lo_sw_species_attrs = GlobalDataLevelAttrs(
+    data_type="L1A_SCI->Level-1A Science Data",
+    logical_source="imap_codice_l1a_lo-sw-species-counts",
+    logical_source_desc="IMAP Mission CoDICE Instrument Level-1A Lo Sunward Species Data",  # noqa
+    instrument_base=codice_base,
+)
+
+energy_attrs = AttrBase(
+    validmin=0,
+    validmax=127,
+    format="I3",
+    var_type="support_data",
+    fieldname="Energy Step",
+    catdesc="TBD",
+    label_axis="TBD",
+)
+
+counts_attrs = ScienceAttrs(
     validmin=0,
     validmax=GlobalConstants.INT_MAXVAL,
-    display_type="TBD",
-    depend_0="epoch",
-    depend_1="Energy",
-    depend_2="Angle",
-    depend_3="Rates",
     format="I12",
-    units="dN",
+    units="counts",
+    label_axis="counts",
+    display_type="time_series",
+    catdesc="TBD",
+    fieldname="TBD",
+    fill_val=GlobalConstants.INT_FILLVAL,
     var_type="data",
-    variable_purpose="PRIMARY",
+    depend_0="epoch",
+    depend_1="energy",
 )

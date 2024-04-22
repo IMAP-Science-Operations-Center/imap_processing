@@ -16,14 +16,14 @@ TEST_DATA = [
         "imap_codice_l1a_hskp_20100101_v001.cdf",
     ),
     (
-        Path(f"{imap_module_directory}/tests/codice/data/sample_science_data.bin"),
-        "imap_codice_l1a_lo-sw-species-counts_20100101_v001.cdf",
+        Path(f"{imap_module_directory}/tests/codice/data/lo_fsw_view_5_ccsds.bin"),
+        "imap_codice_l1a_lo-sw-species-counts_20240319_v001.cdf",
     ),
 ]
 
 
 @pytest.mark.parametrize(("test_file", "expected_filename"), TEST_DATA)
-def test_codice_l1a(test_file, expected_filename):
+def test_codice_l1a(test_file: Path, expected_filename: str):
     """Tests the ``process_codice_l1a`` function and ensure that a proper CDF
     files are created.
 
