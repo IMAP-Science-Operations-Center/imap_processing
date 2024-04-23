@@ -21,6 +21,7 @@ from imap_processing import decom, imap_module_directory
 PACKET_TO_XTCE_MAPPING = {
     "raw_ccsds_20230822_122700Z_idle.bin": "P_COD_NHK.xml",
     "lo_fsw_view_5_ccsds.bin": "P_COD_LO_SW_SPECIES_COUNTS.xml",
+    "lo_fsw_view_6_ccsds.bin": "P_COD_LO_NSW_SPECIES_COUNTS.xml",
 }
 
 

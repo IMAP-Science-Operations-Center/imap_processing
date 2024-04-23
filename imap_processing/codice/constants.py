@@ -33,6 +33,17 @@ LO_SW_SPECIES_NAMES = [
     ("cnoplus", "SW - CNO+ (PUI)"),
 ]
 
+LO_NSW_SPECIES_NAMES = [
+    ("hplus", "NSW - H+"),
+    ("heplusplus", "NSW - He++"),
+    ("c", "NSW - C"),
+    ("o", "NSW - O"),
+    ("ne-si-mg", "NSW - Ne_Si_Mg"),
+    ("fe", "NSW - Fe"),
+    ("heplus", "NSW - He+"),
+    ("cnoplus", "NSW - CNO+"),
+]
+
 # Compression ID lookup table for Lo data products
 # The key is the view_id and the value is the ID for the compression algorithm
 # (see utils.CoDICECompression to see how the values correspond)
