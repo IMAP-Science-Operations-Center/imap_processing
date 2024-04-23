@@ -33,6 +33,7 @@ LO_SW_SPECIES_NAMES = [
     ("cnoplus", "SW - CNO+ (PUI)"),
 ]
 
+# CDF-friendly FIELDNAMES and VARNAMES for lo-nsw-species-counts data product
 LO_NSW_SPECIES_NAMES = [
     ("hplus", "NSW - H+"),
     ("heplusplus", "NSW - He++"),
