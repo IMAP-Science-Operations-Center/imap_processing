@@ -58,7 +58,18 @@ l1a_hskp_attrs = GlobalDataLevelAttrs(
 l1a_lo_sw_species_attrs = GlobalDataLevelAttrs(
     data_type="L1A_SCI->Level-1A Science Data",
     logical_source="imap_codice_l1a_lo-sw-species-counts",
-    logical_source_desc="IMAP Mission CoDICE Instrument Level-1A Lo Sunward Species Data",  # noqa
+    logical_source_desc=(
+        "IMAP Mission CoDICE Instrument Level-1A Lo Sunward Species Data"
+    ),
+    instrument_base=codice_base,
+)
+
+l1a_lo_nsw_species_attrs = GlobalDataLevelAttrs(
+    data_type="L1A_SCI->Level-1A Science Data",
+    logical_source="imap_codice_l1a_lo-nsw-species-counts",
+    logical_source_desc=(
+        "IMAP Mission CoDICE Instrument Level-1A Lo Non-sunward Species Data"
+    ),
     instrument_base=codice_base,
 )
 
