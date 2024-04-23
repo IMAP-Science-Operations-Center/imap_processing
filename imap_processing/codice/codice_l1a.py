@@ -29,6 +29,7 @@ from imap_processing.codice.constants import (
     ESA_SWEEP_TABLE_ID_LOOKUP,
     LO_COLLAPSE_TABLE_ID_LOOKUP,
     LO_COMPRESSION_ID_LOOKUP,
+    LO_NSW_SPECIES_NAMES,
     LO_STEPPING_TABLE_ID_LOOKUP,
     LO_SW_SPECIES_NAMES,
 )
@@ -104,7 +105,7 @@ class CoDICEL1aPipeline:
         )
 
         energy_steps = xr.DataArray(
-            np.arange(128),
+            np.arange(self.num_energy_steps),
             name="energy",
             dims=["energy"],
             attrs=cdf_attrs.energy_attrs.output(),
@@ -112,14 +113,16 @@ class CoDICEL1aPipeline:
 
         dataset = xr.Dataset(
             coords={"epoch": epoch, "energy": energy_steps},
-            attrs=cdf_attrs.l1a_lo_sw_species_attrs.output(),
+            attrs=self.cdf_attrs.output(),
         )
 
         # Create a data variable for each species
-        for species_data, name in zip(self.data, LO_SW_SPECIES_NAMES):
+        for species_data, name in zip(self.data, self.species_names):
             varname, fieldname = name
             species_data_arr = [int(item) for item in species_data]
-            species_data_arr = np.array(species_data_arr).reshape(-1, 128)
+            species_data_arr = np.array(species_data_arr).reshape(
+                -1, self.num_energy_steps
+            )
 
             dataset[varname] = xr.DataArray(
                 species_data_arr,
@@ -197,11 +200,24 @@ class CoDICEL1aPipeline:
         sweep_table = sweep_data[sweep_data["table_idx"] == sweep_table_id]
         self.esa_sweep_values = sweep_table["esa_v"].values
 
-    def get_lo_data_products(self):
-        """Retrieve the lo data products table."""
-        # TODO: implement this
+    def get_lo_data_products(self, apid: int):
+        """Retrieve the lo data products table.
 
-        pass
+        Parameters
+        ----------
+        apid : int
+            The APID of interest.
+        """
+        if apid == CODICEAPID.COD_LO_SW_SPECIES_COUNTS:
+            self.num_species = 16
+            self.num_energy_steps = 128
+            self.species_names = LO_SW_SPECIES_NAMES
+            self.cdf_attrs = cdf_attrs.l1a_lo_sw_species_attrs
+        elif apid == CODICEAPID.COD_LO_NSW_SPECIES_COUNTS:
+            self.num_species = 8
+            self.num_energy_steps = 112
+            self.species_names = LO_NSW_SPECIES_NAMES
+            self.cdf_attrs = cdf_attrs.l1a_lo_nsw_species_attrs
 
     def unpack_science_data(self, packets: list):
         """Unpack the science data from the packet.
@@ -216,11 +232,8 @@ class CoDICEL1aPipeline:
         packet : list[space_packet_parser.parser.Packet]
             List of packets for the APID of interest
 
-        TODO: Make this method more generalized for other APIDs
         TODO: Check to see if we expect to have multiple packets?
         """
-        print("Unpacking science data")
-
         self.compression_algorithm = LO_COMPRESSION_ID_LOOKUP[self.view_id]
         self.collapse_table_id = LO_COLLAPSE_TABLE_ID_LOOKUP[self.view_id]
 
@@ -228,8 +241,7 @@ class CoDICEL1aPipeline:
 
         # Divide up the data by the number of species
         num_bytes = len(science_values)
-        num_species = 16
-        chunk_size = len(science_values) // num_species
+        chunk_size = len(science_values) // self.num_species
         self.data = [
             science_values[i : i + chunk_size] for i in range(0, num_bytes, chunk_size)
         ]
@@ -285,19 +297,20 @@ def process_codice_l1a(packets) -> str:
         The path to the CDF file that was created
     """
     # Group data by APID and sort by time
-    print("Grouping the data by APID")
     grouped_data = group_by_apid(packets)
 
     for apid in grouped_data.keys():
+        print(f"\nProcessing {CODICEAPID(apid).name} packet")
+
         if apid == CODICEAPID.COD_NHK:
-            print("Processing COD_NHK packet")
             packets = grouped_data[apid]
             sorted_packets = sort_by_time(packets, "SHCOARSE")
             dataset = create_hskp_dataset(packets=sorted_packets)
 
-        elif apid == CODICEAPID.COD_LO_SW_SPECIES_COUNTS:
-            print("Processing COD_LO_SW_SPECIES_COUNTS packet")
-
+        elif apid in [
+            CODICEAPID.COD_LO_SW_SPECIES_COUNTS,
+            CODICEAPID.COD_LO_NSW_SPECIES_COUNTS,
+        ]:
             packets = sort_by_time(grouped_data[apid], "SHCOARSE")
 
             # Get the four "main" parameters for processing
@@ -307,7 +320,7 @@ def process_codice_l1a(packets) -> str:
             pipeline = CoDICEL1aPipeline(table_id, plan_id, plan_step, view_id)
             pipeline.get_esa_sweep_values()
             pipeline.get_acquisition_times()
-            pipeline.get_lo_data_products()
+            pipeline.get_lo_data_products(apid)
             pipeline.unpack_science_data(packets)
             dataset = pipeline.create_science_dataset(packets)
 
@@ -315,11 +328,11 @@ def process_codice_l1a(packets) -> str:
             print(f"{apid} is currently not supported")
             continue
 
-        elif apid == CODICEAPID.COD_LO_PRIORITY_COUNTS:
+        elif apid == CODICEAPID.COD_LO_SW_PRIORITY_COUNTS:
             print(f"{apid} is currently not supported")
             continue
 
-        elif apid == CODICEAPID.COD_LO_NSW_SPECIES_COUNTS:
+        elif apid == CODICEAPID.COD_LO_NSW_PRIORITY_COUNTS:
             print(f"{apid} is currently not supported")
             continue
 
@@ -346,5 +359,5 @@ def process_codice_l1a(packets) -> str:
     # Write dataset to CDF
     print(f"\nFinal data product:\n{dataset}\n")
     cdf_filename = write_cdf(dataset)
-    print(f"Created CDF file: {cdf_filename}")
+    print(f"\tCreated CDF file: {cdf_filename}")
     return cdf_filename

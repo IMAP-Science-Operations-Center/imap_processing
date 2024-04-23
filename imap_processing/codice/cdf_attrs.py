@@ -62,6 +62,13 @@ l1a_lo_sw_species_attrs = GlobalDataLevelAttrs(
     instrument_base=codice_base,
 )
 
+l1a_lo_nsw_species_attrs = GlobalDataLevelAttrs(
+    data_type="L1A_SCI->Level-1A Science Data",
+    logical_source="imap_codice_l1a_lo-nsw-species-counts",
+    logical_source_desc="IMAP Mission CoDICE Instrument Level-1A Lo Non-sunward Species Data",  # noqa
+    instrument_base=codice_base,
+)
+
 energy_attrs = AttrBase(
     validmin=0,
     validmax=127,

@@ -19,6 +19,10 @@ TEST_DATA = [
         Path(f"{imap_module_directory}/tests/codice/data/lo_fsw_view_5_ccsds.bin"),
         "imap_codice_l1a_lo-sw-species-counts_20240319_v001.cdf",
     ),
+    (
+        Path(f"{imap_module_directory}/tests/codice/data/lo_fsw_view_6_ccsds.bin"),
+        "imap_codice_l1a_lo-nsw-species-counts_20240319_v001.cdf",
+    ),
 ]
 
 
