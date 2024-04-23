@@ -23,18 +23,14 @@ https://spiceypy.readthedocs.io/en/main/documentation.html
 ## Description of results
 
 The 'spice_output_data.txt' file contains the output results.
-The IMAP spacecraft velocity (km/s) and position (km) are with respect to Earth in the J2000 reference frame.
 
 time_et: ephemeral time
 time_utc: time in UTC (human-readable)
-x_position: x-coordinate of the spacecraft (km)
-y_position: y-coordinate of the spacecraft (km)
-z_position: z-coordinate of the spacecraft (km)
-x_velocity: x-component of the spacecraft velocity (km/s)
-y_velocity: y-component of the spacecraft velocity (km/s)
-z_velocity: z-component of the spacecraft velocity (km/s)
+azimuth: azimuth (degrees)
+elevation: elevation (degrees)
+range: distance from observer to target (km)
 
 ## Important information
 
-The time interval between measurements was selected to be 1e4 seconds.
+The time interval between measurements was selected to be 1e3 seconds.
 That time interval can be changed so that there is a small cadence between measurements.
