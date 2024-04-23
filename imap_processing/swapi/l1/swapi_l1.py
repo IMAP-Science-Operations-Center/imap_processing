@@ -540,7 +540,7 @@ def swapi_l1(packets):
         # other packets are not process in this processing pipeline
         # If appId is science, then the file should contain all data of science appId
         sorted_packets = sort_by_time(grouped_packets[apid], "SHCOARSE")
-        ds_data = create_dataset(sorted_packets)
+        ds_data = create_dataset(sorted_packets, include_header=False)
 
         if apid == SWAPIAPID.SWP_SCI.value:
             data = process_swapi_science(ds_data)

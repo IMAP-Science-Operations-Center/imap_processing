@@ -148,13 +148,3 @@ hi_hk_l1a_attrs = GlobalDataLevelAttrs(
     logical_source_desc=("IMAP-HI Instrument Level-1A Housekeeping Data."),
     instrument_base=hi_base,
 )
-
-hi_hk_l1a_metadata_attrs = ScienceAttrs(
-    validmin=0,
-    validmax=GlobalConstants.INT_MAXVAL,
-    depend_0="epoch",
-    format="I12",
-    units="int",
-    var_type="support_data",
-    variable_purpose="PRIMARY",
-)

@@ -101,17 +101,22 @@ def convert_raw_to_eu(dataset: xr.Dataset, conversion_table_path, packet_name):
     return dataset
 
 
-def create_dataset(packets: list[Packet], met_name="shcoarse") -> xr.Dataset:
+def create_dataset(
+    packets: list[Packet], met_name="shcoarse", include_header=True, skip_keys=None
+) -> xr.Dataset:
     """Create dataset for each metadata field.
-
-    # TODO: change IMAP-Hi to use this and others as needed.
 
     Parameters
     ----------
     packets : list[Packet]
         packet list
-    met_name : str
-        metadata name to use as epoch time
+    met_name : str, Optional
+        Default is "shcoarse" because many instrument uses it.
+        This key is used to get spacecraft time for epoch dimension.
+    include_header: bool, Optional
+        Whether to include CCSDS header data in the dataset
+    skip_keys: list, Optional
+        Keys to skip in the metadata
 
     Returns
     -------
@@ -122,8 +127,21 @@ def create_dataset(packets: list[Packet], met_name="shcoarse") -> xr.Dataset:
     description_dict = {}
 
     for data_packet in packets:
+        current_data = (
+            (data_packet.header | data_packet.data)
+            if include_header
+            else data_packet.data
+        )
+
+        # Drop keys using skip_keys
+        if skip_keys is not None:
+            current_data = {
+                key: value
+                for key, value in current_data.items()
+                if key not in skip_keys
+            }
         # Add metadata to array
-        for key, value in (data_packet.header | data_packet.data).items():
+        for key, value in current_data.items():
             # convert key to lower case to match SPDF requirement
             data_key = key.lower()
             metadata_arrays[data_key].append(value.raw_value)
