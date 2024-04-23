@@ -6,7 +6,7 @@ import pytest
 
 from imap_processing import imap_module_directory
 from imap_processing.codice.codice_l0 import decom_packets
-from imap_processing.codice.codice_l1a import process_codice_l1a
+from imap_processing.codice.codice_l1a import CoDICEL1aPipeline, process_codice_l1a
 
 TEST_DATA = [
     (
@@ -22,8 +22,53 @@ TEST_DATA = [
 ]
 
 
+@pytest.fixture(scope="session")
+def pipeline() -> CoDICEL1aPipeline:
+    """Return an instance of the pipeline to test with
+
+    Returns
+    -------
+    pipeline_instance : CoDICEL1aPipeline
+        An instance of the pipeline to run tests with
+    """
+
+    pipeline_instance = CoDICEL1aPipeline(1, 1, 1, 1)
+
+    return pipeline_instance
+
+
+def test_codicel1apipeline(pipeline):
+    """
+
+    Parameters
+    ----------
+    pipeline
+
+    Returns
+    -------
+
+    """
+
+    packets = decom_packets(
+        Path(f"{imap_module_directory}/tests/codice/data/lo_fsw_view_5_ccsds.bin")
+    )
+
+    pipeline.get_esa_sweep_values()
+    pipeline.get_acquisition_times()
+    pipeline.get_lo_data_products()
+    pipeline.unpack_science_data(packets)
+    dataset = pipeline.create_science_dataset(packets)
+
+    assert hasattr(pipeline, "esa_sweep_values")
+    assert hasattr(pipeline, "acquisition_times")
+    assert hasattr(pipeline, "data")
+
+    print("\n\n\n\n\n")
+    print(dataset)
+
+
 @pytest.mark.parametrize(("test_file", "expected_filename"), TEST_DATA)
-def test_codice_l1a(test_file: Path, expected_filename: str):
+def test_process_codice_l1a(test_file: Path, expected_filename: str):
     """Tests the ``process_codice_l1a`` function and ensure that a proper CDF
     files are created.
 
