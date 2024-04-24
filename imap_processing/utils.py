@@ -102,7 +102,10 @@ def convert_raw_to_eu(dataset: xr.Dataset, conversion_table_path, packet_name):
 
 
 def create_dataset(
-    packets: list[Packet], met_name="shcoarse", include_header=True, skip_keys=None
+    packets: list[Packet],
+    spacecraft_time_key="shcoarse",
+    include_header=True,
+    skip_keys=None,
 ) -> xr.Dataset:
     """Create dataset for each metadata field.
 
@@ -110,7 +113,7 @@ def create_dataset(
     ----------
     packets : list[Packet]
         packet list
-    met_name : str, Optional
+    spacecraft_time_key : str, Optional
         Default is "shcoarse" because many instrument uses it.
         This key is used to get spacecraft time for epoch dimension.
     include_header: bool, Optional
@@ -127,7 +130,7 @@ def create_dataset(
     description_dict = {}
 
     for data_packet in packets:
-        current_data = (
+        data_to_include = (
             (data_packet.header | data_packet.data)
             if include_header
             else data_packet.data
@@ -135,13 +138,11 @@ def create_dataset(
 
         # Drop keys using skip_keys
         if skip_keys is not None:
-            current_data = {
-                key: value
-                for key, value in current_data.items()
-                if key not in skip_keys
-            }
+            for key in skip_keys:
+                data_to_include.pop(key, None)
+
         # Add metadata to array
-        for key, value in current_data.items():
+        for key, value in data_to_include.items():
             # convert key to lower case to match SPDF requirement
             data_key = key.lower()
             metadata_arrays[data_key].append(value.raw_value)
@@ -151,7 +152,7 @@ def create_dataset(
             )
 
     epoch_time = xr.DataArray(
-        metadata_arrays[met_name],
+        metadata_arrays[spacecraft_time_key],
         name="epoch",
         dims=["epoch"],
         attrs=ConstantCoordinates.EPOCH,

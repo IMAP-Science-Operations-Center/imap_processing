@@ -25,7 +25,7 @@ def process_housekeeping(packets: list[Packet]) -> xr.Dataset:
         dataset with all metadata field data in xr.DataArray
     """
     dataset = create_dataset(
-        packets=packets, met_name="ccsds_met", skip_keys=["INSTR_SPECIFIC"]
+        packets=packets, spacecraft_time_key="ccsds_met", skip_keys=["INSTR_SPECIFIC"]
     )
     epoch_converted_time = [
         calc_start_time(sc_time) for sc_time in dataset["ccsds_met"].data
