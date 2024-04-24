@@ -360,4 +360,4 @@ def process_codice_l1a(packets) -> str:
     print(f"\nFinal data product:\n{dataset}\n")
     cdf_filename = write_cdf(dataset)
     print(f"\tCreated CDF file: {cdf_filename}")
-    return cdf_filename
+    return dataset, cdf_filename
