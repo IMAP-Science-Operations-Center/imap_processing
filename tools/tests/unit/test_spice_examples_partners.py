@@ -1,10 +1,12 @@
 import os
+from datetime import datetime
 from pathlib import Path
 
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 import numpy as np
 import spiceypy as spice
+from matplotlib.colors import Normalize
 from pvlib.solarposition import get_solarposition
 
 from tools.spice.spice_examples_partners import (
@@ -14,26 +16,75 @@ from tools.spice.spice_examples_partners import (
 )
 
 
-def plot_test_data(dict):
+def plot_test_data(data_dict):
     """Plot test data."""
     fig, ax = plt.subplots(2, 1, figsize=(10, 10), sharex=True)
 
     ax[0].xaxis.set_major_locator(mdates.AutoDateLocator())
 
-    ax[0].plot(dict["time_array"], dict["azimuth_array"], label="IMAP")
-    ax[0].plot(dict["time_array"], dict["solar_azimuth_array"], label="SUN", marker="*")
-    ax[0].plot(dict["time_array"], dict["test_azimuth_array"], label="Test Data: SUN")
+    ax[0].plot(data_dict["time_array"], data_dict["azimuth_array"], label="IMAP")
+    ax[0].plot(
+        data_dict["time_array"],
+        data_dict["solar_azimuth_array"],
+        label="SUN",
+        marker="*",
+    )
+    ax[0].plot(
+        data_dict["time_array"], data_dict["test_azimuth_array"], label="Test Data: SUN"
+    )
     ax[0].set_ylabel("Azimuth (degrees)")
     ax[0].legend()
 
-    ax[1].plot(dict["time_array"], dict["elevation_array"], label="IMAP")
+    ax[1].plot(data_dict["time_array"], data_dict["elevation_array"], label="IMAP")
     ax[1].plot(
-        dict["time_array"], dict["solar_elevation_array"], label="SUN", marker="*"
+        data_dict["time_array"],
+        data_dict["solar_elevation_array"],
+        label="SUN",
+        marker="*",
     )
-    ax[1].plot(dict["time_array"], dict["test_elevation_array"], label="Test Data: SUN")
+    ax[1].plot(
+        data_dict["time_array"],
+        data_dict["test_elevation_array"],
+        label="Test Data: SUN",
+    )
     ax[1].set_ylabel("Elevation (degrees)")
     ax[1].legend()
 
+    plt.gcf().autofmt_xdate()
+    plt.show()
+
+
+def plot_color_data(data_dict):
+    """Plot colorbar data."""
+    fig, ax = plt.subplots(1, 1, figsize=(15, 15))
+
+    date_format = "%Y %b %d %H:%M:%S"
+    datetime_objects = [
+        datetime.strptime(date_str, date_format) for date_str in data_dict["time_array"]
+    ]
+    times = mdates.date2num(datetime_objects)
+
+    norm = Normalize(vmin=min(times), vmax=max(times))
+    cmap = plt.get_cmap("coolwarm")
+
+    sc = ax.scatter(
+        data_dict["azimuth_array"],
+        data_dict["elevation_array"],
+        c=times,
+        cmap=cmap,
+        norm=norm,
+    )
+    ax.set_xlabel("Azimuth (Degrees)")
+    ax.set_ylabel("Elevation (Degrees)")
+    ax.set_title("Azimuth vs. Elevation Colored by Time")
+    ax.grid(True)
+
+    cbar = plt.colorbar(
+        sc, ax=ax, orientation="vertical", format=mdates.DateFormatter("%H:%M")
+    )
+    cbar.ax.set_ylabel("Time of Day (UTC)")
+
+    plt.subplots_adjust(hspace=0.4)
     plt.gcf().autofmt_xdate()
     plt.show()
 
@@ -131,6 +182,7 @@ def test_calculate_azimuth_elevation():
     }
 
     plot_test_data(dict)
+    plot_color_data(dict)
 
     assert np.allclose(
         range_array, 1.5e6, atol=1e5

@@ -153,7 +153,7 @@ def calculate_azimuth_elevation(longitude, latitude, altitude, et, target="IMAP"
     observer_position_ecef = latitude_longitude_to_ecef(longitude, latitude, altitude)
 
     method = "Ellipsoid"  # Only method supported
-    abcorr = "None"  # Aberration correction
+    abcorr = "LT+S"  # Aberration correction
     azccw = False  # Azimuth measured clockwise from the positive y-axis
     elplsz = True  # Elevation increases from the XY plane toward +Z
     obsctr = "EARTH"  # Name of the center of motion
@@ -235,15 +235,15 @@ def main():
     time_interval = int(1e3)  # seconds between data points
 
     # Define the path to the kernel directory relative to this script
-    kernel_directory = Path(__file__).parents[0]
+    kernel_directory = (
+        Path(__file__).parents[1] / "tests" / "test_data" / "spice_partner_example"
+    )
     kernels = get_kernels(kernel_directory)
 
     # Load spice kernels and perform calculations.
     with (
         spice.KernelPool(kernels),
-        open(
-            "../tests/test_data/spice_partner_example/spice_output_data.txt", "w"
-        ) as file,
+        open("../spice/spice_output_data.csv", "w") as file,
     ):
         # Write the header line to the output file
         file.write("time_et,time_utc,azimuth,elevation,range\n")
@@ -262,27 +262,22 @@ def main():
         # range (km) to the target for each time step
         for time in range(int(start_et_input), int(stop_et_input), time_interval):
             # Convert to UTC time for readability
-            time_utc = spice.et2utc(time, "C", 0)
+            time_utc = spice.et2utc(time, "ISOC", 0)
 
             azimuth, elevation, range_to_target = calculate_azimuth_elevation(
                 longitude, latitude, altitude, time
             )
 
-            azimuth, elevation, range_to_target = (
-                f"{azimuth:.4f}",
-                f"{elevation:.4f}",
-                f"{range_to_target:.4f}",
-            )
-
             # Format data to be written to text file
             data_line = (
-                f"{time}, {time_utc}, {azimuth}, " f"{elevation}, {range_to_target}\n"
+                f"{time},{time_utc},{azimuth:.4f},"
+                f"{elevation:.4f},{range_to_target:.4f}\n"
             )
 
             file.write(data_line)
 
-    print("Data written to spice_output_data.txt")
-    plot_data("../tests/test_data/spice_partner_example/spice_output_data.txt")
+    print("Data written to spice_output_data.csv")
+    plot_data("../spice/spice_output_data.csv")
 
 
 if __name__ == "__main__":
