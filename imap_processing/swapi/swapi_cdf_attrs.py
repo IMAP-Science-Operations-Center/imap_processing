@@ -10,18 +10,13 @@ from imap_processing.cdf.global_attrs import (
 from imap_processing.swapi import __version__
 
 text = (
-    "The Solar Wind and Pickup Ion (SWAPI) instrument "
-    "measures several different elements of the solar "
-    "wind, including hydrogen (H) and helium (He) ions,"
-    " and, on occasion, heavy ions produced by large "
-    "events from the Sun. "
-    "See https://imap.princeton.edu/instruments/swapi for "
-    "more details. "
-    "SWAPI level-1 data contains primary, secondary, "
-    "coincidence counts per ESA voltage step and time. "
-    "Level-2 data contains the same data as level-1 "
-    "but counts are converted to rates by dividing counts "
-    "by time."
+    "The Solar Wind and Pickup Ion (SWAPI) instrument measures several different "
+    "elements of the solar wind, including hydrogen (H) and helium (He) ions, "
+    "and, on occasion, heavy ions produced by large events from the Sun. See "
+    "https://imap.princeton.edu/instruments/swapi for more details. SWAPI level-1 "
+    "data contains primary, secondary, coincidence counts per ESA voltage step and "
+    "time. Level-2 data contains the same data as level-1 but counts are converted "
+    "to rates by dividing counts by time."
 )
 
 swapi_base = GlobalInstrumentAttrs(
@@ -45,7 +40,7 @@ energy_dim_attrs = AttrBase(
 # science data attributes
 counts_attrs = ScienceAttrs(
     validmin=0,
-    validmax=GlobalConstants.UBIT16_MAXVAL,
+    validmax=GlobalConstants.UINT16_MAXVAL,
     format="I5",
     units="counts",
     label_axis="<replaced-in-code>",

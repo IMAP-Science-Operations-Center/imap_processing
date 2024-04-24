@@ -33,5 +33,5 @@ class GlobalConstants:
     # 2100-01-01T00:00:00
     MAX_EPOCH = 3155630469184000000
     # 32-bits max int value
-    UBIT32_MAXVAL = 2**32 - 1
-    UBIT16_MAXVAL = 2**16 - 1
+    UINT32_MAXVAL = np.iinfo(np.uint32).max
+    UINT16_MAXVAL = np.iinfo(np.uint16).max

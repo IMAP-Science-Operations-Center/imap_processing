@@ -289,7 +289,7 @@ def create_dataset(de_data_list: list, packet_met_time: list) -> xr.Dataset:
         dims="epoch",
         attrs=dataclasses.replace(
             hi_cdf_attrs.tof_attrs,
-            fieldname="Time of Flight(TOF) 1",
+            fieldname="Time of Flight (TOF) 1",
             label_axis="TOF1",
         ).output(),
     )
@@ -298,7 +298,7 @@ def create_dataset(de_data_list: list, packet_met_time: list) -> xr.Dataset:
         dims="epoch",
         attrs=dataclasses.replace(
             hi_cdf_attrs.tof_attrs,
-            fieldname="Time of Flight(TOF) 2",
+            fieldname="Time of Flight (TOF) 2",
             label_axis="TOF2",
         ).output(),
     )
@@ -307,7 +307,7 @@ def create_dataset(de_data_list: list, packet_met_time: list) -> xr.Dataset:
         dims="epoch",
         attrs=dataclasses.replace(
             hi_cdf_attrs.tof_attrs,
-            fieldname="Time of Flight(TOF) 3",
+            fieldname="Time of Flight (TOF) 3",
             label_axis="TOF3",
         ).output(),
     )
