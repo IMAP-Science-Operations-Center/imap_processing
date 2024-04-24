@@ -1,5 +1,6 @@
 """Methods for decomming packets, processing to level 1A, and writing CDFs for MAG."""
 
+import dataclasses
 import logging
 from pathlib import Path
 
@@ -11,7 +12,11 @@ from imap_processing.cdf.utils import calc_start_time, write_cdf
 from imap_processing.mag import mag_cdf_attrs
 from imap_processing.mag.l0 import decom_mag
 from imap_processing.mag.l0.mag_l0_data import MagL0
-from imap_processing.mag.l1a.mag_l1a_data import MagL1a, TimeTuple
+from imap_processing.mag.l1a.mag_l1a_data import (
+    MagL1a,
+    MagL1aPacketProperties,
+    TimeTuple,
+)
 from imap_processing.mag.mag_cdf_attrs import DataMode, MagGlobalCdfAttributes, Sensor
 
 logger = logging.getLogger(__name__)
@@ -154,6 +159,8 @@ def process_packets(
         primary_start_time = TimeTuple(mag_l0.PRI_COARSETM, mag_l0.PRI_FNTM)
         secondary_start_time = TimeTuple(mag_l0.SEC_COARSETM, mag_l0.SEC_FNTM)
 
+        mago_is_primary = mag_l0.PRI_SENS == 0
+
         primary_day = calc_start_time(primary_start_time.to_seconds()).astype(
             "datetime64[D]"
         )
@@ -161,75 +168,87 @@ def process_packets(
             "datetime64[D]"
         )
 
-        # seconds of data in this packet is the SUBTYPE plus 1
-        seconds_per_packet = mag_l0.PUS_SSUBTYPE + 1
+        primary_packet_data = MagL1aPacketProperties(
+            mag_l0.SHCOARSE,
+            primary_start_time,
+            mag_l0.PRI_VECSEC,
+            mag_l0.PUS_SSUBTYPE,
+            mag_l0.ccsds_header.SRC_SEQ_CTR,
+            mag_l0.COMPRESSION,
+            mag_l0.MAGO_ACT,
+            mag_l0.MAGI_ACT,
+            mago_is_primary,
+        )
 
+        secondary_packet_data = dataclasses.replace(
+            primary_packet_data,
+            start_time=secondary_start_time,
+            vecsec=mag_l0.SEC_VECSEC,
+            pus_ssubtype=mag_l0.PUS_SSUBTYPE,
+        )
         # now we know the number of secs of data in the packet, and the data rates of
         # each sensor, we can calculate how much data is in this packet and where the
         # byte boundaries are.
 
-        # VECSEC is already decoded in mag_l0
-        total_primary_vectors = seconds_per_packet * mag_l0.PRI_VECSEC
-        total_secondary_vectors = seconds_per_packet * mag_l0.SEC_VECSEC
-
         primary_vectors, secondary_vectors = MagL1a.process_vector_data(
-            mag_l0.VECTORS, total_primary_vectors, total_secondary_vectors
+            mag_l0.VECTORS,
+            primary_packet_data.total_vectors,
+            secondary_packet_data.total_vectors,
         )
 
         primary_timestamped_vectors = MagL1a.calculate_vector_time(
-            primary_vectors, mag_l0.PRI_VECSEC, primary_start_time
+            primary_vectors,
+            primary_packet_data.vectors_per_second,
+            primary_packet_data.start_time,
         )
         secondary_timestamped_vectors = MagL1a.calculate_vector_time(
-            secondary_vectors, mag_l0.SEC_VECSEC, secondary_start_time
+            secondary_vectors,
+            secondary_packet_data.vectors_per_second,
+            secondary_packet_data.start_time,
         )
 
         # Sort primary and secondary into MAGo and MAGi by 24 hour chunks
-        # TODO: Individual vectors should be sorted by day, not the whole packet
-        mago_is_primary = mag_l0.PRI_SENS == 0
-
         mago_day = primary_day if mago_is_primary else secondary_day
         magi_day = primary_day if not mago_is_primary else secondary_day
 
         if mago_day not in mago:
             mago[mago_day] = MagL1a(
                 True,
-                bool(mag_l0.MAGO_ACT),
+                mag_l0.MAGO_ACT,
                 mag_l0.SHCOARSE,
                 primary_timestamped_vectors
                 if mago_is_primary
                 else secondary_timestamped_vectors,
+                primary_packet_data if mago_is_primary else secondary_packet_data,
             )
         else:
-            mago[mago_day].vectors = np.concatenate(
-                [
-                    mago[mago_day].vectors,
-                    (
-                        primary_timestamped_vectors
-                        if mago_is_primary
-                        else secondary_timestamped_vectors
-                    ),
-                ]
+            mago[mago_day].append_vectors(
+                (
+                    primary_timestamped_vectors
+                    if mago_is_primary
+                    else secondary_timestamped_vectors
+                ),
+                primary_packet_data if mago_is_primary else secondary_packet_data,
             )
 
         if magi_day not in magi:
             magi[magi_day] = MagL1a(
                 False,
-                bool(mag_l0.MAGI_ACT),
+                mag_l0.MAGI_ACT,
                 mag_l0.SHCOARSE,
                 primary_timestamped_vectors
                 if not mago_is_primary
                 else secondary_timestamped_vectors,
+                primary_packet_data if not mago_is_primary else secondary_packet_data,
             )
         else:
-            magi[magi_day].vectors = np.concatenate(
-                [
-                    magi[magi_day].vectors,
-                    (
-                        primary_timestamped_vectors
-                        if not mago_is_primary
-                        else secondary_timestamped_vectors
-                    ),
-                ]
+            magi[magi_day].append_vectors(
+                (
+                    primary_timestamped_vectors
+                    if not mago_is_primary
+                    else secondary_timestamped_vectors
+                ),
+                primary_packet_data if not mago_is_primary else secondary_packet_data,
             )
 
     return {"mago": mago, "magi": magi}
@@ -257,6 +276,11 @@ def generate_dataset(single_file_l1a: MagL1a, dataset_attrs: dict) -> xr.Dataset
     dataset : xr.Dataset
         One xarray dataset with proper CDF attributes and shape containing MAG L1A data.
     """
+    # TODO: add:
+    # gaps_in_data global attr
+    # magl1avectordefinition data
+    #
+
     # TODO: Just leave time in datetime64 type with vector as dtype object to avoid this
     # Get the timestamp from the end of the vector
     time_data = single_file_l1a.vectors[:, 4].astype(

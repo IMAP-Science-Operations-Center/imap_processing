@@ -9,6 +9,7 @@ from imap_processing.mag.l1a.mag_l1a import process_packets
 from imap_processing.mag.l1a.mag_l1a_data import (
     MAX_FINE_TIME,
     MagL1a,
+    MagL1aPacketProperties,
     TimeTuple,
 )
 
@@ -113,3 +114,51 @@ def test_calculate_vector_time():
         ]
     )
     assert (test_data == expected_data).all()
+
+
+def test_mag_l1a_data():
+    test_vectors = np.array(
+        [
+            [1, 2, 3, 4, 10000],
+            [5, 6, 7, 8, 10050],
+            [9, 10, 11, 12, 10100],
+            [13, 13, 11, 12, 10150],
+        ],
+        dtype=np.uint,
+    )
+    test_vecsec = 2
+    start_time = TimeTuple(10000, 0)
+
+    packet_properties = MagL1aPacketProperties(
+        435954628, start_time, test_vecsec, 1, 0, 0, 1
+    )
+    mag_l1a = MagL1a(True, True, 10000, test_vectors, packet_properties)
+
+    new_vectors = np.array(
+        [[13, 14, 15, 16, 10400], [16, 17, 18, 19, 10450]], dtype=np.uint
+    )
+
+    new_seq = 5
+    new_properties = MagL1aPacketProperties(
+        435954628, TimeTuple(10400, 0), test_vecsec, 0, new_seq, 0, 1
+    )
+    mag_l1a.append_vectors(new_vectors, new_properties)
+
+    assert np.array_equal(
+        mag_l1a.vectors,
+        np.array(
+            [
+                [1, 2, 3, 4, 10000],
+                [5, 6, 7, 8, 10050],
+                [9, 10, 11, 12, 10100],
+                [13, 13, 11, 12, 10150],
+                [13, 14, 15, 16, 10400],
+                [16, 17, 18, 19, 10450],
+            ],
+            dtype=np.uint,
+        ),
+    )
+    assert mag_l1a.missing_sequences == [1, 2, 3, 4]
+
+
+# TODO test CDF file attributes and data
