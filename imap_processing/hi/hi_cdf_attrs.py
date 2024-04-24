@@ -2,6 +2,7 @@
 
 from imap_processing.cdf.defaults import GlobalConstants
 from imap_processing.cdf.global_attrs import (
+    AttrBase,
     GlobalDataLevelAttrs,
     GlobalInstrumentAttrs,
     ScienceAttrs,
@@ -138,13 +139,64 @@ ccsds_met_attrs = ScienceAttrs(
 hi_de_l1a_attrs = GlobalDataLevelAttrs(
     data_type="L1A_DE>Level-1A Direct Event",
     logical_source="imap_hi_l1a_de",
-    logical_source_desc=("IMAP-HI Instrument Level-1A Direct Event Data."),
+    logical_source_desc=("IMAP-Hi Instrument Level-1A Direct Event Data."),
     instrument_base=hi_base,
 )
 
 hi_hk_l1a_attrs = GlobalDataLevelAttrs(
     data_type="L1A_HK>Level-1A Housekeeping",
     logical_source="imap_hi_l1a_hk",
-    logical_source_desc=("IMAP-HI Instrument Level-1A Housekeeping Data."),
+    logical_source_desc=("IMAP-Hi Instrument Level-1A Housekeeping Data."),
     instrument_base=hi_base,
+)
+
+hi_hk_l1a_metadata_attrs = ScienceAttrs(
+    validmin=0,
+    validmax=GlobalConstants.INT_MAXVAL,
+    depend_0="epoch",
+    format="I12",
+    units="int",
+    var_type="support_data",
+    variable_purpose="PRIMARY",
+)
+
+# Histogram attributes
+hi_hist_l1a_global_attrs = GlobalDataLevelAttrs(
+    data_type="L1A_CNT>Level-1A Histogram",
+    logical_source="imap_hi_l1a_hist",
+    logical_source_desc=("IMAP-Hi Instrument Level-1A Histogram Data."),
+    instrument_base=hi_base,
+)
+
+hi_hist_l1a_angle_attrs = AttrBase(
+    validmin=0,
+    validmax=360,
+    format="I3",
+    units="deg",
+    label_axis="ANGLE",
+    display_type="time_series",
+    catdesc="Angle bin centers for Histogram data.",
+    fieldname="ANGLE",
+    fill_val=GlobalConstants.INT_FILLVAL,
+    var_type="support_data",
+)
+
+hi_hist_l1a_esa_step_attrs = ScienceAttrs(
+    validmin=0,
+    validmax=2**4 - 1,
+    depend_0="epoch",
+    format="I2",
+    catdesc="4-bit ESA Step Number",
+    var_type="support_data",
+    variable_purpose="PRIMARY",
+)
+
+hi_hist_l1a_counter_attrs = ScienceAttrs(
+    validmin=0,
+    validmax=2**12 - 1,
+    depend_0="epoch",
+    depend_1="angle",
+    format="I4",
+    var_type="support_data",
+    variable_purpose="PRIMARY",
 )
