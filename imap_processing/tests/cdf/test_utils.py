@@ -1,3 +1,5 @@
+"""Tests for the ``cdf.utils`` module."""
+
 from pathlib import Path
 
 import imap_data_access
@@ -11,6 +13,8 @@ from imap_processing.swe.swe_cdf_attrs import swe_l1a_global_attrs
 
 
 def test_calc_start_time():
+    """Tests the ``calc_start_time`` function"""
+
     assert calc_start_time(0) == launch_time
     assert calc_start_time(1) == launch_time + np.timedelta64(1, "s")
 
@@ -24,6 +28,8 @@ def test_load_cdf():
 
 
 def test_write_cdf():
+    """Tests the ``write_cdf`` function."""
+
     # Set up a fake dataset
     # lots of requirements on attributes, so depend on SWE for now
     dataset = xr.Dataset(
