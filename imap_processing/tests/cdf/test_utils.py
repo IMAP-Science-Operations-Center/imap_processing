@@ -6,7 +6,7 @@ import imap_data_access
 import numpy as np
 import xarray as xr
 
-from imap_processing import launch_time
+from imap_processing import imap_module_directory, launch_time
 from imap_processing.cdf.global_attrs import ConstantCoordinates
 from imap_processing.cdf.utils import calc_start_time, load_cdf, write_cdf
 from imap_processing.swe.swe_cdf_attrs import swe_l1a_global_attrs
@@ -22,7 +22,9 @@ def test_calc_start_time():
 def test_load_cdf():
     """Tests the ``load_cdf`` function."""
 
-    file_path = Path("data/imap_codice_l1a_hskp_20100101_v001.cdf")
+    file_path = Path(
+        f"{imap_module_directory}/tests/cdf/data/imap_codice_l1a_hskp_20100101_v001.cdf"
+    )
     dataset = load_cdf(file_path)
     assert isinstance(dataset, xr.core.dataset.Dataset)
 
