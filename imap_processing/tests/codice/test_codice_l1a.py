@@ -5,84 +5,132 @@ from pathlib import Path
 import cdflib
 import numpy as np
 import pytest
+import xarray as xr
 
 from imap_processing import imap_module_directory
 from imap_processing.codice.codice_l0 import decom_packets
 from imap_processing.codice.codice_l1a import process_codice_l1a
 
-TEST_PROCESSING_DATA = [
-    (
-        Path(
-            f"{imap_module_directory}/tests/codice/data/raw_ccsds_20230822_122700Z_idle.bin"
-        ),
-        "imap_codice_l1a_hskp_20100101_v001.cdf",
+EXPECTED_ARRAY_SHAPES = [(99,), (1, 128), (1, 112)]
+EXPECTED_ARRAY_SIZES = [123, 16, 8]
+EXPECTED_FILENAMES = [
+    "imap_codice_l1a_hskp_20100101_v001.cdf",
+    "imap_codice_l1a_lo-sw-species-counts_20240319_v001.cdf",
+    "imap_codice_l1a_lo-nsw-species-counts_20240319_v001.cdf",
+]
+TEST_PACKETS = [
+    Path(
+        f"{imap_module_directory}/tests/codice/data/raw_ccsds_20230822_122700Z_idle.bin"
     ),
-    (
-        Path(f"{imap_module_directory}/tests/codice/data/lo_fsw_view_5_ccsds.bin"),
-        "imap_codice_l1a_lo-sw-species-counts_20240319_v001.cdf",
-    ),
-    (
-        Path(f"{imap_module_directory}/tests/codice/data/lo_fsw_view_6_ccsds.bin"),
-        "imap_codice_l1a_lo-nsw-species-counts_20240319_v001.cdf",
-    ),
+    Path(f"{imap_module_directory}/tests/codice/data/lo_fsw_view_5_ccsds.bin"),
+    Path(f"{imap_module_directory}/tests/codice/data/lo_fsw_view_6_ccsds.bin"),
 ]
 
-TEST_VALIDATION_DATA = [
-    (
-        Path(f"{imap_module_directory}/tests/codice/data/lo_fsw_view_5_ccsds.bin"),
-        Path(
-            f"{imap_module_directory}/tests/codice/data/temp_validation_lo-sw-species-counts.cdf"
-        ),
-    ),
-    (
-        Path(f"{imap_module_directory}/tests/codice/data/lo_fsw_view_6_ccsds.bin"),
-        Path(
-            f"{imap_module_directory}/tests/codice/data/temp_validation_lo-nsw-species-counts.cdf"
-        ),
-    ),
+# Placeholder for validation data files
+VALIDATION_DATA = [
+    f"{imap_module_directory}/tests/codice/data/validation_hskp.cdf",
+    f"{imap_module_directory}/tests/codice/data/validation_lo-sw-species-counts.cdf",
+    f"{imap_module_directory}/tests/codice/data/validation_lo-nsw-species-counts.cdf",
 ]
 
 
-@pytest.mark.parametrize(("test_file", "expected_filename"), TEST_PROCESSING_DATA)
-def test_process_codice_l1a(test_file: Path, expected_filename: str):
-    """Tests the ``process_codice_l1a`` function and ensure that a CDF files are
-    created.
+@pytest.fixture(params=TEST_PACKETS)
+def test_l1a_data(request) -> tuple[xr.Dataset, str]:
+    packets = decom_packets(request.param)
+    dataset, cdf_filename = process_codice_l1a(packets)
+    return dataset, cdf_filename
+
+
+@pytest.mark.parametrize(
+    "test_l1a_data, expected_filename",
+    list(zip(TEST_PACKETS, EXPECTED_FILENAMES)),
+    indirect=["test_l1a_data"],
+)
+def test_l1a_cdf_filenames(test_l1a_data, expected_filename: str):
+    """Tests that the ``process_codice_l1a`` function generates CDF files with
+    expected filenames.
 
     Parameters
     ----------
-    test_file : Path
-        The file containing test data
+    test_l1a_data : tuple
+        A tuple containing the ``xarray`` dataset and the CDF filename
     expected_filename : str
-        The filename of the generated CDF file
+        The expected CDF filename
     """
 
-    packets = decom_packets(test_file)
-    _, cdf_filename = process_codice_l1a(packets)
+    _, cdf_filename = test_l1a_data
     assert cdf_filename.name == expected_filename
 
 
-@pytest.mark.parametrize(("test_file", "validation_file"), TEST_VALIDATION_DATA)
-def test_l1a_validation_data(test_file: Path, validation_file: Path):
+@pytest.mark.parametrize(
+    "test_l1a_data, expected_shape",
+    list(zip(TEST_PACKETS, EXPECTED_ARRAY_SHAPES)),
+    indirect=["test_l1a_data"],
+)
+def test_l1a_data_array_shape(test_l1a_data, expected_shape: tuple):
+    """Tests that the data arrays in the generated CDFs have the expected shape.
+
+    Parameters
+    ----------
+    test_l1a_data : tuple
+        A tuple containing the ``xarray`` dataset and the CDF filename
+    expected_shape : tuple
+        The expected shape of the data array
+    """
+
+    dataset, _ = test_l1a_data
+    for variable in dataset:
+        assert dataset[variable].data.shape == expected_shape
+
+
+@pytest.mark.parametrize(
+    "test_l1a_data, expected_size",
+    list(zip(TEST_PACKETS, EXPECTED_ARRAY_SIZES)),
+    indirect=["test_l1a_data"],
+)
+def test_l1a_data_array_size(test_l1a_data, expected_size: int):
+    """Tests that the data arrays in the generated CDFs have the expected size.
+
+    Parameters
+    ----------
+    test_l1a_data : tuple
+        A tuple containing the ``xarray`` dataset and the CDF filename
+    expected_size : int
+        The expected size of the data array
+    """
+
+    dataset, _ = test_l1a_data
+    assert len(dataset) == expected_size
+
+
+@pytest.mark.skip("Awaiting validation data")
+@pytest.mark.parametrize(
+    "test_l1a_data, validation_data",
+    list(zip(TEST_PACKETS, VALIDATION_DATA)),
+    indirect=["test_l1a_data"],
+)
+def test_l1a_data_array_values(test_l1a_data, validation_data: Path):
     """Tests that the generated L1a CDF contents are valid.
 
-    TODO: This tests currently uses validation files that the pipeline itself
-    generates, rather than a CDF file generated by the CoDICE instrument team.
     Once proper validation files are acquired, this test function should point
     to those. This function currently just serves as a framework for validating
     files, but does not actually validate them.
+
+    Parameters
+    ----------
+    test_l1a_data : tuple
+        A tuple containing the ``xarray`` dataset and the CDF filename
+    validataion_data : Path
+        The path to the file containing the validation data
     """
 
-    # Retrieve the validation file contents
-    validation_data = cdflib.xarray.cdf_to_xarray(validation_file)
-
-    # Process packet
-    packets = decom_packets(test_file)
-    dataset, _ = process_codice_l1a(packets)
+    generated_dataset, _ = test_l1a_data
+    validation_dataset = cdflib.xarray.cdf_to_xarray(validation_data)
 
     # Ensure the processed data matches the validation data
-    for variable in validation_data:
-        assert variable in dataset
+    for variable in validation_dataset:
+        assert variable in generated_dataset
         if variable != "epoch":
             np.testing.assert_array_equal(
-                validation_data[variable].data, dataset[variable].data[0]
+                validation_data[variable].data, generated_dataset[variable].data[0]
             )
