@@ -8,10 +8,8 @@ Use
     from imap_processing.codice.codice_l0 import decom_packets
     from imap_processing.codice.codice_l1a import codice_l1a
     packets = decom_packets(packet_file)
-    cdf_filename = codice_l1a(packets)
+    dataset, cdf_filename = process_codice_l1a(packets)
 """
-
-# TODO: Change print statements to logging
 
 import dataclasses
 import logging
@@ -37,6 +35,7 @@ from imap_processing.codice.utils import CODICEAPID, create_hskp_dataset
 from imap_processing.utils import group_by_apid, sort_by_time
 
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 
 class CoDICEL1aPipeline:
@@ -92,7 +91,7 @@ class CoDICEL1aPipeline:
         Returns
         -------
         xr.Dataset
-            xarray dataset containing the science data and supporting metadata
+            ``xarray`` dataset containing the science data and supporting metadata
 
         # TODO: Pull out common code and put in codice.utils alongside
         # create_hskp_dataset()
@@ -283,7 +282,7 @@ def get_params(packet) -> tuple[int, int, int, int]:
     return table_id, plan_id, plan_step, view_id
 
 
-def process_codice_l1a(packets) -> str:
+def process_codice_l1a(packets) -> tuple[xr.Dataset, str]:
     """Process CoDICE l0 data to create l1a data products.
 
     Parameters
@@ -293,6 +292,8 @@ def process_codice_l1a(packets) -> str:
 
     Returns
     -------
+    dataset : xr.Dataset
+        ``xarray`` dataset containing the science data and supporting metadata
     cdf_filename : str
         The path to the CDF file that was created
     """
@@ -300,7 +301,7 @@ def process_codice_l1a(packets) -> str:
     grouped_data = group_by_apid(packets)
 
     for apid in grouped_data.keys():
-        print(f"\nProcessing {CODICEAPID(apid).name} packet")
+        logger.info(f"\nProcessing {CODICEAPID(apid).name} packet")
 
         if apid == CODICEAPID.COD_NHK:
             packets = grouped_data[apid]
@@ -325,39 +326,39 @@ def process_codice_l1a(packets) -> str:
             dataset = pipeline.create_science_dataset(packets)
 
         elif apid == CODICEAPID.COD_LO_PHA:
-            print(f"{apid} is currently not supported")
+            logger.info(f"{apid} is currently not supported")
             continue
 
         elif apid == CODICEAPID.COD_LO_SW_PRIORITY_COUNTS:
-            print(f"{apid} is currently not supported")
+            logger.info(f"{apid} is currently not supported")
             continue
 
         elif apid == CODICEAPID.COD_LO_NSW_PRIORITY_COUNTS:
-            print(f"{apid} is currently not supported")
+            logger.info(f"{apid} is currently not supported")
             continue
 
         elif apid == CODICEAPID.COD_LO_SW_ANGULAR_COUNTS:
-            print(f"{apid} is currently not supported")
+            logger.info(f"{apid} is currently not supported")
             continue
 
         elif apid == CODICEAPID.COD_LO_NSW_ANGULAR_COUNTS:
-            print(f"{apid} is currently not supported")
+            logger.info(f"{apid} is currently not supported")
             continue
 
         elif apid == CODICEAPID.COD_HI_PHA:
-            print(f"{apid} is currently not supported")
+            logger.info(f"{apid} is currently not supported")
             continue
 
         elif apid == CODICEAPID.COD_HI_OMNI_SPECIES_COUNTS:
-            print(f"{apid} is currently not supported")
+            logger.info(f"{apid} is currently not supported")
             continue
 
         elif apid == CODICEAPID.COD_HI_SECT_SPECIES_COUNTS:
-            print(f"{apid} is currently not supported")
+            logger.info(f"{apid} is currently not supported")
             continue
 
     # Write dataset to CDF
-    print(f"\nFinal data product:\n{dataset}\n")
+    logger.info(f"\nFinal data product:\n{dataset}\n")
     cdf_filename = write_cdf(dataset)
-    print(f"\tCreated CDF file: {cdf_filename}")
+    logger.info(f"\tCreated CDF file: {cdf_filename}")
     return dataset, cdf_filename
