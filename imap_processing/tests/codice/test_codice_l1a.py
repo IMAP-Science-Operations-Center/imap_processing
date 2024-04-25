@@ -11,8 +11,16 @@ from imap_processing import imap_module_directory
 from imap_processing.codice.codice_l0 import decom_packets
 from imap_processing.codice.codice_l1a import process_codice_l1a
 
-EXPECTED_ARRAY_SHAPES = [(99,), (1, 128), (1, 112)]
-EXPECTED_ARRAY_SIZES = [123, 16, 8]
+EXPECTED_ARRAY_SHAPES = [
+    (99,),  # hskp
+    (1, 128),  # lo-sw-species-counts
+    (1, 112),  # lo-nsw-species-counts
+]
+EXPECTED_ARRAY_SIZES = [
+    123,  # hskp
+    16,  # lo-sw-species-counts
+    8,  # lo-nsw-species-counts
+]
 EXPECTED_FILENAMES = [
     "imap_codice_l1a_hskp_20100101_v001.cdf",
     "imap_codice_l1a_lo-sw-species-counts_20240319_v001.cdf",
