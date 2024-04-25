@@ -22,7 +22,7 @@ def test_calc_start_time():
 def test_load_cdf():
     """Tests the ``load_cdf`` function."""
 
-    file_path = Path("data/imap_codice_l1a_lo-sw-species-counts_20100101_v001.cdf")
+    file_path = Path("data/imap_codice_l1a_hskp_20100101_v001.cdf")
     dataset = load_cdf(file_path)
     assert isinstance(dataset, xr.core.dataset.Dataset)
 
