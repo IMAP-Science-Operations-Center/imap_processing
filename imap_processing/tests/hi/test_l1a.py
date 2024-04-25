@@ -148,4 +148,4 @@ def test_app_nhk_decom():
 
     # TODO: ask Vivek about this date mismatch between the file name
     # and the data. May get resolved when we have good sample data.
-    assert cem_raw_cdf_filepath.name == "imap_hi_l1a_hk_20310824_v001.cdf"
+    assert cem_raw_cdf_filepath.name == "imap_hi_l1a_hk_20100313_v001.cdf"

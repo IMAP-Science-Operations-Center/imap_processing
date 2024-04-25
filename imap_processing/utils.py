@@ -9,6 +9,7 @@ import xarray as xr
 from space_packet_parser.parser import Packet
 
 from imap_processing.cdf.global_attrs import ConstantCoordinates
+from imap_processing.cdf.utils import calc_start_time
 from imap_processing.common_cdf_attrs import metadata_attrs
 
 
@@ -129,7 +130,9 @@ def create_dataset(
     metadata_arrays = collections.defaultdict(list)
     description_dict = {}
 
-    for data_packet in packets:
+    sorted_packets = sort_by_time(packets, spacecraft_time_key.upper())
+
+    for data_packet in sorted_packets:
         data_to_include = (
             (data_packet.header | data_packet.data)
             if include_header
@@ -151,6 +154,10 @@ def create_dataset(
                 value.long_description or value.short_description
             )
 
+    # NOTE: At this point, we keep epoch time as raw value from packet
+    # which is in seconds and spacecraft time. Some instrument uses this
+    # raw value in processing. If you want to convert this to datetime
+    # object, you can use `update_epoch_to_datetime` function afterwards.
     epoch_time = xr.DataArray(
         metadata_arrays[spacecraft_time_key],
         name="epoch",
@@ -177,5 +184,32 @@ def create_dataset(
             dims=["epoch"],
             attrs=data_attrs.output(),
         )
+
+    return dataset
+
+
+def update_epoch_to_datetime(dataset: xr.Dataset):
+    """Update epoch in dataset to datetime object.
+
+    Parameters
+    ----------
+    dataset : xr.Dataset
+        Dataset to update
+
+    Returns
+    -------
+    xr.Dataset
+        Dataset with updated epoch dimension from int to datetime object.
+    """
+    # convert epoch to datetime
+    epoch_converted_time = [calc_start_time(time) for time in dataset["epoch"].data]
+    # add attrs back to epoch
+    epoch = xr.DataArray(
+        epoch_converted_time,
+        name="epoch",
+        dims=["epoch"],
+        attrs=ConstantCoordinates.EPOCH,
+    )
+    dataset = dataset.assign_coords(epoch=epoch)
 
     return dataset
