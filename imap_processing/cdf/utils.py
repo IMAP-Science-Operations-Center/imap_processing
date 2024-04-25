@@ -2,11 +2,12 @@
 
 import logging
 import re
+from pathlib import Path
 
 import imap_data_access
 import numpy as np
 import xarray as xr
-from cdflib.xarray import xarray_to_cdf
+from cdflib.xarray import cdf_to_xarray, xarray_to_cdf
 
 from imap_processing import launch_time
 
@@ -39,6 +40,22 @@ def calc_start_time(shcoarse_time: float) -> np.datetime64:
     # Get the datetime of Jan 1 2010 as the start date
     time_delta = np.timedelta64(int(shcoarse_time * 1e9), "ns")
     return launch_time + time_delta
+
+
+def load_cdf(file_path: Path) -> xr.Dataset:
+    """Load the contents of a CDF file into an ``xarray`` dataset.
+
+    Parameters
+    ----------
+    file_path : Path
+        The path to the CDF file
+
+    Returns
+    -------
+    dataset : xr.Dataset
+        The ``xarray`` dataset for the CDF file
+    """
+    return cdf_to_xarray(file_path)
 
 
 def write_cdf(dataset: xr.Dataset):
