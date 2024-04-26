@@ -70,13 +70,13 @@ def write_cdf(dataset: xr.Dataset):
 
     Parameters
     ----------
-        dataset : xarray.Dataset
-            The dataset object to convert to a CDF
+    dataset : xarray.Dataset
+        The dataset object to convert to a CDF
 
     Returns
     -------
-        pathlib.Path
-            Path to the file created
+    pathlib.Path
+        Path to the file created
     """
     # Create the filename from the global attributes
     # Logical_source looks like "imap_swe_l2_counts-1min"
