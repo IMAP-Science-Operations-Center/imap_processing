@@ -1,7 +1,7 @@
 """Contains data classes to support GLOWS L1A processing."""
 
 import struct
-from dataclasses import InitVar, dataclass
+from dataclasses import InitVar, dataclass, field
 
 from imap_processing.glows import __version__
 from imap_processing.glows.l0.glows_l0_data import DirectEventL0, HistogramL0
@@ -250,7 +250,7 @@ class DirectEventL1A:
 
     l0: DirectEventL0
     block_header: dict
-    de_data: bytearray
+    de_data: bytearray = field(repr=False)  # Do not include in prints
     most_recent_seq: int
     missing_seq: list[int]
     status_data: StatusData = None
@@ -309,7 +309,7 @@ class DirectEventL1A:
         if not match:
             raise ValueError(
                 f"While attempting to merge L0 packet {second_l0} "
-                f"into L1A packet {self!r}, mismatched values "
+                f"with {self.l0} mismatched values"
                 f"were found. "
             )
 

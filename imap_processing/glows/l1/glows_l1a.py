@@ -10,7 +10,8 @@ from imap_processing.cdf.global_attrs import ConstantCoordinates
 from imap_processing.cdf.utils import calc_start_time, write_cdf
 from imap_processing.glows import glows_cdf_attrs
 from imap_processing.glows.l0.decom_glows import decom_packets
-from imap_processing.glows.l1.glows_l1a_data import HistogramL1A
+from imap_processing.glows.l0.glows_l0_data import DirectEventL0
+from imap_processing.glows.l1.glows_l1a_data import DirectEventL1A, HistogramL1A
 from imap_processing.glows.utils.constants import GlowsConstants
 
 
@@ -36,23 +37,125 @@ def glows_l1a(packet_filepath: Path, data_version: str) -> list[Path]:
     # Create glows L0
     hist_l0, de_l0 = decom_packets(packet_filepath)
 
-    histogram_buckets = dict()
+    de_by_day = process_de_l0(de_l0)
+    hists_by_day = dict()
 
     # Create histogram L1A and filter into days based on start time
     for hist in hist_l0:
         hist_l1a = HistogramL1A(hist)
         hist_day = calc_start_time(hist.MET).astype("datetime64[D]")
-        if hist_day not in histogram_buckets:
-            histogram_buckets[hist_day] = []
-        histogram_buckets[hist_day].append(hist_l1a)
+        if hist_day not in hists_by_day:
+            hists_by_day[hist_day] = []
+        hists_by_day[hist_day].append(hist_l1a)
 
     # Generate CDF files for each day
     generated_files = []
-    for _, hist_l1a_list in histogram_buckets.items():
+    for _, hist_l1a_list in hists_by_day.items():
         dataset = generate_histogram_dataset(hist_l1a_list, data_version)
         generated_files.append(write_cdf(dataset))
 
+    for _, de_l1a_list in de_by_day.items():
+        dataset = generate_de_dataset(de_l1a_list, data_version)
+        generated_files.append(write_cdf(dataset))
+
     return generated_files
+
+
+def process_de_l0(
+    de_l0: list[DirectEventL0],
+) -> dict[np.datetime64, list[DirectEventL1A]]:
+    """
+    Process Direct Event packets into GLOWS L1A CDF files.
+
+    This involves combining packets with direct event sequences that span multiple
+    packets.
+
+    Parameters
+    ----------
+    de_l0 : list[DirectEventL0]
+        List of DirectEventL0 objects
+
+    Returns
+    -------
+    de_by_day : dict[np.datetime64, list[DirectEventL1A]]
+        Dictionary with keys of days and values of lists of DirectEventL1A objects.
+        Each day has one CDF file associated with it.
+    """
+    de_by_day = dict()
+
+    for de in de_l0:
+        de_day = calc_start_time(de.MET).astype("datetime64[D]")
+        if de_day not in de_by_day:
+            de_by_day[de_day] = [DirectEventL1A(de)]
+        elif de.SEQ != 0:
+            # If the direct event is part of a sequence and is not the first,
+            # append it to the last direct event in the list
+            de_by_day[de_day][-1].append(de)
+        else:
+            de_by_day[de_day].append(DirectEventL1A(de))
+
+    return de_by_day
+
+
+def generate_de_dataset(
+    de_l1a_list: list[DirectEventL1A], data_version: str
+) -> xr.Dataset:
+    """
+    Generate a dataset for GLOWS L1A direct event data CDF files.
+
+    Parameters
+    ----------
+    de_l1a_list : list[DirectEventL1A]
+        List of DirectEventL1A objects for a given day
+    data_version : str
+        Data version for CDF filename, in the format "vXXX"
+
+    Returns
+    -------
+    output : xr.Dataset
+        Dataset containing the GLOWS L1A direct event CDF output
+    """
+    # TODO: Block header per second, or global attribute?
+
+    time_data = np.zeros(len(de_l1a_list), dtype="datetime64[ns]")
+    # TODO: Should each timestamp point to a list of direct events, each with a
+    #  timestamp? Or should the list be split out to make the timestamps?
+
+    # Each DirectEventL1A class covers 1 second of direct events data
+    direct_events = np.zeros((len(de_l1a_list), len(de_l1a_list[0].direct_events), 3))
+
+    # In header: block header, missing seqs
+    # Time varying - statusdata
+
+    for index, de in enumerate(de_l1a_list):
+        # Set the timestamp to the first timestamp of the direct event list
+        print("=============")
+        print(de.direct_events)
+        print(de.block_header)
+        print(de.l0.DE_DATA)
+        epoch_time = calc_start_time(de.direct_events[0].timestamp.to_seconds())
+
+        # determine if the length of the direct_events numpy array is long enough,
+        # and extend the direct_events length dimension if necessary.
+        de_len = len(de.direct_events)
+        if de_len > direct_events.shape[1]:
+            # If the new DE list is longer than the existing shape, first reshape
+            # direct_events and pad the existing vectors with zeros.
+            direct_events = np.pad(
+                direct_events,
+                (
+                    (
+                        0,
+                        0,
+                    ),
+                    (0, de_len - direct_events.shape[1]),
+                    (0, 0),
+                ),
+                "constant",
+                constant_values=(0,),
+            )
+
+        time_data[index] = epoch_time
 
 
 def generate_histogram_dataset(

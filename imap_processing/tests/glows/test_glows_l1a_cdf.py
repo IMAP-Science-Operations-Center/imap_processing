@@ -3,7 +3,10 @@ from pathlib import Path
 import pytest
 
 from imap_processing.glows.l0 import decom_glows
-from imap_processing.glows.l1.glows_l1a import generate_histogram_dataset, glows_l1a
+from imap_processing.glows.l1.glows_l1a import (
+    generate_histogram_dataset,
+    glows_l1a,
+)
 from imap_processing.glows.l1.glows_l1a_data import DirectEventL1A, HistogramL1A
 
 
@@ -26,6 +29,7 @@ def test_generate_histogram_dataset(l1a_data):
     assert (dataset["histograms"].data[0] == histograms_l1a[0].histograms).all()
     for key in histograms_l1a[0].block_header.keys():
         assert dataset[key].data[0] == histograms_l1a[0].block_header[key]
+    assert (dataset["histograms"].data[-1] == histograms_l1a[-1].histograms).all()
 
 
 def test_glows_cdf_generation():
