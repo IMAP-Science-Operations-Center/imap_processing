@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from imap_processing.glows import version
+from imap_processing.glows import __version__
 from imap_processing.glows.l0 import decom_glows
 from imap_processing.glows.l1.glows_l1a_data import (
     DirectEventL1A,
@@ -49,7 +49,7 @@ def test_histogram_attributes(histogram_test_data):
 
     expected_block_header = {
         "flight_software_version": 131329,
-        "ground_software_version": version,
+        "ground_software_version": __version__,
         "pkts_file_name": "glows_test_packet_20110921_v01.pkts",
         "seq_count_in_pkts_file": 0,
     }

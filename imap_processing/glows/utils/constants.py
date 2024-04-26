@@ -33,6 +33,10 @@ class TimeTuple:
         object.__setattr__(self, "seconds", final_seconds)
         object.__setattr__(self, "subseconds", final_subseconds)
 
+    def to_seconds(self) -> float:
+        """Convert the TimeTuple to seconds."""
+        return self.seconds + self.subseconds / GlowsConstants.SUBSECOND_LIMIT
+
 
 @dataclass(frozen=True)
 class GlowsConstants:

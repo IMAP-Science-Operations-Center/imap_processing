@@ -1,9 +1,9 @@
 """Contains data classes to support GLOWS L1A processing."""
 
 import struct
-from dataclasses import dataclass
+from dataclasses import InitVar, dataclass
 
-from imap_processing.glows import version
+from imap_processing.glows import __version__
 from imap_processing.glows.l0.glows_l0_data import DirectEventL0, HistogramL0
 from imap_processing.glows.utils.constants import DirectEvent, TimeTuple
 
@@ -162,35 +162,34 @@ class HistogramL1A:
         which is set to "False" for decommed packets.
     """
 
-    l0: HistogramL0
-    histograms: list[int]
-    block_header: dict
-    last_spin_id: int
-    imap_start_time: TimeTuple
-    imap_time_offset: TimeTuple
-    glows_start_time: TimeTuple
-    glows_time_offset: TimeTuple
-    flags: dict
+    l0: InitVar[HistogramL0]
+    histograms: list[int] = None
+    block_header: dict = None
+    last_spin_id: int = None
+    imap_start_time: TimeTuple = None
+    imap_time_offset: TimeTuple = None
+    glows_start_time: TimeTuple = None
+    glows_time_offset: TimeTuple = None
+    flags: dict = None
 
-    def __init__(self, level0: HistogramL0):
+    def __post_init__(self, l0: HistogramL0):
         """Set the attributes based on the given L0 histogram data.
 
         This includes generating a block header and converting the time attributes from
         HistogramL0 into TimeTuple pairs.
         """
-        self.l0 = level0
-        self.histograms = list(self.l0.HISTOGRAM_DATA)
+        self.histograms = list(l0.HISTOGRAM_DATA)
 
         self.block_header = {
-            "flight_software_version": self.l0.SWVER,
-            "ground_software_version": version,
-            "pkts_file_name": self.l0.packet_file_name,
+            "flight_software_version": l0.SWVER,
+            "ground_software_version": __version__,
+            "pkts_file_name": l0.packet_file_name,
             # note: packet number is seq_count (per apid!) field in CCSDS header
-            "seq_count_in_pkts_file": self.l0.ccsds_header.SRC_SEQ_CTR,
+            "seq_count_in_pkts_file": l0.ccsds_header.SRC_SEQ_CTR,
         }
 
         # use start ID and offset to calculate the last spin ID in the block
-        self.last_spin_id = self.l0.STARTID + self.l0.ENDID
+        self.last_spin_id = l0.STARTID + l0.ENDID
 
         # TODO: This sanity check should probably exist in the final code. However,
         # the emulator code does not properly set these values.
@@ -200,14 +199,14 @@ class HistogramL1A:
         #                      f"[{self.l0.SPINS}]")
 
         # Create time tuples based on second and subsecond pairs
-        self.imap_start_time = TimeTuple(self.l0.SEC, self.l0.SUBSEC)
-        self.imap_time_offset = TimeTuple(self.l0.OFFSETSEC, self.l0.OFFSETSUBSEC)
-        self.glows_start_time = TimeTuple(self.l0.GLXSEC, self.l0.GLXSUBSEC)
-        self.glows_time_offset = TimeTuple(self.l0.GLXOFFSEC, self.l0.GLXOFFSUBSEC)
+        self.imap_start_time = TimeTuple(l0.SEC, l0.SUBSEC)
+        self.imap_time_offset = TimeTuple(l0.OFFSETSEC, l0.OFFSETSUBSEC)
+        self.glows_start_time = TimeTuple(l0.GLXSEC, l0.GLXSUBSEC)
+        self.glows_time_offset = TimeTuple(l0.GLXOFFSEC, l0.GLXOFFSUBSEC)
 
         # Flags
         self.flags = {
-            "flags_set_onboard": self.l0.FLAGS,
+            "flags_set_onboard": l0.FLAGS,
             "is_generated_on_ground": False,
         }
 
@@ -224,7 +223,8 @@ class DirectEventL1A:
     ----------
     l0: DirectEventL0
         Level 0 data. In the case of multiple L0 direct events, this is the first L0
-        data class in the sequence.
+        data class in the sequence. This is used to verify all events in the sequence
+        match.
     block_header: dict
         Block header data structure containing versioning, sequence, and file names
     de_data: bytearray
@@ -263,7 +263,7 @@ class DirectEventL1A:
         self.missing_seq = []
 
         self.block_header = {
-            "ground_software_version": version,
+            "ground_software_version": __version__,
             "pkts_file_name": self.l0.packet_file_name,
             # note: packet number is seq_count (per apid!) field in CCSDS header
             "seq_count_in_pkts_file": self.l0.ccsds_header.SRC_SEQ_CTR,
