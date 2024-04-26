@@ -16,7 +16,11 @@ from imap_processing.swapi.swapi_cdf_attrs import (
     uncertainty_attrs,
 )
 from imap_processing.swapi.swapi_utils import SWAPIAPID, SWAPIMODE
-from imap_processing.utils import create_dataset, group_by_apid, sort_by_time
+from imap_processing.utils import (
+    create_dataset,
+    group_by_apid,
+    update_epoch_to_datetime,
+)
 
 
 def filter_good_data(full_sweep_sci):
@@ -539,25 +543,14 @@ def swapi_l1(packets):
         # Right now, we only process SWP_HK and SWP_SCI
         # other packets are not process in this processing pipeline
         # If appId is science, then the file should contain all data of science appId
-        sorted_packets = sort_by_time(grouped_packets[apid], "SHCOARSE")
-        ds_data = create_dataset(sorted_packets)
+        ds_data = create_dataset(grouped_packets[apid], include_header=False)
 
         if apid == SWAPIAPID.SWP_SCI.value:
             data = process_swapi_science(ds_data)
             processed_data.append(data)
         if apid == SWAPIAPID.SWP_HK.value:
             # convert epoch to datetime
-            epoch_converted_time = [
-                calc_start_time(time) for time in ds_data["epoch"].data
-            ]
-            # add attrs back to epoch
-            epoch = xr.DataArray(
-                epoch_converted_time,
-                name="epoch",
-                dims=["epoch"],
-                attrs=ConstantCoordinates.EPOCH,
-            )
-            ds_data = ds_data.assign_coords(epoch=epoch)
+            ds_data = update_epoch_to_datetime(ds_data)
 
             # Add datalevel attrs
             ds_data.attrs.update(swapi_l1_hk_attrs.output())

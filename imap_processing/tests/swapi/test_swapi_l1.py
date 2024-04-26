@@ -118,7 +118,7 @@ def test_swapi_algorithm(decom_test_data):
     grouped_data = group_by_apid(decom_test_data)
     science_data = grouped_data[SWAPIAPID.SWP_SCI]
     sorted_packets = sort_by_time(science_data, "SHCOARSE")
-    ds_data = create_dataset(sorted_packets)
+    ds_data = create_dataset(sorted_packets, include_header=False)
     full_sweep_indices = get_indices_of_full_sweep(ds_data)
     full_sweep_sci = ds_data.isel({"epoch": full_sweep_indices})
     total_packets = len(full_sweep_sci["seq_number"].data)
@@ -211,7 +211,7 @@ def test_process_swapi_science(decom_test_data):
     grouped_data = group_by_apid(decom_test_data)
     science_data = grouped_data[SWAPIAPID.SWP_SCI]
     sorted_packets = sort_by_time(science_data, "SHCOARSE")
-    ds_data = create_dataset(sorted_packets)
+    ds_data = create_dataset(sorted_packets, include_header=False)
     processed_data = process_swapi_science(ds_data)
 
     # Test dataset dimensions
