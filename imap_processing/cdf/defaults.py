@@ -26,8 +26,12 @@ class GlobalConstants:
 
     INT_FILLVAL = np.iinfo(np.int64).min
     INT_MAXVAL = np.iinfo(np.int64).max
+    FLOAT_MAXVAL = np.finfo(np.float64).max
     DOUBLE_FILLVAL = np.float64(-1.0e31)
     # 1900-01-01T00:00:00
     MIN_EPOCH = -315575942816000000
     # 2100-01-01T00:00:00
     MAX_EPOCH = 3155630469184000000
+    # 32-bits max int value
+    UINT32_MAXVAL = np.iinfo(np.uint32).max
+    UINT16_MAXVAL = np.iinfo(np.uint16).max

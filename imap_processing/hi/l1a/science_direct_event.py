@@ -1,5 +1,7 @@
 """IMAP-Hi direct event processing."""
 
+import dataclasses
+
 import numpy as np
 import xarray as xr
 from space_packet_parser.parser import Packet
@@ -277,25 +279,51 @@ def create_dataset(de_data_list: list, packet_met_time: list) -> xr.Dataset:
     )
 
     dataset["esa_step"] = xr.DataArray(
-        esa_step, dims="epoch", attrs=hi_cdf_attrs.esa_step_attrs.output()
+        np.array(esa_step, dtype=np.uint8),
+        dims="epoch",
+        attrs=hi_cdf_attrs.esa_step_attrs.output(),
     )
     dataset["trigger_id"] = xr.DataArray(
-        trigger_id, dims="epoch", attrs=hi_cdf_attrs.trigger_id_attrs.output()
+        np.array(trigger_id, dtype=np.uint8),
+        dims="epoch",
+        attrs=hi_cdf_attrs.trigger_id_attrs.output(),
     )
     dataset["tof_1"] = xr.DataArray(
-        tof_1, dims="epoch", attrs=hi_cdf_attrs.tof_attrs.output()
+        np.array(tof_1, dtype=np.uint16),
+        dims="epoch",
+        attrs=dataclasses.replace(
+            hi_cdf_attrs.tof_attrs,
+            fieldname="Time of Flight (TOF) 1",
+            label_axis="TOF1",
+        ).output(),
     )
     dataset["tof_2"] = xr.DataArray(
-        tof_2, dims="epoch", attrs=hi_cdf_attrs.tof_attrs.output()
+        np.array(tof_2, dtype=np.uint16),
+        dims="epoch",
+        attrs=dataclasses.replace(
+            hi_cdf_attrs.tof_attrs,
+            fieldname="Time of Flight (TOF) 2",
+            label_axis="TOF2",
+        ).output(),
     )
     dataset["tof_3"] = xr.DataArray(
-        tof_3, dims="epoch", attrs=hi_cdf_attrs.tof_attrs.output()
+        np.array(tof_3, dtype=np.uint16),
+        dims="epoch",
+        attrs=dataclasses.replace(
+            hi_cdf_attrs.tof_attrs,
+            fieldname="Time of Flight (TOF) 3",
+            label_axis="TOF3",
+        ).output(),
     )
     dataset["de_tag"] = xr.DataArray(
-        de_tag, dims="epoch", attrs=hi_cdf_attrs.de_tag_attrs.output()
+        np.array(de_tag, dtype=np.uint16),
+        dims="epoch",
+        attrs=hi_cdf_attrs.de_tag_attrs.output(),
     )
     dataset["ccsds_met"] = xr.DataArray(
-        ccsds_met, dims="epoch", attrs=hi_cdf_attrs.ccsds_met_attrs.output()
+        np.array(ccsds_met, dtype=np.uint32),
+        dims="epoch",
+        attrs=hi_cdf_attrs.ccsds_met_attrs.output(),
     )
     # TODO: figure out how to store information about
     # input data(one or more) it used to produce this dataset

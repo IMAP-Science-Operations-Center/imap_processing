@@ -1,6 +1,7 @@
 """SWAPI level-1 processing code."""
 
 import copy
+import dataclasses
 
 import numpy as np
 import xarray as xr
@@ -474,30 +475,66 @@ def process_swapi_science(sci_dataset):
     )
 
     dataset["swp_pcem_counts"] = xr.DataArray(
-        swp_pcem_counts, dims=["epoch", "energy"], attrs=counts_attrs.output()
+        np.array(swp_pcem_counts, dtype=np.uint16),
+        dims=["epoch", "energy"],
+        attrs=dataclasses.replace(
+            counts_attrs,
+            fieldname="Primary CEM counts",
+            label_axis="PCEM cnts",
+            catdesc="Primary Channel Electron Multiplier (CEM) counts",
+        ).output(),
     )
     dataset["swp_scem_counts"] = xr.DataArray(
-        swp_scem_counts, dims=["epoch", "energy"], attrs=counts_attrs.output()
+        np.array(swp_scem_counts, dtype=np.uint16),
+        dims=["epoch", "energy"],
+        attrs=dataclasses.replace(
+            counts_attrs,
+            fieldname="Secondary CEM counts",
+            label_axis="SCEM cnts",
+            catdesc="Secondary Channel Electron Multiplier (CEM) counts",
+        ).output(),
     )
     dataset["swp_coin_counts"] = xr.DataArray(
-        swp_coin_counts, dims=["epoch", "energy"], attrs=counts_attrs.output()
+        np.array(swp_coin_counts, dtype=np.uint16),
+        dims=["epoch", "energy"],
+        attrs=dataclasses.replace(
+            counts_attrs,
+            fieldname="Coincidence counts",
+            label_axis="COIN cnts",
+            catdesc="Coincidence counts",
+        ).output(),
     )
 
     # L1 quality flags
     dataset["swp_pcem_flags"] = xr.DataArray(
-        pcem_compression_flags,
+        np.array(pcem_compression_flags, dtype=np.uint8),
         dims=["epoch", "energy"],
-        attrs=compression_attrs.output(),
+        attrs=dataclasses.replace(
+            compression_attrs,
+            fieldname="Primary CEM flag",
+            label_axis="PCEM flag",
+            catdesc="Primary Channel Electron Multiplier (CEM) compression flags",
+        ).output(),
     )
     dataset["swp_scem_flags"] = xr.DataArray(
-        scem_compression_flags,
+        np.array(scem_compression_flags, dtype=np.uint8),
         dims=["epoch", "energy"],
-        attrs=compression_attrs.output(),
+        attrs=dataclasses.replace(
+            compression_attrs,
+            fieldname="Secondary CEM flag",
+            label_axis="SCEM flag",
+            catdesc="Secondary Channel Electron Multiplier (CEM) compression flags",
+        ).output(),
     )
     dataset["swp_coin_flags"] = xr.DataArray(
-        coin_compression_flags,
+        np.array(coin_compression_flags, dtype=np.uint8),
         dims=["epoch", "energy"],
-        attrs=compression_attrs.output(),
+        attrs=dataclasses.replace(
+            compression_attrs,
+            fieldname="Coincidence flag",
+            label_axis="COIN flag",
+            catdesc="Coincidence flag",
+        ).output(),
     )
 
     # ===================================================================
@@ -510,17 +547,32 @@ def process_swapi_science(sci_dataset):
     dataset["swp_pcem_err"] = xr.DataArray(
         np.sqrt(swp_pcem_counts),
         dims=["epoch", "energy"],
-        attrs=uncertainty_attrs.output(),
+        attrs=dataclasses.replace(
+            uncertainty_attrs,
+            fieldname="Primary CEM Uncertainty",
+            label_axis="PCEM uncert",
+            catdesc="Primary Channel Electron Multiplier (CEM) Uncertainty",
+        ).output(),
     )
     dataset["swp_scem_err"] = xr.DataArray(
         np.sqrt(swp_scem_counts),
         dims=["epoch", "energy"],
-        attrs=uncertainty_attrs.output(),
+        attrs=dataclasses.replace(
+            uncertainty_attrs,
+            fieldname="Secondary CEM Uncertainty",
+            label_axis="SCEM uncert",
+            catdesc="Secondary Channel Electron Multiplier (CEM) Uncertainty",
+        ).output(),
     )
     dataset["swp_coin_err"] = xr.DataArray(
         np.sqrt(swp_coin_counts),
         dims=["epoch", "energy"],
-        attrs=uncertainty_attrs.output(),
+        attrs=dataclasses.replace(
+            uncertainty_attrs,
+            fieldname="Coincidence Uncertainty",
+            label_axis="COIN uncert",
+            catdesc="Coincidence Uncertainty",
+        ).output(),
     )
     # TODO: when SWAPI gives formula to calculate this scenario:
     # Compression of counts also contributes to the uncertainty.
