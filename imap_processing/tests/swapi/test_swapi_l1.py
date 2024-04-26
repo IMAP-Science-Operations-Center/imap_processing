@@ -302,7 +302,7 @@ def test_process_swapi_science(decom_test_data):
     np.testing.assert_array_equal(processed_data["swp_pcem_counts"][0], expected_count)
     assert processed_data["swp_pcem_counts"].shape == (3, 72)
     # Test that we calculated uncertainty correctly
-    np.testing.assert_array_equal(
+    np.testing.assert_allclose(
         np.sqrt(processed_data["swp_pcem_counts"][0]), processed_data["swp_pcem_err"][0]
     )
 

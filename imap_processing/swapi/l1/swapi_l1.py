@@ -475,7 +475,7 @@ def process_swapi_science(sci_dataset):
     )
 
     dataset["swp_pcem_counts"] = xr.DataArray(
-        swp_pcem_counts,
+        np.array(swp_pcem_counts, dtype=np.uint16),
         dims=["epoch", "energy"],
         attrs=dataclasses.replace(
             counts_attrs,
@@ -485,7 +485,7 @@ def process_swapi_science(sci_dataset):
         ).output(),
     )
     dataset["swp_scem_counts"] = xr.DataArray(
-        swp_scem_counts,
+        np.array(swp_scem_counts, dtype=np.uint16),
         dims=["epoch", "energy"],
         attrs=dataclasses.replace(
             counts_attrs,
@@ -495,7 +495,7 @@ def process_swapi_science(sci_dataset):
         ).output(),
     )
     dataset["swp_coin_counts"] = xr.DataArray(
-        swp_coin_counts,
+        np.array(swp_coin_counts, dtype=np.uint16),
         dims=["epoch", "energy"],
         attrs=dataclasses.replace(
             counts_attrs,
@@ -507,7 +507,7 @@ def process_swapi_science(sci_dataset):
 
     # L1 quality flags
     dataset["swp_pcem_flags"] = xr.DataArray(
-        pcem_compression_flags,
+        np.array(pcem_compression_flags, dtype=np.uint8),
         dims=["epoch", "energy"],
         attrs=dataclasses.replace(
             compression_attrs,
@@ -517,7 +517,7 @@ def process_swapi_science(sci_dataset):
         ).output(),
     )
     dataset["swp_scem_flags"] = xr.DataArray(
-        scem_compression_flags,
+        np.array(scem_compression_flags, dtype=np.uint8),
         dims=["epoch", "energy"],
         attrs=dataclasses.replace(
             compression_attrs,
@@ -527,7 +527,7 @@ def process_swapi_science(sci_dataset):
         ).output(),
     )
     dataset["swp_coin_flags"] = xr.DataArray(
-        coin_compression_flags,
+        np.array(coin_compression_flags, dtype=np.uint8),
         dims=["epoch", "energy"],
         attrs=dataclasses.replace(
             compression_attrs,
