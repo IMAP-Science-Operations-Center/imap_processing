@@ -379,13 +379,3 @@ def process_codice_l1a(packets) -> xr.Dataset:
     logger.info(f"\tCreated CDF file: {dataset.cdf_filename}")
 
     return dataset
-
-
-if __name__ == "__main__":
-    from imap_processing.codice.codice_l0 import decom_packets
-
-    packets = decom_packets(
-        Path(f"{imap_module_directory}/tests/codice/data/lo_fsw_view_3_ccsds.bin")
-    )
-    dataset = process_codice_l1a(packets)
-    print(dataset)
