@@ -43,10 +43,17 @@ VALIDATION_DATA = [
 
 
 @pytest.fixture(params=TEST_PACKETS)
-def test_l1a_data(request) -> tuple[xr.Dataset, str]:
+def test_l1a_data(request) -> xr.Dataset:
+    """Return a ``xarray`` dataset containing test data.
+
+    Returns
+    -------
+    dataset : xr.Dataset
+        A ``xarray`` dataset containing the test data
+    """
     packets = decom_packets(request.param)
-    dataset, cdf_filename = process_codice_l1a(packets)
-    return dataset, cdf_filename
+    dataset = process_codice_l1a(packets)
+    return dataset
 
 
 @pytest.mark.parametrize(
@@ -54,20 +61,20 @@ def test_l1a_data(request) -> tuple[xr.Dataset, str]:
     list(zip(TEST_PACKETS, EXPECTED_FILENAMES)),
     indirect=["test_l1a_data"],
 )
-def test_l1a_cdf_filenames(test_l1a_data, expected_filename: str):
+def test_l1a_cdf_filenames(test_l1a_data: xr.Dataset, expected_filename: str):
     """Tests that the ``process_codice_l1a`` function generates CDF files with
     expected filenames.
 
     Parameters
     ----------
-    test_l1a_data : tuple
-        A tuple containing the ``xarray`` dataset and the CDF filename
+    test_l1a_data : xr.Dataset
+        A ``xarray`` dataset containing the test data
     expected_filename : str
         The expected CDF filename
     """
 
-    _, cdf_filename = test_l1a_data
-    assert cdf_filename.name == expected_filename
+    dataset = test_l1a_data
+    assert dataset.cdf_filename.name == expected_filename
 
 
 @pytest.mark.parametrize(
@@ -75,18 +82,18 @@ def test_l1a_cdf_filenames(test_l1a_data, expected_filename: str):
     list(zip(TEST_PACKETS, EXPECTED_ARRAY_SHAPES)),
     indirect=["test_l1a_data"],
 )
-def test_l1a_data_array_shape(test_l1a_data, expected_shape: tuple):
+def test_l1a_data_array_shape(test_l1a_data: xr.Dataset, expected_shape: tuple):
     """Tests that the data arrays in the generated CDFs have the expected shape.
 
     Parameters
     ----------
-    test_l1a_data : tuple
-        A tuple containing the ``xarray`` dataset and the CDF filename
+    test_l1a_data : xr.Dataset
+        A ``xarray`` dataset containing the test data
     expected_shape : tuple
         The expected shape of the data array
     """
 
-    dataset, _ = test_l1a_data
+    dataset = test_l1a_data
     for variable in dataset:
         assert dataset[variable].data.shape == expected_shape
 
@@ -96,18 +103,18 @@ def test_l1a_data_array_shape(test_l1a_data, expected_shape: tuple):
     list(zip(TEST_PACKETS, EXPECTED_ARRAY_SIZES)),
     indirect=["test_l1a_data"],
 )
-def test_l1a_data_array_size(test_l1a_data, expected_size: int):
+def test_l1a_data_array_size(test_l1a_data: xr.Dataset, expected_size: int):
     """Tests that the data arrays in the generated CDFs have the expected size.
 
     Parameters
     ----------
-    test_l1a_data : tuple
-        A tuple containing the ``xarray`` dataset and the CDF filename
+    test_l1a_data : xr.Dataset
+        A ``xarray`` dataset containing the test data
     expected_size : int
         The expected size of the data array
     """
 
-    dataset, _ = test_l1a_data
+    dataset = test_l1a_data
     assert len(dataset) == expected_size
 
 
@@ -117,7 +124,7 @@ def test_l1a_data_array_size(test_l1a_data, expected_size: int):
     list(zip(TEST_PACKETS, VALIDATION_DATA)),
     indirect=["test_l1a_data"],
 )
-def test_l1a_data_array_values(test_l1a_data, validation_data: Path):
+def test_l1a_data_array_values(test_l1a_data: xr.Dataset, validation_data: Path):
     """Tests that the generated L1a CDF contents are valid.
 
     Once proper validation files are acquired, this test function should point
@@ -126,13 +133,13 @@ def test_l1a_data_array_values(test_l1a_data, validation_data: Path):
 
     Parameters
     ----------
-    test_l1a_data : tuple
-        A tuple containing the ``xarray`` dataset and the CDF filename
+    test_l1a_data : xr.Dataset
+        A ``xarray`` dataset containing the test data
     validataion_data : Path
         The path to the file containing the validation data
     """
 
-    generated_dataset, _ = test_l1a_data
+    generated_dataset = test_l1a_data
     validation_dataset = cdflib.xarray.cdf_to_xarray(validation_data)
 
     # Ensure the processed data matches the validation data
