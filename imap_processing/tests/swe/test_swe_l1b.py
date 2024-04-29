@@ -1,9 +1,8 @@
 import pandas as pd
 import pytest
-from cdflib.xarray import cdf_to_xarray
 
 from imap_processing import imap_module_directory
-from imap_processing.cdf.utils import write_cdf
+from imap_processing.cdf.utils import load_cdf, write_cdf
 from imap_processing.swe.l0 import decom_swe
 from imap_processing.swe.l1a.swe_l1a import swe_l1a
 from imap_processing.swe.l1a.swe_science import swe_science
@@ -132,7 +131,7 @@ def test_cdf_creation():
     assert hk_l1a_filepath.name == "imap_swe_l1a_sci_20230927_v001.cdf"
 
     # reads data from CDF file and passes to l1b
-    l1a_cdf_dataset = cdf_to_xarray(hk_l1a_filepath, to_datetime=True)
+    l1a_cdf_dataset = load_cdf(hk_l1a_filepath, to_datetime=True)
     l1b_dataset = swe_l1b(l1a_cdf_dataset)
 
     hk_l1b_filepath = write_cdf(l1b_dataset)
