@@ -42,20 +42,22 @@ def calc_start_time(shcoarse_time: float) -> np.datetime64:
     return launch_time + time_delta
 
 
-def load_cdf(file_path: Path) -> xr.Dataset:
+def load_cdf(file_path: Path, **kwargs) -> xr.Dataset:
     """Load the contents of a CDF file into an ``xarray`` dataset.
 
     Parameters
     ----------
     file_path : Path
         The path to the CDF file
+    kwargs : dict
+        Keyword arguments for ``cdf_to_xarray``
 
     Returns
     -------
     dataset : xr.Dataset
         The ``xarray`` dataset for the CDF file
     """
-    return cdf_to_xarray(file_path)
+    return cdf_to_xarray(file_path, kwargs)
 
 
 def write_cdf(dataset: xr.Dataset):
