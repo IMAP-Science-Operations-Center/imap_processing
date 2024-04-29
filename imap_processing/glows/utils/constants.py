@@ -76,3 +76,11 @@ class DirectEvent:
     timestamp: TimeTuple
     impulse_length: int
     multi_event: bool = False
+
+    def to_array(self):
+        return [
+            self.timestamp.seconds,
+            self.timestamp.subseconds,
+            self.impulse_length,
+            self.multi_event,
+        ]

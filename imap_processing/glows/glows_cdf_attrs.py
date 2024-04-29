@@ -54,6 +54,43 @@ bins_attrs = AttrBase(
     label_axis="Counts",
 )
 
+# TODO Update this
+direct_event_attr = AttrBase(
+    validmin=0,
+    validmax=70,  # doc says maximum count per bin is 66.7
+    catdesc="Direct events, containing seconds, subseconds, counts, and if it is a "
+    "multi-event (boolean)",
+    fieldname="Direct events",
+    format="F7.4",  # Float with 4 digits
+    var_type="support_data",
+    display_type="time_series",
+    label_axis="Counts",
+)
+
+# TODO Update this
+per_second_attrs = AttrBase(
+    validmin=0,
+    validmax=70,  # doc says maximum count per bin is 66.7
+    catdesc="Direct events recorded approximately per second",
+    fieldname="List of direct events ",
+    format="F7.4",  # Float with 4 digits
+    var_type="support_data",
+    display_type="time_series",
+    label_axis="Counts",
+)
+
+# TODO Update this
+direct_event_attrs = AttrBase(
+    validmin=0,
+    validmax=70,  # doc says maximum count per bin is 66.7
+    catdesc="Direct events recorded approximately per second",
+    fieldname="List of direct events ",
+    format="F7.4",  # Float with 4 digits
+    var_type="support_data",
+    display_type="time_series",
+    label_axis="Counts",
+)
+
 histogram_attrs = ScienceAttrs(
     validmin=0,
     validmax=70,  # doc says maximum count per bin is 66.7

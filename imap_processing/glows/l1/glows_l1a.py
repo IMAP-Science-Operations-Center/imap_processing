@@ -43,7 +43,9 @@ def glows_l1a(packet_filepath: Path, data_version: str) -> list[Path]:
     # Create histogram L1A and filter into days based on start time
     for hist in hist_l0:
         hist_l1a = HistogramL1A(hist)
-        hist_day = calc_start_time(hist.MET).astype("datetime64[D]")
+        # Split by IMAP start time
+        # TODO: Should this be MET?
+        hist_day = calc_start_time(hist.SEC).astype("datetime64[D]")
         if hist_day not in hists_by_day:
             hists_by_day[hist_day] = []
         hists_by_day[hist_day].append(hist_l1a)
@@ -56,7 +58,7 @@ def glows_l1a(packet_filepath: Path, data_version: str) -> list[Path]:
 
     for _, de_l1a_list in de_by_day.items():
         dataset = generate_de_dataset(de_l1a_list, data_version)
-        generated_files.append(write_cdf(dataset))
+        # generated_files.append(write_cdf(dataset))
 
     return generated_files
 
@@ -122,18 +124,29 @@ def generate_de_dataset(
     #  timestamp? Or should the list be split out to make the timestamps?
 
     # Each DirectEventL1A class covers 1 second of direct events data
-    direct_events = np.zeros((len(de_l1a_list), len(de_l1a_list[0].direct_events), 3))
+    direct_events = np.zeros((len(de_l1a_list), len(de_l1a_list[0].direct_events), 4))
 
     # In header: block header, missing seqs
     # Time varying - statusdata
 
+    # TODO Check docs to see what should be in here
+    support_data = {
+        "flight_software_version": [],
+        "ground_software_version": [],  # TODO: should this be a global file attribute?
+        "seq_count_in_pkts_file": [],
+        "imap_start_time": [],
+        "imap_time_offset": [],
+        "glows_start_time": [],
+        "glows_time_offset": [],
+    }
+
     for index, de in enumerate(de_l1a_list):
         # Set the timestamp to the first timestamp of the direct event list
         print("=============")
-        print(de.direct_events)
-        print(de.block_header)
-        print(de.l0.DE_DATA)
-        epoch_time = calc_start_time(de.direct_events[0].timestamp.to_seconds())
+        # print(de.direct_events)
+        # print(de.block_header)
+        # print(de.l0.DE_DATA)
+        epoch_time = calc_start_time(de.l0.MET).astype("datetime64[ns]")
 
         # determine if the length of the direct_events numpy array is long enough,
         # and extend the direct_events length dimension if necessary.
@@ -154,8 +167,55 @@ def generate_de_dataset(
                 "constant",
                 constant_values=(0,),
             )
+        new_de = np.array([event.to_array() for event in de.direct_events])
+        print(direct_events.shape)
 
+        direct_events[index, : len(de.direct_events), :] = new_de
         time_data[index] = epoch_time
+        support_data["block_header"].append(de.block_header)
+
+    epoch_time = xr.DataArray(
+        time_data,
+        name="epoch",
+        dims=["epoch"],
+        attrs=ConstantCoordinates.EPOCH,
+    )
+
+    direct_event = xr.DataArray(
+        np.arange(4),
+        name="direct_event",
+        dims=["direct_event"],
+        attrs=glows_cdf_attrs.direct_event_attrs.output(),
+    )
+
+    # TODO come up with a better name
+    per_second = xr.DataArray(
+        np.arange(direct_events.shape[1]),
+        name="per_second",
+        dims=["per_second"],
+        attrs=glows_cdf_attrs.per_second_attrs.output(),
+    )
+
+    de = xr.DataArray(
+        direct_events,
+        name="direct_events",
+        dims=["epoch", "per_second", "direct_event"],
+        coords={
+            "epoch": epoch_time,
+            "per_second": per_second,
+            "direct_event": direct_event,
+        },
+        attrs=glows_cdf_attrs.direct_event_attrs.output(),
+    )
+
+    output = xr.Dataset(
+        coords={"epoch": time_data},
+        attrs=glows_cdf_attrs.glows_l1a_de_attrs.output(),
+    )
+
+    output["direct_events"] = de
+
+    return output
 
 
 def generate_histogram_dataset(
@@ -261,17 +321,17 @@ def generate_histogram_dataset(
 
     output["histograms"] = hist
 
-    for key, value in support_data.items():
-        output[key] = xr.DataArray(
-            value,
-            name=key,
-            dims=["epoch"],
-            coords={"epoch": epoch_time},
-            attrs=dataclasses.replace(
-                glows_cdf_attrs.metadata_attrs,
-                catdesc=glows_cdf_attrs.catdesc_fieldname_l1a[key][0],
-                fieldname=glows_cdf_attrs.catdesc_fieldname_l1a[key][1],
-            ).output(),
-        )
+    # for key, value in support_data.items():
+    #     output[key] = xr.DataArray(
+    #         value,
+    #         name=key,
+    #         dims=["epoch"],
+    #         coords={"epoch": epoch_time},
+    #         attrs=dataclasses.replace(
+    #             glows_cdf_attrs.metadata_attrs,
+    #             catdesc=glows_cdf_attrs.catdesc_fieldname_l1a[key][0],
+    #             fieldname=glows_cdf_attrs.catdesc_fieldname_l1a[key][1],
+    #         ).output(),
+    #     )
 
     return output
