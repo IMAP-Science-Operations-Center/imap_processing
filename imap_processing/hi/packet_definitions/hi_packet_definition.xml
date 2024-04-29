@@ -123,12 +123,9 @@
 			</xtce:Parameter>
             <!-- SCI_DE end -->
             <!-- SCI_CNT start -->
-            <xtce:Parameter name="ESA_STEP" parameterTypeRef="UINT16" shortDescription="Lower 4-bits represent the ESA Step Number: 4-bit ESA Step Enumeration 12-bit Start of Acquisition Time">
-				<xtce:LongDescription>
-					Lower 4-bits represent the ESA Step Number:
-					4-bit ESA Step Enumeration
-					12-bit Start of Acquisition Time
-				</xtce:LongDescription>
+			<xtce:Parameter name="ESA_STEP" parameterTypeRef="UINT16">
+				<xtce:ShortDescription>ESA Step Number</xtce:ShortDescription>
+				<xtce:LongDescription>ESA Step Number</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="COUNTERS" parameterTypeRef="BYTE25920" shortDescription="An array of 90 counters, each counter being 12-bits: 8 12-bit qualified counters (AB, C1C2, AC1, BC1, ABC1, AC1C2, BC1C2, ABC1C2); 11 12-bit long counters (A, B, C, AB, C1C2, AC1, BC1, ABC1, AC1C2, BC1C2, ABC1C2); 5 12-bit counters (totalA, totalB, totalC, FEE_DE_SENT, FEE_DE_RECD)">
 				<xtce:LongDescription>

@@ -9,6 +9,7 @@ import xarray as xr
 from space_packet_parser.parser import Packet
 
 from imap_processing.cdf.global_attrs import ConstantCoordinates
+from imap_processing.cdf.utils import calc_start_time
 from imap_processing.common_cdf_attrs import metadata_attrs
 
 
@@ -101,17 +102,25 @@ def convert_raw_to_eu(dataset: xr.Dataset, conversion_table_path, packet_name):
     return dataset
 
 
-def create_dataset(packets: list[Packet], met_name="shcoarse") -> xr.Dataset:
+def create_dataset(
+    packets: list[Packet],
+    spacecraft_time_key="shcoarse",
+    include_header=True,
+    skip_keys=None,
+) -> xr.Dataset:
     """Create dataset for each metadata field.
-
-    # TODO: change IMAP-Hi to use this and others as needed.
 
     Parameters
     ----------
     packets : list[Packet]
         packet list
-    met_name : str
-        metadata name to use as epoch time
+    spacecraft_time_key : str, Optional
+        Default is "shcoarse" because many instrument uses it.
+        This key is used to get spacecraft time for epoch dimension.
+    include_header: bool, Optional
+        Whether to include CCSDS header data in the dataset
+    skip_keys: list, Optional
+        Keys to skip in the metadata
 
     Returns
     -------
@@ -121,9 +130,22 @@ def create_dataset(packets: list[Packet], met_name="shcoarse") -> xr.Dataset:
     metadata_arrays = collections.defaultdict(list)
     description_dict = {}
 
-    for data_packet in packets:
+    sorted_packets = sort_by_time(packets, spacecraft_time_key.upper())
+
+    for data_packet in sorted_packets:
+        data_to_include = (
+            (data_packet.header | data_packet.data)
+            if include_header
+            else data_packet.data
+        )
+
+        # Drop keys using skip_keys
+        if skip_keys is not None:
+            for key in skip_keys:
+                data_to_include.pop(key, None)
+
         # Add metadata to array
-        for key, value in (data_packet.header | data_packet.data).items():
+        for key, value in data_to_include.items():
             # convert key to lower case to match SPDF requirement
             data_key = key.lower()
             metadata_arrays[data_key].append(value.raw_value)
@@ -132,8 +154,12 @@ def create_dataset(packets: list[Packet], met_name="shcoarse") -> xr.Dataset:
                 value.long_description or value.short_description
             )
 
+    # NOTE: At this point, we keep epoch time as raw value from packet
+    # which is in seconds and spacecraft time. Some instrument uses this
+    # raw value in processing. If you want to convert this to datetime
+    # object, you can use `update_epoch_to_datetime` function afterwards.
     epoch_time = xr.DataArray(
-        metadata_arrays[met_name],
+        metadata_arrays[spacecraft_time_key],
         name="epoch",
         dims=["epoch"],
         attrs=ConstantCoordinates.EPOCH,
@@ -158,5 +184,32 @@ def create_dataset(packets: list[Packet], met_name="shcoarse") -> xr.Dataset:
             dims=["epoch"],
             attrs=data_attrs.output(),
         )
+
+    return dataset
+
+
+def update_epoch_to_datetime(dataset: xr.Dataset):
+    """Update epoch in dataset to datetime object.
+
+    Parameters
+    ----------
+    dataset : xr.Dataset
+        Dataset to update
+
+    Returns
+    -------
+    xr.Dataset
+        Dataset with updated epoch dimension from int to datetime object.
+    """
+    # convert epoch to datetime
+    epoch_converted_time = [calc_start_time(time) for time in dataset["epoch"].data]
+    # add attrs back to epoch
+    epoch = xr.DataArray(
+        epoch_converted_time,
+        name="epoch",
+        dims=["epoch"],
+        attrs=ConstantCoordinates.EPOCH,
+    )
+    dataset = dataset.assign_coords(epoch=epoch)
 
     return dataset

@@ -5,6 +5,7 @@ import pytest
 
 from imap_processing import imap_module_directory
 from imap_processing.cdf.utils import write_cdf
+from imap_processing.hi.l1a import histogram as hist
 from imap_processing.hi.l1a.hi_l1a import hi_l1a
 from imap_processing.hi.utils import HIAPID
 from imap_processing.tests.conftest import ccsds_header_data, check_sum
@@ -148,4 +149,36 @@ def test_app_nhk_decom():
 
     # TODO: ask Vivek about this date mismatch between the file name
     # and the data. May get resolved when we have good sample data.
-    assert cem_raw_cdf_filepath.name == "imap_hi_l1a_hk_20310824_v001.cdf"
+    assert cem_raw_cdf_filepath.name == "imap_hi_l1a_hk_20100313_v001.cdf"
+
+
+def test_app_hist_decom():
+    """Test histogram (SCI_CNT) data"""
+    test_path = imap_module_directory / "tests/hi/l0_test_data"
+    bin_data_path = test_path / "20231030_H45_SCI_CNT.bin"
+    processed_data = hi_l1a(packet_file_path=bin_data_path)
+
+    assert processed_data[0].attrs["Logical_source"] == "imap_hi_l1a_hist"
+    # TODO: compare with validation data once we have it
+
+    # Write CDF
+    cem_raw_cdf_filepath = write_cdf(processed_data[0])
+
+    assert cem_raw_cdf_filepath.name.startswith("imap_hi_l1a_hist_")
+
+
+def test_allocate_histogram_dataset():
+    """Test hi.l1a.histogram.allocate_histogram_dataset()"""
+    n_packets = 5
+    dataset = hist.allocate_histogram_dataset(n_packets)
+
+    assert dataset.dims["epoch"] == n_packets
+    assert dataset.dims["angle"] == 90
+    for var_name in (
+        "ccsds_met",
+        "esa_step",
+        *hist.QUALIFIED_COUNTERS,
+        *hist.LONG_COUNTERS,
+        *hist.TOTAL_COUNTERS,
+    ):
+        assert var_name in dataset
