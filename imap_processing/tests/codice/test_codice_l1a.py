@@ -15,16 +15,19 @@ EXPECTED_ARRAY_SHAPES = [
     (99,),  # hskp
     (1, 128),  # lo-sw-species-counts
     (1, 112),  # lo-nsw-species-counts
+    (1, 211),  # lo-sw-priority-counts
 ]
 EXPECTED_ARRAY_SIZES = [
     123,  # hskp
     16,  # lo-sw-species-counts
     8,  # lo-nsw-species-counts
+    5,  # lo-sw-priority-counts
 ]
 EXPECTED_FILENAMES = [
     "imap_codice_l1a_hskp_20100101_v001.cdf",
     "imap_codice_l1a_lo-sw-species-counts_20240319_v001.cdf",
     "imap_codice_l1a_lo-nsw-species-counts_20240319_v001.cdf",
+    "imap_codice_l1a_lo-sw-priority-counts_20240319_v001.cdf",
 ]
 TEST_PACKETS = [
     Path(
@@ -32,6 +35,7 @@ TEST_PACKETS = [
     ),
     Path(f"{imap_module_directory}/tests/codice/data/lo_fsw_view_5_ccsds.bin"),
     Path(f"{imap_module_directory}/tests/codice/data/lo_fsw_view_6_ccsds.bin"),
+    Path(f"{imap_module_directory}/tests/codice/data/lo_fsw_view_3_ccsds.bin"),
 ]
 
 # Placeholder for validation data files
@@ -39,6 +43,7 @@ VALIDATION_DATA = [
     f"{imap_module_directory}/tests/codice/data/validation_hskp.cdf",
     f"{imap_module_directory}/tests/codice/data/validation_lo-sw-species-counts.cdf",
     f"{imap_module_directory}/tests/codice/data/validation_lo-nsw-species-counts.cdf",
+    f"{imap_module_directory}/tests/codice/data/validataion_lo-sw-priority-counts.cdf",
 ]
 
 
