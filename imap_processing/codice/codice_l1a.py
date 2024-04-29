@@ -303,6 +303,12 @@ def process_codice_l1a(packets) -> xr.Dataset:
     dataset : xarray.Dataset
         ``xarray`` dataset containing the science data and supporting metadata
     """
+    apids_for_science_processing = [
+        CODICEAPID.COD_LO_SW_SPECIES_COUNTS,
+        CODICEAPID.COD_LO_NSW_SPECIES_COUNTS,
+        CODICEAPID.COD_LO_SW_PRIORITY_COUNTS,
+    ]
+
     # Group data by APID and sort by time
     grouped_data = group_by_apid(packets)
 
@@ -314,24 +320,7 @@ def process_codice_l1a(packets) -> xr.Dataset:
             sorted_packets = sort_by_time(packets, "SHCOARSE")
             dataset = create_hskp_dataset(packets=sorted_packets)
 
-        elif apid in [
-            CODICEAPID.COD_LO_SW_SPECIES_COUNTS,
-            CODICEAPID.COD_LO_NSW_SPECIES_COUNTS,
-        ]:
-            packets = sort_by_time(grouped_data[apid], "SHCOARSE")
-
-            # Get the four "main" parameters for processing
-            table_id, plan_id, plan_step, view_id = get_params(packets[0])
-
-            # Run the pipeline to create a dataset for the product
-            pipeline = CoDICEL1aPipeline(table_id, plan_id, plan_step, view_id)
-            pipeline.get_esa_sweep_values()
-            pipeline.get_acquisition_times()
-            pipeline.get_lo_data_products(apid)
-            pipeline.unpack_science_data(packets)
-            dataset = pipeline.create_science_dataset(packets)
-
-        elif apid == CODICEAPID.COD_LO_SW_PRIORITY_COUNTS:
+        elif apid in apids_for_science_processing:
             packets = sort_by_time(grouped_data[apid], "SHCOARSE")
 
             # Get the four "main" parameters for processing
