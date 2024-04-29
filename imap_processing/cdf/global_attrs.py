@@ -213,17 +213,26 @@ class AttrBase:
     display_type : str default="no_plot"
         The display type of the plot (ex "no_plot"), required
     catdesc : str, default=None
-        The category description, "CATDESC" attribute, required
+        The category description, "CATDESC" attribute, required.
+        Max 80 characters. If need to write more, use "var_notes".
     fieldname : str, default=None
-        The fieldname, "FIELDNAM" attribute
+        The fieldname, "FIELDNAM" attribute. Max 30 characters.
+        fieldname and label_axis parameter are closely related.
+        fieldname and label_axis are used in plot. fieldname
+        is used as title of the plot, label_axis is used as axis label.
+        For example, fieldname='Time of flight', label_axis='TOF'
     var_type : str, default="support_data"
-        The type of data
+        The type of data. Valid options are:
+            1. "data" - plotted and listed on CDAWeb and accessed by API,
+            2. "support_data" - not plotted
+            3. "metadata" - reserved for character type variables.
     fill_val : np.int64, default=Constants.INT_FILLVAL
         The values for filling data
     scale_type : str, default="linear"
         The scale of the axis, "SCALETYP" attribute
     label_axis : str, default=None
         Axis label, "LABLAXIS" attribute. Required. Should be close to 6 letters.
+        See fieldname parameter for more information.
     format : str, default=None
         The format of the data, in Fortran format
     units : str, default=None
