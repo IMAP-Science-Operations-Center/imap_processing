@@ -282,7 +282,7 @@ def get_params(packet) -> tuple[int, int, int, int]:
     return table_id, plan_id, plan_step, view_id
 
 
-def process_codice_l1a(packets) -> tuple[xr.Dataset, str]:
+def process_codice_l1a(packets) -> xr.Dataset:
     """Process CoDICE l0 data to create l1a data products.
 
     Parameters
@@ -292,7 +292,7 @@ def process_codice_l1a(packets) -> tuple[xr.Dataset, str]:
 
     Returns
     -------
-    dataset : xr.Dataset
+    dataset : xarray.Dataset
         ``xarray`` dataset containing the science data and supporting metadata
     """
     # Group data by APID and sort by time
