@@ -13,6 +13,14 @@ ESA = ElectroStatic Analyzer
 
 from imap_processing.codice.utils import CoDICECompression
 
+# CDF-friendly FIELDNAMES and VARNAMES for lo-sw-angular-counts data product
+LO_SW_ANGULAR_NAMES = [
+    ("hplus", "SW - H+"),
+    ("heplusplus", "SW - He++"),
+    ("oplus6", "SW - O+6"),
+    ("fe-loq", "SW - Fe lowQ"),
+]
+
 # CDF-friendly FIELDNAMES and VARNAMES for lo-sw-priority-counts data product
 LO_SW_PRIORITY_NAMES = [
     ("p0-tcrs", "SW Sector Triple Coincidence PUI's"),

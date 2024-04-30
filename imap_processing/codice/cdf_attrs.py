@@ -82,6 +82,15 @@ l1a_lo_sw_priority_counts_attrs = GlobalDataLevelAttrs(
     instrument_base=codice_base,
 )
 
+l1a_lo_sw_angular_counts_attrs = GlobalDataLevelAttrs(
+    data_type="L1A_SCI->Level-1A Science Data",
+    logical_source="imap_codice_l1a_lo-sw-angular-counts",
+    logical_source_desc=(
+        "IMAP Mission CoDICE Instrument Level-1A Lo Sunward Angular Counts Data"
+    ),
+    instrument_base=codice_base,
+)
+
 energy_attrs = AttrBase(
     validmin=0,
     validmax=127,
