@@ -209,17 +209,17 @@ class CoDICEL1aPipeline:
             The APID of interest.
         """
         if apid == CODICEAPID.COD_LO_SW_SPECIES_COUNTS:
-            self.num_species = 16
+            self.num_counters = 16
             self.num_energy_steps = 128
             self.variable_names = LO_SW_SPECIES_NAMES
             self.cdf_attrs = cdf_attrs.l1a_lo_sw_species_counts_attrs
         elif apid == CODICEAPID.COD_LO_NSW_SPECIES_COUNTS:
-            self.num_species = 8
+            self.num_counters = 8
             self.num_energy_steps = 112
             self.variable_names = LO_NSW_SPECIES_NAMES
             self.cdf_attrs = cdf_attrs.l1a_lo_nsw_species_counts_attrs
         elif apid == CODICEAPID.COD_LO_SW_PRIORITY_COUNTS:
-            self.num_priorities = 5
+            self.num_counters = 5
             self.num_energy_steps = 211
             self.variable_names = LO_SW_PRIORITY_NAMES
             self.cdf_attrs = cdf_attrs.l1a_lo_sw_priority_counts_attrs
@@ -246,9 +246,7 @@ class CoDICEL1aPipeline:
 
         # Divide up the data by the number of priorities or species
         num_bytes = len(science_values)
-        chunk_size = len(science_values) // (
-            self.num_priorities if hasattr(self, "num_priorities") else self.num_species
-        )
+        chunk_size = len(science_values) // self.num_counters
         self.data = [
             science_values[i : i + chunk_size] for i in range(0, num_bytes, chunk_size)
         ]
@@ -303,7 +301,7 @@ def process_codice_l1a(packets) -> xr.Dataset:
     dataset : xarray.Dataset
         ``xarray`` dataset containing the science data and supporting metadata
     """
-    apids_for_science_processing = [
+    apids_for_lo_science_processing = [
         CODICEAPID.COD_LO_SW_SPECIES_COUNTS,
         CODICEAPID.COD_LO_NSW_SPECIES_COUNTS,
         CODICEAPID.COD_LO_SW_PRIORITY_COUNTS,
@@ -320,7 +318,7 @@ def process_codice_l1a(packets) -> xr.Dataset:
             sorted_packets = sort_by_time(packets, "SHCOARSE")
             dataset = create_hskp_dataset(packets=sorted_packets)
 
-        elif apid in apids_for_science_processing:
+        elif apid in apids_for_lo_science_processing:
             packets = sort_by_time(grouped_data[apid], "SHCOARSE")
 
             # Get the four "main" parameters for processing
