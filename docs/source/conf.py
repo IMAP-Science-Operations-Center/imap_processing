@@ -85,7 +85,6 @@ intersphinx_mapping = {
     "pytest": ("https://pytest.org/en/stable/", None),
     "python": ("https://docs.python.org/3/", None),
     "xarray": ("https://docs.xarray.dev/en/stable/", None),
-    "bitstring": ("https://bitstring.readthedocs.io/en/stable/", None),
 }
 
 # Reference targets not found
