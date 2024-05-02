@@ -97,6 +97,7 @@ class CoDICEL1aPipeline:
 
         # TODO: Pull out common code and put in codice.utils alongside
         # create_hskp_dataset()
+        # TODO: Resolve "Python into too large to convert to C long" error
         """
         epoch = xr.DataArray(
             [calc_start_time(packets[0].data["SHCOARSE"].raw_value)],
@@ -342,6 +343,10 @@ def process_codice_l1a(packets) -> xr.Dataset:
             dataset = pipeline.create_science_dataset(packets)
 
         elif apid == CODICEAPID.COD_LO_PHA:
+            logger.info(f"{apid} is currently not supported")
+            continue
+
+        elif apid == CODICEAPID.COD_LO_NSW_PRIORITY_COUNTS:
             logger.info(f"{apid} is currently not supported")
             continue
 
