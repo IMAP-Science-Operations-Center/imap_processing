@@ -96,6 +96,7 @@ class CoDICEL1aPipeline:
 
         # TODO: Pull out common code and put in codice.utils alongside
         # create_hskp_dataset()
+        # TODO: Resolve "Python into too large to convert to C long" error
         """
         epoch = xr.DataArray(
             [calc_start_time(packets[0].data["SHCOARSE"].raw_value)],
