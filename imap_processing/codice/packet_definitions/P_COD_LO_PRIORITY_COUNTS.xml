@@ -39,11 +39,25 @@
 			<xtce:IntegerParameterType name="UINT32" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="32" encoding="unsigned" />
 			</xtce:IntegerParameterType>
-			<xtce:BinaryParameterType name="BYTE9437184">
+			<xtce:BinaryParameterType name="LO_PRIORITY_COUNTS_BITS">
 				<xtce:UnitSet />
 				<xtce:BinaryDataEncoding bitOrder="mostSignificantBitFirst">
 					<xtce:SizeInBits>
-						<xtce:FixedValue>9437184</xtce:FixedValue>
+						<xtce:DynamicValue>
+							<!--
+
+							Data is of variable length.
+							Slope is always 8 (8 bits per byte) and the intercept
+							is the total number of fixed length bits in the packet)
+
+							This currently works with an intercept of -216, but
+							this was determined empirically with test data. This
+							number should be revisited once an updated packet
+							definition is acquired.
+							-->
+              				<xtce:ParameterInstanceRef parameterRef="PKT_LEN"/>
+              				<xtce:LinearAdjustment intercept="-216" slope="8"/>
+						</xtce:DynamicValue>
 					</xtce:SizeInBits>
 				</xtce:BinaryDataEncoding>
 			</xtce:BinaryParameterType>
@@ -134,7 +148,7 @@
 				<xtce:ShortDescription>Number of bytes in the Data array</xtce:ShortDescription>
 				<xtce:LongDescription>Number of bytes in the Data array.  If compressed, this value represents the length of the compressed data.</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="DATA" parameterTypeRef="BYTE9437184">
+			<xtce:Parameter name="DATA" parameterTypeRef="LO_PRIORITY_COUNTS_BITS">
 				<xtce:ShortDescription>Data Array</xtce:ShortDescription>
 				<xtce:LongDescription>Counter Data
 

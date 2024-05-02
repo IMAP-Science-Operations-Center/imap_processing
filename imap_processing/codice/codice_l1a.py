@@ -29,6 +29,7 @@ from imap_processing.codice.constants import (
     LO_COMPRESSION_ID_LOOKUP,
     LO_NSW_SPECIES_NAMES,
     LO_STEPPING_TABLE_ID_LOOKUP,
+    LO_SW_PRIORITY_NAMES,
     LO_SW_SPECIES_NAMES,
 )
 from imap_processing.codice.utils import CODICEAPID, create_hskp_dataset
@@ -95,6 +96,7 @@ class CoDICEL1aPipeline:
 
         # TODO: Pull out common code and put in codice.utils alongside
         # create_hskp_dataset()
+        # TODO: Resolve "Python into too large to convert to C long" error
         """
         epoch = xr.DataArray(
             [calc_start_time(packets[0].data["SHCOARSE"].raw_value)],
@@ -116,15 +118,15 @@ class CoDICEL1aPipeline:
         )
 
         # Create a data variable for each species
-        for species_data, name in zip(self.data, self.species_names):
+        for variable_data, name in zip(self.data, self.variable_names):
             varname, fieldname = name
-            species_data_arr = [int(item) for item in species_data]
-            species_data_arr = np.array(species_data_arr).reshape(
+            variable_data_arr = [int(item) for item in variable_data]
+            variable_data_arr = np.array(variable_data_arr).reshape(
                 -1, self.num_energy_steps
             )
 
             dataset[varname] = xr.DataArray(
-                species_data_arr,
+                variable_data_arr,
                 name=varname,
                 dims=["epoch", "energy"],
                 attrs=dataclasses.replace(
@@ -208,15 +210,20 @@ class CoDICEL1aPipeline:
             The APID of interest.
         """
         if apid == CODICEAPID.COD_LO_SW_SPECIES_COUNTS:
-            self.num_species = 16
+            self.num_counters = 16
             self.num_energy_steps = 128
-            self.species_names = LO_SW_SPECIES_NAMES
-            self.cdf_attrs = cdf_attrs.l1a_lo_sw_species_attrs
+            self.variable_names = LO_SW_SPECIES_NAMES
+            self.cdf_attrs = cdf_attrs.l1a_lo_sw_species_counts_attrs
         elif apid == CODICEAPID.COD_LO_NSW_SPECIES_COUNTS:
-            self.num_species = 8
+            self.num_counters = 8
             self.num_energy_steps = 112
-            self.species_names = LO_NSW_SPECIES_NAMES
-            self.cdf_attrs = cdf_attrs.l1a_lo_nsw_species_attrs
+            self.variable_names = LO_NSW_SPECIES_NAMES
+            self.cdf_attrs = cdf_attrs.l1a_lo_nsw_species_counts_attrs
+        elif apid == CODICEAPID.COD_LO_SW_PRIORITY_COUNTS:
+            self.num_counters = 5
+            self.num_energy_steps = 211
+            self.variable_names = LO_SW_PRIORITY_NAMES
+            self.cdf_attrs = cdf_attrs.l1a_lo_sw_priority_counts_attrs
 
     def unpack_science_data(self, packets: list):
         """Unpack the science data from the packet.
@@ -238,9 +245,9 @@ class CoDICEL1aPipeline:
 
         science_values = packets[0].data["DATA"].raw_value
 
-        # Divide up the data by the number of species
+        # Divide up the data by the number of priorities or species
         num_bytes = len(science_values)
-        chunk_size = len(science_values) // self.num_species
+        chunk_size = len(science_values) // self.num_counters
         self.data = [
             science_values[i : i + chunk_size] for i in range(0, num_bytes, chunk_size)
         ]
@@ -295,6 +302,12 @@ def process_codice_l1a(packets) -> xr.Dataset:
     dataset : xarray.Dataset
         ``xarray`` dataset containing the science data and supporting metadata
     """
+    apids_for_lo_science_processing = [
+        CODICEAPID.COD_LO_SW_SPECIES_COUNTS,
+        CODICEAPID.COD_LO_NSW_SPECIES_COUNTS,
+        CODICEAPID.COD_LO_SW_PRIORITY_COUNTS,
+    ]
+
     # Group data by APID and sort by time
     grouped_data = group_by_apid(packets)
 
@@ -306,10 +319,7 @@ def process_codice_l1a(packets) -> xr.Dataset:
             sorted_packets = sort_by_time(packets, "SHCOARSE")
             dataset = create_hskp_dataset(packets=sorted_packets)
 
-        elif apid in [
-            CODICEAPID.COD_LO_SW_SPECIES_COUNTS,
-            CODICEAPID.COD_LO_NSW_SPECIES_COUNTS,
-        ]:
+        elif apid in apids_for_lo_science_processing:
             packets = sort_by_time(grouped_data[apid], "SHCOARSE")
 
             # Get the four "main" parameters for processing
@@ -324,10 +334,6 @@ def process_codice_l1a(packets) -> xr.Dataset:
             dataset = pipeline.create_science_dataset(packets)
 
         elif apid == CODICEAPID.COD_LO_PHA:
-            logger.info(f"{apid} is currently not supported")
-            continue
-
-        elif apid == CODICEAPID.COD_LO_SW_PRIORITY_COUNTS:
             logger.info(f"{apid} is currently not supported")
             continue
 
