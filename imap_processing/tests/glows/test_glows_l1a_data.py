@@ -73,7 +73,10 @@ def test_histogram_attributes(histogram_test_data):
         "seq_count_in_pkts_file": 0,
     }
 
-    assert histogram_test_data.block_header == expected_block_header
+    assert histogram_test_data.flight_software_version == expected_block_header["flight_software_version"]
+    assert histogram_test_data.ground_software_version == expected_block_header["ground_software_version"]
+    assert histogram_test_data.pkts_file_name == expected_block_header["pkts_file_name"]
+    assert histogram_test_data.seq_count_in_pkts_file == expected_block_header["seq_count_in_pkts_file"]
     assert histogram_test_data.last_spin_id == 0
 
     assert histogram_test_data.imap_start_time == TimeTuple(54232215, 0)
@@ -270,7 +273,6 @@ def test_combine_direct_events(decom_test_data):
     assert de1.direct_events
 
     # l0 attribute should not be equal, but everything else should be
-    assert de1.block_header == expected.block_header
     assert de1.de_data == expected.de_data
     assert de1.most_recent_seq == 1
     assert de1.missing_seq == []
@@ -395,7 +397,7 @@ def test_expected_results(l1a_test_data):
         de = de_data[validation_data["packet_counter"][index]]
 
         assert (
-            de.block_header["seq_count_in_pkts_file"]
+            de.l0.ccsds_header.SRC_SEQ_CTR
             == validation_data["seq_count_in_pkts_file"][index]
         )
         assert (

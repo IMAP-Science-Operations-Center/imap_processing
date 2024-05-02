@@ -164,7 +164,11 @@ class HistogramL1A:
 
     l0: InitVar[HistogramL0]
     histograms: list[int] = None
-    block_header: dict = None
+    # next four are in block header
+    flight_software_version: int = None
+    ground_software_version: str = None
+    pkts_file_name: str = None
+    seq_count_in_pkts_file: int = None
     last_spin_id: int = None
     imap_start_time: TimeTuple = None
     imap_time_offset: TimeTuple = None
@@ -180,13 +184,11 @@ class HistogramL1A:
         """
         self.histograms = list(l0.HISTOGRAM_DATA)
 
-        self.block_header = {
-            "flight_software_version": l0.SWVER,
-            "ground_software_version": __version__,
-            "pkts_file_name": l0.packet_file_name,
-            # note: packet number is seq_count (per apid!) field in CCSDS header
-            "seq_count_in_pkts_file": l0.ccsds_header.SRC_SEQ_CTR,
-        }
+        self.flight_software_version = l0.SWVER
+        self.ground_software_version = __version__
+        self.pkts_file_name = l0.packet_file_name
+        # note: packet number is seq_count (per apid!) field in CCSDS header
+        self.seq_count_in_pkts_file = l0.ccsds_header.SRC_SEQ_CTR
 
         # use start ID and offset to calculate the last spin ID in the block
         self.last_spin_id = l0.STARTID + l0.ENDID
@@ -219,14 +221,19 @@ class DirectEventL1A:
     so this class may span multiple packets. This is determined by the SEQ and LEN,
     by each packet having an incremental SEQ until LEN number of packets.
 
+    Block header information is retrieved from l0:
+    {
+        "flight_software_version" = l0.ccsds_header.VERSION
+        "ground_software_version" = __version__
+        "pkts_file_name" = l0.packet_file_name
+        "seq_count_in_pkts_file" = l0.ccsds_header.SRC_SEQ_CTR
+    }
     Attributes
     ----------
     l0: DirectEventL0
         Level 0 data. In the case of multiple L0 direct events, this is the first L0
         data class in the sequence. This is used to verify all events in the sequence
         match.
-    block_header: dict
-        Block header data structure containing versioning, sequence, and file names
     de_data: bytearray
         Bytearray of raw DirectEvent data, which is converted into direct_events
     most_recent_seq: int
@@ -249,7 +256,6 @@ class DirectEventL1A:
     """
 
     l0: DirectEventL0
-    block_header: dict
     de_data: bytearray = field(repr=False)  # Do not include in prints
     most_recent_seq: int
     missing_seq: list[int]
@@ -261,13 +267,6 @@ class DirectEventL1A:
         self.most_recent_seq = self.l0.SEQ
         self.de_data = bytearray(level0.DE_DATA)
         self.missing_seq = []
-
-        self.block_header = {
-            "ground_software_version": __version__,
-            "pkts_file_name": self.l0.packet_file_name,
-            # note: packet number is seq_count (per apid!) field in CCSDS header
-            "seq_count_in_pkts_file": self.l0.ccsds_header.SRC_SEQ_CTR,
-        }
 
         if level0.LEN == 1:
             self._process_de_data()
