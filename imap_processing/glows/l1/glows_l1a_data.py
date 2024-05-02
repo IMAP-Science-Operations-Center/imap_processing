@@ -228,6 +228,7 @@ class DirectEventL1A:
         "pkts_file_name" = l0.packet_file_name
         "seq_count_in_pkts_file" = l0.ccsds_header.SRC_SEQ_CTR
     }
+
     Attributes
     ----------
     l0: DirectEventL0

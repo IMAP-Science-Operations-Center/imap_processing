@@ -39,14 +39,22 @@ def test_generate_histogram_dataset(l1a_data):
     assert (dataset["histograms"].data[0] == histograms_l1a[0].histograms).all()
     hist_dict = dataclasses.asdict(histograms_l1a[0])
     for key, item in hist_dict.items():
-        if key in ["imap_start_time",
-                "imap_time_offset",
-                "glows_start_time",
-                "glows_time_offset",]:
-            assert dataset[key].data[0] == TimeTuple(item["seconds"], item["subseconds"]).to_seconds()
+        if key in [
+            "imap_start_time",
+            "imap_time_offset",
+            "glows_start_time",
+            "glows_time_offset",
+        ]:
+            assert (
+                dataset[key].data[0]
+                == TimeTuple(item["seconds"], item["subseconds"]).to_seconds()
+            )
         elif key == "flags":
             assert dataset["flags_set_onboard"].data[0] == item["flags_set_onboard"]
-            assert dataset["is_generated_on_ground"].data[0] == item["is_generated_on_ground"]
+            assert (
+                dataset["is_generated_on_ground"].data[0]
+                == item["is_generated_on_ground"]
+            )
         elif key not in ["histograms", "ground_software_version", "pkts_file_name"]:
             assert dataset[key].data[0] == item
 
@@ -59,17 +67,16 @@ def test_generate_de_dataset(l1a_data):
     assert len(dataset["epoch"].values) == len(de_l1a)
 
     # TODO fix this test
-    assert (dataset["direct_events"].data[0] == np.pad([event.to_array() for event in de_l1a[0].direct_events], ((0, 1389), (0, 0)))).all()
+    assert (
+        dataset["direct_events"].data[0]
+        == np.pad(
+            [event.to_array() for event in de_l1a[0].direct_events], ((0, 1389), (0, 0))
+        )
+    ).all()
 
-    assert (dataset["direct_events"].data[-1] == np.pad([event.to_array() for event in de_l1a[-1].direct_events], ((0, 651), (0, 0)))).all()
-
-
-def test_glows_cdf_generation():
-    # TODO: move this into a temporary directory
-
-    expected_day_one = "20110920"
-    expected_day_two = "20110921"
-
-    # assert len(cdf_generation) == 2
-    # assert expected_day_one in str(cdf_generation[0])
-    # assert expected_day_two in str(cdf_generation[1])
+    assert (
+        dataset["direct_events"].data[-1]
+        == np.pad(
+            [event.to_array() for event in de_l1a[-1].direct_events], ((0, 651), (0, 0))
+        )
+    ).all()

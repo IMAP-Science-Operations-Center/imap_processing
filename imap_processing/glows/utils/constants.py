@@ -78,6 +78,7 @@ class DirectEvent:
     multi_event: bool = False
 
     def to_array(self):
+        """Convert object to array [seconds, subseconds, impulse length, multievent]."""
         return [
             self.timestamp.seconds,
             self.timestamp.subseconds,

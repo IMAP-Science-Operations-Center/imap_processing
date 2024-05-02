@@ -73,10 +73,19 @@ def test_histogram_attributes(histogram_test_data):
         "seq_count_in_pkts_file": 0,
     }
 
-    assert histogram_test_data.flight_software_version == expected_block_header["flight_software_version"]
-    assert histogram_test_data.ground_software_version == expected_block_header["ground_software_version"]
+    assert (
+        histogram_test_data.flight_software_version
+        == expected_block_header["flight_software_version"]
+    )
+    assert (
+        histogram_test_data.ground_software_version
+        == expected_block_header["ground_software_version"]
+    )
     assert histogram_test_data.pkts_file_name == expected_block_header["pkts_file_name"]
-    assert histogram_test_data.seq_count_in_pkts_file == expected_block_header["seq_count_in_pkts_file"]
+    assert (
+        histogram_test_data.seq_count_in_pkts_file
+        == expected_block_header["seq_count_in_pkts_file"]
+    )
     assert histogram_test_data.last_spin_id == 0
 
     assert histogram_test_data.imap_start_time == TimeTuple(54232215, 0)
