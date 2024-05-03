@@ -277,10 +277,10 @@ class DirectEventL1A:
 
     Block header information is retrieved from l0:
     {
-        "flight_software_version" = l0.ccsds_header.VERSION
-        "ground_software_version" = __version__
-        "pkts_file_name" = l0.packet_file_name
-        "seq_count_in_pkts_file" = l0.ccsds_header.SRC_SEQ_CTR
+    "flight_software_version" = l0.ccsds_header.VERSION
+    "ground_software_version" = __version__
+    "pkts_file_name" = l0.packet_file_name
+    "seq_count_in_pkts_file" = l0.ccsds_header.SRC_SEQ_CTR
     }
 
     Attributes
