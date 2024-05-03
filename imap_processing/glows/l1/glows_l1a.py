@@ -307,6 +307,17 @@ def generate_histogram_dataset(
         "last_spin_id": [],
         "flags_set_onboard": [],
         "is_generated_on_ground": [],
+        "number_of_spins_per_block": [],
+        "number_of_bins_per_histogram": [],
+        "number_of_events": [],
+        "filter_temperature_average": [],
+        "filter_temperature_variance": [],
+        "hv_voltage_average": [],
+        "hv_voltage_variance": [],
+        "spin_period_average": [],
+        "spin_period_variance": [],
+        "pulse_length_average": [],
+        "pulse_length_variance": [],
     }
     time_metadata = {
         "imap_start_time": [],

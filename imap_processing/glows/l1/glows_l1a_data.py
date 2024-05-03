@@ -139,12 +139,19 @@ class HistogramL1A:
 
     Attributes
     ----------
-    l0: HistogramL0
-        HistogramL0 Data class containing the raw data from the histogram packet
+    l0: InitVar[HistogramL0]
+        HistogramL0 Data class containing the raw data from the histogram packet. This
+        is only used to create the class and cannot be accessed from an instance.
     histograms: list[int]
         List of histogram data values
-    block_header: dict
-        Header for L1A
+    flight_software_version: int
+        Version of the flight software used to generate the data. Part of block header.
+    ground_software_version: str
+        Version of the ground software used to process the data. Part of block header.
+    pkts_file_name: str
+        Name of the packet file used to generate the data. Part of block header.
+    seq_count_in_pkts_file: int
+        Sequence count in the packet file, equal to SRC_SEQ_CTR Part of block header.
     last_spin_id: int
         ID of the last spin in block (computed with start spin and offset)
     imap_start_time: tuple[int, int]
@@ -157,6 +164,28 @@ class HistogramL1A:
     glows_time_offset: tuple[int, int]
         GLOWS end time offset for the block, in the form (seconds, subseconds). In
         algorithm document as "glows_end_time_offset"
+    number_of_spins_per_block: int
+        Number of spins in the block, from L0.SPINS
+    number_of_bins_per_histogram: int
+        Number of bins in the histogram, from L0.NBINS
+    number_of_events: int
+        Number of events in the block, from L0.EVENTS
+    filter_temperature_average: int
+        Average filter temperature in the block, from L0.TEMPAVG. Uint encoded.
+    filter_temperature_variance: int
+        Variance of filter temperature in the block, from L0.TEMPVAR. Uint encoded.
+    hv_voltage_average: int
+        Average HV voltage in the block, from L0.HVAVG. Uint encoded.
+    hv_voltage_variance: int
+        Variance of HV voltage in the block, from L0.HVVAR. Uint encoded.
+    spin_period_average: int
+        Average spin period in the block, from L0.SPAVG. Uint encoded.
+    spin_period_variance: int
+        Variance of spin period in the block, from L0.SPAVG. Uint encoded.
+    pulse_length_average: int
+        Average pulse length in the block, from L0.ELAVG. Uint encoded.
+    pulse_length_variance: int
+        Variance of pulse length in the block, from L0.ELVAR. Uint encoded.
     flags: dict
         Dictionary containing "flags_set_onboard" from L0, and "is_generated_on_ground",
         which is set to "False" for decommed packets.
@@ -174,6 +203,18 @@ class HistogramL1A:
     imap_time_offset: TimeTuple = None
     glows_start_time: TimeTuple = None
     glows_time_offset: TimeTuple = None
+    # Following variables are copied from L0
+    number_of_spins_per_block: int = None
+    number_of_bins_per_histogram: int = None
+    number_of_events: int = None
+    filter_temperature_average: int = None
+    filter_temperature_variance: int = None
+    hv_voltage_average: int = None
+    hv_voltage_variance: int = None
+    spin_period_average: int = None
+    spin_period_variance: int = None
+    pulse_length_average: int = None
+    pulse_length_variance: int = None
     flags: dict = None
 
     def __post_init__(self, l0: HistogramL0):
@@ -205,6 +246,19 @@ class HistogramL1A:
         self.imap_time_offset = TimeTuple(l0.OFFSETSEC, l0.OFFSETSUBSEC)
         self.glows_start_time = TimeTuple(l0.GLXSEC, l0.GLXSUBSEC)
         self.glows_time_offset = TimeTuple(l0.GLXOFFSEC, l0.GLXOFFSUBSEC)
+
+        # In L1a, these are left as unit encoded values.
+        self.number_of_spins_per_block = l0.SPINS
+        self.number_of_bins_per_histogram = l0.NBINS
+        self.number_of_events = l0.EVENTS
+        self.filter_temperature_average = l0.TEMPAVG
+        self.filter_temperature_variance = l0.TEMPVAR
+        self.hv_voltage_average = l0.HVAVG
+        self.hv_voltage_variance = l0.HVVAR
+        self.spin_period_average = l0.SPAVG
+        self.spin_period_variance = l0.SPAVG
+        self.pulse_length_average = l0.ELAVG
+        self.pulse_length_variance = l0.ELVAR
 
         # Flags
         self.flags = {

@@ -141,6 +141,50 @@ catdesc_fieldname_l1a = {
         "Indicates if the histogram data was generated on the ground",
         "Histogram data generated on ground",
     ],
+    "number_of_spins_per_block": [
+        "Number of spins per block",
+        "Number of spins per block",
+    ],
+    "number_of_bins_per_histogram": [
+        "Number of histogram bins",
+        "Number of histogram bins",
+    ],
+    "number_of_events": [
+        "Total number of events or counts in the histogram",
+        "Total number of histogram events",
+    ],
+    "filter_temperature_average": [
+        "Filter temperature, averaged per block, and unit " "encoded",
+        "Average filter temperature, unit encoded",
+    ],
+    "filter_temperature_variance": [
+        "Filter temperature variance, per block, and unit " "encoded.",
+        "Uint encoded filter temperature variance",
+    ],
+    "hv_voltage_average": [
+        "block averaged HV voltage on the CEM, uint encoded",
+        "Uint encoded average HV voltage",
+    ],
+    "hv_voltage_variance": [
+        "variance of  HV voltage on the CEM, uint encoded",
+        "Uint encoded HV voltage variance",
+    ],
+    "spin_period_average": [
+        "Block averaged spin period, uint encoded",
+        "Average spin period, uint encoded",
+    ],
+    "spin_period_variance": [
+        "Variance of spin period, uint encoded",
+        "Variance of spin period, uint encoded",
+    ],
+    "pulse_length_average": [
+        "Block averaged impulse length, uint encoded",
+        "Block averaged impulse length, uint encoded",
+    ],
+    "pulse_length_variance": [
+        "Variance of impulse length, uint encoded",
+        "Variance of impulse length, uint encoded",
+    ],
     "imap_sclk_last_pps": ["IMAP seconds for last PPS", "IMAP seconds for last PPS"],
     "glows_sclk_last_pps": ["GLOWS seconds for last PPS", "GLOWS seconds for last PPS"],
     "glows_ssclk_last_pps": [
