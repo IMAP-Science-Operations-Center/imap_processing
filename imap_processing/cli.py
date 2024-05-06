@@ -19,7 +19,6 @@ from pathlib import Path
 from urllib.error import HTTPError
 
 import imap_data_access
-from cdflib.xarray import cdf_to_xarray
 
 import imap_processing
 
@@ -31,7 +30,7 @@ import imap_processing
 #   from imap_processing import cdf
 # In code:
 #   call cdf.utils.write_cdf
-from imap_processing.cdf.utils import write_cdf
+from imap_processing.cdf.utils import load_cdf, write_cdf
 from imap_processing.mag.l1a.mag_l1a import mag_l1a
 from imap_processing.swe.l1a.swe_l1a import swe_l1a
 from imap_processing.swe.l1b.swe_l1b import swe_l1b
@@ -352,7 +351,7 @@ class Swe(ProcessInstrument):
 
         elif self.data_level == "l1b":
             # read CDF file
-            l1a_dataset = cdf_to_xarray(dependencies[0])
+            l1a_dataset = load_cdf(dependencies[0])
             processed_data = swe_l1b(l1a_dataset)
             # TODO: Pass in the proper version and descriptor
             cdf_file_path = write_cdf(data=processed_data)
