@@ -33,9 +33,14 @@ def test_dataset():
             )
         },
         attrs=swe_l1a_global_attrs.output()
-        | {"Logical_source": "imap_swe_l1_sci", "Data_version": "001"},
+        | {
+            "Logical_source": "imap_swe_l1_sci",
+            "Data_version": "001",
+            "Logical_file_id": "imap_swe_l1_sci_20100101_v001",
+        },
     )
     dataset["epoch"].attrs = ConstantCoordinates.EPOCH
+    dataset["epoch"].attrs["DEPEND_0"] = "epoch"
 
     return dataset
 
@@ -71,3 +76,20 @@ def test_write_cdf(test_dataset):
     assert file_path.exists()
     assert file_path.name == "imap_swe_l1_sci_20100101_v001.cdf"
     assert file_path.relative_to(imap_data_access.config["DATA_DIR"])
+
+
+def test_written_and_loaded_dataset(test_dataset):
+    """Tests that a dataset that is written to CDF and then loaded results in
+    the original dataset.
+
+    Parameters
+    ----------
+    dataset : xarray.Dataset
+        An ``xarray`` dataset object to test with
+    """
+
+    new_dataset = load_cdf(write_cdf(test_dataset), to_datetime=True)
+    new_dataset.attrs["PI_affiliation"] = tuple(
+        new_dataset.attrs["PI_affiliation"]
+    )  # The PI_affiliation attribute should be a tuple
+    assert str(test_dataset) == str(new_dataset)

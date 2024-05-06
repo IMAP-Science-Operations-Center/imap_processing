@@ -54,10 +54,19 @@ def load_cdf(file_path: Path, **kwargs: dict) -> xr.Dataset:
 
     Returns
     -------
-    xr.Dataset
+    dataset : xr.Dataset
         The ``xarray`` dataset for the CDF file
     """
-    return cdf_to_xarray(file_path, kwargs)
+    dataset = cdf_to_xarray(file_path, kwargs)
+
+    # cdf_to_xarray converts single-value attributes to lists
+    # convert these back to single values where applicable
+    for attribute in dataset.attrs:
+        value = dataset.attrs[attribute]
+        if isinstance(value, list) and len(value) == 1:
+            dataset.attrs[attribute] = value[0]
+
+    return dataset
 
 
 def write_cdf(dataset: xr.Dataset):
