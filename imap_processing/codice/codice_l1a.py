@@ -29,6 +29,7 @@ from imap_processing.codice.constants import (
     LO_COMPRESSION_ID_LOOKUP,
     LO_NSW_SPECIES_NAMES,
     LO_STEPPING_TABLE_ID_LOOKUP,
+    LO_SW_ANGULAR_NAMES,
     LO_SW_PRIORITY_NAMES,
     LO_SW_SPECIES_NAMES,
 )
@@ -224,6 +225,11 @@ class CoDICEL1aPipeline:
             self.num_energy_steps = 211
             self.variable_names = LO_SW_PRIORITY_NAMES
             self.cdf_attrs = cdf_attrs.l1a_lo_sw_priority_counts_attrs
+        elif apid == CODICEAPID.COD_LO_SW_ANGULAR_COUNTS:
+            self.num_counters = 4
+            self.num_energy_steps = 5016
+            self.variable_names = LO_SW_ANGULAR_NAMES
+            self.cdf_attrs = cdf_attrs.l1a_lo_sw_angular_counts_attrs
 
     def unpack_science_data(self, packets: list):
         """Unpack the science data from the packet.
@@ -248,6 +254,7 @@ class CoDICEL1aPipeline:
         # Divide up the data by the number of priorities or species
         num_bytes = len(science_values)
         chunk_size = len(science_values) // self.num_counters
+
         self.data = [
             science_values[i : i + chunk_size] for i in range(0, num_bytes, chunk_size)
         ]
@@ -306,6 +313,8 @@ def process_codice_l1a(packets) -> xr.Dataset:
         CODICEAPID.COD_LO_SW_SPECIES_COUNTS,
         CODICEAPID.COD_LO_NSW_SPECIES_COUNTS,
         CODICEAPID.COD_LO_SW_PRIORITY_COUNTS,
+        CODICEAPID.COD_LO_NSW_PRIORITY_COUNTS,
+        CODICEAPID.COD_LO_SW_ANGULAR_COUNTS,
     ]
 
     # Group data by APID and sort by time
