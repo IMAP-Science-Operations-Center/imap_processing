@@ -47,6 +47,7 @@ pytest-cov = {version="^4.0.0", optional=true}
 ruff = {version="==0.2.1", optional=true}
 sphinx = {version="*", optional=true}
 sphinxcontrib-openapi = {version="^0.8.3", optional=true}
+xlrd = "^2.0.1"
 
 [tool.poetry.extras]
 dev = ["pre-commit", "ruff"]
