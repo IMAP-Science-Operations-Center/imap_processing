@@ -402,7 +402,7 @@ def test_expected_results(l1a_test_data):
         Path(__file__).parent / "direct_events_validation_data_l1a.csv",
         converters={"de_data": ast.literal_eval},
     )
-    assert validation_data.index.size == 20
+    assert validation_data.index.size == 5703
 
     for index in validation_data.index:
         de = de_data[validation_data["packet_counter"][index]]
