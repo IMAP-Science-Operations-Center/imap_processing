@@ -24,7 +24,7 @@ glows_base = GlobalInstrumentAttrs(
     __version__,
     "GLOWS>GLObal Solar Wind Structure",
     text,
-    "Photons (space)",  # TODO: is this accurate?
+    "Imagers (space)",  # TODO: is this the best option? https://spdf.gsfc.nasa.gov/istp_guide/gattributes.html#Instrument_type
 )
 
 # TODO: Do we want a data format version as well as a software version?
@@ -46,8 +46,8 @@ glows_l1a_de_attrs = GlobalDataLevelAttrs(
 bins_attrs = AttrBase(
     validmin=0,
     validmax=70,  # doc says maximum count per bin is 66.7
-    catdesc="Counts of direct events for photon impacts.",
-    fieldname="Counts of direct events.",
+    catdesc="Counts of direct events for photon impacts",
+    fieldname="Counts of direct events",
     format="F7.4",  # Float with 4 digits
     var_type="support_data",
     display_type="time_series",
@@ -59,7 +59,7 @@ per_second_attrs = AttrBase(
     validmin=0,
     validmax=300,
     catdesc="Direct events recorded approximately per second",
-    fieldname="List of direct events ",
+    fieldname="List of direct events",
     format="F7.4",  # Float with 4 digits
     var_type="support_data",
     display_type="time_series",
@@ -68,11 +68,25 @@ per_second_attrs = AttrBase(
 
 # TODO Update this
 # TODO rename this
-direct_event_attrs = AttrBase(
+event_attrs = AttrBase(
     validmin=0,
     validmax=300,  # TODO what is a reasonable max
     catdesc="Direct events recorded approximately per second",
-    fieldname="List of direct events ",
+    fieldname="List of direct events",
+    format="F7.4",  # Int with 10 digits
+    var_type="data",
+    display_type="time_series",
+    label_axis="Counts",
+)
+
+direct_event_attrs = ScienceAttrs(
+    depend_0="epoch",
+    depend_1="per_second",
+    depend_2="direct_event",
+    validmin=0,
+    validmax=300,  # TODO what is a reasonable max
+    catdesc="Direct events recorded approximately per second",
+    fieldname="List of direct events, binned per second",
     format="F7.4",  # Int with 10 digits
     var_type="data",
     display_type="time_series",
@@ -82,10 +96,10 @@ direct_event_attrs = AttrBase(
 histogram_attrs = ScienceAttrs(
     validmin=0,
     validmax=70,  # doc says maximum count per bin is 66.7, value has a 71
-    catdesc="Histogram of photon counts.",
+    catdesc="Histogram of photon counts",
     depend_0="epoch",
     depend_1="bins",
-    fieldname="Histogram of photon counts.",
+    fieldname="Histogram of photon counts",
     format="F7.4",  # Float with 4 digits TODO: are histogram objects float or int?
     display_type="time_series",
     label_axis="Counts",
@@ -96,12 +110,12 @@ histogram_attrs = ScienceAttrs(
 
 metadata_attrs = ScienceAttrs(
     depend_0="epoch",
-    validmin=GlobalConstants.INT_FILLVAL,
-    validmax=GlobalConstants.INT_MAXVAL,
+    validmin=0,
+    validmax=1000000000,  # TODO: Update MAXVAL for each metadata attribute
     display_type="time_series",
     fill_val=GlobalConstants.INT_FILLVAL,
     var_type="metadata",
-    format="I6",
+    format="I10",
     label_axis="Metadata",
 )
 

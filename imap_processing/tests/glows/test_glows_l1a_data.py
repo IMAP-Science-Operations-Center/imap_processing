@@ -35,7 +35,7 @@ def l1a_test_data(decom_test_data):
     de_l1a_dict = process_de_l0(decom_test_data[1])
 
     de_l1a = []
-    for _, value in de_l1a_dict.items():
+    for value in de_l1a_dict.values():
         de_l1a += value
 
     return hist_l1a, de_l1a
@@ -399,8 +399,10 @@ def test_expected_results(l1a_test_data):
     # Validation data is generated from the code sent over by GLOWS team. Contains the
     # first 20 packets
     validation_data = pd.read_csv(
-        Path(__file__).parent / "direct_events_validation_data_l1a.csv"
+        Path(__file__).parent / "direct_events_validation_data_l1a.csv",
+        converters={"de_data": ast.literal_eval},
     )
+    assert validation_data.index.size == 20
 
     for index in validation_data.index:
         de = de_data[validation_data["packet_counter"][index]]
@@ -486,25 +488,23 @@ def test_expected_results(l1a_test_data):
 
         assert de.l0.LEN == validation_data["number_of_de_packets"][index]
 
-        validation_de = ast.literal_eval(validation_data["de_data"][index])
-
         assert (
             de.direct_events[
                 validation_data["de_data_counter"][index]
             ].timestamp.seconds
-            == validation_de[0]
+            == validation_data["de_data"][index][0]
         )
         assert (
             de.direct_events[
                 validation_data["de_data_counter"][index]
             ].timestamp.subseconds
-            == validation_de[1]
+            == validation_data["de_data"][index][1]
         )
         assert (
             de.direct_events[validation_data["de_data_counter"][index]].impulse_length
-            == validation_de[2]
+            == validation_data["de_data"][index][2]
         )
         assert (
             de.direct_events[validation_data["de_data_counter"][index]].multi_event
-            == validation_de[3]
+            == validation_data["de_data"][index][3]
         )

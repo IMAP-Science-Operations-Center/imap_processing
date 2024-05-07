@@ -1,6 +1,7 @@
 """Methods for GLOWS Level 1A processing and CDF writing."""
 
 import dataclasses
+from collections import defaultdict
 from pathlib import Path
 
 import numpy as np
@@ -37,7 +38,7 @@ def glows_l1a(packet_filepath: Path, data_version: str) -> list[Path]:
     hist_l0, de_l0 = decom_packets(packet_filepath)
 
     de_by_day = process_de_l0(de_l0)
-    hists_by_day = dict()
+    hists_by_day = defaultdict(list)
 
     # Create histogram L1A and filter into days based on start time
     for hist in hist_l0:
@@ -45,17 +46,15 @@ def glows_l1a(packet_filepath: Path, data_version: str) -> list[Path]:
         # Split by IMAP start time
         # TODO: Should this be MET?
         hist_day = calc_start_time(hist.SEC).astype("datetime64[D]")
-        if hist_day not in hists_by_day:
-            hists_by_day[hist_day] = []
         hists_by_day[hist_day].append(hist_l1a)
 
     # Generate CDF files for each day
     generated_files = []
-    for _, hist_l1a_list in hists_by_day.items():
+    for hist_l1a_list in hists_by_day.values():
         dataset = generate_histogram_dataset(hist_l1a_list, data_version)
         generated_files.append(write_cdf(dataset))
 
-    for _, de_l1a_list in de_by_day.items():
+    for de_l1a_list in de_by_day.values():
         dataset = generate_de_dataset(de_l1a_list, data_version)
         generated_files.append(write_cdf(dataset))
 
@@ -183,7 +182,7 @@ def generate_de_dataset(
                 "constant",
                 constant_values=(0,),
             )
-        new_de = np.array([event.to_array() for event in de.direct_events])
+        new_de = np.array([event.to_list() for event in de.direct_events])
 
         direct_events[index, : len(de.direct_events), :] = new_de
         time_data[index] = epoch_time
@@ -207,10 +206,11 @@ def generate_de_dataset(
     )
 
     direct_event = xr.DataArray(
+        # Corresponds to DirectEvent (seconds, subseconds, impulse_length, multi_event)
         np.arange(4),
         name="direct_event",
         dims=["direct_event"],
-        attrs=glows_cdf_attrs.direct_event_attrs.output(),
+        attrs=glows_cdf_attrs.event_attrs.output(),
     )
 
     # TODO come up with a better name

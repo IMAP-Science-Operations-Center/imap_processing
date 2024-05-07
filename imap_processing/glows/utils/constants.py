@@ -77,8 +77,8 @@ class DirectEvent:
     impulse_length: int
     multi_event: bool = False
 
-    def to_array(self):
-        """Convert object to array [seconds, subseconds, impulse length, multievent]."""
+    def to_list(self):
+        """Convert object to list [seconds, subseconds, impulse length, multievent]."""
         return [
             self.timestamp.seconds,
             self.timestamp.subseconds,

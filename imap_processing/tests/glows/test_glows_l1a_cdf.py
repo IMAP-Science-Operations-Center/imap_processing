@@ -70,13 +70,13 @@ def test_generate_de_dataset(l1a_data):
     assert (
         dataset["direct_events"].data[0]
         == np.pad(
-            [event.to_array() for event in de_l1a[0].direct_events], ((0, 1389), (0, 0))
+            [event.to_list() for event in de_l1a[0].direct_events], ((0, 1389), (0, 0))
         )
     ).all()
 
     assert (
         dataset["direct_events"].data[-1]
         == np.pad(
-            [event.to_array() for event in de_l1a[-1].direct_events], ((0, 651), (0, 0))
+            [event.to_list() for event in de_l1a[-1].direct_events], ((0, 651), (0, 0))
         )
     ).all()
