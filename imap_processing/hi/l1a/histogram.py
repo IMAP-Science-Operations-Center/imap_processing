@@ -128,8 +128,7 @@ def allocate_histogram_dataset(num_packets: int) -> xr.Dataset:
             dims=["epoch", "angle"],
             attrs=dataclasses.replace(
                 hi_cdf_attrs.hi_hist_l1a_counter_attrs,
-                catdesc=f"Angular histogram of {counter} type events "
-                f"that occurred for a single ESA step.",
+                catdesc=f"Angular histogram of {counter} type events",
                 fieldname=f"{counter} histogram",
                 label_axis=counter,
             ).output(),
