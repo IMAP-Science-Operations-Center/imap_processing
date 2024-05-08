@@ -1,8 +1,11 @@
 import dataclasses
 
+import numpy as np
+import pandas as pd
 import pytest
 from cdflib.xarray import cdf_to_xarray
 
+from imap_processing.cdf.defaults import GlobalConstants
 from imap_processing.ultra import ultra_cdf_attrs
 from imap_processing.ultra.l0.decom_ultra import decom_ultra_apids
 from imap_processing.ultra.l0.ultra_utils import (
@@ -22,6 +25,15 @@ def decom_ultra_aux(ccsds_path, xtce_path):
 
 
 @pytest.fixture()
+def decom_ultra_aux_theta_0(ccsds_path_theta_0, xtce_path):
+    """Data for decom_ultra_events"""
+    data_packet_list = decom_ultra_apids(
+        ccsds_path_theta_0, xtce_path, ULTRA_AUX.apid[0]
+    )
+    return data_packet_list
+
+
+@pytest.fixture()
 def decom_ultra_rates(ccsds_path, xtce_path):
     """Data for decom_ultra_rates"""
     data_packet_list = decom_ultra_apids(ccsds_path, xtce_path, ULTRA_RATES.apid[0])
@@ -33,6 +45,15 @@ def decom_ultra_events(ccsds_path_events, xtce_path):
     """Data for decom_ultra_events"""
     data_packet_list = decom_ultra_apids(
         ccsds_path_events, xtce_path, ULTRA_EVENTS.apid[0]
+    )
+    return data_packet_list
+
+
+@pytest.fixture()
+def decom_ultra_events_theta_0(ccsds_path_theta_0, xtce_path):
+    """Data for decom_ultra_events"""
+    data_packet_list = decom_ultra_apids(
+        ccsds_path_theta_0, xtce_path, ULTRA_EVENTS.apid[0]
     )
     return data_packet_list
 
@@ -170,6 +191,40 @@ def test_xarray_events(decom_ultra_events, decom_ultra_aux, events_test_path):
 
     assert cointype_list == decom_ultra_events["COIN_TYPE"][0:1]
     assert cointype_attr == expected_cointype_attr
+
+
+def test_xarray_events_theta_0(
+    decom_ultra_events_theta_0, decom_ultra_aux_theta_0, events_fsw_comparison_theta_0
+):
+    """This function checks that a xarray was
+    successfully created from the decom_ultra_events data."""
+
+    dataset = create_dataset(
+        {
+            ULTRA_EVENTS.apid[0]: decom_ultra_events_theta_0,
+            ULTRA_AUX.apid[0]: decom_ultra_aux_theta_0,
+        }
+    )
+
+    df = pd.read_csv(events_fsw_comparison_theta_0)
+    df.replace(-1, GlobalConstants.INT_FILLVAL, inplace=True)
+
+    np.testing.assert_array_equal(df["CoinType"], dataset.COIN_TYPE.data)
+    np.testing.assert_array_equal(df["StartType"], dataset.START_TYPE.data)
+    np.testing.assert_array_equal(df["StopType"], dataset.STOP_TYPE.data)
+    np.testing.assert_array_equal(df["StartPosTDC"], dataset.START_POS_TDC.data)
+    np.testing.assert_array_equal(df["StopNorthTDC"], dataset.STOP_NORTH_TDC.data)
+    np.testing.assert_array_equal(df["StopEastTDC"], dataset.STOP_EAST_TDC.data)
+    np.testing.assert_array_equal(df["StopSouthTDC"], dataset.STOP_SOUTH_TDC.data)
+    np.testing.assert_array_equal(df["StopWestTDC"], dataset.STOP_WEST_TDC.data)
+    np.testing.assert_array_equal(df["CoinNorthTDC"], dataset.COIN_NORTH_TDC.data)
+    np.testing.assert_array_equal(df["CoinSouthTDC"], dataset.COIN_SOUTH_TDC.data)
+    np.testing.assert_array_equal(df["CoinDiscreteTDC"], dataset.COIN_DISCRETE_TDC.data)
+    np.testing.assert_array_equal(df["EnergyOrPH"], dataset.ENERGY_PH.data)
+    np.testing.assert_array_equal(df["PulseWidth"], dataset.PULSE_WIDTH.data)
+    np.testing.assert_array_equal(df["PhaseAngle"], dataset.PHASE_ANGLE.data)
+    np.testing.assert_array_equal(df["Bin"], dataset.BIN.data)
+    np.testing.assert_array_equal(df["CnT"], dataset.EVENT_FLAG_CNT.data)
 
 
 def test_cdf_aux(

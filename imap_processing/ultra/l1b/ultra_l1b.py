@@ -2,6 +2,7 @@
 
 # TODO: Decide on consistent fill values.
 import logging
+import math
 from collections import defaultdict
 
 import numpy as np
@@ -48,10 +49,8 @@ def get_back_positions(index: int, events_dataset: xarray.Dataset, xf: float):
     particle_tof : float
         Particle time of flight (i.e. from start to stop)
         (tenths of a nanosecond).
-    xb : float
-        x back position in (hundredths of a millimeter).
-    yb : float
-        y back position in (hundredths of a millimeter).
+    (xb, yb) : tuple of floats
+        Back positions in (hundredths of a millimeter).
     """
     # There are mismatches between the stop TDCs, i.e., SpN, SpS, SpE, and SpW.
     # This normalizes the TDCs
@@ -84,41 +83,21 @@ def get_back_positions(index: int, events_dataset: xarray.Dataset, xf: float):
 
     # Stop Type: 1=Top, 2=Bottom
     if events_dataset["STOP_TYPE"].data[index] == 1:
-        # TODO: Ask if this if statement is needed.
-        # If the difference between TOFy and TOFx is too large, the event is rejected
-        if (
-            get_image_params("TOFDiffTpMin")
-            <= (tofy - tofx)
-            <= get_image_params("TOFDiffTpMax")
-        ):
-            # Convert converts normalized TDC values into units of
-            # hundredths of a millimeter using lookup tables.
-            xb = get_back_position(xb_index, "XBkTp", "ultra45")
-            yb = get_back_position(yb_index, "YBkTp", "ultra45")
+        # Convert converts normalized TDC values into units of
+        # hundredths of a millimeter using lookup tables.
+        xb = get_back_position(xb_index, "XBkTp", "ultra45")
+        yb = get_back_position(yb_index, "YBkTp", "ultra45")
 
-            # Correction for the propagation delay of the start anode and other effects.
-            t2 = get_image_params("TOFSc") * t1 / 1024 + get_image_params("TOFTpOff")
-        else:
-            # TODO: add xb and yb here?
-            xb = yb = -1
-            logger.info("Event Rejected due to TOFDiffBt Min/Max.")
+        # Correction for the propagation delay of the start anode and other effects.
+        t2 = get_image_params("TOFSc") * t1 / 1024 + get_image_params("TOFTpOff")
 
     elif events_dataset["STOP_TYPE"].data[index] == 2:
-        # If the difference between TOFy and TOFx is too large, the event is rejected
-        if (
-            get_image_params("TOFDiffBtMin")
-            <= (tofy - tofx)
-            <= get_image_params("TOFDiffBtMax")
-        ):
-            xb = get_back_position(xb_index, "XBkBt", "ultra45")
-            yb = get_back_position(yb_index, "YBkBt", "ultra45")
+        xb = get_back_position(xb_index, "XBkBt", "ultra45")
+        yb = get_back_position(yb_index, "YBkBt", "ultra45")
 
-            # Correction for the propagation delay of the start anode and other effects.
-            t2 = get_image_params("TOFSc") * t1 / 1024 + get_image_params("TOFBtOff")
-        else:
-            # TODO: add xb=-1 and yb=-1 here?
-            xb = yb = -1
-            logger.info("Event Rejected due to TOFDiffBt Min/Max.")
+        # Correction for the propagation delay of the start anode and other effects.
+        t2 = get_image_params("TOFSc") * t1 / 1024 + get_image_params("TOFBtOff")
+
     else:
         raise ValueError("Error: Invalid Stop Type")
 
@@ -126,7 +105,7 @@ def get_back_positions(index: int, events_dataset: xarray.Dataset, xf: float):
     tof = t2 + xf * get_image_params("XFtTOF") / 32768
     particle_tof = t2  # used later to compute etof
 
-    return tof, particle_tof, xb, yb
+    return tof, particle_tof, (xb, yb)
 
 
 def get_front_x_position(start_type: int, start_position_tdc: float):
@@ -189,30 +168,31 @@ def get_front_y_position(start_type: int, yb: float):
     Returns
     -------
     d : float
-        Distance front to back (mm).
+        Distance front to back (hundredths of a millimeter).
     yf : float
-        Front y position (mm).
+        Front y position (hundredths of a millimeter).
     """
     df = 3.39  # shortest distance from slit to foil (mm)
-    ds = 45  # shutters slit to back detectors (mm)
-    yf_estimate = 40  # from position of particle (mm)
+    z_ds = 44.89  # position of slit on Z axis (mm)
 
     # A particle entering the left shutter will trigger
     # the left anode and vice versa.
     if start_type == 1:
-        # TODO: make certain yb units correct
-        dy_lut = (yf_estimate - yb / 100) * 256 / 81.92  # mm
-        yadj = get_y_adjust(dy_lut)  # mm
-        yf = yf_estimate - yadj  # mm
+        yf_estimate = 40.0  # front position of particle (mm)
+        dy_lut = round((yf_estimate - yb / 100) * 256 / 81.92)  # mm
+        yadj = get_y_adjust(dy_lut) / 100  # mm
+        yf = (yf_estimate - yadj) * 100  # hundredths of a millimeter
     elif start_type == 2:
-        dy_lut = (yb / 100 - yf_estimate) * 256 / 81.92  # mm
-        yadj = get_y_adjust(dy_lut)  # mm
-        yf = yf_estimate + yadj  # mm
+        yf_estimate = -40  # front position of particle (mm)
+        # TODO: make certain yb units correct
+        dy_lut = round((yb / 100 - yf_estimate) * 256 / 81.92)  # mm
+        yadj = get_y_adjust(dy_lut) / 100  # mm
+        yf = (yf_estimate + yadj) * 100  # hundredths of a millimeter
     else:
         raise ValueError("Error: Invalid Start Type")
 
     dadj = np.sqrt(2) * df - yadj  # mm
-    d = ds - dadj  # mm
+    d = (z_ds - dadj) * 100  # hundredths of a millimeter
 
     return d, yf
 
@@ -510,7 +490,7 @@ def determine_species_ssd(energy: float, tof: float, r: float):
     tof : float
         Time of flight of the SSD event (tenths of a nanosecond)
     r : float
-        Path length (mm).
+        Path length (hundredths of a millimeter).
 
     Returns
     -------
@@ -519,7 +499,18 @@ def determine_species_ssd(energy: float, tof: float, r: float):
     bin : int
         Species bin.
     """
-    ctof = tof  # * dmin-ssd-ctof / r TODO: this is unknown dmin-ssd-ctof
+    z_dstop = 2.6 / 2  # position of stop foil on Z axis (mm)
+    z_ds = 46.19 - z_dstop  # position of slit on Z axis (mm)
+    df = 3.39  # distance from slit to foil (mm)
+
+    # PH event TOF normalization to Z axis
+    # Note: there is a type in IMAP-Ultra Flight
+    # Software Specification document
+    dmin = z_ds - np.sqrt(2) * df  # (mm)
+
+    dmin_ssd_ctof = dmin**2 / (dmin - z_dstop)  # (mm)
+
+    ctof = tof * dmin_ssd_ctof / r
 
     # TODO: get these lookup tables
     if r < get_image_params("PathSteepThresh"):
@@ -557,7 +548,7 @@ def determine_species_pulse_height(energy: float, tof: float, r: float):
     tof : float
         Time of flight of the SSD event (tenths of a nanosecond).
     r : float
-        Path length (mm).
+        Path length (hundredths of a millimeter).
 
     Returns
     -------
@@ -583,7 +574,9 @@ def determine_species_pulse_height(energy: float, tof: float, r: float):
     return ctof, bin
 
 
-def get_particle_velocity(xf: float, xb: float, yf: float, yb: float, d: float):
+def get_particle_velocity(
+    front_position: tuple, back_position: tuple, d: float, tof: float
+):
     """
     Determine the particle velocity.
 
@@ -595,24 +588,35 @@ def get_particle_velocity(xf: float, xb: float, yf: float, yb: float, d: float):
 
     Parameters
     ----------
-    xf : float
-        x front position (hundredths of a millimeter).
-    xb : float
-        x back position (hundredths of a millimeter).
-    yf : float
-        Front y position (mm).
-    yb : float
-        y back position (hundredths of a millimeter).
+    front_position : tuple of floats
+        Front position (xf,yf) (hundredths of a millimeter).
+    back_position : tuple of floats
+        Back position (xb,yb) (hundredths of a millimeter).
     d : float
-        distance from slit to foil (mm).
+        distance from slit to foil (hundredths of a millimeter).
 
     Returns
     -------
     velocity : tuple of floats.
-        Corrected TOF.
+        Normalized component of the velocity vectors.
     """
-    # TODO: where is the time component?
-    velocity = ((xf / 100 - xb / 100), (yf - yb / 100), d)
+    # TODO: throw an error for a negative tof?
+    tof = abs(tof)
+    delta_x = front_position[0] - back_position[0]
+    delta_y = front_position[1] - back_position[1]
+
+    v_x = delta_x / tof
+    v_y = delta_y / tof
+    v_z = d / tof
+
+    # Magnitude of the velocity vector
+    magnitude_v = math.sqrt(v_x**2 + v_y**2 + v_z**2)
+
+    vhat_x = v_x / magnitude_v
+    vhat_y = v_y / magnitude_v
+    vhat_z = v_z / magnitude_v
+
+    velocity = (vhat_x, vhat_y, vhat_z)
 
     return velocity
 
@@ -632,6 +636,32 @@ def process_count_zero(data_dict: dict):
     data_dict["energy"].append(-1)
     data_dict["species"].append(-1)
     data_dict["velocity"].append((-1, -1, -1))
+
+
+def get_path_length(front_position, back_position, d):
+    """Calculate the path length.
+
+    Parameters
+    ----------
+    front_position : tuple of floats
+        Front position (xf,yf) (hundredths of a millimeter).
+    back_position : tuple of floats
+        Back position (xb,yb) (hundredths of a millimeter).
+    d : float
+        distance from slit to foil (hundredths of a millimeter).
+
+    Returns
+    -------
+    r : float
+        Path length (hundredths of a millimeter).
+    """
+    r = np.sqrt(
+        (front_position[0] - back_position[0]) ** 2
+        + (front_position[1] - back_position[1]) ** 2
+        + (d) ** 2
+    )
+
+    return r
 
 
 def get_extended_raw_events(events_dataset):
@@ -684,18 +714,18 @@ def get_extended_raw_events(events_dataset):
         if stop_type in [1, 2]:
             # Process for Top and Bottom stop types
             tof, particle_tof, xb, yb = get_back_positions(index, events_dataset, xf)
-            d, yf = get_front_y_position(index, events_dataset, yb)
+            d, yf = get_front_y_position(start_type, yb)
             pulse_height = events_dataset["ENERGY_PH"].data[index]
             energy = get_energy_pulse_height(pulse_height, stop_type, xb, yb)
-            r = np.sqrt((xf / 100 - xb / 100) ** 2 + (yf - yb / 100) ** 2 + d**2)
+            r = get_path_length(xf, xb, yf, yb, d)
             ctof, bin = determine_species_pulse_height(energy, tof, r)
             velocity = get_particle_velocity(xf, xb, yf, yb, d)
         elif stop_type >= 8:
             # Process for SSD stop types
             xb, yb, tof = get_ssd_positions(index, events_dataset, xf)
-            d, yf = get_front_y_position(index, events_dataset, yb)
+            d, yf = get_front_y_position(start_type, yb)
             energy = get_energy_ssd(index, events_dataset)
-            r = np.sqrt((xf / 100 - xb / 100) ** 2 + (yf - yb / 100) ** 2 + d**2)
+            r = get_path_length(xf, xb, yf, yb, d)
             ctof, bin = determine_species_ssd(energy, tof, r)
             velocity = get_particle_velocity(xf, xb, yf, yb, d)
         else:
@@ -704,10 +734,11 @@ def get_extended_raw_events(events_dataset):
         # Append to dictionary
         data_dict["front_position"].append((xf, yf))
         data_dict["back_position"].append((xb, yb))
-        # TODO: is this the tof we want to keep or ctof?
+
         data_dict["tof"].append(tof)
         data_dict["energy"].append(energy)
         # TODO: should we take this from determine_species or event data?
+        # Answer is determine_species and compare with event data
         data_dict["species"].append(bin)
         data_dict["velocity"].append(velocity)
 

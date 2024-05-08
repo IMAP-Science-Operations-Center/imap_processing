@@ -105,7 +105,7 @@ def get_back_position(back_index: int, key: str, file_label: str):
         Converted DNs to Units of hundredths of a millimeter.
     """
     back_pos_path = f"{base_path}/{file_label}_back-pos-luts.csv"
-    back_pos_df = pd.read_csv(back_pos_path, index_col="Index_logical")
+    back_pos_df = pd.read_csv(back_pos_path, index_col="Index_offset")
 
     dn_converted = back_pos_df.at[back_index, key]
 
