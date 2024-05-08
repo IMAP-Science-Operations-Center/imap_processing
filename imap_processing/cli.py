@@ -249,7 +249,7 @@ class ProcessInstrument(ABC):
 
         Attributes
         ----------
-        products: list[str]
+        products : list[str]
         A list of file paths to upload to the SDC.
         """
         if self.upload_to_sdc:
@@ -278,9 +278,9 @@ class ProcessInstrument(ABC):
         """
         Complete pre-processing.
 
-        For this baseclass, pre-processing consists of downloading
-        dependencies for processing. Child classes can override this
-        method to customize the pre-processing actions.
+        For this baseclass, pre-processing consists of downloading dependencies
+        for processing. Child classes can override this method to customize the
+        pre-processing actions.
 
         Returns
         -------
@@ -299,12 +299,13 @@ class ProcessInstrument(ABC):
 
         Attributes
         ----------
-        dependencies: list
-        List of dependencies to process
+        dependencies : list
+            List of dependencies to process
 
         Returns
         -------
-        List of products produced
+        list
+            List of products produced
         """
         raise NotImplementedError
 
@@ -318,8 +319,8 @@ class ProcessInstrument(ABC):
 
         Attributes
         ----------
-        products: list[str]
-        A list of file paths (products) produced by do_processing method.
+        products : list[str]
+            A list of file paths (products) produced by do_processing method.
         """
         self.upload_products(products)
 
