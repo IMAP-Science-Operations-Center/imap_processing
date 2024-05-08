@@ -1,6 +1,3 @@
-`CDK deployment steps
-<https://sds-data-manager.readthedocs.io/en/latest/cdk/cdk-deployment.html>`_
-
 Technology Stack
 ----------------
 
@@ -11,7 +8,7 @@ of the SDC began in ~2022-2023, and so many of the technology decisions reflect
 the technological ecosystem of that time.
 
 AWS
-^^^
+~~~
 
 The SDC uses Amazon Web Services (AWS) as the solution for `cloud
 infrastructure <https://lasp.colorado.edu/galaxy/display/IMAP/SDC+Architecture>`_
@@ -27,11 +24,18 @@ The following sections describe the particular cloud services used in the SDC:
 CDK
 """
 
+
+API Gateway
+"""""""""""
+
 Lambda
 """"""
 
 Batch
 """""
+
+EventBridge
+"""""""""""
 
 RDS
 """
@@ -48,7 +52,7 @@ S3
 
 
 Common Data Format
-^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~
 
 The Common Data Format (CDF) was selected as the file format for IMAP data from
 requirements. CDF is a widely used data format within the Heliophsyics
@@ -58,10 +62,10 @@ and arguably would not be the top choice amongst IMAP SDC developers. As such,
 no other data formats were considered.
 
 Docker
-^^^^^^
+~~~~~~
 
 GitHub
-^^^^^^
+~~~~~~
 
 The SDC uses `GitHub <https://github.com/IMAP-Science-Operations-Center>`_ for
 version controlling its software, as well as keeping track of development tasks
@@ -73,11 +77,11 @@ IMAP SDC strives to comply with the (relatively new) `NASA SMD SPD-41a policies
 this open-source collaborative GitHub solution made the most sense.
 
 Poetry
-^^^^^^
+~~~~~~
 
 
 Pytest
-^^^^^^
+~~~~~~
 
 The `pytest <https://docs.pytest.org>`_ python library was chosen for writing
 and executing unit tests. This library was chosen because it has a large and
@@ -89,7 +93,7 @@ considered.
 
 
 Python
-^^^^^^
+~~~~~~
 
 The SDC uses Python as the primary programming language for the implementation
 of the vast majority of the system and its ancillary tools. A few other
@@ -103,7 +107,7 @@ Datasystems group at LASP.
 
 
 Space Packet Parser
-^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~
 
 The SDC uses the `space_packet_parser
 <https://space-packet-parser.readthedocs.io/en/stable/>`_ library for the
@@ -115,7 +119,7 @@ updated to help meet the needs of the IMAP SDC. The other option for packet
 decommutation would have been `CCSDSPy <https://docs.ccsdspy.org/en/latest/>`_.
 
 Sphinx + ReadTheDocs
-^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~
 
 The SDC uses the Python `sphinx <https://www.sphinx-doc.org/en/master/>`_
 library for generating project documentation as well as reference documentation
@@ -129,11 +133,11 @@ These tools were chosen because they are widely used and have great integration
 with Poetry and GitHub.
 
 Sqlalchemy
-^^^^^^^^^^
+~~~~~~~~~~
 
 
 Xarray + cdflib
-^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~
 
 The Python `xarray <https://docs.xarray.dev/en/stable/>`_ and `cdflib
 <https://cdflib.readthedocs.io>`_ libraries are used for creating data
