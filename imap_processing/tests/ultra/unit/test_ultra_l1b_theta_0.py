@@ -51,20 +51,6 @@ def events_dataset(
     return events_dataset
 
 
-@pytest.fixture()
-def tof(
-    decom_ultra_events,
-    decom_ultra_aux,
-):
-    """TODO."""
-
-    events_dataset = create_dataset(
-        {ULTRA_EVENTS.apid[0]: decom_ultra_events, ULTRA_AUX.apid[0]: decom_ultra_aux}
-    )
-
-    return events_dataset
-
-
 def test_positions(
     events_dataset,
     events_fsw_comparison_theta_0,
