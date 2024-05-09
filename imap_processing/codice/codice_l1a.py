@@ -39,6 +39,11 @@ from imap_processing.utils import group_by_apid, sort_by_time
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
+# TODO: Expand use of launch_time for CoDICE
+# TODO: Data array lengths should all be 128 * num_counters
+#       (see notes in unpack_science_data)
+# TODO: Add ESA Sweep and acquisition times to CDFs
+
 
 class CoDICEL1aPipeline:
     """Contains methods for processing L0 data and creating L1a data products.
@@ -94,13 +99,9 @@ class CoDICEL1aPipeline:
         -------
         xr.Dataset
             ``xarray`` dataset containing the science data and supporting metadata
-
-        # TODO: Pull out common code and put in codice.utils alongside
-        # create_hskp_dataset()
-        # TODO: Resolve "Python into too large to convert to C long" error
         """
         epoch = xr.DataArray(
-            [calc_start_time(packets[0].data["SHCOARSE"].raw_value)],
+            [calc_start_time(packets[0].data["ACQ_START_SECONDS"].raw_value)],
             name="epoch",
             dims=["epoch"],
             attrs=ConstantCoordinates.EPOCH,
@@ -121,8 +122,7 @@ class CoDICEL1aPipeline:
         # Create a data variable for each species
         for variable_data, name in zip(self.data, self.variable_names):
             varname, fieldname = name
-            variable_data_arr = [int(item) for item in variable_data]
-            variable_data_arr = np.array(variable_data_arr).reshape(
+            variable_data_arr = np.array(list(variable_data), dtype=int).reshape(
                 -1, self.num_energy_steps
             )
 
@@ -134,8 +134,6 @@ class CoDICEL1aPipeline:
                     cdf_attrs.counts_attrs, fieldname=fieldname
                 ).output(),
             )
-
-        # TODO: Add in the ESA sweep values and acquisition times? (Confirm with Joey)
 
         return dataset
 
@@ -210,6 +208,33 @@ class CoDICEL1aPipeline:
         apid : int
             The APID of interest.
         """
+        # TODO: There are some discrepancies here to doublecheck with Joey:
+
+        # LO_SW_SPECIES_COUNTS all checks out
+        # PKT_LEN = 283 (really 284 because its zero-indexed)
+        # BYTE_COUNT = 256
+        # 256 * 8 = 2048 bits
+        # 2048 bits / 16 species = 128 bits per species
+
+        # LO_NSW_SPECIES_COUNTS
+        # PKT_LEN = 140
+        # BYTE_COUNT = 112
+        # 112 * 8 = 896 bits
+        # 896 bits / 8 species = 112 bits per species (should be 128)
+        # Math works out if there are 7 species
+
+        # LO_SW_PRIORITY_COUNTS
+        # PKT_LEN = 160
+        # BYTE_COUNT = 132
+        # 132 * 8 = 1056 bits
+        # 1056 bits / 5 counters = 211.2 bits per counter ???
+
+        # LO_SW_ANGULAR_COUNTS
+        # PKT_LEN = 2535
+        # BYTE_COUNT = 2508
+        # 2508 * 8 = 20064 bits
+        # 20064 bits / 4 counters = 5016 bits per counter ???
+
         if apid == CODICEAPID.COD_LO_SW_SPECIES_COUNTS:
             self.num_counters = 16
             self.num_energy_steps = 128
@@ -243,21 +268,36 @@ class CoDICEL1aPipeline:
         ----------
         packet : list[space_packet_parser.parser.Packet]
             List of packets for the APID of interest
-
-        TODO: Check to see if we expect to have multiple packets?
         """
         self.compression_algorithm = LO_COMPRESSION_ID_LOOKUP[self.view_id]
         self.collapse_table_id = LO_COLLAPSE_TABLE_ID_LOOKUP[self.view_id]
 
         science_values = packets[0].data["DATA"].raw_value
+        print(f"Length of science data in bits: {len(science_values)}")
+        print(f"Number of counters: {self.num_counters}")
+        print("\nCCSDS Header:\n")
+        for item in packets[0].header:
+            try:
+                print(f"{item}: {packets[0].header[item].raw_value}")
+            except:  # noqa
+                pass
+        print("\nData:\n")
+        for item in packets[0].data:
+            try:
+                print(f"{item}: {packets[0].data[item].raw_value}")
+            except:  # noqa
+                pass
 
         # Divide up the data by the number of priorities or species
-        num_bytes = len(science_values)
+        num_bits = len(science_values)
         chunk_size = len(science_values) // self.num_counters
+        print(f"chunk_size: {chunk_size}")
 
         self.data = [
-            science_values[i : i + chunk_size] for i in range(0, num_bytes, chunk_size)
+            science_values[i : i + chunk_size] for i in range(0, num_bits, chunk_size)
         ]
+
+        print("\n\n\n\n")
 
 
 def get_params(packet) -> tuple[int, int, int, int]:
@@ -329,6 +369,8 @@ def process_codice_l1a(packets) -> xr.Dataset:
             dataset = create_hskp_dataset(packets=sorted_packets)
 
         elif apid in apids_for_lo_science_processing:
+            print("\n")
+            print(CODICEAPID(apid).name)
             packets = sort_by_time(grouped_data[apid], "SHCOARSE")
 
             # Get the four "main" parameters for processing
