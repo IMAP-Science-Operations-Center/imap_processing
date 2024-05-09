@@ -4,8 +4,7 @@ For further details, see the documentation provided at
 https://imap-processing.readthedocs.io/en/latest/development/CDFs/cdf_requirements.html
 """
 
-# TODO: Update data-type attributes to match the data products
-# TODO: Add detailed catdescs
+# TODO: Add detailed catdescs and fieldnames
 
 from imap_processing.cdf.defaults import GlobalConstants
 from imap_processing.cdf.global_attrs import (
@@ -52,14 +51,14 @@ codice_metadata_attrs = ScienceAttrs(
 )
 
 l1a_hskp_attrs = GlobalDataLevelAttrs(
-    data_type="L1A_SCI->Level-1A Science Data",
+    data_type="L1A_hskp->Level-1A Housekeeping Data",
     logical_source="imap_codice_l1a_hskp",
     logical_source_desc="IMAP Mission CoDICE Instrument Level-1A Housekeeping Data",
     instrument_base=codice_base,
 )
 
 l1a_lo_sw_species_counts_attrs = GlobalDataLevelAttrs(
-    data_type="L1A_SCI->Level-1A Science Data",
+    data_type="L1A_lo-sw-species-counts->Level-1A Lo Sunward Species Counts Data",
     logical_source="imap_codice_l1a_lo-sw-species-counts",
     logical_source_desc=(
         "IMAP Mission CoDICE Instrument Level-1A Lo Sunward Species Counts Data"
@@ -68,7 +67,7 @@ l1a_lo_sw_species_counts_attrs = GlobalDataLevelAttrs(
 )
 
 l1a_lo_nsw_species_counts_attrs = GlobalDataLevelAttrs(
-    data_type="L1A_SCI->Level-1A Science Data",
+    data_type="L1A_lo-nsw-species-counts->Level-1A Lo Non-sunward Species Counts Data",
     logical_source="imap_codice_l1a_lo-nsw-species-counts",
     logical_source_desc=(
         "IMAP Mission CoDICE Instrument Level-1A Lo Non-sunward Species Counts Data"
@@ -77,7 +76,7 @@ l1a_lo_nsw_species_counts_attrs = GlobalDataLevelAttrs(
 )
 
 l1a_lo_sw_priority_counts_attrs = GlobalDataLevelAttrs(
-    data_type="L1A_SCI->Level-1A Science Data",
+    data_type="L1A_lo-sw-priority-counts->Level-1A Lo Sunward Priority Counts Data",
     logical_source="imap_codice_l1a_lo-sw-priority-counts",
     logical_source_desc=(
         "IMAP Mission CoDICE Instrument Level-1A Lo Sunward Priority Counts Data"
@@ -86,7 +85,7 @@ l1a_lo_sw_priority_counts_attrs = GlobalDataLevelAttrs(
 )
 
 l1a_lo_sw_angular_counts_attrs = GlobalDataLevelAttrs(
-    data_type="L1A_SCI->Level-1A Science Data",
+    data_type="L1A_lo-sw-angular-counts->Level-1A Lo Sunward Angular Counts Data",
     logical_source="imap_codice_l1a_lo-sw-angular-counts",
     logical_source_desc=(
         "IMAP Mission CoDICE Instrument Level-1A Lo Sunward Angular Counts Data"
@@ -104,7 +103,7 @@ energy_attrs = AttrBase(
     label_axis="TBD",
 )
 
-counts_attrs = ScienceAttrs(
+counters_attrs = ScienceAttrs(
     validmin=0,
     validmax=GlobalConstants.INT_MAXVAL,
     format="I12",

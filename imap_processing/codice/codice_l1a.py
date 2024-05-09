@@ -39,7 +39,8 @@ from imap_processing.utils import group_by_apid, sort_by_time
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-# TODO: Expand use of launch_time for CoDICE
+# TODO: Expand use of launch_time for CoDICE (separate PR since it affects
+#       calc_start_time() function)
 # TODO: Data array lengths should all be 128 * num_counters
 #       (see notes in unpack_science_data)
 # TODO: Add ESA Sweep and acquisition times to CDFs
@@ -131,7 +132,7 @@ class CoDICEL1aPipeline:
                 name=varname,
                 dims=["epoch", "energy"],
                 attrs=dataclasses.replace(
-                    cdf_attrs.counts_attrs, fieldname=fieldname
+                    cdf_attrs.counters_attrs, fieldname=fieldname
                 ).output(),
             )
 
