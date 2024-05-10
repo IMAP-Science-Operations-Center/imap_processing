@@ -293,9 +293,8 @@ class ProcessInstrument(ABC):
         """
         Abstract method that processes the IMAP processing steps.
 
-        All child classes must implement this method. Input and
-        outputs are typically lists of file paths but are free to
-        any list.
+        All child classes must implement this method. Input and outputs are
+        typically lists of file paths but are free to any list.
 
         Attributes
         ----------
@@ -313,9 +312,9 @@ class ProcessInstrument(ABC):
         """
         Complete post-processing.
 
-        Default post-processing consists of uploading newly generated
-        products to the IMAP SDC. Child classes can override this method
-        to customize the post-processing actions.
+        Default post-processing consists of uploading newly generated products
+        to the IMAP SDC. Child classes can override this method to customize the
+        post-processing actions.
 
         Attributes
         ----------
