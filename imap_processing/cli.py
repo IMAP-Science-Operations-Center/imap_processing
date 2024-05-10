@@ -16,6 +16,7 @@ import sys
 from abc import ABC, abstractmethod
 from json import loads
 from pathlib import Path
+from typing import final
 from urllib.error import HTTPError
 
 import imap_data_access
@@ -31,6 +32,7 @@ import imap_processing
 # In code:
 #   call cdf.utils.write_cdf
 from imap_processing.cdf.utils import load_cdf, write_cdf
+from imap_processing.hi.l1a import hi_l1a
 from imap_processing.mag.l1a.mag_l1a import mag_l1a
 from imap_processing.swe.l1a.swe_l1a import swe_l1a
 from imap_processing.swe.l1b.swe_l1b import swe_l1b
@@ -241,16 +243,91 @@ class ProcessInstrument(ABC):
             file_list.append(imap_data_access.download(return_query[0]["file_path"]))
         return file_list
 
-    @abstractmethod
+    def upload_products(self, products: list[str]):
+        """
+        Upload data products to the IMAP SDC.
+
+        Attributes
+        ----------
+        products : list[str]
+        A list of file paths to upload to the SDC.
+        """
+        if self.upload_to_sdc:
+            if len(products) == 0:
+                logger.info("No files to upload.")
+            for filename in products:
+                logger.info(f"Uploading file: {filename}")
+                imap_data_access.upload(filename)
+
+    @final
     def process(self):
-        """Perform instrument specific processing."""
+        """
+        Run the processing workflow and cannot be overridden by subclasses.
+
+        Each IMAP processing step consists of three steps:
+        1. Pre-processing actions such as downloading dependencies for processing.
+        2. Do the data processing. The result of this step will usually be a list
+        of new products (files).
+        3. Post-processing actions such as uploading files to the IMAP SDC.
+        """
+        dependencies = self.pre_processing()
+        products = self.do_processing(dependencies)
+        self.post_processing(products)
+
+    def pre_processing(self):
+        """
+        Complete pre-processing.
+
+        For this baseclass, pre-processing consists of downloading dependencies
+        for processing. Child classes can override this method to customize the
+        pre-processing actions.
+
+        Returns
+        -------
+        List of dependencies downloaded from the IMAP SDC.
+        """
+        return self.download_dependencies()
+
+    @abstractmethod
+    def do_processing(self, dependencies: list):
+        """
+        Abstract method that processes the IMAP processing steps.
+
+        All child classes must implement this method. Input and outputs are
+        typically lists of file paths but are free to any list.
+
+        Attributes
+        ----------
+        dependencies : list
+            List of dependencies to process
+
+        Returns
+        -------
+        list
+            List of products produced
+        """
         raise NotImplementedError
+
+    def post_processing(self, products: list[str]):
+        """
+        Complete post-processing.
+
+        Default post-processing consists of uploading newly generated products
+        to the IMAP SDC. Child classes can override this method to customize the
+        post-processing actions.
+
+        Attributes
+        ----------
+        products : list[str]
+            A list of file paths (products) produced by do_processing method.
+        """
+        self.upload_products(products)
 
 
 class Codice(ProcessInstrument):
     """Process CoDICE."""
 
-    def process(self):
+    def do_processing(self, dependencies):
         """Perform CoDICE specific processing."""
         print(f"Processing CoDICE {self.data_level}")
 
@@ -258,7 +335,7 @@ class Codice(ProcessInstrument):
 class Glows(ProcessInstrument):
     """Process GLOWS."""
 
-    def process(self):
+    def do_processing(self, dependencies):
         """Perform GLOWS specific processing."""
         print(f"Processing GLOWS {self.data_level}")
 
@@ -266,15 +343,33 @@ class Glows(ProcessInstrument):
 class Hi(ProcessInstrument):
     """Process IMAP-Hi."""
 
-    def process(self):
-        """Perform IMAP-Hi specific processing."""
+    def do_processing(self, dependencies: list):
+        """
+        Perform IMAP-Hi specific processing.
+
+        Attributes
+        ----------
+        dependencies: list
+        List of dependencies to process
+        """
         print(f"Processing IMAP-Hi {self.data_level}")
+
+        if self.data_level == "l1a":
+            # File path is expected output file path
+            if len(dependencies) > 1:
+                raise ValueError(
+                    f"Unexpected dependencies found for Hi L1A:"
+                    f"{dependencies}. Expected only one dependency."
+                )
+            datasets = hi_l1a.hi_l1a(dependencies[0])
+            products = [write_cdf(dataset) for dataset in datasets]
+            return products
 
 
 class Hit(ProcessInstrument):
     """Process HIT."""
 
-    def process(self):
+    def do_processing(self, dependencies):
         """Perform HIT specific processing."""
         print(f"Processing HIT {self.data_level}")
 
@@ -282,7 +377,7 @@ class Hit(ProcessInstrument):
 class Idex(ProcessInstrument):
     """Process IDEX."""
 
-    def process(self):
+    def do_processing(self, dependencies):
         """Perform IDEX specific processing."""
         print(f"Processing IDEX {self.data_level}")
 
@@ -290,7 +385,7 @@ class Idex(ProcessInstrument):
 class Lo(ProcessInstrument):
     """Process IMAP-Lo."""
 
-    def process(self):
+    def do_processing(self, dependencies):
         """Perform IMAP-Lo specific processing."""
         print(f"Processing IMAP-Lo {self.data_level}")
 
@@ -298,10 +393,9 @@ class Lo(ProcessInstrument):
 class Mag(ProcessInstrument):
     """Process MAG."""
 
-    def process(self):
+    def do_processing(self, file_paths):
         """Perform MAG specific processing."""
         print(f"Processing MAG {self.data_level}")
-        file_paths = self.download_dependencies()
 
         if self.data_level == "l1a":
             # File path is expected output file path
@@ -311,18 +405,13 @@ class Mag(ProcessInstrument):
                     f"{file_paths}. Expected only one dependency."
                 )
             output_files = mag_l1a(file_paths[0], data_version=self.version)
-            if self.upload_to_sdc:
-                if len(output_files) == 0:
-                    print("No files to upload.")
-                for filename in output_files:
-                    print(f"Uploading file: {filename}")
-                    imap_data_access.upload(filename)
+            return output_files
 
 
 class Swapi(ProcessInstrument):
     """Process SWAPI."""
 
-    def process(self):
+    def do_processing(self, dependencies):
         """Perform SWAPI specific processing."""
         print(f"Processing SWAPI {self.data_level}")
 
@@ -330,24 +419,21 @@ class Swapi(ProcessInstrument):
 class Swe(ProcessInstrument):
     """Process SWE."""
 
-    def process(self):
+    def do_processing(self, dependencies):
         """Perform SWE specific processing."""
         # self.file_path example:
         # imap/swe/l1a/2023/09/imap_swe_l1a_sci_20230927_v001.cdf
-        dependencies = self.download_dependencies()
         print(f"Processing SWE {self.data_level}")
 
         # TODO: currently assumes just the first path returned is the one to use
 
+        products = []
         if self.data_level == "l1a":
             processed_data = swe_l1a(Path(dependencies[0]))
             for data in processed_data:
                 cdf_file_path = write_cdf(data)
                 print(f"processed file path: {cdf_file_path}")
-
-                if self.upload_to_sdc:
-                    imap_data_access.upload(cdf_file_path)
-                    print(f"Uploading file: {cdf_file_path}")
+                products.append(cdf_file_path)
 
         elif self.data_level == "l1b":
             # read CDF file
@@ -356,9 +442,7 @@ class Swe(ProcessInstrument):
             # TODO: Pass in the proper version and descriptor
             cdf_file_path = write_cdf(data=processed_data)
             print(f"processed file path: {cdf_file_path}")
-            if self.upload_to_sdc:
-                imap_data_access.upload(cdf_file_path)
-                print(f"Uploading file: {cdf_file_path}")
+            products.append(cdf_file_path)
 
         else:
             print("No code to process this level")
@@ -367,7 +451,7 @@ class Swe(ProcessInstrument):
 class Ultra(ProcessInstrument):
     """Process IMAP-Ultra."""
 
-    def process(self):
+    def do_processing(self, dependencies):
         """Perform IMAP-Ultra specific processing."""
         print(f"Processing IMAP-Ultra {self.data_level}")
 
