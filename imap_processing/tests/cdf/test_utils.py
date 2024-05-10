@@ -50,6 +50,10 @@ def test_calc_start_time():
 
     assert calc_start_time(0) == launch_time
     assert calc_start_time(1) == launch_time + np.timedelta64(1, "s")
+    different_launch_time = launch_time + np.timedelta64(2, "s")
+    assert calc_start_time(
+        0, launch_time=different_launch_time
+    ) == launch_time + np.timedelta64(2, "s")
 
 
 def test_load_cdf(test_dataset):
