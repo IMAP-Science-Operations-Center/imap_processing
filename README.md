@@ -3,6 +3,8 @@
 [![All Contributors](https://img.shields.io/badge/all_contributors-11-orange.svg?style=flat-square)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 [![readthedocs](https://readthedocs.org/projects/imap-processing/badge/?version=latest)](https://imap-processing.readthedocs.io/en/latest/)
+<!-- DOI-BADGE -->
+[![DOI](https://zenodo.org/badge/654679818.svg)](https://zenodo.org/badge/latestdoi/654679818)
 
 The Interstellar Mapping and Acceleration Probe (IMAP) is an exciting project aimed at studying the interstellar medium and investigating the acceleration mechanisms of particles within our galaxy. IMAP utilizes cutting-edge technology and advanced instrumentation to gather valuable data and expand our understanding of space.
 
