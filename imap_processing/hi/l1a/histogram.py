@@ -119,21 +119,17 @@ def allocate_histogram_dataset(num_packets: int) -> xr.Dataset:
     data_vars["esa_step"] = xr.DataArray(
         np.empty(num_packets, dtype=np.uint8),
         dims=["epoch"],
-        attrs=dataclasses.replace(
-            hi_cdf_attrs.hi_hist_l1a_esa_step_attrs,
-            fieldname="ESA_STEP",
-            label_axis="ESA_STEP",
-        ).output(),
+        attrs=hi_cdf_attrs.esa_step_attrs.output(),
     )
 
     for counter in (*QUALIFIED_COUNTERS, *LONG_COUNTERS, *TOTAL_COUNTERS):
         data_vars[counter] = xr.DataArray(
-            data=np.empty((num_packets, len(coords["angle"])), np.dtype("uint16")),
+            data=np.empty((num_packets, len(coords["angle"])), np.uint16),
             dims=["epoch", "angle"],
             attrs=dataclasses.replace(
                 hi_cdf_attrs.hi_hist_l1a_counter_attrs,
-                catdesc=f"Counts for {counter} counter",
-                fieldname=counter,
+                catdesc=f"Angular histogram of {counter} type events",
+                fieldname=f"{counter} histogram",
                 label_axis=counter,
             ).output(),
         )

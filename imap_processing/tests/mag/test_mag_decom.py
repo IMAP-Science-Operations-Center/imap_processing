@@ -1,10 +1,9 @@
 from pathlib import Path
 
 import pandas as pd
-from cdflib.xarray import cdf_to_xarray
 
 from imap_processing.cdf import global_attrs
-from imap_processing.cdf.utils import write_cdf
+from imap_processing.cdf.utils import load_cdf, write_cdf
 from imap_processing.mag import mag_cdf_attrs
 from imap_processing.mag.l0.decom_mag import decom_packets, generate_dataset
 
@@ -91,12 +90,12 @@ def test_mag_raw_cdf_generation():
     assert output.exists()
     assert output.name == "imap_mag_l1a_norm-raw_20231025_v001.cdf"
 
-    input_xarray = cdf_to_xarray(output)
+    input_xarray = load_cdf(output)
     assert input_xarray.attrs.keys() == norm_data.attrs.keys()
 
     output = write_cdf(burst_data)
     assert output.exists()
     assert output.name == "imap_mag_l1a_burst-raw_20231025_v001.cdf"
 
-    input_xarray = cdf_to_xarray(output)
+    input_xarray = load_cdf(output)
     assert input_xarray.attrs.keys() == burst_data.attrs.keys()

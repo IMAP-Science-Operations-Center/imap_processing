@@ -161,20 +161,10 @@ hi_hist_l1a_angle_attrs = AttrBase(
     units="deg",
     label_axis="ANGLE",
     display_type="time_series",
-    catdesc="Angle bin centers for Histogram data.",
+    catdesc="Angle bin centers for histogram data.",
     fieldname="ANGLE",
     fill_val=GlobalConstants.INT_FILLVAL,
     var_type="support_data",
-)
-
-hi_hist_l1a_esa_step_attrs = ScienceAttrs(
-    validmin=0,
-    validmax=2**4 - 1,
-    depend_0="epoch",
-    format="I2",
-    catdesc="4-bit ESA Step Number",
-    var_type="support_data",
-    variable_purpose="PRIMARY",
 )
 
 hi_hist_l1a_counter_attrs = ScienceAttrs(
@@ -183,6 +173,6 @@ hi_hist_l1a_counter_attrs = ScienceAttrs(
     depend_0="epoch",
     depend_1="angle",
     format="I4",
-    var_type="support_data",
+    var_type="data",
     variable_purpose="PRIMARY",
 )

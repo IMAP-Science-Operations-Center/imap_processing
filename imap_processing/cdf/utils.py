@@ -2,18 +2,22 @@
 
 import logging
 import re
+from pathlib import Path
+from typing import Optional
 
 import imap_data_access
 import numpy as np
 import xarray as xr
-from cdflib.xarray import xarray_to_cdf
+from cdflib.xarray import cdf_to_xarray, xarray_to_cdf
 
 from imap_processing import launch_time
 
 logger = logging.getLogger(__name__)
 
 
-def calc_start_time(shcoarse_time: float) -> np.datetime64:
+def calc_start_time(
+    shcoarse_time: float, launch_time: Optional[np.datetime64] = launch_time
+) -> np.datetime64:
     """Calculate the datetime64 from the CCSDS secondary header information.
 
     Since all instrument has SHCOARSE or MET seconds, we need convert it to
@@ -23,6 +27,8 @@ def calc_start_time(shcoarse_time: float) -> np.datetime64:
     ----------
     shcoarse_time: float
         Number of seconds since epoch (nominally the launch time)
+    launch_time : np.datetime64
+        The time of launch to use as the baseline
 
     Returns
     -------
@@ -41,6 +47,33 @@ def calc_start_time(shcoarse_time: float) -> np.datetime64:
     return launch_time + time_delta
 
 
+def load_cdf(file_path: Path, **kwargs: dict) -> xr.Dataset:
+    """Load the contents of a CDF file into an ``xarray`` dataset.
+
+    Parameters
+    ----------
+    file_path : Path
+        The path to the CDF file
+    **kwargs : dict, optional
+        Keyword arguments for ``cdf_to_xarray``
+
+    Returns
+    -------
+    dataset : xr.Dataset
+        The ``xarray`` dataset for the CDF file
+    """
+    dataset = cdf_to_xarray(file_path, kwargs)
+
+    # cdf_to_xarray converts single-value attributes to lists
+    # convert these back to single values where applicable
+    for attribute in dataset.attrs:
+        value = dataset.attrs[attribute]
+        if isinstance(value, list) and len(value) == 1:
+            dataset.attrs[attribute] = value[0]
+
+    return dataset
+
+
 def write_cdf(dataset: xr.Dataset):
     """Write the contents of "data" to a CDF file using cdflib.xarray_to_cdf.
 
@@ -53,13 +86,13 @@ def write_cdf(dataset: xr.Dataset):
 
     Parameters
     ----------
-        dataset : xarray.Dataset
-            The dataset object to convert to a CDF
+    dataset : xarray.Dataset
+        The dataset object to convert to a CDF
 
     Returns
     -------
-        pathlib.Path
-            Path to the file created
+    file_path: pathlib.Path
+        Path to the file created
     """
     # Create the filename from the global attributes
     # Logical_source looks like "imap_swe_l2_counts-1min"
