@@ -31,7 +31,7 @@ class SciencePacket(HITBase):
     HDR_MINUTE_CNT: int
         Minute counter (minute mod 10 -> subcom for sectored rates)
     LIVE_TIME: int
-        Live time count (270=100%)
+        Livetime count (270=100%)
     NUM_TRIG: int
         Number of triggers
     NUM_REJECT: int
