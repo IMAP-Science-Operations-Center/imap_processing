@@ -30,9 +30,7 @@ def get_y_adjust(dy_lut: int):
     yadjust_path = f"{base_path}/yadjust.csv"
     yadjust_df = pd.read_csv(yadjust_path).set_index("dYLUT")
 
-    if dy_lut < 0:
-        dy_lut = 0
-    yadj = yadjust_df.at[dy_lut, "dYAdj"]
+    yadj = yadjust_df["dYAdj"].iloc[dy_lut]
 
     return yadj
 
@@ -71,9 +69,9 @@ def get_norm(dn: int, key: str, file_label: str):
     search_key = match.group(1)
 
     tdc_norm_path = f"{base_path}/{file_label}_tdc_norm.csv"
-    tdc_norm_df = pd.read_csv(tdc_norm_path, header=1)
+    tdc_norm_df = pd.read_csv(tdc_norm_path, header=1, index_col="Index")
 
-    dn_norm = tdc_norm_df.at[dn, search_key]
+    dn_norm = tdc_norm_df[search_key].iloc[dn]
 
     return dn_norm
 
@@ -107,7 +105,7 @@ def get_back_position(back_index: int, key: str, file_label: str):
     back_pos_path = f"{base_path}/{file_label}_back-pos-luts.csv"
     back_pos_df = pd.read_csv(back_pos_path, index_col="Index_offset")
 
-    dn_converted = back_pos_df.at[back_index, key]
+    dn_converted = back_pos_df[key].iloc[back_index]
 
     return dn_converted
 
@@ -154,26 +152,18 @@ def get_image_params(image: str):
 
     Parameters
     ----------
-    ssd : int
-        Acts as index 1.
-    composite_energy : int
-        Acts as index 2.
-
-    Note: There are 8 SSDs containing
-    4096 composite energies each.
+    image : str
+        The column name to lookup in the CSV file, e.g., 'XFtLtOff' or 'XFtRtOff'.
+    base_path : str
+        The base path where the CSV file is stored.
 
     Returns
     -------
-    value_sw : int
-        Image parameter.
+    value : float
+        Image parameter value from the CSV file.
     """
-    image_params_path = f"{base_path}/Ultra90_image-params071823.xlsx"
-    image_params_df = pd.read_excel(
-        image_params_path,
-        usecols=["Name", "Value (SW)"],
-        index_col="Name",
-        engine="openpyxl",
-    )
-    value_sw = image_params_df.loc[image, "Value (SW)"]
+    csv_file_path = f"{base_path}/FM45_Startup1_ULTRA_IMGPARAMS_20240207T134735_.csv"
+    df = pd.read_csv(csv_file_path)
+    value = df[image].iloc[0]
 
-    return value_sw
+    return value

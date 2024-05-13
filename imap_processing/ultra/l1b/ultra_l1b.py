@@ -19,7 +19,7 @@ from imap_processing.ultra.l1b.lookup_utils import (
 logger = logging.getLogger(__name__)
 
 
-def get_back_positions(index: int, events_dataset: xarray.Dataset, xf: float):
+def get_back_positions(indices, events_dataset, xf: float):
     """
     Calculate back xb, yb position and tof.
 
@@ -35,8 +35,6 @@ def get_back_positions(index: int, events_dataset: xarray.Dataset, xf: float):
 
     Parameters
     ----------
-    index : int
-        Index of the event.
     events_dataset : xarray.Dataset
         Data in xarray format.
     xf : float
@@ -55,60 +53,66 @@ def get_back_positions(index: int, events_dataset: xarray.Dataset, xf: float):
     # There are mismatches between the stop TDCs, i.e., SpN, SpS, SpE, and SpW.
     # This normalizes the TDCs
     sp_n_norm = get_norm(
-        events_dataset["STOP_NORTH_TDC"].data[index], "TpSpNNorm", "ultra45"
+        events_dataset["STOP_NORTH_TDC"].data[indices], "TpSpNNorm", "ultra45"
     )
     sp_s_norm = get_norm(
-        events_dataset["STOP_SOUTH_TDC"].data[index], "TpSpSNorm", "ultra45"
+        events_dataset["STOP_SOUTH_TDC"].data[indices], "TpSpSNorm", "ultra45"
     )
     sp_e_norm = get_norm(
-        events_dataset["STOP_EAST_TDC"].data[index], "TpSpENorm", "ultra45"
+        events_dataset["STOP_EAST_TDC"].data[indices], "TpSpENorm", "ultra45"
     )
     sp_w_norm = get_norm(
-        events_dataset["STOP_WEST_TDC"].data[index], "TpSpWNorm", "ultra45"
+        events_dataset["STOP_WEST_TDC"].data[indices], "TpSpWNorm", "ultra45"
     )
 
     # Convert normalized TDC values into units of hundredths of a
     # millimeter using lookup tables.
-    xb_index = sp_s_norm - sp_n_norm + 2047
-    yb_index = sp_e_norm - sp_w_norm + 2047
+    xb_index = sp_s_norm.values - sp_n_norm.values + 2047
+    yb_index = sp_e_norm.values - sp_w_norm.values + 2047
 
     # Convert xf to a tof offset,
-    tofx = sp_n_norm + sp_s_norm
-    tofy = sp_e_norm + sp_w_norm
+    tofx = sp_n_norm.values + sp_s_norm.values
+    tofy = sp_e_norm.values + sp_w_norm.values
 
     # tof is the average of the two tofs measured in the X and Y directions,
     # tofx and tofy
     # Units in tenths of a nanosecond
     t1 = tofx + tofy  # /2 incorporated into scale
 
+    xb = np.zeros(len(events_dataset["STOP_TYPE"]))
+    yb = np.zeros(len(events_dataset["STOP_TYPE"]))
+
+    # particle_tof (t2) used later to compute etof
+    t2 = np.zeros(len(events_dataset["STOP_TYPE"]))
+    tof = np.zeros(len(events_dataset["STOP_TYPE"]))
+
     # Stop Type: 1=Top, 2=Bottom
-    if events_dataset["STOP_TYPE"].data[index] == 1:
-        # Convert converts normalized TDC values into units of
-        # hundredths of a millimeter using lookup tables.
-        xb = get_back_position(xb_index, "XBkTp", "ultra45")
-        yb = get_back_position(yb_index, "YBkTp", "ultra45")
+    # Convert converts normalized TDC values into units of
+    # hundredths of a millimeter using lookup tables.
+    index_top = indices[events_dataset["STOP_TYPE"].data[indices] == 1]
+    stop_type_top = events_dataset["STOP_TYPE"].data[indices] == 1
+    xb[index_top] = get_back_position(xb_index[stop_type_top], "XBkTp", "ultra45")
+    yb[index_top] = get_back_position(yb_index[stop_type_top], "YBkTp", "ultra45")
 
-        # Correction for the propagation delay of the start anode and other effects.
-        t2 = get_image_params("TOFSc") * t1 / 1024 + get_image_params("TOFTpOff")
+    # Correction for the propagation delay of the start anode and other effects.
+    t2[index_top] = get_image_params("TOFSC") * t1[stop_type_top] / 1024 + \
+                    get_image_params("TOFTPOFF")
+    tof[index_top] = t2[index_top] + xf[stop_type_top] * get_image_params("XFTTOF") / 32768
 
-    elif events_dataset["STOP_TYPE"].data[index] == 2:
-        xb = get_back_position(xb_index, "XBkBt", "ultra45")
-        yb = get_back_position(yb_index, "YBkBt", "ultra45")
+    index_bottom = indices[events_dataset["STOP_TYPE"].data[indices] == 2]
+    stop_type_bottom = events_dataset["STOP_TYPE"].data[indices] == 2
+    xb[index_bottom] = get_back_position(xb_index[stop_type_bottom], "XBkBt", "ultra45")
+    yb[index_bottom] = get_back_position(yb_index[stop_type_bottom], "YBkBt", "ultra45")
 
-        # Correction for the propagation delay of the start anode and other effects.
-        t2 = get_image_params("TOFSc") * t1 / 1024 + get_image_params("TOFBtOff")
+    # Correction for the propagation delay of the start anode and other effects.
+    t2[index_bottom] = get_image_params("TOFSC") * t1[stop_type_bottom] / 1024 + \
+                    get_image_params("TOFBTOFF")
+    tof[index_bottom] = t2[stop_type_bottom] + xf[stop_type_bottom] * get_image_params("XFTTOF") / 32768
 
-    else:
-        raise ValueError("Error: Invalid Stop Type")
-
-    # Correction for the propagation delay of the start anode and other effects (t2)
-    tof = t2 + xf * get_image_params("XFtTOF") / 32768
-    particle_tof = t2  # used later to compute etof
-
-    return tof, particle_tof, (xb, yb)
+    return tof, t2, xb, yb
 
 
-def get_front_x_position(start_type: int, start_position_tdc: float):
+def get_front_x_position(start_type: np.array, start_position_tdc: np.array):
     """
     Calculate the front xf position.
 
@@ -120,33 +124,34 @@ def get_front_x_position(start_type: int, start_position_tdc: float):
 
     Parameters
     ----------
-    start_type : int
+    start_type : np.array
         Start Type: 1=Left, 2=Right.
-    start_position_tdc: float
+    start_position_tdc: np.array
         Start Position Time to Digital Converter (TDC).
 
     Returns
     -------
-    xf : float
+    xf : np.array
         x front position (hundredths of a millimeter).
     """
-    # A particle entering the left shutter will trigger
-    # the left anode and vice versa.
-    if start_type == 1:
-        xf = get_image_params("XFtSc") * -start_position_tdc / 1024 + get_image_params(
-            "XFtLtOff"
-        )
-    elif start_type == 2:
-        xf = get_image_params("XFtSc") * -start_position_tdc / 1024 + get_image_params(
-            "XFtRtOff"
-        )
-    else:
+
+    if np.any((start_type != 1) & (start_type != 2)):
         raise ValueError("Error: Invalid Start Type")
+
+    xftsc = get_image_params("XFTSC")
+    xft_lt_off = get_image_params("XFTLTOFF")
+    xft_rt_off = get_image_params("XFTRTOFF")
+    xft_off = np.where(start_type == 1, xft_lt_off, xft_rt_off)
+
+    # Calculate xf and convert to hundredths of a millimeter
+    # Note FSW uses xft_off+1.8, but the lookup table uses xft_off
+    # Note FSW uses xft_off-.25, but the lookup table uses xft_off
+    xf = (xftsc * -start_position_tdc + xft_off)*100
 
     return xf
 
 
-def get_front_y_position(start_type: int, yb: float):
+def get_front_y_position(events_dataset, yb: float):
     """
     Compute the adjustments.
 
@@ -175,24 +180,31 @@ def get_front_y_position(start_type: int, yb: float):
     df = 3.39  # shortest distance from slit to foil (mm)
     z_ds = 44.89  # position of slit on Z axis (mm)
 
+    start_type_left = events_dataset["START_TYPE"].data == 1
+    start_type_right = events_dataset["START_TYPE"].data == 2
+    index_array = np.arange(len(events_dataset["START_TYPE"]))
+    index_left = index_array[events_dataset["START_TYPE"].data == 1]
+    index_right = index_array[events_dataset["START_TYPE"].data == 2]
+    yf = np.zeros(len(events_dataset["START_TYPE"]))
+    d = np.zeros(len(events_dataset["START_TYPE"]))
+
     # A particle entering the left shutter will trigger
     # the left anode and vice versa.
-    if start_type == 1:
-        yf_estimate = 40.0  # front position of particle (mm)
-        dy_lut = round((yf_estimate - yb / 100) * 256 / 81.92)  # mm
-        yadj = get_y_adjust(dy_lut) / 100  # mm
-        yf = (yf_estimate - yadj) * 100  # hundredths of a millimeter
-    elif start_type == 2:
-        yf_estimate = -40  # front position of particle (mm)
-        # TODO: make certain yb units correct
-        dy_lut = round((yb / 100 - yf_estimate) * 256 / 81.92)  # mm
-        yadj = get_y_adjust(dy_lut) / 100  # mm
-        yf = (yf_estimate + yadj) * 100  # hundredths of a millimeter
-    else:
-        raise ValueError("Error: Invalid Start Type")
 
-    dadj = np.sqrt(2) * df - yadj  # mm
-    d = (z_ds - dadj) * 100  # hundredths of a millimeter
+    yf_estimate_1 = 40.0  # front position of particle (mm)
+    dy_lut_1 = np.round((yf_estimate_1 - yb[start_type_left] / 100) * 256 / 81.92)  # mm
+    yadj_1 = get_y_adjust(dy_lut_1) / 100  # mm
+    yf[index_left] = (yf_estimate_1 - yadj_1) * 100  # hundredths of a millimeter
+    dadj_1 = np.sqrt(2) * df - yadj_1  # mm# hundredths of a millimeter
+    d[index_left] = (z_ds - dadj_1) * 100  # hundredths of a millimeter
+
+    yf_estimate_2 = -40  # front position of particle (mm)
+    # TODO: make certain yb units correct
+    dy_lut_2 = np.round((yb[start_type_right] / 100 - yf_estimate_2) * 256 / 81.92)  # mm
+    yadj_2 = get_y_adjust(dy_lut_2) / 100  # mm
+    yf[index_right] = (yf_estimate_2 + yadj_2) * 100
+    dadj_2 = np.sqrt(2) * df - yadj_2  # mm# hundredths of a millimeter
+    d[index_right] = (z_ds - dadj_2) * 100  # hundredths of a millimeter
 
     return d, yf
 
@@ -387,7 +399,6 @@ def get_energy_pulse_height(pulse_height: float, stop_type: int, xb: float, yb: 
     ----------
     pulse_height: float
         Pulse height from the stop anode.
-        # TODO: units?
     stop_type: int
         Stop Type: 1=Top, 2=Bottom.
     xb : float
@@ -399,8 +410,7 @@ def get_energy_pulse_height(pulse_height: float, stop_type: int, xb: float, yb: 
     -------
     energy : float
         Energy measured using the pulse height
-        from the stop anode (keV).
-    # TODO: make certain units are correct.
+        from the stop anode (DN).
     """
     if stop_type == 1:
         # TODO: make certain xb, yb units correct
