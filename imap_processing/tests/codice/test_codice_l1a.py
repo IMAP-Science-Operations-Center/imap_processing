@@ -2,12 +2,12 @@
 
 from pathlib import Path
 
-import cdflib
 import numpy as np
 import pytest
 import xarray as xr
 
 from imap_processing import imap_module_directory
+from imap_processing.cdf.utils import load_cdf
 from imap_processing.codice.codice_l0 import decom_packets
 from imap_processing.codice.codice_l1a import process_codice_l1a
 
@@ -150,7 +150,7 @@ def test_l1a_data_array_values(test_l1a_data: xr.Dataset, validation_data: Path)
     """
 
     generated_dataset = test_l1a_data
-    validation_dataset = cdflib.xarray.cdf_to_xarray(validation_data)
+    validation_dataset = load_cdf(validation_data)
 
     # Ensure the processed data matches the validation data
     for variable in validation_dataset:
