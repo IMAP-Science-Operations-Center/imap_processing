@@ -2,7 +2,6 @@
 
 # TODO: Decide on consistent fill values.
 import logging
-import math
 from collections import defaultdict
 
 import numpy as np
@@ -95,9 +94,10 @@ def get_back_positions(indices, events_dataset, xf: float):
     yb[index_top] = get_back_position(yb_index[stop_type_top], "YBkTp", "ultra45")
 
     # Correction for the propagation delay of the start anode and other effects.
-    t2[index_top] = get_image_params("TOFSC") * t1[stop_type_top] / 1024 + \
-                    get_image_params("TOFTPOFF")
-    tof[index_top] = t2[index_top] + xf[stop_type_top] * get_image_params("XFTTOF") / 32768
+    t2[index_top] = get_image_params("TOFSC") * t1[stop_type_top] + get_image_params(
+        "TOFTPOFF"
+    )
+    tof[index_top] = t2[index_top] + xf[stop_type_top] * get_image_params("XFTTOF")
 
     index_bottom = indices[events_dataset["STOP_TYPE"].data[indices] == 2]
     stop_type_bottom = events_dataset["STOP_TYPE"].data[indices] == 2
@@ -105,9 +105,12 @@ def get_back_positions(indices, events_dataset, xf: float):
     yb[index_bottom] = get_back_position(yb_index[stop_type_bottom], "YBkBt", "ultra45")
 
     # Correction for the propagation delay of the start anode and other effects.
-    t2[index_bottom] = get_image_params("TOFSC") * t1[stop_type_bottom] / 1024 + \
-                    get_image_params("TOFBTOFF")
-    tof[index_bottom] = t2[stop_type_bottom] + xf[stop_type_bottom] * get_image_params("XFTTOF") / 32768
+    t2[index_bottom] = get_image_params("TOFSC") * t1[
+        stop_type_bottom
+    ] + get_image_params("TOFBTOFF")
+    tof[index_bottom] = t2[index_bottom] + xf[stop_type_bottom] * get_image_params(
+        "XFTTOF"
+    )
 
     return tof, t2, xb, yb
 
@@ -134,7 +137,6 @@ def get_front_x_position(start_type: np.array, start_position_tdc: np.array):
     xf : np.array
         x front position (hundredths of a millimeter).
     """
-
     if np.any((start_type != 1) & (start_type != 2)):
         raise ValueError("Error: Invalid Start Type")
 
@@ -146,7 +148,7 @@ def get_front_x_position(start_type: np.array, start_position_tdc: np.array):
     # Calculate xf and convert to hundredths of a millimeter
     # Note FSW uses xft_off+1.8, but the lookup table uses xft_off
     # Note FSW uses xft_off-.25, but the lookup table uses xft_off
-    xf = (xftsc * -start_position_tdc + xft_off)*100
+    xf = (xftsc * -start_position_tdc + xft_off) * 100
 
     return xf
 
@@ -200,7 +202,9 @@ def get_front_y_position(events_dataset, yb: float):
 
     yf_estimate_2 = -40  # front position of particle (mm)
     # TODO: make certain yb units correct
-    dy_lut_2 = np.round((yb[start_type_right] / 100 - yf_estimate_2) * 256 / 81.92)  # mm
+    dy_lut_2 = np.round(
+        (yb[start_type_right] / 100 - yf_estimate_2) * 256 / 81.92
+    )  # mm
     yadj_2 = get_y_adjust(dy_lut_2) / 100  # mm
     yf[index_right] = (yf_estimate_2 + yadj_2) * 100
     dadj_2 = np.sqrt(2) * df - yadj_2  # mm# hundredths of a millimeter
@@ -322,7 +326,7 @@ def get_ssd_index(index: int, events_dataset: xarray.Dataset):
     return ssd_index
 
 
-def get_ssd_positions(index: int, events_dataset: xarray.Dataset, xf: float):
+def get_ssd_positions(indices, events_dataset: xarray.Dataset, xf: float):
     """
     Calculate back xb, yb position for the SSDs.
 
@@ -359,6 +363,9 @@ def get_ssd_positions(index: int, events_dataset: xarray.Dataset, xf: float):
         Time of flight (tenths of a nanosecond).
     """
     xb = 0
+
+    index_left = indices[events_dataset["START_TYPE"].data[indices] == 1]
+    index_right = indices[events_dataset["START_TYPE"].data[indices] == 2]
 
     # Start Type: 1=Left, 2=Right
     if events_dataset["START_TYPE"].data[index] == 1:  # Left
@@ -620,15 +627,13 @@ def get_particle_velocity(
     v_z = d / tof
 
     # Magnitude of the velocity vector
-    magnitude_v = math.sqrt(v_x**2 + v_y**2 + v_z**2)
+    magnitude_v = np.sqrt(v_x**2 + v_y**2 + v_z**2)
 
     vhat_x = v_x / magnitude_v
     vhat_y = v_y / magnitude_v
     vhat_z = v_z / magnitude_v
 
-    velocity = (vhat_x, vhat_y, vhat_z)
-
-    return velocity
+    return vhat_x, vhat_y, vhat_z
 
 
 def process_count_zero(data_dict: dict):
