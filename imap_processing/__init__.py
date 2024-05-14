@@ -44,7 +44,7 @@ PROCESSING_LEVELS = {
     "mag": ["l0", "l1a", "l1b", "l1c", "l2pre", "l2"],
     "swapi": ["l0", "l1", "l2"],
     "swe": ["l0", "l1a", "l1b", "l2"],
-    "ultra": ["l0", "l1a", "l1b", "l1c", "l1d", "l2"],
+    "ultra": ["l0", "l1a", "l1b", "l1c", "l2"],
 }
 
 # Reference start time (launch time or epoch)

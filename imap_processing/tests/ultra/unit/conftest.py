@@ -33,6 +33,20 @@ def ccsds_path_events():
 
 
 @pytest.fixture()
+def ccsds_path_theta_0():
+    """Returns the ccsds directory."""
+    return (
+        Path(sys.modules[__name__.split(".")[0]].__file__).parent
+        / "tests"
+        / "ultra"
+        / "test_data"
+        / "l0"
+        / "FM45_40P_Phi28p5_BeamCal_LinearScan_phi28.50_theta-0.00"
+        "_20240207T102740.CCSDS"
+    )
+
+
+@pytest.fixture()
 def ccsds_path_tof():
     """Returns the ccsds directory."""
     return (
@@ -91,11 +105,45 @@ def aux_test_path():
 
 
 @pytest.fixture()
+def aux_test_path_theta_0():
+    """Returns the xtce auxiliary test data directory."""
+    filename = (
+        "FM45_40P_Phi28p5_BeamCal_LinearScan_phi28.50_theta-0.00"
+        "_ULTRA_AUXILIARY_20240207T102753_.csv"
+    )
+    return (
+        Path(sys.modules[__name__.split(".")[0]].__file__).parent
+        / "tests"
+        / "ultra"
+        / "test_data"
+        / "l0"
+        / filename
+    )
+
+
+@pytest.fixture()
 def events_test_path():
     """Returns the xtce auxiliary test data directory."""
     filename = (
         "ultra45_raw_sc_ultrarawimgevent_FM45_7P_Phi00_BeamCal_"
         "LinearScan_phi004_theta-001_20230821T121304.csv"
+    )
+    return (
+        Path(sys.modules[__name__.split(".")[0]].__file__).parent
+        / "tests"
+        / "ultra"
+        / "test_data"
+        / "l0"
+        / filename
+    )
+
+
+@pytest.fixture()
+def events_test_path_theta_0():
+    """Returns the xtce auxiliary test data directory."""
+    filename = (
+        "FM45_40P_Phi28p5_BeamCal_LinearScan_phi28.50_theta-0.00"
+        "_Ultra_Image_Raw_Event_20240207T102746_.csv"
     )
     return (
         Path(sys.modules[__name__.split(".")[0]].__file__).parent

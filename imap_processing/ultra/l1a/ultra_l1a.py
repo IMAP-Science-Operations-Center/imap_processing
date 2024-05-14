@@ -256,7 +256,7 @@ def create_dataset(decom_ultra_dict: dict):
     return dataset
 
 
-def ultra_l1a(packet_file: Path, xtce: Path):
+def ultra_l1a(packet_file: Path):
     """
     Process ULTRA L0 data into L1A CDF files at output_filepath.
 
@@ -264,15 +264,13 @@ def ultra_l1a(packet_file: Path, xtce: Path):
     ----------
     packet_file : dict
         Dictionary containing paid and path to the CCSDS data packet file.
-    xtce : Path
-        Path to the XTCE packet definition file.
     """
     if ULTRA_EVENTS.apid[0] in packet_file.keys():
         # For events data we need aux data to calculate event times
         apid = ULTRA_EVENTS.apid[0]
-        decom_ultra_events = decom_ultra_apids(packet_file[apid], xtce, apid)
+        decom_ultra_events = decom_ultra_apids(packet_file[apid], apid)
         decom_ultra_aux = decom_ultra_apids(
-            packet_file[ULTRA_AUX.apid[0]], xtce, ULTRA_AUX.apid[0]
+            packet_file[ULTRA_AUX.apid[0]], ULTRA_AUX.apid[0]
         )
         decom_ultra_dict = {
             ULTRA_EVENTS.apid[0]: decom_ultra_events,
@@ -280,7 +278,7 @@ def ultra_l1a(packet_file: Path, xtce: Path):
         }
     else:
         apid = next(iter(packet_file.keys()))
-        decom_ultra_dict = {apid: decom_ultra_apids(packet_file[apid], xtce, apid)}
+        decom_ultra_dict = {apid: decom_ultra_apids(packet_file[apid], apid)}
 
     dataset = create_dataset(decom_ultra_dict)
     output_filepath = write_cdf(dataset)

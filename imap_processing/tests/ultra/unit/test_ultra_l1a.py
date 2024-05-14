@@ -15,32 +15,30 @@ from imap_processing.ultra.l1a.ultra_l1a import create_dataset, ultra_l1a
 
 
 @pytest.fixture()
-def decom_ultra_aux(ccsds_path, xtce_path):
+def decom_ultra_aux(ccsds_path):
     """Data for decom_ultra_aux"""
-    data_packet_list = decom_ultra_apids(ccsds_path, xtce_path, ULTRA_AUX.apid[0])
+    data_packet_list = decom_ultra_apids(ccsds_path, ULTRA_AUX.apid[0])
     return data_packet_list
 
 
 @pytest.fixture()
-def decom_ultra_rates(ccsds_path, xtce_path):
+def decom_ultra_rates(ccsds_path):
     """Data for decom_ultra_rates"""
-    data_packet_list = decom_ultra_apids(ccsds_path, xtce_path, ULTRA_RATES.apid[0])
+    data_packet_list = decom_ultra_apids(ccsds_path, ULTRA_RATES.apid[0])
     return data_packet_list
 
 
 @pytest.fixture()
-def decom_ultra_events(ccsds_path_events, xtce_path):
+def decom_ultra_events(ccsds_path_events):
     """Data for decom_ultra_events"""
-    data_packet_list = decom_ultra_apids(
-        ccsds_path_events, xtce_path, ULTRA_EVENTS.apid[0]
-    )
+    data_packet_list = decom_ultra_apids(ccsds_path_events, ULTRA_EVENTS.apid[0])
     return data_packet_list
 
 
 @pytest.fixture()
 def decom_ultra_tof(ccsds_path_tof, xtce_path):
     """Data for decom_ultra_tof"""
-    data_packet_list = decom_ultra_apids(ccsds_path_tof, xtce_path, ULTRA_TOF.apid[0])
+    data_packet_list = decom_ultra_apids(ccsds_path_tof, ULTRA_TOF.apid[0])
     return data_packet_list
 
 
@@ -174,12 +172,11 @@ def test_xarray_events(decom_ultra_events, decom_ultra_aux, events_test_path):
 
 def test_cdf_aux(
     ccsds_path,
-    xtce_path,
     decom_ultra_aux,
 ):
     """Tests that CDF file is created and contains same attributes as xarray."""
 
-    test_data_path = ultra_l1a({ULTRA_AUX.apid[0]: ccsds_path}, xtce_path)
+    test_data_path = ultra_l1a({ULTRA_AUX.apid[0]: ccsds_path})
     assert test_data_path.exists()
     # TODO: replace "sci" with proper descriptor (previously aux)
     assert test_data_path.name == "imap_ultra_l1a_sci_20220530_v001.cdf"
@@ -192,12 +189,11 @@ def test_cdf_aux(
 
 def test_cdf_rates(
     ccsds_path,
-    xtce_path,
     decom_ultra_rates,
 ):
     """Tests that CDF file is created and contains same attributes as xarray."""
 
-    test_data_path = ultra_l1a({ULTRA_RATES.apid[0]: ccsds_path}, xtce_path)
+    test_data_path = ultra_l1a({ULTRA_RATES.apid[0]: ccsds_path})
     assert test_data_path.exists()
     # TODO: replace "sci" with proper descriptor (previously rates)
     assert test_data_path.name == "imap_ultra_l1a_sci_20220530_v001.cdf"
@@ -210,11 +206,10 @@ def test_cdf_rates(
 
 def test_cdf_tof(
     ccsds_path_tof,
-    xtce_path,
     decom_ultra_tof,
 ):
     """Tests that CDF file is created and contains same attributes as xarray."""
-    test_data_path = ultra_l1a({ULTRA_TOF.apid[0]: ccsds_path_tof}, xtce_path)
+    test_data_path = ultra_l1a({ULTRA_TOF.apid[0]: ccsds_path_tof})
     # TODO: replace "sci" with proper descriptor (previously tof)
     assert test_data_path.name == "imap_ultra_l1a_sci_20240124_v001.cdf"
 
@@ -227,19 +222,17 @@ def test_cdf_tof(
 def test_cdf_events(
     ccsds_path,
     ccsds_path_events,
-    xtce_path,
     decom_ultra_events,
 ):
     """Tests that CDF file is created and contains same attributes as xarray."""
     test_data_path = ultra_l1a(
         {ULTRA_AUX.apid[0]: ccsds_path, ULTRA_EVENTS.apid[0]: ccsds_path_events},
-        xtce_path,
     )
     assert test_data_path.exists()
     # TODO: replace "sci" with proper descriptor (previously events)
     assert test_data_path.name == "imap_ultra_l1a_sci_20220530_v001.cdf"
 
-    decom_ultra_aux = decom_ultra_apids(ccsds_path, xtce_path, ULTRA_AUX.apid[0])
+    decom_ultra_aux = decom_ultra_apids(ccsds_path, ULTRA_AUX.apid[0])
     dataset_events = create_dataset(
         {ULTRA_EVENTS.apid[0]: decom_ultra_events, ULTRA_AUX.apid[0]: decom_ultra_aux}
     )
