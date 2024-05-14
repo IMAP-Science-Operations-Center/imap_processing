@@ -4,8 +4,6 @@ For further details, see the documentation provided at
 https://imap-processing.readthedocs.io/en/latest/development/CDFs/cdf_requirements.html
 """
 
-# TODO: Add detailed catdescs and fieldnames
-
 from imap_processing.cdf.defaults import GlobalConstants
 from imap_processing.cdf.global_attrs import (
     AttrBase,
@@ -39,17 +37,7 @@ codice_base = GlobalInstrumentAttrs(
     "Particles (space)",
 )
 
-codice_metadata_attrs = ScienceAttrs(
-    validmin=0,
-    validmax=GlobalConstants.INT_MAXVAL,
-    display_type="no_plot",
-    depend_0="epoch",
-    format="I12",
-    units="dN",
-    var_type="data",
-    variable_purpose="PRIMARY",
-)
-
+# Dataset-level attributes
 l1a_hskp_attrs = GlobalDataLevelAttrs(
     data_type="L1A_hskp->Level-1A Housekeeping Data",
     logical_source="imap_codice_l1a_hskp",
@@ -91,6 +79,18 @@ l1a_lo_sw_angular_counts_attrs = GlobalDataLevelAttrs(
         "IMAP Mission CoDICE Instrument Level-1A Lo Sunward Angular Counts Data"
     ),
     instrument_base=codice_base,
+)
+
+# Variable-level attributes
+codice_metadata_attrs = ScienceAttrs(
+    validmin=0,
+    validmax=GlobalConstants.INT_MAXVAL,
+    display_type="no_plot",
+    depend_0="epoch",
+    format="I12",
+    units="dN",
+    var_type="data",
+    variable_purpose="PRIMARY",
 )
 
 energy_attrs = AttrBase(

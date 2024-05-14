@@ -8,6 +8,7 @@ import collections
 import dataclasses
 from enum import IntEnum
 
+import numpy as np
 import xarray as xr
 
 from imap_processing.cdf.global_attrs import ConstantCoordinates
@@ -126,7 +127,12 @@ def create_hskp_dataset(packets) -> xr.Dataset:
         add_metadata_to_array(packet, metadata_arrays)
 
     epoch = xr.DataArray(
-        [calc_start_time(item) for item in metadata_arrays["SHCOARSE"]],
+        [
+            calc_start_time(
+                item, launch_time=np.datetime64("2010-01-01T00:01:06.184", "ns")
+            )
+            for item in metadata_arrays["SHCOARSE"]
+        ],
         name="epoch",
         dims=["epoch"],
         attrs=ConstantCoordinates.EPOCH,
@@ -137,14 +143,23 @@ def create_hskp_dataset(packets) -> xr.Dataset:
         attrs=cdf_attrs.l1a_hskp_attrs.output(),
     )
 
+    # TODO: Change 'TBD' catdesc and fieldname
+    # Once packet definition files are re-generated, can get this info from
+    # something like this:
+    #    for key, value in (packet.header | packet.data).items():
+    #      fieldname = value.short_description
+    #      catdesc = value.short_description
+    # I am holding off making this change until I acquire updated housekeeping
+    # packets/validation data that match the latest telemetry definitions
+    # I may also be able to replace this function with utils.create_dataset(?)
     for key, value in metadata_arrays.items():
         dataset[key] = xr.DataArray(
             value,
             dims=["epoch"],
             attrs=dataclasses.replace(
                 cdf_attrs.codice_metadata_attrs,
-                catdesc=key,
-                fieldname=key,
+                catdesc="TBD",
+                fieldname="TBD",
                 label_axis=key,
                 depend_0="epoch",
             ).output(),

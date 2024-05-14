@@ -39,8 +39,6 @@ from imap_processing.utils import group_by_apid, sort_by_time
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-# TODO: Expand use of launch_time for CoDICE (separate PR since it affects
-#       calc_start_time() function)
 # TODO: Data array lengths should all be 128 * num_counters
 #       (see notes in unpack_science_data)
 # TODO: Add ESA Sweep and acquisition times to CDFs
@@ -101,8 +99,15 @@ class CoDICEL1aPipeline:
         xr.Dataset
             ``xarray`` dataset containing the science data and supporting metadata
         """
+        # TODO: Add metadata attrs
+
         epoch = xr.DataArray(
-            [calc_start_time(packets[0].data["ACQ_START_SECONDS"].raw_value)],
+            [
+                calc_start_time(
+                    packets[0].data["ACQ_START_SECONDS"].raw_value,
+                    launch_time=np.datetime64("2010-01-01T00:01:06.184", "ns"),
+                )
+            ],
             name="epoch",
             dims=["epoch"],
             attrs=ConstantCoordinates.EPOCH,
