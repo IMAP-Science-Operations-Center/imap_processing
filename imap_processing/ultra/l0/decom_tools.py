@@ -2,7 +2,11 @@
 
 import numpy as np
 
-from imap_processing.ultra.l0.ultra_utils import append_fillval, parse_event
+from imap_processing.ultra.l0.ultra_utils import (
+    EVENT_FIELD_RANGES,
+    append_fillval,
+    parse_event,
+)
 
 
 def read_and_advance(binary_data: str, n: int, current_position: int):
@@ -243,6 +247,10 @@ def read_image_raw_events_binary(packet, decom_data: dict):
 
     # Uses fill value for all packets that do not contain event data.
     if count == 0:
+        # if decom_data is empty, append fill values to all fields
+        if not decom_data:
+            for field in EVENT_FIELD_RANGES.keys():
+                decom_data[field] = []
         append_fillval(decom_data, packet)
 
     # For all packets with event data, parses the binary string

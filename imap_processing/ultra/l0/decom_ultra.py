@@ -3,11 +3,9 @@
 import collections
 import logging
 from collections import defaultdict
-from pathlib import Path
 
 import numpy as np
 
-from imap_processing import decom, imap_module_directory
 from imap_processing.ccsds.ccsds_data import CcsdsData
 from imap_processing.ultra.l0.decom_tools import (
     decompress_binary,
@@ -22,7 +20,7 @@ from imap_processing.ultra.l0.ultra_utils import (
     ULTRA_TOF,
     append_ccsds_fields,
 )
-from imap_processing.utils import group_by_apid, sort_by_time
+from imap_processing.utils import sort_by_time
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -98,14 +96,14 @@ def append_params(decom_data: dict, packet):
     append_ccsds_fields(decom_data, ccsds_data)
 
 
-def decom_ultra_apids(packet_file: Path, apid: int):
+def decom_ultra_apids(data: dict, apid: int):
     """
     Unpack and decode Ultra packets using CCSDS format and XTCE packet definitions.
 
     Parameters
     ----------
-    packet_file : Path
-        Path to the CCSDS data packet file.
+    data : dict
+        Grouped data.
     apid : int
         The APID to process.
 
@@ -114,14 +112,6 @@ def decom_ultra_apids(packet_file: Path, apid: int):
     decom_data : dict
         A dictionary containing the decoded data.
     """
-    xtce = Path(
-        f"{imap_module_directory}/ultra/packet_definitions/ULTRA_SCI_COMBINED.xml"
-    )
-
-    packets = decom.decom_packets(packet_file, xtce)
-    grouped_data = group_by_apid(packets)
-    data = {apid: grouped_data[apid]}
-
     # Strategy dict maps APIDs to their respective processing functions
     strategy_dict = {
         ULTRA_TOF.apid[0]: process_ultra_tof,

@@ -10,6 +10,8 @@ class PacketProperties(NamedTuple):
     """Class that represents properties of the ULTRA packet type."""
 
     apid: list  # List of APIDs
+    logical_source: list  # List of logical sources
+    addition_to_logical_desc: str  # Description of the logical source
     width: int  # Width of binary data
     block: int  # Number of values in each block.
     # This is important for decompressing the images and
@@ -23,19 +25,35 @@ class PacketProperties(NamedTuple):
 # Define PacketProperties instances directly in the module namespace
 ULTRA_AUX = PacketProperties(
     apid=[880, 994],
+    logical_source=["imap_ultra_l1a_45aux", "imap_ultra_l1a_90aux"],
+    addition_to_logical_desc="Auxiliary",
     width=None,
     block=None,
     len_array=None,
     mantissa_bit_length=None,
 )
 ULTRA_RATES = PacketProperties(
-    apid=[881, 945], width=5, block=16, len_array=48, mantissa_bit_length=12
+    apid=[881, 945],
+    logical_source=["imap_ultra_l1a_45rates", "imap_ultra_l1a_90rates"],
+    addition_to_logical_desc="Image Rates",
+    width=5,
+    block=16,
+    len_array=48,
+    mantissa_bit_length=12,
 )
 ULTRA_TOF = PacketProperties(
-    apid=[883, 947], width=4, block=15, len_array=None, mantissa_bit_length=4
+    apid=[883, 947],
+    logical_source=["imap_ultra_l1a_45tof", "imap_ultra_l1a_90tof"],
+    addition_to_logical_desc="Time of Flight Images",
+    width=4,
+    block=15,
+    len_array=None,
+    mantissa_bit_length=4,
 )
 ULTRA_EVENTS = PacketProperties(
     apid=[896, 960],
+    logical_source=["imap_ultra_l1a_45events", "imap_ultra_l1a_90events"],
+    addition_to_logical_desc="Single Events",
     width=None,
     block=None,
     len_array=None,
