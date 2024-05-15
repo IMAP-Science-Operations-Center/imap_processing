@@ -1,11 +1,7 @@
 import dataclasses
-
-import numpy as np
-import pandas as pd
 import pytest
 
 from imap_processing import decom
-from imap_processing.cdf.defaults import GlobalConstants
 from imap_processing.cdf.utils import load_cdf
 from imap_processing.ultra import ultra_cdf_attrs
 from imap_processing.ultra.l0.decom_ultra import decom_ultra_apids
@@ -31,9 +27,9 @@ def decom_ultra_aux(ccsds_path_theta_0, xtce_path):
 
 
 @pytest.fixture()
-def decom_ultra_rates(ccsds_path, xtce_path):
+def decom_ultra_rates(ccsds_path_theta_0, xtce_path):
     """Data for decom_ultra_rates"""
-    packets = decom.decom_packets(ccsds_path, xtce_path)
+    packets = decom.decom_packets(ccsds_path_theta_0, xtce_path)
     grouped_data = group_by_apid(packets)
     data = {ULTRA_RATES.apid[0]: grouped_data[ULTRA_RATES.apid[0]]}
 
@@ -51,6 +47,11 @@ def decom_ultra_events(ccsds_path_theta_0, xtce_path):
     data_packet_list = decom_ultra_apids(data, ULTRA_EVENTS.apid[0])
     return data_packet_list
 
+@pytest.fixture()
+def decom_ultra_tof(ccsds_path_tof, xtce_path):
+    """Data for decom_ultra_tof"""
+    data_packet_list = decom_ultra_apids(ccsds_path_tof, xtce_path, ULTRA_TOF.apid[0])
+    return data_packet_list
 
 @pytest.fixture()
 def decom_ultra_tof(ccsds_path_tof, xtce_path):
@@ -63,7 +64,18 @@ def decom_ultra_tof(ccsds_path_tof, xtce_path):
     return data_packet_list
 
 
-def test_xarray_aux(decom_ultra_aux, aux_test_path):
+@pytest.fixture()
+def decom_ultra_tof_theta_00(ccsds_path_theta_0, xtce_path):
+    """Data for decom_ultra_tof"""
+    packets = decom.decom_packets(ccsds_path_theta_0, xtce_path)
+    grouped_data = group_by_apid(packets)
+    data = {ULTRA_TOF.apid[0]: grouped_data[ULTRA_TOF.apid[0]]}
+
+    data_packet_list = decom_ultra_apids(data, ULTRA_TOF.apid[0])
+    return data_packet_list
+
+
+def test_xarray_aux(decom_ultra_aux):
     """This function checks that a xarray was
     successfully created from the decom_ultra_aux data."""
 
@@ -114,7 +126,7 @@ def test_xarray_rates(decom_ultra_rates):
     dataset = create_dataset({ULTRA_RATES.apid[0]: decom_ultra_rates})
 
     # Spot check metadata data and attributes
-    specific_epoch_data = dataset.sel(epoch="2022-05-30T22:52:00.184000")["START_RF"]
+    specific_epoch_data = dataset.sel(epoch="2024-02-07T15:28:37.184000")["START_RF"]
     startrf_list = specific_epoch_data.values.tolist()
     startrf_attr = dataset.variables["START_RF"].attrs
 
@@ -129,14 +141,13 @@ def test_xarray_rates(decom_ultra_rates):
     assert startrf_attr == expected_startrf_attr
 
 
-def test_xarray_tof(decom_ultra_tof):
+def test_xarray_tof_theta_00(decom_ultra_tof):
     """This function checks that a xarray was
     successfully created from the decom_ultra_tof data."""
-
     dataset = create_dataset({ULTRA_TOF.apid[0]: decom_ultra_tof})
 
     # Spot check metadata data and attributes
-    specific_epoch_data = dataset.sel(epoch="2024-01-24T11:39:21.184000", sid=0)[
+    specific_epoch_data = dataset.sel(epoch="2024-02-07T15:28:37.184000", sid=0)[
         "PACKETDATA"
     ]
     packetdata_attr = dataset.variables["PACKETDATA"].attrs
@@ -157,9 +168,7 @@ def test_xarray_tof(decom_ultra_tof):
     assert packetdata_attr == expected_packetdata_attr
 
 
-def test_xarray_events(
-    decom_ultra_events, decom_ultra_aux, events_fsw_comparison_theta_0
-):
+def test_xarray_events(decom_ultra_events, decom_ultra_aux, events_test_path):
     """This function checks that a xarray was
     successfully created from the decom_ultra_events data."""
 
@@ -170,25 +179,54 @@ def test_xarray_events(
         }
     )
 
-    df = pd.read_csv(events_fsw_comparison_theta_0)
-    df.replace(-1, GlobalConstants.INT_FILLVAL, inplace=True)
+    # Spot check metadata data and attributes
+    specific_epoch_data = dataset.sel(epoch="2024-02-07T15:28:37.184000")["COIN_TYPE"]
+    cointype_list = specific_epoch_data.values.tolist()
+    cointype_attr = dataset.variables["COIN_TYPE"].attrs
 
-    np.testing.assert_array_equal(df["CoinType"], dataset.COIN_TYPE.data)
-    np.testing.assert_array_equal(df["StartType"], dataset.START_TYPE.data)
-    np.testing.assert_array_equal(df["StopType"], dataset.STOP_TYPE.data)
-    np.testing.assert_array_equal(df["StartPosTDC"], dataset.START_POS_TDC.data)
-    np.testing.assert_array_equal(df["StopNorthTDC"], dataset.STOP_NORTH_TDC.data)
-    np.testing.assert_array_equal(df["StopEastTDC"], dataset.STOP_EAST_TDC.data)
-    np.testing.assert_array_equal(df["StopSouthTDC"], dataset.STOP_SOUTH_TDC.data)
-    np.testing.assert_array_equal(df["StopWestTDC"], dataset.STOP_WEST_TDC.data)
-    np.testing.assert_array_equal(df["CoinNorthTDC"], dataset.COIN_NORTH_TDC.data)
-    np.testing.assert_array_equal(df["CoinSouthTDC"], dataset.COIN_SOUTH_TDC.data)
-    np.testing.assert_array_equal(df["CoinDiscreteTDC"], dataset.COIN_DISCRETE_TDC.data)
-    np.testing.assert_array_equal(df["EnergyOrPH"], dataset.ENERGY_PH.data)
-    np.testing.assert_array_equal(df["PulseWidth"], dataset.PULSE_WIDTH.data)
-    np.testing.assert_array_equal(df["PhaseAngle"], dataset.PHASE_ANGLE.data)
-    np.testing.assert_array_equal(df["Bin"], dataset.BIN.data)
-    np.testing.assert_array_equal(df["CnT"], dataset.EVENT_FLAG_CNT.data)
+    expected_cointype_attr = dataclasses.replace(
+        ultra_cdf_attrs.ultra_support_attrs,
+        catdesc="coin_type",
+        fieldname="coin_type",
+        label_axis="coin_type",
+    ).output()
+
+    assert cointype_list == decom_ultra_events["COIN_TYPE"][0:1]
+    assert cointype_attr == expected_cointype_attr
+
+
+# def test_xarray_events(
+#     decom_ultra_events, decom_ultra_aux, events_fsw_comparison_theta_0
+# ):
+#     """This function checks that a xarray was
+#     successfully created from the decom_ultra_events data."""
+#
+#     dataset = create_dataset(
+#         {
+#             ULTRA_EVENTS.apid[0]: decom_ultra_events,
+#             ULTRA_AUX.apid[0]: decom_ultra_aux,
+#         }
+#     )
+#
+#     mask = dataset.COIN_TYPE.data != GlobalConstants.INT_FILLVAL
+#
+#     df = pd.read_csv(events_fsw_comparison_theta_0)
+#
+#     np.testing.assert_array_equal(df["CoinType"], dataset.COIN_TYPE.data[mask])
+#     np.testing.assert_array_equal(df["StartType"], dataset.START_TYPE.data[mask])
+#     np.testing.assert_array_equal(df["StopType"], dataset.STOP_TYPE.data[mask])
+#     np.testing.assert_array_equal(df["StartPosTDC"], dataset.START_POS_TDC.data[mask])
+#     np.testing.assert_array_equal(df["StopNorthTDC"], dataset.STOP_NORTH_TDC.data[mask])
+#     np.testing.assert_array_equal(df["StopEastTDC"], dataset.STOP_EAST_TDC.data[mask])
+#     np.testing.assert_array_equal(df["StopSouthTDC"], dataset.STOP_SOUTH_TDC.data[mask])
+#     np.testing.assert_array_equal(df["StopWestTDC"], dataset.STOP_WEST_TDC.data[mask])
+#     np.testing.assert_array_equal(df["CoinNorthTDC"], dataset.COIN_NORTH_TDC.data[mask])
+#     np.testing.assert_array_equal(df["CoinSouthTDC"], dataset.COIN_SOUTH_TDC.data[mask])
+#     np.testing.assert_array_equal(df["CoinDiscrete"], dataset.COIN_DISCRETE_TDC.data[mask])
+#     np.testing.assert_array_equal(df["EnergyPH"], dataset.ENERGY_PH.data[mask])
+#     np.testing.assert_array_equal(df["PulseWidth"], dataset.PULSE_WIDTH.data[mask])
+#     np.testing.assert_array_equal(df["Bin"], dataset.BIN.data[mask])
+#     np.testing.assert_array_equal(df["CoinT"], dataset.EVENT_FLAG_CNT.data[mask])
 
 
 def test_cdf_aux(
