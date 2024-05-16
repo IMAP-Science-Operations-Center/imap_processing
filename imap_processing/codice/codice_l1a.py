@@ -41,9 +41,8 @@ logger.setLevel(logging.INFO)
 
 # TODO: Data array lengths should all be 128 * num_counters
 #       (see notes in unpack_science_data)
-# TODO: Add ESA Sweep and acquisition times to CDFs (as constants)
-# TODO: Update data variable names to include prefix (e.g. imap_codice_lo-sw-)
 # TODO: Try new simulated data
+# TODO: Add metadata attrs to science dataset
 
 
 class CoDICEL1aPipeline:
@@ -101,8 +100,6 @@ class CoDICEL1aPipeline:
         xr.Dataset
             ``xarray`` dataset containing the science data and supporting metadata
         """
-        # TODO: Add metadata attrs
-
         epoch = xr.DataArray(
             [
                 calc_start_time(
@@ -143,6 +140,20 @@ class CoDICEL1aPipeline:
                 ).output(),
             )
 
+        # Add ESA Sweep values
+        dataset["esa_sweep_values"] = xr.DataArray(
+            self.esa_sweep_values,
+            dims=["voltage"],
+            attrs=dataclasses.replace(cdf_attrs.esa_sweep_attrs).output(),
+        )
+
+        # Add acquisition times
+        dataset["acquisition_times"] = xr.DataArray(
+            self.acquisition_times,
+            dims=["milliseconds"],
+            attrs=dataclasses.replace(cdf_attrs.acquisition_times_attrs).output(),
+        )
+
         return dataset
 
     def get_acquisition_times(self):
@@ -175,10 +186,13 @@ class CoDICEL1aPipeline:
         ]
 
         # Get the acquisition times
-        self.acquisition_times = lo_stepping_values.acq_time
-
-        # TODO: Expand acquisition times list so that each energy step has an
-        # associated time
+        self.acquisition_times = []
+        energy_steps = lo_stepping_values[
+            ["e1", "e2", "e3", "e4", "e5", "e6", "e7", "e8"]
+        ].astype(str)  # convert to string to avoid confusion with table index value
+        for step_number in range(128):
+            index = energy_steps.isin([str(step_number)]).any(axis=1).idxmax()
+            self.acquisition_times.append(lo_stepping_values.acq_time[index])
 
     def get_esa_sweep_values(self):
         """Retrieve the ESA sweep values.
@@ -426,3 +440,8 @@ def process_codice_l1a(packets) -> xr.Dataset:
     logger.info(f"\tCreated CDF file: {dataset.cdf_filename}")
 
     return dataset
+
+
+# Update cli script IDEX
+# No need for speadsheet for IDEX if its working
+# Ask Joey about Level 2, updated algorithm document

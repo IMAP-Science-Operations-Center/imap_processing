@@ -2,6 +2,8 @@
 
 For further details, see the documentation provided at
 https://imap-processing.readthedocs.io/en/latest/development/CDFs/cdf_requirements.html
+
+Reference: https://spdf.gsfc.nasa.gov/sp_use_of_cdf.html
 """
 
 # TODO: Add catdescs
@@ -85,6 +87,16 @@ l1a_lo_sw_angular_counts_attrs = GlobalDataLevelAttrs(
 )
 
 # Variable-level attributes
+acquisition_times_attrs = AttrBase(
+    validmin=0,
+    validmax=GlobalConstants.INT_MAXVAL,
+    format="I12",
+    var_type="support_data",
+    fieldname="Acquisition Time",
+    catdesc="TBD",
+    label_axis="Acq Time",
+)
+
 codice_metadata_attrs = ScienceAttrs(
     validmin=0,
     validmax=GlobalConstants.INT_MAXVAL,
@@ -94,16 +106,6 @@ codice_metadata_attrs = ScienceAttrs(
     units="dN",
     var_type="data",
     variable_purpose="PRIMARY",
-)
-
-energy_attrs = AttrBase(
-    validmin=0,
-    validmax=127,
-    format="I3",
-    var_type="support_data",
-    fieldname="Energy Step",
-    catdesc="TBD",
-    label_axis="energy",
 )
 
 counters_attrs = ScienceAttrs(
@@ -119,4 +121,24 @@ counters_attrs = ScienceAttrs(
     var_type="data",
     depend_0="epoch",
     depend_1="energy",
+)
+
+energy_attrs = AttrBase(
+    validmin=0,
+    validmax=127,
+    format="I3",
+    var_type="support_data",
+    fieldname="Energy Step",
+    catdesc="TBD",
+    label_axis="energy",
+)
+
+esa_sweep_attrs = AttrBase(
+    validmin=0,
+    validmax=GlobalConstants.INT_MAXVAL,
+    format="I12",
+    var_type="support_data",
+    fieldname="ESA V",
+    catdesc="TBD",
+    label_axis="ESA V",
 )

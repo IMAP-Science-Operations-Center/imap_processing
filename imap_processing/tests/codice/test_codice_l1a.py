@@ -20,10 +20,10 @@ EXPECTED_ARRAY_SHAPES = [
 ]
 EXPECTED_ARRAY_SIZES = [
     123,  # hskp
-    16,  # lo-sw-species-counts
-    8,  # lo-nsw-species-counts
-    5,  # lo-sw-priority-counts
-    4,  # lo-sw-angular-counts
+    18,  # lo-sw-species-counts
+    10,  # lo-nsw-species-counts
+    7,  # lo-sw-priority-counts
+    6,  # lo-sw-angular-counts
 ]
 EXPECTED_FILENAMES = [
     "imap_codice_l1a_hskp_20100101_v001.cdf",
@@ -105,7 +105,10 @@ def test_l1a_data_array_shape(test_l1a_data: xr.Dataset, expected_shape: tuple):
 
     dataset = test_l1a_data
     for variable in dataset:
-        assert dataset[variable].data.shape == expected_shape
+        if variable in ["esa_sweep_values", "acquisition_times"]:
+            assert dataset[variable].data.shape == (128,)
+        else:
+            assert dataset[variable].data.shape == expected_shape
 
 
 @pytest.mark.parametrize(

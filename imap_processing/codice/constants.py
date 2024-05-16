@@ -11,6 +11,9 @@ PUI = PickUp Ion
 ESA = ElectroStatic Analyzer
 """
 
+# TODO: variable names cannot have dashes
+# TODO: Expand lists to include labelaxis
+
 from imap_processing.codice.utils import CoDICECompression
 
 # CDF-friendly FIELDNAMES and VARNAMES for lo-sw-angular-counts data product
