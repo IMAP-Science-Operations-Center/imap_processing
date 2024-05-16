@@ -467,12 +467,13 @@ class Ultra(ProcessInstrument):
             # File path is expected output file path
             if len(dependencies) > 1:
                 raise ValueError(
-                    f"Unexpected dependencies found for MAG L1A:"
+                    f"Unexpected dependencies found for ULTRA L1A:"
                     f"{dependencies}. Expected only one dependency."
                 )
 
         if self.data_level == "l1a":
             datasets = ultra_l1a(dependencies[0])
+            print(datasets)
             products = [write_cdf(dataset) for dataset in datasets]
             return products
 
@@ -498,7 +499,6 @@ def main():
         args.upload_to_sdc,
     )
     instrument.process()
-    print("hi")
 
 
 if __name__ == "__main__":

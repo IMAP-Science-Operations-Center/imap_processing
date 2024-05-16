@@ -7,20 +7,18 @@ import pytest
 from imap_processing import decom
 from imap_processing.ultra.l0.decom_ultra import decom_ultra_apids
 from imap_processing.ultra.l0.ultra_utils import RATES_KEYS, ULTRA_RATES
-
-
-@pytest.fixture()
-def decom_test_data(ccsds_path, xtce_path):
-    """Data for decom"""
-    data_packet_list = decom.decom_packets(ccsds_path, xtce_path)
-    return data_packet_list
+from imap_processing.utils import group_by_apid
 
 
 @pytest.fixture()
 def decom_ultra(ccsds_path, xtce_path):
     """Data for decom_ultra"""
-    data_packets = decom_ultra_apids(ccsds_path, xtce_path, ULTRA_RATES.apid[0])
-    return data_packets
+    packets = decom.decom_packets(ccsds_path, xtce_path)
+    grouped_data = group_by_apid(packets)
+    data = {ULTRA_RATES.apid[0]: grouped_data[ULTRA_RATES.apid[0]]}
+
+    data_packet_list = decom_ultra_apids(data, ULTRA_RATES.apid[0])
+    return data_packet_list
 
 
 def test_image_rate_decom(decom_ultra, rates_test_path):

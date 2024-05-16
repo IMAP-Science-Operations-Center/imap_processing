@@ -50,15 +50,11 @@ def append_tof_params(
         Dictionary used for stacking in time dimension.
     """
     # TODO: add error handling to make certain every timestamp has 8 SID values
-    shcoarse = packet.data["SHCOARSE"].derived_value
 
     for key in packet.data.keys():
         # Keep appending packet data until SID = 7
         if key == "PACKETDATA":
             data_dict[key].append(decompressed_data)
-        # SHCOARSE should be unique
-        elif key == "SHCOARSE" and shcoarse not in decom_data["SHCOARSE"]:
-            decom_data[key].append(packet.data[key].derived_value)
         # Keep appending all other data until SID = 7
         else:
             data_dict[key].append(packet.data[key].derived_value)
@@ -69,6 +65,9 @@ def append_tof_params(
 
     # Once "SID" reaches 7, we have all the images and data for the single timestamp
     if packet.data["SID"].derived_value == 7:
+        decom_data["SHCOARSE"].extend(list(set(data_dict["SHCOARSE"])))
+        data_dict["SHCOARSE"].clear()
+
         for key in packet.data.keys():
             if key != "SHCOARSE":
                 stacked_dict[key].append(np.stack(data_dict[key]))
@@ -186,7 +185,7 @@ def process_ultra_events(sorted_packets: list, decom_data: dict):
     Parameters
     ----------
     sorted_packets : list
-        TOF packets sorted by time.
+        EVENTS packets sorted by time.
     decom_data : collections.defaultdict
         Empty dictionary.
 
@@ -218,7 +217,7 @@ def process_ultra_aux(sorted_packets: list, decom_data: dict):
     Parameters
     ----------
     sorted_packets : list
-        TOF packets sorted by time.
+        AUX packets sorted by time.
     decom_data : collections.defaultdict
         Empty dictionary.
 
@@ -240,7 +239,7 @@ def process_ultra_rates(sorted_packets: list, decom_data: dict):
     Parameters
     ----------
     sorted_packets : list
-        TOF packets sorted by time.
+        RATES packets sorted by time.
     decom_data : collections.defaultdict
         Empty dictionary.
 

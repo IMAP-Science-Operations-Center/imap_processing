@@ -2,17 +2,21 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from imap_processing import decom
 from imap_processing.cdf.defaults import GlobalConstants
 from imap_processing.ultra.l0.decom_ultra import decom_ultra_apids
 from imap_processing.ultra.l0.ultra_utils import ULTRA_EVENTS
+from imap_processing.utils import group_by_apid
 
 
 @pytest.fixture()
 def decom_ultra(ccsds_path_events, xtce_path):
     """Data for decom_ultra"""
-    data_packet_list = decom_ultra_apids(
-        ccsds_path_events, xtce_path, ULTRA_EVENTS.apid[0]
-    )
+    packets = decom.decom_packets(ccsds_path_events, xtce_path)
+    grouped_data = group_by_apid(packets)
+    data = {ULTRA_EVENTS.apid[0]: grouped_data[ULTRA_EVENTS.apid[0]]}
+
+    data_packet_list = decom_ultra_apids(data, ULTRA_EVENTS.apid[0])
     return data_packet_list
 
 

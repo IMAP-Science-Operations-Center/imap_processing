@@ -4,14 +4,22 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from imap_processing import decom
 from imap_processing.ultra.l0.decom_ultra import decom_ultra_apids
 from imap_processing.ultra.l0.ultra_utils import ULTRA_TOF
+from imap_processing.utils import group_by_apid
+
+# TODO: discuss with instrument team incomplete set of SIDs
 
 
 @pytest.fixture()
 def decom_ultra(ccsds_path_tof, xtce_path):
     """Data for decom_ultra"""
-    data_packet_list = decom_ultra_apids(ccsds_path_tof, xtce_path, ULTRA_TOF.apid[0])
+    packets = decom.decom_packets(ccsds_path_tof, xtce_path)
+    grouped_data = group_by_apid(packets)
+    data = {ULTRA_TOF.apid[0]: grouped_data[ULTRA_TOF.apid[0]]}
+
+    data_packet_list = decom_ultra_apids(data, ULTRA_TOF.apid[0])
     return data_packet_list
 
 

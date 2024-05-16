@@ -105,23 +105,6 @@ def aux_test_path():
 
 
 @pytest.fixture()
-def aux_test_path_theta_0():
-    """Returns the xtce auxiliary test data directory."""
-    filename = (
-        "FM45_40P_Phi28p5_BeamCal_LinearScan_phi28.50_theta-0.00"
-        "_ULTRA_AUXILIARY_20240207T102753_.csv"
-    )
-    return (
-        Path(sys.modules[__name__.split(".")[0]].__file__).parent
-        / "tests"
-        / "ultra"
-        / "test_data"
-        / "l0"
-        / filename
-    )
-
-
-@pytest.fixture()
 def events_test_path():
     """Returns the xtce auxiliary test data directory."""
     filename = (
@@ -139,45 +122,11 @@ def events_test_path():
 
 
 @pytest.fixture()
-def events_test_path_theta_0():
-    """Returns the xtce auxiliary test data directory."""
-    filename = (
-        "FM45_40P_Phi28p5_BeamCal_LinearScan_phi28.50_theta-0.00"
-        "_Ultra_Image_Raw_Event_20240207T102746_.csv"
-    )
-    return (
-        Path(sys.modules[__name__.split(".")[0]].__file__).parent
-        / "tests"
-        / "ultra"
-        / "test_data"
-        / "l0"
-        / filename
-    )
-
-
-@pytest.fixture()
 def tof_test_path():
     """Returns the xtce auxiliary test data directory."""
     filename = (
         "ultra45_raw_sc_enaphxtofhangimg_FM45_TV_Cycle6_Hot_Ops_"
         "Front212_20240124T063837.csv"
-    )
-    return (
-        Path(sys.modules[__name__.split(".")[0]].__file__).parent
-        / "tests"
-        / "ultra"
-        / "test_data"
-        / "l0"
-        / filename
-    )
-
-
-@pytest.fixture()
-def events_fsw_comparison_theta_0():
-    """Returns the xtce auxiliary test data directory."""
-    filename = (
-        "FM45_40P_Phi28p5_BeamCal_LinearScan_phi28.50_theta-0.00"
-        "_Ultra_Image_Raw_Event_20240207T102746_withFSWcalcs.csv"
     )
     return (
         Path(sys.modules[__name__.split(".")[0]].__file__).parent
