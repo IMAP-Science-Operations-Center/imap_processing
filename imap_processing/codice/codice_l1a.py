@@ -41,7 +41,9 @@ logger.setLevel(logging.INFO)
 
 # TODO: Data array lengths should all be 128 * num_counters
 #       (see notes in unpack_science_data)
-# TODO: Add ESA Sweep and acquisition times to CDFs
+# TODO: Add ESA Sweep and acquisition times to CDFs (as constants)
+# TODO: Update data variable names to include prefix (e.g. imap_codice_lo-sw-)
+# TODO: Try new simulated data
 
 
 class CoDICEL1aPipeline:

@@ -4,6 +4,9 @@ For further details, see the documentation provided at
 https://imap-processing.readthedocs.io/en/latest/development/CDFs/cdf_requirements.html
 """
 
+# TODO: Add catdescs
+# TODO: Validmax should be 2^24 not 2^64
+
 from imap_processing.cdf.defaults import GlobalConstants
 from imap_processing.cdf.global_attrs import (
     AttrBase,
@@ -100,7 +103,7 @@ energy_attrs = AttrBase(
     var_type="support_data",
     fieldname="Energy Step",
     catdesc="TBD",
-    label_axis="TBD",
+    label_axis="energy",
 )
 
 counters_attrs = ScienceAttrs(
