@@ -5,7 +5,7 @@ from unittest import mock
 
 import pytest
 
-from imap_processing.cli import Hi, _validate_args, main
+from imap_processing.cli import Hi, Ultra, _validate_args, main
 
 
 @mock.patch("imap_processing.cli.Mag")
@@ -86,4 +86,33 @@ def test_hi(mock_write_cdf, mock_hi_l1a, mock_upload, mock_download, mock_query)
     assert mock_query.call_count == 1
     assert mock_download.call_count == 1
     assert mock_hi_l1a.call_count == 1
+    assert mock_upload.call_count == 2
+
+
+@mock.patch("imap_processing.cli.imap_data_access.query")
+@mock.patch("imap_processing.cli.imap_data_access.download")
+@mock.patch("imap_processing.cli.imap_data_access.upload")
+@mock.patch("imap_processing.cli.ultra_l1a.ultra_l1a")
+@mock.patch("imap_processing.cli.write_cdf")
+def test_ultra(mock_write_cdf, mock_ultra_l1a, mock_upload, mock_download, mock_query):
+    """Test coverage for cli.Ultra class"""
+    mock_query.return_value = [{"file_path": "/path/to/file0"}]
+    mock_download.return_value = "dependency0"
+    mock_ultra_l1a.return_value = ["l1a_dataset0", "l1a_dataset1"]
+    mock_write_cdf.side_effect = ["/path/to/product0", "/path/to/product1"]
+
+    dependency_str = (
+        "[{"
+        "'instrument': 'ultra',"
+        "'data_level': 'l0',"
+        "'descriptor': 'raw',"
+        "'version': 'v001',"
+        "'start_date': '20240207'"
+        "}]"
+    )
+    instrument = Ultra("l1a", dependency_str, "20240207", "20240208", "v001", True)
+    instrument.process()
+    assert mock_query.call_count == 1
+    assert mock_download.call_count == 1
+    assert mock_ultra_l1a.call_count == 1
     assert mock_upload.call_count == 2

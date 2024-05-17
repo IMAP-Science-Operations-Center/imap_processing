@@ -36,7 +36,7 @@ from imap_processing.hi.l1a import hi_l1a
 from imap_processing.mag.l1a.mag_l1a import mag_l1a
 from imap_processing.swe.l1a.swe_l1a import swe_l1a
 from imap_processing.swe.l1b.swe_l1b import swe_l1b
-from imap_processing.ultra.l1a.ultra_l1a import ultra_l1a
+from imap_processing.ultra.l1a import ultra_l1a
 
 logger = logging.getLogger(__name__)
 
@@ -472,8 +472,7 @@ class Ultra(ProcessInstrument):
                 )
 
         if self.data_level == "l1a":
-            datasets = ultra_l1a(dependencies[0])
-            print(datasets)
+            datasets = ultra_l1a.ultra_l1a(dependencies[0])
             products = [write_cdf(dataset) for dataset in datasets]
             return products
 

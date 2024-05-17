@@ -13,7 +13,7 @@ import xarray as xr
 
 from imap_processing import decom, imap_module_directory
 from imap_processing.cdf.global_attrs import ConstantCoordinates
-from imap_processing.cdf.utils import calc_start_time, write_cdf
+from imap_processing.cdf.utils import calc_start_time
 from imap_processing.ultra import ultra_cdf_attrs
 from imap_processing.ultra.l0.decom_ultra import (
     ULTRA_AUX,
@@ -300,8 +300,8 @@ def ultra_l1a(packet_file: Path, apid: Optional[int] = None):
 
     Returns
     -------
-    output_filepaths : list
-        List of filepaths to the created CDF files.
+    output_datasets : list of xarray.Dataset
+        List of xarray.Dataset
     """
     xtce = Path(
         f"{imap_module_directory}/ultra/packet_definitions/" f"ULTRA_SCI_COMBINED.xml"
@@ -310,7 +310,7 @@ def ultra_l1a(packet_file: Path, apid: Optional[int] = None):
     packets = decom.decom_packets(packet_file, xtce)
     grouped_data = group_by_apid(packets)
 
-    output_filepaths = []
+    output_datasets = []
 
     if apid is not None:
         apids = [apid]
@@ -332,8 +332,6 @@ def ultra_l1a(packet_file: Path, apid: Optional[int] = None):
                 apid: decom_ultra_apids(data, apid),
             }
         dataset = create_dataset(decom_ultra_dict)
-        output_filepath = write_cdf(dataset)
-        logging.info(f"Created CDF file at {output_filepath}")
-        output_filepaths.append(output_filepath)
+        output_datasets.append(dataset)
 
-    return output_filepaths
+    return output_datasets

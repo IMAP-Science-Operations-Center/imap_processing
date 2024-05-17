@@ -3,7 +3,7 @@ import dataclasses
 import pytest
 
 from imap_processing import decom
-from imap_processing.cdf.utils import load_cdf
+from imap_processing.cdf.utils import load_cdf, write_cdf
 from imap_processing.ultra import ultra_cdf_attrs
 from imap_processing.ultra.l0.decom_ultra import decom_ultra_apids
 from imap_processing.ultra.l0.ultra_utils import (
@@ -186,12 +186,14 @@ def test_cdf_aux(
 ):
     """Tests that CDF file is created and contains same attributes as xarray."""
 
-    test_data_path = ultra_l1a(ccsds_path_theta_0, apid=ULTRA_AUX.apid[0])
-    assert test_data_path[0].exists()
-    assert test_data_path[0].name == "imap_ultra_l1a_45aux_20240207_v001.cdf"
+    test_data = ultra_l1a(ccsds_path_theta_0, apid=ULTRA_AUX.apid[0])
+    test_data_path = write_cdf(test_data[0])
+
+    assert test_data_path.exists()
+    assert test_data_path.name == "imap_ultra_l1a_45aux_20240207_v001.cdf"
 
     dataset_aux = create_dataset({ULTRA_AUX.apid[0]: decom_ultra_aux})
-    input_xarray_aux = load_cdf(test_data_path[0])
+    input_xarray_aux = load_cdf(test_data_path)
 
     assert input_xarray_aux.attrs.keys() == dataset_aux.attrs.keys()
 
@@ -202,12 +204,14 @@ def test_cdf_rates(
 ):
     """Tests that CDF file is created and contains same attributes as xarray."""
 
-    test_data_path = ultra_l1a(ccsds_path_theta_0, apid=ULTRA_RATES.apid[0])
-    assert test_data_path[0].exists()
-    assert test_data_path[0].name == "imap_ultra_l1a_45rates_20240207_v001.cdf"
+    test_data = ultra_l1a(ccsds_path_theta_0, apid=ULTRA_RATES.apid[0])
+    test_data_path = write_cdf(test_data[0])
+
+    assert test_data_path.exists()
+    assert test_data_path.name == "imap_ultra_l1a_45rates_20240207_v001.cdf"
 
     dataset_rates = create_dataset({ULTRA_RATES.apid[0]: decom_ultra_rates})
-    input_xarray_rates = load_cdf(test_data_path[0])
+    input_xarray_rates = load_cdf(test_data_path)
 
     assert input_xarray_rates.attrs.keys() == dataset_rates.attrs.keys()
 
@@ -217,12 +221,14 @@ def test_cdf_tof(
     decom_ultra_tof,
 ):
     """Tests that CDF file is created and contains same attributes as xarray."""
-    test_data_path = ultra_l1a(ccsds_path_theta_0, apid=ULTRA_TOF.apid[0])
-    assert test_data_path[0].exists()
-    assert test_data_path[0].name == "imap_ultra_l1a_45tof_20240207_v001.cdf"
+    test_data = ultra_l1a(ccsds_path_theta_0, apid=ULTRA_TOF.apid[0])
+    test_data_path = write_cdf(test_data[0])
+
+    assert test_data_path.exists()
+    assert test_data_path.name == "imap_ultra_l1a_45tof_20240207_v001.cdf"
 
     dataset_tof = create_dataset({ULTRA_TOF.apid[0]: decom_ultra_tof})
-    input_xarray_tof = load_cdf(test_data_path[0])
+    input_xarray_tof = load_cdf(test_data_path)
 
     assert input_xarray_tof.attrs.keys() == dataset_tof.attrs.keys()
 
@@ -233,13 +239,15 @@ def test_cdf_events(
     decom_ultra_events,
 ):
     """Tests that CDF file is created and contains same attributes as xarray."""
-    test_data_path = ultra_l1a(ccsds_path_theta_0, apid=ULTRA_EVENTS.apid[0])
-    assert test_data_path[0].exists()
-    assert test_data_path[0].name == "imap_ultra_l1a_45events_20240207_v001.cdf"
+    test_data = ultra_l1a(ccsds_path_theta_0, apid=ULTRA_EVENTS.apid[0])
+    test_data_path = write_cdf(test_data[0])
+
+    assert test_data_path.exists()
+    assert test_data_path.name == "imap_ultra_l1a_45events_20240207_v001.cdf"
 
     dataset_events = create_dataset(
         {ULTRA_EVENTS.apid[0]: decom_ultra_events, ULTRA_AUX.apid[0]: decom_ultra_aux}
     )
-    input_xarray_events = load_cdf(test_data_path[0])
+    input_xarray_events = load_cdf(test_data_path)
 
     assert input_xarray_events.attrs.keys() == dataset_events.attrs.keys()
