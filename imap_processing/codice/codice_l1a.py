@@ -42,7 +42,7 @@ logger.setLevel(logging.INFO)
 # TODO: Data array lengths should all be 128 * num_counters
 #       (see notes in unpack_science_data)
 # TODO: Try new simulated data
-# TODO: Add metadata attrs to science dataset
+# TODO: Add metadata attrs to science dataset?
 
 
 class CoDICEL1aPipeline:
@@ -125,18 +125,20 @@ class CoDICEL1aPipeline:
         )
 
         # Create a data variable for each species
-        for variable_data, name in zip(self.data, self.variable_names):
-            varname, fieldname = name
+        for variable_data, variable_name in zip(self.data, self.variable_names):
+            fieldname = self.variable_names[variable_name]["fieldname"]
+            catdesc = self.variable_names[variable_name]["catdesc"]
+
             variable_data_arr = np.array(list(variable_data), dtype=int).reshape(
                 -1, self.num_energy_steps
             )
 
-            dataset[varname] = xr.DataArray(
+            dataset[variable_name] = xr.DataArray(
                 variable_data_arr,
-                name=varname,
+                name=variable_name,
                 dims=["epoch", "energy"],
                 attrs=dataclasses.replace(
-                    cdf_attrs.counters_attrs, fieldname=fieldname
+                    cdf_attrs.counters_attrs, fieldname=fieldname, catdesc=catdesc
                 ).output(),
             )
 
@@ -144,14 +146,14 @@ class CoDICEL1aPipeline:
         dataset["esa_sweep_values"] = xr.DataArray(
             self.esa_sweep_values,
             dims=["voltage"],
-            attrs=dataclasses.replace(cdf_attrs.esa_sweep_attrs).output(),
+            attrs=cdf_attrs.esa_sweep_attrs.output(),
         )
 
         # Add acquisition times
         dataset["acquisition_times"] = xr.DataArray(
             self.acquisition_times,
             dims=["milliseconds"],
-            attrs=dataclasses.replace(cdf_attrs.acquisition_times_attrs).output(),
+            attrs=cdf_attrs.acquisition_times_attrs.output(),
         )
 
         return dataset
@@ -180,7 +182,6 @@ class CoDICEL1aPipeline:
         ]
 
         # Get the appropriate values
-        # TODO: update lo_stepping_values.csv with updated data
         lo_stepping_values = lo_stepping_data[
             lo_stepping_data["table_num"] == lo_stepping_table_id
         ]
@@ -440,8 +441,3 @@ def process_codice_l1a(packets) -> xr.Dataset:
     logger.info(f"\tCreated CDF file: {dataset.cdf_filename}")
 
     return dataset
-
-
-# Update cli script IDEX
-# No need for speadsheet for IDEX if its working
-# Ask Joey about Level 2, updated algorithm document

@@ -6,9 +6,6 @@ https://imap-processing.readthedocs.io/en/latest/development/CDFs/cdf_requiremen
 Reference: https://spdf.gsfc.nasa.gov/sp_use_of_cdf.html
 """
 
-# TODO: Add catdescs
-# TODO: Validmax should be 2^24 not 2^64
-
 from imap_processing.cdf.defaults import GlobalConstants
 from imap_processing.cdf.global_attrs import (
     AttrBase,
@@ -88,57 +85,70 @@ l1a_lo_sw_angular_counts_attrs = GlobalDataLevelAttrs(
 
 # Variable-level attributes
 acquisition_times_attrs = AttrBase(
-    validmin=0,
-    validmax=GlobalConstants.INT_MAXVAL,
-    format="I12",
-    var_type="support_data",
+    catdesc="Time of acquisition for the energy step",
+    display_type="no_plot",
     fieldname="Acquisition Time",
-    catdesc="TBD",
+    fill_val=GlobalConstants.DOUBLE_FILLVAL,
+    format="F10.3",
     label_axis="Acq Time",
+    units="ms",
+    validmin=0,
+    validmax=GlobalConstants.FLOAT_MAXVAL,
+    var_type="support_data",
+    scale_type="linear",
 )
 
 codice_metadata_attrs = ScienceAttrs(
-    validmin=0,
-    validmax=GlobalConstants.INT_MAXVAL,
     display_type="no_plot",
-    depend_0="epoch",
     format="I12",
     units="dN",
+    validmin=0,
+    validmax=GlobalConstants.INT_MAXVAL,
     var_type="data",
     variable_purpose="PRIMARY",
+    depend_0="epoch",
 )
 
 counters_attrs = ScienceAttrs(
-    validmin=0,
-    validmax=GlobalConstants.INT_MAXVAL,
-    format="I12",
-    units="counts",
-    label_axis="counts",
+    catdesc="Fill in at creation",
     display_type="time_series",
-    catdesc="TBD",
-    fieldname="TBD",
+    fieldname="Fill in at creation",
     fill_val=GlobalConstants.INT_FILLVAL,
+    format="I12",
+    label_axis="counts",
+    units="counts",
+    validmin=0,
+    validmax=8388607,  # max value for a signed 24-bit integer
     var_type="data",
+    scale_type="linear",
     depend_0="epoch",
     depend_1="energy",
 )
 
 energy_attrs = AttrBase(
+    catdesc="Energy per charge (E/q) sweeping step",
+    display_type="no_plot",
+    fieldname="Energy Step",
+    fill_val=GlobalConstants.INT_FILLVAL,
+    format="I3",
+    label_axis="energy",
+    units="",
     validmin=0,
     validmax=127,
-    format="I3",
     var_type="support_data",
-    fieldname="Energy Step",
-    catdesc="TBD",
-    label_axis="energy",
+    scale_type="linear",
 )
 
 esa_sweep_attrs = AttrBase(
+    catdesc="ElectroStatic Analyzer Energy Values",
+    display_type="no_plot",
+    fieldname="ESA V",
+    fill_val=GlobalConstants.INT_FILLVAL,
+    format="I12",
+    label_axis="ESA V",
+    units="V",
     validmin=0,
     validmax=GlobalConstants.INT_MAXVAL,
-    format="I12",
     var_type="support_data",
-    fieldname="ESA V",
-    catdesc="TBD",
-    label_axis="ESA V",
+    scale_type="linear",
 )
