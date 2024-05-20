@@ -296,31 +296,14 @@ class CoDICEL1aPipeline:
         self.collapse_table_id = LO_COLLAPSE_TABLE_ID_LOOKUP[self.view_id]
 
         science_values = packets[0].data["DATA"].raw_value
-        print(f"Length of science data in bits: {len(science_values)}")
-        print(f"Number of counters: {self.num_counters}")
-        print("\nCCSDS Header:\n")
-        for item in packets[0].header:
-            try:
-                print(f"{item}: {packets[0].header[item].raw_value}")
-            except:  # noqa
-                pass
-        print("\nData:\n")
-        for item in packets[0].data:
-            try:
-                print(f"{item}: {packets[0].data[item].raw_value}")
-            except:  # noqa
-                pass
 
         # Divide up the data by the number of priorities or species
         num_bits = len(science_values)
         chunk_size = len(science_values) // self.num_counters
-        print(f"chunk_size: {chunk_size}")
 
         self.data = [
             science_values[i : i + chunk_size] for i in range(0, num_bits, chunk_size)
         ]
-
-        print("\n\n\n\n")
 
 
 def get_params(packet) -> tuple[int, int, int, int]:
@@ -392,8 +375,6 @@ def process_codice_l1a(packets) -> xr.Dataset:
             dataset = create_hskp_dataset(packets=sorted_packets)
 
         elif apid in apids_for_lo_science_processing:
-            print("\n")
-            print(CODICEAPID(apid).name)
             packets = sort_by_time(grouped_data[apid], "SHCOARSE")
 
             # Get the four "main" parameters for processing
