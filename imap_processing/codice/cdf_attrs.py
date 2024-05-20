@@ -109,21 +109,24 @@ codice_metadata_attrs = ScienceAttrs(
     depend_0="epoch",
 )
 
-counters_attrs = ScienceAttrs(
-    catdesc="Fill in at creation",
-    display_type="time_series",
-    fieldname="Fill in at creation",
-    fill_val=GlobalConstants.INT_FILLVAL,
-    format="I12",
-    label_axis="counts",
-    units="counts",
-    validmin=0,
-    validmax=8388607,  # max value for a signed 24-bit integer
-    var_type="data",
-    scale_type="linear",
-    depend_0="epoch",
-    depend_1="energy",
-)
+# TODO: cdf.global_attrs needs to be updated to allow multiple LABL_PTRs
+#       as well as to not include LABEL_AXIS when necessary. For now, hard-code
+#       these so we don't need to use cdf.global_attrs.ScienceAttrs()
+counters_attrs = {
+    "CATDESC": "Fill in at creation",
+    "DISPLAY_TYPE": "time_series",
+    "FIELDNAM": "Fill in at creation",
+    "FILLVAL": GlobalConstants.INT_FILLVAL,
+    "FORMAT": "I12",
+    "LABL_PTR_1": "energy",
+    "UNITS": "counts",
+    "VALIDMIN": 0,
+    "VALIDMAX": 8388607,  # max value for a signed 24-bit integer
+    "VAR_TYPE": "data",
+    "SCALETYP": "linear",
+    "DEPEND_0": "epoch",
+    "DEPEND_1": "energy",
+}
 
 energy_attrs = AttrBase(
     catdesc="Energy per charge (E/q) sweeping step",

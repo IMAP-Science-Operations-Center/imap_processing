@@ -11,7 +11,6 @@ Use
     dataset = process_codice_l1a(packets)
 """
 
-import dataclasses
 import logging
 from pathlib import Path
 
@@ -133,13 +132,14 @@ class CoDICEL1aPipeline:
                 -1, self.num_energy_steps
             )
 
+            counter_attrs = cdf_attrs.counters_attrs
+            counter_attrs["FIELDNAM"] = fieldname
+            counter_attrs["CATDESC"] = catdesc
             dataset[variable_name] = xr.DataArray(
                 variable_data_arr,
                 name=variable_name,
                 dims=["epoch", "energy"],
-                attrs=dataclasses.replace(
-                    cdf_attrs.counters_attrs, fieldname=fieldname, catdesc=catdesc
-                ).output(),
+                attrs=counter_attrs,
             )
 
         # Add ESA Sweep values
