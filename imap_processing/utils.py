@@ -2,6 +2,7 @@
 
 import collections
 import dataclasses
+import logging
 
 import numpy as np
 import pandas as pd
@@ -11,6 +12,8 @@ from space_packet_parser.parser import Packet
 from imap_processing.cdf.global_attrs import ConstantCoordinates
 from imap_processing.cdf.utils import calc_start_time
 from imap_processing.common_cdf_attrs import metadata_attrs
+
+logger = logging.getLogger(__name__)
 
 
 def sort_by_time(packets, time_key):
@@ -53,7 +56,9 @@ def group_by_apid(packets: list):
     return grouped_packets
 
 
-def convert_raw_to_eu(dataset: xr.Dataset, conversion_table_path, packet_name):
+def convert_raw_to_eu(
+    dataset: xr.Dataset, conversion_table_path, packet_name, **read_csv_kwargs
+):
     """Convert raw data to engineering unit.
 
     Parameters
@@ -64,6 +69,15 @@ def convert_raw_to_eu(dataset: xr.Dataset, conversion_table_path, packet_name):
         Path to engineering unit conversion table.
         Eg:
         f"{imap_module_directory}/swe/l1b/engineering_unit_convert_table.csv"
+        Engineering unit conversion table must be a csv file with required
+        informational columns: ('packetName', 'mnemonic', 'convertAs') and
+        conversion columns named 'c0', 'c1', 'c2', etc. Conversion columns
+        specify the array of polynomial coefficients used for the conversion.
+        Comment lines are allowed in the csv file specified by starting with
+        the '#' character.
+    read_csv_kwargs: dict
+        Keyword arguments to pass to pandas.read_csv.
+
     packet_name: str
         Packet name
 
@@ -74,30 +88,38 @@ def convert_raw_to_eu(dataset: xr.Dataset, conversion_table_path, packet_name):
     """
     # Make sure there is column called "index" with unique
     # value such as 0, 1, 2, 3, ...
-    eu_conversion_table = pd.read_csv(
+    eu_conversion_df = pd.read_csv(
         conversion_table_path,
-        index_col="index",
+        **read_csv_kwargs,
     )
 
     # Look up all metadata fields for the packet name
-    metadata_list = eu_conversion_table.loc[
-        eu_conversion_table["packetName"] == packet_name
-    ]
+    packet_df = eu_conversion_df.loc[eu_conversion_df["packetName"] == packet_name]
 
     # for each metadata field, convert raw value to engineering unit
-    for field in metadata_list.index:
-        metadata_field = metadata_list.loc[field]["mnemonic"]
-        # On this line, we are getting the coefficients from the
-        # table and then reverse them because the np.polyval is
-        # expecting coefficient in descending order
-        coeff_values = metadata_list.loc[
-            metadata_list["mnemonic"] == metadata_field
-        ].values[0][6:][::-1]
+    for _, row in packet_df.iterrows():
+        if row["convertAs"] == "UNSEGMENTED_POLY":
+            # On this line, we are getting the coefficients from the
+            # table and then reverse them because the np.polyval is
+            # expecting coefficient in descending order
+            # coeff columns must have names 'c0', 'c1', 'c2', ...
+            coeff_values = row.filter(regex=r"c\d").values[::-1]
 
-        # Convert the raw value to engineering unit
-        dataset[metadata_field].data = np.polyval(
-            coeff_values, dataset[metadata_field].data
-        )
+            try:
+                # Convert the raw value to engineering unit
+                dataset[row["mnemonic"]].data = np.polyval(
+                    coeff_values, dataset[row["mnemonic"]].data
+                )
+                # Modify units attribute
+                if "unit" in row:
+                    dataset[row["mnemonic"]].attrs.update({"units": row["unit"]})
+            except KeyError:
+                logger.warning(f"Input dataset does not contain key: {row['mnemonic']}")
+        else:
+            raise ValueError(
+                f"Unexpected conversion type: {row["convertAs"]} encountered in"
+                f" engineering unit conversion table: {conversion_table_path}"
+            )
 
     return dataset
 
