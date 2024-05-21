@@ -1,11 +1,15 @@
 """Contains code to perform SWE L1b processing."""
 
+import logging
+
 import xarray as xr
 
 from imap_processing import imap_module_directory
 from imap_processing.swe.l1b.swe_l1b_science import swe_l1b_science
 from imap_processing.swe.utils.swe_utils import SWEAPID
 from imap_processing.utils import convert_raw_to_eu
+
+logger = logging.getLogger(__name__)
 
 
 def swe_l1b(l1a_dataset: xr.Dataset):
@@ -37,6 +41,5 @@ def swe_l1b(l1a_dataset: xr.Dataset):
     )
     data = swe_l1b_science(eu_data)
     if data is None:
-        print("No data to write to CDF")
-        return
+        logger.info("No data to write to CDF")
     return data
