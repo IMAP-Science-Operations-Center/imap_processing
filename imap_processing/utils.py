@@ -65,7 +65,7 @@ def convert_raw_to_eu(
     ----------
     dataset : xr.Dataset
         Raw data.
-    conversion_table_path : str
+    conversion_table_path : str, path object or file-like object
         Path to engineering unit conversion table.
         Eg:
         f"{imap_module_directory}/swe/l1b/engineering_unit_convert_table.csv"
@@ -75,9 +75,9 @@ def convert_raw_to_eu(
         specify the array of polynomial coefficients used for the conversion.
         Comment lines are allowed in the csv file specified by starting with
         the '#' character.
-    packet_name: str
+    packet_name : str
         Packet name
-    read_csv_kwargs: dict
+    read_csv_kwargs : dict
         In order to allow for some flexibility in the format of the csv
         conversion table, any additional keywords passed to this function are
         passed in the call to `pandas.read_csv()`. See pandas documentation
@@ -117,6 +117,7 @@ def convert_raw_to_eu(
                 if "unit" in row:
                     dataset[row["mnemonic"]].attrs.update({"units": row["unit"]})
             except KeyError:
+                # TODO: Don't catch this error once packet definitions stabilize
                 logger.warning(f"Input dataset does not contain key: {row['mnemonic']}")
         else:
             raise ValueError(

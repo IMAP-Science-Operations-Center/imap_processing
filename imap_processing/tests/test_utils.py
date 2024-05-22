@@ -48,11 +48,11 @@ def test_convert_raw_to_eu(tmp_path):
     )
 
     eu_dataset = utils.convert_raw_to_eu(
-        dn_dataset.copy(), str(test_csv.absolute()), "PACKET_0", comment="#"
+        dn_dataset.copy(), test_csv.absolute(), "PACKET_0", comment="#"
     )
 
     # Check the converted values by manually doing the polynomial math
-    assert np.array_equal(eu_dataset["FIELD_0"].data, np.zeros(n_packets))
+    np.testing.assert_array_equal(eu_dataset["FIELD_0"].data, np.zeros(n_packets))
     assert eu_dataset["FIELD_0"].attrs["units"] == test_df["unit"].iloc[0]
 
     field_1_coeffs = (
@@ -61,11 +61,11 @@ def test_convert_raw_to_eu(tmp_path):
     field_1_compare = np.zeros(n_packets)
     for p, coeff in enumerate(field_1_coeffs):
         field_1_compare += coeff * np.power(field_1, p)
-    assert np.array_equal(eu_dataset["FIELD_1"].data, field_1_compare)
+    np.testing.assert_array_equal(eu_dataset["FIELD_1"].data, field_1_compare)
 
     # Check that a ValueError is raised for unexpected conversion specified in
     # conversion table "convertAs" column
     with pytest.raises(ValueError, match=r"Unexpected conversion type: .*"):
         eu_dataset = utils.convert_raw_to_eu(
-            dn_dataset.copy(), str(test_csv.absolute()), "PACKET_1", comment="#"
+            dn_dataset.copy(), test_csv.absolute(), "PACKET_1", comment="#"
         )
