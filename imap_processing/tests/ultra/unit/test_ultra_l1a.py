@@ -235,9 +235,9 @@ def test_cdf_aux(
     ],
     indirect=True,
 )
-def test_cdf_rates(ccsds_path_theta_0, decom_ultra_rates, decom_test_data):
+def test_cdf_rates(ccsds_path_theta_0, decom_test_data):
     """Tests that CDF file is created and contains same attributes as xarray."""
-
+    decom_ultra_rates, _ = decom_test_data
     test_data = ultra_l1a(ccsds_path_theta_0, apid=ULTRA_RATES.apid[0])
     test_data_path = write_cdf(test_data[0])
 
@@ -263,8 +263,9 @@ def test_cdf_rates(ccsds_path_theta_0, decom_ultra_rates, decom_test_data):
     ],
     indirect=True,
 )
-def test_cdf_tof(ccsds_path_theta_0, decom_ultra_tof, decom_test_data):
+def test_cdf_tof(ccsds_path_theta_0, decom_test_data):
     """Tests that CDF file is created and contains same attributes as xarray."""
+    decom_ultra_tof, _ = decom_test_data
     test_data = ultra_l1a(ccsds_path_theta_0, apid=ULTRA_TOF.apid[0])
     test_data_path = write_cdf(test_data[0])
 
