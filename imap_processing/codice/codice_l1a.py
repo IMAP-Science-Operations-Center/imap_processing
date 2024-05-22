@@ -26,6 +26,8 @@ from imap_processing.codice.constants import (
     ESA_SWEEP_TABLE_ID_LOOKUP,
     LO_COLLAPSE_TABLE_ID_LOOKUP,
     LO_COMPRESSION_ID_LOOKUP,
+    LO_NSW_ANGULAR_NAMES,
+    LO_NSW_PRIORITY_NAMES,
     LO_NSW_SPECIES_NAMES,
     LO_STEPPING_TABLE_ID_LOOKUP,
     LO_SW_ANGULAR_NAMES,
@@ -38,8 +40,6 @@ from imap_processing.utils import group_by_apid, sort_by_time
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-# TODO: Data array lengths should all be 128 * num_counters
-#       (see notes in unpack_science_data)
 # TODO: Try new simulated data
 # TODO: Add metadata attrs to science dataset?
 
@@ -84,15 +84,15 @@ class CoDICEL1aPipeline:
         self.plan_step = plan_step
         self.view_id = view_id
 
-    def create_science_dataset(self, packets: list) -> xr.Dataset:
+    def create_science_dataset(self, start_time: np.datetime64) -> xr.Dataset:
         """Create an ``xarray`` dataset for the unpacked science data.
 
         The dataset can then be written to a CDF file.
 
         Parameters
         ----------
-        packet : list[space_packet_parser.parser.Packet]
-            List of packets for the APID of interest
+        start_time : np.datetime64
+            The start time of the packet, used to determine epoch data variable
 
         Returns
         -------
@@ -100,12 +100,7 @@ class CoDICEL1aPipeline:
             ``xarray`` dataset containing the science data and supporting metadata
         """
         epoch = xr.DataArray(
-            [
-                calc_start_time(
-                    packets[0].data["ACQ_START_SECONDS"].raw_value,
-                    launch_time=np.datetime64("2010-01-01T00:01:06.184", "ns"),
-                )
-            ],
+            [start_time],
             name="epoch",
             dims=["epoch"],
             attrs=ConstantCoordinates.EPOCH,
@@ -265,21 +260,31 @@ class CoDICEL1aPipeline:
             self.cdf_attrs = cdf_attrs.l1a_lo_sw_species_counts_attrs
         elif apid == CODICEAPID.COD_LO_NSW_SPECIES_COUNTS:
             self.num_counters = 8
-            self.num_energy_steps = 112
+            self.num_energy_steps = 128
             self.variable_names = LO_NSW_SPECIES_NAMES
             self.cdf_attrs = cdf_attrs.l1a_lo_nsw_species_counts_attrs
         elif apid == CODICEAPID.COD_LO_SW_PRIORITY_COUNTS:
             self.num_counters = 5
-            self.num_energy_steps = 211
+            self.num_energy_steps = 128
             self.variable_names = LO_SW_PRIORITY_NAMES
             self.cdf_attrs = cdf_attrs.l1a_lo_sw_priority_counts_attrs
+        elif apid == CODICEAPID.COD_LO_NSW_PRIORITY_COUNTS:
+            self.num_counters = 2
+            self.num_energy_steps = 128
+            self.variable_names = LO_NSW_PRIORITY_NAMES
+            self.cdf_attrs = cdf_attrs.l1a_lo_nsw_priority_counts_attrs
         elif apid == CODICEAPID.COD_LO_SW_ANGULAR_COUNTS:
             self.num_counters = 4
-            self.num_energy_steps = 5016
+            self.num_energy_steps = 128
             self.variable_names = LO_SW_ANGULAR_NAMES
             self.cdf_attrs = cdf_attrs.l1a_lo_sw_angular_counts_attrs
+        elif apid == CODICEAPID.COD_LO_NSW_ANGULAR_COUNTS:
+            self.num_counters = 1
+            self.num_energy_steps = 128
+            self.variable_names = LO_NSW_ANGULAR_NAMES
+            self.cdf_attrs = cdf_attrs.l1a_lo_nsw_angular_counts_attrs
 
-    def unpack_science_data(self, packets: list):
+    def unpack_science_data(self, science_values: str):
         """Unpack the science data from the packet.
 
         For LO SW Species Counts data, the science data within the packet is a
@@ -289,21 +294,22 @@ class CoDICEL1aPipeline:
 
         Parameters
         ----------
-        packet : list[space_packet_parser.parser.Packet]
-            List of packets for the APID of interest
+        science_values : str
+            A string of binary data representing the science values of the data
         """
         self.compression_algorithm = LO_COMPRESSION_ID_LOOKUP[self.view_id]
         self.collapse_table_id = LO_COLLAPSE_TABLE_ID_LOOKUP[self.view_id]
 
-        science_values = packets[0].data["DATA"].raw_value
-
+        # TODO: Turn this back on after SIT-3
+        # For SIT-3, just create appropriate length data arrays of all ones
         # Divide up the data by the number of priorities or species
-        num_bits = len(science_values)
-        chunk_size = len(science_values) // self.num_counters
-
-        self.data = [
-            science_values[i : i + chunk_size] for i in range(0, num_bits, chunk_size)
-        ]
+        # science_values = packets[0].data["DATA"].raw_value
+        # num_bits = len(science_values)
+        # chunk_size = len(science_values) // self.num_counters
+        # self.data = [
+        #     science_values[i : i + chunk_size] for i in range(0, num_bits, chunk_size)
+        # ]
+        self.data = ["1" * 128 for _ in range(self.num_counters)]
 
 
 def get_params(packet) -> tuple[int, int, int, int]:
@@ -361,6 +367,7 @@ def process_codice_l1a(packets) -> xr.Dataset:
         CODICEAPID.COD_LO_SW_PRIORITY_COUNTS,
         CODICEAPID.COD_LO_NSW_PRIORITY_COUNTS,
         CODICEAPID.COD_LO_SW_ANGULAR_COUNTS,
+        CODICEAPID.COD_LO_NSW_ANGULAR_COUNTS,
     ]
 
     # Group data by APID and sort by time
@@ -375,32 +382,47 @@ def process_codice_l1a(packets) -> xr.Dataset:
             dataset = create_hskp_dataset(packets=sorted_packets)
 
         elif apid in apids_for_lo_science_processing:
-            packets = sort_by_time(grouped_data[apid], "SHCOARSE")
+            # Temporary workarounds to deal with poorly formatted or missing
+            # simulated data
+            if apid == CODICEAPID.COD_LO_NSW_PRIORITY_COUNTS:
+                packets = []
+                start_time = np.datetime64("2024-03-19T00:00:00", "ns")
+                science_values = None
+                table_id, plan_id, plan_step, view_id = 0, 0, 0, 4
 
-            # Get the four "main" parameters for processing
-            table_id, plan_id, plan_step, view_id = get_params(packets[0])
+            else:
+                # Sort the packets by time
+                packets = sort_by_time(grouped_data[apid], "SHCOARSE")
+
+                # Determine the start time of the packet
+                start_time = calc_start_time(
+                    packets[0].data["ACQ_START_SECONDS"].raw_value,
+                    launch_time=np.datetime64("2010-01-01T00:01:06.184", "ns"),
+                )
+
+                # Extract the data
+                science_values = packets[0].data["DATA"].raw_value
+
+                # Get the four "main" parameters for processing
+                table_id, plan_id, plan_step, view_id = get_params(packets[0])
 
             # Run the pipeline to create a dataset for the product
             pipeline = CoDICEL1aPipeline(table_id, plan_id, plan_step, view_id)
             pipeline.get_esa_sweep_values()
             pipeline.get_acquisition_times()
             pipeline.get_lo_data_products(apid)
-            pipeline.unpack_science_data(packets)
-            dataset = pipeline.create_science_dataset(packets)
+            pipeline.unpack_science_data(science_values)
+            dataset = pipeline.create_science_dataset(start_time)
+
+        elif apid == CODICEAPID.COD_LO_INSTRUMENT_COUNTERS:
+            logger.info(f"{apid} is currently not supported")
+            continue
 
         elif apid == CODICEAPID.COD_LO_PHA:
             logger.info(f"{apid} is currently not supported")
             continue
 
-        elif apid == CODICEAPID.COD_LO_NSW_PRIORITY_COUNTS:
-            logger.info(f"{apid} is currently not supported")
-            continue
-
-        elif apid == CODICEAPID.COD_LO_SW_ANGULAR_COUNTS:
-            logger.info(f"{apid} is currently not supported")
-            continue
-
-        elif apid == CODICEAPID.COD_LO_NSW_ANGULAR_COUNTS:
+        elif apid == CODICEAPID.COD_HI_INSTRUMENT_COUNTERS:
             logger.info(f"{apid} is currently not supported")
             continue
 

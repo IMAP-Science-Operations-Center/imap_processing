@@ -21,6 +21,10 @@ LO_SW_ANGULAR_NAMES = {
     "fe_loq": {"fieldname": "SW - Fe lowQ", "catdesc": "TBD"},
 }
 
+LO_NSW_ANGULAR_NAMES = {
+    "heplusplus": {"fieldname": "NSW - He++", "catdesc": "TBD"},
+}
+
 LO_SW_PRIORITY_NAMES = {
     "p0_tcrs": {"fieldname": "SW Sector Triple Coincidence PUI's", "catdesc": "TBD"},
     "p1_hplus": {"fieldname": "SW Sector H+", "catdesc": "TBD"},
@@ -30,6 +34,11 @@ LO_SW_PRIORITY_NAMES = {
         "catdesc": "TBD",
     },
     "p4_dcrs": {"fieldname": "SW Sector Double Coincidence PUI's", "catdesc": "TBD"},
+}
+
+LO_NSW_PRIORITY_NAMES = {
+    "p5_heavies": {"fieldname": "NSW Sector Heavies", "catdesc": "TBD"},
+    "p6_hplus_heplusplus": {"fieldname": "NSW H+ and He++", "catdesc": "TBD"},
 }
 
 LO_SW_SPECIES_NAMES = {
