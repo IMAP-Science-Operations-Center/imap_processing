@@ -33,8 +33,8 @@
 			<xtce:IntegerParameterType name="UINT20" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="20" encoding="unsigned" />
 			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="UINT24" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="24" encoding="unsigned" />
+			<xtce:IntegerParameterType name="UINT23" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="23" encoding="unsigned" />
 			</xtce:IntegerParameterType>
 			<xtce:IntegerParameterType name="UINT32" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="32" encoding="unsigned" />
@@ -48,12 +48,14 @@
 
 							Data is of variable length.
 							Slope is always 8 (8 bits per byte) and the intercept
-							is the total number of fixed length bits in the packet)
+							is the total number of fixed length bits in the packet
 
-							This currently works with an intercept of -216, but
-							this was determined empirically with test data. This
-							number should be revisited once an updated packet
-							definition is acquired.
+							In this case, the intercept is the sum of fixed bits
+							from SHCOARSE to BYTE_COUNT (224)
+
+							Subtract 8 because PKT_LEN is zero-indexed
+
+							224 - 8 = 216
 							-->
               				<xtce:ParameterInstanceRef parameterRef="PKT_LEN"/>
               				<xtce:LinearAdjustment intercept="-216" slope="8"/>
@@ -140,11 +142,11 @@
 				<xtce:ShortDescription>Indicates a data quality issue</xtce:ShortDescription>
 				<xtce:LongDescription>Indicates that there was some error detected during acquisition or processing of the data.  Errors could include corrupted acquisition memory (i.e. EDAC errors), timing violations, or other events that interrupted or otherwise affected data collection.</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="COMPRESSION" parameterTypeRef="UINT2">
+			<xtce:Parameter name="COMPRESSION" parameterTypeRef="UINT3">
 				<xtce:ShortDescription>Compression Configuration</xtce:ShortDescription>
 				<xtce:LongDescription>Whether/how the data is compressed.</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="BYTE_COUNT" parameterTypeRef="UINT24">
+			<xtce:Parameter name="BYTE_COUNT" parameterTypeRef="UINT23">
 				<xtce:ShortDescription>Number of bytes in the Data array</xtce:ShortDescription>
 				<xtce:LongDescription>Number of bytes in the Data array.  If compressed, this value represents the length of the compressed data.</xtce:LongDescription>
 			</xtce:Parameter>

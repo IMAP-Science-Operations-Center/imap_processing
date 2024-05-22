@@ -11,7 +11,6 @@ Use
     dataset = process_codice_l1a(packets)
 """
 
-import dataclasses
 import logging
 from pathlib import Path
 
@@ -38,6 +37,11 @@ from imap_processing.utils import group_by_apid, sort_by_time
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
+
+# TODO: Data array lengths should all be 128 * num_counters
+#       (see notes in unpack_science_data)
+# TODO: Try new simulated data
+# TODO: Add metadata attrs to science dataset?
 
 
 class CoDICEL1aPipeline:
@@ -94,13 +98,15 @@ class CoDICEL1aPipeline:
         -------
         xr.Dataset
             ``xarray`` dataset containing the science data and supporting metadata
-
-        # TODO: Pull out common code and put in codice.utils alongside
-        # create_hskp_dataset()
-        # TODO: Resolve "Python into too large to convert to C long" error
         """
         epoch = xr.DataArray(
-            [calc_start_time(packets[0].data["SHCOARSE"].raw_value)],
+            [
+                calc_start_time(
+                    packet.data["ACQ_START_SECONDS"].raw_value,
+                    launch_time=np.datetime64("2010-01-01T00:01:06.184", "ns"),
+                )
+                for packet in packets
+            ],
             name="epoch",
             dims=["epoch"],
             attrs=ConstantCoordinates.EPOCH,
@@ -119,23 +125,37 @@ class CoDICEL1aPipeline:
         )
 
         # Create a data variable for each species
-        for variable_data, name in zip(self.data, self.variable_names):
-            varname, fieldname = name
-            variable_data_arr = [int(item) for item in variable_data]
-            variable_data_arr = np.array(variable_data_arr).reshape(
+        for variable_data, variable_name in zip(self.data, self.variable_names):
+            fieldname = self.variable_names[variable_name]["fieldname"]
+            catdesc = self.variable_names[variable_name]["catdesc"]
+
+            variable_data_arr = np.array(list(variable_data), dtype=int).reshape(
                 -1, self.num_energy_steps
             )
 
-            dataset[varname] = xr.DataArray(
+            counter_attrs = cdf_attrs.counters_attrs
+            counter_attrs["FIELDNAM"] = fieldname
+            counter_attrs["CATDESC"] = catdesc
+            dataset[variable_name] = xr.DataArray(
                 variable_data_arr,
-                name=varname,
+                name=variable_name,
                 dims=["epoch", "energy"],
-                attrs=dataclasses.replace(
-                    cdf_attrs.counts_attrs, fieldname=fieldname
-                ).output(),
+                attrs=counter_attrs,
             )
 
-        # TODO: Add in the ESA sweep values and acquisition times? (Confirm with Joey)
+        # Add ESA Sweep values
+        dataset["esa_sweep_values"] = xr.DataArray(
+            self.esa_sweep_values,
+            dims=["voltage"],
+            attrs=cdf_attrs.esa_sweep_attrs.output(),
+        )
+
+        # Add acquisition times
+        dataset["acquisition_times"] = xr.DataArray(
+            self.acquisition_times,
+            dims=["milliseconds"],
+            attrs=cdf_attrs.acquisition_times_attrs.output(),
+        )
 
         return dataset
 
@@ -163,16 +183,24 @@ class CoDICEL1aPipeline:
         ]
 
         # Get the appropriate values
-        # TODO: update lo_stepping_values.csv with updated data
         lo_stepping_values = lo_stepping_data[
             lo_stepping_data["table_num"] == lo_stepping_table_id
         ]
 
-        # Get the acquisition times
-        self.acquisition_times = lo_stepping_values.acq_time
+        # Create a list for the acquisition times
+        self.acquisition_times = []
 
-        # TODO: Expand acquisition times list so that each energy step has an
-        # associated time
+        # Only need the energy columns from the table
+        energy_steps = lo_stepping_values[
+            ["e1", "e2", "e3", "e4", "e5", "e6", "e7", "e8"]
+        ].astype(str)  # convert to string to avoid confusion with table index value
+
+        # For each energy step (0-127), scan the energy columns and find the row
+        # number, which corresponds to a specific acquisition time, then append
+        # it to the list
+        for step_number in range(128):
+            row_number = np.argmax(energy_steps == str(step_number), axis=1).argmax()
+            self.acquisition_times.append(lo_stepping_values.acq_time[row_number])
 
     def get_esa_sweep_values(self):
         """Retrieve the ESA sweep values.
@@ -210,6 +238,33 @@ class CoDICEL1aPipeline:
         apid : int
             The APID of interest.
         """
+        # TODO: There are some discrepancies here to doublecheck with Joey:
+
+        # LO_SW_SPECIES_COUNTS all checks out
+        # PKT_LEN = 283 (really 284 because its zero-indexed)
+        # BYTE_COUNT = 256
+        # 256 * 8 = 2048 bits
+        # 2048 bits / 16 species = 128 bits per species
+
+        # LO_NSW_SPECIES_COUNTS
+        # PKT_LEN = 140
+        # BYTE_COUNT = 112
+        # 112 * 8 = 896 bits
+        # 896 bits / 8 species = 112 bits per species (should be 128)
+        # Math works out if there are 7 species
+
+        # LO_SW_PRIORITY_COUNTS
+        # PKT_LEN = 160
+        # BYTE_COUNT = 132
+        # 132 * 8 = 1056 bits
+        # 1056 bits / 5 counters = 211.2 bits per counter ???
+
+        # LO_SW_ANGULAR_COUNTS
+        # PKT_LEN = 2535
+        # BYTE_COUNT = 2508
+        # 2508 * 8 = 20064 bits
+        # 20064 bits / 4 counters = 5016 bits per counter ???
+
         if apid == CODICEAPID.COD_LO_SW_SPECIES_COUNTS:
             self.num_counters = 16
             self.num_energy_steps = 128
@@ -243,8 +298,6 @@ class CoDICEL1aPipeline:
         ----------
         packet : list[space_packet_parser.parser.Packet]
             List of packets for the APID of interest
-
-        TODO: Check to see if we expect to have multiple packets?
         """
         self.compression_algorithm = LO_COMPRESSION_ID_LOOKUP[self.view_id]
         self.collapse_table_id = LO_COLLAPSE_TABLE_ID_LOOKUP[self.view_id]
@@ -252,11 +305,11 @@ class CoDICEL1aPipeline:
         science_values = packets[0].data["DATA"].raw_value
 
         # Divide up the data by the number of priorities or species
-        num_bytes = len(science_values)
+        num_bits = len(science_values)
         chunk_size = len(science_values) // self.num_counters
 
         self.data = [
-            science_values[i : i + chunk_size] for i in range(0, num_bytes, chunk_size)
+            science_values[i : i + chunk_size] for i in range(0, num_bits, chunk_size)
         ]
 
 
