@@ -471,7 +471,6 @@ class Ultra(ProcessInstrument):
                     f"{dependencies}. Expected only one dependency."
                 )
 
-        if self.data_level == "l1a":
             datasets = ultra_l1a.ultra_l1a(dependencies[0])
             products = [write_cdf(dataset) for dataset in datasets]
             return products

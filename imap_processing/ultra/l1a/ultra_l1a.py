@@ -20,7 +20,7 @@ from imap_processing.ultra.l0.decom_ultra import (
     ULTRA_EVENTS,
     ULTRA_RATES,
     ULTRA_TOF,
-    decom_ultra_apids,
+    process_ultra_apids,
 )
 from imap_processing.utils import group_by_apid
 
@@ -294,7 +294,7 @@ def ultra_l1a(packet_file: Path, apid: Optional[int] = None):
     Parameters
     ----------
     packet_file : dict
-        Dictionary containing paid and path to the CCSDS data packet file.
+        Path to the CCSDS data packet file.
     apid : int, optional
         Optional apid
 
@@ -312,24 +312,31 @@ def ultra_l1a(packet_file: Path, apid: Optional[int] = None):
 
     output_datasets = []
 
+    # This is used for two purposes currently:
+    # 1. For testing purposes to only generate a dataset for a single apid.
+    #    Each test dataset is only for a single apid while the rest of the apids
+    #    contain zeros. Ideally we would have
+    #    test data for all apids and remove this parameter.
+    # 2. When we are generating the l1a dataset for the events packet since
+    #    right now we need to combine the events and aux packets to get the
+    #    correct event timestamps (get_event_time). This part will change
+    #    when we begin using the spin table in the database instead of the aux packet.
     if apid is not None:
         apids = [apid]
     else:
         apids = grouped_data.keys()
 
     for apid in apids:
-        data = {apid: grouped_data[apid]}
-
         if apid == ULTRA_EVENTS.apid[0]:
-            data_aux = {ULTRA_AUX.apid[0]: grouped_data[ULTRA_AUX.apid[0]]}
-
             decom_ultra_dict = {
-                apid: decom_ultra_apids(data, apid),
-                ULTRA_AUX.apid[0]: decom_ultra_apids(data_aux, ULTRA_AUX.apid[0]),
+                apid: process_ultra_apids(grouped_data[apid], apid),
+                ULTRA_AUX.apid[0]: process_ultra_apids(
+                    grouped_data[ULTRA_AUX.apid[0]], ULTRA_AUX.apid[0]
+                ),
             }
         else:
             decom_ultra_dict = {
-                apid: decom_ultra_apids(data, apid),
+                apid: process_ultra_apids(grouped_data[apid], apid),
             }
         dataset = create_dataset(decom_ultra_dict)
         output_datasets.append(dataset)

@@ -8,6 +8,23 @@ import pytest
 from imap_processing.cli import Hi, Ultra, _validate_args, main
 
 
+@pytest.fixture()
+def mock_instrument_dependencies():
+    with (
+        mock.patch("imap_processing.cli.imap_data_access.query") as mock_query,
+        mock.patch("imap_processing.cli.imap_data_access.download") as mock_download,
+        mock.patch("imap_processing.cli.imap_data_access.upload") as mock_upload,
+        mock.patch("imap_processing.cli.write_cdf") as mock_write_cdf,
+    ):
+        mocks = {
+            "mock_query": mock_query,
+            "mock_download": mock_download,
+            "mock_upload": mock_upload,
+            "mock_write_cdf": mock_write_cdf,
+        }
+        yield mocks
+
+
 @mock.patch("imap_processing.cli.Mag")
 def test_main(mock_instrument):
     """Test imap_processing.cli.main()"""
@@ -60,17 +77,14 @@ def test_validate_args(instrument, data_level, raises_value_error):
         _validate_args(args)
 
 
-@mock.patch("imap_processing.cli.imap_data_access.query")
-@mock.patch("imap_processing.cli.imap_data_access.download")
-@mock.patch("imap_processing.cli.imap_data_access.upload")
 @mock.patch("imap_processing.cli.hi_l1a.hi_l1a")
-@mock.patch("imap_processing.cli.write_cdf")
-def test_hi(mock_write_cdf, mock_hi_l1a, mock_upload, mock_download, mock_query):
+def test_hi(mock_hi_l1a, mock_instrument_dependencies):
     """Test coverage for cli.Hi class"""
-    mock_query.return_value = [{"file_path": "/path/to/file0"}]
-    mock_download.return_value = "file0"
+    mocks = mock_instrument_dependencies
+    mocks["mock_query"].return_value = [{"file_path": "/path/to/file0"}]
+    mocks["mock_download"].return_value = "file0"
     mock_hi_l1a.return_value = ["l1a_file0", "l1a_file1"]
-    mock_write_cdf.side_effect = ["/path/to/file0", "/path/to/file1"]
+    mocks["mock_write_cdf"].side_effect = ["/path/to/file0", "/path/to/file1"]
 
     dependency_str = (
         "[{"
@@ -83,23 +97,20 @@ def test_hi(mock_write_cdf, mock_hi_l1a, mock_upload, mock_download, mock_query)
     )
     instrument = Hi("l1a", dependency_str, "20231212", "20231213", "v005", True)
     instrument.process()
-    assert mock_query.call_count == 1
-    assert mock_download.call_count == 1
+    assert mocks["mock_query"].call_count == 1
+    assert mocks["mock_download"].call_count == 1
     assert mock_hi_l1a.call_count == 1
-    assert mock_upload.call_count == 2
+    assert mocks["mock_upload"].call_count == 2
 
 
-@mock.patch("imap_processing.cli.imap_data_access.query")
-@mock.patch("imap_processing.cli.imap_data_access.download")
-@mock.patch("imap_processing.cli.imap_data_access.upload")
 @mock.patch("imap_processing.cli.ultra_l1a.ultra_l1a")
-@mock.patch("imap_processing.cli.write_cdf")
-def test_ultra(mock_write_cdf, mock_ultra_l1a, mock_upload, mock_download, mock_query):
+def test_ultra(mock_ultra_l1a, mock_instrument_dependencies):
     """Test coverage for cli.Ultra class"""
-    mock_query.return_value = [{"file_path": "/path/to/file0"}]
-    mock_download.return_value = "dependency0"
+    mocks = mock_instrument_dependencies
+    mocks["mock_query"].return_value = [{"file_path": "/path/to/file0"}]
+    mocks["mock_download"].return_value = "dependency0"
     mock_ultra_l1a.return_value = ["l1a_dataset0", "l1a_dataset1"]
-    mock_write_cdf.side_effect = ["/path/to/product0", "/path/to/product1"]
+    mocks["mock_write_cdf"].side_effect = ["/path/to/product0", "/path/to/product1"]
 
     dependency_str = (
         "[{"
@@ -112,7 +123,7 @@ def test_ultra(mock_write_cdf, mock_ultra_l1a, mock_upload, mock_download, mock_
     )
     instrument = Ultra("l1a", dependency_str, "20240207", "20240208", "v001", True)
     instrument.process()
-    assert mock_query.call_count == 1
-    assert mock_download.call_count == 1
+    assert mocks["mock_query"].call_count == 1
+    assert mocks["mock_download"].call_count == 1
     assert mock_ultra_l1a.call_count == 1
-    assert mock_upload.call_count == 2
+    assert mocks["mock_upload"].call_count == 2

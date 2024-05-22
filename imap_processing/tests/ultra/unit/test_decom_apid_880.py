@@ -2,23 +2,23 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from imap_processing import decom
-from imap_processing.ultra.l0.decom_ultra import decom_ultra_apids
 from imap_processing.ultra.l0.ultra_utils import ULTRA_AUX
 from imap_processing.utils import group_by_apid
 
 
-@pytest.fixture()
-def decom_test_data(ccsds_path, xtce_path):
-    """Read test data from file"""
-    packets = decom.decom_packets(ccsds_path, xtce_path)
-    grouped_data = group_by_apid(packets)
-    data = {ULTRA_AUX.apid[0]: grouped_data[ULTRA_AUX.apid[0]]}
-
-    data_packet_list = decom_ultra_apids(data, ULTRA_AUX.apid[0])
-    return data_packet_list, packets
-
-
+@pytest.mark.parametrize(
+    "decom_test_data",
+    [
+        pytest.param(
+            {
+                "apid": ULTRA_AUX.apid[0],
+                "filename": "Ultra45_EM_SwRI_Cal_Run7_"
+                "ThetaScan_20220530T225054.CCSDS",
+            }
+        )
+    ],
+    indirect=True,
+)
 def test_aux_enumerated(decom_test_data):
     """Test if enumerated values derived correctly"""
 
@@ -40,10 +40,23 @@ def test_aux_enumerated(decom_test_data):
     assert count == total_packets
 
 
+@pytest.mark.parametrize(
+    "decom_test_data",
+    [
+        pytest.param(
+            {
+                "apid": ULTRA_AUX.apid[0],
+                "filename": "Ultra45_EM_SwRI_Cal_Run7_"
+                "ThetaScan_20220530T225054.CCSDS",
+            }
+        )
+    ],
+    indirect=True,
+)
 def test_aux_mode(decom_test_data):
     """Test if enumerated values derived correctly"""
 
-    data_packet_list, packets = decom_test_data
+    _, packets = decom_test_data
 
     for packet in packets:
         if packet.header["PKT_APID"].derived_value == 880:
@@ -53,22 +66,33 @@ def test_aux_mode(decom_test_data):
             assert packet.data["RIGHTDEFLECTIONCHARGE"].derived_value == "MODE0"
 
 
+@pytest.mark.parametrize(
+    "decom_test_data",
+    [
+        pytest.param(
+            {
+                "apid": ULTRA_AUX.apid[0],
+                "filename": "Ultra45_EM_SwRI_Cal_Run7_"
+                "ThetaScan_20220530T225054.CCSDS",
+            }
+        )
+    ],
+    indirect=True,
+)
 def test_aux_decom(decom_test_data, aux_test_path):
     """This function reads validation data and checks that
     decom data matches validation data for auxiliary packet"""
 
-    data_packet_list, packets = decom_test_data
+    decom_ultra, _ = decom_test_data
 
     df = pd.read_csv(aux_test_path, index_col="MET")
 
+    np.testing.assert_array_equal(df.SpinStartSeconds, decom_ultra["TIMESPINSTART"])
     np.testing.assert_array_equal(
-        df.SpinStartSeconds, data_packet_list["TIMESPINSTART"]
+        df.SpinStartSubseconds, decom_ultra["TIMESPINSTARTSUB"]
     )
-    np.testing.assert_array_equal(
-        df.SpinStartSubseconds, data_packet_list["TIMESPINSTARTSUB"]
-    )
-    np.testing.assert_array_equal(df.SpinDuration, data_packet_list["DURATION"])
-    np.testing.assert_array_equal(df.SpinNumber, data_packet_list["SPINNUMBER"])
-    np.testing.assert_array_equal(df.SpinDataTime, data_packet_list["TIMESPINDATA"])
-    np.testing.assert_array_equal(df.SpinPeriod, data_packet_list["SPINPERIOD"])
-    np.testing.assert_array_equal(df.SpinPhase, data_packet_list["SPINPHASE"])
+    np.testing.assert_array_equal(df.SpinDuration, decom_ultra["DURATION"])
+    np.testing.assert_array_equal(df.SpinNumber, decom_ultra["SPINNUMBER"])
+    np.testing.assert_array_equal(df.SpinDataTime, decom_ultra["TIMESPINDATA"])
+    np.testing.assert_array_equal(df.SpinPeriod, decom_ultra["SPINPERIOD"])
+    np.testing.assert_array_equal(df.SpinPhase, decom_ultra["SPINPHASE"])

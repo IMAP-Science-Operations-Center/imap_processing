@@ -2,27 +2,29 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from imap_processing import decom
 from imap_processing.cdf.defaults import GlobalConstants
-from imap_processing.ultra.l0.decom_ultra import decom_ultra_apids
 from imap_processing.ultra.l0.ultra_utils import ULTRA_EVENTS
-from imap_processing.utils import group_by_apid
 
 
-@pytest.fixture()
-def decom_ultra(ccsds_path_events, xtce_path):
-    """Data for decom_ultra"""
-    packets = decom.decom_packets(ccsds_path_events, xtce_path)
-    grouped_data = group_by_apid(packets)
-    data = {ULTRA_EVENTS.apid[0]: grouped_data[ULTRA_EVENTS.apid[0]]}
-
-    data_packet_list = decom_ultra_apids(data, ULTRA_EVENTS.apid[0])
-    return data_packet_list
-
-
-def test_image_raw_events_decom(decom_ultra, events_test_path):
+@pytest.mark.parametrize(
+    "decom_test_data",
+    [
+        pytest.param(
+            {
+                "apid": ULTRA_EVENTS.apid[0],
+                "filename": "FM45_7P_Phi0.0_BeamCal_LinearScan_phi0.04"
+                "_theta-0.01_20230821T121304.CCSDS",
+            }
+        )
+    ],
+    indirect=True,
+)
+def test_image_raw_events_decom(
+    decom_test_data, events_test_path, ccsds_path_events, xtce_path
+):
     """This function reads validation data and checks that decom data
     matches validation data for image rate packet"""
+    decom_ultra, _ = decom_test_data
 
     df = pd.read_csv(events_test_path, index_col="MET")
     df.replace(-1, GlobalConstants.INT_FILLVAL, inplace=True)
@@ -51,10 +53,24 @@ def test_image_raw_events_decom(decom_ultra, events_test_path):
     np.testing.assert_array_equal(df["Bin"], decom_ultra["BIN"])
 
 
-def test_image_raw_events_decom_flags(decom_ultra, events_test_path):
+@pytest.mark.parametrize(
+    "decom_test_data",
+    [
+        pytest.param(
+            {
+                "apid": ULTRA_EVENTS.apid[0],
+                "filename": "FM45_7P_Phi0.0_BeamCal_LinearScan_phi0.04"
+                "_theta-0.01_20230821T121304.CCSDS",
+            }
+        )
+    ],
+    indirect=True,
+)
+def test_image_raw_events_decom_flags(decom_test_data, events_test_path):
     """This function reads validation data and checks that decom data
     matches validation data for image rate packet"""
 
+    decom_ultra, _ = decom_test_data
     df = pd.read_csv(events_test_path, index_col="MET")
     df.replace(-1, GlobalConstants.INT_FILLVAL, inplace=True)
 

@@ -95,13 +95,13 @@ def append_params(decom_data: dict, packet):
     append_ccsds_fields(decom_data, ccsds_data)
 
 
-def decom_ultra_apids(data: dict, apid: int):
+def process_ultra_apids(data: list, apid: int):
     """
     Unpack and decode Ultra packets using CCSDS format and XTCE packet definitions.
 
     Parameters
     ----------
-    data : dict
+    data : list
         Grouped data.
     apid : int
         The APID to process.
@@ -119,7 +119,7 @@ def decom_ultra_apids(data: dict, apid: int):
         ULTRA_RATES.apid[0]: process_ultra_rates,
     }
 
-    sorted_packets = sort_by_time(data[apid], "SHCOARSE")
+    sorted_packets = sort_by_time(data, "SHCOARSE")
 
     process_function = strategy_dict.get(apid)
     decom_data = process_function(sorted_packets, defaultdict(list))

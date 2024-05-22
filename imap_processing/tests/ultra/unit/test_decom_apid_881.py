@@ -4,26 +4,26 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from imap_processing import decom
-from imap_processing.ultra.l0.decom_ultra import decom_ultra_apids
 from imap_processing.ultra.l0.ultra_utils import RATES_KEYS, ULTRA_RATES
-from imap_processing.utils import group_by_apid
 
 
-@pytest.fixture()
-def decom_ultra(ccsds_path, xtce_path):
-    """Data for decom_ultra"""
-    packets = decom.decom_packets(ccsds_path, xtce_path)
-    grouped_data = group_by_apid(packets)
-    data = {ULTRA_RATES.apid[0]: grouped_data[ULTRA_RATES.apid[0]]}
-
-    data_packet_list = decom_ultra_apids(data, ULTRA_RATES.apid[0])
-    return data_packet_list
-
-
-def test_image_rate_decom(decom_ultra, rates_test_path):
+@pytest.mark.parametrize(
+    "decom_test_data",
+    [
+        pytest.param(
+            {
+                "apid": ULTRA_RATES.apid[0],
+                "filename": "Ultra45_EM_SwRI_Cal_Run7_"
+                "ThetaScan_20220530T225054.CCSDS",
+            }
+        )
+    ],
+    indirect=True,
+)
+def test_image_rate_decom(decom_test_data, rates_test_path):
     """This function reads validation data and checks that decom data
     matches validation data for image rate packet"""
+    decom_ultra, _ = decom_test_data
 
     df = pd.read_csv(rates_test_path, index_col="MET")
     total_packets = 23
