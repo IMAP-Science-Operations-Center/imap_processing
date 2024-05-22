@@ -18,7 +18,7 @@ ultra_description_text = (
     "compresses, and becomes much hotter as it meets the "
     "interstellar medium (ISM). The instrument also measures the "
     "distribution of solar wind electrons and protons, and the "
-    "magnetic field. See"
+    "magnetic field. See "
     "https://imap.princeton.edu/instruments/ultra for more details."
 )
 
