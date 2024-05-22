@@ -1,9 +1,7 @@
 import pandas as pd
-import pytest
 
 from imap_processing import imap_module_directory
 from imap_processing.cdf.utils import load_cdf, write_cdf
-from imap_processing.swe.l0 import decom_swe
 from imap_processing.swe.l1a.swe_l1a import swe_l1a
 from imap_processing.swe.l1a.swe_science import swe_science
 from imap_processing.swe.l1b.swe_l1b import swe_l1b
@@ -11,18 +9,6 @@ from imap_processing.swe.utils.swe_utils import (
     SWEAPID,
 )
 from imap_processing.utils import convert_raw_to_eu, group_by_apid
-
-
-@pytest.fixture(scope="session")
-def decom_test_data():
-    """Read test data from test folder"""
-    test_folder_path = "tests/swe/l0_data"
-    packet_files = list(imap_module_directory.glob(f"{test_folder_path}/*.bin"))
-
-    data_list = []
-    for packet_file in packet_files:
-        data_list.extend(decom_swe.decom_packets(packet_file))
-    return data_list
 
 
 def test_swe_l1b(decom_test_data):
@@ -61,7 +47,7 @@ def test_swe_l1b(decom_test_data):
     # read science validation data
     test_data_path = imap_module_directory / "tests/swe/l0_validation_data"
     eu_validation_data = pd.read_csv(
-        test_data_path / "idle_export_eu.SWE_SCIENCE_20230927_172708.csv",
+        test_data_path / "idle_export_eu.SWE_SCIENCE_20240510_092742.csv",
         index_col="SHCOARSE",
     )
     second_data = sorted_packets[1]
@@ -78,17 +64,14 @@ def test_swe_l1b(decom_test_data):
         assert round(science_l1b[field].data[1], 5) == round(validation_data[field], 5)
 
 
-@pytest.mark.xfail(reason="Will update test data with multiple packets")
 def test_cdf_creation():
     """Test that CDF file is created and has the correct name."""
-
-    test_data_path = "tests/swe/l0_data/20230927173238_SWE_SCIENCE_packet.bin"
+    test_data_path = "tests/swe/l0_data/2024051010_SWE_SCIENCE_packet.bin"
     l1a_datasets = swe_l1a(imap_module_directory / test_data_path)
 
     sci_l1a_filepath = write_cdf(l1a_datasets)
 
-    # TODO: replace "sci" with proper descriptor (previously lveng-hk)
-    assert sci_l1a_filepath.name == "imap_swe_l1a_sci_20230927_v001.cdf"
+    assert sci_l1a_filepath.name == "imap_swe_l1a_sci_20240510_v001.cdf"
 
     # reads data from CDF file and passes to l1b
     l1a_cdf_dataset = load_cdf(sci_l1a_filepath, to_datetime=True)
@@ -96,5 +79,4 @@ def test_cdf_creation():
 
     sci_l1b_filepath = write_cdf(l1b_dataset)
 
-    # TODO: replace "sci" with proper descriptor (previously lveng-hk)
-    assert sci_l1b_filepath.name == "imap_swe_l1b_sci_20230927_v001.cdf"
+    assert sci_l1b_filepath.name == "imap_swe_l1b_sci_20240510_v001.cdf"
