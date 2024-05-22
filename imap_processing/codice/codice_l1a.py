@@ -102,9 +102,10 @@ class CoDICEL1aPipeline:
         epoch = xr.DataArray(
             [
                 calc_start_time(
-                    packets[0].data["ACQ_START_SECONDS"].raw_value,
+                    packet.data["ACQ_START_SECONDS"].raw_value,
                     launch_time=np.datetime64("2010-01-01T00:01:06.184", "ns"),
                 )
+                for packet in packets
             ],
             name="epoch",
             dims=["epoch"],
@@ -186,14 +187,20 @@ class CoDICEL1aPipeline:
             lo_stepping_data["table_num"] == lo_stepping_table_id
         ]
 
-        # Get the acquisition times
+        # Create a list for the acquisition times
         self.acquisition_times = []
+
+        # Only need the energy columns from the table
         energy_steps = lo_stepping_values[
             ["e1", "e2", "e3", "e4", "e5", "e6", "e7", "e8"]
         ].astype(str)  # convert to string to avoid confusion with table index value
+
+        # For each energy step (0-127), scan the energy columns and find the row
+        # number, which corresponds to a specific acquisition time, then append
+        # it to the list
         for step_number in range(128):
-            index = energy_steps.isin([str(step_number)]).any(axis=1).idxmax()
-            self.acquisition_times.append(lo_stepping_values.acq_time[index])
+            row_number = (energy_steps == str(step_number)).any(axis=1).idxmax()
+            self.acquisition_times.append(lo_stepping_values.acq_time[row_number])
 
     def get_esa_sweep_values(self):
         """Retrieve the ESA sweep values.

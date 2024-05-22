@@ -36,9 +36,6 @@
 			<xtce:IntegerParameterType name="UINT23" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="23" encoding="unsigned" />
 			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="UINT24" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="24" encoding="unsigned" />
-			</xtce:IntegerParameterType>
 			<xtce:IntegerParameterType name="UINT32" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="32" encoding="unsigned" />
 			</xtce:IntegerParameterType>
