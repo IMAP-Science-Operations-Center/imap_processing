@@ -36,6 +36,7 @@ from imap_processing.hi.l1a import hi_l1a
 from imap_processing.mag.l1a.mag_l1a import mag_l1a
 from imap_processing.swe.l1a.swe_l1a import swe_l1a
 from imap_processing.swe.l1b.swe_l1b import swe_l1b
+from imap_processing.ultra.l1a import ultra_l1a
 
 logger = logging.getLogger(__name__)
 
@@ -451,9 +452,28 @@ class Swe(ProcessInstrument):
 class Ultra(ProcessInstrument):
     """Process IMAP-Ultra."""
 
-    def do_processing(self, dependencies):
-        """Perform IMAP-Ultra specific processing."""
+    def do_processing(self, dependencies: list):
+        """
+        Perform IMAP-Ultra specific processing.
+
+        Attributes
+        ----------
+        dependencies: list
+        List of dependencies to process
+        """
         print(f"Processing IMAP-Ultra {self.data_level}")
+
+        if self.data_level == "l1a":
+            # File path is expected output file path
+            if len(dependencies) > 1:
+                raise ValueError(
+                    f"Unexpected dependencies found for ULTRA L1A:"
+                    f"{dependencies}. Expected only one dependency."
+                )
+
+            datasets = ultra_l1a.ultra_l1a(dependencies[0])
+            products = [write_cdf(dataset) for dataset in datasets]
+            return products
 
 
 def main():

@@ -2,6 +2,7 @@
 
 import collections
 import dataclasses
+import logging
 
 import numpy as np
 import xarray as xr
@@ -12,6 +13,8 @@ from imap_processing.swe import swe_cdf_attrs
 from imap_processing.swe.utils.swe_utils import (
     add_metadata_to_array,
 )
+
+logger = logging.getLogger(__name__)
 
 
 def decompressed_counts(cem_count):
@@ -231,4 +234,5 @@ def swe_science(decom_data):
             ).output(),
         )
 
+    logger.info("SWE L1A science data process completed")
     return dataset

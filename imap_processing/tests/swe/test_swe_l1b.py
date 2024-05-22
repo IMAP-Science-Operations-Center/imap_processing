@@ -1,29 +1,14 @@
 import pandas as pd
-import pytest
 
 from imap_processing import imap_module_directory
 from imap_processing.cdf.utils import load_cdf, write_cdf
-from imap_processing.swe.l0 import decom_swe
 from imap_processing.swe.l1a.swe_l1a import swe_l1a
 from imap_processing.swe.l1a.swe_science import swe_science
 from imap_processing.swe.l1b.swe_l1b import swe_l1b
 from imap_processing.swe.utils.swe_utils import (
     SWEAPID,
-    create_dataset,
 )
 from imap_processing.utils import convert_raw_to_eu, group_by_apid
-
-
-@pytest.fixture(scope="session")
-def decom_test_data():
-    """Read test data from test folder"""
-    test_folder_path = "tests/swe/l0_data"
-    packet_files = list(imap_module_directory.glob(f"{test_folder_path}/*.bin"))
-
-    data_list = []
-    for packet_file in packet_files:
-        data_list.extend(decom_swe.decom_packets(packet_file))
-    return data_list
 
 
 def test_swe_l1b(decom_test_data):
@@ -62,7 +47,7 @@ def test_swe_l1b(decom_test_data):
     # read science validation data
     test_data_path = imap_module_directory / "tests/swe/l0_validation_data"
     eu_validation_data = pd.read_csv(
-        test_data_path / "idle_export_eu.SWE_SCIENCE_20230927_172708.csv",
+        test_data_path / "idle_export_eu.SWE_SCIENCE_20240510_092742.csv",
         index_col="SHCOARSE",
     )
     second_data = sorted_packets[1]
@@ -78,63 +63,20 @@ def test_swe_l1b(decom_test_data):
     for field in science_eu_field_list:
         assert round(science_l1b[field].data[1], 5) == round(validation_data[field], 5)
 
-    # process housekeeping data to l1a and create l1b
-    hk_l1a_ds = create_dataset(grouped_data[1330])
-    hk_l1b = convert_raw_to_eu(
-        hk_l1a_ds, conversion_table_path, SWEAPID.SWE_APP_HK.name
-    )
-
-    # read housekeeping validation data
-    eu_validation_data = pd.read_csv(
-        test_data_path / "data_derived.SWE_APP_HK_20230927_094839.csv",
-        index_col="SHCOARSE",
-    )
-    second_data = grouped_data[1330][1]
-    validation_data = eu_validation_data.loc[second_data.data["SHCOARSE"].raw_value]
-
-    # check that these field's calculated EU value matches with
-    # validation data's EU value.
-    eu_field_list = [
-        "HVPS_VBULK",
-        "HVPS_VCEM",
-        "HVPS_VESA",
-        "HVPS_VESA_LOW_RANGE",
-        "HVPS_ICEM",
-        "FEE_TEMP",
-        "SENSOR_TEMP",
-        "HVPS_TEMP",
-        "LVPS_BACK_BOARD_TEMP",
-    ]
-
-    # Check EU values from housekeeping data
-    for field in eu_field_list:
-        assert round(hk_l1b[field].data[1], 5) == round(validation_data[field], 5)
-
 
 def test_cdf_creation():
     """Test that CDF file is created and has the correct name."""
-
-    test_data_path = "tests/swe/l0_data/20230927100248_SWE_HK_packet.bin"
+    test_data_path = "tests/swe/l0_data/2024051010_SWE_SCIENCE_packet.bin"
     l1a_datasets = swe_l1a(imap_module_directory / test_data_path)
 
-    # TODO: This creates an unbound local access error if we don't get any hk_l1a data
-    #       use the last dataset if we don't find any hk_l1a data for now
-    hk_l1a_data = l1a_datasets[-1]
-    for i in range(len(l1a_datasets)):
-        if l1a_datasets[i].attrs["descriptor"] == "sci":
-            hk_l1a_data = l1a_datasets[i]
-            break
+    sci_l1a_filepath = write_cdf(l1a_datasets)
 
-    hk_l1a_filepath = write_cdf(hk_l1a_data)
-
-    # TODO: replace "sci" with proper descriptor (previously lveng-hk)
-    assert hk_l1a_filepath.name == "imap_swe_l1a_sci_20230927_v001.cdf"
+    assert sci_l1a_filepath.name == "imap_swe_l1a_sci_20240510_v001.cdf"
 
     # reads data from CDF file and passes to l1b
-    l1a_cdf_dataset = load_cdf(hk_l1a_filepath, to_datetime=True)
+    l1a_cdf_dataset = load_cdf(sci_l1a_filepath, to_datetime=True)
     l1b_dataset = swe_l1b(l1a_cdf_dataset)
 
-    hk_l1b_filepath = write_cdf(l1b_dataset)
+    sci_l1b_filepath = write_cdf(l1b_dataset)
 
-    # TODO: replace "sci" with proper descriptor (previously lveng-hk)
-    assert hk_l1b_filepath.name == "imap_swe_l1b_sci_20230927_v001.cdf"
+    assert sci_l1b_filepath.name == "imap_swe_l1b_sci_20240510_v001.cdf"

@@ -84,3 +84,6 @@ convention = "numpy"
 
 [tool.poetry.scripts]
 imap_cli = 'imap_processing.cli:main'
+
+[tool.codespell]
+ignore-words-list = "livetime"

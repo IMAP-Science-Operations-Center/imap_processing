@@ -12,7 +12,7 @@ def main():
     packet_definition_path = (
         f"{imap_module_directory}/{instrument_name}/packet_definitions"
     )
-    path_to_excel_file = f"{current_directory}/TLM_HIT_modified.xls"
+    path_to_excel_file = f"{current_directory}/TLM_HIT_modified.xlsx"
 
     # Lo packets
     packets = {
