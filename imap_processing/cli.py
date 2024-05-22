@@ -421,31 +421,35 @@ class Swe(ProcessInstrument):
 
     def do_processing(self, dependencies):
         """Perform SWE specific processing."""
-        # self.file_path example:
-        # imap/swe/l1a/2023/09/imap_swe_l1a_sci_20230927_v001.cdf
         print(f"Processing SWE {self.data_level}")
 
-        # TODO: currently assumes just the first path returned is the one to use
-
-        products = []
         if self.data_level == "l1a":
+            if len(dependencies) > 1:
+                raise ValueError(
+                    f"Unexpected dependencies found for SWE L1A:"
+                    f"{dependencies}. Expected only one dependency."
+                )
             processed_data = swe_l1a(Path(dependencies[0]))
-            for data in processed_data:
-                cdf_file_path = write_cdf(data)
-                print(f"processed file path: {cdf_file_path}")
-                products.append(cdf_file_path)
+            # Right now, we only process science data. Therefore,
+            # we expect only one dataset to be returned.
+            cdf_file_path = write_cdf(processed_data)
+            print(f"processed file path: {cdf_file_path}")
+            return cdf_file_path
 
         elif self.data_level == "l1b":
+            if len(dependencies) > 1:
+                raise ValueError(
+                    f"Unexpected dependencies found for SWE L1B:"
+                    f"{dependencies}. Expected only one dependency."
+                )
             # read CDF file
-            l1a_dataset = load_cdf(dependencies[0])
+            l1a_dataset = load_cdf(dependencies[0], to_datetime=True)
             processed_data = swe_l1b(l1a_dataset)
-            # TODO: Pass in the proper version and descriptor
-            cdf_file_path = write_cdf(data=processed_data)
+            cdf_file_path = write_cdf(processed_data)
             print(f"processed file path: {cdf_file_path}")
-            products.append(cdf_file_path)
-
+            return cdf_file_path
         else:
-            print("No code to process this level")
+            print("Did not recognize data level. No processing done.")
 
 
 class Ultra(ProcessInstrument):
