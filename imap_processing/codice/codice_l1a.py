@@ -199,7 +199,7 @@ class CoDICEL1aPipeline:
         # number, which corresponds to a specific acquisition time, then append
         # it to the list
         for step_number in range(128):
-            row_number = (energy_steps == str(step_number)).any(axis=1).idxmax()
+            row_number = np.argmax(energy_steps == str(step_number), axis=1).argmax()
             self.acquisition_times.append(lo_stepping_values.acq_time[row_number])
 
     def get_esa_sweep_values(self):
