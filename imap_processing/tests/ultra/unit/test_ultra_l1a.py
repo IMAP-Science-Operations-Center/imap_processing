@@ -21,9 +21,10 @@ def decom_ultra_aux(ccsds_path_theta_0, xtce_path):
     """Data for decom_ultra_aux"""
     packets = decom.decom_packets(ccsds_path_theta_0, xtce_path)
     grouped_data = group_by_apid(packets)
-    data = {ULTRA_AUX.apid[0]: grouped_data[ULTRA_AUX.apid[0]]}
 
-    data_packet_list = process_ultra_apids(data, ULTRA_AUX.apid[0])
+    data_packet_list = process_ultra_apids(
+        grouped_data[ULTRA_AUX.apid[0]], ULTRA_AUX.apid[0]
+    )
     return data_packet_list
 
 
