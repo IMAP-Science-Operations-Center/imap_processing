@@ -75,11 +75,14 @@ def convert_raw_to_eu(
         specify the array of polynomial coefficients used for the conversion.
         Comment lines are allowed in the csv file specified by starting with
         the '#' character.
-    read_csv_kwargs: dict
-        Keyword arguments to pass to pandas.read_csv.
-
     packet_name: str
         Packet name
+    read_csv_kwargs: dict
+        In order to allow for some flexibility in the format of the csv
+        conversion table, any additional keywords passed to this function are
+        passed in the call to `pandas.read_csv()`. See pandas documentation
+        for a list of keywords and their functionality:
+        https://pandas.pydata.org/docs/reference/api/pandas.read_csv.html
 
     Returns
     -------
