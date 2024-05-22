@@ -362,7 +362,7 @@ def swe_l1b_science(l1a_data):
     l1a_data_copy = l1a_data.copy(deep=True)
 
     full_cycle_data_indices = get_indices_of_full_cycles(l1a_data["QUARTER_CYCLE"].data)
-    logger.info(
+    logger.debug(
         f"Quarter cycle data before filtering: {l1a_data_copy['QUARTER_CYCLE'].data}"
     )
 
@@ -379,7 +379,7 @@ def swe_l1b_science(l1a_data):
 
         # Update total packets
         total_packets = len(full_cycle_data_indices)
-        logger.info(
+        logger.debug(
             "Quarters cycle after filtering: "
             f"{full_cycle_l1a_data['QUARTER_CYCLE'].data}"
         )
@@ -535,4 +535,6 @@ def swe_l1b_science(l1a_data):
                 depend_1="Cycle",
             ).output(),
         )
+
+    logger.info("SWE L1b science processing completed")
     return dataset
