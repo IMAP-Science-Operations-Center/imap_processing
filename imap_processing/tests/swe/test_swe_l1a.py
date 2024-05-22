@@ -23,7 +23,7 @@ def decom_test_data():
 
 
 def test_total_packets(decom_test_data):
-    assert len(decom_test_data) == 23
+    assert len(decom_test_data) == 4
 
 
 def test_group_by_apid(decom_test_data):
@@ -33,24 +33,11 @@ def test_group_by_apid(decom_test_data):
     total_science_data = grouped_data[SWEAPID.SWE_SCIENCE]
     assert len(total_science_data) == 4
 
-    # check total dataset for cem raw
-    total_cem_raw_data = grouped_data[SWEAPID.SWE_CEM_RAW]
-    assert len(total_cem_raw_data) == 2
-
-    # check total dataset for housekeeping
-    grouped_data[SWEAPID.SWE_APP_HK]
-    assert len(total_cem_raw_data) == 2
-
-    # check total dataset for event message
-    total_event_message_data = grouped_data[SWEAPID.SWE_EVTMSG]
-    assert len(total_event_message_data) == 15
-
 
 def test_cdf_creation():
-    test_data_path = "tests/swe/l0_data/20230927100425_SWE_CEM_RAW_packet.bin"
+    test_data_path = "tests/swe/l0_data/20230927173238_SWE_SCIENCE_packet.bin"
     processed_data = swe_l1a(imap_module_directory / test_data_path)
 
-    cem_raw_cdf_filepath = write_cdf(processed_data[0])
+    cem_raw_cdf_filepath = write_cdf(processed_data)
 
-    # TODO: replace "sci" with proper descriptor (previously was cemraw)
     assert cem_raw_cdf_filepath.name == "imap_swe_l1a_sci_20230927_v001.cdf"
