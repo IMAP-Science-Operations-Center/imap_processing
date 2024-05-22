@@ -434,7 +434,7 @@ class Swe(ProcessInstrument):
             # we expect only one dataset to be returned.
             cdf_file_path = write_cdf(processed_data)
             print(f"processed file path: {cdf_file_path}")
-            return cdf_file_path
+            return [cdf_file_path]
 
         elif self.data_level == "l1b":
             if len(dependencies) > 1:
@@ -447,7 +447,7 @@ class Swe(ProcessInstrument):
             processed_data = swe_l1b(l1a_dataset)
             cdf_file_path = write_cdf(processed_data)
             print(f"processed file path: {cdf_file_path}")
-            return cdf_file_path
+            return [cdf_file_path]
         else:
             print("Did not recognize data level. No processing done.")
 
