@@ -120,7 +120,7 @@ def convert_raw_to_eu(
                 logger.warning(f"Input dataset does not contain key: {row['mnemonic']}")
         else:
             raise ValueError(
-                f"Unexpected conversion type: {row["convertAs"]} encountered in"
+                f"Unexpected conversion type: {row['convertAs']} encountered in"
                 f" engineering unit conversion table: {conversion_table_path}"
             )
 
