@@ -176,3 +176,11 @@ hi_hist_l1a_counter_attrs = ScienceAttrs(
     var_type="data",
     variable_purpose="PRIMARY",
 )
+
+# L1B Housekeeping Global Attributes
+hi_hk_l1b_global_attrs = GlobalDataLevelAttrs(
+    data_type="L1B_HK>Level-1B Housekeeping",
+    logical_source="imap_hi_l1b_hk",
+    logical_source_desc=("IMAP-Hi Instrument Level-1B Housekeeping Data."),
+    instrument_base=hi_base,
+)
