@@ -512,7 +512,7 @@ l1a_hk_attrs_subset = {
 }
 
 # Dictionary of housekeeping attributes specific to L1B
-# TODO Update data format. Should be a float. Need more info from instrument team
+# TODO Update data formats. Should be float values. Need more info from instrument team
 l1b_hk_attrs_subset = {
     "preamp_l234a": replace(
         hit_hk_base_attrs,
@@ -548,7 +548,7 @@ l1b_hk_attrs_subset = {
         fieldname="Preamp L234B Voltage",
         label_axis="Preamp L234B Voltage",
         units="V",
-        format="I4",
+        format="I2",
     ),
     "temp0": replace(
         hit_hk_base_attrs,
@@ -559,7 +559,7 @@ l1b_hk_attrs_subset = {
         fieldname="FEE LDO Regulator",
         label_axis="Temp0 - FEE LDO regulator",
         units="C",
-        format="I4",
+        format="I2",
     ),
     "temp1": replace(
         hit_hk_base_attrs,
@@ -570,7 +570,7 @@ l1b_hk_attrs_subset = {
         fieldname="Primary Heater",
         label_axis="Temp1 - primary heater",
         units="C",
-        format="I4",
+        format="I2",
     ),
     "temp2": replace(
         hit_hk_base_attrs,
@@ -580,7 +580,7 @@ l1b_hk_attrs_subset = {
         fieldname="FEE FPGA",
         label_axis="Temp2 - FEE FPGA",
         units="C",
-        format="I4",
+        format="I2",
     ),
     "temp3": replace(
         hit_hk_base_attrs,
@@ -590,7 +590,7 @@ l1b_hk_attrs_subset = {
         fieldname="Secondary Heater",
         label_axis="Temp3 - secondary heater",
         units="C",
-        format="I4",
+        format="I2",
     ),
     "analog_temp": replace(
         hit_hk_base_attrs,
@@ -601,7 +601,7 @@ l1b_hk_attrs_subset = {
         fieldname="Analog Temp",
         label_axis="Analog temp",
         units="C",
-        format="I4",
+        format="I2",
     ),
     "hvps_temp": replace(
         hit_hk_base_attrs,
@@ -612,7 +612,7 @@ l1b_hk_attrs_subset = {
         fieldname="Board Temp",
         label_axis="HVPS temp",
         units="C",
-        format="I4",
+        format="I2",
     ),
     "idpu_temp": replace(
         hit_hk_base_attrs,
@@ -622,7 +622,7 @@ l1b_hk_attrs_subset = {
         fieldname="LDO Temp",
         label_axis="IDPU temp",
         units="C",
-        format="I4",
+        format="I2",
     ),
     "lvps_temp": replace(
         hit_hk_base_attrs,
@@ -633,67 +633,67 @@ l1b_hk_attrs_subset = {
         fieldname="Board Temp",
         label_axis="LVPS temp",
         units="C",
-        format="I4",
+        format="I2",
     ),
     "ebox_3d4vd": replace(
         hit_hk_base_attrs,
-        validmin=3.1,
-        validmax=3.6,
+        validmin=3,  # doc says min 3.1
+        validmax=4,  # doc says max 3.6
         catdesc="3.4VD Ebox (Digital)",
         fieldname="3.4VD Ebox (Digital)",
         label_axis="3.4VD Ebox (Digital)",
         units="V",
-        format="I4",
+        format="F1.1",
     ),
     "ebox_5d1vd": replace(
         hit_hk_base_attrs,
-        validmin=4.85,
-        validmax=5.45,
+        validmin=4,  # doc says min 4.85
+        validmax=6,  # doc says max 5.45
         catdesc="5.1VD Ebox (Digital)",
         fieldname="5.1VD Ebox (Digital)",
         label_axis="5.1VD Ebox (Digital)",
         units="V",
-        format="I4",
+        format="F1.2",
     ),
     "ebox_p12va": replace(
         hit_hk_base_attrs,
-        validmin=11.2,
-        validmax=13.1,
+        validmin=11,  # doc says min 11.2
+        validmax=14,  # doc says max 13.1
         catdesc="+12VA Ebox (Analog)",
         fieldname="+12VA Ebox (Analog)",
         label_axis="+12VA Ebox (Analog)",
         units="V",
-        format="I4",
+        format="F2.1",
     ),
     "ebox_m12va": replace(
         hit_hk_base_attrs,
-        validmin=-13.1,
-        validmax=-11.2,
+        validmin=-14,  # doc says min -13.1
+        validmax=-12,  # doc says max -11.2
         catdesc="-12VA Ebox (Analog)",
         fieldname="-12VA Ebox (Analog)",
         label_axis="-12VA Ebox (Analog)",
         units="V",
-        format="I4",
+        format="F2.1",
     ),
     "ebox_p5d7va": replace(
         hit_hk_base_attrs,
-        validmin=5.3,
-        validmax=6.3,
+        validmin=5,  # doc says min 5.3
+        validmax=7,  # doc says max 6.3
         catdesc="+5.7VA Ebox (Analog)",
         fieldname="+5.7VA Ebox (Analog)",
         label_axis="+5.7VA Ebox (Analog)",
         units="V",
-        format="I4",
+        format="F1.1",
     ),
     "ebox_m5d7va": replace(
         hit_hk_base_attrs,
-        validmin=-6.4125,
-        validmax=-5.25,
+        validmin=-7,  # doc says min -6.4125
+        validmax=-5,  # doc says max -5.25
         catdesc="-5.7VA Ebox (Analog)",
         fieldname="-5.7VA Ebox (Analog)",
         label_axis="-5.7VA Ebox (Analog)",
         units="V",
-        format="I4",
+        format="F1.4",
     ),
     "ref_p5v": replace(
         hit_hk_base_attrs,
@@ -713,7 +713,7 @@ l1b_hk_attrs_subset = {
         fieldname="L1A/B Bias",
         label_axis="L1A/B Bias",
         units="V",
-        format="I4",
+        format="I2",
     ),
     "l2ab_bias": replace(
         hit_hk_base_attrs,
@@ -723,7 +723,7 @@ l1b_hk_attrs_subset = {
         fieldname="L2A/B Bias",
         label_axis="L2A/B Bias",
         units="V",
-        format="I4",
+        format="I2",
     ),
     "l34a_bias": replace(
         hit_hk_base_attrs,
@@ -733,7 +733,7 @@ l1b_hk_attrs_subset = {
         fieldname="L3/4A Bias",
         label_axis="L3/4A Bias",
         units="V",
-        format="I4",
+        format="I3",
     ),
     "l34b_bias": replace(
         hit_hk_base_attrs,
@@ -743,17 +743,17 @@ l1b_hk_attrs_subset = {
         fieldname="L3/4B Bias",
         label_axis="L3/4B Bias",
         units="V",
-        format="I4",
+        format="I3",
     ),
     "ebox_p2d0vd": replace(
         hit_hk_base_attrs,
-        validmin=1.79,
-        validmax=2.5,
+        validmin=1,  # doc says min 1.79
+        validmax=3,  # doc says max 2.5
         catdesc="+2.0VD Ebox (Digital)",
         fieldname="+2.0VD Ebox (Digital)",
         label_axis="+2.0VD Ebox (Digital)",
         units="V",
-        format="I4",
+        format="F1.2",
     ),
 }
 
