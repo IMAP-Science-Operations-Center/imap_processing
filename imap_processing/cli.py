@@ -33,6 +33,7 @@ import imap_processing
 #   call cdf.utils.write_cdf
 from imap_processing.cdf.utils import load_cdf, write_cdf
 from imap_processing.hi.l1a import hi_l1a
+from imap_processing.idex.idex_packet_parser import PacketParser
 from imap_processing.mag.l1a.mag_l1a import mag_l1a
 from imap_processing.swe.l1a.swe_l1a import swe_l1a
 from imap_processing.swe.l1b.swe_l1b import swe_l1b
@@ -82,7 +83,7 @@ def _parse_args():
     )
     instrument_help = (
         "The instrument to process. Acceptable values are: "
-        f"{imap_processing.INSTRUMENTS}"
+        f"{imap_data_access.VALID_INSTRUMENTS}"
     )
     level_help = (
         "The data level to process. Acceptable values are: "
@@ -381,6 +382,18 @@ class Idex(ProcessInstrument):
     def do_processing(self, dependencies):
         """Perform IDEX specific processing."""
         print(f"Processing IDEX {self.data_level}")
+
+        if self.data_level == "l1":
+            if len(dependencies) > 1:
+                raise ValueError(
+                    f"Unexpected dependencies found for IDEX L1:"
+                    f"{dependencies}. Expected only one dependency."
+                )
+            # read CDF file
+            processed_data = PacketParser(dependencies[0]).data
+            cdf_file_path = write_cdf(processed_data)
+            print(f"processed file path: {cdf_file_path}")
+            return [cdf_file_path]
 
 
 class Lo(ProcessInstrument):
