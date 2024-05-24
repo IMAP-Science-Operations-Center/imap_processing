@@ -35,6 +35,7 @@ from imap_processing.cdf.utils import load_cdf, write_cdf
 from imap_processing.hi.l1a import hi_l1a
 from imap_processing.idex.idex_packet_parser import PacketParser
 from imap_processing.mag.l1a.mag_l1a import mag_l1a
+from imap_processing.swapi.l1.swapi_l1 import swapi_l1
 from imap_processing.swe.l1a.swe_l1a import swe_l1a
 from imap_processing.swe.l1b.swe_l1b import swe_l1b
 from imap_processing.ultra.l1a import ultra_l1a
@@ -428,6 +429,18 @@ class Swapi(ProcessInstrument):
     def do_processing(self, dependencies):
         """Perform SWAPI specific processing."""
         print(f"Processing SWAPI {self.data_level}")
+
+        if self.data_level == "l1":
+            if len(dependencies) > 1:
+                raise ValueError(
+                    f"Unexpected dependencies found for SWAPI L1:"
+                    f"{dependencies}. Expected only one dependency."
+                )
+            # process data
+            processed_data = swapi_l1(dependencies[0])
+            # Write all processed data to CDF files
+            products = [write_cdf(dataset) for dataset in processed_data]
+            return products
 
 
 class Swe(ProcessInstrument):

@@ -321,13 +321,21 @@ def test_process_swapi_science(decom_test_data):
     assert cdf_path.name == cdf_filename
 
 
-def test_swapi_l1_hk(decom_test_data):
+def test_swapi_l1_cdf():
     """Test housekeeping processing and CDF file creation"""
-    grouped_data = group_by_apid(decom_test_data)
-    processed_data = swapi_l1(grouped_data[SWAPIAPID.SWP_HK])
+    l0_data_path = (
+        f"{imap_module_directory}/tests/swapi/l0_data/"
+        "BinLog CCSDS_FRAG_TLM_20231012_125856Z_test.bin"
+    )
+    processed_data = swapi_l1(l0_data_path)
 
     # Test CDF File
-    cdf_filename = "imap_swapi_l1_hk_20100101_v001.cdf"
+    # sci cdf file
+    cdf_filename = "imap_swapi_l1_sci-1min_20100101_v001.cdf"
     cdf_path = write_cdf(processed_data[0])
+    assert cdf_path.name == cdf_filename
 
+    # hk cdf file
+    cdf_filename = "imap_swapi_l1_hk_20100101_v001.cdf"
+    cdf_path = write_cdf(processed_data[1])
     assert cdf_path.name == cdf_filename
