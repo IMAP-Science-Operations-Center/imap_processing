@@ -11,13 +11,13 @@ import xarray as xr
 logger = logging.getLogger(__name__)
 
 
-def create_dataset(l1a_dataset, name):
+def create_dataset(data_dict, name):
     """
     Create xarray for L1b data.
 
     Parameters
     ----------
-    data_dict: : dict (TODO: in future)
+    data_dict: : dict
         L1b data dictionary.
 
     Returns
@@ -27,7 +27,7 @@ def create_dataset(l1a_dataset, name):
     """
     # TODO: this will change to actual l1b data dictionary
     # For now we are using it for retrieving the epoch.
-    dataset = l1a_dataset["imap_ultra_l1a_45de"]
+    dataset = data_dict["imap_ultra_l1a_45de"]
 
     # Load metadata from the metadata file
     with open(Path(__file__).parent.parent / "ultra_metadata_example.json") as f:
