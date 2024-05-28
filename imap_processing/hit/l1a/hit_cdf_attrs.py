@@ -66,7 +66,7 @@ l1a_l1b_hk_attrs = {
         validmax=3,
         catdesc="Flight Software Version Number (A.B.C bits)",
         fieldname="Flight Software Version Number A",
-        label_axis="Flight software version number a",
+        label_axis="FSW A",
         format="I1",
     ),
     "fsw_version_b": replace(
@@ -74,7 +74,7 @@ l1a_l1b_hk_attrs = {
         validmax=15,
         catdesc="Flight Software Version Number (A.B.C bits)",
         fieldname="Flight Software Version Number B",
-        label_axis="Flight software version number b",
+        label_axis="FSW B",
         format="I2",
     ),
     "fsw_version_c": replace(
@@ -82,7 +82,7 @@ l1a_l1b_hk_attrs = {
         validmax=63,
         catdesc="Flight Software Version Number (A.B.C bits)",
         fieldname="Flight Software Version Number C",
-        label_axis="Flight software version number c",
+        label_axis="FSW C",
         format="I2",
     ),
     "num_good_cmds": replace(
@@ -90,7 +90,7 @@ l1a_l1b_hk_attrs = {
         validmax=255,
         catdesc="Number of Good Commands",
         fieldname="Number of Good Commands",
-        label_axis="Number of good commands",
+        label_axis="Good cmds",
         format="I3",
     ),
     "last_good_cmd": replace(
@@ -257,7 +257,7 @@ l1a_l1b_hk_attrs = {
         hit_hk_base_attrs,
         catdesc="Leakage Current [V]",
         fieldname="Leakage Current [V]",
-        label_axis="Leakage current [V]",
+        label_axis="Leakage current V",
         format="I19",
     ),
     "phasic_status": replace(
@@ -426,7 +426,7 @@ l1a_hk_attrs_subset = {
         validmax=4095,
         catdesc="5.1VD Ebox (Digital)",
         fieldname="5.1VD Ebox (Digital)",
-        label_axis="5.1VD Ebox (Digital)",
+        label_axis="5.1VD Ebox",
         format="I4",
     ),
     "ebox_p12va": replace(
@@ -434,7 +434,7 @@ l1a_hk_attrs_subset = {
         validmax=4095,
         catdesc="+12VA Ebox (Analog)",
         fieldname="+12VA Ebox (Analog)",
-        label_axis="+12VA Ebox (Analog)",
+        label_axis="+12VA Ebox",
         format="I4",
     ),
     "ebox_m12va": replace(
@@ -442,7 +442,7 @@ l1a_hk_attrs_subset = {
         validmax=4095,
         catdesc="-12VA Ebox (Analog)",
         fieldname="-12VA Ebox (Analog)",
-        label_axis="-12VA Ebox (Analog)",
+        label_axis="-12VA Ebox",
         format="I4",
     ),
     "ebox_p5d7va": replace(
@@ -450,7 +450,7 @@ l1a_hk_attrs_subset = {
         validmax=4095,
         catdesc="+5.7VA Ebox (Analog)",
         fieldname="+5.7VA Ebox (Analog)",
-        label_axis="+5.7VA Ebox (Analog)",
+        label_axis="+5.7VA Ebox",
         format="I4",
     ),
     "ebox_m5d7va": replace(
@@ -458,7 +458,7 @@ l1a_hk_attrs_subset = {
         validmax=4095,
         catdesc="-5.7VA Ebox (Analog)",
         fieldname="-5.7VA Ebox (Analog)",
-        label_axis="-5.7VA Ebox (Analog)",
+        label_axis="-5.7VA Ebox",
         format="I4",
     ),
     "ref_p5v": replace(
@@ -506,7 +506,7 @@ l1a_hk_attrs_subset = {
         validmax=4095,
         catdesc="+2.0VD Ebox (Digital)",
         fieldname="+2.0VD Ebox (Digital)",
-        label_axis="+2.0VD Ebox (Digital)",
+        label_axis="+2.0VD Ebox",
         format="I4",
     ),
 }
@@ -519,7 +519,7 @@ l1b_hk_attrs_subset = {
         # validmax=4095,           # Need this info from instrument team
         catdesc="Preamp L234A Voltage",
         fieldname="Preamp L234A Voltage",
-        label_axis="Preamp L234A Voltage",
+        label_axis="Preamp L234A V",
         units="V",
         format="I4",
     ),
@@ -528,7 +528,7 @@ l1b_hk_attrs_subset = {
         # validmax=4095,           # Need this info from instrument team
         catdesc="Preamp L1A Voltage",
         fieldname="Preamp L1A Voltage",
-        label_axis="Preamp L1A Voltage",
+        label_axis="Preamp L1A V",
         units="V",
         format="I4",
     ),
@@ -537,7 +537,7 @@ l1b_hk_attrs_subset = {
         # validmax=4095,           # Need this info from instrument team
         catdesc="Preamp L1B Voltage",
         fieldname="Preamp L1B Voltage",
-        label_axis="Preamp L1B Voltage",
+        label_axis="Preamp L1B V",
         units="V",
         format="I4",
     ),
@@ -546,7 +546,7 @@ l1b_hk_attrs_subset = {
         # validmax=4095,           # Need this info from instrument team
         catdesc="Preamp L234B Voltage",
         fieldname="Preamp L234B Voltage",
-        label_axis="Preamp L234B Voltage",
+        label_axis="Preamp L234B V",
         units="V",
         format="I2",
     ),
@@ -641,9 +641,9 @@ l1b_hk_attrs_subset = {
         validmax=4,  # doc says max 3.6
         catdesc="3.4VD Ebox (Digital)",
         fieldname="3.4VD Ebox (Digital)",
-        label_axis="3.4VD Ebox (Digital)",
+        label_axis="3.4VD Ebox",
         units="V",
-        format="F1.1",
+        format="F2.1",
     ),
     "ebox_5d1vd": replace(
         hit_hk_base_attrs,
@@ -651,9 +651,9 @@ l1b_hk_attrs_subset = {
         validmax=6,  # doc says max 5.45
         catdesc="5.1VD Ebox (Digital)",
         fieldname="5.1VD Ebox (Digital)",
-        label_axis="5.1VD Ebox (Digital)",
+        label_axis="5.1VD Ebox",
         units="V",
-        format="F1.2",
+        format="F3.2",
     ),
     "ebox_p12va": replace(
         hit_hk_base_attrs,
@@ -661,9 +661,9 @@ l1b_hk_attrs_subset = {
         validmax=14,  # doc says max 13.1
         catdesc="+12VA Ebox (Analog)",
         fieldname="+12VA Ebox (Analog)",
-        label_axis="+12VA Ebox (Analog)",
+        label_axis="+12VA Ebox",
         units="V",
-        format="F2.1",
+        format="F3.1",
     ),
     "ebox_m12va": replace(
         hit_hk_base_attrs,
@@ -671,9 +671,9 @@ l1b_hk_attrs_subset = {
         validmax=-12,  # doc says max -11.2
         catdesc="-12VA Ebox (Analog)",
         fieldname="-12VA Ebox (Analog)",
-        label_axis="-12VA Ebox (Analog)",
+        label_axis="-12VA Ebox",
         units="V",
-        format="F2.1",
+        format="F3.1",
     ),
     "ebox_p5d7va": replace(
         hit_hk_base_attrs,
@@ -681,9 +681,9 @@ l1b_hk_attrs_subset = {
         validmax=7,  # doc says max 6.3
         catdesc="+5.7VA Ebox (Analog)",
         fieldname="+5.7VA Ebox (Analog)",
-        label_axis="+5.7VA Ebox (Analog)",
+        label_axis="+5.7VA Ebox",
         units="V",
-        format="F1.1",
+        format="F2.1",
     ),
     "ebox_m5d7va": replace(
         hit_hk_base_attrs,
@@ -691,9 +691,9 @@ l1b_hk_attrs_subset = {
         validmax=-5,  # doc says max -5.25
         catdesc="-5.7VA Ebox (Analog)",
         fieldname="-5.7VA Ebox (Analog)",
-        label_axis="-5.7VA Ebox (Analog)",
+        label_axis="-5.7VA Ebox",
         units="V",
-        format="F1.4",
+        format="F5.4",
     ),
     "ref_p5v": replace(
         hit_hk_base_attrs,
@@ -751,9 +751,9 @@ l1b_hk_attrs_subset = {
         validmax=3,  # doc says max 2.5
         catdesc="+2.0VD Ebox (Digital)",
         fieldname="+2.0VD Ebox (Digital)",
-        label_axis="+2.0VD Ebox (Digital)",
+        label_axis="+2.0VD Ebox",
         units="V",
-        format="F1.2",
+        format="F3.2",
     ),
 }
 
