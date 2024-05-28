@@ -43,7 +43,7 @@ ULTRA_RATES = PacketProperties(
 )
 ULTRA_TOF = PacketProperties(
     apid=[883, 947],
-    logical_source=["imap_ultra_l1a_45tof", "imap_ultra_l1a_90tof"],
+    logical_source=["imap_ultra_l1a_45phxtof", "imap_ultra_l1a_90phxtof"],
     addition_to_logical_desc="Time of Flight Images",
     width=4,
     block=15,
@@ -52,7 +52,7 @@ ULTRA_TOF = PacketProperties(
 )
 ULTRA_EVENTS = PacketProperties(
     apid=[896, 960],
-    logical_source=["imap_ultra_l1a_45events", "imap_ultra_l1a_90events"],
+    logical_source=["imap_ultra_l1a_45de", "imap_ultra_l1a_90de"],
     addition_to_logical_desc="Single Events",
     width=None,
     block=None,

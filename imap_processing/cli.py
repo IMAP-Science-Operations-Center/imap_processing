@@ -14,6 +14,7 @@ import argparse
 import logging
 import sys
 from abc import ABC, abstractmethod
+from collections import defaultdict
 from json import loads
 from pathlib import Path
 from typing import final
@@ -37,6 +38,7 @@ from imap_processing.mag.l1a.mag_l1a import mag_l1a
 from imap_processing.swe.l1a.swe_l1a import swe_l1a
 from imap_processing.swe.l1b.swe_l1b import swe_l1b
 from imap_processing.ultra.l1a import ultra_l1a
+from imap_processing.ultra.l1b import ultra_l1b
 
 logger = logging.getLogger(__name__)
 
@@ -48,8 +50,7 @@ def _parse_args():
     --instrument "mag"
     --data-level "l1a"
     --start-date "20231212"
-    --end-date "20231212"
-    --version "v00-01"
+    --version "v001"
     --dependency "[
         {
             'instrument': 'mag',
@@ -476,6 +477,14 @@ class Ultra(ProcessInstrument):
                 )
 
             datasets = ultra_l1a.ultra_l1a(dependencies[0])
+            products = [write_cdf(dataset) for dataset in datasets]
+            return products
+        elif self.data_level == "l1b":
+            data_dict = defaultdict(list)
+            for dependency in dependencies:
+                dataset = load_cdf(dependency)
+                data_dict[dataset.attrs["Logical_source"]].append(dataset)
+            datasets = ultra_l1b.ultra_l1b(data_dict)
             products = [write_cdf(dataset) for dataset in datasets]
             return products
 
