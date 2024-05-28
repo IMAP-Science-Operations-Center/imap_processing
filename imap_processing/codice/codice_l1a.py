@@ -41,7 +41,6 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 # TODO: Decom data arrays need to be decompressed
-# TODO: Try new simulated data
 # TODO: Add metadata attrs to science dataset?
 # TODO: In decommutation, how to have a variable length data and then a checksum
 #       after it?
