@@ -303,6 +303,6 @@ def test_cdf_events(ccsds_path_theta_0, decom_ultra_aux, decom_test_data):
     dataset_events = create_dataset(
         {ULTRA_EVENTS.apid[0]: decom_ultra_events, ULTRA_AUX.apid[0]: decom_ultra_aux}
     )
-    input_xarray_events = load_cdf(test_data_path)
+    input_xarray_events = load_cdf(test_data_path, to_datetime=True)
 
     assert input_xarray_events.attrs.keys() == dataset_events.attrs.keys()
