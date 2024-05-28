@@ -22,7 +22,7 @@ from imap_processing import decom, imap_module_directory
 PACKET_TO_XTCE_MAPPING = {
     "raw_ccsds_20230822_122700Z_idle.bin": "P_COD_NHK.xml",
     "imap_codice_lo-sw-priority_20240429.pkts": "P_COD_LO_SW_PRIORITY_COUNTS.xml",
-    "imap_codice_lo-nsw-priority_20240319.pkts": "P_COD_LO_PRIORITY_COUNTS.xml",
+    "imap_codice_lo-nsw-priority_20240429.pkts": "P_COD_LO_NSW_PRIORITY_COUNTS.xml",
     "imap_codice_lo-sw-species_20240429.pkts": "P_COD_LO_SW_SPECIES_COUNTS.xml",
     "imap_codice_lo-nsw-species_20240429.pkts": "P_COD_LO_NSW_SPECIES_COUNTS.xml",
     "imap_codice_lo-sw-angular_20240319.pkts": "P_COD_LO_SW_ANGULAR_COUNTS.xml",

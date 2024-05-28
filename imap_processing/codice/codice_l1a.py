@@ -364,30 +364,20 @@ def process_codice_l1a(packets) -> xr.Dataset:
             dataset = create_hskp_dataset(packets=sorted_packets)
 
         elif apid in apids_for_lo_science_processing:
-            # Temporary workarounds to deal with poorly formatted or missing
-            # simulated data
-            if apid == CODICEAPID.COD_LO_NSW_PRIORITY_COUNTS:
-                start_time = np.datetime64(
-                    "2024-03-19T00:00:00", "ns"
-                )  # Consistent with the other simulated data
-                science_values = None
-                table_id, plan_id, plan_step, view_id = 0, 0, 0, 4
+            # Sort the packets by time
+            packets = sort_by_time(grouped_data[apid], "SHCOARSE")
 
-            else:
-                # Sort the packets by time
-                packets = sort_by_time(grouped_data[apid], "SHCOARSE")
+            # Determine the start time of the packet
+            start_time = calc_start_time(
+                packets[0].data["ACQ_START_SECONDS"].raw_value,
+                launch_time=np.datetime64("2010-01-01T00:01:06.184", "ns"),
+            )
 
-                # Determine the start time of the packet
-                start_time = calc_start_time(
-                    packets[0].data["ACQ_START_SECONDS"].raw_value,
-                    launch_time=np.datetime64("2010-01-01T00:01:06.184", "ns"),
-                )
+            # Extract the data
+            science_values = packets[0].data["DATA"].raw_value
 
-                # Extract the data
-                science_values = packets[0].data["DATA"].raw_value
-
-                # Get the four "main" parameters for processing
-                table_id, plan_id, plan_step, view_id = get_params(packets[0])
+            # Get the four "main" parameters for processing
+            table_id, plan_id, plan_step, view_id = get_params(packets[0])
 
             # Run the pipeline to create a dataset for the product
             pipeline = CoDICEL1aPipeline(table_id, plan_id, plan_step, view_id)
