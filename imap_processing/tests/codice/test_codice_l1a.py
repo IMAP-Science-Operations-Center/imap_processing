@@ -40,25 +40,25 @@ EXPECTED_FILENAMES = [
 ]
 TEST_PACKETS = [
     Path(
-        f"{imap_module_directory}/tests/codice/data/raw_ccsds_20230822_122700Z_idle.bin"
+        f"{imap_module_directory}/tests/codice/data/imap_codice_l0_hskp_20230822.pkts"
     ),
     Path(
-        f"{imap_module_directory}/tests/codice/data/imap_codice_lo-sw-angular_20240429.pkts"
+        f"{imap_module_directory}/tests/codice/data/imap_codice_l0_lo-sw-angular_20240429.pkts"
     ),
     Path(
-        f"{imap_module_directory}/tests/codice/data/imap_codice_lo-nsw-angular_20240429.pkts"
+        f"{imap_module_directory}/tests/codice/data/imap_codice_l0_lo-nsw-angular_20240429.pkts"
     ),
     Path(
-        f"{imap_module_directory}/tests/codice/data/imap_codice_lo-sw-priority_20240429.pkts"
+        f"{imap_module_directory}/tests/codice/data/imap_codice_l0_lo-sw-priority_20240429.pkts"
     ),
     Path(
-        f"{imap_module_directory}/tests/codice/data/imap_codice_lo-nsw-priority_20240429.pkts"
+        f"{imap_module_directory}/tests/codice/data/imap_codice_l0_lo-nsw-priority_20240429.pkts"
     ),
     Path(
-        f"{imap_module_directory}/tests/codice/data/imap_codice_lo-sw-species_20240429.pkts"
+        f"{imap_module_directory}/tests/codice/data/imap_codice_l0_lo-sw-species_20240429.pkts"
     ),
     Path(
-        f"{imap_module_directory}/tests/codice/data/imap_codice_lo-nsw-species_20240429.pkts"
+        f"{imap_module_directory}/tests/codice/data/imap_codice_l0_lo-nsw-species_20240429.pkts"
     ),
 ]
 
