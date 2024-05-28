@@ -367,7 +367,9 @@ def process_codice_l1a(packets) -> xr.Dataset:
             # Temporary workarounds to deal with poorly formatted or missing
             # simulated data
             if apid == CODICEAPID.COD_LO_NSW_PRIORITY_COUNTS:
-                start_time = np.datetime64("2024-03-19T00:00:00", "ns")
+                start_time = np.datetime64(
+                    "2024-03-19T00:00:00", "ns"
+                )  # Consistent with the other simulated data
                 science_values = None
                 table_id, plan_id, plan_step, view_id = 0, 0, 0, 4
 
