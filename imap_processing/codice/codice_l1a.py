@@ -344,12 +344,12 @@ def process_codice_l1a(packets) -> xr.Dataset:
         ``xarray`` dataset containing the science data and supporting metadata
     """
     apids_for_lo_science_processing = [
-        CODICEAPID.COD_LO_SW_SPECIES_COUNTS,
-        CODICEAPID.COD_LO_NSW_SPECIES_COUNTS,
-        CODICEAPID.COD_LO_SW_PRIORITY_COUNTS,
-        CODICEAPID.COD_LO_NSW_PRIORITY_COUNTS,
         CODICEAPID.COD_LO_SW_ANGULAR_COUNTS,
         CODICEAPID.COD_LO_NSW_ANGULAR_COUNTS,
+        CODICEAPID.COD_LO_SW_PRIORITY_COUNTS,
+        CODICEAPID.COD_LO_NSW_PRIORITY_COUNTS,
+        CODICEAPID.COD_LO_SW_SPECIES_COUNTS,
+        CODICEAPID.COD_LO_NSW_SPECIES_COUNTS,
     ]
 
     # Group data by APID and sort by time
