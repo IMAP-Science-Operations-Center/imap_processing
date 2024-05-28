@@ -32,7 +32,7 @@ EXPECTED_ARRAY_SIZES = [
 EXPECTED_FILENAMES = [
     "imap_codice_l1a_hskp_20100101_v001.cdf",
     "imap_codice_l1a_lo-sw-angular-counts_20240319_v001.cdf",
-    "imap_codice_l1a_lo-nsw-angular-counts_20240319_v001.cdf",
+    "imap_codice_l1a_lo-nsw-angular-counts_20240429_v001.cdf",
     "imap_codice_l1a_lo-sw-priority-counts_20240429_v001.cdf",
     "imap_codice_l1a_lo-nsw-priority-counts_20240429_v001.cdf",
     "imap_codice_l1a_lo-sw-species-counts_20240429_v001.cdf",
@@ -46,7 +46,7 @@ TEST_PACKETS = [
         f"{imap_module_directory}/tests/codice/data/imap_codice_lo-sw-angular_20240319.pkts"
     ),
     Path(
-        f"{imap_module_directory}/tests/codice/data/imap_codice_lo-nsw-angular_20240319.pkts"
+        f"{imap_module_directory}/tests/codice/data/imap_codice_lo-nsw-angular_20240429.pkts"
     ),
     Path(
         f"{imap_module_directory}/tests/codice/data/imap_codice_lo-sw-priority_20240429.pkts"
