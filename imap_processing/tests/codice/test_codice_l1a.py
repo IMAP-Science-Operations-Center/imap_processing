@@ -35,7 +35,7 @@ EXPECTED_FILENAMES = [
     "imap_codice_l1a_lo-nsw-angular-counts_20240319_v001.cdf",
     "imap_codice_l1a_lo-sw-priority-counts_20240319_v001.cdf",
     "imap_codice_l1a_lo-nsw-priority-counts_20240319_v001.cdf",
-    "imap_codice_l1a_lo-sw-species-counts_20240319_v001.cdf",
+    "imap_codice_l1a_lo-sw-species-counts_20240429_v001.cdf",
     "imap_codice_l1a_lo-nsw-species-counts_20240319_v001.cdf",
 ]
 TEST_PACKETS = [

@@ -43,6 +43,8 @@ logger.setLevel(logging.INFO)
 # TODO: Decom data arrays need to be decompressed
 # TODO: Try new simulated data
 # TODO: Add metadata attrs to science dataset?
+# TODO: In decommutation, how to have a variable length data and then a checksum
+#       after it?
 
 
 class CoDICEL1aPipeline:
@@ -233,33 +235,6 @@ class CoDICEL1aPipeline:
         apid : int
             The APID of interest.
         """
-        # TODO: There are some discrepancies here to doublecheck with Joey:
-
-        # LO_SW_SPECIES_COUNTS all checks out
-        # PKT_LEN = 283 (really 284 because its zero-indexed)
-        # BYTE_COUNT = 256
-        # 256 * 8 = 2048 bits
-        # 2048 bits / 16 species = 128 bits per species
-
-        # LO_NSW_SPECIES_COUNTS
-        # PKT_LEN = 140
-        # BYTE_COUNT = 112
-        # 112 * 8 = 896 bits
-        # 896 bits / 8 species = 112 bits per species (should be 128)
-        # Math works out if there are 7 species
-
-        # LO_SW_PRIORITY_COUNTS
-        # PKT_LEN = 160
-        # BYTE_COUNT = 132
-        # 132 * 8 = 1056 bits
-        # 1056 bits / 5 counters = 211.2 bits per counter ???
-
-        # LO_SW_ANGULAR_COUNTS
-        # PKT_LEN = 2535
-        # BYTE_COUNT = 2508
-        # 2508 * 8 = 20064 bits
-        # 20064 bits / 4 counters = 5016 bits per counter ???
-
         if apid == CODICEAPID.COD_LO_SW_SPECIES_COUNTS:
             self.num_counters = 16
             self.num_energy_steps = 128
@@ -392,7 +367,6 @@ def process_codice_l1a(packets) -> xr.Dataset:
             # Temporary workarounds to deal with poorly formatted or missing
             # simulated data
             if apid == CODICEAPID.COD_LO_NSW_PRIORITY_COUNTS:
-                packets = []
                 start_time = np.datetime64("2024-03-19T00:00:00", "ns")
                 science_values = None
                 table_id, plan_id, plan_step, view_id = 0, 0, 0, 4
