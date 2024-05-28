@@ -585,7 +585,7 @@ def process_swapi_science(sci_dataset):
 
 
 def swapi_l1(file_path):
-    """Process SWAPI L0 data to level 1.
+    """Process SWAPI level 0 data to level 1.
 
     Parameters
     ----------
