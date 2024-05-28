@@ -22,7 +22,7 @@ from imap_processing.utils import create_dataset, group_by_apid, sort_by_time
 def decom_test_data():
     """Read test data from file"""
     test_folder_path = "tests/swapi/l0_data"
-    packet_files = list(imap_module_directory.glob(f"{test_folder_path}/*.bin"))
+    packet_files = list(imap_module_directory.glob(f"{test_folder_path}/*.pkts"))
     packet_definition = (
         f"{imap_module_directory}/swapi/packet_definitions/swapi_packet_definition.xml"
     )
@@ -325,7 +325,7 @@ def test_swapi_l1_cdf():
     """Test housekeeping processing and CDF file creation"""
     l0_data_path = (
         f"{imap_module_directory}/tests/swapi/l0_data/"
-        "BinLog CCSDS_FRAG_TLM_20231012_125856Z_test.bin"
+        "imap_swapi_l0_raw_20231012_v001.pkts"
     )
     processed_data = swapi_l1(l0_data_path)
 
