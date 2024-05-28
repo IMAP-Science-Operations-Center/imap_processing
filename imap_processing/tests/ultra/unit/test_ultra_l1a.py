@@ -270,7 +270,7 @@ def test_cdf_tof(ccsds_path_theta_0, decom_test_data):
     test_data_path = write_cdf(test_data[0])
 
     assert test_data_path.exists()
-    assert test_data_path.name == "imap_ultra_l1a_45tof_20240207_v001.cdf"
+    assert test_data_path.name == "imap_ultra_l1a_45phxtof_20240207_v001.cdf"
 
     dataset_tof = create_dataset({ULTRA_TOF.apid[0]: decom_ultra_tof})
     input_xarray_tof = load_cdf(test_data_path)
@@ -298,7 +298,7 @@ def test_cdf_events(ccsds_path_theta_0, decom_ultra_aux, decom_test_data):
     test_data_path = write_cdf(test_data[0])
 
     assert test_data_path.exists()
-    assert test_data_path.name == "imap_ultra_l1a_45events_20240207_v001.cdf"
+    assert test_data_path.name == "imap_ultra_l1a_45de_20240207_v001.cdf"
 
     dataset_events = create_dataset(
         {ULTRA_EVENTS.apid[0]: decom_ultra_events, ULTRA_AUX.apid[0]: decom_ultra_aux}
