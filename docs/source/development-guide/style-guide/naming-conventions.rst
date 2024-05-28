@@ -43,7 +43,7 @@ The general filename convention is as follows::
   * IMAP-Lo: TBD
   * IMAP-Ultra: ``45sensor-counts``, ``90sensor-counts`` (more TBD)
   * MAG: ``normal``, ``burst``
-  * SWAPI: ``sci``, ``hk``
+  * SWAPI: ``sci-1min``, ``hk``
   * SWE: ``sci``
 
 * ``<startdate>`` is the date of the 'earliest' data within the data product, in the format of ``YYYYMMDD``.
