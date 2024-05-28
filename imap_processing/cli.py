@@ -230,6 +230,7 @@ class ProcessInstrument(ABC):
                     instrument=dependency["instrument"],
                     data_level=dependency["data_level"],
                     version=dependency["version"],
+                    descriptor=dependency["descriptor"],
                 )
             except HTTPError as e:
                 raise ValueError(f"Unable to download files from {dependency}") from e
