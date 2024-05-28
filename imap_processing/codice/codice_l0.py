@@ -24,7 +24,7 @@ PACKET_TO_XTCE_MAPPING = {
     "imap_codice_lo-sw-priority_20240429.pkts": "P_COD_LO_SW_PRIORITY_COUNTS.xml",
     "imap_codice_lo-nsw-priority_20240319.pkts": "P_COD_LO_PRIORITY_COUNTS.xml",
     "imap_codice_lo-sw-species_20240429.pkts": "P_COD_LO_SW_SPECIES_COUNTS.xml",
-    "imap_codice_lo-nsw-species_20240319.pkts": "P_COD_LO_NSW_SPECIES_COUNTS.xml",
+    "imap_codice_lo-nsw-species_20240429.pkts": "P_COD_LO_NSW_SPECIES_COUNTS.xml",
     "imap_codice_lo-sw-angular_20240319.pkts": "P_COD_LO_SW_ANGULAR_COUNTS.xml",
     "imap_codice_lo-nsw-angular_20240319.pkts": "P_COD_LO_NSW_ANGULAR_COUNTS.xml",
 }
