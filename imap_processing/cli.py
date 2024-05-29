@@ -22,6 +22,7 @@ from urllib.error import HTTPError
 import imap_data_access
 
 import imap_processing
+from imap_processing.cdf.utils import load_cdf, write_cdf
 
 # TODO: change how we import things and also folder
 # structure may?
@@ -31,7 +32,7 @@ import imap_processing
 #   from imap_processing import cdf
 # In code:
 #   call cdf.utils.write_cdf
-from imap_processing.cdf.utils import load_cdf, write_cdf
+from imap_processing.codice import codice_l1a
 from imap_processing.hi.l1a import hi_l1a
 from imap_processing.idex.idex_packet_parser import PacketParser
 from imap_processing.mag.l1a.mag_l1a import mag_l1a
@@ -333,6 +334,18 @@ class Codice(ProcessInstrument):
     def do_processing(self, dependencies):
         """Perform CoDICE specific processing."""
         print(f"Processing CoDICE {self.data_level}")
+
+        if self.data_level == "l1a":
+            if len(dependencies) > 1:
+                raise ValueError(
+                    f"Unexpected dependencies found for CoDICE L1a:"
+                    f"{dependencies}. Expected only one dependency."
+                )
+            # process data
+            dataset = codice_l1a.process_codice_l1a(dependencies[0])
+            cdf_file_path = dataset.attrs["cdf_filename"]
+            print(f"processed file path: {cdf_file_path}")
+            return [cdf_file_path]
 
 
 class Glows(ProcessInstrument):

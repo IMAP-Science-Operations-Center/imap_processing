@@ -22,6 +22,7 @@ from imap_processing import imap_module_directory
 from imap_processing.cdf.global_attrs import ConstantCoordinates
 from imap_processing.cdf.utils import calc_start_time, write_cdf
 from imap_processing.codice import cdf_attrs
+from imap_processing.codice.codice_l0 import decom_packets
 from imap_processing.codice.constants import (
     ESA_SWEEP_TABLE_ID_LOOKUP,
     LO_COLLAPSE_TABLE_ID_LOOKUP,
@@ -349,13 +350,13 @@ def get_params(packet) -> tuple[int, int, int, int]:
     return table_id, plan_id, plan_step, view_id
 
 
-def process_codice_l1a(packets) -> xr.Dataset:
+def process_codice_l1a(file_path: str) -> xr.Dataset:
     """Process CoDICE l0 data to create l1a data products.
 
     Parameters
     ----------
-    packets : list[space_packet_parser.parser.Packet]
-        Decom data list that contains all APIDs
+    file_path : str
+        Path to the CoDICE L0 file to process
 
     Returns
     -------
@@ -370,7 +371,8 @@ def process_codice_l1a(packets) -> xr.Dataset:
         CODICEAPID.COD_LO_SW_ANGULAR_COUNTS,
     ]
 
-    # Group data by APID and sort by time
+    # Decom the packets, group data by APID, and sort by time
+    packets = decom_packets(file_path)
     grouped_data = group_by_apid(packets)
 
     for apid in grouped_data.keys():
