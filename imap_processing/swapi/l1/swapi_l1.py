@@ -6,8 +6,10 @@ import dataclasses
 import numpy as np
 import xarray as xr
 
+from imap_processing import imap_module_directory
 from imap_processing.cdf.global_attrs import ConstantCoordinates
 from imap_processing.cdf.utils import calc_start_time
+from imap_processing.decom import decom_packets
 from imap_processing.swapi.swapi_cdf_attrs import (
     compression_attrs,
     counts_attrs,
@@ -20,6 +22,7 @@ from imap_processing.swapi.swapi_utils import SWAPIAPID, SWAPIMODE
 from imap_processing.utils import (
     create_dataset,
     group_by_apid,
+    sort_by_time,
     update_epoch_to_datetime,
 )
 
@@ -581,21 +584,28 @@ def process_swapi_science(sci_dataset):
     return dataset
 
 
-def swapi_l1(packets):
-    """Based on APID, process SWAPI L0 data to level 1.
+def swapi_l1(file_path):
+    """Process SWAPI level 0 data to level 1.
 
     Parameters
     ----------
-    packets : list
-        List of decom packets
+    file_path : str
+        Path to SWAPI L0 file.
     """
+    xtce_definition = (
+        f"{imap_module_directory}/swapi/packet_definitions/swapi_packet_definition.xml"
+    )
+    packets = decom_packets(
+        packet_file=file_path, xtce_packet_definition=xtce_definition
+    )
     grouped_packets = group_by_apid(packets)
     processed_data = []
     for apid in grouped_packets.keys():
+        sorted_packets = sort_by_time(grouped_packets[apid], "SHCOARSE")
         # Right now, we only process SWP_HK and SWP_SCI
         # other packets are not process in this processing pipeline
         # If appId is science, then the file should contain all data of science appId
-        ds_data = create_dataset(grouped_packets[apid], include_header=False)
+        ds_data = create_dataset(sorted_packets, include_header=False)
 
         if apid == SWAPIAPID.SWP_SCI.value:
             data = process_swapi_science(ds_data)
