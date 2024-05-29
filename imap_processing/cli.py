@@ -484,7 +484,7 @@ class Ultra(ProcessInstrument):
             data_dict = defaultdict(list)
             for dependency in dependencies:
                 dataset = load_cdf(dependency, to_datetime=True)
-                data_dict[dataset.attrs["Logical_source"]].append(dataset)
+                data_dict[dataset.attrs["Logical_source"]] = dataset
             datasets = ultra_l1b.ultra_l1b(data_dict)
             products = [write_cdf(dataset) for dataset in datasets]
             return products

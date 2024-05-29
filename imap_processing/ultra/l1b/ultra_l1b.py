@@ -33,7 +33,7 @@ def create_dataset(data_dict, name):
     with open(Path(__file__).parent.parent / "ultra_metadata_example.json") as f:
         metadata = json.loads(f.read())[name]
 
-    epoch = dataset[0].coords["epoch"]
+    epoch = dataset.coords["epoch"]
 
     annotated_de_attrs = metadata["dataset_attrs"]
 
