@@ -344,7 +344,6 @@ class Codice(ProcessInstrument):
             # process data
             dataset = codice_l1a.process_codice_l1a(dependencies[0])
             cdf_file_path = dataset.attrs["cdf_filename"]
-            print(f"processed file path: {cdf_file_path}")
             return [cdf_file_path]
 
 
