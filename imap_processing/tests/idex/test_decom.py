@@ -12,7 +12,7 @@ from imap_processing.idex.idex_packet_parser import PacketParser
 @pytest.fixture(scope="session")
 def decom_test_data():
     test_file = Path(
-        f"{imap_module_directory}/tests/idex/imap_idex_l0_raw_20230725_20230725_v01-00.pkts"
+        f"{imap_module_directory}/tests/idex/imap_idex_l0_raw_20230725_v001.pkts"
     )
     return PacketParser(test_file)
 

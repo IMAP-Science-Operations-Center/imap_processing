@@ -4,8 +4,9 @@ import sys
 from unittest import mock
 
 import pytest
+import xarray as xr
 
-from imap_processing.cli import Hi, Ultra, _validate_args, main
+from imap_processing.cli import Codice, Hi, Ultra, _validate_args, main
 
 
 @pytest.fixture()
@@ -75,6 +76,35 @@ def test_validate_args(instrument, data_level, raises_value_error):
             _validate_args(args)
     else:
         _validate_args(args)
+
+
+@mock.patch("imap_processing.cli.codice_l1a.process_codice_l1a")
+def test_codice(mock_codice_l1a, mock_instrument_dependencies):
+    """Test coverage for cli.CoDICE class"""
+
+    test_dataset = xr.Dataset({}, attrs={"cdf_filename": "file0"})
+
+    mocks = mock_instrument_dependencies
+    mocks["mock_query"].return_value = [{"file_path": "/path/to/file0"}]
+    mocks["mock_download"].return_value = "file0"
+    mock_codice_l1a.return_value = test_dataset
+    mocks["mock_write_cdf"].side_effect = ["/path/to/file0"]
+
+    dependency_str = (
+        "[{"
+        "'instrument': 'codice',"
+        "'data_level': 'l0',"
+        "'descriptor': 'hskp',"
+        "'version': 'v001',"
+        "'start_date': '20230822'"
+        "}]"
+    )
+    instrument = Codice("l1a", dependency_str, "20230822", "20230822", "v001", True)
+    instrument.process()
+    assert mocks["mock_query"].call_count == 1
+    assert mocks["mock_download"].call_count == 1
+    assert mock_codice_l1a.call_count == 1
+    assert mocks["mock_upload"].call_count == 1
 
 
 @mock.patch("imap_processing.cli.hi_l1a.hi_l1a")
