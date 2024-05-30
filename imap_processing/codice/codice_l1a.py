@@ -357,7 +357,7 @@ def process_codice_l1a(file_path: Path | str) -> xr.Dataset:
 
     Parameters
     ----------
-    file_path : Path | str
+    file_path : pathlib.Path | str
         Path to the CoDICE L0 file to process
 
     Returns
