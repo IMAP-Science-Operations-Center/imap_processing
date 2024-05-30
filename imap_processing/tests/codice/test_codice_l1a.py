@@ -10,6 +10,8 @@ from imap_processing import imap_module_directory
 from imap_processing.cdf.utils import load_cdf
 from imap_processing.codice.codice_l1a import process_codice_l1a
 
+# TODO: Add test that processes a file with multiple APIDs
+
 EXPECTED_ARRAY_SHAPES = [
     (99,),  # hskp
     (1, 128),  # lo-sw-angular-counts

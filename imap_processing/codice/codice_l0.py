@@ -32,13 +32,18 @@ def decom_packets(packet_file: Path) -> list:
     list : list
         all the unpacked data.
     """
+    # Determine the mapping between L0 filename and corresponding XML filename
+    # via the descriptor. For example:
+    # packet_file = imap_codice_l0_lo-sw-species_YYYYMMDD_v001.pkts
     descriptor = (
-        packet_file.stem.split("imap_codice_l0_")[-1]
-        .split("_")[0]
-        .upper()
-        .replace("-", "_")
+        packet_file.stem.split("imap_codice_l0_")[
+            -1
+        ]  # lo-sw-species_YYYYMMDD_v001.pkts
+        .split("_")[0]  # lo-sw-species
+        .upper()  # LO-SW-SPECIES
+        .replace("-", "_")  # LO_SW_SPECIES
     )
-    filename = f"P_COD_{descriptor}.xml"
+    filename = f"P_COD_{descriptor}.xml"  # P_COD_LO_SW_SPECIES.xml
     xtce_document = Path(
         f"{imap_module_directory}/codice/packet_definitions/{filename}"
     )

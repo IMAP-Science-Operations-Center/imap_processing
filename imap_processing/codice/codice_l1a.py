@@ -293,7 +293,7 @@ class CoDICEL1aPipeline:
         # self.data = [
         #     science_values[i : i + chunk_size] for i in range(0, num_bits, chunk_size)
         # ]
-        self.data = ["1" * 128 for _ in range(self.num_counters)]
+        self.data = [["1"] * 128] * self.num_counters
 
 
 def get_params(packet) -> tuple[int, int, int, int]:
