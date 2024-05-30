@@ -38,7 +38,7 @@ def create_dataset(data_dict, name):
     annotated_de_attrs = metadata["dataset_attrs"]
 
     dataset = xr.Dataset(
-        coords={"epoch": epoch.astype("datetime64[ns]")},
+        coords={"epoch": epoch},
         attrs=annotated_de_attrs,
     )
 
@@ -58,7 +58,8 @@ def ultra_l1b(data_dict: dict):
     Parameters
     ----------
     data_dict: : dict
-        Dependencies dictionary.
+        Dictionary including the data itself and
+        its dependent data.
 
     Returns
     -------
