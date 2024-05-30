@@ -7,7 +7,10 @@ from imap_processing.ultra.l1b.ultra_l1b import create_dataset, ultra_l1b
 
 @pytest.fixture()
 def mock_data_dict():
-    epoch = np.array([760591786368000000, 760591787368000000, 760591788368000000])
+    epoch = np.array(
+        [760591786368000000, 760591787368000000, 760591788368000000],
+        dtype="datetime64[ns]",
+    )
     data_dict = {"imap_ultra_l1a_45de": xr.Dataset(coords={"epoch": epoch})}
     return data_dict
 
