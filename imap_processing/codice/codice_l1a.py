@@ -11,6 +11,8 @@ Use
     dataset = process_codice_l1a(packets)
 """
 
+from __future__ import annotations
+
 import logging
 from pathlib import Path
 
@@ -355,7 +357,7 @@ def process_codice_l1a(file_path: Path | str) -> xr.Dataset:
 
     Parameters
     ----------
-    file_path : str
+    file_path : Path | str
         Path to the CoDICE L0 file to process
 
     Returns
