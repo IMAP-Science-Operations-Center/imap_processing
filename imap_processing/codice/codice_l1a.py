@@ -350,7 +350,7 @@ def get_params(packet) -> tuple[int, int, int, int]:
     return table_id, plan_id, plan_step, view_id
 
 
-def process_codice_l1a(file_path: str) -> xr.Dataset:
+def process_codice_l1a(file_path: Path | str) -> xr.Dataset:
     """Process CoDICE l0 data to create l1a data products.
 
     Parameters
