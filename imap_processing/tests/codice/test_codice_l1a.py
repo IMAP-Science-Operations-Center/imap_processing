@@ -8,7 +8,6 @@ import xarray as xr
 
 from imap_processing import imap_module_directory
 from imap_processing.cdf.utils import load_cdf
-from imap_processing.codice.codice_l0 import decom_packets
 from imap_processing.codice.codice_l1a import process_codice_l1a
 
 EXPECTED_ARRAY_SHAPES = [
@@ -61,8 +60,8 @@ def test_l1a_data(request) -> xr.Dataset:
     dataset : xr.Dataset
         A ``xarray`` dataset containing the test data
     """
-    packets = decom_packets(request.param)
-    dataset = process_codice_l1a(packets)
+
+    dataset = process_codice_l1a(request.param)
     return dataset
 
 
