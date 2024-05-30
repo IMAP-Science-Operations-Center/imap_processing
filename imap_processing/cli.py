@@ -14,7 +14,6 @@ import argparse
 import logging
 import sys
 from abc import ABC, abstractmethod
-from collections import defaultdict
 from json import loads
 from pathlib import Path
 from typing import final
@@ -481,7 +480,7 @@ class Ultra(ProcessInstrument):
             products = [write_cdf(dataset) for dataset in datasets]
             return products
         elif self.data_level == "l1b":
-            data_dict = defaultdict(list)
+            data_dict = {}
             for dependency in dependencies:
                 dataset = load_cdf(dependency, to_datetime=True)
                 data_dict[dataset.attrs["Logical_source"]] = dataset

@@ -19,9 +19,8 @@ def test_create_dataset(mock_data_dict):
     assert "epoch" in dataset.coords
     assert dataset.coords["epoch"].dtype == "datetime64[ns]"
     assert dataset.attrs["Logical_source"] == "imap_ultra_l1b_45annotated-events"
-    assert "x_front" in dataset.data_vars
     assert dataset["x_front"].attrs["UNITS"] == "mm"
-    assert (dataset["x_front"].values == 0).all()
+    np.testing.assert_array_equal(dataset["x_front"], np.zeros(3))
 
 
 def test_ultra_l1b(mock_data_dict):
@@ -29,3 +28,11 @@ def test_ultra_l1b(mock_data_dict):
     output_datasets = ultra_l1b(mock_data_dict)
 
     assert len(output_datasets) == 1
+    assert (
+        output_datasets[0].attrs["Logical_source"]
+        == "imap_ultra_l1b_45annotated-events"
+    )
+    assert (
+        output_datasets[0].attrs["Logical_source_description"]
+        == "IMAP-Ultra Instrument Level-1B Annotated Event Data."
+    )

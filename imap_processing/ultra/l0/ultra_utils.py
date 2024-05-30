@@ -25,7 +25,7 @@ class PacketProperties(NamedTuple):
 # Define PacketProperties instances directly in the module namespace
 ULTRA_AUX = PacketProperties(
     apid=[880, 994],
-    logical_source=["imap_ultra_l1a_45aux", "imap_ultra_l1a_90aux"],
+    logical_source=["imap_ultra_l1a_45sensor-aux", "imap_ultra_l1a_90sensor-aux"],
     addition_to_logical_desc="Auxiliary",
     width=None,
     block=None,
@@ -34,7 +34,7 @@ ULTRA_AUX = PacketProperties(
 )
 ULTRA_RATES = PacketProperties(
     apid=[881, 945],
-    logical_source=["imap_ultra_l1a_45rates", "imap_ultra_l1a_90rates"],
+    logical_source=["imap_ultra_l1a_45sensor-rates", "imap_ultra_l1a_90sensor-rates"],
     addition_to_logical_desc="Image Rates",
     width=5,
     block=16,
@@ -43,7 +43,10 @@ ULTRA_RATES = PacketProperties(
 )
 ULTRA_TOF = PacketProperties(
     apid=[883, 947],
-    logical_source=["imap_ultra_l1a_45phxtof", "imap_ultra_l1a_90phxtof"],
+    logical_source=[
+        "imap_ultra_l1a_45sensor-histogram",
+        "imap_ultra_l1a_90sensor-histogram",
+    ],
     addition_to_logical_desc="Time of Flight Images",
     width=4,
     block=15,
@@ -52,7 +55,7 @@ ULTRA_TOF = PacketProperties(
 )
 ULTRA_EVENTS = PacketProperties(
     apid=[896, 960],
-    logical_source=["imap_ultra_l1a_45de", "imap_ultra_l1a_90de"],
+    logical_source=["imap_ultra_l1a_45sensor-de", "imap_ultra_l1a_90sensor-de"],
     addition_to_logical_desc="Single Events",
     width=None,
     block=None,

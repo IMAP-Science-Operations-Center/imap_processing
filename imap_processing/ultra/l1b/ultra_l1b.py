@@ -1,14 +1,10 @@
 """Calculates ULTRA L1b."""
 
 import json
-import logging
-import re
 from pathlib import Path
 
 import numpy as np
 import xarray as xr
-
-logger = logging.getLogger(__name__)
 
 
 def create_dataset(data_dict, name):
@@ -57,9 +53,8 @@ def ultra_l1b(data_dict: dict):
 
     Parameters
     ----------
-    data_dict: : dict
-        Dictionary including the data itself and
-        its dependent data.
+    data_dict : dict
+        The data itself and its dependent data.
 
     Returns
     -------
@@ -67,7 +62,7 @@ def ultra_l1b(data_dict: dict):
         List of xarray.Dataset
     """
     output_datasets = []
-    instrument_id = int(re.search(r"45|90", next(iter(data_dict.keys()))).group())
+    instrument_id = 45 if "45" in next(iter(data_dict.keys())) else 90
 
     # TODO: Add the other l1b products here.
     l1b_products = [
