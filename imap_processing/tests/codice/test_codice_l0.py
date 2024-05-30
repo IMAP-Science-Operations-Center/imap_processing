@@ -25,7 +25,7 @@ def decom_test_data() -> list:
 
     packet_file = Path(
         f"{imap_module_directory}/tests/codice/data/"
-        f"imap_codice_l0_hskp_20230822.pkts"
+        f"imap_codice_l0_hskp_20230822_v001.pkts"
     )
 
     data_packet_list = codice_l0.decom_packets(packet_file)
