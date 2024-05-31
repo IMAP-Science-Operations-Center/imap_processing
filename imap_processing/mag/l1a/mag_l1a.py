@@ -7,7 +7,7 @@ import numpy as np
 import xarray as xr
 
 from imap_processing.cdf.global_attrs import ConstantCoordinates
-from imap_processing.cdf.imap_cdf_data import ImapCdfData
+from imap_processing.cdf.cdf_attribute_manager import CdfAttributeManager
 from imap_processing.cdf.utils import calc_start_time, write_cdf
 from imap_processing.mag import mag_cdf_attrs
 from imap_processing.mag.l0 import decom_mag
@@ -85,9 +85,9 @@ def process_and_write_data(
     if not packet_data:
         return []
 
-    cdf_attrs = ImapCdfData()
+    cdf_attrs = CdfAttributeManager()
     cdf_attrs.add_instrument_global_attrs("mag")
-    cdf_attrs.add_variable_attrs("mag", "l1a")
+    cdf_attrs.load_variable_attrs("mag", "l1a")
 
     # TODO: Rework attrs to be better
     raw_attrs["Data_version"] = data_version

@@ -14,7 +14,7 @@ from space_packet_parser import parser, xtcedef
 from imap_processing import imap_module_directory
 from imap_processing.ccsds.ccsds_data import CcsdsData
 from imap_processing.cdf.global_attrs import ConstantCoordinates
-from imap_processing.cdf.imap_cdf_data import ImapCdfData
+from imap_processing.cdf.cdf_attribute_manager import CdfAttributeManager
 from imap_processing.cdf.utils import calc_start_time
 from imap_processing.mag import mag_cdf_attrs
 from imap_processing.mag.l0.mag_l0_data import MagL0, Mode
@@ -67,7 +67,7 @@ def decom_packets(packet_file_path: str | Path) -> dict[str, list[MagL0]]:
     return {"norm": norm_data, "burst": burst_data}
 
 
-def generate_dataset(l0_data: list[MagL0], cdf_attrs: ImapCdfData, logical_source_id: str) -> xr.Dataset:
+def generate_dataset(l0_data: list[MagL0], cdf_attrs: CdfAttributeManager, logical_source_id: str) -> xr.Dataset:
     """
     Generate a CDF dataset from the sorted raw L0 MAG data.
 
@@ -76,7 +76,7 @@ def generate_dataset(l0_data: list[MagL0], cdf_attrs: ImapCdfData, logical_sourc
     l0_data : list[MagL0]
         List of sorted L0 MAG data.
 
-    cdf_attrs : ImapCdfData
+    cdf_attrs : CdfAttributeManager
         Global and variable attributes for the dataset.
 
     Returns

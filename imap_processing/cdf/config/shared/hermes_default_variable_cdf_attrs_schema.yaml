@@ -1,0 +1,506 @@
+# Based on :  https://spdf.gsfc.nasa.gov/istp_guide/vattributes.html
+#             HERMES CDF Format Guide
+attribute_key:
+  # ===== EPOCH-ONLY VARIABLE ATTRIBUTES =====
+  TIME_BASE:
+    description: > 
+      fixed (0AD, 1900, 1970 (POSIX), J2000 (used by CDF_TIME_TT2000),
+      4714 BC (Julian)) or flexible (provider-defined)
+    derived: true
+    required: true    # NOT Required in ISTP Guide
+    overwrite: false
+    valid_values: null
+    alternate: null
+  RESOLUTION:
+    description: > 
+      Using ISO8601 relative time format, for example: "1s" = 1 second. 
+      Resolution provides the smallest change in time that is measured.
+    derived: true
+    required: true    # NOT Required in ISTP Guide
+    overwrite: false
+    valid_values: null
+    alternate: null
+  TIME_SCALE:
+    description: >
+      TT (same as TDT, used by CDF_TIME_TT2000), TAI (same as IAT, TT-32.184s), 
+      UTC (includes leap seconds), TDB (same as SPICE ET), EME1950 [default: UTC]
+    derived: true
+    required: true    # NOT Required in ISTP Guide
+    overwrite: false
+    valid_values: null
+    alternate: null
+  REFERENCE_POSITION:
+    description: >
+      Topocenter (local), Geocenter , rotating Earth geoid (used by CDF_TIME_TT2000). 
+      Reference_Position is optional metadata to account for time variance with position in 
+      the gravity wells and with relative velocity. While we could use a combined 
+      TimeSystem attribute that defines mission-specific time scales where needed, such as 
+      UTC-at-STEREO-B, it's cleaner to keep them separate as Time_Scale=UTC and 
+      Reference_Position=STEREO-B.
+    derived: true
+    required: true    # NOT Required in ISTP Guide
+    overwrite: false
+    valid_values: null
+    alternate: null
+  LEAP_SECONDS_INCLUDED:
+    description: > 
+      comma-delimited list (within brackets) of leap seconds included in the form of a lists
+      of ISO8601 times when each leap second was added, appended with the size of the leap 
+      second in ISO8601 relative time (+/- time, most commonly: "+1s") [default: standard 
+      list of leap seconds up to time of data]. Leap_Seconds_Included is needed to account 
+      for time scales that don't have all 34 (in 2009) leap seconds and for the clocks in 
+      various countries that started using leap seconds at different times. The full list is 
+      required to handle the equally or more common case where a time scale starts at a 
+      pecific UTC but continues on without leap seconds in TAI mode; this is basically what 
+      missions that don't add leap seconds are doing.
+      $ cat tai-utc.dat | awk 'ORS="," { val = $7 - prev } {prev = $7} { print $1$2"01+" val "s" }'
+    derived: false
+    required: false   # NOT Required in ISTP Guide
+    overwrite: false
+    valid_values: null
+    alternate: null
+  ABSOLUTE_ERROR:
+    description: >
+      Absolute or systematic error, in same units as Units attribute.
+    derived: false
+    required: false   # NOT Required in ISTP Guide
+    overwrite: false
+    valid_values: null
+    alternate: null
+  RELATIVE_ERROR:
+    description: >
+      Relative or random error, in same units as Units attribute - to specify the accuracy 
+      of the time stamps relative to each other. This is usually much smaller than Absolute_Error.
+    derived: false
+    required: false   # NOT Required in ISTP Guide
+    overwrite: false
+    valid_values: null
+    alternate: null
+  BIN_LOCATION:
+    description: >
+      relative position of time stamp to the data measurement bin, with 0.0 at the beginning 
+      of time bin and 1.0 at the end. Default is 0.5 for the time at the center of the data 
+      measurement. Since clock readings are usually truncated, the real value may be closer to 0.0.
+    derived: false
+    required: false   # NOT Required in ISTP Guide
+    overwrite: false
+    valid_values: null
+    alternate: null
+  # ===== DATA VARIABLE ATTRIBUTES =====
+  CATDESC:
+    description: >
+      This is a human readable description of the data variable. Generally, this is an 80-
+      character string which describes the variable and what it depends on.
+    derived: false
+    required: true
+    overwrite: false
+    valid_values: null
+    alternate: null
+  DELTA_MINUS_VAR:
+    description: >
+      DEPEND_i variables are typically physical values along the corresponding i-th
+      dimension of the parent data variable, such as energy levels or spectral frequencies. The
+      discreet set of values are located with respect to the sampling bin by
+      DELTA_PLUS_VAR and DELTA_MINUS_VAR, which hold the variable name
+      containing the distance from the value to the bin edge. It is strongly recommended that
+      HERMES DEPEND_i variables include DELTA_PLUS_VAR and
+      DELTA_MINUS_VAR attributes that point to the appropriate variable(s) located
+      elsewhere in the CDF file.
+    derived: false
+    required: false # NOT Required in ISTP Guide
+    overwrite: false
+    valid_values: null
+    alternate: null
+  DELTA_PLUS_VAR:
+    description: >
+      DEPEND_i variables are typically physical values along the corresponding i-th
+      dimension of the parent data variable, such as energy levels or spectral frequencies. The
+      discreet set of values are located with respect to the sampling bin by
+      DELTA_PLUS_VAR and DELTA_MINUS_VAR, which hold the variable name
+      containing the distance from the value to the bin edge. It is strongly recommended that
+      HERMES DEPEND_i variables include DELTA_PLUS_VAR and
+      DELTA_MINUS_VAR attributes that point to the appropriate variable(s) located
+      elsewhere in the CDF file.
+    derived: false
+    required: false # NOT Required in ISTP Guide
+    overwrite: false
+    valid_values: null
+    alternate: null
+  DEPEND_0:
+    description: >
+      Explicitly ties a data variable to the time variable on which it depends. All variables
+      which change with time must have a DEPEND_0 attribute defined. See section 5.2.1
+      which specifies the HERMES usage of DEPEND_0.
+    derived: true
+    required: true
+    overwrite: false
+    valid_values: null
+    alternate: null
+  DEPEND_i:         # For i'th dimensional data variables
+    description: >
+      Ties a dimensional data variable to a SUPPORT_DATA variable on which the i-th
+      dimension of the data variable depends. The number of DEPEND attributes must match
+      the dimensionality of the variable, i.e., a one-dimensional variable must have a
+      DEPEND_1, a two-dimensional variable must have a DEPEND_1 and a DEPEND_2
+      attribute, etc. The value of the attribute must be a variable in the same CDF data set. It is
+      strongly recommended that DEPEND_i variables hold values in physical units.
+      DEPEND_i variables also require their own attributes, as described in section 5.1.4.
+    derived: false
+    required: false
+    overwrite: false
+    valid_values: null
+    alternate: null
+  DISPLAY_TYPE:
+    description: >
+      This tells automated software, such as CDAWeb, how the data should be displayed.
+    derived: true
+    required: true
+    overwrite: false
+    valid_values:
+      time_series
+      time_series>noerrorbars
+      spectrogram
+      stack_plot
+      image
+    alternate: null
+  FIELDNAM:
+    description: >
+      A shortened version of CATDESC which can be used to label a plot axis or as a data
+      listing heading. This is a string, up to ~30 characters in length.
+    derived: true
+    required: true
+    overwrite: false
+    valid_values: null
+    alternate: null
+  FILLVAL:
+    description: >
+      Identifies the fill value used where data values are known to be bad or missing.
+      FILLVAL is required for time-varying variables. Fill data are always non-valid data. The
+      ISTP standard fill values are listed in Table 5-4.
+    derived: true
+    required: true
+    overwrite: false
+    valid_values: null
+    alternate: null
+  FORMAT:           # NOTE Only one of FORMAT or FORM_PTR should be present
+    description: >
+      This field allows software to properly format the associated data when displayed on a
+      screen or output to a file. Format can be specified using either Fortran or C format codes.
+      For instance, "F10.3" indicates that the data should be displayed across 10 characters
+      where 3 of those characters are to the right of the decimal. For a description of FORTRAN 
+      formatting codes see the docs here: 
+      https://docs.oracle.com/cd/E19957-01/805-4939/z40007437a2e/index.html
+    derived: true
+    required: true
+    overwrite: false
+    valid_values: null
+    alternate: FORM_PTR
+  FORM_PTR:
+    description: >
+      The value of this field is a variable which stores the character string that represents the
+      desired output format for the associated data.
+    derived: false
+    required: false
+    overwrite: false
+    valid_values: null
+    alternate: FORMAT
+  LABLAXIS:          # NOTE Only one of LABLAXIS or LABL_PTR_i should be present
+    description: >
+      Used to label a plot axis or to provide a heading for a data listing. This field is generally
+      6-10 characters. Only one of LABLAXIS or LABL_PTR_i should be present.
+    derived: true
+    required: true
+    overwrite: false
+    valid_values: null
+    alternate: LABL_PTR_1
+  LABL_PTR_i:
+    description: >
+      Used to label a dimensional variable when one value of LABLAXIS is not sufficient to
+      describe the variable or to label all the axes. LABL_PTR_i is used instead of
+      LABLAXIS, where i can take on any value from 1 to n where n is the total number of
+      dimensions of the original variable. The value of LABL_PTR_1 is a variable which will
+      contain the short character strings which describe the first dimension of the original
+      variable. The value of the attribute must be a variable in the same CDF data set and is
+      generally 6-10 characters. Only one of LABLAXIS or LABL_PTR_i should be present.
+    derived: false
+    required: false
+    overwrite: false
+    valid_values: null
+    alternate: LABLAXIS
+  SI_CONVERSION:
+    description: >
+      The conversion factor to SI units. This is the factor that the variable must be multiplied
+      by in order to convert it to generic SI units. This parameter contains two text fields
+      separated by the ">" delimiter. The first component is the conversion factor and the
+      second is the standard SI unit. Units are defined according to their standard SI symbols
+      (ie. Tesla = T, Newtons = N, Meters = m, etc.) For data variables that are inherently
+      unitless, and thus lack a conversion factor, this data attribute will be " > " where ' ' is
+      a blank space and the quotation marks are not included. Units which are not conveniently
+      transformed into SI should follow the blank syntax " > " described above.
+    derived: true
+    required: true  # NOT Required in ISTP Guide
+    overwrite: false
+    valid_values: null
+    alternate: null
+  UNITS:            # NOTE Only one of UNITS or UNIT_PTR should be present
+    description: >
+      A 6-20 character string that identifies the units of the variable (e.g. nT for magnetic
+      field). Use a blank character, rather than "None" or "unitless", for variables that have no
+      units (e.g., a ratio or a direction cosine). An active list of HERMES standard UNITS and
+      their SI_CONVERSIONs is maintained on the mission web-pages at
+      https://lasp.colorado.edu/galaxy/display/HERMES/Units+of+Measure, accessible via the
+      HERMES Science Working Team pages. Those pages also lay out the rules for
+      formatting the UNITS string.
+    derived: true
+    required: true
+    overwrite: false
+    valid_values: null
+    alternate: UNIT_PTR
+  UNIT_PTR:
+    description: >
+      The value of this field is a variable which stores short character strings which identify the
+      units of the variable. Use a blank character, rather than "None" or "unitless", for
+      variables that have no units (e.g., a ratio or a direction cosine). The value of this attribute
+      must be a variable in the same CDF data set.
+    derived: false
+    required: false
+    overwrite: false
+    valid_values: null
+    alternate: UNITS
+  VALIDMIN:
+    description: >
+      The minimum value for a particular variable that is expected over the lifetime of the
+      mission. Used by application software to filter out values that are out of range. The
+      value must match the data type of the variable.
+    derived: true
+    required: true
+    overwrite: false
+    valid_values: null
+    alternate: null
+  VALIDMAX:
+    description: >
+      The maximum value for a particular variable that is expected over the lifetime of the
+      mission. Used by application software to filter out values that are out of range. The
+      value must match the data type of the variable.
+    derived: true
+    required: true
+    overwrite: false
+    valid_values: null
+    alternate: null
+  VAR_TYPE:
+    description: >
+      Used in CDAWeb to indicate if the data should be used directly by users. 
+    derived: true
+    required: true
+    overwrite: false
+    valid_values:
+        data
+        support_data
+        metadata
+        ignore_data
+    alternate: null
+  COORDINATE_SYSTEM:
+    description: > 
+      All variables for which the values are dependent on the system of coordinates are
+      strongly recommended to have this attribute. This includes both full vectors, tensors, etc.
+      or individual values, e.g. of an angle with respect to some axis. The attribute is a text
+      string which takes the form: "XXX[>optional long name]"
+    derived: false
+    required: false   # NOT Required in HERMES Format Guide
+    overwrite: false
+    valid_values: null
+    alternate: null
+  TENSOR_ORDER:
+    description: > 
+      All variables which hold physical vectors, tensors, etc., or sub-parts thereof, are strongly
+      recommended to have their tensorial properties held by this numerical value. Vectors
+      have TENSOR_ORDER=1, pressure tensors have TENSOR_ORDER=2, etc. Variables
+      which hold single components or sub-parts of a vector or tensor, e.g., the x-component of
+      velocity or the three diagonal elements of a tensor, use this attribute to establish the
+      underlying object from which they are extracted. TENSOR_ORDER is a number, usually
+      held as a CDF_INT4, rather than a character string.
+    derived: false
+    required: false   # NOT Required in HERMES Format Guide
+    overwrite: false
+    valid_values: null
+    alternate: null
+  REPRESENTATION_i:
+    description: >
+      This strongly recommended attribute holds the way vector or tensor variables are held,
+      e.g., as Cartesian or polar forms, and their sequence order in the dimension i in which
+      they are held. Cartesians are indicated by x,y,z; polar coordinates by r (magnitude), t
+      (theta - from z-axis), p (phi - longitude or azimuth around z-axis from x axis), l (lambda
+      = latitude). Examples follow.
+    derived: false
+    required: false   # NOT Required in HERMES Format Guide
+    overwrite: false
+    valid_values: null
+    alternate: null
+  OPERATOR_TYPE:
+    description: > 
+      This has been introduced to describe HERMES quaternions (see Section 5.2 below). It
+      has allowed values "UNIT_QUATERNION" or "ROTATION_MATRIX" although other
+      values could be added. Unit quaternions correspond to pure spatial rotations.
+    derived: false
+    required: false   # NOT Required in HERMES Format Guide
+    overwrite: false
+    valid_values: null
+    alternate: null
+  WCSAXES:
+    description: > 
+      This is a FITS WCS Keyword being repurposed for handling WCS transformations with 
+      high-dimensional or spectral CDF data variables. 
+      The value field shall contain a non-negative integer no
+      greater than 999, representing the number of axes in the associated
+      data array.
+    derived: true
+    required: false   # NOT Required in HERMES Format Guide
+    overwrite: false
+    valid_values: null
+    alternate: null
+  MJDREF:
+    description: > 
+      This is a FITS WCS Keyword being repurposed for handling WCS transformations with 
+      high-dimensional or spectral CDF data variables. The value shall contain a floating
+      point number representing the reference time position of the time stamps along the 
+      0'th axis of the measurement.
+    derived: true
+    required: false   # NOT Required in HERMES Format Guide
+    overwrite: false
+    valid_values: null
+    alternate: null
+  TIMEUNIT:
+    description: > 
+      This is a FITS WCS Keyword being repurposed for handling WCS transformations with 
+      high-dimensional or spectral CDF data variables. The value shall contain a character
+      string giving the units of the time stamps along the 0'th axis of the measurement. 
+      The TIMEUNIT should match the CUNITi along the time axis of the measurement
+    derived: true
+    required: false   # NOT Required in HERMES Format Guide
+    overwrite: false
+    valid_values: null
+    alternate: null
+  TIMEDEL:
+    description: > 
+      This is a FITS WCS Keyword being repurposed for handling WCS transformations with 
+      high-dimensional or spectral CDF data variables. The value shall contain a floating
+      point number representing the resolution of the time stamps along the 0'th axis of 
+      the measurement. The TIMEDEL should match the CRDELi along the time axis of the 
+      measurement.
+    derived: true
+    required: false   # NOT Required in HERMES Format Guide
+    overwrite: false
+    valid_values: null
+    alternate: null
+  CNAMEi:
+    description: > 
+      This is a FITS WCS Keyword being repurposed for handling WCS transformations with 
+      high-dimensional or spectral CDF data variables. This metadata attribte should be 
+      used for the i'th dimension (1-based) and reapeated for all WCSAXES dimensions. 
+      The value shall contain a charachter string represnting the name of the i'th axis.
+      The name is used for comment/documentation purposes only and is not used as a part
+      of the i'th axis coordinate transformations.
+    derived: true
+    required: false   # NOT Required in HERMES Format Guide
+    overwrite: false
+    valid_values: null
+    alternate: null
+  CTYPEi:
+    description: > 
+      This is a FITS WCS Keyword being repurposed for handling WCS transformations with 
+      high-dimensional or spectral CDF data variables. This metadata attribte should be 
+      used for the i'th dimension (1-based) and reapeated for all WCSAXES dimensions. 
+      The value field shall contain a character string, giving
+      the name of the coordinate represented by axis i.
+    derived: true
+    required: false   # NOT Required in HERMES Format Guide
+    overwrite: false
+    valid_values: null
+    alternate: null
+  CUNITi:
+    description: > 
+      This is a FITS WCS Keyword being repurposed for handling WCS transformations with 
+      high-dimensional or spectral CDF data variables. This metadata attribte should be 
+      used for the i'th dimension (1-based) and reapeated for all WCSAXES dimensions. 
+      The value shall be the units along axis i, compatible with CTYPEi to be used for
+      scaling and coordinate transformations along the i'th axis. 
+    derived: true
+    required: false   # NOT Required in HERMES Format Guide
+    overwrite: false
+    valid_values: null
+    alternate: null
+  CRPIXi:
+    description: > 
+      This is a FITS WCS Keyword being repurposed for handling WCS transformations with 
+      high-dimensional or spectral CDF data variables. This metadata attribte should be 
+      used for the i'th dimension (1-based) and reapeated for all WCSAXES dimensions. 
+      The value field shall contain a floating point number, 
+      identifying the location of a reference point along axis i, in units of
+      the axis index.  This value is based upon a counter that runs from 1 to
+      NAXISn with an increment of 1 per pixel.  The reference point value
+      need not be that for the center of a pixel nor lie within the actual
+      data array.  Use comments to indicate the location of the index point
+      relative to the pixel.
+    derived: true
+    required: false   # NOT Required in HERMES Format Guide
+    overwrite: false
+    valid_values: null
+    alternate: null
+  CRVALi:
+    description: > 
+      This is a FITS WCS Keyword being repurposed for handling WCS transformations with 
+      high-dimensional or spectral CDF data variables. This metadata attribte should be 
+      used for the i'th dimension (1-based) and reapeated for all WCSAXES dimensions. 
+      The value field shall contain a floating point number,
+      giving the value of the coordinate specified by the CTYPEn keyword at
+      the reference point CRPIXi.
+    derived: true
+    required: false   # NOT Required in HERMES Format Guide
+    overwrite: false
+    valid_values: null
+    alternate: null
+  CDELTi:
+    description: > 
+      This is a FITS WCS Keyword being repurposed for handling WCS transformations with 
+      high-dimensional or spectral CDF data variables. This metadata attribte should be 
+      used for the i'th dimension (1-based) and reapeated for all WCSAXES dimensions. 
+      The value field shall contain a floating point number 
+      giving the partial derivative of the coordinate specified by the CTYPEi 
+      keywords with respect to the pixel index, evaluated at the reference 
+      point CRPIXi, in units of the coordinate specified by  the CTYPEi 
+      keyword.
+    derived: true
+    required: false   # NOT Required in HERMES Format Guide
+    overwrite: false
+    valid_values: null
+    alternate: null
+data:
+  - CATDESC
+  - DEPEND_0
+  - DISPLAY_TYPE
+  - FIELDNAM
+  - FILLVAL
+  - FORMAT
+  - LABLAXIS
+  - SI_CONVERSION
+  - UNITS
+  - VALIDMIN
+  - VALIDMAX
+  - VAR_TYPE 
+support_data:
+  - CATDESC
+  - FIELDNAM
+  - FILLVAL
+  - FORMAT
+  - LABLAXIS
+  - SI_CONVERSION
+  - UNITS
+  - VALIDMIN
+  - VALIDMAX
+  - VAR_TYPE
+metadata:
+  - CATDESC
+  - FIELDNAM
+  - FILLVAL
+  - FORMAT
+  - VAR_TYPE

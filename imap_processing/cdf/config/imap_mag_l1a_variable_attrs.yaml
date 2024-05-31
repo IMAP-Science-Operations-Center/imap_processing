@@ -1,23 +1,24 @@
-default_attrs:
+default_attrs: &default
   # Assumed values for all variable attrs unless overwritten
   DEPEND_0: epoch
   DISPLAY_TYPE: time_series
   FILLVAL: -9223372036854775808    
   FORMAT: I12
   VALIDMIN: -9223372036854775808    
-  VALIDMAX: 9223372036854775807    
+  VALIDMAX: 9223372036854775807
+  VAR_TYPE: data
   
 mag_raw_vector_attrs:
+  <<: *default
   CATDESC: Raw unprocessed magnetic field vector data in bytes
   DEPEND_1: direction
   FIELDNAM: Magnetic Field Vector
   LABLAXIS: Raw binary magnetic field vector data
   FORMAT: I3
   UNITS: counts
-  VAR_TYPE: data
-  base: default_attrs
 
 vector_attrs:
+    <<: *default
     CATDESC: Magnetic field vector with x y z and sensor range varying by time
     DEPEND_1: direction
     FIELDNAM: Magnetic Field Vector
@@ -25,126 +26,132 @@ vector_attrs:
     FILLVAL: 9223372036854775807    
     FORMAT: I3
     UNITS: counts
-    VAR_TYPE: data
-    base: default_attrs
 
-mag_support_attrs:
+mag_support_attrs: &support_default
+    <<: *default
     VAR_TYPE: support_data
-    base: default_attrs
 
-mag_metadata_attrs: 
+mag_metadata_attrs: &metadata_default
+    <<: *default
     VAR_TYPE: metadata
-    base: default_attrs
-    
+
 mag_flag_attrs:
+    <<: *default  
     VALIDMIN: 0
     VALIDMAX: 1
     DISPLAY_TYPE: time_series
     FILLVAL: 255
     FORMAT: I1
-    base: default_attrs
     
 raw_direction_attrs: 
+    <<: *default
     CATDESC: Raw magnetic field vector binary length
     FIELDNAM: Raw magnetic field vector binary length
     LABLAXIS: Magnetic field vector directions
-    base: direction_attrs
 
 direction_attrs: 
+    <<: *default
     CATDESC: Magnetic field vector
     FIELDNAM: \[xyz\] magnetic field vector
     FORMAT: I3
     VAR_TYPE: support_data
     DISPLAY_TYPE: time_series
     LABLAXIS: Magnetic field vector
-    base: default_attrs
     
 PUS_SPARE1: 
+    <<: *support_default
     CATDESC: Spare header from ESA Standard
     FIELDNAM: Spare header
-    base: mag_support_attrs
 
 PUS_VERSION: 
+    <<: *support_default
     CATDESC: PUS Version number
     FIELDNAM: PUS Version number
-    base: mag_support_attrs
 
 PUS_SPARE2: 
+    <<: *support_default
     CATDESC: Spare header from ESA Standard
     FIELDNAM: Spare header
-    base: mag_support_attrs
 
 PUS_STYPE: 
+    <<: *support_default
     CATDESC: PUS Service type
     FIELDNAM: PUS Service type
-    base: mag_support_attrs
 
 PUS_SSUBTYPE: 
+    <<: *support_default
     CATDESC: PUS Service subtype, the number of seconds of data minus 1
     FIELDNAM: Number of seconds of data minus 1
-    base: mag_support_attrs
 
 COMPRESSION: 
+    <<: *support_default
     CATDESC: Indicates if the data is compressed, with 1 indicating the data is compressed
     FIELDNAM: Data is compressed
-    base: mag_support_attrs
+
 MAGO_ACT: 
+    <<: *support_default
     CATDESC: MAGO Active status
     FIELDNAM: MAGO Active status boolean
-    base: mag_support_attrs
 
 MAGI_ACT: 
+    <<: *support_default
     CATDESC: MAGI Active status
     FIELDNAM: MAGI Active status boolean
-    base: mag_support_attrs
 
 PRI_SENS: 
+    <<: *support_default
     CATDESC: Indicates which instrument is designated as primary. 0 is MAGo, 1 is MAGi
     FIELDNAM: MAGi primary sensor boolean
-    base: mag_support_attrs
 
 SPARE1: 
+    <<: *support_default
     CATDESC: Spare
     FIELDNAM: Spare
-    base: mag_support_attrs
 
 PRI_VECSEC: 
+    <<: *support_default
     CATDESC: Primary vectors per second count
     FIELDNAM: Primary vectors per second
-    base: mag_support_attrs
 
 SEC_VECSEC: 
+    <<: *support_default
     CATDESC: Secondary vectors per second count
     FIELDNAM: Secondary vectors per second
-    base: mag_support_attrs
+    
 
 SPARE2: 
+    <<: *support_default
     CATDESC: Spare
     FIELDNAM: Spare
-    base: mag_support_attrs
+    
 
 PRI_COARSETM: 
+    <<: *support_default
     CATDESC: Primary coarse time, mission SCLK in whole seconds
     FIELDNAM: Primary coarse time (s)
-    base: mag_support_attrs
+    
 
 PRI_FNTM: 
+    <<: *support_default
     CATDESC: Primary fine time, mission SCLK in 16bit subseconds
     FIELDNAM: Primary fine time (16 bit subsecond)
-    base: mag_support_attrs
+    
 
 SEC_COARSETM: 
+    <<: *support_default
     CATDESC: Secondary coarse time, mission SCLK in whole seconds
     FIELDNAM: Secondary coarse time (s)
-    base: mag_support_attrs
+    
 
 SEC_FNTM: 
+    <<: *support_default
     CATDESC: Secondary fine time, mission SCLK in 16bit subseconds
     FIELDNAM: Secondary fine time (16 bit subsecond)
-    base: mag_support_attrs
+    
 
 VECTORS: 
+    <<: *support_default
     CATDESC: Raw binary value of MAG Science vectors before processing
     FIELDNAM: Raw vector binary
-    base: mag_support_attrs
+    
 
