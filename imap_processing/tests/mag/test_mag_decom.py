@@ -1,13 +1,10 @@
-import inspect
 from pathlib import Path
 
 import pandas as pd
 
 from imap_processing.cdf import global_attrs
-from imap_processing.cdf.cdf_attribute_manager import CdfAttributeManager
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import load_cdf, write_cdf
-from imap_processing.mag import mag_cdf_attrs
 from imap_processing.mag.l0.decom_mag import decom_packets, generate_dataset
 
 
@@ -60,15 +57,14 @@ def test_mag_raw_xarray():
     template.add_instrument_variable_attrs("mag", "l1a")
 
     norm_data = generate_dataset(l0_norm, template, "imap_mag_l1a_norm-raw")
-    burst_data = generate_dataset(
-        l0_burst, template, "imap_mag_l1a_burst-raw")
+    burst_data = generate_dataset(l0_burst, template, "imap_mag_l1a_burst-raw")
 
     required_attrs = list(
         global_attrs.GlobalInstrumentAttrs("", "", "").output().keys()
     )
 
     for required_attr in required_attrs:
-        assert(required_attr in list(norm_data.attrs.keys()))
+        assert required_attr in list(norm_data.attrs.keys())
 
     # TODO: Fails because we have a value in GlobalInstrumentAttrs that is not in the
     # default global schema
@@ -98,9 +94,7 @@ def test_mag_raw_cdf_generation():
     template.add_instrument_variable_attrs("mag", "l1a")
 
     norm_data = generate_dataset(l0_norm, template, "imap_mag_l1a_norm-raw")
-    burst_data = generate_dataset(
-        l0_burst, template, "imap_mag_l1a_burst-raw"
-    )
+    burst_data = generate_dataset(l0_burst, template, "imap_mag_l1a_burst-raw")
 
     output = write_cdf(norm_data)
     assert output.exists()

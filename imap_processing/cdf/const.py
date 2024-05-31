@@ -1,8 +1,8 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
+# ruff: noqa: N816
 """
 Various constants defined in cdf.h and used in pycdf.
+
 Most constants referred to in the CDF manuals are provided by this module.
 E.g., to create a CDF and add a variable of type EPOCH:
 

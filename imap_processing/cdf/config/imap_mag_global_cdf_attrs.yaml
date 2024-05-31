@@ -1,5 +1,6 @@
-Descriptor: MAG>Magnetometer
-TEXT: >
+Descriptor: &desc
+  MAG>Magnetometer
+TEXT: &txt >
   The IMAP magnetometer (MAG consists of a pair of identical magnetometers
   which each measure the magnetic field in three directions in the vicinity of
   the spacecraft.
@@ -9,6 +10,8 @@ TEXT: >
   https://imap.princeton.edu/instruments/mag for more details.
 
 imap_mag_l1a_norm-raw:
+    Descriptor: *desc
+    TEXT: *txt
     Data_type: L1A_raw-norm>Level-1A raw normal rate
     Logical_source: imap_mag_l1a_norm-raw
     Logical_source_description: IMAP Mission MAG Normal Rate Instrument Level-1A Data.
