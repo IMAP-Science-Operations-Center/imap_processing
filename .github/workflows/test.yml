@@ -29,6 +29,8 @@ jobs:
 
       - name: Install dependencies and app
         run: |
+          # Need to install extra plugins first
+          poetry self add "poetry-dynamic-versioning[plugin]"
           poetry install --extras "test"
 
       - name: Testing
