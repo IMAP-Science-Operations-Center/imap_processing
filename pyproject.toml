@@ -4,6 +4,7 @@ build-backend = "poetry_dynamic_versioning.backend"
 
 [tool.poetry]
 name = "imap-processing"
+# Gets updated dynamically by the poetry-dynamic-versioning plugin
 version = "0.0.0"
 description = "IMAP Science Operations Center Processing"
 authors = ["IMAP SDC Developers <imap-sdc@lists.lasp.colorado.edu>"]
