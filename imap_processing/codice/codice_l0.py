@@ -18,16 +18,6 @@ from pathlib import Path
 
 from imap_processing import decom, imap_module_directory
 
-PACKET_TO_XTCE_MAPPING = {
-    "raw_ccsds_20230822_122700Z_idle.bin": "P_COD_NHK.xml",
-    "lo_fsw_view_3_ccsds.bin": "P_COD_LO_PRIORITY_COUNTS.xml",
-    "lo_fsw_view_4_ccsds.bin": "P_COD_LO_PRIORITY_COUNTS.xml",
-    "lo_fsw_view_5_ccsds.bin": "P_COD_LO_SW_SPECIES_COUNTS.xml",
-    "lo_fsw_view_6_ccsds.bin": "P_COD_LO_NSW_SPECIES_COUNTS.xml",
-    "lo_fsw_view_7_ccsds.bin": "P_COD_LO_SW_ANGULAR_COUNTS.xml",
-    "lo_fsw_view_8_ccsds.bin": "P_COD_LO_NSW_ANGULAR_COUNTS.xml",
-}
-
 
 def decom_packets(packet_file: Path) -> list:
     """Decom CoDICE data packets using CoDICE packet definition.
@@ -42,7 +32,19 @@ def decom_packets(packet_file: Path) -> list:
     list : list
         all the unpacked data.
     """
+    # Determine the mapping between L0 filename and corresponding XML filename
+    # via the descriptor. For example:
+    # packet_file = imap_codice_l0_lo-sw-species_YYYYMMDD_v001.pkts
+    descriptor = (
+        packet_file.stem.split("imap_codice_l0_")[
+            -1
+        ]  # lo-sw-species_YYYYMMDD_v001.pkts
+        .split("_")[0]  # lo-sw-species
+        .upper()  # LO-SW-SPECIES
+        .replace("-", "_")  # LO_SW_SPECIES
+    )
+    filename = f"P_COD_{descriptor}.xml"  # P_COD_LO_SW_SPECIES.xml
     xtce_document = Path(
-        f"{imap_module_directory}/codice/packet_definitions/{PACKET_TO_XTCE_MAPPING[packet_file.name]}"
+        f"{imap_module_directory}/codice/packet_definitions/{filename}"
     )
     return decom.decom_packets(packet_file, xtce_document)

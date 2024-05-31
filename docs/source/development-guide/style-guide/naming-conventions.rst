@@ -34,8 +34,9 @@ The general filename convention is as follows::
   can have any text or numbers as long as it doesn't include underscores. The following is a list of expected
   descriptors for each instrument:
 
-  * CoDICE: ``hskp``, ``eng``, ``lo-priority``, ``lo-sw-angular``, ``lo-nsw-angular``, ``lo-pha``, ``hi-pha``,
-    ``lo-sw-species``, ``lo-nsw-species``, ``hi-omni``, ``hi-sectored``
+  * CoDICE: ``hskp``, ``lo-counters-aggregated``, ``lo-counters-singles``, ``hi-counters-aggregated``,
+    ``hi-counters-singles``, ``lo-sw-priority``, ``lo-nsw-priority``, ``lo-sw-angular``, ``lo-nsw-angular``, ``lo-pha``,
+    ``hi-pha``, ``lo-sw-species``, ``lo-nsw-species``, ``hi-omni``, ``hi-sectored``, ``lo-ialirt``, ``hi-ialirt``
   * GLOWS: ``histogram``, ``de``
   * HIT: TBD
   * IDEX: ``sci``

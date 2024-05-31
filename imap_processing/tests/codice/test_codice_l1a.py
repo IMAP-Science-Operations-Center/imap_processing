@@ -10,44 +10,68 @@ from imap_processing import imap_module_directory
 from imap_processing.cdf.utils import load_cdf
 from imap_processing.codice.codice_l1a import process_codice_l1a
 
+# TODO: Add test that processes a file with multiple APIDs
+
 EXPECTED_ARRAY_SHAPES = [
     (99,),  # hskp
+    (1, 128),  # lo-sw-angular-counts
+    (1, 128),  # lo-nsw-angular-counts
+    (1, 128),  # lo-sw-priority-counts
+    (1, 128),  # lo-nsw-priority-counts
     (1, 128),  # lo-sw-species-counts
-    (1, 112),  # lo-nsw-species-counts
-    (1, 211),  # lo-sw-priority-counts
-    (1, 5016),  # lo-sw-angular-counts
+    (1, 128),  # lo-nsw-species-counts
 ]
 EXPECTED_ARRAY_SIZES = [
     123,  # hskp
+    6,  # lo-sw-angular-counts
+    3,  # lo-nsw-angular-counts
+    7,  # lo-sw-priority-counts
+    4,  # lo-nsw-priority-counts
     18,  # lo-sw-species-counts
     10,  # lo-nsw-species-counts
-    7,  # lo-sw-priority-counts
-    6,  # lo-sw-angular-counts
 ]
 EXPECTED_FILENAMES = [
     "imap_codice_l1a_hskp_20100101_v001.cdf",
-    "imap_codice_l1a_lo-sw-species-counts_20240319_v001.cdf",
-    "imap_codice_l1a_lo-nsw-species-counts_20240319_v001.cdf",
-    "imap_codice_l1a_lo-sw-priority-counts_20240319_v001.cdf",
-    "imap_codice_l1a_lo-sw-angular-counts_20240319_v001.cdf",
+    "imap_codice_l1a_lo-sw-angular-counts_20240429_v001.cdf",
+    "imap_codice_l1a_lo-nsw-angular-counts_20240429_v001.cdf",
+    "imap_codice_l1a_lo-sw-priority-counts_20240429_v001.cdf",
+    "imap_codice_l1a_lo-nsw-priority-counts_20240429_v001.cdf",
+    "imap_codice_l1a_lo-sw-species-counts_20240429_v001.cdf",
+    "imap_codice_l1a_lo-nsw-species-counts_20240429_v001.cdf",
 ]
 TEST_PACKETS = [
     Path(
-        f"{imap_module_directory}/tests/codice/data/raw_ccsds_20230822_122700Z_idle.bin"
+        f"{imap_module_directory}/tests/codice/data/imap_codice_l0_hskp_20230822_v001.pkts"
     ),
-    Path(f"{imap_module_directory}/tests/codice/data/lo_fsw_view_5_ccsds.bin"),
-    Path(f"{imap_module_directory}/tests/codice/data/lo_fsw_view_6_ccsds.bin"),
-    Path(f"{imap_module_directory}/tests/codice/data/lo_fsw_view_3_ccsds.bin"),
-    Path(f"{imap_module_directory}/tests/codice/data/lo_fsw_view_7_ccsds.bin"),
+    Path(
+        f"{imap_module_directory}/tests/codice/data/imap_codice_l0_lo-sw-angular_20240429_v001.pkts"
+    ),
+    Path(
+        f"{imap_module_directory}/tests/codice/data/imap_codice_l0_lo-nsw-angular_20240429_v001.pkts"
+    ),
+    Path(
+        f"{imap_module_directory}/tests/codice/data/imap_codice_l0_lo-sw-priority_20240429_v001.pkts"
+    ),
+    Path(
+        f"{imap_module_directory}/tests/codice/data/imap_codice_l0_lo-nsw-priority_20240429_v001.pkts"
+    ),
+    Path(
+        f"{imap_module_directory}/tests/codice/data/imap_codice_l0_lo-sw-species_20240429_v001.pkts"
+    ),
+    Path(
+        f"{imap_module_directory}/tests/codice/data/imap_codice_l0_lo-nsw-species_20240429_v001.pkts"
+    ),
 ]
 
 # Placeholder for validation data files
 VALIDATION_DATA = [
     f"{imap_module_directory}/tests/codice/data/validation_hskp.cdf",
+    f"{imap_module_directory}/tests/codice/data/validataion_lo-sw-angular-counts.cdf",
+    f"{imap_module_directory}/tests/codice/data/validataion_lo-nsw-angular-counts.cdf",
+    f"{imap_module_directory}/tests/codice/data/validataion_lo-sw-priority-counts.cdf",
+    f"{imap_module_directory}/tests/codice/data/validataion_lo-nsw-priority-counts.cdf",
     f"{imap_module_directory}/tests/codice/data/validation_lo-sw-species-counts.cdf",
     f"{imap_module_directory}/tests/codice/data/validation_lo-nsw-species-counts.cdf",
-    f"{imap_module_directory}/tests/codice/data/validataion_lo-sw-priority-counts.cdf",
-    f"{imap_module_directory}/tests/codice/data/validataion_lo-sw-angular-counts.cdf",
 ]
 
 
