@@ -10,13 +10,14 @@ import numpy as np
 import xarray as xr
 from cdflib.xarray import cdf_to_xarray, xarray_to_cdf
 
-from imap_processing import launch_time
+import imap_processing
 
 logger = logging.getLogger(__name__)
 
 
 def calc_start_time(
-    shcoarse_time: float, launch_time: Optional[np.datetime64] = launch_time
+    shcoarse_time: float,
+    launch_time: Optional[np.datetime64] = imap_processing.launch_time,
 ) -> np.datetime64:
     """Calculate the datetime64 from the CCSDS secondary header information.
 
@@ -129,6 +130,8 @@ def write_cdf(dataset: xr.Dataset):
     # Insert the final attribute:
     # The Logical_file_id is always the name of the file without the extension
     dataset.attrs["Logical_file_id"] = file_path.stem
+    # Add the processing version to the dataset attributes
+    dataset.attrs["ground_software_version"] = imap_processing.__version__
 
     # Convert the xarray object to a CDF
     xarray_to_cdf(
