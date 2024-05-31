@@ -8,8 +8,6 @@ There are utilities to read and write IMAP data files in
 the CDF file format, and to interact with the SPICE toolkit.
 """
 
-__version__ = "0.2.0"
-
 # When imap_processing is installed using pip, we need to be able to find the
 # packet definitions directory path.
 #
@@ -17,6 +15,8 @@ __version__ = "0.2.0"
 from pathlib import Path
 
 import numpy as np
+
+from imap_processing._version import __version__, __version_tuple__  # noqa: F401
 
 # Eg. imap_module_directory = /usr/local/lib/python3.11/site-packages/imap_processing
 imap_module_directory = Path(__file__).parent
