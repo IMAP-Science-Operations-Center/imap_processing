@@ -12,11 +12,11 @@
         "TEXT": "Ultra captures images of very energetic neutral atoms, particularly hydrogen (H) atoms, produced in the solar system at the heliosheath, the region where the solar wind slows, compresses, and becomes much hotter as it meets the interstellar medium (ISM). The instrument also measures the distribution of solar wind electrons and protons, and the magnetic field. See https://imap.princeton.edu/instruments/ultra for more details.",
         "Instrument_type": "Particles (space)"
     },
-    "imap_ultra_l1b_45annotated-de": {
+    "imap_ultra_l1b_45sensor-de": {
         "dataset_attrs": {
             "Logical_file_id": "<to-be-replaced-in-code>",
             "Data_type": "L1B_Annotated>Level-1B Annotated Event",
-            "Logical_source": "imap_ultra_l1b_45annotated-events",
+            "Logical_source": "imap_ultra_l1b_45sensor-de",
             "Logical_source_description": "IMAP-Ultra Instrument Level-1B Annotated Event Data.",
             "Project": "STP>Solar-Terrestrial Physics",
             "Source_name": "IMAP>Interstellar Mapping and Acceleration Probe",

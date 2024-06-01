@@ -23,7 +23,7 @@ def create_dataset(data_dict, name):
     """
     # TODO: this will change to actual l1b data dictionary
     # For now we are using it for retrieving the epoch.
-    dataset = data_dict["imap_ultra_l1a_45de"]
+    dataset = data_dict["imap_ultra_l1a_45sensor-de"]
 
     # Load metadata from the metadata file
     with open(Path(__file__).parent.parent / "ultra_metadata_example.json") as f:
@@ -66,7 +66,7 @@ def ultra_l1b(data_dict: dict):
 
     # TODO: Add the other l1b products here.
     l1b_products = [
-        f"imap_ultra_l1b_{instrument_id}annotated-de",
+        f"imap_ultra_l1b_{instrument_id}sensor-de",
         # f"imap_ultra_l1b_{instrument_id}extended-spin",
         # f"imap_ultra_l1b_{instrument_id}culling-mask",
         # f"imap_ultra_l1b_{instrument_id}badtimes"
