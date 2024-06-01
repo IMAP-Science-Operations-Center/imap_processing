@@ -293,7 +293,7 @@ def ultra_l1a(packet_file: Path, apid: Optional[int] = None):
 
     Parameters
     ----------
-    packet_file : dict
+    packet_file : Path
         Path to the CCSDS data packet file.
     apid : int, optional
         Optional apid
