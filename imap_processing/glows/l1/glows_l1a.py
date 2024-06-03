@@ -339,9 +339,11 @@ def generate_histogram_dataset(
             int(hist.flags["is_generated_on_ground"])
         )
 
+        # Add support_data keys to the support_data dictionary
         for key in support_data.keys():
             if key not in ["flags_set_onboard", "is_generated_on_ground"]:
                 support_data[key].append(hist.__getattribute__(key))
+        # For the time varying data, convert to seconds and then append
         for key in time_metadata.keys():
             time_metadata[key].append(hist.__getattribute__(key).to_seconds())
         time_data[index] = epoch_time
@@ -352,9 +354,10 @@ def generate_histogram_dataset(
         dims=["epoch"],
         attrs=ConstantCoordinates.EPOCH,
     )
+    bin_count = 3600  # TODO: Is it always 3600 bins?
 
     bins = xr.DataArray(
-        np.arange(3600),  # TODO: Is it always 3600 bins?
+        np.arange(bin_count),
         name="bins",
         dims=["bins"],
         attrs=glows_cdf_attrs.bins_attrs.output(),
