@@ -97,6 +97,7 @@ def write_cdf(dataset: xr.Dataset):
     # Create the filename from the global attributes
     # Logical_source looks like "imap_swe_l2_counts-1min"
     instrument, data_level, descriptor = dataset.attrs["Logical_source"].split("_")[1:]
+
     start_time = np.datetime_as_string(dataset["epoch"].values[0], unit="D").replace(
         "-", ""
     )
