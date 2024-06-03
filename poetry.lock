@@ -1077,7 +1077,7 @@ files = [
 name = "pyyaml"
 version = "6.0.1"
 description = "YAML parser and emitter for Python"
-optional = true
+optional = false
 python-versions = ">=3.6"
 files = [
     {file = "PyYAML-6.0.1-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:d858aa552c999bc8a8d57426ed01e40bef403cd8ccdd0fc5f6f04a00414cac2a"},
@@ -1678,4 +1678,4 @@ tools = ["openpyxl", "pandas"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9,<4"
-content-hash = "e665245b61bb724875219433343bd6b4677c6faf4e1f1e2ce67bdb96992b938f"
+content-hash = "32f3d71ce100ef91419f1eee229b61bfcadccea36d0929d00f9f62ff6f9acca0"
