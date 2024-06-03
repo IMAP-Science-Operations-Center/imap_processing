@@ -7,14 +7,11 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import numpy as np
 import yaml
 
-from imap_processing.cdf import const
-
 DEFAULT_GLOBAL_CDF_ATTRS_FILE = "imap_default_global_cdf_attrs.yaml"
-DEFAULT_GLOBAL_CDF_ATTRS_SCHEMA_FILE = "hermes_default_global_cdf_attrs_schema.yaml"
-DEFAULT_VARIABLE_CDF_ATTRS_SCHEMA_FILE = "hermes_default_variable_cdf_attrs_schema.yaml"
+DEFAULT_GLOBAL_CDF_ATTRS_SCHEMA_FILE = "default_global_cdf_attrs_schema.yaml"
+DEFAULT_VARIABLE_CDF_ATTRS_SCHEMA_FILE = "default_variable_cdf_attrs_schema.yaml"
 
 
 class CdfAttributeManager:
@@ -66,55 +63,11 @@ class CdfAttributeManager:
         # TODO: copied from hermes_core. Currently we can use default schema, but
         # We should add some way of extending the schema and remove all the HERMES
         # specific stuff
-        # Data Validation, Complaiance, Derived Attributes
+        # Data Validation, Complaiance,
         self.global_attribute_schema = self._load_default_global_attr_schema()
 
         # Data Validation and Compliance for Variable Data
         self.variable_attribute_schema = self._load_default_variable_attr_schema()
-
-        self.cdftypenames = {
-            const.CDF_BYTE.value: "CDF_BYTE",
-            const.CDF_CHAR.value: "CDF_CHAR",
-            const.CDF_INT1.value: "CDF_INT1",
-            const.CDF_UCHAR.value: "CDF_UCHAR",
-            const.CDF_UINT1.value: "CDF_UINT1",
-            const.CDF_INT2.value: "CDF_INT2",
-            const.CDF_UINT2.value: "CDF_UINT2",
-            const.CDF_INT4.value: "CDF_INT4",
-            const.CDF_UINT4.value: "CDF_UINT4",
-            const.CDF_INT8.value: "CDF_INT8",
-            const.CDF_FLOAT.value: "CDF_FLOAT",
-            const.CDF_REAL4.value: "CDF_REAL4",
-            const.CDF_DOUBLE.value: "CDF_DOUBLE",
-            const.CDF_REAL8.value: "CDF_REAL8",
-            const.CDF_EPOCH.value: "CDF_EPOCH",
-            const.CDF_EPOCH16.value: "CDF_EPOCH16",
-            const.CDF_TIME_TT2000.value: "CDF_TIME_TT2000",
-        }
-        self.numpytypedict = {
-            const.CDF_BYTE.value: np.int8,
-            const.CDF_CHAR.value: np.int8,
-            const.CDF_INT1.value: np.int8,
-            const.CDF_UCHAR.value: np.uint8,
-            const.CDF_UINT1.value: np.uint8,
-            const.CDF_INT2.value: np.int16,
-            const.CDF_UINT2.value: np.uint16,
-            const.CDF_INT4.value: np.int32,
-            const.CDF_UINT4.value: np.uint32,
-            const.CDF_INT8.value: np.int64,
-            const.CDF_FLOAT.value: np.float32,
-            const.CDF_REAL4.value: np.float32,
-            const.CDF_DOUBLE.value: np.float64,
-            const.CDF_REAL8.value: np.float64,
-            const.CDF_EPOCH.value: np.float64,
-            const.CDF_EPOCH16.value: np.dtype((np.float64, 2)),
-            const.CDF_TIME_TT2000.value: np.int64,
-        }
-        self.timetypes = [
-            const.CDF_EPOCH.value,
-            const.CDF_EPOCH16.value,
-            const.CDF_TIME_TT2000.value,
-        ]
 
         # Load Default IMAP Global Attributes
         self.global_attributes = self._load_yaml_data(
@@ -207,19 +160,16 @@ class CdfAttributeManager:
         for attr_name, attr_schema in self.global_attribute_schema.items():
             if attr_name in self.global_attributes:
                 output[attr_name] = self.global_attributes[attr_name]
-            elif (
-                attr_schema["required"]
-                and not attr_schema["derived"]
-                and attr_name not in self.global_attributes
-            ):
-                # TODO throw an error
-                output[attr_name] = None
             # Retrieve instrument specific global attributes from the variable file
             elif (
                 instrument_id is not None
                 and attr_name in self.global_attributes[instrument_id]
             ):
                 output[attr_name] = self.global_attributes[instrument_id][attr_name]
+            elif attr_schema["required"] and attr_name not in self.global_attributes:
+                # TODO throw an error
+                output[attr_name] = None
+
         return output
 
     def load_variable_attrs(self, file_name: str) -> None:
