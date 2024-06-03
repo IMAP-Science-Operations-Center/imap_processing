@@ -1,6 +1,7 @@
 """Contains code to perform SWE L1b science processing."""
 
 import dataclasses
+import logging
 
 import numpy as np
 import pandas as pd
@@ -9,6 +10,8 @@ import xarray as xr
 from imap_processing import imap_module_directory
 from imap_processing.cdf.global_attrs import ConstantCoordinates
 from imap_processing.swe import swe_cdf_attrs
+
+logger = logging.getLogger(__name__)
 
 # ESA voltage and index in the final data table
 esa_voltage_row_index_dict = {
@@ -359,6 +362,9 @@ def swe_l1b_science(l1a_data):
     l1a_data_copy = l1a_data.copy(deep=True)
 
     full_cycle_data_indices = get_indices_of_full_cycles(l1a_data["QUARTER_CYCLE"].data)
+    logger.debug(
+        f"Quarter cycle data before filtering: {l1a_data_copy['QUARTER_CYCLE'].data}"
+    )
 
     # Delete Raw Science Data from l1b and onwards
     del l1a_data_copy["RAW_SCIENCE_DATA"]
@@ -369,10 +375,21 @@ def swe_l1b_science(l1a_data):
 
     if len(full_cycle_data_indices) != total_packets:
         # Filter metadata and science data of packets that makes full cycles
-        l1a_data_copy = filter_full_cycle_data(full_cycle_data_indices, l1a_data_copy)
+        full_cycle_l1a_data = l1a_data_copy.isel({"epoch": full_cycle_data_indices})
 
         # Update total packets
         total_packets = len(full_cycle_data_indices)
+        logger.debug(
+            "Quarters cycle after filtering: "
+            f"{full_cycle_l1a_data['QUARTER_CYCLE'].data}"
+        )
+        if len(full_cycle_data_indices) != len(
+            full_cycle_l1a_data["QUARTER_CYCLE"].data
+        ):
+            raise ValueError(
+                "Error: full cycle data indices and filtered quarter cycle data size "
+                "mismatch"
+            )
 
     # Go through each cycle and populate full cycle data
     for packet_index in range(0, total_packets, 4):
@@ -388,7 +405,7 @@ def swe_l1b_science(l1a_data):
             continue
 
         full_cycle_data = populate_full_cycle_data(
-            l1a_data_copy, packet_index, esa_table_num
+            full_cycle_l1a_data, packet_index, esa_table_num
         )
 
         # save full data array to file
@@ -494,7 +511,7 @@ def swe_l1b_science(l1a_data):
     )
 
     # create xarray dataset for each metadata field
-    for key, value in l1a_data_copy.items():
+    for key, value in full_cycle_l1a_data.items():
         if key == "SCIENCE_DATA":
             continue
 
@@ -507,7 +524,7 @@ def swe_l1b_science(l1a_data):
         # int_attrs["DEPEND_O"] = "epoch"
         # int_attrs["DEPEND_2"] = "Cycle"
         dataset[key] = xr.DataArray(
-            value.data[full_cycle_data_indices].reshape(-1, 4),
+            value.data.reshape(-1, 4),
             dims=["epoch", "Cycle"],
             attrs=dataclasses.replace(
                 swe_cdf_attrs.swe_metadata_attrs,
@@ -518,4 +535,6 @@ def swe_l1b_science(l1a_data):
                 depend_1="Cycle",
             ).output(),
         )
+
+    logger.info("SWE L1b science processing completed")
     return dataset

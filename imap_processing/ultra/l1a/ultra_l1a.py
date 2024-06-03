@@ -6,19 +6,23 @@
 import dataclasses
 import logging
 from pathlib import Path
+from typing import Optional
 
 import numpy as np
 import xarray as xr
 
+from imap_processing import decom, imap_module_directory
 from imap_processing.cdf.global_attrs import ConstantCoordinates
-from imap_processing.cdf.utils import calc_start_time, write_cdf
+from imap_processing.cdf.utils import calc_start_time
 from imap_processing.ultra import ultra_cdf_attrs
 from imap_processing.ultra.l0.decom_ultra import (
     ULTRA_AUX,
     ULTRA_EVENTS,
+    ULTRA_RATES,
     ULTRA_TOF,
-    decom_ultra_apids,
+    process_ultra_apids,
 )
+from imap_processing.utils import group_by_apid
 
 logger = logging.getLogger(__name__)
 
@@ -41,15 +45,32 @@ def initiate_data_arrays(decom_ultra: dict, apid: int):
     # Converted time
     time_converted = []
 
-    if apid == ULTRA_EVENTS.apid[0]:
+    if apid in ULTRA_EVENTS.apid:
+        index = ULTRA_EVENTS.apid.index(apid)
+        logical_source = ULTRA_EVENTS.logical_source[index]
+        addition_to_logical_desc = ULTRA_EVENTS.addition_to_logical_desc
         for time in decom_ultra["EVENTTIMES"]:
             time_converted.append(calc_start_time(time))
-    elif apid == ULTRA_TOF.apid[0]:
+    elif apid in ULTRA_TOF.apid:
+        index = ULTRA_TOF.apid.index(apid)
+        logical_source = ULTRA_TOF.logical_source[index]
+        addition_to_logical_desc = ULTRA_TOF.addition_to_logical_desc
         for time in np.unique(decom_ultra["SHCOARSE"]):
             time_converted.append(calc_start_time(time))
-    else:
+    elif apid in ULTRA_AUX.apid:
+        index = ULTRA_AUX.apid.index(apid)
+        logical_source = ULTRA_AUX.logical_source[index]
+        addition_to_logical_desc = ULTRA_AUX.addition_to_logical_desc
         for time in decom_ultra["SHCOARSE"]:
             time_converted.append(calc_start_time(time))
+    elif apid in ULTRA_RATES.apid:
+        index = ULTRA_RATES.apid.index(apid)
+        logical_source = ULTRA_RATES.logical_source[index]
+        addition_to_logical_desc = ULTRA_RATES.addition_to_logical_desc
+        for time in decom_ultra["SHCOARSE"]:
+            time_converted.append(calc_start_time(time))
+    else:
+        raise ValueError(f"APID {apid} not recognized.")
 
     epoch_time = xr.DataArray(
         time_converted,
@@ -58,10 +79,15 @@ def initiate_data_arrays(decom_ultra: dict, apid: int):
         attrs=ConstantCoordinates.EPOCH,
     )
 
-    if apid != ULTRA_TOF.apid[0]:
+    if apid not in (ULTRA_TOF.apid[0], ULTRA_TOF.apid[1]):
         dataset = xr.Dataset(
             coords={"epoch": epoch_time},
-            attrs=ultra_cdf_attrs.ultra_l1a_attrs.output(),
+            attrs=dataclasses.replace(
+                ultra_cdf_attrs.ultra_l1a_attrs,
+                logical_source=logical_source,
+                logical_source_desc=f"IMAP Mission ULTRA Instrument Level-1A "
+                f"{addition_to_logical_desc} Data",
+            ).output(),
         )
     else:
         row = xr.DataArray(
@@ -102,7 +128,12 @@ def initiate_data_arrays(decom_ultra: dict, apid: int):
 
         dataset = xr.Dataset(
             coords={"epoch": epoch_time, "sid": sid, "row": row, "column": column},
-            attrs=ultra_cdf_attrs.ultra_l1a_attrs.output(),
+            attrs=dataclasses.replace(
+                ultra_cdf_attrs.ultra_l1a_attrs,
+                logical_source=logical_source,
+                logical_source_desc=f"IMAP Mission ULTRA Instrument Level-1A "
+                f"{addition_to_logical_desc} Data",
+            ).output(),
         )
 
     return dataset
@@ -256,33 +287,58 @@ def create_dataset(decom_ultra_dict: dict):
     return dataset
 
 
-def ultra_l1a(packet_file: Path, xtce: Path):
+def ultra_l1a(packet_file: Path, apid: Optional[int] = None):
     """
     Process ULTRA L0 data into L1A CDF files at output_filepath.
 
     Parameters
     ----------
-    packet_file : dict
-        Dictionary containing paid and path to the CCSDS data packet file.
-    xtce : Path
-        Path to the XTCE packet definition file.
-    """
-    if ULTRA_EVENTS.apid[0] in packet_file.keys():
-        # For events data we need aux data to calculate event times
-        apid = ULTRA_EVENTS.apid[0]
-        decom_ultra_events = decom_ultra_apids(packet_file[apid], xtce, apid)
-        decom_ultra_aux = decom_ultra_apids(
-            packet_file[ULTRA_AUX.apid[0]], xtce, ULTRA_AUX.apid[0]
-        )
-        decom_ultra_dict = {
-            ULTRA_EVENTS.apid[0]: decom_ultra_events,
-            ULTRA_AUX.apid[0]: decom_ultra_aux,
-        }
-    else:
-        apid = next(iter(packet_file.keys()))
-        decom_ultra_dict = {apid: decom_ultra_apids(packet_file[apid], xtce, apid)}
+    packet_file : Path
+        Path to the CCSDS data packet file.
+    apid : int, optional
+        Optional apid
 
-    dataset = create_dataset(decom_ultra_dict)
-    output_filepath = write_cdf(dataset)
-    logging.info(f"Created CDF file at {output_filepath}")
-    return output_filepath
+    Returns
+    -------
+    output_datasets : list of xarray.Dataset
+        List of xarray.Dataset
+    """
+    xtce = Path(
+        f"{imap_module_directory}/ultra/packet_definitions/" f"ULTRA_SCI_COMBINED.xml"
+    )
+
+    packets = decom.decom_packets(packet_file, xtce)
+    grouped_data = group_by_apid(packets)
+
+    output_datasets = []
+
+    # This is used for two purposes currently:
+    # 1. For testing purposes to only generate a dataset for a single apid.
+    #    Each test dataset is only for a single apid while the rest of the apids
+    #    contain zeros. Ideally we would have
+    #    test data for all apids and remove this parameter.
+    # 2. When we are generating the l1a dataset for the events packet since
+    #    right now we need to combine the events and aux packets to get the
+    #    correct event timestamps (get_event_time). This part will change
+    #    when we begin using the spin table in the database instead of the aux packet.
+    if apid is not None:
+        apids = [apid]
+    else:
+        apids = grouped_data.keys()
+
+    for apid in apids:
+        if apid == ULTRA_EVENTS.apid[0]:
+            decom_ultra_dict = {
+                apid: process_ultra_apids(grouped_data[apid], apid),
+                ULTRA_AUX.apid[0]: process_ultra_apids(
+                    grouped_data[ULTRA_AUX.apid[0]], ULTRA_AUX.apid[0]
+                ),
+            }
+        else:
+            decom_ultra_dict = {
+                apid: process_ultra_apids(grouped_data[apid], apid),
+            }
+        dataset = create_dataset(decom_ultra_dict)
+        output_datasets.append(dataset)
+
+    return output_datasets

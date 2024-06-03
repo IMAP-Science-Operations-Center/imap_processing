@@ -13,54 +13,87 @@ ESA = ElectroStatic Analyzer
 
 from imap_processing.codice.utils import CoDICECompression
 
-# CDF-friendly FIELDNAMES and VARNAMES for lo-sw-angular-counts data product
-LO_SW_ANGULAR_NAMES = [
-    ("hplus", "SW - H+"),
-    ("heplusplus", "SW - He++"),
-    ("oplus6", "SW - O+6"),
-    ("fe-loq", "SW - Fe lowQ"),
-]
+# CDF-friendly names for lo data products
+LO_SW_ANGULAR_NAMES = {
+    "hplus": {"fieldname": "SW - H+", "catdesc": "Sunward H+ Species"},
+    "heplusplus": {"fieldname": "SW - He++", "catdesc": "Sunward He++ Species"},
+    "oplus6": {"fieldname": "SW - O+6", "catdesc": "Sunward O+6 Species"},
+    "fe_loq": {"fieldname": "SW - Fe lowQ", "catdesc": "Sunward Fe lowQ Species"},
+}
 
-# CDF-friendly FIELDNAMES and VARNAMES for lo-sw-priority-counts data product
-LO_SW_PRIORITY_NAMES = [
-    ("p0-tcrs", "SW Sector Triple Coincidence PUI's"),
-    ("p1-hplus", "SW Sector H+"),
-    ("p2-heplusplus", "SW Sector He++"),
-    ("p3-heavies", "SW Sector High Charge State Heavies"),
-    ("p4-dcrs", "SW Sector Double Coincidence PUI's"),
-]
+LO_NSW_ANGULAR_NAMES = {
+    "heplusplus": {"fieldname": "NSW - He++", "catdesc": "Non-sunward He++ Species"},
+}
 
-# CDF-friendly FIELDNAMES and VARNAMES for lo-sw-species-counts data product
-LO_SW_SPECIES_NAMES = [
-    ("hplus", "SW - H+"),
-    ("heplusplus", "SW - He++"),
-    ("cplus4", "SW - C+4"),
-    ("cplus5", "SW - C+5"),
-    ("cplus6", "SW - C+6"),
-    ("oplus5", "SW - O+5"),
-    ("oplus6", "SW - O+6"),
-    ("oplus7", "SW - O+7"),
-    ("oplus8", "SW - O+8"),
-    ("ne", "SW - Ne"),
-    ("mg", "SW - Mg"),
-    ("si", "SW - Si"),
-    ("fe-loq", "SW - Fe lowQ"),
-    ("fe-hiq", "SW - Fe highQ"),
-    ("heplus", "SW - He+ (PUI)"),
-    ("cnoplus", "SW - CNO+ (PUI)"),
-]
+LO_SW_PRIORITY_NAMES = {
+    "p0_tcrs": {
+        "fieldname": "SW Sector Triple Coincidence PUI's",
+        "catdesc": "Sunward Sector Triple Coincidence Pickup Ions Priority",
+    },
+    "p1_hplus": {"fieldname": "SW Sector H+", "catdesc": "Sunward Sector H+ Priority"},
+    "p2_heplusplus": {
+        "fieldname": "SW Sector He++",
+        "catdesc": "Sunward Sector He++ Priority",
+    },
+    "p3_heavies": {
+        "fieldname": "SW Sector High Charge State Heavies",
+        "catdesc": "Sunward Sector High Charge State Heavies Priority =",
+    },
+    "p4_dcrs": {
+        "fieldname": "SW Sector Double Coincidence PUI's",
+        "catdesc": "Sunward Sector Double Coincidence Pickup Ions Priority",
+    },
+}
 
-# CDF-friendly FIELDNAMES and VARNAMES for lo-nsw-species-counts data product
-LO_NSW_SPECIES_NAMES = [
-    ("hplus", "NSW - H+"),
-    ("heplusplus", "NSW - He++"),
-    ("c", "NSW - C"),
-    ("o", "NSW - O"),
-    ("ne-si-mg", "NSW - Ne_Si_Mg"),
-    ("fe", "NSW - Fe"),
-    ("heplus", "NSW - He+"),
-    ("cnoplus", "NSW - CNO+"),
-]
+LO_NSW_PRIORITY_NAMES = {
+    "p5_heavies": {
+        "fieldname": "NSW Sector Heavies",
+        "catdesc": "Non-sunward Sector Heavies Priority",
+    },
+    "p6_hplus_heplusplus": {
+        "fieldname": "NSW H+ and He++",
+        "catdesc": "Non-sunward H+ and He++ Priority",
+    },
+}
+
+LO_SW_SPECIES_NAMES = {
+    "hplus": {"fieldname": "SW - H+", "catdesc": "H+ Sunward Species"},
+    "heplusplus": {"fieldname": "SW - He+", "catdesc": "He+ Sunward Species"},
+    "cplus4": {"fieldname": "SW - C+4", "catdesc": "C+4 Sunward Species"},
+    "cplus5": {"fieldname": "SW - C+5", "catdesc": "C+5 Sunward Species"},
+    "cplus6": {"fieldname": "SW - C+6", "catdesc": "C+6 Sunward Species"},
+    "oplus5": {"fieldname": "SW - O+5", "catdesc": "O+5 Sunward Species"},
+    "oplus6": {"fieldname": "SW - O+6", "catdesc": "O+6 Sunward Species"},
+    "oplus7": {"fieldname": "SW - O+7", "catdesc": "O+7 Sunward Species"},
+    "oplus8": {"fieldname": "SW - O+8", "catdesc": "O+8 Sunward Species"},
+    "ne": {"fieldname": "SW - Ne", "catdesc": "Ne Sunward Species"},
+    "mg": {"fieldname": "SW - Mg", "catdesc": "Mg Sunward Species"},
+    "si": {"fieldname": "SW - Si", "catdesc": "Si Sunward Species"},
+    "fe_loq": {"fieldname": "SW - Fe lowQ", "catdesc": "Fe lowQ Sunward Species"},
+    "fe_hiq": {"fieldname": "SW - Fe highQ", "catdesc": "Fe highQ Sunward Species"},
+    "heplus": {
+        "fieldname": "SW - He+ (PUI)",
+        "catdesc": "He+ Pickup Ion Sunward Species",
+    },
+    "cnoplus": {
+        "fieldname": "SW - CNO+ (PUI)",
+        "catdesc": "CNO+ Pickup Ion Sunward Species",
+    },
+}
+
+LO_NSW_SPECIES_NAMES = {
+    "hplus": {"fieldname": "NSW - H+", "catdesc": "H+ Non-sunward Species"},
+    "heplusplus": {"fieldname": "NSW - He++", "catdesc": "He++ Non-sunward Species"},
+    "c": {"fieldname": "NSW - C", "catdesc": "C Non-sunward Species"},
+    "o": {"fieldname": "NSW - O", "catdesc": "O Non-sunward Species"},
+    "ne_si_mg": {
+        "fieldname": "NSW - Ne_Si_Mg",
+        "catdesc": "Ne-Si-Mg Non-sunward Species",
+    },
+    "fe": {"fieldname": "NSW - Fe", "catdesc": "Fe Non-sunward Species"},
+    "heplus": {"fieldname": "NSW - He+", "catdesc": "He+ Non-sunward Species"},
+    "cnoplus": {"fieldname": "NSW - CNO+", "catdesc": "CNO+ Non-sunward Species"},
+}
 
 # Compression ID lookup table for Lo data products
 # The key is the view_id and the value is the ID for the compression algorithm

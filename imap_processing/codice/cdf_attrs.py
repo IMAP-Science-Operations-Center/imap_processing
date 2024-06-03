@@ -2,6 +2,8 @@
 
 For further details, see the documentation provided at
 https://imap-processing.readthedocs.io/en/latest/development/CDFs/cdf_requirements.html
+
+Reference: https://spdf.gsfc.nasa.gov/sp_use_of_cdf.html
 """
 
 from imap_processing.cdf.defaults import GlobalConstants
@@ -37,26 +39,52 @@ codice_base = GlobalInstrumentAttrs(
     "Particles (space)",
 )
 
-codice_metadata_attrs = ScienceAttrs(
-    validmin=0,
-    validmax=GlobalConstants.INT_MAXVAL,
-    display_type="no_plot",
-    depend_0="epoch",
-    format="I12",
-    units="dN",
-    var_type="data",
-    variable_purpose="PRIMARY",
-)
-
+# Dataset-level attributes
 l1a_hskp_attrs = GlobalDataLevelAttrs(
-    data_type="L1A_SCI->Level-1A Science Data",
+    data_type="L1A_hskp->Level-1A Housekeeping Data",
     logical_source="imap_codice_l1a_hskp",
     logical_source_desc="IMAP Mission CoDICE Instrument Level-1A Housekeeping Data",
     instrument_base=codice_base,
 )
 
+l1a_lo_sw_angular_counts_attrs = GlobalDataLevelAttrs(
+    data_type="L1A_lo-sw-angular-counts->Level-1A Lo Sunward Angular Counts Data",
+    logical_source="imap_codice_l1a_lo-sw-angular-counts",
+    logical_source_desc=(
+        "IMAP Mission CoDICE Instrument Level-1A Lo Sunward Angular Counts Data"
+    ),
+    instrument_base=codice_base,
+)
+
+l1a_lo_nsw_angular_counts_attrs = GlobalDataLevelAttrs(
+    data_type="L1A_lo-nsw-angular-counts->Level-1A Lo Non-Sunward Angular Counts Data",
+    logical_source="imap_codice_l1a_lo-nsw-angular-counts",
+    logical_source_desc=(
+        "IMAP Mission CoDICE Instrument Level-1A Lo Non-sunward Angular Counts Data"
+    ),
+    instrument_base=codice_base,
+)
+
+l1a_lo_sw_priority_counts_attrs = GlobalDataLevelAttrs(
+    data_type="L1A_lo-sw-priority-counts->Level-1A Lo Sunward Priority Counts Data",
+    logical_source="imap_codice_l1a_lo-sw-priority-counts",
+    logical_source_desc=(
+        "IMAP Mission CoDICE Instrument Level-1A Lo Sunward Priority Counts Data"
+    ),
+    instrument_base=codice_base,
+)
+
+l1a_lo_nsw_priority_counts_attrs = GlobalDataLevelAttrs(
+    data_type="L1A_lo-sw-priority-counts->Level-1A Lo Non-Sunward Priority Counts Data",
+    logical_source="imap_codice_l1a_lo-nsw-priority-counts",
+    logical_source_desc=(
+        "IMAP Mission CoDICE Instrument Level-1A Lo Non-Sunward Priority Counts Data"
+    ),
+    instrument_base=codice_base,
+)
+
 l1a_lo_sw_species_counts_attrs = GlobalDataLevelAttrs(
-    data_type="L1A_SCI->Level-1A Science Data",
+    data_type="L1A_lo-sw-species-counts->Level-1A Lo Sunward Species Counts Data",
     logical_source="imap_codice_l1a_lo-sw-species-counts",
     logical_source_desc=(
         "IMAP Mission CoDICE Instrument Level-1A Lo Sunward Species Counts Data"
@@ -65,53 +93,83 @@ l1a_lo_sw_species_counts_attrs = GlobalDataLevelAttrs(
 )
 
 l1a_lo_nsw_species_counts_attrs = GlobalDataLevelAttrs(
-    data_type="L1A_SCI->Level-1A Science Data",
+    data_type="L1A_lo-nsw-species-counts->Level-1A Lo Non-Sunward Species Counts Data",
     logical_source="imap_codice_l1a_lo-nsw-species-counts",
     logical_source_desc=(
-        "IMAP Mission CoDICE Instrument Level-1A Lo Non-sunward Species Counts Data"
+        "IMAP Mission CoDICE Instrument Level-1A Lo Non-Sunward Species Counts Data"
     ),
     instrument_base=codice_base,
 )
 
-l1a_lo_sw_priority_counts_attrs = GlobalDataLevelAttrs(
-    data_type="L1A_SCI->Level-1A Science Data",
-    logical_source="imap_codice_l1a_lo-sw-priority-counts",
-    logical_source_desc=(
-        "IMAP Mission CoDICE Instrument Level-1A Lo Sunward Priority Counts Data"
-    ),
-    instrument_base=codice_base,
-)
-
-l1a_lo_sw_angular_counts_attrs = GlobalDataLevelAttrs(
-    data_type="L1A_SCI->Level-1A Science Data",
-    logical_source="imap_codice_l1a_lo-sw-angular-counts",
-    logical_source_desc=(
-        "IMAP Mission CoDICE Instrument Level-1A Lo Sunward Angular Counts Data"
-    ),
-    instrument_base=codice_base,
-)
-
-energy_attrs = AttrBase(
+# Variable-level attributes
+acquisition_times_attrs = AttrBase(
+    catdesc="Time of acquisition for the energy step",
+    display_type="no_plot",
+    fieldname="Acquisition Time",
+    fill_val=GlobalConstants.DOUBLE_FILLVAL,
+    format="F10.3",
+    label_axis="Acq Time",
+    units="ms",
     validmin=0,
-    validmax=127,
-    format="I3",
+    validmax=GlobalConstants.FLOAT_MAXVAL,
     var_type="support_data",
-    fieldname="Energy Step",
-    catdesc="TBD",
-    label_axis="TBD",
+    scale_type="linear",
 )
 
-counts_attrs = ScienceAttrs(
+codice_metadata_attrs = ScienceAttrs(
+    display_type="no_plot",
+    format="I12",
+    units="dN",
     validmin=0,
     validmax=GlobalConstants.INT_MAXVAL,
-    format="I12",
-    units="counts",
-    label_axis="counts",
-    display_type="time_series",
-    catdesc="TBD",
-    fieldname="TBD",
-    fill_val=GlobalConstants.INT_FILLVAL,
     var_type="data",
+    variable_purpose="PRIMARY",
     depend_0="epoch",
-    depend_1="energy",
+)
+
+# TODO: cdf.global_attrs needs to be updated to allow multiple LABL_PTRs
+#       as well as to not include LABEL_AXIS when necessary. For now, hard-code
+#       these so we don't need to use cdf.global_attrs.ScienceAttrs()
+counters_attrs = {
+    "CATDESC": "Fill in at creation",
+    "DISPLAY_TYPE": "time_series",
+    "FIELDNAM": "Fill in at creation",
+    "FILLVAL": GlobalConstants.INT_FILLVAL,
+    "FORMAT": "I12",
+    "LABL_PTR_1": "energy",
+    "UNITS": "counts",
+    "VALIDMIN": 0,
+    "VALIDMAX": 8388607,  # max value for a signed 24-bit integer
+    "VAR_TYPE": "data",
+    "SCALETYP": "linear",
+    "DEPEND_0": "epoch",
+    "DEPEND_1": "energy",
+}
+
+energy_attrs = AttrBase(
+    catdesc="Energy per charge (E/q) sweeping step",
+    display_type="no_plot",
+    fieldname="Energy Step",
+    fill_val=GlobalConstants.INT_FILLVAL,
+    format="I3",
+    label_axis="energy",
+    units="",
+    validmin=0,
+    validmax=127,
+    var_type="support_data",
+    scale_type="linear",
+)
+
+esa_sweep_attrs = AttrBase(
+    catdesc="ElectroStatic Analyzer Energy Values",
+    display_type="no_plot",
+    fieldname="ESA Voltage",
+    fill_val=GlobalConstants.INT_FILLVAL,
+    format="I19",
+    label_axis="ESA V",
+    units="V",
+    validmin=0,
+    validmax=GlobalConstants.INT_MAXVAL,
+    var_type="support_data",
+    scale_type="linear",
 )

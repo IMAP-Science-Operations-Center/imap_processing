@@ -5,6 +5,10 @@ from pathlib import Path
 
 import pytest
 
+from imap_processing import decom
+from imap_processing.ultra.l0.decom_ultra import process_ultra_apids
+from imap_processing.utils import group_by_apid
+
 
 @pytest.fixture()
 def ccsds_path():
@@ -29,6 +33,20 @@ def ccsds_path_events():
         / "test_data"
         / "l0"
         / "FM45_7P_Phi0.0_BeamCal_LinearScan_phi0.04_theta-0.01_20230821T121304.CCSDS"
+    )
+
+
+@pytest.fixture()
+def ccsds_path_theta_0():
+    """Returns the ccsds directory."""
+    return (
+        Path(sys.modules[__name__.split(".")[0]].__file__).parent
+        / "tests"
+        / "ultra"
+        / "test_data"
+        / "l0"
+        / "FM45_40P_Phi28p5_BeamCal_LinearScan_phi28.50_theta-0.00"
+        "_20240207T102740.CCSDS"
     )
 
 
@@ -122,3 +140,24 @@ def tof_test_path():
         / "l0"
         / filename
     )
+
+
+@pytest.fixture()
+def decom_test_data(request, xtce_path):
+    """Read test data from file"""
+    apid = request.param["apid"]
+    filename = request.param["filename"]
+    ccsds_path = (
+        Path(sys.modules[__name__.split(".")[0]].__file__).parent
+        / "tests"
+        / "ultra"
+        / "test_data"
+        / "l0"
+        / filename
+    )
+
+    packets = decom.decom_packets(ccsds_path, xtce_path)
+    grouped_data = group_by_apid(packets)
+
+    data_packet_list = process_ultra_apids(grouped_data[apid], apid)
+    return data_packet_list, packets
