@@ -1,4 +1,5 @@
 import dataclasses
+from functools import reduce
 from pathlib import Path
 
 import numpy as np
@@ -25,9 +26,8 @@ def l1a_data():
 
     de_l1a_dict = process_de_l0(de_l0)
 
-    de_l1a = []
-    for _, value in de_l1a_dict.items():
-        de_l1a += value
+    # Flatten the dictionary to one list of DE values
+    de_l1a = reduce(list.__add__, [value for value in de_l1a_dict.values()])
 
     return (histograms_l1a, de_l1a)
 
@@ -58,7 +58,8 @@ def test_generate_histogram_dataset(l1a_data):
         elif key not in ["histograms", "ground_software_version", "pkts_file_name"]:
             assert dataset[key].data[0] == item
 
-    assert (dataset["histograms"].data[-1] == histograms_l1a[-1].histograms).all()
+    for i in range(len(dataset["histograms"].data)):
+        assert (dataset["histograms"].data[i] == histograms_l1a[i].histograms).all()
 
 
 def test_generate_de_dataset(l1a_data):
@@ -66,7 +67,6 @@ def test_generate_de_dataset(l1a_data):
     dataset = generate_de_dataset(de_l1a, "v001")
     assert len(dataset["epoch"].values) == len(de_l1a)
 
-    # TODO fix this test
     assert (
         dataset["direct_events"].data[0]
         == np.pad(

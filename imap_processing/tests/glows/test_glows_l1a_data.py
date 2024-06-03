@@ -1,5 +1,6 @@
 import ast
 import dataclasses
+from functools import reduce
 from pathlib import Path
 
 import pandas as pd
@@ -34,9 +35,8 @@ def l1a_test_data(decom_test_data):
 
     de_l1a_dict = process_de_l0(decom_test_data[1])
 
-    de_l1a = []
-    for value in de_l1a_dict.values():
-        de_l1a += value
+    # Flatten the dictionary to one list of DE values
+    de_l1a = reduce(list.__add__, [value for value in de_l1a_dict.values()])
 
     return hist_l1a, de_l1a
 
