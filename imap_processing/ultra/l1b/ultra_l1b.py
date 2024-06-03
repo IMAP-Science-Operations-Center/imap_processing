@@ -1,10 +1,14 @@
 """Calculates ULTRA L1b."""
 
-import json
 from pathlib import Path
 
-import numpy as np
 import xarray as xr
+
+from imap_processing.cdf.cdf_attribute_manager import CdfAttributeManager
+from imap_processing.ultra.l1b.badtimes import calculate_badtimes
+from imap_processing.ultra.l1b.cullingmask import calculate_culling_mask
+from imap_processing.ultra.l1b.de import calculate_annotated_de
+from imap_processing.ultra.l1b.extendedspin import calculate_extended_spin
 
 
 def create_dataset(data_dict, name):
@@ -15,34 +19,39 @@ def create_dataset(data_dict, name):
     ----------
     data_dict: : dict
         L1b data dictionary.
+    name: str
+        Name of the dataset.
 
     Returns
     -------
     dataset : xarray.Dataset
-        xarray.Dataset
+        Data in xarray format.
     """
-    # TODO: this will change to actual l1b data dictionary
-    # For now we are using it for retrieving the epoch.
-    dataset = data_dict["imap_ultra_l1a_45sensor-de"]
+    cdf_manager = CdfAttributeManager(Path(__file__).parents[2] / "cdf" / "config")
+    cdf_manager.load_global_attributes("imap_default_global_cdf_attrs.yaml")
+    cdf_manager.load_global_attributes("imap_ultra_global_cdf_attrs.yaml")
+    cdf_manager.load_variable_attrs("imap_ultra_l1b_variable_attrs.yaml")
 
-    # Load metadata from the metadata file
-    with open(Path(__file__).parent.parent / "ultra_metadata_example.json") as f:
-        metadata = json.loads(f.read())[name]
-
-    epoch = dataset.coords["epoch"]
-
-    annotated_de_attrs = metadata["dataset_attrs"]
+    epoch_time = xr.DataArray(
+        data_dict["epoch"],
+        name="epoch",
+        dims=["epoch"],
+        attrs=cdf_manager.variable_attributes["epoch"],
+    )
 
     dataset = xr.Dataset(
-        coords={"epoch": epoch},
-        attrs=annotated_de_attrs,
+        coords={"epoch": epoch_time},
+        attrs=cdf_manager.get_global_attributes(name),
     )
 
-    dataset["x_front"] = xr.DataArray(
-        np.zeros(len(epoch), dtype=np.float32),
-        dims=["epoch"],
-        attrs=metadata["x_front"],
-    )
+    for key in data_dict.keys():
+        if key == "epoch":
+            continue
+        dataset[key] = xr.DataArray(
+            data_dict[key],
+            dims=["epoch"],
+            attrs=cdf_manager.variable_attributes[key],
+        )
 
     return dataset
 
@@ -64,18 +73,33 @@ def ultra_l1b(data_dict: dict):
     output_datasets = []
     instrument_id = 45 if "45" in next(iter(data_dict.keys())) else 90
 
-    # TODO: Add the other l1b products here.
-    l1b_products = [
-        f"imap_ultra_l1b_{instrument_id}sensor-de",
-        # f"imap_ultra_l1b_{instrument_id}extended-spin",
-        # f"imap_ultra_l1b_{instrument_id}culling-mask",
-        # f"imap_ultra_l1b_{instrument_id}badtimes"
-    ]
+    if f"imap_ultra_l1a_{instrument_id}sensor-rates" in data_dict:
+        extendedspin_dict = calculate_extended_spin(data_dict)
+        extendedspin_dataset = create_dataset(
+            extendedspin_dict, f"imap_ultra_l1b_{instrument_id}sensor-extendedspin"
+        )
 
-    for name in l1b_products:
-        # TODO: perform l1b calculations here.
-        # For now we are using the L1A data (data_dict) as a placeholder.
-        dataset = create_dataset(data_dict, name)
+        cullingmask_dict = calculate_culling_mask(extendedspin_dict)
+        cullingmask_dataset = create_dataset(
+            cullingmask_dict, f"imap_ultra_l1b_{instrument_id}sensor-cullingmask"
+        )
+
+        badtimes_dict = calculate_badtimes(extendedspin_dict)
+        badtimes_dataset = create_dataset(
+            badtimes_dict, f"imap_ultra_l1b_{instrument_id}sensor-badtimes"
+        )
+
+        output_datasets.extend(
+            [extendedspin_dataset, cullingmask_dataset, badtimes_dataset]
+        )
+    elif (
+        f"imap_ultra_l1a_{instrument_id}sensor-aux" in data_dict
+        and f"imap_ultra_l1a_{instrument_id}sensor-de" in data_dict
+    ):
+        de_dict = calculate_annotated_de(data_dict)
+        dataset = create_dataset(de_dict, f"imap_ultra_l1b_{instrument_id}sensor-de")
         output_datasets.append(dataset)
+    else:
+        raise ValueError("Data dictionary does not contain the expected keys.")
 
     return output_datasets

@@ -1,0 +1,71 @@
+Descriptor: &desc
+  Ultra>IMAP Ultra-Energy (IMAP-Ultra) Energetic Neutral Atom Imager
+TEXT: &txt >
+  Ultra captures images of very energetic neutral atoms, particularly hydrogen (H) atoms,
+  produced in the solar system at the heliosheath, the region where the solar wind slows,
+  compresses, and becomes much hotter as it meets the interstellar medium (ISM).
+  The instrument also measures the distribution of solar wind electrons and protons, and
+  the magnetic field. See https://imap.princeton.edu/instruments/ultra for more details.
+
+imap_ultra_l1b_45sensor-de:
+    Descriptor: 45sensor-de
+    TEXT: *txt
+    Data_level: 1B
+    Data_type: L1B_DE>Level-1B Direct Events
+    Logical_source: imap_ultra_l1b_45sensor-de
+    Logical_source_description: IMAP-Ultra Instrument Level-1B Direct Event Data.
+
+imap_ultra_l1b_90sensor-de:
+    Descriptor: 90sensor-de
+    TEXT: *txt
+    Data_level: 1B
+    Data_type: L1B_DE>Level-1B Direct Events
+    Logical_source: imap_ultra_l1b_90sensor-de
+    Logical_source_description: IMAP-Ultra Instrument Level-1B Direct Event Data.
+
+imap_ultra_l1b_45sensor-extendedspin:
+    Descriptor: 45sensor-extendedspin
+    TEXT: *txt
+    Data_level: 1B
+    Data_type: L1B_Extended-Spin>Level-1B Extended Spin
+    Logical_source: imap_ultra_l1b_45sensor-extendedspin
+    Logical_source_description: IMAP-Ultra Instrument Level-1B Extended Spin Data.
+
+imap_ultra_l1b_90sensor-extendedspin:
+    Descriptor: 90sensor-extendedspin
+    TEXT: *txt
+    Data_type: L1B_Extended-Spin>Level-1B Extended Spin
+    Logical_source: imap_ultra_l1b_90sensor-extendedspin
+    Logical_source_description: IMAP-Ultra Instrument Level-1B Extended Spin Data.
+
+imap_ultra_l1b_45sensor-cullingmask:
+    Descriptor: 45cullingmask
+    TEXT: *txt
+    Data_level: 1B
+    Data_type: L1B_Culling-Mask>Level-1B Culling Mask
+    Logical_source: imap_ultra_l1b_45sensor-cullingmask
+    Logical_source_description: IMAP-Ultra Instrument Level-1B Culling Mask Data.
+
+imap_ultra_l1b_90sensor-cullingmask:
+    Descriptor: 90cullingmask
+    TEXT: *txt
+    Data_level: 1B
+    Data_type: L1B_Culling-Mask>Level-1B Culling Mask
+    Logical_source: imap_ultra_l1b_90sensor-cullingmask
+    Logical_source_description: IMAP-Ultra Instrument Level-1B Culling Mask Data.
+
+imap_ultra_l1b_45sensor-badtimes:
+    Descriptor: 45badtimes
+    TEXT: *txt
+    Data_level: 1B
+    Data_type: L1B_Badtimes>Level-1B Badtimes
+    Logical_source: imap_ultra_l1b_45sensor-badtimes
+    Logical_source_description: IMAP-Ultra Instrument Level-1B Badtimes Data.
+
+imap_ultra_l1b_90sensor-badtimes:
+    Descriptor: 90badtimes
+    TEXT: *txt
+    Data_level: 1B
+    Data_type: L1B_Badtimes>Level-1B Badtimes
+    Logical_source: imap_ultra_l1b_90sensor-badtimes
+    Logical_source_description: IMAP-Ultra Instrument Level-1B Badtimes Data.
