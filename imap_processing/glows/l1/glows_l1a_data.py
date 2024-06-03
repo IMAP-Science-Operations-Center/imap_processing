@@ -181,7 +181,7 @@ class HistogramL1A:
     spin_period_average: int
         Average spin period in the block, from L0.SPAVG. Uint encoded.
     spin_period_variance: int
-        Variance of spin period in the block, from L0.SPAVG. Uint encoded.
+        Variance of spin period in the block, from L0.SPVAR. Uint encoded.
     pulse_length_average: int
         Average pulse length in the block, from L0.ELAVG. Uint encoded.
     pulse_length_variance: int
@@ -256,7 +256,7 @@ class HistogramL1A:
         self.hv_voltage_average = l0.HVAVG
         self.hv_voltage_variance = l0.HVVAR
         self.spin_period_average = l0.SPAVG
-        self.spin_period_variance = l0.SPAVG
+        self.spin_period_variance = l0.SPVAR
         self.pulse_length_average = l0.ELAVG
         self.pulse_length_variance = l0.ELVAR
 

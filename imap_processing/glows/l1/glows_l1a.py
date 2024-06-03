@@ -182,6 +182,9 @@ def generate_de_dataset(
                 "constant",
                 constant_values=(0,),
             )
+
+        # Convert the direct events data into a numpy array and add it to the direct_
+        # events array
         new_de = np.array([event.to_list() for event in de.direct_events])
 
         direct_events[index, : len(de.direct_events), :] = new_de
