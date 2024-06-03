@@ -1,5 +1,8 @@
 # Possible data directory files
 data/imap/
+# Ignore Excel files
+*.xlsx
+*.xls
 
 # Documentation ignore
 docs/source/**/generated

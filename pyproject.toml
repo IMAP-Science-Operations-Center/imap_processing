@@ -53,7 +53,7 @@ sphinxcontrib-openapi = {version="^0.8.3", optional=true}
 dev = ["pre-commit", "ruff"]
 doc = ["numpydoc", "pydata-sphinx-theme", "sphinx", "sphinxcontrib-openapi"]
 test = ["pytest", "pytest-cov"]
-tools= ["pandas", "openpyxl"]
+tools= ["openpyxl", "pandas"]
 
 [project.urls]
 homepage = "https://github.com/IMAP-Science-Operations-Center"
