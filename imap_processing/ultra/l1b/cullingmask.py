@@ -1,35 +1,24 @@
 """Calculates Culling Mask."""
 
+from imap_processing.ultra.utils.ultra_l1_utils import create_dataset
 
-def calculate_cullingmask(extended_spin_dict):
+
+def calculate_cullingmask(extended_spin_dict, name):
     """
-    Create dictionary with defined datatype for Culling Mask Data.
+    Create dataset with defined datatype for Culling Mask Data.
 
     Parameters
     ----------
     extended_spin_dict: : dict
         L1b data dictionary.
+    name: str
+        Name of the dataset.
 
     Returns
     -------
-    cullingmask_dict : dict
-        Dictionary containing the data.
+    cullingmask_dataset : xarray.Dataset
+        Dataset containing the data.
     """
-    cullingmask_dict = {}
+    cullingmask_dataset = create_dataset(extended_spin_dict, name, "l1b")
 
-    # Placeholder for bitwise filtering based on quality flags
-    cullingmask_dict["epoch"] = extended_spin_dict["epoch"]
-    cullingmask_dict["spin_number"] = extended_spin_dict["spin_number"]
-    cullingmask_dict["spin_start_time"] = extended_spin_dict["spin_start_time"]
-    cullingmask_dict["avg_spin_period"] = extended_spin_dict["avg_spin_period"]
-    cullingmask_dict["rate_start_pulses"] = extended_spin_dict["rate_start_pulses"]
-    cullingmask_dict["rate_stop_pulses"] = extended_spin_dict["rate_stop_pulses"]
-    cullingmask_dict["rate_coin_pulses"] = extended_spin_dict["rate_coin_pulses"]
-    cullingmask_dict["rate_processed_events"] = extended_spin_dict[
-        "rate_processed_events"
-    ]
-    cullingmask_dict["rate_rejected_events"] = extended_spin_dict[
-        "rate_rejected_events"
-    ]
-
-    return cullingmask_dict
+    return cullingmask_dataset

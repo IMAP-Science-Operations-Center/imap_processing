@@ -2,16 +2,16 @@ import numpy as np
 import pytest
 import xarray as xr
 
-from imap_processing.ultra.l1b.de import calculate_de
-from imap_processing.ultra.l1b.ultra_l1b import create_dataset, ultra_l1b
+from imap_processing.ultra.l1b.ultra_l1b import ultra_l1b
+from imap_processing.ultra.utils.ultra_l1_utils import create_dataset
 
 
 @pytest.fixture()
 def mock_data_l1a_rates_dict():
     # Create sample data for the xarray Dataset
     epoch = np.arange(
-        "2024-02-07T15:28:37", "2024-02-07T16:24:50", dtype="datetime64[s]"
-    )[:5]
+        "2024-02-07T15:28:37", "2024-02-07T15:28:42", dtype="datetime64[s]"
+    )
 
     data_vars = {
         "COIN_TYPE": ("epoch", np.zeros(5)),
@@ -33,8 +33,8 @@ def mock_data_l1a_rates_dict():
 def mock_data_l1a_de_dict():
     # Create sample data for the xarray Dataset
     epoch = np.arange(
-        "2024-02-07T15:28:37", "2024-02-07T16:24:50", dtype="datetime64[s]"
-    )[:5]
+        "2024-02-07T15:28:37", "2024-02-07T15:28:42", dtype="datetime64[s]"
+    )
 
     data_vars = {
         "COIN_TYPE": ("epoch", np.zeros(5)),
@@ -64,7 +64,7 @@ def mock_data_l1b_dict():
 
 def test_create_dataset(mock_data_l1b_dict):
     """Tests that dataset is created as expected."""
-    dataset = create_dataset(mock_data_l1b_dict, "imap_ultra_l1b_45sensor-de")
+    dataset = create_dataset(mock_data_l1b_dict, "imap_ultra_l1b_45sensor-de", "l1b")
 
     assert "epoch" in dataset.coords
     assert dataset.coords["epoch"].dtype == "datetime64[ns]"
@@ -97,17 +97,10 @@ def test_ultra_l1b(mock_data_l1a_rates_dict):
 
 def test_ultra_l1b_error(mock_data_l1a_rates_dict):
     """Tests that L1a data throws an error."""
-    data_dict = mock_data_l1a_rates_dict.copy()
-    data_dict["bad_key"] = data_dict.pop("imap_ultra_l1a_45sensor-rates")
+    mock_data_l1a_rates_dict["bad_key"] = mock_data_l1a_rates_dict.pop(
+        "imap_ultra_l1a_45sensor-rates"
+    )
     with pytest.raises(
         ValueError, match="Data dictionary does not contain the expected keys."
     ):
-        ultra_l1b(data_dict)
-
-
-def test_calculate_de(mock_data_l1a_de_dict):
-    """Tests calculate_de function."""
-
-    de_dict = calculate_de(mock_data_l1a_de_dict)
-
-    assert "epoch" in de_dict
+        ultra_l1b(mock_data_l1a_rates_dict)

@@ -2,15 +2,16 @@ import numpy as np
 import pytest
 import xarray as xr
 
-from imap_processing.ultra.l1c.ultra_l1c import create_dataset, ultra_l1c
+from imap_processing.ultra.l1c.ultra_l1c import ultra_l1c
+from imap_processing.ultra.utils.ultra_l1_utils import create_dataset
 
 
 @pytest.fixture()
 def mock_data_l1b_dict():
     # Create sample data for the xarray Dataset
     epoch = np.arange(
-        "2024-02-07T15:28:37", "2024-02-07T16:24:50", dtype="datetime64[s]"
-    )[:5]
+        "2024-02-07T15:28:37", "2024-02-07T15:28:42", dtype="datetime64[s]"
+    )
 
     data_vars_histogram = {
         "sid": ("epoch", np.zeros(5)),
@@ -66,7 +67,9 @@ def mock_data_l1c_dict():
 
 def test_create_dataset(mock_data_l1c_dict):
     """Tests that dataset is created as expected."""
-    dataset = create_dataset(mock_data_l1c_dict, "imap_ultra_l1c_45sensor-histogram")
+    dataset = create_dataset(
+        mock_data_l1c_dict, "imap_ultra_l1c_45sensor-histogram", "l1c"
+    )
 
     assert "epoch" in dataset.coords
     assert dataset.coords["epoch"].dtype == "datetime64[ns]"
@@ -92,9 +95,10 @@ def test_ultra_l1c(mock_data_l1b_dict):
 
 def test_ultra_l1c_error(mock_data_l1b_dict):
     """Tests that L1b data throws an error."""
-    data_dict = mock_data_l1b_dict.copy()
-    data_dict["bad_key"] = data_dict.pop("imap_ultra_l1a_45sensor-histogram")
+    mock_data_l1b_dict["bad_key"] = mock_data_l1b_dict.pop(
+        "imap_ultra_l1a_45sensor-histogram"
+    )
     with pytest.raises(
         ValueError, match="Data dictionary does not contain the expected keys."
     ):
-        ultra_l1c(data_dict)
+        ultra_l1c(mock_data_l1b_dict)

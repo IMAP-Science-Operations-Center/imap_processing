@@ -91,7 +91,7 @@ eventtype:
   FIELDNAM: eventtype
   LABLAXIS: eventtype
   # TODO: come back to format
-  UNITS: ' '
+  UNITS: " "
 
 vx_ultra:
   <<: *default
@@ -99,7 +99,7 @@ vx_ultra:
   FIELDNAM: vx_ultra
   LABLAXIS: vx ultra
   # TODO: come back to format
-  UNITS: ' '
+  UNITS: " "
 
 vy_ultra:
   <<: *default
@@ -107,7 +107,7 @@ vy_ultra:
   FIELDNAM: vy_ultra
   LABLAXIS: vy ultra
   # TODO: come back to format
-  UNITS: ' '
+  UNITS: " "
 
 vz_ultra:
   <<: *default
@@ -115,7 +115,7 @@ vz_ultra:
   FIELDNAM: vz_ultra
   LABLAXIS: vz ultra
   # TODO: come back to format
-  UNITS: ' '
+  UNITS: " "
 
 energy:
   <<: *default
@@ -131,7 +131,7 @@ species:
   FIELDNAM: species
   LABLAXIS: species
   # TODO: come back to format
-  UNITS: ' '
+  UNITS: " "
 
 event_efficiency:
   <<: *default
@@ -139,7 +139,7 @@ event_efficiency:
   FIELDNAM: event_efficiency
   LABLAXIS: event efficiency
   # TODO: come back to format
-  UNITS: ' '
+  UNITS: " "
 
 vx_sc:
   <<: *default
@@ -147,7 +147,7 @@ vx_sc:
   FIELDNAM: vx_sc
   LABLAXIS: vx sc
   # TODO: come back to format
-  UNITS: ' '
+  UNITS: " "
 
 vy_sc:
   <<: *default
@@ -155,7 +155,7 @@ vy_sc:
   FIELDNAM: vy_sc
   LABLAXIS: vy sc
   # TODO: come back to format
-  UNITS: ' '
+  UNITS: " "
 
 vz_sc:
   <<: *default
@@ -163,7 +163,7 @@ vz_sc:
   FIELDNAM: vz_sc
   LABLAXIS: vz sc
   # TODO: come back to format
-  UNITS: ' '
+  UNITS: " "
 
 vx_dps_sc:
   <<: *default
@@ -171,7 +171,7 @@ vx_dps_sc:
   FIELDNAM: vx_dps_sc
   LABLAXIS: vx dps sc
   # TODO: come back to format
-  UNITS: ' '
+  UNITS: " "
 
 vy_dps_sc:
   <<: *default
@@ -179,7 +179,7 @@ vy_dps_sc:
   FIELDNAM: vy_dps_sc
   LABLAXIS: vy dps sc
   # TODO: come back to format
-  UNITS: ' '
+  UNITS: " "
 
 vz_dps_sc:
   <<: *default
@@ -187,7 +187,7 @@ vz_dps_sc:
   FIELDNAM: vz_dps_sc
   LABLAXIS: vz dps sc
   # TODO: come back to format
-  UNITS: ' '
+  UNITS: " "
 
 vx_dps_helio:
   <<: *default
@@ -195,7 +195,7 @@ vx_dps_helio:
   FIELDNAM: vx_dps_helio
   LABLAXIS: vx dps helio
   # TODO: come back to format
-  UNITS: ' '
+  UNITS: " "
 
 vy_dps_helio:
   <<: *default
@@ -203,7 +203,7 @@ vy_dps_helio:
   FIELDNAM: vy_dps_helio
   LABLAXIS: vy dps helio
   # TODO: come back to format
-  UNITS: ' '
+  UNITS: " "
 
 vz_dps_helio:
   <<: *default
@@ -211,7 +211,7 @@ vz_dps_helio:
   FIELDNAM: vz_dps_helio
   LABLAXIS: vz dps helio
   # TODO: come back to format
-  UNITS: ' '
+  UNITS: " "
 
 eventtimes:
   <<: *default
@@ -219,7 +219,7 @@ eventtimes:
   FIELDNAM: eventtimes
   LABLAXIS: event times
   # TODO: come back to format
-  UNITS: ' '
+  UNITS: " "
 
 spin_number:
   <<: *default
@@ -227,7 +227,7 @@ spin_number:
   FIELDNAM: spin_number
   LABLAXIS: spin_number
   # TODO: come back to format
-  UNITS: ' '
+  UNITS: " "
 
 spin_start_time:
   <<: *default
@@ -291,7 +291,7 @@ quality_hk:
   FIELDNAM: quality_hk
   LABLAXIS: quality hk
   # TODO: come back to format
-  UNITS: ' '
+  UNITS: " "
 
 quality_attitude:
   <<: *default
@@ -299,7 +299,7 @@ quality_attitude:
   FIELDNAM: quality_attitude
   LABLAXIS: quality attitude
   # TODO: come back to format
-  UNITS: ' '
+  UNITS: " "
 
 quality_instruments:
   <<: *default
@@ -307,4 +307,4 @@ quality_instruments:
   FIELDNAM: quality_instruments
   LABLAXIS: quality instruments
   # TODO: come back to format
-  UNITS: ' '
+  UNITS: " "
