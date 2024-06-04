@@ -37,6 +37,10 @@ class TimeTuple:
         """Convert the TimeTuple to seconds."""
         return self.seconds + self.subseconds / GlowsConstants.SUBSECOND_LIMIT
 
+    def to_float(self):
+        """Convert the TimeTuple to a float."""
+        return self.seconds + self.subseconds / GlowsConstants.SUBSECOND_LIMIT
+
 
 @dataclass(frozen=True)
 class GlowsConstants:
