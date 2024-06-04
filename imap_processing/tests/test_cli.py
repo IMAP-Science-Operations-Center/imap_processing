@@ -168,19 +168,10 @@ def test_ultra_l1b(mock_ultra_l1b, mock_instrument_dependencies):
     mock_ultra_l1b.return_value = ["l1b_dataset0", "l1b_dataset1"]
     mocks["mock_write_cdf"].side_effect = ["/path/to/product0", "/path/to/product1"]
 
-    dependency_str = (
-        "[{"
-        "'instrument': 'ultra',"
-        "'data_level': 'l1a',"
-        "'descriptor': 'descriptor',"
-        "'version': 'v001',"
-        "'start_date': '20240207'"
-        "}]"
-    )
-    instrument = Ultra("l1b", dependency_str, "20240207", "20240208", "v001", True)
+    instrument = Ultra("l1b", "[]", "20240207", "20240208", "v001", True)
     instrument.process()
-    assert mocks["mock_query"].call_count == 1
-    assert mocks["mock_download"].call_count == 1
+    assert mocks["mock_query"].call_count == 0
+    assert mocks["mock_download"].call_count == 0
     assert mock_ultra_l1b.call_count == 1
     assert mocks["mock_upload"].call_count == 2
 
@@ -194,18 +185,9 @@ def test_ultra_l1c(mock_ultra_l1c, mock_instrument_dependencies):
     mock_ultra_l1c.return_value = ["l1c_dataset0", "l1c_dataset1"]
     mocks["mock_write_cdf"].side_effect = ["/path/to/product0", "/path/to/product1"]
 
-    dependency_str = (
-        "[{"
-        "'instrument': 'ultra',"
-        "'data_level': 'l1b',"
-        "'descriptor': 'descriptor',"
-        "'version': 'v001',"
-        "'start_date': '20240207'"
-        "}]"
-    )
-    instrument = Ultra("l1c", dependency_str, "20240207", "20240208", "v001", True)
+    instrument = Ultra("l1c", "[]", "20240207", "20240208", "v001", True)
     instrument.process()
-    assert mocks["mock_query"].call_count == 1
-    assert mocks["mock_download"].call_count == 1
+    assert mocks["mock_query"].call_count == 0
+    assert mocks["mock_download"].call_count == 0
     assert mock_ultra_l1c.call_count == 1
     assert mocks["mock_upload"].call_count == 2
