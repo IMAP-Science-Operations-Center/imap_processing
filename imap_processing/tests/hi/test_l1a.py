@@ -172,8 +172,8 @@ def test_allocate_histogram_dataset():
     n_packets = 5
     dataset = hist.allocate_histogram_dataset(n_packets)
 
-    assert dataset.dims["epoch"] == n_packets
-    assert dataset.dims["angle"] == 90
+    assert dataset.sizes["epoch"] == n_packets
+    assert dataset.sizes["angle"] == 90
     for var_name in (
         "ccsds_met",
         "esa_step",

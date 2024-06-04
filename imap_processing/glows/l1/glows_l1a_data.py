@@ -1,9 +1,9 @@
 """Contains data classes to support GLOWS L1A processing."""
 
 import struct
-from dataclasses import dataclass
+from dataclasses import InitVar, dataclass, field
 
-from imap_processing.glows import version
+from imap_processing.glows import __version__
 from imap_processing.glows.l0.glows_l0_data import DirectEventL0, HistogramL0
 from imap_processing.glows.utils.constants import DirectEvent, TimeTuple
 
@@ -139,12 +139,19 @@ class HistogramL1A:
 
     Attributes
     ----------
-    l0: HistogramL0
-        HistogramL0 Data class containing the raw data from the histogram packet
+    l0: InitVar[HistogramL0]
+        HistogramL0 Data class containing the raw data from the histogram packet. This
+        is only used to create the class and cannot be accessed from an instance.
     histograms: list[int]
         List of histogram data values
-    block_header: dict
-        Header for L1A
+    flight_software_version: int
+        Version of the flight software used to generate the data. Part of block header.
+    ground_software_version: str
+        Version of the ground software used to process the data. Part of block header.
+    pkts_file_name: str
+        Name of the packet file used to generate the data. Part of block header.
+    seq_count_in_pkts_file: int
+        Sequence count in the packet file, equal to SRC_SEQ_CTR Part of block header.
     last_spin_id: int
         ID of the last spin in block (computed with start spin and offset)
     imap_start_time: tuple[int, int]
@@ -157,40 +164,75 @@ class HistogramL1A:
     glows_time_offset: tuple[int, int]
         GLOWS end time offset for the block, in the form (seconds, subseconds). In
         algorithm document as "glows_end_time_offset"
+    number_of_spins_per_block: int
+        Number of spins in the block, from L0.SPINS
+    number_of_bins_per_histogram: int
+        Number of bins in the histogram, from L0.NBINS
+    number_of_events: int
+        Number of events in the block, from L0.EVENTS
+    filter_temperature_average: int
+        Average filter temperature in the block, from L0.TEMPAVG. Uint encoded.
+    filter_temperature_variance: int
+        Variance of filter temperature in the block, from L0.TEMPVAR. Uint encoded.
+    hv_voltage_average: int
+        Average HV voltage in the block, from L0.HVAVG. Uint encoded.
+    hv_voltage_variance: int
+        Variance of HV voltage in the block, from L0.HVVAR. Uint encoded.
+    spin_period_average: int
+        Average spin period in the block, from L0.SPAVG. Uint encoded.
+    spin_period_variance: int
+        Variance of spin period in the block, from L0.SPVAR. Uint encoded.
+    pulse_length_average: int
+        Average pulse length in the block, from L0.ELAVG. Uint encoded.
+    pulse_length_variance: int
+        Variance of pulse length in the block, from L0.ELVAR. Uint encoded.
     flags: dict
         Dictionary containing "flags_set_onboard" from L0, and "is_generated_on_ground",
         which is set to "False" for decommed packets.
     """
 
-    l0: HistogramL0
-    histograms: list[int]
-    block_header: dict
-    last_spin_id: int
-    imap_start_time: TimeTuple
-    imap_time_offset: TimeTuple
-    glows_start_time: TimeTuple
-    glows_time_offset: TimeTuple
-    flags: dict
+    l0: InitVar[HistogramL0]
+    histograms: list[int] = None
+    # next four are in block header
+    flight_software_version: int = None
+    ground_software_version: str = None
+    pkts_file_name: str = None
+    seq_count_in_pkts_file: int = None
+    last_spin_id: int = None
+    imap_start_time: TimeTuple = None
+    imap_time_offset: TimeTuple = None
+    glows_start_time: TimeTuple = None
+    glows_time_offset: TimeTuple = None
+    # Following variables are copied from L0
+    number_of_spins_per_block: int = None
+    number_of_bins_per_histogram: int = None
+    number_of_events: int = None
+    filter_temperature_average: int = None
+    filter_temperature_variance: int = None
+    hv_voltage_average: int = None
+    hv_voltage_variance: int = None
+    spin_period_average: int = None
+    spin_period_variance: int = None
+    pulse_length_average: int = None
+    pulse_length_variance: int = None
+    flags: dict = None
 
-    def __init__(self, level0: HistogramL0):
+    def __post_init__(self, l0: HistogramL0):
         """Set the attributes based on the given L0 histogram data.
 
         This includes generating a block header and converting the time attributes from
         HistogramL0 into TimeTuple pairs.
         """
-        self.l0 = level0
-        self.histograms = list(self.l0.HISTOGRAM_DATA)
+        self.histograms = list(l0.HISTOGRAM_DATA)
 
-        self.block_header = {
-            "flight_software_version": self.l0.SWVER,
-            "ground_software_version": version,
-            "pkts_file_name": self.l0.packet_file_name,
-            # note: packet number is seq_count (per apid!) field in CCSDS header
-            "seq_count_in_pkts_file": self.l0.ccsds_header.SRC_SEQ_CTR,
-        }
+        self.flight_software_version = l0.SWVER
+        self.ground_software_version = __version__
+        self.pkts_file_name = l0.packet_file_name
+        # note: packet number is seq_count (per apid!) field in CCSDS header
+        self.seq_count_in_pkts_file = l0.ccsds_header.SRC_SEQ_CTR
 
         # use start ID and offset to calculate the last spin ID in the block
-        self.last_spin_id = self.l0.STARTID + self.l0.ENDID
+        self.last_spin_id = l0.STARTID + l0.ENDID
 
         # TODO: This sanity check should probably exist in the final code. However,
         # the emulator code does not properly set these values.
@@ -200,14 +242,27 @@ class HistogramL1A:
         #                      f"[{self.l0.SPINS}]")
 
         # Create time tuples based on second and subsecond pairs
-        self.imap_start_time = TimeTuple(self.l0.SEC, self.l0.SUBSEC)
-        self.imap_time_offset = TimeTuple(self.l0.OFFSETSEC, self.l0.OFFSETSUBSEC)
-        self.glows_start_time = TimeTuple(self.l0.GLXSEC, self.l0.GLXSUBSEC)
-        self.glows_time_offset = TimeTuple(self.l0.GLXOFFSEC, self.l0.GLXOFFSUBSEC)
+        self.imap_start_time = TimeTuple(l0.SEC, l0.SUBSEC)
+        self.imap_time_offset = TimeTuple(l0.OFFSETSEC, l0.OFFSETSUBSEC)
+        self.glows_start_time = TimeTuple(l0.GLXSEC, l0.GLXSUBSEC)
+        self.glows_time_offset = TimeTuple(l0.GLXOFFSEC, l0.GLXOFFSUBSEC)
+
+        # In L1a, these are left as unit encoded values.
+        self.number_of_spins_per_block = l0.SPINS
+        self.number_of_bins_per_histogram = l0.NBINS
+        self.number_of_events = l0.EVENTS
+        self.filter_temperature_average = l0.TEMPAVG
+        self.filter_temperature_variance = l0.TEMPVAR
+        self.hv_voltage_average = l0.HVAVG
+        self.hv_voltage_variance = l0.HVVAR
+        self.spin_period_average = l0.SPAVG
+        self.spin_period_variance = l0.SPVAR
+        self.pulse_length_average = l0.ELAVG
+        self.pulse_length_variance = l0.ELVAR
 
         # Flags
         self.flags = {
-            "flags_set_onboard": self.l0.FLAGS,
+            "flags_set_onboard": l0.FLAGS,
             "is_generated_on_ground": False,
         }
 
@@ -220,13 +275,20 @@ class DirectEventL1A:
     so this class may span multiple packets. This is determined by the SEQ and LEN,
     by each packet having an incremental SEQ until LEN number of packets.
 
+    Block header information is retrieved from l0:
+    {
+    "flight_software_version" = l0.ccsds_header.VERSION
+    "ground_software_version" = __version__
+    "pkts_file_name" = l0.packet_file_name
+    "seq_count_in_pkts_file" = l0.ccsds_header.SRC_SEQ_CTR
+    }
+
     Attributes
     ----------
     l0: DirectEventL0
         Level 0 data. In the case of multiple L0 direct events, this is the first L0
-        data class in the sequence.
-    block_header: dict
-        Block header data structure containing versioning, sequence, and file names
+        data class in the sequence. This is used to verify all events in the sequence
+        match.
     de_data: bytearray
         Bytearray of raw DirectEvent data, which is converted into direct_events
     most_recent_seq: int
@@ -249,8 +311,7 @@ class DirectEventL1A:
     """
 
     l0: DirectEventL0
-    block_header: dict
-    de_data: bytearray
+    de_data: bytearray = field(repr=False)  # Do not include in prints
     most_recent_seq: int
     missing_seq: list[int]
     status_data: StatusData = None
@@ -261,13 +322,6 @@ class DirectEventL1A:
         self.most_recent_seq = self.l0.SEQ
         self.de_data = bytearray(level0.DE_DATA)
         self.missing_seq = []
-
-        self.block_header = {
-            "ground_software_version": version,
-            "pkts_file_name": self.l0.packet_file_name,
-            # note: packet number is seq_count (per apid!) field in CCSDS header
-            "seq_count_in_pkts_file": self.l0.ccsds_header.SRC_SEQ_CTR,
-        }
 
         if level0.LEN == 1:
             self._process_de_data()
@@ -309,7 +363,7 @@ class DirectEventL1A:
         if not match:
             raise ValueError(
                 f"While attempting to merge L0 packet {second_l0} "
-                f"into L1A packet {self!r}, mismatched values "
+                f"with {self.l0} mismatched values"
                 f"were found. "
             )
 

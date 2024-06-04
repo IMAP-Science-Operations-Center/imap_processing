@@ -1,13 +1,15 @@
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["poetry-core>=1.0.0", "poetry-dynamic-versioning>=1.0.0,<2.0.0"]
+build-backend = "poetry_dynamic_versioning.backend"
 
 [tool.poetry]
 name = "imap-processing"
-version = "0.2.0"
+# Gets updated dynamically by the poetry-dynamic-versioning plugin
+version = "0.0.0"
 description = "IMAP Science Operations Center Processing"
 authors = ["IMAP SDC Developers <imap-sdc@lists.lasp.colorado.edu>"]
 readme = "README.md"
+include = ["imap_processing/_version.py"]
 license = "MIT"
 keywords = ["IMAP", "SDC", "SOC", "Science Operations"]
 classifiers = [
@@ -35,6 +37,7 @@ python = ">=3.9,<4"
 space_packet_parser = ">=4.2.0"
 spiceypy = ">=6.0.0"
 xarray = '>=2023.0.0'
+pyyaml = "^6.0.1"
 
 # Optional dependencies
 numpydoc = {version="^1.5.0", optional=true}
@@ -52,7 +55,7 @@ sphinxcontrib-openapi = {version="^0.8.3", optional=true}
 dev = ["pre-commit", "ruff"]
 doc = ["numpydoc", "pydata-sphinx-theme", "sphinx", "sphinxcontrib-openapi"]
 test = ["pytest", "pytest-cov"]
-tools= ["pandas", "openpyxl"]
+tools= ["openpyxl", "pandas"]
 
 [project.urls]
 homepage = "https://github.com/IMAP-Science-Operations-Center"
@@ -63,6 +66,10 @@ testpaths = [
   "imap_processing/tests",
 ]
 addopts = "-ra"
+filterwarnings = [
+    "ignore:Converting non-nanosecond:UserWarning:cdflib",
+    "ignore:datetime.datetime.utcfromtimestamp:DeprecationWarning:cdflib",
+]
 
 
 [tool.ruff]
@@ -87,3 +94,15 @@ imap_cli = 'imap_processing.cli:main'
 
 [tool.codespell]
 ignore-words-list = "livetime"
+
+[tool.poetry-dynamic-versioning]
+enable = true
+vcs = "git"
+
+[tool.poetry-dynamic-versioning.files."imap_processing/_version.py"]
+persistent-substitution = true
+initial-content = """
+  # These version placeholders will be replaced later during substitution.
+  __version__ = "0.0.0"
+  __version_tuple__ = (0, 0, 0)
+"""
