@@ -139,7 +139,7 @@ de_count:
 
 # Histogram Attributes
 
-## Coordindates
+## Coordinates
 azimuth_6:
   <<: *default
   VALIDMIN: 0
@@ -492,7 +492,7 @@ val_period:
   VALIDMIN: 0
   CATDESC: Valid Spin Period
   DEPEND_0: spin
-  FIELDNAM: Vaid Spin Period
+  FIELDNAM: Valid Spin Period
   FORMAT: I12
   VAR_TYPE: support_data
   LABLAXIS: valid spin period
@@ -505,7 +505,7 @@ val_spin:
   DEPEND_0: spin
   DISPLAY_TYPE: time_series
   FILLVAL: np.iinfo(np.int64).min
-  FIELDNAM: Vaid Spin Phase
+  FIELDNAM: Valid Spin Phase
   FORMAT: I12
   VAR_TYPE: support_data
   LABLAXIS: valid spin phase
