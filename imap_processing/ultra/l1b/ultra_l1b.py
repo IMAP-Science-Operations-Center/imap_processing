@@ -5,6 +5,7 @@ from pathlib import Path
 import xarray as xr
 
 from imap_processing.cdf.cdf_attribute_manager import CdfAttributeManager
+from imap_processing.cdf.utils import load_cdf
 from imap_processing.ultra.l1b.badtimes import calculate_badtimes
 from imap_processing.ultra.l1b.cullingmask import calculate_cullingmask
 from imap_processing.ultra.l1b.de import calculate_de
@@ -56,20 +57,25 @@ def create_dataset(data_dict, name):
     return dataset
 
 
-def ultra_l1b(data_dict: dict):
+def ultra_l1b(dependencies: list[Path]):
     """
     Process ULTRA L1A data into L1B CDF files at output_filepath.
 
     Parameters
     ----------
-    data_dict : dict
-        The data itself and its dependent data.
+    dependencies : list[Path]
+        List of dependencies.
 
     Returns
     -------
     output_datasets : list of xarray.Dataset
         List of xarray.Dataset
     """
+    data_dict = {}
+    for dependency in dependencies:
+        dataset = load_cdf(dependency, to_datetime=True)
+        data_dict[dataset.attrs["Logical_source"]] = dataset
+
     output_datasets = []
     instrument_id = 45 if "45" in next(iter(data_dict.keys())) else 90
 

@@ -134,8 +134,8 @@ def test_hi(mock_hi_l1a, mock_instrument_dependencies):
 
 
 @mock.patch("imap_processing.cli.ultra_l1a.ultra_l1a")
-def test_ultra(mock_ultra_l1a, mock_instrument_dependencies):
-    """Test coverage for cli.Ultra class"""
+def test_ultra_l1a(mock_ultra_l1a, mock_instrument_dependencies):
+    """Test coverage for cli.Ultra class with l1a data level"""
     mocks = mock_instrument_dependencies
     mocks["mock_query"].return_value = [{"file_path": "/path/to/file0"}]
     mocks["mock_download"].return_value = "dependency0"
@@ -156,4 +156,56 @@ def test_ultra(mock_ultra_l1a, mock_instrument_dependencies):
     assert mocks["mock_query"].call_count == 1
     assert mocks["mock_download"].call_count == 1
     assert mock_ultra_l1a.call_count == 1
+    assert mocks["mock_upload"].call_count == 2
+
+
+@mock.patch("imap_processing.cli.ultra_l1b.ultra_l1b")
+def test_ultra_l1b(mock_ultra_l1b, mock_instrument_dependencies):
+    """Test coverage for cli.Ultra class with l1b data level"""
+    mocks = mock_instrument_dependencies
+    mocks["mock_query"].return_value = [{"file_path": "/path/to/file0"}]
+    mocks["mock_download"].return_value = "dependency0"
+    mock_ultra_l1b.return_value = ["l1b_dataset0", "l1b_dataset1"]
+    mocks["mock_write_cdf"].side_effect = ["/path/to/product0", "/path/to/product1"]
+
+    dependency_str = (
+        "[{"
+        "'instrument': 'ultra',"
+        "'data_level': 'l1a',"
+        "'descriptor': 'descriptor',"
+        "'version': 'v001',"
+        "'start_date': '20240207'"
+        "}]"
+    )
+    instrument = Ultra("l1b", dependency_str, "20240207", "20240208", "v001", True)
+    instrument.process()
+    assert mocks["mock_query"].call_count == 1
+    assert mocks["mock_download"].call_count == 1
+    assert mock_ultra_l1b.call_count == 1
+    assert mocks["mock_upload"].call_count == 2
+
+
+@mock.patch("imap_processing.cli.ultra_l1c.ultra_l1c")
+def test_ultra_l1c(mock_ultra_l1c, mock_instrument_dependencies):
+    """Test coverage for cli.Ultra class with l1c data level"""
+    mocks = mock_instrument_dependencies
+    mocks["mock_query"].return_value = [{"file_path": "/path/to/file0"}]
+    mocks["mock_download"].return_value = "dependency0"
+    mock_ultra_l1c.return_value = ["l1c_dataset0", "l1c_dataset1"]
+    mocks["mock_write_cdf"].side_effect = ["/path/to/product0", "/path/to/product1"]
+
+    dependency_str = (
+        "[{"
+        "'instrument': 'ultra',"
+        "'data_level': 'l1b',"
+        "'descriptor': 'descriptor',"
+        "'version': 'v001',"
+        "'start_date': '20240207'"
+        "}]"
+    )
+    instrument = Ultra("l1c", dependency_str, "20240207", "20240208", "v001", True)
+    instrument.process()
+    assert mocks["mock_query"].call_count == 1
+    assert mocks["mock_download"].call_count == 1
+    assert mock_ultra_l1c.call_count == 1
     assert mocks["mock_upload"].call_count == 2

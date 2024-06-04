@@ -5,6 +5,7 @@ from pathlib import Path
 import xarray as xr
 
 from imap_processing.cdf.cdf_attribute_manager import CdfAttributeManager
+from imap_processing.cdf.utils import load_cdf
 from imap_processing.ultra.l1c.histogram import calculate_histogram
 from imap_processing.ultra.l1c.pset import (
     calculate_pset_backgroundrates,
@@ -59,20 +60,25 @@ def create_dataset(data_dict, name):
     return dataset
 
 
-def ultra_l1c(data_dict: dict):
+def ultra_l1c(dependencies: list[Path]):
     """
     Process ULTRA L1A and L1B data into L1C CDF files at output_filepath.
 
     Parameters
     ----------
-    data_dict : dict
-        The data itself and its dependent data.
+    dependencies : list[Path]
+        List of dependencies.
 
     Returns
     -------
     output_datasets : list of xarray.Dataset
         List of xarray.Dataset
     """
+    data_dict = {}
+    for dependency in dependencies:
+        dataset = load_cdf(dependency, to_datetime=True)
+        data_dict[dataset.attrs["Logical_source"]] = dataset
+
     output_datasets = []
     instrument_id = 45 if "45" in next(iter(data_dict.keys())) else 90
 
