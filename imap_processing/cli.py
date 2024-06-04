@@ -52,7 +52,6 @@ def _parse_args():
     --instrument "mag"
     --data-level "l1a"
     --start-date "20231212"
-    --end-date "20231212"
     --version "v001"
     --dependency "[
         {
