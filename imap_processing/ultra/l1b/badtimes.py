@@ -1,10 +1,5 @@
 """Calculates Badtimes."""
 
-import logging
-from collections import defaultdict
-
-logger = logging.getLogger(__name__)
-
 
 def calculate_badtimes(extended_spin_dict):
     """
@@ -20,7 +15,7 @@ def calculate_badtimes(extended_spin_dict):
     badtimes_dict : dict
         Dictionary containing the data.
     """
-    badtimes_dict = defaultdict(list)
+    badtimes_dict = {}
 
     # Placeholder for bitwise filtering based on quality flags
     badtimes_dict["epoch"] = extended_spin_dict["epoch"]

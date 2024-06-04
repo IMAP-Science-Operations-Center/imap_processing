@@ -1,12 +1,7 @@
 """Calculates Culling Mask."""
 
-import logging
-from collections import defaultdict
 
-logger = logging.getLogger(__name__)
-
-
-def calculate_culling_mask(extended_spin_dict):
+def calculate_cullingmask(extended_spin_dict):
     """
     Create dictionary with defined datatype for Culling Mask Data.
 
@@ -17,24 +12,24 @@ def calculate_culling_mask(extended_spin_dict):
 
     Returns
     -------
-    culling_mask_dict : dict
+    cullingmask_dict : dict
         Dictionary containing the data.
     """
-    culling_mask_dict = defaultdict(list)
+    cullingmask_dict = {}
 
     # Placeholder for bitwise filtering based on quality flags
-    culling_mask_dict["epoch"] = extended_spin_dict["epoch"]
-    culling_mask_dict["spin_number"] = extended_spin_dict["spin_number"]
-    culling_mask_dict["spin_start_time"] = extended_spin_dict["spin_start_time"]
-    culling_mask_dict["avg_spin_period"] = extended_spin_dict["avg_spin_period"]
-    culling_mask_dict["rate_start_pulses"] = extended_spin_dict["rate_start_pulses"]
-    culling_mask_dict["rate_stop_pulses"] = extended_spin_dict["rate_stop_pulses"]
-    culling_mask_dict["rate_coin_pulses"] = extended_spin_dict["rate_coin_pulses"]
-    culling_mask_dict["rate_processed_events"] = extended_spin_dict[
+    cullingmask_dict["epoch"] = extended_spin_dict["epoch"]
+    cullingmask_dict["spin_number"] = extended_spin_dict["spin_number"]
+    cullingmask_dict["spin_start_time"] = extended_spin_dict["spin_start_time"]
+    cullingmask_dict["avg_spin_period"] = extended_spin_dict["avg_spin_period"]
+    cullingmask_dict["rate_start_pulses"] = extended_spin_dict["rate_start_pulses"]
+    cullingmask_dict["rate_stop_pulses"] = extended_spin_dict["rate_stop_pulses"]
+    cullingmask_dict["rate_coin_pulses"] = extended_spin_dict["rate_coin_pulses"]
+    cullingmask_dict["rate_processed_events"] = extended_spin_dict[
         "rate_processed_events"
     ]
-    culling_mask_dict["rate_rejected_events"] = extended_spin_dict[
+    cullingmask_dict["rate_rejected_events"] = extended_spin_dict[
         "rate_rejected_events"
     ]
 
-    return culling_mask_dict
+    return cullingmask_dict

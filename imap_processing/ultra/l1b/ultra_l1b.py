@@ -6,9 +6,9 @@ import xarray as xr
 
 from imap_processing.cdf.cdf_attribute_manager import CdfAttributeManager
 from imap_processing.ultra.l1b.badtimes import calculate_badtimes
-from imap_processing.ultra.l1b.cullingmask import calculate_culling_mask
-from imap_processing.ultra.l1b.de import calculate_annotated_de
-from imap_processing.ultra.l1b.extendedspin import calculate_extended_spin
+from imap_processing.ultra.l1b.cullingmask import calculate_cullingmask
+from imap_processing.ultra.l1b.de import calculate_de
+from imap_processing.ultra.l1b.extendedspin import calculate_extendedspin
 
 
 def create_dataset(data_dict, name):
@@ -74,12 +74,12 @@ def ultra_l1b(data_dict: dict):
     instrument_id = 45 if "45" in next(iter(data_dict.keys())) else 90
 
     if f"imap_ultra_l1a_{instrument_id}sensor-rates" in data_dict:
-        extendedspin_dict = calculate_extended_spin(data_dict)
+        extendedspin_dict = calculate_extendedspin(data_dict)
         extendedspin_dataset = create_dataset(
             extendedspin_dict, f"imap_ultra_l1b_{instrument_id}sensor-extendedspin"
         )
 
-        cullingmask_dict = calculate_culling_mask(extendedspin_dict)
+        cullingmask_dict = calculate_cullingmask(extendedspin_dict)
         cullingmask_dataset = create_dataset(
             cullingmask_dict, f"imap_ultra_l1b_{instrument_id}sensor-cullingmask"
         )
@@ -96,7 +96,7 @@ def ultra_l1b(data_dict: dict):
         f"imap_ultra_l1a_{instrument_id}sensor-aux" in data_dict
         and f"imap_ultra_l1a_{instrument_id}sensor-de" in data_dict
     ):
-        de_dict = calculate_annotated_de(data_dict)
+        de_dict = calculate_de(data_dict)
         dataset = create_dataset(de_dict, f"imap_ultra_l1b_{instrument_id}sensor-de")
         output_datasets.append(dataset)
     else:
