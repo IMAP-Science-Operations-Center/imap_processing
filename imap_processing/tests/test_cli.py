@@ -48,7 +48,7 @@ def test_main(mock_instrument):
         "--end-date",
         "20240501",
         "--version",
-        "v00-01",
+        "v001",
         "--upload-to-sdc",
     ]
     with mock.patch.object(sys, "argv", test_args):
