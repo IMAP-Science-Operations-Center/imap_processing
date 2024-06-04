@@ -519,11 +519,19 @@ class Ultra(ProcessInstrument):
             products = [write_cdf(dataset) for dataset in datasets]
             return products
         elif self.data_level == "l1b":
-            datasets = ultra_l1b.ultra_l1b(dependencies)
+            data_dict = {}
+            for dependency in dependencies:
+                dataset = load_cdf(dependency, to_datetime=True)
+                data_dict[dataset.attrs["Logical_source"]] = dataset
+            datasets = ultra_l1b.ultra_l1b(data_dict)
             products = [write_cdf(dataset) for dataset in datasets]
             return products
         elif self.data_level == "l1c":
-            datasets = ultra_l1c.ultra_l1c(dependencies)
+            data_dict = {}
+            for dependency in dependencies:
+                dataset = load_cdf(dependency, to_datetime=True)
+                data_dict[dataset.attrs["Logical_source"]] = dataset
+            datasets = ultra_l1c.ultra_l1c(data_dict)
             products = [write_cdf(dataset) for dataset in datasets]
             return products
 
