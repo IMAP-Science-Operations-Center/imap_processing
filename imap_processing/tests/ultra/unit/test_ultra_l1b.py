@@ -2,11 +2,12 @@ import numpy as np
 import pytest
 import xarray as xr
 
+from imap_processing.ultra.l1b.de import calculate_de
 from imap_processing.ultra.l1b.ultra_l1b import create_dataset, ultra_l1b
 
 
 @pytest.fixture()
-def mock_data_l1a_dict():
+def mock_data_l1a_rates_dict():
     # Create sample data for the xarray Dataset
     epoch = np.arange(
         "2024-02-07T15:28:37", "2024-02-07T16:24:50", dtype="datetime64[s]"
@@ -25,6 +26,29 @@ def mock_data_l1a_dict():
     dataset = xr.Dataset(data_vars, coords={"epoch": epoch}, attrs=attrs)
 
     data_dict = {"imap_ultra_l1a_45sensor-rates": dataset}
+    return data_dict
+
+
+@pytest.fixture()
+def mock_data_l1a_de_dict():
+    # Create sample data for the xarray Dataset
+    epoch = np.arange(
+        "2024-02-07T15:28:37", "2024-02-07T16:24:50", dtype="datetime64[s]"
+    )[:5]
+
+    data_vars = {
+        "COIN_TYPE": ("epoch", np.zeros(5)),
+    }
+
+    attrs = {
+        "Logical_source": "imap_ultra_l1a_45sensor-rates",
+        "Logical_source_description": "IMAP Mission ULTRA Instrument "
+        "Level-1A Single-Sensor Data",
+    }
+
+    dataset = xr.Dataset(data_vars, coords={"epoch": epoch}, attrs=attrs)
+
+    data_dict = {"imap_ultra_l1a_45sensor-de": dataset}
     return data_dict
 
 
@@ -49,9 +73,9 @@ def test_create_dataset(mock_data_l1b_dict):
     np.testing.assert_array_equal(dataset["x_front"], np.zeros(3))
 
 
-def test_ultra_l1b(mock_data_l1a_dict):
+def test_ultra_l1b(mock_data_l1a_rates_dict):
     """Tests that L1b data is created."""
-    output_datasets = ultra_l1b(mock_data_l1a_dict)
+    output_datasets = ultra_l1b(mock_data_l1a_rates_dict)
 
     assert len(output_datasets) == 3
     assert (
@@ -71,11 +95,19 @@ def test_ultra_l1b(mock_data_l1a_dict):
     )
 
 
-def test_ultra_l1b_error(mock_data_l1a_dict):
+def test_ultra_l1b_error(mock_data_l1a_rates_dict):
     """Tests that L1a data throws an error."""
-    data_dict = mock_data_l1a_dict.copy()
+    data_dict = mock_data_l1a_rates_dict.copy()
     data_dict["bad_key"] = data_dict.pop("imap_ultra_l1a_45sensor-rates")
     with pytest.raises(
         ValueError, match="Data dictionary does not contain the expected keys."
     ):
         ultra_l1b(data_dict)
+
+
+def test_calculate_de(mock_data_l1a_de_dict):
+    """Tests calculate_de function."""
+
+    de_dict = calculate_de(mock_data_l1a_de_dict)
+
+    assert "epoch" in de_dict
