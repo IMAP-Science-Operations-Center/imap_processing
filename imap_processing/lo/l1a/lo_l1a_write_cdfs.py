@@ -119,5 +119,5 @@ def create_lo_scide_dataset(sci_de: list):
         # TODO: figure out how to convert time data to epoch
         coords={"epoch": sci_de_epoch},
     )
-    print("test")
+
     return sci_de_dataset
