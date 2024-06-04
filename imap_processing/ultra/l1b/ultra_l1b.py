@@ -45,7 +45,7 @@ def ultra_l1b(data_dict: dict):
     ):
         de_dataset = calculate_de(data_dict, f"imap_ultra_l1b_{instrument_id}sensor-de")
 
-        output_datasets.append(de_dataset)
+        output_datasets.extend([de_dataset])
     else:
         raise ValueError("Data dictionary does not contain the expected keys.")
 

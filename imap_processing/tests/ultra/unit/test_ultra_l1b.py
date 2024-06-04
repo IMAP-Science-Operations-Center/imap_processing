@@ -30,29 +30,6 @@ def mock_data_l1a_rates_dict():
 
 
 @pytest.fixture()
-def mock_data_l1a_de_dict():
-    # Create sample data for the xarray Dataset
-    epoch = np.arange(
-        "2024-02-07T15:28:37", "2024-02-07T15:28:42", dtype="datetime64[s]"
-    )
-
-    data_vars = {
-        "COIN_TYPE": ("epoch", np.zeros(5)),
-    }
-
-    attrs = {
-        "Logical_source": "imap_ultra_l1a_45sensor-rates",
-        "Logical_source_description": "IMAP Mission ULTRA Instrument "
-        "Level-1A Single-Sensor Data",
-    }
-
-    dataset = xr.Dataset(data_vars, coords={"epoch": epoch}, attrs=attrs)
-
-    data_dict = {"imap_ultra_l1a_45sensor-de": dataset}
-    return data_dict
-
-
-@pytest.fixture()
 def mock_data_l1b_dict():
     epoch = np.array(
         [760591786368000000, 760591787368000000, 760591788368000000],
