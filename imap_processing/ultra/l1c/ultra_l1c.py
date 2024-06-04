@@ -33,7 +33,7 @@ def create_dataset(data_dict, name):
     cdf_manager = CdfAttributeManager(Path(__file__).parents[2] / "cdf" / "config")
     cdf_manager.load_global_attributes("imap_default_global_cdf_attrs.yaml")
     cdf_manager.load_global_attributes("imap_ultra_global_cdf_attrs.yaml")
-    cdf_manager.load_variable_attrs("imap_ultra_l1c_variable_attrs.yaml")
+    cdf_manager.load_variable_attributes("imap_ultra_l1c_variable_attrs.yaml")
 
     epoch_time = xr.DataArray(
         data_dict["epoch"],
@@ -80,7 +80,10 @@ def ultra_l1c(data_dict: dict):
         f"imap_ultra_l1a_{instrument_id}sensor-histogram" in data_dict
         and f"imap_ultra_l1b_{instrument_id}sensor-cullingmask" in data_dict
     ):
-        histogram_dict = calculate_histogram(data_dict)
+        histogram_dict = calculate_histogram(
+            data_dict[f"imap_ultra_l1a_{instrument_id}sensor-histogram"],
+            data_dict[f"imap_ultra_l1b_{instrument_id}sensor-cullingmask"],
+        )
         histogram_dataset = create_dataset(
             histogram_dict, f"imap_ultra_l1c_{instrument_id}sensor-histogram"
         )

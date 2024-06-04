@@ -125,10 +125,10 @@ shcoarse:
   # TODO: come back to format
   UNITS: seconds
 
-packet_data:
+packetdata:
   <<: *default
   CATDESC: A 2D numpy array representing pixel values. Each pixel is stored as an unsigned 16-bit integer.
-  FIELDNAM: packet_data
+  FIELDNAM: packetdata
   LABLAXIS: packet data
   # TODO: come back to format
   UNITS: " "

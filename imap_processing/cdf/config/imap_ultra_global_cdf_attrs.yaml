@@ -39,7 +39,7 @@ imap_ultra_l1b_90sensor-extendedspin:
     Logical_source_description: IMAP-Ultra Instrument Level-1B Extended Spin Data.
 
 imap_ultra_l1b_45sensor-cullingmask:
-    Descriptor: 45cullingmask
+    Descriptor: 45sensor-cullingmask
     TEXT: *txt
     Data_level: 1B
     Data_type: L1B_Culling-Mask>Level-1B Culling Mask
@@ -47,7 +47,7 @@ imap_ultra_l1b_45sensor-cullingmask:
     Logical_source_description: IMAP-Ultra Instrument Level-1B Culling Mask Data.
 
 imap_ultra_l1b_90sensor-cullingmask:
-    Descriptor: 90cullingmask
+    Descriptor: 90sensor-cullingmask
     TEXT: *txt
     Data_level: 1B
     Data_type: L1B_Culling-Mask>Level-1B Culling Mask
@@ -55,7 +55,7 @@ imap_ultra_l1b_90sensor-cullingmask:
     Logical_source_description: IMAP-Ultra Instrument Level-1B Culling Mask Data.
 
 imap_ultra_l1b_45sensor-badtimes:
-    Descriptor: 45badtimes
+    Descriptor: 45sensor-badtimes
     TEXT: *txt
     Data_level: 1B
     Data_type: L1B_Badtimes>Level-1B Badtimes
@@ -63,9 +63,89 @@ imap_ultra_l1b_45sensor-badtimes:
     Logical_source_description: IMAP-Ultra Instrument Level-1B Badtimes Data.
 
 imap_ultra_l1b_90sensor-badtimes:
-    Descriptor: 90badtimes
+    Descriptor: 90sensor-badtimes
     TEXT: *txt
     Data_level: 1B
     Data_type: L1B_Badtimes>Level-1B Badtimes
     Logical_source: imap_ultra_l1b_90sensor-badtimes
     Logical_source_description: IMAP-Ultra Instrument Level-1B Badtimes Data.
+
+imap_ultra_l1c_45sensor-pset-exposure:
+    Descriptor: 45sensor-pset-exposure
+    TEXT: *txt
+    Data_level: 1C
+    Data_type: L1C_Exposure>Level-1C Exposure
+    Logical_source: imap_ultra_l1c_45sensor-pset-exposure
+    Logical_source_description: IMAP-Ultra Instrument Level-1C Pointing Set Grid Exposure Data.
+
+imap_ultra_l1c_90sensor-pset-exposure:
+    Descriptor: 90sensor-pset-exposure
+    TEXT: *txt
+    Data_level: 1C
+    Data_type: L1C_Exposure>Level-1C Exposure
+    Logical_source: imap_ultra_l1c_90sensor-pset-exposure
+    Logical_source_description: IMAP-Ultra Instrument Level-1C Pointing Set Grid Exposure Data.
+
+imap_ultra_l1c_45sensor-pset-sensitivity:
+    Descriptor: 45sensor-pset-sensitivity
+    TEXT: *txt
+    Data_level: 1C
+    Data_type: L1C_Sensitivity>Level-1C Sensitivity
+    Logical_source: imap_ultra_l1c_45sensor-pset-sensitivity
+    Logical_source_description: IMAP-Ultra Instrument Level-1C Pointing Set Grid Sensitivity Data.
+
+imap_ultra_l1c_90sensor-pset-sensitivity:
+    Descriptor: 90sensor-pset-sensitivity
+    TEXT: *txt
+    Data_level: 1C
+    Data_type: L1C_Sensitivity>Level-1C Sensitivity
+    Logical_source: imap_ultra_l1c_90sensor-pset-sensitivity
+    Logical_source_description: IMAP-Ultra Instrument Level-1C Pointing Set Grid Sensitivity Data.
+
+imap_ultra_l1c_45sensor-pset-counts:
+    Descriptor: 45sensor-pset-counts
+    TEXT: *txt
+    Data_level: 1C
+    Data_type: L1C_Sensitivity>Level-1C Counts
+    Logical_source: imap_ultra_l1c_45sensor-pset-counts
+    Logical_source_description: IMAP-Ultra Instrument Level-1C Pointing Set Grid Counts Data.
+
+imap_ultra_l1c_90sensor-pset-counts:
+    Descriptor: 90sensor-pset-counts
+    TEXT: *txt
+    Data_level: 1C
+    Data_type: L1C_Sensitivity>Level-1C Counts
+    Logical_source: imap_ultra_l1c_90sensor-pset-counts
+    Logical_source_description: IMAP-Ultra Instrument Level-1C Pointing Set Grid Counts Data.
+
+imap_ultra_l1c_45sensor-pset-backgroundrate:
+    Descriptor: 45sensor-pset-backgroundrate
+    TEXT: *txt
+    Data_level: 1C
+    Data_type: L1C_Sensitivity>Level-1C Background Rate
+    Logical_source: imap_ultra_l1c_45sensor-pset-backgroundrate
+    Logical_source_description: IMAP-Ultra Instrument Level-1C Pointing Set Grid Background Rate Data.
+
+imap_ultra_l1c_90sensor-pset-backgroundrate:
+    Descriptor: 90sensor-pset-backgroundrate
+    TEXT: *txt
+    Data_level: 1C
+    Data_type: L1C_Sensitivity>Level-1C Background Rate
+    Logical_source: imap_ultra_l1c_90sensor-pset-backgroundrate
+    Logical_source_description: IMAP-Ultra Instrument Level-1C Pointing Set Grid Background Rate Data.
+
+imap_ultra_l1c_45sensor-histogram:
+    Descriptor: 45sensor-histogram
+    TEXT: *txt
+    Data_level: 1C
+    Data_type: L1C_Sensitivity>Level-1C Histogram
+    Logical_source: imap_ultra_l1c_45sensor-histogram
+    Logical_source_description: IMAP-Ultra Instrument Level-1C Pointing Set Grid Histogram Data.
+
+imap_ultra_l1c_90sensor-histogram:
+    Descriptor: 90sensor-histogram
+    TEXT: *txt
+    Data_level: 1C
+    Data_type: L1C_Sensitivity>Level-1C Histogram
+    Logical_source: imap_ultra_l1c_90sensor-histogram
+    Logical_source_description: IMAP-Ultra Instrument Level-1C Pointing Set Grid Histogram Data.

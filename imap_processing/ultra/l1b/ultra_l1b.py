@@ -30,7 +30,7 @@ def create_dataset(data_dict, name):
     cdf_manager = CdfAttributeManager(Path(__file__).parents[2] / "cdf" / "config")
     cdf_manager.load_global_attributes("imap_default_global_cdf_attrs.yaml")
     cdf_manager.load_global_attributes("imap_ultra_global_cdf_attrs.yaml")
-    cdf_manager.load_variable_attrs("imap_ultra_l1b_variable_attrs.yaml")
+    cdf_manager.load_variable_attributes("imap_ultra_l1b_variable_attrs.yaml")
 
     epoch_time = xr.DataArray(
         data_dict["epoch"],

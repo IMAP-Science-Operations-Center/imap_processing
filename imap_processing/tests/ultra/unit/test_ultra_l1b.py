@@ -10,13 +10,12 @@ def mock_data_l1a_dict():
     # Create sample data for the xarray Dataset
     epoch = np.arange(
         "2024-02-07T15:28:37", "2024-02-07T16:24:50", dtype="datetime64[s]"
-    )[:3313]
+    )[:5]
+
     data_vars = {
-        "COIN_TYPE": (
-            ["epoch"],
-            np.random.randint(-9223372036854775808, high=0, size=3313),
-        ),
+        "COIN_TYPE": ("epoch", np.zeros(5)),
     }
+
     attrs = {
         "Logical_source": "imap_ultra_l1a_45sensor-rates",
         "Logical_source_description": "IMAP Mission ULTRA Instrument "
@@ -73,7 +72,7 @@ def test_ultra_l1b(mock_data_l1a_dict):
 
 
 def test_ultra_l1b_error(mock_data_l1a_dict):
-    """Tests that L1b data is created."""
+    """Tests that L1a data throws an error."""
     data_dict = mock_data_l1a_dict.copy()
     data_dict["bad_key"] = data_dict.pop("imap_ultra_l1a_45sensor-rates")
     with pytest.raises(
