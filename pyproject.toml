@@ -64,6 +64,10 @@ testpaths = [
   "imap_processing/tests",
 ]
 addopts = "-ra"
+filterwarnings = [
+    "ignore:Converting non-nanosecond:UserWarning:cdflib",
+    "ignore:datetime.datetime.utcfromtimestamp:DeprecationWarning:cdflib",
+]
 
 
 [tool.ruff]
