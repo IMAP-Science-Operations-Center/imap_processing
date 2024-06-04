@@ -21,6 +21,6 @@ class ImapCdfAttributes(CdfAttributeManager):
         # Looks for file named "imap_{instrument}_global_cdf_attrs.yaml"
         self.load_global_attributes(f"imap_{instrument}_global_cdf_attrs.yaml")
 
-    def add_instrument_variable_attrs(self, instrument, level):
+    def add_instrument_variable_attrs(self, instrument: str, level: str):
         """Add instrument specific variable attributes."""
-        self.load_variable_attrs(f"imap_{instrument}_{level}_variable_attrs.yaml")
+        self.load_variable_attributes(f"imap_{instrument}_{level}_variable_attrs.yaml")

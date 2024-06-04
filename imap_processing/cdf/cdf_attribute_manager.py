@@ -27,11 +27,17 @@ class CdfAttributeManager:
     ```
     cdf_attr_manager = CdfAttributeManager(data_dir)
     cdf_attr_manager.load_global_attributes("global_attrs.yaml")
-    cdf_attr_manager.load_global_attrs("instrument_global_attrs.yaml")
-    cdf_attr_manager.load_variable_attrs("variable_attrs.yaml")
+    cdf_attr_manager.load_global_attributes("instrument_global_attrs.yaml")
+    cdf_attr_manager.load_variable_attributes("variable_attrs.yaml")
     ```
 
+    Later files will overwrite earlier files if the same attribute is defined.
+
     You can then get the global and variable attributes:
+
+    If you provide an instrument_id, it will also add the attributes defined under
+    instrument_id. If this is not included, then only the attributes defined in the top
+    level of the file are used.
 
     ```
     # Instrument ID is optional for refining the attributes used from the file
@@ -44,7 +50,7 @@ class CdfAttributeManager:
 
     Attributes
     ----------
-    source_dir: Path
+    source_dir : Path
         The directory containing the schema and variable files - nominally config/
     """
 
@@ -54,7 +60,7 @@ class CdfAttributeManager:
 
         Parameters
         ----------
-        data_dir: Path
+        data_dir : Path
             The directory containing the schema and variable files - nominally config/
         """
         # TODO: Split up schema source and data source?
@@ -70,7 +76,7 @@ class CdfAttributeManager:
         self.variable_attribute_schema = self._load_default_variable_attr_schema()
 
         # Load Default IMAP Global Attributes
-        self.global_attributes = self._load_yaml_data(
+        self.global_attributes = CdfAttributeManager._load_yaml_data(
             self.source_dir / DEFAULT_GLOBAL_CDF_ATTRS_FILE
         )
         self.variable_attributes = dict()
@@ -87,7 +93,7 @@ class CdfAttributeManager:
             self.source_dir / "shared" / DEFAULT_GLOBAL_CDF_ATTRS_SCHEMA_FILE
         )
         # Load the Schema
-        return self._load_yaml_data(default_schema_path)
+        return CdfAttributeManager._load_yaml_data(default_schema_path)
 
     def _load_default_variable_attr_schema(self) -> dict:
         """
@@ -107,13 +113,19 @@ class CdfAttributeManager:
         """
         Update the global attributes property with the attributes from the file.
 
+        Calling this method multiple times on different files will add all the
+        attributes from the files, overwriting existing attributes if they are
+        duplicated.
+
         Parameters
         ----------
         file_path: str
             file path to load, under self.source_dir.
 
         """
-        self.global_attributes.update(self._load_yaml_data(self.source_dir / file_path))
+        self.global_attributes.update(
+            CdfAttributeManager._load_yaml_data(self.source_dir / file_path)
+        )
 
     @staticmethod
     def _load_yaml_data(file_path: str | Path) -> dict:
@@ -132,7 +144,7 @@ class CdfAttributeManager:
         with open(file_path) as file:
             return yaml.safe_load(file)
 
-    def get_global_attributes(self, instrument_id=None) -> dict:
+    def get_global_attributes(self, instrument_id: str | None = None) -> dict:
         """
         Generate a dictionary global attributes based off the loaded schema and attrs.
 
@@ -140,7 +152,7 @@ class CdfAttributeManager:
         present. It can also include instrument specific global attributes if
         instrumet_id is set.
 
-        If a logical_source_id is provided, the level and instrument specific
+        If an instrument_id is provided, the level and instrument specific
         attributes that were previously loaded using add_instrument_global_attrs will
         be included.
 
@@ -148,7 +160,7 @@ class CdfAttributeManager:
         ----------
         instrument_id : str
             The id of the CDF file, used to retrieve instrument and level
-            specific global attributes. Suggested value is logical_source_id.
+            specific global attributes. Suggested value is the logical_source_id.
 
         Returns
         -------
@@ -172,23 +184,23 @@ class CdfAttributeManager:
 
         return output
 
-    def load_variable_attrs(self, file_name: str) -> None:
+    def load_variable_attributes(self, file_name: str) -> None:
         """
         Add variable attributes for a given filename.
 
         Parameters
         ----------
-        file_name: str
+        file_name : str
             The name of the file to load from self.source_dir
         """
         # Add variable attributes from file_name. Each variable name should have the
         # required sub fields as defined in the variable schema.
-        raw_var_attrs = self._load_yaml_data(self.source_dir / file_name)
+        raw_var_attrs = CdfAttributeManager._load_yaml_data(self.source_dir / file_name)
         var_attrs = raw_var_attrs.copy()
 
         self.variable_attributes.update(var_attrs)
 
-    def get_variable_attributes(self, variable_name) -> dict:
+    def get_variable_attributes(self, variable_name: str) -> dict:
         """
         Get the attributes for a given variable name.
 

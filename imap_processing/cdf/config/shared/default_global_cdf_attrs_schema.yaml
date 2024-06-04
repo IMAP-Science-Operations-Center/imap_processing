@@ -7,7 +7,7 @@ DOI:
     the SPASE naming authority or archive.
   default: null
   required: false # NOT Required in ISTP Guide (Recommended)
-  validate: true
+  validate: true # include in validation
   overwrite: false
 Data_level:
   description: >
