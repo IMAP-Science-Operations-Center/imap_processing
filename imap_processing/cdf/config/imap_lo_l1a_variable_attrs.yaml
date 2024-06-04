@@ -30,7 +30,7 @@ direct_events:
   FORMAT: I12
   VAR_TYPE: support_data
 
-direct_event_time:
+de_time:
   <<: *default
   VALIDMAX: 4096
   CATDESC: Time relative to spin start
