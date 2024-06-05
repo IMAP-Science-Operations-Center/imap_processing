@@ -5,16 +5,14 @@ import numpy as np
 from imap_processing.ultra.utils.ultra_l1_utils import create_dataset
 
 
-def calculate_histogram(l1a_histogram_dict, l1b_cullingmask_dict, name):
+def calculate_histogram(data_dict, name):
     """
     Create dictionary with defined datatype for Histogram Data.
 
     Parameters
     ----------
-    l1a_histogram_dict: : dict
-        L1a data dictionary.
-    l1b_cullingmask_dict: : dict
-        L1b data dictionary.
+    data_dict: : dict
+        Data dictionary.
 
     Returns
     -------
@@ -24,7 +22,7 @@ def calculate_histogram(l1a_histogram_dict, l1b_cullingmask_dict, name):
     histogram_dict = {}
 
     # Placeholder for calculations
-    dataset = l1a_histogram_dict["imap_ultra_l1a_45sensor-histogram"]
+    dataset = data_dict["imap_ultra_l1a_45sensor-histogram"]
     epoch = dataset.coords["epoch"].values
 
     histogram_dict["epoch"] = epoch

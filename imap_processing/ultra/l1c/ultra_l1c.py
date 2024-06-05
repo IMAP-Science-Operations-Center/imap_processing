@@ -31,8 +31,7 @@ def ultra_l1c(data_dict: dict):
         and f"imap_ultra_l1b_{instrument_id}sensor-cullingmask" in data_dict
     ):
         histogram_dataset = calculate_histogram(
-            data_dict[f"imap_ultra_l1a_{instrument_id}sensor-histogram"],
-            data_dict[f"imap_ultra_l1b_{instrument_id}sensor-cullingmask"],
+            data_dict,
             f"imap_ultra_l1c_{instrument_id}sensor-histogram",
         )
         output_datasets.append(histogram_dataset)
