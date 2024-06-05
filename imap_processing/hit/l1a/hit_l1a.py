@@ -42,7 +42,7 @@ class HitAPID(IntEnum):
     HIT_MEMDUMP = 1255  # Memory dump
 
 
-def hit_l1a_data(packet_file: str):
+def hit_l1a_data(packet_file: Path | str):
     """
     Process HIT L0 data into L1A data products.
 
