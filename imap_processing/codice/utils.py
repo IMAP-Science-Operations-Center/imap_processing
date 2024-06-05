@@ -144,10 +144,7 @@ def create_hskp_dataset(packets) -> xr.Dataset:
 
     dataset = xr.Dataset(
         coords={"epoch": epoch},
-        attrs={
-            **cdf_attrs.get_global_attributes(),
-            **cdf_attrs.global_attributes["imap_codice_l1a_hskp"],
-        },
+        attrs=cdf_attrs.get_global_attributes("imap_codice_l1a_hskp"),
     )
 
     # TODO: Change 'TBD' catdesc and fieldname

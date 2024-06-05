@@ -121,47 +121,42 @@ class CoDICEL1aPipeline:
             np.arange(self.num_energy_steps),
             name="energy",
             dims=["energy"],
-            attrs=cdf_attrs.variable_attributes["energy_attrs"],
+            attrs=cdf_attrs.get_variable_attributes("energy_attrs"),
         )
 
         dataset = xr.Dataset(
             coords={"epoch": epoch, "energy": energy_steps},
-            attrs={
-                **cdf_attrs.get_global_attributes(),
-                **cdf_attrs.global_attributes[self.dataset_name],
-            },
+            attrs=cdf_attrs.get_global_attributes(self.dataset_name),
         )
 
         # Create a data variable for each species
         for variable_data, variable_name in zip(self.data, self.variable_names):
-            fieldname = self.variable_names[variable_name]["fieldname"]
-            catdesc = self.variable_names[variable_name]["catdesc"]
-
             variable_data_arr = np.array(list(variable_data), dtype=int).reshape(
                 -1, self.num_energy_steps
             )
+            cdf_attrs_key = (
+                f"{self.dataset_name.split('imap_codice_l1a_')[-1]}-{variable_name}"
+            )
 
-            cdf_attrs.variable_attributes["counters_attrs"]["FIELDNAM"] = fieldname
-            cdf_attrs.variable_attributes["counters_attrs"]["CATDESC"] = catdesc
             dataset[variable_name] = xr.DataArray(
                 variable_data_arr,
                 name=variable_name,
                 dims=["epoch", "energy"],
-                attrs=cdf_attrs.variable_attributes["counters_attrs"],
+                attrs=cdf_attrs.get_variable_attributes(cdf_attrs_key),
             )
 
         # Add ESA Sweep values
         dataset["esa_sweep_values"] = xr.DataArray(
             self.esa_sweep_values,
             dims=["voltage"],
-            attrs=cdf_attrs.variable_attributes["esa_sweep_attrs"],
+            attrs=cdf_attrs.get_variable_attributes("esa_sweep_attrs"),
         )
 
         # Add acquisition times
         dataset["acquisition_times"] = xr.DataArray(
             self.acquisition_times,
             dims=["milliseconds"],
-            attrs=cdf_attrs.variable_attributes["acquisition_times_attrs"],
+            attrs=cdf_attrs.get_variable_attributes("acquisition_times_attrs"),
         )
 
         return dataset

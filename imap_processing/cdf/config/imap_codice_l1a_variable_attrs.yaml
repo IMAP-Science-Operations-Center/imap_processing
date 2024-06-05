@@ -25,7 +25,7 @@ acquisition_times_attrs:
     VALIDMAX: 1.7976931348623157e+308
     VAR_TYPE: support_data
 
-counters_attrs:
+counters_attrs: &counters
     <<: *default
     CATDESC: Fill in at creation
     DEPEND_0: epoch
@@ -43,7 +43,7 @@ energy_attrs:
     FIELDNAM: Energy step
     FORMAT: I3
     LABLAXIS: energy
-    UNITS: dN
+    UNITS: ' '
     VALIDMIN: 0
     VALIDMAX: 127
     VAR_TYPE: support_data
@@ -58,8 +58,182 @@ esa_sweep_attrs:
     VALIDMIN: 0
     VAR_TYPE: support_data
 
-# TODO: Define CATDESCs and FIELDNAMs for metadata fields, e.g.:
-#COMPRESSION:
-#    <<: *support_default
-#    CATDESC: Indicates if the data is compressed, with 1 indicating the data is compressed
-#    FIELDNAM: Data is compressed
+lo_sw_angular_counts-hplus:
+    <<: *counters
+    CATDESC: Sunward H+ Species
+    FIELDNAM: SW - H+
+
+lo_sw_angular_counts-heplusplus:
+    <<: *counters
+    CATDESC: Sunward He++ Species
+    FIELDNAM: SW - He++
+
+lo_sw_angular_counts-oplus6:
+    <<: *counters
+    CATDESC: Sunward O+6 Species
+    FIELDNAM: SW - O+6
+
+lo_sw_angular_counts-fe_loq:
+    <<: *counters
+    CATDESC: Sunward Fe lowQ Species
+    FIELDNAM: SW - Fe lowQ
+
+lo_nsw_angular_counts-heplusplus:
+    <<: *counters
+    CATDESC: Non-sunward He++ Species
+    FIELDNAM: NSW - He++
+
+lo_sw_priority_counts-p0_tcrs:
+    <<: *counters
+    CATDESC: Sunward Sector Triple Coincidence Pickup Ions Priority
+    FIELDNAM: SW Sector Triple Coincidence PUI's
+
+lo_sw_priority_counts-p1_hplus:
+    <<: *counters
+    CATDESC: Sunward Sector H+ Priority
+    FIELDNAM: SW Sector H+
+
+lo_sw_priority_counts-p2_heplusplus:
+    <<: *counters
+    CATDESC: Sunward Sector He++ Priority
+    FIELDNAM: SW Sector He++
+
+lo_sw_priority_counts-p3_heavies:
+    <<: *counters
+    CATDESC: Sunward Sector High Charge State Heavies Priority
+    FIELDNAM: SW Sector High Charge State Heavies
+
+lo_sw_priority_counts-p4_dcrs:
+    <<: *counters
+    CATDESC: Sunward Sector Double Coincidence Pickup Ions Priority
+    FIELDNAM: SW Sector Double Coincidence PUI's
+
+lo_nsw_priority_counts-p5_heavies:
+    <<: *counters
+    CATDESC: Non-sunward Sector Heavies Priority
+    FIELDNAM: NSW Sector Heavies
+
+lo_nsw_priority_counts-p6_hplus_heplusplus:
+    <<: *counters
+    CATDESC: Non-sunward H+ and He++ Priority
+    FIELDNAM: NSW H+ and He++
+
+lo_sw_species_counts-hplus:
+    <<: *counters
+    CATDESC: H+ Sunward Species
+    FIELDNAM: SW - H+
+
+lo_sw_species_counts-heplusplus:
+    <<: *counters
+    CATDESC: He++ Sunward Species
+    FIELDNAM: SW - He++
+
+lo_sw_species_counts-cplus4:
+    <<: *counters
+    CATDESC: C+4 Sunward Species
+    FIELDNAM: SW - C+4
+
+lo_sw_species_counts-cplus5:
+    <<: *counters
+    CATDESC: C+5 Sunward Species
+    FIELDNAM: SW - C+5
+
+lo_sw_species_counts-cplus6:
+    <<: *counters
+    CATDESC: C+6 Sunward Species
+    FIELDNAM: SW - C+6
+
+lo_sw_species_counts-oplus5:
+    <<: *counters
+    CATDESC: O+5 Sunward Species
+    FIELDNAM: SW - O+5
+
+lo_sw_species_counts-oplus6:
+    <<: *counters
+    CATDESC: O+6 Sunward Species
+    FIELDNAM: SW - O+6
+
+lo_sw_species_counts-oplus7:
+    <<: *counters
+    CATDESC: O+7 Sunward Species
+    FIELDNAM: SW - O+7
+
+lo_sw_species_counts-oplus8:
+    <<: *counters
+    CATDESC: O+8 Sunward Species
+    FIELDNAM: SW - O+8
+
+lo_sw_species_counts-ne:
+    <<: *counters
+    CATDESC: Ne Sunward Species
+    FIELDNAM: SW - Ne
+
+lo_sw_species_counts-mg:
+    <<: *counters
+    CATDESC: Mg Sunward Species
+    FIELDNAM: SW - Mg
+
+lo_sw_species_counts-si:
+    <<: *counters
+    CATDESC: Si Sunward Species
+    FIELDNAM: SW - Si
+
+lo_sw_species_counts-fe_loq:
+    <<: *counters
+    CATDESC: Fe lowQ Sunward Species
+    FIELDNAM: SW - Fe lowQ
+
+lo_sw_species_counts-fe_hiq:
+    <<: *counters
+    CATDESC: Fe highQ Sunward Species
+    FIELDNAM: SW - Fe highQ
+
+lo_sw_species_counts-heplus:
+    <<: *counters
+    CATDESC: He+ Pickup Ion Sunward Species
+    FIELDNAM: SW - He+ (PUI)
+
+lo_sw_species_counts-cnoplus:
+    <<: *counters
+    CATDESC: CNO+ Pickup Ion Sunward Species
+    FIELDNAM: SW - CNO+ (PUI)
+
+lo_nsw_species_counts-hplus:
+    <<: *counters
+    CATDESC: H+ Non-sunward Species
+    FIELDNAM: NSW - H+
+
+lo_nsw_species_counts-heplusplus:
+    <<: *counters
+    CATDESC: He++ Non-sunward Species
+    FIELDNAM: NSW - He++
+
+lo_nsw_species_counts-c:
+    <<: *counters
+    CATDESC: C Non-sunward Species
+    FIELDNAM: NSW - C
+
+lo_nsw_species_counts-o:
+    <<: *counters
+    CATDESC: O Non-sunward Species
+    FIELDNAM: NSW - O
+
+lo_nsw_species_counts-ne_si_mg:
+    <<: *counters
+    CATDESC: Ne-Si-Mg Non-sunward Species
+    FIELDNAM: NSW - Ne_Si_Mg
+
+lo_nsw_species_counts-fe:
+    <<: *counters
+    CATDESC: Fe Non-sunward Species
+    FIELDNAM: NSW - Fe
+
+lo_nsw_species_counts-heplus:
+    <<: *counters
+    CATDESC: He+ Non-sunward Species
+    FIELDNAM: NSW - He+
+
+lo_nsw_species_counts-cnoplus:
+    <<: *counters
+    CATDESC: CNO+ Non-sunward Species
+    FIELDNAM: NSW - CNO+
