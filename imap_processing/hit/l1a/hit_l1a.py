@@ -1,6 +1,7 @@
 """Decommutate HIT CCSDS data and create L1a data products."""
 
 import logging
+import typing
 from collections import defaultdict
 from dataclasses import fields
 from enum import IntEnum
@@ -24,26 +25,20 @@ class HitAPID(IntEnum):
 
     Attributes
     ----------
-    HIT_AUT : int
-        Autonomy
     HIT_HSKP: int
         Housekeeping
     HIT_SCIENCE : int
         Science
     HIT_IALRT : int
         I-ALiRT
-    HIT_MEMDUMP : int
-        Memory dump
     """
 
-    HIT_AUT = 1250  # Autonomy
     HIT_HSKP = 1251  # Housekeeping
     HIT_SCIENCE = 1252  # Science
     HIT_IALRT = 1253  # I-ALiRT
-    HIT_MEMDUMP = 1255  # Memory dump
 
 
-def hit_l1a_data(packet_file: Path | str):
+def hit_l1a_data(packet_file: typing.Union[Path, str]):
     """
     Process HIT L0 data into L1A data products.
 
@@ -64,7 +59,10 @@ def hit_l1a_data(packet_file: Path | str):
 
     # Create datasets
     # TODO define keys to skip for each apid. Currently just have
-    #  a list for housekeeping.
+    #  a list for housekeeping. Some of these may change later.
+    #  leak_i_raw can be handled in the housekeeping class as an
+    #  InitVar so that it doesn't show up when you extract the object's
+    #  field names.
     skip_keys = [
         "shcoarse",
         "ground_sw_version",
@@ -100,9 +98,9 @@ def decom_packets(packet_file: str):
     """
     # TODO: update path to use a combined packets xtce file
     xtce_file = imap_module_directory / "hit/packet_definitions/P_HIT_HSKP.xml"
-    logger.info(f"Unpacking {packet_file} using xtce definitions in {xtce_file}")
+    logger.debug(f"Unpacking {packet_file} using xtce definitions in {xtce_file}")
     unpacked_packets = decom.decom_packets(packet_file, xtce_file)
-    logger.info(f"{packet_file} unpacked")
+    logger.debug(f"{packet_file} unpacked")
     return unpacked_packets
 
 
@@ -119,18 +117,21 @@ def group_data(unpacked_data: list):
     dict
         grouped data by apid
     """
-    logger.info("Grouping packet values for each apid")
+    logger.debug("Grouping packet values for each apid")
     grouped_data = utils.group_by_apid(unpacked_data)
 
     # Create data classes for each packet
     for apid in grouped_data:
         if apid == HitAPID.HIT_HSKP:
-            logger.info(f"Grouping housekeeping packets - APID: {apid}")
-            grouped_data[apid] = [Housekeeping(packet, "0.0", "hskp_sample.ccsds") for packet in grouped_data[apid]]
+            logger.debug(f"Grouping housekeeping packets - APID: {apid}")
+            grouped_data[apid] = [
+                Housekeeping(packet, "0.0", "hskp_sample.ccsds")
+                for packet in grouped_data[apid]
+            ]
         else:
             raise RuntimeError(f"Encountered unexpected APID [{apid}]")
 
-    logger.info("Finished grouping packet data")
+    logger.debug("Finished grouping packet data")
     return grouped_data
 
 
@@ -163,6 +164,11 @@ def create_datasets(data: dict, skip_keys=None):
                 # convert key to lower case to match SPDF requirement
                 data_key = field_name.lower()
                 metadata_arrays[data_key].append(field_value)
+
+        # TODO: SHCOARSE is an integer, so we'll need to use the
+        #  calc_start_time() function to get this value into a
+        #  datetime64[s], otherwise this is going to be showing
+        #  1970's unix epoch time values.
 
         # Create xarray data arrays for dependencies
         epoch_time = xr.DataArray(
