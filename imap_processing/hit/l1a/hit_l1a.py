@@ -126,9 +126,7 @@ def group_data(unpacked_data: list):
     for apid in grouped_data:
         if apid == HitAPID.HIT_HSKP:
             logger.info(f"Grouping housekeeping packets - APID: {apid}")
-            for i, packet in enumerate(grouped_data[apid]):
-                # convert data to data classes
-                grouped_data[apid][i] = Housekeeping(packet, "0.0", "hskp_sample.ccsds")
+            grouped_data[apid] = [Housekeeping(packet, "0.0", "hskp_sample.ccsds") for packet in grouped_data[apid]]
         else:
             raise RuntimeError(f"Encountered unexpected APID [{apid}]")
 
