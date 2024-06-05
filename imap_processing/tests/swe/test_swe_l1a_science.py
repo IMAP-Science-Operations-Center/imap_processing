@@ -81,7 +81,7 @@ def test_data_order(decom_test_data):
     # Get unpacked science data
     processed_data = swe_science(decom_test_data)
 
-    quarter_cycle = processed_data["QUARTER_CYCLE"].data
+    quarter_cycle = processed_data["quarter_cycle"].data
     assert quarter_cycle[0] == 0
     assert quarter_cycle[1] == 1
     assert quarter_cycle[2] == 2
@@ -94,11 +94,11 @@ def test_swe_science_algorithm(decom_test_data):
     processed_data = swe_science(decom_test_data)
 
     # science data should have this shape, 15x12x7.
-    science_data = processed_data["SCIENCE_DATA"].data[0]
+    science_data = processed_data["science_data"].data[0]
     assert science_data.shape == (180, 7)
 
     # Test data has n packets, therefore, SPIN_PHASE should have that same length.
-    spin_phase = processed_data["SPIN_PHASE"]
+    spin_phase = processed_data["spin_phase"]
     expected_length = 29
     assert len(spin_phase) == expected_length
 

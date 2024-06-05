@@ -107,18 +107,23 @@ def convert_raw_to_eu(
             # expecting coefficient in descending order
             # coeff columns must have names 'c0', 'c1', 'c2', ...
             coeff_values = row.filter(regex=r"c\d").values[::-1]
-
+            row_key = row["mnemonic"]
+            # TODO: remove this check once everyone has lowercase
+            # all of CDF data variable names to match SPDF requirement.
+            # Right now, check if dataset mnemonics is lowercase of row mnemonics.
+            # If so, make them match
+            mnemonics = row_key.lower() if row_key.lower() in dataset else row_key
             try:
                 # Convert the raw value to engineering unit
-                dataset[row["mnemonic"]].data = np.polyval(
-                    coeff_values, dataset[row["mnemonic"]].data
+                dataset[mnemonics].data = np.polyval(
+                    coeff_values, dataset[mnemonics].data
                 )
                 # Modify units attribute
                 if "unit" in row:
-                    dataset[row["mnemonic"]].attrs.update({"units": row["unit"]})
+                    dataset[mnemonics].attrs.update({"units": row["unit"]})
             except KeyError:
                 # TODO: Don't catch this error once packet definitions stabilize
-                logger.warning(f"Input dataset does not contain key: {row['mnemonic']}")
+                logger.warning(f"Input dataset does not contain key: {row_key}")
         else:
             raise ValueError(
                 f"Unexpected conversion type: {row['convertAs']} encountered in"
