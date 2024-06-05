@@ -160,7 +160,6 @@ def create_datasets(data: dict, skip_keys=None):
             for field in fields(packet):
                 field_name = field.name
                 field_value = getattr(packet, field_name)
-                print(f"{field_name}: {field_value}")
                 # convert key to lower case to match SPDF requirement
                 data_key = field_name.lower()
                 metadata_arrays[data_key].append(field_value)
