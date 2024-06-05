@@ -3,8 +3,7 @@ import pathlib
 import pytest
 import xarray as xr
 
-from imap_processing import imap_module_directory
-from imap_processing.cdf.utils import write_cdf
+from imap_processing import imap_module_directory, utils
 from imap_processing.hit.l0.data_classes.housekeeping import Housekeeping
 from imap_processing.hit.l1a import hit_l1a
 
@@ -31,7 +30,7 @@ def unpacked_packets(packet_filepath):
         A sorted list of decommutated packets
     """
     packets = hit_l1a.decom_packets(packet_filepath)
-    sorted_packets = sorted(packets, key=lambda x: x.data["SHCOARSE"].derived_value)
+    sorted_packets = utils.sort_by_time(packets, "SHCOARSE")
     return sorted_packets
 
 
@@ -90,3 +89,14 @@ def test_hit_l1a(packet_filepath):
     assert len(cdf_filepaths) == 1
     assert isinstance(cdf_filepaths[0], pathlib.PurePath)
     assert cdf_filepaths[0].name == "imap_hit_l1a_hk_19700105_v001.cdf"
+
+
+def test_total_datasets(unpacked_packets):
+    """Test if total number of datasets is correct"""
+    # assert len(unpacked_packets) == total_datasets
+
+
+def test_dataset_dims_length(unpacked_packets):
+    """Test if the time dimension length in the dataset is correct"""
+    # grouped_data = hit_l1a.group_data(unpacked_packets)
+    # assert grouped_data["hit_l1a.HitAPID.HIT_HSKP"].dims["epoch"] == num_packet_times
