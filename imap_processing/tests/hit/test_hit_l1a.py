@@ -70,9 +70,9 @@ def test_create_datasets(unpacked_packets):
         "ccsds_header",
         "leak_i_raw",
     ]
-    datasets = hit_l1a.create_datasets(grouped_data, skip_keys=skip_keys)
-    assert len(datasets.keys()) == 1
-    assert isinstance(datasets[1251], xr.Dataset)
+    datasets_by_apid = hit_l1a.create_datasets(grouped_data, skip_keys=skip_keys)
+    assert len(datasets_by_apid.keys()) == 1
+    assert isinstance(datasets_by_apid[hit_l1a.HitAPID.HIT_HSKP], xr.Dataset)
 
 
 def test_hit_l1a(packet_filepath):
