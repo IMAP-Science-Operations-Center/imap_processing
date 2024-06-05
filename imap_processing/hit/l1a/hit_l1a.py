@@ -4,6 +4,7 @@ import logging
 from collections import defaultdict
 from dataclasses import fields
 from enum import IntEnum
+from pathlib import Path
 
 import numpy as np
 import xarray as xr
@@ -58,7 +59,7 @@ def hit_l1a_data(packet_file: Path | str):
     """
     # Decom, sort, and group packets by apid
     packets = decom_packets(packet_file)
-    sorted_packets = sorted(packets, key=lambda x: x.data["SHCOARSE"].derived_value)
+    sorted_packets = utils.sort_by_time(packets, "SHCOARSE")
     grouped_data = group_data(sorted_packets)
 
     # Create datasets
