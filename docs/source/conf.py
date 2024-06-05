@@ -100,6 +100,7 @@ nitpick_ignore_regex = [
     (r"py:.*", r".*.lo.l0.data_classes.*"),
     (r"py:.*", r".*.hit.l0.utils.*"),
     (r"py:.*", r".*.hit.l0.data_classes.*"),
+    (r"py:.*", r".*.hit.l1a.*"),
 ]
 
 # Ignore the inherited members from the <instrument>APID IntEnum class
