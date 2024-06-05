@@ -123,7 +123,7 @@ def group_data(unpacked_data: list):
     grouped_data = utils.group_by_apid(unpacked_data)
 
     # Create data classes for each packet
-    for apid in grouped_data.keys():
+    for apid in grouped_data:
         if apid == HitAPID.HIT_HSKP:
             logger.info(f"Grouping housekeeping packets - APID: {apid}")
             for i, packet in enumerate(grouped_data[apid]):
