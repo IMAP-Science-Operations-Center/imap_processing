@@ -5,15 +5,14 @@ other CoDICE processing modules.
 """
 
 import collections
-import dataclasses
 from enum import IntEnum
 
 import numpy as np
 import xarray as xr
 
 from imap_processing.cdf.global_attrs import ConstantCoordinates
+from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import calc_start_time
-from imap_processing.codice import cdf_attrs
 
 
 class CODICEAPID(IntEnum):
@@ -121,11 +120,16 @@ def create_hskp_dataset(packets) -> xr.Dataset:
     xarray.Dataset
         xarray dataset containing the metadata
     """
+    cdf_attrs = ImapCdfAttributes()
+    cdf_attrs.add_instrument_global_attrs("codice")
+    cdf_attrs.add_instrument_variable_attrs("codice", "l1a")
+
     metadata_arrays = collections.defaultdict(list)
 
     for packet in packets:
         add_metadata_to_array(packet, metadata_arrays)
 
+    # TODO: Is there a way to get the attrs from the YAML-based method?
     epoch = xr.DataArray(
         [
             calc_start_time(
@@ -140,7 +144,7 @@ def create_hskp_dataset(packets) -> xr.Dataset:
 
     dataset = xr.Dataset(
         coords={"epoch": epoch},
-        attrs=cdf_attrs.l1a_hskp_attrs.output(),
+        attrs=cdf_attrs.get_global_attributes("imap_codice_l1a_hskp"),
     )
 
     # TODO: Change 'TBD' catdesc and fieldname
@@ -153,16 +157,12 @@ def create_hskp_dataset(packets) -> xr.Dataset:
     # packets/validation data that match the latest telemetry definitions
     # I may also be able to replace this function with utils.create_dataset(?)
     for key, value in metadata_arrays.items():
-        dataset[key] = xr.DataArray(
-            value,
-            dims=["epoch"],
-            attrs=dataclasses.replace(
-                cdf_attrs.codice_metadata_attrs,
-                catdesc="TBD",
-                fieldname="TBD",
-                label_axis=key,
-                depend_0="epoch",
-            ).output(),
-        )
+        attrs = cdf_attrs.variable_attributes["codice_support_attrs"]
+        attrs["CATDESC"] = "TBD"
+        attrs["DEPEND_0"] = "epoch"
+        attrs["FIELDNAM"] = "TBD"
+        attrs["LABLAXIS"] = key
+
+        dataset[key] = xr.DataArray(value, dims=["epoch"], attrs=attrs)
 
     return dataset

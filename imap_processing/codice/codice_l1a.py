@@ -22,8 +22,9 @@ import xarray as xr
 
 from imap_processing import imap_module_directory
 from imap_processing.cdf.global_attrs import ConstantCoordinates
+from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import calc_start_time, write_cdf
-from imap_processing.codice import cdf_attrs
+from imap_processing.codice import __version__
 from imap_processing.codice.codice_l0 import decom_packets
 from imap_processing.codice.constants import (
     ESA_SWEEP_TABLE_ID_LOOKUP,
@@ -104,6 +105,11 @@ class CoDICEL1aPipeline:
         xr.Dataset
             ``xarray`` dataset containing the science data and supporting metadata
         """
+        cdf_attrs = ImapCdfAttributes()
+        cdf_attrs.add_instrument_global_attrs("codice")
+        cdf_attrs.add_instrument_variable_attrs("codice", "l1a")
+
+        # TODO: Is there a way to get the attrs from the YAML-based method?
         epoch = xr.DataArray(
             [start_time],
             name="epoch",
@@ -115,45 +121,42 @@ class CoDICEL1aPipeline:
             np.arange(self.num_energy_steps),
             name="energy",
             dims=["energy"],
-            attrs=cdf_attrs.energy_attrs.output(),
+            attrs=cdf_attrs.get_variable_attributes("energy_attrs"),
         )
 
         dataset = xr.Dataset(
             coords={"epoch": epoch, "energy": energy_steps},
-            attrs=self.cdf_attrs.output(),
+            attrs=cdf_attrs.get_global_attributes(self.dataset_name),
         )
 
         # Create a data variable for each species
         for variable_data, variable_name in zip(self.data, self.variable_names):
-            fieldname = self.variable_names[variable_name]["fieldname"]
-            catdesc = self.variable_names[variable_name]["catdesc"]
-
             variable_data_arr = np.array(list(variable_data), dtype=int).reshape(
                 -1, self.num_energy_steps
             )
+            cdf_attrs_key = (
+                f"{self.dataset_name.split('imap_codice_l1a_')[-1]}-{variable_name}"
+            )
 
-            counter_attrs = cdf_attrs.counters_attrs
-            counter_attrs["FIELDNAM"] = fieldname
-            counter_attrs["CATDESC"] = catdesc
             dataset[variable_name] = xr.DataArray(
                 variable_data_arr,
                 name=variable_name,
                 dims=["epoch", "energy"],
-                attrs=counter_attrs,
+                attrs=cdf_attrs.get_variable_attributes(cdf_attrs_key),
             )
 
         # Add ESA Sweep values
         dataset["esa_sweep_values"] = xr.DataArray(
             self.esa_sweep_values,
             dims=["voltage"],
-            attrs=cdf_attrs.esa_sweep_attrs.output(),
+            attrs=cdf_attrs.get_variable_attributes("esa_sweep_attrs"),
         )
 
         # Add acquisition times
         dataset["acquisition_times"] = xr.DataArray(
             self.acquisition_times,
             dims=["milliseconds"],
-            attrs=cdf_attrs.acquisition_times_attrs.output(),
+            attrs=cdf_attrs.get_variable_attributes("acquisition_times_attrs"),
         )
 
         return dataset
@@ -241,32 +244,32 @@ class CoDICEL1aPipeline:
             self.num_counters = 16
             self.num_energy_steps = 128
             self.variable_names = LO_SW_SPECIES_NAMES
-            self.cdf_attrs = cdf_attrs.l1a_lo_sw_species_counts_attrs
+            self.dataset_name = "imap_codice_l1a_lo_sw_species_counts"
         elif apid == CODICEAPID.COD_LO_NSW_SPECIES_COUNTS:
             self.num_counters = 8
             self.num_energy_steps = 128
             self.variable_names = LO_NSW_SPECIES_NAMES
-            self.cdf_attrs = cdf_attrs.l1a_lo_nsw_species_counts_attrs
+            self.dataset_name = "imap_codice_l1a_lo_nsw_species_counts"
         elif apid == CODICEAPID.COD_LO_SW_PRIORITY_COUNTS:
             self.num_counters = 5
             self.num_energy_steps = 128
             self.variable_names = LO_SW_PRIORITY_NAMES
-            self.cdf_attrs = cdf_attrs.l1a_lo_sw_priority_counts_attrs
+            self.dataset_name = "imap_codice_l1a_lo_sw_priority_counts"
         elif apid == CODICEAPID.COD_LO_NSW_PRIORITY_COUNTS:
             self.num_counters = 2
             self.num_energy_steps = 128
             self.variable_names = LO_NSW_PRIORITY_NAMES
-            self.cdf_attrs = cdf_attrs.l1a_lo_nsw_priority_counts_attrs
+            self.dataset_name = "imap_codice_l1a_lo_nsw_priority_counts"
         elif apid == CODICEAPID.COD_LO_SW_ANGULAR_COUNTS:
             self.num_counters = 4
             self.num_energy_steps = 128
             self.variable_names = LO_SW_ANGULAR_NAMES
-            self.cdf_attrs = cdf_attrs.l1a_lo_sw_angular_counts_attrs
+            self.dataset_name = "imap_codice_l1a_lo_sw_angular_counts"
         elif apid == CODICEAPID.COD_LO_NSW_ANGULAR_COUNTS:
             self.num_counters = 1
             self.num_energy_steps = 128
             self.variable_names = LO_NSW_ANGULAR_NAMES
-            self.cdf_attrs = cdf_attrs.l1a_lo_nsw_angular_counts_attrs
+            self.dataset_name = "imap_codice_l1a_lo_nsw_angular_counts"
 
     def unpack_science_data(self, science_values: str):
         """Unpack the science data from the packet.
@@ -416,6 +419,7 @@ def process_codice_l1a(file_path: Path | str) -> xr.Dataset:
 
     # Write dataset to CDF
     logger.info(f"\nFinal data product:\n{dataset}\n")
+    dataset.attrs["Data_version"] = __version__
     dataset.attrs["cdf_filename"] = write_cdf(dataset)
     logger.info(f"\tCreated CDF file: {dataset.cdf_filename}")
 
