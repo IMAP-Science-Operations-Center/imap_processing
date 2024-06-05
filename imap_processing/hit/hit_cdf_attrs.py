@@ -62,7 +62,7 @@ hit_hk_base_attrs = ScienceAttrs(
 # TODO: update label_axis with values provided by instrument team.
 #  Waiting for info
 
-# Define
+# Define housekeeping data variable attributes
 
 # Dictionary of housekeeping attributes that are common between
 # L1A and L1B (modes, flags, states)
