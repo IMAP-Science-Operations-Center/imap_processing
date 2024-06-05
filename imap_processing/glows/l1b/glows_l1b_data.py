@@ -1,12 +1,12 @@
 """Module for GLOWS L1B data products."""
 
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 import numpy as np
 
-from imap_processing.glows.l1a.glows_l1a_data import DirectEventL1A, HistogramL1A
+from imap_processing.glows.l1a.glows_l1a_data import DirectEventL1A
 
 
 class AncillaryParameters:
@@ -86,26 +86,29 @@ class HistogramL1B:
     """
     GLOWS L1B histogram data product, generated from GLOWS L1A histogram data product.
 
+    All the spice attributes come from the SPICE kernels and are not initialized.
+    Other variables are initialized as their encoded or unprocessed values, and then
+    decoded or processed in the __post_init__ method.
+
+    IMPORTANT: The order of the fields inherited from L1A must match the order of the
+    fields in the DataSet created in decom_glows.py.
+
     Attributes
     ----------
+    histogram
+        array of block-accumulated count numbers
+    flight_software_version: str
+    seq_count_in_pkts_file: int
+    flags_set_onboard: int
+    is_generated_on_ground: int
+    number_of_spins_per_block
+        nblock
     block_header
         header, see Tab. 12
     unique_block_identifier
         YYYY-MM-DDThh:mm:ss based on IMAP UTC time
-    glows_start_time
-        GLOWS clock, subseconds as decimal part of float, see Sec. 12.2.1
-    glows_end_time_offset
-        GLOWS clock, subseconds as decimal part of float, see Sec. 12.2.1
-    imap_start_time
-        IMAP clock, subseconds as decimal part of float, see Sec. 12.2.1
-    imap_end_time_offset
-        IMAP clock, subseconds as decimal part of float, see Sec. 12.2.1
-    number_of_spins_per_block
-        nblock
     number_of_bins_per_histogram
         nbin
-    histogram
-        array of block-accumulated count numbers
     number_of_events
         total number of events/counts in histogram
     imap_spin_angle_bin_cntr
@@ -128,6 +131,14 @@ class HistogramL1B:
         block-averaged value, decoded to μs using Eq. (47)
     pulse_length_std_dev
     standard deviation (1 sigma), decoded to μs using Eq. (51)
+    glows_start_time
+        GLOWS clock, subseconds as decimal part of float, see Sec. 12.2.1
+    glows_end_time_offset
+        GLOWS clock, subseconds as decimal part of float, see Sec. 12.2.1
+    imap_start_time
+        IMAP clock, subseconds as decimal part of float, see Sec. 12.2.1
+    imap_end_time_offset
+        IMAP clock, subseconds as decimal part of float, see Sec. 12.2.1
     spin_period_ground_average
         block-averaged value computed on ground, see Sec. 12.6.1
     spin_period_ground_std_dev
@@ -153,19 +164,17 @@ class HistogramL1B:
         flags for extra information see Tab. 13 see Sec. 12.3
     """
 
-    # TODO: map-reduce style for creating xarray -> L1B data -> xarray
-    block_header: dict  # could be a new type
-    unique_block_identifier: str  # Could be datetime
-    glows_start_time: np.single
-    glows_end_time_offset: np.single
-    imap_start_time: np.single
-    imap_end_time_offset: np.single
+    # block_header: dict  # could be a new type TODO: missing from values in L1A
+    # unique_block_identifier: str  # Could be datetime TODO: Missing from values in L1A
+    histogram: np.ndarray
+    flight_software_version: str
+    seq_count_in_pkts_file: int
+    last_spin_id: int
+    flags_set_onboard: int
+    is_generated_on_ground: int
     number_of_spins_per_block: int
     number_of_bins_per_histogram: int
-    histogram: np.ndarray
     number_of_events: int
-    imap_spin_angle_bin_cntr: np.single
-    histogram_flag_array: np.ndarray
     filter_temperature_average: np.single
     filter_temperature_std_dev: np.single
     hv_voltage_average: np.single
@@ -174,18 +183,24 @@ class HistogramL1B:
     spin_period_std_dev: np.single
     pulse_length_average: np.single
     pulse_length_std_dev: np.single
-    spin_period_ground_average: np.single  # retrieved from SPICE?
-    spin_period_ground_std_dev: np.single  # retrieved from SPICE?
-    position_angle_offset_average: np.single  # retrieved from SPICE
-    position_angle_offset_std_dev: np.single  # retrieved from SPICE
-    spin_axis_orientation_std_dev: np.single  # retrieved from SPICE
-    spin_axis_orientation_average: np.single  # retrieved from SPICE
-    spacecraft_location_average: np.ndarray  # retrieved from SPICE
-    spacecraft_location_std_dev: np.ndarray  # retrieved from SPICE
-    spacecraft_velocity_average: np.ndarray  # retrieved from SPICE
-    spacecraft_velocity_std_dev: np.ndarray  # retrieved from SPICE
-    flags: np.ndarray
-    conversion_table: dict
+    imap_start_time: np.single  # No conversion needed from l1a->l1b
+    imap_end_time_offset: np.single  # No conversion needed from l1a->l1b
+    glows_start_time: np.single  # No conversion needed from l1a->l1b
+    glows_end_time_offset: np.single  # No conversion needed from l1a->l1b
+    imap_spin_angle_bin_cntr: np.single = field(init=False)  # TODO this isn't in L1A?
+    # histogram_flag_array: np.ndarray = field(init=False)
+    spin_period_ground_average: np.single = field(init=False)  # retrieved from SPICE?
+    spin_period_ground_std_dev: np.single = field(init=False)  # retrieved from SPICE?
+    position_angle_offset_average: np.single = field(init=False)  # retrieved from SPICE
+    position_angle_offset_std_dev: np.single = field(init=False)  # retrieved from SPICE
+    spin_axis_orientation_std_dev: np.single = field(init=False)  # retrieved from SPICE
+    spin_axis_orientation_average: np.single = field(init=False)  # retrieved from SPICE
+    # spacecraft_location_average: np.ndarray = field(init=False)  # retrieved from SPIC
+    # spacecraft_location_std_dev: np.ndarray = field(init=False)  # retrieved from SPIC
+    # spacecraft_velocity_average: np.ndarray = field(init=False)  # retrieved from SPIC
+    # spacecraft_velocity_std_dev: np.ndarray = field(init=False)  # retrieved from SPIC
+    # flags: np.ndarray
+    # conversion_table: dict
 
     # TODO:
     # - unique block identifier for individual histograms
@@ -193,11 +208,14 @@ class HistogramL1B:
     # - flags
     # - maybe: bat angle flags? (section 12.3.3)
 
-    def __init__(self, l1a: HistogramL1A):
-        self.imap_start_time = l1a.imap_start_time.to_float()
-        self.imap_time_offset = l1a.imap_time_offset.to_float()
-        self.glows_start_time = l1a.glows_start_time.to_float()
-        self.glows_time_offset = l1a.glows_time_offset.to_float()
+    # TODO: Use post_init / InitVar to take in attributes and create the class from
+    #  those values. Then in glows_l1b write a method to take in an xarray dataset and
+    #  call the transform.
+    def __post_init__(self):
+        """Process data."""
+        # TODO figure out how these are computed
+        self.imap_spin_angle_bin_cntr = -999.0
+        # self.histogram_flag_array = np.zeros((2,))
 
         # TODO: These pieces will need to be filled in from SPICE kernels. For now,
         #  they are placeholders. GLOWS example code has better placeholders if needed.
@@ -207,27 +225,29 @@ class HistogramL1B:
         self.position_angle_offset_std_dev = -999.0
         self.spin_axis_orientation_std_dev = -999.0
         self.spin_axis_orientation_average = -999.0
-        self.spacecraft_location_average = np.array([-999.0, -999.0, -999.0])
-        self.spacecraft_location_std_dev = np.array([-999.0, -999.0, -999.0])
-        self.spacecraft_velocity_average = np.array([-999.0, -999.0, -999.0])
-        self.spacecraft_velocity_std_dev = np.array([-999.0, -999.0, -999.0])
+        # self.spacecraft_location_average = np.array([-999.0, -999.0, -999.0])
+        # self.spacecraft_location_std_dev = np.array([-999.0, -999.0, -999.0])
+        # self.spacecraft_velocity_average = np.array([-999.0, -999.0, -999.0])
+        # self.spacecraft_velocity_std_dev = np.array([-999.0, -999.0, -999.0])
 
         # TODO: This should probably be an AWS file
-        self.ancillary_parameters = AncillaryParameters(
-            json.loads(
-                str(Path(__file__).parents[1] / "l1b_conversion_table_v001.json")
-            )
-        )
+        # TODO Pass in AncillaryParameters object instead of reading here.
+        with open(
+            Path(__file__).parents[1] / "ancillary" / "l1b_conversion_table_v001.json"
+        ) as f:
+            self.ancillary_parameters = AncillaryParameters(json.loads(f.read()))
 
         self.filter_temperature_average = self.decode_ancillary_data(
-            self.ancillary_parameters.filter_temperature, l1a.filter_temperature_average
+            self.ancillary_parameters.filter_temperature,
+            self.filter_temperature_average,
         )
         self.filter_temperature_std_dev = self.decode_ancillary_data(
-            self.ancillary_parameters.filter_temperature, l1a.filter_temperature_std_dev
+            self.ancillary_parameters.filter_temperature,
+            self.filter_temperature_std_dev,
         )
 
     @staticmethod
-    def decode_ancillary_data(params: dict, encoded_value: float) -> np.single:
+    def decode_ancillary_data(params: dict, encoded_value: np.single) -> np.single:
         """
         Decode parameters using the algorithm defined in section 11.4.
 
@@ -258,6 +278,15 @@ class HistogramL1B:
         param_a = (2 ** params["n_bits"] - 1) / (params["max"] - params["min"])
         param_b = -params["min"] * param_a
 
-        decoded_value = (encoded_value - param_b) / param_a
+        decoded_value: np.single = (encoded_value - param_b) / param_a
 
-        return np.single(decoded_value)
+        return decoded_value
+
+    def convert_to_dataarrays(self) -> tuple[np.ndarray]:
+        """
+        Convert the class to a tuple of xarray DataArrays for output.
+
+        Outputs all class attributes as DataArrays.
+        Todo: should attribute setting occur here or in output step?
+        """
+        pass
