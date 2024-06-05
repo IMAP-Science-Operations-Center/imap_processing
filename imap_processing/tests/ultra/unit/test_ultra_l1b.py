@@ -30,6 +30,33 @@ def mock_data_l1a_rates_dict():
 
 
 @pytest.fixture()
+def mock_data_l1a_de_aux_dict():
+    # Create sample data for the xarray Dataset
+    epoch = np.arange(
+        "2024-02-07T15:28:37", "2024-02-07T15:28:42", dtype="datetime64[s]"
+    )
+
+    data_vars = {
+        "var": ("epoch", np.zeros(5)),
+    }
+
+    attrs = {
+        "Logical_source": "imap_ultra_l1a_45sensor-name",
+        "Logical_source_description": "IMAP Mission ULTRA Instrument "
+        "Level-1A Single-Sensor Data",
+    }
+
+    dataset = xr.Dataset(data_vars, coords={"epoch": epoch}, attrs=attrs)
+
+    data_dict = {
+        "imap_ultra_l1a_45sensor-de": dataset,
+        "imap_ultra_l1a_45sensor-aux": dataset,
+    }
+
+    return data_dict
+
+
+@pytest.fixture()
 def mock_data_l1b_dict():
     epoch = np.array(
         [760591786368000000, 760591787368000000, 760591788368000000],
@@ -50,7 +77,7 @@ def test_create_dataset(mock_data_l1b_dict):
     np.testing.assert_array_equal(dataset["x_front"], np.zeros(3))
 
 
-def test_ultra_l1b(mock_data_l1a_rates_dict):
+def test_ultra_l1b_rates(mock_data_l1a_rates_dict):
     """Tests that L1b data is created."""
     output_datasets = ultra_l1b(mock_data_l1a_rates_dict)
 
@@ -69,6 +96,18 @@ def test_ultra_l1b(mock_data_l1a_rates_dict):
     assert (
         output_datasets[0].attrs["Logical_source_description"]
         == "IMAP-Ultra Instrument Level-1B Extended Spin Data."
+    )
+
+
+def test_ultra_l1b_de(mock_data_l1a_de_aux_dict):
+    """Tests that L1b data is created."""
+    output_datasets = ultra_l1b(mock_data_l1a_de_aux_dict)
+
+    assert len(output_datasets) == 1
+    assert output_datasets[0].attrs["Logical_source"] == "imap_ultra_l1b_45sensor-de"
+    assert (
+        output_datasets[0].attrs["Logical_source_description"]
+        == "IMAP-Ultra Instrument Level-1B Direct Event Data."
     )
 
 
