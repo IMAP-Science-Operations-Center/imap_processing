@@ -1,5 +1,7 @@
 """Calculates Pointing Set Grids."""
 
+import numpy as np
+
 from imap_processing.ultra.utils.ultra_l1_utils import create_dataset
 
 
@@ -25,7 +27,16 @@ def calculate_pset_exposure(
     dataset : xarray.Dataset
         Dataset containing the data.
     """
-    dataset = create_dataset(l1b_de_dict, name, "l1c")
+    pset_dict = {}
+
+    # Placeholder for calculations
+    dataset = l1b_de_dict["imap_ultra_l1a_45sensor-de"]
+    epoch = dataset.coords["epoch"].values
+
+    pset_dict["epoch"] = epoch
+    pset_dict["esa_step"] = np.zeros(len(epoch), dtype=np.uint8)
+
+    dataset = create_dataset(pset_dict, name, "l1c")
 
     return dataset
 
@@ -52,7 +63,16 @@ def calculate_pset_sensitivity(
     dataset : xarray.Dataset
         Dataset containing the data.
     """
-    dataset = create_dataset(l1b_de_dict, name, "l1c")
+    pset_dict = {}
+
+    # Placeholder for calculations
+    dataset = l1b_de_dict["imap_ultra_l1a_45sensor-de"]
+    epoch = dataset.coords["epoch"].values
+
+    pset_dict["epoch"] = epoch
+    pset_dict["esa_step"] = np.zeros(len(epoch), dtype=np.uint8)
+
+    dataset = create_dataset(pset_dict, name, "l1c")
 
     return dataset
 
@@ -79,7 +99,16 @@ def calculate_pset_counts(
     dataset : xarray.Dataset
         Dataset containing the data.
     """
-    dataset = create_dataset(l1b_de_dict, name, "l1c")
+    pset_dict = {}
+
+    # Placeholder for calculations
+    dataset = l1b_de_dict["imap_ultra_l1a_45sensor-de"]
+    epoch = dataset.coords["epoch"].values
+
+    pset_dict["epoch"] = epoch
+    pset_dict["esa_step"] = np.zeros(len(epoch), dtype=np.uint8)
+
+    dataset = create_dataset(pset_dict, name, "l1c")
 
     return dataset
 
@@ -106,6 +135,15 @@ def calculate_pset_backgroundrates(
     dataset : xarray.Dataset
         Dataset containing the data.
     """
-    dataset = create_dataset(l1b_de_dict, name, "l1c")
+    pset_dict = {}
+
+    # Placeholder for calculations
+    dataset = l1b_de_dict["imap_ultra_l1a_45sensor-de"]
+    epoch = dataset.coords["epoch"].values
+
+    pset_dict["epoch"] = epoch
+    pset_dict["esa_step"] = np.zeros(len(epoch), dtype=np.uint8)
+
+    dataset = create_dataset(pset_dict, name, "l1c")
 
     return dataset
