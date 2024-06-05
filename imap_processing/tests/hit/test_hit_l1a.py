@@ -86,21 +86,7 @@ def test_hit_l1a(packet_filepath):
     packet_filepath : str
         Path to ccsds file
     """
-    packets = hit_l1a.decom_packets(packet_filepath)
-    sorted_packets = sorted(packets, key=lambda x: x.data["SHCOARSE"].derived_value)
-    grouped_data = hit_l1a.group_data(sorted_packets)
-    skip_keys = [
-        "shcoarse",
-        "ground_sw_version",
-        "packet_file_name",
-        "ccsds_header",
-        "leak_i_raw",
-    ]
-    datasets = hit_l1a.create_datasets(grouped_data, skip_keys=skip_keys)
-    cdf_filepaths = []
-    for dataset in datasets.values():
-        cdf_file = write_cdf(dataset)
-        cdf_filepaths.append(cdf_file)
+    cdf_filepaths = hit_l1a.hit_l1a_data(packet_filepath)
     assert len(cdf_filepaths) == 1
     assert isinstance(cdf_filepaths[0], pathlib.PurePath)
     assert cdf_filepaths[0].name == "imap_hit_l1a_hk_19700105_v001.cdf"
