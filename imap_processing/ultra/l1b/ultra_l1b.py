@@ -25,7 +25,7 @@ def ultra_l1b(data_dict: dict):
 
     if f"imap_ultra_l1a_{instrument_id}sensor-rates" in data_dict:
         extendedspin_dataset = calculate_extendedspin(
-            data_dict, f"imap_ultra_l1b_{instrument_id}sensor-extspin"
+            data_dict, f"imap_ultra_l1b_{instrument_id}sensor-extendedspin"
         )
 
         cullingmask_dataset = calculate_cullingmask(
