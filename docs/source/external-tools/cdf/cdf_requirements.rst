@@ -120,7 +120,7 @@ This attribute lists the parent data files for files of derived and merged data 
 Example
 ========
 
-Here is an example of what this looks like for CoDice:
+Here is an example of what this looks like for CoDICE:
 
     .. code-block:: bash
 
