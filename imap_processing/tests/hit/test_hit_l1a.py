@@ -85,7 +85,7 @@ def test_hit_l1a(packet_filepath):
     packet_filepath : str
         Path to ccsds file
     """
-    cdf_filepaths = hit_l1a.hit_l1a_data(packet_filepath)
+    cdf_filepaths = hit_l1a.hit_l1a(packet_filepath)
     assert len(cdf_filepaths) == 1
     assert isinstance(cdf_filepaths[0], pathlib.PurePath)
     assert cdf_filepaths[0].name == "imap_hit_l1a_hk_20100105_v001.cdf"
