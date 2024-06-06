@@ -83,7 +83,8 @@ def test_ultra_l1b_rates(mock_data_l1a_rates_dict):
 
     assert len(output_datasets) == 3
     assert (
-        output_datasets[0].attrs["Logical_source"] == "imap_ultra_l1b_45sensor-extspin"
+        output_datasets[0].attrs["Logical_source"]
+        == "imap_ultra_l1b_45sensor-extendedspin"
     )
     assert (
         output_datasets[1].attrs["Logical_source"]
