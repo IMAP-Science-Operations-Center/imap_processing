@@ -7,7 +7,7 @@ import xarray as xr
 from imap_processing.cdf.cdf_attribute_manager import CdfAttributeManager
 
 
-def create_dataset(data_dict, name, level):
+def create_dataset(data_dict, name, level, instrument_id=None):
     """
     Create xarray for L1b data.
 
@@ -19,6 +19,8 @@ def create_dataset(data_dict, name, level):
         Name of the dataset.
     level: str
         Level of the dataset.
+    instrument_id: int
+        Instrument ID.
 
     Returns
     -------
@@ -42,13 +44,40 @@ def create_dataset(data_dict, name, level):
         attrs=cdf_manager.get_global_attributes(name),
     )
 
-    for key in data_dict.keys():
-        if key == "epoch":
-            continue
-        dataset[key] = xr.DataArray(
-            data_dict[key],
-            dims=["epoch"],
-            attrs=cdf_manager.variable_attributes[key],
-        )
+    # Create the dataset variables
+    if (
+        dataset.attrs["Logical_source"]
+        == f"imap_ultra_l1c_{instrument_id}sensor-histogram"
+    ):
+        for key in data_dict.keys():
+            if key in ["epoch", "sid", "row", "column"]:
+                continue
+            elif key == "packetdata":
+                dataset[key] = xr.DataArray(
+                    data_dict[key],
+                    dims=["epoch", "sid", "row", "column"],
+                    attrs=cdf_manager.variable_attributes[key],
+                )
+            elif key == "spin":
+                dataset[key] = xr.DataArray(
+                    data_dict[key],
+                    dims=["epoch", "sid"],
+                    attrs=cdf_manager.variable_attributes[key],
+                )
+            else:
+                dataset[key] = xr.DataArray(
+                    data_dict[key],
+                    dims=["epoch"],
+                    attrs=cdf_manager.variable_attributes[key],
+                )
+    else:
+        for key in data_dict.keys():
+            if key == "epoch":
+                continue
+            dataset[key] = xr.DataArray(
+                data_dict[key],
+                dims=["epoch"],
+                attrs=cdf_manager.variable_attributes[key],
+            )
 
     return dataset
