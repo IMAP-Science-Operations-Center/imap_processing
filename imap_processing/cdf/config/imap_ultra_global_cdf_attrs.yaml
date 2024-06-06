@@ -66,61 +66,19 @@ imap_ultra_l1b_90sensor-badtimes:
     Logical_source: imap_ultra_l1b_90sensor-badtimes
     Logical_source_description: IMAP-Ultra Instrument Level-1B Badtimes Data.
 
-imap_ultra_l1c_45sensor-pset-exposure:
+imap_ultra_l1c_45sensor-pset:
     <<: *instrument_base
     Data_level: 1C
-    Data_type: L1C_45Sensor-PSET-Exposure>Level-1C Exposure for Ultra45
-    Logical_source: imap_ultra_l1c_45sensor-pset-exposure
+    Data_type: L1C_45Sensor-PSET>Level-1C Pointing Set Grid for Ultra45
+    Logical_source: imap_ultra_l1c_45sensor-pset
     Logical_source_description: IMAP-Ultra Instrument Level-1C Pointing Set Grid Exposure Data.
 
-imap_ultra_l1c_90sensor-pset-exposure:
+imap_ultra_l1c_90sensor-pset:
     <<: *instrument_base
     Data_level: 1C
-    Data_type: L1C_90Sensor-PSET-Exposure>Level-1C Exposure for Ultra90
-    Logical_source: imap_ultra_l1c_90sensor-pset-exposure
+    Data_type: L1C_90Sensor-PSET>Level-1C Pointing Set Grid for Ultra90
+    Logical_source: imap_ultra_l1c_90sensor-pset
     Logical_source_description: IMAP-Ultra Instrument Level-1C Pointing Set Grid Exposure Data.
-
-imap_ultra_l1c_45sensor-pset-sensitivity:
-    <<: *instrument_base
-    Data_level: 1C
-    Data_type: L1C_45Sensor-PSET-Sensitivity>Level-1C Sensitivity for Ultra45
-    Logical_source: imap_ultra_l1c_45sensor-pset-sensitivity
-    Logical_source_description: IMAP-Ultra Instrument Level-1C Pointing Set Grid Sensitivity Data.
-
-imap_ultra_l1c_90sensor-pset-sensitivity:
-    <<: *instrument_base
-    Data_level: 1C
-    Data_type: L1C_90Sensor-PSET-Sensitivity>Level-1C Sensitivity for Ultra90
-    Logical_source: imap_ultra_l1c_90sensor-pset-sensitivity
-    Logical_source_description: IMAP-Ultra Instrument Level-1C Pointing Set Grid Sensitivity Data.
-
-imap_ultra_l1c_45sensor-pset-counts:
-    <<: *instrument_base
-    Data_level: 1C
-    Data_type: L1C_45Sensor-PSET-Counts>Level-1C Counts for Ultra45
-    Logical_source: imap_ultra_l1c_45sensor-pset-counts
-    Logical_source_description: IMAP-Ultra Instrument Level-1C Pointing Set Grid Counts Data.
-
-imap_ultra_l1c_90sensor-pset-counts:
-    <<: *instrument_base
-    Data_level: 1C
-    Data_type: L1C_90Sensor-PSET-Counts>Level-1C Counts for Ultra90
-    Logical_source: imap_ultra_l1c_90sensor-pset-counts
-    Logical_source_description: IMAP-Ultra Instrument Level-1C Pointing Set Grid Counts Data.
-
-imap_ultra_l1c_45sensor-pset-backgroundrates:
-    <<: *instrument_base
-    Data_level: 1C
-    Data_type: L1C_45Sensor-PSET-BackgroundRates>Level-1C Background Rate for Ultra45
-    Logical_source: imap_ultra_l1c_45sensor-pset-backgroundrates
-    Logical_source_description: IMAP-Ultra Instrument Level-1C Pointing Set Grid Background Rate Data.
-
-imap_ultra_l1c_90sensor-pset-backgroundrates:
-    <<: *instrument_base
-    Data_level: 1C
-    Data_type: L1C_45Sensor-PSET-BackgroundRates>Level-1C Background Rate for Ultra90
-    Logical_source: imap_ultra_l1c_90sensor-pset-backgroundrates
-    Logical_source_description: IMAP-Ultra Instrument Level-1C Pointing Set Grid Background Rate Data.
 
 imap_ultra_l1c_45sensor-histogram:
     <<: *instrument_base

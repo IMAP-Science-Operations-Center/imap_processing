@@ -1,12 +1,7 @@
 """Calculates ULTRA L1c."""
 
 from imap_processing.ultra.l1c.histogram import calculate_histogram
-from imap_processing.ultra.l1c.pset import (
-    calculate_pset_backgroundrates,
-    calculate_pset_counts,
-    calculate_pset_exposure,
-    calculate_pset_sensitivity,
-)
+from imap_processing.ultra.l1c.pset import calculate_pset
 
 
 def ultra_l1c(data_dict: dict):
@@ -38,27 +33,15 @@ def ultra_l1c(data_dict: dict):
     elif (
         f"imap_ultra_l1b_{instrument_id}sensor-cullingmask" in data_dict
         and f"imap_ultra_l1b_{instrument_id}sensor-de" in data_dict
-        and f"imap_ultra_l1b_{instrument_id}extendedspin-de" in data_dict
+        and f"imap_ultra_l1b_{instrument_id}sensor-extendedspin" in data_dict
     ):
-        pset_exposure_dataset = calculate_pset_exposure(
-            data_dict, f"imap_ultra_l1c_{instrument_id}sensor-pset-exposure"
-        )
-        pset_sensitivity_dataset = calculate_pset_sensitivity(
-            data_dict, f"imap_ultra_l1c_{instrument_id}sensor-pset-sensitivity"
-        )
-        pset_backgroundrates_dataset = calculate_pset_backgroundrates(
-            data_dict, f"imap_ultra_l1c_{instrument_id}sensor-pset-backgroundrates"
-        )
-        pset_counts_dataset = calculate_pset_counts(
-            data_dict, f"imap_ultra_l1c_{instrument_id}sensor-pset-counts"
+        pset_dataset = calculate_pset(
+            data_dict, f"imap_ultra_l1c_{instrument_id}sensor-pset"
         )
 
         output_datasets.extend(
             [
-                pset_exposure_dataset,
-                pset_sensitivity_dataset,
-                pset_backgroundrates_dataset,
-                pset_counts_dataset,
+                pset_dataset,
             ]
         )
     else:
