@@ -117,8 +117,8 @@ This attribute is an SPDF standard global attribute, which is used to denote the
 ===========
 This attribute lists the parent data files for files of derived and merged data sets. The syntax for a CDF parent is: ``CDF>logical_file_id``. Multiple entry values are used for multiple parents. This attribute is required for any data products that are derived from 2 or more data sources and the file names of parent data should be clearly identified. CDF parents may include source files with non-cdf extensions.
 
-Data
-====
+Example
+========
 
 Here is an example of what this looks like for CoDice:
 
