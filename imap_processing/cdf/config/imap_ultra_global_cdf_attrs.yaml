@@ -22,17 +22,17 @@ imap_ultra_l1b_90sensor-de:
     Logical_source: imap_ultra_l1b_90sensor-de
     Logical_source_description: IMAP-Ultra Instrument Level-1B Direct Event Data.
 
-imap_ultra_l1b_45sensor-extendedspin:
+imap_ultra_l1b_45sensor-extspin:
     <<: *instrument_base
     Data_level: 1B
     Data_type: L1B_45Sensor-ExtendedSpin>Level-1B Extended Spin for Ultra45
-    Logical_source: imap_ultra_l1b_45sensor-extendedspin
+    Logical_source: imap_ultra_l1b_45sensor-extspin
     Logical_source_description: IMAP-Ultra Instrument Level-1B Extended Spin Data.
 
-imap_ultra_l1b_90sensor-extendedspin:
+imap_ultra_l1b_90sensor-extspin:
     <<: *instrument_base
     Data_type: L1B_90Sensor-ExtendedSpin>Level-1B Extended Spin for Ultra90
-    Logical_source: imap_ultra_l1b_90sensor-extendedspin
+    Logical_source: imap_ultra_l1b_90sensor-extspin
     Logical_source_description: IMAP-Ultra Instrument Level-1B Extended Spin Data.
 
 imap_ultra_l1b_45sensor-cullingmask:
