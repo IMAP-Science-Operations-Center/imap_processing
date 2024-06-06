@@ -117,6 +117,29 @@ This attribute is an SPDF standard global attribute, which is used to denote the
 ===========
 This attribute lists the parent data files for files of derived and merged data sets. The syntax for a CDF parent is: ``CDF>logical_file_id``. Multiple entry values are used for multiple parents. This attribute is required for any data products that are derived from 2 or more data sources and the file names of parent data should be clearly identified. CDF parents may include source files with non-cdf extensions.
 
+Here is an example of what this looks like for CoDice:
+
+    .. code-block:: bash
+        {'Project': ['STP>Solar-Terrestrial Physics'],
+         'Source_name': ['IMAP>Interstellar Mapping and Acceleration Probe'],
+         'Discipline': ['Solar Physics>Heliospheric Physics'],
+         'Mission_group': ['IMAP>Interstellar Mapping and Acceleration Probe'],
+         'PI_name': ['Dr. David J. McComas'],
+         'PI_affiliation': ['Princeton Plasma Physics Laboratory',
+          '100 Stellarator Road, Princeton, NJ 08540'],
+         'File_naming_convention': ['source_descriptor_datatype_yyyyMMdd_vNNN'],
+         'Data_version': ['001'],
+         'Descriptor': ['CoDICE>Compact Dual Ion Composition Experiment'],
+         'TEXT': ['The Compact Dual Ion Composition Experiment (CoDICE) will measure the distributions and composition of interstellar pickup ions (PUIs), particles that make it through the heliosheath into the heliosphere. CoDICE also collects and characterizes solar wind ions including the mass and composition of highly energized particles (called suprathermal) from the Sun. CoDICE combines an electrostatic analyzer(ESA) with a Time-Of-Flight versus Energy (TOF / E) subsystem to simultaneously  measure the velocity, arrival direction, ionic charge state, and mass of specific species of ions in the LISM. CoDICE also has a path for higher energy particles to skip the ESA but still get measured by the common TOF / E system. These measurements are critical in determining the Local Interstellar Medium (LISM) composition and flow properties, the origin of the enigmatic suprathermal tails on the solar wind distributions and advance understanding of the acceleration of particles in the heliosphere.'],
+         'Instrument_type': ['Particles (space)'],
+         'Logical_file_id': ['imap_codice_l1a_lo-sw-species-counts_20240319_v001'],
+         'Data_type': ['L1A_lo-sw-species-counts->Level-1A Lo Sunward Species Counts Data'],
+         'Logical_source': ['imap_codice_l1a_lo-sw-species-counts'],
+         'Logical_source_description': ['IMAP Mission CoDICE Instrument Level-1A Lo Sunward Species Counts Data']
+        }
+
+
+
 **************
 IMAP Variables
 **************
