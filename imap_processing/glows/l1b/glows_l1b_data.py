@@ -195,10 +195,10 @@ class HistogramL1B:
     position_angle_offset_std_dev: np.single = field(init=False)  # retrieved from SPICE
     spin_axis_orientation_std_dev: np.single = field(init=False)  # retrieved from SPICE
     spin_axis_orientation_average: np.single = field(init=False)  # retrieved from SPICE
-    # spacecraft_location_average: np.ndarray = field(init=False)  # retrieved from SPIC
-    # spacecraft_location_std_dev: np.ndarray = field(init=False)  # retrieved from SPIC
-    # spacecraft_velocity_average: np.ndarray = field(init=False)  # retrieved from SPIC
-    # spacecraft_velocity_std_dev: np.ndarray = field(init=False)  # retrieved from SPIC
+    spacecraft_location_average: np.ndarray = field(init=False)  # retrieved from SPIC
+    spacecraft_location_std_dev: np.ndarray = field(init=False)  # retrieved from SPIC
+    spacecraft_velocity_average: np.ndarray = field(init=False)  # retrieved from SPIC
+    spacecraft_velocity_std_dev: np.ndarray = field(init=False)  # retrieved from SPIC
     # flags: np.ndarray
     # conversion_table: dict
 
@@ -225,10 +225,10 @@ class HistogramL1B:
         self.position_angle_offset_std_dev = -999.0
         self.spin_axis_orientation_std_dev = -999.0
         self.spin_axis_orientation_average = -999.0
-        # self.spacecraft_location_average = np.array([-999.0, -999.0, -999.0])
-        # self.spacecraft_location_std_dev = np.array([-999.0, -999.0, -999.0])
-        # self.spacecraft_velocity_average = np.array([-999.0, -999.0, -999.0])
-        # self.spacecraft_velocity_std_dev = np.array([-999.0, -999.0, -999.0])
+        self.spacecraft_location_average = np.array([-999.0, -999.0, -999.0])
+        self.spacecraft_location_std_dev = np.array([-999.0, -999.0, -999.0])
+        self.spacecraft_velocity_average = np.array([-999.0, -999.0, -999.0])
+        self.spacecraft_velocity_std_dev = np.array([-999.0, -999.0, -999.0])
 
         # TODO: This should probably be an AWS file
         # TODO Pass in AncillaryParameters object instead of reading here.
@@ -281,12 +281,3 @@ class HistogramL1B:
         decoded_value: np.single = (encoded_value - param_b) / param_a
 
         return decoded_value
-
-    def convert_to_dataarrays(self) -> tuple[np.ndarray]:
-        """
-        Convert the class to a tuple of xarray DataArrays for output.
-
-        Outputs all class attributes as DataArrays.
-        Todo: should attribute setting occur here or in output step?
-        """
-        pass

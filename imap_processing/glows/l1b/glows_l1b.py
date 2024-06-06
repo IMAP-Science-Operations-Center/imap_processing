@@ -32,19 +32,26 @@ def glows_l1b():
 def process_histogram(l1a: xr.Dataset) -> xr.Dataset:
     """Process the histogram data from the L1A dataset and return the L1B dataset."""
     dataarrays = [l1a[i] for i in l1a.keys()]
-    print(f"Dataarray len: {len(dataarrays)}")
-    print(f"Dataarrays type: {type(dataarrays[0])}")
 
     dims = [[] for i in l1a.keys()]
-    new_dims = [[] for i in range(28)]
+    # 32 is the number of attributes in the HistogramL1B class.
+    new_dims = [[] for i in range(32)]
 
-    # This is the only multi dimensional variable, so we need to set the dims to be all
-    # the dims EXCEPT for epoch.
+    # histograms is the only multi dimensional variable, so we need to set its dims to
+    # pass along all the dims EXCEPT for epoch. (in this case just "bins")
     # The rest of the vars are only epoch so they have an empty list.
     dims[0] = ["bins"]
-    # TODO: new dims needs to include all the ndarray types as well - do we add a dim
-    #  for 3 value arr
+
+    # This preserves the dimensions
     new_dims[0] = ["bins"]
+
+    # For the new arrays added: add their dimensions. These aren't defined anywhere,
+    # so when the dataset is created I will need to add "coords" as a new dimension.
+    new_dims[-4] = ["coords"]
+    new_dims[-3] = ["coords"]
+    new_dims[-2] = ["coords"]
+    new_dims[-1] = ["coords"]
+
     l1b_fields = xr.apply_ufunc(
         histogram_mapping,
         # TODO rearrange class to match with dataset
@@ -53,22 +60,37 @@ def process_histogram(l1a: xr.Dataset) -> xr.Dataset:
         output_core_dims=new_dims,
         vectorize=True,
     )
-    print("done")
+
+    # This is a tuple of dataarrays and not a dataset yet
     return l1b_fields
 
 
 def histogram_mapping(*args) -> tuple:
-    """Do things. (ruff is being annoying)."""
-    for arg in args:
-        print(f"Arg type: {type(arg)}\n")
-        print(arg)
+    """For each variable in the L1A dataset, pass that into the HistogramL1B class.
+
+    This class automatically converts all L1A values to L1B values and creates
+    additional data fields. Then, the return is just the data fields of the L1B class,
+    so the output file exactly lines up with that class.
+
+    Attributes
+    ----------
+    args : tuple
+        The args should exactly line up with the init for the HistogramL1B class.
+
+    Returns
+    -------
+    tuple
+        The data fields of the HistogramL1B class.
+    """
+    # for arg in args:
+    # print(f"Arg type: {type(arg)}\n")
+    # print(arg)
     # Given: all the inputs for histogramL1B init
     # Return: a tuple of all the histogramL1B attributes
 
     # TODO: validate expected types and number of inputs, so we can have a more
     #  intelligent error?
     hist_l1b = HistogramL1B(*args)
-    print("Generated hist_l1b")
 
     return tuple(dataclasses.asdict(hist_l1b).values())
     # might need to change input - a list of dataarrays?
