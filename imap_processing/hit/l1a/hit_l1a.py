@@ -165,14 +165,14 @@ def create_datasets(data: dict, skip_keys=None):
                 data_key = field_name.lower()
                 metadata_arrays[data_key].append(field_value)
 
-        # TODO: SHCOARSE is an integer, so we'll need to use the
-        #  calc_start_time() function to get this value into a
-        #  datetime64[s], otherwise this is going to be showing
-        #  1970's unix epoch time values.
+        # Convert integers into datetime64[s]
+        epoch_converted_times = [
+            utils.calc_start_time(time) for time in metadata_arrays["shcoarse"]
+        ]
 
         # Create xarray data arrays for dependencies
         epoch_time = xr.DataArray(
-            np.array(metadata_arrays["shcoarse"], dtype="datetime64[s]"),
+            epoch_converted_times,
             name="epoch",
             dims=["epoch"],
             attrs=ConstantCoordinates.EPOCH,
@@ -185,13 +185,13 @@ def create_datasets(data: dict, skip_keys=None):
             attrs=hit_cdf_attrs.l1a_hk_attrs["adc_channels"].output(),
         )
 
-        # Create a xarray dataset
+        # Create xarray dataset
         dataset = xr.Dataset(
             coords={"epoch": epoch_time, "adc_channels": adc_channels},
             attrs=hit_cdf_attrs.hit_hk_l1a_attrs.output(),
         )
 
-        # Create a xarray data array for each metadata field
+        # Create xarray data array for each metadata field
         for key, value in metadata_arrays.items():
             if key not in skip_keys:
                 if key == "leak_i":
