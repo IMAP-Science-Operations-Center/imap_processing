@@ -5,14 +5,14 @@ import numpy as np
 from imap_processing.ultra.utils.ultra_l1_utils import create_dataset
 
 
-def calculate_pset(data_dict, name):
+def calculate_pset(pset_dataset, name):
     """
     Create dictionary with defined datatype for Pointing Set Grid Data.
 
     Parameters
     ----------
-    data_dict: : dict
-        L1b data dictionary.
+    pset_dataset: xarray.Dataset
+        Dataset containing histogram data.
     name: str
         Name of the dataset.
 
@@ -24,8 +24,7 @@ def calculate_pset(data_dict, name):
     pset_dict = {}
 
     # Placeholder for calculations
-    dataset = data_dict["imap_ultra_l1b_45sensor-de"]
-    epoch = dataset.coords["epoch"].values
+    epoch = pset_dataset.coords["epoch"].values
 
     pset_dict["epoch"] = epoch
     pset_dict["esa_step"] = np.zeros(len(epoch), dtype=np.uint8)

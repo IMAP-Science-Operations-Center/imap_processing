@@ -18,7 +18,6 @@ def ultra_l1c(data_dict: dict):
     output_datasets : list of xarray.Dataset
         List of xarray.Dataset
     """
-    output_datasets = []
     instrument_id = 45 if any("45" in key for key in data_dict.keys()) else 90
 
     if (
@@ -26,24 +25,21 @@ def ultra_l1c(data_dict: dict):
         and f"imap_ultra_l1b_{instrument_id}sensor-cullingmask" in data_dict
     ):
         histogram_dataset = calculate_histogram(
-            data_dict,
+            data_dict[f"imap_ultra_l1a_{instrument_id}sensor-histogram"],
             f"imap_ultra_l1c_{instrument_id}sensor-histogram",
         )
-        output_datasets.append(histogram_dataset)
+        output_datasets = [histogram_dataset]
     elif (
         f"imap_ultra_l1b_{instrument_id}sensor-cullingmask" in data_dict
         and f"imap_ultra_l1b_{instrument_id}sensor-de" in data_dict
         and f"imap_ultra_l1b_{instrument_id}sensor-extendedspin" in data_dict
     ):
         pset_dataset = calculate_pset(
-            data_dict, f"imap_ultra_l1c_{instrument_id}sensor-pset"
+            data_dict[f"imap_ultra_l1b_{instrument_id}sensor-de"],
+            f"imap_ultra_l1c_{instrument_id}sensor-pset",
         )
 
-        output_datasets.extend(
-            [
-                pset_dataset,
-            ]
-        )
+        output_datasets = [pset_dataset]
     else:
         raise ValueError("Data dictionary does not contain the expected keys.")
 

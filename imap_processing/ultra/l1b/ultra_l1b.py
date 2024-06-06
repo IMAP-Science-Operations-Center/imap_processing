@@ -25,7 +25,8 @@ def ultra_l1b(data_dict: dict):
 
     if f"imap_ultra_l1a_{instrument_id}sensor-rates" in data_dict:
         extendedspin_dataset = calculate_extendedspin(
-            data_dict, f"imap_ultra_l1b_{instrument_id}sensor-extendedspin"
+            data_dict[f"imap_ultra_l1a_{instrument_id}sensor-rates"],
+            f"imap_ultra_l1b_{instrument_id}sensor-extendedspin",
         )
 
         cullingmask_dataset = calculate_cullingmask(
@@ -43,9 +44,12 @@ def ultra_l1b(data_dict: dict):
         f"imap_ultra_l1a_{instrument_id}sensor-aux" in data_dict
         and f"imap_ultra_l1a_{instrument_id}sensor-de" in data_dict
     ):
-        de_dataset = calculate_de(data_dict, f"imap_ultra_l1b_{instrument_id}sensor-de")
+        de_dataset = calculate_de(
+            data_dict[f"imap_ultra_l1a_{instrument_id}sensor-de"],
+            f"imap_ultra_l1b_{instrument_id}sensor-de",
+        )
 
-        output_datasets.extend([de_dataset])
+        output_datasets.append(de_dataset)
     else:
         raise ValueError("Data dictionary does not contain the expected keys.")
 
