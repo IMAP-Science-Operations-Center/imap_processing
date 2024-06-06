@@ -13,7 +13,12 @@ ESA = ElectroStatic Analyzer
 
 from imap_processing.codice.utils import CoDICECompression
 
+# TODO: Convert these to lists because we dont need the fieldname or catdesc
 # CDF-friendly names for lo data products
+LO_INST_COUNTS_AGGREGATED_NAMES = {
+    "aggregated": {"fieldname": "Rates - Aggregated", "catdesc": "Aggregated Rates"}
+}
+
 LO_SW_ANGULAR_NAMES = {
     "hplus": {"fieldname": "SW - H+", "catdesc": "Sunward H+ Species"},
     "heplusplus": {"fieldname": "SW - He++", "catdesc": "Sunward He++ Species"},

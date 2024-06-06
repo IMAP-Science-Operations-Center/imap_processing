@@ -58,6 +58,11 @@ esa_sweep_attrs:
     VALIDMIN: 0
     VAR_TYPE: support_data
 
+lo_counters_aggregated-aggregated:
+    <<: *counters
+    CATDESC: Aggregated Rates
+    FIELDNAM: Rates - Aggregated
+
 lo_sw_angular_counts-hplus:
     <<: *counters
     CATDESC: Sunward H+ Species
