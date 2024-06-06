@@ -56,7 +56,7 @@ def ultra_l1b(data_dict: dict, data_version: str):
         )
         de_dataset.attrs["Data_version"] = data_version
 
-        output_datasets.extend([de_dataset])
+        output_datasets.append(de_dataset)
     else:
         raise ValueError("Data dictionary does not contain the expected keys.")
 
