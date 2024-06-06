@@ -36,7 +36,7 @@ def ultra_l1c(data_dict: dict, data_version: str):
     elif (
         f"imap_ultra_l1b_{instrument_id}sensor-cullingmask" in data_dict
         and f"imap_ultra_l1b_{instrument_id}sensor-de" in data_dict
-        and f"imap_ultra_l1b_{instrument_id}sensor-extendedspin" in data_dict
+        and f"imap_ultra_l1b_{instrument_id}sensor-extspin" in data_dict
     ):
         pset_dataset = calculate_pset(
             data_dict[f"imap_ultra_l1b_{instrument_id}sensor-de"],
