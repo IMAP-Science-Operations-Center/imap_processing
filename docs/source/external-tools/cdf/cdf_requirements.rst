@@ -120,6 +120,7 @@ This attribute lists the parent data files for files of derived and merged data 
 Here is an example of what this looks like for CoDice:
 
     .. code-block:: bash
+
         {'Project': ['STP>Solar-Terrestrial Physics'],
          'Source_name': ['IMAP>Interstellar Mapping and Acceleration Probe'],
          'Discipline': ['Solar Physics>Heliospheric Physics'],
