@@ -1,0 +1,63 @@
+{
+    "global_attrs": {
+        "Project": "STP>Solar-Terrestrial Physics",
+        "Source_name": "IMAP>Interstellar Mapping and Acceleration Probe",
+        "Discipline": "Solar Physics>Heliospheric Physics",
+        "Mission_group": "IMAP>Interstellar Mapping and Acceleration Probe",
+        "PI_name": "Dr. David J. McComas",
+        "PI_affiliation": "Princeton Plasma Physics Laboratory",
+        "File_naming_convention": "source_descriptor_datatype_yyyyMMdd_vNNN",
+        "Data_version": 1,
+        "Descriptor": "ultra>IMAP Ultra-Energy (IMAP-Ultra) Energetic Neutral Atom Imager",
+        "TEXT": "Ultra captures images of very energetic neutral atoms, particularly hydrogen (H) atoms, produced in the solar system at the heliosheath, the region where the solar wind slows, compresses, and becomes much hotter as it meets the interstellar medium (ISM). The instrument also measures the distribution of solar wind electrons and protons, and the magnetic field. See https://imap.princeton.edu/instruments/ultra for more details.",
+        "Instrument_type": "Particles (space)"
+    },
+    "imap_ultra_l1b_45sensor-de": {
+        "dataset_attrs": {
+            "Logical_file_id": "<to-be-replaced-in-code>",
+            "Data_type": "L1B_Annotated>Level-1B Annotated Event",
+            "Logical_source": "imap_ultra_l1b_45sensor-de",
+            "Logical_source_description": "IMAP-Ultra Instrument Level-1B Annotated Event Data.",
+            "Project": "STP>Solar-Terrestrial Physics",
+            "Source_name": "IMAP>Interstellar Mapping and Acceleration Probe",
+            "Discipline": "Solar Physics>Heliospheric Physics",
+            "Mission_group": "IMAP>Interstellar Mapping and Acceleration Probe",
+            "PI_name": "Dr. David J. McComas",
+            "PI_affiliation": "Princeton Plasma Physics Laboratory",
+            "File_naming_convention": "source_descriptor_datatype_yyyyMMdd_vNNN",
+            "Data_version": 1,
+            "Descriptor": "ultra>IMAP Ultra-Energy (IMAP-Ultra) Energetic Neutral Atom Imager",
+            "TEXT": "Ultra captures images of very energetic neutral atoms, particularly hydrogen (H) atoms, produced in the solar system at the heliosheath, the region where the solar wind slows, compresses, and becomes much hotter as it meets the interstellar medium (ISM). The instrument also measures the distribution of solar wind electrons and protons, and the magnetic field. See https://imap.princeton.edu/instruments/ultra for more details.",
+            "Instrument_type": "Particles (space)"
+        },
+        "epoch": {
+            "CATDESC": "Time, number of nanoseconds since J2000 with leap seconds included",
+            "VAR_TYPE": "support_data",
+            "FIELDNAM": "epoch",
+            "FORMAT": "I19",
+            "LABLAXIS": "epoch",
+            "UNITS": "ns",
+            "VALIDMIN": -3.15576e+17,
+            "VALIDMAX": 3.15563e+18,
+            "FILLVAL": -9.22337e+18,
+            "SCALE_TYP": "linear",
+            "TIME_BASE": "J2000",
+            "TIME_SCALE": "Terrestrail Time",
+            "MONOTON": "INCREASE",
+            "REFERENCE_POSITION": "Rotating Earth Geoid"
+        },
+        "x_front": {
+            "CATDESC": "x front position",
+            "VAR_TYPE": "data",
+            "DISPLAY_TYPE": "time_series",
+            "FIELDNAM": "x_front",
+            "FORMAT": "I2",
+            "LABLAXIS": "x_front",
+            "UNITS": "mm",
+            "VALIDMIN": 0.0,
+            "VALIDMAX": 72.0,
+            "FILLVAL": -9.22337e+18,
+            "SCALE_TYP": "linear"
+        }
+    }
+}

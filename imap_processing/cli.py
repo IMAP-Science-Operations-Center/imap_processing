@@ -40,6 +40,7 @@ from imap_processing.swapi.l1.swapi_l1 import swapi_l1
 from imap_processing.swe.l1a.swe_l1a import swe_l1a
 from imap_processing.swe.l1b.swe_l1b import swe_l1b
 from imap_processing.ultra.l1a import ultra_l1a
+from imap_processing.ultra.l1b import ultra_l1b
 
 logger = logging.getLogger(__name__)
 
@@ -51,8 +52,7 @@ def _parse_args():
     --instrument "mag"
     --data-level "l1a"
     --start-date "20231212"
-    --end-date "20231212"
-    --version "v00-01"
+    --version "v001"
     --dependency "[
         {
             'instrument': 'mag',
@@ -101,6 +101,29 @@ def _parse_args():
     )
 
     parser = argparse.ArgumentParser(prog="imap_cli", description=description)
+    # TODO: Add version here and change our current "version" to "data-version"?
+    # parser.add_argument(
+    #     "--version",
+    #     action="version",
+    #     version=f"%(prog)s {imap_processing.__version__}",
+    # )
+    # Logging level
+    parser.add_argument(
+        "--debug",
+        help="Print lots of debugging statements",
+        action="store_const",
+        dest="loglevel",
+        const=logging.DEBUG,
+        default=logging.WARNING,
+    )
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        help="Add verbose output",
+        action="store_const",
+        dest="loglevel",
+        const=logging.INFO,
+    )
     parser.add_argument("--instrument", type=str, required=True, help=instrument_help)
     parser.add_argument("--data-level", type=str, required=True, help=level_help)
 
@@ -232,6 +255,7 @@ class ProcessInstrument(ABC):
                     instrument=dependency["instrument"],
                     data_level=dependency["data_level"],
                     version=dependency["version"],
+                    descriptor=dependency["descriptor"],
                 )
             except HTTPError as e:
                 raise ValueError(f"Unable to download files from {dependency}") from e
@@ -274,9 +298,15 @@ class ProcessInstrument(ABC):
         of new products (files).
         3. Post-processing actions such as uploading files to the IMAP SDC.
         """
+        logger.info(f"IMAP Processing Version: {imap_processing.__version__}")
+        logger.info(f"Processing {self.__class__.__name__} level {self.data_level}")
+        logger.info("Beginning preprocessing (download dependencies)")
         dependencies = self.pre_processing()
+        logger.info("Beginning actual processing")
         products = self.do_processing(dependencies)
+        logger.info("Beginning postprocessing (uploading data products)")
         self.post_processing(products)
+        logger.info("Processing complete")
 
     def pre_processing(self):
         """
@@ -514,6 +544,14 @@ class Ultra(ProcessInstrument):
                 )
 
             datasets = ultra_l1a.ultra_l1a(dependencies[0])
+            products = [write_cdf(dataset) for dataset in datasets]
+            return products
+        elif self.data_level == "l1b":
+            data_dict = {}
+            for dependency in dependencies:
+                dataset = load_cdf(dependency, to_datetime=True)
+                data_dict[dataset.attrs["Logical_source"]] = dataset
+            datasets = ultra_l1b.ultra_l1b(data_dict)
             products = [write_cdf(dataset) for dataset in datasets]
             return products
 

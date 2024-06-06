@@ -1,0 +1,191 @@
+<?xml version='1.0' encoding='utf-8'?>
+<xtce:SpaceSystem xmlns:xtce="http://www.omg.org/space/xtce" name="P_COD_LO_SW_SPECIES_COUNTS">
+	<xtce:Header date="2024-05" version="1.0" author="IMAP SDC" />
+	<xtce:TelemetryMetaData>
+		<xtce:ParameterTypeSet>
+			<xtce:IntegerParameterType name="UINT1" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT2" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="2" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT3" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="3" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT4" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="4" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT6" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="6" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT8" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="8" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT11" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="11" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT14" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="14" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT16" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="16" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT20" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="20" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT23" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="23" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT32" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="32" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:BinaryParameterType name="LO_SW_SPECIES_COUNTS_BITS">
+				<xtce:UnitSet />
+				<xtce:BinaryDataEncoding bitOrder="mostSignificantBitFirst">
+					<xtce:SizeInBits>
+						<xtce:FixedValue>1376</xtce:FixedValue>
+					</xtce:SizeInBits>
+				</xtce:BinaryDataEncoding>
+			</xtce:BinaryParameterType>
+		</xtce:ParameterTypeSet>
+		<xtce:ParameterSet>
+			<xtce:Parameter name="VERSION" parameterTypeRef="UINT3">
+				<xtce:LongDescription>CCSDS Packet Version Number (always 0)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="TYPE" parameterTypeRef="UINT1">
+				<xtce:LongDescription>CCSDS Packet Type Indicator (0=telemetry)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SEC_HDR_FLG" parameterTypeRef="UINT1">
+				<xtce:LongDescription>CCSDS Packet Secondary Header Flag (always 1)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PKT_APID" parameterTypeRef="UINT11">
+				<xtce:LongDescription>CCSDS Packet Application Process ID</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SEQ_FLGS" parameterTypeRef="UINT2">
+				<xtce:LongDescription>CCSDS Packet Grouping Flags (3=not part of group)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SRC_SEQ_CTR" parameterTypeRef="UINT14">
+				<xtce:LongDescription>CCSDS Packet Sequence Count (increments with each new packet)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PKT_LEN" parameterTypeRef="UINT16">
+				<xtce:LongDescription>CCSDS Packet Length (number of bytes after Packet length minus 1)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SHCOARSE" parameterTypeRef="UINT32" shortDescription="S/C TIME - SECONDS">
+				<xtce:LongDescription>SECONDARY HEADER - WHOLE-SECONDS PART OF SCLK</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PACKET_VERSION" parameterTypeRef="UINT16" shortDescription="PACKET VERSION">
+				<xtce:LongDescription>PACKET VERSION - THIS WILL BE INCREMENTED EACH TIME THE FORMAT OF THE PACKET CHANGES.</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SPIN_PERIOD" parameterTypeRef="UINT16" shortDescription="SPIN PERIOD REPORTED BY THE SPACECRAFT">
+				<xtce:LongDescription>SPIN PERIOD REPORTED BY THE SPACECRAFT IN THE TIME AND STATUS MESSAGE.  REPORTED PERIOD IS THE PERIOD THAT WAS ACTIVE WHEN THE 16-SPIN ACQUISITION CYCLE STARTED.</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="ACQ_START_SECONDS" parameterTypeRef="UINT32" shortDescription="ACQUISITION START TIME (SECONDS)">
+				<xtce:LongDescription>FULL-SECONDS PORTION OF THE TIME AT WHICH THE 16-SPIN CYCLE STARTED</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="ACQ_START_SUBSECONDS" parameterTypeRef="UINT20" shortDescription="ACQUISITION START TIME (SUBSECONDS)">
+				<xtce:LongDescription>SUB-SECONDS PORTION OF THE TIME AT WHICH THE 16-SPIN CYCLE STARTED (MICROSECONDS)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SPARE_00" parameterTypeRef="UINT8" shortDescription="SPARE FOR ALIGNMENT">
+				<xtce:LongDescription>SPARE FOR ALIGNMENT</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="ST_BIAS_GAIN_MODE" parameterTypeRef="UINT2" shortDescription="BIAS GAIN MODE (SUPRATHERMAL)">
+				<xtce:LongDescription>BIAS GAIN MODE FOR THE SUPRATHERMAL SECTOR</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SW_BIAS_GAIN_MODE" parameterTypeRef="UINT2" shortDescription="BIAS GAIN MODE (SOLARWIND)">
+				<xtce:LongDescription>BIAS GAIN MODE FOR THE SOLARWIND SECTOR</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="TABLE_ID" parameterTypeRef="UINT32" shortDescription="SCIENCE LOOKUP TABLE VERSION/ID">
+				<xtce:LongDescription>UNIQUE ID ASSIGNED TO A SPECIFIC TABLE CONFIGURATION.  THIS FIELD IS USED TO LINK THE OVERALL ACQUISITION AND PROCESSING SETTINGS TO A SPECIFIC TABLE CONFIGURATION.</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PLAN_ID" parameterTypeRef="UINT16" shortDescription="PLAN TABLE ID">
+				<xtce:LongDescription>PLAN TABLE THAT WAS IN USE</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PLAN_STEP" parameterTypeRef="UINT4" shortDescription="PLAN STEP NUMBER">
+				<xtce:LongDescription>PLAN STEP THAT WAS ACTIVE WHEN THIS DATA WAS ACQUIRED AND PROCESSED.</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="VIEW_ID" parameterTypeRef="UINT4" shortDescription="VIEW TABLE USED FOR DATA COLLAPSING AND COMPRESSION">
+				<xtce:LongDescription>VIEW ID PROVIDES INFORMATION ABOUT HOW DATA WAS COLLAPSED AND/OR COMPRESSED.</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="RGFO_HALF_SPIN" parameterTypeRef="UINT6" shortDescription="HALF-SPIN WHEN REDUCED GAIN FACTOR OPERATION WAS ACTIVATED">
+				<xtce:LongDescription>INDICATES THE POINT WHEN REDUCED GAIN FACTOR OPERATION (RGFO) WAS ACTIVED.  IN RGFO, THE ENTRANCE ESA VOLTAGE IS REDUCED IN ORDER TO LIMIT THE NUMBER OF IONS THAT REACH THE DETECTORS.</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="NSO_HALF_SPIN" parameterTypeRef="UINT6" shortDescription="HALF-SPIN WHEN NO SCAN OPERATION WAS ACTIVATED">
+				<xtce:LongDescription>INDICATES THE POINT WHEN NO-SCAN OPERATION (NSO) WAS ACTIVED.  IN NSO, THE ESA VOLTAGE IS SET TO THE FIRST STEP IN THE SCAN AND REMAINS FIXED UNTIL THE NEXT CYCLE BOUNDARY.</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SPARE_01" parameterTypeRef="UINT1" shortDescription="SPARE">
+				<xtce:LongDescription>SPARE</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SUSPECT" parameterTypeRef="UINT1" shortDescription="INDICATES A DATA QUALITY ISSUE">
+				<xtce:LongDescription>INDICATES THAT THERE WAS SOME ERROR DETECTED DURING ACQUISITION OR PROCESSING OF THE DATA.  ERRORS COULD INCLUDE CORRUPTED ACQUISITION MEMORY (I.E. EDAC ERRORS), TIMING VIOLATIONS, OR OTHER EVENTS THAT INTERRUPTED OR OTHERWISE AFFECTED DATA COLLECTION.</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="COMPRESSION" parameterTypeRef="UINT3" shortDescription="COMPRESSION CONFIGURATION">
+				<xtce:LongDescription>WHETHER/HOW THE DATA IS COMPRESSED.</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="BYTE_COUNT" parameterTypeRef="UINT23" shortDescription="NUMBER OF BYTES IN THE DATA ARRAY">
+				<xtce:LongDescription>NUMBER OF BYTES IN THE DATA ARRAY.  IF COMPRESSED, THIS VALUE REPRESENTS THE LENGTH OF THE COMPRESSED DATA.</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DATA" parameterTypeRef="LO_SW_SPECIES_COUNTS_BITS" shortDescription="DATA ARRAY">
+				<xtce:LongDescription>COUNTER DATA
+
+VARIABLE LENGTH; MAXIMUM (BASED ON UNCOLLAPSED, UNCOMPRESSED DATA, AND ASSUMING ALL 32 SPECIES-COUNTERS INCLUDED):
+
+128 ENERGIES X 24 POSITIONS X 12 SPIN-ANGLES X 32 BITS X 32 COUNTERS = 37,748,736 BITS (4,718,592 BYTES)
+
+REALISTICALLY, DATA IS AGGRESSIVELY COLLAPSED AND COMPRESSED, AND ONLY A SUBSET OF THE 32 SPECIES COUNTERS WILL BE INCLUDED, SO THIS DATA FIELD WILL BE MUCH SMALLER THAN THE MAXIMUM.
+
+DATA FORMAT IS A SERIES OF SPIN-ANGLE X POSITION X ENERGY DATA CUBES COLLAPSED PER THE SCI_LUT COLLAPSE TABLE SELECTED BY THE VIEW_ID.  WHICH COUNTERS ARE INCLUDED IS DETERMINED BY USING THE PLAN_ID AND PLAN_STEP TO INDEX INTO THE SCI_LUT DATA PRODUCTS HI/LO TABLES TO FIND ALL THE COUNTERS THAT ARE ASSOCIATED WITH THE VIEW_ID.
+
+THE COLLAPSED DATA CUBES ARE ALSO OPTIONALLY COMPRESSED USING LOSSY AND/OR LOSSLESS COMPRESSION.  LOSSY COMPRESSION IS A TABLE-BASED 24-&gt;8 BIT COMPRESSION APPLIED TO EACH COUNTER VALUE.  LOSSLESS COMPRESSION USES THE LZMA COMPRESSION ALGORITHM AND IS APPLIED TO THE FULL DATA FIELD AS A SINGLE UNIT.
+
+FIELD WILL ADDITIONALLY BE PADDED IN ORDER TO MEET THE REQUIREMENT OF PACKETS BEING A MULTIPLE OF 16 BITS;  ANY PAD BITS WILL BE ACCOUNTED FOR IN THE CCSDS HEADER LENGTH FIELD, BUT WILL *NOT* BE INCLUDED IN THE BYTE_COUNT FIELD
+
+WHEN THIS ARRAY IS TOO LARGE FOR A SINGLE CCSDS PACKET, CODICE WILL UTILIZE THE CCSDS GROUPING FLAGS TO PROVIDE THE FULL DATA PACKET OVER SEVERAL CCSDS PACKETS.</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="CHKSUM" parameterTypeRef="UINT16">
+				<xtce:LongDescription>PACKET CHECKSUM</xtce:LongDescription>
+			</xtce:Parameter>
+		</xtce:ParameterSet>
+		<xtce:ContainerSet>
+			<xtce:SequenceContainer name="CCSDSPacket">
+				<xtce:EntryList>
+					<xtce:ParameterRefEntry parameterRef="VERSION" />
+					<xtce:ParameterRefEntry parameterRef="TYPE" />
+					<xtce:ParameterRefEntry parameterRef="SEC_HDR_FLG" />
+					<xtce:ParameterRefEntry parameterRef="PKT_APID" />
+					<xtce:ParameterRefEntry parameterRef="SEQ_FLGS" />
+					<xtce:ParameterRefEntry parameterRef="SRC_SEQ_CTR" />
+					<xtce:ParameterRefEntry parameterRef="PKT_LEN" />
+				</xtce:EntryList>
+			</xtce:SequenceContainer>
+			<xtce:SequenceContainer name="P_COD_LO_SW_SPECIES_COUNTS">
+				<xtce:BaseContainer containerRef="CCSDSPacket">
+					<xtce:RestrictionCriteria>
+						<xtce:Comparison parameterRef="PKT_APID" value="1156" useCalibratedValue="false" />
+					</xtce:RestrictionCriteria>
+				</xtce:BaseContainer>
+				<xtce:EntryList>
+					<xtce:ParameterRefEntry parameterRef="SHCOARSE" />
+					<xtce:ParameterRefEntry parameterRef="PACKET_VERSION" />
+					<xtce:ParameterRefEntry parameterRef="SPIN_PERIOD" />
+					<xtce:ParameterRefEntry parameterRef="ACQ_START_SECONDS" />
+					<xtce:ParameterRefEntry parameterRef="ACQ_START_SUBSECONDS" />
+					<xtce:ParameterRefEntry parameterRef="SPARE_00" />
+					<xtce:ParameterRefEntry parameterRef="ST_BIAS_GAIN_MODE" />
+					<xtce:ParameterRefEntry parameterRef="SW_BIAS_GAIN_MODE" />
+					<xtce:ParameterRefEntry parameterRef="TABLE_ID" />
+					<xtce:ParameterRefEntry parameterRef="PLAN_ID" />
+					<xtce:ParameterRefEntry parameterRef="PLAN_STEP" />
+					<xtce:ParameterRefEntry parameterRef="VIEW_ID" />
+					<xtce:ParameterRefEntry parameterRef="RGFO_HALF_SPIN" />
+					<xtce:ParameterRefEntry parameterRef="NSO_HALF_SPIN" />
+					<xtce:ParameterRefEntry parameterRef="SPARE_01" />
+					<xtce:ParameterRefEntry parameterRef="SUSPECT" />
+					<xtce:ParameterRefEntry parameterRef="COMPRESSION" />
+					<xtce:ParameterRefEntry parameterRef="BYTE_COUNT" />
+					<xtce:ParameterRefEntry parameterRef="DATA" />
+					<xtce:ParameterRefEntry parameterRef="CHKSUM" />
+				</xtce:EntryList>
+			</xtce:SequenceContainer>
+		</xtce:ContainerSet>
+	</xtce:TelemetryMetaData>
+</xtce:SpaceSystem>
