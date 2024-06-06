@@ -29,7 +29,6 @@ def ultra_l1c(data_dict: dict, data_version: str):
         histogram_dataset = calculate_histogram(
             data_dict[f"imap_ultra_l1a_{instrument_id}sensor-histogram"],
             f"imap_ultra_l1c_{instrument_id}sensor-histogram",
-            instrument_id,
         )
         # TODO: move these to use ImapCdfAttributes().add_global_attribute()
         histogram_dataset.attrs["Data_version"] = data_version
