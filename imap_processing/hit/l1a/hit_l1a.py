@@ -18,6 +18,8 @@ from imap_processing.hit.l0.data_classes.housekeeping import Housekeeping
 
 logger = logging.getLogger(__name__)
 
+# TODO review logging levels to use (debug vs. info)
+
 
 class HitAPID(IntEnum):
     """
@@ -33,9 +35,9 @@ class HitAPID(IntEnum):
         I-ALiRT
     """
 
-    HIT_HSKP = 1251  # Housekeeping
-    HIT_SCIENCE = 1252  # Science
-    HIT_IALRT = 1253  # I-ALiRT
+    HIT_HSKP = 1251
+    HIT_SCIENCE = 1252
+    HIT_IALRT = 1253
 
 
 def hit_l1a_data(packet_file: typing.Union[Path, str]):
@@ -78,7 +80,7 @@ def hit_l1a_data(packet_file: typing.Union[Path, str]):
     for dataset in datasets.values():
         cdf_file = write_cdf(dataset)
         cdf_filepaths.append(cdf_file)
-    logger.info("L1A CDF files created")
+    logger.info(f"L1A CDF files created: {cdf_filepaths}")
     return cdf_filepaths
 
 
