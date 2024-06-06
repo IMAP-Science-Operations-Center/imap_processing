@@ -31,6 +31,7 @@ from imap_processing.codice.constants import (
     LO_COLLAPSE_TABLE_ID_LOOKUP,
     LO_COMPRESSION_ID_LOOKUP,
     LO_INST_COUNTS_AGGREGATED_NAMES,
+    LO_INST_COUNTS_SINGLES_NAMES,
     LO_NSW_ANGULAR_NAMES,
     LO_NSW_PRIORITY_NAMES,
     LO_NSW_SPECIES_NAMES,
@@ -241,11 +242,17 @@ class CoDICEL1aPipeline:
         apid : int
             The APID of interest.
         """
+        # TODO: This is not very DRY. Is there a better way to handle this?
         if apid == CODICEAPID.COD_LO_INST_COUNTS_AGGREGATED:
             self.num_counters = 1
             self.num_energy_steps = 128
             self.variable_names = LO_INST_COUNTS_AGGREGATED_NAMES
             self.dataset_name = "imap_codice_l1a_lo_counters_aggregated"
+        if apid == CODICEAPID.COD_LO_INST_COUNTS_SINGLES:
+            self.num_counters = 1
+            self.num_energy_steps = 128
+            self.variable_names = LO_INST_COUNTS_SINGLES_NAMES
+            self.dataset_name = "imap_codice_l1a_lo_counters_singles"
         elif apid == CODICEAPID.COD_LO_SW_ANGULAR_COUNTS:
             self.num_counters = 4
             self.num_energy_steps = 128
@@ -356,6 +363,7 @@ def process_codice_l1a(file_path: Path | str) -> xr.Dataset:
     """
     apids_for_lo_science_processing = [
         CODICEAPID.COD_LO_INST_COUNTS_AGGREGATED,
+        CODICEAPID.COD_LO_INST_COUNTS_SINGLES,
         CODICEAPID.COD_LO_SW_ANGULAR_COUNTS,
         CODICEAPID.COD_LO_NSW_ANGULAR_COUNTS,
         CODICEAPID.COD_LO_SW_PRIORITY_COUNTS,
@@ -399,10 +407,6 @@ def process_codice_l1a(file_path: Path | str) -> xr.Dataset:
             pipeline.get_lo_data_products(apid)
             pipeline.unpack_science_data(science_values)
             dataset = pipeline.create_science_dataset(start_time)
-
-        elif apid == CODICEAPID.COD_LO_INST_COUNTS_SINGLES:
-            logger.info(f"{apid} is currently not supported")
-            continue
 
         elif apid == CODICEAPID.COD_LO_PHA:
             logger.info(f"{apid} is currently not supported")

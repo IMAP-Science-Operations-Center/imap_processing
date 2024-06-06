@@ -24,6 +24,12 @@ imap_codice_l1a_lo_counters_aggregated:
     Logical_source: imap_codice_l1a_lo-counters-aggregated
     Logical_source_description: IMAP Mission CoDICE Lo Level-1A Aggregated Instrument Counts Data.
 
+imap_codice_l1a_lo_counters_singles:
+    <<: *instrument_base
+    Data_type: L1A_lo-counters-aggregated->Level-1A Lo Single Instrument Counts Data
+    Logical_source: imap_codice_l1a_lo-counters-singles
+    Logical_source_description: IMAP Mission CoDICE Lo Level-1A Single Instrument Counts Data.
+
 imap_codice_l1a_lo_sw_angular_counts:
     <<: *instrument_base
     Data_type: L1A_lo-sw-angular-counts->Level-1A Lo Sunward Angular Counts Data

@@ -63,6 +63,11 @@ lo_counters_aggregated-aggregated:
     CATDESC: Aggregated Rates
     FIELDNAM: Rates - Aggregated
 
+lo_counters_singles-apd_singles:
+    <<: *counters
+    CATDESC: Single Rates (APD)
+    FIELDNAM: Rates - Single (APD)
+
 lo_sw_angular_counts-hplus:
     <<: *counters
     CATDESC: Sunward H+ Species

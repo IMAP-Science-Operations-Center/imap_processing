@@ -15,6 +15,7 @@ from imap_processing.codice.utils import CoDICECompression
 
 # CDF-friendly names for lo data products
 LO_INST_COUNTS_AGGREGATED_NAMES = ["aggregated"]
+LO_INST_COUNTS_SINGLES_NAMES = ["apd_singles"]
 LO_SW_ANGULAR_NAMES = ["hplus", "heplusplus", "oplus6", "fe_loq"]
 LO_NSW_ANGULAR_NAMES = ["heplusplus"]
 LO_SW_PRIORITY_NAMES = ["p0_tcrs", "p1_hplus", "p2_heplusplus", "p3_heavies", "p4_dcrs"]
