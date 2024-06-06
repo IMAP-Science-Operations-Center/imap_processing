@@ -132,3 +132,11 @@ packetdata:
   LABLAXIS: packet data
   # TODO: come back to format
   UNITS: " "
+
+bin_number:
+  <<: *default
+  CATDESC: Bin number.
+  FIELDNAM: bin
+  LABLAXIS: bin
+  # TODO: come back to format
+  UNITS: " "
