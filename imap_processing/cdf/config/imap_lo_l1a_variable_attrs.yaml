@@ -1,12 +1,12 @@
 default_attrs: &default
   # Assumed values for all variable attrs unless overwritten
-  DEPEND_0: epoch
   DISPLAY_TYPE: time_series
   FILLVAL: -9223372036854775808
   FORMAT: I12
   VALIDMIN: 0
   VALIDMAX: 9223372036854775807
   VAR_TYPE: data
+  UNITS: ' '
 
 # Re-used Coordinate
 esa_step:
@@ -14,7 +14,7 @@ esa_step:
   VALIDMIN: 1
   VALIDMAX: 7
   CATDESC: Energy Step
-  DEPEND_0: direct_events
+  DEPEND_1: direct_events
   FIELDNAM: Energy Step
   FORMAT: I1
   VAR_TYPE: support_data
@@ -22,29 +22,33 @@ esa_step:
 
 # Direct Events Attributes
 direct_events:
-  <<: *default
-  VALIDMIN": 0
+  FILLVAL: -9223372036854775808
+  FORMAT: I12
+  VALIDMIN: 0
+  VALIDMAX: 9223372036854775807
+  DEPEND_1: direct_events
   CATDESC: Index of number of direct events for pointing
   FIELDNAM: direct_events
-  FILLVAL: np.iinfo(np.int64).min
-  FORMAT: I12
   VAR_TYPE: support_data
+  UNITS: ' '
+  LABLAXIS: DE
 
 de_time:
   <<: *default
   VALIDMAX: 4096
   CATDESC: Time relative to spin start
-  DEPEND_0: direct_events
+  DEPEND_1: direct_events
   FIELDNAM: Direct Event Time
   UNITS: microseconds
   LABLAXIS: DE time
+  VAR_TYPE: support_data
 
 mode:
   <<: *default
   VALIDMIN: 0
   VALIDMAX: 1
   CATDESC: Energy Stepping Mode
-  DEPEND_0: direct_events
+  DEPEND_1: direct_events
   FIELDNAM: ESA Mode
   FORMAT: I1
   VAR_TYPE: support_data
@@ -55,7 +59,7 @@ tof0:
   VALIDMIN: 0
   VALIDMAX: 4096
   CATDESC: Time of Flight
-  DEPEND_0: direct_events
+  DEPEND_1: direct_events
   FIELDNAM: Time of Flight 2
   FORMAT: I4
   VAR_TYPE: support_data
@@ -66,7 +70,7 @@ tof1:
   VALIDMIN: 0
   VALIDMAX: 4096
   CATDESC: Time of Flight
-  DEPEND_0: direct_events
+  DEPEND_1: direct_events
   FIELDNAM: Time of Flight 1
   FORMAT: I4
   VAR_TYPE: support_data
@@ -77,7 +81,7 @@ tof2:
   VALIDMIN: 0
   VALIDMAX: 4096
   CATDESC: Time of Flight
-  DEPEND_0: direct_events
+  DEPEND_1: direct_events
   FIELDNAM: Time of Flight 2
   FORMAT: I4
   VAR_TYPE: support_data
@@ -88,7 +92,7 @@ tof3:
   VALIDMIN: 0
   VALIDMAX: 4096
   CATDESC: Time of Flight
-  DEPEND_0: direct_events
+  DEPEND_1: direct_events
   FIELDNAM: Time of Flight 3
   FORMAT: I4
   VAR_TYPE: support_data
@@ -99,7 +103,7 @@ cksm:
   VALIDMIN: 0
   VALIDMAX: 15
   CATDESC: checksum TBD
-  DEPEND_0: direct_events
+  DEPEND_1: direct_events
   FIELDNAM: Checksum
   FORMAT: I2
   VAR_TYPE: support_data
@@ -110,7 +114,7 @@ pos:
   VALIDMIN: 0
   VALIDMAX: 4
   CATDESC: Stop position
-  DEPEND_0: direct_events
+  DEPEND_1: direct_events
   FIELDNAM: Stop Position
   FORMAT: I1
   VAR_TYPE: support_data
@@ -121,7 +125,7 @@ coincidence_type:
   VALIDMIN: 0
   VALIDMAX: 15
   CATDESC: Direct Event Coincidence Type
-  DEPEND_0: direct_events
+  DEPEND_1: direct_events
   FIELDNAM: Coincidence Type
   FORMAT: I2
   VAR_TYPE: support_data
@@ -131,6 +135,7 @@ de_count:
   <<: *default
   VALIDMIN: 0
   VALIDMAX: 32767
+  DEPEND_0: epoch
   CATDESC: Direct Event Counts
   FIELDNAM: Direct Event Count
   FORMAT: I5
@@ -423,14 +428,17 @@ spin:
   VALIDMIN: 0
   CATDESC: Spin numbers in pointing
   FIELDNAM: Spin numbers
+  DEPEND_1: spin
   FORMAT: I12
   VAR_TYPE: support_data
   LABLAXIS: spin numbers
+
 
 ## Spin Fields
 num_completed:
   <<: *default
   VALIDMIN: 0
+  DEPEND_0: epoch
   CATDESC: Number of spins completed
   FIELDNAM: Number of spins completed
   FORMAT: I12
@@ -439,6 +447,7 @@ num_completed:
 acq_end:
   <<: *default
   VALIDMIN: 0
+  DEPEND_0: epoch
   CATDESC: Acquisition End
   FIELDNAM: Acquisition End
   FORMAT: I12
@@ -449,7 +458,7 @@ spin_seconds:
   <<: *default
   VALIDMIN: 0
   CATDESC: Spin Start Seconds Time
-  DEPEND_0: spin
+  DEPEND_1: spin
   FIELDNAM: Spin Start Seconds Time
   FORMAT: I12
   VAR_TYPE: support_data
@@ -460,7 +469,7 @@ spin_subseconds:
   <<: *default
   VALIDMIN: 0
   CATDESC: Spin Start Sub-Seconds Time
-  DEPEND_0: spin
+  DEPEND_1: spin
   FIELDNAM: Spin Start Sub-Seconds Time
   FORMAT: I12
   VAR_TYPE: support_data
@@ -470,7 +479,7 @@ esa_p_dac:
   <<: *default
   VALIDMIN: 0
   CATDESC: Positive ESA Set Point
-  DEPEND_0: spin
+  DEPEND_1: spin
   FIELDNAM: Positive ESA Set Point
   FORMAT: I12
   VAR_TYPE: support_data
@@ -478,10 +487,9 @@ esa_p_dac:
 
 esa_n_dac:
   <<: *default
-
   VALIDMIN: 0
   CATDESC: Negative ESA Set Point
-  DEPEND_0: spin
+  DEPEND_1: spin
   FIELDNAM: Negative ESA Set Point
   FORMAT: I12
   VAR_TYPE: support_data
@@ -491,7 +499,7 @@ val_period:
   <<: *default
   VALIDMIN: 0
   CATDESC: Valid Spin Period
-  DEPEND_0: spin
+  DEPEND_1: spin
   FIELDNAM: Valid Spin Period
   FORMAT: I12
   VAR_TYPE: support_data
@@ -500,11 +508,9 @@ val_period:
 val_spin:
   <<: *default
   VALIDMIN: 0
-  VALIDMAX: np.iinfo(np.int64).max
   CATDESC: Valid Spin Phase
-  DEPEND_0: spin
+  DEPEND_1: spin
   DISPLAY_TYPE: time_series
-  FILLVAL: np.iinfo(np.int64).min
   FIELDNAM: Valid Spin Phase
   FORMAT: I12
   VAR_TYPE: support_data
@@ -514,7 +520,7 @@ source:
   <<: *default
   VALIDMIN: 0
   CATDESC: Spin Period Source
-  DEPEND_0: spin
+  DEPEND_1: spin
   FIELDNAM: Spin Period Source
   FORMAT: I12
   VAR_TYPE: support_data
