@@ -35,7 +35,7 @@ def process_histogram(l1a: xr.Dataset) -> xr.Dataset:
 
     dims = [[] for i in l1a.keys()]
     # 32 is the number of attributes in the HistogramL1B class.
-    new_dims = [[] for i in range(32)]
+    new_dims = [[] for i in range(34)]
 
     # histograms is the only multi dimensional variable, so we need to set its dims to
     # pass along all the dims EXCEPT for epoch. (in this case just "bins")
@@ -44,6 +44,8 @@ def process_histogram(l1a: xr.Dataset) -> xr.Dataset:
 
     # This preserves the dimensions
     new_dims[0] = ["bins"]
+    new_dims[22] = ["bins"]  # flags need another dimension
+    new_dims[23] = ["flags", "bins"]
 
     # For the new arrays added: add their dimensions. These aren't defined anywhere,
     # so when the dataset is created I will need to add "coords" as a new dimension.

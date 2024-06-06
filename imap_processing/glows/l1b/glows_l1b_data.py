@@ -95,7 +95,7 @@ class HistogramL1B:
 
     Attributes
     ----------
-    histogram
+    histograms
         array of block-accumulated count numbers
     flight_software_version: str
     seq_count_in_pkts_file: int
@@ -112,7 +112,7 @@ class HistogramL1B:
     number_of_events
         total number of events/counts in histogram
     imap_spin_angle_bin_cntr
-        IMAP spin angle ψ for bin centers, see Sec. 10.6
+        IMAP spin angle ψ for bin centers, see Sec. -
     histogram_flag_array
         array of bad-angle flags for histogram bins, see Tab. 14
     filter_temperature_average
@@ -132,21 +132,21 @@ class HistogramL1B:
     pulse_length_std_dev
     standard deviation (1 sigma), decoded to μs using Eq. (51)
     glows_start_time
-        GLOWS clock, subseconds as decimal part of float, see Sec. 12.2.1
+        GLOWS clock, subseconds as decimal part of float, see Sec. -.1
     glows_end_time_offset
-        GLOWS clock, subseconds as decimal part of float, see Sec. 12.2.1
+        GLOWS clock, subseconds as decimal part of float, see Sec. -.1
     imap_start_time
-        IMAP clock, subseconds as decimal part of float, see Sec. 12.2.1
+        IMAP clock, subseconds as decimal part of float, see Sec. -.1
     imap_end_time_offset
-        IMAP clock, subseconds as decimal part of float, see Sec. 12.2.1
+        IMAP clock, subseconds as decimal part of float, see Sec. -.1
     spin_period_ground_average
-        block-averaged value computed on ground, see Sec. 12.6.1
+        block-averaged value computed on ground, see Sec. -.1
     spin_period_ground_std_dev
-        standard deviation (1 sigma), see Sec. 12.6.1
+        standard deviation (1 sigma), see Sec. -.1
     position_angle_offset_average
-        block-averaged value in degrees, see Sec. 10.6 and 12.6.1
+        block-averaged value in degrees, see Sec. - and -.1
     position_angle_offset_std_dev
-        standard deviation (1 sigma), see Sec. 10.6 and 12.6.1
+        standard deviation (1 sigma), see Sec. - and -.1
     spin_axis_orientation_std_dev
         standard deviation( 1 sigma): ∆λ, ∆φ for ⟨λ⟩, ⟨φ⟩
     spin_axis_orientation_average
@@ -161,16 +161,18 @@ class HistogramL1B:
     spacecraft_velocity_std_dev
         standard deviations (1 sigma) ∆VX , ∆VY , ∆VZ for ⟨VX ⟩, ⟨VY ⟩, ⟨VZ ⟩
     flags
-        flags for extra information see Tab. 13 see Sec. 12.3
+        flags for extra information, per histogram. This should be a human-readable
+        structure.
     """
 
-    # block_header: dict  # could be a new type TODO: missing from values in L1A
-    # unique_block_identifier: str  # Could be datetime TODO: Missing from values in L1A
-    histogram: np.ndarray
+    histograms: np.ndarray
     flight_software_version: str
+    # pkts_file_name: str TODO: add this in L0
     seq_count_in_pkts_file: int
+    # l1a_file_name: str TODO: add this
+    # ancillary_data_files: np.ndarray TODO Add this
     last_spin_id: int
-    flags_set_onboard: int
+    flags_set_onboard: int  # TODO: this should be renamed in L1B
     is_generated_on_ground: int
     number_of_spins_per_block: int
     number_of_bins_per_histogram: int
@@ -187,8 +189,13 @@ class HistogramL1B:
     imap_end_time_offset: np.single  # No conversion needed from l1a->l1b
     glows_start_time: np.single  # No conversion needed from l1a->l1b
     glows_end_time_offset: np.single  # No conversion needed from l1a->l1b
-    imap_spin_angle_bin_cntr: np.single = field(init=False)  # TODO this isn't in L1A?
-    # histogram_flag_array: np.ndarray = field(init=False)
+    unique_block_identifier: str = field(
+        init=False
+    )  # Could be datetime TODO: Missing from values in L1A
+    imap_spin_angle_bin_cntr: np.ndarray = field(
+        init=False
+    )  # Same size as bins TODO add dims
+    histogram_flag_array: np.ndarray = field(init=False)  # TODO add dims
     spin_period_ground_average: np.single = field(init=False)  # retrieved from SPICE?
     spin_period_ground_std_dev: np.single = field(init=False)  # retrieved from SPICE?
     position_angle_offset_average: np.single = field(init=False)  # retrieved from SPICE
@@ -199,36 +206,34 @@ class HistogramL1B:
     spacecraft_location_std_dev: np.ndarray = field(init=False)  # retrieved from SPIC
     spacecraft_velocity_average: np.ndarray = field(init=False)  # retrieved from SPIC
     spacecraft_velocity_std_dev: np.ndarray = field(init=False)  # retrieved from SPIC
-    # flags: np.ndarray
-    # conversion_table: dict
+    # TODO make these human - readable
+    # flags: np.ndarray = field(init=False) # Generated per-histogram
 
     # TODO:
-    # - unique block identifier for individual histograms
-    # - Decode ancillary parameters to physical units
-    # - flags
-    # - maybe: bat angle flags? (section 12.3.3)
+    # - Determine a good way to output flags as "human readable"
+    # - Add spice pieces
+    # - add in the filenames for the input files
+    # - Bad angle algorithm using SPICE locations
+    # - Move ancillary file to AWS
 
-    # TODO: Use post_init / InitVar to take in attributes and create the class from
-    #  those values. Then in glows_l1b write a method to take in an xarray dataset and
-    #  call the transform.
     def __post_init__(self):
         """Process data."""
-        # TODO figure out how these are computed
-        self.imap_spin_angle_bin_cntr = -999.0
         # self.histogram_flag_array = np.zeros((2,))
 
         # TODO: These pieces will need to be filled in from SPICE kernels. For now,
         #  they are placeholders. GLOWS example code has better placeholders if needed.
-        self.spin_period_ground_average = -999.0
-        self.spin_period_ground_std_dev = -999.0
-        self.position_angle_offset_average = -999.0
-        self.position_angle_offset_std_dev = -999.0
-        self.spin_axis_orientation_std_dev = -999.0
-        self.spin_axis_orientation_average = -999.0
-        self.spacecraft_location_average = np.array([-999.0, -999.0, -999.0])
-        self.spacecraft_location_std_dev = np.array([-999.0, -999.0, -999.0])
-        self.spacecraft_velocity_average = np.array([-999.0, -999.0, -999.0])
-        self.spacecraft_velocity_std_dev = np.array([-999.0, -999.0, -999.0])
+        self.spin_period_ground_average = np.single(-999.9)
+        self.spin_period_ground_std_dev = np.single(-999.9)
+        self.position_angle_offset_average = np.single(-999.9)
+        self.position_angle_offset_std_dev = np.single(-999.9)
+        self.spin_axis_orientation_std_dev = np.single(-999.9)
+        self.spin_axis_orientation_average = np.single(-999.9)
+        self.spacecraft_location_average = np.array([-999.9, -999.9, -999.9])
+        self.spacecraft_location_std_dev = np.array([-999.9, -999.9, -999.9])
+        self.spacecraft_velocity_average = np.array([-999.9, -999.9, -999.9])
+        self.spacecraft_velocity_std_dev = np.array([-999.9, -999.9, -999.9])
+        # Will require some additional inputs
+        self.imap_spin_angle_bin_cntr = np.zeros((3600,))
 
         # TODO: This should probably be an AWS file
         # TODO Pass in AncillaryParameters object instead of reading here.
@@ -246,10 +251,15 @@ class HistogramL1B:
             self.filter_temperature_std_dev,
         )
 
+        self.histogram_flag_array = np.zeros((17, 3600))
+        self.unique_block_identifier = np.datetime_as_string(
+            np.datetime64(int(self.imap_start_time), "ns"), "s"
+        )
+
     @staticmethod
     def decode_ancillary_data(params: dict, encoded_value: np.single) -> np.single:
         """
-        Decode parameters using the algorithm defined in section 11.4.
+        Decode parameters using the algorithm defined in section -.
 
         The output parameter T_d is defined as:
         T_d = (T_e - B) / A

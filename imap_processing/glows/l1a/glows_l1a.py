@@ -303,8 +303,7 @@ def generate_histogram_dataset(
     # TODO: add missing attributes
     support_data = {
         "flight_software_version": [],
-        # TODO: should this be a global file attribute?
-        # "ground_software_version": [],
+        # "ground_software_version": [], # TODO: add this from global attrs
         # "pkts_file_name": [],
         "seq_count_in_pkts_file": [],
         "last_spin_id": [],
