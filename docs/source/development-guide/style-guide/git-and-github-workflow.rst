@@ -58,7 +58,7 @@ well.*
        git remote add upstream git@github.com:IMAP-Science-Operations-Center/imap_processing.git  # for SSH
 
 
-#. Install the development dependencies and pre-commit hooks. These hooks will automatically run the
+#. Install the ``pre-commit`` library to enable pre-commit hooks. These hooks will automatically run the
    `ruff <https://beta.ruff.rs/docs/>`_ formatter and linter on your code changes
    before commits:
 
@@ -66,7 +66,9 @@ well.*
 
        pip3 install pre-commit
 
-   If this results in errors, check the correct form of pip is being employed using ``which pip``.
+   If this results in errors, check the correct form of pip is being employed using ``which pip`` or ``which pip3``.
+
+   *Note: This is optional, but helpful. This goes through pre-commit hooks locally for convenience, but they will also be run when a pull request is made on GitHub.*
 
 #. Retrieve the ``upstream`` ``dev`` branch:
 
@@ -81,7 +83,7 @@ well.*
    descriptive (e.g. ``update-codice-unit-tests``) and not too generic (e.g. ``bug-fix``, ``updates``). Consistent use
    of hyphens is encouraged.
 
-   Place the terminal in the file path of the fork you created in step one. Then, run the following command:
+   In the terminal, set your working directory to the file path of the fork you created in step one. Then, run the following command:
 
    .. code-block:: bash
 
@@ -89,7 +91,7 @@ well.*
 
 #. Make changes to the branch using the nominal ``git add``/``git commit`` cycle.
 
-   *Note: Open the forked repository in a chosen IDE to make alterations.*
+   *Note: You can open the forked repository in a chosen IDE to make changes.*
 
    .. code-block:: bash
 
