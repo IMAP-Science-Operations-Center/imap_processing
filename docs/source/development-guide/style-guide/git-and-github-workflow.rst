@@ -58,7 +58,7 @@ well.*
        git remote add upstream git@github.com:IMAP-Science-Operations-Center/imap_processing.git  # for SSH
 
 
-#. Install the ``pre-commit`` library to enable pre-commit hooks. These hooks will automatically run the
+#. Install the development dependencies and pre-commit hooks. These hooks will automatically run the
    `ruff <https://beta.ruff.rs/docs/>`_ formatter and linter on your code changes
    before commits:
 
