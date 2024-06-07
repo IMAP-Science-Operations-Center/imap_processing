@@ -30,6 +30,8 @@ from imap_processing.codice.constants import (
     ESA_SWEEP_TABLE_ID_LOOKUP,
     LO_COLLAPSE_TABLE_ID_LOOKUP,
     LO_COMPRESSION_ID_LOOKUP,
+    LO_INST_COUNTS_AGGREGATED_NAMES,
+    LO_INST_COUNTS_SINGLES_NAMES,
     LO_NSW_ANGULAR_NAMES,
     LO_NSW_PRIORITY_NAMES,
     LO_NSW_SPECIES_NAMES,
@@ -240,26 +242,17 @@ class CoDICEL1aPipeline:
         apid : int
             The APID of interest.
         """
-        if apid == CODICEAPID.COD_LO_SW_SPECIES_COUNTS:
-            self.num_counters = 16
+        # TODO: This is not very DRY. Is there a better way to handle this?
+        if apid == CODICEAPID.COD_LO_INST_COUNTS_AGGREGATED:
+            self.num_counters = 1
             self.num_energy_steps = 128
-            self.variable_names = LO_SW_SPECIES_NAMES
-            self.dataset_name = "imap_codice_l1a_lo_sw_species_counts"
-        elif apid == CODICEAPID.COD_LO_NSW_SPECIES_COUNTS:
-            self.num_counters = 8
+            self.variable_names = LO_INST_COUNTS_AGGREGATED_NAMES
+            self.dataset_name = "imap_codice_l1a_lo_counters_aggregated"
+        if apid == CODICEAPID.COD_LO_INST_COUNTS_SINGLES:
+            self.num_counters = 1
             self.num_energy_steps = 128
-            self.variable_names = LO_NSW_SPECIES_NAMES
-            self.dataset_name = "imap_codice_l1a_lo_nsw_species_counts"
-        elif apid == CODICEAPID.COD_LO_SW_PRIORITY_COUNTS:
-            self.num_counters = 5
-            self.num_energy_steps = 128
-            self.variable_names = LO_SW_PRIORITY_NAMES
-            self.dataset_name = "imap_codice_l1a_lo_sw_priority_counts"
-        elif apid == CODICEAPID.COD_LO_NSW_PRIORITY_COUNTS:
-            self.num_counters = 2
-            self.num_energy_steps = 128
-            self.variable_names = LO_NSW_PRIORITY_NAMES
-            self.dataset_name = "imap_codice_l1a_lo_nsw_priority_counts"
+            self.variable_names = LO_INST_COUNTS_SINGLES_NAMES
+            self.dataset_name = "imap_codice_l1a_lo_counters_singles"
         elif apid == CODICEAPID.COD_LO_SW_ANGULAR_COUNTS:
             self.num_counters = 4
             self.num_energy_steps = 128
@@ -270,6 +263,26 @@ class CoDICEL1aPipeline:
             self.num_energy_steps = 128
             self.variable_names = LO_NSW_ANGULAR_NAMES
             self.dataset_name = "imap_codice_l1a_lo_nsw_angular_counts"
+        elif apid == CODICEAPID.COD_LO_SW_PRIORITY_COUNTS:
+            self.num_counters = 5
+            self.num_energy_steps = 128
+            self.variable_names = LO_SW_PRIORITY_NAMES
+            self.dataset_name = "imap_codice_l1a_lo_sw_priority_counts"
+        elif apid == CODICEAPID.COD_LO_NSW_PRIORITY_COUNTS:
+            self.num_counters = 2
+            self.num_energy_steps = 128
+            self.variable_names = LO_NSW_PRIORITY_NAMES
+            self.dataset_name = "imap_codice_l1a_lo_nsw_priority_counts"
+        elif apid == CODICEAPID.COD_LO_SW_SPECIES_COUNTS:
+            self.num_counters = 16
+            self.num_energy_steps = 128
+            self.variable_names = LO_SW_SPECIES_NAMES
+            self.dataset_name = "imap_codice_l1a_lo_sw_species_counts"
+        elif apid == CODICEAPID.COD_LO_NSW_SPECIES_COUNTS:
+            self.num_counters = 8
+            self.num_energy_steps = 128
+            self.variable_names = LO_NSW_SPECIES_NAMES
+            self.dataset_name = "imap_codice_l1a_lo_nsw_species_counts"
 
     def unpack_science_data(self, science_values: str):
         """Unpack the science data from the packet.
@@ -349,6 +362,8 @@ def process_codice_l1a(file_path: Path | str) -> xr.Dataset:
         ``xarray`` dataset containing the science data and supporting metadata
     """
     apids_for_lo_science_processing = [
+        CODICEAPID.COD_LO_INST_COUNTS_AGGREGATED,
+        CODICEAPID.COD_LO_INST_COUNTS_SINGLES,
         CODICEAPID.COD_LO_SW_ANGULAR_COUNTS,
         CODICEAPID.COD_LO_NSW_ANGULAR_COUNTS,
         CODICEAPID.COD_LO_SW_PRIORITY_COUNTS,
@@ -393,15 +408,15 @@ def process_codice_l1a(file_path: Path | str) -> xr.Dataset:
             pipeline.unpack_science_data(science_values)
             dataset = pipeline.create_science_dataset(start_time)
 
-        elif apid == CODICEAPID.COD_LO_INSTRUMENT_COUNTERS:
-            logger.info(f"{apid} is currently not supported")
-            continue
-
         elif apid == CODICEAPID.COD_LO_PHA:
             logger.info(f"{apid} is currently not supported")
             continue
 
-        elif apid == CODICEAPID.COD_HI_INSTRUMENT_COUNTERS:
+        elif apid == CODICEAPID.COD_HI_INST_COUNTS_AGGREGATED:
+            logger.info(f"{apid} is currently not supported")
+            continue
+
+        elif apid == CODICEAPID.COD_HI_INST_COUNTS_SINGLES:
             logger.info(f"{apid} is currently not supported")
             continue
 
