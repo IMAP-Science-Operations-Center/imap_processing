@@ -50,6 +50,19 @@ documented.
 S3
 ""
 
+cdflib + Xarray
+~~~~~~~~~~~~~~~
+
+The Python `xarray <https://docs.xarray.dev/en/stable/>`_ and `cdflib
+<https://cdflib.readthedocs.io>`_ libraries are used for creating data
+structures for IMAP data and reading/writing those data structures to CDF files,
+respectively.  ``cdflib`` was chosen for CDF file I/O because of its convenient
+``xarray_to_cdf()`` and ``cdf_to_xarray()`` functions. Additionally, the main
+developer for ``cdflib`` (Bryan Harter) is also a developer for the IMAP SDC,
+and so there is a lot of in-house knowledge of the library. ``xarray`` was
+chosen for its support of data structures that closely match the format of CDF
+files (i.e. use of data variables, data attributes, time coordinates, etc.).
+
 
 Common Data Format
 ~~~~~~~~~~~~~~~~~~
@@ -57,9 +70,8 @@ Common Data Format
 The Common Data Format (CDF) was selected as the file format for IMAP data from
 requirements. CDF is a widely used data format within the Heliophsyics
 community. This decision was based purely on `requirements
-<https://lasp.colorado.edu/galaxy/display/IMAP/IMAP+SDC+to+Instrument+Team+ICD#IMAPSDCtoInstrumentTeamICD-1.3FormatStandards>`_
-and arguably would not be the top choice amongst IMAP SDC developers. As such,
-no other data formats were considered.
+<https://lasp.colorado.edu/galaxy/display/IMAP/IMAP+SDC+to+Instrument+Team+ICD#IMAPSDCtoInstrumentTeamICD-1.3FormatStandards>`_.
+As such, no other data formats were considered.
 
 Docker
 ~~~~~~
@@ -72,9 +84,10 @@ version controlling its software, as well as keeping track of development tasks
 (i.e. GitHub Issues) and progress (i.e. GitHub Projects), and performing code
 reviews. GitHub was chosen over other solutions like GitLab and Bitbucket mainly
 for its collaborative features and unlimited free public repositories. As the
-IMAP SDC strives to comply with the (relatively new) `NASA SMD SPD-41a policies
+IMAP SDC strives to comply with the `NASA SMD SPD-41a policies
 <https://smd-cms.nasa.gov/wp-content/uploads/2023/08/smd-information-policy-spd-41a.pdf>`_,
-this open-source collaborative GitHub solution made the most sense.
+(adopted in 2022) this open-source collaborative GitHub solution made the most
+sense.
 
 Poetry
 ~~~~~~
@@ -103,7 +116,7 @@ and a lot of the SDC cloud infrastructure is built with AWS CDK, but otherwise
 everything is written in Python. Python was chosen mostly because at the time of
 development, it was the most widely used and supported language for scientific
 software development, and the main programming language used within the
-Datasystems group at LASP.
+Data Systems group at LASP.
 
 
 Space Packet Parser
@@ -114,7 +127,7 @@ The SDC uses the `space_packet_parser
 decommutation of CCSDS packets and processing L0-level data. This library was
 chosen for its support of XTCE format for telemetry definitions. Another benefit
 to using this library is that it was developed and is actively maintained
-in-house here in Datasystems at LASP (Gavin Medley), and so the library can be
+in-house here in Data Systems at LASP (Gavin Medley), and so the library can be
 updated to help meet the needs of the IMAP SDC. The other option for packet
 decommutation would have been `CCSDSPy <https://docs.ccsdspy.org/en/latest/>`_.
 
@@ -134,17 +147,3 @@ with Poetry and GitHub.
 
 Sqlalchemy
 ~~~~~~~~~~
-
-
-Xarray + cdflib
-~~~~~~~~~~~~~~~
-
-The Python `xarray <https://docs.xarray.dev/en/stable/>`_ and `cdflib
-<https://cdflib.readthedocs.io>`_ libraries are used for creating data
-structures for IMAP data and reading/writing those data structures to CDF files,
-respectively.  ``cdflib`` was chosen for CDF file I/O because of its convenient
-``xarray_to_cdf()`` and ``cdf_to_xarray()`` functions. Additionally, the main
-developer for ``cdflib`` (Bryan Harter) is also a developer for the IMAP SDC,
-and so there is a lot of in-house knowledge of the library. ``xarray`` was
-chosen for its support of data structures that closely match the format of CDF
-files (i.e. use of data variables, data attributes, time coordinates, etc.).
