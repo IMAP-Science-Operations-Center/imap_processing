@@ -2,18 +2,17 @@
 
 from collections import namedtuple
 from dataclasses import fields
+from pathlib import Path
 
 import xarray as xr
 
 from imap_processing.cdf.global_attrs import ConstantCoordinates
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import calc_start_time, write_cdf
-from imap_processing.lo.l0.data_classes.science_counts import ScienceCounts
 from imap_processing.lo.l0.data_classes.science_direct_events import ScienceDirectEvents
-from imap_processing.lo.l0.data_classes.star_sensor import StarSensor
 
 
-def lo_l1a(dependency):
+def lo_l1a(dependency: Path):
     """
     Process IMAP-Lo L0 data into L1A CDF data products.
 
@@ -38,27 +37,21 @@ def lo_l1a(dependency):
     # TODO: Inside Loop: Check for each APID and Initialize data
     #  class object with packet contents, add to list
 
-    # TODO: Create dataset
-    # TODO: Write CDF
-
     # create the attribute manager for this data level
     attr_mgr = ImapCdfAttributes()
     attr_mgr.add_instrument_global_attrs(instrument="lo")
     attr_mgr.add_instrument_variable_attrs(instrument="lo", level="l1a")
 
-    # Temporary code. the fields will still be pulled from the data classes,
-    # the data class to use will be determined by the APID in the decommed file
-    # and the data class will first be populated with the packet data.
-    if "_de_" in dependency:
+    # TODO: replace with real processing when sample data is available
+    # Temporary code until I get sample data. The fields will still be pulled
+    # from the data classes, but the data class will be determined by the
+    # APID in the decommed file and the data class will first be populated
+    # with the packet data.
+    packet_file_name = dependency.name
+    if "_de_" in packet_file_name:
         data_fields = fields(ScienceDirectEvents)
         logical_source = "imap_lo_l1a_de"
-    elif "_histogram_" in dependency:
-        data_fields = fields(ScienceCounts)
-        logical_source = "imap_lo_l1a_histogram"
-    elif "_star_" in dependency:
-        data_fields = fields(StarSensor)
-        logical_source = "imap_lo_l1a_star"
-    elif "_spin_" in dependency:
+    elif "_spin_" in packet_file_name:
         # Spin data class doesn't exist yet. fake the fields() output
         data_field_tup = namedtuple("data_field_tup", ["name"])
         data_fields = [
@@ -79,8 +72,8 @@ def lo_l1a(dependency):
     return create_file_paths
 
 
-# TODO: This is going to work differently when I have a list of
-# populated data classes. The data_fields input is temporary.
+# TODO: This is going to work differently when I sample data.
+#  The data_fields input is temporary.
 def create_datasets(attr_mgr, logical_source, data_fields):
     """Create a dataset using the populated data classes.
 
@@ -117,7 +110,7 @@ def create_datasets(attr_mgr, logical_source, data_fields):
         # The spin packet contains a variable number of spins in each
         # packet. To avoid needing to use a 2-dimensional array to
         # store the spin fields, epoch will not be used for many
-        # of the fields and they will instead use the coordinate `spin`
+        # of the fields. They will instead use the coordinate `spin`
         # which is an index of each spin in the pointing (0 to num spins in pointing)
         spin = xr.DataArray(
             data=[0, 1, 2],
