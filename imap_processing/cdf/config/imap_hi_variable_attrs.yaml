@@ -1,0 +1,205 @@
+default_attrs: &default
+  DEPEND_0: epoch
+  DISPLAY_TYPE: time_series
+  FORMAT: I12
+  UNITS: " "
+  VAR_TYPE: data
+  SCALE_TYPE: linear
+
+default_uint8_attrs: &default_uint8
+  <<: *default
+  FILLVAL: 0
+  FORMAT: I3
+  VALIDMIN: 0
+  VALIDMAX: 255
+  dtype: uint8
+
+default_uint16_attrs: &default_uint16
+  <<: *default
+  FILLVAL: 0
+  FORMAT: I5
+  VALIDMIN: 0
+  VALIDMAX: 65535
+  dtype: uint16
+
+default_uint32_attrs: &default_uint32
+  <<: *default
+  FILLVAL: 0
+  FORMAT: I10
+  VALIDMIN: 0
+  VALIDMAX: 4294967295
+  dtype: uint32
+
+default_int32_attrs: &default_int32
+  <<: *default
+  FILLVAL: -2147483648
+  FORMAT: I10
+  VALIDMIN: -2147483648
+  VALIDMAX: 2147483647
+  dtype: int32
+
+default_float32_attrs: &default_float32
+  <<: *default
+  FILLVAL: .NAN
+  FORMAT: F10.2
+  VALIDMIN: -3.4028235e+38
+  VALIDMAX: 3.4028235e+38
+  dtype: float32
+
+hi_de_epoch_attrs:
+  CATDESC: Direct Event time, number of nanoseconds since J2000 with leap seconds included
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: Time since January 1, 2000, 11:58:55.816 UTC
+  FILLVAL: 9999-12-31T23:59:59.999999999
+  LABLAXIS: epoch
+  UNITS: ns
+  VALIDMIN: 2000-12-01T11:58:55.816000000
+  VALIDMAX: 2099-12-31T00:00:00.000000000
+  VAR_TYPE: support_data
+  SCALE_TYP: linear
+  MONOTON: INCREASE
+  TIME_BASE: J2000
+  TIME_SCALE: Terrestrial Time
+  dtype: uint64
+  base: default_attrs
+
+hi_de_event_met_attrs:
+  <<: *default
+  CATDESC: Mission Elapsed Time (MET) of Direct Event
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: Time since (TODO - what is the def of MET?)
+  FILLVAL: NaN
+  FORMAT: F12.3
+  LABLAXIS: DE MET
+  UNITS: sec
+  VALIDMIN: 0
+  VALIDMAX: TODO
+  VAR_TYPE: support_data
+  SCALE_TYP: linear
+  dtype: float64
+
+hi_de_coincidence_type:
+  <<: *default_uint8
+  CATDESC: Bitmap of detectors hit for Direct Event
+  FIELDNAM: Coincidence Type
+  FILLVAL: 0
+  FORMAT: I2
+  LABLAXIS: Type
+  VALIDMIN: 0
+  VALIDMAX: 15
+  VAR_NOTES: >
+    A 4-bit quantity, representable as a hexadecimal digit,
+    made up of the ORed quantities: (A hit? 8:0) | (B hit? 4:0)
+    | (C1 hit? 2:0) | (C2 hit? 1 : 0)
+
+hi_de_trigger_id:
+  <<: *default_uint8
+  CATDESC: Trigger ID of the detector that was hit first
+  FIELDNAM: Trigger ID
+  FILLVAL: 0
+  FORMAT: I1
+  LABLAXIS: ID
+  VALIDMIN: 1
+  VALIDMAX: 3
+  VAR_NOTES: >
+    The trigger ID is 2-bits. It represents which detector was
+    hit first. It can be 1, 2, 3 for detector A, B, C respectively.
+
+hi_de_esa_stepping_num:
+  <<: *default_uint8
+  CATDESC: Zero based index indicates which row of onboard stepping table was used
+  FIELDNAM: ESA stepping number
+  FILLVAL:
+  FORMAT: I2
+  LABLAXIS: Stepping Num
+  VALIDMIN: 0
+  VALIDMAX: 16
+
+hi_de_esa_step:
+  <<: *default_uint8
+  CATDESC: Zero based energy step index
+  FIELDNAM: ESA energy step
+  FILLVAL: 255
+  FORMAT: I2
+  LABLAXIS: Energy Step
+  VALIDMIN: 0
+  VALIDMAX: 12
+
+default_delta_t: &default_delta_t
+  <<: *default_int32
+  FORMAT: I3
+  LABLAXIS: delta T
+  UNITS: ns
+  VALIDMIN: -512
+  VALIDMAX: 512
+
+hi_de_delta_t_ab:
+  <<: *default_delta_t
+  CATDESC: Time difference between detector A and B events (t_B - t_A)
+  FIELDNAM: Delta T, event A to B
+
+hi_de_delta_t_ac1:
+  <<: *default_delta_t
+  CATDESC: Time difference between detector A and C1 events (t_C1 - t_A)
+  FIELDNAM: Delta T, event A to C1
+
+hi_de_delta_t_bc1:
+  <<: *default_delta_t
+  CATDESC: Time difference between detector B and C1 events (t_C1 - t_B)
+  FIELDNAM: Delta T, event B to C1
+
+hi_de_delta_t_c1c2:
+  <<: *default_delta_t
+  CATDESC: Time difference between detector C1 and C2 events (t_C2 - t_C1)
+  FIELDNAM: Delta T, event C1 to C2
+
+hi_de_spin_phase:
+  <<: *default_float32
+  CATDESC: Floating point spin phase
+  FIELDNAM: Spin Phase
+  FORMAT: F4.3
+  LABLAXIS: Spin Phase
+  VALIDMIN: 0
+  VALIDMAX: 1
+
+hi_de_hae_latitude:
+  <<: *default_float32
+  CATDESC: Look direction HAE latitude
+  FIELDNAM: Ecliptic Lattitude
+  FORMAT: F5.2
+  LABLAXIS: Lat
+  VALIDMIN: -180
+  VALIDMAX: 180
+  UNITS: deg
+
+hi_de_hae_longitude:
+  <<: *default_float32
+  CATDESC: Look direction HAE longitude
+  FIELDNAM: Ecliptic Longitude
+  FORMAT: F5.2
+  LABLAXIS: Lon
+  VALIDMIN: 0
+  VALIDMAX: 360
+  UNITS: deg
+
+hi_de_quality_flag:
+  <<: *default_uint16
+  CATDESC: Direct event bitwise quality flag
+  FIELDNAM: DE quality flag
+  FILLVAL: 65535
+  FORMAT: I5
+  LABLAXIS: Qlt Flag
+  VALIDMIN: 0
+  VALIDMAX: 65535
+  VAR_NOTES: >
+    Bitwise quality flag {TODO: Store bitwise definition here?}
+
+hi_de_nominal_bin:
+  <<: *default_uint8
+  CATDESC: Corresponding histogram angle bin for this Direct Event
+  FIELDNAM: Histogram Bin Number
+  FILLVAL: 511
+  FORMAT: I2
+  LABLAXIS: Hist Bin \#
+  VALIDMIN: 0
+  VALIDMAX: 89
