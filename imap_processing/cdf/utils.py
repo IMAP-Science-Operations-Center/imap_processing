@@ -2,6 +2,7 @@
 
 import logging
 import re
+from collections import ChainMap
 from pathlib import Path
 from typing import Optional
 
@@ -9,6 +10,7 @@ import imap_data_access
 import numpy as np
 import xarray as xr
 from cdflib.xarray import cdf_to_xarray, xarray_to_cdf
+from cdflib.xarray.cdf_to_xarray import ISTP_TO_XARRAY_ATTRS
 
 import imap_processing
 
@@ -48,13 +50,18 @@ def calc_start_time(
     return launch_time + time_delta
 
 
-def load_cdf(file_path: Path, **kwargs: dict) -> xr.Dataset:
+def load_cdf(
+    file_path: Path, remove_xarray_attrs: bool = True, **kwargs: dict
+) -> xr.Dataset:
     """Load the contents of a CDF file into an ``xarray`` dataset.
 
     Parameters
     ----------
     file_path : Path
         The path to the CDF file
+    remove_xarray_attrs: bool
+        Whether to remove the xarray attributes that get injected by the
+        cdf_to_xarray function from the output xarray.Dataset. Default is True.
     **kwargs : dict, optional
         Keyword arguments for ``cdf_to_xarray``
 
@@ -71,6 +78,15 @@ def load_cdf(file_path: Path, **kwargs: dict) -> xr.Dataset:
         value = dataset.attrs[attribute]
         if isinstance(value, list) and len(value) == 1:
             dataset.attrs[attribute] = value[0]
+
+    # Remove attributes specific to xarray plotting from vars and coords
+    # TODO: This can be removed if/when feature is added to cdf_to_xarray to
+    #      make adding these attributes optional
+    if remove_xarray_attrs:
+        xarray_attrs = [v for k, v in ISTP_TO_XARRAY_ATTRS.items()]
+        for _, data_array in ChainMap(dataset.data_vars, dataset.coords).items():
+            for key in xarray_attrs:
+                data_array.attrs.pop(key, None)
 
     return dataset
 

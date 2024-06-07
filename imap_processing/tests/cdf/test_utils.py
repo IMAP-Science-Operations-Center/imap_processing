@@ -1,5 +1,7 @@
 """Tests for the ``cdf.utils`` module."""
 
+from collections import ChainMap
+
 import imap_data_access
 import numpy as np
 import pytest
@@ -66,6 +68,13 @@ def test_load_cdf(test_dataset):
     # Load the CDF and ensure the function returns a dataset
     dataset = load_cdf(file_path)
     assert isinstance(dataset, xr.core.dataset.Dataset)
+
+    # Test removal of attributes that are added on by cdf_to_xarray and
+    # are specific to xarray plotting
+    xarray_attrs = ["units", "standard_name", "long_name"]
+    for _, data_array in ChainMap(dataset.data_vars, dataset.coords).items():
+        for attr in xarray_attrs:
+            assert attr not in data_array.attrs.keys()
 
 
 def test_write_cdf(test_dataset):
