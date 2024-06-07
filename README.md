@@ -1,6 +1,6 @@
 # IMAP (Interstellar Mapping and Acceleration Probe)
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-[![All Contributors](https://img.shields.io/badge/all_contributors-12-orange.svg?style=flat-square)](#contributors-)
+[![All Contributors](https://img.shields.io/badge/all_contributors-13-orange.svg?style=flat-square)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 [![readthedocs](https://readthedocs.org/projects/imap-processing/badge/?version=latest)](https://imap-processing.readthedocs.io/en/latest/)
 <!-- DOI-BADGE -->
@@ -44,6 +44,7 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/vmartinez-cu"><img src="https://avatars.githubusercontent.com/u/39746325?v=4?s=100" width="100px;" alt="vmartinez-cu"/><br /><sub><b>vmartinez-cu</b></sub></a><br /><a href="https://github.com/IMAP-Science-Operations-Center/imap_processing/pulls?q=is%3Apr+reviewed-by%3Avmartinez-cu" title="Reviewed Pull Requests">👀</a> <a href="https://github.com/IMAP-Science-Operations-Center/imap_processing/commits?author=vmartinez-cu" title="Code">💻</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/subagonsouth"><img src="https://avatars.githubusercontent.com/u/16110870?v=4?s=100" width="100px;" alt="Tim Plummer"/><br /><sub><b>Tim Plummer</b></sub></a><br /><a href="https://github.com/IMAP-Science-Operations-Center/imap_processing/pulls?q=is%3Apr+reviewed-by%3Asubagonsouth" title="Reviewed Pull Requests">👀</a> <a href="https://github.com/IMAP-Science-Operations-Center/imap_processing/commits?author=subagonsouth" title="Code">💻</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/daralynnrhode"><img src="https://avatars.githubusercontent.com/u/143308810?v=4?s=100" width="100px;" alt="Daralynn Rhode"/><br /><sub><b>Daralynn Rhode</b></sub></a><br /><a href="https://github.com/IMAP-Science-Operations-Center/imap_processing/commits?author=daralynnrhode" title="Code">💻</a> <a href="https://github.com/IMAP-Science-Operations-Center/imap_processing/commits?author=daralynnrhode" title="Documentation">📖</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/anamanica"><img src="https://avatars.githubusercontent.com/u/171708990?v=4?s=100" width="100px;" alt="anamanica"/><br /><sub><b>anamanica</b></sub></a><br /><a href="https://github.com/IMAP-Science-Operations-Center/imap_processing/commits?author=anamanica" title="Code">💻</a> <a href="https://github.com/IMAP-Science-Operations-Center/imap_processing/commits?author=anamanica" title="Documentation">📖</a></td>
     </tr>
   </tbody>
 </table>
