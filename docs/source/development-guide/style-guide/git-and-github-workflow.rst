@@ -81,7 +81,7 @@ well.*
    descriptive (e.g. ``update-codice-unit-tests``) and not too generic (e.g. ``bug-fix``, ``updates``). Consistent use
    of hyphens is encouraged.
 
-   Place the terminal in the file path of the fork you created in step one. Then, run the following command:
+Make sure your current working directory is located within the `imap_processing` repo. Then, run the following command:
 
    .. code-block:: bash
 
