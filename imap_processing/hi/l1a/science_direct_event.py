@@ -6,9 +6,11 @@ import numpy as np
 import xarray as xr
 from space_packet_parser.parser import Packet
 
-from imap_processing import launch_time
+from imap_processing import imap_module_directory, launch_time
+from imap_processing.cdf.cdf_attribute_manager import CdfAttributeManager
 from imap_processing.cdf.global_attrs import ConstantCoordinates
 from imap_processing.hi import hi_cdf_attrs
+from imap_processing.hi.utils import HIAPID
 
 # TODO: read LOOKED_UP_DURATION_OF_TICK from
 # instrument status summary later. This value
@@ -169,7 +171,9 @@ def break_into_bits_size(binary_data: str) -> list:
     ]
 
 
-def create_dataset(de_data_list: list, packet_met_time: list) -> xr.Dataset:
+def create_dataset(
+    de_data_list: list, packet_met_time: list, sensor_str: str
+) -> xr.Dataset:
     """Create xarray dataset.
 
     Parameters
@@ -178,6 +182,8 @@ def create_dataset(de_data_list: list, packet_met_time: list) -> xr.Dataset:
         Parsed direct event data list
     packet_met_time : list
         List of packet MET time
+    sensor_str : str
+        Sensor head: "45" or "90"
 
     Returns
     -------
@@ -185,6 +191,7 @@ def create_dataset(de_data_list: list, packet_met_time: list) -> xr.Dataset:
         xarray dataset
     """
     # These are the variables that we will store in the dataset
+    meta_event_met = []
     de_met_time = []
     esa_step = []
     trigger_id = []
@@ -245,6 +252,7 @@ def create_dataset(de_data_list: list, packet_met_time: list) -> xr.Dataset:
             metaevent_time_in_ns += half_tick_ns
             continue
 
+        meta_event_met.append(metaevent_time_in_ns)
         # calculate direct event time using time information from metaevent
         # and de_tag. epoch in this dataset uses this time of the event
         de_time_in_ns = (
@@ -266,6 +274,15 @@ def create_dataset(de_data_list: list, packet_met_time: list) -> xr.Dataset:
         # add packet time to ccsds_met list
         ccsds_met.append(packet_met_time[index])
 
+    # Load the CDF attributes
+    cdf_manager = CdfAttributeManager(imap_module_directory / "cdf" / "config")
+    cdf_manager.load_global_attributes("imap_hi_global_cdf_attrs.yaml")
+    cdf_manager.load_variable_attributes("imap_hi_variable_attrs.yaml")
+
+    # Inject sensor head into Logical_source
+    gattrs = cdf_manager.get_global_attributes("imap_hi_l1a_de_attrs")
+    gattrs["Logical_source"] = gattrs["Logical_source"].format(sensor=sensor_str)
+
     epoch_time = xr.DataArray(
         de_met_time,
         name="epoch",
@@ -275,7 +292,7 @@ def create_dataset(de_data_list: list, packet_met_time: list) -> xr.Dataset:
 
     dataset = xr.Dataset(
         coords={"epoch": epoch_time},
-        attrs=hi_cdf_attrs.hi_de_l1a_attrs.output(),
+        attrs=gattrs,
     )
 
     dataset["esa_step"] = xr.DataArray(
@@ -325,6 +342,11 @@ def create_dataset(de_data_list: list, packet_met_time: list) -> xr.Dataset:
         dims="epoch",
         attrs=hi_cdf_attrs.ccsds_met_attrs.output(),
     )
+    dataset["meta_event_met"] = xr.DataArray(
+        np.array(ccsds_met, dtype=np.uint64),
+        dims="epoch",
+        attrs=hi_cdf_attrs.ccsds_met_attrs.output(),
+    )
     # TODO: figure out how to store information about
     # input data(one or more) it used to produce this dataset
     return dataset
@@ -348,6 +370,7 @@ def science_direct_event(packets_data: list[Packet]) -> xr.Dataset:
     dataset: xarray.Dataset
         xarray dataset
     """
+    sensor_str = HIAPID(packets_data[0].header["PKT_APID"].raw_value).sensor
     de_data_list = []
     packet_met_time = []
 
@@ -366,4 +389,4 @@ def science_direct_event(packets_data: list[Packet]) -> xr.Dataset:
         )
 
     # create dataset
-    return create_dataset(de_data_list, packet_met_time)
+    return create_dataset(de_data_list, packet_met_time, sensor_str)
