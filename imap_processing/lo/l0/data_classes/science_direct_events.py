@@ -131,7 +131,7 @@ class ScienceDirectEvents(LoBase):
         # cases, so these can be initialized to the
         # CDF fill val and stored with this value for
         # those cases.
-        self.TIME = np.ones(self.DE_COUNT) * GlobalConstants.DOUBLE_FILLVAL
+        self.DE_TIME = np.ones(self.DE_COUNT) * GlobalConstants.DOUBLE_FILLVAL
         self.ESA_STEP = np.ones(self.DE_COUNT) * GlobalConstants.DOUBLE_FILLVAL
         self.MODE = np.ones(self.DE_COUNT) * GlobalConstants.DOUBLE_FILLVAL
         self.TOF0 = np.ones(self.DE_COUNT) * GlobalConstants.DOUBLE_FILLVAL
@@ -157,7 +157,7 @@ class ScienceDirectEvents(LoBase):
             case_number = int(data.next_bits(4), 2)
 
             # time, ESA_STEP, and mode are always transmitted.
-            self.TIME[de_idx] = int(data.next_bits(DATA_BITS.TIME), 2)
+            self.DE_TIME[de_idx] = int(data.next_bits(DATA_BITS.DE_TIME), 2)
             self.ESA_STEP[de_idx] = int(data.next_bits(DATA_BITS.ESA_STEP), 2)
             self.MODE[de_idx] = int(data.next_bits(DATA_BITS.MODE), 2)
 
