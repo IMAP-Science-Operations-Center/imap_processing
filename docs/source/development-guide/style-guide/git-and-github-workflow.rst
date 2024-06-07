@@ -37,8 +37,8 @@ well.*
    ``imap_processing`` `repository <https://github.com/IMAP-Science-Operations-Center/imap_processing>`_ and clicking
    the ``Fork`` button near the top-right of the page. Follow the various steps to create a fork under your GitHub
    account.
+
    *Note: Name your fork something general, and not specific to the issue you are addressing. The branch title will follow your specific project.*
-   This is a test edit 2.
 
 #. Make a local copy of your personal fork by cloning the repository, using the URL found by clicking the green "clone"
    button:
@@ -79,7 +79,9 @@ well.*
 
 #. Create a feature branch off of the ``dev`` branch to develop changes on. Branch names should be short but
    descriptive (e.g. ``update-codice-unit-tests``) and not too generic (e.g. ``bug-fix``, ``updates``). Consistent use
-   of hyphens is encouraged. Place the terminal in the file path of the fork you created in step one. Then, run the following command:
+   of hyphens is encouraged.
+
+   Place the terminal in the file path of the fork you created in step one. Then, run the following command:
 
    .. code-block:: bash
 
@@ -87,7 +89,7 @@ well.*
 
 #. Make changes to the branch using the nominal ``git add``/``git commit`` cycle.
 
-   *Note: Open the forked repository a chosen IDE to make alterations.*
+   *Note: Open the forked repository in a chosen IDE to make alterations.*
 
    .. code-block:: bash
 
