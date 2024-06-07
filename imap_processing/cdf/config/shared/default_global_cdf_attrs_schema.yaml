@@ -69,13 +69,6 @@ Discipline:
   required: true
   validate: true
   overwrite: false
-File_naming_convention:
-  description: >
-    This attribute is not described in SPDF documentation.
-  default: source_descriptor_datatype_yyyyMMdd
-  required: false
-  validate: false
-  overwrite: true
 Generation_date:
   description: >
     Date stamps the creation of the file using the syntax yyyymmdd, e.g., "
