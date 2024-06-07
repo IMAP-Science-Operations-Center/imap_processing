@@ -82,9 +82,8 @@ def load_cdf(
     # TODO: This can be removed if/when feature is added to cdf_to_xarray to
     #      make adding these attributes optional
     if remove_xarray_attrs:
-        xarray_attrs = [v for k, v in ISTP_TO_XARRAY_ATTRS.items()]
         for key in dataset.variables.keys():
-            for xarray_key in xarray_attrs:
+            for xarray_key in  ISTP_TO_XARRAY_ATTRS.values():
                 dataset[key].attrs.pop(xarray_key, None)
 
     return dataset
