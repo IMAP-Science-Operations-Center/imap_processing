@@ -2,7 +2,6 @@
 
 import logging
 import re
-from collections import ChainMap
 from pathlib import Path
 from typing import Optional
 
@@ -84,9 +83,9 @@ def load_cdf(
     #      make adding these attributes optional
     if remove_xarray_attrs:
         xarray_attrs = [v for k, v in ISTP_TO_XARRAY_ATTRS.items()]
-        for _, data_array in ChainMap(dataset.data_vars, dataset.coords).items():
-            for key in xarray_attrs:
-                data_array.attrs.pop(key, None)
+        for key in dataset.variables.keys():
+            for xarray_key in xarray_attrs:
+                dataset[key].attrs.pop(xarray_key, None)
 
     return dataset
 
