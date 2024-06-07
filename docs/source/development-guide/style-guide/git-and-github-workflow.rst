@@ -68,7 +68,7 @@ well.*
 
    If this results in errors, check the correct form of pip is being employed using ``which pip`` or ``which pip3``.
 
-   *Note: This is optional, but helpful. This goes through pre-commit hooks locally for convenience, but they will also be run when a pull request is made on GitHub.*
+   *Note: This is optional, but helpful. This goes through pre-commit hooks locally for convenience which will also run when a pull request is made on GitHub.*
 
 #. Retrieve the ``upstream`` ``dev`` branch:
 
