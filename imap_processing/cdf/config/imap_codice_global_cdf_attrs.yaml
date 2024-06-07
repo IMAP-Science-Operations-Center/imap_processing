@@ -14,54 +14,63 @@ instrument_base: &instrument_base
 
 imap_codice_l1a_hskp:
     <<: *instrument_base
+    Data_level: 1A
     Data_type: L1A_hskp->Level-1A Housekeeping Data
     Logical_source: imap_codice_l1a_hskp
     Logical_source_description: IMAP Mission CoDICE Instrument Level-1A Housekeeping Data.
 
 imap_codice_l1a_lo_counters_aggregated:
     <<: *instrument_base
+    Data_level: 1A
     Data_type: L1A_lo-counters-aggregated->Level-1A Lo Aggregated Instrument Counts Data
     Logical_source: imap_codice_l1a_lo-counters-aggregated
     Logical_source_description: IMAP Mission CoDICE Lo Level-1A Aggregated Instrument Counts Data.
 
 imap_codice_l1a_lo_counters_singles:
     <<: *instrument_base
+    Data_level: 1A
     Data_type: L1A_lo-counters-aggregated->Level-1A Lo Single Instrument Counts Data
     Logical_source: imap_codice_l1a_lo-counters-singles
     Logical_source_description: IMAP Mission CoDICE Lo Level-1A Single Instrument Counts Data.
 
 imap_codice_l1a_lo_sw_angular_counts:
     <<: *instrument_base
+    Data_level: 1A
     Data_type: L1A_lo-sw-angular-counts->Level-1A Lo Sunward Angular Counts Data
     Logical_source: imap_codice_l1a_lo-sw-angular-counts
     Logical_source_description: IMAP Mission CoDICE Lo Level-1A Sunward Angular Counts Data.
 
 imap_codice_l1a_lo_nsw_angular_counts:
     <<: *instrument_base
+    Data_level: 1A
     Data_type: L1A_lo-nsw-angular-counts->Level-1A Lo Non-Sunward Angular Counts Data
     Logical_source: imap_codice_l1a_lo-nsw-angular-counts
     Logical_source_description: IMAP Mission CoDICE Lo Level-1A Non-Sunward Angular Counts Data.
 
 imap_codice_l1a_lo_sw_priority_counts:
     <<: *instrument_base
+    Data_level: 1A
     Data_type: L1A_lo-sw-priority-counts->Level-1A Lo Sunward Priority Counts Data
     Logical_source: imap_codice_l1a_lo-sw-priority-counts
     Logical_source_description: IMAP Mission CoDICE Lo Level-1A Sunward Priority Counts Data.
 
 imap_codice_l1a_lo_nsw_priority_counts:
     <<: *instrument_base
+    Data_level: 1A
     Data_type: L1A_lo-nsw-priority-counts->Level-1A Lo Non-Sunward Priority Counts Data
     Logical_source: imap_codice_l1a_lo-nsw-priority-counts
     Logical_source_description: IMAP Mission CoDICE Lo Level-1A Non-Sunward Priority Counts Data.
 
 imap_codice_l1a_lo_sw_species_counts:
     <<: *instrument_base
+    Data_level: 1A
     Data_type: L1A_lo-sw-species-counts->Level-1A Lo Sunward Species Counts Data
     Logical_source: imap_codice_l1a_lo-sw-species-counts
     Logical_source_description: IMAP Mission CoDICE Lo Level-1A Sunward Species Counts Data.
 
 imap_codice_l1a_lo_nsw_species_counts:
     <<: *instrument_base
+    Data_level: 1A
     Data_type: L1A_lo-nsw-species-counts->Level-1A Lo Non-Sunward Species Counts Data
     Logical_source: imap_codice_l1a_lo-nsw-species-counts
     Logical_source_description: IMAP Mission CoDICE Lo Level-1A Non-Sunward Species Counts Data.
