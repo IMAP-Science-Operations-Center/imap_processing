@@ -89,7 +89,7 @@ Make sure your current working directory is located within the `imap_processing`
 
 #. Make changes to the branch using the nominal ``git add``/``git commit`` cycle.
 
-   *Note: Open the forked repository in a chosen IDE to make alterations.*
+   *Note: You can open the forked repository in a chosen IDE to make changes.*
 
    .. code-block:: bash
 
