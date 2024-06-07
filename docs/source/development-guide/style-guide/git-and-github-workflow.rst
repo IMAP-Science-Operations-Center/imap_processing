@@ -37,6 +37,8 @@ well.*
    ``imap_processing`` `repository <https://github.com/IMAP-Science-Operations-Center/imap_processing>`_ and clicking
    the ``Fork`` button near the top-right of the page. Follow the various steps to create a fork under your GitHub
    account.
+   *Note: Name your fork something general, and not specific to the issue you are addressing. The branch title will follow your specific project.*
+
 #. Make a local copy of your personal fork by cloning the repository, using the URL found by clicking the green "clone"
    button:
 
@@ -44,6 +46,8 @@ well.*
 
        git clone https://github.com/<username>/imap_processing.git  # for HTTPS
        git clone git@github.com:<username>/imap_processing.git  # for SSH
+
+   This must be done even if you have previously cloned the repository. You must clone your personal fork.
 
 #. Ensure that the personal fork is pointing to the ``upstream`` ``imap_processing`` repository:
 
@@ -59,25 +63,30 @@ well.*
 
    .. code-block:: bash
 
-       pip install .[dev]
-       pre-commit install
+       pip3 install pre-commit
+
+   If this results in errors, you can ensure you are running the correct form of pip using ``which pip``.
 
 #. Retrieve the ``upstream`` ``dev`` branch:
 
    .. code-block:: bash
 
        git fetch upstream
-       git checkout -b dev upstream/dev
+       git checkout -b dev upstream-dev
+
+   To check this step, run ``git status``. The branch name should be ``upstream-dev``.
 
 #. Create a feature branch off of the ``dev`` branch to develop changes on. Branch names should be short but
    descriptive (e.g. ``update-codice-unit-tests``) and not too generic (e.g. ``bug-fix``, ``updates``). Consistent use
-   of hyphens is encouraged.
+   of hyphens is encouraged. Place the terminal in the file path of the fork you created in step one. Then, run the following command:
 
    .. code-block:: bash
 
         git checkout -b <branchname>
 
 #. Make changes to the branch using the nominal ``git add``/``git commit`` cycle.
+
+   *Note: Open the forked repository a chosen IDE to make alterations.*
 
    .. code-block:: bash
 
