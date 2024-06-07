@@ -38,7 +38,7 @@ well.*
    the ``Fork`` button near the top-right of the page. Follow the various steps to create a fork under your GitHub
    account.
 
-   *Note: Name your fork something general, and not specific to the issue you are addressing. The branch title will follow your specific project.*
+   *Note: Name the fork something general, and not specific to the issue being addressed. The branch title will follow the specific project.*
 
 #. Make a local copy of your personal fork by cloning the repository, using the URL found by clicking the green "clone"
    button:
