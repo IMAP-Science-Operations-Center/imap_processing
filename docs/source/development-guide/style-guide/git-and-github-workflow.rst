@@ -66,7 +66,7 @@ well.*
 
        pip3 install pre-commit
 
-   If this results in errors, you can ensure you are running the correct form of pip using ``which pip``.
+   If this results in errors, check the correct form of pip is being employed using ``which pip``.
 
 #. Retrieve the ``upstream`` ``dev`` branch:
 
