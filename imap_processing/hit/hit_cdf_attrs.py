@@ -4,6 +4,7 @@ from dataclasses import replace
 
 from imap_processing.cdf.defaults import GlobalConstants
 from imap_processing.cdf.global_attrs import (
+    AttrBase,
     GlobalDataLevelAttrs,
     GlobalInstrumentAttrs,
     ScienceAttrs,
@@ -61,10 +62,22 @@ hit_hk_base_attrs = ScienceAttrs(
 # TODO: update label_axis with values provided by instrument team.
 #  Waiting for info
 
+# Define housekeeping data variable attributes
 
 # Dictionary of housekeeping attributes that are common between
 # L1A and L1B (modes, flags, states)
 l1a_l1b_hk_attrs = {
+    # adc_channels is a dependency for leak_i data variable
+    "adc_channels": AttrBase(
+        validmin=0,
+        validmax=63,
+        var_type="metadata",
+        display_type="no_plot",
+        catdesc="ADC Channel",
+        fieldname="ADC Channel",
+        label_axis="Channel",
+        format="I2",
+    ),
     "fsw_version_a": replace(
         hit_hk_base_attrs,
         validmax=3,
@@ -235,7 +248,7 @@ l1a_l1b_hk_attrs = {
         label_axis="Mode",
         format="I1",
     ),
-    "dynamic_threshold_level": replace(
+    "dyn_thresh_lvl": replace(
         hit_hk_base_attrs,
         validmax=3,
         var_type="ignore_data",
@@ -305,14 +318,18 @@ l1a_l1b_hk_attrs = {
         label_axis="Spin period long",
         format="I5",
     ),
-    "leak_current": replace(
+    "leak_i": replace(
         hit_hk_base_attrs,
-        catdesc="Leakage Current [V]",
-        fieldname="Leakage Current [V]",
-        label_axis="Current V",
+        var_type="ignore_data",
+        display_type="no_plot",
+        depend_1="adc_channels",
+        catdesc="Leakage Current [I]",
+        fieldname="Leakage Current [I]",
+        label_axis="Current I",
+        labl_ptr="adc_channels",
         format="I19",
     ),
-    "phasic_status": replace(
+    "phasic_stat": replace(
         hit_hk_base_attrs,
         validmax=1,
         var_type="ignore_data",
@@ -375,7 +392,7 @@ l1a_l1b_hk_attrs = {
 }
 
 # Dictionary of housekeeping attributes specific to L1A
-l1a_hk_attrs_subset = {
+l1a_hk_attrs = {
     "preamp_l234a": replace(
         hit_hk_base_attrs,
         validmax=4095,
@@ -577,7 +594,7 @@ l1a_hk_attrs_subset = {
 
 # Dictionary of housekeeping attributes specific to L1B
 # TODO Update data formats. Should be float values. Need more info from instrument team
-l1b_hk_attrs_subset = {
+l1b_hk_attrs = {
     "preamp_l234a": replace(
         hit_hk_base_attrs,
         # validmax=4095,           # Need this info from instrument team
@@ -822,5 +839,5 @@ l1b_hk_attrs_subset = {
 }
 
 # Dictionaries of complete L1A and L1B housekeeping attributes
-l1a_hk_attrs = l1a_hk_attrs_subset.update(l1a_l1b_hk_attrs)
-l1b_hk_attrs = l1b_hk_attrs_subset.update(l1a_l1b_hk_attrs)
+l1a_hk_attrs.update(l1a_l1b_hk_attrs)
+l1b_hk_attrs.update(l1a_l1b_hk_attrs)

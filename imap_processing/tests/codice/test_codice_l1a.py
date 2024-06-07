@@ -14,6 +14,8 @@ from imap_processing.codice.codice_l1a import process_codice_l1a
 
 EXPECTED_ARRAY_SHAPES = [
     (99,),  # hskp
+    (1, 128),  # lo-counters-aggregated
+    (1, 128),  # lo-counters-aggregated
     (1, 128),  # lo-sw-angular-counts
     (1, 128),  # lo-nsw-angular-counts
     (1, 128),  # lo-sw-priority-counts
@@ -23,6 +25,8 @@ EXPECTED_ARRAY_SHAPES = [
 ]
 EXPECTED_ARRAY_SIZES = [
     123,  # hskp
+    3,  # lo-counters-aggregated
+    3,  # lo-counters-aggregated
     6,  # lo-sw-angular-counts
     3,  # lo-nsw-angular-counts
     7,  # lo-sw-priority-counts
@@ -32,6 +36,8 @@ EXPECTED_ARRAY_SIZES = [
 ]
 EXPECTED_FILENAMES = [
     "imap_codice_l1a_hskp_20100101_v001.cdf",
+    "imap_codice_l1a_lo-counters-aggregated_20240429_v001.cdf",
+    "imap_codice_l1a_lo-counters-singles_20240429_v001.cdf",
     "imap_codice_l1a_lo-sw-angular-counts_20240429_v001.cdf",
     "imap_codice_l1a_lo-nsw-angular-counts_20240429_v001.cdf",
     "imap_codice_l1a_lo-sw-priority-counts_20240429_v001.cdf",
@@ -42,6 +48,12 @@ EXPECTED_FILENAMES = [
 TEST_PACKETS = [
     Path(
         f"{imap_module_directory}/tests/codice/data/imap_codice_l0_hskp_20230822_v001.pkts"
+    ),
+    Path(
+        f"{imap_module_directory}/tests/codice/data/imap_codice_l0_lo-counters-aggregated_20240429_v001.pkts"
+    ),
+    Path(
+        f"{imap_module_directory}/tests/codice/data/imap_codice_l0_lo-counters-singles_20240429_v001.pkts"
     ),
     Path(
         f"{imap_module_directory}/tests/codice/data/imap_codice_l0_lo-sw-angular_20240429_v001.pkts"
@@ -66,10 +78,12 @@ TEST_PACKETS = [
 # Placeholder for validation data files
 VALIDATION_DATA = [
     f"{imap_module_directory}/tests/codice/data/validation_hskp.cdf",
-    f"{imap_module_directory}/tests/codice/data/validataion_lo-sw-angular-counts.cdf",
-    f"{imap_module_directory}/tests/codice/data/validataion_lo-nsw-angular-counts.cdf",
-    f"{imap_module_directory}/tests/codice/data/validataion_lo-sw-priority-counts.cdf",
-    f"{imap_module_directory}/tests/codice/data/validataion_lo-nsw-priority-counts.cdf",
+    f"{imap_module_directory}/tests/codice/data/validation_lo-counters-aggregated.cdf",
+    f"{imap_module_directory}/tests/codice/data/validation_lo-counters-singles.cdf",
+    f"{imap_module_directory}/tests/codice/data/validation_lo-sw-angular-counts.cdf",
+    f"{imap_module_directory}/tests/codice/data/validation_lo-nsw-angular-counts.cdf",
+    f"{imap_module_directory}/tests/codice/data/validation_lo-sw-priority-counts.cdf",
+    f"{imap_module_directory}/tests/codice/data/validation_lo-nsw-priority-counts.cdf",
     f"{imap_module_directory}/tests/codice/data/validation_lo-sw-species-counts.cdf",
     f"{imap_module_directory}/tests/codice/data/validation_lo-nsw-species-counts.cdf",
 ]

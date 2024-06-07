@@ -1,50 +1,9 @@
 """Calculates ULTRA L1b."""
 
-import json
-from pathlib import Path
-
-import numpy as np
-import xarray as xr
-
-
-def create_dataset(data_dict, name):
-    """
-    Create xarray for L1b data.
-
-    Parameters
-    ----------
-    data_dict: : dict
-        L1b data dictionary.
-
-    Returns
-    -------
-    dataset : xarray.Dataset
-        xarray.Dataset
-    """
-    # TODO: this will change to actual l1b data dictionary
-    # For now we are using it for retrieving the epoch.
-    dataset = data_dict["imap_ultra_l1a_45sensor-de"]
-
-    # Load metadata from the metadata file
-    with open(Path(__file__).parent.parent / "ultra_metadata_example.json") as f:
-        metadata = json.loads(f.read())[name]
-
-    epoch = dataset.coords["epoch"]
-
-    annotated_de_attrs = metadata["dataset_attrs"]
-
-    dataset = xr.Dataset(
-        coords={"epoch": epoch},
-        attrs=annotated_de_attrs,
-    )
-
-    dataset["x_front"] = xr.DataArray(
-        np.zeros(len(epoch), dtype=np.float32),
-        dims=["epoch"],
-        attrs=metadata["x_front"],
-    )
-
-    return dataset
+from imap_processing.ultra.l1b.badtimes import calculate_badtimes
+from imap_processing.ultra.l1b.cullingmask import calculate_cullingmask
+from imap_processing.ultra.l1b.de import calculate_de
+from imap_processing.ultra.l1b.extendedspin import calculate_extendedspin
 
 
 def ultra_l1b(data_dict: dict):
@@ -62,20 +21,36 @@ def ultra_l1b(data_dict: dict):
         List of xarray.Dataset
     """
     output_datasets = []
-    instrument_id = 45 if "45" in next(iter(data_dict.keys())) else 90
+    instrument_id = 45 if any("45" in key for key in data_dict.keys()) else 90
 
-    # TODO: Add the other l1b products here.
-    l1b_products = [
-        f"imap_ultra_l1b_{instrument_id}sensor-de",
-        # f"imap_ultra_l1b_{instrument_id}extended-spin",
-        # f"imap_ultra_l1b_{instrument_id}culling-mask",
-        # f"imap_ultra_l1b_{instrument_id}badtimes"
-    ]
+    if f"imap_ultra_l1a_{instrument_id}sensor-rates" in data_dict:
+        extendedspin_dataset = calculate_extendedspin(
+            data_dict[f"imap_ultra_l1a_{instrument_id}sensor-rates"],
+            f"imap_ultra_l1b_{instrument_id}sensor-extendedspin",
+        )
 
-    for name in l1b_products:
-        # TODO: perform l1b calculations here.
-        # For now we are using the L1A data (data_dict) as a placeholder.
-        dataset = create_dataset(data_dict, name)
-        output_datasets.append(dataset)
+        cullingmask_dataset = calculate_cullingmask(
+            extendedspin_dataset, f"imap_ultra_l1b_{instrument_id}sensor-cullingmask"
+        )
+
+        badtimes_dataset = calculate_badtimes(
+            extendedspin_dataset, f"imap_ultra_l1b_{instrument_id}sensor-badtimes"
+        )
+
+        output_datasets.extend(
+            [extendedspin_dataset, cullingmask_dataset, badtimes_dataset]
+        )
+    elif (
+        f"imap_ultra_l1a_{instrument_id}sensor-aux" in data_dict
+        and f"imap_ultra_l1a_{instrument_id}sensor-de" in data_dict
+    ):
+        de_dataset = calculate_de(
+            data_dict[f"imap_ultra_l1a_{instrument_id}sensor-de"],
+            f"imap_ultra_l1b_{instrument_id}sensor-de",
+        )
+
+        output_datasets.append(de_dataset)
+    else:
+        raise ValueError("Data dictionary does not contain the expected keys.")
 
     return output_datasets

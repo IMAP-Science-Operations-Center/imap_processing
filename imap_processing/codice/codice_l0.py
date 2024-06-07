@@ -32,19 +32,19 @@ def decom_packets(packet_file: Path) -> list:
     list : list
         all the unpacked data.
     """
-    # Determine the mapping between L0 filename and corresponding XML filename
-    # via the descriptor. For example:
-    # packet_file = imap_codice_l0_lo-sw-species_YYYYMMDD_v001.pkts
-    descriptor = (
-        packet_file.stem.split("imap_codice_l0_")[
-            -1
-        ]  # lo-sw-species_YYYYMMDD_v001.pkts
-        .split("_")[0]  # lo-sw-species
-        .upper()  # LO-SW-SPECIES
-        .replace("-", "_")  # LO_SW_SPECIES
-    )
-    filename = f"P_COD_{descriptor}.xml"  # P_COD_LO_SW_SPECIES.xml
+    packet_to_xtce_mapping = {
+        "imap_codice_l0_hskp_20230822_v001.pkts": "P_COD_NHK.xml",
+        "imap_codice_l0_lo-counters-aggregated_20240429_v001.pkts": "P_COD_LO_INST_COUNTS_AGGREGATED.xml",  # noqa
+        "imap_codice_l0_lo-counters-singles_20240429_v001.pkts": "P_COD_LO_INST_COUNTS_SINGLES.xml",  # noqa
+        "imap_codice_l0_lo-sw-angular_20240429_v001.pkts": "P_COD_LO_SW_ANGULAR_COUNTS.xml",  # noqa
+        "imap_codice_l0_lo-nsw-angular_20240429_v001.pkts": "P_COD_LO_NSW_ANGULAR_COUNTS.xml",  # noqa
+        "imap_codice_l0_lo-sw-priority_20240429_v001.pkts": "P_COD_LO_SW_PRIORITY_COUNTS.xml",  # noqa
+        "imap_codice_l0_lo-nsw-priority_20240429_v001.pkts": "P_COD_LO_NSW_PRIORITY_COUNTS.xml",  # noqa
+        "imap_codice_l0_lo-sw-species_20240429_v001.pkts": "P_COD_LO_SW_SPECIES_COUNTS.xml",  # noqa
+        "imap_codice_l0_lo-nsw-species_20240429_v001.pkts": "P_COD_LO_NSW_SPECIES_COUNTS.xml",  # noqa
+    }
+
     xtce_document = Path(
-        f"{imap_module_directory}/codice/packet_definitions/{filename}"
+        f"{imap_module_directory}/codice/packet_definitions/{packet_to_xtce_mapping[packet_file.name]}"
     )
     return decom.decom_packets(packet_file, xtce_document)
