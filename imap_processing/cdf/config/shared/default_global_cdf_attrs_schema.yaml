@@ -71,9 +71,8 @@ Discipline:
   overwrite: false
 File_naming_convention:
   description: >
-    If File_naming_convention was not set, it uses default setting:
-      source_datatype_descriptor_yyyyMMdd
-  default: source_datatype_descriptor_yyyyMMdd
+    This attribute is not described in SPDF documentation.
+  default: source_descriptor_datatype_yyyyMMdd
   required: false
   validate: false
   overwrite: true
