@@ -11,7 +11,7 @@ def mock_data_l1a_rates_dict():
     # Create sample data for the xarray Dataset
     epoch = np.arange(
         "2024-02-07T15:28:37", "2024-02-07T15:28:42", dtype="datetime64[s]"
-    )
+    ).astype("datetime64[ns]")
 
     data_vars = {
         "COIN_TYPE": ("epoch", np.zeros(5)),
@@ -34,7 +34,7 @@ def mock_data_l1a_de_aux_dict():
     # Create sample data for the xarray Dataset
     epoch = np.arange(
         "2024-02-07T15:28:37", "2024-02-07T15:28:42", dtype="datetime64[s]"
-    )
+    ).astype("datetime64[ns]")
 
     data_vars = {
         "var": ("epoch", np.zeros(5)),
