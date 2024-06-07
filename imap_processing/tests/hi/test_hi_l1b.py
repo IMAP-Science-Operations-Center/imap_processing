@@ -32,4 +32,3 @@ def test_hi_l1b_de(create_de_data, tmp_path):
     l1b_dataset = hi_l1b(l1a_cdf_path)
     assert l1b_dataset.attrs["Logical_source"] == "imap_hi_l1b_45sensor-de"
     assert len(l1b_dataset.data_vars) == 14
-    pass

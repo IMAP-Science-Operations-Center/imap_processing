@@ -1,3 +1,4 @@
+# ------- Default attributes section -------
 default_attrs: &default
   DEPEND_0: epoch
   DISPLAY_TYPE: time_series
@@ -30,6 +31,14 @@ default_uint32_attrs: &default_uint32
   VALIDMAX: 4294967295
   dtype: uint32
 
+default_uint64_attrs: &default_uint64
+  <<: *default
+  FILLVAL: 0
+  FORMAT: I20
+  VALIDMIN: 0
+  VALIDMAX: 18446744073709551615
+  dtype: uint64
+
 default_int32_attrs: &default_int32
   <<: *default
   FILLVAL: -2147483648
@@ -46,11 +55,27 @@ default_float32_attrs: &default_float32
   VALIDMAX: 3.4028235e+38
   dtype: float32
 
+# ------- L1A DE Section -------
+hi_de_ccsds_met:
+  <<: *default_uint32
+  CATDESC: CCSDS mission elapsed time (MET). 32-bit integer value that represents the MET in seconds.
+  FIELDNAM: Mission Elapsed Time(MET)
+  LABLAXIS: CCSDS MET
+  UNITS: sec
+  VAR_TYPE: support_data
+
+hi_de_de_tag:
+  <<: *default_uint16
+  CATDESC: Ticks (nominally 2 ms) since last meta-event
+  FIELDNAM: Direct Event Time Tag
+  LABLAXIS: DE Time Tag
+
 hi_de_epoch_attrs:
   CATDESC: Direct Event time, number of nanoseconds since J2000 with leap seconds included
   DISPLAY_TYPE: no_plot
   FIELDNAM: Time since January 1, 2000, 11:58:55.816 UTC
   FILLVAL: 9999-12-31T23:59:59.999999999
+  FORMAT: " "
   LABLAXIS: epoch
   UNITS: ns
   VALIDMIN: 2000-12-01T11:58:55.816000000
@@ -60,37 +85,43 @@ hi_de_epoch_attrs:
   MONOTON: INCREASE
   TIME_BASE: J2000
   TIME_SCALE: Terrestrial Time
-  dtype: uint64
-  base: default_attrs
 
-hi_de_event_met_attrs:
-  <<: *default
+hi_de_esa_stepping_num:
+  <<: *default_uint8
+  CATDESC: Zero based index indicates which row of onboard stepping table was used
+  FIELDNAM: ESA stepping number
+  FILLVAL: 255
+  FORMAT: I2
+  LABLAXIS: Stepping Num
+  VALIDMIN: 0
+  VALIDMAX: 16
+  VAR_NOTES: >
+    ESA (electrostatic analyzer) stepping number is 4-bit integer value that indicates
+    which row of the onboard stepping table was used to set voltages of the inner and
+    outter ESA surfaces.
+
+hi_de_event_met:
+  <<: *default_uint64
   CATDESC: Mission Elapsed Time (MET) of Direct Event
   DISPLAY_TYPE: no_plot
   FIELDNAM: Time since (TODO - what is the def of MET?)
-  FILLVAL: NaN
-  FORMAT: F12.3
   LABLAXIS: DE MET
-  UNITS: sec
-  VALIDMIN: 0
-  VALIDMAX: TODO
+  UNITS: ns
   VAR_TYPE: support_data
   SCALE_TYP: linear
-  dtype: float64
 
-hi_de_coincidence_type:
-  <<: *default_uint8
-  CATDESC: Bitmap of detectors hit for Direct Event
-  FIELDNAM: Coincidence Type
-  FILLVAL: 0
-  FORMAT: I2
-  LABLAXIS: Type
+hi_de_meta_event_met:
+  <<: *default_uint64
+  CATDESC: Mission elapsed time (MET) of last meta-event
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: Meta-event Mission Elapsed Time
+  LABLAXIS: Meta MET
+  UNITS: ns
   VALIDMIN: 0
-  VALIDMAX: 15
-  VAR_NOTES: >
-    A 4-bit quantity, representable as a hexadecimal digit,
-    made up of the ORed quantities: (A hit? 8:0) | (B hit? 4:0)
-    | (C1 hit? 2:0) | (C2 hit? 1 : 0)
+  VALIDMAX: 4294967295
+  VAR_TYPE: support_data
+  SCALE_TYP: linear
+  dtype: uint64
 
 hi_de_trigger_id:
   <<: *default_uint8
@@ -105,15 +136,50 @@ hi_de_trigger_id:
     The trigger ID is 2-bits. It represents which detector was
     hit first. It can be 1, 2, 3 for detector A, B, C respectively.
 
-hi_de_esa_stepping_num:
+default_tof: &default_tof
+  <<: *default_uint16
+  FORMAT: I4
+  UNITS: ticks
+  VALIDMAX: 1023
+  VAR_NOTES: >
+    Time of flight is 10-bit integer value that represents the time of flight of
+    the direct event. 1023 and 511 are values used to indicate no event was registered.
+
+hi_de_tof_1:
+  <<: *default_tof
+  CATDESC: Time of flight of direct event, 1023 or 511 indicates no event registered
+  FIELDNAM: Time of Flight (TOF) 1
+  LABLAXIS: TOF1
+
+hi_de_tof_2:
+  <<: *default_tof
+  CATDESC: Time of flight of direct event, 1023 or 511 indicates no event registered
+  FIELDNAM: Time of Flight (TOF) 2
+  LABLAXIS: TOF2
+
+hi_de_tof_3:
+  <<: *default_tof
+  CATDESC: Time of flight of direct event, 1023 indicates no event registered
+  FIELDNAM: Time of Flight (TOF) 3
+  LABLAXIS: TOF3
+  VAR_NOTES: >
+    Time of flight is 10-bit integer value that represents the time of flight of
+    the direct event. 1023 is the value used to indicate no event was registered.
+
+# ------- L1B DE Section -------
+hi_de_coincidence_type:
   <<: *default_uint8
-  CATDESC: Zero based index indicates which row of onboard stepping table was used
-  FIELDNAM: ESA stepping number
-  FILLVAL:
+  CATDESC: Bitmap of detectors hit for Direct Event
+  FIELDNAM: Coincidence Type
+  FILLVAL: 0
   FORMAT: I2
-  LABLAXIS: Stepping Num
+  LABLAXIS: Type
   VALIDMIN: 0
-  VALIDMAX: 16
+  VALIDMAX: 15
+  VAR_NOTES: >
+    A 4-bit quantity, representable as a hexadecimal digit,
+    made up of the ORed quantities: (A hit? 8:0) | (B hit? 4:0)
+    | (C1 hit? 2:0) | (C2 hit? 1 : 0)
 
 hi_de_esa_step:
   <<: *default_uint8
