@@ -25,7 +25,7 @@ def swe_l1b(l1a_dataset: xr.Dataset):
     xarray.Dataset
         Processed data to L1B
     """
-    apid = l1a_dataset["PKT_APID"].data[0]
+    apid = int(l1a_dataset.attrs["packet_apid"])
 
     # convert value from raw to engineering units as needed
     conversion_table_path = (
@@ -33,6 +33,7 @@ def swe_l1b(l1a_dataset: xr.Dataset):
     )
     # Look up packet name from APID
     packet_name = next(packet for packet in SWEAPID if packet.value == apid)
+
     # Convert raw data to engineering units as needed
     eu_data = convert_raw_to_eu(
         l1a_dataset,

@@ -107,6 +107,6 @@ def process_file(excel_path, output_folder):
 if __name__ == "__main__":
     process_file(
         "tools/metadata_generation/imap_product_definition_swapi.xlsx",
-        Path("imap_processing/swapi/config/"),  # output folder
+        Path("imap_processing/cdf/config/"),  # output folder
     )
     print("Finished writing SWAPI metadata file.")
