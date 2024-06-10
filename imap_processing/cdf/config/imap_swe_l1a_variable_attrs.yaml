@@ -33,8 +33,8 @@ polar_angle:
 # TODO: I am not sure what the FIELDNAM should be.
 # I tried best to match this: https://spdf.gsfc.nasa.gov/istp_guide/variables.html#Metadata_eg1
 spin_angle_label:
-  CATDESC: Spin angle step. Angle resolution is 12 degree nominally
-  FIELDNAM: 12 Degree Resolution
+  CATDESC: 180 measurements per quarter cycle
+  FIELDNAM: Spin Angle
   FORMAT: A3
   VAR_TYPE: metadata
 

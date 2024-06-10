@@ -437,7 +437,7 @@ def swe_l1b_science(l1a_data):
 
     # NOTE: LABL_PTR_1 should be CDF_CHAR.
     energy_label = xr.DataArray(
-        [str(i) for i in np.arange(24)],
+        energy.values.astype(str),
         name="energy_label",
         dims=["energy_label"],
         attrs=cdf_attrs.get_variable_attributes("energy_label"),
@@ -452,7 +452,7 @@ def swe_l1b_science(l1a_data):
 
     # NOTE: LABL_PTR_2 should be CDF_CHAR.
     angle_label = xr.DataArray(
-        [str(i) for i in np.arange(30)],
+        angle.values.astype(str),
         name="angle_label",
         dims=["angle_label"],
         attrs=cdf_attrs.get_variable_attributes("angle_label"),
@@ -474,7 +474,7 @@ def swe_l1b_science(l1a_data):
 
     # NOTE: LABL_PTR_3 should be CDF_CHAR.
     cem_label = xr.DataArray(
-        [str(i) for i in np.arange(7)],
+        cem.values.astype(str),
         name="cem_label",
         dims=["cem_label"],
         attrs=cdf_attrs.get_variable_attributes("cem_label"),
