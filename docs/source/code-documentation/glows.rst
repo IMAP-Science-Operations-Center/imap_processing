@@ -26,5 +26,5 @@ data from the GLOWS instrument.
 
     l0.decom_glows
     l0.glows_l0_data
-    l1.glows_l1a_data
+    l1a.glows_l1a_data
     utils.constants
