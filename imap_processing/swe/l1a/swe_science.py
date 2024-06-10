@@ -159,11 +159,27 @@ def swe_science(decom_data):
         attrs=cdf_attrs.get_variable_attributes("spin_angle"),
     )
 
+    # NOTE: LABL_PTR_1 should be CDF_CHAR.
+    spin_angle_label = xr.DataArray(
+        spin_angle.values.astype(str),
+        name="spin_angle_label",
+        dims=["spin_angle_label"],
+        attrs=cdf_attrs.get_variable_attributes("spin_angle_label"),
+    )
+
     polar_angle = xr.DataArray(
         np.arange(7),
         name="polar_angle",
         dims=["polar_angle"],
         attrs=cdf_attrs.get_variable_attributes("polar_angle"),
+    )
+
+    # NOTE: LABL_PTR_2 should be CDF_CHAR.
+    polar_angle_label = xr.DataArray(
+        polar_angle.values.astype(str),
+        name="polar_angle_label",
+        dims=["polar_angle_label"],
+        attrs=cdf_attrs.get_variable_attributes("polar_angle_label"),
     )
 
     science_xarray = xr.DataArray(
@@ -187,6 +203,8 @@ def swe_science(decom_data):
             "epoch": epoch_time,
             "spin_angle": spin_angle,
             "polar_angle": polar_angle,
+            "spin_angle_label": spin_angle_label,
+            "polar_angle_label": polar_angle_label,
         },
         attrs=l1a_global_attrs,
     )

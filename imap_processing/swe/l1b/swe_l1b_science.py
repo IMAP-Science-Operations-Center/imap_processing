@@ -428,7 +428,6 @@ def swe_l1b_science(l1a_data):
         attrs=cdf_attrs.get_variable_attributes("epoch"),
     )
 
-    # TODO: add more descriptive description
     energy = xr.DataArray(
         np.arange(24),
         name="energy",
@@ -436,11 +435,27 @@ def swe_l1b_science(l1a_data):
         attrs=cdf_attrs.get_variable_attributes("energy"),
     )
 
+    # NOTE: LABL_PTR_1 should be CDF_CHAR.
+    energy_label = xr.DataArray(
+        energy.values.astype(str),
+        name="energy_label",
+        dims=["energy_label"],
+        attrs=cdf_attrs.get_variable_attributes("energy_label"),
+    )
+
     angle = xr.DataArray(
         np.arange(30),
         name="angle",
         dims=["angle"],
         attrs=cdf_attrs.get_variable_attributes("angle"),
+    )
+
+    # NOTE: LABL_PTR_2 should be CDF_CHAR.
+    angle_label = xr.DataArray(
+        angle.values.astype(str),
+        name="angle_label",
+        dims=["angle_label"],
+        attrs=cdf_attrs.get_variable_attributes("angle_label"),
     )
 
     cycle = xr.DataArray(
@@ -455,6 +470,14 @@ def swe_l1b_science(l1a_data):
         name="cem",
         dims=["cem"],
         attrs=cdf_attrs.get_variable_attributes("cem"),
+    )
+
+    # NOTE: LABL_PTR_3 should be CDF_CHAR.
+    cem_label = xr.DataArray(
+        cem.values.astype(str),
+        name="cem_label",
+        dims=["cem_label"],
+        attrs=cdf_attrs.get_variable_attributes("cem_label"),
     )
 
     # Add science data and it's associated metadata into dataset.
@@ -479,6 +502,9 @@ def swe_l1b_science(l1a_data):
             "angle": angle,
             "cem": cem,
             "cycle": cycle,
+            "energy_label": energy_label,
+            "angle_label": angle_label,
+            "cem_label": cem_label,
         },
         attrs=cdf_attrs.get_global_attributes("imap_swe_l1b_sci"),
     )

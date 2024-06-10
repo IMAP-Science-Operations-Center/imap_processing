@@ -126,6 +126,8 @@ def test_sci_de_decom(create_de_data, tmp_path):
 
     # Write to CDF
     cdf_filename = "imap_hi_l1a_de_20230927_v001.cdf"
+    # TODO: Dropping duplicates to ignore ISTP for now. Need to update test data
+    processed_data[0] = processed_data[0].sortby("epoch").groupby("epoch").first()
     cdf_filepath = write_cdf(processed_data[0])
 
     assert cdf_filepath.name == cdf_filename
@@ -160,6 +162,8 @@ def test_app_hist_decom():
 
     assert processed_data[0].attrs["Logical_source"] == "imap_hi_l1a_hist"
     # TODO: compare with validation data once we have it
+    # TODO: Dropping duplicates to ignore ISTP for now. Need to update test data
+    processed_data[0] = processed_data[0].sortby("epoch").groupby("epoch").first()
 
     # Write CDF
     cem_raw_cdf_filepath = write_cdf(processed_data[0])

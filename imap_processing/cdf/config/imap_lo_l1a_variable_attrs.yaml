@@ -8,6 +8,7 @@ default_attrs: &default
   VAR_TYPE: data
   UNITS: ' '
 
+<<<<<<< HEAD
 # Re-used Coordinate
 esa_step:
   <<: *default
@@ -22,10 +23,15 @@ esa_step:
 
 # Direct Events Attributes
 direct_events:
+=======
+de_default_attrs: &de_default
+  DISPLAY_TYPE: time_series
+>>>>>>> dev
   FILLVAL: -9223372036854775808
   FORMAT: I12
   VALIDMIN: 0
   VALIDMAX: 9223372036854775807
+<<<<<<< HEAD
   DEPEND_1: direct_events
   CATDESC: Index of number of direct events for pointing
   FIELDNAM: direct_events
@@ -129,6 +135,125 @@ coincidence_type:
   FIELDNAM: Coincidence Type
   FORMAT: I2
   VAR_TYPE: support_data
+=======
+  VAR_TYPE: support_data
+  DEPEND_1: direct_events
+  UNITS: ' '
+
+epoch:
+  CATDESC: Time, number of nanoseconds since J2000 with leap seconds included
+  FIELDNAM: epoch
+  LABLAXIS: epoch
+  FILLVAL: -9223372036854775808
+  FORMAT: " " # Supposedly not required, fails in xarray_to_cdf
+  VALIDMIN: -9223372036854775808
+  VALIDMAX: 9223372036854775807
+  UNITS: ns
+  VAR_TYPE: support_data
+  SCALETYP: linear
+  MONOTON: INCREASE
+  TIME_BASE: J2000
+  TIME_SCALE: Terrestrial Time
+  REFERENCE_POSITION: Rotating Earth Geoid
+
+# Re-used Coordinate
+esa_step:
+  <<: *de_default
+  VALIDMIN: 1
+  VALIDMAX: 7
+  CATDESC: Energy Step
+  FIELDNAM: Energy Step
+  FORMAT: I1
+  LABLAXIS: ESA
+
+# Direct Events Attributes
+direct_events:
+  <<: *de_default
+  FORMAT: I12
+  DEPEND_1: direct_events
+  CATDESC: Index of number of direct events for pointing
+  FIELDNAM: direct_events
+  LABLAXIS: DE
+
+de_time:
+  <<: *de_default
+  VALIDMAX: 4096
+  CATDESC: Time relative to spin start
+  FIELDNAM: Direct Event Time
+  UNITS: microseconds
+  LABLAXIS: DE time
+
+mode:
+  <<: *de_default
+  VALIDMIN: 0
+  VALIDMAX: 1
+  CATDESC: Energy Stepping Mode
+  FIELDNAM: ESA Mode
+  FORMAT: I1
+  LABLAXIS: ESA Mode
+
+tof0:
+  <<: *de_default
+  VALIDMIN: 0
+  VALIDMAX: 4096
+  CATDESC: Time of Flight
+  FIELDNAM: Time of Flight 2
+  FORMAT: I4
+  LABLAXIS: ToF 0
+
+tof1:
+  <<: *de_default
+  VALIDMIN: 0
+  VALIDMAX: 4096
+  CATDESC: Time of Flight
+  FIELDNAM: Time of Flight 1
+  FORMAT: I4
+  LABLAXIS: ToF 1
+
+tof2:
+  <<: *de_default
+  VALIDMIN: 0
+  VALIDMAX: 4096
+  CATDESC: Time of Flight
+  FIELDNAM: Time of Flight 2
+  FORMAT: I4
+  LABLAXIS: ToF 2
+
+tof3:
+  <<: *de_default
+  VALIDMIN: 0
+  VALIDMAX: 4096
+  CATDESC: Time of Flight
+  FIELDNAM: Time of Flight 3
+  FORMAT: I4
+  LABLAXIS: ToF 3
+
+cksm:
+  <<: *de_default
+  VALIDMIN: 0
+  VALIDMAX: 15
+  CATDESC: checksum TBD
+  FIELDNAM: Checksum
+  FORMAT: I2
+  LABLAXIS: Checksum
+
+pos:
+  <<: *de_default
+  VALIDMIN: 0
+  VALIDMAX: 4
+  CATDESC: Stop position
+  FIELDNAM: Stop Position
+  FORMAT: I1
+  LABLAXIS: Stop Position
+
+coincidence_type:
+  <<: *de_default
+  VALIDMIN: 0
+  VALIDMAX: 15
+  CATDESC: Direct Event Coincidence Type
+  FIELDNAM: Coincidence Type
+  FORMAT: I2
+>>>>>>> dev
   LABLAXIS: Coincidence Type
 
 de_count:

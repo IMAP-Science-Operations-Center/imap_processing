@@ -40,7 +40,7 @@ class HitAPID(IntEnum):
     HIT_IALRT = 1253
 
 
-def hit_l1a_data(packet_file: typing.Union[Path, str]):
+def hit_l1a(packet_file: typing.Union[Path, str]):
     """
     Process HIT L0 data into L1A data products.
 

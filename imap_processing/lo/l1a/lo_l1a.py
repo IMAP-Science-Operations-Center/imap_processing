@@ -6,7 +6,6 @@ from pathlib import Path
 
 import xarray as xr
 
-from imap_processing.cdf.global_attrs import ConstantCoordinates
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import calc_start_time, write_cdf
 from imap_processing.lo.l0.data_classes.science_direct_events import ScienceDirectEvents
@@ -100,7 +99,7 @@ def create_datasets(attr_mgr, logical_source, data_fields):
         data=epoch_converted_time,
         name="epoch",
         dims=["epoch"],
-        attrs=ConstantCoordinates.EPOCH,
+        attrs=attr_mgr.get_variable_attributes("epoch"),
     )
 
     # Set any extra coordinates and initialize the dataset
