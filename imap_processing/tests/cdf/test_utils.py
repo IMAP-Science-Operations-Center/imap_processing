@@ -102,5 +102,5 @@ def test_written_and_loaded_dataset(test_dataset):
         An ``xarray`` dataset object to test with
     """
 
-    new_dataset = load_cdf(write_cdf(test_dataset), to_datetime=True)
+    new_dataset = load_cdf(write_cdf(test_dataset))
     assert str(test_dataset) == str(new_dataset)

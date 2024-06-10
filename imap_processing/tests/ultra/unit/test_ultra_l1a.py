@@ -313,7 +313,7 @@ def test_cdf_events(ccsds_path_theta_0, decom_ultra_aux, decom_test_data):
     dataset_events = create_dataset(
         {ULTRA_EVENTS.apid[0]: decom_ultra_events, ULTRA_AUX.apid[0]: decom_ultra_aux}
     )
-    input_xarray_events = load_cdf(test_data_path, to_datetime=True)
+    input_xarray_events = load_cdf(test_data_path)
 
     # write_cdf() injects some attributes that are not in the xarray
     assert set(dataset_events.attrs.keys()).issubset(
