@@ -36,6 +36,7 @@ from imap_processing.codice import codice_l1a
 from imap_processing.hi.l1a import hi_l1a
 from imap_processing.hit.l1a.hit_l1a import hit_l1a
 from imap_processing.idex.idex_packet_parser import PacketParser
+from imap_processing.lo.l1a import lo_l1a
 from imap_processing.mag.l1a.mag_l1a import mag_l1a
 from imap_processing.swapi.l1.swapi_l1 import swapi_l1
 from imap_processing.swe.l1a.swe_l1a import swe_l1a
@@ -457,6 +458,17 @@ class Lo(ProcessInstrument):
     def do_processing(self, dependencies):
         """Perform IMAP-Lo specific processing."""
         print(f"Processing IMAP-Lo {self.data_level}")
+
+        if self.data_level == "l1a":
+            # L1A packet / products are 1 to 1. Should only have
+            # one dependency file
+            if len(dependencies) > 1:
+                raise ValueError(
+                    f"Unexpected dependencies found for IMAP-Lo L1A:"
+                    f"{dependencies}. Expected only one dependency."
+                )
+            output_files = lo_l1a.lo_l1a(dependencies[0])
+            return [output_files]
 
 
 class Mag(ProcessInstrument):

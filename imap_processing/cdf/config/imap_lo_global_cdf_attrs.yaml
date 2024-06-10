@@ -1,0 +1,35 @@
+instrument_base: &instrument_base
+  Descriptor:
+    Lo>IMAP Low-Energy (IMAP-Lo) Energetic Neutral Atom Imager
+  TEXT: >
+    IMAP-Lo is a single-pixel neutral atom imager that delivers energy and position measurements of low-energy Interstellar Neutral (ISN) atoms tracked over the ecliptic longitude >180deg and global maps of energetic neutral atoms (ENAs). Mounted on a pivot platform, IMAP-Lo tracks the flow of these ions through the local interstellar medium (LISM) to precisely determine the species-dependent flow speed, temperature, and direction of the LISM that surrounds, interacts with, and determines the outer boundaries of the global heliosphere. IMAP-Lo uses the pivoting field of view (FOV) to view variable angles out to 90deg from the spin axis. This assists IMAP-Lo to pinpoint the intersection between the ISN inflow speed and longitude to uniquely determine the LISM flow vector. Data from IMAP-Lo will help us be able to see from inside the heliosphere what it is like just outside the solar system, our local neighborhood.
+  Data_version: "001"
+  Instrument_type: "Particles (space)"
+
+imap_lo_l1a_de:
+  <<: *instrument_base
+  Data_level: 1A
+  Data_type: L1A_de>Level-1A Science Direct Events
+  Logical_source: imap_lo_l1a_de
+  Logical_source_description: IMAP Mission IMAP-Lo Instrument Level-1A Data
+
+imap_lo_l1a_histogram:
+  <<: *instrument_base
+  Data_level: 1A
+  Data_type: L1A_histogram>Level-1A Science Counts
+  Logical_source: imap_lo_l1a_histogram
+  Logical_source_description: IMAP Mission IMAP-Lo Instrument Level-1A Data
+
+imap_lo_l1a_star:
+  <<: *instrument_base
+  Data_level: 1A
+  Data_type: L1A_star>Level-1A Star Sensor
+  Logical_source: imap_lo_l1a_star
+  Logical_source_description: IMAP Mission IMAP-Lo Instrument Level-1A Data
+
+imap_lo_l1a_spin:
+  <<: *instrument_base
+  Data_level: 1A
+  Data_type: L1A_star>Level-1A Spin
+  Logical_source: imap_lo_l1a_spin
+  Logical_source_description: IMAP Mission IMAP-Lo Instrument Level-1A Data
