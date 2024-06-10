@@ -51,6 +51,7 @@ LO_NSW_SPECIES_NAMES = [
 
 # CDF-friendly names for hi data products
 HI_INST_COUNTS_AGGREGATED_NAMES = ["aggregated"]
+HI_INST_COUNTS_SINGLES_NAMES = ["tcr", "ssdo", "stssd"]
 
 # Compression ID lookup table for Lo data products
 # The key is the view_id and the value is the ID for the compression algorithm

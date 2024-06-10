@@ -207,6 +207,11 @@ class CoDICEL1aPipeline:
             self.num_energy_steps = 128
             self.variable_names = constants.HI_INST_COUNTS_AGGREGATED_NAMES
             self.dataset_name = "imap_codice_l1a_hi_counters_aggregated"
+        if apid == CODICEAPID.COD_HI_INST_COUNTS_SINGLES:
+            self.num_counters = 3
+            self.num_energy_steps = 128
+            self.variable_names = constants.HI_INST_COUNTS_SINGLES_NAMES
+            self.dataset_name = "imap_codice_l1a_hi_counters_singles"
         if apid == CODICEAPID.COD_LO_INST_COUNTS_AGGREGATED:
             self.num_counters = 1
             self.num_energy_steps = 128
@@ -221,32 +226,32 @@ class CoDICEL1aPipeline:
             self.num_counters = 4
             self.num_energy_steps = 128
             self.variable_names = constants.LO_SW_ANGULAR_NAMES
-            self.dataset_name = "imap_codice_l1a_lo_sw_angular_counts"
+            self.dataset_name = "imap_codice_l1a_lo_sw_angular"
         elif apid == CODICEAPID.COD_LO_NSW_ANGULAR_COUNTS:
             self.num_counters = 1
             self.num_energy_steps = 128
             self.variable_names = constants.LO_NSW_ANGULAR_NAMES
-            self.dataset_name = "imap_codice_l1a_lo_nsw_angular_counts"
+            self.dataset_name = "imap_codice_l1a_lo_nsw_angular"
         elif apid == CODICEAPID.COD_LO_SW_PRIORITY_COUNTS:
             self.num_counters = 5
             self.num_energy_steps = 128
             self.variable_names = constants.LO_SW_PRIORITY_NAMES
-            self.dataset_name = "imap_codice_l1a_lo_sw_priority_counts"
+            self.dataset_name = "imap_codice_l1a_lo_sw_priority"
         elif apid == CODICEAPID.COD_LO_NSW_PRIORITY_COUNTS:
             self.num_counters = 2
             self.num_energy_steps = 128
             self.variable_names = constants.LO_NSW_PRIORITY_NAMES
-            self.dataset_name = "imap_codice_l1a_lo_nsw_priority_counts"
+            self.dataset_name = "imap_codice_l1a_lo_nsw_priority"
         elif apid == CODICEAPID.COD_LO_SW_SPECIES_COUNTS:
             self.num_counters = 16
             self.num_energy_steps = 128
             self.variable_names = constants.LO_SW_SPECIES_NAMES
-            self.dataset_name = "imap_codice_l1a_lo_sw_species_counts"
+            self.dataset_name = "imap_codice_l1a_lo_sw_species"
         elif apid == CODICEAPID.COD_LO_NSW_SPECIES_COUNTS:
             self.num_counters = 8
             self.num_energy_steps = 128
             self.variable_names = constants.LO_NSW_SPECIES_NAMES
-            self.dataset_name = "imap_codice_l1a_lo_nsw_species_counts"
+            self.dataset_name = "imap_codice_l1a_lo_nsw_species"
 
     def get_esa_sweep_values(self):
         """Retrieve the ESA sweep values.
@@ -413,6 +418,9 @@ def process_codice_l1a(file_path: Path | str) -> xr.Dataset:
         if file_path.name.startswith("imap_codice_l0_hi-counters-aggregated"):
             apid = CODICEAPID.COD_HI_INST_COUNTS_AGGREGATED
             table_id, plan_id, plan_step, view_id = (1, 0, 0, 3)
+        elif file_path.name.startswith("imap_codice_l0_hi-counters-singles"):
+            apid = CODICEAPID.COD_HI_INST_COUNTS_SINGLES
+            table_id, plan_id, plan_step, view_id = (1, 0, 0, 4)
 
         start_time = np.datetime64(
             "2024-04-29T00:00:00", "ns"
