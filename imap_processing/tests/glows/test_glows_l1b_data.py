@@ -1,6 +1,7 @@
+import numpy as np
 import pytest
 
-from imap_processing.glows.l1b.glows_l1b_data import AncillaryParameters
+from imap_processing.glows.l1b.glows_l1b_data import AncillaryParameters, DirectEventL1B
 
 
 def test_glows_l1b_ancillary_file():
@@ -55,3 +56,15 @@ def test_glows_l1b_ancillary_file():
 
     with pytest.raises(KeyError):
         ancillary = AncillaryParameters(fake_bad_input)
+
+
+def test_glows_l1b_de():
+    input_test_data = np.array([[1, 0, 3], [100, 2_000, 6]])
+    times, pulse_len = DirectEventL1B.process_direct_events(input_test_data)
+
+    expected_times = np.array([1.0, 100.001])
+
+    expected_pulse = np.array([3, 6])
+
+    assert np.allclose(times, expected_times)
+    assert np.allclose(pulse_len, expected_pulse)

@@ -4,29 +4,50 @@ import dataclasses
 
 import xarray as xr
 
-from imap_processing.glows.l1b.glows_l1b_data import HistogramL1B
+from imap_processing.glows.l1b.glows_l1b_data import DirectEventL1B, HistogramL1B
 
 
-def read_input_cdf(input_file):
-    """
-    Read the input CDF file and return the data as a list of GLOWS L1A products.
+def glows_l1b_histograms(input_dataset: xr.Dataset) -> xr.Dataset:
+    """Process the GLOWS L1B data and format the histogram attribute outputs."""
+    # TODO: add CDF attribute steps
 
-    Parameters
-    ----------
-    input_file : str
-        The path to the input CDF file.
-    """
-    pass
+    # Will call process_histograms and construct the dataset with the return
+    raise NotImplementedError
 
 
-def glows_l1b():
-    """Process the GLOWS L1B data."""
-    # read in the data from CDF files
+def glows_l1b_de(input_dataset: xr.Dataset) -> xr.Dataset:
+    """Process the GLOWS L1B data and format the direct event attribute outputs."""
+    # TODO: generate dataset with CDF attributes
+    # Will call process_de and construct the dataset with the return
+    raise NotImplementedError
 
-    # For each dataarray, map each point -> histogram output
 
-    # then, write a method to reduce list of histogram input ->  one dataset output
-    pass
+def process_de(l1a: xr.Dataset) -> xr.Dataset:
+    """Process the direct event data from the L1A dataset and return the L1B dataset."""
+    dataarrays = [l1a[i] for i in l1a.keys()]
+
+    # An empty array passes the epoch dimension through
+    dims = [[] for i in l1a.keys()]
+    new_dims = [[] for i in range(14)]
+
+    # Set the two DE dimensions. This is the only multi-dimensional L1A variable.
+    dims[0] = ["per_second", "direct_event"]
+
+    # Flags is a constant length
+    new_dims[-3] = ["flags"]
+    # glows_times and pulse_lengths should be length of "per_second"
+    new_dims[-2] = ["per_second"]
+    new_dims[-1] = ["per_second"]
+
+    l1b_fields = xr.apply_ufunc(
+        lambda *args: tuple(dataclasses.asdict(DirectEventL1B(*args)).values()),
+        *dataarrays,
+        input_core_dims=dims,
+        output_core_dims=new_dims,
+        vectorize=True,
+    )
+
+    return l1b_fields
 
 
 def process_histogram(l1a: xr.Dataset) -> xr.Dataset:
@@ -54,9 +75,9 @@ def process_histogram(l1a: xr.Dataset) -> xr.Dataset:
     new_dims[-2] = ["coords"]
     new_dims[-1] = ["coords"]
 
+    # TODO: validate the input dims line up with the dims value
     l1b_fields = xr.apply_ufunc(
-        histogram_mapping,
-        # TODO rearrange class to match with dataset
+        lambda *args: tuple(dataclasses.asdict(HistogramL1B(*args)).values()),
         *dataarrays,
         input_core_dims=dims,
         output_core_dims=new_dims,
@@ -65,34 +86,3 @@ def process_histogram(l1a: xr.Dataset) -> xr.Dataset:
 
     # This is a tuple of dataarrays and not a dataset yet
     return l1b_fields
-
-
-def histogram_mapping(*args) -> tuple:
-    """For each variable in the L1A dataset, pass that into the HistogramL1B class.
-
-    This class automatically converts all L1A values to L1B values and creates
-    additional data fields. Then, the return is just the data fields of the L1B class,
-    so the output file exactly lines up with that class.
-
-    Attributes
-    ----------
-    args : tuple
-        The args should exactly line up with the init for the HistogramL1B class.
-
-    Returns
-    -------
-    tuple
-        The data fields of the HistogramL1B class.
-    """
-    # for arg in args:
-    # print(f"Arg type: {type(arg)}\n")
-    # print(arg)
-    # Given: all the inputs for histogramL1B init
-    # Return: a tuple of all the histogramL1B attributes
-
-    # TODO: validate expected types and number of inputs, so we can have a more
-    #  intelligent error?
-    hist_l1b = HistogramL1B(*args)
-
-    return tuple(dataclasses.asdict(hist_l1b).values())
-    # might need to change input - a list of dataarrays?

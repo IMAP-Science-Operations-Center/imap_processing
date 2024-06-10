@@ -1,12 +1,13 @@
+# ruff: noqa: PLR0913
 """Module for GLOWS L1B data products."""
 
 import json
-from dataclasses import dataclass, field
+from dataclasses import InitVar, dataclass, field
 from pathlib import Path
 
 import numpy as np
 
-from imap_processing.glows.l1a.glows_l1a_data import DirectEventL1A
+from imap_processing.glows.utils.constants import TimeTuple
 
 
 class AncillaryParameters:
@@ -73,12 +74,267 @@ class AncillaryParameters:
                 "expected format."
             ) from e
 
+    def decode(self, param_key: str, encoded_value: np.single) -> np.single:
+        """
+        Decode parameters using the algorithm defined in section -.
 
+        The output parameter T_d is defined as:
+        T_d = (T_e - B) / A
+
+        where T_e is the encoded value and A and B are:
+        A = (2^n - 1) / (max - min)
+        B = -min * A
+
+        Max, min, and n are defined in an ancillary data file defined by
+        AncillaryParameters.
+
+        Parameters
+        ----------
+        param_key : str
+            The parameter to use for decoding. Should be one of "filter_temperature",
+            "hv_voltage", "spin_period", "spin_phase", or "pulse_length".
+        encoded_value : np.single
+            The encoded value to decode.
+
+        Returns
+        -------
+        decoded_value : np.single
+            The decoded value.
+        """
+        params = getattr(self, param_key)
+        # compute parameters a and b:
+        param_a = (2 ** params["n_bits"] - 1) / (params["max"] - params["min"])
+        param_b = -params["min"] * param_a
+
+        return np.single((encoded_value - param_b) / param_a)
+
+    def decode_std_dev(self, param_key: str, encoded_value: np.single) -> np.single:
+        """
+        Decode an encoded variance variable and compute the standard deviation.
+
+        The decoded value of encoded_value is given by:
+        variance = encoded_value / (param_a**2)
+
+        where param_a is defined as:
+        param_a = (2^n - 1) / (max - min)
+
+        The standard deviation is then the square root of the variance.
+
+        Parameters
+        ----------
+        param_key: str
+            The parameter to use for decoding. Should be one of "filter_temperature",
+            "hv_voltage", "spin_period", "spin_phase", or "pulse_length".
+        encoded_value: np.single
+            The encoded variance to decode.
+
+        Returns
+        -------
+        std_dev: np.single
+            The standard deviation of the encoded value.
+        """
+        params = getattr(self, param_key)
+        # compute parameters a and b:
+        param_a = (2 ** params["n_bits"] - 1) / (params["max"] - params["min"])
+
+        variance = encoded_value / (param_a**2)
+
+        return np.single(np.sqrt(variance))
+
+
+@dataclass
 class DirectEventL1B:
-    """GLOWS L1B direct event data product."""
+    """GLOWS L1B direct event data product.
 
-    def __init__(self, l1a: DirectEventL1A):
-        pass
+    This class uses dataclass "InitVar" types which are only used to create the
+    output dataclass and not used beyond the __post_init__ function. These attributes
+    represent data variables that are present in L1A but not passed on in the same form
+    to L1B.
+
+    Attributes
+    ----------
+    direct_events: np.ndarray
+        4d array consisting of [seconds, subseconds, pulse_length, is_multi_event],
+        which is the DirectEvent structure from L1A. This is used to generate
+        direct_event_glows_times and direct_event_pulse_lengths.
+    seq_count_in_pkts_file: int
+        Sequence count in the input file, passed from L1A
+    unique_identifier: str
+        YYYY-MM-DDThh:mm:ss based on IMAP UTC time
+    number_of_de_packets: InitVar[np.single]
+        Number of DE packets in the block, passed in from L1A.
+        TODO: Missing from algorithm document, double check that this should be in L1B
+    imap_time_last_pps: np.single
+        Last PPS in IMAP clock format. Copied from imap_sclk_last_pps in L1A,
+         In seconds.
+    glows_time_last_pps: np.single
+        Last PPS in GLOWS clock format. Creaded from glows_sclk_last_pps and
+        glows_ssclk_last_pps in L1A. In seconds, with subseconds as decimal.
+    glows_ssclk_last_pps: InitVar[np.single]
+        Subseconds of the last PPS in GLOWS clock format. Used to update
+        glows_time_last_pps.
+    imap_time_next_pps: np.single
+        Next PPS in IMAP clock format. Copied from imap_slck_next_pps in L1A.
+        In seconds.
+    catbed_heater_active: InitVar[np.single]
+        Flag for catbed heater
+    spin_period_valid: InitVar[np.single]
+        Flag for valid spin period
+    spin_phase_at_next_pps_valid: InitVar[np.single]
+        Flag for valid spin phase at next PPS
+    spin_period_source: InitVar[np.single]
+        Source of spin period flag
+    spin_period: np.single
+        Spin period in seconds, decoded from ancillary data
+    spin_phase_at_next_pps: np.single
+        Spin phase at the next PPS in degrees, decoded from ancillary data
+    number_of_completed_spins: int
+        Number of completed spins in the block, passed from L1A
+    filter_temperature: np.single
+        Filter temperature in Celsius degrees, decoded from ancillary data
+    hv_voltage: np.single
+        CEM voltage in volts, decoded from ancillary data
+    glows_time_on_pps_valid: InitVar[np.single]
+        Flag for valid GLOWS time on PPS, ends up in flags array
+    time_status_valid: InitVar[np.single]
+        Flag for valid time status, ends up in flags array
+    housekeeping_valid: InitVar[np.single]
+        Flag for valid housekeeping, ends up in flags array
+    is_pps_autogenerated: InitVar[np.single]
+        Flag for autogenerated PPS, ends up in flags array
+    hv_test_in_progress: InitVar[np.single]
+        Flag for HV test in progress, ends up in flags array
+    pulse_test_in_progress: InitVar[np.single]
+        Flag for pulse test in progress, ends up in flags array
+    memory_error_detected: InitVar[np.single]
+        Flag for memory error detected, ends up in flags array
+    flags: ndarray
+        array of flags for extra information, per histogram. This is assembled from
+        L1A variables.
+    direct_event_glows_times: ndarray
+        array of times for direct events, GLOWS clock, subseconds as decimal part of
+        float. From direct_events.
+    direct_event_pulse_lengths: ndarray
+        array of pulse lengths [μs] for direct events. From direct_events
+    """
+
+    direct_events: InitVar[np.ndarray] = None
+    seq_count_in_pkts_file: np.single = None  # Passed from L1A
+    unique_identifier: str = field(init=False, default=None)
+    number_of_de_packets: np.single = None
+    imap_time_last_pps: np.single = None
+    glows_time_last_pps: np.single = None
+    # Added to the end of glows_time_last_pps as subseconds
+    glows_ssclk_last_pps: InitVar[int] = None
+    imap_time_next_pps: np.single = None
+    catbed_heater_active: InitVar[np.single] = None
+    spin_period_valid: InitVar[np.single] = None
+    spin_phase_at_next_pps_valid: InitVar[np.single] = None
+    spin_period_source: InitVar[np.single] = None
+    spin_period: np.single = None
+    spin_phase_at_next_pps: np.single = None
+    number_of_completed_spins: np.single = None
+    filter_temperature: np.single = None
+    hv_voltage: np.single = None
+    glows_time_on_pps_valid: InitVar[np.single] = None
+    time_status_valid: InitVar[np.single] = None
+    housekeeping_valid: InitVar[np.single] = None
+    is_pps_autogenerated: InitVar[np.single] = None
+    hv_test_in_progress: InitVar[np.single] = None
+    pulse_test_in_progress: InitVar[np.single] = None
+    memory_error_detected: InitVar[np.single] = None
+
+    # pkts_file_name: str # TODO: Add once L1A questions are answered
+    # l1a_file_name: str # TODO: Add once L1A questions are answered
+    # ancillary_data_files: np.ndarray # TODO: Add once L1A questions are answered
+    # The following variables are created from the InitVar data
+    flags: np.ndarray = field(init=False, default=None)
+    # TODO: First two values of DE are sec/subsec
+    direct_event_glows_times: np.ndarray = field(init=False, default=None)
+    # 3rd value is pulse length
+    direct_event_pulse_lengths: np.ndarray = field(init=False, default=None)
+    # TODO: where does the multi-event flag go?
+
+    def __post_init__(
+        self,
+        direct_events: np.ndarray,
+        glows_ssclk_last_pps: np.single,
+        catbed_heater_active: np.single,
+        spin_period_valid: np.single,
+        spin_phase_at_next_pps_valid: np.single,
+        spin_period_source: np.single,
+        glows_time_on_pps_valid: np.single,
+        time_status_valid: np.single,
+        housekeeping_valid: np.single,
+        is_pps_autogenerated: np.single,
+        hv_test_in_progress: np.single,
+        pulse_test_in_progress: np.single,
+        memory_error_detected: np.single,
+    ):
+        """Generate the L1B data for direct events using the inputs from InitVar."""
+        self.direct_event_glows_times, self.direct_event_pulse_lengths = (
+            self.process_direct_events(direct_events)
+        )
+
+        self.glows_time_last_pps = TimeTuple(
+            int(self.glows_time_last_pps), glows_ssclk_last_pps
+        ).to_seconds()
+
+        with open(
+            Path(__file__).parents[1] / "ancillary" / "l1b_conversion_table_v001.json"
+        ) as f:
+            self.ancillary_parameters = AncillaryParameters(json.loads(f.read()))
+
+        self.filter_temperature = self.ancillary_parameters.decode(
+            "filter_temperature", self.filter_temperature
+        )
+        self.hv_voltage = self.ancillary_parameters.decode(
+            "hv_voltage", self.hv_voltage
+        )
+        self.spin_period = self.ancillary_parameters.decode(
+            "spin_period", self.spin_period
+        )
+
+        self.flags = np.array(
+            [
+                catbed_heater_active,
+                spin_period_valid,
+                spin_phase_at_next_pps_valid,
+                spin_period_source,
+                glows_time_on_pps_valid,
+                time_status_valid,
+                housekeeping_valid,
+                is_pps_autogenerated,
+                hv_test_in_progress,
+                pulse_test_in_progress,
+                memory_error_detected,
+            ]
+        )
+
+    @staticmethod
+    def process_direct_events(direct_events: np.ndarray):
+        """
+        Process direct events data, separating out the time flags and the pulse length.
+
+        Parameters
+        ----------
+        de: np.ndarray
+            Direct event data from L1A, with shape (n, 4) where n is the number of
+            direct events.
+
+        Returns
+        -------
+        (times, pulse_lengths): tuple
+            Tuple of two np.ndarrays, the first being the times of the direct events
+            and the second being the pulse lengths. Both of shape (n,)
+        """
+        times = np.zeros((direct_events.shape[0],))
+        pulse_lengths = np.zeros((direct_events.shape[0],))
+        for index, de in enumerate(direct_events):
+            times[index] = TimeTuple(de[0], de[1]).to_seconds()
+            pulse_lengths[index] = de[2]
+
+        return times, pulse_lengths
 
 
 @dataclass
@@ -212,7 +468,7 @@ class HistogramL1B:
     # TODO:
     # - Determine a good way to output flags as "human readable"
     # - Add spice pieces
-    # - add in the filenames for the input files
+    # - add in the filenames for the input files - should they be global attributes?
     # - Bad angle algorithm using SPICE locations
     # - Move ancillary file to AWS
 
@@ -242,52 +498,33 @@ class HistogramL1B:
         ) as f:
             self.ancillary_parameters = AncillaryParameters(json.loads(f.read()))
 
-        self.filter_temperature_average = self.decode_ancillary_data(
-            self.ancillary_parameters.filter_temperature,
-            self.filter_temperature_average,
+        self.filter_temperature_average = self.ancillary_parameters.decode(
+            "filter_temperature", self.filter_temperature_average
         )
-        self.filter_temperature_std_dev = self.decode_ancillary_data(
-            self.ancillary_parameters.filter_temperature,
-            self.filter_temperature_std_dev,
+        self.filter_temperature_std_dev = self.ancillary_parameters.decode_std_dev(
+            "filter_temperature", self.filter_temperature_std_dev
+        )
+
+        self.hv_voltage_average = self.ancillary_parameters.decode(
+            "hv_voltage", self.hv_voltage_average
+        )
+        self.hv_voltage_std_dev = self.ancillary_parameters.decode_std_dev(
+            "hv_voltage", self.hv_voltage_std_dev
+        )
+        self.spin_period_average = self.ancillary_parameters.decode(
+            "spin_period", self.spin_period_average
+        )
+        self.spin_period_std_dev = self.ancillary_parameters.decode_std_dev(
+            "spin_period", self.spin_period_std_dev
+        )
+        self.pulse_length_average = self.ancillary_parameters.decode(
+            "pulse_length", self.pulse_length_average
+        )
+        self.pulse_length_std_dev = self.ancillary_parameters.decode_std_dev(
+            "pulse_length", self.pulse_length_std_dev
         )
 
         self.histogram_flag_array = np.zeros((17, 3600))
         self.unique_block_identifier = np.datetime_as_string(
             np.datetime64(int(self.imap_start_time), "ns"), "s"
         )
-
-    @staticmethod
-    def decode_ancillary_data(params: dict, encoded_value: np.single) -> np.single:
-        """
-        Decode parameters using the algorithm defined in section -.
-
-        The output parameter T_d is defined as:
-        T_d = (T_e - B) / A
-
-        where T_e is the encoded value and A and B are:
-        A = (2^n - 1) / (max - min)
-        B = -min * A
-
-        Max, min, and n are defined in an ancillary data file defined by
-        AncillaryParameters.
-
-        Parameters
-        ----------
-        params : dict
-            A dictionary of parameters for decoding the ancillary data. Consists of
-            keys ['n_bits', 'max', 'min'].
-        encoded_value : float
-            The encoded value to decode.
-
-        Returns
-        -------
-        decoded_value : float
-            The decoded value.
-        """
-        # compute parameters a and b:
-        param_a = (2 ** params["n_bits"] - 1) / (params["max"] - params["min"])
-        param_b = -params["min"] * param_a
-
-        decoded_value: np.single = (encoded_value - param_b) / param_a
-
-        return decoded_value
