@@ -8,134 +8,12 @@ default_attrs: &default
   VAR_TYPE: data
   UNITS: ' '
 
-<<<<<<< HEAD
-# Re-used Coordinate
-esa_step:
-  <<: *default
-  VALIDMIN: 1
-  VALIDMAX: 7
-  CATDESC: Energy Step
-  DEPEND_1: direct_events
-  FIELDNAM: Energy Step
-  FORMAT: I1
-  VAR_TYPE: support_data
-  LABLAXIS: ESA
-
-# Direct Events Attributes
-direct_events:
-=======
 de_default_attrs: &de_default
   DISPLAY_TYPE: time_series
->>>>>>> dev
   FILLVAL: -9223372036854775808
   FORMAT: I12
   VALIDMIN: 0
   VALIDMAX: 9223372036854775807
-<<<<<<< HEAD
-  DEPEND_1: direct_events
-  CATDESC: Index of number of direct events for pointing
-  FIELDNAM: direct_events
-  VAR_TYPE: support_data
-  UNITS: ' '
-  LABLAXIS: DE
-
-de_time:
-  <<: *default
-  VALIDMAX: 4096
-  CATDESC: Time relative to spin start
-  DEPEND_1: direct_events
-  FIELDNAM: Direct Event Time
-  UNITS: microseconds
-  LABLAXIS: DE time
-  VAR_TYPE: support_data
-
-mode:
-  <<: *default
-  VALIDMIN: 0
-  VALIDMAX: 1
-  CATDESC: Energy Stepping Mode
-  DEPEND_1: direct_events
-  FIELDNAM: ESA Mode
-  FORMAT: I1
-  VAR_TYPE: support_data
-  LABLAXIS: ESA Mode
-
-tof0:
-  <<: *default
-  VALIDMIN: 0
-  VALIDMAX: 4096
-  CATDESC: Time of Flight
-  DEPEND_1: direct_events
-  FIELDNAM: Time of Flight 2
-  FORMAT: I4
-  VAR_TYPE: support_data
-  LABLAXIS: ToF 0
-
-tof1:
-  <<: *default
-  VALIDMIN: 0
-  VALIDMAX: 4096
-  CATDESC: Time of Flight
-  DEPEND_1: direct_events
-  FIELDNAM: Time of Flight 1
-  FORMAT: I4
-  VAR_TYPE: support_data
-  LABLAXIS: ToF 1
-
-tof2:
-  <<: *default
-  VALIDMIN: 0
-  VALIDMAX: 4096
-  CATDESC: Time of Flight
-  DEPEND_1: direct_events
-  FIELDNAM: Time of Flight 2
-  FORMAT: I4
-  VAR_TYPE: support_data
-  LABLAXIS: ToF 2
-
-tof3:
-  <<: *default
-  VALIDMIN: 0
-  VALIDMAX: 4096
-  CATDESC: Time of Flight
-  DEPEND_1: direct_events
-  FIELDNAM: Time of Flight 3
-  FORMAT: I4
-  VAR_TYPE: support_data
-  LABLAXIS: ToF 3
-
-cksm:
-  <<: *default
-  VALIDMIN: 0
-  VALIDMAX: 15
-  CATDESC: checksum TBD
-  DEPEND_1: direct_events
-  FIELDNAM: Checksum
-  FORMAT: I2
-  VAR_TYPE: support_data
-  LABLAXIS: Checksum
-
-pos:
-  <<: *default
-  VALIDMIN: 0
-  VALIDMAX: 4
-  CATDESC: Stop position
-  DEPEND_1: direct_events
-  FIELDNAM: Stop Position
-  FORMAT: I1
-  VAR_TYPE: support_data
-  LABLAXIS: Stop Position
-
-coincidence_type:
-  <<: *default
-  VALIDMIN: 0
-  VALIDMAX: 15
-  CATDESC: Direct Event Coincidence Type
-  DEPEND_1: direct_events
-  FIELDNAM: Coincidence Type
-  FORMAT: I2
-  VAR_TYPE: support_data
-=======
   VAR_TYPE: support_data
   DEPEND_1: direct_events
   UNITS: ' '
@@ -253,7 +131,6 @@ coincidence_type:
   CATDESC: Direct Event Coincidence Type
   FIELDNAM: Coincidence Type
   FORMAT: I2
->>>>>>> dev
   LABLAXIS: Coincidence Type
 
 de_count:
