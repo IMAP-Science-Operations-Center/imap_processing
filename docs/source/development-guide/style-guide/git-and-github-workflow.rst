@@ -38,7 +38,7 @@ well.*
    the ``Fork`` button near the top-right of the page. Follow the various steps to create a fork under your GitHub
    account.
 
-   *Note: Name the fork something general, and not specific to the issue being addressed. The branch title will follow the specific project.*
+   *Note: Hold the naming convention username/imap_processing, and not specific to the issue being addressed. The branch title will follow the specific project.*
 
 #. Make a local copy of your personal fork by cloning the repository, using the URL found by clicking the green "clone"
    button:
@@ -69,15 +69,6 @@ well.*
    If this results in errors, check the correct form of pip is being employed using ``which pip`` or ``which pip3``.
 
    *Note: This is optional, but helpful. This goes through pre-commit hooks locally for convenience which will also run when a pull request is made on GitHub.*
-
-#. Retrieve the ``upstream`` ``dev`` branch:
-
-   .. code-block:: bash
-
-       git fetch upstream
-       git checkout -b dev upstream-dev
-
-   To check this step, run ``git status``. The branch name should be ``upstream-dev``.
 
 #. Create a feature branch off of the ``dev`` branch to develop changes on. Branch names should be short but
    descriptive (e.g. ``update-codice-unit-tests``) and not too generic (e.g. ``bug-fix``, ``updates``). Consistent use
