@@ -61,13 +61,13 @@ class ScienceDirectEvents(LoBase):
     ----------
     SHCOARSE : int
         Spacecraft time.
-    COUNT: int
+    DE_COUNT: int
         Number of direct events.
     DATA: str
         Compressed TOF Direct Event time tagged data.
-    TIME: numpy.ndarray
+    DE_TIME: numpy.ndarray
         time tag for the direct event
-    ENERGY: numpy.ndarray
+    ESA_STEP: numpy.ndarray
         energy of the direct event ENA.
     MODE: numpy.ndarray
         Indication of how the data is packed.
@@ -100,10 +100,10 @@ class ScienceDirectEvents(LoBase):
     """
 
     SHCOARSE: int
-    COUNT: int
+    DE_COUNT: int
     DATA: str
-    TIME: np.ndarray
-    ENERGY: np.ndarray
+    DE_TIME: np.ndarray
+    ESA_STEP: np.ndarray
     MODE: np.ndarray
     TOF0: np.ndarray
     TOF1: np.ndarray
@@ -131,15 +131,15 @@ class ScienceDirectEvents(LoBase):
         # cases, so these can be initialized to the
         # CDF fill val and stored with this value for
         # those cases.
-        self.TIME = np.ones(self.COUNT) * GlobalConstants.DOUBLE_FILLVAL
-        self.ENERGY = np.ones(self.COUNT) * GlobalConstants.DOUBLE_FILLVAL
-        self.MODE = np.ones(self.COUNT) * GlobalConstants.DOUBLE_FILLVAL
-        self.TOF0 = np.ones(self.COUNT) * GlobalConstants.DOUBLE_FILLVAL
-        self.TOF1 = np.ones(self.COUNT) * GlobalConstants.DOUBLE_FILLVAL
-        self.TOF2 = np.ones(self.COUNT) * GlobalConstants.DOUBLE_FILLVAL
-        self.TOF3 = np.ones(self.COUNT) * GlobalConstants.DOUBLE_FILLVAL
-        self.CKSM = np.ones(self.COUNT) * GlobalConstants.DOUBLE_FILLVAL
-        self.POS = np.ones(self.COUNT) * GlobalConstants.DOUBLE_FILLVAL
+        self.DE_TIME = np.ones(self.DE_COUNT) * GlobalConstants.DOUBLE_FILLVAL
+        self.ESA_STEP = np.ones(self.DE_COUNT) * GlobalConstants.DOUBLE_FILLVAL
+        self.MODE = np.ones(self.DE_COUNT) * GlobalConstants.DOUBLE_FILLVAL
+        self.TOF0 = np.ones(self.DE_COUNT) * GlobalConstants.DOUBLE_FILLVAL
+        self.TOF1 = np.ones(self.DE_COUNT) * GlobalConstants.DOUBLE_FILLVAL
+        self.TOF2 = np.ones(self.DE_COUNT) * GlobalConstants.DOUBLE_FILLVAL
+        self.TOF3 = np.ones(self.DE_COUNT) * GlobalConstants.DOUBLE_FILLVAL
+        self.CKSM = np.ones(self.DE_COUNT) * GlobalConstants.DOUBLE_FILLVAL
+        self.POS = np.ones(self.DE_COUNT) * GlobalConstants.DOUBLE_FILLVAL
         self._decompress_data()
 
     def _decompress_data(self):
@@ -149,16 +149,16 @@ class ScienceDirectEvents(LoBase):
         attributes are set.
         """
         data = BinaryString(self.DATA)
-        for de_idx in range(self.COUNT):
+        for de_idx in range(self.DE_COUNT):
             # The first 4 bits of the binary data are used to
             # determine which case number we are working with.
             # The case number is used to determine how to
             # decompress the TOF values.
             case_number = int(data.next_bits(4), 2)
 
-            # time, energy, and mode are always transmitted.
-            self.TIME[de_idx] = int(data.next_bits(DATA_BITS.TIME), 2)
-            self.ENERGY[de_idx] = int(data.next_bits(DATA_BITS.ENERGY), 2)
+            # time, ESA_STEP, and mode are always transmitted.
+            self.DE_TIME[de_idx] = int(data.next_bits(DATA_BITS.DE_TIME), 2)
+            self.ESA_STEP[de_idx] = int(data.next_bits(DATA_BITS.ESA_STEP), 2)
             self.MODE[de_idx] = int(data.next_bits(DATA_BITS.MODE), 2)
 
             # Case decoder indicates which parts of the data

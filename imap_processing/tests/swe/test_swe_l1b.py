@@ -20,15 +20,14 @@ def test_swe_l1b(decom_test_data):
     decom_test_data : list
         List of packets
     """
-    # SWE_APP_HK = 1330
-    # SWE_SCIENCE = 1344
     grouped_data = group_by_apid(decom_test_data)
     # Process science to l1a.
     # because of test data being in the wrong
     # order, we need to manually re-sort data
     # into order.
     sorted_packets = sorted(
-        grouped_data[1344], key=lambda x: x.data["QUARTER_CYCLE"].raw_value
+        grouped_data[SWEAPID.SWE_SCIENCE],
+        key=lambda x: x.data["QUARTER_CYCLE"].raw_value,
     )
     science_l1a_ds = swe_science(sorted_packets)
     # convert value from raw to engineering units as needed
@@ -50,6 +49,7 @@ def test_swe_l1b(decom_test_data):
         test_data_path / "idle_export_eu.SWE_SCIENCE_20240510_092742.csv",
         index_col="SHCOARSE",
     )
+
     second_data = sorted_packets[1]
     validation_data = eu_validation_data.loc[second_data.data["SHCOARSE"].raw_value]
 
@@ -61,7 +61,9 @@ def test_swe_l1b(decom_test_data):
 
     # Test EU values for science data
     for field in science_eu_field_list:
-        assert round(science_l1b[field].data[1], 5) == round(validation_data[field], 5)
+        assert round(science_l1b[field.lower()].data[1], 5) == round(
+            validation_data[field], 5
+        )
 
 
 def test_cdf_creation():

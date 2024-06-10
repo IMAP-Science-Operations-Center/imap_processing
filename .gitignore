@@ -1,5 +1,11 @@
 # Possible data directory files
 data/imap/
+# Ignore Excel files
+*.xlsx
+*.xls
+
+# poetry dynamic version creation
+_version.py
 
 # Documentation ignore
 docs/source/**/generated

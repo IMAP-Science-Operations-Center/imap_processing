@@ -1,15 +1,13 @@
 """Contains code to perform SWE L1a science processing."""
 
 import collections
-import dataclasses
 import logging
 
 import numpy as np
 import xarray as xr
 
-from imap_processing.cdf.global_attrs import ConstantCoordinates
+from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import calc_start_time
-from imap_processing.swe import swe_cdf_attrs
 from imap_processing.swe.utils.swe_utils import (
     add_metadata_to_array,
 )
@@ -139,6 +137,11 @@ def swe_science(decom_data):
         raw_science_array.append(raw_counts.astype(np.int64))
         metadata_arrays = add_metadata_to_array(data_packet, metadata_arrays)
 
+    # Load CDF attrs
+    cdf_attrs = ImapCdfAttributes()
+    cdf_attrs.add_instrument_global_attrs("swe")
+    cdf_attrs.add_instrument_variable_attrs("swe", "l1a")
+
     epoch_converted_time = [
         calc_start_time(sc_time) for sc_time in metadata_arrays["SHCOARSE"]
     ]
@@ -146,92 +149,76 @@ def swe_science(decom_data):
         epoch_converted_time,
         name="epoch",
         dims=["epoch"],
-        attrs=ConstantCoordinates.EPOCH,
+        attrs=cdf_attrs.get_variable_attributes("epoch"),
     )
 
-    # TODO: add more descriptive description
-    energy = xr.DataArray(
+    spin_angle = xr.DataArray(
         np.arange(180),
-        name="Energy",
-        dims=["Energy"],
-        attrs=dataclasses.replace(
-            swe_cdf_attrs.int_base,
-            catdesc="Energy's index value in the lookup table",
-            fieldname="Energy Bins",
-            label_axis="Energy Bins",
-            units="",
-        ).output(),
+        name="spin_angle",
+        dims=["spin_angle"],
+        attrs=cdf_attrs.get_variable_attributes("spin_angle"),
     )
 
-    counts = xr.DataArray(
+    # NOTE: LABL_PTR_1 should be CDF_CHAR.
+    spin_angle_label = xr.DataArray(
+        spin_angle.values.astype(str),
+        name="spin_angle_label",
+        dims=["spin_angle_label"],
+        attrs=cdf_attrs.get_variable_attributes("spin_angle_label"),
+    )
+
+    polar_angle = xr.DataArray(
         np.arange(7),
-        name="Counts",
-        dims=["Counts"],
-        attrs=dataclasses.replace(
-            swe_cdf_attrs.int_base,
-            catdesc="Counts",
-            fieldname="Counts",
-            label_axis="Counts",
-            units="int",
-        ).output(),
+        name="polar_angle",
+        dims=["polar_angle"],
+        attrs=cdf_attrs.get_variable_attributes("polar_angle"),
     )
 
-    science_attrs = dataclasses.replace(
-        swe_cdf_attrs.l1a_science_attrs,
-        catdesc="Uncompressed counts from SWE",
-        fieldname="Uncompressed counts from SWE",
-        label_axis="Uncompressed counts from SWE",
-        units="counts",
+    # NOTE: LABL_PTR_2 should be CDF_CHAR.
+    polar_angle_label = xr.DataArray(
+        polar_angle.values.astype(str),
+        name="polar_angle_label",
+        dims=["polar_angle_label"],
+        attrs=cdf_attrs.get_variable_attributes("polar_angle_label"),
     )
+
     science_xarray = xr.DataArray(
         science_array,
-        dims=["epoch", "Energy", "Counts"],
-        attrs=science_attrs.output(),
+        dims=["epoch", "spin_angle", "polar_angle"],
+        attrs=cdf_attrs.get_variable_attributes("science_data"),
     )
 
-    raw_science_attrs = dataclasses.replace(
-        swe_cdf_attrs.l1a_science_attrs,
-        catdesc="Raw counts from SWE",
-        fieldname="Raw counts from SWE",
-        label_axis="Raw counts from SWE",
-        units="counts",
-    )
     raw_science_xarray = xr.DataArray(
         raw_science_array,
-        dims=["epoch", "Energy", "Counts"],
-        attrs=raw_science_attrs.output(),
+        dims=["epoch", "spin_angle", "polar_angle"],
+        attrs=cdf_attrs.get_variable_attributes("raw_counts"),
     )
 
+    # Add APID to global attrs for following processing steps
+    l1a_global_attrs = cdf_attrs.get_global_attributes("imap_swe_l1a_sci")
+    # Formatting to string to be complaint with ISTP
+    l1a_global_attrs["packet_apid"] = f"{decom_data[0].header['PKT_APID'].raw_value}"
     dataset = xr.Dataset(
         coords={
             "epoch": epoch_time,
-            "Energy": energy,
-            "Counts": counts,
+            "spin_angle": spin_angle,
+            "polar_angle": polar_angle,
+            "spin_angle_label": spin_angle_label,
+            "polar_angle_label": polar_angle_label,
         },
-        attrs=swe_cdf_attrs.swe_l1a_global_attrs.output(),
+        attrs=l1a_global_attrs,
     )
-    dataset["SCIENCE_DATA"] = science_xarray
-    dataset["RAW_SCIENCE_DATA"] = raw_science_xarray
+    dataset["science_data"] = science_xarray
+    dataset["raw_science_data"] = raw_science_xarray
 
     # create xarray dataset for each metadata field
     for key, value in metadata_arrays.items():
-        # TODO: figure out how to add more descriptive
-        # description for each metadata field
-        #
-        # int_attrs["CATDESC"] = int_attrs["FIELDNAM"] = int_attrs["LABLAXIS"] = key
-        # # get int32's max since most of metadata is under 32-bits
-        # int_attrs["VALIDMAX"] = np.iinfo(np.int32).max
-        # int_attrs["DEPEND_0"] = "epoch"
-        dataset[key] = xr.DataArray(
+        # Lowercase the key to be complaint with ISTP's metadata field
+        metadata_field = key.lower()
+        dataset[metadata_field] = xr.DataArray(
             value,
             dims=["epoch"],
-            attrs=dataclasses.replace(
-                swe_cdf_attrs.swe_metadata_attrs,
-                catdesc=key,
-                fieldname=key,
-                label_axis=key,
-                depend_0="epoch",
-            ).output(),
+            attrs=cdf_attrs.get_variable_attributes(metadata_field),
         )
 
     logger.info("SWE L1A science data process completed")

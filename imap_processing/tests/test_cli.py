@@ -6,7 +6,7 @@ from unittest import mock
 import pytest
 import xarray as xr
 
-from imap_processing.cli import Codice, Hi, Ultra, _validate_args, main
+from imap_processing.cli import Codice, Hi, Hit, Ultra, _validate_args, main
 
 
 @pytest.fixture()
@@ -48,7 +48,7 @@ def test_main(mock_instrument):
         "--end-date",
         "20240501",
         "--version",
-        "v00-01",
+        "v001",
         "--upload-to-sdc",
     ]
     with mock.patch.object(sys, "argv", test_args):
@@ -134,8 +134,8 @@ def test_hi(mock_hi_l1a, mock_instrument_dependencies):
 
 
 @mock.patch("imap_processing.cli.ultra_l1a.ultra_l1a")
-def test_ultra(mock_ultra_l1a, mock_instrument_dependencies):
-    """Test coverage for cli.Ultra class"""
+def test_ultra_l1a(mock_ultra_l1a, mock_instrument_dependencies):
+    """Test coverage for cli.Ultra class with l1a data level"""
     mocks = mock_instrument_dependencies
     mocks["mock_query"].return_value = [{"file_path": "/path/to/file0"}]
     mocks["mock_download"].return_value = "dependency0"
@@ -156,4 +156,64 @@ def test_ultra(mock_ultra_l1a, mock_instrument_dependencies):
     assert mocks["mock_query"].call_count == 1
     assert mocks["mock_download"].call_count == 1
     assert mock_ultra_l1a.call_count == 1
+    assert mocks["mock_upload"].call_count == 2
+
+
+@mock.patch("imap_processing.cli.ultra_l1b.ultra_l1b")
+def test_ultra_l1b(mock_ultra_l1b, mock_instrument_dependencies):
+    """Test coverage for cli.Ultra class with l1b data level"""
+    mocks = mock_instrument_dependencies
+    mocks["mock_query"].return_value = [{"file_path": "/path/to/file0"}]
+    mocks["mock_download"].return_value = "dependency0"
+    mock_ultra_l1b.return_value = ["l1b_dataset0", "l1b_dataset1"]
+    mocks["mock_write_cdf"].side_effect = ["/path/to/product0", "/path/to/product1"]
+
+    instrument = Ultra("l1b", "[]", "20240207", "20240208", "v001", True)
+    instrument.process()
+    assert mocks["mock_query"].call_count == 0
+    assert mocks["mock_download"].call_count == 0
+    assert mock_ultra_l1b.call_count == 1
+    assert mocks["mock_upload"].call_count == 2
+
+
+@mock.patch("imap_processing.cli.ultra_l1c.ultra_l1c")
+def test_ultra_l1c(mock_ultra_l1c, mock_instrument_dependencies):
+    """Test coverage for cli.Ultra class with l1c data level"""
+    mocks = mock_instrument_dependencies
+    mocks["mock_query"].return_value = [{"file_path": "/path/to/file0"}]
+    mocks["mock_download"].return_value = "dependency0"
+    mock_ultra_l1c.return_value = ["l1c_dataset0", "l1c_dataset1"]
+    mocks["mock_write_cdf"].side_effect = ["/path/to/product0", "/path/to/product1"]
+
+    instrument = Ultra("l1c", "[]", "20240207", "20240208", "v001", True)
+    instrument.process()
+    assert mocks["mock_query"].call_count == 0
+    assert mocks["mock_download"].call_count == 0
+    assert mock_ultra_l1c.call_count == 1
+    assert mocks["mock_upload"].call_count == 2
+
+
+@mock.patch("imap_processing.cli.hit_l1a")
+def test_hit_l1a(mock_hit_l1a, mock_instrument_dependencies):
+    """Test coverage for cli.Hit class with l1a data level"""
+    mocks = mock_instrument_dependencies
+    mocks["mock_query"].return_value = [{"file_path": "/path/to/file0"}]
+    mocks["mock_download"].return_value = "dependency0"
+    mock_hit_l1a.return_value = ["l1a_dataset0", "l1a_dataset1"]
+    mocks["mock_write_cdf"].side_effect = ["/path/to/product0", "/path/to/product1"]
+
+    dependency_str = (
+        "[{"
+        "'instrument': 'hit',"
+        "'data_level': 'l0',"
+        "'descriptor': 'raw',"
+        "'version': 'v001',"
+        "'start_date': '20100105'"
+        "}]"
+    )
+    instrument = Hit("l1a", dependency_str, "20100105", "20100101", "v001", True)
+    instrument.process()
+    assert mocks["mock_query"].call_count == 1
+    assert mocks["mock_download"].call_count == 1
+    assert mock_hit_l1a.call_count == 1
     assert mocks["mock_upload"].call_count == 2

@@ -219,7 +219,8 @@ def test_cdf_aux(
     dataset_aux = create_dataset({ULTRA_AUX.apid[0]: decom_ultra_aux})
     input_xarray_aux = load_cdf(test_data_path)
 
-    assert input_xarray_aux.attrs.keys() == dataset_aux.attrs.keys()
+    # write_cdf() injects some attributes that are not in the xarray
+    assert set(dataset_aux.attrs.keys()).issubset(set(input_xarray_aux.attrs.keys()))
 
 
 @pytest.mark.parametrize(
@@ -239,6 +240,9 @@ def test_cdf_rates(ccsds_path_theta_0, decom_test_data):
     """Tests that CDF file is created and contains same attributes as xarray."""
     decom_ultra_rates, _ = decom_test_data
     test_data = ultra_l1a(ccsds_path_theta_0, apid=ULTRA_RATES.apid[0])
+    # TODO: Dropping duplicates to ignore ISTP for now. Need to update test data
+    # or wait for an update to cdflib
+    test_data[0] = test_data[0].sortby("epoch").groupby("epoch").first()
     test_data_path = write_cdf(test_data[0])
 
     assert test_data_path.exists()
@@ -247,7 +251,10 @@ def test_cdf_rates(ccsds_path_theta_0, decom_test_data):
     dataset_rates = create_dataset({ULTRA_RATES.apid[0]: decom_ultra_rates})
     input_xarray_rates = load_cdf(test_data_path)
 
-    assert input_xarray_rates.attrs.keys() == dataset_rates.attrs.keys()
+    # write_cdf() injects some attributes that are not in the xarray
+    assert set(dataset_rates.attrs.keys()).issubset(
+        set(input_xarray_rates.attrs.keys())
+    )
 
 
 @pytest.mark.parametrize(
@@ -274,8 +281,8 @@ def test_cdf_tof(ccsds_path_theta_0, decom_test_data):
 
     dataset_tof = create_dataset({ULTRA_TOF.apid[0]: decom_ultra_tof})
     input_xarray_tof = load_cdf(test_data_path)
-
-    assert input_xarray_tof.attrs.keys() == dataset_tof.attrs.keys()
+    # write_cdf() injects some attributes that are not in the xarray
+    assert set(dataset_tof.attrs.keys()).issubset(set(input_xarray_tof.attrs.keys()))
 
 
 @pytest.mark.parametrize(
@@ -295,6 +302,9 @@ def test_cdf_events(ccsds_path_theta_0, decom_ultra_aux, decom_test_data):
     """Tests that CDF file is created and contains same attributes as xarray."""
     decom_ultra_events, _ = decom_test_data
     test_data = ultra_l1a(ccsds_path_theta_0, apid=ULTRA_EVENTS.apid[0])
+    # TODO: Dropping duplicates to ignore ISTP for now. Need to update test data
+    # or wait for an update to cdflib
+    test_data[0] = test_data[0].sortby("epoch").groupby("epoch").first()
     test_data_path = write_cdf(test_data[0])
 
     assert test_data_path.exists()
@@ -305,4 +315,7 @@ def test_cdf_events(ccsds_path_theta_0, decom_ultra_aux, decom_test_data):
     )
     input_xarray_events = load_cdf(test_data_path, to_datetime=True)
 
-    assert input_xarray_events.attrs.keys() == dataset_events.attrs.keys()
+    # write_cdf() injects some attributes that are not in the xarray
+    assert set(dataset_events.attrs.keys()).issubset(
+        set(input_xarray_events.attrs.keys())
+    )

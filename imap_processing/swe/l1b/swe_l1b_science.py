@@ -1,6 +1,5 @@
 """Contains code to perform SWE L1b science processing."""
 
-import dataclasses
 import logging
 
 import numpy as np
@@ -8,8 +7,7 @@ import pandas as pd
 import xarray as xr
 
 from imap_processing import imap_module_directory
-from imap_processing.cdf.global_attrs import ConstantCoordinates
-from imap_processing.swe import swe_cdf_attrs
+from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 
 logger = logging.getLogger(__name__)
 
@@ -229,9 +227,9 @@ def populate_full_cycle_data(
 
         # Go through four quarter cycle data packets
         for index in range(4):
-            decompressed_counts = l1a_data["SCIENCE_DATA"].data[packet_index + index]
+            decompressed_counts = l1a_data["science_data"].data[packet_index + index]
             # Do deadtime correction
-            acq_duration = l1a_data["ACQ_DURATION"].data[packet_index + index]
+            acq_duration = l1a_data["acq_duration"].data[packet_index + index]
             corrected_counts = deadtime_correction(decompressed_counts, acq_duration)
             # Convert counts to rate
             counts_rate = convert_counts_to_rate(corrected_counts, acq_duration)
@@ -353,7 +351,7 @@ def swe_l1b_science(l1a_data):
     xarray.Dataset
         Processed l1b data
     """
-    total_packets = len(l1a_data["SCIENCE_DATA"].data)
+    total_packets = len(l1a_data["science_data"].data)
 
     # Array to store list of table populated with data
     # of full cycles
@@ -361,13 +359,13 @@ def swe_l1b_science(l1a_data):
     packet_index = 0
     l1a_data_copy = l1a_data.copy(deep=True)
 
-    full_cycle_data_indices = get_indices_of_full_cycles(l1a_data["QUARTER_CYCLE"].data)
+    full_cycle_data_indices = get_indices_of_full_cycles(l1a_data["quarter_cycle"].data)
     logger.debug(
-        f"Quarter cycle data before filtering: {l1a_data_copy['QUARTER_CYCLE'].data}"
+        f"Quarter cycle data before filtering: {l1a_data_copy['quarter_cycle'].data}"
     )
 
     # Delete Raw Science Data from l1b and onwards
-    del l1a_data_copy["RAW_SCIENCE_DATA"]
+    del l1a_data_copy["raw_science_data"]
 
     if full_cycle_data_indices.size == 0:
         # Log that no data is found for science data
@@ -381,10 +379,10 @@ def swe_l1b_science(l1a_data):
         total_packets = len(full_cycle_data_indices)
         logger.debug(
             "Quarters cycle after filtering: "
-            f"{full_cycle_l1a_data['QUARTER_CYCLE'].data}"
+            f"{full_cycle_l1a_data['quarter_cycle'].data}"
         )
         if len(full_cycle_data_indices) != len(
-            full_cycle_l1a_data["QUARTER_CYCLE"].data
+            full_cycle_l1a_data["quarter_cycle"].data
         ):
             raise ValueError(
                 "Error: full cycle data indices and filtered quarter cycle data size "
@@ -394,7 +392,7 @@ def swe_l1b_science(l1a_data):
     # Go through each cycle and populate full cycle data
     for packet_index in range(0, total_packets, 4):
         # get ESA lookup table information
-        esa_table_num = l1a_data["ESA_TABLE_NUM"].data[packet_index]
+        esa_table_num = l1a_data["esa_table_num"].data[packet_index]
 
         # If ESA lookup table number is in-flight calibration
         # data, then skip current cycle per SWE teams specification.
@@ -413,6 +411,11 @@ def swe_l1b_science(l1a_data):
 
     # ------------------------------------------------------------------
     # Save data to dataset.
+    # ------------------------------------------------------------------
+    # Load CDF attrs
+    cdf_attrs = ImapCdfAttributes()
+    cdf_attrs.add_instrument_global_attrs("swe")
+    cdf_attrs.add_instrument_variable_attrs("swe", "l1b")
 
     # Get epoch time of full cycle data and then reshape it to
     # (n, 4) where n = total number of full cycles and 4 = four
@@ -422,60 +425,59 @@ def swe_l1b_science(l1a_data):
         l1a_data["epoch"].data[full_cycle_data_indices].reshape(-1, 4)[:, 0],
         name="epoch",
         dims=["epoch"],
-        attrs=ConstantCoordinates.EPOCH,
+        attrs=cdf_attrs.get_variable_attributes("epoch"),
     )
 
-    # TODO: add more descriptive description
     energy = xr.DataArray(
         np.arange(24),
-        name="Energy",
-        dims=["Energy"],
-        attrs=dataclasses.replace(
-            swe_cdf_attrs.int_base,
-            catdesc="Energy's index value in lookup table",
-            fieldname="Energy Bins",
-            label_axis="Energy Bins",
-            units="",
-        ).output(),
+        name="energy",
+        dims=["energy"],
+        attrs=cdf_attrs.get_variable_attributes("energy"),
+    )
+
+    # NOTE: LABL_PTR_1 should be CDF_CHAR.
+    energy_label = xr.DataArray(
+        energy.values.astype(str),
+        name="energy_label",
+        dims=["energy_label"],
+        attrs=cdf_attrs.get_variable_attributes("energy_label"),
     )
 
     angle = xr.DataArray(
         np.arange(30),
-        name="Angle",
-        dims=["Angle"],
-        attrs=dataclasses.replace(
-            swe_cdf_attrs.int_base,
-            catdesc="Spin Angle",
-            fieldname="Spin Angle",
-            label_axis="Spin Angle",
-            units="Degree",
-        ).output(),
+        name="angle",
+        dims=["angle"],
+        attrs=cdf_attrs.get_variable_attributes("angle"),
+    )
+
+    # NOTE: LABL_PTR_2 should be CDF_CHAR.
+    angle_label = xr.DataArray(
+        angle.values.astype(str),
+        name="angle_label",
+        dims=["angle_label"],
+        attrs=cdf_attrs.get_variable_attributes("angle_label"),
     )
 
     cycle = xr.DataArray(
         np.arange(4),
-        name="Cycle",
-        dims=["Cycle"],
-        attrs=dataclasses.replace(
-            swe_cdf_attrs.int_base,
-            catdesc="Full cycle data takes 4 spins' data",
-            fieldname="Quarter Cycle",
-            label_axis="Quarter Cycle",
-            units="int",
-        ).output(),
+        name="cycle",
+        dims=["cycle"],
+        attrs=cdf_attrs.get_variable_attributes("cycle"),
     )
 
-    rates = xr.DataArray(
+    cem = xr.DataArray(
         np.arange(7, dtype=np.float64),
-        name="Rates",
-        dims=["Rates"],
-        attrs=dataclasses.replace(
-            swe_cdf_attrs.float_base,
-            catdesc="Counts converted to rates",
-            fieldname="Rates",
-            label_axis="Rates",
-            units="Counts/seconds",
-        ).output(),
+        name="cem",
+        dims=["cem"],
+        attrs=cdf_attrs.get_variable_attributes("cem"),
+    )
+
+    # NOTE: LABL_PTR_3 should be CDF_CHAR.
+    cem_label = xr.DataArray(
+        cem.values.astype(str),
+        name="cem_label",
+        dims=["cem_label"],
+        attrs=cdf_attrs.get_variable_attributes("cem_label"),
     )
 
     # Add science data and it's associated metadata into dataset.
@@ -496,44 +498,32 @@ def swe_l1b_science(l1a_data):
     dataset = xr.Dataset(
         coords={
             "epoch": epoch_time,
-            "Energy": energy,
-            "Angle": angle,
-            "Rates": rates,
-            "Cycle": cycle,
+            "energy": energy,
+            "angle": angle,
+            "cem": cem,
+            "cycle": cycle,
+            "energy_label": energy_label,
+            "angle_label": angle_label,
+            "cem_label": cem_label,
         },
-        attrs=swe_cdf_attrs.swe_l1b_global_attrs.output(),
+        attrs=cdf_attrs.get_global_attributes("imap_swe_l1b_sci"),
     )
 
-    dataset["SCIENCE_DATA"] = xr.DataArray(
+    dataset["science_data"] = xr.DataArray(
         all_data,
-        dims=["epoch", "Energy", "Angle", "Rates"],
-        attrs=swe_cdf_attrs.l1b_science_attrs.output(),
+        dims=["epoch", "energy", "angle", "cem"],
+        attrs=cdf_attrs.get_variable_attributes("science_data"),
     )
 
     # create xarray dataset for each metadata field
     for key, value in full_cycle_l1a_data.items():
-        if key == "SCIENCE_DATA":
+        if key == "science_data":
             continue
-
-        # TODO: figure out how to add more descriptive
-        # description for each metadata field
-        #
-        # int_attrs["CATDESC"] = int_attrs["FIELDNAM"] = int_attrs["LABLAXIS"] = key
-        # # get int32's max since most of metadata is under 32-bits
-        # int_attrs["VALIDMAX"] = np.iinfo(np.int32).max
-        # int_attrs["DEPEND_O"] = "epoch"
-        # int_attrs["DEPEND_2"] = "Cycle"
-        dataset[key] = xr.DataArray(
+        metadata_field = key.lower()
+        dataset[metadata_field] = xr.DataArray(
             value.data.reshape(-1, 4),
-            dims=["epoch", "Cycle"],
-            attrs=dataclasses.replace(
-                swe_cdf_attrs.swe_metadata_attrs,
-                catdesc=key,
-                fieldname=key,
-                label_axis=key,
-                depend_0="epoch",
-                depend_1="Cycle",
-            ).output(),
+            dims=["epoch", "cycle"],
+            attrs=cdf_attrs.get_variable_attributes(metadata_field),
         )
 
     logger.info("SWE L1b science processing completed")

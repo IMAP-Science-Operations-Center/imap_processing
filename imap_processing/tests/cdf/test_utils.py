@@ -7,8 +7,8 @@ import xarray as xr
 
 from imap_processing import launch_time
 from imap_processing.cdf.global_attrs import ConstantCoordinates
+from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import calc_start_time, load_cdf, write_cdf
-from imap_processing.swe.swe_cdf_attrs import swe_l1a_global_attrs
 
 
 @pytest.fixture()
@@ -20,6 +20,9 @@ def test_dataset():
     dataset : xarray.Dataset
         The ``xarray`` dataset object
     """
+    # Load the CDF attrs
+    swe_attrs = ImapCdfAttributes()
+    swe_attrs.add_instrument_global_attrs("swe")
 
     dataset = xr.Dataset(
         {
@@ -32,11 +35,9 @@ def test_dataset():
                 ],
             )
         },
-        attrs=swe_l1a_global_attrs.output()
+        attrs=swe_attrs.get_global_attributes("imap_swe_l1a_sci")
         | {
-            "Logical_source": "imap_swe_l1_sci",
-            "Data_version": "001",
-            "Logical_file_id": "imap_swe_l1_sci_20100101_v001",
+            "Logical_file_id": "imap_swe_l1a_sci_20100101_v001",
         },
     )
     dataset["epoch"].attrs = ConstantCoordinates.EPOCH
@@ -78,7 +79,7 @@ def test_write_cdf(test_dataset):
 
     file_path = write_cdf(test_dataset)
     assert file_path.exists()
-    assert file_path.name == "imap_swe_l1_sci_20100101_v001.cdf"
+    assert file_path.name == "imap_swe_l1a_sci_20100101_v001.cdf"
     assert file_path.relative_to(imap_data_access.config["DATA_DIR"])
 
 
@@ -93,7 +94,4 @@ def test_written_and_loaded_dataset(test_dataset):
     """
 
     new_dataset = load_cdf(write_cdf(test_dataset), to_datetime=True)
-    new_dataset.attrs["PI_affiliation"] = tuple(
-        new_dataset.attrs["PI_affiliation"]
-    )  # The PI_affiliation attribute should be a tuple
     assert str(test_dataset) == str(new_dataset)

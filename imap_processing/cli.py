@@ -34,13 +34,16 @@ from imap_processing.cdf.utils import load_cdf, write_cdf
 #   call cdf.utils.write_cdf
 from imap_processing.codice import codice_l1a
 from imap_processing.hi.l1a import hi_l1a
+from imap_processing.hit.l1a.hit_l1a import hit_l1a
 from imap_processing.idex.idex_packet_parser import PacketParser
+from imap_processing.lo.l1a import lo_l1a
 from imap_processing.mag.l1a.mag_l1a import mag_l1a
 from imap_processing.swapi.l1.swapi_l1 import swapi_l1
 from imap_processing.swe.l1a.swe_l1a import swe_l1a
 from imap_processing.swe.l1b.swe_l1b import swe_l1b
 from imap_processing.ultra.l1a import ultra_l1a
 from imap_processing.ultra.l1b import ultra_l1b
+from imap_processing.ultra.l1c import ultra_l1c
 
 logger = logging.getLogger(__name__)
 
@@ -101,6 +104,29 @@ def _parse_args():
     )
 
     parser = argparse.ArgumentParser(prog="imap_cli", description=description)
+    # TODO: Add version here and change our current "version" to "data-version"?
+    # parser.add_argument(
+    #     "--version",
+    #     action="version",
+    #     version=f"%(prog)s {imap_processing.__version__}",
+    # )
+    # Logging level
+    parser.add_argument(
+        "--debug",
+        help="Print lots of debugging statements",
+        action="store_const",
+        dest="loglevel",
+        const=logging.DEBUG,
+        default=logging.WARNING,
+    )
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        help="Add verbose output",
+        action="store_const",
+        dest="loglevel",
+        const=logging.INFO,
+    )
     parser.add_argument("--instrument", type=str, required=True, help=instrument_help)
     parser.add_argument("--data-level", type=str, required=True, help=level_help)
 
@@ -275,9 +301,15 @@ class ProcessInstrument(ABC):
         of new products (files).
         3. Post-processing actions such as uploading files to the IMAP SDC.
         """
+        logger.info(f"IMAP Processing Version: {imap_processing.__version__}")
+        logger.info(f"Processing {self.__class__.__name__} level {self.data_level}")
+        logger.info("Beginning preprocessing (download dependencies)")
         dependencies = self.pre_processing()
+        logger.info("Beginning actual processing")
         products = self.do_processing(dependencies)
+        logger.info("Beginning postprocessing (uploading data products)")
         self.post_processing(products)
+        logger.info("Processing complete")
 
     def pre_processing(self):
         """
@@ -389,6 +421,16 @@ class Hit(ProcessInstrument):
         """Perform HIT specific processing."""
         print(f"Processing HIT {self.data_level}")
 
+        if self.data_level == "l1a":
+            if len(dependencies) > 1:
+                raise ValueError(
+                    f"Unexpected dependencies found for HIT L1A:"
+                    f"{dependencies}. Expected only one dependency."
+                )
+            # process data and write all processed data to CDF files
+            products = hit_l1a(dependencies[0])
+            return products
+
 
 class Idex(ProcessInstrument):
     """Process IDEX."""
@@ -416,6 +458,17 @@ class Lo(ProcessInstrument):
     def do_processing(self, dependencies):
         """Perform IMAP-Lo specific processing."""
         print(f"Processing IMAP-Lo {self.data_level}")
+
+        if self.data_level == "l1a":
+            # L1A packet / products are 1 to 1. Should only have
+            # one dependency file
+            if len(dependencies) > 1:
+                raise ValueError(
+                    f"Unexpected dependencies found for IMAP-Lo L1A:"
+                    f"{dependencies}. Expected only one dependency."
+                )
+            output_files = lo_l1a.lo_l1a(dependencies[0])
+            return [output_files]
 
 
 class Mag(ProcessInstrument):
@@ -523,6 +576,14 @@ class Ultra(ProcessInstrument):
                 dataset = load_cdf(dependency, to_datetime=True)
                 data_dict[dataset.attrs["Logical_source"]] = dataset
             datasets = ultra_l1b.ultra_l1b(data_dict)
+            products = [write_cdf(dataset) for dataset in datasets]
+            return products
+        elif self.data_level == "l1c":
+            data_dict = {}
+            for dependency in dependencies:
+                dataset = load_cdf(dependency, to_datetime=True)
+                data_dict[dataset.attrs["Logical_source"]] = dataset
+            datasets = ultra_l1c.ultra_l1c(data_dict)
             products = [write_cdf(dataset) for dataset in datasets]
             return products
 

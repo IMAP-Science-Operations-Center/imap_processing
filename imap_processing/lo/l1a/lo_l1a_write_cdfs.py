@@ -56,7 +56,7 @@ def create_lo_scide_dataset(sci_de: list):
         sci_de_times, dims="epoch", attrs=lo_cdf_attrs.lo_tof_attrs.output()
     )
     sci_de_epoch = xr.DataArray(
-        np.array(sci_de_times, dtype="datetime64[s]"),
+        np.array(sci_de_times, dtype="datetime64[s]").astype("datetime64[ns]"),
         dims=["epoch"],
         name="epoch",
         attrs=ConstantCoordinates.EPOCH,

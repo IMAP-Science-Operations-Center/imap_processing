@@ -25,7 +25,7 @@ def fake_packet_data():
         },
         {
             "SHCOARSE": fake_data_field(0, 0),
-            "COUNT": fake_data_field(0, 0),
+            "DE_COUNT": fake_data_field(0, 0),
             "DATA": fake_data_field("00", "00"),
             "CHKSUM": fake_data_field(0, 0),
         },
@@ -35,41 +35,33 @@ def fake_packet_data():
 @pytest.fixture()
 def single_de(fake_packet_data):
     de = ScienceDirectEvents(fake_packet_data, "0", "fakepacketname")
-    de.COUNT = 1
-    de.TIME = np.ones(de.COUNT) * GlobalConstants.DOUBLE_FILLVAL
-    de.ENERGY = np.ones(de.COUNT) * GlobalConstants.DOUBLE_FILLVAL
-    de.MODE = np.ones(de.COUNT) * GlobalConstants.DOUBLE_FILLVAL
-    de.TOF0 = np.ones(de.COUNT) * GlobalConstants.DOUBLE_FILLVAL
-    de.TOF1 = np.ones(de.COUNT) * GlobalConstants.DOUBLE_FILLVAL
-    de.TOF2 = np.ones(de.COUNT) * GlobalConstants.DOUBLE_FILLVAL
-    de.TOF3 = np.ones(de.COUNT) * GlobalConstants.DOUBLE_FILLVAL
-    de.CKSM = np.ones(de.COUNT) * GlobalConstants.DOUBLE_FILLVAL
-    de.POS = np.ones(de.COUNT) * GlobalConstants.DOUBLE_FILLVAL
+    de.DE_COUNT = 1
+    de.DE_TIME = np.ones(de.DE_COUNT) * GlobalConstants.DOUBLE_FILLVAL
+    de.ESA_STEP = np.ones(de.DE_COUNT) * GlobalConstants.DOUBLE_FILLVAL
+    de.MODE = np.ones(de.DE_COUNT) * GlobalConstants.DOUBLE_FILLVAL
+    de.TOF0 = np.ones(de.DE_COUNT) * GlobalConstants.DOUBLE_FILLVAL
+    de.TOF1 = np.ones(de.DE_COUNT) * GlobalConstants.DOUBLE_FILLVAL
+    de.TOF2 = np.ones(de.DE_COUNT) * GlobalConstants.DOUBLE_FILLVAL
+    de.TOF3 = np.ones(de.DE_COUNT) * GlobalConstants.DOUBLE_FILLVAL
+    de.CKSM = np.ones(de.DE_COUNT) * GlobalConstants.DOUBLE_FILLVAL
+    de.POS = np.ones(de.DE_COUNT) * GlobalConstants.DOUBLE_FILLVAL
     return de
 
 
 @pytest.fixture()
 def multi_de(fake_packet_data):
     de = ScienceDirectEvents(fake_packet_data, "0", "fakepacketname")
-    de.COUNT = 2
-    de.TIME = np.ones(de.COUNT) * GlobalConstants.DOUBLE_FILLVAL
-    de.ENERGY = np.ones(de.COUNT) * GlobalConstants.DOUBLE_FILLVAL
-    de.MODE = np.ones(de.COUNT) * GlobalConstants.DOUBLE_FILLVAL
-    de.TOF0 = np.ones(de.COUNT) * GlobalConstants.DOUBLE_FILLVAL
-    de.TOF1 = np.ones(de.COUNT) * GlobalConstants.DOUBLE_FILLVAL
-    de.TOF2 = np.ones(de.COUNT) * GlobalConstants.DOUBLE_FILLVAL
-    de.TOF3 = np.ones(de.COUNT) * GlobalConstants.DOUBLE_FILLVAL
-    de.CKSM = np.ones(de.COUNT) * GlobalConstants.DOUBLE_FILLVAL
-    de.POS = np.ones(de.COUNT) * GlobalConstants.DOUBLE_FILLVAL
+    de.DE_COUNT = 2
+    de.DE_TIME = np.ones(de.DE_COUNT) * GlobalConstants.DOUBLE_FILLVAL
+    de.ESA_STEP = np.ones(de.DE_COUNT) * GlobalConstants.DOUBLE_FILLVAL
+    de.MODE = np.ones(de.DE_COUNT) * GlobalConstants.DOUBLE_FILLVAL
+    de.TOF0 = np.ones(de.DE_COUNT) * GlobalConstants.DOUBLE_FILLVAL
+    de.TOF1 = np.ones(de.DE_COUNT) * GlobalConstants.DOUBLE_FILLVAL
+    de.TOF2 = np.ones(de.DE_COUNT) * GlobalConstants.DOUBLE_FILLVAL
+    de.TOF3 = np.ones(de.DE_COUNT) * GlobalConstants.DOUBLE_FILLVAL
+    de.CKSM = np.ones(de.DE_COUNT) * GlobalConstants.DOUBLE_FILLVAL
+    de.POS = np.ones(de.DE_COUNT) * GlobalConstants.DOUBLE_FILLVAL
     return de
-
-
-@pytest.fixture()
-def tof_data():
-    TOFData = namedtuple(
-        "TOFData", ["ENERGY", "POS", "TOF0", "TOF1", "TOF2", "TOF3", "CKSM", "TIME"]
-    )
-    return TOFData
 
 
 def test_parse_data_case_0(single_de):
@@ -101,8 +93,8 @@ def test_parse_data_case_0(single_de):
     single_de._decompress_data()
 
     # Assert
-    np.testing.assert_array_equal(single_de.TIME, expected_time)
-    np.testing.assert_array_equal(single_de.ENERGY, expected_energy)
+    np.testing.assert_array_equal(single_de.DE_TIME, expected_time)
+    np.testing.assert_array_equal(single_de.ESA_STEP, expected_energy)
     np.testing.assert_array_equal(single_de.MODE, expected_mode)
     np.testing.assert_array_equal(single_de.TOF0, expected_tof0)
     np.testing.assert_array_equal(single_de.TOF1, expected_tof1)
@@ -139,8 +131,8 @@ def test_parse_data_case_10(single_de):
     single_de._decompress_data()
 
     # Assert
-    np.testing.assert_array_equal(single_de.TIME, expected_time)
-    np.testing.assert_array_equal(single_de.ENERGY, expected_energy)
+    np.testing.assert_array_equal(single_de.DE_TIME, expected_time)
+    np.testing.assert_array_equal(single_de.ESA_STEP, expected_energy)
     np.testing.assert_array_equal(single_de.MODE, expected_mode)
     np.testing.assert_array_equal(single_de.TOF0, expected_tof0)
     np.testing.assert_array_equal(single_de.TOF1, expected_tof1)
@@ -207,8 +199,8 @@ def test_decompress_data_multi_de(multi_de):
     multi_de._decompress_data()
 
     # Assert
-    np.testing.assert_array_equal(multi_de.TIME, expected_time)
-    np.testing.assert_array_equal(multi_de.ENERGY, expected_energy)
+    np.testing.assert_array_equal(multi_de.DE_TIME, expected_time)
+    np.testing.assert_array_equal(multi_de.ESA_STEP, expected_energy)
     np.testing.assert_array_equal(multi_de.MODE, expected_mode)
     np.testing.assert_array_equal(multi_de.TOF0, expected_tof0)
     np.testing.assert_array_equal(multi_de.TOF1, expected_tof1)
