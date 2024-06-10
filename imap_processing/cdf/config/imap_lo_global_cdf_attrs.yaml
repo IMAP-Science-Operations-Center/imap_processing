@@ -32,7 +32,6 @@ imap_lo_l1a_spin:
   Data_level: 1A
   Data_type: L1A_star>Level-1A Spin
   Logical_source: imap_lo_l1a_spin
-<<<<<<< HEAD
   Logical_source_description: IMAP Mission IMAP-Lo Instrument Level-1A Data
 
 imap_lo_l1b_badtimes:
@@ -76,6 +75,3 @@ imap_lo_l1b_prostar:
   Data_type: L1B_prostar>Level-1B Processed Star Sensor
   Logical_source: imap_lo_l1b_prostar
   Logical_source_description: IMAP Mission IMAP-Lo Instrument Level-1B Data
-=======
-  Logical_source_description: IMAP Mission IMAP-Lo Instrument Level-1A Data
->>>>>>> dev

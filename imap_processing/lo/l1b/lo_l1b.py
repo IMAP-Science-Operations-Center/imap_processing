@@ -1,4 +1,4 @@
-"""IMAP-Lo L1A Data Processing."""
+"""IMAP-Lo L1B Data Processing."""
 
 from collections import namedtuple
 
@@ -12,12 +12,12 @@ from imap_processing.cdf.utils import calc_start_time, write_cdf
 
 def lo_l1b(dependencies: dict):
     """
-    Process IMAP-Lo L0 data into L1A CDF data products.
+    Process IMAP-Lo L1A data into L1B CDF data products.
 
     Parameters
     ----------
-    dependencies :
-        dependency datasets needed for data product creation.
+    dependencies : dict
+        dictionary of datasets needed for L1B data product creation in xarray Datasets.
 
     Returns
     -------
@@ -32,7 +32,6 @@ def lo_l1b(dependencies: dict):
     # if the dependencies are used to create Annotated Direct Events
 
     if "imap_lo_l1a_de" in dependencies and "imap_lo_l1a_spin" in dependencies:
-        print("IN IF CHECK")
         logical_source = "imap_lo_l1b_de"
         # TODO: TEMPORARY. Need to update to use the L1B data class once that exists
         #  and I have sample data.
@@ -129,7 +128,6 @@ def create_datasets(attr_mgr, logical_source, data_fields):
         # Create a data array for the current field and add it to the dataset
         # TODO: TEMPORARY. need to update to use l1a data once that's available.
         #  Won't need to check for the direction field when I have sample data either.
-        print(f"FIELD: {field}, DIMS: {dims}")
         if field == "direction":
             dataset[field] = xr.DataArray(
                 [[0, 0, 1], [0, 1, 0], [0, 0, 1]],
