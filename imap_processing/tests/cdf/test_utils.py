@@ -67,6 +67,8 @@ def test_load_cdf(test_dataset):
     dataset = load_cdf(file_path)
     assert isinstance(dataset, xr.core.dataset.Dataset)
 
+    # Test that epoch is converted to datetime64 by default
+    assert dataset["epoch"].data.dtype == np.dtype("datetime64[ns]")
     # Test removal of attributes that are added on by cdf_to_xarray and
     # are specific to xarray plotting
     xarray_attrs = ["units", "standard_name", "long_name"]

@@ -69,6 +69,8 @@ def load_cdf(
     dataset : xr.Dataset
         The ``xarray`` dataset for the CDF file
     """
+    if "to_datetime" not in kwargs:
+        kwargs["to_datetime"] = True
     dataset = cdf_to_xarray(file_path, kwargs)
 
     # cdf_to_xarray converts single-value attributes to lists
