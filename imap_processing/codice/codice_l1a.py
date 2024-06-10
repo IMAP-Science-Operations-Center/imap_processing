@@ -21,25 +21,10 @@ import pandas as pd
 import xarray as xr
 
 from imap_processing import imap_module_directory
-from imap_processing.cdf.global_attrs import ConstantCoordinates
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import calc_start_time, write_cdf
-from imap_processing.codice import __version__
+from imap_processing.codice import __version__, constants
 from imap_processing.codice.codice_l0 import decom_packets
-from imap_processing.codice.constants import (
-    ESA_SWEEP_TABLE_ID_LOOKUP,
-    LO_COLLAPSE_TABLE_ID_LOOKUP,
-    LO_COMPRESSION_ID_LOOKUP,
-    LO_INST_COUNTS_AGGREGATED_NAMES,
-    LO_INST_COUNTS_SINGLES_NAMES,
-    LO_NSW_ANGULAR_NAMES,
-    LO_NSW_PRIORITY_NAMES,
-    LO_NSW_SPECIES_NAMES,
-    LO_STEPPING_TABLE_ID_LOOKUP,
-    LO_SW_ANGULAR_NAMES,
-    LO_SW_PRIORITY_NAMES,
-    LO_SW_SPECIES_NAMES,
-)
 from imap_processing.codice.utils import CODICEAPID, create_hskp_dataset
 from imap_processing.utils import group_by_apid, sort_by_time
 
@@ -77,10 +62,10 @@ class CoDICEL1aPipeline:
         Create an ``xarray`` dataset for the unpacked science data.
     get_acquisition_times()
         Retrieve the acquisition times via the Lo stepping table.
+    get_data_products()
+        Retrieve the lo data products.
     get_esa_sweep_values()
         Retrieve the ESA sweep values.
-    get_lo_data_products()
-        Retrieve the lo data products.
     unpack_science_data()
         Make 4D L1a data product from the decompressed science data.
     """
@@ -111,12 +96,11 @@ class CoDICEL1aPipeline:
         cdf_attrs.add_instrument_global_attrs("codice")
         cdf_attrs.add_instrument_variable_attrs("codice", "l1a")
 
-        # TODO: Is there a way to get the attrs from the YAML-based method?
         epoch = xr.DataArray(
             [start_time],
             name="epoch",
             dims=["epoch"],
-            attrs=ConstantCoordinates.EPOCH,
+            attrs=cdf_attrs.get_variable_attributes("epoch"),
         )
 
         energy_steps = xr.DataArray(
@@ -147,19 +131,20 @@ class CoDICEL1aPipeline:
                 attrs=cdf_attrs.get_variable_attributes(cdf_attrs_key),
             )
 
-        # Add ESA Sweep values
-        dataset["esa_sweep_values"] = xr.DataArray(
-            self.esa_sweep_values,
-            dims=["voltage"],
-            attrs=cdf_attrs.get_variable_attributes("esa_sweep_attrs"),
-        )
+        # Add ESA Sweep Values and acquisition times (lo only)
+        if hasattr(self, "esa_sweep_values"):
+            dataset["esa_sweep_values"] = xr.DataArray(
+                self.esa_sweep_values,
+                dims=["voltage"],
+                attrs=cdf_attrs.get_variable_attributes("esa_sweep_attrs"),
+            )
 
-        # Add acquisition times
-        dataset["acquisition_times"] = xr.DataArray(
-            self.acquisition_times,
-            dims=["milliseconds"],
-            attrs=cdf_attrs.get_variable_attributes("acquisition_times_attrs"),
-        )
+        if hasattr(self, "acquisition_times"):
+            dataset["acquisition_times"] = xr.DataArray(
+                self.acquisition_times,
+                dims=["milliseconds"],
+                attrs=cdf_attrs.get_variable_attributes("acquisition_times_attrs"),
+            )
 
         return dataset
 
@@ -182,7 +167,7 @@ class CoDICEL1aPipeline:
         lo_stepping_data = pd.read_csv(lo_stepping_data_file)
 
         # Determine which Lo stepping table is needed
-        lo_stepping_table_id = LO_STEPPING_TABLE_ID_LOOKUP[
+        lo_stepping_table_id = constants.LO_STEPPING_TABLE_ID_LOOKUP[
             (self.plan_id, self.plan_step)
         ]
 
@@ -206,6 +191,63 @@ class CoDICEL1aPipeline:
             row_number = np.argmax(energy_steps == str(step_number), axis=1).argmax()
             self.acquisition_times.append(lo_stepping_values.acq_time[row_number])
 
+    def get_data_products(self, apid: int):
+        """Retrieve the values for the lo- or hi- data products table.
+
+        Parameters
+        ----------
+        apid : int
+            The APID of interest.
+        """
+        # TODO: This is not very DRY. Is there a better way to handle this?
+        if apid == CODICEAPID.COD_HI_INST_COUNTS_AGGREGATED:
+            self.num_counters = 1
+            self.num_energy_steps = (
+                128  # TODO: Not sure what this should be yet, so just use 128 for now
+            )
+            self.variable_names = constants.HI_INST_COUNTS_AGGREGATED_NAMES
+            self.dataset_name = "imap_codice_l1a_hi_counters_aggregated"
+        if apid == CODICEAPID.COD_LO_INST_COUNTS_AGGREGATED:
+            self.num_counters = 1
+            self.num_energy_steps = 128
+            self.variable_names = constants.LO_INST_COUNTS_AGGREGATED_NAMES
+            self.dataset_name = "imap_codice_l1a_lo_counters_aggregated"
+        if apid == CODICEAPID.COD_LO_INST_COUNTS_SINGLES:
+            self.num_counters = 1
+            self.num_energy_steps = 128
+            self.variable_names = constants.LO_INST_COUNTS_SINGLES_NAMES
+            self.dataset_name = "imap_codice_l1a_lo_counters_singles"
+        elif apid == CODICEAPID.COD_LO_SW_ANGULAR_COUNTS:
+            self.num_counters = 4
+            self.num_energy_steps = 128
+            self.variable_names = constants.LO_SW_ANGULAR_NAMES
+            self.dataset_name = "imap_codice_l1a_lo_sw_angular_counts"
+        elif apid == CODICEAPID.COD_LO_NSW_ANGULAR_COUNTS:
+            self.num_counters = 1
+            self.num_energy_steps = 128
+            self.variable_names = constants.LO_NSW_ANGULAR_NAMES
+            self.dataset_name = "imap_codice_l1a_lo_nsw_angular_counts"
+        elif apid == CODICEAPID.COD_LO_SW_PRIORITY_COUNTS:
+            self.num_counters = 5
+            self.num_energy_steps = 128
+            self.variable_names = constants.LO_SW_PRIORITY_NAMES
+            self.dataset_name = "imap_codice_l1a_lo_sw_priority_counts"
+        elif apid == CODICEAPID.COD_LO_NSW_PRIORITY_COUNTS:
+            self.num_counters = 2
+            self.num_energy_steps = 128
+            self.variable_names = constants.LO_NSW_PRIORITY_NAMES
+            self.dataset_name = "imap_codice_l1a_lo_nsw_priority_counts"
+        elif apid == CODICEAPID.COD_LO_SW_SPECIES_COUNTS:
+            self.num_counters = 16
+            self.num_energy_steps = 128
+            self.variable_names = constants.LO_SW_SPECIES_NAMES
+            self.dataset_name = "imap_codice_l1a_lo_sw_species_counts"
+        elif apid == CODICEAPID.COD_LO_NSW_SPECIES_COUNTS:
+            self.num_counters = 8
+            self.num_energy_steps = 128
+            self.variable_names = constants.LO_NSW_SPECIES_NAMES
+            self.dataset_name = "imap_codice_l1a_lo_nsw_species_counts"
+
     def get_esa_sweep_values(self):
         """Retrieve the ESA sweep values.
 
@@ -228,61 +270,13 @@ class CoDICEL1aPipeline:
         sweep_data = pd.read_csv(esa_sweep_data_file)
 
         # Determine which ESA sweep table is needed
-        sweep_table_id = ESA_SWEEP_TABLE_ID_LOOKUP[(self.plan_id, self.plan_step)]
+        sweep_table_id = constants.ESA_SWEEP_TABLE_ID_LOOKUP[
+            (self.plan_id, self.plan_step)
+        ]
 
         # Get the appropriate values
         sweep_table = sweep_data[sweep_data["table_idx"] == sweep_table_id]
         self.esa_sweep_values = sweep_table["esa_v"].values
-
-    def get_lo_data_products(self, apid: int):
-        """Retrieve the lo data products table.
-
-        Parameters
-        ----------
-        apid : int
-            The APID of interest.
-        """
-        # TODO: This is not very DRY. Is there a better way to handle this?
-        if apid == CODICEAPID.COD_LO_INST_COUNTS_AGGREGATED:
-            self.num_counters = 1
-            self.num_energy_steps = 128
-            self.variable_names = LO_INST_COUNTS_AGGREGATED_NAMES
-            self.dataset_name = "imap_codice_l1a_lo_counters_aggregated"
-        if apid == CODICEAPID.COD_LO_INST_COUNTS_SINGLES:
-            self.num_counters = 1
-            self.num_energy_steps = 128
-            self.variable_names = LO_INST_COUNTS_SINGLES_NAMES
-            self.dataset_name = "imap_codice_l1a_lo_counters_singles"
-        elif apid == CODICEAPID.COD_LO_SW_ANGULAR_COUNTS:
-            self.num_counters = 4
-            self.num_energy_steps = 128
-            self.variable_names = LO_SW_ANGULAR_NAMES
-            self.dataset_name = "imap_codice_l1a_lo_sw_angular_counts"
-        elif apid == CODICEAPID.COD_LO_NSW_ANGULAR_COUNTS:
-            self.num_counters = 1
-            self.num_energy_steps = 128
-            self.variable_names = LO_NSW_ANGULAR_NAMES
-            self.dataset_name = "imap_codice_l1a_lo_nsw_angular_counts"
-        elif apid == CODICEAPID.COD_LO_SW_PRIORITY_COUNTS:
-            self.num_counters = 5
-            self.num_energy_steps = 128
-            self.variable_names = LO_SW_PRIORITY_NAMES
-            self.dataset_name = "imap_codice_l1a_lo_sw_priority_counts"
-        elif apid == CODICEAPID.COD_LO_NSW_PRIORITY_COUNTS:
-            self.num_counters = 2
-            self.num_energy_steps = 128
-            self.variable_names = LO_NSW_PRIORITY_NAMES
-            self.dataset_name = "imap_codice_l1a_lo_nsw_priority_counts"
-        elif apid == CODICEAPID.COD_LO_SW_SPECIES_COUNTS:
-            self.num_counters = 16
-            self.num_energy_steps = 128
-            self.variable_names = LO_SW_SPECIES_NAMES
-            self.dataset_name = "imap_codice_l1a_lo_sw_species_counts"
-        elif apid == CODICEAPID.COD_LO_NSW_SPECIES_COUNTS:
-            self.num_counters = 8
-            self.num_energy_steps = 128
-            self.variable_names = LO_NSW_SPECIES_NAMES
-            self.dataset_name = "imap_codice_l1a_lo_nsw_species_counts"
 
     def unpack_science_data(self, science_values: str):
         """Unpack the science data from the packet.
@@ -297,8 +291,8 @@ class CoDICEL1aPipeline:
         science_values : str
             A string of binary data representing the science values of the data
         """
-        self.compression_algorithm = LO_COMPRESSION_ID_LOOKUP[self.view_id]
-        self.collapse_table_id = LO_COLLAPSE_TABLE_ID_LOOKUP[self.view_id]
+        self.compression_algorithm = constants.LO_COMPRESSION_ID_LOOKUP[self.view_id]
+        self.collapse_table_id = constants.LO_COLLAPSE_TABLE_ID_LOOKUP[self.view_id]
 
         # TODO: Turn this back on after SIT-3
         # For SIT-3, just create appropriate length data arrays of all ones
@@ -372,70 +366,81 @@ def process_codice_l1a(file_path: Path | str) -> xr.Dataset:
         CODICEAPID.COD_LO_NSW_SPECIES_COUNTS,
     ]
 
-    # Decom the packets, group data by APID, and sort by time
-    packets = decom_packets(file_path)
-    grouped_data = group_by_apid(packets)
+    apids_for_hi_science_processing = [
+        CODICEAPID.COD_HI_INST_COUNTS_AGGREGATED,
+        CODICEAPID.COD_HI_INST_COUNTS_SINGLES,
+        CODICEAPID.COD_HI_OMNI_SPECIES_COUNTS,
+        CODICEAPID.COD_HI_SECT_SPECIES_COUNTS,
+    ]
 
-    for apid in grouped_data.keys():
-        logger.info(f"\nProcessing {CODICEAPID(apid).name} packet")
+    # Temporary workaround in order to create hi data products in absence of simulated data
+    if file_path.name.startswith("imap_codice_l0_lo") or file_path.name.startswith(
+        "imap_codice_l0_hskp"
+    ):
+        # Decom the packets, group data by APID, and sort by time
+        packets = decom_packets(file_path)
+        grouped_data = group_by_apid(packets)
 
-        if apid == CODICEAPID.COD_NHK:
-            packets = grouped_data[apid]
-            sorted_packets = sort_by_time(packets, "SHCOARSE")
-            dataset = create_hskp_dataset(packets=sorted_packets)
+        for apid in grouped_data.keys():
+            logger.info(f"\nProcessing {CODICEAPID(apid).name} packet")
 
-        elif apid in apids_for_lo_science_processing:
-            # Sort the packets by time
-            packets = sort_by_time(grouped_data[apid], "SHCOARSE")
+            if apid == CODICEAPID.COD_NHK:
+                packets = grouped_data[apid]
+                sorted_packets = sort_by_time(packets, "SHCOARSE")
+                dataset = create_hskp_dataset(packets=sorted_packets)
 
-            # Determine the start time of the packet
-            start_time = calc_start_time(
-                packets[0].data["ACQ_START_SECONDS"].raw_value,
-                launch_time=np.datetime64("2010-01-01T00:01:06.184", "ns"),
-            )
+            elif apid in apids_for_lo_science_processing:
+                # Sort the packets by time
+                packets = sort_by_time(grouped_data[apid], "SHCOARSE")
 
-            # Extract the data
-            science_values = packets[0].data["DATA"].raw_value
+                # Determine the start time of the packet
+                start_time = calc_start_time(
+                    packets[0].data["ACQ_START_SECONDS"].raw_value,
+                    launch_time=np.datetime64("2010-01-01T00:01:06.184", "ns"),
+                )
 
-            # Get the four "main" parameters for processing
-            table_id, plan_id, plan_step, view_id = get_params(packets[0])
+                # Extract the data
+                science_values = packets[0].data["DATA"].raw_value
 
-            # Run the pipeline to create a dataset for the product
-            pipeline = CoDICEL1aPipeline(table_id, plan_id, plan_step, view_id)
-            pipeline.get_esa_sweep_values()
-            pipeline.get_acquisition_times()
-            pipeline.get_lo_data_products(apid)
-            pipeline.unpack_science_data(science_values)
-            dataset = pipeline.create_science_dataset(start_time)
+                # Get the four "main" parameters for processing
+                table_id, plan_id, plan_step, view_id = get_params(packets[0])
 
-        elif apid == CODICEAPID.COD_LO_PHA:
-            logger.info(f"{apid} is currently not supported")
-            continue
+                # Run the pipeline to create a dataset for the product
+                pipeline = CoDICEL1aPipeline(table_id, plan_id, plan_step, view_id)
+                pipeline.get_esa_sweep_values()
+                pipeline.get_acquisition_times()
+                pipeline.get_data_products(apid)
+                pipeline.unpack_science_data(science_values)
+                dataset = pipeline.create_science_dataset(start_time)
 
-        elif apid == CODICEAPID.COD_HI_INST_COUNTS_AGGREGATED:
-            logger.info(f"{apid} is currently not supported")
-            continue
+        # Write dataset to CDF
+        logger.info(f"\nFinal data product:\n{dataset}\n")
+        dataset.attrs["Data_version"] = __version__
+        dataset.attrs["cdf_filename"] = write_cdf(dataset)
+        logger.info(f"\tCreated CDF file: {dataset.cdf_filename}")
 
-        elif apid == CODICEAPID.COD_HI_INST_COUNTS_SINGLES:
-            logger.info(f"{apid} is currently not supported")
-            continue
+        return dataset
 
-        elif apid == CODICEAPID.COD_HI_PHA:
-            logger.info(f"{apid} is currently not supported")
-            continue
+    # Temporary workaround in order to create hi data products in absence of simulated data
+    elif file_path.name.startswith("imap_codice_l0_hi"):
+        if file_path.name.startswith("imap_codice_l0_hi-counters-aggregated"):
+            apid = CODICEAPID.COD_HI_INST_COUNTS_AGGREGATED
+            table_id, plan_id, plan_step, view_id = (1, 0, 0, 3)
 
-        elif apid == CODICEAPID.COD_HI_OMNI_SPECIES_COUNTS:
-            logger.info(f"{apid} is currently not supported")
-            continue
+        start_time = np.datetime64(
+            "2024-04-29T00:00:00", "ns"
+        )  # Using this to match the other data products
+        science_values = ""  # Currently don't have simulated data for this
 
-        elif apid == CODICEAPID.COD_HI_SECT_SPECIES_COUNTS:
-            logger.info(f"{apid} is currently not supported")
-            continue
+        pipeline = CoDICEL1aPipeline(table_id, plan_id, plan_step, view_id)
+        pipeline.get_data_products(apid)
+        pipeline.unpack_science_data(science_values)
+        dataset = pipeline.create_science_dataset(start_time)
 
-    # Write dataset to CDF
-    logger.info(f"\nFinal data product:\n{dataset}\n")
-    dataset.attrs["Data_version"] = __version__
-    dataset.attrs["cdf_filename"] = write_cdf(dataset)
-    logger.info(f"\tCreated CDF file: {dataset.cdf_filename}")
+        # Write dataset to CDF
+        logger.info(f"\nFinal data product:\n{dataset}\n")
+        dataset.attrs["Data_version"] = __version__
+        dataset.attrs["cdf_filename"] = write_cdf(dataset)
+        logger.info(f"\tCreated CDF file: {dataset.cdf_filename}")
 
-    return dataset
+        return dataset

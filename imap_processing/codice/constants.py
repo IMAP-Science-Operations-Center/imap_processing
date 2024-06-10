@@ -49,6 +49,9 @@ LO_NSW_SPECIES_NAMES = [
     "cnoplus",
 ]
 
+# CDF-friendly names for hi data products
+HI_INST_COUNTS_AGGREGATED_NAMES = ["aggregated"]
+
 # Compression ID lookup table for Lo data products
 # The key is the view_id and the value is the ID for the compression algorithm
 # (see utils.CoDICECompression to see how the values correspond)

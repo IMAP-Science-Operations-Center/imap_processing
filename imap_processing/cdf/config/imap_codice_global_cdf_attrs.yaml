@@ -19,6 +19,13 @@ imap_codice_l1a_hskp:
     Logical_source: imap_codice_l1a_hskp
     Logical_source_description: IMAP Mission CoDICE Instrument Level-1A Housekeeping Data.
 
+imap_codice_l1a_hi_counters_aggregated:
+    <<: *instrument_base
+    Data_level: 1A
+    Data_type: L1A_hi-counters-aggregated->Level-1A Hi Aggregated Instrument Counts Data
+    Logical_source: imap_codice_l1a_hi-counters-aggregated
+    Logical_source_description: IMAP Mission CoDICE Hi Level-1A Aggregated Instrument Counts Data.
+
 imap_codice_l1a_lo_counters_aggregated:
     <<: *instrument_base
     Data_level: 1A
