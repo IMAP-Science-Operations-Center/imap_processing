@@ -62,13 +62,16 @@ def load_cdf(
         Whether to remove the xarray attributes that get injected by the
         cdf_to_xarray function from the output xarray.Dataset. Default is True.
     **kwargs : dict, optional
-        Keyword arguments for ``cdf_to_xarray``
+        Keyword arguments for ``cdf_to_xarray``. This function overrides the
+        ``cdf_to_xarray`` default keyword value `to_datetime=False` with
+        ``to_datetime=True`.
 
     Returns
     -------
     dataset : xr.Dataset
         The ``xarray`` dataset for the CDF file
     """
+    # TODO: remove this when cdflib is updated to version >1.3.0
     if "to_datetime" not in kwargs:
         kwargs["to_datetime"] = True
     dataset = cdf_to_xarray(file_path, kwargs)
