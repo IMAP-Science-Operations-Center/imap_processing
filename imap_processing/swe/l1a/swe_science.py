@@ -160,6 +160,7 @@ def swe_science(decom_data):
     )
 
     # NOTE: LABL_PTR_1 should be CDF_CHAR.
+    # TODO: Make this label and spin_angle data match. Do same for polar_angle
     spin_angle_label = xr.DataArray(
         [str(i) for i in np.arange(180)],
         name="spin_angle_label",
