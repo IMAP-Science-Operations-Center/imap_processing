@@ -200,11 +200,11 @@ class CoDICEL1aPipeline:
             The APID of interest.
         """
         # TODO: This is not very DRY. Is there a better way to handle this?
+        # TODO: For hi products, not sure what data array size should be yet,
+        # so just use 128 for now
         if apid == CODICEAPID.COD_HI_INST_COUNTS_AGGREGATED:
             self.num_counters = 1
-            self.num_energy_steps = (
-                128  # TODO: Not sure what this should be yet, so just use 128 for now
-            )
+            self.num_energy_steps = 128
             self.variable_names = constants.HI_INST_COUNTS_AGGREGATED_NAMES
             self.dataset_name = "imap_codice_l1a_hi_counters_aggregated"
         if apid == CODICEAPID.COD_LO_INST_COUNTS_AGGREGATED:
@@ -366,14 +366,8 @@ def process_codice_l1a(file_path: Path | str) -> xr.Dataset:
         CODICEAPID.COD_LO_NSW_SPECIES_COUNTS,
     ]
 
-    apids_for_hi_science_processing = [
-        CODICEAPID.COD_HI_INST_COUNTS_AGGREGATED,
-        CODICEAPID.COD_HI_INST_COUNTS_SINGLES,
-        CODICEAPID.COD_HI_OMNI_SPECIES_COUNTS,
-        CODICEAPID.COD_HI_SECT_SPECIES_COUNTS,
-    ]
-
-    # Temporary workaround in order to create hi data products in absence of simulated data
+    # Temporary workaround in order to create hi data products in absence of
+    # simulated data
     if file_path.name.startswith("imap_codice_l0_lo") or file_path.name.startswith(
         "imap_codice_l0_hskp"
     ):
@@ -413,15 +407,8 @@ def process_codice_l1a(file_path: Path | str) -> xr.Dataset:
                 pipeline.unpack_science_data(science_values)
                 dataset = pipeline.create_science_dataset(start_time)
 
-        # Write dataset to CDF
-        logger.info(f"\nFinal data product:\n{dataset}\n")
-        dataset.attrs["Data_version"] = __version__
-        dataset.attrs["cdf_filename"] = write_cdf(dataset)
-        logger.info(f"\tCreated CDF file: {dataset.cdf_filename}")
-
-        return dataset
-
-    # Temporary workaround in order to create hi data products in absence of simulated data
+    # Temporary workaround in order to create hi data products in absence of
+    # simulated data
     elif file_path.name.startswith("imap_codice_l0_hi"):
         if file_path.name.startswith("imap_codice_l0_hi-counters-aggregated"):
             apid = CODICEAPID.COD_HI_INST_COUNTS_AGGREGATED
@@ -437,10 +424,10 @@ def process_codice_l1a(file_path: Path | str) -> xr.Dataset:
         pipeline.unpack_science_data(science_values)
         dataset = pipeline.create_science_dataset(start_time)
 
-        # Write dataset to CDF
-        logger.info(f"\nFinal data product:\n{dataset}\n")
-        dataset.attrs["Data_version"] = __version__
-        dataset.attrs["cdf_filename"] = write_cdf(dataset)
-        logger.info(f"\tCreated CDF file: {dataset.cdf_filename}")
+    # Write dataset to CDF
+    logger.info(f"\nFinal data product:\n{dataset}\n")
+    dataset.attrs["Data_version"] = __version__
+    dataset.attrs["cdf_filename"] = write_cdf(dataset)
+    logger.info(f"\tCreated CDF file: {dataset.cdf_filename}")
 
-        return dataset
+    return dataset
