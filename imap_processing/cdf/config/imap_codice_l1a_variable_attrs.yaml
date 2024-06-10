@@ -1,5 +1,4 @@
-# TODO: Add clarifying section headers
-
+# <=== Defaults ===>
 default_attrs: &default
   # Assumed values for all variable attrs unless overwritten
   DISPLAY_TYPE: no_plot
@@ -15,30 +14,7 @@ codice_support_attrs: &support_default
     <<: *default
     VAR_TYPE: support_data
 
-acquisition_times_attrs:
-    <<: *default
-    CATDESC: Time of acquisition for the energy step
-    FIELDNAM: Acquisition Time
-    FILLVAL: -1e+31
-    FORMAT: F10.3
-    LABLAXIS: Acq Time
-    UNITS: ms
-    VALIDMIN: 0
-    VALIDMAX: 1.7976931348623157e+308
-    VAR_TYPE: support_data
-
-counters_attrs: &counters
-    <<: *default
-    CATDESC: Fill in at creation
-    DEPEND_0: epoch
-    DEPEND_1: energy
-    DISPLAY_TYPE: time_series
-    FIELDNAM: Fill in at creation
-    LABL_PTR_1: energy
-    UNITS: counts
-    VALIDMIN: 0
-    VALIDMAX: 8388607  # max value for a signed 24-bit integer
-
+# <=== Coordinates ===>
 energy_attrs:
     <<: *default
     CATDESC: Energy per charge (E/q) sweeping step
@@ -66,6 +42,31 @@ epoch:
   TIME_SCALE: Terrestrial Time
   REFERENCE_POSITION: Rotating Earth Geoid
 
+# <=== Dataset Attributes ===>
+acquisition_times_attrs:
+    <<: *default
+    CATDESC: Time of acquisition for the energy step
+    FIELDNAM: Acquisition Time
+    FILLVAL: -1e+31
+    FORMAT: F10.3
+    LABLAXIS: Acq Time
+    UNITS: ms
+    VALIDMIN: 0
+    VALIDMAX: 1.7976931348623157e+308
+    VAR_TYPE: support_data
+
+counters_attrs: &counters
+    <<: *default
+    CATDESC: Fill in at creation
+    DEPEND_0: epoch
+    DEPEND_1: energy
+    DISPLAY_TYPE: time_series
+    FIELDNAM: Fill in at creation
+    LABL_PTR_1: energy
+    UNITS: counts
+    VALIDMIN: 0
+    VALIDMAX: 8388607  # max value for a signed 24-bit integer
+
 esa_sweep_attrs:
     <<: *default
     CATDESC: ElectroStatic Analyzer Energy Values
@@ -76,11 +77,14 @@ esa_sweep_attrs:
     VALIDMIN: 0
     VAR_TYPE: support_data
 
+# <=== Data Variable Attributes ===>
+# hi-counters-aggregated
 hi_counters_aggregated-aggregated:
     <<: *counters
     CATDESC: Aggregated Rates
     FIELDNAM: Rates - Aggregated
 
+# hi-counters-singles
 hi_counters_singles-tcr:
     <<: *counters
     CATDESC: TCR Rates
@@ -96,16 +100,81 @@ hi_counters_singles-stssd:
     CATDESC: STSSD Rates
     FIELDNAM: Rates - Event G (STSSD)
 
+# hi-omni
+hi_omni-h:
+    <<: *counters
+    CATDESC: Omni H Counts
+    FIELDNAM: H
+
+hi_omni-he3:
+    <<: *counters
+    CATDESC: Omni He3 Counts
+    FIELDNAM: He3
+
+hi_omni-he4:
+    <<: *counters
+    CATDESC: Omni He4 Counts
+    FIELDNAM: He4
+
+hi_omni-c:
+    <<: *counters
+    CATDESC: Omni C Counts
+    FIELDNAM: C
+
+hi_omni-o:
+    <<: *counters
+    CATDESC: Omni O Counts
+    FIELDNAM: O
+
+hi_omni-ne_mg_si:
+    <<: *counters
+    CATDESC: Omni Ne_Mg_Si Counts
+    FIELDNAM: Ne_Mg_Si
+
+hi_omni-fe:
+    <<: *counters
+    CATDESC: Omni Fe Counts
+    FIELDNAM: Fe
+
+hi_omni-uh:
+    <<: *counters
+    CATDESC: Omni UH Counts
+    FIELDNAM: UH
+
+# hi-sectored
+hi_sectored-h:
+    <<: *counters
+    CATDESC: Sectored H Counts
+    FIELDNAM: H
+
+hi_sectored-he3he4:
+    <<: *counters
+    CATDESC: Sectored He3He4 Counts
+    FIELDNAM: He3He4
+
+hi_sectored-cno:
+    <<: *counters
+    CATDESC: Sectored CNO Counts
+    FIELDNAM: CNO
+
+hi_sectored-fe:
+    <<: *counters
+    CATDESC: Sectored Fe Counts
+    FIELDNAM: Fe
+
+# lo-counters-aggregated
 lo_counters_aggregated-aggregated:
     <<: *counters
     CATDESC: Aggregated Rates
     FIELDNAM: Rates - Aggregated
 
+# lo-counters-singles
 lo_counters_singles-apd_singles:
     <<: *counters
     CATDESC: Single Rates (APD)
     FIELDNAM: Rates - Single (APD)
 
+# lo-sw-angular
 lo_sw_angular-hplus:
     <<: *counters
     CATDESC: Sunward H+ Species
@@ -131,6 +200,7 @@ lo_nsw_angular-heplusplus:
     CATDESC: Non-sunward He++ Species
     FIELDNAM: NSW - He++
 
+# lo-sw-priority
 lo_sw_priority-p0_tcrs:
     <<: *counters
     CATDESC: Sunward Sector Triple Coincidence Pickup Ions Priority
@@ -156,6 +226,7 @@ lo_sw_priority-p4_dcrs:
     CATDESC: Sunward Sector Double Coincidence Pickup Ions Priority
     FIELDNAM: SW Sector Double Coincidence PUI's
 
+# lo-nsw-priority
 lo_nsw_priority-p5_heavies:
     <<: *counters
     CATDESC: Non-sunward Sector Heavies Priority
@@ -166,6 +237,7 @@ lo_nsw_priority-p6_hplus_heplusplus:
     CATDESC: Non-sunward H+ and He++ Priority
     FIELDNAM: NSW H+ and He++
 
+# lo-sw-species
 lo_sw_species-hplus:
     <<: *counters
     CATDESC: H+ Sunward Species
@@ -246,6 +318,7 @@ lo_sw_species-cnoplus:
     CATDESC: CNO+ Pickup Ion Sunward Species
     FIELDNAM: SW - CNO+ (PUI)
 
+# lo-nsw-species
 lo_nsw_species-hplus:
     <<: *counters
     CATDESC: H+ Non-sunward Species

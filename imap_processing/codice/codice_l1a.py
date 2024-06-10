@@ -212,6 +212,16 @@ class CoDICEL1aPipeline:
             self.num_energy_steps = 128
             self.variable_names = constants.HI_INST_COUNTS_SINGLES_NAMES
             self.dataset_name = "imap_codice_l1a_hi_counters_singles"
+        if apid == CODICEAPID.COD_HI_OMNI_SPECIES_COUNTS:
+            self.num_counters = 8
+            self.num_energy_steps = 128
+            self.variable_names = constants.HI_OMNI_SPECIES_NAMES
+            self.dataset_name = "imap_codice_l1a_hi_omni"
+        if apid == CODICEAPID.COD_HI_SECT_SPECIES_COUNTS:
+            self.num_counters = 4
+            self.num_energy_steps = 128
+            self.variable_names = constants.HI_SECT_SPECIES_NAMES
+            self.dataset_name = "imap_codice_l1a_hi_sectored"
         if apid == CODICEAPID.COD_LO_INST_COUNTS_AGGREGATED:
             self.num_counters = 1
             self.num_energy_steps = 128
@@ -421,6 +431,12 @@ def process_codice_l1a(file_path: Path | str) -> xr.Dataset:
         elif file_path.name.startswith("imap_codice_l0_hi-counters-singles"):
             apid = CODICEAPID.COD_HI_INST_COUNTS_SINGLES
             table_id, plan_id, plan_step, view_id = (1, 0, 0, 4)
+        elif file_path.name.startswith("imap_codice_l0_hi-omni"):
+            apid = CODICEAPID.COD_HI_OMNI_SPECIES_COUNTS
+            table_id, plan_id, plan_step, view_id = (1, 0, 0, 5)
+        elif file_path.name.startswith("imap_codice_l0_hi-sectored"):
+            apid = CODICEAPID.COD_HI_SECT_SPECIES_COUNTS
+            table_id, plan_id, plan_step, view_id = (1, 0, 0, 6)
 
         start_time = np.datetime64(
             "2024-04-29T00:00:00", "ns"

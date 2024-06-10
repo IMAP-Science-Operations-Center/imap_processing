@@ -16,6 +16,8 @@ EXPECTED_ARRAY_SHAPES = [
     (99,),  # hskp
     (1, 128),  # hi-counters-aggregated
     (1, 128),  # hi-counters-singles
+    (1, 128),  # hi-omni
+    (1, 128),  # hi-sectored
     (1, 128),  # lo-counters-aggregated
     (1, 128),  # lo-counters-aggregated
     (1, 128),  # lo-sw-angular
@@ -29,6 +31,8 @@ EXPECTED_ARRAY_SIZES = [
     123,  # hskp
     1,  # hi-counters-aggregated
     3,  # hi-counters-singles
+    8,  # hi-omni
+    4,  # hi-sectored
     3,  # lo-counters-aggregated
     3,  # lo-counters-singles
     6,  # lo-sw-angular
@@ -42,6 +46,8 @@ EXPECTED_FILENAMES = [
     "imap_codice_l1a_hskp_20100101_v001.cdf",
     "imap_codice_l1a_hi-counters-aggregated_20240429_v001.cdf",
     "imap_codice_l1a_hi-counters-singles_20240429_v001.cdf",
+    "imap_codice_l1a_hi-omni_20240429_v001.cdf",
+    "imap_codice_l1a_hi-sectored_20240429_v001.cdf",
     "imap_codice_l1a_lo-counters-aggregated_20240429_v001.cdf",
     "imap_codice_l1a_lo-counters-singles_20240429_v001.cdf",
     "imap_codice_l1a_lo-sw-angular_20240429_v001.cdf",
@@ -60,6 +66,12 @@ TEST_PACKETS = [
     ),
     Path(
         f"{imap_module_directory}/tests/codice/data/imap_codice_l0_hi-counters-singles_20240429_v001.pkts"
+    ),
+    Path(
+        f"{imap_module_directory}/tests/codice/data/imap_codice_l0_hi-omni_20240429_v001.pkts"
+    ),
+    Path(
+        f"{imap_module_directory}/tests/codice/data/imap_codice_l0_hi-sectored_20240429_v001.pkts"
     ),
     Path(
         f"{imap_module_directory}/tests/codice/data/imap_codice_l0_lo-counters-aggregated_20240429_v001.pkts"
@@ -92,6 +104,8 @@ VALIDATION_DATA = [
     f"{imap_module_directory}/tests/codice/data/validation_hskp.cdf",
     f"{imap_module_directory}/tests/codice/data/validation_hi-counters-aggregated.cdf",
     f"{imap_module_directory}/tests/codice/data/validation_hi-counters-singles.cdf",
+    f"{imap_module_directory}/tests/codice/data/validation_hi-omni.cdf",
+    f"{imap_module_directory}/tests/codice/data/validation_hi-sectored.cdf",
     f"{imap_module_directory}/tests/codice/data/validation_lo-counters-aggregated.cdf",
     f"{imap_module_directory}/tests/codice/data/validation_lo-counters-singles.cdf",
     f"{imap_module_directory}/tests/codice/data/validation_lo-sw-angular.cdf",
