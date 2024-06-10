@@ -122,7 +122,7 @@ Example
 
 Here is an example of what this looks like for CoDICE:
 
-    .. code-block:: bash
+    .. code-block:: python
 
         {'Project': ['STP>Solar-Terrestrial Physics'],
          'Source_name': ['IMAP>Interstellar Mapping and Acceleration Probe'],
