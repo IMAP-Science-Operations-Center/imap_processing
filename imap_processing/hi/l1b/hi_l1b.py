@@ -94,7 +94,7 @@ def annotate_direct_events(l1a_dataset):
         "quality_flag",
         "nominal_bin",
     ]:
-        attrs = CDF_MANAGER.variable_attributes[f"hi_de_{var}"]
+        attrs = CDF_MANAGER.get_variable_attributes(f"hi_de_{var}").copy()
         dtype = attrs.pop("dtype")
         if attrs["FILLVAL"] == "NaN":
             attrs["FILLVAL"] = np.nan
@@ -113,7 +113,9 @@ def annotate_direct_events(l1a_dataset):
     #    some functionality can be found in imap_data_access.file_validation but
     #    only works on full file names
     sensor_str = l1a_dataset.attrs["Logical_source"].split("_")[-1].split("-")[0]
-    gattrs = CDF_MANAGER.get_global_attributes("imap_hi_l1b_de_attrs")
-    gattrs["Logical_source"] = gattrs["Logical_source"].format(sensor=sensor_str)
-    l1b_dataset.attrs.update(**gattrs)
+    de_global_attrs = CDF_MANAGER.get_global_attributes("imap_hi_l1b_de_attrs").copy()
+    de_global_attrs["Logical_source"] = de_global_attrs["Logical_source"].format(
+        sensor=sensor_str
+    )
+    l1b_dataset.attrs.update(**de_global_attrs)
     return l1b_dataset

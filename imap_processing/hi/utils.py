@@ -27,6 +27,6 @@ class HIAPID(IntEnum):
         Returns
         -------
         str
-            "45" or "90"
+            "45sensor" or "90sensor"
         """
         return self.name[1:3] + "sensor"

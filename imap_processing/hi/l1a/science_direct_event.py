@@ -180,7 +180,7 @@ def create_dataset(
     packet_met_time : list
         List of packet MET time
     sensor_str : str
-        Sensor head: "45" or "90"
+        Sensor head: "45sensor" or "90sensor"
 
     Returns
     -------
@@ -280,11 +280,13 @@ def create_dataset(
     cdf_manager.load_variable_attributes("imap_hi_variable_attrs.yaml")
 
     # Inject sensor head into Logical_source
-    gattrs = cdf_manager.get_global_attributes("imap_hi_l1a_de_attrs")
-    gattrs["Logical_source"] = gattrs["Logical_source"].format(sensor=sensor_str)
+    de_global_attrs = cdf_manager.get_global_attributes("imap_hi_l1a_de_attrs").copy()
+    de_global_attrs["Logical_source"] = de_global_attrs["Logical_source"].format(
+        sensor=sensor_str
+    )
 
     epoch_time = xr.DataArray(
-        data_dict["epoch"],
+        data_dict.pop("epoch"),
         name="epoch",
         dims=["epoch"],
         attrs=ConstantCoordinates.EPOCH,
@@ -292,13 +294,11 @@ def create_dataset(
 
     dataset = xr.Dataset(
         coords={"epoch": epoch_time},
-        attrs=gattrs,
+        attrs=de_global_attrs,
     )
 
     for var_name, data in data_dict.items():
-        if var_name == "epoch":
-            continue
-        attrs = cdf_manager.get_variable_attributes(f"hi_de_{var_name}")
+        attrs = cdf_manager.get_variable_attributes(f"hi_de_{var_name}").copy()
         dtype = attrs.pop("dtype")
         dataset[var_name] = xr.DataArray(
             np.array(data, dtype=np.dtype(dtype)),

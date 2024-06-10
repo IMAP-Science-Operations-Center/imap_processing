@@ -11,7 +11,7 @@ def test_sci_de_decom(create_de_data):
     """Test science direct event data"""
 
     # Process using test data
-    processed_data = hi_l1a(packet_file_path=create_de_data)
+    processed_data = hi_l1a(packet_file_path=create_de_data(HIAPID.H45_SCI_DE.value))
 
     assert processed_data[0].attrs["Logical_source"] == "imap_hi_l1a_45sensor-de"
     assert processed_data[0].attrs["Data_version"] == "001"
