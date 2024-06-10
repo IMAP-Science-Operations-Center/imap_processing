@@ -60,7 +60,7 @@ def hi_l1b(l1a_cdf_path: Path):
     else:
         raise NotImplementedError(
             f"No Hi L1B processing defined for file type: "
-            f"{l1a_dataset.attrs["Logical_source"]}"
+            f"{l1a_dataset.attrs['Logical_source']}"
         )
     return l1b_dataset
 
