@@ -34,7 +34,7 @@ def hi_l1b(l1a_cdf_path: Path):
         Processed xarray dataset
     """
     logger.info(f"Running Hi L1B processing on file: {l1a_cdf_path.name}")
-    l1a_dataset = load_cdf(l1a_cdf_path, to_datetime=True)
+    l1a_dataset = load_cdf(l1a_cdf_path)
     logical_source_parts = l1a_dataset.attrs["Logical_source"].split("_")
     # TODO: apid is not currently stored in all L1A data but should be.
     #    Use apid to determine what L1B processing function to call
