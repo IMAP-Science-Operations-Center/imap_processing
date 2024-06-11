@@ -15,12 +15,13 @@ class Mode(IntEnum):
 
     Attributes
     ----------
-    IntEnum : IntEnum
+    BURST : int
+        APID for Burst mode data
+    NORMAL : int
+        ApID for Normal mode data
     """
 
-    # APID for Burst mode data
     BURST = 1068
-    # ApID for Normal mode data
     NORMAL = 1052
 
 

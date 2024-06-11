@@ -21,12 +21,7 @@ logger = logging.getLogger(__name__)
 
 
 class Scitype(IntEnum):
-    """IDEX Science Type.
-
-    Attributes
-    ----------
-    IntEnum : IntEnum
-    """
+    """IDEX Science Type."""
 
     FIRST_PACKET = 1
     TOF_HIGH = 2
