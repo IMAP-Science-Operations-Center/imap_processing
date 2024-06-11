@@ -7,11 +7,11 @@ def test_lo_l1b():
     # Arrange
     de_file = (
         imap_module_directory
-        / "tests/lo/test_l1a_cdfs/imap_lo_l1a_de_20100101_v001.cdf"
+        / "tests/lo/test_cdfs/imap_lo_l1a_de_20100101_v001.cdf"
     )
     spin_file = (
         imap_module_directory
-        / "tests/lo/test_l1a_cdfs/imap_lo_l1a_spin_20100101_v001.cdf"
+        / "tests/lo/test_cdfs/imap_lo_l1a_spin_20100101_v001.cdf"
     )
     data = {}
     for file in [de_file, spin_file]:

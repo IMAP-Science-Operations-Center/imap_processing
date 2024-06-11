@@ -479,6 +479,14 @@ class Lo(ProcessInstrument):
             output_file = lo_l1b.lo_l1b(data_dict)
             return [output_file]
 
+        elif self.data_level == "l1c":
+            data_dict = {}
+            for dependency in dependencies:
+                dataset = load_cdf(dependency, to_datetime=True)
+                data_dict[dataset.attrs["Logical_source"]] = dataset
+            output_file = lo_l1b.lo_l1b(data_dict)
+            return [output_file]
+
 
 class Mag(ProcessInstrument):
     """Process MAG."""
