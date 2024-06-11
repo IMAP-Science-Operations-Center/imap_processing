@@ -29,7 +29,7 @@ imap_codice_l1a_hi_counters_aggregated:
 imap_codice_l1a_hi_counters_singles:
     <<: *instrument_base
     Data_level: 1A
-    Data_type: L1A_hi-counters-aggregated->Level-1A Hi Single Instrument Counts Data
+    Data_type: L1A_hi-counters-singles->Level-1A Hi Single Instrument Counts Data
     Logical_source: imap_codice_l1a_hi-counters-singles
     Logical_source_description: IMAP Mission CoDICE Hi Level-1A Single Instrument Counts Data.
 

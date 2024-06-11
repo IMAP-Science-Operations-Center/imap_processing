@@ -47,7 +47,7 @@ acquisition_times_attrs:
     <<: *default
     CATDESC: Time of acquisition for the energy step
     FIELDNAM: Acquisition Time
-    FILLVAL: -1e+31
+    FILLVAL: 1.7976931348623157e+308
     FORMAT: F10.3
     LABLAXIS: Acq Time
     UNITS: ms
