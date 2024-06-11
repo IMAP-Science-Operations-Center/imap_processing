@@ -20,7 +20,7 @@ energy_attrs:
     CATDESC: Energy per charge (E/q) sweeping step
     FIELDNAM: Energy step
     FORMAT: I3
-    LABLAXIS: energy
+    LABLAXIS: energy step
     UNITS: ' '
     VALIDMIN: 0
     VALIDMAX: 127
