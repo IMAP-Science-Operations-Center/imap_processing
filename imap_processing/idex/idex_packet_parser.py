@@ -463,18 +463,12 @@ class PacketParser:
     received from the POC.  The class is instantiated with a reference to a L0 file as
     it exists on the local file system.
 
-    Attributes
-    ----------
-        data (xarray.Dataset): An object containing all of the relevant L1 data
-
-    TODO
-    ----
-        * Add method to generate quicklook
+    TODO: Add method to generate quicklook plots
 
     Examples
     --------
     .. code-block:: python
-        # Print out the data in a L0 file
+
         from imap_processing.idex.idex_packet_parser import PacketParser
         l0_file = "imap_processing/tests/idex/imap_idex_l0_sci_20230725_v001.pkts"
         l1_data = PacketParser(l0_file)
@@ -487,7 +481,8 @@ class PacketParser:
 
         Parameters
         ----------
-            packet_file (str):  The path and filename to the L0 file to read
+        packet_file: str
+          The path and filename to the L0 file to read
 
         Notes
         -----
@@ -536,16 +531,25 @@ class RawDustEvent:
 
     Attributes
     ----------
-    None
+    HIGH_SAMPLE_RATE: float
+        The high sample rate in microseconds per sample
+    LOW_SAMPLE_RATE: float
+        The low sample rate in microseconds per sample
+    NUMBER_SAMPLES_PER_LOW_SAMPLE_BLOCK: int
+        The number of samples in a "block" of low sample data
+    NUMBER_SAMPLES_PER_HIGH_SAMPLE_BLOCK: int
+        The number of samples in a "block" of high sample data
 
     Methods
     -------
-    __init__(space_packet_parser.ParsedPacket):
-        Initialize a raw dust event, with an FPGA Header Packet from IDEX.
-    parse_packet(space_packet_parser.ParsedPacket):
-        Parse IDEX data packets to populate bit strings.
-    process():
-        Generates an xarray.Dataset object after all packets are parsed
+    _set_impact_time(packet)
+    _set_sample_trigger_times(packet)
+    _parse_high_sample_waveform(waveform_raw)
+    _parse_low_sample_waveform(waveform_raw)
+    _calc_low_sample_resolution(num_samples)
+    _calc_high_sample_resolution(num_samples)
+    parse_packet(packet)
+    process()
     """
 
     # Constants
@@ -570,7 +574,8 @@ class RawDustEvent:
 
         Parameters
         ----------
-            header_packet:  The FPGA metadata event header
+        header_packet: space_packet_parser.ParsedPacket
+            The FPGA metadata event header
 
         """
         # Calculate the impact time in seconds since epoch
@@ -638,8 +643,8 @@ class RawDustEvent:
 
         Parameters
         ----------
-            packet : space_packet_parser.ParsedPacket
-                The IDEX FPGA header packet info
+        packet : space_packet_parser.ParsedPacket
+            The IDEX FPGA header packet info
 
         Notes
         -----
@@ -692,6 +697,15 @@ class RawDustEvent:
             * 3x10 bits of integer data.
 
         The very last 4 numbers are bad usually, so remove those
+
+        Parameters
+        ----------
+        waveform_raw: str
+            The binary string representing the high sample waveform
+
+        Returns
+        -------
+        list
         """
         ints = []
         for i in range(0, len(waveform_raw), 32):
@@ -711,6 +725,15 @@ class RawDustEvent:
         Data arrives in 32 bit chunks, divided up into:
             * 8 bits of padding
             * 2x12 bits of integer data.
+
+        Parameters
+        ----------
+        waveform_raw: str
+            The binary string representing the low sample waveform
+
+        Returns
+        -------
+        list
         """
         ints = []
         for i in range(0, len(waveform_raw), 32):
@@ -728,6 +751,15 @@ class RawDustEvent:
 
         Multiply a linear array by the sample rate
         Subtract the calculated trigger time
+
+        Parameters
+        ----------
+        num_samples: int
+            The number of samples
+
+        Returns
+        -------
+        numpy.ndarray
         """
         time_low_sr_init = np.linspace(0, num_samples, num_samples)
         time_low_sr_data = (
@@ -743,6 +775,15 @@ class RawDustEvent:
 
         Multiply a linear array by the sample rate
         Subtract the calculated trigger time
+
+        Parameters
+        ----------
+        num_samples: int
+            The number of samples
+
+        Returns
+        -------
+        numpy.ndarray
         """
         time_high_sr_init = np.linspace(0, num_samples, num_samples)
         time_high_sr_data = (
@@ -755,8 +796,8 @@ class RawDustEvent:
 
         Parameters
         ----------
-            packet: A single science data packet for one of the 6
-                    IDEX observables
+        packet: A single science data packet for one of the 6
+                IDEX observables
         """
         scitype = packet.data["IDX__SCI0TYPE"].raw_value
         raw_science_bits = packet.data["IDX__SCI0RAW"].raw_value
@@ -767,6 +808,13 @@ class RawDustEvent:
 
         This function determines which variable to append the bits
         to, given a specific scitype.
+
+        Parameters
+        ----------
+        scitype: str
+            The science type of the data
+        bits: str
+            The binary data to append
         """
         if scitype == Scitype.TOF_HIGH:
             self.TOF_High_bits += bits

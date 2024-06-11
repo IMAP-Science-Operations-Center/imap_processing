@@ -68,7 +68,7 @@ def load_cdf(
 
     Returns
     -------
-    dataset : xr.Dataset
+    dataset : xarray.Dataset
         The ``xarray`` dataset for the CDF file
     """
     # TODO: remove this when cdflib is updated to version >1.3.0

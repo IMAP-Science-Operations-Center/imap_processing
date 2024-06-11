@@ -44,12 +44,12 @@ def create_dataset(packets: list[Packet]) -> xr.Dataset:
 
     Parameters
     ----------
-    packets : list[Packet]
+    packets : list[space_packet_parser.ParsedPacket]
         packet list
 
     Returns
     -------
-    xr.dataset
+    xarray.Dataset
         dataset with all metadata field data in xr.DataArray
     """
     dataset = allocate_histogram_dataset(len(packets))
@@ -80,18 +80,18 @@ def create_dataset(packets: list[Packet]) -> xr.Dataset:
 
 def allocate_histogram_dataset(num_packets: int) -> xr.Dataset:
     """
-    Allocate empty xr.Dataset for specified number of Hi Histogram packets.
+    Allocate empty xarray.Dataset for specified number of Hi Histogram packets.
 
     Parameters
     ----------
     num_packets : int
         The number of Hi Histogram packets to allocate space for
-        in the xr.Dataset.
+        in the xarray.Dataset.
 
     Returns
     -------
-    xr.Dataset
-        Empty xr.Dataset ready to be filled with packet data
+    xarray.Dataset
+        Empty xarray.Dataset ready to be filled with packet data
     """
     # preallocate the xr.DataArrays for all CDF attributes based on number of packets
     coords = dict()

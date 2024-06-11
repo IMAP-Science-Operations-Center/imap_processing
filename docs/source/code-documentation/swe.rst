@@ -1,11 +1,11 @@
 .. _swe:
 
-SWE (Solar Wind Electrons)
-==========================
+SWE
+====
 
 .. currentmodule:: imap_processing.swe
 
-This is the SWE Instrument module, which contains the code for processing
+This is the SWE (Solar Wind Electrons) Instrument module, which contains the code for processing
 data from the SWE instrument.
 
 The L0 code to decommutate the CCSDS packet data can be found below.
@@ -38,3 +38,12 @@ found below.
 
     l1b.swe_l1b
     l1b.swe_l1b_science
+
+The modules below contains various utility classes and functions used for processing SWE data.
+
+.. autosummary::
+    :toctree: generated/
+    :template: autosummary.rst
+    :recursive:
+
+    utils.swe_utils
