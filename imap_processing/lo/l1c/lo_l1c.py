@@ -103,13 +103,13 @@ def create_datasets(attr_mgr, logical_source, data_fields):
         )
 
         esa_step_label = xr.DataArray(
-            [str(i) for i in np.arange(1, 8)],
+            esa_step.values.astype(str),
             name="esa_step_label",
             dims=["esa_step_label"],
             attrs=attr_mgr.get_variable_attributes("esa_step_label"),
         )
         pointing_bins_label = xr.DataArray(
-            [str(i) for i in np.arange(3600)],
+            pointing_bins.values.astype(str),
             name="pointing_bins_label",
             dims=["pointing_bins_label"],
             attrs=attr_mgr.get_variable_attributes("pointing_bins_label"),
