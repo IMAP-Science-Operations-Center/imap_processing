@@ -25,7 +25,7 @@ def generate_xarray(packet_file: str, xtce: str, time_keys=None):
 
     Returns
     -------
-    xr.Dataset
+    xarray.Dataset
         A dataset containing the decoded data fields with 'time' as the coordinating
         dimension.
 

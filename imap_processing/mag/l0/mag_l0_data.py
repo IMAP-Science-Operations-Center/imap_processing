@@ -15,13 +15,12 @@ class Mode(IntEnum):
 
     Attributes
     ----------
-    BURST : int
-        APID for Burst mode data
-    NORMAL : int
-        ApID for Normal mode data
+    IntEnum : IntEnum
     """
 
+    # APID for Burst mode data
     BURST = 1068
+    # ApID for Normal mode data
     NORMAL = 1052
 
 
@@ -70,7 +69,7 @@ class MagL0:
         Secondary Coarse Time for first vector, seconds
     SEC_FNTM: int
         Secondary Fine Time for first vector, subseconds
-    VECTORS: np.ndarray | str
+    VECTORS: numpy.ndarray or str
         MAG Science Vectors - divide based on PRI_VECSEC and PUS_SSUBTYPE for vector
         counts. There is a post init call to convert a string into a numpy array -
         the only place it is a string is in the class initialization.

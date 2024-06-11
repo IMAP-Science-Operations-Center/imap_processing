@@ -18,8 +18,8 @@ def hi_l1b(l1a_cdf_path: Path):
 
     Parameters
     ----------
-    l1a_cdf_path : Path
-    Path to L1A CDF file.
+    l1a_cdf_path : pathlib.Path
+        Path to L1A CDF file.
 
     Returns
     -------

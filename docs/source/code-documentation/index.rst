@@ -17,11 +17,14 @@ Instruments
 
    codice
    glows
-   hit
-   swe
    hi
+   hit
+   idex
    lo
+   mag
    swapi
+   swe
+   ultra
 
 Utility functions can be found in modules within the top package level.
 
