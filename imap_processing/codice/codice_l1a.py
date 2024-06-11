@@ -191,93 +191,14 @@ class CoDICEL1aPipeline:
             self.acquisition_times.append(lo_stepping_values.acq_time[row_number])
 
     def get_data_products(self, apid: int):
-        """Retrieve the values for the lo- or hi- data products table.
+        """Retrieve various settings for defining the data products.
 
         Parameters
         ----------
         apid : int
             The APID of interest.
         """
-        # TODO: For hi products, not sure what data array size should be yet,
-        # so just use 128 for now
-
-        data_product_configurations = {
-            CODICEAPID.COD_HI_INST_COUNTS_AGGREGATED: {
-                "num_counters": 1,
-                "num_energy_steps": 128,
-                "variable_names": constants.HI_INST_COUNTS_AGGREGATED_NAMES,
-                "dataset_name": "imap_codice_l1a_hi_counters_aggregated",
-            },
-            CODICEAPID.COD_HI_INST_COUNTS_SINGLES: {
-                "num_counters": 3,
-                "num_energy_steps": 128,
-                "variable_names": constants.HI_INST_COUNTS_SINGLES_NAMES,
-                "dataset_name": "imap_codice_l1a_hi_counters_singles",
-            },
-            CODICEAPID.COD_HI_OMNI_SPECIES_COUNTS: {
-                "num_counters": 8,
-                "num_energy_steps": 128,
-                "variable_names": constants.HI_OMNI_SPECIES_NAMES,
-                "dataset_name": "imap_codice_l1a_hi_omni",
-            },
-            CODICEAPID.COD_HI_SECT_SPECIES_COUNTS: {
-                "num_counters": 4,
-                "num_energy_steps": 128,
-                "variable_names": constants.HI_SECT_SPECIES_NAMES,
-                "dataset_name": "imap_codice_l1a_hi_sectored",
-            },
-            CODICEAPID.COD_LO_INST_COUNTS_AGGREGATED: {
-                "num_counters": 1,
-                "num_energy_steps": 128,
-                "variable_names": constants.LO_INST_COUNTS_AGGREGATED_NAMES,
-                "dataset_name": "imap_codice_l1a_lo_counters_aggregated",
-            },
-            CODICEAPID.COD_LO_INST_COUNTS_SINGLES: {
-                "num_counters": 1,
-                "num_energy_steps": 128,
-                "variable_names": constants.LO_INST_COUNTS_SINGLES_NAMES,
-                "dataset_name": "imap_codice_l1a_lo_counters_singles",
-            },
-            CODICEAPID.COD_LO_SW_ANGULAR_COUNTS: {
-                "num_counters": 4,
-                "num_energy_steps": 128,
-                "variable_names": constants.LO_SW_ANGULAR_NAMES,
-                "dataset_name": "imap_codice_l1a_lo_sw_angular",
-            },
-            CODICEAPID.COD_LO_NSW_ANGULAR_COUNTS: {
-                "num_counters": 1,
-                "num_energy_steps": 128,
-                "variable_names": constants.LO_NSW_ANGULAR_NAMES,
-                "dataset_name": "imap_codice_l1a_lo_nsw_angular",
-            },
-            CODICEAPID.COD_LO_SW_PRIORITY_COUNTS: {
-                "num_counters": 5,
-                "num_energy_steps": 128,
-                "variable_names": constants.LO_SW_PRIORITY_NAMES,
-                "dataset_name": "imap_codice_l1a_lo_sw_priority",
-            },
-            CODICEAPID.COD_LO_NSW_PRIORITY_COUNTS: {
-                "num_counters": 2,
-                "num_energy_steps": 128,
-                "variable_names": constants.LO_NSW_PRIORITY_NAMES,
-                "dataset_name": "imap_codice_l1a_lo_nsw_priority",
-            },
-            CODICEAPID.COD_LO_SW_SPECIES_COUNTS: {
-                "num_counters": 16,
-                "num_energy_steps": 128,
-                "variable_names": constants.LO_SW_SPECIES_NAMES,
-                "dataset_name": "imap_codice_l1a_lo_sw_species",
-            },
-            CODICEAPID.COD_LO_NSW_SPECIES_COUNTS: {
-                "num_counters": 8,
-                "num_energy_steps": 128,
-                "variable_names": constants.LO_NSW_SPECIES_NAMES,
-                "dataset_name": "imap_codice_l1a_lo_nsw_species",
-            },
-        }
-
-        config = data_product_configurations.get(apid)
-
+        config = constants.DATA_PRODUCT_CONFIGURATIONS.get(apid)
         self.num_counters = config["num_counters"]
         self.num_energy_steps = config["num_energy_steps"]
         self.variable_names = config["variable_names"]
@@ -405,16 +326,14 @@ def process_codice_l1a(file_path: Path | str) -> xr.Dataset:
         CODICEAPID.COD_LO_NSW_SPECIES_COUNTS,
     ]
 
-    # Temporary workaround in order to create hi data products in absence of
-    # simulated data
-    if file_path.name.startswith("imap_codice_l0_lo") or file_path.name.startswith(
-        "imap_codice_l0_hskp"
-    ):
+    # TODO: Temporary workaround in order to create hi data products in absence
+    #       of simulated data
+    if file_path.name.startswith(("imap_codice_l0_lo", "imap_codice_l0_hskp")):
         # Decom the packets, group data by APID, and sort by time
         packets = decom_packets(file_path)
         grouped_data = group_by_apid(packets)
 
-        for apid in grouped_data.keys():
+        for apid in grouped_data:
             logger.info(f"\nProcessing {CODICEAPID(apid).name} packet")
 
             if apid == CODICEAPID.COD_NHK:
@@ -446,9 +365,10 @@ def process_codice_l1a(file_path: Path | str) -> xr.Dataset:
                 pipeline.unpack_science_data(science_values)
                 dataset = pipeline.create_science_dataset(start_time)
 
-    # Temporary workaround in order to create hi data products in absence of
-    # simulated data. This is essentially the same process as is for lo, but
-    # don't try to decom any packets, just define the data outright.
+    # TODO: Temporary workaround in order to create hi data products in absence
+    #       of simulated data. This is essentially the same process as is for
+    #       lo, but don't try to decom any packets, just define the data
+    #       outright.
     elif file_path.name.startswith("imap_codice_l0_hi"):
         if file_path.name.startswith("imap_codice_l0_hi-counters-aggregated"):
             apid = CODICEAPID.COD_HI_INST_COUNTS_AGGREGATED

@@ -103,42 +103,42 @@ hi_counters_singles-stssd:
 # hi-omni
 hi_omni-h:
     <<: *counters
-    CATDESC: Omni H Counts
+    CATDESC: Omnidirectional H Counts
     FIELDNAM: H
 
 hi_omni-he3:
     <<: *counters
-    CATDESC: Omni He3 Counts
+    CATDESC: Omnidirectional He3 Counts
     FIELDNAM: He3
 
 hi_omni-he4:
     <<: *counters
-    CATDESC: Omni He4 Counts
+    CATDESC: Omnidirectional He4 Counts
     FIELDNAM: He4
 
 hi_omni-c:
     <<: *counters
-    CATDESC: Omni C Counts
+    CATDESC: Omnidirectional C Counts
     FIELDNAM: C
 
 hi_omni-o:
     <<: *counters
-    CATDESC: Omni O Counts
+    CATDESC: Omnidirectional O Counts
     FIELDNAM: O
 
 hi_omni-ne_mg_si:
     <<: *counters
-    CATDESC: Omni Ne_Mg_Si Counts
+    CATDESC: Omnidirectional Ne_Mg_Si Counts
     FIELDNAM: Ne_Mg_Si
 
 hi_omni-fe:
     <<: *counters
-    CATDESC: Omni Fe Counts
+    CATDESC: Omnidirectional Fe Counts
     FIELDNAM: Fe
 
 hi_omni-uh:
     <<: *counters
-    CATDESC: Omni UH Counts
+    CATDESC: Omnidirectional UH Counts
     FIELDNAM: UH
 
 # hi-sectored
