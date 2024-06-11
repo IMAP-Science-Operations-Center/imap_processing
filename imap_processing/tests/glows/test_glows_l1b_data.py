@@ -39,7 +39,7 @@ def test_glows_l1b_ancillary_file():
     }
 
     ancillary = AncillaryParameters(fake_good_input)
-    for key in fake_good_input.keys():
+    for key in fake_good_input:
         assert getattr(ancillary, key) == fake_good_input[key]
 
     fake_bad_input = {

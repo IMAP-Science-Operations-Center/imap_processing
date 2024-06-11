@@ -1,6 +1,6 @@
 {
     "description": "Table for conversion/decoding ancillary parameters collected onboard by IMAP/GLOWS",
-    "version": "0.1",
+    "version": "v001",
     "date_of_creation_yyyymmdd": "20230527",
     "filter_temperature": {
         "min": -30.0,
