@@ -5,7 +5,6 @@ from collections import namedtuple
 import numpy as np
 import xarray as xr
 
-from imap_processing.cdf.global_attrs import ConstantCoordinates
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import calc_start_time, write_cdf
 
@@ -86,7 +85,7 @@ def create_datasets(attr_mgr, logical_source, data_fields):
         data=epoch_converted_time,
         name="epoch",
         dims=["epoch"],
-        attrs=ConstantCoordinates.EPOCH,
+        attrs=attr_mgr.get_variable_attributes("epoch"),
     )
 
     if logical_source == "imap_lo_l1c_pset":
@@ -94,7 +93,7 @@ def create_datasets(attr_mgr, logical_source, data_fields):
             data=[1, 2, 3, 4, 5, 6, 7],
             name="esa_step",
             dims=["esa_step"],
-            attrs=attr_mgr.get_variable_attributes("esa_steps"),
+            attrs=attr_mgr.get_variable_attributes("esa_step"),
         )
         pointing_bins = xr.DataArray(
             data=np.arange(3600),
@@ -115,7 +114,6 @@ def create_datasets(attr_mgr, logical_source, data_fields):
             dims=["pointing_bins_label"],
             attrs=attr_mgr.get_variable_attributes("pointing_bins_label"),
         )
-
         dataset = xr.Dataset(
             coords={
                 "epoch": epoch_time,
@@ -139,11 +137,9 @@ def create_datasets(attr_mgr, logical_source, data_fields):
             for key, value in attr_mgr.get_variable_attributes(field).items()
             if "DEPEND" in key
         ]
-        print(f"FIELD: {field}, DIMS: {dims}")
 
         # Create a data array for the current field and add it to the dataset
-        # TODO: TEMPORARY. need to update to use l1a data once that's available.
-        #  Won't need to check for the direction field when I have sample data either.
+        # TODO: TEMPORARY. need to update to use l1b data once that's available.
         if field in ["pointing_start", "pointing_end", "mode", "pivot_angle"]:
             dataset[field] = xr.DataArray(
                 data=[1],
@@ -152,9 +148,24 @@ def create_datasets(attr_mgr, logical_source, data_fields):
             )
         # TODO: This is temporary.
         #  The data type will be set in the data class when that's created
+        elif field == "exposure_time":
+            dataset[field] = xr.DataArray(
+                data=[7 * [np.float16(1)]],
+                dims=dims,
+                attrs=attr_mgr.get_variable_attributes(field),
+            )
+
+        elif "rate" in field:
+            dataset[field] = xr.DataArray(
+                data=[3600 * [7 * [np.float16(1)]]],
+                dims=dims,
+                attrs=attr_mgr.get_variable_attributes(field),
+            )
         else:
             dataset[field] = xr.DataArray(
-                data=[[1], 3600 * [1], 7 * [1]], dims=dims, attrs=attr_mgr.get_variable_attributes(field)
+                data=[3600 * [7 * [1]]],
+                dims=dims,
+                attrs=attr_mgr.get_variable_attributes(field),
             )
 
     return dataset

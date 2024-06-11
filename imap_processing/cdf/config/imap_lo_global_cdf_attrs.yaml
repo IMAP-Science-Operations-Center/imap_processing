@@ -80,12 +80,12 @@ imap_lo_l1c_goodtimes:
   <<: *instrument_base
   Data_level: 1C
   Data_type: L1C_goodtimes>Level-1C Goodtimes List
-  Logical_source: imap_lo_l1b_goodtimes
+  Logical_source: imap_lo_l1c_goodtimes
   Logical_source_description: IMAP Mission IMAP-Lo Instrument Level-1C Data
 
 imap_lo_l1c_pset:
   <<: *instrument_base
   Data_level: 1C
   Data_type: L1C_pset>Level-1C Pointing Set
-  Logical_source: imap_lo_l1b_pset
+  Logical_source: imap_lo_l1c_pset
   Logical_source_description: IMAP Mission IMAP-Lo Instrument Level-1C Data

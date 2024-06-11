@@ -112,6 +112,7 @@ triples_rates:
   CATDESC: Count rates for triple coincidence events
   DEPEND_1: pointing_bins
   DEPEND_2: esa_step
+  FILLVAL: -1.0000000E+31
   FIELDNAM: triple coincidence count rates
   LABLAXIS: triple coincidence count rates
   LABL_PTR_1: pointing_bins_label
@@ -128,11 +129,12 @@ doubles_counts:
   LABL_PTR_1: pointing_bins_label
   LABL_PTR_2: esa_step_label
 
-doubles_rate:
+doubles_rates:
   <<: *default
   CATDESC: Count rates for double coincidence events
   DEPEND_1: pointing_bins
   DEPEND_2: esa_step
+  FILLVAL: -1.0000000E+31
   FIELDNAM: double coincidence count rates
   LABLAXIS: double coincidence count rates
   LABL_PTR_1: pointing_bins_label
@@ -154,6 +156,7 @@ hydrogen_rates:
   CATDESC: Count rates for Hydrogen events
   DEPEND_1: pointing_bins
   DEPEND_2: esa_step
+  FILLVAL: -1.0000000E+31
   FIELDNAM: Hydrogen count rates
   LABLAXIS: H coincidence count rates
   LABL_PTR_1: pointing_bins_label
@@ -164,17 +167,29 @@ oxygen_counts:
   CATDESC: Count rates for Oxygen events
   DEPEND_1: pointing_bins
   DEPEND_2: esa_step
+  FORMAT: I12
   FIELDNAM: Oxygen count rates
   LABLAXIS: O count rates
-  LABL_PTR_1: pointing bins
-  LABL_PTR_2: ESA steps
+  LABL_PTR_1: pointing_bins_label
+  LABL_PTR_2: esa_step_label
+
+oxygen_rates:
+  <<: *default
+  CATDESC : Count rates for Oxygen events
+  DEPEND_1 : pointing_bins
+  DEPEND_2 : esa_step
+  FILLVAL: -1.0000000E+31
+  FIELDNAM : Oxygen count rates
+  LABLAXIS : O count rates
+  LABL_PTR_1: pointing_bins_label
+  LABL_PTR_2: esa_step_label
 
 exposure_time:
   <<: *default
   CATDESC: Exposure times by ESA step
   DEPEND_1: esa_step
+  FILLVAL: -1.0000000E+31
   FIELDNAM: Exposure Times
   UNITS: "s"
   LABLAXIS: exposure times
-  LABL_PTR_1: pointing bins
-  LABL_PTR_2: ESA steps
+  LABL_PTR_1: esa_step_label
