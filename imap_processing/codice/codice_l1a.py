@@ -92,17 +92,18 @@ class CoDICEL1aPipeline:
         xr.Dataset
             ``xarray`` dataset containing the science data and supporting metadata
         """
+        # Set the CDF attrs
         cdf_attrs = ImapCdfAttributes()
         cdf_attrs.add_instrument_global_attrs("codice")
         cdf_attrs.add_instrument_variable_attrs("codice", "l1a")
 
+        # Define DataArrays for the coordinates
         epoch = xr.DataArray(
             [start_time],
             name="epoch",
             dims=["epoch"],
             attrs=cdf_attrs.get_variable_attributes("epoch"),
         )
-
         energy_steps = xr.DataArray(
             np.arange(self.num_energy_steps),
             name="energy",
@@ -110,6 +111,7 @@ class CoDICEL1aPipeline:
             attrs=cdf_attrs.get_variable_attributes("energy_attrs"),
         )
 
+        # Create the dataset to hold the data variables
         dataset = xr.Dataset(
             coords={"epoch": epoch, "energy": energy_steps},
             attrs=cdf_attrs.get_global_attributes(self.dataset_name),
@@ -123,7 +125,6 @@ class CoDICEL1aPipeline:
             cdf_attrs_key = (
                 f"{self.dataset_name.split('imap_codice_l1a_')[-1]}-{variable_name}"
             )
-
             dataset[variable_name] = xr.DataArray(
                 variable_data_arr,
                 name=variable_name,
@@ -132,17 +133,15 @@ class CoDICEL1aPipeline:
             )
 
         # Add ESA Sweep Values and acquisition times (lo only)
-        if hasattr(self, "esa_sweep_values"):
+        if "_lo_" in self.dataset_name:
             dataset["esa_sweep_values"] = xr.DataArray(
                 self.esa_sweep_values,
-                dims=["voltage"],
+                dims=["energy"],
                 attrs=cdf_attrs.get_variable_attributes("esa_sweep_attrs"),
             )
-
-        if hasattr(self, "acquisition_times"):
             dataset["acquisition_times"] = xr.DataArray(
                 self.acquisition_times,
-                dims=["milliseconds"],
+                dims=["energy"],
                 attrs=cdf_attrs.get_variable_attributes("acquisition_times_attrs"),
             )
 
