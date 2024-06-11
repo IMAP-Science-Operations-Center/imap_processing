@@ -97,7 +97,7 @@ def create_datasets(attr_mgr, logical_source, data_fields):
         )
 
         direction_vec_label = xr.DataArray(
-            [str(i) for i in np.arange(3)],
+            data=direction_vec.values.astype(str),
             name="direction_vec_label",
             dims=["direction_vec_label"],
             attrs=attr_mgr.get_variable_attributes("direction_vec_label"),
