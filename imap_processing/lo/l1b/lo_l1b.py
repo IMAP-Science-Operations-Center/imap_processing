@@ -5,7 +5,6 @@ from collections import namedtuple
 import numpy as np
 import xarray as xr
 
-from imap_processing.cdf.global_attrs import ConstantCoordinates
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import calc_start_time, write_cdf
 
@@ -85,7 +84,7 @@ def create_datasets(attr_mgr, logical_source, data_fields):
         data=epoch_converted_time,
         name="epoch",
         dims=["epoch"],
-        attrs=ConstantCoordinates.EPOCH,
+        attrs=attr_mgr.get_variable_attributes("epoch"),
     )
 
     if logical_source == "imap_lo_l1b_de":
@@ -97,7 +96,7 @@ def create_datasets(attr_mgr, logical_source, data_fields):
         )
 
         direction_vec_label = xr.DataArray(
-            [str(i) for i in np.arange(3)],
+            data=direction_vec.values.astype(str),
             name="direction_vec_label",
             dims=["direction_vec_label"],
             attrs=attr_mgr.get_variable_attributes("direction_vec_label"),

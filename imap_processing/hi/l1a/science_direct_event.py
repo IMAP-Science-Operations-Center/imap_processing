@@ -1,14 +1,13 @@
 """IMAP-Hi direct event processing."""
 
-import dataclasses
-
 import numpy as np
 import xarray as xr
 from space_packet_parser.parser import Packet
 
-from imap_processing import launch_time
+from imap_processing import imap_module_directory, launch_time
+from imap_processing.cdf.cdf_attribute_manager import CdfAttributeManager
 from imap_processing.cdf.global_attrs import ConstantCoordinates
-from imap_processing.hi import hi_cdf_attrs
+from imap_processing.hi.utils import HIAPID
 
 # TODO: read LOOKED_UP_DURATION_OF_TICK from
 # instrument status summary later. This value
@@ -45,27 +44,33 @@ def parse_direct_event(event_data: str) -> dict:
 
     IMAP-Hi direct event data information is stored in
     48-bits as follow:
-        Read first two bits (start_bitmask_data) to find
-        out which type of event it is. start_bitmask_data value mapping:
-            1 - A
-            2 - B
-            3 - C
-            0 - META
-        If it's a metaevent:
-            Read 48-bits into 2, 4, 10, 32 bits. Each of these breaks
-            down as:
-                start_bitmask_data - 2 bits (tA=1, tB=2, tC1=3, META=0)
-                ESA step - 4 bits
-                integer millisecond of MET(subseconds) - 10 bits
-                integer MET(seconds) - 32 bits
-        If it's not a metaevent:
-            Read 48-bits into 2, 10, 10, 10, 16 bits. Each of these breaks
-            down as:
-                start_bitmask_data - 2 bits (tA=1, tB=2, tC1=3, META=0)
-                tof_1 - 10 bit counter
-                tof_2 - 10 bit counter
-                tof_3 - 10 bit counter
-                de_tag - 16 bits
+
+    |    Read first two bits (start_bitmask_data) to find
+    |    out which type of event it is. start_bitmask_data value mapping:
+    |
+    |        1 - A
+    |        2 - B
+    |        3 - C
+    |        0 - META
+    |    If it's a metaevent:
+    |
+    |        Read 48-bits into 2, 4, 10, 32 bits. Each of these breaks
+    |        down as:
+    |
+    |            start_bitmask_data - 2 bits (tA=1, tB=2, tC1=3, META=0)
+    |            ESA step - 4 bits
+    |            integer millisecond of MET(subseconds) - 10 bits
+    |            integer MET(seconds) - 32 bits
+    |
+    |    If it's not a metaevent:
+    |        Read 48-bits into 2, 10, 10, 10, 16 bits. Each of these breaks
+    |        down as:
+    |
+    |            start_bitmask_data - 2 bits (tA=1, tB=2, tC1=3, META=0)
+    |            tof_1 - 10 bit counter
+    |            tof_2 - 10 bit counter
+    |            tof_3 - 10 bit counter
+    |            de_tag - 16 bits
 
     There are at most total of 665 of 48-bits in each data packet.
     This data packet is of variable length. If there is one event, then
@@ -79,15 +84,16 @@ def parse_direct_event(event_data: str) -> dict:
     then as mentioned above, first packet will contain metaevent in DE_TOF
     information and second packet will contain 0-bits in DE_TOF. In general,
     every two packets will look like this.
-        first packet = [
-            (start_bitmask_data, ESA step, int millisecond of MET, int MET),
-            (start_bitmask_data, tof_1, tof_2, tof_3, de_tag),
-            .....
-        ]
-        second packet = [
-            (start_bitmask_data, tof_1, tof_2, tof_3, de_tag),
-            .....
-        ]
+
+    |    first packet = [
+    |        (start_bitmask_data, ESA step, int millisecond of MET, int MET),
+    |        (start_bitmask_data, tof_1, tof_2, tof_3, de_tag),
+    |        .....
+    |    ]
+    |    second packet = [
+    |        (start_bitmask_data, tof_1, tof_2, tof_3, de_tag),
+    |       .....
+    |    ]
 
     In direct event data, if no hit is registered, the tof_x field in
     the DE to a value of negative one. However, since the field is described as a
@@ -100,8 +106,9 @@ def parse_direct_event(event_data: str) -> dict:
     tof_1, tof_2, tof_3, because this is in case of an error. But,
     IMAP-Hi like to process it still to investigate the data.
     Example of what it will look like if no hit was registered.
-            (start_bitmask_data, 1023, 1023, 1023, de_tag)
-            start_bitmask_data will be 1 or 2 or 3.
+
+    |        (start_bitmask_data, 1023, 1023, 1023, de_tag)
+    |        start_bitmask_data will be 1 or 2 or 3.
 
     Parameters
     ----------
@@ -169,7 +176,9 @@ def break_into_bits_size(binary_data: str) -> list:
     ]
 
 
-def create_dataset(de_data_list: list, packet_met_time: list) -> xr.Dataset:
+def create_dataset(
+    de_data_list: list, packet_met_time: list, sensor_str: str
+) -> xr.Dataset:
     """Create xarray dataset.
 
     Parameters
@@ -178,6 +187,8 @@ def create_dataset(de_data_list: list, packet_met_time: list) -> xr.Dataset:
         Parsed direct event data list
     packet_met_time : list
         List of packet MET time
+    sensor_str : str
+        Sensor head: "45sensor" or "90sensor"
 
     Returns
     -------
@@ -185,14 +196,18 @@ def create_dataset(de_data_list: list, packet_met_time: list) -> xr.Dataset:
         xarray dataset
     """
     # These are the variables that we will store in the dataset
-    de_met_time = []
-    esa_step = []
-    trigger_id = []
-    tof_1 = []
-    tof_2 = []
-    tof_3 = []
-    de_tag = []
-    ccsds_met = []
+    data_dict = {
+        "epoch": list(),
+        "event_met": list(),
+        "ccsds_met": list(),
+        "meta_event_met": list(),
+        "esa_stepping_num": list(),
+        "trigger_id": list(),
+        "tof_1": list(),
+        "tof_2": list(),
+        "tof_3": list(),
+        "de_tag": list(),
+    }
 
     # How to handle if first event is not metaevent? This
     # means that current data file started with direct event.
@@ -245,29 +260,41 @@ def create_dataset(de_data_list: list, packet_met_time: list) -> xr.Dataset:
             metaevent_time_in_ns += half_tick_ns
             continue
 
+        data_dict["meta_event_met"].append(metaevent_time_in_ns)
         # calculate direct event time using time information from metaevent
         # and de_tag. epoch in this dataset uses this time of the event
-        de_time_in_ns = (
+        de_met_in_ns = (
             metaevent_time_in_ns
             + event["de_tag"] * LOOKED_UP_DURATION_OF_TICK * MICROSECOND_TO_NS
         )
-        de_time = get_direct_event_time(de_time_in_ns)
-        de_met_time.append(de_time)
-        esa_step.append(current_esa_step)
+        data_dict["event_met"].append(de_met_in_ns)
+        data_dict["epoch"].append(get_direct_event_time(de_met_in_ns))
+        data_dict["esa_stepping_num"].append(current_esa_step)
         # start_bitmask_data is 1, 2, 3 for detector A, B, C
         # respectively. This is used to identify which detector
         # was hit first for this current direct event.
-        trigger_id.append(event["start_bitmask_data"])
-        tof_1.append(event["tof_1"])
-        tof_2.append(event["tof_2"])
-        tof_3.append(event["tof_3"])
+        data_dict["trigger_id"].append(event["start_bitmask_data"])
+        data_dict["tof_1"].append(event["tof_1"])
+        data_dict["tof_2"].append(event["tof_2"])
+        data_dict["tof_3"].append(event["tof_3"])
         # IMAP-Hi like to keep de_tag value for diagnostic purposes
-        de_tag.append(event["de_tag"])
+        data_dict["de_tag"].append(event["de_tag"])
         # add packet time to ccsds_met list
-        ccsds_met.append(packet_met_time[index])
+        data_dict["ccsds_met"].append(packet_met_time[index])
+
+    # Load the CDF attributes
+    cdf_manager = CdfAttributeManager(imap_module_directory / "cdf" / "config")
+    cdf_manager.load_global_attributes("imap_hi_global_cdf_attrs.yaml")
+    cdf_manager.load_variable_attributes("imap_hi_variable_attrs.yaml")
+
+    # Inject sensor head into Logical_source
+    de_global_attrs = cdf_manager.get_global_attributes("imap_hi_l1a_de_attrs").copy()
+    de_global_attrs["Logical_source"] = de_global_attrs["Logical_source"].format(
+        sensor=sensor_str
+    )
 
     epoch_time = xr.DataArray(
-        de_met_time,
+        data_dict.pop("epoch"),
         name="epoch",
         dims=["epoch"],
         attrs=ConstantCoordinates.EPOCH,
@@ -275,56 +302,18 @@ def create_dataset(de_data_list: list, packet_met_time: list) -> xr.Dataset:
 
     dataset = xr.Dataset(
         coords={"epoch": epoch_time},
-        attrs=hi_cdf_attrs.hi_de_l1a_attrs.output(),
+        attrs=de_global_attrs,
     )
 
-    dataset["esa_step"] = xr.DataArray(
-        np.array(esa_step, dtype=np.uint8),
-        dims="epoch",
-        attrs=hi_cdf_attrs.esa_step_attrs.output(),
-    )
-    dataset["trigger_id"] = xr.DataArray(
-        np.array(trigger_id, dtype=np.uint8),
-        dims="epoch",
-        attrs=hi_cdf_attrs.trigger_id_attrs.output(),
-    )
-    dataset["tof_1"] = xr.DataArray(
-        np.array(tof_1, dtype=np.uint16),
-        dims="epoch",
-        attrs=dataclasses.replace(
-            hi_cdf_attrs.tof_attrs,
-            fieldname="Time of Flight (TOF) 1",
-            label_axis="TOF1",
-        ).output(),
-    )
-    dataset["tof_2"] = xr.DataArray(
-        np.array(tof_2, dtype=np.uint16),
-        dims="epoch",
-        attrs=dataclasses.replace(
-            hi_cdf_attrs.tof_attrs,
-            fieldname="Time of Flight (TOF) 2",
-            label_axis="TOF2",
-        ).output(),
-    )
-    dataset["tof_3"] = xr.DataArray(
-        np.array(tof_3, dtype=np.uint16),
-        dims="epoch",
-        attrs=dataclasses.replace(
-            hi_cdf_attrs.tof_attrs,
-            fieldname="Time of Flight (TOF) 3",
-            label_axis="TOF3",
-        ).output(),
-    )
-    dataset["de_tag"] = xr.DataArray(
-        np.array(de_tag, dtype=np.uint16),
-        dims="epoch",
-        attrs=hi_cdf_attrs.de_tag_attrs.output(),
-    )
-    dataset["ccsds_met"] = xr.DataArray(
-        np.array(ccsds_met, dtype=np.uint32),
-        dims="epoch",
-        attrs=hi_cdf_attrs.ccsds_met_attrs.output(),
-    )
+    for var_name, data in data_dict.items():
+        attrs = cdf_manager.get_variable_attributes(f"hi_de_{var_name}").copy()
+        dtype = attrs.pop("dtype")
+        dataset[var_name] = xr.DataArray(
+            np.array(data, dtype=np.dtype(dtype)),
+            dims="epoch",
+            attrs=attrs,
+        )
+
     # TODO: figure out how to store information about
     # input data(one or more) it used to produce this dataset
     return dataset
@@ -334,13 +323,14 @@ def science_direct_event(packets_data: list[Packet]) -> xr.Dataset:
     """Unpack IMAP-Hi direct event data.
 
     Processing step:
-        1. Break binary stream data into unit of 48-bits
-        2. Parse direct event data
-        5. Save the data into xarray dataset.
+
+    |    1. Break binary stream data into unit of 48-bits
+    |    2. Parse direct event data
+    |    5. Save the data into xarray dataset.
 
     Parameters
     ----------
-    packets_data : list[Packet]
+    packets_data : list[space_packet_parser.ParsedPacket]
         List of packets data
 
     Returns
@@ -348,6 +338,7 @@ def science_direct_event(packets_data: list[Packet]) -> xr.Dataset:
     dataset: xarray.Dataset
         xarray dataset
     """
+    sensor_str = HIAPID(packets_data[0].header["PKT_APID"].raw_value).sensor
     de_data_list = []
     packet_met_time = []
 
@@ -366,4 +357,4 @@ def science_direct_event(packets_data: list[Packet]) -> xr.Dataset:
         )
 
     # create dataset
-    return create_dataset(de_data_list, packet_met_time)
+    return create_dataset(de_data_list, packet_met_time, sensor_str)

@@ -80,7 +80,7 @@ def generate_dataset(l0_data: list[MagL0], dataset_attrs: dict) -> xr.Dataset:
 
     Returns
     -------
-    dataset : xr.Dataset
+    dataset : xarray.Dataset
         xarray dataset with proper CDF attributes and shape.
     """
     # TODO: Correct CDF attributes from email

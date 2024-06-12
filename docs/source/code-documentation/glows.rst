@@ -1,7 +1,7 @@
 .. _glows:
 
-GLOWS (Global Solar Wind Structure)
-===================================
+GLOWS
+=====
 
 .. currentmodule:: imap_processing.ccsds
 
@@ -15,7 +15,7 @@ GLOWS (Global Solar Wind Structure)
 
 .. currentmodule:: imap_processing.glows
 
-This is the GLOWS Instrument module, which contains the code for processing
+This is the GLOWS (Global Solar Wind Structure) Instrument module, which contains the code for processing
 data from the GLOWS instrument.
 
 

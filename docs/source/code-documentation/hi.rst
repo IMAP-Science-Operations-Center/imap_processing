@@ -1,7 +1,41 @@
 .. _hi:
 
 IMAP-Hi
-==========================
+========
 
-This is the IMAP-Hi Instrument module, which contains the code for processing
-data from the IMAP-Hi instrument.
+.. currentmodule:: imap_processing.hi
+
+This is the IMAP-Hi instrument module, which contains the code for processing data from the IMAP-Hi instrument.
+
+The processing code is divided into several submodules, each of which is
+used to process different level of data.
+
+Level 0 Processing code.
+
+.. autosummary::
+    :toctree: generated/
+    :template: autosummary.rst
+    :recursive:
+
+    l0.decom_hi
+
+Level 1A Processing code.
+
+.. autosummary::
+    :toctree: generated/
+    :template: autosummary.rst
+    :recursive:
+
+    l1a.hi_l1a
+    l1a.histogram
+    l1a.housekeeping
+    l1a.science_direct_event
+
+Level 1B Processing code.
+
+.. autosummary::
+    :toctree: generated/
+    :template: autosummary.rst
+    :recursive:
+
+    l1b.hi_l1b
