@@ -23,6 +23,7 @@ def test_dataset():
     # Load the CDF attrs
     swe_attrs = ImapCdfAttributes()
     swe_attrs.add_instrument_global_attrs("swe")
+    swe_attrs.add_global_attribute("Data_version", "001")
 
     dataset = xr.Dataset(
         {
@@ -67,6 +68,15 @@ def test_load_cdf(test_dataset):
     dataset = load_cdf(file_path)
     assert isinstance(dataset, xr.core.dataset.Dataset)
 
+    # Test that epoch is converted to datetime64 by default
+    assert dataset["epoch"].data.dtype == np.dtype("datetime64[ns]")
+    # Test removal of attributes that are added on by cdf_to_xarray and
+    # are specific to xarray plotting
+    xarray_attrs = ["units", "standard_name", "long_name"]
+    for _, data_array in dataset.variables.items():
+        for attr in xarray_attrs:
+            assert attr not in data_array.attrs
+
 
 def test_write_cdf(test_dataset):
     """Tests the ``write_cdf`` function.
@@ -93,5 +103,5 @@ def test_written_and_loaded_dataset(test_dataset):
         An ``xarray`` dataset object to test with
     """
 
-    new_dataset = load_cdf(write_cdf(test_dataset), to_datetime=True)
+    new_dataset = load_cdf(write_cdf(test_dataset))
     assert str(test_dataset) == str(new_dataset)

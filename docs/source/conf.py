@@ -85,14 +85,23 @@ intersphinx_mapping = {
     "pytest": ("https://pytest.org/en/stable/", None),
     "python": ("https://docs.python.org/3/", None),
     "xarray": ("https://docs.xarray.dev/en/stable/", None),
+    "space_packet_parser": (
+        "https://space-packet-parser.readthedocs.io/en/stable/",
+        None,
+    ),
 }
 
 # Reference targets not found
 nitpicky = True
 
 # Some inherited method targets aren't found through intersphinx
+# TODO: comeback and clean this up later
 nitpick_ignore_regex = [
     (r"py:.*", r".*APID\..*"),
+    (r"py:.*", r".*Scitype.*"),
+    (r"py:.*", r".*Mode.*"),
+    (r"py:.*", r".*SWAPIMODE.*"),
+    (r"py:.*", r".*TriggerDescription.*"),
     (r"py:.*", r".*IntEnum.*"),
     (r"py:.*", r".*space_packet_parser.*"),
     (r"py:.*", r".*CoDICECompression.*"),

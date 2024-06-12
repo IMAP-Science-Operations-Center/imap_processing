@@ -9,6 +9,7 @@ import imap_data_access
 import numpy as np
 import xarray as xr
 from cdflib.xarray import cdf_to_xarray, xarray_to_cdf
+from cdflib.xarray.cdf_to_xarray import ISTP_TO_XARRAY_ATTRS
 
 import imap_processing
 
@@ -48,21 +49,31 @@ def calc_start_time(
     return launch_time + time_delta
 
 
-def load_cdf(file_path: Path, **kwargs: dict) -> xr.Dataset:
+def load_cdf(
+    file_path: Path, remove_xarray_attrs: bool = True, **kwargs: dict
+) -> xr.Dataset:
     """Load the contents of a CDF file into an ``xarray`` dataset.
 
     Parameters
     ----------
     file_path : Path
         The path to the CDF file
+    remove_xarray_attrs: bool
+        Whether to remove the xarray attributes that get injected by the
+        cdf_to_xarray function from the output xarray.Dataset. Default is True.
     **kwargs : dict, optional
-        Keyword arguments for ``cdf_to_xarray``
+        Keyword arguments for ``cdf_to_xarray``. This function overrides the
+        ``cdf_to_xarray`` default keyword value `to_datetime=False` with
+        ``to_datetime=True`.
 
     Returns
     -------
-    dataset : xr.Dataset
+    dataset : xarray.Dataset
         The ``xarray`` dataset for the CDF file
     """
+    # TODO: remove this when cdflib is updated to version >1.3.0
+    if "to_datetime" not in kwargs:
+        kwargs["to_datetime"] = True
     dataset = cdf_to_xarray(file_path, kwargs)
 
     # cdf_to_xarray converts single-value attributes to lists
@@ -71,6 +82,14 @@ def load_cdf(file_path: Path, **kwargs: dict) -> xr.Dataset:
         value = dataset.attrs[attribute]
         if isinstance(value, list) and len(value) == 1:
             dataset.attrs[attribute] = value[0]
+
+    # Remove attributes specific to xarray plotting from vars and coords
+    # TODO: This can be removed if/when feature is added to cdf_to_xarray to
+    #      make adding these attributes optional
+    if remove_xarray_attrs:
+        for key in dataset.variables.keys():
+            for xarray_key in ISTP_TO_XARRAY_ATTRS.values():
+                dataset[key].attrs.pop(xarray_key, None)
 
     return dataset
 

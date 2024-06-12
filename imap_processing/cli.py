@@ -522,7 +522,7 @@ class Swe(ProcessInstrument):
                     f"Unexpected dependencies found for SWE L1A:"
                     f"{dependencies}. Expected only one dependency."
                 )
-            processed_data = swe_l1a(Path(dependencies[0]))
+            processed_data = swe_l1a(Path(dependencies[0]), data_version=self.version)
             # Right now, we only process science data. Therefore,
             # we expect only one dataset to be returned.
             cdf_file_path = write_cdf(processed_data)
@@ -536,7 +536,7 @@ class Swe(ProcessInstrument):
                     f"{dependencies}. Expected only one dependency."
                 )
             # read CDF file
-            l1a_dataset = load_cdf(dependencies[0], to_datetime=True)
+            l1a_dataset = load_cdf(dependencies[0])
             processed_data = swe_l1b(l1a_dataset)
             cdf_file_path = write_cdf(processed_data)
             print(f"processed file path: {cdf_file_path}")
@@ -573,7 +573,7 @@ class Ultra(ProcessInstrument):
         elif self.data_level == "l1b":
             data_dict = {}
             for dependency in dependencies:
-                dataset = load_cdf(dependency, to_datetime=True)
+                dataset = load_cdf(dependency)
                 data_dict[dataset.attrs["Logical_source"]] = dataset
             datasets = ultra_l1b.ultra_l1b(data_dict)
             products = [write_cdf(dataset) for dataset in datasets]
@@ -581,7 +581,7 @@ class Ultra(ProcessInstrument):
         elif self.data_level == "l1c":
             data_dict = {}
             for dependency in dependencies:
-                dataset = load_cdf(dependency, to_datetime=True)
+                dataset = load_cdf(dependency)
                 data_dict[dataset.attrs["Logical_source"]] = dataset
             datasets = ultra_l1c.ultra_l1c(data_dict)
             products = [write_cdf(dataset) for dataset in datasets]

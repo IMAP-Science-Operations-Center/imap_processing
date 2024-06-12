@@ -17,6 +17,17 @@ class TimeTuple:
 
     Course time is mission SCLK in seconds. Fine time is 16bit unsigned sub-second
     counter.
+
+    Attributes
+    ----------
+    coarse_time : int
+        Coarse time in seconds
+    fine_time : int
+        Subsecond
+
+    Methods
+    -------
+    to_seconds()
     """
 
     coarse_time: int
@@ -85,19 +96,23 @@ class MagL1a:
         True if the sensor is active
     SHCOARSE : int
         Mission elapsed time
-    vectors : np.array[4]
+    vectors : numpy.ndarray
         List of magnetic vector samples, starting at start_time. [x, y, z, range, time],
         where time is np.datetime64[ns]
 
+    Methods
+    -------
+    calculate_vector_time(vectors, vectors_per_second, start_time)
+    process_vector_data(vector_data, primary_count, secondary_count)
     """
 
     is_mago: bool
     active: bool
     SHCOARSE: int
-    vectors: np.array
+    vectors: np.ndarray
 
     @staticmethod
-    def calculate_vector_time(vectors, vectors_per_second, start_time) -> np.array:
+    def calculate_vector_time(vectors, vectors_per_second, start_time) -> np.ndarray:
         """
         Add timestamps to the vector list, turning the shape from (n, 4) to (n, 5).
 
@@ -106,7 +121,7 @@ class MagL1a:
 
         Parameters
         ----------
-        vectors : np.array
+        vectors : numpy.ndarray
             List of magnetic vector samples, starting at start_time. Shape of (n, 4)
         vectors_per_second : int
             Number of vectors per second
@@ -115,7 +130,7 @@ class MagL1a:
 
         Returns
         -------
-        vector_objects
+        vector_objects: numpy.ndarray
             vectors with timestamps added in seconds, calculated from
             cdf.utils.calc_start_time.
             TODO: Move timestamps to J2000
@@ -141,7 +156,7 @@ class MagL1a:
     @staticmethod
     def process_vector_data(
         vector_data: np.ndarray, primary_count: int, secondary_count: int
-    ) -> (list[tuple], list[tuple]):
+    ) -> (np.ndarray, np.ndarray):
         """
         Given raw packet data, process into Vectors.
 
@@ -152,7 +167,7 @@ class MagL1a:
 
         Parameters
         ----------
-        vector_data : np.ndarray
+        vector_data : numpy.ndarray
             Raw vector data, in bytes. Contains both primary and secondary vector data
             (first primary, then secondary)
         primary_count : int
@@ -162,7 +177,7 @@ class MagL1a:
 
         Returns
         -------
-        (primary, secondary)
+        (primary, secondary): (numpy.ndarray, numpy.ndarray)
             Two arrays, each containing tuples of (x, y, z, sample_range) for each
             vector sample.
         """

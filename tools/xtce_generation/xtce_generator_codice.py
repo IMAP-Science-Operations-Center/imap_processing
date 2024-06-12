@@ -13,18 +13,22 @@ def main():
     # CoDICE packets
     packets = {
         "P_COD_HSKP": 1136,
+        "P_COD_LO_IAL": 1152,
         "P_COD_LO_PHA": 1153,
-        "P_COD_LO_INSTRUMENT_COUNTERS": 1154,
         "P_COD_LO_SW_PRIORITY": 1155,
         "P_COD_LO_SW_SPECIES": 1156,
         "P_COD_LO_NSW_SPECIES": 1157,
         "P_COD_LO_SW_ANGULAR": 1158,
         "P_COD_LO_NSW_ANGULAR": 1159,
         "P_COD_LO_NSW_PRIORITY": 1160,
+        "P_COD_LO_INST_COUNTS_AGGREGATED": 1161,
+        "P_COD_LO_INST_COUNTS_SINGLES": 1162,
+        "P_COD_HI_IAL": 1168,
         "P_COD_HI_PHA": 1169,
-        "P_COD_HI_INSTRUMENT_COUNTERS": 1170,
-        "P_COD_HI_OMNI_SPECIES": 1172,
-        "P_COD_HI_SECT_SPECIES": 1173,
+        "P_COD_HI_INST_COUNTS_AGGREGATED": 1170,
+        "P_COD_HI_INST_COUNTS_SINGLES": 1171,
+        "P_COD_HI_OMNI_SPECIES_COUNTS": 1172,
+        "P_COD_HI_SECT_SPECIES_COUNTS": 1173,
     }
 
     for packet_name, app_id in packets.items():

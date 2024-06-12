@@ -45,27 +45,33 @@ def parse_direct_event(event_data: str) -> dict:
 
     IMAP-Hi direct event data information is stored in
     48-bits as follow:
-        Read first two bits (start_bitmask_data) to find
-        out which type of event it is. start_bitmask_data value mapping:
-            1 - A
-            2 - B
-            3 - C
-            0 - META
-        If it's a metaevent:
-            Read 48-bits into 2, 4, 10, 32 bits. Each of these breaks
-            down as:
-                start_bitmask_data - 2 bits (tA=1, tB=2, tC1=3, META=0)
-                ESA step - 4 bits
-                integer millisecond of MET(subseconds) - 10 bits
-                integer MET(seconds) - 32 bits
-        If it's not a metaevent:
-            Read 48-bits into 2, 10, 10, 10, 16 bits. Each of these breaks
-            down as:
-                start_bitmask_data - 2 bits (tA=1, tB=2, tC1=3, META=0)
-                tof_1 - 10 bit counter
-                tof_2 - 10 bit counter
-                tof_3 - 10 bit counter
-                de_tag - 16 bits
+
+    |    Read first two bits (start_bitmask_data) to find
+    |    out which type of event it is. start_bitmask_data value mapping:
+    |
+    |        1 - A
+    |        2 - B
+    |        3 - C
+    |        0 - META
+    |    If it's a metaevent:
+    |
+    |        Read 48-bits into 2, 4, 10, 32 bits. Each of these breaks
+    |        down as:
+    |
+    |            start_bitmask_data - 2 bits (tA=1, tB=2, tC1=3, META=0)
+    |            ESA step - 4 bits
+    |            integer millisecond of MET(subseconds) - 10 bits
+    |            integer MET(seconds) - 32 bits
+    |
+    |    If it's not a metaevent:
+    |        Read 48-bits into 2, 10, 10, 10, 16 bits. Each of these breaks
+    |        down as:
+    |
+    |            start_bitmask_data - 2 bits (tA=1, tB=2, tC1=3, META=0)
+    |            tof_1 - 10 bit counter
+    |            tof_2 - 10 bit counter
+    |            tof_3 - 10 bit counter
+    |            de_tag - 16 bits
 
     There are at most total of 665 of 48-bits in each data packet.
     This data packet is of variable length. If there is one event, then
@@ -79,15 +85,16 @@ def parse_direct_event(event_data: str) -> dict:
     then as mentioned above, first packet will contain metaevent in DE_TOF
     information and second packet will contain 0-bits in DE_TOF. In general,
     every two packets will look like this.
-        first packet = [
-            (start_bitmask_data, ESA step, int millisecond of MET, int MET),
-            (start_bitmask_data, tof_1, tof_2, tof_3, de_tag),
-            .....
-        ]
-        second packet = [
-            (start_bitmask_data, tof_1, tof_2, tof_3, de_tag),
-            .....
-        ]
+
+    |    first packet = [
+    |        (start_bitmask_data, ESA step, int millisecond of MET, int MET),
+    |        (start_bitmask_data, tof_1, tof_2, tof_3, de_tag),
+    |        .....
+    |    ]
+    |    second packet = [
+    |        (start_bitmask_data, tof_1, tof_2, tof_3, de_tag),
+    |       .....
+    |    ]
 
     In direct event data, if no hit is registered, the tof_x field in
     the DE to a value of negative one. However, since the field is described as a
@@ -100,8 +107,9 @@ def parse_direct_event(event_data: str) -> dict:
     tof_1, tof_2, tof_3, because this is in case of an error. But,
     IMAP-Hi like to process it still to investigate the data.
     Example of what it will look like if no hit was registered.
-            (start_bitmask_data, 1023, 1023, 1023, de_tag)
-            start_bitmask_data will be 1 or 2 or 3.
+
+    |        (start_bitmask_data, 1023, 1023, 1023, de_tag)
+    |        start_bitmask_data will be 1 or 2 or 3.
 
     Parameters
     ----------
@@ -334,13 +342,14 @@ def science_direct_event(packets_data: list[Packet]) -> xr.Dataset:
     """Unpack IMAP-Hi direct event data.
 
     Processing step:
-        1. Break binary stream data into unit of 48-bits
-        2. Parse direct event data
-        5. Save the data into xarray dataset.
+
+    |    1. Break binary stream data into unit of 48-bits
+    |    2. Parse direct event data
+    |    5. Save the data into xarray dataset.
 
     Parameters
     ----------
-    packets_data : list[Packet]
+    packets_data : list[space_packet_parser.ParsedPacket]
         List of packets data
 
     Returns
