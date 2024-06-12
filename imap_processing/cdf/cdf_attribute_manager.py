@@ -127,6 +127,26 @@ class CdfAttributeManager:
             CdfAttributeManager._load_yaml_data(self.source_dir / file_path)
         )
 
+    def add_global_attribute(self, attribute_name: str, attribute_value: str) -> None:
+        """
+        Add a single global attribute to the global attributes.
+
+        This is intended only for dynamic global attributes which change per-file, such
+        as Data_version. It is not intended to be used for static attributes, which
+        should all be included in the YAML files.
+
+        This will overwrite any existing value in attribute_name if it exists. The
+        attribute must be in the global schema, or it will not be included as output.
+
+        Parameters
+        ----------
+        attribute_name: str
+            The name of the attribute to add.
+        attribute_value: str
+            The value of the attribute to add.
+        """
+        self.global_attributes[attribute_name] = attribute_value
+
     @staticmethod
     def _load_yaml_data(file_path: str | Path) -> dict:
         """

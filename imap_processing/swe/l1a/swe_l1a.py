@@ -12,7 +12,7 @@ from imap_processing.utils import group_by_apid, sort_by_time
 logger = logging.getLogger(__name__)
 
 
-def swe_l1a(file_path):
+def swe_l1a(file_path, data_version=None):
     """Process SWE l0 data into l1a data.
 
     Receive all L0 data file. Based on appId, it
@@ -23,6 +23,9 @@ def swe_l1a(file_path):
     ----------
     file_path: pathlib.Path
         Path where data is downloaded
+    data_version: str
+        Data version to write to CDF files and the Data_version CDF attribute.
+        Should be in the format Vxxx
 
     Returns
     -------
@@ -40,4 +43,4 @@ def swe_l1a(file_path):
     sorted_packets = sort_by_time(grouped_data[SWEAPID.SWE_SCIENCE], "ACQ_START_COARSE")
     logger.debug("Processing science data for [%s] packets", len(sorted_packets))
 
-    return swe_science(decom_data=sorted_packets)
+    return swe_science(decom_data=sorted_packets, data_version=data_version)

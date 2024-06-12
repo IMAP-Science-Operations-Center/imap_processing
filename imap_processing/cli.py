@@ -551,7 +551,7 @@ class Swe(ProcessInstrument):
                     f"Unexpected dependencies found for SWE L1A:"
                     f"{dependencies}. Expected only one dependency."
                 )
-            processed_data = swe_l1a(Path(dependencies[0]))
+            processed_data = swe_l1a(Path(dependencies[0]), data_version=self.version)
             # Right now, we only process science data. Therefore,
             # we expect only one dataset to be returned.
             cdf_file_path = write_cdf(processed_data)

@@ -43,7 +43,7 @@ Data_type:
   overwrite: true
 Data_version:
   description: >
-    This attribute identifies the version (vX.Y.Z) of a particular CDF data file.
+    This attribute identifies the version of a particular CDF data file.
   default: null
   required: true
   validate: true
