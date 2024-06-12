@@ -79,7 +79,7 @@ def test_create_dataset(mock_data_l1b_dict):
 
 def test_ultra_l1b_rates(mock_data_l1a_rates_dict):
     """Tests that L1b data is created."""
-    output_datasets = ultra_l1b(mock_data_l1a_rates_dict)
+    output_datasets = ultra_l1b(mock_data_l1a_rates_dict, data_version="v001")
 
     assert len(output_datasets) == 3
     assert (
@@ -101,7 +101,7 @@ def test_ultra_l1b_rates(mock_data_l1a_rates_dict):
 
 def test_ultra_l1b_de(mock_data_l1a_de_aux_dict):
     """Tests that L1b data is created."""
-    output_datasets = ultra_l1b(mock_data_l1a_de_aux_dict)
+    output_datasets = ultra_l1b(mock_data_l1a_de_aux_dict, data_version="v001")
 
     assert len(output_datasets) == 1
     assert output_datasets[0].attrs["Logical_source"] == "imap_ultra_l1b_45sensor-de"
@@ -119,4 +119,4 @@ def test_ultra_l1b_error(mock_data_l1a_rates_dict):
     with pytest.raises(
         ValueError, match="Data dictionary does not contain the expected keys."
     ):
-        ultra_l1b(mock_data_l1a_rates_dict)
+        ultra_l1b(mock_data_l1a_rates_dict, data_version="v001")

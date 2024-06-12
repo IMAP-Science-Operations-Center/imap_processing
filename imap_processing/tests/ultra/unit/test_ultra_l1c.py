@@ -80,7 +80,7 @@ def test_create_dataset(mock_data_l1c_dict):
 
 def test_ultra_l1c(mock_data_l1b_dict):
     """Tests that L1c data is created."""
-    output_datasets = ultra_l1c(mock_data_l1b_dict)
+    output_datasets = ultra_l1c(mock_data_l1b_dict, data_version="v001")
 
     assert len(output_datasets) == 1
     assert (
@@ -101,4 +101,4 @@ def test_ultra_l1c_error(mock_data_l1b_dict):
     with pytest.raises(
         ValueError, match="Data dictionary does not contain the expected keys."
     ):
-        ultra_l1c(mock_data_l1b_dict)
+        ultra_l1c(mock_data_l1b_dict, data_version="v001")

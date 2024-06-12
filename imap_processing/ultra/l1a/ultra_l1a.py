@@ -287,7 +287,7 @@ def create_dataset(decom_ultra_dict: dict):
     return dataset
 
 
-def ultra_l1a(packet_file: Path, apid: Optional[int] = None):
+def ultra_l1a(packet_file: Path, data_version: str, apid: Optional[int] = None):
     """
     Process ULTRA L0 data into L1A CDF files at output_filepath.
 
@@ -295,6 +295,8 @@ def ultra_l1a(packet_file: Path, apid: Optional[int] = None):
     ----------
     packet_file : pathlib.Path
         Path to the CCSDS data packet file.
+    data_version: str
+        Version of the data product being created
     apid : Optional[int]
         Optional apid
 
@@ -339,6 +341,8 @@ def ultra_l1a(packet_file: Path, apid: Optional[int] = None):
                 apid: process_ultra_apids(grouped_data[apid], apid),
             }
         dataset = create_dataset(decom_ultra_dict)
+        # TODO: move this to use ImapCdfAttributes().add_global_attribute()
+        dataset.attrs["Data_version"] = data_version
         output_datasets.append(dataset)
 
     return output_datasets

@@ -212,7 +212,7 @@ def test_process_swapi_science(decom_test_data):
     science_data = grouped_data[SWAPIAPID.SWP_SCI]
     sorted_packets = sort_by_time(science_data, "SHCOARSE")
     ds_data = create_dataset(sorted_packets, include_header=False)
-    processed_data = process_swapi_science(ds_data)
+    processed_data = process_swapi_science(ds_data, data_version="v001")
 
     # Test dataset dimensions
     assert processed_data.sizes == {"epoch": 3, "energy": 72}
@@ -308,7 +308,7 @@ def test_process_swapi_science(decom_test_data):
 
     # make PLAN_ID data incorrect
     ds_data["plan_id_science"][:12] = np.arange(12)
-    processed_data = process_swapi_science(ds_data)
+    processed_data = process_swapi_science(ds_data, data_version="v001")
 
     # Test dataset dimensions
     assert processed_data.sizes == {"epoch": 2, "energy": 72}
@@ -327,7 +327,7 @@ def test_swapi_l1_cdf():
         f"{imap_module_directory}/tests/swapi/l0_data/"
         "imap_swapi_l0_raw_20231012_v001.pkts"
     )
-    processed_data = swapi_l1(l0_data_path)
+    processed_data = swapi_l1(l0_data_path, data_version="v001")
 
     # Test CDF File
     # sci cdf file

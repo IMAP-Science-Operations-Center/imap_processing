@@ -210,7 +210,9 @@ def test_cdf_aux(
 ):
     """Tests that CDF file is created and contains same attributes as xarray."""
 
-    test_data = ultra_l1a(ccsds_path_theta_0, apid=ULTRA_AUX.apid[0])
+    test_data = ultra_l1a(
+        ccsds_path_theta_0, data_version="v001", apid=ULTRA_AUX.apid[0]
+    )
     test_data_path = write_cdf(test_data[0])
 
     assert test_data_path.exists()
@@ -239,7 +241,9 @@ def test_cdf_aux(
 def test_cdf_rates(ccsds_path_theta_0, decom_test_data):
     """Tests that CDF file is created and contains same attributes as xarray."""
     decom_ultra_rates, _ = decom_test_data
-    test_data = ultra_l1a(ccsds_path_theta_0, apid=ULTRA_RATES.apid[0])
+    test_data = ultra_l1a(
+        ccsds_path_theta_0, data_version="v001", apid=ULTRA_RATES.apid[0]
+    )
     # TODO: Dropping duplicates to ignore ISTP for now. Need to update test data
     # or wait for an update to cdflib
     test_data[0] = test_data[0].sortby("epoch").groupby("epoch").first()
@@ -273,7 +277,9 @@ def test_cdf_rates(ccsds_path_theta_0, decom_test_data):
 def test_cdf_tof(ccsds_path_theta_0, decom_test_data):
     """Tests that CDF file is created and contains same attributes as xarray."""
     decom_ultra_tof, _ = decom_test_data
-    test_data = ultra_l1a(ccsds_path_theta_0, apid=ULTRA_TOF.apid[0])
+    test_data = ultra_l1a(
+        ccsds_path_theta_0, data_version="v001", apid=ULTRA_TOF.apid[0]
+    )
     test_data_path = write_cdf(test_data[0])
 
     assert test_data_path.exists()
@@ -301,7 +307,9 @@ def test_cdf_tof(ccsds_path_theta_0, decom_test_data):
 def test_cdf_events(ccsds_path_theta_0, decom_ultra_aux, decom_test_data):
     """Tests that CDF file is created and contains same attributes as xarray."""
     decom_ultra_events, _ = decom_test_data
-    test_data = ultra_l1a(ccsds_path_theta_0, apid=ULTRA_EVENTS.apid[0])
+    test_data = ultra_l1a(
+        ccsds_path_theta_0, data_version="v001", apid=ULTRA_EVENTS.apid[0]
+    )
     # TODO: Dropping duplicates to ignore ISTP for now. Need to update test data
     # or wait for an update to cdflib
     test_data[0] = test_data[0].sortby("epoch").groupby("epoch").first()
