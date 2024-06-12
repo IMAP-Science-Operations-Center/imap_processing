@@ -107,5 +107,5 @@ initial-content = """
   __version_tuple__ = (0, 0, 0)
 """
 [tool.numpydoc_validation]
-checks = ["all", "EX01", "SA01", "ES01",] # report on all checks, except the following
-exclude = ['\.__init__.py', ] # don't report on objects that match any of these regex
+checks = ["all", "EX01", "SA01", "ES01" ] # report on all checks, except the following
+exclude = ['__init__' ] # don't report on objects that match any of these regex
