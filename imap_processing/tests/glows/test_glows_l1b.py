@@ -291,7 +291,7 @@ def test_glows_l1b(de_dataset, hist_dataset):
 
     # From table 11 in the algorithm document
     expected_hist_data = [
-        "unique_block_identifier",
+        # "unique_block_identifier", Left out until I determine where to put string data
         "glows_start_time",
         "glows_end_time_offset",
         "imap_start_time",
