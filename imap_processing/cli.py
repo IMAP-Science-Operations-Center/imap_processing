@@ -411,10 +411,10 @@ class Hi(ProcessInstrument):
                     f"Unexpected dependencies found for Hi L1A:"
                     f"{dependencies}. Expected only one dependency."
                 )
-            datasets = hi_l1a.hi_l1a(dependencies[0])
+            datasets = hi_l1a.hi_l1a(dependencies[0], self.version)
             products = [write_cdf(dataset) for dataset in datasets]
         elif self.data_level == "l1b":
-            dataset = hi_l1b.hi_l1b(dependencies[0])
+            dataset = hi_l1b.hi_l1b(dependencies[0], self.version)
             products = [write_cdf(dataset)]
         else:
             raise NotImplementedError(
