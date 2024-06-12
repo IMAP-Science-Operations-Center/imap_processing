@@ -13,6 +13,7 @@ TEXT: &txt >
 imap_glows_l1b_hist:
   Descriptor: *desc
   TEXT: *txt
+  Data_level: L1B
   Data_type: L1B_hist>Level-1B histogram
   Logical_source: imap_glows_l1b_hist
   Logical_source_description: IMAP Mission GLOWS Instrument Level-1B Histogram Data.
@@ -20,6 +21,7 @@ imap_glows_l1b_hist:
 imap_glows_l1b_de:
   Descriptor: *desc
   TEXT: *txt
+  Data_level: L1B
   Data_type: L1B_de>Level-1B Direct Events
   Logical_source: imap_glows_l1b_de
   Logical_source_description: IMAP Mission GLOWS Instrument Level-1B Direct Events Data.

@@ -8,18 +8,19 @@ import numpy as np
 import xarray as xr
 
 from imap_processing.cdf.global_attrs import ConstantCoordinates
-from imap_processing.cdf.utils import calc_start_time, write_cdf
+from imap_processing.cdf.utils import calc_start_time
 from imap_processing.glows import __version__, glows_cdf_attrs
 from imap_processing.glows.l0.decom_glows import decom_packets
 from imap_processing.glows.l0.glows_l0_data import DirectEventL0
 from imap_processing.glows.l1a.glows_l1a_data import DirectEventL1A, HistogramL1A
 
 
-def glows_l1a(packet_filepath: Path, data_version: str) -> list[Path]:
+def glows_l1a(packet_filepath: Path, data_version: str) -> list[xr.Dataset]:
     """
     Process packets into GLOWS L1A CDF files.
 
-    Outputs CDF files for histogram and direct event GLOWS L1A CDF files.
+    Outputs Datasets for histogram and direct event GLOWS L1A. This list can be passed
+    into write_cdf to output CDF files.
 
     Parameters
     ----------
@@ -30,8 +31,8 @@ def glows_l1a(packet_filepath: Path, data_version: str) -> list[Path]:
 
     Returns
     -------
-    generated_files: list[Path]
-        List of the paths of the generated CDF files
+    generated_files: list[xr.Dataset]
+        List of the L1A datasets
     """
     # TODO: Data version inside file as well?
     # Create glows L0
@@ -49,16 +50,16 @@ def glows_l1a(packet_filepath: Path, data_version: str) -> list[Path]:
         hists_by_day[hist_day].append(hist_l1a)
 
     # Generate CDF files for each day
-    generated_files = []
+    output_datasets = []
     for hist_l1a_list in hists_by_day.values():
         dataset = generate_histogram_dataset(hist_l1a_list, data_version)
-        generated_files.append(write_cdf(dataset))
+        output_datasets.append(dataset)
 
     for de_l1a_list in de_by_day.values():
         dataset = generate_de_dataset(de_l1a_list, data_version)
-        generated_files.append(write_cdf(dataset))
+        output_datasets.append(dataset)
 
-    return generated_files
+    return output_datasets
 
 
 def process_de_l0(

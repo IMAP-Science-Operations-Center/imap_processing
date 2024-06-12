@@ -2,24 +2,130 @@
 
 import dataclasses
 
+import numpy as np
 import xarray as xr
 
+from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.glows.l1b.glows_l1b_data import DirectEventL1B, HistogramL1B
 
 
-def glows_l1b_histograms(input_dataset: xr.Dataset) -> xr.Dataset:
-    """Process the GLOWS L1B data and format the histogram attribute outputs."""
-    # TODO: add CDF attribute steps
+def glows_l1b(input_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
+    """Process the GLOWS L1B data and format the output datasets."""
+    cdf_attrs = ImapCdfAttributes()
+    cdf_attrs.add_instrument_global_attrs("glows")
+    cdf_attrs.add_instrument_variable_attrs("glows", "l1b")
+    cdf_attrs.add_global_attribute("Data_version", data_version)
 
-    # Will call process_histograms and construct the dataset with the return
-    raise NotImplementedError
+    data_epoch = xr.DataArray(
+        input_dataset["epoch"],
+        name="epoch",
+        dims=["epoch"],
+        attrs=cdf_attrs.get_variable_attributes("epoch_attrs"),
+    )
 
+    logical_source = (
+        input_dataset.attrs["Logical_source"][0]
+        if isinstance(input_dataset.attrs["Logical_source"], list)
+        else input_dataset.attrs["Logical_source"]
+    )
 
-def glows_l1b_de(input_dataset: xr.Dataset) -> xr.Dataset:
-    """Process the GLOWS L1B data and format the direct event attribute outputs."""
-    # TODO: generate dataset with CDF attributes
-    # Will call process_de and construct the dataset with the return
-    raise NotImplementedError
+    if "hist" in logical_source:
+        flag_data = xr.DataArray(
+            np.arange(17),
+            name="flags",
+            dims=["flags"],
+            attrs=cdf_attrs.get_variable_attributes("flag_attrs"),
+        )
+        bad_flag_data = xr.DataArray(
+            np.arange(4),
+            name="bad_angle_flags",
+            dims=["bad_angle_flags"],
+            attrs=cdf_attrs.get_variable_attributes("flag_attrs"),
+        )
+
+        # TODO: the four spacecraft location/velocity values should probably each get
+        # their own dimension/attributes
+        eclipic_data = xr.DataArray(
+            np.arange(3),
+            name="ecliptic",
+            dims=["ecliptic"],
+            attrs=cdf_attrs.get_variable_attributes("ecliptic_attrs"),
+        )
+
+        bin_data = xr.DataArray(
+            input_dataset["bins"],
+            name="bins",
+            dims=["bins"],
+            attrs=cdf_attrs.get_variable_attributes("bin_attrs"),
+        )
+
+        output_dataarrays = process_histogram(input_dataset)
+        # TODO: Is it ok to copy the dimensions from the input dataset?
+
+        output_dataset = xr.Dataset(
+            coords={
+                "epoch": data_epoch,
+                "bins": bin_data,
+                "bad_angle_flags": bad_flag_data,
+                "flags": flag_data,
+                "ecliptic": eclipic_data,
+            },
+            attrs=cdf_attrs.get_global_attributes("imap_glows_l1b_hist"),
+        )
+
+        # Since we know the output_dataarrays are in the same order as the fields in the
+        # HistogramL1B dataclass, we can use dataclasses.fields to get the field names.
+
+        fields = dataclasses.fields(HistogramL1B)
+
+        for index, dataarray in enumerate(output_dataarrays):
+            # Dataarray is already an xr.DataArray type, so we can just assign it
+            output_dataset[fields[index].name] = dataarray
+            output_dataset[
+                fields[index].name
+            ].attrs = cdf_attrs.get_variable_attributes(fields[index].name)
+
+    elif "de" in logical_source:
+        output_dataarrays = process_de(input_dataset)
+        per_second_data = xr.DataArray(
+            input_dataset["per_second"],
+            name="per_second",
+            dims=["per_second"],
+            attrs=cdf_attrs.get_variable_attributes("per_second_attrs"),
+        )
+
+        flag_data = xr.DataArray(
+            np.arange(11),
+            name="flags",
+            dims=["flags"],
+            attrs=cdf_attrs.get_variable_attributes("flag_attrs"),
+        )
+
+        output_dataset = xr.Dataset(
+            coords={
+                "epoch": data_epoch,
+                "per_second": per_second_data,
+                "flags": flag_data,
+            },
+            attrs=cdf_attrs.get_global_attributes("imap_glows_l1b_de"),
+        )
+        fields = dataclasses.fields(DirectEventL1B)
+
+        for index, dataarray in enumerate(output_dataarrays):
+            # Dataarray is already an xr.DataArray type, so we can just assign it
+            output_dataset[fields[index].name] = dataarray
+            output_dataset[
+                fields[index].name
+            ].attrs = cdf_attrs.get_variable_attributes(fields[index].name)
+
+    else:
+        raise ValueError(
+            f"Logical_source {input_dataset.attrs['Logical_source']} for input file "
+            f"does not match histogram "
+            "('hist') or direct event ('de')."
+        )
+
+    return output_dataset
 
 
 def process_de(l1a: xr.Dataset) -> tuple[xr.DataArray]:
@@ -55,7 +161,7 @@ def process_de(l1a: xr.Dataset) -> tuple[xr.DataArray]:
 
     # An empty array passes the epoch dimension through
     dims = [[] for i in l1a.keys()]
-    new_dims = [[] for i in range(14)]
+    new_dims = [[] for i in range(13)]
 
     # Set the two direct event dimensions. This is the only multi-dimensional L1A
     # (input) variable.
@@ -75,6 +181,7 @@ def process_de(l1a: xr.Dataset) -> tuple[xr.DataArray]:
         input_core_dims=dims,
         output_core_dims=new_dims,
         vectorize=True,
+        keep_attrs=True,
     )
 
     return l1b_fields
@@ -104,7 +211,7 @@ def process_histogram(l1a: xr.Dataset) -> xr.Dataset:
     dataarrays = [l1a[i] for i in l1a.keys()]
 
     dims = [[] for i in l1a.keys()]
-    # 34 is the number of output attributes in the HistogramL1B class.
+    # 35 is the number of output attributes in the HistogramL1B class.
     new_dims = [[] for i in range(34)]
 
     # histograms is the only multi dimensional variable, so we need to set its dims to
@@ -114,28 +221,31 @@ def process_histogram(l1a: xr.Dataset) -> xr.Dataset:
 
     # This preserves the dimensions for the histogram output
     new_dims[0] = ["bins"]
-    new_dims[22] = ["bins"]  # For imap_spin_angle_center - a per-bin value
+    new_dims[21] = ["bins"]  # For imap_spin_angle_center - a per-bin value
 
     # For histogram_flag_array - varies by the new dimension "flags" and by the number
     # of bins
-    new_dims[23] = ["flags", "bins"]
+    new_dims[22] = ["bad_angle_flags", "bins"]
 
     # For the new arrays added: add their dimensions. These aren't defined anywhere,
     # so when the dataset is created I will need to add "ecliptic" as a new dimension.
 
     # These represent the spacecraft position and std dev, and velocity and std dev.
+    new_dims[-5] = ["ecliptic"]
     new_dims[-4] = ["ecliptic"]
     new_dims[-3] = ["ecliptic"]
     new_dims[-2] = ["ecliptic"]
-    new_dims[-1] = ["ecliptic"]
 
-    # TODO: validate the input dims line up with the dims value
+    # Flags is a constant length (17). It has a dimension of "flags"
+    new_dims[-1] = ["flags", "bins"]
+
     l1b_fields = xr.apply_ufunc(
-        lambda *args: tuple(dataclasses.asdict(HistogramL1B(*args)).values()),
+        lambda *args: HistogramL1B(*args).output_data(),
         *dataarrays,
         input_core_dims=dims,
         output_core_dims=new_dims,
         vectorize=True,
+        keep_attrs=True,
     )
 
     # This is a tuple of dataarrays and not a dataset yet

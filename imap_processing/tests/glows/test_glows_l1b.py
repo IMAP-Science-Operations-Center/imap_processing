@@ -4,7 +4,8 @@ import numpy as np
 import pytest
 import xarray as xr
 
-from imap_processing.glows.l1b.glows_l1b import process_de, process_histogram
+from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
+from imap_processing.glows.l1b.glows_l1b import glows_l1b, process_de, process_histogram
 from imap_processing.glows.l1b.glows_l1b_data import (
     AncillaryParameters,
     DirectEventL1B,
@@ -36,11 +37,24 @@ def hist_dataset():
         "glows_start_time": np.zeros((20,)),
         "glows_time_offset": np.zeros((20,)),
     }
-    epoch = xr.DataArray(np.arange(20), name="epoch", dims=["epoch"])
+    cdf_attrs = ImapCdfAttributes()
+    cdf_attrs.add_instrument_global_attrs("glows")
+    cdf_attrs.add_instrument_variable_attrs("glows", "l1b")
+
+    epoch = xr.DataArray(
+        np.arange(20),
+        name="epoch",
+        dims=["epoch"],
+        attrs=cdf_attrs.get_variable_attributes("epoch_attrs"),
+    )
 
     bins = xr.DataArray(np.arange(3600), name="bins", dims=["bins"])
 
-    ds = xr.Dataset(coords={"epoch": epoch})
+    ds = xr.Dataset(
+        coords={"epoch": epoch},
+        attrs=cdf_attrs.get_global_attributes("imap_glows_l1b_hist"),
+    )
+
     ds["histograms"] = xr.DataArray(
         np.zeros((20, 3600)),
         dims=["epoch", "bins"],
@@ -79,7 +93,17 @@ def de_dataset():
         "pulse_test_in_progress": np.zeros((20,)),
         "memory_error_detected": np.zeros((20,)),
     }
-    epoch = xr.DataArray(np.arange(20), name="epoch", dims=["epoch"])
+
+    cdf_attrs = ImapCdfAttributes()
+    cdf_attrs.add_instrument_global_attrs("glows")
+    cdf_attrs.add_instrument_variable_attrs("glows", "l1b")
+
+    epoch = xr.DataArray(
+        np.arange(20),
+        name="epoch",
+        dims=["epoch"],
+        attrs=cdf_attrs.get_variable_attributes("epoch_attrs"),
+    )
 
     per_second = xr.DataArray(np.arange(2295), name="per_second", dims=["per_second"])
     direct_event = xr.DataArray(
@@ -91,7 +115,10 @@ def de_dataset():
 
     variables["filter_temperature"][0] = 100
 
-    ds = xr.Dataset(coords={"epoch": epoch})
+    ds = xr.Dataset(
+        coords={"epoch": epoch, "per_second": per_second, "direct_event": direct_event},
+        attrs=cdf_attrs.get_global_attributes("imap_glows_l1b_de"),
+    )
 
     ds["direct_events"] = xr.DataArray(
         de_data,
@@ -243,4 +270,79 @@ def test_process_de(de_dataset, ancillary_dict):
 
     expected_temp = ancillary.decode("filter_temperature", 100.0)
 
-    assert np.isclose(output[9].data[0], expected_temp)
+    assert np.isclose(output[8].data[0], expected_temp)
+
+
+def test_glows_l1b(de_dataset, hist_dataset):
+    hist_output = glows_l1b(hist_dataset, "V001")
+
+    assert hist_output["histograms"].dims == ("epoch", "bins")
+    assert hist_output["histograms"].shape == (20, 3600)
+
+    # This needs to be added eventually, but is skipped for now.
+    expected_de_data = [
+        "flight_software_version",
+        "ground_software_version",
+        "pkts_file_name",
+        "seq_count_in_pkts_file",
+        "l1a_file_name",
+        "ancillary_data_files",
+    ]
+
+    # From table 11 in the algorithm document
+    expected_hist_data = [
+        "unique_block_identifier",
+        "glows_start_time",
+        "glows_end_time_offset",
+        "imap_start_time",
+        "imap_end_time_offset",
+        "number_of_spins_per_block",
+        "number_of_bins_per_histogram",
+        "histograms",  # named histogram in alg doc
+        "number_of_events",
+        "imap_spin_angle_bin_cntr",
+        "histogram_flag_array",
+        "filter_temperature_average",
+        "filter_temperature_std_dev",
+        "hv_voltage_average",
+        "hv_voltage_std_dev",
+        "spin_period_average",
+        "spin_period_std_dev",
+        "pulse_length_average",
+        "pulse_length_std_dev",
+        "spin_period_ground_average",
+        "spin_period_ground_std_dev",
+        "position_angle_offset_average",
+        "position_angle_offset_std_dev",
+        "spin_axis_orientation_std_dev",
+        "spin_axis_orientation_average",
+        "spacecraft_location_average",
+        "spacecraft_location_std_dev",
+        "spacecraft_velocity_average",
+        "spacecraft_velocity_std_dev",
+        "flags",
+    ]
+
+    for key in expected_hist_data:
+        assert key in hist_output
+
+    de_output = glows_l1b(de_dataset, "V001")
+
+    # From table 15 in the algorithm document
+    expected_de_data = [
+        # "unique_identifier", TODO: determine the best way to add this
+        "imap_time_last_pps",
+        "imap_time_next_pps",
+        "glows_time_last_pps",
+        "number_of_completed_spins",
+        "filter_temperature",
+        "hv_voltage",
+        "spin_period",
+        "spin_phase_at_next_pps",
+        "flags",
+        "direct_event_glows_times",
+        "direct_event_pulse_lengths",
+    ]
+
+    for key in expected_de_data:
+        assert key in de_output

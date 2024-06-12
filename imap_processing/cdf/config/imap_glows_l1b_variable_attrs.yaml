@@ -1,4 +1,5 @@
 int_fillval: &int_fillval -9223372036854775808
+valid_max: &valid_max 3155630469184000000
 
 epoch_attrs:
   CATDESC: Time, number of nanoseconds since J2000 with leap seconds included
@@ -28,7 +29,7 @@ default_attrs: &default
 
 default_coords: &default_coords
   FORMAT: F2.4  # Float with 4 digits
-  VAR_TYPE: support_data
+  VAR_TYPE: data
   DISPLAY_TYPE: time_series
 
 metadata_default: &metadata_default
@@ -44,6 +45,16 @@ bin_attrs:
   FIELDNAM: Counts of direct events
   LABLAXIS: Counts
 
+flag_attrs:
+  <<: *default_coords
+  VALIDMIN: 0
+  VALIDMAX: 1
+  FILLVAL: -1
+  CATDESC: Flags for histogram information
+  FIELDNAM: Flags for histogram information
+  LABLAXIS: Flags
+  UNITS: ' '
+
 per_second_attrs:
   <<: *default_coords
   VALIDMIN: 0
@@ -51,6 +62,17 @@ per_second_attrs:
   CATDESC: Direct events recorded approximately per second
   FIELDNAM: List of direct events
   LABLAXIS: Photon Counts per Second
+
+ecliptic_attrs:
+  <<: *default_coords
+  # TODO: Update validmin and validmax
+  VALIDMIN: *int_fillval
+  VALIDMAX: *valid_max
+  CATDESC: Cartesian Ecliptic X, Y, Z coordinates for the spacecraft in KM
+  FIELDNAM: Cartesian Ecliptic X, Y, Z coordinates
+  LABLAXIS: Ecliptic Coordinates
+  UNITS: km
+  FILLVAL: *int_fillval
 
 histogram_attrs:
   <<: *default
@@ -63,26 +85,38 @@ histogram_attrs:
 
 histograms:
   <<: *default
+  DEPEND_1: bins
   CATDESC: array of block-accumulated counts as histograms
   FIELDNAM: block-accumulated count numbers
+  LABLAXIS: Bins
+  UNITS: counts
 
 flight_software_version:
-  <<: *default
+  <<: *metadata_default
   CATDESC: IMAP flight software version
   FIELDNAM: IMAP flight software version
 
 seq_count_in_pkts_file:
-  <<: *default
+  <<: *metadata_default
   CATDESC: sequence count in packets file
   FIELDNAM: sequence count in packets file
 
 flags_set_onboard:
   <<: *default
+  DEPEND_1: flags
+  DISPLAY_TYPE: no_plot
+  LABLAXIS: Flags
   CATDESC: >
     Flags for bad data [missing PPS, missing time, missing spin phase, missing
     spin periods, overexposure, nonmonotonic event, data collected at night,
     HV test, pulse test, memory error]
   FIELDNAM: Flags set onboard for missing or bad data
+  UNITS: ' '
+
+last_spin_id:
+  <<: *metadata_default
+  CATDESC: Last spin ID
+  FIELDNAM: Last spin ID
 
 is_generated_on_ground:
   <<: *metadata_default
@@ -109,6 +143,12 @@ number_of_events:
   CATDESC: Total number of events/counts in histogram
   FIELDNAM: total number of events/counts in histogram
 
+# TODO: Might not be required for L1B
+number_of_de_packets:
+  <<: *metadata_default
+  CATDESC: Number of direct event packets
+  FIELDNAM: Number of direct event packets
+
 imap_spin_angle_bin_cntr:
   <<: *metadata_default
   CATDESC: IMAP spin angle psi for bin centers
@@ -118,6 +158,7 @@ histogram_flag_array:
   <<: *metadata_default
   CATDESC: array of bad-angle flags for histogram bins
   FIELDNAM: array of bad-angle flags for histogram bins
+  UNITS: ' '
 
 filter_temperature_average:
   <<: *metadata_default
@@ -158,9 +199,6 @@ pulse_length_std_dev:
   <<: *metadata_default
   CATDESC: Pulse length standard deviation (1 sigma)
   FIELDNAM: Pulse length standard deviation
-
-standard:
-  <<: *metadata_default deviation (1 sigma), decoded to us
 
 glows_start_time:
   <<: *metadata_default
@@ -236,3 +274,63 @@ flags:
   <<: *metadata_default
   CATDESC: flags for extra information, per histogram.
   FIELDNAM: flags for extra information, per histogram.
+
+# DE attributes
+unique_identifier:
+  <<: *metadata_default
+  CATDESC: YYYY-MM-DDThh:mm:ss based on IMAP UTC time
+  FIELDNAM: YYYY-MM-DDThh:mm:ss based on IMAP UTC time
+
+imap_time_last_pps:
+  <<: *metadata_default
+  CATDESC: IMAP clock, subseconds as decimal part of float for the last PPS
+  FIELDNAM: IMAP clock, subseconds as decimal part of float
+
+imap_time_next_pps:
+  <<: *metadata_default
+  CATDESC: IMAP clock, subseconds as decimal part of float for the next PPS
+  FIELDNAM: IMAP clock, subseconds as decimal part of float
+
+glows_time_last_pps:
+  <<: *metadata_default
+  CATDESC: GLOWS clock, subseconds as decimal part of float for the last PPS
+  FIELDNAM: GLOWS clock, subseconds as decimal part of float
+
+number_of_completed_spins:
+  <<: *metadata_default
+  CATDESC: Number of completed spins
+  FIELDNAM: Number of completed spins
+
+filter_temperature:
+  <<: *metadata_default
+  CATDESC: Filter temperature in degrees Celsius
+  FIELDNAM: Filter temperature in degrees Celsius
+
+hv_voltage:
+  <<: *metadata_default
+  CATDESC: HV voltage in volts
+  FIELDNAM: HV voltage in volts
+
+spin_period:
+  <<: *metadata_default
+  CATDESC: Spin period in seconds
+  FIELDNAM: Spin period in seconds
+
+spin_phase_at_next_pps:
+  <<: *metadata_default
+  CATDESC: Spin phase at the next PPS in degrees
+  FIELDNAM: Spin phase at the next PPS in degrees
+
+direct_event_glows_times:
+  <<: *metadata_default
+  DEPEND_1: per_second
+  CATDESC: >
+    An array of times for direct events from the GLOWS clock, with subseconds as the
+    decimal part of the float.
+  FIELDNAM: Direct event times, GLOWS clock
+
+direct_event_pulse_lengths:
+  <<: *metadata_default
+  DEPEND_1: per_second
+  CATDESC: An array of pulse lengths for direct events in microseconds
+  FIELDNAM: Direct event pulse lengths (us)
