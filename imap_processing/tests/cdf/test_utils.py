@@ -23,6 +23,7 @@ def test_dataset():
     # Load the CDF attrs
     swe_attrs = ImapCdfAttributes()
     swe_attrs.add_instrument_global_attrs("swe")
+    swe_attrs.add_global_attribute("Data_version", "001")
 
     dataset = xr.Dataset(
         {
