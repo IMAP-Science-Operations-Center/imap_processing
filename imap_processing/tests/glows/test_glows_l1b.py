@@ -225,8 +225,7 @@ def test_process_histograms(hist_dataset):
     )
 
     output = process_histogram(hist_dataset)
-    print(output)
-    assert len(output) == len(dataclasses.asdict(test_l1b).keys())
+    assert len(output) == len(dataclasses.asdict(test_l1b))
 
 
 def test_process_de(de_dataset, ancillary_dict):

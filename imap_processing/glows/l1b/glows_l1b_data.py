@@ -74,7 +74,7 @@ class AncillaryParameters:
                 "expected format."
             ) from e
 
-    def decode(self, param_key: str, encoded_value: np.single) -> np.single:
+    def decode(self, param_key: str, encoded_value: np.double) -> np.double:
         """
         Decode parameters using the algorithm defined in section -.
 
@@ -93,12 +93,12 @@ class AncillaryParameters:
         param_key : str
             The parameter to use for decoding. Should be one of "filter_temperature",
             "hv_voltage", "spin_period", "spin_phase", or "pulse_length".
-        encoded_value : np.single
+        encoded_value : np.double
             The encoded value to decode.
 
         Returns
         -------
-        decoded_value : np.single
+        decoded_value : np.double
             The decoded value.
         """
         params = getattr(self, param_key)
@@ -106,9 +106,9 @@ class AncillaryParameters:
         param_a = (2 ** params["n_bits"] - 1) / (params["max"] - params["min"])
         param_b = -params["min"] * param_a
 
-        return np.single((encoded_value - param_b) / param_a)
+        return np.double((encoded_value - param_b) / param_a)
 
-    def decode_std_dev(self, param_key: str, encoded_value: np.single) -> np.single:
+    def decode_std_dev(self, param_key: str, encoded_value: np.double) -> np.double:
         """
         Decode an encoded variance variable and compute the standard deviation.
 
@@ -125,12 +125,12 @@ class AncillaryParameters:
         param_key: str
             The parameter to use for decoding. Should be one of "filter_temperature",
             "hv_voltage", "spin_period", "spin_phase", or "pulse_length".
-        encoded_value: np.single
+        encoded_value: np.double
             The encoded variance to decode.
 
         Returns
         -------
-        std_dev: np.single
+        std_dev: np.double
             The standard deviation of the encoded value.
         """
         params = getattr(self, param_key)
@@ -139,7 +139,7 @@ class AncillaryParameters:
 
         variance = encoded_value / (param_a**2)
 
-        return np.single(np.sqrt(variance))
+        return np.double(np.sqrt(variance))
 
 
 @dataclass
@@ -161,52 +161,52 @@ class DirectEventL1B:
         Sequence count in the input file, passed from L1A
     unique_identifier: str
         YYYY-MM-DDThh:mm:ss based on IMAP UTC time
-    number_of_de_packets: InitVar[np.single]
+    number_of_de_packets: InitVar[np.double]
         Number of DE packets in the block, passed in from L1A.
         TODO: Missing from algorithm document, double check that this should be in L1B
-    imap_time_last_pps: np.single
+    imap_time_last_pps: np.double
         Last PPS in IMAP clock format. Copied from imap_sclk_last_pps in L1A,
          In seconds.
-    glows_time_last_pps: np.single
+    glows_time_last_pps: np.double
         Last PPS in GLOWS clock format. Creaded from glows_sclk_last_pps and
         glows_ssclk_last_pps in L1A. In seconds, with subseconds as decimal.
-    glows_ssclk_last_pps: InitVar[np.single]
+    glows_ssclk_last_pps: InitVar[np.double]
         Subseconds of the last PPS in GLOWS clock format. Used to update
         glows_time_last_pps.
-    imap_time_next_pps: np.single
+    imap_time_next_pps: np.double
         Next PPS in IMAP clock format. Copied from imap_slck_next_pps in L1A.
         In seconds.
-    catbed_heater_active: InitVar[np.single]
+    catbed_heater_active: InitVar[np.double]
         Flag for catbed heater
-    spin_period_valid: InitVar[np.single]
+    spin_period_valid: InitVar[np.double]
         Flag for valid spin period
-    spin_phase_at_next_pps_valid: InitVar[np.single]
+    spin_phase_at_next_pps_valid: InitVar[np.double]
         Flag for valid spin phase at next PPS
-    spin_period_source: InitVar[np.single]
+    spin_period_source: InitVar[np.double]
         Source of spin period flag
-    spin_period: np.single
+    spin_period: np.double
         Spin period in seconds, decoded from ancillary data
-    spin_phase_at_next_pps: np.single
+    spin_phase_at_next_pps: np.double
         Spin phase at the next PPS in degrees, decoded from ancillary data
     number_of_completed_spins: int
         Number of completed spins in the block, passed from L1A
-    filter_temperature: np.single
+    filter_temperature: np.double
         Filter temperature in Celsius degrees, decoded from ancillary data
-    hv_voltage: np.single
+    hv_voltage: np.double
         CEM voltage in volts, decoded from ancillary data
-    glows_time_on_pps_valid: InitVar[np.single]
+    glows_time_on_pps_valid: InitVar[np.double]
         Flag for valid GLOWS time on PPS, ends up in flags array
-    time_status_valid: InitVar[np.single]
+    time_status_valid: InitVar[np.double]
         Flag for valid time status, ends up in flags array
-    housekeeping_valid: InitVar[np.single]
+    housekeeping_valid: InitVar[np.double]
         Flag for valid housekeeping, ends up in flags array
-    is_pps_autogenerated: InitVar[np.single]
+    is_pps_autogenerated: InitVar[np.double]
         Flag for autogenerated PPS, ends up in flags array
-    hv_test_in_progress: InitVar[np.single]
+    hv_test_in_progress: InitVar[np.double]
         Flag for HV test in progress, ends up in flags array
-    pulse_test_in_progress: InitVar[np.single]
+    pulse_test_in_progress: InitVar[np.double]
         Flag for pulse test in progress, ends up in flags array
-    memory_error_detected: InitVar[np.single]
+    memory_error_detected: InitVar[np.double]
         Flag for memory error detected, ends up in flags array
     flags: ndarray
         array of flags for extra information, per histogram. This is assembled from
@@ -219,30 +219,30 @@ class DirectEventL1B:
     """
 
     direct_events: InitVar[np.ndarray]
-    seq_count_in_pkts_file: np.single  # Passed from L1A
+    seq_count_in_pkts_file: np.double  # Passed from L1A
     unique_identifier: str = field(init=False)
-    number_of_de_packets: np.single
-    imap_time_last_pps: np.single
-    glows_time_last_pps: np.single
+    number_of_de_packets: np.double
+    imap_time_last_pps: np.double
+    glows_time_last_pps: np.double
     # Added to the end of glows_time_last_pps as subseconds
     glows_ssclk_last_pps: InitVar[int]
-    imap_time_next_pps: np.single
-    catbed_heater_active: InitVar[np.single]
-    spin_period_valid: InitVar[np.single]
-    spin_phase_at_next_pps_valid: InitVar[np.single]
-    spin_period_source: InitVar[np.single]
-    spin_period: np.single
-    spin_phase_at_next_pps: np.single
-    number_of_completed_spins: np.single
-    filter_temperature: np.single
-    hv_voltage: np.single
-    glows_time_on_pps_valid: InitVar[np.single]
-    time_status_valid: InitVar[np.single]
-    housekeeping_valid: InitVar[np.single]
-    is_pps_autogenerated: InitVar[np.single]
-    hv_test_in_progress: InitVar[np.single]
-    pulse_test_in_progress: InitVar[np.single]
-    memory_error_detected: InitVar[np.single]
+    imap_time_next_pps: np.double
+    catbed_heater_active: InitVar[np.double]
+    spin_period_valid: InitVar[np.double]
+    spin_phase_at_next_pps_valid: InitVar[np.double]
+    spin_period_source: InitVar[np.double]
+    spin_period: np.double
+    spin_phase_at_next_pps: np.double
+    number_of_completed_spins: np.double
+    filter_temperature: np.double
+    hv_voltage: np.double
+    glows_time_on_pps_valid: InitVar[np.double]
+    time_status_valid: InitVar[np.double]
+    housekeeping_valid: InitVar[np.double]
+    is_pps_autogenerated: InitVar[np.double]
+    hv_test_in_progress: InitVar[np.double]
+    pulse_test_in_progress: InitVar[np.double]
+    memory_error_detected: InitVar[np.double]
 
     # pkts_file_name: str # TODO: Add once L1A questions are answered
     # l1a_file_name: str # TODO: Add once L1A questions are answered
@@ -259,17 +259,17 @@ class DirectEventL1B:
         self,
         direct_events: np.ndarray,
         glows_ssclk_last_pps: int,
-        catbed_heater_active: np.single,
-        spin_period_valid: np.single,
-        spin_phase_at_next_pps_valid: np.single,
-        spin_period_source: np.single,
-        glows_time_on_pps_valid: np.single,
-        time_status_valid: np.single,
-        housekeeping_valid: np.single,
-        is_pps_autogenerated: np.single,
-        hv_test_in_progress: np.single,
-        pulse_test_in_progress: np.single,
-        memory_error_detected: np.single,
+        catbed_heater_active: np.double,
+        spin_period_valid: np.double,
+        spin_phase_at_next_pps_valid: np.double,
+        spin_period_source: np.double,
+        glows_time_on_pps_valid: np.double,
+        time_status_valid: np.double,
+        housekeeping_valid: np.double,
+        is_pps_autogenerated: np.double,
+        hv_test_in_progress: np.double,
+        pulse_test_in_progress: np.double,
+        memory_error_detected: np.double,
     ):
         """Generate the L1B data for direct events using the inputs from InitVar."""
         self.direct_event_glows_times, self.direct_event_pulse_lengths = (
@@ -435,18 +435,18 @@ class HistogramL1B:
     number_of_spins_per_block: int
     number_of_bins_per_histogram: int
     number_of_events: int
-    filter_temperature_average: np.single
-    filter_temperature_std_dev: np.single
-    hv_voltage_average: np.single
-    hv_voltage_std_dev: np.single
-    spin_period_average: np.single
-    spin_period_std_dev: np.single
-    pulse_length_average: np.single
-    pulse_length_std_dev: np.single
-    imap_start_time: np.single  # No conversion needed from l1a->l1b
-    imap_end_time_offset: np.single  # No conversion needed from l1a->l1b
-    glows_start_time: np.single  # No conversion needed from l1a->l1b
-    glows_end_time_offset: np.single  # No conversion needed from l1a->l1b
+    filter_temperature_average: np.double
+    filter_temperature_std_dev: np.double
+    hv_voltage_average: np.double
+    hv_voltage_std_dev: np.double
+    spin_period_average: np.double
+    spin_period_std_dev: np.double
+    pulse_length_average: np.double
+    pulse_length_std_dev: np.double
+    imap_start_time: np.double  # No conversion needed from l1a->l1b
+    imap_end_time_offset: np.double  # No conversion needed from l1a->l1b
+    glows_start_time: np.double  # No conversion needed from l1a->l1b
+    glows_end_time_offset: np.double  # No conversion needed from l1a->l1b
     unique_block_identifier: str = field(
         init=False
     )  # Could be datetime TODO: Missing from values in L1A
@@ -454,12 +454,12 @@ class HistogramL1B:
         init=False
     )  # Same size as bins TODO add dims
     histogram_flag_array: np.ndarray = field(init=False)  # TODO add dims
-    spin_period_ground_average: np.single = field(init=False)  # retrieved from SPICE?
-    spin_period_ground_std_dev: np.single = field(init=False)  # retrieved from SPICE?
-    position_angle_offset_average: np.single = field(init=False)  # retrieved from SPICE
-    position_angle_offset_std_dev: np.single = field(init=False)  # retrieved from SPICE
-    spin_axis_orientation_std_dev: np.single = field(init=False)  # retrieved from SPICE
-    spin_axis_orientation_average: np.single = field(init=False)  # retrieved from SPICE
+    spin_period_ground_average: np.double = field(init=False)  # retrieved from SPICE?
+    spin_period_ground_std_dev: np.double = field(init=False)  # retrieved from SPICE?
+    position_angle_offset_average: np.double = field(init=False)  # retrieved from SPICE
+    position_angle_offset_std_dev: np.double = field(init=False)  # retrieved from SPICE
+    spin_axis_orientation_std_dev: np.double = field(init=False)  # retrieved from SPICE
+    spin_axis_orientation_average: np.double = field(init=False)  # retrieved from SPICE
     spacecraft_location_average: np.ndarray = field(init=False)  # retrieved from SPIC
     spacecraft_location_std_dev: np.ndarray = field(init=False)  # retrieved from SPIC
     spacecraft_velocity_average: np.ndarray = field(init=False)  # retrieved from SPIC
@@ -480,12 +480,12 @@ class HistogramL1B:
 
         # TODO: These pieces will need to be filled in from SPICE kernels. For now,
         #  they are placeholders. GLOWS example code has better placeholders if needed.
-        self.spin_period_ground_average = np.single(-999.9)
-        self.spin_period_ground_std_dev = np.single(-999.9)
-        self.position_angle_offset_average = np.single(-999.9)
-        self.position_angle_offset_std_dev = np.single(-999.9)
-        self.spin_axis_orientation_std_dev = np.single(-999.9)
-        self.spin_axis_orientation_average = np.single(-999.9)
+        self.spin_period_ground_average = np.double(-999.9)
+        self.spin_period_ground_std_dev = np.double(-999.9)
+        self.position_angle_offset_average = np.double(-999.9)
+        self.position_angle_offset_std_dev = np.double(-999.9)
+        self.spin_axis_orientation_std_dev = np.double(-999.9)
+        self.spin_axis_orientation_average = np.double(-999.9)
         self.spacecraft_location_average = np.array([-999.9, -999.9, -999.9])
         self.spacecraft_location_std_dev = np.array([-999.9, -999.9, -999.9])
         self.spacecraft_velocity_average = np.array([-999.9, -999.9, -999.9])
