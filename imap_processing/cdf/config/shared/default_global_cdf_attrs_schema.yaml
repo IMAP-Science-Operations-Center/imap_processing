@@ -70,13 +70,13 @@ Discipline:
   validate: true
   overwrite: false
 File_naming_convention:
-   description: >
-     If File_naming_convention was not set, it uses default setting:
-       source_datatype_descriptor_yyyyMMdd
-   default: source_datatype_descriptor_yyyyMMdd
-   required: false
-   validate: false
-   overwrite: true
+  description: >
+    If File_naming_convention was not set, it uses default setting:
+      source_datatype_descriptor_yyyyMMdd
+  default: source_datatype_descriptor_yyyyMMdd
+  required: false
+  validate: false
+  overwrite: true
 Generation_date:
   description: >
     Date stamps the creation of the file using the syntax yyyymmdd, e.g., "
