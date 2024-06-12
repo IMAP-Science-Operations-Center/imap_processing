@@ -8,8 +8,8 @@ import pytest
 
 from imap_processing.glows import __version__
 from imap_processing.glows.l0 import decom_glows
-from imap_processing.glows.l1.glows_l1a import process_de_l0
-from imap_processing.glows.l1.glows_l1a_data import (
+from imap_processing.glows.l1a.glows_l1a import process_de_l0
+from imap_processing.glows.l1a.glows_l1a_data import (
     DirectEventL1A,
     HistogramL1A,
     StatusData,
