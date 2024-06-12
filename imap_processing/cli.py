@@ -36,6 +36,7 @@ from imap_processing.codice import codice_l1a
 from imap_processing.hi.l1a import hi_l1a
 from imap_processing.hi.l1b import hi_l1b
 from imap_processing.hit.l1a.hit_l1a import hit_l1a
+from imap_processing.hit.l1b.hit_l1b import hit_l1b
 from imap_processing.idex.idex_packet_parser import PacketParser
 from imap_processing.lo.l1a import lo_l1a
 from imap_processing.lo.l1b import lo_l1b
@@ -438,6 +439,17 @@ class Hit(ProcessInstrument):
                 )
             # process data and write all processed data to CDF files
             products = hit_l1a(dependencies[0])
+            return products
+
+        elif self.data_level == "l1b":
+            if len(dependencies) > 1:
+                raise ValueError(
+                    f"Unexpected dependencies found for HIT L1B:"
+                    f"{dependencies}. Expected only one dependency."
+                )
+            # process data and write all processed data to CDF files
+            l1a_dataset = load_cdf(dependencies[0])
+            products = hit_l1b(l1a_dataset)
             return products
 
 
