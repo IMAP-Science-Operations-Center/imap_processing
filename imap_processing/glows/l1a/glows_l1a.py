@@ -12,7 +12,7 @@ from imap_processing.cdf.utils import calc_start_time, write_cdf
 from imap_processing.glows import __version__, glows_cdf_attrs
 from imap_processing.glows.l0.decom_glows import decom_packets
 from imap_processing.glows.l0.glows_l0_data import DirectEventL0
-from imap_processing.glows.l1.glows_l1a_data import DirectEventL1A, HistogramL1A
+from imap_processing.glows.l1a.glows_l1a_data import DirectEventL1A, HistogramL1A
 
 
 def glows_l1a(packet_filepath: Path, data_version: str) -> list[Path]:
@@ -303,8 +303,7 @@ def generate_histogram_dataset(
     # TODO: add missing attributes
     support_data = {
         "flight_software_version": [],
-        # TODO: should this be a global file attribute?
-        # "ground_software_version": [],
+        # "ground_software_version": [], # TODO: add this from global attrs
         # "pkts_file_name": [],
         "seq_count_in_pkts_file": [],
         "last_spin_id": [],
