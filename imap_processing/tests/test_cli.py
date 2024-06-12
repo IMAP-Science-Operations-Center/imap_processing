@@ -108,7 +108,7 @@ def test_codice(mock_codice_l1a, mock_instrument_dependencies):
 
 
 @mock.patch("imap_processing.cli.hi_l1a.hi_l1a")
-def test_hi(mock_hi_l1a, mock_instrument_dependencies):
+def test_hi_l1a(mock_hi_l1a, mock_instrument_dependencies):
     """Test coverage for cli.Hi class"""
     mocks = mock_instrument_dependencies
     mocks["mock_query"].return_value = [{"file_path": "/path/to/file0"}]
@@ -131,6 +131,32 @@ def test_hi(mock_hi_l1a, mock_instrument_dependencies):
     assert mocks["mock_download"].call_count == 1
     assert mock_hi_l1a.call_count == 1
     assert mocks["mock_upload"].call_count == 2
+
+
+@mock.patch("imap_processing.cli.hi_l1b.hi_l1b")
+def test_hi_l1b(mock_hi_l1b, mock_instrument_dependencies):
+    """Test coverage for cli.Hi class"""
+    mocks = mock_instrument_dependencies
+    mocks["mock_query"].return_value = [{"file_path": "/path/to/file0"}]
+    mocks["mock_download"].return_value = "file0"
+    mock_hi_l1b.return_value = "hi_l1b_dataset"
+    mocks["mock_write_cdf"].return_value = "/path/to/file0"
+
+    dependency_str = (
+        "[{"
+        "'instrument': 'hi',"
+        "'data_level': 'l1a',"
+        "'descriptor': 'sci',"
+        "'version': 'v00-01',"
+        "'start_date': '20231212'"
+        "}]"
+    )
+    instrument = Hi("l1b", dependency_str, "20231212", "20231213", "v005", True)
+    instrument.process()
+    assert mocks["mock_query"].call_count == 1
+    assert mocks["mock_download"].call_count == 1
+    assert mock_hi_l1b.call_count == 1
+    assert mocks["mock_upload"].call_count == 1
 
 
 @mock.patch("imap_processing.cli.ultra_l1a.ultra_l1a")

@@ -23,7 +23,7 @@ def glows_l1a(packet_filepath: Path, data_version: str) -> list[Path]:
 
     Parameters
     ----------
-    packet_filepath: Path
+    packet_filepath: pathlib.Path
         Path to packet file for processing
     data_version: str
         Data version for CDF filename, in the format "vXXX"
@@ -112,7 +112,7 @@ def generate_de_dataset(
 
     Returns
     -------
-    output : xr.Dataset
+    output : xarray.Dataset
         Dataset containing the GLOWS L1A direct event CDF output
     """
     # TODO: Block header per second, or global attribute?
@@ -290,7 +290,7 @@ def generate_histogram_dataset(
 
     Returns
     -------
-    output : xr.Dataset
+    output : xarray.Dataset
         Dataset containing the GLOWS L1A histogram CDF output
     """
     time_data = np.zeros(len(hist_l1a_list), dtype="datetime64[ns]")

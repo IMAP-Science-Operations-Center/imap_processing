@@ -14,12 +14,12 @@ def process_housekeeping(packets: list[Packet]) -> xr.Dataset:
 
     Parameters
     ----------
-    packets : list[Packet]
+    packets : list[space_packet_parser.ParsedPacket]
         packet list
 
     Returns
     -------
-    xr.dataset
+    xarray.Dataset
         dataset with all metadata field data in xr.DataArray
     """
     dataset = create_dataset(

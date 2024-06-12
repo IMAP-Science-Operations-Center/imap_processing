@@ -11,7 +11,7 @@ PUI = PickUp Ion
 ESA = ElectroStatic Analyzer
 """
 
-from imap_processing.codice.utils import CoDICECompression
+from imap_processing.codice.utils import CODICEAPID, CoDICECompression
 
 # CDF-friendly names for lo data products
 LO_INST_COUNTS_AGGREGATED_NAMES = ["aggregated"]
@@ -48,6 +48,89 @@ LO_NSW_SPECIES_NAMES = [
     "heplus",
     "cnoplus",
 ]
+
+# CDF-friendly names for hi data products
+HI_INST_COUNTS_AGGREGATED_NAMES = ["aggregated"]
+HI_INST_COUNTS_SINGLES_NAMES = ["tcr", "ssdo", "stssd"]
+HI_OMNI_SPECIES_NAMES = ["h", "he3", "he4", "c", "o", "ne_mg_si", "fe", "uh"]
+HI_SECT_SPECIES_NAMES = ["h", "he3he4", "cno", "fe"]
+
+# TODO: For hi products, not sure what data array size should be yet, so just
+#       use 128 for now
+DATA_PRODUCT_CONFIGURATIONS = {
+    CODICEAPID.COD_HI_INST_COUNTS_AGGREGATED: {
+        "num_counters": 1,
+        "num_energy_steps": 128,
+        "variable_names": HI_INST_COUNTS_AGGREGATED_NAMES,
+        "dataset_name": "imap_codice_l1a_hi_counters_aggregated",
+    },
+    CODICEAPID.COD_HI_INST_COUNTS_SINGLES: {
+        "num_counters": 3,
+        "num_energy_steps": 128,
+        "variable_names": HI_INST_COUNTS_SINGLES_NAMES,
+        "dataset_name": "imap_codice_l1a_hi_counters_singles",
+    },
+    CODICEAPID.COD_HI_OMNI_SPECIES_COUNTS: {
+        "num_counters": 8,
+        "num_energy_steps": 128,
+        "variable_names": HI_OMNI_SPECIES_NAMES,
+        "dataset_name": "imap_codice_l1a_hi_omni",
+    },
+    CODICEAPID.COD_HI_SECT_SPECIES_COUNTS: {
+        "num_counters": 4,
+        "num_energy_steps": 128,
+        "variable_names": HI_SECT_SPECIES_NAMES,
+        "dataset_name": "imap_codice_l1a_hi_sectored",
+    },
+    CODICEAPID.COD_LO_INST_COUNTS_AGGREGATED: {
+        "num_counters": 1,
+        "num_energy_steps": 128,
+        "variable_names": LO_INST_COUNTS_AGGREGATED_NAMES,
+        "dataset_name": "imap_codice_l1a_lo_counters_aggregated",
+    },
+    CODICEAPID.COD_LO_INST_COUNTS_SINGLES: {
+        "num_counters": 1,
+        "num_energy_steps": 128,
+        "variable_names": LO_INST_COUNTS_SINGLES_NAMES,
+        "dataset_name": "imap_codice_l1a_lo_counters_singles",
+    },
+    CODICEAPID.COD_LO_SW_ANGULAR_COUNTS: {
+        "num_counters": 4,
+        "num_energy_steps": 128,
+        "variable_names": LO_SW_ANGULAR_NAMES,
+        "dataset_name": "imap_codice_l1a_lo_sw_angular",
+    },
+    CODICEAPID.COD_LO_NSW_ANGULAR_COUNTS: {
+        "num_counters": 1,
+        "num_energy_steps": 128,
+        "variable_names": LO_NSW_ANGULAR_NAMES,
+        "dataset_name": "imap_codice_l1a_lo_nsw_angular",
+    },
+    CODICEAPID.COD_LO_SW_PRIORITY_COUNTS: {
+        "num_counters": 5,
+        "num_energy_steps": 128,
+        "variable_names": LO_SW_PRIORITY_NAMES,
+        "dataset_name": "imap_codice_l1a_lo_sw_priority",
+    },
+    CODICEAPID.COD_LO_NSW_PRIORITY_COUNTS: {
+        "num_counters": 2,
+        "num_energy_steps": 128,
+        "variable_names": LO_NSW_PRIORITY_NAMES,
+        "dataset_name": "imap_codice_l1a_lo_nsw_priority",
+    },
+    CODICEAPID.COD_LO_SW_SPECIES_COUNTS: {
+        "num_counters": 16,
+        "num_energy_steps": 128,
+        "variable_names": LO_SW_SPECIES_NAMES,
+        "dataset_name": "imap_codice_l1a_lo_sw_species",
+    },
+    CODICEAPID.COD_LO_NSW_SPECIES_COUNTS: {
+        "num_counters": 8,
+        "num_energy_steps": 128,
+        "variable_names": LO_NSW_SPECIES_NAMES,
+        "dataset_name": "imap_codice_l1a_lo_nsw_species",
+    },
+}
 
 # Compression ID lookup table for Lo data products
 # The key is the view_id and the value is the ID for the compression algorithm

@@ -76,7 +76,7 @@ def test_cdf_creation():
     assert sci_l1a_filepath.name == "imap_swe_l1a_sci_20240510_v001.cdf"
 
     # reads data from CDF file and passes to l1b
-    l1a_cdf_dataset = load_cdf(sci_l1a_filepath, to_datetime=True)
+    l1a_cdf_dataset = load_cdf(sci_l1a_filepath)
     l1b_dataset = swe_l1b(l1a_cdf_dataset)
 
     sci_l1b_filepath = write_cdf(l1b_dataset)
