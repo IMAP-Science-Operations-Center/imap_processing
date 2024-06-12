@@ -163,12 +163,3 @@ def create_hk_dataset():
 
     logger.info("HIT L1B datasets created")
     return hk_dataset
-
-
-if __name__ == "__main__":
-    # Create xarray dataset
-    l1a_data = xr.Dataset(
-        coords=None,
-        attrs=None,
-    )
-    data = hit_l1b(l1a_data)
