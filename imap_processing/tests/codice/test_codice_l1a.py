@@ -123,7 +123,7 @@ def test_l1a_data(request) -> xr.Dataset:
 
     Returns
     -------
-    dataset : xr.Dataset
+    dataset : xarray.Dataset
         A ``xarray`` dataset containing the test data
     """
 
@@ -142,7 +142,7 @@ def test_l1a_cdf_filenames(test_l1a_data: xr.Dataset, expected_filename: str):
 
     Parameters
     ----------
-    test_l1a_data : xr.Dataset
+    test_l1a_data : xarray.Dataset
         A ``xarray`` dataset containing the test data
     expected_filename : str
         The expected CDF filename
@@ -162,7 +162,7 @@ def test_l1a_data_array_shape(test_l1a_data: xr.Dataset, expected_shape: tuple):
 
     Parameters
     ----------
-    test_l1a_data : xr.Dataset
+    test_l1a_data : xarray.Dataset
         A ``xarray`` dataset containing the test data
     expected_shape : tuple
         The expected shape of the data array
@@ -186,7 +186,7 @@ def test_l1a_data_array_size(test_l1a_data: xr.Dataset, expected_size: int):
 
     Parameters
     ----------
-    test_l1a_data : xr.Dataset
+    test_l1a_data : xarray.Dataset
         A ``xarray`` dataset containing the test data
     expected_size : int
         The expected size of the data array
@@ -211,9 +211,9 @@ def test_l1a_data_array_values(test_l1a_data: xr.Dataset, validation_data: Path)
 
     Parameters
     ----------
-    test_l1a_data : xr.Dataset
+    test_l1a_data : xarray.Dataset
         A ``xarray`` dataset containing the test data
-    validataion_data : Path
+    validataion_data : pathlib.Path
         The path to the file containing the validation data
     """
 

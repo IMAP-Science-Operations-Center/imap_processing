@@ -1,6 +1,8 @@
 """IMAP-HI L1A processing module."""
 
 import logging
+from pathlib import Path
+from typing import Union
 
 from imap_processing.hi.l0 import decom_hi
 from imap_processing.hi.l1a.histogram import create_dataset as hist_create_dataset
@@ -12,7 +14,7 @@ from imap_processing.utils import group_by_apid
 logger = logging.getLogger(__name__)
 
 
-def hi_l1a(packet_file_path: str):
+def hi_l1a(packet_file_path: Union[str, Path]):
     """Process IMAP raw data to l1a.
 
     Parameters

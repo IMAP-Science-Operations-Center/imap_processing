@@ -84,12 +84,12 @@ class CoDICEL1aPipeline:
 
         Parameters
         ----------
-        start_time : np.datetime64
+        start_time : numpy.datetime64
             The start time of the packet, used to determine epoch data variable
 
         Returns
         -------
-        xr.Dataset
+        xarray.Dataset
             ``xarray`` dataset containing the science data and supporting metadata
         """
         # Set the CDF attrs
