@@ -33,6 +33,6 @@ repos:
       - id: poetry-lock
         args: [--no-update]
   - repo: https://github.com/numpy/numpydoc
-    rev: '1.7.0'
+    rev: 'v1.7.0'
     hooks:
       - id: numpydoc-validation
