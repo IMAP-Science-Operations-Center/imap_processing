@@ -7,6 +7,7 @@ It includes a `TelemetryGenerator` class for creating XTCE
 files based on packet definitions stored in
 an Excel file.
 """
+
 from pathlib import Path
 
 from tools.xtce_generation.telemetry_generator import TelemetryGenerator
