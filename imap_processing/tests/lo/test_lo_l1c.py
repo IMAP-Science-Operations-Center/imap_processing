@@ -19,7 +19,7 @@ def test_lo_l1c():
 
     expected_out = "imap_lo_l1c_pset_20100101_v001.cdf"
     # Act
-    output_file = lo_l1c(data)
+    output_file = lo_l1c(data, "001")
 
     # Assert
     assert expected_out == output_file.name
