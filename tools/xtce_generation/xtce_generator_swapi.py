@@ -1,12 +1,18 @@
+"""
+Module for generating XTCE (XML Telemetry and Command Exchange) files for telemetry packets.
+
+This module provides functionality to generate XTCE files for telemetry packets of swapi.
+It includes a `TelemetryGenerator` class for creating XTCE files based on packet definitions stored in
+an Excel file.
+"""
+
 from pathlib import Path
 
 from tools.xtce_generation.telemetry_generator import TelemetryGenerator
 
 
 def main():
-    """This function can be used by any instrument to generate XTCE
-    for certain number of packets. Change values where TODO is
-    """
+    """Function can be used by swapi to generate XTCE for a given number of packets. Change values where TODO is."""
 
     instrument_name = "swapi"
     current_directory = Path(__file__).parent
