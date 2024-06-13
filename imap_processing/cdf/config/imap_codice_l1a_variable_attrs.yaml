@@ -50,6 +50,8 @@ energy_label:
     VAR_TYPE: metadata
 
 # <=== Dataset Attributes ===>
+# TODO: resolve ISTP warning: Width of F10 FORMAT may be insufficient for
+#       values.  Adjust FORMAT or VALIDMIN/VALIDMAX value to resolve.
 acquisition_times_attrs:
     <<: *default
     CATDESC: Time of acquisition for the energy step

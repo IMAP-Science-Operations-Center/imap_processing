@@ -42,7 +42,16 @@ epoch_attrs:
   TIME_SCALE: Terrestrial Time
   REFERENCE_POSITION: Rotating Earth Geoid
 
+# <=== Labels ===>
+energy_label:
+    CATDESC: Energy per charge (E/q) sweeping step
+    FIELDNAM: Energy step
+    FORMAT: A3
+    VAR_TYPE: metadata
+
 # <=== Dataset Attributes ===>
+# TODO: resolve ISTP warning: Width of F10 FORMAT may be insufficient for
+#       values.  Adjust FORMAT or VALIDMIN/VALIDMAX value to resolve.
 acquisition_times_attrs:
     <<: *default
     CATDESC: Time of acquisition for the energy step
@@ -62,10 +71,12 @@ counters_attrs: &counters
     DEPEND_1: energy
     DISPLAY_TYPE: time_series
     FIELDNAM: Fill in at creation
-    LABL_PTR_1: energy
+    FILLVAL: 1.7976931348623157e+308
+    FORMAT: F10.3
+    LABL_PTR_1: energy_label
     UNITS: rates
     VALIDMIN: 0
-    VALIDMAX: 8388607  # max value for a signed 24-bit integer
+    VALIDMAX: 1.7976931348623157e+308
 
 esa_sweep_attrs:
     <<: *default

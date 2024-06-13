@@ -21,6 +21,8 @@ from imap_processing.cdf.utils import load_cdf, write_cdf
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
+# TODO: Fix ISTP compliance issues (revealed in SKTEditor)
+
 
 def create_hskp_dataset(l1a_dataset, cdf_attrs) -> xr.Dataset:
     """Create an ``xarray`` dataset for the housekeeping data.
