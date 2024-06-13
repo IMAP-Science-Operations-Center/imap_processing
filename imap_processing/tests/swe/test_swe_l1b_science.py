@@ -33,7 +33,7 @@ def l1a_test_data():
     for packet_file in packet_files:
         data.extend(decom_swe.decom_packets(packet_file))
     # Get unpacked science data
-    unpacked_data = swe_science(data)
+    unpacked_data = swe_science(data, "001")
     return unpacked_data
 
 
