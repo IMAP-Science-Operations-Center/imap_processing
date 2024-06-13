@@ -5,17 +5,17 @@ import xarray as xr
 
 from imap_processing import imap_module_directory
 from imap_processing.cdf.utils import load_cdf
+from imap_processing.hit.l1a import hit_l1a
 from imap_processing.hit.l1b import hit_l1b
 
 
 @pytest.fixture(scope="module")
 def dependency():
-    """Set path to test data file"""
+    """Get L1A data from test packet file"""
 
-    cdf_filepath = (
-        imap_module_directory / "tests/hit/test_data/imap_hit_l1a_hk_20100105_v001.cdf"
-    )
-    l1a_data = load_cdf(cdf_filepath)
+    packet_filepath = imap_module_directory / "tests/hit/test_data/hskp_sample.ccsds"
+    l1a_data = load_cdf(hit_l1a.hit_l1a(packet_filepath)[0])
+
     return l1a_data
 
 
