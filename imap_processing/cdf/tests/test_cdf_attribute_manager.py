@@ -2,26 +2,45 @@ from pathlib import Path
 
 from imap_processing.cdf.cdf_attribute_manager import CdfAttributeManager
 
-# test __init__(self, data_dir: Path): (?)
-# test load_global_attributes(self, file_path: str):
-# test _load_yaml_data(file_path: str | Path) -> dict: (?)
-# test load_variable_attributes(self, file_name: str) -> None:
-# test get_variable_attributes(self, variable_name: str) -> dict:
 
-# test _load_default_global_attr_schema(sef) -> dict: (?)
-# test _load_default_variable_attr_schema(self) -> dict: (?)
 def test_default_attr_schema():
-    # TODO: initialize CdfAttributeManager object
-    # TODO: assert statement to test default global schema
-    # TODO: assert statement to test default variable schema
+    """
+    Test function that covers:
+        _load_default_global_attr_schema
+        _load_default_variable_attr_schema
+    """
 
-def test_load_yaml_data():
-    # TODO: Check if file is properly loaded in ... ?
-
-# @pytest.mark.xfail(reason="Missing IMAP specific global schema")
-def test_global_attribute():
+    # Initialize CdfAttributeManager object which loads in default schema
     cdf_manager = CdfAttributeManager(Path(__file__).parent.parent / "config")
 
+    # Default global tests
+    # Check false case
+    assert cdf_manager.global_attribute_schema["DOI"]["required"] == "false"
+
+    # Check true case
+    assert cdf_manager.global_attribute_schema["Data_level"] == "true"
+
+    # Default variable tests
+    # Check false case
+    assert cdf_manager.variable_attribute_schema["TIME_BASE"]["required"] == "false"
+
+    # Check true case
+    assert cdf_manager.variable_attribute_schema["RESOLUTION"]["required"] == "true"
+
+
+# @pytest.mark.xfail(reason="Missing IMAP specific global schema")
+
+
+def test_global_attribute():
+    """
+    Test function that covers:
+        load_global_attributes
+        get_global_attributes
+    """
+    # Initialize CdfAttributeManager object which loads in default information
+    cdf_manager = CdfAttributeManager(Path(__file__).parent.parent / "config")
+
+    # Load in test data
     cdf_manager.load_global_attributes("imap_default_global_cdf_attrs.yaml")
 
     # Expected failure: file_naming_convention is not in schema.
@@ -51,6 +70,7 @@ def test_global_attribute():
     )
     assert mag_l1a_global_attrs["Descriptor"] == "MAG>Magnetometer"
     assert mag_l1a_global_attrs["Logical_source"] == "imap_mag_l1a_norm-raw"
+
 
 def test_variable_attribute():
     cdf_manager = CdfAttributeManager(Path(__file__).parent.parent / "config")
