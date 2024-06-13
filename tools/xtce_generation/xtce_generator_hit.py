@@ -1,3 +1,12 @@
+"""
+Module for generating XTCE files for telemetry packets.
+
+This module provides functionality to generate XTCE files for
+telemetry packets for hit.
+It includes a `TelemetryGenerator` class for creating XTCE
+files based on packet definitions stored in
+an Excel file.
+"""
 from pathlib import Path
 
 from telemetry_generator import TelemetryGenerator
@@ -6,7 +15,8 @@ from imap_processing import imap_module_directory
 
 
 def main():
-    """HIT XTCE generator"""
+    """Function used by hit to generate XTCE. Change values where TODO is."""
+
     instrument_name = "hit"
     current_directory = Path(__file__).parent
     packet_definition_path = (
