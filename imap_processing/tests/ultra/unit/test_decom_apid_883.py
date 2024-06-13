@@ -1,3 +1,5 @@
+"""Module to test the decompressed ultra l1 time of flight (tof) data."""
+
 import json
 
 import numpy as np
@@ -22,8 +24,19 @@ from imap_processing.ultra.l0.ultra_utils import ULTRA_TOF
     indirect=True,
 )
 def test_tof_decom(decom_test_data, tof_test_path):
-    """This function reads validation data and checks that decom data
-    matches validation data for image rate packet"""
+    """
+    Function reads validation data and compares to image rate packet.
+
+    This function reads validation data and checks that decom data
+    matches validation data for image rate packet.
+
+    Parameters
+    -----------
+    decom_test_data : iterable
+        Contains decompressed ultra event data and metadata.
+    tof_test_path : str
+        File path to tof.
+    """
 
     decom_ultra, _ = decom_test_data
     df = pd.read_csv(tof_test_path, index_col="SequenceCount")

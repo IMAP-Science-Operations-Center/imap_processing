@@ -1,3 +1,5 @@
+"""Module for testing ultra l1a processing functionality."""
+
 import dataclasses
 
 import pytest
@@ -18,7 +20,21 @@ from imap_processing.utils import group_by_apid
 
 @pytest.fixture()
 def decom_ultra_aux(ccsds_path_theta_0, xtce_path):
-    """Data for decom_ultra_aux"""
+    """
+    Data for decom_ultra_aux.
+
+    Parameters
+    ----------
+    ccsds_path_theta_0 : str
+        The file path to the ccsds data.
+    xtce_path : str
+        The file path to the xtce file.
+
+    Returns
+    -------
+    array_like
+        List of data.
+    """
     packets = decom.decom_packets(ccsds_path_theta_0, xtce_path)
     grouped_data = group_by_apid(packets)
 
@@ -42,8 +58,14 @@ def decom_ultra_aux(ccsds_path_theta_0, xtce_path):
     indirect=True,
 )
 def test_xarray_aux(decom_test_data):
-    """This function checks that a xarray was
-    successfully created from the decom_ultra_aux data."""
+    """
+    Function checks that a xarray was created from the decom_ultra_aux data.
+
+    Parameters
+    -----------
+    decom_test_data : iterable
+        Contains decompressed ultra even data and metadata.
+    """
 
     decom_ultra_aux, _ = decom_test_data
     dataset = create_dataset({ULTRA_AUX.apid[0]: decom_ultra_aux})
@@ -100,8 +122,14 @@ def test_xarray_aux(decom_test_data):
     indirect=True,
 )
 def test_xarray_rates(decom_test_data):
-    """This function checks that a xarray was
-    successfully created from the decom_ultra_rates data."""
+    """
+    Function checks that a xarray was created from the decom_ultra_rates data.
+
+    Parameters
+    -----------
+    decom_test_data : iterable
+        Contains decompressed ultra even data and metadata.
+    """
 
     decom_ultra_rates, _ = decom_test_data
     dataset = create_dataset({ULTRA_RATES.apid[0]: decom_ultra_rates})
@@ -136,8 +164,14 @@ def test_xarray_rates(decom_test_data):
     indirect=True,
 )
 def test_xarray_tof(decom_test_data):
-    """This function checks that a xarray was
-    successfully created from the decom_ultra_tof data."""
+    """
+    Function checks that a xarray was created from the decom_ultra_tof data.
+
+    Parameters
+    ----------
+    decom_test_data : iterable
+        Contains decompressed ultra even data and metadata.
+    """
     decom_ultra_tof, _ = decom_test_data
     dataset = create_dataset({ULTRA_TOF.apid[0]: decom_ultra_tof})
 
@@ -177,8 +211,18 @@ def test_xarray_tof(decom_test_data):
     indirect=True,
 )
 def test_xarray_events(decom_test_data, decom_ultra_aux, events_test_path):
-    """This function checks that a xarray was
-    successfully created from the decom_ultra_events data."""
+    """
+    Function checks that a xarray was created from the decom_ultra_events data.
+
+    Parameters
+    ----------
+    decom_test_data : iterable
+        Contains decompressed ultra even data and metadata.
+    decom_ultra_aux : iterable
+        Decompressed ultra aux data.
+    events_test_path : str
+        The file path to the events test data.
+    """
 
     decom_ultra_events, _ = decom_test_data
     dataset = create_dataset(
@@ -208,7 +252,16 @@ def test_cdf_aux(
     ccsds_path_theta_0,
     decom_ultra_aux,
 ):
-    """Tests that CDF file is created and contains same attributes as xarray."""
+    """
+    Test that CDF file is created and contains same attributes as xarray.
+
+    Parameters
+    ----------
+    ccsds_path_theta_0 : str
+        The file path to the ccsds data.
+    decom_ultra_aux : iterable
+        Decompressed ultra aux data.
+    """
 
     test_data = ultra_l1a(ccsds_path_theta_0, apid=ULTRA_AUX.apid[0])
     test_data_path = write_cdf(test_data[0])
@@ -237,7 +290,16 @@ def test_cdf_aux(
     indirect=True,
 )
 def test_cdf_rates(ccsds_path_theta_0, decom_test_data):
-    """Tests that CDF file is created and contains same attributes as xarray."""
+    """
+    Test that CDF file is created and contains same attributes as xarray.
+
+    Parameters
+    ----------
+    ccsds_path_theta_0 : str
+        The file path to the ccsds data.
+    decom_test_data : iterable
+        Contains decompressed ultra even data and metadata.
+    """
     decom_ultra_rates, _ = decom_test_data
     test_data = ultra_l1a(ccsds_path_theta_0, apid=ULTRA_RATES.apid[0])
     # TODO: Dropping duplicates to ignore ISTP for now. Need to update test data
@@ -271,7 +333,16 @@ def test_cdf_rates(ccsds_path_theta_0, decom_test_data):
     indirect=True,
 )
 def test_cdf_tof(ccsds_path_theta_0, decom_test_data):
-    """Tests that CDF file is created and contains same attributes as xarray."""
+    """
+    Test that CDF file is created and contains same attributes as xarray.
+
+    Parameters
+    ----------
+    ccsds_path_theta_0 : str
+        The file path to the ccsds data.
+    decom_test_data : iterable
+        Contains decompressed ultra even data and metadata.
+    """
     decom_ultra_tof, _ = decom_test_data
     test_data = ultra_l1a(ccsds_path_theta_0, apid=ULTRA_TOF.apid[0])
     test_data_path = write_cdf(test_data[0])
@@ -299,7 +370,18 @@ def test_cdf_tof(ccsds_path_theta_0, decom_test_data):
     indirect=True,
 )
 def test_cdf_events(ccsds_path_theta_0, decom_ultra_aux, decom_test_data):
-    """Tests that CDF file is created and contains same attributes as xarray."""
+    """
+    Test that CDF file is created and contains same attributes as xarray.
+
+    Parameters
+    ----------
+    ccsds_path_theta_0 : str
+        The file path to the ccsds data.
+    decom_ultra_aux : iterable
+        Decompressed ultra aux data.
+    decom_test_data : iterable
+        Contains decompressed ultra even data and metadata.
+    """
     decom_ultra_events, _ = decom_test_data
     test_data = ultra_l1a(ccsds_path_theta_0, apid=ULTRA_EVENTS.apid[0])
     # TODO: Dropping duplicates to ignore ISTP for now. Need to update test data

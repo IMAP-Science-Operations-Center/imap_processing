@@ -1,3 +1,5 @@
+"""Module to test the decompressed ultra l0 image rate data."""
+
 import json
 
 import numpy as np
@@ -21,8 +23,19 @@ from imap_processing.ultra.l0.ultra_utils import RATES_KEYS, ULTRA_RATES
     indirect=True,
 )
 def test_image_rate_decom(decom_test_data, rates_test_path):
-    """This function reads validation data and checks that decom data
-    matches validation data for image rate packet"""
+    """
+    Function reads validation data and compares to image rate packet.
+
+    This function reads validation data and checks that decom data
+    matches validation data for image rate packet.
+
+    Parameters
+    -----------
+    decom_test_data : iterable
+        Contains decompressed ultra event data and metadata.
+    rates_test_path : str
+        File path to tof.
+    """
     decom_ultra, _ = decom_test_data
 
     df = pd.read_csv(rates_test_path, index_col="MET")

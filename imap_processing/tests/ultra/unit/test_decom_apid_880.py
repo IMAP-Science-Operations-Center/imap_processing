@@ -1,3 +1,5 @@
+"""Test the decompression and validation of auxiliary ultra data."""
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -20,7 +22,14 @@ from imap_processing.utils import group_by_apid
     indirect=True,
 )
 def test_aux_enumerated(decom_test_data):
-    """Test if enumerated values derived correctly"""
+    """
+    Test if enumerated values derived correctly.
+
+    Parameters
+    -----------
+    decom_test_data : iterable
+        Contains decompressed Ultra auxiliary packet data and metadata.
+    """
 
     _, packets = decom_test_data
 
@@ -54,7 +63,14 @@ def test_aux_enumerated(decom_test_data):
     indirect=True,
 )
 def test_aux_mode(decom_test_data):
-    """Test if enumerated values derived correctly"""
+    """
+    Test if enumerated values derived correctly.
+
+    Parameters
+    ----------
+    decom_test_data : iterable
+        Contains decompressed Ultra auxiliary packet data and metadata.
+    """
 
     _, packets = decom_test_data
 
@@ -80,8 +96,19 @@ def test_aux_mode(decom_test_data):
     indirect=True,
 )
 def test_aux_decom(decom_test_data, aux_test_path):
-    """This function reads validation data and checks that
-    decom data matches validation data for auxiliary packet"""
+    """
+    Read validation data and compares to auxiliary packet data.
+
+    Function reads validation data and checks that
+    decom data matches validation data for auxiliary packet.
+
+    Parameters
+    ----------
+    decom_test_data : iterable
+        Contains decompressed Ultra auxiliary packet data and metadata.
+    aux_test_path : str
+        File path to the auxiliary packet validation data.
+    """
 
     decom_ultra, _ = decom_test_data
 

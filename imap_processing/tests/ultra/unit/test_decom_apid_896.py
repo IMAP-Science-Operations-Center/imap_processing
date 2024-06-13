@@ -1,3 +1,5 @@
+"""Module to test decompressed ultra l0 events data."""
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -22,8 +24,23 @@ from imap_processing.ultra.l0.ultra_utils import ULTRA_EVENTS
 def test_image_raw_events_decom(
     decom_test_data, events_test_path, ccsds_path_events, xtce_path
 ):
-    """This function reads validation data and checks that decom data
-    matches validation data for image rate packet"""
+    """
+    Function reads validation data and checks to compare to image rate packet.
+
+    This function reads validation data and checks that decom data
+    matches validation data for image rate packet.
+
+    Parameters
+    ----------
+    decom_test_data : iterable
+        Contains decompressed ultra event data and metadata.
+    events_test_path : str
+        The file path to the events test data.
+    ccsds_path_events : str
+        The file path to the events data in CCSDS format.
+    xtce_path : str
+        The file path to the XTCE data.
+    """
     decom_ultra, _ = decom_test_data
 
     df = pd.read_csv(events_test_path, index_col="MET")
@@ -67,8 +84,19 @@ def test_image_raw_events_decom(
     indirect=True,
 )
 def test_image_raw_events_decom_flags(decom_test_data, events_test_path):
-    """This function reads validation data and checks that decom data
-    matches validation data for image rate packet"""
+    """
+    Function reads validation data and compares to image rate packet.
+
+    This function reads validation data and checks that decom data
+    matches validation data for image rate packet.
+
+    Parameters
+    ----------
+    decom_test_data : iterable
+        Contains decompressed ultra even data and metadata.
+    events_test_path : str
+        The file path to the events test data.
+    """
 
     decom_ultra, _ = decom_test_data
     df = pd.read_csv(events_test_path, index_col="MET")

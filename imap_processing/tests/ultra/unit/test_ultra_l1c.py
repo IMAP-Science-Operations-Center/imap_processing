@@ -1,3 +1,5 @@
+"""Module for testing Ultra L1C processing functionality."""
+
 import numpy as np
 import pytest
 import xarray as xr
@@ -8,6 +10,14 @@ from imap_processing.ultra.utils.ultra_l1_utils import create_dataset
 
 @pytest.fixture()
 def mock_data_l1b_dict():
+    """
+    Fixture providing mock l1b data dictionaries.
+
+    Returns
+    --------
+    dict
+        Directory of mock data.
+    """
     # Create sample data for the xarray Dataset
     epoch = np.arange(
         "2024-02-07T15:28:37", "2024-02-07T15:28:42", dtype="datetime64[s]"
@@ -57,6 +67,15 @@ def mock_data_l1b_dict():
 
 @pytest.fixture()
 def mock_data_l1c_dict():
+    """
+    Fixture providing mock l1c data dictionary.
+
+    Returns
+    -------
+    dict
+        Directory of mock data.
+    """
+
     epoch = np.array(
         [760591786368000000, 760591787368000000, 760591788368000000],
         dtype="datetime64[ns]",
@@ -66,7 +85,14 @@ def mock_data_l1c_dict():
 
 
 def test_create_dataset(mock_data_l1c_dict):
-    """Tests that dataset is created as expected."""
+    """
+    Test that dataset is created as expected.
+
+    Parameters
+    -----------
+    mock_data_l1c_dict : iterable
+        Mock l1c data dictionary.
+    """
     dataset = create_dataset(
         mock_data_l1c_dict, "imap_ultra_l1c_45sensor-histogram", "l1c"
     )
@@ -79,7 +105,14 @@ def test_create_dataset(mock_data_l1c_dict):
 
 
 def test_ultra_l1c(mock_data_l1b_dict):
-    """Tests that L1c data is created."""
+    """
+    Test that l1c data is created.
+
+    Parameters
+    -----------
+    mock_data_l1b_dict : iterable
+        Mock l1b data dictionary.
+    """
     output_datasets = ultra_l1c(mock_data_l1b_dict)
 
     assert len(output_datasets) == 1
@@ -94,7 +127,14 @@ def test_ultra_l1c(mock_data_l1b_dict):
 
 
 def test_ultra_l1c_error(mock_data_l1b_dict):
-    """Tests that L1b data throws an error."""
+    """
+    Test that l1b data throws an error.
+
+    Parameters
+    ----------
+    mock_data_l1b_dict : iterable
+        Mock l1b data dictionary.
+    """
     mock_data_l1b_dict["bad_key"] = mock_data_l1b_dict.pop(
         "imap_ultra_l1a_45sensor-histogram"
     )

@@ -1,3 +1,5 @@
+"""Module for testing Ultra L1B processing functionality."""
+
 import numpy as np
 import pytest
 import xarray as xr
@@ -8,6 +10,14 @@ from imap_processing.ultra.utils.ultra_l1_utils import create_dataset
 
 @pytest.fixture()
 def mock_data_l1a_rates_dict():
+    """
+    Fixture providing mock l1a rates data dictionaries.
+
+    Returns
+    --------
+    dict
+        Data dictionary.
+    """
     # Create sample data for the xarray Dataset
     epoch = np.arange(
         "2024-02-07T15:28:37", "2024-02-07T15:28:42", dtype="datetime64[s]"
@@ -31,6 +41,14 @@ def mock_data_l1a_rates_dict():
 
 @pytest.fixture()
 def mock_data_l1a_de_aux_dict():
+    """
+    Fixture providing mock Level-1A direct event and auxiliary data dictionaries.
+
+    Returns
+    --------
+    dict
+        Data dictionary.
+    """
     # Create sample data for the xarray Dataset
     epoch = np.arange(
         "2024-02-07T15:28:37", "2024-02-07T15:28:42", dtype="datetime64[s]"
@@ -58,6 +76,14 @@ def mock_data_l1a_de_aux_dict():
 
 @pytest.fixture()
 def mock_data_l1b_dict():
+    """
+    Fixture providing mock l1b data dictionary.
+
+    Returns
+    --------
+    dict
+        Data dictionary.
+    """
     epoch = np.array(
         [760591786368000000, 760591787368000000, 760591788368000000],
         dtype="datetime64[ns]",
@@ -67,7 +93,14 @@ def mock_data_l1b_dict():
 
 
 def test_create_dataset(mock_data_l1b_dict):
-    """Tests that dataset is created as expected."""
+    """
+    Test that dataset is created as expected.
+
+    Parameters
+    ----------
+    mock_data_l1b_dict : iterable
+        Mock l1b data dictionary.
+    """
     dataset = create_dataset(mock_data_l1b_dict, "imap_ultra_l1b_45sensor-de", "l1b")
 
     assert "epoch" in dataset.coords
@@ -78,7 +111,14 @@ def test_create_dataset(mock_data_l1b_dict):
 
 
 def test_ultra_l1b_rates(mock_data_l1a_rates_dict):
-    """Tests that L1b data is created."""
+    """
+    Test that L1b data is created.
+
+    Parameters
+    -----------
+    mock_data_l1a_rates_dict : iterable
+        Mock l1a rates data dictionary.
+    """
     output_datasets = ultra_l1b(mock_data_l1a_rates_dict)
 
     assert len(output_datasets) == 3
@@ -100,7 +140,14 @@ def test_ultra_l1b_rates(mock_data_l1a_rates_dict):
 
 
 def test_ultra_l1b_de(mock_data_l1a_de_aux_dict):
-    """Tests that L1b data is created."""
+    """
+    Test that L1b data is created.
+
+    Parameters
+    -----------
+    mock_data_l1a_de_aux_dict : iterable
+        Mock l1a direct event data dictionary.
+    """
     output_datasets = ultra_l1b(mock_data_l1a_de_aux_dict)
 
     assert len(output_datasets) == 1
@@ -112,7 +159,14 @@ def test_ultra_l1b_de(mock_data_l1a_de_aux_dict):
 
 
 def test_ultra_l1b_error(mock_data_l1a_rates_dict):
-    """Tests that L1a data throws an error."""
+    """
+    Test that L1a data throws an error.
+
+    Parameters
+    -----------
+    mock_data_l1a_rates_dict : iterable
+        Mock l1a rates data dictionary.
+    """
     mock_data_l1a_rates_dict["bad_key"] = mock_data_l1a_rates_dict.pop(
         "imap_ultra_l1a_45sensor-rates"
     )

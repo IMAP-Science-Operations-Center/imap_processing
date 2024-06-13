@@ -1,4 +1,4 @@
-"""Pytest plugin module for test data paths"""
+"""Pytest plugin module for test data paths."""
 
 import sys
 from pathlib import Path
@@ -12,7 +12,14 @@ from imap_processing.utils import group_by_apid
 
 @pytest.fixture()
 def ccsds_path():
-    """Returns the ccsds directory."""
+    """
+    Return the ccsds directory.
+
+    Returns
+    --------
+    dict
+        The ccsds directory.
+    """
     return (
         Path(sys.modules[__name__.split(".")[0]].__file__).parent
         / "tests"
@@ -25,7 +32,14 @@ def ccsds_path():
 
 @pytest.fixture()
 def ccsds_path_events():
-    """Returns the ccsds directory."""
+    """
+    Return the ccsds directory.
+
+    Returns
+    -------
+    dict
+        The ccsds directory.
+    """
     return (
         Path(sys.modules[__name__.split(".")[0]].__file__).parent
         / "tests"
@@ -38,7 +52,14 @@ def ccsds_path_events():
 
 @pytest.fixture()
 def ccsds_path_theta_0():
-    """Returns the ccsds directory."""
+    """
+    Return the ccsds directory.
+
+    Returns
+    -------
+    dict
+        The ccsds directory..
+    """
     return (
         Path(sys.modules[__name__.split(".")[0]].__file__).parent
         / "tests"
@@ -52,7 +73,14 @@ def ccsds_path_theta_0():
 
 @pytest.fixture()
 def ccsds_path_tof():
-    """Returns the ccsds directory."""
+    """
+    Return the ccsds directory.
+
+    Returns
+    -------
+    dict
+        The ccsds directory.
+    """
     return (
         Path(sys.modules[__name__.split(".")[0]].__file__).parent
         / "tests"
@@ -65,7 +93,14 @@ def ccsds_path_tof():
 
 @pytest.fixture()
 def xtce_path():
-    """Returns the xtce image rates directory."""
+    """
+    Return the xtce image rates directory.
+
+    Returns
+    -------
+    dict
+        Data directory for xtce image rates.
+    """
     return (
         Path(sys.modules[__name__.split(".")[0]].__file__).parent
         / "ultra"
@@ -76,7 +111,14 @@ def xtce_path():
 
 @pytest.fixture()
 def rates_test_path():
-    """Returns the xtce image rates test data directory."""
+    """
+    Return the xtce image rates test data directory.
+
+    Returns
+    --------
+    dict
+        Data directory for xtce image rates.
+    """
     filename = (
         "ultra45_raw_sc_ultraimgrates_Ultra45_EM_SwRI_Cal_Run7_ThetaScan_"
         "20220530T225054.csv"
@@ -93,7 +135,14 @@ def rates_test_path():
 
 @pytest.fixture()
 def aux_test_path():
-    """Returns the xtce auxiliary test data directory."""
+    """
+    Return the xtce auxiliary test data directory.
+
+    Returns
+    -------
+    dict
+        Data directory for xtce auxiliary test.
+    """
     filename = (
         "ultra45_raw_sc_auxdata_Ultra45_EM_SwRI_Cal_Run7_ThetaScan_"
         "20220530T225054.csv"
@@ -110,7 +159,14 @@ def aux_test_path():
 
 @pytest.fixture()
 def events_test_path():
-    """Returns the xtce auxiliary test data directory."""
+    """
+    Return the xtce auxiliary test data directory.
+
+    Returns
+    -------
+    dict
+        Data directory for xtce auxiliary test.
+    """
     filename = (
         "ultra45_raw_sc_ultrarawimgevent_FM45_7P_Phi00_BeamCal_"
         "LinearScan_phi004_theta-001_20230821T121304.csv"
@@ -127,7 +183,14 @@ def events_test_path():
 
 @pytest.fixture()
 def tof_test_path():
-    """Returns the xtce auxiliary test data directory."""
+    """
+    Return the xtce auxiliary test data directory.
+
+    Returns
+    -------
+    dict
+        Data directory for xtce auxiliary test.
+    """
     filename = (
         "ultra45_raw_sc_enaphxtofhangimg_FM45_TV_Cycle6_Hot_Ops_"
         "Front212_20240124T063837.csv"
@@ -144,7 +207,21 @@ def tof_test_path():
 
 @pytest.fixture()
 def decom_test_data(request, xtce_path):
-    """Read test data from file"""
+    """
+    Read test data from file.
+
+    Parameters
+    ----------
+    request : iterable TODo check
+        Request object containing the test parameters.
+    xtce_path : str
+        File path to the xtce file.
+
+    Returns
+    --------
+    iterable
+        Contains the decompressed packet data and the original packets.
+    """
     apid = request.param["apid"]
     filename = request.param["filename"]
     ccsds_path = (
