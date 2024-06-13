@@ -15,7 +15,7 @@ from imap_processing import imap_module_directory
 
 
 def main():
-    """Function used by hit to generate XTCE. Change values where TODO is."""
+    """Function used by hit to generate XTCE."""
 
     instrument_name = "hit"
     current_directory = Path(__file__).parent
