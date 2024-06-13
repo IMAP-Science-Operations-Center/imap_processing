@@ -17,7 +17,7 @@ def test_group_by_apid(decom_test_data):
 
 def test_cdf_creation():
     test_data_path = "tests/swe/l0_data/2024051010_SWE_SCIENCE_packet.bin"
-    processed_data = swe_l1a(imap_module_directory / test_data_path, "v001")
+    processed_data = swe_l1a(imap_module_directory / test_data_path, "001")
 
     cem_raw_cdf_filepath = write_cdf(processed_data)
 

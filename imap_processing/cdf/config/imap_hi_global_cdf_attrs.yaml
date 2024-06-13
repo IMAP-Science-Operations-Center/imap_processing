@@ -2,8 +2,6 @@
 # manager as long as they are defined in the global attribute schema. Instrument
 # level global attributes are thus defined at the root level.
 
-# TODO: remove Data_version. It should be dynamically generated
-Data_version: "001"
 Descriptor: &desc
   Hi>IMAP High-Energy (IMAP-Hi) Energetic Neutral Atom Imager
 TEXT: &txt >
