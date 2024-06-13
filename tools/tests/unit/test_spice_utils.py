@@ -1,3 +1,5 @@
+"""Test functionalities related to SPICE and utilities."""
+
 from pathlib import Path
 
 import pytest
@@ -12,7 +14,14 @@ from tools.spice.spice_utils import (
 
 @pytest.fixture()
 def kernels():
-    """Return the SPICE kernels used for testing"""
+    """
+    Return the SPICE kernels used for testing.
+
+    Returns
+    -------
+    kernels :
+        A list of paths or identifiers for SPICE kernels.
+    """
     # TODO: ALl kernels able to be downloaded from NAIF are not available
     #  in the test_data/spice directory.
     directory = Path(__file__).parent.parent / "test_data" / "spice"
@@ -22,7 +31,14 @@ def kernels():
 
 @pytest.mark.xfail(reason="Download NAIF kernels")
 def test_list_files_with_extensions(kernels):
-    """Tests the list_files_with_extensions function."""
+    """
+    Test the list_files_with_extensions function.
+
+    Parameters
+    ----------
+    kernels : array_like
+        A list of paths or identifiers for SPICE kernels.
+    """
 
     directory = Path(__file__).parent.parent / "test_data" / "spice"
 
@@ -44,7 +60,14 @@ def test_list_files_with_extensions(kernels):
 
 @pytest.mark.xfail(reason="Download NAIF kernels")
 def test_list_loaded_kernels(kernels):
-    """Tests the ``list_loaded_kernels`` function"""
+    """
+    Test the ``list_loaded_kernels`` function.
+
+    Parameters
+    ----------
+    kernels : array_like
+        A list of paths or identifiers for SPICE kernels.
+    """
     directory = Path(__file__).parent.parent / "test_data" / "spice"
 
     with spice.KernelPool(kernels):
@@ -62,7 +85,7 @@ def test_list_loaded_kernels(kernels):
 
 @pytest.mark.xfail(reason="Download NAIF kernels")
 def test_list_all_constants():
-    """Tests the ``list_all_constants`` function"""
+    """Test the ``list_all_constants`` function."""
 
     # Set up the test environment
     directory = Path(__file__).parent.parent / "test_data" / "spice"
