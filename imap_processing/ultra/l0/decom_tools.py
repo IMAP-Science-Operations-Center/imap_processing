@@ -10,7 +10,8 @@ from imap_processing.ultra.l0.ultra_utils import (
 
 
 def read_and_advance(binary_data: str, n: int, current_position: int):
-    """Extract the specified number of bits from a binary string.
+    """
+    Extract the specified number of bits from a binary string.
 
     Starting from the current position, it reads n bits. This is used twice.
     The first time it reads the first 5 bits to determine the width.
@@ -47,7 +48,8 @@ def read_and_advance(binary_data: str, n: int, current_position: int):
 
 
 def log_decompression(value: int, mantissa_bit_length: int) -> int:
-    """Perform logarithmic decompression on an integer.
+    """
+    Perform logarithmic decompression on an integer.
 
     Supports both 16-bit and 8-bit formats based on the specified
     mantissa bit length.
@@ -87,7 +89,8 @@ def log_decompression(value: int, mantissa_bit_length: int) -> int:
 def decompress_binary(
     binary: str, width_bit: int, block: int, array_length: int, mantissa_bit_length: int
 ) -> list:
-    """Decompress a binary string.
+    """
+    Will decompress a binary string.
 
     Decompress a binary string based on block-width encoding and
     logarithmic compression.
@@ -101,9 +104,9 @@ def decompress_binary(
     binary : str
         A binary string containing the compressed data.
     width_bit : int
-        The bit width that describes the width of data in the block
+        The bit width that describes the width of data in the block.
     block : int
-        Number of values in each block
+        Number of values in each block.
     array_length : int
         The length of the array to be decompressed.
     mantissa_bit_length : int
@@ -111,10 +114,12 @@ def decompress_binary(
 
     Returns
     -------
-    list
+    list :
         A list of decompressed values.
 
-    Note: Equations from Section 1.2.1.1 Data Compression and Decompression Algorithms
+    Notes
+    -----
+    Equations from Section 1.2.1.1 Data Compression and Decompression Algorithms
     in Ultra_algorithm_doc_rev2.pdf.
     """
     current_position = 0
@@ -147,7 +152,8 @@ def decompress_image(
     width_bit: int,
     mantissa_bit_length: int,
 ):
-    """Decompresses a binary string representing an image into a matrix of pixel values.
+    """
+    Will decompress a binary string representing an image into a matrix of pixel values.
 
     It starts with an initial pixel value and decompresses the rest of the image using
     block-wise decompression and logarithmic decompression based on provided bit widths
@@ -160,13 +166,13 @@ def decompress_image(
     binary_data : str
         Binary string.
     width_bit : int
-        The bit width that describes the width of data in the block
+        The bit width that describes the width of data in the block.
     mantissa_bit_length : int
         The bit length of the mantissa.
 
     Returns
     -------
-    p_decom : numpy.ndarray
+    numpy.ndarray
         A 2D numpy array representing pixel values.
         Each pixel is stored as an unsigned 16-bit integer (uint16).
 
@@ -226,7 +232,8 @@ def decompress_image(
 
 
 def read_image_raw_events_binary(packet, decom_data: dict):
-    """Convert contents of binary string 'EVENTDATA' into values.
+    """
+    Convert contents of binary string 'EVENTDATA' into values.
 
     Parameters
     ----------
@@ -237,7 +244,7 @@ def read_image_raw_events_binary(packet, decom_data: dict):
 
     Returns
     -------
-    decom_data : dict
+    dict
         Each for loop appends to the existing dictionary.
     """
     binary = packet.data["EVENTDATA"].raw_value

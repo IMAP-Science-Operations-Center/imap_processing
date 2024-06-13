@@ -1,4 +1,4 @@
-"""Decommutates Ultra CCSDS packets."""
+"""Decommutate Ultra CCSDS packets."""
 
 import collections
 import logging
@@ -108,7 +108,7 @@ def process_ultra_apids(data: list, apid: int):
 
     Returns
     -------
-    decom_data : dict
+    dict
         A dictionary containing the decoded data.
     """
     # Strategy dict maps APIDs to their respective processing functions
@@ -140,7 +140,7 @@ def process_ultra_tof(sorted_packets: list, decom_data: collections.defaultdict)
 
     Returns
     -------
-    decom_data : dict
+    dict
         A dictionary containing the decoded data.
     """
     stacked_dict = defaultdict(list)
@@ -191,7 +191,7 @@ def process_ultra_events(sorted_packets: list, decom_data: dict):
 
     Returns
     -------
-    decom_data : dict
+    dict
         A dictionary containing the decoded data.
     """
     for packet in sorted_packets:
@@ -223,7 +223,7 @@ def process_ultra_aux(sorted_packets: list, decom_data: dict):
 
     Returns
     -------
-    decom_data : dict
+    dict
         A dictionary containing the decoded data.
     """
     for packet in sorted_packets:
@@ -245,7 +245,7 @@ def process_ultra_rates(sorted_packets: list, decom_data: dict):
 
     Returns
     -------
-    decom_data : dict
+    dict
         A dictionary containing the decoded data.
     """
     for packet in sorted_packets:
