@@ -18,7 +18,7 @@ def calculate_extendedspin(rates_dataset, name):
 
     Returns
     -------
-    array_like
+    xarray.dataset
         Dataset containing the data.
     """
     extendedspin_dict = {}
