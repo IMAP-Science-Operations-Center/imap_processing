@@ -39,6 +39,9 @@ def hit_l1b(l1a_dataset: xr.Dataset):
     if "_hk" in logical_source:
         dataset = create_hk_dataset()
         datasets.append(dataset)
+    elif "_sci" in logical_source:
+        # process science data. placeholder for future code
+        pass
 
     # Create CDF files
     logger.info("Creating CDF files for HIT L1B data")
@@ -80,6 +83,10 @@ def create_hk_dataset():
     # Convert integers into datetime64[s]
     epoch_converted_time = [utils.calc_start_time(time) for time in [0, 1, 2]]
 
+    # Shape for dims
+    n_epoch = 3
+    n_channels = 64
+
     # Create xarray data arrays for dependencies
     epoch_time = xr.DataArray(
         data=epoch_converted_time,
@@ -89,7 +96,7 @@ def create_hk_dataset():
     )
 
     adc_channels = xr.DataArray(
-        np.arange(3, dtype=np.uint16),
+        np.arange(n_channels, dtype=np.uint16),
         name="adc_channels",
         dims=["adc_channels"],
         attrs=hit_cdf_attrs.l1b_hk_attrs["adc_channels"].output(),
@@ -118,8 +125,7 @@ def create_hk_dataset():
             if field == "leak_i":
                 # 2D array - needs two dims
                 hk_dataset[field] = xr.DataArray(
-                    [[0, 0, 1], [0, 1, 0], [0, 0, 1]],
-                    # np.random.randint(2, size=(65, 3)),
+                    np.ones((n_epoch, n_channels), dtype=np.uint16),
                     dims=dims,
                     attrs=hit_cdf_attrs.l1b_hk_attrs[field].output(),
                 )
