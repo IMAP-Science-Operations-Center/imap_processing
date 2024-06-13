@@ -89,7 +89,7 @@ def create_hk_dataset():
     )
 
     adc_channels = xr.DataArray(
-        np.array(np.arange(3), dtype=np.uint16),
+        np.arange(3, dtype=np.uint16),
         name="adc_channels",
         dims=["adc_channels"],
         attrs=hit_cdf_attrs.l1b_hk_attrs["adc_channels"].output(),
