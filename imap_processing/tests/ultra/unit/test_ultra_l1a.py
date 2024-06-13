@@ -62,7 +62,7 @@ def test_xarray_aux(decom_test_data):
     Function checks that a xarray was created from the decom_ultra_aux data.
 
     Parameters
-    -----------
+    ----------
     decom_test_data : iterable
         Contains decompressed ultra even data and metadata.
     """
@@ -126,7 +126,7 @@ def test_xarray_rates(decom_test_data):
     Function checks that a xarray was created from the decom_ultra_rates data.
 
     Parameters
-    -----------
+    ----------
     decom_test_data : iterable
         Contains decompressed ultra even data and metadata.
     """

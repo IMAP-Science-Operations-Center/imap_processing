@@ -14,7 +14,7 @@ def mock_data_l1b_dict():
     Fixture providing mock l1b data dictionaries.
 
     Returns
-    --------
+    -------
     dict
         Directory of mock data.
     """
@@ -89,7 +89,7 @@ def test_create_dataset(mock_data_l1c_dict):
     Test that dataset is created as expected.
 
     Parameters
-    -----------
+    ----------
     mock_data_l1c_dict : iterable
         Mock l1c data dictionary.
     """
@@ -109,7 +109,7 @@ def test_ultra_l1c(mock_data_l1b_dict):
     Test that l1c data is created.
 
     Parameters
-    -----------
+    ----------
     mock_data_l1b_dict : iterable
         Mock l1b data dictionary.
     """

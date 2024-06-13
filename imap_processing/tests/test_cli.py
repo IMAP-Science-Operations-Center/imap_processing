@@ -33,7 +33,7 @@ def test_main(mock_instrument):
     Test imap_processing.cli.main().
 
     Parameters
-    -----------
+    ----------
     mock_instrument : str TODO CHeck
         Mock instrument.
     """
@@ -78,7 +78,7 @@ def test_validate_args(instrument, data_level, raises_value_error):
     Test coverage for imap_processing.cli._validate_args().
 
     Parameters
-    -----------
+    ----------
     instrument : str
         Instrument name.
     data_level : str
@@ -103,7 +103,7 @@ def test_codice(mock_codice_l1a, mock_instrument_dependencies):
     Test coverage for cli.CoDICE class.
 
     Parameters
-    -----------
+    ----------
     mock_codice_l1a : iterable TODO check
         Mock codice l1a data TODO Check.
     mock_instrument_dependencies : iterable TODO check
@@ -141,7 +141,7 @@ def test_hi_l1a(mock_hi_l1a, mock_instrument_dependencies):
     Test coverage for cli.Hi class.
 
     Parameters
-    -----------
+    ----------
     mock_hi_l1a : iterable TODO check
         Mock hi l1a data.
     mock_instrument_dependencies : iterable TODO check
@@ -176,7 +176,7 @@ def test_hi_l1b(mock_hi_l1b, mock_instrument_dependencies):
     Test coverage for cli.Hi class.
 
     Parameters
-    -----------
+    ----------
     mock_hi_l1b : iterable TODO check
         Mock hi l1b data TODO check.
     mock_instrument_dependencies : iterable TODO check
@@ -211,7 +211,7 @@ def test_ultra_l1a(mock_ultra_l1a, mock_instrument_dependencies):
     Test coverage for cli.Ultra class with l1a data level.
 
     Parameters
-    -----------
+    ----------
     mock_ultra_l1a : iterable TODO check
         Mock ultra l1a data TODO Check.
     mock_instrument_dependencies : iterable TODO check
@@ -246,7 +246,7 @@ def test_ultra_l1b(mock_ultra_l1b, mock_instrument_dependencies):
     Test coverage for cli.Ultra class with l1b data level.
 
     Parameters
-    -----------
+    ----------
     mock_ultra_l1b : iterable TODO check
         Mock ultra l1b data TODO Check.
     mock_instrument_dependencies : iterable TODO check
@@ -272,7 +272,7 @@ def test_ultra_l1c(mock_ultra_l1c, mock_instrument_dependencies):
     Test coverage for cli.Ultra class with l1c data level.
 
     Parameters
-    -----------
+    ----------
     mock_ultra_l1c : iterable TODO check
         Mock ultra l1c data TODO CHECK.
     mock_instrument_dependencies : iterable TODO check
@@ -298,7 +298,7 @@ def test_hit_l1a(mock_hit_l1a, mock_instrument_dependencies):
     Test coverage for cli.Hit class with l1a data level.
 
     Parameters
-    -----------
+    ----------
     mock_hit_l1a : iterable TODO check
         Mock hit l1a data TODO check.
     mock_instrument_dependencies : iterable TODO check

@@ -16,7 +16,7 @@ def ccsds_path():
     Return the ccsds directory.
 
     Returns
-    --------
+    -------
     dict
         The ccsds directory.
     """
@@ -115,7 +115,7 @@ def rates_test_path():
     Return the xtce image rates test data directory.
 
     Returns
-    --------
+    -------
     dict
         Data directory for xtce image rates.
     """

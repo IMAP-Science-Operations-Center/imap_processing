@@ -14,7 +14,7 @@ def mock_data_l1a_rates_dict():
     Fixture providing mock l1a rates data dictionaries.
 
     Returns
-    --------
+    -------
     dict
         Data dictionary.
     """
@@ -45,7 +45,7 @@ def mock_data_l1a_de_aux_dict():
     Fixture providing mock Level-1A direct event and auxiliary data dictionaries.
 
     Returns
-    --------
+    -------
     dict
         Data dictionary.
     """
@@ -80,7 +80,7 @@ def mock_data_l1b_dict():
     Fixture providing mock l1b data dictionary.
 
     Returns
-    --------
+    -------
     dict
         Data dictionary.
     """
@@ -115,7 +115,7 @@ def test_ultra_l1b_rates(mock_data_l1a_rates_dict):
     Test that L1b data is created.
 
     Parameters
-    -----------
+    ----------
     mock_data_l1a_rates_dict : iterable
         Mock l1a rates data dictionary.
     """
@@ -144,7 +144,7 @@ def test_ultra_l1b_de(mock_data_l1a_de_aux_dict):
     Test that L1b data is created.
 
     Parameters
-    -----------
+    ----------
     mock_data_l1a_de_aux_dict : iterable
         Mock l1a direct event data dictionary.
     """
@@ -163,7 +163,7 @@ def test_ultra_l1b_error(mock_data_l1a_rates_dict):
     Test that L1a data throws an error.
 
     Parameters
-    -----------
+    ----------
     mock_data_l1a_rates_dict : iterable
         Mock l1a rates data dictionary.
     """

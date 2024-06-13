@@ -30,7 +30,7 @@ def test_image_rate_decom(decom_test_data, rates_test_path):
     matches validation data for image rate packet.
 
     Parameters
-    -----------
+    ----------
     decom_test_data : iterable
         Contains decompressed ultra event data and metadata.
     rates_test_path : str

@@ -13,7 +13,7 @@ def test_convert_raw_to_eu(tmp_path):
     Test coverage for utils.convert_raw_to_eu().
 
     Parameters
-    -----------
+    ----------
     tmp_path : str
         File Path to tmp.
     """
