@@ -7,7 +7,8 @@ import yaml
 
 
 def get_global_attributes(sheet):
-    """Get the global attributes from a metadata spreadsheet.
+    """
+    Get the global attributes from a metadata spreadsheet.
 
     Parameters
     ----------
@@ -27,12 +28,15 @@ def get_global_attributes(sheet):
 
 
 def get_dataset_attributes(sheet, global_attrs=None):
-    """Get the dataset attributes from a metadata spreadsheet.
+    """
+    Get the dataset attributes from a metadata spreadsheet.
 
     Parameters
     ----------
     sheet : pandas.DataFrame
         A sheet/tab from an Excel file represented as a pandas DataFrame.
+    global_attrs : iterable TODO Check
+        Default sets to None.
 
     Returns
     -------
@@ -61,7 +65,8 @@ def get_dataset_attributes(sheet, global_attrs=None):
 
 # Load all sheets
 def process_file(excel_path, output_folder):
-    """Process the metadata file and output the metadata to a JSON file.
+    """
+    Will process the metadata file and output the metadata to a JSON file.
 
     Parameters
     ----------
