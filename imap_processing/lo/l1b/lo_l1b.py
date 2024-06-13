@@ -29,8 +29,7 @@ def lo_l1b(dependencies: dict, data_version: str):
     attr_mgr = ImapCdfAttributes()
     attr_mgr.add_instrument_global_attrs(instrument="lo")
     attr_mgr.add_instrument_variable_attrs(instrument="lo", level="l1b")
-    # uncomment this once Maxine's PR is merged
-    # attr_mgr.add_global_attribute("Data_version", data_version)
+    attr_mgr.add_global_attribute("Data_version", data_version)
 
     # if the dependencies are used to create Annotated Direct Events
 

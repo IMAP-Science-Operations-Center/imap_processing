@@ -12,11 +12,11 @@ def test_sci_de_decom(create_de_data):
 
     # Process using test data
     processed_data = hi_l1a(
-        packet_file_path=create_de_data(HIAPID.H45_SCI_DE.value), data_version="v001"
+        packet_file_path=create_de_data(HIAPID.H45_SCI_DE.value), data_version="001"
     )
 
     assert processed_data[0].attrs["Logical_source"] == "imap_hi_l1a_45sensor-de"
-    assert processed_data[0].attrs["Data_version"] == "v001"
+    assert processed_data[0].attrs["Data_version"] == "001"
 
     # unique ESA steps should be [1, 2]
     assert np.array_equal(
@@ -49,11 +49,11 @@ def test_app_nhk_decom():
     # Unpack housekeeping data
     test_path = imap_module_directory / "tests/hi/l0_test_data"
     bin_data_path = test_path / "20231030_H45_APP_NHK.bin"
-    processed_data = hi_l1a(packet_file_path=bin_data_path, data_version="v001")
+    processed_data = hi_l1a(packet_file_path=bin_data_path, data_version="001")
 
     assert np.unique(processed_data[0]["pkt_apid"].values) == HIAPID.H45_APP_NHK.value
     assert processed_data[0].attrs["Logical_source"] == "imap_hi_l1a_hk"
-    assert processed_data[0].attrs["Data_version"] == "v001"
+    assert processed_data[0].attrs["Data_version"] == "001"
     # TODO: compare with validation data once we have it
 
     # Write CDF
@@ -68,7 +68,7 @@ def test_app_hist_decom():
     """Test histogram (SCI_CNT) data"""
     test_path = imap_module_directory / "tests/hi/l0_test_data"
     bin_data_path = test_path / "20231030_H45_SCI_CNT.bin"
-    processed_data = hi_l1a(packet_file_path=bin_data_path, data_version="v001")
+    processed_data = hi_l1a(packet_file_path=bin_data_path, data_version="001")
 
     assert processed_data[0].attrs["Logical_source"] == "imap_hi_l1a_hist"
     # TODO: compare with validation data once we have it

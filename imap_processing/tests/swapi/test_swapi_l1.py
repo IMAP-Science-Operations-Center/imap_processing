@@ -212,7 +212,7 @@ def test_process_swapi_science(decom_test_data):
     science_data = grouped_data[SWAPIAPID.SWP_SCI]
     sorted_packets = sort_by_time(science_data, "SHCOARSE")
     ds_data = create_dataset(sorted_packets, include_header=False)
-    processed_data = process_swapi_science(ds_data, data_version="v001")
+    processed_data = process_swapi_science(ds_data, data_version="001")
 
     # Test dataset dimensions
     assert processed_data.sizes == {"epoch": 3, "energy": 72}
@@ -308,7 +308,7 @@ def test_process_swapi_science(decom_test_data):
 
     # make PLAN_ID data incorrect
     ds_data["plan_id_science"][:12] = np.arange(12)
-    processed_data = process_swapi_science(ds_data, data_version="v001")
+    processed_data = process_swapi_science(ds_data, data_version="001")
 
     # Test dataset dimensions
     assert processed_data.sizes == {"epoch": 2, "energy": 72}

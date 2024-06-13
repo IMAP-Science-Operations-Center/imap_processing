@@ -14,7 +14,7 @@ def test_hi_l1b_hk():
     # TODO: once things are more stable, check in an L1A HK file as test data
     test_path = imap_module_directory / "tests/hi/l0_test_data"
     bin_data_path = test_path / "20231030_H45_APP_NHK.bin"
-    data_version = "v001"
+    data_version = "001"
     processed_data = hi_l1a(packet_file_path=bin_data_path, data_version=data_version)
     l1a_cdf_path = write_cdf(processed_data[0])
 
@@ -28,7 +28,7 @@ def test_hi_l1b_de(create_de_data, tmp_path):
     # TODO: once things are more stable, check in an L1A DE file as test data
     # Process using test data
     bin_data_path = create_de_data(HIAPID.H45_SCI_DE.value)
-    data_version = "v001"
+    data_version = "001"
     processed_data = hi_l1a(packet_file_path=bin_data_path, data_version=data_version)
     l1a_cdf_path = write_cdf(processed_data[0])
 
