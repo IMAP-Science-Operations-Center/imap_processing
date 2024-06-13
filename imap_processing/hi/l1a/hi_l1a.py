@@ -14,13 +14,15 @@ from imap_processing.utils import group_by_apid
 logger = logging.getLogger(__name__)
 
 
-def hi_l1a(packet_file_path: Union[str, Path]):
+def hi_l1a(packet_file_path: Union[str, Path], data_version: str):
     """Process IMAP raw data to l1a.
 
     Parameters
     ----------
     packet_file_path : str
         Data packet file path
+    data_version : str
+        Version of the data product being created
 
     Returns
     -------
@@ -53,5 +55,8 @@ def hi_l1a(packet_file_path: Union[str, Path]):
             data = process_housekeeping(grouped_data[apid])
         else:
             raise RuntimeError(f"Encountered unexpected APID [{apid}]")
+
+        # TODO: revisit this
+        data.attrs["Data_version"] = data_version
         processed_data.append(data)
     return processed_data

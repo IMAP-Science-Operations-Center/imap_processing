@@ -377,7 +377,7 @@ class Codice(ProcessInstrument):
                     f"{dependencies}. Expected only one dependency."
                 )
             # process data
-            dataset = codice_l1a.process_codice_l1a(dependencies[0])
+            dataset = codice_l1a.process_codice_l1a(dependencies[0], self.version)
             cdf_file_path = dataset.attrs["cdf_filename"]
             return [cdf_file_path]
 
@@ -411,10 +411,10 @@ class Hi(ProcessInstrument):
                     f"Unexpected dependencies found for Hi L1A:"
                     f"{dependencies}. Expected only one dependency."
                 )
-            datasets = hi_l1a.hi_l1a(dependencies[0])
+            datasets = hi_l1a.hi_l1a(dependencies[0], self.version)
             products = [write_cdf(dataset) for dataset in datasets]
         elif self.data_level == "l1b":
-            dataset = hi_l1b.hi_l1b(dependencies[0])
+            dataset = hi_l1b.hi_l1b(dependencies[0], self.version)
             products = [write_cdf(dataset)]
         else:
             raise NotImplementedError(
@@ -437,7 +437,7 @@ class Hit(ProcessInstrument):
                     f"{dependencies}. Expected only one dependency."
                 )
             # process data and write all processed data to CDF files
-            products = hit_l1a(dependencies[0])
+            products = hit_l1a(dependencies[0], self.version)
             return products
 
 
@@ -455,7 +455,7 @@ class Idex(ProcessInstrument):
                     f"{dependencies}. Expected only one dependency."
                 )
             # read CDF file
-            processed_data = PacketParser(dependencies[0]).data
+            processed_data = PacketParser(dependencies[0], self.version).data
             cdf_file_path = write_cdf(processed_data)
             print(f"processed file path: {cdf_file_path}")
             return [cdf_file_path]
@@ -476,7 +476,7 @@ class Lo(ProcessInstrument):
                     f"Unexpected dependencies found for IMAP-Lo L1A:"
                     f"{dependencies}. Expected only one dependency."
                 )
-            output_files = lo_l1a.lo_l1a(dependencies[0])
+            output_files = lo_l1a.lo_l1a(dependencies[0], self.version)
             return [output_files]
 
         elif self.data_level == "l1b":
@@ -484,7 +484,7 @@ class Lo(ProcessInstrument):
             for dependency in dependencies:
                 dataset = load_cdf(dependency, to_datetime=True)
                 data_dict[dataset.attrs["Logical_source"]] = dataset
-            output_file = lo_l1b.lo_l1b(data_dict)
+            output_file = lo_l1b.lo_l1b(data_dict, self.version)
             return [output_file]
 
 
@@ -520,7 +520,7 @@ class Swapi(ProcessInstrument):
                     f"{dependencies}. Expected only one dependency."
                 )
             # process data
-            processed_data = swapi_l1(dependencies[0])
+            processed_data = swapi_l1(dependencies[0], self.version)
             # Write all processed data to CDF files
             products = [write_cdf(dataset) for dataset in processed_data]
             return products
@@ -584,7 +584,7 @@ class Ultra(ProcessInstrument):
                     f"{dependencies}. Expected only one dependency."
                 )
 
-            datasets = ultra_l1a.ultra_l1a(dependencies[0])
+            datasets = ultra_l1a.ultra_l1a(dependencies[0], self.version)
             products = [write_cdf(dataset) for dataset in datasets]
             return products
         elif self.data_level == "l1b":
@@ -592,7 +592,7 @@ class Ultra(ProcessInstrument):
             for dependency in dependencies:
                 dataset = load_cdf(dependency)
                 data_dict[dataset.attrs["Logical_source"]] = dataset
-            datasets = ultra_l1b.ultra_l1b(data_dict)
+            datasets = ultra_l1b.ultra_l1b(data_dict, self.version)
             products = [write_cdf(dataset) for dataset in datasets]
             return products
         elif self.data_level == "l1c":
@@ -600,7 +600,7 @@ class Ultra(ProcessInstrument):
             for dependency in dependencies:
                 dataset = load_cdf(dependency)
                 data_dict[dataset.attrs["Logical_source"]] = dataset
-            datasets = ultra_l1c.ultra_l1c(data_dict)
+            datasets = ultra_l1c.ultra_l1c(data_dict, self.version)
             products = [write_cdf(dataset) for dataset in datasets]
             return products
 

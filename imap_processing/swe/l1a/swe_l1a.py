@@ -12,7 +12,7 @@ from imap_processing.utils import group_by_apid, sort_by_time
 logger = logging.getLogger(__name__)
 
 
-def swe_l1a(file_path, data_version=None):
+def swe_l1a(file_path, data_version):
     """Process SWE l0 data into l1a data.
 
     Receive all L0 data file. Based on appId, it
