@@ -21,7 +21,7 @@ from telemetry_generator import TelemetryGenerator
 
 
 def main():
-    """Function used by lo to generate XTCE. Change values where TODO is."""
+    """Function used by lo to generate XTCE."""
 
     instrument_name = "lo"
     current_directory = Path(__file__).parent
