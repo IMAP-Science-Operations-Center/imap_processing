@@ -26,7 +26,7 @@ energy_attrs:
     VALIDMAX: 127
     VAR_TYPE: support_data
 
-epoch:
+epoch_attrs:
   CATDESC: Time, number of nanoseconds since J2000 with leap seconds included
   FIELDNAM: epoch
   LABLAXIS: epoch
