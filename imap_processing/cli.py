@@ -33,6 +33,8 @@ from imap_processing.cdf.utils import load_cdf, write_cdf
 # In code:
 #   call cdf.utils.write_cdf
 from imap_processing.codice import codice_l1a
+from imap_processing.glows.l1a.glows_l1a import glows_l1a
+from imap_processing.glows.l1b.glows_l1b import glows_l1b
 from imap_processing.hi.l1a import hi_l1a
 from imap_processing.hi.l1b import hi_l1b
 from imap_processing.hit.l1a.hit_l1a import hit_l1a
@@ -390,6 +392,27 @@ class Glows(ProcessInstrument):
     def do_processing(self, dependencies):
         """Perform GLOWS specific processing."""
         print(f"Processing GLOWS {self.data_level}")
+        products = []
+        if self.data_level == "l1a":
+            if len(dependencies) > 1:
+                raise ValueError(
+                    f"Unexpected dependencies found for GLOWS L1A:"
+                    f"{dependencies}. Expected only one input dependency."
+                )
+            datasets = glows_l1a(dependencies[0], self.version)
+            products = [write_cdf(dataset) for dataset in datasets]
+
+        if self.data_level == "l1b":
+            if len(dependencies) < 1:
+                raise ValueError(
+                    f"Unexpected dependencies found for GLOWS L1B:"
+                    f"{dependencies}. Expected at least one input dependency."
+                )
+            input_dataset = load_cdf(dependencies[0])
+            dataset = glows_l1b(input_dataset, self.version)
+            products = [write_cdf(dataset)]
+
+        return products
 
 
 class Hi(ProcessInstrument):
