@@ -99,7 +99,10 @@ class CoDICEL1aPipeline:
 
         # Define coordinates
         epoch = xr.DataArray(
-            [start_time, start_time],  # TODO: Fix after SIT-3 (see note below)
+            [
+                start_time,
+                start_time + np.timedelta64(1, "s"),
+            ],  # TODO: Fix after SIT-3 (see note below)
             name="epoch",
             dims=["epoch"],
             attrs=cdf_attrs.get_variable_attributes("epoch_attrs"),
