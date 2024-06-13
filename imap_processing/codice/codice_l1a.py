@@ -97,12 +97,15 @@ class CoDICEL1aPipeline:
         cdf_attrs.add_instrument_global_attrs("codice")
         cdf_attrs.add_instrument_variable_attrs("codice", "l1a")
 
-        # Define DataArrays for the coordinates
+        # Define coordinates
         epoch = xr.DataArray(
-            [start_time],
+            [
+                start_time,
+                start_time + np.timedelta64(1, "s"),
+            ],  # TODO: Fix after SIT-3 (see note below)
             name="epoch",
             dims=["epoch"],
-            attrs=cdf_attrs.get_variable_attributes("epoch"),
+            attrs=cdf_attrs.get_variable_attributes("epoch_attrs"),
         )
         energy_steps = xr.DataArray(
             np.arange(self.num_energy_steps),
@@ -111,16 +114,32 @@ class CoDICEL1aPipeline:
             attrs=cdf_attrs.get_variable_attributes("energy_attrs"),
         )
 
+        # Define labels
+        energy_label = xr.DataArray(
+            energy_steps.values.astype(str),
+            name="energy_label",
+            dims=["energy_label"],
+            attrs=cdf_attrs.get_variable_attributes("energy_label"),
+        )
+
         # Create the dataset to hold the data variables
         dataset = xr.Dataset(
-            coords={"epoch": epoch, "energy": energy_steps},
+            coords={
+                "epoch": epoch,
+                "energy": energy_steps,
+                "energy_label": energy_label,
+            },
             attrs=cdf_attrs.get_global_attributes(self.dataset_name),
         )
 
-        # Create a data variable for each species
+        # Create a data variable for each counter
         for variable_data, variable_name in zip(self.data, self.variable_names):
-            variable_data_arr = np.array(list(variable_data), dtype=int).reshape(
-                -1, self.num_energy_steps
+            # TODO: Currently, cdflib doesn't properly write/read CDF files that
+            #       have a single epoch value. To get around this for now, use
+            #       two epoch values and reshape accordingly. Revisit this after
+            #       SIT-3.
+            variable_data_arr = np.array(list(variable_data) * 2, dtype=int).reshape(
+                2, self.num_energy_steps
             )
             cdf_attrs_key = (
                 f"{self.dataset_name.split('imap_codice_l1a_')[-1]}-{variable_name}"

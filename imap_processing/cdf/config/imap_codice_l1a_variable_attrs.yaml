@@ -26,7 +26,7 @@ energy_attrs:
     VALIDMAX: 127
     VAR_TYPE: support_data
 
-epoch:
+epoch_attrs:
   CATDESC: Time, number of nanoseconds since J2000 with leap seconds included
   FIELDNAM: epoch
   LABLAXIS: epoch
@@ -41,6 +41,13 @@ epoch:
   TIME_BASE: J2000
   TIME_SCALE: Terrestrial Time
   REFERENCE_POSITION: Rotating Earth Geoid
+
+# <=== Labels ===>
+energy_label:
+    CATDESC: Energy per charge (E/q) sweeping step
+    FIELDNAM: Energy step
+    FORMAT: A3
+    VAR_TYPE: metadata
 
 # <=== Dataset Attributes ===>
 acquisition_times_attrs:
@@ -62,7 +69,7 @@ counters_attrs: &counters
     DEPEND_1: energy
     DISPLAY_TYPE: time_series
     FIELDNAM: Fill in at creation
-    LABL_PTR_1: energy
+    LABL_PTR_1: energy_label
     UNITS: counts
     VALIDMIN: 0
     VALIDMAX: 8388607  # max value for a signed 24-bit integer
