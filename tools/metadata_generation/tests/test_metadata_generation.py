@@ -1,3 +1,11 @@
+"""
+Create an Excel file for testing.
+
+This fixture function creates an Excel file containing data for
+testing metadata generation.It includes sheets for global attributes,
+science data, and ignored data.
+"""
+
 import pandas as pd
 import pytest
 import yaml
@@ -11,7 +19,19 @@ from ..metadata_generator import (
 
 @pytest.fixture()
 def metadata_spreadsheet(tmp_path):
-    """Create an excel file for testing."""
+    """
+    Create an excel file for testing.
+
+    Parameters
+    ----------
+    tmp_path : str
+        Temporary directory path.
+
+    Returns
+    -------
+    exel_path :
+        Path to the generated Excel file.
+    """
     # Create a pandas DataFrame for global attributes
     data = {
         "NAME": ["global_att1", "global_att2"],
@@ -61,7 +81,14 @@ def metadata_spreadsheet(tmp_path):
 
 
 def test_get_global_attributes(metadata_spreadsheet):
-    """Test the get_global_attributes function."""
+    """
+    Test the get_global_attributes function.
+
+    Parameters
+    ----------
+    metadata_spreadsheet : str
+        Path to the Excel file containing metadata.
+    """
     # Read the excel file
     sheet = pd.read_excel(
         metadata_spreadsheet, engine="openpyxl", sheet_name="global_attrs"
@@ -78,7 +105,14 @@ def test_get_global_attributes(metadata_spreadsheet):
 
 
 def test_get_dataset_attributes(metadata_spreadsheet):
-    """Test the get_dataset_attributes function."""
+    """
+    Test the get_dataset_attributes function.
+
+    Parameters
+    ----------
+    metadata_spreadsheet : str
+        Path to the Excel file containing metadata.
+    """
     # Read the excel file
     sheet = pd.read_excel(
         metadata_spreadsheet, engine="openpyxl", sheet_name="imap_science_data"
@@ -96,7 +130,16 @@ def test_get_dataset_attributes(metadata_spreadsheet):
 
 
 def test_process_file(metadata_spreadsheet, tmp_path):
-    """Test the entire process file function."""
+    """
+    Test the entire process file function.
+
+    Parameters
+    ----------
+    metadata_spreadsheet : array_like
+        Path to the Excel file containing metadata.
+    tmp_path : str
+        Temporary directory path.
+    """
     # Get the global attributes
 
     process_file(metadata_spreadsheet, tmp_path)
