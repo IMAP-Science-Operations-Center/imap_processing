@@ -1,4 +1,4 @@
-"""Contains code to perform ULTRA L1a cdf generation."""
+"""Contain code to perform ULTRA L1a cdf generation."""
 
 # TODO: Evaluate naming conventions for fields and variables
 # TODO: Improved short and long descriptions for each variable
@@ -28,7 +28,8 @@ logger = logging.getLogger(__name__)
 
 
 def initiate_data_arrays(decom_ultra: dict, apid: int):
-    """Initiate xarray data arrays.
+    """
+    Initiate xarray data arrays.
 
     Parameters
     ----------
@@ -39,7 +40,7 @@ def initiate_data_arrays(decom_ultra: dict, apid: int):
 
     Returns
     -------
-    dataset : xarray.Dataset
+    xarray.Dataset
         Data in xarray format.
     """
     # Converted time
@@ -140,18 +141,21 @@ def initiate_data_arrays(decom_ultra: dict, apid: int):
 
 
 def get_event_time(decom_ultra_dict: dict):
-    """Get event times using data from events and aux packets.
+    """
+    Get event times using data from events and aux packets.
 
     Parameters
     ----------
-    decom_ultra_dict: dict
+    decom_ultra_dict : dict
         Events and aux data.
 
     Returns
     -------
-    decom_events : dict
+    dict
         Ultra events data with calculated events timestamps.
 
+    Notes
+    -----
     Equation for event time:
     t = t_(spin start) + t_(spin start sub)/1000 +
     t_(spin duration)/1000 * phase_angle/720
@@ -194,7 +198,8 @@ def get_event_time(decom_ultra_dict: dict):
 
 
 def create_dataset(decom_ultra_dict: dict):
-    """Create xarray for packet.
+    """
+    Create xarray for packet.
 
     Parameters
     ----------
@@ -203,7 +208,7 @@ def create_dataset(decom_ultra_dict: dict):
 
     Returns
     -------
-    dataset : xarray.Dataset
+    xarray.Dataset
         Data in xarray format.
     """
     # Combine events and aux datasets so we can have proper event timestamps
@@ -289,19 +294,19 @@ def create_dataset(decom_ultra_dict: dict):
 
 def ultra_l1a(packet_file: Path, apid: Optional[int] = None):
     """
-    Process ULTRA L0 data into L1A CDF files at output_filepath.
+    Will process ULTRA L0 data into L1A CDF files at output_filepath.
 
     Parameters
     ----------
     packet_file : pathlib.Path
         Path to the CCSDS data packet file.
     apid : Optional[int]
-        Optional apid
+        Optional apid.
 
     Returns
     -------
-    output_datasets : list of xarray.Dataset
-        List of xarray.Dataset
+    list
+        List of xarray.Dataset.
     """
     xtce = Path(
         f"{imap_module_directory}/ultra/packet_definitions/" f"ULTRA_SCI_COMBINED.xml"
