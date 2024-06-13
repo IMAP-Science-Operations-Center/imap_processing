@@ -406,8 +406,9 @@ class Glows(ProcessInstrument):
                     f"Unexpected dependencies found for GLOWS L1B:"
                     f"{dependencies}. Expected at least one input dependency."
                 )
-            dataset = glows_l1b(dependencies[0], self.version)
-            products = write_cdf(dataset)
+            input_dataset = load_cdf(dependencies[0])
+            dataset = glows_l1b(input_dataset, self.version)
+            products = [write_cdf(dataset)]
 
         return products
 
