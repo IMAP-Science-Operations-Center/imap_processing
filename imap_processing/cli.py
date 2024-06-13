@@ -40,6 +40,7 @@ from imap_processing.hit.l1b.hit_l1b import hit_l1b
 from imap_processing.idex.idex_packet_parser import PacketParser
 from imap_processing.lo.l1a import lo_l1a
 from imap_processing.lo.l1b import lo_l1b
+from imap_processing.lo.l1c import lo_l1c
 from imap_processing.mag.l1a.mag_l1a import mag_l1a
 from imap_processing.swapi.l1.swapi_l1 import swapi_l1
 from imap_processing.swe.l1a.swe_l1a import swe_l1a
@@ -497,6 +498,14 @@ class Lo(ProcessInstrument):
                 dataset = load_cdf(dependency, to_datetime=True)
                 data_dict[dataset.attrs["Logical_source"]] = dataset
             output_file = lo_l1b.lo_l1b(data_dict, self.version)
+            return [output_file]
+
+        elif self.data_level == "l1c":
+            data_dict = {}
+            for dependency in dependencies:
+                dataset = load_cdf(dependency, to_datetime=True)
+                data_dict[dataset.attrs["Logical_source"]] = dataset
+            output_file = lo_l1c.lo_l1c(data_dict)
             return [output_file]
 
 
