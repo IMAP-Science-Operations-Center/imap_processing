@@ -1,5 +1,7 @@
 from collections import namedtuple
 
+import numpy as np
+
 from imap_processing import imap_module_directory
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import load_cdf
@@ -49,46 +51,16 @@ def test_create_dataset():
 
     dataset = create_datasets(attr_mgr, logical_source, data_fields)
 
-    assert len(dataset.pointing_start.shape) == 1
-    assert dataset.pointing_start.shape[0] == 1
-    assert len(dataset.pointing_end.shape) == 1
-    assert dataset.pointing_end.shape[0] == 1
-    assert len(dataset.mode.shape) == 1
-    assert dataset.mode.shape[0] == 1
-    assert len(dataset.pivot_angle.shape) == 1
-    assert dataset.pivot_angle.shape[0] == 1
-    assert len(dataset.triples_counts.shape) == 3
-    assert dataset.triples_counts.shape[0] == 1
-    assert dataset.triples_counts.shape[1] == 3600
-    assert dataset.triples_counts.shape[2] == 7
-    assert len(dataset.triples_rates.shape) == 3
-    assert dataset.triples_rates.shape[0] == 1
-    assert dataset.triples_rates.shape[1] == 3600
-    assert dataset.triples_rates.shape[2] == 7
-    assert len(dataset.doubles_counts.shape) == 3
-    assert dataset.doubles_counts.shape[0] == 1
-    assert dataset.doubles_counts.shape[1] == 3600
-    assert dataset.doubles_counts.shape[2] == 7
-    assert len(dataset.doubles_rates.shape) == 3
-    assert dataset.doubles_rates.shape[0] == 1
-    assert dataset.doubles_rates.shape[1] == 3600
-    assert dataset.doubles_rates.shape[2] == 7
-    assert len(dataset.hydrogen_counts.shape) == 3
-    assert dataset.hydrogen_counts.shape[0] == 1
-    assert dataset.hydrogen_counts.shape[1] == 3600
-    assert dataset.hydrogen_counts.shape[2] == 7
-    assert len(dataset.hydrogen_rates.shape) == 3
-    assert dataset.hydrogen_rates.shape[0] == 1
-    assert dataset.hydrogen_rates.shape[1] == 3600
-    assert dataset.hydrogen_rates.shape[2] == 7
-    assert len(dataset.oxygen_counts.shape) == 3
-    assert dataset.oxygen_counts.shape[0] == 1
-    assert dataset.oxygen_counts.shape[1] == 3600
-    assert dataset.oxygen_counts.shape[2] == 7
-    assert len(dataset.oxygen_rates.shape) == 3
-    assert dataset.oxygen_rates.shape[0] == 1
-    assert dataset.oxygen_rates.shape[1] == 3600
-    assert dataset.oxygen_rates.shape[2] == 7
-    assert len(dataset.exposure_time.shape) == 2
-    assert dataset.exposure_time.shape[0] == 1
-    assert dataset.exposure_time.shape[1] == 7
+    np.testing.assert_array_equal(dataset.pointing_start, np.ones(1))
+    np.testing.assert_array_equal(dataset.pointing_end, np.ones(1))
+    np.testing.assert_array_equal(dataset.mode, np.ones(1))
+    np.testing.assert_array_equal(dataset.pivot_angle, np.ones(1))
+    np.testing.assert_array_equal(dataset.triples_counts, np.ones((1, 3600, 7)))
+    np.testing.assert_array_equal(dataset.triples_rates, np.ones((1, 3600, 7)))
+    np.testing.assert_array_equal(dataset.doubles_counts, np.ones((1, 3600, 7)))
+    np.testing.assert_array_equal(dataset.doubles_rates, np.ones((1, 3600, 7)))
+    np.testing.assert_array_equal(dataset.hydrogen_counts, np.ones((1, 3600, 7)))
+    np.testing.assert_array_equal(dataset.hydrogen_rates, np.ones((1, 3600, 7)))
+    np.testing.assert_array_equal(dataset.oxygen_counts, np.ones((1, 3600, 7)))
+    np.testing.assert_array_equal(dataset.oxygen_rates, np.ones((1, 3600, 7)))
+    np.testing.assert_array_equal(dataset.exposure_time, np.ones((1, 7)))

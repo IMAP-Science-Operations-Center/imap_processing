@@ -150,20 +150,20 @@ def create_datasets(attr_mgr, logical_source, data_fields):
         #  The data type will be set in the data class when that's created
         elif field == "exposure_time":
             dataset[field] = xr.DataArray(
-                data=[7 * [np.float16(1)]],
+                data=np.ones((1, 7), dtype=np.float16),
                 dims=dims,
                 attrs=attr_mgr.get_variable_attributes(field),
             )
 
         elif "rate" in field:
             dataset[field] = xr.DataArray(
-                data=[3600 * [7 * [np.float16(1)]]],
+                data=np.ones((1, 3600, 7), dtype=np.float16),
                 dims=dims,
                 attrs=attr_mgr.get_variable_attributes(field),
             )
         else:
             dataset[field] = xr.DataArray(
-                data=[3600 * [7 * [1]]],
+                data=np.ones((1, 3600, 7), dtype=np.int16),
                 dims=dims,
                 attrs=attr_mgr.get_variable_attributes(field),
             )

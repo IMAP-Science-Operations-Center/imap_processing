@@ -29,7 +29,7 @@ epoch:
 esa_step_label:
   CATDESC: ESA Steps
   FIELDNAM: ESA Steps
-  FORMAT: A3
+  FORMAT: A1
   VAR_TYPE: metadata
 
 esa_step:
@@ -48,7 +48,7 @@ esa_step:
 pointing_bins_label:
   CATDESC: Pointing bins
   FIELDNAM: Pointing bins
-  FORMAT: A3
+  FORMAT: A4
   VAR_TYPE: metadata
 
 pointing_bins:
