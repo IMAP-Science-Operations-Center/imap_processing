@@ -1,7 +1,7 @@
 int_fillval: &int_fillval -9223372036854775808
 valid_max: &valid_max 3155630469184000000
 
-epoch_attrs:
+epoch_dim:
   CATDESC: Time, number of nanoseconds since J2000 with leap seconds included
   FIELDNAM: epoch
   FILLVAL: *int_fillval
@@ -37,7 +37,7 @@ metadata_default: &metadata_default
   VAR_TYPE: metadata
   LABLAXIS: Metadata
 
-bin_attrs:
+bin_dim:
   <<: *default_coords
   VALIDMIN: 0
   VALIDMAX: 70
@@ -45,7 +45,7 @@ bin_attrs:
   FIELDNAM: Counts of direct events
   LABLAXIS: Counts
 
-flag_attrs:
+flag_dim:
   <<: *default_coords
   VALIDMIN: 0
   VALIDMAX: 1
@@ -55,7 +55,7 @@ flag_attrs:
   LABLAXIS: Flags
   UNITS: ' '
 
-per_second_attrs:
+per_second_dim:
   <<: *default_coords
   VALIDMIN: 0
   VALIDMAX: 300
@@ -63,7 +63,7 @@ per_second_attrs:
   FIELDNAM: List of direct events
   LABLAXIS: Photon Counts per Second
 
-ecliptic_attrs:
+ecliptic_dim:
   <<: *default_coords
   # TODO: Update validmin and validmax
   VALIDMIN: *int_fillval
@@ -74,7 +74,7 @@ ecliptic_attrs:
   UNITS: km
   FILLVAL: *int_fillval
 
-histogram_attrs:
+histogram_dim:
   <<: *default
   VALIDMIN: 0
   VALIDMAX: 70

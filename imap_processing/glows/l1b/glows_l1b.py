@@ -20,7 +20,7 @@ def glows_l1b(input_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
         input_dataset["epoch"],
         name="epoch",
         dims=["epoch"],
-        attrs=cdf_attrs.get_variable_attributes("epoch_attrs"),
+        attrs=cdf_attrs.get_variable_attributes("epoch_dim"),
     )
 
     logical_source = (
@@ -34,13 +34,13 @@ def glows_l1b(input_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
             np.arange(17),
             name="flags",
             dims=["flags"],
-            attrs=cdf_attrs.get_variable_attributes("flag_attrs"),
+            attrs=cdf_attrs.get_variable_attributes("flag_dim"),
         )
         bad_flag_data = xr.DataArray(
             np.arange(4),
             name="bad_angle_flags",
             dims=["bad_angle_flags"],
-            attrs=cdf_attrs.get_variable_attributes("flag_attrs"),
+            attrs=cdf_attrs.get_variable_attributes("flag_dim"),
         )
 
         # TODO: the four spacecraft location/velocity values should probably each get
@@ -49,14 +49,14 @@ def glows_l1b(input_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
             np.arange(3),
             name="ecliptic",
             dims=["ecliptic"],
-            attrs=cdf_attrs.get_variable_attributes("ecliptic_attrs"),
+            attrs=cdf_attrs.get_variable_attributes("ecliptic_dim"),
         )
 
         bin_data = xr.DataArray(
             input_dataset["bins"],
             name="bins",
             dims=["bins"],
-            attrs=cdf_attrs.get_variable_attributes("bin_attrs"),
+            attrs=cdf_attrs.get_variable_attributes("bin_dim"),
         )
 
         output_dataarrays = process_histogram(input_dataset)
@@ -91,14 +91,14 @@ def glows_l1b(input_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
             input_dataset["per_second"],
             name="per_second",
             dims=["per_second"],
-            attrs=cdf_attrs.get_variable_attributes("per_second_attrs"),
+            attrs=cdf_attrs.get_variable_attributes("per_second_dim"),
         )
 
         flag_data = xr.DataArray(
             np.arange(11),
             name="flags",
             dims=["flags"],
-            attrs=cdf_attrs.get_variable_attributes("flag_attrs"),
+            attrs=cdf_attrs.get_variable_attributes("flag_dim"),
         )
 
         output_dataset = xr.Dataset(
@@ -156,30 +156,35 @@ def process_de(l1a: xr.Dataset) -> tuple[xr.DataArray]:
     # is passed into the function (here a lambda.)
 
     # We need to specify the other dimensions for input and output so the arrays are
-    # properly aligned. The input dimensions are in `dims` and the output dimensions are
-    # in `new_dims`.
+    # properly aligned. The input dimensions are in `input_dims` and the output
+    # dimensions are in `output_dims`.
 
     # An empty array passes the epoch dimension through
-    dims = [[] for i in l1a.keys()]
-    new_dims = [[] for i in range(13)]
+    input_dims = [[] for i in l1a.keys()]
+
+    output_dimension_mapping = {
+        "flags": ["flags"],
+        "direct_event_glows_times": ["per_second"],
+        "direct_event_pulse_lengths": ["per_second"],
+    }
+
+    # For each attribute, retrieve the dims from output_dimension_mapping or use an
+    # empty list. Output_dims should be the same length as the number of attributes in
+    # the class.
+    output_dims = [
+        output_dimension_mapping.get(field.name, [])
+        for field in dataclasses.fields(DirectEventL1B)
+    ]
 
     # Set the two direct event dimensions. This is the only multi-dimensional L1A
     # (input) variable.
-    dims[0] = ["per_second", "direct_event"]
-
-    # Flags is a constant length. It has a dimension of "flags"
-    new_dims[-3] = ["flags"]
-
-    # glows_times and pulse_lengths should be dimension of "per_second", the same as
-    # the input.
-    new_dims[-2] = ["per_second"]
-    new_dims[-1] = ["per_second"]
+    input_dims[0] = ["per_second", "direct_event"]
 
     l1b_fields = xr.apply_ufunc(
         lambda *args: tuple(dataclasses.asdict(DirectEventL1B(*args)).values()),
         *dataarrays,
-        input_core_dims=dims,
-        output_core_dims=new_dims,
+        input_core_dims=input_dims,
+        output_core_dims=output_dims,
         vectorize=True,
         keep_attrs=True,
     )
@@ -210,40 +215,39 @@ def process_histogram(l1a: xr.Dataset) -> xr.Dataset:
     """
     dataarrays = [l1a[i] for i in l1a.keys()]
 
-    dims = [[] for i in l1a.keys()]
-    # 35 is the number of output attributes in the HistogramL1B class.
-    new_dims = [[] for i in range(34)]
+    input_dims = [[] for i in l1a.keys()]
 
-    # histograms is the only multi dimensional variable, so we need to set its dims to
-    # pass along all the dims EXCEPT for epoch. (in this case just "bins")
-    # The rest of the vars are epoch only, so they have an empty list.
-    dims[0] = ["bins"]
+    # This should include a mapping to every dimension in the output data besides epoch.
+    # Only non-1D variables need to be in this mapping.
+    output_dimension_mapping = {
+        "histograms": ["bins"],
+        "imap_spin_angle_bin_cntr": ["bins"],
+        "histogram_flag_array": ["bad_angle_flags", "bins"],
+        "spacecraft_location_average": ["ecliptic"],
+        "spacecraft_location_std_dev": ["ecliptic"],
+        "spacecraft_velocity_average": ["ecliptic"],
+        "spacecraft_velocity_std_dev": ["ecliptic"],
+        "flags": ["flags", "bins"],
+    }
 
-    # This preserves the dimensions for the histogram output
-    new_dims[0] = ["bins"]
-    new_dims[21] = ["bins"]  # For imap_spin_angle_center - a per-bin value
+    # For each attribute, retrieve the dims from output_dimension_mapping or use an
+    # empty list. Output_dims should be the same length as the number of attributes in
+    # the class.
+    output_dims = [
+        output_dimension_mapping.get(field.name, [])
+        for field in dataclasses.fields(HistogramL1B)
+    ]
 
-    # For histogram_flag_array - varies by the new dimension "flags" and by the number
-    # of bins
-    new_dims[22] = ["bad_angle_flags", "bins"]
-
-    # For the new arrays added: add their dimensions. These aren't defined anywhere,
-    # so when the dataset is created I will need to add "ecliptic" as a new dimension.
-
-    # These represent the spacecraft position and std dev, and velocity and std dev.
-    new_dims[-5] = ["ecliptic"]
-    new_dims[-4] = ["ecliptic"]
-    new_dims[-3] = ["ecliptic"]
-    new_dims[-2] = ["ecliptic"]
-
-    # Flags is a constant length (17). It has a dimension of "flags"
-    new_dims[-1] = ["flags", "bins"]
+    # histograms is the only multi dimensional input variable, so we set the non-epoch
+    # dimension ("bins").
+    # The rest of the input vars are epoch only, so they have an empty list.
+    input_dims[0] = ["bins"]
 
     l1b_fields = xr.apply_ufunc(
         lambda *args: HistogramL1B(*args).output_data(),
         *dataarrays,
-        input_core_dims=dims,
-        output_core_dims=new_dims,
+        input_core_dims=input_dims,
+        output_core_dims=output_dims,
         vectorize=True,
         keep_attrs=True,
     )
