@@ -7,10 +7,14 @@ from typing import Union
 import numpy as np
 import xarray as xr
 
+from imap_processing import imap_module_directory
+from imap_processing.cdf.cdf_attribute_manager import CdfAttributeManager
 from imap_processing.cdf.utils import load_cdf
-from imap_processing.hi.utils import CDF_MANAGER
 
 logger = logging.getLogger(__name__)
+CDF_MANAGER = CdfAttributeManager(imap_module_directory / "cdf" / "config")
+CDF_MANAGER.load_global_attributes("imap_hi_global_cdf_attrs.yaml")
+CDF_MANAGER.load_variable_attributes("imap_hi_variable_attrs.yaml")
 
 
 def hi_l1c(l1b_de_path: Union[Path, str], data_version: str):
