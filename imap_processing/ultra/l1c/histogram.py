@@ -1,4 +1,4 @@
-"""Calculates Histogram."""
+"""Calculate Histogram."""
 
 import numpy as np
 
@@ -11,12 +11,14 @@ def calculate_histogram(histogram_dataset, name):
 
     Parameters
     ----------
-    histogram_dataset: xarray.Dataset
+    histogram_dataset : xarray.Dataset
         Dataset containing histogram data.
+    name : str
+        Name for TODO check.
 
     Returns
     -------
-    dataset : xarray.Dataset
+    dataset :
         Dataset containing the data.
     """
     histogram_dict = {}
