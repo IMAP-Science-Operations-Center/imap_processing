@@ -40,6 +40,7 @@ from imap_processing.hit.l1b.hit_l1b import hit_l1b
 from imap_processing.idex.idex_packet_parser import PacketParser
 from imap_processing.lo.l1a import lo_l1a
 from imap_processing.lo.l1b import lo_l1b
+from imap_processing.lo.l1c import lo_l1c
 from imap_processing.mag.l1a.mag_l1a import mag_l1a
 from imap_processing.mag.l1b.mag_l1b import mag_l1b
 from imap_processing.mag.l1c.mag_l1c import mag_l1c
@@ -501,6 +502,14 @@ class Lo(ProcessInstrument):
             output_file = lo_l1b.lo_l1b(data_dict, self.version)
             return [output_file]
 
+        elif self.data_level == "l1c":
+            data_dict = {}
+            for dependency in dependencies:
+                dataset = load_cdf(dependency, to_datetime=True)
+                data_dict[dataset.attrs["Logical_source"]] = dataset
+            output_file = lo_l1c.lo_l1c(data_dict)
+            return [output_file]
+
 
 class Mag(ProcessInstrument):
     """Process MAG."""
@@ -594,7 +603,7 @@ class Swe(ProcessInstrument):
                 )
             # read CDF file
             l1a_dataset = load_cdf(dependencies[0])
-            processed_data = swe_l1b(l1a_dataset)
+            processed_data = swe_l1b(l1a_dataset, data_version=self.version)
             cdf_file_path = write_cdf(processed_data)
             print(f"processed file path: {cdf_file_path}")
             return [cdf_file_path]
