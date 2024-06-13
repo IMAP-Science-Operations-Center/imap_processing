@@ -14,7 +14,7 @@ from tools.xtce_generation.telemetry_generator import TelemetryGenerator
 
 
 def main():
-    """Function used by mag to generate XTCE. Change values where TODO is."""
+    """Function used by mag to generate XTCE."""
 
     instrument_name = "mag"
     current_directory = Path(__file__).parent
