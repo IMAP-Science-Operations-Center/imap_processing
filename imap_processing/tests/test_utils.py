@@ -1,4 +1,4 @@
-"""Tests coverage for imap_processing/utils.py"""
+"""Tests coverage for imap_processing/utils.py."""
 
 import numpy as np
 import pandas as pd
@@ -9,7 +9,14 @@ from imap_processing import utils
 
 
 def test_convert_raw_to_eu(tmp_path):
-    """Test coverage for utils.convert_raw_to_eu()"""
+    """
+    Test coverage for utils.convert_raw_to_eu().
+
+    Parameters
+    -----------
+    tmp_path : str
+        File Path to tmp.
+    """
     # Generate a csv for testing
     test_df = pd.DataFrame(
         data={

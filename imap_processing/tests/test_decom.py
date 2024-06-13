@@ -1,4 +1,4 @@
-"""Tests aspects of the decommutation process that is generic to all instruments"""
+"""Test aspects of the decommutation process that is generic to all instruments."""
 
 import pytest
 
@@ -10,7 +10,14 @@ xtce_document_list = imap_module_directory.glob("*/packet_definitions/*.xml")
 
 @pytest.mark.parametrize("xtce_document", xtce_document_list)
 def test_ccsds_header(xtce_document):
-    """Test if the XTCE document contains the proper CCSDS header information"""
+    """
+    Test if the XTCE document contains the proper CCSDS header information.
+
+    Parameters
+    ----------
+    xtce_document : str
+        The path to xtce document to be tested.
+    """
 
     # Define what is expected in the XTCE document
     header_keys = [

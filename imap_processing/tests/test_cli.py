@@ -1,4 +1,4 @@
-"""Tests coverage for imap_processing.cli."""
+"""Test coverage for imap_processing.cli."""
 
 import sys
 from unittest import mock
@@ -11,6 +11,7 @@ from imap_processing.cli import Codice, Hi, Hit, Ultra, _validate_args, main
 
 @pytest.fixture()
 def mock_instrument_dependencies():
+    """Mock instrument dependencies set up."""
     with (
         mock.patch("imap_processing.cli.imap_data_access.query") as mock_query,
         mock.patch("imap_processing.cli.imap_data_access.download") as mock_download,
@@ -28,7 +29,14 @@ def mock_instrument_dependencies():
 
 @mock.patch("imap_processing.cli.Mag")
 def test_main(mock_instrument):
-    """Test imap_processing.cli.main()"""
+    """
+    Test imap_processing.cli.main().
+
+    Parameters
+    -----------
+    mock_instrument : str TODO CHeck
+        Mock instrument.
+    """
     test_args = [
         "imap_cli",
         "--instrument",
@@ -66,7 +74,18 @@ def test_main(mock_instrument):
     ],
 )
 def test_validate_args(instrument, data_level, raises_value_error):
-    """Test coverage for imap_processing.cli._validate_args()"""
+    """
+    Test coverage for imap_processing.cli._validate_args().
+
+    Parameters
+    -----------
+    instrument : str
+        Instrument name.
+    data_level : str
+        Data level.
+    raises_value_error : bool
+        Raised value error or not.
+    """
     args = mock.Mock
     args.instrument = instrument
     args.data_level = data_level
@@ -80,7 +99,16 @@ def test_validate_args(instrument, data_level, raises_value_error):
 
 @mock.patch("imap_processing.cli.codice_l1a.process_codice_l1a")
 def test_codice(mock_codice_l1a, mock_instrument_dependencies):
-    """Test coverage for cli.CoDICE class"""
+    """
+    Test coverage for cli.CoDICE class.
+
+    Parameters
+    -----------
+    mock_codice_l1a : iterable TODO check
+        Mock codice l1a data TODO Check.
+    mock_instrument_dependencies : iterable TODO check
+        Mock instrument dependencies TODO check.
+    """
 
     test_dataset = xr.Dataset({}, attrs={"cdf_filename": "file0"})
 
@@ -109,7 +137,16 @@ def test_codice(mock_codice_l1a, mock_instrument_dependencies):
 
 @mock.patch("imap_processing.cli.hi_l1a.hi_l1a")
 def test_hi_l1a(mock_hi_l1a, mock_instrument_dependencies):
-    """Test coverage for cli.Hi class"""
+    """
+    Test coverage for cli.Hi class.
+
+    Parameters
+    -----------
+    mock_hi_l1a : iterable TODO check
+        Mock hi l1a data.
+    mock_instrument_dependencies : iterable TODO check
+        Mock instrument dependencies.
+    """
     mocks = mock_instrument_dependencies
     mocks["mock_query"].return_value = [{"file_path": "/path/to/file0"}]
     mocks["mock_download"].return_value = "file0"
@@ -135,7 +172,16 @@ def test_hi_l1a(mock_hi_l1a, mock_instrument_dependencies):
 
 @mock.patch("imap_processing.cli.hi_l1b.hi_l1b")
 def test_hi_l1b(mock_hi_l1b, mock_instrument_dependencies):
-    """Test coverage for cli.Hi class"""
+    """
+    Test coverage for cli.Hi class.
+
+    Parameters
+    -----------
+    mock_hi_l1b : iterable TODO check
+        Mock hi l1b data TODO check.
+    mock_instrument_dependencies : iterable TODO check
+        Mock instrument dependencies TODO check.
+    """
     mocks = mock_instrument_dependencies
     mocks["mock_query"].return_value = [{"file_path": "/path/to/file0"}]
     mocks["mock_download"].return_value = "file0"
@@ -161,7 +207,16 @@ def test_hi_l1b(mock_hi_l1b, mock_instrument_dependencies):
 
 @mock.patch("imap_processing.cli.ultra_l1a.ultra_l1a")
 def test_ultra_l1a(mock_ultra_l1a, mock_instrument_dependencies):
-    """Test coverage for cli.Ultra class with l1a data level"""
+    """
+    Test coverage for cli.Ultra class with l1a data level.
+
+    Parameters
+    -----------
+    mock_ultra_l1a : iterable TODO check
+        Mock ultra l1a data TODO Check.
+    mock_instrument_dependencies : iterable TODO check
+        Mock instrument dependencies TODO check.
+    """
     mocks = mock_instrument_dependencies
     mocks["mock_query"].return_value = [{"file_path": "/path/to/file0"}]
     mocks["mock_download"].return_value = "dependency0"
@@ -187,7 +242,16 @@ def test_ultra_l1a(mock_ultra_l1a, mock_instrument_dependencies):
 
 @mock.patch("imap_processing.cli.ultra_l1b.ultra_l1b")
 def test_ultra_l1b(mock_ultra_l1b, mock_instrument_dependencies):
-    """Test coverage for cli.Ultra class with l1b data level"""
+    """
+    Test coverage for cli.Ultra class with l1b data level.
+
+    Parameters
+    -----------
+    mock_ultra_l1b : iterable TODO check
+        Mock ultra l1b data TODO Check.
+    mock_instrument_dependencies : iterable TODO check
+        Mock instrument dependencies TODO check.
+    """
     mocks = mock_instrument_dependencies
     mocks["mock_query"].return_value = [{"file_path": "/path/to/file0"}]
     mocks["mock_download"].return_value = "dependency0"
@@ -204,7 +268,16 @@ def test_ultra_l1b(mock_ultra_l1b, mock_instrument_dependencies):
 
 @mock.patch("imap_processing.cli.ultra_l1c.ultra_l1c")
 def test_ultra_l1c(mock_ultra_l1c, mock_instrument_dependencies):
-    """Test coverage for cli.Ultra class with l1c data level"""
+    """
+    Test coverage for cli.Ultra class with l1c data level.
+
+    Parameters
+    -----------
+    mock_ultra_l1c : iterable TODO check
+        Mock ultra l1c data TODO CHECK.
+    mock_instrument_dependencies : iterable TODO check
+        Mock instrument dependencies TODO check.
+    """
     mocks = mock_instrument_dependencies
     mocks["mock_query"].return_value = [{"file_path": "/path/to/file0"}]
     mocks["mock_download"].return_value = "dependency0"
@@ -221,7 +294,16 @@ def test_ultra_l1c(mock_ultra_l1c, mock_instrument_dependencies):
 
 @mock.patch("imap_processing.cli.hit_l1a")
 def test_hit_l1a(mock_hit_l1a, mock_instrument_dependencies):
-    """Test coverage for cli.Hit class with l1a data level"""
+    """
+    Test coverage for cli.Hit class with l1a data level.
+
+    Parameters
+    -----------
+    mock_hit_l1a : iterable TODO check
+        Mock hit l1a data TODO check.
+    mock_instrument_dependencies : iterable TODO check
+        Mock instrument dependencies TODO check.
+    """
     mocks = mock_instrument_dependencies
     mocks["mock_query"].return_value = [{"file_path": "/path/to/file0"}]
     mocks["mock_download"].return_value = "dependency0"
