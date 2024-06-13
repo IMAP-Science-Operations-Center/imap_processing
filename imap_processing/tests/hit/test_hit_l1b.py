@@ -14,7 +14,7 @@ def dependency():
     """Get L1A data from test packet file"""
 
     packet_filepath = imap_module_directory / "tests/hit/test_data/hskp_sample.ccsds"
-    l1a_data = load_cdf(hit_l1a.hit_l1a(packet_filepath)[0])
+    l1a_data = load_cdf(hit_l1a.hit_l1a(packet_filepath, "001")[0])
 
     return l1a_data
 
