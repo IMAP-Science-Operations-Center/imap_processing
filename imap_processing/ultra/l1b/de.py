@@ -1,4 +1,4 @@
-"""Calculates Annotated Direct Events."""
+"""Calculate Annotated Direct Events."""
 
 import numpy as np
 
@@ -11,14 +11,14 @@ def calculate_de(de_dataset, name):
 
     Parameters
     ----------
-    de_dataset: xarray.Dataset
+    de_dataset : xarray.Dataset
         Dataset containing direct event data.
-    name: str
+    name : str
         Name of the dataset.
 
     Returns
     -------
-    dataset : xarray.Dataset
+    dataset
         Dataset containing the data.
     """
     de_dict = {}
