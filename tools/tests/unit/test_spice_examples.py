@@ -1,3 +1,5 @@
+"""Test functionalities related to spice and utilities."""
+
 from pathlib import Path
 
 import numpy as np
@@ -16,14 +18,33 @@ from tools.spice.spice_utils import (
 
 @pytest.fixture()
 def kernel_directory():
-    """Kernel directory."""
+    """
+    Kernel directory.
+
+    Returns
+    -------
+    kernel_directory :
+        Directory to kernel location.
+    """
     kernel_directory = Path(__file__).parents[1] / "test_data" / "spice"
     return kernel_directory
 
 
 @pytest.fixture()
 def kernels(kernel_directory):
-    """Loads all kernels."""
+    """
+    Load all kernels.
+
+    Parameters
+    ----------
+    kernel_directory : str TODO check
+        Directory to kernel location.
+
+    Returns
+    --------
+    kernels :
+        A list of paths or identifiers for SPICE kernels.
+    """
     # TODO: ALl kernels able to be downloaded from NAIF are not available
     #  in the test_data/spice directory.
     kernels = list_files_with_extensions(
@@ -34,13 +55,19 @@ def kernels(kernel_directory):
 
 @pytest.fixture()
 def direct_events():
-    """Loads direct events test data.
+    """
+    Load direct events test data.
 
     Possible example of future direct_events structure:
     direct_events.keys()
     dict_keys(['eventID', 'tdb', 'xstart', 'ystart', 'xstop', 'ystop',
     'eventtype', 'ph', 'spinphase', 'tof', 'ishead90', 'yf', 'd',
     'energy', 'rvecultra', 'vultra', 'rmagultra', 'rnormultra'])
+
+    Returns
+    -------
+    direct_events :
+        Returns direct events test data.
     """
     direct_events = {
         "vultra": np.array(
@@ -54,7 +81,16 @@ def direct_events():
 
 @pytest.mark.xfail(reason="Download NAIF kernels")
 def test_get_attitude_timerange(kernels, kernel_directory):
-    """Tests get_attitude_timerange function."""
+    """
+    Test get_attitude_timerange function.
+
+    Parameters
+    ----------
+    kernels : array_like TODO check
+        A list of paths or identifiers for SPICE kernels.
+    kernel_directory : str TODO check
+        Directory to find the kernels.
+    """
 
     with spice.KernelPool(kernels):
         ck_kernel = list_files_with_extensions(kernel_directory, [".ck"])
@@ -65,7 +101,18 @@ def test_get_attitude_timerange(kernels, kernel_directory):
 
 @pytest.mark.xfail(reason="Download NAIF kernels")
 def test_get_particle_velocity(direct_events, kernels, kernel_directory):
-    """Tests the get_particle_velocity function."""
+    """
+    Test the get_particle_velocity function.
+
+    Parameters
+    ----------
+    direct_events : str TODO Check
+        Direction to the events.
+    kernels : array_like TODO check
+        A list of paths or identifiers for SPICE kernels.
+    kernel_directory : str TODO check
+        Directory to find the kernels.
+    """
 
     with spice.KernelPool(kernels):
         _get_particle_velocity(direct_events)
@@ -73,7 +120,18 @@ def test_get_particle_velocity(direct_events, kernels, kernel_directory):
 
 @pytest.mark.xfail(reason="Download NAIF kernels")
 def test_build_annotated_events(direct_events, kernels, kernel_directory):
-    """Tests the build_annotated_events function."""
+    """
+    Test the build_annotated_events function.
+
+    Parameters
+    ----------
+    direct_events : str TODO Check
+        Direction to the events.
+    kernels : array_like TODO check
+        A list of paths or identifiers for SPICE kernels.
+    kernel_directory : str TODO check
+        Directory to find the kernels.
+    """
     spice.kclear()
     kernels = list_files_with_extensions(
         kernel_directory, [".tsc", ".tls", ".tf", ".bsp", ".ck"]
