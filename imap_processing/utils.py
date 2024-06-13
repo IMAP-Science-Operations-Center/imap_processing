@@ -17,37 +17,39 @@ logger = logging.getLogger(__name__)
 
 
 def sort_by_time(packets, time_key):
-    """Sort packets by specified key.
+    """
+    Sort packets by specified key.
 
     Parameters
     ----------
     packets : list
-        Decom data packets
+        Decom data packets.
     time_key : str
         Key to sort by. Must be a key in the packets data dictionary.
-        e.g. "SHCOARSE" or "MET_TIME" or "ACQ_START_COARSE"
+        e.g. "SHCOARSE" or "MET_TIME" or "ACQ_START_COARSE".
 
     Returns
     -------
     list
-        sorted packets
+        Sorted packets.
     """
     sorted_packets = sorted(packets, key=lambda x: x.data[time_key].raw_value)
     return sorted_packets
 
 
 def group_by_apid(packets: list):
-    """Group data by apid.
+    """
+    Group data by apid.
 
     Parameters
     ----------
     packets : list
-        packet list
+        Packet list.
 
     Returns
     -------
     dict
-        grouped data by apid
+        Grouped data by apid.
     """
     grouped_packets = collections.defaultdict(list)
     for packet in packets:
@@ -59,7 +61,8 @@ def group_by_apid(packets: list):
 def convert_raw_to_eu(
     dataset: xr.Dataset, conversion_table_path, packet_name, **read_csv_kwargs
 ):
-    """Convert raw data to engineering unit.
+    """
+    Convert raw data to engineering unit.
 
     Parameters
     ----------
@@ -76,13 +79,13 @@ def convert_raw_to_eu(
         Comment lines are allowed in the csv file specified by starting with
         the '#' character.
     packet_name : str
-        Packet name
-    read_csv_kwargs : dict
+        Packet name.
+    **read_csv_kwargs : iterable
         In order to allow for some flexibility in the format of the csv
         conversion table, any additional keywords passed to this function are
         passed in the call to `pandas.read_csv()`. See pandas documentation
         for a list of keywords and their functionality:
-        https://pandas.pydata.org/docs/reference/api/pandas.read_csv.html
+        https://pandas.pydata.org/docs/reference/api/pandas.read_csv.html.
 
     Returns
     -------
@@ -139,24 +142,25 @@ def create_dataset(
     include_header=True,
     skip_keys=None,
 ) -> xr.Dataset:
-    """Create dataset for each metadata field.
+    """
+    Create dataset for each metadata field.
 
     Parameters
     ----------
     packets : list[Packet]
-        packet list
+        Packet list.
     spacecraft_time_key : str, Optional
         Default is "shcoarse" because many instrument uses it.
         This key is used to get spacecraft time for epoch dimension.
-    include_header: bool, Optional
-        Whether to include CCSDS header data in the dataset
-    skip_keys: list, Optional
-        Keys to skip in the metadata
+    include_header : bool, Optional
+        Whether to include CCSDS header data in the dataset.
+    skip_keys : list, Optional
+        Keys to skip in the metadata.
 
     Returns
     -------
     xr.dataset
-        dataset with all metadata field data in xr.DataArray
+        Dataset with all metadata field data in xr.DataArray.
     """
     metadata_arrays = collections.defaultdict(list)
     description_dict = {}
@@ -220,12 +224,13 @@ def create_dataset(
 
 
 def update_epoch_to_datetime(dataset: xr.Dataset):
-    """Update epoch in dataset to datetime object.
+    """
+    Update epoch in dataset to datetime object.
 
     Parameters
     ----------
     dataset : xr.Dataset
-        Dataset to update
+        Dataset to update.
 
     Returns
     -------
