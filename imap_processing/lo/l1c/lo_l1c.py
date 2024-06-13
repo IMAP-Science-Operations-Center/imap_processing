@@ -1,4 +1,4 @@
-"""IMAP-Lo L1B Data Processing."""
+"""IMAP-Lo L1C Data Processing."""
 
 from collections import namedtuple
 
@@ -9,14 +9,14 @@ from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import calc_start_time, write_cdf
 
 
-def lo_l1b(dependencies: dict, data_version: str):
+def lo_l1c(dependencies: dict, data_version: str):
     """
-    Process IMAP-Lo L1A data into L1B CDF data products.
+    Process IMAP-Lo L1B data into L1C CDF data products.
 
     Parameters
     ----------
     dependencies : dict
-        dictionary of datasets needed for L1B data product creation in xarray Datasets.
+        dictionary of datasets needed for L1C data product creation in xarray Datasets.
     data_version : str
         Version of the data product being created
 
@@ -28,28 +28,29 @@ def lo_l1b(dependencies: dict, data_version: str):
     # create the attribute manager for this data level
     attr_mgr = ImapCdfAttributes()
     attr_mgr.add_instrument_global_attrs(instrument="lo")
-    attr_mgr.add_instrument_variable_attrs(instrument="lo", level="l1b")
+    attr_mgr.add_instrument_variable_attrs(instrument="lo", level="l1c")
     attr_mgr.add_global_attribute("Data_version", data_version)
 
     # if the dependencies are used to create Annotated Direct Events
-
-    if "imap_lo_l1a_de" in dependencies and "imap_lo_l1a_spin" in dependencies:
-        logical_source = "imap_lo_l1b_de"
-        # TODO: TEMPORARY. Need to update to use the L1B data class once that exists
+    if "imap_lo_l1b_de" in dependencies:
+        logical_source = "imap_lo_l1c_pset"
+        # TODO: TEMPORARY. Need to update to use the L1C data class once that exists
         #  and I have sample data.
         data_field_tup = namedtuple("data_field_tup", ["name"])
         data_fields = [
-            data_field_tup("ESA_STEP"),
+            data_field_tup("POINTING_START"),
+            data_field_tup("POINTING_END"),
             data_field_tup("MODE"),
-            data_field_tup("TOF0"),
-            data_field_tup("TOF1"),
-            data_field_tup("TOF2"),
-            data_field_tup("TOF3"),
-            data_field_tup("COINCIDENCE_TYPE"),
-            data_field_tup("POS"),
-            data_field_tup("COINCIDENCE"),
-            data_field_tup("BADTIME"),
-            data_field_tup("DIRECTION"),
+            data_field_tup("PIVOT_ANGLE"),
+            data_field_tup("TRIPLES_COUNTS"),
+            data_field_tup("TRIPLES_RATES"),
+            data_field_tup("DOUBLES_COUNTS"),
+            data_field_tup("DOUBLES_RATES"),
+            data_field_tup("HYDROGEN_COUNTS"),
+            data_field_tup("HYDROGEN_RATES"),
+            data_field_tup("OXYGEN_COUNTS"),
+            data_field_tup("OXYGEN_RATES"),
+            data_field_tup("EXPOSURE_TIME"),
         ]
 
     dataset = create_datasets(attr_mgr, logical_source, data_fields)
@@ -79,7 +80,7 @@ def create_datasets(attr_mgr, logical_source, data_fields):
     #  and relative L1A DE time to calculate the absolute DE time,
     #  this epoch conversion will go away and the time in the DE dataclass
     #  can be used direction
-    epoch_converted_time = [calc_start_time(time) for time in [0, 1, 2]]
+    epoch_converted_time = [calc_start_time(1)]
 
     # Create a data array for the epoch time
     # TODO: might need to update the attrs to use new YAML file
@@ -90,26 +91,39 @@ def create_datasets(attr_mgr, logical_source, data_fields):
         attrs=attr_mgr.get_variable_attributes("epoch"),
     )
 
-    if logical_source == "imap_lo_l1b_de":
-        direction_vec = xr.DataArray(
-            data=[0, 1, 2],
-            name="direction_vec",
-            dims=["direction_vec"],
-            attrs=attr_mgr.get_variable_attributes("direction_vec"),
+    if logical_source == "imap_lo_l1c_pset":
+        esa_step = xr.DataArray(
+            data=[1, 2, 3, 4, 5, 6, 7],
+            name="esa_step",
+            dims=["esa_step"],
+            attrs=attr_mgr.get_variable_attributes("esa_step"),
+        )
+        pointing_bins = xr.DataArray(
+            data=np.arange(3600),
+            name="pointing_bins",
+            dims=["pointing_bins"],
+            attrs=attr_mgr.get_variable_attributes("pointing_bins"),
         )
 
-        direction_vec_label = xr.DataArray(
-            data=direction_vec.values.astype(str),
-            name="direction_vec_label",
-            dims=["direction_vec_label"],
-            attrs=attr_mgr.get_variable_attributes("direction_vec_label"),
+        esa_step_label = xr.DataArray(
+            esa_step.values.astype(str),
+            name="esa_step_label",
+            dims=["esa_step_label"],
+            attrs=attr_mgr.get_variable_attributes("esa_step_label"),
         )
-
+        pointing_bins_label = xr.DataArray(
+            pointing_bins.values.astype(str),
+            name="pointing_bins_label",
+            dims=["pointing_bins_label"],
+            attrs=attr_mgr.get_variable_attributes("pointing_bins_label"),
+        )
         dataset = xr.Dataset(
             coords={
                 "epoch": epoch_time,
-                "direction_vec": direction_vec,
-                "direction_vec_label": direction_vec_label,
+                "pointing_bins": pointing_bins,
+                "pointing_bins_label": pointing_bins_label,
+                "esa_step": esa_step,
+                "esa_step_label": esa_step_label,
             },
             attrs=attr_mgr.get_global_attributes(logical_source),
         )
@@ -128,25 +142,33 @@ def create_datasets(attr_mgr, logical_source, data_fields):
         ]
 
         # Create a data array for the current field and add it to the dataset
-        # TODO: TEMPORARY. need to update to use l1a data once that's available.
-        #  Won't need to check for the direction field when I have sample data either.
-        if field == "direction":
+        # TODO: TEMPORARY. need to update to use l1b data once that's available.
+        if field in ["pointing_start", "pointing_end", "mode", "pivot_angle"]:
             dataset[field] = xr.DataArray(
-                [[0, 0, 1], [0, 1, 0], [0, 0, 1]],
+                data=[1],
                 dims=dims,
                 attrs=attr_mgr.get_variable_attributes(field),
             )
         # TODO: This is temporary.
         #  The data type will be set in the data class when that's created
-        elif field in ["tof0", "tof1", "tof2", "tof3"]:
+        elif field == "exposure_time":
             dataset[field] = xr.DataArray(
-                [np.float16(1), np.float16(1), np.float16(1)],
+                data=np.ones((1, 7), dtype=np.float16),
+                dims=dims,
+                attrs=attr_mgr.get_variable_attributes(field),
+            )
+
+        elif "rate" in field:
+            dataset[field] = xr.DataArray(
+                data=np.ones((1, 3600, 7), dtype=np.float16),
                 dims=dims,
                 attrs=attr_mgr.get_variable_attributes(field),
             )
         else:
             dataset[field] = xr.DataArray(
-                [1, 1, 1], dims=dims, attrs=attr_mgr.get_variable_attributes(field)
+                data=np.ones((1, 3600, 7), dtype=np.int16),
+                dims=dims,
+                attrs=attr_mgr.get_variable_attributes(field),
             )
 
     return dataset

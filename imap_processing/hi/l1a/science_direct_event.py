@@ -286,6 +286,8 @@ def create_dataset(
     cdf_manager = CdfAttributeManager(imap_module_directory / "cdf" / "config")
     cdf_manager.load_global_attributes("imap_hi_global_cdf_attrs.yaml")
     cdf_manager.load_variable_attributes("imap_hi_variable_attrs.yaml")
+    # uncomment this once Maxine's PR is merged
+    # attr_mgr.add_global_attribute("Data_version", data_version)
 
     # Inject sensor head into Logical_source
     de_global_attrs = cdf_manager.get_global_attributes("imap_hi_l1a_de_attrs").copy()

@@ -30,7 +30,7 @@ def test_swe_l1b(decom_test_data):
         grouped_data[SWEAPID.SWE_SCIENCE],
         key=lambda x: x.data["QUARTER_CYCLE"].raw_value,
     )
-    science_l1a_ds = swe_science(sorted_packets)
+    science_l1a_ds = swe_science(sorted_packets, "001")
     # convert value from raw to engineering units as needed
     conversion_table_path = (
         imap_module_directory / "swe/l1b/engineering_unit_convert_table.csv"
@@ -71,7 +71,7 @@ def test_swe_l1b(decom_test_data):
 def test_cdf_creation():
     """Test that CDF file is created and has the correct name."""
     test_data_path = "tests/swe/l0_data/2024051010_SWE_SCIENCE_packet.bin"
-    l1a_datasets = swe_l1a(imap_module_directory / test_data_path, "v002")
+    l1a_datasets = swe_l1a(imap_module_directory / test_data_path, "002")
 
     sci_l1a_filepath = write_cdf(l1a_datasets)
 
@@ -79,8 +79,8 @@ def test_cdf_creation():
 
     # reads data from CDF file and passes to l1b
     l1a_cdf_dataset = load_cdf(sci_l1a_filepath)
-    l1b_dataset = swe_l1b(l1a_cdf_dataset)
+    l1b_dataset = swe_l1b(l1a_cdf_dataset, "002")
 
     sci_l1b_filepath = write_cdf(l1b_dataset)
 
-    assert sci_l1b_filepath.name == "imap_swe_l1b_sci_20240510_v001.cdf"
+    assert sci_l1b_filepath.name == "imap_swe_l1b_sci_20240510_v002.cdf"

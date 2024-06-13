@@ -11,6 +11,7 @@ instrument_base: &instrument_base
     TOF / E system. These measurements are critical in determining the Local Interstellar Medium (LISM) composition and
     flow properties, the origin of the enigmatic suprathermal tails on the solar wind distributions and advance
     understanding of the acceleration of particles in the heliosphere.
+  Instrument_type: Particles (space)
 
 imap_codice_l1a_hskp:
     <<: *instrument_base

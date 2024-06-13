@@ -19,7 +19,7 @@ CDF_MANAGER.load_global_attributes("imap_hi_global_cdf_attrs.yaml")
 CDF_MANAGER.load_variable_attributes("imap_hi_variable_attrs.yaml")
 
 
-def hi_l1b(l1a_cdf_path: Path):
+def hi_l1b(l1a_cdf_path: Path, data_version: str):
     """
     High level IMAP-HI L1B processing function.
 
@@ -27,6 +27,8 @@ def hi_l1b(l1a_cdf_path: Path):
     ----------
     l1a_cdf_path : pathlib.Path
         Path to L1A CDF file.
+    data_version : str
+        Version of the data product being created
 
     Returns
     -------
@@ -62,6 +64,8 @@ def hi_l1b(l1a_cdf_path: Path):
             f"No Hi L1B processing defined for file type: "
             f"{l1a_dataset.attrs['Logical_source']}"
         )
+    # TODO: revisit this
+    l1b_dataset.attrs["Data_version"] = data_version
     return l1b_dataset
 
 

@@ -66,7 +66,7 @@ def decompressed_counts(cem_count):
     )
 
 
-def swe_science(decom_data, data_version=None):
+def swe_science(decom_data, data_version):
     """SWE L1a science processing.
 
     SWE L1A algorithm steps:
