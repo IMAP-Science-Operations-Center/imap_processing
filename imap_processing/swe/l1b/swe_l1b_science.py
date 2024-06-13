@@ -338,13 +338,15 @@ def filter_full_cycle_data(full_cycle_data_indices: np.ndarray, l1a_data: xr.Dat
     return l1a_data
 
 
-def swe_l1b_science(l1a_data):
+def swe_l1b_science(l1a_data, data_version: str):
     """SWE l1b science processing.
 
     Parameters
     ----------
     l1a_data : xarray.Dataset
         Input data
+    data_version : str
+        Version of the data product being created
 
     Returns
     -------
@@ -416,6 +418,7 @@ def swe_l1b_science(l1a_data):
     cdf_attrs = ImapCdfAttributes()
     cdf_attrs.add_instrument_global_attrs("swe")
     cdf_attrs.add_instrument_variable_attrs("swe", "l1b")
+    cdf_attrs.add_global_attribute("Data_version", data_version)
 
     # Get epoch time of full cycle data and then reshape it to
     # (n, 4) where n = total number of full cycles and 4 = four

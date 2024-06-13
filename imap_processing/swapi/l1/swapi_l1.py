@@ -407,13 +407,15 @@ def process_sweep_data(full_sweep_sci, cem_prefix):
     return all_cem_data
 
 
-def process_swapi_science(sci_dataset):
+def process_swapi_science(sci_dataset, data_version: str):
     """Process SWAPI science data and create CDF file.
 
     Parameters
     ----------
     dataset : xarray.Dataset
         L0 data
+    data_version : str
+        Version of the data product being created
     """
     # ====================================================
     # Step 1: Filter full cycle data
@@ -476,6 +478,8 @@ def process_swapi_science(sci_dataset):
         coords={"epoch": epoch_time, "energy": energy},
         attrs=sci_l1_attrs,
     )
+    # TODO: update to use add_global_attribute() function
+    dataset.attrs["DataVersion"] = data_version
 
     dataset["swp_pcem_counts"] = xr.DataArray(
         np.array(swp_pcem_counts, dtype=np.uint16),
@@ -584,13 +588,15 @@ def process_swapi_science(sci_dataset):
     return dataset
 
 
-def swapi_l1(file_path):
+def swapi_l1(file_path, data_version: str):
     """Process SWAPI level 0 data to level 1.
 
     Parameters
     ----------
     file_path : str
         Path to SWAPI L0 file.
+    data_version : str
+        Version of the data product being created
     """
     xtce_definition = (
         f"{imap_module_directory}/swapi/packet_definitions/swapi_packet_definition.xml"
@@ -608,7 +614,7 @@ def swapi_l1(file_path):
         ds_data = create_dataset(sorted_packets, include_header=False)
 
         if apid == SWAPIAPID.SWP_SCI.value:
-            data = process_swapi_science(ds_data)
+            data = process_swapi_science(ds_data, data_version)
             processed_data.append(data)
         if apid == SWAPIAPID.SWP_HK.value:
             # convert epoch to datetime
@@ -616,6 +622,7 @@ def swapi_l1(file_path):
 
             # Add datalevel attrs
             ds_data.attrs.update(swapi_l1_hk_attrs.output())
+            ds_data.attrs["Data_version"] = data_version
             processed_data.append(ds_data)
 
     return processed_data

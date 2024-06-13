@@ -40,7 +40,7 @@ class HitAPID(IntEnum):
     HIT_IALRT = 1253
 
 
-def hit_l1a(packet_file: typing.Union[Path, str]):
+def hit_l1a(packet_file: typing.Union[Path, str], data_version: str):
     """
     Process HIT L0 data into L1A data products.
 
@@ -48,6 +48,8 @@ def hit_l1a(packet_file: typing.Union[Path, str]):
     ----------
     packet_file : str
         Path to the CCSDS data packet file.
+    data_version : str
+        Version of the data product being created
 
     Returns
     -------
@@ -78,6 +80,8 @@ def hit_l1a(packet_file: typing.Union[Path, str]):
     logger.info("Creating CDF files for HIT L1A data")
     cdf_filepaths = []
     for dataset in datasets.values():
+        # TODO: update to use the add_global_attribute() function
+        dataset.attrs["Data_version"] = data_version
         cdf_file = write_cdf(dataset)
         cdf_filepaths.append(cdf_file)
     logger.info(f"L1A CDF files created: {cdf_filepaths}")

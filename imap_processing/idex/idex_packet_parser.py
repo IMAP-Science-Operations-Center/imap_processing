@@ -476,13 +476,15 @@ class PacketParser:
 
     """
 
-    def __init__(self, packet_file: str):
+    def __init__(self, packet_file: str, data_version: str):
         """Read a l0 pkts file and perform all of the decom work.
 
         Parameters
         ----------
         packet_file: str
           The path and filename to the L0 file to read
+        data_version: str
+            The version of the data product being created
 
         Notes
         -----
@@ -521,6 +523,7 @@ class PacketParser:
 
         self.data = xr.concat(processed_dust_impact_list, dim="epoch")
         self.data.attrs = idex_cdf_attrs.idex_l1_global_attrs.output()
+        self.data.attrs["Data_version"] = data_version
 
 
 class RawDustEvent:

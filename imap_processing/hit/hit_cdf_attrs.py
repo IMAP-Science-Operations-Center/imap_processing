@@ -603,6 +603,7 @@ l1b_hk_attrs = {
         label_axis="Preamp L234A V",
         units="V",
         format="I4",
+        fill_val=GlobalConstants.DOUBLE_FILLVAL,
     ),
     "preamp_l1a": replace(
         hit_hk_base_attrs,
@@ -612,6 +613,7 @@ l1b_hk_attrs = {
         label_axis="Preamp L1A V",
         units="V",
         format="I4",
+        fill_val=GlobalConstants.DOUBLE_FILLVAL,
     ),
     "preamp_l1b": replace(
         hit_hk_base_attrs,
@@ -621,6 +623,7 @@ l1b_hk_attrs = {
         label_axis="Preamp L1B V",
         units="V",
         format="I4",
+        fill_val=GlobalConstants.DOUBLE_FILLVAL,
     ),
     "preamp_l234b": replace(
         hit_hk_base_attrs,
@@ -630,6 +633,7 @@ l1b_hk_attrs = {
         label_axis="Preamp L234B V",
         units="V",
         format="I2",
+        fill_val=GlobalConstants.DOUBLE_FILLVAL,
     ),
     "temp0": replace(
         hit_hk_base_attrs,
@@ -641,6 +645,7 @@ l1b_hk_attrs = {
         label_axis="Temp",
         units="C",
         format="I2",
+        fill_val=GlobalConstants.DOUBLE_FILLVAL,
     ),
     "temp1": replace(
         hit_hk_base_attrs,
@@ -652,6 +657,7 @@ l1b_hk_attrs = {
         label_axis="Temp",
         units="C",
         format="I2",
+        fill_val=GlobalConstants.DOUBLE_FILLVAL,
     ),
     "temp2": replace(
         hit_hk_base_attrs,
@@ -662,6 +668,7 @@ l1b_hk_attrs = {
         label_axis="Temp",
         units="C",
         format="I2",
+        fill_val=GlobalConstants.DOUBLE_FILLVAL,
     ),
     "temp3": replace(
         hit_hk_base_attrs,
@@ -672,6 +679,7 @@ l1b_hk_attrs = {
         label_axis="Temp",
         units="C",
         format="I2",
+        fill_val=GlobalConstants.DOUBLE_FILLVAL,
     ),
     "analog_temp": replace(
         hit_hk_base_attrs,
@@ -683,6 +691,7 @@ l1b_hk_attrs = {
         label_axis="Temp",
         units="C",
         format="I2",
+        fill_val=GlobalConstants.DOUBLE_FILLVAL,
     ),
     "hvps_temp": replace(
         hit_hk_base_attrs,
@@ -694,6 +703,7 @@ l1b_hk_attrs = {
         label_axis="Temp",
         units="C",
         format="I2",
+        fill_val=GlobalConstants.DOUBLE_FILLVAL,
     ),
     "idpu_temp": replace(
         hit_hk_base_attrs,
@@ -704,6 +714,7 @@ l1b_hk_attrs = {
         label_axis="Temp",
         units="C",
         format="I2",
+        fill_val=GlobalConstants.DOUBLE_FILLVAL,
     ),
     "lvps_temp": replace(
         hit_hk_base_attrs,
@@ -715,6 +726,7 @@ l1b_hk_attrs = {
         label_axis="Temp",
         units="C",
         format="I2",
+        fill_val=GlobalConstants.DOUBLE_FILLVAL,
     ),
     "ebox_3d4vd": replace(
         hit_hk_base_attrs,
@@ -725,6 +737,7 @@ l1b_hk_attrs = {
         label_axis="3.4VD Ebox",
         units="V",
         format="F2.1",
+        fill_val=GlobalConstants.DOUBLE_FILLVAL,
     ),
     "ebox_5d1vd": replace(
         hit_hk_base_attrs,
@@ -735,6 +748,7 @@ l1b_hk_attrs = {
         label_axis="5.1VD Ebox",
         units="V",
         format="F3.2",
+        fill_val=GlobalConstants.DOUBLE_FILLVAL,
     ),
     "ebox_p12va": replace(
         hit_hk_base_attrs,
@@ -745,6 +759,7 @@ l1b_hk_attrs = {
         label_axis="+12VA Ebox",
         units="V",
         format="F3.1",
+        fill_val=GlobalConstants.DOUBLE_FILLVAL,
     ),
     "ebox_m12va": replace(
         hit_hk_base_attrs,
@@ -755,6 +770,7 @@ l1b_hk_attrs = {
         label_axis="-12VA Ebox",
         units="V",
         format="F3.1",
+        fill_val=GlobalConstants.DOUBLE_FILLVAL,
     ),
     "ebox_p5d7va": replace(
         hit_hk_base_attrs,
@@ -765,6 +781,7 @@ l1b_hk_attrs = {
         label_axis="+5.7VA Ebox",
         units="V",
         format="F2.1",
+        fill_val=GlobalConstants.DOUBLE_FILLVAL,
     ),
     "ebox_m5d7va": replace(
         hit_hk_base_attrs,
@@ -775,6 +792,7 @@ l1b_hk_attrs = {
         label_axis="-5.7VA Ebox",
         units="V",
         format="F5.4",
+        fill_val=GlobalConstants.DOUBLE_FILLVAL,
     ),
     "ref_p5v": replace(
         hit_hk_base_attrs,
@@ -785,6 +803,7 @@ l1b_hk_attrs = {
         label_axis="+5V ref",
         units="V",
         format="I4",
+        fill_val=GlobalConstants.DOUBLE_FILLVAL,
     ),
     "l1ab_bias": replace(
         hit_hk_base_attrs,
@@ -795,6 +814,7 @@ l1b_hk_attrs = {
         label_axis="L1A/B Bias",
         units="V",
         format="I2",
+        fill_val=GlobalConstants.DOUBLE_FILLVAL,
     ),
     "l2ab_bias": replace(
         hit_hk_base_attrs,
@@ -805,6 +825,7 @@ l1b_hk_attrs = {
         label_axis="L2A/B Bias",
         units="V",
         format="I2",
+        fill_val=GlobalConstants.DOUBLE_FILLVAL,
     ),
     "l34a_bias": replace(
         hit_hk_base_attrs,
@@ -815,6 +836,7 @@ l1b_hk_attrs = {
         label_axis="L3/4A Bias",
         units="V",
         format="I3",
+        fill_val=GlobalConstants.DOUBLE_FILLVAL,
     ),
     "l34b_bias": replace(
         hit_hk_base_attrs,
@@ -825,6 +847,7 @@ l1b_hk_attrs = {
         label_axis="L3/4B Bias",
         units="V",
         format="I3",
+        fill_val=GlobalConstants.DOUBLE_FILLVAL,
     ),
     "ebox_p2d0vd": replace(
         hit_hk_base_attrs,
@@ -835,6 +858,7 @@ l1b_hk_attrs = {
         label_axis="+2.0VD Ebox",
         units="V",
         format="F3.2",
+        fill_val=GlobalConstants.DOUBLE_FILLVAL,
     ),
 }
 

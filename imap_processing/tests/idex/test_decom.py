@@ -14,7 +14,7 @@ def decom_test_data():
     test_file = Path(
         f"{imap_module_directory}/tests/idex/imap_idex_l0_raw_20230725_v001.pkts"
     )
-    return PacketParser(test_file)
+    return PacketParser(test_file, "001")
 
 
 def test_idex_decom_length(decom_test_data):
