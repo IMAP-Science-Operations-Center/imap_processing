@@ -554,7 +554,7 @@ class Swe(ProcessInstrument):
                 )
             # read CDF file
             l1a_dataset = load_cdf(dependencies[0])
-            processed_data = swe_l1b(l1a_dataset)
+            processed_data = swe_l1b(l1a_dataset, data_version=self.version)
             cdf_file_path = write_cdf(processed_data)
             print(f"processed file path: {cdf_file_path}")
             return [cdf_file_path]
