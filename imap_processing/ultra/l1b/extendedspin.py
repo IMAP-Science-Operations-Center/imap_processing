@@ -1,4 +1,4 @@
-"""Calculates Extended Spin."""
+"""Calculate Extended Spin."""
 
 import numpy as np
 
@@ -11,14 +11,14 @@ def calculate_extendedspin(rates_dataset, name):
 
     Parameters
     ----------
-    rates_dataset: xarray.Dataset
+    rates_dataset : xarray.Dataset
         Dataset containing rates data.
-    name: str
+    name : str
         Name of the dataset.
 
     Returns
     -------
-    extendedspin_dataset : xarray.Dataset
+    array_like
         Dataset containing the data.
     """
     extendedspin_dict = {}
