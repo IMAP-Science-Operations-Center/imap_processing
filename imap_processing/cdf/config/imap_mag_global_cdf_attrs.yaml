@@ -81,5 +81,17 @@ imap_mag_l1b_burst-magi:
     Logical_source_description: IMAP Mission MAGi Burst Rate Instrument Level-1B Data.
     Data_level: L1B
 
+imap_mag_l1c_norm-mago:
+    <<: *default
+    Data_type: L1C_norm-mago>Level 1C MAGo normal rate
+    Logical_source: imap_mag_l1c_norm-mago
+    Logical_source_description: IMAP Mission MAGo Normal Rate Instrument Level-1C Data.
+    Data_level: L1C
 
+imap_mag_l1c_norm-magi:
+    <<: *default
+    Data_type: L1C_norm-magi>Level 1C MAGi normal rate
+    Logical_source: imap_mag_l1c_norm-magi
+    Logical_source_description: IMAP Mission MAGi Normal Rate Instrument Level-1C Data.
+    Data_level: L1C
 

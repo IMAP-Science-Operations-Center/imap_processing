@@ -8,7 +8,7 @@ from imap_processing.cdf.utils import load_cdf, write_cdf
 from imap_processing.mag.l1b.mag_l1b import mag_l1b, mag_l1b_processing
 
 
-@pytest.fixture()
+@pytest.fixture(scope="module")
 def mag_l1a_dataset():
     epoch = xr.DataArray(np.arange(20), name="epoch", dims=["epoch"])
     direction = xr.DataArray(np.arange(4), name="direction", dims=["direction"])
