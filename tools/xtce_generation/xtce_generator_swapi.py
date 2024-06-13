@@ -8,14 +8,13 @@ files based on packet definitions stored in
 an Excel file.
 """
 
-
 from pathlib import Path
 
 from tools.xtce_generation.telemetry_generator import TelemetryGenerator
 
 
 def main():
-    """Function used by swapi to generate XTCE. Change values where TODO is."""
+    """Function used by swapi to generate XTCE."""
 
     instrument_name = "swapi"
     current_directory = Path(__file__).parent
