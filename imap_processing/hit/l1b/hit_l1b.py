@@ -150,7 +150,7 @@ def create_hk_dataset():
                 "ebox_p2d0vd",
             ]:
                 hk_dataset[field] = xr.DataArray(
-                    [np.float16(1), np.float16(1), np.float16(1)],
+                    np.ones(3, dtype=np.float16),
                     dims=dims,
                     attrs=hit_cdf_attrs.l1b_hk_attrs[field].output(),
                 )
