@@ -50,6 +50,7 @@ jobs:
 
   pypi-publish:
     name: Upload release to PyPI
+    needs: build_sdist
     runs-on: ubuntu-latest
     environment:
       name: pypi
