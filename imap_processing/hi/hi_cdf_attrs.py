@@ -131,7 +131,7 @@ hi_de_l1a_attrs = GlobalDataLevelAttrs(
 
 hi_hk_l1a_attrs = GlobalDataLevelAttrs(
     data_type="L1A_HK>Level-1A Housekeeping",
-    logical_source="imap_hi_l1a_hk",
+    logical_source="imap_hi_l1a_{sensor}-hk",
     logical_source_desc=("IMAP-Hi Instrument Level-1A Housekeeping Data."),
     instrument_base=hi_base,
 )
@@ -148,8 +148,8 @@ hi_hk_l1a_metadata_attrs = ScienceAttrs(
 
 # Histogram attributes
 hi_hist_l1a_global_attrs = GlobalDataLevelAttrs(
-    data_type="L1A_CNT>Level-1A Histogram",
-    logical_source="imap_hi_l1a_hist",
+    data_type="L1A_HIST>Level-1A Histogram",
+    logical_source="imap_hi_l1a_{sensor}-hist",
     logical_source_desc=("IMAP-Hi Instrument Level-1A Histogram Data."),
     instrument_base=hi_base,
 )
