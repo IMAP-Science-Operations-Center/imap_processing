@@ -107,56 +107,37 @@ def test_codice(mock_codice_l1a, mock_instrument_dependencies):
     assert mocks["mock_upload"].call_count == 1
 
 
-@mock.patch("imap_processing.cli.hi_l1a.hi_l1a")
-def test_hi_l1a(mock_hi_l1a, mock_instrument_dependencies):
+@pytest.mark.parametrize("data_level, n_prods", [("l1a", 2), ("l1b", 1), ("l1c", 1)])
+def test_hi_l1(mock_instrument_dependencies, data_level, n_prods):
     """Test coverage for cli.Hi class"""
     mocks = mock_instrument_dependencies
     mocks["mock_query"].return_value = [{"file_path": "/path/to/file0"}]
     mocks["mock_download"].return_value = "file0"
-    mock_hi_l1a.return_value = ["l1a_file0", "l1a_file1"]
     mocks["mock_write_cdf"].side_effect = ["/path/to/file0", "/path/to/file1"]
 
-    dependency_str = (
-        "[{"
-        "'instrument': 'lo',"
-        "'data_level': 'l0',"
-        "'descriptor': 'sci',"
-        "'version': 'v00-01',"
-        "'start_date': '20231212'"
-        "}]"
-    )
-    instrument = Hi("l1a", dependency_str, "20231212", "20231213", "v005", True)
-    instrument.process()
-    assert mocks["mock_query"].call_count == 1
-    assert mocks["mock_download"].call_count == 1
-    assert mock_hi_l1a.call_count == 1
-    assert mocks["mock_upload"].call_count == 2
-
-
-@mock.patch("imap_processing.cli.hi_l1b.hi_l1b")
-def test_hi_l1b(mock_hi_l1b, mock_instrument_dependencies):
-    """Test coverage for cli.Hi class"""
-    mocks = mock_instrument_dependencies
-    mocks["mock_query"].return_value = [{"file_path": "/path/to/file0"}]
-    mocks["mock_download"].return_value = "file0"
-    mock_hi_l1b.return_value = "hi_l1b_dataset"
-    mocks["mock_write_cdf"].return_value = "/path/to/file0"
-
-    dependency_str = (
-        "[{"
-        "'instrument': 'hi',"
-        "'data_level': 'l1a',"
-        "'descriptor': 'sci',"
-        "'version': 'v00-01',"
-        "'start_date': '20231212'"
-        "}]"
-    )
-    instrument = Hi("l1b", dependency_str, "20231212", "20231213", "v005", True)
-    instrument.process()
-    assert mocks["mock_query"].call_count == 1
-    assert mocks["mock_download"].call_count == 1
-    assert mock_hi_l1b.call_count == 1
-    assert mocks["mock_upload"].call_count == 1
+    # patch autospec=True makes this test confirm that the function call in cli.py
+    # matches the mocked function signature.
+    with mock.patch(
+        f"imap_processing.cli.hi_{data_level}.hi_{data_level}", autospec=True
+    ) as mock_hi:
+        mock_hi.return_value = [f"{data_level}_file{n}" for n in range(n_prods)]
+        dependency_str = (
+            "[{"
+            "'instrument': 'lo',"
+            "'data_level': 'l0',"
+            "'descriptor': 'sci',"
+            "'version': 'v00-01',"
+            "'start_date': '20231212'"
+            "}]"
+        )
+        instrument = Hi(
+            data_level, dependency_str, "20231212", "20231213", "v005", True
+        )
+        instrument.process()
+        assert mocks["mock_query"].call_count == 1
+        assert mocks["mock_download"].call_count == 1
+        assert mock_hi.call_count == 1
+        assert mocks["mock_upload"].call_count == n_prods
 
 
 @mock.patch("imap_processing.cli.ultra_l1a.ultra_l1a")

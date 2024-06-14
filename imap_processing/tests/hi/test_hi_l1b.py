@@ -1,4 +1,4 @@
-"""Test coverage for imap_processing.hi.hi_l1b.py"""
+"""Test coverage for imap_processing.hi.l1b.hi_l1b.py"""
 
 from imap_processing import imap_module_directory
 from imap_processing.cdf.utils import write_cdf
