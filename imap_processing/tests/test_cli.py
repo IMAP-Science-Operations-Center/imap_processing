@@ -115,7 +115,11 @@ def test_hi_l1(mock_instrument_dependencies, data_level, n_prods):
     mocks["mock_download"].return_value = "file0"
     mocks["mock_write_cdf"].side_effect = ["/path/to/file0", "/path/to/file1"]
 
-    with mock.patch(f"imap_processing.cli.hi_{data_level}.hi_{data_level}") as mock_hi:
+    # patch autospec=True makes this test confirm that the function call in cli.py
+    # matches the mocked function signature.
+    with mock.patch(
+        f"imap_processing.cli.hi_{data_level}.hi_{data_level}", autospec=True
+    ) as mock_hi:
         mock_hi.return_value = [f"{data_level}_file{n}" for n in range(n_prods)]
         dependency_str = (
             "[{"

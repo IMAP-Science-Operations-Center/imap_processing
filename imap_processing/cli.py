@@ -443,7 +443,7 @@ class Hi(ProcessInstrument):
             dataset = hi_l1b.hi_l1b(dependencies[0], self.version)
             products = [write_cdf(dataset)]
         elif self.data_level == "l1c":
-            dataset = hi_l1c.hi_l1c(dependencies[0])
+            dataset = hi_l1c.hi_l1c(dependencies, self.version)
             products = [write_cdf(dataset)]
         else:
             raise NotImplementedError(
