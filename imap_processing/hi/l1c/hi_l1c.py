@@ -1,4 +1,4 @@
-"""IMAP-HI L1C processing module."""
+"""IMAP-HI l1c processing module."""
 
 import logging
 from pathlib import Path
@@ -12,24 +12,21 @@ from imap_processing.cdf.cdf_attribute_manager import CdfAttributeManager
 from imap_processing.cdf.utils import load_cdf
 
 logger = logging.getLogger(__name__)
-CDF_MANAGER = CdfAttributeManager(imap_module_directory / "cdf" / "config")
-CDF_MANAGER.load_global_attributes("imap_hi_global_cdf_attrs.yaml")
-CDF_MANAGER.load_variable_attributes("imap_hi_variable_attrs.yaml")
 
 
-def hi_l1c(l1b_de_path: Union[Path, str], data_version: str):
+def hi_l1c(dependencies: list, data_version: str):
     """
-    High level IMAP-Hi L1C processing function.
+    High level IMAP-Hi l1c processing function.
 
-    This function will be expanded once the L1C processing is better defined. It
+    This function will be expanded once the l1c processing is better defined. It
     will need to add inputs such as Ephemerides, Goodtimes inputs, and
     instrument status summary and will output a Pointing Set CDF as well as a
     Goodtimes list (CDF?).
 
     Parameters
     ----------
-    l1b_de_path : pathlib.Path
-        Location of l1b annotated direct event file.
+    dependencies : list
+        Input dependencies needed for l1c processing.
 
     data_version : str
         Data version to write to CDF files and the Data_version CDF attribute.
@@ -40,19 +37,39 @@ def hi_l1c(l1b_de_path: Union[Path, str], data_version: str):
     processed_data : xarray.Dataset
         Processed xarray dataset
     """
-    logger.info("Running Hi L1C processing")
+    logger.info("Running Hi l1c processing")
 
+    # TODO: I am not sure what the input for Goodtimes will be so for now,
+    #    If the input is a CDF, do pset processing
+    if len(dependencies) == 1 and str(dependencies[0]).endswith("cdf"):
+        l1c_dataset = generate_pset_dataset(dependencies[0])
+    else:
+        raise NotImplementedError(
+            "Input dependencies not recognized for l1c pset processing."
+        )
+
+    # TODO: revisit this
+    l1c_dataset.attrs["Data_version"] = data_version
+    return l1c_dataset
+
+
+def generate_pset_dataset(l1b_de_path: Union[Path, str]) -> xr.Dataset:
+    """
+    Process IMAP-Hi l1b product into a l1c pset xarray dataset.
+
+    Parameters
+    ----------
+    l1b_de_path : Union[Path, str]
+        Location of IMAP-Hi l1b de product.
+
+    Returns
+    -------
+    xarray.Dataset ready to be written to CDF.
+    """
     de_dataset = load_cdf(l1b_de_path)
     sensor_str = de_dataset.attrs["Logical_source"].split("_")[-1].split("-")[0]
-
-    # determine the number of unique esa_stepping_numbers
-    # NOTE: it is possible that multiple esa_stepping_numbers will correspond
-    #     to a single esa_step. These should be bookkept as unique entries in
-    #     the esa_step coordinate.
-    n_esa_step = np.unique(de_dataset.esa_stepping_num.data).size
-
+    n_esa_step = de_dataset.esa_step.data.size
     pset_dataset = allocate_pset_dataset(n_esa_step, sensor_str)
-
     # TODO: Stored epoch value needs to be consistent across ENA instruments.
     #    SPDF says this should be the center of the time bin, but instrument
     #    teams may disagree.
@@ -77,10 +94,14 @@ def allocate_pset_dataset(n_esa_steps: int, sensor_str: str):
     xarray.Dataset
         Empty xarray.Dataset ready to be filled with data
     """
+    cdf_manager = CdfAttributeManager(imap_module_directory / "cdf" / "config")
+    cdf_manager.load_global_attributes("imap_hi_global_cdf_attrs.yaml")
+    cdf_manager.load_variable_attributes("imap_hi_variable_attrs.yaml")
+
     # preallocate coordinates xr.DataArrays
     coords = dict()
     # epoch coordinate has only 1 entry for pointing set
-    attrs = CDF_MANAGER.get_variable_attributes("hi_pset_epoch").copy()
+    attrs = cdf_manager.get_variable_attributes("hi_pset_epoch").copy()
     dtype = attrs.pop("dtype")
     coords["epoch"] = xr.DataArray(
         np.empty(1, dtype=dtype),
@@ -88,7 +109,7 @@ def allocate_pset_dataset(n_esa_steps: int, sensor_str: str):
         dims=["epoch"],
         attrs=attrs,
     )
-    attrs = CDF_MANAGER.get_variable_attributes("hi_pset_esa_step").copy()
+    attrs = cdf_manager.get_variable_attributes("hi_pset_esa_step").copy()
     dtype = attrs.pop("dtype")
     coords["esa_step"] = xr.DataArray(
         np.full(n_esa_steps, attrs["FILLVAL"], dtype=dtype),
@@ -97,7 +118,7 @@ def allocate_pset_dataset(n_esa_steps: int, sensor_str: str):
         attrs=attrs,
     )
     # spin angle bins are 0.1 degree bins for full 360 degree spin
-    attrs = CDF_MANAGER.get_variable_attributes("hi_pset_spin_angle_bin").copy()
+    attrs = cdf_manager.get_variable_attributes("hi_pset_spin_angle_bin").copy()
     dtype = attrs.pop("dtype")
     coords["spin_angle_bin"] = xr.DataArray(
         np.arange(int(360 / 0.1), dtype=dtype),
@@ -108,38 +129,46 @@ def allocate_pset_dataset(n_esa_steps: int, sensor_str: str):
 
     # Allocate the variables
     data_vars = dict()
-    # despun_z is a 1x3 unit vector
-    data_vars["despun_z"] = full_dataarray("despun_z", coords, shape=(1, 3))
-    data_vars["hae_latitude"] = full_dataarray("hae_latitude", coords)
-    data_vars["hae_longitude"] = full_dataarray("hae_longitude", coords)
-    data_vars["counts"] = full_dataarray("counts", coords)
-    data_vars["exposure_times"] = full_dataarray("exposure_times", coords)
-    data_vars["background_rates"] = full_dataarray("background_rates", coords)
-    data_vars["background_rates_uncertainty"] = full_dataarray(
-        "background_rates_uncertainty", coords
-    )
+    # despun_z is a 1x3 unit vector that does not have a DEPEND_1.
+    # Define this dict to override the shape produced in full_dataarray
+    var_shapes = {"despun_z": (1, 3)}
+    for var_name in [
+        "despun_z",
+        "hae_latitude",
+        "hae_longitude",
+        "counts",
+        "exposure_times",
+        "background_rates",
+        "background_rates_uncertainty",
+    ]:
+        data_vars[var_name] = full_dataarray(
+            var_name,
+            cdf_manager.get_variable_attributes(f"hi_pset_{var_name}"),
+            coords,
+            shape=var_shapes.get(var_name, None),
+        )
 
     # Generate label variables
     data_vars["esa_step_label"] = xr.DataArray(
         coords["esa_step"].values.astype(str),
         name="esa_step_label",
         dims=["esa_step"],
-        attrs=CDF_MANAGER.get_variable_attributes("hi_pset_esa_step_label"),
+        attrs=cdf_manager.get_variable_attributes("hi_pset_esa_step_label"),
     )
     data_vars["spin_bin_label"] = xr.DataArray(
         coords["spin_angle_bin"].values.astype(str),
         name="spin_bin_label",
         dims=["spin_angle_bin"],
-        attrs=CDF_MANAGER.get_variable_attributes("hi_pset_spin_bin_label"),
+        attrs=cdf_manager.get_variable_attributes("hi_pset_spin_bin_label"),
     )
     data_vars["label_vector_HAE"] = xr.DataArray(
         np.array(["x HAE", "y HAE", "z HAE"], dtype=str),
         name="label_vector_HAE",
         dims=[" "],
-        attrs=CDF_MANAGER.get_variable_attributes("hi_pset_label_vector_HAE"),
+        attrs=cdf_manager.get_variable_attributes("hi_pset_label_vector_HAE"),
     )
 
-    pset_global_attrs = CDF_MANAGER.get_global_attributes(
+    pset_global_attrs = cdf_manager.get_global_attributes(
         "imap_hi_l1c_pset_attrs"
     ).copy()
     pset_global_attrs["Logical_source"] = pset_global_attrs["Logical_source"].format(
@@ -149,7 +178,7 @@ def allocate_pset_dataset(n_esa_steps: int, sensor_str: str):
     return dataset
 
 
-def full_dataarray(name, coords: dict, shape=None):
+def full_dataarray(name, attrs, coords: dict, shape=None):
     """
     Generate an empty xarray.DataArray with appropriate attributes.
 
@@ -161,6 +190,8 @@ def full_dataarray(name, coords: dict, shape=None):
     ----------
     name : str
         Variable name
+    attrs : dict
+        CDF variable attributes. Usually retrieved from CdfAttributeManager.
     coords : dict
         Coordinate variables for the Dataset.
     shape : int or tuple
@@ -170,18 +201,16 @@ def full_dataarray(name, coords: dict, shape=None):
     -------
     xarray.DataArray meeting input specifications
     """
-    attrs = CDF_MANAGER.get_variable_attributes(f"hi_pset_{name}").copy()
-    dtype = attrs.pop("dtype")
+    _attrs = attrs.copy()
+    dtype = attrs.pop("dtype", None)
 
     # extract dims keyword argument from DEPEND_i attributes
-    dims = [v for k, v in attrs.items() if k.startswith("DEPEND")]
+    dims = [v for k, v in sorted(attrs.items()) if k.startswith("DEPEND")]
     # define shape of the ndarray to generate
     if shape is None:
         shape = [coords[k].data.size for k in dims]
     if len(shape) > len(dims):
         dims.append("")
-
-    print(f"{name=}, {shape=}, {dims=}")
 
     data_array = xr.DataArray(
         np.full(shape, attrs["FILLVAL"], dtype=dtype),
