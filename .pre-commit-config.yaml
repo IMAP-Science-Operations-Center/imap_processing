@@ -36,4 +36,5 @@ repos:
     rev: 'v1.7.0'
     hooks:
       - id: numpydoc-validation
+        exclude: '^imap_processing/tests/|^imap_processing/swe/|^imap_processing/swapi/|^imap_processing/mag/|^imap_processing/lo/|^imap_processing/idex/|^imap_processing/ialirt/|^imap_processing/hit/|^imap_processing/hi/|^imap_processing/codice/|^imap_processing/glows/|^imap_processing/cdf/'
 
