@@ -25,7 +25,7 @@ def decom_test_data() -> list:
 
     packet_file = Path(
         f"{imap_module_directory}/tests/codice/data/"
-        f"imap_codice_l0_hskp_20230822_v001.pkts"
+        f"imap_codice_l0_hskp_20100101_v001.pkts"
     )
 
     data_packet_list = codice_l0.decom_packets(packet_file)
@@ -76,7 +76,7 @@ def test_eu_hk_data(
         The validation data to compare against
     """
 
-    l1a_hk_ds = create_hskp_dataset(decom_test_data)
+    l1a_hk_ds = create_hskp_dataset(decom_test_data, "001")
     eu_hk_data = convert_raw_to_eu(
         l1a_hk_ds,
         imap_module_directory / "tests/codice/data/eu_unit_lookup_table.csv",

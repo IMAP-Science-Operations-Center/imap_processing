@@ -119,7 +119,7 @@ def test_ultra_l1b_rates(mock_data_l1a_rates_dict):
     mock_data_l1a_rates_dict : iterable
         Mock l1a rates data dictionary.
     """
-    output_datasets = ultra_l1b(mock_data_l1a_rates_dict)
+    output_datasets = ultra_l1b(mock_data_l1a_rates_dict, data_version="001")
 
     assert len(output_datasets) == 3
     assert (
@@ -148,7 +148,7 @@ def test_ultra_l1b_de(mock_data_l1a_de_aux_dict):
     mock_data_l1a_de_aux_dict : iterable
         Mock l1a direct event data dictionary.
     """
-    output_datasets = ultra_l1b(mock_data_l1a_de_aux_dict)
+    output_datasets = ultra_l1b(mock_data_l1a_de_aux_dict, data_version="001")
 
     assert len(output_datasets) == 1
     assert output_datasets[0].attrs["Logical_source"] == "imap_ultra_l1b_45sensor-de"
@@ -173,4 +173,4 @@ def test_ultra_l1b_error(mock_data_l1a_rates_dict):
     with pytest.raises(
         ValueError, match="Data dictionary does not contain the expected keys."
     ):
-        ultra_l1b(mock_data_l1a_rates_dict)
+        ultra_l1b(mock_data_l1a_rates_dict, data_version="001")

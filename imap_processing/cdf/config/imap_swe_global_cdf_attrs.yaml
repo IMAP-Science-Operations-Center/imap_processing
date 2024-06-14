@@ -6,7 +6,6 @@ instrument_base: &instrument_base
     and transport of charged particles in the heliosphere.
     SWE design and assembly is led by the Princeton Plasma Physics Laboratory. See
     https://imap.princeton.edu/instruments/swe for more details.
-  Data_version: "001"
   Instrument_type: "Particles (space)"
 
 imap_swe_l1a_sci:

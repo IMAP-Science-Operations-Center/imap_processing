@@ -113,7 +113,7 @@ def test_ultra_l1c(mock_data_l1b_dict):
     mock_data_l1b_dict : iterable
         Mock l1b data dictionary.
     """
-    output_datasets = ultra_l1c(mock_data_l1b_dict)
+    output_datasets = ultra_l1c(mock_data_l1b_dict, data_version="001")
 
     assert len(output_datasets) == 1
     assert (
@@ -141,4 +141,4 @@ def test_ultra_l1c_error(mock_data_l1b_dict):
     with pytest.raises(
         ValueError, match="Data dictionary does not contain the expected keys."
     ):
-        ultra_l1c(mock_data_l1b_dict)
+        ultra_l1c(mock_data_l1b_dict, data_version="001")

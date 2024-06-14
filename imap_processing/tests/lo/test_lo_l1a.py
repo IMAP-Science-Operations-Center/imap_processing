@@ -17,7 +17,7 @@ from imap_processing.lo.l1a.lo_l1a import lo_l1a
 )
 def test_lo_l1a(dependency, expected_out):
     # Act
-    output_file = lo_l1a(dependency)
+    output_file = lo_l1a(dependency, "001")
 
     # Assert
     assert expected_out == output_file.name

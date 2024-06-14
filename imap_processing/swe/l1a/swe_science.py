@@ -66,7 +66,7 @@ def decompressed_counts(cem_count):
     )
 
 
-def swe_science(decom_data):
+def swe_science(decom_data, data_version):
     """SWE L1a science processing.
 
     SWE L1A algorithm steps:
@@ -97,6 +97,10 @@ def swe_science(decom_data):
     ----------
     packet_file : str
         packet file path
+
+    data_version: str
+        Data version for the 'Data_version' CDF attribute. This is the version of the
+        output file.
 
     Returns
     -------
@@ -141,6 +145,7 @@ def swe_science(decom_data):
     cdf_attrs = ImapCdfAttributes()
     cdf_attrs.add_instrument_global_attrs("swe")
     cdf_attrs.add_instrument_variable_attrs("swe", "l1a")
+    cdf_attrs.add_global_attribute("Data_version", data_version)
 
     epoch_converted_time = [
         calc_start_time(sc_time) for sc_time in metadata_arrays["SHCOARSE"]

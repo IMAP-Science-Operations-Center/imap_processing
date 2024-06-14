@@ -9,7 +9,7 @@ default_attrs: &default
 
 default_uint8_attrs: &default_uint8
   <<: *default
-  FILLVAL: 0
+  FILLVAL: 255
   FORMAT: I3
   VALIDMIN: 0
   VALIDMAX: 255
@@ -17,7 +17,7 @@ default_uint8_attrs: &default_uint8
 
 default_uint16_attrs: &default_uint16
   <<: *default
-  FILLVAL: 0
+  FILLVAL: 65535
   FORMAT: I5
   VALIDMIN: 0
   VALIDMAX: 65535
@@ -25,7 +25,7 @@ default_uint16_attrs: &default_uint16
 
 default_uint32_attrs: &default_uint32
   <<: *default
-  FILLVAL: 0
+  FILLVAL: 4294967295
   FORMAT: I10
   VALIDMIN: 0
   VALIDMAX: 4294967295
@@ -33,7 +33,7 @@ default_uint32_attrs: &default_uint32
 
 default_uint64_attrs: &default_uint64
   <<: *default
-  FILLVAL: 0
+  FILLVAL: 18446744073709551615
   FORMAT: I20
   VALIDMIN: 0
   VALIDMAX: 18446744073709551615
@@ -54,6 +54,23 @@ default_float32_attrs: &default_float32
   VALIDMIN: -3.4028235e+38
   VALIDMAX: 3.4028235e+38
   dtype: float32
+
+default_epoch: &default_epoch
+  CATDESC: Time, number of nanoseconds since J2000 with leap seconds included
+  FIELDNAM: epoch
+  LABLAXIS: epoch
+  FILLVAL: -9223372036854775808
+  FORMAT: " " # Supposedly not required, fails in xarray_to_cdf
+  VALIDMIN: -9223372036854775808
+  VALIDMAX: 9223372036854775807
+  UNITS: ns
+  VAR_TYPE: support_data
+  SCALETYP: linear
+  MONOTON: INCREASE
+  TIME_BASE: J2000
+  TIME_SCALE: Terrestrial Time
+  REFERENCE_POSITION: Rotating Earth Geoid
+  dtype: datetime64[ns]
 
 # ------- L1A DE Section -------
 hi_de_ccsds_met:
@@ -181,15 +198,18 @@ hi_de_coincidence_type:
     made up of the ORed quantities: (A hit? 8:0) | (B hit? 4:0)
     | (C1 hit? 2:0) | (C2 hit? 1 : 0)
 
-hi_de_esa_step:
-  <<: *default_uint8
+default_esa_step: &default_esa_step
   CATDESC: Zero based energy step index
   FIELDNAM: ESA energy step
   FILLVAL: 255
   FORMAT: I2
-  LABLAXIS: Energy Step
   VALIDMIN: 0
   VALIDMAX: 12
+
+hi_de_esa_step:
+  <<: *default_uint8
+  <<: *default_esa_step
+  LABLAXIS: Energy Step
 
 default_delta_t: &default_delta_t
   <<: *default_int32
@@ -269,3 +289,147 @@ hi_de_nominal_bin:
   LABLAXIS: Hist Bin \#
   VALIDMIN: 0
   VALIDMAX: 89
+
+# ------- L1C PSET Section -------
+hi_pset_epoch:
+  <<: *default_epoch
+
+hi_pset_esa_step:
+  <<: *default_esa_step
+  LABLAXIS: Energy Step
+  UNITS: " "
+  VALIDMIN: 0
+  VALIDMAX: 12
+  SCALE_TYP: linear
+  MONOTON: INCREASE
+  VAR_TYPE: support_data
+  dtype: uint8
+
+hi_pset_spin_angle_bin:
+  CATDESC: 0.1 degree spin angle bins
+  FIELDNAM: Spin angle bin index
+  FILLVAL: 65535
+  FORMAT: I3
+  LABLAXIS: Bin Index
+  UNITS: deg
+  SCALE_TYP: linear
+  MONOTON: INCREASE
+  VALIDMIN: 0
+  VALIDMAX: 3599
+  VAR_TYPE: support_data
+  VAR_NOTES: >
+    Bins are defined by spin angle about the mean axis of rotation for the pointing set.
+    Spin angle bins start at closest to ecliptic North. Bin zero is centered at 0.05 degrees
+    spinward of ecliptic North and all bins are 0.1 degrees wide.
+  dtype: uint16
+
+# Based on SPDF example of a vector magnetic field variable at the following link,
+# despun_z does not need a DEPEND_1 because it does not depend on any support_data
+# https://spdf.gsfc.nasa.gov/istp_guide/variables.html#data_eg2
+hi_pset_despun_z:
+  <<: *default_float32
+  CATDESC: Unit vector corresponding to Despun Pointing Frame z-axis in HAE Ecliptic coordinates
+  FIELDNAM: Despun Frame z-axis in HAE coordinates
+  FORMAT: F5.3
+  LABL_PTR_1: label_vector_HAE
+  UNITS: " "
+  VALIDMIN: -1
+  VALIDMAX: 1
+  DISPLAY_TYPE: no_plot
+  VAR_TYPE: support_data
+
+hi_pset_hae_latitude:
+  <<: *default_float32
+  CATDESC: Latitude of bin center in HAE coordinates
+  FIELDNAM: HAE Latitude
+  DEPEND_0: epoch
+  DEPEND_1: spin_angle_bin
+  DISPLAY_TYPE: no_plot
+  FORMAT: F5.2
+  LABLAXIS: Latitude
+  UNITS: deg
+  VALIDMIN: 0
+  VALIDMAX: 180
+
+hi_pset_hae_longitude:
+  <<: *default_float32
+  CATDESC: Longitude of bin center in HAE coordinates
+  FIELDNAM: HAE Longitude
+  DEPEND_0: epoch
+  DEPEND_1: spin_angle_bin
+  DISPLAY_TYPE: no_plot
+  FORMAT: F5.2
+  LABLAXIS: Latitude
+  UNITS: deg
+  VALIDMIN: 0
+  VALIDMAX: 360
+
+hi_pset_counts:
+  <<: *default_uint16
+  CATDESC: Binned direct events counts during good times
+  FIELDNAM: Binned DE counts
+  DEPEND_0: epoch
+  DEPEND_1: esa_step
+  DEPEND_2: spin_angle_bin
+  LABL_PTR_1: esa_step_label
+  LABL_PTR_2: spin_bin_label
+  DISPLAY_TYPE: stack_plot
+  FORMAT: I5
+
+hi_pset_exposure_times:
+  <<: *default_float32
+  CATDESC: Exposure times for each bin during good times
+  FIELDNAM: Bin exposure times
+  DEPEND_0: epoch
+  DEPEND_1: esa_step
+  DEPEND_2: spin_angle_bin
+  LABL_PTR_1: esa_step_label
+  LABL_PTR_2: spin_bin_label
+  UNITS: sec
+  DISPLAY_TYPE: stack_plot
+  FORMAT: F6.2
+
+hi_pset_background_rates:
+  <<: *default_float32
+  CATDESC: Background count rates
+  FIELDNAM: Background count rates
+  DEPEND_0: epoch
+  DEPEND_1: esa_step
+  DEPEND_2: spin_angle_bin
+  LABL_PTR_1: esa_step_label
+  LABL_PTR_2: spin_bin_label
+  UNITS: counts / s
+  DISPLAY_TYPE: stack_plot
+  FORMAT: F4.2
+
+hi_pset_background_rates_uncertainty:
+  <<: *default_float32
+  CATDESC: Background count rate uncertainties
+  FIELDNAM: Background count rate uncertainties
+  DEPEND_0: epoch
+  DEPEND_1: esa_step
+  DEPEND_2: spin_angle_bin
+  LABL_PTR_1: esa_step_label
+  LABL_PTR_2: spin_bin_label
+  UNITS: counts / s
+  DISPLAY_TYPE: stack_plot
+  FORMAT: F4.2
+
+# <=== pset label Attributes ===>
+hi_pset_spin_bin_label:
+  CATDESC: Label spin angle bin
+  FIELDNAM: Label spin angle bin
+  FORMAT: A4
+  VAR_TYPE: metadata
+
+hi_pset_esa_step_label:
+  CATDESC: Label esa step
+  FIELDNAM: Label esa step
+  FORMAT: A4
+  VAR_TYPE: metadata
+
+hi_pset_label_vector_HAE:
+  CATDESC: Label cartesian despun_z
+  FIELDNAM: Label cartesian despun_z
+  FORMAT: A5
+  VAR_TYPE: metadata

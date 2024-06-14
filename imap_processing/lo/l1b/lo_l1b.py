@@ -9,7 +9,7 @@ from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import calc_start_time, write_cdf
 
 
-def lo_l1b(dependencies: dict):
+def lo_l1b(dependencies: dict, data_version: str):
     """
     Process IMAP-Lo L1A data into L1B CDF data products.
 
@@ -17,6 +17,8 @@ def lo_l1b(dependencies: dict):
     ----------
     dependencies : dict
         dictionary of datasets needed for L1B data product creation in xarray Datasets.
+    data_version : str
+        Version of the data product being created
 
     Returns
     -------
@@ -27,6 +29,7 @@ def lo_l1b(dependencies: dict):
     attr_mgr = ImapCdfAttributes()
     attr_mgr.add_instrument_global_attrs(instrument="lo")
     attr_mgr.add_instrument_variable_attrs(instrument="lo", level="l1b")
+    attr_mgr.add_global_attribute("Data_version", data_version)
 
     # if the dependencies are used to create Annotated Direct Events
 

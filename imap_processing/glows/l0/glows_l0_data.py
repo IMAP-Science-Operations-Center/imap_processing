@@ -150,10 +150,7 @@ class DirectEventL0(GlowsL0):
 
     Methods
     -------
-    within_same_sequence
-        Compare two DirectEventL0 objects and see if MET and LEN are equal (meaning they
-        are in the same sequence)
-
+    within_same_sequence(other)
     """
 
     MET: int

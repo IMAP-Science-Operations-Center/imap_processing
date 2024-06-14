@@ -79,7 +79,7 @@ def test_data_order(decom_test_data):
     assert decom_test_data[3].data["QUARTER_CYCLE"].derived_value == "FORTH"
 
     # Get unpacked science data
-    processed_data = swe_science(decom_test_data)
+    processed_data = swe_science(decom_test_data, "001")
 
     quarter_cycle = processed_data["quarter_cycle"].data
     assert quarter_cycle[0] == 0
@@ -91,7 +91,7 @@ def test_data_order(decom_test_data):
 def test_swe_science_algorithm(decom_test_data):
     """Test general shape of return dataset from swe_science."""
     # Get unpacked science data
-    processed_data = swe_science(decom_test_data)
+    processed_data = swe_science(decom_test_data, "001")
 
     # science data should have this shape, 15x12x7.
     science_data = processed_data["science_data"].data[0]
@@ -113,7 +113,7 @@ def test_decompress_counts(decom_test_data):
         "20230927173323_3rd_quarter_decompressed.csv",
         "20230927173238_4th_quarter_decompressed.csv",
     ]
-    decompressed_data = swe_science(decom_test_data)
+    decompressed_data = swe_science(decom_test_data, "001")
 
     for index in range(len(filepaths)):
         instrument_decompressed_counts = pd.read_csv(

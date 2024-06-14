@@ -23,7 +23,7 @@ import xarray as xr
 from imap_processing import imap_module_directory
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import calc_start_time, write_cdf
-from imap_processing.codice import __version__, constants
+from imap_processing.codice import constants
 from imap_processing.codice.codice_l0 import decom_packets
 from imap_processing.codice.utils import CODICEAPID, create_hskp_dataset
 from imap_processing.utils import group_by_apid, sort_by_time
@@ -77,7 +77,9 @@ class CoDICEL1aPipeline:
         self.plan_step = plan_step
         self.view_id = view_id
 
-    def create_science_dataset(self, start_time: np.datetime64) -> xr.Dataset:
+    def create_science_dataset(
+        self, start_time: np.datetime64, data_version: str
+    ) -> xr.Dataset:
         """Create an ``xarray`` dataset for the unpacked science data.
 
         The dataset can then be written to a CDF file.
@@ -86,6 +88,9 @@ class CoDICEL1aPipeline:
         ----------
         start_time : numpy.datetime64
             The start time of the packet, used to determine epoch data variable
+        data_version : str
+        Version of the data product being created
+
 
         Returns
         -------
@@ -96,13 +101,17 @@ class CoDICEL1aPipeline:
         cdf_attrs = ImapCdfAttributes()
         cdf_attrs.add_instrument_global_attrs("codice")
         cdf_attrs.add_instrument_variable_attrs("codice", "l1a")
+        cdf_attrs.add_global_attribute("Data_version", data_version)
 
-        # Define DataArrays for the coordinates
+        # Define coordinates
         epoch = xr.DataArray(
-            [start_time],
+            [
+                start_time,
+                start_time + np.timedelta64(1, "s"),
+            ],  # TODO: Fix after SIT-3 (see note below)
             name="epoch",
             dims=["epoch"],
-            attrs=cdf_attrs.get_variable_attributes("epoch"),
+            attrs=cdf_attrs.get_variable_attributes("epoch_attrs"),
         )
         energy_steps = xr.DataArray(
             np.arange(self.num_energy_steps),
@@ -111,16 +120,32 @@ class CoDICEL1aPipeline:
             attrs=cdf_attrs.get_variable_attributes("energy_attrs"),
         )
 
+        # Define labels
+        energy_label = xr.DataArray(
+            energy_steps.values.astype(str),
+            name="energy_label",
+            dims=["energy_label"],
+            attrs=cdf_attrs.get_variable_attributes("energy_label"),
+        )
+
         # Create the dataset to hold the data variables
         dataset = xr.Dataset(
-            coords={"epoch": epoch, "energy": energy_steps},
+            coords={
+                "epoch": epoch,
+                "energy": energy_steps,
+                "energy_label": energy_label,
+            },
             attrs=cdf_attrs.get_global_attributes(self.dataset_name),
         )
 
-        # Create a data variable for each species
+        # Create a data variable for each counter
         for variable_data, variable_name in zip(self.data, self.variable_names):
-            variable_data_arr = np.array(list(variable_data), dtype=int).reshape(
-                -1, self.num_energy_steps
+            # TODO: Currently, cdflib doesn't properly write/read CDF files that
+            #       have a single epoch value. To get around this for now, use
+            #       two epoch values and reshape accordingly. Revisit this after
+            #       SIT-3.
+            variable_data_arr = np.array(list(variable_data) * 2, dtype=int).reshape(
+                2, self.num_energy_steps
             )
             cdf_attrs_key = (
                 f"{self.dataset_name.split('imap_codice_l1a_')[-1]}-{variable_name}"
@@ -298,13 +323,15 @@ def get_params(packet) -> tuple[int, int, int, int]:
     return table_id, plan_id, plan_step, view_id
 
 
-def process_codice_l1a(file_path: Path | str) -> xr.Dataset:
+def process_codice_l1a(file_path: Path | str, data_version: str) -> xr.Dataset:
     """Process CoDICE l0 data to create l1a data products.
 
     Parameters
     ----------
     file_path : pathlib.Path | str
         Path to the CoDICE L0 file to process
+    data_version : str
+        Version of the data product being created
 
     Returns
     -------
@@ -339,7 +366,7 @@ def process_codice_l1a(file_path: Path | str) -> xr.Dataset:
             if apid == CODICEAPID.COD_NHK:
                 packets = grouped_data[apid]
                 sorted_packets = sort_by_time(packets, "SHCOARSE")
-                dataset = create_hskp_dataset(packets=sorted_packets)
+                dataset = create_hskp_dataset(sorted_packets, data_version)
 
             elif apid in apids_for_lo_science_processing:
                 # Sort the packets by time
@@ -363,7 +390,7 @@ def process_codice_l1a(file_path: Path | str) -> xr.Dataset:
                 pipeline.get_acquisition_times()
                 pipeline.get_data_products(apid)
                 pipeline.unpack_science_data(science_values)
-                dataset = pipeline.create_science_dataset(start_time)
+                dataset = pipeline.create_science_dataset(start_time, data_version)
 
     # TODO: Temporary workaround in order to create hi data products in absence
     #       of simulated data. This is essentially the same process as is for
@@ -391,11 +418,10 @@ def process_codice_l1a(file_path: Path | str) -> xr.Dataset:
         pipeline = CoDICEL1aPipeline(table_id, plan_id, plan_step, view_id)
         pipeline.get_data_products(apid)
         pipeline.unpack_science_data(science_values)
-        dataset = pipeline.create_science_dataset(start_time)
+        dataset = pipeline.create_science_dataset(start_time, data_version)
 
     # Write dataset to CDF
     logger.info(f"\nFinal data product:\n{dataset}\n")
-    dataset.attrs["Data_version"] = __version__
     dataset.attrs["cdf_filename"] = write_cdf(dataset)
     logger.info(f"\tCreated CDF file: {dataset.cdf_filename}")
 
