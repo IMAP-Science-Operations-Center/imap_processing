@@ -13,7 +13,7 @@ def ultra_l1c(data_dict: dict, data_version: str):
     data_dict : dict
         The data itself and its dependent data.
     data_version : str
-        Version of the data product being created
+        Version of the data product being created.
 
     Returns
     -------

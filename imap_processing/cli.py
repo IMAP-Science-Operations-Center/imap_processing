@@ -429,6 +429,11 @@ class Glows(ProcessInstrument):
         ----------
         dependencies : array_like
             List of dependencies to process.
+
+        Returns
+        -------
+        iterable TODO double check
+            Cdf file containing process data. TODO double Check.
         """
         print(f"Processing GLOWS {self.data_level}")
         products = []
@@ -624,8 +629,8 @@ class Mag(ProcessInstrument):
 
         Parameters
         ----------
-        file_paths : str
-            Path to the files.
+        dependencies : array_like
+            List of dependencies to process.
 
         Returns
         -------

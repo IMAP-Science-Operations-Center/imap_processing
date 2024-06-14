@@ -300,8 +300,8 @@ def ultra_l1a(packet_file: Path, data_version: str, apid: Optional[int] = None):
     ----------
     packet_file : pathlib.Path
         Path to the CCSDS data packet file.
-    data_version: str
-        Version of the data product being created
+    data_version : str
+        Version of the data product being created.
     apid : Optional[int]
         Optional apid.
 
