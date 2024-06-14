@@ -1,11 +1,17 @@
-"""Contains a data class for CCSDS data."""
+"""Contain a data class for CCSDS data."""
 
 from dataclasses import dataclass, fields
 
 
 @dataclass
 class CcsdsData:
-    """Data class for CCSDS header.
+    """
+    Data class for CCSDS header.
+
+    Parameters
+    ----------
+    packet_header : dict
+        A dictionary containing CCSDS packet header information.
 
     Attributes
     ----------
@@ -34,6 +40,14 @@ class CcsdsData:
     PKT_LEN: int
 
     def __init__(self, packet_header: dict):
+        """
+        Initialize the CCSDSData object.
+
+        Parameters
+        ----------
+        packet_header : dict
+            A dictionary containing CCSDS packet header information.
+        """
         attributes = [field.name for field in fields(self)]
 
         for key, item in packet_header.items():
