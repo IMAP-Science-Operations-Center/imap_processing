@@ -11,7 +11,7 @@ class CcsdsData:
     Parameters
     ----------
     packet_header : dict
-        A dictionary containing CCSDS packet header information.
+        A dictionary containing the CCSDS packet header information.
 
     Attributes
     ----------
