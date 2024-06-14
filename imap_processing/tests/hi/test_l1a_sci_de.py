@@ -36,13 +36,13 @@ def test_create_dataset():
     # Test for good data
     list_with_meta_first = [metaevent, directevent_1, directevent_2, directevent_3]
     packet_time = [123] * len(list_with_meta_first)
-    dataset = create_dataset(list_with_meta_first, packet_time, "45sensor")
+    dataset = create_dataset(list_with_meta_first, packet_time)
     assert dataset["epoch"].shape == (3,)
 
     # Test for missing metaevent
     list_with_no_meta = [directevent_1, directevent_2, directevent_3]
     packet_time = [123] * len(list_with_no_meta)
-    dataset = create_dataset(list_with_no_meta, packet_time, "90sensor")
+    dataset = create_dataset(list_with_no_meta, packet_time)
     assert dataset is None
 
     # test for first metaevent missing in the list
@@ -55,7 +55,7 @@ def test_create_dataset():
         directevent_3,
     ]
     packet_time = [123] * len(list_with_meta_middle)
-    dataset = create_dataset(list_with_meta_middle, packet_time, "45sensor")
+    dataset = create_dataset(list_with_meta_middle, packet_time)
     assert dataset["epoch"].shape == (3,)
     np.testing.assert_array_equal(dataset["trigger_id"].data, [1, 2, 3])
 
@@ -68,5 +68,5 @@ def test_create_dataset():
         metaevent,
     ]
     packet_time = [123] * len(list_with_meta_last)
-    dataset = create_dataset(list_with_meta_last, packet_time, "90sensor")
+    dataset = create_dataset(list_with_meta_last, packet_time)
     assert dataset["epoch"].shape == (0,)
