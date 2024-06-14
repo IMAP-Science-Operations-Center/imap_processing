@@ -76,7 +76,7 @@ def test_eu_hk_data(
         The validation data to compare against
     """
 
-    l1a_hk_ds = create_hskp_dataset(decom_test_data)
+    l1a_hk_ds = create_hskp_dataset(decom_test_data, "001")
     eu_hk_data = convert_raw_to_eu(
         l1a_hk_ds,
         imap_module_directory / "tests/codice/data/eu_unit_lookup_table.csv",

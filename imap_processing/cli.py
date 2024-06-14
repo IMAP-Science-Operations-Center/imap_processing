@@ -32,7 +32,7 @@ from imap_processing.cdf.utils import load_cdf, write_cdf
 #   from imap_processing import cdf
 # In code:
 #   call cdf.utils.write_cdf
-from imap_processing.codice import codice_l1a
+from imap_processing.codice import codice_l1a, codice_l1b
 from imap_processing.glows.l1a.glows_l1a import glows_l1a
 from imap_processing.glows.l1b.glows_l1b import glows_l1b
 from imap_processing.hi.l1a import hi_l1a
@@ -382,6 +382,17 @@ class Codice(ProcessInstrument):
                 )
             # process data
             dataset = codice_l1a.process_codice_l1a(dependencies[0], self.version)
+            cdf_file_path = dataset.attrs["cdf_filename"]
+            return [cdf_file_path]
+
+        if self.data_level == "l1b":
+            if len(dependencies) > 1:
+                raise ValueError(
+                    f"Unexpected dependencies found for CoDICE L1b:"
+                    f"{dependencies}. Expected only one dependency."
+                )
+            # process data
+            dataset = codice_l1b.process_codice_l1b(dependencies[0], self.version)
             cdf_file_path = dataset.attrs["cdf_filename"]
             return [cdf_file_path]
 
