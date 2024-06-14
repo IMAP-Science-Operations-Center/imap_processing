@@ -479,7 +479,7 @@ def process_swapi_science(sci_dataset, data_version: str):
         attrs=sci_l1_attrs,
     )
     # TODO: update to use add_global_attribute() function
-    dataset.attrs["DataVersion"] = data_version
+    dataset.attrs["Data_version"] = data_version
 
     dataset["swp_pcem_counts"] = xr.DataArray(
         np.array(swp_pcem_counts, dtype=np.uint16),

@@ -1,6 +1,7 @@
 # ruff: noqa: PLR0913
 """Module for GLOWS L1B data products."""
 
+import dataclasses
 import json
 from dataclasses import InitVar, dataclass, field
 from pathlib import Path
@@ -220,8 +221,8 @@ class DirectEventL1B:
 
     direct_events: InitVar[np.ndarray]
     seq_count_in_pkts_file: np.double  # Passed from L1A
-    unique_identifier: str = field(init=False)
-    number_of_de_packets: np.double
+    # unique_identifier: str = field(init=False)
+    number_of_de_packets: np.double  # TODO Is this required in L1B?
     imap_time_last_pps: np.double
     glows_time_last_pps: np.double
     # Added to the end of glows_time_last_pps as subseconds
@@ -277,9 +278,11 @@ class DirectEventL1B:
         )
 
         # TODO: double check that this time is in unix time and is the correct variable
-        self.unique_identifier = np.datetime_as_string(
-            np.datetime64(int(self.imap_time_last_pps), "ns"), "s"
-        )
+        # TODO: This cannot be in the data because it's a string, put it in the
+        #  attributes
+        # self.unique_identifier = np.datetime_as_string(
+        #     np.datetime64(int(self.imap_time_last_pps), "ns"), "s"
+        # )
         self.glows_time_last_pps = TimeTuple(
             int(self.glows_time_last_pps), glows_ssclk_last_pps
         ).to_seconds()
@@ -359,6 +362,8 @@ class HistogramL1B:
         array of block-accumulated count numbers
     flight_software_version: str
     seq_count_in_pkts_file: int
+    last_spin_id: int
+        The ID of the previous spin
     flags_set_onboard: int
     is_generated_on_ground: int
     number_of_spins_per_block
@@ -371,8 +376,6 @@ class HistogramL1B:
         total number of events/counts in histogram
     imap_spin_angle_bin_cntr
         IMAP spin angle ψ for bin centers, see Sec. -
-    histogram_flag_array
-        array of bad-angle flags for histogram bins, see Tab. 14
     filter_temperature_average
         block-averaged value, decoded to Celsius degrees using Eq. (47)
     filter_temperature_std_dev
@@ -397,6 +400,9 @@ class HistogramL1B:
         IMAP clock, subseconds as decimal part of float, see Sec. -.1
     imap_end_time_offset
         IMAP clock, subseconds as decimal part of float, see Sec. -.1
+    histogram_flag_array
+        flags for bad-time information per bin, consisting of [is_close_to_uv_source,
+        is_inside_excluded_region, is_excluded_by_instr_team, is_suspected_transient]
     spin_period_ground_average
         block-averaged value computed on ground, see Sec. -.1
     spin_period_ground_std_dev
@@ -447,13 +453,11 @@ class HistogramL1B:
     imap_end_time_offset: np.double  # No conversion needed from l1a->l1b
     glows_start_time: np.double  # No conversion needed from l1a->l1b
     glows_end_time_offset: np.double  # No conversion needed from l1a->l1b
-    unique_block_identifier: str = field(
-        init=False
-    )  # Could be datetime TODO: Missing from values in L1A
-    imap_spin_angle_bin_cntr: np.ndarray = field(
-        init=False
-    )  # Same size as bins TODO add dims
-    histogram_flag_array: np.ndarray = field(init=False)  # TODO add dims
+    # unique_block_identifier: str = field(
+    #     init=False
+    # )  # Could be datetime TODO: Can't put a string in data
+    imap_spin_angle_bin_cntr: np.ndarray = field(init=False)  # Same size as bins
+    histogram_flag_array: np.ndarray = field(init=False)
     spin_period_ground_average: np.double = field(init=False)  # retrieved from SPICE?
     spin_period_ground_std_dev: np.double = field(init=False)  # retrieved from SPICE?
     position_angle_offset_average: np.double = field(init=False)  # retrieved from SPICE
@@ -464,13 +468,12 @@ class HistogramL1B:
     spacecraft_location_std_dev: np.ndarray = field(init=False)  # retrieved from SPIC
     spacecraft_velocity_average: np.ndarray = field(init=False)  # retrieved from SPIC
     spacecraft_velocity_std_dev: np.ndarray = field(init=False)  # retrieved from SPIC
-    # TODO make these human - readable
-    # flags: np.ndarray = field(init=False) # Generated per-histogram
-
+    flags: np.ndarray = field(init=False)
     # TODO:
     # - Determine a good way to output flags as "human readable"
     # - Add spice pieces
     # - add in the filenames for the input files - should they be global attributes?
+    # - also unique identifiers
     # - Bad angle algorithm using SPICE locations
     # - Move ancillary file to AWS
 
@@ -526,7 +529,22 @@ class HistogramL1B:
             "pulse_length", self.pulse_length_std_dev
         )
 
-        self.histogram_flag_array = np.zeros((17, 3600))
-        self.unique_block_identifier = np.datetime_as_string(
-            np.datetime64(int(self.imap_start_time), "ns"), "s"
-        )
+        self.histogram_flag_array = np.zeros((4, 3600))
+        # self.unique_block_identifier = np.datetime_as_string(
+        #     np.datetime64(int(self.imap_start_time), "ns"), "s"
+        # )
+        self.flags = np.zeros((17, 3600))
+
+    def output_data(self) -> tuple:
+        """
+        Output the L1B DataArrays as a tuple.
+
+        It is faster to return the values like this than to use to_dict() from
+        dataclasses.
+
+        Returns
+        -------
+        tuple:
+            A tuple containing each attribute value in the class.
+        """
+        return tuple(getattr(self, out.name) for out in dataclasses.fields(self))

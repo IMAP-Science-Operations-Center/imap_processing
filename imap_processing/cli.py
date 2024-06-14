@@ -33,12 +33,16 @@ from imap_processing.cdf.utils import load_cdf, write_cdf
 # In code:
 #   call cdf.utils.write_cdf
 from imap_processing.codice import codice_l1a, codice_l1b
+from imap_processing.glows.l1a.glows_l1a import glows_l1a
+from imap_processing.glows.l1b.glows_l1b import glows_l1b
 from imap_processing.hi.l1a import hi_l1a
 from imap_processing.hi.l1b import hi_l1b
 from imap_processing.hit.l1a.hit_l1a import hit_l1a
+from imap_processing.hit.l1b.hit_l1b import hit_l1b
 from imap_processing.idex.idex_packet_parser import PacketParser
 from imap_processing.lo.l1a import lo_l1a
 from imap_processing.lo.l1b import lo_l1b
+from imap_processing.lo.l1c import lo_l1c
 from imap_processing.mag.l1a.mag_l1a import mag_l1a
 from imap_processing.swapi.l1.swapi_l1 import swapi_l1
 from imap_processing.swe.l1a.swe_l1a import swe_l1a
@@ -399,6 +403,27 @@ class Glows(ProcessInstrument):
     def do_processing(self, dependencies):
         """Perform GLOWS specific processing."""
         print(f"Processing GLOWS {self.data_level}")
+        products = []
+        if self.data_level == "l1a":
+            if len(dependencies) > 1:
+                raise ValueError(
+                    f"Unexpected dependencies found for GLOWS L1A:"
+                    f"{dependencies}. Expected only one input dependency."
+                )
+            datasets = glows_l1a(dependencies[0], self.version)
+            products = [write_cdf(dataset) for dataset in datasets]
+
+        if self.data_level == "l1b":
+            if len(dependencies) < 1:
+                raise ValueError(
+                    f"Unexpected dependencies found for GLOWS L1B:"
+                    f"{dependencies}. Expected at least one input dependency."
+                )
+            input_dataset = load_cdf(dependencies[0])
+            dataset = glows_l1b(input_dataset, self.version)
+            products = [write_cdf(dataset)]
+
+        return products
 
 
 class Hi(ProcessInstrument):
@@ -451,6 +476,17 @@ class Hit(ProcessInstrument):
             products = hit_l1a(dependencies[0], self.version)
             return products
 
+        elif self.data_level == "l1b":
+            if len(dependencies) > 1:
+                raise ValueError(
+                    f"Unexpected dependencies found for HIT L1B:"
+                    f"{dependencies}. Expected only one dependency."
+                )
+            # process data and write all processed data to CDF files
+            l1a_dataset = load_cdf(dependencies[0])
+            products = hit_l1b(l1a_dataset)
+            return products
+
 
 class Idex(ProcessInstrument):
     """Process IDEX."""
@@ -496,6 +532,14 @@ class Lo(ProcessInstrument):
                 dataset = load_cdf(dependency, to_datetime=True)
                 data_dict[dataset.attrs["Logical_source"]] = dataset
             output_file = lo_l1b.lo_l1b(data_dict, self.version)
+            return [output_file]
+
+        elif self.data_level == "l1c":
+            data_dict = {}
+            for dependency in dependencies:
+                dataset = load_cdf(dependency, to_datetime=True)
+                data_dict[dataset.attrs["Logical_source"]] = dataset
+            output_file = lo_l1c.lo_l1c(data_dict)
             return [output_file]
 
 
@@ -565,7 +609,7 @@ class Swe(ProcessInstrument):
                 )
             # read CDF file
             l1a_dataset = load_cdf(dependencies[0])
-            processed_data = swe_l1b(l1a_dataset)
+            processed_data = swe_l1b(l1a_dataset, data_version=self.version)
             cdf_file_path = write_cdf(processed_data)
             print(f"processed file path: {cdf_file_path}")
             return [cdf_file_path]
