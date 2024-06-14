@@ -44,6 +44,8 @@ from imap_processing.lo.l1a import lo_l1a
 from imap_processing.lo.l1b import lo_l1b
 from imap_processing.lo.l1c import lo_l1c
 from imap_processing.mag.l1a.mag_l1a import mag_l1a
+from imap_processing.mag.l1b.mag_l1b import mag_l1b
+from imap_processing.mag.l1c.mag_l1c import mag_l1c
 from imap_processing.swapi.l1.swapi_l1 import swapi_l1
 from imap_processing.swe.l1a.swe_l1a import swe_l1a
 from imap_processing.swe.l1b.swe_l1b import swe_l1b
@@ -546,19 +548,45 @@ class Lo(ProcessInstrument):
 class Mag(ProcessInstrument):
     """Process MAG."""
 
-    def do_processing(self, file_paths):
+    def do_processing(self, dependencies) -> list[Path]:
         """Perform MAG specific processing."""
         print(f"Processing MAG {self.data_level}")
 
         if self.data_level == "l1a":
             # File path is expected output file path
-            if len(file_paths) > 1:
+            if len(dependencies) > 1:
                 raise ValueError(
                     f"Unexpected dependencies found for MAG L1A:"
-                    f"{file_paths}. Expected only one dependency."
+                    f"{dependencies}. Expected only one dependency."
                 )
-            output_files = mag_l1a(file_paths[0], data_version=self.version)
+            output_files = mag_l1a(dependencies[0], data_version=self.version)
             return output_files
+
+        if self.data_level == "l1b":
+            if len(dependencies) > 1:
+                raise ValueError(
+                    f"Unexpected dependencies found for MAG L1B:"
+                    f"{dependencies}. Expected only one dependency."
+                )
+            input_data = load_cdf(dependencies[0])
+            output_dataset = mag_l1b(input_data, self.version)
+            output_files = write_cdf(output_dataset)
+            return [output_files]
+
+        if self.data_level == "l1c":
+            # L1C depends on matching norm/burst files: eg burst-magi and norm-magi or
+            # burst-mago and norm-mago
+            if len(dependencies) != 2:
+                raise ValueError(
+                    f"Invalid dependencies found for MAG L1C:"
+                    f"{dependencies}. Expected two dependencies."
+                )
+
+            input_data = [load_cdf(dep) for dep in dependencies]
+            # Input datasets can be in any order
+            output_dataset = mag_l1c(input_data[0], input_data[1], self.version)
+            output_files = write_cdf(output_dataset)
+            return [output_files]
 
 
 class Swapi(ProcessInstrument):
