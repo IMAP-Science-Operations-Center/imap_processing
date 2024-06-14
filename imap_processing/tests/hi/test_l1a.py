@@ -52,7 +52,7 @@ def test_app_nhk_decom():
     processed_data = hi_l1a(packet_file_path=bin_data_path, data_version="001")
 
     assert np.unique(processed_data[0]["pkt_apid"].values) == HIAPID.H45_APP_NHK.value
-    assert processed_data[0].attrs["Logical_source"] == "imap_hi_l1a_hk"
+    assert processed_data[0].attrs["Logical_source"] == "imap_hi_l1a_45sensor-hk"
     assert processed_data[0].attrs["Data_version"] == "001"
     # TODO: compare with validation data once we have it
 
@@ -61,7 +61,7 @@ def test_app_nhk_decom():
 
     # TODO: ask Vivek about this date mismatch between the file name
     # and the data. May get resolved when we have good sample data.
-    assert cem_raw_cdf_filepath.name == "imap_hi_l1a_hk_20100313_v001.cdf"
+    assert cem_raw_cdf_filepath.name == "imap_hi_l1a_45sensor-hk_20100313_v001.cdf"
 
 
 def test_app_hist_decom():
@@ -70,7 +70,7 @@ def test_app_hist_decom():
     bin_data_path = test_path / "20231030_H45_SCI_CNT.bin"
     processed_data = hi_l1a(packet_file_path=bin_data_path, data_version="001")
 
-    assert processed_data[0].attrs["Logical_source"] == "imap_hi_l1a_hist"
+    assert processed_data[0].attrs["Logical_source"] == "imap_hi_l1a_45sensor-hist"
     # TODO: compare with validation data once we have it
     # TODO: Dropping duplicates to ignore ISTP for now. Need to update test data
     processed_data[0] = processed_data[0].sortby("epoch").groupby("epoch").first()
@@ -78,7 +78,7 @@ def test_app_hist_decom():
     # Write CDF
     cem_raw_cdf_filepath = write_cdf(processed_data[0])
 
-    assert cem_raw_cdf_filepath.name.startswith("imap_hi_l1a_hist_")
+    assert cem_raw_cdf_filepath.name.startswith("imap_hi_l1a_45sensor-hist_")
 
 
 def test_allocate_histogram_dataset():
@@ -86,6 +86,7 @@ def test_allocate_histogram_dataset():
     n_packets = 5
     dataset = hist.allocate_histogram_dataset(n_packets)
 
+    assert dataset.attrs["Data_type"] == "L1A_HIST>Level-1A Histogram"
     assert dataset.sizes["epoch"] == n_packets
     assert dataset.sizes["angle"] == 90
     for var_name in (

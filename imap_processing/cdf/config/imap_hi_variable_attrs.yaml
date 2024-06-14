@@ -87,21 +87,9 @@ hi_de_de_tag:
   FIELDNAM: Direct Event Time Tag
   LABLAXIS: DE Time Tag
 
-hi_de_epoch_attrs:
+hi_de_epoch:
+  <<: *default_epoch
   CATDESC: Direct Event time, number of nanoseconds since J2000 with leap seconds included
-  DISPLAY_TYPE: no_plot
-  FIELDNAM: Time since January 1, 2000, 11:58:55.816 UTC
-  FILLVAL: 9999-12-31T23:59:59.999999999
-  FORMAT: " "
-  LABLAXIS: epoch
-  UNITS: ns
-  VALIDMIN: 2000-12-01T11:58:55.816000000
-  VALIDMAX: 2099-12-31T00:00:00.000000000
-  VAR_TYPE: support_data
-  SCALE_TYP: linear
-  MONOTON: INCREASE
-  TIME_BASE: J2000
-  TIME_SCALE: Terrestrial Time
 
 hi_de_esa_stepping_num:
   <<: *default_uint8

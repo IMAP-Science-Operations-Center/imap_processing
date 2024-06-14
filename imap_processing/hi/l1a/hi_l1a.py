@@ -58,5 +58,11 @@ def hi_l1a(packet_file_path: Union[str, Path], data_version: str):
 
         # TODO: revisit this
         data.attrs["Data_version"] = data_version
+
+        # set the sensor string in Logical_source
+        sensor_str = HIAPID(apid).sensor
+        data.attrs["Logical_source"] = data.attrs["Logical_source"].format(
+            sensor=sensor_str
+        )
         processed_data.append(data)
     return processed_data

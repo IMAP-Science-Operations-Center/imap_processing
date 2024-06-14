@@ -7,7 +7,6 @@ from space_packet_parser.parser import Packet
 from imap_processing import imap_module_directory, launch_time
 from imap_processing.cdf.cdf_attribute_manager import CdfAttributeManager
 from imap_processing.cdf.global_attrs import ConstantCoordinates
-from imap_processing.hi.utils import HIAPID
 
 # TODO: read LOOKED_UP_DURATION_OF_TICK from
 # instrument status summary later. This value
@@ -176,9 +175,7 @@ def break_into_bits_size(binary_data: str) -> list:
     ]
 
 
-def create_dataset(
-    de_data_list: list, packet_met_time: list, sensor_str: str
-) -> xr.Dataset:
+def create_dataset(de_data_list: list, packet_met_time: list) -> xr.Dataset:
     """Create xarray dataset.
 
     Parameters
@@ -187,8 +184,6 @@ def create_dataset(
         Parsed direct event data list
     packet_met_time : list
         List of packet MET time
-    sensor_str : str
-        Sensor head: "45sensor" or "90sensor"
 
     Returns
     -------
@@ -289,12 +284,6 @@ def create_dataset(
     # uncomment this once Maxine's PR is merged
     # attr_mgr.add_global_attribute("Data_version", data_version)
 
-    # Inject sensor head into Logical_source
-    de_global_attrs = cdf_manager.get_global_attributes("imap_hi_l1a_de_attrs").copy()
-    de_global_attrs["Logical_source"] = de_global_attrs["Logical_source"].format(
-        sensor=sensor_str
-    )
-
     epoch_time = xr.DataArray(
         data_dict.pop("epoch"),
         name="epoch",
@@ -302,6 +291,7 @@ def create_dataset(
         attrs=ConstantCoordinates.EPOCH,
     )
 
+    de_global_attrs = cdf_manager.get_global_attributes("imap_hi_l1a_de_attrs")
     dataset = xr.Dataset(
         coords={"epoch": epoch_time},
         attrs=de_global_attrs,
@@ -340,7 +330,6 @@ def science_direct_event(packets_data: list[Packet]) -> xr.Dataset:
     dataset: xarray.Dataset
         xarray dataset
     """
-    sensor_str = HIAPID(packets_data[0].header["PKT_APID"].raw_value).sensor
     de_data_list = []
     packet_met_time = []
 
@@ -359,4 +348,4 @@ def science_direct_event(packets_data: list[Packet]) -> xr.Dataset:
         )
 
     # create dataset
-    return create_dataset(de_data_list, packet_met_time, sensor_str)
+    return create_dataset(de_data_list, packet_met_time)
