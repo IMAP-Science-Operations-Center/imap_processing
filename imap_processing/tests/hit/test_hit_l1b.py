@@ -9,7 +9,7 @@ from imap_processing.hit.l1a import hit_l1a
 from imap_processing.hit.l1b import hit_l1b
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture()
 def dependency():
     """Get L1A data from test packet file"""
 
