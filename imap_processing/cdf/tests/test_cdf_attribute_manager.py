@@ -15,17 +15,17 @@ def test_default_attr_schema():
 
     # Default global tests
     # Check false case
-    assert cdf_manager.global_attribute_schema["DOI"]["required"] == "false"
+    assert cdf_manager.global_attribute_schema["DOI"]["required"] is False
 
     # Check true case
-    assert cdf_manager.global_attribute_schema["Data_level"] == "true"
+    assert cdf_manager.global_attribute_schema["Data_level"]["required"] is True
 
     # Default variable tests
     # Check false case
-    assert cdf_manager.variable_attribute_schema["TIME_BASE"]["required"] == "false"
+    assert cdf_manager.variable_attribute_schema['attribute_key']["ABSOLUTE_ERROR"]["required"] is False
 
     # Check true case
-    assert cdf_manager.variable_attribute_schema["RESOLUTION"]["required"] == "true"
+    assert cdf_manager.variable_attribute_schema['attribute_key']["RESOLUTION"]["required"] is True
 
 
 # @pytest.mark.xfail(reason="Missing IMAP specific global schema")
