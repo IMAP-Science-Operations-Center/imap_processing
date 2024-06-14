@@ -9,7 +9,7 @@ import xarray as xr
 
 from imap_processing.cdf.global_attrs import ConstantCoordinates
 from imap_processing.cdf.utils import calc_start_time
-from imap_processing.glows import __version__, glows_cdf_attrs
+from imap_processing.glows import glows_cdf_attrs
 from imap_processing.glows.l0.decom_glows import decom_packets
 from imap_processing.glows.l0.glows_l0_data import DirectEventL0
 from imap_processing.glows.l1a.glows_l1a_data import DirectEventL1A, HistogramL1A
@@ -126,7 +126,7 @@ def generate_de_dataset(
     direct_events = np.zeros((len(de_l1a_list), len(de_l1a_list[0].direct_events), 4))
     global_attributes = glows_cdf_attrs.glows_l1a_de_attrs.output()
 
-    global_attributes["ground_software_version"] = __version__
+    global_attributes["ground_software_version"] = data_version
     # In header: block header, missing seqs
     # Time varying - statusdata
 
