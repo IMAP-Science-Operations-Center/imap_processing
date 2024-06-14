@@ -32,8 +32,8 @@ def glows_l1b(input_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
     if "hist" in logical_source:
         flag_data = xr.DataArray(
             np.arange(17),
-            name="flags",
-            dims=["flags"],
+            name="flag_dim",
+            dims=["flag_dim"],
             attrs=cdf_attrs.get_variable_attributes("flag_dim"),
         )
         bad_flag_data = xr.DataArray(
@@ -67,7 +67,7 @@ def glows_l1b(input_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
                 "epoch": data_epoch,
                 "bins": bin_data,
                 "bad_angle_flags": bad_flag_data,
-                "flags": flag_data,
+                "flag_dim": flag_data,
                 "ecliptic": eclipic_data,
             },
             attrs=cdf_attrs.get_global_attributes("imap_glows_l1b_hist"),
@@ -96,8 +96,8 @@ def glows_l1b(input_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
 
         flag_data = xr.DataArray(
             np.arange(11),
-            name="flags",
-            dims=["flags"],
+            name="flag_dim",
+            dims=["flag_dim"],
             attrs=cdf_attrs.get_variable_attributes("flag_dim"),
         )
 
@@ -105,7 +105,7 @@ def glows_l1b(input_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
             coords={
                 "epoch": data_epoch,
                 "per_second": per_second_data,
-                "flags": flag_data,
+                "flag_dim": flag_data,
             },
             attrs=cdf_attrs.get_global_attributes("imap_glows_l1b_de"),
         )
@@ -163,7 +163,7 @@ def process_de(l1a: xr.Dataset) -> tuple[xr.DataArray]:
     input_dims = [[] for i in l1a.keys()]
 
     output_dimension_mapping = {
-        "flags": ["flags"],
+        "de_flags": ["flag_dim"],
         "direct_event_glows_times": ["per_second"],
         "direct_event_pulse_lengths": ["per_second"],
     }
@@ -227,7 +227,7 @@ def process_histogram(l1a: xr.Dataset) -> xr.Dataset:
         "spacecraft_location_std_dev": ["ecliptic"],
         "spacecraft_velocity_average": ["ecliptic"],
         "spacecraft_velocity_std_dev": ["ecliptic"],
-        "flags": ["flags", "bins"],
+        "flags": ["flag_dim", "bins"],
     }
 
     # For each attribute, retrieve the dims from output_dimension_mapping or use an

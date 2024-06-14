@@ -249,7 +249,7 @@ class DirectEventL1B:
     # l1a_file_name: str # TODO: Add once L1A questions are answered
     # ancillary_data_files: np.ndarray # TODO: Add once L1A questions are answered
     # The following variables are created from the InitVar data
-    flags: np.ndarray = field(init=False, default=None)
+    de_flags: np.ndarray = field(init=False, default=None)
     # TODO: First two values of DE are sec/subsec
     direct_event_glows_times: np.ndarray = field(init=False, default=None)
     # 3rd value is pulse length
@@ -302,7 +302,7 @@ class DirectEventL1B:
             "spin_period", self.spin_period
         )
 
-        self.flags = np.array(
+        self.de_flags = np.array(
             [
                 catbed_heater_active,
                 spin_period_valid,
