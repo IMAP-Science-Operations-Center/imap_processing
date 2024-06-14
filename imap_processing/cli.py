@@ -473,7 +473,7 @@ class Hit(ProcessInstrument):
                 )
             # process data and write all processed data to CDF files
             l1a_dataset = load_cdf(dependencies[0])
-            products = hit_l1b(l1a_dataset)
+            products = hit_l1b(l1a_dataset, self.version)
             return products
 
 

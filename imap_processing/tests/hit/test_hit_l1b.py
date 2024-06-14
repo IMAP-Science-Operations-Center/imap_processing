@@ -40,7 +40,7 @@ def test_hit_l1b(dependency):
     dependency : xr.dataset
         L1A data
     """
-    cdf_filepaths = hit_l1b.hit_l1b(dependency)
+    cdf_filepaths = hit_l1b.hit_l1b(dependency, "001")
     assert len(cdf_filepaths) == 1
     assert isinstance(cdf_filepaths[0], pathlib.PurePath)
     assert cdf_filepaths[0].name == "imap_hit_l1b_hk_20100101_v001.cdf"
