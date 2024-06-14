@@ -176,6 +176,7 @@ def process_codice_l1b(file_path: Path, data_version: str) -> xr.Dataset:
     cdf_attrs = ImapCdfAttributes()
     cdf_attrs.add_instrument_global_attrs("codice")
     cdf_attrs.add_instrument_variable_attrs("codice", "l1b")
+    cdf_attrs.add_global_attribute("Data_version", data_version)
 
     dataset_name = (
         l1a_dataset.attrs["Logical_source"].replace("-", "_").replace("l1a", "l1b")
@@ -189,7 +190,6 @@ def process_codice_l1b(file_path: Path, data_version: str) -> xr.Dataset:
 
     # Write the dataset to CDF
     logger.info(f"\nFinal data product:\n{l1b_dataset}\n")
-    l1b_dataset.attrs["Data_version"] = data_version
     l1b_dataset.attrs["cdf_filename"] = write_cdf(l1b_dataset)
     logger.info(f"\tCreated CDF file: {l1b_dataset.cdf_filename}")
 

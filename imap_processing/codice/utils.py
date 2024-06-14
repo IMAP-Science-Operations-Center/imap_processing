@@ -109,13 +109,15 @@ def add_metadata_to_array(packet, metadata_arrays: dict) -> dict:
     return metadata_arrays
 
 
-def create_hskp_dataset(packets) -> xr.Dataset:
+def create_hskp_dataset(packets, data_version: str) -> xr.Dataset:
     """Create dataset for each metadata field for housekeeping data.
 
     Parameters
     ----------
     packets : list[space_packet_parser.parser.Packet]
         The list of packets to process
+    data_version : str
+        Version of the data product being created
 
     Returns
     -------
@@ -125,6 +127,7 @@ def create_hskp_dataset(packets) -> xr.Dataset:
     cdf_attrs = ImapCdfAttributes()
     cdf_attrs.add_instrument_global_attrs("codice")
     cdf_attrs.add_instrument_variable_attrs("codice", "l1a")
+    cdf_attrs.add_global_attribute("Data_version", data_version)
 
     metadata_arrays = collections.defaultdict(list)
 

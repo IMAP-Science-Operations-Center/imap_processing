@@ -77,7 +77,9 @@ class CoDICEL1aPipeline:
         self.plan_step = plan_step
         self.view_id = view_id
 
-    def create_science_dataset(self, start_time: np.datetime64) -> xr.Dataset:
+    def create_science_dataset(
+        self, start_time: np.datetime64, data_version: str
+    ) -> xr.Dataset:
         """Create an ``xarray`` dataset for the unpacked science data.
 
         The dataset can then be written to a CDF file.
@@ -86,6 +88,9 @@ class CoDICEL1aPipeline:
         ----------
         start_time : numpy.datetime64
             The start time of the packet, used to determine epoch data variable
+        data_version : str
+        Version of the data product being created
+
 
         Returns
         -------
@@ -96,6 +101,7 @@ class CoDICEL1aPipeline:
         cdf_attrs = ImapCdfAttributes()
         cdf_attrs.add_instrument_global_attrs("codice")
         cdf_attrs.add_instrument_variable_attrs("codice", "l1a")
+        cdf_attrs.add_global_attribute("Data_version", data_version)
 
         # Define coordinates
         epoch = xr.DataArray(
@@ -360,7 +366,7 @@ def process_codice_l1a(file_path: Path | str, data_version: str) -> xr.Dataset:
             if apid == CODICEAPID.COD_NHK:
                 packets = grouped_data[apid]
                 sorted_packets = sort_by_time(packets, "SHCOARSE")
-                dataset = create_hskp_dataset(packets=sorted_packets)
+                dataset = create_hskp_dataset(sorted_packets, data_version)
 
             elif apid in apids_for_lo_science_processing:
                 # Sort the packets by time
@@ -384,7 +390,7 @@ def process_codice_l1a(file_path: Path | str, data_version: str) -> xr.Dataset:
                 pipeline.get_acquisition_times()
                 pipeline.get_data_products(apid)
                 pipeline.unpack_science_data(science_values)
-                dataset = pipeline.create_science_dataset(start_time)
+                dataset = pipeline.create_science_dataset(start_time, data_version)
 
     # TODO: Temporary workaround in order to create hi data products in absence
     #       of simulated data. This is essentially the same process as is for
@@ -412,11 +418,10 @@ def process_codice_l1a(file_path: Path | str, data_version: str) -> xr.Dataset:
         pipeline = CoDICEL1aPipeline(table_id, plan_id, plan_step, view_id)
         pipeline.get_data_products(apid)
         pipeline.unpack_science_data(science_values)
-        dataset = pipeline.create_science_dataset(start_time)
+        dataset = pipeline.create_science_dataset(start_time, data_version)
 
     # Write dataset to CDF
     logger.info(f"\nFinal data product:\n{dataset}\n")
-    dataset.attrs["Data_version"] = data_version
     dataset.attrs["cdf_filename"] = write_cdf(dataset)
     logger.info(f"\tCreated CDF file: {dataset.cdf_filename}")
 

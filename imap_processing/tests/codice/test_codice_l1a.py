@@ -127,7 +127,6 @@ def test_l1a_data(request) -> xr.Dataset:
         A ``xarray`` dataset containing the test data
     """
 
-    # TODO: add version to test inputs
     dataset = process_codice_l1a(file_path=request.param, data_version="001")
     return dataset
 
