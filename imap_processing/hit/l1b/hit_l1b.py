@@ -17,13 +17,15 @@ logger = logging.getLogger(__name__)
 # TODO review logging levels to use (debug vs. info)
 
 
-def hit_l1b(l1a_dataset: xr.Dataset):
+def hit_l1b(l1a_dataset: xr.Dataset, data_version: str):
     """Process HIT data to L1B.
 
     Parameters
     ----------
     l1a_dataset : xarray.Dataset
         l1A data
+    data_version : str
+        Version of the data product being created
 
     Returns
     -------
@@ -47,6 +49,7 @@ def hit_l1b(l1a_dataset: xr.Dataset):
     logger.info("Creating CDF files for HIT L1B data")
     cdf_filepaths = []
     for dataset in datasets:
+        dataset.attrs["Data_version"] = data_version
         cdf_file = write_cdf(dataset)
         cdf_filepaths.append(cdf_file)
     logger.info(f"L1B CDF files created: {cdf_filepaths}")
