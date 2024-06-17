@@ -4,6 +4,8 @@ from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 
 # test add_instrument_global_attrs(self, instrument: str):
 def test_add_instrument_global_attrs():
+    pass
 
 # test add_instrument_variable_attrs(self, instrument: str, level: str):
 def test_add_instrument_variable_attrs():
+    pass
