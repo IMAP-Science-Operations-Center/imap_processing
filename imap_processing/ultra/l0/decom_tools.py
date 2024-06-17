@@ -220,6 +220,7 @@ def decompress_image(
                 # Keeps only the last 8 bits of the result of pixel0 - delta_f
                 # This operation ensures that the result is within the range
                 # of an 8-bit byte (0-255)
+                # TODO: Check to make certain no negative values occur here.
                 p[i][column_index] = (pixel0 - delta_f) & 0xFF
                 # Perform logarithmic decompression on the pixel value
                 p_decom[i][column_index] = log_decompression(
