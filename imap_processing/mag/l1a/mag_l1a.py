@@ -24,10 +24,12 @@ def mag_l1a(packet_filepath, data_version: str) -> list[Path]:
     ----------
     packet_filepath :
         Packet files for processing
+    data_version : str
+        Data version to write to CDF files
 
     Returns
     -------
-    generated_files: list[Path]
+    generated_files: list[pathlib.Path]
         A list of generated filenames
     """
     packets = decom_mag.decom_packets(packet_filepath)
@@ -69,16 +71,16 @@ def process_and_write_data(
     ----------
     packet_data: list[MagL0]
         List of MagL0 packets to process, containing primary and secondary sensor data
-    raw_attrs
+    raw_attrs: dict
         Attributes for MagL1A raw CDF files
-    mago_attrs
+    mago_attrs: dict
         Attributes for MagL1A MAGo CDF files
-    magi_attrs
+    magi_attrs: dict
         Attributes for MagL1A MAGi CDF files
 
     Returns
     -------
-    generated_files: list[Path]
+    generated_files: list[pathlib.Path]
         A list of generated filenames
     """
     if not packet_data:
@@ -126,7 +128,7 @@ def process_packets(
 
     Returns
     -------
-    packet_dict: dict[str, dict[np.datetime64, MagL1a]]
+    packet_dict: dict[str, dict[numpy.datetime64, MagL1a]]
         Dictionary containing two keys: "mago" which points to a dictionary of mago
          MagL1A objects, and "magi" which points to a dictionary of magi MagL1A objects.
          Each dictionary has keys of days and values of MagL1A objects, so each day
@@ -161,8 +163,12 @@ def process_packets(
         total_primary_vectors = seconds_per_packet * mag_l0.PRI_VECSEC
         total_secondary_vectors = seconds_per_packet * mag_l0.SEC_VECSEC
 
+        # The raw vectors are of type int8, but the output vectors should be at least
+        # int16.
         primary_vectors, secondary_vectors = MagL1a.process_vector_data(
-            mag_l0.VECTORS, total_primary_vectors, total_secondary_vectors
+            mag_l0.VECTORS.astype(dtype=np.int32),
+            total_primary_vectors,
+            total_secondary_vectors,
         )
 
         primary_timestamped_vectors = MagL1a.calculate_vector_time(
@@ -243,7 +249,7 @@ def generate_dataset(single_file_l1a: MagL1a, dataset_attrs: dict) -> xr.Dataset
 
     Returns
     -------
-    dataset : xr.Dataset
+    dataset : xarray.Dataset
         One xarray dataset with proper CDF attributes and shape containing MAG L1A data.
     """
     # TODO: Just leave time in datetime64 type with vector as dtype object to avoid this

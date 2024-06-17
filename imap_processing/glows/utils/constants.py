@@ -2,6 +2,8 @@
 
 from dataclasses import dataclass
 
+import numpy as np
+
 
 @dataclass(frozen=True)
 class TimeTuple:
@@ -33,9 +35,11 @@ class TimeTuple:
         object.__setattr__(self, "seconds", final_seconds)
         object.__setattr__(self, "subseconds", final_subseconds)
 
-    def to_seconds(self) -> float:
+    def to_seconds(self) -> np.single:
         """Convert the TimeTuple to seconds."""
-        return self.seconds + self.subseconds / GlowsConstants.SUBSECOND_LIMIT
+        return np.single(
+            self.seconds + self.subseconds / GlowsConstants.SUBSECOND_LIMIT
+        )
 
 
 @dataclass(frozen=True)

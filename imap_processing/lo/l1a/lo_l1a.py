@@ -11,7 +11,7 @@ from imap_processing.cdf.utils import calc_start_time, write_cdf
 from imap_processing.lo.l0.data_classes.science_direct_events import ScienceDirectEvents
 
 
-def lo_l1a(dependency: Path):
+def lo_l1a(dependency: Path, data_version: str):
     """
     Process IMAP-Lo L0 data into L1A CDF data products.
 
@@ -20,6 +20,8 @@ def lo_l1a(dependency: Path):
     dependency :
         dependency file needed for data product creation.
         Should always be only one for L1A.
+    data_version : str
+        Version of the data product being created
 
     Returns
     -------
@@ -40,6 +42,7 @@ def lo_l1a(dependency: Path):
     attr_mgr = ImapCdfAttributes()
     attr_mgr.add_instrument_global_attrs(instrument="lo")
     attr_mgr.add_instrument_variable_attrs(instrument="lo", level="l1a")
+    attr_mgr.add_global_attribute("Data_version", data_version)
 
     # TODO: replace with real processing when sample data is available
     # Temporary code until I get sample data. The fields will still be pulled

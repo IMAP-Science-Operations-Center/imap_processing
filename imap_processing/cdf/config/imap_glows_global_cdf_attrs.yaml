@@ -1,0 +1,26 @@
+instrument_base: &instrument_base
+  Descriptor: GLOWS>GLObal Solar Wind Structure
+  TEXT: >
+    The GLObal Solar Wind Structure (GLOWS) is a non-imaging single-pixel Lyman-alpha
+    photometer that will be used to observe the sky distribution of the helioglow to
+    better understand the evolution of the solar wind structure.
+    The Lyman-alpha photon counts from these observations can be used to build a more
+    comprehensive picture of the solar wind structure and how it changes through the
+    solar cycles.
+    GLOWS design and assembly is led by the Space Research Center, Warsaw, Poland
+    (CBK PAN). See https://imap.princeton.edu/instruments/glows for more details.
+  Instrument_type: Particles (space)
+
+imap_glows_l1b_hist:
+  <<: *instrument_base
+  Data_level: L1B
+  Data_type: L1B_hist>Level-1B histogram
+  Logical_source: imap_glows_l1b_hist
+  Logical_source_description: IMAP Mission GLOWS Instrument Level-1B Histogram Data.
+
+imap_glows_l1b_de:
+  <<: *instrument_base
+  Data_level: L1B
+  Data_type: L1B_de>Level-1B Direct Events
+  Logical_source: imap_glows_l1b_de
+  Logical_source_description: IMAP Mission GLOWS Instrument Level-1B Direct Events Data.

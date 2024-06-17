@@ -33,7 +33,11 @@ def decom_packets(packet_file: Path) -> list:
         all the unpacked data.
     """
     packet_to_xtce_mapping = {
-        "imap_codice_l0_hskp_20230822_v001.pkts": "P_COD_NHK.xml",
+        "imap_codice_l0_hi-counters-aggregated_20240429_v001.pkts": "P_COD_HI_INST_COUNTS_AGGREGATED.xml",  # noqa
+        "imap_codice_l0_hi-counters-singles_20240429_v001.pkts": "P_COD_HI_INST_COUNTS_SINGLES.xml",  # noqa
+        "imap_codice_l0_hi-omni_20240429_v001.pkts": "P_COD_HI_OMNI_SPECIES_COUNTS.xml",
+        "imap_codice_l0_hi-sectored_20240429_v001.pkts": "P_COD_HI_SECT_SPECIES_COUNTS.xml",  # noqa
+        "imap_codice_l0_hskp_20100101_v001.pkts": "P_COD_NHK.xml",
         "imap_codice_l0_lo-counters-aggregated_20240429_v001.pkts": "P_COD_LO_INST_COUNTS_AGGREGATED.xml",  # noqa
         "imap_codice_l0_lo-counters-singles_20240429_v001.pkts": "P_COD_LO_INST_COUNTS_SINGLES.xml",  # noqa
         "imap_codice_l0_lo-sw-angular_20240429_v001.pkts": "P_COD_LO_SW_ANGULAR_COUNTS.xml",  # noqa

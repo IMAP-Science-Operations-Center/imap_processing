@@ -1,6 +1,8 @@
 """IMAP-HI L1A processing module."""
 
 import logging
+from pathlib import Path
+from typing import Union
 
 from imap_processing.hi.l0 import decom_hi
 from imap_processing.hi.l1a.histogram import create_dataset as hist_create_dataset
@@ -12,13 +14,15 @@ from imap_processing.utils import group_by_apid
 logger = logging.getLogger(__name__)
 
 
-def hi_l1a(packet_file_path: str):
+def hi_l1a(packet_file_path: Union[str, Path], data_version: str):
     """Process IMAP raw data to l1a.
 
     Parameters
     ----------
     packet_file_path : str
         Data packet file path
+    data_version : str
+        Version of the data product being created
 
     Returns
     -------
@@ -51,5 +55,14 @@ def hi_l1a(packet_file_path: str):
             data = process_housekeeping(grouped_data[apid])
         else:
             raise RuntimeError(f"Encountered unexpected APID [{apid}]")
+
+        # TODO: revisit this
+        data.attrs["Data_version"] = data_version
+
+        # set the sensor string in Logical_source
+        sensor_str = HIAPID(apid).sensor
+        data.attrs["Logical_source"] = data.attrs["Logical_source"].format(
+            sensor=sensor_str
+        )
         processed_data.append(data)
     return processed_data

@@ -70,7 +70,7 @@ class MagL0:
         Secondary Coarse Time for first vector, seconds
     SEC_FNTM: int
         Secondary Fine Time for first vector, subseconds
-    VECTORS: np.ndarray | str
+    VECTORS: numpy.ndarray or str
         MAG Science Vectors - divide based on PRI_VECSEC and PUS_SSUBTYPE for vector
         counts. There is a post init call to convert a string into a numpy array -
         the only place it is a string is in the class initialization.

@@ -6,12 +6,12 @@ import numpy as np
 import pytest
 
 from imap_processing.glows.l0 import decom_glows
-from imap_processing.glows.l1.glows_l1a import (
+from imap_processing.glows.l1a.glows_l1a import (
     generate_de_dataset,
     generate_histogram_dataset,
     process_de_l0,
 )
-from imap_processing.glows.l1.glows_l1a_data import HistogramL1A
+from imap_processing.glows.l1a.glows_l1a_data import HistogramL1A
 from imap_processing.glows.utils.constants import TimeTuple
 
 

@@ -8,30 +8,31 @@ import numpy as np
 import xarray as xr
 
 from imap_processing.cdf.global_attrs import ConstantCoordinates
-from imap_processing.cdf.utils import calc_start_time, write_cdf
+from imap_processing.cdf.utils import calc_start_time
 from imap_processing.glows import __version__, glows_cdf_attrs
 from imap_processing.glows.l0.decom_glows import decom_packets
 from imap_processing.glows.l0.glows_l0_data import DirectEventL0
-from imap_processing.glows.l1.glows_l1a_data import DirectEventL1A, HistogramL1A
+from imap_processing.glows.l1a.glows_l1a_data import DirectEventL1A, HistogramL1A
 
 
-def glows_l1a(packet_filepath: Path, data_version: str) -> list[Path]:
+def glows_l1a(packet_filepath: Path, data_version: str) -> list[xr.Dataset]:
     """
     Process packets into GLOWS L1A CDF files.
 
-    Outputs CDF files for histogram and direct event GLOWS L1A CDF files.
+    Outputs Datasets for histogram and direct event GLOWS L1A. This list can be passed
+    into write_cdf to output CDF files.
 
     Parameters
     ----------
-    packet_filepath: Path
+    packet_filepath: pathlib.Path
         Path to packet file for processing
     data_version: str
         Data version for CDF filename, in the format "vXXX"
 
     Returns
     -------
-    generated_files: list[Path]
-        List of the paths of the generated CDF files
+    generated_files: list[xr.Dataset]
+        List of the L1A datasets
     """
     # TODO: Data version inside file as well?
     # Create glows L0
@@ -49,16 +50,16 @@ def glows_l1a(packet_filepath: Path, data_version: str) -> list[Path]:
         hists_by_day[hist_day].append(hist_l1a)
 
     # Generate CDF files for each day
-    generated_files = []
+    output_datasets = []
     for hist_l1a_list in hists_by_day.values():
         dataset = generate_histogram_dataset(hist_l1a_list, data_version)
-        generated_files.append(write_cdf(dataset))
+        output_datasets.append(dataset)
 
     for de_l1a_list in de_by_day.values():
         dataset = generate_de_dataset(de_l1a_list, data_version)
-        generated_files.append(write_cdf(dataset))
+        output_datasets.append(dataset)
 
-    return generated_files
+    return output_datasets
 
 
 def process_de_l0(
@@ -112,7 +113,7 @@ def generate_de_dataset(
 
     Returns
     -------
-    output : xr.Dataset
+    output : xarray.Dataset
         Dataset containing the GLOWS L1A direct event CDF output
     """
     # TODO: Block header per second, or global attribute?
@@ -126,6 +127,7 @@ def generate_de_dataset(
     global_attributes = glows_cdf_attrs.glows_l1a_de_attrs.output()
 
     global_attributes["ground_software_version"] = __version__
+    global_attributes["Data_version"] = data_version
     # In header: block header, missing seqs
     # Time varying - statusdata
 
@@ -238,7 +240,7 @@ def generate_de_dataset(
 
     output = xr.Dataset(
         coords={"epoch": time_data},
-        attrs=glows_cdf_attrs.glows_l1a_de_attrs.output(),
+        attrs=global_attributes,
     )
 
     output["direct_events"] = de
@@ -290,7 +292,7 @@ def generate_histogram_dataset(
 
     Returns
     -------
-    output : xr.Dataset
+    output : xarray.Dataset
         Dataset containing the GLOWS L1A histogram CDF output
     """
     time_data = np.zeros(len(hist_l1a_list), dtype="datetime64[ns]")
@@ -303,8 +305,7 @@ def generate_histogram_dataset(
     # TODO: add missing attributes
     support_data = {
         "flight_software_version": [],
-        # TODO: should this be a global file attribute?
-        # "ground_software_version": [],
+        # "ground_software_version": [], # TODO: add this from global attrs
         # "pkts_file_name": [],
         "seq_count_in_pkts_file": [],
         "last_spin_id": [],
@@ -376,7 +377,7 @@ def generate_histogram_dataset(
 
     output = xr.Dataset(
         coords={"epoch": epoch_time, "bins": bins},
-        attrs=glows_cdf_attrs.glows_l1a_hist_attrs.output(),
+        attrs=glows_attrs,
     )
 
     output["histograms"] = hist
