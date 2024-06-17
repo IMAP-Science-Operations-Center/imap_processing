@@ -113,7 +113,7 @@ def test_variable_attribute():
        """
     cdf_manager = CdfAttributeManager(Path(__file__).parent.parent / "config")
     cdf_manager.load_global_attributes("imap_default_global_cdf_attrs.yaml")
-    cdf_manager.load_variable_attributes("imap_mag_l1_variable_attrs.yaml")
+    cdf_manager.load_variable_attributes("imap_test_variable.yaml")
 
     # All variables required to have:
     expected_attributes = [
