@@ -22,7 +22,6 @@ def calculate_histogram(histogram_dataset, name):
     histogram_dict = {}
 
     # Placeholder for calculations
-    # TODO: come back and update this data structure.
     epoch = histogram_dataset.coords["epoch"].values
 
     histogram_dict["epoch"] = epoch

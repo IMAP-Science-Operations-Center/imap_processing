@@ -24,7 +24,6 @@ def calculate_pset(pset_dataset, name):
     pset_dict = {}
 
     # Placeholder for calculations
-    # TODO: come back and update this data structure.
     epoch = pset_dataset.coords["epoch"].values
 
     pset_dict["epoch"] = epoch
