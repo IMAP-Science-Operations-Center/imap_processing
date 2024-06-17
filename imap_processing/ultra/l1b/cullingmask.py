@@ -16,7 +16,7 @@ def calculate_cullingmask(extended_spin_dict, name):
 
     Returns
     -------
-    xarray.dataset
+    xarray.Dataset
         Dataset containing the data.
     """
     cullingmask_dataset = create_dataset(extended_spin_dict, name, "l1b")
