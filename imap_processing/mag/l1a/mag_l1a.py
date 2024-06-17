@@ -163,8 +163,10 @@ def process_packets(
         total_primary_vectors = seconds_per_packet * mag_l0.PRI_VECSEC
         total_secondary_vectors = seconds_per_packet * mag_l0.SEC_VECSEC
 
+        # The raw vectors are of type int8, but the output vectors should be at least
+        # int16.
         primary_vectors, secondary_vectors = MagL1a.process_vector_data(
-            mag_l0.VECTORS, total_primary_vectors, total_secondary_vectors
+            mag_l0.VECTORS.astype(dtype=np.int32), total_primary_vectors, total_secondary_vectors
         )
 
         primary_timestamped_vectors = MagL1a.calculate_vector_time(
