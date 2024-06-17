@@ -26,6 +26,12 @@ imap_hi_l1b_de_attrs:
     Logical_source: imap_hi_l1b_{sensor}-de
     Logical_source_description: IMAP-Hi Instrument Level-1B Direct Event Data.
 
+imap_hi_l1b_hk_attrs:
+    Data_level: 1B
+    Data_type: L1B_HK>Level-1B Housekeeping
+    Logical_source: imap_hi_l1b_{sensor}-hk
+    Logical_source_description: IMAP-Hi Instrument Level-1B Housekeeping Data.
+
 imap_hi_l1c_pset_attrs:
     Data_level: 1C
     Data_type: L1C_PSET>Level-1C Pointing Set
