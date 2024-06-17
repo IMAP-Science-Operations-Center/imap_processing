@@ -42,7 +42,6 @@ def test_global_attribute():
 
     # Initialize CdfAttributeManager object which loads in default global variables and schema
     cdf_manager = CdfAttributeManager(Path(__file__).parent.parent / "config")
-
     # Test that default information was loaded in from "imap_default_global_cdf_attrs.yaml"
     assert cdf_manager.global_attributes["Project"] == "STP>Solar-Terrestrial Physics"
     assert cdf_manager.global_attributes["Source_name"] == "IMAP>Interstellar Mapping and Acceleration Probe"
@@ -141,17 +140,21 @@ def test_variable_attribute():
             assert variable_attrs_2 in imap_test_variable.keys()
 
     # Calling required attributes
-    # imap_test_variable["CATDESC"] == "test time"
-    # imap_test_variable["DEPEND_0"] == "test_depend"
-    # imap_test_variable["DISPLAY_TYPE"] == "test_display_type"
-    # imap_test_variable["FIELDNAM"] == "test_display_type"
-    # imap_test_variable["FILLVAL"] == -10
-    # imap_test_variable["FORMAT"] == "I1"
-    # imap_test_variable["LABLAXIS"] == "test_labaxis"
-    # imap_test_variable["UNITS"] == "test_units"
-    # imap_test_variable["VALIDMIN"] == 0
-    # imap_test_variable["VALIDMAX"] == 10
-    # imap_test_variable["VAR_TYPE"] == "test_var_type"
+    # assert imap_test_variable["CATDESC"] == "test time"
+    # assert imap_test_variable["DEPEND_0"] == "test_depend"
+    # assert imap_test_variable["DISPLAY_TYPE"] == "test_display_type"
+    # assert imap_test_variable["FIELDNAM"] == "test_display_type"
+    # assert imap_test_variable["FILLVAL"] == -10
+    # assert imap_test_variable["FORMAT"] == "I1"
+    # assert imap_test_variable["LABLAXIS"] == "test_labaxis"
+    # assert imap_test_variable["UNITS"] == "test_units"
+    # assert imap_test_variable["VALIDMIN"] == 0
+    # assert imap_test_variable["VALIDMAX"] == 10
+    # assert imap_test_variable["VAR_TYPE"] == "test_var_type"
 
+    # Calling to non required attributes
+    # assert imap_test_variable["NOT_REQUIRED"] == "test_not_required"
 
-
+    # Calling attribute name that does not exist
+    # TODO: should throw error
+    # assert imap_test_variable["DNE"] == "test time"
