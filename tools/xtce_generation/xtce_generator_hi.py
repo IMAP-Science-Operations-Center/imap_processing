@@ -1,10 +1,20 @@
+"""
+Module for generating XTCE files for telemetry packets for hi.
+
+This module provides functionality to generate XTCE files for
+telemetry packets for hi.
+It includes a `TelemetryGenerator` class for creating XTCE
+files based on packet definitions stored in
+an Excel file.
+"""
+
 from pathlib import Path
 
 from tools.xtce_generation.telemetry_generator import TelemetryGenerator
 
 
 def main():
-    """IMAP-Hi XTCE generator tool."""
+    """Function used by hi to generate XTCE."""
 
     instrument_name = "hi"
     current_directory = Path(__file__).parent

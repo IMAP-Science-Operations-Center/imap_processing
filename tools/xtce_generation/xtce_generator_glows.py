@@ -1,10 +1,21 @@
+"""
+Module for generating XTCE files for telemetry packets for glows.
+
+This module provides functionality to generate XTCE files for
+telemetry packets for glows.
+It includes a `TelemetryGenerator` class for creating XTCE
+files based on packet definitions stored in
+an Excel file.
+"""
+
 from pathlib import Path
 
 from tools.xtce_generation.telemetry_generator import TelemetryGenerator
 
 
 def main():
-    """This function is used to generate the GLOWS XTCE files for packet processing.
+    """
+    Function is used to generate the GLOWS XTCE files for packet processing.
 
     This will create two XML files, P_GLX_TMSCDE.xml and P_GLX_TMSCHIST.xml. For
     processing, these need to be manually combined into one file: GLX_COMBINED.xml.
@@ -18,7 +29,6 @@ def main():
     Finally, copy the SequenceContainer named "P_GLX_TMSCDE" out of P_GLX_TMSCDE.xml
     into the ContainerSet in GLX_COMBINED. Then, delete the "SEC" entry. This is a
     duplicate and will cause an error.
-
     """
 
     instrument_name = "glows"
