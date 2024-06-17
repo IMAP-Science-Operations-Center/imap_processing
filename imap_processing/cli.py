@@ -221,7 +221,7 @@ class ProcessInstrument(ABC):
             'start_date': '20231212'
         }]" .
     start_date : str
-        The start date for the output data. Format: YYYYMMDD .
+        The start date for the output data in **YYYYMMDD** format.
     end_date : str
         The end date for the output data. Format: YYYYMMDD .
     version : str
