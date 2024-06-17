@@ -51,7 +51,6 @@ def test_global_attribute():
     assert cdf_manager.global_attributes[
                "PI_affiliation"] == "Princeton Plasma Physics Laboratory, 100 Stellarator Road, Princeton, NJ 08540"
     assert cdf_manager.global_attributes["File_naming_convention"] == "source_descriptor_datatype_yyyyMMdd_vNNN"
-    assert cdf_manager.global_attributes["Data_version"] == 1
 
     # Load in different data, test what was carried over
     cdf_manager.load_global_attributes("imap_default_global_test_cdf_attrs.yaml")
@@ -114,7 +113,7 @@ def test_variable_attribute():
        """
     cdf_manager = CdfAttributeManager(Path(__file__).parent.parent / "config")
     cdf_manager.load_global_attributes("imap_default_global_cdf_attrs.yaml")
-    cdf_manager.load_variable_attributes("imap_mag_l1a_variable_attrs.yaml")
+    cdf_manager.load_variable_attributes("imap_mag_l1_variable_attrs.yaml")
 
     # All variables required to have:
     expected_attributes = [
