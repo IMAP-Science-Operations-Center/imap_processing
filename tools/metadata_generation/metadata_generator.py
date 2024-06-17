@@ -35,7 +35,7 @@ def get_dataset_attributes(sheet, global_attrs=None):
     ----------
     sheet : pandas.DataFrame
         A sheet/tab from an Excel file represented as a pandas DataFrame.
-    global_attrs : iterable TODO Check
+    global_attrs : dict
         Default sets to None.
 
     Returns

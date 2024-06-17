@@ -221,11 +221,11 @@ class ProcessInstrument(ABC):
             'start_date': '20231212'
         }]" .
     start_date : str
-        The start date for the output data. Format: YYYYMMDD .
+        The start date for the output data in YYYYMMDD format.
     end_date : str
-        The end date for the output data. Format: YYYYMMDD .
+        The end date for the output data in YYYYMMDD format.
     version : str
-        The version of the data. Format: vXXX .
+        The version of the data in vXXX format.
     upload_to_sdc : bool
         A flag indicating whether to upload the output file to the SDC.
     """
@@ -390,7 +390,7 @@ class Codice(ProcessInstrument):
 
         Returns
         -------
-        str TODO double check
+        list[pathlib.Path]
             File path to the cdf file.
         """
         print(f"Processing CoDICE {self.data_level}")
@@ -432,8 +432,8 @@ class Glows(ProcessInstrument):
 
         Returns
         -------
-        iterable TODO double check
-            Cdf file containing process data. TODO double Check.
+        list[pathlib.Path]
+            Cdf file containing processed data.
         """
         print(f"Processing GLOWS {self.data_level}")
         products = []

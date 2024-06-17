@@ -80,7 +80,7 @@ def convert_raw_to_eu(
         the '#' character.
     packet_name : str
         Packet name.
-    **read_csv_kwargs : iterable
+    **read_csv_kwargs : dict
         In order to allow for some flexibility in the format of the csv
         conversion table, any additional keywords passed to this function are
         passed in the call to `pandas.read_csv()`. See pandas documentation

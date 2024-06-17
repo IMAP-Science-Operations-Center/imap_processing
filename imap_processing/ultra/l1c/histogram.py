@@ -18,7 +18,7 @@ def calculate_histogram(histogram_dataset, name):
 
     Returns
     -------
-    xarray.Dataset :
+    xarray.Dataset
         Dataset containing the data.
     """
     histogram_dict = {}
