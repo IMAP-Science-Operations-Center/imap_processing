@@ -18,7 +18,7 @@ def calculate_pset(pset_dataset, name):
 
     Returns
     -------
-    Dataset :
+    xarray.Dataset :
         Dataset containing the data.
     """
     pset_dict = {}
