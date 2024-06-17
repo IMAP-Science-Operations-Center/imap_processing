@@ -88,8 +88,10 @@ def test_global_attribute():
     # Testing first elif statement
     assert mag_test_global_attrs["Project"] == cdf_manager.global_attributes["Project"]
     assert mag_test_global_attrs["Source_name"] == cdf_manager.global_attributes["Source_name"]
-        # TODO: check with maxine that the below code SHOULD cause an error because "Project" is not in self.global_attributes[inst_id]
-        # assert mag_test_global_attrs["Project"] == cdf_manager.global_attributes["imap_test_T1_test"]["Project"]
+    # BUT not everything in mag_test_global_attrs will be in cdf_manager.global_attributes["imap_test_T1_test"]
+    # TODO: check with maxine that the below code SHOULD cause an error because "Project" is not in self.global_
+    #   attributes[inst_id]
+    # assert mag_test_global_attrs["Project"] == cdf_manager.global_attributes["imap_test_T1_test"]["Project"]
     assert mag_test_global_attrs["Data_type"] == cdf_manager.global_attributes["imap_test_T1_test"]["Data_type"]
 
     for attr_name in cdf_manager.global_attributes["imap_test_T1_test"].keys():
@@ -101,15 +103,16 @@ def test_global_attribute():
         if required_schema is True:
             assert attr_name in mag_test_global_attrs.keys()
 
-
-        # BUT not everything in mag_test_global_attrs will be in cdf_manager.global_attributes["imap_test_T1_test"]
-
     # Testing second elif statement
     # Should throw error
 
 
-
 def test_variable_attribute():
+    """
+       Test function that covers:
+           load_variable_attributes
+           get_variable_attributes
+       """
     cdf_manager = CdfAttributeManager(Path(__file__).parent.parent / "config")
     cdf_manager.load_global_attributes("imap_default_global_cdf_attrs.yaml")
     cdf_manager.load_variable_attributes("imap_mag_l1a_variable_attrs.yaml")
@@ -129,3 +132,26 @@ def test_variable_attribute():
             assert attr in variable_attrs.keys()
 
     # TODO: Call, and test get_variable_attributes
+    imap_test_variable = cdf_manager.get_variable_attributes("test_field_1")
+
+    # Make sure all expected attributes are here
+    for variable_attrs_2 in cdf_manager.variable_attribute_schema.keys():
+        required_var_attributes = cdf_manager.variable_attribute_schema[variable_attrs_2]
+        if required_var_attributes is True:
+            assert variable_attrs_2 in imap_test_variable.keys()
+
+    # Calling required attributes
+    # imap_test_variable["CATDESC"] == "test time"
+    # imap_test_variable["DEPEND_0"] == "test_depend"
+    # imap_test_variable["DISPLAY_TYPE"] == "test_display_type"
+    # imap_test_variable["FIELDNAM"] == "test_display_type"
+    # imap_test_variable["FILLVAL"] == -10
+    # imap_test_variable["FORMAT"] == "I1"
+    # imap_test_variable["LABLAXIS"] == "test_labaxis"
+    # imap_test_variable["UNITS"] == "test_units"
+    # imap_test_variable["VALIDMIN"] == 0
+    # imap_test_variable["VALIDMAX"] == 10
+    # imap_test_variable["VAR_TYPE"] == "test_var_type"
+
+
+
