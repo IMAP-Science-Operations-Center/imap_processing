@@ -103,7 +103,6 @@ seq_count_in_pkts_file:
 
 flags_set_onboard:
   <<: *default
-  DEPEND_1: flags
   DISPLAY_TYPE: no_plot
   LABLAXIS: Flags
   CATDESC: >
@@ -151,11 +150,14 @@ number_of_de_packets:
 
 imap_spin_angle_bin_cntr:
   <<: *metadata_default
+  DEPEND_1: bins
   CATDESC: IMAP spin angle psi for bin centers
   FIELDNAM: IMAP spin angle psi for bin centers
 
 histogram_flag_array:
   <<: *metadata_default
+  DEPEND_1: bad_angle_flags
+  DEPEND_2: bins
   CATDESC: array of bad-angle flags for histogram bins
   FIELDNAM: array of bad-angle flags for histogram bins
   UNITS: ' '
@@ -252,26 +254,38 @@ spin_axis_orientation_average:
 
 spacecraft_location_average:
   <<: *metadata_default
+  DEPEND_1: ecliptic
   CATDESC: block-averaged Cartesian ecliptic coordinates [X, Y, Z] [km] of IMAP
   FIELDNAM: block-averaged Cartesian ecliptic coordinates of IMAP
 
 spacecraft_location_std_dev:
   <<: *metadata_default
+  DEPEND_1: ecliptic
   CATDESC: Spacecraft location standard deviations (1 sigma) delta X, delta Y, delta Z for [X, Y, Z]
   FIELDNAM: standard deviations (1 sigma) for spacecraft location
 
 spacecraft_velocity_average:
   <<: *metadata_default
+  DEPEND_1: ecliptic
   CATDESC: block-averaged values [VX, VY, VZ] [km/s] of IMAP velocity components (Cartesian ecliptic frame)
   FIELDNAM: block-averaged values of IMAP velocity components (Cartesian ecliptic frame)
 
 spacecraft_velocity_std_dev:
   <<: *metadata_default
+  DEPEND_1: ecliptic
   CATDESC: Spacecraft velocity standard deviations (1 sigma) delta VX, delta VY, delta VZ for [VX, VY, VZ]
   FIELDNAM: Spacecraft velocity standard deviations
 
 flags:
   <<: *metadata_default
+  DEPEND_1: flag_dim
+  DEPEND_2: bins
+  CATDESC: flags for extra information, per histogram.
+  FIELDNAM: flags for extra information, per histogram.
+
+de_flags:
+  <<: *metadata_default
+  DEPEND_1: flag_dim
   CATDESC: flags for extra information, per histogram.
   FIELDNAM: flags for extra information, per histogram.
 

@@ -339,7 +339,7 @@ def test_glows_l1b(de_dataset, hist_dataset):
         "hv_voltage",
         "spin_period",
         "spin_phase_at_next_pps",
-        "flags",
+        "de_flags",
         "direct_event_glows_times",
         "direct_event_pulse_lengths",
     ]

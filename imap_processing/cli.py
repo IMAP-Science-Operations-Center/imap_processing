@@ -264,6 +264,7 @@ class ProcessInstrument(ABC):
                 # TODO: determine what dependency information is optional
                 # TODO: Add in timestamps and descriptor to query
                 return_query = imap_data_access.query(
+                    start_date=self.start_date,
                     instrument=dependency["instrument"],
                     data_level=dependency["data_level"],
                     version=dependency["version"],

@@ -127,6 +127,7 @@ def generate_de_dataset(
     global_attributes = glows_cdf_attrs.glows_l1a_de_attrs.output()
 
     global_attributes["ground_software_version"] = __version__
+    global_attributes["Data_version"] = data_version
     # In header: block header, missing seqs
     # Time varying - statusdata
 
@@ -239,7 +240,7 @@ def generate_de_dataset(
 
     output = xr.Dataset(
         coords={"epoch": time_data},
-        attrs=glows_cdf_attrs.glows_l1a_de_attrs.output(),
+        attrs=global_attributes,
     )
 
     output["direct_events"] = de
@@ -376,7 +377,7 @@ def generate_histogram_dataset(
 
     output = xr.Dataset(
         coords={"epoch": epoch_time, "bins": bins},
-        attrs=glows_cdf_attrs.glows_l1a_hist_attrs.output(),
+        attrs=glows_attrs,
     )
 
     output["histograms"] = hist
