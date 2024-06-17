@@ -1,0 +1,55 @@
+Descriptor: &desc
+  TEST>Testinstrument
+TEXT: &txt >
+  This file is nothing more than a test yamal. This description? This is a test description.
+  This Testinstrument will contribute to our understanding of the cdf_attribute_manager.py file.
+  This test file is led by me, Ana Manica. Lasp undergraduate employee. 
+  I don't have a website. Sorry.
+
+imap_test_T1_test:
+    Descriptor: *desc
+    TEXT: *txt
+    Data_type: T1_test-one>Test-1 test one
+    Logical_source: imap_test_T1_test
+    Logical_source_description: IMAP Mission TEST one document Level-T1.
+
+imap_test_section_2:
+    Descriptor: *desc
+    TEXT: *txt
+    Data_type: L1A_raw-burst>Level-1A raw burst rate
+    Logical_source: imap_mag_l1a_burst-raw
+    Logical_source_description: IMAP Mission MAG Burst Rate Instrument Level-1A Data.
+
+
+imap_test_section_3:
+    Descriptor: *desc
+    TEXT: *txt
+    Data_type: L1A_raw-norm-mago>Level 1A MAGo normal rate
+    Logical_source: imap_mag_l1a_norm-mago
+    Logical_source_description: IMAP Mission MAGo Normal Rate Instrument Level-1A Data.
+
+
+imap_test_section_4:
+    Descriptor: *desc
+    TEXT: *txt
+    Data_type: L1A_raw-norm-magi>Level 1A MAGi normal rate
+    Logical_source: imap_mag_l1a_norm-magi
+    Logical_source_description: IMAP Mission MAGi Normal Rate Instrument Level-1A Data.
+
+
+imap_test_section_5:
+    Descriptor: *desc
+    TEXT: *txt
+    Data_type: L1A_raw-burst-mago>Level 1A MAGo burst rate
+    Logical_source: imap_mag_l1a_burst-mago
+    Logical_source_description: IMAP Mission MAGo Burst Rate Instrument Level-1A Data.
+
+
+imap_test_section_7:
+    Descriptor: *desc
+    TEXT: *txt
+    Data_type: L1A_raw-burst-magi>Level 1A MAGi burst rate
+    Logical_source: imap_mag_l1a_burst-magi
+    Logical_source_description: IMAP Mission MAGi Burst Rate Instrument Level-1A Data.
+
+
