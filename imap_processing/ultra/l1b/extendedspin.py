@@ -18,7 +18,7 @@ def calculate_extendedspin(rates_dataset, name):
 
     Returns
     -------
-    xarray.dataset
+    xarray.Dataset
         Dataset containing the data.
     """
     extendedspin_dict = {}

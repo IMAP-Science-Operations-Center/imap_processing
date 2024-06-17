@@ -18,7 +18,7 @@ def calculate_de(de_dataset, name):
 
     Returns
     -------
-    xarray.dataset
+    xarray.Dataset
         Dataset containing the data.
     """
     de_dict = {}
