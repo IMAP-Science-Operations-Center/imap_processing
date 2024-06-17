@@ -182,9 +182,9 @@ def decompress_image(
     blocks_per_row = cols // pixels_per_block
 
     # Compressed pixel matrix
-    p = np.zeros((rows, cols), dtype=np.uint16)
+    p = np.zeros((rows, cols), dtype=np.int16)
     # Decompressed pixel matrix
-    p_decom = np.zeros((rows, cols), dtype=np.uint16)
+    p_decom = np.zeros((rows, cols), dtype=np.int16)
 
     pos = 0  # Starting position in the binary string
 
