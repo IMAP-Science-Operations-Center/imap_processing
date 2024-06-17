@@ -188,9 +188,9 @@ def decompress_image(
     blocks_per_row = cols // pixels_per_block
 
     # Compressed pixel matrix
-    p = np.zeros((rows, cols), dtype=np.int16)
+    p = np.zeros((rows, cols), dtype=np.uint16)
     # Decompressed pixel matrix
-    p_decom = np.zeros((rows, cols), dtype=np.int16)
+    p_decom = np.zeros((rows, cols), dtype=np.uint16)
 
     pos = 0  # Starting position in the binary string
 
@@ -221,11 +221,10 @@ def decompress_image(
                 # This operation ensures that the result is within the range
                 # of an 8-bit byte (0-255)
                 # TODO: Check to make certain no negative values occur here.
-                if (pixel0 - delta_f) & 0xFF < 0:
-                    print((pixel0 - delta_f) & 0xFF)
-                    print(pixel0)
-                    print(delta_f)
-                p[i][column_index] = (pixel0 - delta_f) & 0xFF
+                if delta_f < 0:
+                    p[i][column_index] = (pixel0 + (-delta_f)) & 0xFF
+                else:
+                    p[i][column_index] = (pixel0 - delta_f) & 0xFF
                 # Perform logarithmic decompression on the pixel value
                 p_decom[i][column_index] = log_decompression(
                     p[i][column_index], mantissa_bit_length
