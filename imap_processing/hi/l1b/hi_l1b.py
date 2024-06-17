@@ -9,7 +9,6 @@ import xarray as xr
 from imap_processing import imap_module_directory
 from imap_processing.cdf.cdf_attribute_manager import CdfAttributeManager
 from imap_processing.cdf.utils import load_cdf
-from imap_processing.hi.hi_cdf_attrs import hi_hk_l1b_global_attrs
 from imap_processing.hi.utils import HIAPID
 from imap_processing.utils import convert_raw_to_eu
 
@@ -56,7 +55,9 @@ def hi_l1b(l1a_cdf_path: Path, data_version: str):
             converters={"mnemonic": str.lower},
         )
 
-        l1b_dataset.attrs.update(hi_hk_l1b_global_attrs.output())
+        l1b_dataset.attrs.update(
+            CDF_MANAGER.get_global_attributes("imap_hi_l1b_hk_attrs")
+        )
     elif logical_source_parts[-1].endswith("de"):
         l1b_dataset = annotate_direct_events(l1a_dataset)
     else:
@@ -64,6 +65,14 @@ def hi_l1b(l1a_cdf_path: Path, data_version: str):
             f"No Hi L1B processing defined for file type: "
             f"{l1a_dataset.attrs['Logical_source']}"
         )
+    # Update global attributes
+    # TODO: write a function that extracts the sensor from Logical_source
+    #    some functionality can be found in imap_data_access.file_validation but
+    #    only works on full file names
+    sensor_str = logical_source_parts[-1].split("-")[0]
+    l1b_dataset.attrs["Logical_source"] = l1b_dataset.attrs["Logical_source"].format(
+        sensor=sensor_str
+    )
     # TODO: revisit this
     l1b_dataset.attrs["Data_version"] = data_version
     return l1b_dataset
@@ -112,14 +121,6 @@ def annotate_direct_events(l1a_dataset):
         ["tof_1", "tof_2", "tof_3", "de_tag", "ccsds_met", "meta_event_met"]
     )
 
-    # Update global attributes
-    # TODO: write a function that extracts the sensor from Logical_source
-    #    some functionality can be found in imap_data_access.file_validation but
-    #    only works on full file names
-    sensor_str = l1a_dataset.attrs["Logical_source"].split("_")[-1].split("-")[0]
-    de_global_attrs = CDF_MANAGER.get_global_attributes("imap_hi_l1b_de_attrs").copy()
-    de_global_attrs["Logical_source"] = de_global_attrs["Logical_source"].format(
-        sensor=sensor_str
-    )
+    de_global_attrs = CDF_MANAGER.get_global_attributes("imap_hi_l1b_de_attrs")
     l1b_dataset.attrs.update(**de_global_attrs)
     return l1b_dataset

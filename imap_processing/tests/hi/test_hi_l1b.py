@@ -2,7 +2,6 @@
 
 from imap_processing import imap_module_directory
 from imap_processing.cdf.utils import write_cdf
-from imap_processing.hi.hi_cdf_attrs import hi_hk_l1b_global_attrs
 from imap_processing.hi.l1a.hi_l1a import hi_l1a
 from imap_processing.hi.l1b.hi_l1b import hi_l1b
 from imap_processing.hi.utils import HIAPID
@@ -19,7 +18,7 @@ def test_hi_l1b_hk():
     l1a_cdf_path = write_cdf(processed_data[0])
 
     l1b_dataset = hi_l1b(l1a_cdf_path, data_version=data_version)
-    assert l1b_dataset.attrs["Logical_source"] == hi_hk_l1b_global_attrs.logical_source
+    assert l1b_dataset.attrs["Logical_source"] == "imap_hi_l1b_45sensor-hk"
 
 
 def test_hi_l1b_de(create_de_data, tmp_path):
