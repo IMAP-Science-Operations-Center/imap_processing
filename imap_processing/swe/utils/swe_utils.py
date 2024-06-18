@@ -23,7 +23,7 @@ def add_metadata_to_array(data_packet, metadata_arrays):
     Returns
     -------
     metadata_arrays : dict
-        The metadata_array containing metadata.
+        The metadata_array with metadata from input data packet.
     """
     for key, value in data_packet.data.items():
         if key == "SCIENCE_DATA":
