@@ -12,3 +12,11 @@ imap_test_T1_test:
     Data_type: T1_test-one>Test-1 test one
     Logical_source: imap_test_T1_test
     Logical_source_description: IMAP Mission TEST one document Level-T1.
+
+imap_test_T2_test:
+    Descriptor: *desc
+    TEXT: *txt
+    Data_type: T2_test-two>Test-2 test two
+    Logical_source: imap_test_T2_test
+    Logical_source_description: IMAP Mission TEST two document Level-T2.
+    Additional_info: Test two additional info
