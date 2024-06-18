@@ -30,7 +30,7 @@ class SWAPIMODE(IntEnum):
     Attributes
     ----------
     IntEnum : IntEnum
-        SWAPI APID Enums.
+        SWAPI Mode Enums.
     """
 
     LVENG = 0
