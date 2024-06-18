@@ -4,13 +4,15 @@ import pandas as pd
 import pytest
 
 from imap_processing.cdf.defaults import GlobalConstants
-from imap_processing.ultra.l0.decom_ultra import decom_ultra_apids
+from imap_processing import decom
+from imap_processing.utils import group_by_apid
+from imap_processing.ultra.l0.decom_ultra import process_ultra_apids
 from imap_processing.ultra.l0.ultra_utils import (
     ULTRA_AUX,
     ULTRA_EVENTS,
 )
 from imap_processing.ultra.l1a.ultra_l1a import create_dataset
-from imap_processing.ultra.l1b.ultra_l1b import (
+from imap_processing.ultra.l1b.ultra_l1b_extended import (
     determine_species_pulse_height,
     get_back_positions,
     get_front_x_position,
@@ -21,98 +23,121 @@ from imap_processing.ultra.l1b.ultra_l1b import (
 )
 
 
-@pytest.fixture()
-def decom_ultra_events(ccsds_path_theta_0, xtce_path):
-    """Data for decom_ultra_events"""
-    data_packet_list = decom_ultra_apids(
-        ccsds_path_theta_0, xtce_path, ULTRA_EVENTS.apid[0]
-    )
-    return data_packet_list
-
 
 @pytest.fixture()
 def decom_ultra_aux(ccsds_path_theta_0, xtce_path):
     """Data for decom_ultra_aux"""
-    data_packet_list = decom_ultra_apids(
-        ccsds_path_theta_0, xtce_path, ULTRA_AUX.apid[0]
+    packets = decom.decom_packets(ccsds_path_theta_0, xtce_path)
+    grouped_data = group_by_apid(packets)
+
+    data_packet_list = process_ultra_apids(
+        grouped_data[ULTRA_AUX.apid[0]], ULTRA_AUX.apid[0]
     )
     return data_packet_list
 
-
-@pytest.fixture()
-def indices_start_type_1_or_2(decom_ultra_events, decom_ultra_aux):
-    """
-    A pytest fixture to extract indices from events_dataset where START_TYPE is 1 or 2
-    and COUNT is not 0. Assumes the dataset is structured with an 'epoch' dimension.
-    """
-
-    # Create the dataset
-    events_dataset = create_dataset(
-        {ULTRA_EVENTS.apid[0]: decom_ultra_events, ULTRA_AUX.apid[0]: decom_ultra_aux}
-    )
-
-    # Remove start_type with fill values
-    events_dataset = events_dataset.where(
-        events_dataset["START_TYPE"] != GlobalConstants.INT_FILLVAL, drop=True
-    )
-
-    # Check top and bottom
-    index_1 = np.where(events_dataset["START_TYPE"] == 1)[0]
-    index_2 = np.where(events_dataset["START_TYPE"] == 2)[0]
-
-    return index_1, index_2, events_dataset
-
-
-@pytest.fixture()
-def indices_stop_type_1_or_2(decom_ultra_events, decom_ultra_aux):
-    """
-    A pytest fixture to extract indices from events_dataset where STOP_TYPE is 1 or 2
-    and COUNT is not 0. Assumes the dataset is structured with an 'epoch' dimension.
-    """
-
-    # Create the dataset
-    events_dataset = create_dataset(
-        {ULTRA_EVENTS.apid[0]: decom_ultra_events, ULTRA_AUX.apid[0]: decom_ultra_aux}
-    )
-    # Remove start_type with fill values
-    events_dataset = events_dataset.where(
-        events_dataset["START_TYPE"] != GlobalConstants.INT_FILLVAL, drop=True
-    )
-
-    # Check top and bottom
-    index_1 = np.where(events_dataset["STOP_TYPE"] == 1)[0]
-    index_2 = np.where(events_dataset["STOP_TYPE"] == 2)[0]
-
-    return index_1, index_2, events_dataset
-
-
-@pytest.fixture()
-def indices_stop_type_8_to_15(decom_ultra_events, decom_ultra_aux):
-    """
-    A pytest fixture to extract indices from events_dataset where STOP_TYPE is 1 or 2
-    and COUNT is not 0. Assumes the dataset is structured with an 'epoch' dimension.
-    """
-
-    # Create the dataset
-    events_dataset = create_dataset(
-        {ULTRA_EVENTS.apid[0]: decom_ultra_events, ULTRA_AUX.apid[0]: decom_ultra_aux}
-    )
-    # Remove start_type with fill values
-    events_dataset = events_dataset.where(
-        events_dataset["START_TYPE"] != GlobalConstants.INT_FILLVAL, drop=True
-    )
-
-    # Check top and bottom
-    index = np.where(events_dataset["STOP_TYPE"] >= 8)[0]
-
-    return index, events_dataset
+@pytest.mark.parametrize(
+    "decom_test_data",
+    [
+        pytest.param(
+            {
+                "apid": ULTRA_EVENTS.apid[0],
+                "filename": "FM45_40P_Phi28p5_BeamCal_LinearScan_phi28.50"
+                "_theta-0.00_20240207T102740.CCSDS",
+            },
+        )
+    ],
+    indirect=True,
+)
+# @pytest.fixture()
+# def indices_start_type_1_or_2(decom_test_data):
+#     """
+#     A pytest fixture to extract indices from events_dataset where START_TYPE is 1 or 2
+#     and COUNT is not 0. Assumes the dataset is structured with an 'epoch' dimension.
+#     """
+#
+#     # Create the dataset
+#     events_dataset = create_dataset(
+#         {ULTRA_EVENTS.apid[0]: decom_ultra_events, ULTRA_AUX.apid[0]: decom_ultra_aux}
+#     )
+#
+#     # Remove start_type with fill values
+#     events_dataset = events_dataset.where(
+#         events_dataset["START_TYPE"] != GlobalConstants.INT_FILLVAL, drop=True
+#     )
+#
+#     # Check top and bottom
+#     index_1 = np.where(events_dataset["START_TYPE"] == 1)[0]
+#     index_2 = np.where(events_dataset["START_TYPE"] == 2)[0]
+#
+#     return index_1, index_2, events_dataset
+#
+#
+# @pytest.fixture()
+# def indices_stop_type_1_or_2(decom_ultra_events, decom_ultra_aux):
+#     """
+#     A pytest fixture to extract indices from events_dataset where STOP_TYPE is 1 or 2
+#     and COUNT is not 0. Assumes the dataset is structured with an 'epoch' dimension.
+#     """
+#
+#     # Create the dataset
+#     events_dataset = create_dataset(
+#         {ULTRA_EVENTS.apid[0]: decom_ultra_events, ULTRA_AUX.apid[0]: decom_ultra_aux}
+#     )
+#     # Remove start_type with fill values
+#     events_dataset = events_dataset.where(
+#         events_dataset["START_TYPE"] != GlobalConstants.INT_FILLVAL, drop=True
+#     )
+#
+#     # Check top and bottom
+#     index_1 = np.where(events_dataset["STOP_TYPE"] == 1)[0]
+#     index_2 = np.where(events_dataset["STOP_TYPE"] == 2)[0]
+#
+#     return index_1, index_2, events_dataset
+#
+#
+# @pytest.fixture()
+# def indices_stop_type_8_to_15(decom_ultra_events, decom_ultra_aux):
+#     """
+#     A pytest fixture to extract indices from events_dataset where STOP_TYPE is 1 or 2
+#     and COUNT is not 0. Assumes the dataset is structured with an 'epoch' dimension.
+#     """
+#
+#     # Create the dataset
+#     events_dataset = create_dataset(
+#         {ULTRA_EVENTS.apid[0]: decom_ultra_events, ULTRA_AUX.apid[0]: decom_ultra_aux}
+#     )
+#     # Remove start_type with fill values
+#     events_dataset = events_dataset.where(
+#         events_dataset["START_TYPE"] != GlobalConstants.INT_FILLVAL, drop=True
+#     )
+#
+#     # Check top and bottom
+#     index = np.where(events_dataset["STOP_TYPE"] >= 8)[0]
+#
+#     return index, events_dataset
 
 
 def test_xf(
-    indices_start_type_1_or_2,
+    decom_test_data,
+    decom_ultra_aux,
     events_fsw_comparison_theta_0,
 ):
-    indices_1, indices_2, events_dataset = indices_start_type_1_or_2
+    decom_ultra_events, _ = decom_test_data
+    dataset = create_dataset(
+        {
+            ULTRA_EVENTS.apid[0]: decom_ultra_events,
+            ULTRA_AUX.apid[0]: decom_ultra_aux,
+        }
+    )
+
+    # Remove start_type with fill values
+    events_dataset = dataset.where(
+        dataset["START_TYPE"] != GlobalConstants.INT_FILLVAL, drop=True
+    )
+
+    # Check top and bottom
+    indices_1 = np.where(events_dataset["START_TYPE"] == 1)[0]
+    indices_2 = np.where(events_dataset["START_TYPE"] == 2)[0]
 
     df = pd.read_csv(events_fsw_comparison_theta_0)
     df_filt = df[df["StartType"] != -1]
