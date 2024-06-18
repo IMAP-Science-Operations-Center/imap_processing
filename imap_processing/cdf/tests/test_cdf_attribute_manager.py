@@ -1,6 +1,6 @@
 from pathlib import Path
 
-import pytest
+# import pytest
 
 from imap_processing.cdf.cdf_attribute_manager import CdfAttributeManager
 
