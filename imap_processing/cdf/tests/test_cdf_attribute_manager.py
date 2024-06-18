@@ -53,6 +53,7 @@ def test_global_attribute():
 
     # Test that default information was loaded in from
     #   "imap_default_global_cdf_attrs.yaml"
+    # THIS MAY BE AN ISSUE
     assert cdf_manager.global_attributes["Project"] == "STP>Solar-Terrestrial Physics"
     assert (
         cdf_manager.global_attributes["Source_name"]
@@ -87,13 +88,16 @@ def test_global_attribute():
 
     # Testing attributes in default_global_cdf_attrs_schema.yaml
     assert (
-        cdf_manager.global_attributes["Discipline"]
-        == "Solar Physics>Heliospheric Physics"
-    )
-    assert (
         cdf_manager.global_attributes["File_naming_convention"]
         == "source_descriptor_datatype_yyyyMMdd_vNNN"
     )
+
+    # Testing attributes in 1st loaded file, and NOT in second loaded file:
+    assert (
+        cdf_manager.global_attributes["Discipline"]
+        == "Solar Physics>Heliospheric Physics"
+    )
+
     # Testing attributes in imap_default_global_test_cdf_attrs.yaml
     assert cdf_manager.global_attributes["Project"] == "STP>Solar-Terrestrial Physics"
     assert (
@@ -152,6 +156,35 @@ def test_global_attribute():
         == cdf_manager.global_attributes["imap_test_T1_test"]["Data_type"]
     )
 
+    # Testing second elif statement
+    # Should throw error
+
+    # Load in more data using get_global_attributes
+    test_get_global_attrs_2 = cdf_manager.get_global_attributes("imap_test_T2_test")
+    # Testing information previously loaded into global attributes
+    assert test_get_global_attrs_2["Project"] == "STP>Solar-Terrestrial Physics"
+    assert (
+        test_get_global_attrs_2["Source_name"]
+        == "IMAP>Interstellar Mapping and Acceleration Probe"
+    )
+    assert test_get_global_attrs_2["Mission_group"] == "Dysfunctional Cats"
+
+    # Testing if statement
+    assert test_get_global_attrs_2["Descriptor"] == "TEST>Testinstrument"
+    # "Data_type" not required according to default schema
+    assert test_get_global_attrs_2["Data_type"] == "T2_test-two>Test-2 test two"
+    assert test_get_global_attrs_2["Logical_source"] == "imap_test_T2_test"
+    assert (
+        test_get_global_attrs_2["Logical_source_description"]
+        == "IMAP Mission TEST two document Level-T2."
+    )
+    assert test_get_global_attrs_2["LINK_TEXT"] == "Test two additional info"
+
+    # Trying to update a default global using get_global_attributes does not work.
+    # For example, thing about DOI event.
+
+    # END END END
+
     # Testing that everything in the global attributes was carried over
     #   during get_global_attributes
     # This test is kind of stupid.
@@ -163,9 +196,6 @@ def test_global_attribute():
         required_schema = cdf_manager.global_attribute_schema[attr_name]["required"]
         if required_schema is True:
             assert attr_name in test_get_global_attrs.keys()
-
-    # Testing second elif statement
-    # Should throw error
 
 
 def test_variable_attribute():
