@@ -1,7 +1,6 @@
 from pathlib import Path
 
 # import pytest
-
 from imap_processing.cdf.cdf_attribute_manager import CdfAttributeManager
 
 
@@ -26,10 +25,18 @@ def test_default_attr_schema():
 
     # Default variable tests
     # Check false case
-    assert cdf_manager.variable_attribute_schema['attribute_key']["ABSOLUTE_ERROR"]["required"] is False
+    assert (
+        cdf_manager.variable_attribute_schema["attribute_key"]["ABSOLUTE_ERROR"][
+            "required"
+        ]
+        is False
+    )
 
     # Check true case
-    assert cdf_manager.variable_attribute_schema['attribute_key']["RESOLUTION"]["required"] is True
+    assert (
+        cdf_manager.variable_attribute_schema["attribute_key"]["RESOLUTION"]["required"]
+        is True
+    )
 
 
 # @pytest.mark.xfail(reason="Missing IMAP specific global schema")
@@ -46,23 +53,46 @@ def test_global_attribute():
     cdf_manager = CdfAttributeManager(Path(__file__).parent.parent / "config")
     # Test that default information was loaded in from "imap_default_global_cdf_attrs.yaml"
     assert cdf_manager.global_attributes["Project"] == "STP>Solar-Terrestrial Physics"
-    assert cdf_manager.global_attributes["Source_name"] == "IMAP>Interstellar Mapping and Acceleration Probe"
-    assert cdf_manager.global_attributes["Discipline"] == "Solar Physics>Heliospheric Physics"
-    assert cdf_manager.global_attributes["Mission_group"] == "IMAP>Interstellar Mapping and Acceleration Probe"
+    assert (
+        cdf_manager.global_attributes["Source_name"]
+        == "IMAP>Interstellar Mapping and Acceleration Probe"
+    )
+    assert (
+        cdf_manager.global_attributes["Discipline"]
+        == "Solar Physics>Heliospheric Physics"
+    )
+    assert (
+        cdf_manager.global_attributes["Mission_group"]
+        == "IMAP>Interstellar Mapping and Acceleration Probe"
+    )
     assert cdf_manager.global_attributes["PI_name"] == "Dr. David J. McComas"
-    assert cdf_manager.global_attributes[
-               "PI_affiliation"] == "Princeton Plasma Physics Laboratory, 100 Stellarator Road, Princeton, NJ 08540"
-    assert cdf_manager.global_attributes["File_naming_convention"] == "source_descriptor_datatype_yyyyMMdd_vNNN"
+    assert (
+        cdf_manager.global_attributes["PI_affiliation"]
+        == "Princeton Plasma Physics Laboratory, 100 Stellarator Road, Princeton, NJ 08540"
+    )
+    assert (
+        cdf_manager.global_attributes["File_naming_convention"]
+        == "source_descriptor_datatype_yyyyMMdd_vNNN"
+    )
 
     # Load in different data, test what was carried over
     cdf_manager.load_global_attributes("imap_default_global_test_cdf_attrs.yaml")
     assert cdf_manager.global_attributes["Project"] == "STP>Solar-Terrestrial Physics"
-    assert cdf_manager.global_attributes["Source_name"] == "IMAP>Interstellar Mapping and Acceleration Probe"
-    assert cdf_manager.global_attributes["Discipline"] == "Solar Physics>Heliospheric Physics"
+    assert (
+        cdf_manager.global_attributes["Source_name"]
+        == "IMAP>Interstellar Mapping and Acceleration Probe"
+    )
+    assert (
+        cdf_manager.global_attributes["Discipline"]
+        == "Solar Physics>Heliospheric Physics"
+    )
     assert cdf_manager.global_attributes["Mission_group"] == "Dysfunctional Cats"
     assert cdf_manager.global_attributes["PI_name"] == "Ana Manica"
     assert cdf_manager.global_attributes["PI_affiliation"] == "LASP, CU"
-    assert cdf_manager.global_attributes["File_naming_convention"] == "source_descriptor_datatype_yyyyMMdd_vNNN"
+    assert (
+        cdf_manager.global_attributes["File_naming_convention"]
+        == "source_descriptor_datatype_yyyyMMdd_vNNN"
+    )
     assert cdf_manager.global_attributes["Data_version"] == 2
     assert cdf_manager.global_attributes["Test_attribute"] == "test"
 
@@ -87,12 +117,18 @@ def test_global_attribute():
 
     # Testing first elif statement
     assert mag_test_global_attrs["Project"] == cdf_manager.global_attributes["Project"]
-    assert mag_test_global_attrs["Source_name"] == cdf_manager.global_attributes["Source_name"]
+    assert (
+        mag_test_global_attrs["Source_name"]
+        == cdf_manager.global_attributes["Source_name"]
+    )
     # BUT not everything in mag_test_global_attrs will be in cdf_manager.global_attributes["imap_test_T1_test"]
     # TODO: check with maxine that the below code SHOULD cause an error because "Project" is not in self.global_
     #   attributes[inst_id]
     # assert mag_test_global_attrs["Project"] == cdf_manager.global_attributes["imap_test_T1_test"]["Project"]
-    assert mag_test_global_attrs["Data_type"] == cdf_manager.global_attributes["imap_test_T1_test"]["Data_type"]
+    assert (
+        mag_test_global_attrs["Data_type"]
+        == cdf_manager.global_attributes["imap_test_T1_test"]["Data_type"]
+    )
 
     for attr_name in cdf_manager.global_attributes["imap_test_T1_test"].keys():
         assert attr_name in mag_test_global_attrs.keys()
@@ -109,10 +145,10 @@ def test_global_attribute():
 
 def test_variable_attribute():
     """
-       Test function that covers:
-           load_variable_attributes
-           get_variable_attributes
-       """
+    Test function that covers:
+        load_variable_attributes
+        get_variable_attributes
+    """
     cdf_manager = CdfAttributeManager(Path(__file__).parent.parent / "config")
     cdf_manager.load_global_attributes("imap_default_global_cdf_attrs.yaml")
     cdf_manager.load_variable_attributes("imap_test_variable.yaml")
@@ -136,7 +172,9 @@ def test_variable_attribute():
 
     # Make sure all expected attributes are here
     for variable_attrs_2 in cdf_manager.variable_attribute_schema.keys():
-        required_var_attributes = cdf_manager.variable_attribute_schema[variable_attrs_2]
+        required_var_attributes = cdf_manager.variable_attribute_schema[
+            variable_attrs_2
+        ]
         if required_var_attributes is True:
             assert variable_attrs_2 in imap_test_variable.keys()
 
