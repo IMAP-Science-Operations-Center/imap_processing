@@ -6,8 +6,8 @@ Run the processing for a specific instrument & data level.
 This module serves as a command line utility to invoke the processing for
 a user-supplied instrument and data level.
 
-USES
----_
+Examples
+--------
     imap_cli --instrument <instrument> --level <data_level>
 """
 
