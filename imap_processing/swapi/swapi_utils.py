@@ -15,7 +15,7 @@ class SWAPIAPID(IntEnum):
     Attributes
     ----------
     IntEnum : IntEnum
-        No idea todo Check.
+        SWAPI APID Enums.
     """
 
     SWP_HK = 1184
@@ -30,7 +30,7 @@ class SWAPIMODE(IntEnum):
     Attributes
     ----------
     IntEnum : IntEnum
-        No idea todo check.
+        SWAPI APID Enums.
     """
 
     LVENG = 0
