@@ -1,0 +1,310 @@
+default_attrs: &default
+  # Assumed values for all variable attrs unless overwritten
+  DEPEND_0: epoch
+  DISPLAY_TYPE: time_series
+  FILLVAL: -9223372036854775808
+  FORMAT: I19
+  VALIDMIN: 0
+  VALIDMAX: 9223372036854775807
+  VAR_TYPE: data
+
+epoch:
+  <<: *default
+  CATDESC: Time, number of nanoseconds since J2000 with leap seconds included
+  FIELDNAM: epoch
+  LABLAXIS: epoch
+  UNITS: ns
+  VAR_TYPE: support_data
+  SCALETYP: linear
+  MONOTON: INCREASE
+  TIME_BASE: J2000
+  TIME_SCALE: Terrestrial Time
+  REFERENCE_POSITION: Rotating Earth Geoid
+
+x_front:
+  <<: *default
+  CATDESC: x front position
+  FIELDNAM: Event x-position on front foil
+  LABLAXIS: x front position
+  # TODO: come back to format
+  UNITS: mm
+
+y_front:
+  <<: *default
+  CATDESC: y front position
+  FIELDNAM: Event y-position on front foil
+  LABLAXIS: y front position
+  # TODO: come back to format
+  UNITS: mm
+
+x_back:
+  <<: *default
+  CATDESC: x back position
+  FIELDNAM: x_back
+  LABLAXIS: x back position
+  # TODO: come back to format
+  UNITS: mm
+
+y_back:
+  <<: *default
+  CATDESC: y back position
+  FIELDNAM: y_back
+  LABLAXIS: y back position
+  # TODO: come back to format
+  UNITS: mm
+
+x_coin:
+  <<: *default
+  CATDESC: x coincidence position
+  FIELDNAM: x_coin
+  LABLAXIS: x coincidence position
+  # TODO: come back to format
+  UNITS: mm
+
+tof_start_stop:
+  <<: *default
+  CATDESC: Particle time of flight from start to stop
+  FIELDNAM: tof_start_stop
+  LABLAXIS: tof start stop
+  # TODO: come back to format
+  UNITS: ns
+
+tof_stop_coin:
+  <<: *default
+  CATDESC: Particle time of flight from stop to coincidence
+  FIELDNAM: tof_stop_coin
+  LABLAXIS: tof stop coin
+  # TODO: come back to format
+  UNITS: ns
+
+tof_corrected:
+  <<: *default
+  CATDESC: Corrected time of flight
+  FIELDNAM: tof_corrected
+  LABLAXIS: tof corrected
+  # TODO: come back to format
+  UNITS: ns
+
+eventtype:
+  <<: *default
+  CATDESC: Eventtype (1-2 top and bottom stop types; 8-15 ssd stop types)
+  FIELDNAM: eventtype
+  LABLAXIS: eventtype
+  # TODO: come back to format
+  UNITS: " "
+
+vx_ultra:
+  <<: *default
+  CATDESC: Normalized component of the velocity vector in x direction in the instrument frame.
+  FIELDNAM: vx_ultra
+  LABLAXIS: vx ultra
+  # TODO: come back to format
+  UNITS: " "
+
+vy_ultra:
+  <<: *default
+  CATDESC: Normalized component of the velocity vector in y direction in the instrument frame.
+  FIELDNAM: vy_ultra
+  LABLAXIS: vy ultra
+  # TODO: come back to format
+  UNITS: " "
+
+vz_ultra:
+  <<: *default
+  CATDESC: Normalized component of the velocity vector in z direction in the instrument frame.
+  FIELDNAM: vz_ultra
+  LABLAXIS: vz ultra
+  # TODO: come back to format
+  UNITS: " "
+
+energy:
+  <<: *default
+  CATDESC: Energy measured using the pulse height from the stop anode (DN) or Energy measured using the SSD (keV) depending on eventtype.
+  FIELDNAM: energy
+  LABLAXIS: energy
+  # TODO: come back to format
+  UNITS: keV
+
+species:
+  <<: *default
+  CATDESC: Species bin.
+  FIELDNAM: species
+  LABLAXIS: species
+  # TODO: come back to format
+  UNITS: " "
+
+event_efficiency:
+  <<: *default
+  CATDESC: Estimated event efficiency for this path through the instrument.
+  FIELDNAM: event_efficiency
+  LABLAXIS: event efficiency
+  # TODO: come back to format
+  UNITS: " "
+
+vx_sc:
+  <<: *default
+  CATDESC: Normalized component of the velocity vector in x direction in the spacecraft frame.
+  FIELDNAM: vx_sc
+  LABLAXIS: vx sc
+  # TODO: come back to format
+  UNITS: " "
+
+vy_sc:
+  <<: *default
+  CATDESC: Normalized component of the velocity vector in y direction in the spacecraft frame.
+  FIELDNAM: vy_sc
+  LABLAXIS: vy sc
+  # TODO: come back to format
+  UNITS: " "
+
+vz_sc:
+  <<: *default
+  CATDESC: Normalized component of the velocity vector in z direction in the spacecraft frame.
+  FIELDNAM: vz_sc
+  LABLAXIS: vz sc
+  # TODO: come back to format
+  UNITS: " "
+
+vx_dps_sc:
+  <<: *default
+  CATDESC: Normalized component of the velocity vector in x direction in the DPS frame at rest WRT spacecraft (velocity w/ spacecraft frame subtracted)
+  FIELDNAM: vx_dps_sc
+  LABLAXIS: vx dps sc
+  # TODO: come back to format
+  UNITS: " "
+
+vy_dps_sc:
+  <<: *default
+  CATDESC: Normalized component of the velocity vector in y direction in the DPS frame at rest WRT spacecraft (velocity w/ spacecraft frame subtracted)
+  FIELDNAM: vy_dps_sc
+  LABLAXIS: vy dps sc
+  # TODO: come back to format
+  UNITS: " "
+
+vz_dps_sc:
+  <<: *default
+  CATDESC: Normalized component of the velocity vector in z direction in the DPS frame at rest WRT spacecraft (velocity w/ spacecraft frame subtracted)
+  FIELDNAM: vz_dps_sc
+  LABLAXIS: vz dps sc
+  # TODO: come back to format
+  UNITS: " "
+
+vx_dps_helio:
+  <<: *default
+  CATDESC: Normalized component of the velocity vector in x direction in the DPS frame at rest WRT heliosphere.
+  FIELDNAM: vx_dps_helio
+  LABLAXIS: vx dps helio
+  # TODO: come back to format
+  UNITS: " "
+
+vy_dps_helio:
+  <<: *default
+  CATDESC: Normalized component of the velocity vector in y direction in the DPS frame at rest WRT heliosphere.
+  FIELDNAM: vy_dps_helio
+  LABLAXIS: vy dps helio
+  # TODO: come back to format
+  UNITS: " "
+
+vz_dps_helio:
+  <<: *default
+  CATDESC: Normalized component of the velocity vector in z direction in the DPS frame at rest WRT heliosphere.
+  FIELDNAM: vz_dps_helio
+  LABLAXIS: vz dps helio
+  # TODO: come back to format
+  UNITS: " "
+
+eventtimes:
+  <<: *default
+  CATDESC: Event times calculated from event and universal spin table.
+  FIELDNAM: eventtimes
+  LABLAXIS: event times
+  # TODO: come back to format
+  UNITS: " "
+
+spin_number:
+  <<: *default
+  CATDESC: Spin number from Universal Spin Table.
+  FIELDNAM: spin_number
+  LABLAXIS: spin_number
+  # TODO: come back to format
+  UNITS: " "
+
+spin_start_time:
+  <<: *default
+  CATDESC: Spin start time from Universal Spin Table.
+  FIELDNAM: spin_start_time
+  LABLAXIS: spin start time
+  # TODO: come back to format
+  UNITS: s
+
+avg_spin_period:
+  <<: *default
+  CATDESC: Average spin period from Universal Spin Table.
+  FIELDNAM: avg_spin_period
+  LABLAXIS: avg_spin_period
+  # TODO: come back to format
+  UNITS: s
+
+rate_start_pulses:
+  <<: *default
+  CATDESC: Rate of start pulses (/s).
+  FIELDNAM: rate_start_pulses
+  LABLAXIS: rate start pulses
+  # TODO: come back to format
+  UNITS: 1/s
+
+rate_stop_pulses:
+  <<: *default
+  CATDESC: Rate of stop pulses (/s).
+  FIELDNAM: rate_stop_pulses
+  LABLAXIS: rate stop pulses
+  # TODO: come back to format
+  UNITS: 1/s
+
+rate_coin_pulses:
+  <<: *default
+  CATDESC: Rate of coincidence pulses (/s).
+  FIELDNAM: rate_coin_pulses
+  LABLAXIS: rate coincidence pulses
+  # TODO: come back to format
+  UNITS: 1/s
+
+rate_processed_events:
+  <<: *default
+  CATDESC: Rate of processed events (/s).
+  FIELDNAM: rate_processed_events
+  LABLAXIS: rate processed events
+  # TODO: come back to format
+  UNITS: 1/s
+
+rate_rejected_events:
+  <<: *default
+  CATDESC: Rate of rejected events (/s).
+  FIELDNAM: rate_rejected_events
+  LABLAXIS: rate rejected events
+  # TODO: come back to format
+  UNITS: 1/s
+
+quality_hk:
+  <<: *default
+  CATDESC: Spin filter derived from Ultra housekeeping. Bitwise flagging used to filter the spin.
+  FIELDNAM: quality_hk
+  LABLAXIS: quality hk
+  # TODO: come back to format
+  UNITS: " "
+
+quality_attitude:
+  <<: *default
+  CATDESC: Spin filter derived from IMAP attitude. Bitwise flagging used to filter the spin.
+  FIELDNAM: quality_attitude
+  LABLAXIS: quality attitude
+  # TODO: come back to format
+  UNITS: " "
+
+quality_instruments:
+  <<: *default
+  CATDESC: Spin filter derived from instruments other than Ultra. Bitwise flagging used to filter the spin.
+  FIELDNAM: quality_instruments
+  LABLAXIS: quality instruments
+  # TODO: come back to format
+  UNITS: " "
