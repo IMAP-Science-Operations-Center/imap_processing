@@ -12,6 +12,8 @@ def test_default_attr_schema():
         _load_default_variable_attr_schema
     """
 
+    # Test
+
     # Initialize CdfAttributeManager object which loads in default schema
     cdf_manager = CdfAttributeManager(Path(__file__).parent.parent / "config")
 
