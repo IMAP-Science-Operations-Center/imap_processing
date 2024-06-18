@@ -1,11 +1,9 @@
 """
-Module for generating XTCE files for telemetry packets.
+Module for generating XTCE files for telemetry packets for a given instrument.
 
-This module provides functionality to generate XTCE files for
-telemetry packets of a specific instrument.
-It includes a `TelemetryGenerator` class for creating XTCE
-files based on packet definitions stored in
-an Excel file.
+This module provides functionality to generate XTCE files for telemetry packets
+for an instrument. It includes a `TelemetryGenerator` class for creating XTCE files
+based on packet definitions stored in an Excel file.
 """
 
 from pathlib import Path
