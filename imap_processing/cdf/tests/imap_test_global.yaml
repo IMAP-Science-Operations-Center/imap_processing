@@ -19,4 +19,4 @@ imap_test_T2_test:
     Data_type: T2_test-two>Test-2 test two
     Logical_source: imap_test_T2_test
     Logical_source_description: IMAP Mission TEST two document Level-T2.
-    Additional_info: Test two additional info
+    LINK_TEXT: Test two additional info
