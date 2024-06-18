@@ -1,6 +1,5 @@
 # from pathlib import Path
 # from imap_processing.cdf.cdf_attribute_manager import CdfAttributeManager
-# This is a test2
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 
 # test add_instrument_global_attrs(self, instrument: str):
