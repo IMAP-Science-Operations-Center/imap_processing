@@ -49,9 +49,10 @@ def test_global_attribute():
         get_global_attributes
     """
 
-    # Initialize CdfAttributeManager object which loads in default global
-    #   variables and schema
+    # Initialize CdfAttributeManager object which loads in default
+    #   global/variable schema
     cdf_manager = CdfAttributeManager(Path(__file__).parent.parent / "config")
+
     # Test that default information was loaded in from
     #   "imap_default_global_cdf_attrs.yaml"
     assert cdf_manager.global_attributes["Project"] == "STP>Solar-Terrestrial Physics"
@@ -70,8 +71,8 @@ def test_global_attribute():
     assert cdf_manager.global_attributes["PI_name"] == "Dr. David J. McComas"
     assert (
         cdf_manager.global_attributes["PI_affiliation"]
-        == "Princeton Plasma Physics Laboratory, 100 Stellarator Road, Princeton,"
-        "NJ 08540"
+        == "Princeton Plasma Physics Laboratory, 100 Stellarator Road, "
+        "Princeton, NJ 08540"
     )
     assert (
         cdf_manager.global_attributes["File_naming_convention"]
@@ -79,6 +80,7 @@ def test_global_attribute():
     )
 
     # Load in different data, test what was carried over
+    cdf_manager.source_dir = Path(__file__).parent.parent / "test"
     cdf_manager.load_global_attributes("imap_default_global_test_cdf_attrs.yaml")
     assert cdf_manager.global_attributes["Project"] == "STP>Solar-Terrestrial Physics"
     assert (
