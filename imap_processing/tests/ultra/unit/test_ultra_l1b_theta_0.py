@@ -3,9 +3,8 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from imap_processing.cdf.defaults import GlobalConstants
 from imap_processing import decom
-from imap_processing.utils import group_by_apid
+from imap_processing.cdf.defaults import GlobalConstants
 from imap_processing.ultra.l0.decom_ultra import process_ultra_apids
 from imap_processing.ultra.l0.ultra_utils import (
     ULTRA_AUX,
@@ -21,7 +20,7 @@ from imap_processing.ultra.l1b.ultra_l1b_extended import (
     get_path_length,
     get_ssd_positions,
 )
-
+from imap_processing.utils import group_by_apid
 
 
 @pytest.fixture()
@@ -34,6 +33,7 @@ def decom_ultra_aux(ccsds_path_theta_0, xtce_path):
         grouped_data[ULTRA_AUX.apid[0]], ULTRA_AUX.apid[0]
     )
     return data_packet_list
+
 
 @pytest.mark.parametrize(
     "decom_test_data",
@@ -48,75 +48,6 @@ def decom_ultra_aux(ccsds_path_theta_0, xtce_path):
     ],
     indirect=True,
 )
-# @pytest.fixture()
-# def indices_start_type_1_or_2(decom_test_data):
-#     """
-#     A pytest fixture to extract indices from events_dataset where START_TYPE is 1 or 2
-#     and COUNT is not 0. Assumes the dataset is structured with an 'epoch' dimension.
-#     """
-#
-#     # Create the dataset
-#     events_dataset = create_dataset(
-#         {ULTRA_EVENTS.apid[0]: decom_ultra_events, ULTRA_AUX.apid[0]: decom_ultra_aux}
-#     )
-#
-#     # Remove start_type with fill values
-#     events_dataset = events_dataset.where(
-#         events_dataset["START_TYPE"] != GlobalConstants.INT_FILLVAL, drop=True
-#     )
-#
-#     # Check top and bottom
-#     index_1 = np.where(events_dataset["START_TYPE"] == 1)[0]
-#     index_2 = np.where(events_dataset["START_TYPE"] == 2)[0]
-#
-#     return index_1, index_2, events_dataset
-#
-#
-# @pytest.fixture()
-# def indices_stop_type_1_or_2(decom_ultra_events, decom_ultra_aux):
-#     """
-#     A pytest fixture to extract indices from events_dataset where STOP_TYPE is 1 or 2
-#     and COUNT is not 0. Assumes the dataset is structured with an 'epoch' dimension.
-#     """
-#
-#     # Create the dataset
-#     events_dataset = create_dataset(
-#         {ULTRA_EVENTS.apid[0]: decom_ultra_events, ULTRA_AUX.apid[0]: decom_ultra_aux}
-#     )
-#     # Remove start_type with fill values
-#     events_dataset = events_dataset.where(
-#         events_dataset["START_TYPE"] != GlobalConstants.INT_FILLVAL, drop=True
-#     )
-#
-#     # Check top and bottom
-#     index_1 = np.where(events_dataset["STOP_TYPE"] == 1)[0]
-#     index_2 = np.where(events_dataset["STOP_TYPE"] == 2)[0]
-#
-#     return index_1, index_2, events_dataset
-#
-#
-# @pytest.fixture()
-# def indices_stop_type_8_to_15(decom_ultra_events, decom_ultra_aux):
-#     """
-#     A pytest fixture to extract indices from events_dataset where STOP_TYPE is 1 or 2
-#     and COUNT is not 0. Assumes the dataset is structured with an 'epoch' dimension.
-#     """
-#
-#     # Create the dataset
-#     events_dataset = create_dataset(
-#         {ULTRA_EVENTS.apid[0]: decom_ultra_events, ULTRA_AUX.apid[0]: decom_ultra_aux}
-#     )
-#     # Remove start_type with fill values
-#     events_dataset = events_dataset.where(
-#         events_dataset["START_TYPE"] != GlobalConstants.INT_FILLVAL, drop=True
-#     )
-#
-#     # Check top and bottom
-#     index = np.where(events_dataset["STOP_TYPE"] >= 8)[0]
-#
-#     return index, events_dataset
-
-
 def test_xf(
     decom_test_data,
     decom_ultra_aux,
@@ -159,9 +90,41 @@ def test_xf(
     assert np.allclose(xf_2 - 25, selected_rows_2.Xf.values.astype("float"), rtol=1e-3)
 
 
-@pytest.fixture()
-def tof(indices_stop_type_1_or_2, events_fsw_comparison_theta_0):
-    indices_1, indices_2, events_dataset = indices_stop_type_1_or_2
+@pytest.mark.parametrize(
+    "decom_test_data",
+    [
+        pytest.param(
+            {
+                "apid": ULTRA_EVENTS.apid[0],
+                "filename": "FM45_40P_Phi28p5_BeamCal_LinearScan_phi28.50"
+                "_theta-0.00_20240207T102740.CCSDS",
+            },
+        )
+    ],
+    indirect=True,
+)
+def test_xb_yb(
+    decom_test_data,
+    decom_ultra_aux,
+    events_fsw_comparison_theta_0,
+):
+    decom_ultra_events, _ = decom_test_data
+    dataset = create_dataset(
+        {
+            ULTRA_EVENTS.apid[0]: decom_ultra_events,
+            ULTRA_AUX.apid[0]: decom_ultra_aux,
+        }
+    )
+
+    # Remove start_type with fill values
+    events_dataset = dataset.where(
+        dataset["START_TYPE"] != GlobalConstants.INT_FILLVAL, drop=True
+    )
+
+    # Check top and bottom
+    indices_1 = np.where(events_dataset["STOP_TYPE"] == 1)[0]
+    indices_2 = np.where(events_dataset["STOP_TYPE"] == 2)[0]
+
     indices = np.concatenate((indices_1, indices_2))
     indices.sort()
 
@@ -169,32 +132,47 @@ def tof(indices_stop_type_1_or_2, events_fsw_comparison_theta_0):
     df_filt = df[df["StartType"] != -1]
     selected_rows_1 = df_filt.iloc[indices]
 
-    tof, t2, xb, yb = get_back_positions(
+    _, _, xb, yb = get_back_positions(
         indices, events_dataset, selected_rows_1.Xf.values.astype("float")
     )
-    return tof, t2, xb, yb
-
-
-def test_xb_yb(
-    indices_stop_type_1_or_2,
-    tof,
-    events_fsw_comparison_theta_0,
-):
-    _, _, xb, yb = tof
-    indices_1, indices_2, events_dataset = indices_stop_type_1_or_2
-    indices = np.concatenate((indices_1, indices_2))
-
-    df = pd.read_csv(events_fsw_comparison_theta_0)
-    df_filt = df[df["StartType"] != -1]
-    selected_rows_1 = df_filt.iloc[indices]
 
     np.testing.assert_array_equal(xb[indices], selected_rows_1["Xb"].astype("float"))
     np.testing.assert_array_equal(yb[indices], selected_rows_1["Yb"].astype("float"))
 
 
-@pytest.fixture()
-def tof_ssd(indices_stop_type_8_to_15, events_fsw_comparison_theta_0):
-    indices, events_dataset = indices_stop_type_8_to_15
+@pytest.mark.parametrize(
+    "decom_test_data",
+    [
+        pytest.param(
+            {
+                "apid": ULTRA_EVENTS.apid[0],
+                "filename": "FM45_40P_Phi28p5_BeamCal_LinearScan_phi28.50"
+                "_theta-0.00_20240207T102740.CCSDS",
+            },
+        )
+    ],
+    indirect=True,
+)
+def test_xb_yb_ssd(
+    decom_test_data,
+    decom_ultra_aux,
+    events_fsw_comparison_theta_0,
+):
+    decom_ultra_events, _ = decom_test_data
+    dataset = create_dataset(
+        {
+            ULTRA_EVENTS.apid[0]: decom_ultra_events,
+            ULTRA_AUX.apid[0]: decom_ultra_aux,
+        }
+    )
+
+    # Remove start_type with fill values
+    events_dataset = dataset.where(
+        dataset["START_TYPE"] != GlobalConstants.INT_FILLVAL, drop=True
+    )
+
+    # Check top and bottom
+    indices = np.where(events_dataset["STOP_TYPE"] >= 8)[0]
 
     df = pd.read_csv(events_fsw_comparison_theta_0)
     df_filt = df[df["StartType"] != -1]
@@ -203,36 +181,50 @@ def tof_ssd(indices_stop_type_8_to_15, events_fsw_comparison_theta_0):
     tof, xb, yb = get_ssd_positions(
         indices, events_dataset, selected_rows_1.Xf.values.astype("float")
     )
-    return xb, yb, tof
-
-
-def test_xb_yb_ssd(
-    indices_stop_type_8_to_15,
-    tof_ssd,
-    events_fsw_comparison_theta_0,
-):
-    xb, yb, tof = tof_ssd
-    indices_1, indices_2, events_dataset = indices_stop_type_1_or_2
-    indices = np.concatenate((indices_1, indices_2))
-
-    df = pd.read_csv(events_fsw_comparison_theta_0)
-    df_filt = df[df["StartType"] != -1]
-    selected_rows_1 = df_filt.iloc[indices]
 
     np.testing.assert_array_equal(xb[indices], selected_rows_1["Xb"].astype("float"))
     np.testing.assert_array_equal(yb[indices], selected_rows_1["Yb"].astype("float"))
 
 
+@pytest.mark.parametrize(
+    "decom_test_data",
+    [
+        pytest.param(
+            {
+                "apid": ULTRA_EVENTS.apid[0],
+                "filename": "FM45_40P_Phi28p5_BeamCal_LinearScan_phi28.50"
+                "_theta-0.00_20240207T102740.CCSDS",
+            },
+        )
+    ],
+    indirect=True,
+)
 def test_yf(
-    indices_start_type_1_or_2,
-    indices_stop_type_1_or_2,
     events_fsw_comparison_theta_0,
-    tof,
+    decom_test_data,
+    decom_ultra_aux,
 ):
-    index_1, index_2, events_dataset = indices_start_type_1_or_2
+    decom_ultra_events, _ = decom_test_data
+    dataset = create_dataset(
+        {
+            ULTRA_EVENTS.apid[0]: decom_ultra_events,
+            ULTRA_AUX.apid[0]: decom_ultra_aux,
+        }
+    )
+
+    # Remove start_type with fill values
+    events_dataset = dataset.where(
+        dataset["START_TYPE"] != GlobalConstants.INT_FILLVAL, drop=True
+    )
+
+    indices_1 = np.where(events_dataset["STOP_TYPE"] == 1)[0]
+    indices_2 = np.where(events_dataset["STOP_TYPE"] == 2)[0]
+    indices = np.concatenate((indices_1, indices_2))
+    indices.sort()
 
     df = pd.read_csv(events_fsw_comparison_theta_0)
     df_filt = df[df["StartType"] != -1]
+    selected_rows_1 = df_filt.iloc[indices]
 
     d, yf = get_front_y_position(events_dataset, df_filt.Yb.values.astype("float"))
 
@@ -252,10 +244,9 @@ def test_yf(
     # energy = get_energy_pulse_height(pulse_height, stop_type, xb, yb)
 
     # TODO: needs lookup table to test bin
-    tof, t2, xb, yb = tof
-    indices_1, indices_2, events_dataset = indices_stop_type_1_or_2
-    indices = np.concatenate((indices_1, indices_2))
-    indices.sort()
+    tof, t2, xb, yb = get_back_positions(
+        indices, events_dataset, selected_rows_1.Xf.values.astype("float")
+    )
 
     energy = df_filt["Xf"].iloc[indices].astype("float")
     r = df_filt["r"].iloc[indices].astype("float")
