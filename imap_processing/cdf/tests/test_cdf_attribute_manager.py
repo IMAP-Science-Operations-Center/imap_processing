@@ -49,9 +49,11 @@ def test_global_attribute():
         get_global_attributes
     """
 
-    # Initialize CdfAttributeManager object which loads in default global variables and schema
+    # Initialize CdfAttributeManager object which loads in default global
+    #   variables and schema
     cdf_manager = CdfAttributeManager(Path(__file__).parent.parent / "config")
-    # Test that default information was loaded in from "imap_default_global_cdf_attrs.yaml"
+    # Test that default information was loaded in from
+    #   "imap_default_global_cdf_attrs.yaml"
     assert cdf_manager.global_attributes["Project"] == "STP>Solar-Terrestrial Physics"
     assert (
         cdf_manager.global_attributes["Source_name"]
@@ -68,7 +70,8 @@ def test_global_attribute():
     assert cdf_manager.global_attributes["PI_name"] == "Dr. David J. McComas"
     assert (
         cdf_manager.global_attributes["PI_affiliation"]
-        == "Princeton Plasma Physics Laboratory, 100 Stellarator Road, Princeton, NJ 08540"
+        == "Princeton Plasma Physics Laboratory, 100 Stellarator Road, Princeton,"
+        "NJ 08540"
     )
     assert (
         cdf_manager.global_attributes["File_naming_convention"]
@@ -121,10 +124,12 @@ def test_global_attribute():
         mag_test_global_attrs["Source_name"]
         == cdf_manager.global_attributes["Source_name"]
     )
-    # BUT not everything in mag_test_global_attrs will be in cdf_manager.global_attributes["imap_test_T1_test"]
-    # TODO: check with maxine that the below code SHOULD cause an error because "Project" is not in self.global_
-    #   attributes[inst_id]
-    # assert mag_test_global_attrs["Project"] == cdf_manager.global_attributes["imap_test_T1_test"]["Project"]
+    # BUT not everything in mag_test_global_attrs will be in
+    #   cdf_manager.global_attributes["imap_test_T1_test"]
+    # TODO: check with maxine that the below code SHOULD cause an error because
+    #  "Project" is not in self.global_attributes[inst_id]
+    # assert mag_test_global_attrs["Project"]
+    #   == cdf_manager.global_attributes["imap_test_T1_test"]["Project"]
     assert (
         mag_test_global_attrs["Data_type"]
         == cdf_manager.global_attributes["imap_test_T1_test"]["Data_type"]
@@ -196,4 +201,4 @@ def test_variable_attribute():
 
     # Calling attribute name that does not exist
     # TODO: should throw error
-    # assert imap_test_variable["DNE"] == "test time"
+    # assert imap_test_variable["DOES_NOT_EXIST"] == "test time"
