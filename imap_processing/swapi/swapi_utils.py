@@ -1,4 +1,5 @@
-"""Various classes and functions used throughout SWAPI processing.
+"""
+Various classes and functions used throughout SWAPI processing.
 
 This module contains utility classes and functions that are used by various
 other SWAPI processing modules.
@@ -8,11 +9,13 @@ from enum import IntEnum
 
 
 class SWAPIAPID(IntEnum):
-    """Create ENUM for apid.
+    """
+    Create ENUM for apid.
 
-    Parameters
+    Attributes
     ----------
-    IntEnum : IntEnum.
+    IntEnum : IntEnum
+        No idea todo Check.
     """
 
     SWP_HK = 1184
@@ -21,11 +24,13 @@ class SWAPIAPID(IntEnum):
 
 
 class SWAPIMODE(IntEnum):
-    """Create ENUM for MODE.
+    """
+    Create ENUM for MODE.
 
-    Parameters
+    Attributes
     ----------
-    IntEnum : IntEnum.
+    IntEnum : IntEnum
+        No idea todo check.
     """
 
     LVENG = 0
