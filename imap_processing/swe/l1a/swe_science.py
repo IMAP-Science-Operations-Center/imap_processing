@@ -98,7 +98,7 @@ def swe_science(decom_data, data_version):
     Parameters
     ----------
     decom_data : dict
-        Decompressed data. Todo check.
+        Decompressed packet data.
 
     data_version : str
         Data version for the 'Data_version' CDF attribute. This is the version of the
