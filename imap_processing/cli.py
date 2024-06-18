@@ -628,7 +628,7 @@ class Lo(ProcessInstrument):
             for dependency in dependencies:
                 dataset = load_cdf(dependency, to_datetime=True)
                 data_dict[dataset.attrs["Logical_source"]] = dataset
-            output_file = lo_l1c.lo_l1c(data_dict)
+            output_file = lo_l1c.lo_l1c(data_dict, self.version)
             return [output_file]
 
 
