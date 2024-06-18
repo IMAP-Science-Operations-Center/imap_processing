@@ -183,7 +183,20 @@ def test_get_global_attributes():
             assert attr_name in test_get_global_attrs.keys()
 
 
-# TODO: Test add_global_attribute
+def test_add_global_attribute():
+    # Initialize CdfAttributeManager object which loads in default info
+    cdf_manager = CdfAttributeManager(Path(__file__).parent.parent / "config")
+
+    # Change filepath to load test global attributes
+    cdf_manager.source_dir = Path(__file__).parent.parent / "tests"
+    cdf_manager.load_global_attributes("imap_default_global_test_cdf_attrs.yaml")
+    cdf_manager.load_global_attributes("imap_test_global.yaml")
+
+    # Changing a dynamic global variable
+    cdf_manager.add_global_attribute("Project", "Test Project")
+    assert cdf_manager.global_attributes["Project"] == "Test Project"
+    test_get_global_attrs = cdf_manager.get_global_attributes("imap_test_T1_test")
+    assert test_get_global_attrs["Project"] == "Test Project"
 
 
 def test_variable_attribute():
@@ -285,7 +298,7 @@ def test_get_variable_attributes():
     with pytest.raises(KeyError):
         assert imap_test_variable["DOES_NOT_EXIST"] == "test time"
 
-    # TODO: Load in different data, test again
+    # Load in different data, test again
     imap_test_variable_2 = cdf_manager.get_variable_attributes("test_field_2")
     # Calling default attributes
     assert imap_test_variable_2["DEPEND_0"] == "test_depend"
