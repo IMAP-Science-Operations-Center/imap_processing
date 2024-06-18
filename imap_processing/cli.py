@@ -63,6 +63,7 @@ def _parse_args():
     The expected input format is:
     --instrument "mag"
     --data-level "l1a"
+    --descriptor "all"
     --start-date "20231212"
     --version "v001"
     --dependency "[
@@ -85,6 +86,7 @@ def _parse_args():
         "for a specific instrument and data level. Example usage: "
         '"imap_cli --instrument "mag" '
         '--data-level "l1a"'
+        '--descriptor "all"'
         ' --start-date "20231212"'
         '--version "v001"'
         '--dependency "['
@@ -102,6 +104,10 @@ def _parse_args():
     level_help = (
         "The data level to process. Acceptable values are: "
         f"{imap_processing.PROCESSING_LEVELS}"
+    )
+    descriptor_help = (
+        "The descriptor of the product to process. This could be 'all' or a specific "
+        "descriptor like 'sci-1min'. Default is 'all'."
     )
     dependency_help = (
         "Dependency information in str format."
@@ -138,6 +144,11 @@ def _parse_args():
     )
     parser.add_argument("--instrument", type=str, required=True, help=instrument_help)
     parser.add_argument("--data-level", type=str, required=True, help=level_help)
+    # TODO: unused for now, but needed for batch job handling
+    # pass through of status in AWS
+    parser.add_argument(
+        "--descriptor", type=str, required=False, help=descriptor_help, default="all"
+    )
 
     parser.add_argument(
         "--start-date",
