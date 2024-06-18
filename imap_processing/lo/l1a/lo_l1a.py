@@ -13,20 +13,20 @@ from imap_processing.lo.l0.data_classes.science_direct_events import ScienceDire
 
 def lo_l1a(dependency: Path, data_version: str):
     """
-    Process IMAP-Lo L0 data into L1A CDF data products.
+    Will process IMAP-Lo L0 data into L1A CDF data products.
 
     Parameters
     ----------
-    dependency :
-        dependency file needed for data product creation.
+    dependency : dict
+        Dependency file needed for data product creation.
         Should always be only one for L1A.
     data_version : str
-        Version of the data product being created
+        Version of the data product being created.
 
     Returns
     -------
-    created_file_paths: list[Path]
-        location of created CDF files
+    created_file_paths : list[Path]
+        Location of created CDF files.
     """
     # TODO: decom the CCSDS file
 
@@ -77,20 +77,22 @@ def lo_l1a(dependency: Path, data_version: str):
 # TODO: This is going to work differently when I sample data.
 #  The data_fields input is temporary.
 def create_datasets(attr_mgr, logical_source, data_fields):
-    """Create a dataset using the populated data classes.
+    """
+    Create a dataset using the populated data classes.
 
     Parameters
     ----------
     attr_mgr : ImapCdfAttributes
-        attribute manager used to get the data product field's attributes
-    logical_source: str
-        The logical source of the data product that's being created
-    data_fields: list[dataclasses.Field]
+        Attribute manager used to get the data product field's attributes.
+    logical_source : str
+        The logical source of the data product that's being created.
+    data_fields : list[dataclasses.Field]
+        List of Fields for data classes.
 
     Returns
     -------
-    xr.dataset
-        dataset with all data product fields in xr.DataArray
+    dataset : xr.dataset
+        Dataset with all data product fields in xr.DataArray.
     """
     # Convert each packet's spacecraft time to an absolute epoch time
     # TODO: replace temp hardcoded values with packet values

@@ -17,7 +17,8 @@ from imap_processing.lo.l0.utils.lo_base import LoBase
 
 @dataclass
 class ScienceDirectEvents(LoBase):
-    """L1A Science Direct Events data.
+    """
+    L1A Science Direct Events data.
 
     The Science Direct Events class handles the parsing and
     decompression of L0 to L1A data.
@@ -57,6 +58,15 @@ class ScienceDirectEvents(LoBase):
     The raw values are computed for L1A and will be converted to
     engineering units in L1B.
 
+    Parameters
+    ----------
+    packet : dict
+        Single packet from space_packet_parser.
+    software_version : str
+        Current version of IMAP-Lo processing.
+    packet_file_name : str
+        Name of the CCSDS file where the packet originated.
+
     Attributes
     ----------
     SHCOARSE : int
@@ -66,9 +76,9 @@ class ScienceDirectEvents(LoBase):
     DATA: str
         Compressed TOF Direct Event time tagged data.
     DE_TIME: numpy.ndarray
-        time tag for the direct event
+        Time tag for the direct event.
     ESA_STEP: numpy.ndarray
-        energy of the direct event ENA.
+        Energy of the direct event ENA.
     MODE: numpy.ndarray
         Indication of how the data is packed.
     TOF0: numpy.ndarray
@@ -86,7 +96,7 @@ class ScienceDirectEvents(LoBase):
         it's considered a silver triple. This is important for the compression
         for golden triples because it's used to recover TOF1 because
         compression scheme to save space on golden triples doesn't send
-        down TOF1 so it's recovered on the ground using the checksum
+        down TOF1 so it's recovered on the ground using the checksum.
     POS: numpy.ndarray
         Stop position for the direct event. There are 4 quadrants
         on the at the stop position.
@@ -113,17 +123,17 @@ class ScienceDirectEvents(LoBase):
     POS: np.ndarray
 
     def __init__(self, packet, software_version: str, packet_file_name: str):
-        """Initialize Science Direct Events Data class.
+        """
+        Initialize Science Direct Events Data class.
 
         Parameters
         ----------
-        packet: dict
-            single packet from space_packet_parser.
-        software_version: str
-            current version of IMAP-Lo processing.
-        packet_file_name: str
-            name of the CCSDS file where the packet
-            originated.
+        packet : dict
+            Single packet from space_packet_parser.
+        software_version : str
+            Current version of IMAP-Lo processing.
+        packet_file_name : str
+            Name of the CCSDS file where the packet originated.
         """
         super().__init__(software_version, packet_file_name, CcsdsData(packet.header))
         self.set_attributes(packet)
@@ -143,7 +153,8 @@ class ScienceDirectEvents(LoBase):
         self._decompress_data()
 
     def _decompress_data(self):
-        """Decompress the Lo Science Direct Events data.
+        """
+        Will decompress the Lo Science Direct Events data.
 
         TOF data is decompressed and the direct event data class
         attributes are set.

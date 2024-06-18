@@ -16,10 +16,20 @@ from imap_processing.lo.l0.utils.lo_base import LoBase
 
 @dataclass
 class ScienceCounts(LoBase):
-    """L1A Science Count data class.
+    """
+    L1A Science Count data class.
 
     The Science Counts class handles the parsing
     and decompression of L0 to L1A data.
+
+    Parameters
+    ----------
+    packet : dict
+        Single packet from space_packet_parser.
+    software_version : str
+        Current version of IMAP-Lo processing.
+    packet_file_name : str
+        Name of the CCSDS file where the packet originated.
 
     Attributes
     ----------
@@ -257,7 +267,23 @@ class ScienceCounts(LoBase):
         )
 
     def _parse_section(self, binary_string, decompression, data_shape):
-        """Parse a single section of data in the science counts data binary."""
+        """
+        Parse a single section of data in the science counts data binary.
+
+        Parameters
+        ----------
+        binary_string : str
+            Binary string.
+        decompression : int
+            The decompressed integer.
+        data_shape : list
+            Shape of the data. Todo check.
+
+        Returns
+        -------
+        np.array
+            Data array.
+        """
         # Use the decompression method to get the bit length
         # for this section.
         if decompression == Decompress.DECOMPRESS8TO16:
@@ -280,7 +306,25 @@ class ScienceCounts(LoBase):
         return data_array.reshape(data_shape[0], data_shape[1])
 
     def _extract_binary(self, binary_string, section_length, bit_length, decompression):
-        """Extract and decompress science count binary data section."""
+        """
+        Extract and decompress science count binary data section.
+
+        Parameters
+        ----------
+        binary_string : str
+            Binary string.
+        section_length : int
+            Length of section.
+        bit_length : int
+            Length of the bit.
+        decompression : int
+            The decompressed integer.
+
+        Returns
+        -------
+        np.array
+            Decompressed science count binary data.
+        """
         data_list = list()
         # stop the binary_string once you reach the end of the data section.
         bit_stop = binary_string.bit_pos + section_length

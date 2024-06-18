@@ -5,7 +5,8 @@ from imap_processing.lo.l0.lo_apid import LoAPID
 
 # TODO: Not sure if this class is worth having.
 class LoContainer:
-    """IMAP-Lo Level 0 data container class.
+    """
+    IMAP-Lo Level 0 data container class.
 
     The IMAP-Lo Level 0 data container class is used to store
     data for all 19 IMAP-Lo L0 unpacked data to allow filtering
@@ -14,17 +15,15 @@ class LoContainer:
     Attributes
     ----------
     data : dict
-        dictionary of IMAP-Lo data classes for L0
-
+        Dictionary of IMAP-Lo data classes for L0.
 
     Methods
     -------
     add():
-        Adds another data class to the container
-
+        Adds another data class to the container.
     filter_apid():
         Filters the container and returns a list of
-        data classes for the APID
+        data classes for the APID.
     """
 
     data_dict: dict
@@ -40,9 +39,8 @@ class LoContainer:
 
         Parameters
         ----------
-        data:
-            Any Lo L0 data class object
-
+        data : dict
+            Any Lo L0 data class object.
         """
         data_apid = data.ccsds_header.PKT_APID
         # check if the data being appended has a valid Lo APID
@@ -55,12 +53,12 @@ class LoContainer:
 
         Parameters
         ----------
-        apid: int
+        apid : int
             APID to use for data filtering.
 
         Returns
         -------
         list
-            filtered list of Lo data classes for a single APID.
+            Filtered list of Lo data classes for a single APID.
         """
         return self.data_dict[apid]

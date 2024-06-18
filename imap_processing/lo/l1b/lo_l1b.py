@@ -11,19 +11,19 @@ from imap_processing.cdf.utils import calc_start_time, write_cdf
 
 def lo_l1b(dependencies: dict, data_version: str):
     """
-    Process IMAP-Lo L1A data into L1B CDF data products.
+    Will process IMAP-Lo L1A data into L1B CDF data products.
 
     Parameters
     ----------
     dependencies : dict
-        dictionary of datasets needed for L1B data product creation in xarray Datasets.
+        Dictionary of datasets needed for L1B data product creation in xarray Datasets.
     data_version : str
-        Version of the data product being created
+        Version of the data product being created.
 
     Returns
     -------
-    created_file_paths: list[Path]
-        location of created CDF files
+    created_file_paths : list[Path]
+        Location of created CDF files.
     """
     # create the attribute manager for this data level
     attr_mgr = ImapCdfAttributes()
@@ -60,20 +60,22 @@ def lo_l1b(dependencies: dict, data_version: str):
 # TODO: This is going to work differently when I sample data.
 #  The data_fields input is temporary.
 def create_datasets(attr_mgr, logical_source, data_fields):
-    """Create a dataset using the populated data classes.
+    """
+    Create a dataset using the populated data classes.
 
     Parameters
     ----------
     attr_mgr : ImapCdfAttributes
-        attribute manager used to get the data product field's attributes
-    logical_source: str
-        The logical source of the data product that's being created
-    data_fields: list[dataclasses.Field]
+        Attribute manager used to get the data product field's attributes.
+    logical_source : str
+        The logical source of the data product that's being created.
+    data_fields : list[dataclasses.Field]
+        List of Fields for data classes.
 
     Returns
     -------
-    xr.dataset
-        dataset with all data product fields in xr.DataArray
+    dataset : xr.dataset
+        Dataset with all data product fields in xr.DataArray.
     """
     # TODO: Once L1B DE processing is implemented using the spin packet
     #  and relative L1A DE time to calculate the absolute DE time,
