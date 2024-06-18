@@ -20,3 +20,7 @@ imap_test_T2_test:
     Logical_source: imap_test_T2_test
     Logical_source_description: IMAP Mission TEST two document Level-T2.
     LINK_TEXT: Test two additional info
+
+imap_test_T3_test:
+    Descriptor: *desc
+    TEXT: *txt
