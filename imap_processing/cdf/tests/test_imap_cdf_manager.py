@@ -45,5 +45,6 @@ def test_add_instrument_variable_attrs():
     # Testing again
     # ultra_instrument = imap_cdf_manager.get_variable_attributes("imap_swe_l1a_sci")
     # assert ultra_instrument["DEPEND_0"] == "epoch"
-    # assert ultra_instrument["CATDESC"] == "Time, number of nanoseconds since J2000 with leap seconds included"
+    # assert ultra_instrument["CATDESC"] == "Time, number of nanoseconds
+    #   since J2000 with leap seconds included"
     # assert ultra_instrument["VALIDMAX"] == 9223372036854775807
