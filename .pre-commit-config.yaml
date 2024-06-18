@@ -36,5 +36,7 @@ repos:
     rev: 'v1.7.0'
     hooks:
       - id: numpydoc-validation
-        exclude: '^imap_processing/tests/|.*test.*|^imap_processing/ultra|^imap_processing/swe|^imap_processing/swapi|^imap_processing/mag|^imap_processing/lo|^imap_processing/idex|^imap_processing/ialirt|^imap_processing/hit|^imap_processing/hi|^imap_processing/glows|^imap_processing/codice'
+        exclude: '^tools/|^imap_processing/tests/|.*test.*|^imap_processing/ultra|^imap_processing/swapi|^imap_processing/mag|^imap_processing/lo|^imap_processing/idex|^imap_processing/ialirt|^imap_processing/hit|^imap_processing/hi|^imap_processing/glows|^imap_processing/codice|^imap_processing/utils.py|^imap_processing/decom.py|^imap_processing/cli.py|^imap_processing/cdf/|^imap_processing/ccsds/'
         # Will need to remove exclude section once all numpydoc changes are made.
+        #This is only testing the swe none test files.
+        #What will be excluded at very end: '^imap_processing/tests/|.*test.*'
