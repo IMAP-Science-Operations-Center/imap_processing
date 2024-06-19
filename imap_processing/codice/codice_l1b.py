@@ -1,13 +1,13 @@
-"""Perform CoDICE l1b processing.
+"""
+Perform CoDICE l1b processing.
 
 This module processes CoDICE l1a files and creates L1a data products.
 
-Use
----
-
-    from imap_processing.codice.codice_l0 import decom_packets
-    from imap_processing.codice.codice_l1b import process_codice_l1b
-    dataset = process_codice_l1b(l1a_file)
+Notes
+-----
+from imap_processing.codice.codice_l0 import decom_packets
+from imap_processing.codice.codice_l1b import process_codice_l1b
+dataset = process_codice_l1b(l1a_file)
 """
 
 import logging
@@ -25,21 +25,22 @@ logger.setLevel(logging.INFO)
 
 
 def create_hskp_dataset(l1a_dataset, cdf_attrs) -> xr.Dataset:
-    """Create an ``xarray`` dataset for the housekeeping data.
+    """
+    Create an ``xarray`` dataset for the housekeeping data.
 
     The dataset can then be written to a CDF file.
 
     Parameters
     ----------
     l1a_dataset : xr.Dataset
-        The L1a dataset that is being processed
+        The L1a dataset that is being processed.
     cdf_attrs : ImapCdfAttributes
-        The CDF attributes for the dataset
+        The CDF attributes for the dataset.
 
     Returns
     -------
-    xarray.Dataset
-        ``xarray`` dataset containing the science data and supporting metadata
+    l1b_dataset : xarray.Dataset
+        The ``xarray`` dataset containing the science data and supporting metadata.
     """
     epoch = l1a_dataset.coords["epoch"]
     l1b_dataset = xr.Dataset(
@@ -82,24 +83,25 @@ def create_hskp_dataset(l1a_dataset, cdf_attrs) -> xr.Dataset:
 def create_science_dataset(
     l1a_dataset: xr.Dataset, cdf_attrs, dataset_name
 ) -> xr.Dataset:
-    """Create an ``xarray`` dataset for the science data.
+    """
+    Create an ``xarray`` dataset for the science data.
 
     The dataset can then be written to a CDF file.
 
     Parameters
     ----------
     l1a_dataset : xr.Dataset
-        The L1a dataset that is being processed
+        The L1a dataset that is being processed.
     cdf_attrs : ImapCdfAttributes
-        The CDF attributes for the dataset
+        The CDF attributes for the dataset.
     dataset_name : str
         The name that is used to construct the data variable name and reference
-        the CDF attributes (e.g. ``imap_codice_l1b_hi_omni``)
+        the CDF attributes (e.g. ``imap_codice_l1b_hi_omni``).
 
     Returns
     -------
-    xarray.Dataset
-        ``xarray`` dataset containing the science data and supporting metadata
+    l1b_dataset : xarray.Dataset
+        The ``xarray`` dataset containing the science data and supporting metadata.
     """
     # Retrieve the coordinates from the l1a dataset
     epoch = l1a_dataset.coords["epoch"]
@@ -153,19 +155,20 @@ def create_science_dataset(
 
 
 def process_codice_l1b(file_path: Path, data_version: str) -> xr.Dataset:
-    """Process CoDICE l1a data to create l1b data products.
+    """
+    Will process CoDICE l1a data to create l1b data products.
 
     Parameters
     ----------
     file_path : pathlib.Path | str
-        Path to the CoDICE L1a file to process
+        Path to the CoDICE L1a file to process.
     data_version : str
-        Version of the data product being created
+        Version of the data product being created.
 
     Returns
     -------
-    dataset : xarray.Dataset
-        ``xarray`` dataset containing the science data and supporting metadata
+    l1b_dataset : xarray.Dataset
+        The``xarray`` dataset containing the science data and supporting metadata.
     """
     logger.info(f"\nProcessing {file_path.name} file.")
 

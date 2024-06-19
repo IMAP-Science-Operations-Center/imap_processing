@@ -1,4 +1,5 @@
-"""Various classes and functions used throughout CoDICE processing.
+"""
+Various classes and functions used throughout CoDICE processing.
 
 This module contains utility classes and functions that are used by various
 other CoDICE processing modules.
@@ -16,12 +17,7 @@ from imap_processing.cdf.utils import calc_start_time
 
 
 class CODICEAPID(IntEnum):
-    """Create ENUM for CoDICE APIDs.
-
-    Parameters
-    ----------
-    IntEnum : IntEnum
-    """
+    """Create ENUM for CoDICE APIDs."""
 
     COD_AUT = 1120
     COD_BOOT_HK = 1121
@@ -59,12 +55,7 @@ class CODICEAPID(IntEnum):
 
 
 class CoDICECompression(IntEnum):
-    """Create ENUM for CoDICE compression algorithms.
-
-    Parameters
-    ----------
-    IntEnum : IntEnum
-    """
+    """Create ENUM for CoDICE compression algorithms."""
 
     NO_COMPRESSION = 0
     LOSSY_A = 1
@@ -75,19 +66,20 @@ class CoDICECompression(IntEnum):
 
 
 def add_metadata_to_array(packet, metadata_arrays: dict) -> dict:
-    """Add metadata to the metadata_arrays.
+    """
+    Add metadata to the metadata_arrays.
 
     Parameters
     ----------
     packet : space_packet_parser.parser.Packet
-        CODICE data packet
+        CODICE data packet.
     metadata_arrays : dict
-        Metadata arrays
+        Metadata arrays.
 
     Returns
     -------
     metadata_arrays : dict
-        Updated metadata arrays with values
+        Updated metadata arrays with values.
     """
     ignore_list = [
         "SPARE_1",
@@ -110,19 +102,20 @@ def add_metadata_to_array(packet, metadata_arrays: dict) -> dict:
 
 
 def create_hskp_dataset(packets, data_version: str) -> xr.Dataset:
-    """Create dataset for each metadata field for housekeeping data.
+    """
+    Create dataset for each metadata field for housekeeping data.
 
     Parameters
     ----------
     packets : list[space_packet_parser.parser.Packet]
-        The list of packets to process
+        The list of packets to process.
     data_version : str
-        Version of the data product being created
+        Version of the data product being created.
 
     Returns
     -------
-    xarray.Dataset
-        xarray dataset containing the metadata
+    dataset : xarray.Dataset
+        Xarray dataset containing the metadata.
     """
     cdf_attrs = ImapCdfAttributes()
     cdf_attrs.add_instrument_global_attrs("codice")
