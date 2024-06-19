@@ -91,11 +91,11 @@ def _parse_args():
         '--version "v001"'
         '--dependency "['
         '   {"instrument": "mag",'
-        '   "data_level": "l0"',
-        '   "descriptor": "sci"',
-        '   "version": "v001"',
-        '   "start_date": "20231212"',
-        '}]" --upload-to-sdc"',
+        '   "data_level": "l0",'
+        '   "descriptor": "sci",'
+        '   "version": "v001",'
+        '   "start_date": "20231212"'
+        '}]" --upload-to-sdc"'
     )
     instrument_help = (
         "The instrument to process. Acceptable values are: "
