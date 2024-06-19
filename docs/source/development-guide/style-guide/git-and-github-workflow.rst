@@ -66,9 +66,9 @@ well.*
 
        pip3 install pre-commit
 
-   If this results in errors, check the correct form of pip is being employed using ``which pip`` or ``which pip3``.
+    If this results in errors, check the correct form of pip is being employed using ``which pip`` or ``which pip3``.
 
-    Then, while in the top directory of the repository, run:
+   Then, while in the top directory of the repository, run:
 
     .. code-block:: bash
 
