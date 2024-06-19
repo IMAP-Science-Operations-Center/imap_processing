@@ -91,8 +91,8 @@ def create_datasets(attr_mgr, logical_source, data_fields):
 
     Returns
     -------
-    dataset : xr.dataset
-        Dataset with all data product fields in xr.DataArray.
+    dataset : xarray.Dataset
+        Dataset with all data product fields in xarray.DataArray.
     """
     # Convert each packet's spacecraft time to an absolute epoch time
     # TODO: replace temp hardcoded values with packet values
