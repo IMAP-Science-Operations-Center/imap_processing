@@ -68,6 +68,12 @@ well.*
 
    If this results in errors, check the correct form of pip is being employed using ``which pip`` or ``which pip3``.
 
+    Then, while in the top directory of the repository, run:
+
+    .. code-block:: bash
+
+        pre-commit install
+
    *Note: This is optional, but helpful. This goes through pre-commit hooks locally for convenience which will also run when a pull request is made on GitHub.*
 
 #. Create a feature branch off of the ``dev`` branch to develop changes on. Branch names should be short but
