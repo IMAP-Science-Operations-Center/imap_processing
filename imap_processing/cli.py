@@ -91,11 +91,11 @@ def _parse_args():
         '--version "v001"'
         '--dependency "['
         '   {"instrument": "mag",'
-        '   "data_level": "l0"',
-        '   "descriptor": "sci"',
-        '   "version": "v001"',
-        '   "start_date": "20231212"',
-        '}]" --upload-to-sdc"',
+        '   "data_level": "l0",'
+        '   "descriptor": "sci",'
+        '   "version": "v001",'
+        '   "start_date": "20231212"'
+        '}]" --upload-to-sdc"'
     )
     instrument_help = (
         "The instrument to process. Acceptable values are: "
@@ -557,7 +557,7 @@ class Lo(ProcessInstrument):
             for dependency in dependencies:
                 dataset = load_cdf(dependency, to_datetime=True)
                 data_dict[dataset.attrs["Logical_source"]] = dataset
-            output_file = lo_l1c.lo_l1c(data_dict)
+            output_file = lo_l1c.lo_l1c(data_dict, self.version)
             return [output_file]
 
 

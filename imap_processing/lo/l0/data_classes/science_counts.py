@@ -322,7 +322,7 @@ class ScienceCounts(LoBase):
 
         Returns
         -------
-        np.array
+        numpy.array
             Decompressed science count binary data.
         """
         data_list = list()
