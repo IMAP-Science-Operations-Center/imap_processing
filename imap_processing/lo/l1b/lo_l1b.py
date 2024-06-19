@@ -74,7 +74,7 @@ def create_datasets(attr_mgr, logical_source, data_fields):
 
     Returns
     -------
-    dataset : xr.dataset
+    dataset : xarray.Dataset
         Dataset with all data product fields in xr.DataArray.
     """
     # TODO: Once L1B DE processing is implemented using the spin packet
