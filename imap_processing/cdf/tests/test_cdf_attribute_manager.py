@@ -4,6 +4,8 @@ import pytest
 
 from imap_processing.cdf.cdf_attribute_manager import CdfAttributeManager
 
+# This is an important test.
+
 
 def test_default_attr_schema():
     """
