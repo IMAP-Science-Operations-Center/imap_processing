@@ -22,7 +22,7 @@ def lo_l1b(dependencies: dict, data_version: str):
 
     Returns
     -------
-    created_file_paths : list[Path]
+    created_file_paths : list[pathlib.Path]
         Location of created CDF files.
     """
     # create the attribute manager for this data level
