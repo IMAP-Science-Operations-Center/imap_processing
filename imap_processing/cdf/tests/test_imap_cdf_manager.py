@@ -24,11 +24,11 @@ def test_add_instrument_global_attrs():
 
 def testing_source_dir():
     # Create an ImapCdfAttributes object
-    imap_cdf_manager = ImapCdfAttributes()
+    imap_cdf_manager = ImapCdfAttributes("tests")
     assert (
         str(imap_cdf_manager.source_dir)
         == "/Users/anma6676/Desktop/Repositories/imap_processing"
-        "/imap_processing/cdf/config"
+        "/imap_processing/cdf/tests"
     )
 
 
