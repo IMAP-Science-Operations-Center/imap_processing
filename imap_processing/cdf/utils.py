@@ -42,7 +42,9 @@ def convert_met_to_datetime64(
     """
     # Convert MET to int, then to nanoseconds as datetime64 requires int input and
     # some instruments are adding additional float precision to the MET
-    time_array = (np.asarray(met) * 1e9).astype(int).astype("timedelta64[ns]")
+    # NOTE: We need int64 here when running on 32bit systems as plain int will default
+    #       to 32bit and overflow due to the nanosecond multiplication
+    time_array = (np.asarray(met) * 1e9).astype(np.int64).astype("timedelta64[ns]")
     return launch_time + time_array
 
 
