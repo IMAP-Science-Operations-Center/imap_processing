@@ -7,7 +7,7 @@ import numpy as np
 import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
-from imap_processing.cdf.utils import calc_start_time
+from imap_processing.cdf.utils import convert_met_to_datetime64
 from imap_processing.swe.utils.swe_utils import (
     add_metadata_to_array,
 )
@@ -149,9 +149,7 @@ def swe_science(decom_data, data_version):
     cdf_attrs.add_instrument_variable_attrs("swe", "l1a")
     cdf_attrs.add_global_attribute("Data_version", data_version)
 
-    epoch_converted_time = [
-        calc_start_time(sc_time) for sc_time in metadata_arrays["SHCOARSE"]
-    ]
+    epoch_converted_time = convert_met_to_datetime64(metadata_arrays["SHCOARSE"])
     epoch_time = xr.DataArray(
         epoch_converted_time,
         name="epoch",

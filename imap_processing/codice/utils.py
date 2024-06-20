@@ -13,7 +13,7 @@ import xarray as xr
 
 from imap_processing.cdf.global_attrs import ConstantCoordinates
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
-from imap_processing.cdf.utils import calc_start_time
+from imap_processing.cdf.utils import convert_met_to_datetime64
 
 
 class CODICEAPID(IntEnum):
@@ -129,12 +129,10 @@ def create_hskp_dataset(packets, data_version: str) -> xr.Dataset:
 
     # TODO: Is there a way to get the attrs from the YAML-based method?
     epoch = xr.DataArray(
-        [
-            calc_start_time(
-                item, launch_time=np.datetime64("2010-01-01T00:01:06.184", "ns")
-            )
-            for item in metadata_arrays["SHCOARSE"]
-        ],
+        convert_met_to_datetime64(
+            metadata_arrays["SHCOARSE"],
+            launch_time=np.datetime64("2010-01-01T00:01:06.184", "ns"),
+        ),
         name="epoch",
         dims=["epoch"],
         attrs=ConstantCoordinates.EPOCH,

@@ -8,7 +8,7 @@ import xarray as xr
 from imap_processing import launch_time
 from imap_processing.cdf.global_attrs import ConstantCoordinates
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
-from imap_processing.cdf.utils import calc_start_time, load_cdf, write_cdf
+from imap_processing.cdf.utils import convert_met_to_datetime64, load_cdf, write_cdf
 
 
 @pytest.fixture()
@@ -47,15 +47,20 @@ def test_dataset():
     return dataset
 
 
-def test_calc_start_time():
-    """Tests the ``calc_start_time`` function"""
+def test_convert_met_to_datetime64():
+    """Tests the ``convert_met_to_datetime64`` function"""
 
-    assert calc_start_time(0) == launch_time
-    assert calc_start_time(1) == launch_time + np.timedelta64(1, "s")
+    assert convert_met_to_datetime64(0) == launch_time
+    assert convert_met_to_datetime64(1) == launch_time + np.timedelta64(1, "s")
     different_launch_time = launch_time + np.timedelta64(2, "s")
-    assert calc_start_time(
+    assert convert_met_to_datetime64(
         0, launch_time=different_launch_time
     ) == launch_time + np.timedelta64(2, "s")
+    # array-like input should work
+    output = convert_met_to_datetime64([0, 1])
+    np.testing.assert_array_equal(
+        output, [launch_time, launch_time + np.timedelta64(1, "s")]
+    )
 
 
 def test_load_cdf(test_dataset):

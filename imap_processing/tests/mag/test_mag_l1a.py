@@ -3,7 +3,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from imap_processing.cdf.utils import calc_start_time
+from imap_processing.cdf.utils import convert_met_to_datetime64
 from imap_processing.mag.l0.decom_mag import decom_packets
 from imap_processing.mag.l1a.mag_l1a import process_packets
 from imap_processing.mag.l1a.mag_l1a_data import (
@@ -101,7 +101,7 @@ def test_calculate_vector_time():
 
     test_data = MagL1a.calculate_vector_time(test_vectors, test_vecsec, start_time)
 
-    converted_start_time_ns = calc_start_time(start_time.to_seconds())
+    converted_start_time_ns = convert_met_to_datetime64(start_time.to_seconds())
 
     skips_ns = np.timedelta64(int(1 / test_vecsec * 1e9), "ns")
     expected_data = np.array(

@@ -22,7 +22,7 @@ import xarray as xr
 
 from imap_processing import imap_module_directory
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
-from imap_processing.cdf.utils import calc_start_time
+from imap_processing.cdf.utils import convert_met_to_datetime64
 from imap_processing.codice import constants
 from imap_processing.codice.codice_l0 import decom_packets
 from imap_processing.codice.utils import CODICEAPID, create_hskp_dataset
@@ -380,7 +380,7 @@ def process_codice_l1a(file_path: Path | str, data_version: str) -> xr.Dataset:
                 packets = sort_by_time(grouped_data[apid], "SHCOARSE")
 
                 # Determine the start time of the packet
-                start_time = calc_start_time(
+                start_time = convert_met_to_datetime64(
                     packets[0].data["ACQ_START_SECONDS"].raw_value,
                     launch_time=np.datetime64("2010-01-01T00:01:06.184", "ns"),
                 )

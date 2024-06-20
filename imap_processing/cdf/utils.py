@@ -16,39 +16,34 @@ import imap_processing
 logger = logging.getLogger(__name__)
 
 
-def calc_start_time(
-    shcoarse_time: float,
+def convert_met_to_datetime64(
+    met: np.typing.ArrayLike,
     launch_time: Optional[np.datetime64] = imap_processing.launch_time,
 ) -> np.datetime64:
-    """
-    Calculate the datetime64 from the CCSDS secondary header information.
-
-    Since all instrument has SHCOARSE or MET seconds, we need convert it to
-    UTC. Took this from IDEX code.
+    """Convert mission elapsed time (MET) to numpy datetime64.
 
     Parameters
     ----------
-    shcoarse_time : float
-        Number of seconds since epoch (nominally the launch time).
+    met: array_like
+        Number of seconds since epoch (nominally the launch time)
     launch_time : np.datetime64
         The time of launch to use as the baseline.
 
     Returns
     -------
-    np.timedelta64
-        The time of the event.
+    np.datetime64
+        Numpy datetime64 representation of the mission elapsed time
 
-    Notes
     -----
-    TODO - move this into imap-data-access? How should it be used?
     This conversion is temporary for now, and will need SPICE in the future.
     Nick Dutton mentioned that s/c clock start epoch is
         jan-1-2010-00:01:06.184 ET
     We will use this for now.
     """
-    # Get the datetime of Jan 1 2010 as the start date
-    time_delta = np.timedelta64(int(shcoarse_time * 1e9), "ns")
-    return launch_time + time_delta
+    # Convert MET to int, then to nanoseconds as datetime64 requires int input and
+    # some instruments are adding additional float precision to the MET
+    time_array = (np.asarray(met) * 1e9).astype(int).astype("timedelta64[ns]")
+    return launch_time + time_array
 
 
 def load_cdf(

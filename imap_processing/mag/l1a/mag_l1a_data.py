@@ -5,7 +5,7 @@ from math import floor
 
 import numpy as np
 
-from imap_processing.cdf.utils import calc_start_time
+from imap_processing.cdf.utils import convert_met_to_datetime64
 
 MAX_FINE_TIME = 65535  # maximum 16 bit unsigned int
 
@@ -131,13 +131,13 @@ class MagL1a:
         Returns
         -------
         vector_objects : numpy.ndarray
-            Vectors with timestamps added in seconds, calculated from
-            cdf.utils.calc_start_time.
-            TODO: Move timestamps to J2000.
+            vectors with timestamps added in seconds, calculated from
+            cdf.utils.convert_met_to_datetime64.
+            TODO: Move timestamps to J2000
         """
         timedelta = np.timedelta64(int(1 / vectors_per_second * 1e9), "ns")
 
-        start_time_ns = calc_start_time(start_time.to_seconds())
+        start_time_ns = convert_met_to_datetime64(start_time.to_seconds())
 
         # Calculate time skips for each vector in ns
         times = np.reshape(
