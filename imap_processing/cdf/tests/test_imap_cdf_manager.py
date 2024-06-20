@@ -22,13 +22,14 @@ def test_add_instrument_global_attrs():
     assert instrument2_instrument["Project"] == "STP>Solar-Terrestrial Physics"
 
 
-def test_base_global_info():
+def testing_source_dir():
     # Create an ImapCdfAttributes object
     imap_cdf_manager = ImapCdfAttributes()
     assert (
-        imap_cdf_manager.global_attributes["Project"] == "STP>Solar-Terrestrial Physics"
+        str(imap_cdf_manager.source_dir)
+        == "/Users/anma6676/Desktop/Repositories/imap_processing"
+        "/imap_processing/cdf/config"
     )
-    assert imap_cdf_manager.global_attributes["PI_name"] == "Dr. David J. McComas"
 
 
 def test_add_instrument_variable_attrs():
