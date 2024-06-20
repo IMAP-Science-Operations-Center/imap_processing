@@ -22,6 +22,15 @@ def test_add_instrument_global_attrs():
     assert instrument2_instrument["Project"] == "STP>Solar-Terrestrial Physics"
 
 
+def test_base_global_info():
+    # Create an ImapCdfAttributes object
+    imap_cdf_manager = ImapCdfAttributes()
+    assert (
+        imap_cdf_manager.global_attributes["Project"] == "STP>Solar-Terrestrial Physics"
+    )
+    assert imap_cdf_manager.global_attributes["PI_name"] == "Dr. David J. McComas"
+
+
 def test_add_instrument_variable_attrs():
     # Create an ImapCdfAttributes object
     imap_cdf_manager = ImapCdfAttributes("tests")
