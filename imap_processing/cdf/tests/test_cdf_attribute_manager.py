@@ -106,6 +106,7 @@ def test_global_attribute():
     #   the global attrs schema
     for attr in cdf_manager.global_attributes.keys():
         assert attr in cdf_manager.global_attribute_schema.keys()
+        assert attr in cdf_manager.global_attributes.keys()
 
 
 def test_get_global_attributes():
@@ -183,6 +184,30 @@ def test_get_global_attributes():
         required_schema = cdf_manager.global_attribute_schema[attr_name]["required"]
         if required_schema is True:
             assert attr_name in test_get_global_attrs.keys()
+
+
+def test_property_global_attrs():
+    # Initialize CDFAttributeManager object
+    test_obj = CdfAttributeManager(Path(__file__).parent.parent / "config")
+    test_obj.source_dir = Path(__file__).parent.parent / "tests"
+    test_obj.load_global_attributes("imap_default_global_test_cdf_attrs.yaml")
+    test_obj.load_global_attributes("imap_test_global.yaml")
+    test_obj.global_attributes = "imap_test_T1_test"
+
+    # Testing default information loaded in
+    assert test_obj.global_attributes["Project"] == "STP>Solar-Terrestrial Physics"
+    assert (
+        test_obj.global_attributes["Source_name"]
+        == "IMAP>Interstellar Mapping and Acceleration Probe"
+    )
+    assert test_obj.global_attributes["PI_name"] == "Ana Manica"
+
+    # Testing instrument specific information
+    assert test_obj.global_attributes["Descriptor"] == "TEST>Testinstrument"
+    assert (
+        test_obj.global_attributes["imap_test_T1_test"]["Data_type"]
+        == "T1_test-one>Test-1 test one"
+    )
 
 
 def test_add_global_attribute():

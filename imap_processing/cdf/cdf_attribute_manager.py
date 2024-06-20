@@ -76,10 +76,23 @@ class CdfAttributeManager:
         self.variable_attribute_schema = self._load_default_variable_attr_schema()
 
         # Load Default IMAP Global Attributes
-        self.global_attributes = CdfAttributeManager._load_yaml_data(
+        self._global_attributes = CdfAttributeManager._load_yaml_data(
             self.source_dir / DEFAULT_GLOBAL_CDF_ATTRS_FILE
         )
         self.variable_attributes = dict()
+
+    @property
+    def global_attributes(self):
+        """Docstring."""
+        # TODO: Validate attributes
+        # TODO: return validated attributes
+        # print("Returning global attributes previously loaded: ")
+        return self._global_attributes
+
+    @global_attributes.setter
+    def global_attributes(self, instrument_id: str):
+        # Load in instrument specific global attributes
+        return self.get_global_attributes(instrument_id)
 
     def _load_default_global_attr_schema(self) -> dict:
         """
