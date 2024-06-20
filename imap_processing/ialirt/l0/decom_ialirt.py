@@ -31,7 +31,6 @@ def generate_xarray(packet_file: str, xtce: str, time_keys=None):
 
     Examples
     --------
-    Output:
     # This is an example of what the xarray dataset might look like
     # after being processed by this function.
 
