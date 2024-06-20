@@ -300,198 +300,278 @@ dac1_enable:
   FORMAT: I1
 
 
-# TODO consider making another default entry for the following variables since they
-#  all have the same max and format. Need more info from Eric
+# TODO Update data formats. Should be float values. Need more info from instrument team
 
 preamp_l234a":
   <<: *default
-  VALIDMAX: 4095
-  CATDESC: Preamp L234A
-  FIELDNAM: Preamp L234A
-  LABLAXIS: Preamp L234A
+  VALIDMAX: 4095  # Need more info from instr. team
+  CATDESC: Preamp L234A Voltage
+  FIELDNAM: Preamp L234A Voltage
+  LABLAXIS: Voltage
   FORMAT: I4
+  UNITS: V
+  FILLVAL: -1.0000000E+31
 
 preamp_l1a:
   <<: *default
-  VALIDMAX: 4095
-  CATDESC: Preamp L1A
-  FIELDNAM: Preamp L1A
-  LABLAXIS: Preamp L1A
+  VALIDMAX: 4095  # Need more info from instr. team
+  CATDESC: Preamp L1A Voltage
+  FIELDNAM: Preamp L1A Voltage
+  LABLAXIS: Voltage
   FORMAT: I4
+  UNITS: V
+  FILLVAL: -1.0000000E+31
 
 preamp_l1b:
   <<: *default
-  VALIDMAX: 4095
-  CATDESC: Preamp L1B
-  FIELDNAM: Preamp L1B
-  LABLAXIS: Preamp L1B
+  VALIDMAX: 4095  # Need more info from instr. team
+  CATDESC: Preamp L1B Voltage
+  FIELDNAM: Preamp L1B Voltage
+  LABLAXIS: Voltage
   FORMAT: I4
+  UNITS: V
+  FILLVAL: -1.0000000E+31
 
 preamp_l234b:
   <<: *default
-  VALIDMAX: 4095
-  CATDESC: Preamp L234B
-  FIELDNAM: Preamp L234B
-  LABLAXIS: Preamp L234B
+  VALIDMAX: 4095 # Need more info from instr. team
+  CATDESC: Preamp L234B Voltage
+  FIELDNAM: Preamp L234B Voltage
+  LABLAXIS: Voltage
   FORMAT: I4
+  UNITS: V
+  FILLVAL: -1.0000000E+31
 
 temp0:
   <<: *default
-  VALIDMAX: 4095
+  VALIDMIN: -25
+  VALIDMAX: 57
   CATDESC: FEE LDO Regulator Mounted on the Board Next to the Low-dropout Regulator
   FIELDNAM: FEE LDO Regulator
-  LABLAXIS: Temp0
-  FORMAT: I4
+  LABLAXIS: Temperature
+  FORMAT: I2
+  UNITS: C
+  FILLVAL: -1.0000000E+31
 
 temp1:
   <<: *default
-  VALIDMAX: 4095
+  VALIDMIN: -25
+  VALIDMAX: 50
   CATDESC: Primary Heater Mounted on the Board Next to the Primary Heater Circuit
   FIELDNAM: Primary Heater
-  LABLAXIS: Temp1
-  FORMAT: I4
+  LABLAXIS: Temperature
+  FORMAT: I2
+  UNITS: C
+  FILLVAL: -1.0000000E+31
 
 temp2:
   <<: *default
-  VALIDMAX: 4095
+  VALIDMIN: -25
+  VALIDMAX: 50
   CATDESC: FEE FPGA Mounted on the Board Next to the FPGA
   FIELDNAM: FEE FPGA
-  LABLAXIS: Temp2
-  FORMAT: I4
+  LABLAXIS: Temperature
+  FORMAT: I2
+  UNITS: C
+  FILLVAL: -1.0000000E+31
 
 temp3:
   <<: *default
-  VALIDMAX: 4095
+  VALIDMIN: -25
+  VALIDMAX: 50
   CATDESC: Secondary Heater
   FIELDNAM: Secondary Heater
-  LABLAXIS: Temp3
-  FORMAT: I4
+  LABLAXIS: Temperature
+  FORMAT: I2
+  UNITS: C
+  FILLVAL: -1.0000000E+31
 
 analog_temp:
   <<: *default
-  VALIDMAX: 4095
+  VALIDMIN: -25
+  VALIDMAX: 50
   CATDESC: Chassis Temp Mounted on the Analog Board Close to Thermostats, Heaters, and Chassis
   FIELDNAM: Analog Temp
-  LABLAXIS: Analog temp
-  FORMAT: I4
+  LABLAXIS: Temperature
+  FORMAT: I2
+  UNITS: C
+  FILLVAL: -1.0000000E+31
 
 hvps_temp:
   <<: *default
-  VALIDMAX: 4095
+  VALIDMIN: -25
+  VALIDMAX: 50
   CATDESC: Board Temp Mounted Inside Faraday Cage in Middle of Board Near Connector Side
   FIELDNAM: Board Temp
-  LABLAXIS: HVPS temp
-  FORMAT: I4
+  LABLAXIS: Temperature
+  FORMAT: I2
+  UNITS: C
+  FILLVAL: -1.0000000E+31
 
 idpu_temp:
   <<: *default
-  VALIDMAX: 4095
+  VALIDMIN: -25
+  VALIDMAX: 65
   CATDESC: LDO Temp Mounted on Top of the Low-dropout Regulator
   FIELDNAM: LDO Temp
-  LABLAXIS: IDPU temp
-  FORMAT: I4
+  LABLAXIS: Temperature
+  FORMAT: I2
+  UNITS: C
+  FILLVAL: -1.0000000E+31
 
 lvps_temp:
   <<: *default
-  VALIDMAX: 4095
+  VALIDMIN: -25
+  VALIDMAX: 80
   CATDESC: Board Temp Mounted in the Middle of Board on Opposite Side of Hottest Component
   FIELDNAM: Board Temp
-  LABLAXIS: LVPS temp
-  FORMAT: I4
+  LABLAXIS: Temperature
+  FORMAT: I2
+  UNITS: C
+  FILLVAL: -1.0000000E+31
 
 ebox_3d4vd:
   <<: *default
-  VALIDMAX: 4095
+  # doc says min 3.1
+  # doc says max 3.6
+  VALIDMIN: 3
+  VALIDMAX: 4
   CATDESC: 3.4VD Ebox (Digital)
   FIELDNAM: 3.4VD Ebox (Digital)
-  LABLAXIS: 3.4VD Ebox
-  FORMAT: I4
+  LABLAXIS: Voltage
+  FORMAT: F2.1
+  UNITS: V
+  FILLVAL: -1.0000000E+31
 
 ebox_5d1vd:
   <<: *default
-  VALIDMAX: 4095
+  # doc says min 4.85
+  # doc says max 5.45
+  VALIDMIN: 4
+  VALIDMAX: 6
   CATDESC: 5.1VD Ebox (Digital)
   FIELDNAM: 5.1VD Ebox (Digital)
-  LABLAXIS: 5.1VD Ebox
-  FORMAT: I4
+  LABLAXIS: Voltage
+  FORMAT: F3.2
+  UNITS: V
+  FILLVAL: -1.0000000E+31
 
 ebox_p12va:
   <<: *default
-  VALIDMAX: 4095
+  # doc says min 11.2
+  # doc says max 13.1
+  VALIDMIN: 11
+  VALIDMAX: 14
   CATDESC: +12VA Ebox (Analog)
   FIELDNAM: +12VA Ebox (Analog)
-  LABLAXIS: +12VA Ebox
-  FORMAT: I4
+  LABLAXIS: Voltage
+  FORMAT: F3.1
+  UNITS: V
+  FILLVAL: -1.0000000E+31
 
 ebox_m12va:
   <<: *default
-  VALIDMAX: 4095
+  # doc says min -13.1
+  # doc says max -11.2
+  VALIDMIN: -14
+  VALIDMAX: -12
   CATDESC: -12VA Ebox (Analog)
   FIELDNAM: -12VA Ebox (Analog)
-  LABLAXIS: -12VA Ebox
-  FORMAT: I4
+  LABLAXIS: Voltage
+  FORMAT: F3.1
+  UNITS: V
+  FILLVAL: -1.0000000E+31
 
 ebox_p5d7va:
   <<: *default
-  VALIDMAX: 4095
+  # doc says min 5.3
+  # doc says max 6.3
+  VALIDMIN: 5
+  VALIDMAX: 7
   CATDESC: +5.7VA Ebox (Analog)
   FIELDNAM: +5.7VA Ebox (Analog)
-  LABLAXIS: +5.7VA Ebox
-  FORMAT: I4
+  LABLAXIS: Voltage
+  FORMAT: F2.1
+  UNITS: V
+  FILLVAL: -1.0000000E+31
 
 ebox_m5d7va:
   <<: *default
-  VALIDMAX: 4095
+  # doc says min -6.4125
+  # doc says max -5.25
+  VALIDMIN: -7
+  VALIDMAX: -5
   CATDESC: -5.7VA Ebox (Analog)
   FIELDNAM: -5.7VA Ebox (Analog)
-  LABLAXIS: -5.7VA Ebox
-  FORMAT: I4
+  LABLAXIS: Voltage
+  FORMAT: F5.4
+  UNITS: V
+  FILLVAL: -1.0000000E+31
 
 ref_p5v:
+  #Need more info from instrument team on min and max values
   <<: *default
-  VALIDMAX: 4095
   CATDESC: +5V ref
   FIELDNAM: +5V ref
-  LABLAXIS: +5V ref
+  LABLAXIS: Voltage
   FORMAT: I4
+  UNITS: V
+  FILLVAL: -1.0000000E+31
 
 l1ab_bias:
   <<: *default
-  VALIDMAX: 4095
+  VALIDMIN: 0
+  VALIDMAX: 15
   CATDESC: L1A/B Bias
   FIELDNAM: L1A/B Bias
-  LABLAXIS: L1A/B Bias
-  FORMAT: I4
+  LABLAXIS: Voltage
+  FORMAT: I2
+  UNITS: V
+  FILLVAL: -1.0000000E+31
 
 l2ab_bias:
   <<: *default
-  VALIDMAX: 4095
+  VALIDMIN: 0
+  VALIDMAX: 25
   CATDESC: L2A/B Bias
   FIELDNAM: L2A/B Bias
-  LABLAXIS: L2A/B Bias
-  FORMAT: I4
+  LABLAXIS: Voltage
+  FORMAT: I2
+  UNITS: V
+  FILLVAL: -1.0000000E+31
 
 l34a_bias:
   <<: *default
-  VALIDMAX: 4095
+  VALIDMIN: 0
+  VALIDMAX: 255
   CATDESC: L3/4A Bias
   FIELDNAM: L3/4A Bias
-  LABLAXIS: L3/4A Bias
-  FORMAT: I4
+  LABLAXIS: Voltage
+  FORMAT: I3
+  UNITS: V
+  FILLVAL: -1.0000000E+31
 
 l34b_bias:
   <<: *default
-  VALIDMAX: 4095
+  VALIDMIN: 0
+  VALIDMAX: 225
   CATDESC: L3/4B Bias
   FIELDNAM: L3/4B Bias
-  LABLAXIS: L3/4B Bias
-  FORMAT: I4
+  LABLAXIS: Voltage
+  FORMAT: I3
+  UNITS: V
+  FILLVAL: -1.0000000E+31
 
 ebox_p2d0vd:
   <<: *default
-  VALIDMAX: 4095
+  # doc says min 1.79
+  # doc says max 2.5
+  VALIDMIN: 1
+  VALIDMAX: 3
   CATDESC: +2.0VD Ebox (Digital)
   FIELDNAM: +2.0VD Ebox (Digital)
-  LABLAXIS: +2.0VD Ebox
-  FORMAT: I4
+  LABLAXIS: Voltage
+  FORMAT: F3.2
+  UNITS: V
+  FILLVAL: -1.0000000E+31
 
