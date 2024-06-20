@@ -12,13 +12,18 @@ from imap_processing.cdf.cdf_attribute_manager import CdfAttributeManager
 class ImapCdfAttributes(CdfAttributeManager):
     """Contains IMAP specific tools and settings for CDF management."""
 
-    def __init__(self, source_dir_input=None):
+    def __init__(self, source_dir=None):
         """Set the path to the config directory."""
-        if source_dir_input is None:
+        if source_dir is None:
             super().__init__(Path(__file__).parent / "config")
         else:
             super().__init__(Path(__file__).parent / "config")
-            self.source_dir = Path(__file__).parent / source_dir_input
+            self.source_dir = Path(__file__).parent / source_dir
+        # if source_dir_input is None:
+        #     super().__init__(Path(__file__).parent / source_dir_input
+        # else:
+        #     super().__init__(Path(__file__).parent / "config")
+        #     self.source_dir = Path(__file__).parent / source_dir_input
 
     def add_instrument_global_attrs(self, instrument: str):
         """Add instrument specific global attributes."""

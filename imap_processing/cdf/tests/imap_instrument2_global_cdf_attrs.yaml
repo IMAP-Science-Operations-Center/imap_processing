@@ -10,7 +10,6 @@ instrument_base: &instrument_base
 
 imap_swe_l1a_sci:
   <<: *instrument_base
-  # NOTE: Right now, this Data_level is required to produce valid CDF
   Data_level: 1A
   Data_type: L1A_SCI>Level-1A Science data
   Logical_source: imap_swe_l1a_sci

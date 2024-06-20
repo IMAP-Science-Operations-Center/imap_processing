@@ -156,6 +156,25 @@ def test_get_global_attributes():
     # "Data_type" not required according to default schema
     assert test_get_global_attrs_2["Data_type"] == "T2_test-two>Test-2 test two"
 
+    # Testing that required schema keys are in get_global_attributes
+    for attr_name in cdf_manager.global_attribute_schema.keys():
+        required_schema = cdf_manager.global_attribute_schema[attr_name]["required"]
+        if required_schema is True:
+            assert attr_name in test_get_global_attrs.keys()
+
+
+def test_instrument_id_format():
+    # Initialize CdfAttributeManager object which loads in default info
+    cdf_manager = CdfAttributeManager(Path(__file__).parent.parent / "config")
+
+    # Change filepath to load test global attributes
+    cdf_manager.source_dir = Path(__file__).parent.parent / "tests"
+    cdf_manager.load_global_attributes("imap_default_global_test_cdf_attrs.yaml")
+    cdf_manager.load_global_attributes("imap_test_global.yaml")
+
+    # Loading in instrument specific attributes
+    test_get_global_attrs = cdf_manager.get_global_attributes("imap_test_T1_test")
+
     # Testing how instrument_id operates
     assert test_get_global_attrs["Project"] == cdf_manager.global_attributes["Project"]
     assert (
@@ -173,15 +192,6 @@ def test_get_global_attributes():
     with pytest.raises(KeyError):
         assert cdf_manager.global_attributes["imap_test_T1_test"]["Project"]
 
-    # Trying to update a default global using get_global_attributes does not work.
-    # For example, thing about DOI event.
-
-    # Testing that required schema keys are in get_global_attributes
-    for attr_name in cdf_manager.global_attribute_schema.keys():
-        required_schema = cdf_manager.global_attribute_schema[attr_name]["required"]
-        if required_schema is True:
-            assert attr_name in test_get_global_attrs.keys()
-
 
 def test_add_global_attribute():
     # Initialize CdfAttributeManager object which loads in default info
@@ -189,7 +199,6 @@ def test_add_global_attribute():
 
     # Change filepath to load test global attributes
     cdf_manager.source_dir = Path(__file__).parent.parent / "tests"
-    cdf_manager.load_global_attributes("imap_default_global_test_cdf_attrs.yaml")
     cdf_manager.load_global_attributes("imap_test_global.yaml")
 
     # Changing a dynamic global variable
@@ -197,6 +206,26 @@ def test_add_global_attribute():
     assert cdf_manager.global_attributes["Project"] == "Test Project"
     test_get_global_attrs = cdf_manager.get_global_attributes("imap_test_T1_test")
     assert test_get_global_attrs["Project"] == "Test Project"
+
+    # Testing adding required global attribute
+    # TODO: Assert that get_global_attiribute fails
+    cdf_manager.global_attributes.__delitem__("Source_name")
+    with pytest.raises(KeyError):
+        assert (
+            cdf_manager.global_attributes["Source_name"]
+            == "IMAP>Interstellar Mapping and Acceleration Probe"
+        )
+
+    # The following code does not throw an error. Instead, Source_name is just "None"
+    # assert cdf_manager.get_global_attributes("imap_test_T1_test") is None
+
+    cdf_manager.add_global_attribute("Source_name", "anas_source")
+    assert cdf_manager.global_attributes["Source_name"] == "anas_source"
+
+    # TODO: Should I test this for instrument attributes like logical_source?
+    # The code below does NOT work. The logical_source is not deleted
+    # test_get_global_attrs.__delitem__("Logical_source")
+    # assert cdf_manager.get_global_attributes("imap_test_T1_test") is None
 
 
 def test_variable_attribute():
@@ -234,8 +263,7 @@ def test_variable_attribute():
         if attribute["required"] is True:
             for exp_attr in expected_attributes:
                 assert (
-                    exp_attr
-                    in cdf_manager.variable_attribute_schema["attribute_key"].keys()
+                    exp_attr in cdf_manager.variable_attribute_schema["attribute_key"]
                 )
 
     # Testing specific things
