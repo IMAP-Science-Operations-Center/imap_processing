@@ -425,7 +425,7 @@ def process_swapi_science(sci_dataset, data_version: str):
     Parameters
     ----------
     sci_dataset : xarray.Dataset
-        L0 data. todo check.
+        L0 data.
     data_version : str
         Version of the data product being created.
 
