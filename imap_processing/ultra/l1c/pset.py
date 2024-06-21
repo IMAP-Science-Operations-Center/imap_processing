@@ -1,4 +1,4 @@
-"""Calculates Pointing Set Grids."""
+"""Calculate Pointing Set Grids."""
 
 import numpy as np
 
@@ -11,9 +11,9 @@ def calculate_pset(pset_dataset, name):
 
     Parameters
     ----------
-    pset_dataset: xarray.Dataset
+    pset_dataset : xarray.Dataset
         Dataset containing histogram data.
-    name: str
+    name : str
         Name of the dataset.
 
     Returns

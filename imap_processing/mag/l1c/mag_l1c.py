@@ -9,7 +9,7 @@ def mag_l1c(
     first_input_dataset: xr.Dataset, second_input_dataset: xr.Dataset, version
 ) -> xr.Dataset:
     """
-    Process MAG L1C data from L1A data.
+    Will process MAG L1C data from L1A data.
 
     This requires both the norm and burst data to be passed in.
 
@@ -23,7 +23,12 @@ def mag_l1c(
         was norm, or norm if first_input_dataset was burst. It should match the
         instrument - both inputs should be mago or magi.
     version : str
-        The version of the output data
+        The version of the output data.
+
+    Returns
+    -------
+    output_dataset : xr.Dataset
+        L1C data set.
     """
     # TODO: L1C processing involves filling gaps with burst data.
     input_logical_source_1 = first_input_dataset.attrs["Logical_source"]
