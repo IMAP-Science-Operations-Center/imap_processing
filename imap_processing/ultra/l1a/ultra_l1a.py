@@ -1,6 +1,5 @@
 """Generate ULTRA L1a CDFs."""
 
-
 # TODO: Evaluate naming conventions for fields and variables
 # TODO: Improved short and long descriptions for each variable
 # TODO: Improved var_notes for each variable
