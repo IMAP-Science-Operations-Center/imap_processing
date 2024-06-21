@@ -18,19 +18,20 @@ logger = logging.getLogger(__name__)
 
 
 def hit_l1b(l1a_dataset: xr.Dataset, data_version: str):
-    """Process HIT data to L1B.
+    """
+    Will process HIT data to L1B.
 
     Parameters
     ----------
     l1a_dataset : xarray.Dataset
-        l1A data
+        L1A data.
     data_version : str
-        Version of the data product being created
+        Version of the data product being created.
 
     Returns
     -------
-    xarray.Dataset
-        L1B processed data
+    cdf_filepaths : xarray.Dataset
+        L1B processed data.
     """
     # TODO: Check for type of L1A dataset and determine what L1B products to make
     #   Need more info from instrument teams. Work with housekeeping data for now
@@ -58,12 +59,13 @@ def hit_l1b(l1a_dataset: xr.Dataset, data_version: str):
 
 # TODO: This is going to work differently when we have sample data
 def create_hk_dataset():
-    """Create a housekeeping dataset.
+    """
+    Create a housekeeping dataset.
 
     Returns
     -------
-    xr.dataset
-        Dataset with all data product fields in xr.DataArray
+    hk_dataset : xarray.dataset
+        Dataset with all data product fields in xarray.DataArray.
     """
     logger.info("Creating datasets for HIT L1B data")
 

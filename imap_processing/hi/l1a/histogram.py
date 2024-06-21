@@ -40,17 +40,18 @@ TOTAL_COUNTERS = ("total_a", "total_b", "total_c", "fee_de_sent", "fee_de_recd")
 
 
 def create_dataset(packets: list[Packet]) -> xr.Dataset:
-    """Create dataset for a number of Hi Histogram packets.
+    """
+    Create dataset for a number of Hi Histogram packets.
 
     Parameters
     ----------
     packets : list[space_packet_parser.ParsedPacket]
-        packet list
+        Packet list.
 
     Returns
     -------
-    xarray.Dataset
-        dataset with all metadata field data in xr.DataArray
+    dataset : xarray.Dataset
+        Dataset with all metadata field data in xr.DataArray.
     """
     dataset = allocate_histogram_dataset(len(packets))
 
@@ -90,8 +91,8 @@ def allocate_histogram_dataset(num_packets: int) -> xr.Dataset:
 
     Returns
     -------
-    xarray.Dataset
-        Empty xarray.Dataset ready to be filled with packet data
+    dataset : xarray.Dataset
+        Empty xarray.Dataset ready to be filled with packet data.
     """
     # preallocate the xr.DataArrays for all CDF attributes based on number of packets
     coords = dict()
