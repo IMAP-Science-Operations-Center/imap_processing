@@ -2,6 +2,8 @@
 # from imap_processing.cdf.cdf_attribute_manager import CdfAttributeManager
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 
+# test
+
 
 def test_add_instrument_global_attrs():
     # Create an ImapCdfAttributes object
