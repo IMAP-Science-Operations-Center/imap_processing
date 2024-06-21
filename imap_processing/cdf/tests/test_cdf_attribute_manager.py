@@ -208,7 +208,6 @@ def test_add_global_attribute():
     assert test_get_global_attrs["Project"] == "Test Project"
 
     # Testing adding required global attribute
-    # TODO: Assert that get_global_attiribute fails
     cdf_manager.global_attributes.__delitem__("Source_name")
     with pytest.raises(KeyError):
         assert (
@@ -216,16 +215,8 @@ def test_add_global_attribute():
             == "IMAP>Interstellar Mapping and Acceleration Probe"
         )
 
-    # The following code does not throw an error. Instead, Source_name is just "None"
-    # assert cdf_manager.get_global_attributes("imap_test_T1_test") is None
-
     cdf_manager.add_global_attribute("Source_name", "anas_source")
     assert cdf_manager.global_attributes["Source_name"] == "anas_source"
-
-    # TODO: Should I test this for instrument attributes like logical_source?
-    # The code below does NOT work. The logical_source is not deleted
-    # test_get_global_attrs.__delitem__("Logical_source")
-    # assert cdf_manager.get_global_attributes("imap_test_T1_test") is None
 
 
 def test_variable_attribute():
