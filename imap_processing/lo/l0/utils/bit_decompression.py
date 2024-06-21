@@ -7,7 +7,7 @@ import numpy as np
 
 
 class Decompress(Enum):
-    """Decompression options."""
+    """The decompression options."""
 
     DECOMPRESS8TO12 = "8_to_12"
     DECOMPRESS8TO16 = "8_to_16"
@@ -27,7 +27,7 @@ DECOMPRESSION_TABLES = {
 
 def decompress_int(compressed_value, decompression, decompression_lookup):
     """
-    Decompress a data field using a specified bit conversion.
+    Will decompress a data field using a specified bit conversion.
 
     Parameters
     ----------
@@ -36,7 +36,7 @@ def decompress_int(compressed_value, decompression, decompression_lookup):
     decompression : Decompress
         The decompression to use.
     decompression_lookup : dict
-        dictionary containing all the decompression tables
+        Dictionary containing all the decompression tables.
 
     Returns
     -------
