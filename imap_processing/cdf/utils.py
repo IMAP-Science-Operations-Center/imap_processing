@@ -20,25 +20,27 @@ def calc_start_time(
     shcoarse_time: float,
     launch_time: Optional[np.datetime64] = imap_processing.launch_time,
 ) -> np.datetime64:
-    """Calculate the datetime64 from the CCSDS secondary header information.
+    """
+    Calculate the datetime64 from the CCSDS secondary header information.
 
     Since all instrument has SHCOARSE or MET seconds, we need convert it to
     UTC. Took this from IDEX code.
 
     Parameters
     ----------
-    shcoarse_time: float
-        Number of seconds since epoch (nominally the launch time)
+    shcoarse_time : float
+        Number of seconds since epoch (nominally the launch time).
     launch_time : np.datetime64
-        The time of launch to use as the baseline
+        The time of launch to use as the baseline.
 
     Returns
     -------
-    np.datetime64
-        The time of the event
+    np.timedelta64
+        The time of the event.
 
-    TODO - move this into imap-data-access? How should it be used?
+    Notes
     -----
+    TODO - move this into imap-data-access? How should it be used?
     This conversion is temporary for now, and will need SPICE in the future.
     Nick Dutton mentioned that s/c clock start epoch is
         jan-1-2010-00:01:06.184 ET
@@ -52,16 +54,17 @@ def calc_start_time(
 def load_cdf(
     file_path: Path, remove_xarray_attrs: bool = True, **kwargs: dict
 ) -> xr.Dataset:
-    """Load the contents of a CDF file into an ``xarray`` dataset.
+    """
+    Load the contents of a CDF file into an ``xarray`` dataset.
 
     Parameters
     ----------
     file_path : Path
-        The path to the CDF file
-    remove_xarray_attrs: bool
+        The path to the CDF file.
+    remove_xarray_attrs : bool
         Whether to remove the xarray attributes that get injected by the
         cdf_to_xarray function from the output xarray.Dataset. Default is True.
-    **kwargs : dict, optional
+    **kwargs : {dict} optional
         Keyword arguments for ``cdf_to_xarray``. This function overrides the
         ``cdf_to_xarray`` default keyword value `to_datetime=False` with
         ``to_datetime=True`.
@@ -69,7 +72,7 @@ def load_cdf(
     Returns
     -------
     dataset : xarray.Dataset
-        The ``xarray`` dataset for the CDF file
+        The ``xarray`` dataset for the CDF file.
     """
     # TODO: remove this when cdflib is updated to version >1.3.0
     if "to_datetime" not in kwargs:
@@ -95,7 +98,8 @@ def load_cdf(
 
 
 def write_cdf(dataset: xr.Dataset):
-    """Write the contents of "data" to a CDF file using cdflib.xarray_to_cdf.
+    """
+    Write the contents of "data" to a CDF file using cdflib.xarray_to_cdf.
 
     This function determines the file name to use from the global attributes,
     fills in the final attributes, and converts the whole dataset to a CDF.
@@ -107,12 +111,12 @@ def write_cdf(dataset: xr.Dataset):
     Parameters
     ----------
     dataset : xarray.Dataset
-        The dataset object to convert to a CDF
+        The dataset object to convert to a CDF.
 
     Returns
     -------
-    file_path: pathlib.Path
-        Path to the file created
+    file_path : pathlib.Path
+        Path to the file created.
     """
     # Create the filename from the global attributes
     # Logical_source looks like "imap_swe_l2_counts-1min"
