@@ -81,38 +81,6 @@ class CdfAttributeManager:
         )
         self._variable_attributes = dict()
 
-    @property
-    def global_attributes(self):
-        """Moving global_attributes to property."""
-        # Validating required global attributes are present
-        for attr_name in self.global_attribute_schema.keys():
-            required_attr = self.global_attribute_schema[attr_name]["required"]
-            if required_attr is True and attr_name not in self._global_attributes:
-                self._global_attributes[attr_name] = None
-
-        return self._global_attributes
-
-    @global_attributes.setter
-    def global_attributes(self, instrument_id: str):
-        # Load in instrument specific global attributes
-        self.get_global_attributes(instrument_id)
-
-    @property
-    def variable_attributes(self):
-        """Moving variable_attributes to property."""
-        for attr_name in self.variable_attribute_schema["attribute_key"]:
-            attribute = self.variable_attribute_schema["attribute_key"][attr_name][
-                "required"
-            ]
-            if attribute is True and attr_name not in self._variable_attributes.keys():
-                self._variable_attributes["attribute_key"] = None
-
-        return self._variable_attributes
-
-    @variable_attributes.setter
-    def variable_attributes(self, variable_name: str):
-        self.get_variable_attributes(variable_name)
-
     def _load_default_global_attr_schema(self) -> dict:
         """
         Load the default global schema from the source directory.
@@ -269,3 +237,6 @@ class CdfAttributeManager:
             return self._variable_attributes[variable_name]
         # TODO: throw an error?
         return {}
+
+    global_attributes = property(fget=get_global_attributes)
+    variable_attributes = property(fget=get_variable_attributes)

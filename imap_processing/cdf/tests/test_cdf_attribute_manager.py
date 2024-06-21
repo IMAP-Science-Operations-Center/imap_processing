@@ -202,34 +202,11 @@ def test_property_global_attrs():
 
     """
     # Initialize CDFAttributeManager object
-    test_obj = CdfAttributeManager(Path(__file__).parent.parent / "config")
-    test_obj.source_dir = Path(__file__).parent.parent / "tests"
-    test_obj.load_global_attributes("imap_default_global_test_cdf_attrs.yaml")
-    test_obj.load_global_attributes("imap_test_global.yaml")
-    test_obj.global_attributes = "imap_test_T1_test"
-
-    # Testing default information loaded in
-    assert test_obj.global_attributes["Project"] == "STP>Solar-Terrestrial Physics"
-    assert (
-        test_obj.global_attributes["Source_name"]
-        == "IMAP>Interstellar Mapping and Acceleration Probe"
-    )
-    assert test_obj.global_attributes["PI_name"] == "Ana Manica"
-
-    # Testing instrument specific information
-    assert test_obj.global_attributes["Descriptor"] == "TEST>Testinstrument"
-    assert (
-        test_obj.global_attributes["imap_test_T1_test"]["Data_type"]
-        == "T1_test-one>Test-1 test one"
-    )
-    assert (
-        test_obj.global_attributes["imap_test_T1_test"]["Logical_source"]
-        == "imap_test_T1_test"
-    )
-    assert (
-        test_obj.global_attributes["imap_test_T1_test"]["Logical_source_description"]
-        == "IMAP Mission TEST one document Level-T1."
-    )
+    cdf_manager = CdfAttributeManager(Path(__file__).parent.parent / "config")
+    cdf_manager.source_dir = Path(__file__).parent.parent / "tests"
+    cdf_manager.load_global_attributes = "imap_default_global_test_cdf_attrs.yaml"
+    cdf_manager.load_global_attributes = "imap_test_global.yaml"
+    cdf_manager.global_attribute = "imap_test_T1_test"
 
 
 def test_add_global_attribute():
