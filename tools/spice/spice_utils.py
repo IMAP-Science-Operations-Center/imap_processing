@@ -42,16 +42,17 @@ def list_files_with_extensions(directory: str, extensions=None) -> list[str]:
 
 
 def list_loaded_kernels(extensions=None) -> list:
-    """List furnished spice kernels, optionally filtered by specific extensions.
+    """
+    List furnished spice kernels, optionally filtered by specific extensions.
 
     Parameters
     ----------
-    extensions: list of str or None, optional
+    extensions : list of str or None, optional
         Extensions to filter the kernels. If None, list all kernels.
 
     Returns
     -------
-    : list
+    result : list
         A list of kernel filenames.
     """
     count = spice.ktotal("ALL")
@@ -70,12 +71,13 @@ def list_loaded_kernels(extensions=None) -> list:
 
 
 def list_all_constants() -> dict:
-    """List all constants in the Spice constant pool.
+    """
+    List all constants in the Spice constant pool.
 
     Returns
     -------
-    : dict
-        Dictionary of kernel constants
+    result : dict
+        Dictionary of kernel constants.
     """
     # retrieve names of kernel variables using below inputs per
     # https://naif.jpl.nasa.gov/pub/naif/toolkit_docs/C/cspice/gdpool_c.html

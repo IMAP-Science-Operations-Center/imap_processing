@@ -1,4 +1,14 @@
+"""
+A class representing CCSDS packet parameters.
+
+This class defines the parameters commonly found in CCSDS telemetry packets.
+Each parameter consists of a name, parameter type reference, and description.
+"""
+
+
 class CCSDSParameters:
+    """The defined class for CCSDS parameters. Contains the object itself."""
+
     def __init__(self):
         self.parameters = [
             {
