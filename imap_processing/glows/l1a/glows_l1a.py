@@ -17,22 +17,22 @@ from imap_processing.glows.l1a.glows_l1a_data import DirectEventL1A, HistogramL1
 
 def glows_l1a(packet_filepath: Path, data_version: str) -> list[xr.Dataset]:
     """
-    Process packets into GLOWS L1A CDF files.
+    Will process packets into GLOWS L1A CDF files.
 
     Outputs Datasets for histogram and direct event GLOWS L1A. This list can be passed
     into write_cdf to output CDF files.
 
     Parameters
     ----------
-    packet_filepath: pathlib.Path
-        Path to packet file for processing
-    data_version: str
-        Data version for CDF filename, in the format "vXXX"
+    packet_filepath : pathlib.Path
+        Path to packet file for processing.
+    data_version : str
+        Data version for CDF filename, in the format "vXXX".
 
     Returns
     -------
-    generated_files: list[xr.Dataset]
-        List of the L1A datasets
+    generated_files : list[xr.Dataset]
+        List of the L1A datasets.
     """
     # TODO: Data version inside file as well?
     # Create glows L0
@@ -66,7 +66,7 @@ def process_de_l0(
     de_l0: list[DirectEventL0],
 ) -> dict[np.datetime64, list[DirectEventL1A]]:
     """
-    Process Direct Event packets into GLOWS L1A CDF files.
+    Will process Direct Event packets into GLOWS L1A CDF files.
 
     This involves combining packets with direct event sequences that span multiple
     packets.
@@ -74,7 +74,7 @@ def process_de_l0(
     Parameters
     ----------
     de_l0 : list[DirectEventL0]
-        List of DirectEventL0 objects
+        List of DirectEventL0 objects.
 
     Returns
     -------
@@ -107,14 +107,14 @@ def generate_de_dataset(
     Parameters
     ----------
     de_l1a_list : list[DirectEventL1A]
-        List of DirectEventL1A objects for a given day
+        List of DirectEventL1A objects for a given day.
     data_version : str
-        Data version for CDF filename, in the format "vXXX"
+        Data version for CDF filename, in the format "vXXX".
 
     Returns
     -------
     output : xarray.Dataset
-        Dataset containing the GLOWS L1A direct event CDF output
+        Dataset containing the GLOWS L1A direct event CDF output.
     """
     # TODO: Block header per second, or global attribute?
 
@@ -286,14 +286,14 @@ def generate_histogram_dataset(
     Parameters
     ----------
     hist_l1a_list : list[HistogramL1A]
-        List of HistogramL1A objects for a given day
+        List of HistogramL1A objects for a given day.
     data_version : str
-        Data version for CDF filename, in the format "vXXX"
+        Data version for CDF filename, in the format "vXXX".
 
     Returns
     -------
     output : xarray.Dataset
-        Dataset containing the GLOWS L1A histogram CDF output
+        Dataset containing the GLOWS L1A histogram CDF output.
     """
     time_data = np.zeros(len(hist_l1a_list), dtype="datetime64[ns]")
     # TODO Add daily average of histogram counts

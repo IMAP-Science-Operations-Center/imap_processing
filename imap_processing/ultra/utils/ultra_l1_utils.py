@@ -13,11 +13,11 @@ def create_dataset(data_dict, name, level):
 
     Parameters
     ----------
-    data_dict: : dict
+    data_dict : dict
         L1b data dictionary.
-    name: str
+    name : str
         Name of the dataset.
-    level: str
+    level : str
         Level of the dataset.
 
     Returns

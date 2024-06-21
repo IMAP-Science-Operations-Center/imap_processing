@@ -1,28 +1,34 @@
-"""Contains a data class for CCSDS data."""
+"""Contain a data class for CCSDS data."""
 
 from dataclasses import dataclass, fields
 
 
 @dataclass
 class CcsdsData:
-    """Data class for CCSDS header.
+    """
+    Data class for CCSDS header.
+
+    Parameters
+    ----------
+    packet_header : dict
+        Dictionary of packet headers.
 
     Attributes
     ----------
     VERSION: int
-        CCSDS Packet Version Number
+        CCSDS Packet Version Number.
     TYPE: int
-        CCSDS Packet Type Indicator
+        CCSDS Packet Type Indicator.
     SEC_HDR_FLG: int
-        CCSDS Packet Secondary Header Flag
+        CCSDS Packet Secondary Header Flag.
     PKT_APID: int
-        CCSDS Packet Application Process ID
+        CCSDS Packet Application Process ID.
     SEQ_FLGS: int
-        CCSDS Packet Grouping Flags
+        CCSDS Packet Grouping Flags.
     SRC_SEQ_CTR: int
-        CCSDS Packet Sequence Count
+        CCSDS Packet Sequence Count.
     PKT_LEN: int
-        CCSDS Packet Length
+        CCSDS Packet Length.
     """
 
     VERSION: int

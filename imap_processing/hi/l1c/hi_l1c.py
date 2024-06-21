@@ -30,12 +30,12 @@ def hi_l1c(dependencies: list, data_version: str):
 
     data_version : str
         Data version to write to CDF files and the Data_version CDF attribute.
-        Should be in the format Vxxx
+        Should be in the format Vxxx.
 
     Returns
     -------
-    processed_data : xarray.Dataset
-        Processed xarray dataset
+    l1c_dataset : xarray.Dataset
+        Processed xarray dataset.
     """
     logger.info("Running Hi l1c processing")
 
@@ -55,7 +55,7 @@ def hi_l1c(dependencies: list, data_version: str):
 
 def generate_pset_dataset(l1b_de_path: Union[Path, str]) -> xr.Dataset:
     """
-    Process IMAP-Hi l1b product into a l1c pset xarray dataset.
+    Will process IMAP-Hi l1b product into a l1c pset xarray dataset.
 
     Parameters
     ----------
@@ -64,7 +64,8 @@ def generate_pset_dataset(l1b_de_path: Union[Path, str]) -> xr.Dataset:
 
     Returns
     -------
-    xarray.Dataset ready to be written to CDF.
+    pset_dataset : xarray.Dataset
+        Ready to be written to CDF.
     """
     de_dataset = load_cdf(l1b_de_path)
     sensor_str = de_dataset.attrs["Logical_source"].split("_")[-1].split("-")[0]
@@ -85,14 +86,14 @@ def allocate_pset_dataset(n_esa_steps: int, sensor_str: str):
     Parameters
     ----------
     n_esa_steps : int
-        Number of Electrostatic Analyzer steps to allocate
+        Number of Electrostatic Analyzer steps to allocate.
     sensor_str : str
-        '45sensor' or '90sensor'
+        '45sensor' or '90sensor'.
 
     Returns
     -------
-    xarray.Dataset
-        Empty xarray.Dataset ready to be filled with data
+    dataset : xarray.Dataset
+        Empty xarray.Dataset ready to be filled with data.
     """
     cdf_manager = CdfAttributeManager(imap_module_directory / "cdf" / "config")
     cdf_manager.load_global_attributes("imap_hi_global_cdf_attrs.yaml")
@@ -189,7 +190,7 @@ def full_dataarray(name, attrs, coords: dict, shape=None):
     Parameters
     ----------
     name : str
-        Variable name
+        Variable name.
     attrs : dict
         CDF variable attributes. Usually retrieved from CdfAttributeManager.
     coords : dict
@@ -199,7 +200,8 @@ def full_dataarray(name, attrs, coords: dict, shape=None):
 
     Returns
     -------
-    xarray.DataArray meeting input specifications
+    data_array : xarray.DataArray
+        Meeting input specifications.
     """
     _attrs = attrs.copy()
     dtype = attrs.pop("dtype", None)

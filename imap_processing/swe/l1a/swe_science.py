@@ -16,17 +16,18 @@ logger = logging.getLogger(__name__)
 
 
 def decompressed_counts(cem_count):
-    """Decompressed counts from the CEMs.
+    """
+    Decompressed counts from the CEMs.
 
     Parameters
     ----------
     cem_count : int
-        CEM counts. Eg. 243
+        CEM counts. Eg. 243.
 
     Returns
     -------
     int
-        decompressed count. Eg. 40959
+        Decompressed count. Eg. 40959.
     """
     # index is the first four bits of input data
     # multi is the last four bits of input data
@@ -67,7 +68,8 @@ def decompressed_counts(cem_count):
 
 
 def swe_science(decom_data, data_version):
-    """SWE L1a science processing.
+    """
+    SWE L1a science processing.
 
     SWE L1A algorithm steps:
         - Read data from each SWE packet file
@@ -95,17 +97,17 @@ def swe_science(decom_data, data_version):
 
     Parameters
     ----------
-    packet_file : str
-        packet file path
+    decom_data : dict
+        Decompressed packet data.
 
-    data_version: str
+    data_version : str
         Data version for the 'Data_version' CDF attribute. This is the version of the
         output file.
 
     Returns
     -------
-    xarray.Dataset
-        xarray dataset with data.
+    dataset : xarray.Dataset
+        The xarray dataset with data.
     """
     science_array = []
     raw_science_array = []

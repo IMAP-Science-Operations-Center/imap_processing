@@ -7,16 +7,17 @@ from imap_processing.ccsds.ccsds_data import CcsdsData
 
 @dataclass
 class HITBase:
-    """Data structure for common values across HIT.
+    """
+    Data structure for common values across HIT.
 
     Attributes
     ----------
     ground_sw_version : str
-        Ground software version
+        Ground software version.
     packet_file_name : str
-        File name of the source packet
+        File name of the source packet.
     ccsds_header : CcsdsData
-        CCSDS header data
+        CCSDS header data.
 
     Methods
     -------
@@ -29,13 +30,13 @@ class HITBase:
     ccsds_header: CcsdsData
 
     def parse_data(self, packet):
-        """Parse Lo L0 packet data.
+        """
+        Parse Lo L0 packet data.
 
         Parameters
         ----------
         packet : dict
             A single Lo L0 packet from space packet parser.
-
         """
         attributes = [field.name for field in fields(self)]
 

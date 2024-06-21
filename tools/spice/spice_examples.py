@@ -1,6 +1,9 @@
-"""Annotated Events: project events in instrument frame to reference systems.
+"""
+Annotated Events: project events in instrument frame to reference systems.
 
-Reference: https://spiceypy.readthedocs.io/en/main/documentation.html.
+References
+----------
+https://spiceypy.readthedocs.io/en/main/documentation.html.
 """
 
 import logging
@@ -12,23 +15,26 @@ logger = logging.getLogger(__name__)
 
 
 def get_attitude_timerange(ck_kernel, id):
-    """Get attitude timerange using the ck kernel.
+    """
+    Get attitude timerange using the ck kernel.
 
     Parameters
     ----------
-    ck_kernel: str
+    ck_kernel : str
         Directory of the ck kernel.
-    id: int
+    id : int
         ID of the instrument or spacecraft body.
 
     Returns
     -------
-    start: float
+    start : float
         Start time in ET.
-    end: float
+    end : float
         End time in ET.
 
-    NOTE: ck_kernel refers to the kernel containing attitude data.
+    Notes
+    -----
+    ck_kernel refers to the kernel containing attitude data.
     """
     # Get the first CK path
     ck_path = ck_kernel[0]
@@ -60,19 +66,22 @@ def get_attitude_timerange(ck_kernel, id):
 
 
 def _get_particle_velocity(direct_events):
-    """Get the particle velocity in the heliosphere frame.
+    """
+    Get the particle velocity in the heliosphere frame.
 
     Parameters
     ----------
-    direct_events: dict
+    direct_events : dict
         Dictionary of direct events.
 
     Returns
     -------
-    vultra_heliosphere_frame: np.ndarray
+    vultra_heliosphere_frame : np.ndarray
         Particle velocity in the heliosphere frame.
 
-    #Note: Using a single event time/velocity for now.
+    Notes
+    -----
+    Using a single event time/velocity for now.
     This of course will change.
     """
     time = direct_events["tdb"]
@@ -100,13 +109,14 @@ def _get_particle_velocity(direct_events):
 
 
 def build_annotated_events(direct_events, kernels):
-    """Build annotated events.
+    """
+    Build annotated events.
 
     Parameters
     ----------
-    direct_events: dict
+    direct_events : dict
         Dictionary of direct events.
-    kernels: list
+    kernels : list
         List of kernels to be loaded.
     """
     with spice.KernelPool(kernels):

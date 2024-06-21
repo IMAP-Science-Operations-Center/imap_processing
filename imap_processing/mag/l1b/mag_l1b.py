@@ -11,19 +11,19 @@ from imap_processing.cdf.utils import load_cdf
 
 def mag_l1b(input_dataset: xr.Dataset, version: str) -> xr.Dataset:
     """
-    Process MAG L1B data from L1A data.
+    Will process MAG L1B data from L1A data.
 
     Parameters
     ----------
     input_dataset : xr.Dataset
-        The input dataset to process
+        The input dataset to process.
     version : str
-        The version of the output data
+        The version of the output data.
 
     Returns
     -------
     output_dataset : xr.Dataset
-        The processed dataset
+        The processed dataset.
     """
     # TODO:
     # Read in calibration file
@@ -47,7 +47,7 @@ def mag_l1b(input_dataset: xr.Dataset, version: str) -> xr.Dataset:
 
 def mag_l1b_processing(input_dataset: xr.Dataset) -> xr.Dataset:
     """
-    Process MAG L1B data from L1A data.
+    Will process MAG L1B data from L1A data.
 
     MAG L1B is almost identical to L1A, with only the vectors and attributes getting
     updated. All non-vector variables are the same.
@@ -55,7 +55,12 @@ def mag_l1b_processing(input_dataset: xr.Dataset) -> xr.Dataset:
     Parameters
     ----------
     input_dataset : xr.Dataset
-        The input dataset to process
+        The input dataset to process.
+
+    Returns
+    -------
+    output_dataset : xr.Dataset
+        L1b dataset.
     """
     # TODO: There is a time alignment step that will add a lot of complexity.
     # This needs to be done once we have some SPICE time data.
@@ -90,7 +95,8 @@ def mag_l1b_processing(input_dataset: xr.Dataset) -> xr.Dataset:
 
 
 def calibrate(input_vector: np.ndarray, calibration_matrix: xr.DataArray = None):
-    """Apply calibration matrix to input vector.
+    """
+    Apply calibration matrix to input vector.
 
     The calibration matrix contains 3x3 matrices for each range. To calibrate the input
     vector, we take the range (which is the fourth value of the vector) to determine
@@ -98,10 +104,15 @@ def calibrate(input_vector: np.ndarray, calibration_matrix: xr.DataArray = None)
 
     Parameters
     ----------
-       input_vector : numpy.ndarray
-           The input vector to calibrate [x, y, z, range]
-       calibration_matrix : xr.DataArray
-           The full set of calibration matrices, for each range. Size is ((3, 3, 4))
+    input_vector : numpy.ndarray
+        The input vector to calibrate [x, y, z, range].
+    calibration_matrix : xr.DataArray
+        The full set of calibration matrices, for each range. Size is ((3, 3, 4)).
+
+    Returns
+    -------
+    updated_vector : numpy.ndarray
+        Calibrated vector.
     """
     updated_vector = input_vector.copy()
 

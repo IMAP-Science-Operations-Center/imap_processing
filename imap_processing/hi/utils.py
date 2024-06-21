@@ -4,12 +4,7 @@ from enum import IntEnum
 
 
 class HIAPID(IntEnum):
-    """Create ENUM for apid.
-
-    Parameters
-    ----------
-    IntEnum : IntEnum
-    """
+    """Create ENUM for apid."""
 
     H45_APP_NHK = 754
     H45_SCI_CNT = 769
@@ -22,11 +17,11 @@ class HIAPID(IntEnum):
     @property
     def sensor(self):
         """
-        Defines the sensor name attribute for this class.
+        Define the sensor name attribute for this class.
 
         Returns
         -------
         str
-            "45sensor" or "90sensor"
+            "45sensor" or "90sensor".
         """
         return self.name[1:3] + "sensor"

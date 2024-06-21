@@ -18,19 +18,19 @@ logger = logging.getLogger(__name__)
 
 def mag_l1a(packet_filepath, data_version: str) -> list[Path]:
     """
-    Process MAG L0 data into L1A CDF files at cdf_filepath.
+    Will process MAG L0 data into L1A CDF files at cdf_filepath.
 
     Parameters
     ----------
-    packet_filepath :
-        Packet files for processing
+    packet_filepath : pathlib.Path
+        Packet files for processing.
     data_version : str
-        Data version to write to CDF files
+        Data version to write to CDF files.
 
     Returns
     -------
-    generated_files: list[pathlib.Path]
-        A list of generated filenames
+    generated_files : list[pathlib.Path]
+        A list of generated filenames.
     """
     packets = decom_mag.decom_packets(packet_filepath)
 
@@ -63,25 +63,27 @@ def process_and_write_data(
     data_version: str,
 ) -> list[Path]:
     """
-    Process MAG L0 data into L1A, then create and write out CDF files.
+    Will process MAG L0 data into L1A, then create and write out CDF files.
 
     Norm and burst mode descriptors are distinguished with the passed in attrs.
 
     Parameters
     ----------
-    packet_data: list[MagL0]
-        List of MagL0 packets to process, containing primary and secondary sensor data
-    raw_attrs: dict
-        Attributes for MagL1A raw CDF files
-    mago_attrs: dict
-        Attributes for MagL1A MAGo CDF files
-    magi_attrs: dict
-        Attributes for MagL1A MAGi CDF files
+    packet_data : list[MagL0]
+        List of MagL0 packets to process, containing primary and secondary sensor data.
+    raw_attrs : dict
+        Attributes for MagL1A raw CDF files.
+    mago_attrs : dict
+        Attributes for MagL1A MAGo CDF files.
+    magi_attrs : dict
+        Attributes for MagL1A MAGi CDF files.
+    data_version : str
+        Data version.
 
     Returns
     -------
-    generated_files: list[pathlib.Path]
-        A list of generated filenames
+    generated_files : list[pathlib.Path]
+        A list of generated filenames.
     """
     if not packet_data:
         return []
@@ -124,16 +126,15 @@ def process_packets(
     Parameters
     ----------
     mag_l0_list : list[MagL0]
-        List of Mag L0 packets to process
+        List of Mag L0 packets to process.
 
     Returns
     -------
-    packet_dict: dict[str, dict[numpy.datetime64, MagL1a]]
+    packet_dict : dict[str, dict[numpy.datetime64, MagL1a]]
         Dictionary containing two keys: "mago" which points to a dictionary of mago
          MagL1A objects, and "magi" which points to a dictionary of magi MagL1A objects.
          Each dictionary has keys of days and values of MagL1A objects, so each day
          corresponds to one MagL1A object.
-
     """
     magi = {}
     mago = {}
@@ -242,10 +243,10 @@ def generate_dataset(single_file_l1a: MagL1a, dataset_attrs: dict) -> xr.Dataset
 
     Parameters
     ----------
-    single_file_l1a: MagL1a
+    single_file_l1a : MagL1a
         L1A data covering one day to process into a xarray dataset.
-    dataset_attrs: dict
-        Global attributes for the dataset, as created by mag_attrs
+    dataset_attrs : dict
+        Global attributes for the dataset, as created by mag_attrs.
 
     Returns
     -------
