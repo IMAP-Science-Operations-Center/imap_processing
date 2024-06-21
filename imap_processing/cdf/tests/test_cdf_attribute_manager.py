@@ -32,9 +32,6 @@ def test_default_attr_schema():
     )
 
 
-# @pytest.mark.xfail(reason="Missing IMAP specific global schema")
-
-
 def test_global_attribute():
     """
     Test function that covers:
@@ -207,7 +204,7 @@ def test_add_global_attribute():
     assert cdf_manager.global_attributes["Project"] == "Test Project"
     assert test_get_global_attrs["Project"] == "Test Project"
 
-    # Testing adding required deleted global attribute
+    # Testing adding required global attribute
     cdf_manager.global_attributes.__delitem__("Source_name")
     # Reloading get_global_attributes to pick up deleted Source_name
     test_get_global_attrs = cdf_manager.get_global_attributes("imap_test_T1_test")
@@ -218,7 +215,7 @@ def test_add_global_attribute():
     cdf_manager.add_global_attribute("Source_name", "anas_source")
     assert cdf_manager.global_attributes["Source_name"] == "anas_source"
 
-    # Testing instrument specific data
+    # Testing instrument specific attribute
     cdf_manager.global_attributes["imap_test_T1_test"].__delitem__("Logical_source")
     # Reloading get_global_attributes to pick up deleted Source_name
     test_get_global_attrs = cdf_manager.get_global_attributes("imap_test_T1_test")
