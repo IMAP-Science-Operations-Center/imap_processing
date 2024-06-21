@@ -210,10 +210,8 @@ def test_add_global_attribute():
     # Testing adding required global attribute
     cdf_manager.global_attributes.__delitem__("Source_name")
     with pytest.raises(KeyError):
-        assert (
-            cdf_manager.global_attributes["Source_name"]
-            == "IMAP>Interstellar Mapping and Acceleration Probe"
-        )
+        assert cdf_manager.global_attributes["Source_name"] == "Wrong"
+    assert cdf_manager.global_attributes["Source_name"] is None
 
     cdf_manager.add_global_attribute("Source_name", "anas_source")
     assert cdf_manager.global_attributes["Source_name"] == "anas_source"
@@ -257,7 +255,7 @@ def test_variable_attribute():
                     exp_attr in cdf_manager.variable_attribute_schema["attribute_key"]
                 )
 
-    # Testing specific things
+    # Testing specific attributes
     assert (
         cdf_manager.variable_attributes["default_attrs"]["DEPEND_0"]
         == cdf_manager.variable_attributes["default_attrs"]["DEPEND_0"]
