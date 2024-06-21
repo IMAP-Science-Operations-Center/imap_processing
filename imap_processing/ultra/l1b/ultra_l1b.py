@@ -1,4 +1,4 @@
-"""Calculates ULTRA L1b."""
+"""Calculate ULTRA L1b."""
 
 from imap_processing.ultra.l1b.badtimes import calculate_badtimes
 from imap_processing.ultra.l1b.cullingmask import calculate_cullingmask
@@ -8,19 +8,19 @@ from imap_processing.ultra.l1b.extendedspin import calculate_extendedspin
 
 def ultra_l1b(data_dict: dict, data_version: str):
     """
-    Process ULTRA L1A data into L1B CDF files at output_filepath.
+    Will process ULTRA L1A data into L1B CDF files at output_filepath.
 
     Parameters
     ----------
     data_dict : dict
         The data itself and its dependent data.
     data_version : str
-        Version of the data product being created
+        Version of the data product being created.
 
     Returns
     -------
     output_datasets : list of xarray.Dataset
-        List of xarray.Dataset
+        List of xarray.Dataset.
     """
     output_datasets = []
     instrument_id = 45 if any("45" in key for key in data_dict.keys()) else 90

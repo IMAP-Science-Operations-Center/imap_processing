@@ -269,7 +269,8 @@ RATES_KEYS = [
 
 
 def append_fillval(decom_data: dict, packet):
-    """Append fill values to all fields.
+    """
+    Append fill values to all fields.
 
     Parameters
     ----------
@@ -284,12 +285,18 @@ def append_fillval(decom_data: dict, packet):
 
 
 def parse_event(event_binary):
-    """Parse a binary string representing a single event.
+    """
+    Parse a binary string representing a single event.
 
     Parameters
     ----------
     event_binary : str
         Event binary string.
+
+    Returns
+    -------
+    fields_dict : dict
+        Dict of the fields for a single event.
     """
     fields_dict = {}
     for field, (start, end) in EVENT_FIELD_RANGES.items():
@@ -299,7 +306,8 @@ def parse_event(event_binary):
 
 
 def append_ccsds_fields(decom_data: dict, ccsds_data_object: object):
-    """Append CCSDS fields to event_data.
+    """
+    Append CCSDS fields to event_data.
 
     Parameters
     ----------

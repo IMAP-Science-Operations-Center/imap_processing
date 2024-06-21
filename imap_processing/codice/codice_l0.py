@@ -1,4 +1,5 @@
-"""Perform CoDICE L0 processing.
+"""
+Perform CoDICE L0 processing.
 
 This module contains a function to decommutate CoDICE CCSDS packets using
 XTCE packet definitions.
@@ -6,9 +7,8 @@ XTCE packet definitions.
 For more information on this process and the latest versions of the packet
 definitions, see https://lasp.colorado.edu/galaxy/display/IMAP/CoDICE.
 
-Use
----
-
+Notes
+-----
     from imap_processing.codice.codice_l0 import decom_packets
     packet_file = '/path/to/raw_ccsds_20230822_122700Z_idle.bin'
     packet_list = decom_packets(packet_file)
@@ -20,7 +20,8 @@ from imap_processing import decom, imap_module_directory
 
 
 def decom_packets(packet_file: Path) -> list:
-    """Decom CoDICE data packets using CoDICE packet definition.
+    """
+    Decom CoDICE data packets using CoDICE packet definition.
 
     Parameters
     ----------
@@ -30,7 +31,7 @@ def decom_packets(packet_file: Path) -> list:
     Returns
     -------
     list : list
-        all the unpacked data.
+        All the unpacked data.
     """
     packet_to_xtce_mapping = {
         "imap_codice_l0_hi-counters-aggregated_20240429_v001.pkts": "P_COD_HI_INST_COUNTS_AGGREGATED.xml",  # noqa

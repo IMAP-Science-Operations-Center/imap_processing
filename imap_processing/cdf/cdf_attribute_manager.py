@@ -1,4 +1,5 @@
-"""Class for creating and managing CDF attrs.
+"""
+Class for creating and managing CDF attrs.
 
 Developed based of HermesDataSchema from HERMES-SOC/hermes_core.
 """
@@ -48,6 +49,11 @@ class CdfAttributeManager:
     The variable and global attributes are validated against the schemas upon calling
     `get_global_attributes` and `get_variable_attributes`.
 
+    Parameters
+    ----------
+    data_dir : Path
+        The directory containing the schema and variable files (nominally config/).
+
     Attributes
     ----------
     source_dir : Path
@@ -55,14 +61,7 @@ class CdfAttributeManager:
     """
 
     def __init__(self, data_dir: Path):
-        """
-        Initialize the CdfAttributeManager and read schemas from data_dir.
-
-        Parameters
-        ----------
-        data_dir : Path
-            The directory containing the schema and variable files - nominally config/
-        """
+        """Initialize the CdfAttributeManager and read schemas from data_dir."""
         # TODO: Split up schema source and data source?
         self.source_dir = data_dir
 
@@ -87,7 +86,8 @@ class CdfAttributeManager:
 
         Returns
         -------
-        the dict representing the global schema
+        dict
+            The dict representing the global schema.
         """
         default_schema_path = (
             self.source_dir / "shared" / DEFAULT_GLOBAL_CDF_ATTRS_SCHEMA_FILE
@@ -101,7 +101,8 @@ class CdfAttributeManager:
 
         Returns
         -------
-        the dict representing the variable schema
+        dict
+            The dict representing the variable schema.
         """
         default_schema_path = (
             self.source_dir / "shared" / DEFAULT_VARIABLE_CDF_ATTRS_SCHEMA_FILE
@@ -119,9 +120,8 @@ class CdfAttributeManager:
 
         Parameters
         ----------
-        file_path: str
-            file path to load, under self.source_dir.
-
+        file_path : str
+            File path to load, under self.source_dir.
         """
         self._global_attributes.update(
             CdfAttributeManager._load_yaml_data(self.source_dir / file_path)
@@ -140,9 +140,9 @@ class CdfAttributeManager:
 
         Parameters
         ----------
-        attribute_name: str
+        attribute_name : str
             The name of the attribute to add.
-        attribute_value: str
+        attribute_value : str
             The value of the attribute to add.
         """
         self._global_attributes[attribute_name] = attribute_value
@@ -154,11 +154,12 @@ class CdfAttributeManager:
 
         Parameters
         ----------
-        file_path: str | Path
-            path to the yaml file to load.
+        file_path : str | Path
+            Path to the yaml file to load.
 
         Returns
         -------
+        yaml
             Loaded yaml.
         """
         with open(file_path) as file:
@@ -211,7 +212,7 @@ class CdfAttributeManager:
         Parameters
         ----------
         file_name : str
-            The name of the file to load from self.source_dir
+            The name of the file to load from self.source_dir.
         """
         # Add variable attributes from file_name. Each variable name should have the
         # required sub fields as defined in the variable schema.
@@ -231,6 +232,11 @@ class CdfAttributeManager:
         ----------
         variable_name : str
             The name of the variable to retrieve attributes for.
+
+        Returns
+        -------
+        dict
+            I have no idea todo check.
         """
         # TODO: Create a variable attribute schema file, validate here
         if variable_name in self._variable_attributes:

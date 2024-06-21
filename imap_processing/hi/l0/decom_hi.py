@@ -4,7 +4,19 @@ from imap_processing import decom, imap_module_directory
 
 
 def decom_packets(packet_file_path: str):
-    """Decom IMAP-Hi data using its packet definition."""
+    """
+    Decom IMAP-Hi data using its packet definition.
+
+    Parameters
+    ----------
+    packet_file_path : str
+        File path to the packet.
+
+    Returns
+    -------
+    list
+        Decompressed file packets.
+    """
     packet_def_file = (
         imap_module_directory / "hi/packet_definitions/hi_packet_definition.xml"
     )

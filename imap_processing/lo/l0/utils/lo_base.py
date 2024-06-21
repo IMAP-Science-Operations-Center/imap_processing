@@ -7,16 +7,17 @@ from imap_processing.ccsds.ccsds_data import CcsdsData
 
 @dataclass
 class LoBase:
-    """Data structure for common values across histogram and direct events data.
+    """
+    Data structure for common values across histogram and direct events data.
 
     Attributes
     ----------
     ground_sw_version : str
-        Ground software version
+        Ground software version.
     packet_file_name : str
-        File name of the source packet
+        File name of the source packet.
     ccsds_header : CcsdsData
-        CCSDS header data
+        CCSDS header data.
 
     Methods
     -------
@@ -29,7 +30,8 @@ class LoBase:
     ccsds_header: CcsdsData
 
     def set_attributes(self, packet):
-        """Set dataclass attributes with packet data.
+        """
+        Set dataclass attributes with packet data.
 
         Parameters
         ----------

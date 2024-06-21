@@ -36,7 +36,14 @@ class TimeTuple:
         object.__setattr__(self, "subseconds", final_subseconds)
 
     def to_seconds(self) -> np.single:
-        """Convert the TimeTuple to seconds."""
+        """
+        Convert the TimeTuple to seconds.
+
+        Returns
+        -------
+        np.single
+            TimeTuple in seconds.
+        """
         return np.single(
             self.seconds + self.subseconds / GlowsConstants.SUBSECOND_LIMIT
         )
@@ -82,7 +89,14 @@ class DirectEvent:
     multi_event: bool = False
 
     def to_list(self):
-        """Convert object to list [seconds, subseconds, impulse length, multievent]."""
+        """
+        Convert object to list [seconds, subseconds, impulse length, multievent].
+
+        Returns
+        -------
+        list
+            Converted object to list.
+        """
         return [
             self.timestamp.seconds,
             self.timestamp.subseconds,

@@ -32,3 +32,9 @@ repos:
       - id: poetry-check
       - id: poetry-lock
         args: [--no-update]
+  - repo: https://github.com/numpy/numpydoc
+    rev: 'v1.7.0'
+    hooks:
+      - id: numpydoc-validation
+        exclude: '^imap_processing/tests/|.*test.*'
+
