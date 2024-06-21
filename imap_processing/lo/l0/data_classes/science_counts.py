@@ -277,7 +277,7 @@ class ScienceCounts(LoBase):
         decompression : int
             The decompressed integer.
         data_shape : list
-            Shape of the data. Todo check.
+            Shape of the data.
 
         Returns
         -------

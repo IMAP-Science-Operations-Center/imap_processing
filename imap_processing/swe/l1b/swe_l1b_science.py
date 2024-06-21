@@ -41,12 +41,18 @@ esa_voltage_row_index_dict = {
 
 
 def read_lookup_table(table_index_value: int):
-    """Read lookup table from file.
+    """
+    Read lookup table from file.
 
     Parameters
     ----------
     table_index_value : int
-        ESA table index number
+        ESA table index number.
+
+    Returns
+    -------
+    list
+        Line from lookup table todo check.
     """
     # This is equivalent of os.path.join in Path
     lookup_table_filepath = imap_module_directory / "swe/l1b/swe_esa_lookup_table.csv"
@@ -64,7 +70,8 @@ def read_lookup_table(table_index_value: int):
 
 
 def deadtime_correction(counts: np.ndarray, acq_duration: int):
-    """Calculate deadtime correction.
+    """
+    Calculate deadtime correction.
 
     Deadtime correction is a technique used in various fields, including
     nuclear physics, radiation detection, and particle counting, to compensate
@@ -90,14 +97,14 @@ def deadtime_correction(counts: np.ndarray, acq_duration: int):
     Parameters
     ----------
     counts : numpy.ndarray
-        counts data before deadtime corrections
+        Counts data before deadtime corrections.
     acq_duration : int
-        This is ACQ_DURATION from science packet
+        This is ACQ_DURATION from science packet.
 
     Returns
     -------
-    numpy.ndarray
-        Corrected counts
+    corrected_count : numpy.ndarray
+        Corrected counts.
     """
     # deadtime will be constant once it's defined.
     # This deadtime value is from previous mission. SWE
@@ -111,22 +118,22 @@ def deadtime_correction(counts: np.ndarray, acq_duration: int):
 
 
 def convert_counts_to_rate(data: np.ndarray, acq_duration: int):
-    """Convert counts to rate using sampling time.
+    """
+    Convert counts to rate using sampling time.
 
     acq_duration is ACQ_DURATION from science packet.
-
 
     Parameters
     ----------
     data : numpy.ndarray
-        counts data
+        Counts data.
     acq_duration : int
-        Acquisition duration. acq_duration is in millieseconds
+        Acquisition duration. acq_duration is in millieseconds.
 
     Returns
     -------
     numpy.ndarray
-        Count rates array in seconds
+        Count rates array in seconds.
     """
     # convert milliseconds to seconds
     acq_duration = acq_duration / 1000.0
@@ -134,7 +141,8 @@ def convert_counts_to_rate(data: np.ndarray, acq_duration: int):
 
 
 def calculate_calibration_factor(time):
-    """Calculate calibration factor.
+    """
+    Calculate calibration factor.
 
     Steps to calculate calibration factor:
 
@@ -166,13 +174,19 @@ def calculate_calibration_factor(time):
     |     measurements at the specific time you're interested in. This ensures that
     |     your measurements are as accurate as possible, taking into account the
     |     instrument's changing sensitivity over time.
+
+    Parameters
+    ----------
+    time : int
+        Input time.
     """
     # NOTE: waiting on fake calibration data to write this.
     pass
 
 
 def apply_in_flight_calibration(data):
-    """Apply in flight calibration to full cycle data.
+    """
+    Apply in flight calibration to full cycle data.
 
     These factors are used to account for changes in gain with time.
 
@@ -181,7 +195,7 @@ def apply_in_flight_calibration(data):
     Parameters
     ----------
     data : numpy.ndarray
-        full cycle data array
+        Full cycle data array.
     """
     # calculate calibration factor
     # Apply to all data
@@ -191,21 +205,22 @@ def apply_in_flight_calibration(data):
 def populate_full_cycle_data(
     l1a_data: xr.Dataset, packet_index: int, esa_table_num: int
 ):
-    """Populate full cycle data array using esa lookup table and l1a_data.
+    """
+    Populate full cycle data array using esa lookup table and l1a_data.
 
     Parameters
     ----------
     l1a_data : xarray.Dataset
-        L1a data with full cycle data only
+        L1a data with full cycle data only.
     packet_index : int
         Index of current packet in the whole packet list.
     esa_table_num : int
-        ESA lookup table number
+        ESA lookup table number.
 
     Returns
     -------
     numpy.ndarray
-        Array with full cycle data populated
+        Array with full cycle data populated.
     """
     esa_lookup_table = read_lookup_table(esa_table_num)
 
@@ -261,7 +276,8 @@ def populate_full_cycle_data(
 
 
 def find_cycle_starts(cycles: np.ndarray):
-    """Find index of where new cycle started.
+    """
+    Find index of where new cycle started.
 
     Brandon Stone helped developed this algorithm.
 
@@ -273,7 +289,7 @@ def find_cycle_starts(cycles: np.ndarray):
     Returns
     -------
     numpy.ndarray
-        Array of indices of start cycle
+        Array of indices of start cycle.
     """
     if cycles.size < 4:
         return np.array([], np.int64)
@@ -295,7 +311,8 @@ def find_cycle_starts(cycles: np.ndarray):
 
 
 def get_indices_of_full_cycles(quarter_cycle: np.ndarray):
-    """Get indices of full cycles.
+    """
+    Get indices of full cycles.
 
     Parameters
     ----------
@@ -319,14 +336,15 @@ def get_indices_of_full_cycles(quarter_cycle: np.ndarray):
 
 
 def filter_full_cycle_data(full_cycle_data_indices: np.ndarray, l1a_data: xr.Dataset):
-    """Filter metadata and science of packets that makes full cycles.
+    """
+    Filter metadata and science of packets that makes full cycles.
 
     Parameters
     ----------
     full_cycle_data_indices : numpy.ndarray
         Array with indices of full cycles.
     l1a_data : xarray.Dataset
-        L1A dataset
+        L1A dataset.
 
     Returns
     -------
@@ -339,19 +357,20 @@ def filter_full_cycle_data(full_cycle_data_indices: np.ndarray, l1a_data: xr.Dat
 
 
 def swe_l1b_science(l1a_data, data_version: str):
-    """SWE l1b science processing.
+    """
+    SWE l1b science processing.
 
     Parameters
     ----------
     l1a_data : xarray.Dataset
-        Input data
+        Input data.
     data_version : str
-        Version of the data product being created
+        Version of the data product being created.
 
     Returns
     -------
     xarray.Dataset
-        Processed l1b data
+        Processed l1b data.
     """
     total_packets = len(l1a_data["science_data"].data)
 
