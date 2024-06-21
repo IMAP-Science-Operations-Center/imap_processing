@@ -20,11 +20,6 @@ class ImapCdfAttributes(CdfAttributeManager):
         else:
             super().__init__(Path(__file__).parent / "config")
             self.source_dir = Path(__file__).parent / source_dir
-        # if source_dir_input is None:
-        #     super().__init__(Path(__file__).parent / source_dir_input
-        # else:
-        #     super().__init__(Path(__file__).parent / "config")
-        #     self.source_dir = Path(__file__).parent / source_dir_input
 
     def add_instrument_global_attrs(self, instrument: str):
         """
