@@ -9,14 +9,7 @@ from enum import IntEnum
 
 
 class SWAPIAPID(IntEnum):
-    """
-    Create ENUM for apid.
-
-    Attributes
-    ----------
-    IntEnum : IntEnum
-        SWAPI APID Enums.
-    """
+    """Create ENUM for apid."""
 
     SWP_HK = 1184
     SWP_SCI = 1188
@@ -24,14 +17,7 @@ class SWAPIAPID(IntEnum):
 
 
 class SWAPIMODE(IntEnum):
-    """
-    Create ENUM for MODE.
-
-    Attributes
-    ----------
-    IntEnum : IntEnum
-        SWAPI Mode Enums.
-    """
+    """Create ENUM for MODE."""
 
     LVENG = 0
     LVSCI = 1

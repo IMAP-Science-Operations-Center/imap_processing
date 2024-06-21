@@ -16,21 +16,31 @@ from imap_processing.lo.l0.utils.lo_base import LoBase
 
 @dataclass
 class StarSensor(LoBase):
-    """L1A Star Sensor data class.
+    """
+    L1A Star Sensor data class.
 
     The Start Sensor class handles the parsing
     and decompression of L0 to L1A data.
+
+    Parameters
+    ----------
+    packet : dict
+        The packet.
+    software_version : str
+        Software version.
+    packet_file_name : str
+        Name of packet file.
 
     Attributes
     ----------
     SHCOARSE : int
         Spacecraft time.
     COUNT : int
-        number of star sensor samples
+        Number of star sensor samples.
     DATA_COMPRESSED : str
-        star sensor compressed binary data
+        Star sensor compressed binary data.
     DATA : list(int)
-        decompressed star sensor data list
+        Decompressed star sensor data list.
 
     Methods
     -------
@@ -54,7 +64,7 @@ class StarSensor(LoBase):
 
     def _decompress_data(self):
         """
-        Decompress the Star Sensor packet data.
+        Will decompress the Star Sensor packet data.
 
         The Star packet data is read in as one large binary chunk
         in the XTCE, but contains multiple data fields where each data field
