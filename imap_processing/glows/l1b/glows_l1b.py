@@ -10,7 +10,21 @@ from imap_processing.glows.l1b.glows_l1b_data import DirectEventL1B, HistogramL1
 
 
 def glows_l1b(input_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
-    """Process the GLOWS L1B data and format the output datasets."""
+    """
+    Will process the GLOWS L1B data and format the output datasets.
+
+    Parameters
+    ----------
+    input_dataset : xr.Dataset
+        Dataset of input values.
+    data_version : str
+        Data version.
+
+    Returns
+    -------
+    output_dataset : xr.Dataset
+        L1b output dataset.
+    """
     cdf_attrs = ImapCdfAttributes()
     cdf_attrs.add_instrument_global_attrs("glows")
     cdf_attrs.add_instrument_variable_attrs("glows", "l1b")
@@ -130,7 +144,7 @@ def glows_l1b(input_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
 
 def process_de(l1a: xr.Dataset) -> tuple[xr.DataArray]:
     """
-    Process the direct event data from the L1A dataset and return the L1B dataset.
+    Will process the direct event data from the L1A dataset and return the L1B dataset.
 
     This method takes in a dataset and applies a function along each timestamp.
     The function here is the creation of a DirectEventL1B object from the data. Each
@@ -141,12 +155,12 @@ def process_de(l1a: xr.Dataset) -> tuple[xr.DataArray]:
     Parameters
     ----------
     l1a : xr.Dataset
-        The L1A dataset to process
+        The L1A dataset to process.
 
     Returns
     -------
-    l1b_arrays: tuple[xr.DataArray]
-        The DataArrays for each variable in the L1B dataset
+    l1b_arrays : tuple[xr.DataArray]
+        The DataArrays for each variable in the L1B dataset.
     """
     dataarrays = [l1a[i] for i in l1a.keys()]
 
@@ -194,7 +208,7 @@ def process_de(l1a: xr.Dataset) -> tuple[xr.DataArray]:
 
 def process_histogram(l1a: xr.Dataset) -> xr.Dataset:
     """
-    Process the histogram data from the L1A dataset and return the L1B dataset.
+    Will process the histogram data from the L1A dataset and return the L1B dataset.
 
     This method takes in a dataset and applies a function along each timestamp.
     The function here is the creation of a HistogramL1B object from the data. Each
@@ -205,11 +219,11 @@ def process_histogram(l1a: xr.Dataset) -> xr.Dataset:
     Parameters
     ----------
     l1a : xr.Dataset
-        The L1A dataset to process
+        The L1A dataset to process.
 
     Returns
     -------
-    l1b_arrays: tuple[xr.DataArray]
+    l1b_arrays : tuple[xr.DataArray]
         The DataArrays for each variable in the L1B dataset. These can be assembled
         directly into a DataSet with the appropriate attributes.
     """

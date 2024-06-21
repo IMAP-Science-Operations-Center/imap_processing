@@ -7,7 +7,8 @@ from imap_processing.ccsds.ccsds_data import CcsdsData
 
 @dataclass
 class GlowsL0:
-    """Data structure for common values across histogram and direct events data.
+    """
+    Data structure for common values across histogram and direct events data.
 
     Attributes
     ----------
@@ -26,7 +27,8 @@ class GlowsL0:
 
 @dataclass
 class HistogramL0(GlowsL0):
-    """Data structure for storing GLOWS histogram packet data.
+    """
+    Data structure for storing GLOWS histogram packet data.
 
     Attributes
     ----------
@@ -127,7 +129,8 @@ class HistogramL0(GlowsL0):
 
 @dataclass
 class DirectEventL0(GlowsL0):
-    """Data structure for storing GLOWS direct event packet data.
+    """
+    Data structure for storing GLOWS direct event packet data.
 
     Attributes
     ----------
@@ -175,12 +178,13 @@ class DirectEventL0(GlowsL0):
 
         Parameters
         ----------
-        other
+        other : int
             Another instance of DirectEventL0 to compare to.
 
         Returns
         -------
-        True if the SEC and LEN fields match, False otherwise.
+        bool
+            True if the SEC and LEN fields match, False otherwise.
         """
         if not isinstance(other, DirectEventL0):
             return False

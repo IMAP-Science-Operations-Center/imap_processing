@@ -1,4 +1,5 @@
-"""Decompress CoDICE science data.
+"""
+Will decompress CoDICE science data.
 
 For CoDICE, there are 3 forms of compression:
 
@@ -36,53 +37,56 @@ from imap_processing.codice.utils import CoDICECompression
 
 
 def _apply_lossy_a(compressed_value: int) -> int:
-    """Apply 8-bit to 32-bit Lossy A decompression algorithm.
+    """
+    Apply 8-bit to 32-bit Lossy A decompression algorithm.
 
     The Lossy A algorithm uses a lookup table imported into this module.
 
     Parameters
     ----------
     compressed_value : int
-        The compressed 8-bit value
+        The compressed 8-bit value.
 
     Returns
     -------
     int
-        The 24- or 32-bit decompressed value
+        The 24- or 32-bit decompressed value.
     """
     return LOSSY_A_TABLE[compressed_value]
 
 
 def _apply_lossy_b(compressed_value: int) -> int:
-    """Apply 8-bit to 32-bit Lossy B decompression algorithm.
+    """
+    Apply 8-bit to 32-bit Lossy B decompression algorithm.
 
     The Lossy B algorithm uses a lookup table imported into this module.
 
     Parameters
     ----------
     compressed_value : int
-        The compressed 8-bit value
+        The compressed 8-bit value.
 
     Returns
     -------
     int
-        The 24- or 32-bit decompressed value
+        The 24- or 32-bit decompressed value.
     """
     return LOSSY_B_TABLE[compressed_value]
 
 
 def _apply_lzma_lossless(compressed_value: int) -> int:
-    """Apply LZMA lossless decompression algorithm.
+    """
+    Apply LZMA lossless decompression algorithm.
 
     Parameters
     ----------
     compressed_value : int
-        The compressed 8-bit value
+        The compressed 8-bit value.
 
     Returns
     -------
     decompressed_value : int
-        The 24- or 32-bit decompressed value
+        The 24- or 32-bit decompressed value.
     """
     decompressed_value = lzma.decompress(compressed_value)
     decompressed_value = int.from_bytes(decompressed_value, byteorder="big")
@@ -91,7 +95,8 @@ def _apply_lzma_lossless(compressed_value: int) -> int:
 
 
 def decompress(compressed_value: int, algorithm: IntEnum) -> int:
-    """Decompress the value.
+    """
+    Will decompress the value.
 
     Apply the appropriate decompression algorithm(s) based on the value
     of the ``algorithm`` attribute. One or more individual algorithms may be
@@ -100,15 +105,15 @@ def decompress(compressed_value: int, algorithm: IntEnum) -> int:
     Parameters
     ----------
     compressed_value : int
-        The 8-bit compressed value to decompress
+        The 8-bit compressed value to decompress.
     algorithm : int
         The algorithm to apply. Supported algorithms are provided in the
-        ``codice_utils.CoDICECompression`` class
+        ``codice_utils.CoDICECompression`` class.
 
     Returns
     -------
     decompressed_value : int
-        The 24- or 32-bit decompressed value
+        The 24- or 32-bit decompressed value.
     """
     if algorithm == CoDICECompression.NO_COMPRESSION:
         decompressed_value = compressed_value

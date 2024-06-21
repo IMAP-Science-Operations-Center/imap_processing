@@ -1,10 +1,10 @@
-"""Perform CoDICE l1a processing.
+"""
+Perform CoDICE l1a processing.
 
 This module processes decommutated CoDICE packets and creates L1a data products.
 
-Use
----
-
+Notes
+-----
     from imap_processing.codice.codice_l0 import decom_packets
     from imap_processing.codice.codice_l1a import process_codice_l1a
     packets = decom_packets(packet_file)
@@ -38,23 +38,24 @@ logger.setLevel(logging.INFO)
 
 
 class CoDICEL1aPipeline:
-    """Contains methods for processing L0 data and creating L1a data products.
+    """
+    Contains methods for processing L0 data and creating L1a data products.
 
-    Attributes
+    Parameters
     ----------
     table_id : int
         A unique ID assigned to a specific table configuration. This field is
         used to link the overall acquisition and processing settings to a
-        specific table configuration
+        specific table configuration.
     plan_id : int
         The plan table that was in use.  In conjunction with ``plan_step``,
-        describes which counters are included in the data packet
+        describes which counters are included in the data packet.
     plan_step : int
         Plan step that was active when the data was acquired and processed. In
         conjunction with ``plan_id``, describes which counters are included
-        in the data packet
+        in the data packet.
     view_id : int
-        Provides information about how data was collapsed and/or compressed
+        Provides information about how data was collapsed and/or compressed.
 
     Methods
     -------
@@ -80,22 +81,22 @@ class CoDICEL1aPipeline:
     def create_science_dataset(
         self, start_time: np.datetime64, data_version: str
     ) -> xr.Dataset:
-        """Create an ``xarray`` dataset for the unpacked science data.
+        """
+        Create an ``xarray`` dataset for the unpacked science data.
 
         The dataset can then be written to a CDF file.
 
         Parameters
         ----------
         start_time : numpy.datetime64
-            The start time of the packet, used to determine epoch data variable
+            The start time of the packet, used to determine epoch data variable.
         data_version : str
-        Version of the data product being created
-
+            Version of the data product being created.
 
         Returns
         -------
-        xarray.Dataset
-            ``xarray`` dataset containing the science data and supporting metadata
+        dataset : xarray.Dataset
+            The ``xarray`` dataset containing the science data and supporting metadata.
         """
         # Set the CDF attrs
         cdf_attrs = ImapCdfAttributes()
@@ -173,7 +174,8 @@ class CoDICEL1aPipeline:
         return dataset
 
     def get_acquisition_times(self):
-        """Retrieve the acquisition times via the Lo stepping table.
+        """
+        Retrieve the acquisition times via the Lo stepping table.
 
         Get the acquisition times from the data file based on the values of
         ``plan_id`` and ``plan_step``
@@ -216,7 +218,8 @@ class CoDICEL1aPipeline:
             self.acquisition_times.append(lo_stepping_values.acq_time[row_number])
 
     def get_data_products(self, apid: int):
-        """Retrieve various settings for defining the data products.
+        """
+        Retrieve various settings for defining the data products.
 
         Parameters
         ----------
@@ -230,7 +233,8 @@ class CoDICEL1aPipeline:
         self.dataset_name = config["dataset_name"]
 
     def get_esa_sweep_values(self):
-        """Retrieve the ESA sweep values.
+        """
+        Retrieve the ESA sweep values.
 
         Get the ElectroStatic Analyzer (ESA) sweep values from the data file
         based on the values of ``plan_id`` and ``plan_step``
@@ -260,7 +264,8 @@ class CoDICEL1aPipeline:
         self.esa_sweep_values = sweep_table["esa_v"].values
 
     def unpack_science_data(self, science_values: str):
-        """Unpack the science data from the packet.
+        """
+        Unpack the science data from the packet.
 
         For LO SW Species Counts data, the science data within the packet is a
         blob of compressed values of length 2048 bits (16 species * 128 energy
@@ -270,7 +275,7 @@ class CoDICEL1aPipeline:
         Parameters
         ----------
         science_values : str
-            A string of binary data representing the science values of the data
+            A string of binary data representing the science values of the data.
         """
         self.compression_algorithm = constants.LO_COMPRESSION_ID_LOOKUP[self.view_id]
         self.collapse_table_id = constants.LO_COLLAPSE_TABLE_ID_LOOKUP[self.view_id]
@@ -288,7 +293,8 @@ class CoDICEL1aPipeline:
 
 
 def get_params(packet) -> tuple[int, int, int, int]:
-    """Return the four 'main' parameters used for l1a processing.
+    """
+    Return the four 'main' parameters used for l1a processing.
 
     The combination of these parameters largely determines what steps/values
     are used to create CoDICE L1a data products and what steps are needed in
@@ -297,23 +303,23 @@ def get_params(packet) -> tuple[int, int, int, int]:
     Parameters
     ----------
     packet : space_packet_parser.parser.Packet
-        A packet for the APID of interest
+        A packet for the APID of interest.
 
     Returns
     -------
     table_id : int
         A unique ID assigned to a specific table configuration. This field is
         used to link the overall acquisition and processing settings to a
-        specific table configuration
+        specific table configuration.
     plan_id : int
         The plan table that was in use.  In conjunction with ``plan_step``,
-        describes which counters are included in the data packet
+        describes which counters are included in the data packet.
     plan_step : int
         Plan step that was active when the data was acquired and processed. In
         conjunction with ``plan_id``, describes which counters are included
-        in the data packet
+        in the data packet.
     view_id : int
-        Provides information about how data was collapsed and/or compressed
+        Provides information about how data was collapsed and/or compressed.
     """
     table_id = packet.data["TABLE_ID"].raw_value
     plan_id = packet.data["PLAN_ID"].raw_value
@@ -324,19 +330,20 @@ def get_params(packet) -> tuple[int, int, int, int]:
 
 
 def process_codice_l1a(file_path: Path | str, data_version: str) -> xr.Dataset:
-    """Process CoDICE l0 data to create l1a data products.
+    """
+    Will process CoDICE l0 data to create l1a data products.
 
     Parameters
     ----------
     file_path : pathlib.Path | str
-        Path to the CoDICE L0 file to process
+        Path to the CoDICE L0 file to process.
     data_version : str
-        Version of the data product being created
+        Version of the data product being created.
 
     Returns
     -------
     dataset : xarray.Dataset
-        ``xarray`` dataset containing the science data and supporting metadata
+        The ``xarray`` dataset containing the science data and supporting metadata.
     """
     # TODO: Once simulated data for codice-hi is acquired, there shouldn't be a
     # need to split the processing based on the file_path, so this function can
