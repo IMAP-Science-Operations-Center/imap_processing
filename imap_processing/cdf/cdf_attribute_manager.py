@@ -79,20 +79,39 @@ class CdfAttributeManager:
         self._global_attributes = CdfAttributeManager._load_yaml_data(
             self.source_dir / DEFAULT_GLOBAL_CDF_ATTRS_FILE
         )
-        self.variable_attributes = dict()
+        self._variable_attributes = dict()
 
     @property
     def global_attributes(self):
-        """Docstring."""
-        # TODO: Validate attributes
-        # TODO: return validated attributes
-        # print("Returning global attributes previously loaded: ")
+        """Moving global_attributes to property."""
+        # Validating required global attributes are present
+        for attr_name in self.global_attribute_schema.keys():
+            required_attr = self.global_attribute_schema[attr_name]["required"]
+            if required_attr is True and attr_name not in self._global_attributes:
+                self._global_attributes[attr_name] = None
+
         return self._global_attributes
 
     @global_attributes.setter
     def global_attributes(self, instrument_id: str):
         # Load in instrument specific global attributes
-        return self.get_global_attributes(instrument_id)
+        self.get_global_attributes(instrument_id)
+
+    @property
+    def variable_attributes(self):
+        """Moving variable_attributes to property."""
+        for attr_name in self.variable_attribute_schema["attribute_key"]:
+            attribute = self.variable_attribute_schema["attribute_key"][attr_name][
+                "required"
+            ]
+            if attribute is True and attr_name not in self._variable_attributes.keys():
+                self._variable_attributes["attribute_key"] = None
+
+        return self._variable_attributes
+
+    @variable_attributes.setter
+    def variable_attributes(self, variable_name: str):
+        self.get_variable_attributes(variable_name)
 
     def _load_default_global_attr_schema(self) -> dict:
         """
@@ -136,7 +155,7 @@ class CdfAttributeManager:
             file path to load, under self.source_dir.
 
         """
-        self.global_attributes.update(
+        self._global_attributes.update(
             CdfAttributeManager._load_yaml_data(self.source_dir / file_path)
         )
 
@@ -158,7 +177,7 @@ class CdfAttributeManager:
         attribute_value: str
             The value of the attribute to add.
         """
-        self.global_attributes[attribute_name] = attribute_value
+        self._global_attributes[attribute_name] = attribute_value
 
     @staticmethod
     def _load_yaml_data(file_path: str | Path) -> dict:
@@ -203,15 +222,15 @@ class CdfAttributeManager:
         """
         output = dict()
         for attr_name, attr_schema in self.global_attribute_schema.items():
-            if attr_name in self.global_attributes:
-                output[attr_name] = self.global_attributes[attr_name]
+            if attr_name in self._global_attributes:
+                output[attr_name] = self._global_attributes[attr_name]
             # Retrieve instrument specific global attributes from the variable file
             elif (
                 instrument_id is not None
-                and attr_name in self.global_attributes[instrument_id]
+                and attr_name in self._global_attributes[instrument_id]
             ):
-                output[attr_name] = self.global_attributes[instrument_id][attr_name]
-            elif attr_schema["required"] and attr_name not in self.global_attributes:
+                output[attr_name] = self._global_attributes[instrument_id][attr_name]
+            elif attr_schema["required"] and attr_name not in self._global_attributes:
                 # TODO throw an error
                 output[attr_name] = None
 
@@ -231,7 +250,7 @@ class CdfAttributeManager:
         raw_var_attrs = CdfAttributeManager._load_yaml_data(self.source_dir / file_name)
         var_attrs = raw_var_attrs.copy()
 
-        self.variable_attributes.update(var_attrs)
+        self._variable_attributes.update(var_attrs)
 
     def get_variable_attributes(self, variable_name: str) -> dict:
         """
@@ -246,7 +265,7 @@ class CdfAttributeManager:
             The name of the variable to retrieve attributes for.
         """
         # TODO: Create a variable attribute schema file, validate here
-        if variable_name in self.variable_attributes:
-            return self.variable_attributes[variable_name]
+        if variable_name in self._variable_attributes:
+            return self._variable_attributes[variable_name]
         # TODO: throw an error?
         return {}
