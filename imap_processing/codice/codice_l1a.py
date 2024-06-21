@@ -22,7 +22,7 @@ import xarray as xr
 
 from imap_processing import imap_module_directory
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
-from imap_processing.cdf.utils import calc_start_time, write_cdf
+from imap_processing.cdf.utils import calc_start_time
 from imap_processing.codice import constants
 from imap_processing.codice.codice_l0 import decom_packets
 from imap_processing.codice.utils import CODICEAPID, create_hskp_dataset
@@ -429,7 +429,5 @@ def process_codice_l1a(file_path: Path | str, data_version: str) -> xr.Dataset:
 
     # Write dataset to CDF
     logger.info(f"\nFinal data product:\n{dataset}\n")
-    dataset.attrs["cdf_filename"] = write_cdf(dataset)
-    logger.info(f"\tCreated CDF file: {dataset.cdf_filename}")
 
     return dataset

@@ -19,12 +19,12 @@ def test_lo_l1b():
         dataset = load_cdf(file)
         data[dataset.attrs["Logical_source"]] = dataset
 
-    expected_out = "imap_lo_l1b_de_20100101_v001.cdf"
+    expected_logical_source = "imap_lo_l1b_de"
     # Act
     output_file = lo_l1b(data, "001")
 
     # Assert
-    assert expected_out == output_file.name
+    assert expected_logical_source == output_file.attrs["Logical_source"]
 
 
 def test_create_datasets():

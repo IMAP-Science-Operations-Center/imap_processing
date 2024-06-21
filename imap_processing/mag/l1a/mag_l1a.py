@@ -7,7 +7,7 @@ import numpy as np
 import xarray as xr
 
 from imap_processing.cdf.global_attrs import ConstantCoordinates
-from imap_processing.cdf.utils import calc_start_time, write_cdf
+from imap_processing.cdf.utils import calc_start_time
 from imap_processing.mag import mag_cdf_attrs
 from imap_processing.mag.l0 import decom_mag
 from imap_processing.mag.l0.mag_l0_data import MagL0
@@ -95,26 +95,19 @@ def process_and_write_data(
 
     mag_raw = decom_mag.generate_dataset(packet_data, raw_attrs)
 
-    filepath = write_cdf(mag_raw)
-    logger.info(f"Created RAW CDF file at {filepath}")
-
-    generated_files = [filepath]
+    generated_datasets = [mag_raw]
 
     l1a = process_packets(packet_data)
 
     for _, mago in l1a["mago"].items():
         norm_mago_output = generate_dataset(mago, mago_attrs)
-        filepath = write_cdf(norm_mago_output)
-        logger.info(f"Created L1a MAGo CDF file at {filepath}")
-        generated_files.append(filepath)
+        generated_datasets.append(norm_mago_output)
 
     for _, magi in l1a["magi"].items():
         norm_magi_output = generate_dataset(magi, magi_attrs)
-        filepath = write_cdf(norm_magi_output)
-        logger.info(f"Created L1a MAGi CDF file at {filepath}")
-        generated_files.append(filepath)
+        generated_datasets.append(norm_magi_output)
 
-    return generated_files
+    return generated_datasets
 
 
 def process_packets(
