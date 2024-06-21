@@ -1,11 +1,13 @@
-# from pathlib import Path
+from pathlib import Path
+
 # from imap_processing.cdf.cdf_attribute_manager import CdfAttributeManager
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 
 
 def test_add_instrument_global_attrs():
-    # Create an ImapCdfAttributes object
-    imap_cdf_manager = ImapCdfAttributes("tests")
+    # Create an ImapCdfAttributes object, set to correct file path
+    imap_cdf_manager = ImapCdfAttributes()
+    imap_cdf_manager.source_dir = Path(__file__).parent.parent / "tests"
     imap_cdf_manager.add_instrument_global_attrs("instrument")
 
     # Testing data loaded in
@@ -24,7 +26,8 @@ def test_add_instrument_global_attrs():
 
 def testing_source_dir():
     # Create an ImapCdfAttributes object
-    imap_cdf_manager = ImapCdfAttributes("tests")
+    imap_cdf_manager = ImapCdfAttributes()
+    imap_cdf_manager.source_dir = Path(__file__).parent.parent / "tests"
     assert (
         str(imap_cdf_manager.source_dir)
         == "/Users/anma6676/Desktop/Repositories/imap_processing"
@@ -34,7 +37,8 @@ def testing_source_dir():
 
 def test_add_instrument_variable_attrs():
     # Create an ImapCdfAttributes object
-    imap_cdf_manager = ImapCdfAttributes("tests")
+    imap_cdf_manager = ImapCdfAttributes()
+    imap_cdf_manager.source_dir = Path(__file__).parent.parent / "tests"
     imap_cdf_manager.add_instrument_variable_attrs("instrument", "level")
 
     # Testing the actual function
