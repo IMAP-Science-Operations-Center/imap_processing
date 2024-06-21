@@ -37,4 +37,4 @@ repos:
     hooks:
       - id: numpydoc-validation
         exclude: '^imap_processing/tests/|.*test.*'
-         
+
