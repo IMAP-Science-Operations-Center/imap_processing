@@ -15,19 +15,20 @@ logger = logging.getLogger(__name__)
 
 
 def hi_l1a(packet_file_path: Union[str, Path], data_version: str):
-    """Process IMAP raw data to l1a.
+    """
+    Will process IMAP raw data to l1a.
 
     Parameters
     ----------
     packet_file_path : str
-        Data packet file path
+        Data packet file path.
     data_version : str
-        Version of the data product being created
+        Version of the data product being created.
 
     Returns
     -------
     processed_data : list
-        List of processed xarray dataset
+        List of processed xarray dataset.
     """
     unpacked_data = decom_hi.decom_packets(packet_file_path)
 

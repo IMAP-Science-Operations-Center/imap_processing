@@ -1,10 +1,11 @@
-"""Contains constants variables to support CoDICE processing.
+"""
+Contains constants variables to support CoDICE processing.
 
 The ``plan_id``, ``plan_step``, and ``view_id`` mentioned in this module are
 derived from the packet data.
 
-Acronyms
---------
+Notes
+-----
 SW = SunWard
 NSW = Non-SunWard
 PUI = PickUp Ion

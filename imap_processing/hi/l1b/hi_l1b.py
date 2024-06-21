@@ -27,12 +27,12 @@ def hi_l1b(l1a_cdf_path: Path, data_version: str):
     l1a_cdf_path : pathlib.Path
         Path to L1A CDF file.
     data_version : str
-        Version of the data product being created
+        Version of the data product being created.
 
     Returns
     -------
-    processed_data : xarray.Dataset
-        Processed xarray dataset
+    l1b_dataset : xarray.Dataset
+        Processed xarray dataset.
     """
     logger.info(f"Running Hi L1B processing on file: {l1a_cdf_path.name}")
     l1a_dataset = load_cdf(l1a_cdf_path)
@@ -84,12 +84,12 @@ def annotate_direct_events(l1a_dataset):
 
     Parameters
     ----------
-    l1a_dataset: xarray.Dataset
+    l1a_dataset : xarray.Dataset
         L1A direct event data.
 
     Returns
     -------
-    xarray.Dataset
+    l1b_dataset : xarray.Dataset
         L1B direct event data.
     """
     n_epoch = l1a_dataset["epoch"].size

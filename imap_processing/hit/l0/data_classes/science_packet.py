@@ -13,7 +13,8 @@ from imap_processing.hit.l0.utils.hit_base import HITBase
 
 @dataclass
 class SciencePacket(HITBase):
-    """L0 HIT Science Package data.
+    """
+    L0 HIT Science Package data.
 
     This data class handles the decommutation of the HIT Science Packet
     data.
@@ -206,10 +207,11 @@ class SciencePacket(HITBase):
 
 @dataclass
 class SectorRates:
-    """L0 PHA Record data.
+    """
+    L0 PHA Record data.
 
     A data class for PHA Record data which will be stored
-    in the SciencePacket PHA_RECORDS attribute
+    in the SciencePacket PHA_RECORDS attribute.
 
     Attributes
     ----------
@@ -222,10 +224,11 @@ class SectorRates:
 
 @dataclass
 class PHARecord:
-    """L0 Sector Rates data.
+    """
+    L0 Sector Rates data.
 
     A data class for Sector Rate data which will be stored
-    in the SciencePacket SECTORATES attribute
+    in the SciencePacket SECTORATES attribute.
 
     Attributes
     ----------

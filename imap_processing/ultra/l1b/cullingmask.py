@@ -1,4 +1,4 @@
-"""Calculates Culling Mask."""
+"""Calculate Culling Mask."""
 
 from imap_processing.ultra.utils.ultra_l1_utils import create_dataset
 
@@ -9,9 +9,9 @@ def calculate_cullingmask(extended_spin_dict, name):
 
     Parameters
     ----------
-    extended_spin_dict: dict
+    extended_spin_dict : dict
         L1b data dictionary.
-    name: str
+    name : str
         Name of the dataset.
 
     Returns

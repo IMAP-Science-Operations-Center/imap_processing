@@ -13,19 +13,20 @@ logger = logging.getLogger(__name__)
 
 
 def swe_l1b(l1a_dataset: xr.Dataset, data_version: str):
-    """Process data to L1B.
+    """
+    Will process data to L1B.
 
     Parameters
     ----------
     l1a_dataset : xarray.Dataset
-        l1a data input
+        The l1a data input.
     data_version : str
         Version of the data product being created.
 
     Returns
     -------
-    xarray.Dataset
-        Processed data to L1B
+     data : xarray.Dataset
+        Processed data to L1B.
     """
     apid = int(l1a_dataset.attrs["packet_apid"])
 

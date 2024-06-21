@@ -10,10 +10,20 @@ from imap_processing.hit.l0.utils.hit_base import HITBase
 
 @dataclass
 class Housekeeping(HITBase):
-    """L1A HIT Housekeeping data.
+    """
+    L1A HIT Housekeeping data.
 
     The HIT Housekeeping data class handles the decommutation
     and parsing of L0 to L1A data.
+
+    Parameters
+    ----------
+    packet : dict
+        Dictionary of packet.
+    software_version : str
+        Version of software.
+    packet_file_name : str
+        Name of packet file.
 
     Attributes
     ----------
@@ -140,7 +150,6 @@ class Housekeeping(HITBase):
         the Housekeeping packet data.
     _parse_leak():
         Parse each current leakage field and put into an array.
-
     """
 
     SHCOARSE: int
