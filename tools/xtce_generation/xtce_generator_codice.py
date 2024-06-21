@@ -1,9 +1,18 @@
+"""
+Module for generating XTCE files for telemetry packets for codice.
+
+This module provides functionality to generate XTCE files for telemetry packets
+for codice. It includes a `TelemetryGenerator` class for creating XTCE files
+based on packet definitions stored in an Excel file.
+"""
+
 from pathlib import Path
 
 from tools.xtce_generation.telemetry_generator import TelemetryGenerator
 
 
 def main():
+    """Function used by instrument to generate XTCE."""
     instrument_name = "codice"
     current_directory = Path(__file__).parent
     module_path = f"{current_directory}/../../imap_processing"

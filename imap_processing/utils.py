@@ -17,37 +17,39 @@ logger = logging.getLogger(__name__)
 
 
 def sort_by_time(packets, time_key):
-    """Sort packets by specified key.
+    """
+    Sort packets by specified key.
 
     Parameters
     ----------
     packets : list
-        Decom data packets
+        Decom data packets.
     time_key : str
         Key to sort by. Must be a key in the packets data dictionary.
-        e.g. "SHCOARSE" or "MET_TIME" or "ACQ_START_COARSE"
+        e.g. "SHCOARSE" or "MET_TIME" or "ACQ_START_COARSE".
 
     Returns
     -------
-    list
-        sorted packets
+    sorted_packets : list
+        Sorted packets.
     """
     sorted_packets = sorted(packets, key=lambda x: x.data[time_key].raw_value)
     return sorted_packets
 
 
 def group_by_apid(packets: list):
-    """Group data by apid.
+    """
+    Group data by apid.
 
     Parameters
     ----------
     packets : list
-        packet list
+        Packet list.
 
     Returns
     -------
-    dict
-        grouped data by apid
+    grouped_packets : dict
+        Grouped data by apid.
     """
     grouped_packets = collections.defaultdict(list)
     for packet in packets:
@@ -59,13 +61,15 @@ def group_by_apid(packets: list):
 def convert_raw_to_eu(
     dataset: xr.Dataset, conversion_table_path, packet_name, **read_csv_kwargs
 ):
-    """Convert raw data to engineering unit.
+    """
+    Convert raw data to engineering unit.
 
     Parameters
     ----------
     dataset : xr.Dataset
         Raw data.
-    conversion_table_path : str, path object or file-like object
+    conversion_table_path : str,
+        Path object or file-like object
         Path to engineering unit conversion table.
         Eg:
         f"{imap_module_directory}/swe/l1b/engineering_unit_convert_table.csv"
@@ -76,17 +80,17 @@ def convert_raw_to_eu(
         Comment lines are allowed in the csv file specified by starting with
         the '#' character.
     packet_name : str
-        Packet name
-    read_csv_kwargs : dict
+        Packet name.
+    **read_csv_kwargs : dict
         In order to allow for some flexibility in the format of the csv
         conversion table, any additional keywords passed to this function are
         passed in the call to `pandas.read_csv()`. See pandas documentation
         for a list of keywords and their functionality:
-        https://pandas.pydata.org/docs/reference/api/pandas.read_csv.html
+        https://pandas.pydata.org/docs/reference/api/pandas.read_csv.html.
 
     Returns
     -------
-    xr.Dataset
+    dataset : xr.Dataset
         Raw data converted to engineering unit as needed.
     """
     # Make sure there is column called "index" with unique
@@ -139,24 +143,25 @@ def create_dataset(
     include_header=True,
     skip_keys=None,
 ) -> xr.Dataset:
-    """Create dataset for each metadata field.
+    """
+    Create dataset for each metadata field.
 
     Parameters
     ----------
     packets : list[Packet]
-        packet list
-    spacecraft_time_key : str, Optional
-        Default is "shcoarse" because many instrument uses it.
+        Packet list.
+    spacecraft_time_key : str
+        Default is "shcoarse" because many instrument uses it, optional.
         This key is used to get spacecraft time for epoch dimension.
-    include_header: bool, Optional
-        Whether to include CCSDS header data in the dataset
-    skip_keys: list, Optional
-        Keys to skip in the metadata
+    include_header : bool
+        Whether to include CCSDS header data in the dataset, optional.
+    skip_keys : list
+        Keys to skip in the metadata, optional.
 
     Returns
     -------
-    xr.dataset
-        dataset with all metadata field data in xr.DataArray
+    dataset : xr.dataset
+        Dataset with all metadata field data in xr.DataArray.
     """
     metadata_arrays = collections.defaultdict(list)
     description_dict = {}
@@ -220,16 +225,17 @@ def create_dataset(
 
 
 def update_epoch_to_datetime(dataset: xr.Dataset):
-    """Update epoch in dataset to datetime object.
+    """
+    Update epoch in dataset to datetime object.
 
     Parameters
     ----------
     dataset : xr.Dataset
-        Dataset to update
+        Dataset to update.
 
     Returns
     -------
-    xr.Dataset
+    dataset : xr.Dataset
         Dataset with updated epoch dimension from int to datetime object.
     """
     # convert epoch to datetime

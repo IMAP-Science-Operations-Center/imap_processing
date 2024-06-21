@@ -1,4 +1,4 @@
-"""Calculates ULTRA L1c."""
+"""Calculate ULTRA L1c."""
 
 from imap_processing.ultra.l1c.histogram import calculate_histogram
 from imap_processing.ultra.l1c.pset import calculate_pset
@@ -6,19 +6,19 @@ from imap_processing.ultra.l1c.pset import calculate_pset
 
 def ultra_l1c(data_dict: dict, data_version: str):
     """
-    Process ULTRA L1A and L1B data into L1C CDF files at output_filepath.
+    Will process ULTRA L1A and L1B data into L1C CDF files at output_filepath.
 
     Parameters
     ----------
     data_dict : dict
         The data itself and its dependent data.
     data_version : str
-        Version of the data product being created
+        Version of the data product being created.
 
     Returns
     -------
     output_datasets : list of xarray.Dataset
-        List of xarray.Dataset
+        List of xarray.Dataset.
     """
     instrument_id = 45 if any("45" in key for key in data_dict.keys()) else 90
 

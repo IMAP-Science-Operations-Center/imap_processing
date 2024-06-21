@@ -4,7 +4,8 @@ from imap_processing import decom, imap_module_directory
 
 
 def decom_packets(packet_file: str):
-    """Decom SWE data packets using SWE packet definition.
+    """
+    Decom SWE data packets using SWE packet definition.
 
     Parameters
     ----------
@@ -14,7 +15,7 @@ def decom_packets(packet_file: str):
     Returns
     -------
     List
-        List of all the unpacked data
+        List of all the unpacked data.
     """
     xtce_document = (
         f"{imap_module_directory}/swe/packet_definitions/swe_packet_definition.xml"
