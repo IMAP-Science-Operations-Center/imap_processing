@@ -220,10 +220,8 @@ def decompress_image(
                 # Keeps only the last 8 bits of the result of pixel0 - delta_f
                 # This operation ensures that the result is within the range
                 # of an 8-bit byte (0-255)
-                if delta_f < 0:
-                    p[i][column_index] = (pixel0 + (-delta_f)) & 0xFF
-                else:
-                    p[i][column_index] = (pixel0 - delta_f) & 0xFF
+                result = np.uint16(pixel0) - delta_f
+                p[i][column_index] = np.uint8(result & 0xFF)
                 # Perform logarithmic decompression on the pixel value
                 p_decom[i][column_index] = log_decompression(
                     p[i][column_index], mantissa_bit_length
