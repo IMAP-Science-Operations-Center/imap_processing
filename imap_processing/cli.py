@@ -273,9 +273,9 @@ class ProcessInstrument(ABC):
             try:
                 # TODO: Validate dep dict
                 # TODO: determine what dependency information is optional
-                # TODO: Add in timestamps and descriptor to query
                 return_query = imap_data_access.query(
                     start_date=self.start_date,
+                    end_date=self.end_date,
                     instrument=dependency["instrument"],
                     data_level=dependency["data_level"],
                     version=dependency["version"],
@@ -291,8 +291,13 @@ class ProcessInstrument(ABC):
                     f"This should never occur "
                     f"in normal processing."
                 )
-
-            file_list.append(imap_data_access.download(return_query[0]["file_path"]))
+            file_list.extend(
+                [
+                    imap_data_access.download(query_return["file_path"])
+                    for query_return in return_query
+                ]
+            )
+        print(file_list)
         return file_list
 
     def upload_products(self, products: list[str]):
@@ -429,7 +434,8 @@ class Glows(ProcessInstrument):
             products = [write_cdf(dataset) for dataset in datasets]
 
         if self.data_level == "l1b":
-            if len(dependencies) < 1:
+            print(dependencies)
+            if len(dependencies) > 1:
                 raise ValueError(
                     f"Unexpected dependencies found for GLOWS L1B:"
                     f"{dependencies}. Expected at least one input dependency."
