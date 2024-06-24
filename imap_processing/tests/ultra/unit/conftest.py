@@ -161,20 +161,3 @@ def decom_test_data(request, xtce_path):
 
     data_packet_list = process_ultra_apids(grouped_data[apid], apid)
     return data_packet_list, packets
-
-
-@pytest.fixture()
-def events_fsw_comparison_theta_0():
-    """Returns the xtce auxiliary test data directory."""
-    filename = (
-        "FM45_40P_Phi28p5_BeamCal_LinearScan_phi28.50_theta-0.00"
-        "_Ultra_Image_Raw_Event_20240207T102746_withFSWcalcs.csv"
-    )
-    return (
-        Path(sys.modules[__name__.split(".")[0]].__file__).parent
-        / "tests"
-        / "ultra"
-        / "test_data"
-        / "l0"
-        / filename
-    )
