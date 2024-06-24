@@ -14,11 +14,19 @@ class ImapCdfAttributes(CdfAttributeManager):
     """Contains IMAP specific tools and settings for CDF management."""
 
     def __init__(self, source_dir=None):
-        """Set the path to the config directory."""
+        """
+
+        Set the path to the config directory.
+
+        Parameters
+        ----------
+        source_dir
+            Source directory.
+        """
         if source_dir is None:
             super().__init__(Path(__file__).parent / "config")
         else:
-            super().__init__(Path(__file__).parent / source_dir)
+            super().__init__(source_dir)
 
     def add_instrument_global_attrs(self, instrument: str):
         """
