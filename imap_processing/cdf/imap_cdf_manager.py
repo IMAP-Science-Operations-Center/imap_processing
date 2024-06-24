@@ -11,11 +11,17 @@ from imap_processing.cdf.cdf_attribute_manager import CdfAttributeManager
 
 
 class ImapCdfAttributes(CdfAttributeManager):
-    """Contains IMAP specific tools and settings for CDF management."""
+    """
+    Contains IMAP specific tools and settings for CDF management.
+
+    Parameters
+    ----------
+    source_dir : Path
+            Source directory.
+    """
 
     def __init__(self, source_dir=None):
         """
-
         Set the path to the config directory.
 
         Parameters
