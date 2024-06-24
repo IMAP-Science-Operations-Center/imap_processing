@@ -16,8 +16,8 @@ class ImapCdfAttributes(CdfAttributeManager):
 
     Parameters
     ----------
-    source_dir : Path
-            Source directory.
+    source_dir : Path or None
+        Source directory.
     """
 
     def __init__(self, source_dir=None):
@@ -26,7 +26,7 @@ class ImapCdfAttributes(CdfAttributeManager):
 
         Parameters
         ----------
-        source_dir
+        source_dir : Path or None
             Source directory.
         """
         if source_dir is None:
