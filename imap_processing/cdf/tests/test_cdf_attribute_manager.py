@@ -4,8 +4,6 @@ import pytest
 
 from imap_processing.cdf.cdf_attribute_manager import CdfAttributeManager
 
-# This is an important test.
-
 
 def test_default_attr_schema():
     """
@@ -32,9 +30,6 @@ def test_default_attr_schema():
         cdf_manager.variable_attribute_schema["attribute_key"]["RESOLUTION"]["required"]
         is True
     )
-
-
-# @pytest.mark.xfail(reason="Missing IMAP specific global schema")
 
 
 def test_global_attribute():
@@ -106,7 +101,6 @@ def test_global_attribute():
     #   the global attrs schema
     for attr in cdf_manager.global_attributes.keys():
         assert attr in cdf_manager.global_attribute_schema.keys()
-        assert attr in cdf_manager.global_attributes.keys()
 
 
 def test_get_global_attributes():
@@ -114,6 +108,7 @@ def test_get_global_attributes():
     Test function that covers:
         get_global_attributes
     """
+
     # Initialize CdfAttributeManager object which loads in default info
     cdf_manager = CdfAttributeManager(Path(__file__).parent.parent / "config")
 
@@ -159,6 +154,25 @@ def test_get_global_attributes():
     # "Data_type" not required according to default schema
     assert test_get_global_attrs_2["Data_type"] == "T2_test-two>Test-2 test two"
 
+    # Testing that required schema keys are in get_global_attributes
+    for attr_name in cdf_manager.global_attribute_schema.keys():
+        required_schema = cdf_manager.global_attribute_schema[attr_name]["required"]
+        if required_schema is True:
+            assert attr_name in test_get_global_attrs.keys()
+
+
+def test_instrument_id_format():
+    # Initialize CdfAttributeManager object which loads in default info
+    cdf_manager = CdfAttributeManager(Path(__file__).parent.parent / "config")
+
+    # Change filepath to load test global attributes
+    cdf_manager.source_dir = Path(__file__).parent.parent / "tests"
+    cdf_manager.load_global_attributes("imap_default_global_test_cdf_attrs.yaml")
+    cdf_manager.load_global_attributes("imap_test_global.yaml")
+
+    # Loading in instrument specific attributes
+    test_get_global_attrs = cdf_manager.get_global_attributes("imap_test_T1_test")
+
     # Testing how instrument_id operates
     assert test_get_global_attrs["Project"] == cdf_manager.global_attributes["Project"]
     assert (
@@ -176,40 +190,46 @@ def test_get_global_attributes():
     with pytest.raises(KeyError):
         assert cdf_manager.global_attributes["imap_test_T1_test"]["Project"]
 
-    # Trying to update a default global using get_global_attributes does not work.
-    # For example, thing about DOI event.
-
-    # Testing that required schema keys are in get_global_attributes
-    for attr_name in cdf_manager.global_attribute_schema.keys():
-        required_schema = cdf_manager.global_attribute_schema[attr_name]["required"]
-        if required_schema is True:
-            assert attr_name in test_get_global_attrs.keys()
-
-
-def test_property_global_attrs():
-    """
-    Instead of:
-    cdf_manager.load_global_attributes("file_with_instrument")
-    variable = cdf_manager.get_global_attributes("instrument")
-    cdf_manager.global_attributes["Default attribute"]
-    variable["instrument attribute"]
-
-    Pyproperty allows:
-    cdf_manager.load_global_attributes("file_with_instrument")
-    cdf_manager.global_attributes = "instrument"
-    cdf_manager.global_attributes["Default attribute"]
-    cdf_manager.global_attributes["instrument"]["instrument_attribute]
-
-    """
-    # Initialize CDFAttributeManager object
-    cdf_manager = CdfAttributeManager(Path(__file__).parent.parent / "config")
-    cdf_manager.source_dir = Path(__file__).parent.parent / "tests"
-    cdf_manager.load_global_attributes = "imap_default_global_test_cdf_attrs.yaml"
-    cdf_manager.load_global_attributes = "imap_test_global.yaml"
-    cdf_manager.global_attribute = "imap_test_T1_test"
-
 
 def test_add_global_attribute():
+    # Initialize CdfAttributeManager object which loads in default info
+    cdf_manager = CdfAttributeManager(Path(__file__).parent.parent / "config")
+
+    # Change filepath to load test global attributes
+    cdf_manager.source_dir = Path(__file__).parent.parent / "tests"
+    cdf_manager.load_global_attributes("imap_test_global.yaml")
+
+    # Changing a dynamic global variable
+    cdf_manager.add_global_attribute("Project", "Test Project")
+    test_get_global_attrs = cdf_manager.get_global_attributes("imap_test_T1_test")
+    assert cdf_manager.global_attributes["Project"] == "Test Project"
+    assert test_get_global_attrs["Project"] == "Test Project"
+
+    # Testing adding required global attribute
+    cdf_manager.global_attributes.__delitem__("Source_name")
+    # Reloading get_global_attributes to pick up deleted Source_name
+    test_get_global_attrs = cdf_manager.get_global_attributes("imap_test_T1_test")
+    with pytest.raises(KeyError):
+        assert cdf_manager.global_attributes["Source_name"]
+    assert test_get_global_attrs["Source_name"] is None
+
+    # Adding deleted global attribute
+    cdf_manager.add_global_attribute("Source_name", "anas_source")
+    assert cdf_manager.global_attributes["Source_name"] == "anas_source"
+    # Reloading get_global_attributes to pick up added Source_name
+    test_get_global_attrs = cdf_manager.get_global_attributes("imap_test_T1_test")
+    assert test_get_global_attrs["Source_name"] == "anas_source"
+
+    # Testing instrument specific attribute
+    cdf_manager.global_attributes["imap_test_T1_test"].__delitem__("Logical_source")
+    # Reloading get_global_attributes to pick up deleted Source_name
+    test_get_global_attrs = cdf_manager.get_global_attributes("imap_test_T1_test")
+    with pytest.raises(KeyError):
+        assert cdf_manager.global_attributes["imap_test_T1_test"]["Logical_source"]
+    assert test_get_global_attrs["Logical_source"] is None
+
+
+def test_property_global_attributes():
     # Initialize CdfAttributeManager object which loads in default info
     cdf_manager = CdfAttributeManager(Path(__file__).parent.parent / "config")
 
@@ -218,11 +238,7 @@ def test_add_global_attribute():
     cdf_manager.load_global_attributes("imap_default_global_test_cdf_attrs.yaml")
     cdf_manager.load_global_attributes("imap_test_global.yaml")
 
-    # Changing a dynamic global variable
-    cdf_manager.add_global_attribute("Project", "Test Project")
-    assert cdf_manager.global_attributes["Project"] == "Test Project"
-    test_get_global_attrs = cdf_manager.get_global_attributes("imap_test_T1_test")
-    assert test_get_global_attrs["Project"] == "Test Project"
+    cdf_manager.global_attributes["Project"]
 
 
 def test_variable_attribute():
@@ -263,7 +279,7 @@ def test_variable_attribute():
                     exp_attr in cdf_manager.variable_attribute_schema["attribute_key"]
                 )
 
-    # Testing specific things
+    # Testing specific attributes
     assert (
         cdf_manager.variable_attributes["default_attrs"]["DEPEND_0"]
         == cdf_manager.variable_attributes["default_attrs"]["DEPEND_0"]
@@ -345,114 +361,3 @@ def test_get_variable_attributes():
     assert imap_test_variable_2["TIME_BASE"] == 11
     assert imap_test_variable_2["TIME_SCALE"] == "test_time_scale_2"
     assert imap_test_variable_2["REFERENCE_POSITION"] == "test_reference_position_2"
-
-
-def test_property_variable_attrs():
-    # Creating CdfAttributeManager object, loading in default data
-    cdf_manager = CdfAttributeManager(Path(__file__).parent.parent / "config")
-    cdf_manager.source_dir = Path(__file__).parent.parent / "tests"
-    cdf_manager.load_global_attributes("imap_default_global_test_cdf_attrs.yaml")
-    # Loading in test data
-    cdf_manager.load_variable_attributes("imap_test_variable.yaml")
-    cdf_manager.variable_attributes = "test_field_1"
-
-    # Make sure all expected attributes are present
-    for variable_attrs in cdf_manager.variable_attribute_schema.keys():
-        required_var_attributes = cdf_manager.variable_attribute_schema[variable_attrs]
-        if required_var_attributes is True:
-            assert variable_attrs in cdf_manager.variable_attributes.keys()
-
-    # Calling default attributes
-    assert cdf_manager.variable_attributes["test_field_1"]["DEPEND_0"] == "test_depend"
-    assert (
-        cdf_manager.variable_attributes["test_field_1"]["DISPLAY_TYPE"]
-        == "test_display_type"
-    )
-    assert cdf_manager.variable_attributes["test_field_1"]["FILLVAL"] == -10
-    assert cdf_manager.variable_attributes["test_field_1"]["FORMAT"] == "I1"
-    assert cdf_manager.variable_attributes["test_field_1"]["VALIDMIN"] == 0
-    assert cdf_manager.variable_attributes["test_field_1"]["VALIDMAX"] == 10
-    assert (
-        cdf_manager.variable_attributes["test_field_1"]["VAR_TYPE"]
-        == "test_variable_type"
-    )
-
-    # Calling required attributes
-    assert cdf_manager.variable_attributes["test_field_1"]["CATDESC"] == "test time"
-    assert cdf_manager.variable_attributes["test_field_1"]["FIELDNAM"] == "test_field_1"
-    assert cdf_manager.variable_attributes["test_field_1"]["LABLAXIS"] == "test_labaxis"
-    assert cdf_manager.variable_attributes["test_field_1"]["UNITS"] == "test_units"
-    assert (
-        cdf_manager.variable_attributes["test_field_1"]["VAR_TYPE"]
-        == "test_variable_type"
-    )
-    assert (
-        cdf_manager.variable_attributes["test_field_1"]["SCALETYP"] == "test_scaletyp"
-    )
-    assert cdf_manager.variable_attributes["test_field_1"]["MONOTON"] == "test_monoton"
-    assert cdf_manager.variable_attributes["test_field_1"]["TIME_BASE"] == 10
-    assert (
-        cdf_manager.variable_attributes["test_field_1"]["TIME_SCALE"]
-        == "test_time_scale"
-    )
-    assert (
-        cdf_manager.variable_attributes["test_field_1"]["REFERENCE_POSITION"]
-        == "test_reference_position"
-    )
-
-    # Calling to non required attributes
-    assert (
-        cdf_manager.variable_attributes["test_field_1"]["NOT_REQUIRED"]
-        == "test_not_required"
-    )
-
-    # Calling attribute name that does not exist
-    with pytest.raises(KeyError):
-        assert (
-            cdf_manager.variable_attributes["test_field_1"]["DOES_NOT_EXIST"]
-            == "test time"
-        )
-
-    # Load in different data, test again
-    cdf_manager.variable_attributes = "test_field_2"
-    # Calling default attributes
-    assert cdf_manager.variable_attributes["test_field_2"]["DEPEND_0"] == "test_depend"
-    assert (
-        cdf_manager.variable_attributes["test_field_2"]["DISPLAY_TYPE"]
-        == "test_display_type"
-    )
-    assert cdf_manager.variable_attributes["test_field_2"]["FILLVAL"] == -10
-    assert cdf_manager.variable_attributes["test_field_2"]["FORMAT"] == "I1"
-    assert cdf_manager.variable_attributes["test_field_2"]["VALIDMIN"] == 0
-    assert cdf_manager.variable_attributes["test_field_2"]["VALIDMAX"] == 10
-    assert (
-        cdf_manager.variable_attributes["test_field_2"]["VAR_TYPE"]
-        == "test_variable_type_2"
-    )
-
-    # Calling required attributes
-    assert cdf_manager.variable_attributes["test_field_2"]["CATDESC"] == "test time 2"
-    assert cdf_manager.variable_attributes["test_field_2"]["FIELDNAM"] == "test_field_2"
-    assert (
-        cdf_manager.variable_attributes["test_field_2"]["LABLAXIS"] == "test_labaxis_2"
-    )
-    assert cdf_manager.variable_attributes["test_field_2"]["UNITS"] == "test_units_2"
-    assert (
-        cdf_manager.variable_attributes["test_field_2"]["VAR_TYPE"]
-        == "test_variable_type_2"
-    )
-    assert (
-        cdf_manager.variable_attributes["test_field_2"]["SCALETYP"] == "test_scaletyp_2"
-    )
-    assert (
-        cdf_manager.variable_attributes["test_field_2"]["MONOTON"] == "test_monoton_2"
-    )
-    assert cdf_manager.variable_attributes["test_field_2"]["TIME_BASE"] == 11
-    assert (
-        cdf_manager.variable_attributes["test_field_2"]["TIME_SCALE"]
-        == "test_time_scale_2"
-    )
-    assert (
-        cdf_manager.variable_attributes["test_field_2"]["REFERENCE_POSITION"]
-        == "test_reference_position_2"
-    )

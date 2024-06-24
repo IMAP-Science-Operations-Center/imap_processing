@@ -14,6 +14,7 @@ DEFAULT_GLOBAL_CDF_ATTRS_FILE = "imap_default_global_cdf_attrs.yaml"
 DEFAULT_GLOBAL_CDF_ATTRS_SCHEMA_FILE = "default_global_cdf_attrs_schema.yaml"
 DEFAULT_VARIABLE_CDF_ATTRS_SCHEMA_FILE = "default_variable_cdf_attrs_schema.yaml"
 
+class Global
 
 class CdfAttributeManager:
     """
@@ -75,10 +76,10 @@ class CdfAttributeManager:
         self.variable_attribute_schema = self._load_default_variable_attr_schema()
 
         # Load Default IMAP Global Attributes
-        self._global_attributes = CdfAttributeManager._load_yaml_data(
-            self.source_dir / DEFAULT_GLOBAL_CDF_ATTRS_FILE
+        self.global_attributes = CDFAttrs(CdfAttributeManager._load_yaml_data(
+            self.source_dir / DEFAULT_GLOBAL_CDF_ATTRS_FILE)
         )
-        self._variable_attributes = dict()
+        self.variable_attributes = CDFAttrs()
 
     def _load_default_global_attr_schema(self) -> dict:
         """
@@ -123,7 +124,7 @@ class CdfAttributeManager:
         file_path : str
             File path to load, under self.source_dir.
         """
-        self._global_attributes.update(
+        self.global_attributes.update(
             CdfAttributeManager._load_yaml_data(self.source_dir / file_path)
         )
 
@@ -145,7 +146,7 @@ class CdfAttributeManager:
         attribute_value : str
             The value of the attribute to add.
         """
-        self._global_attributes[attribute_name] = attribute_value
+        self.global_attributes[attribute_name] = attribute_value
 
     @staticmethod
     def _load_yaml_data(file_path: str | Path) -> dict:
@@ -189,17 +190,18 @@ class CdfAttributeManager:
             The global attribute values created from the input global attribute files
             and schemas.
         """
+
         output = dict()
         for attr_name, attr_schema in self.global_attribute_schema.items():
-            if attr_name in self._global_attributes:
-                output[attr_name] = self._global_attributes[attr_name]
+            if attr_name in self.global_attributes:
+                output[attr_name] = self.global_attributes[attr_name]
             # Retrieve instrument specific global attributes from the variable file
             elif (
                 instrument_id is not None
-                and attr_name in self._global_attributes[instrument_id]
+                and attr_name in self.global_attributes[instrument_id]
             ):
-                output[attr_name] = self._global_attributes[instrument_id][attr_name]
-            elif attr_schema["required"] and attr_name not in self._global_attributes:
+                output[attr_name] = self.global_attributes[instrument_id][attr_name]
+            elif attr_schema["required"] and attr_name not in self.global_attributes:
                 # TODO throw an error
                 output[attr_name] = None
 
@@ -219,7 +221,7 @@ class CdfAttributeManager:
         raw_var_attrs = CdfAttributeManager._load_yaml_data(self.source_dir / file_name)
         var_attrs = raw_var_attrs.copy()
 
-        self._variable_attributes.update(var_attrs)
+        self.variable_attributes.update(var_attrs)
 
     def get_variable_attributes(self, variable_name: str) -> dict:
         """
@@ -239,10 +241,21 @@ class CdfAttributeManager:
             I have no idea todo check.
         """
         # TODO: Create a variable attribute schema file, validate here
-        if variable_name in self._variable_attributes:
-            return self._variable_attributes[variable_name]
+        if variable_name in self.variable_attributes:
+            return self.variable_attributes[variable_name]
         # TODO: throw an error?
         return {}
 
-    global_attributes = property(fget=get_global_attributes)
-    variable_attributes = property(fget=get_variable_attributes)
+
+class CDFAttrs(dict):
+    def __getitem__(self, key):
+        self._validate(key)
+        val = dict.__getitem__(self, key)
+        return val
+
+    @staticmethod
+    def _validate(key):
+        """If present in cdf_manager.global_attriubte_schema, return cdf_manager.global_attributes[key]"""
+
+
+
