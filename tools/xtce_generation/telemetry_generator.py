@@ -58,7 +58,7 @@ class TelemetryGenerator:
         else:
             self.pkt = pkt
 
-    def create_telemetry_xml(self):  # type: ignore[no-untyped-def]
+    def create_telemetry_xml(self) -> tuple:
         """
         Create an XML representation of telemetry data based on input parameters.
 
@@ -103,7 +103,7 @@ class TelemetryGenerator:
 
         return root, parameter_type_set, parameter_set, telemetry_metadata
 
-    def get_unique_bits_length(self) -> dict[str, str]:
+    def get_unique_bits_length(self) -> dict:
         """
         Create dictionary.
 
@@ -143,9 +143,9 @@ class TelemetryGenerator:
 
     def create_parameter_types(
         self,
-        parameter_type_set: list[str],
-        unique_lengths: dict[str, str],
-    ) -> list[str]:
+        parameter_type_set: list,
+        unique_lengths: dict,
+    ) -> list:
         """
         Create parameter types based on 'dataType' for the unique 'lengthInBits' values.
 
@@ -167,7 +167,9 @@ class TelemetryGenerator:
         for parameter_type_ref_name, size in unique_lengths.items():
             if "UINT" in parameter_type_ref_name:
                 parameter_type = Et.SubElement(
-                    parameter_type_set, "xtce:IntegerParameterType"
+                    parameter_type_set,  # type: ignore[arg-type]
+                    # ToDo Change, expected Element type for argument 1
+                    "xtce:IntegerParameterType",
                 )
                 parameter_type.attrib["name"] = parameter_type_ref_name
                 parameter_type.attrib["signed"] = "false"
@@ -178,7 +180,9 @@ class TelemetryGenerator:
 
             elif any(x in parameter_type_ref_name for x in ["SINT", "INT"]):
                 parameter_type = Et.SubElement(
-                    parameter_type_set, "xtce:IntegerParameterType"
+                    parameter_type_set,  # type: ignore[arg-type]
+                    # TODO change. Expected Element type for argument 1
+                    "xtce:IntegerParameterType",
                 )
                 parameter_type.attrib["name"] = parameter_type_ref_name
                 parameter_type.attrib["signed"] = "true"
@@ -188,7 +192,9 @@ class TelemetryGenerator:
 
             elif "BYTE" in parameter_type_ref_name:
                 binary_parameter_type = Et.SubElement(
-                    parameter_type_set, "xtce:BinaryParameterType"
+                    parameter_type_set,  # type: ignore[arg-type]
+                    "xtce:BinaryParameterType",
+                    # Todo Change, expected Element type for first argument.
                 )
                 binary_parameter_type.attrib["name"] = parameter_type_ref_name
 
@@ -206,8 +212,8 @@ class TelemetryGenerator:
         return parameter_type_set
 
     def create_ccsds_packet_parameters(
-        self, parameter_set: list[str], ccsds_parameters: list[dict[str, str]]
-    ) -> list[str]:
+        self, parameter_set: list, ccsds_parameters: list
+    ) -> list:
         """
         Create XML elements to define CCSDS packet parameters based on the given data.
 
@@ -237,10 +243,10 @@ class TelemetryGenerator:
 
     def create_container_set(
         self,
-        telemetry_metadata: dict,  # type: ignore[type-arg] # todo change
-        ccsds_parameters: list[dict[str, str]],
+        telemetry_metadata: dict,
+        ccsds_parameters: list,
         container_name: str,
-    ) -> dict:  # type: ignore[type-arg] #todo Change
+    ) -> dict:
         """
         Create XML elements.
 
@@ -307,7 +313,7 @@ class TelemetryGenerator:
 
         return telemetry_metadata
 
-    def create_remaining_parameters(self, parameter_set: list[str]) -> list[str]:
+    def create_remaining_parameters(self, parameter_set: list) -> list:
         """
         Create XML elements for parameters.
 
@@ -315,7 +321,7 @@ class TelemetryGenerator:
 
         Parameters
         ----------
-        parameter_set : list todo check
+        parameter_set : list
             The ParameterSet element where parameters will be added.
 
         Returns
@@ -331,6 +337,7 @@ class TelemetryGenerator:
                 continue
 
             parameter = Et.SubElement(parameter_set, "xtce:Parameter")  # type: ignore[arg-type]
+            # todo Change
             # Argument 1 to "SubElement" has incompatible type
             # "list[Any]"; expected "Element"
             parameter.attrib["name"] = row["mnemonic"]
