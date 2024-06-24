@@ -3,14 +3,12 @@ from pathlib import Path
 # from imap_processing.cdf.cdf_attribute_manager import CdfAttributeManager
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 
-# Test
-
 
 def test_add_instrument_global_attrs():
     # Create an ImapCdfAttributes object, set to correct file path
     imap_cdf_manager = ImapCdfAttributes()
     imap_cdf_manager.source_dir = Path(__file__).parent.parent / "tests"
-    imap_cdf_manager.add_instrument_global_attrs("instrument")
+    imap_cdf_manager.add_instrument_global_attrs("instrument1")
 
     # Testing data loaded in
     imap_instrument = imap_cdf_manager.get_global_attributes("imap_test_T1_test")
@@ -38,7 +36,7 @@ def test_add_instrument_variable_attrs():
     # Create an ImapCdfAttributes object
     imap_cdf_manager = ImapCdfAttributes()
     imap_cdf_manager.source_dir = Path(__file__).parent.parent / "tests"
-    imap_cdf_manager.add_instrument_variable_attrs("instrument", "level")
+    imap_cdf_manager.add_instrument_variable_attrs("instrument1", "level1")
 
     # Testing the actual function
     imap_instrument = imap_cdf_manager.get_variable_attributes("test_field_1")
