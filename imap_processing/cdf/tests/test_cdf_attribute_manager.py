@@ -209,11 +209,15 @@ def test_add_global_attribute():
     # Reloading get_global_attributes to pick up deleted Source_name
     test_get_global_attrs = cdf_manager.get_global_attributes("imap_test_T1_test")
     with pytest.raises(KeyError):
-        assert cdf_manager.global_attributes["Source_name"] == "Does_not_exist"
+        assert cdf_manager.global_attributes["Source_name"]
     assert test_get_global_attrs["Source_name"] is None
+
     # Adding deleted global attribute
     cdf_manager.add_global_attribute("Source_name", "anas_source")
     assert cdf_manager.global_attributes["Source_name"] == "anas_source"
+    # Reloading get_global_attributes to pick up added Source_name
+    test_get_global_attrs = cdf_manager.get_global_attributes("imap_test_T1_test")
+    assert test_get_global_attrs["Source_name"] == "anas_source"
 
     # Testing instrument specific attribute
     cdf_manager.global_attributes["imap_test_T1_test"].__delitem__("Logical_source")
@@ -221,7 +225,7 @@ def test_add_global_attribute():
     test_get_global_attrs = cdf_manager.get_global_attributes("imap_test_T1_test")
     with pytest.raises(KeyError):
         assert (
-            cdf_manager.global_attributes["imap_test_T1_test"]["Logical_source"] is None
+            cdf_manager.global_attributes["imap_test_T1_test"]["Logical_source"]
         )
     assert test_get_global_attrs["Logical_source"] is None
 
