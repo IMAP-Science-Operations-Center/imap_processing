@@ -2,6 +2,7 @@
 
 import xml.etree.ElementTree as Et
 from datetime import datetime
+from typing import Optional
 
 import pandas as pd
 
@@ -39,12 +40,12 @@ class TelemetryGenerator:
         Default set to None.
     """
 
-    def __init__(  # type: ignore[no-untyped-def]
+    def __init__(
         self,
         packet_name: str,
         path_to_excel_file: str,
         apid: int,
-        pkt=None,
+        pkt: Optional[str] = None,
     ) -> None:
         """Initialize TelemetryGenerator."""
         self.packet_name = packet_name
