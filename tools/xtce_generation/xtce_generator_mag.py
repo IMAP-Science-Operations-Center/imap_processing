@@ -36,7 +36,9 @@ def main() -> None:
     for packet_name, app_id in packets.items():
         print(packet_name)
         telemetry_generator = TelemetryGenerator(
-            packet_name=packet_name, path_to_excel_file=path_to_excel_file, apid=app_id
+            packet_name=packet_name,
+            path_to_excel_file=path_to_excel_file,
+            apid=int(app_id),
         )
         telemetry_generator.generate_telemetry_xml(
             f"{packet_definition_path}/{packet_name}.xml", packet_name

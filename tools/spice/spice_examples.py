@@ -14,7 +14,7 @@ import spiceypy as spice
 logger = logging.getLogger(__name__)
 
 
-def get_attitude_timerange(ck_kernel, id):
+def get_attitude_timerange(ck_kernel: str, id: int) -> tuple[float, float]:
     """
     Get attitude timerange using the ck kernel.
 
@@ -65,7 +65,9 @@ def get_attitude_timerange(ck_kernel, id):
     return start, end
 
 
-def _get_particle_velocity(direct_events):
+def _get_particle_velocity(
+    direct_events: dict[str, str],
+):  # can't tell it to return Any
     """
     Get the particle velocity in the heliosphere frame.
 
@@ -108,7 +110,8 @@ def _get_particle_velocity(direct_events):
     return ultra_velocity_heliosphere_frame
 
 
-def build_annotated_events(direct_events, kernels):
+def build_annotated_events(direct_events: dict[str, str], kernels: list[str]) -> None:
+    # Todo double check dict parameters
     """
     Build annotated events.
 

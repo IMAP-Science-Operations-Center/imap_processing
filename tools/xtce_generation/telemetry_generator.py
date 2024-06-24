@@ -39,7 +39,13 @@ class TelemetryGenerator:
         Default set to None.
     """
 
-    def __init__(self, packet_name, path_to_excel_file, apid, pkt=None):
+    def __init__(  # type: ignore[no-untyped-def]
+        self,
+        packet_name: str,
+        path_to_excel_file: str,
+        apid: int,
+        pkt=None,
+    ) -> None:
         """Initialize TelemetryGenerator."""
         self.packet_name = packet_name
         self.apid = apid
@@ -52,7 +58,7 @@ class TelemetryGenerator:
         else:
             self.pkt = pkt
 
-    def create_telemetry_xml(self):
+    def create_telemetry_xml(self):  # type: ignore[no-untyped-def]
         """
         Create an XML representation of telemetry data based on input parameters.
 
@@ -97,7 +103,7 @@ class TelemetryGenerator:
 
         return root, parameter_type_set, parameter_set, telemetry_metadata
 
-    def get_unique_bits_length(self):
+    def get_unique_bits_length(self) -> dict[str, str]:
         """
         Create dictionary.
 
@@ -135,7 +141,11 @@ class TelemetryGenerator:
         unique_lengths = dict(sorted(unique_lengths.items(), key=lambda item: item[1]))
         return unique_lengths
 
-    def create_parameter_types(self, parameter_type_set, unique_lengths):
+    def create_parameter_types(
+        self,
+        parameter_type_set: list[str],
+        unique_lengths: dict[str, str],
+    ) -> list[str]:
         """
         Create parameter types based on 'dataType' for the unique 'lengthInBits' values.
 
@@ -195,7 +205,9 @@ class TelemetryGenerator:
 
         return parameter_type_set
 
-    def create_ccsds_packet_parameters(self, parameter_set, ccsds_parameters):
+    def create_ccsds_packet_parameters(
+        self, parameter_set: list[str], ccsds_parameters: list[dict[str, str]]
+    ) -> list[str]:
         """
         Create XML elements to define CCSDS packet parameters based on the given data.
 
@@ -212,7 +224,9 @@ class TelemetryGenerator:
             The updated ParameterSet element.
         """
         for parameter_data in ccsds_parameters:
-            parameter = Et.SubElement(parameter_set, "xtce:Parameter")
+            parameter = Et.SubElement(parameter_set, "xtce:Parameter")  # type: ignore[arg-type]
+            # Argument 1 to "SubElement" has incompatible type
+            # "list[str]"; expected "Element"
             parameter.attrib["name"] = parameter_data["name"]
             parameter.attrib["parameterTypeRef"] = parameter_data["parameterTypeRef"]
 
@@ -222,8 +236,11 @@ class TelemetryGenerator:
         return parameter_set
 
     def create_container_set(
-        self, telemetry_metadata, ccsds_parameters, container_name
-    ):
+        self,
+        telemetry_metadata: dict,  # type: ignore[type-arg] # todo change
+        ccsds_parameters: list[dict[str, str]],
+        container_name: str,
+    ) -> dict:  # type: ignore[type-arg] #todo Change
         """
         Create XML elements.
 
@@ -245,7 +262,9 @@ class TelemetryGenerator:
             The updated TelemetryMetaData element.
         """
         # Create ContainerSet element
-        container_set = Et.SubElement(telemetry_metadata, "xtce:ContainerSet")
+        container_set = Et.SubElement(telemetry_metadata, "xtce:ContainerSet")  # type: ignore[arg-type]
+        # Argument 1 to "SubElement" has incompatible type
+        # "dict[Any, Any]"; expected "Element"
 
         # Create CCSDSPacket SequenceContainer
         ccsds_packet_container = Et.SubElement(container_set, "xtce:SequenceContainer")
@@ -288,7 +307,7 @@ class TelemetryGenerator:
 
         return telemetry_metadata
 
-    def create_remaining_parameters(self, parameter_set):
+    def create_remaining_parameters(self, parameter_set: list[str]) -> list[str]:
         """
         Create XML elements for parameters.
 
@@ -311,7 +330,9 @@ class TelemetryGenerator:
                 # not part of CCSDS header
                 continue
 
-            parameter = Et.SubElement(parameter_set, "xtce:Parameter")
+            parameter = Et.SubElement(parameter_set, "xtce:Parameter")  # type: ignore[arg-type]
+            # Argument 1 to "SubElement" has incompatible type
+            # "list[Any]"; expected "Element"
             parameter.attrib["name"] = row["mnemonic"]
             parameter_type_ref = f"{row['dataType']}{row['lengthInBits']}"
 
@@ -326,7 +347,7 @@ class TelemetryGenerator:
 
         return parameter_set
 
-    def generate_telemetry_xml(self, output_xml_path, container_name):
+    def generate_telemetry_xml(self, output_xml_path: str, container_name: str) -> None:
         """
         Create and output an XTCE file based on the data within the class.
 
