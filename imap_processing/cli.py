@@ -525,8 +525,8 @@ class Hit(ProcessInstrument):
 
         Returns
         -------
-        products : list
-            List of products.
+        datasets : list
+            List of datasets.
         """
         print(f"Processing HIT {self.data_level}")
 
@@ -537,8 +537,8 @@ class Hit(ProcessInstrument):
                     f"{dependencies}. Expected only one dependency."
                 )
             # process data and write all processed data to CDF files
-            products = hit_l1a(dependencies[0], self.version)
-            return products
+            datasets = hit_l1a(dependencies[0], self.version)
+            return datasets
 
         elif self.data_level == "l1b":
             if len(dependencies) > 1:
@@ -548,8 +548,8 @@ class Hit(ProcessInstrument):
                 )
             # process data and write all processed data to CDF files
             l1a_dataset = load_cdf(dependencies[0])
-            products = hit_l1b(l1a_dataset, self.version)
-            return products
+            datasets = hit_l1b(l1a_dataset, self.version)
+            return datasets
 
 
 class Idex(ProcessInstrument):
@@ -578,8 +578,8 @@ class Idex(ProcessInstrument):
                     f"{dependencies}. Expected only one dependency."
                 )
             # read CDF file
-            processed_data = PacketParser(dependencies[0], self.version).data
-            return [processed_data]
+            dataset = PacketParser(dependencies[0], self.version).data
+            return [dataset]
 
 
 class Lo(ProcessInstrument):
@@ -665,8 +665,8 @@ class Mag(ProcessInstrument):
                     f"{dependencies}. Expected only one dependency."
                 )
             input_data = load_cdf(dependencies[0])
-            output_dataset = mag_l1b(input_data, self.version)
-            return [output_dataset]
+            dataset = mag_l1b(input_data, self.version)
+            return [dataset]
 
         if self.data_level == "l1c":
             # L1C depends on matching norm/burst files: eg burst-magi and norm-magi or
@@ -679,8 +679,8 @@ class Mag(ProcessInstrument):
 
             input_data = [load_cdf(dep) for dep in dependencies]
             # Input datasets can be in any order
-            output_dataset = mag_l1c(input_data[0], input_data[1], self.version)
-            return [output_dataset]
+            dataset = mag_l1c(input_data[0], input_data[1], self.version)
+            return [dataset]
 
 
 class Swapi(ProcessInstrument):
