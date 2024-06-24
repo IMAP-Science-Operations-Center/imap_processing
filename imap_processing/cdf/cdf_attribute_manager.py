@@ -14,7 +14,6 @@ DEFAULT_GLOBAL_CDF_ATTRS_FILE = "imap_default_global_cdf_attrs.yaml"
 DEFAULT_GLOBAL_CDF_ATTRS_SCHEMA_FILE = "default_global_cdf_attrs_schema.yaml"
 DEFAULT_VARIABLE_CDF_ATTRS_SCHEMA_FILE = "default_variable_cdf_attrs_schema.yaml"
 
-class Global
 
 class CdfAttributeManager:
     """
@@ -76,10 +75,12 @@ class CdfAttributeManager:
         self.variable_attribute_schema = self._load_default_variable_attr_schema()
 
         # Load Default IMAP Global Attributes
-        self.global_attributes = CDFAttrs(CdfAttributeManager._load_yaml_data(
-            self.source_dir / DEFAULT_GLOBAL_CDF_ATTRS_FILE)
+        self.global_attributes = CdfAttributeManager._load_yaml_data(
+            self.source_dir / DEFAULT_GLOBAL_CDF_ATTRS_FILE
         )
-        self.variable_attributes = CDFAttrs()
+        self.variable_attributes = dict()
+        # TODO: make private
+        # TODO: Finish variable attributes
 
     def _load_default_global_attr_schema(self) -> dict:
         """
@@ -190,7 +191,6 @@ class CdfAttributeManager:
             The global attribute values created from the input global attribute files
             and schemas.
         """
-
         output = dict()
         for attr_name, attr_schema in self.global_attribute_schema.items():
             if attr_name in self.global_attributes:
@@ -245,17 +245,3 @@ class CdfAttributeManager:
             return self.variable_attributes[variable_name]
         # TODO: throw an error?
         return {}
-
-
-class CDFAttrs(dict):
-    def __getitem__(self, key):
-        self._validate(key)
-        val = dict.__getitem__(self, key)
-        return val
-
-    @staticmethod
-    def _validate(key):
-        """If present in cdf_manager.global_attriubte_schema, return cdf_manager.global_attributes[key]"""
-
-
-
