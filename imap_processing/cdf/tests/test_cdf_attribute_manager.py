@@ -108,6 +108,7 @@ def test_get_global_attributes():
     Test function that covers:
         get_global_attributes
     """
+
     # Initialize CdfAttributeManager object which loads in default info
     cdf_manager = CdfAttributeManager(Path(__file__).parent.parent / "config")
 
@@ -224,9 +225,7 @@ def test_add_global_attribute():
     # Reloading get_global_attributes to pick up deleted Source_name
     test_get_global_attrs = cdf_manager.get_global_attributes("imap_test_T1_test")
     with pytest.raises(KeyError):
-        assert (
-            cdf_manager.global_attributes["imap_test_T1_test"]["Logical_source"]
-        )
+        assert cdf_manager.global_attributes["imap_test_T1_test"]["Logical_source"]
     assert test_get_global_attrs["Logical_source"] is None
 
 
