@@ -3,6 +3,8 @@ from pathlib import Path
 # from imap_processing.cdf.cdf_attribute_manager import CdfAttributeManager
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 
+# Test
+
 
 def test_add_instrument_global_attrs():
     # Create an ImapCdfAttributes object, set to correct file path
@@ -27,9 +29,8 @@ def test_add_instrument_global_attrs():
 def testing_source_dir():
     # Create an ImapCdfAttributes object
     imap_cdf_manager = ImapCdfAttributes(Path(__file__).parent.parent / "tests")
-    assert (
-        str(imap_cdf_manager.source_dir)
-        == str(Path(__file__).parent.parent / "tests")
+    assert str(imap_cdf_manager.source_dir) == str(
+        Path(__file__).parent.parent / "tests"
     )
 
 
