@@ -255,7 +255,6 @@ class ProcessInstrument(ABC):
         self.end_date = end_date
         if not end_date:
             self.end_date = start_date
-            print(f"Setting end time to start time: {start_date}")
 
         self.version = version
         self.upload_to_sdc = upload_to_sdc
@@ -297,7 +296,6 @@ class ProcessInstrument(ABC):
                     for query_return in return_query
                 ]
             )
-        print(file_list)
         return file_list
 
     def upload_products(self, products: list[str]):
@@ -434,7 +432,6 @@ class Glows(ProcessInstrument):
             products = [write_cdf(dataset) for dataset in datasets]
 
         if self.data_level == "l1b":
-            print(dependencies)
             if len(dependencies) > 1:
                 raise ValueError(
                     f"Unexpected dependencies found for GLOWS L1B:"
