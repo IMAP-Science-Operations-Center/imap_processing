@@ -45,7 +45,7 @@ repos:
                 --disable-error-code, import-untyped,
                 --disable-error-code, import-not-found,
                 --disable-error-code, no-untyped-call ]
-        exclude: '^imap_processing/'
+        exclude: '^imap_processing/|^docs/source/conf.py'
         # '^docs/source/conf.py|^tools/|.*test.*'
 
 
