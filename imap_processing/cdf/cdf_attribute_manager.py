@@ -75,12 +75,10 @@ class CdfAttributeManager:
         self.variable_attribute_schema = self._load_default_variable_attr_schema()
 
         # Load Default IMAP Global Attributes
-        self.global_attributes = CdfAttributeManager._load_yaml_data(
+        self._global_attributes = CdfAttributeManager._load_yaml_data(
             self.source_dir / DEFAULT_GLOBAL_CDF_ATTRS_FILE
         )
-        self.variable_attributes = dict()
-
-        # TODO: Change names of global_attributes and variable_attributes?
+        self._variable_attributes = dict()
 
     def _load_default_global_attr_schema(self) -> dict:
         """
@@ -125,7 +123,7 @@ class CdfAttributeManager:
         file_path : str
             File path to load, under self.source_dir.
         """
-        self.global_attributes.update(
+        self._global_attributes.update(
             CdfAttributeManager._load_yaml_data(self.source_dir / file_path)
         )
 
@@ -147,7 +145,7 @@ class CdfAttributeManager:
         attribute_value : str
             The value of the attribute to add.
         """
-        self.global_attributes[attribute_name] = attribute_value
+        self._global_attributes[attribute_name] = attribute_value
 
     @staticmethod
     def _load_yaml_data(file_path: str | Path) -> dict:
@@ -193,15 +191,15 @@ class CdfAttributeManager:
         """
         output = dict()
         for attr_name, attr_schema in self.global_attribute_schema.items():
-            if attr_name in self.global_attributes:
-                output[attr_name] = self.global_attributes[attr_name]
+            if attr_name in self._global_attributes:
+                output[attr_name] = self._global_attributes[attr_name]
             # Retrieve instrument specific global attributes from the variable file
             elif (
                 instrument_id is not None
-                and attr_name in self.global_attributes[instrument_id]
+                and attr_name in self._global_attributes[instrument_id]
             ):
-                output[attr_name] = self.global_attributes[instrument_id][attr_name]
-            elif attr_schema["required"] and attr_name not in self.global_attributes:
+                output[attr_name] = self._global_attributes[instrument_id][attr_name]
+            elif attr_schema["required"] and attr_name not in self._global_attributes:
                 # TODO throw an error
                 output[attr_name] = None
 
@@ -217,11 +215,11 @@ class CdfAttributeManager:
             The name of the file to load from self.source_dir.
         """
         # Add variable attributes from file_name. Each variable name should have the
-        # required sub fields as defined in the variable schema.
+        # Required subfields as defined in the variable schema.
         raw_var_attrs = CdfAttributeManager._load_yaml_data(self.source_dir / file_name)
         var_attrs = raw_var_attrs.copy()
 
-        self.variable_attributes.update(var_attrs)
+        self._variable_attributes.update(var_attrs)
 
     def get_variable_attributes(self, variable_name: str) -> dict:
         """
@@ -238,22 +236,21 @@ class CdfAttributeManager:
         Returns
         -------
         dict
-            I have no idea todo check.
+            Information containing specific variable attributes
+            associated with "variable_name".
         """
-        # TODO: finish code
-        # TODO: Create a variable attribute schema file, validate here
         output = dict()
         for attr_name in self.variable_attribute_schema.keys():
-            if variable_name in self.variable_attributes:
-                output = self.variable_attributes[variable_name]
+            if variable_name in self._variable_attributes:
+                output = self._variable_attributes[variable_name]
             elif (
                 variable_name is not None
-                and attr_name in self.variable_attribute["variable_name"]
+                and attr_name in self._variable_attributes["variable_name"]
             ):
-                output = self.variable_attributes["variable_name"][attr_name]
+                output = self._variable_attributes["variable_name"][attr_name]
             elif (
-                variable_name not in self.variable_attributes_schema
-                and self.variable_attributes_schema["required"]
+                variable_name not in self.variable_attribute_schema
+                and self.variable_attribute_schema["required"]
             ):
                 output[variable_name] = None
 

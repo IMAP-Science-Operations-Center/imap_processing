@@ -43,33 +43,33 @@ def test_global_attribute():
     cdf_manager.load_global_attributes("imap_default_global_cdf_attrs.yaml")
 
     # Testing information has been loaded in
-    assert cdf_manager.global_attributes["Project"] == "STP>Solar-Terrestrial Physics"
+    assert cdf_manager._global_attributes["Project"] == "STP>Solar-Terrestrial Physics"
     assert (
-        cdf_manager.global_attributes["Source_name"]
+        cdf_manager._global_attributes["Source_name"]
         == "IMAP>Interstellar Mapping and Acceleration Probe"
     )
     assert (
-        cdf_manager.global_attributes["Discipline"]
+        cdf_manager._global_attributes["Discipline"]
         == "Solar Physics>Heliospheric Physics"
     )
     assert (
-        cdf_manager.global_attributes["Mission_group"]
+        cdf_manager._global_attributes["Mission_group"]
         == "IMAP>Interstellar Mapping and Acceleration Probe"
     )
-    assert cdf_manager.global_attributes["PI_name"] == "Dr. David J. McComas"
+    assert cdf_manager._global_attributes["PI_name"] == "Dr. David J. McComas"
     assert (
-        cdf_manager.global_attributes["PI_affiliation"]
+        cdf_manager._global_attributes["PI_affiliation"]
         == "Princeton Plasma Physics Laboratory, 100 Stellarator Road, "
         "Princeton, NJ 08540"
     )
     assert (
-        cdf_manager.global_attributes["File_naming_convention"]
+        cdf_manager._global_attributes["File_naming_convention"]
         == "source_descriptor_datatype_yyyyMMdd_vNNN"
     )
     # The following test should fail because "DOI" is not an attribute in
     #   imap_default_global_cdf_attrs.yaml
     with pytest.raises(KeyError):
-        assert cdf_manager.global_attributes["DOI"] == "test"
+        assert cdf_manager._global_attributes["DOI"] == "test"
 
     # Load in different data
     cdf_manager.source_dir = Path(__file__).parent.parent / "tests"
@@ -77,29 +77,29 @@ def test_global_attribute():
 
     # Testing attributes carried over
     assert (
-        cdf_manager.global_attributes["File_naming_convention"]
+        cdf_manager._global_attributes["File_naming_convention"]
         == "source_descriptor_datatype_yyyyMMdd_vNNN"
     )
     assert (
-        cdf_manager.global_attributes["Discipline"]
+        cdf_manager._global_attributes["Discipline"]
         == "Solar Physics>Heliospheric Physics"
     )
 
     # Testing attributes newly loaded
-    assert cdf_manager.global_attributes["Project"] == "STP>Solar-Terrestrial Physics"
+    assert cdf_manager._global_attributes["Project"] == "STP>Solar-Terrestrial Physics"
     assert (
-        cdf_manager.global_attributes["Source_name"]
+        cdf_manager._global_attributes["Source_name"]
         == "IMAP>Interstellar Mapping and Acceleration Probe"
     )
-    assert cdf_manager.global_attributes["Mission_group"] == "Dysfunctional Cats"
-    assert cdf_manager.global_attributes["PI_name"] == "Ana Manica"
-    assert cdf_manager.global_attributes["PI_affiliation"] == "LASP, CU"
-    assert cdf_manager.global_attributes["Data_version"] == 2
-    assert cdf_manager.global_attributes["DOI"] == "test"
+    assert cdf_manager._global_attributes["Mission_group"] == "Dysfunctional Cats"
+    assert cdf_manager._global_attributes["PI_name"] == "Ana Manica"
+    assert cdf_manager._global_attributes["PI_affiliation"] == "LASP, CU"
+    assert cdf_manager._global_attributes["Data_version"] == 2
+    assert cdf_manager._global_attributes["DOI"] == "test"
 
     # Testing that everything loaded into the global attrs is present in
     #   the global attrs schema
-    for attr in cdf_manager.global_attributes.keys():
+    for attr in cdf_manager._global_attributes.keys():
         assert attr in cdf_manager.global_attribute_schema.keys()
 
 
@@ -174,21 +174,21 @@ def test_instrument_id_format():
     test_get_global_attrs = cdf_manager.get_global_attributes("imap_test_T1_test")
 
     # Testing how instrument_id operates
-    assert test_get_global_attrs["Project"] == cdf_manager.global_attributes["Project"]
+    assert test_get_global_attrs["Project"] == cdf_manager._global_attributes["Project"]
     assert (
         test_get_global_attrs["Source_name"]
-        == cdf_manager.global_attributes["Source_name"]
+        == cdf_manager._global_attributes["Source_name"]
     )
     assert (
         test_get_global_attrs["Data_type"]
-        == cdf_manager.global_attributes["imap_test_T1_test"]["Data_type"]
+        == cdf_manager._global_attributes["imap_test_T1_test"]["Data_type"]
     )
     assert (
-        cdf_manager.global_attributes["imap_test_T1_test"]["Logical_source"]
+        cdf_manager._global_attributes["imap_test_T1_test"]["Logical_source"]
         == "imap_test_T1_test"
     )
     with pytest.raises(KeyError):
-        assert cdf_manager.global_attributes["imap_test_T1_test"]["Project"]
+        assert cdf_manager._global_attributes["imap_test_T1_test"]["Project"]
 
 
 def test_add_global_attribute():
@@ -202,30 +202,30 @@ def test_add_global_attribute():
     # Changing a dynamic global variable
     cdf_manager.add_global_attribute("Project", "Test Project")
     test_get_global_attrs = cdf_manager.get_global_attributes("imap_test_T1_test")
-    assert cdf_manager.global_attributes["Project"] == "Test Project"
+    assert cdf_manager._global_attributes["Project"] == "Test Project"
     assert test_get_global_attrs["Project"] == "Test Project"
 
     # Testing adding required global attribute
-    cdf_manager.global_attributes.__delitem__("Source_name")
+    cdf_manager._global_attributes.__delitem__("Source_name")
     # Reloading get_global_attributes to pick up deleted Source_name
     test_get_global_attrs = cdf_manager.get_global_attributes("imap_test_T1_test")
     with pytest.raises(KeyError):
-        assert cdf_manager.global_attributes["Source_name"]
+        assert cdf_manager._global_attributes["Source_name"]
     assert test_get_global_attrs["Source_name"] is None
 
     # Adding deleted global attribute
     cdf_manager.add_global_attribute("Source_name", "anas_source")
-    assert cdf_manager.global_attributes["Source_name"] == "anas_source"
+    assert cdf_manager._global_attributes["Source_name"] == "anas_source"
     # Reloading get_global_attributes to pick up added Source_name
     test_get_global_attrs = cdf_manager.get_global_attributes("imap_test_T1_test")
     assert test_get_global_attrs["Source_name"] == "anas_source"
 
     # Testing instrument specific attribute
-    cdf_manager.global_attributes["imap_test_T1_test"].__delitem__("Logical_source")
+    cdf_manager._global_attributes["imap_test_T1_test"].__delitem__("Logical_source")
     # Reloading get_global_attributes to pick up deleted Source_name
     test_get_global_attrs = cdf_manager.get_global_attributes("imap_test_T1_test")
     with pytest.raises(KeyError):
-        assert cdf_manager.global_attributes["imap_test_T1_test"]["Logical_source"]
+        assert cdf_manager._global_attributes["imap_test_T1_test"]["Logical_source"]
     assert test_get_global_attrs["Logical_source"] is None
 
 
@@ -269,16 +269,16 @@ def test_variable_attribute():
 
     # Testing specific attributes
     assert (
-        cdf_manager.variable_attributes["default_attrs"]["DEPEND_0"]
-        == cdf_manager.variable_attributes["default_attrs"]["DEPEND_0"]
+        cdf_manager._variable_attributes["default_attrs"]["DEPEND_0"]
+        == cdf_manager._variable_attributes["default_attrs"]["DEPEND_0"]
     )
-    assert cdf_manager.variable_attributes["default_attrs"]["FILLVAL"] == -10
-    assert cdf_manager.variable_attributes["test_field_1"]["DEPEND_0"] == "test_depend"
+    assert cdf_manager._variable_attributes["default_attrs"]["FILLVAL"] == -10
+    assert cdf_manager._variable_attributes["test_field_1"]["DEPEND_0"] == "test_depend"
     assert (
-        cdf_manager.variable_attributes["default_attrs"]["VAR_TYPE"] == "test_var_type"
+        cdf_manager._variable_attributes["default_attrs"]["VAR_TYPE"] == "test_var_type"
     )
     with pytest.raises(KeyError):
-        assert cdf_manager.variable_attributes["default_attrs"]["CATDESC"] == "test"
+        assert cdf_manager._variable_attributes["default_attrs"]["CATDESC"] == "test"
 
 
 def test_get_variable_attributes():
