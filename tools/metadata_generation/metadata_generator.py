@@ -38,7 +38,7 @@ def get_dataset_attributes(
     ----------
     sheet : pandas.DataFrame
         A sheet/tab from an Excel file represented as a pandas DataFrame.
-    global_attrs : None
+    global_attrs : dict or None
         List of global attributes.
 
     Returns
