@@ -18,7 +18,9 @@ from imap_processing.ultra.l1b.lookup_utils import (
 logger = logging.getLogger(__name__)
 
 
-def get_back_positions(indices: np.array, events_dataset: xarray.Dataset, xf: np.array):
+def get_back_positions(indices: np.array,
+                       events_dataset: xarray.Dataset,
+                       xf: np.array):
     """
     Calculate back xb, yb position and tof.
 
@@ -43,9 +45,9 @@ def get_back_positions(indices: np.array, events_dataset: xarray.Dataset, xf: np
 
     Returns
     -------
-    tof : float
+    tof : np.array
         Time of flight (tenths of a nanosecond).
-    particle_tof : float
+    t2 : float
         Particle time of flight (i.e. from start to stop)
         (tenths of a nanosecond).
     xb : np.array
@@ -328,7 +330,7 @@ def get_ssd_index(index: np.array, events_dataset: xarray.Dataset, side: str):
     return ssd_indices, ybs * 100, tofs
 
 
-def get_ssd_positions(indices, events_dataset: xarray.Dataset, xf: float):
+def get_ssd_positions(indices: np.array, events_dataset: xarray.Dataset, xf: np.array):
     """
     Calculate back xb, yb position for the SSDs.
 
@@ -348,11 +350,11 @@ def get_ssd_positions(indices, events_dataset: xarray.Dataset, xf: float):
 
     Parameters
     ----------
-    index : int
-        Index of the event.
+    index : np.array
+        Indices of the event.
     events_dataset : xarray.Dataset
         Data in xarray format.
-    xf : int
+    xf : np.array
         Front x position (hundredths of a millimeter)
 
     Returns
@@ -368,26 +370,22 @@ def get_ssd_positions(indices, events_dataset: xarray.Dataset, xf: float):
     ssd_indices_right, _, tofs_right = get_ssd_index(index_right, events_dataset, "RT")
 
     ssd_indices = np.concatenate((ssd_indices_left, ssd_indices_right))
+    # in nanoseconds
     tof_offset = np.concatenate((tofs_left, tofs_right))
-
-    time = (
-        get_image_params("TOFSSDSC")
-        * events_dataset["COIN_DISCRETE_TDC"].data[ssd_indices]
-        / 1024
-        + tof_offset
-    )
+    # this is in nanoseconds: "TOFSSDSC"
+    time = get_image_params("TOFSSDSC") * events_dataset["COIN_DISCRETE_TDC"].data[ssd_indices]/1024 + tof_offset
 
     # The scale factor and offsets, and a multiplier to convert xf to a tof offset.
-    tof = (
-        time
-        + get_image_params("TOFSSDTOTOFF")
-        + xf * get_image_params("XFTTOF") / 32768
-    )
+    tof = time + get_image_params("TOFSSDTOTOFF") + \
+          xf[ssd_indices] * get_image_params("XFTTOF")
 
-    return tof
+    return ssd_indices, tof
 
 
-def get_energy_pulse_height(pulse_height: float, stop_type: int, xb: float, yb: float):
+def get_energy_pulse_height(events_dataset: xarray.Dataset,
+                            indices_1: np.array,
+                            indices_2: np.array,
+                            xb: np.array, yb: np.array):
     """
     Calculate the pulse-height energy.
 
@@ -400,39 +398,43 @@ def get_energy_pulse_height(pulse_height: float, stop_type: int, xb: float, yb: 
 
     Parameters
     ----------
-    pulse_height: float
-        Pulse height from the stop anode.
-    stop_type: int
+    events_dataset : xarray.Dataset
+        Data in xarray format.
+    indices_1: np.array
         Stop Type: 1=Top, 2=Bottom.
-    xb : float
+    indices_2: np.array
+        Stop Type: 1=Top, 2=Bottom.
+    xb : np.array
         x back position (hundredths of a millimeter).
-    yb : float
+    yb : np.array
         y back position (hundredths of a millimeter).
 
     Returns
     -------
-    energy : float
+    energy : np.array
         Energy measured using the pulse height
         from the stop anode (DN).
     """
-    if stop_type == 1:
-        # TODO: make certain xb, yb units correct
-        xlut = (xb / 100 - 25 / 2) * 20 / 50  # mm
-        ylut = (yb / 100 + 82 / 2) * 32 / 82  # mm
-        energy = xlut + ylut  # placeholder
-        # energy = pulse_height - get_image_params("SpTpPHOffset")
-        # TODO * SpTpPHCorr[Xlut, Ylut] / 1024; George Clark working on it
-    elif stop_type == 2:
-        # TODO: make certain xb, yb units correct
-        xlut = (xb / 100 + 50 + 25 / 2) * 20 / 50  # mm
-        ylut = (yb / 100 + 82 / 2) * 32 / 82  # mm
-        energy = xlut + ylut  # placeholder
-        # energy = pulse_height - get_image_params("SpBtPHOffset")
-        # TODO * SpBtPHCorr[Xlut, Ylut]/1024; George Clark working on it
-    else:
-        raise ValueError("Error: Invalid Stop Type")
+    # Stop type 1
+    xlut = (xb[indices_1] / 100 - 25 / 2) * 20 / 50  # mm
+    ylut = (yb[indices_1] / 100 + 82 / 2) * 32 / 82  # mm
+    energy_1 = xlut + ylut  # placeholder
+    # energy = events_dataset["ENERGY_PH"].data[indices_1] -
+    # get_image_params("SpTpPHOffset")
+    # TODO * SpTpPHCorr[xlut, ylut] / 1024; George Clark working on it
 
-    return energy
+    # Stop type 2
+    xlut = (xb[indices_2] / 100 + 50 + 25 / 2) * 20 / 50  # mm
+    ylut = (yb[indices_2] / 100 + 82 / 2) * 32 / 82  # mm
+    energy_2 = xlut + ylut  # placeholder
+    # energy = events_dataset["ENERGY_PH"].data[indices_2] -
+    # energy = pulse_height - get_image_params("SpBtPHOffset")
+    # TODO * SpBtPHCorr[xlut, ylut]/1024; George Clark working on it
+
+    energy = np.concatenate((energy_1, energy_2))
+    indices = np.concatenate((indices_1, indices_2))
+
+    return energy, indices
 
 
 def get_energy_ssd(index: int, events_dataset: xarray.Dataset):
@@ -479,7 +481,7 @@ def get_energy_ssd(index: int, events_dataset: xarray.Dataset):
     return energy_norm
 
 
-def determine_species_ssd(energy: float, tof: float, r: float):
+def determine_species_ssd(energy: np.array, tof: np.array, r: np.array):
     """
     Determine the species for SSD events.
 
@@ -498,18 +500,18 @@ def determine_species_ssd(energy: float, tof: float, r: float):
 
     Parameters
     ----------
-    energy : float
+    energy : np.array
         Energy from the SSD event (keV).
-    tof : float
+    tof : np.array
         Time of flight of the SSD event (tenths of a nanosecond)
-    r : float
+    r : np.array
         Path length (hundredths of a millimeter).
 
     Returns
     -------
-    ctof : float
+    ctof : np.array
         Corrected TOF.
-    bin : int
+    bin : np.array
         Species bin.
     """
     z_dstop = 2.6 / 2  # position of stop foil on Z axis (mm)
@@ -526,20 +528,20 @@ def determine_species_ssd(energy: float, tof: float, r: float):
     ctof = tof * dmin_ssd_ctof / r
 
     # TODO: get these lookup tables
-    if r < get_image_params("PathSteepThresh"):
-        # bin = ExTOFSpeciesSteep[energy, ctof]
-        bin = 0  # placeholder
-    elif r < get_image_params("PathMediumThresh"):
-        # bin = ExTOFSpeciesMedium[energy, ctof]
-        bin = 0  # placeholder
-    else:
-        # bin = ExTOFSpeciesFlat[energy, ctof]
-        bin = 0  # placeholder
+    # if r < get_image_params("PathSteepThresh"):
+    #     # bin = ExTOFSpeciesSteep[energy, ctof]
+    #     bin = 0  # placeholder
+    # elif r < get_image_params("PathMediumThresh"):
+    #     # bin = ExTOFSpeciesMedium[energy, ctof]
+    #     bin = 0  # placeholder
+    # else:
+    #     # bin = ExTOFSpeciesFlat[energy, ctof]
+    #     bin = 0  # placeholder
 
     return ctof, bin
 
 
-def determine_species_pulse_height(energy: float, tof: float, r: float):
+def determine_species_pulse_height(energy: np.array, tof: np.array, r: np.array):
     """
     Determine the species for pulse-height events.
 
@@ -556,18 +558,18 @@ def determine_species_pulse_height(energy: float, tof: float, r: float):
 
     Parameters
     ----------
-    energy : float
+    energy : np.array
         Energy from the SSD event (keV).
-    tof : float
+    tof : np.array
         Time of flight of the SSD event (tenths of a nanosecond).
-    r : float
+    r : np.array
         Path length (hundredths of a millimeter).
 
     Returns
     -------
-    ctof : float
+    ctof : np.array
         Corrected TOF.
-    bin : int
+    bin : np.array
         Species bin.
     """
     z_dstop = 2.6 / 2  # position of stop foil on Z axis (mm)
@@ -588,7 +590,7 @@ def determine_species_pulse_height(energy: float, tof: float, r: float):
 
 
 def get_particle_velocity(
-    front_position: tuple, back_position: tuple, d: float, tof: float
+    front_position: tuple, back_position: tuple, d: np.array, tof: np.array
 ):
     """
     Determine the particle velocity.
@@ -605,16 +607,26 @@ def get_particle_velocity(
         Front position (xf,yf) (hundredths of a millimeter).
     back_position : tuple of floats
         Back position (xb,yb) (hundredths of a millimeter).
-    d : float
+    d : np.array
         distance from slit to foil (hundredths of a millimeter).
+    tof : np.array
+        Time of flight (tenths of a nanosecond).
 
     Returns
     -------
-    velocity : tuple of floats.
-        Normalized component of the velocity vectors.
+    vhat_x : np.array.
+        Normalized component of the velocity vector in x direction.
+    vhat_y : np.array.
+        Normalized component of the velocity vector in y direction.
+    vhat_z : np.array.
+        Normalized component of the velocity vector in z direction.
     """
-    # TODO: throw an error for a negative tof?
-    tof = abs(tof)
+    # FSW seems to make this absolute value. I will do the same for now.
+    # TODO: Ask Ultra team about this.
+    if tof[tof < 0].any():
+        tof = abs(tof)
+        logging.info(f"Negative tof values found.")
+
     delta_x = front_position[0] - back_position[0]
     delta_y = front_position[1] - back_position[1]
 
@@ -727,6 +739,7 @@ def get_extended_raw_events(events_dataset):
             tof, particle_tof, xb, yb = get_back_positions(index, events_dataset, xf)
             d, yf = get_front_y_position(start_type, yb)
             pulse_height = events_dataset["ENERGY_PH"].data[index]
+            # TODO stopped here
             energy = get_energy_pulse_height(pulse_height, stop_type, xb, yb)
             r = get_path_length(xf, xb, yf, yb, d)
             ctof, bin = determine_species_pulse_height(energy, tof, r)

@@ -13,12 +13,15 @@ from imap_processing.ultra.l0.ultra_utils import (
 from imap_processing.ultra.l1a.ultra_l1a import create_dataset
 from imap_processing.ultra.l1b.ultra_l1b_extended import (
     determine_species_pulse_height,
+    determine_species_ssd,
     get_back_positions,
     get_front_x_position,
     get_front_y_position,
     get_particle_velocity,
     get_path_length,
     get_ssd_index,
+    get_ssd_positions,
+    get_energy_pulse_height,
 )
 from imap_processing.utils import group_by_apid
 
@@ -198,11 +201,12 @@ def test_yb_ssd(
     ],
     indirect=True,
 )
-def test_get_front_y_position(
+def test_velocity(
     events_fsw_comparison_theta_0,
     decom_test_data,
     decom_ultra_aux,
 ):
+    """Tests velocity and other parameters used for velocity."""
     decom_ultra_events, _ = decom_test_data
     dataset = create_dataset(
         {
@@ -239,18 +243,17 @@ def test_get_front_y_position(
     assert r == pytest.approx(df_filt["r"].astype("float"), rel=1e-3)
 
     # TODO: test get_energy_pulse_height
-    # pulse_height = events_dataset["ENERGY_PH"].data[index]
-    # energy = get_energy_pulse_height(pulse_height, stop_type, xb, yb)
+    energy = get_energy_pulse_height(events_dataset, indices_1, indices_2, xb_test, yb_test)
 
     # TODO: needs lookup table to test bin
     tof, t2, xb, yb = get_back_positions(
         indices, events_dataset, selected_rows_1.Xf.values.astype("float")
     )
 
-    energy = df_filt["Xf"].iloc[indices].astype("float")
+    energy = df_filt["Energy"].iloc[indices].astype("float")
     r = df_filt["r"].iloc[indices].astype("float")
 
-    ctof, bin = determine_species_pulse_height(energy, tof[indices] * 100, r)
+    ctof, bin = determine_species_pulse_height(energy.to_numpy(), tof[indices] * 100, r.to_numpy())
     assert ctof.values == pytest.approx(
         df_filt["cTOF"].iloc[indices].astype("float").values, rel=1e-3
     )
@@ -271,3 +274,65 @@ def test_get_front_y_position(
     assert vhat_z == pytest.approx(
         df_filt["vhatZ"].iloc[indices].astype("float").values, rel=1e-2
     )
+
+
+@pytest.mark.parametrize(
+    "decom_test_data",
+    [
+        pytest.param(
+            {
+                "apid": ULTRA_EVENTS.apid[0],
+                "filename": "FM45_40P_Phi28p5_BeamCal_LinearScan_phi28.50"
+                            "_theta-0.00_20240207T102740.CCSDS",
+            },
+        )
+    ],
+    indirect=True,
+)
+def test_determine_species_ssd(
+        events_fsw_comparison_theta_0,
+        decom_test_data,
+        decom_ultra_aux,
+):
+    """Tests velocity and other parameters used for velocity."""
+    decom_ultra_events, _ = decom_test_data
+    dataset = create_dataset(
+        {
+            ULTRA_EVENTS.apid[0]: decom_ultra_events,
+            ULTRA_AUX.apid[0]: decom_ultra_aux,
+        }
+    )
+
+    # Remove start_type with fill values
+    events_dataset = dataset.where(
+        dataset["START_TYPE"] != GlobalConstants.INT_FILLVAL, drop=True
+    )
+
+    indices = np.where(events_dataset["STOP_TYPE"] >= 8)[0]
+    df = pd.read_csv(events_fsw_comparison_theta_0)
+    df_filt = df[df["StartType"] != -1]
+
+    xf = df_filt["Xf"].astype("float").values
+
+    z_dstop = 2.6 / 2  # position of stop foil on Z axis (mm)
+    z_ds = 46.19 - z_dstop  # position of slit on Z axis (mm)
+    df = 3.39  # distance from slit to foil (mm)
+
+    # PH event TOF normalization to Z axis
+    # Note: there is a type in IMAP-Ultra Flight
+    # Software Specification document
+    dmin = z_ds - np.sqrt(2) * df  # (mm)
+    dmin_ssd_ctof = dmin ** 2 / (dmin - z_dstop)  # (mm)
+
+    ssd_indices, tof = get_ssd_positions(indices, events_dataset, xf)
+    #print('hi')
+    #tof = (ctof * r) / dmin_ssd_ctof
+    energy = df_filt["Energy"].astype("float")
+
+    r = df_filt["r"].astype("float")
+
+    ctof, bin = determine_species_ssd(energy.iloc[ssd_indices].to_numpy(), tof * 100, r.iloc[ssd_indices].to_numpy())
+    print('hi')
+    ctof = df_filt["cTOF"].iloc[ssd_indices].astype("float")
+
+
