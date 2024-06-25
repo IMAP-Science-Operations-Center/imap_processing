@@ -1,0 +1,14 @@
+Descriptor: &desc
+  TEST>Testinstrument
+TEXT: &txt >
+  This file is nothing more than a test yamal. This description? This is a test description.
+  This Testinstrument will contribute to our understanding of the cdf_attribute_manager.py file.
+  This test file is led by me, Ana Manica. Lasp undergraduate employee.
+  I don't have a website. Sorry.
+
+imap_test_T1_test:
+    Descriptor: *desc
+    TEXT: *txt
+    Data_type: T1_test-one>Test-1 test one
+    Logical_source: imap_test_T1_test
+    Logical_source_description: IMAP Mission TEST one document Level-T1.
