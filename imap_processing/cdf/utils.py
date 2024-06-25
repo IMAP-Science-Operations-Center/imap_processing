@@ -101,7 +101,7 @@ def load_cdf(
     return dataset
 
 
-def write_cdf(dataset: xr.Dataset) -> Path:
+def write_cdf(dataset: xr.Dataset) -> list[Path]:
     """
     Write the contents of "data" to a CDF file using cdflib.xarray_to_cdf.
 
@@ -167,4 +167,5 @@ def write_cdf(dataset: xr.Dataset) -> Path:
         terminate_on_warning=True,
     )  # Terminate if not ISTP compliant
 
-    return file_path
+    return file_path #type: ignore[no-any-return]
+    #TODO Change,  Returning Any from function declared to return "list[Path]"
