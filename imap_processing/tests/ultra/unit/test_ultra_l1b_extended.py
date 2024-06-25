@@ -18,7 +18,6 @@ from imap_processing.ultra.l1b.ultra_l1b_extended import (
     get_front_y_position,
     get_particle_velocity,
     get_path_length,
-    get_ssd_positions,
     get_ssd_index,
 )
 from imap_processing.utils import group_by_apid
@@ -199,7 +198,7 @@ def test_yb_ssd(
     ],
     indirect=True,
 )
-def test_yf(
+def test_get_front_y_position(
     events_fsw_comparison_theta_0,
     decom_test_data,
     decom_ultra_aux,

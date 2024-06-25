@@ -157,62 +157,59 @@ def get_front_x_position(start_type: np.array, start_position_tdc: np.array):
     return xf
 
 
-def get_front_y_position(events_dataset, yb: float):
+def get_front_y_position(events_dataset: xarray.Dataset, yb: np.array) -> tuple[np.array, np.array]:
     """
-    Compute the adjustments.
+    Compute the adjustments for the front y position and distance front to back.
 
-    These are needed for the front position
-    (yf) and distance front to back (d).
-    This utilizes lookup tables, but is based on
-    the angle of the foil and trigonometry.
-    Further description is available on pages 38-39 of
-    IMAP-Ultra Flight Software Specification document
-    (7523-9009_Rev_-.pdf).
+    This function utilizes lookup tables and trigonometry based on
+    the angle of the foil. Further description is available in the
+    IMAP-Ultra Flight Software Specification document.
 
     Parameters
     ----------
-    start_type : int
-        Start Type: 1=Left, 2=Right.
-    yb : float
-        y back position in (hundredths of a millimeter).
+    events_dataset : xarray.Dataset
+        Data in xarray format.
+    yb : np.array
+        y back position in hundredths of a millimeter.
 
     Returns
     -------
-    d : float
-        Distance front to back (hundredths of a millimeter).
-    yf : float
-        Front y position (hundredths of a millimeter).
+    d : np.array
+        Distance front to back in hundredths of a millimeter.
+    yf : np.array
+        Front y position in hundredths of a millimeter.
     """
-    df = 3.39  # shortest distance from slit to foil (mm)
-    z_ds = 44.89  # position of slit on Z axis (mm)
+    # df in IMAP-Ultra Flight Software Specification document.
+    d_slit_foil = 3.39  # shortest distance from slit to foil (mm)
+    # z_ds in IMAP-Ultra Flight Software Specification document.
+    slit_z = 44.89  # position of slit on Z axis (mm)
 
+    # Determine start types
     start_type_left = events_dataset["START_TYPE"].data == 1
     start_type_right = events_dataset["START_TYPE"].data == 2
     index_array = np.arange(len(events_dataset["START_TYPE"]))
-    index_left = index_array[events_dataset["START_TYPE"].data == 1]
-    index_right = index_array[events_dataset["START_TYPE"].data == 2]
+    index_left = index_array[start_type_left]
+    index_right = index_array[start_type_right]
+
     yf = np.zeros(len(events_dataset["START_TYPE"]))
     d = np.zeros(len(events_dataset["START_TYPE"]))
 
-    # A particle entering the left shutter will trigger
-    # the left anode and vice versa.
+    yf_estimate_left = 40.0  # front position of particle for left shutter (mm)
+    yf_estimate_right = -40.0  # front position of particle for right shutter (mm)
 
-    yf_estimate_1 = 40.0  # front position of particle (mm)
-    dy_lut_1 = np.round((yf_estimate_1 - yb[start_type_left] / 100) * 256 / 81.92)  # mm
-    yadj_1 = get_y_adjust(dy_lut_1) / 100  # mm
-    yf[index_left] = (yf_estimate_1 - yadj_1) * 100  # hundredths of a millimeter
-    dadj_1 = np.sqrt(2) * df - yadj_1  # mm# hundredths of a millimeter
-    d[index_left] = (z_ds - dadj_1) * 100  # hundredths of a millimeter
+    # Compute adjustments for left start type
+    dy_lut_left = np.round((yf_estimate_left - yb[start_type_left] / 100) * 256 / 81.92)
+    y_adjust_left = get_y_adjust(dy_lut_left) / 100  # y adjustment in mm
+    yf[index_left] = (yf_estimate_left - y_adjust_left) * 100  # hundredths of a millimeter
+    distance_adjust_left = np.sqrt(2) * d_slit_foil - y_adjust_left  # distance adjustment in mm
+    d[index_left] = (slit_z - distance_adjust_left) * 100  # hundredths of a millimeter
 
-    yf_estimate_2 = -40  # front position of particle (mm)
-    # TODO: make certain yb units correct
-    dy_lut_2 = np.round(
-        (yb[start_type_right] / 100 - yf_estimate_2) * 256 / 81.92
-    )  # mm
-    yadj_2 = get_y_adjust(dy_lut_2) / 100  # mm
-    yf[index_right] = (yf_estimate_2 + yadj_2) * 100
-    dadj_2 = np.sqrt(2) * df - yadj_2  # mm# hundredths of a millimeter
-    d[index_right] = (z_ds - dadj_2) * 100  # hundredths of a millimeter
+    # Compute adjustments for right start type
+    dy_lut_right = np.round((yb[start_type_right] / 100 - yf_estimate_right) * 256 / 81.92)
+    y_adjust_right = get_y_adjust(dy_lut_right) / 100  # y adjustment in mm
+    yf[index_right] = (yf_estimate_right + y_adjust_right) * 100  # hundredths of a millimeter
+    distance_adjust_right = np.sqrt(2) * d_slit_foil - y_adjust_right  # distance adjustment in mm
+    d[index_right] = (slit_z - distance_adjust_right) * 100  # hundredths of a millimeter
 
     return d, yf
 
@@ -295,8 +292,7 @@ def get_coincidence_positions(
     return etof, xc
 
 
-def get_ssd_index(index: np.array, events_dataset: xarray.Dataset,
-                  side: str):
+def get_ssd_index(index: np.array, events_dataset: xarray.Dataset, side: str):
     """Figure out what SSD a particle hit.
 
     Parameters
@@ -315,7 +311,6 @@ def get_ssd_index(index: np.array, events_dataset: xarray.Dataset,
     yb : np.array
         y ssd position (hundredths of a millimeter).
     """
-
     ssd_indices = np.array([], dtype=int)
     ybs = np.array([], dtype=float)
     tofs = np.array([], dtype=float)
@@ -365,7 +360,6 @@ def get_ssd_positions(indices, events_dataset: xarray.Dataset, xf: float):
     tof : int
         Time of flight (tenths of a nanosecond).
     """
-
     # Start Type: 1=Left, 2=Right
     index_left = indices[events_dataset["START_TYPE"].data[indices] == 1]
     index_right = indices[events_dataset["START_TYPE"].data[indices] == 2]
@@ -376,8 +370,12 @@ def get_ssd_positions(indices, events_dataset: xarray.Dataset, xf: float):
     ssd_indices = np.concatenate((ssd_indices_left, ssd_indices_right))
     tof_offset = np.concatenate((tofs_left, tofs_right))
 
-    time = get_image_params("TOFSSDSC") * \
-           events_dataset["COIN_DISCRETE_TDC"].data[ssd_indices] / 1024 + tof_offset
+    time = (
+        get_image_params("TOFSSDSC")
+        * events_dataset["COIN_DISCRETE_TDC"].data[ssd_indices]
+        / 1024
+        + tof_offset
+    )
 
     # The scale factor and offsets, and a multiplier to convert xf to a tof offset.
     tof = (
