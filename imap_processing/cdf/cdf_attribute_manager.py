@@ -80,6 +80,8 @@ class CdfAttributeManager:
         )
         self.variable_attributes = dict()
 
+        # TODO: Change names of global_attributes and variable_attributes?
+
     def _load_default_global_attr_schema(self) -> dict:
         """
         Load the default global schema from the source directory.
@@ -238,8 +240,21 @@ class CdfAttributeManager:
         dict
             I have no idea todo check.
         """
+        # TODO: finish code
         # TODO: Create a variable attribute schema file, validate here
-        if variable_name in self.variable_attributes:
-            return self.variable_attributes[variable_name]
-        # TODO: throw an error?
-        return {}
+        output = dict()
+        for attr_name in self.variable_attribute_schema.keys():
+            if variable_name in self.variable_attributes:
+                output = self.variable_attributes[variable_name]
+            elif (
+                variable_name is not None
+                and attr_name in self.variable_attribute["variable_name"]
+            ):
+                output = self.variable_attributes["variable_name"][attr_name]
+            elif (
+                variable_name not in self.variable_attributes_schema
+                and self.variable_attributes_schema["required"]
+            ):
+                output[variable_name] = None
+
+        return output
