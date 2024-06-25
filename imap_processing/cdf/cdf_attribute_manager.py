@@ -78,7 +78,9 @@ class CdfAttributeManager:
         self.global_attributes = CdfAttributeManager._load_yaml_data(
             self.source_dir / DEFAULT_GLOBAL_CDF_ATTRS_FILE
         )
-        self.variable_attributes = dict()
+        self.variable_attributes = dict()  # type: ignore[var-annotated]
+        # Todo Change, Need type annotation for "variable_attributes"
+        # (hint: "variable_attributes: dict[<type>, <type>] = ...")
 
     def _load_default_global_attr_schema(self) -> dict:
         """
@@ -93,7 +95,9 @@ class CdfAttributeManager:
             self.source_dir / "shared" / DEFAULT_GLOBAL_CDF_ATTRS_SCHEMA_FILE
         )
         # Load the Schema
-        return CdfAttributeManager._load_yaml_data(default_schema_path)
+        return CdfAttributeManager._load_yaml_data(default_schema_path)  # type: ignore[no-any-return]
+
+    # TODO Change, Returning Any from function declared to return "dict[Any, Any]"
 
     def _load_default_variable_attr_schema(self) -> dict:
         """
@@ -108,9 +112,11 @@ class CdfAttributeManager:
             self.source_dir / "shared" / DEFAULT_VARIABLE_CDF_ATTRS_SCHEMA_FILE
         )
         # Load the Schema
-        return CdfAttributeManager._load_yaml_data(default_schema_path)
+        return CdfAttributeManager._load_yaml_data(default_schema_path)  # type: ignore[no-any-return]
 
-    def load_global_attributes(self, file_path: str):
+    # TODO Change Returning Any from function declared to return "dict[Any, Any]"
+
+    def load_global_attributes(self, file_path: str) -> None:
         """
         Update the global attributes property with the attributes from the file.
 
@@ -148,7 +154,7 @@ class CdfAttributeManager:
         self.global_attributes[attribute_name] = attribute_value
 
     @staticmethod
-    def _load_yaml_data(file_path: str | Path) -> dict:
+    def _load_yaml_data(file_path: str | Path) -> yaml:
         """
         Load a yaml file from the provided path.
 
@@ -236,10 +242,11 @@ class CdfAttributeManager:
         Returns
         -------
         dict
-            I have no idea todo check.
+            Dictionary of variable attributes.
         """
         # TODO: Create a variable attribute schema file, validate here
         if variable_name in self.variable_attributes:
-            return self.variable_attributes[variable_name]
+            return self.variable_attributes[variable_name]  # type: ignore[no-any-return]
+        # TODO Change, Returning Any from function declared to return "dict[Any, Any]"
         # TODO: throw an error?
         return {}

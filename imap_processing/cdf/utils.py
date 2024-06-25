@@ -12,6 +12,7 @@ from cdflib.xarray import cdf_to_xarray, xarray_to_cdf
 from cdflib.xarray.cdf_to_xarray import ISTP_TO_XARRAY_ATTRS
 
 import imap_processing
+from imap_processing._version import __version__, __version_tuple__  # noqa: F401
 
 logger = logging.getLogger(__name__)
 
@@ -76,7 +77,10 @@ def load_cdf(
     """
     # TODO: remove this when cdflib is updated to version >1.3.0
     if "to_datetime" not in kwargs:
-        kwargs["to_datetime"] = True
+        kwargs["to_datetime"] = True  # type: ignore[assignment]
+        # ToDO Change
+        # Incompatible types in assignment
+        # (expression has type "bool", target has type "dict[Any, Any]")
     dataset = cdf_to_xarray(file_path, kwargs)
 
     # cdf_to_xarray converts single-value attributes to lists
@@ -97,7 +101,7 @@ def load_cdf(
     return dataset
 
 
-def write_cdf(dataset: xr.Dataset):
+def write_cdf(dataset: xr.Dataset) -> list[Path]:
     """
     Write the contents of "data" to a CDF file using cdflib.xarray_to_cdf.
 
@@ -115,7 +119,7 @@ def write_cdf(dataset: xr.Dataset):
 
     Returns
     -------
-    file_path : pathlib.Path
+    file_path : list[Path]
         Path to the file created.
     """
     # Create the filename from the global attributes
@@ -153,7 +157,7 @@ def write_cdf(dataset: xr.Dataset):
     # The Logical_file_id is always the name of the file without the extension
     dataset.attrs["Logical_file_id"] = file_path.stem
     # Add the processing version to the dataset attributes
-    dataset.attrs["ground_software_version"] = imap_processing.__version__
+    dataset.attrs["ground_software_version"] = imap_processing._version.__version__
 
     # Convert the xarray object to a CDF
     xarray_to_cdf(
@@ -163,4 +167,4 @@ def write_cdf(dataset: xr.Dataset):
         terminate_on_warning=True,
     )  # Terminate if not ISTP compliant
 
-    return file_path
+    return [file_path]
