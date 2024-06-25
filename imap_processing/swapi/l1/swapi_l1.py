@@ -1,12 +1,15 @@
 """SWAPI level-1 processing code."""
 
 import copy
+import dataclasses
 
 import numpy as np
 import xarray as xr
 
+from imap_processing import imap_module_directory
 from imap_processing.cdf.global_attrs import ConstantCoordinates
 from imap_processing.cdf.utils import calc_start_time
+from imap_processing.decom import decom_packets
 from imap_processing.swapi.swapi_cdf_attrs import (
     compression_attrs,
     counts_attrs,
@@ -16,11 +19,17 @@ from imap_processing.swapi.swapi_cdf_attrs import (
     uncertainty_attrs,
 )
 from imap_processing.swapi.swapi_utils import SWAPIAPID, SWAPIMODE
-from imap_processing.utils import create_dataset, group_by_apid, sort_by_time
+from imap_processing.utils import (
+    create_dataset,
+    group_by_apid,
+    sort_by_time,
+    update_epoch_to_datetime,
+)
 
 
 def filter_good_data(full_sweep_sci):
-    """Filter out bad data sweep indices.
+    """
+    Filter out bad data sweep indices.
 
     Bad data indicator:
 
@@ -37,7 +46,7 @@ def filter_good_data(full_sweep_sci):
     Returns
     -------
     numpy.ndarray
-        Good data sweep indices
+        Good data sweep indices.
     """
     # PLAN_ID for current sweep should all be one value and
     # SWEEP_TABLE should all be one value.
@@ -76,7 +85,8 @@ def filter_good_data(full_sweep_sci):
 
 
 def decompress_count(count_data: np.ndarray, compression_flag: np.ndarray):
-    """Decompress counts based on compression indicators.
+    """
+    Will decompress counts based on compression indicators.
 
     Decompression algorithm:
     There are 3 compression regions:
@@ -125,7 +135,8 @@ def decompress_count(count_data: np.ndarray, compression_flag: np.ndarray):
 
 
 def find_sweep_starts(packets: xr.Dataset):
-    """Find index of where new cycle started.
+    """
+    Find index of where new cycle started.
 
     Beginning of a sweep is marked by SWP_SCI.SEQ_NUMBER=0
     (Sequence number of set of steps in energy sweep);
@@ -179,7 +190,8 @@ def find_sweep_starts(packets: xr.Dataset):
 
 
 def get_indices_of_full_sweep(packets: xr.Dataset):
-    """Get indices of full cycles.
+    """
+    Get indices of full cycles.
 
     Beginning of a sweep is marked by SWP_SCI.SEQ_NUMBER=0
     (Sequence number of set of steps in energy sweep);
@@ -193,7 +205,7 @@ def get_indices_of_full_sweep(packets: xr.Dataset):
     ----------
     packets : xarray.Dataset
         Dataset that contains SEQ_NUMBER data information.
-        Eg. sci_dataset["SEQ_NUMBER"].data
+        Eg. sci_dataset["SEQ_NUMBER"].data.
 
     Returns
     -------
@@ -212,7 +224,8 @@ def get_indices_of_full_sweep(packets: xr.Dataset):
 
 
 def process_sweep_data(full_sweep_sci, cem_prefix):
-    """Group full sweep data into correct sequence order.
+    """
+    Group full sweep data into correct sequence order.
 
     Data from each packet comes like this:
 
@@ -307,16 +320,22 @@ def process_sweep_data(full_sweep_sci, cem_prefix):
     Parameters
     ----------
     full_sweep_sci : xarray.Dataset
-        Full dataset
+        Full dataset.
     cem_prefix : str
-        Indicate which CEM or its flag we are processing. Options are:
+        Indicate which CEM or its flag we are processing.
+        Options are:
 
         |    PCEM_CNT
         |    SCEM_CNT
         |    COIN_CNT
         |    PCEM_RNG_ST
         |    SCEM_RNG_ST
-        |    COIN_RNG_ST
+        |    COIN_RNG_ST.
+
+    Returns
+    -------
+    all_cem_data : xarray.Dataset
+        Correctly order dataset.
     """
     # First, concat all CEM data
     current_cem_counts = np.concatenate(
@@ -399,13 +418,21 @@ def process_sweep_data(full_sweep_sci, cem_prefix):
     return all_cem_data
 
 
-def process_swapi_science(sci_dataset):
-    """Process SWAPI science data and create CDF file.
+def process_swapi_science(sci_dataset, data_version: str):
+    """
+    Will process SWAPI science data and create CDF file.
 
     Parameters
     ----------
+    sci_dataset : xarray.Dataset
+        L0 data.
+    data_version : str
+        Version of the data product being created.
+
+    Returns
+    -------
     dataset : xarray.Dataset
-        L0 data
+        Dataset.
     """
     # ====================================================
     # Step 1: Filter full cycle data
@@ -468,32 +495,70 @@ def process_swapi_science(sci_dataset):
         coords={"epoch": epoch_time, "energy": energy},
         attrs=sci_l1_attrs,
     )
+    # TODO: update to use add_global_attribute() function
+    dataset.attrs["Data_version"] = data_version
 
     dataset["swp_pcem_counts"] = xr.DataArray(
-        swp_pcem_counts, dims=["epoch", "energy"], attrs=counts_attrs.output()
+        np.array(swp_pcem_counts, dtype=np.uint16),
+        dims=["epoch", "energy"],
+        attrs=dataclasses.replace(
+            counts_attrs,
+            fieldname="Primary CEM counts",
+            label_axis="PCEM cnts",
+            catdesc="Primary Channel Electron Multiplier (CEM) counts",
+        ).output(),
     )
     dataset["swp_scem_counts"] = xr.DataArray(
-        swp_scem_counts, dims=["epoch", "energy"], attrs=counts_attrs.output()
+        np.array(swp_scem_counts, dtype=np.uint16),
+        dims=["epoch", "energy"],
+        attrs=dataclasses.replace(
+            counts_attrs,
+            fieldname="Secondary CEM counts",
+            label_axis="SCEM cnts",
+            catdesc="Secondary Channel Electron Multiplier (CEM) counts",
+        ).output(),
     )
     dataset["swp_coin_counts"] = xr.DataArray(
-        swp_coin_counts, dims=["epoch", "energy"], attrs=counts_attrs.output()
+        np.array(swp_coin_counts, dtype=np.uint16),
+        dims=["epoch", "energy"],
+        attrs=dataclasses.replace(
+            counts_attrs,
+            fieldname="Coincidence counts",
+            label_axis="COIN cnts",
+            catdesc="Coincidence counts",
+        ).output(),
     )
 
     # L1 quality flags
     dataset["swp_pcem_flags"] = xr.DataArray(
-        pcem_compression_flags,
+        np.array(pcem_compression_flags, dtype=np.uint8),
         dims=["epoch", "energy"],
-        attrs=compression_attrs.output(),
+        attrs=dataclasses.replace(
+            compression_attrs,
+            fieldname="Primary CEM flag",
+            label_axis="PCEM flag",
+            catdesc="Primary Channel Electron Multiplier (CEM) compression flags",
+        ).output(),
     )
     dataset["swp_scem_flags"] = xr.DataArray(
-        scem_compression_flags,
+        np.array(scem_compression_flags, dtype=np.uint8),
         dims=["epoch", "energy"],
-        attrs=compression_attrs.output(),
+        attrs=dataclasses.replace(
+            compression_attrs,
+            fieldname="Secondary CEM flag",
+            label_axis="SCEM flag",
+            catdesc="Secondary Channel Electron Multiplier (CEM) compression flags",
+        ).output(),
     )
     dataset["swp_coin_flags"] = xr.DataArray(
-        coin_compression_flags,
+        np.array(coin_compression_flags, dtype=np.uint8),
         dims=["epoch", "energy"],
-        attrs=compression_attrs.output(),
+        attrs=dataclasses.replace(
+            compression_attrs,
+            fieldname="Coincidence flag",
+            label_axis="COIN flag",
+            catdesc="Coincidence flag",
+        ).output(),
     )
 
     # ===================================================================
@@ -506,17 +571,32 @@ def process_swapi_science(sci_dataset):
     dataset["swp_pcem_err"] = xr.DataArray(
         np.sqrt(swp_pcem_counts),
         dims=["epoch", "energy"],
-        attrs=uncertainty_attrs.output(),
+        attrs=dataclasses.replace(
+            uncertainty_attrs,
+            fieldname="Primary CEM Uncertainty",
+            label_axis="PCEM uncert",
+            catdesc="Primary Channel Electron Multiplier (CEM) Uncertainty",
+        ).output(),
     )
     dataset["swp_scem_err"] = xr.DataArray(
         np.sqrt(swp_scem_counts),
         dims=["epoch", "energy"],
-        attrs=uncertainty_attrs.output(),
+        attrs=dataclasses.replace(
+            uncertainty_attrs,
+            fieldname="Secondary CEM Uncertainty",
+            label_axis="SCEM uncert",
+            catdesc="Secondary Channel Electron Multiplier (CEM) Uncertainty",
+        ).output(),
     )
     dataset["swp_coin_err"] = xr.DataArray(
         np.sqrt(swp_coin_counts),
         dims=["epoch", "energy"],
-        attrs=uncertainty_attrs.output(),
+        attrs=dataclasses.replace(
+            uncertainty_attrs,
+            fieldname="Coincidence Uncertainty",
+            label_axis="COIN uncert",
+            catdesc="Coincidence Uncertainty",
+        ).output(),
     )
     # TODO: when SWAPI gives formula to calculate this scenario:
     # Compression of counts also contributes to the uncertainty.
@@ -525,42 +605,47 @@ def process_swapi_science(sci_dataset):
     return dataset
 
 
-def swapi_l1(packets):
-    """Based on APID, process SWAPI L0 data to level 1.
+def swapi_l1(file_path, data_version: str):
+    """
+    Will process SWAPI level 0 data to level 1.
 
     Parameters
     ----------
-    packets : list
-        List of decom packets
+    file_path : str
+        Path to SWAPI L0 file.
+    data_version : str
+        Version of the data product being created.
+
+    Returns
+    -------
+    processed_data : xarray.Dataset
+        Set of processed data.
     """
+    xtce_definition = (
+        f"{imap_module_directory}/swapi/packet_definitions/swapi_packet_definition.xml"
+    )
+    packets = decom_packets(
+        packet_file=file_path, xtce_packet_definition=xtce_definition
+    )
     grouped_packets = group_by_apid(packets)
     processed_data = []
     for apid in grouped_packets.keys():
+        sorted_packets = sort_by_time(grouped_packets[apid], "SHCOARSE")
         # Right now, we only process SWP_HK and SWP_SCI
         # other packets are not process in this processing pipeline
         # If appId is science, then the file should contain all data of science appId
-        sorted_packets = sort_by_time(grouped_packets[apid], "SHCOARSE")
-        ds_data = create_dataset(sorted_packets)
+        ds_data = create_dataset(sorted_packets, include_header=False)
 
         if apid == SWAPIAPID.SWP_SCI.value:
-            data = process_swapi_science(ds_data)
+            data = process_swapi_science(ds_data, data_version)
             processed_data.append(data)
         if apid == SWAPIAPID.SWP_HK.value:
             # convert epoch to datetime
-            epoch_converted_time = [
-                calc_start_time(time) for time in ds_data["epoch"].data
-            ]
-            # add attrs back to epoch
-            epoch = xr.DataArray(
-                epoch_converted_time,
-                name="epoch",
-                dims=["epoch"],
-                attrs=ConstantCoordinates.EPOCH,
-            )
-            ds_data = ds_data.assign_coords(epoch=epoch)
+            ds_data = update_epoch_to_datetime(ds_data)
 
             # Add datalevel attrs
             ds_data.attrs.update(swapi_l1_hk_attrs.output())
+            ds_data.attrs["Data_version"] = data_version
             processed_data.append(ds_data)
 
     return processed_data

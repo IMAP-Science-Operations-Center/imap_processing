@@ -22,7 +22,7 @@ from imap_processing.utils import create_dataset, group_by_apid, sort_by_time
 def decom_test_data():
     """Read test data from file"""
     test_folder_path = "tests/swapi/l0_data"
-    packet_files = list(imap_module_directory.glob(f"{test_folder_path}/*.bin"))
+    packet_files = list(imap_module_directory.glob(f"{test_folder_path}/*.pkts"))
     packet_definition = (
         f"{imap_module_directory}/swapi/packet_definitions/swapi_packet_definition.xml"
     )
@@ -118,7 +118,7 @@ def test_swapi_algorithm(decom_test_data):
     grouped_data = group_by_apid(decom_test_data)
     science_data = grouped_data[SWAPIAPID.SWP_SCI]
     sorted_packets = sort_by_time(science_data, "SHCOARSE")
-    ds_data = create_dataset(sorted_packets)
+    ds_data = create_dataset(sorted_packets, include_header=False)
     full_sweep_indices = get_indices_of_full_sweep(ds_data)
     full_sweep_sci = ds_data.isel({"epoch": full_sweep_indices})
     total_packets = len(full_sweep_sci["seq_number"].data)
@@ -211,8 +211,8 @@ def test_process_swapi_science(decom_test_data):
     grouped_data = group_by_apid(decom_test_data)
     science_data = grouped_data[SWAPIAPID.SWP_SCI]
     sorted_packets = sort_by_time(science_data, "SHCOARSE")
-    ds_data = create_dataset(sorted_packets)
-    processed_data = process_swapi_science(ds_data)
+    ds_data = create_dataset(sorted_packets, include_header=False)
+    processed_data = process_swapi_science(ds_data, data_version="001")
 
     # Test dataset dimensions
     assert processed_data.sizes == {"epoch": 3, "energy": 72}
@@ -302,13 +302,13 @@ def test_process_swapi_science(decom_test_data):
     np.testing.assert_array_equal(processed_data["swp_pcem_counts"][0], expected_count)
     assert processed_data["swp_pcem_counts"].shape == (3, 72)
     # Test that we calculated uncertainty correctly
-    np.testing.assert_array_equal(
+    np.testing.assert_allclose(
         np.sqrt(processed_data["swp_pcem_counts"][0]), processed_data["swp_pcem_err"][0]
     )
 
     # make PLAN_ID data incorrect
     ds_data["plan_id_science"][:12] = np.arange(12)
-    processed_data = process_swapi_science(ds_data)
+    processed_data = process_swapi_science(ds_data, data_version="001")
 
     # Test dataset dimensions
     assert processed_data.sizes == {"epoch": 2, "energy": 72}
@@ -321,13 +321,21 @@ def test_process_swapi_science(decom_test_data):
     assert cdf_path.name == cdf_filename
 
 
-def test_swapi_l1_hk(decom_test_data):
+def test_swapi_l1_cdf():
     """Test housekeeping processing and CDF file creation"""
-    grouped_data = group_by_apid(decom_test_data)
-    processed_data = swapi_l1(grouped_data[SWAPIAPID.SWP_HK])
+    l0_data_path = (
+        f"{imap_module_directory}/tests/swapi/l0_data/"
+        "imap_swapi_l0_raw_20231012_v001.pkts"
+    )
+    processed_data = swapi_l1(l0_data_path, data_version="v001")
 
     # Test CDF File
-    cdf_filename = "imap_swapi_l1_hk_20100101_v001.cdf"
+    # sci cdf file
+    cdf_filename = "imap_swapi_l1_sci-1min_20100101_v001.cdf"
     cdf_path = write_cdf(processed_data[0])
+    assert cdf_path.name == cdf_filename
 
+    # hk cdf file
+    cdf_filename = "imap_swapi_l1_hk_20100101_v001.cdf"
+    cdf_path = write_cdf(processed_data[1])
     assert cdf_path.name == cdf_filename

@@ -1,0 +1,371 @@
+<?xml version='1.0' encoding='utf-8'?>
+<xtce:SpaceSystem xmlns:xtce="http://www.omg.org/space/xtce" name="P_HIT_SCIENCE">
+	<xtce:Header date="2024-05" version="1.0" author="IMAP SDC" />
+	<xtce:TelemetryMetaData>
+		<xtce:ParameterTypeSet>
+			<xtce:IntegerParameterType name="UINT1" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT2" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="2" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT3" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="3" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT6" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="6" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT8" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="8" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT11" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="11" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT14" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="14" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT16" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="16" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT24" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="24" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT32" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="32" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:BinaryParameterType name="BYTE192">
+				<xtce:UnitSet />
+				<xtce:BinaryDataEncoding bitOrder="mostSignificantBitFirst">
+					<xtce:SizeInBits>
+						<xtce:FixedValue>192</xtce:FixedValue>
+					</xtce:SizeInBits>
+				</xtce:BinaryDataEncoding>
+			</xtce:BinaryParameterType>
+			<xtce:BinaryParameterType name="BYTE240">
+				<xtce:UnitSet />
+				<xtce:BinaryDataEncoding bitOrder="mostSignificantBitFirst">
+					<xtce:SizeInBits>
+						<xtce:FixedValue>240</xtce:FixedValue>
+					</xtce:SizeInBits>
+				</xtce:BinaryDataEncoding>
+			</xtce:BinaryParameterType>
+			<xtce:BinaryParameterType name="BYTE320">
+				<xtce:UnitSet />
+				<xtce:BinaryDataEncoding bitOrder="mostSignificantBitFirst">
+					<xtce:SizeInBits>
+						<xtce:FixedValue>320</xtce:FixedValue>
+					</xtce:SizeInBits>
+				</xtce:BinaryDataEncoding>
+			</xtce:BinaryParameterType>
+			<xtce:BinaryParameterType name="BYTE384">
+				<xtce:UnitSet />
+				<xtce:BinaryDataEncoding bitOrder="mostSignificantBitFirst">
+					<xtce:SizeInBits>
+						<xtce:FixedValue>384</xtce:FixedValue>
+					</xtce:SizeInBits>
+				</xtce:BinaryDataEncoding>
+			</xtce:BinaryParameterType>
+			<xtce:BinaryParameterType name="BYTE416">
+				<xtce:UnitSet />
+				<xtce:BinaryDataEncoding bitOrder="mostSignificantBitFirst">
+					<xtce:SizeInBits>
+						<xtce:FixedValue>416</xtce:FixedValue>
+					</xtce:SizeInBits>
+				</xtce:BinaryDataEncoding>
+			</xtce:BinaryParameterType>
+			<xtce:BinaryParameterType name="BYTE512">
+				<xtce:UnitSet />
+				<xtce:BinaryDataEncoding bitOrder="mostSignificantBitFirst">
+					<xtce:SizeInBits>
+						<xtce:FixedValue>512</xtce:FixedValue>
+					</xtce:SizeInBits>
+				</xtce:BinaryDataEncoding>
+			</xtce:BinaryParameterType>
+			<xtce:BinaryParameterType name="BYTE528">
+				<xtce:UnitSet />
+				<xtce:BinaryDataEncoding bitOrder="mostSignificantBitFirst">
+					<xtce:SizeInBits>
+						<xtce:FixedValue>528</xtce:FixedValue>
+					</xtce:SizeInBits>
+				</xtce:BinaryDataEncoding>
+			</xtce:BinaryParameterType>
+			<xtce:BinaryParameterType name="BYTE768">
+				<xtce:UnitSet />
+				<xtce:BinaryDataEncoding bitOrder="mostSignificantBitFirst">
+					<xtce:SizeInBits>
+						<xtce:FixedValue>768</xtce:FixedValue>
+					</xtce:SizeInBits>
+				</xtce:BinaryDataEncoding>
+			</xtce:BinaryParameterType>
+			<xtce:BinaryParameterType name="BYTE1856">
+				<xtce:UnitSet />
+				<xtce:BinaryDataEncoding bitOrder="mostSignificantBitFirst">
+					<xtce:SizeInBits>
+						<xtce:FixedValue>1856</xtce:FixedValue>
+					</xtce:SizeInBits>
+				</xtce:BinaryDataEncoding>
+			</xtce:BinaryParameterType>
+			<xtce:BinaryParameterType name="BYTE1920">
+				<xtce:UnitSet />
+				<xtce:BinaryDataEncoding bitOrder="mostSignificantBitFirst">
+					<xtce:SizeInBits>
+						<xtce:FixedValue>1920</xtce:FixedValue>
+					</xtce:SizeInBits>
+				</xtce:BinaryDataEncoding>
+			</xtce:BinaryParameterType>
+			<xtce:BinaryParameterType name="BYTE2112">
+				<xtce:UnitSet />
+				<xtce:BinaryDataEncoding bitOrder="mostSignificantBitFirst">
+					<xtce:SizeInBits>
+						<xtce:FixedValue>2112</xtce:FixedValue>
+					</xtce:SizeInBits>
+				</xtce:BinaryDataEncoding>
+			</xtce:BinaryParameterType>
+			<xtce:BinaryParameterType name="BYTE2672">
+				<xtce:UnitSet />
+				<xtce:BinaryDataEncoding bitOrder="mostSignificantBitFirst">
+					<xtce:SizeInBits>
+						<xtce:FixedValue>2672</xtce:FixedValue>
+					</xtce:SizeInBits>
+				</xtce:BinaryDataEncoding>
+			</xtce:BinaryParameterType>
+			<xtce:BinaryParameterType name="BYTE29344">
+				<xtce:UnitSet />
+				<xtce:BinaryDataEncoding bitOrder="mostSignificantBitFirst">
+					<xtce:SizeInBits>
+						<xtce:FixedValue>29344</xtce:FixedValue>
+					</xtce:SizeInBits>
+				</xtce:BinaryDataEncoding>
+			</xtce:BinaryParameterType>
+		</xtce:ParameterTypeSet>
+		<xtce:ParameterSet>
+			<xtce:Parameter name="VERSION" parameterTypeRef="UINT3">
+				<xtce:LongDescription>CCSDS Packet Version Number (always 0)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="TYPE" parameterTypeRef="UINT1">
+				<xtce:LongDescription>CCSDS Packet Type Indicator (0=telemetry)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SEC_HDR_FLG" parameterTypeRef="UINT1">
+				<xtce:LongDescription>CCSDS Packet Secondary Header Flag (always 1)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PKT_APID" parameterTypeRef="UINT11">
+				<xtce:LongDescription>CCSDS Packet Application Process ID</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SEQ_FLGS" parameterTypeRef="UINT2">
+				<xtce:LongDescription>CCSDS Packet Grouping Flags (3=not part of group)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SRC_SEQ_CTR" parameterTypeRef="UINT14">
+				<xtce:LongDescription>CCSDS Packet Sequence Count (increments with each new packet)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PKT_LEN" parameterTypeRef="UINT16">
+				<xtce:LongDescription>CCSDS Packet Length (number of bytes after Packet length minus 1)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SHCOARSE" parameterTypeRef="UINT32" shortDescription="Spacecraft tick">
+				<xtce:LongDescription>CCSDS Packet Sec Header</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="HDR_UNIT_NUM" parameterTypeRef="UINT2" shortDescription="Unit ID (e.g. EM)">
+				<xtce:LongDescription>Science Frame Header</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="HDR_FRAME_VERSION" parameterTypeRef="UINT6" shortDescription="Frame version number">
+				<xtce:LongDescription>Science Frame Header</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="HDR_STATUS_BITS" parameterTypeRef="UINT8" shortDescription="status bits">
+				<xtce:LongDescription>Science Frame Header</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="HDR_MINUTE_CNT" parameterTypeRef="UINT8" shortDescription="minute counter (minute mod 10 -&gt; subcom for sectored rates)">
+				<xtce:LongDescription>Science Frame Header</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SCI_SPARE1" parameterTypeRef="UINT24" shortDescription="spare bits">
+				<xtce:LongDescription>Science Frame Header</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="LIVE_TIME" parameterTypeRef="UINT16" shortDescription="Livetime count (270=100%)">
+				<xtce:LongDescription>Livetime counter, Front End Electronics. Expect 270 counts at 100% live time</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="NUM_TRIG" parameterTypeRef="UINT16" shortDescription="Number of triggers">
+				<xtce:LongDescription>Number of triggers</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="NUM_REJECT" parameterTypeRef="UINT16" shortDescription="Number of rejected events">
+				<xtce:LongDescription>Number of rejected events</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="NUM_ACC_W_PHA" parameterTypeRef="UINT16" shortDescription="Number of accepted events with PHA data">
+				<xtce:LongDescription>Number of accepted events with PHA data</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="NUM_ACC_NO_PHA" parameterTypeRef="UINT16" shortDescription="Number of events without PHA data">
+				<xtce:LongDescription>Number of events without PHA data</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="NUM_HAZ_TRIG" parameterTypeRef="UINT16" shortDescription="Number of triggers with hazard flag">
+				<xtce:LongDescription>Number of triggers with hazard flag</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="NUM_HAZ_REJECT" parameterTypeRef="UINT16" shortDescription="Number of rejected events with hazard flag">
+				<xtce:LongDescription>Number of rejected events with hazard flag</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="NUM_HAZ_ACC_W_PHA" parameterTypeRef="UINT16" shortDescription="Number of accepted hazard events with PHA data">
+				<xtce:LongDescription>Number of accepted hazard events with PHA data</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="NUM_HAZ_ACC_NO_PHA" parameterTypeRef="UINT16" shortDescription="Number of hazard events without PHA data">
+				<xtce:LongDescription>Number of hazard events without PHA data</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SNGRATES_RAW" parameterTypeRef="BYTE1856" shortDescription="PHA high gain and low gain for all detectors">
+				<xtce:LongDescription>Counts since last science frame for PHA high gain and low gain for all detectors</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="NREAD" parameterTypeRef="UINT16" shortDescription="events read from event fifo">
+				<xtce:LongDescription>events read from event fifo</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="NHAZARD" parameterTypeRef="UINT16" shortDescription="events tagged with hazard flag">
+				<xtce:LongDescription>events rejected for Hazard condition</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="NADCSTIM" parameterTypeRef="UINT16" shortDescription="adc-stim events">
+				<xtce:LongDescription>ADC-calibration STIM events</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="NODD" parameterTypeRef="UINT16" shortDescription="odd events">
+				<xtce:LongDescription>odd events</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="NODDFIX" parameterTypeRef="UINT16" shortDescription="odd events that were fixed in sw">
+				<xtce:LongDescription>fixed odd events</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="NMULTI" parameterTypeRef="UINT16" shortDescription="events with multiple hits in a single detector (may be crosstalk)">
+				<xtce:LongDescription>events with multiple hits in relevant layers</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="NMULTIFIX" parameterTypeRef="UINT16" shortDescription="multi events that were fixed in sw">
+				<xtce:LongDescription>fixed multi events</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="NBADTRAJ" parameterTypeRef="UINT16" shortDescription="bad trajectory">
+				<xtce:LongDescription>events rejected for inconsistent/bad trajectory</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="NL2" parameterTypeRef="UINT16" shortDescription="events sorted into L12 event category">
+				<xtce:LongDescription>events sorted into L12 event category</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="NL3" parameterTypeRef="UINT16" shortDescription="events sorted into L123 event category">
+				<xtce:LongDescription>events sorted into L123 event category</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="NL4" parameterTypeRef="UINT16" shortDescription="events sorted into L1423 event category">
+				<xtce:LongDescription>events sorted into L1423 event category</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="NPEN" parameterTypeRef="UINT16" shortDescription="events sorted into PEN (penetrating) event category">
+				<xtce:LongDescription>events sorted into PEN (penetrating) event category</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="NFORMAT" parameterTypeRef="UINT16" shortDescription="nothing currently goes in this slot">
+				<xtce:LongDescription>events handled b the telemetry event formatter</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="NASIDE" parameterTypeRef="UINT16" shortDescription="A-side events">
+				<xtce:LongDescription>events the software assumed were A-side events</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="NBSIDE" parameterTypeRef="UINT16" shortDescription="B-side events">
+				<xtce:LongDescription>events the software assumed were B-side events</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="NERROR" parameterTypeRef="UINT16" shortDescription="events that caused a processing error - should never happen">
+				<xtce:LongDescription>events that caused a processing error - should never happen</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="NBADTAGS" parameterTypeRef="UINT16" shortDescription="events with inconsistent tags vs pulse heights">
+				<xtce:LongDescription>events with bad tags from onboard event processing</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="COINRATES_RAW" parameterTypeRef="BYTE416" shortDescription="Coincidence rates for all detectors">
+				<xtce:LongDescription>Coincidence rates for all detectors</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="BUFRATES_RAW" parameterTypeRef="BYTE512" shortDescription="Priority Buffer: ADC cal events">
+				<xtce:LongDescription>ADC calibration events</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="L2FGRATES_RAW" parameterTypeRef="BYTE2112" shortDescription="R2 foreground rates">
+				<xtce:LongDescription>Range 2 (L1L2) foreground rates</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="L2BGRATES_RAW" parameterTypeRef="BYTE192" shortDescription="R2 background rates">
+				<xtce:LongDescription>Range 2 (L1L2) background rates</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="L3FGRATES_RAW" parameterTypeRef="BYTE2672" shortDescription="R3 foreground rates">
+				<xtce:LongDescription>Range 3 (L2L3) foreground rates</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="L3BGRATES_RAW" parameterTypeRef="BYTE192" shortDescription="R3 background rates">
+				<xtce:LongDescription>Range 3 (L2L3) background rates</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PENFGRATES_RAW" parameterTypeRef="BYTE528" shortDescription="R4 foreground rates">
+				<xtce:LongDescription>Range 4 (L3AL3B) foreground rates</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PENBGRATES_RAW" parameterTypeRef="BYTE240" shortDescription="R4 background rates">
+				<xtce:LongDescription>Range 4 (PEN) background rates and livetime STIM events</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="IALIRTRATES_RAW" parameterTypeRef="BYTE320" shortDescription="I-ALiRT rates">
+				<xtce:LongDescription>I-ALiRT rates</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SECTORATES_RAW" parameterTypeRef="BYTE1920" shortDescription="Sector rates">
+				<xtce:LongDescription>sector(j,k); j -&gt; 22.5 deg declination bins from sunward spin axis; k -&gt; 24 deg azimuthal/spin bins from spin phase 0; species ID = (HDR_MIN_COUNT mod 10)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="L4FGRATES_RAW" parameterTypeRef="BYTE768" shortDescription="L4 Ions foreground rates">
+				<xtce:LongDescription>L4 Ions (L1L4L2, L1L4L2L3, L1L4L3L3) foreground rate</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="L4BGRATES_RAW" parameterTypeRef="BYTE384" shortDescription="L4 Ions background rates">
+				<xtce:LongDescription>L4 Ions (L1L4L2, L1L4L2L3, L1L4L3L3) background rate</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PHA_RECORDS_RAW" parameterTypeRef="BYTE29344" shortDescription="Event PHA records">
+				<xtce:LongDescription>Event PHA records, array of 4-byte fields</xtce:LongDescription>
+			</xtce:Parameter>
+		</xtce:ParameterSet>
+		<xtce:ContainerSet>
+			<xtce:SequenceContainer name="CCSDSPacket">
+				<xtce:EntryList>
+					<xtce:ParameterRefEntry parameterRef="VERSION" />
+					<xtce:ParameterRefEntry parameterRef="TYPE" />
+					<xtce:ParameterRefEntry parameterRef="SEC_HDR_FLG" />
+					<xtce:ParameterRefEntry parameterRef="PKT_APID" />
+					<xtce:ParameterRefEntry parameterRef="SEQ_FLGS" />
+					<xtce:ParameterRefEntry parameterRef="SRC_SEQ_CTR" />
+					<xtce:ParameterRefEntry parameterRef="PKT_LEN" />
+				</xtce:EntryList>
+			</xtce:SequenceContainer>
+			<xtce:SequenceContainer name="P_HIT_SCIENCE">
+				<xtce:BaseContainer containerRef="CCSDSPacket">
+					<xtce:RestrictionCriteria>
+						<xtce:Comparison parameterRef="PKT_APID" value="1252" useCalibratedValue="false" />
+					</xtce:RestrictionCriteria>
+				</xtce:BaseContainer>
+				<xtce:EntryList>
+					<xtce:ParameterRefEntry parameterRef="SHCOARSE" />
+					<xtce:ParameterRefEntry parameterRef="HDR_UNIT_NUM" />
+					<xtce:ParameterRefEntry parameterRef="HDR_FRAME_VERSION" />
+					<xtce:ParameterRefEntry parameterRef="HDR_STATUS_BITS" />
+					<xtce:ParameterRefEntry parameterRef="HDR_MINUTE_CNT" />
+					<xtce:ParameterRefEntry parameterRef="SCI_SPARE1" />
+					<xtce:ParameterRefEntry parameterRef="LIVE_TIME" />
+					<xtce:ParameterRefEntry parameterRef="NUM_TRIG" />
+					<xtce:ParameterRefEntry parameterRef="NUM_REJECT" />
+					<xtce:ParameterRefEntry parameterRef="NUM_ACC_W_PHA" />
+					<xtce:ParameterRefEntry parameterRef="NUM_ACC_NO_PHA" />
+					<xtce:ParameterRefEntry parameterRef="NUM_HAZ_TRIG" />
+					<xtce:ParameterRefEntry parameterRef="NUM_HAZ_REJECT" />
+					<xtce:ParameterRefEntry parameterRef="NUM_HAZ_ACC_W_PHA" />
+					<xtce:ParameterRefEntry parameterRef="NUM_HAZ_ACC_NO_PHA" />
+					<xtce:ParameterRefEntry parameterRef="SNGRATES_RAW" />
+					<xtce:ParameterRefEntry parameterRef="NREAD" />
+					<xtce:ParameterRefEntry parameterRef="NHAZARD" />
+					<xtce:ParameterRefEntry parameterRef="NADCSTIM" />
+					<xtce:ParameterRefEntry parameterRef="NODD" />
+					<xtce:ParameterRefEntry parameterRef="NODDFIX" />
+					<xtce:ParameterRefEntry parameterRef="NMULTI" />
+					<xtce:ParameterRefEntry parameterRef="NMULTIFIX" />
+					<xtce:ParameterRefEntry parameterRef="NBADTRAJ" />
+					<xtce:ParameterRefEntry parameterRef="NL2" />
+					<xtce:ParameterRefEntry parameterRef="NL3" />
+					<xtce:ParameterRefEntry parameterRef="NL4" />
+					<xtce:ParameterRefEntry parameterRef="NPEN" />
+					<xtce:ParameterRefEntry parameterRef="NFORMAT" />
+					<xtce:ParameterRefEntry parameterRef="NASIDE" />
+					<xtce:ParameterRefEntry parameterRef="NBSIDE" />
+					<xtce:ParameterRefEntry parameterRef="NERROR" />
+					<xtce:ParameterRefEntry parameterRef="NBADTAGS" />
+					<xtce:ParameterRefEntry parameterRef="COINRATES_RAW" />
+					<xtce:ParameterRefEntry parameterRef="BUFRATES_RAW" />
+					<xtce:ParameterRefEntry parameterRef="L2FGRATES_RAW" />
+					<xtce:ParameterRefEntry parameterRef="L2BGRATES_RAW" />
+					<xtce:ParameterRefEntry parameterRef="L3FGRATES_RAW" />
+					<xtce:ParameterRefEntry parameterRef="L3BGRATES_RAW" />
+					<xtce:ParameterRefEntry parameterRef="PENFGRATES_RAW" />
+					<xtce:ParameterRefEntry parameterRef="PENBGRATES_RAW" />
+					<xtce:ParameterRefEntry parameterRef="IALIRTRATES_RAW" />
+					<xtce:ParameterRefEntry parameterRef="SECTORATES_RAW" />
+					<xtce:ParameterRefEntry parameterRef="L4FGRATES_RAW" />
+					<xtce:ParameterRefEntry parameterRef="L4BGRATES_RAW" />
+					<xtce:ParameterRefEntry parameterRef="PHA_RECORDS_RAW" />
+				</xtce:EntryList>
+			</xtce:SequenceContainer>
+		</xtce:ContainerSet>
+	</xtce:TelemetryMetaData>
+</xtce:SpaceSystem>

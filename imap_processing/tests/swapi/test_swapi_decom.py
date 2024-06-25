@@ -13,7 +13,7 @@ from imap_processing.utils import group_by_apid
 def decom_test_data():
     """Read test data from file"""
     test_folder_path = "tests/swapi/l0_data"
-    packet_files = list(imap_module_directory.glob(f"{test_folder_path}/*.bin"))
+    packet_files = list(imap_module_directory.glob(f"{test_folder_path}/*.pkts"))
     packet_definition = (
         f"{imap_module_directory}/swapi/packet_definitions/swapi_packet_definition.xml"
     )

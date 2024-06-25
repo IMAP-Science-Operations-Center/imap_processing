@@ -1,10 +1,11 @@
 import dataclasses
 
 import pytest
-from cdflib.xarray import cdf_to_xarray
 
+from imap_processing import decom
+from imap_processing.cdf.utils import load_cdf, write_cdf
 from imap_processing.ultra import ultra_cdf_attrs
-from imap_processing.ultra.l0.decom_ultra import decom_ultra_apids
+from imap_processing.ultra.l0.decom_ultra import process_ultra_apids
 from imap_processing.ultra.l0.ultra_utils import (
     ULTRA_AUX,
     ULTRA_EVENTS,
@@ -12,42 +13,39 @@ from imap_processing.ultra.l0.ultra_utils import (
     ULTRA_TOF,
 )
 from imap_processing.ultra.l1a.ultra_l1a import create_dataset, ultra_l1a
+from imap_processing.utils import group_by_apid
 
 
 @pytest.fixture()
-def decom_ultra_aux(ccsds_path, xtce_path):
+def decom_ultra_aux(ccsds_path_theta_0, xtce_path):
     """Data for decom_ultra_aux"""
-    data_packet_list = decom_ultra_apids(ccsds_path, xtce_path, ULTRA_AUX.apid[0])
-    return data_packet_list
+    packets = decom.decom_packets(ccsds_path_theta_0, xtce_path)
+    grouped_data = group_by_apid(packets)
 
-
-@pytest.fixture()
-def decom_ultra_rates(ccsds_path, xtce_path):
-    """Data for decom_ultra_rates"""
-    data_packet_list = decom_ultra_apids(ccsds_path, xtce_path, ULTRA_RATES.apid[0])
-    return data_packet_list
-
-
-@pytest.fixture()
-def decom_ultra_events(ccsds_path_events, xtce_path):
-    """Data for decom_ultra_events"""
-    data_packet_list = decom_ultra_apids(
-        ccsds_path_events, xtce_path, ULTRA_EVENTS.apid[0]
+    data_packet_list = process_ultra_apids(
+        grouped_data[ULTRA_AUX.apid[0]], ULTRA_AUX.apid[0]
     )
     return data_packet_list
 
 
-@pytest.fixture()
-def decom_ultra_tof(ccsds_path_tof, xtce_path):
-    """Data for decom_ultra_tof"""
-    data_packet_list = decom_ultra_apids(ccsds_path_tof, xtce_path, ULTRA_TOF.apid[0])
-    return data_packet_list
-
-
-def test_xarray_aux(decom_ultra_aux, aux_test_path):
+@pytest.mark.parametrize(
+    "decom_test_data",
+    [
+        pytest.param(
+            {
+                "apid": ULTRA_AUX.apid[0],
+                "filename": "FM45_40P_Phi28p5_BeamCal_LinearScan_phi28.50"
+                "_theta-0.00_20240207T102740.CCSDS",
+            }
+        )
+    ],
+    indirect=True,
+)
+def test_xarray_aux(decom_test_data):
     """This function checks that a xarray was
     successfully created from the decom_ultra_aux data."""
 
+    decom_ultra_aux, _ = decom_test_data
     dataset = create_dataset({ULTRA_AUX.apid[0]: decom_ultra_aux})
 
     # Spot check string data and attributes
@@ -88,14 +86,28 @@ def test_xarray_aux(decom_ultra_aux, aux_test_path):
     assert shcoarse_attr == expected_shcoarse_attr
 
 
-def test_xarray_rates(decom_ultra_rates):
+@pytest.mark.parametrize(
+    "decom_test_data",
+    [
+        pytest.param(
+            {
+                "apid": ULTRA_RATES.apid[0],
+                "filename": "FM45_40P_Phi28p5_BeamCal_LinearScan_phi28.50"
+                "_theta-0.00_20240207T102740.CCSDS",
+            }
+        )
+    ],
+    indirect=True,
+)
+def test_xarray_rates(decom_test_data):
     """This function checks that a xarray was
     successfully created from the decom_ultra_rates data."""
 
+    decom_ultra_rates, _ = decom_test_data
     dataset = create_dataset({ULTRA_RATES.apid[0]: decom_ultra_rates})
 
     # Spot check metadata data and attributes
-    specific_epoch_data = dataset.sel(epoch="2022-05-30T22:52:00.184000")["START_RF"]
+    specific_epoch_data = dataset.sel(epoch="2024-02-07T15:28:37.184000")["START_RF"]
     startrf_list = specific_epoch_data.values.tolist()
     startrf_attr = dataset.variables["START_RF"].attrs
 
@@ -110,14 +122,27 @@ def test_xarray_rates(decom_ultra_rates):
     assert startrf_attr == expected_startrf_attr
 
 
-def test_xarray_tof(decom_ultra_tof):
+@pytest.mark.parametrize(
+    "decom_test_data",
+    [
+        pytest.param(
+            {
+                "apid": ULTRA_TOF.apid[0],
+                "filename": "FM45_40P_Phi28p5_BeamCal_LinearScan_phi28.50"
+                "_theta-0.00_20240207T102740.CCSDS",
+            }
+        )
+    ],
+    indirect=True,
+)
+def test_xarray_tof(decom_test_data):
     """This function checks that a xarray was
     successfully created from the decom_ultra_tof data."""
-
+    decom_ultra_tof, _ = decom_test_data
     dataset = create_dataset({ULTRA_TOF.apid[0]: decom_ultra_tof})
 
     # Spot check metadata data and attributes
-    specific_epoch_data = dataset.sel(epoch="2024-01-24T11:39:21.184000", sid=0)[
+    specific_epoch_data = dataset.sel(epoch="2024-02-07T15:28:36.184000", sid=0)[
         "PACKETDATA"
     ]
     packetdata_attr = dataset.variables["PACKETDATA"].attrs
@@ -138,26 +163,33 @@ def test_xarray_tof(decom_ultra_tof):
     assert packetdata_attr == expected_packetdata_attr
 
 
-def test_xarray_events(decom_ultra_events, decom_ultra_aux, events_test_path):
+@pytest.mark.parametrize(
+    "decom_test_data",
+    [
+        pytest.param(
+            {
+                "apid": ULTRA_EVENTS.apid[0],
+                "filename": "FM45_40P_Phi28p5_BeamCal_LinearScan_phi28.50"
+                "_theta-0.00_20240207T102740.CCSDS",
+            },
+        )
+    ],
+    indirect=True,
+)
+def test_xarray_events(decom_test_data, decom_ultra_aux, events_test_path):
     """This function checks that a xarray was
     successfully created from the decom_ultra_events data."""
 
-    # Create aux test data with timestamps within the same range as events data
-    start_value = decom_ultra_events["SHCOARSE"][0] - 1
-    increment = 14  # 14 seconds between each aux data packet
-    sequence_length = len(decom_ultra_aux["SHCOARSE"])
-
-    new_shcoarse_values = [start_value + i * increment for i in range(sequence_length)]
-
-    decom_ultra_aux["SHCOARSE"] = new_shcoarse_values
-    decom_ultra_aux["TIMESPINSTART"] = new_shcoarse_values
-
+    decom_ultra_events, _ = decom_test_data
     dataset = create_dataset(
-        {ULTRA_EVENTS.apid[0]: decom_ultra_events, ULTRA_AUX.apid[0]: decom_ultra_aux}
+        {
+            ULTRA_EVENTS.apid[0]: decom_ultra_events,
+            ULTRA_AUX.apid[0]: decom_ultra_aux,
+        }
     )
 
     # Spot check metadata data and attributes
-    specific_epoch_data = dataset.sel(epoch="2023-08-21T16:14:10.917929")["COIN_TYPE"]
+    specific_epoch_data = dataset.sel(epoch="2024-02-07T15:28:37.184000")["COIN_TYPE"]
     cointype_list = specific_epoch_data.values.tolist()
     cointype_attr = dataset.variables["COIN_TYPE"].attrs
 
@@ -173,76 +205,125 @@ def test_xarray_events(decom_ultra_events, decom_ultra_aux, events_test_path):
 
 
 def test_cdf_aux(
-    ccsds_path,
-    xtce_path,
+    ccsds_path_theta_0,
     decom_ultra_aux,
 ):
     """Tests that CDF file is created and contains same attributes as xarray."""
 
-    test_data_path = ultra_l1a({ULTRA_AUX.apid[0]: ccsds_path}, xtce_path)
+    test_data = ultra_l1a(
+        ccsds_path_theta_0, data_version="001", apid=ULTRA_AUX.apid[0]
+    )
+    test_data_path = write_cdf(test_data[0])
+
     assert test_data_path.exists()
-    # TODO: replace "sci" with proper descriptor (previously aux)
-    assert test_data_path.name == "imap_ultra_l1a_sci_20220530_v001.cdf"
+    assert test_data_path.name == "imap_ultra_l1a_45sensor-aux_20240207_v001.cdf"
 
     dataset_aux = create_dataset({ULTRA_AUX.apid[0]: decom_ultra_aux})
-    input_xarray_aux = cdf_to_xarray(test_data_path)
+    input_xarray_aux = load_cdf(test_data_path)
 
-    assert input_xarray_aux.attrs.keys() == dataset_aux.attrs.keys()
+    # write_cdf() injects some attributes that are not in the xarray
+    assert set(dataset_aux.attrs.keys()).issubset(set(input_xarray_aux.attrs.keys()))
 
 
-def test_cdf_rates(
-    ccsds_path,
-    xtce_path,
-    decom_ultra_rates,
-):
+@pytest.mark.parametrize(
+    "decom_test_data",
+    [
+        pytest.param(
+            {
+                "apid": ULTRA_RATES.apid[0],
+                "filename": "FM45_40P_Phi28p5_BeamCal_LinearScan_phi28.50"
+                "_theta-0.00_20240207T102740.CCSDS",
+            },
+        )
+    ],
+    indirect=True,
+)
+def test_cdf_rates(ccsds_path_theta_0, decom_test_data):
     """Tests that CDF file is created and contains same attributes as xarray."""
+    decom_ultra_rates, _ = decom_test_data
+    test_data = ultra_l1a(
+        ccsds_path_theta_0, data_version="001", apid=ULTRA_RATES.apid[0]
+    )
+    # TODO: Dropping duplicates to ignore ISTP for now. Need to update test data
+    # or wait for an update to cdflib
+    test_data[0] = test_data[0].sortby("epoch").groupby("epoch").first()
+    test_data_path = write_cdf(test_data[0])
 
-    test_data_path = ultra_l1a({ULTRA_RATES.apid[0]: ccsds_path}, xtce_path)
     assert test_data_path.exists()
-    # TODO: replace "sci" with proper descriptor (previously rates)
-    assert test_data_path.name == "imap_ultra_l1a_sci_20220530_v001.cdf"
+    assert test_data_path.name == "imap_ultra_l1a_45sensor-rates_20240207_v001.cdf"
 
     dataset_rates = create_dataset({ULTRA_RATES.apid[0]: decom_ultra_rates})
-    input_xarray_rates = cdf_to_xarray(test_data_path)
+    input_xarray_rates = load_cdf(test_data_path)
 
-    assert input_xarray_rates.attrs.keys() == dataset_rates.attrs.keys()
+    # write_cdf() injects some attributes that are not in the xarray
+    assert set(dataset_rates.attrs.keys()).issubset(
+        set(input_xarray_rates.attrs.keys())
+    )
 
 
-def test_cdf_tof(
-    ccsds_path_tof,
-    xtce_path,
-    decom_ultra_tof,
-):
+@pytest.mark.parametrize(
+    "decom_test_data",
+    [
+        pytest.param(
+            {
+                "apid": ULTRA_TOF.apid[0],
+                "filename": "FM45_40P_Phi28p5_BeamCal_LinearScan_phi28.50"
+                "_theta-0.00_20240207T102740.CCSDS",
+            },
+        )
+    ],
+    indirect=True,
+)
+def test_cdf_tof(ccsds_path_theta_0, decom_test_data):
     """Tests that CDF file is created and contains same attributes as xarray."""
-    test_data_path = ultra_l1a({ULTRA_TOF.apid[0]: ccsds_path_tof}, xtce_path)
-    # TODO: replace "sci" with proper descriptor (previously tof)
-    assert test_data_path.name == "imap_ultra_l1a_sci_20240124_v001.cdf"
+    decom_ultra_tof, _ = decom_test_data
+    test_data = ultra_l1a(
+        ccsds_path_theta_0, data_version="001", apid=ULTRA_TOF.apid[0]
+    )
+    test_data_path = write_cdf(test_data[0])
+
+    assert test_data_path.exists()
+    assert test_data_path.name == "imap_ultra_l1a_45sensor-histogram_20240207_v001.cdf"
 
     dataset_tof = create_dataset({ULTRA_TOF.apid[0]: decom_ultra_tof})
-    input_xarray_tof = cdf_to_xarray(test_data_path)
+    input_xarray_tof = load_cdf(test_data_path)
+    # write_cdf() injects some attributes that are not in the xarray
+    assert set(dataset_tof.attrs.keys()).issubset(set(input_xarray_tof.attrs.keys()))
 
-    assert input_xarray_tof.attrs.keys() == dataset_tof.attrs.keys()
 
-
-def test_cdf_events(
-    ccsds_path,
-    ccsds_path_events,
-    xtce_path,
-    decom_ultra_events,
-):
+@pytest.mark.parametrize(
+    "decom_test_data",
+    [
+        pytest.param(
+            {
+                "apid": ULTRA_EVENTS.apid[0],
+                "filename": "FM45_40P_Phi28p5_BeamCal_LinearScan_phi28.50"
+                "_theta-0.00_20240207T102740.CCSDS",
+            },
+        )
+    ],
+    indirect=True,
+)
+def test_cdf_events(ccsds_path_theta_0, decom_ultra_aux, decom_test_data):
     """Tests that CDF file is created and contains same attributes as xarray."""
-    test_data_path = ultra_l1a(
-        {ULTRA_AUX.apid[0]: ccsds_path, ULTRA_EVENTS.apid[0]: ccsds_path_events},
-        xtce_path,
+    decom_ultra_events, _ = decom_test_data
+    test_data = ultra_l1a(
+        ccsds_path_theta_0, data_version="001", apid=ULTRA_EVENTS.apid[0]
     )
-    assert test_data_path.exists()
-    # TODO: replace "sci" with proper descriptor (previously events)
-    assert test_data_path.name == "imap_ultra_l1a_sci_20220530_v001.cdf"
+    # TODO: Dropping duplicates to ignore ISTP for now. Need to update test data
+    # or wait for an update to cdflib
+    test_data[0] = test_data[0].sortby("epoch").groupby("epoch").first()
+    test_data_path = write_cdf(test_data[0])
 
-    decom_ultra_aux = decom_ultra_apids(ccsds_path, xtce_path, ULTRA_AUX.apid[0])
+    assert test_data_path.exists()
+    assert test_data_path.name == "imap_ultra_l1a_45sensor-de_20240207_v001.cdf"
+
     dataset_events = create_dataset(
         {ULTRA_EVENTS.apid[0]: decom_ultra_events, ULTRA_AUX.apid[0]: decom_ultra_aux}
     )
-    input_xarray_events = cdf_to_xarray(test_data_path)
+    input_xarray_events = load_cdf(test_data_path)
 
-    assert input_xarray_events.attrs.keys() == dataset_events.attrs.keys()
+    # write_cdf() injects some attributes that are not in the xarray
+    assert set(dataset_events.attrs.keys()).issubset(
+        set(input_xarray_events.attrs.keys())
+    )

@@ -1,4 +1,5 @@
-"""Contains common attribute classes to use as a base for CDF files.
+"""
+Contains common attribute classes to use as a base for CDF files.
 
 All the classes with "Global" in their name are intended for use for global attributes
 in CDF files. The rest are attributes for individual data fields within the CDF file.
@@ -8,9 +9,13 @@ check if all the attributes are valid of if all the required attributes are pres
 This check occurs during the xarray_to_cdf step, which has an example in
 imap_processing/cdf/utils.py.
 
+References
+----------
 For more information on attributes, refer to the SPDF documentation at:
 https://spdf.gsfc.nasa.gov/istp_guide/vattributes.html
 
+Examples
+--------
 Additional examples on how to use these dataclasses are in
 imap_processing/idex/idex_cdf_attrs.py and imap_processing/idex/idex_packet_parser.py.
 """
@@ -35,7 +40,6 @@ class GlobalConstantAttrs:
         Global file attributes, including project, source_name, discipline, PI_name,
         PI_affiliation, and mission_group. This should be the same
         for all instruments.
-
     """
 
     # TODO: ask about how to add optional parameter in File_naming_convention.
@@ -71,18 +75,19 @@ class GlobalConstantAttrs:
         Returns
         -------
         dict
-            Global base attributes
+            Global base attributes.
         """
         return self.GLOBAL_BASE
 
 
 class ConstantCoordinates:
-    """Return a dictionary with global base attributes.
+    """
+    Return a dictionary with global base attributes.
 
     Attributes
     ----------
     EPOCH:
-        Default values for "epoch" coordinate value
+        Default values for "epoch" coordinate value.
     """
 
     EPOCH: ClassVar[dict] = {
@@ -109,14 +114,15 @@ class ConstantCoordinates:
 
 @dataclass
 class GlobalInstrumentAttrs:
-    """Each instrument should extend this class and replace the info as needed.
+    """
+    Each instrument should extend this class and replace the info as needed.
 
     Attributes
     ----------
     version : str
-        The software version
+        The software version.
     descriptor : str
-        Descriptor of the instrument (Ex: "IDEX>Interstellar Dust Experiment")
+        Descriptor of the instrument (Ex: "IDEX>Interstellar Dust Experiment").
         NOTE:
         Instrument name on the left side of the ">" will need to match what it
         appears in the filename.
@@ -126,9 +132,7 @@ class GlobalInstrumentAttrs:
         This attribute is used to facilitate making choices of instrument type. More
         than one entry is allowed. Valid IMAP values include:
         [Electric Fields (space), Magnetic Fields (space), Particles (space),
-        Plasma and Solar Wind, Ephemeris]
-
-
+        Plasma and Solar Wind, Ephemeris].
     """
 
     version: str
@@ -143,8 +147,8 @@ class GlobalInstrumentAttrs:
         Returns
         -------
         dict
-            dictionary of correctly formatted values for the data_version, descriptor,
-            text, and logical_file_id, added on to the global attributes from GlobalBase
+            Dictionary of correctly formatted values for the data_version, descriptor,
+            text, and logical_file_id, added to the global attributes from GlobalBase.
         """
         return GlobalConstantAttrs().output() | {
             "Data_version": self.version,
@@ -172,16 +176,13 @@ class GlobalDataLevelAttrs:
     logical_source_desc : str
         The description of the data, ex "IMAP Mission IDEX Instrument Level-1 Data."
     instrument_base : GlobalInstrumentAttrs
-        The InstrumentBase object describing the basic instrument information
-    additional_attrs : dict, default=None
-        Any additional attributes that are data level specific
+        The InstrumentBase object describing the basic instrument information.
     """
 
     data_type: str
     logical_source: str
     logical_source_desc: str
     instrument_base: GlobalInstrumentAttrs
-    additional_attrs: dict = None
 
     def output(self):
         """
@@ -190,20 +191,16 @@ class GlobalDataLevelAttrs:
         Returns
         -------
         dict
-            dictionary of correctly formatted values for the attributes in the class and
-            the attributes from InstrumentBase
+            Dictionary of correctly formatted values for the attributes in the class and
+            the attributes from InstrumentBase.
         """
-        return (
-            self.instrument_base.output()
-            | {
-                # TODO: rework cdf_utils.write_cdf to leverage dataclasses
-                "Logical_file_id": ["FILL ME IN AT FILE CREATION"],
-                "Data_type": self.data_type,
-                "Logical_source": self.logical_source,
-                "Logical_source_description": self.logical_source_desc,
-            }
-            | (self.additional_attrs or {})
-        )
+        return self.instrument_base.output() | {
+            # TODO: rework cdf_utils.write_cdf to leverage dataclasses
+            "Logical_file_id": ["FILL ME IN AT FILE CREATION"],
+            "Data_type": self.data_type,
+            "Logical_source": self.logical_source,
+            "Logical_source_description": self.logical_source_desc,
+        }
 
 
 @dataclass
@@ -214,27 +211,36 @@ class AttrBase:
     Attributes
     ----------
     validmin : np.float64 | np.int64
-        The valid minimum value, required
+        The valid minimum value, required.
     validmax : np.float64 | np.int64
-        The valid maximum value, required
+        The valid maximum value, required.
     display_type : str default="no_plot"
-        The display type of the plot (ex "no_plot"), required
+        The display type of the plot (ex "no_plot"), required.
     catdesc : str, default=None
-        The category description, "CATDESC" attribute, required
+        The category description, "CATDESC" attribute, required.
+        Max 80 characters. If need to write more, use "var_notes".
     fieldname : str, default=None
-        The fieldname, "FIELDNAM" attribute
+        The fieldname, "FIELDNAM" attribute. Max 30 characters.
+        fieldname and label_axis parameter are closely related.
+        fieldname and label_axis are used in plot. fieldname
+        is used as title of the plot, label_axis is used as axis label.
+        For example, fieldname='Time of flight', label_axis='TOF'
     var_type : str, default="support_data"
-        The type of data
+        The type of data. Valid options are:
+            1. "data" - plotted and listed on CDAWeb and accessed by API,
+            2. "support_data" - not plotted
+            3. "metadata" - reserved for character type variables.
     fill_val : np.int64, default=Constants.INT_FILLVAL
         The values for filling data
     scale_type : str, default="linear"
-        The scale of the axis, "SCALETYP" attribute
+        The scale of the axis, "SCALETYP" attribute.
     label_axis : str, default=None
         Axis label, "LABLAXIS" attribute. Required. Should be close to 6 letters.
+        See fieldname parameter for more information.
     format : str, default=None
-        The format of the data, in Fortran format
+        The format of the data, in Fortran format.
     units : str, default=None
-        The units of the data
+        The units of the data.
     """
 
     validmin: Union[np.float64, np.int64]
@@ -256,7 +262,7 @@ class AttrBase:
         Returns
         -------
         dict
-            Dictionary of correctly formatted values for the attributes in the class
+            Dictionary of correctly formatted values for the attributes in the class.
         """
         return {
             "CATDESC": self.catdesc,
@@ -294,7 +300,7 @@ class ScienceAttrs(AttrBase):
     variable_purpose : str = None, optional
         The variable purpose attribute tells which variables are worth plotting.
     var_notes : str = None, optional
-        Notes on the variable
+        Notes on the variable.
     """
 
     depend_0: str = None
@@ -353,9 +359,9 @@ class FloatAttrs(ScienceAttrs):
     format : str, default="F64.5"
         The format of the data, in Fortran format
     fill_val : np.float64, default=Constants.DOUBLE_FILLVAL
-        The values for filling data
+        The values for filling data.
     units : str, default="float"
-        The units of the data
+        The units of the data.
     """
 
     format: str = "F64.5"
@@ -375,15 +381,15 @@ class StringAttrs:
     depend_0 : str
         The first degree of dependent coordinate variables.
     catdesc : str, default=None
-        The category description, "CATDESC" attribute, required
+        The category description, "CATDESC" attribute, required.
     fieldname : str, default=None
-        The fieldname, "FIELDNAM" attribute
+        The fieldname, "FIELDNAM" attribute.
     format : str, default="A80"
-        The format of the data, in Fortran format
+        The format of the data, in Fortran format.
     var_type : str, default="metadata"
-        The type of data
+        The type of data.
     display_type : str, default="no_plot"
-        The display type of the plot
+        The display type of the plot.
     """
 
     depend_0: str

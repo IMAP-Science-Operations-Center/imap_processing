@@ -19,6 +19,11 @@ def write_lo_l1a_cdfs(data: LoContainer):
     data : LoContainer
         The Lo data container contaings all available Lo dataclass objects
         for one pointing.
+
+    Returns
+    -------
+    created_file_paths : list[Path]
+        Location of created CDF files.
     """
     created_filepaths = []
 
@@ -40,12 +45,12 @@ def create_lo_scide_dataset(sci_de: list):
 
     Parameters
     ----------
-    scide: list
+    sci_de : list
         List of ScienceDirectEvent data classes.
 
     Returns
     -------
-    xarray.Dataset
+    sci_de_dataset : xarray.Dataset
         Lo L1A Science Direct Event Dataset.
     """
     # TODO: getting sci_de_times because it's used in both the data time field
@@ -56,7 +61,7 @@ def create_lo_scide_dataset(sci_de: list):
         sci_de_times, dims="epoch", attrs=lo_cdf_attrs.lo_tof_attrs.output()
     )
     sci_de_epoch = xr.DataArray(
-        np.array(sci_de_times, dtype="datetime64[s]"),
+        np.array(sci_de_times, dtype="datetime64[s]").astype("datetime64[ns]"),
         dims=["epoch"],
         name="epoch",
         attrs=ConstantCoordinates.EPOCH,

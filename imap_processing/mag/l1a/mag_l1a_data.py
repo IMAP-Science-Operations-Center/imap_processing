@@ -17,6 +17,17 @@ class TimeTuple:
 
     Course time is mission SCLK in seconds. Fine time is 16bit unsigned sub-second
     counter.
+
+    Attributes
+    ----------
+    coarse_time : int
+        Coarse time in seconds.
+    fine_time : int
+        Subsecond.
+
+    Methods
+    -------
+    to_seconds()
     """
 
     coarse_time: int
@@ -29,7 +40,7 @@ class TimeTuple:
         Parameters
         ----------
         seconds : float
-            Number of seconds to add
+            Number of seconds to add.
 
         Returns
         -------
@@ -54,8 +65,8 @@ class TimeTuple:
 
         Returns
         -------
-        seconds: float
-            Time in seconds
+        seconds : float
+            Time in seconds.
         """
         return self.coarse_time + self.fine_time / MAX_FINE_TIME
 
@@ -227,7 +238,7 @@ class MagL1a:
         vector_objects (n, 5)
             vectors with timestamps added in seconds, calculated from
             cdf.utils.calc_start_time.
-            TODO: Move timestamps to J2000
+            TODO: Move timestamps to J2000.
         """
         timedelta = np.timedelta64(int(1 / vecters_per_sec * 1e9), "ns")
 
@@ -250,34 +261,47 @@ class MagL1a:
     @staticmethod
     def process_vector_data(
         vector_data: np.ndarray, primary_count: int, secondary_count: int
-    ) -> (list[tuple], list[tuple]):
+    ) -> (np.ndarray, np.ndarray):
         """
         Given raw packet data, process into Vectors.
 
         Vectors are grouped into primary sensor and secondary sensor, and returned as a
-        tuple (primary sensor vectors, secondary sensor vectors)
+        tuple (primary sensor vectors, secondary sensor vectors).
 
-        Written by MAG instrument team
+        Written by MAG instrument team.
 
         Parameters
         ----------
-        vector_data : np.ndarray
+        vector_data : numpy.ndarray
             Raw vector data, in bytes. Contains both primary and secondary vector data
-            (first primary, then secondary)
+            (first primary, then secondary).
         primary_count : int
-            Count of the number of primary vectors
+            Count of the number of primary vectors.
         secondary_count : int
-            Count of the number of secondary vectors
+            Count of the number of secondary vectors.
 
         Returns
         -------
-        (primary, secondary)
+        (primary, secondary): (numpy.ndarray, numpy.ndarray)
             Two arrays, each containing tuples of (x, y, z, sample_range) for each
             vector sample.
         """
 
         # TODO: error handling
         def to_signed16(n):
+            """
+            Convert an integer to a signed 16-bit integer.
+
+            Parameters
+            ----------
+            n : int
+                The integer to be converted.
+
+            Returns
+            -------
+            int
+                Converted integer.
+            """
             n = n & 0xFFFF
             return n | (-(n & 0x8000))
 

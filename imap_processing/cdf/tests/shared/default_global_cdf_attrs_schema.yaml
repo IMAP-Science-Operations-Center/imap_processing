@@ -1,0 +1,246 @@
+DOI:
+  description: >
+    DOI is a persistent Unique Digital Identifier with the form
+    https://doi.org/<PREFIX>/<SUFFIX> with the <PREFIX> identifying the DOI
+    registration authority and the <SUFFIX> identifying the dataset. The DOI should point to
+    a landing page for additional information about the dataset. DOIs are typically created by
+    the SPASE naming authority or archive.
+  default: null
+  required: false # NOT Required in ISTP Guide (Recommended)
+  validate: true # include in validation
+  overwrite: false
+Data_level:
+  description: >
+    This attribute is used in file name creation and records the level of processsing done
+    on the dataset. For HERMES the following are valid values:
+    - l0>Level 0
+    - l1>Level 1
+    - l2>Level 2
+    - l3>Level 3
+    - l4>Level 4
+    - ql>Quicklook
+  default: null
+  required: true # NOT Required in ISTP Guide (Derived)
+  validate: false
+  overwrite: true
+Data_product_descriptor:
+  description: >
+    This is an optional field that may not be needed for all products. Where it is used, identifier
+    should be short (e.q. 3-8 characters) descriptors that are helpful to end- users. If a
+    descriptor contains multiple components, underscores are used to separate those components.
+  default: null
+  required: false # NOT Required in ISTP Guide (Derived)
+  validate: false
+  overwrite: true
+Data_type:
+  description: >
+    This attribute is used by CDF file writing software to create a filename. It is a
+    combination of the following filename components: mode, data level, and optional data
+    product descriptor.
+  default: null
+  required: false # NOT Required in ISTP Guide (Derived)
+  validate: false
+  overwrite: true
+Data_version:
+  description: >
+    This attribute identifies the version of a particular CDF data file.
+  default: null
+  required: true
+  validate: true
+  overwrite: false
+Descriptor:
+  description: >
+    This attribute identifies the name of the instrument or sensor that collected the data. Both
+    a long name and a short name are given. For any data file, only a single value is allowed.
+    For HERMES, the following are valid values:
+    - EEA>Electron Electrostatic Analyzer
+    - MERIT>Miniaturized Electron pRoton Telescope
+    - NEMISIS> Noise Eliminating Magnetometer In a Small Integrated System
+    - SPAN-I>Solar Probe Analyzer for Ions
+  default: null
+  required: true
+  validate: true
+  overwrite: false
+Discipline:
+  description: >
+    This attribute describes both the science discipline and sub discipline. For HERMES,
+    this value should always be "Space Physics>Magnetospheric Science."
+  default: Space Physics>Magnetospheric Science
+  required: true
+  validate: true
+  overwrite: false
+File_naming_convention:
+  description: >
+    If File_naming_convention was not set, it uses default setting:
+      source_datatype_descriptor_yyyyMMdd
+  default: source_datatype_descriptor_yyyyMMdd
+  required: false
+  validate: false
+  overwrite: true
+Generation_date:
+  description: >
+    Date stamps the creation of the file using the syntax yyyymmdd, e.g., "
+  default: null
+  required: false # NOT Required in ISTP Guide (Recommended)
+  validate: true
+  overwrite: true
+HTTP_LINK:
+  description: >
+    The 'HTTP_LINK', 'LINK_TEXT', and 'LINK_TITLE' attributes store the URL with a
+    description of this dataset at the HERMES SDC. The use of HTTP_LINK attribute requires
+    the existence and equal number of corresponding LINK_TEXT and LINK_TITLE attributes.
+    If text is not needed for these attributes, use an empty string "".
+  default: null
+  required: false # NOT Required in ISTP Guide (Recommended)
+  validate: true
+  overwrite: false
+Instrument_mode:
+  description: >
+    TBS
+  default: null
+  required: false # NOT Required in ISTP Guide (Derived)
+  validate: false
+  overwrite: false
+Instrument_type:
+  description: >
+    This attribute is used to facilitate making choices of instrument type. More than one entry
+    is allowed. Acceptable values for HERMES include:
+    - Magnetic Fields (space)
+    - Particles (space)
+    - Plasma and Solar Wind
+    - Ephemeris -> Ephemeris/Attitude/Ancillary
+  default: null
+  required: true
+  validate: true
+  overwrite: false
+LINK_TEXT:
+  description: >
+    The 'HTTP_LINK', 'LINK_TEXT', and 'LINK_TITLE' attributes store the URL with a
+    description of this dataset at the HERMES SDC. The use of HTTP_LINK attribute requires
+    the existence and equal number of corresponding LINK_TEXT and LINK_TITLE attributes.
+    If text is not needed for these attributes, use an empty string "".
+  default: null
+  required: false # NOT Required in ISTP Guide (Recommended)
+  validate: true
+  overwrite: false
+LINK_TITLE:
+  description: >
+    The 'HTTP_LINK', 'LINK_TEXT', and 'LINK_TITLE' attributes store the URL with a
+    description of this dataset at the HERMES SDC. The use of HTTP_LINK attribute requires
+    the existence and equal number of corresponding LINK_TEXT and LINK_TITLE attributes.
+    If text is not needed for these attributes, use an empty string "".
+  default: null
+  required: false # NOT Required in ISTP Guide (Recommended)
+  validate: true
+  overwrite: false
+Logical_file_id:
+  description: >
+    This attribute stores the name of the CDF file but without the
+    file extension (e.g. ".cdf"). This attribute is required to avoid loss of the original source
+    in the case of accidental (or intentional) renaming.
+  default: null
+  required: true
+  validate: true
+  overwrite: true
+Logical_source:
+  description: >
+    This attribute determines the file naming convention in the SKT Editor and is used by
+    CDA Web. It is composed of the following values:
+    - source_name - (e.g. spacecraft identifier)
+    - descriptor - (e.g. instrument identifier - see Section Error! Reference source not
+    found.)
+    - data_type - (e.g. mode, data level, and optional data product descriptor - value
+    come from 'Data_type' attribute)
+  default: null
+  required: true
+  validate: true
+  overwrite: true
+Logical_source_description:
+  description: >
+    This attribute writes out the full words associated with the encrypted Logical_source
+    above, e.g., "Level 1 Dual Electron Spectrometer Survey Data". Users on CDAWeb see
+    this value on their website.
+  default: null
+  required: true
+  validate: true
+  overwrite: true
+MODS:
+  description: >
+    This attribute is an SPDF standard global attribute, which is used to denote the history of
+    modifications made to the CDF data set. The MODS attribute should contain a
+    description of all significant changes to the data set, essentially capturing a log of high-
+    level release notes. This attribute can have as many entries as necessary and should be
+    updated if the Interface Number ("X") of the version number changes.
+  default: null
+  required: false # NOT Required in ISTP Guide (Recommended)
+  validate: true
+  overwrite: false
+Mission_group:
+  description: >
+    This attribute has a single value and is used to facilitate making choices of source through
+    CDAWeb. This value should be "HERMES."
+  default: HERMES
+  required: true
+  validate: true
+  overwrite: false
+PI_affiliation:
+  description: >
+    This attribute value should include the HERMES mission PI affiliation followed by a
+    comma-separated list of any Co-I affiliations that are responsible for this particular
+    dataset. The following are valid HERMES values, of which the abbreviations should be
+    used exclusively within this attribute value, and the full text of the affiliation included in
+    the general 'text' attribute as it is used solely in plot labels.
+    - GSFC - Goddard Space Flight Center
+    - UCB - University of California, Berkeley
+    - SSL - Space Sciences Laboratory, UCB
+    - UM - University of Michigan
+  default: null
+  required: true
+  validate: true
+  overwrite: false
+PI_name:
+  description: >
+    This attribute value should include first initial and last name of the HERMES mission PI
+    followed by a comma-separated list of any Co-Is that are responsible for this particular
+    dataset.
+  default: null
+  required: true
+  validate: true
+  overwrite: false
+Project:
+  description: >
+    This attribute identifies the name of the project and indicates ownership. For HERMES,
+    this value should be "STP>Solar-Terrestrial Physics".
+  default: STP>Solar-Terrestrial Physics
+  required: true
+  validate: true
+  overwrite: false
+Source_name:
+  description: >
+    This attribute identifies the observatory where the data originated. The following are
+    valid values for HERMES:
+    - HERMES>Heliophysics Environmental and Radiation Measurement Experiment Suite
+  default: HERMES>Heliophysics Environmental and Radiation Measurement Experiment Suite
+  required: true
+  validate: true
+  overwrite: false
+Start_time:
+  description: >
+    The start time of the contained data given in YYYYMMDD_hhmmss
+  default: null
+  required: false # NOT Required in ISTP Guide (Derived)
+  validate: false
+  overwrite: true
+TEXT:
+  description: >
+    This attribute is an SPDF standard global attribute, which is a text description of the
+    experiment whose data is included in the CDF. A reference to a journal article(s) or to a
+    World Wide Web page describing the experiment is essential and constitutes the
+    minimum requirement. A written description of the data set is also desirable. This
+    attribute can have as many entries as necessary to contain the desired information.
+    Typically, this attribute is about a paragraph in length and is not shown on CDAWeb.
+    CDAWeb is the web portal for access to SPDF data, available at https://cdaweb.gsfc.nasa.gov.
+  default: null
+  required: true
+  validate: true
+  overwrite: false

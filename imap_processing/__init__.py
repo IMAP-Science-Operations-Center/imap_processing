@@ -8,8 +8,6 @@ There are utilities to read and write IMAP data files in
 the CDF file format, and to interact with the SPICE toolkit.
 """
 
-__version__ = "0.2.0"
-
 # When imap_processing is installed using pip, we need to be able to find the
 # packet definitions directory path.
 #
@@ -18,33 +16,23 @@ from pathlib import Path
 
 import numpy as np
 
+from imap_processing._version import __version__, __version_tuple__  # noqa: F401
+
 # Eg. imap_module_directory = /usr/local/lib/python3.11/site-packages/imap_processing
 imap_module_directory = Path(__file__).parent
 
-INSTRUMENTS = [
-    "codice",
-    "glows",
-    "hi",
-    "hit",
-    "idex",
-    "lo",
-    "mag",
-    "swapi",
-    "swe",
-    "ultra",
-]
-
+# TODO: should we move this to imap-data-access?
 PROCESSING_LEVELS = {
     "codice": ["l0", "l1a", "l1b", "l2"],
     "glows": ["l0", "l1a", "l1b", "l2"],
     "hi": ["l0", "l1a", "l1b", "l1c", "l2"],
     "hit": ["l0", "l1a", "l1b", "l2"],
-    "idex": ["l0", "l1a", "l1b", "l1c", "l2"],
+    "idex": ["l0", "l1", "l2"],
     "lo": ["l0", "l1a", "l1b", "l1c", "l2"],
     "mag": ["l0", "l1a", "l1b", "l1c", "l2pre", "l2"],
     "swapi": ["l0", "l1", "l2"],
     "swe": ["l0", "l1a", "l1b", "l2"],
-    "ultra": ["l0", "l1a", "l1b", "l1c", "l1d", "l2"],
+    "ultra": ["l0", "l1a", "l1b", "l1c", "l2"],
 }
 
 # Reference start time (launch time or epoch)

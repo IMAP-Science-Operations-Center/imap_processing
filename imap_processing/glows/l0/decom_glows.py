@@ -7,12 +7,13 @@ from space_packet_parser import parser, xtcedef
 
 from imap_processing import imap_module_directory
 from imap_processing.ccsds.ccsds_data import CcsdsData
-from imap_processing.glows import version
+from imap_processing.glows import __version__
 from imap_processing.glows.l0.glows_l0_data import DirectEventL0, HistogramL0
 
 
 class GlowsParams(Enum):
-    """Enum class for Glows packet data.
+    """
+    Enum class for Glows packet data.
 
     Attributes
     ----------
@@ -27,9 +28,10 @@ class GlowsParams(Enum):
 
 
 def decom_packets(
-    packet_file_path: str,
+    packet_file_path: Path,
 ) -> tuple[list[HistogramL0], list[DirectEventL0]]:
-    """Decom GLOWS data packets using GLOWS packet definition.
+    """
+    Decom GLOWS data packets using GLOWS packet definition.
 
     Parameters
     ----------
@@ -40,7 +42,7 @@ def decom_packets(
     -------
     data : tuple[list[HistogramL0], list[DirectEventL0]]
         A tuple with two pieces: one list of the GLOWS histogram data, in GlowsHistL0
-        instances, and one list of the GLOWS direct event data, in GlowsDeL0 instance
+        instances, and one list of the GLOWS direct event data, in GlowsDeL0 instance.
     """
     # Define paths
     xtce_document = Path(
@@ -53,7 +55,7 @@ def decom_packets(
     histdata = []
     dedata = []
 
-    filename = Path(packet_file_path).name
+    filename = packet_file_path.name
 
     with open(packet_file_path, "rb") as binary_data:
         glows_packets = glows_parser.generator(binary_data)
@@ -69,7 +71,7 @@ def decom_packets(
                     for item in packet.data.values()
                 ]
                 hist_l0 = HistogramL0(
-                    version, filename, CcsdsData(packet.header), *values
+                    __version__, filename, CcsdsData(packet.header), *values
                 )
                 histdata.append(hist_l0)
 
@@ -82,7 +84,7 @@ def decom_packets(
                 ]
 
                 de_l0 = DirectEventL0(
-                    version, filename, CcsdsData(packet.header), *values
+                    __version__, filename, CcsdsData(packet.header), *values
                 )
                 dedata.append(de_l0)
 

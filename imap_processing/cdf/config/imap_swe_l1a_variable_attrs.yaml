@@ -1,0 +1,251 @@
+# <=== Coordinates ===>
+
+spin_angle:
+  CATDESC: 180 measurements per quarter cycle. See VAR_NOTES for details
+  FIELDNAM: Spin Angle
+  FILLVAL: -9223370000000000000
+  FORMAT: I3
+  LABLAXIS: Angle
+  SCALE_TYP: linear
+  UNITS: " "
+  VALIDMAX: 179
+  VALIDMIN: 0
+  VAR_NOTES: Combination of energy and spin angle. 180 measurements per quarter cycle.
+    At this point, we don't know about energy or spin angle information.
+  VAR_TYPE: support_data
+
+polar_angle:
+  CATDESC: This is angle of 7 CEMs
+  FIELDNAM: Polar Angle
+  FILLVAL: -9223370000000000000
+  FORMAT: I1
+  LABLAXIS: Angle
+  SCALE_TYP: linear
+  UNITS: int
+  VALIDMAX: 6
+  VALIDMIN: 0
+  VAR_NOTES: " "
+  VAR_TYPE: support_data
+
+# <=== Label Attributes ===>
+# LABL_PTR_i expects VAR_TYPE of metadata with char data type.
+# We need to define this if we have DEPEND_1 or more.
+# TODO: I am not sure what the FIELDNAM should be.
+# I tried best to match this: https://spdf.gsfc.nasa.gov/istp_guide/variables.html#Metadata_eg1
+spin_angle_label:
+  CATDESC: 180 measurements per quarter cycle
+  FIELDNAM: Spin Angle
+  FORMAT: A3
+  VAR_TYPE: metadata
+
+polar_angle_label:
+  CATDESC: This is angle of 7 CEMs
+  FIELDNAM: CEM Counts
+  FORMAT: A1
+  VAR_TYPE: metadata
+
+# TODO: how to avoid repeating this?
+epoch:
+  CATDESC: Time, number of nanoseconds since J2000 with leap seconds included
+  FIELDNAM: epoch
+  LABLAXIS: epoch
+  FILLVAL: -9223372036854775808
+  FORMAT: " " # Supposedly not required, fails in xarray_to_cdf
+  VALIDMIN: -9223372036854775808
+  VALIDMAX: 9223372036854775807
+  UNITS: ns
+  VAR_TYPE: support_data
+  SCALETYP: linear
+  MONOTON: INCREASE
+  TIME_BASE: J2000
+  TIME_SCALE: Terrestrial Time
+  REFERENCE_POSITION: Rotating Earth Geoid
+
+# <=== Data Variables ===>
+# Default Attrs for all data variables unless overridden
+
+default_attrs: &default
+  DEPEND_0: epoch
+  DISPLAY_TYPE: 'no_plot'
+  LABLAXIS: ' '
+  FILLVAL: -9223372036854775808
+  FORMAT: I19
+  UNITS: ' '
+  VALIDMIN: 0
+  VALIDMAX: 9223372036854769664
+  VAR_TYPE: support_data
+  SCALETYP: linear
+
+raw_counts:
+  <<: *default
+  CATDESC: Raw Counts stored in 8bits length
+  DEPEND_1: spin_angle
+  DEPEND_2: polar_angle
+  LABL_PTR_1: spin_angle_label
+  LABL_PTR_2: polar_angle_label
+  DISPLAY_TYPE: spectrogram
+  FIELDNAM: Raw Counts
+  FORMAT: I3
+  UNITS: counts
+  VALIDMAX: 256
+  VALIDMIN: 0
+  VAR_TYPE: data
+
+science_data:
+  <<: *default
+  CATDESC: Decompressed Counts
+  DEPEND_1: spin_angle
+  DEPEND_2: polar_angle
+  LABL_PTR_1: spin_angle_label
+  LABL_PTR_2: polar_angle_label
+  DISPLAY_TYPE: spectrogram
+  FIELDNAM: Decompressed Counts
+  FORMAT: I5
+  UNITS: counts
+  VALIDMAX: 66539
+  VALIDMIN: 0
+  VAR_TYPE: data
+
+shcoarse:
+  <<: *default
+  CATDESC: Mission elapsed time
+  FIELDNAM: SHCOARSE
+
+acq_start_coarse:
+  <<: *default
+  CATDESC: Acquisition start time coarse in seconds
+  FIELDNAM: Acquisition Time Coarse
+
+acq_start_fine:
+  <<: *default
+  CATDESC: Acquisition start time fine in microseconds
+  FIELDNAM: Acquisition Time Fine
+  FORMAT: I10
+  VALIDMAX: 4290000000
+
+cem_nominal_only:
+  <<: *default
+  CATDESC: CEM Nominal status bit. '1' -- nominal, '0' -- not nominal
+  FIELDNAM: CEM Nominal Status
+  FORMAT: I1
+  VALIDMAX: 1
+
+spin_period_validity:
+  <<: *default
+  CATDESC: Spin period valid bit. '1' -- valid, '0' -- invalid
+  FIELDNAM: Spin Period Validity
+  FORMAT: I1
+  VALIDMAX: 1
+
+spin_phase_validity:
+  <<: *default
+  CATDESC: Spin phase valid bit. '1' -- valid, '0' -- invalid
+  FIELDNAM: Spin Phase Validity
+  FORMAT: I1
+  VALIDMAX: 1
+
+spin_period_source:
+  <<: *default
+  CATDESC: >
+    Spin period source bit. '1' -- sun sensor (safing), '0' -- star tracker
+    (nominal)
+  FIELDNAM: Spin Period Source
+  FORMAT: I1
+  VALIDMAX: 1
+
+settle_duration:
+  <<: *default
+  CATDESC: HVPS settling duration
+  FIELDNAM: HVPS Setting Duration
+  FORMAT: I5
+  VALIDMAX: 65535
+
+acq_duration:
+  <<: *default
+  CATDESC: Acquisition duration
+  FIELDNAM: Acquisition Duration
+  FORMAT: I10
+  VALIDMAX: 4290000000
+
+spin_phase:
+  <<: *default
+  CATDESC: Spin phase
+  FIELDNAM: Spin Phase
+  FORMAT: I5
+  VALIDMAX: 65535
+
+spin_period:
+  <<: *default
+  CATDESC: Spin period
+  FIELDNAM: Spin Period
+  FORMAT: I5
+  VALIDMAX: 65535
+
+repoint_warning:
+  <<: *default
+  CATDESC: >
+    Thruster fired during this quarter cycle. '1' -- yes, warning received,
+    '0' -- no, warning not received
+  FIELDNAM: Repointing Warning
+  FORMAT: I1
+  VALIDMAX: 1
+
+high_count:
+  <<: *default
+  CATDESC: >
+    High CEM count observed for at least one CEM during this quarter cycle.
+    '1' -- yes, high count occurred, '0' -- no, no high count occurred
+  FIELDNAM: High Count
+  FORMAT: I1
+  VALIDMAX: 1
+
+stim_enabled:
+  <<: *default
+  CATDESC: Stim state. '1' -- enabled, '0' -- disabled
+  FIELDNAM: Stim State
+  FORMAT: I1
+  VALIDMAX: 1
+
+quarter_cycle:
+  <<: *default
+  CATDESC: Quarter cycle number
+  FIELDNAM: Quarter Cycle Number
+  FORMAT: I3
+  VALIDMAX: 255
+
+esa_table_num:
+  <<: *default
+  CATDESC: ESA table identifier
+  FIELDNAM: ESA table Identifier
+  FORMAT: I3
+  VALIDMAX: 255
+
+esa_acq_cfg:
+  <<: *default
+  CATDESC: ESA acquisition configuration
+  FIELDNAM: ESA Acquisition Configuration
+  FORMAT: I3
+  VALIDMAX: 255
+
+threshold_dac:
+  <<: *default
+  CATDESC: Threshold DAC value
+  FIELDNAM: Threshold DAC Value
+  FORMAT: I5
+  VALIDMAX: 65535
+
+stim_cfg_reg:
+  <<: *default
+  CATDESC: >
+    Stim pulse configuration register. Bits 0-3, period, 4-7, duration, 8-9
+    mode
+  FIELDNAM: Stim Pulse Configuration
+  FORMAT: I5
+  VALIDMAX: 65535
+
+cksum:
+  <<: *default
+  CATDESC: Checksum
+  FIELDNAM: Checksum
+  FORMAT: I5
+  VALIDMAX: 65535

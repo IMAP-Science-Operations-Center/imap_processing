@@ -37,6 +37,9 @@ well.*
    ``imap_processing`` `repository <https://github.com/IMAP-Science-Operations-Center/imap_processing>`_ and clicking
    the ``Fork`` button near the top-right of the page. Follow the various steps to create a fork under your GitHub
    account.
+
+   *Note: Hold the naming convention username/imap_processing. The branch title will follow the specific project.*
+
 #. Make a local copy of your personal fork by cloning the repository, using the URL found by clicking the green "clone"
    button:
 
@@ -44,6 +47,8 @@ well.*
 
        git clone https://github.com/<username>/imap_processing.git  # for HTTPS
        git clone git@github.com:<username>/imap_processing.git  # for SSH
+
+   This must be done even if you have previously cloned the repository. You must clone your personal fork.
 
 #. Ensure that the personal fork is pointing to the ``upstream`` ``imap_processing`` repository:
 
@@ -53,31 +58,37 @@ well.*
        git remote add upstream git@github.com:IMAP-Science-Operations-Center/imap_processing.git  # for SSH
 
 
-#. Install the development dependencies and pre-commit hooks. These hooks will automatically run the
+#. Install the ``pre-commit`` library to enable pre-commit hooks. These hooks will automatically run the
    `ruff <https://beta.ruff.rs/docs/>`_ formatter and linter on your code changes
    before commits:
 
    .. code-block:: bash
 
-       pip install .[dev]
-       pre-commit install
+       pip3 install pre-commit
 
-#. Retrieve the ``upstream`` ``dev`` branch:
+   If this results in errors, check the correct form of pip is being employed using ``which pip`` or ``which pip3``.
 
-   .. code-block:: bash
+   Then, while in the top directory of the repository, run:
 
-       git fetch upstream
-       git checkout -b dev upstream/dev
+    .. code-block:: bash
+
+        pre-commit install
+
+   *Note: This is optional, but helpful. This goes through pre-commit hooks locally for convenience which will also run when a pull request is made on GitHub.*
 
 #. Create a feature branch off of the ``dev`` branch to develop changes on. Branch names should be short but
    descriptive (e.g. ``update-codice-unit-tests``) and not too generic (e.g. ``bug-fix``, ``updates``). Consistent use
    of hyphens is encouraged.
+
+   In the terminal, set your working directory to the file path of the fork you created in step one. Then, run the following command:
 
    .. code-block:: bash
 
         git checkout -b <branchname>
 
 #. Make changes to the branch using the nominal ``git add``/``git commit`` cycle.
+
+   *Note: You can open the forked repository in a chosen IDE to make changes.*
 
    .. code-block:: bash
 

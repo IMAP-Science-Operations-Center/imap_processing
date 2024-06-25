@@ -1,0 +1,350 @@
+int_fillval: &int_fillval -9223372036854775808
+valid_max: &valid_max 3155630469184000000
+
+epoch_dim:
+  CATDESC: Time, number of nanoseconds since J2000 with leap seconds included
+  FIELDNAM: epoch
+  FILLVAL: *int_fillval
+  LABLAXIS: epoch
+  FORMAT: ' '  # Supposedly not required fails in xarray_to_cdf
+  UNITS: ns
+  VALIDMIN: -315575942816000000
+  VALIDMAX: 3155630469184000000
+  VAR_TYPE: support_data
+  SCALETYP: linear
+  MONOTON: INCREASE
+  TIME_BASE: J2000
+  TIME_SCALE: Terrestrial Time
+  REFERENCE_POSITION: Rotating Earth Geoid
+
+default_attrs: &default
+  # Assumed values for all variable attrs unless overwritten
+  DEPEND_0: epoch
+  DISPLAY_TYPE: time_series
+  FILLVAL: *int_fillval
+  FORMAT: I12
+  VALIDMIN: *int_fillval
+  VALIDMAX: 9223372036854775807
+  VAR_TYPE: data
+
+default_coords: &default_coords
+  FORMAT: F2.4  # Float with 4 digits
+  VAR_TYPE: data
+  DISPLAY_TYPE: time_series
+
+metadata_default: &metadata_default
+  <<: *default
+  VAR_TYPE: metadata
+  LABLAXIS: Metadata
+
+bin_dim:
+  <<: *default_coords
+  VALIDMIN: 0
+  VALIDMAX: 70
+  CATDESC: Counts of direct events for photon impacts
+  FIELDNAM: Counts of direct events
+  LABLAXIS: Counts
+
+flag_dim:
+  <<: *default_coords
+  VALIDMIN: 0
+  VALIDMAX: 1
+  FILLVAL: -1
+  CATDESC: Flags for histogram information
+  FIELDNAM: Flags for histogram information
+  LABLAXIS: Flags
+  UNITS: ' '
+
+per_second_dim:
+  <<: *default_coords
+  VALIDMIN: 0
+  VALIDMAX: 300
+  CATDESC: Direct events recorded approximately per second
+  FIELDNAM: List of direct events
+  LABLAXIS: Photon Counts per Second
+
+ecliptic_dim:
+  <<: *default_coords
+  # TODO: Update validmin and validmax
+  VALIDMIN: *int_fillval
+  VALIDMAX: *valid_max
+  CATDESC: Cartesian Ecliptic X, Y, Z coordinates for the spacecraft in KM
+  FIELDNAM: Cartesian Ecliptic X, Y, Z coordinates
+  LABLAXIS: Ecliptic Coordinates
+  UNITS: km
+  FILLVAL: *int_fillval
+
+histogram_dim:
+  <<: *default
+  VALIDMIN: 0
+  VALIDMAX: 70
+  CATDESC: Histogram of direct events for photon impacts
+  DEPEND_1: bins
+  FIELDNAM: Histogram of direct events
+  FORMAT: F2.4
+
+histograms:
+  <<: *default
+  DEPEND_1: bins
+  CATDESC: array of block-accumulated counts as histograms
+  FIELDNAM: block-accumulated count numbers
+  LABLAXIS: Bins
+  UNITS: counts
+
+flight_software_version:
+  <<: *metadata_default
+  CATDESC: IMAP flight software version
+  FIELDNAM: IMAP flight software version
+
+seq_count_in_pkts_file:
+  <<: *metadata_default
+  CATDESC: sequence count in packets file
+  FIELDNAM: sequence count in packets file
+
+flags_set_onboard:
+  <<: *default
+  DISPLAY_TYPE: no_plot
+  LABLAXIS: Flags
+  CATDESC: >
+    Flags for bad data [missing PPS, missing time, missing spin phase, missing
+    spin periods, overexposure, nonmonotonic event, data collected at night,
+    HV test, pulse test, memory error]
+  FIELDNAM: Flags set onboard for missing or bad data
+  UNITS: ' '
+
+last_spin_id:
+  <<: *metadata_default
+  CATDESC: Last spin ID
+  FIELDNAM: Last spin ID
+
+is_generated_on_ground:
+  <<: *metadata_default
+  CATDESC: Indicates if the histogram data is generated on ground
+  FIELDNAM: is generated on ground
+
+number_of_spins_per_block:
+  <<: *metadata_default
+  CATDESC: Number of spins per block
+  FIELDNAM: Number of spins per block
+
+unique_block_identifier:
+  <<: *metadata_default
+  CATDESC: YYYY-MM-DDThh:mm:ss based on IMAP UTC time
+  FIELDNAM: YYYY-MM-DDThh:mm:ss based on IMAP UTC time
+
+number_of_bins_per_histogram:
+  <<: *metadata_default
+  CATDESC: Number of histogram bins
+  FIELDNAM: Number of histogram bins
+
+number_of_events:
+  <<: *metadata_default
+  CATDESC: Total number of events/counts in histogram
+  FIELDNAM: total number of events/counts in histogram
+
+# TODO: Might not be required for L1B
+number_of_de_packets:
+  <<: *metadata_default
+  CATDESC: Number of direct event packets
+  FIELDNAM: Number of direct event packets
+
+imap_spin_angle_bin_cntr:
+  <<: *metadata_default
+  DEPEND_1: bins
+  CATDESC: IMAP spin angle psi for bin centers
+  FIELDNAM: IMAP spin angle psi for bin centers
+
+histogram_flag_array:
+  <<: *metadata_default
+  DEPEND_1: bad_angle_flags
+  DEPEND_2: bins
+  CATDESC: array of bad-angle flags for histogram bins
+  FIELDNAM: array of bad-angle flags for histogram bins
+  UNITS: ' '
+
+filter_temperature_average:
+  <<: *metadata_default
+  CATDESC: block-averaged value, decoded to Celsius degrees
+  FIELDNAM: block-averaged value, decoded to Celsius degrees
+
+filter_temperature_std_dev:
+  <<: *metadata_default
+  CATDESC: standard deviation (1 sigma), decoded to Celsius degrees
+  FIELDNAM: standard deviation (1 sigma), decoded to Celsius degrees
+
+hv_voltage_average:
+  <<: *metadata_default
+  CATDESC: block-averaged value, decoded to volts
+  FIELDNAM: block-averaged value, decoded to volts
+
+hv_voltage_std_dev:
+  <<: *metadata_default
+  CATDESC: standard deviation (1 sigma), decoded to volts
+  FIELDNAM: standard deviation (1 sigma), decoded to volts
+
+spin_period_average:
+  <<: *metadata_default
+  CATDESC: block-averaged onboard value, decoded to seconds
+  FIELDNAM: block-averaged onboard value, decoded to seconds
+
+spin_period_std_dev:
+  <<: *metadata_default
+  CATDESC: standard deviation (1 sigma), decoded to seconds
+  FIELDNAM: standard deviation (1 sigma), decoded to seconds
+
+pulse_length_average:
+  <<: *metadata_default
+  CATDESC: block-averaged value, decoded to us
+  FIELDNAM: block-averaged value, decoded to us
+
+pulse_length_std_dev:
+  <<: *metadata_default
+  CATDESC: Pulse length standard deviation (1 sigma)
+  FIELDNAM: Pulse length standard deviation
+
+glows_start_time:
+  <<: *metadata_default
+  CATDESC: GLOWS clock, subseconds as decimal part of float
+  FIELDNAM: GLOWS clock, subseconds as decimal part of float
+
+glows_end_time_offset:
+  <<: *metadata_default
+  CATDESC: GLOWS clock, subseconds as decimal part of float
+  FIELDNAM: GLOWS clock, subseconds as decimal part of float
+
+imap_start_time:
+  <<: *metadata_default
+  CATDESC: IMAP clock, subseconds as decimal part of float
+  FIELDNAM: IMAP clock, subseconds as decimal part of float
+
+imap_end_time_offset:
+  <<: *metadata_default
+  CATDESC: IMAP clock, subseconds as decimal part of float
+  FIELDNAM: IMAP clock, subseconds as decimal part of float
+
+spin_period_ground_average:
+  <<: *metadata_default
+  CATDESC: block-averaged value computed on ground
+  FIELDNAM: block-averaged value computed on ground
+
+spin_period_ground_std_dev:
+  <<: *metadata_default
+  CATDESC: standard deviation (1 sigma)
+  FIELDNAM: standard deviation (1 sigma)
+
+position_angle_offset_average:
+  <<: *metadata_default
+  CATDESC: block-averaged value in degrees
+  FIELDNAM: block-averaged value in degrees
+
+position_angle_offset_std_dev:
+  <<: *metadata_default
+  CATDESC: standard deviation (1 sigma)
+  FIELDNAM: standard deviation (1 sigma)
+
+spin_axis_orientation_std_dev:
+  <<: *metadata_default
+  CATDESC: standard deviation( 1 sigma) for spin axis orientation
+  FIELDNAM: standard deviation for spin axis orientation
+
+spin_axis_orientation_average:
+  <<: *metadata_default
+  CATDESC: block-averaged spin-axis ecliptic longitude and latitude in degrees
+  FIELDNAM: block-averaged spin-axis in degrees
+
+spacecraft_location_average:
+  <<: *metadata_default
+  DEPEND_1: ecliptic
+  CATDESC: block-averaged Cartesian ecliptic coordinates [X, Y, Z] [km] of IMAP
+  FIELDNAM: block-averaged Cartesian ecliptic coordinates of IMAP
+
+spacecraft_location_std_dev:
+  <<: *metadata_default
+  DEPEND_1: ecliptic
+  CATDESC: Spacecraft location standard deviations (1 sigma) delta X, delta Y, delta Z for [X, Y, Z]
+  FIELDNAM: standard deviations (1 sigma) for spacecraft location
+
+spacecraft_velocity_average:
+  <<: *metadata_default
+  DEPEND_1: ecliptic
+  CATDESC: block-averaged values [VX, VY, VZ] [km/s] of IMAP velocity components (Cartesian ecliptic frame)
+  FIELDNAM: block-averaged values of IMAP velocity components (Cartesian ecliptic frame)
+
+spacecraft_velocity_std_dev:
+  <<: *metadata_default
+  DEPEND_1: ecliptic
+  CATDESC: Spacecraft velocity standard deviations (1 sigma) delta VX, delta VY, delta VZ for [VX, VY, VZ]
+  FIELDNAM: Spacecraft velocity standard deviations
+
+flags:
+  <<: *metadata_default
+  DEPEND_1: flag_dim
+  DEPEND_2: bins
+  CATDESC: flags for extra information, per histogram.
+  FIELDNAM: flags for extra information, per histogram.
+
+de_flags:
+  <<: *metadata_default
+  DEPEND_1: flag_dim
+  CATDESC: flags for extra information, per histogram.
+  FIELDNAM: flags for extra information, per histogram.
+
+# DE attributes
+unique_identifier:
+  <<: *metadata_default
+  CATDESC: YYYY-MM-DDThh:mm:ss based on IMAP UTC time
+  FIELDNAM: YYYY-MM-DDThh:mm:ss based on IMAP UTC time
+
+imap_time_last_pps:
+  <<: *metadata_default
+  CATDESC: IMAP clock, subseconds as decimal part of float for the last PPS
+  FIELDNAM: IMAP clock, subseconds as decimal part of float
+
+imap_time_next_pps:
+  <<: *metadata_default
+  CATDESC: IMAP clock, subseconds as decimal part of float for the next PPS
+  FIELDNAM: IMAP clock, subseconds as decimal part of float
+
+glows_time_last_pps:
+  <<: *metadata_default
+  CATDESC: GLOWS clock, subseconds as decimal part of float for the last PPS
+  FIELDNAM: GLOWS clock, subseconds as decimal part of float
+
+number_of_completed_spins:
+  <<: *metadata_default
+  CATDESC: Number of completed spins
+  FIELDNAM: Number of completed spins
+
+filter_temperature:
+  <<: *metadata_default
+  CATDESC: Filter temperature in degrees Celsius
+  FIELDNAM: Filter temperature in degrees Celsius
+
+hv_voltage:
+  <<: *metadata_default
+  CATDESC: HV voltage in volts
+  FIELDNAM: HV voltage in volts
+
+spin_period:
+  <<: *metadata_default
+  CATDESC: Spin period in seconds
+  FIELDNAM: Spin period in seconds
+
+spin_phase_at_next_pps:
+  <<: *metadata_default
+  CATDESC: Spin phase at the next PPS in degrees
+  FIELDNAM: Spin phase at the next PPS in degrees
+
+direct_event_glows_times:
+  <<: *metadata_default
+  DEPEND_1: per_second
+  CATDESC: >
+    An array of times for direct events from the GLOWS clock, with subseconds as the
+    decimal part of the float.
+  FIELDNAM: Direct event times, GLOWS clock
+
+direct_event_pulse_lengths:
+  <<: *metadata_default
+  DEPEND_1: per_second
+  CATDESC: An array of pulse lengths for direct events in microseconds
+  FIELDNAM: Direct event pulse lengths (us)

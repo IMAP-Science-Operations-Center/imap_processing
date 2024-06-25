@@ -1,0 +1,42 @@
+{
+    "description": "Table for conversion/decoding ancillary parameters collected onboard by IMAP/GLOWS",
+    "version": "v001",
+    "date_of_creation_yyyymmdd": "20230527",
+    "filter_temperature": {
+        "min": -30.0,
+        "max": 80.0,
+        "n_bits": 8,
+        "p01": 0.0,
+        "p02": 0.0,
+        "p03": 0.0,
+        "p04": 0.0
+    },
+    "hv_voltage": {
+        "min": 0.0,
+        "max": 3500.0,
+        "n_bits": 12,
+        "p01": 0.0,
+        "p02": 0.0,
+        "p03": 0.0,
+        "p04": 0.0
+    },
+    "spin_period": {
+        "min": 0.0,
+        "max": 20.9712,
+        "n_bits": 16
+    },
+    "spin_phase": {
+        "min": 0.0,
+        "max": 360.0,
+        "n_bits": 16
+    },
+    "pulse_length": {
+        "min": 0.0,
+        "max": 255.0,
+        "n_bits": 8,
+        "p01": 0.0,
+        "p02": 0.0,
+        "p03": 0.0,
+        "p04": 0.0
+    }
+}

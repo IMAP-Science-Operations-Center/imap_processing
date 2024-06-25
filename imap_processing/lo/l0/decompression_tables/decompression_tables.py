@@ -12,8 +12,8 @@ DE_BIT_SHIFT = 1
 DataFields = namedtuple(
     "DataFields",
     [
-        "TIME",
-        "ENERGY",
+        "DE_TIME",
+        "ESA_STEP",
         "MODE",
         "TOF0",
         "TOF1",

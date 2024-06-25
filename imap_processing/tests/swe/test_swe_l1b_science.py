@@ -33,7 +33,7 @@ def l1a_test_data():
     for packet_file in packet_files:
         data.extend(decom_swe.decom_packets(packet_file))
     # Get unpacked science data
-    unpacked_data = swe_science(data)
+    unpacked_data = swe_science(data, "001")
     return unpacked_data
 
 
@@ -53,3 +53,6 @@ def test_get_full_cycle_data_indices():
     q = np.array([1, 2])
     filtered_q = get_indices_of_full_cycles(q)
     np.testing.assert_array_equal(filtered_q, np.array([]))
+
+
+# TODO: Add more tests

@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 # ruff: noqa: PLR0913
-"""Run the processing for a specific instrument & data level.
+"""
+Run the processing for a specific instrument & data level.
 
 This module serves as a command line utility to invoke the processing for
 a user-supplied instrument and data level.
 
-Use
----
+Examples
+--------
     imap_cli --instrument <instrument> --level <data_level>
 """
 
@@ -16,12 +17,13 @@ import sys
 from abc import ABC, abstractmethod
 from json import loads
 from pathlib import Path
+from typing import final
 from urllib.error import HTTPError
 
 import imap_data_access
-from cdflib.xarray import cdf_to_xarray
 
 import imap_processing
+from imap_processing.cdf.utils import load_cdf, write_cdf
 
 # TODO: change how we import things and also folder
 # structure may?
@@ -31,23 +33,41 @@ import imap_processing
 #   from imap_processing import cdf
 # In code:
 #   call cdf.utils.write_cdf
-from imap_processing.cdf.utils import write_cdf
+from imap_processing.codice import codice_l1a, codice_l1b
+from imap_processing.glows.l1a.glows_l1a import glows_l1a
+from imap_processing.glows.l1b.glows_l1b import glows_l1b
+from imap_processing.hi.l1a import hi_l1a
+from imap_processing.hi.l1b import hi_l1b
+from imap_processing.hi.l1c import hi_l1c
+from imap_processing.hit.l1a.hit_l1a import hit_l1a
+from imap_processing.hit.l1b.hit_l1b import hit_l1b
+from imap_processing.idex.idex_packet_parser import PacketParser
+from imap_processing.lo.l1a import lo_l1a
+from imap_processing.lo.l1b import lo_l1b
+from imap_processing.lo.l1c import lo_l1c
 from imap_processing.mag.l1a.mag_l1a import mag_l1a
+from imap_processing.mag.l1b.mag_l1b import mag_l1b
+from imap_processing.mag.l1c.mag_l1c import mag_l1c
+from imap_processing.swapi.l1.swapi_l1 import swapi_l1
 from imap_processing.swe.l1a.swe_l1a import swe_l1a
 from imap_processing.swe.l1b.swe_l1b import swe_l1b
+from imap_processing.ultra.l1a import ultra_l1a
+from imap_processing.ultra.l1b import ultra_l1b
+from imap_processing.ultra.l1c import ultra_l1c
 
 logger = logging.getLogger(__name__)
 
 
 def _parse_args():
-    """Parse the command line arguments.
+    """
+    Parse the command line arguments.
 
     The expected input format is:
     --instrument "mag"
     --data-level "l1a"
+    --descriptor "all"
     --start-date "20231212"
-    --end-date "20231212"
-    --version "v00-01"
+    --version "v001"
     --dependency "[
         {
             'instrument': 'mag',
@@ -61,30 +81,35 @@ def _parse_args():
     Returns
     -------
     args : argparse.Namespace
-        An object containing the parsed arguments and their values
+        An object containing the parsed arguments and their values.
     """
     description = (
         "This command line program invokes the processing pipeline "
         "for a specific instrument and data level. Example usage: "
         '"imap_cli --instrument "mag" '
         '--data-level "l1a"'
+        '--descriptor "all"'
         ' --start-date "20231212"'
         '--version "v001"'
         '--dependency "['
         '   {"instrument": "mag",'
-        '   "data_level": "l0"',
-        '   "descriptor": "sci"',
-        '   "version": "v001"',
-        '   "start_date": "20231212"',
-        '}]" --upload-to-sdc"',
+        '   "data_level": "l0",'
+        '   "descriptor": "sci",'
+        '   "version": "v001",'
+        '   "start_date": "20231212"'
+        '}]" --upload-to-sdc"'
     )
     instrument_help = (
         "The instrument to process. Acceptable values are: "
-        f"{imap_processing.INSTRUMENTS}"
+        f"{imap_data_access.VALID_INSTRUMENTS}"
     )
     level_help = (
         "The data level to process. Acceptable values are: "
         f"{imap_processing.PROCESSING_LEVELS}"
+    )
+    descriptor_help = (
+        "The descriptor of the product to process. This could be 'all' or a specific "
+        "descriptor like 'sci-1min'. Default is 'all'."
     )
     dependency_help = (
         "Dependency information in str format."
@@ -96,8 +121,36 @@ def _parse_args():
     )
 
     parser = argparse.ArgumentParser(prog="imap_cli", description=description)
+    # TODO: Add version here and change our current "version" to "data-version"?
+    # parser.add_argument(
+    #     "--version",
+    #     action="version",
+    #     version=f"%(prog)s {imap_processing.__version__}",
+    # )
+    # Logging level
+    parser.add_argument(
+        "--debug",
+        help="Print lots of debugging statements",
+        action="store_const",
+        dest="loglevel",
+        const=logging.DEBUG,
+        default=logging.WARNING,
+    )
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        help="Add verbose output",
+        action="store_const",
+        dest="loglevel",
+        const=logging.INFO,
+    )
     parser.add_argument("--instrument", type=str, required=True, help=instrument_help)
     parser.add_argument("--data-level", type=str, required=True, help=level_help)
+    # TODO: unused for now, but needed for batch job handling
+    # pass through of status in AWS
+    parser.add_argument(
+        "--descriptor", type=str, required=False, help=descriptor_help, default="all"
+    )
 
     parser.add_argument(
         "--start-date",
@@ -140,12 +193,13 @@ def _parse_args():
 
 
 def _validate_args(args):
-    """Ensure that the  arguments are valid before kicking off the processing.
+    """
+    Ensure that the  arguments are valid before kicking off the processing.
 
     Parameters
     ----------
     args : argparse.Namespace
-        An object containing the parsed arguments and their values
+        An object containing the parsed arguments and their values.
     """
     if args.instrument not in imap_data_access.VALID_INSTRUMENTS:
         raise ValueError(
@@ -161,12 +215,13 @@ def _validate_args(args):
 
 
 class ProcessInstrument(ABC):
-    """An abstract base class containing a method to process an instrument.
+    """
+    An abstract base class containing a method to process an instrument.
 
-    Attributes
+    Parameters
     ----------
     data_level : str
-        The data level to process (e.g. ``l1a``)
+        The data level to process (e.g. ``l1a``).
     dependency_str : str
         A string representation of the dependencies for the instrument in the
         format: "[{
@@ -175,13 +230,13 @@ class ProcessInstrument(ABC):
             'descriptor': 'sci',
             'version': 'v00-01',
             'start_date': '20231212'
-        }]"
+        }]".
     start_date : str
-        The start date for the output data. Format: YYYYMMDD
+        The start date for the output data in YYYYMMDD format.
     end_date : str
-        The end date for the output data. Format: YYYYMMDD
+        The end date for the output data in YYYYMMDD format.
     version : str
-        The version of the data. Format: vXXX
+        The version of the data in vXXX format.
     upload_to_sdc : bool
         A flag indicating whether to upload the output file to the SDC.
     """
@@ -204,17 +259,17 @@ class ProcessInstrument(ABC):
         self.end_date = end_date
         if not end_date:
             self.end_date = start_date
-            print(f"Setting end time to start time: {start_date}")
 
         self.version = version
         self.upload_to_sdc = upload_to_sdc
 
     def download_dependencies(self):
-        """Download the dependencies for the instrument.
+        """
+        Download the dependencies for the instrument.
 
         Returns
         -------
-        file_list: list[str]
+        file_list : list[str]
             A list of file paths to the downloaded dependencies.
         """
         file_list = []
@@ -222,11 +277,13 @@ class ProcessInstrument(ABC):
             try:
                 # TODO: Validate dep dict
                 # TODO: determine what dependency information is optional
-                # TODO: Add in timestamps and descriptor to query
                 return_query = imap_data_access.query(
+                    start_date=self.start_date,
+                    end_date=self.end_date,
                     instrument=dependency["instrument"],
                     data_level=dependency["data_level"],
                     version=dependency["version"],
+                    descriptor=dependency["descriptor"],
                 )
             except HTTPError as e:
                 raise ValueError(f"Unable to download files from {dependency}") from e
@@ -238,143 +295,533 @@ class ProcessInstrument(ABC):
                     f"This should never occur "
                     f"in normal processing."
                 )
-
-            file_list.append(imap_data_access.download(return_query[0]["file_path"]))
+            file_list.extend(
+                [
+                    imap_data_access.download(query_return["file_path"])
+                    for query_return in return_query
+                ]
+            )
         return file_list
 
-    @abstractmethod
+    def upload_products(self, products: list[str]):
+        """
+        Upload data products to the IMAP SDC.
+
+        Parameters
+        ----------
+        products : list[str]
+            A list of file paths to upload to the SDC.
+        """
+        if self.upload_to_sdc:
+            if len(products) == 0:
+                logger.info("No files to upload.")
+            for filename in products:
+                logger.info(f"Uploading file: {filename}")
+                imap_data_access.upload(filename)
+
+    @final
     def process(self):
-        """Perform instrument specific processing."""
+        """
+        Run the processing workflow and cannot be overridden by subclasses.
+
+        Each IMAP processing step consists of three steps:
+        1. Pre-processing actions such as downloading dependencies for processing.
+        2. Do the data processing. The result of this step will usually be a list
+        of new products (files).
+        3. Post-processing actions such as uploading files to the IMAP SDC.
+        """
+        logger.info(f"IMAP Processing Version: {imap_processing.__version__}")
+        logger.info(f"Processing {self.__class__.__name__} level {self.data_level}")
+        logger.info("Beginning preprocessing (download dependencies)")
+        dependencies = self.pre_processing()
+        logger.info("Beginning actual processing")
+        products = self.do_processing(dependencies)
+        logger.info("Beginning postprocessing (uploading data products)")
+        self.post_processing(products)
+        logger.info("Processing complete")
+
+    def pre_processing(self):
+        """
+        Complete pre-processing.
+
+        For this baseclass, pre-processing consists of downloading dependencies
+        for processing. Child classes can override this method to customize the
+        pre-processing actions.
+
+        Returns
+        -------
+        list
+            List of dependencies downloaded from the IMAP SDC.
+        """
+        return self.download_dependencies()
+
+    @abstractmethod
+    def do_processing(self, dependencies: list):
+        """
+        Abstract method that processes the IMAP processing steps.
+
+        All child classes must implement this method. Input and outputs are
+        typically lists of file paths but are free to any list.
+
+        Parameters
+        ----------
+        dependencies : list
+            List of dependencies to process.
+
+        Returns
+        -------
+        list
+            List of products produced.
+        """
         raise NotImplementedError
+
+    def post_processing(self, products: list[str]):
+        """
+        Complete post-processing.
+
+        Default post-processing consists of uploading newly generated products
+        to the IMAP SDC. Child classes can override this method to customize the
+        post-processing actions.
+
+        Parameters
+        ----------
+        products : list[str]
+            A list of file paths (products) produced by do_processing method.
+        """
+        self.upload_products(products)
 
 
 class Codice(ProcessInstrument):
     """Process CoDICE."""
 
-    def process(self):
-        """Perform CoDICE specific processing."""
+    def do_processing(self, dependencies):
+        """
+        Perform CoDICE specific processing.
+
+        Parameters
+        ----------
+        dependencies : list
+            List of dependencies to process.
+
+        Returns
+        -------
+         list
+            List of cdf file paths.
+        """
         print(f"Processing CoDICE {self.data_level}")
+
+        if self.data_level == "l1a":
+            if len(dependencies) > 1:
+                raise ValueError(
+                    f"Unexpected dependencies found for CoDICE L1a:"
+                    f"{dependencies}. Expected only one dependency."
+                )
+            # process data
+            dataset = codice_l1a.process_codice_l1a(dependencies[0], self.version)
+            cdf_file_path = dataset.attrs["cdf_filename"]
+            return [cdf_file_path]
+
+        if self.data_level == "l1b":
+            if len(dependencies) > 1:
+                raise ValueError(
+                    f"Unexpected dependencies found for CoDICE L1b:"
+                    f"{dependencies}. Expected only one dependency."
+                )
+            # process data
+            dataset = codice_l1b.process_codice_l1b(dependencies[0], self.version)
+            cdf_file_path = dataset.attrs["cdf_filename"]
+            return [cdf_file_path]
 
 
 class Glows(ProcessInstrument):
     """Process GLOWS."""
 
-    def process(self):
-        """Perform GLOWS specific processing."""
+    def do_processing(self, dependencies):
+        """
+        Perform GLOWS specific processing.
+
+        Parameters
+        ----------
+        dependencies : list
+            List of dependencies to process.
+
+        Returns
+        -------
+        products : list
+            List of products.
+        """
         print(f"Processing GLOWS {self.data_level}")
+        products = []
+        if self.data_level == "l1a":
+            if len(dependencies) > 1:
+                raise ValueError(
+                    f"Unexpected dependencies found for GLOWS L1A:"
+                    f"{dependencies}. Expected only one input dependency."
+                )
+            datasets = glows_l1a(dependencies[0], self.version)
+            products = [write_cdf(dataset) for dataset in datasets]
+
+        if self.data_level == "l1b":
+            if len(dependencies) > 1:
+                raise ValueError(
+                    f"Unexpected dependencies found for GLOWS L1B:"
+                    f"{dependencies}. Expected at least one input dependency."
+                )
+            input_dataset = load_cdf(dependencies[0])
+            dataset = glows_l1b(input_dataset, self.version)
+            products = [write_cdf(dataset)]
+
+        return products
 
 
 class Hi(ProcessInstrument):
     """Process IMAP-Hi."""
 
-    def process(self):
-        """Perform IMAP-Hi specific processing."""
+    def do_processing(self, dependencies: list):
+        """
+        Perform IMAP-Hi specific processing.
+
+        Parameters
+        ----------
+        dependencies : list
+            List of dependencies to process.
+
+        Returns
+        -------
+        products : list
+            List of products.
+        """
         print(f"Processing IMAP-Hi {self.data_level}")
+
+        if self.data_level == "l1a":
+            # File path is expected output file path
+            if len(dependencies) > 1:
+                raise ValueError(
+                    f"Unexpected dependencies found for Hi L1A:"
+                    f"{dependencies}. Expected only one dependency."
+                )
+            datasets = hi_l1a.hi_l1a(dependencies[0], self.version)
+            products = [write_cdf(dataset) for dataset in datasets]
+        elif self.data_level == "l1b":
+            dataset = hi_l1b.hi_l1b(dependencies[0], self.version)
+            products = [write_cdf(dataset)]
+        elif self.data_level == "l1c":
+            dataset = hi_l1c.hi_l1c(dependencies, self.version)
+            products = [write_cdf(dataset)]
+        else:
+            raise NotImplementedError(
+                f"Hi processing not implemented for level {self.data_level}"
+            )
+        return products
 
 
 class Hit(ProcessInstrument):
     """Process HIT."""
 
-    def process(self):
-        """Perform HIT specific processing."""
+    def do_processing(self, dependencies):
+        """
+        Perform HIT specific processing.
+
+        Parameters
+        ----------
+        dependencies : list
+            List of dependencies to process.
+
+        Returns
+        -------
+        products : list
+            List of products.
+        """
         print(f"Processing HIT {self.data_level}")
+
+        if self.data_level == "l1a":
+            if len(dependencies) > 1:
+                raise ValueError(
+                    f"Unexpected dependencies found for HIT L1A:"
+                    f"{dependencies}. Expected only one dependency."
+                )
+            # process data and write all processed data to CDF files
+            products = hit_l1a(dependencies[0], self.version)
+            return products
+
+        elif self.data_level == "l1b":
+            if len(dependencies) > 1:
+                raise ValueError(
+                    f"Unexpected dependencies found for HIT L1B:"
+                    f"{dependencies}. Expected only one dependency."
+                )
+            # process data and write all processed data to CDF files
+            l1a_dataset = load_cdf(dependencies[0])
+            products = hit_l1b(l1a_dataset, self.version)
+            return products
 
 
 class Idex(ProcessInstrument):
     """Process IDEX."""
 
-    def process(self):
-        """Perform IDEX specific processing."""
+    def do_processing(self, dependencies):
+        """
+        Perform IDEX specific processing.
+
+        Parameters
+        ----------
+        dependencies : list
+            List of dependencies to process.
+
+        Returns
+        -------
+        list
+            List of cdf file paths.
+        """
         print(f"Processing IDEX {self.data_level}")
+
+        if self.data_level == "l1":
+            if len(dependencies) > 1:
+                raise ValueError(
+                    f"Unexpected dependencies found for IDEX L1:"
+                    f"{dependencies}. Expected only one dependency."
+                )
+            # read CDF file
+            processed_data = PacketParser(dependencies[0], self.version).data
+            cdf_file_path = write_cdf(processed_data)
+            print(f"processed file path: {cdf_file_path}")
+            return [cdf_file_path]
 
 
 class Lo(ProcessInstrument):
     """Process IMAP-Lo."""
 
-    def process(self):
-        """Perform IMAP-Lo specific processing."""
+    def do_processing(self, dependencies):
+        """
+        Perform IMAP-Lo specific processing.
+
+        Parameters
+        ----------
+        dependencies : list
+            List of dependencies to process.
+
+        Returns
+        -------
+        output_files : list
+            List of output files.
+        """
         print(f"Processing IMAP-Lo {self.data_level}")
+
+        if self.data_level == "l1a":
+            # L1A packet / products are 1 to 1. Should only have
+            # one dependency file
+            if len(dependencies) > 1:
+                raise ValueError(
+                    f"Unexpected dependencies found for IMAP-Lo L1A:"
+                    f"{dependencies}. Expected only one dependency."
+                )
+            output_files = lo_l1a.lo_l1a(dependencies[0], self.version)
+            return [output_files]
+
+        elif self.data_level == "l1b":
+            data_dict = {}
+            for dependency in dependencies:
+                dataset = load_cdf(dependency, to_datetime=True)
+                data_dict[dataset.attrs["Logical_source"]] = dataset
+            output_file = lo_l1b.lo_l1b(data_dict, self.version)
+            return [output_file]
+
+        elif self.data_level == "l1c":
+            data_dict = {}
+            for dependency in dependencies:
+                dataset = load_cdf(dependency, to_datetime=True)
+                data_dict[dataset.attrs["Logical_source"]] = dataset
+            output_file = lo_l1c.lo_l1c(data_dict, self.version)
+            return [output_file]
 
 
 class Mag(ProcessInstrument):
     """Process MAG."""
 
-    def process(self):
-        """Perform MAG specific processing."""
+    def do_processing(self, dependencies) -> list[Path]:
+        """
+        Perform MAG specific processing.
+
+        Parameters
+        ----------
+        dependencies : list
+            List of dependencies to process.
+
+        Returns
+        -------
+        output_files : list
+            List of output files.
+        """
         print(f"Processing MAG {self.data_level}")
-        file_paths = self.download_dependencies()
 
         if self.data_level == "l1a":
             # File path is expected output file path
-            if len(file_paths) > 1:
+            if len(dependencies) > 1:
                 raise ValueError(
                     f"Unexpected dependencies found for MAG L1A:"
-                    f"{file_paths}. Expected only one dependency."
+                    f"{dependencies}. Expected only one dependency."
                 )
-            output_files = mag_l1a(file_paths[0], data_version=self.version)
-            if self.upload_to_sdc:
-                if len(output_files) == 0:
-                    print("No files to upload.")
-                for filename in output_files:
-                    print(f"Uploading file: {filename}")
-                    imap_data_access.upload(filename)
+            output_files = mag_l1a(dependencies[0], data_version=self.version)
+            return output_files
+
+        if self.data_level == "l1b":
+            if len(dependencies) > 1:
+                raise ValueError(
+                    f"Unexpected dependencies found for MAG L1B:"
+                    f"{dependencies}. Expected only one dependency."
+                )
+            input_data = load_cdf(dependencies[0])
+            output_dataset = mag_l1b(input_data, self.version)
+            output_files = write_cdf(output_dataset)
+            return [output_files]
+
+        if self.data_level == "l1c":
+            # L1C depends on matching norm/burst files: eg burst-magi and norm-magi or
+            # burst-mago and norm-mago
+            if len(dependencies) != 2:
+                raise ValueError(
+                    f"Invalid dependencies found for MAG L1C:"
+                    f"{dependencies}. Expected two dependencies."
+                )
+
+            input_data = [load_cdf(dep) for dep in dependencies]
+            # Input datasets can be in any order
+            output_dataset = mag_l1c(input_data[0], input_data[1], self.version)
+            output_files = write_cdf(output_dataset)
+            return [output_files]
 
 
 class Swapi(ProcessInstrument):
     """Process SWAPI."""
 
-    def process(self):
-        """Perform SWAPI specific processing."""
+    def do_processing(self, dependencies):
+        """
+        Perform SWAPI specific processing.
+
+        Parameters
+        ----------
+        dependencies : list
+            List of dependencies to process.
+
+        Returns
+        -------
+        product : list
+            List of products.
+        """
         print(f"Processing SWAPI {self.data_level}")
+
+        if self.data_level == "l1":
+            if len(dependencies) > 1:
+                raise ValueError(
+                    f"Unexpected dependencies found for SWAPI L1:"
+                    f"{dependencies}. Expected only one dependency."
+                )
+            # process data
+            processed_data = swapi_l1(dependencies[0], self.version)
+            # Write all processed data to CDF files
+            products = [write_cdf(dataset) for dataset in processed_data]
+            return products
 
 
 class Swe(ProcessInstrument):
     """Process SWE."""
 
-    def process(self):
-        """Perform SWE specific processing."""
-        # self.file_path example:
-        # imap/swe/l1a/2023/09/imap_swe_l1a_sci_20230927_v001.cdf
-        dependencies = self.download_dependencies()
+    def do_processing(self, dependencies):
+        """
+        Perform SWE specific processing.
+
+        Parameters
+        ----------
+        dependencies : list
+            List of dependencies to process.
+
+        Returns
+        -------
+        list
+            Path to cdf file.
+        """
         print(f"Processing SWE {self.data_level}")
 
-        # TODO: currently assumes just the first path returned is the one to use
-
         if self.data_level == "l1a":
-            processed_data = swe_l1a(Path(dependencies[0]))
-            for data in processed_data:
-                cdf_file_path = write_cdf(data)
-                print(f"processed file path: {cdf_file_path}")
-
-                if self.upload_to_sdc:
-                    imap_data_access.upload(cdf_file_path)
-                    print(f"Uploading file: {cdf_file_path}")
+            if len(dependencies) > 1:
+                raise ValueError(
+                    f"Unexpected dependencies found for SWE L1A:"
+                    f"{dependencies}. Expected only one dependency."
+                )
+            processed_data = swe_l1a(Path(dependencies[0]), data_version=self.version)
+            # Right now, we only process science data. Therefore,
+            # we expect only one dataset to be returned.
+            cdf_file_path = write_cdf(processed_data)
+            print(f"processed file path: {cdf_file_path}")
+            return [cdf_file_path]
 
         elif self.data_level == "l1b":
+            if len(dependencies) > 1:
+                raise ValueError(
+                    f"Unexpected dependencies found for SWE L1B:"
+                    f"{dependencies}. Expected only one dependency."
+                )
             # read CDF file
-            l1a_dataset = cdf_to_xarray(dependencies[0])
-            processed_data = swe_l1b(l1a_dataset)
-            # TODO: Pass in the proper version and descriptor
-            cdf_file_path = write_cdf(data=processed_data)
+            l1a_dataset = load_cdf(dependencies[0])
+            processed_data = swe_l1b(l1a_dataset, data_version=self.version)
+            cdf_file_path = write_cdf(processed_data)
             print(f"processed file path: {cdf_file_path}")
-            if self.upload_to_sdc:
-                imap_data_access.upload(cdf_file_path)
-                print(f"Uploading file: {cdf_file_path}")
-
+            return [cdf_file_path]
         else:
-            print("No code to process this level")
+            print("Did not recognize data level. No processing done.")
 
 
 class Ultra(ProcessInstrument):
     """Process IMAP-Ultra."""
 
-    def process(self):
-        """Perform IMAP-Ultra specific processing."""
+    def do_processing(self, dependencies: list):
+        """
+        Perform IMAP-Ultra specific processing.
+
+        Parameters
+        ----------
+        dependencies : list
+            List of dependencies to process.
+
+        Returns
+        -------
+        product : list
+            List of products.
+        """
         print(f"Processing IMAP-Ultra {self.data_level}")
+
+        if self.data_level == "l1a":
+            # File path is expected output file path
+            if len(dependencies) > 1:
+                raise ValueError(
+                    f"Unexpected dependencies found for ULTRA L1A:"
+                    f"{dependencies}. Expected only one dependency."
+                )
+
+            datasets = ultra_l1a.ultra_l1a(dependencies[0], self.version)
+            products = [write_cdf(dataset) for dataset in datasets]
+            return products
+        elif self.data_level == "l1b":
+            data_dict = {}
+            for dependency in dependencies:
+                dataset = load_cdf(dependency)
+                data_dict[dataset.attrs["Logical_source"]] = dataset
+            datasets = ultra_l1b.ultra_l1b(data_dict, self.version)
+            products = [write_cdf(dataset) for dataset in datasets]
+            return products
+        elif self.data_level == "l1c":
+            data_dict = {}
+            for dependency in dependencies:
+                dataset = load_cdf(dependency)
+                data_dict[dataset.attrs["Logical_source"]] = dataset
+            datasets = ultra_l1c.ultra_l1c(data_dict, self.version)
+            products = [write_cdf(dataset) for dataset in datasets]
+            return products
 
 
 def main():
-    """Run the processing for a specific instrument & data level.
+    """
+    Run the processing for a specific instrument & data level.
 
     Set up the command line arguments, parse them, and then invoke the
     appropriate instrument processing function.

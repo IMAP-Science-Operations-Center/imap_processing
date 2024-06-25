@@ -17,7 +17,8 @@ from imap_processing.lo.l0.utils.lo_base import LoBase
 
 @dataclass
 class ScienceDirectEvents(LoBase):
-    """L1A Science Direct Events data.
+    """
+    L1A Science Direct Events data.
 
     The Science Direct Events class handles the parsing and
     decompression of L0 to L1A data.
@@ -57,18 +58,27 @@ class ScienceDirectEvents(LoBase):
     The raw values are computed for L1A and will be converted to
     engineering units in L1B.
 
+    Parameters
+    ----------
+    packet : dict
+        Single packet from space_packet_parser.
+    software_version : str
+        Current version of IMAP-Lo processing.
+    packet_file_name : str
+        Name of the CCSDS file where the packet originated.
+
     Attributes
     ----------
     SHCOARSE : int
         Spacecraft time.
-    COUNT: int
+    DE_COUNT: int
         Number of direct events.
     DATA: str
         Compressed TOF Direct Event time tagged data.
-    TIME: numpy.ndarray
-        time tag for the direct event
-    ENERGY: numpy.ndarray
-        energy of the direct event ENA.
+    DE_TIME: numpy.ndarray
+        Time tag for the direct event.
+    ESA_STEP: numpy.ndarray
+        Energy of the direct event ENA.
     MODE: numpy.ndarray
         Indication of how the data is packed.
     TOF0: numpy.ndarray
@@ -86,7 +96,7 @@ class ScienceDirectEvents(LoBase):
         it's considered a silver triple. This is important for the compression
         for golden triples because it's used to recover TOF1 because
         compression scheme to save space on golden triples doesn't send
-        down TOF1 so it's recovered on the ground using the checksum
+        down TOF1 so it's recovered on the ground using the checksum.
     POS: numpy.ndarray
         Stop position for the direct event. There are 4 quadrants
         on the at the stop position.
@@ -100,10 +110,10 @@ class ScienceDirectEvents(LoBase):
     """
 
     SHCOARSE: int
-    COUNT: int
+    DE_COUNT: int
     DATA: str
-    TIME: np.ndarray
-    ENERGY: np.ndarray
+    DE_TIME: np.ndarray
+    ESA_STEP: np.ndarray
     MODE: np.ndarray
     TOF0: np.ndarray
     TOF1: np.ndarray
@@ -113,17 +123,17 @@ class ScienceDirectEvents(LoBase):
     POS: np.ndarray
 
     def __init__(self, packet, software_version: str, packet_file_name: str):
-        """Initialize Science Direct Events Data class.
+        """
+        Initialize Science Direct Events Data class.
 
         Parameters
         ----------
-        packet: dict
-            single packet from space_packet_parser.
-        software_version: str
-            current version of IMAP-Lo processing.
-        packet_file_name: str
-            name of the CCSDS file where the packet
-            originated.
+        packet : dict
+            Single packet from space_packet_parser.
+        software_version : str
+            Current version of IMAP-Lo processing.
+        packet_file_name : str
+            Name of the CCSDS file where the packet originated.
         """
         super().__init__(software_version, packet_file_name, CcsdsData(packet.header))
         self.set_attributes(packet)
@@ -131,34 +141,35 @@ class ScienceDirectEvents(LoBase):
         # cases, so these can be initialized to the
         # CDF fill val and stored with this value for
         # those cases.
-        self.TIME = np.ones(self.COUNT) * GlobalConstants.DOUBLE_FILLVAL
-        self.ENERGY = np.ones(self.COUNT) * GlobalConstants.DOUBLE_FILLVAL
-        self.MODE = np.ones(self.COUNT) * GlobalConstants.DOUBLE_FILLVAL
-        self.TOF0 = np.ones(self.COUNT) * GlobalConstants.DOUBLE_FILLVAL
-        self.TOF1 = np.ones(self.COUNT) * GlobalConstants.DOUBLE_FILLVAL
-        self.TOF2 = np.ones(self.COUNT) * GlobalConstants.DOUBLE_FILLVAL
-        self.TOF3 = np.ones(self.COUNT) * GlobalConstants.DOUBLE_FILLVAL
-        self.CKSM = np.ones(self.COUNT) * GlobalConstants.DOUBLE_FILLVAL
-        self.POS = np.ones(self.COUNT) * GlobalConstants.DOUBLE_FILLVAL
+        self.DE_TIME = np.ones(self.DE_COUNT) * GlobalConstants.DOUBLE_FILLVAL
+        self.ESA_STEP = np.ones(self.DE_COUNT) * GlobalConstants.DOUBLE_FILLVAL
+        self.MODE = np.ones(self.DE_COUNT) * GlobalConstants.DOUBLE_FILLVAL
+        self.TOF0 = np.ones(self.DE_COUNT) * GlobalConstants.DOUBLE_FILLVAL
+        self.TOF1 = np.ones(self.DE_COUNT) * GlobalConstants.DOUBLE_FILLVAL
+        self.TOF2 = np.ones(self.DE_COUNT) * GlobalConstants.DOUBLE_FILLVAL
+        self.TOF3 = np.ones(self.DE_COUNT) * GlobalConstants.DOUBLE_FILLVAL
+        self.CKSM = np.ones(self.DE_COUNT) * GlobalConstants.DOUBLE_FILLVAL
+        self.POS = np.ones(self.DE_COUNT) * GlobalConstants.DOUBLE_FILLVAL
         self._decompress_data()
 
     def _decompress_data(self):
-        """Decompress the Lo Science Direct Events data.
+        """
+        Will decompress the Lo Science Direct Events data.
 
         TOF data is decompressed and the direct event data class
         attributes are set.
         """
         data = BinaryString(self.DATA)
-        for de_idx in range(self.COUNT):
+        for de_idx in range(self.DE_COUNT):
             # The first 4 bits of the binary data are used to
             # determine which case number we are working with.
             # The case number is used to determine how to
             # decompress the TOF values.
             case_number = int(data.next_bits(4), 2)
 
-            # time, energy, and mode are always transmitted.
-            self.TIME[de_idx] = int(data.next_bits(DATA_BITS.TIME), 2)
-            self.ENERGY[de_idx] = int(data.next_bits(DATA_BITS.ENERGY), 2)
+            # time, ESA_STEP, and mode are always transmitted.
+            self.DE_TIME[de_idx] = int(data.next_bits(DATA_BITS.DE_TIME), 2)
+            self.ESA_STEP[de_idx] = int(data.next_bits(DATA_BITS.ESA_STEP), 2)
             self.MODE[de_idx] = int(data.next_bits(DATA_BITS.MODE), 2)
 
             # Case decoder indicates which parts of the data

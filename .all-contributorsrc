@@ -129,7 +129,8 @@
       "avatar_url": "https://avatars.githubusercontent.com/u/39746325?v=4",
       "profile": "https://github.com/vmartinez-cu",
       "contributions": [
-        "review"
+        "review",
+        "code"
       ]
     },
     {
@@ -138,7 +139,28 @@
       "avatar_url": "https://avatars.githubusercontent.com/u/16110870?v=4",
       "profile": "https://github.com/subagonsouth",
       "contributions": [
-        "review"
+        "review",
+        "code"
+      ]
+    },
+    {
+      "login": "daralynnrhode",
+      "name": "Daralynn Rhode",
+      "avatar_url": "https://avatars.githubusercontent.com/u/143308810?v=4",
+      "profile": "https://github.com/daralynnrhode",
+      "contributions": [
+        "code",
+        "doc"
+      ]
+    },
+    {
+      "login": "anamanica",
+      "name": "anamanica",
+      "avatar_url": "https://avatars.githubusercontent.com/u/171708990?v=4",
+      "profile": "https://github.com/anamanica",
+      "contributions": [
+        "code",
+        "doc"
       ]
     }
   ],

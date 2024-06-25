@@ -3,11 +3,9 @@
 import collections
 import logging
 from collections import defaultdict
-from pathlib import Path
 
 import numpy as np
 
-from imap_processing import decom
 from imap_processing.ccsds.ccsds_data import CcsdsData
 from imap_processing.ultra.l0.decom_tools import (
     decompress_binary,
@@ -22,7 +20,7 @@ from imap_processing.ultra.l0.ultra_utils import (
     ULTRA_TOF,
     append_ccsds_fields,
 )
-from imap_processing.utils import group_by_apid, sort_by_time
+from imap_processing.utils import sort_by_time
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -52,15 +50,11 @@ def append_tof_params(
         Dictionary used for stacking in time dimension.
     """
     # TODO: add error handling to make certain every timestamp has 8 SID values
-    shcoarse = packet.data["SHCOARSE"].derived_value
 
     for key in packet.data.keys():
         # Keep appending packet data until SID = 7
         if key == "PACKETDATA":
             data_dict[key].append(decompressed_data)
-        # SHCOARSE should be unique
-        elif key == "SHCOARSE" and shcoarse not in decom_data["SHCOARSE"]:
-            decom_data[key].append(packet.data[key].derived_value)
         # Keep appending all other data until SID = 7
         else:
             data_dict[key].append(packet.data[key].derived_value)
@@ -71,6 +65,9 @@ def append_tof_params(
 
     # Once "SID" reaches 7, we have all the images and data for the single timestamp
     if packet.data["SID"].derived_value == 7:
+        decom_data["SHCOARSE"].extend(list(set(data_dict["SHCOARSE"])))
+        data_dict["SHCOARSE"].clear()
+
         for key in packet.data.keys():
             if key != "SHCOARSE":
                 stacked_dict[key].append(np.stack(data_dict[key]))
@@ -98,16 +95,14 @@ def append_params(decom_data: dict, packet):
     append_ccsds_fields(decom_data, ccsds_data)
 
 
-def decom_ultra_apids(packet_file: Path, xtce: Path, apid: int):
+def process_ultra_apids(data: list, apid: int):
     """
     Unpack and decode Ultra packets using CCSDS format and XTCE packet definitions.
 
     Parameters
     ----------
-    packet_file : Path
-        Path to the CCSDS data packet file.
-    xtce : Path
-        Path to the XTCE packet definition file.
+    data : list
+        Grouped data.
     apid : int
         The APID to process.
 
@@ -116,10 +111,6 @@ def decom_ultra_apids(packet_file: Path, xtce: Path, apid: int):
     decom_data : dict
         A dictionary containing the decoded data.
     """
-    packets = decom.decom_packets(packet_file, xtce)
-    grouped_data = group_by_apid(packets)
-    data = {apid: grouped_data[apid]}
-
     # Strategy dict maps APIDs to their respective processing functions
     strategy_dict = {
         ULTRA_TOF.apid[0]: process_ultra_tof,
@@ -128,7 +119,7 @@ def decom_ultra_apids(packet_file: Path, xtce: Path, apid: int):
         ULTRA_RATES.apid[0]: process_ultra_rates,
     }
 
-    sorted_packets = sort_by_time(data[apid], "SHCOARSE")
+    sorted_packets = sort_by_time(data, "SHCOARSE")
 
     process_function = strategy_dict.get(apid)
     decom_data = process_function(sorted_packets, defaultdict(list))
@@ -194,7 +185,7 @@ def process_ultra_events(sorted_packets: list, decom_data: dict):
     Parameters
     ----------
     sorted_packets : list
-        TOF packets sorted by time.
+        EVENTS packets sorted by time.
     decom_data : collections.defaultdict
         Empty dictionary.
 
@@ -226,7 +217,7 @@ def process_ultra_aux(sorted_packets: list, decom_data: dict):
     Parameters
     ----------
     sorted_packets : list
-        TOF packets sorted by time.
+        AUX packets sorted by time.
     decom_data : collections.defaultdict
         Empty dictionary.
 
@@ -248,7 +239,7 @@ def process_ultra_rates(sorted_packets: list, decom_data: dict):
     Parameters
     ----------
     sorted_packets : list
-        TOF packets sorted by time.
+        RATES packets sorted by time.
     decom_data : collections.defaultdict
         Empty dictionary.
 

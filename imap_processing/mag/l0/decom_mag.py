@@ -22,7 +22,8 @@ logger = logging.getLogger(__name__)
 
 
 def decom_packets(packet_file_path: str | Path) -> dict[str, list[MagL0]]:
-    """Decom MAG data packets using MAG packet definition.
+    """
+    Decom MAG data packets using MAG packet definition.
 
     Parameters
     ----------
@@ -81,8 +82,8 @@ def generate_dataset(l0_data: list[MagL0], dataset_attrs: dict) -> xr.Dataset:
 
     Returns
     -------
-    dataset : xr.Dataset
-        xarray dataset with proper CDF attributes and shape.
+    dataset : xarray.Dataset
+        The xarray dataset with proper CDF attributes and shape.
     """
     # TODO: Correct CDF attributes from email
 

@@ -5,20 +5,19 @@ from pathlib import Path
 import numpy as np
 import pytest
 import xarray as xr
-from cdflib.xarray import cdf_to_xarray
 from cdflib.xarray.xarray_to_cdf import ISTPError
 
 from imap_processing import imap_module_directory
-from imap_processing.cdf.utils import write_cdf
+from imap_processing.cdf.utils import load_cdf, write_cdf
 from imap_processing.idex.idex_packet_parser import PacketParser
 
 
 @pytest.fixture()
 def decom_test_data():
     test_file = Path(
-        f"{imap_module_directory}/tests/idex/imap_idex_l0_raw_20230725_20230725_v01-00.pkts"
+        f"{imap_module_directory}/tests/idex/imap_idex_l0_raw_20230725_v001.pkts"
     )
-    return PacketParser(test_file).data
+    return PacketParser(test_file, "v001").data
 
 
 def test_idex_cdf_file(decom_test_data):
@@ -74,7 +73,5 @@ def test_idex_tof_high_data_from_cdf(decom_test_data):
         data = np.array([int(line.rstrip()) for line in f])
 
     file_name = write_cdf(decom_test_data)
-    l1_data = cdf_to_xarray(
-        file_name
-    )  # Read in the data from the CDF file to an xarray object
+    l1_data = load_cdf(file_name)
     assert (l1_data["TOF_High"][13].data == data).all()

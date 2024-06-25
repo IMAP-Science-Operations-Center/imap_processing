@@ -21,16 +21,16 @@ def generate_xarray(packet_file: str, xtce: str, time_keys=None):
     xtce : str
         Path to the XTCE packet definition file.
     time_keys : dict
-        Keys used for creating xarray dataset
+        Keys used for creating xarray dataset.
 
     Returns
     -------
-    xr.Dataset
+    dataset : xarray.Dataset
         A dataset containing the decoded data fields with 'time' as the coordinating
         dimension.
 
-    Example Output:
-    ---------------
+    Examples
+    --------
     # This is an example of what the xarray dataset might look like
     # after being processed by this function.
 

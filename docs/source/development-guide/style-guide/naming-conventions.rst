@@ -21,10 +21,10 @@ The general filename convention is as follows::
   * CoDICE: ``l0``, ``l1a``, ``l1b``, ``l2``, ``l3``
   * GLOWS: ``l0``, ``l1a``, ``l1b``, ``l2``, ``l3a``, ``l3b``, ``l3c``, ``l3d``
   * HIT: ``l0``, ``l1a``, ``l1b``, ``l2``, ``l3``
-  * IDEX: ``l0``, ``l1a``, ``l1b``, ``l1c``, ``l2``, ``l3``
+  * IDEX: ``l0``, ``l1``, ``l2``, ``l3``
   * IMAP-Hi: ``l0``, ``l1a``, ``l1b``, ``l1c``, ``l2``, ``l3``
   * IMAP-Lo: ``l0``, ``l1a``, ``l1b``, ``l1c``, ``l2``
-  * IMAP-Ultra: ``l0``, ``l1a``, ``l1b``, ``l1ca``, ``l1cb``, ``l1c``, ``l1d``, ``l2``, ``l3``
+  * IMAP-Ultra: ``l0``, ``l1a``, ``l1b``, ``l1c``, ``l2``, ``l3``
   * MAG: ``l0``, ``l1a``, ``l1b``, ``l1c``, ``l2pre``, ``l2``
   * SWAPI: ``l0``, ``l1``, ``l2``, ``l3a``, ``l3b``
   * SWE: ``l0``, ``l1a``, ``l1b``, ``l2``, ``l3``
@@ -34,17 +34,18 @@ The general filename convention is as follows::
   can have any text or numbers as long as it doesn't include underscores. The following is a list of expected
   descriptors for each instrument:
 
-  * CoDICE: ``hskp``, ``eng``, ``lo-priority``, ``lo-sw-angular``, ``lo-nsw-angular``, ``lo-pha``, ``hi-pha``,
-    ``lo-sw-species``, ``lo-nsw-species``, ``hi-omni``, ``hi-sectored``
+  * CoDICE: ``hskp``, ``lo-counters-aggregated``, ``lo-counters-singles``, ``hi-counters-aggregated``,
+    ``hi-counters-singles``, ``lo-sw-priority``, ``lo-nsw-priority``, ``lo-sw-angular``, ``lo-nsw-angular``, ``lo-pha``,
+    ``hi-pha``, ``lo-sw-species``, ``lo-nsw-species``, ``hi-omni``, ``hi-sectored``, ``lo-ialirt``, ``hi-ialirt``
   * GLOWS: ``histogram``, ``de``
   * HIT: TBD
-  * IDEX: TBD
+  * IDEX: ``sci``
   * IMAP-Hi: ``45sensor-counts``, ``90sensor-counts``, ``45sensor-flux-map-3month`` (more TBD)
   * IMAP-Lo: TBD
   * IMAP-Ultra: ``45sensor-counts``, ``90sensor-counts`` (more TBD)
   * MAG: ``normal``, ``burst``
-  * SWAPI: TBD
-  * SWE: TBD
+  * SWAPI: ``sci-1min``, ``hk``
+  * SWE: ``sci``
 
 * ``<startdate>`` is the date of the 'earliest' data within the data product, in the format of ``YYYYMMDD``.
 * ``<repointing>`` is an optional component that describes the repointing number, in the format of ``repoint<num>``,

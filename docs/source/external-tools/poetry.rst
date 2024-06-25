@@ -83,6 +83,9 @@ Installing and the Poetry Shell
 
 To install the Poetry project, you can use the `install <https://python-poetry.org/docs/cli/#install>`_ command::
 
+    # We use dynamic versioning, which requires a plugin to be installed first
+    poetry self add "poetry-dynamic-versioning[plugin]"
+
     # Install main dependencies and any dependency groups which are installed by default
     poetry install
 
