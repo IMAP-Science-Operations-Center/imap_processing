@@ -167,5 +167,5 @@ def write_cdf(dataset: xr.Dataset) -> list[Path]:
         terminate_on_warning=True,
     )  # Terminate if not ISTP compliant
 
-    return file_path #type: ignore[no-any-return]
-    #TODO Change,  Returning Any from function declared to return "list[Path]"
+    return file_path  # type: ignore[no-any-return]
+    # TODO Change,  Returning Any from function declared to return "list[Path]"
