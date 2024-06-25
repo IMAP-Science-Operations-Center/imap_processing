@@ -20,7 +20,7 @@ test_field_1:
   TIME_BASE: 10
   TIME_SCALE: test_time_scale
   REFERENCE_POSITION: test_reference_position
-  NOT_REQUIRED: test_not_required
+  LEAP_SECONDS_INCLUDED: test_not_required
 
 test_field_2:
   <<: *default

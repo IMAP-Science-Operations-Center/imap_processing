@@ -14,8 +14,6 @@ DEFAULT_GLOBAL_CDF_ATTRS_FILE = "imap_default_global_cdf_attrs.yaml"
 DEFAULT_GLOBAL_CDF_ATTRS_SCHEMA_FILE = "default_global_cdf_attrs_schema.yaml"
 DEFAULT_VARIABLE_CDF_ATTRS_SCHEMA_FILE = "default_variable_cdf_attrs_schema.yaml"
 
-# Pre-commit fix
-
 
 class CdfAttributeManager:
     """
@@ -242,18 +240,13 @@ class CdfAttributeManager:
             associated with "variable_name".
         """
         output = dict()
-        for attr_name in self.variable_attribute_schema.keys():
-            if variable_name in self._variable_attributes:
-                output = self._variable_attributes[variable_name]
+        for attr_name in self.variable_attribute_schema["attribute_key"]:
+            if attr_name in self._variable_attributes[variable_name]:
+                output[attr_name] = self._variable_attributes[variable_name][attr_name]
             elif (
-                variable_name is not None
-                and attr_name in self._variable_attributes["variable_name"]
+                self.variable_attribute_schema["attribute_key"][attr_name]["required"]
+                and attr_name not in self._variable_attributes[variable_name]
             ):
-                output = self._variable_attributes["variable_name"][attr_name]
-            elif (
-                variable_name not in self.variable_attribute_schema
-                and self.variable_attribute_schema["required"]
-            ):
-                output[variable_name] = None
+                output[attr_name] = None
 
         return output
