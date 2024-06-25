@@ -155,7 +155,7 @@ def create_hskp_dataset(packets, data_version: str) -> xr.Dataset:
     # packets/validation data that match the latest telemetry definitions
     # I may also be able to replace this function with utils.create_dataset(?)
     for key, value in metadata_arrays.items():
-        attrs = cdf_attrs.variable_attributes["codice_support_attrs"]
+        attrs = cdf_attrs.get_variable_attributes("codice_support_attrs")
         attrs["CATDESC"] = "TBD"
         attrs["DEPEND_0"] = "epoch"
         attrs["FIELDNAM"] = "TBD"
