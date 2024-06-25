@@ -52,8 +52,7 @@ def group_by_apid(packets: list) -> dict:
     grouped_packets : dict
         Grouped data by apid.
     """
-    grouped_packets: dict[list]
-    grouped_packets = collections.defaultdict(list)
+    grouped_packets: dict[list] = collections.defaultdict(list)
     for packet in packets:
         apid = packet.header["PKT_APID"].raw_value
         grouped_packets.setdefault(apid, []).append(packet)

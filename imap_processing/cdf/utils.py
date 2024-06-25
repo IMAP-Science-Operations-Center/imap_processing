@@ -119,7 +119,7 @@ def write_cdf(dataset: xr.Dataset) -> list[Path]:
 
     Returns
     -------
-    file_path : list[Path]
+    file_path : pathlib.Path
         Path to the file created.
     """
     # Create the filename from the global attributes

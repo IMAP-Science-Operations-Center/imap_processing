@@ -355,6 +355,7 @@ class ProcessInstrument(ABC):
 
     @abstractmethod
     def do_processing(self, dependencies: list):  # type: ignore[no-untyped-def]
+        # Todo Remove type: ignore once function is implemented.
         """
         Abstract method that processes the IMAP processing steps.
 
@@ -665,7 +666,7 @@ class Mag(ProcessInstrument):
             List of output files.
         """
         print(f"Processing MAG {self.data_level}")
-        place_holder: list[Path] = []
+        output_files: list[Path] = []
 
         if self.data_level == "l1a":
             # File path is expected output file path
@@ -674,8 +675,7 @@ class Mag(ProcessInstrument):
                     f"Unexpected dependencies found for MAG L1A:"
                     f"{dependencies}. Expected only one dependency."
                 )
-            output_files = mag_l1a(dependencies[0], data_version=self.version)
-            return [output_files]
+            output_files.extend(mag_l1a(dependencies[0], data_version=self.version))
 
         if self.data_level == "l1b":
             if len(dependencies) > 1:
@@ -686,7 +686,7 @@ class Mag(ProcessInstrument):
             input_data = load_cdf(dependencies[0])
             output_dataset = mag_l1b(input_data, self.version)
             output_files = write_cdf(output_dataset)
-            return [output_files]
+            return output_files
 
         if self.data_level == "l1c":
             # L1C depends on matching norm/burst files: eg burst-magi and norm-magi or
@@ -700,9 +700,8 @@ class Mag(ProcessInstrument):
             input_data = [load_cdf(dep) for dep in dependencies]
             # Input datasets can be in any order
             output_dataset = mag_l1c(input_data[0], input_data[1], self.version)
-            output_files = write_cdf(output_dataset)
-            return [output_files]
-        return place_holder
+            output_files.extend(write_cdf(output_dataset))
+        return output_files
 
 
 class Swapi(ProcessInstrument):
@@ -735,7 +734,6 @@ class Swapi(ProcessInstrument):
             processed_data = swapi_l1(dependencies[0], self.version)
             # Write all processed data to CDF files
             products = [write_cdf(dataset) for dataset in processed_data]
-            return products
         return products
 
 
@@ -770,7 +768,6 @@ class Swe(ProcessInstrument):
             # we expect only one dataset to be returned.
             cdf_file_path = write_cdf(processed_data)
             print(f"processed file path: {cdf_file_path}")
-            return [cdf_file_path]
 
         elif self.data_level == "l1b":
             if len(dependencies) > 1:
@@ -783,7 +780,6 @@ class Swe(ProcessInstrument):
             processed_data = swe_l1b(l1a_dataset, data_version=self.version)
             cdf_file_path = write_cdf(processed_data)
             print(f"processed file path: {cdf_file_path}")
-            return [cdf_file_path]
         else:
             print("Did not recognize data level. No processing done.")
         return cdf_file_path
@@ -819,7 +815,6 @@ class Ultra(ProcessInstrument):
 
             datasets = ultra_l1a.ultra_l1a(dependencies[0], self.version)
             products = [write_cdf(dataset) for dataset in datasets]
-            return products
         elif self.data_level == "l1b":
             data_dict = {}
             for dependency in dependencies:
@@ -827,7 +822,6 @@ class Ultra(ProcessInstrument):
                 data_dict[dataset.attrs["Logical_source"]] = dataset
             datasets = ultra_l1b.ultra_l1b(data_dict, self.version)
             products = [write_cdf(dataset) for dataset in datasets]
-            return products
         elif self.data_level == "l1c":
             data_dict = {}
             for dependency in dependencies:
@@ -835,7 +829,6 @@ class Ultra(ProcessInstrument):
                 data_dict[dataset.attrs["Logical_source"]] = dataset
             datasets = ultra_l1c.ultra_l1c(data_dict, self.version)
             products = [write_cdf(dataset) for dataset in datasets]
-            return products
         return products
 
 
