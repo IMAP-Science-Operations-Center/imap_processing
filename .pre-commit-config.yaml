@@ -47,4 +47,3 @@ repos:
                 --disable-error-code, import-not-found,
                 --disable-error-code, no-untyped-call,
                 --disable-error-code, type-arg]
-        exclude: '^imap_processing/'
