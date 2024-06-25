@@ -10,17 +10,18 @@ from imap_processing.utils import create_dataset, update_epoch_to_datetime
 
 
 def process_housekeeping(packets: list[Packet]) -> xr.Dataset:
-    """Create dataset for each metadata field.
+    """
+    Create dataset for each metadata field.
 
     Parameters
     ----------
     packets : list[space_packet_parser.ParsedPacket]
-        packet list
+        Packet list.
 
     Returns
     -------
-    xarray.Dataset
-        dataset with all metadata field data in xr.DataArray
+    dataset : xarray.Dataset
+        Dataset with all metadata field data in xr.DataArray.
     """
     dataset = create_dataset(
         packets=packets, spacecraft_time_key="ccsds_met", skip_keys=["INSTR_SPECIFIC"]

@@ -28,7 +28,8 @@ from imap_processing.utils import (
 
 
 def filter_good_data(full_sweep_sci):
-    """Filter out bad data sweep indices.
+    """
+    Filter out bad data sweep indices.
 
     Bad data indicator:
 
@@ -45,7 +46,7 @@ def filter_good_data(full_sweep_sci):
     Returns
     -------
     numpy.ndarray
-        Good data sweep indices
+        Good data sweep indices.
     """
     # PLAN_ID for current sweep should all be one value and
     # SWEEP_TABLE should all be one value.
@@ -84,7 +85,8 @@ def filter_good_data(full_sweep_sci):
 
 
 def decompress_count(count_data: np.ndarray, compression_flag: np.ndarray):
-    """Decompress counts based on compression indicators.
+    """
+    Will decompress counts based on compression indicators.
 
     Decompression algorithm:
     There are 3 compression regions:
@@ -133,7 +135,8 @@ def decompress_count(count_data: np.ndarray, compression_flag: np.ndarray):
 
 
 def find_sweep_starts(packets: xr.Dataset):
-    """Find index of where new cycle started.
+    """
+    Find index of where new cycle started.
 
     Beginning of a sweep is marked by SWP_SCI.SEQ_NUMBER=0
     (Sequence number of set of steps in energy sweep);
@@ -187,7 +190,8 @@ def find_sweep_starts(packets: xr.Dataset):
 
 
 def get_indices_of_full_sweep(packets: xr.Dataset):
-    """Get indices of full cycles.
+    """
+    Get indices of full cycles.
 
     Beginning of a sweep is marked by SWP_SCI.SEQ_NUMBER=0
     (Sequence number of set of steps in energy sweep);
@@ -201,7 +205,7 @@ def get_indices_of_full_sweep(packets: xr.Dataset):
     ----------
     packets : xarray.Dataset
         Dataset that contains SEQ_NUMBER data information.
-        Eg. sci_dataset["SEQ_NUMBER"].data
+        Eg. sci_dataset["SEQ_NUMBER"].data.
 
     Returns
     -------
@@ -220,7 +224,8 @@ def get_indices_of_full_sweep(packets: xr.Dataset):
 
 
 def process_sweep_data(full_sweep_sci, cem_prefix):
-    """Group full sweep data into correct sequence order.
+    """
+    Group full sweep data into correct sequence order.
 
     Data from each packet comes like this:
 
@@ -315,16 +320,22 @@ def process_sweep_data(full_sweep_sci, cem_prefix):
     Parameters
     ----------
     full_sweep_sci : xarray.Dataset
-        Full dataset
+        Full dataset.
     cem_prefix : str
-        Indicate which CEM or its flag we are processing. Options are:
+        Indicate which CEM or its flag we are processing.
+        Options are:
 
         |    PCEM_CNT
         |    SCEM_CNT
         |    COIN_CNT
         |    PCEM_RNG_ST
         |    SCEM_RNG_ST
-        |    COIN_RNG_ST
+        |    COIN_RNG_ST.
+
+    Returns
+    -------
+    all_cem_data : xarray.Dataset
+        Correctly order dataset.
     """
     # First, concat all CEM data
     current_cem_counts = np.concatenate(
@@ -408,14 +419,20 @@ def process_sweep_data(full_sweep_sci, cem_prefix):
 
 
 def process_swapi_science(sci_dataset, data_version: str):
-    """Process SWAPI science data and create CDF file.
+    """
+    Will process SWAPI science data and create CDF file.
 
     Parameters
     ----------
-    dataset : xarray.Dataset
-        L0 data
+    sci_dataset : xarray.Dataset
+        L0 data.
     data_version : str
-        Version of the data product being created
+        Version of the data product being created.
+
+    Returns
+    -------
+    dataset : xarray.Dataset
+        Dataset.
     """
     # ====================================================
     # Step 1: Filter full cycle data
@@ -589,14 +606,20 @@ def process_swapi_science(sci_dataset, data_version: str):
 
 
 def swapi_l1(file_path, data_version: str):
-    """Process SWAPI level 0 data to level 1.
+    """
+    Will process SWAPI level 0 data to level 1.
 
     Parameters
     ----------
     file_path : str
         Path to SWAPI L0 file.
     data_version : str
-        Version of the data product being created
+        Version of the data product being created.
+
+    Returns
+    -------
+    processed_data : xarray.Dataset
+        Set of processed data.
     """
     xtce_definition = (
         f"{imap_module_directory}/swapi/packet_definitions/swapi_packet_definition.xml"

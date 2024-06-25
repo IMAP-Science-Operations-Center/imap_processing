@@ -1,4 +1,4 @@
-"""Contains data classes to support GLOWS L1A processing."""
+"""Data classes to support GLOWS L1A processing."""
 
 import struct
 from dataclasses import InitVar, dataclass, field
@@ -10,7 +10,8 @@ from imap_processing.glows.utils.constants import DirectEvent, TimeTuple
 
 @dataclass
 class StatusData:
-    """Data structure for GLOWS status data, also known as "data_every_second".
+    """
+    Data structure for GLOWS status data, also known as "data_every_second".
 
     This is used to generate the housekeeping info for each direct event from the
     compressed structure in the first 40 bytes of each direct event data field.
@@ -22,6 +23,11 @@ class StatusData:
     StatusData attributes.
 
     Attributes must match byte_attribute_mapping in generate_status_data.
+
+    Parameters
+    ----------
+    general_data_subset : bytearray
+        40 bytes containing the information for general data (data_every_second).
 
     Attributes
     ----------
@@ -89,14 +95,10 @@ class StatusData:
     memory_error_detected: int
 
     def __init__(self, general_data_subset: bytearray):
-        """Generate the flag and encoded information from 40 bytes of direct event data.
+        """
+        Generate the flag and encoded information from 40 bytes of direct event data.
 
         The 40 bytes also includes one extra byte of padding at the end.
-
-        Parameters
-        ----------
-        general_data_subset: bytearray
-            40 bytes containing the information for general data (data_every_second).
         """
         byte_attribute_mapping = {
             "imap_sclk_last_pps": 4,
@@ -135,7 +137,8 @@ class StatusData:
 
 @dataclass
 class HistogramL1A:
-    """Data structure for GLOWS Histogram Level 1A data.
+    """
+    Data structure for GLOWS Histogram Level 1A data.
 
     Attributes
     ----------
@@ -218,10 +221,16 @@ class HistogramL1A:
     flags: dict = None
 
     def __post_init__(self, l0: HistogramL0):
-        """Set the attributes based on the given L0 histogram data.
+        """
+        Set the attributes based on the given L0 histogram data.
 
         This includes generating a block header and converting the time attributes from
         HistogramL0 into TimeTuple pairs.
+
+        Parameters
+        ----------
+        l0 : HistogramL0
+            Lo histogram data.
         """
         self.histograms = list(l0.HISTOGRAM_DATA)
 
@@ -269,7 +278,8 @@ class HistogramL1A:
 
 @dataclass
 class DirectEventL1A:
-    """Data structure for GLOWS Histogram Level 1A data.
+    """
+    Data structure for GLOWS Histogram Level 1A data.
 
     This includes steps for merging multiple Direct Event packets into one class,
     so this class may span multiple packets. This is determined by the SEQ and LEN,
@@ -283,31 +293,36 @@ class DirectEventL1A:
     "seq_count_in_pkts_file" = l0.ccsds_header.SRC_SEQ_CTR
     }
 
+    Parameters
+    ----------
+    level0 : DirectEventL0
+        Level 0 data.
+
     Attributes
     ----------
-    l0: DirectEventL0
+    l0 : DirectEventL0
         Level 0 data. In the case of multiple L0 direct events, this is the first L0
         data class in the sequence. This is used to verify all events in the sequence
         match.
-    de_data: bytearray
+    de_data : bytearray
         Bytearray of raw DirectEvent data, which is converted into direct_events
-    most_recent_seq: int
+    most_recent_seq : int
         The most recent sequence added to the L1A dataclass - for counting gaps
-    missing_seq: list[int]
+    missing_seq : list[int]
         Any missing sequence counts in the data. Should be an empty array in normal
         operation
-    status_data: StatusData
+    status_data : StatusData
         StatusData generated from the first 40 bytes of direct events data. This
         includes information on flags and ancillary housekeeping info from the
         spacecraft.
-    direct_events: list[DirectEvent]
+    direct_events : list[DirectEvent]
         List of DirectEvent objects, which is created when the final level 0 packet in
         the sequence is added to de_data. Defaults to None.
 
     Methods
     -------
     append
-        Add another Level0 instance
+        Add another Level0 instance.
     """
 
     l0: DirectEventL0
@@ -327,7 +342,8 @@ class DirectEventL1A:
             self._process_de_data()
 
     def append(self, second_l0: DirectEventL0):
-        """Merge an additional direct event packet to this DirectEventL1A class.
+        """
+        Merge an additional direct event packet to this DirectEventL1A class.
 
         Direct event data can span multiple packets, as marked by the SEQ and LEN
         attributes. This method will add the next piece of data in the sequence
@@ -341,8 +357,8 @@ class DirectEventL1A:
 
         Parameters
         ----------
-        second_l0: DirectEventL0
-            Additional L0 packet to add to the DirectEventL1A class
+        second_l0 : DirectEventL0
+            Additional L0 packet to add to the DirectEventL1A class.
         """
         # if SEQ is missing or if the sequence is out of order, do not continue.
         if not second_l0.SEQ or second_l0.SEQ < self.most_recent_seq:
@@ -377,7 +393,7 @@ class DirectEventL1A:
 
     def _process_de_data(self):
         """
-        Process direct event bytes.
+        Will process direct event bytes.
 
         Once the packets are complete, create the status data table from the first 40
         bytes in de_data, and the direct events from the remaining bytes.
@@ -386,7 +402,8 @@ class DirectEventL1A:
         self.direct_events = self._generate_direct_events(self.de_data[40:])
 
     def _generate_direct_events(self, direct_events: bytearray):
-        """Generate the list of direct events from the raw bytearray.
+        """
+        Generate the list of direct events from the raw bytearray.
 
         First, the starting timestamp is created from the first 8 bytes in the direct
         event array. Then, the remaining events are processed based on a marker in the
@@ -396,14 +413,13 @@ class DirectEventL1A:
 
         Parameters
         ----------
-        direct_events: bytearray
-            bytearray containing direct event data
+        direct_events : bytearray
+            Bytearray containing direct event data.
 
         Returns
         -------
-        processed_events: list[DirectEvent]
-            An array containing DirectEvent objects
-
+        processed_events : list[DirectEvent]
+            An array containing DirectEvent objects.
         """
         # read the first direct event, which is always uncompressed
         current_event = self._build_uncompressed_event(direct_events[:8])
@@ -456,7 +472,8 @@ class DirectEventL1A:
     def _build_compressed_event(
         self, raw: bytearray, oldest_diff: int, previous_time: TimeTuple
     ) -> "DirectEvent":
-        """Build direct event from data with timestamps compressed as timedeltas.
+        """
+        Build direct event from data with timestamps compressed as timedeltas.
 
         This process requires adding onto a previous timestamp to create a new
         timestamp. If raw is three bytes, the three byte method of compression is used,
@@ -465,17 +482,17 @@ class DirectEventL1A:
 
         Parameters
         ----------
-        raw: bytearray
-            Raw 2 or 3 byte compressed data to process
-        oldest_diff: int
-            last 6 bits of the byte immediately before raw
-        previous_time: TimeTuple
-            The previous timestamp to build off of
+        raw : bytearray
+            Raw 2 or 3 byte compressed data to process.
+        oldest_diff : int
+            Last 6 bits of the byte immediately before raw.
+        previous_time : TimeTuple
+            The previous timestamp to build off of.
 
         Returns
         -------
-        DirectEvent built by the input data
-
+        DirectEvent
+            Built by the input data.
         """
         if len(raw) == 2:
             rest = raw[0]
@@ -500,18 +517,20 @@ class DirectEventL1A:
         return DirectEvent(TimeTuple(seconds, subseconds), length, False)
 
     def _build_uncompressed_event(self, raw: bytearray) -> DirectEvent:
-        """Build direct event from raw binary 8-byte array.
+        """
+        Build direct event from raw binary 8-byte array.
 
         This method assumes that the raw binary contains uncompressed timestamps.
 
         Parameters
         ----------
-        raw: bytearray
-            8 bytes of data to build the event with
+        raw : bytearray
+            8 bytes of data to build the event with.
 
         Returns
         -------
-        DirectEvent object built from raw
+        DirectEvent
+            Object built from raw.
         """
         if len(raw) != 8:
             raise ValueError(

@@ -2,18 +2,24 @@
 
 
 class BinaryString:
-    """Iterate through a binary string.
+    """
+    Iterate through a binary string.
 
     The binary string class retains the current
     binary string bit position and updates it
     each time the string is accessed.
 
+    Parameters
+    ----------
+    bin : str
+        Binary string.
+
     Attributes
     ----------
     bin : str
-        binary string.
+        Binary string.
     bit_pos : int
-        current position in the binary string.
+        Current position in the binary string.
 
     Methods
     -------
@@ -22,7 +28,6 @@ class BinaryString:
         using the current bit position as the reference point.
         The bit position is updated to be the bit immediately
         following the last returned bit.
-
     """
 
     bin: str
@@ -33,7 +38,8 @@ class BinaryString:
         self.bit_pos = 0
 
     def next_bits(self, num_bits):
-        """Return the next x bits in the binary string.
+        """
+        Return the next x bits in the binary string.
 
         The bit position updated to be the bit immediately
         following the last returned bit.
@@ -45,9 +51,8 @@ class BinaryString:
 
         Returns
         -------
-        str
+        bits : str
             A binary string containing the next x bits that were requested.
-
         """
         bits = self.bin[self.bit_pos : self.bit_pos + num_bits]
         self.bit_pos += num_bits

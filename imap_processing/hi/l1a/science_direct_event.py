@@ -21,17 +21,18 @@ MICROSECOND_TO_NS = 1e3
 
 
 def get_direct_event_time(time_in_ns: int) -> np.datetime64:
-    """Create MET(Mission Elapsed Time) time using input times.
+    """
+    Create MET(Mission Elapsed Time) time using input times.
 
     Parameters
     ----------
     time_in_ns : int
-        Time in nanoseconds
+        Time in nanoseconds.
 
     Returns
     -------
     met_datetime : numpy.datetime64
-        Human-readable MET time
+        Human-readable MET time.
     """
     met_datetime = launch_time + np.timedelta64(int(time_in_ns), "ns")
 
@@ -39,7 +40,8 @@ def get_direct_event_time(time_in_ns: int) -> np.datetime64:
 
 
 def parse_direct_event(event_data: str) -> dict:
-    """Parse event data.
+    """
+    Parse event data.
 
     IMAP-Hi direct event data information is stored in
     48-bits as follow:
@@ -112,12 +114,12 @@ def parse_direct_event(event_data: str) -> dict:
     Parameters
     ----------
     event_data : str
-        48-bits Event data
+        48-bits Event data.
 
     Returns
     -------
     dict
-        Parsed event data
+        Parsed event data.
     """
     event_type = int(event_data[:2])
     metaevent = 0
@@ -154,17 +156,18 @@ def parse_direct_event(event_data: str) -> dict:
 
 
 def break_into_bits_size(binary_data: str) -> list:
-    """Break binary stream data into 48-bits.
+    """
+    Break binary stream data into 48-bits.
 
     Parameters
     ----------
     binary_data : str
-        Binary data
+        Binary data.
 
     Returns
     -------
     list
-        List of 48-bits
+        List of 48-bits.
     """
     # TODO: ask Paul what to do if the length of
     # binary_data is not a multiple of 48
@@ -176,19 +179,20 @@ def break_into_bits_size(binary_data: str) -> list:
 
 
 def create_dataset(de_data_list: list, packet_met_time: list) -> xr.Dataset:
-    """Create xarray dataset.
+    """
+    Create xarray dataset.
 
     Parameters
     ----------
     de_data_list : list
-        Parsed direct event data list
+        Parsed direct event data list.
     packet_met_time : list
-        List of packet MET time
+        List of packet MET time.
 
     Returns
     -------
-    dataset: xarray.Dataset
-        xarray dataset
+    dataset : xarray.Dataset
+        Xarray dataset.
     """
     # These are the variables that we will store in the dataset
     data_dict = {
@@ -312,7 +316,8 @@ def create_dataset(de_data_list: list, packet_met_time: list) -> xr.Dataset:
 
 
 def science_direct_event(packets_data: list[Packet]) -> xr.Dataset:
-    """Unpack IMAP-Hi direct event data.
+    """
+    Unpack IMAP-Hi direct event data.
 
     Processing step:
 
@@ -323,12 +328,12 @@ def science_direct_event(packets_data: list[Packet]) -> xr.Dataset:
     Parameters
     ----------
     packets_data : list[space_packet_parser.ParsedPacket]
-        List of packets data
+        List of packets data.
 
     Returns
     -------
-    dataset: xarray.Dataset
-        xarray dataset
+    dataset : xarray.Dataset
+        Xarray dataset.
     """
     de_data_list = []
     packet_met_time = []

@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 # ruff: noqa: PLR0913
-"""Run the processing for a specific instrument & data level.
+"""
+Run the processing for a specific instrument & data level.
 
 This module serves as a command line utility to invoke the processing for
 a user-supplied instrument and data level.
 
-Use
----
+Examples
+--------
     imap_cli --instrument <instrument> --level <data_level>
 """
 
@@ -58,7 +59,8 @@ logger = logging.getLogger(__name__)
 
 
 def _parse_args():
-    """Parse the command line arguments.
+    """
+    Parse the command line arguments.
 
     The expected input format is:
     --instrument "mag"
@@ -79,7 +81,7 @@ def _parse_args():
     Returns
     -------
     args : argparse.Namespace
-        An object containing the parsed arguments and their values
+        An object containing the parsed arguments and their values.
     """
     description = (
         "This command line program invokes the processing pipeline "
@@ -191,12 +193,13 @@ def _parse_args():
 
 
 def _validate_args(args):
-    """Ensure that the  arguments are valid before kicking off the processing.
+    """
+    Ensure that the  arguments are valid before kicking off the processing.
 
     Parameters
     ----------
     args : argparse.Namespace
-        An object containing the parsed arguments and their values
+        An object containing the parsed arguments and their values.
     """
     if args.instrument not in imap_data_access.VALID_INSTRUMENTS:
         raise ValueError(
@@ -212,12 +215,13 @@ def _validate_args(args):
 
 
 class ProcessInstrument(ABC):
-    """An abstract base class containing a method to process an instrument.
+    """
+    An abstract base class containing a method to process an instrument.
 
-    Attributes
+    Parameters
     ----------
     data_level : str
-        The data level to process (e.g. ``l1a``)
+        The data level to process (e.g. ``l1a``).
     dependency_str : str
         A string representation of the dependencies for the instrument in the
         format: "[{
@@ -226,13 +230,13 @@ class ProcessInstrument(ABC):
             'descriptor': 'sci',
             'version': 'v00-01',
             'start_date': '20231212'
-        }]"
+        }]".
     start_date : str
-        The start date for the output data. Format: YYYYMMDD
+        The start date for the output data in YYYYMMDD format.
     end_date : str
-        The end date for the output data. Format: YYYYMMDD
+        The end date for the output data in YYYYMMDD format.
     version : str
-        The version of the data. Format: vXXX
+        The version of the data in vXXX format.
     upload_to_sdc : bool
         A flag indicating whether to upload the output file to the SDC.
     """
@@ -255,17 +259,17 @@ class ProcessInstrument(ABC):
         self.end_date = end_date
         if not end_date:
             self.end_date = start_date
-            print(f"Setting end time to start time: {start_date}")
 
         self.version = version
         self.upload_to_sdc = upload_to_sdc
 
     def download_dependencies(self):
-        """Download the dependencies for the instrument.
+        """
+        Download the dependencies for the instrument.
 
         Returns
         -------
-        file_list: list[str]
+        file_list : list[str]
             A list of file paths to the downloaded dependencies.
         """
         file_list = []
@@ -273,9 +277,9 @@ class ProcessInstrument(ABC):
             try:
                 # TODO: Validate dep dict
                 # TODO: determine what dependency information is optional
-                # TODO: Add in timestamps and descriptor to query
                 return_query = imap_data_access.query(
                     start_date=self.start_date,
+                    end_date=self.end_date,
                     instrument=dependency["instrument"],
                     data_level=dependency["data_level"],
                     version=dependency["version"],
@@ -291,18 +295,22 @@ class ProcessInstrument(ABC):
                     f"This should never occur "
                     f"in normal processing."
                 )
-
-            file_list.append(imap_data_access.download(return_query[0]["file_path"]))
+            file_list.extend(
+                [
+                    imap_data_access.download(query_return["file_path"])
+                    for query_return in return_query
+                ]
+            )
         return file_list
 
     def upload_products(self, products: list[str]):
         """
         Upload data products to the IMAP SDC.
 
-        Attributes
+        Parameters
         ----------
         products : list[str]
-        A list of file paths to upload to the SDC.
+            A list of file paths to upload to the SDC.
         """
         if self.upload_to_sdc:
             if len(products) == 0:
@@ -342,7 +350,8 @@ class ProcessInstrument(ABC):
 
         Returns
         -------
-        List of dependencies downloaded from the IMAP SDC.
+        list
+            List of dependencies downloaded from the IMAP SDC.
         """
         return self.download_dependencies()
 
@@ -354,15 +363,15 @@ class ProcessInstrument(ABC):
         All child classes must implement this method. Input and outputs are
         typically lists of file paths but are free to any list.
 
-        Attributes
+        Parameters
         ----------
         dependencies : list
-            List of dependencies to process
+            List of dependencies to process.
 
         Returns
         -------
         list
-            List of products produced
+            List of products produced.
         """
         raise NotImplementedError
 
@@ -374,7 +383,7 @@ class ProcessInstrument(ABC):
         to the IMAP SDC. Child classes can override this method to customize the
         post-processing actions.
 
-        Attributes
+        Parameters
         ----------
         products : list[str]
             A list of file paths (products) produced by do_processing method.
@@ -386,7 +395,19 @@ class Codice(ProcessInstrument):
     """Process CoDICE."""
 
     def do_processing(self, dependencies):
-        """Perform CoDICE specific processing."""
+        """
+        Perform CoDICE specific processing.
+
+        Parameters
+        ----------
+        dependencies : list
+            List of dependencies to process.
+
+        Returns
+        -------
+         list
+            List of cdf file paths.
+        """
         print(f"Processing CoDICE {self.data_level}")
 
         if self.data_level == "l1a":
@@ -416,7 +437,19 @@ class Glows(ProcessInstrument):
     """Process GLOWS."""
 
     def do_processing(self, dependencies):
-        """Perform GLOWS specific processing."""
+        """
+        Perform GLOWS specific processing.
+
+        Parameters
+        ----------
+        dependencies : list
+            List of dependencies to process.
+
+        Returns
+        -------
+        products : list
+            List of products.
+        """
         print(f"Processing GLOWS {self.data_level}")
         products = []
         if self.data_level == "l1a":
@@ -429,7 +462,7 @@ class Glows(ProcessInstrument):
             products = [write_cdf(dataset) for dataset in datasets]
 
         if self.data_level == "l1b":
-            if len(dependencies) < 1:
+            if len(dependencies) > 1:
                 raise ValueError(
                     f"Unexpected dependencies found for GLOWS L1B:"
                     f"{dependencies}. Expected at least one input dependency."
@@ -448,10 +481,15 @@ class Hi(ProcessInstrument):
         """
         Perform IMAP-Hi specific processing.
 
-        Attributes
+        Parameters
         ----------
-        dependencies: list
-        List of dependencies to process
+        dependencies : list
+            List of dependencies to process.
+
+        Returns
+        -------
+        products : list
+            List of products.
         """
         print(f"Processing IMAP-Hi {self.data_level}")
 
@@ -481,7 +519,19 @@ class Hit(ProcessInstrument):
     """Process HIT."""
 
     def do_processing(self, dependencies):
-        """Perform HIT specific processing."""
+        """
+        Perform HIT specific processing.
+
+        Parameters
+        ----------
+        dependencies : list
+            List of dependencies to process.
+
+        Returns
+        -------
+        products : list
+            List of products.
+        """
         print(f"Processing HIT {self.data_level}")
 
         if self.data_level == "l1a":
@@ -510,7 +560,19 @@ class Idex(ProcessInstrument):
     """Process IDEX."""
 
     def do_processing(self, dependencies):
-        """Perform IDEX specific processing."""
+        """
+        Perform IDEX specific processing.
+
+        Parameters
+        ----------
+        dependencies : list
+            List of dependencies to process.
+
+        Returns
+        -------
+        list
+            List of cdf file paths.
+        """
         print(f"Processing IDEX {self.data_level}")
 
         if self.data_level == "l1":
@@ -530,7 +592,19 @@ class Lo(ProcessInstrument):
     """Process IMAP-Lo."""
 
     def do_processing(self, dependencies):
-        """Perform IMAP-Lo specific processing."""
+        """
+        Perform IMAP-Lo specific processing.
+
+        Parameters
+        ----------
+        dependencies : list
+            List of dependencies to process.
+
+        Returns
+        -------
+        output_files : list
+            List of output files.
+        """
         print(f"Processing IMAP-Lo {self.data_level}")
 
         if self.data_level == "l1a":
@@ -565,7 +639,19 @@ class Mag(ProcessInstrument):
     """Process MAG."""
 
     def do_processing(self, dependencies) -> list[Path]:
-        """Perform MAG specific processing."""
+        """
+        Perform MAG specific processing.
+
+        Parameters
+        ----------
+        dependencies : list
+            List of dependencies to process.
+
+        Returns
+        -------
+        output_files : list
+            List of output files.
+        """
         print(f"Processing MAG {self.data_level}")
 
         if self.data_level == "l1a":
@@ -609,7 +695,19 @@ class Swapi(ProcessInstrument):
     """Process SWAPI."""
 
     def do_processing(self, dependencies):
-        """Perform SWAPI specific processing."""
+        """
+        Perform SWAPI specific processing.
+
+        Parameters
+        ----------
+        dependencies : list
+            List of dependencies to process.
+
+        Returns
+        -------
+        product : list
+            List of products.
+        """
         print(f"Processing SWAPI {self.data_level}")
 
         if self.data_level == "l1":
@@ -629,7 +727,19 @@ class Swe(ProcessInstrument):
     """Process SWE."""
 
     def do_processing(self, dependencies):
-        """Perform SWE specific processing."""
+        """
+        Perform SWE specific processing.
+
+        Parameters
+        ----------
+        dependencies : list
+            List of dependencies to process.
+
+        Returns
+        -------
+        list
+            Path to cdf file.
+        """
         print(f"Processing SWE {self.data_level}")
 
         if self.data_level == "l1a":
@@ -668,10 +778,15 @@ class Ultra(ProcessInstrument):
         """
         Perform IMAP-Ultra specific processing.
 
-        Attributes
+        Parameters
         ----------
-        dependencies: list
-        List of dependencies to process
+        dependencies : list
+            List of dependencies to process.
+
+        Returns
+        -------
+        product : list
+            List of products.
         """
         print(f"Processing IMAP-Ultra {self.data_level}")
 
@@ -705,7 +820,8 @@ class Ultra(ProcessInstrument):
 
 
 def main():
-    """Run the processing for a specific instrument & data level.
+    """
+    Run the processing for a specific instrument & data level.
 
     Set up the command line arguments, parse them, and then invoke the
     appropriate instrument processing function.

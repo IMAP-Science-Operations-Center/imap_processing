@@ -13,7 +13,8 @@ logger = logging.getLogger(__name__)
 
 
 def swe_l1a(file_path, data_version):
-    """Process SWE l0 data into l1a data.
+    """
+    Will process SWE l0 data into l1a data.
 
     Receive all L0 data file. Based on appId, it
     call its function to process. If appId is science, it requires more work
@@ -21,16 +22,16 @@ def swe_l1a(file_path, data_version):
 
     Parameters
     ----------
-    file_path: pathlib.Path
-        Path where data is downloaded
-    data_version: str
+    file_path : pathlib.Path
+        Path where data is downloaded.
+    data_version : str
         Data version to write to CDF files and the Data_version CDF attribute.
-        Should be in the format Vxxx
+        Should be in the format Vxxx.
 
     Returns
     -------
     List
-        List of xarray.Dataset
+        List of xarray.Dataset.
     """
     packets = decom_swe.decom_packets(file_path)
 

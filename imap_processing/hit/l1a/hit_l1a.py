@@ -42,19 +42,19 @@ class HitAPID(IntEnum):
 
 def hit_l1a(packet_file: typing.Union[Path, str], data_version: str):
     """
-    Process HIT L0 data into L1A data products.
+    Will process HIT L0 data into L1A data products.
 
     Parameters
     ----------
     packet_file : str
         Path to the CCSDS data packet file.
     data_version : str
-        Version of the data product being created
+        Version of the data product being created.
 
     Returns
     -------
-    dict
-        List of file paths to CDF data product files
+    cdf_filepaths : dict
+        List of file paths to CDF data product files.
     """
     # Decom, sort, and group packets by apid
     packets = decom_packets(packet_file)
@@ -99,8 +99,8 @@ def decom_packets(packet_file: str):
 
     Returns
     -------
-    list
-        List of all the unpacked data
+    unpacked_packets : list
+        List of all the unpacked data.
     """
     # TODO: update path to use a combined packets xtce file
     xtce_file = imap_module_directory / "hit/packet_definitions/P_HIT_HSKP.xml"
@@ -111,17 +111,18 @@ def decom_packets(packet_file: str):
 
 
 def group_data(unpacked_data: list):
-    """Group data by apid.
+    """
+    Group data by apid.
 
     Parameters
     ----------
     unpacked_data : list
-        packet list
+        Packet list.
 
     Returns
     -------
-    dict
-        grouped data by apid
+    grouped_data : dict
+        Grouped data by apid.
     """
     logger.debug("Grouping packet values for each apid")
     grouped_data = utils.group_by_apid(unpacked_data)
@@ -149,13 +150,13 @@ def create_datasets(data: dict, skip_keys=None):
     ----------
     data : dict
         A single dictionary containing data for all instances of an APID.
-    skip_keys: list, Optional
-        Keys to skip in the metadata
+    skip_keys : list, Optional
+        Keys to skip in the metadata.
 
     Returns
     -------
-    dict
-        A dictionary containing xr.Dataset for each APID. Each dataset in the
+    processed_data : dict
+        A dictionary containing xarray.Dataset for each APID. Each dataset in the
         dictionary will be converted to a CDF.
     """
     logger.info("Creating datasets for HIT L1A data")

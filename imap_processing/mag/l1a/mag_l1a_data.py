@@ -21,9 +21,9 @@ class TimeTuple:
     Attributes
     ----------
     coarse_time : int
-        Coarse time in seconds
+        Coarse time in seconds.
     fine_time : int
-        Subsecond
+        Subsecond.
 
     Methods
     -------
@@ -40,7 +40,7 @@ class TimeTuple:
         Parameters
         ----------
         seconds : float
-            Number of seconds to add
+            Number of seconds to add.
 
         Returns
         -------
@@ -65,8 +65,8 @@ class TimeTuple:
 
         Returns
         -------
-        seconds: float
-            Time in seconds
+        seconds : float
+            Time in seconds.
         """
         return self.coarse_time + self.fine_time / MAX_FINE_TIME
 
@@ -91,14 +91,14 @@ class MagL1a:
     Attributes
     ----------
     is_mago : bool
-        True if the data is from MagO, False if data is from MagI
+        True if the data is from MagO, False if data is from MagI.
     active : bool
-        True if the sensor is active
+        True if the sensor is active.
     SHCOARSE : int
-        Mission elapsed time
+        Mission elapsed time.
     vectors : numpy.ndarray
         List of magnetic vector samples, starting at start_time. [x, y, z, range, time],
-        where time is np.datetime64[ns]
+        where time is np.datetime64[ns].
 
     Methods
     -------
@@ -122,18 +122,18 @@ class MagL1a:
         Parameters
         ----------
         vectors : numpy.ndarray
-            List of magnetic vector samples, starting at start_time. Shape of (n, 4)
+            List of magnetic vector samples, starting at start_time. Shape of (n, 4).
         vectors_per_second : int
-            Number of vectors per second
+            Number of vectors per second.
         start_time : TimeTuple
-            The coarse and fine time for the sensor
+            The coarse and fine time for the sensor.
 
         Returns
         -------
-        vector_objects: numpy.ndarray
-            vectors with timestamps added in seconds, calculated from
+        vector_objects : numpy.ndarray
+            Vectors with timestamps added in seconds, calculated from
             cdf.utils.calc_start_time.
-            TODO: Move timestamps to J2000
+            TODO: Move timestamps to J2000.
         """
         timedelta = np.timedelta64(int(1 / vectors_per_second * 1e9), "ns")
 
@@ -161,19 +161,19 @@ class MagL1a:
         Given raw packet data, process into Vectors.
 
         Vectors are grouped into primary sensor and secondary sensor, and returned as a
-        tuple (primary sensor vectors, secondary sensor vectors)
+        tuple (primary sensor vectors, secondary sensor vectors).
 
-        Written by MAG instrument team
+        Written by MAG instrument team.
 
         Parameters
         ----------
         vector_data : numpy.ndarray
             Raw vector data, in bytes. Contains both primary and secondary vector data
-            (first primary, then secondary)
+            (first primary, then secondary).
         primary_count : int
-            Count of the number of primary vectors
+            Count of the number of primary vectors.
         secondary_count : int
-            Count of the number of secondary vectors
+            Count of the number of secondary vectors.
 
         Returns
         -------
@@ -184,6 +184,19 @@ class MagL1a:
 
         # TODO: error handling
         def to_signed16(n):
+            """
+            Convert an integer to a signed 16-bit integer.
+
+            Parameters
+            ----------
+            n : int
+                The integer to be converted.
+
+            Returns
+            -------
+            int
+                Converted integer.
+            """
             n = n & 0xFFFF
             return n | (-(n & 0x8000))
 
