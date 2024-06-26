@@ -322,6 +322,7 @@ def test_get_variable_attributes():
     assert imap_test_variable["TIME_SCALE"] == "test_time_scale"
     assert imap_test_variable["REFERENCE_POSITION"] == "test_reference_position"
     assert imap_test_variable["DEPEND_1"] == "test_depend_1"
+    assert imap_test_variable["DEPEND_2"] == "test_depend_2"
 
     # Calling to non required attributes
     assert imap_test_variable["LEAP_SECONDS_INCLUDED"] == "test_not_required"
