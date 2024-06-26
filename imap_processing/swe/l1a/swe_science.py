@@ -15,7 +15,7 @@ from imap_processing.swe.utils.swe_utils import (
 logger = logging.getLogger(__name__)
 
 
-def decompressed_counts(cem_count):
+def decompressed_counts(cem_count: int) -> int:
     """
     Decompressed counts from the CEMs.
 
@@ -67,7 +67,7 @@ def decompressed_counts(cem_count):
     )
 
 
-def swe_science(decom_data, data_version):
+def swe_science(decom_data: dict, data_version: str) -> xr.Dataset:
     """
     SWE L1a science processing.
 
@@ -112,7 +112,7 @@ def swe_science(decom_data, data_version):
     science_array = []
     raw_science_array = []
 
-    metadata_arrays = collections.defaultdict(list)
+    metadata_arrays: np.array = collections.defaultdict(list)
 
     # We know we can only have 8 bit numbers input, so iterate over all
     # possibilities once up front

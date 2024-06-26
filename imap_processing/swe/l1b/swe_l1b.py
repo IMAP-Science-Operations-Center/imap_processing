@@ -12,7 +12,7 @@ from imap_processing.utils import convert_raw_to_eu
 logger = logging.getLogger(__name__)
 
 
-def swe_l1b(l1a_dataset: xr.Dataset, data_version: str):
+def swe_l1b(l1a_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
     """
     Will process data to L1B.
 
