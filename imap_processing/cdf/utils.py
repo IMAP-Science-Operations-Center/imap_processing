@@ -53,7 +53,7 @@ def met_to_j2000ns(
     #       float input and we want to keep ns precision in those floats
     # NOTE: We need int64 here when running on 32bit systems as plain int will default
     #       to 32bit and overflow due to the nanosecond multiplication
-    time_array = (np.asarray(met) * 1e9).astype(np.int64)
+    time_array = (np.asarray(met, dtype=float) * 1e9).astype(np.int64)
     # Calculate the time difference between our reference system and J2000
     j2000_offset = (
         (reference_epoch - J2000_EPOCH).astype("timedelta64[ns]").astype(np.int64)

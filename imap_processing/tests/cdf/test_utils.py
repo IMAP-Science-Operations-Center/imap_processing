@@ -53,6 +53,9 @@ def test_met_to_j2000ns():
     imap_epoch_offset = (IMAP_EPOCH - J2000_EPOCH).astype(np.int64)
     assert met_to_j2000ns(0) == imap_epoch_offset
     assert met_to_j2000ns(1) == imap_epoch_offset + 1e9
+    # Large input should work (avoid overflow with int32 SHCOARSE inputs)
+    assert met_to_j2000ns(np.int32(2**30)) == imap_epoch_offset + 2**30 * 1e9
+    assert met_to_j2000ns(0).dtype == np.int64
     # Float input should work
     assert met_to_j2000ns(0.0) == imap_epoch_offset
     assert met_to_j2000ns(1.2) == imap_epoch_offset + 1.2e9
