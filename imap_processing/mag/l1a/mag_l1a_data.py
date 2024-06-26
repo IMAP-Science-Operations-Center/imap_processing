@@ -33,7 +33,7 @@ class TimeTuple:
     coarse_time: int
     fine_time: int
 
-    def __add__(self, seconds: float) -> TimeTuple:
+    def __add__(self, seconds: float):  # type: ignore[no-untyped-def]
         # ruff is saying TimeTuple is undefined for this usage.
         """
         Add a number of seconds to the time tuple.
