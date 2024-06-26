@@ -341,7 +341,7 @@ class ProcessInstrument(ABC):
         self.post_processing(products)
         logger.info("Processing complete")
 
-    def pre_processing(self):  # type: ignore[no-untyped-def]
+    def pre_processing(self) -> list:
         """
         Complete pre-processing.
 
