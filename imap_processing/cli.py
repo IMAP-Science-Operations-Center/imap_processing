@@ -260,7 +260,6 @@ class ProcessInstrument(ABC):
         self.end_date = end_date
         if not end_date:
             self.end_date = start_date
-            print(f"Setting end time to start time: {start_date}")
 
         self.version = version
         self.upload_to_sdc = upload_to_sdc
@@ -279,9 +278,9 @@ class ProcessInstrument(ABC):
             try:
                 # TODO: Validate dep dict
                 # TODO: determine what dependency information is optional
-                # TODO: Add in timestamps and descriptor to query
                 return_query = imap_data_access.query(
                     start_date=self.start_date,
+                    end_date=self.end_date,
                     instrument=dependency["instrument"],
                     data_level=dependency["data_level"],
                     version=dependency["version"],
@@ -297,8 +296,12 @@ class ProcessInstrument(ABC):
                     f"This should never occur "
                     f"in normal processing."
                 )
-
-            file_list.append(imap_data_access.download(return_query[0]["file_path"]))
+            file_list.extend(
+                [
+                    imap_data_access.download(query_return["file_path"])
+                    for query_return in return_query
+                ]
+            )
         return file_list
 
     def upload_products(self, products: list[str]) -> None:
@@ -463,7 +466,7 @@ class Glows(ProcessInstrument):
             products = [write_cdf(dataset) for dataset in datasets]
 
         if self.data_level == "l1b":
-            if len(dependencies) < 1:
+            if len(dependencies) > 1:
                 raise ValueError(
                     f"Unexpected dependencies found for GLOWS L1B:"
                     f"{dependencies}. Expected at least one input dependency."

@@ -1,0 +1,30 @@
+default_attrs: &default
+  # Assumed values for all variable attrs unless overwritten
+  DEPEND_0: epoch
+  DISPLAY_TYPE: time_series
+  FILLVAL: -9223372036854775808
+  FORMAT: I19
+  VALIDMIN: 0
+  VALIDMAX: 9223372036854775807
+  VAR_TYPE: data
+
+epoch:
+  <<: *default
+  CATDESC: Time, number of nanoseconds since J2000 with leap seconds included
+  FIELDNAM: epoch
+  LABLAXIS: epoch
+  UNITS: ns
+  VAR_TYPE: support_data
+  SCALETYP: linear
+  MONOTON: INCREASE
+  TIME_BASE: J2000
+  TIME_SCALE: Terrestrial Time
+  REFERENCE_POSITION: Rotating Earth Geoid
+
+x_front:
+  <<: *default
+  CATDESC: x front position
+  FIELDNAM: Event x-position on front foil
+  LABLAXIS: x front position
+  # TODO: come back to format
+  UNITS: mm
