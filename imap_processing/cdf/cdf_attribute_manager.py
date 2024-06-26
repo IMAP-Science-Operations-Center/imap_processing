@@ -285,5 +285,10 @@ class CdfAttributeManager:
             ):
                 # logger.warn()
                 output[attr_name] = ""
+            elif check_schema is False:
+                if variable_name in self._variable_attributes:
+                    return self._variable_attributes[variable_name]
+                # TODO: throw an error?
+                return {}
 
         return output
