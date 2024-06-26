@@ -10,8 +10,6 @@ from pathlib import Path
 
 import yaml
 
-# Test change
-
 DEFAULT_GLOBAL_CDF_ATTRS_FILE = "imap_default_global_cdf_attrs.yaml"
 DEFAULT_GLOBAL_CDF_ATTRS_SCHEMA_FILE = "default_global_cdf_attrs_schema.yaml"
 DEFAULT_VARIABLE_CDF_ATTRS_SCHEMA_FILE = "default_variable_cdf_attrs_schema.yaml"
@@ -217,11 +215,34 @@ class CdfAttributeManager:
             The name of the file to load from self.source_dir.
         """
         # Add variable attributes from file_name. Each variable name should have the
-        # Required subfields as defined in the variable schema.
+        # required sub fields as defined in the variable schema.
         raw_var_attrs = CdfAttributeManager._load_yaml_data(self.source_dir / file_name)
         var_attrs = raw_var_attrs.copy()
 
         self._variable_attributes.update(var_attrs)
+
+    # def get_variable_attributes(self, variable_name: str) -> dict:
+    #     """
+    #     Get the attributes for a given variable name.
+    #
+    #     It retrieves the variable from previously loaded variable definition files and
+    #     validates against the defined variable schemas.
+    #
+    #     Parameters
+    #     ----------
+    #     variable_name : str
+    #         The name of the variable to retrieve attributes for.
+    #
+    #     Returns
+    #     -------
+    #     dict
+    #         I have no idea todo check.
+    #     """
+    #     # TODO: Create a variable attribute schema file, validate here
+    #     if variable_name in self._variable_attributes:
+    #         return self._variable_attributes[variable_name]
+    #     # TODO: throw an error?
+    #     return {}
 
     def get_variable_attributes(self, variable_name: str) -> dict:
         """
@@ -249,6 +270,7 @@ class CdfAttributeManager:
                 self.variable_attribute_schema["attribute_key"][attr_name]["required"]
                 and attr_name not in self._variable_attributes[variable_name]
             ):
-                output[attr_name] = None
+                # logger.warn()
+                output[attr_name] = ""
 
         return output
