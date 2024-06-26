@@ -7,7 +7,7 @@ import xarray as xr
 from imap_processing.cdf.cdf_attribute_manager import CdfAttributeManager
 
 
-def create_dataset(data_dict, name, level):
+def create_dataset(data_dict: dict, name: str, level: str) -> xr.Dataset:
     """
     Create xarray for L1b data.
 

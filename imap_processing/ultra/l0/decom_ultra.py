@@ -26,13 +26,13 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-def append_tof_params(
+def append_tof_params(  # type: ignore[no-untyped-def] #Todo Update, need packet param type.
     decom_data: dict,
     packet,
     decompressed_data: list,
     data_dict: dict,
     stacked_dict: dict,
-):
+) -> None:
     """
     Append parsed items to a dictionary, including decompressed data if available.
 
@@ -77,7 +77,8 @@ def append_tof_params(
             data_dict[key].clear()
 
 
-def append_params(decom_data: dict, packet):
+def append_params(decom_data: dict, packet) -> None:  # type: ignore[no-untyped-def]
+    # Todo Update what packet type is.
     """
     Append parsed items to a dictionary, including decompressed data if available.
 
@@ -95,7 +96,7 @@ def append_params(decom_data: dict, packet):
     append_ccsds_fields(decom_data, ccsds_data)
 
 
-def process_ultra_apids(data: list, apid: int):
+def process_ultra_apids(data: list, apid: int) -> dict:
     """
     Unpack and decode Ultra packets using CCSDS format and XTCE packet definitions.
 
@@ -122,12 +123,15 @@ def process_ultra_apids(data: list, apid: int):
     sorted_packets = sort_by_time(data, "SHCOARSE")
 
     process_function = strategy_dict.get(apid)
-    decom_data = process_function(sorted_packets, defaultdict(list))
+    decom_data = process_function(sorted_packets, defaultdict(list))  # type: ignore[misc]
+    # ToDo Change, "None" not callable
 
     return decom_data
 
 
-def process_ultra_tof(sorted_packets: list, decom_data: collections.defaultdict):
+def process_ultra_tof(
+    sorted_packets: list, decom_data: collections.defaultdict
+) -> dict:
     """
     Unpack and decode Ultra TOF packets.
 
@@ -143,8 +147,8 @@ def process_ultra_tof(sorted_packets: list, decom_data: collections.defaultdict)
     decom_data : dict
         A dictionary containing the decoded data.
     """
-    stacked_dict = defaultdict(list)
-    data_dict = defaultdict(list)
+    stacked_dict: dict = defaultdict(list)
+    data_dict: dict = defaultdict(list)
 
     # For TOF we need to sort by time and then SID
     sorted_packets = sorted(
@@ -178,7 +182,7 @@ def process_ultra_tof(sorted_packets: list, decom_data: collections.defaultdict)
     return decom_data
 
 
-def process_ultra_events(sorted_packets: list, decom_data: dict):
+def process_ultra_events(sorted_packets: list, decom_data: dict) -> dict:
     """
     Unpack and decode Ultra EVENTS packets.
 
@@ -210,7 +214,7 @@ def process_ultra_events(sorted_packets: list, decom_data: dict):
     return decom_data
 
 
-def process_ultra_aux(sorted_packets: list, decom_data: dict):
+def process_ultra_aux(sorted_packets: list, decom_data: dict) -> dict:
     """
     Unpack and decode Ultra AUX packets.
 
@@ -232,7 +236,7 @@ def process_ultra_aux(sorted_packets: list, decom_data: dict):
     return decom_data
 
 
-def process_ultra_rates(sorted_packets: list, decom_data: dict):
+def process_ultra_rates(sorted_packets: list, decom_data: dict) -> dict:
     """
     Unpack and decode Ultra RATES packets.
 
@@ -257,7 +261,9 @@ def process_ultra_rates(sorted_packets: list, decom_data: dict):
             ULTRA_RATES.mantissa_bit_length,
         )
 
-        for index in range(ULTRA_RATES.len_array):
+        for index in range(ULTRA_RATES.len_array):  # type: ignore[arg-type]
+            # TODO Change, Argument 1 to "range" has incompatible type
+            # "Optional[int]"; expected "SupportsIndex"
             decom_data[RATES_KEYS[index]].append(decompressed_data[index])
 
         append_params(decom_data, packet)
