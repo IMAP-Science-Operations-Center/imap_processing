@@ -168,4 +168,3 @@ def write_cdf(dataset: xr.Dataset) -> list[Path]:
     )  # Terminate if not ISTP compliant
 
     return file_path  # type: ignore[no-any-return]
-    # TODO Change,  Returning Any from function declared to return "list[Path]"

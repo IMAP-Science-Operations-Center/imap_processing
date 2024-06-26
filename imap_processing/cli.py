@@ -358,7 +358,6 @@ class ProcessInstrument(ABC):
 
     @abstractmethod
     def do_processing(self, dependencies: list):  # type: ignore[no-untyped-def]
-        # Todo Remove type: ignore once function is implemented.
         """
         Abstract method that processes the IMAP processing steps.
 
@@ -631,9 +630,6 @@ class Lo(ProcessInstrument):
             data_dict = {}
             for dependency in dependencies:
                 dataset = load_cdf(dependency, to_datetime=True)  # type: ignore[arg-type]
-                # Todo Change
-                # Argument "to_datetime" to "load_cdf" has incompatible
-                # type "bool"; expected "dict[Any, Any]"
                 data_dict[dataset.attrs["Logical_source"]] = dataset
             output_file = lo_l1b.lo_l1b(data_dict, self.version)
             return [output_file]
@@ -642,9 +638,6 @@ class Lo(ProcessInstrument):
             data_dict = {}
             for dependency in dependencies:
                 dataset = load_cdf(dependency, to_datetime=True)  # type: ignore[arg-type]
-                # Todo Change
-                # Argument "to_datetime" to "load_cdf" has incompatible
-                # type "bool"; expected "dict[Any, Any]"
                 data_dict[dataset.attrs["Logical_source"]] = dataset
             output_file = lo_l1c.lo_l1c(data_dict, self.version)
             return [output_file]

@@ -78,9 +78,7 @@ class CdfAttributeManager:
         self.global_attributes = CdfAttributeManager._load_yaml_data(
             self.source_dir / DEFAULT_GLOBAL_CDF_ATTRS_FILE
         )
-        self.variable_attributes = dict()  # type: ignore[var-annotated]
-        # Todo Change, Need type annotation for "variable_attributes"
-        # (hint: "variable_attributes: dict[<type>, <type>] = ...")
+        self.variable_attributes: dict[str, dict]
 
     def _load_default_global_attr_schema(self) -> dict:
         """
@@ -246,7 +244,5 @@ class CdfAttributeManager:
         """
         # TODO: Create a variable attribute schema file, validate here
         if variable_name in self.variable_attributes:
-            return self.variable_attributes[variable_name]  # type: ignore[no-any-return]
-        # TODO Change, Returning Any from function declared to return "dict[Any, Any]"
-        # TODO: throw an error?
+            return self.variable_attributes[variable_name]
         return {}
