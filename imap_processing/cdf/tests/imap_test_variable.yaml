@@ -21,6 +21,7 @@ test_field_1:
   TIME_SCALE: test_time_scale
   REFERENCE_POSITION: test_reference_position
   LEAP_SECONDS_INCLUDED: test_not_required
+  DEPEND_1: test_depend_1
 
 test_field_2:
   <<: *default

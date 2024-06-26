@@ -321,6 +321,7 @@ def test_get_variable_attributes():
     assert imap_test_variable["TIME_BASE"] == 10
     assert imap_test_variable["TIME_SCALE"] == "test_time_scale"
     assert imap_test_variable["REFERENCE_POSITION"] == "test_reference_position"
+    assert imap_test_variable["DEPEND_1"] == "test_depend_1"
 
     # Calling to non required attributes
     assert imap_test_variable["LEAP_SECONDS_INCLUDED"] == "test_not_required"
@@ -354,3 +355,4 @@ def test_get_variable_attributes():
 
     # TODO: Should I handle cases for if a variable_name not in
     #  the variable_attribute_schema is dealt with?
+    # TODO: write test loading in attribute not in schema

@@ -244,7 +244,7 @@ class CdfAttributeManager:
     #     # TODO: throw an error?
     #     return {}
 
-    def get_variable_attributes(self, variable_name: str) -> dict:
+    def get_variable_attributes(self, variable_name: str, check_schema=True) -> dict:
         """
         Get the attributes for a given variable name.
 
@@ -256,6 +256,9 @@ class CdfAttributeManager:
         variable_name : str
             The name of the variable to retrieve attributes for.
 
+        check_schema : bool
+            Flag to bypass schema validation.
+
         Returns
         -------
         dict
@@ -263,12 +266,29 @@ class CdfAttributeManager:
             associated with "variable_name".
         """
         output = dict()
+        val = 1
         for attr_name in self.variable_attribute_schema["attribute_key"]:
-            if attr_name in self._variable_attributes[variable_name]:
-                output[attr_name] = self._variable_attributes[variable_name][attr_name]
+            if (
+                attr_name in self._variable_attributes[variable_name]
+                or attr_name == "DEPEND_i"
+            ):
+                if attr_name == "DEPEND_i":
+                    if "DEPEND_" + str(val) in self._variable_attributes[variable_name]:
+                        # Search self._variable_attributes[variable_name]
+                        output["DEPEND_" + str(val)] = self._variable_attributes[
+                            variable_name
+                        ]["DEPEND_" + str(val)]
+                        val = val + 1
+                else:
+                    output[attr_name] = self._variable_attributes[variable_name][
+                        attr_name
+                    ]
+            elif attr_name in self._variable_attributes:
+                output[attr_name] = self._variable_attributes[attr_name]
             elif (
                 self.variable_attribute_schema["attribute_key"][attr_name]["required"]
                 and attr_name not in self._variable_attributes[variable_name]
+                and check_schema is True
             ):
                 # logger.warn()
                 output[attr_name] = ""
