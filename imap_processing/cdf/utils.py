@@ -77,11 +77,8 @@ def load_cdf(
     """
     # TODO: remove this when cdflib is updated to version >1.3.0
     if "to_datetime" not in kwargs:
-        kwargs["to_datetime"] = True  # type: ignore[assignment]
-        # ToDO Change
-        # Incompatible types in assignment
-        # (expression has type "bool", target has type "dict[Any, Any]")
-    dataset = cdf_to_xarray(file_path, kwargs)
+        to_datetime_arg = kwargs.get("to_datetime", True)
+    dataset = cdf_to_xarray(file_path, to_datetime=to_datetime_arg, **kwargs)
 
     # cdf_to_xarray converts single-value attributes to lists
     # convert these back to single values where applicable

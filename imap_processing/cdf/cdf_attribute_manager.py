@@ -7,7 +7,6 @@ Developed based of HermesDataSchema from HERMES-SOC/hermes_core.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
 
 import yaml
 
@@ -79,10 +78,9 @@ class CdfAttributeManager:
         self.global_attributes = CdfAttributeManager._load_yaml_data(
             self.source_dir / DEFAULT_GLOBAL_CDF_ATTRS_FILE
         )
-        self.variable_attributes = dict[Any]  # type: ignore[misc]
-        # TODO change, Type application has too few types (2 expected).
+        self.variable_attributes: dict[str, dict] = dict()
 
-    def _load_default_global_attr_schema(self) -> dict:
+    def _load_default_global_attr_schema(self) -> yaml:
         """
         Load the default global schema from the source directory.
 
@@ -95,11 +93,9 @@ class CdfAttributeManager:
             self.source_dir / "shared" / DEFAULT_GLOBAL_CDF_ATTRS_SCHEMA_FILE
         )
         # Load the Schema
-        return CdfAttributeManager._load_yaml_data(default_schema_path)  # type: ignore[no-any-return]
+        return CdfAttributeManager._load_yaml_data(default_schema_path)
 
-    # TODO Change, Returning Any from function declared to return "dict[Any, Any]"
-
-    def _load_default_variable_attr_schema(self) -> dict:
+    def _load_default_variable_attr_schema(self) -> yaml:
         """
         Load the default variable schema from the source directory.
 
@@ -112,7 +108,7 @@ class CdfAttributeManager:
             self.source_dir / "shared" / DEFAULT_VARIABLE_CDF_ATTRS_SCHEMA_FILE
         )
         # Load the Schema
-        return CdfAttributeManager._load_yaml_data(default_schema_path)  # type: ignore[no-any-return]
+        return CdfAttributeManager._load_yaml_data(default_schema_path)
 
     # TODO Change Returning Any from function declared to return "dict[Any, Any]"
 
@@ -246,5 +242,5 @@ class CdfAttributeManager:
         """
         # TODO: Create a variable attribute schema file, validate here
         if variable_name in self.variable_attributes:
-            return self.variable_attributes[variable_name]  # type: ignore[no-any-return]
+            return self.variable_attributes[variable_name]
         return {}
