@@ -282,6 +282,7 @@ class CdfAttributeManager:
                 self.variable_attribute_schema["attribute_key"][attr_name]["required"]
                 and attr_name not in self._variable_attributes[variable_name]
                 and check_schema is True
+                and attr_name != "DEPEND_0"
             ):
                 # logger.warn()
                 output[attr_name] = ""
