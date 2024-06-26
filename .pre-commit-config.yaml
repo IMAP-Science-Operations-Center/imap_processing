@@ -37,4 +37,13 @@ repos:
     hooks:
       - id: numpydoc-validation
         exclude: '^imap_processing/tests/|.*test.*'
-
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: 'v1.10.0'
+    hooks:
+      - id: mypy
+        pass_filenames: false
+        args: [ ., --strict, --explicit-package-bases,
+                  --disable-error-code, import-untyped,
+                  --disable-error-code, import-not-found,
+                  --disable-error-code, no-untyped-call,
+                  --disable-error-code, type-arg ]
