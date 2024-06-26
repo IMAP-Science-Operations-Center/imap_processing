@@ -13,7 +13,7 @@ import xarray as xr
 
 from imap_processing import decom, imap_module_directory
 from imap_processing.cdf.global_attrs import ConstantCoordinates
-from imap_processing.cdf.utils import convert_met_to_datetime64
+from imap_processing.cdf.utils import met_to_j2000ns
 from imap_processing.ultra import ultra_cdf_attrs
 from imap_processing.ultra.l0.decom_ultra import (
     ULTRA_AUX,
@@ -67,7 +67,9 @@ def initiate_data_arrays(decom_ultra: dict, apid: int):
         raise ValueError(f"APID {apid} not recognized.")
 
     epoch_time = xr.DataArray(
-        convert_met_to_datetime64(raw_time),
+        met_to_j2000ns(
+            raw_time, reference_epoch=np.datetime64("2010-01-01T00:01:06.184", "ns")
+        ),
         name="epoch",
         dims=["epoch"],
         attrs=ConstantCoordinates.EPOCH,

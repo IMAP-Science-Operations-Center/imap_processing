@@ -8,7 +8,7 @@ import xarray as xr
 
 from imap_processing import imap_module_directory
 from imap_processing.cdf.global_attrs import ConstantCoordinates
-from imap_processing.cdf.utils import convert_met_to_datetime64
+from imap_processing.cdf.utils import met_to_j2000ns
 from imap_processing.decom import decom_packets
 from imap_processing.swapi.swapi_cdf_attrs import (
     compression_attrs,
@@ -473,7 +473,7 @@ def process_swapi_science(sci_dataset, data_version: str):
 
     # epoch time. Should be same dimension as number of good sweeps
     epoch_time = good_sweep_sci["epoch"].data.reshape(total_full_sweeps, 12)[:, 0]
-    epoch_converted_time = convert_met_to_datetime64(epoch_time)
+    epoch_converted_time = met_to_j2000ns(epoch_time)
     epoch_time = xr.DataArray(
         epoch_converted_time,
         name="epoch",

@@ -70,7 +70,7 @@ default_epoch: &default_epoch
   TIME_BASE: J2000
   TIME_SCALE: Terrestrial Time
   REFERENCE_POSITION: Rotating Earth Geoid
-  dtype: datetime64[ns]
+  dtype: int64
 
 # ------- L1A DE Section -------
 hi_de_ccsds_met:

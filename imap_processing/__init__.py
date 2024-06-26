@@ -14,8 +14,6 @@ the CDF file format, and to interact with the SPICE toolkit.
 # This directory is used by the imap_processing package to find the packet definitions.
 from pathlib import Path
 
-import numpy as np
-
 from imap_processing._version import __version__, __version_tuple__  # noqa: F401
 
 # Eg. imap_module_directory = /usr/local/lib/python3.11/site-packages/imap_processing
@@ -34,6 +32,3 @@ PROCESSING_LEVELS = {
     "swe": ["l0", "l1a", "l1b", "l2"],
     "ultra": ["l0", "l1a", "l1b", "l1c", "l2"],
 }
-
-# Reference start time (launch time or epoch)
-launch_time = np.datetime64("2010-01-01T00:01:06.184", "ns")
