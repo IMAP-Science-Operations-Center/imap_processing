@@ -7,6 +7,7 @@ Developed based of HermesDataSchema from HERMES-SOC/hermes_core.
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any
 
 import yaml
 
@@ -78,7 +79,8 @@ class CdfAttributeManager:
         self.global_attributes = CdfAttributeManager._load_yaml_data(
             self.source_dir / DEFAULT_GLOBAL_CDF_ATTRS_FILE
         )
-        self.variable_attributes: dict[str, dict]
+        self.variable_attributes = dict[Any]  # type: ignore[misc]
+        # TODO change, Type application has too few types (2 expected).
 
     def _load_default_global_attr_schema(self) -> dict:
         """
@@ -244,5 +246,5 @@ class CdfAttributeManager:
         """
         # TODO: Create a variable attribute schema file, validate here
         if variable_name in self.variable_attributes:
-            return self.variable_attributes[variable_name]
+            return self.variable_attributes[variable_name]  # type: ignore[no-any-return]
         return {}
