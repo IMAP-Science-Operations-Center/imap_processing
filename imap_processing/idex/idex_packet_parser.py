@@ -12,7 +12,7 @@ from enum import IntEnum
 
 import numpy as np
 import xarray as xr
-from space_packet_parser import parser, space_packet_parser, xtcedef
+import space_packet_parser
 
 from imap_processing import imap_module_directory
 from imap_processing.cdf.global_attrs import ConstantCoordinates
