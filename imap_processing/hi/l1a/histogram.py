@@ -7,7 +7,7 @@ import xarray as xr
 from space_packet_parser.parser import Packet
 
 from imap_processing.cdf.global_attrs import ConstantCoordinates
-from imap_processing.cdf.utils import calc_start_time
+from imap_processing.cdf.utils import met_to_j2000ns
 from imap_processing.hi import hi_cdf_attrs
 
 # TODO: Verify that these names are OK for counter variables in the CDF
@@ -57,9 +57,7 @@ def create_dataset(packets: list[Packet]) -> xr.Dataset:
 
     # unpack the packets data into the Dataset
     for i_epoch, packet in enumerate(packets):
-        dataset.epoch.data[i_epoch] = calc_start_time(
-            packet.data["CCSDS_MET"].raw_value
-        )
+        dataset.epoch.data[i_epoch] = met_to_j2000ns(packet.data["CCSDS_MET"].raw_value)
         dataset.ccsds_met[i_epoch] = packet.data["CCSDS_MET"].raw_value
         dataset.esa_step[i_epoch] = packet.data["ESA_STEP"].raw_value
 

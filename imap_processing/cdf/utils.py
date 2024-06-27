@@ -16,39 +16,49 @@ import imap_processing
 logger = logging.getLogger(__name__)
 
 
-def calc_start_time(
-    shcoarse_time: float,
-    launch_time: Optional[np.datetime64] = imap_processing.launch_time,
-) -> np.datetime64:
-    """
-    Calculate the datetime64 from the CCSDS secondary header information.
+# Reference start time (launch time or epoch)
+# DEFAULT_EPOCH = np.datetime64("2010-01-01T00:01:06.184", "ns")
+IMAP_EPOCH = np.datetime64("2010-01-01T00:00:00", "ns")
+J2000_EPOCH = np.datetime64("2000-01-01T11:58:55.816", "ns")
 
-    Since all instrument has SHCOARSE or MET seconds, we need convert it to
-    UTC. Took this from IDEX code.
+
+def met_to_j2000ns(
+    met: np.typing.ArrayLike,
+    reference_epoch: Optional[np.datetime64] = IMAP_EPOCH,
+) -> np.typing.ArrayLike:
+    """
+    Convert mission elapsed time (MET) to nanoseconds from J2000.
 
     Parameters
     ----------
-    shcoarse_time : float
-        Number of seconds since epoch (nominally the launch time).
-    launch_time : np.datetime64
-        The time of launch to use as the baseline.
+    met : array_like
+        Number of seconds since epoch according to the spacecraft clock.
+    reference_epoch : np.datetime64
+        The time of reference for the mission elapsed time. The standard
+        reference time for IMAP is January 1, 2010 00:00:00 UTC. Per APL's
+        IMAP Timekeeping System Design document.
 
     Returns
     -------
-    np.timedelta64
-        The time of the event.
+    array_like or scalar, int64
+        The mission elapsed time converted to nanoseconds since the J2000 epoch.
 
     Notes
     -----
-    TODO - move this into imap-data-access? How should it be used?
-    This conversion is temporary for now, and will need SPICE in the future.
-    Nick Dutton mentioned that s/c clock start epoch is
-        jan-1-2010-00:01:06.184 ET
-    We will use this for now.
+    This conversion is temporary for now, and will need SPICE in the future to
+    account for spacecraft clock drift.
     """
-    # Get the datetime of Jan 1 2010 as the start date
-    time_delta = np.timedelta64(int(shcoarse_time * 1e9), "ns")
-    return launch_time + time_delta
+    # Mission elapsed time is in seconds, convert to nanoseconds
+    # NOTE: We need to multiply the incoming met by 1e9 first because we could have
+    #       float input and we want to keep ns precision in those floats
+    # NOTE: We need int64 here when running on 32bit systems as plain int will default
+    #       to 32bit and overflow due to the nanosecond multiplication
+    time_array = (np.asarray(met, dtype=float) * 1e9).astype(np.int64)
+    # Calculate the time difference between our reference system and J2000
+    j2000_offset = (
+        (reference_epoch - J2000_EPOCH).astype("timedelta64[ns]").astype(np.int64)
+    )
+    return j2000_offset + time_array
 
 
 def load_cdf(
@@ -64,19 +74,14 @@ def load_cdf(
     remove_xarray_attrs : bool
         Whether to remove the xarray attributes that get injected by the
         cdf_to_xarray function from the output xarray.Dataset. Default is True.
-    **kwargs : {dict} optional
-        Keyword arguments for ``cdf_to_xarray``. This function overrides the
-        ``cdf_to_xarray`` default keyword value `to_datetime=False` with
-        ``to_datetime=True`.
+    **kwargs : dict, optional
+        Keyword arguments for ``cdf_to_xarray``.
 
     Returns
     -------
     dataset : xarray.Dataset
         The ``xarray`` dataset for the CDF file.
     """
-    # TODO: remove this when cdflib is updated to version >1.3.0
-    if "to_datetime" not in kwargs:
-        kwargs["to_datetime"] = True
     dataset = cdf_to_xarray(file_path, kwargs)
 
     # cdf_to_xarray converts single-value attributes to lists
@@ -121,9 +126,9 @@ def write_cdf(dataset: xr.Dataset):
     # Create the filename from the global attributes
     # Logical_source looks like "imap_swe_l2_counts-1min"
     instrument, data_level, descriptor = dataset.attrs["Logical_source"].split("_")[1:]
-    start_time = np.datetime_as_string(dataset["epoch"].values[0], unit="D").replace(
-        "-", ""
-    )
+    # Convert J2000 epoch referenced data to datetime64
+    dt64 = J2000_EPOCH + dataset["epoch"].values[0].astype("timedelta64[ns]")
+    start_time = np.datetime_as_string(dt64, unit="D").replace("-", "")
 
     # Will now accept vXXX or XXX formats, as batch starter sends versions as vXXX.
     r = re.compile(r"v\d{3}")
@@ -159,7 +164,6 @@ def write_cdf(dataset: xr.Dataset):
     xarray_to_cdf(
         dataset,
         str(file_path),
-        datetime64_to_cdftt2000=True,
         terminate_on_warning=True,
     )  # Terminate if not ISTP compliant
 
