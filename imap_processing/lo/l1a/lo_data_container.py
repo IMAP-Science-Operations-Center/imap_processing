@@ -1,7 +1,7 @@
 """Container for IMAP-Lo L0 data classes."""
 
 from imap_processing.lo.l0.lo_apid import LoAPID
-from imap_processing.lo.utils.lo_base import LoBase
+from imap_processing.lo.l0.utils.lo_base import LoBase
 
 
 # TODO: Not sure if this class is worth having.
