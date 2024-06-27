@@ -85,6 +85,6 @@ def test_write_lo_l1a_cdfs(direct_events):
     lo_data.add(direct_events[0])
     lo_data.add(direct_events[1])
 
-    created_file_paths = write_lo_l1a_cdfs(lo_data)
+    created_datasets = write_lo_l1a_cdfs(lo_data)
 
-    assert created_file_paths[0].name == "imap_lo_l1a_scide_20240410_v001.cdf"
+    assert created_datasets[0].attrs["Logical_source"] == "imap_lo_l1a_scide"

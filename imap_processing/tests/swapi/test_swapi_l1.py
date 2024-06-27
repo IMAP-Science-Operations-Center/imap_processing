@@ -3,7 +3,7 @@ import pytest
 import xarray as xr
 
 from imap_processing import imap_module_directory
-from imap_processing.cdf.utils import write_cdf
+from imap_processing.cdf.utils import met_to_j2000ns, write_cdf
 from imap_processing.decom import decom_packets
 from imap_processing.swapi.l1.swapi_l1 import (
     SWAPIAPID,
@@ -217,11 +217,7 @@ def test_process_swapi_science(decom_test_data):
     # Test dataset dimensions
     assert processed_data.sizes == {"epoch": 3, "energy": 72}
     # Test epoch data is correct
-    expected_epoch_datetime = [
-        np.datetime64("2010-01-01T00:01:54.184000000"),
-        np.datetime64("2010-01-01T00:02:06.184000000"),
-        np.datetime64("2010-01-01T00:02:18.184000000"),
-    ]
+    expected_epoch_datetime = met_to_j2000ns([48, 60, 72])
     np.testing.assert_array_equal(processed_data["epoch"].data, expected_epoch_datetime)
 
     expected_count = [
