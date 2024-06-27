@@ -548,7 +548,7 @@ class RawDustEvent:
 
     Parameters
     ----------
-    header_packet : space_packet_parser.ParsedPacket
+    header_packet : space_packet_parser.Packet
         The FPGA metadata event header.
 
     Attributes
@@ -585,7 +585,7 @@ class RawDustEvent:
         512  # The number of samples in a "block" of high sample data
     )
 
-    def __init__(self, header_packet: space_packet_parser.ParsedPacket) -> None:
+    def __init__(self, header_packet: space_packet_parser.Packet) -> None:
         """
         Initialize a raw dust event, with an FPGA Header Packet from IDEX.
 
@@ -597,7 +597,7 @@ class RawDustEvent:
 
         Parameters
         ----------
-        header_packet : space_packet_parser.ParsedPacket
+        header_packet : space_packet_parser.Packet
             The FPGA metadata event header.
         """
         # Calculate the impact time in seconds since epoch
@@ -626,7 +626,7 @@ class RawDustEvent:
         self.Target_High_bits = ""
         self.Ion_Grid_bits = ""
 
-    def _set_impact_time(self, packet: space_packet_parser.ParsedPacket) -> None:
+    def _set_impact_time(self, packet: space_packet_parser.Packet) -> None:
         """
         Calculate the datetime64 from the FPGA header information.
 
@@ -634,7 +634,7 @@ class RawDustEvent:
 
         Parameters
         ----------
-        packet : space_packet_parser.ParsedPacket
+        packet : space_packet_parser.Packet
             The IDEX FPGA header packet.
 
         Notes
@@ -657,7 +657,7 @@ class RawDustEvent:
         )
 
     def _set_sample_trigger_times(
-        self, packet: space_packet_parser.ParsedPacket
+        self, packet: space_packet_parser.Packet
     ) -> None:
         """
         Calculate the actual sample trigger time.
@@ -667,7 +667,7 @@ class RawDustEvent:
 
         Parameters
         ----------
-        packet : space_packet_parser.ParsedPacket
+        packet : space_packet_parser.Packet
             The IDEX FPGA header packet info.
 
         Notes
