@@ -202,21 +202,29 @@ def create_datasets(data: dict, data_version, skip_keys=None):
         )
 
         # Create xarray data array for each metadata field
-        for key, value in metadata_arrays.items():
-            if key not in skip_keys:
-                if key == "leak_i":
+        for field, data in metadata_arrays.items():
+            if field not in skip_keys:
+                # Create a list of all the dimensions using the DEPEND_I keys in the
+                # attributes
+                dims = [
+                    value
+                    for key, value in attr_mgr.get_variable_attributes(field).items()
+                    if "DEPEND" in key
+                ]
+                if field == "leak_i":
                     # 2D array - needs two dims
-                    dataset[key] = xr.DataArray(
-                        value,
-                        dims=["epoch", "adc_channels"],
-                        attrs=attr_mgr.get_variable_attributes(key),
+                    dataset[field] = xr.DataArray(
+                        data,
+                        dims=dims,
+                        attrs=attr_mgr.get_variable_attributes(field),
                     )
                 else:
-                    dataset[key] = xr.DataArray(
-                        value,
-                        dims=["epoch"],
-                        attrs=attr_mgr.get_variable_attributes(key),
+                    dataset[field] = xr.DataArray(
+                        data,
+                        dims=dims,
+                        attrs=attr_mgr.get_variable_attributes(field),
                     )
         processed_data[apid] = dataset
     logger.info("HIT L1A datasets created")
     return processed_data
+
