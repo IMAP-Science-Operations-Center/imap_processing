@@ -55,7 +55,8 @@ def lo_l1c(dependencies: dict, data_version: str) -> list[Path]:
             data_field_tup("EXPOSURE_TIME"),
         ]
 
-    dataset = create_datasets(attr_mgr, logical_source, data_fields)
+    dataset: list[Path] = create_datasets(attr_mgr, logical_source, data_fields)  # type: ignore[arg-type]
+    # TODO Remove once data_fields input is removed from create_datasets
     return dataset
 
 

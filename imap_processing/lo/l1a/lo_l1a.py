@@ -71,7 +71,7 @@ def lo_l1a(dependency: Path, data_version: str) -> list[Path]:
         ]
         logical_source = "imap_lo_l1a_spin"
 
-    dataset = create_datasets(attr_mgr, logical_source, data_fields)
+    dataset: list[Path] = create_datasets(attr_mgr, logical_source, data_fields)
 
     return dataset
 
