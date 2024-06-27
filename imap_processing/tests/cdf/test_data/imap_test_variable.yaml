@@ -36,3 +36,6 @@ test_field_2:
 
 test_field_3:
   DEPEND_1: depend_1_test_3
+  DEPEND_1: depend_1_test_3
+  LABL_PTR_1: labl_ptr_1
+  REPRESENTATION_2: representation_2

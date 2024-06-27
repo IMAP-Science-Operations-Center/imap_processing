@@ -107,7 +107,9 @@ def annotate_direct_events(l1a_dataset):
         "quality_flag",
         "nominal_bin",
     ]:
-        attrs = CDF_MANAGER.get_variable_attributes(f"hi_de_{var}", False).copy()
+        attrs = CDF_MANAGER.get_variable_attributes(
+            f"hi_de_{var}", check_schema=False
+        ).copy()
         dtype = attrs.pop("dtype")
         if attrs["FILLVAL"] == "NaN":
             attrs["FILLVAL"] = np.nan

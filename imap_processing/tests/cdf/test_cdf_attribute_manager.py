@@ -342,3 +342,12 @@ def test_get_variable_attributes():
     with pytest.raises(KeyError):
         assert imap_test_variable_3["DEPEND_0"]
     assert imap_test_variable_3["CATDESC"] == ""
+    assert imap_test_variable_3["REPRESENTATION_2"] == "representation_2"
+    assert imap_test_variable_3["LABL_PTR_1"] == "labl_ptr_1"
+
+    # check_schema = False
+    imap_test_variable_1_false = cdf_manager.get_variable_attributes(
+        "test_field_1", False
+    )
+    assert imap_test_variable_1_false["NOT_IN_SCHEMA"] == "not_in_schema"
+    assert imap_test_variable_1_false["VALIDMIN"] == 0

@@ -222,29 +222,6 @@ class CdfAttributeManager:
 
         self._variable_attributes.update(var_attrs)
 
-    # def get_variable_attributes(self, variable_name: str) -> dict:
-    #     """
-    #     Get the attributes for a given variable name.
-    #
-    #     It retrieves the variable from previously loaded variable definition files and
-    #     validates against the defined variable schemas.
-    #
-    #     Parameters
-    #     ----------
-    #     variable_name : str
-    #         The name of the variable to retrieve attributes for.
-    #
-    #     Returns
-    #     -------
-    #     dict
-    #         I have no idea todo check.
-    #     """
-    #     # TODO: Create a variable attribute schema file, validate here
-    #     if variable_name in self._variable_attributes:
-    #         return self._variable_attributes[variable_name]
-    #     # TODO: throw an error?
-    #     return {}
-
     def get_variable_attributes(self, variable_name: str, check_schema=True) -> dict:
         """
         Get the attributes for a given variable name.
@@ -266,45 +243,72 @@ class CdfAttributeManager:
             Information containing specific variable attributes
             associated with "variable_name".
         """
+        # Case to handle attributes not in schema
+        if check_schema is False:
+            if variable_name in self._variable_attributes:
+                return self._variable_attributes[variable_name]
+            # TODO: throw an error?
+            return {}
+
         output = dict()
         for attr_name in self.variable_attribute_schema["attribute_key"]:
-            # Current case to handle hi instruments and avoid "dtype" key error
-            # TODO: Do we want to keep the check_schema flag?
-            if check_schema is False:
-                if variable_name in self._variable_attributes:
-                    return self._variable_attributes[variable_name]
-                # TODO: throw an error?
-                return {}
-            # Standard, expected cases
-            elif attr_name in self._variable_attributes[variable_name]:
+            # Standard case
+            if attr_name in self._variable_attributes[variable_name]:
                 output[attr_name] = self._variable_attributes[variable_name][attr_name]
-            elif attr_name in self._variable_attributes:
-                output[attr_name] = self._variable_attributes[attr_name]
             # Case to handle DEPEND_i schema issues
             elif attr_name == "DEPEND_i":
-                # range(3) because the highest DEPEND_i value is 3.
-                for i in range(3):
-                    attr_name_depend = "DEPEND_" + str(i)
-                    if attr_name_depend in self._variable_attributes[variable_name]:
-                        output[attr_name_depend] = self._variable_attributes[
-                            variable_name
-                        ][attr_name_depend]
-            # Includes attr_name != DEPEND_0 to handle lo_l1a. Because
-            # epoch is not a dimension for some fields, DEPEND_i starts at >=1,
-            # and thus should not be included.
+                # DEFAULT_0 is not required, UNLESS we are dealing with
+                # variable_name = epoch
+                # Find all the attributes of variable_name that contain "DEPEND"
+                variable_depend_attrs = [
+                    key
+                    for key in self._variable_attributes[variable_name].keys()
+                    if "DEPEND" in key
+                ]
+                # Confirm that each DEPEND_i attribute is unique
+                if len(set(variable_depend_attrs)) != len(variable_depend_attrs):
+                    logging.warning(
+                        f"Found duplicate DEPEND_i attribute in variable "
+                        f"{variable_name}: {variable_depend_attrs}"
+                    )
+                for variable_depend_attr in variable_depend_attrs:
+                    output[variable_depend_attr] = self._variable_attributes[
+                        variable_name
+                    ][variable_depend_attr]
+                # TODO: Add more DEPEND_0 variable checks!
+            # Case to handle LABL_PTR_i schema issues
+            elif attr_name == "LABL_PTR_i":
+                # Find all the attributes of variable_name that contain "LABL_PTR"
+                variable_labl_attrs = [
+                    key
+                    for key in self._variable_attributes[variable_name].keys()
+                    if "LABL_PTR" in key
+                ]
+                for variable_labl_attr in variable_labl_attrs:
+                    output[variable_labl_attr] = self._variable_attributes[
+                        variable_name
+                    ][variable_labl_attr]
+            # Case to handle REPRESENTATION_i schema issues
+            elif attr_name == "REPRESENTATION_i":
+                # Find all the attributes of variable_name that contain
+                # "REPRESENTATION_i"
+                variable_rep_attrs = [
+                    key
+                    for key in self._variable_attributes[variable_name].keys()
+                    if "REPRESENTATION" in key
+                ]
+                for variable_rep_attr in variable_rep_attrs:
+                    output[variable_rep_attr] = self._variable_attributes[
+                        variable_name
+                    ][variable_rep_attr]
+            # Validating required schema
             elif (
                 self.variable_attribute_schema["attribute_key"][attr_name]["required"]
                 and attr_name not in self._variable_attributes[variable_name]
-                and attr_name != "DEPEND_0"
             ):
-                if attr_name == "DEPEND_0":
-                    logging.warning(
-                        "Required schema 'DEPEND_0' not present in attributes."
-                    )
-                else:
-                    logging.warning(
-                        "Required schema '" + attr_name + "' attribute not present"
-                    )
-                    output[attr_name] = ""
+                logging.warning(
+                    "Required schema '" + attr_name + "' attribute not present"
+                )
+                output[attr_name] = ""
 
         return output

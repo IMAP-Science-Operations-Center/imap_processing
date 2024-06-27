@@ -102,7 +102,9 @@ def allocate_pset_dataset(n_esa_steps: int, sensor_str: str):
     # preallocate coordinates xr.DataArrays
     coords = dict()
     # epoch coordinate has only 1 entry for pointing set
-    attrs = cdf_manager.get_variable_attributes("hi_pset_epoch", False).copy()
+    attrs = cdf_manager.get_variable_attributes(
+        "hi_pset_epoch", check_schema=False
+    ).copy()
     dtype = attrs.pop("dtype")
     coords["epoch"] = xr.DataArray(
         np.empty(1, dtype=dtype),
@@ -110,7 +112,9 @@ def allocate_pset_dataset(n_esa_steps: int, sensor_str: str):
         dims=["epoch"],
         attrs=attrs,
     )
-    attrs = cdf_manager.get_variable_attributes("hi_pset_esa_step", False).copy()
+    attrs = cdf_manager.get_variable_attributes(
+        "hi_pset_esa_step", check_schema=False
+    ).copy()
     dtype = attrs.pop("dtype")
     coords["esa_step"] = xr.DataArray(
         np.full(n_esa_steps, attrs["FILLVAL"], dtype=dtype),
@@ -119,7 +123,9 @@ def allocate_pset_dataset(n_esa_steps: int, sensor_str: str):
         attrs=attrs,
     )
     # spin angle bins are 0.1 degree bins for full 360 degree spin
-    attrs = cdf_manager.get_variable_attributes("hi_pset_spin_angle_bin", False).copy()
+    attrs = cdf_manager.get_variable_attributes(
+        "hi_pset_spin_angle_bin", check_schema=False
+    ).copy()
     dtype = attrs.pop("dtype")
     coords["spin_angle_bin"] = xr.DataArray(
         np.arange(int(360 / 0.1), dtype=dtype),
@@ -144,7 +150,9 @@ def allocate_pset_dataset(n_esa_steps: int, sensor_str: str):
     ]:
         data_vars[var_name] = full_dataarray(
             var_name,
-            cdf_manager.get_variable_attributes(f"hi_pset_{var_name}", False),
+            cdf_manager.get_variable_attributes(
+                f"hi_pset_{var_name}", check_schema=False
+            ),
             coords,
             shape=var_shapes.get(var_name, None),
         )
@@ -154,19 +162,25 @@ def allocate_pset_dataset(n_esa_steps: int, sensor_str: str):
         coords["esa_step"].values.astype(str),
         name="esa_step_label",
         dims=["esa_step"],
-        attrs=cdf_manager.get_variable_attributes("hi_pset_esa_step_label", False),
+        attrs=cdf_manager.get_variable_attributes(
+            "hi_pset_esa_step_label", check_schema=False
+        ),
     )
     data_vars["spin_bin_label"] = xr.DataArray(
         coords["spin_angle_bin"].values.astype(str),
         name="spin_bin_label",
         dims=["spin_angle_bin"],
-        attrs=cdf_manager.get_variable_attributes("hi_pset_spin_bin_label", False),
+        attrs=cdf_manager.get_variable_attributes(
+            "hi_pset_spin_bin_label", check_schema=False
+        ),
     )
     data_vars["label_vector_HAE"] = xr.DataArray(
         np.array(["x HAE", "y HAE", "z HAE"], dtype=str),
         name="label_vector_HAE",
         dims=[" "],
-        attrs=cdf_manager.get_variable_attributes("hi_pset_label_vector_HAE", False),
+        attrs=cdf_manager.get_variable_attributes(
+            "hi_pset_label_vector_HAE", check_schema=False
+        ),
     )
 
     pset_global_attrs = cdf_manager.get_global_attributes(
