@@ -137,7 +137,7 @@ def get_energy_norm(ssd, composite_energy):
     energy_norm_df = pd.read_csv(energy_norm_path)
 
     row_number = ssd * 4096 + composite_energy
-    norm_composite_energy = energy_norm_df.at[row_number, "NormEnergy"]
+    norm_composite_energy = energy_norm_df["NormEnergy"].iloc[row_number]
 
     return norm_composite_energy
 

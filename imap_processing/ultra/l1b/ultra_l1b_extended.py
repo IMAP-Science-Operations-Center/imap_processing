@@ -164,7 +164,7 @@ def get_front_x_position(start_type: np.array, start_position_tdc: np.array):
     return xf
 
 
-def get_front_y_position(events_dataset: xarray.Dataset, yb: np.array) -> tuple[np.array, np.array]:
+def get_front_y_position(events_dataset: xarray.DataArray, yb: np.array) -> tuple[np.array, np.array]:
     """
     Compute the adjustments for the front y position and distance front to back.
 
@@ -174,7 +174,7 @@ def get_front_y_position(events_dataset: xarray.Dataset, yb: np.array) -> tuple[
 
     Parameters
     ----------
-    events_dataset : xarray.Dataset
+    events_dataset : xarray.DataArray
         Data in xarray format.
     yb : np.array
         y back position in hundredths of a millimeter.
@@ -322,12 +322,15 @@ def get_ssd_offset_and_positions(events_dataset: xarray.Dataset):
     ssd_indices = np.array([], dtype=int)
     ybs = np.array([], dtype=np.float64)
     tof_offsets = np.array([], dtype=np.float64)
+    ssds = np.array([], dtype=int)
 
     # START_TYPE: 1=Left
     indices = np.where((events_dataset["STOP_TYPE"] >= 8) & (events_dataset["START_TYPE"] == 1))[0]
     for i in range(8):
         ssd_index = indices[events_dataset[f"SSD_FLAG_{i}"].data[indices] == 1]
         ssd_indices = np.concatenate((ssd_indices, ssd_index))
+
+        ssds = np.concatenate((ssds, np.full(len(ssd_index), i, dtype=int)))
 
         yb = np.full(len(ssd_index), get_image_params(f"YBKSSD{i}"))
         ybs = np.concatenate((ybs, yb))
@@ -341,6 +344,8 @@ def get_ssd_offset_and_positions(events_dataset: xarray.Dataset):
         ssd_index = indices[events_dataset[f"SSD_FLAG_{i}"].data[indices] == 1]
         ssd_indices = np.concatenate((ssd_indices, ssd_index))
 
+        ssds = np.concatenate((ssds, np.full(len(ssd_index), i, dtype=int)))
+
         yb = np.full(len(ssd_index), get_image_params(f"YBKSSD{i}"))
         ybs = np.concatenate((ybs, yb))
 
@@ -348,7 +353,7 @@ def get_ssd_offset_and_positions(events_dataset: xarray.Dataset):
         tof_offsets = np.concatenate((tof_offsets, tof_offset))
 
     # multiply ybs times 100 to convert to hundredths of a millimeter.
-    return ssd_indices, ybs * 100, tof_offsets
+    return ssd_indices, ybs * 100, tof_offsets, ssds
 
 
 def get_ssd_tof(indices: np.array, events_dataset: xarray.Dataset, xf: np.array):
@@ -383,24 +388,18 @@ def get_ssd_tof(indices: np.array, events_dataset: xarray.Dataset, xf: np.array)
     tof : int
         Time of flight (tenths of a nanosecond).
     """
-    # Start Type: 1=Left, 2=Right
-    index_left = indices[events_dataset["START_TYPE"].data[indices] == 1]
-    index_right = indices[events_dataset["START_TYPE"].data[indices] == 2]
+    ssd_indices, ybs, tof_offsets, ssd = get_ssd_offset_and_positions(events_dataset)
 
-    ssd_indices_left, _, tofs_left = get_ssd_offset_and_positions(index_left, events_dataset, "LT")
-    ssd_indices_right, _, tofs_right = get_ssd_offset_and_positions(index_right, events_dataset, "RT")
-
-    ssd_indices = np.concatenate((ssd_indices_left, ssd_indices_right))
     # in nanoseconds
-    tof_offset = np.concatenate((tofs_left, tofs_right))
-    # this is in nanoseconds: "TOFSSDSC"
-    time = get_image_params("TOFSSDSC") * events_dataset["COIN_DISCRETE_TDC"].data[ssd_indices] + tof_offset
-    # Should be 18 nanoseconds.
+    time = get_image_params("TOFSSDSC") * events_dataset["COIN_DISCRETE_TDC"].data[ssd_indices] + tof_offsets
+
     # The scale factor and offsets, and a multiplier to convert xf to a tof offset.
     tof = time + get_image_params("TOFSSDTOTOFF") + \
           xf[ssd_indices] * get_image_params("XFTTOF")
 
-    return ssd_indices, tof
+    tof = tof.astype(np.float64)
+
+    return ssd_indices, tof, ssd
 
 
 def get_energy_pulse_height(events_dataset: xarray.Dataset,
@@ -455,7 +454,7 @@ def get_energy_pulse_height(events_dataset: xarray.Dataset,
     return energy
 
 
-def get_energy_ssd(index: int, events_dataset: xarray.Dataset):
+def get_energy_ssd(events_dataset: xarray.Dataset, ssd_indices: np.array, ssd: np.array):
     """
     Get SSD energy.
 
@@ -470,31 +469,32 @@ def get_energy_ssd(index: int, events_dataset: xarray.Dataset):
 
     Parameters
     ----------
-    index : int
-        Index of the event.
-    events_dataset : xarray.Dataset
-        Data in xarray format.
+    events_dataset: xarray.Dataset
+        Events dataset.
+    ssd_indices : np.array
+        Indices of the event.
+    ssd : np.array
+        SSD number.
 
     Returns
     -------
     energy : float
-        Energy measured using the SSD (keV).
-    #TODO: make certain units are correct.
+        Energy measured using the SSD.
     """
     # TODO: find a reference for this
     composite_energy_threshold = 1706
 
-    energy = events_dataset["EnergyPH"].data[index]
+    energy = events_dataset["ENERGY_PH"].data[ssd_indices]
 
-    if energy < composite_energy_threshold:
-        composite_energy = energy
-    else:
-        composite_energy = (
-            composite_energy_threshold + events_dataset["PULSE_WIDTH"].data[index]
-        )
+    composite_energy = np.empty(len(energy), dtype=np.float64)
 
-    ssd_indices, _, _ = get_ssd_tof_and_positions(index, events_dataset)
-    energy_norm = get_energy_norm(ssd_indices, composite_energy)
+    composite_energy[energy >= composite_energy_threshold] = (
+            composite_energy_threshold +
+            events_dataset["PULSE_WIDTH"][ssd_indices][energy >= composite_energy_threshold]
+    )
+    composite_energy[energy < composite_energy_threshold] = energy[energy < composite_energy_threshold]
+
+    energy_norm = get_energy_norm(ssd, composite_energy)
 
     return energy_norm
 
