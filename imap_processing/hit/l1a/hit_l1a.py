@@ -59,6 +59,12 @@ def hit_l1a(packet_file: typing.Union[Path, str], data_version: str):
     sorted_packets = utils.sort_by_time(packets, "SHCOARSE")
     grouped_data = group_data(sorted_packets)
 
+    # create the attribute manager for this data level
+    attr_mgr = ImapCdfAttributes()
+    attr_mgr.add_instrument_global_attrs(instrument="hit")
+    attr_mgr.add_instrument_variable_attrs(instrument="hit", level="l1a")
+    attr_mgr.add_global_attribute("Data_version", data_version)
+
     # Create datasets
     # TODO define keys to skip for each apid. Currently just have
     #  a list for housekeeping. Some of these may change later.
@@ -72,7 +78,7 @@ def hit_l1a(packet_file: typing.Union[Path, str], data_version: str):
         "ccsds_header",
         "leak_i_raw",
     ]
-    datasets = create_datasets(grouped_data, data_version, skip_keys)
+    datasets = create_datasets(grouped_data, attr_mgr, skip_keys)
 
     return list(datasets.values())
 
@@ -131,7 +137,7 @@ def group_data(unpacked_data: list):
     return grouped_data
 
 
-def create_datasets(data: dict, data_version, skip_keys=None):
+def create_datasets(data: dict, attr_mgr, skip_keys=None):
     """
     Create a dataset for each APID in the data.
 
@@ -139,10 +145,10 @@ def create_datasets(data: dict, data_version, skip_keys=None):
     ----------
     data : dict
         A single dictionary containing data for all instances of an APID.
-    data_version : str
-        Version of the data product being created.
-    skip_keys : list, Optional
-        Keys to skip in the metadata.
+    attr_mgr : ImapCdfAttributes
+        attribute manager used to get the data product field's attributes
+    skip_keys: list, Optional
+        Keys to skip in the metadata
 
     Returns
     -------
@@ -150,12 +156,6 @@ def create_datasets(data: dict, data_version, skip_keys=None):
         A dictionary containing xarray.Dataset for each APID. Each dataset in the
         dictionary will be converted to a CDF.
     """
-    # create the attribute manager for this data level
-    attr_mgr = ImapCdfAttributes()
-    attr_mgr.add_instrument_global_attrs(instrument="hit")
-    attr_mgr.add_instrument_variable_attrs(instrument="hit", level="l1a")
-    attr_mgr.add_global_attribute("Data_version", data_version)
-
     logger.info("Creating datasets for HIT L1A data")
     processed_data = {}
     for apid, data_packets in data.items():
@@ -227,4 +227,3 @@ def create_datasets(data: dict, data_version, skip_keys=None):
         processed_data[apid] = dataset
     logger.info("HIT L1A datasets created")
     return processed_data
-

@@ -1,7 +1,10 @@
+import pathlib
+
 import pytest
 import xarray as xr
 
 from imap_processing import imap_module_directory, utils
+from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.hit.l0.data_classes.housekeeping import Housekeeping
 from imap_processing.hit.l1a import hit_l1a
 
@@ -67,7 +70,15 @@ def test_create_datasets(unpacked_packets):
         "ccsds_header",
         "leak_i_raw",
     ]
-    datasets_by_apid = hit_l1a.create_datasets(grouped_data, "001", skip_keys=skip_keys)
+
+    attr_mgr = ImapCdfAttributes()
+    attr_mgr.add_instrument_global_attrs(instrument="hit")
+    attr_mgr.add_instrument_variable_attrs(instrument="hit", level="l1a")
+    attr_mgr.add_global_attribute("Data_version", "001")
+
+    datasets_by_apid = hit_l1a.create_datasets(
+        grouped_data, attr_mgr, skip_keys=skip_keys
+    )
     assert len(datasets_by_apid.keys()) == 1
     assert isinstance(datasets_by_apid[hit_l1a.HitAPID.HIT_HSKP], xr.Dataset)
 

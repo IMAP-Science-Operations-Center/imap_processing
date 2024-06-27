@@ -31,6 +31,12 @@ def hit_l1b(l1a_dataset: xr.Dataset, data_version: str):
     cdf_filepaths : xarray.Dataset
         L1B processed data.
     """
+    # create the attribute manager for this data level
+    attr_mgr = ImapCdfAttributes()
+    attr_mgr.add_instrument_global_attrs(instrument="hit")
+    attr_mgr.add_instrument_variable_attrs(instrument="hit", level="l1b")
+    attr_mgr.add_global_attribute("Data_version", data_version)
+
     # TODO: Check for type of L1A dataset and determine what L1B products to make
     #   Need more info from instrument teams. Work with housekeeping data for now
     logical_source = "imap_hit_l1b_hk"
@@ -38,7 +44,7 @@ def hit_l1b(l1a_dataset: xr.Dataset, data_version: str):
     # Create datasets
     datasets = []
     if "_hk" in logical_source:
-        dataset = create_hk_dataset(data_version)
+        dataset = create_hk_dataset(attr_mgr)
         datasets.append(dataset)
     elif "_sci" in logical_source:
         # process science data. placeholder for future code
@@ -48,14 +54,13 @@ def hit_l1b(l1a_dataset: xr.Dataset, data_version: str):
 
 
 # TODO: This is going to work differently when we have sample data
-def create_hk_dataset(data_version):
-    """
-    Create a housekeeping dataset.
+def create_hk_dataset(attr_mgr):
+    """Create a housekeeping dataset.
 
     Parameters
     ----------
-    data_version : str
-        Version of the data product being created.
+    attr_mgr : ImapCdfAttributes
+        attribute manager used to get the data product field's attributes
 
     Returns
     -------
@@ -77,12 +82,6 @@ def create_hk_dataset(data_version):
         "ccsds_header",
         "leak_i_raw",
     ]
-
-    # create the attribute manager for this data level
-    attr_mgr = ImapCdfAttributes()
-    attr_mgr.add_instrument_global_attrs(instrument="hit")
-    attr_mgr.add_instrument_variable_attrs(instrument="hit", level="l1b")
-    attr_mgr.add_global_attribute("Data_version", data_version)
 
     logical_source = "imap_hit_l1b_hk"
 
