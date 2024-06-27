@@ -11,8 +11,9 @@ from collections import namedtuple
 from enum import IntEnum
 
 import numpy as np
-import xarray as xr
 import space_packet_parser
+import xarray as xr
+from space_packet_parser import parser, xtcedef
 
 from imap_processing import imap_module_directory
 from imap_processing.cdf.global_attrs import ConstantCoordinates
