@@ -656,7 +656,9 @@ class RawDustEvent:
             met, reference_epoch=np.datetime64("2012-01-01T00:00:00.000000000")
         )
 
-    def _set_sample_trigger_times(self, packet: space_packet_parser.parser.Packet) -> None:
+    def _set_sample_trigger_times(
+        self, packet: space_packet_parser.parser.Packet
+    ) -> None:
         """
         Calculate the actual sample trigger time.
 
