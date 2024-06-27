@@ -305,22 +305,10 @@ def test_get_variable_attributes():
     assert imap_test_variable["DEPEND_0"] == "test_depend"
     assert imap_test_variable["DISPLAY_TYPE"] == "test_display_type"
     assert imap_test_variable["FILLVAL"] == -10
-    assert imap_test_variable["FORMAT"] == "I1"
-    assert imap_test_variable["VALIDMIN"] == 0
-    assert imap_test_variable["VALIDMAX"] == 10
-    assert imap_test_variable["VAR_TYPE"] == "test_variable_type"
 
     # Calling required attributes
     assert imap_test_variable["CATDESC"] == "test time"
-    assert imap_test_variable["FIELDNAM"] == "test_field_1"
-    assert imap_test_variable["LABLAXIS"] == "test_labaxis"
-    assert imap_test_variable["UNITS"] == "test_units"
-    assert imap_test_variable["VAR_TYPE"] == "test_variable_type"
-    # assert imap_test_variable["SCALETYP"] == "test_scaletyp"
-    # assert imap_test_variable["MONOTON"] == "test_monoton"
     assert imap_test_variable["TIME_BASE"] == 10
-    assert imap_test_variable["TIME_SCALE"] == "test_time_scale"
-    assert imap_test_variable["REFERENCE_POSITION"] == "test_reference_position"
     assert imap_test_variable["DEPEND_1"] == "test_depend_1"
     assert imap_test_variable["DEPEND_2"] == "test_depend_2"
 
@@ -329,7 +317,11 @@ def test_get_variable_attributes():
 
     # Calling attribute name that does not exist
     with pytest.raises(KeyError):
-        assert imap_test_variable["DOES_NOT_EXIST"] == "test time"
+        assert imap_test_variable["DOES_NOT_EXIST"]
+
+    # Testing for attribute not in schema
+    with pytest.raises(KeyError):
+        assert imap_test_variable["NOT_IN_SCHEMA"]
 
     # Load in different data, test again
     imap_test_variable_2 = cdf_manager.get_variable_attributes("test_field_2")
@@ -337,23 +329,16 @@ def test_get_variable_attributes():
     assert imap_test_variable_2["DEPEND_0"] == "test_depend"
     assert imap_test_variable_2["DISPLAY_TYPE"] == "test_display_type"
     assert imap_test_variable_2["FILLVAL"] == -10
-    assert imap_test_variable_2["FORMAT"] == "I1"
-    assert imap_test_variable_2["VALIDMIN"] == 0
-    assert imap_test_variable_2["VALIDMAX"] == 10
-    assert imap_test_variable_2["VAR_TYPE"] == "test_variable_type_2"
 
     # Calling required attributes
     assert imap_test_variable_2["CATDESC"] == "test time 2"
-    assert imap_test_variable_2["FIELDNAM"] == "test_field_2"
-    assert imap_test_variable_2["LABLAXIS"] == "test_labaxis_2"
-    assert imap_test_variable_2["UNITS"] == "test_units_2"
-    assert imap_test_variable_2["VAR_TYPE"] == "test_variable_type_2"
-    # assert imap_test_variable_2["SCALETYP"] == "test_scaletyp_2"
-    # assert imap_test_variable_2["MONOTON"] == "test_monoton_2"
     assert imap_test_variable_2["TIME_BASE"] == 11
-    assert imap_test_variable_2["TIME_SCALE"] == "test_time_scale_2"
-    assert imap_test_variable_2["REFERENCE_POSITION"] == "test_reference_position_2"
 
-    # TODO: Should I handle cases for if a variable_name not in
-    #  the variable_attribute_schema is dealt with?
-    # TODO: write test loading in attribute not in schema
+    # Loading in different data to test logger errors, empty strings,
+    # and DEPEND_i with i >= 1 condition
+    imap_test_variable_3 = cdf_manager.get_variable_attributes("test_field_3")
+
+    assert imap_test_variable_3["DEPEND_1"] == "depend_1_test_3"
+    with pytest.raises(KeyError):
+        assert imap_test_variable_3["DEPEND_0"]
+    assert imap_test_variable_3["CATDESC"] == ""

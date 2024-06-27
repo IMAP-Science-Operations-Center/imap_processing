@@ -15,14 +15,13 @@ test_field_1:
   LABLAXIS: test_labaxis
   UNITS: test_units
   VAR_TYPE: test_variable_type
-  SCALETYP: test_scaletyp
-  MONOTON: test_monoton
   TIME_BASE: 10
   TIME_SCALE: test_time_scale
   REFERENCE_POSITION: test_reference_position
   LEAP_SECONDS_INCLUDED: test_not_required
   DEPEND_1: test_depend_1
   DEPEND_2: test_depend_2
+  NOT_IN_SCHEMA: not_in_schema
 
 test_field_2:
   <<: *default
@@ -31,8 +30,9 @@ test_field_2:
   LABLAXIS: test_labaxis_2
   UNITS: test_units_2
   VAR_TYPE: test_variable_type_2
-  SCALETYP: test_scaletyp_2
-  MONOTON: test_monoton_2
   TIME_BASE: 11
   TIME_SCALE: test_time_scale_2
   REFERENCE_POSITION: test_reference_position_2
+
+test_field_3:
+  DEPEND_1: depend_1_test_3

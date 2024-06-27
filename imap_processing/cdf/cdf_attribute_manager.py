@@ -6,6 +6,7 @@ Developed based of HermesDataSchema from HERMES-SOC/hermes_core.
 
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 
 import yaml
@@ -267,29 +268,43 @@ class CdfAttributeManager:
         """
         output = dict()
         for attr_name in self.variable_attribute_schema["attribute_key"]:
-            if attr_name in self._variable_attributes[variable_name]:
+            # Current case to handle hi instruments and avoid "dtype" key error
+            # TODO: Do we want to keep the check_schema flag?
+            if check_schema is False:
+                if variable_name in self._variable_attributes:
+                    return self._variable_attributes[variable_name]
+                # TODO: throw an error?
+                return {}
+            # Standard, expected cases
+            elif attr_name in self._variable_attributes[variable_name]:
                 output[attr_name] = self._variable_attributes[variable_name][attr_name]
             elif attr_name in self._variable_attributes:
                 output[attr_name] = self._variable_attributes[attr_name]
+            # Case to handle DEPEND_i schema issues
             elif attr_name == "DEPEND_i":
-                for i in range(10):
+                # range(3) because the highest DEPEND_i value is 3.
+                for i in range(3):
                     attr_name_depend = "DEPEND_" + str(i)
                     if attr_name_depend in self._variable_attributes[variable_name]:
                         output[attr_name_depend] = self._variable_attributes[
                             variable_name
                         ][attr_name_depend]
+            # Includes attr_name != DEPEND_0 to handle lo_l1a. Because
+            # epoch is not a dimension for some fields, DEPEND_i starts at >=1,
+            # and thus should not be included.
             elif (
                 self.variable_attribute_schema["attribute_key"][attr_name]["required"]
                 and attr_name not in self._variable_attributes[variable_name]
-                and check_schema is True
                 and attr_name != "DEPEND_0"
             ):
-                # logger.warn()
-                output[attr_name] = ""
-            elif check_schema is False:
-                if variable_name in self._variable_attributes:
-                    return self._variable_attributes[variable_name]
-                # TODO: throw an error?
-                return {}
+                if attr_name == "DEPEND_0":
+                    logging.warning(
+                        "Required schema 'DEPEND_0' not present in attributes."
+                    )
+                else:
+                    logging.warning(
+                        "Required schema '" + attr_name + "' attribute not present"
+                    )
+                    output[attr_name] = ""
 
         return output
