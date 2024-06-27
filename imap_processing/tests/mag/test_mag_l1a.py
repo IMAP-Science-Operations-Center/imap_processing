@@ -3,7 +3,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from imap_processing.cdf.utils import calc_start_time
+from imap_processing.cdf.utils import met_to_j2000ns
 from imap_processing.mag.l0.decom_mag import decom_packets
 from imap_processing.mag.l1a.mag_l1a import process_packets
 from imap_processing.mag.l1a.mag_l1a_data import (
@@ -23,7 +23,7 @@ def test_compare_validation_data():
     l1 = process_packets(l0["norm"])
     # Should have one day of data
     expected_day = np.datetime64("2023-11-30")
-
+    print(l1["mago"])
     l1_mago = l1["mago"][expected_day]
     l1_magi = l1["magi"][expected_day]
 
@@ -102,7 +102,7 @@ def test_calculate_vector_time():
 
     test_data = MagL1a.calculate_vector_time(test_vectors, test_vecsec, start_time)
 
-    converted_start_time_ns = calc_start_time(start_time.to_seconds())
+    converted_start_time_ns = met_to_j2000ns(start_time.to_seconds())
 
     skips_ns = np.timedelta64(int(1 / test_vecsec * 1e9), "ns")
     expected_data = np.array(

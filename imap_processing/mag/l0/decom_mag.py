@@ -14,7 +14,7 @@ from space_packet_parser import parser, xtcedef
 from imap_processing import imap_module_directory
 from imap_processing.ccsds.ccsds_data import CcsdsData
 from imap_processing.cdf.global_attrs import ConstantCoordinates
-from imap_processing.cdf.utils import calc_start_time
+from imap_processing.cdf.utils import met_to_j2000ns
 from imap_processing.mag import mag_cdf_attrs
 from imap_processing.mag.l0.mag_l0_data import MagL0, Mode
 
@@ -111,7 +111,7 @@ def generate_dataset(l0_data: list[MagL0], dataset_attrs: dict) -> xr.Dataset:
             )
         vector_data[index, :vector_len] = datapoint.VECTORS
 
-        shcoarse_data[index] = calc_start_time(datapoint.SHCOARSE)
+        shcoarse_data[index] = met_to_j2000ns(datapoint.SHCOARSE)
         # Add remaining pieces to arrays
         for key, value in dataclasses.asdict(datapoint).items():
             if key not in ("ccsds_header", "VECTORS", "SHCOARSE"):
