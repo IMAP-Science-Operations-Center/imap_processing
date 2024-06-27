@@ -1,6 +1,5 @@
 """Calculates Extended Raw Events for ULTRA L1b."""
 
-# TODO: Decide on consistent fill values.
 import logging
 from collections import defaultdict
 
@@ -18,9 +17,7 @@ from imap_processing.ultra.l1b.lookup_utils import (
 logger = logging.getLogger(__name__)
 
 
-def get_ph_tof_and_back_positions(
-                       events_dataset: xarray.Dataset,
-                       xf: np.array):
+def get_ph_tof_and_back_positions(events_dataset: xarray.Dataset, xf: np.array):
     """
     Calculate back xb, yb position and tof.
 
@@ -111,10 +108,12 @@ def get_ph_tof_and_back_positions(
     yb[index_bottom] = get_back_position(yb_index[stop_type_bottom], "YBkBt", "ultra45")
 
     # Correction for the propagation delay of the start anode and other effects.
-    t2[index_bottom] = get_image_params("TOFSC") * \
-                       t1[stop_type_bottom] + get_image_params("TOFBTOFF")
-    tof[index_bottom] = t2[index_bottom] + \
-                        xf[stop_type_bottom] * get_image_params("XFTTOF")
+    t2[index_bottom] = get_image_params("TOFSC") * t1[
+        stop_type_bottom
+    ] + get_image_params("TOFBTOFF")
+    tof[index_bottom] = t2[index_bottom] + xf[stop_type_bottom] * get_image_params(
+        "XFTTOF"
+    )
 
     # TODO: why mult by 100?
     tof = tof[indices].astype(np.float64) * 100
@@ -164,7 +163,9 @@ def get_front_x_position(start_type: np.array, start_position_tdc: np.array):
     return xf
 
 
-def get_front_y_position(events_dataset: xarray.DataArray, yb: np.array) -> tuple[np.array, np.array]:
+def get_front_y_position(
+    events_dataset: xarray.DataArray, yb: np.array
+) -> tuple[np.array, np.array]:
     """
     Compute the adjustments for the front y position and distance front to back.
 
@@ -207,16 +208,28 @@ def get_front_y_position(events_dataset: xarray.DataArray, yb: np.array) -> tupl
     # Compute adjustments for left start type
     dy_lut_left = np.round((yf_estimate_left - yb[start_type_left] / 100) * 256 / 81.92)
     y_adjust_left = get_y_adjust(dy_lut_left) / 100  # y adjustment in mm
-    yf[index_left] = (yf_estimate_left - y_adjust_left) * 100  # hundredths of a millimeter
-    distance_adjust_left = np.sqrt(2) * d_slit_foil - y_adjust_left  # distance adjustment in mm
+    yf[index_left] = (
+        yf_estimate_left - y_adjust_left
+    ) * 100  # hundredths of a millimeter
+    distance_adjust_left = (
+        np.sqrt(2) * d_slit_foil - y_adjust_left
+    )  # distance adjustment in mm
     d[index_left] = (slit_z - distance_adjust_left) * 100  # hundredths of a millimeter
 
     # Compute adjustments for right start type
-    dy_lut_right = np.round((yb[start_type_right] / 100 - yf_estimate_right) * 256 / 81.92)
+    dy_lut_right = np.round(
+        (yb[start_type_right] / 100 - yf_estimate_right) * 256 / 81.92
+    )
     y_adjust_right = get_y_adjust(dy_lut_right) / 100  # y adjustment in mm
-    yf[index_right] = (yf_estimate_right + y_adjust_right) * 100  # hundredths of a millimeter
-    distance_adjust_right = np.sqrt(2) * d_slit_foil - y_adjust_right  # distance adjustment in mm
-    d[index_right] = (slit_z - distance_adjust_right) * 100  # hundredths of a millimeter
+    yf[index_right] = (
+        yf_estimate_right + y_adjust_right
+    ) * 100  # hundredths of a millimeter
+    distance_adjust_right = (
+        np.sqrt(2) * d_slit_foil - y_adjust_right
+    )  # distance adjustment in mm
+    d[index_right] = (
+        slit_z - distance_adjust_right
+    ) * 100  # hundredths of a millimeter
 
     d = d.astype(np.float64)
     yf = yf.astype(np.float64)
@@ -258,7 +271,6 @@ def get_coincidence_positions(
         coincidence anode (tenths of a nanosecond).
     xc : float
         x coincidence position (hundredths of a millimeter).
-    TODO: where is yc defined in document?
     """
     # TODO: This works for the top and bottom anodes (e.g. TpSpNNorm, BtSpNNorm)?
 
@@ -325,7 +337,9 @@ def get_ssd_offset_and_positions(events_dataset: xarray.Dataset):
     ssds = np.array([], dtype=int)
 
     # START_TYPE: 1=Left
-    indices = np.where((events_dataset["STOP_TYPE"] >= 8) & (events_dataset["START_TYPE"] == 1))[0]
+    indices = np.where(
+        (events_dataset["STOP_TYPE"] >= 8) & (events_dataset["START_TYPE"] == 1)
+    )[0]
     for i in range(8):
         ssd_index = indices[events_dataset[f"SSD_FLAG_{i}"].data[indices] == 1]
         ssd_indices = np.concatenate((ssd_indices, ssd_index))
@@ -339,7 +353,9 @@ def get_ssd_offset_and_positions(events_dataset: xarray.Dataset):
         tof_offsets = np.concatenate((tof_offsets, tof_offset))
 
     # START_TYPE: 2=Right
-    indices = np.where((events_dataset["STOP_TYPE"] >= 8) & (events_dataset["START_TYPE"] == 2))[0]
+    indices = np.where(
+        (events_dataset["STOP_TYPE"] >= 8) & (events_dataset["START_TYPE"] == 2)
+    )[0]
     for i in range(8):
         ssd_index = indices[events_dataset[f"SSD_FLAG_{i}"].data[indices] == 1]
         ssd_indices = np.concatenate((ssd_indices, ssd_index))
@@ -356,7 +372,7 @@ def get_ssd_offset_and_positions(events_dataset: xarray.Dataset):
     return ssd_indices, ybs * 100, tof_offsets, ssds
 
 
-def get_ssd_tof(indices: np.array, events_dataset: xarray.Dataset, xf: np.array):
+def get_ssd_tof(events_dataset: xarray.Dataset, xf: np.array):
     """
     Calculate back xb, yb position for the SSDs.
 
@@ -376,8 +392,6 @@ def get_ssd_tof(indices: np.array, events_dataset: xarray.Dataset, xf: np.array)
 
     Parameters
     ----------
-    index : np.array
-        Indices of the event.
     events_dataset : xarray.Dataset
         Data in xarray format.
     xf : np.array
@@ -391,19 +405,25 @@ def get_ssd_tof(indices: np.array, events_dataset: xarray.Dataset, xf: np.array)
     ssd_indices, ybs, tof_offsets, ssd = get_ssd_offset_and_positions(events_dataset)
 
     # in nanoseconds
-    time = get_image_params("TOFSSDSC") * events_dataset["COIN_DISCRETE_TDC"].data[ssd_indices] + tof_offsets
+    time = (
+        get_image_params("TOFSSDSC")
+        * events_dataset["COIN_DISCRETE_TDC"].data[ssd_indices]
+        + tof_offsets
+    )
 
     # The scale factor and offsets, and a multiplier to convert xf to a tof offset.
-    tof = time + get_image_params("TOFSSDTOTOFF") + \
-          xf[ssd_indices] * get_image_params("XFTTOF")
+    tof = (
+        time
+        + get_image_params("TOFSSDTOTOFF")
+        + xf[ssd_indices] * get_image_params("XFTTOF")
+    )
 
     tof = tof.astype(np.float64)
 
     return ssd_indices, tof, ssd
 
 
-def get_energy_pulse_height(events_dataset: xarray.Dataset,
-                            xb: np.array, yb: np.array):
+def get_energy_pulse_height(events_dataset: xarray.Dataset, xb: np.array, yb: np.array):
     """
     Calculate the pulse-height energy.
 
@@ -454,7 +474,9 @@ def get_energy_pulse_height(events_dataset: xarray.Dataset,
     return energy
 
 
-def get_energy_ssd(events_dataset: xarray.Dataset, ssd_indices: np.array, ssd: np.array):
+def get_energy_ssd(
+    events_dataset: xarray.Dataset, ssd_indices: np.array, ssd: np.array
+):
     """
     Get SSD energy.
 
@@ -489,10 +511,14 @@ def get_energy_ssd(events_dataset: xarray.Dataset, ssd_indices: np.array, ssd: n
     composite_energy = np.empty(len(energy), dtype=np.float64)
 
     composite_energy[energy >= composite_energy_threshold] = (
-            composite_energy_threshold +
-            events_dataset["PULSE_WIDTH"][ssd_indices][energy >= composite_energy_threshold]
+        composite_energy_threshold
+        + events_dataset["PULSE_WIDTH"][ssd_indices][
+            energy >= composite_energy_threshold
+        ]
     )
-    composite_energy[energy < composite_energy_threshold] = energy[energy < composite_energy_threshold]
+    composite_energy[energy < composite_energy_threshold] = energy[
+        energy < composite_energy_threshold
+    ]
 
     energy_norm = get_energy_norm(ssd, composite_energy)
 
@@ -541,7 +567,7 @@ def determine_species_ssd(energy: np.array, tof: np.array, r: np.array):
     # Software Specification document
     dmin = z_ds - np.sqrt(2) * df  # (mm)
     dmin_ssd_ctof = dmin**2 / (dmin - z_dstop)  # (mm)
-    ctof = tof * dmin_ssd_ctof / (r/100)
+    ctof = tof * dmin_ssd_ctof / (r / 100)
 
     bin = 0  # placeholder
 
@@ -554,7 +580,7 @@ def determine_species_ssd(energy: np.array, tof: np.array, r: np.array):
     #     # bin = ExTOFSpeciesFlat[energy, ctof]
 
     # Convert ctof from nanoseconds to tenths of a nanosecond
-    return ctof*10, bin
+    return ctof * 10, bin
 
 
 def determine_species_pulse_height(energy: np.array, tof: np.array, r: np.array):
@@ -641,7 +667,7 @@ def get_particle_velocity(
     # TODO: Ask Ultra team about this.
     if tof[tof < 0].any():
         tof = abs(tof)
-        logging.info(f"Negative tof values found.")
+        logging.info("Negative tof values found.")
 
     delta_x = front_position[0] - back_position[0]
     delta_y = front_position[1] - back_position[1]
@@ -658,23 +684,6 @@ def get_particle_velocity(
     vhat_z = v_z / magnitude_v
 
     return vhat_x, vhat_y, vhat_z
-
-
-def process_count_zero(data_dict: dict):
-    """
-    Append default values for events with count == 0.
-
-    Parameters
-    ----------
-    data_dict : dict
-        Data in dictionary format.
-    """
-    data_dict["front_position"].append((-1, -1))
-    data_dict["back_position"].append((-1, -1))
-    data_dict["tof"].append(-1)
-    data_dict["energy"].append(-1)
-    data_dict["species"].append(-1)
-    data_dict["velocity"].append((-1, -1, -1))
 
 
 def get_path_length(front_position, back_position, d):
@@ -752,7 +761,9 @@ def get_extended_raw_events(events_dataset):
 
         if stop_type in [1, 2]:
             # Process for Top and Bottom stop types
-            tof, particle_tof, xb, yb = get_ph_tof_and_back_positions(index, events_dataset, xf)
+            tof, particle_tof, xb, yb = get_ph_tof_and_back_positions(
+                index, events_dataset, xf
+            )
             d, yf = get_front_y_position(start_type, yb)
             pulse_height = events_dataset["ENERGY_PH"].data[index]
             # TODO stopped here
@@ -777,16 +788,14 @@ def get_extended_raw_events(events_dataset):
 
         data_dict["tof"].append(tof)
         data_dict["energy"].append(energy)
-        # TODO: should we take this from determine_species or event data?
-        # Answer is determine_species and compare with event data
+
+        # Determine_species independenty of event data
         data_dict["species"].append(bin)
         data_dict["velocity"].append(velocity)
 
         coincidence_type = events_dataset["COIN_TYPE"].data[index]
         if coincidence_type in [1, 2]:
             etof, xc = get_coincidence_positions(index, events_dataset, particle_tof)
-            # TODO: equation for yc
-            yc = 0  # placeholder
 
             # Append to dictionary
             data_dict["coincidence_position"].append((xc, yc))

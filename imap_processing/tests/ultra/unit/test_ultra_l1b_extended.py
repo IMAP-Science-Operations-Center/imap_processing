@@ -13,15 +13,15 @@ from imap_processing.ultra.l1a.ultra_l1a import create_dataset
 from imap_processing.ultra.l1b.ultra_l1b_extended import (
     determine_species_pulse_height,
     determine_species_ssd,
-    get_ph_tof_and_back_positions,
+    get_energy_pulse_height,
     get_energy_ssd,
     get_front_x_position,
     get_front_y_position,
     get_particle_velocity,
     get_path_length,
+    get_ph_tof_and_back_positions,
     get_ssd_offset_and_positions,
     get_ssd_tof,
-    get_energy_pulse_height,
 )
 from imap_processing.utils import group_by_apid
 
@@ -32,8 +32,12 @@ def events_dataset(ccsds_path_theta_0, xtce_path):
     packets = decom.decom_packets(ccsds_path_theta_0, xtce_path)
     grouped_data = group_by_apid(packets)
 
-    decom_ultra_events = process_ultra_apids(grouped_data[ULTRA_EVENTS.apid[0]], ULTRA_EVENTS.apid[0])
-    decom_ultra_aux = process_ultra_apids(grouped_data[ULTRA_AUX.apid[0]], ULTRA_AUX.apid[0])
+    decom_ultra_events = process_ultra_apids(
+        grouped_data[ULTRA_EVENTS.apid[0]], ULTRA_EVENTS.apid[0]
+    )
+    decom_ultra_aux = process_ultra_apids(
+        grouped_data[ULTRA_AUX.apid[0]], ULTRA_AUX.apid[0]
+    )
 
     dataset = create_dataset(
         {
@@ -69,11 +73,13 @@ def test_get_front_x_position(
 
     # TODO: should we try to match FSW data on this?
     # The value 180 was added to xf_1 since that is the offset from the FSW xft_off
-    assert np.allclose(xf[indices_1] + 180,
-                       selected_rows_1.Xf.values.astype("float"), rtol=1e-3)
+    assert np.allclose(
+        xf[indices_1] + 180, selected_rows_1.Xf.values.astype("float"), rtol=1e-3
+    )
     # The value 25 was subtracted from xf_2 bc that is the offset from the FSW xft_off
-    assert np.allclose(xf[indices_2] - 25,
-                       selected_rows_2.Xf.values.astype("float"), rtol=1e-3)
+    assert np.allclose(
+        xf[indices_2] - 25, selected_rows_2.Xf.values.astype("float"), rtol=1e-3
+    )
 
 
 def test_ph_xb_yb(
@@ -115,10 +121,12 @@ def test_get_ssd_offset_and_positions(
 
     # -4 is a value of an offset for SSD3 for Left Start Type and SSD0 for Right Start Type.
     offset_length = len(tof_offsets[tof_offsets == -4])
-    expected_offset_length = len(selected_rows[((selected_rows["StartType"]==1) &
-                                                (selected_rows["SSDS3"]==1)) |
-                                               ((selected_rows["StartType"]==2) &
-                                                (selected_rows["SSDS4"]==1))])
+    expected_offset_length = len(
+        selected_rows[
+            ((selected_rows["StartType"] == 1) & (selected_rows["SSDS3"] == 1))
+            | ((selected_rows["StartType"] == 2) & (selected_rows["SSDS4"] == 1))
+        ]
+    )
 
     assert offset_length == expected_offset_length
 
@@ -158,7 +166,9 @@ def test_ph_velocity(
     r = df_filt["r"].iloc[indices].astype("float")
 
     # TODO: needs lookup table to test bin
-    ctof, bin = determine_species_pulse_height(test_energy.to_numpy(), tof, r.to_numpy())
+    ctof, bin = determine_species_pulse_height(
+        test_energy.to_numpy(), tof, r.to_numpy()
+    )
     assert ctof == pytest.approx(
         df_filt["cTOF"].iloc[indices].astype("float"), rel=1e-3
     )
@@ -182,8 +192,8 @@ def test_ph_velocity(
 
 
 def test_ssd_velocity(
-        events_fsw_comparison_theta_0,
-        events_dataset,
+    events_fsw_comparison_theta_0,
+    events_dataset,
 ):
     """Tests velocity and other parameters used for velocity."""
 
@@ -198,13 +208,15 @@ def test_ssd_velocity(
     energy = get_energy_ssd(events_dataset, ssd_indices, ssd)
     test_energy = df_filt["Energy"].iloc[ssd_indices].astype("float")
 
+    # TODO: the last values don't match. Look into this.
     assert np.array_equal(test_energy[0:385], energy[0:385].astype(float))
 
     r = df_filt["r"].astype("float")
 
     # TODO: needs lookup table to test bin
-    # Something wrong here now.
-    ctof, bin = determine_species_ssd(test_energy.iloc[ssd_indices].to_numpy(), tof, r.iloc[ssd_indices].to_numpy())
+    ctof, bin = determine_species_ssd(
+        test_energy.to_numpy(), tof, r.iloc[ssd_indices].to_numpy()
+    )
     test_ctof = df_filt["cTOF"].iloc[ssd_indices].astype("float")
 
     # TODO: the last values don't match. Look into this.

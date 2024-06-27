@@ -3,18 +3,18 @@
 import numpy as np
 import xarray as xr
 
-from imap_processing.ultra.utils.ultra_l1_utils import create_dataset
 from imap_processing.ultra.l1b.ultra_l1b_extended import (
+    determine_species_pulse_height,
+    get_energy_pulse_height,
     get_front_x_position,
+    get_front_y_position,
+    get_particle_velocity,
+    get_path_length,
     get_ph_tof_and_back_positions,
     get_ssd_offset_and_positions,
-    get_front_y_position,
-    get_energy_pulse_height,
-    get_path_length,
-    determine_species_pulse_height,
-    get_particle_velocity,
     get_ssd_tof,
 )
+from imap_processing.ultra.utils.ultra_l1_utils import create_dataset
 
 
 def calculate_de(de_dataset: xr.Dataset, name: str) -> xr.Dataset:
@@ -40,13 +40,14 @@ def calculate_de(de_dataset: xr.Dataset, name: str) -> xr.Dataset:
     de_dict["epoch"] = de_dataset["epoch"]
 
     # Pulse height
-    ph_indices = np.where((de_dataset["STOP_TYPE"] == 1) | (de_dataset["STOP_TYPE"] == 2))
+    ph_indices = np.where(
+        (de_dataset["STOP_TYPE"] == 1) | (de_dataset["STOP_TYPE"] == 2)
+    )
     ph_xf = get_front_x_position(
         de_dataset["START_TYPE"].data[ph_indices],
         de_dataset["START_POS_TDC"].data[ph_indices],
     )
-    ph_tof, ph_t2, ph_xb, ph_yb = \
-        get_ph_tof_and_back_positions(de_dataset, ph_xf)
+    ph_tof, ph_t2, ph_xb, ph_yb = get_ph_tof_and_back_positions(de_dataset, ph_xf)
     ph_d, ph_yf = get_front_y_position(de_dataset[ph_indices], ph_yb)
     energy = get_energy_pulse_height(de_dataset, ph_xb, ph_yb)
 
@@ -62,7 +63,7 @@ def calculate_de(de_dataset: xr.Dataset, name: str) -> xr.Dataset:
     )
 
     # SSD
-    ssd_indices = np.where((de_dataset["STOP_TYPE"] >= 8))
+    ssd_indices = np.where(de_dataset["STOP_TYPE"] >= 8)
     ssd_xf = get_front_x_position(
         de_dataset["START_TYPE"].data[ssd_indices],
         de_dataset["START_POS_TDC"].data[ssd_indices],
@@ -85,6 +86,8 @@ def calculate_de(de_dataset: xr.Dataset, name: str) -> xr.Dataset:
     de_dict["vz_ultra"] = np.zeros(len(epoch), dtype=np.float64)
     de_dict["energy"] = np.zeros(len(epoch), dtype=np.uint64)
     de_dict["species"] = np.zeros(len(epoch), dtype=np.uint64)
+
+    # TODO: add more fields in the future
     de_dict["event_efficiency"] = np.zeros(len(epoch), dtype=np.float64)
     de_dict["vx_sc"] = np.zeros(len(epoch), dtype=np.float64)
     de_dict["vy_sc"] = np.zeros(len(epoch), dtype=np.float64)
