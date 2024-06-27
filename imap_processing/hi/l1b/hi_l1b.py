@@ -1,14 +1,12 @@
 """IMAP-HI L1B processing module."""
 
 import logging
-from pathlib import Path
 
 import numpy as np
 import xarray as xr
 
 from imap_processing import imap_module_directory
 from imap_processing.cdf.cdf_attribute_manager import CdfAttributeManager
-from imap_processing.cdf.utils import load_cdf
 from imap_processing.hi.utils import HIAPID
 from imap_processing.utils import convert_raw_to_eu
 
@@ -18,14 +16,14 @@ CDF_MANAGER.load_global_attributes("imap_hi_global_cdf_attrs.yaml")
 CDF_MANAGER.load_variable_attributes("imap_hi_variable_attrs.yaml")
 
 
-def hi_l1b(l1a_cdf_path: Path, data_version: str):
+def hi_l1b(l1a_dataset: xr.Dataset, data_version: str):
     """
     High level IMAP-HI L1B processing function.
 
     Parameters
     ----------
-    l1a_cdf_path : pathlib.Path
-        Path to L1A CDF file.
+    l1a_dataset : xarray.Dataset
+        L1A dataset to process.
     data_version : str
         Version of the data product being created.
 
@@ -34,8 +32,9 @@ def hi_l1b(l1a_cdf_path: Path, data_version: str):
     l1b_dataset : xarray.Dataset
         Processed xarray dataset.
     """
-    logger.info(f"Running Hi L1B processing on file: {l1a_cdf_path.name}")
-    l1a_dataset = load_cdf(l1a_cdf_path)
+    logger.info(
+        f"Running Hi L1B processing on dataset: {l1a_dataset.attrs['Logical_source']}"
+    )
     logical_source_parts = l1a_dataset.attrs["Logical_source"].split("_")
     # TODO: apid is not currently stored in all L1A data but should be.
     #    Use apid to determine what L1B processing function to call

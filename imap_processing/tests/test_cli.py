@@ -16,12 +16,14 @@ def mock_instrument_dependencies():
         mock.patch("imap_processing.cli.imap_data_access.download") as mock_download,
         mock.patch("imap_processing.cli.imap_data_access.upload") as mock_upload,
         mock.patch("imap_processing.cli.write_cdf") as mock_write_cdf,
+        mock.patch("imap_processing.cli.load_cdf") as mock_load_cdf,
     ):
         mocks = {
             "mock_query": mock_query,
             "mock_download": mock_download,
             "mock_upload": mock_upload,
             "mock_write_cdf": mock_write_cdf,
+            "mock_load_cdf": mock_load_cdf,
         }
         yield mocks
 
@@ -114,6 +116,7 @@ def test_hi_l1(mock_instrument_dependencies, data_level, n_prods):
     mocks["mock_query"].return_value = [{"file_path": "/path/to/file0"}]
     mocks["mock_download"].return_value = "file0"
     mocks["mock_write_cdf"].side_effect = ["/path/to/file0", "/path/to/file1"]
+    mocks["mock_load_cdf"].return_value = xr.Dataset()
 
     # patch autospec=True makes this test confirm that the function call in cli.py
     # matches the mocked function signature.

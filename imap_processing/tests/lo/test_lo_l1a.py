@@ -6,18 +6,18 @@ from imap_processing.lo.l1a.lo_l1a import lo_l1a
 
 
 @pytest.mark.parametrize(
-    ("dependency", "expected_out"),
+    ("dependency", "expected_logical_source"),
     [
-        (Path("imap_lo_l0_de_20100101_v001.pkts"), "imap_lo_l1a_de_20100101_v001.cdf"),
+        (Path("imap_lo_l0_de_20100101_v001.pkts"), "imap_lo_l1a_de"),
         (
             Path("imap_lo_l0_spin_20100101_v001.pkt"),
-            "imap_lo_l1a_spin_20100101_v001.cdf",
+            "imap_lo_l1a_spin",
         ),
     ],
 )
-def test_lo_l1a(dependency, expected_out):
+def test_lo_l1a(dependency, expected_logical_source):
     # Act
-    output_file = lo_l1a(dependency, "001")
+    output_dataset = lo_l1a(dependency, "001")
 
     # Assert
-    assert expected_out == output_file.name
+    assert expected_logical_source == output_dataset.attrs["Logical_source"]
