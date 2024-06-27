@@ -1,4 +1,3 @@
-# TODO: test get_energy_pulse_height
 import numpy as np
 import pandas as pd
 import pytest
@@ -14,50 +13,27 @@ from imap_processing.ultra.l1a.ultra_l1a import create_dataset
 from imap_processing.ultra.l1b.ultra_l1b_extended import (
     determine_species_pulse_height,
     determine_species_ssd,
-    get_back_positions,
+    get_ph_tof_and_back_positions,
     get_front_x_position,
     get_front_y_position,
     get_particle_velocity,
     get_path_length,
-    get_ssd_index,
-    get_ssd_positions,
+    get_ssd_offset_and_positions,
+    get_ssd_tof,
     get_energy_pulse_height,
 )
 from imap_processing.utils import group_by_apid
 
 
 @pytest.fixture()
-def decom_ultra_aux(ccsds_path_theta_0, xtce_path):
-    """Data for decom_ultra_aux"""
+def events_dataset(ccsds_path_theta_0, xtce_path):
+    """Test data"""
     packets = decom.decom_packets(ccsds_path_theta_0, xtce_path)
     grouped_data = group_by_apid(packets)
 
-    data_packet_list = process_ultra_apids(
-        grouped_data[ULTRA_AUX.apid[0]], ULTRA_AUX.apid[0]
-    )
-    return data_packet_list
+    decom_ultra_events = process_ultra_apids(grouped_data[ULTRA_EVENTS.apid[0]], ULTRA_EVENTS.apid[0])
+    decom_ultra_aux = process_ultra_apids(grouped_data[ULTRA_AUX.apid[0]], ULTRA_AUX.apid[0])
 
-
-@pytest.mark.parametrize(
-    "decom_test_data",
-    [
-        pytest.param(
-            {
-                "apid": ULTRA_EVENTS.apid[0],
-                "filename": "FM45_40P_Phi28p5_BeamCal_LinearScan_phi28.50"
-                "_theta-0.00_20240207T102740.CCSDS",
-            },
-        )
-    ],
-    indirect=True,
-)
-def test_get_front_x_position(
-    decom_test_data,
-    decom_ultra_aux,
-    events_fsw_comparison_theta_0,
-):
-    """Tests get_front_x_position function."""
-    decom_ultra_events, _ = decom_test_data
     dataset = create_dataset(
         {
             ULTRA_EVENTS.apid[0]: decom_ultra_events,
@@ -69,8 +45,14 @@ def test_get_front_x_position(
     events_dataset = dataset.where(
         dataset["START_TYPE"] != GlobalConstants.INT_FILLVAL, drop=True
     )
+    return events_dataset
 
-    # Check top and bottom
+
+def test_get_front_x_position(
+    events_dataset,
+    events_fsw_comparison_theta_0,
+):
+    """Tests get_front_x_position function."""
     indices_1 = np.where(events_dataset["START_TYPE"] == 1)[0]
     indices_2 = np.where(events_dataset["START_TYPE"] == 2)[0]
 
@@ -79,54 +61,26 @@ def test_get_front_x_position(
     selected_rows_1 = df_filt.iloc[indices_1]
     selected_rows_2 = df_filt.iloc[indices_2]
 
-    xf_1 = get_front_x_position(
-        events_dataset["START_TYPE"].data[indices_1],
-        events_dataset["START_POS_TDC"].data[indices_1],
-    )
-    xf_2 = get_front_x_position(
-        events_dataset["START_TYPE"].data[indices_2],
-        events_dataset["START_POS_TDC"].data[indices_2],
+    xf = get_front_x_position(
+        events_dataset["START_TYPE"].data,
+        events_dataset["START_POS_TDC"].data,
     )
 
+    # TODO: should we try to match FSW data on this?
     # The value 180 was added to xf_1 since that is the offset from the FSW xft_off
-    assert np.allclose(xf_1 + 180, selected_rows_1.Xf.values.astype("float"), rtol=1e-3)
+    assert np.allclose(xf[indices_1] + 180,
+                       selected_rows_1.Xf.values.astype("float"), rtol=1e-3)
     # The value 25 was subtracted from xf_2 bc that is the offset from the FSW xft_off
-    assert np.allclose(xf_2 - 25, selected_rows_2.Xf.values.astype("float"), rtol=1e-3)
+    assert np.allclose(xf[indices_2] - 25,
+                       selected_rows_2.Xf.values.astype("float"), rtol=1e-3)
 
 
-@pytest.mark.parametrize(
-    "decom_test_data",
-    [
-        pytest.param(
-            {
-                "apid": ULTRA_EVENTS.apid[0],
-                "filename": "FM45_40P_Phi28p5_BeamCal_LinearScan_phi28.50"
-                "_theta-0.00_20240207T102740.CCSDS",
-            },
-        )
-    ],
-    indirect=True,
-)
-def test_xb_yb(
-    decom_test_data,
-    decom_ultra_aux,
+def test_ph_xb_yb(
+    events_dataset,
     events_fsw_comparison_theta_0,
 ):
     """Tests xb and yb from get_back_positions function."""
-    decom_ultra_events, _ = decom_test_data
-    dataset = create_dataset(
-        {
-            ULTRA_EVENTS.apid[0]: decom_ultra_events,
-            ULTRA_AUX.apid[0]: decom_ultra_aux,
-        }
-    )
 
-    # Remove start_type with fill values
-    events_dataset = dataset.where(
-        dataset["START_TYPE"] != GlobalConstants.INT_FILLVAL, drop=True
-    )
-
-    # Check top and bottom
     indices_1 = np.where(events_dataset["STOP_TYPE"] == 1)[0]
     indices_2 = np.where(events_dataset["STOP_TYPE"] == 2)[0]
 
@@ -137,49 +91,20 @@ def test_xb_yb(
     df_filt = df[df["StartType"] != -1]
     selected_rows_1 = df_filt.iloc[indices]
 
-    _, _, xb, yb = get_back_positions(
-        indices, events_dataset, selected_rows_1.Xf.values.astype("float")
+    _, _, xb, yb = get_ph_tof_and_back_positions(
+        events_dataset, selected_rows_1.Xf.values.astype("float")
     )
 
     np.testing.assert_array_equal(xb[indices], selected_rows_1["Xb"].astype("float"))
     np.testing.assert_array_equal(yb[indices], selected_rows_1["Yb"].astype("float"))
 
 
-@pytest.mark.parametrize(
-    "decom_test_data",
-    [
-        pytest.param(
-            {
-                "apid": ULTRA_EVENTS.apid[0],
-                "filename": "FM45_40P_Phi28p5_BeamCal_LinearScan_phi28.50"
-                "_theta-0.00_20240207T102740.CCSDS",
-            },
-        )
-    ],
-    indirect=True,
-)
-def test_yb_ssd(
-    decom_test_data,
-    decom_ultra_aux,
+def test_get_ssd_offset_and_positions(
+    events_dataset,
     events_fsw_comparison_theta_0,
 ):
-    """Tests yb from get_ssd_index function."""
-    decom_ultra_events, _ = decom_test_data
-    dataset = create_dataset(
-        {
-            ULTRA_EVENTS.apid[0]: decom_ultra_events,
-            ULTRA_AUX.apid[0]: decom_ultra_aux,
-        }
-    )
-
-    # Remove start_type with fill values
-    events_dataset = dataset.where(
-        dataset["START_TYPE"] != GlobalConstants.INT_FILLVAL, drop=True
-    )
-
-    indices = np.where(events_dataset["STOP_TYPE"] >= 8)[0]
-
-    ssd_indices, ybs, _ = get_ssd_index(indices, events_dataset, "LT")
+    """Tests get_ssd_offset_and_positions function."""
+    ssd_indices, ybs, tof_offsets = get_ssd_offset_and_positions(events_dataset)
 
     df = pd.read_csv(events_fsw_comparison_theta_0)
     df_filt = df[df["StartType"] != -1]
@@ -187,43 +112,22 @@ def test_yb_ssd(
 
     np.testing.assert_array_equal(ybs, selected_rows["Yb"].astype("float"))
 
+    # -4 is a value of an offset for SSD3 for Left Start Type and SSD0 for Right Start Type.
+    offset_length = len(tof_offsets[tof_offsets == -4])
+    expected_offset_length = len(selected_rows[((selected_rows["StartType"]==1) &
+                                                (selected_rows["SSDS3"]==1)) |
+                                               ((selected_rows["StartType"]==2) &
+                                                (selected_rows["SSDS4"]==1))])
 
-@pytest.mark.parametrize(
-    "decom_test_data",
-    [
-        pytest.param(
-            {
-                "apid": ULTRA_EVENTS.apid[0],
-                "filename": "FM45_40P_Phi28p5_BeamCal_LinearScan_phi28.50"
-                "_theta-0.00_20240207T102740.CCSDS",
-            },
-        )
-    ],
-    indirect=True,
-)
-def test_velocity(
+    assert offset_length == expected_offset_length
+
+
+def test_ph_velocity(
     events_fsw_comparison_theta_0,
-    decom_test_data,
-    decom_ultra_aux,
+    events_dataset,
 ):
     """Tests velocity and other parameters used for velocity."""
-    decom_ultra_events, _ = decom_test_data
-    dataset = create_dataset(
-        {
-            ULTRA_EVENTS.apid[0]: decom_ultra_events,
-            ULTRA_AUX.apid[0]: decom_ultra_aux,
-        }
-    )
-
-    # Remove start_type with fill values
-    events_dataset = dataset.where(
-        dataset["START_TYPE"] != GlobalConstants.INT_FILLVAL, drop=True
-    )
-
-    indices_1 = np.where(events_dataset["STOP_TYPE"] == 1)[0]
-    indices_2 = np.where(events_dataset["STOP_TYPE"] == 2)[0]
-    indices = np.concatenate((indices_1, indices_2))
-    indices.sort()
+    indices = np.where(np.isin(events_dataset["STOP_TYPE"], [1, 2]))[0]
 
     df = pd.read_csv(events_fsw_comparison_theta_0)
     df_filt = df[df["StartType"] != -1]
@@ -233,36 +137,36 @@ def test_velocity(
 
     assert yf == pytest.approx(df_filt["Yf"].astype("float"), 1e-3)
 
-    xf_test = df_filt["Xf"].astype("float").values
-    yf_test = df_filt["Yf"].astype("float").values
+    test_xf = df_filt["Xf"].astype("float").values
+    test_yf = df_filt["Yf"].astype("float").values
 
-    xb_test = df_filt["Xb"].astype("float").values
-    yb_test = df_filt["Yb"].astype("float").values
+    test_xb = df_filt["Xb"].astype("float").values
+    test_yb = df_filt["Yb"].astype("float").values
 
-    r = get_path_length((xf_test, yf_test), (xb_test, yb_test), d)
+    r = get_path_length((test_xf, test_yf), (test_xb, test_yb), d)
     assert r == pytest.approx(df_filt["r"].astype("float"), rel=1e-3)
 
     # TODO: test get_energy_pulse_height
-    energy = get_energy_pulse_height(events_dataset, indices_1, indices_2, xb_test, yb_test)
+    energy = get_energy_pulse_height(events_dataset, test_xb, test_yb)
 
     # TODO: needs lookup table to test bin
-    tof, t2, xb, yb = get_back_positions(
-        indices, events_dataset, selected_rows_1.Xf.values.astype("float")
+    tof, t2, xb, yb = get_ph_tof_and_back_positions(
+        events_dataset, selected_rows_1.Xf.values.astype("float")
     )
 
-    energy = df_filt["Energy"].iloc[indices].astype("float")
+    test_energy = df_filt["Energy"].iloc[indices].astype("float")
     r = df_filt["r"].iloc[indices].astype("float")
 
-    ctof, bin = determine_species_pulse_height(energy.to_numpy(), tof[indices] * 100, r.to_numpy())
-    assert ctof.values == pytest.approx(
-        df_filt["cTOF"].iloc[indices].astype("float").values, rel=1e-3
+    ctof, bin = determine_species_pulse_height(test_energy.to_numpy(), tof, r.to_numpy())
+    assert ctof == pytest.approx(
+        df_filt["cTOF"].iloc[indices].astype("float"), rel=1e-3
     )
 
     vhat_x, vhat_y, vhat_z = get_particle_velocity(
-        (xf_test[indices], yf_test[indices]),
-        (xb_test[indices], yb_test[indices]),
+        (test_xf[indices], test_yf[indices]),
+        (test_xb[indices], test_yb[indices]),
         d[indices],
-        tof[indices],
+        tof,
     )
 
     assert vhat_x == pytest.approx(
@@ -276,37 +180,11 @@ def test_velocity(
     )
 
 
-@pytest.mark.parametrize(
-    "decom_test_data",
-    [
-        pytest.param(
-            {
-                "apid": ULTRA_EVENTS.apid[0],
-                "filename": "FM45_40P_Phi28p5_BeamCal_LinearScan_phi28.50"
-                            "_theta-0.00_20240207T102740.CCSDS",
-            },
-        )
-    ],
-    indirect=True,
-)
 def test_determine_species_ssd(
         events_fsw_comparison_theta_0,
-        decom_test_data,
-        decom_ultra_aux,
+        events_dataset,
 ):
     """Tests velocity and other parameters used for velocity."""
-    decom_ultra_events, _ = decom_test_data
-    dataset = create_dataset(
-        {
-            ULTRA_EVENTS.apid[0]: decom_ultra_events,
-            ULTRA_AUX.apid[0]: decom_ultra_aux,
-        }
-    )
-
-    # Remove start_type with fill values
-    events_dataset = dataset.where(
-        dataset["START_TYPE"] != GlobalConstants.INT_FILLVAL, drop=True
-    )
 
     indices = np.where(events_dataset["STOP_TYPE"] >= 8)[0]
     df = pd.read_csv(events_fsw_comparison_theta_0)
@@ -314,25 +192,12 @@ def test_determine_species_ssd(
 
     xf = df_filt["Xf"].astype("float").values
 
-    z_dstop = 2.6 / 2  # position of stop foil on Z axis (mm)
-    z_ds = 46.19 - z_dstop  # position of slit on Z axis (mm)
-    df = 3.39  # distance from slit to foil (mm)
+    ssd_indices, tof = get_ssd_tof(indices, events_dataset, xf)
 
-    # PH event TOF normalization to Z axis
-    # Note: there is a type in IMAP-Ultra Flight
-    # Software Specification document
-    dmin = z_ds - np.sqrt(2) * df  # (mm)
-    dmin_ssd_ctof = dmin ** 2 / (dmin - z_dstop)  # (mm)
-
-    ssd_indices, tof = get_ssd_positions(indices, events_dataset, xf)
-    #print('hi')
-    #tof = (ctof * r) / dmin_ssd_ctof
     energy = df_filt["Energy"].astype("float")
-
     r = df_filt["r"].astype("float")
 
-    ctof, bin = determine_species_ssd(energy.iloc[ssd_indices].to_numpy(), tof * 100, r.iloc[ssd_indices].to_numpy())
-    print('hi')
-    ctof = df_filt["cTOF"].iloc[ssd_indices].astype("float")
+    ctof, bin = determine_species_ssd(energy.iloc[ssd_indices].to_numpy(), tof, r.iloc[ssd_indices].to_numpy())
+    test_ctof = df_filt["cTOF"].iloc[ssd_indices].astype("float")
 
-
+    assert ctof == pytest.approx(test_ctof.values, rel=1e-1)
