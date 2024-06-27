@@ -79,7 +79,7 @@ def create_hk_dataset():
     # Create fake data for now
 
     # Convert integers into datetime64[s]
-    epoch_converted_time = [utils.calc_start_time(time) for time in [0, 1, 2]]
+    epoch_converted_time = utils.met_to_j2000ns([0, 1, 2])
 
     # Shape for dims
     n_epoch = 3
