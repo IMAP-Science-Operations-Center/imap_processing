@@ -10,7 +10,7 @@ import xarray as xr
 from space_packet_parser.parser import Packet
 
 from imap_processing.cdf.global_attrs import ConstantCoordinates
-from imap_processing.cdf.utils import calc_start_time
+from imap_processing.cdf.utils import met_to_j2000ns
 from imap_processing.common_cdf_attrs import metadata_attrs
 
 logger = logging.getLogger(__name__)
@@ -239,7 +239,7 @@ def update_epoch_to_datetime(dataset: xr.Dataset):
         Dataset with updated epoch dimension from int to datetime object.
     """
     # convert epoch to datetime
-    epoch_converted_time = [calc_start_time(time) for time in dataset["epoch"].data]
+    epoch_converted_time = met_to_j2000ns(dataset["epoch"])
     # add attrs back to epoch
     epoch = xr.DataArray(
         epoch_converted_time,

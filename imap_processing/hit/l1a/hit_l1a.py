@@ -12,7 +12,6 @@ import xarray as xr
 
 from imap_processing import decom, imap_module_directory, utils
 from imap_processing.cdf.global_attrs import ConstantCoordinates
-from imap_processing.cdf.utils import write_cdf
 from imap_processing.hit import hit_cdf_attrs
 from imap_processing.hit.l0.data_classes.housekeeping import Housekeeping
 
@@ -76,16 +75,10 @@ def hit_l1a(packet_file: typing.Union[Path, str], data_version: str):
     ]
     datasets = create_datasets(grouped_data, skip_keys)
 
-    # Create CDF files
-    logger.info("Creating CDF files for HIT L1A data")
-    cdf_filepaths = []
     for dataset in datasets.values():
         # TODO: update to use the add_global_attribute() function
         dataset.attrs["Data_version"] = data_version
-        cdf_file = write_cdf(dataset)
-        cdf_filepaths.append(cdf_file)
-    logger.info(f"L1A CDF files created: {cdf_filepaths}")
-    return cdf_filepaths
+    return list(datasets.values())
 
 
 def decom_packets(packet_file: str):
@@ -173,9 +166,7 @@ def create_datasets(data: dict, skip_keys=None):
                 metadata_arrays[data_key].append(field_value)
 
         # Convert integers into datetime64[s]
-        epoch_converted_times = [
-            utils.calc_start_time(time) for time in metadata_arrays["shcoarse"]
-        ]
+        epoch_converted_times = utils.met_to_j2000ns(metadata_arrays["shcoarse"])
 
         # Create xarray data arrays for dependencies
         epoch_time = xr.DataArray(

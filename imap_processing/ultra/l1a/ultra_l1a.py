@@ -13,7 +13,7 @@ import xarray as xr
 
 from imap_processing import decom, imap_module_directory
 from imap_processing.cdf.global_attrs import ConstantCoordinates
-from imap_processing.cdf.utils import calc_start_time
+from imap_processing.cdf.utils import met_to_j2000ns
 from imap_processing.ultra import ultra_cdf_attrs
 from imap_processing.ultra.l0.decom_ultra import process_ultra_apids
 from imap_processing.ultra.l0.ultra_utils import (
@@ -43,38 +43,33 @@ def initiate_data_arrays(decom_ultra: dict, apid: int) -> xr.Dataset:
     dataset : xarray.Dataset
         Data in xarray format.
     """
-    # Converted time
-    time_converted = []
-
     if apid in ULTRA_EVENTS.apid:
         index = ULTRA_EVENTS.apid.index(apid)
         logical_source = ULTRA_EVENTS.logical_source[index]
         addition_to_logical_desc = ULTRA_EVENTS.addition_to_logical_desc
-        for time in decom_ultra["EVENTTIMES"]:
-            time_converted.append(calc_start_time(time))
+        raw_time = decom_ultra["EVENTTIMES"]
     elif apid in ULTRA_TOF.apid:
         index = ULTRA_TOF.apid.index(apid)
         logical_source = ULTRA_TOF.logical_source[index]
         addition_to_logical_desc = ULTRA_TOF.addition_to_logical_desc
-        for time in np.unique(decom_ultra["SHCOARSE"]):
-            time_converted.append(calc_start_time(time))
+        raw_time = np.unique(decom_ultra["SHCOARSE"])
     elif apid in ULTRA_AUX.apid:
         index = ULTRA_AUX.apid.index(apid)
         logical_source = ULTRA_AUX.logical_source[index]
         addition_to_logical_desc = ULTRA_AUX.addition_to_logical_desc
-        for time in decom_ultra["SHCOARSE"]:
-            time_converted.append(calc_start_time(time))
+        raw_time = decom_ultra["SHCOARSE"]
     elif apid in ULTRA_RATES.apid:
         index = ULTRA_RATES.apid.index(apid)
         logical_source = ULTRA_RATES.logical_source[index]
         addition_to_logical_desc = ULTRA_RATES.addition_to_logical_desc
-        for time in decom_ultra["SHCOARSE"]:
-            time_converted.append(calc_start_time(time))
+        raw_time = decom_ultra["SHCOARSE"]
     else:
         raise ValueError(f"APID {apid} not recognized.")
 
     epoch_time = xr.DataArray(
-        time_converted,
+        met_to_j2000ns(
+            raw_time, reference_epoch=np.datetime64("2010-01-01T00:01:06.184", "ns")
+        ),
         name="epoch",
         dims=["epoch"],
         attrs=ConstantCoordinates.EPOCH,

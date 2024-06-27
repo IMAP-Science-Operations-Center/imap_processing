@@ -16,6 +16,7 @@ from space_packet_parser import parser, xtcedef
 
 from imap_processing import imap_module_directory
 from imap_processing.cdf.global_attrs import ConstantCoordinates
+from imap_processing.cdf.utils import met_to_j2000ns
 from imap_processing.idex import idex_cdf_attrs
 
 logger = logging.getLogger(__name__)
@@ -648,12 +649,10 @@ class RawDustEvent:
         # Number of microseconds since the last second
         microseconds_since_last_second = 20 * num_of_20_microsecond_increments
         # Get the datetime of Jan 1 2012 as the start date
-        launch_time = np.datetime64("2012-01-01T00:00:00.000000000")
+        met = seconds_since_launch + microseconds_since_last_second * 1e-6
 
-        self.impact_time = (
-            launch_time
-            + np.timedelta64(seconds_since_launch, "s")
-            + np.timedelta64(microseconds_since_last_second, "us")
+        self.impact_time = met_to_j2000ns(
+            met, reference_epoch=np.datetime64("2012-01-01T00:00:00.000000000")
         )
 
     def _set_sample_trigger_times(self, packet):

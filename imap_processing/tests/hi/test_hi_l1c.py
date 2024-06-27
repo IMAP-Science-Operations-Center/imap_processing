@@ -6,7 +6,6 @@ import xarray as xr
 
 from imap_processing import imap_module_directory
 from imap_processing.cdf.cdf_attribute_manager import CdfAttributeManager
-from imap_processing.cdf.utils import write_cdf
 from imap_processing.hi.l1a.hi_l1a import hi_l1a
 from imap_processing.hi.l1b.hi_l1b import hi_l1b
 from imap_processing.hi.l1c import hi_l1c
@@ -19,11 +18,9 @@ def test_generate_pset_dataset(create_de_data):
     # For now, test using false de data run through l1a and l1b processing
     bin_data_path = create_de_data(HIAPID.H45_SCI_DE.value)
     processed_data = hi_l1a(bin_data_path, "002")
-    l1a_cdf_path = write_cdf(processed_data[0])
-    l1b_dataset = hi_l1b(l1a_cdf_path, "002")
-    l1b_cdf_path = write_cdf(l1b_dataset)
+    l1b_dataset = hi_l1b(processed_data[0], "002")
 
-    l1c_dataset = hi_l1c.generate_pset_dataset(l1b_cdf_path)
+    l1c_dataset = hi_l1c.generate_pset_dataset(l1b_dataset)
 
     assert l1c_dataset.epoch.data[0] == l1b_dataset.epoch.data[0]
 

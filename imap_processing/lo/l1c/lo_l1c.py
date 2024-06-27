@@ -6,7 +6,7 @@ import numpy as np
 import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
-from imap_processing.cdf.utils import calc_start_time, write_cdf
+from imap_processing.cdf.utils import met_to_j2000ns
 
 
 def lo_l1c(dependencies: dict, data_version: str):
@@ -54,8 +54,7 @@ def lo_l1c(dependencies: dict, data_version: str):
         ]
 
     dataset = create_datasets(attr_mgr, logical_source, data_fields)
-    create_file_paths = write_cdf(dataset)
-    return create_file_paths
+    return dataset
 
 
 # TODO: This is going to work differently when I sample data.
@@ -82,7 +81,7 @@ def create_datasets(attr_mgr, logical_source, data_fields):
     #  and relative L1A DE time to calculate the absolute DE time,
     #  this epoch conversion will go away and the time in the DE dataclass
     #  can be used direction
-    epoch_converted_time = [calc_start_time(1)]
+    epoch_converted_time = [met_to_j2000ns(1)]
 
     # Create a data array for the epoch time
     # TODO: might need to update the attrs to use new YAML file
