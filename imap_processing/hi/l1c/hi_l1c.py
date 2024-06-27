@@ -9,7 +9,6 @@ import xarray as xr
 
 from imap_processing import imap_module_directory
 from imap_processing.cdf.cdf_attribute_manager import CdfAttributeManager
-from imap_processing.cdf.utils import load_cdf
 
 logger = logging.getLogger(__name__)
 
@@ -40,8 +39,8 @@ def hi_l1c(dependencies: list, data_version: str):
     logger.info("Running Hi l1c processing")
 
     # TODO: I am not sure what the input for Goodtimes will be so for now,
-    #    If the input is a CDF, do pset processing
-    if len(dependencies) == 1 and str(dependencies[0]).endswith("cdf"):
+    #    If the input is an xarray Dataset, do pset processing
+    if len(dependencies) == 1 and isinstance(dependencies[0], xr.Dataset):
         l1c_dataset = generate_pset_dataset(dependencies[0])
     else:
         raise NotImplementedError(
@@ -53,21 +52,20 @@ def hi_l1c(dependencies: list, data_version: str):
     return l1c_dataset
 
 
-def generate_pset_dataset(l1b_de_path: Union[Path, str]) -> xr.Dataset:
+def generate_pset_dataset(de_dataset: Union[Path, str]) -> xr.Dataset:
     """
     Will process IMAP-Hi l1b product into a l1c pset xarray dataset.
 
     Parameters
     ----------
-    l1b_de_path : Union[Path, str]
-        Location of IMAP-Hi l1b de product.
+    de_dataset : xarray.Dataset
+        IMAP-Hi l1b de product.
 
     Returns
     -------
     pset_dataset : xarray.Dataset
         Ready to be written to CDF.
     """
-    de_dataset = load_cdf(l1b_de_path)
     sensor_str = de_dataset.attrs["Logical_source"].split("_")[-1].split("-")[0]
     n_esa_step = de_dataset.esa_step.data.size
     pset_dataset = allocate_pset_dataset(n_esa_step, sensor_str)

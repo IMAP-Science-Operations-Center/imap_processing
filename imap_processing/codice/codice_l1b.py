@@ -11,12 +11,10 @@ dataset = process_codice_l1b(l1a_file)
 """
 
 import logging
-from pathlib import Path
 
 import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
-from imap_processing.cdf.utils import load_cdf, write_cdf
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -154,14 +152,14 @@ def create_science_dataset(
     return l1b_dataset
 
 
-def process_codice_l1b(file_path: Path, data_version: str) -> xr.Dataset:
+def process_codice_l1b(l1a_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
     """
     Will process CoDICE l1a data to create l1b data products.
 
     Parameters
     ----------
-    file_path : pathlib.Path | str
-        Path to the CoDICE L1a file to process.
+    l1a_dataset : xarray.Dataset
+        CoDICE L1a dataset to process.
     data_version : str
         Version of the data product being created.
 
@@ -170,10 +168,7 @@ def process_codice_l1b(file_path: Path, data_version: str) -> xr.Dataset:
     l1b_dataset : xarray.Dataset
         The``xarray`` dataset containing the science data and supporting metadata.
     """
-    logger.info(f"\nProcessing {file_path.name} file.")
-
-    # Load the L1a CDF
-    l1a_dataset = load_cdf(file_path)
+    logger.info(f"\nProcessing {l1a_dataset.attrs['Logical_source']}.")
 
     # Start constructing l1b dataset
     cdf_attrs = ImapCdfAttributes()
@@ -193,7 +188,5 @@ def process_codice_l1b(file_path: Path, data_version: str) -> xr.Dataset:
 
     # Write the dataset to CDF
     logger.info(f"\nFinal data product:\n{l1b_dataset}\n")
-    l1b_dataset.attrs["cdf_filename"] = write_cdf(l1b_dataset)
-    logger.info(f"\tCreated CDF file: {l1b_dataset.cdf_filename}")
 
     return l1b_dataset

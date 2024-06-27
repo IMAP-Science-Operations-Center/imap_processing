@@ -8,7 +8,6 @@ import xarray as xr
 
 from imap_processing import utils
 from imap_processing.cdf.global_attrs import ConstantCoordinates
-from imap_processing.cdf.utils import write_cdf
 from imap_processing.hit import hit_cdf_attrs
 from imap_processing.hit.l0.data_classes.housekeeping import Housekeeping
 
@@ -46,15 +45,9 @@ def hit_l1b(l1a_dataset: xr.Dataset, data_version: str):
         # process science data. placeholder for future code
         pass
 
-    # Create CDF files
-    logger.info("Creating CDF files for HIT L1B data")
-    cdf_filepaths = []
     for dataset in datasets:
         dataset.attrs["Data_version"] = data_version
-        cdf_file = write_cdf(dataset)
-        cdf_filepaths.append(cdf_file)
-    logger.info(f"L1B CDF files created: {cdf_filepaths}")
-    return cdf_filepaths
+    return datasets
 
 
 # TODO: This is going to work differently when we have sample data
@@ -86,7 +79,7 @@ def create_hk_dataset():
     # Create fake data for now
 
     # Convert integers into datetime64[s]
-    epoch_converted_time = [utils.calc_start_time(time) for time in [0, 1, 2]]
+    epoch_converted_time = utils.met_to_j2000ns([0, 1, 2])
 
     # Shape for dims
     n_epoch = 3

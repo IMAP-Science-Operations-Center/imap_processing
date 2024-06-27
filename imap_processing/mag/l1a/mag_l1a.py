@@ -7,7 +7,7 @@ import numpy as np
 import xarray as xr
 
 from imap_processing.cdf.global_attrs import ConstantCoordinates
-from imap_processing.cdf.utils import calc_start_time, write_cdf
+from imap_processing.cdf.utils import J2000_EPOCH, met_to_j2000ns
 from imap_processing.mag import mag_cdf_attrs
 from imap_processing.mag.l0 import decom_mag
 from imap_processing.mag.l0.mag_l0_data import MagL0
@@ -95,26 +95,19 @@ def process_and_write_data(
 
     mag_raw = decom_mag.generate_dataset(packet_data, raw_attrs)
 
-    filepath = write_cdf(mag_raw)
-    logger.info(f"Created RAW CDF file at {filepath}")
-
-    generated_files = [filepath]
+    generated_datasets = [mag_raw]
 
     l1a = process_packets(packet_data)
 
     for _, mago in l1a["mago"].items():
         norm_mago_output = generate_dataset(mago, mago_attrs)
-        filepath = write_cdf(norm_mago_output)
-        logger.info(f"Created L1a MAGo CDF file at {filepath}")
-        generated_files.append(filepath)
+        generated_datasets.append(norm_mago_output)
 
     for _, magi in l1a["magi"].items():
         norm_magi_output = generate_dataset(magi, magi_attrs)
-        filepath = write_cdf(norm_magi_output)
-        logger.info(f"Created L1a MAGi CDF file at {filepath}")
-        generated_files.append(filepath)
+        generated_datasets.append(norm_magi_output)
 
-    return generated_files
+    return generated_datasets
 
 
 def process_packets(
@@ -146,12 +139,16 @@ def process_packets(
         primary_start_time = TimeTuple(mag_l0.PRI_COARSETM, mag_l0.PRI_FNTM)
         secondary_start_time = TimeTuple(mag_l0.SEC_COARSETM, mag_l0.SEC_FNTM)
 
-        primary_day = calc_start_time(primary_start_time.to_seconds()).astype(
-            "datetime64[D]"
-        )
-        secondary_day = calc_start_time(secondary_start_time.to_seconds()).astype(
-            "datetime64[D]"
-        )
+        primary_day = (
+            J2000_EPOCH
+            + met_to_j2000ns(primary_start_time.to_seconds()).astype("timedelta64[ns]")
+        ).astype("datetime64[D]")
+        secondary_day = (
+            J2000_EPOCH
+            + met_to_j2000ns(secondary_start_time.to_seconds()).astype(
+                "timedelta64[ns]"
+            )
+        ).astype("datetime64[D]")
 
         # seconds of data in this packet is the SUBTYPE plus 1
         seconds_per_packet = mag_l0.PUS_SSUBTYPE + 1

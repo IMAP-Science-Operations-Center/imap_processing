@@ -1,5 +1,3 @@
-import pathlib
-
 import pytest
 import xarray as xr
 
@@ -85,10 +83,10 @@ def test_hit_l1a(packet_filepath):
     packet_filepath : str
         Path to ccsds file
     """
-    cdf_filepaths = hit_l1a.hit_l1a(packet_filepath, "001")
-    assert len(cdf_filepaths) == 1
-    assert isinstance(cdf_filepaths[0], pathlib.PurePath)
-    assert cdf_filepaths[0].name == "imap_hit_l1a_hk_20100105_v001.cdf"
+    datasets = hit_l1a.hit_l1a(packet_filepath, "001")
+    assert len(datasets) == 1
+    assert isinstance(datasets[0], xr.Dataset)
+    assert datasets[0].attrs["Logical_source"] == "imap_hit_l1a_hk"
 
 
 def test_total_datasets(unpacked_packets):

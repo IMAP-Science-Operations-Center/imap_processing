@@ -4,9 +4,10 @@ import numpy as np
 import xarray as xr
 from space_packet_parser.parser import Packet
 
-from imap_processing import imap_module_directory, launch_time
+from imap_processing import imap_module_directory
 from imap_processing.cdf.cdf_attribute_manager import CdfAttributeManager
 from imap_processing.cdf.global_attrs import ConstantCoordinates
+from imap_processing.cdf.utils import met_to_j2000ns
 
 # TODO: read LOOKED_UP_DURATION_OF_TICK from
 # instrument status summary later. This value
@@ -18,25 +19,6 @@ LOOKED_UP_DURATION_OF_TICK = 3999
 SECOND_TO_NS = 1e9
 MILLISECOND_TO_NS = 1e6
 MICROSECOND_TO_NS = 1e3
-
-
-def get_direct_event_time(time_in_ns: int) -> np.datetime64:
-    """
-    Create MET(Mission Elapsed Time) time using input times.
-
-    Parameters
-    ----------
-    time_in_ns : int
-        Time in nanoseconds.
-
-    Returns
-    -------
-    met_datetime : numpy.datetime64
-        Human-readable MET time.
-    """
-    met_datetime = launch_time + np.timedelta64(int(time_in_ns), "ns")
-
-    return met_datetime
 
 
 def parse_direct_event(event_data: str) -> dict:
@@ -267,7 +249,7 @@ def create_dataset(de_data_list: list, packet_met_time: list) -> xr.Dataset:
             + event["de_tag"] * LOOKED_UP_DURATION_OF_TICK * MICROSECOND_TO_NS
         )
         data_dict["event_met"].append(de_met_in_ns)
-        data_dict["epoch"].append(get_direct_event_time(de_met_in_ns))
+        data_dict["epoch"].append(met_to_j2000ns(de_met_in_ns / 1e9))
         data_dict["esa_stepping_num"].append(current_esa_step)
         # start_bitmask_data is 1, 2, 3 for detector A, B, C
         # respectively. This is used to identify which detector
