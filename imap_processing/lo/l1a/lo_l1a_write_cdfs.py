@@ -4,7 +4,6 @@ import numpy as np
 import xarray as xr
 
 from imap_processing.cdf.global_attrs import ConstantCoordinates
-from imap_processing.cdf.utils import write_cdf
 from imap_processing.lo.l0.lo_apid import LoAPID
 from imap_processing.lo.l1a import lo_cdf_attrs
 from imap_processing.lo.l1a.lo_data_container import LoContainer
@@ -25,18 +24,17 @@ def write_lo_l1a_cdfs(data: LoContainer):
     created_file_paths : list[Path]
         Location of created CDF files.
     """
-    created_filepaths = []
+    created_datasets = []
 
     # Write Science Direct Events CDF if available
     science_direct_events = data.filter_apid(LoAPID.ILO_SCI_DE.value)
     if science_direct_events:
         scide_dataset = create_lo_scide_dataset(science_direct_events)
-        cdf_file = write_cdf(scide_dataset)
-        created_filepaths.append(cdf_file)
+        created_datasets.append(scide_dataset)
 
     # TODO: Add the rest of the APIDS
 
-    return created_filepaths
+    return created_datasets
 
 
 def create_lo_scide_dataset(sci_de: list):

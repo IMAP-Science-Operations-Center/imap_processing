@@ -8,7 +8,7 @@ import numpy as np
 import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
-from imap_processing.cdf.utils import calc_start_time, write_cdf
+from imap_processing.cdf.utils import calc_start_time
 
 
 def lo_l1b(dependencies: dict, data_version: str) -> list[Path]:
@@ -54,10 +54,9 @@ def lo_l1b(dependencies: dict, data_version: str) -> list[Path]:
             data_field_tup("DIRECTION"),
         ]
 
-    dataset = create_datasets(attr_mgr, logical_source, data_fields)  # type: ignore[arg-type]
-    # TODO Remove once correct format for data_fields is implemented.
-    create_file_paths: list[Path] = write_cdf(dataset)
-    return create_file_paths
+
+    dataset = create_datasets(attr_mgr, logical_source, data_fields)
+    return dataset
 
 
 # TODO: This is going to work differently when I sample data.

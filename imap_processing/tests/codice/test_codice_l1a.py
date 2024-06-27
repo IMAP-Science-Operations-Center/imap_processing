@@ -42,20 +42,20 @@ EXPECTED_ARRAY_SIZES = [
     18,  # lo-sw-species
     10,  # lo-nsw-species
 ]
-EXPECTED_FILENAMES = [
-    "imap_codice_l1a_hskp_20100101_v001.cdf",
-    "imap_codice_l1a_hi-counters-aggregated_20240429_v001.cdf",
-    "imap_codice_l1a_hi-counters-singles_20240429_v001.cdf",
-    "imap_codice_l1a_hi-omni_20240429_v001.cdf",
-    "imap_codice_l1a_hi-sectored_20240429_v001.cdf",
-    "imap_codice_l1a_lo-counters-aggregated_20240429_v001.cdf",
-    "imap_codice_l1a_lo-counters-singles_20240429_v001.cdf",
-    "imap_codice_l1a_lo-sw-angular_20240429_v001.cdf",
-    "imap_codice_l1a_lo-nsw-angular_20240429_v001.cdf",
-    "imap_codice_l1a_lo-sw-priority_20240429_v001.cdf",
-    "imap_codice_l1a_lo-nsw-priority_20240429_v001.cdf",
-    "imap_codice_l1a_lo-sw-species_20240429_v001.cdf",
-    "imap_codice_l1a_lo-nsw-species_20240429_v001.cdf",
+EXPECTED_LOGICAL_SOURCE = [
+    "imap_codice_l1a_hskp",
+    "imap_codice_l1a_hi-counters-aggregated",
+    "imap_codice_l1a_hi-counters-singles",
+    "imap_codice_l1a_hi-omni",
+    "imap_codice_l1a_hi-sectored",
+    "imap_codice_l1a_lo-counters-aggregated",
+    "imap_codice_l1a_lo-counters-singles",
+    "imap_codice_l1a_lo-sw-angular",
+    "imap_codice_l1a_lo-nsw-angular",
+    "imap_codice_l1a_lo-sw-priority",
+    "imap_codice_l1a_lo-nsw-priority",
+    "imap_codice_l1a_lo-sw-species",
+    "imap_codice_l1a_lo-nsw-species",
 ]
 TEST_PACKETS = [
     Path(
@@ -132,24 +132,24 @@ def test_l1a_data(request) -> xr.Dataset:
 
 
 @pytest.mark.parametrize(
-    "test_l1a_data, expected_filename",
-    list(zip(TEST_PACKETS, EXPECTED_FILENAMES)),
+    "test_l1a_data, expected_logical_source",
+    list(zip(TEST_PACKETS, EXPECTED_LOGICAL_SOURCE)),
     indirect=["test_l1a_data"],
 )
-def test_l1a_cdf_filenames(test_l1a_data: xr.Dataset, expected_filename: str):
-    """Tests that the ``process_codice_l1a`` function generates CDF files with
-    expected filenames.
+def test_l1a_cdf_filenames(test_l1a_data: xr.Dataset, expected_logical_source: str):
+    """Tests that the ``process_codice_l1a`` function generates datasets
+    with the expected logical source.
 
     Parameters
     ----------
     test_l1a_data : xarray.Dataset
         A ``xarray`` dataset containing the test data
-    expected_filename : str
+    expected_logical_source : str
         The expected CDF filename
     """
 
     dataset = test_l1a_data
-    assert dataset.cdf_filename.name == expected_filename
+    assert dataset.attrs["Logical_source"] == expected_logical_source
 
 
 @pytest.mark.xfail(
