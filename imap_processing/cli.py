@@ -21,6 +21,7 @@ from typing import final
 from urllib.error import HTTPError
 
 import imap_data_access
+import xarray as xr
 
 import imap_processing
 from imap_processing._version import __version__, __version_tuple__  # noqa: F401
@@ -376,19 +377,24 @@ class ProcessInstrument(ABC):
         """
         raise NotImplementedError
 
-    def post_processing(self, products: list[str]) -> None:
+
+    def post_processing(self, datasets: list[xr.Dataset]) -> None:
+
         """
         Complete post-processing.
 
-        Default post-processing consists of uploading newly generated products
-        to the IMAP SDC. Child classes can override this method to customize the
+        Default post-processing consists of writing the datasets to local storage
+        and then uploading those newly generated products to the IMAP SDC.
+        Child classes can override this method to customize the
         post-processing actions.
 
         Parameters
         ----------
-        products : list[str]
-            A list of file paths (products) produced by do_processing method.
+        datasets : list[xarray.Dataset]
+            A list of datasets (products) produced by do_processing method.
         """
+        logger.info("Writing products to local storage")
+        products = [write_cdf(dataset) for dataset in datasets]
         self.upload_products(products)
 
 
@@ -420,8 +426,7 @@ class Codice(ProcessInstrument):
                 )
             # process data
             dataset = codice_l1a.process_codice_l1a(dependencies[0], self.version)
-            cdf_file_path = dataset.attrs["cdf_filename"]
-            return [cdf_file_path]
+            return [dataset]
 
         if self.data_level == "l1b":
             if len(dependencies) > 1:
@@ -430,10 +435,10 @@ class Codice(ProcessInstrument):
                     f"{dependencies}. Expected only one dependency."
                 )
             # process data
-            dataset = codice_l1b.process_codice_l1b(dependencies[0], self.version)
-            cdf_file_path = dataset.attrs["cdf_filename"]
-            return [cdf_file_path]
-        return cdf_file_path
+            dependency = load_cdf(dependencies[0])
+            dataset = codice_l1b.process_codice_l1b(dependency, self.version)
+            return [dataset]
+
 
 
 class Glows(ProcessInstrument):
@@ -454,7 +459,6 @@ class Glows(ProcessInstrument):
             List of products.
         """
         print(f"Processing GLOWS {self.data_level}")
-        products = []
         if self.data_level == "l1a":
             if len(dependencies) > 1:
                 raise ValueError(
@@ -462,7 +466,6 @@ class Glows(ProcessInstrument):
                     f"{dependencies}. Expected only one input dependency."
                 )
             datasets = glows_l1a(dependencies[0], self.version)
-            products = [write_cdf(dataset) for dataset in datasets]
 
         if self.data_level == "l1b":
             if len(dependencies) > 1:
@@ -471,10 +474,9 @@ class Glows(ProcessInstrument):
                     f"{dependencies}. Expected at least one input dependency."
                 )
             input_dataset = load_cdf(dependencies[0])
-            dataset = glows_l1b(input_dataset, self.version)
-            products = [write_cdf(dataset)]
+            datasets = [glows_l1b(input_dataset, self.version)]
 
-        return products
+        return datasets
 
 
 class Hi(ProcessInstrument):
@@ -504,18 +506,17 @@ class Hi(ProcessInstrument):
                     f"{dependencies}. Expected only one dependency."
                 )
             datasets = hi_l1a.hi_l1a(dependencies[0], self.version)
-            products = [write_cdf(dataset) for dataset in datasets]
         elif self.data_level == "l1b":
-            dataset = hi_l1b.hi_l1b(dependencies[0], self.version)
-            products = [write_cdf(dataset)]
+            dependencies = [load_cdf(dependency) for dependency in dependencies]
+            datasets = [hi_l1b.hi_l1b(dependencies[0], self.version)]
         elif self.data_level == "l1c":
-            dataset = hi_l1c.hi_l1c(dependencies, self.version)
-            products = [write_cdf(dataset)]
+            dependencies = [load_cdf(dependency) for dependency in dependencies]
+            datasets = [hi_l1c.hi_l1c(dependencies, self.version)]
         else:
             raise NotImplementedError(
                 f"Hi processing not implemented for level {self.data_level}"
             )
-        return products
+        return datasets
 
 
 class Hit(ProcessInstrument):
@@ -532,8 +533,8 @@ class Hit(ProcessInstrument):
 
         Returns
         -------
-        products : list
-            List of products.
+        datasets : list
+            List of datasets.
         """
         print(f"Processing HIT {self.data_level}")
         products = []
@@ -545,8 +546,8 @@ class Hit(ProcessInstrument):
                     f"{dependencies}. Expected only one dependency."
                 )
             # process data and write all processed data to CDF files
-            products = hit_l1a(dependencies[0], self.version)
-            return products
+            datasets = hit_l1a(dependencies[0], self.version)
+            return datasets
 
         elif self.data_level == "l1b":
             if len(dependencies) > 1:
@@ -556,9 +557,10 @@ class Hit(ProcessInstrument):
                 )
             # process data and write all processed data to CDF files
             l1a_dataset = load_cdf(dependencies[0])
-            products = hit_l1b(l1a_dataset, self.version)
-            return products
-        return products
+
+            datasets = hit_l1b(l1a_dataset, self.version)
+            return datasets
+
 
 
 class Idex(ProcessInstrument):
@@ -588,11 +590,10 @@ class Idex(ProcessInstrument):
                     f"{dependencies}. Expected only one dependency."
                 )
             # read CDF file
-            processed_data = PacketParser(dependencies[0], self.version).data
-            cdf_file_path = write_cdf(processed_data)
-            print(f"processed file path: {cdf_file_path}")
-            return [cdf_file_path]
-        return cdf_file_path
+
+            dataset = PacketParser(dependencies[0], self.version).data
+            return [dataset]
+
 
 
 class Lo(ProcessInstrument):
@@ -623,25 +624,24 @@ class Lo(ProcessInstrument):
                     f"Unexpected dependencies found for IMAP-Lo L1A:"
                     f"{dependencies}. Expected only one dependency."
                 )
-            output_files = lo_l1a.lo_l1a(dependencies[0], self.version)
-            return [output_files]
+            dataset = lo_l1a.lo_l1a(dependencies[0], self.version)
+            return [dataset]
 
         elif self.data_level == "l1b":
             data_dict = {}
             for dependency in dependencies:
-                dataset = load_cdf(dependency, to_datetime=True)  # type: ignore[arg-type]
+                dataset = load_cdf(dependency)
                 data_dict[dataset.attrs["Logical_source"]] = dataset
-            output_file = lo_l1b.lo_l1b(data_dict, self.version)
-            return [output_file]
+            dataset = lo_l1b.lo_l1b(data_dict, self.version)
+            return [dataset]
 
         elif self.data_level == "l1c":
             data_dict = {}
             for dependency in dependencies:
-                dataset = load_cdf(dependency, to_datetime=True)  # type: ignore[arg-type]
+                dataset = load_cdf(dependency)
                 data_dict[dataset.attrs["Logical_source"]] = dataset
-            output_file = lo_l1c.lo_l1c(data_dict, self.version)
-            return [output_file]
-        return output_file
+            dataset = lo_l1c.lo_l1c(data_dict, self.version)
+            return [dataset]
 
 
 class Mag(ProcessInstrument):
@@ -671,7 +671,8 @@ class Mag(ProcessInstrument):
                     f"Unexpected dependencies found for MAG L1A:"
                     f"{dependencies}. Expected only one dependency."
                 )
-            output_files.extend(mag_l1a(dependencies[0], data_version=self.version))
+            datasets = mag_l1a(dependencies[0], data_version=self.version)
+            return datasets
 
         if self.data_level == "l1b":
             if len(dependencies) > 1:
@@ -680,9 +681,9 @@ class Mag(ProcessInstrument):
                     f"{dependencies}. Expected only one dependency."
                 )
             input_data = load_cdf(dependencies[0])
-            output_dataset = mag_l1b(input_data, self.version)
-            output_files = write_cdf(output_dataset)
-            return output_files
+            dataset = mag_l1b(input_data, self.version)
+            return [dataset]
+
 
         if self.data_level == "l1c":
             # L1C depends on matching norm/burst files: eg burst-magi and norm-magi or
@@ -695,9 +696,8 @@ class Mag(ProcessInstrument):
 
             input_data = [load_cdf(dep) for dep in dependencies]
             # Input datasets can be in any order
-            output_dataset = mag_l1c(input_data[0], input_data[1], self.version)
-            output_files.extend(write_cdf(output_dataset))
-        return output_files
+            dataset = mag_l1c(input_data[0], input_data[1], self.version)
+            return [dataset]
 
 
 class Swapi(ProcessInstrument):
@@ -727,10 +727,8 @@ class Swapi(ProcessInstrument):
                     f"{dependencies}. Expected only one dependency."
                 )
             # process data
-            processed_data = swapi_l1(dependencies[0], self.version)
-            # Write all processed data to CDF files
-            products = [write_cdf(dataset) for dataset in processed_data]
-        return products
+            datasets = swapi_l1(dependencies[0], self.version)
+            return datasets
 
 
 class Swe(ProcessInstrument):
@@ -759,11 +757,12 @@ class Swe(ProcessInstrument):
                     f"Unexpected dependencies found for SWE L1A:"
                     f"{dependencies}. Expected only one dependency."
                 )
-            processed_data = swe_l1a(Path(dependencies[0]), data_version=self.version)
+            dataset = swe_l1a(Path(dependencies[0]), data_version=self.version)
             # Right now, we only process science data. Therefore,
             # we expect only one dataset to be returned.
-            cdf_file_path = write_cdf(processed_data)
-            print(f"processed file path: {cdf_file_path}")
+
+            return [dataset]
+
 
         elif self.data_level == "l1b":
             if len(dependencies) > 1:
@@ -773,9 +772,8 @@ class Swe(ProcessInstrument):
                 )
             # read CDF file
             l1a_dataset = load_cdf(dependencies[0])
-            processed_data = swe_l1b(l1a_dataset, data_version=self.version)
-            cdf_file_path = write_cdf(processed_data)
-            print(f"processed file path: {cdf_file_path}")
+            dataset = swe_l1b(l1a_dataset, data_version=self.version)
+            return [dataset]
         else:
             print("Did not recognize data level. No processing done.")
         return cdf_file_path
@@ -810,22 +808,22 @@ class Ultra(ProcessInstrument):
                 )
 
             datasets = ultra_l1a.ultra_l1a(dependencies[0], self.version)
-            products = [write_cdf(dataset) for dataset in datasets]
+            return datasets
         elif self.data_level == "l1b":
             data_dict = {}
             for dependency in dependencies:
                 dataset = load_cdf(dependency)
                 data_dict[dataset.attrs["Logical_source"]] = dataset
             datasets = ultra_l1b.ultra_l1b(data_dict, self.version)
-            products = [write_cdf(dataset) for dataset in datasets]
+            return datasets
         elif self.data_level == "l1c":
             data_dict = {}
             for dependency in dependencies:
                 dataset = load_cdf(dependency)
                 data_dict[dataset.attrs["Logical_source"]] = dataset
             datasets = ultra_l1c.ultra_l1c(data_dict, self.version)
-            products = [write_cdf(dataset) for dataset in datasets]
-        return products
+            return datasets
+
 
 
 def main() -> None:

@@ -7,7 +7,7 @@ from pathlib import Path
 import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
-from imap_processing.cdf.utils import calc_start_time, write_cdf
+from imap_processing.cdf.utils import met_to_j2000ns
 from imap_processing.lo.l0.data_classes.science_direct_events import ScienceDirectEvents
 
 
@@ -70,8 +70,7 @@ def lo_l1a(dependency: Path, data_version: str):
         logical_source = "imap_lo_l1a_spin"
 
     dataset = create_datasets(attr_mgr, logical_source, data_fields)
-    create_file_paths = write_cdf(dataset)
-    return create_file_paths
+    return dataset
 
 
 # TODO: This is going to work differently when I sample data.
@@ -96,7 +95,7 @@ def create_datasets(attr_mgr, logical_source, data_fields):
     """
     # Convert each packet's spacecraft time to an absolute epoch time
     # TODO: replace temp hardcoded values with packet values
-    epoch_converted_time = [calc_start_time(time) for time in [0, 1, 2]]
+    epoch_converted_time = met_to_j2000ns([0, 1, 2])
 
     # Create a data array for the poch time
     # TODO: might need to update the attrs to use new YAML file
