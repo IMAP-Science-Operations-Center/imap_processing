@@ -305,7 +305,7 @@ class ProcessInstrument(ABC):
             )
         return file_list
 
-    def upload_products(self, products: list[str]) -> None:
+    def upload_products(self, products: list[list[Path]]) -> None:
         """
         Upload data products to the IMAP SDC.
 
@@ -377,9 +377,7 @@ class ProcessInstrument(ABC):
         """
         raise NotImplementedError
 
-
     def post_processing(self, datasets: list[xr.Dataset]) -> None:
-
         """
         Complete post-processing.
 
@@ -401,7 +399,7 @@ class ProcessInstrument(ABC):
 class Codice(ProcessInstrument):
     """Process CoDICE."""
 
-    def do_processing(self, dependencies: list) -> list:
+    def do_processing(self, dependencies: list) -> xr.Dataset:
         """
         Perform CoDICE specific processing.
 
@@ -412,11 +410,10 @@ class Codice(ProcessInstrument):
 
         Returns
         -------
-         list
-            List of cdf file paths.
+         dataset : xr.Dataset
+            Xr.Dataset of cdf file paths.
         """
         print(f"Processing CoDICE {self.data_level}")
-        cdf_file_path = []
 
         if self.data_level == "l1a":
             if len(dependencies) > 1:
@@ -440,11 +437,10 @@ class Codice(ProcessInstrument):
             return [dataset]
 
 
-
 class Glows(ProcessInstrument):
     """Process GLOWS."""
 
-    def do_processing(self, dependencies: list) -> list:
+    def do_processing(self, dependencies: list) -> xr.Dataset:
         """
         Perform GLOWS specific processing.
 
@@ -455,8 +451,8 @@ class Glows(ProcessInstrument):
 
         Returns
         -------
-        products : list
-            List of products.
+        datasets : xr.Dataset
+            Xr.dataset of products.
         """
         print(f"Processing GLOWS {self.data_level}")
         if self.data_level == "l1a":
@@ -482,7 +478,7 @@ class Glows(ProcessInstrument):
 class Hi(ProcessInstrument):
     """Process IMAP-Hi."""
 
-    def do_processing(self, dependencies: list) -> list:
+    def do_processing(self, dependencies: list) -> xr.Dataset:
         """
         Perform IMAP-Hi specific processing.
 
@@ -493,8 +489,8 @@ class Hi(ProcessInstrument):
 
         Returns
         -------
-        products : list
-            List of products.
+        datasets : xr.Dataset
+            Xr.Dataset of products.
         """
         print(f"Processing IMAP-Hi {self.data_level}")
 
@@ -522,7 +518,7 @@ class Hi(ProcessInstrument):
 class Hit(ProcessInstrument):
     """Process HIT."""
 
-    def do_processing(self, dependencies: list) -> list:
+    def do_processing(self, dependencies: list) -> xr.Dataset:
         """
         Perform HIT specific processing.
 
@@ -533,11 +529,10 @@ class Hit(ProcessInstrument):
 
         Returns
         -------
-        datasets : list
-            List of datasets.
+        datasets : xr.Dataset
+            Xr.Dataset of datasets.
         """
         print(f"Processing HIT {self.data_level}")
-        products = []
 
         if self.data_level == "l1a":
             if len(dependencies) > 1:
@@ -562,11 +557,10 @@ class Hit(ProcessInstrument):
             return datasets
 
 
-
 class Idex(ProcessInstrument):
     """Process IDEX."""
 
-    def do_processing(self, dependencies: list) -> list:
+    def do_processing(self, dependencies: list) -> xr.Dataset:
         """
         Perform IDEX specific processing.
 
@@ -577,11 +571,11 @@ class Idex(ProcessInstrument):
 
         Returns
         -------
-        list
-            List of cdf file paths.
+        datasets : xr.Dataset
+            Xr.Dataset of cdf file paths.
         """
         print(f"Processing IDEX {self.data_level}")
-        cdf_file_path = []
+        dataset: xr.Dataset = []
 
         if self.data_level == "l1":
             if len(dependencies) > 1:
@@ -593,13 +587,13 @@ class Idex(ProcessInstrument):
 
             dataset = PacketParser(dependencies[0], self.version).data
             return [dataset]
-
+        return dataset
 
 
 class Lo(ProcessInstrument):
     """Process IMAP-Lo."""
 
-    def do_processing(self, dependencies: list) -> list:
+    def do_processing(self, dependencies: list) -> xr.Dataset:
         """
         Perform IMAP-Lo specific processing.
 
@@ -610,12 +604,11 @@ class Lo(ProcessInstrument):
 
         Returns
         -------
-        output_files : list
-            List of output files.
+        dataset : xr.Dataset
+            Xr.Dataset of output files.
         """
         print(f"Processing IMAP-Lo {self.data_level}")
-        output_file = []
-
+        dataset: xr.Dataset = []
         if self.data_level == "l1a":
             # L1A packet / products are 1 to 1. Should only have
             # one dependency file
@@ -642,12 +635,13 @@ class Lo(ProcessInstrument):
                 data_dict[dataset.attrs["Logical_source"]] = dataset
             dataset = lo_l1c.lo_l1c(data_dict, self.version)
             return [dataset]
+        return dataset
 
 
 class Mag(ProcessInstrument):
     """Process MAG."""
 
-    def do_processing(self, dependencies: list) -> list[Path]:
+    def do_processing(self, dependencies: list) -> xr.Dataset:
         """
         Perform MAG specific processing.
 
@@ -658,11 +652,10 @@ class Mag(ProcessInstrument):
 
         Returns
         -------
-        output_files : list
-            List of output files.
+        dataset : xr.Dataset
+            Xr.Dataset of output files.
         """
         print(f"Processing MAG {self.data_level}")
-        output_files: list[Path] = []
 
         if self.data_level == "l1a":
             # File path is expected output file path
@@ -684,7 +677,6 @@ class Mag(ProcessInstrument):
             dataset = mag_l1b(input_data, self.version)
             return [dataset]
 
-
         if self.data_level == "l1c":
             # L1C depends on matching norm/burst files: eg burst-magi and norm-magi or
             # burst-mago and norm-mago
@@ -703,7 +695,7 @@ class Mag(ProcessInstrument):
 class Swapi(ProcessInstrument):
     """Process SWAPI."""
 
-    def do_processing(self, dependencies: list) -> list:
+    def do_processing(self, dependencies: list) -> xr.Dataset:
         """
         Perform SWAPI specific processing.
 
@@ -714,11 +706,10 @@ class Swapi(ProcessInstrument):
 
         Returns
         -------
-        product : list
-            List of products.
+        dataset : xr.Dataset
+            Xr.Dataset of products.
         """
         print(f"Processing SWAPI {self.data_level}")
-        products = []
 
         if self.data_level == "l1":
             if len(dependencies) > 1:
@@ -734,7 +725,7 @@ class Swapi(ProcessInstrument):
 class Swe(ProcessInstrument):
     """Process SWE."""
 
-    def do_processing(self, dependencies: list) -> list:
+    def do_processing(self, dependencies: list) -> xr.Dataset:
         """
         Perform SWE specific processing.
 
@@ -745,12 +736,10 @@ class Swe(ProcessInstrument):
 
         Returns
         -------
-        list
+        dataset : xr.Dataset
             Path to cdf file.
         """
         print(f"Processing SWE {self.data_level}")
-        cdf_file_path = []
-
         if self.data_level == "l1a":
             if len(dependencies) > 1:
                 raise ValueError(
@@ -762,7 +751,6 @@ class Swe(ProcessInstrument):
             # we expect only one dataset to be returned.
 
             return [dataset]
-
 
         elif self.data_level == "l1b":
             if len(dependencies) > 1:
@@ -776,13 +764,13 @@ class Swe(ProcessInstrument):
             return [dataset]
         else:
             print("Did not recognize data level. No processing done.")
-        return cdf_file_path
+        return [dataset]
 
 
 class Ultra(ProcessInstrument):
     """Process IMAP-Ultra."""
 
-    def do_processing(self, dependencies: list) -> list:
+    def do_processing(self, dependencies: list) -> xr.Dataset:
         """
         Perform IMAP-Ultra specific processing.
 
@@ -793,11 +781,10 @@ class Ultra(ProcessInstrument):
 
         Returns
         -------
-        product : list
-            List of products.
+        datasets : xr.Dataset
+            Xr.Dataset of products.
         """
         print(f"Processing IMAP-Ultra {self.data_level}")
-        products = []
 
         if self.data_level == "l1a":
             # File path is expected output file path
@@ -823,7 +810,6 @@ class Ultra(ProcessInstrument):
                 data_dict[dataset.attrs["Logical_source"]] = dataset
             datasets = ultra_l1c.ultra_l1c(data_dict, self.version)
             return datasets
-
 
 
 def main() -> None:
