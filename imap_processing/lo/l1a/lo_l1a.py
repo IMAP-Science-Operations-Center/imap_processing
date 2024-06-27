@@ -8,7 +8,7 @@ from typing import Any
 import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
-from imap_processing.cdf.utils import calc_start_time
+from imap_processing.cdf.utils import met_to_j2000ns
 from imap_processing.lo.l0.data_classes.science_direct_events import ScienceDirectEvents
 
 
@@ -102,7 +102,7 @@ def create_datasets(
     """
     # Convert each packet's spacecraft time to an absolute epoch time
     # TODO: replace temp hardcoded values with packet values
-    epoch_converted_time = [calc_start_time(time) for time in [0, 1, 2]]
+    epoch_converted_time = met_to_j2000ns([0, 1, 2])
 
     # Create a data array for the poch time
     # TODO: might need to update the attrs to use new YAML file

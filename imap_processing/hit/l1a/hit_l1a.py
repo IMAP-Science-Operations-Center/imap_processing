@@ -166,9 +166,7 @@ def create_datasets(data: dict, skip_keys=None):
                 metadata_arrays[data_key].append(field_value)
 
         # Convert integers into datetime64[s]
-        epoch_converted_times = [
-            utils.calc_start_time(time) for time in metadata_arrays["shcoarse"]
-        ]
+        epoch_converted_times = utils.met_to_j2000ns(metadata_arrays["shcoarse"])
 
         # Create xarray data arrays for dependencies
         epoch_time = xr.DataArray(

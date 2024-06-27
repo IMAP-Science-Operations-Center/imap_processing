@@ -1,9 +1,10 @@
 import dataclasses
 
+import numpy as np
 import pytest
 
 from imap_processing import decom
-from imap_processing.cdf.utils import load_cdf, write_cdf
+from imap_processing.cdf.utils import J2000_EPOCH, load_cdf, write_cdf
 from imap_processing.ultra import ultra_cdf_attrs
 from imap_processing.ultra.l0.decom_ultra import process_ultra_apids
 from imap_processing.ultra.l0.ultra_utils import (
@@ -107,7 +108,10 @@ def test_xarray_rates(decom_test_data):
     dataset = create_dataset({ULTRA_RATES.apid[0]: decom_ultra_rates})
 
     # Spot check metadata data and attributes
-    specific_epoch_data = dataset.sel(epoch="2024-02-07T15:28:37.184000")["START_RF"]
+    j2000_time = (
+        np.datetime64("2024-02-07T15:28:37.184000", "ns") - J2000_EPOCH
+    ).astype(np.int64)
+    specific_epoch_data = dataset.sel(epoch=j2000_time)["START_RF"]
     startrf_list = specific_epoch_data.values.tolist()
     startrf_attr = dataset.variables["START_RF"].attrs
 
@@ -142,9 +146,10 @@ def test_xarray_tof(decom_test_data):
     dataset = create_dataset({ULTRA_TOF.apid[0]: decom_ultra_tof})
 
     # Spot check metadata data and attributes
-    specific_epoch_data = dataset.sel(epoch="2024-02-07T15:28:36.184000", sid=0)[
-        "PACKETDATA"
-    ]
+    j2000_time = (
+        np.datetime64("2024-02-07T15:28:36.184000", "ns") - J2000_EPOCH
+    ).astype(np.int64)
+    specific_epoch_data = dataset.sel(epoch=j2000_time, sid=0)["PACKETDATA"]
     packetdata_attr = dataset.variables["PACKETDATA"].attrs
 
     expected_packetdata_attr = dataclasses.replace(
@@ -189,7 +194,10 @@ def test_xarray_events(decom_test_data, decom_ultra_aux, events_test_path):
     )
 
     # Spot check metadata data and attributes
-    specific_epoch_data = dataset.sel(epoch="2024-02-07T15:28:37.184000")["COIN_TYPE"]
+    j2000_time = (
+        np.datetime64("2024-02-07T15:28:37.184000", "ns") - J2000_EPOCH
+    ).astype(np.int64)
+    specific_epoch_data = dataset.sel(epoch=j2000_time)["COIN_TYPE"]
     cointype_list = specific_epoch_data.values.tolist()
     cointype_attr = dataset.variables["COIN_TYPE"].attrs
 
@@ -200,7 +208,7 @@ def test_xarray_events(decom_test_data, decom_ultra_aux, events_test_path):
         label_axis="coin_type",
     ).output()
 
-    assert cointype_list == decom_ultra_events["COIN_TYPE"][0:1]
+    assert cointype_list == decom_ultra_events["COIN_TYPE"][0]
     assert cointype_attr == expected_cointype_attr
 
 

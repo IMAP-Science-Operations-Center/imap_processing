@@ -618,7 +618,7 @@ class Lo(ProcessInstrument):
         elif self.data_level == "l1b":
             data_dict = {}
             for dependency in dependencies:
-                dataset = load_cdf(dependency, to_datetime=True)
+                dataset = load_cdf(dependency)
                 data_dict[dataset.attrs["Logical_source"]] = dataset
             dataset = lo_l1b.lo_l1b(data_dict, self.version)
             return [dataset]
@@ -626,7 +626,7 @@ class Lo(ProcessInstrument):
         elif self.data_level == "l1c":
             data_dict = {}
             for dependency in dependencies:
-                dataset = load_cdf(dependency, to_datetime=True)
+                dataset = load_cdf(dependency)
                 data_dict[dataset.attrs["Logical_source"]] = dataset
             dataset = lo_l1c.lo_l1c(data_dict, self.version)
             return [dataset]

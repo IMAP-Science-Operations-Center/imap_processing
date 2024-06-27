@@ -22,7 +22,7 @@ import xarray as xr
 
 from imap_processing import imap_module_directory
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
-from imap_processing.cdf.utils import calc_start_time
+from imap_processing.cdf.utils import IMAP_EPOCH, met_to_j2000ns
 from imap_processing.codice import constants
 from imap_processing.codice.codice_l0 import decom_packets
 from imap_processing.codice.utils import CODICEAPID, create_hskp_dataset
@@ -78,9 +78,7 @@ class CoDICEL1aPipeline:
         self.plan_step = plan_step
         self.view_id = view_id
 
-    def create_science_dataset(
-        self, start_time: np.datetime64, data_version: str
-    ) -> xr.Dataset:
+    def create_science_dataset(self, met: np.int64, data_version: str) -> xr.Dataset:
         """
         Create an ``xarray`` dataset for the unpacked science data.
 
@@ -88,8 +86,8 @@ class CoDICEL1aPipeline:
 
         Parameters
         ----------
-        start_time : numpy.datetime64
-            The start time of the packet, used to determine epoch data variable.
+        met : numpy.int64
+            The mission elapsed time of the packet, used to determine epoch data.
         data_version : str
             Version of the data product being created.
 
@@ -106,10 +104,7 @@ class CoDICEL1aPipeline:
 
         # Define coordinates
         epoch = xr.DataArray(
-            [
-                start_time,
-                start_time + np.timedelta64(1, "s"),
-            ],  # TODO: Fix after SIT-3 (see note below)
+            met_to_j2000ns(met),  # TODO: Fix after SIT-3 (see note below)
             name="epoch",
             dims=["epoch"],
             attrs=cdf_attrs.get_variable_attributes("epoch_attrs"),
@@ -380,11 +375,8 @@ def process_codice_l1a(file_path: Path | str, data_version: str) -> xr.Dataset:
                 packets = sort_by_time(grouped_data[apid], "SHCOARSE")
 
                 # Determine the start time of the packet
-                start_time = calc_start_time(
-                    packets[0].data["ACQ_START_SECONDS"].raw_value,
-                    launch_time=np.datetime64("2010-01-01T00:01:06.184", "ns"),
-                )
-
+                met = packets[0].data["ACQ_START_SECONDS"].raw_value
+                met = [met, met + 1]  # TODO: Remove after SIT-3
                 # Extract the data
                 science_values = packets[0].data["DATA"].raw_value
 
@@ -397,7 +389,7 @@ def process_codice_l1a(file_path: Path | str, data_version: str) -> xr.Dataset:
                 pipeline.get_acquisition_times()
                 pipeline.get_data_products(apid)
                 pipeline.unpack_science_data(science_values)
-                dataset = pipeline.create_science_dataset(start_time, data_version)
+                dataset = pipeline.create_science_dataset(met, data_version)
 
     # TODO: Temporary workaround in order to create hi data products in absence
     #       of simulated data. This is essentially the same process as is for
@@ -417,15 +409,15 @@ def process_codice_l1a(file_path: Path | str, data_version: str) -> xr.Dataset:
             apid = CODICEAPID.COD_HI_SECT_SPECIES_COUNTS
             table_id, plan_id, plan_step, view_id = (1, 0, 0, 6)
 
-        start_time = np.datetime64(
-            "2024-04-29T00:00:00", "ns"
-        )  # Using this to match the other data products
+        met0 = (np.datetime64("2024-04-29T00:00") - IMAP_EPOCH).astype("timedelta64[s]")
+        met0 = met0.astype(np.int64)
+        met = [met0, met0 + 1]  # Using this to match the other data products
         science_values = ""  # Currently don't have simulated data for this
 
         pipeline = CoDICEL1aPipeline(table_id, plan_id, plan_step, view_id)
         pipeline.get_data_products(apid)
         pipeline.unpack_science_data(science_values)
-        dataset = pipeline.create_science_dataset(start_time, data_version)
+        dataset = pipeline.create_science_dataset(met, data_version)
 
     # Write dataset to CDF
     logger.info(f"\nFinal data product:\n{dataset}\n")
