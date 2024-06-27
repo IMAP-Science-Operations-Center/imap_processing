@@ -6,7 +6,7 @@ import numpy as np
 import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
-from imap_processing.cdf.utils import calc_start_time, write_cdf
+from imap_processing.cdf.utils import calc_start_time
 
 
 def lo_l1c(dependencies: dict, data_version: str):
@@ -54,8 +54,7 @@ def lo_l1c(dependencies: dict, data_version: str):
         ]
 
     dataset = create_datasets(attr_mgr, logical_source, data_fields)
-    create_file_paths = write_cdf(dataset)
-    return create_file_paths
+    return dataset
 
 
 # TODO: This is going to work differently when I sample data.
