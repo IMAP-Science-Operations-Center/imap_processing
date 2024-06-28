@@ -1,6 +1,7 @@
 """Contains code to perform SWE L1b science processing."""
 
 import logging
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -40,7 +41,7 @@ esa_voltage_row_index_dict = {
 }
 
 
-def read_lookup_table(table_index_value: int) -> list:
+def read_lookup_table(table_index_value: int) -> Any:
     """
     Read lookup table from file.
 
@@ -62,12 +63,9 @@ def read_lookup_table(table_index_value: int) -> list:
     )
 
     if table_index_value == 0:
-        return lookup_table.loc[lookup_table["table_index"] == 0]  # type: ignore[no-any-return]
-    # TODO Change, Returning Any from function declared to return str
-    # What is the correct object type?
+        return lookup_table.loc[lookup_table["table_index"] == 0]
     elif table_index_value == 1:
-        return lookup_table.loc[lookup_table["table_index"] == 1]  # type: ignore[no-any-return]
-    # See above instance
+        return lookup_table.loc[lookup_table["table_index"] == 1]
     else:
         raise ValueError("Error: Invalid table index value")
 
@@ -257,8 +255,7 @@ def populate_full_cycle_data(
             for step in range(180):
                 # Get esa voltage value from esa lookup table and
                 # use that to get row index in full data array
-                esa_voltage_value = esa_lookup_table.loc[esa_step_number]["esa_v"]  # type: ignore[attr-defined]
-                # TODO Change,  "list[Any]" has no attribute "loc"
+                esa_voltage_value = esa_lookup_table.loc[esa_step_number]["esa_v"]
                 esa_voltage_row_index = esa_voltage_row_index_dict[esa_voltage_value]
 
                 # every six steps, increment column index
