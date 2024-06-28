@@ -16,7 +16,7 @@ CDF_MANAGER.load_global_attributes("imap_hi_global_cdf_attrs.yaml")
 CDF_MANAGER.load_variable_attributes("imap_hi_variable_attrs.yaml")
 
 
-def hi_l1b(l1a_dataset: xr.Dataset, data_version: str):
+def hi_l1b(l1a_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
     """
     High level IMAP-HI L1B processing function.
 
@@ -77,7 +77,7 @@ def hi_l1b(l1a_dataset: xr.Dataset, data_version: str):
     return l1b_dataset
 
 
-def annotate_direct_events(l1a_dataset):
+def annotate_direct_events(l1a_dataset: xr.Dataset) -> xr.Dataset:
     """
     Perform Hi L1B processing on direct event data.
 

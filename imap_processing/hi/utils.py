@@ -15,7 +15,7 @@ class HIAPID(IntEnum):
     H90_SCI_DE = 834
 
     @property
-    def sensor(self):
+    def sensor(self) -> str:
         """
         Define the sensor name attribute for this class.
 
