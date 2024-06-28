@@ -1,11 +1,11 @@
 """Decommutate HIT CCSDS data and create L1a data products."""
 
 import logging
-import typing
 from collections import defaultdict
 from dataclasses import fields
 from enum import IntEnum
 from pathlib import Path
+from typing import Optional, Union
 
 import numpy as np
 import xarray as xr
@@ -39,7 +39,7 @@ class HitAPID(IntEnum):
     HIT_IALRT = 1253
 
 
-def hit_l1a(packet_file: typing.Union[Path, str], data_version: str):
+def hit_l1a(packet_file: str, data_version: str) -> list:
     """
     Will process HIT L0 data into L1A data products.
 
@@ -52,7 +52,7 @@ def hit_l1a(packet_file: typing.Union[Path, str], data_version: str):
 
     Returns
     -------
-    cdf_filepaths : dict
+    cdf_filepaths : list
         List of file paths to CDF data product files.
     """
     # Decom, sort, and group packets by apid
@@ -81,7 +81,7 @@ def hit_l1a(packet_file: typing.Union[Path, str], data_version: str):
     return list(datasets.values())
 
 
-def decom_packets(packet_file: str):
+def decom_packets(packet_file: Union[Path, str]) -> list:
     """
     Unpack and decode packets using CCSDS file and XTCE packet definitions.
 
@@ -98,12 +98,12 @@ def decom_packets(packet_file: str):
     # TODO: update path to use a combined packets xtce file
     xtce_file = imap_module_directory / "hit/packet_definitions/P_HIT_HSKP.xml"
     logger.debug(f"Unpacking {packet_file} using xtce definitions in {xtce_file}")
-    unpacked_packets = decom.decom_packets(packet_file, xtce_file)
+    unpacked_packets: list = decom.decom_packets(packet_file, xtce_file)
     logger.debug(f"{packet_file} unpacked")
     return unpacked_packets
 
 
-def group_data(unpacked_data: list):
+def group_data(unpacked_data: list) -> dict:
     """
     Group data by apid.
 
@@ -118,7 +118,7 @@ def group_data(unpacked_data: list):
         Grouped data by apid.
     """
     logger.debug("Grouping packet values for each apid")
-    grouped_data = utils.group_by_apid(unpacked_data)
+    grouped_data: dict = utils.group_by_apid(unpacked_data)
 
     # Create data classes for each packet
     for apid in grouped_data:
@@ -135,7 +135,7 @@ def group_data(unpacked_data: list):
     return grouped_data
 
 
-def create_datasets(data: dict, skip_keys=None):
+def create_datasets(data: dict, skip_keys: Optional[list] = None) -> dict:
     """
     Create a dataset for each APID in the data.
 
@@ -191,7 +191,9 @@ def create_datasets(data: dict, skip_keys=None):
 
         # Create xarray data array for each metadata field
         for key, value in metadata_arrays.items():
-            if key not in skip_keys:
+            if key not in skip_keys:  # type: ignore[operator]
+                # TODO Change, Unsupported right operand type for in
+                # ("Optional[list[Any]]")
                 if key == "leak_i":
                     # 2D array - needs two dims
                     dataset[key] = xr.DataArray(
