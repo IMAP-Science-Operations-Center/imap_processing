@@ -103,7 +103,7 @@ def load_cdf(
     return dataset
 
 
-def write_cdf(dataset: xr.Dataset) -> list[Path]:
+def write_cdf(dataset: xr.Dataset) -> xr.Dataset:
     """
     Write the contents of "data" to a CDF file using cdflib.xarray_to_cdf.
 
@@ -121,8 +121,8 @@ def write_cdf(dataset: xr.Dataset) -> list[Path]:
 
     Returns
     -------
-    file_path : pathlib.Path
-        Path to the file created.
+    file_path : xr.Dataset
+        Xr.Dataset to the file created.
     """
     # Create the filename from the global attributes
     # Logical_source looks like "imap_swe_l2_counts-1min"
@@ -168,4 +168,4 @@ def write_cdf(dataset: xr.Dataset) -> list[Path]:
         terminate_on_warning=True,
     )  # Terminate if not ISTP compliant
 
-    return file_path  # type: ignore[no-any-return]
+    return file_path
