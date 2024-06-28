@@ -320,7 +320,7 @@ def append_ccsds_fields(
     ----------
     decom_data : dict
         Parsed data.
-    ccsds_data_object : object
+    ccsds_data_object : DataclassInstance
         CCSDS data object.
     """
     for field in fields(ccsds_data_object.__class__):
