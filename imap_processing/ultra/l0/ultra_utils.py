@@ -3,8 +3,6 @@
 from dataclasses import fields
 from typing import NamedTuple, Union
 
-from _typeshed import DataclassInstance
-
 from imap_processing.cdf.defaults import GlobalConstants
 
 
@@ -310,9 +308,7 @@ def parse_event(event_binary: str) -> dict:
     return fields_dict
 
 
-def append_ccsds_fields(
-    decom_data: dict, ccsds_data_object: Union[DataclassInstance, DataclassInstance]
-) -> None:
+def append_ccsds_fields(decom_data: dict, ccsds_data_object: object) -> None:
     """
     Append CCSDS fields to event_data.
 
@@ -323,7 +319,7 @@ def append_ccsds_fields(
     ccsds_data_object : DataclassInstance
         CCSDS data object.
     """
-    for field in fields(ccsds_data_object.__class__):
+    for field in fields(ccsds_data_object.__class__):  # type: ignore[arg-type]
         ccsds_key = field.name
         if ccsds_key not in decom_data:
             decom_data[ccsds_key] = []
