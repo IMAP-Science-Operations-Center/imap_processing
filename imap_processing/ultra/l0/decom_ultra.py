@@ -3,8 +3,10 @@
 import collections
 import logging
 from collections import defaultdict
+from typing import Any, Union
 
 import numpy as np
+from space_packet_parser.parser import Packet
 
 from imap_processing.ccsds.ccsds_data import CcsdsData
 from imap_processing.ultra.l0.decom_tools import (
@@ -26,9 +28,9 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-def append_tof_params(  # type: ignore[no-untyped-def] #Todo Update, need packet param type.
+def append_tof_params(
     decom_data: dict,
-    packet,
+    packet: Packet,
     decompressed_data: list,
     data_dict: dict,
     stacked_dict: dict,
@@ -77,7 +79,7 @@ def append_tof_params(  # type: ignore[no-untyped-def] #Todo Update, need packet
             data_dict[key].clear()
 
 
-def append_params(decom_data: dict, packet) -> None:  # type: ignore[no-untyped-def]
+def append_params(decom_data: dict, packet: Packet) -> None:
     # Todo Update what packet type is.
     """
     Append parsed items to a dictionary, including decompressed data if available.
@@ -96,7 +98,7 @@ def append_params(decom_data: dict, packet) -> None:  # type: ignore[no-untyped-
     append_ccsds_fields(decom_data, ccsds_data)
 
 
-def process_ultra_apids(data: list, apid: int) -> dict:
+def process_ultra_apids(data: list, apid: int) -> Union[dict[Any, Any], bool]:
     """
     Unpack and decode Ultra packets using CCSDS format and XTCE packet definitions.
 
@@ -122,9 +124,8 @@ def process_ultra_apids(data: list, apid: int) -> dict:
 
     sorted_packets = sort_by_time(data, "SHCOARSE")
 
-    process_function = strategy_dict.get(apid)
-    decom_data = process_function(sorted_packets, defaultdict(list))  # type: ignore[misc]
-    # ToDo Change, "None" not callable
+    process_function = strategy_dict.get(apid, lambda *args: False)
+    decom_data = process_function(sorted_packets, defaultdict(list))
 
     return decom_data
 
@@ -262,8 +263,6 @@ def process_ultra_rates(sorted_packets: list, decom_data: dict) -> dict:
         )
 
         for index in range(ULTRA_RATES.len_array):  # type: ignore[arg-type]
-            # TODO Change, Argument 1 to "range" has incompatible type
-            # "Optional[int]"; expected "SupportsIndex"
             decom_data[RATES_KEYS[index]].append(decompressed_data[index])
 
         append_params(decom_data, packet)

@@ -12,14 +12,16 @@ class PacketProperties(NamedTuple):
     apid: list  # List of APIDs
     logical_source: list  # List of logical sources
     addition_to_logical_desc: str  # Description of the logical source
-    width: Union[int, None]  # Width of binary data
-    block: Union[int, None]  # Number of values in each block.
+    width: Union[int, None]  # Width of binary data (could be None).
+    block: Union[int, None]  # Number of values in each block (could be None).
     # This is important for decompressing the images and
     # a description is available on page 171 of IMAP-Ultra Flight
     # Software Specification document (7523-9009_Rev_-.pdf).
-    len_array: Union[int, None]  # Length of the array to be decompressed
+    len_array: Union[
+        int, None
+    ]  # Length of the array to be decompressed (could be None).
     mantissa_bit_length: Union[int, None]  # used to determine the level of
-    # precision that can be recovered from compressed data.
+    # precision that can be recovered from compressed data (could be None).
 
 
 # Define PacketProperties instances directly in the module namespace
@@ -317,11 +319,7 @@ def append_ccsds_fields(decom_data: dict, ccsds_data_object: object) -> None:
     ccsds_data_object : object
         CCSDS data object.
     """
-    for field in fields(ccsds_data_object.__class__):  # type: ignore[arg-type]
-        # TODO Change, Argument 1 to "fields" has incompatible type
-        # "type[object]";
-        # expected "Union[DataclassInstance, type[DataclassInstance]]".
-        # Double check the type declaration.
+    for field in fields(ccsds_data_object.__class__):
         ccsds_key = field.name
         if ccsds_key not in decom_data:
             decom_data[ccsds_key] = []
