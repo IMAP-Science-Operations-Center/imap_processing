@@ -107,8 +107,8 @@ def parse_direct_event(event_data: str) -> dict:
     metaevent = 0
     if event_type == metaevent:
         # parse metaevent
-        event_type = event_data[:2] #type: ignore[assignment]
-        #TODO Change, Incompatible types in assignment
+        event_type = event_data[:2]  # type: ignore[assignment]
+        # TODO Change, Incompatible types in assignment
         # (expression has type "str", variable has type "int")
         esa_step = event_data[2:6]
         subseconds = event_data[6:16]
