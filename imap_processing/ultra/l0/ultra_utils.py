@@ -328,5 +328,3 @@ def append_ccsds_fields(
         if ccsds_key not in decom_data:
             decom_data[ccsds_key] = []
         decom_data[ccsds_key].append(getattr(ccsds_data_object, ccsds_key))
-
-#remove this
