@@ -1,43 +1,38 @@
 import pandas as pd
 import pytest
 
-from imap_processing import imap_module_directory
 from imap_processing.hi.l0.decom_hi import decom_packets
 
 
 @pytest.fixture(scope="session")
-def decom_nhk_data():
+def decom_nhk_data(hi_l0_test_data_path):
     """Read test housekeeping data from test folder"""
-    test_folder_path = "tests/hi/l0_test_data"
-    packet_file = imap_module_directory / f"{test_folder_path}/20231030_H45_APP_NHK.bin"
-    return decom_packets(packet_file)
+    packet_file = hi_l0_test_data_path / "20231030_H45_APP_NHK.bin"
+    return list(decom_packets(packet_file))
 
 
 @pytest.fixture(scope="session")
-def nhk_validation_data():
+def nhk_validation_data(hi_l0_test_data_path):
     """Read in validation data from the CSV file"""
-    test_data_path = imap_module_directory / "tests/hi/l0_validation_data"
     raw_validation_data = pd.read_csv(
-        test_data_path / "20231030_H45_APP_NHK.csv",
+        hi_l0_test_data_path / "20231030_H45_APP_NHK.csv",
         index_col="CCSDS_MET",
     )
     return raw_validation_data
 
 
 @pytest.fixture(scope="session")
-def decom_sci_de_data():
+def decom_sci_de_data(hi_l0_test_data_path):
     """Read science direct event data from test folder"""
-    test_folder_path = "tests/hi/l0_test_data"
-    packet_file = imap_module_directory / f"{test_folder_path}/20231030_H45_SCI_DE.bin"
-    return decom_packets(packet_file)
+    packet_file = hi_l0_test_data_path / "20231030_H45_SCI_DE.bin"
+    return list(decom_packets(packet_file))
 
 
 @pytest.fixture(scope="session")
-def decom_sci_cnt_data():
+def decom_sci_cnt_data(hi_l0_test_data_path):
     """Read science count data from test folder"""
-    test_folder_path = "tests/hi/l0_test_data"
-    packet_file = imap_module_directory / f"{test_folder_path}/20231030_H45_SCI_CNT.bin"
-    return decom_packets(packet_file)
+    packet_file = hi_l0_test_data_path / "20231030_H45_SCI_CNT.bin"
+    return list(decom_packets(packet_file))
 
 
 def test_app_nhk_decom(decom_nhk_data):

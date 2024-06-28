@@ -1,6 +1,5 @@
 import numpy as np
 
-from imap_processing import imap_module_directory
 from imap_processing.cdf.utils import write_cdf
 from imap_processing.hi.l1a import histogram as hist
 from imap_processing.hi.l1a.hi_l1a import hi_l1a
@@ -43,12 +42,11 @@ def test_sci_de_decom(create_de_data):
     assert cdf_filepath.name == cdf_filename
 
 
-def test_app_nhk_decom():
+def test_app_nhk_decom(hi_l0_test_data_path):
     """Test housekeeping data"""
 
     # Unpack housekeeping data
-    test_path = imap_module_directory / "tests/hi/l0_test_data"
-    bin_data_path = test_path / "20231030_H45_APP_NHK.bin"
+    bin_data_path = hi_l0_test_data_path / "20231030_H45_APP_NHK.bin"
     processed_data = hi_l1a(packet_file_path=bin_data_path, data_version="001")
 
     assert np.unique(processed_data[0]["pkt_apid"].values) == HIAPID.H45_APP_NHK.value
@@ -64,10 +62,9 @@ def test_app_nhk_decom():
     assert cem_raw_cdf_filepath.name == "imap_hi_l1a_45sensor-hk_20100313_v001.cdf"
 
 
-def test_app_hist_decom():
+def test_app_hist_decom(hi_l0_test_data_path):
     """Test histogram (SCI_CNT) data"""
-    test_path = imap_module_directory / "tests/hi/l0_test_data"
-    bin_data_path = test_path / "20231030_H45_SCI_CNT.bin"
+    bin_data_path = hi_l0_test_data_path / "20231030_H45_SCI_CNT.bin"
     processed_data = hi_l1a(packet_file_path=bin_data_path, data_version="001")
 
     assert processed_data[0].attrs["Logical_source"] == "imap_hi_l1a_45sensor-hist"
