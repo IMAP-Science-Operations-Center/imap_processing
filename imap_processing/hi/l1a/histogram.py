@@ -4,9 +4,9 @@ import numpy as np
 import xarray as xr
 from space_packet_parser.parser import Packet
 
-from imap_processing.cdf.utils import met_to_j2000ns
 from imap_processing import imap_module_directory
 from imap_processing.cdf.cdf_attribute_manager import CdfAttributeManager
+from imap_processing.cdf.utils import met_to_j2000ns
 
 # TODO: Verify that these names are OK for counter variables in the CDF
 # define the names of the 24 counter arrays
