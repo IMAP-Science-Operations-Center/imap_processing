@@ -1,17 +1,15 @@
 """Test coverage for imap_processing.hi.l1b.hi_l1b.py"""
 
-from imap_processing import imap_module_directory
 from imap_processing.hi.l1a.hi_l1a import hi_l1a
 from imap_processing.hi.l1b.hi_l1b import hi_l1b
 from imap_processing.hi.utils import HIAPID
 
 
-def test_hi_l1b_hk():
+def test_hi_l1b_hk(hi_l0_test_data_path):
     """Test coverage for imap_processing.hi.hi_l1b.hi_l1b() with
     housekeeping L1A as input"""
     # TODO: once things are more stable, check in an L1A HK file as test data
-    test_path = imap_module_directory / "tests/hi/l0_test_data"
-    bin_data_path = test_path / "20231030_H45_APP_NHK.bin"
+    bin_data_path = hi_l0_test_data_path / "20231030_H45_APP_NHK.bin"
     data_version = "001"
     processed_data = hi_l1a(packet_file_path=bin_data_path, data_version=data_version)
 
