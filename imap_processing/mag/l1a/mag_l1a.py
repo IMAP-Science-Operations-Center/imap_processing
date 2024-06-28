@@ -164,7 +164,7 @@ def process_packets(
         # The raw vectors are of type int8, but the output vectors should be at least
         # int16.
         primary_vectors, secondary_vectors = MagL1a.process_vector_data(
-            mag_l0.VECTORS.astype(dtype=np.int32), #type: ignore[union-attr]
+            mag_l0.VECTORS.astype(dtype=np.int32),  # type: ignore[union-attr]
             # TODO Maybe Change, Item "str" of "Union[Any, str]"
             #  has no attribute "astype"
             # this is because mypy expects both to have the attributes
