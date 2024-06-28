@@ -220,7 +220,7 @@ class HistogramL1A:
     pulse_length_variance: int = None
     flags: dict = None
 
-    def __post_init__(self, l0: HistogramL0):
+    def __post_init__(self, l0: HistogramL0) -> None:
         """
         Set the attributes based on the given L0 histogram data.
 
@@ -341,7 +341,7 @@ class DirectEventL1A:
         if level0.LEN == 1:
             self._process_de_data()
 
-    def append(self, second_l0: DirectEventL0):
+    def append(self, second_l0: DirectEventL0) -> None:
         """
         Merge an additional direct event packet to this DirectEventL1A class.
 
@@ -391,7 +391,7 @@ class DirectEventL1A:
         if self.l0.LEN == self.most_recent_seq + 1:
             self._process_de_data()
 
-    def _process_de_data(self):
+    def _process_de_data(self) -> None:
         """
         Will process direct event bytes.
 
@@ -401,7 +401,7 @@ class DirectEventL1A:
         self.status_data = StatusData(self.de_data[:40])
         self.direct_events = self._generate_direct_events(self.de_data[40:])
 
-    def _generate_direct_events(self, direct_events: bytearray):
+    def _generate_direct_events(self, direct_events: bytearray) -> list[DirectEvent]:
         """
         Generate the list of direct events from the raw bytearray.
 
