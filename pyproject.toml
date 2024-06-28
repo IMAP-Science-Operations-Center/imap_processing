@@ -115,3 +115,7 @@ checks = ["all", #report on all checks, except the following
     "ES01", # Ignore No extended summary found
     "RT02" ] # Ignore The first line of the Returns section
 exclude = ['__init__' ] # don't report on objects that match any of these regex
+
+[tool.mypy]
+follow_imports = 'skip'
+exclude = ["tests", "tools", "docs","imap_processing/cli.py", "imap_processing/utils.py", "cdf", "imap_processing/decom.py", "ultra", "swe", "swapi", "mag", "lo", "idex", "ialirt", "glows", "codice" ]
