@@ -161,6 +161,16 @@ def test_ph_velocity(
     tof, t2, xb, yb = get_ph_tof_and_back_positions(
         events_dataset, selected_rows_1.Xf.values.astype("float")
     )
+    #
+    # index_left = np.where(df_filt["CoinType"] == 1)[0]
+    # index_right = np.where(df_filt["CoinType"] == 2)[0]
+    # index = np.concatenate((index_left, index_right))
+    #
+    # # TODO: This is as close as I can get. I suspect that the lookup
+    # # table that I have is not correct. Leave as TODO.
+    # test_xc = df_filt["Xc"].iloc[index].astype("float")
+    # _, xc = get_coincidence_positions(events_dataset, tof)
+    # assert xc == pytest.approx(test_xc.values, rel=1)
 
     test_energy = df_filt["Energy"].iloc[indices].astype("float")
     r = df_filt["r"].iloc[indices].astype("float")

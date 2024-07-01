@@ -50,31 +50,37 @@ def get_ph_tof_and_back_positions(events_dataset: xarray.Dataset, xf: np.array):
     yb : np.array
         Back positions in y direction (hundredths of a millimeter).
     """
-    indices = np.where(np.isin(events_dataset["STOP_TYPE"], [1, 2]))[0]
+    index_top = np.where(events_dataset["STOP_TYPE"] == 1)[0]
+    index_bottom = np.where(events_dataset["STOP_TYPE"] == 2)[0]
+    indices = np.concatenate((index_top, index_bottom))
 
     # There are mismatches between the stop TDCs, i.e., SpN, SpS, SpE, and SpW.
     # This normalizes the TDCs
+    # TpSpNNorm
     sp_n_norm = get_norm(
-        events_dataset["STOP_NORTH_TDC"].data[indices], "TpSpNNorm", "ultra45"
+        events_dataset["STOP_NORTH_TDC"].data[indices], "SpN", "ultra45"
     )
+    # TpSpSNorm
     sp_s_norm = get_norm(
-        events_dataset["STOP_SOUTH_TDC"].data[indices], "TpSpSNorm", "ultra45"
+        events_dataset["STOP_SOUTH_TDC"].data[indices], "SpS", "ultra45"
     )
+    # TpSpENorm
     sp_e_norm = get_norm(
-        events_dataset["STOP_EAST_TDC"].data[indices], "TpSpENorm", "ultra45"
+        events_dataset["STOP_EAST_TDC"].data[indices], "SpE", "ultra45"
     )
+    # TpSpWNorm
     sp_w_norm = get_norm(
-        events_dataset["STOP_WEST_TDC"].data[indices], "TpSpWNorm", "ultra45"
+        events_dataset["STOP_WEST_TDC"].data[indices], "SpW", "ultra45"
     )
 
     # Convert normalized TDC values into units of hundredths of a
     # millimeter using lookup tables.
-    xb_index = sp_s_norm.values - sp_n_norm.values + 2047
-    yb_index = sp_e_norm.values - sp_w_norm.values + 2047
+    xb_index = sp_s_norm - sp_n_norm + 2047
+    yb_index = sp_e_norm - sp_w_norm + 2047
 
     # Convert xf to a tof offset
-    tofx = sp_n_norm.values + sp_s_norm.values
-    tofy = sp_e_norm.values + sp_w_norm.values
+    tofx = sp_n_norm + sp_s_norm
+    tofy = sp_e_norm + sp_w_norm
 
     # tof is the average of the two tofs measured in the X and Y directions,
     # tofx and tofy
@@ -91,7 +97,6 @@ def get_ph_tof_and_back_positions(events_dataset: xarray.Dataset, xf: np.array):
     # Stop Type: 1=Top, 2=Bottom
     # Convert converts normalized TDC values into units of
     # hundredths of a millimeter using lookup tables.
-    index_top = indices[events_dataset["STOP_TYPE"].data[indices] == 1]
     stop_type_top = events_dataset["STOP_TYPE"].data[indices] == 1
     xb[index_top] = get_back_position(xb_index[stop_type_top], "XBkTp", "ultra45")
     yb[index_top] = get_back_position(yb_index[stop_type_top], "YBkTp", "ultra45")
@@ -237,9 +242,7 @@ def get_front_y_position(
     return d, yf
 
 
-def get_coincidence_positions(
-    index: int, events_dataset: xarray.Dataset, particle_tof: float
-):
+def get_coincidence_positions(events_dataset: xarray.Dataset, particle_tof: float):
     """
     Calculate coincidence positions.
 
@@ -272,44 +275,49 @@ def get_coincidence_positions(
     xc : float
         x coincidence position (hundredths of a millimeter).
     """
-    # TODO: This works for the top and bottom anodes (e.g. TpSpNNorm, BtSpNNorm)?
+    index_left = np.where(events_dataset["COIN_TYPE"] == 1)[0]
+    index_right = np.where(events_dataset["COIN_TYPE"] == 2)[0]
 
-    if (
-        events_dataset["COIN_TYPE"].data[index] == 1
-        or events_dataset["COIN_TYPE"].data[index] == 2
-    ):
-        # Normalized TDCs
-        # For the stop anode, there are mismatches between the coincidence TDCs,
-        # i.e., CoinN and CoinS. They must be normalized via lookup tables.
-        coin_n_norm = get_norm(
-            events_dataset["COIN_NORTH_TDC"], "TpCoinNNorm", "ultra45"
-        )
-        coin_s_norm = get_norm(
-            events_dataset["COIN_SOUTH_TDC"], "TpCoinSNorm", "ultra45"
-        )
+    # Normalized TDCs
+    # For the stop anode, there are mismatches between the coincidence TDCs,
+    # i.e., CoinN and CoinS. They must be normalized via lookup tables.
 
-    else:
-        raise ValueError("Error: Invalid Coincidence Type")
+    # TpCoinNNorm Top
+    coin_n_norm_left = get_norm(
+        events_dataset["COIN_NORTH_TDC"][index_left], "CoinN", "ultra45"
+    )
+    # TpCoinSNorm Top
+    coin_s_norm_left = get_norm(
+        events_dataset["COIN_SOUTH_TDC"][index_left], "CoinS", "ultra45"
+    )
+    t1_left = coin_n_norm_left + coin_s_norm_left  # /2 incorporated into scale
+    xc_left = get_image_params("XCOINTPSC") * (
+        coin_s_norm_left - coin_n_norm_left
+    ) + get_image_params("XCOINTPOFF")  # millimeter
+    t2_left = get_image_params("ETOFSC") * t1_left + get_image_params("ETOFTPOFF")
 
-    t1 = coin_n_norm + coin_s_norm  # /2 incorporated into scale
-
-    if events_dataset["COIN_TYPE"].data[index] == 1:
-        # calculate x coincidence position xc
-        xc = get_image_params("XCoinTpSc") * (
-            coin_s_norm - coin_n_norm
-        ) / 1024 + get_image_params("XCoinTpOff")  # hundredths of a millimeter
-        t2 = get_image_params("eTOFSc") * t1 / 1024 + get_image_params("eTOFTpOff")
-    elif events_dataset["COIN_TYPE"].data[index] == 2:
-        # calculate x coincidence position xc
-        xc = get_image_params("XCoinBtSc") * (
-            coin_s_norm - coin_n_norm
-        ) / 1024 + get_image_params("XCoinBtOff")  # hundredths of a millimeter
-        t2 = get_image_params("eTOFSc") * t1 / 1024 + get_image_params("eTOFBtOff")
-    else:
-        raise ValueError("Error: Invalid Coin Type")
+    # TpCoinNNorm Bottom
+    coin_n_norm_right = get_norm(
+        events_dataset["COIN_NORTH_TDC"][index_right], "CoinN", "ultra45"
+    )
+    # TpCoinSNorm Bottom
+    coin_s_norm_right = get_norm(
+        events_dataset["COIN_SOUTH_TDC"][index_right], "CoinS", "ultra45"
+    )
+    t1_right = coin_n_norm_right + coin_s_norm_right  # /2 incorporated into scale
+    xc_right = get_image_params("XCOINBTSC") * (
+        coin_s_norm_right - coin_n_norm_right
+    ) + get_image_params("XCOINBTOFF")  # millimeter
+    t2_right = get_image_params("ETOFSC") * t1_right + get_image_params("ETOFBTOFF")
 
     # Time for the electrons to travel back to coincidence anode.
+    t2 = np.concatenate((t2_left, t2_right))
+    # Convert to hundredths of a millimeter by multiplying times 100
+    xc = np.concatenate((xc_left * 100, xc_right * 100))
+
     etof = t2 - particle_tof
+    etof = etof.astype(np.float64)
+    xc = xc.astype(np.float64)
 
     return etof, xc
 

@@ -31,7 +31,7 @@ def test_get_stop_norm():
     tdc_norm_path = f"{base_path}/ultra45_tdc_norm.csv"
     tdc_norm_df = pd.read_csv(tdc_norm_path, header=1)
 
-    stop_norm = get_norm(378, "TpSpENorm", "ultra45")
+    stop_norm = get_norm(378, "SpE", "ultra45")
 
     assert stop_norm == tdc_norm_df["SpE"][378]
 

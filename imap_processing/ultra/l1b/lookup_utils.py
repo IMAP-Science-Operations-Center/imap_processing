@@ -1,7 +1,5 @@
 """Contains tools for lookup tables for l1b."""
 
-import re
-
 import pandas as pd
 
 from imap_processing import imap_module_directory
@@ -65,15 +63,12 @@ def get_norm(dn: int, key: str, file_label: str):
         Normalized DNs.
     """
     # We only need the center string, i.e. SpN, SpS, SpE, SpW
-    match = re.search(r"(Sp[NSEW])", key)
-    search_key = match.group(1)
-
     tdc_norm_path = f"{base_path}/{file_label}_tdc_norm.csv"
     tdc_norm_df = pd.read_csv(tdc_norm_path, header=1, index_col="Index")
 
-    dn_norm = tdc_norm_df[search_key].iloc[dn]
+    dn_norm = tdc_norm_df[key].iloc[dn]
 
-    return dn_norm
+    return dn_norm.values
 
 
 def get_back_position(back_index: int, key: str, file_label: str):

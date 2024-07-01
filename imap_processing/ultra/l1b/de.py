@@ -5,6 +5,7 @@ import xarray as xr
 
 from imap_processing.ultra.l1b.ultra_l1b_extended import (
     determine_species_pulse_height,
+    get_coincidence_positions,
     get_energy_pulse_height,
     get_front_x_position,
     get_front_y_position,
@@ -62,6 +63,8 @@ def calculate_de(de_dataset: xr.Dataset, name: str) -> xr.Dataset:
         ph_tof,
     )
 
+    etof, xc = get_coincidence_positions(de_dataset, ph_tof)
+
     # SSD
     ssd_indices = np.where(de_dataset["STOP_TYPE"] >= 8)
     ssd_xf = get_front_x_position(
@@ -84,6 +87,7 @@ def calculate_de(de_dataset: xr.Dataset, name: str) -> xr.Dataset:
     de_dict["vx_ultra"] = np.zeros(len(epoch), dtype=np.float64)
     de_dict["vy_ultra"] = np.zeros(len(epoch), dtype=np.float64)
     de_dict["vz_ultra"] = np.zeros(len(epoch), dtype=np.float64)
+    de_dict["etof"] = np.zeros(len(epoch), dtype=np.float64)
     de_dict["energy"] = np.zeros(len(epoch), dtype=np.uint64)
     de_dict["species"] = np.zeros(len(epoch), dtype=np.uint64)
 
