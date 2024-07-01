@@ -195,30 +195,30 @@ class HistogramL1A:
     """
 
     l0: InitVar[HistogramL0]
-    histograms: list[int] = None
+    histograms: list[int] = field(init=False)
     # next four are in block header
-    flight_software_version: int = None
-    ground_software_version: str = None
-    pkts_file_name: str = None
-    seq_count_in_pkts_file: int = None
-    last_spin_id: int = None
-    imap_start_time: TimeTuple = None
-    imap_time_offset: TimeTuple = None
-    glows_start_time: TimeTuple = None
-    glows_time_offset: TimeTuple = None
+    flight_software_version: int = field(init=False)
+    ground_software_version: str = field(init=False)
+    pkts_file_name: str = field(init=False)
+    seq_count_in_pkts_file: int = field(init=False)
+    last_spin_id: int = field(init=False)
+    imap_start_time: TimeTuple = field(init=False)
+    imap_time_offset: TimeTuple = field(init=False)
+    glows_start_time: TimeTuple = field(init=False)
+    glows_time_offset: TimeTuple = field(init=False)
     # Following variables are copied from L0
-    number_of_spins_per_block: int = None
-    number_of_bins_per_histogram: int = None
-    number_of_events: int = None
-    filter_temperature_average: int = None
-    filter_temperature_variance: int = None
-    hv_voltage_average: int = None
-    hv_voltage_variance: int = None
-    spin_period_average: int = None
-    spin_period_variance: int = None
-    pulse_length_average: int = None
-    pulse_length_variance: int = None
-    flags: dict = None
+    number_of_spins_per_block: int = field(init=False)
+    number_of_bins_per_histogram: int = field(init=False)
+    number_of_events: int = field(init=False)
+    filter_temperature_average: int = field(init=False)
+    filter_temperature_variance: int = field(init=False)
+    hv_voltage_average: int = field(init=False)
+    hv_voltage_variance: int = field(init=False)
+    spin_period_average: int = field(init=False)
+    spin_period_variance: int = field(init=False)
+    pulse_length_average: int = field(init=False)
+    pulse_length_variance: int = field(init=False)
+    flags: dict = field(init=False)
 
     def __post_init__(self, l0: HistogramL0) -> None:
         """
@@ -329,8 +329,8 @@ class DirectEventL1A:
     de_data: bytearray = field(repr=False)  # Do not include in prints
     most_recent_seq: int
     missing_seq: list[int]
-    status_data: StatusData = None
-    direct_events: list[DirectEvent] = None
+    status_data: StatusData = field(init=False)
+    direct_events: list[DirectEvent] = field(init=False)
 
     def __init__(self, level0: DirectEventL0):
         self.l0 = level0
