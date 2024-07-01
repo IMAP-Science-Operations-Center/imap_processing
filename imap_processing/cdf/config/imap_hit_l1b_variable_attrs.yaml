@@ -37,7 +37,10 @@ epoch:
   REFERENCE_POSITION: Rotating Earth Geoid
 
 adc_channels:   # adc_channels is a dependency for leak_i data variable
-  <<: *support_default
+  DISPLAY_TYPE: no_plot
+  FILLVAL: -9223372036854775808
+  UNITS: ' '
+  SCALETYP: linear
   VALIDMIN: 0
   VALIDMAX: 63
   VAR_TYPE: metadata
@@ -244,12 +247,12 @@ spin_period_long:
 
 leak_i:
   <<: *support_default
-  depend_1: adc_channels
+  DEPEND_1: adc_channels
   CATDESC: Leakage Current [I]
   FIELDNAM: Leakage Current [I]
   LABLAXIS: Current I
   labl_ptr: adc_channels
-  FORMAT: I19",
+  FORMAT: I19
 
 phasic_stat:
   <<: *support_default
@@ -302,7 +305,7 @@ dac1_enable:
 
 # TODO Update data formats. Should be float values. Need more info from instrument team
 
-preamp_l234a":
+preamp_l234a:
   <<: *default
   VALIDMAX: 4095  # Need more info from instr. team
   CATDESC: Preamp L234A Voltage
@@ -338,7 +341,7 @@ preamp_l234b:
   CATDESC: Preamp L234B Voltage
   FIELDNAM: Preamp L234B Voltage
   LABLAXIS: Voltage
-  FORMAT: I4
+  FORMAT: I2
   UNITS: V
   FILLVAL: -1.0000000E+31
 

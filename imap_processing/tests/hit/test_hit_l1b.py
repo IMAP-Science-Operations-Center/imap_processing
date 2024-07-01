@@ -22,7 +22,7 @@ def test_create_hk_dataset():
     Creates a xarray dataset for housekeeping data
     """
 
-    l1b_hk_dataset = hit_l1b.create_hk_dataset()
+    l1b_hk_dataset = hit_l1b.create_hk_dataset("001")
     assert isinstance(l1b_hk_dataset, xr.Dataset)
 
 
