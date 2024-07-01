@@ -330,7 +330,7 @@ class DirectEventL1A:
     most_recent_seq: int
     missing_seq: list[int]
     status_data: StatusData = field(init=False)
-    direct_events: list[DirectEvent] = field(init=False)
+    direct_events: list[DirectEvent] = field(init=False, default=None)  # type: ignore[arg-type]
 
     def __init__(self, level0: DirectEventL0):
         self.l0 = level0
