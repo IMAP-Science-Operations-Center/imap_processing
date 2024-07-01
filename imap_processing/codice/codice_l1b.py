@@ -22,7 +22,9 @@ logger.setLevel(logging.INFO)
 # TODO: Fix ISTP compliance issues (revealed in SKTEditor)
 
 
-def create_hskp_dataset(l1a_dataset, cdf_attrs) -> xr.Dataset:
+def create_hskp_dataset(
+    l1a_dataset: xr.Dataset, cdf_attrs: ImapCdfAttributes
+) -> xr.Dataset:
     """
     Create an ``xarray`` dataset for the housekeeping data.
 
@@ -79,7 +81,7 @@ def create_hskp_dataset(l1a_dataset, cdf_attrs) -> xr.Dataset:
 
 
 def create_science_dataset(
-    l1a_dataset: xr.Dataset, cdf_attrs, dataset_name
+    l1a_dataset: xr.Dataset, cdf_attrs: ImapCdfAttributes, dataset_name: str
 ) -> xr.Dataset:
     """
     Create an ``xarray`` dataset for the science data.

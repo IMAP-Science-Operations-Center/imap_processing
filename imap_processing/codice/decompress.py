@@ -74,13 +74,13 @@ def _apply_lossy_b(compressed_value: int) -> int:
     return LOSSY_B_TABLE[compressed_value]
 
 
-def _apply_lzma_lossless(compressed_value: int) -> int:
+def _apply_lzma_lossless(compressed_value: bytes) -> int:
     """
     Apply LZMA lossless decompression algorithm.
 
     Parameters
     ----------
-    compressed_value : int
+    compressed_value : bytes
         The compressed 8-bit value.
 
     Returns
@@ -89,9 +89,9 @@ def _apply_lzma_lossless(compressed_value: int) -> int:
         The 24- or 32-bit decompressed value.
     """
     decompressed_value = lzma.decompress(compressed_value)
-    decompressed_value = int.from_bytes(decompressed_value, byteorder="big")
+    decompressed_value_int = int.from_bytes(decompressed_value, byteorder="big")
 
-    return decompressed_value
+    return decompressed_value_int
 
 
 def decompress(compressed_value: int, algorithm: IntEnum) -> int:

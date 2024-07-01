@@ -52,4 +52,5 @@ def decom_packets(packet_file: Path) -> list:
     xtce_document = Path(
         f"{imap_module_directory}/codice/packet_definitions/{packet_to_xtce_mapping[packet_file.name]}"
     )
-    return decom.decom_packets(packet_file, xtce_document)
+    decom_packet_list: list = decom.decom_packets(packet_file, xtce_document)
+    return decom_packet_list
