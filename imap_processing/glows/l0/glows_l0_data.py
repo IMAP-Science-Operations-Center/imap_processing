@@ -116,7 +116,7 @@ class HistogramL0(GlowsL0):
     EVENTS: int
     HISTOGRAM_DATA: bytearray
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """Convert HISTOGRAM_DATA attribute from string to bytearray if needed."""
         if isinstance(self.HISTOGRAM_DATA, str):
             # Convert string output from space_packet_parser to bytearray
@@ -162,7 +162,7 @@ class DirectEventL0(GlowsL0):
     SEQ: int
     DE_DATA: bytearray = field(repr=False)  # Do not include in print
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """Convert from string to bytearray if DE_DATA is a string of ones and zeros."""
         if isinstance(self.DE_DATA, str):
             # Convert string output from space_packet_parser to bytearray
@@ -170,7 +170,7 @@ class DirectEventL0(GlowsL0):
                 int(self.DE_DATA, 2).to_bytes(len(self.DE_DATA) // 8, "big")
             )
 
-    def within_same_sequence(self, other):
+    def within_same_sequence(self, other: "DirectEventL0") -> bool:
         """
         Compare fields for L0 which should be the same for packets within one sequence.
 
@@ -178,7 +178,7 @@ class DirectEventL0(GlowsL0):
 
         Parameters
         ----------
-        other : int
+        other : DirectEventL0
             Another instance of DirectEventL0 to compare to.
 
         Returns
