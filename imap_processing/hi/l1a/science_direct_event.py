@@ -284,7 +284,9 @@ def create_dataset(de_data_list: list, packet_met_time: list) -> xr.Dataset:
     )
 
     for var_name, data in data_dict.items():
-        attrs = cdf_manager.get_variable_attributes(f"hi_de_{var_name}").copy()
+        attrs = cdf_manager.get_variable_attributes(
+            f"hi_de_{var_name}", check_schema=False
+        ).copy()
         dtype = attrs.pop("dtype")
         dataset[var_name] = xr.DataArray(
             np.array(data, dtype=np.dtype(dtype)),
