@@ -67,16 +67,15 @@ def test_create_datasets(unpacked_packets):
         "ccsds_header",
         "leak_i_raw",
     ]
-    datasets_by_apid = hit_l1a.create_datasets(grouped_data, skip_keys=skip_keys)
+    datasets_by_apid = hit_l1a.create_datasets(grouped_data, "001", skip_keys=skip_keys)
     assert len(datasets_by_apid.keys()) == 1
     assert isinstance(datasets_by_apid[hit_l1a.HitAPID.HIT_HSKP], xr.Dataset)
 
 
 def test_hit_l1a(packet_filepath):
-    """Create L1A CDF files
+    """Create L1A datasets
 
-    Creates a CDF file for each apid dataset and stores all
-    cdf file paths in a list
+    Creates xarray datasets from a packet.
 
     Parameters
     ----------

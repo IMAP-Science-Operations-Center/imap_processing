@@ -11,8 +11,7 @@ import numpy as np
 import xarray as xr
 
 from imap_processing import decom, imap_module_directory, utils
-from imap_processing.cdf.global_attrs import ConstantCoordinates
-from imap_processing.hit import hit_cdf_attrs
+from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.hit.l0.data_classes.housekeeping import Housekeeping
 
 logger = logging.getLogger(__name__)
@@ -73,11 +72,8 @@ def hit_l1a(packet_file: typing.Union[Path, str], data_version: str):
         "ccsds_header",
         "leak_i_raw",
     ]
-    datasets = create_datasets(grouped_data, skip_keys)
+    datasets = create_datasets(grouped_data, data_version, skip_keys)
 
-    for dataset in datasets.values():
-        # TODO: update to use the add_global_attribute() function
-        dataset.attrs["Data_version"] = data_version
     return list(datasets.values())
 
 
@@ -135,7 +131,7 @@ def group_data(unpacked_data: list):
     return grouped_data
 
 
-def create_datasets(data: dict, skip_keys=None):
+def create_datasets(data: dict, data_version, skip_keys=None):
     """
     Create a dataset for each APID in the data.
 
@@ -143,6 +139,8 @@ def create_datasets(data: dict, skip_keys=None):
     ----------
     data : dict
         A single dictionary containing data for all instances of an APID.
+    data_version : str
+        Version of the data product being created.
     skip_keys : list, Optional
         Keys to skip in the metadata.
 
@@ -152,9 +150,23 @@ def create_datasets(data: dict, skip_keys=None):
         A dictionary containing xarray.Dataset for each APID. Each dataset in the
         dictionary will be converted to a CDF.
     """
+    # create the attribute manager for this data level
+    attr_mgr = ImapCdfAttributes()
+    attr_mgr.add_instrument_global_attrs(instrument="hit")
+    attr_mgr.add_instrument_variable_attrs(instrument="hit", level="l1a")
+    attr_mgr.add_global_attribute("Data_version", data_version)
+
     logger.info("Creating datasets for HIT L1A data")
     processed_data = {}
     for apid, data_packets in data.items():
+        if apid == HitAPID.HIT_HSKP:
+            logical_source = "imap_hit_l1a_hk"
+        elif apid == HitAPID.HIT_SCIENCE:
+            logical_source = "imap_hit_l1a_sci-counts"
+            # TODO what about pulse height? It has the same apid.
+            #  Will need to approach this differently
+        else:
+            raise Exception(f"Unknown APID [{apid}]")
         metadata_arrays = defaultdict(list)
         for packet in data_packets:
             # Add metadata to an array
@@ -173,20 +185,20 @@ def create_datasets(data: dict, skip_keys=None):
             epoch_converted_times,
             name="epoch",
             dims=["epoch"],
-            attrs=ConstantCoordinates.EPOCH,
+            attrs=attr_mgr.get_variable_attributes("epoch"),
         )
 
         adc_channels = xr.DataArray(
-            np.array(np.arange(64), dtype=np.uint16),
+            np.arange(64, dtype=np.uint16),
             name="adc_channels",
             dims=["adc_channels"],
-            attrs=hit_cdf_attrs.l1a_hk_attrs["adc_channels"].output(),
+            attrs=attr_mgr.get_variable_attributes("adc_channels"),
         )
 
         # Create xarray dataset
         dataset = xr.Dataset(
             coords={"epoch": epoch_time, "adc_channels": adc_channels},
-            attrs=hit_cdf_attrs.hit_hk_l1a_attrs.output(),
+            attrs=attr_mgr.get_global_attributes(logical_source),
         )
 
         # Create xarray data array for each metadata field
@@ -197,13 +209,13 @@ def create_datasets(data: dict, skip_keys=None):
                     dataset[key] = xr.DataArray(
                         value,
                         dims=["epoch", "adc_channels"],
-                        attrs=hit_cdf_attrs.l1a_hk_attrs[key].output(),
+                        attrs=attr_mgr.get_variable_attributes(key),
                     )
                 else:
                     dataset[key] = xr.DataArray(
                         value,
                         dims=["epoch"],
-                        attrs=hit_cdf_attrs.l1a_hk_attrs[key].output(),
+                        attrs=attr_mgr.get_variable_attributes(key),
                     )
         processed_data[apid] = dataset
     logger.info("HIT L1A datasets created")
