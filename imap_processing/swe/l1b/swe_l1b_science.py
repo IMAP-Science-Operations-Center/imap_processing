@@ -118,7 +118,7 @@ def deadtime_correction(counts: np.ndarray, acq_duration: int) -> np.ndarray:
     return corrected_count
 
 
-def convert_counts_to_rate(data: np.ndarray, acq_duration: float) -> np.ndarray:
+def convert_counts_to_rate(data: np.ndarray, acq_duration: int) -> np.ndarray:
     """
     Convert counts to rate using sampling time.
 
@@ -128,7 +128,7 @@ def convert_counts_to_rate(data: np.ndarray, acq_duration: float) -> np.ndarray:
     ----------
     data : numpy.ndarray
         Counts data.
-    acq_duration : float
+    acq_duration : int
         Acquisition duration. acq_duration is in millieseconds.
 
     Returns
@@ -137,7 +137,7 @@ def convert_counts_to_rate(data: np.ndarray, acq_duration: float) -> np.ndarray:
         Count rates array in seconds.
     """
     # convert milliseconds to seconds
-    acq_duration = acq_duration / 1000.0
+    acq_duration = int(acq_duration / 1000.0)
     return data / acq_duration
 
 
