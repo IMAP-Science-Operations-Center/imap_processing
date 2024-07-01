@@ -4,12 +4,10 @@ from pathlib import Path
 
 from tools.xtce_generation.telemetry_generator import TelemetryGenerator
 
-# I am changing this
-
 
 def editing_packets_dictionary(packets: dict):
     """
-    Small file to edit dictionary.
+    Method for editing dictionary.
 
     Parameters
     ----------
@@ -181,6 +179,8 @@ def main():
         telemetry_generator.generate_telemetry_xml(
             f"{packet_definition_path}/{packet_name}.xml", packet_name
         )
+
+    # return packets
 
 
 if __name__ == "__main__":

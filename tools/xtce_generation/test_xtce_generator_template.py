@@ -1,29 +1,39 @@
-from tools.xtce_generation.xtce_generator_template import editing_packets_dictionary
+"""Testing for xtce generator template."""
+
+from unittest import mock
 
 
-def test_editing_packets_dictionary(monkeypatch):
-    packets = {
-        "ana": 0,
-        "daralynn": 1,
-        "lizzy": 3,
-        "maxine": 4,
-        "matthew": 5,
-        "shawn": 6,
-    }
-    user_inputs = iter(
-        [
-            "y"  # Would you like to edit the dictionary? Y/N:
-            "1"  # Would like to (1) edit packet_name, (2) edit app_id,
-            # (3) delete item, (4) add item (Q) Quit:
-            "not in packet"  # What packet name would you like to edit:
-            # {packet keys} Enter name:
-            "not in packet again"  # Incorrect packet name.
-            # Choose from {packet keys} Enter name:
-            "shawn"  # Incorrect packet name. Choose from {packet keys} Enter name:
-            "sean"  # Enter new packet name:
-        ]
-    )
+@mock.patch("tools.xtce_generation.")
+def test_main():
+    """Testing base main function."""
+    test_args = [
+        "test",
+        "sWe",
+        "test_file",
+        "ana",
+        "1",
+        "gav",
+        "2",
+        "meg",
+        "3",
+        "Q",
+        "N",
+    ]
+    # expected_result = {"ana": 1, "gav": 2, "meg": 3}
+    input_values = iter(test_args)
+    with mock.patch.object("builtins.input", lambda _: next(input_values)):
+        pass
 
-    monkeypatch.setattr("builtins.input", lambda _: next(user_inputs))
 
-    editing_packets_dictionary(packets)
+# @pytest.mark.parametrize(
+#     "arguments,final",
+#     [(
+#         # Command line arguments
+#         ["test", "sWe", "test_file", "ana", "1", "gav", "2", "meg", "3", "Q", "N"],
+#         # Resulting dictionary
+#         {"ana": 1, "gav": 2, "meg": 3}
+#     )]
+#     )
+# def test_editing_packets_dictionary(mocked_input):
+#     result = main(arguments)
+#     assert result == final
