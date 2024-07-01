@@ -103,22 +103,17 @@ def parse_direct_event(event_data: str) -> dict:
     dict
         Parsed event data.
     """
-    event_type = int(event_data[:2])
+    event_type = int(event_data[:2], 2)
     metaevent = 0
     if event_type == metaevent:
         # parse metaevent
-        event_type = event_data[:2]  # type: ignore[assignment]
-        # TODO Change, Incompatible types in assignment
-        # (expression has type "str", variable has type "int")
         esa_step = event_data[2:6]
         subseconds = event_data[6:16]
         seconds = event_data[16:]
 
         # return parsed metaevent data
         return {
-            "start_bitmask_data": int(event_type, 2),  # type: ignore[call-overload]
-            # TODO Change, No overload variant of "int"
-            # matches argument types "int", "int"
+            "start_bitmask_data": event_type,
             "esa_step": int(esa_step, 2),
             "subseconds": int(subseconds, 2),
             "seconds": int(seconds, 2),
