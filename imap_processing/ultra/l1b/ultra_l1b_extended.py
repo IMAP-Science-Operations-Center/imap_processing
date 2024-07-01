@@ -17,7 +17,7 @@ from imap_processing.ultra.l1b.lookup_utils import (
 logger = logging.getLogger(__name__)
 
 
-def get_ph_tof_and_back_positions(events_dataset: xarray.Dataset, xf: np.array):
+def get_ph_tof_and_back_positions(de_dataset: xarray.Dataset, xf: np.array):
     """
     Calculate back xb, yb position and tof.
 
@@ -33,7 +33,7 @@ def get_ph_tof_and_back_positions(events_dataset: xarray.Dataset, xf: np.array):
 
     Parameters
     ----------
-    events_dataset : xarray.Dataset
+    de_dataset : xarray.Dataset
         Data in xarray format.
     xf : np.array
         x front position in (hundredths of a millimeter).
@@ -50,27 +50,21 @@ def get_ph_tof_and_back_positions(events_dataset: xarray.Dataset, xf: np.array):
     yb : np.array
         Back positions in y direction (hundredths of a millimeter).
     """
-    index_top = np.where(events_dataset["STOP_TYPE"] == 1)[0]
-    index_bottom = np.where(events_dataset["STOP_TYPE"] == 2)[0]
-    indices = np.concatenate((index_top, index_bottom))
+    indices = np.where(np.isin(de_dataset["STOP_TYPE"], [1, 2]))[0]
 
     # There are mismatches between the stop TDCs, i.e., SpN, SpS, SpE, and SpW.
     # This normalizes the TDCs
-    # TpSpNNorm
     sp_n_norm = get_norm(
-        events_dataset["STOP_NORTH_TDC"].data[indices], "SpN", "ultra45"
+        de_dataset["STOP_NORTH_TDC"].data[indices], "SpN", "ultra45"
     )
-    # TpSpSNorm
     sp_s_norm = get_norm(
-        events_dataset["STOP_SOUTH_TDC"].data[indices], "SpS", "ultra45"
+        de_dataset["STOP_SOUTH_TDC"].data[indices], "SpS", "ultra45"
     )
-    # TpSpENorm
     sp_e_norm = get_norm(
-        events_dataset["STOP_EAST_TDC"].data[indices], "SpE", "ultra45"
+        de_dataset["STOP_EAST_TDC"].data[indices], "SpE", "ultra45"
     )
-    # TpSpWNorm
     sp_w_norm = get_norm(
-        events_dataset["STOP_WEST_TDC"].data[indices], "SpW", "ultra45"
+        de_dataset["STOP_WEST_TDC"].data[indices], "SpW", "ultra45"
     )
 
     # Convert normalized TDC values into units of hundredths of a
@@ -87,17 +81,18 @@ def get_ph_tof_and_back_positions(events_dataset: xarray.Dataset, xf: np.array):
     # Units in tenths of a nanosecond
     t1 = tofx + tofy  # /2 incorporated into scale
 
-    xb = np.zeros(len(events_dataset["STOP_TYPE"]))
-    yb = np.zeros(len(events_dataset["STOP_TYPE"]))
+    xb = np.zeros(len(de_dataset["STOP_TYPE"]))
+    yb = np.zeros(len(de_dataset["STOP_TYPE"]))
 
     # particle_tof (t2) used later to compute etof
-    t2 = np.zeros(len(events_dataset["STOP_TYPE"]))
-    tof = np.zeros(len(events_dataset["STOP_TYPE"]))
+    t2 = np.zeros(len(de_dataset["STOP_TYPE"]))
+    tof = np.zeros(len(de_dataset["STOP_TYPE"]))
 
     # Stop Type: 1=Top, 2=Bottom
     # Convert converts normalized TDC values into units of
     # hundredths of a millimeter using lookup tables.
-    stop_type_top = events_dataset["STOP_TYPE"].data[indices] == 1
+    index_top = indices[de_dataset["STOP_TYPE"].data[indices] == 1]
+    stop_type_top = de_dataset["STOP_TYPE"].data[indices] == 1
     xb[index_top] = get_back_position(xb_index[stop_type_top], "XBkTp", "ultra45")
     yb[index_top] = get_back_position(yb_index[stop_type_top], "YBkTp", "ultra45")
 
@@ -107,8 +102,8 @@ def get_ph_tof_and_back_positions(events_dataset: xarray.Dataset, xf: np.array):
     )
     tof[index_top] = t2[index_top] + xf[stop_type_top] * get_image_params("XFTTOF")
 
-    index_bottom = indices[events_dataset["STOP_TYPE"].data[indices] == 2]
-    stop_type_bottom = events_dataset["STOP_TYPE"].data[indices] == 2
+    index_bottom = indices[de_dataset["STOP_TYPE"].data[indices] == 2]
+    stop_type_bottom = de_dataset["STOP_TYPE"].data[indices] == 2
     xb[index_bottom] = get_back_position(xb_index[stop_type_bottom], "XBkBt", "ultra45")
     yb[index_bottom] = get_back_position(yb_index[stop_type_bottom], "YBkBt", "ultra45")
 
@@ -169,7 +164,7 @@ def get_front_x_position(start_type: np.array, start_position_tdc: np.array):
 
 
 def get_front_y_position(
-    events_dataset: xarray.DataArray, yb: np.array
+    de_dataset: xarray.DataArray, yb: np.array
 ) -> tuple[np.array, np.array]:
     """
     Compute the adjustments for the front y position and distance front to back.
@@ -180,7 +175,7 @@ def get_front_y_position(
 
     Parameters
     ----------
-    events_dataset : xarray.DataArray
+    de_dataset : xarray.DataArray
         Data in xarray format.
     yb : np.array
         y back position in hundredths of a millimeter.
@@ -198,14 +193,14 @@ def get_front_y_position(
     slit_z = 44.89  # position of slit on Z axis (mm)
 
     # Determine start types
-    start_type_left = events_dataset["START_TYPE"].data == 1
-    start_type_right = events_dataset["START_TYPE"].data == 2
-    index_array = np.arange(len(events_dataset["START_TYPE"]))
+    start_type_left = de_dataset["START_TYPE"].data == 1
+    start_type_right = de_dataset["START_TYPE"].data == 2
+    index_array = np.arange(len(de_dataset["START_TYPE"]))
     index_left = index_array[start_type_left]
     index_right = index_array[start_type_right]
 
-    yf = np.zeros(len(events_dataset["START_TYPE"]))
-    d = np.zeros(len(events_dataset["START_TYPE"]))
+    yf = np.zeros(len(de_dataset["START_TYPE"]))
+    d = np.zeros(len(de_dataset["START_TYPE"]))
 
     yf_estimate_left = 40.0  # front position of particle for left shutter (mm)
     yf_estimate_right = -40.0  # front position of particle for right shutter (mm)
@@ -242,7 +237,7 @@ def get_front_y_position(
     return d, yf
 
 
-def get_coincidence_positions(events_dataset: xarray.Dataset, particle_tof: float):
+def get_coincidence_positions(de_dataset: xarray.Dataset, particle_tof: float):
     """
     Calculate coincidence positions.
 
@@ -261,7 +256,7 @@ def get_coincidence_positions(events_dataset: xarray.Dataset, particle_tof: floa
     ----------
     index : int
         Index of the event.
-    events_dataset : xarray.Dataset
+    de_dataset : xarray.Dataset
         Data in xarray format.
     particle_tof : float
         Particle time of flight (i.e. from start to stop)
@@ -275,8 +270,8 @@ def get_coincidence_positions(events_dataset: xarray.Dataset, particle_tof: floa
     xc : float
         x coincidence position (hundredths of a millimeter).
     """
-    index_left = np.where(events_dataset["COIN_TYPE"] == 1)[0]
-    index_right = np.where(events_dataset["COIN_TYPE"] == 2)[0]
+    index_left = np.where(de_dataset["COIN_TYPE"] == 1)[0]
+    index_right = np.where(de_dataset["COIN_TYPE"] == 2)[0]
 
     # Normalized TDCs
     # For the stop anode, there are mismatches between the coincidence TDCs,
@@ -284,11 +279,11 @@ def get_coincidence_positions(events_dataset: xarray.Dataset, particle_tof: floa
 
     # TpCoinNNorm Top
     coin_n_norm_left = get_norm(
-        events_dataset["COIN_NORTH_TDC"][index_left], "CoinN", "ultra45"
+        de_dataset["COIN_NORTH_TDC"][index_left], "CoinN", "ultra45"
     )
     # TpCoinSNorm Top
     coin_s_norm_left = get_norm(
-        events_dataset["COIN_SOUTH_TDC"][index_left], "CoinS", "ultra45"
+        de_dataset["COIN_SOUTH_TDC"][index_left], "CoinS", "ultra45"
     )
     t1_left = coin_n_norm_left + coin_s_norm_left  # /2 incorporated into scale
     xc_left = get_image_params("XCOINTPSC") * (
@@ -298,11 +293,11 @@ def get_coincidence_positions(events_dataset: xarray.Dataset, particle_tof: floa
 
     # TpCoinNNorm Bottom
     coin_n_norm_right = get_norm(
-        events_dataset["COIN_NORTH_TDC"][index_right], "CoinN", "ultra45"
+        de_dataset["COIN_NORTH_TDC"][index_right], "CoinN", "ultra45"
     )
     # TpCoinSNorm Bottom
     coin_s_norm_right = get_norm(
-        events_dataset["COIN_SOUTH_TDC"][index_right], "CoinS", "ultra45"
+        de_dataset["COIN_SOUTH_TDC"][index_right], "CoinS", "ultra45"
     )
     t1_right = coin_n_norm_right + coin_s_norm_right  # /2 incorporated into scale
     xc_right = get_image_params("XCOINBTSC") * (
@@ -322,12 +317,12 @@ def get_coincidence_positions(events_dataset: xarray.Dataset, particle_tof: floa
     return etof, xc
 
 
-def get_ssd_offset_and_positions(events_dataset: xarray.Dataset):
+def get_ssd_offset_and_positions(de_dataset: xarray.Dataset):
     """Figure out what SSD a particle hit.
 
     Parameters
     ----------
-    events_dataset : xarray.Dataset
+    de_dataset : xarray.Dataset
         Data in xarray format.
 
     Returns
@@ -346,10 +341,10 @@ def get_ssd_offset_and_positions(events_dataset: xarray.Dataset):
 
     # START_TYPE: 1=Left
     indices = np.where(
-        (events_dataset["STOP_TYPE"] >= 8) & (events_dataset["START_TYPE"] == 1)
+        (de_dataset["STOP_TYPE"] >= 8) & (de_dataset["START_TYPE"] == 1)
     )[0]
     for i in range(8):
-        ssd_index = indices[events_dataset[f"SSD_FLAG_{i}"].data[indices] == 1]
+        ssd_index = indices[de_dataset[f"SSD_FLAG_{i}"].data[indices] == 1]
         ssd_indices = np.concatenate((ssd_indices, ssd_index))
 
         ssds = np.concatenate((ssds, np.full(len(ssd_index), i, dtype=int)))
@@ -362,10 +357,10 @@ def get_ssd_offset_and_positions(events_dataset: xarray.Dataset):
 
     # START_TYPE: 2=Right
     indices = np.where(
-        (events_dataset["STOP_TYPE"] >= 8) & (events_dataset["START_TYPE"] == 2)
+        (de_dataset["STOP_TYPE"] >= 8) & (de_dataset["START_TYPE"] == 2)
     )[0]
     for i in range(8):
-        ssd_index = indices[events_dataset[f"SSD_FLAG_{i}"].data[indices] == 1]
+        ssd_index = indices[de_dataset[f"SSD_FLAG_{i}"].data[indices] == 1]
         ssd_indices = np.concatenate((ssd_indices, ssd_index))
 
         ssds = np.concatenate((ssds, np.full(len(ssd_index), i, dtype=int)))
@@ -380,7 +375,7 @@ def get_ssd_offset_and_positions(events_dataset: xarray.Dataset):
     return ssd_indices, ybs * 100, tof_offsets, ssds
 
 
-def get_ssd_tof(events_dataset: xarray.Dataset, xf: np.array):
+def get_ssd_tof(de_dataset: xarray.Dataset, xf: np.array):
     """
     Calculate back xb, yb position for the SSDs.
 
@@ -400,7 +395,7 @@ def get_ssd_tof(events_dataset: xarray.Dataset, xf: np.array):
 
     Parameters
     ----------
-    events_dataset : xarray.Dataset
+    de_dataset : xarray.Dataset
         Data in xarray format.
     xf : np.array
         Front x position (hundredths of a millimeter)
@@ -410,12 +405,12 @@ def get_ssd_tof(events_dataset: xarray.Dataset, xf: np.array):
     tof : int
         Time of flight (tenths of a nanosecond).
     """
-    ssd_indices, ybs, tof_offsets, ssd = get_ssd_offset_and_positions(events_dataset)
+    ssd_indices, ybs, tof_offsets, ssd = get_ssd_offset_and_positions(de_dataset)
 
     # in nanoseconds
     time = (
         get_image_params("TOFSSDSC")
-        * events_dataset["COIN_DISCRETE_TDC"].data[ssd_indices]
+        * de_dataset["COIN_DISCRETE_TDC"].data[ssd_indices]
         + tof_offsets
     )
 
@@ -431,7 +426,7 @@ def get_ssd_tof(events_dataset: xarray.Dataset, xf: np.array):
     return ssd_indices, tof, ssd
 
 
-def get_energy_pulse_height(events_dataset: xarray.Dataset, xb: np.array, yb: np.array):
+def get_energy_pulse_height(de_dataset: xarray.Dataset, xb: np.array, yb: np.array):
     """
     Calculate the pulse-height energy.
 
@@ -444,7 +439,7 @@ def get_energy_pulse_height(events_dataset: xarray.Dataset, xb: np.array, yb: np
 
     Parameters
     ----------
-    events_dataset : xarray.Dataset
+    de_dataset : xarray.Dataset
         Data in xarray format.
     xb : np.array
         x back position (hundredths of a millimeter).
@@ -457,14 +452,14 @@ def get_energy_pulse_height(events_dataset: xarray.Dataset, xb: np.array, yb: np
         Energy measured using the pulse height
         from the stop anode (DN).
     """
-    indices_1 = np.where(events_dataset["STOP_TYPE"] == 1)[0]
-    indices_2 = np.where(events_dataset["STOP_TYPE"] == 2)[0]
+    indices_1 = np.where(de_dataset["STOP_TYPE"] == 1)[0]
+    indices_2 = np.where(de_dataset["STOP_TYPE"] == 2)[0]
 
     # Stop type 1
     xlut = (xb[indices_1] / 100 - 25 / 2) * 20 / 50  # mm
     ylut = (yb[indices_1] / 100 + 82 / 2) * 32 / 82  # mm
     energy_1 = xlut + ylut  # placeholder
-    # energy = events_dataset["ENERGY_PH"].data[indices_1] -
+    # energy = de_dataset["ENERGY_PH"].data[indices_1] -
     # get_image_params("SpTpPHOffset")
     # TODO * SpTpPHCorr[xlut, ylut] / 1024; George Clark working on it
 
@@ -472,7 +467,7 @@ def get_energy_pulse_height(events_dataset: xarray.Dataset, xb: np.array, yb: np
     xlut = (xb[indices_2] / 100 + 50 + 25 / 2) * 20 / 50  # mm
     ylut = (yb[indices_2] / 100 + 82 / 2) * 32 / 82  # mm
     energy_2 = xlut + ylut  # placeholder
-    # energy = events_dataset["ENERGY_PH"].data[indices_2] -
+    # energy = de_dataset["ENERGY_PH"].data[indices_2] -
     # energy = pulse_height - get_image_params("SpBtPHOffset")
     # TODO * SpBtPHCorr[xlut, ylut]/1024; George Clark working on it
 
@@ -483,7 +478,7 @@ def get_energy_pulse_height(events_dataset: xarray.Dataset, xb: np.array, yb: np
 
 
 def get_energy_ssd(
-    events_dataset: xarray.Dataset, ssd_indices: np.array, ssd: np.array
+    de_dataset: xarray.Dataset, ssd_indices: np.array, ssd: np.array
 ):
     """
     Get SSD energy.
@@ -499,7 +494,7 @@ def get_energy_ssd(
 
     Parameters
     ----------
-    events_dataset: xarray.Dataset
+    de_dataset: xarray.Dataset
         Events dataset.
     ssd_indices : np.array
         Indices of the event.
@@ -514,13 +509,13 @@ def get_energy_ssd(
     # TODO: find a reference for this
     composite_energy_threshold = 1706
 
-    energy = events_dataset["ENERGY_PH"].data[ssd_indices]
+    energy = de_dataset["ENERGY_PH"].data[ssd_indices]
 
     composite_energy = np.empty(len(energy), dtype=np.float64)
 
     composite_energy[energy >= composite_energy_threshold] = (
         composite_energy_threshold
-        + events_dataset["PULSE_WIDTH"][ssd_indices][
+        + de_dataset["PULSE_WIDTH"][ssd_indices][
             energy >= composite_energy_threshold
         ]
     )
@@ -720,13 +715,13 @@ def get_path_length(front_position, back_position, d):
     return r
 
 
-def get_extended_raw_events(events_dataset):
+def get_extended_raw_events(de_dataset):
     """
     Create dictionary of extended raw events.
 
     Parameters
     ----------
-    events_dataset : dict
+    de_dataset : dict
         Data in xarray format.
 
     Returns
@@ -750,30 +745,30 @@ def get_extended_raw_events(events_dataset):
     """
     data_dict = defaultdict(list)
 
-    for time in events_dataset["SHCOARSE"].data:
-        index = np.where(events_dataset["SHCOARSE"].data == time)[0][0]
-        count = events_dataset["COUNT"].data[index]
+    for time in de_dataset["SHCOARSE"].data:
+        index = np.where(de_dataset["SHCOARSE"].data == time)[0][0]
+        count = de_dataset["COUNT"].data[index]
 
         if count == 0:
             process_count_zero(data_dict)
             continue  # TODO: handle as needed: -1?
 
         # Shared processing for valid start types
-        start_type = events_dataset["START_TYPE"].data[index]
+        start_type = de_dataset["START_TYPE"].data[index]
         if start_type not in [1, 2]:
             raise ValueError("Error: Invalid Start Type")
 
-        start_position_tdc = events_dataset["START_POS_TDC"].data[index]
+        start_position_tdc = de_dataset["START_POS_TDC"].data[index]
         xf = get_front_x_position(start_type, start_position_tdc)
-        stop_type = events_dataset["STOP_TYPE"].data[index]
+        stop_type = de_dataset["STOP_TYPE"].data[index]
 
         if stop_type in [1, 2]:
             # Process for Top and Bottom stop types
             tof, particle_tof, xb, yb = get_ph_tof_and_back_positions(
-                index, events_dataset, xf
+                index, de_dataset, xf
             )
             d, yf = get_front_y_position(start_type, yb)
-            pulse_height = events_dataset["ENERGY_PH"].data[index]
+            pulse_height = de_dataset["ENERGY_PH"].data[index]
             # TODO stopped here
             energy = get_energy_pulse_height(pulse_height, stop_type, xb, yb)
             r = get_path_length(xf, xb, yf, yb, d)
@@ -781,9 +776,9 @@ def get_extended_raw_events(events_dataset):
             velocity = get_particle_velocity(xf, xb, yf, yb, d)
         elif stop_type >= 8:
             # Process for SSD stop types
-            xb, yb, tof = get_ssd_tof(index, events_dataset, xf)
+            xb, yb, tof = get_ssd_tof(index, de_dataset, xf)
             d, yf = get_front_y_position(start_type, yb)
-            energy = get_energy_ssd(index, events_dataset)
+            energy = get_energy_ssd(index, de_dataset)
             r = get_path_length(xf, xb, yf, yb, d)
             ctof, bin = determine_species_ssd(energy, tof, r)
             velocity = get_particle_velocity(xf, xb, yf, yb, d)
@@ -801,9 +796,9 @@ def get_extended_raw_events(events_dataset):
         data_dict["species"].append(bin)
         data_dict["velocity"].append(velocity)
 
-        coincidence_type = events_dataset["COIN_TYPE"].data[index]
+        coincidence_type = de_dataset["COIN_TYPE"].data[index]
         if coincidence_type in [1, 2]:
-            etof, xc = get_coincidence_positions(index, events_dataset, particle_tof)
+            etof, xc = get_coincidence_positions(index, de_dataset, particle_tof)
 
             # Append to dictionary
             data_dict["coincidence_position"].append((xc, yc))

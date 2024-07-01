@@ -13,6 +13,7 @@ from imap_processing.ultra.l1a.ultra_l1a import create_dataset
 from imap_processing.ultra.l1b.ultra_l1b_extended import (
     determine_species_pulse_height,
     determine_species_ssd,
+    get_coincidence_positions,
     get_energy_pulse_height,
     get_energy_ssd,
     get_front_x_position,
@@ -24,10 +25,11 @@ from imap_processing.ultra.l1b.ultra_l1b_extended import (
     get_ssd_tof,
 )
 from imap_processing.utils import group_by_apid
+from imap_processing.ultra.l1b.de import calculate_de
 
 
 @pytest.fixture()
-def events_dataset(ccsds_path_theta_0, xtce_path):
+def de_dataset(ccsds_path_theta_0, xtce_path):
     """Test data"""
     packets = decom.decom_packets(ccsds_path_theta_0, xtce_path)
     grouped_data = group_by_apid(packets)
@@ -47,19 +49,19 @@ def events_dataset(ccsds_path_theta_0, xtce_path):
     )
 
     # Remove start_type with fill values
-    events_dataset = dataset.where(
+    de_dataset = dataset.where(
         dataset["START_TYPE"] != GlobalConstants.INT_FILLVAL, drop=True
     )
-    return events_dataset
+    return de_dataset
 
 
 def test_get_front_x_position(
-    events_dataset,
+    de_dataset,
     events_fsw_comparison_theta_0,
 ):
     """Tests get_front_x_position function."""
-    indices_1 = np.where(events_dataset["START_TYPE"] == 1)[0]
-    indices_2 = np.where(events_dataset["START_TYPE"] == 2)[0]
+    indices_1 = np.where(de_dataset["START_TYPE"] == 1)[0]
+    indices_2 = np.where(de_dataset["START_TYPE"] == 2)[0]
 
     df = pd.read_csv(events_fsw_comparison_theta_0)
     df_filt = df[df["StartType"] != -1]
@@ -67,8 +69,8 @@ def test_get_front_x_position(
     selected_rows_2 = df_filt.iloc[indices_2]
 
     xf = get_front_x_position(
-        events_dataset["START_TYPE"].data,
-        events_dataset["START_POS_TDC"].data,
+        de_dataset["START_TYPE"].data,
+        de_dataset["START_POS_TDC"].data,
     )
 
     # TODO: should we try to match FSW data on this?
@@ -83,13 +85,13 @@ def test_get_front_x_position(
 
 
 def test_ph_xb_yb(
-    events_dataset,
+    de_dataset,
     events_fsw_comparison_theta_0,
 ):
     """Tests xb and yb from get_back_positions function."""
 
-    indices_1 = np.where(events_dataset["STOP_TYPE"] == 1)[0]
-    indices_2 = np.where(events_dataset["STOP_TYPE"] == 2)[0]
+    indices_1 = np.where(de_dataset["STOP_TYPE"] == 1)[0]
+    indices_2 = np.where(de_dataset["STOP_TYPE"] == 2)[0]
 
     indices = np.concatenate((indices_1, indices_2))
     indices.sort()
@@ -99,19 +101,19 @@ def test_ph_xb_yb(
     selected_rows_1 = df_filt.iloc[indices]
 
     _, _, xb, yb = get_ph_tof_and_back_positions(
-        events_dataset, selected_rows_1.Xf.values.astype("float")
+        de_dataset, selected_rows_1.Xf.values.astype("float")
     )
 
-    np.testing.assert_array_equal(xb[indices], selected_rows_1["Xb"].astype("float"))
-    np.testing.assert_array_equal(yb[indices], selected_rows_1["Yb"].astype("float"))
+    np.testing.assert_array_equal(xb, selected_rows_1["Xb"].astype("float"))
+    np.testing.assert_array_equal(yb, selected_rows_1["Yb"].astype("float"))
 
 
 def test_get_ssd_offset_and_positions(
-    events_dataset,
+    de_dataset,
     events_fsw_comparison_theta_0,
 ):
     """Tests get_ssd_offset_and_positions function."""
-    ssd_indices, ybs, tof_offsets = get_ssd_offset_and_positions(events_dataset)
+    ssd_indices, ybs, tof_offsets, _ = get_ssd_offset_and_positions(de_dataset)
 
     df = pd.read_csv(events_fsw_comparison_theta_0)
     df_filt = df[df["StartType"] != -1]
@@ -133,16 +135,16 @@ def test_get_ssd_offset_and_positions(
 
 def test_ph_velocity(
     events_fsw_comparison_theta_0,
-    events_dataset,
+    de_dataset,
 ):
     """Tests velocity and other parameters used for velocity."""
-    indices = np.where(np.isin(events_dataset["STOP_TYPE"], [1, 2]))[0]
+    indices = np.where(np.isin(de_dataset["STOP_TYPE"], [1, 2]))[0]
 
     df = pd.read_csv(events_fsw_comparison_theta_0)
     df_filt = df[df["StartType"] != -1]
     selected_rows_1 = df_filt.iloc[indices]
 
-    d, yf = get_front_y_position(events_dataset, df_filt.Yb.values.astype("float"))
+    d, yf = get_front_y_position(de_dataset, df_filt.Yb.values.astype("float"))
 
     assert yf == pytest.approx(df_filt["Yf"].astype("float"), 1e-3)
 
@@ -156,21 +158,21 @@ def test_ph_velocity(
     assert r == pytest.approx(df_filt["r"].astype("float"), rel=1e-3)
 
     # TODO: test get_energy_pulse_height
-    energy = get_energy_pulse_height(events_dataset, test_xb, test_yb)
+    energy = get_energy_pulse_height(de_dataset, test_xb, test_yb)
 
     tof, t2, xb, yb = get_ph_tof_and_back_positions(
-        events_dataset, selected_rows_1.Xf.values.astype("float")
+        de_dataset, selected_rows_1.Xf.values.astype("float")
     )
-    #
-    # index_left = np.where(df_filt["CoinType"] == 1)[0]
-    # index_right = np.where(df_filt["CoinType"] == 2)[0]
-    # index = np.concatenate((index_left, index_right))
-    #
-    # # TODO: This is as close as I can get. I suspect that the lookup
-    # # table that I have is not correct. Leave as TODO.
-    # test_xc = df_filt["Xc"].iloc[index].astype("float")
-    # _, xc = get_coincidence_positions(events_dataset, tof)
-    # assert xc == pytest.approx(test_xc.values, rel=1)
+
+    index_left = np.where(df_filt["CoinType"] == 1)[0]
+    index_right = np.where(df_filt["CoinType"] == 2)[0]
+    index = np.concatenate((index_left, index_right))
+
+    # TODO: This is as close as I can get. I suspect that the lookup
+    # table that I have is not correct. Leave as TODO.
+    test_xc = df_filt["Xc"].iloc[index].astype("float")
+    _, xc = get_coincidence_positions(de_dataset, tof)
+    assert xc == pytest.approx(test_xc.values, rel=1)
 
     test_energy = df_filt["Energy"].iloc[indices].astype("float")
     r = df_filt["r"].iloc[indices].astype("float")
@@ -203,19 +205,18 @@ def test_ph_velocity(
 
 def test_ssd_velocity(
     events_fsw_comparison_theta_0,
-    events_dataset,
+    de_dataset,
 ):
     """Tests velocity and other parameters used for velocity."""
 
-    indices = np.where(events_dataset["STOP_TYPE"] >= 8)[0]
     df = pd.read_csv(events_fsw_comparison_theta_0)
     df_filt = df[df["StartType"] != -1]
 
     xf = df_filt["Xf"].astype("float").values
 
-    ssd_indices, tof, ssd = get_ssd_tof(indices, events_dataset, xf)
+    ssd_indices, tof, ssd = get_ssd_tof(de_dataset, xf)
 
-    energy = get_energy_ssd(events_dataset, ssd_indices, ssd)
+    energy = get_energy_ssd(de_dataset, ssd_indices, ssd)
     test_energy = df_filt["Energy"].iloc[ssd_indices].astype("float")
 
     # TODO: the last values don't match. Look into this.
