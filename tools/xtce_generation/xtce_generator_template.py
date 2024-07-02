@@ -1,6 +1,7 @@
-"""XTCE generator script."""
+"""XTCE generator script that uses CLI for generalized format."""
 
 import argparse
+import json
 from pathlib import Path
 
 import imap_data_access
@@ -16,7 +17,7 @@ def _parse_args():
     The expected input format is:
     --instrument "instrument_name"
     --filename "file_name"
-    --packets [{"packet_name_1": app_id_1, "packet_name_2": app_id_2}]
+    --packets '{"packet_name_1": app_id_1, "packet_name_2": app_id_2}'
 
     Returns
     -------
@@ -24,15 +25,15 @@ def _parse_args():
         An object containing the parsed arguments and their values.
     """
     description = (
-        "This command line program generates an instrument specific XTCE file "
+        "This command line program generates an instrument specific XTCE file."
         "Example usage: "
         '--instrument "swapi"'
         '--filename "TLM_SWP_20231006-121021.xlsx"'
-        '--packets "['
-        '   {"P_SWP_HK": 1184,'
-        '    "P_SWP_SCI": 1188,'
-        '   "P_SWP_AUT": 1192,'
-        '}]"'
+        "--packets '"
+        '{"P_SWP_HK": 1184, '
+        '"P_SWP_SCI": 1188, '
+        '"P_SWP_AUT": 1192, '
+        "}'"
     )
     instrument_help = (
         "The instrument to process. Acceptable values are: "
@@ -46,11 +47,11 @@ def _parse_args():
         "Example usage: "
         '--instrument "swapi"'
         '--filename "TLM_SWP_20231006-121021.xlsx"'
-        '--packets "['
-        '   {"P_SWP_HK": 1184,'
-        '    "P_SWP_SCI": 1188,'
-        '   "P_SWP_AUT": 1192,'
-        '}]"'
+        "--packets '"
+        '{"P_SWP_HK": 1184, '
+        '"P_SWP_SCI": 1188, '
+        '"P_SWP_AUT": 1192, '
+        "}'"
     )
 
     parser = argparse.ArgumentParser(prog="imap_xtce", description=description)
@@ -65,7 +66,7 @@ def _parse_args():
 
 def _validate_args(args):
     """
-    Ensure that the  arguments are valid before kicking off the processing.
+    Ensure that the instrument is valid.
 
     Parameters
     ----------
@@ -80,18 +81,12 @@ def _validate_args(args):
 
 
 def main():
-    """Docstring."""
-    # Command line arguments form:
-    # --instrument
-    # "instrument_name"
-    # --file - name
-    # "file_name"
-    # --packets[{"packet_name_1": app_id_1, "packet_name_2": app_id_2}].
+    """Generate xtce file from CLI information given."""
 
+    # Parse arguments, and validate instrument
     args = _parse_args()
     _validate_args(args)
 
-    # TODO: change instrument name
     instrument_name = args.instrument
     current_directory = Path(__file__).parent
     module_path = f"{current_directory}/../../imap_processing"
@@ -99,16 +94,8 @@ def main():
     # TODO: Copy packet definition to tools/xtce_generation/ folder
     path_to_excel_file = f"{current_directory}/{args.filename}"
 
-    # TODO: update packets dictionary with packet name and appId
-    # Eg.
-    # packets = {
-    #     "P_COD_HI_PHA": 1169,
-    #     "P_COD_LO_PHA": 1153,
-    #     "P_COD_LO_NSW_SPECIES_COUNTS": 1157,
-    #     "P_COD_HI_OMNI_SPECIES_COUNTS": 1172,
-    # }
-
-    packets = {args.packets}
+    # Update packets dictionary with given CLI information
+    packets = json.loads(args.packets)
 
     for packet_name, app_id in packets.items():
         print(packet_name)
