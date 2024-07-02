@@ -1,16 +1,12 @@
 """Unpack IMAP-Hi histogram data."""
 
-import dataclasses
-
 import numpy as np
 import xarray as xr
 from space_packet_parser.parser import Packet
 
-from imap_processing.cdf.global_attrs import ConstantCoordinates
+from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import met_to_j2000ns
-from imap_processing.hi import hi_cdf_attrs
 
-# TODO: Verify that these names are OK for counter variables in the CDF
 # define the names of the 24 counter arrays
 # contained in the histogram packet
 QUALIFIED_COUNTERS = (
@@ -59,7 +55,7 @@ def create_dataset(packets: list[Packet]) -> xr.Dataset:
     for i_epoch, packet in enumerate(packets):
         dataset.epoch.data[i_epoch] = met_to_j2000ns(packet.data["CCSDS_MET"].raw_value)
         dataset.ccsds_met[i_epoch] = packet.data["CCSDS_MET"].raw_value
-        dataset.esa_step[i_epoch] = packet.data["ESA_STEP"].raw_value
+        dataset.esa_stepping_num[i_epoch] = packet.data["ESA_STEP"].raw_value
 
         # unpack 24 arrays of 90 12-bit unsigned integers
         counters_binary_data = packet.data["COUNTERS"].raw_value
@@ -92,49 +88,53 @@ def allocate_histogram_dataset(num_packets: int) -> xr.Dataset:
     dataset : xarray.Dataset
         Empty xarray.Dataset ready to be filled with packet data.
     """
+    attr_mgr = ImapCdfAttributes()
+    attr_mgr.add_instrument_global_attrs(instrument="hi")
+    attr_mgr.load_variable_attributes("imap_hi_variable_attrs.yaml")
     # preallocate the xr.DataArrays for all CDF attributes based on number of packets
     coords = dict()
     coords["epoch"] = xr.DataArray(
         np.empty(num_packets, dtype="datetime64[ns]"),
         name="epoch",
         dims=["epoch"],
-        attrs=ConstantCoordinates.EPOCH,
+        attrs=attr_mgr.get_variable_attributes("hi_hist_epoch"),
     )
     # Histogram data is binned in 90, 4-degree bins
-    # TODO: Confirm whether to define bins by centers or edges. For now centers
-    #    are assumed.
     coords["angle"] = xr.DataArray(
         np.arange(2, 360, 4),
         name="angle",
         dims=["angle"],
-        attrs=hi_cdf_attrs.hi_hist_l1a_angle_attrs.output(),
+        attrs=attr_mgr.get_variable_attributes("hi_hist_angle"),
     )
     data_vars = dict()
     data_vars["ccsds_met"] = xr.DataArray(
         np.empty(num_packets, dtype=np.uint32),
         dims=["epoch"],
-        attrs=hi_cdf_attrs.ccsds_met_attrs.output(),
+        attrs=attr_mgr.get_variable_attributes("hi_hist_ccsds_met"),
     )
-    data_vars["esa_step"] = xr.DataArray(
+    data_vars["esa_stepping_num"] = xr.DataArray(
         np.empty(num_packets, dtype=np.uint8),
         dims=["epoch"],
-        attrs=hi_cdf_attrs.esa_step_attrs.output(),
+        attrs=attr_mgr.get_variable_attributes("hi_hist_esa_stepping_num"),
     )
 
-    for counter in (*QUALIFIED_COUNTERS, *LONG_COUNTERS, *TOTAL_COUNTERS):
-        data_vars[counter] = xr.DataArray(
+    # Allocate xarray.DataArray objects for the 24 90-element histogram counters
+    default_counter_attrs = attr_mgr.get_variable_attributes("hi_hist_counters")
+    for counter_name in (*QUALIFIED_COUNTERS, *LONG_COUNTERS, *TOTAL_COUNTERS):
+        # Inject counter name into generic counter attributes
+        counter_attrs = default_counter_attrs.copy()
+        for key, val in counter_attrs.items():
+            if isinstance(val, str) and "{counter_name}" in val:
+                counter_attrs[key] = val.format(counter_name=counter_name)
+        data_vars[counter_name] = xr.DataArray(
             data=np.empty((num_packets, len(coords["angle"])), np.uint16),
             dims=["epoch", "angle"],
-            attrs=dataclasses.replace(
-                hi_cdf_attrs.hi_hist_l1a_counter_attrs,
-                catdesc=f"Angular histogram of {counter} type events",
-                fieldname=f"{counter} histogram",
-                label_axis=counter,
-            ).output(),
+            attrs=counter_attrs,
         )
+
     dataset = xr.Dataset(
         data_vars=data_vars,
         coords=coords,
-        attrs=hi_cdf_attrs.hi_hist_l1a_global_attrs.output(),
+        attrs=attr_mgr.get_global_attributes("imap_hi_l1a_hist_attrs"),
     )
     return dataset
