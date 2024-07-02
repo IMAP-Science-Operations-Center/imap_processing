@@ -137,6 +137,7 @@ def convert_counts_to_rate(data: np.ndarray, acq_duration: int) -> np.ndarray:
         Count rates array in seconds.
     """
     # convert milliseconds to seconds
+    # Todo: check with SWE team about int or float types.
     acq_duration = int(acq_duration / 1000.0)
     return data / acq_duration
 
