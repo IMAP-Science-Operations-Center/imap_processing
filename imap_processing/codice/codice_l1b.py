@@ -61,7 +61,7 @@ def create_hskp_dataset(l1a_dataset, cdf_attrs) -> xr.Dataset:
         #      catdesc = value.short_description
         # I am holding off making this change until I acquire updated housekeeping
         # packets/validation data that match the latest telemetry definitions
-        attrs = cdf_attrs.variable_attributes["codice_support_attrs"]
+        attrs = cdf_attrs.get_variable_attributes("codice_support_attrs")
         attrs["CATDESC"] = "TBD"
         attrs["DEPEND_0"] = "epoch"
         attrs["FIELDNAM"] = "TBD"
