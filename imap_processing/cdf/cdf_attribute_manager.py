@@ -6,6 +6,7 @@ Developed based of HermesDataSchema from HERMES-SOC/hermes_core.
 
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 
 import yaml
@@ -75,10 +76,11 @@ class CdfAttributeManager:
         self.variable_attribute_schema = self._load_default_variable_attr_schema()
 
         # Load Default IMAP Global Attributes
-        self.global_attributes = CdfAttributeManager._load_yaml_data(
+        self._global_attributes = CdfAttributeManager._load_yaml_data(
             self.source_dir / DEFAULT_GLOBAL_CDF_ATTRS_FILE
         )
-        self.variable_attributes: dict[str, dict] = dict()
+        self._variable_attributes = dict()
+        
 
     def _load_default_global_attr_schema(self) -> yaml:
         """
@@ -125,7 +127,7 @@ class CdfAttributeManager:
         file_path : str
             File path to load, under self.source_dir.
         """
-        self.global_attributes.update(
+        self._global_attributes.update(
             CdfAttributeManager._load_yaml_data(self.source_dir / file_path)
         )
 
@@ -147,7 +149,7 @@ class CdfAttributeManager:
         attribute_value : str
             The value of the attribute to add.
         """
-        self.global_attributes[attribute_name] = attribute_value
+        self._global_attributes[attribute_name] = attribute_value
 
     @staticmethod
     def _load_yaml_data(file_path: str | Path) -> yaml:
@@ -193,15 +195,15 @@ class CdfAttributeManager:
         """
         output = dict()
         for attr_name, attr_schema in self.global_attribute_schema.items():
-            if attr_name in self.global_attributes:
-                output[attr_name] = self.global_attributes[attr_name]
+            if attr_name in self._global_attributes:
+                output[attr_name] = self._global_attributes[attr_name]
             # Retrieve instrument specific global attributes from the variable file
             elif (
                 instrument_id is not None
-                and attr_name in self.global_attributes[instrument_id]
+                and attr_name in self._global_attributes[instrument_id]
             ):
-                output[attr_name] = self.global_attributes[instrument_id][attr_name]
-            elif attr_schema["required"] and attr_name not in self.global_attributes:
+                output[attr_name] = self._global_attributes[instrument_id][attr_name]
+            elif attr_schema["required"] and attr_name not in self._global_attributes:
                 # TODO throw an error
                 output[attr_name] = None
 
@@ -221,9 +223,9 @@ class CdfAttributeManager:
         raw_var_attrs = CdfAttributeManager._load_yaml_data(self.source_dir / file_name)
         var_attrs = raw_var_attrs.copy()
 
-        self.variable_attributes.update(var_attrs)
+        self._variable_attributes.update(var_attrs)
 
-    def get_variable_attributes(self, variable_name: str) -> dict:
+    def get_variable_attributes(self, variable_name: str, check_schema=True) -> dict:
         """
         Get the attributes for a given variable name.
 
@@ -235,12 +237,82 @@ class CdfAttributeManager:
         variable_name : str
             The name of the variable to retrieve attributes for.
 
+        check_schema : bool
+            Flag to bypass schema validation.
+
         Returns
         -------
         dict
-            Dictionary of variable attributes.
+            Information containing specific variable attributes
+            associated with "variable_name".
         """
-        # TODO: Create a variable attribute schema file, validate here
-        if variable_name in self.variable_attributes:
-            return self.variable_attributes[variable_name]
-        return {}
+        # Case to handle attributes not in schema
+        if check_schema is False:
+            if variable_name in self._variable_attributes:
+                return self._variable_attributes[variable_name]
+            # TODO: throw an error?
+            return {}
+
+        output = dict()
+        for attr_name in self.variable_attribute_schema["attribute_key"]:
+            # Standard case
+            if attr_name in self._variable_attributes[variable_name]:
+                output[attr_name] = self._variable_attributes[variable_name][attr_name]
+            # Case to handle DEPEND_i schema issues
+            elif attr_name == "DEPEND_i":
+                # DEFAULT_0 is not required, UNLESS we are dealing with
+                # variable_name = epoch
+                # Find all the attributes of variable_name that contain "DEPEND"
+                variable_depend_attrs = [
+                    key
+                    for key in self._variable_attributes[variable_name].keys()
+                    if "DEPEND" in key
+                ]
+                # Confirm that each DEPEND_i attribute is unique
+                if len(set(variable_depend_attrs)) != len(variable_depend_attrs):
+                    logging.warning(
+                        f"Found duplicate DEPEND_i attribute in variable "
+                        f"{variable_name}: {variable_depend_attrs}"
+                    )
+                for variable_depend_attr in variable_depend_attrs:
+                    output[variable_depend_attr] = self._variable_attributes[
+                        variable_name
+                    ][variable_depend_attr]
+                # TODO: Add more DEPEND_0 variable checks!
+            # Case to handle LABL_PTR_i schema issues
+            elif attr_name == "LABL_PTR_i":
+                # Find all the attributes of variable_name that contain "LABL_PTR"
+                variable_labl_attrs = [
+                    key
+                    for key in self._variable_attributes[variable_name].keys()
+                    if "LABL_PTR" in key
+                ]
+                for variable_labl_attr in variable_labl_attrs:
+                    output[variable_labl_attr] = self._variable_attributes[
+                        variable_name
+                    ][variable_labl_attr]
+            # Case to handle REPRESENTATION_i schema issues
+            elif attr_name == "REPRESENTATION_i":
+                # Find all the attributes of variable_name that contain
+                # "REPRESENTATION_i"
+                variable_rep_attrs = [
+                    key
+                    for key in self._variable_attributes[variable_name].keys()
+                    if "REPRESENTATION" in key
+                ]
+                for variable_rep_attr in variable_rep_attrs:
+                    output[variable_rep_attr] = self._variable_attributes[
+                        variable_name
+                    ][variable_rep_attr]
+            # Validating required schema
+            elif (
+                self.variable_attribute_schema["attribute_key"][attr_name]["required"]
+                and attr_name not in self._variable_attributes[variable_name]
+            ):
+                logging.warning(
+                    "Required schema '" + attr_name + "' attribute not present"
+                )
+                output[attr_name] = ""
+
+        return output
+
