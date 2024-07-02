@@ -16,7 +16,7 @@ def test_main_general(mock_input):
         "test_script",
         "--instrument",
         "swe",
-        "--filename",
+        "--file_name",
         "TLM_SWP_20231006-121021.xlsx",
         "--packets",
         '{"P_SWP_HK": 1184, "P_SWP_SCI": 1188, "P_SWP_AUT": 1192}',
@@ -33,7 +33,7 @@ def test_main_inval_instr(mock_input):
         "test_script",
         "--instrument",
         "ana",
-        "--filename",
+        "--file_name",
         "TLM_SWP_20231006-121021.xlsx",
         "--packets",
         '{"P_SWP_HK": 1184, "P_SWP_SCI": 1188, "P_SWP_AUT": 1192}',
@@ -58,4 +58,22 @@ def test_main_inval_arg(mock_input):
     ]
     with mock.patch.object(sys, "argv", test_args):
         with pytest.raises(SystemExit):
+            main()
+
+
+# File does not exist
+@mock.patch("tools.xtce_generation.xtce_generator_template.main")
+def test_main_inval_file(mock_input):
+    """Testing with invalid file."""
+    test_args = [
+        "test_script",
+        "--instrument",
+        "glows",
+        "--file_name",
+        "This file is silly",
+        "--packets",
+        '{"P_SWP_HK": 1184, "P_SWP_SCI": 1188, "P_SWP_AUT": 1192}',
+    ]
+    with mock.patch.object(sys, "argv", test_args):
+        with pytest.raises(FileNotFoundError):
             main()

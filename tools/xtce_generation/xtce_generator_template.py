@@ -16,7 +16,7 @@ def _parse_args():
 
     The expected input format is:
     --instrument "instrument_name"
-    --filename "file_name"
+    --file_name "file_name"
     --packets '{"packet_name_1": app_id_1, "packet_name_2": app_id_2}'
 
     Returns
@@ -28,7 +28,7 @@ def _parse_args():
         "This command line program generates an instrument specific XTCE file."
         "Example usage: "
         '--instrument "swapi"'
-        '--filename "TLM_SWP_20231006-121021.xlsx"'
+        '--file_name "TLM_SWP_20231006-121021.xlsx"'
         "--packets '"
         '{"P_SWP_HK": 1184, '
         '"P_SWP_SCI": 1188, '
@@ -39,7 +39,7 @@ def _parse_args():
         "The instrument to process. Acceptable values are: "
         f"{imap_data_access.VALID_INSTRUMENTS}"
     )
-    filename_help = "Provide filename to write packets to."
+    file_name_help = "Provide file name to write packets to."
     packets_help = (
         "Provide packet dictionary using packet_name, and app_id."
         '{"<packet_name>": <app_id>}'
@@ -47,7 +47,7 @@ def _parse_args():
 
     parser = argparse.ArgumentParser(prog="imap_xtce", description=description)
     parser.add_argument("--instrument", type=str, required=True, help=instrument_help)
-    parser.add_argument("--filename", type=str, required=True, help=filename_help)
+    parser.add_argument("--file_name", type=str, required=True, help=file_name_help)
     parser.add_argument("--packets", type=str, required=True, help=packets_help)
 
     args = parser.parse_args()
@@ -70,6 +70,10 @@ def _validate_args(args):
             f"{imap_data_access.VALID_INSTRUMENTS}"
         )
 
+    directory = Path(__file__).parent / args.file_name
+    if not directory.exists():
+        raise FileNotFoundError(f"{args.file_name} does not exist.")
+
 
 def main():
     """Generate xtce file from CLI information given."""
@@ -79,10 +83,12 @@ def main():
     _validate_args(args)
 
     instrument_name = args.instrument
-    current_directory = Path(__file__).parent
-    module_path = f"{current_directory}/../../imap_processing"
-    packet_definition_path = f"{module_path}/{instrument_name}/packet_definitions"
-    path_to_excel_file = f"{current_directory}/{args.filename}"
+    current_directory = Path(__file__).parent.parent.parent
+    module_path = current_directory / "imap_processing"
+    packet_definition_path = module_path / instrument_name / "packet_definitions"
+    path_to_excel_file = (
+        current_directory / "tools" / "xtce_generation" / args.file_name
+    )
 
     # Update packets dictionary with given CLI information
     packets = json.loads(args.packets)
@@ -93,7 +99,7 @@ def main():
             packet_name=packet_name, path_to_excel_file=path_to_excel_file, apid=app_id
         )
         telemetry_generator.generate_telemetry_xml(
-            f"{packet_definition_path}/{packet_name}.xml", packet_name
+            packet_definition_path / f"{packet_name}.xml", packet_name
         )
 
 
