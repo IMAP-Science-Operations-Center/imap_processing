@@ -4,11 +4,9 @@ import numpy as np
 import xarray as xr
 from space_packet_parser.parser import Packet
 
-from imap_processing import imap_module_directory
-from imap_processing.cdf.cdf_attribute_manager import CdfAttributeManager
+from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import met_to_j2000ns
 
-# TODO: Verify that these names are OK for counter variables in the CDF
 # define the names of the 24 counter arrays
 # contained in the histogram packet
 QUALIFIED_COUNTERS = (
@@ -90,39 +88,38 @@ def allocate_histogram_dataset(num_packets: int) -> xr.Dataset:
     dataset : xarray.Dataset
         Empty xarray.Dataset ready to be filled with packet data.
     """
-    cdf_manager = CdfAttributeManager(imap_module_directory / "cdf" / "config")
-    cdf_manager.load_global_attributes("imap_hi_global_cdf_attrs.yaml")
-    cdf_manager.load_variable_attributes("imap_hi_variable_attrs.yaml")
+    attr_mgr = ImapCdfAttributes()
+    attr_mgr.add_instrument_global_attrs(instrument="hi")
+    attr_mgr.load_variable_attributes("imap_hi_variable_attrs.yaml")
     # preallocate the xr.DataArrays for all CDF attributes based on number of packets
     coords = dict()
     coords["epoch"] = xr.DataArray(
         np.empty(num_packets, dtype="datetime64[ns]"),
         name="epoch",
         dims=["epoch"],
-        attrs=cdf_manager.get_variable_attributes("hi_hist_epoch"),
+        attrs=attr_mgr.get_variable_attributes("hi_hist_epoch"),
     )
     # Histogram data is binned in 90, 4-degree bins
-    # TODO: Confirm whether to define bins by centers or edges. For now centers
-    #    are assumed.
     coords["angle"] = xr.DataArray(
         np.arange(2, 360, 4),
         name="angle",
         dims=["angle"],
-        attrs=cdf_manager.get_variable_attributes("hi_hist_angle"),
+        attrs=attr_mgr.get_variable_attributes("hi_hist_angle"),
     )
     data_vars = dict()
     data_vars["ccsds_met"] = xr.DataArray(
         np.empty(num_packets, dtype=np.uint32),
         dims=["epoch"],
-        attrs=cdf_manager.get_variable_attributes("hi_hist_ccsds_met"),
+        attrs=attr_mgr.get_variable_attributes("hi_hist_ccsds_met"),
     )
     data_vars["esa_stepping_num"] = xr.DataArray(
         np.empty(num_packets, dtype=np.uint8),
         dims=["epoch"],
-        attrs=cdf_manager.get_variable_attributes("hi_hist_esa_stepping_num"),
+        attrs=attr_mgr.get_variable_attributes("hi_hist_esa_stepping_num"),
     )
 
-    default_counter_attrs = cdf_manager.get_variable_attributes("hi_hist_counters")
+    # Allocate xarray.DataArray objects for the 24 90-element histogram counters
+    default_counter_attrs = attr_mgr.get_variable_attributes("hi_hist_counters")
     for counter_name in (*QUALIFIED_COUNTERS, *LONG_COUNTERS, *TOTAL_COUNTERS):
         # Inject counter name into generic counter attributes
         counter_attrs = default_counter_attrs.copy()
@@ -134,9 +131,10 @@ def allocate_histogram_dataset(num_packets: int) -> xr.Dataset:
             dims=["epoch", "angle"],
             attrs=counter_attrs,
         )
+
     dataset = xr.Dataset(
         data_vars=data_vars,
         coords=coords,
-        attrs=cdf_manager.get_global_attributes("imap_hi_l1a_hist_attrs"),
+        attrs=attr_mgr.get_global_attributes("imap_hi_l1a_hist_attrs"),
     )
     return dataset
