@@ -143,6 +143,15 @@ def create_datasets(data: dict, attr_mgr: ImapCdfAttributes):
         dictionary will be converted to a CDF.
     """
     logger.info("Creating datasets for HIT L1A data")
+
+    skip_keys = [
+        "shcoarse",
+        "ground_sw_version",
+        "packet_file_name",
+        "ccsds_header",
+        "leak_i_raw",
+    ]
+
     processed_data = {}
     for apid, data_packets in data.items():
         if apid == HitAPID.HIT_HSKP:
@@ -152,13 +161,6 @@ def create_datasets(data: dict, attr_mgr: ImapCdfAttributes):
             #  leak_i_raw can be handled in the housekeeping class as an
             #  InitVar so that it doesn't show up when you extract the object's
             #  field names.
-            skip_keys = [
-                "shcoarse",
-                "ground_sw_version",
-                "packet_file_name",
-                "ccsds_header",
-                "leak_i_raw",
-            ]
         elif apid == HitAPID.HIT_SCIENCE:
             logical_source = "imap_hit_l1a_sci-counts"
             # TODO what about pulse height? It has the same apid.
@@ -193,9 +195,21 @@ def create_datasets(data: dict, attr_mgr: ImapCdfAttributes):
             attrs=attr_mgr.get_variable_attributes("adc_channels"),
         )
 
+        # NOTE: LABL_PTR_1 should be CDF_CHAR.
+        adc_channels_label = xr.DataArray(
+            adc_channels.values.astype(str),
+            name="adc_channels_label",
+            dims=["adc_channels_label"],
+            attrs=attr_mgr.get_variable_attributes("adc_channels_label"),
+        )
+
         # Create xarray dataset
         dataset = xr.Dataset(
-            coords={"epoch": epoch_time, "adc_channels": adc_channels},
+            coords={
+                "epoch": epoch_time,
+                "adc_channels": adc_channels,
+                "adc_channels_label": adc_channels_label,
+            },
             attrs=attr_mgr.get_global_attributes(logical_source),
         )
 
