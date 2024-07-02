@@ -91,7 +91,7 @@ def test_allocate_histogram_dataset():
     assert dataset.sizes["angle"] == 90
     for var_name in (
         "ccsds_met",
-        "esa_step",
+        "esa_stepping_num",
         *hist.QUALIFIED_COUNTERS,
         *hist.LONG_COUNTERS,
         *hist.TOTAL_COUNTERS,
