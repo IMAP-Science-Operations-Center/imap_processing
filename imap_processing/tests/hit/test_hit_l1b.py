@@ -1,11 +1,8 @@
-import pathlib
-
 import pytest
 import xarray as xr
 
 from imap_processing import imap_module_directory
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
-from imap_processing.cdf.utils import load_cdf
 from imap_processing.hit.l1a import hit_l1a
 from imap_processing.hit.l1b import hit_l1b
 
