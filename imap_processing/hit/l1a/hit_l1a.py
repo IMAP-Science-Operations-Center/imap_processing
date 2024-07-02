@@ -66,19 +66,7 @@ def hit_l1a(packet_file: typing.Union[Path, str], data_version: str):
     attr_mgr.add_global_attribute("Data_version", data_version)
 
     # Create datasets
-    # TODO define keys to skip for each apid. Currently just have
-    #  a list for housekeeping. Some of these may change later.
-    #  leak_i_raw can be handled in the housekeeping class as an
-    #  InitVar so that it doesn't show up when you extract the object's
-    #  field names.
-    skip_keys = [
-        "shcoarse",
-        "ground_sw_version",
-        "packet_file_name",
-        "ccsds_header",
-        "leak_i_raw",
-    ]
-    datasets = create_datasets(grouped_data, attr_mgr, skip_keys)
+    datasets = create_datasets(grouped_data, attr_mgr)
 
     return list(datasets.values())
 
@@ -137,7 +125,7 @@ def group_data(unpacked_data: list):
     return grouped_data
 
 
-def create_datasets(data: dict, attr_mgr, skip_keys=None):
+def create_datasets(data: dict, attr_mgr):
     """
     Create a dataset for each APID in the data.
 
@@ -146,9 +134,7 @@ def create_datasets(data: dict, attr_mgr, skip_keys=None):
     data : dict
         A single dictionary containing data for all instances of an APID.
     attr_mgr : ImapCdfAttributes
-        attribute manager used to get the data product field's attributes
-    skip_keys: list, Optional
-        Keys to skip in the metadata
+        Attribute manager used to get the data product field's attributes.
 
     Returns
     -------
@@ -161,6 +147,18 @@ def create_datasets(data: dict, attr_mgr, skip_keys=None):
     for apid, data_packets in data.items():
         if apid == HitAPID.HIT_HSKP:
             logical_source = "imap_hit_l1a_hk"
+            # TODO define keys to skip for each apid. Currently just have
+            #  a list for housekeeping. Some of these may change later.
+            #  leak_i_raw can be handled in the housekeeping class as an
+            #  InitVar so that it doesn't show up when you extract the object's
+            #  field names.
+            skip_keys = [
+                "shcoarse",
+                "ground_sw_version",
+                "packet_file_name",
+                "ccsds_header",
+                "leak_i_raw",
+            ]
         elif apid == HitAPID.HIT_SCIENCE:
             logical_source = "imap_hit_l1a_sci-counts"
             # TODO what about pulse height? It has the same apid.

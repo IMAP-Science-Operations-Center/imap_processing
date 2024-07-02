@@ -1,5 +1,3 @@
-import pathlib
-
 import pytest
 import xarray as xr
 
@@ -63,22 +61,13 @@ def test_create_datasets(unpacked_packets):
         A sorted list of decommutated packets
     """
     grouped_data = hit_l1a.group_data(unpacked_packets)
-    skip_keys = [
-        "shcoarse",
-        "ground_sw_version",
-        "packet_file_name",
-        "ccsds_header",
-        "leak_i_raw",
-    ]
 
     attr_mgr = ImapCdfAttributes()
     attr_mgr.add_instrument_global_attrs(instrument="hit")
     attr_mgr.add_instrument_variable_attrs(instrument="hit", level="l1a")
     attr_mgr.add_global_attribute("Data_version", "001")
 
-    datasets_by_apid = hit_l1a.create_datasets(
-        grouped_data, attr_mgr, skip_keys=skip_keys
-    )
+    datasets_by_apid = hit_l1a.create_datasets(grouped_data, attr_mgr)
     assert len(datasets_by_apid.keys()) == 1
     assert isinstance(datasets_by_apid[hit_l1a.HitAPID.HIT_HSKP], xr.Dataset)
 

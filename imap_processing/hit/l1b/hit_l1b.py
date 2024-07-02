@@ -55,12 +55,13 @@ def hit_l1b(l1a_dataset: xr.Dataset, data_version: str):
 
 # TODO: This is going to work differently when we have sample data
 def create_hk_dataset(attr_mgr):
-    """Create a housekeeping dataset.
+    """
+    Create a housekeeping dataset.
 
     Parameters
     ----------
     attr_mgr : ImapCdfAttributes
-        attribute manager used to get the data product field's attributes
+        Attribute manager used to get the data product field's attributes.
 
     Returns
     -------
