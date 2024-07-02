@@ -1,7 +1,6 @@
 """Calculates Extended Raw Events for ULTRA L1b."""
 
 import logging
-from collections import defaultdict
 
 import numpy as np
 import xarray
@@ -51,21 +50,14 @@ def get_ph_tof_and_back_positions(de_dataset: xarray.Dataset, xf: np.array):
         Back positions in y direction (hundredths of a millimeter).
     """
     indices = np.where(np.isin(de_dataset["STOP_TYPE"], [1, 2]))[0]
+    xf = xf[indices]
 
     # There are mismatches between the stop TDCs, i.e., SpN, SpS, SpE, and SpW.
     # This normalizes the TDCs
-    sp_n_norm = get_norm(
-        de_dataset["STOP_NORTH_TDC"].data[indices], "SpN", "ultra45"
-    )
-    sp_s_norm = get_norm(
-        de_dataset["STOP_SOUTH_TDC"].data[indices], "SpS", "ultra45"
-    )
-    sp_e_norm = get_norm(
-        de_dataset["STOP_EAST_TDC"].data[indices], "SpE", "ultra45"
-    )
-    sp_w_norm = get_norm(
-        de_dataset["STOP_WEST_TDC"].data[indices], "SpW", "ultra45"
-    )
+    sp_n_norm = get_norm(de_dataset["STOP_NORTH_TDC"].data[indices], "SpN", "ultra45")
+    sp_s_norm = get_norm(de_dataset["STOP_SOUTH_TDC"].data[indices], "SpS", "ultra45")
+    sp_e_norm = get_norm(de_dataset["STOP_EAST_TDC"].data[indices], "SpE", "ultra45")
+    sp_w_norm = get_norm(de_dataset["STOP_WEST_TDC"].data[indices], "SpW", "ultra45")
 
     # Convert normalized TDC values into units of hundredths of a
     # millimeter using lookup tables.
@@ -372,7 +364,11 @@ def get_ssd_offset_and_positions(de_dataset: xarray.Dataset):
         tof_offsets = np.concatenate((tof_offsets, tof_offset))
 
     # multiply ybs times 100 to convert to hundredths of a millimeter.
-    return ssd_indices, ybs * 100, tof_offsets, ssds
+    yb_final = ybs[np.argsort(ssd_indices)] * 100
+    tof_offsets_final = tof_offsets[np.argsort(ssd_indices)]
+    ssds_final = ssds[np.argsort(ssd_indices)]
+
+    return yb_final, tof_offsets_final, ssds_final
 
 
 def get_ssd_tof(de_dataset: xarray.Dataset, xf: np.array):
@@ -405,12 +401,12 @@ def get_ssd_tof(de_dataset: xarray.Dataset, xf: np.array):
     tof : int
         Time of flight (tenths of a nanosecond).
     """
-    ssd_indices, ybs, tof_offsets, ssd = get_ssd_offset_and_positions(de_dataset)
+    _, tof_offsets, ssd = get_ssd_offset_and_positions(de_dataset)
+    ssd_indices = np.where(de_dataset["STOP_TYPE"] >= 8)[0]
 
     # in nanoseconds
     time = (
-        get_image_params("TOFSSDSC")
-        * de_dataset["COIN_DISCRETE_TDC"].data[ssd_indices]
+        get_image_params("TOFSSDSC") * de_dataset["COIN_DISCRETE_TDC"].data[ssd_indices]
         + tof_offsets
     )
 
@@ -423,7 +419,7 @@ def get_ssd_tof(de_dataset: xarray.Dataset, xf: np.array):
 
     tof = tof.astype(np.float64)
 
-    return ssd_indices, tof, ssd
+    return tof, ssd
 
 
 def get_energy_pulse_height(de_dataset: xarray.Dataset, xb: np.array, yb: np.array):
@@ -477,9 +473,7 @@ def get_energy_pulse_height(de_dataset: xarray.Dataset, xb: np.array, yb: np.arr
     return energy
 
 
-def get_energy_ssd(
-    de_dataset: xarray.Dataset, ssd_indices: np.array, ssd: np.array
-):
+def get_energy_ssd(de_dataset: xarray.Dataset, ssd_indices: np.array, ssd: np.array):
     """
     Get SSD energy.
 
@@ -515,9 +509,7 @@ def get_energy_ssd(
 
     composite_energy[energy >= composite_energy_threshold] = (
         composite_energy_threshold
-        + de_dataset["PULSE_WIDTH"][ssd_indices][
-            energy >= composite_energy_threshold
-        ]
+        + de_dataset["PULSE_WIDTH"][ssd_indices][energy >= composite_energy_threshold]
     )
     composite_energy[energy < composite_energy_threshold] = energy[
         energy < composite_energy_threshold
@@ -713,99 +705,3 @@ def get_path_length(front_position, back_position, d):
     )
 
     return r
-
-
-def get_extended_raw_events(de_dataset):
-    """
-    Create dictionary of extended raw events.
-
-    Parameters
-    ----------
-    de_dataset : dict
-        Data in xarray format.
-
-    Returns
-    -------
-    data_dict : dict of lists
-        Data for extended raw events.
-
-    Definitions:
-    START_TYPE = 1: Left Slit
-    START_TYPE = 2: Right Slit
-    STOP_TYPE = 1: Top
-    STOP_TYPE = 2: Bottom
-    COIN_TYPE = 1: Top
-    COIN_TYPE = 2: Bottom
-    STOP_TYPE >= 8: SSD
-
-    TODO: stop type 1, 2, 8-15; nothing else?
-    TODO: how should event type be formatting? See ppt
-    presentation Extended Raw Events
-    Table for more details
-    """
-    data_dict = defaultdict(list)
-
-    for time in de_dataset["SHCOARSE"].data:
-        index = np.where(de_dataset["SHCOARSE"].data == time)[0][0]
-        count = de_dataset["COUNT"].data[index]
-
-        if count == 0:
-            process_count_zero(data_dict)
-            continue  # TODO: handle as needed: -1?
-
-        # Shared processing for valid start types
-        start_type = de_dataset["START_TYPE"].data[index]
-        if start_type not in [1, 2]:
-            raise ValueError("Error: Invalid Start Type")
-
-        start_position_tdc = de_dataset["START_POS_TDC"].data[index]
-        xf = get_front_x_position(start_type, start_position_tdc)
-        stop_type = de_dataset["STOP_TYPE"].data[index]
-
-        if stop_type in [1, 2]:
-            # Process for Top and Bottom stop types
-            tof, particle_tof, xb, yb = get_ph_tof_and_back_positions(
-                index, de_dataset, xf
-            )
-            d, yf = get_front_y_position(start_type, yb)
-            pulse_height = de_dataset["ENERGY_PH"].data[index]
-            # TODO stopped here
-            energy = get_energy_pulse_height(pulse_height, stop_type, xb, yb)
-            r = get_path_length(xf, xb, yf, yb, d)
-            ctof, bin = determine_species_pulse_height(energy, tof, r)
-            velocity = get_particle_velocity(xf, xb, yf, yb, d)
-        elif stop_type >= 8:
-            # Process for SSD stop types
-            xb, yb, tof = get_ssd_tof(index, de_dataset, xf)
-            d, yf = get_front_y_position(start_type, yb)
-            energy = get_energy_ssd(index, de_dataset)
-            r = get_path_length(xf, xb, yf, yb, d)
-            ctof, bin = determine_species_ssd(energy, tof, r)
-            velocity = get_particle_velocity(xf, xb, yf, yb, d)
-        else:
-            raise ValueError("Error: Invalid Stop Type")
-
-        # Append to dictionary
-        data_dict["front_position"].append((xf, yf))
-        data_dict["back_position"].append((xb, yb))
-
-        data_dict["tof"].append(tof)
-        data_dict["energy"].append(energy)
-
-        # Determine_species independenty of event data
-        data_dict["species"].append(bin)
-        data_dict["velocity"].append(velocity)
-
-        coincidence_type = de_dataset["COIN_TYPE"].data[index]
-        if coincidence_type in [1, 2]:
-            etof, xc = get_coincidence_positions(index, de_dataset, particle_tof)
-
-            # Append to dictionary
-            data_dict["coincidence_position"].append((xc, yc))
-            data_dict["etof"].append(etof)
-        else:
-            data_dict["coincidence_position"].append((-1, -1))
-            data_dict["etof"].append(-1)
-            logger.info("Coincidence position not equal to top or bottom.")
-
-    return data_dict

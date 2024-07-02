@@ -1,6 +1,7 @@
 """Calculate Annotated Direct Events."""
 
 import numpy as np
+
 from imap_processing.cdf.defaults import GlobalConstants
 import xarray as xr
 
@@ -40,8 +41,11 @@ def calculate_de(de_dataset: xr.Dataset, name: str) -> xr.Dataset:
     de_dataset = de_dataset[de_dataset["START_TYPE"] != GlobalConstants.INT_FILLVAL]
 
     epoch = de_dataset.coords["epoch"].values
-
     de_dict["epoch"] = de_dataset["epoch"]
+    xf = get_front_x_position(
+        de_dataset["START_TYPE"].data,
+        de_dataset["START_POS_TDC"].data,
+    )
 
     # Pulse height
     ph_indices = np.where(

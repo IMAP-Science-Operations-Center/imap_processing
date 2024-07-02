@@ -10,6 +10,7 @@ from imap_processing.ultra.l0.ultra_utils import (
     ULTRA_EVENTS,
 )
 from imap_processing.ultra.l1a.ultra_l1a import create_dataset
+from imap_processing.ultra.l1b.de import calculate_de
 from imap_processing.ultra.l1b.ultra_l1b_extended import (
     determine_species_pulse_height,
     determine_species_ssd,
@@ -25,7 +26,6 @@ from imap_processing.ultra.l1b.ultra_l1b_extended import (
     get_ssd_tof,
 )
 from imap_processing.utils import group_by_apid
-from imap_processing.ultra.l1b.de import calculate_de
 
 
 @pytest.fixture()
@@ -49,10 +49,11 @@ def de_dataset(ccsds_path_theta_0, xtce_path):
     )
 
     # Remove start_type with fill values
-    de_dataset = dataset.where(
+    l1a_de_dataset = dataset.where(
         dataset["START_TYPE"] != GlobalConstants.INT_FILLVAL, drop=True
     )
-    return de_dataset
+    l1b_de_dataset = calculate_de(l1a_de_dataset, "imap_ultra_l1b_45sensor-de")
+    return l1a_de_dataset, l1b_de_dataset
 
 
 def test_get_front_x_position(
@@ -60,27 +61,41 @@ def test_get_front_x_position(
     events_fsw_comparison_theta_0,
 ):
     """Tests get_front_x_position function."""
-    indices_1 = np.where(de_dataset["START_TYPE"] == 1)[0]
-    indices_2 = np.where(de_dataset["START_TYPE"] == 2)[0]
+    l1a_de_dataset, l1b_de_dataset = de_dataset
+
+    # Left Start Type
+    indices_left = np.where(l1a_de_dataset["START_TYPE"] == 1)[0]
+    # Right Start Type
+    indices_right = np.where(l1a_de_dataset["START_TYPE"] == 2)[0]
 
     df = pd.read_csv(events_fsw_comparison_theta_0)
     df_filt = df[df["StartType"] != -1]
-    selected_rows_1 = df_filt.iloc[indices_1]
-    selected_rows_2 = df_filt.iloc[indices_2]
+    selected_rows_1 = df_filt.iloc[indices_left]
+    selected_rows_2 = df_filt.iloc[indices_right]
 
     xf = get_front_x_position(
-        de_dataset["START_TYPE"].data,
-        de_dataset["START_POS_TDC"].data,
+        l1a_de_dataset["START_TYPE"].data,
+        l1a_de_dataset["START_POS_TDC"].data,
     )
 
     # TODO: should we try to match FSW data on this?
     # The value 180 was added to xf_1 since that is the offset from the FSW xft_off
     assert np.allclose(
-        xf[indices_1] + 180, selected_rows_1.Xf.values.astype("float"), rtol=1e-3
+        xf[indices_left] + 180, selected_rows_1.Xf.values.astype("float"), rtol=1e-3
+    )
+    assert np.allclose(
+        l1b_de_dataset["x_front"].values[indices_left] + 180,
+        selected_rows_1.Xf.values.astype("float"),
+        rtol=1e-3,
     )
     # The value 25 was subtracted from xf_2 bc that is the offset from the FSW xft_off
     assert np.allclose(
-        xf[indices_2] - 25, selected_rows_2.Xf.values.astype("float"), rtol=1e-3
+        xf[indices_right] - 25, selected_rows_2.Xf.values.astype("float"), rtol=1e-3
+    )
+    assert np.allclose(
+        l1b_de_dataset["x_front"].values[indices_right] - 25,
+        selected_rows_2.Xf.values.astype("float"),
+        rtol=1e-3,
     )
 
 
@@ -89,23 +104,33 @@ def test_ph_xb_yb(
     events_fsw_comparison_theta_0,
 ):
     """Tests xb and yb from get_back_positions function."""
-
-    indices_1 = np.where(de_dataset["STOP_TYPE"] == 1)[0]
-    indices_2 = np.where(de_dataset["STOP_TYPE"] == 2)[0]
-
-    indices = np.concatenate((indices_1, indices_2))
-    indices.sort()
+    l1a_de_dataset, l1b_de_dataset = de_dataset
 
     df = pd.read_csv(events_fsw_comparison_theta_0)
     df_filt = df[df["StartType"] != -1]
-    selected_rows_1 = df_filt.iloc[indices]
 
-    _, _, xb, yb = get_ph_tof_and_back_positions(
-        de_dataset, selected_rows_1.Xf.values.astype("float")
+    _, _, ph_xb, ph_yb = get_ph_tof_and_back_positions(
+        l1a_de_dataset, df_filt.Xf.astype("float").values
     )
 
-    np.testing.assert_array_equal(xb, selected_rows_1["Xb"].astype("float"))
-    np.testing.assert_array_equal(yb, selected_rows_1["Yb"].astype("float"))
+    indices = np.where(
+        (l1a_de_dataset["STOP_TYPE"] == 1) | (l1a_de_dataset["STOP_TYPE"] == 2)
+    )[0]
+    selected_rows = df_filt.iloc[indices]
+    np.testing.assert_array_equal(ph_xb, selected_rows["Xb"].astype("float"))
+    np.testing.assert_array_equal(ph_yb, selected_rows["Yb"].astype("float"))
+
+    ssd_yb, tof_offsets, _ = get_ssd_offset_and_positions(l1a_de_dataset)
+    indices = np.where(l1a_de_dataset["STOP_TYPE"] >= 8)[0]
+    selected_rows = df_filt.iloc[indices]
+    np.testing.assert_array_equal(ssd_yb, selected_rows["Yb"].astype("float"))
+
+    np.testing.assert_array_equal(
+        l1b_de_dataset["y_back"], df_filt["Yb"].astype("float")
+    )
+    np.testing.assert_array_equal(
+        l1b_de_dataset["x_back"], df_filt["Xb"].astype("float")
+    )
 
 
 def test_get_ssd_offset_and_positions(
@@ -113,13 +138,14 @@ def test_get_ssd_offset_and_positions(
     events_fsw_comparison_theta_0,
 ):
     """Tests get_ssd_offset_and_positions function."""
-    ssd_indices, ybs, tof_offsets, _ = get_ssd_offset_and_positions(de_dataset)
+    l1a_de_dataset, l1b_de_dataset = de_dataset
+    ssd_indices = np.where(l1a_de_dataset["STOP_TYPE"] >= 8)[0]
+
+    _, tof_offsets, _ = get_ssd_offset_and_positions(l1a_de_dataset)
 
     df = pd.read_csv(events_fsw_comparison_theta_0)
     df_filt = df[df["StartType"] != -1]
     selected_rows = df_filt.iloc[ssd_indices]
-
-    np.testing.assert_array_equal(ybs, selected_rows["Yb"].astype("float"))
 
     # -4 is a value of an offset for SSD3 for Left Start Type and SSD0 for Right Start Type.
     offset_length = len(tof_offsets[tof_offsets == -4])
@@ -138,13 +164,14 @@ def test_ph_velocity(
     de_dataset,
 ):
     """Tests velocity and other parameters used for velocity."""
-    indices = np.where(np.isin(de_dataset["STOP_TYPE"], [1, 2]))[0]
+    l1a_de_dataset, l1b_de_dataset = de_dataset
+    indices = np.where(np.isin(l1a_de_dataset["STOP_TYPE"], [1, 2]))[0]
 
     df = pd.read_csv(events_fsw_comparison_theta_0)
     df_filt = df[df["StartType"] != -1]
     selected_rows_1 = df_filt.iloc[indices]
 
-    d, yf = get_front_y_position(de_dataset, df_filt.Yb.values.astype("float"))
+    d, yf = get_front_y_position(l1a_de_dataset, df_filt.Yb.values.astype("float"))
 
     assert yf == pytest.approx(df_filt["Yf"].astype("float"), 1e-3)
 
@@ -158,10 +185,10 @@ def test_ph_velocity(
     assert r == pytest.approx(df_filt["r"].astype("float"), rel=1e-3)
 
     # TODO: test get_energy_pulse_height
-    energy = get_energy_pulse_height(de_dataset, test_xb, test_yb)
+    energy = get_energy_pulse_height(l1a_de_dataset, test_xb, test_yb)
 
     tof, t2, xb, yb = get_ph_tof_and_back_positions(
-        de_dataset, selected_rows_1.Xf.values.astype("float")
+        l1a_de_dataset, df_filt.Xf.values.astype("float")
     )
 
     index_left = np.where(df_filt["CoinType"] == 1)[0]
@@ -171,7 +198,7 @@ def test_ph_velocity(
     # TODO: This is as close as I can get. I suspect that the lookup
     # table that I have is not correct. Leave as TODO.
     test_xc = df_filt["Xc"].iloc[index].astype("float")
-    _, xc = get_coincidence_positions(de_dataset, tof)
+    _, xc = get_coincidence_positions(l1a_de_dataset, tof)
     assert xc == pytest.approx(test_xc.values, rel=1)
 
     test_energy = df_filt["Energy"].iloc[indices].astype("float")
@@ -208,19 +235,21 @@ def test_ssd_velocity(
     de_dataset,
 ):
     """Tests velocity and other parameters used for velocity."""
-
+    l1a_de_dataset, l1b_de_dataset = de_dataset
     df = pd.read_csv(events_fsw_comparison_theta_0)
     df_filt = df[df["StartType"] != -1]
 
     xf = df_filt["Xf"].astype("float").values
 
-    ssd_indices, tof, ssd = get_ssd_tof(de_dataset, xf)
+    tof, ssd = get_ssd_tof(l1a_de_dataset, xf)
 
-    energy = get_energy_ssd(de_dataset, ssd_indices, ssd)
+    ssd_indices = np.where(l1a_de_dataset["STOP_TYPE"] >= 8)[0]
+
+    energy = get_energy_ssd(l1a_de_dataset, ssd_indices, ssd)
     test_energy = df_filt["Energy"].iloc[ssd_indices].astype("float")
 
-    # TODO: the last values don't match. Look into this.
-    assert np.array_equal(test_energy[0:385], energy[0:385].astype(float))
+    # TODO: the first value doesn't match. Look into this.
+    assert np.array_equal(test_energy[1::], energy[1::].astype(float))
 
     r = df_filt["r"].astype("float")
 
@@ -230,5 +259,5 @@ def test_ssd_velocity(
     )
     test_ctof = df_filt["cTOF"].iloc[ssd_indices].astype("float")
 
-    # TODO: the last values don't match. Look into this.
+    # TODO: these values don't match exactly. Look into this.
     ctof[0:385] == pytest.approx(test_ctof.values[0:385], rel=1e-1)
