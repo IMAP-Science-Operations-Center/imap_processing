@@ -120,7 +120,7 @@ attribute_key:
       Explicitly ties a data variable to the time variable on which it depends. All variables
       which change with time must have a DEPEND_0 attribute defined. See section 5.2.1
       which specifies the HERMES usage of DEPEND_0.
-    required: true
+    required: false
     overwrite: false
     valid_values: null
     alternate: null
