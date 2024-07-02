@@ -125,7 +125,7 @@ def group_data(unpacked_data: list):
     return grouped_data
 
 
-def create_datasets(data: dict, attr_mgr):
+def create_datasets(data: dict, attr_mgr: ImapCdfAttributes):
     """
     Create a dataset for each APID in the data.
 
