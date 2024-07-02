@@ -4,8 +4,7 @@ import numpy as np
 import xarray as xr
 from space_packet_parser.parser import Packet
 
-from imap_processing import imap_module_directory
-from imap_processing.cdf.cdf_attribute_manager import CdfAttributeManager
+from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import met_to_j2000ns
 
 # TODO: read LOOKED_UP_DURATION_OF_TICK from
@@ -263,9 +262,9 @@ def create_dataset(de_data_list: list, packet_met_time: list) -> xr.Dataset:
         data_dict["ccsds_met"].append(packet_met_time[index])
 
     # Load the CDF attributes
-    cdf_manager = CdfAttributeManager(imap_module_directory / "cdf" / "config")
-    cdf_manager.load_global_attributes("imap_hi_global_cdf_attrs.yaml")
-    cdf_manager.load_variable_attributes("imap_hi_variable_attrs.yaml")
+    attr_mgr = ImapCdfAttributes()
+    attr_mgr.add_instrument_global_attrs("hi")
+    attr_mgr.load_variable_attributes("imap_hi_variable_attrs.yaml")
     # uncomment this once Maxine's PR is merged
     # attr_mgr.add_global_attribute("Data_version", data_version)
 
@@ -273,17 +272,17 @@ def create_dataset(de_data_list: list, packet_met_time: list) -> xr.Dataset:
         data_dict.pop("epoch"),
         name="epoch",
         dims=["epoch"],
-        attrs=cdf_manager.get_variable_attributes("hi_de_epoch"),
+        attrs=attr_mgr.get_variable_attributes("hi_de_epoch"),
     )
 
-    de_global_attrs = cdf_manager.get_global_attributes("imap_hi_l1a_de_attrs")
+    de_global_attrs = attr_mgr.get_global_attributes("imap_hi_l1a_de_attrs")
     dataset = xr.Dataset(
         coords={"epoch": epoch_time},
         attrs=de_global_attrs,
     )
 
     for var_name, data in data_dict.items():
-        attrs = cdf_manager.get_variable_attributes(
+        attrs = attr_mgr.get_variable_attributes(
             f"hi_de_{var_name}", check_schema=False
         ).copy()
         dtype = attrs.pop("dtype")
