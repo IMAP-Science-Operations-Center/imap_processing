@@ -93,6 +93,22 @@ eventtype:
   # TODO: come back to format
   UNITS: " "
 
+cointype:
+  <<: *default
+  CATDESC: Cointype (1-top; 2-bottom)
+  FIELDNAM: cointype
+  LABLAXIS: cointype
+  # TODO: come back to format
+  UNITS: " "
+
+starttype:
+  <<: *default
+  CATDESC: Starttype (1-left; 2-right)
+  FIELDNAM: starttype
+  LABLAXIS: starttype
+  # TODO: come back to format
+  UNITS: " "
+
 vx_ultra:
   <<: *default
   CATDESC: Normalized component of the velocity vector in x direction in the instrument frame.
@@ -130,6 +146,23 @@ species:
   CATDESC: Species bin.
   FIELDNAM: species
   LABLAXIS: species
+  # TODO: come back to format
+  UNITS: " "
+
+
+front_back_distance:
+  <<: *default
+  CATDESC: Distance front to back in hundredths of a millimeter.
+  FIELDNAM: front_back_distance
+  LABLAXIS: front_back_distance
+  # TODO: come back to format
+  UNITS: " "
+
+path_length:
+  <<: *default
+  CATDESC: Path length in hundredths of a millimeter.
+  FIELDNAM: path_length
+  LABLAXIS: path_length
   # TODO: come back to format
   UNITS: " "
 
