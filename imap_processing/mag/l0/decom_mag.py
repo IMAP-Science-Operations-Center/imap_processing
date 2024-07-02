@@ -14,9 +14,11 @@ from space_packet_parser import parser, xtcedef
 from imap_processing import imap_module_directory
 from imap_processing.ccsds.ccsds_data import CcsdsData
 from imap_processing.cdf.global_attrs import ConstantCoordinates
+from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import met_to_j2000ns
 from imap_processing.mag import mag_cdf_attrs
 from imap_processing.mag.l0.mag_l0_data import MagL0, Mode
+from imap_processing.mag.mag_cdf_attrs import DataMode
 
 logger = logging.getLogger(__name__)
 
@@ -67,7 +69,7 @@ def decom_packets(packet_file_path: str | Path) -> dict[str, list[MagL0]]:
     return {"norm": norm_data, "burst": burst_data}
 
 
-def generate_dataset(l0_data: list[MagL0], dataset_attrs: dict) -> xr.Dataset:
+def generate_dataset(l0_data: list[MagL0], mode: DataMode, attribute_manager: ImapCdfAttributes) -> xr.Dataset:
     """
     Generate a CDF dataset from the sorted raw L0 MAG data.
 
@@ -76,9 +78,8 @@ def generate_dataset(l0_data: list[MagL0], dataset_attrs: dict) -> xr.Dataset:
     l0_data : list[MagL0]
         List of sorted L0 MAG data.
 
-    dataset_attrs : dict
-        Global attributes for the dataset. Method will add day of data and day of
-        generation.
+    attribute_manager : ImapCdfAttributes
+        Attribute manager for the dataset, including all MAG L1A attributes.
 
     Returns
     -------
@@ -125,7 +126,7 @@ def generate_dataset(l0_data: list[MagL0], dataset_attrs: dict) -> xr.Dataset:
         np.arange(vector_data.shape[1]),
         name="direction",
         dims=["direction"],
-        attrs=mag_cdf_attrs.raw_direction_attrs.output(),
+        attrs=attribute_manager.get_variable_attributes("raw_direction_attrs"),
     )
 
     # TODO: Epoch here refers to the start of the sample. Confirm that this is
@@ -134,19 +135,21 @@ def generate_dataset(l0_data: list[MagL0], dataset_attrs: dict) -> xr.Dataset:
         shcoarse_data,
         name="epoch",
         dims=["epoch"],
-        attrs=ConstantCoordinates.EPOCH,
+        attrs=attribute_manager.get_variable_attributes("epoch"),
     )
     # TODO: raw vectors units
     raw_vectors = xr.DataArray(
         vector_data,
         name="raw_vectors",
         dims=["epoch", "direction"],
-        attrs=mag_cdf_attrs.mag_raw_vector_attrs.output(),
+        attrs=attribute_manager.get_variable_attributes("raw_vector_attrs")
     )
+
+    logical_id = f"imap_mag_l1a_{mode.value.lower()}-raw"
 
     output = xr.Dataset(
         coords={"epoch": epoch_time, "direction": direction},
-        attrs=dataset_attrs,
+        attrs=attribute_manager.get_global_attributes(logical_id),
     )
 
     output["raw_vectors"] = raw_vectors
@@ -158,14 +161,7 @@ def generate_dataset(l0_data: list[MagL0], dataset_attrs: dict) -> xr.Dataset:
                 value,
                 name=key.lower(),
                 dims=["epoch"],
-                attrs=dataclasses.replace(
-                    mag_cdf_attrs.mag_support_attrs,
-                    catdesc=mag_cdf_attrs.catdesc_fieldname_l0[key][0],
-                    fieldname=mag_cdf_attrs.catdesc_fieldname_l0[key][1],
-                    # TODO: label_axis should be as close to 6 letters as possible
-                    label_axis=key,
-                    display_type="no_plot",
-                ).output(),
+                attrs=attribute_manager.get_variable_attributes(key),
             )
 
     return output
