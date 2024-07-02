@@ -79,8 +79,7 @@ class CdfAttributeManager:
         self._global_attributes = CdfAttributeManager._load_yaml_data(
             self.source_dir / DEFAULT_GLOBAL_CDF_ATTRS_FILE
         )
-        self._variable_attributes = dict()
-        
+        self._variable_attributes: dict = {}
 
     def _load_default_global_attr_schema(self) -> yaml:
         """
@@ -225,7 +224,9 @@ class CdfAttributeManager:
 
         self._variable_attributes.update(var_attrs)
 
-    def get_variable_attributes(self, variable_name: str, check_schema=True) -> dict:
+    def get_variable_attributes(
+        self, variable_name: str, check_schema: bool = True
+    ) -> dict:
         """
         Get the attributes for a given variable name.
 
@@ -249,7 +250,8 @@ class CdfAttributeManager:
         # Case to handle attributes not in schema
         if check_schema is False:
             if variable_name in self._variable_attributes:
-                return self._variable_attributes[variable_name]
+                return_dict: dict = self._variable_attributes[variable_name]
+                return return_dict
             # TODO: throw an error?
             return {}
 
@@ -315,4 +317,3 @@ class CdfAttributeManager:
                 output[attr_name] = ""
 
         return output
-
