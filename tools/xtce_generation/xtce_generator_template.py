@@ -39,19 +39,10 @@ def _parse_args():
         "The instrument to process. Acceptable values are: "
         f"{imap_data_access.VALID_INSTRUMENTS}"
     )
-    filename_help = (
-        # TODO: what help should I provide?
-    )
+    filename_help = "Provide filename to write packets to."
     packets_help = (
-        # TODO: Overall packets_help statement
-        "Example usage: "
-        '--instrument "swapi"'
-        '--filename "TLM_SWP_20231006-121021.xlsx"'
-        "--packets '"
-        '{"P_SWP_HK": 1184, '
-        '"P_SWP_SCI": 1188, '
-        '"P_SWP_AUT": 1192, '
-        "}'"
+        "Provide packet dictionary using packet_name, and app_id."
+        '{"<packet_name>": <app_id>}'
     )
 
     parser = argparse.ArgumentParser(prog="imap_xtce", description=description)
@@ -91,7 +82,6 @@ def main():
     current_directory = Path(__file__).parent
     module_path = f"{current_directory}/../../imap_processing"
     packet_definition_path = f"{module_path}/{instrument_name}/packet_definitions"
-    # TODO: Copy packet definition to tools/xtce_generation/ folder
     path_to_excel_file = f"{current_directory}/{args.filename}"
 
     # Update packets dictionary with given CLI information
