@@ -25,8 +25,6 @@ from imap_processing.ultra.l1b.ultra_l1b_extended import (
 )
 from imap_processing.utils import group_by_apid
 
-# IMPORTANT: TODO tomorrow - datatypes!!!
-
 
 @pytest.fixture()
 def de_dataset(ccsds_path_theta_0, xtce_path):
@@ -177,16 +175,13 @@ def test_ph_components(
     # FSW test data should be negative and not have an analysis
     # for negative tof values.
     assert vhat_x[tof > 0] == pytest.approx(
-        -df_filt["vhatX"].iloc[
-            ph_indices].astype("float").values[tof > 0], rel=1e-2
+        -df_filt["vhatX"].iloc[ph_indices].astype("float").values[tof > 0], rel=1e-2
     )
     assert vhat_y[tof > 0] == pytest.approx(
-        -df_filt["vhatY"].iloc[
-            ph_indices].astype("float").values[tof > 0], rel=1e-2
+        -df_filt["vhatY"].iloc[ph_indices].astype("float").values[tof > 0], rel=1e-2
     )
     assert vhat_z[tof > 0] == pytest.approx(
-        -df_filt["vhatZ"].iloc[
-            ph_indices].astype("float").values[tof > 0], rel=1e-2
+        -df_filt["vhatZ"].iloc[ph_indices].astype("float").values[tof > 0], rel=1e-2
     )
 
 
