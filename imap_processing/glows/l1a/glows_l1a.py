@@ -8,13 +8,15 @@ import numpy as np
 import xarray as xr
 
 from imap_processing.cdf.global_attrs import ConstantCoordinates
+from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import J2000_EPOCH, met_to_j2000ns
-from imap_processing.glows import __version__, glows_cdf_attrs
+from imap_processing.glows import glows_cdf_attrs
 from imap_processing.glows.l0.decom_glows import decom_packets
 from imap_processing.glows.l0.glows_l0_data import DirectEventL0
 from imap_processing.glows.l1a.glows_l1a_data import DirectEventL1A, HistogramL1A
 
 
+# No direct cdf alterations needed (I believe)
 def glows_l1a(packet_filepath: Path, data_version: str) -> list[xr.Dataset]:
     """
     Will process packets into GLOWS L1A CDF files.
@@ -62,6 +64,7 @@ def glows_l1a(packet_filepath: Path, data_version: str) -> list[xr.Dataset]:
     return output_datasets
 
 
+# No direct cdf alterations needed (I think)
 def process_de_l0(
     de_l0: list[DirectEventL0],
 ) -> dict[np.datetime64, list[DirectEventL1A]]:
@@ -98,6 +101,7 @@ def process_de_l0(
     return de_by_day
 
 
+# This file WILL require direct cdf alterations (I think)
 def generate_de_dataset(
     de_l1a_list: list[DirectEventL1A], data_version: str
 ) -> xr.Dataset:
@@ -124,12 +128,28 @@ def generate_de_dataset(
 
     # Each DirectEventL1A class covers 1 second of direct events data
     direct_events = np.zeros((len(de_l1a_list), len(de_l1a_list[0].direct_events), 4))
-    global_attributes = glows_cdf_attrs.glows_l1a_de_attrs.output()
+    # =======================
+    #     global_attributes =
+    #           glows_cdf_attrs.glows_l1a_de_attrs.output() # Global attributes
+    #
+    #     global_attributes["ground_software_version"] =
+    #           __version__  # Covered with global attrs
+    #     global_attributes["Data_version"] =
+    #           data_version # Adding data version global attr
+    #     # In header: block header, missing seqs
+    #     # Time varying - statusdata
 
-    global_attributes["ground_software_version"] = __version__
-    global_attributes["Data_version"] = data_version
-    # In header: block header, missing seqs
-    # Time varying - statusdata
+    # My code for block above
+    # Create object
+    glows_attributes = ImapCdfAttributes()
+    # Load files
+    glows_attributes.add_instrument_global_atts("glows")
+    glows_attributes.add_instrument_variable_attrs("glows", "l1a")
+    # Adding global attribute data_version
+    glows_attributes.add_global_attribute("Data_version", data_version)
+    # Create desired global and variable dictionaries
+    glows_de_global = glows_attributes.get_global_attributes("imap_glows_l1a_de")
+    # ground_soft = glows_attributes.get_variable_attributes("ground_software_version")
 
     support_data = {
         # "flight_software_version": [], # breaks
@@ -215,7 +235,7 @@ def generate_de_dataset(
         np.arange(4),
         name="direct_event",
         dims=["direct_event"],
-        attrs=glows_cdf_attrs.event_attrs.output(),
+        attrs=glows_attributes.get_variable_attributes("event_attrs"),
     )
 
     # TODO come up with a better name
@@ -223,7 +243,7 @@ def generate_de_dataset(
         np.arange(direct_events.shape[1]),
         name="per_second",
         dims=["per_second"],
-        attrs=glows_cdf_attrs.per_second_attrs.output(),
+        attrs=glows_attributes.get_variable_attributes("per_second_attrs"),
     )
 
     de = xr.DataArray(
@@ -235,12 +255,13 @@ def generate_de_dataset(
             "per_second": per_second,
             "direct_event": direct_event,
         },
-        attrs=glows_cdf_attrs.direct_event_attrs.output(),
+        attrs=glows_attributes.get_variable_attributes("direct_event_attrs"),
     )
 
     output = xr.Dataset(
         coords={"epoch": time_data},
-        attrs=global_attributes,
+        attrs=glows_de_global,
+        # attrs=global-attrs
     )
 
     output["direct_events"] = de

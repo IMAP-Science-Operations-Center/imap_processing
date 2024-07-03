@@ -55,7 +55,7 @@ histogram_attrs:
   UNITS: counts
   VAR_TYPE: data
 
-meta_data_attrs:
+metadata_attrs:
   DEPEND_0: epoch
   VALIDMIN: 0
   VALIDMAX: 1000000000
