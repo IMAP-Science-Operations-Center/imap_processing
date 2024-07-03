@@ -5,7 +5,7 @@ from collections import defaultdict
 from dataclasses import fields
 from enum import IntEnum
 from pathlib import Path
-from typing import Optional, Union
+from typing import Union
 
 import numpy as np
 import xarray as xr
@@ -126,7 +126,6 @@ def group_data(unpacked_data: list) -> dict:
 
 
 def create_datasets(data: dict, attr_mgr: ImapCdfAttributes) -> dict:
-
     """
     Create a dataset for each APID in the data.
 
@@ -215,8 +214,16 @@ def create_datasets(data: dict, attr_mgr: ImapCdfAttributes) -> dict:
         )
 
         # Create xarray data array for each metadata field
-        for field, data in metadata_arrays.items():
-            if field not in skip_keys:
+        for field, data in metadata_arrays.items():  # type: ignore[assignment]
+            # TODO Error, Incompatible types in assignment
+            # (expression has type "str", variable has type "Field[Any]")
+            # AND
+            # Incompatible types in assignment
+            # (expression has type "list[Any]", variable has type "dict[Any, Any]")
+            if field not in skip_keys:  # type: ignore[comparison-overlap]
+                # TODO Error, Non-overlapping container check
+                # (element type: "Field[Any]", container item type: "str")
+
                 # Create a list of all the dimensions using the DEPEND_I keys in the
                 # attributes
                 dims = [
@@ -224,7 +231,11 @@ def create_datasets(data: dict, attr_mgr: ImapCdfAttributes) -> dict:
                     for key, value in attr_mgr.get_variable_attributes(field).items()
                     if "DEPEND" in key
                 ]
-                if field == "leak_i":
+                if field == "leak_i":  # type: ignore[comparison-overlap]
+                    # TODO Error,  Non-overlapping equality check
+                    # (left operand type: "Field[Any]",
+                    # right operand type: "Literal['leak_i']")
+
                     # 2D array - needs two dims
                     dataset[field] = xr.DataArray(
                         data,
