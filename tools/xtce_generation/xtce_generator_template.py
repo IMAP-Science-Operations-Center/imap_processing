@@ -8,6 +8,7 @@ import imap_data_access
 
 from tools.xtce_generation.telemetry_generator import TelemetryGenerator
 
+
 # Function to parse command line arguments
 def _parse_args() -> argparse.Namespace:
     """
@@ -75,7 +76,7 @@ def _validate_args(args: argparse.Namespace) -> None:
         raise FileNotFoundError(f"{args.file_path} not found, and may not exist.")
 
 
-def main():
+def main() -> None:
     """
     Generate xtce file from CLI information given.
 
