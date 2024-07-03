@@ -188,7 +188,7 @@ def decompress_image(
     blocks_per_row = cols // pixels_per_block
 
     # Compressed pixel matrix
-    p = np.zeros((rows, cols), dtype=np.int16)
+    p = np.zeros((rows, cols), dtype=np.uint16)
     # Decompressed pixel matrix
     p_decom = np.zeros((rows, cols), dtype=np.int16)
 
@@ -220,9 +220,9 @@ def decompress_image(
                 # Keeps only the last 8 bits of the result of pixel0 - delta_f
                 # This operation ensures that the result is within the range
                 # of an 8-bit byte (0-255)
-                # Use np.uint16 for the arithmetic operation to avoid overflow
-                result = np.int16(pixel0) + (-delta_f)
-                p[i][column_index] = np.uint8(result)
+                # Use np.int16 for the arithmetic operation to avoid overflow
+                # Then implicitly cast back to the p's uint16 dtype for storage
+                p[i][column_index] = np.int16(pixel0) - delta_f
                 # Perform logarithmic decompression on the pixel value
                 p_decom[i][column_index] = log_decompression(
                     p[i][column_index], mantissa_bit_length
