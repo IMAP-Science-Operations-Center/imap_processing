@@ -2,6 +2,7 @@ import pytest
 import xarray as xr
 
 from imap_processing import imap_module_directory
+from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.hit.l1a import hit_l1a
 from imap_processing.hit.l1b import hit_l1b
 
@@ -22,7 +23,13 @@ def test_create_hk_dataset():
     Creates a xarray dataset for housekeeping data
     """
 
-    l1b_hk_dataset = hit_l1b.create_hk_dataset()
+    # create the attribute manager for this data level
+    attr_mgr = ImapCdfAttributes()
+    attr_mgr.add_instrument_global_attrs(instrument="hit")
+    attr_mgr.add_instrument_variable_attrs(instrument="hit", level="l1b")
+    attr_mgr.add_global_attribute("Data_version", "001")
+
+    l1b_hk_dataset = hit_l1b.create_hk_dataset(attr_mgr)
     assert isinstance(l1b_hk_dataset, xr.Dataset)
 
 

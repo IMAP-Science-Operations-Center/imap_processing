@@ -25,6 +25,7 @@ Instruments
    swapi
    swe
    ultra
+   cdf
 
 Utility functions can be found in modules within the top package level.
 
