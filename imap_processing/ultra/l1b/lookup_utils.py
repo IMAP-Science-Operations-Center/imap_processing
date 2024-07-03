@@ -1,5 +1,6 @@
 """Contains tools for lookup tables for l1b."""
 
+import numpy as np
 import pandas as pd
 
 from imap_processing import imap_module_directory
@@ -7,7 +8,7 @@ from imap_processing import imap_module_directory
 base_path = f"{imap_module_directory}/ultra/lookup_tables"
 
 
-def get_y_adjust(dy_lut: int):
+def get_y_adjust(dy_lut: np.ndarray):
     """
     Adjust the front yf position based on the particle's trajectory.
 
@@ -17,12 +18,12 @@ def get_y_adjust(dy_lut: int):
 
     Parameters
     ----------
-    dy_lut : int
+    dy_lut : np.ndarray
         Change in y direction used for the lookup table (mm).
 
     Returns
     -------
-    yadj : int
+    yadj : np.ndarray
         Y adjustment (mm).
     """
     yadjust_path = f"{base_path}/yadjust.csv"
@@ -30,10 +31,10 @@ def get_y_adjust(dy_lut: int):
 
     yadj = yadjust_df["dYAdj"].iloc[dy_lut]
 
-    return yadj
+    return yadj.values
 
 
-def get_norm(dn: int, key: str, file_label: str):
+def get_norm(dn: np.ndarray, key: str, file_label: str):
     """
     Correct mismatches between the stop Time to Digital Converters (TDCs).
 
@@ -42,11 +43,12 @@ def get_norm(dn: int, key: str, file_label: str):
     using lookup tables.
 
     Further description is available on pages 31-32 of the IMAP-Ultra Flight Software
-    Specification document (7523-9009_Rev_-.pdf).
+    Specification document (7523-9009_Rev_-.pdf). This will work for both Tp{key}Norm,
+    Bt{key}Norm. This is for getStopNorm and getCoinNorm.
 
     Parameters
     ----------
-    dn : int
+    dn : np.ndarray
         DN of the TDC.
     key : str
         TpSpNNorm, TpSpSNorm, TpSpENorm, or TpSpWNorm.
@@ -54,12 +56,9 @@ def get_norm(dn: int, key: str, file_label: str):
     file_label : str
         Instrument (ultra45 or ultra90).
 
-    Note: This will work for both Tp{key}Norm and Bt{key}Norm
-    This is for getStopNorm and getCoinNorm.
-
     Returns
     -------
-    dn_norm : int
+    dn_norm : np.ndarray
         Normalized DNs.
     """
     # We only need the center string, i.e. SpN, SpS, SpE, SpW
@@ -71,7 +70,7 @@ def get_norm(dn: int, key: str, file_label: str):
     return dn_norm.values
 
 
-def get_back_position(back_index: int, key: str, file_label: str):
+def get_back_position(back_index: np.ndarray, key: str, file_label: str):
     """
     Convert normalized TDC values using lookup tables.
 
@@ -83,18 +82,17 @@ def get_back_position(back_index: int, key: str, file_label: str):
 
     Parameters
     ----------
-    back_index : int
-        dn_norm (output from get_norm).
+    back_index : np.ndarray
         Options include SpSNorm - SpNNorm + 2047, SpENorm - SpWNorm + 2047,
-        SpSNorm - SpNNorm + 2047, or SpENorm - SpWNorm + 2047
+        SpSNorm - SpNNorm + 2047, or SpENorm - SpWNorm + 2047.
     key : str
-        XBkTp, YBkTp, XBkBt, or YBkBt
+        XBkTp, YBkTp, XBkBt, or YBkBt.
     file_label : str
         Instrument (ultra45 or ultra90).
 
     Returns
     -------
-    dn_converted : int
+    dn_converted : np.ndarray
         Converted DNs to Units of hundredths of a millimeter.
     """
     back_pos_path = f"{base_path}/{file_label}_back-pos-luts.csv"
@@ -102,30 +100,28 @@ def get_back_position(back_index: int, key: str, file_label: str):
 
     dn_converted = back_pos_df[key].iloc[back_index]
 
-    return dn_converted
+    return dn_converted.values
 
 
-def get_energy_norm(ssd, composite_energy):
+def get_energy_norm(ssd: np.ndarray, composite_energy: np.ndarray):
     """
     Normalize composite energy per SSD using a lookup table.
 
     Further description is available on page 41 of the
     IMAP-Ultra Flight Software Specification document
-    (7523-9009_Rev_-.pdf).
+    (7523-9009_Rev_-.pdf). Note : There are 8 SSDs containing
+    4096 composite energies each.
 
     Parameters
     ----------
-    ssd : int
+    ssd : np.ndarray
         Acts as index 1.
-    composite_energy : int
+    composite_energy : np.ndarray
         Acts as index 2.
-
-    Note: There are 8 SSDs containing
-    4096 composite energies each.
 
     Returns
     -------
-    norm_composite_energy : int
+    norm_composite_energy : np.ndarray
         Normalized composite energy.
     """
     energy_norm_path = f"{base_path}/EgyNorm.mem.csv"
@@ -134,7 +130,7 @@ def get_energy_norm(ssd, composite_energy):
     row_number = ssd * 4096 + composite_energy
     norm_composite_energy = energy_norm_df["NormEnergy"].iloc[row_number]
 
-    return norm_composite_energy
+    return norm_composite_energy.values
 
 
 def get_image_params(image: str):
@@ -148,13 +144,11 @@ def get_image_params(image: str):
     Parameters
     ----------
     image : str
-        The column name to lookup in the CSV file, e.g., 'XFtLtOff' or 'XFtRtOff'.
-    base_path : str
-        The base path where the CSV file is stored.
+        The column name to lookup in the CSV file, e.g., 'XFTLTOFF' or 'XFTRTOFF'.
 
     Returns
     -------
-    value : float
+    value : np.float64
         Image parameter value from the CSV file.
     """
     csv_file_path = f"{base_path}/FM45_Startup1_ULTRA_IMGPARAMS_20240207T134735_.csv"
