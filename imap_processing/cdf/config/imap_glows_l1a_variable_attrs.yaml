@@ -1,0 +1,242 @@
+bins_attrs:
+  VALIDMMIN: 0
+  VALIDMAX: 70
+  CATDESC: Counts of direct events for photon impacts
+  FIELDNAM: Counts of direct events
+  FORMAT: F2.4
+  VAR_TYPE: support_data
+  DISPLAY_TYPE: time_series
+  LABLAXIS: Counts
+
+per_second_attrs:
+  VALIDMMIN: 0
+  VALIDMAX: 300
+  CATDESC: Direct events recorded approximately per second
+  FIELDNAM: List of direct events
+  FORMAT: F2.4
+  VAR_TYPE: support_data
+  DISPLAY_TYPE: time_series
+  LABLAXIS: Counts
+
+event_attrs:
+  VALIDMMIN: 0
+  VALIDMAX: 300
+  CATDESC: Direct events recorded approximately per second
+  FIELDNAM: List of direct events
+  FORMAT: F2.4
+  VAR_TYPE: data
+  DISPLAY_TYPE: time_series
+  LABLAXIS: Counts
+
+direct_event_attrs:
+  DEPEND_O: epoch
+  DEPEND_1: per_second
+  DEPEND_2: direct_event
+  VALIDMIN: 0
+  VALIDMAX: 300
+  CATDESC: Direct events recorded approximately per second
+  FIELDNAM: List of direct events, binned per second
+  FORMAT: F2.4
+  VAR_TYPE: data
+  DISPLAY_TYPE: time_series
+  LABLAXIS: Counts
+
+histogram_attrs:
+  VALIDMIN: 0
+  VALIDMAX: 70
+  CATDESC: Histogram of photon counts
+  DEPEND_0: epoch
+  DEPEND_1: bins
+  FIELDNAM: Histogram of photon counts
+  FORMAT: F2.4
+  DISPLAY_TYPE: time_series
+  LABLAXIS: Counts
+  FILL_VAL: GlobalConstants.INT_FILLVAL
+  UNITS: counts
+  VAR_TYPE: data
+
+meta_data_attrs:
+  DEPEND_0: epoch
+  VALIDMIN: 0
+  VALIDMAX: 1000000000
+  DISPLAY_TYPE: time_series
+  FILL_VAL: GlobalConstants.INT_FILLVAL
+  VAR_TYPE: metadata
+  FORMAT: I10
+  LABLAXIS: Metadata
+
+flight_software_version:
+  CATDESC: Flight software version
+  FIELDNAM: Flight software version
+
+ground_software_version:
+  CATDESC: Ground software version in the format vXXX
+  FIELDNAM: Ground software version
+
+pkts_file_name:
+  CATDESC: Input filename for packets data
+  FIELDNAM: Input filename
+
+seq_count_in_pkts_file:
+  CATDESC: Sequence counter from packet
+  FIELDNAM: Sequence counter
+
+last_spin_id:
+  CATDESC: The ID of the last spin in the block
+  FIELDNAM: Last spin ID
+
+imap_start_time:
+  CATDESC: Start time of the block, in seconds, in IMAP spacecraft clock time
+  FIELDNAM: Start time in seconds in IMAP time
+
+imap_time_offset:
+  CATDESC: End time of the block, in seconds, in IMAP spacecraft clock time
+  FIELDNAM: End time in seconds in IMAP time
+
+glows_start_time:
+  CATDESC: Start time of the block, in seconds, in GLOWS clock time
+  FIELDNAM: Start time in seconds in GLOWS time
+
+glows_time_offset:
+  CATDESC: End time of the block, in seconds, in GLOWS clock time
+  FIELDNAM: End time in seconds in GLOWS time
+
+flags_set_onboard:
+  CATDESC: Flags for bad data [missing PPS, missing time, missing spin phase, missing spin periods, overexposure, nonmonotonic event, data collected at night, HV test, pulse test, memory error]
+  FIELDNAM: Flags for missing or bad data
+
+is_generated_on_ground:
+  CATDESC: Indicates if the histogram data was generated on the ground
+  FIELDNAM: Histogram data generated on ground
+
+number_of_spins_per_block:
+  CATDESC: Number of spins per block
+  FIELDNAM: Number of spins per block
+
+number_of_spins_per_histogram:
+  CATDESC: Number of histogram bins
+  FIELDNAM: Number of histogram bins
+
+numer_of_events:
+  CATDESC: Total number of events or counts in the histogram
+  FIELDNAM: Total number of histogram events
+
+filter_temperature_average:
+  CATDESC: Filter temperature, averaged per block, and unit " "encoded
+  FIELDNAM: Average filter temperature, unit encoded
+
+filter_temperature_variance:
+  CATDESC: Filter temperature variance, per block, and unit " "encoded.
+  FIELDNAM: Uint encoded filter temperature variance
+
+hv_voltage_average:
+  CATDESC: block averaged HV voltage on the CEM, uint encoded
+  FIELDNAM: Uint encoded average HV voltage
+
+hv_voltage_variance:
+  CADESC: variance of  HV voltage on the CEM, uint encoded
+  FIELDNAM: Uint encoded HV voltage variance
+
+spin_period_average:
+  CATDESC: Block averaged spin period, uint encoded
+  FIELDNAM: Average spin period, uint encoded
+
+spin_period_variance:
+  CATDESC: Variance of spin period, uint encoded
+  FIELDNAM: Variance of spin period, uint encoded
+
+pulsa_length_average:
+  CATDESC: Block averaged impulse length, uint encoded
+  FIELDNAM: Block averaged impulse length, uint encoded
+
+pulse_length_variance:
+  CATDESC: Variance of impulse length, uint encoded
+  FIELDNAM: Variance of impulse length, uint encoded
+
+imap_sclk_last_pps:
+  CATDESC: IMAP seconds for last PPS
+  FIELDNAM: IMAP seconds for last PPS
+
+glows_sclk_last_pps:
+  CATDESC: GLOWS seconds for last PPS
+  FIELDNAM: GLOWS seconds for last PPS
+
+glows_ssclk_last_pps:
+  CATDESC: GLOWS subseconds for last PPS, with a max of 2000000
+  FIELDNAM: GLOWS subseconds for last PPS
+
+imap_sclk_next_pps:
+  CATDESC: IMAP seconds for next PPS
+  FIELDNAM: IMAP seconds for next PPS
+
+catbed_heater_active:
+  CATDESC: Indicates if the heater is active
+  FIELDNAM: Heater active flag
+
+spin_period_valid:
+  CATDESC: indicates if the spin phase is valid
+  FIELDNAM: valid spin phase flag
+
+spin_phase_at_next_pps_valid:
+  CATDESC: Indicates if the spin phase at next PPS is valid
+  FELDNAM: Spin phase at next PPS is valid
+
+spin_period_source:
+  CATDESC: Flag - Spin period source
+  FIELDNAM: Flag - Spin period source
+
+spin_period:
+  CATDESC: Uint encoded spin period value
+  FIELDNAM: Uint encoded spin period value
+
+spin_phase_at_next_pps:
+  CATDESC: Uint encoded next spin phase value
+  FIELDNAM: Uint encoded next spin phase value
+
+number_of_completed_spins:
+  CATDESC: Number of spins, from onboard
+  FIELDNAM: Number of spins, from onboard
+
+filter_temperature:
+  CATDESC: Uint encoded temperature
+  FIELDNAM: Uint encoded temperature
+
+hv_voltage:
+  CATDESC: Uint encoded voltage
+  FIELDNAM: Uint encoded voltage
+
+glows_time_on_pps_valid:
+  CATDESC: Indicates if the glows time is valid
+  FIELDNAM: Flag - is glows time valid
+
+time_status_valid:
+  CATDESC: Flag - valid time status
+  FIELDNAM: Flag - valid time status
+
+housekeeping_valid:
+  CATDESC: Flag - valid housekeeping
+  FIELDNAM: Flag - valid housekeeping
+
+is_pps_autogenerated:
+  CATDESC: Indicates if PPS is autogenerated
+  FIELDNAM: Indicates if PPS is autogenerated
+
+hv_test_in_progress:
+  CATDESC: Flag
+  FIELDNAM: Flag
+
+pulse_test_in_progress:
+  CATDESC: FLag
+  FIELDNAM: Flag
+
+memory_error_detected:
+  CATDESC: Flag
+  FIELDNAM: Flag
+
+number_of_de_packets:
+  CATDESC: Number of DE packets
+  FIELDNAM: Number of DE packets
+
+missing_packet_sequences:
+  CATDESC: Missing packet sequence numbers
+  FIELDNAM: Missing packet sequences
