@@ -7,8 +7,7 @@ import numpy as np
 import xarray as xr
 
 from imap_processing import utils
-from imap_processing.cdf.global_attrs import ConstantCoordinates
-from imap_processing.hit import hit_cdf_attrs
+from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.hit.l0.data_classes.housekeeping import Housekeeping
 
 logger = logging.getLogger(__name__)
@@ -32,6 +31,12 @@ def hit_l1b(l1a_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
     cdf_filepaths : xarray.Dataset
         L1B processed data.
     """
+    # create the attribute manager for this data level
+    attr_mgr = ImapCdfAttributes()
+    attr_mgr.add_instrument_global_attrs(instrument="hit")
+    attr_mgr.add_instrument_variable_attrs(instrument="hit", level="l1b")
+    attr_mgr.add_global_attribute("Data_version", data_version)
+
     # TODO: Check for type of L1A dataset and determine what L1B products to make
     #   Need more info from instrument teams. Work with housekeeping data for now
     logical_source = "imap_hit_l1b_hk"
@@ -39,21 +44,24 @@ def hit_l1b(l1a_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
     # Create datasets
     datasets = []
     if "_hk" in logical_source:
-        dataset = create_hk_dataset()
+        dataset = create_hk_dataset(attr_mgr)
         datasets.append(dataset)
     elif "_sci" in logical_source:
         # process science data. placeholder for future code
         pass
 
-    for dataset in datasets:
-        dataset.attrs["Data_version"] = data_version
     return datasets
 
 
 # TODO: This is going to work differently when we have sample data
-def create_hk_dataset() -> xr.Dataset:
+def create_hk_dataset(attr_mgr: ImapCdfAttributes) -> xr.Dataset:
     """
     Create a housekeeping dataset.
+
+    Parameters
+    ----------
+    attr_mgr : ImapCdfAttributes
+        Attribute manager used to get the data product field's attributes.
 
     Returns
     -------
@@ -76,6 +84,8 @@ def create_hk_dataset() -> xr.Dataset:
         "leak_i_raw",
     ]
 
+    logical_source = "imap_hit_l1b_hk"
+
     # Create fake data for now
 
     # Convert integers into datetime64[s]
@@ -90,20 +100,20 @@ def create_hk_dataset() -> xr.Dataset:
         data=epoch_converted_time,
         name="epoch",
         dims=["epoch"],
-        attrs=ConstantCoordinates.EPOCH,
+        attrs=attr_mgr.get_variable_attributes("epoch"),
     )
 
     adc_channels = xr.DataArray(
         np.arange(n_channels, dtype=np.uint16),
         name="adc_channels",
         dims=["adc_channels"],
-        attrs=hit_cdf_attrs.l1b_hk_attrs["adc_channels"].output(),
+        attrs=attr_mgr.get_variable_attributes("adc_channels"),
     )
 
     # Create xarray dataset
     hk_dataset = xr.Dataset(
         coords={"epoch": epoch_time, "adc_channels": adc_channels},
-        attrs=hit_cdf_attrs.hit_hk_l1b_attrs.output(),
+        attrs=attr_mgr.get_global_attributes(logical_source),
     )
 
     # Create xarray data array for each data field
@@ -114,7 +124,7 @@ def create_hk_dataset() -> xr.Dataset:
             # attributes
             dims = [
                 value
-                for key, value in hit_cdf_attrs.l1b_hk_attrs[field].output().items()
+                for key, value in attr_mgr.get_variable_attributes(field).items()
                 if "DEPEND" in key
             ]
 
@@ -125,7 +135,7 @@ def create_hk_dataset() -> xr.Dataset:
                 hk_dataset[field] = xr.DataArray(
                     np.ones((n_epoch, n_channels), dtype=np.uint16),
                     dims=dims,
-                    attrs=hit_cdf_attrs.l1b_hk_attrs[field].output(),
+                    attrs=attr_mgr.get_variable_attributes(field),
                 )
             elif field in [
                 "preamp_l234a",
@@ -156,13 +166,13 @@ def create_hk_dataset() -> xr.Dataset:
                 hk_dataset[field] = xr.DataArray(
                     np.ones(3, dtype=np.float16),
                     dims=dims,
-                    attrs=hit_cdf_attrs.l1b_hk_attrs[field].output(),
+                    attrs=attr_mgr.get_variable_attributes(field),
                 )
             else:
                 hk_dataset[field] = xr.DataArray(
                     [1, 1, 1],
                     dims=dims,
-                    attrs=hit_cdf_attrs.l1b_hk_attrs[field].output(),
+                    attrs=attr_mgr.get_variable_attributes(field),
                 )
 
     logger.info("HIT L1B datasets created")

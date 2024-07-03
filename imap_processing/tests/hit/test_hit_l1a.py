@@ -2,6 +2,7 @@ import pytest
 import xarray as xr
 
 from imap_processing import imap_module_directory, utils
+from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.hit.l0.data_classes.housekeeping import Housekeeping
 from imap_processing.hit.l1a import hit_l1a
 
@@ -60,23 +61,21 @@ def test_create_datasets(unpacked_packets):
         A sorted list of decommutated packets
     """
     grouped_data = hit_l1a.group_data(unpacked_packets)
-    skip_keys = [
-        "shcoarse",
-        "ground_sw_version",
-        "packet_file_name",
-        "ccsds_header",
-        "leak_i_raw",
-    ]
-    datasets_by_apid = hit_l1a.create_datasets(grouped_data, skip_keys=skip_keys)
+
+    attr_mgr = ImapCdfAttributes()
+    attr_mgr.add_instrument_global_attrs(instrument="hit")
+    attr_mgr.add_instrument_variable_attrs(instrument="hit", level="l1a")
+    attr_mgr.add_global_attribute("Data_version", "001")
+
+    datasets_by_apid = hit_l1a.create_datasets(grouped_data, attr_mgr)
     assert len(datasets_by_apid.keys()) == 1
     assert isinstance(datasets_by_apid[hit_l1a.HitAPID.HIT_HSKP], xr.Dataset)
 
 
 def test_hit_l1a(packet_filepath):
-    """Create L1A CDF files
+    """Create L1A datasets
 
-    Creates a CDF file for each apid dataset and stores all
-    cdf file paths in a list
+    Creates xarray datasets from a packet.
 
     Parameters
     ----------
