@@ -125,23 +125,21 @@ def get_front_x_position(start_type: np.array, start_position_tdc: np.array):
     Calculate the front xf position.
 
     Converts Start Position Time to Digital Converter (TDC)
-    values into units of hundredths of a
-    millimeter using a scale factor and offsets.
+    values into units of hundredths of a millimeter using a scale factor and offsets.
     Further description is available on pages 30 of
-    IMAP-Ultra Flight Software Specification document
-    (7523-9009_Rev_-.pdf).
+    IMAP-Ultra Flight Software Specification document (7523-9009_Rev_-.pdf).
 
     Parameters
     ----------
     start_type : np.array
         Start Type: 1=Left, 2=Right.
-    start_position_tdc: np.array
+    start_position_tdc : np.array
         Start Position Time to Digital Converter (TDC).
 
     Returns
     -------
     xf : np.array
-        x front position (hundredths of a millimeter).
+        X front position (hundredths of a millimeter).
     """
     indices = np.where((start_type == 1) | (start_type == 2))
 
@@ -171,7 +169,7 @@ def get_front_y_position(start_type: np.array, yb: np.array):
     start_type : np.array
         Start Type: 1=Left, 2=Right.
     yb : np.array
-        y back position in hundredths of a millimeter.
+        Y back position in hundredths of a millimeter.
 
     Returns
     -------
@@ -260,7 +258,7 @@ def get_coincidence_positions(
         Time for the electrons to travel back to
         coincidence anode (tenths of a nanosecond).
     xc_sorted : np.ndarray
-        x coincidence position (hundredths of a millimeter).
+        X coincidence position (hundredths of a millimeter).
     """
     index_top = np.where(de_dataset["COIN_TYPE"] == 1)[0]
     index_bottom = np.where(de_dataset["COIN_TYPE"] == 2)[0]
@@ -308,7 +306,8 @@ def get_coincidence_positions(
 
 
 def get_ssd_offset_and_positions(de_dataset: xarray.Dataset):
-    """Figure out what SSD a particle hit.
+    """
+    Figure out what SSD a particle hit.
 
     Parameters
     ----------
@@ -318,7 +317,7 @@ def get_ssd_offset_and_positions(de_dataset: xarray.Dataset):
     Returns
     -------
     yb_sorted : np.array
-        y ssd position (hundredths of a millimeter).
+        Y ssd position (hundredths of a millimeter).
     tof_offsets_sorted : np.array
         Time of flight offset (tenths of a nanosecond).
     ssds_sorted : np.array
@@ -392,7 +391,7 @@ def get_ssd_tof(de_dataset: xarray.Dataset, xf: np.array):
     de_dataset : xarray.Dataset
         Data in xarray format.
     xf : np.array
-        Front x position (hundredths of a millimeter)
+        Front x position (hundredths of a millimeter).
 
     Returns
     -------
@@ -435,9 +434,9 @@ def get_energy_pulse_height(stop_type: np.array, xb: np.array, yb: np.array):
     stop_type : np.array
         Stop type: 1=Top, 2=Bottom.
     xb : np.array
-        x back position (hundredths of a millimeter).
+        X back position (hundredths of a millimeter).
     yb : np.array
-        y back position (hundredths of a millimeter).
+        Y back position (hundredths of a millimeter).
 
     Returns
     -------
@@ -484,7 +483,7 @@ def get_energy_ssd(de_dataset: xarray.Dataset, ssd: np.array):
 
     Parameters
     ----------
-    de_dataset: xarray.Dataset
+    de_dataset : xarray.Dataset
         Events dataset.
     ssd : np.array
         SSD number.
@@ -537,7 +536,7 @@ def determine_species_ssd(energy: np.array, tof: np.array, r: np.array):
     energy : np.array
         Energy from the SSD event (keV).
     tof : np.array
-        Time of flight of the SSD event (tenths of a nanosecond)
+        Time of flight of the SSD event (tenths of a nanosecond).
     r : np.array
         Path length (hundredths of a millimeter).
 
@@ -641,7 +640,7 @@ def get_particle_velocity(
     back_position : tuple
         Back position (xb,yb) (hundredths of a millimeter).
     d : np.array
-        distance from slit to foil (hundredths of a millimeter).
+        Distance from slit to foil (hundredths of a millimeter).
     tof : np.array
         Time of flight (tenths of a nanosecond).
 
@@ -679,7 +678,8 @@ def get_particle_velocity(
 
 
 def get_path_length(front_position, back_position, d):
-    """Calculate the path length.
+    """
+    Calculate the path length.
 
     Parameters
     ----------
@@ -688,7 +688,7 @@ def get_path_length(front_position, back_position, d):
     back_position : tuple of floats
         Back position (xb,yb) (hundredths of a millimeter).
     d : float
-        distance from slit to foil (hundredths of a millimeter).
+        Distance from slit to foil (hundredths of a millimeter).
 
     Returns
     -------
