@@ -16,7 +16,7 @@ def _parse_args():
 
     The expected input format is:
     --instrument "instrument_name"
-    --file_name "file_name"
+    --file_path "full_file_path"
     --packets '{"packet_name_1": app_id_1, "packet_name_2": app_id_2}'
 
     Returns
@@ -28,7 +28,8 @@ def _parse_args():
         "This command line program generates an instrument specific XTCE file."
         "Example usage: "
         '--instrument "swapi"'
-        '--file_name "TLM_SWP_20231006-121021.xlsx"'
+        "--file_path "
+        '"/Users/anma6676/Desktop/Repositories/imap_processing/tools/xtce_generation/TLM_SWP_20231006-121021.xlsx"'
         "--packets '"
         '{"P_SWP_HK": 1184, '
         '"P_SWP_SCI": 1188, '
@@ -39,7 +40,7 @@ def _parse_args():
         "The instrument to process. Acceptable values are: "
         f"{imap_data_access.VALID_INSTRUMENTS}"
     )
-    file_name_help = "Provide file name to write packets to."
+    file_path_help = "Provide full file path to write packets to."
     packets_help = (
         "Provide packet dictionary using packet_name, and app_id."
         '{"<packet_name>": <app_id>}'
@@ -47,7 +48,7 @@ def _parse_args():
 
     parser = argparse.ArgumentParser(prog="imap_xtce", description=description)
     parser.add_argument("--instrument", type=str, required=True, help=instrument_help)
-    parser.add_argument("--file_name", type=str, required=True, help=file_name_help)
+    parser.add_argument("--file_path", type=str, required=True, help=file_path_help)
     parser.add_argument("--packets", type=str, required=True, help=packets_help)
 
     args = parser.parse_args()
@@ -70,9 +71,9 @@ def _validate_args(args):
             f"{imap_data_access.VALID_INSTRUMENTS}"
         )
 
-    directory = Path(__file__).parent / args.file_name
+    directory = Path(args.file_path)
     if not directory.exists():
-        raise FileNotFoundError(f"{args.file_name} does not exist.")
+        raise FileNotFoundError(f"{args.file_path} not found, and may not exist.")
 
 
 def main():
@@ -86,9 +87,7 @@ def main():
     current_directory = Path(__file__).parent.parent.parent
     module_path = current_directory / "imap_processing"
     packet_definition_path = module_path / instrument_name / "packet_definitions"
-    path_to_excel_file = (
-        current_directory / "tools" / "xtce_generation" / args.file_name
-    )
+    path_to_excel_file = args.file_path
 
     # Update packets dictionary with given CLI information
     packets = json.loads(args.packets)
