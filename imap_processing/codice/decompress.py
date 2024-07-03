@@ -31,7 +31,6 @@ References
 
 import lzma
 from enum import IntEnum
-from typing import Union
 
 from imap_processing.codice.constants import LOSSY_A_TABLE, LOSSY_B_TABLE
 from imap_processing.codice.utils import CoDICECompression
@@ -75,7 +74,7 @@ def _apply_lossy_b(compressed_value: int) -> int:
     return LOSSY_B_TABLE[compressed_value]
 
 
-def _apply_lzma_lossless(compressed_value: Union[int, bytes]) -> int:
+def _apply_lzma_lossless(compressed_value: int) -> int:
     """
     Apply LZMA lossless decompression algorithm.
 
@@ -89,10 +88,7 @@ def _apply_lzma_lossless(compressed_value: Union[int, bytes]) -> int:
     decompressed_value : int
         The 24- or 32-bit decompressed value.
     """
-    if isinstance(compressed_value, int):
-        bytes_compressed_value = compressed_value.to_bytes(compressed_value, "big")
-    else:
-        bytes_compressed_value = compressed_value
+    bytes_compressed_value = compressed_value.to_bytes(compressed_value, "big")
     decompressed_value = lzma.decompress(bytes_compressed_value)
     decompressed_value_int = int.from_bytes(decompressed_value, byteorder="big")
 
