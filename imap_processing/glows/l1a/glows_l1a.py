@@ -8,15 +8,14 @@ import numpy as np
 import xarray as xr
 
 from imap_processing.cdf.global_attrs import ConstantCoordinates
-from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import J2000_EPOCH, met_to_j2000ns
-from imap_processing.glows import glows_cdf_attrs
+from imap_processing.glows import __version__, glows_cdf_attrs
 from imap_processing.glows.l0.decom_glows import decom_packets
 from imap_processing.glows.l0.glows_l0_data import DirectEventL0
 from imap_processing.glows.l1a.glows_l1a_data import DirectEventL1A, HistogramL1A
 
 
-# No direct cdf alterations needed (I believe)
+# Processes packet files into CDF files. Returns a list of generated L1a datasets.
 def glows_l1a(packet_filepath: Path, data_version: str) -> list[xr.Dataset]:
     """
     Will process packets into GLOWS L1A CDF files.
@@ -38,12 +37,16 @@ def glows_l1a(packet_filepath: Path, data_version: str) -> list[xr.Dataset]:
     """
     # TODO: Data version inside file as well?
     # Create glows L0
+    # Decompose packet file into histogram, and direct event data.
     hist_l0, de_l0 = decom_packets(packet_filepath)
 
+    # Process the direct event data into a dictionary grouped by the day.
     de_by_day = process_de_l0(de_l0)
+    # Dictionary is used to store histogram data grouped by day
     hists_by_day = defaultdict(list)
 
-    # Create histogram L1A and filter into days based on start time
+    # Loop through each histogram data packet, convert it to HistogramL1a,
+    # and group it day
     for hist in hist_l0:
         hist_l1a = HistogramL1A(hist)
         # Split by IMAP start time
@@ -52,6 +55,9 @@ def glows_l1a(packet_filepath: Path, data_version: str) -> list[xr.Dataset]:
         hists_by_day[hist_day].append(hist_l1a)
 
     # Generate CDF files for each day
+    # Loop through the grouped histogram and direct event data,
+    # generate datasets for each day,
+    # Add to output list.
     output_datasets = []
     for hist_l1a_list in hists_by_day.values():
         dataset = generate_histogram_dataset(hist_l1a_list, data_version)
@@ -61,10 +67,11 @@ def glows_l1a(packet_filepath: Path, data_version: str) -> list[xr.Dataset]:
         dataset = generate_de_dataset(de_l1a_list, data_version)
         output_datasets.append(dataset)
 
+    # Return generated Datasets
     return output_datasets
 
 
-# No direct cdf alterations needed (I think)
+# Combining packets with direct event sequences that span multiple packets.
 def process_de_l0(
     de_l0: list[DirectEventL0],
 ) -> dict[np.datetime64, list[DirectEventL1A]]:
@@ -85,12 +92,16 @@ def process_de_l0(
         Dictionary with keys of days and values of lists of DirectEventL1A objects.
         Each day has one CDF file associated with it.
     """
+    # Dict to store direct event data grouped by day.
     de_by_day = dict()
 
+    # Loop though each DirectEventL0 object, convert MET to day, and group=
+    # by day.
     for de in de_l0:
         de_day = (J2000_EPOCH + met_to_j2000ns(de.MET)).astype("datetime64[D]")
         if de_day not in de_by_day:
             de_by_day[de_day] = [DirectEventL1A(de)]
+        # Putting not first data int o last direct event list.
         elif de.SEQ != 0:
             # If the direct event is part of a sequence and is not the first,
             # append it to the last direct event in the list
@@ -98,10 +109,11 @@ def process_de_l0(
         else:
             de_by_day[de_day].append(DirectEventL1A(de))
 
+    # Return the processed Direct Events
     return de_by_day
 
 
-# This file WILL require direct cdf alterations (I think)
+# Generate xarray dataset(array of dimensions) from a list of DirectEventL1a objects
 def generate_de_dataset(
     de_l1a_list: list[DirectEventL1A], data_version: str
 ) -> xr.Dataset:
@@ -122,35 +134,23 @@ def generate_de_dataset(
     """
     # TODO: Block header per second, or global attribute?
 
+    # Store timestamps for each DirectEventL1a object.
     time_data = np.zeros(len(de_l1a_list), dtype="datetime64[ns]")
     # TODO: Should each timestamp point to a list of direct events, each with a
     #  timestamp? Or should the list be split out to make the timestamps?
 
+    # Create a 3D array to store the direct events data
     # Each DirectEventL1A class covers 1 second of direct events data
     direct_events = np.zeros((len(de_l1a_list), len(de_l1a_list[0].direct_events), 4))
-    # =======================
-    #     global_attributes =
-    #           glows_cdf_attrs.glows_l1a_de_attrs.output() # Global attributes
-    #
-    #     global_attributes["ground_software_version"] =
-    #           __version__  # Covered with global attrs
-    #     global_attributes["Data_version"] =
-    #           data_version # Adding data version global attr
-    #     # In header: block header, missing seqs
-    #     # Time varying - statusdata
 
-    # My code for block above
-    # Create object
-    glows_attributes = ImapCdfAttributes()
-    # Load files
-    glows_attributes.add_instrument_global_atts("glows")
-    glows_attributes.add_instrument_variable_attrs("glows", "l1a")
-    # Adding global attribute data_version
-    glows_attributes.add_global_attribute("Data_version", data_version)
-    # Create desired global and variable dictionaries
-    glows_de_global = glows_attributes.get_global_attributes("imap_glows_l1a_de")
-    # ground_soft = glows_attributes.get_variable_attributes("ground_software_version")
+    # Get global attributes for the data set, and set additional attributes
+    global_attributes = glows_cdf_attrs.glows_l1a_de_attrs.output()
+    global_attributes["ground_software_version"] = __version__
+    global_attributes["Data_version"] = data_version
+    # In header: block header, missing seqs
+    # Time varying - statusdata
 
+    # Initializing dictionaries for support, and data every second.
     support_data = {
         # "flight_software_version": [], # breaks
         "seq_count_in_pkts_file": [],  # works
@@ -181,6 +181,8 @@ def generate_de_dataset(
         "memory_error_detected": [],
     }
 
+    # Iterate over de_l1a_list (parameter) and populate the tie data,
+    # direct events array and support/data dictionaries.
     for index, de in enumerate(de_l1a_list):
         # Set the timestamp to the first timestamp of the direct event list
         epoch_time = met_to_j2000ns(de.l0.MET).astype("datetime64[ns]")
@@ -223,6 +225,7 @@ def generate_de_dataset(
         for key in data_every_second.keys():
             data_every_second[key].append(de.status_data.__getattribute__(key))
 
+    # Convert arrays and dictionaries into xarray 'DataArray' objects
     epoch_time = xr.DataArray(
         time_data,
         name="epoch",
@@ -235,7 +238,7 @@ def generate_de_dataset(
         np.arange(4),
         name="direct_event",
         dims=["direct_event"],
-        attrs=glows_attributes.get_variable_attributes("event_attrs"),
+        attrs=glows_cdf_attrs.event_attrs.output(),
     )
 
     # TODO come up with a better name
@@ -243,7 +246,7 @@ def generate_de_dataset(
         np.arange(direct_events.shape[1]),
         name="per_second",
         dims=["per_second"],
-        attrs=glows_attributes.get_variable_attributes("per_second_attrs"),
+        attrs=glows_cdf_attrs.per_second_attrs.output(),
     )
 
     de = xr.DataArray(
@@ -255,13 +258,13 @@ def generate_de_dataset(
             "per_second": per_second,
             "direct_event": direct_event,
         },
-        attrs=glows_attributes.get_variable_attributes("direct_event_attrs"),
+        attrs=glows_cdf_attrs.direct_event_attrs.output(),
     )
 
+    # Create an xarray dataset object, and add DataArray objects into it
     output = xr.Dataset(
         coords={"epoch": time_data},
-        attrs=glows_de_global,
-        # attrs=global-attrs
+        attrs=global_attributes,
     )
 
     output["direct_events"] = de
@@ -295,6 +298,7 @@ def generate_de_dataset(
             ).output(),
         )
 
+    # Return this 'Dataset'
     return output
 
 
