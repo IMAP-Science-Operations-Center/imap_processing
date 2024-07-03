@@ -80,7 +80,7 @@ def _apply_lzma_lossless(compressed_value: int) -> int:
 
     Parameters
     ----------
-    compressed_value : int or bytes
+    compressed_value : int
         The compressed 8-bit value.
 
     Returns
@@ -88,7 +88,10 @@ def _apply_lzma_lossless(compressed_value: int) -> int:
     decompressed_value : int
         The 24- or 32-bit decompressed value.
     """
-    bytes_compressed_value = compressed_value.to_bytes(compressed_value, "big")
+    compressed_value_int: int = compressed_value
+    bytes_compressed_value: bytes = compressed_value_int.to_bytes(
+        compressed_value, "big"
+    )
     decompressed_value = lzma.decompress(bytes_compressed_value)
     decompressed_value_int = int.from_bytes(decompressed_value, byteorder="big")
 
