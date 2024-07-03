@@ -1,0 +1,27 @@
+instrument_base: &instrument_base
+  Descriptor: &desc
+    HIT>IMAP High-energy Ion Telescope
+  TEXT: &txt >
+    The High-energy Ion Telescope (HIT) measures the elemental composition, energy spectra,
+    angle distributions, and arrival times of high-energy ions. HIT delivers full-sky
+    coverage from a wide instrument field-of-view (FOV) to enable a high resolution of ion
+    measurements, such as observing shock-accelerated ions, determining the origin of the
+    solar energetic particles (SEPs) spectra, and resolving particle transport in the
+    heliosphere. See https://imap.princeton.edu/instruments/hit for more details.
+  Instrument_type: Particles (space)
+
+  # L1a
+imap_hit_l1a_hk:
+    <<: *instrument_base
+    Data_level: 1A
+    Data_type: L1A_HK>Level-1A Housekeeping
+    Logical_source: imap_hit_l1a_hk
+    Logical_source_description: IMAP Mission HIT Instrument Level-1A Housekeeping Data.
+
+  # L1b
+imap_hit_l1b_hk:
+    <<: *instrument_base
+    Data_level: 1B
+    Data_type: L1B_HK>Level-1B Housekeeping
+    Logical_source: imap_hit_l1b_hk
+    Logical_source_description: IMAP Mission HIT Instrument Level-1B Housekeeping Data.
