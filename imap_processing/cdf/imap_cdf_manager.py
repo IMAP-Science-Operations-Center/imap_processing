@@ -16,7 +16,7 @@ class ImapCdfAttributes(CdfAttributeManager):
 
     Parameters
     ----------
-    source_dir : Path or None
+    source_dir : pathlib.Path or None
         Source directory.
     """
 
@@ -26,7 +26,7 @@ class ImapCdfAttributes(CdfAttributeManager):
 
         Parameters
         ----------
-        source_dir : Path or None
+        source_dir : pathlib.Path or None
             Source directory.
         """
         if source_dir is None:
