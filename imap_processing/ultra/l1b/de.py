@@ -53,14 +53,16 @@ def calculate_de(de_dataset: xr.Dataset, name: str) -> xr.Dataset:
     ph_indices = np.where(
         (de_dataset["STOP_TYPE"] == 1) | (de_dataset["STOP_TYPE"] == 2)
     )[0]
-    ph_tof, ph_t2, ph_xb, ph_yb = get_ph_tof_and_back_positions(de_dataset, xf)
+    ph_tof, ph_t2, ph_xb, ph_yb = get_ph_tof_and_back_positions(
+        de_dataset, xf, "ultra45"
+    )
     ph_d, ph_yf = get_front_y_position(de_dataset["START_TYPE"].data[ph_indices], ph_yb)
     ph_energy = get_energy_pulse_height(
         de_dataset["STOP_TYPE"].data[ph_indices], ph_xb, ph_yb
     )
     ph_r = get_path_length((xf[ph_indices], ph_yf), (ph_xb, ph_yb), ph_d)
     ph_ctof, ph_bin = determine_species_pulse_height(ph_energy, ph_tof, ph_r)
-    ph_etof, ph_xc = get_coincidence_positions(de_dataset, ph_tof)
+    ph_etof, ph_xc = get_coincidence_positions(de_dataset, ph_tof, "ultra45")
 
     # SSD
     ssd_indices = np.where(de_dataset["STOP_TYPE"] >= 8)[0]
@@ -70,7 +72,7 @@ def calculate_de(de_dataset: xr.Dataset, name: str) -> xr.Dataset:
     )
     ssd_tof, ssd = get_ssd_tof(de_dataset, xf)
     ssd_energy = get_energy_ssd(de_dataset, ssd)
-    ssd_xb = np.zeros(len(ssd_yb), dtype=np.float64)
+    ssd_xb = np.zeros(len(ssd_yb))
     ssd_r = get_path_length((xf[ssd_indices], ssd_yf), (ssd_xb, ssd_yb), ssd_d)
     ssd_ctof, ssd_bin = determine_species_ssd(ssd_energy, ssd_tof, ssd_r)
 
@@ -85,7 +87,7 @@ def calculate_de(de_dataset: xr.Dataset, name: str) -> xr.Dataset:
     xb = np.concatenate((ph_xb, ssd_xb))
     de_dict["x_back"] = xb[np.argsort(combined_indices)]
 
-    xcoin = np.concatenate((ph_xc, np.zeros(len(ssd_indices), dtype=np.float64)))
+    xcoin = np.concatenate((ph_xc, np.zeros(len(ssd_indices))))
     de_dict["x_coin"] = xcoin[np.argsort(combined_indices)]
 
     yf = np.concatenate((ph_yf, ssd_yf))
@@ -100,26 +102,33 @@ def calculate_de(de_dataset: xr.Dataset, name: str) -> xr.Dataset:
     tof = np.concatenate((ph_tof, ssd_tof))
     de_dict["tof_start_stop"] = tof[np.argsort(combined_indices)]
 
-    etof = np.concatenate((ph_etof, np.zeros(len(ssd_indices), dtype=np.float64)))
+    etof = np.concatenate((ph_etof, np.zeros(len(ssd_indices))))
     de_dict["tof_stop_coin"] = etof[np.argsort(combined_indices)]
 
     ctof = np.concatenate((ph_ctof, ssd_ctof))
     de_dict["tof_corrected"] = ctof[np.argsort(combined_indices)]
 
-    de_dict["cointype"] = de_dataset["COIN_TYPE"]
-    de_dict["starttype"] = de_dataset["START_TYPE"]
-    de_dict["eventtype"] = de_dataset["STOP_TYPE"]
-    de_dict["eventtimes"] = de_dataset["EVENTTIMES"]
+    keys = [
+        "coincidence_type",
+        "start_type",
+        "event_type",
+        "eventtimes",
+        "de_event_met",
+    ]
+    dataset_keys = ["COIN_TYPE", "START_TYPE", "STOP_TYPE", "EVENTTIMES", "SHCOARSE"]
 
-    vhat_x, vhat_y, vhat_z = get_particle_velocity(
-        (de_dict["x_front"], de_dict["y_front"]),
-        (de_dict["x_back"], de_dict["y_back"]),
-        de_dict["front_back_distance"],
-        de_dict["tof_start_stop"],
+    de_dict.update(
+        {key: de_dataset[dataset_key] for key, dataset_key in zip(keys, dataset_keys)}
     )
-    de_dict["vx_ultra"] = vhat_x
-    de_dict["vy_ultra"] = vhat_y
-    de_dict["vz_ultra"] = vhat_z
+
+    de_dict["vx_ultra"], de_dict["vy_ultra"], de_dict["vz_ultra"] = (
+        get_particle_velocity(
+            (de_dict["x_front"], de_dict["y_front"]),
+            (de_dict["x_back"], de_dict["y_back"]),
+            de_dict["front_back_distance"],
+            de_dict["tof_start_stop"],
+        )
+    )
 
     energy = np.concatenate((ph_energy, ssd_energy))
     de_dict["energy"] = energy[np.argsort(combined_indices)]

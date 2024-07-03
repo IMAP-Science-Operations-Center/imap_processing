@@ -5,6 +5,7 @@ import logging
 import numpy as np
 import xarray
 
+from imap_processing.cdf.defaults import GlobalConstants
 from imap_processing.ultra.l1b.lookup_utils import (
     get_back_position,
     get_energy_norm,
@@ -14,9 +15,12 @@ from imap_processing.ultra.l1b.lookup_utils import (
 )
 
 # TODO: add in logic similar to FSW document.
+# TODO: make lookup tables into config files.
 
 
-def get_ph_tof_and_back_positions(de_dataset: xarray.Dataset, xf: np.array):
+def get_ph_tof_and_back_positions(
+    de_dataset: xarray.Dataset, xf: np.array, sensor: str
+):
     """
     Calculate back xb, yb position and tof.
 
@@ -35,15 +39,16 @@ def get_ph_tof_and_back_positions(de_dataset: xarray.Dataset, xf: np.array):
     de_dataset : xarray.Dataset
         Data in xarray format.
     xf : np.array
-        x front position in (hundredths of a millimeter).
+        X front position in (hundredths of a millimeter).
+    sensor : str
+        Sensor name.
 
     Returns
     -------
     tof : np.array
         Time of flight (tenths of a nanosecond).
     t2 : np.array
-        Particle time of flight (i.e. from start to stop)
-        (tenths of a nanosecond).
+        Particle time of flight from start to stop (tenths of a nanosecond).
     xb : np.array
         Back positions in x direction (hundredths of a millimeter).
     yb : np.array
@@ -54,10 +59,10 @@ def get_ph_tof_and_back_positions(de_dataset: xarray.Dataset, xf: np.array):
 
     # There are mismatches between the stop TDCs, i.e., SpN, SpS, SpE, and SpW.
     # This normalizes the TDCs
-    sp_n_norm = get_norm(de_dataset["STOP_NORTH_TDC"].data[indices], "SpN", "ultra45")
-    sp_s_norm = get_norm(de_dataset["STOP_SOUTH_TDC"].data[indices], "SpS", "ultra45")
-    sp_e_norm = get_norm(de_dataset["STOP_EAST_TDC"].data[indices], "SpE", "ultra45")
-    sp_w_norm = get_norm(de_dataset["STOP_WEST_TDC"].data[indices], "SpW", "ultra45")
+    sp_n_norm = get_norm(de_dataset["STOP_NORTH_TDC"].data[indices], "SpN", sensor)
+    sp_s_norm = get_norm(de_dataset["STOP_SOUTH_TDC"].data[indices], "SpS", sensor)
+    sp_e_norm = get_norm(de_dataset["STOP_EAST_TDC"].data[indices], "SpE", sensor)
+    sp_w_norm = get_norm(de_dataset["STOP_WEST_TDC"].data[indices], "SpW", sensor)
 
     # Convert normalized TDC values into units of hundredths of a
     # millimeter using lookup tables.
@@ -85,8 +90,8 @@ def get_ph_tof_and_back_positions(de_dataset: xarray.Dataset, xf: np.array):
     # hundredths of a millimeter using lookup tables.
     index_top = indices[de_dataset["STOP_TYPE"].data[indices] == 1]
     stop_type_top = de_dataset["STOP_TYPE"].data[indices] == 1
-    xb[index_top] = get_back_position(xb_index[stop_type_top], "XBkTp", "ultra45")
-    yb[index_top] = get_back_position(yb_index[stop_type_top], "YBkTp", "ultra45")
+    xb[index_top] = get_back_position(xb_index[stop_type_top], "XBkTp", sensor)
+    yb[index_top] = get_back_position(yb_index[stop_type_top], "YBkTp", sensor)
 
     # Correction for the propagation delay of the start anode and other effects.
     t2[index_top] = get_image_params("TOFSC") * t1[stop_type_top] + get_image_params(
@@ -96,22 +101,21 @@ def get_ph_tof_and_back_positions(de_dataset: xarray.Dataset, xf: np.array):
 
     index_bottom = indices[de_dataset["STOP_TYPE"].data[indices] == 2]
     stop_type_bottom = de_dataset["STOP_TYPE"].data[indices] == 2
-    xb[index_bottom] = get_back_position(xb_index[stop_type_bottom], "XBkBt", "ultra45")
-    yb[index_bottom] = get_back_position(yb_index[stop_type_bottom], "YBkBt", "ultra45")
+    xb[index_bottom] = get_back_position(xb_index[stop_type_bottom], "XBkBt", sensor)
+    yb[index_bottom] = get_back_position(yb_index[stop_type_bottom], "YBkBt", sensor)
 
     # Correction for the propagation delay of the start anode and other effects.
     t2[index_bottom] = get_image_params("TOFSC") * t1[
         stop_type_bottom
-    ] + get_image_params("TOFBTOFF")
+    ] + get_image_params("TOFBTOFF")  # 10*ns
     tof[index_bottom] = t2[index_bottom] + xf[stop_type_bottom] * get_image_params(
         "XFTTOF"
     )
-
-    # TODO: why mult by 100?
-    tof = tof[indices].astype(np.float64) * 100
-    t2 = t2[indices].astype(np.float64)
-    xb = xb[indices].astype(np.float64)
-    yb = yb[indices].astype(np.float64)
+    # Multiply by 100 to get tenths of a nanosecond.
+    tof = tof[indices] * 100
+    t2 = t2[indices]
+    xb = xb[indices]
+    yb = yb[indices]
 
     return tof, t2, xb, yb
 
@@ -150,8 +154,6 @@ def get_front_x_position(start_type: np.array, start_position_tdc: np.array):
     # Note FSW uses xft_off+1.8, but the lookup table uses xft_off
     # Note FSW uses xft_off-.25, but the lookup table uses xft_off
     xf = (xftsc * -start_position_tdc[indices] + xft_off) * 100
-
-    xf = xf.astype(np.float64)
 
     return xf
 
@@ -222,13 +224,12 @@ def get_front_y_position(start_type: np.array, yb: np.array):
     # hundredths of a millimeter
     d[index_right] = (slit_z - distance_adjust_right) * 100
 
-    d = d.astype(np.float64)
-    yf = yf.astype(np.float64)
-
     return d, yf
 
 
-def get_coincidence_positions(de_dataset: xarray.Dataset, particle_tof: np.ndarray):
+def get_coincidence_positions(
+    de_dataset: xarray.Dataset, particle_tof: np.ndarray, sensor: str
+):
     """
     Calculate coincidence positions.
 
@@ -250,6 +251,8 @@ def get_coincidence_positions(de_dataset: xarray.Dataset, particle_tof: np.ndarr
     particle_tof : np.ndarray
         Particle time of flight (i.e. from start to stop)
         (tenths of a nanosecond).
+    sensor : str
+        Sensor name.
 
     Returns
     -------
@@ -268,42 +271,35 @@ def get_coincidence_positions(de_dataset: xarray.Dataset, particle_tof: np.ndarr
     # i.e., CoinN and CoinS. They must be normalized via lookup tables.
 
     # TpCoinNNorm Top
-    coin_n_norm_left = get_norm(
-        de_dataset["COIN_NORTH_TDC"][index_top], "CoinN", "ultra45"
-    )
+    coin_n_norm_top = get_norm(de_dataset["COIN_NORTH_TDC"][index_top], "CoinN", sensor)
     # TpCoinSNorm Top
-    coin_s_norm_left = get_norm(
-        de_dataset["COIN_SOUTH_TDC"][index_top], "CoinS", "ultra45"
-    )
-    t1_left = coin_n_norm_left + coin_s_norm_left  # /2 incorporated into scale
-    xc_left = get_image_params("XCOINTPSC") * (
-        coin_s_norm_left - coin_n_norm_left
+    coin_s_norm_top = get_norm(de_dataset["COIN_SOUTH_TDC"][index_top], "CoinS", sensor)
+    t1_top = coin_n_norm_top + coin_s_norm_top  # /2 incorporated into scale
+    xc_top = get_image_params("XCOINTPSC") * (
+        coin_s_norm_top - coin_n_norm_top
     ) + get_image_params("XCOINTPOFF")  # millimeter
-    t2_left = get_image_params("ETOFSC") * t1_left + get_image_params("ETOFTPOFF")
+    t2_top = get_image_params("ETOFSC") * t1_top + get_image_params("ETOFTPOFF")
 
     # TpCoinNNorm Bottom
-    coin_n_norm_right = get_norm(
-        de_dataset["COIN_NORTH_TDC"][index_bottom], "CoinN", "ultra45"
+    coin_n_norm_bottom = get_norm(
+        de_dataset["COIN_NORTH_TDC"][index_bottom], "CoinN", sensor
     )
     # TpCoinSNorm Bottom
-    coin_s_norm_right = get_norm(
-        de_dataset["COIN_SOUTH_TDC"][index_bottom], "CoinS", "ultra45"
+    coin_s_norm_bottom = get_norm(
+        de_dataset["COIN_SOUTH_TDC"][index_bottom], "CoinS", sensor
     )
-    t1_right = coin_n_norm_right + coin_s_norm_right  # /2 incorporated into scale
-    xc_right = get_image_params("XCOINBTSC") * (
-        coin_s_norm_right - coin_n_norm_right
+    t1_bottom = coin_n_norm_bottom + coin_s_norm_bottom  # /2 incorporated into scale
+    xc_bottom = get_image_params("XCOINBTSC") * (
+        coin_s_norm_bottom - coin_n_norm_bottom
     ) + get_image_params("XCOINBTOFF")  # millimeter
-    t2_right = get_image_params("ETOFSC") * t1_right + get_image_params("ETOFBTOFF")
+    t2_bottom = get_image_params("ETOFSC") * t1_bottom + get_image_params("ETOFBTOFF")
 
     # Time for the electrons to travel back to coincidence anode.
-    t2 = np.concatenate((t2_left, t2_right))
+    t2 = np.concatenate((t2_top, t2_bottom))
     # Convert to hundredths of a millimeter by multiplying times 100
-    xc = np.concatenate((xc_left * 100, xc_right * 100))
+    xc = np.concatenate((xc_top * 100, xc_bottom * 100))
 
     etof = t2 - particle_tof
-
-    etof = etof.astype(np.float64)
-    xc = xc.astype(np.float64)
 
     etof_sorted = etof[np.argsort(index)]
     xc_sorted = xc[np.argsort(index)]
@@ -321,10 +317,12 @@ def get_ssd_offset_and_positions(de_dataset: xarray.Dataset):
 
     Returns
     -------
-    yb : np.array
+    yb_sorted : np.array
         y ssd position (hundredths of a millimeter).
-    tof_offsets : np.array
-        Time of flight offset (nanoseconds).
+    tof_offsets_sorted : np.array
+        Time of flight offset (tenths of a nanosecond).
+    ssds_sorted : np.array
+        SSD number.
     """
     ssd_indices = np.array([], dtype=int)
     ybs = np.array([], dtype=np.float64)
@@ -364,11 +362,11 @@ def get_ssd_offset_and_positions(de_dataset: xarray.Dataset):
         tof_offsets = np.concatenate((tof_offsets, tof_offset))
 
     # multiply ybs times 100 to convert to hundredths of a millimeter.
-    yb_final = ybs[np.argsort(ssd_indices)] * 100
-    tof_offsets_final = tof_offsets[np.argsort(ssd_indices)]
-    ssds_final = ssds[np.argsort(ssd_indices)]
+    yb_sorted = ybs[np.argsort(ssd_indices)] * 100
+    tof_offsets_sorted = tof_offsets[np.argsort(ssd_indices)]
+    ssds_sorted = ssds[np.argsort(ssd_indices)]
 
-    return yb_final, tof_offsets_final, ssds_final
+    return yb_sorted, tof_offsets_sorted, ssds_sorted
 
 
 def get_ssd_tof(de_dataset: xarray.Dataset, xf: np.array):
@@ -398,13 +396,14 @@ def get_ssd_tof(de_dataset: xarray.Dataset, xf: np.array):
 
     Returns
     -------
-    tof : int
+    tof : np.ndarray
         Time of flight (tenths of a nanosecond).
+    ssd : np.ndarray
+        SSD number.
     """
     _, tof_offsets, ssd = get_ssd_offset_and_positions(de_dataset)
     ssd_indices = np.where(de_dataset["STOP_TYPE"] >= 8)[0]
 
-    # in nanoseconds
     time = (
         get_image_params("TOFSSDSC") * de_dataset["COIN_DISCRETE_TDC"].data[ssd_indices]
         + tof_offsets
@@ -416,8 +415,6 @@ def get_ssd_tof(de_dataset: xarray.Dataset, xf: np.array):
         + get_image_params("TOFSSDTOTOFF")
         + xf[ssd_indices] * get_image_params("XFTTOF")
     )
-
-    tof = tof.astype(np.float64)
 
     return tof, ssd
 
@@ -468,7 +465,6 @@ def get_energy_pulse_height(stop_type: np.array, xb: np.array, yb: np.array):
     # TODO * SpBtPHCorr[xlut, ylut]/1024; George Clark working on it
 
     energy = np.concatenate((energy_1, energy_2))
-    energy = energy.astype(np.float64)
 
     return energy
 
@@ -490,14 +486,12 @@ def get_energy_ssd(de_dataset: xarray.Dataset, ssd: np.array):
     ----------
     de_dataset: xarray.Dataset
         Events dataset.
-    ssd_indices : np.array
-        Indices of the event.
     ssd : np.array
         SSD number.
 
     Returns
     -------
-    energy : float
+    energy : np.ndarray
         Energy measured using the SSD.
     """
     # TODO: find a reference for this
@@ -660,10 +654,7 @@ def get_particle_velocity(
     vhat_z : np.array.
         Normalized component of the velocity vector in z direction.
     """
-    # FSW seems to make this absolute value. I will do the same for now.
-    # TODO: Ask Ultra team about how to handle negative values.
     if tof[tof < 0].any():
-        tof = abs(tof)
         logging.info("Negative tof values found.")
 
     delta_x = front_position[0] - back_position[0]
@@ -676,9 +667,13 @@ def get_particle_velocity(
     # Magnitude of the velocity vector
     magnitude_v = np.sqrt(v_x**2 + v_y**2 + v_z**2)
 
-    vhat_x = v_x / magnitude_v
-    vhat_y = v_y / magnitude_v
-    vhat_z = v_z / magnitude_v
+    vhat_x = -v_x / magnitude_v
+    vhat_y = -v_y / magnitude_v
+    vhat_z = -v_z / magnitude_v
+
+    vhat_x[tof < 0] = GlobalConstants.INT_FILLVAL
+    vhat_y[tof < 0] = GlobalConstants.INT_FILLVAL
+    vhat_z[tof < 0] = GlobalConstants.INT_FILLVAL
 
     return vhat_x, vhat_y, vhat_z
 

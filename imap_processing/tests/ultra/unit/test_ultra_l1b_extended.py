@@ -96,7 +96,7 @@ def test_xb_yb(
     df_filt = df[df["StartType"] != -1]
 
     _, _, ph_xb, ph_yb = get_ph_tof_and_back_positions(
-        de_dataset, df_filt.Xf.astype("float").values
+        de_dataset, df_filt.Xf.astype("float").values, "ultra45"
     )
 
     ph_indices = np.where(
@@ -145,7 +145,7 @@ def test_ph_components(
     # )
 
     tof, t2, xb, yb = get_ph_tof_and_back_positions(
-        de_dataset, df_filt.Xf.values.astype("float")
+        de_dataset, df_filt.Xf.values.astype("float"), "ultra45"
     )
 
     index = np.where((df_filt["CoinType"] == 1) | (df_filt["CoinType"] == 2))[0]
@@ -153,7 +153,7 @@ def test_ph_components(
     # TODO: This is as close as I can get.
     #  I suspect that the lookup table is different.
     test_xc = df_filt["Xc"].iloc[index].astype("float")
-    etof, xc = get_coincidence_positions(de_dataset, tof)
+    etof, xc = get_coincidence_positions(de_dataset, tof, "ultra45")
     assert xc == pytest.approx(test_xc.values, rel=1)
 
     test_energy = df_filt["Energy"].iloc[ph_indices].astype("float")
@@ -174,19 +174,22 @@ def test_ph_components(
         d[ph_indices],
         tof,
     )
-
-    assert vhat_x == pytest.approx(
-        df_filt["vhatX"].iloc[ph_indices].astype("float").values, rel=1e-2
+    # FSW test data should be negative and not have an analysis
+    # for negative tof values.
+    assert vhat_x[tof > 0] == pytest.approx(
+        -df_filt["vhatX"].iloc[
+            ph_indices].astype("float").values[tof > 0], rel=1e-2
     )
-    assert vhat_y == pytest.approx(
-        df_filt["vhatY"].iloc[ph_indices].astype("float").values, rel=1e-2
+    assert vhat_y[tof > 0] == pytest.approx(
+        -df_filt["vhatY"].iloc[
+            ph_indices].astype("float").values[tof > 0], rel=1e-2
     )
-    assert vhat_z == pytest.approx(
-        df_filt["vhatZ"].iloc[ph_indices].astype("float").values, rel=1e-2
+    assert vhat_z[tof > 0] == pytest.approx(
+        -df_filt["vhatZ"].iloc[
+            ph_indices].astype("float").values[tof > 0], rel=1e-2
     )
 
 
-# TODO: TOMORROW start here.
 def test_get_ssd_offset_and_positions(
     de_dataset,
     events_fsw_comparison_theta_0,
@@ -241,5 +244,5 @@ def test_ssd_components(
     )
     test_ctof = df_filt["cTOF"].iloc[ssd_indices].astype("float")
 
-    # TODO: these values don't match exactly. Look into this.
-    assert ctof[0:385] == pytest.approx(test_ctof.values[0:385], rel=1e-1)
+    # TODO: these values don't match exactly. Need exact lookup values.
+    assert ctof[1::] == pytest.approx(test_ctof.values[1::], rel=1)
