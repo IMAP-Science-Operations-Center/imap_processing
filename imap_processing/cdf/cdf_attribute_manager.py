@@ -26,12 +26,12 @@ class CdfAttributeManager:
 
     To use, you can load one or many global and variable attribute files:
 
-    ```
-    cdf_attr_manager = CdfAttributeManager(data_dir)
-    cdf_attr_manager.load_global_attributes("global_attrs.yaml")
-    cdf_attr_manager.load_global_attributes("instrument_global_attrs.yaml")
-    cdf_attr_manager.load_variable_attributes("variable_attrs.yaml")
-    ```
+    .. code::
+
+        cdf_attr_manager = CdfAttributeManager(data_dir)
+        cdf_attr_manager.load_global_attributes("global_attrs.yaml")
+        cdf_attr_manager.load_global_attributes("instrument_global_attrs.yaml")
+        cdf_attr_manager.load_variable_attributes("variable_attrs.yaml")
 
     Later files will overwrite earlier files if the same attribute is defined.
 
@@ -41,23 +41,23 @@ class CdfAttributeManager:
     instrument_id. If this is not included, then only the attributes defined in the top
     level of the file are used.
 
-    ```
-    # Instrument ID is optional for refining the attributes used from the file
-    global_attrs = cdf_attr_manager.get_global_attributes(instrument_id)
-    variable_attrs = cdf_attr_manager.get_variable_attributes(variable_name)
-    ```
+    .. code::
+
+        # Instrument ID is optional for refining the attributes used from the file
+        global_attrs = cdf_attr_manager.get_global_attributes(instrument_id)
+        variable_attrs = cdf_attr_manager.get_variable_attributes(variable_name)
 
     The variable and global attributes are validated against the schemas upon calling
-    `get_global_attributes` and `get_variable_attributes`.
+    ``get_global_attributes`` and ``get_variable_attributes``.
 
     Parameters
     ----------
-    data_dir : Path
+    data_dir : pathlib.Path
         The directory containing the schema and variable files (nominally config/).
 
     Attributes
     ----------
-    source_dir : Path
+    source_dir : pathlib.Path
         The directory containing the schema and variable files - nominally config/
     """
 
