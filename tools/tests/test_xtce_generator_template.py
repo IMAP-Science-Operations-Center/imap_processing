@@ -1,11 +1,18 @@
 """Testing for xtce generator template."""
 
 import sys
+from pathlib import Path
 from unittest import mock
 
 import pytest
 
 from tools.xtce_generation.xtce_generator_template import main
+
+
+# Create filepath for testing
+def filepath(file_name: str):
+    file_path = Path(__file__).parent.parent / "xtce_generation" / file_name
+    return str(file_path)
 
 
 # General test
@@ -16,8 +23,8 @@ def test_main_general(mock_input):
         "test_script",
         "--instrument",
         "swe",
-        "--file_path",
-        "/Users/anma6676/Desktop/Repositories/imap_processing/tools/xtce_generation/TLM_SWP_20231006-121021.xlsx",
+        "--file-path",
+        f"{filepath('TLM_SWP_20231006-121021.xlsx')}",
         "--packets",
         '{"P_SWP_HK": 1184, "P_SWP_SCI": 1188, "P_SWP_AUT": 1192}',
     ]
@@ -33,8 +40,8 @@ def test_main_inval_instr(mock_input):
         "test_script",
         "--instrument",
         "ana",
-        "--file_path",
-        "/Users/anma6676/Desktop/Repositories/imap_processing/tools/xtce_generation/TLM_SWP_20231006-121021.xlsx",
+        "--file-path",
+        f"{filepath('TLM_SWP_20231006-121021.xlsx')}",
         "--packets",
         '{"P_SWP_HK": 1184, "P_SWP_SCI": 1188, "P_SWP_AUT": 1192}',
     ]
@@ -69,7 +76,7 @@ def test_main_inval_file(mock_input):
         "test_script",
         "--instrument",
         "glows",
-        "--file_path",
+        "--file-path",
         "This file is silly",
         "--packets",
         '{"P_SWP_HK": 1184, "P_SWP_SCI": 1188, "P_SWP_AUT": 1192}',

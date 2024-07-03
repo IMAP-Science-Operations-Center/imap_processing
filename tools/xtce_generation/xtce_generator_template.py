@@ -16,7 +16,7 @@ def _parse_args():
 
     The expected input format is:
     --instrument "instrument_name"
-    --file_path "full_file_path"
+    --file-path "full_file_path"
     --packets '{"packet_name_1": app_id_1, "packet_name_2": app_id_2}'
 
     Returns
@@ -28,7 +28,7 @@ def _parse_args():
         "This command line program generates an instrument specific XTCE file."
         "Example usage: "
         '--instrument "swapi"'
-        "--file_path "
+        "--file-path "
         '"/Users/anma6676/Desktop/Repositories/imap_processing/tools/xtce_generation/TLM_SWP_20231006-121021.xlsx"'
         "--packets '"
         '{"P_SWP_HK": 1184, '
@@ -48,7 +48,7 @@ def _parse_args():
 
     parser = argparse.ArgumentParser(prog="imap_xtce", description=description)
     parser.add_argument("--instrument", type=str, required=True, help=instrument_help)
-    parser.add_argument("--file_path", type=str, required=True, help=file_path_help)
+    parser.add_argument("--file-path", type=str, required=True, help=file_path_help)
     parser.add_argument("--packets", type=str, required=True, help=packets_help)
 
     args = parser.parse_args()
@@ -77,7 +77,11 @@ def _validate_args(args):
 
 
 def main():
-    """Generate xtce file from CLI information given."""
+    """
+    Generate xtce file from CLI information given.
+
+    The xtce file will be written in an instrument specific subfolder.
+    """
 
     # Parse arguments, and validate instrument
     args = _parse_args()
