@@ -2,6 +2,7 @@
 
 import xml.etree.ElementTree as Et
 from datetime import datetime
+from typing import Optional
 
 import pandas as pd
 
@@ -39,7 +40,13 @@ class TelemetryGenerator:
         Default set to None.
     """
 
-    def __init__(self, packet_name, path_to_excel_file, apid, pkt=None):
+    def __init__(
+        self,
+        packet_name: str,
+        path_to_excel_file: str,
+        apid: int,
+        pkt: Optional[str] = None,
+    ) -> None:
         """Initialize TelemetryGenerator."""
         self.packet_name = packet_name
         self.apid = apid
@@ -52,7 +59,7 @@ class TelemetryGenerator:
         else:
             self.pkt = pkt
 
-    def create_telemetry_xml(self):
+    def create_telemetry_xml(self) -> tuple:
         """
         Create an XML representation of telemetry data based on input parameters.
 
@@ -97,7 +104,7 @@ class TelemetryGenerator:
 
         return root, parameter_type_set, parameter_set, telemetry_metadata
 
-    def get_unique_bits_length(self):
+    def get_unique_bits_length(self) -> dict:
         """
         Create dictionary.
 
@@ -135,7 +142,11 @@ class TelemetryGenerator:
         unique_lengths = dict(sorted(unique_lengths.items(), key=lambda item: item[1]))
         return unique_lengths
 
-    def create_parameter_types(self, parameter_type_set, unique_lengths):
+    def create_parameter_types(
+        self,
+        parameter_type_set: Et.Element,
+        unique_lengths: dict,
+    ) -> Et.Element:
         """
         Create parameter types based on 'dataType' for the unique 'lengthInBits' values.
 
@@ -144,20 +155,21 @@ class TelemetryGenerator:
 
         Parameters
         ----------
-        parameter_type_set : list TODO Double Check
+        parameter_type_set : Et.Element
             The ParameterTypeSet element where parameter types are.
-        unique_lengths : list TODO Double Check
+        unique_lengths : dict
             Unique values from the 'lengthInBits' column.
 
         Returns
         -------
-        parameter_type_set
+        parameter_type_set : Et.Element
             The updated ParameterTypeSet element.
         """
         for parameter_type_ref_name, size in unique_lengths.items():
             if "UINT" in parameter_type_ref_name:
                 parameter_type = Et.SubElement(
-                    parameter_type_set, "xtce:IntegerParameterType"
+                    parameter_type_set,
+                    "xtce:IntegerParameterType",
                 )
                 parameter_type.attrib["name"] = parameter_type_ref_name
                 parameter_type.attrib["signed"] = "false"
@@ -168,7 +180,8 @@ class TelemetryGenerator:
 
             elif any(x in parameter_type_ref_name for x in ["SINT", "INT"]):
                 parameter_type = Et.SubElement(
-                    parameter_type_set, "xtce:IntegerParameterType"
+                    parameter_type_set,
+                    "xtce:IntegerParameterType",
                 )
                 parameter_type.attrib["name"] = parameter_type_ref_name
                 parameter_type.attrib["signed"] = "true"
@@ -178,7 +191,8 @@ class TelemetryGenerator:
 
             elif "BYTE" in parameter_type_ref_name:
                 binary_parameter_type = Et.SubElement(
-                    parameter_type_set, "xtce:BinaryParameterType"
+                    parameter_type_set,
+                    "xtce:BinaryParameterType",
                 )
                 binary_parameter_type.attrib["name"] = parameter_type_ref_name
 
@@ -195,20 +209,22 @@ class TelemetryGenerator:
 
         return parameter_type_set
 
-    def create_ccsds_packet_parameters(self, parameter_set, ccsds_parameters):
+    def create_ccsds_packet_parameters(
+        self, parameter_set: Et.Element, ccsds_parameters: list
+    ) -> Et.Element:
         """
         Create XML elements to define CCSDS packet parameters based on the given data.
 
         Parameters
         ----------
-        parameter_set : list
+        parameter_set : Et.Element
             The ParameterSet element where parameters will be added.
-        ccsds_parameters : dict
+        ccsds_parameters : list
             A list of dictionaries containing CCSDS parameter data.
 
         Returns
         -------
-        parameter_set
+        parameter_set : Et.Element
             The updated ParameterSet element.
         """
         for parameter_data in ccsds_parameters:
@@ -222,8 +238,11 @@ class TelemetryGenerator:
         return parameter_set
 
     def create_container_set(
-        self, telemetry_metadata, ccsds_parameters, container_name
-    ):
+        self,
+        telemetry_metadata: Et.Element,
+        ccsds_parameters: list,
+        container_name: str,
+    ) -> Et.Element:
         """
         Create XML elements.
 
@@ -232,7 +251,7 @@ class TelemetryGenerator:
 
         Parameters
         ----------
-        telemetry_metadata : dict todo check
+        telemetry_metadata : Et.Element
             The TelemetryMetaData element where containers are.
         ccsds_parameters : list
             A list of dictionaries containing CCSDS parameter data.
@@ -241,12 +260,11 @@ class TelemetryGenerator:
 
         Returns
         -------
-        telemetry_metadata
+        telemetry_metadata : Et.Element
             The updated TelemetryMetaData element.
         """
         # Create ContainerSet element
         container_set = Et.SubElement(telemetry_metadata, "xtce:ContainerSet")
-
         # Create CCSDSPacket SequenceContainer
         ccsds_packet_container = Et.SubElement(container_set, "xtce:SequenceContainer")
         ccsds_packet_container.attrib["name"] = "CCSDSPacket"
@@ -288,7 +306,7 @@ class TelemetryGenerator:
 
         return telemetry_metadata
 
-    def create_remaining_parameters(self, parameter_set):
+    def create_remaining_parameters(self, parameter_set: Et.Element) -> Et.Element:
         """
         Create XML elements for parameters.
 
@@ -296,12 +314,12 @@ class TelemetryGenerator:
 
         Parameters
         ----------
-        parameter_set : list todo check
+        parameter_set : Et.Element
             The ParameterSet element where parameters will be added.
 
         Returns
         -------
-        parameter_set
+        parameter_set : Et.Element
             The updated ParameterSet element.
         """
         # Process rows from SHCOARSE until the last available row in the DataFrame
@@ -326,7 +344,7 @@ class TelemetryGenerator:
 
         return parameter_set
 
-    def generate_telemetry_xml(self, output_xml_path, container_name):
+    def generate_telemetry_xml(self, output_xml_path: str, container_name: str) -> None:
         """
         Create and output an XTCE file based on the data within the class.
 

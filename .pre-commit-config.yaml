@@ -42,8 +42,9 @@ repos:
     hooks:
       - id: mypy
         pass_filenames: false
-        args: [ ., --strict, --explicit-package-bases,
-                  --disable-error-code, import-untyped,
-                  --disable-error-code, import-not-found,
-                  --disable-error-code, no-untyped-call,
-                  --disable-error-code, type-arg ]
+        args: [., --strict, --explicit-package-bases,
+                --disable-error-code, import-untyped,
+                --disable-error-code, import-not-found,
+                --disable-error-code, no-untyped-call,
+                --disable-error-code, type-arg]
+
