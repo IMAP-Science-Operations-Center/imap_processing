@@ -99,7 +99,7 @@ class MagL0:
     SEC_FNTM: int
     VECTORS: np.ndarray | str
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """
         Convert Vectors attribute from string to bytearray if needed.
 
