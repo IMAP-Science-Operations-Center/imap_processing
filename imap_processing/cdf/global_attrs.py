@@ -21,7 +21,7 @@ imap_processing/idex/idex_cdf_attrs.py and imap_processing/idex/idex_packet_pars
 """
 
 from dataclasses import dataclass
-from typing import ClassVar, Final, Union
+from typing import Any, ClassVar, Final, Optional, Union
 
 import numpy as np
 
@@ -66,7 +66,7 @@ class GlobalConstantAttrs:
         "File_naming_convention": "source_descriptor_datatype_yyyyMMdd_vNNN",
     }
 
-    def output(self):
+    def output(self) -> dict:
         """
         Generate the output for the global attributes as a dictionary.
 
@@ -140,7 +140,7 @@ class GlobalInstrumentAttrs:
     text: str
     instrument_type: str = "Particles (space)"
 
-    def output(self):
+    def output(self) -> dict:
         """
         Generate the output for the instrument as a dictionary.
 
@@ -184,7 +184,7 @@ class GlobalDataLevelAttrs:
     logical_source_desc: str
     instrument_base: GlobalInstrumentAttrs
 
-    def output(self):
+    def output(self) -> dict:
         """
         Generate the output for the data level as a dictionary.
 
@@ -246,16 +246,16 @@ class AttrBase:
     validmin: Union[np.float64, np.int64]
     validmax: Union[np.float64, np.int64]
     display_type: str = "no_plot"
-    catdesc: str = None
-    fieldname: str = None
+    catdesc: Optional[str] = None
+    fieldname: Optional[str] = None
     var_type: str = "support_data"
     fill_val: np.int64 = GlobalConstants.INT_FILLVAL
     scale_type: str = "linear"
-    label_axis: str = None
-    format: str = None
+    label_axis: Optional[str] = None
+    format: Optional[str] = None
     units: str = ""
 
-    def output(self):
+    def output(self) -> dict:
         """
         Generate the output for the data level as a dictionary.
 
@@ -303,20 +303,20 @@ class ScienceAttrs(AttrBase):
         Notes on the variable.
     """
 
-    depend_0: str = None
-    depend_1: str = None
-    depend_2: str = None
-    depend_3: str = None
-    variable_purpose: str = None
-    var_notes: str = None
-    labl_ptr: str = None
+    depend_0: Optional[str] = None
+    depend_1: Optional[str] = None
+    depend_2: Optional[str] = None
+    depend_3: Optional[str] = None
+    variable_purpose: Optional[str] = None
+    var_notes: Optional[str] = None
+    labl_ptr: Optional[str] = None
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """If depend_0 is not set, raise an error, as this attribute is required."""
         if self.depend_0 is None:
             raise TypeError("ScienceBase requires depend_0 attribute.")
 
-    def output(self):
+    def output(self) -> Any:
         """
         Generate the output for the data level as a dictionary.
 
@@ -393,13 +393,13 @@ class StringAttrs:
     """
 
     depend_0: str
-    catdesc: str = None
-    fieldname: str = None
+    catdesc: Optional[str] = None
+    fieldname: Optional[str] = None
     format: str = "A80"
     var_type: str = "metadata"
     display_type: str = "no_plot"
 
-    def output(self):
+    def output(self) -> dict:
         """
         Generate the output for the data level as a dictionary.
 

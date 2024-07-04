@@ -1,10 +1,12 @@
 """Calculate ULTRA L1c."""
 
+import xarray as xr
+
 from imap_processing.ultra.l1c.histogram import calculate_histogram
 from imap_processing.ultra.l1c.pset import calculate_pset
 
 
-def ultra_l1c(data_dict: dict, data_version: str):
+def ultra_l1c(data_dict: dict, data_version: str) -> xr.Dataset:
     """
     Will process ULTRA L1A and L1B data into L1C CDF files at output_filepath.
 

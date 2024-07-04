@@ -3,8 +3,10 @@
 import collections
 import logging
 from collections import defaultdict
+from typing import Any, Union
 
 import numpy as np
+from space_packet_parser.parser import Packet
 
 from imap_processing.ccsds.ccsds_data import CcsdsData
 from imap_processing.ultra.l0.decom_tools import (
@@ -28,11 +30,11 @@ logger = logging.getLogger(__name__)
 
 def append_tof_params(
     decom_data: dict,
-    packet,
+    packet: Packet,
     decompressed_data: list,
     data_dict: dict,
     stacked_dict: dict,
-):
+) -> None:
     """
     Append parsed items to a dictionary, including decompressed data if available.
 
@@ -77,7 +79,8 @@ def append_tof_params(
             data_dict[key].clear()
 
 
-def append_params(decom_data: dict, packet):
+def append_params(decom_data: dict, packet: Packet) -> None:
+    # Todo Update what packet type is.
     """
     Append parsed items to a dictionary, including decompressed data if available.
 
@@ -95,7 +98,7 @@ def append_params(decom_data: dict, packet):
     append_ccsds_fields(decom_data, ccsds_data)
 
 
-def process_ultra_apids(data: list, apid: int):
+def process_ultra_apids(data: list, apid: int) -> Union[dict[Any, Any], bool]:
     """
     Unpack and decode Ultra packets using CCSDS format and XTCE packet definitions.
 
@@ -121,13 +124,15 @@ def process_ultra_apids(data: list, apid: int):
 
     sorted_packets = sort_by_time(data, "SHCOARSE")
 
-    process_function = strategy_dict.get(apid)
+    process_function = strategy_dict.get(apid, lambda *args: False)
     decom_data = process_function(sorted_packets, defaultdict(list))
 
     return decom_data
 
 
-def process_ultra_tof(sorted_packets: list, decom_data: collections.defaultdict):
+def process_ultra_tof(
+    sorted_packets: list, decom_data: collections.defaultdict
+) -> dict:
     """
     Unpack and decode Ultra TOF packets.
 
@@ -143,33 +148,35 @@ def process_ultra_tof(sorted_packets: list, decom_data: collections.defaultdict)
     decom_data : dict
         A dictionary containing the decoded data.
     """
-    stacked_dict = defaultdict(list)
-    data_dict = defaultdict(list)
+    stacked_dict: dict = defaultdict(list)
+    data_dict: dict = defaultdict(list)
 
     # For TOF we need to sort by time and then SID
     sorted_packets = sorted(
         sorted_packets,
         key=lambda x: (x.data["SHCOARSE"].raw_value, x.data["SID"].raw_value),
     )
+    if isinstance(ULTRA_TOF.mantissa_bit_length, int) and isinstance(
+        ULTRA_TOF.width, int
+    ):
+        for packet in sorted_packets:
+            # Decompress the image data
+            decompressed_data = decompress_image(
+                packet.data["P00"].derived_value,
+                packet.data["PACKETDATA"].raw_value,
+                ULTRA_TOF.width,
+                ULTRA_TOF.mantissa_bit_length,
+            )
 
-    for packet in sorted_packets:
-        # Decompress the image data
-        decompressed_data = decompress_image(
-            packet.data["P00"].derived_value,
-            packet.data["PACKETDATA"].raw_value,
-            ULTRA_TOF.width,
-            ULTRA_TOF.mantissa_bit_length,
-        )
-
-        # Append the decompressed data and other derived data
-        # to the dictionary
-        append_tof_params(
-            decom_data,
-            packet,
-            decompressed_data=decompressed_data,
-            data_dict=data_dict,
-            stacked_dict=stacked_dict,
-        )
+            # Append the decompressed data and other derived data
+            # to the dictionary
+            append_tof_params(
+                decom_data,
+                packet,
+                decompressed_data=decompressed_data,
+                data_dict=data_dict,
+                stacked_dict=stacked_dict,
+            )
 
     # Stack the data to create required dimensions
     for key in stacked_dict.keys():
@@ -178,7 +185,7 @@ def process_ultra_tof(sorted_packets: list, decom_data: collections.defaultdict)
     return decom_data
 
 
-def process_ultra_events(sorted_packets: list, decom_data: dict):
+def process_ultra_events(sorted_packets: list, decom_data: dict) -> dict:
     """
     Unpack and decode Ultra EVENTS packets.
 
@@ -210,7 +217,7 @@ def process_ultra_events(sorted_packets: list, decom_data: dict):
     return decom_data
 
 
-def process_ultra_aux(sorted_packets: list, decom_data: dict):
+def process_ultra_aux(sorted_packets: list, decom_data: dict) -> dict:
     """
     Unpack and decode Ultra AUX packets.
 
@@ -232,7 +239,7 @@ def process_ultra_aux(sorted_packets: list, decom_data: dict):
     return decom_data
 
 
-def process_ultra_rates(sorted_packets: list, decom_data: dict):
+def process_ultra_rates(sorted_packets: list, decom_data: dict) -> dict:
     """
     Unpack and decode Ultra RATES packets.
 
@@ -248,18 +255,24 @@ def process_ultra_rates(sorted_packets: list, decom_data: dict):
     decom_data : dict
         A dictionary containing the decoded data.
     """
-    for packet in sorted_packets:
-        decompressed_data = decompress_binary(
-            packet.data["FASTDATA_00"].raw_value,
-            ULTRA_RATES.width,
-            ULTRA_RATES.block,
-            ULTRA_RATES.len_array,
-            ULTRA_RATES.mantissa_bit_length,
-        )
+    if (
+        isinstance(ULTRA_RATES.mantissa_bit_length, int)
+        and isinstance(ULTRA_RATES.len_array, int)
+        and isinstance(ULTRA_RATES.block, int)
+        and isinstance(ULTRA_RATES.width, int)
+    ):
+        for packet in sorted_packets:
+            decompressed_data = decompress_binary(
+                packet.data["FASTDATA_00"].raw_value,
+                ULTRA_RATES.width,
+                ULTRA_RATES.block,
+                ULTRA_RATES.len_array,
+                ULTRA_RATES.mantissa_bit_length,
+            )
 
-        for index in range(ULTRA_RATES.len_array):
-            decom_data[RATES_KEYS[index]].append(decompressed_data[index])
+            for index in range(ULTRA_RATES.len_array):
+                decom_data[RATES_KEYS[index]].append(decompressed_data[index])
 
-        append_params(decom_data, packet)
+            append_params(decom_data, packet)
 
     return decom_data
