@@ -67,7 +67,7 @@ def decompressed_counts(cem_count: int) -> int:
     )
 
 
-def swe_science(decom_data: dict, data_version: str) -> xr.Dataset:
+def swe_science(decom_data: list, data_version: str) -> xr.Dataset:
     """
     SWE L1a science processing.
 
@@ -97,7 +97,7 @@ def swe_science(decom_data: dict, data_version: str) -> xr.Dataset:
 
     Parameters
     ----------
-    decom_data : dict
+    decom_data : list
         Decompressed packet data.
 
     data_version : str
