@@ -3,6 +3,7 @@
 from dataclasses import dataclass
 
 import numpy as np
+import space_packet_parser
 
 from imap_processing.ccsds.ccsds_data import CcsdsData
 from imap_processing.lo.l0.utils.binary_string import BinaryString
@@ -24,7 +25,7 @@ class ScienceCounts(LoBase):
 
     Parameters
     ----------
-    packet : dict
+    packet : space_packet_parser.parser.Packet
         Single packet from space_packet_parser.
     software_version : str
         Current version of IMAP-Lo processing.
@@ -122,12 +123,17 @@ class ScienceCounts(LoBase):
 
     # TODO: Because test data does not currently exist, the init function contents
     # must be commented out for the unit tests to run properly
-    def __init__(self, packet, software_version: str, packet_file_name: str):
+    def __init__(
+        self,
+        packet: space_packet_parser.parser.Packet,
+        software_version: str,
+        packet_file_name: str,
+    ) -> None:
         super().__init__(software_version, packet_file_name, CcsdsData(packet.header))
         self.set_attributes(packet)
         self._decompress_data()
 
-    def _decompress_data(self):
+    def _decompress_data(self) -> None:
         """Parse the science count binary chunk for each section of data."""
         # make a bit stream containing the binary for the entire
         # chunk of Science Count packet data
@@ -266,15 +272,20 @@ class ScienceCounts(LoBase):
             binary_string, Decompress.DECOMPRESS8TO16, (60, 7)
         )
 
-    def _parse_section(self, binary_string, decompression, data_shape):
+    def _parse_section(
+        self,
+        binary_string: BinaryString,
+        decompression: Decompress,
+        data_shape: tuple[int, int],
+    ) -> np.array:
         """
         Parse a single section of data in the science counts data binary.
 
         Parameters
         ----------
-        binary_string : str
+        binary_string : BinaryString
             Binary string.
-        decompression : int
+        decompression : Decompress
             The decompressed integer.
         data_shape : list
             Shape of the data.
@@ -305,19 +316,25 @@ class ScienceCounts(LoBase):
         # telemetry definition sheet.
         return data_array.reshape(data_shape[0], data_shape[1])
 
-    def _extract_binary(self, binary_string, section_length, bit_length, decompression):
+    def _extract_binary(
+        self,
+        binary_string: BinaryString,
+        section_length: int,
+        bit_length: int,
+        decompression: Decompress,
+    ) -> np.ndarray:
         """
         Extract and decompress science count binary data section.
 
         Parameters
         ----------
-        binary_string : str
+        binary_string : BinaryString
             Binary string.
         section_length : int
             Length of section.
         bit_length : int
             Length of the bit.
-        decompression : int
+        decompression : Decompress
             The decompressed integer.
 
         Returns

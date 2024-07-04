@@ -1,8 +1,9 @@
 """IMAP-Lo L1A Data Processing."""
 
 from collections import namedtuple
-from dataclasses import fields
+from dataclasses import Field, fields
 from pathlib import Path
+from typing import Any
 
 import xarray as xr
 
@@ -11,7 +12,7 @@ from imap_processing.cdf.utils import met_to_j2000ns
 from imap_processing.lo.l0.data_classes.science_direct_events import ScienceDirectEvents
 
 
-def lo_l1a(dependency: Path, data_version: str):
+def lo_l1a(dependency: Path, data_version: str) -> list[Path]:
     """
     Will process IMAP-Lo L0 data into L1A CDF data products.
 
@@ -56,7 +57,8 @@ def lo_l1a(dependency: Path, data_version: str):
     elif "_spin_" in packet_file_name:
         # Spin data class doesn't exist yet. fake the fields() output
         data_field_tup = namedtuple("data_field_tup", ["name"])
-        data_fields = [
+        data_fields = [  # type: ignore[assignment]
+            # TODO, The errors are because the fake data is not in the correct format.
             data_field_tup("NUM_COMPLETED"),
             data_field_tup("ACQ_END"),
             data_field_tup("SPIN_SECONDS"),
@@ -69,13 +71,18 @@ def lo_l1a(dependency: Path, data_version: str):
         ]
         logical_source = "imap_lo_l1a_spin"
 
-    dataset = create_datasets(attr_mgr, logical_source, data_fields)
+    dataset: list[Path] = create_datasets(attr_mgr, logical_source, data_fields)
+
     return dataset
 
 
 # TODO: This is going to work differently when I sample data.
 #  The data_fields input is temporary.
-def create_datasets(attr_mgr, logical_source, data_fields):
+def create_datasets(
+    attr_mgr: ImapCdfAttributes,
+    logical_source: str,
+    data_fields: tuple[Field[Any], ...],
+) -> xr.Dataset:
     """
     Create a dataset using the populated data classes.
 
