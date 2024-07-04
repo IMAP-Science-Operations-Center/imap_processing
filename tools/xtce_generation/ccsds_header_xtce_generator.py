@@ -9,7 +9,7 @@ Each parameter consists of a name, parameter type reference, and description.
 class CCSDSParameters:
     """The defined class for CCSDS parameters. Contains the object itself."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.parameters = [
             {
                 "name": "VERSION",
