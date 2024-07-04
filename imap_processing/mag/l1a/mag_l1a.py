@@ -16,7 +16,7 @@ from imap_processing.mag.l1a.mag_l1a_data import MagL1a, TimeTuple
 logger = logging.getLogger(__name__)
 
 
-def mag_l1a(packet_filepath, data_version: str) -> list[Path]:
+def mag_l1a(packet_filepath: Path, data_version: str) -> list[Path]:
     """
     Will process MAG L0 data into L1A CDF files at cdf_filepath.
 
@@ -164,7 +164,10 @@ def process_packets(
         # The raw vectors are of type int8, but the output vectors should be at least
         # int16.
         primary_vectors, secondary_vectors = MagL1a.process_vector_data(
-            mag_l0.VECTORS.astype(dtype=np.int32),
+            mag_l0.VECTORS.astype(dtype=np.int32),  # type: ignore[union-attr]
+            # TODO Maybe Change, Item "str" of "Union[Any, str]"
+            #  has no attribute "astype"
+            # this is because mypy expects both to have the attributes
             total_primary_vectors,
             total_secondary_vectors,
         )

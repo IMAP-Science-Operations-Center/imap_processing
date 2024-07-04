@@ -2,6 +2,7 @@
 
 import collections
 import logging
+from typing import Optional
 
 import xarray as xr
 
@@ -10,7 +11,9 @@ from imap_processing.decom import decom_packets
 logger = logging.getLogger(__name__)
 
 
-def generate_xarray(packet_file: str, xtce: str, time_keys=None):
+def generate_xarray(
+    packet_file: str, xtce: str, time_keys: Optional[dict] = None
+) -> xr.Dataset:
     """
     Generate xarray from unpacked data.
 
@@ -63,7 +66,7 @@ def generate_xarray(packet_file: str, xtce: str, time_keys=None):
     instruments = list(time_keys.keys())
 
     # Initialize storage dictionary using defaultdict
-    data_storage = {inst: collections.defaultdict(list) for inst in instruments}
+    data_storage: dict = {inst: collections.defaultdict(list) for inst in instruments}
 
     for packet in packets:
         for key, value in packet.data.items():

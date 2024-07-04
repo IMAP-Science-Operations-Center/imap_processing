@@ -863,5 +863,9 @@ l1b_hk_attrs = {
 }
 
 # Dictionaries of complete L1A and L1B housekeeping attributes
-l1a_hk_attrs.update(l1a_l1b_hk_attrs)
-l1b_hk_attrs.update(l1a_l1b_hk_attrs)
+l1a_hk_attrs.update(l1a_l1b_hk_attrs)  # type: ignore[arg-type]
+l1b_hk_attrs.update(l1a_l1b_hk_attrs)  # type: ignore[arg-type]
+
+# TODO Fix mypy error above.
+# Argument 1 to "update" of "MutableMapping" has incompatible type
+# "dict[str, AttrBase]"; expected "SupportsKeysAndGetItem[str, ScienceAttrs]"
