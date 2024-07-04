@@ -12,6 +12,7 @@ from cdflib.xarray import cdf_to_xarray, xarray_to_cdf
 from cdflib.xarray.cdf_to_xarray import ISTP_TO_XARRAY_ATTRS
 
 import imap_processing
+from imap_processing._version import __version__, __version_tuple__  # noqa: F401
 
 logger = logging.getLogger(__name__)
 
@@ -102,7 +103,7 @@ def load_cdf(
     return dataset
 
 
-def write_cdf(dataset: xr.Dataset):
+def write_cdf(dataset: xr.Dataset) -> xr.Dataset:
     """
     Write the contents of "data" to a CDF file using cdflib.xarray_to_cdf.
 
@@ -120,8 +121,8 @@ def write_cdf(dataset: xr.Dataset):
 
     Returns
     -------
-    file_path : pathlib.Path
-        Path to the file created.
+    file_path : xr.Dataset
+        Xr.Dataset to the file created.
     """
     # Create the filename from the global attributes
     # Logical_source looks like "imap_swe_l2_counts-1min"
@@ -158,7 +159,7 @@ def write_cdf(dataset: xr.Dataset):
     # The Logical_file_id is always the name of the file without the extension
     dataset.attrs["Logical_file_id"] = file_path.stem
     # Add the processing version to the dataset attributes
-    dataset.attrs["ground_software_version"] = imap_processing.__version__
+    dataset.attrs["ground_software_version"] = imap_processing._version.__version__
 
     # Convert the xarray object to a CDF
     xarray_to_cdf(

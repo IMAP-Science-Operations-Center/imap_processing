@@ -6,7 +6,7 @@ from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 
 
 def mag_l1c(
-    first_input_dataset: xr.Dataset, second_input_dataset: xr.Dataset, version
+    first_input_dataset: xr.Dataset, second_input_dataset: xr.Dataset, version: str
 ) -> xr.Dataset:
     """
     Will process MAG L1C data from L1A data.
