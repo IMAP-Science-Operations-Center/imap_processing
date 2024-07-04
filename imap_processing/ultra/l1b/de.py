@@ -1,11 +1,12 @@
 """Calculate Annotated Direct Events."""
 
 import numpy as np
+import xarray as xr
 
 from imap_processing.ultra.utils.ultra_l1_utils import create_dataset
 
 
-def calculate_de(de_dataset, name):
+def calculate_de(de_dataset: xr.Dataset, name: str) -> xr.Dataset:
     """
     Create dataset with defined datatypes for Direct Event Data.
 
