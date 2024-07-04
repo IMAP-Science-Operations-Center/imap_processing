@@ -79,9 +79,9 @@ class CdfAttributeManager:
         self._global_attributes = CdfAttributeManager._load_yaml_data(
             self.source_dir / DEFAULT_GLOBAL_CDF_ATTRS_FILE
         )
-        self._variable_attributes = dict()
+        self._variable_attributes: dict = {}
 
-    def _load_default_global_attr_schema(self) -> dict:
+    def _load_default_global_attr_schema(self) -> yaml:
         """
         Load the default global schema from the source directory.
 
@@ -96,7 +96,7 @@ class CdfAttributeManager:
         # Load the Schema
         return CdfAttributeManager._load_yaml_data(default_schema_path)
 
-    def _load_default_variable_attr_schema(self) -> dict:
+    def _load_default_variable_attr_schema(self) -> yaml:
         """
         Load the default variable schema from the source directory.
 
@@ -111,7 +111,9 @@ class CdfAttributeManager:
         # Load the Schema
         return CdfAttributeManager._load_yaml_data(default_schema_path)
 
-    def load_global_attributes(self, file_path: str):
+    # TODO Change Returning Any from function declared to return "dict[Any, Any]"
+
+    def load_global_attributes(self, file_path: str) -> None:
         """
         Update the global attributes property with the attributes from the file.
 
@@ -149,7 +151,7 @@ class CdfAttributeManager:
         self._global_attributes[attribute_name] = attribute_value
 
     @staticmethod
-    def _load_yaml_data(file_path: str | Path) -> dict:
+    def _load_yaml_data(file_path: str | Path) -> yaml:
         """
         Load a yaml file from the provided path.
 
@@ -222,7 +224,9 @@ class CdfAttributeManager:
 
         self._variable_attributes.update(var_attrs)
 
-    def get_variable_attributes(self, variable_name: str, check_schema=True) -> dict:
+    def get_variable_attributes(
+        self, variable_name: str, check_schema: bool = True
+    ) -> dict:
         """
         Get the attributes for a given variable name.
 
@@ -246,7 +250,8 @@ class CdfAttributeManager:
         # Case to handle attributes not in schema
         if check_schema is False:
             if variable_name in self._variable_attributes:
-                return self._variable_attributes[variable_name]
+                return_dict: dict = self._variable_attributes[variable_name]
+                return return_dict
             # TODO: throw an error?
             return {}
 
