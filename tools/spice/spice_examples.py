@@ -8,13 +8,14 @@ https://spiceypy.readthedocs.io/en/main/documentation.html.
 
 import logging
 
+import numpy as np
 import spiceypy as spice
 
 # Logger setup
 logger = logging.getLogger(__name__)
 
 
-def get_attitude_timerange(ck_kernel, id):
+def get_attitude_timerange(ck_kernel: str, id: int) -> tuple:
     """
     Get attitude timerange using the ck kernel.
 
@@ -65,7 +66,9 @@ def get_attitude_timerange(ck_kernel, id):
     return start, end
 
 
-def _get_particle_velocity(direct_events):
+def _get_particle_velocity(
+    direct_events: dict,
+) -> np.ndarray:
     """
     Get the particle velocity in the heliosphere frame.
 
@@ -76,7 +79,7 @@ def _get_particle_velocity(direct_events):
 
     Returns
     -------
-    vultra_heliosphere_frame : np.ndarray
+    vultra_heliosphere_frame : numpy.ndarray
         Particle velocity in the heliosphere frame.
 
     Notes
@@ -108,7 +111,7 @@ def _get_particle_velocity(direct_events):
     return ultra_velocity_heliosphere_frame
 
 
-def build_annotated_events(direct_events, kernels):
+def build_annotated_events(direct_events: dict, kernels: list) -> None:
     """
     Build annotated events.
 

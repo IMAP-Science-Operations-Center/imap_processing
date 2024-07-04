@@ -1,6 +1,7 @@
 """Ultra Decompression Tools."""
 
 import numpy as np
+import space_packet_parser
 
 from imap_processing.ultra.l0.ultra_utils import (
     EVENT_FIELD_RANGES,
@@ -9,7 +10,9 @@ from imap_processing.ultra.l0.ultra_utils import (
 )
 
 
-def read_and_advance(binary_data: str, n: int, current_position: int):
+def read_and_advance(
+    binary_data: str, n: int, current_position: int
+) -> tuple[int, int]:
     """
     Extract the specified number of bits from a binary string.
 
@@ -123,7 +126,7 @@ def decompress_binary(
     in Ultra_algorithm_doc_rev2.pdf.
     """
     current_position = 0
-    decompressed_values = []
+    decompressed_values: list = []
 
     while current_position < len(binary):
         # Read the width of the block
@@ -151,7 +154,7 @@ def decompress_image(
     binary_data: str,
     width_bit: int,
     mantissa_bit_length: int,
-):
+) -> np.ndarray:
     """
     Will decompress a binary string representing an image into a matrix of pixel values.
 
@@ -232,7 +235,9 @@ def decompress_image(
     return p_decom
 
 
-def read_image_raw_events_binary(packet, decom_data: dict):
+def read_image_raw_events_binary(
+    packet: space_packet_parser.parser.Packet, decom_data: dict
+) -> dict:
     """
     Convert contents of binary string 'EVENTDATA' into values.
 
