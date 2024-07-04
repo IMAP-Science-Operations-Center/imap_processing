@@ -119,5 +119,5 @@ exclude = ['__init__' ] # don't report on objects that match any of these regex
 
 [tool.mypy]
 follow_imports = 'skip'
-exclude = ["tests", "ultra", "swe", "swapi", "mag", "lo", "idex", "ialirt", "hit", "hi", "glows", "codice" ]
+exclude = ["tests", "docs", "ultra", "swe", "swapi", "mag", "lo", "idex", "ialirt", "hit", "hi", "glows", "codice" ]
 
