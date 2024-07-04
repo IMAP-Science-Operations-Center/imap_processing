@@ -92,6 +92,7 @@ convention = "numpy"
 
 [tool.poetry.scripts]
 imap_cli = 'imap_processing.cli:main'
+imap_xtce = 'tools.xtce_generation.xtce_generator_template:main'
 
 [tool.codespell]
 ignore-words-list = "livetime"
@@ -118,4 +119,5 @@ exclude = ['__init__' ] # don't report on objects that match any of these regex
 
 [tool.mypy]
 follow_imports = 'skip'
-exclude = ["tests", "tools", "docs", "ultra", "swe", "swapi", "mag", "lo", "idex", "ialirt", "hit", "hi", "glows", "codice" ]
+exclude = ["tests", "ultra", "swe", "swapi", "mag", "lo", "idex", "ialirt", "hit", "hi", "glows", "codice" ]
+

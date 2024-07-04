@@ -218,7 +218,7 @@ class CdfAttributeManager:
             The name of the file to load from self.source_dir.
         """
         # Add variable attributes from file_name. Each variable name should have the
-        # required sub fields as defined in the variable schema.
+        # Required subfields as defined in the variable schema.
         raw_var_attrs = CdfAttributeManager._load_yaml_data(self.source_dir / file_name)
         var_attrs = raw_var_attrs.copy()
 
