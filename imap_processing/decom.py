@@ -8,7 +8,7 @@ to decommutate CCSDS packet data using a given XTCE packet definition.
 from space_packet_parser import parser, xtcedef
 
 
-def decom_packets(packet_file: str, xtce_packet_definition: str):
+def decom_packets(packet_file: str, xtce_packet_definition: str) -> list:
     """
     Unpack CCSDS data packet.
 

@@ -11,7 +11,7 @@ from pathlib import Path
 from tools.xtce_generation.telemetry_generator import TelemetryGenerator
 
 
-def main():
+def main() -> None:
     """
     Function is used to generate the GLOWS XTCE files for packet processing.
 

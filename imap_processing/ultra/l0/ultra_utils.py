@@ -1,7 +1,7 @@
 """Contains data classes to support Ultra L0 processing."""
 
 from dataclasses import fields
-from typing import NamedTuple
+from typing import NamedTuple, Union
 
 from imap_processing.cdf.defaults import GlobalConstants
 
@@ -12,14 +12,16 @@ class PacketProperties(NamedTuple):
     apid: list  # List of APIDs
     logical_source: list  # List of logical sources
     addition_to_logical_desc: str  # Description of the logical source
-    width: int  # Width of binary data
-    block: int  # Number of values in each block.
+    width: Union[int, None]  # Width of binary data (could be None).
+    block: Union[int, None]  # Number of values in each block (could be None).
     # This is important for decompressing the images and
     # a description is available on page 171 of IMAP-Ultra Flight
     # Software Specification document (7523-9009_Rev_-.pdf).
-    len_array: int  # Length of the array to be decompressed
-    mantissa_bit_length: int  # used to determine the level of
-    # precision that can be recovered from compressed data.
+    len_array: Union[
+        int, None
+    ]  # Length of the array to be decompressed (could be None).
+    mantissa_bit_length: Union[int, None]  # used to determine the level of
+    # precision that can be recovered from compressed data (could be None).
 
 
 # Define PacketProperties instances directly in the module namespace
@@ -268,7 +270,8 @@ RATES_KEYS = [
 ]
 
 
-def append_fillval(decom_data: dict, packet):
+def append_fillval(decom_data: dict, packet):  # type: ignore[no-untyped-def]
+    # ToDo, need packet param type
     """
     Append fill values to all fields.
 
@@ -284,7 +287,7 @@ def append_fillval(decom_data: dict, packet):
             decom_data[key].append(GlobalConstants.INT_FILLVAL)
 
 
-def parse_event(event_binary):
+def parse_event(event_binary: str) -> dict:
     """
     Parse a binary string representing a single event.
 
@@ -305,7 +308,7 @@ def parse_event(event_binary):
     return fields_dict
 
 
-def append_ccsds_fields(decom_data: dict, ccsds_data_object: object):
+def append_ccsds_fields(decom_data: dict, ccsds_data_object: object) -> None:
     """
     Append CCSDS fields to event_data.
 
@@ -313,10 +316,10 @@ def append_ccsds_fields(decom_data: dict, ccsds_data_object: object):
     ----------
     decom_data : dict
         Parsed data.
-    ccsds_data_object : object
+    ccsds_data_object : DataclassInstance
         CCSDS data object.
     """
-    for field in fields(ccsds_data_object.__class__):
+    for field in fields(ccsds_data_object.__class__):  # type: ignore[arg-type]
         ccsds_key = field.name
         if ccsds_key not in decom_data:
             decom_data[ccsds_key] = []
