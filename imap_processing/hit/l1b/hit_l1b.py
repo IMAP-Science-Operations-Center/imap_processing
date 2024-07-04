@@ -6,8 +6,8 @@ from dataclasses import fields
 import numpy as np
 import xarray as xr
 
-from imap_processing import utils
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
+from imap_processing.cdf.utils import met_to_j2000ns
 from imap_processing.hit.l0.data_classes.housekeeping import Housekeeping
 
 logger = logging.getLogger(__name__)
@@ -89,7 +89,7 @@ def create_hk_dataset(attr_mgr: ImapCdfAttributes) -> xr.Dataset:
     # Create fake data for now
 
     # Convert integers into datetime64[s]
-    epoch_converted_time = utils.met_to_j2000ns([0, 1, 2])
+    epoch_converted_time = met_to_j2000ns([0, 1, 2])
 
     # Shape for dims
     n_epoch = 3

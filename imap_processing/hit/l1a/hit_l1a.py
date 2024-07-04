@@ -4,14 +4,13 @@ import logging
 from collections import defaultdict
 from dataclasses import fields
 from enum import IntEnum
-from pathlib import Path
-from typing import Union
 
 import numpy as np
 import xarray as xr
 
 from imap_processing import decom, imap_module_directory, utils
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
+from imap_processing.cdf.utils import met_to_j2000ns
 from imap_processing.hit.l0.data_classes.housekeeping import Housekeeping
 
 logger = logging.getLogger(__name__)
@@ -71,7 +70,7 @@ def hit_l1a(packet_file: str, data_version: str) -> list:
     return list(datasets.values())
 
 
-def decom_packets(packet_file: Union[Path, str]) -> list:
+def decom_packets(packet_file: str) -> list:
     """
     Unpack and decode packets using CCSDS file and XTCE packet definitions.
 
@@ -178,7 +177,7 @@ def create_datasets(data: dict, attr_mgr: ImapCdfAttributes) -> dict:
                 metadata_arrays[data_key].append(field_value)
 
         # Convert integers into datetime64[s]
-        epoch_converted_times = utils.met_to_j2000ns(metadata_arrays["shcoarse"])
+        epoch_converted_times = met_to_j2000ns(metadata_arrays["shcoarse"])
 
         # Create xarray data arrays for dependencies
         epoch_time = xr.DataArray(
@@ -228,7 +227,7 @@ def create_datasets(data: dict, attr_mgr: ImapCdfAttributes) -> dict:
                 # attributes
                 dims = [
                     value
-                    for key, value in attr_mgr.get_variable_attributes(field).items()
+                    for key, value in attr_mgr.get_variable_attributes(field).items()  # type: ignore[arg-type]
                     if "DEPEND" in key
                 ]
                 if field == "leak_i":  # type: ignore[comparison-overlap]
@@ -240,13 +239,13 @@ def create_datasets(data: dict, attr_mgr: ImapCdfAttributes) -> dict:
                     dataset[field] = xr.DataArray(
                         data,
                         dims=dims,
-                        attrs=attr_mgr.get_variable_attributes(field),
+                        attrs=attr_mgr.get_variable_attributes(field),  # type: ignore[arg-type]
                     )
                 else:
                     dataset[field] = xr.DataArray(
                         data,
                         dims=dims,
-                        attrs=attr_mgr.get_variable_attributes(field),
+                        attrs=attr_mgr.get_variable_attributes(field),  # type: ignore[arg-type]
                     )
         processed_data[apid] = dataset
     logger.info("HIT L1A datasets created")

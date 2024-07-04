@@ -145,7 +145,7 @@ def create_dataset(
     packets: list[Packet],
     spacecraft_time_key: str = "shcoarse",
     include_header: bool = True,
-    skip_keys: Optional[str] = None,
+    skip_keys: Optional[list[str]] = None,
 ) -> xr.Dataset:
     """
     Create dataset for each metadata field.
