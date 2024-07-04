@@ -1,11 +1,12 @@
 """Calculate Histogram."""
 
 import numpy as np
+import xarray as xr
 
 from imap_processing.ultra.utils.ultra_l1_utils import create_dataset
 
 
-def calculate_histogram(histogram_dataset, name):
+def calculate_histogram(histogram_dataset: xr.Dataset, name: str) -> xr.Dataset:
     """
     Create dictionary with defined datatype for Histogram Data.
 
