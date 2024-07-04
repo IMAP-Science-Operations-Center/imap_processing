@@ -26,7 +26,7 @@ The explicit code interfaces and structure are described in the :ref:`code-docum
    data-access-api/index
 
 If you make use of any ``imap_processing`` code, please consider citing it in your research.
-TODO: Add a Zenodo DOI badge here.
+`https://zenodo.org/record/11168295 <https://zenodo.org/record/11168295>`_
 
 Contributing to IMAP
 --------------------

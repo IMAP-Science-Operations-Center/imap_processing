@@ -1,9 +1,11 @@
 """Calculate Badtimes."""
 
+import xarray as xr
+
 from imap_processing.ultra.utils.ultra_l1_utils import create_dataset
 
 
-def calculate_badtimes(extended_spin_dict, name):
+def calculate_badtimes(extended_spin_dict: dict, name: str) -> xr.Dataset:
     """
     Create dataset with defined datatypes for Badtimes Data.
 

@@ -5,7 +5,6 @@
 # TODO: Improved var_notes for each variable
 import dataclasses
 import logging
-from pathlib import Path
 from typing import Optional
 
 import numpy as np
@@ -15,19 +14,19 @@ from imap_processing import decom, imap_module_directory
 from imap_processing.cdf.global_attrs import ConstantCoordinates
 from imap_processing.cdf.utils import met_to_j2000ns
 from imap_processing.ultra import ultra_cdf_attrs
-from imap_processing.ultra.l0.decom_ultra import (
+from imap_processing.ultra.l0.decom_ultra import process_ultra_apids
+from imap_processing.ultra.l0.ultra_utils import (
     ULTRA_AUX,
     ULTRA_EVENTS,
     ULTRA_RATES,
     ULTRA_TOF,
-    process_ultra_apids,
 )
 from imap_processing.utils import group_by_apid
 
 logger = logging.getLogger(__name__)
 
 
-def initiate_data_arrays(decom_ultra: dict, apid: int):
+def initiate_data_arrays(decom_ultra: dict, apid: int) -> xr.Dataset:
     """
     Initiate xarray data arrays.
 
@@ -135,7 +134,7 @@ def initiate_data_arrays(decom_ultra: dict, apid: int):
     return dataset
 
 
-def get_event_time(decom_ultra_dict: dict):
+def get_event_time(decom_ultra_dict: dict) -> dict:
     """
     Get event times using data from events and aux packets.
 
@@ -157,7 +156,7 @@ def get_event_time(decom_ultra_dict: dict):
     """
     event_times, durations, spin_starts = ([] for _ in range(3))
     decom_aux = decom_ultra_dict[ULTRA_AUX.apid[0]]
-    decom_events = decom_ultra_dict[ULTRA_EVENTS.apid[0]]
+    decom_events: dict = decom_ultra_dict[ULTRA_EVENTS.apid[0]]
 
     timespinstart_array = np.array(decom_aux["TIMESPINSTART"])
     timespinstartsub_array = np.array(decom_aux["TIMESPINSTARTSUB"]) / 1000
@@ -192,7 +191,7 @@ def get_event_time(decom_ultra_dict: dict):
     return decom_events
 
 
-def create_dataset(decom_ultra_dict: dict):
+def create_dataset(decom_ultra_dict: dict) -> xr.Dataset:
     """
     Create xarray for packet.
 
@@ -287,13 +286,15 @@ def create_dataset(decom_ultra_dict: dict):
     return dataset
 
 
-def ultra_l1a(packet_file: Path, data_version: str, apid: Optional[int] = None):
+def ultra_l1a(
+    packet_file: str, data_version: str, apid: Optional[int] = None
+) -> xr.Dataset:
     """
     Will process ULTRA L0 data into L1A CDF files at output_filepath.
 
     Parameters
     ----------
-    packet_file : pathlib.Path
+    packet_file : str
         Path to the CCSDS data packet file.
     data_version : str
         Version of the data product being created.
@@ -305,7 +306,7 @@ def ultra_l1a(packet_file: Path, data_version: str, apid: Optional[int] = None):
     output_datasets : list of xarray.Dataset
         List of xarray.Dataset.
     """
-    xtce = Path(
+    xtce = str(
         f"{imap_module_directory}/ultra/packet_definitions/" f"ULTRA_SCI_COMBINED.xml"
     )
 
@@ -326,7 +327,7 @@ def ultra_l1a(packet_file: Path, data_version: str, apid: Optional[int] = None):
     if apid is not None:
         apids = [apid]
     else:
-        apids = grouped_data.keys()
+        apids = list(grouped_data.keys())
 
     for apid in apids:
         if apid == ULTRA_EVENTS.apid[0]:

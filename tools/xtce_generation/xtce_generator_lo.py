@@ -18,7 +18,7 @@ from telemetry_generator import TelemetryGenerator
 # P_ILO_SCI_DE
 
 
-def main():
+def main() -> None:
     """Function used by lo to generate XTCE."""
     instrument_name = "lo"
     current_directory = Path(__file__).parent
