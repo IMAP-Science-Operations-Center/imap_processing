@@ -174,7 +174,7 @@ def process_de(l1a: xr.Dataset) -> tuple[xr.DataArray]:
     # dimensions are in `output_dims`.
 
     # An empty array passes the epoch dimension through
-    input_dims = [[] for i in l1a.keys()]
+    input_dims: list = [[] for i in l1a.keys()]
 
     output_dimension_mapping = {
         "de_flags": ["flag_dim"],
@@ -194,7 +194,7 @@ def process_de(l1a: xr.Dataset) -> tuple[xr.DataArray]:
     # (input) variable.
     input_dims[0] = ["per_second", "direct_event"]
 
-    l1b_fields = xr.apply_ufunc(
+    l1b_fields: tuple = xr.apply_ufunc(
         lambda *args: tuple(dataclasses.asdict(DirectEventL1B(*args)).values()),
         *dataarrays,
         input_core_dims=input_dims,
@@ -229,7 +229,7 @@ def process_histogram(l1a: xr.Dataset) -> xr.Dataset:
     """
     dataarrays = [l1a[i] for i in l1a.keys()]
 
-    input_dims = [[] for i in l1a.keys()]
+    input_dims: list = [[] for i in l1a.keys()]
 
     # This should include a mapping to every dimension in the output data besides epoch.
     # Only non-1D variables need to be in this mapping.

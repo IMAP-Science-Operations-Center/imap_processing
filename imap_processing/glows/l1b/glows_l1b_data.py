@@ -272,7 +272,7 @@ class DirectEventL1B:
         hv_test_in_progress: np.double,
         pulse_test_in_progress: np.double,
         memory_error_detected: np.double,
-    ):
+    ) -> None:
         """
         Generate the L1B data for direct events using the inputs from InitVar.
 
@@ -509,7 +509,7 @@ class HistogramL1B:
     # - Bad angle algorithm using SPICE locations
     # - Move ancillary file to AWS
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """Will process data."""
         # self.histogram_flag_array = np.zeros((2,))
 
