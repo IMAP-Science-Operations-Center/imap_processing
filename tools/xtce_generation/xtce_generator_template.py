@@ -10,7 +10,7 @@ from tools.xtce_generation.telemetry_generator import TelemetryGenerator
 
 
 # Function to parse command line arguments
-def _parse_args():
+def _parse_args() -> argparse.Namespace:
     """
     Parse the command line arguments.
 
@@ -56,7 +56,7 @@ def _parse_args():
     return args
 
 
-def _validate_args(args):
+def _validate_args(args: argparse.Namespace) -> None:
     """
     Ensure that the instrument is valid.
 
@@ -76,7 +76,7 @@ def _validate_args(args):
         raise FileNotFoundError(f"{args.file_path} not found, and may not exist.")
 
 
-def main():
+def main() -> None:
     """
     Generate xtce file from CLI information given.
 
@@ -99,7 +99,9 @@ def main():
     for packet_name, app_id in packets.items():
         print(packet_name)
         telemetry_generator = TelemetryGenerator(
-            packet_name=packet_name, path_to_excel_file=path_to_excel_file, apid=app_id
+            packet_name=packet_name,
+            path_to_excel_file=path_to_excel_file,
+            apid=int(app_id),
         )
         telemetry_generator.generate_telemetry_xml(
             packet_definition_path / f"{packet_name}.xml", packet_name
