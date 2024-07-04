@@ -156,25 +156,27 @@ def process_ultra_tof(
         sorted_packets,
         key=lambda x: (x.data["SHCOARSE"].raw_value, x.data["SID"].raw_value),
     )
+    if isinstance(ULTRA_TOF.mantissa_bit_length, int) and isinstance(
+        ULTRA_TOF.width, int
+    ):
+        for packet in sorted_packets:
+            # Decompress the image data
+            decompressed_data = decompress_image(
+                packet.data["P00"].derived_value,
+                packet.data["PACKETDATA"].raw_value,
+                ULTRA_TOF.width,
+                ULTRA_TOF.mantissa_bit_length,
+            )
 
-    for packet in sorted_packets:
-        # Decompress the image data
-        decompressed_data = decompress_image(
-            packet.data["P00"].derived_value,
-            packet.data["PACKETDATA"].raw_value,
-            ULTRA_TOF.width,
-            ULTRA_TOF.mantissa_bit_length,
-        )
-
-        # Append the decompressed data and other derived data
-        # to the dictionary
-        append_tof_params(
-            decom_data,
-            packet,
-            decompressed_data=decompressed_data,
-            data_dict=data_dict,
-            stacked_dict=stacked_dict,
-        )
+            # Append the decompressed data and other derived data
+            # to the dictionary
+            append_tof_params(
+                decom_data,
+                packet,
+                decompressed_data=decompressed_data,
+                data_dict=data_dict,
+                stacked_dict=stacked_dict,
+            )
 
     # Stack the data to create required dimensions
     for key in stacked_dict.keys():
@@ -253,18 +255,24 @@ def process_ultra_rates(sorted_packets: list, decom_data: dict) -> dict:
     decom_data : dict
         A dictionary containing the decoded data.
     """
-    for packet in sorted_packets:
-        decompressed_data = decompress_binary(
-            packet.data["FASTDATA_00"].raw_value,
-            ULTRA_RATES.width,
-            ULTRA_RATES.block,
-            ULTRA_RATES.len_array,
-            ULTRA_RATES.mantissa_bit_length,
-        )
+    if (
+        isinstance(ULTRA_RATES.mantissa_bit_length, int)
+        and isinstance(ULTRA_RATES.len_array, int)
+        and isinstance(ULTRA_RATES.block, int)
+        and isinstance(ULTRA_RATES.width, int)
+    ):
+        for packet in sorted_packets:
+            decompressed_data = decompress_binary(
+                packet.data["FASTDATA_00"].raw_value,
+                ULTRA_RATES.width,
+                ULTRA_RATES.block,
+                ULTRA_RATES.len_array,
+                ULTRA_RATES.mantissa_bit_length,
+            )
 
-        for index in range(ULTRA_RATES.len_array):  # type: ignore[arg-type]
-            decom_data[RATES_KEYS[index]].append(decompressed_data[index])
+            for index in range(ULTRA_RATES.len_array):
+                decom_data[RATES_KEYS[index]].append(decompressed_data[index])
 
-        append_params(decom_data, packet)
+            append_params(decom_data, packet)
 
     return decom_data
