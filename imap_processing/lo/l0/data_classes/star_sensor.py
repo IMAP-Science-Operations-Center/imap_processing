@@ -3,6 +3,7 @@
 from dataclasses import dataclass
 
 import numpy as np
+import space_packet_parser
 
 from imap_processing.ccsds.ccsds_data import CcsdsData
 from imap_processing.lo.l0.utils.binary_string import BinaryString
@@ -24,7 +25,7 @@ class StarSensor(LoBase):
 
     Parameters
     ----------
-    packet : dict
+    packet : space_packet_parser.parser.Packet
         The packet.
     software_version : str
         Software version.
@@ -57,12 +58,17 @@ class StarSensor(LoBase):
 
     # TODO: Because test data does not currently exist, the init function contents
     # must be commented out for the unit tests to run properly
-    def __init__(self, packet, software_version: str, packet_file_name: str):
+    def __init__(
+        self,
+        packet: space_packet_parser.parser.Packet,
+        software_version: str,
+        packet_file_name: str,
+    ) -> None:
         super().__init__(software_version, packet_file_name, CcsdsData(packet.header))
         self.set_attributes(packet)
         self._decompress_data()
 
-    def _decompress_data(self):
+    def _decompress_data(self) -> None:
         """
         Will decompress the Star Sensor packet data.
 

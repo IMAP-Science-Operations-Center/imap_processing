@@ -5,10 +5,15 @@ This module contains a common function that can be used by multiple instruments
 to decommutate CCSDS packet data using a given XTCE packet definition.
 """
 
+from pathlib import Path
+from typing import Union
+
 from space_packet_parser import parser, xtcedef
 
 
-def decom_packets(packet_file: str, xtce_packet_definition: str):
+def decom_packets(
+    packet_file: Union[str, Path], xtce_packet_definition: Union[str, Path]
+) -> list:
     """
     Unpack CCSDS data packet.
 

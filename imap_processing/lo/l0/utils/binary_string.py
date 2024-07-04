@@ -33,11 +33,11 @@ class BinaryString:
     bin: str
     bit_pos: int
 
-    def __init__(self, bin: str):
+    def __init__(self, bin: str) -> None:
         self.bin = bin
         self.bit_pos = 0
 
-    def next_bits(self, num_bits):
+    def next_bits(self, num_bits: int) -> str:
         """
         Return the next x bits in the binary string.
 

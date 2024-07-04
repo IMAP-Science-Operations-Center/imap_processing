@@ -1,6 +1,7 @@
 """Container for IMAP-Lo L0 data classes."""
 
 from imap_processing.lo.l0.lo_apid import LoAPID
+from imap_processing.lo.l0.utils.lo_base import LoBase
 
 
 # TODO: Not sure if this class is worth having.
@@ -28,18 +29,18 @@ class LoContainer:
 
     data_dict: dict
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.data_dict = {apid.value: [] for apid in LoAPID}
 
     # TODO: How do I write the parameter type in the docstring when it can be
     # multiple different kinds of types (any Lo dataclass)?
-    def add(self, data):
+    def add(self, data: LoBase) -> None:
         """
         Add data class to the container after confirming that the APID is valid.
 
         Parameters
         ----------
-        data : dict
+        data : LoBase
             Any Lo L0 data class object.
         """
         data_apid = data.ccsds_header.PKT_APID
@@ -47,7 +48,7 @@ class LoContainer:
         if data_apid in [apid.value for apid in LoAPID]:
             self.data_dict[data_apid].append(data)
 
-    def filter_apid(self, apid):
+    def filter_apid(self, apid: int) -> list:
         """
         Filter the container by APID.
 
@@ -61,4 +62,5 @@ class LoContainer:
         list
             Filtered list of Lo data classes for a single APID.
         """
-        return self.data_dict[apid]
+        filtered_list: list = self.data_dict[apid]
+        return filtered_list

@@ -1,8 +1,8 @@
 """IMAP-HI l1c processing module."""
 
 import logging
-from pathlib import Path
-from typing import Union
+from collections.abc import Sized
+from typing import Optional
 
 import numpy as np
 import xarray as xr
@@ -13,7 +13,7 @@ from imap_processing.cdf.cdf_attribute_manager import CdfAttributeManager
 logger = logging.getLogger(__name__)
 
 
-def hi_l1c(dependencies: list, data_version: str):
+def hi_l1c(dependencies: list, data_version: str) -> xr.Dataset:
     """
     High level IMAP-Hi l1c processing function.
 
@@ -52,7 +52,7 @@ def hi_l1c(dependencies: list, data_version: str):
     return l1c_dataset
 
 
-def generate_pset_dataset(de_dataset: Union[Path, str]) -> xr.Dataset:
+def generate_pset_dataset(de_dataset: xr.Dataset) -> xr.Dataset:
     """
     Will process IMAP-Hi l1b product into a l1c pset xarray dataset.
 
@@ -77,7 +77,7 @@ def generate_pset_dataset(de_dataset: Union[Path, str]) -> xr.Dataset:
     return pset_dataset
 
 
-def allocate_pset_dataset(n_esa_steps: int, sensor_str: str):
+def allocate_pset_dataset(n_esa_steps: int, sensor_str: str) -> xr.Dataset:
     """
     Allocate an empty xarray.Dataset.
 
@@ -191,7 +191,9 @@ def allocate_pset_dataset(n_esa_steps: int, sensor_str: str):
     return dataset
 
 
-def full_dataarray(name, attrs, coords: dict, shape=None):
+def full_dataarray(
+    name: str, attrs: dict, coords: dict, shape: Optional[Sized] = None
+) -> xr.DataArray:
     """
     Generate an empty xarray.DataArray with appropriate attributes.
 

@@ -10,7 +10,7 @@ from imap_processing.lo.l1a import lo_cdf_attrs
 from imap_processing.lo.l1a.lo_data_container import LoContainer
 
 
-def write_lo_l1a_cdfs(data: LoContainer):
+def write_lo_l1a_cdfs(data: LoContainer) -> list:
     """
     Write the Lo L1a CDFs.
 
@@ -38,7 +38,7 @@ def write_lo_l1a_cdfs(data: LoContainer):
     return created_datasets
 
 
-def create_lo_scide_dataset(sci_de: list):
+def create_lo_scide_dataset(sci_de: list) -> xr.Dataset:
     """
     Create Lo L1A Science Direct Event Dataset from the ScienceDirectEvent dataclasses.
 

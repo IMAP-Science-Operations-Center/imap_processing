@@ -3,6 +3,7 @@
 from dataclasses import dataclass
 
 import numpy as np
+import space_packet_parser
 
 from imap_processing.ccsds.ccsds_data import CcsdsData
 from imap_processing.cdf.defaults import GlobalConstants
@@ -122,13 +123,18 @@ class ScienceDirectEvents(LoBase):
     CKSM: np.ndarray
     POS: np.ndarray
 
-    def __init__(self, packet, software_version: str, packet_file_name: str):
+    def __init__(
+        self,
+        packet: space_packet_parser.parser.Packet,
+        software_version: str,
+        packet_file_name: str,
+    ) -> None:
         """
         Initialize Science Direct Events Data class.
 
         Parameters
         ----------
-        packet : dict
+        packet : space_packet_parser.parser.Packet
             Single packet from space_packet_parser.
         software_version : str
             Current version of IMAP-Lo processing.
@@ -152,7 +158,7 @@ class ScienceDirectEvents(LoBase):
         self.POS = np.ones(self.DE_COUNT) * GlobalConstants.DOUBLE_FILLVAL
         self._decompress_data()
 
-    def _decompress_data(self):
+    def _decompress_data(self) -> None:
         """
         Will decompress the Lo Science Direct Events data.
 

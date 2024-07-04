@@ -11,7 +11,7 @@ from pathlib import Path
 from tools.xtce_generation.telemetry_generator import TelemetryGenerator
 
 
-def main():
+def main() -> None:
     """Function used by swe to generate XTCE."""
 
     instrument_name = "swe"
