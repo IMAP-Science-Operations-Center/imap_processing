@@ -5,7 +5,6 @@
 # TODO: Improved var_notes for each variable
 import dataclasses
 import logging
-from pathlib import Path
 from typing import Optional
 
 import numpy as np
@@ -288,14 +287,14 @@ def create_dataset(decom_ultra_dict: dict) -> xr.Dataset:
 
 
 def ultra_l1a(
-    packet_file: Path, data_version: str, apid: Optional[int] = None
+    packet_file: str, data_version: str, apid: Optional[int] = None
 ) -> xr.Dataset:
     """
     Will process ULTRA L0 data into L1A CDF files at output_filepath.
 
     Parameters
     ----------
-    packet_file : pathlib.Path
+    packet_file : str
         Path to the CCSDS data packet file.
     data_version : str
         Version of the data product being created.
@@ -307,7 +306,7 @@ def ultra_l1a(
     output_datasets : list of xarray.Dataset
         List of xarray.Dataset.
     """
-    xtce = Path(
+    xtce = str(
         f"{imap_module_directory}/ultra/packet_definitions/" f"ULTRA_SCI_COMBINED.xml"
     )
 
@@ -328,7 +327,7 @@ def ultra_l1a(
     if apid is not None:
         apids = [apid]
     else:
-        apids = grouped_data.keys()
+        apids = list(grouped_data.keys())
 
     for apid in apids:
         if apid == ULTRA_EVENTS.apid[0]:
