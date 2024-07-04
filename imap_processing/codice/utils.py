@@ -9,6 +9,7 @@ import collections
 from enum import IntEnum
 
 import numpy as np
+import space_packet_parser
 import xarray as xr
 
 from imap_processing.cdf.global_attrs import ConstantCoordinates
@@ -65,7 +66,7 @@ class CoDICECompression(IntEnum):
     LOSSY_B_LOSSLESS = 5
 
 
-def add_metadata_to_array(packet, metadata_arrays: dict) -> dict:
+def add_metadata_to_array(packet: space_packet_parser, metadata_arrays: dict) -> dict:
     """
     Add metadata to the metadata_arrays.
 
@@ -101,7 +102,9 @@ def add_metadata_to_array(packet, metadata_arrays: dict) -> dict:
     return metadata_arrays
 
 
-def create_hskp_dataset(packets, data_version: str) -> xr.Dataset:
+def create_hskp_dataset(
+    packets: space_packet_parser.parser.Packet, data_version: str
+) -> xr.Dataset:
     """
     Create dataset for each metadata field for housekeeping data.
 
@@ -122,7 +125,7 @@ def create_hskp_dataset(packets, data_version: str) -> xr.Dataset:
     cdf_attrs.add_instrument_variable_attrs("codice", "l1a")
     cdf_attrs.add_global_attribute("Data_version", data_version)
 
-    metadata_arrays = collections.defaultdict(list)
+    metadata_arrays: dict = collections.defaultdict(list)
 
     for packet in packets:
         add_metadata_to_array(packet, metadata_arrays)

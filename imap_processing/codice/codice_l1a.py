@@ -18,6 +18,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+import space_packet_parser
 import xarray as xr
 
 from imap_processing import imap_module_directory
@@ -168,7 +169,7 @@ class CoDICEL1aPipeline:
 
         return dataset
 
-    def get_acquisition_times(self):
+    def get_acquisition_times(self) -> None:
         """
         Retrieve the acquisition times via the Lo stepping table.
 
@@ -212,7 +213,7 @@ class CoDICEL1aPipeline:
             row_number = np.argmax(energy_steps == str(step_number), axis=1).argmax()
             self.acquisition_times.append(lo_stepping_values.acq_time[row_number])
 
-    def get_data_products(self, apid: int):
+    def get_data_products(self, apid: int) -> None:
         """
         Retrieve various settings for defining the data products.
 
@@ -221,13 +222,15 @@ class CoDICEL1aPipeline:
         apid : int
             The APID of interest.
         """
-        config = constants.DATA_PRODUCT_CONFIGURATIONS.get(apid)
+        config = constants.DATA_PRODUCT_CONFIGURATIONS.get(apid)  # type: ignore[call-overload]
+        # TODO Change, No overload variant of "get" of
+        #  "dict" matches argument type "str".
         self.num_counters = config["num_counters"]
         self.num_energy_steps = config["num_energy_steps"]
         self.variable_names = config["variable_names"]
         self.dataset_name = config["dataset_name"]
 
-    def get_esa_sweep_values(self):
+    def get_esa_sweep_values(self) -> None:
         """
         Retrieve the ESA sweep values.
 
@@ -258,7 +261,7 @@ class CoDICEL1aPipeline:
         sweep_table = sweep_data[sweep_data["table_idx"] == sweep_table_id]
         self.esa_sweep_values = sweep_table["esa_v"].values
 
-    def unpack_science_data(self, science_values: str):
+    def unpack_science_data(self, science_values: str) -> None:
         """
         Unpack the science data from the packet.
 
@@ -287,7 +290,7 @@ class CoDICEL1aPipeline:
         self.data = [["1"] * 128] * self.num_counters
 
 
-def get_params(packet) -> tuple[int, int, int, int]:
+def get_params(packet: space_packet_parser.parser.Packet) -> tuple[int, int, int, int]:
     """
     Return the four 'main' parameters used for l1a processing.
 
@@ -324,7 +327,7 @@ def get_params(packet) -> tuple[int, int, int, int]:
     return table_id, plan_id, plan_step, view_id
 
 
-def process_codice_l1a(file_path: Path | str, data_version: str) -> xr.Dataset:
+def process_codice_l1a(file_path: Path, data_version: str) -> xr.Dataset:
     """
     Will process CoDICE l0 data to create l1a data products.
 
