@@ -13,7 +13,7 @@ from telemetry_generator import TelemetryGenerator
 from imap_processing import imap_module_directory
 
 
-def main():
+def main() -> None:
     """Function used by hit to generate XTCE."""
     instrument_name = "hit"
     current_directory = Path(__file__).parent

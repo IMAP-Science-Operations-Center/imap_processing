@@ -11,6 +11,7 @@ from collections import namedtuple
 from enum import IntEnum
 
 import numpy as np
+import space_packet_parser
 import xarray as xr
 from space_packet_parser import parser, xtcedef
 
@@ -487,7 +488,7 @@ class PacketParser:
         l1_data.write_l1_cdf()
     """
 
-    def __init__(self, packet_file: str, data_version: str):
+    def __init__(self, packet_file: str, data_version: str) -> None:
         """
         Read a l0 pkts file and perform all of the decom work.
 
@@ -547,7 +548,7 @@ class RawDustEvent:
 
     Parameters
     ----------
-    header_packet : space_packet_parser.ParsedPacket
+    header_packet : space_packet_parser.parser.Packet
         The FPGA metadata event header.
 
     Attributes
@@ -584,7 +585,7 @@ class RawDustEvent:
         512  # The number of samples in a "block" of high sample data
     )
 
-    def __init__(self, header_packet):
+    def __init__(self, header_packet: space_packet_parser.parser.Packet) -> None:
         """
         Initialize a raw dust event, with an FPGA Header Packet from IDEX.
 
@@ -596,7 +597,7 @@ class RawDustEvent:
 
         Parameters
         ----------
-        header_packet : space_packet_parser.ParsedPacket
+        header_packet : space_packet_parser.parser.Packet
             The FPGA metadata event header.
         """
         # Calculate the impact time in seconds since epoch
@@ -625,7 +626,7 @@ class RawDustEvent:
         self.Target_High_bits = ""
         self.Ion_Grid_bits = ""
 
-    def _set_impact_time(self, packet):
+    def _set_impact_time(self, packet: space_packet_parser.parser.Packet) -> None:
         """
         Calculate the datetime64 from the FPGA header information.
 
@@ -633,7 +634,7 @@ class RawDustEvent:
 
         Parameters
         ----------
-        packet : space_packet_parser.ParsedPacket
+        packet : space_packet_parser.parser.Packet
             The IDEX FPGA header packet.
 
         Notes
@@ -655,7 +656,9 @@ class RawDustEvent:
             met, reference_epoch=np.datetime64("2012-01-01T00:00:00.000000000")
         )
 
-    def _set_sample_trigger_times(self, packet):
+    def _set_sample_trigger_times(
+        self, packet: space_packet_parser.parser.Packet
+    ) -> None:
         """
         Calculate the actual sample trigger time.
 
@@ -664,7 +667,7 @@ class RawDustEvent:
 
         Parameters
         ----------
-        packet : space_packet_parser.ParsedPacket
+        packet : space_packet_parser.parser.Packet
             The IDEX FPGA header packet info.
 
         Notes
@@ -708,7 +711,7 @@ class RawDustEvent:
             * self.NUMBER_SAMPLES_PER_HIGH_SAMPLE_BLOCK
         )
 
-    def _parse_high_sample_waveform(self, waveform_raw: str):
+    def _parse_high_sample_waveform(self, waveform_raw: str) -> list[int]:
         """
         Will process the high sample waveform.
 
@@ -740,7 +743,7 @@ class RawDustEvent:
             ]
         return ints[:-4]  # Remove last 4 numbers
 
-    def _parse_low_sample_waveform(self, waveform_raw: str):
+    def _parse_low_sample_waveform(self, waveform_raw: str) -> list[int]:
         """
         Will process the low sample waveform.
 
@@ -767,7 +770,7 @@ class RawDustEvent:
             ]
         return ints
 
-    def _calc_low_sample_resolution(self, num_samples: int):
+    def _calc_low_sample_resolution(self, num_samples: int) -> np.ndarray:
         """
         Calculate the resolution of the low samples.
 
@@ -793,7 +796,7 @@ class RawDustEvent:
         )
         return time_low_sr_data
 
-    def _calc_high_sample_resolution(self, num_samples: int):
+    def _calc_high_sample_resolution(self, num_samples: int) -> np.ndarray:
         """
         Calculate the resolution of high samples.
 
@@ -819,13 +822,13 @@ class RawDustEvent:
         )
         return time_high_sr_data
 
-    def parse_packet(self, packet):
+    def parse_packet(self, packet: space_packet_parser.parser.Packet) -> None:
         """
         Parse IDEX data packets to populate bit strings.
 
         Parameters
         ----------
-        packet : dict
+        packet : space_packet_parser.parser.Packet
             A single science data packet for one of the 6.
             IDEX observables.
         """
@@ -833,7 +836,7 @@ class RawDustEvent:
         raw_science_bits = packet.data["IDX__SCI0RAW"].raw_value
         self._append_raw_data(scitype, raw_science_bits)
 
-    def _append_raw_data(self, scitype, bits):
+    def _append_raw_data(self, scitype: Scitype, bits: str) -> None:
         """
         Append data to the appropriate bit string.
 
@@ -842,7 +845,7 @@ class RawDustEvent:
 
         Parameters
         ----------
-        scitype : str
+        scitype : Scitype
             The science type of the data.
         bits : str
             The binary data to append.
@@ -862,7 +865,7 @@ class RawDustEvent:
         else:
             logger.warning("Unknown science type received: [%s]", scitype)
 
-    def process(self):
+    def process(self) -> xr.Dataset:
         """
         Will process the raw data into a xarray.Dataset.
 

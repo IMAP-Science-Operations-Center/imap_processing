@@ -1,6 +1,7 @@
 """Contains code to perform SWE L1b science processing."""
 
 import logging
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -40,7 +41,7 @@ esa_voltage_row_index_dict = {
 }
 
 
-def read_lookup_table(table_index_value: int):
+def read_lookup_table(table_index_value: int) -> Any:
     """
     Read lookup table from file.
 
@@ -69,7 +70,7 @@ def read_lookup_table(table_index_value: int):
         raise ValueError("Error: Invalid table index value")
 
 
-def deadtime_correction(counts: np.ndarray, acq_duration: int):
+def deadtime_correction(counts: np.ndarray, acq_duration: int) -> np.ndarray:
     """
     Calculate deadtime correction.
 
@@ -117,7 +118,7 @@ def deadtime_correction(counts: np.ndarray, acq_duration: int):
     return corrected_count
 
 
-def convert_counts_to_rate(data: np.ndarray, acq_duration: int):
+def convert_counts_to_rate(data: np.ndarray, acq_duration: int) -> np.ndarray:
     """
     Convert counts to rate using sampling time.
 
@@ -136,11 +137,12 @@ def convert_counts_to_rate(data: np.ndarray, acq_duration: int):
         Count rates array in seconds.
     """
     # convert milliseconds to seconds
-    acq_duration = acq_duration / 1000.0
+    # Todo: check with SWE team about int or float types.
+    acq_duration = int(acq_duration / 1000.0)
     return data / acq_duration
 
 
-def calculate_calibration_factor(time):
+def calculate_calibration_factor(time: int) -> None:
     """
     Calculate calibration factor.
 
@@ -184,7 +186,7 @@ def calculate_calibration_factor(time):
     pass
 
 
-def apply_in_flight_calibration(data):
+def apply_in_flight_calibration(data: np.ndarray) -> None:
     """
     Apply in flight calibration to full cycle data.
 
@@ -204,7 +206,7 @@ def apply_in_flight_calibration(data):
 
 def populate_full_cycle_data(
     l1a_data: xr.Dataset, packet_index: int, esa_table_num: int
-):
+) -> np.ndarray:
     """
     Populate full cycle data array using esa lookup table and l1a_data.
 
@@ -275,7 +277,7 @@ def populate_full_cycle_data(
     return full_cycle_data
 
 
-def find_cycle_starts(cycles: np.ndarray):
+def find_cycle_starts(cycles: np.ndarray) -> np.ndarray:
     """
     Find index of where new cycle started.
 
@@ -310,7 +312,7 @@ def find_cycle_starts(cycles: np.ndarray):
     return np.where(valid)[0]
 
 
-def get_indices_of_full_cycles(quarter_cycle: np.ndarray):
+def get_indices_of_full_cycles(quarter_cycle: np.ndarray) -> np.ndarray:
     """
     Get indices of full cycles.
 
@@ -335,7 +337,9 @@ def get_indices_of_full_cycles(quarter_cycle: np.ndarray):
     return full_cycles_indices.reshape(-1)
 
 
-def filter_full_cycle_data(full_cycle_data_indices: np.ndarray, l1a_data: xr.Dataset):
+def filter_full_cycle_data(
+    full_cycle_data_indices: np.ndarray, l1a_data: xr.Dataset
+) -> xr.Dataset:
     """
     Filter metadata and science of packets that makes full cycles.
 
@@ -356,7 +360,7 @@ def filter_full_cycle_data(full_cycle_data_indices: np.ndarray, l1a_data: xr.Dat
     return l1a_data
 
 
-def swe_l1b_science(l1a_data, data_version: str):
+def swe_l1b_science(l1a_data: xr.Dataset, data_version: str) -> xr.Dataset:
     """
     SWE l1b science processing.
 
