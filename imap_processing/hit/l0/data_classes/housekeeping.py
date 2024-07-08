@@ -3,6 +3,7 @@
 from dataclasses import dataclass
 
 import numpy as np
+import space_packet_parser
 
 from imap_processing.ccsds.ccsds_data import CcsdsData
 from imap_processing.hit.l0.utils.hit_base import HITBase
@@ -210,13 +211,18 @@ class Housekeeping(HITBase):
     L34B_BIAS: int
     EBOX_P2D0VD: int
 
-    def __init__(self, packet, software_version: str, packet_file_name: str):
+    def __init__(
+        self,
+        packet: space_packet_parser.parser.Packet,
+        software_version: str,
+        packet_file_name: str,
+    ):
         """Housekeeping Data class initialization method."""
         super().__init__(software_version, packet_file_name, CcsdsData(packet.header))
         self.parse_data(packet)
         self._parse_leak()
 
-    def _parse_leak(self):
+    def _parse_leak(self) -> None:
         """Parse each current leakage field and put into an array."""
         # Each Leak field is 10 bits long
         leak_bit_length = 10

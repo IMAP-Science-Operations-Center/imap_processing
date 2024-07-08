@@ -94,7 +94,9 @@ def mag_l1b_processing(input_dataset: xr.Dataset) -> xr.Dataset:
     return output_dataset
 
 
-def calibrate(input_vector: np.ndarray, calibration_matrix: xr.DataArray = None):
+def calibrate(
+    input_vector: np.ndarray, calibration_matrix: xr.DataArray = None
+) -> np.ndarray:
     """
     Apply calibration matrix to input vector.
 

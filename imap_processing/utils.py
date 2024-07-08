@@ -3,6 +3,7 @@
 import collections
 import dataclasses
 import logging
+from typing import Optional
 
 import numpy as np
 import pandas as pd
@@ -16,7 +17,7 @@ from imap_processing.common_cdf_attrs import metadata_attrs
 logger = logging.getLogger(__name__)
 
 
-def sort_by_time(packets, time_key):
+def sort_by_time(packets: list, time_key: str) -> list:
     """
     Sort packets by specified key.
 
@@ -37,7 +38,7 @@ def sort_by_time(packets, time_key):
     return sorted_packets
 
 
-def group_by_apid(packets: list):
+def group_by_apid(packets: list) -> dict:
     """
     Group data by apid.
 
@@ -51,7 +52,7 @@ def group_by_apid(packets: list):
     grouped_packets : dict
         Grouped data by apid.
     """
-    grouped_packets = collections.defaultdict(list)
+    grouped_packets: dict[list] = collections.defaultdict(list)
     for packet in packets:
         apid = packet.header["PKT_APID"].raw_value
         grouped_packets.setdefault(apid, []).append(packet)
@@ -59,8 +60,11 @@ def group_by_apid(packets: list):
 
 
 def convert_raw_to_eu(
-    dataset: xr.Dataset, conversion_table_path, packet_name, **read_csv_kwargs
-):
+    dataset: xr.Dataset,
+    conversion_table_path: str,
+    packet_name: str,
+    **read_csv_kwargs: dict,
+) -> xr.Dataset:
     """
     Convert raw data to engineering unit.
 
@@ -139,9 +143,9 @@ def convert_raw_to_eu(
 
 def create_dataset(
     packets: list[Packet],
-    spacecraft_time_key="shcoarse",
-    include_header=True,
-    skip_keys=None,
+    spacecraft_time_key: str = "shcoarse",
+    include_header: bool = True,
+    skip_keys: Optional[list[str]] = None,
 ) -> xr.Dataset:
     """
     Create dataset for each metadata field.
@@ -224,7 +228,7 @@ def create_dataset(
     return dataset
 
 
-def update_epoch_to_datetime(dataset: xr.Dataset):
+def update_epoch_to_datetime(dataset: xr.Dataset) -> xr.Dataset:
     """
     Update epoch in dataset to datetime object.
 

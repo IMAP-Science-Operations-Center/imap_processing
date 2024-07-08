@@ -1,6 +1,8 @@
 """IMAP-Lo L1C Data Processing."""
 
 from collections import namedtuple
+from dataclasses import Field
+from pathlib import Path
 
 import numpy as np
 import xarray as xr
@@ -9,7 +11,7 @@ from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import met_to_j2000ns
 
 
-def lo_l1c(dependencies: dict, data_version: str):
+def lo_l1c(dependencies: dict, data_version: str) -> list[Path]:
     """
     Will process IMAP-Lo L1B data into L1C CDF data products.
 
@@ -53,13 +55,16 @@ def lo_l1c(dependencies: dict, data_version: str):
             data_field_tup("EXPOSURE_TIME"),
         ]
 
-    dataset = create_datasets(attr_mgr, logical_source, data_fields)
+    dataset: list[Path] = create_datasets(attr_mgr, logical_source, data_fields)  # type: ignore[arg-type]
+    # TODO Remove once data_fields input is removed from create_datasets
     return dataset
 
 
 # TODO: This is going to work differently when I sample data.
 #  The data_fields input is temporary.
-def create_datasets(attr_mgr, logical_source, data_fields):
+def create_datasets(
+    attr_mgr: ImapCdfAttributes, logical_source: str, data_fields: list[Field]
+) -> xr.Dataset:
     """
     Create a dataset using the populated data classes.
 

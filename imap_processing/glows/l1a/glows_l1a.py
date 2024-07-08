@@ -131,14 +131,14 @@ def generate_de_dataset(
     # In header: block header, missing seqs
     # Time varying - statusdata
 
-    support_data = {
+    support_data: dict = {
         # "flight_software_version": [], # breaks
         "seq_count_in_pkts_file": [],  # works
         "number_of_de_packets": [],  # works
         # "missing_packet_sequences": [] # breaks
     }
 
-    data_every_second = {
+    data_every_second: dict = {
         "imap_sclk_last_pps": [],
         "glows_sclk_last_pps": [],
         "glows_ssclk_last_pps": [],
@@ -303,7 +303,7 @@ def generate_histogram_dataset(
     hist_data = np.zeros((len(hist_l1a_list), 3600))
 
     # TODO: add missing attributes
-    support_data = {
+    support_data: dict = {
         "flight_software_version": [],
         # "ground_software_version": [], # TODO: add this from global attrs
         # "pkts_file_name": [],
@@ -323,7 +323,7 @@ def generate_histogram_dataset(
         "pulse_length_average": [],
         "pulse_length_variance": [],
     }
-    time_metadata = {
+    time_metadata: dict = {
         "imap_start_time": [],
         "imap_time_offset": [],
         "glows_start_time": [],

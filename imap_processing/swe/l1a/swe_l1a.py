@@ -2,6 +2,8 @@
 
 import logging
 
+import xarray as xr
+
 from imap_processing.swe.l0 import decom_swe
 from imap_processing.swe.l1a.swe_science import swe_science
 from imap_processing.swe.utils.swe_utils import (
@@ -12,7 +14,7 @@ from imap_processing.utils import group_by_apid, sort_by_time
 logger = logging.getLogger(__name__)
 
 
-def swe_l1a(file_path, data_version):
+def swe_l1a(file_path: str, data_version: str) -> xr.Dataset:
     """
     Will process SWE l0 data into l1a data.
 
@@ -22,7 +24,7 @@ def swe_l1a(file_path, data_version):
 
     Parameters
     ----------
-    file_path : pathlib.Path
+    file_path : str
         Path where data is downloaded.
     data_version : str
         Data version to write to CDF files and the Data_version CDF attribute.

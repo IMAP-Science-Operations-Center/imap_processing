@@ -92,6 +92,7 @@ convention = "numpy"
 
 [tool.poetry.scripts]
 imap_cli = 'imap_processing.cli:main'
+imap_xtce = 'tools.xtce_generation.xtce_generator_template:main'
 
 [tool.codespell]
 ignore-words-list = "livetime"
@@ -115,3 +116,7 @@ checks = ["all", #report on all checks, except the following
     "ES01", # Ignore No extended summary found
     "RT02" ] # Ignore The first line of the Returns section
 exclude = ['__init__' ] # don't report on objects that match any of these regex
+
+[tool.mypy]
+follow_imports = 'skip'
+exclude = ["tests", "docs"]

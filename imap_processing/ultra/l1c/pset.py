@@ -1,11 +1,12 @@
 """Calculate Pointing Set Grids."""
 
 import numpy as np
+import xarray as xr
 
 from imap_processing.ultra.utils.ultra_l1_utils import create_dataset
 
 
-def calculate_pset(pset_dataset, name):
+def calculate_pset(pset_dataset: xr.Dataset, name: str) -> xr.Dataset:
     """
     Create dictionary with defined datatype for Pointing Set Grid Data.
 

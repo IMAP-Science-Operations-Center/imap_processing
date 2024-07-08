@@ -23,7 +23,7 @@ from imap_processing.mag.mag_cdf_attrs import DataMode, MagSensorMode, Sensor
 logger = logging.getLogger(__name__)
 
 
-def mag_l1a(packet_filepath, data_version: str) -> list[Path]:
+def mag_l1a(packet_filepath: Path, data_version: str) -> list[Path]:
     """
     Will process MAG L0 data into L1A CDF files at cdf_filepath.
 
@@ -191,7 +191,10 @@ def process_packets(
         # byte boundaries are.
 
         primary_vectors, secondary_vectors = MagL1a.process_vector_data(
-            mag_l0.VECTORS.astype(dtype=np.int32),
+            mag_l0.VECTORS.astype(dtype=np.int32),  # type: ignore[union-attr]
+            # TODO Maybe Change, Item "str" of "Union[Any, str]"
+            #  has no attribute "astype"
+            # this is because mypy expects both to have the attributes
             primary_packet_data.total_vectors,
             secondary_packet_data.total_vectors,
         )

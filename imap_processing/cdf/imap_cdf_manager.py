@@ -6,6 +6,7 @@ or code.
 """
 
 from pathlib import Path
+from typing import Optional
 
 from imap_processing.cdf.cdf_attribute_manager import CdfAttributeManager
 
@@ -16,17 +17,17 @@ class ImapCdfAttributes(CdfAttributeManager):
 
     Parameters
     ----------
-    source_dir : Path or None
+    source_dir : pathlib.Path or None
         Source directory.
     """
 
-    def __init__(self, source_dir=None):
+    def __init__(self, source_dir: Optional[Path] = None):
         """
         Set the path to the config directory.
 
         Parameters
         ----------
-        source_dir : Path or None
+        source_dir : pathlib.Path or None
             Source directory.
         """
         if source_dir is None:
@@ -34,7 +35,7 @@ class ImapCdfAttributes(CdfAttributeManager):
         else:
             super().__init__(source_dir)
 
-    def add_instrument_global_attrs(self, instrument: str):
+    def add_instrument_global_attrs(self, instrument: str) -> None:
         """
         Add instrument specific global attributes.
 
@@ -46,7 +47,7 @@ class ImapCdfAttributes(CdfAttributeManager):
         # Looks for file named "imap_{instrument}_global_cdf_attrs.yaml"
         self.load_global_attributes(f"imap_{instrument}_global_cdf_attrs.yaml")
 
-    def add_instrument_variable_attrs(self, instrument: str, level: str):
+    def add_instrument_variable_attrs(self, instrument: str, level: str) -> None:
         """
         Add instrument specific variable attributes.
 

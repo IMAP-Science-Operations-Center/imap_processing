@@ -22,7 +22,9 @@ logger.setLevel(logging.INFO)
 # TODO: Fix ISTP compliance issues (revealed in SKTEditor)
 
 
-def create_hskp_dataset(l1a_dataset, cdf_attrs) -> xr.Dataset:
+def create_hskp_dataset(
+    l1a_dataset: xr.Dataset, cdf_attrs: ImapCdfAttributes
+) -> xr.Dataset:
     """
     Create an ``xarray`` dataset for the housekeeping data.
 
@@ -61,7 +63,7 @@ def create_hskp_dataset(l1a_dataset, cdf_attrs) -> xr.Dataset:
         #      catdesc = value.short_description
         # I am holding off making this change until I acquire updated housekeeping
         # packets/validation data that match the latest telemetry definitions
-        attrs = cdf_attrs.variable_attributes["codice_support_attrs"]
+        attrs = cdf_attrs.get_variable_attributes("codice_support_attrs")
         attrs["CATDESC"] = "TBD"
         attrs["DEPEND_0"] = "epoch"
         attrs["FIELDNAM"] = "TBD"
@@ -79,7 +81,7 @@ def create_hskp_dataset(l1a_dataset, cdf_attrs) -> xr.Dataset:
 
 
 def create_science_dataset(
-    l1a_dataset: xr.Dataset, cdf_attrs, dataset_name
+    l1a_dataset: xr.Dataset, cdf_attrs: ImapCdfAttributes, dataset_name: str
 ) -> xr.Dataset:
     """
     Create an ``xarray`` dataset for the science data.

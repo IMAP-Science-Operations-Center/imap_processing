@@ -6,7 +6,6 @@ from space_packet_parser.parser import Packet
 
 from imap_processing import imap_module_directory
 from imap_processing.cdf.cdf_attribute_manager import CdfAttributeManager
-from imap_processing.cdf.global_attrs import ConstantCoordinates
 from imap_processing.cdf.utils import met_to_j2000ns
 
 # TODO: read LOOKED_UP_DURATION_OF_TICK from
@@ -103,18 +102,17 @@ def parse_direct_event(event_data: str) -> dict:
     dict
         Parsed event data.
     """
-    event_type = int(event_data[:2])
+    event_type = int(event_data[:2], 2)
     metaevent = 0
     if event_type == metaevent:
         # parse metaevent
-        event_type = event_data[:2]
         esa_step = event_data[2:6]
         subseconds = event_data[6:16]
         seconds = event_data[16:]
 
         # return parsed metaevent data
         return {
-            "start_bitmask_data": int(event_type, 2),
+            "start_bitmask_data": event_type,
             "esa_step": int(esa_step, 2),
             "subseconds": int(subseconds, 2),
             "seconds": int(seconds, 2),
@@ -177,7 +175,7 @@ def create_dataset(de_data_list: list, packet_met_time: list) -> xr.Dataset:
         Xarray dataset.
     """
     # These are the variables that we will store in the dataset
-    data_dict = {
+    data_dict: dict = {
         "epoch": list(),
         "event_met": list(),
         "ccsds_met": list(),
@@ -274,7 +272,7 @@ def create_dataset(de_data_list: list, packet_met_time: list) -> xr.Dataset:
         data_dict.pop("epoch"),
         name="epoch",
         dims=["epoch"],
-        attrs=ConstantCoordinates.EPOCH,
+        attrs=cdf_manager.get_variable_attributes("hi_de_epoch"),
     )
 
     de_global_attrs = cdf_manager.get_global_attributes("imap_hi_l1a_de_attrs")
@@ -284,7 +282,9 @@ def create_dataset(de_data_list: list, packet_met_time: list) -> xr.Dataset:
     )
 
     for var_name, data in data_dict.items():
-        attrs = cdf_manager.get_variable_attributes(f"hi_de_{var_name}").copy()
+        attrs = cdf_manager.get_variable_attributes(
+            f"hi_de_{var_name}", check_schema=False
+        ).copy()
         dtype = attrs.pop("dtype")
         dataset[var_name] = xr.DataArray(
             np.array(data, dtype=np.dtype(dtype)),

@@ -2,6 +2,8 @@
 
 from enum import IntEnum
 
+import space_packet_parser
+
 
 class SWEAPID(IntEnum):
     """Create ENUM for apid."""
@@ -9,7 +11,9 @@ class SWEAPID(IntEnum):
     SWE_SCIENCE = 1344
 
 
-def add_metadata_to_array(data_packet, metadata_arrays):
+def add_metadata_to_array(
+    data_packet: space_packet_parser.parser.Packet, metadata_arrays: dict
+) -> dict:
     """
     Add metadata to the metadata_arrays.
 

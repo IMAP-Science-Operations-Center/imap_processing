@@ -24,7 +24,7 @@ class TimeTuple:
     seconds: int
     subseconds: int
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """Add any subseconds over the limit into the seconds field."""
         final_seconds = self.seconds
         final_subseconds = self.subseconds
@@ -88,7 +88,7 @@ class DirectEvent:
     impulse_length: int
     multi_event: bool = False
 
-    def to_list(self):
+    def to_list(self) -> list:
         """
         Convert object to list [seconds, subseconds, impulse length, multievent].
 

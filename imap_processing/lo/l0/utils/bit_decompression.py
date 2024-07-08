@@ -2,6 +2,7 @@
 
 from enum import Enum
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 
@@ -25,7 +26,10 @@ DECOMPRESSION_TABLES = {
 }
 
 
-def decompress_int(compressed_value, decompression, decompression_lookup):
+def decompress_int(
+    compressed_value: int, decompression: Decompress, decompression_lookup: dict
+) -> Any:
+    # No idea what the correct type is for the return. Mypy says it is Any
     """
     Will decompress a data field using a specified bit conversion.
 
@@ -40,7 +44,7 @@ def decompress_int(compressed_value, decompression, decompression_lookup):
 
     Returns
     -------
-    decompressed : int
+    decompressed :
         The decompressed integer.
     """
     valid_decompression = [

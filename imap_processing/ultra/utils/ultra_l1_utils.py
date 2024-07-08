@@ -7,7 +7,7 @@ import xarray as xr
 from imap_processing.cdf.cdf_attribute_manager import CdfAttributeManager
 
 
-def create_dataset(data_dict, name, level):
+def create_dataset(data_dict: dict, name: str, level: str) -> xr.Dataset:
     """
     Create xarray for L1b data.
 
@@ -34,7 +34,7 @@ def create_dataset(data_dict, name, level):
         data_dict["epoch"],
         name="epoch",
         dims=["epoch"],
-        attrs=cdf_manager.variable_attributes["epoch"],
+        attrs=cdf_manager.get_variable_attributes("epoch"),
     )
 
     dataset = xr.Dataset(
@@ -48,7 +48,7 @@ def create_dataset(data_dict, name, level):
         dataset[key] = xr.DataArray(
             data_dict[key],
             dims=["epoch"],
-            attrs=cdf_manager.variable_attributes[key],
+            attrs=cdf_manager.get_variable_attributes(key),
         )
 
     return dataset

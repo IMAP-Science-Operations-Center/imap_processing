@@ -33,7 +33,8 @@ class TimeTuple:
     coarse_time: int
     fine_time: int
 
-    def __add__(self, seconds: float):
+    def __add__(self, seconds: float):  # type: ignore[no-untyped-def]
+        # ruff is saying TimeTuple is undefined for this usage.
         """
         Add a number of seconds to the time tuple.
 
@@ -262,7 +263,7 @@ class MagL1a:
     @staticmethod
     def process_vector_data(
         vector_data: np.ndarray, primary_count: int, secondary_count: int
-    ) -> (np.ndarray, np.ndarray):
+    ) -> tuple[np.ndarray, np.ndarray]:
         """
         Given raw packet data, process into Vectors.
 
@@ -289,7 +290,7 @@ class MagL1a:
         """
 
         # TODO: error handling
-        def to_signed16(n):
+        def to_signed16(n: int) -> int:
             """
             Convert an integer to a signed 16-bit integer.
 
