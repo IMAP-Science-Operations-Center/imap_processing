@@ -146,7 +146,11 @@ number_of_spins_per_histogram:
   CATDESC: Number of histogram bins
   FIELDNAM: Number of histogram bins
 
-numer_of_events:
+number_of_bins_per_histogram:
+  CATDESC: Number of histogram bins
+  FIELDNAM: Number of histogram bins
+
+number_of_events:
   <<: *metadata_attrs
   CATDESC: Total number of events or counts in the histogram
   FIELDNAM: Total number of histogram events
@@ -181,7 +185,7 @@ spin_period_variance:
   CATDESC: Variance of spin period, uint encoded
   FIELDNAM: Variance of spin period, uint encoded
 
-pulsa_length_average:
+pulse_length_average:
   <<: *metadata_attrs
   CATDESC: Block averaged impulse length, uint encoded
   FIELDNAM: Block averaged impulse length, uint encoded

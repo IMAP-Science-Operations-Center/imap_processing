@@ -447,7 +447,7 @@ def generate_histogram_dataset(
             name=key,
             dims=["epoch"],
             coords={"epoch": epoch_time},
-            attrs=glows_attrs.get_variable_attributes(str(key)),
+            attrs=glows_attrs.get_variable_attributes(key),
             # attrs=dataclasses.replace(
             #     glows_cdf_attrs.metadata_attrs,
             #     catdesc=glows_cdf_attrs.catdesc_fieldname_l1a[key][0],
@@ -461,7 +461,7 @@ def generate_histogram_dataset(
             name=key,
             dims=["epoch"],
             coords={"epoch": epoch_time},
-            attrs=glows_attrs.get_variable_attributes(str(key)),
+            attrs=glows_attrs.get_variable_attributes(key),
             # attrs=dataclasses.replace(
             #     glows_cdf_attrs.metadata_attrs,
             #     catdesc=glows_cdf_attrs.catdesc_fieldname_l1a[key][0],
