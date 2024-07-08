@@ -12,7 +12,7 @@ from imap_processing.utils import convert_raw_to_eu
 logger = logging.getLogger(__name__)
 
 
-def swe_l1b(l1a_dataset: xr.Dataset, data_version: str):
+def swe_l1b(l1a_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
     """
     Will process data to L1B.
 
@@ -31,7 +31,7 @@ def swe_l1b(l1a_dataset: xr.Dataset, data_version: str):
     apid = int(l1a_dataset.attrs["packet_apid"])
 
     # convert value from raw to engineering units as needed
-    conversion_table_path = (
+    conversion_table_path = str(
         imap_module_directory / "swe/l1b/engineering_unit_convert_table.csv"
     )
     # Look up packet name from APID

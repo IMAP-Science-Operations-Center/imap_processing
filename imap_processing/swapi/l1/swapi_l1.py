@@ -27,7 +27,7 @@ from imap_processing.utils import (
 )
 
 
-def filter_good_data(full_sweep_sci):
+def filter_good_data(full_sweep_sci: xr.Dataset) -> np.ndarray:
     """
     Filter out bad data sweep indices.
 
@@ -84,7 +84,9 @@ def filter_good_data(full_sweep_sci):
     return good_data_indices
 
 
-def decompress_count(count_data: np.ndarray, compression_flag: np.ndarray):
+def decompress_count(
+    count_data: np.ndarray, compression_flag: np.ndarray
+) -> np.ndarray:
     """
     Will decompress counts based on compression indicators.
 
@@ -134,7 +136,7 @@ def decompress_count(count_data: np.ndarray, compression_flag: np.ndarray):
     return new_count
 
 
-def find_sweep_starts(packets: xr.Dataset):
+def find_sweep_starts(packets: xr.Dataset) -> np.ndarray:
     """
     Find index of where new cycle started.
 
@@ -189,7 +191,7 @@ def find_sweep_starts(packets: xr.Dataset):
     return np.where(valid)[0]
 
 
-def get_indices_of_full_sweep(packets: xr.Dataset):
+def get_indices_of_full_sweep(packets: xr.Dataset) -> np.ndarray:
     """
     Get indices of full cycles.
 
@@ -223,7 +225,7 @@ def get_indices_of_full_sweep(packets: xr.Dataset):
     return full_cycles_indices.reshape(-1)
 
 
-def process_sweep_data(full_sweep_sci, cem_prefix):
+def process_sweep_data(full_sweep_sci: xr.Dataset, cem_prefix: str) -> xr.Dataset:
     """
     Group full sweep data into correct sequence order.
 
@@ -418,7 +420,7 @@ def process_sweep_data(full_sweep_sci, cem_prefix):
     return all_cem_data
 
 
-def process_swapi_science(sci_dataset, data_version: str):
+def process_swapi_science(sci_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
     """
     Will process SWAPI science data and create CDF file.
 
@@ -605,7 +607,7 @@ def process_swapi_science(sci_dataset, data_version: str):
     return dataset
 
 
-def swapi_l1(file_path, data_version: str):
+def swapi_l1(file_path: str, data_version: str) -> xr.Dataset:
     """
     Will process SWAPI level 0 data to level 1.
 

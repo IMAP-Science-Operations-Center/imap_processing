@@ -16,7 +16,7 @@ CDF_MANAGER.load_global_attributes("imap_hi_global_cdf_attrs.yaml")
 CDF_MANAGER.load_variable_attributes("imap_hi_variable_attrs.yaml")
 
 
-def hi_l1b(l1a_dataset: xr.Dataset, data_version: str):
+def hi_l1b(l1a_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
     """
     High level IMAP-HI L1B processing function.
 
@@ -43,14 +43,16 @@ def hi_l1b(l1a_dataset: xr.Dataset, data_version: str):
     if logical_source_parts[-1].endswith("hk"):
         # if packet_enum in (HIAPID.H45_APP_NHK, HIAPID.H90_APP_NHK):
         packet_enum = HIAPID(l1a_dataset["pkt_apid"].data[0])
-        conversion_table_path = (
+        conversion_table_path = str(
             imap_module_directory / "hi" / "l1b" / "hi_eng_unit_convert_table.csv"
         )
         l1b_dataset = convert_raw_to_eu(
             l1a_dataset,
             conversion_table_path=conversion_table_path,
             packet_name=packet_enum.name,
-            comment="#",
+            comment="#",  # type: ignore[arg-type]
+            # Todo error, Argument "comment" to "convert_raw_to_eu" has incompatible
+            # type "str"; expected "dict[Any, Any]"
             converters={"mnemonic": str.lower},
         )
 
@@ -77,7 +79,7 @@ def hi_l1b(l1a_dataset: xr.Dataset, data_version: str):
     return l1b_dataset
 
 
-def annotate_direct_events(l1a_dataset):
+def annotate_direct_events(l1a_dataset: xr.Dataset) -> xr.Dataset:
     """
     Perform Hi L1B processing on direct event data.
 

@@ -165,14 +165,14 @@ def generate_de_dataset(
     # =======
 
     # Initializing dictionaries for support, and data every second.
-    support_data = {
+    support_data: dict = {
         # "flight_software_version": [], # breaks
         "seq_count_in_pkts_file": [],  # works
         "number_of_de_packets": [],  # works
         # "missing_packet_sequences": [] # breaks
     }
 
-    data_every_second = {
+    data_every_second: dict = {
         "imap_sclk_last_pps": [],
         "glows_sclk_last_pps": [],
         "glows_ssclk_last_pps": [],
@@ -358,7 +358,7 @@ def generate_histogram_dataset(
     glows_attrs.add_global_attribute("Data_version", data_version)
 
     # TODO: add missing attributes
-    support_data = {
+    support_data: dict = {
         "flight_software_version": [],
         # "ground_software_version": [], # TODO: add this from global attrs
         # "pkts_file_name": [],
@@ -378,7 +378,7 @@ def generate_histogram_dataset(
         "pulse_length_average": [],
         "pulse_length_variance": [],
     }
-    time_metadata = {
+    time_metadata: dict = {
         "imap_start_time": [],
         "imap_time_offset": [],
         "glows_start_time": [],
