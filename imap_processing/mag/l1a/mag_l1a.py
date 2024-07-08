@@ -8,6 +8,7 @@ import numpy as np
 import xarray as xr
 
 from imap_processing.cdf.global_attrs import ConstantCoordinates
+from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import J2000_EPOCH, met_to_j2000ns
 from imap_processing.mag import mag_cdf_attrs
 from imap_processing.mag.l0 import decom_mag
@@ -17,7 +18,7 @@ from imap_processing.mag.l1a.mag_l1a_data import (
     MagL1aPacketProperties,
     TimeTuple,
 )
-from imap_processing.mag.mag_cdf_attrs import DataMode, MagGlobalCdfAttributes, Sensor
+from imap_processing.mag.mag_cdf_attrs import DataMode, MagSensorMode, Sensor
 
 logger = logging.getLogger(__name__)
 
@@ -45,11 +46,21 @@ def mag_l1a(packet_filepath, data_version: str) -> list[Path]:
 
     input_files = [packet_filepath.name]
 
+    attribute_manager = ImapCdfAttributes()
+    attribute_manager.add_instrument_global_attrs("mag")
+    attribute_manager.add_instrument_variable_attrs("mag", "l1")
+
+    attribute_manager.add_global_attribute("Data_version", data_version)
+    attribute_manager.add_global_attribute("Input_files", str(input_files))
+    attribute_manager.add_global_attribute("Generation_date", np.datetime64(
+        "now",
+    ).astype(str))
+
     generated_files = process_and_write_data(
-        norm_data, DataMode.NORM, input_files, data_version
+        norm_data, DataMode.NORM, attribute_manager
     )
     generated_files += process_and_write_data(
-        burst_data, DataMode.BURST, input_files, data_version
+        burst_data, DataMode.BURST, attribute_manager
     )
 
     return generated_files
@@ -58,8 +69,7 @@ def mag_l1a(packet_filepath, data_version: str) -> list[Path]:
 def process_and_write_data(
     packet_data: list[MagL0],
     data_mode: DataMode,
-    input_files: list[str],
-    data_version: str,
+    attribute_manager: ImapCdfAttributes
 ) -> list[Path]:
     """
     Will process MAG L0 data into L1A, then create and write out CDF files.
@@ -68,24 +78,12 @@ def process_and_write_data(
 
     Parameters
     ----------
-    packet_data : list[MagL0]
-        List of MagL0 packets to process, containing primary and secondary sensor data.
-    raw_attrs : dict
-        Attributes for MagL1A raw CDF files.
-    mago_attrs : dict
-        Attributes for MagL1A MAGo CDF files.
-    magi_attrs : dict
-        Attributes for MagL1A MAGi CDF files.
-    data_version : str
-        Data version.
-    data_version: str
-        Version of the CDF file to output, in the format "vXXX"
     packet_data: list[MagL0]
         List of MagL0 packets to process, containing primary and secondary sensor data
     data_mode: DataMode
         Enum for distinguishing between norm and burst mode data
-    input_files: list[str]
-        List of dependent filenames for generating the CDF files.
+    attribute_manager: ImapCdfAttributes
+        Attribute manager for CDF files for MAG L1A
 
     Returns
     -------
@@ -95,15 +93,10 @@ def process_and_write_data(
     if not packet_data:
         return []
 
-    generation_date = np.datetime64(
-        "now",
-    ).astype(str)
-
     mag_raw = decom_mag.generate_dataset(
         packet_data,
-        MagGlobalCdfAttributes(
-            data_mode, Sensor.RAW, generation_date, input_files, data_version
-        ).attribute_dict,
+        data_mode,
+        attribute_manager
     )
 
     generated_datasets = [mag_raw]
@@ -114,16 +107,17 @@ def process_and_write_data(
     for _, mago in l1a["mago"].items():
         norm_mago_output = generate_dataset(
             mago,
-            MagGlobalCdfAttributes(
-                data_mode, Sensor.MAGO, generation_date, input_files, data_version
-            ).attribute_dict,
+            MagSensorMode(
+                data_mode, Sensor.MAGO
+            ),
+            attribute_manager
         )
         generated_datasets.append(norm_mago_output)
 
     for _, magi in l1a["magi"].items():
         norm_magi_output = generate_dataset(
             magi,
-            MagGlobalCdfAttributes(
+            MagSensorMode(
                 data_mode, Sensor.MAGI, generation_date, input_files, data_version
             ).attribute_dict,
         )
@@ -189,7 +183,7 @@ def process_packets(
         secondary_packet_data = dataclasses.replace(
             primary_packet_data,
             start_time=secondary_start_time,
-            vecsec=mag_l0.SEC_VECSEC,
+            vectors_per_second=mag_l0.SEC_VECSEC,
             pus_ssubtype=mag_l0.PUS_SSUBTYPE,
         )
         # now we know the number of secs of data in the packet, and the data rates of
@@ -260,7 +254,7 @@ def process_packets(
     return {"mago": mago, "magi": magi}
 
 
-def generate_dataset(single_file_l1a: MagL1a, dataset_attrs: dict) -> xr.Dataset:
+def generate_dataset(single_file_l1a: MagL1a, sensor_mode: MagSensorMode, attribute_manager: ImapCdfAttributes) -> xr.Dataset:
     """
     Generate a Xarray dataset for L1A data to output to CDF files.
 
@@ -274,8 +268,10 @@ def generate_dataset(single_file_l1a: MagL1a, dataset_attrs: dict) -> xr.Dataset
     ----------
     single_file_l1a : MagL1a
         L1A data covering one day to process into a xarray dataset.
-    dataset_attrs : dict
-        Global attributes for the dataset, as created by mag_attrs.
+    sensor_mode : MagSensorMode
+        Indicates which sensor (MagO or MAGi) and mode (burst or norm) the data is from.
+    attribute_manager : ImapCdfAttributes
+        Attributes for the dataset, as created by ImapCdfAttributes.
 
     Returns
     -------
@@ -297,7 +293,7 @@ def generate_dataset(single_file_l1a: MagL1a, dataset_attrs: dict) -> xr.Dataset
         np.arange(4),
         name="direction",
         dims=["direction"],
-        attrs=mag_cdf_attrs.direction_attrs.output(),
+        attrs=attribute_manager.get_variable_attributes("direction_attrs"),
     )
 
     # TODO: Epoch here refers to the start of the sample. Confirm that this is
@@ -306,19 +302,19 @@ def generate_dataset(single_file_l1a: MagL1a, dataset_attrs: dict) -> xr.Dataset
         time_data,
         name="epoch",
         dims=["epoch"],
-        attrs=ConstantCoordinates.EPOCH,
+        attrs=attribute_manager.get_variable_attributes("epoch"),
     )
 
     vectors = xr.DataArray(
         single_file_l1a.vectors[:, :4],
         name="vectors",
         dims=["epoch", "direction"],
-        attrs=mag_cdf_attrs.vector_attrs.output(),
+        attrs=attribute_manager.get_variable_attributes("vector_attrs"),
     )
 
     output = xr.Dataset(
         coords={"epoch": epoch_time, "direction": direction},
-        attrs=dataset_attrs,
+        attrs=attribute_manager.get_global_attributes(sensor_mode.get_logical_id()),
     )
 
     output["vectors"] = vectors

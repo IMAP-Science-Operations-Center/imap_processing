@@ -5,7 +5,7 @@ from math import floor
 
 import numpy as np
 
-from imap_processing.cdf.utils import met_to_j2000ns
+from imap_processing.cdf.utils import met_to_j2000ns, J2000_EPOCH
 
 MAX_FINE_TIME = 65535  # maximum 16 bit unsigned int
 
@@ -178,10 +178,12 @@ class MagL1a:
     packet_definitions: dict[np.datetime64, MagL1aPacketProperties] = None
     most_recent_sequence: int = None
     missing_sequences: list[int] = field(default_factory=list)
+    timestamp: np.datetime64 = None
 
     def __post_init__(self, starting_packet: MagL1aPacketProperties):
         """Initialize the packet_definition dictionary and most_recent_sequence."""
-        self.packet_definitions = {calc_start_time(self.shcoarse): starting_packet}
+        self.time = (J2000_EPOCH + met_to_j2000ns(self.shcoarse)).astype("datetime64[D]")
+        self.packet_definitions = {self.time: starting_packet}
         # most_recent_sequence is the sequence number of the packet used to initialize
         # the object
         self.most_recent_sequence = starting_packet.src_seq_ctr
@@ -202,7 +204,7 @@ class MagL1a:
         vector_sequence = packet_properties.src_seq_ctr
 
         self.vectors = np.concatenate([self.vectors, additional_vectors])
-        self.packet_definitions[calc_start_time(packet_properties.shcoarse)] = (
+        self.packet_definitions[self.time] = (
             packet_properties
         )
 
@@ -239,9 +241,8 @@ class MagL1a:
             Vectors with timestamps added in seconds, calculated from
             cdf.utils.met_to_j2000ns.
         """
-        # TODO: Move timestamps to J2000
         timedelta = np.timedelta64(int(1 / vecters_per_sec * 1e9), "ns")
-
+        # TODO: validate that start_time from SHCOARSE is precise enough
         start_time_ns = met_to_j2000ns(start_time.to_seconds())
 
         # Calculate time skips for each vector in ns
