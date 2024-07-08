@@ -3,12 +3,13 @@
 import collections
 import dataclasses
 import logging
-from typing import Optional
+from pathlib import Path
+from typing import Optional, Union
 
 import numpy as np
 import pandas as pd
 import xarray as xr
-from space_packet_parser.parser import Packet
+from space_packet_parser import parser, xtcedef
 
 from imap_processing.cdf.global_attrs import ConstantCoordinates
 from imap_processing.cdf.utils import met_to_j2000ns
@@ -142,7 +143,7 @@ def convert_raw_to_eu(
 
 
 def create_dataset(
-    packets: list[Packet],
+    packets: list[parser.Packet],
     spacecraft_time_key: str = "shcoarse",
     include_header: bool = True,
     skip_keys: Optional[list[str]] = None,
@@ -254,3 +255,86 @@ def update_epoch_to_datetime(dataset: xr.Dataset) -> xr.Dataset:
     dataset = dataset.assign_coords(epoch=epoch)
 
     return dataset
+
+
+def packet_file_to_datasets(
+    packet_file: Union[str, Path], xtce_packet_definition: str
+) -> dict[int, xr.Dataset]:
+    """
+    Convert a packet file to xarray datasets.
+
+    The packet file can contain multiple apids and these will be separated
+    into distinct datasets, one per apid. The datasets will contain the
+    ``derived_value``s of the data fields, and the ``raw_value``s if no
+    ``derived_value`` is available. If there are conversions in the XTCE
+    packet definition, the ``derived_value`` will be the converted value.
+    The dimension of the dataset will be the time field in J2000 nanoseconds.
+
+    Parameters
+    ----------
+    packet_file : str
+        Path to data packet path with filename.
+    xtce_packet_definition : str
+        Path to XTCE file with filename.
+
+    Returns
+    -------
+    datasets : dict
+        Mapping from apid to xarray dataset, one dataset per apid.
+    """
+    # Set up containers to store our data
+    # We are getting a packet file that may contain multiple apids
+    # Each apid has consistent data fields, so we want to create a
+    # dataset per apid.
+    # {apid1: dataset1, apid2: dataset2, ...}
+    data_dict: dict[int, dict] = dict()
+    attribute_dict: dict[int, dict] = dict()
+
+    # Set up the parser from the input packet definition
+    packet_definition = xtcedef.XtcePacketDefinition(xtce_packet_definition)
+    packet_parser = parser.PacketParser(packet_definition)
+
+    with open(packet_file, "rb") as binary_data:
+        packet_generator = packet_parser.generator(binary_data)
+        for packet in packet_generator:
+            apid = packet.header["PKT_APID"].raw_value
+            if apid not in data_dict:
+                # This is the first packet for this APID
+                data_dict[apid] = collections.defaultdict(list)
+                attribute_dict[apid] = collections.defaultdict(dict)
+
+                # Fill in the attributes
+                for key, value in packet.data.items():
+                    attribute_dict[apid][key]["short_description"] = (
+                        value.short_description
+                    )
+                    attribute_dict[apid][key]["long_description"] = (
+                        value.long_description
+                    )
+                    # TODO: Additional info from XTCE like units
+
+            # TODO: Include the header too? (packet.header | packet.data)
+            for key, value in packet.data.items():
+                # TODO: Do we want derived_value or raw_value?
+                # Right now we use a derived value is there is one, otherwise raw value
+                # Maybe we want these to be separated into l1a (raw) and l1b (derived)?
+                data_dict[apid][key].append(value.derived_value or value.raw_value)
+
+    dataset_by_apid = {}
+    # Convert each apid's data to an xarray dataset
+    for apid, data in data_dict.items():
+        # The time key is always the first key in the data dictionary on IMAP
+        time_key = next(iter(data.keys()))
+        # Convert to J2000 time and use that as our primary dimension
+        time_data = met_to_j2000ns(data[time_key])
+        ds = xr.Dataset(
+            {key.lower(): ("epoch", val) for key, val in data.items()},
+            coords={"epoch": time_data},
+        )
+        for key, value in attribute_dict[apid].items():
+            ds[key.lower()].attrs.update(value)
+        ds = ds.sortby("epoch")
+
+        dataset_by_apid[apid] = ds
+
+    return dataset_by_apid
