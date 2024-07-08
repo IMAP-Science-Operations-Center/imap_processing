@@ -1,3 +1,27 @@
+# Info found in cdf.defaults.py
+int_fillval: &int_fillval -9223372036854775808
+min_epoch: &min_epoch -315575942816000000
+max_epoch: &max_epoch 3155630469184000000
+
+# glows_l1a.py -> line 234.
+# Information found in cdf.config.global_attrs.py EPOCH, and cdf.defaults.py
+epoch:
+  CATDESC: Time, number of nanoseconds since J2000 with leap seconds included
+  FIELDNAM: epoch
+  FILLVAL: *int_fillval # GlobalConstants.INT_FILLVAL,
+  LABLAXIS: epoch
+  FORMAT: ""  # Supposedly not required, fails in xarray_to_cdf
+  UNITS: ns
+  VALIDMIN: *min_epoch # GlobalConstants.MIN_EPOCH
+  VALIDMAX: *max_epoch # GlobalConstants.MAX_EPOCH
+  VAR_TYPE: support_data
+  SCALETYP: linear
+  MONOTON: INCREASE
+  TIME_BASE: J2000
+  TIME_SCALE: Terrestrial Time
+  REFERENCE_POSITION: Rotating Earth Geoid
+
+# Putting glows.l1a.glows_l1a_data.py into .yaml format
 bins_attrs:
   VALIDMMIN: 0
   VALIDMAX: 70
@@ -65,11 +89,8 @@ metadata_attrs: &metadata_attrs
   FORMAT: I10
   LABLAXIS: Metadata
 
-flight_software_version:
-  <<: *metadata_attrs
-  CATDESC: Flight software version
-  FIELDNAM: Flight software version
-
+# not-in--dicts in generate_de_dataset
+# Should I be defining the metadata_attrs here?
 ground_software_version:
   <<: *metadata_attrs
   CATDESC: Ground software version in the format vXXX
@@ -79,11 +100,6 @@ pkts_file_name:
   <<: *metadata_attrs
   CATDESC: Input filename for packets data
   FIELDNAM: Input filename
-
-seq_count_in_pkts_file:
-  <<: *metadata_attrs
-  CATDESC: Sequence counter from packet
-  FIELDNAM: Sequence counter
 
 last_spin_id:
   <<: *metadata_attrs
@@ -174,7 +190,21 @@ pulse_length_variance:
   <<: *metadata_attrs
   CATDESC: Variance of impulse length, uint encoded
   FIELDNAM: Variance of impulse length, uint encoded
+# End of not-in--dicts in generate_de_dataset
 
+# support_data
+seq_count_in_pkts_file:
+  <<: *metadata_attrs
+  CATDESC: Sequence counter from packet
+  FIELDNAM: Sequence counter
+
+number_of_de_packets:
+  <<: *metadata_attrs
+  CATDESC: Number of DE packets
+  FIELDNAM: Number of DE packets
+# End of support data
+
+# data_every_second in glows_l1a.py
 imap_sclk_last_pps:
   <<: *metadata_attrs
   CATDESC: IMAP seconds for last PPS
@@ -274,13 +304,17 @@ memory_error_detected:
   <<: *metadata_attrs
   CATDESC: Flag
   FIELDNAM: Flag
+# End of data_every_second
 
-number_of_de_packets:
-  <<: *metadata_attrs
-  CATDESC: Number of DE packets
-  FIELDNAM: Number of DE packets
-
+# Commented out in support_data
+# Do I include *metadata_attrs?
 missing_packet_sequences:
   <<: *metadata_attrs
   CATDESC: Missing packet sequence numbers
   FIELDNAM: Missing packet sequences
+
+flight_software_version:
+  <<: *metadata_attrs
+  CATDESC: Flight software version
+  FIELDNAM: Flight software version
+# End of commented out support_data
