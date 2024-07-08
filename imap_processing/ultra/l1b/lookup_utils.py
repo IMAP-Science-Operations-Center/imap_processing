@@ -34,7 +34,7 @@ def get_y_adjust(dy_lut: np.ndarray):
     return yadj.values
 
 
-def get_norm(dn: np.ndarray, key: str, file_label: str):
+def get_norm(dn: np.ndarray, key: str, sensor: str):
     """
     Correct mismatches between the stop Time to Digital Converters (TDCs).
 
@@ -53,7 +53,7 @@ def get_norm(dn: np.ndarray, key: str, file_label: str):
     key : str
         TpSpNNorm, TpSpSNorm, TpSpENorm, or TpSpWNorm.
         BtSpNNorm, BtSpSNorm, BtSpENorm, or BtSpWNorm.
-    file_label : str
+    sensor : str
         Instrument (ultra45 or ultra90).
 
     Returns
@@ -62,15 +62,20 @@ def get_norm(dn: np.ndarray, key: str, file_label: str):
         Normalized DNs.
     """
     # We only need the center string, i.e. SpN, SpS, SpE, SpW
-    tdc_norm_path = f"{base_path}/{file_label}_tdc_norm.csv"
-    tdc_norm_df = pd.read_csv(tdc_norm_path, header=1, index_col="Index")
+    if sensor == "ultra45":
+        file_label = "Ultra45_tdc_norm_LUT_IntPulser_20230901.csv"
+    else:
+        file_label = "Ultra90_tdc_norm_LUT_IntPulser_20230614.csv"
+
+    tdc_norm_path = f"{base_path}/{file_label}"
+    tdc_norm_df = pd.read_csv(tdc_norm_path, header=0, index_col="Index")
 
     dn_norm = tdc_norm_df[key].iloc[dn]
 
     return dn_norm.values
 
 
-def get_back_position(back_index: np.ndarray, key: str, file_label: str):
+def get_back_position(back_index: np.ndarray, key: str, sensor: str):
     """
     Convert normalized TDC values using lookup tables.
 
@@ -87,7 +92,7 @@ def get_back_position(back_index: np.ndarray, key: str, file_label: str):
         SpSNorm - SpNNorm + 2047, or SpENorm - SpWNorm + 2047.
     key : str
         XBkTp, YBkTp, XBkBt, or YBkBt.
-    file_label : str
+    sensor : str
         Instrument (ultra45 or ultra90).
 
     Returns
@@ -95,7 +100,12 @@ def get_back_position(back_index: np.ndarray, key: str, file_label: str):
     dn_converted : np.ndarray
         Converted DNs to Units of hundredths of a millimeter.
     """
-    back_pos_path = f"{base_path}/{file_label}_back-pos-luts.csv"
+    if sensor == "ultra45":
+        file_label = "back-pos-luts_SN202_20230216.csv"
+    else:
+        file_label = "back-pos-luts_SN201_20230717.csv"
+
+    back_pos_path = f"{base_path}/{file_label}"
     back_pos_df = pd.read_csv(back_pos_path, index_col="Index_offset")
 
     dn_converted = back_pos_df[key].iloc[back_index]

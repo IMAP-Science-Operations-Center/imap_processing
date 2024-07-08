@@ -28,8 +28,8 @@ def test_get_y_adjust():
 def test_get_stop_norm():
     """Tests function get_stop_norm."""
 
-    tdc_norm_path = f"{base_path}/ultra45_tdc_norm.csv"
-    tdc_norm_df = pd.read_csv(tdc_norm_path, header=1)
+    tdc_norm_path = f"{base_path}/Ultra45_tdc_norm_LUT_IntPulser_20230901.csv"
+    tdc_norm_df = pd.read_csv(tdc_norm_path, header=0)
 
     array = np.array([378])
     stop_norm = get_norm(array, "SpE", "ultra45")
@@ -40,7 +40,7 @@ def test_get_stop_norm():
 def test_get_back_position():
     """Tests function get_back_position."""
 
-    back_pos_path = f"{base_path}/ultra45_back-pos-luts.csv"
+    back_pos_path = f"{base_path}/back-pos-luts_SN202_20230216.csv"
     back_pos_df = pd.read_csv(back_pos_path, index_col="Index_offset")
 
     array = np.array([-2000])
