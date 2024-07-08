@@ -7,10 +7,8 @@ from pathlib import Path
 import numpy as np
 import xarray as xr
 
-from imap_processing.cdf.global_attrs import ConstantCoordinates
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import J2000_EPOCH, met_to_j2000ns
-from imap_processing.mag import mag_cdf_attrs
 from imap_processing.mag.l0 import decom_mag
 from imap_processing.mag.l0.mag_l0_data import MagL0
 from imap_processing.mag.l1a.mag_l1a_data import (
@@ -52,9 +50,12 @@ def mag_l1a(packet_filepath: Path, data_version: str) -> list[Path]:
 
     attribute_manager.add_global_attribute("Data_version", data_version)
     attribute_manager.add_global_attribute("Input_files", str(input_files))
-    attribute_manager.add_global_attribute("Generation_date", np.datetime64(
-        "now",
-    ).astype(str))
+    attribute_manager.add_global_attribute(
+        "Generation_date",
+        np.datetime64(
+            "now",
+        ).astype(str),
+    )
 
     generated_files = process_and_write_data(
         norm_data, DataMode.NORM, attribute_manager
@@ -67,9 +68,7 @@ def mag_l1a(packet_filepath: Path, data_version: str) -> list[Path]:
 
 
 def process_and_write_data(
-    packet_data: list[MagL0],
-    data_mode: DataMode,
-    attribute_manager: ImapCdfAttributes
+    packet_data: list[MagL0], data_mode: DataMode, attribute_manager: ImapCdfAttributes
 ) -> list[Path]:
     """
     Will process MAG L0 data into L1A, then create and write out CDF files.
@@ -93,11 +92,7 @@ def process_and_write_data(
     if not packet_data:
         return []
 
-    mag_raw = decom_mag.generate_dataset(
-        packet_data,
-        data_mode,
-        attribute_manager
-    )
+    mag_raw = decom_mag.generate_dataset(packet_data, data_mode, attribute_manager)
 
     generated_datasets = [mag_raw]
 
@@ -106,11 +101,7 @@ def process_and_write_data(
     # TODO: Rearrange generate_dataset to combine these two for loops
     for _, mago in l1a["mago"].items():
         norm_mago_output = generate_dataset(
-            mago,
-            MagSensorMode(
-                data_mode, Sensor.MAGO
-            ),
-            attribute_manager
+            mago, MagSensorMode(data_mode, Sensor.MAGO), attribute_manager
         )
         generated_datasets.append(norm_mago_output)
 
@@ -257,7 +248,11 @@ def process_packets(
     return {"mago": mago, "magi": magi}
 
 
-def generate_dataset(single_file_l1a: MagL1a, sensor_mode: MagSensorMode, attribute_manager: ImapCdfAttributes) -> xr.Dataset:
+def generate_dataset(
+    single_file_l1a: MagL1a,
+    sensor_mode: MagSensorMode,
+    attribute_manager: ImapCdfAttributes,
+) -> xr.Dataset:
     """
     Generate a Xarray dataset for L1A data to output to CDF files.
 

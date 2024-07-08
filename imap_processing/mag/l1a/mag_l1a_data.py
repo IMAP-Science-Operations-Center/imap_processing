@@ -5,7 +5,7 @@ from math import floor
 
 import numpy as np
 
-from imap_processing.cdf.utils import met_to_j2000ns, J2000_EPOCH
+from imap_processing.cdf.utils import J2000_EPOCH, met_to_j2000ns
 
 MAX_FINE_TIME = 65535  # maximum 16 bit unsigned int
 
@@ -183,7 +183,9 @@ class MagL1a:
 
     def __post_init__(self, starting_packet: MagL1aPacketProperties):
         """Initialize the packet_definition dictionary and most_recent_sequence."""
-        self.time = (J2000_EPOCH + met_to_j2000ns(self.shcoarse)).astype("datetime64[D]")
+        self.time = (J2000_EPOCH + met_to_j2000ns(self.shcoarse)).astype(
+            "datetime64[D]"
+        )
         self.packet_definitions = {self.time: starting_packet}
         # most_recent_sequence is the sequence number of the packet used to initialize
         # the object
@@ -205,9 +207,7 @@ class MagL1a:
         vector_sequence = packet_properties.src_seq_ctr
 
         self.vectors = np.concatenate([self.vectors, additional_vectors])
-        self.packet_definitions[self.time] = (
-            packet_properties
-        )
+        self.packet_definitions[self.time] = packet_properties
 
         # Every additional packet should be the next one in the sequence, if not, add
         # the missing sequence(s) to the gap data
