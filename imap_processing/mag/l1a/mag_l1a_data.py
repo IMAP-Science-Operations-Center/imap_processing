@@ -120,11 +120,18 @@ class MagL1aPacketProperties:
     src_seq_ctr: int  # From ccsds header
     compression: int
     mago_is_primary: int
-    seconds_per_packet: int = None
-    total_vectors: int = None
+    seconds_per_packet: int = field(init=False)
+    total_vectors: int = field(init=False)
 
-    def __post_init__(self, pus_ssubtype):
-        """Calculate seconds_per_packet and total_vectors."""
+    def __post_init__(self, pus_ssubtype: int) -> None:
+        """
+        Calculate seconds_per_packet and total_vectors.
+
+        Parameters
+        ----------
+        pus_ssubtype : int
+            PUS Service Subtype, used to determine the seconds of data in the packet.
+        """
         # seconds of data in this packet is the SUBTYPE plus 1
         self.seconds_per_packet = pus_ssubtype + 1
 
@@ -169,6 +176,8 @@ class MagL1a:
         Sequence number of the most recent packet added to the object
     missing_sequences : list[int]
         List of missing sequence numbers in the day
+    start_time : np.datetime64
+        Start time of the day, in ns since J2000 epoch
     """
 
     is_mago: bool
@@ -176,38 +185,46 @@ class MagL1a:
     shcoarse: int
     vectors: np.array
     starting_packet: InitVar[MagL1aPacketProperties]
-    packet_definitions: dict[np.datetime64, MagL1aPacketProperties] = None
-    most_recent_sequence: int = None
+    packet_definitions: dict[np.datetime64, MagL1aPacketProperties] = field(init=False)
+    most_recent_sequence: int = field(init=False)
     missing_sequences: list[int] = field(default_factory=list)
-    timestamp: np.datetime64 = None
+    start_time: np.datetime64 = field(init=False)
 
-    def __post_init__(self, starting_packet: MagL1aPacketProperties):
-        """Initialize the packet_definition dictionary and most_recent_sequence."""
-        self.time = (J2000_EPOCH + met_to_j2000ns(self.shcoarse)).astype(
+    def __post_init__(self, starting_packet: MagL1aPacketProperties) -> None:
+        """
+        Initialize the packet_definition dictionary and most_recent_sequence.
+
+        Parameters
+        ----------
+        starting_packet : MagL1aPacketProperties
+            The packet properties for the first packet in the day, including start time.
+        """
+        # TODO should this be from starting_packet
+        self.start_time = (J2000_EPOCH + met_to_j2000ns(self.shcoarse)).astype(
             "datetime64[D]"
         )
-        self.packet_definitions = {self.time: starting_packet}
+        self.packet_definitions = {self.start_time: starting_packet}
         # most_recent_sequence is the sequence number of the packet used to initialize
         # the object
         self.most_recent_sequence = starting_packet.src_seq_ctr
 
     def append_vectors(
         self, additional_vectors: np.array, packet_properties: MagL1aPacketProperties
-    ):
+    ) -> None:
         """
         Append additional vectors to the current vectors array.
 
         Parameters
         ----------
         additional_vectors : np.array
-            New vectors to append
-        packet_properties: MagL1aPacketProperties
-            Additional vector definition to add to the l0_packets dictionary
+            New vectors to append.
+        packet_properties : MagL1aPacketProperties
+            Additional vector definition to add to the l0_packets dictionary.
         """
         vector_sequence = packet_properties.src_seq_ctr
 
         self.vectors = np.concatenate([self.vectors, additional_vectors])
-        self.packet_definitions[self.time] = packet_properties
+        self.packet_definitions[self.start_time] = packet_properties
 
         # Every additional packet should be the next one in the sequence, if not, add
         # the missing sequence(s) to the gap data
@@ -219,7 +236,7 @@ class MagL1a:
 
     @staticmethod
     def calculate_vector_time(
-        vectors, vecters_per_sec: int, start_time: TimeTuple
+        vectors: np.ndarray, vecters_per_sec: int, start_time: TimeTuple
     ) -> np.array:
         """
         Add timestamps to the vector list, turning the shape from (n, 4) to (n, 5).
@@ -230,11 +247,11 @@ class MagL1a:
         Parameters
         ----------
         vectors : np.array
-            List of magnetic vector samples, starting at start_time. Shape of (n, 4)
+            List of magnetic vector samples, starting at start_time. Shape of (n, 4).
         vecters_per_sec : int
-            Number of vectors per second
+            Number of vectors per second.
         start_time : TimeTuple
-            Start time of the vectors, the timestamp of the first vector
+            Start time of the vectors, the timestamp of the first vector.
 
         Returns
         -------

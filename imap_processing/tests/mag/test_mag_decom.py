@@ -5,11 +5,11 @@ import pytest
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import load_cdf, write_cdf
+from imap_processing.mag.constants import DataMode
 from imap_processing.mag.l0.decom_mag import decom_packets, generate_dataset
-from imap_processing.mag.mag_cdf_attrs import DataMode
 
 
-@pytest.fixture
+@pytest.fixture()
 def cdf_attrs():
     test_attrs = ImapCdfAttributes()
     test_attrs.add_instrument_global_attrs("mag")
@@ -63,14 +63,25 @@ def test_mag_raw_xarray(cdf_attrs):
     l0_burst = packets["burst"]
 
     norm_data = generate_dataset(l0_norm, DataMode.NORM, cdf_attrs)
-    burst_data = generate_dataset(
-        l0_burst, DataMode.BURST, cdf_attrs
+    burst_data = generate_dataset(l0_burst, DataMode.BURST, cdf_attrs)
+
+    # Logical_file_id is filled in at file creation time. The rest of the required
+    # values should be included.
+    assert all(
+        [
+            item is not None
+            for key, item in norm_data.attrs.items()
+            if key != "Logical_file_id"
+        ]
     )
 
-    # Logical_file_id is filled in at file creation time. The rest of the required values should be included.
-    assert all([item is not None for key, item in norm_data.attrs.items() if key != "Logical_file_id"])
-
-    assert all([item is not None for key, item in burst_data.attrs.items() if key != "Logical_file_id"])
+    assert all(
+        [
+            item is not None
+            for key, item in burst_data.attrs.items()
+            if key != "Logical_file_id"
+        ]
+    )
 
     expected_norm_len = 17
     assert norm_data.sizes["epoch"] == expected_norm_len
@@ -87,9 +98,7 @@ def test_mag_raw_cdf_generation(cdf_attrs):
     l0_burst = packets["burst"]
 
     norm_data = generate_dataset(l0_norm, DataMode.NORM, cdf_attrs)
-    burst_data = generate_dataset(
-        l0_burst, DataMode.BURST, cdf_attrs
-    )
+    burst_data = generate_dataset(l0_burst, DataMode.BURST, cdf_attrs)
 
     output = write_cdf(norm_data)
     assert output.exists()

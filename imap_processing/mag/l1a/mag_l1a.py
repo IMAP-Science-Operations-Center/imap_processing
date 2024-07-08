@@ -9,6 +9,7 @@ import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import J2000_EPOCH, met_to_j2000ns
+from imap_processing.mag.constants import DataMode, MagSensorMode, Sensor
 from imap_processing.mag.l0 import decom_mag
 from imap_processing.mag.l0.mag_l0_data import MagL0
 from imap_processing.mag.l1a.mag_l1a_data import (
@@ -16,7 +17,6 @@ from imap_processing.mag.l1a.mag_l1a_data import (
     MagL1aPacketProperties,
     TimeTuple,
 )
-from imap_processing.mag.mag_cdf_attrs import DataMode, MagSensorMode, Sensor
 
 logger = logging.getLogger(__name__)
 
@@ -69,7 +69,7 @@ def mag_l1a(packet_filepath: Path, data_version: str) -> list[Path]:
 
 def process_and_write_data(
     packet_data: list[MagL0], data_mode: DataMode, attribute_manager: ImapCdfAttributes
-) -> list[Path]:
+) -> list[xr.Dataset]:
     """
     Will process MAG L0 data into L1A, then create and write out CDF files.
 
@@ -77,12 +77,14 @@ def process_and_write_data(
 
     Parameters
     ----------
-    packet_data: list[MagL0]
-        List of MagL0 packets to process, containing primary and secondary sensor data
-    data_mode: DataMode
-        Enum for distinguishing between norm and burst mode data
-    attribute_manager: ImapCdfAttributes
-        Attribute manager for CDF files for MAG L1A
+    packet_data : list[MagL0]
+        List of MagL0 packets to process, containing primary and secondary sensor data.
+
+    data_mode : DataMode
+        Enum for distinguishing between norm and burst mode data.
+
+    attribute_manager : ImapCdfAttributes
+        Attribute manager for CDF files for MAG L1A.
 
     Returns
     -------
@@ -99,6 +101,7 @@ def process_and_write_data(
     l1a = process_packets(packet_data)
 
     # TODO: Rearrange generate_dataset to combine these two for loops
+    # TODO: update MagSensorMode to just be a logical id
     for _, mago in l1a["mago"].items():
         norm_mago_output = generate_dataset(
             mago, MagSensorMode(data_mode, Sensor.MAGO), attribute_manager
@@ -108,9 +111,8 @@ def process_and_write_data(
     for _, magi in l1a["magi"].items():
         norm_magi_output = generate_dataset(
             magi,
-            MagSensorMode(
-                data_mode, Sensor.MAGI, generation_date, input_files, data_version
-            ).attribute_dict,
+            MagSensorMode(data_mode, Sensor.MAGI),
+            attribute_manager,
         )
         generated_datasets.append(norm_magi_output)
 
@@ -166,8 +168,6 @@ def process_packets(
             mag_l0.PUS_SSUBTYPE,
             mag_l0.ccsds_header.SRC_SEQ_CTR,
             mag_l0.COMPRESSION,
-            mag_l0.MAGO_ACT,
-            mag_l0.MAGI_ACT,
             mago_is_primary,
         )
 

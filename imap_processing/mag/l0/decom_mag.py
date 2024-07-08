@@ -13,12 +13,10 @@ from space_packet_parser import parser, xtcedef
 
 from imap_processing import imap_module_directory
 from imap_processing.ccsds.ccsds_data import CcsdsData
-from imap_processing.cdf.global_attrs import ConstantCoordinates
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import met_to_j2000ns
-from imap_processing.mag import mag_cdf_attrs
+from imap_processing.mag.constants import DataMode
 from imap_processing.mag.l0.mag_l0_data import MagL0, Mode
-from imap_processing.mag.mag_cdf_attrs import DataMode
 
 logger = logging.getLogger(__name__)
 
@@ -69,7 +67,9 @@ def decom_packets(packet_file_path: str | Path) -> dict[str, list[MagL0]]:
     return {"norm": norm_data, "burst": burst_data}
 
 
-def generate_dataset(l0_data: list[MagL0], mode: DataMode, attribute_manager: ImapCdfAttributes) -> xr.Dataset:
+def generate_dataset(
+    l0_data: list[MagL0], mode: DataMode, attribute_manager: ImapCdfAttributes
+) -> xr.Dataset:
     """
     Generate a CDF dataset from the sorted raw L0 MAG data.
 
@@ -77,6 +77,9 @@ def generate_dataset(l0_data: list[MagL0], mode: DataMode, attribute_manager: Im
     ----------
     l0_data : list[MagL0]
         List of sorted L0 MAG data.
+
+    mode : DataMode
+        The mode of the CDF file - burst or norm.
 
     attribute_manager : ImapCdfAttributes
         Attribute manager for the dataset, including all MAG L1A attributes.
@@ -142,7 +145,7 @@ def generate_dataset(l0_data: list[MagL0], mode: DataMode, attribute_manager: Im
         vector_data,
         name="raw_vectors",
         dims=["epoch", "direction"],
-        attrs=attribute_manager.get_variable_attributes("raw_vector_attrs")
+        attrs=attribute_manager.get_variable_attributes("raw_vector_attrs"),
     )
 
     logical_id = f"imap_mag_l1a_{mode.value.lower()}-raw"
