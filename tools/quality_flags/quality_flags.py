@@ -1,9 +1,28 @@
-from enum import IntFlag
+from enum import IntFlag, EnumMeta
 from operator import or_ as _or_
 from functools import reduce
 
+class QualityFlagMeta(EnumMeta):
+    def __new__(metacls, cls, bases, classdict):
+        # Create the new enum class
+        enum_class = super().__new__(metacls, cls, bases, classdict)
+        # Assign the _name_ attribute and message to each member
+        for member_name, member in enum_class._member_map_.items():
+            if isinstance(member.value, FlagBit):
+                member._name_ = member_name
+                member.message = member.value.message
+        return enum_class
 
-class QualityFlag(IntFlag):
+class QualityFlag(IntFlag, metaclass=QualityFlagMeta):
+    def __new__(cls, value, *args):
+        obj = int.__new__(cls, value)
+        obj._value_ = value
+        if isinstance(value, FlagBit):
+            obj.message = value.message
+        else:
+            obj.message = None
+        return obj
+
     def decompose(self):
         value = self.value
         not_covered = value
@@ -28,22 +47,6 @@ class QualityFlag(IntFlag):
             members.append(self.__class__._value2member_map_[value])
         members.sort(key=lambda m: m._value_, reverse=True)
         return members, not_covered
-
-    @property
-    def summary(self):
-        """Summarize quality flag value"""
-        members, not_covered = self.decompose()
-        print(members)
-        if not_covered:
-            raise ValueError(f"{self.__name__} has value {self.value} but that value cannot be created by elements "
-                             f"of {self.__class__}. This should never happen unless a quality flag was declared "
-                             f"without using the FrozenFlagMeta metaclass.")
-
-        try:
-            return int(self.value), [m.message for m in members]
-        except Exception as err:
-            raise AttributeError(
-                "Tried to summarize a quality flag but its values don't appear to have messages.") from err
 
 
 class FlagBit(int):

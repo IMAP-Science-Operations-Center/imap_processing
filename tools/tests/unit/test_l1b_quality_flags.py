@@ -3,6 +3,8 @@ import pytest
 
 from tools.quality_flags import quality_flags as qf
 
+import pytest
+
 def test_quality_flag():
     """Test our ability to create summary messages from a quality flag"""
     @qf.with_all_none
@@ -23,6 +25,17 @@ def test_quality_flag():
         # UNEXPECTED_TELEM_VALUE_CHANGE = qf.FlagBit(
         #     2**3,  # bit 3
         #     message="Value changed within the observation that should not have.")
+
+    # Test the decompose method
+    def message(flag):
+        members, not_covered = flag.decompose()
+        for m in members:
+            print(m, "=>", m.message)
+        print("Not covered:", not_covered)
+
+    # Example usage
+    test_flag = TestFlag.A | TestFlag.B
+    message(test_flag)
 
     assert (TestFlag.A | TestFlag.B).decompose() == ([TestFlag.B, TestFlag.A], 0)
 
