@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 # TODO review logging levels to use (debug vs. info)
 
 
-def hit_l1b(l1a_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
+def hit_l1b(l1a_dataset: xr.Dataset, data_version: str) -> list[xr.Dataset]:
     """
     Will process HIT data to L1B.
 

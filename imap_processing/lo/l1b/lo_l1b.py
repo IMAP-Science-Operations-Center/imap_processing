@@ -2,7 +2,6 @@
 
 from collections import namedtuple
 from dataclasses import Field
-from pathlib import Path
 
 import numpy as np
 import xarray as xr
@@ -11,7 +10,7 @@ from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import met_to_j2000ns
 
 
-def lo_l1b(dependencies: dict, data_version: str) -> list[Path]:
+def lo_l1b(dependencies: dict, data_version: str) -> list[xr.Dataset]:
     """
     Will process IMAP-Lo L1A data into L1B CDF data products.
 
@@ -24,7 +23,7 @@ def lo_l1b(dependencies: dict, data_version: str) -> list[Path]:
 
     Returns
     -------
-    created_file_paths : list[pathlib.Path]
+    created_file_paths : list[xr.Dataset]
         Location of created CDF files.
     """
     # create the attribute manager for this data level
@@ -54,9 +53,9 @@ def lo_l1b(dependencies: dict, data_version: str) -> list[Path]:
             data_field_tup("DIRECTION"),
         ]
 
-    dataset: list[Path] = create_datasets(attr_mgr, logical_source, data_fields)  # type: ignore[arg-type]
+    dataset = create_datasets(attr_mgr, logical_source, data_fields)  # type: ignore[arg-type]
     # TODO Remove once data_fields is removed from create_datasets
-    return dataset
+    return [dataset]
 
 
 # TODO: This is going to work differently when I sample data.

@@ -103,7 +103,7 @@ def load_cdf(
     return dataset
 
 
-def write_cdf(dataset: xr.Dataset) -> xr.Dataset:
+def write_cdf(dataset: xr.Dataset) -> Path:
     """
     Write the contents of "data" to a CDF file using cdflib.xarray_to_cdf.
 
@@ -121,8 +121,8 @@ def write_cdf(dataset: xr.Dataset) -> xr.Dataset:
 
     Returns
     -------
-    file_path : xr.Dataset
-        Xr.Dataset to the file created.
+    file_path : Path
+        Path to the file created.
     """
     # Create the filename from the global attributes
     # Logical_source looks like "imap_swe_l2_counts-1min"
@@ -149,7 +149,7 @@ def write_cdf(dataset: xr.Dataset) -> xr.Dataset:
         version=version,
         repointing=repointing,
     )
-    file_path = science_file.construct_path()
+    file_path = Path(science_file.construct_path())
     if not file_path.parent.exists():
         logger.info(
             "The directory does not exist, creating directory %s", file_path.parent

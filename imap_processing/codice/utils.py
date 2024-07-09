@@ -102,8 +102,10 @@ def add_metadata_to_array(packet: space_packet_parser, metadata_arrays: dict) ->
     return metadata_arrays
 
 
-def create_hskp_dataset(
-    packets: space_packet_parser.parser.Packet, data_version: str
+# TODO: Correct the type of "packets"
+def create_hskp_dataset(  # type: ignore[no-untyped-def]
+    packets,
+    data_version: str,
 ) -> xr.Dataset:
     """
     Create dataset for each metadata field for housekeeping data.
