@@ -13,6 +13,23 @@ from imap_processing.glows.l0.glows_l0_data import DirectEventL0
 from imap_processing.glows.l1a.glows_l1a_data import DirectEventL1A, HistogramL1A
 
 
+def create_glows_attr_obj() -> ImapCdfAttributes:
+    """
+    Load in 1la CDF attributes for GLOWS instrument.
+
+    Returns
+    -------
+    glows_attrs : ImapCdfAttributes
+        Imap object with l1a attribute files loaded in.
+    """
+    # Create ImapCdfAttributes object for cdf attributes management
+    glows_attrs = ImapCdfAttributes()
+    # Load in files
+    glows_attrs.add_instrument_global_attrs("glows")
+    glows_attrs.add_instrument_variable_attrs("glows", "l1a")
+    return glows_attrs
+
+
 # Processes packet files into CDF files. Returns a list of generated L1a datasets.
 def glows_l1a(packet_filepath: Path, data_version: str) -> list[xr.Dataset]:
     """
@@ -33,6 +50,9 @@ def glows_l1a(packet_filepath: Path, data_version: str) -> list[xr.Dataset]:
     generated_files : list[xr.Dataset]
         List of the L1A datasets.
     """
+    # Create ImapCdfAttributes object for cdf attributes management
+    glows_attrs = create_glows_attr_obj()
+
     # TODO: Data version inside file as well?
     # Create glows L0
     # Decompose packet file into histogram, and direct event data.
@@ -59,11 +79,11 @@ def glows_l1a(packet_filepath: Path, data_version: str) -> list[xr.Dataset]:
     # Add to output list.
     output_datasets = []
     for hist_l1a_list in hists_by_day.values():
-        dataset = generate_histogram_dataset(hist_l1a_list, data_version)
+        dataset = generate_histogram_dataset(hist_l1a_list, data_version, glows_attrs)
         output_datasets.append(dataset)
 
     for de_l1a_list in de_by_day.values():
-        dataset = generate_de_dataset(de_l1a_list, data_version)
+        dataset = generate_de_dataset(de_l1a_list, data_version, glows_attrs)
         output_datasets.append(dataset)
 
     # Return generated Datasets
@@ -114,7 +134,9 @@ def process_de_l0(
 
 # Generate xarray dataset(array of dimensions) from a list of DirectEventL1a objects
 def generate_de_dataset(
-    de_l1a_list: list[DirectEventL1A], data_version: str
+    de_l1a_list: list[DirectEventL1A],
+    data_version: str,
+    imap_object: ImapCdfAttributes,
 ) -> xr.Dataset:
     """
     Generate a dataset for GLOWS L1A direct event data CDF files.
@@ -125,6 +147,8 @@ def generate_de_dataset(
         List of DirectEventL1A objects for a given day.
     data_version : str
         Data version for CDF filename, in the format "vXXX".
+    imap_object : ImapCdfAttributes
+        Object containing l1a CDF attributes for instrument glows.
 
     Returns
     -------
@@ -142,27 +166,8 @@ def generate_de_dataset(
     # Each DirectEventL1A class covers 1 second of direct events data
     direct_events = np.zeros((len(de_l1a_list), len(de_l1a_list[0].direct_events), 4))
 
-    # BEFORE
-    # <<<<<<<
-    #     # Get global attributes for the data set, and set additional attributes
-    #     global_attributes = glows_cdf_attrs.glows_l1a_de_attrs.output()
-    #     global_attributes["ground_software_version"] = __version__
-    #     global_attributes["Data_version"] = data_version
-    #     # In header: block header, missing seqs
-    #     # Time varying - statusdata
-    # <<<<<<<
-
-    # AFTER
-    # =======
-    # Initializing attributes object and loading instrument/variable attributes
-    glows_attrs = ImapCdfAttributes()
-    glows_attrs.add_instrument_global_attrs("glows")
-    glows_attrs.add_instrument_variable_attrs("glows", "l1a")
-    glows_attrs.add_global_attribute("Data_version", data_version)
-    # Creating dictionary that mirrors glows_cdf_attrs.glows_l1a_de_attrs.output()
-    # imap_glows_l1a_de = glows_attrs.get_global_attributes("imap_glows_l1a_de")
+    imap_object.add_global_attribute("Data_version", data_version)
     # TODO: What is ground_software_version??
-    # =======
 
     # Initializing dictionaries for support, and data every second.
     support_data: dict = {
@@ -246,7 +251,7 @@ def generate_de_dataset(
         name="epoch",
         dims=["epoch"],
         # attrs=ConstantCoordinates.EPOCH,
-        attrs=glows_attrs.get_variable_attributes("epoch"),
+        attrs=imap_object.get_variable_attributes("epoch"),
     )
 
     direct_event = xr.DataArray(
@@ -255,7 +260,7 @@ def generate_de_dataset(
         name="direct_event",
         dims=["direct_event"],
         # attrs=glows_cdf_attrs.event_attrs.output(),
-        attrs=glows_attrs.get_variable_attributes("event_attrs"),
+        attrs=imap_object.get_variable_attributes("event_attrs"),
     )
 
     # TODO come up with a better name
@@ -263,8 +268,7 @@ def generate_de_dataset(
         np.arange(direct_events.shape[1]),
         name="per_second",
         dims=["per_second"],
-        # attrs=glows_cdf_attrs.per_second_attrs.output(),
-        attrs=glows_attrs.get_variable_attributes("per_second_attrs"),
+        attrs=imap_object.get_variable_attributes("per_second_attrs"),
     )
 
     de = xr.DataArray(
@@ -276,16 +280,14 @@ def generate_de_dataset(
             "per_second": per_second,
             "direct_event": direct_event,
         },
-        # attrs=glows_cdf_attrs.direct_event_attrs.output(),
-        attrs=glows_attrs.get_variable_attributes("direct_event_attrs"),
+        attrs=imap_object.get_variable_attributes("direct_event_attrs"),
     )
 
     # TODO: This is the weird global attribute.
     # Create an xarray dataset object, and add DataArray objects into it
     output = xr.Dataset(
         coords={"epoch": time_data},
-        # attrs=global_attributes,
-        attrs=glows_attrs.get_global_attributes("imap_glows_l1a_de"),
+        attrs=imap_object.get_global_attributes("imap_glows_l1a_de"),
     )
 
     output["direct_events"] = de
@@ -299,12 +301,7 @@ def generate_de_dataset(
             name=key,
             dims=["epoch"],
             coords={"epoch": epoch_time},
-            attrs=glows_attrs.get_variable_attributes(str(key)),
-            # dataclasses.replace(
-            # glows_cdf_attrs.metadata_attrs,
-            # catdesc=glows_cdf_attrs.catdesc_fieldname_l1a[key][0],
-            # fieldname=glows_cdf_attrs.catdesc_fieldname_l1a[key][1],
-            # ).output(),
+            attrs=imap_object.get_variable_attributes(key),
         )
 
     for key, value in data_every_second.items():
@@ -313,12 +310,7 @@ def generate_de_dataset(
             name=key,
             dims=["epoch"],
             coords={"epoch": epoch_time},
-            attrs=glows_attrs.get_variable_attributes(str(key)),
-            # dataclasses.replace(
-            # glows_cdf_attrs.metadata_attrs,
-            # catdesc=glows_cdf_attrs.catdesc_fieldname_l1a[key][0],
-            # fieldname=glows_cdf_attrs.catdesc_fieldname_l1a[key][1],
-            # ).output(),
+            attrs=imap_object.get_variable_attributes(key),
         )
 
     # Return this 'Dataset'
@@ -326,7 +318,7 @@ def generate_de_dataset(
 
 
 def generate_histogram_dataset(
-    hist_l1a_list: list[HistogramL1A], data_version: str
+    hist_l1a_list: list[HistogramL1A], data_version: str, imap_object: ImapCdfAttributes
 ) -> xr.Dataset:
     """
     Generate a dataset for GLOWS L1A histogram data CDF files.
@@ -337,6 +329,8 @@ def generate_histogram_dataset(
         List of HistogramL1A objects for a given day.
     data_version : str
         Data version for CDF filename, in the format "vXXX".
+    imap_object : ImapCdfAttributes
+        Object containing l1a CDF attributes for instrument glows.
 
     Returns
     -------
@@ -351,11 +345,7 @@ def generate_histogram_dataset(
 
     hist_data = np.zeros((len(hist_l1a_list), 3600))
 
-    # Initializing attributes object and loading instrument/variable attributes
-    glows_attrs = ImapCdfAttributes()
-    glows_attrs.add_instrument_global_attrs("glows")
-    glows_attrs.add_instrument_variable_attrs("glows", "l1a")
-    glows_attrs.add_global_attribute("Data_version", data_version)
+    imap_object.add_global_attribute("Data_version", data_version)
 
     # TODO: add missing attributes
     support_data: dict = {
@@ -408,8 +398,7 @@ def generate_histogram_dataset(
         time_data,
         name="epoch",
         dims=["epoch"],
-        # attrs=ConstantCoordinates.EPOCH,
-        attrs=glows_attrs.get_variable_attributes("epoch"),
+        attrs=imap_object.get_variable_attributes("epoch"),
     )
     bin_count = 3600  # TODO: Is it always 3600 bins?
 
@@ -417,8 +406,7 @@ def generate_histogram_dataset(
         np.arange(bin_count),
         name="bins",
         dims=["bins"],
-        # attrs=glows_cdf_attrs.bins_attrs.output(),
-        attrs=glows_attrs.get_variable_attributes("bins_attrs"),
+        attrs=imap_object.get_variable_attributes("bins_attrs"),
     )
 
     hist = xr.DataArray(
@@ -426,12 +414,10 @@ def generate_histogram_dataset(
         name="histograms",
         dims=["epoch", "bins"],
         coords={"epoch": epoch_time, "bins": bins},
-        # attrs=glows_cdf_attrs.histogram_attrs.output(),
-        attrs=glows_attrs.get_variable_attributes("histogram_attrs"),
+        attrs=imap_object.get_variable_attributes("histogram_attrs"),
     )
 
-    # glows_attrs = glows_cdf_attrs.glows_l1a_hist_attrs.output()
-    glows_attrs_global = glows_attrs.get_global_attributes("imap_glows_l1a_hist")
+    glows_attrs_global = imap_object.get_global_attributes("imap_glows_l1a_hist")
     glows_attrs_global["Data_version"] = data_version
 
     output = xr.Dataset(
@@ -447,12 +433,7 @@ def generate_histogram_dataset(
             name=key,
             dims=["epoch"],
             coords={"epoch": epoch_time},
-            attrs=glows_attrs.get_variable_attributes(key),
-            # attrs=dataclasses.replace(
-            #     glows_cdf_attrs.metadata_attrs,
-            #     catdesc=glows_cdf_attrs.catdesc_fieldname_l1a[key][0],
-            #     fieldname=glows_cdf_attrs.catdesc_fieldname_l1a[key][1],
-            # ).output(),
+            attrs=imap_object.get_variable_attributes(key),
         )
 
     for key, value in time_metadata.items():
@@ -461,13 +442,7 @@ def generate_histogram_dataset(
             name=key,
             dims=["epoch"],
             coords={"epoch": epoch_time},
-            attrs=glows_attrs.get_variable_attributes(key),
-            # attrs=dataclasses.replace(
-            #     glows_cdf_attrs.metadata_attrs,
-            #     catdesc=glows_cdf_attrs.catdesc_fieldname_l1a[key][0],
-            #     fieldname=glows_cdf_attrs.catdesc_fieldname_l1a[key][1],
-            #     format="F8.6",
-            # ).output(),
+            attrs=imap_object.get_variable_attributes(key),
         )
 
     return output
