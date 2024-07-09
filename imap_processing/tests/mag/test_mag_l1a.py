@@ -23,7 +23,6 @@ def test_compare_validation_data():
     l1 = process_packets(l0["norm"])
     # Should have one day of data
     expected_day = np.datetime64("2023-11-30")
-    print(l1["mago"])
     l1_mago = l1["mago"][expected_day]
     l1_magi = l1["magi"][expected_day]
 

@@ -9,7 +9,7 @@ import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import J2000_EPOCH, met_to_j2000ns
-from imap_processing.mag.constants import DataMode, MagSensorMode, Sensor
+from imap_processing.mag.constants import DataMode
 from imap_processing.mag.l0 import decom_mag
 from imap_processing.mag.l0.mag_l0_data import MagL0
 from imap_processing.mag.l1a.mag_l1a_data import (
@@ -21,7 +21,7 @@ from imap_processing.mag.l1a.mag_l1a_data import (
 logger = logging.getLogger(__name__)
 
 
-def mag_l1a(packet_filepath: Path, data_version: str) -> list[Path]:
+def mag_l1a(packet_filepath: Path, data_version: str) -> list[xr.Dataset]:
     """
     Will process MAG L0 data into L1A CDF files at cdf_filepath.
 
@@ -34,7 +34,7 @@ def mag_l1a(packet_filepath: Path, data_version: str) -> list[Path]:
 
     Returns
     -------
-    generated_files : list[pathlib.Path]
+    generated_files : list[xr.Dataset]
         A list of generated filenames.
     """
     packets = decom_mag.decom_packets(packet_filepath)
@@ -44,6 +44,7 @@ def mag_l1a(packet_filepath: Path, data_version: str) -> list[Path]:
 
     input_files = [packet_filepath.name]
 
+    # Create attribute manager and add MAG L1A attributes and global variables
     attribute_manager = ImapCdfAttributes()
     attribute_manager.add_instrument_global_attrs("mag")
     attribute_manager.add_instrument_variable_attrs("mag", "l1")
@@ -57,17 +58,13 @@ def mag_l1a(packet_filepath: Path, data_version: str) -> list[Path]:
         ).astype(str),
     )
 
-    generated_files = process_and_write_data(
-        norm_data, DataMode.NORM, attribute_manager
-    )
-    generated_files += process_and_write_data(
-        burst_data, DataMode.BURST, attribute_manager
-    )
+    generated_datasets = create_l1a(norm_data, DataMode.NORM, attribute_manager)
+    generated_datasets += create_l1a(burst_data, DataMode.BURST, attribute_manager)
 
-    return generated_files
+    return generated_datasets
 
 
-def process_and_write_data(
+def create_l1a(
     packet_data: list[MagL0], data_mode: DataMode, attribute_manager: ImapCdfAttributes
 ) -> list[xr.Dataset]:
     """
@@ -88,7 +85,7 @@ def process_and_write_data(
 
     Returns
     -------
-    generated_files : list[pathlib.Path]
+    generated_files : list[xr.Dataset]
         A list of generated filenames.
     """
     if not packet_data:
@@ -101,17 +98,17 @@ def process_and_write_data(
     l1a = process_packets(packet_data)
 
     # TODO: Rearrange generate_dataset to combine these two for loops
-    # TODO: update MagSensorMode to just be a logical id
+    # Split into MAGo and MAGi
     for _, mago in l1a["mago"].items():
-        norm_mago_output = generate_dataset(
-            mago, MagSensorMode(data_mode, Sensor.MAGO), attribute_manager
-        )
+        logical_file_id = f"imap_mag_l1a_{data_mode.value.lower()}-mago"
+        norm_mago_output = generate_dataset(mago, logical_file_id, attribute_manager)
         generated_datasets.append(norm_mago_output)
 
     for _, magi in l1a["magi"].items():
+        logical_file_id = f"imap_mag_l1a_{data_mode.value.lower()}-magi"
         norm_magi_output = generate_dataset(
             magi,
-            MagSensorMode(data_mode, Sensor.MAGI),
+            logical_file_id,
             attribute_manager,
         )
         generated_datasets.append(norm_magi_output)
@@ -124,6 +121,9 @@ def process_packets(
 ) -> dict[str, dict[np.datetime64, MagL1a]]:
     """
     Given a list of MagL0 packets, process them into MagO and MagI L1A data classes.
+
+    This splits the MagL0 packets into MagO and MagI data, returning a dictionary with
+    keys "mago" and "magi."
 
     Parameters
     ----------
@@ -250,7 +250,7 @@ def process_packets(
 
 def generate_dataset(
     single_file_l1a: MagL1a,
-    sensor_mode: MagSensorMode,
+    logical_file_id: str,
     attribute_manager: ImapCdfAttributes,
 ) -> xr.Dataset:
     """
@@ -266,8 +266,9 @@ def generate_dataset(
     ----------
     single_file_l1a : MagL1a
         L1A data covering one day to process into a xarray dataset.
-    sensor_mode : MagSensorMode
+    logical_file_id : str
         Indicates which sensor (MagO or MAGi) and mode (burst or norm) the data is from.
+        This is used to retrieve the global attributes from attribute_manager.
     attribute_manager : ImapCdfAttributes
         Attributes for the dataset, as created by ImapCdfAttributes.
 
@@ -279,7 +280,6 @@ def generate_dataset(
     # TODO: add:
     # gaps_in_data global attr
     # magl1avectordefinition data
-    #
 
     # TODO: Just leave time in datetime64 type with vector as dtype object to avoid this
     # Get the timestamp from the end of the vector
@@ -312,7 +312,7 @@ def generate_dataset(
 
     output = xr.Dataset(
         coords={"epoch": epoch_time, "direction": direction},
-        attrs=attribute_manager.get_global_attributes(sensor_mode.get_logical_id()),
+        attrs=attribute_manager.get_global_attributes(logical_file_id),
     )
 
     output["vectors"] = vectors
