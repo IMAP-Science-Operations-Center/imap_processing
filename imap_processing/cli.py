@@ -641,13 +641,13 @@ class Lo(ProcessInstrument):
 class Mag(ProcessInstrument):
     """Process MAG."""
 
-    def do_processing(self, dependencies: list) -> xr.Dataset:
+    def do_processing(self, dependencies: list[Path]) -> list[xr.Dataset]:
         """
         Perform MAG specific processing.
 
         Parameters
         ----------
-        dependencies : list
+        dependencies : list[Path]
             List of dependencies to process.
 
         Returns
@@ -656,6 +656,7 @@ class Mag(ProcessInstrument):
             Xr.Dataset of output files.
         """
         print(f"Processing MAG {self.data_level}")
+        datasets: list[xr.Dataset] = []
 
         if self.data_level == "l1a":
             # File path is expected output file path
@@ -665,7 +666,6 @@ class Mag(ProcessInstrument):
                     f"{dependencies}. Expected only one dependency."
                 )
             datasets = mag_l1a(dependencies[0], data_version=self.version)
-            return datasets
 
         if self.data_level == "l1b":
             if len(dependencies) > 1:
@@ -674,8 +674,7 @@ class Mag(ProcessInstrument):
                     f"{dependencies}. Expected only one dependency."
                 )
             input_data = load_cdf(dependencies[0])
-            dataset = mag_l1b(input_data, self.version)
-            return [dataset]
+            datasets = [mag_l1b(input_data, self.version)]
 
         if self.data_level == "l1c":
             # L1C depends on matching norm/burst files: eg burst-magi and norm-magi or
@@ -688,8 +687,9 @@ class Mag(ProcessInstrument):
 
             input_data = [load_cdf(dep) for dep in dependencies]
             # Input datasets can be in any order
-            dataset = mag_l1c(input_data[0], input_data[1], self.version)
-            return [dataset]
+            datasets = [mag_l1c(input_data[0], input_data[1], self.version)]
+
+        return datasets
 
 
 class Swapi(ProcessInstrument):
