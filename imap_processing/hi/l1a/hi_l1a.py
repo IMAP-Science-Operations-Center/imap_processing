@@ -27,7 +27,7 @@ def hi_l1a(packet_file_path: str, data_version: str) -> list[xr.Dataset]:
 
     Returns
     -------
-    processed_data : list[xr.Dataset]
+    processed_data : list[xarray.Dataset]
         List of processed xarray dataset.
     """
     unpacked_data = decom_hi.decom_packets(packet_file_path)
