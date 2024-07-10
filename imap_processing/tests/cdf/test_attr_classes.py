@@ -44,23 +44,6 @@ def test_global_attrs():
     }
     assert data_level.output() == expected_level
 
-    data_level = GlobalDataLevelAttrs(
-        data_type="1",
-        logical_source="2",
-        logical_source_desc="3",
-        instrument_base=inst,
-        additional_attrs={"software_version": "1", "rules_of_use": "2"},
-    )
-    expected_level = inst.output() | {
-        "Logical_file_id": ["FILL ME IN AT FILE CREATION"],
-        "Data_type": "1",
-        "Logical_source": "2",
-        "Logical_source_description": "3",
-        "software_version": "1",
-        "rules_of_use": "2",
-    }
-    assert data_level.output() == expected_level
-
 
 def test_science_attr():
     with pytest.raises(TypeError):

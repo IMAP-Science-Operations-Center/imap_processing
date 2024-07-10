@@ -158,6 +158,3 @@ def test_mag_l1a_data():
         ),
     )
     assert mag_l1a.missing_sequences == [1, 2, 3, 4]
-
-
-# TODO test CDF file attributes and data
