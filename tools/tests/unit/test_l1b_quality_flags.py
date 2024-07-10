@@ -1,8 +1,9 @@
-"""Test coverage for quality flags. """
+"""Test coverage for quality flags."""
+
 import pytest
 
+from tools.quality_flags import l1b_quality_flag_definitions as definitions
 from tools.quality_flags import quality_flags as qf
-from tools.quality_flags import quality_flag_definitions as definitions
 
 
 def test_quality_flags():
@@ -15,29 +16,36 @@ def test_quality_flags():
         8: "Reserved 1.",
         16: "ENA specific flag.",
         32: "Ultra 1.",
-        64: "Ultra 2."
+        64: "Ultra 2.",
     }
 
     for f in definitions.L1bQualityFlags:
         assert f.value in expected_base_mapping
         assert f.value.message == expected_base_mapping[f.value]
 
-    assert definitions.L1bQualityFlags.ALL.summary[1].sort() == list(expected_base_mapping.values()).sort()
-    assert definitions.L1bQualityFlags.ALL.summary[0] == sum(expected_base_mapping.keys())
+    assert (
+        definitions.L1bQualityFlags.ALL.summary[1].sort()
+        == list(expected_base_mapping.values()).sort()
+    )
+    assert definitions.L1bQualityFlags.ALL.summary[0] == sum(
+        expected_base_mapping.keys()
+    )
 
 
 def test_example_usage():
     """Test example usage."""
-    ultra_flag = definitions.L1bQualityFlags.MISSING_TELEM | \
-                 definitions.L1bQualityFlags.ULTRA1 | \
-                 definitions.L1bQualityFlags.ENA_SPECIFIC
+    ultra_flag = (
+        definitions.L1bQualityFlags.MISSING_TELEM
+        | definitions.L1bQualityFlags.ULTRA1
+        | definitions.L1bQualityFlags.ENA_SPECIFIC
+    )
 
     decomposed = ultra_flag.decompose()
 
     expected_mapping = {
         2: ("MISSING_TELEM", "Missing telemetry."),
         32: ("ULTRA1", "Ultra 1."),
-        16: ("ENA_SPECIFIC", "ENA specific flag.")
+        16: ("ENA_SPECIFIC", "ENA specific flag."),
     }
 
     for flag in decomposed[0]:
@@ -49,6 +57,7 @@ def test_example_usage():
 
 def test_quality_flag():
     """Test our ability to create summary messages from a quality flag"""
+
     @qf.with_all_none
     class TestFlag(qf.QualityFlag):
         A = qf.FlagBit(0b1, message="Bit 0 - A")
@@ -90,6 +99,7 @@ def test_quality_flag():
 
 def test_strict_quality_flags():
     """Test that quality flags are STRICT and raise errors for invalid values"""
+
     class TestFlag(qf.QualityFlag):
         BIT_0 = 0b001
         BIT_2 = 0b100

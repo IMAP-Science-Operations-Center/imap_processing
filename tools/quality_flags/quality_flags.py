@@ -1,10 +1,9 @@
-from enum import IntFlag, STRICT
-from operator import or_ as _or_
+from enum import STRICT, IntFlag
 from functools import reduce
+from operator import or_ as _or_
 
 
 class QualityFlag(IntFlag, boundary=STRICT):
-
     # Create a new instance of a class.
     def __new__(cls, value, *args):
         # TODO: stopped here.
@@ -45,15 +44,18 @@ class QualityFlag(IntFlag, boundary=STRICT):
         members, not_covered = self.decompose()
         print(members)
         if not_covered:
-            raise ValueError(f"{self.__name__} has value {self.value} but that value cannot be created by elements "
-                             f"of {self.__class__}. This should never happen unless a quality flag was declared "
-                             f"without using the FrozenFlagMeta metaclass.")
+            raise ValueError(
+                f"{self.__name__} has value {self.value} but that value cannot be created by elements "
+                f"of {self.__class__}. This should never happen unless a quality flag was declared "
+                f"without using the FrozenFlagMeta metaclass."
+            )
 
         try:
             return int(self.value), [m.value.message for m in members]
         except Exception as err:
             raise AttributeError(
-                "Tried to summarize a quality flag but its values don't appear to have messages.") from err
+                "Tried to summarize a quality flag but its values don't appear to have messages."
+            ) from err
 
 
 class FlagBit(int):
@@ -74,6 +76,6 @@ class FlagBit(int):
 
 def with_all_none(f):
     """Add NONE and ALL pseudo-members to f"""
-    f._member_map_['NONE'] = f(FlagBit(0, message="No flags set."))
-    f._member_map_['ALL'] = f(reduce(_or_, f))
+    f._member_map_["NONE"] = f(FlagBit(0, message="No flags set."))
+    f._member_map_["ALL"] = f(reduce(_or_, f))
     return f
