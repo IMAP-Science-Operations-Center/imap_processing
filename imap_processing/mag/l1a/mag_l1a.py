@@ -34,7 +34,7 @@ def mag_l1a(packet_filepath: Path, data_version: str) -> list[xr.Dataset]:
 
     Returns
     -------
-    generated_files : list[xr.Dataset]
+    generated_files : list[xarray.Dataset]
         A list of generated filenames.
     """
     packets = decom_mag.decom_packets(packet_filepath)
@@ -85,7 +85,7 @@ def create_l1a(
 
     Returns
     -------
-    generated_files : list[xr.Dataset]
+    generated_files : list[xarray.Dataset]
         A list of generated filenames.
     """
     if not packet_data:

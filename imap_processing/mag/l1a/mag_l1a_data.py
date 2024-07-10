@@ -34,7 +34,6 @@ class TimeTuple:
     fine_time: int
 
     def __add__(self, seconds: float):  # type: ignore[no-untyped-def]
-        # ruff is saying TimeTuple is undefined for this usage.
         """
         Add a number of seconds to the time tuple.
 
@@ -47,6 +46,7 @@ class TimeTuple:
         -------
         time : TimeTuple
             New time tuple with the current time tuple + seconds.
+            Ruff is saying TimeTuple is undefined for this usage.
         """
         # Add whole seconds to coarse time
         coarse = self.coarse_time + floor(seconds)
@@ -162,21 +162,21 @@ class MagL1a:
         1 if the sensor is active, 0 if not
     shcoarse : int
         Mission elapsed time for the first packet, the start time for the whole day
-    vectors : np.array[5]
+    vectors : numpy.array[5]
         List of magnetic vector samples, starting at start_time. [x, y, z, range, time],
-        where time is np.datetime64[ns]
+        where time is numpy.datetime64[ns]
     starting_packet : InitVar[MagL1aPacketProperties]
         The packet properties for the first packet in the day. As an InitVar, this
         cannot be accessed from an instance of the class. Instead, packet_definitions
         should be used.
-    packet_definitions : dict[np.datetime64, MagL1aPacketProperties]
+    packet_definitions : dict[numpy.datetime64, MagL1aPacketProperties]
         Dictionary of packet properties for each packet in the day. The key is the start
         time of the packet, and the value is a dataclass of packet properties.
     most_recent_sequence : int
         Sequence number of the most recent packet added to the object
     missing_sequences : list[int]
         List of missing sequence numbers in the day
-    start_time : np.datetime64
+    start_time : numpy.datetime64
         Start time of the day, in ns since J2000 epoch
     """
 
@@ -216,7 +216,7 @@ class MagL1a:
 
         Parameters
         ----------
-        additional_vectors : np.array
+        additional_vectors : numpy.array
             New vectors to append.
         packet_properties : MagL1aPacketProperties
             Additional vector definition to add to the l0_packets dictionary.
@@ -246,7 +246,7 @@ class MagL1a:
 
         Parameters
         ----------
-        vectors : np.array
+        vectors : numpy.array
             List of magnetic vector samples, starting at start_time. Shape of (n, 4).
         vecters_per_sec : int
             Number of vectors per second.
