@@ -197,8 +197,7 @@ def create_dataset(
 
     # NOTE: At this point, we keep epoch time as raw value from packet
     # which is in seconds and spacecraft time. Some instrument uses this
-    # raw value in processing. If you want to convert this to datetime
-    # object, you can use `update_epoch_to_datetime` function afterwards.
+    # raw value in processing.
     epoch_time = xr.DataArray(
         metadata_arrays[spacecraft_time_key],
         name="epoch",
@@ -229,37 +228,9 @@ def create_dataset(
     return dataset
 
 
-def update_epoch_to_datetime(dataset: xr.Dataset) -> xr.Dataset:
-    """
-    Update epoch in dataset to datetime object.
-
-    Parameters
-    ----------
-    dataset : xr.Dataset
-        Dataset to update.
-
-    Returns
-    -------
-    dataset : xr.Dataset
-        Dataset with updated epoch dimension from int to datetime object.
-    """
-    # convert epoch to datetime
-    epoch_converted_time = met_to_j2000ns(dataset["epoch"])
-    # add attrs back to epoch
-    epoch = xr.DataArray(
-        epoch_converted_time,
-        name="epoch",
-        dims=["epoch"],
-        attrs=ConstantCoordinates.EPOCH,
-    )
-    dataset = dataset.assign_coords(epoch=epoch)
-
-    return dataset
-
-
 def packet_file_to_datasets(
     packet_file: Union[str, Path],
-    xtce_packet_definition: str,
+    xtce_packet_definition: Union[str, Path],
     use_derived_value: bool = True,
 ) -> dict[int, xr.Dataset]:
     """
