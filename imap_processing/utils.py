@@ -258,7 +258,9 @@ def update_epoch_to_datetime(dataset: xr.Dataset) -> xr.Dataset:
 
 
 def packet_file_to_datasets(
-    packet_file: Union[str, Path], xtce_packet_definition: str
+    packet_file: Union[str, Path],
+    xtce_packet_definition: str,
+    use_derived_value: bool = True,
 ) -> dict[int, xr.Dataset]:
     """
     Convert a packet file to xarray datasets.
@@ -276,6 +278,8 @@ def packet_file_to_datasets(
         Path to data packet path with filename.
     xtce_packet_definition : str
         Path to XTCE file with filename.
+    use_derived_value : bool, default True
+        Whether or not to use the derived value from the XTCE definition.
 
     Returns
     -------
@@ -288,7 +292,6 @@ def packet_file_to_datasets(
     # dataset per apid.
     # {apid1: dataset1, apid2: dataset2, ...}
     data_dict: dict[int, dict] = dict()
-    attribute_dict: dict[int, dict] = dict()
 
     # Set up the parser from the input packet definition
     packet_definition = xtcedef.XtcePacketDefinition(xtce_packet_definition)
@@ -301,24 +304,16 @@ def packet_file_to_datasets(
             if apid not in data_dict:
                 # This is the first packet for this APID
                 data_dict[apid] = collections.defaultdict(list)
-                attribute_dict[apid] = collections.defaultdict(dict)
 
-                # Fill in the attributes
-                for key, value in packet.data.items():
-                    attribute_dict[apid][key]["short_description"] = (
-                        value.short_description
-                    )
-                    attribute_dict[apid][key]["long_description"] = (
-                        value.long_description
-                    )
-                    # TODO: Additional info from XTCE like units
+            # TODO: Do we want to give an option to remove the header content?
+            packet_content = packet.data | packet.header
 
-            # TODO: Include the header too? (packet.header | packet.data)
-            for key, value in packet.data.items():
-                # TODO: Do we want derived_value or raw_value?
-                # Right now we use a derived value is there is one, otherwise raw value
-                # Maybe we want these to be separated into l1a (raw) and l1b (derived)?
-                data_dict[apid][key].append(value.derived_value or value.raw_value)
+            for key, value in packet_content.items():
+                val = value.raw_value
+                if use_derived_value:
+                    # Use the derived value if it exists, otherwise use the raw value
+                    val = value.derived_value or val
+                data_dict[apid][key].append(val)
 
     dataset_by_apid = {}
     # Convert each apid's data to an xarray dataset
@@ -331,8 +326,6 @@ def packet_file_to_datasets(
             {key.lower(): ("epoch", val) for key, val in data.items()},
             coords={"epoch": time_data},
         )
-        for key, value in attribute_dict[apid].items():
-            ds[key.lower()].attrs.update(value)
         ds = ds.sortby("epoch")
 
         dataset_by_apid[apid] = ds
