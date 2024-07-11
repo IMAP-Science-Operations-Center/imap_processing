@@ -1,9 +1,11 @@
+"""L1b quality flag definitions."""
+
 from tools.quality_flags import quality_flags as qf
 
 
 @qf.with_all_none
 class L1bQualityFlags(qf.QualityFlag):
-    """Base Quality flags"""
+    """Base Quality flags."""
 
     INF = qf.FlagBit(
         2**0,  # bit 0

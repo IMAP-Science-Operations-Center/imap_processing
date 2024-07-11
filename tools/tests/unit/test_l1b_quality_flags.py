@@ -1,5 +1,7 @@
 """Test coverage for quality flags."""
 
+from enum import IntFlag
+
 import pytest
 
 from tools.quality_flags import l1b_quality_flag_definitions as definitions
@@ -115,3 +117,41 @@ def test_strict_quality_flags():
         TestFlag(3)
     with pytest.raises(ValueError):
         TestFlag(6)
+
+
+def test_flagbit_creation():
+    """Test creating FlagBit instances with value and message"""
+    flag = qf.FlagBit(1, message="Bit 0 - A")
+    assert flag == 1
+    assert flag.message == "Bit 0 - A"
+    assert str(flag), "1: Bit 0 - A"
+
+    flag = qf.FlagBit(2, message="Bit 1 - B")
+    assert flag == 2
+    assert flag.message == "Bit 1 - B"
+    assert str(flag) == "2: Bit 1 - B"
+
+
+def test_flagbit_default_message():
+    """Test creating FlagBit instance without message"""
+    flag = qf.FlagBit(3)
+    assert flag == 3
+    assert flag.message == None
+    assert str(flag) == "3: None"
+
+
+def test_with_all_none():
+    """Test the with_all_none function"""
+
+    class TestFlag(IntFlag):
+        A = qf.FlagBit(0b1, message="Bit 0 - A")
+        B = qf.FlagBit(0b10, message="Bit 1 - B")
+
+    qf.with_all_none(TestFlag)
+
+    # Check the NONE member
+    assert TestFlag.NONE.value == 0
+    assert TestFlag.NONE.value.message == "No flags set."
+
+    # Check the ALL member
+    assert TestFlag.ALL.value == 3
