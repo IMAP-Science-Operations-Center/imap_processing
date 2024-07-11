@@ -112,11 +112,11 @@ def test_strict_quality_flags():
     TestFlag(4)  # bit 2
     TestFlag(5)  # bit 0 and 2
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="Value not representable by this flag."):
         TestFlag(2)
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="Value not representable by this flag."):
         TestFlag(3)
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="Value not representable by this flag."):
         TestFlag(6)
 
 
@@ -137,7 +137,7 @@ def test_flagbit_default_message():
     """Test creating FlagBit instance without message"""
     flag = qf.FlagBit(3)
     assert flag == 3
-    assert flag.message == None
+    assert flag.message is None
     assert str(flag) == "3: None"
 
 
