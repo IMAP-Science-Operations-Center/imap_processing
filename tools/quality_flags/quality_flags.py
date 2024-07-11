@@ -1,24 +1,22 @@
 """Bitwise flagging."""
 
-from enum import STRICT, IntFlag
+from enum import IntFlag, EnumMeta, STRICT
 from functools import reduce
 from operator import or_ as _or_
+from typing import Optional
 
 
 class QualityFlag(IntFlag, boundary=STRICT):
-    """
-    Subclass of IntFlag; decomposes flag into components and returns messages.
-    """
+    """Subclass of IntFlag; decomposes flag and returns messages."""
 
-    def __new__(cls, value, *args: tuple):
+    def __new__(cls, value: int, *args: tuple) -> "QualityFlag":
         """
         Create a new instance of a class.
 
         Parameters
         ----------
-        value : FlagBit
-            An instance of FlagBit, which is a subclass of int that
-            includes an accompanying message.
+        value : int
+            An instance of int that includes an accompanying message.
         *args : tuple
             Additional positional arguments.
 
@@ -29,15 +27,13 @@ class QualityFlag(IntFlag, boundary=STRICT):
             This instance behaves like an integer and it enables
             the inclusion of custom messages.
         """
-        # Invokes the __new__ method of the int class.
         obj = int.__new__(cls, value)
-        # Enables messages to be added to value
         obj._value_ = value
         return obj
 
-    def decompose(self):
+    def decompose(self) -> tuple:
         """
-        Method for decomposing a flag into its individual components.
+        Decompose a flag into its individual components.
 
         Returns
         -------
@@ -61,19 +57,14 @@ class QualityFlag(IntFlag, boundary=STRICT):
 
         members = []
         for member, member_value in flags_to_check:
-            # All bits set in member_value are also set in value
-            # then member_value & value will equal member_value
             if member_value and member_value & value == member_value:
                 members.append(member)
-                # Detect any inconsistencies or invalid values that do not correspond
-                # to any combination of defined flags
                 not_covered &= ~member_value
-        # sort members
         members.sort(key=lambda m: m._value_, reverse=True)
         return members, not_covered
 
     @property
-    def summary(self):
+    def summary(self) -> tuple:
         """
         Summarize the quality flag value.
 
@@ -86,10 +77,9 @@ class QualityFlag(IntFlag, boundary=STRICT):
             flag bits that make up the quality flag.
         """
         members, not_covered = self.decompose()
-        print(members)
         if not_covered:
             raise ValueError(
-                f"{self.__name__} has value {self.value} but "
+                f"{self.__class__.__name__} has value {self.value} but "
                 f"that value cannot be created by elements "
                 f"of {self.__class__}."
             )
@@ -107,7 +97,7 @@ class FlagBit(int):
     """Subclass of int captures integer value and message."""
 
     # Create a new instance of a class.
-    def __new__(cls, value, message=None):
+    def __new__(cls, value: int, message: Optional[str] = None) -> "FlagBit":
         """
         Create a new instance of FlagBit.
 
@@ -129,8 +119,8 @@ class FlagBit(int):
         obj.message = message
         return obj
 
-    # Provides a way to view the message
-    def __str__(self):
+    # Provides way to view the message
+    def __str__(self) -> str:
         """
         Return the string representation of the FlagBit instance.
 
@@ -143,18 +133,18 @@ class FlagBit(int):
         return f"{super().__str__()}: {self.message}"
 
 
-def with_all_none(f):
+def with_all_none(f: EnumMeta) -> EnumMeta:
     """
     Add NONE and ALL pseudo-members to an enumeration class.
 
     Parameters
     ----------
-    f : enum.EnumMeta
+    f : EnumMeta
         The enumeration class to which the pseudo-members NONE and ALL will be added.
 
     Returns
     -------
-    enum.EnumMeta
+    f: EnumMeta
         The modified enumeration class with the added pseudo-members NONE and ALL.
     """
     f._member_map_["NONE"] = f(FlagBit(0, message="No flags set."))
