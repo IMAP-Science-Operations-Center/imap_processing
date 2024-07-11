@@ -96,6 +96,9 @@ class QualityFlag(IntFlag, boundary=STRICT):
 class FlagBit(int):
     """Subclass of int captures integer value and message."""
 
+    # Added this so mypy wouldn't throw an error.
+    message: Optional[str]
+
     # Create a new instance of a class.
     def __new__(cls, value: int, message: Optional[str] = None) -> "FlagBit":
         """
@@ -122,7 +125,7 @@ class FlagBit(int):
     # Provides way to view the message
     def __str__(self) -> str:
         """
-        Return string representation of the FlagBit instance.
+        Return the string representation of the FlagBit instance.
 
         Returns
         -------
