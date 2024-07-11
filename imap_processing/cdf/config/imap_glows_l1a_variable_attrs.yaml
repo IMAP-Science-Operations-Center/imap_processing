@@ -12,14 +12,14 @@ default_attrs: &default_attrs
   TIME_BASE: J2000
   # Guess from other l1a sections, but optional?
   TIME_SCALE: Terrestrial Time
-  # Guess from other l1a sections
+  # Guess from other l1a sections, prob wrong
   REFERENCE_POSITION: Rotating Earth Geoid
   # Guess from other l1a sections
-  UNITS: ns
+  UNITS: ' '
   FILLVAL: *int_fillval
   VALIDMIN: *min_epoch
-  CATDESC: ' '
-  FIELDNAM: ' '
+  # CATDESC: Default attributes used for multiple variables
+  # FIELDNAM: ' '
 
 # Information found in cdf.config.global_attrs.py EPOCH, and cdf.defaults.py
 epoch:
@@ -110,7 +110,7 @@ histogram_attrs:
   # FORMAT is different from glows_cdf_attrs.py
   # Changed this in order to avoid warnings
   # Float with 4 digits
-  FORMAT: F0.5
+  FORMAT: F7.4
   DISPLAY_TYPE: time_series
   LABLAXIS: Counts
   FILL_VAL: *int_fillval
@@ -127,14 +127,7 @@ metadata_attrs: &metadata_attrs
   VAR_TYPE: metadata
   FORMAT: I10
   LABLAXIS: Metadata
-  RESOLUTION: ' '
-
-# not-in--dicts in generate_de_dataset
-# Should I be defining the metadata_attrs here?
-ground_software_version:
-  <<: *metadata_attrs
-  CATDESC: Ground software version in the format vXXX
-  FIELDNAM: Ground software version
+  RESOLUTION: ISO8601
 
 pkts_file_name:
   <<: *metadata_attrs
@@ -153,7 +146,8 @@ imap_start_time:
   # FORMAT is different from glows_cdf_attrs.py
   # Changed this in order to avoid warnings
   # Can range from F0 to F0.9
-  FORMAT: F0
+  FORMAT: F16.6
+  UNITS: seconds
 
 imap_time_offset:
   <<: *metadata_attrs
@@ -162,7 +156,8 @@ imap_time_offset:
   # FORMAT is different from glows_cdf_attrs.py
   # Changed this in order to avoid warnings
   # Can range from F0 to F0.9
-  FORMAT: F0.9
+  FORMAT: F16.6
+  UNITS: seconds
 
 glows_start_time:
   <<: *metadata_attrs
@@ -171,7 +166,8 @@ glows_start_time:
   # FORMAT is different from glows_cdf_attrs.py
   # Changed this in order to avoid warnings
   # Can range from F0 to F0.9
-  FORMAT: F0.5
+  FORMAT: F16.6
+  UNITS: seconds
 
 glows_time_offset:
   <<: *metadata_attrs
@@ -180,11 +176,12 @@ glows_time_offset:
   # FORMAT is different from glows_cdf_attrs.py
   # Changed this in order to avoid warnings
   # Can range from F0 to F0.9
-  FORMAT: F0.5
+  FORMAT: F16.6
+  UNITS: seconds
 
 flags_set_onboard:
   <<: *metadata_attrs
-  CATDESC: Flags for bad data [missing PPS, missing time, missing spin phase, missing spin periods, overexposure, nonmonotonic event, data collected at night, HV test, pulse test, memory error]
+  CATDESC: FLags for bad data
   FIELDNAM: Flags for missing or bad data
 
 is_generated_on_ground:
@@ -214,12 +211,12 @@ number_of_events:
 
 filter_temperature_average:
   <<: *metadata_attrs
-  CATDESC: Filter temperature, averaged per block, and unit " "encoded
+  CATDESC: Filter temperature, averaged per block, and unit encoded
   FIELDNAM: Average filter temperature, unit encoded
 
 filter_temperature_variance:
   <<: *metadata_attrs
-  CATDESC: Filter temperature variance, per block, and unit " "encoded.
+  CATDESC: Filter temperature variance, per block, and unit encoded.
   FIELDNAM: Uint encoded filter temperature variance
 
 hv_voltage_average:
@@ -229,7 +226,7 @@ hv_voltage_average:
 
 hv_voltage_variance:
   <<: *metadata_attrs
-  CADESC: variance of  HV voltage on the CEM, uint encoded
+  CATDESC: variance of  HV voltage on the CEM, uint encoded
   FIELDNAM: Uint encoded HV voltage variance
 
 spin_period_average:
@@ -299,7 +296,7 @@ spin_period_valid:
 spin_phase_at_next_pps_valid:
   <<: *metadata_attrs
   CATDESC: Indicates if the spin phase at next PPS is valid
-  FELDNAM: Spin phase at next PPS is valid
+  FIELDNAM: Spin phase at next PPS is valid
 
 spin_period_source:
   <<: *metadata_attrs

@@ -13,9 +13,14 @@ from imap_processing.glows.l0.glows_l0_data import DirectEventL0
 from imap_processing.glows.l1a.glows_l1a_data import DirectEventL1A, HistogramL1A
 
 
-def create_glows_attr_obj() -> ImapCdfAttributes:
+def create_glows_attr_obj(data_version: str) -> ImapCdfAttributes:
     """
     Load in 1la CDF attributes for GLOWS instrument.
+
+    Parameters
+    ----------
+    data_version : str
+        Data version for CDF filename, in the format "vXXX".
 
     Returns
     -------
@@ -27,10 +32,10 @@ def create_glows_attr_obj() -> ImapCdfAttributes:
     # Load in files
     glows_attrs.add_instrument_global_attrs("glows")
     glows_attrs.add_instrument_variable_attrs("glows", "l1a")
+    glows_attrs.add_global_attribute("Data_version", data_version)
     return glows_attrs
 
 
-# Processes packet files into CDF files. Returns a list of generated L1a datasets.
 def glows_l1a(packet_filepath: Path, data_version: str) -> list[xr.Dataset]:
     """
     Will process packets into GLOWS L1A CDF files.
@@ -51,21 +56,18 @@ def glows_l1a(packet_filepath: Path, data_version: str) -> list[xr.Dataset]:
         List of the L1A datasets.
     """
     # Create ImapCdfAttributes object for cdf attributes management
-    glows_attrs = create_glows_attr_obj()
+    glows_attrs = create_glows_attr_obj(data_version)
 
     # TODO: Data version inside file as well?
-    # Create glows L0
+
     # Decompose packet file into histogram, and direct event data.
     hist_l0, de_l0 = decom_packets(packet_filepath)
 
-    # Process the direct event data into a dictionary grouped by the day.
+    # Create dictionaries to group data by day
     de_by_day = process_de_l0(de_l0)
-    # Dictionary is used to store histogram data grouped by day
     hists_by_day = defaultdict(list)
 
-    # TODO: Is there a reason process_de_l0 is its own function and we have the
-    #   code for histrogram data here?
-    # hist_by_day now holds HistogramL1A data based on the day
+    # TODO: Make this its own function?
     for hist in hist_l0:
         hist_l1a = HistogramL1A(hist)
         # Split by IMAP start time
@@ -74,23 +76,18 @@ def glows_l1a(packet_filepath: Path, data_version: str) -> list[xr.Dataset]:
         hists_by_day[hist_day].append(hist_l1a)
 
     # Generate CDF files for each day
-    # Loop through the grouped histogram and direct event data,
-    # generate datasets for each day,
-    # Add to output list.
     output_datasets = []
     for hist_l1a_list in hists_by_day.values():
-        dataset = generate_histogram_dataset(hist_l1a_list, data_version, glows_attrs)
+        dataset = generate_histogram_dataset(hist_l1a_list, glows_attrs)
         output_datasets.append(dataset)
 
     for de_l1a_list in de_by_day.values():
-        dataset = generate_de_dataset(de_l1a_list, data_version, glows_attrs)
+        dataset = generate_de_dataset(de_l1a_list, glows_attrs)
         output_datasets.append(dataset)
 
-    # Return generated Datasets
     return output_datasets
 
 
-# Combining packets with direct event sequences that span multiple packets.
 def process_de_l0(
     de_l0: list[DirectEventL0],
 ) -> dict[np.datetime64, list[DirectEventL1A]]:
@@ -111,11 +108,8 @@ def process_de_l0(
         Dictionary with keys of days and values of lists of DirectEventL1A objects.
         Each day has one CDF file associated with it.
     """
-    # Dict to store direct event data grouped by day.
     de_by_day = dict()
 
-    # Loop though each DirectEventL0 object, convert MET to day, and group=
-    # by day.
     for de in de_l0:
         de_day = (J2000_EPOCH + met_to_j2000ns(de.MET)).astype("datetime64[D]")
         if de_day not in de_by_day:
@@ -128,15 +122,12 @@ def process_de_l0(
         else:
             de_by_day[de_day].append(DirectEventL1A(de))
 
-    # Return the processed Direct Events
     return de_by_day
 
 
-# Generate xarray dataset(array of dimensions) from a list of DirectEventL1a objects
 def generate_de_dataset(
     de_l1a_list: list[DirectEventL1A],
-    data_version: str,
-    imap_object: ImapCdfAttributes,
+    glows_cdf_attributes: ImapCdfAttributes,
 ) -> xr.Dataset:
     """
     Generate a dataset for GLOWS L1A direct event data CDF files.
@@ -145,9 +136,7 @@ def generate_de_dataset(
     ----------
     de_l1a_list : list[DirectEventL1A]
         List of DirectEventL1A objects for a given day.
-    data_version : str
-        Data version for CDF filename, in the format "vXXX".
-    imap_object : ImapCdfAttributes
+    glows_cdf_attributes : ImapCdfAttributes
         Object containing l1a CDF attributes for instrument glows.
 
     Returns
@@ -162,14 +151,9 @@ def generate_de_dataset(
     # TODO: Should each timestamp point to a list of direct events, each with a
     #  timestamp? Or should the list be split out to make the timestamps?
 
-    # Create a 3D array to store the direct events data
     # Each DirectEventL1A class covers 1 second of direct events data
     direct_events = np.zeros((len(de_l1a_list), len(de_l1a_list[0].direct_events), 4))
 
-    imap_object.add_global_attribute("Data_version", data_version)
-    # TODO: What is ground_software_version??
-
-    # Initializing dictionaries for support, and data every second.
     support_data: dict = {
         # "flight_software_version": [], # breaks
         "seq_count_in_pkts_file": [],  # works
@@ -200,8 +184,6 @@ def generate_de_dataset(
         "memory_error_detected": [],
     }
 
-    # Iterate over de_l1a_list (parameter) and populate the time data,
-    # direct events array and support/data dictionaries.
     for index, de in enumerate(de_l1a_list):
         # Set the timestamp to the first timestamp of the direct event list
         epoch_time = met_to_j2000ns(de.l0.MET).astype("datetime64[ns]")
@@ -226,8 +208,6 @@ def generate_de_dataset(
                 constant_values=(0,),
             )
 
-        # Convert the direct events data into a numpy array and add it to the
-        # direct_events array
         new_de = np.array([event.to_list() for event in de.direct_events])
 
         direct_events[index, : len(de.direct_events), :] = new_de
@@ -250,8 +230,7 @@ def generate_de_dataset(
         time_data,
         name="epoch",
         dims=["epoch"],
-        # attrs=ConstantCoordinates.EPOCH,
-        attrs=imap_object.get_variable_attributes("epoch"),
+        attrs=glows_cdf_attributes.get_variable_attributes("epoch"),
     )
 
     direct_event = xr.DataArray(
@@ -259,8 +238,7 @@ def generate_de_dataset(
         np.arange(4),
         name="direct_event",
         dims=["direct_event"],
-        # attrs=glows_cdf_attrs.event_attrs.output(),
-        attrs=imap_object.get_variable_attributes("event_attrs"),
+        attrs=glows_cdf_attributes.get_variable_attributes("event_attrs"),
     )
 
     # TODO come up with a better name
@@ -268,7 +246,7 @@ def generate_de_dataset(
         np.arange(direct_events.shape[1]),
         name="per_second",
         dims=["per_second"],
-        attrs=imap_object.get_variable_attributes("per_second_attrs"),
+        attrs=glows_cdf_attributes.get_variable_attributes("per_second_attrs"),
     )
 
     de = xr.DataArray(
@@ -280,14 +258,14 @@ def generate_de_dataset(
             "per_second": per_second,
             "direct_event": direct_event,
         },
-        attrs=imap_object.get_variable_attributes("direct_event_attrs"),
+        attrs=glows_cdf_attributes.get_variable_attributes("direct_event_attrs"),
     )
 
     # TODO: This is the weird global attribute.
     # Create an xarray dataset object, and add DataArray objects into it
     output = xr.Dataset(
         coords={"epoch": time_data},
-        attrs=imap_object.get_global_attributes("imap_glows_l1a_de"),
+        attrs=glows_cdf_attributes.get_global_attributes("imap_glows_l1a_de"),
     )
 
     output["direct_events"] = de
@@ -301,7 +279,7 @@ def generate_de_dataset(
             name=key,
             dims=["epoch"],
             coords={"epoch": epoch_time},
-            attrs=imap_object.get_variable_attributes(key),
+            attrs=glows_cdf_attributes.get_variable_attributes(key),
         )
 
     for key, value in data_every_second.items():
@@ -310,15 +288,14 @@ def generate_de_dataset(
             name=key,
             dims=["epoch"],
             coords={"epoch": epoch_time},
-            attrs=imap_object.get_variable_attributes(key),
+            attrs=glows_cdf_attributes.get_variable_attributes(key),
         )
 
-    # Return this 'Dataset'
     return output
 
 
 def generate_histogram_dataset(
-    hist_l1a_list: list[HistogramL1A], data_version: str, imap_object: ImapCdfAttributes
+    hist_l1a_list: list[HistogramL1A], glows_cdf_attributes: ImapCdfAttributes
 ) -> xr.Dataset:
     """
     Generate a dataset for GLOWS L1A histogram data CDF files.
@@ -327,9 +304,7 @@ def generate_histogram_dataset(
     ----------
     hist_l1a_list : list[HistogramL1A]
         List of HistogramL1A objects for a given day.
-    data_version : str
-        Data version for CDF filename, in the format "vXXX".
-    imap_object : ImapCdfAttributes
+    glows_cdf_attributes : ImapCdfAttributes
         Object containing l1a CDF attributes for instrument glows.
 
     Returns
@@ -345,12 +320,9 @@ def generate_histogram_dataset(
 
     hist_data = np.zeros((len(hist_l1a_list), 3600))
 
-    imap_object.add_global_attribute("Data_version", data_version)
-
     # TODO: add missing attributes
     support_data: dict = {
         "flight_software_version": [],
-        # "ground_software_version": [], # TODO: add this from global attrs
         # "pkts_file_name": [],
         "seq_count_in_pkts_file": [],
         "last_spin_id": [],
@@ -398,7 +370,7 @@ def generate_histogram_dataset(
         time_data,
         name="epoch",
         dims=["epoch"],
-        attrs=imap_object.get_variable_attributes("epoch"),
+        attrs=glows_cdf_attributes.get_variable_attributes("epoch"),
     )
     bin_count = 3600  # TODO: Is it always 3600 bins?
 
@@ -406,7 +378,7 @@ def generate_histogram_dataset(
         np.arange(bin_count),
         name="bins",
         dims=["bins"],
-        attrs=imap_object.get_variable_attributes("bins_attrs"),
+        attrs=glows_cdf_attributes.get_variable_attributes("bins_attrs"),
     )
 
     hist = xr.DataArray(
@@ -414,15 +386,14 @@ def generate_histogram_dataset(
         name="histograms",
         dims=["epoch", "bins"],
         coords={"epoch": epoch_time, "bins": bins},
-        attrs=imap_object.get_variable_attributes("histogram_attrs"),
+        attrs=glows_cdf_attributes.get_variable_attributes("histogram_attrs"),
     )
 
-    glows_attrs_global = imap_object.get_global_attributes("imap_glows_l1a_hist")
-    glows_attrs_global["Data_version"] = data_version
+    attrs = glows_cdf_attributes.get_global_attributes("imap_glows_l1a_hist")
 
     output = xr.Dataset(
         coords={"epoch": epoch_time, "bins": bins},
-        attrs=glows_attrs_global,
+        attrs=attrs,
     )
 
     output["histograms"] = hist
@@ -433,7 +404,7 @@ def generate_histogram_dataset(
             name=key,
             dims=["epoch"],
             coords={"epoch": epoch_time},
-            attrs=imap_object.get_variable_attributes(key),
+            attrs=glows_cdf_attributes.get_variable_attributes(key),
         )
 
     for key, value in time_metadata.items():
@@ -442,7 +413,7 @@ def generate_histogram_dataset(
             name=key,
             dims=["epoch"],
             coords={"epoch": epoch_time},
-            attrs=imap_object.get_variable_attributes(key),
+            attrs=glows_cdf_attributes.get_variable_attributes(key),
         )
 
     return output
