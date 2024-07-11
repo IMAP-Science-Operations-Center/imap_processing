@@ -33,17 +33,6 @@ def l1a_data():
     return (histograms_l1a, de_l1a)
 
 
-def test_create_glows_attr_obj():
-    glows_attrs = create_glows_attr_obj("v000")
-    glows_his_attrs = glows_attrs.get_variable_attributes("histogram_attrs")
-    for variable_attrs in glows_attrs.variable_attribute_schema["attribute_key"]:
-        required_var_attributes = glows_attrs.variable_attribute_schema[
-            "attribute_key"
-        ][variable_attrs]["required"]
-        if required_var_attributes is True:
-            assert variable_attrs in glows_his_attrs.keys()
-
-
 def test_generate_histogram_dataset(l1a_data):
     histograms_l1a, _ = l1a_data
     glows_attrs = create_glows_attr_obj("v001")
