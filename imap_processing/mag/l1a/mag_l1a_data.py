@@ -162,7 +162,7 @@ class MagL1a:
         1 if the sensor is active, 0 if not
     shcoarse : int
         Mission elapsed time for the first packet, the start time for the whole day
-    vectors : numpy.array[5]
+    vectors : numpy.ndarray
         List of magnetic vector samples, starting at start_time. [x, y, z, range, time],
         where time is numpy.datetime64[ns]
     starting_packet : InitVar[MagL1aPacketProperties]
@@ -178,6 +178,12 @@ class MagL1a:
         List of missing sequence numbers in the day
     start_time : numpy.datetime64
         Start time of the day, in ns since J2000 epoch
+
+    Methods
+    -------
+    append_vectors()
+    calculate_vector_time()
+    process_vector_data()
     """
 
     is_mago: bool
