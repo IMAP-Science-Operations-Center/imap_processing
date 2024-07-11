@@ -1,6 +1,6 @@
 """Bitwise flagging."""
 
-from enum import IntFlag, EnumMeta, STRICT
+from enum import STRICT, EnumMeta, IntFlag
 from functools import reduce
 from operator import or_ as _or_
 from typing import Optional
@@ -122,7 +122,7 @@ class FlagBit(int):
     # Provides way to view the message
     def __str__(self) -> str:
         """
-        Return the string representation of the FlagBit instance.
+        Return string representation of the FlagBit instance.
 
         Returns
         -------
