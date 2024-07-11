@@ -242,7 +242,7 @@ class MagL1a:
 
     @staticmethod
     def calculate_vector_time(
-        vectors: np.ndarray, vecters_per_sec: int, start_time: TimeTuple
+        vectors: np.ndarray, vectors_per_sec: int, start_time: TimeTuple
     ) -> np.array:
         """
         Add timestamps to the vector list, turning the shape from (n, 4) to (n, 5).
@@ -254,7 +254,7 @@ class MagL1a:
         ----------
         vectors : numpy.array
             List of magnetic vector samples, starting at start_time. Shape of (n, 4).
-        vecters_per_sec : int
+        vectors_per_sec : int
             Number of vectors per second.
         start_time : TimeTuple
             Start time of the vectors, the timestamp of the first vector.
@@ -265,7 +265,7 @@ class MagL1a:
             Vectors with timestamps added in seconds, calculated from
             cdf.utils.met_to_j2000ns.
         """
-        timedelta = np.timedelta64(int(1 / vecters_per_sec * 1e9), "ns")
+        timedelta = np.timedelta64(int(1 / vectors_per_sec * 1e9), "ns")
         # TODO: validate that start_time from SHCOARSE is precise enough
         start_time_ns = met_to_j2000ns(start_time.to_seconds())
 

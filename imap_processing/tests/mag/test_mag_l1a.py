@@ -5,7 +5,7 @@ import pandas as pd
 
 from imap_processing.cdf.utils import met_to_j2000ns
 from imap_processing.mag.l0.decom_mag import decom_packets
-from imap_processing.mag.l1a.mag_l1a import process_packets
+from imap_processing.mag.l1a.mag_l1a import mag_l1a, process_packets
 from imap_processing.mag.l1a.mag_l1a_data import (
     MAX_FINE_TIME,
     MagL1a,
@@ -158,3 +158,25 @@ def test_mag_l1a_data():
         ),
     )
     assert mag_l1a.missing_sequences == [1, 2, 3, 4]
+
+
+def test_mag_l1a():
+    current_directory = Path(__file__).parent
+    test_file = current_directory / "mag_l1_test_data.pkts"
+
+    output_data = mag_l1a(test_file, "v001")
+
+    # Test data is one day's worth of NORM data, so it should return one raw, one MAGO
+    # and one MAGI dataset
+    assert len(output_data) == 3
+    expected_logical_source = [
+        "imap_mag_l1a_norm-raw",
+        "imap_mag_l1a_norm-mago",
+        "imap_mag_l1a_norm-magi",
+    ]
+
+    for data_type in [data.attrs["Logical_source"] for data in output_data]:
+        assert data_type in expected_logical_source
+
+    for data in output_data:
+        assert data.attrs["Data_version"] == "v001"
