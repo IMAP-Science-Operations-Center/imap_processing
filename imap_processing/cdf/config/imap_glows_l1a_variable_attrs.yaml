@@ -18,8 +18,6 @@ default_attrs: &default_attrs
   UNITS: ' '
   FILLVAL: *int_fillval
   VALIDMIN: *min_epoch
-  # CATDESC: Default attributes used for multiple variables
-  # FIELDNAM: ' '
 
 # Information found in cdf.config.global_attrs.py EPOCH, and cdf.defaults.py
 epoch:
