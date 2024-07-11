@@ -312,7 +312,10 @@ class CdfAttributeManager:
                 and attr_name not in self._variable_attributes[variable_name]
             ):
                 logging.warning(
-                    "Required schema '" + attr_name + "' attribute not present"
+                    "Required schema '"
+                    + attr_name
+                    + "' attribute not present for "
+                    + variable_name
                 )
                 output[attr_name] = ""
 
