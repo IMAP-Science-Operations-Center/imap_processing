@@ -44,416 +44,53 @@ placed into the CDF in the VAR_NOTES attribute.
 """
 TriggerDescription = namedtuple(
     "TriggerDescription",
-    ["name", "packet_name", "num_bits", "field", "notes", "label", "units"],
+    ["name", "packet_name", "num_bits"],
 )
 trigger_description_dict = {
     trigger.name: trigger
     for trigger in [
+        TriggerDescription("event_number", "IDX__TXHDREVTNUM", 16),
+        TriggerDescription("tof_high_trigger_level", "IDX__TXHDRHGTRIGLVL", 10),
         TriggerDescription(
-            "event_number",
-            "IDX__TXHDREVTNUM",
-            16,
-            "Event Number",
-            "The unique number assigned to the impact by the FPGA",
-            "Event #",
-            "",
+            "tof_high_trigger_num_max_1_2", "IDX__TXHDRHGTRIGNMAX12", 11
         ),
         TriggerDescription(
-            "tof_high_trigger_level",
-            "IDX__TXHDRHGTRIGLVL",
-            10,
-            "TOF High Trigger Level",
-            "Trigger level for the TOF High Channel",
-            "Level",
-            "",
+            "tof_high_trigger_num_min_1_2", "IDX__TXHDRHGTRIGNMIN12", 11
         ),
+        TriggerDescription("tof_high_trigger_num_min_1", "IDX__TXHDRHGTRIGNMIN1", 8),
+        TriggerDescription("tof_high_trigger_num_max_1", "IDX__TXHDRHGTRIGNMAX1", 8),
+        TriggerDescription("tof_high_trigger_num_min_2", "IDX__TXHDRHGTRIGNMIN2", 8),
+        TriggerDescription("tof_high_trigger_num_max_2", "IDX__TXHDRHGTRIGNMAX2", 8),
+        TriggerDescription("tof_low_trigger_level", "IDX__TXHDRLGTRIGLVL", 10),
+        TriggerDescription("tof_low_trigger_num_max_1_2", "IDX__TXHDRLGTRIGNMAX12", 11),
+        TriggerDescription("tof_low_trigger_num_min_1_2", "IDX__TXHDRLGTRIGNMIN12", 11),
+        TriggerDescription("tof_low_trigger_num_min_1", "IDX__TXHDRLGTRIGNMIN1", 8),
+        TriggerDescription("tof_low_trigger_num_max_1", "IDX__TXHDRLGTRIGNMAX1", 8),
+        TriggerDescription("tof_low_trigger_num_min_2", "IDX__TXHDRLGTRIGNMIN2", 8),
+        TriggerDescription("tof_low_trigger_num_max_2", "IDX__TXHDRLGTRIGNMAX2", 16),
+        TriggerDescription("tof_mid_trigger_level", "IDX__TXHDRMGTRIGLVL", 10),
+        TriggerDescription("tof_mid_trigger_num_max_1_2", "IDX__TXHDRMGTRIGNMAX12", 11),
+        TriggerDescription("tof_mid_trigger_num_min_1_2", "IDX__TXHDRMGTRIGNMIN12", 11),
+        TriggerDescription("tof_mid_trigger_num_min_1", "IDX__TXHDRMGTRIGNMIN1", 8),
+        TriggerDescription("tof_mid_trigger_num_max_1", "IDX__TXHDRMGTRIGNMAX1", 8),
+        TriggerDescription("tof_mid_trigger_num_min_2", "IDX__TXHDRMGTRIGNMIN2", 8),
+        TriggerDescription("tof_mid_trigger_num_max_2", "IDX__TXHDRMGTRIGNMAX2", 8),
         TriggerDescription(
-            "tof_high_trigger_num_max_1_2",
-            "IDX__TXHDRHGTRIGNMAX12",
-            11,
-            "TOF High Double Pulse Max Samples",
-            (
-                "Maximum number of samples between pulse 1 and 2 for TOF "
-                "High double pulse triggering"
-            ),
-            "# Samples",
-            "samples",
+            "low_sample_coincidence_mode_blocks", "IDX__TXHDRLSTRIGCMBLOCKS", 3
         ),
-        TriggerDescription(
-            "tof_high_trigger_num_min_1_2",
-            "IDX__TXHDRHGTRIGNMIN12",
-            11,
-            "TOF High Double Pulse Min Samples",
-            (
-                "Minimum number of samples between pulse 1 and 2 for TOF High "
-                "double pulse triggering"
-            ),
-            "# Samples",
-            "samples",
-        ),
-        TriggerDescription(
-            "tof_high_trigger_num_min_1",
-            "IDX__TXHDRHGTRIGNMIN1",
-            8,
-            "TOF High Pulse 1 Min Samples",
-            (
-                "Minimum number of samples for pulse 1 for TOF High single and "
-                "double pulse triggering"
-            ),
-            "# Samples",
-            "samples",
-        ),
-        TriggerDescription(
-            "tof_high_trigger_num_max_1",
-            "IDX__TXHDRHGTRIGNMAX1",
-            8,
-            "TOF High Pulse 1 Max Samples",
-            (
-                "Maximum number of samples for pulse 1 for TOF High single and "
-                "double pulse triggering"
-            ),
-            "# Samples",
-            "samples",
-        ),
-        TriggerDescription(
-            "tof_high_trigger_num_min_2",
-            "IDX__TXHDRHGTRIGNMIN2",
-            8,
-            "TOF High Pulse 2 Min Samples",
-            (
-                "Minimum number of samples for pulse 2 for TOF High single and "
-                "double pulse triggering"
-            ),
-            "# Samples",
-            "samples",
-        ),
-        TriggerDescription(
-            "tof_high_trigger_num_max_2",
-            "IDX__TXHDRHGTRIGNMAX2",
-            8,
-            "TOF High Pulse 2 Max Samples",
-            (
-                "Maximum number of samples for pulse 2 for TOF High single and "
-                "double pulse triggering"
-            ),
-            "# Samples",
-            "samples",
-        ),
-        TriggerDescription(
-            "tof_low_trigger_level",
-            "IDX__TXHDRLGTRIGLVL",
-            10,
-            "TOF Low Trigger Level",
-            "Trigger level for the TOF Low Channel",
-            "Level",
-            "samples",
-        ),
-        TriggerDescription(
-            "tof_low_trigger_num_max_1_2",
-            "IDX__TXHDRLGTRIGNMAX12",
-            11,
-            "TOF Low Double Pulse Max Samples",
-            (
-                "Maximum number of samples between pulse 1 and 2 for TOF Low "
-                "double pulse triggering"
-            ),
-            "# Samples",
-            "samples",
-        ),
-        TriggerDescription(
-            "tof_low_trigger_num_min_1_2",
-            "IDX__TXHDRLGTRIGNMIN12",
-            11,
-            "TOF Low Double Pulse Min Samples",
-            (
-                "Minimum number of samples between pulse 1 and 2 for TOF Low "
-                "double pulse triggering"
-            ),
-            "# Samples",
-            "samples",
-        ),
-        TriggerDescription(
-            "tof_low_trigger_num_min_1",
-            "IDX__TXHDRLGTRIGNMIN1",
-            8,
-            "TOF Low Pulse 1 Min Samples",
-            (
-                "Minimum number of samples for pulse 1 for TOF Low single and "
-                "double pulse triggering"
-            ),
-            "# Samples",
-            "samples",
-        ),
-        TriggerDescription(
-            "tof_low_trigger_num_max_1",
-            "IDX__TXHDRLGTRIGNMAX1",
-            8,
-            "TOF Low Pulse 1 Max Samples",
-            (
-                "Maximum number of samples for pulse 1 for TOF Low single and "
-                "double pulse triggering"
-            ),
-            "# Samples",
-            "samples",
-        ),
-        TriggerDescription(
-            "tof_low_trigger_num_min_2",
-            "IDX__TXHDRLGTRIGNMIN2",
-            8,
-            "TOF Low Pulse 2 Min Samples",
-            (
-                "Minimum number of samples for pulse 2 for TOF Low single and "
-                "double pulse triggering"
-            ),
-            "# Samples",
-            "samples",
-        ),
-        TriggerDescription(
-            "tof_low_trigger_num_max_2",
-            "IDX__TXHDRLGTRIGNMAX2",
-            16,
-            "TOF Low Pulse 2 Max Samples",
-            (
-                "Maximum number of samples for pulse 2 for TOF Low single and "
-                "double pulse triggering"
-            ),
-            "# Samples",
-            "samples",
-        ),
-        TriggerDescription(
-            "tof_mid_trigger_level",
-            "IDX__TXHDRMGTRIGLVL",
-            10,
-            "TOF Mid Trigger Level",
-            "Trigger level for the TOF Mid Channel",
-            "Level",
-            "# Samples",
-        ),
-        TriggerDescription(
-            "tof_mid_trigger_num_max_1_2",
-            "IDX__TXHDRMGTRIGNMAX12",
-            11,
-            "TOF Mid Double Pulse Max Samples",
-            (
-                "Maximum number of samples between pulse 1 and 2 for TOF Mid "
-                "double pulse triggering"
-            ),
-            "# Samples",
-            "samples",
-        ),
-        TriggerDescription(
-            "tof_mid_trigger_num_min_1_2",
-            "IDX__TXHDRMGTRIGNMIN12",
-            11,
-            "TOF Mid Double Pulse Min Samples",
-            (
-                "Minimum number of samples between pulse 1 and 2 for TOF Mid "
-                "double pulse triggering"
-            ),
-            "# Samples",
-            "samples",
-        ),
-        TriggerDescription(
-            "tof_mid_trigger_num_min_1",
-            "IDX__TXHDRMGTRIGNMIN1",
-            8,
-            "TOF Mid Pulse 1 Min Samples",
-            (
-                "Minimum number of samples for pulse 1 for TOF Mid single and "
-                "double pulse triggering"
-            ),
-            "# Samples",
-            "samples",
-        ),
-        TriggerDescription(
-            "tof_mid_trigger_num_max_1",
-            "IDX__TXHDRMGTRIGNMAX1",
-            8,
-            "TOF Mid Pulse 1 Max Samples",
-            (
-                "Maximum number of samples for pulse 1 for TOF Mid single and "
-                "double pulse triggering"
-            ),
-            "# Samples",
-            "samples",
-        ),
-        TriggerDescription(
-            "tof_mid_trigger_num_min_2",
-            "IDX__TXHDRMGTRIGNMIN2",
-            8,
-            "TOF Mid Pulse 2 Min Samples",
-            (
-                "Minimum number of samples for pulse 2 for TOF Mid single and "
-                "double pulse triggering"
-            ),
-            "# Samples",
-            "samples",
-        ),
-        TriggerDescription(
-            "tof_mid_trigger_num_max_2",
-            "IDX__TXHDRMGTRIGNMAX2",
-            8,
-            "TOF Mid Pulse 2 Max Samples",
-            (
-                "Maximum number of samples for pulse 2 for TOF Mid single and "
-                "double pulse triggering"
-            ),
-            "# Samples",
-            "samples",
-        ),
-        TriggerDescription(
-            "low_sample_coincidence_mode_blocks",
-            "IDX__TXHDRLSTRIGCMBLOCKS",
-            3,
-            "LS Coincidence Mode Blocks",
-            (
-                "Number of blocks coincidence window is enabled after "
-                "low sample trigger"
-            ),
-            "# Blocks",
-            "Blocks",
-        ),
-        TriggerDescription(
-            "low_sample_trigger_polarity",
-            "IDX__TXHDRLSTRIGPOL",
-            1,
-            "LS Trigger Polarity",
-            "The trigger polarity for low sample (0 = normal, 1 = inverted) ",
-            "Polarity",
-            "",
-        ),
-        TriggerDescription(
-            "low_sample_trigger_level",
-            "IDX__TXHDRLSTRIGLVL",
-            12,
-            "LS Trigger Level",
-            "Trigger level for the low sample",
-            "Level",
-            "",
-        ),
-        TriggerDescription(
-            "low_sample_trigger_num_min",
-            "IDX__TXHDRLSTRIGNMIN",
-            8,
-            "LS Trigger Min Num Samples",
-            (
-                "The minimum number of samples above/below the trigger level for "
-                "triggering the low sample"
-            ),
-            "# Samples",
-            "samples",
-        ),
-        TriggerDescription(
-            "low_sample_trigger_mode",
-            "IDX__TXHDRLSTRIGMODE",
-            1,
-            "LS Trigger Mode Enabled",
-            "Low sample trigger mode (0=disabled, 1=enabled)",
-            "Mode",
-            "",
-        ),
-        TriggerDescription(
-            "tof_low_trigger_mode",
-            "IDX__TXHDRLSTRIGMODE",
-            1,
-            "TOF Low Trigger Mode Enabled",
-            "TOF Low trigger mode (0=disabled, 1=enabled)",
-            "Mode",
-            "",
-        ),
-        TriggerDescription(
-            "tof_mid_trigger_mode",
-            "IDX__TXHDRMGTRIGMODE",
-            1,
-            "TOF Mid Trigger Mode Enabled",
-            "TOF Mid trigger mode (0=disabled, 1=enabled)",
-            "Mode",
-            "",
-        ),
-        TriggerDescription(
-            "tof_high_trigger_mode",
-            "IDX__TXHDRHGTRIGMODE",
-            2,
-            "TOF High Trigger Mode Enabled",
-            (
-                "TOF High trigger mode (0=disabled, 1=threshold mode, "
-                "2=single pulse mode, 3=double pulse mode)"
-            ),
-            "Mode",
-            "",
-        ),
-        TriggerDescription(
-            "detector_voltage",
-            "IDX__TXHDRHVPSHKCH0",
-            12,
-            "Detector Voltage",
-            (
-                "Last measurement in raw dN for processor board signal: "
-                "Detector Voltage"
-            ),
-            "Voltage",
-            "dN",
-        ),
-        TriggerDescription(
-            "sensor_voltage",
-            "IDX__TXHDRHVPSHKCH1",
-            12,
-            "Sensor Voltage",
-            (
-                "Last measurement in raw dN for processor board signal: "
-                "Sensor Voltage "
-            ),
-            "Voltage",
-            "dN",
-        ),
-        TriggerDescription(
-            "target_voltage",
-            "IDX__TXHDRHVPSHKCH2",
-            12,
-            "Target Voltage",
-            (
-                "Last measurement in raw dN for processor board signal: "
-                "Target Voltage"
-            ),
-            "Voltage",
-            "dN",
-        ),
-        TriggerDescription(
-            "reflectron_voltage",
-            "IDX__TXHDRHVPSHKCH3",
-            12,
-            "Reflectron Voltage",
-            (
-                "Last measurement in raw dN for processor board signal: "
-                "Reflectron Voltage"
-            ),
-            "Voltage",
-            "dN",
-        ),
-        TriggerDescription(
-            "rejection_voltage",
-            "IDX__TXHDRHVPSHKCH4",
-            12,
-            "Rejection Voltage",
-            (
-                "Last measurement in raw dN for processor board signal: "
-                "Rejection Voltage"
-            ),
-            "Voltage",
-            "dN",
-        ),
-        TriggerDescription(
-            "detector_current",
-            "IDX__TXHDRHVPSHKCH5",
-            12,
-            "Detector Current",
-            (
-                "Last measurement in raw dN for processor board signal: "
-                "Detector Current "
-            ),
-            "Current",
-            "dN",
-        ),
+        TriggerDescription("low_sample_trigger_polarity", "IDX__TXHDRLSTRIGPOL", 1),
+        TriggerDescription("low_sample_trigger_level", "IDX__TXHDRLSTRIGLVL", 12),
+        TriggerDescription("low_sample_trigger_num_min", "IDX__TXHDRLSTRIGNMIN", 8),
+        TriggerDescription("low_sample_trigger_mode", "IDX__TXHDRLSTRIGMODE", 1),
+        TriggerDescription("tof_low_trigger_mode", "IDX__TXHDRLSTRIGMODE", 1),
+        TriggerDescription("tof_mid_trigger_mode", "IDX__TXHDRMGTRIGMODE", 1),
+        TriggerDescription("tof_high_trigger_mode", "IDX__TXHDRHGTRIGMODE", 2),
+        TriggerDescription("detector_voltage", "IDX__TXHDRHVPSHKCH0", 12),
+        TriggerDescription("sensor_voltage", "IDX__TXHDRHVPSHKCH1", 12),
+        TriggerDescription("target_voltage", "IDX__TXHDRHVPSHKCH2", 12),
+        TriggerDescription("reflectron_voltage", "IDX__TXHDRHVPSHKCH3", 12),
+        TriggerDescription("rejection_voltage", "IDX__TXHDRHVPSHKCH4", 12),
+        TriggerDescription("detector_current", "IDX__TXHDRHVPSHKCH5", 12),
     ]
 }
 
@@ -935,35 +572,35 @@ class RawDustEvent:
         tof_low_xr = xr.DataArray(
             name="TOF_Low",
             data=[self._parse_high_sample_waveform(self.TOF_Low_bits)],
-            dims=("epoch", "time_high_sr_dim"),
+            dims=("epoch", "time_high_sr"),
             # attrs=idex_cdf_attrs.tof_low_attrs.output(),
             attrs=idex_attrs.get_variable_attributes("tof_low_attrs"),
         )
         tof_mid_xr = xr.DataArray(
             name="TOF_Mid",
             data=[self._parse_high_sample_waveform(self.TOF_Mid_bits)],
-            dims=("epoch", "time_high_sr_dim"),
+            dims=("epoch", "time_high_sr"),
             # attrs=idex_cdf_attrs.tof_mid_attrs.output(),
             attrs=idex_attrs.get_variable_attributes("tof_mid_attrs"),
         )
         target_high_xr = xr.DataArray(
             name="Target_High",
             data=[self._parse_low_sample_waveform(self.Target_High_bits)],
-            dims=("epoch", "time_low_sr_dim"),
+            dims=("epoch", "time_low_sr"),
             # attrs=idex_cdf_attrs.target_high_attrs.output(),
             attrs=idex_attrs.get_variable_attributes("target_high_attrs"),
         )
         target_low_xr = xr.DataArray(
             name="Target_Low",
             data=[self._parse_low_sample_waveform(self.Target_Low_bits)],
-            dims=("epoch", "time_low_sr_dim"),
+            dims=("epoch", "time_low_sr"),
             # attrs=idex_cdf_attrs.target_low_attrs.output(),
             attrs=idex_attrs.get_variable_attributes("target_low_attrs"),
         )
         ion_grid_xr = xr.DataArray(
             name="Ion_Grid",
             data=[self._parse_low_sample_waveform(self.Ion_Grid_bits)],
-            dims=("epoch", "time_low_sr_dim"),
+            dims=("epoch", "time_low_sr"),
             # attrs=idex_cdf_attrs.ion_grid_attrs.output(),
             attrs=idex_attrs.get_variable_attributes("ion_grid_attrs"),
         )

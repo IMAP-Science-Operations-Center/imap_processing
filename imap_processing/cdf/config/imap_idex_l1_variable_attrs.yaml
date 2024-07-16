@@ -12,14 +12,14 @@ int_maxval: &int_maxval 9223372036854775807 # np.iinfo(np.int64).max
 
 # l1_data_base
 l1_data_base: &l1_data_base # ScienceAttrs
-  VALIDMIN: *data_min
-  VALDMAX: *data_max
+  VALIDMIN: *min_epoch
+  VALIDMAX: *max_epoch
   DISPLAY_TYPE: spectrogram
   DEPEND_0: epoch
-  FORMAT: I12
+  FORMAT: ""
   UNITS: dN
   VAR_TYPE: data
-  VAR_PURPOSE: PRIMARY
+  # VAR_PURPOSE: PRIMARY
   CATDESC: ""
   FIELDNAM: ""
   FILLVAL: *int_fillval
@@ -54,7 +54,7 @@ sample_rate_base: &sample_rate_base # FloatAttrs
   DISPLAY_TYPE: no_plot
   CATDESC: ""
   FIELDNAM: ""
-  FILLVAL: -1.0e31 # DOUBLE FILL VAL
+  FILLVAL: -1.0e+31 # DOUBLE FILL VAL
   VALIDMIN: *sample_rate_min
   VALIDMAX: *sample_rate_max
   DEPEND_0: epoch
@@ -84,6 +84,7 @@ low_sr_attrs:
   <<:  *sample_rate_base
   CATDESC: Low sample rate time steps for a dust event.
   FIELDNAM: Low Sample Rate Time
+  FILLVAL: *int_fillval
 
 high_sr_attrs:
   <<:  *sample_rate_base
@@ -104,9 +105,11 @@ tof_mid_attrs:
 
 tof_low_attrs:
   <<: *l1_tof_base
+  FILLVAL: *int_fillval
   CATDESC: Time of flight waveform on the low-gain channel
   FIELDNAM: Low Gain Time of Flight
   LABLAXIS: TOF Low Ampl.
+
 
 target_low_attrs:
   <<: *l1_target_base
