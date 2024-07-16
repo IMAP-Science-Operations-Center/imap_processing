@@ -5,7 +5,6 @@ This module contains code to decommutate IDEX packets and creates xarrays to
 support creation of L1 data products.
 """
 
-import dataclasses
 import logging
 from collections import namedtuple
 from enum import IntEnum
@@ -16,9 +15,8 @@ import xarray as xr
 from space_packet_parser import parser, xtcedef
 
 from imap_processing import imap_module_directory
-from imap_processing.cdf.global_attrs import ConstantCoordinates
+from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import met_to_j2000ns
-from imap_processing.idex import idex_cdf_attrs
 
 logger = logging.getLogger(__name__)
 
@@ -459,6 +457,27 @@ trigger_description_dict = {
 }
 
 
+def create_idex_attr_obj(data_version: str) -> ImapCdfAttributes:
+    """
+    Load in 1l CDF attributes for IDEX instrument.
+
+    Parameters
+    ----------
+    data_version : str
+        Data version for CDF filename, in the format "vXXX".
+
+    Returns
+    -------
+    idex_attrs : ImapCdfAttributes
+        Imap object with l1a attribute files loaded in.
+    """
+    idex_attrs = ImapCdfAttributes()
+    idex_attrs.add_instrument_global_attrs("idex")
+    idex_attrs.add_instrument_variable_attrs("idex", "l1")
+    idex_attrs.add_global_attribute("Data_version", data_version)
+    return idex_attrs
+
+
 class PacketParser:
     """
     IDEX packet parsing class.
@@ -518,7 +537,7 @@ class PacketParser:
                     if scitype == Scitype.FIRST_PACKET:
                         # Initial packet for new dust event
                         # Further packets will fill in data
-                        dust_events[event_number] = RawDustEvent(packet)
+                        dust_events[event_number] = RawDustEvent(packet, data_version)
                     elif event_number not in dust_events:
                         raise KeyError(
                             f"Have not receive header information from event number\
@@ -535,8 +554,10 @@ class PacketParser:
         ]
 
         self.data = xr.concat(processed_dust_impact_list, dim="epoch")
-        self.data.attrs = idex_cdf_attrs.idex_l1_global_attrs.output()
-        self.data.attrs["Data_version"] = data_version
+        # self.data.attrs = idex_cdf_attrs.idex_l1_global_attrs.output()
+        # self.data.attrs["Data_version"] = data_version
+        idex_attrs = create_idex_attr_obj(data_version)
+        self.data.attrs = idex_attrs.get_global_attributes("imap_idex_l1_sci")
 
 
 class RawDustEvent:
@@ -550,6 +571,8 @@ class RawDustEvent:
     ----------
     header_packet : space_packet_parser.parser.Packet
         The FPGA metadata event header.
+    data_version : str
+            The version of the data product being created.
 
     Attributes
     ----------
@@ -585,7 +608,11 @@ class RawDustEvent:
         512  # The number of samples in a "block" of high sample data
     )
 
-    def __init__(self, header_packet: space_packet_parser.parser.Packet) -> None:
+    # TODO: Do I need to add the data_version here,
+    #  or is that something I can get from the header_packet?
+    def __init__(
+        self, header_packet: space_packet_parser.parser.Packet, data_version: str
+    ) -> None:
         """
         Initialize a raw dust event, with an FPGA Header Packet from IDEX.
 
@@ -599,6 +626,8 @@ class RawDustEvent:
         ----------
         header_packet : space_packet_parser.parser.Packet
             The FPGA metadata event header.
+        data_version : str
+            Data version for CDF filename, in the format "vXXX".
         """
         # Calculate the impact time in seconds since epoch
         self.impact_time = 0
@@ -625,6 +654,8 @@ class RawDustEvent:
         self.Target_Low_bits = ""
         self.Target_High_bits = ""
         self.Ion_Grid_bits = ""
+
+        self.cdf_attrs = create_idex_attr_obj(data_version)
 
     def _set_impact_time(self, packet: space_packet_parser.parser.Packet) -> None:
         """
@@ -878,6 +909,9 @@ class RawDustEvent:
         xarray.Dataset
             A Dataset object containing the data from a single impact.
         """
+        # Create object for CDF attrs
+        idex_attrs = self.cdf_attrs
+
         # Gather the huge number of trigger info metadata
         trigger_vars = {}
         for var, value in self.trigger_values.items():
@@ -886,53 +920,51 @@ class RawDustEvent:
                 name=var,
                 data=[value],
                 dims=("epoch"),
-                attrs=dataclasses.replace(
-                    idex_cdf_attrs.trigger_base,
-                    catdesc=trigger_description.notes,
-                    fieldname=trigger_description.field,
-                    var_notes=trigger_description.notes,
-                    validmax=2**trigger_description.num_bits - 1,
-                    label_axis=trigger_description.label,
-                    units=trigger_description.units,
-                ).output(),
+                attrs=idex_attrs.get_variable_attributes(trigger_description.name),
             )
 
         # Process the 6 primary data variables
         tof_high_xr = xr.DataArray(
             name="TOF_High",
             data=[self._parse_high_sample_waveform(self.TOF_High_bits)],
-            dims=("epoch", "Time_High_SR_dim"),
-            attrs=idex_cdf_attrs.tof_high_attrs.output(),
+            dims=("epoch", "time_high_ssr_dim"),
+            # attrs=idex_cdf_attrs.tof_high_attrs.output(),
+            attrs=idex_attrs.get_variable_attributes("tof_high_attrs"),
         )
         tof_low_xr = xr.DataArray(
             name="TOF_Low",
             data=[self._parse_high_sample_waveform(self.TOF_Low_bits)],
-            dims=("epoch", "Time_High_SR_dim"),
-            attrs=idex_cdf_attrs.tof_low_attrs.output(),
+            dims=("epoch", "time_high_sr_dim"),
+            # attrs=idex_cdf_attrs.tof_low_attrs.output(),
+            attrs=idex_attrs.get_variable_attributes("tof_low_attrs"),
         )
         tof_mid_xr = xr.DataArray(
             name="TOF_Mid",
             data=[self._parse_high_sample_waveform(self.TOF_Mid_bits)],
-            dims=("epoch", "Time_High_SR_dim"),
-            attrs=idex_cdf_attrs.tof_mid_attrs.output(),
+            dims=("epoch", "time_high_sr_dim"),
+            # attrs=idex_cdf_attrs.tof_mid_attrs.output(),
+            attrs=idex_attrs.get_variable_attributes("tof_mid_attrs"),
         )
         target_high_xr = xr.DataArray(
             name="Target_High",
             data=[self._parse_low_sample_waveform(self.Target_High_bits)],
-            dims=("epoch", "Time_Low_SR_dim"),
-            attrs=idex_cdf_attrs.target_high_attrs.output(),
+            dims=("epoch", "time_low_sr_dim"),
+            # attrs=idex_cdf_attrs.target_high_attrs.output(),
+            attrs=idex_attrs.get_variable_attributes("target_high_attrs"),
         )
         target_low_xr = xr.DataArray(
             name="Target_Low",
             data=[self._parse_low_sample_waveform(self.Target_Low_bits)],
-            dims=("epoch", "Time_Low_SR_dim"),
-            attrs=idex_cdf_attrs.target_low_attrs.output(),
+            dims=("epoch", "time_low_sr_dim"),
+            # attrs=idex_cdf_attrs.target_low_attrs.output(),
+            attrs=idex_attrs.get_variable_attributes("target_low_attrs"),
         )
         ion_grid_xr = xr.DataArray(
             name="Ion_Grid",
             data=[self._parse_low_sample_waveform(self.Ion_Grid_bits)],
-            dims=("epoch", "Time_Low_SR_dim"),
-            attrs=idex_cdf_attrs.ion_grid_attrs.output(),
+            dims=("epoch", "time_low_sr_dim"),
+            # attrs=idex_cdf_attrs.ion_grid_attrs.output(),
+            attrs=idex_attrs.get_variable_attributes("ion_grid_attrs"),
         )
 
         # Determine the 3 coordinate variables
@@ -940,21 +972,24 @@ class RawDustEvent:
             name="epoch",
             data=[self.impact_time],
             dims=("epoch"),
-            attrs=ConstantCoordinates.EPOCH,
+            # attrs=ConstantCoordinates.EPOCH,
+            attrs=idex_attrs.get_variable_attributes("epoch"),
         )
 
         time_low_sr_xr = xr.DataArray(
-            name="Time_Low_SR",
+            name="time_low_sr",
             data=[self._calc_low_sample_resolution(len(target_low_xr[0]))],
-            dims=("epoch", "Time_Low_SR_dim"),
-            attrs=idex_cdf_attrs.low_sr_attrs.output(),
+            dims=("epoch", "time_low_sr_dim"),
+            # attrs=idex_cdf_attrs.low_sr_attrs.output(),
+            attrs=idex_attrs.get_variable_attributes("low_sr_attrs"),
         )
 
         time_high_sr_xr = xr.DataArray(
-            name="Time_High_SR",
+            name="time_high_sr",
             data=[self._calc_high_sample_resolution(len(tof_low_xr[0]))],
-            dims=("epoch", "Time_High_SR_dim"),
-            attrs=idex_cdf_attrs.high_sr_attrs.output(),
+            dims=("epoch", "time_high_sr_dim"),
+            # attrs=idex_cdf_attrs.high_sr_attrs.output(),
+            attrs=idex_attrs.get_variable_attributes("high_sr_attrs"),
         )
 
         # Combine to return a dataset object
@@ -970,7 +1005,7 @@ class RawDustEvent:
             | trigger_vars,
             coords={
                 "epoch": epoch_xr,
-                "Time_Low_SR": time_low_sr_xr,
-                "Time_High_SR": time_high_sr_xr,
+                "time_low_sr": time_low_sr_xr,
+                "time_high_sr": time_high_sr_xr,
             },
         )
