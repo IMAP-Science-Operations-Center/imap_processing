@@ -15,4 +15,5 @@ Level 1 Processing Code:
     :template: autosummary.rst
     :recursive:
 
-    idex_l1
+    l0.decom_idex
+    l1.idex_l1
