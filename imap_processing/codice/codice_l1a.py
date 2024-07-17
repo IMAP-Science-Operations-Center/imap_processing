@@ -142,7 +142,7 @@ class CoDICEL1aPipeline:
             # TODO: Currently, cdflib doesn't properly write/read CDF files that
             #       have a single epoch value. To get around this for now, use
             #       two epoch values and reshape accordingly. Revisit this after
-            #       SIT-3.
+            #       SIT-3. See https://github.com/MAVENSDC/cdflib/issues/268
             variable_data_arr = np.array(list(variable_data) * 2, dtype=int).reshape(
                 2, self.num_energy_steps
             )
@@ -424,8 +424,6 @@ def process_codice_l1a(file_path: Path, data_version: str) -> xr.Dataset:
         CODICEAPID.COD_LO_NSW_SPECIES_COUNTS,
     ]
 
-    # TODO: Temporary workaround in order to create hi data products in absence
-    #       of simulated data
     if file_path.name.startswith(("imap_codice_l0_lo", "imap_codice_l0_hskp")):
         # Decom the packets, group data by APID, and sort by time
         packets = decom_packets(file_path)
@@ -488,7 +486,5 @@ def process_codice_l1a(file_path: Path, data_version: str) -> xr.Dataset:
         pipeline.unpack_science_data(science_values)
         dataset = pipeline.create_science_dataset(met, data_version)
 
-    # Write dataset to CDF
     logger.info(f"\nFinal data product:\n{dataset}\n")
-
     return dataset

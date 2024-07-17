@@ -7,7 +7,7 @@ import pytest
 import xarray as xr
 
 from imap_processing import imap_module_directory
-from imap_processing.cdf.utils import load_cdf
+from imap_processing.cdf.utils import load_cdf, write_cdf
 from imap_processing.codice.codice_l1a import process_codice_l1a
 
 # TODO: Add test that processes a file with multiple APIDs
@@ -128,6 +128,11 @@ def test_l1a_data(request) -> xr.Dataset:
     """
 
     dataset = process_codice_l1a(file_path=request.param, data_version="001")
+
+    # Write the dataset to a CDF so it can be manually inspected as well
+    file_path = write_cdf(dataset)
+    print(f"CDF file written to {file_path}")
+
     return dataset
 
 
@@ -153,7 +158,7 @@ def test_l1a_cdf_filenames(test_l1a_data: xr.Dataset, expected_logical_source: s
 
 
 @pytest.mark.xfail(
-    reason="Currently failing due to cdflib/epoch issue. Revisit after SIT-3"
+    reason="Currently failing due to cdflib/epoch issue. See https://github.com/MAVENSDC/cdflib/issues/268"
 )
 @pytest.mark.parametrize(
     "test_l1a_data, expected_shape",

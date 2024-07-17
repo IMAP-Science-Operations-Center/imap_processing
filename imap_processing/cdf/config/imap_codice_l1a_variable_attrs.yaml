@@ -1,14 +1,20 @@
 # <=== Defaults ===>
 default_attrs: &default
-  # Assumed values for all variable attrs unless overwritten
-  DISPLAY_TYPE: no_plot
-  FILLVAL: -9223372036854775808
-  FORMAT: I12
-  UNITS: dN
-  VALIDMIN: -9223372036854775808
-  VALIDMAX: 9223372036854775807
-  VAR_TYPE: data
-  SCALETYP: linear
+    CATDESC: ""
+    DISPLAY_TYPE: no_plot
+    FIELDNAM: ""
+    FILLVAL: -9223372036854775808
+    FORMAT: I12
+    LABLAXIS: ""
+    REFERENCE_POSITION: ""
+    RESOLUTION: ""
+    SCALETYP: linear
+    TIME_BASE: ""
+    TIME_SCALE: ""
+    UNITS: dN
+    VALIDMIN: -9223372036854775808
+    VALIDMAX: 9223372036854775807
+    VAR_TYPE: data
 
 codice_support_attrs: &support_default
     <<: *default
@@ -27,26 +33,37 @@ energy_attrs:
     VAR_TYPE: support_data
 
 epoch_attrs:
-  CATDESC: Time, number of nanoseconds since J2000 with leap seconds included
-  FIELDNAM: epoch
-  LABLAXIS: epoch
-  FILLVAL: -9223372036854775808
-  FORMAT: " " # Supposedly not required, fails in xarray_to_cdf
-  VALIDMIN: -9223372036854775808
-  VALIDMAX: 9223372036854775807
-  UNITS: ns
-  VAR_TYPE: support_data
-  SCALETYP: linear
-  MONOTON: INCREASE
-  TIME_BASE: J2000
-  TIME_SCALE: Terrestrial Time
-  REFERENCE_POSITION: Rotating Earth Geoid
+    <<: *default
+    CATDESC: Time, number of nanoseconds since J2000 with leap seconds included
+    FIELDNAM: epoch
+    LABLAXIS: epoch
+    FILLVAL: -9223372036854775808
+    FORMAT: " " # Supposedly not required, fails in xarray_to_cdf
+    VALIDMIN: -9223372036854775808
+    VALIDMAX: 9223372036854775807
+    UNITS: ns
+    VAR_TYPE: support_data
+    SCALETYP: linear
+    MONOTON: INCREASE
+    TIME_BASE: J2000
+    TIME_SCALE: Terrestrial Time
+    REFERENCE_POSITION: Rotating Earth Geoid
 
 # <=== Labels ===>
 energy_label:
     CATDESC: Energy per charge (E/q) sweeping step
+    DISPLAY_TYPE: ""
     FIELDNAM: Energy step
+    FILLVAL: ""
     FORMAT: A3
+    LABLAXIS: ""
+    REFERENCE_POSITION: ""
+    RESOLUTION: ""
+    TIME_BASE: ""
+    TIME_SCALE: ""
+    UNITS: ""
+    VALIDMAX: ""
+    VALIDMIN: ""
     VAR_TYPE: metadata
 
 # <=== Dataset Attributes ===>
@@ -55,6 +72,7 @@ energy_label:
 acquisition_times_attrs:
     <<: *default
     CATDESC: Time of acquisition for the energy step
+    DEPEND_1: energy
     FIELDNAM: Acquisition Time
     FILLVAL: 1.7976931348623157e+308
     FORMAT: F10.3
@@ -79,6 +97,7 @@ counters_attrs: &counters
 esa_sweep_attrs:
     <<: *default
     CATDESC: ElectroStatic Analyzer Energy Values
+    DEPEND_1: energy
     FIELDNAM: ESA Voltage
     FORMAT: I19
     LABLAXIS: ESA V
