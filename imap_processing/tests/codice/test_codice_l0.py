@@ -12,8 +12,6 @@ from imap_processing.codice import codice_l0
 from imap_processing.codice.codice_l1a import create_hskp_dataset
 from imap_processing.utils import convert_raw_to_eu
 
-# TODO: Move tests for housekeeping data to test_codice_l1a.py
-
 
 @pytest.fixture(scope="session")
 def decom_test_data() -> list:
@@ -64,7 +62,7 @@ def validation_data() -> pd.core.frame.DataFrame:
     return validation_data
 
 
-def test_eu_hk_data(
+def test_eu_hskp_data(
     decom_test_data: list[space_packet_parser.parser.Packet],
     validation_data: pd.core.frame.DataFrame,
 ):
@@ -107,7 +105,7 @@ def test_eu_hk_data(
             assert round(eu_val, 5) == round(validation_val, 5)
 
 
-def test_raw_hk_data(
+def test_raw_hskp_data(
     decom_test_data: list[space_packet_parser.parser.Packet],
     validation_data: pd.core.frame.DataFrame,
 ):

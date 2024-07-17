@@ -23,7 +23,6 @@ import space_packet_parser
 import xarray as xr
 
 from imap_processing import imap_module_directory
-from imap_processing.cdf.global_attrs import ConstantCoordinates
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import IMAP_EPOCH, met_to_j2000ns
 from imap_processing.codice import constants
@@ -322,7 +321,6 @@ def create_hskp_dataset(
     for packet in packets:
         add_metadata_to_array(packet, metadata_arrays)
 
-    # TODO: Is there a way to get the attrs from the YAML-based method?
     epoch = xr.DataArray(
         met_to_j2000ns(
             metadata_arrays["SHCOARSE"],
@@ -330,7 +328,7 @@ def create_hskp_dataset(
         ),
         name="epoch",
         dims=["epoch"],
-        attrs=ConstantCoordinates.EPOCH,
+        attrs=cdf_attrs.get_variable_attributes("epoch_attrs"),
     )
 
     dataset = xr.Dataset(
@@ -339,14 +337,13 @@ def create_hskp_dataset(
     )
 
     # TODO: Change 'TBD' catdesc and fieldname
-    # Once packet definition files are re-generated, can get this info from
-    # something like this:
+    # Once housekeeping packet definition file is re-generated with updated
+    # version of space_packet_parser, can get fieldname and catdesc info via:
     #    for key, value in (packet.header | packet.data).items():
     #      fieldname = value.short_description
-    #      catdesc = value.short_description
+    #      catdesc = value.long_description
     # I am holding off making this change until I acquire updated housekeeping
     # packets/validation data that match the latest telemetry definitions
-    # I may also be able to replace this function with utils.create_dataset(?)
     for key, value in metadata_arrays.items():
         attrs = cdf_attrs.get_variable_attributes("codice_support_attrs")
         attrs["CATDESC"] = "TBD"
