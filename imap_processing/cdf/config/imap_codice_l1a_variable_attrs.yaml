@@ -67,19 +67,17 @@ energy_label:
     VAR_TYPE: metadata
 
 # <=== Dataset Attributes ===>
-# TODO: resolve ISTP warning: Width of F10 FORMAT may be insufficient for
-#       values.  Adjust FORMAT or VALIDMIN/VALIDMAX value to resolve.
 acquisition_times_attrs:
     <<: *default
     CATDESC: Time of acquisition for the energy step
     DEPEND_1: energy
     FIELDNAM: Acquisition Time
-    FILLVAL: 1.7976931348623157e+308
+    FILLVAL: .NAN
     FORMAT: F10.3
     LABLAXIS: Acq Time
     UNITS: ms
     VALIDMIN: 0
-    VALIDMAX: 1.7976931348623157e+308
+    VALIDMAX: 1000
     VAR_TYPE: support_data
 
 counters_attrs: &counters
