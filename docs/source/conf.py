@@ -19,8 +19,6 @@ from pathlib import Path
 import imap_processing
 
 sys.path.insert(0, Path("../../imap_processing").resolve())
-sys.path.insert(0, Path("../../imap_processing/l0/decom_idex").resolve())
-sys.path.insert(0, Path("../../imap_processing/l1/idex_l1").resolve())
 
 # -- Project information -----------------------------------------------------
 

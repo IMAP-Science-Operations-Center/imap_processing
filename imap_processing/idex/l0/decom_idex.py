@@ -24,6 +24,6 @@ def decom_packets(packet_file: str) -> list:
     xtce_filename = "idex_packet_definition.xml"
     xtce_file = f"{imap_module_directory}/idex/packet_definitions/{xtce_filename}"
 
-    decom_packet_list: list = decom.decom_packets(packet_file, xtce_file)
+    decom_packet_list = decom.decom_packets(packet_file, xtce_file)
 
-    return decom_packet_list
+    return list(decom_packet_list)
