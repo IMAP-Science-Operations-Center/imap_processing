@@ -15,4 +15,4 @@ Level 1 Processing Code:
     :template: autosummary.rst
     :recursive:
 
-    idex_packet_parser
+    idex_l1
