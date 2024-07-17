@@ -1,9 +1,4 @@
-"""
-Decommutate IDEX CCSDS packets.
-
-This module contains code to decommutate IDEX packets and creates xarrays to
-support creation of L1 data products.
-"""
+"""Decommutate IDEX CCSDS packets."""
 
 import logging
 from collections import namedtuple
@@ -12,11 +7,10 @@ from enum import IntEnum
 import numpy as np
 import space_packet_parser
 import xarray as xr
-from space_packet_parser import parser, xtcedef
 
-from imap_processing import imap_module_directory
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import met_to_j2000ns
+from imap_processing.idex.l0.decom_idex import decom_packets
 
 logger = logging.getLogger(__name__)
 
@@ -156,32 +150,28 @@ class PacketParser:
         -----
             Currently assumes one L0 file will generate exactly one l1a file.
         """
-        xtce_filename = "idex_packet_definition.xml"
-        xtce_file = f"{imap_module_directory}/idex/packet_definitions/{xtce_filename}"
-        packet_definition = xtcedef.XtcePacketDefinition(xtce_document=xtce_file)
-        packet_parser = parser.PacketParser(packet_definition)
+        decom_packet_list = decom_packets(packet_file)
 
+        # TODO: Turn decom_packet_list back into generator type?
         dust_events = {}
-        with open(packet_file, "rb") as binary_data:
-            packet_generator = packet_parser.generator(binary_data)
-            for packet in packet_generator:
-                if "IDX__SCI0TYPE" in packet.data:
-                    scitype = packet.data["IDX__SCI0TYPE"].raw_value
-                    event_number = packet.data["IDX__SCI0EVTNUM"].derived_value
-                    if scitype == Scitype.FIRST_PACKET:
-                        # Initial packet for new dust event
-                        # Further packets will fill in data
-                        dust_events[event_number] = RawDustEvent(packet, data_version)
-                    elif event_number not in dust_events:
-                        raise KeyError(
-                            f"Have not receive header information from event number\
-                                {event_number}.  Packets are possibly out of order!"
-                        )
-                    else:
-                        # Populate the IDEXRawDustEvent with 1's and 0's
-                        dust_events[event_number].parse_packet(packet)
+        for packet in decom_packet_list:
+            if "IDX__SCI0TYPE" in packet.data:
+                scitype = packet.data["IDX__SCI0TYPE"].raw_value
+                event_number = packet.data["IDX__SCI0EVTNUM"].derived_value
+                if scitype == Scitype.FIRST_PACKET:
+                    # Initial packet for new dust event
+                    # Further packets will fill in data
+                    dust_events[event_number] = RawDustEvent(packet, data_version)
+                elif event_number not in dust_events:
+                    raise KeyError(
+                        f"Have not receive header information from event number\
+                            {event_number}.  Packets are possibly out of order!"
+                    )
                 else:
-                    logger.warning(f"Unhandled packet received: {packet}")
+                    # Populate the IDEXRawDustEvent with 1's and 0's
+                    dust_events[event_number].parse_packet(packet)
+            else:
+                logger.warning(f"Unhandled packet received: {packet}")
 
         processed_dust_impact_list = [
             dust_event.process() for dust_event in dust_events.values()
@@ -192,7 +182,6 @@ class PacketParser:
         self.data.attrs = idex_attrs.get_global_attributes("imap_idex_l1_sci")
 
 
-# Pretty sure this goes in decom_idex.py
 class RawDustEvent:
     """
     Encapsulate IDEX Raw Dust Event.
