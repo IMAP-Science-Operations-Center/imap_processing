@@ -13,6 +13,7 @@ Notes
 
 from __future__ import annotations
 
+import collections
 import logging
 from pathlib import Path
 
@@ -22,11 +23,12 @@ import space_packet_parser
 import xarray as xr
 
 from imap_processing import imap_module_directory
+from imap_processing.cdf.global_attrs import ConstantCoordinates
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import IMAP_EPOCH, met_to_j2000ns
 from imap_processing.codice import constants
 from imap_processing.codice.codice_l0 import decom_packets
-from imap_processing.codice.utils import CODICEAPID, create_hskp_dataset
+from imap_processing.codice.utils import CODICEAPID, add_metadata_to_array
 from imap_processing.utils import group_by_apid, sort_by_time
 
 logger = logging.getLogger(__name__)
@@ -36,6 +38,7 @@ logger.setLevel(logging.INFO)
 # TODO: Add metadata attrs to science dataset?
 # TODO: In decommutation, how to have a variable length data and then a checksum
 #       after it?
+# TODO: Add support for decomming multiple APIDs from a single file
 
 
 class CoDICEL1aPipeline:
@@ -288,6 +291,72 @@ class CoDICEL1aPipeline:
         #     science_values[i : i + chunk_size] for i in range(0, num_bits, chunk_size)
         # ]
         self.data = [["1"] * 128] * self.num_counters
+
+
+def create_hskp_dataset(
+    packets: list[space_packet_parser.parser.Packet],
+    data_version: str,
+) -> xr.Dataset:
+    """
+    Create dataset for each metadata field for housekeeping data.
+
+    Parameters
+    ----------
+    packets : list[space_packet_parser.parser.Packet]
+        The list of packets to process.
+    data_version : str
+        Version of the data product being created.
+
+    Returns
+    -------
+    dataset : xarray.Dataset
+        Xarray dataset containing the metadata.
+    """
+    cdf_attrs = ImapCdfAttributes()
+    cdf_attrs.add_instrument_global_attrs("codice")
+    cdf_attrs.add_instrument_variable_attrs("codice", "l1a")
+    cdf_attrs.add_global_attribute("Data_version", data_version)
+
+    metadata_arrays: dict = collections.defaultdict(list)
+
+    for packet in packets:
+        add_metadata_to_array(packet, metadata_arrays)
+
+    # TODO: Is there a way to get the attrs from the YAML-based method?
+    epoch = xr.DataArray(
+        met_to_j2000ns(
+            metadata_arrays["SHCOARSE"],
+            reference_epoch=np.datetime64("2010-01-01T00:01:06.184", "ns"),
+        ),
+        name="epoch",
+        dims=["epoch"],
+        attrs=ConstantCoordinates.EPOCH,
+    )
+
+    dataset = xr.Dataset(
+        coords={"epoch": epoch},
+        attrs=cdf_attrs.get_global_attributes("imap_codice_l1a_hskp"),
+    )
+
+    # TODO: Change 'TBD' catdesc and fieldname
+    # Once packet definition files are re-generated, can get this info from
+    # something like this:
+    #    for key, value in (packet.header | packet.data).items():
+    #      fieldname = value.short_description
+    #      catdesc = value.short_description
+    # I am holding off making this change until I acquire updated housekeeping
+    # packets/validation data that match the latest telemetry definitions
+    # I may also be able to replace this function with utils.create_dataset(?)
+    for key, value in metadata_arrays.items():
+        attrs = cdf_attrs.get_variable_attributes("codice_support_attrs")
+        attrs["CATDESC"] = "TBD"
+        attrs["DEPEND_0"] = "epoch"
+        attrs["FIELDNAM"] = "TBD"
+        attrs["LABLAXIS"] = key
+
+        dataset[key] = xr.DataArray(value, dims=["epoch"], attrs=attrs)
+
+    return dataset
 
 
 def get_params(packet: space_packet_parser.parser.Packet) -> tuple[int, int, int, int]:

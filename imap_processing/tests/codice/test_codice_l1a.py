@@ -99,6 +99,9 @@ TEST_PACKETS = [
     ),
 ]
 
+
+# Test data
+
 # Placeholder for validation data files
 VALIDATION_DATA = [
     f"{imap_module_directory}/tests/codice/data/validation_hskp.cdf",

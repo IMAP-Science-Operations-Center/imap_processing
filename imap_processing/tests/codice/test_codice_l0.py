@@ -9,8 +9,10 @@ import space_packet_parser
 
 from imap_processing import imap_module_directory
 from imap_processing.codice import codice_l0
-from imap_processing.codice.utils import create_hskp_dataset
+from imap_processing.codice.codice_l1a import create_hskp_dataset
 from imap_processing.utils import convert_raw_to_eu
+
+# TODO: Move tests for housekeeping data to test_codice_l1a.py
 
 
 @pytest.fixture(scope="session")
