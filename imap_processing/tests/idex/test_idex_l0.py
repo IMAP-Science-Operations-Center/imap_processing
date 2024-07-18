@@ -1,5 +1,7 @@
 """Tests the decommutation process for IDEX CCSDS Packets."""
 
+from pathlib import Path
+
 import numpy as np
 import pytest
 
@@ -9,7 +11,7 @@ from imap_processing.idex.l1.idex_l1 import PacketParser
 
 @pytest.fixture(scope="session")
 def decom_test_data():
-    test_file = (
+    test_file = Path(
         f"{imap_module_directory}/tests/idex/imap_idex_l0_raw_20230725_v001.pkts"
     )
     return PacketParser(test_file, "001")

@@ -1,4 +1,8 @@
-"""Decommutate IDEX CCSDS packets."""
+"""
+Perform IDEX l1 Processing.
+
+This module processes decommutated IDEX packets and creates l1 data products.
+"""
 
 import logging
 from collections import namedtuple
