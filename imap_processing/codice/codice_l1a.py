@@ -62,12 +62,12 @@ class CoDICEL1aPipeline:
 
     Methods
     -------
+    configure_data_products()
+        Set the various settings for defining the data products.
     create_science_dataset()
         Create an ``xarray`` dataset for the unpacked science data.
     get_acquisition_times()
         Retrieve the acquisition times via the Lo stepping table.
-    get_data_products()
-        Retrieve the lo data products.
     get_esa_sweep_values()
         Retrieve the ESA sweep values.
     unpack_science_data()
@@ -80,6 +80,21 @@ class CoDICEL1aPipeline:
         self.plan_id = plan_id
         self.plan_step = plan_step
         self.view_id = view_id
+
+    def configure_data_products(self, apid: int) -> None:
+        """
+        Set the various settings for defining the data products.
+
+        Parameters
+        ----------
+        apid : int
+            The APID of interest.
+        """
+        config = constants.DATA_PRODUCT_CONFIGURATIONS.get(apid)  # type: ignore[call-overload]
+        self.num_counters = config["num_counters"]
+        self.num_energy_steps = config["num_energy_steps"]
+        self.variable_names = config["variable_names"]
+        self.dataset_name = config["dataset_name"]
 
     def create_science_dataset(self, met: np.int64, data_version: str) -> xr.Dataset:
         """
@@ -214,23 +229,6 @@ class CoDICEL1aPipeline:
         for step_number in range(128):
             row_number = np.argmax(energy_steps == str(step_number), axis=1).argmax()
             self.acquisition_times.append(lo_stepping_values.acq_time[row_number])
-
-    def get_data_products(self, apid: int) -> None:
-        """
-        Retrieve various settings for defining the data products.
-
-        Parameters
-        ----------
-        apid : int
-            The APID of interest.
-        """
-        config = constants.DATA_PRODUCT_CONFIGURATIONS.get(apid)  # type: ignore[call-overload]
-        # TODO Change, No overload variant of "get" of
-        #  "dict" matches argument type "str".
-        self.num_counters = config["num_counters"]
-        self.num_energy_steps = config["num_energy_steps"]
-        self.variable_names = config["variable_names"]
-        self.dataset_name = config["dataset_name"]
 
     def get_esa_sweep_values(self) -> None:
         """
@@ -454,7 +452,7 @@ def process_codice_l1a(file_path: Path, data_version: str) -> xr.Dataset:
                 pipeline = CoDICEL1aPipeline(table_id, plan_id, plan_step, view_id)
                 pipeline.get_esa_sweep_values()
                 pipeline.get_acquisition_times()
-                pipeline.get_data_products(apid)
+                pipeline.configure_data_products(apid)
                 pipeline.unpack_science_data(science_values)
                 dataset = pipeline.create_science_dataset(met, data_version)
 
@@ -482,7 +480,7 @@ def process_codice_l1a(file_path: Path, data_version: str) -> xr.Dataset:
         science_values = ""  # Currently don't have simulated data for this
 
         pipeline = CoDICEL1aPipeline(table_id, plan_id, plan_step, view_id)
-        pipeline.get_data_products(apid)
+        pipeline.configure_data_products(apid)
         pipeline.unpack_science_data(science_values)
         dataset = pipeline.create_science_dataset(met, data_version)
 
