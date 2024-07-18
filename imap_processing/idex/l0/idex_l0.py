@@ -18,7 +18,7 @@ def decom_packets(packet_file: str) -> list:
 
     Returns
     -------
-    list : list
+    list
         All the unpacked data.
     """
     xtce_filename = "idex_packet_definition.xml"
