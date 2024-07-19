@@ -1,0 +1,443 @@
+int_fillval: &int_fillval -9223372036854775808
+min_epoch: &min_epoch -315575942816000000
+max_epoch: &max_epoch 3155630469184000000
+
+data_min: &data_min 0
+data_max: &data_max 4096
+
+sample_rate_min: &sample_rate_min -130
+sample_rate_max: &sample_rate_max 130
+
+int_maxval: &int_maxval 9223372036854775807
+
+l1_data_base: &l1_data_base
+  VALIDMIN: *data_min
+  VALIDMAX: *data_max
+  DISPLAY_TYPE: spectrogram
+  DEPEND_0: epoch
+  FORMAT: ""
+  UNITS: dN
+  VAR_TYPE: data
+  # VAR_PURPOSE: PRIMARY
+  CATDESC: ""
+  FIELDNAM: ""
+  FILLVAL: *int_fillval
+  LABLAXIS: ""
+
+l1_tof_base: &l1_tof_base
+  <<: *l1_data_base
+  DEPEND_1: time_high_sr
+
+l1_target_base: &l1_target_base
+  <<: *l1_data_base
+  DEPEND_1: time_low_sr
+
+epoch:
+  <<:  *l1_data_base
+  CATDESC: Time, number of nanoseconds since J2000 with leap seconds included
+  FIELDNAM: epoch
+  FILLVAL: *int_fillval
+  LABLAXIS: epoch
+  FORMAT: ""  # Supposedly not required, fails in xarray_to_cdf
+  UNITS: ns
+  VALIDMIN: *min_epoch
+  VALIDMAX: *max_epoch
+  VAR_TYPE: support_data
+  SCALETYP: linear
+  MONOTON: INCREASE
+  TIME_BASE: J2000
+  TIME_SCALE: Terrestrial Time
+  REFERENCE_POSITION: Rotating Earth Geoid
+
+sample_rate_base: &sample_rate_base
+  DISPLAY_TYPE: no_plot
+  CATDESC: ""
+  FIELDNAM: ""
+  FILLVAL: -1.0e+31
+  VALIDMIN: *sample_rate_min
+  VALIDMAX: *sample_rate_max
+  DEPEND_0: epoch
+  FORMAT: F64.5
+  LABLAXIS: Time
+  UNITS: microseconds
+  VAR_TYPE: support_data # Not in attrs file
+  VAR_NOTES:  The number of microseconds since the event.
+              0 is the start of data collection, negative
+              numbers represent data collected prior to a dust event
+
+trigger_base: &trigger_base
+  VALIDMIN: 0
+  VALIDMAX: *int_maxval
+  DISPLAY_0: epoch
+  DISPLAY_TYPE: no_plot
+  CATDESC: ""
+  FIELDNAM: ""
+  VAR_TYPE: support_data
+  FILLVAL: *int_fillval
+  LABLAXIS: ""
+  FORMAT: I12
+  UNITS: ""
+
+# TODO: All of these have var_notes in idex_cef_attrs. Should I add these?
+low_sr_attrs:
+  <<:  *sample_rate_base
+  CATDESC: Low sample rate time steps for a dust event.
+  FIELDNAM: Low Sample Rate Time
+  FILLVAL: *int_fillval
+  VAR_NOTES: The low sample rate in microseconds. Steps are approximately 1/4.025
+             microseconds in duration. Used by the Ion_Grid, Target_Low, and
+             Target_High variables.
+
+high_sr_attrs:
+  <<:  *sample_rate_base
+  CATDESC: High sample rate time steps for a dust event.
+  FIELDNAM: High Sample Rate Time
+  VAR_NOTES: The high sample rate in microseconds. Steps are approximately 1/260
+    microseconds in duration. Used by the TOF_High, TOF_Mid, and
+    TOF_Low variables.
+
+tof_high_attrs:
+  <<: *l1_tof_base
+  CATDESC: Time of flight waveform on the high-gain channel
+  FIELDNAM: High Gain Time of Flight
+  LABLAXIS: TOF High Ampl.
+  VAR_NOTES: High gain channel of the time-of-flight signal.
+        Sampled at 260 Megasamples per second, with a 10-bit resolution.
+        Data is used to quantify dust composition.
+
+tof_mid_attrs:
+  <<: *l1_tof_base
+  CATDESC: Time of flight waveform on the mid-gain channel
+  FIELDNAM: Mid Gain Time of Flight
+  LABLAXIS: TOF Mid Ampl.
+  VAR_NOTES: Mid gain channel of the time-of-flight signal.
+        Sampled at 260 Megasamples per second, with a 10-bit resolution.
+        Data is used to quantify dust composition.
+
+tof_low_attrs:
+  <<: *l1_tof_base
+  FILLVAL: *int_fillval
+  CATDESC: Time of flight waveform on the low-gain channel
+  FIELDNAM: Low Gain Time of Flight
+  LABLAXIS: TOF Low Ampl.
+  VAR_NOTES: Low gain channel of the time-of-flight signal.
+        Sampled at 260 Megasamples per second, with a 10-bit resolution.
+        Data is used to quantify dust composition.
+
+
+target_low_attrs:
+  <<: *l1_target_base
+  CATDESC: Target low charge sensitive amplifier waveform
+  FIELDNAM: Low Target Signal
+  LABLAXIS: Low Target Ampl.
+  VAR_NOTES: Low gain channel of IDEX's target signal.
+        Sampled at 3.75 Msps with 12-bit resolution.
+        Data is used to quantify dust charge.
+
+target_high_attrs:
+  <<: *l1_target_base
+  CATDESC: Ion grid charge sensitive amplifier waveform
+  FIELDNAM: High Target Signal
+  LABLAXIS: High Target Ampl.
+  VAR_NOTES: High gain channel of IDEX's target signal.
+        Sampled at 3.75 Msps with 12-bit resolution.
+        Data is used to quantify dust charge.
+
+ion_grid_attrs:
+  <<: *l1_target_base
+  CATDESC: Ion grid charge sensitive amplifier waveform data
+  FIELDNAM: Ion Grid Signal
+  LABLAXIS: Ion Grid Ampl.
+  VAR_NOTES: This is the ion grid signal from IDEX.
+        Sampled at 3.75 Msps with 12-bit resolution.
+        Data is used to quantify dust charge.
+
+# Trigger Stuff
+
+event_number:
+  <<: *trigger_base
+  CATDESC: The unique number assigned to the impact by the FPGA
+  FIELDNAM: Event Number
+  VALIDMAX: 65535
+  LABLAXIS: Event Number
+  UNITS: ""
+
+tof_high_trigger_level:
+  <<: *trigger_base
+  VALIDMAX: 1023
+  FIELDNAM: TOF High Trigger Level
+  CATDESC: Trigger level for the TOF High Channel
+  LABLAXIS: Level
+  UNITS: ""
+
+tof_high_trigger_num_max_1_2:
+  <<: *trigger_base
+  VALIDMAX: 2047
+  FIELDNAM: TOF High Double Pulse Max Samples
+  CATDESC: Maximum number of samples between pulse 1 and 2 for TOF. High double pulse triggering.
+  LABLAXIS: Samples Number
+  UNITS: "" # "samples" in idex_packet_parser...?
+
+tof_high_trigger_num_min_1_2:
+  <<: *trigger_base
+  VALIDMAX: 2047
+  FIELDNAM: TOF High Double Pulse Min Samples
+  CATDESC: Minimum number of samples between pulse 1 and 2 for TOF High. Double pulse triggering.
+  LABLAXIS: Samples Number
+  UNITS: "" # "samples" in idex_packet_parser...?
+
+tof_high_trigger_num_min_1:
+  <<: *trigger_base
+  VALIDMAX: 255
+  FIELDNAM: TOF High Pulse 1 Min Samples
+  CATDESC: Minimum number of samples for pulse 1 for TOF High single and double pulse triggering.
+  LABLAXIS: Samples Number
+  UNITS: "" # "samples" in idex_packet_parser...?
+
+tof_high_trigger_num_max_1:
+  <<: *trigger_base
+  VALIDMAX: 255
+  FIELDNAM: TOF High Pulse 1 Max Samples
+  CATDESC: Maximum number of samples for pulse 1 for TOF High single and double pulse triggering.
+  LABLAXIS: Samples Number
+  UNITS: "" # "samples" in idex_packet_parser...?
+
+tof_high_trigger_num_min_2:
+  <<: *trigger_base
+  VALIDMAX: 255
+  FIELDNAM: TOF High Pulse 2 Min Samples
+  CATDESC: Minimum number of samples for pulse 2 for TOF High single and double pulse triggering.
+  LABLAXIS: Samples Number
+  UNITS: "" # "samples" in idex_packet_parser...?
+
+tof_high_trigger_num_max_2:
+  <<: *trigger_base
+  VALIDMAX: 255
+  FIELDNAM: TOF High Pulse 2 Max Samples
+  CATDESC: Maximum number of samples for pulse 2 for TOF High single and double pulse triggering.
+  LABLAXIS: Samples Number
+  UNITS: "" # "samples" in idex_packet_parser...?
+
+tof_low_trigger_level:
+  <<: *trigger_base
+  VALIDMAX: 1023
+  FIELDNAM: TOF Low Trigger Level
+  CATDESC: Trigger level for the TOF Low Channel
+  LABLAXIS: Level
+  UNITS: "" # "samples" in idex_packet_parser...?
+
+tof_low_trigger_num_max_1_2:
+  <<: *trigger_base
+  VALIDMAX: 2047
+  FIELDNAM: TOF Low Double Pulse Max Samples
+  CATDESC: Maximum number of samples between pulse 1 and 2 for TOF Low double pulse triggering.
+  LABLAXIS: Samples Number
+  UNITS: "" # "samples" in idex_packet_parser...?
+
+tof_low_trigger_num_min_1_2:
+  <<: *trigger_base
+  VALIDMAX: 2047
+  FIELDNAM: TOF Low Double Pulse Min Samples
+  CATDESC: Minimum number of samples between pulse 1 and 2 for TOF Low double pulse triggering.
+  LABLAXIS: Samples Number
+  UNITS: "" # "samples" in idex_packet_parser...?
+
+tof_low_trigger_num_min_1:
+  <<: *trigger_base
+  VALIDMAX: 255
+  FIELDNAM: TOF Low Pulse 1 Min Samples
+  CATDESC: Minimum number of samples for pulse 1 for TOF Low single and double pulse triggering.
+  LABLAXIS: Samples Number
+  UNITS: "" # "samples" in idex_packet_parser...?
+
+tof_low_trigger_num_max_1:
+  <<: *trigger_base
+  VALIDMAX: 255
+  FIELDNAM: TOF Low Pulse 1 Max Samples
+  CATDESC: Maximum number of samples for pulse 1 for TOF Low single and double pulse triggering.
+  LABLAXIS: Samples Number
+  UNITS: "" # "samples" in idex_packet_parser...?
+
+tof_low_trigger_num_min_2 :
+  <<: *trigger_base
+  VALIDMAX: 255
+  FIELDNAM: TOF Low Pulse 2 Min Samples
+  CATDESC: Minimum number of samples for pulse 2 for TOF Low single and double pulse triggering.
+  LABLAXIS: Samples Number
+  UNITS: "" # "samples" in idex_packet_parser...?
+
+tof_low_trigger_num_max_2:
+  <<: *trigger_base
+  VALIDMAX: 65535
+  FIELDNAM: TOF Low Pulse 2 Max Samples
+  CATDESC: Maximum number of samples for pulse 2 for TOF Low single and double pulse triggering.
+  LABLAXIS: Samples Number
+  UNITS: "" # "samples" in idex_packet_parser...?
+
+tof_mid_trigger_level:
+  <<: *trigger_base
+  VALIDMAX: 1023
+  FIELDNAM: TOF Mid Trigger Level
+  CATDESC: Trigger level for the TOF Mid Channel
+  LABLAXIS: Level
+  UNITS: "" # "samples" in idex_packet_parser...?
+
+tof_mid_trigger_num_max_1_2:
+  <<: *trigger_base
+  VALIDMAX: 2047
+  FIELDNAM: TOF Mid Double Pulse Max Samples
+  CATDESC: Maximum number of samples between pulse 1 and 2 for TOF Mid double pulse triggering.
+  LABLAXIS: Samples Number
+  UNITS: "" # "samples" in idex_packet_parser...?
+
+tof_mid_trigger_num_min_1_2:
+  <<: *trigger_base
+  VALIDMAX: 2047
+  FIELDNAM: TOF Mid Double Pulse Min Samples
+  CATDESC: Minimum number of samples between pulse 1 and 2 for TOF Mid double pulse triggering.
+  LABLAXIS: Samples Number
+  UNITS: "" # "samples" in idex_packet_parser...?
+
+tof_mid_trigger_num_min_1:
+  <<: *trigger_base
+  VALIDMAX: 255
+  FIELDNAM: TOF Mid Pulse 1 Min Samples
+  CATDESC: Minimum number of samples for pulse 1 for TOF Mid single and double pulse triggering.
+  LABLAXIS: Samples Number
+  UNITS: "" # "samples" in idex_packet_parser...?
+
+tof_mid_trigger_num_max_1:
+  <<: *trigger_base
+  VALIDMAX: 255
+  FIELDNAM: TOF Mid Pulse 1 Max Samples
+  CATDESC: Maximum number of samples for pulse 1 for TOF Mid single and double pulse triggering.
+  LABLAXIS: Samples Number
+  UNITS: "" # "samples" in idex_packet_parser...?
+
+tof_mid_trigger_num_min_2:
+  <<: *trigger_base
+  VALIDMAX: 255
+  FIELDNAM: TOF Mid Pulse 2 Min Samples
+  CATDESC: Minimum number of samples for pulse 2 for TOF Mid single and double pulse triggering.
+  LABLAXIS: Samples Number
+  UNITS: "" # "samples" in idex_packet_parser...?
+
+tof_mid_trigger_num_max_2:
+  <<: *trigger_base
+  VALIDMAX: 255
+  FIELDNAM: TOF Mid Pulse 2 Max Samples
+  CATDESC: Maximum number of samples for pulse 2 for TOF Mid single and double pulse triggering.
+  LABLAXIS: Samples Number
+  UNITS: "" # "samples" in idex_packet_parser...?
+
+low_sample_coincidence_mode_blocks:
+  <<: *trigger_base
+  VALIDMAX: 7
+  FIELDNAM: LS Coincidence Mode Blocks
+  CATDESC: Number of blocks coincidence window is enabled after low sample trigger.
+  LABLAXIS: Blocks Number
+  UNITS: "" # "blocks" in idex_packet_parser...?
+
+low_sample_trigger_polarity:
+  <<: *trigger_base
+  VALIDMAX: 1
+  FIELDNAM: LS Trigger Polarity
+  CATDESC: The trigger polarity for low sample (0 = normal, 1 = inverted)
+  LABLAXIS: Polarity
+  UNITS: ""
+
+low_sample_trigger_level:
+  <<: *trigger_base
+  VALIDMAX: 4095
+  FIELDNAM: LS Trigger Level
+  CATDESC: Trigger level for the low sample
+  LABLAXIS: Level
+  UNITS: ""
+
+low_sample_trigger_num_min:
+  <<: *trigger_base
+  VALIDMAX: 255
+  FIELDNAM: LS Trigger Min Num Samples
+  CATDESC: The minimum number of samples above/below the trigger level for triggering the low sample.
+  LABLAXIS: Samples Number
+  UNITS: "" # "samples" in idex_packet_parser...?
+
+low_sample_trigger_mode:
+  <<: *trigger_base
+  VALIDMAX: 1
+  FIELDNAM: LS Trigger Mode Enabled
+  CATDESC: Low sample trigger mode (0=disabled, 1=enabled)
+  LABLAXIS: Mode
+  UNITS: ""
+
+tof_low_trigger_mode:
+  <<: *trigger_base
+  VALIDMAX: 1
+  FIELDNAM: TOF Low Trigger Mode Enabled
+  CATDESC: TOF Low trigger mode (0=disabled, 1=enabled)
+  LABLAXIS: Mode
+  UNITS: ""
+
+tof_mid_trigger_mode:
+  <<: *trigger_base
+  VALIDMAX: 1
+  FIELDNAM: TOF Mid Trigger Mode Enabled
+  CATDESC: TOF Mid trigger mode (0=disabled, 1=enabled)
+  LABLAXIS: Mode
+  UNITS: ""
+
+tof_high_trigger_mode:
+  <<: *trigger_base
+  VALIDMAX: 3
+  FIELDNAM: TOF High Trigger Mode Enabled
+  CATDESC: TOF High trigger mode (0=disabled, 1=threshold mode, 2=single pulse mode, 3=double pulse mode).
+  LABLAXIS: Mode
+  UNITS: ""
+
+detector_voltage:
+  <<: *trigger_base
+  VALIDMAX: 4095
+  FIELDNAM: Detector Voltage
+  CATDESC: Last measurement in raw dN for processor board signal - "Detector Voltage"
+  LABLAXIS: Voltage
+  UNITS: dN
+
+sensor_voltage:
+  <<: *trigger_base
+  VALIDMAX: 4095
+  FIELDNAM: Sensor Voltage
+  CATDESC: Last measurement in raw dN for processor board signal - "Sensor Voltage "
+  LABLAXIS: Voltage
+  UNITS: dN
+
+target_voltage:
+  <<: *trigger_base
+  VALIDMAX: 4095
+  FIELDNAM: Target Voltage
+  CATDESC: Last measurement in raw dN for processor board signal - "Target Voltage"
+  LABLAXIS: Voltage
+  UNITS: dN
+
+reflectron_voltage:
+  <<: *trigger_base
+  VALIDMAX: 4095
+  FIELDNAM: Reflectron Voltage
+  CATDESC: Last measurement in raw dN for processor board signal - "Reflectron Voltage"
+  LABLAXIS: Voltage
+  UNITS: dN
+
+rejection_voltage:
+  <<: *trigger_base
+  VALIDMAX: 4095
+  FIELDNAM: Rejection Voltage
+  CATDESC: Last measurement in raw dN for processor board signal - "Rejection Voltage"
+  LABLAXIS: Voltage
+  UNITS: dN
+
+detector_current:
+  <<: *trigger_base
+  VALIDMAX: 4095
+  FIELDNAM: Detector Current
+  CATDESC: Last measurement in raw dN for processor board signal - "Detector Current "
+  LABLAXIS: Current
+  UNITS: dN
