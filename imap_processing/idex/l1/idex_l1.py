@@ -68,9 +68,7 @@ trigger_description_dict = {
         TriggerDescription("tof_mid_trigger_num_max_1", "IDX__TXHDRMGTRIGNMAX1"),
         TriggerDescription("tof_mid_trigger_num_min_2", "IDX__TXHDRMGTRIGNMIN2"),
         TriggerDescription("tof_mid_trigger_num_max_2", "IDX__TXHDRMGTRIGNMAX2"),
-        TriggerDescription(
-            "low_sample_coincidence_mode_blocks", "IDX__TXHDRLSTRIGCMBLOCKS"
-        ),
+        TriggerDescription("low_sample_coincidence_mode_blocks", "IDX__TXHDRLSTRIGCMBLOCKS"), # noqa
         TriggerDescription("low_sample_trigger_polarity", "IDX__TXHDRLSTRIGPOL"),
         TriggerDescription("low_sample_trigger_level", "IDX__TXHDRLSTRIGLVL"),
         TriggerDescription("low_sample_trigger_num_min", "IDX__TXHDRLSTRIGNMIN"),
@@ -85,10 +83,10 @@ trigger_description_dict = {
         TriggerDescription("rejection_voltage", "IDX__TXHDRHVPSHKCH4"),
         TriggerDescription("detector_current", "IDX__TXHDRHVPSHKCH5"),
     ]
-}
+}  # fmt: skip
 
 
-def create_idex_attr_obj(data_version: str) -> ImapCdfAttributes:
+def get_idex_attrs(data_version: str) -> ImapCdfAttributes:
     """
     Load in CDF attributes for IDEX instrument.
 
@@ -109,7 +107,6 @@ def create_idex_attr_obj(data_version: str) -> ImapCdfAttributes:
     return idex_attrs
 
 
-# Pretty sure this should go in idex_l1.py
 class PacketParser:
     """
     IDEX packet parsing class.
@@ -156,7 +153,6 @@ class PacketParser:
         """
         decom_packet_list = decom_packets(packet_file)
 
-        # TODO: Turn decom_packet_list back into generator type?
         dust_events = {}
         for packet in decom_packet_list:
             if "IDX__SCI0TYPE" in packet.data:
@@ -182,7 +178,7 @@ class PacketParser:
         ]
 
         self.data = xr.concat(processed_dust_impact_list, dim="epoch")
-        idex_attrs = create_idex_attr_obj(data_version)
+        idex_attrs = get_idex_attrs(data_version)
         self.data.attrs = idex_attrs.get_global_attributes("imap_idex_l1_sci")
 
 
@@ -234,8 +230,6 @@ class RawDustEvent:
         512  # The number of samples in a "block" of high sample data
     )
 
-    # TODO: Do I need to add the data_version here,
-    #  or is that something I can get from the header_packet?
     def __init__(
         self, header_packet: space_packet_parser.parser.Packet, data_version: str
     ) -> None:
@@ -281,7 +275,7 @@ class RawDustEvent:
         self.Target_High_bits = ""
         self.Ion_Grid_bits = ""
 
-        self.cdf_attrs = create_idex_attr_obj(data_version)
+        self.cdf_attrs = get_idex_attrs(data_version)
 
     def _set_impact_time(self, packet: space_packet_parser.parser.Packet) -> None:
         """
