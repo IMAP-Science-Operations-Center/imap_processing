@@ -20,7 +20,7 @@ from imap_processing.ultra.l1b.lookup_utils import (
 
 def get_ph_tof_and_back_positions(
     de_dataset: xarray.Dataset, xf: np.array, sensor: str
-):
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """
     Calculate back xb, yb position and tof.
 
@@ -120,7 +120,9 @@ def get_ph_tof_and_back_positions(
     return tof, t2, xb, yb
 
 
-def get_front_x_position(start_type: np.array, start_position_tdc: np.array):
+def get_front_x_position(
+    start_type: np.array, start_position_tdc: np.array
+) -> np.array:
     """
     Calculate the front xf position.
 
@@ -154,7 +156,9 @@ def get_front_x_position(start_type: np.array, start_position_tdc: np.array):
     return xf
 
 
-def get_front_y_position(start_type: np.array, yb: np.array):
+def get_front_y_position(
+    start_type: np.array, yb: np.array
+) -> tuple[np.array, np.array]:
     """
     Compute the adjustments for the front y position and distance front to back.
 
@@ -225,7 +229,7 @@ def get_front_y_position(start_type: np.array, yb: np.array):
 
 def get_coincidence_positions(
     de_dataset: xarray.Dataset, particle_tof: np.ndarray, sensor: str
-):
+) -> tuple[np.ndarray, np.ndarray]:
     """
     Calculate coincidence positions.
 
@@ -303,7 +307,9 @@ def get_coincidence_positions(
     return etof_sorted, xc_sorted
 
 
-def get_ssd_offset_and_positions(de_dataset: xarray.Dataset):
+def get_ssd_offset_and_positions(
+    de_dataset: xarray.Dataset,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Figure out what SSD a particle hit.
 
@@ -366,7 +372,9 @@ def get_ssd_offset_and_positions(de_dataset: xarray.Dataset):
     return yb_sorted, tof_offsets_sorted, ssds_sorted
 
 
-def get_ssd_tof(de_dataset: xarray.Dataset, xf: np.array):
+def get_ssd_tof(
+    de_dataset: xarray.Dataset, xf: np.array
+) -> tuple[np.ndarray, np.ndarray]:
     """
     Calculate back xb, yb position for the SSDs.
 
@@ -416,7 +424,9 @@ def get_ssd_tof(de_dataset: xarray.Dataset, xf: np.array):
     return tof, ssd
 
 
-def get_energy_pulse_height(stop_type: np.array, xb: np.array, yb: np.array):
+def get_energy_pulse_height(
+    stop_type: np.array, xb: np.array, yb: np.array
+) -> np.array:
     """
     Calculate the pulse-height energy.
 
@@ -466,7 +476,7 @@ def get_energy_pulse_height(stop_type: np.array, xb: np.array, yb: np.array):
     return energy
 
 
-def get_energy_ssd(de_dataset: xarray.Dataset, ssd: np.array):
+def get_energy_ssd(de_dataset: xarray.Dataset, ssd: np.array) -> np.ndarray:
     """
     Get SSD energy.
 
@@ -512,7 +522,9 @@ def get_energy_ssd(de_dataset: xarray.Dataset, ssd: np.array):
     return energy_norm
 
 
-def determine_species_ssd(energy: np.array, tof: np.array, r: np.array):
+def determine_species_ssd(
+    energy: np.array, tof: np.array, r: np.array
+) -> tuple[np.array, np.array]:
     """
     Determine the species for SSD events.
 
@@ -570,7 +582,9 @@ def determine_species_ssd(energy: np.array, tof: np.array, r: np.array):
     return ctof * 10, bin
 
 
-def determine_species_pulse_height(energy: np.array, tof: np.array, r: np.array):
+def determine_species_pulse_height(
+    energy: np.array, tof: np.array, r: np.array
+) -> tuple[np.array, np.array]:
     """
     Determine the species for pulse-height events.
 
@@ -621,7 +635,7 @@ def determine_species_pulse_height(energy: np.array, tof: np.array, r: np.array)
 
 def get_particle_velocity(
     front_position: tuple, back_position: tuple, d: np.array, tof: np.array
-):
+) -> tuple[np.array, np.array, np.array]:
     """
     Determine the particle velocity.
 
@@ -644,11 +658,11 @@ def get_particle_velocity(
 
     Returns
     -------
-    vhat_x : np.array.
+    vhat_x : np.array
         Normalized component of the velocity vector in x direction.
-    vhat_y : np.array.
+    vhat_y : np.array
         Normalized component of the velocity vector in y direction.
-    vhat_z : np.array.
+    vhat_z : np.array
         Normalized component of the velocity vector in z direction.
     """
     if tof[tof < 0].any():
@@ -675,7 +689,7 @@ def get_particle_velocity(
     return vhat_x, vhat_y, vhat_z
 
 
-def get_path_length(front_position, back_position, d):
+def get_path_length(front_position: tuple, back_position: tuple, d: float) -> float:
     """
     Calculate the path length.
 
@@ -693,7 +707,7 @@ def get_path_length(front_position, back_position, d):
     r : float
         Path length (hundredths of a millimeter).
     """
-    r = np.sqrt(
+    r: float = np.sqrt(
         (front_position[0] - back_position[0]) ** 2
         + (front_position[1] - back_position[1]) ** 2
         + (d) ** 2

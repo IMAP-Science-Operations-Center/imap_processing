@@ -8,7 +8,7 @@ from imap_processing import imap_module_directory
 base_path = imap_module_directory / "ultra" / "lookup_tables"
 
 
-def get_y_adjust(dy_lut: np.ndarray):
+def get_y_adjust(dy_lut: np.ndarray) -> np.ndarray:
     """
     Adjust the front yf position based on the particle's trajectory.
 
@@ -34,7 +34,7 @@ def get_y_adjust(dy_lut: np.ndarray):
     return yadj.values
 
 
-def get_norm(dn: np.ndarray, key: str, file_label: str):
+def get_norm(dn: np.ndarray, key: str, file_label: str) -> np.ndarray:
     """
     Correct mismatches between the stop Time to Digital Converters (TDCs).
 
@@ -70,7 +70,7 @@ def get_norm(dn: np.ndarray, key: str, file_label: str):
     return dn_norm.values
 
 
-def get_back_position(back_index: np.ndarray, key: str, file_label: str):
+def get_back_position(back_index: np.ndarray, key: str, file_label: str) -> np.ndarray:
     """
     Convert normalized TDC values using lookup tables.
 
@@ -103,7 +103,7 @@ def get_back_position(back_index: np.ndarray, key: str, file_label: str):
     return dn_converted.values
 
 
-def get_energy_norm(ssd: np.ndarray, composite_energy: np.ndarray):
+def get_energy_norm(ssd: np.ndarray, composite_energy: np.ndarray) -> np.ndarray:
     """
     Normalize composite energy per SSD using a lookup table.
 
@@ -133,7 +133,7 @@ def get_energy_norm(ssd: np.ndarray, composite_energy: np.ndarray):
     return norm_composite_energy.values
 
 
-def get_image_params(image: str):
+def get_image_params(image: str) -> np.float64:
     """
     Lookup table for image parameters.
 
