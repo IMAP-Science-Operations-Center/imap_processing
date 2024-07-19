@@ -32,6 +32,22 @@ class L1bQualityFlags(IntFlag):
     )
     BASE_ALL = BASE_INF | BASE_MISSING_TELEM | BASE_NEG | BASE_RES1
 
+    @property
+    def name(self) -> str:
+        """
+        Override the default name property to handle combined flags.
+
+        Returns
+        -------
+        combined_name : str
+            The combined name of the individual flags.
+        """
+        if self._name_ is not None:
+            return self._name_
+
+        members = [member for member in L1bQualityFlags if member & self == member]
+        return "|".join(str(m.name) for m in members if m != L1bQualityFlags.NONE)
+
     def __str__(self) -> str:
         """
         Override the default string representation.
