@@ -1,4 +1,4 @@
-from tools.quality_flags.quality_flags import L1bQualityFlags
+from imap_processing.quality_flags import L1bQualityFlags
 
 
 def test_l1b_quality_flags():
@@ -26,6 +26,7 @@ def test_l1b_quality_flags():
         L1bQualityFlags.BASE_INF
         | L1bQualityFlags.BASE_MISSING_TELEM
         | L1bQualityFlags.BASE_NEG
+        | L1bQualityFlags.BASE_RES1
     )
 
     flag = L1bQualityFlags.BASE_INF | L1bQualityFlags.ENA_RES1
