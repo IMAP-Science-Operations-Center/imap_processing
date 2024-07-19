@@ -5,7 +5,7 @@ This module contains utility classes and functions that are used by various
 other SWAPI processing modules.
 """
 
-from enum import Enum, IntEnum
+from enum import IntEnum
 
 
 class SWAPIAPID(IntEnum):
@@ -16,10 +16,10 @@ class SWAPIAPID(IntEnum):
     SWP_AUT = 1192
 
 
-class SWAPIMODE(Enum):
+class SWAPIMODE(IntEnum):
     """Create ENUM for MODE."""
 
-    LVENG = "LVENG"
-    LVSCI = "LVSCI"
-    HVENG = "HVENG"
-    HVSCI = "HVSCI"
+    LVENG = 0
+    LVSCI = 1
+    HVENG = 2
+    HVSCI = 3

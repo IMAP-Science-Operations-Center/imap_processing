@@ -14,6 +14,7 @@ from imap_processing.swapi.l1.swapi_l1 import (
     process_sweep_data,
     swapi_l1,
 )
+from imap_processing.swapi.swapi_utils import SWAPIMODE
 from imap_processing.utils import packet_file_to_datasets
 
 
@@ -25,7 +26,9 @@ def decom_test_data():
     packet_definition = (
         f"{imap_module_directory}/swapi/packet_definitions/swapi_packet_definition.xml"
     )
-    return packet_file_to_datasets(packet_files, packet_definition)
+    return packet_file_to_datasets(
+        packet_files, packet_definition, use_derived_value=False
+    )
 
 
 def test_filter_good_data():
@@ -36,7 +39,7 @@ def test_filter_good_data():
         {
             "plan_id_science": xr.DataArray(np.full((total_sweeps * 12), 1)),
             "sweep_table": xr.DataArray(np.repeat(np.arange(total_sweeps), 12)),
-            "mode": xr.DataArray(np.full((total_sweeps * 12), "HVENG")),
+            "mode": xr.DataArray(np.full((total_sweeps * 12), SWAPIMODE.HVENG.value)),
         },
         coords={"epoch": np.arange(total_sweeps * 12)},
     )
@@ -47,13 +50,17 @@ def test_filter_good_data():
 
     # Check for bad MODE data, only HVENG is "good"
     # TODO: update test when we update MODE from HVENG to HVSCI
-    ds["mode"] = xr.DataArray(np.repeat(["LVENG", "LVSCI", "HVENG"], 12))
+    ds["mode"] = xr.DataArray(
+        np.repeat(
+            [SWAPIMODE.LVENG.value, SWAPIMODE.LVSCI.value, SWAPIMODE.HVENG.value], 12
+        )
+    )
     bad_data_indices = filter_good_data(ds)
     np.testing.assert_array_equal(bad_data_indices, np.arange(24, 36))
 
     # Check for bad sweep_table data.
     # Reset MODE data and create first sweep to be mixed value
-    ds["mode"] = xr.DataArray(np.full((total_sweeps * 12), "HVENG"))
+    ds["mode"] = xr.DataArray(np.full((total_sweeps * 12), SWAPIMODE.HVENG.value))
     ds["sweep_table"][:12] = np.arange(0, 12)
     np.testing.assert_array_equal(filter_good_data(ds), np.arange(12, 36))
 

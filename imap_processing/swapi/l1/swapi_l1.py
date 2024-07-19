@@ -53,7 +53,7 @@ def filter_good_data(full_sweep_sci: xr.Dataset) -> np.ndarray:
     # TODO: change comparison to SWAPIMODE.HVSCI once we have
     # some HVSCI data
     # MODE should be HVSCI
-    mode_indices = (mode == SWAPIMODE.HVENG.value).all(axis=1)
+    mode_indices = (mode == SWAPIMODE.HVENG).all(axis=1)
     bad_data_indices = sweep_indices & plan_id_indices & mode_indices
 
     # TODO: add checks for checksum
@@ -527,7 +527,7 @@ def process_swapi_science(sci_dataset: xr.Dataset, data_version: str) -> xr.Data
     # L1 quality flags
     # TODO: Should these be kept in raw format rather than derived into strings?
     dataset["swp_pcem_flags"] = xr.DataArray(
-        np.array(pcem_compression_flags == "RAW", dtype=np.uint8),
+        np.array(pcem_compression_flags, dtype=np.uint8),
         dims=["epoch", "energy"],
         attrs=dataclasses.replace(
             compression_attrs,
@@ -537,7 +537,7 @@ def process_swapi_science(sci_dataset: xr.Dataset, data_version: str) -> xr.Data
         ).output(),
     )
     dataset["swp_scem_flags"] = xr.DataArray(
-        np.array(scem_compression_flags == "RAW", dtype=np.uint8),
+        np.array(scem_compression_flags, dtype=np.uint8),
         dims=["epoch", "energy"],
         attrs=dataclasses.replace(
             compression_attrs,
@@ -547,7 +547,7 @@ def process_swapi_science(sci_dataset: xr.Dataset, data_version: str) -> xr.Data
         ).output(),
     )
     dataset["swp_coin_flags"] = xr.DataArray(
-        np.array(coin_compression_flags == "RAW", dtype=np.uint8),
+        np.array(coin_compression_flags, dtype=np.uint8),
         dims=["epoch", "energy"],
         attrs=dataclasses.replace(
             compression_attrs,
@@ -620,7 +620,9 @@ def swapi_l1(file_path: str, data_version: str) -> xr.Dataset:
     xtce_definition = (
         f"{imap_module_directory}/swapi/packet_definitions/swapi_packet_definition.xml"
     )
-    datasets = packet_file_to_datasets(file_path, xtce_definition)
+    datasets = packet_file_to_datasets(
+        file_path, xtce_definition, use_derived_value=False
+    )
     processed_data = []
     for apid, ds_data in datasets.items():
         # Right now, we only process SWP_HK and SWP_SCI
