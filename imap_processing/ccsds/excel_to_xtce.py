@@ -214,7 +214,6 @@ class XTCEGenerator:
             comparison.attrib["useCalibratedValue"] = "false"
 
             packet_entry_list = Et.SubElement(science_container, "xtce:EntryList")
-            final_row = len(packet_df) - 1
             for i, row in packet_df.iterrows():
                 if i < 7:
                     # Skip first 7 rows as they are the CCSDS header elements
@@ -228,9 +227,9 @@ class XTCEGenerator:
                 )
                 parameter_ref_entry.attrib["parameterRef"] = name
                 # Add this parameter to the ParameterSet too
-                self._add_parameter(row, final_two_rows=i >= final_row - 1)
+                self._add_parameter(row)
 
-    def _add_parameter(self, row: pd.Series, final_two_rows: bool = False) -> None:
+    def _add_parameter(self, row: pd.Series) -> None:
         """
         Row from a packet definition to be added to the XTCE file.
 
@@ -238,9 +237,6 @@ class XTCEGenerator:
         ----------
         row : pandas.Row
             Row to be added to the XTCE file, containing mnemonic, lengthInBits, ...
-        final_two_rows : bool
-            Whether this row is one of the final two rows in the packet definition.
-            This determines whether to use a dynamic value for the sizeInBits.
         """
         parameter = Et.SubElement(self._parameter_set, "xtce:Parameter")
         # Combine the packet name and mnemonic to create a unique parameter name
@@ -288,22 +284,19 @@ class XTCEGenerator:
             encoding.attrib["bitOrder"] = "mostSignificantBitFirst"
 
             size_in_bits = Et.SubElement(encoding, "xtce:SizeInBits")
-            if final_two_rows:
-                # If it is a byte field in the final two rows, consider it a
-                # dynamic value. (there is sometimes an extra checksum in the final row)
-                dynamic_value = Et.SubElement(size_in_bits, "xtce:DynamicValue")
-                param_ref = Et.SubElement(dynamic_value, "xtce:ParameterInstanceRef")
-                param_ref.attrib["parameterRef"] = "PKT_LEN"
-                linear_adjustment = Et.SubElement(
-                    dynamic_value, "xtce:LinearAdjustment"
-                )
-                linear_adjustment.attrib["slope"] = str(8)
-                # Intercept is the start bit of this parameter - (header bytes - 1) * 8
-                linear_adjustment.attrib["intercept"] = str(-(row["startBit"] - 40))
-            else:
-                # Consider it a fixed length value
-                fixed_value = Et.SubElement(size_in_bits, "xtce:FixedValue")
-                fixed_value.text = str(row["lengthInBits"])
+
+            # If it is a byte field consider it a dynamic value.
+            dynamic_value = Et.SubElement(size_in_bits, "xtce:DynamicValue")
+            param_ref = Et.SubElement(dynamic_value, "xtce:ParameterInstanceRef")
+            param_ref.attrib["parameterRef"] = "PKT_LEN"
+            linear_adjustment = Et.SubElement(dynamic_value, "xtce:LinearAdjustment")
+            linear_adjustment.attrib["slope"] = str(8)
+            # Intercept is the start bit of this parameter - (header bytes - 1) * 8
+            linear_adjustment.attrib["intercept"] = str(-(row["startBit"] - 40))
+
+            # TODO: Do we want to allow fixed length values?
+            # fixed_value = Et.SubElement(size_in_bits, "xtce:FixedValue")
+            # fixed_value.text = str(row["lengthInBits"])
 
         if row["convertAs"] == "ANALOG":
             # Go look up the conversion in the AnalogConversions tab
