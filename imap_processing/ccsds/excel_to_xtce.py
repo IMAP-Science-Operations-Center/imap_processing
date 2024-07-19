@@ -214,6 +214,8 @@ class XTCEGenerator:
             comparison.attrib["useCalibratedValue"] = "false"
 
             packet_entry_list = Et.SubElement(science_container, "xtce:EntryList")
+            # Needed for dynamic binary packet length
+            total_packet_bits = int(packet_df["lengthInBits"].sum())
             for i, row in packet_df.iterrows():
                 if i < 7:
                     # Skip first 7 rows as they are the CCSDS header elements
@@ -227,9 +229,9 @@ class XTCEGenerator:
                 )
                 parameter_ref_entry.attrib["parameterRef"] = name
                 # Add this parameter to the ParameterSet too
-                self._add_parameter(row)
+                self._add_parameter(row, total_packet_bits)
 
-    def _add_parameter(self, row: pd.Series) -> None:
+    def _add_parameter(self, row: pd.Series, total_packet_bits: int) -> None:
         """
         Row from a packet definition to be added to the XTCE file.
 
@@ -237,6 +239,8 @@ class XTCEGenerator:
         ----------
         row : pandas.Row
             Row to be added to the XTCE file, containing mnemonic, lengthInBits, ...
+        total_packet_bits : int
+            Total number of bits in the packet, as summed from the lengthInBits column.
         """
         parameter = Et.SubElement(self._parameter_set, "xtce:Parameter")
         # Combine the packet name and mnemonic to create a unique parameter name
@@ -252,6 +256,8 @@ class XTCEGenerator:
             description = Et.SubElement(parameter, "xtce:LongDescription")
             description.text = row.get("longDescription")
 
+        length_in_bits = int(row["lengthInBits"])
+
         # Add the parameterTypeRef for this row
         if "UINT" in row["dataType"]:
             parameter_type = Et.SubElement(
@@ -261,7 +267,7 @@ class XTCEGenerator:
             parameter_type.attrib["signed"] = "false"
 
             encoding = Et.SubElement(parameter_type, "xtce:IntegerDataEncoding")
-            encoding.attrib["sizeInBits"] = str(row["lengthInBits"])
+            encoding.attrib["sizeInBits"] = str(length_in_bits)
             encoding.attrib["encoding"] = "unsigned"
 
         elif any(x in row["dataType"] for x in ["SINT", "INT"]):
@@ -271,7 +277,7 @@ class XTCEGenerator:
             parameter_type.attrib["name"] = name
             parameter_type.attrib["signed"] = "true"
             encoding = Et.SubElement(parameter_type, "xtce:IntegerDataEncoding")
-            encoding.attrib["sizeInBits"] = str(row["lengthInBits"])
+            encoding.attrib["sizeInBits"] = str(length_in_bits)
             encoding.attrib["encoding"] = "signed"
 
         elif "BYTE" in row["dataType"]:
@@ -291,8 +297,13 @@ class XTCEGenerator:
             param_ref.attrib["parameterRef"] = "PKT_LEN"
             linear_adjustment = Et.SubElement(dynamic_value, "xtce:LinearAdjustment")
             linear_adjustment.attrib["slope"] = str(8)
-            # Intercept is the start bit of this parameter - (header bytes - 1) * 8
-            linear_adjustment.attrib["intercept"] = str(-(row["startBit"] - 40))
+            # The length of all other variables (other than this specific one)
+            other_variable_bits = total_packet_bits - length_in_bits
+            # PKT_LEN == number of bytes in the packet data field - 1
+            # So we need to subtract the header bytes plus 1 to get the offset
+            # The amount to subtract to get the intercept is then:
+            # number of other bits in the packet - (6 + 1) * 8
+            linear_adjustment.attrib["intercept"] = str(-int(other_variable_bits - 56))
 
             # TODO: Do we want to allow fixed length values?
             # fixed_value = Et.SubElement(size_in_bits, "xtce:FixedValue")
