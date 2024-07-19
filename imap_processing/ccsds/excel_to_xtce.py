@@ -82,6 +82,9 @@ class XTCEGenerator:
         self.sheets = pd.read_excel(path_to_excel_file, sheet_name=None)
         # Set up the packet mapping from packetName to Apid
         packet_sheet = self.sheets["Packets"]
+        if "apId" not in packet_sheet.columns:
+            # Create the apId column from the apIdHex (base=0 works with the 0x prefix)
+            packet_sheet["apId"] = packet_sheet["apIdHex"].apply(int, base=0)
         self._packet_mapping = packet_sheet.set_index("packetName")["apId"].to_dict()
 
         # Create the XML containers that will be populated later
