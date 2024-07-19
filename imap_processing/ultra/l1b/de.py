@@ -22,6 +22,9 @@ from imap_processing.ultra.l1b.ultra_l1b_extended import (
 from imap_processing.ultra.utils.ultra_l1_utils import create_dataset
 
 
+# TODO: pass in attribute_manager to add attributes
+# instead of using GlobalConstants.
+def calculate_de(de_dataset, name):
 def calculate_de(de_dataset: xr.Dataset, name: str) -> xr.Dataset:
     """
     Create dataset with defined datatypes for Direct Event Data.
@@ -77,36 +80,36 @@ def calculate_de(de_dataset: xr.Dataset, name: str) -> xr.Dataset:
     ssd_ctof, ssd_bin = determine_species_ssd(ssd_energy, ssd_tof, ssd_r)
 
     # Combine ph_yb and ssd_yb along with their indices
-    combined_indices = np.concatenate((ph_indices, ssd_indices))
+    combined_indices = np.argsort(np.concatenate((ph_indices, ssd_indices)))
 
     de_dict["x_front"] = xf
 
     yb = np.concatenate((ph_yb, ssd_yb))
-    de_dict["y_back"] = yb[np.argsort(combined_indices)]
+    de_dict["y_back"] = yb[combined_indices]
 
     xb = np.concatenate((ph_xb, ssd_xb))
-    de_dict["x_back"] = xb[np.argsort(combined_indices)]
+    de_dict["x_back"] = xb[combined_indices]
 
     xcoin = np.concatenate((ph_xc, np.zeros(len(ssd_indices))))
-    de_dict["x_coin"] = xcoin[np.argsort(combined_indices)]
+    de_dict["x_coin"] = xcoin[combined_indices]
 
     yf = np.concatenate((ph_yf, ssd_yf))
-    de_dict["y_front"] = yf[np.argsort(combined_indices)]
+    de_dict["y_front"] = yf[combined_indices]
 
     d = np.concatenate((ph_d, ssd_d))
-    de_dict["front_back_distance"] = d[np.argsort(combined_indices)]
+    de_dict["front_back_distance"] = d[combined_indices]
 
     r = np.concatenate((ph_r, ssd_r))
-    de_dict["path_length"] = r[np.argsort(combined_indices)]
+    de_dict["path_length"] = r[combined_indices]
 
     tof = np.concatenate((ph_tof, ssd_tof))
-    de_dict["tof_start_stop"] = tof[np.argsort(combined_indices)]
+    de_dict["tof_start_stop"] = tof[combined_indices]
 
     etof = np.concatenate((ph_etof, np.zeros(len(ssd_indices))))
-    de_dict["tof_stop_coin"] = etof[np.argsort(combined_indices)]
+    de_dict["tof_stop_coin"] = etof[combined_indices]
 
     ctof = np.concatenate((ph_ctof, ssd_ctof))
-    de_dict["tof_corrected"] = ctof[np.argsort(combined_indices)]
+    de_dict["tof_corrected"] = ctof[combined_indices]
 
     keys = [
         "coincidence_type",
@@ -131,10 +134,10 @@ def calculate_de(de_dataset: xr.Dataset, name: str) -> xr.Dataset:
     )
 
     energy = np.concatenate((ph_energy, ssd_energy))
-    de_dict["energy"] = energy[np.argsort(combined_indices)]
+    de_dict["energy"] = energy[combined_indices]
 
     species = np.concatenate((ph_bin, ssd_bin))
-    de_dict["species"] = species[np.argsort(combined_indices)]
+    de_dict["species"] = species[combined_indices]
 
     # TODO: add more fields in the future; these will be annotated events
     # de_dict["event_efficiency"] = np.zeros(len(epoch), dtype=np.float64)

@@ -5,7 +5,7 @@ import pandas as pd
 
 from imap_processing import imap_module_directory
 
-base_path = f"{imap_module_directory}/ultra/lookup_tables"
+base_path = imap_module_directory / "ultra" / "lookup_tables"
 
 
 def get_y_adjust(dy_lut: np.ndarray):
@@ -26,7 +26,7 @@ def get_y_adjust(dy_lut: np.ndarray):
     yadj : np.ndarray
         Y adjustment (mm).
     """
-    yadjust_path = f"{base_path}/yadjust.csv"
+    yadjust_path = base_path / "yadjust.csv"
     yadjust_df = pd.read_csv(yadjust_path).set_index("dYLUT")
 
     yadj = yadjust_df["dYAdj"].iloc[dy_lut]
@@ -67,7 +67,7 @@ def get_norm(dn: np.ndarray, key: str, sensor: str):
     else:
         file_label = "Ultra90_tdc_norm_LUT_IntPulser_20230614.csv"
 
-    tdc_norm_path = f"{base_path}/{file_label}"
+    tdc_norm_path = base_path / file_label
     tdc_norm_df = pd.read_csv(tdc_norm_path, header=0, index_col="Index")
 
     dn_norm = tdc_norm_df[key].iloc[dn]
@@ -105,7 +105,7 @@ def get_back_position(back_index: np.ndarray, key: str, sensor: str):
     else:
         file_label = "back-pos-luts_SN201_20230717.csv"
 
-    back_pos_path = f"{base_path}/{file_label}"
+    back_pos_path = base_path / file_label
     back_pos_df = pd.read_csv(back_pos_path, index_col="Index_offset")
 
     dn_converted = back_pos_df[key].iloc[back_index]
@@ -134,7 +134,7 @@ def get_energy_norm(ssd: np.ndarray, composite_energy: np.ndarray):
     norm_composite_energy : np.ndarray
         Normalized composite energy.
     """
-    energy_norm_path = f"{base_path}/EgyNorm.mem.csv"
+    energy_norm_path = base_path / "EgyNorm.mem.csv"
     energy_norm_df = pd.read_csv(energy_norm_path)
 
     row_number = ssd * 4096 + composite_energy
@@ -161,7 +161,7 @@ def get_image_params(image: str):
     value : np.float64
         Image parameter value from the CSV file.
     """
-    csv_file_path = f"{base_path}/FM45_Startup1_ULTRA_IMGPARAMS_20240207T134735_.csv"
+    csv_file_path = base_path / "FM45_Startup1_ULTRA_IMGPARAMS_20240207T134735_.csv"
     df = pd.read_csv(csv_file_path)
     value = df[image].iloc[0]
 

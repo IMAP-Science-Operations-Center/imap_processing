@@ -28,7 +28,7 @@ x_front:
   LABLAXIS: x front position
   VALIDMIN: -1e6
   FORMAT: F12.6
-  UNITS: hundredths of a millimeter
+  UNITS: mm / 100
 
 y_front:
   <<: *default
@@ -37,7 +37,7 @@ y_front:
   LABLAXIS: y front position
   VALIDMIN: -1e6
   FORMAT: F12.6
-  UNITS: hundredths of a millimeter
+  UNITS: mm / 100
 
 x_back:
   <<: *default
@@ -46,7 +46,7 @@ x_back:
   LABLAXIS: x back position
   VALIDMIN: -1e6
   FORMAT: F12.6
-  UNITS: hundredths of a millimeter
+  UNITS: mm / 100
 
 y_back:
   <<: *default
@@ -55,7 +55,7 @@ y_back:
   LABLAXIS: y back position
   VALIDMIN: -1e6
   FORMAT: F12.6
-  UNITS: hundredths of a millimeter
+  UNITS: mm / 100
 
 x_coin:
   <<: *default
@@ -64,7 +64,7 @@ x_coin:
   LABLAXIS: x coincidence position
   VALIDMIN: -1e6
   FORMAT: F12.6
-  UNITS: hundredths of a millimeter
+  UNITS: mm / 100
 
 tof_start_stop:
   <<: *default
@@ -73,7 +73,7 @@ tof_start_stop:
   LABLAXIS: tof start stop
   VALIDMIN: -1e6
   FORMAT: F12.6
-  UNITS: tenths of a nanosecond
+  UNITS: nanosecond / 10
 
 tof_stop_coin:
   <<: *default
@@ -82,7 +82,7 @@ tof_stop_coin:
   LABLAXIS: tof stop coin
   VALIDMIN: -1e6
   FORMAT: F12.6
-  UNITS: tenths of a nanosecond
+  UNITS: nanosecond / 10
 
 tof_corrected:
   <<: *default
@@ -91,7 +91,7 @@ tof_corrected:
   LABLAXIS: tof corrected
   VALIDMIN: -1e6
   FORMAT: F12.6
-  UNITS: tenths of a nanosecond
+  UNITS: nanosecond / 10
 
 event_type:
   <<: *default
@@ -167,7 +167,7 @@ front_back_distance:
   FIELDNAM: front_back_distance
   LABLAXIS: front_back_distance
   FORMAT: F12.6
-  UNITS: hundredths of a millimeter
+  UNITS: mm / 100
 
 path_length:
   <<: *default
@@ -175,7 +175,7 @@ path_length:
   FIELDNAM: path_length
   LABLAXIS: path_length
   FORMAT: F12.6
-  UNITS: hundredths of a millimeter
+  UNITS: mm / 100
 
 event_efficiency:
   <<: *default
