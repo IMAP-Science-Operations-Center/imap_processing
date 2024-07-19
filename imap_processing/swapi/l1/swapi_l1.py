@@ -467,11 +467,10 @@ def process_swapi_science(sci_dataset: xr.Dataset, data_version: str) -> xr.Data
     # ===================================================================
 
     # epoch time. Should be same dimension as number of good sweeps
-    epoch_time = good_sweep_sci["epoch"].data.reshape(total_full_sweeps, 12)[:, 0]
-    # epoch_converted_time = met_to_j2000ns(epoch_time)
-    epoch_converted_time = epoch_time
+    epoch_values = good_sweep_sci["epoch"].data.reshape(total_full_sweeps, 12)[:, 0]
+
     epoch_time = xr.DataArray(
-        epoch_converted_time,
+        epoch_values,
         name="epoch",
         dims=["epoch"],
         attrs=ConstantCoordinates.EPOCH,
