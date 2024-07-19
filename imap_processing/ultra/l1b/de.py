@@ -1,10 +1,9 @@
 """Calculate Annotated Direct Events."""
 
 import numpy as np
-
-from imap_processing.cdf.defaults import GlobalConstants
 import xarray as xr
 
+from imap_processing.cdf.defaults import GlobalConstants
 from imap_processing.ultra.l1b.ultra_l1b_extended import (
     determine_species_pulse_height,
     determine_species_ssd,
@@ -24,7 +23,6 @@ from imap_processing.ultra.utils.ultra_l1_utils import create_dataset
 
 # TODO: pass in attribute_manager to add attributes
 # instead of using GlobalConstants.
-def calculate_de(de_dataset, name):
 def calculate_de(de_dataset: xr.Dataset, name: str) -> xr.Dataset:
     """
     Create dataset with defined datatypes for Direct Event Data.
