@@ -34,7 +34,7 @@ def get_y_adjust(dy_lut: np.ndarray):
     return yadj.values
 
 
-def get_norm(dn: np.ndarray, key: str, sensor: str):
+def get_norm(dn: np.ndarray, key: str, file_label: str):
     """
     Correct mismatches between the stop Time to Digital Converters (TDCs).
 
@@ -53,7 +53,7 @@ def get_norm(dn: np.ndarray, key: str, sensor: str):
     key : str
         TpSpNNorm, TpSpSNorm, TpSpENorm, or TpSpWNorm.
         BtSpNNorm, BtSpSNorm, BtSpENorm, or BtSpWNorm.
-    sensor : str
+    file_label : str
         Instrument (ultra45 or ultra90).
 
     Returns
@@ -62,20 +62,15 @@ def get_norm(dn: np.ndarray, key: str, sensor: str):
         Normalized DNs.
     """
     # We only need the center string, i.e. SpN, SpS, SpE, SpW
-    if sensor == "ultra45":
-        file_label = "Ultra45_tdc_norm_LUT_IntPulser_20230901.csv"
-    else:
-        file_label = "Ultra90_tdc_norm_LUT_IntPulser_20230614.csv"
-
-    tdc_norm_path = base_path / file_label
-    tdc_norm_df = pd.read_csv(tdc_norm_path, header=0, index_col="Index")
+    tdc_norm_path = base_path / f"{file_label}_tdc_norm.csv"
+    tdc_norm_df = pd.read_csv(tdc_norm_path, header=1, index_col="Index")
 
     dn_norm = tdc_norm_df[key].iloc[dn]
 
     return dn_norm.values
 
 
-def get_back_position(back_index: np.ndarray, key: str, sensor: str):
+def get_back_position(back_index: np.ndarray, key: str, file_label: str):
     """
     Convert normalized TDC values using lookup tables.
 
@@ -92,7 +87,7 @@ def get_back_position(back_index: np.ndarray, key: str, sensor: str):
         SpSNorm - SpNNorm + 2047, or SpENorm - SpWNorm + 2047.
     key : str
         XBkTp, YBkTp, XBkBt, or YBkBt.
-    sensor : str
+    file_label : str
         Instrument (ultra45 or ultra90).
 
     Returns
@@ -100,12 +95,7 @@ def get_back_position(back_index: np.ndarray, key: str, sensor: str):
     dn_converted : np.ndarray
         Converted DNs to Units of hundredths of a millimeter.
     """
-    if sensor == "ultra45":
-        file_label = "back-pos-luts_SN202_20230216.csv"
-    else:
-        file_label = "back-pos-luts_SN201_20230717.csv"
-
-    back_pos_path = base_path / file_label
+    back_pos_path = base_path / f"{file_label}_back-pos-luts.csv"
     back_pos_df = pd.read_csv(back_pos_path, index_col="Index_offset")
 
     dn_converted = back_pos_df[key].iloc[back_index]
@@ -161,7 +151,7 @@ def get_image_params(image: str):
     value : np.float64
         Image parameter value from the CSV file.
     """
-    csv_file_path = base_path / "FM45_Startup1_ULTRA_IMGPARAMS_20240207T134735_.csv"
+    csv_file_path = base_path / "FM45_Startup1_ULTRA_IMGPARAMS_20240719.csv"
     df = pd.read_csv(csv_file_path)
     value = df[image].iloc[0]
 

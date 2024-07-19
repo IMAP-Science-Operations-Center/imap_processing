@@ -10,13 +10,13 @@ from imap_processing.ultra.l1b.lookup_utils import (
     get_y_adjust,
 )
 
-base_path = f"{imap_module_directory}/ultra/lookup_tables"
+base_path = imap_module_directory / "ultra" / "lookup_tables"
 
 
 def test_get_y_adjust():
     """Tests function get_y_adjust."""
 
-    yadjust_path = f"{base_path}/yadjust.csv"
+    yadjust_path = base_path / "yadjust.csv"
     yadjust_df = pd.read_csv(yadjust_path).set_index("dYLUT")
 
     array = np.array([8])
@@ -28,8 +28,8 @@ def test_get_y_adjust():
 def test_get_stop_norm():
     """Tests function get_stop_norm."""
 
-    tdc_norm_path = f"{base_path}/Ultra45_tdc_norm_LUT_IntPulser_20230901.csv"
-    tdc_norm_df = pd.read_csv(tdc_norm_path, header=0)
+    tdc_norm_path = base_path / "ultra45_tdc_norm.csv"
+    tdc_norm_df = pd.read_csv(tdc_norm_path, header=1)
 
     array = np.array([378])
     stop_norm = get_norm(array, "SpE", "ultra45")
@@ -40,7 +40,7 @@ def test_get_stop_norm():
 def test_get_back_position():
     """Tests function get_back_position."""
 
-    back_pos_path = f"{base_path}/back-pos-luts_SN202_20230216.csv"
+    back_pos_path = base_path / "ultra45_back-pos-luts.csv"
     back_pos_df = pd.read_csv(back_pos_path, index_col="Index_offset")
 
     array = np.array([-2000])
@@ -52,7 +52,7 @@ def test_get_back_position():
 def test_get_egy_norm():
     """Tests function get_egy_norm."""
 
-    egy_norm_path = f"{base_path}/EgyNorm.mem.csv"
+    egy_norm_path = base_path / "EgyNorm.mem.csv"
     egy_norm_df = pd.read_csv(egy_norm_path)
 
     norm_composite_energy = get_energy_norm(np.array([2]), np.array([2]))
@@ -65,4 +65,4 @@ def test_get_image_params():
 
     image_params = get_image_params("XFTLTOFF")
 
-    assert image_params == 47.5
+    assert image_params == 49.3

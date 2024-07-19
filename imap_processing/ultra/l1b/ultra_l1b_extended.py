@@ -149,8 +149,6 @@ def get_front_x_position(start_type: np.array, start_position_tdc: np.array):
     xft_off = np.where(start_type[indices] == 1, xft_lt_off, xft_rt_off)
 
     # Calculate xf and convert to hundredths of a millimeter
-    # Note FSW uses xft_off+1.8, but the lookup table uses xft_off
-    # Note FSW uses xft_off-.25, but the lookup table uses xft_off
     xf = (xftsc * -start_position_tdc[indices] + xft_off) * 100
 
     return xf

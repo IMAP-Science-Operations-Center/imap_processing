@@ -22,34 +22,16 @@ def test_get_front_x_position(
     events_fsw_comparison_theta_0,
 ):
     """Tests get_front_x_position function."""
-    # Left Start Type
-    indices_left = np.where(de_dataset["START_TYPE"] == 1)[0]
-    # Right Start Type
-    indices_right = np.where(de_dataset["START_TYPE"] == 2)[0]
 
     df = pd.read_csv(events_fsw_comparison_theta_0)
     df_filt = df[df["StartType"] != -1]
-    selected_rows_1 = df_filt.iloc[indices_left]
-    selected_rows_2 = df_filt.iloc[indices_right]
 
     xf = get_front_x_position(
         de_dataset["START_TYPE"].data,
         de_dataset["START_POS_TDC"].data,
     )
 
-    # TODO: Need new lookup tables for "XFTLTOFF", "XFTRTOFF"
-    # Need new lookup table.
-    # The value 180 was added to xf_1 since that
-    # is the offset from the FSW xft_off
-    assert np.allclose(
-        xf[indices_left] + 180, selected_rows_1.Xf.values.astype("float"), rtol=1e-3
-    )
-
-    # The value 25 was subtracted from xf_2 bc that
-    # is the offset from the FSW xft_off
-    assert np.allclose(
-        xf[indices_right] - 25, selected_rows_2.Xf.values.astype("float"), rtol=1e-3
-    )
+    assert np.allclose(xf, df_filt.Xf.values.astype("float"), rtol=1e-5)
 
 
 def test_xb_yb(
@@ -167,11 +149,11 @@ def test_get_ssd_offset_and_positions(
 
     # -4 is a value of an offset for SSD3 for Left Start Type and
     # SSD0 for Right Start Type.
-    offset_length = len(tof_offsets[tof_offsets == -4])
+    offset_length = len(tof_offsets[tof_offsets == -4.2])
     expected_offset_length = len(
         selected_rows[
             ((selected_rows["StartType"] == 1) & (selected_rows["SSDS3"] == 1))
-            | ((selected_rows["StartType"] == 2) & (selected_rows["SSDS4"] == 1))
+            | ((selected_rows["StartType"] == 2) & (selected_rows["SSDS5"] == 1))
         ]
     )
 
