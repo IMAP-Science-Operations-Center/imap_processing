@@ -30,7 +30,7 @@ class L1bQualityFlags(IntFlag):
         | ULTRA_RES1
         | ULTRA_RES2
     )
-    BASE_ALL = BASE_INF | BASE_MISSING_TELEM | BASE_NEG
+    BASE_ALL = BASE_INF | BASE_MISSING_TELEM | BASE_NEG | BASE_RES1
 
     def __str__(self) -> str:
         """
