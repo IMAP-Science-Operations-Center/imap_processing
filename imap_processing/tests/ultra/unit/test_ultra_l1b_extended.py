@@ -2,14 +2,6 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from imap_processing import decom
-from imap_processing.cdf.defaults import GlobalConstants
-from imap_processing.ultra.l0.decom_ultra import process_ultra_apids
-from imap_processing.ultra.l0.ultra_utils import (
-    ULTRA_AUX,
-    ULTRA_EVENTS,
-)
-from imap_processing.ultra.l1a.ultra_l1a import create_dataset
 from imap_processing.ultra.l1b.ultra_l1b_extended import (
     determine_species_pulse_height,
     determine_species_ssd,
@@ -23,31 +15,6 @@ from imap_processing.ultra.l1b.ultra_l1b_extended import (
     get_ssd_offset_and_positions,
     get_ssd_tof,
 )
-from imap_processing.utils import group_by_apid
-
-
-@pytest.fixture()
-def de_dataset(ccsds_path_theta_0, xtce_path):
-    """L1A test data"""
-    packets = decom.decom_packets(ccsds_path_theta_0, xtce_path)
-    grouped_data = group_by_apid(packets)
-    decom_ultra_events = process_ultra_apids(
-        grouped_data[ULTRA_EVENTS.apid[0]], ULTRA_EVENTS.apid[0]
-    )
-    decom_ultra_aux = process_ultra_apids(
-        grouped_data[ULTRA_AUX.apid[0]], ULTRA_AUX.apid[0]
-    )
-    dataset = create_dataset(
-        {
-            ULTRA_EVENTS.apid[0]: decom_ultra_events,
-            ULTRA_AUX.apid[0]: decom_ultra_aux,
-        }
-    )
-    # Remove start_type with fill values
-    l1a_de_dataset = dataset.where(
-        dataset["START_TYPE"] != GlobalConstants.INT_FILLVAL, drop=True
-    )
-    return l1a_de_dataset
 
 
 def test_get_front_x_position(
