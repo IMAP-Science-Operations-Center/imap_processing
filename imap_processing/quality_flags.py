@@ -30,29 +30,16 @@ class BaseQualityFlags(IntFlag):
         members = [member for member in BaseQualityFlags if member & self == member]
         return "|".join(str(m.name) for m in members if m != BaseQualityFlags.NONE)
 
-    def __str__(self) -> str:
-        """
-        Override the default string representation.
-
-        Returns
-        -------
-        output_string : str
-            The modified string representation without the initial segment
-            before the first period.
-        """
-        output_string = super().__str__().split(".", 1)[-1]
-        return output_string
-
 
 class UltraQualityFlags(IntFlag):
     """Ultra specific Quality flags."""
 
     NONE = 0x0
-    ENA_RES1 = 0x10  # bit 4, ENA reserved 1
-    ULTRA_RES1 = 0x20  # bit 5, Ultra reserved 1
-    ULTRA_RES2 = 0x40  # bit 6, Ultra reserved 2
+    ULTRA_RES1 = 0x10  # bit 4, Ultra reserved 1
+    ULTRA_RES2 = 0x20  # bit 5, Ultra reserved 2
+    ULTRA_RES3 = 0x40  # bit 6, Ultra reserved 3
 
-    ALL = ENA_RES1 | ULTRA_RES1 | ULTRA_RES2
+    ALL = ULTRA_RES1 | ULTRA_RES2 | ULTRA_RES3
 
     @property
     def name(self) -> str:
@@ -69,16 +56,3 @@ class UltraQualityFlags(IntFlag):
 
         members = [member for member in UltraQualityFlags if member & self == member]
         return "|".join(str(m.name) for m in members if m != UltraQualityFlags.NONE)
-
-    def __str__(self) -> str:
-        """
-        Override the default string representation.
-
-        Returns
-        -------
-        output_string : str
-            The modified string representation without the initial segment
-            before the first period.
-        """
-        output_string = super().__str__().split(".", 1)[-1]
-        return output_string

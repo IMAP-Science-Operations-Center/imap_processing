@@ -30,22 +30,22 @@ def test_quality_flags():
 
     # Test UltraQualityFlags
     assert UltraQualityFlags.NONE == 0x0
-    assert UltraQualityFlags.ENA_RES1 == 0x10
-    assert UltraQualityFlags.ULTRA_RES1 == 0x20
-    assert UltraQualityFlags.ULTRA_RES2 == 0x40
+    assert UltraQualityFlags.ULTRA_RES1 == 0x10
+    assert UltraQualityFlags.ULTRA_RES2 == 0x20
+    assert UltraQualityFlags.ULTRA_RES3 == 0x40
 
     assert UltraQualityFlags.ALL == (
-        UltraQualityFlags.ENA_RES1
+        UltraQualityFlags.ULTRA_RES3
         | UltraQualityFlags.ULTRA_RES1
         | UltraQualityFlags.ULTRA_RES2
     )
 
-    flag = UltraQualityFlags.ENA_RES1 | UltraQualityFlags.ULTRA_RES1
-    assert flag & UltraQualityFlags.ENA_RES1
+    flag = UltraQualityFlags.ULTRA_RES3 | UltraQualityFlags.ULTRA_RES1
+    assert flag & UltraQualityFlags.ULTRA_RES3
     assert flag & UltraQualityFlags.ULTRA_RES1
     assert not flag & UltraQualityFlags.ULTRA_RES2
 
     assert UltraQualityFlags.NONE.name == "NONE"
-    assert UltraQualityFlags.ENA_RES1.name == "ENA_RES1"
-    combined_flags = UltraQualityFlags.ENA_RES1 | UltraQualityFlags.ULTRA_RES1
-    assert combined_flags.name == "ENA_RES1|ULTRA_RES1"
+    assert UltraQualityFlags.ULTRA_RES3.name == "ULTRA_RES3"
+    combined_flags = UltraQualityFlags.ULTRA_RES3 | UltraQualityFlags.ULTRA_RES1
+    assert combined_flags.name == "ULTRA_RES1|ULTRA_RES3"
