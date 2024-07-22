@@ -3,16 +3,18 @@
 from enum import IntFlag
 
 
+# TODO: as needed create a message for each name, value pair
+#  for a more verbose description of what the flag indicates
 class BaseQualityFlags(IntFlag):
     """Base Quality flags."""
 
     NONE = 0x0
-    BASE_INF = 0x1  # bit 0, Infinite value
-    BASE_MISSING_TELEM = 0x2  # bit 1, Missing telemetry
-    BASE_NEG = 0x4  # bit 2, Negative value
-    BASE_RES1 = 0x8  # bit 3, Reserved 1
+    INF = 2**0  # bit 0, Infinite value
+    MISSING_TELEM = 2**1  # bit 1, Missing telemetry
+    NEG = 2**2  # bit 2, Negative value
+    RES1 = 2**3  # bit 3, Reserved 1
 
-    BASE_ALL = BASE_INF | BASE_MISSING_TELEM | BASE_NEG | BASE_RES1
+    ALL = INF | MISSING_TELEM | NEG | RES1
 
     @property
     def name(self) -> str:
@@ -35,9 +37,9 @@ class UltraQualityFlags(IntFlag):
     """Ultra specific Quality flags."""
 
     NONE = 0x0
-    ULTRA_RES1 = 0x10  # bit 4, Ultra reserved 1
-    ULTRA_RES2 = 0x20  # bit 5, Ultra reserved 2
-    ULTRA_RES3 = 0x40  # bit 6, Ultra reserved 3
+    ULTRA_RES1 = 2**4  # bit 4, Ultra reserved 1
+    ULTRA_RES2 = 2**5  # bit 5, Ultra reserved 2
+    ULTRA_RES3 = 2**6  # bit 6, Ultra reserved 3
 
     ALL = ULTRA_RES1 | ULTRA_RES2 | ULTRA_RES3
 

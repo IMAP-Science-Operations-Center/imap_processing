@@ -6,27 +6,27 @@ def test_quality_flags():
 
     # Test BaseQualityFlags
     assert BaseQualityFlags.NONE == 0x0
-    assert BaseQualityFlags.BASE_INF == 0x1
-    assert BaseQualityFlags.BASE_MISSING_TELEM == 0x2
-    assert BaseQualityFlags.BASE_NEG == 0x4
-    assert BaseQualityFlags.BASE_RES1 == 0x8
+    assert BaseQualityFlags.INF == 0x1
+    assert BaseQualityFlags.MISSING_TELEM == 0x2
+    assert BaseQualityFlags.NEG == 0x4
+    assert BaseQualityFlags.RES1 == 0x8
 
-    assert BaseQualityFlags.BASE_ALL == (
-        BaseQualityFlags.BASE_INF
-        | BaseQualityFlags.BASE_MISSING_TELEM
-        | BaseQualityFlags.BASE_NEG
-        | BaseQualityFlags.BASE_RES1
+    assert BaseQualityFlags.ALL == (
+        BaseQualityFlags.INF
+        | BaseQualityFlags.MISSING_TELEM
+        | BaseQualityFlags.NEG
+        | BaseQualityFlags.RES1
     )
 
-    flag = BaseQualityFlags.BASE_INF | BaseQualityFlags.BASE_RES1
-    assert flag & BaseQualityFlags.BASE_INF
-    assert flag & BaseQualityFlags.BASE_RES1
-    assert not flag & BaseQualityFlags.BASE_MISSING_TELEM
+    flag = BaseQualityFlags.INF | BaseQualityFlags.RES1
+    assert flag & BaseQualityFlags.INF
+    assert flag & BaseQualityFlags.RES1
+    assert not flag & BaseQualityFlags.MISSING_TELEM
 
     assert BaseQualityFlags.NONE.name == "NONE"
-    assert BaseQualityFlags.BASE_INF.name == "BASE_INF"
-    combined_flags = BaseQualityFlags.BASE_INF | BaseQualityFlags.BASE_RES1
-    assert combined_flags.name == "BASE_INF|BASE_RES1"
+    assert BaseQualityFlags.INF.name == "INF"
+    combined_flags = BaseQualityFlags.INF | BaseQualityFlags.RES1
+    assert combined_flags.name == "INF|RES1"
 
     # Test UltraQualityFlags
     assert UltraQualityFlags.NONE == 0x0
