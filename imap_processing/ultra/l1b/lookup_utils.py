@@ -7,6 +7,22 @@ from imap_processing import imap_module_directory
 
 base_path = imap_module_directory / "ultra" / "lookup_tables"
 
+_YADJUST_DF = pd.read_csv(base_path / "yadjust.csv").set_index("dYLUT")
+_TDC_NORM_DF_ULTRA45 = pd.read_csv(
+    base_path / "ultra45_tdc_norm.csv", header=1, index_col="Index"
+)
+_TDC_NORM_DF_ULTRA90 = pd.read_csv(
+    base_path / "ultra90_tdc_norm.csv", header=1, index_col="Index"
+)
+_BACK_POS_DF_ULTRA45 = pd.read_csv(
+    base_path / "ultra45_back-pos-luts.csv", index_col="Index_offset"
+)
+_BACK_POS_DF_ULTRA90 = pd.read_csv(
+    base_path / "ultra90_back-pos-luts.csv", index_col="Index_offset"
+)
+_ENERGY_NORM_DF = pd.read_csv(base_path / "EgyNorm.mem.csv")
+_IMAGE_PARAMS_DF = pd.read_csv(base_path / "FM45_Startup1_ULTRA_IMGPARAMS_20240719.csv")
+
 
 def get_y_adjust(dy_lut: np.ndarray) -> np.ndarray:
     """
@@ -26,10 +42,8 @@ def get_y_adjust(dy_lut: np.ndarray) -> np.ndarray:
     yadj : np.ndarray
         Y adjustment (mm).
     """
-    yadjust_path = base_path / "yadjust.csv"
-    yadjust_df = pd.read_csv(yadjust_path).set_index("dYLUT")
-
-    yadj = yadjust_df["dYAdj"].iloc[dy_lut]
+    yadj = _YADJUST_DF["dYAdj"].iloc[dy_lut]
+    _YADJUST_DF["dYAdj"].values[dy_lut]
 
     return yadj.values
 
@@ -61,9 +75,10 @@ def get_norm(dn: np.ndarray, key: str, file_label: str) -> np.ndarray:
     dn_norm : np.ndarray
         Normalized DNs.
     """
-    # We only need the center string, i.e. SpN, SpS, SpE, SpW
-    tdc_norm_path = base_path / f"{file_label}_tdc_norm.csv"
-    tdc_norm_df = pd.read_csv(tdc_norm_path, header=1, index_col="Index")
+    if file_label == "ultra45":
+        tdc_norm_df = _TDC_NORM_DF_ULTRA45
+    else:
+        tdc_norm_df = _TDC_NORM_DF_ULTRA90
 
     dn_norm = tdc_norm_df[key].iloc[dn]
 
@@ -95,8 +110,10 @@ def get_back_position(back_index: np.ndarray, key: str, file_label: str) -> np.n
     dn_converted : np.ndarray
         Converted DNs to Units of hundredths of a millimeter.
     """
-    back_pos_path = base_path / f"{file_label}_back-pos-luts.csv"
-    back_pos_df = pd.read_csv(back_pos_path, index_col="Index_offset")
+    if file_label == "ultra45":
+        back_pos_df = _BACK_POS_DF_ULTRA45
+    else:
+        back_pos_df = _BACK_POS_DF_ULTRA90
 
     dn_converted = back_pos_df[key].iloc[back_index]
 
@@ -124,11 +141,8 @@ def get_energy_norm(ssd: np.ndarray, composite_energy: np.ndarray) -> np.ndarray
     norm_composite_energy : np.ndarray
         Normalized composite energy.
     """
-    energy_norm_path = base_path / "EgyNorm.mem.csv"
-    energy_norm_df = pd.read_csv(energy_norm_path)
-
     row_number = ssd * 4096 + composite_energy
-    norm_composite_energy = energy_norm_df["NormEnergy"].iloc[row_number]
+    norm_composite_energy = _ENERGY_NORM_DF["NormEnergy"].iloc[row_number]
 
     return norm_composite_energy.values
 
@@ -151,8 +165,6 @@ def get_image_params(image: str) -> np.float64:
     value : np.float64
         Image parameter value from the CSV file.
     """
-    csv_file_path = base_path / "FM45_Startup1_ULTRA_IMGPARAMS_20240719.csv"
-    df = pd.read_csv(csv_file_path)
-    value = df[image].iloc[0]
+    value = _IMAGE_PARAMS_DF[image].iloc[0]
 
     return value
