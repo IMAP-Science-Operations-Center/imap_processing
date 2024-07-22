@@ -1,40 +1,51 @@
-from imap_processing.quality_flags import L1bQualityFlags
+from imap_processing.quality_flags import BaseQualityFlags, UltraQualityFlags
 
 
-def test_l1b_quality_flags():
-    """Test the L1bQualityFlags bitwise operations."""
+def test_quality_flags():
+    """Test the QualityFlags bitwise operations."""
 
-    assert L1bQualityFlags.NONE == 0x0
-    assert L1bQualityFlags.BASE_INF == 0x1
-    assert L1bQualityFlags.BASE_MISSING_TELEM == 0x2
-    assert L1bQualityFlags.BASE_NEG == 0x4
-    assert L1bQualityFlags.BASE_RES1 == 0x8
-    assert L1bQualityFlags.ENA_RES1 == 0x10
-    assert L1bQualityFlags.ULTRA_RES1 == 0x20
-    assert L1bQualityFlags.ULTRA_RES2 == 0x40
+    # Test BaseQualityFlags
+    assert BaseQualityFlags.NONE == 0x0
+    assert BaseQualityFlags.BASE_INF == 0x1
+    assert BaseQualityFlags.BASE_MISSING_TELEM == 0x2
+    assert BaseQualityFlags.BASE_NEG == 0x4
+    assert BaseQualityFlags.BASE_RES1 == 0x8
 
-    assert L1bQualityFlags.ALL == (
-        L1bQualityFlags.BASE_INF
-        | L1bQualityFlags.BASE_MISSING_TELEM
-        | L1bQualityFlags.BASE_NEG
-        | L1bQualityFlags.BASE_RES1
-        | L1bQualityFlags.ENA_RES1
-        | L1bQualityFlags.ULTRA_RES1
-        | L1bQualityFlags.ULTRA_RES2
-    )
-    assert L1bQualityFlags.BASE_ALL == (
-        L1bQualityFlags.BASE_INF
-        | L1bQualityFlags.BASE_MISSING_TELEM
-        | L1bQualityFlags.BASE_NEG
-        | L1bQualityFlags.BASE_RES1
+    assert BaseQualityFlags.BASE_ALL == (
+        BaseQualityFlags.BASE_INF
+        | BaseQualityFlags.BASE_MISSING_TELEM
+        | BaseQualityFlags.BASE_NEG
+        | BaseQualityFlags.BASE_RES1
     )
 
-    flag = L1bQualityFlags.BASE_INF | L1bQualityFlags.ENA_RES1
-    assert flag & L1bQualityFlags.BASE_INF
-    assert flag & L1bQualityFlags.ENA_RES1
-    assert not flag & L1bQualityFlags.BASE_MISSING_TELEM
+    flag = BaseQualityFlags.BASE_INF | BaseQualityFlags.BASE_RES1
+    assert flag & BaseQualityFlags.BASE_INF
+    assert flag & BaseQualityFlags.BASE_RES1
+    assert not flag & BaseQualityFlags.BASE_MISSING_TELEM
 
-    assert L1bQualityFlags.NONE.name == "NONE"
-    assert L1bQualityFlags.BASE_INF.name == "BASE_INF"
-    combined_flags = L1bQualityFlags.BASE_INF | L1bQualityFlags.ENA_RES1
-    assert combined_flags.name == "BASE_INF|ENA_RES1"
+    assert BaseQualityFlags.NONE.name == "NONE"
+    assert BaseQualityFlags.BASE_INF.name == "BASE_INF"
+    combined_flags = BaseQualityFlags.BASE_INF | BaseQualityFlags.BASE_RES1
+    assert combined_flags.name == "BASE_INF|BASE_RES1"
+
+    # Test UltraQualityFlags
+    assert UltraQualityFlags.NONE == 0x0
+    assert UltraQualityFlags.ENA_RES1 == 0x10
+    assert UltraQualityFlags.ULTRA_RES1 == 0x20
+    assert UltraQualityFlags.ULTRA_RES2 == 0x40
+
+    assert UltraQualityFlags.ALL == (
+        UltraQualityFlags.ENA_RES1
+        | UltraQualityFlags.ULTRA_RES1
+        | UltraQualityFlags.ULTRA_RES2
+    )
+
+    flag = UltraQualityFlags.ENA_RES1 | UltraQualityFlags.ULTRA_RES1
+    assert flag & UltraQualityFlags.ENA_RES1
+    assert flag & UltraQualityFlags.ULTRA_RES1
+    assert not flag & UltraQualityFlags.ULTRA_RES2
+
+    assert UltraQualityFlags.NONE.name == "NONE"
+    assert UltraQualityFlags.ENA_RES1.name == "ENA_RES1"
+    combined_flags = UltraQualityFlags.ENA_RES1 | UltraQualityFlags.ULTRA_RES1
+    assert combined_flags.name == "ENA_RES1|ULTRA_RES1"
