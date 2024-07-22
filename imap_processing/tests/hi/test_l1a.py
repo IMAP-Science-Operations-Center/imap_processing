@@ -57,7 +57,7 @@ def test_app_nhk_decom():
     # TODO: compare with validation data once we have it
 
     # Write CDF
-    cem_raw_cdf_filepath = write_cdf(processed_data[0])
+    cem_raw_cdf_filepath = write_cdf(processed_data[0], istp=False)
 
     # TODO: ask Vivek about this date mismatch between the file name
     # and the data. May get resolved when we have good sample data.

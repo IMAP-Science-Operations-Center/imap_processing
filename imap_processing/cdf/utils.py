@@ -103,7 +103,7 @@ def load_cdf(
     return dataset
 
 
-def write_cdf(dataset: xr.Dataset) -> Path:
+def write_cdf(dataset: xr.Dataset, **extra_cdf_kwargs: dict) -> Path:
     """
     Write the contents of "data" to a CDF file using cdflib.xarray_to_cdf.
 
@@ -118,6 +118,8 @@ def write_cdf(dataset: xr.Dataset) -> Path:
     ----------
     dataset : xarray.Dataset
         The dataset object to convert to a CDF.
+    **extra_cdf_kwargs : dict
+        Additional keyword arguments to pass to the ``xarray_to_cdf`` function.
 
     Returns
     -------
@@ -166,6 +168,7 @@ def write_cdf(dataset: xr.Dataset) -> Path:
         dataset,
         str(file_path),
         terminate_on_warning=True,
+        **extra_cdf_kwargs,
     )  # Terminate if not ISTP compliant
 
     return file_path

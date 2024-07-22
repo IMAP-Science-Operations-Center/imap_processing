@@ -2,7 +2,6 @@
 
 import numpy as np
 import xarray as xr
-from space_packet_parser.parser import Packet
 
 from imap_processing import imap_module_directory
 from imap_processing.cdf.cdf_attribute_manager import CdfAttributeManager
@@ -297,7 +296,7 @@ def create_dataset(de_data_list: list, packet_met_time: list) -> xr.Dataset:
     return dataset
 
 
-def science_direct_event(packets_data: list[Packet]) -> xr.Dataset:
+def science_direct_event(packets_data: xr.Dataset) -> xr.Dataset:
     """
     Unpack IMAP-Hi direct event data.
 
@@ -309,8 +308,8 @@ def science_direct_event(packets_data: list[Packet]) -> xr.Dataset:
 
     Parameters
     ----------
-    packets_data : list[space_packet_parser.ParsedPacket]
-        List of packets data.
+    packets_data : xarray.Dataset
+        Packets extracted into a dataset.
 
     Returns
     -------
@@ -324,14 +323,14 @@ def science_direct_event(packets_data: list[Packet]) -> xr.Dataset:
     # I am using extend to add another list to the
     # end of the list. This way, I don't need to flatten
     # the list later.
-    for data in packets_data:
+    for i, data in enumerate(packets_data["de_tof"].data):
         # break binary stream data into unit of 48-bits
-        event_48bits_list = break_into_bits_size(data.data["DE_TOF"].raw_value)
+        event_48bits_list = break_into_bits_size(data)
         # parse 48-bits into meaningful data such as metaevent or direct event
         de_data_list.extend([parse_direct_event(event) for event in event_48bits_list])
         # add packet time to packet_met_time
         packet_met_time.extend(
-            [data.data["CCSDS_MET"].raw_value] * len(event_48bits_list)
+            [packets_data["ccsds_met"].data[i]] * len(event_48bits_list)
         )
 
     # create dataset

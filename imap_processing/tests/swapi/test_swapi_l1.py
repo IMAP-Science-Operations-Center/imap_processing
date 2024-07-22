@@ -4,7 +4,6 @@ import xarray as xr
 
 from imap_processing import imap_module_directory
 from imap_processing.cdf.utils import met_to_j2000ns, write_cdf
-from imap_processing.decom import decom_packets
 from imap_processing.swapi.l1.swapi_l1 import (
     SWAPIAPID,
     decompress_count,
@@ -15,21 +14,21 @@ from imap_processing.swapi.l1.swapi_l1 import (
     process_sweep_data,
     swapi_l1,
 )
-from imap_processing.utils import create_dataset, group_by_apid, sort_by_time
+from imap_processing.swapi.swapi_utils import SWAPIMODE
+from imap_processing.utils import packet_file_to_datasets
 
 
 @pytest.fixture(scope="session")
 def decom_test_data():
     """Read test data from file"""
-    test_folder_path = "tests/swapi/l0_data"
-    packet_files = list(imap_module_directory.glob(f"{test_folder_path}/*.pkts"))
+    test_file = "tests/swapi/l0_data/imap_swapi_l0_raw_20231012_v001.pkts"
+    packet_files = imap_module_directory / test_file
     packet_definition = (
         f"{imap_module_directory}/swapi/packet_definitions/swapi_packet_definition.xml"
     )
-    data_list = []
-    for packet_file in packet_files:
-        data_list.extend(decom_packets(packet_file, packet_definition))
-    return data_list
+    return packet_file_to_datasets(
+        packet_files, packet_definition, use_derived_value=False
+    )
 
 
 def test_filter_good_data():
@@ -40,7 +39,7 @@ def test_filter_good_data():
         {
             "plan_id_science": xr.DataArray(np.full((total_sweeps * 12), 1)),
             "sweep_table": xr.DataArray(np.repeat(np.arange(total_sweeps), 12)),
-            "mode": xr.DataArray(np.full((total_sweeps * 12), 2)),
+            "mode": xr.DataArray(np.full((total_sweeps * 12), SWAPIMODE.HVENG.value)),
         },
         coords={"epoch": np.arange(total_sweeps * 12)},
     )
@@ -49,17 +48,19 @@ def test_filter_good_data():
     bad_data_indices = filter_good_data(ds)
     assert len(bad_data_indices) == 36
 
-    # Check for bad MODE data.
-    # This test returns this indices because MODE has 0, 1 values
-    # for the first two sweeps.
+    # Check for bad MODE data, only HVENG is "good"
     # TODO: update test when we update MODE from HVENG to HVSCI
-    ds["mode"] = xr.DataArray(np.repeat(np.arange(total_sweeps), 12))
+    ds["mode"] = xr.DataArray(
+        np.repeat(
+            [SWAPIMODE.LVENG.value, SWAPIMODE.LVSCI.value, SWAPIMODE.HVENG.value], 12
+        )
+    )
     bad_data_indices = filter_good_data(ds)
     np.testing.assert_array_equal(bad_data_indices, np.arange(24, 36))
 
     # Check for bad sweep_table data.
     # Reset MODE data and create first sweep to be mixed value
-    ds["mode"] = xr.DataArray(np.full((total_sweeps * 12), 2))
+    ds["mode"] = xr.DataArray(np.full((total_sweeps * 12), SWAPIMODE.HVENG.value))
     ds["sweep_table"][:12] = np.arange(0, 12)
     np.testing.assert_array_equal(filter_good_data(ds), np.arange(12, 36))
 
@@ -87,7 +88,9 @@ def test_find_sweep_starts():
     """Test for find sweep starts"""
     time = np.arange(26)
     sequence_number = time % 12
-    ds = xr.Dataset({"seq_number": sequence_number}, coords={"epoch": time})
+    ds = xr.Dataset(
+        {"seq_number": sequence_number}, coords={"epoch": met_to_j2000ns(time)}
+    )
 
     start_indices = find_sweep_starts(ds)
     np.testing.assert_array_equal(start_indices, [0, 12])
@@ -107,7 +110,9 @@ def test_get_full_indices():
     """Test for correct full sweep indices"""
     time = np.arange(26)
     sequence_number = time % 12
-    ds = xr.Dataset({"seq_number": sequence_number}, coords={"epoch": time})
+    ds = xr.Dataset(
+        {"seq_number": sequence_number}, coords={"epoch": met_to_j2000ns(time)}
+    )
 
     sweep_indices = get_indices_of_full_sweep(ds)
     np.testing.assert_array_equal(sweep_indices, np.arange(0, 24))
@@ -115,10 +120,7 @@ def test_get_full_indices():
 
 def test_swapi_algorithm(decom_test_data):
     """Test SWAPI L1 algorithm"""
-    grouped_data = group_by_apid(decom_test_data)
-    science_data = grouped_data[SWAPIAPID.SWP_SCI]
-    sorted_packets = sort_by_time(science_data, "SHCOARSE")
-    ds_data = create_dataset(sorted_packets, include_header=False)
+    ds_data = decom_test_data[SWAPIAPID.SWP_SCI]
     full_sweep_indices = get_indices_of_full_sweep(ds_data)
     full_sweep_sci = ds_data.isel({"epoch": full_sweep_indices})
     total_packets = len(full_sweep_sci["seq_number"].data)
@@ -208,10 +210,7 @@ def test_swapi_algorithm(decom_test_data):
 
 def test_process_swapi_science(decom_test_data):
     """Test process swapi science"""
-    grouped_data = group_by_apid(decom_test_data)
-    science_data = grouped_data[SWAPIAPID.SWP_SCI]
-    sorted_packets = sort_by_time(science_data, "SHCOARSE")
-    ds_data = create_dataset(sorted_packets, include_header=False)
+    ds_data = decom_test_data[SWAPIAPID.SWP_SCI]
     processed_data = process_swapi_science(ds_data, data_version="001")
 
     # Test dataset dimensions
@@ -333,5 +332,6 @@ def test_swapi_l1_cdf():
 
     # hk cdf file
     cdf_filename = "imap_swapi_l1_hk_20100101_v001.cdf"
-    cdf_path = write_cdf(processed_data[1])
+    # Ignore ISTP checks for HK data
+    cdf_path = write_cdf(processed_data[1], istp=False)
     assert cdf_path.name == cdf_filename

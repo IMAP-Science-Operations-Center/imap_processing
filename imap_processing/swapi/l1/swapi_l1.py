@@ -8,8 +8,6 @@ import xarray as xr
 
 from imap_processing import imap_module_directory
 from imap_processing.cdf.global_attrs import ConstantCoordinates
-from imap_processing.cdf.utils import met_to_j2000ns
-from imap_processing.decom import decom_packets
 from imap_processing.swapi.swapi_cdf_attrs import (
     compression_attrs,
     counts_attrs,
@@ -19,12 +17,7 @@ from imap_processing.swapi.swapi_cdf_attrs import (
     uncertainty_attrs,
 )
 from imap_processing.swapi.swapi_utils import SWAPIAPID, SWAPIMODE
-from imap_processing.utils import (
-    create_dataset,
-    group_by_apid,
-    sort_by_time,
-    update_epoch_to_datetime,
-)
+from imap_processing.utils import packet_file_to_datasets
 
 
 def filter_good_data(full_sweep_sci: xr.Dataset) -> np.ndarray:
@@ -172,7 +165,7 @@ def find_sweep_starts(packets: xr.Dataset) -> np.ndarray:
     #
     # [0 0 0 1 0 0 0 0 0 0 0 0 1 0 0 0 0]      # And all?
 
-    ione = diff == 1
+    ione = diff == 1e9  # 1 second
 
     valid = (
         (packets["seq_number"] == 0)[:-11]
@@ -474,10 +467,10 @@ def process_swapi_science(sci_dataset: xr.Dataset, data_version: str) -> xr.Data
     # ===================================================================
 
     # epoch time. Should be same dimension as number of good sweeps
-    epoch_time = good_sweep_sci["epoch"].data.reshape(total_full_sweeps, 12)[:, 0]
-    epoch_converted_time = met_to_j2000ns(epoch_time)
+    epoch_values = good_sweep_sci["epoch"].data.reshape(total_full_sweeps, 12)[:, 0]
+
     epoch_time = xr.DataArray(
-        epoch_converted_time,
+        epoch_values,
         name="epoch",
         dims=["epoch"],
         attrs=ConstantCoordinates.EPOCH,
@@ -532,6 +525,7 @@ def process_swapi_science(sci_dataset: xr.Dataset, data_version: str) -> xr.Data
     )
 
     # L1 quality flags
+    # TODO: Should these be kept in raw format rather than derived into strings?
     dataset["swp_pcem_flags"] = xr.DataArray(
         np.array(pcem_compression_flags, dtype=np.uint8),
         dims=["epoch", "energy"],
@@ -626,25 +620,19 @@ def swapi_l1(file_path: str, data_version: str) -> xr.Dataset:
     xtce_definition = (
         f"{imap_module_directory}/swapi/packet_definitions/swapi_packet_definition.xml"
     )
-    packets = decom_packets(
-        packet_file=file_path, xtce_packet_definition=xtce_definition
+    datasets = packet_file_to_datasets(
+        file_path, xtce_definition, use_derived_value=False
     )
-    grouped_packets = group_by_apid(packets)
     processed_data = []
-    for apid in grouped_packets.keys():
-        sorted_packets = sort_by_time(grouped_packets[apid], "SHCOARSE")
+    for apid, ds_data in datasets.items():
         # Right now, we only process SWP_HK and SWP_SCI
         # other packets are not process in this processing pipeline
         # If appId is science, then the file should contain all data of science appId
-        ds_data = create_dataset(sorted_packets, include_header=False)
 
         if apid == SWAPIAPID.SWP_SCI.value:
             data = process_swapi_science(ds_data, data_version)
             processed_data.append(data)
         if apid == SWAPIAPID.SWP_HK.value:
-            # convert epoch to datetime
-            ds_data = update_epoch_to_datetime(ds_data)
-
             # Add datalevel attrs
             ds_data.attrs.update(swapi_l1_hk_attrs.output())
             ds_data.attrs["Data_version"] = data_version
