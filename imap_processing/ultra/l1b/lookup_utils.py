@@ -42,10 +42,7 @@ def get_y_adjust(dy_lut: np.ndarray) -> np.ndarray:
     yadj : np.ndarray
         Y adjustment (mm).
     """
-    yadj = _YADJUST_DF["dYAdj"].iloc[dy_lut]
-    _YADJUST_DF["dYAdj"].values[dy_lut]
-
-    return yadj.values
+    return _YADJUST_DF["dYAdj"].values[dy_lut]
 
 
 def get_norm(dn: np.ndarray, key: str, file_label: str) -> np.ndarray:
@@ -80,9 +77,7 @@ def get_norm(dn: np.ndarray, key: str, file_label: str) -> np.ndarray:
     else:
         tdc_norm_df = _TDC_NORM_DF_ULTRA90
 
-    dn_norm = tdc_norm_df[key].iloc[dn]
-
-    return dn_norm.values
+    return tdc_norm_df[key].values[dn]
 
 
 def get_back_position(back_index: np.ndarray, key: str, file_label: str) -> np.ndarray:
@@ -115,9 +110,7 @@ def get_back_position(back_index: np.ndarray, key: str, file_label: str) -> np.n
     else:
         back_pos_df = _BACK_POS_DF_ULTRA90
 
-    dn_converted = back_pos_df[key].iloc[back_index]
-
-    return dn_converted.values
+    return back_pos_df[key].values[back_index]
 
 
 def get_energy_norm(ssd: np.ndarray, composite_energy: np.ndarray) -> np.ndarray:
@@ -142,9 +135,8 @@ def get_energy_norm(ssd: np.ndarray, composite_energy: np.ndarray) -> np.ndarray
         Normalized composite energy.
     """
     row_number = ssd * 4096 + composite_energy
-    norm_composite_energy = _ENERGY_NORM_DF["NormEnergy"].iloc[row_number]
 
-    return norm_composite_energy.values
+    return _ENERGY_NORM_DF["NormEnergy"].values[row_number]
 
 
 def get_image_params(image: str) -> np.float64:
@@ -165,6 +157,4 @@ def get_image_params(image: str) -> np.float64:
     value : np.float64
         Image parameter value from the CSV file.
     """
-    value = _IMAGE_PARAMS_DF[image].iloc[0]
-
-    return value
+    return _IMAGE_PARAMS_DF[image].values[0]
