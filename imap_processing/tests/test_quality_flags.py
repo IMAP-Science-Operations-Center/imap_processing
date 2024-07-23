@@ -1,51 +1,44 @@
-from imap_processing.quality_flags import BaseQualityFlags, UltraQualityFlags
+from imap_processing.quality_flags import QualityFlags
 
 
 def test_quality_flags():
     """Test the QualityFlags bitwise operations."""
 
-    # Test BaseQualityFlags
-    assert BaseQualityFlags.NONE == 0x0
-    assert BaseQualityFlags.INF == 0x1
-    assert BaseQualityFlags.MISSING_TELEM == 0x2
-    assert BaseQualityFlags.NEG == 0x4
-    assert BaseQualityFlags.RES1 == 0x8
+    # Test individual flags
+    assert QualityFlags.NONE == 0x0
+    assert QualityFlags.INF == 2**0
+    assert QualityFlags.MISSING_TELEM == 2**1
+    assert QualityFlags.NEG == 2**2
+    assert QualityFlags.RES1 == 2**3
+    assert QualityFlags.BAD_SPIN == 2**4
+    assert QualityFlags.FOV == 2**5
 
-    assert BaseQualityFlags.ALL == (
-        BaseQualityFlags.INF
-        | BaseQualityFlags.MISSING_TELEM
-        | BaseQualityFlags.NEG
-        | BaseQualityFlags.RES1
-    )
+    flag = QualityFlags.INF | QualityFlags.RES1
+    assert flag & QualityFlags.INF
+    assert flag & QualityFlags.RES1
+    assert not flag & QualityFlags.MISSING_TELEM
 
-    flag = BaseQualityFlags.INF | BaseQualityFlags.RES1
-    assert flag & BaseQualityFlags.INF
-    assert flag & BaseQualityFlags.RES1
-    assert not flag & BaseQualityFlags.MISSING_TELEM
-
-    assert BaseQualityFlags.NONE.name == "NONE"
-    assert BaseQualityFlags.INF.name == "INF"
-    combined_flags = BaseQualityFlags.INF | BaseQualityFlags.RES1
+    assert QualityFlags.NONE.name == "NONE"
+    assert QualityFlags.INF.name == "INF"
+    combined_flags = QualityFlags.INF | QualityFlags.RES1
     assert combined_flags.name == "INF|RES1"
 
-    # Test UltraQualityFlags
-    assert UltraQualityFlags.NONE == 0x0
-    assert UltraQualityFlags.ULTRA_RES1 == 0x10
-    assert UltraQualityFlags.ULTRA_RES2 == 0x20
-    assert UltraQualityFlags.ULTRA_RES3 == 0x40
+    combined_flags = QualityFlags.MISSING_TELEM | QualityFlags.FOV
+    assert combined_flags.name == "MISSING_TELEM|FOV"
 
-    assert UltraQualityFlags.ALL == (
-        UltraQualityFlags.ULTRA_RES3
-        | UltraQualityFlags.ULTRA_RES1
-        | UltraQualityFlags.ULTRA_RES2
+    combined_flags = (
+        QualityFlags.INF
+        | QualityFlags.MISSING_TELEM
+        | QualityFlags.NEG
+        | QualityFlags.RES1
     )
+    assert combined_flags.name == "INF|MISSING_TELEM|NEG|RES1"
 
-    flag = UltraQualityFlags.ULTRA_RES3 | UltraQualityFlags.ULTRA_RES1
-    assert flag & UltraQualityFlags.ULTRA_RES3
-    assert flag & UltraQualityFlags.ULTRA_RES1
-    assert not flag & UltraQualityFlags.ULTRA_RES2
+    combined_flags = QualityFlags.BAD_SPIN | QualityFlags.FOV | QualityFlags.INF
+    assert combined_flags.name == "INF|BAD_SPIN|FOV"
 
-    assert UltraQualityFlags.NONE.name == "NONE"
-    assert UltraQualityFlags.ULTRA_RES3.name == "ULTRA_RES3"
-    combined_flags = UltraQualityFlags.ULTRA_RES3 | UltraQualityFlags.ULTRA_RES1
-    assert combined_flags.name == "ULTRA_RES1|ULTRA_RES3"
+    combined_flags = QualityFlags.FOV | QualityFlags.RES1 | QualityFlags.MISSING_TELEM
+    assert combined_flags.name == "MISSING_TELEM|RES1|FOV"
+
+    combined_flags = QualityFlags.BAD_SPIN | QualityFlags.FOV
+    assert combined_flags.name == "BAD_SPIN|FOV"
