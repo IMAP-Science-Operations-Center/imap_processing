@@ -21,8 +21,8 @@ class ImapQualityFlag(IntFlag):
         if self._name_ is not None:
             return self._name_
 
-        members = [member for member in BaseQualityFlags if member & self == member]
-        return "|".join(str(m.name) for m in members if m != BaseQualityFlags.NONE)
+        members = [member for member in UltraQualityFlags if member & self == member]
+        return "|".join(str(m.name) for m in members if m != UltraQualityFlags.NONE)
 
 
 class BaseQualityFlags(ImapQualityFlag):
