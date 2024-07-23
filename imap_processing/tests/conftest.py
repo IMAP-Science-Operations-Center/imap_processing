@@ -3,11 +3,7 @@
 import imap_data_access
 import pytest
 
-# Import modularized fixtures as plugins from the fixtures package in this directory
-pytest_plugins = [
-    "imap_processing.tests.plugins.common_fixtures",
-    "imap_processing.tests.plugins.hi_fixtures",
-]
+from imap_processing import imap_module_directory
 
 
 @pytest.fixture(autouse=True)
@@ -17,3 +13,8 @@ def _set_global_config(monkeypatch, tmp_path):
     monkeypatch.setitem(
         imap_data_access.config, "DATA_ACCESS_URL", "https://api.test.com"
     )
+
+
+@pytest.fixture(scope="session")
+def imap_tests_path():
+    return imap_module_directory / "tests"
