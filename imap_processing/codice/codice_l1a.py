@@ -34,9 +34,8 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 # TODO: Decom data arrays need to be decompressed
-# TODO: Add metadata attrs to science dataset?
 # TODO: In decommutation, how to have a variable length data and then a checksum
-#       after it?
+#       after it? (Might be fixed with new XTCE script updates)
 # TODO: Add support for decomming multiple APIDs from a single file
 
 
@@ -173,6 +172,8 @@ class CoDICEL1aPipeline:
 
         # Add ESA Sweep Values and acquisition times (lo only)
         if "_lo_" in self.dataset_name:
+            self.get_esa_sweep_values()
+            self.get_acquisition_times()
             dataset["esa_sweep_values"] = xr.DataArray(
                 self.esa_sweep_values,
                 dims=["energy"],
@@ -456,135 +457,57 @@ def process_codice_l1a(file_path: Path, data_version: str) -> xr.Dataset:
     dataset : xarray.Dataset
         The ``xarray`` dataset containing the science data and supporting metadata.
     """
-    # TODO: Once simulated data for codice-hi is acquired, there shouldn't be a
-    # need to split the processing based on the file_path, so this function can
-    # be simplified.
+    # TODO: Use new packet_file_to_dataset() function to simplify things
 
-    apids_for_event_data_processing = [
-        CODICEAPID.COD_LO_PHA,
-        CODICEAPID.COD_HI_PHA,
-    ]
-    apids_for_hi_science_processing = [
-        CODICEAPID.COD_HI_INST_COUNTS_AGGREGATED,
-        CODICEAPID.COD_HI_INST_COUNTS_SINGLES,
-        CODICEAPID.COD_HI_OMNI_SPECIES_COUNTS,
-        CODICEAPID.COD_HI_SECT_SPECIES_COUNTS,
-    ]
-    apids_for_lo_science_processing = [
-        CODICEAPID.COD_LO_INST_COUNTS_AGGREGATED,
-        CODICEAPID.COD_LO_INST_COUNTS_SINGLES,
-        CODICEAPID.COD_LO_SW_ANGULAR_COUNTS,
-        CODICEAPID.COD_LO_NSW_ANGULAR_COUNTS,
-        CODICEAPID.COD_LO_SW_PRIORITY_COUNTS,
-        CODICEAPID.COD_LO_NSW_PRIORITY_COUNTS,
-        CODICEAPID.COD_LO_SW_SPECIES_COUNTS,
-        CODICEAPID.COD_LO_NSW_SPECIES_COUNTS,
-    ]
+    # Decom the packets, group data by APID, and sort by time
+    packets = decom_packets(file_path)
+    grouped_data = group_by_apid(packets)
 
-    if file_path.name.startswith(
-        (
-            "imap_codice_l0_lo",
-            "imap_codice_l0_hskp",
-            "imap_codice_l0_hi",
-        )
-    ):
-        # Decom the packets, group data by APID, and sort by time
-        packets = decom_packets(file_path)
-        grouped_data = group_by_apid(packets)
+    for apid in grouped_data:
+        logger.info(f"\nProcessing {CODICEAPID(apid).name} packet")
 
-        for apid in grouped_data:
-            logger.info(f"\nProcessing {CODICEAPID(apid).name} packet")
+        if apid == CODICEAPID.COD_NHK:
+            packets = grouped_data[apid]
+            sorted_packets = sort_by_time(packets, "SHCOARSE")
+            dataset = create_hskp_dataset(sorted_packets, data_version)
 
-            if apid == CODICEAPID.COD_NHK:
-                packets = grouped_data[apid]
-                sorted_packets = sort_by_time(packets, "SHCOARSE")
-                dataset = create_hskp_dataset(sorted_packets, data_version)
+        elif apid in [CODICEAPID.COD_LO_PHA, CODICEAPID.COD_HI_PHA]:
+            if apid == CODICEAPID.COD_LO_PHA:
+                dataset_name = "imap_codice_l1a_lo_pha"
+            elif apid == CODICEAPID.COD_HI_PHA:
+                dataset_name = "imap_codice_l1a_hi_pha"
 
-            elif apid in apids_for_lo_science_processing:
-                # Sort the packets by time
-                packets = sort_by_time(grouped_data[apid], "SHCOARSE")
+            # Sort the packets by time
+            packets = sort_by_time(grouped_data[apid], "SHCOARSE")
 
-                # Determine the start time of the packet
-                met = packets[0].data["ACQ_START_SECONDS"].raw_value
-                met = [met, met + 1]  # TODO: Remove after SIT-3
-                # Extract the data
-                science_values = packets[0].data["DATA"].raw_value
+            # Determine the start time of the packet
+            met = packets[0].data["ACQ_START_SECONDS"].raw_value
+            met = [met, met + 1]  # TODO: Remove after cdflib fix
 
-                # Get the four "main" parameters for processing
-                table_id, plan_id, plan_step, view_id = get_params(packets[0])
+            # Extract the data
+            event_data = packets[0].data["EVENT_DATA"].raw_value
 
-                # Run the pipeline to create a dataset for the product
-                pipeline = CoDICEL1aPipeline(table_id, plan_id, plan_step, view_id)
-                pipeline.get_esa_sweep_values()
-                pipeline.get_acquisition_times()
-                pipeline.configure_data_products(apid)
-                pipeline.unpack_science_data(science_values)
-                dataset = pipeline.create_science_dataset(met, data_version)
+            # Create the dataset
+            dataset = create_event_dataset(met, event_data, dataset_name, data_version)
 
-            elif apid in apids_for_event_data_processing:
-                if apid == CODICEAPID.COD_LO_PHA:
-                    dataset_name = "imap_codice_l1a_lo_pha"
-                elif apid == CODICEAPID.COD_HI_PHA:
-                    dataset_name = "imap_codice_l1a_hi_pha"
+        elif apid in constants.APIDS_FOR_SCIENCE_PROCESSING:
+            # Sort the packets by time
+            packets = sort_by_time(grouped_data[apid], "SHCOARSE")
 
-                # Sort the packets by time
-                packets = sort_by_time(grouped_data[apid], "SHCOARSE")
+            # Determine the start time of the packet
+            met = packets[0].data["ACQ_START_SECONDS"].raw_value
+            met = [met, met + 1]  # TODO: Remove after cdflib fix
+            # Extract the data
+            science_values = packets[0].data["DATA"].raw_value
 
-                # Determine the start time of the packet
-                met = packets[0].data["ACQ_START_SECONDS"].raw_value
-                met = [met, met + 1]  # TODO: Remove after SIT-3
+            # Get the four "main" parameters for processing
+            table_id, plan_id, plan_step, view_id = get_params(packets[0])
 
-                # Extract the data
-                event_data = packets[0].data["EVENT_DATA"].raw_value
-
-                # Create the dataset
-                dataset = create_event_dataset(
-                    met, event_data, dataset_name, data_version
-                )
-
-            elif apid in apids_for_hi_science_processing:
-                # Sort the packets by time
-                packets = sort_by_time(grouped_data[apid], "SHCOARSE")
-
-                # Determine the start time of the packet
-                met = packets[0].data["ACQ_START_SECONDS"].raw_value
-                met = [met, met + 1]  # TODO: Remove after SIT-3
-                # Extract the data
-                science_values = packets[0].data["DATA"].raw_value
-
-                # Get the four "main" parameters for processing
-                table_id, plan_id, plan_step, view_id = get_params(packets[0])
-
-                # Run the pipeline to create a dataset for the product
-                pipeline = CoDICEL1aPipeline(table_id, plan_id, plan_step, view_id)
-                pipeline.configure_data_products(apid)
-                pipeline.unpack_science_data(science_values)
-                dataset = pipeline.create_science_dataset(met, data_version)
-
-    # TODO: Temporary workaround in order to create hi data products in absence
-    #       of simulated data. This is essentially the same process as is for
-    #       lo, but don't try to decom any packets, just define the data
-    #       outright.
-    # elif file_path.name.startswith("imap_codice_l0_hi"):
-    # if file_path.name.startswith("imap_codice_l0_hi-counters-aggregated"):
-    #     apid = CODICEAPID.COD_HI_INST_COUNTS_AGGREGATED
-    #     table_id, plan_id, plan_step, view_id = (1, 0, 0, 3)
-    # elif file_path.name.startswith("imap_codice_l0_hi-counters-singles"):
-    #     apid = CODICEAPID.COD_HI_INST_COUNTS_SINGLES
-    #     table_id, plan_id, plan_step, view_id = (1, 0, 0, 4)
-    # elif file_path.name.startswith("imap_codice_l0_hi-omni"):
-    #     apid = CODICEAPID.COD_HI_OMNI_SPECIES_COUNTS
-    #     table_id, plan_id, plan_step, view_id = (1, 0, 0, 5)
-
-    # met0 = (np.datetime64("2024-04-29T00:00") - IMAP_EPOCH).astype("timedelta64[s]")
-    # met0 = met0.astype(np.int64)
-    # met = [met0, met0 + 1]  # Using this to match the other data products
-    # science_values = ""  # Currently don't have simulated data for this
-    #
-    # pipeline = CoDICEL1aPipeline(table_id, plan_id, plan_step, view_id)
-    # pipeline.configure_data_products(apid)
-    # pipeline.unpack_science_data(science_values)
-    # dataset = pipeline.create_science_dataset(met, data_version)
+            # Run the pipeline to create a dataset for the product
+            pipeline = CoDICEL1aPipeline(table_id, plan_id, plan_step, view_id)
+            pipeline.configure_data_products(apid)
+            pipeline.unpack_science_data(science_values)
+            dataset = pipeline.create_science_dataset(met, data_version)
 
     logger.info(f"\nFinal data product:\n{dataset}\n")
     return dataset
