@@ -465,6 +465,7 @@ def process_codice_l1a(file_path: Path, data_version: str) -> xr.Dataset:
         CODICEAPID.COD_HI_PHA,
     ]
     apids_for_hi_science_processing = [
+        CODICEAPID.COD_HI_OMNI_SPECIES_COUNTS,
         CODICEAPID.COD_HI_SECT_SPECIES_COUNTS,
     ]
     apids_for_lo_science_processing = [
@@ -484,6 +485,7 @@ def process_codice_l1a(file_path: Path, data_version: str) -> xr.Dataset:
             "imap_codice_l0_hskp",
             "imap_codice_l0_hi-pha",
             "imap_codice_l0_hi-sectored",
+            "imap_codice_l0_hi-omni",
         )
     ):
         # Decom the packets, group data by APID, and sort by time
@@ -570,9 +572,9 @@ def process_codice_l1a(file_path: Path, data_version: str) -> xr.Dataset:
         elif file_path.name.startswith("imap_codice_l0_hi-counters-singles"):
             apid = CODICEAPID.COD_HI_INST_COUNTS_SINGLES
             table_id, plan_id, plan_step, view_id = (1, 0, 0, 4)
-        elif file_path.name.startswith("imap_codice_l0_hi-omni"):
-            apid = CODICEAPID.COD_HI_OMNI_SPECIES_COUNTS
-            table_id, plan_id, plan_step, view_id = (1, 0, 0, 5)
+        # elif file_path.name.startswith("imap_codice_l0_hi-omni"):
+        #     apid = CODICEAPID.COD_HI_OMNI_SPECIES_COUNTS
+        #     table_id, plan_id, plan_step, view_id = (1, 0, 0, 5)
 
         met0 = (np.datetime64("2024-04-29T00:00") - IMAP_EPOCH).astype("timedelta64[s]")
         met0 = met0.astype(np.int64)
