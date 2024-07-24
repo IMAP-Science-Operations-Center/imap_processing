@@ -287,6 +287,9 @@ def generate_dataset(
         np.dtype("datetime64[ns]"), copy=False
     )
 
+    cdf_manager = ImapCdfAttributes()
+    cdf_manager.load_variable_attributes("imap_mag_l1_variable_attrs.yaml")
+
     direction = xr.DataArray(
         np.arange(4),
         name="direction",

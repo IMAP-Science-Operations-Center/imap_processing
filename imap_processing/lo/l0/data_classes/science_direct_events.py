@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 
 import numpy as np
-import space_packet_parser
+from space_packet_parser.parser import Packet
 
 from imap_processing.ccsds.ccsds_data import CcsdsData
 from imap_processing.cdf.defaults import GlobalConstants
@@ -125,7 +125,7 @@ class ScienceDirectEvents(LoBase):
 
     def __init__(
         self,
-        packet: space_packet_parser.parser.Packet,
+        packet: Packet,
         software_version: str,
         packet_file_name: str,
     ) -> None:

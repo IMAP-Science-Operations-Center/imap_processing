@@ -124,6 +124,10 @@ def generate_dataset(
                 for ccsds_key, ccsds_value in value.items():
                     support_data[ccsds_key].append(ccsds_value)
 
+    cdf_manager = ImapCdfAttributes()
+    cdf_manager.add_instrument_global_attrs("mag")
+    cdf_manager.load_variable_attributes("imap_mag_l1_variable_attrs.yaml")
+
     # Used in L1A vectors
     direction = xr.DataArray(
         np.arange(vector_data.shape[1]),

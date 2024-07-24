@@ -55,6 +55,7 @@ vector_attrs:
 mag_support_attrs: &support_default
     <<: *default
     VAR_TYPE: support_data
+    UNITS: " "
 
 mag_metadata_attrs: &metadata_default
     <<: *default
