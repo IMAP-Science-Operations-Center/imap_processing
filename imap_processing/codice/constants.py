@@ -65,18 +65,12 @@ LO_NSW_SPECIES_NAMES = [
     "heplus",
     "cnoplus",
 ]
-LO_PHA_NAMES = [
-    "TBD",
-]
 
 # CDF-friendly names for hi data products
 HI_INST_COUNTS_AGGREGATED_NAMES = ["aggregated"]
 HI_INST_COUNTS_SINGLES_NAMES = ["tcr", "ssdo", "stssd"]
 HI_OMNI_SPECIES_NAMES = ["h", "he3", "he4", "c", "o", "ne_mg_si", "fe", "uh"]
 HI_SECT_SPECIES_NAMES = ["h", "he3he4", "cno", "fe"]
-HI_PHA_NAMES = [
-    "TBD",
-]
 
 # TODO: Hi products shape should be energy x ssd index x spin sector (8*12*12)
 DATA_PRODUCT_CONFIGURATIONS = {
@@ -151,12 +145,6 @@ DATA_PRODUCT_CONFIGURATIONS = {
         "num_energy_steps": 128,
         "variable_names": LO_NSW_SPECIES_NAMES,
         "dataset_name": "imap_codice_l1a_lo_nsw_species",
-    },
-    CODICEAPID.COD_LO_PHA: {
-        "num_counters": 1,
-        "num_energy_steps": 128,
-        "variable_names": LO_PHA_NAMES,
-        "dataset_name": "imap_codice_l1a_lo_pha",
     },
 }
 
