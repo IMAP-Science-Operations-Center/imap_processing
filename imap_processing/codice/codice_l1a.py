@@ -464,6 +464,9 @@ def process_codice_l1a(file_path: Path, data_version: str) -> xr.Dataset:
         CODICEAPID.COD_LO_PHA,
         CODICEAPID.COD_HI_PHA,
     ]
+    apids_for_hi_science_processing = [
+        CODICEAPID.COD_HI_SECT_SPECIES_COUNTS,
+    ]
     apids_for_lo_science_processing = [
         CODICEAPID.COD_LO_INST_COUNTS_AGGREGATED,
         CODICEAPID.COD_LO_INST_COUNTS_SINGLES,
@@ -476,7 +479,12 @@ def process_codice_l1a(file_path: Path, data_version: str) -> xr.Dataset:
     ]
 
     if file_path.name.startswith(
-        ("imap_codice_l0_lo", "imap_codice_l0_hskp", "imap_codice_l0_hi-pha")
+        (
+            "imap_codice_l0_lo",
+            "imap_codice_l0_hskp",
+            "imap_codice_l0_hi-pha",
+            "imap_codice_l0_hi-sectored",
+        )
     ):
         # Decom the packets, group data by APID, and sort by time
         packets = decom_packets(file_path)
@@ -532,6 +540,25 @@ def process_codice_l1a(file_path: Path, data_version: str) -> xr.Dataset:
                     met, event_data, dataset_name, data_version
                 )
 
+            elif apid in apids_for_hi_science_processing:
+                # Sort the packets by time
+                packets = sort_by_time(grouped_data[apid], "SHCOARSE")
+
+                # Determine the start time of the packet
+                met = packets[0].data["ACQ_START_SECONDS"].raw_value
+                met = [met, met + 1]  # TODO: Remove after SIT-3
+                # Extract the data
+                science_values = packets[0].data["DATA"].raw_value
+
+                # Get the four "main" parameters for processing
+                table_id, plan_id, plan_step, view_id = get_params(packets[0])
+
+                # Run the pipeline to create a dataset for the product
+                pipeline = CoDICEL1aPipeline(table_id, plan_id, plan_step, view_id)
+                pipeline.configure_data_products(apid)
+                pipeline.unpack_science_data(science_values)
+                dataset = pipeline.create_science_dataset(met, data_version)
+
     # TODO: Temporary workaround in order to create hi data products in absence
     #       of simulated data. This is essentially the same process as is for
     #       lo, but don't try to decom any packets, just define the data
@@ -546,9 +573,6 @@ def process_codice_l1a(file_path: Path, data_version: str) -> xr.Dataset:
         elif file_path.name.startswith("imap_codice_l0_hi-omni"):
             apid = CODICEAPID.COD_HI_OMNI_SPECIES_COUNTS
             table_id, plan_id, plan_step, view_id = (1, 0, 0, 5)
-        elif file_path.name.startswith("imap_codice_l0_hi-sectored"):
-            apid = CODICEAPID.COD_HI_SECT_SPECIES_COUNTS
-            table_id, plan_id, plan_step, view_id = (1, 0, 0, 6)
 
         met0 = (np.datetime64("2024-04-29T00:00") - IMAP_EPOCH).astype("timedelta64[s]")
         met0 = met0.astype(np.int64)
