@@ -24,7 +24,7 @@ import xarray as xr
 
 from imap_processing import imap_module_directory
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
-from imap_processing.cdf.utils import IMAP_EPOCH, met_to_j2000ns
+from imap_processing.cdf.utils import met_to_j2000ns
 from imap_processing.codice import constants
 from imap_processing.codice.codice_l0 import decom_packets
 from imap_processing.codice.utils import CODICEAPID, add_metadata_to_array
@@ -465,6 +465,8 @@ def process_codice_l1a(file_path: Path, data_version: str) -> xr.Dataset:
         CODICEAPID.COD_HI_PHA,
     ]
     apids_for_hi_science_processing = [
+        CODICEAPID.COD_HI_INST_COUNTS_AGGREGATED,
+        CODICEAPID.COD_HI_INST_COUNTS_SINGLES,
         CODICEAPID.COD_HI_OMNI_SPECIES_COUNTS,
         CODICEAPID.COD_HI_SECT_SPECIES_COUNTS,
     ]
@@ -483,9 +485,7 @@ def process_codice_l1a(file_path: Path, data_version: str) -> xr.Dataset:
         (
             "imap_codice_l0_lo",
             "imap_codice_l0_hskp",
-            "imap_codice_l0_hi-pha",
-            "imap_codice_l0_hi-sectored",
-            "imap_codice_l0_hi-omni",
+            "imap_codice_l0_hi",
         )
     ):
         # Decom the packets, group data by APID, and sort by time
@@ -565,26 +565,26 @@ def process_codice_l1a(file_path: Path, data_version: str) -> xr.Dataset:
     #       of simulated data. This is essentially the same process as is for
     #       lo, but don't try to decom any packets, just define the data
     #       outright.
-    elif file_path.name.startswith("imap_codice_l0_hi"):
-        if file_path.name.startswith("imap_codice_l0_hi-counters-aggregated"):
-            apid = CODICEAPID.COD_HI_INST_COUNTS_AGGREGATED
-            table_id, plan_id, plan_step, view_id = (1, 0, 0, 3)
-        elif file_path.name.startswith("imap_codice_l0_hi-counters-singles"):
-            apid = CODICEAPID.COD_HI_INST_COUNTS_SINGLES
-            table_id, plan_id, plan_step, view_id = (1, 0, 0, 4)
-        # elif file_path.name.startswith("imap_codice_l0_hi-omni"):
-        #     apid = CODICEAPID.COD_HI_OMNI_SPECIES_COUNTS
-        #     table_id, plan_id, plan_step, view_id = (1, 0, 0, 5)
+    # elif file_path.name.startswith("imap_codice_l0_hi"):
+    # if file_path.name.startswith("imap_codice_l0_hi-counters-aggregated"):
+    #     apid = CODICEAPID.COD_HI_INST_COUNTS_AGGREGATED
+    #     table_id, plan_id, plan_step, view_id = (1, 0, 0, 3)
+    # elif file_path.name.startswith("imap_codice_l0_hi-counters-singles"):
+    #     apid = CODICEAPID.COD_HI_INST_COUNTS_SINGLES
+    #     table_id, plan_id, plan_step, view_id = (1, 0, 0, 4)
+    # elif file_path.name.startswith("imap_codice_l0_hi-omni"):
+    #     apid = CODICEAPID.COD_HI_OMNI_SPECIES_COUNTS
+    #     table_id, plan_id, plan_step, view_id = (1, 0, 0, 5)
 
-        met0 = (np.datetime64("2024-04-29T00:00") - IMAP_EPOCH).astype("timedelta64[s]")
-        met0 = met0.astype(np.int64)
-        met = [met0, met0 + 1]  # Using this to match the other data products
-        science_values = ""  # Currently don't have simulated data for this
-
-        pipeline = CoDICEL1aPipeline(table_id, plan_id, plan_step, view_id)
-        pipeline.configure_data_products(apid)
-        pipeline.unpack_science_data(science_values)
-        dataset = pipeline.create_science_dataset(met, data_version)
+    # met0 = (np.datetime64("2024-04-29T00:00") - IMAP_EPOCH).astype("timedelta64[s]")
+    # met0 = met0.astype(np.int64)
+    # met = [met0, met0 + 1]  # Using this to match the other data products
+    # science_values = ""  # Currently don't have simulated data for this
+    #
+    # pipeline = CoDICEL1aPipeline(table_id, plan_id, plan_step, view_id)
+    # pipeline.configure_data_products(apid)
+    # pipeline.unpack_science_data(science_values)
+    # dataset = pipeline.create_science_dataset(met, data_version)
 
     logger.info(f"\nFinal data product:\n{dataset}\n")
     return dataset
