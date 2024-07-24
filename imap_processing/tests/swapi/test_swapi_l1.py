@@ -214,7 +214,7 @@ def test_process_swapi_science(decom_test_data):
     processed_data = process_swapi_science(ds_data, data_version="001")
 
     # Test dataset dimensions
-    assert processed_data.sizes == {"epoch": 3, "energy": 72}
+    assert processed_data.sizes == {"epoch": 3, "energy": 72, "energy_label": 72}
     # Test epoch data is correct
     expected_epoch_datetime = met_to_j2000ns([48, 60, 72])
     np.testing.assert_array_equal(processed_data["epoch"].data, expected_epoch_datetime)
@@ -306,7 +306,7 @@ def test_process_swapi_science(decom_test_data):
     processed_data = process_swapi_science(ds_data, data_version="001")
 
     # Test dataset dimensions
-    assert processed_data.sizes == {"epoch": 2, "energy": 72}
+    assert processed_data.sizes == {"epoch": 2, "energy": 72, "energy_label": 72}
 
     # Test CDF File
     # This time mismatch is because of sample data. Sample data has

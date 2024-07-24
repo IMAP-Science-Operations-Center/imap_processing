@@ -1,21 +1,13 @@
 """SWAPI level-1 processing code."""
 
 import copy
-import dataclasses
 
 import numpy as np
 import xarray as xr
 
 from imap_processing import imap_module_directory
 from imap_processing.cdf.global_attrs import ConstantCoordinates
-from imap_processing.swapi.swapi_cdf_attrs import (
-    compression_attrs,
-    counts_attrs,
-    energy_dim_attrs,
-    swapi_l1_hk_attrs,
-    swapi_l1_sci_attrs,
-    uncertainty_attrs,
-)
+from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.swapi.swapi_utils import SWAPIAPID, SWAPIMODE
 from imap_processing.utils import packet_file_to_datasets
 
@@ -469,6 +461,11 @@ def process_swapi_science(sci_dataset: xr.Dataset, data_version: str) -> xr.Data
     # epoch time. Should be same dimension as number of good sweeps
     epoch_values = good_sweep_sci["epoch"].data.reshape(total_full_sweeps, 12)[:, 0]
 
+    # Load the CDF attributes
+    cdf_manager = ImapCdfAttributes()
+    cdf_manager.add_instrument_global_attrs("swapi")
+    cdf_manager.load_variable_attributes("imap_swapi_variable_attrs.yaml")
+
     epoch_time = xr.DataArray(
         epoch_values,
         name="epoch",
@@ -478,50 +475,47 @@ def process_swapi_science(sci_dataset: xr.Dataset, data_version: str) -> xr.Data
 
     # There are 72 energy steps
     energy = xr.DataArray(
-        np.arange(72), name="energy", dims=["energy"], attrs=energy_dim_attrs.output()
+        np.arange(72),
+        name="energy",
+        dims=["energy"],
+        attrs=cdf_manager.get_variable_attributes("energy"),
+    )
+    # LABL_PTR_1 should be CDF_CHAR.
+    energy_label = xr.DataArray(
+        energy.values.astype(str),
+        name="energy_label",
+        dims=["energy_label"],
+        attrs=cdf_manager.get_variable_attributes("energy_label"),
     )
 
     # Add other global attributes
-    sci_l1_attrs = swapi_l1_sci_attrs.output()
-    sci_l1_attrs["sweep_table"] = f"{sci_dataset['sweep_table'].data[0]}"
-    sci_l1_attrs["plan_id"] = f"{sci_dataset['plan_id_science'].data[0]}"
+    cdf_manager.add_global_attribute("Data_version", data_version)
+    cdf_manager.add_global_attribute(
+        "sweep_table", f"{sci_dataset['sweep_table'].data[0]}"
+    )
+    cdf_manager.add_global_attribute(
+        "plan_id", f"{sci_dataset['plan_id_science'].data[0]}"
+    )
 
     dataset = xr.Dataset(
-        coords={"epoch": epoch_time, "energy": energy},
-        attrs=sci_l1_attrs,
+        coords={"epoch": epoch_time, "energy": energy, "energy_label": energy_label},
+        attrs=cdf_manager.get_global_attributes("imap_swapi_l1_sci"),
     )
-    # TODO: update to use add_global_attribute() function
-    dataset.attrs["Data_version"] = data_version
 
     dataset["swp_pcem_counts"] = xr.DataArray(
         np.array(swp_pcem_counts, dtype=np.uint16),
         dims=["epoch", "energy"],
-        attrs=dataclasses.replace(
-            counts_attrs,
-            fieldname="Primary CEM counts",
-            label_axis="PCEM cnts",
-            catdesc="Primary Channel Electron Multiplier (CEM) counts",
-        ).output(),
+        attrs=cdf_manager.get_variable_attributes("pcem_counts"),
     )
     dataset["swp_scem_counts"] = xr.DataArray(
         np.array(swp_scem_counts, dtype=np.uint16),
         dims=["epoch", "energy"],
-        attrs=dataclasses.replace(
-            counts_attrs,
-            fieldname="Secondary CEM counts",
-            label_axis="SCEM cnts",
-            catdesc="Secondary Channel Electron Multiplier (CEM) counts",
-        ).output(),
+        attrs=cdf_manager.get_variable_attributes("scem_counts"),
     )
     dataset["swp_coin_counts"] = xr.DataArray(
         np.array(swp_coin_counts, dtype=np.uint16),
         dims=["epoch", "energy"],
-        attrs=dataclasses.replace(
-            counts_attrs,
-            fieldname="Coincidence counts",
-            label_axis="COIN cnts",
-            catdesc="Coincidence counts",
-        ).output(),
+        attrs=cdf_manager.get_variable_attributes("coin_counts"),
     )
 
     # L1 quality flags
@@ -529,32 +523,17 @@ def process_swapi_science(sci_dataset: xr.Dataset, data_version: str) -> xr.Data
     dataset["swp_pcem_flags"] = xr.DataArray(
         np.array(pcem_compression_flags, dtype=np.uint8),
         dims=["epoch", "energy"],
-        attrs=dataclasses.replace(
-            compression_attrs,
-            fieldname="Primary CEM flag",
-            label_axis="PCEM flag",
-            catdesc="Primary Channel Electron Multiplier (CEM) compression flags",
-        ).output(),
+        attrs=cdf_manager.get_variable_attributes("pcem_flags"),
     )
     dataset["swp_scem_flags"] = xr.DataArray(
         np.array(scem_compression_flags, dtype=np.uint8),
         dims=["epoch", "energy"],
-        attrs=dataclasses.replace(
-            compression_attrs,
-            fieldname="Secondary CEM flag",
-            label_axis="SCEM flag",
-            catdesc="Secondary Channel Electron Multiplier (CEM) compression flags",
-        ).output(),
+        attrs=cdf_manager.get_variable_attributes("scem_flags"),
     )
     dataset["swp_coin_flags"] = xr.DataArray(
         np.array(coin_compression_flags, dtype=np.uint8),
         dims=["epoch", "energy"],
-        attrs=dataclasses.replace(
-            compression_attrs,
-            fieldname="Coincidence flag",
-            label_axis="COIN flag",
-            catdesc="Coincidence flag",
-        ).output(),
+        attrs=cdf_manager.get_variable_attributes("coin_flags"),
     )
 
     # ===================================================================
@@ -567,32 +546,17 @@ def process_swapi_science(sci_dataset: xr.Dataset, data_version: str) -> xr.Data
     dataset["swp_pcem_err"] = xr.DataArray(
         np.sqrt(swp_pcem_counts),
         dims=["epoch", "energy"],
-        attrs=dataclasses.replace(
-            uncertainty_attrs,
-            fieldname="Primary CEM Uncertainty",
-            label_axis="PCEM uncert",
-            catdesc="Primary Channel Electron Multiplier (CEM) Uncertainty",
-        ).output(),
+        attrs=cdf_manager.get_variable_attributes("pcem_uncertainty"),
     )
     dataset["swp_scem_err"] = xr.DataArray(
         np.sqrt(swp_scem_counts),
         dims=["epoch", "energy"],
-        attrs=dataclasses.replace(
-            uncertainty_attrs,
-            fieldname="Secondary CEM Uncertainty",
-            label_axis="SCEM uncert",
-            catdesc="Secondary Channel Electron Multiplier (CEM) Uncertainty",
-        ).output(),
+        attrs=cdf_manager.get_variable_attributes("scem_uncertainty"),
     )
     dataset["swp_coin_err"] = xr.DataArray(
         np.sqrt(swp_coin_counts),
         dims=["epoch", "energy"],
-        attrs=dataclasses.replace(
-            uncertainty_attrs,
-            fieldname="Coincidence Uncertainty",
-            label_axis="COIN uncert",
-            catdesc="Coincidence Uncertainty",
-        ).output(),
+        attrs=cdf_manager.get_variable_attributes("coin_uncertainty"),
     )
     # TODO: when SWAPI gives formula to calculate this scenario:
     # Compression of counts also contributes to the uncertainty.
@@ -633,9 +597,12 @@ def swapi_l1(file_path: str, data_version: str) -> xr.Dataset:
             data = process_swapi_science(ds_data, data_version)
             processed_data.append(data)
         if apid == SWAPIAPID.SWP_HK.value:
-            # Add datalevel attrs
-            ds_data.attrs.update(swapi_l1_hk_attrs.output())
-            ds_data.attrs["Data_version"] = data_version
+            # Add HK datalevel attrs
+            # TODO: ask SWAPI if we need to process HK if we can use WebPODA
+            hk_attrs = ImapCdfAttributes()
+            hk_attrs.add_instrument_global_attrs("swapi")
+            hk_attrs.add_global_attribute("Data_version", data_version)
+            ds_data.attrs.update(hk_attrs.get_global_attributes("imap_swapi_l1_hk"))
             processed_data.append(ds_data)
 
     return processed_data

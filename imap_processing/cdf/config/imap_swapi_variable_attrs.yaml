@@ -1,0 +1,104 @@
+# <=== Coordinates ===>
+energy:
+  CATDESC: Energy step id in lookup table
+  FIELDNAM: Energy Step
+  FILLVAL: -9223370000000000000
+  FORMAT: I2
+  LABLAXIS: Energy Step
+  SCALE_TYP: linear
+  UNITS: " "
+  VALIDMAX: 71
+  VALIDMIN: 0
+  VAR_TYPE: support_data
+
+# <=== LABL_PTR_i Attributes ===>
+energy_label:
+  CATDESC: Energy step id in lookup table
+  FIELDNAM: Energy Step
+  FORMAT: A2
+  VAR_TYPE: metadata
+
+# <=== Data Variables ===>
+counts_default: &counts_default
+  DEPEND_0: epoch
+  DEPEND_1: energy
+  DISPLAY_TYPE: spectrogram
+  LABL_PTR_1: energy_label
+  FILLVAL: -9223372036854775808
+  FORMAT: I5
+  UNITS: counts
+  VALIDMIN: 0
+  VALIDMAX: 65535
+  VAR_TYPE: data
+  SCALETYP: linear
+
+compression_default: &compression_default
+  DEPEND_0: epoch
+  DEPEND_1: energy
+  DISPLAY_TYPE: spectrogram
+  LABL_PTR_1: energy_label
+  FILLVAL: -9223372036854775808
+  FORMAT: I1
+  UNITS: ' '
+  VALIDMIN: 0
+  VALIDMAX: 1
+  VAR_TYPE: data
+  SCALETYP: linear
+
+uncertainty_default: &uncertainty_default
+  DEPEND_0: epoch
+  DEPEND_1: energy
+  DISPLAY_TYPE: spectrogram
+  LABL_PTR_1: energy_label
+  FILLVAL: -1.0000000E+31
+  FORMAT: E19.5
+  UNITS: counts
+  VALIDMIN: 0.0
+  VALIDMAX: 1.7976931348623157e+308 # TODO: find actual value
+  VAR_TYPE: data
+  SCALETYP: linear
+
+pcem_counts:
+  <<: *counts_default
+  CATDESC: Primary Channel Electron Multiplier (CEM)  Counts
+  FIELDNAM: Primary CEM Counts
+
+scem_counts:
+  <<: *counts_default
+  CATDESC: Secondary Channel Electron Multiplier (CEM)  Counts
+  FIELDNAM: Secondary CEM Counts
+
+coin_counts:
+  <<: *counts_default
+  CATDESC: Coincidence Counts
+  FIELDNAM: Coincidence CEM Counts
+
+pcem_flags:
+  <<: *compression_default
+  CATDESC: Primary Channel Electron Multiplier (CEM) compression flag
+  FIELDNAM: Primary CEM Flag
+
+scem_flags:
+  <<: *compression_default
+  CATDESC: Secondary Channel Electron Multiplier (CEM) compression flag
+  FIELDNAM: Secondary CEM Flag
+
+coin_flags:
+  <<: *compression_default
+  CATDESC: Coincidence compression flag
+  FIELDNAM: Coincidence Flag
+
+pcem_uncertainty:
+  <<: *uncertainty_default
+  CATDESC: Primary Channel Electron Multiplier (CEM) uncertainty
+  FIELDNAM: Primary CEM Uncertainty
+
+scem_uncertainty:
+  <<: *uncertainty_default
+  CATDESC: Secondary Channel Electron Multiplier (CEM) uncertainty
+  FIELDNAM: Secondary CEM Uncertainty
+
+coin_uncertainty:
+  <<: *uncertainty_default
+  CATDESC: Coincidence uncertainty
+  FIELDNAM: Coincidence Uncertainty
