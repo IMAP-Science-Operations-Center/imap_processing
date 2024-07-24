@@ -64,52 +64,22 @@ EXPECTED_LOGICAL_SOURCE = [
     "imap_codice_l1a_lo-pha",
 ]
 TEST_PACKETS = [
-    Path(
-        f"{imap_module_directory}/tests/codice/data/imap_codice_l0_hskp_20100101_v001.pkts"
-    ),
-    Path(
-        f"{imap_module_directory}/tests/codice/data/imap_codice_l0_hi-counters-aggregated_20240429_v001.pkts"
-    ),
-    Path(
-        f"{imap_module_directory}/tests/codice/data/imap_codice_l0_hi-counters-singles_20240429_v001.pkts"
-    ),
-    Path(
-        f"{imap_module_directory}/tests/codice/data/imap_codice_l0_hi-omni_20240429_v001.pkts"
-    ),
-    Path(
-        f"{imap_module_directory}/tests/codice/data/imap_codice_l0_hi-sectored_20240429_v001.pkts"
-    ),
-    Path(
-        f"{imap_module_directory}/tests/codice/data/imap_codice_l0_hi-pha_20240429_v001.pkts"
-    ),
-    Path(
-        f"{imap_module_directory}/tests/codice/data/imap_codice_l0_lo-counters-aggregated_20240429_v001.pkts"
-    ),
-    Path(
-        f"{imap_module_directory}/tests/codice/data/imap_codice_l0_lo-counters-singles_20240429_v001.pkts"
-    ),
-    Path(
-        f"{imap_module_directory}/tests/codice/data/imap_codice_l0_lo-sw-angular_20240429_v001.pkts"
-    ),
-    Path(
-        f"{imap_module_directory}/tests/codice/data/imap_codice_l0_lo-nsw-angular_20240429_v001.pkts"
-    ),
-    Path(
-        f"{imap_module_directory}/tests/codice/data/imap_codice_l0_lo-sw-priority_20240429_v001.pkts"
-    ),
-    Path(
-        f"{imap_module_directory}/tests/codice/data/imap_codice_l0_lo-nsw-priority_20240429_v001.pkts"
-    ),
-    Path(
-        f"{imap_module_directory}/tests/codice/data/imap_codice_l0_lo-sw-species_20240429_v001.pkts"
-    ),
-    Path(
-        f"{imap_module_directory}/tests/codice/data/imap_codice_l0_lo-nsw-species_20240429_v001.pkts"
-    ),
-    Path(
-        f"{imap_module_directory}/tests/codice/data/imap_codice_l0_lo-pha_20240429_v001.pkts"
-    ),
-]
+    Path(f"{imap_module_directory}/tests/codice/data/imap_codice_l0_hskp_20100101_v001.pkts"),
+    Path(f"{imap_module_directory}/tests/codice/data/imap_codice_l0_hi-counters-aggregated_20240429_v001.pkts"),
+    Path(f"{imap_module_directory}/tests/codice/data/imap_codice_l0_hi-counters-singles_20240429_v001.pkts"),
+    Path(f"{imap_module_directory}/tests/codice/data/imap_codice_l0_hi-omni_20240429_v001.pkts"),
+    Path(f"{imap_module_directory}/tests/codice/data/imap_codice_l0_hi-sectored_20240429_v001.pkts"),
+    Path(f"{imap_module_directory}/tests/codice/data/imap_codice_l0_hi-pha_20240429_v001.pkts"),
+    Path(f"{imap_module_directory}/tests/codice/data/imap_codice_l0_lo-counters-aggregated_20240429_v001.pkts"),
+    Path(f"{imap_module_directory}/tests/codice/data/imap_codice_l0_lo-counters-singles_20240429_v001.pkts"),
+    Path(f"{imap_module_directory}/tests/codice/data/imap_codice_l0_lo-sw-angular_20240429_v001.pkts"),
+    Path(f"{imap_module_directory}/tests/codice/data/imap_codice_l0_lo-nsw-angular_20240429_v001.pkts"),
+    Path(f"{imap_module_directory}/tests/codice/data/imap_codice_l0_lo-sw-priority_20240429_v001.pkts"),
+    Path(f"{imap_module_directory}/tests/codice/data/imap_codice_l0_lo-nsw-priority_20240429_v001.pkts"),
+    Path(f"{imap_module_directory}/tests/codice/data/imap_codice_l0_lo-sw-species_20240429_v001.pkts"),
+    Path(f"{imap_module_directory}/tests/codice/data/imap_codice_l0_lo-nsw-species_20240429_v001.pkts"),
+    Path(f"{imap_module_directory}/tests/codice/data/imap_codice_l0_lo-pha_20240429_v001.pkts"),
+]  # fmt: skip
 
 # Placeholder for validation data files
 VALIDATION_DATA = [
