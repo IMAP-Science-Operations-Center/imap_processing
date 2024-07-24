@@ -18,6 +18,7 @@ EXPECTED_ARRAY_SHAPES = [
     (1, 128),  # hi-counters-singles
     (1, 128),  # hi-omni
     (1, 128),  # hi-sectored
+    (1, 128),  # hi-pha
     (1, 128),  # lo-counters-aggregated
     (1, 128),  # lo-counters-aggregated
     (1, 128),  # lo-sw-angular
@@ -26,6 +27,7 @@ EXPECTED_ARRAY_SHAPES = [
     (1, 128),  # lo-nsw-priority
     (1, 128),  # lo-sw-species
     (1, 128),  # lo-nsw-species
+    (1, 128),  # lo-pha
 ]
 EXPECTED_ARRAY_SIZES = [
     123,  # hskp
@@ -33,6 +35,7 @@ EXPECTED_ARRAY_SIZES = [
     3,  # hi-counters-singles
     8,  # hi-omni
     4,  # hi-sectored
+    0,  # hi-pha
     3,  # lo-counters-aggregated
     3,  # lo-counters-singles
     6,  # lo-sw-angular
@@ -41,6 +44,7 @@ EXPECTED_ARRAY_SIZES = [
     4,  # lo-nsw-priority
     18,  # lo-sw-species
     10,  # lo-nsw-species
+    0,  # lo-pha
 ]
 EXPECTED_LOGICAL_SOURCE = [
     "imap_codice_l1a_hskp",
@@ -48,6 +52,7 @@ EXPECTED_LOGICAL_SOURCE = [
     "imap_codice_l1a_hi-counters-singles",
     "imap_codice_l1a_hi-omni",
     "imap_codice_l1a_hi-sectored",
+    "imap_codice_l1a_hi-pha",
     "imap_codice_l1a_lo-counters-aggregated",
     "imap_codice_l1a_lo-counters-singles",
     "imap_codice_l1a_lo-sw-angular",
@@ -56,6 +61,7 @@ EXPECTED_LOGICAL_SOURCE = [
     "imap_codice_l1a_lo-nsw-priority",
     "imap_codice_l1a_lo-sw-species",
     "imap_codice_l1a_lo-nsw-species",
+    "imap_codice_l1a_lo-pha",
 ]
 TEST_PACKETS = [
     Path(
@@ -72,6 +78,9 @@ TEST_PACKETS = [
     ),
     Path(
         f"{imap_module_directory}/tests/codice/data/imap_codice_l0_hi-sectored_20240429_v001.pkts"
+    ),
+    Path(
+        f"{imap_module_directory}/tests/codice/data/imap_codice_l0_hi-pha_20240429_v001.pkts"
     ),
     Path(
         f"{imap_module_directory}/tests/codice/data/imap_codice_l0_lo-counters-aggregated_20240429_v001.pkts"
@@ -97,6 +106,9 @@ TEST_PACKETS = [
     Path(
         f"{imap_module_directory}/tests/codice/data/imap_codice_l0_lo-nsw-species_20240429_v001.pkts"
     ),
+    Path(
+        f"{imap_module_directory}/tests/codice/data/imap_codice_l0_lo-pha_20240429_v001.pkts"
+    ),
 ]
 
 # Placeholder for validation data files
@@ -106,6 +118,7 @@ VALIDATION_DATA = [
     f"{imap_module_directory}/tests/codice/data/validation_hi-counters-singles.cdf",
     f"{imap_module_directory}/tests/codice/data/validation_hi-omni.cdf",
     f"{imap_module_directory}/tests/codice/data/validation_hi-sectored.cdf",
+    f"{imap_module_directory}/tests/codice/data/validation_hi-pha.cdf",
     f"{imap_module_directory}/tests/codice/data/validation_lo-counters-aggregated.cdf",
     f"{imap_module_directory}/tests/codice/data/validation_lo-counters-singles.cdf",
     f"{imap_module_directory}/tests/codice/data/validation_lo-sw-angular.cdf",
@@ -114,6 +127,7 @@ VALIDATION_DATA = [
     f"{imap_module_directory}/tests/codice/data/validation_lo-nsw-priority.cdf",
     f"{imap_module_directory}/tests/codice/data/validation_lo-sw-species.cdf",
     f"{imap_module_directory}/tests/codice/data/validation_lo-nsw-species.cdf",
+    f"{imap_module_directory}/tests/codice/data/validation_lo-pha.cdf",
 ]
 
 

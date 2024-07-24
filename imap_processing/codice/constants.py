@@ -49,6 +49,9 @@ LO_NSW_SPECIES_NAMES = [
     "heplus",
     "cnoplus",
 ]
+LO_PHA_NAMES = [
+    "foo",
+]
 
 # CDF-friendly names for hi data products
 HI_INST_COUNTS_AGGREGATED_NAMES = ["aggregated"]
@@ -129,6 +132,12 @@ DATA_PRODUCT_CONFIGURATIONS = {
         "num_energy_steps": 128,
         "variable_names": LO_NSW_SPECIES_NAMES,
         "dataset_name": "imap_codice_l1a_lo_nsw_species",
+    },
+    CODICEAPID.COD_LO_PHA: {
+        "num_counters": 1,
+        "num_energy_steps": 128,
+        "variable_names": LO_PHA_NAMES,
+        "dataset_name": "imap_codice_l1a_lo_pha",
     },
 }
 

@@ -290,6 +290,55 @@ class CoDICEL1aPipeline:
         self.data = [["1"] * 128] * self.num_counters
 
 
+def create_event_dataset(
+    met: list[int], event_data: str, dataset_name: str, data_version: str
+) -> xr.Dataset:
+    """
+    Create dataset for event data.
+
+    Parameters
+    ----------
+    met : list[int]
+        The Mission Elapsed Time of the data.
+    event_data : str
+        A string of binary numbers representing the event data.
+    dataset_name : str
+        The name for the dataset.
+    data_version : str
+        Version of the data product being created.
+
+    Returns
+    -------
+    dataset : xarray.Dataset
+        Xarray dataset containing the event data.
+    """
+    cdf_attrs = ImapCdfAttributes()
+    cdf_attrs.add_instrument_global_attrs("codice")
+    cdf_attrs.add_instrument_variable_attrs("codice", "l1a")
+    cdf_attrs.add_global_attribute("Data_version", data_version)
+
+    # Define coordinates
+    epoch = xr.DataArray(
+        met_to_j2000ns(met),  # TODO: Fix after SIT-3 (see note below)
+        name="epoch",
+        dims=["epoch"],
+        attrs=cdf_attrs.get_variable_attributes("epoch_attrs"),
+    )
+
+    # Create the dataset to hold the data variables
+    dataset = xr.Dataset(
+        coords={
+            "epoch": epoch,
+        },
+        attrs=cdf_attrs.get_global_attributes(dataset_name),
+    )
+
+    # TODO: Determine what should go in event data CDF and how it should be
+    # structured.
+
+    return dataset
+
+
 def create_hskp_dataset(
     packets: list[space_packet_parser.parser.Packet],
     data_version: str,
@@ -411,6 +460,10 @@ def process_codice_l1a(file_path: Path, data_version: str) -> xr.Dataset:
     # need to split the processing based on the file_path, so this function can
     # be simplified.
 
+    apids_for_event_data_processing = [
+        CODICEAPID.COD_LO_PHA,
+        CODICEAPID.COD_HI_PHA,
+    ]
     apids_for_lo_science_processing = [
         CODICEAPID.COD_LO_INST_COUNTS_AGGREGATED,
         CODICEAPID.COD_LO_INST_COUNTS_SINGLES,
@@ -422,7 +475,9 @@ def process_codice_l1a(file_path: Path, data_version: str) -> xr.Dataset:
         CODICEAPID.COD_LO_NSW_SPECIES_COUNTS,
     ]
 
-    if file_path.name.startswith(("imap_codice_l0_lo", "imap_codice_l0_hskp")):
+    if file_path.name.startswith(
+        ("imap_codice_l0_lo", "imap_codice_l0_hskp", "imap_codice_l0_hi-pha")
+    ):
         # Decom the packets, group data by APID, and sort by time
         packets = decom_packets(file_path)
         grouped_data = group_by_apid(packets)
@@ -455,6 +510,27 @@ def process_codice_l1a(file_path: Path, data_version: str) -> xr.Dataset:
                 pipeline.configure_data_products(apid)
                 pipeline.unpack_science_data(science_values)
                 dataset = pipeline.create_science_dataset(met, data_version)
+
+            elif apid in apids_for_event_data_processing:
+                if apid == CODICEAPID.COD_LO_PHA:
+                    dataset_name = "imap_codice_l1a_lo_pha"
+                elif apid == CODICEAPID.COD_HI_PHA:
+                    dataset_name = "imap_codice_l1a_hi_pha"
+
+                # Sort the packets by time
+                packets = sort_by_time(grouped_data[apid], "SHCOARSE")
+
+                # Determine the start time of the packet
+                met = packets[0].data["ACQ_START_SECONDS"].raw_value
+                met = [met, met + 1]  # TODO: Remove after SIT-3
+
+                # Extract the data
+                event_data = packets[0].data["EVENT_DATA"].raw_value
+
+                # Create the dataset
+                dataset = create_event_dataset(
+                    met, event_data, dataset_name, data_version
+                )
 
     # TODO: Temporary workaround in order to create hi data products in absence
     #       of simulated data. This is essentially the same process as is for
