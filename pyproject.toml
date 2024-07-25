@@ -118,5 +118,15 @@ checks = ["all", #report on all checks, except the following
 exclude = ['__init__' ] # don't report on objects that match any of these regex
 
 [tool.mypy]
+disable_error_code = ['type-arg', 'import-untyped', 'import-not-found', 'no-untyped-call']
+strict = true
+explicit_package_bases = true
 follow_imports = 'skip'
-exclude = ["tests", "docs"]
+exclude = ["tests", "docs" , "__init__.py"]
+mypy_path = ["imap_processing/" , "tools/"]
+
+
+
+
+
+
