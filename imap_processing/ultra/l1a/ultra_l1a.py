@@ -119,7 +119,6 @@ def initiate_data_arrays(decom_ultra: dict, apid: int) -> xr.Dataset:
             attrs=sci_cdf_attrs,
         )
 
-    print("logical_source", dataset.attrs["Logical_source"])
     return dataset
 
 
