@@ -9,7 +9,7 @@ import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import J2000_EPOCH, met_to_j2000ns
-from imap_processing.mag.constants import DataMode
+from imap_processing.mag.constants import DataMode, PrimarySensor
 from imap_processing.mag.l0 import decom_mag
 from imap_processing.mag.l0.mag_l0_data import MagL0
 from imap_processing.mag.l1a.mag_l1a_data import (
@@ -148,7 +148,7 @@ def process_packets(
         primary_start_time = TimeTuple(mag_l0.PRI_COARSETM, mag_l0.PRI_FNTM)
         secondary_start_time = TimeTuple(mag_l0.SEC_COARSETM, mag_l0.SEC_FNTM)
 
-        mago_is_primary = mag_l0.PRI_SENS == 0
+        mago_is_primary = mag_l0.PRI_SENS == PrimarySensor.MAGO.value
 
         primary_day = (
             J2000_EPOCH

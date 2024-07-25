@@ -1,5 +1,7 @@
 """Data classes for storing and processing MAG Level 1A data."""
 
+from __future__ import annotations
+
 from dataclasses import InitVar, dataclass, field
 from math import floor
 
@@ -33,7 +35,7 @@ class TimeTuple:
     coarse_time: int
     fine_time: int
 
-    def __add__(self, seconds: float):  # type: ignore[no-untyped-def]
+    def __add__(self, seconds: float) -> TimeTuple:
         """
         Add a number of seconds to the time tuple.
 
@@ -46,7 +48,6 @@ class TimeTuple:
         -------
         time : TimeTuple
             New time tuple with the current time tuple + seconds.
-            Ruff is saying TimeTuple is undefined for this usage.
         """
         # Add whole seconds to coarse time
         coarse = self.coarse_time + floor(seconds)

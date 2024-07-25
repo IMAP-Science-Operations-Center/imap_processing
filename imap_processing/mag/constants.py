@@ -37,3 +37,21 @@ class Sensor(Enum):
     MAGO = "MAGO"
     MAGI = "MAGI"
     RAW = "RAW"
+
+
+class PrimarySensor(Enum):
+    """
+    Enum for primary sensor: MAGo and MAGi (MAGO, MAGI).
+
+    This corresponds to the PRI_SENS field in the MAG Level 0 data.
+
+    Attributes
+    ----------
+    MAGO : int
+        Primary sensor is MAGo.
+    MAGI : int
+        Primary sensor is MAGi.
+    """
+
+    MAGO = 0
+    MAGI = 1
