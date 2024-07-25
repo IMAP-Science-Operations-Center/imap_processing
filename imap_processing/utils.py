@@ -1,7 +1,6 @@
 """Common functions that every instrument can use."""
 
 import collections
-import dataclasses
 import logging
 from pathlib import Path
 from typing import Optional, Union
@@ -11,9 +10,9 @@ import pandas as pd
 import xarray as xr
 from space_packet_parser import parser, xtcedef
 
-from imap_processing.cdf.global_attrs import ConstantCoordinates
+from imap_processing.cdf import epoch_attrs
+from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import met_to_j2000ns
-from imap_processing.common_cdf_attrs import metadata_attrs
 
 logger = logging.getLogger(__name__)
 
@@ -198,11 +197,13 @@ def create_dataset(
     # NOTE: At this point, we keep epoch time as raw value from packet
     # which is in seconds and spacecraft time. Some instrument uses this
     # raw value in processing.
+    # Load the CDF attributes
+    cdf_manager = ImapCdfAttributes()
     epoch_time = xr.DataArray(
         metadata_arrays[spacecraft_time_key],
         name="epoch",
         dims=["epoch"],
-        attrs=ConstantCoordinates.EPOCH,
+        attrs=epoch_attrs,
     )
 
     dataset = xr.Dataset(
@@ -212,17 +213,15 @@ def create_dataset(
     # create xarray dataset for each metadata field
     for key, value in metadata_arrays.items():
         # replace description and fieldname
-        data_attrs = dataclasses.replace(
-            metadata_attrs,
-            catdesc=description_dict[key],
-            fieldname=key,
-            label_axis=key,
-            depend_0="epoch",
-        )
+        data_attrs = cdf_manager.get_variable_attributes("metadata_attrs")
+        data_attrs["CATDESC"] = description_dict[key]
+        data_attrs["FIELDNAM"] = key
+        data_attrs["LABLAXIS"] = key
+
         dataset[key] = xr.DataArray(
             value,
             dims=["epoch"],
-            attrs=data_attrs.output(),
+            attrs=data_attrs,
         )
 
     return dataset

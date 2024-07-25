@@ -6,7 +6,7 @@ import numpy as np
 import xarray as xr
 
 from imap_processing import imap_module_directory
-from imap_processing.cdf.global_attrs import ConstantCoordinates
+from imap_processing.cdf import epoch_attrs
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.swapi.swapi_utils import SWAPIAPID, SWAPIMODE
 from imap_processing.utils import packet_file_to_datasets
@@ -470,7 +470,7 @@ def process_swapi_science(sci_dataset: xr.Dataset, data_version: str) -> xr.Data
         epoch_values,
         name="epoch",
         dims=["epoch"],
-        attrs=ConstantCoordinates.EPOCH,
+        attrs=epoch_attrs,
     )
 
     # There are 72 energy steps

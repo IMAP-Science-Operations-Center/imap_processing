@@ -3,10 +3,9 @@
 from dataclasses import dataclass
 
 import numpy as np
-import space_packet_parser
+from space_packet_parser.parser import Packet
 
 from imap_processing.ccsds.ccsds_data import CcsdsData
-from imap_processing.cdf.defaults import GlobalConstants
 from imap_processing.lo.l0.decompression_tables.decompression_tables import (
     CASE_DECODER,
     DATA_BITS,
@@ -125,7 +124,7 @@ class ScienceDirectEvents(LoBase):
 
     def __init__(
         self,
-        packet: space_packet_parser.parser.Packet,
+        packet: Packet,
         software_version: str,
         packet_file_name: str,
     ) -> None:
@@ -147,15 +146,15 @@ class ScienceDirectEvents(LoBase):
         # cases, so these can be initialized to the
         # CDF fill val and stored with this value for
         # those cases.
-        self.DE_TIME = np.ones(self.DE_COUNT) * GlobalConstants.DOUBLE_FILLVAL
-        self.ESA_STEP = np.ones(self.DE_COUNT) * GlobalConstants.DOUBLE_FILLVAL
-        self.MODE = np.ones(self.DE_COUNT) * GlobalConstants.DOUBLE_FILLVAL
-        self.TOF0 = np.ones(self.DE_COUNT) * GlobalConstants.DOUBLE_FILLVAL
-        self.TOF1 = np.ones(self.DE_COUNT) * GlobalConstants.DOUBLE_FILLVAL
-        self.TOF2 = np.ones(self.DE_COUNT) * GlobalConstants.DOUBLE_FILLVAL
-        self.TOF3 = np.ones(self.DE_COUNT) * GlobalConstants.DOUBLE_FILLVAL
-        self.CKSM = np.ones(self.DE_COUNT) * GlobalConstants.DOUBLE_FILLVAL
-        self.POS = np.ones(self.DE_COUNT) * GlobalConstants.DOUBLE_FILLVAL
+        self.DE_TIME = np.ones(self.DE_COUNT) * np.float64(-1.0e31)
+        self.ESA_STEP = np.ones(self.DE_COUNT) * np.float64(-1.0e31)
+        self.MODE = np.ones(self.DE_COUNT) * np.float64(-1.0e31)
+        self.TOF0 = np.ones(self.DE_COUNT) * np.float64(-1.0e31)
+        self.TOF1 = np.ones(self.DE_COUNT) * np.float64(-1.0e31)
+        self.TOF2 = np.ones(self.DE_COUNT) * np.float64(-1.0e31)
+        self.TOF3 = np.ones(self.DE_COUNT) * np.float64(-1.0e31)
+        self.CKSM = np.ones(self.DE_COUNT) * np.float64(-1.0e31)
+        self.POS = np.ones(self.DE_COUNT) * np.float64(-1.0e31)
         self._decompress_data()
 
     def _decompress_data(self) -> None:
