@@ -41,5 +41,5 @@ repos:
     rev: 'v1.10.0'
     hooks:
       - id: mypy
-        pass_filenames: false
+        exclude: .*(tests|docs).*
 
