@@ -12,7 +12,7 @@ import numpy as np
 import space_packet_parser
 import xarray as xr
 
-from imap_processing import epoch_attrs
+from imap_processing.cdf import epoch_attrs
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import met_to_j2000ns
 

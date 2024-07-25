@@ -5,7 +5,7 @@ import numpy as np
 import pytest
 import xarray as xr
 
-from imap_processing import epoch_attrs
+from imap_processing.cdf import epoch_attrs
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import (
     IMAP_EPOCH,
