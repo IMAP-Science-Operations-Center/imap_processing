@@ -124,7 +124,9 @@ disable_error_code = ['import-not-found', # Unable to locate module or package s
                 'type-arg' ] # Requires type arguments to be specified in list[] and dict[]
 strict = true
 explicit_package_bases = true
-follow_imports = 'skip'
-exclude = ["tests"]
+follow_imports = 'skip' #may want to remove
+exclude = ["tests", "cdf_attrs"]
 packages = ["imap_processing" , "tools"]
+plugins = 'numpy.typing.mypy_plugin'
+
 
