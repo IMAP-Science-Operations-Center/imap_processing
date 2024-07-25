@@ -6,7 +6,7 @@ from imap_processing.ultra.l1c.histogram import calculate_histogram
 from imap_processing.ultra.l1c.pset import calculate_pset
 
 
-def ultra_l1c(data_dict: dict, data_version: str) -> xr.Dataset:
+def ultra_l1c(data_dict: dict, data_version: str) -> list[xr.Dataset]:
     """
     Will process ULTRA L1A and L1B data into L1C CDF files at output_filepath.
 
@@ -19,7 +19,7 @@ def ultra_l1c(data_dict: dict, data_version: str) -> xr.Dataset:
 
     Returns
     -------
-    output_datasets : list of xarray.Dataset
+    output_datasets : list[xarray.Dataset]
         List of xarray.Dataset.
     """
     instrument_id = 45 if any("45" in key for key in data_dict.keys()) else 90

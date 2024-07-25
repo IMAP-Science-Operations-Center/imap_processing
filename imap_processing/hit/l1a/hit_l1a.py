@@ -37,7 +37,7 @@ class HitAPID(IntEnum):
     HIT_IALRT = 1253
 
 
-def hit_l1a(packet_file: str, data_version: str) -> list:
+def hit_l1a(packet_file: str, data_version: str) -> list[xr.Dataset]:
     """
     Will process HIT L0 data into L1A data products.
 
@@ -50,8 +50,8 @@ def hit_l1a(packet_file: str, data_version: str) -> list:
 
     Returns
     -------
-    cdf_filepaths : list
-        List of file paths to CDF data product files.
+    cdf_filepaths : list[xarray.Dataset]
+        List of Datasets of L1A processed data.
     """
     # Decom, sort, and group packets by apid
     packets = decom_packets(packet_file)

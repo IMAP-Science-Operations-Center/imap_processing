@@ -9,7 +9,7 @@ from cdflib.xarray.xarray_to_cdf import ISTPError
 
 from imap_processing import imap_module_directory
 from imap_processing.cdf.utils import load_cdf, write_cdf
-from imap_processing.idex.idex_packet_parser import PacketParser
+from imap_processing.idex.l1.idex_l1 import PacketParser
 
 
 @pytest.fixture()

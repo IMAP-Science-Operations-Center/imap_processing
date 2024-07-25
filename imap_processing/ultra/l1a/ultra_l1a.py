@@ -288,7 +288,7 @@ def create_dataset(decom_ultra_dict: dict) -> xr.Dataset:
 
 def ultra_l1a(
     packet_file: str, data_version: str, apid: Optional[int] = None
-) -> xr.Dataset:
+) -> list[xr.Dataset]:
     """
     Will process ULTRA L0 data into L1A CDF files at output_filepath.
 
@@ -303,7 +303,7 @@ def ultra_l1a(
 
     Returns
     -------
-    output_datasets : list of xarray.Dataset
+    output_datasets : list[xarray.Dataset]
         List of xarray.Dataset.
     """
     xtce = str(

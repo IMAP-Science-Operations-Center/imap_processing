@@ -2,10 +2,8 @@
 
 import numpy as np
 import xarray as xr
-from space_packet_parser.parser import Packet
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
-from imap_processing.cdf.utils import met_to_j2000ns
 
 # define the names of the 24 counter arrays
 # contained in the histogram packet
@@ -35,30 +33,34 @@ LONG_COUNTERS = (
 TOTAL_COUNTERS = ("total_a", "total_b", "total_c", "fee_de_sent", "fee_de_recd")
 
 
-def create_dataset(packets: list[Packet]) -> xr.Dataset:
+def create_dataset(input_ds: xr.Dataset) -> xr.Dataset:
     """
     Create dataset for a number of Hi Histogram packets.
 
     Parameters
     ----------
-    packets : list[space_packet_parser.ParsedPacket]
-        Packet list.
+    input_ds : xarray.Dataset
+        Dataset of packets.
 
     Returns
     -------
     dataset : xarray.Dataset
         Dataset with all metadata field data in xr.DataArray.
     """
-    dataset = allocate_histogram_dataset(len(packets))
+    dataset = allocate_histogram_dataset(len(input_ds.epoch))
+
+    # TODO: Move into the allocate dataset function?
+    dataset["epoch"].data[:] = input_ds["epoch"].data
+    dataset["ccsds_met"].data = input_ds["ccsds_met"].data
+    dataset["esa_stepping_num"].data = input_ds["esa_step"].data
 
     # unpack the packets data into the Dataset
-    for i_epoch, packet in enumerate(packets):
-        dataset.epoch.data[i_epoch] = met_to_j2000ns(packet.data["CCSDS_MET"].raw_value)
-        dataset.ccsds_met[i_epoch] = packet.data["CCSDS_MET"].raw_value
-        dataset.esa_stepping_num[i_epoch] = packet.data["ESA_STEP"].raw_value
-
+    # (npackets, 24 * 90 * 12)
+    # TODO: Look into avoiding the for-loops below
+    #       It seems like we could try to reshape the arrays and do some numpy
+    #       broadcasting rather than for-loops directly here
+    for i_epoch, counters_binary_data in enumerate(input_ds["counters"].data):
         # unpack 24 arrays of 90 12-bit unsigned integers
-        counters_binary_data = packet.data["COUNTERS"].raw_value
         counter_ints = [
             int(counters_binary_data[i * 12 : (i + 1) * 12], 2) for i in range(90 * 24)
         ]
