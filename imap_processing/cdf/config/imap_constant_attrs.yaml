@@ -17,3 +17,17 @@ epoch:
   TIME_BASE: J2000
   TIME_SCALE: Terrestrial Time
   REFERENCE_POSITION: Rotating Earth Geoid
+
+# <=== Data Variables ===>
+# Default Attrs for all metadata variables unless overridden
+metadata_attrs:
+  DEPEND_0: epoch
+  DISPLAY_TYPE: 'no_plot'
+  LABLAXIS: ' '
+  FILLVAL: -9223372036854775808
+  FORMAT: I19
+  UNITS: ' '
+  VALIDMIN: 0
+  VALIDMAX: 9223372036854769664
+  VAR_TYPE: support_data
+  SCALETYP: linear

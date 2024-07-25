@@ -15,6 +15,7 @@ the CDF file format, and to interact with the SPICE toolkit.
 from pathlib import Path
 
 from imap_processing._version import __version__, __version_tuple__  # noqa: F401
+from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 
 # Eg. imap_module_directory = /usr/local/lib/python3.11/site-packages/imap_processing
 imap_module_directory = Path(__file__).parent
@@ -32,3 +33,7 @@ PROCESSING_LEVELS = {
     "swe": ["l0", "l1a", "l1b", "l2"],
     "ultra": ["l0", "l1a", "l1b", "l1c", "l2"],
 }
+
+# Load Epoch CDF attributes
+cdf_manager = ImapCdfAttributes()
+epoch_attrs = cdf_manager.get_variable_attributes("epoch")

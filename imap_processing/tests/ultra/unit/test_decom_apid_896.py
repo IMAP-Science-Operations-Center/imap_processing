@@ -2,7 +2,6 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from imap_processing.cdf.defaults import GlobalConstants
 from imap_processing.ultra.l0.ultra_utils import ULTRA_EVENTS
 
 
@@ -27,7 +26,7 @@ def test_image_raw_events_decom(
     decom_ultra, _ = decom_test_data
 
     df = pd.read_csv(events_test_path, index_col="MET")
-    df.replace(-1, GlobalConstants.INT_FILLVAL, inplace=True)
+    df.replace(-1, np.iinfo(np.int64).min, inplace=True)
 
     np.testing.assert_array_equal(df.SID, decom_ultra["SID"])
     np.testing.assert_array_equal(df["Spin"], decom_ultra["SPIN"])
@@ -72,7 +71,7 @@ def test_image_raw_events_decom_flags(decom_test_data, events_test_path):
 
     decom_ultra, _ = decom_test_data
     df = pd.read_csv(events_test_path, index_col="MET")
-    df.replace(-1, GlobalConstants.INT_FILLVAL, inplace=True)
+    df.replace(-1, np.iinfo(np.int64).min, inplace=True)
 
     np.testing.assert_array_equal(df["CnT"], decom_ultra["EVENT_FLAG_CNT"])
     np.testing.assert_array_equal(df["PHCmpSL"], decom_ultra["EVENT_FLAG_PHCMPSL"])
