@@ -86,14 +86,13 @@ lint.ignore = ["D104", "PLR2004", "RUF200", "S311"]
 # S603 unchecked input in subprocess call is fine in our tests
 # PT006 Wrong type passed to first argument of @pytest.mark.parametrize
 "*/tests/*" = ["D", "S101", "S603", "PT006"]
-"tools/xtce*" = ["D"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "numpy"
 
 [tool.poetry.scripts]
 imap_cli = 'imap_processing.cli:main'
-imap_xtce = 'tools.xtce_generation.xtce_generator_template:main'
+imap_xtce = 'imap_processing.ccsds.excel_to_xtce:main'
 
 [tool.codespell]
 ignore-words-list = "livetime"

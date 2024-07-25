@@ -11,6 +11,20 @@ instrument_base: &instrument_base
     (CBK PAN). See https://imap.princeton.edu/instruments/glows for more details.
   Instrument_type: Particles (space)
 
+imap_glows_l1a_hist:
+  <<: *instrument_base
+  Data_level: L1A
+  Data_type: L1A_hist>Level-1A histogram
+  Logical_source: imap_glows_l1a_hist
+  Logical_source_description: IMAP Mission GLOWS Histogram Level-1A Data.
+
+imap_glows_l1a_de:
+  <<: *instrument_base
+  Data_level: L1A
+  Data_type: L1A_de>Level-1A direct event
+  Logical_source: imap_glows_l1a_de
+  Logical_source_description: IMAP Mission GLOWS Direct Event Level-1A Data.
+
 imap_glows_l1b_hist:
   <<: *instrument_base
   Data_level: L1B

@@ -6,14 +6,14 @@ import numpy as np
 import xarray as xr
 
 from imap_processing import imap_module_directory
-from imap_processing.cdf.cdf_attribute_manager import CdfAttributeManager
+from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.hi.utils import HIAPID
 from imap_processing.utils import convert_raw_to_eu
 
 logger = logging.getLogger(__name__)
-CDF_MANAGER = CdfAttributeManager(imap_module_directory / "cdf" / "config")
-CDF_MANAGER.load_global_attributes("imap_hi_global_cdf_attrs.yaml")
-CDF_MANAGER.load_variable_attributes("imap_hi_variable_attrs.yaml")
+ATTR_MGR = ImapCdfAttributes()
+ATTR_MGR.add_instrument_global_attrs("hi")
+ATTR_MGR.load_variable_attributes("imap_hi_variable_attrs.yaml")
 
 
 def hi_l1b(l1a_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
@@ -56,9 +56,7 @@ def hi_l1b(l1a_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
             converters={"mnemonic": str.lower},
         )
 
-        l1b_dataset.attrs.update(
-            CDF_MANAGER.get_global_attributes("imap_hi_l1b_hk_attrs")
-        )
+        l1b_dataset.attrs.update(ATTR_MGR.get_global_attributes("imap_hi_l1b_hk_attrs"))
     elif logical_source_parts[-1].endswith("de"):
         l1b_dataset = annotate_direct_events(l1a_dataset)
     else:
@@ -108,7 +106,7 @@ def annotate_direct_events(l1a_dataset: xr.Dataset) -> xr.Dataset:
         "quality_flag",
         "nominal_bin",
     ]:
-        attrs = CDF_MANAGER.get_variable_attributes(
+        attrs = ATTR_MGR.get_variable_attributes(
             f"hi_de_{var}", check_schema=False
         ).copy()
         dtype = attrs.pop("dtype")
@@ -124,6 +122,6 @@ def annotate_direct_events(l1a_dataset: xr.Dataset) -> xr.Dataset:
         ["tof_1", "tof_2", "tof_3", "de_tag", "ccsds_met", "meta_event_met"]
     )
 
-    de_global_attrs = CDF_MANAGER.get_global_attributes("imap_hi_l1b_de_attrs")
+    de_global_attrs = ATTR_MGR.get_global_attributes("imap_hi_l1b_de_attrs")
     l1b_dataset.attrs.update(**de_global_attrs)
     return l1b_dataset

@@ -1,0 +1,376 @@
+# Info found in cdf.defaults.py
+# Info defined from glows_cdf_attrs
+int_fillval: &int_fillval -9223372036854775808
+min_epoch: &min_epoch -315575942816000000
+max_epoch: &max_epoch 3155630469184000000
+
+#Information taken from CDF warnings of missing attributes
+default_attrs: &default_attrs
+  # Resolution is optional?
+  RESOLUTION: ' '
+  DISPLAY_TYPE: no_plot
+  TIME_BASE: J2000
+  # Guess from other l1a sections, but optional?
+  TIME_SCALE: Terrestrial Time
+  # Guess from other l1a sections, prob wrong
+  REFERENCE_POSITION: Rotating Earth Geoid
+  # Guess from other l1a sections
+  UNITS: ' '
+  FILLVAL: *int_fillval
+  VALIDMIN: *min_epoch
+
+# Information found in cdf.config.global_attrs.py EPOCH, and cdf.defaults.py
+epoch:
+  <<:  *default_attrs
+  CATDESC: Time, number of nanoseconds since J2000 with leap seconds included
+  FIELDNAM: epoch
+  FILLVAL: *int_fillval # GlobalConstants.INT_FILLVAL,
+  LABLAXIS: epoch
+  FORMAT: ""  # Supposedly not required, fails in xarray_to_cdf
+  UNITS: ns
+  VALIDMIN: *min_epoch # GlobalConstants.MIN_EPOCH
+  VALIDMAX: *max_epoch # GlobalConstants.MAX_EPOCH
+  VAR_TYPE: support_data
+  SCALETYP: linear
+  MONOTON: INCREASE
+  TIME_BASE: J2000
+  TIME_SCALE: Terrestrial Time
+  REFERENCE_POSITION: Rotating Earth Geoid
+
+# Information from glows_cdf_attrs.py
+bins_attrs:
+  <<:  *default_attrs
+  VALIDMMIN: 0
+  VALIDMAX: 70
+  CATDESC: Counts of direct events for photon impacts
+  FIELDNAM: Counts of direct events
+  # FORMAT is different from glows_cdf_attrs.py
+  # Changed this in order to avoid warnings
+  # Int with 10 digits
+  FORMAT: I10
+  VAR_TYPE: support_data
+  DISPLAY_TYPE: time_series
+  LABLAXIS: Counts
+
+per_second_attrs:
+  <<:  *default_attrs
+  VALIDMMIN: 0
+  VALIDMAX: 300
+  CATDESC: Direct events recorded approximately per second
+  FIELDNAM: List of direct events
+  # FORMAT is different from glows_cdf_attrs.py
+  # Changed this in order to avoid warnings
+  # Int with 10 digits
+  FORMAT: I10
+  VAR_TYPE: support_data
+  DISPLAY_TYPE: time_series
+  LABLAXIS: Counts
+
+event_attrs:
+  <<:  *default_attrs
+  VALIDMMIN: 0
+  VALIDMAX: 300
+  CATDESC: Direct events recorded approximately per second
+  FIELDNAM: List of direct events
+  # FORMAT is different from glows_cdf_attrs.py
+  # Changed this in order to avoid warnings
+  # Int with 10 digits
+  FORMAT: I10
+  VAR_TYPE: data
+  DISPLAY_TYPE: time_series
+  LABLAXIS: Counts
+
+direct_event_attrs:
+  <<:  *default_attrs
+  DEPEND_O: epoch
+  DEPEND_1: per_second
+  DEPEND_2: direct_event
+  VALIDMIN: 0
+  VALIDMAX: 300
+  CATDESC: Direct events recorded approximately per second
+  FIELDNAM: List of direct events, binned per second
+  # FORMAT is different from glows_cdf_attrs.py
+  # Changed this in order to avoid warnings
+  # Int with 10 digits
+  FORMAT: I10
+  VAR_TYPE: data
+  DISPLAY_TYPE: time_series
+  LABLAXIS: Counts
+
+histogram_attrs:
+  <<:  *default_attrs
+  VALIDMIN: 0
+  VALIDMAX: 70
+  CATDESC: Histogram of photon counts
+  DEPEND_0: epoch
+  DEPEND_1: bins
+  FIELDNAM: Histogram of photon counts
+  # FORMAT is different from glows_cdf_attrs.py
+  # Changed this in order to avoid warnings
+  # Float with 4 digits
+  FORMAT: F7.4
+  DISPLAY_TYPE: time_series
+  LABLAXIS: Counts
+  FILL_VAL: *int_fillval
+  UNITS: counts
+  VAR_TYPE: data
+
+metadata_attrs: &metadata_attrs
+  <<:  *default_attrs
+  DEPEND_0: epoch
+  VALIDMIN: 0
+  VALIDMAX: 1000000000
+  DISPLAY_TYPE: time_series
+  FILL_VAL: *int_fillval
+  VAR_TYPE: metadata
+  FORMAT: I10
+  LABLAXIS: Metadata
+  RESOLUTION: ISO8601
+
+pkts_file_name:
+  <<: *metadata_attrs
+  CATDESC: Input filename for packets data
+  FIELDNAM: Input filename
+
+last_spin_id:
+  <<: *metadata_attrs
+  CATDESC: The ID of the last spin in the block
+  FIELDNAM: Last spin ID
+
+imap_start_time:
+  <<: *metadata_attrs
+  CATDESC: Start time of the block, in seconds, in IMAP spacecraft clock time
+  FIELDNAM: Start time in seconds in IMAP time
+  # FORMAT is different from glows_cdf_attrs.py
+  # Changed this in order to avoid warnings
+  # Can range from F0 to F0.9
+  FORMAT: F16.6
+  UNITS: seconds
+
+imap_time_offset:
+  <<: *metadata_attrs
+  CATDESC: End time of the block, in seconds, in IMAP spacecraft clock time
+  FIELDNAM: End time in seconds in IMAP time
+  # FORMAT is different from glows_cdf_attrs.py
+  # Changed this in order to avoid warnings
+  # Can range from F0 to F0.9
+  FORMAT: F16.6
+  UNITS: seconds
+
+glows_start_time:
+  <<: *metadata_attrs
+  CATDESC: Start time of the block, in seconds, in GLOWS clock time
+  FIELDNAM: Start time in seconds in GLOWS time
+  # FORMAT is different from glows_cdf_attrs.py
+  # Changed this in order to avoid warnings
+  # Can range from F0 to F0.9
+  FORMAT: F16.6
+  UNITS: seconds
+
+glows_time_offset:
+  <<: *metadata_attrs
+  CATDESC: End time of the block, in seconds, in GLOWS clock time
+  FIELDNAM: End time in seconds in GLOWS time
+  # FORMAT is different from glows_cdf_attrs.py
+  # Changed this in order to avoid warnings
+  # Can range from F0 to F0.9
+  FORMAT: F16.6
+  UNITS: seconds
+
+flags_set_onboard:
+  <<: *metadata_attrs
+  CATDESC: FLags for bad data
+  FIELDNAM: Flags for missing or bad data
+
+is_generated_on_ground:
+  <<: *metadata_attrs
+  CATDESC: Indicates if the histogram data was generated on the ground
+  FIELDNAM: Histogram data generated on ground
+
+number_of_spins_per_block:
+  <<: *metadata_attrs
+  CATDESC: Number of spins per block
+  FIELDNAM: Number of spins per block
+
+number_of_spins_per_histogram:
+  <<: *metadata_attrs
+  CATDESC: Number of histogram bins
+  FIELDNAM: Number of histogram bins
+
+number_of_bins_per_histogram:
+  <<: *metadata_attrs
+  CATDESC: Number of histogram bins
+  FIELDNAM: Number of histogram bins
+
+number_of_events:
+  <<: *metadata_attrs
+  CATDESC: Total number of events or counts in the histogram
+  FIELDNAM: Total number of histogram events
+
+filter_temperature_average:
+  <<: *metadata_attrs
+  CATDESC: Filter temperature, averaged per block, and unit encoded
+  FIELDNAM: Average filter temperature, unit encoded
+
+filter_temperature_variance:
+  <<: *metadata_attrs
+  CATDESC: Filter temperature variance, per block, and unit encoded.
+  FIELDNAM: Uint encoded filter temperature variance
+
+hv_voltage_average:
+  <<: *metadata_attrs
+  CATDESC: block averaged HV voltage on the CEM, uint encoded
+  FIELDNAM: Uint encoded average HV voltage
+
+hv_voltage_variance:
+  <<: *metadata_attrs
+  CATDESC: variance of  HV voltage on the CEM, uint encoded
+  FIELDNAM: Uint encoded HV voltage variance
+
+spin_period_average:
+  <<: *metadata_attrs
+  CATDESC: Block averaged spin period, uint encoded
+  FIELDNAM: Average spin period, uint encoded
+
+spin_period_variance:
+  <<: *metadata_attrs
+  CATDESC: Variance of spin period, uint encoded
+  FIELDNAM: Variance of spin period, uint encoded
+
+pulse_length_average:
+  <<: *metadata_attrs
+  CATDESC: Block averaged impulse length, uint encoded
+  FIELDNAM: Block averaged impulse length, uint encoded
+
+pulse_length_variance:
+  <<: *metadata_attrs
+  CATDESC: Variance of impulse length, uint encoded
+  FIELDNAM: Variance of impulse length, uint encoded
+# End of not-in--dicts in generate_de_dataset
+
+# support_data
+seq_count_in_pkts_file:
+  <<: *metadata_attrs
+  CATDESC: Sequence counter from packet
+  FIELDNAM: Sequence counter
+
+number_of_de_packets:
+  <<: *metadata_attrs
+  CATDESC: Number of DE packets
+  FIELDNAM: Number of DE packets
+# End of support data
+
+# data_every_second in glows_l1a.py
+imap_sclk_last_pps:
+  <<: *metadata_attrs
+  CATDESC: IMAP seconds for last PPS
+  FIELDNAM: IMAP seconds for last PPS
+
+glows_sclk_last_pps:
+  <<: *metadata_attrs
+  CATDESC: GLOWS seconds for last PPS
+  FIELDNAM: GLOWS seconds for last PPS
+
+glows_ssclk_last_pps:
+  <<: *metadata_attrs
+  CATDESC: GLOWS subseconds for last PPS, with a max of 2000000
+  FIELDNAM: GLOWS subseconds for last PPS
+
+imap_sclk_next_pps:
+  <<: *metadata_attrs
+  CATDESC: IMAP seconds for next PPS
+  FIELDNAM: IMAP seconds for next PPS
+
+catbed_heater_active:
+  <<: *metadata_attrs
+  CATDESC: Indicates if the heater is active
+  FIELDNAM: Heater active flag
+
+spin_period_valid:
+  <<: *metadata_attrs
+  CATDESC: indicates if the spin phase is valid
+  FIELDNAM: valid spin phase flag
+
+spin_phase_at_next_pps_valid:
+  <<: *metadata_attrs
+  CATDESC: Indicates if the spin phase at next PPS is valid
+  FIELDNAM: Spin phase at next PPS is valid
+
+spin_period_source:
+  <<: *metadata_attrs
+  CATDESC: Flag - Spin period source
+  FIELDNAM: Flag - Spin period source
+
+spin_period:
+  <<: *metadata_attrs
+  CATDESC: Uint encoded spin period value
+  FIELDNAM: Uint encoded spin period value
+
+spin_phase_at_next_pps:
+  <<: *metadata_attrs
+  CATDESC: Uint encoded next spin phase value
+  FIELDNAM: Uint encoded next spin phase value
+
+number_of_completed_spins:
+  <<: *metadata_attrs
+  CATDESC: Number of spins, from onboard
+  FIELDNAM: Number of spins, from onboard
+
+filter_temperature:
+  <<: *metadata_attrs
+  CATDESC: Uint encoded temperature
+  FIELDNAM: Uint encoded temperature
+
+hv_voltage:
+  <<: *metadata_attrs
+  CATDESC: Uint encoded voltage
+  FIELDNAM: Uint encoded voltage
+
+glows_time_on_pps_valid:
+  <<: *metadata_attrs
+  CATDESC: Indicates if the glows time is valid
+  FIELDNAM: Flag - is glows time valid
+
+time_status_valid:
+  <<: *metadata_attrs
+  CATDESC: Flag - valid time status
+  FIELDNAM: Flag - valid time status
+
+housekeeping_valid:
+  <<: *metadata_attrs
+  CATDESC: Flag - valid housekeeping
+  FIELDNAM: Flag - valid housekeeping
+
+is_pps_autogenerated:
+  <<: *metadata_attrs
+  CATDESC: Indicates if PPS is autogenerated
+  FIELDNAM: Indicates if PPS is autogenerated
+
+hv_test_in_progress:
+  <<: *metadata_attrs
+  CATDESC: Flag
+  FIELDNAM: Flag
+
+pulse_test_in_progress:
+  <<: *metadata_attrs
+  CATDESC: FLag
+  FIELDNAM: Flag
+
+memory_error_detected:
+  <<: *metadata_attrs
+  CATDESC: Flag
+  FIELDNAM: Flag
+# End of data_every_second
+
+# Commented out in support_data
+# Do I include *metadata_attrs?
+missing_packet_sequences:
+  <<: *metadata_attrs
+  CATDESC: Missing packet sequence numbers
+  FIELDNAM: Missing packet sequences
+
+flight_software_version:
+  <<: *metadata_attrs
+  CATDESC: Flight software version
+  FIELDNAM: Flight software version
+# End of commented out support_data

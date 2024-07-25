@@ -7,6 +7,7 @@ import pytest
 
 from imap_processing.glows.l0 import decom_glows
 from imap_processing.glows.l1a.glows_l1a import (
+    create_glows_attr_obj,
     generate_de_dataset,
     generate_histogram_dataset,
     process_de_l0,
@@ -34,7 +35,8 @@ def l1a_data():
 
 def test_generate_histogram_dataset(l1a_data):
     histograms_l1a, _ = l1a_data
-    dataset = generate_histogram_dataset(histograms_l1a, "v001")
+    glows_attrs = create_glows_attr_obj("v001")
+    dataset = generate_histogram_dataset(histograms_l1a, glows_attrs)
 
     assert (dataset["histograms"].data[0] == histograms_l1a[0].histograms).all()
     hist_dict = dataclasses.asdict(histograms_l1a[0])
@@ -64,7 +66,8 @@ def test_generate_histogram_dataset(l1a_data):
 
 def test_generate_de_dataset(l1a_data):
     _, de_l1a = l1a_data
-    dataset = generate_de_dataset(de_l1a, "v001")
+    glows_attrs = create_glows_attr_obj("v001")
+    dataset = generate_de_dataset(de_l1a, glows_attrs)
     assert len(dataset["epoch"].values) == len(de_l1a)
 
     assert (

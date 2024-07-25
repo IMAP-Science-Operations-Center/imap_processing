@@ -1,11 +1,9 @@
 """
-Decommutate IDEX CCSDS packets.
+Perform IDEX l1 Processing.
 
-This module contains code to decommutate IDEX packets and creates xarrays to
-support creation of L1 data products.
+This module processes decommutated IDEX packets and creates l1 data products.
 """
 
-import dataclasses
 import logging
 from collections import namedtuple
 from enum import IntEnum
@@ -13,12 +11,10 @@ from enum import IntEnum
 import numpy as np
 import space_packet_parser
 import xarray as xr
-from space_packet_parser import parser, xtcedef
 
-from imap_processing import imap_module_directory
-from imap_processing.cdf.global_attrs import ConstantCoordinates
+from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import met_to_j2000ns
-from imap_processing.idex import idex_cdf_attrs
+from imap_processing.idex.l0.idex_l0 import decom_packets
 
 logger = logging.getLogger(__name__)
 
@@ -45,418 +41,70 @@ placed into the CDF in the VAR_NOTES attribute.
 """
 TriggerDescription = namedtuple(
     "TriggerDescription",
-    ["name", "packet_name", "num_bits", "field", "notes", "label", "units"],
+    ["name", "packet_name"],
 )
 trigger_description_dict = {
     trigger.name: trigger
     for trigger in [
-        TriggerDescription(
-            "event_number",
-            "IDX__TXHDREVTNUM",
-            16,
-            "Event Number",
-            "The unique number assigned to the impact by the FPGA",
-            "Event #",
-            "",
-        ),
-        TriggerDescription(
-            "tof_high_trigger_level",
-            "IDX__TXHDRHGTRIGLVL",
-            10,
-            "TOF High Trigger Level",
-            "Trigger level for the TOF High Channel",
-            "Level",
-            "",
-        ),
-        TriggerDescription(
-            "tof_high_trigger_num_max_1_2",
-            "IDX__TXHDRHGTRIGNMAX12",
-            11,
-            "TOF High Double Pulse Max Samples",
-            (
-                "Maximum number of samples between pulse 1 and 2 for TOF "
-                "High double pulse triggering"
-            ),
-            "# Samples",
-            "samples",
-        ),
-        TriggerDescription(
-            "tof_high_trigger_num_min_1_2",
-            "IDX__TXHDRHGTRIGNMIN12",
-            11,
-            "TOF High Double Pulse Min Samples",
-            (
-                "Minimum number of samples between pulse 1 and 2 for TOF High "
-                "double pulse triggering"
-            ),
-            "# Samples",
-            "samples",
-        ),
-        TriggerDescription(
-            "tof_high_trigger_num_min_1",
-            "IDX__TXHDRHGTRIGNMIN1",
-            8,
-            "TOF High Pulse 1 Min Samples",
-            (
-                "Minimum number of samples for pulse 1 for TOF High single and "
-                "double pulse triggering"
-            ),
-            "# Samples",
-            "samples",
-        ),
-        TriggerDescription(
-            "tof_high_trigger_num_max_1",
-            "IDX__TXHDRHGTRIGNMAX1",
-            8,
-            "TOF High Pulse 1 Max Samples",
-            (
-                "Maximum number of samples for pulse 1 for TOF High single and "
-                "double pulse triggering"
-            ),
-            "# Samples",
-            "samples",
-        ),
-        TriggerDescription(
-            "tof_high_trigger_num_min_2",
-            "IDX__TXHDRHGTRIGNMIN2",
-            8,
-            "TOF High Pulse 2 Min Samples",
-            (
-                "Minimum number of samples for pulse 2 for TOF High single and "
-                "double pulse triggering"
-            ),
-            "# Samples",
-            "samples",
-        ),
-        TriggerDescription(
-            "tof_high_trigger_num_max_2",
-            "IDX__TXHDRHGTRIGNMAX2",
-            8,
-            "TOF High Pulse 2 Max Samples",
-            (
-                "Maximum number of samples for pulse 2 for TOF High single and "
-                "double pulse triggering"
-            ),
-            "# Samples",
-            "samples",
-        ),
-        TriggerDescription(
-            "tof_low_trigger_level",
-            "IDX__TXHDRLGTRIGLVL",
-            10,
-            "TOF Low Trigger Level",
-            "Trigger level for the TOF Low Channel",
-            "Level",
-            "samples",
-        ),
-        TriggerDescription(
-            "tof_low_trigger_num_max_1_2",
-            "IDX__TXHDRLGTRIGNMAX12",
-            11,
-            "TOF Low Double Pulse Max Samples",
-            (
-                "Maximum number of samples between pulse 1 and 2 for TOF Low "
-                "double pulse triggering"
-            ),
-            "# Samples",
-            "samples",
-        ),
-        TriggerDescription(
-            "tof_low_trigger_num_min_1_2",
-            "IDX__TXHDRLGTRIGNMIN12",
-            11,
-            "TOF Low Double Pulse Min Samples",
-            (
-                "Minimum number of samples between pulse 1 and 2 for TOF Low "
-                "double pulse triggering"
-            ),
-            "# Samples",
-            "samples",
-        ),
-        TriggerDescription(
-            "tof_low_trigger_num_min_1",
-            "IDX__TXHDRLGTRIGNMIN1",
-            8,
-            "TOF Low Pulse 1 Min Samples",
-            (
-                "Minimum number of samples for pulse 1 for TOF Low single and "
-                "double pulse triggering"
-            ),
-            "# Samples",
-            "samples",
-        ),
-        TriggerDescription(
-            "tof_low_trigger_num_max_1",
-            "IDX__TXHDRLGTRIGNMAX1",
-            8,
-            "TOF Low Pulse 1 Max Samples",
-            (
-                "Maximum number of samples for pulse 1 for TOF Low single and "
-                "double pulse triggering"
-            ),
-            "# Samples",
-            "samples",
-        ),
-        TriggerDescription(
-            "tof_low_trigger_num_min_2",
-            "IDX__TXHDRLGTRIGNMIN2",
-            8,
-            "TOF Low Pulse 2 Min Samples",
-            (
-                "Minimum number of samples for pulse 2 for TOF Low single and "
-                "double pulse triggering"
-            ),
-            "# Samples",
-            "samples",
-        ),
-        TriggerDescription(
-            "tof_low_trigger_num_max_2",
-            "IDX__TXHDRLGTRIGNMAX2",
-            16,
-            "TOF Low Pulse 2 Max Samples",
-            (
-                "Maximum number of samples for pulse 2 for TOF Low single and "
-                "double pulse triggering"
-            ),
-            "# Samples",
-            "samples",
-        ),
-        TriggerDescription(
-            "tof_mid_trigger_level",
-            "IDX__TXHDRMGTRIGLVL",
-            10,
-            "TOF Mid Trigger Level",
-            "Trigger level for the TOF Mid Channel",
-            "Level",
-            "# Samples",
-        ),
-        TriggerDescription(
-            "tof_mid_trigger_num_max_1_2",
-            "IDX__TXHDRMGTRIGNMAX12",
-            11,
-            "TOF Mid Double Pulse Max Samples",
-            (
-                "Maximum number of samples between pulse 1 and 2 for TOF Mid "
-                "double pulse triggering"
-            ),
-            "# Samples",
-            "samples",
-        ),
-        TriggerDescription(
-            "tof_mid_trigger_num_min_1_2",
-            "IDX__TXHDRMGTRIGNMIN12",
-            11,
-            "TOF Mid Double Pulse Min Samples",
-            (
-                "Minimum number of samples between pulse 1 and 2 for TOF Mid "
-                "double pulse triggering"
-            ),
-            "# Samples",
-            "samples",
-        ),
-        TriggerDescription(
-            "tof_mid_trigger_num_min_1",
-            "IDX__TXHDRMGTRIGNMIN1",
-            8,
-            "TOF Mid Pulse 1 Min Samples",
-            (
-                "Minimum number of samples for pulse 1 for TOF Mid single and "
-                "double pulse triggering"
-            ),
-            "# Samples",
-            "samples",
-        ),
-        TriggerDescription(
-            "tof_mid_trigger_num_max_1",
-            "IDX__TXHDRMGTRIGNMAX1",
-            8,
-            "TOF Mid Pulse 1 Max Samples",
-            (
-                "Maximum number of samples for pulse 1 for TOF Mid single and "
-                "double pulse triggering"
-            ),
-            "# Samples",
-            "samples",
-        ),
-        TriggerDescription(
-            "tof_mid_trigger_num_min_2",
-            "IDX__TXHDRMGTRIGNMIN2",
-            8,
-            "TOF Mid Pulse 2 Min Samples",
-            (
-                "Minimum number of samples for pulse 2 for TOF Mid single and "
-                "double pulse triggering"
-            ),
-            "# Samples",
-            "samples",
-        ),
-        TriggerDescription(
-            "tof_mid_trigger_num_max_2",
-            "IDX__TXHDRMGTRIGNMAX2",
-            8,
-            "TOF Mid Pulse 2 Max Samples",
-            (
-                "Maximum number of samples for pulse 2 for TOF Mid single and "
-                "double pulse triggering"
-            ),
-            "# Samples",
-            "samples",
-        ),
-        TriggerDescription(
-            "low_sample_coincidence_mode_blocks",
-            "IDX__TXHDRLSTRIGCMBLOCKS",
-            3,
-            "LS Coincidence Mode Blocks",
-            (
-                "Number of blocks coincidence window is enabled after "
-                "low sample trigger"
-            ),
-            "# Blocks",
-            "Blocks",
-        ),
-        TriggerDescription(
-            "low_sample_trigger_polarity",
-            "IDX__TXHDRLSTRIGPOL",
-            1,
-            "LS Trigger Polarity",
-            "The trigger polarity for low sample (0 = normal, 1 = inverted) ",
-            "Polarity",
-            "",
-        ),
-        TriggerDescription(
-            "low_sample_trigger_level",
-            "IDX__TXHDRLSTRIGLVL",
-            12,
-            "LS Trigger Level",
-            "Trigger level for the low sample",
-            "Level",
-            "",
-        ),
-        TriggerDescription(
-            "low_sample_trigger_num_min",
-            "IDX__TXHDRLSTRIGNMIN",
-            8,
-            "LS Trigger Min Num Samples",
-            (
-                "The minimum number of samples above/below the trigger level for "
-                "triggering the low sample"
-            ),
-            "# Samples",
-            "samples",
-        ),
-        TriggerDescription(
-            "low_sample_trigger_mode",
-            "IDX__TXHDRLSTRIGMODE",
-            1,
-            "LS Trigger Mode Enabled",
-            "Low sample trigger mode (0=disabled, 1=enabled)",
-            "Mode",
-            "",
-        ),
-        TriggerDescription(
-            "tof_low_trigger_mode",
-            "IDX__TXHDRLSTRIGMODE",
-            1,
-            "TOF Low Trigger Mode Enabled",
-            "TOF Low trigger mode (0=disabled, 1=enabled)",
-            "Mode",
-            "",
-        ),
-        TriggerDescription(
-            "tof_mid_trigger_mode",
-            "IDX__TXHDRMGTRIGMODE",
-            1,
-            "TOF Mid Trigger Mode Enabled",
-            "TOF Mid trigger mode (0=disabled, 1=enabled)",
-            "Mode",
-            "",
-        ),
-        TriggerDescription(
-            "tof_high_trigger_mode",
-            "IDX__TXHDRHGTRIGMODE",
-            2,
-            "TOF High Trigger Mode Enabled",
-            (
-                "TOF High trigger mode (0=disabled, 1=threshold mode, "
-                "2=single pulse mode, 3=double pulse mode)"
-            ),
-            "Mode",
-            "",
-        ),
-        TriggerDescription(
-            "detector_voltage",
-            "IDX__TXHDRHVPSHKCH0",
-            12,
-            "Detector Voltage",
-            (
-                "Last measurement in raw dN for processor board signal: "
-                "Detector Voltage"
-            ),
-            "Voltage",
-            "dN",
-        ),
-        TriggerDescription(
-            "sensor_voltage",
-            "IDX__TXHDRHVPSHKCH1",
-            12,
-            "Sensor Voltage",
-            (
-                "Last measurement in raw dN for processor board signal: "
-                "Sensor Voltage "
-            ),
-            "Voltage",
-            "dN",
-        ),
-        TriggerDescription(
-            "target_voltage",
-            "IDX__TXHDRHVPSHKCH2",
-            12,
-            "Target Voltage",
-            (
-                "Last measurement in raw dN for processor board signal: "
-                "Target Voltage"
-            ),
-            "Voltage",
-            "dN",
-        ),
-        TriggerDescription(
-            "reflectron_voltage",
-            "IDX__TXHDRHVPSHKCH3",
-            12,
-            "Reflectron Voltage",
-            (
-                "Last measurement in raw dN for processor board signal: "
-                "Reflectron Voltage"
-            ),
-            "Voltage",
-            "dN",
-        ),
-        TriggerDescription(
-            "rejection_voltage",
-            "IDX__TXHDRHVPSHKCH4",
-            12,
-            "Rejection Voltage",
-            (
-                "Last measurement in raw dN for processor board signal: "
-                "Rejection Voltage"
-            ),
-            "Voltage",
-            "dN",
-        ),
-        TriggerDescription(
-            "detector_current",
-            "IDX__TXHDRHVPSHKCH5",
-            12,
-            "Detector Current",
-            (
-                "Last measurement in raw dN for processor board signal: "
-                "Detector Current "
-            ),
-            "Current",
-            "dN",
-        ),
+        TriggerDescription("event_number", "IDX__TXHDREVTNUM"),
+        TriggerDescription("tof_high_trigger_level", "IDX__TXHDRHGTRIGLVL"),
+        TriggerDescription("tof_high_trigger_num_max_1_2", "IDX__TXHDRHGTRIGNMAX12"),
+        TriggerDescription("tof_high_trigger_num_min_1_2", "IDX__TXHDRHGTRIGNMIN12"),
+        TriggerDescription("tof_high_trigger_num_min_1", "IDX__TXHDRHGTRIGNMIN1"),
+        TriggerDescription("tof_high_trigger_num_max_1", "IDX__TXHDRHGTRIGNMAX1"),
+        TriggerDescription("tof_high_trigger_num_min_2", "IDX__TXHDRHGTRIGNMIN2"),
+        TriggerDescription("tof_high_trigger_num_max_2", "IDX__TXHDRHGTRIGNMAX2"),
+        TriggerDescription("tof_low_trigger_level", "IDX__TXHDRLGTRIGLVL"),
+        TriggerDescription("tof_low_trigger_num_max_1_2", "IDX__TXHDRLGTRIGNMAX12"),
+        TriggerDescription("tof_low_trigger_num_min_1_2", "IDX__TXHDRLGTRIGNMIN12"),
+        TriggerDescription("tof_low_trigger_num_min_1", "IDX__TXHDRLGTRIGNMIN1"),
+        TriggerDescription("tof_low_trigger_num_max_1", "IDX__TXHDRLGTRIGNMAX1"),
+        TriggerDescription("tof_low_trigger_num_min_2", "IDX__TXHDRLGTRIGNMIN2"),
+        TriggerDescription("tof_low_trigger_num_max_2", "IDX__TXHDRLGTRIGNMAX2"),
+        TriggerDescription("tof_mid_trigger_level", "IDX__TXHDRMGTRIGLVL"),
+        TriggerDescription("tof_mid_trigger_num_max_1_2", "IDX__TXHDRMGTRIGNMAX12"),
+        TriggerDescription("tof_mid_trigger_num_min_1_2", "IDX__TXHDRMGTRIGNMIN12"),
+        TriggerDescription("tof_mid_trigger_num_min_1", "IDX__TXHDRMGTRIGNMIN1"),
+        TriggerDescription("tof_mid_trigger_num_max_1", "IDX__TXHDRMGTRIGNMAX1"),
+        TriggerDescription("tof_mid_trigger_num_min_2", "IDX__TXHDRMGTRIGNMIN2"),
+        TriggerDescription("tof_mid_trigger_num_max_2", "IDX__TXHDRMGTRIGNMAX2"),
+        TriggerDescription("low_sample_coincidence_mode_blocks", "IDX__TXHDRLSTRIGCMBLOCKS"), # noqa
+        TriggerDescription("low_sample_trigger_polarity", "IDX__TXHDRLSTRIGPOL"),
+        TriggerDescription("low_sample_trigger_level", "IDX__TXHDRLSTRIGLVL"),
+        TriggerDescription("low_sample_trigger_num_min", "IDX__TXHDRLSTRIGNMIN"),
+        TriggerDescription("low_sample_trigger_mode", "IDX__TXHDRLSTRIGMODE"),
+        TriggerDescription("tof_low_trigger_mode", "IDX__TXHDRLSTRIGMODE"),
+        TriggerDescription("tof_mid_trigger_mode", "IDX__TXHDRMGTRIGMODE"),
+        TriggerDescription("tof_high_trigger_mode", "IDX__TXHDRHGTRIGMODE"),
+        TriggerDescription("detector_voltage", "IDX__TXHDRHVPSHKCH0"),
+        TriggerDescription("sensor_voltage", "IDX__TXHDRHVPSHKCH1"),
+        TriggerDescription("target_voltage", "IDX__TXHDRHVPSHKCH2"),
+        TriggerDescription("reflectron_voltage", "IDX__TXHDRHVPSHKCH3"),
+        TriggerDescription("rejection_voltage", "IDX__TXHDRHVPSHKCH4"),
+        TriggerDescription("detector_current", "IDX__TXHDRHVPSHKCH5"),
     ]
-}
+}  # fmt: skip
+
+
+def get_idex_attrs(data_version: str) -> ImapCdfAttributes:
+    """
+    Load in CDF attributes for IDEX instrument.
+
+    Parameters
+    ----------
+    data_version : str
+        Data version for CDF filename, in the format "vXXX".
+
+    Returns
+    -------
+    idex_attrs : ImapCdfAttributes
+        Imap object with l1a attribute files loaded in.
+    """
+    idex_attrs = ImapCdfAttributes()
+    idex_attrs.add_instrument_global_attrs("idex")
+    idex_attrs.add_instrument_variable_attrs("idex", "l1")
+    idex_attrs.add_global_attribute("Data_version", data_version)
+    return idex_attrs
 
 
 class PacketParser:
@@ -484,7 +132,7 @@ class PacketParser:
 
         from imap_processing.idex.idex_packet_parser import PacketParser
         l0_file = "imap_processing/tests/idex/imap_idex_l0_sci_20230725_v001.pkts"
-        l1_data = PacketParser(l0_file)
+        l1_data = PacketParser(l0_file, data_version)
         l1_data.write_l1_cdf()
     """
 
@@ -503,40 +151,35 @@ class PacketParser:
         -----
             Currently assumes one L0 file will generate exactly one l1a file.
         """
-        xtce_filename = "idex_packet_definition.xml"
-        xtce_file = f"{imap_module_directory}/idex/packet_definitions/{xtce_filename}"
-        packet_definition = xtcedef.XtcePacketDefinition(xtce_document=xtce_file)
-        packet_parser = parser.PacketParser(packet_definition)
+        decom_packet_list = decom_packets(packet_file)
 
         dust_events = {}
-        with open(packet_file, "rb") as binary_data:
-            packet_generator = packet_parser.generator(binary_data)
-            for packet in packet_generator:
-                if "IDX__SCI0TYPE" in packet.data:
-                    scitype = packet.data["IDX__SCI0TYPE"].raw_value
-                    event_number = packet.data["IDX__SCI0EVTNUM"].derived_value
-                    if scitype == Scitype.FIRST_PACKET:
-                        # Initial packet for new dust event
-                        # Further packets will fill in data
-                        dust_events[event_number] = RawDustEvent(packet)
-                    elif event_number not in dust_events:
-                        raise KeyError(
-                            f"Have not receive header information from event number\
-                                {event_number}.  Packets are possibly out of order!"
-                        )
-                    else:
-                        # Populate the IDEXRawDustEvent with 1's and 0's
-                        dust_events[event_number].parse_packet(packet)
+        for packet in decom_packet_list:
+            if "IDX__SCI0TYPE" in packet.data:
+                scitype = packet.data["IDX__SCI0TYPE"].raw_value
+                event_number = packet.data["IDX__SCI0EVTNUM"].derived_value
+                if scitype == Scitype.FIRST_PACKET:
+                    # Initial packet for new dust event
+                    # Further packets will fill in data
+                    dust_events[event_number] = RawDustEvent(packet, data_version)
+                elif event_number not in dust_events:
+                    raise KeyError(
+                        f"Have not receive header information from event number\
+                            {event_number}.  Packets are possibly out of order!"
+                    )
                 else:
-                    logger.warning(f"Unhandled packet received: {packet}")
+                    # Populate the IDEXRawDustEvent with 1's and 0's
+                    dust_events[event_number].parse_packet(packet)
+            else:
+                logger.warning(f"Unhandled packet received: {packet}")
 
         processed_dust_impact_list = [
             dust_event.process() for dust_event in dust_events.values()
         ]
 
         self.data = xr.concat(processed_dust_impact_list, dim="epoch")
-        self.data.attrs = idex_cdf_attrs.idex_l1_global_attrs.output()
-        self.data.attrs["Data_version"] = data_version
+        idex_attrs = get_idex_attrs(data_version)
+        self.data.attrs = idex_attrs.get_global_attributes("imap_idex_l1_sci")
 
 
 class RawDustEvent:
@@ -550,6 +193,8 @@ class RawDustEvent:
     ----------
     header_packet : space_packet_parser.parser.Packet
         The FPGA metadata event header.
+    data_version : str
+            The version of the data product being created.
 
     Attributes
     ----------
@@ -585,7 +230,9 @@ class RawDustEvent:
         512  # The number of samples in a "block" of high sample data
     )
 
-    def __init__(self, header_packet: space_packet_parser.parser.Packet) -> None:
+    def __init__(
+        self, header_packet: space_packet_parser.parser.Packet, data_version: str
+    ) -> None:
         """
         Initialize a raw dust event, with an FPGA Header Packet from IDEX.
 
@@ -599,6 +246,8 @@ class RawDustEvent:
         ----------
         header_packet : space_packet_parser.parser.Packet
             The FPGA metadata event header.
+        data_version : str
+            Data version for CDF filename, in the format "vXXX".
         """
         # Calculate the impact time in seconds since epoch
         self.impact_time = 0
@@ -625,6 +274,8 @@ class RawDustEvent:
         self.Target_Low_bits = ""
         self.Target_High_bits = ""
         self.Ion_Grid_bits = ""
+
+        self.cdf_attrs = get_idex_attrs(data_version)
 
     def _set_impact_time(self, packet: space_packet_parser.parser.Packet) -> None:
         """
@@ -878,6 +529,9 @@ class RawDustEvent:
         xarray.Dataset
             A Dataset object containing the data from a single impact.
         """
+        # Create object for CDF attrs
+        idex_attrs = self.cdf_attrs
+
         # Gather the huge number of trigger info metadata
         trigger_vars = {}
         for var, value in self.trigger_values.items():
@@ -886,53 +540,51 @@ class RawDustEvent:
                 name=var,
                 data=[value],
                 dims=("epoch"),
-                attrs=dataclasses.replace(
-                    idex_cdf_attrs.trigger_base,
-                    catdesc=trigger_description.notes,
-                    fieldname=trigger_description.field,
-                    var_notes=trigger_description.notes,
-                    validmax=2**trigger_description.num_bits - 1,
-                    label_axis=trigger_description.label,
-                    units=trigger_description.units,
-                ).output(),
+                attrs=idex_attrs.get_variable_attributes(trigger_description.name),
             )
 
         # Process the 6 primary data variables
         tof_high_xr = xr.DataArray(
             name="TOF_High",
             data=[self._parse_high_sample_waveform(self.TOF_High_bits)],
-            dims=("epoch", "Time_High_SR_dim"),
-            attrs=idex_cdf_attrs.tof_high_attrs.output(),
+            dims=("epoch", "time_high_ssr_dim"),
+            # attrs=idex_cdf_attrs.tof_high_attrs.output(),
+            attrs=idex_attrs.get_variable_attributes("tof_high_attrs"),
         )
         tof_low_xr = xr.DataArray(
             name="TOF_Low",
             data=[self._parse_high_sample_waveform(self.TOF_Low_bits)],
-            dims=("epoch", "Time_High_SR_dim"),
-            attrs=idex_cdf_attrs.tof_low_attrs.output(),
+            dims=("epoch", "time_high_sr"),
+            # attrs=idex_cdf_attrs.tof_low_attrs.output(),
+            attrs=idex_attrs.get_variable_attributes("tof_low_attrs"),
         )
         tof_mid_xr = xr.DataArray(
             name="TOF_Mid",
             data=[self._parse_high_sample_waveform(self.TOF_Mid_bits)],
-            dims=("epoch", "Time_High_SR_dim"),
-            attrs=idex_cdf_attrs.tof_mid_attrs.output(),
+            dims=("epoch", "time_high_sr"),
+            # attrs=idex_cdf_attrs.tof_mid_attrs.output(),
+            attrs=idex_attrs.get_variable_attributes("tof_mid_attrs"),
         )
         target_high_xr = xr.DataArray(
             name="Target_High",
             data=[self._parse_low_sample_waveform(self.Target_High_bits)],
-            dims=("epoch", "Time_Low_SR_dim"),
-            attrs=idex_cdf_attrs.target_high_attrs.output(),
+            dims=("epoch", "time_low_sr"),
+            # attrs=idex_cdf_attrs.target_high_attrs.output(),
+            attrs=idex_attrs.get_variable_attributes("target_high_attrs"),
         )
         target_low_xr = xr.DataArray(
             name="Target_Low",
             data=[self._parse_low_sample_waveform(self.Target_Low_bits)],
-            dims=("epoch", "Time_Low_SR_dim"),
-            attrs=idex_cdf_attrs.target_low_attrs.output(),
+            dims=("epoch", "time_low_sr"),
+            # attrs=idex_cdf_attrs.target_low_attrs.output(),
+            attrs=idex_attrs.get_variable_attributes("target_low_attrs"),
         )
         ion_grid_xr = xr.DataArray(
             name="Ion_Grid",
             data=[self._parse_low_sample_waveform(self.Ion_Grid_bits)],
-            dims=("epoch", "Time_Low_SR_dim"),
-            attrs=idex_cdf_attrs.ion_grid_attrs.output(),
+            dims=("epoch", "time_low_sr"),
+            # attrs=idex_cdf_attrs.ion_grid_attrs.output(),
+            attrs=idex_attrs.get_variable_attributes("ion_grid_attrs"),
         )
 
         # Determine the 3 coordinate variables
@@ -940,21 +592,24 @@ class RawDustEvent:
             name="epoch",
             data=[self.impact_time],
             dims=("epoch"),
-            attrs=ConstantCoordinates.EPOCH,
+            # attrs=ConstantCoordinates.EPOCH,
+            attrs=idex_attrs.get_variable_attributes("epoch"),
         )
 
         time_low_sr_xr = xr.DataArray(
-            name="Time_Low_SR",
+            name="time_low_sr",
             data=[self._calc_low_sample_resolution(len(target_low_xr[0]))],
-            dims=("epoch", "Time_Low_SR_dim"),
-            attrs=idex_cdf_attrs.low_sr_attrs.output(),
+            dims=("epoch", "time_low_sr_dim"),
+            # attrs=idex_cdf_attrs.low_sr_attrs.output(),
+            attrs=idex_attrs.get_variable_attributes("low_sr_attrs"),
         )
 
         time_high_sr_xr = xr.DataArray(
-            name="Time_High_SR",
+            name="time_high_sr",
             data=[self._calc_high_sample_resolution(len(tof_low_xr[0]))],
-            dims=("epoch", "Time_High_SR_dim"),
-            attrs=idex_cdf_attrs.high_sr_attrs.output(),
+            dims=("epoch", "time_high_sr_dim"),
+            # attrs=idex_cdf_attrs.high_sr_attrs.output(),
+            attrs=idex_attrs.get_variable_attributes("high_sr_attrs"),
         )
 
         # Combine to return a dataset object
@@ -970,7 +625,7 @@ class RawDustEvent:
             | trigger_vars,
             coords={
                 "epoch": epoch_xr,
-                "Time_Low_SR": time_low_sr_xr,
-                "Time_High_SR": time_high_sr_xr,
+                "time_low_sr": time_low_sr_xr,
+                "time_high_sr": time_high_sr_xr,
             },
         )
