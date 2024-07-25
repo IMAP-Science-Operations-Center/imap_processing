@@ -42,5 +42,4 @@ repos:
     hooks:
       - id: mypy
         pass_filenames: false
-        args: [ . ]
 
