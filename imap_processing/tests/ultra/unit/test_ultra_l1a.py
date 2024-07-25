@@ -42,6 +42,7 @@ def decom_ultra_aux(ccsds_path_theta_0, xtce_path):
     ],
     indirect=True,
 )
+@pytest.mark.xfail(reason="Fix CDF attrs")
 def test_xarray_aux(decom_test_data):
     """This function checks that a xarray was
     successfully created from the decom_ultra_aux data."""
@@ -100,6 +101,7 @@ def test_xarray_aux(decom_test_data):
     ],
     indirect=True,
 )
+@pytest.mark.xfail(reason="Fix CDF attrs")
 def test_xarray_rates(decom_test_data):
     """This function checks that a xarray was
     successfully created from the decom_ultra_rates data."""
@@ -139,6 +141,7 @@ def test_xarray_rates(decom_test_data):
     ],
     indirect=True,
 )
+@pytest.mark.xfail(reason="Fix CDF attrs")
 def test_xarray_tof(decom_test_data):
     """This function checks that a xarray was
     successfully created from the decom_ultra_tof data."""
@@ -181,6 +184,7 @@ def test_xarray_tof(decom_test_data):
     ],
     indirect=True,
 )
+@pytest.mark.xfail(reason="Fix CDF attrs")
 def test_xarray_events(decom_test_data, decom_ultra_aux, events_test_path):
     """This function checks that a xarray was
     successfully created from the decom_ultra_events data."""

@@ -8,6 +8,14 @@ instrument_base: &instrument_base
     the magnetic field. See https://imap.princeton.edu/instruments/ultra for more details.
   Instrument_type: "Particles (space)"
 
+# TODO: revisit this to be more specific
+imap_ultra_l1a_sci:
+    <<: *instrument_base
+    Data_level: 1A
+    Data_type: L1A_SCI>Level-1A Science data
+    Logical_source: imap_ultra_l1a_sci
+    Logical_source_description: IMAP-Ultra Instrument Level-1A Science Data.
+
 imap_ultra_l1b_45sensor-de:
     <<: *instrument_base
     Data_level: 1B
