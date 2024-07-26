@@ -324,6 +324,10 @@ def test_swapi_l1_cdf():
     )
     processed_data = swapi_l1(l0_data_path, data_version="v001")
 
+    assert processed_data[0].attrs["Apid"] == f"{SWAPIAPID.SWP_SCI}"
+    assert processed_data[0].attrs["Plan_id"] == "0"
+    assert processed_data[0].attrs["Sweep_table"] == "0"
+
     # Test CDF File
     # sci cdf file
     cdf_filename = "imap_swapi_l1_sci-1min_20100101_v001.cdf"

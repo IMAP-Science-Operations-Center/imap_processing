@@ -206,8 +206,6 @@ class CdfAttributeManager:
                 # TODO throw an error
                 output[attr_name] = None
 
-            # TODO: figure out how to return additional global attributes
-            # user add during processing
         return output
 
     def load_variable_attributes(self, file_name: str) -> None:

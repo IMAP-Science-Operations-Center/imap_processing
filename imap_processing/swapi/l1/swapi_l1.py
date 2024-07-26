@@ -489,22 +489,12 @@ def process_swapi_science(sci_dataset: xr.Dataset, data_version: str) -> xr.Data
     )
 
     # Add other global attributes
-    # TODO:uncomment once add_global_attribute is fixed
+    # TODO: add others like below once add_global_attribute is fixed
     cdf_manager.add_global_attribute("Data_version", data_version)
-    # cdf_manager.add_global_attribute(
-    #     "sweep_table", f"{sci_dataset['sweep_table'].data[0]}"
-    # )
-    # cdf_manager.add_global_attribute(
-    #     "plan_id", f"{sci_dataset['plan_id_science'].data[0]}"
-    # )
-    # cdf_manager.add_global_attribute(
-    #     "apid", f"{sci_dataset['pkt_apid'].data[0]}"
-    # )
     l1_global_attrs = cdf_manager.get_global_attributes("imap_swapi_l1_sci")
-    l1_global_attrs["sweep_table"] = f"{sci_dataset['sweep_table'].data[0]}"
-    l1_global_attrs["plan_id"] = f"{sci_dataset['plan_id_science'].data[0]}"
-    l1_global_attrs["apid"] = f"{sci_dataset['pkt_apid'].data[0]}"
-    print("global in code ", l1_global_attrs["apid"])
+    l1_global_attrs["Sweep_table"] = f"{sci_dataset['sweep_table'].data[0]}"
+    l1_global_attrs["Plan_id"] = f"{sci_dataset['plan_id_science'].data[0]}"
+    l1_global_attrs["Apid"] = f"{sci_dataset['pkt_apid'].data[0]}"
 
     dataset = xr.Dataset(
         coords={"epoch": epoch_time, "energy": energy, "energy_label": energy_label},

@@ -1,9 +1,13 @@
 """SWAPI L2 processing module."""
 
+import logging
+
 import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.swapi.swapi_utils import SWAPIAPID
+
+logger = logging.getLogger(__name__)
 
 
 def process_science(l1_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
@@ -81,6 +85,7 @@ def process_science(l1_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
 
     # TODO: add thruster firing flag
     # TODO: add other flags
+    logger.info("SWAPI L2 processing complete")
 
     return l2_dataset
 
@@ -101,7 +106,7 @@ def swapi_l2(l1_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
     data : xarray.Dataset
         Processed data to L2.
     """
-    apid = int(l1_dataset.attrs["apid"])
+    apid = int(l1_dataset.attrs["Apid"])
     # Right now, we don't process any other apid besides science packet
     # to L2
     if apid != SWAPIAPID.SWP_SCI:
