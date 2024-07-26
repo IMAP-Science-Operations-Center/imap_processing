@@ -2,9 +2,7 @@
 
 import xarray as xr
 
-from imap_processing.hi.hi_cdf_attrs import (
-    hi_hk_l1a_attrs,
-)
+from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 
 
 def process_housekeeping(dataset: xr.Dataset) -> xr.Dataset:
@@ -21,6 +19,9 @@ def process_housekeeping(dataset: xr.Dataset) -> xr.Dataset:
     dataset : xarray.Dataset
         Dataset with all metadata field data in xr.DataArray.
     """
+    # Load the CDF attributes
+    attr_mgr = ImapCdfAttributes()
+    attr_mgr.add_instrument_global_attrs("hi")
     # Add datalevel attrs
-    dataset.attrs.update(hi_hk_l1a_attrs.output())
+    dataset.attrs.update(attr_mgr.get_global_attributes("imap_hi_l1a_hk_attrs"))
     return dataset

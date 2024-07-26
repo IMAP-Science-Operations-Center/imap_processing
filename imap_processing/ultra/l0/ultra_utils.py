@@ -3,7 +3,7 @@
 from dataclasses import fields
 from typing import NamedTuple, Union
 
-from imap_processing.cdf.defaults import GlobalConstants
+import numpy as np
 
 
 class PacketProperties(NamedTuple):
@@ -284,7 +284,7 @@ def append_fillval(decom_data: dict, packet):  # type: ignore[no-untyped-def]
     """
     for key in decom_data:
         if (key not in packet.header.keys()) and (key not in packet.data.keys()):
-            decom_data[key].append(GlobalConstants.INT_FILLVAL)
+            decom_data[key].append(np.iinfo(np.int64).min)
 
 
 def parse_event(event_binary: str) -> dict:

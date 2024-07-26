@@ -645,14 +645,13 @@ class Lo(ProcessInstrument):
 class Mag(ProcessInstrument):
     """Process MAG."""
 
-    # TODO: fixed in later PR
-    def do_processing(self, dependencies: list) -> list[xr.Dataset]:
+    def do_processing(self, dependencies: list[Path]) -> list[xr.Dataset]:
         """
         Perform MAG specific processing.
 
         Parameters
         ----------
-        dependencies : list
+        dependencies : list[Path]
             List of dependencies to process.
 
         Returns
