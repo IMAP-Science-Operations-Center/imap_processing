@@ -156,19 +156,19 @@ paths:
           schema:
             type: string
         - in: query
-          name: filename (WIP)
+          name: filename
           description: The full filename of the desired file (e.g. ``imap_mag_l1a_burst_20240105_20240105_v01-01.pkts``).
           required: false
           schema:
             type: string
         - in: query
-          name: N days ago WIP
+          name: N days ago
           description: Returns all files acquired in the last 'N' days (with 'N' representing a numeric value).
           required: false
           schema:
             type: string
         - in: query
-          name: today WIP
+          name: today
           description: Returns all files acquired in the last 24 hours.
           required: false
           schema:
