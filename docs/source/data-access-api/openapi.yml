@@ -52,6 +52,7 @@ paths:
                 items:
                   type: string
 
+
   '/download/{filepath}':
     get:
       tags:
@@ -150,6 +151,12 @@ paths:
         - in: query
           name: extension
           description: The file extension of interest (e.g. ``cdf``). Supported extensions include ``pkts`` and ``cdf``.
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: [WIP] filename
+          description: The full filename of the desired file (e.g. ``imap_mag_l1a_burst_20240105_20240105_v01-01.pkts``).
           required: false
           schema:
             type: string
