@@ -1,11 +1,13 @@
 """Data classes for storing and processing MAG Level 1A data."""
 
-from dataclasses import dataclass
+from __future__ import annotations
+
+from dataclasses import InitVar, dataclass, field
 from math import floor
 
 import numpy as np
 
-from imap_processing.cdf.utils import met_to_j2000ns
+from imap_processing.cdf.utils import J2000_EPOCH, met_to_j2000ns
 
 MAX_FINE_TIME = 65535  # maximum 16 bit unsigned int
 
@@ -33,8 +35,7 @@ class TimeTuple:
     coarse_time: int
     fine_time: int
 
-    def __add__(self, seconds: float):  # type: ignore[no-untyped-def]
-        # ruff is saying TimeTuple is undefined for this usage.
+    def __add__(self, seconds: float) -> TimeTuple:
         """
         Add a number of seconds to the time tuple.
 
@@ -73,11 +74,76 @@ class TimeTuple:
 
 
 @dataclass
+class MagL1aPacketProperties:
+    """
+    Data class with Mag L1A per-packet data.
+
+    This contains per-packet variations in L1a data that is passed into CDF
+    files. Since each L1a file contains multiple packets, the variables in this
+    class vary by time in the end CDF file.
+
+    seconds_per_packet, and total_vectors are calculated from pus_ssubtype and
+    vecsec values, which are only passed in to the init method and cannot be
+    accessed from an instance as they are InitVars.
+
+    To use the class, pass in pus_ssubtype and either PRI_VECSEC or SEC_VECSEC,
+    then you can access seconds_per_packet and total_vectors.
+
+    Attributes
+    ----------
+    shcoarse : int
+        Mission elapsed time for the packet
+    start_time : TimeTuple
+        Start time of the packet
+    vectors_per_second : int
+        Number of vectors per second
+    pus_ssubtype : int
+        PUS Service Subtype - used to calculate seconds_per_packet. This is an InitVar,
+        meaning it is only used when creating the class and cannot be accessed from an
+        instance of the class - instead seconds_per_packet should be used.
+    src_seq_ctr : int
+        Sequence counter from the ccsds header
+    compression : int
+        Science Data Compression Flag from level 0
+    mago_is_primary : int
+        1 if mago is designated the primary sensor, otherwise 0
+    seconds_per_packet : int
+        Number of seconds of data in this packet - calculated as pus_ssubtype + 1
+    total_vectors : int
+        Total number of vectors in this packet - calculated as
+        seconds_per_packet * vecsec
+    """
+
+    shcoarse: int
+    start_time: TimeTuple
+    vectors_per_second: int
+    pus_ssubtype: InitVar[int]
+    src_seq_ctr: int  # From ccsds header
+    compression: int
+    mago_is_primary: int
+    seconds_per_packet: int = field(init=False)
+    total_vectors: int = field(init=False)
+
+    def __post_init__(self, pus_ssubtype: int) -> None:
+        """
+        Calculate seconds_per_packet and total_vectors.
+
+        Parameters
+        ----------
+        pus_ssubtype : int
+            PUS Service Subtype, used to determine the seconds of data in the packet.
+        """
+        # seconds of data in this packet is the SUBTYPE plus 1
+        self.seconds_per_packet = pus_ssubtype + 1
+
+        # VECSEC is already decoded in mag_l0
+        self.total_vectors = self.seconds_per_packet * self.vectors_per_second
+
+
+@dataclass
 class MagL1a:
     """
     Data class for MAG Level 1A data.
-
-    TODO: This object should end up having 1 days worth of data.
 
     One MAG L1A object corresponds to part of one MAG L0 packet, which corresponds to
     one packet of data from the MAG instrument. Each L0 packet consists of data from
@@ -92,30 +158,93 @@ class MagL1a:
     Attributes
     ----------
     is_mago : bool
-        True if the data is from MagO, False if data is from MagI.
-    active : bool
-        True if the sensor is active.
-    SHCOARSE : int
-        Mission elapsed time.
+        True if the data is from MagO, False if data is from MagI
+    is_active : int
+        1 if the sensor is active, 0 if not
+    shcoarse : int
+        Mission elapsed time for the first packet, the start time for the whole day
     vectors : numpy.ndarray
         List of magnetic vector samples, starting at start_time. [x, y, z, range, time],
-        where time is np.datetime64[ns].
+        where time is numpy.datetime64[ns]
+    starting_packet : InitVar[MagL1aPacketProperties]
+        The packet properties for the first packet in the day. As an InitVar, this
+        cannot be accessed from an instance of the class. Instead, packet_definitions
+        should be used.
+    packet_definitions : dict[numpy.datetime64, MagL1aPacketProperties]
+        Dictionary of packet properties for each packet in the day. The key is the start
+        time of the packet, and the value is a dataclass of packet properties.
+    most_recent_sequence : int
+        Sequence number of the most recent packet added to the object
+    missing_sequences : list[int]
+        List of missing sequence numbers in the day
+    start_time : numpy.datetime64
+        Start time of the day, in ns since J2000 epoch
 
     Methods
     -------
-    calculate_vector_time(vectors, vectors_per_second, start_time)
-    process_vector_data(vector_data, primary_count, secondary_count)
+    append_vectors()
+    calculate_vector_time()
+    process_vector_data()
     """
 
     is_mago: bool
-    active: bool
-    SHCOARSE: int
-    vectors: np.ndarray
+    is_active: int
+    shcoarse: int
+    vectors: np.array
+    starting_packet: InitVar[MagL1aPacketProperties]
+    packet_definitions: dict[np.datetime64, MagL1aPacketProperties] = field(init=False)
+    most_recent_sequence: int = field(init=False)
+    missing_sequences: list[int] = field(default_factory=list)
+    start_time: np.datetime64 = field(init=False)
+
+    def __post_init__(self, starting_packet: MagL1aPacketProperties) -> None:
+        """
+        Initialize the packet_definition dictionary and most_recent_sequence.
+
+        Parameters
+        ----------
+        starting_packet : MagL1aPacketProperties
+            The packet properties for the first packet in the day, including start time.
+        """
+        # TODO should this be from starting_packet
+        self.start_time = (J2000_EPOCH + met_to_j2000ns(self.shcoarse)).astype(
+            "datetime64[D]"
+        )
+        self.packet_definitions = {self.start_time: starting_packet}
+        # most_recent_sequence is the sequence number of the packet used to initialize
+        # the object
+        self.most_recent_sequence = starting_packet.src_seq_ctr
+
+    def append_vectors(
+        self, additional_vectors: np.array, packet_properties: MagL1aPacketProperties
+    ) -> None:
+        """
+        Append additional vectors to the current vectors array.
+
+        Parameters
+        ----------
+        additional_vectors : numpy.array
+            New vectors to append.
+        packet_properties : MagL1aPacketProperties
+            Additional vector definition to add to the l0_packets dictionary.
+        """
+        vector_sequence = packet_properties.src_seq_ctr
+
+        self.vectors = np.concatenate([self.vectors, additional_vectors])
+        self.packet_definitions[self.start_time] = packet_properties
+
+        # Every additional packet should be the next one in the sequence, if not, add
+        # the missing sequence(s) to the gap data
+        if not self.most_recent_sequence + 1 == vector_sequence:
+            self.missing_sequences += list(
+                range(self.most_recent_sequence + 1, vector_sequence)
+            )
+        self.most_recent_sequence = vector_sequence
 
     @staticmethod
     def calculate_vector_time(
-        vectors: np.ndarray, vectors_per_second: int, start_time: TimeTuple
-    ) -> np.ndarray:
+        vectors: np.ndarray, vectors_per_sec: int, start_time: TimeTuple
+    ) -> np.array:
         """
         Add timestamps to the vector list, turning the shape from (n, 4) to (n, 5).
 
@@ -124,12 +253,12 @@ class MagL1a:
 
         Parameters
         ----------
-        vectors : numpy.ndarray
+        vectors : numpy.array
             List of magnetic vector samples, starting at start_time. Shape of (n, 4).
-        vectors_per_second : int
+        vectors_per_sec : int
             Number of vectors per second.
         start_time : TimeTuple
-            The coarse and fine time for the sensor.
+            Start time of the vectors, the timestamp of the first vector.
 
         Returns
         -------
@@ -137,9 +266,8 @@ class MagL1a:
             Vectors with timestamps added in seconds, calculated from
             cdf.utils.met_to_j2000ns.
         """
-        # TODO: Move timestamps to J2000
-        timedelta = np.timedelta64(int(1 / vectors_per_second * 1e9), "ns")
-
+        timedelta = np.timedelta64(int(1 / vectors_per_sec * 1e9), "ns")
+        # TODO: validate that start_time from SHCOARSE is precise enough
         start_time_ns = met_to_j2000ns(start_time.to_seconds())
 
         # Calculate time skips for each vector in ns

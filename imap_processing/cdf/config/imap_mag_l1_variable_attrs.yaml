@@ -1,3 +1,19 @@
+epoch:
+  CATDESC: Time, number of nanoseconds since J2000 with leap seconds included
+  FIELDNAM: epoch
+  LABLAXIS: epoch
+  FILLVAL: -9223372036854775808
+  FORMAT: " " # Supposedly not required, fails in xarray_to_cdf
+  VALIDMIN: -9223372036854775808
+  VALIDMAX: 9223372036854775807
+  UNITS: ns
+  VAR_TYPE: support_data
+  SCALETYP: linear
+  MONOTON: INCREASE
+  TIME_BASE: J2000
+  TIME_SCALE: Terrestrial Time
+  REFERENCE_POSITION: Rotating Earth Geoid
+
 default_attrs: &default
   # Assumed values for all variable attrs unless overwritten
   DEPEND_0: epoch
@@ -7,25 +23,34 @@ default_attrs: &default
   VALIDMIN: -9223372036854775808
   VALIDMAX: 9223372036854775807
   VAR_TYPE: data
+  UNITS: ' '
 
-mag_raw_vector_attrs:
-  <<: *default
+default_coords: &default_coords
+  # Assumed values for all coordinate attrs unless overwritten
+  FORMAT: F2.4  # Float with 4 digits
+  VAR_TYPE: data
+  DISPLAY_TYPE: time_series
+  FILLVAL: -9223372036854775808
+  VALIDMIN: -9223372036854775808
+  VALIDMAX: 9223372036854775807
+  UNITS: counts
+
+raw_vector_attrs:
+  <<: *default_coords
   CATDESC: Raw unprocessed magnetic field vector data in bytes
   DEPEND_1: direction
   FIELDNAM: Magnetic Field Vector
   LABLAXIS: Raw binary magnetic field vector data
   FORMAT: I3
-  UNITS: counts
 
 vector_attrs:
-    <<: *default
+    <<: *default_coords
     CATDESC: Magnetic field vector with x y z and sensor range varying by time
     DEPEND_1: direction
     FIELDNAM: Magnetic Field Vector
     LABLAXIS: Magnetic field vector data
     FILLVAL: 9223372036854775807
     FORMAT: I3
-    UNITS: counts
 
 mag_support_attrs: &support_default
     <<: *default
@@ -44,13 +69,13 @@ mag_flag_attrs:
     FORMAT: I1
 
 raw_direction_attrs:
-    <<: *default
+    <<: *default_coords
     CATDESC: Raw magnetic field vector binary length
     FIELDNAM: Raw magnetic field vector binary length
     LABLAXIS: Magnetic field vector directions
 
 direction_attrs:
-    <<: *default
+    <<: *default_coords
     CATDESC: Magnetic field vector
     FIELDNAM: \[xyz\] magnetic field vector
     FORMAT: I3
@@ -154,4 +179,39 @@ VECTORS:
     CATDESC: Raw binary value of MAG Science vectors before processing
     FIELDNAM: Raw vector binary
 
+# CCSDS attributes for MAG L1A RAW
 
+VERSION:
+  <<: *metadata_default
+  CATDESC: CCSDS Packet version number
+  FIELDNAM: CCSDS Packet version number
+
+TYPE:
+  <<: *metadata_default
+  CATDESC: CCSDS Packet type
+  FIELDNAM: CCSDS Packet type
+
+SEC_HDR_FLG:
+  <<: *metadata_default
+  CATDESC: CCSDS Packet Secondary header flag
+  FIELDNAM: CCSDS Packet Secondary header flag
+
+PKT_APID:
+  <<: *metadata_default
+  CATDESC: CCSDS Packet Application Process ID
+  FIELDNAM: CCSDS Packet Application Process ID
+
+SEQ_FLGS:
+  <<: *metadata_default
+  CATDESC: CCSDS Packet Grouping flags
+  FIELDNAM: CCSDS Packet Grouping flags
+
+SRC_SEQ_CTR:
+  <<: *metadata_default
+  CATDESC: CCSDS Packet Source Sequence Counter
+  FIELDNAM: CCSDS Packet Source Sequence Counter
+
+PKT_LEN:
+  <<: *metadata_default
+  CATDESC: CCSDS Packet Length
+  FIELDNAM: CCSDS Packet Length

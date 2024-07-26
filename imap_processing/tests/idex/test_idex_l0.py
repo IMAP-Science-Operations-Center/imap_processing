@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 
 from imap_processing import imap_module_directory
-from imap_processing.idex.idex_packet_parser import PacketParser
+from imap_processing.idex.l1.idex_l1 import PacketParser
 
 
 @pytest.fixture(scope="session")

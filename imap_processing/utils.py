@@ -1,18 +1,18 @@
 """Common functions that every instrument can use."""
 
 import collections
-import dataclasses
 import logging
-from typing import Optional
+from pathlib import Path
+from typing import Optional, Union
 
 import numpy as np
 import pandas as pd
 import xarray as xr
-from space_packet_parser.parser import Packet
+from space_packet_parser import parser, xtcedef
 
-from imap_processing.cdf.global_attrs import ConstantCoordinates
+from imap_processing.cdf import epoch_attrs
+from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import met_to_j2000ns
-from imap_processing.common_cdf_attrs import metadata_attrs
 
 logger = logging.getLogger(__name__)
 
@@ -142,7 +142,7 @@ def convert_raw_to_eu(
 
 
 def create_dataset(
-    packets: list[Packet],
+    packets: list[parser.Packet],
     spacecraft_time_key: str = "shcoarse",
     include_header: bool = True,
     skip_keys: Optional[list[str]] = None,
@@ -196,13 +196,14 @@ def create_dataset(
 
     # NOTE: At this point, we keep epoch time as raw value from packet
     # which is in seconds and spacecraft time. Some instrument uses this
-    # raw value in processing. If you want to convert this to datetime
-    # object, you can use `update_epoch_to_datetime` function afterwards.
+    # raw value in processing.
+    # Load the CDF attributes
+    cdf_manager = ImapCdfAttributes()
     epoch_time = xr.DataArray(
         metadata_arrays[spacecraft_time_key],
         name="epoch",
         dims=["epoch"],
-        attrs=ConstantCoordinates.EPOCH,
+        attrs=epoch_attrs,
     )
 
     dataset = xr.Dataset(
@@ -212,45 +213,91 @@ def create_dataset(
     # create xarray dataset for each metadata field
     for key, value in metadata_arrays.items():
         # replace description and fieldname
-        data_attrs = dataclasses.replace(
-            metadata_attrs,
-            catdesc=description_dict[key],
-            fieldname=key,
-            label_axis=key,
-            depend_0="epoch",
-        )
+        data_attrs = cdf_manager.get_variable_attributes("metadata_attrs")
+        data_attrs["CATDESC"] = description_dict[key]
+        data_attrs["FIELDNAM"] = key
+        data_attrs["LABLAXIS"] = key
+
         dataset[key] = xr.DataArray(
             value,
             dims=["epoch"],
-            attrs=data_attrs.output(),
+            attrs=data_attrs,
         )
 
     return dataset
 
 
-def update_epoch_to_datetime(dataset: xr.Dataset) -> xr.Dataset:
+def packet_file_to_datasets(
+    packet_file: Union[str, Path],
+    xtce_packet_definition: Union[str, Path],
+    use_derived_value: bool = True,
+) -> dict[int, xr.Dataset]:
     """
-    Update epoch in dataset to datetime object.
+    Convert a packet file to xarray datasets.
+
+    The packet file can contain multiple apids and these will be separated
+    into distinct datasets, one per apid. The datasets will contain the
+    ``derived_value``s of the data fields, and the ``raw_value``s if no
+    ``derived_value`` is available. If there are conversions in the XTCE
+    packet definition, the ``derived_value`` will be the converted value.
+    The dimension of the dataset will be the time field in J2000 nanoseconds.
 
     Parameters
     ----------
-    dataset : xr.Dataset
-        Dataset to update.
+    packet_file : str
+        Path to data packet path with filename.
+    xtce_packet_definition : str
+        Path to XTCE file with filename.
+    use_derived_value : bool, default True
+        Whether or not to use the derived value from the XTCE definition.
 
     Returns
     -------
-    dataset : xr.Dataset
-        Dataset with updated epoch dimension from int to datetime object.
+    datasets : dict
+        Mapping from apid to xarray dataset, one dataset per apid.
     """
-    # convert epoch to datetime
-    epoch_converted_time = met_to_j2000ns(dataset["epoch"])
-    # add attrs back to epoch
-    epoch = xr.DataArray(
-        epoch_converted_time,
-        name="epoch",
-        dims=["epoch"],
-        attrs=ConstantCoordinates.EPOCH,
-    )
-    dataset = dataset.assign_coords(epoch=epoch)
+    # Set up containers to store our data
+    # We are getting a packet file that may contain multiple apids
+    # Each apid has consistent data fields, so we want to create a
+    # dataset per apid.
+    # {apid1: dataset1, apid2: dataset2, ...}
+    data_dict: dict[int, dict] = dict()
 
-    return dataset
+    # Set up the parser from the input packet definition
+    packet_definition = xtcedef.XtcePacketDefinition(xtce_packet_definition)
+    packet_parser = parser.PacketParser(packet_definition)
+
+    with open(packet_file, "rb") as binary_data:
+        packet_generator = packet_parser.generator(binary_data)
+        for packet in packet_generator:
+            apid = packet.header["PKT_APID"].raw_value
+            if apid not in data_dict:
+                # This is the first packet for this APID
+                data_dict[apid] = collections.defaultdict(list)
+
+            # TODO: Do we want to give an option to remove the header content?
+            packet_content = packet.data | packet.header
+
+            for key, value in packet_content.items():
+                val = value.raw_value
+                if use_derived_value:
+                    # Use the derived value if it exists, otherwise use the raw value
+                    val = value.derived_value or val
+                data_dict[apid][key].append(val)
+
+    dataset_by_apid = {}
+    # Convert each apid's data to an xarray dataset
+    for apid, data in data_dict.items():
+        # The time key is always the first key in the data dictionary on IMAP
+        time_key = next(iter(data.keys()))
+        # Convert to J2000 time and use that as our primary dimension
+        time_data = met_to_j2000ns(data[time_key])
+        ds = xr.Dataset(
+            {key.lower(): ("epoch", val) for key, val in data.items()},
+            coords={"epoch": time_data},
+        )
+        ds = ds.sortby("epoch")
+
+        dataset_by_apid[apid] = ds
+
+    return dataset_by_apid

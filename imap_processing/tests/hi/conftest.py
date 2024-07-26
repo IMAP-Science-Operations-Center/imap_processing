@@ -2,7 +2,15 @@ import random
 
 import pytest
 
-from imap_processing.tests.conftest import ccsds_header_data, check_sum
+
+@pytest.fixture(scope="session")
+def hi_test_data_path(imap_tests_path):
+    return imap_tests_path / "hi" / "test_data"
+
+
+@pytest.fixture(scope="session")
+def hi_l0_test_data_path(hi_test_data_path):
+    return hi_test_data_path / "l0"
 
 
 def create_metaevent(esa_step, met_subseconds, met_seconds):
@@ -15,6 +23,24 @@ def create_metaevent(esa_step, met_subseconds, met_seconds):
 def create_directevent(tof_1, tof_2, tof_3, de_tag):
     start_bitmask_data = random.choice([1, 2, 3])  # Detector A, B, C
     return f"{start_bitmask_data:02b}{tof_1:010b}{tof_2:010b}{tof_3:010b}{de_tag:016b}"
+
+
+def ccsds_header_data(apid, pkt_len):
+    """Create binary data for CCSDS header with apid provided."""
+    # CCSDS primary header
+    # 3 bits - Version number
+    # 1 bit - Packet type
+    # 1 bit - Secondary header flag
+    # 16 bits - APID
+    # 2 bits - Sequence flag
+    # 14 bits - Packet sequence count
+    # 16 bits - Packet length
+    return f"{0:03b}{0:01b}{1:01b}{apid:011b}{1:02b}{0:014b}{pkt_len:016b}"
+
+
+def check_sum(bits_size):
+    """Create check test sum."""
+    return f"{0:0{bits_size}b}"
 
 
 @pytest.fixture()
