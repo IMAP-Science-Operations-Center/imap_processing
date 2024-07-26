@@ -5,6 +5,7 @@ import dataclasses
 import numpy as np
 import xarray as xr
 
+from imap_processing.cdf import epoch_attrs
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.glows.l1b.glows_l1b_data import DirectEventL1B, HistogramL1B
 
@@ -34,7 +35,7 @@ def glows_l1b(input_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
         input_dataset["epoch"],
         name="epoch",
         dims=["epoch"],
-        attrs=cdf_attrs.get_variable_attributes("epoch_dim"),
+        attrs=epoch_attrs,
     )
 
     logical_source = (

@@ -6,6 +6,7 @@ from pathlib import Path
 import numpy as np
 import xarray as xr
 
+from imap_processing.cdf import epoch_attrs
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import J2000_EPOCH, met_to_j2000ns
 from imap_processing.glows.l0.decom_glows import decom_packets
@@ -230,7 +231,7 @@ def generate_de_dataset(
         time_data,
         name="epoch",
         dims=["epoch"],
-        attrs=glows_cdf_attributes.get_variable_attributes("epoch"),
+        attrs=epoch_attrs,
     )
 
     direct_event = xr.DataArray(
@@ -370,7 +371,7 @@ def generate_histogram_dataset(
         time_data,
         name="epoch",
         dims=["epoch"],
-        attrs=glows_cdf_attributes.get_variable_attributes("epoch"),
+        attrs=epoch_attrs,
     )
     bin_count = 3600  # TODO: Is it always 3600 bins?
 
