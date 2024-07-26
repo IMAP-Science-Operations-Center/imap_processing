@@ -3,6 +3,7 @@
 import numpy as np
 import xarray as xr
 
+from imap_processing.cdf import epoch_attrs
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import met_to_j2000ns
 
@@ -266,11 +267,15 @@ def create_dataset(de_data_list: list, packet_met_time: list) -> xr.Dataset:
     # uncomment this once Maxine's PR is merged
     # attr_mgr.add_global_attribute("Data_version", data_version)
 
+    epoch_attrs["CATDESC"] = (
+        "Direct Event time, number of nanoseconds since J2000 with leap "
+        "seconds included"
+    )
     epoch_time = xr.DataArray(
         data_dict.pop("epoch"),
         name="epoch",
         dims=["epoch"],
-        attrs=attr_mgr.get_variable_attributes("hi_de_epoch"),
+        attrs=epoch_attrs,
     )
 
     de_global_attrs = attr_mgr.get_global_attributes("imap_hi_l1a_de_attrs")
