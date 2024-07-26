@@ -78,7 +78,7 @@ organize the files. See the example file path: ``data/imap/swe/l0/2024/01/imap_s
    :group:
    :include: /query
 
-*Note: ``filename``, ``N days ago``, and ``today`` are all [WIP].*
+*Note:* ``filename``, ``N days ago``, and ``today`` *are all [WIP].*
 
 **Example Usage:**
 

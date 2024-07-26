@@ -162,7 +162,7 @@ paths:
           schema:
             type: string
         - in: query
-          name: N days ago
+          name: N_days_ago
           description: Returns all files acquired in the last 'N' days (with 'N' representing a numeric value).
           required: false
           schema:
