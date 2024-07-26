@@ -9,6 +9,7 @@ from enum import IntEnum
 
 import space_packet_parser
 
+
 class CODICEAPID(IntEnum):
     """Create ENUM for CoDICE APIDs."""
 
