@@ -3,10 +3,10 @@
 import numpy as np
 import xarray as xr
 
-from imap_processing.cdf.global_attrs import ConstantCoordinates
+from imap_processing.cdf import epoch_attrs
+from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import J2000_EPOCH
 from imap_processing.lo.l0.lo_apid import LoAPID
-from imap_processing.lo.l1a import lo_cdf_attrs
 from imap_processing.lo.l1a.lo_data_container import LoContainer
 
 
@@ -52,12 +52,16 @@ def create_lo_scide_dataset(sci_de: list) -> xr.Dataset:
     sci_de_dataset : xarray.Dataset
         Lo L1A Science Direct Event Dataset.
     """
+    # Load the CDF attributes
+    cdf_manager = ImapCdfAttributes()
+    cdf_manager.add_instrument_global_attrs("lo")
+    cdf_manager.add_instrument_variable_attrs("lo", "l1a")
     # TODO: getting sci_de_times because it's used in both the data time field
     # and epoch. Need to figure out if this is needed and if a conversion needs
     # to happen to get the epoch time.
     sci_de_times = np.concatenate([sci_de_data.TIME for sci_de_data in sci_de])
     sci_de_time = xr.DataArray(
-        sci_de_times, dims="epoch", attrs=lo_cdf_attrs.lo_tof_attrs.output()
+        sci_de_times, dims="epoch", attrs=cdf_manager.get_variable_attributes("de_time")
     )
     epoch_times = (
         np.array(sci_de_times, dtype="datetime64[s]").astype("datetime64[ns]")
@@ -67,47 +71,49 @@ def create_lo_scide_dataset(sci_de: list) -> xr.Dataset:
         epoch_times,
         dims=["epoch"],
         name="epoch",
-        attrs=ConstantCoordinates.EPOCH,
+        attrs=epoch_attrs,
     )
     sci_de_energy = xr.DataArray(
         np.concatenate([sci_de_data.ENERGY for sci_de_data in sci_de]),
         dims="epoch",
-        attrs=lo_cdf_attrs.lo_tof_attrs.output(),
+        attrs=cdf_manager.get_variable_attributes(
+            "esa_step"
+        ),  # TODO: check if this is correct
     )
     sci_de_mode = xr.DataArray(
         np.concatenate([sci_de_data.MODE for sci_de_data in sci_de]),
         dims="epoch",
-        attrs=lo_cdf_attrs.lo_tof_attrs.output(),
+        attrs=cdf_manager.get_variable_attributes("mode"),
     )
     sci_de_tof0 = xr.DataArray(
         np.concatenate([sci_de_data.TOF0 for sci_de_data in sci_de]),
         dims="epoch",
-        attrs=lo_cdf_attrs.lo_tof_attrs.output(),
+        attrs=cdf_manager.get_variable_attributes("tof0"),
     )
     sci_de_tof1 = xr.DataArray(
         np.concatenate([sci_de_data.TOF1 for sci_de_data in sci_de]),
         dims="epoch",
-        attrs=lo_cdf_attrs.lo_tof_attrs.output(),
+        attrs=cdf_manager.get_variable_attributes("tof1"),
     )
     sci_de_tof2 = xr.DataArray(
         np.concatenate([sci_de_data.TOF2 for sci_de_data in sci_de]),
         dims="epoch",
-        attrs=lo_cdf_attrs.lo_tof_attrs.output(),
+        attrs=cdf_manager.get_variable_attributes("tof2"),
     )
     sci_de_tof3 = xr.DataArray(
         np.concatenate([sci_de_data.TOF3 for sci_de_data in sci_de]),
         dims="epoch",
-        attrs=lo_cdf_attrs.lo_tof_attrs.output(),
+        attrs=cdf_manager.get_variable_attributes("tof3"),
     )
     sci_de_checksum = xr.DataArray(
         np.concatenate([sci_de_data.CKSM for sci_de_data in sci_de]),
         dims="epoch",
-        attrs=lo_cdf_attrs.lo_tof_attrs.output(),
+        attrs=cdf_manager.get_variable_attributes("cksm"),
     )
     sci_de_pos = xr.DataArray(
         np.concatenate([sci_de_data.POS for sci_de_data in sci_de]),
         dims="epoch",
-        attrs=lo_cdf_attrs.lo_tof_attrs.output(),
+        attrs=cdf_manager.get_variable_attributes("pos"),
     )
 
     # Create the full dataset
@@ -123,7 +129,7 @@ def create_lo_scide_dataset(sci_de: list) -> xr.Dataset:
             "checksum": sci_de_checksum,
             "pos": sci_de_pos,
         },
-        attrs=lo_cdf_attrs.lo_de_l1a_attrs.output(),
+        attrs=cdf_manager.get_global_attributes("imap_lo_l1a_de"),
         # TODO: figure out how to convert time data to epoch
         coords={"epoch": sci_de_epoch},
     )

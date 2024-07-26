@@ -3,7 +3,6 @@
 # TODO: Evaluate naming conventions for fields and variables
 # TODO: Improved short and long descriptions for each variable
 # TODO: Improved var_notes for each variable
-import dataclasses
 import logging
 from typing import Optional
 
@@ -11,9 +10,8 @@ import numpy as np
 import xarray as xr
 
 from imap_processing import decom, imap_module_directory
-from imap_processing.cdf.global_attrs import ConstantCoordinates
+from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import met_to_j2000ns
-from imap_processing.ultra import ultra_cdf_attrs
 from imap_processing.ultra.l0.decom_ultra import process_ultra_apids
 from imap_processing.ultra.l0.ultra_utils import (
     ULTRA_AUX,
@@ -65,24 +63,31 @@ def initiate_data_arrays(decom_ultra: dict, apid: int) -> xr.Dataset:
     else:
         raise ValueError(f"APID {apid} not recognized.")
 
+    # Load the CDF attributes
+    cdf_manager = ImapCdfAttributes()
+    cdf_manager.add_instrument_global_attrs("ultra")
+    cdf_manager.add_instrument_variable_attrs("ultra", "l1a")
+
     epoch_time = xr.DataArray(
         met_to_j2000ns(
             raw_time, reference_epoch=np.datetime64("2010-01-01T00:01:06.184", "ns")
         ),
         name="epoch",
         dims=["epoch"],
-        attrs=ConstantCoordinates.EPOCH,
+        attrs=cdf_manager.get_variable_attributes("epoch"),
+    )
+
+    sci_cdf_attrs = cdf_manager.get_global_attributes("imap_ultra_l1a_sci")
+    # replace the logical source and logical source description
+    sci_cdf_attrs["Logical_source"] = logical_source
+    sci_cdf_attrs["Logical_source_desc"] = (
+        f"IMAP Mission ULTRA Instrument Level-1A {addition_to_logical_desc} Data"
     )
 
     if apid not in (ULTRA_TOF.apid[0], ULTRA_TOF.apid[1]):
         dataset = xr.Dataset(
             coords={"epoch": epoch_time},
-            attrs=dataclasses.replace(
-                ultra_cdf_attrs.ultra_l1a_attrs,
-                logical_source=logical_source,
-                logical_source_desc=f"IMAP Mission ULTRA Instrument Level-1A "
-                f"{addition_to_logical_desc} Data",
-            ).output(),
+            attrs=sci_cdf_attrs,
         )
     else:
         row = xr.DataArray(
@@ -90,11 +95,7 @@ def initiate_data_arrays(decom_ultra: dict, apid: int) -> xr.Dataset:
             np.arange(54),
             name="row",
             dims=["row"],
-            attrs=dataclasses.replace(
-                ultra_cdf_attrs.ultra_metadata_attrs,
-                catdesc="row",  # TODO: short and long descriptions
-                fieldname="row",
-            ).output(),
+            attrs=cdf_manager.get_variable_attributes("ultra_metadata_attrs"),
         )
 
         column = xr.DataArray(
@@ -102,11 +103,7 @@ def initiate_data_arrays(decom_ultra: dict, apid: int) -> xr.Dataset:
             np.arange(180),
             name="column",
             dims=["column"],
-            attrs=dataclasses.replace(
-                ultra_cdf_attrs.ultra_metadata_attrs,
-                catdesc="column",  # TODO: short and long descriptions
-                fieldname="column",
-            ).output(),
+            attrs=cdf_manager.get_variable_attributes("ultra_metadata_attrs"),
         )
 
         sid = xr.DataArray(
@@ -114,21 +111,12 @@ def initiate_data_arrays(decom_ultra: dict, apid: int) -> xr.Dataset:
             np.arange(8),
             name="sid",
             dims=["sid"],
-            attrs=dataclasses.replace(
-                ultra_cdf_attrs.ultra_metadata_attrs,
-                catdesc="sid",  # TODO: short and long descriptions
-                fieldname="sid",
-            ).output(),
+            attrs=cdf_manager.get_variable_attributes("ultra_metadata_attrs"),
         )
 
         dataset = xr.Dataset(
             coords={"epoch": epoch_time, "sid": sid, "row": row, "column": column},
-            attrs=dataclasses.replace(
-                ultra_cdf_attrs.ultra_l1a_attrs,
-                logical_source=logical_source,
-                logical_source_desc=f"IMAP Mission ULTRA Instrument Level-1A "
-                f"{addition_to_logical_desc} Data",
-            ).output(),
+            attrs=sci_cdf_attrs,
         )
 
     return dataset
@@ -213,6 +201,12 @@ def create_dataset(decom_ultra_dict: dict) -> xr.Dataset:
         apid = next(iter(decom_ultra_dict.keys()))
         decom_ultra = decom_ultra_dict[apid]
 
+    # Load the CDF attributes
+    # TODO: call this once and pass the object to the function
+    cdf_manager = ImapCdfAttributes()
+    cdf_manager.add_instrument_global_attrs("ultra")
+    cdf_manager.add_instrument_variable_attrs("ultra", "l1a")
+
     dataset = initiate_data_arrays(decom_ultra, apid)
 
     for key, value in decom_ultra.items():
@@ -225,13 +219,8 @@ def create_dataset(decom_ultra_dict: dict) -> xr.Dataset:
         # for PACKETDATA which has dimensions of (time, sid, row, column) and
         # SHCOARSE with has dimensions of (time)
         elif apid == ULTRA_TOF.apid[0] and key != "PACKETDATA" and key != "SHCOARSE":
-            attrs = dataclasses.replace(
-                ultra_cdf_attrs.ultra_support_attrs,
-                catdesc=key.lower(),  # TODO: short and long descriptions
-                fieldname=key.lower(),
-                label_axis=key.lower(),
-                depend_1="sid",
-            ).output()
+            # TODO: fix this to use the correct attributes
+            attrs = cdf_manager.get_variable_attributes("ultra_support_attrs")
             dims = ["epoch", "sid"]
         # AUX enums require string attributes
         elif key in [
@@ -244,36 +233,19 @@ def create_dataset(decom_ultra_dict: dict) -> xr.Dataset:
             "LEFTDEFLECTIONCHARGE",
             "RIGHTDEFLECTIONCHARGE",
         ]:
-            attrs = dataclasses.replace(
-                ultra_cdf_attrs.string_base,
-                catdesc=key.lower(),  # TODO: short and long descriptions
-                fieldname=key.lower(),
-                depend_0="epoch",
-            ).output()
+            # TODO: fix this to use the correct attributes
+            attrs = cdf_manager.get_variable_attributes("string_base_attrs")
             dims = ["epoch"]
         # TOF packetdata has multiple dimensions
         elif key == "PACKETDATA":
-            attrs = dataclasses.replace(
-                ultra_cdf_attrs.ultra_support_attrs,
-                catdesc=key.lower(),  # TODO: short and long descriptions
-                fieldname=key.lower(),
-                label_axis=key.lower(),
-                depend_1="sid",
-                depend_2="row",
-                depend_3="column",
-                units="pixels",
-                variable_purpose="primary_var",
-            ).output()
+            # TODO: fix this to use the correct attributes
+            attrs = cdf_manager.get_variable_attributes("packet_data_attrs")
             dims = ["epoch", "sid", "row", "column"]
         # Use metadata with a single dimension for
         # all other data products
         else:
-            attrs = dataclasses.replace(
-                ultra_cdf_attrs.ultra_support_attrs,
-                catdesc=key.lower(),  # TODO: short and long descriptions
-                fieldname=key.lower(),
-                label_axis=key.lower(),
-            ).output()
+            # TODO: fix this to use the correct attributes
+            attrs = cdf_manager.get_variable_attributes("ultra_support_attrs")
             dims = ["epoch"]
 
         dataset[key] = xr.DataArray(
