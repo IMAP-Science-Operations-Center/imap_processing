@@ -4,6 +4,7 @@ from pathlib import Path
 
 import xarray as xr
 
+from imap_processing.cdf import epoch_attrs
 from imap_processing.cdf.cdf_attribute_manager import CdfAttributeManager
 
 
@@ -34,7 +35,7 @@ def create_dataset(data_dict: dict, name: str, level: str) -> xr.Dataset:
         data_dict["epoch"],
         name="epoch",
         dims=["epoch"],
-        attrs=cdf_manager.get_variable_attributes("epoch"),
+        attrs=epoch_attrs,
     )
 
     dataset = xr.Dataset(

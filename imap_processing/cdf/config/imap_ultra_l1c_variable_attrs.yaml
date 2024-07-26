@@ -8,19 +8,6 @@ default_attrs: &default
   VALIDMAX: 9223372036854775807
   VAR_TYPE: data
 
-epoch:
-  <<: *default
-  CATDESC: Time, number of nanoseconds since J2000 with leap seconds included
-  FIELDNAM: epoch
-  LABLAXIS: epoch
-  UNITS: ns
-  VAR_TYPE: support_data
-  SCALETYP: linear
-  MONOTON: INCREASE
-  TIME_BASE: J2000
-  TIME_SCALE: Terrestrial Time
-  REFERENCE_POSITION: Rotating Earth Geoid
-
 spin_angle:
   <<: *default
   CATDESC: Angular bin defined by central location of the bin
