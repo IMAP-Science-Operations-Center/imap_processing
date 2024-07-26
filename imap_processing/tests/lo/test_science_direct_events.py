@@ -3,7 +3,6 @@ from collections import namedtuple
 import numpy as np
 import pytest
 
-from imap_processing.cdf.defaults import GlobalConstants
 from imap_processing.lo.l0.data_classes.science_direct_events import (
     ScienceDirectEvents,
 )
@@ -36,15 +35,15 @@ def fake_packet_data():
 def single_de(fake_packet_data):
     de = ScienceDirectEvents(fake_packet_data, "0", "fakepacketname")
     de.DE_COUNT = 1
-    de.DE_TIME = np.ones(de.DE_COUNT) * GlobalConstants.DOUBLE_FILLVAL
-    de.ESA_STEP = np.ones(de.DE_COUNT) * GlobalConstants.DOUBLE_FILLVAL
-    de.MODE = np.ones(de.DE_COUNT) * GlobalConstants.DOUBLE_FILLVAL
-    de.TOF0 = np.ones(de.DE_COUNT) * GlobalConstants.DOUBLE_FILLVAL
-    de.TOF1 = np.ones(de.DE_COUNT) * GlobalConstants.DOUBLE_FILLVAL
-    de.TOF2 = np.ones(de.DE_COUNT) * GlobalConstants.DOUBLE_FILLVAL
-    de.TOF3 = np.ones(de.DE_COUNT) * GlobalConstants.DOUBLE_FILLVAL
-    de.CKSM = np.ones(de.DE_COUNT) * GlobalConstants.DOUBLE_FILLVAL
-    de.POS = np.ones(de.DE_COUNT) * GlobalConstants.DOUBLE_FILLVAL
+    de.DE_TIME = np.ones(de.DE_COUNT) * np.float64(-1.0e31)
+    de.ESA_STEP = np.ones(de.DE_COUNT) * np.float64(-1.0e31)
+    de.MODE = np.ones(de.DE_COUNT) * np.float64(-1.0e31)
+    de.TOF0 = np.ones(de.DE_COUNT) * np.float64(-1.0e31)
+    de.TOF1 = np.ones(de.DE_COUNT) * np.float64(-1.0e31)
+    de.TOF2 = np.ones(de.DE_COUNT) * np.float64(-1.0e31)
+    de.TOF3 = np.ones(de.DE_COUNT) * np.float64(-1.0e31)
+    de.CKSM = np.ones(de.DE_COUNT) * np.float64(-1.0e31)
+    de.POS = np.ones(de.DE_COUNT) * np.float64(-1.0e31)
     return de
 
 
@@ -52,15 +51,15 @@ def single_de(fake_packet_data):
 def multi_de(fake_packet_data):
     de = ScienceDirectEvents(fake_packet_data, "0", "fakepacketname")
     de.DE_COUNT = 2
-    de.DE_TIME = np.ones(de.DE_COUNT) * GlobalConstants.DOUBLE_FILLVAL
-    de.ESA_STEP = np.ones(de.DE_COUNT) * GlobalConstants.DOUBLE_FILLVAL
-    de.MODE = np.ones(de.DE_COUNT) * GlobalConstants.DOUBLE_FILLVAL
-    de.TOF0 = np.ones(de.DE_COUNT) * GlobalConstants.DOUBLE_FILLVAL
-    de.TOF1 = np.ones(de.DE_COUNT) * GlobalConstants.DOUBLE_FILLVAL
-    de.TOF2 = np.ones(de.DE_COUNT) * GlobalConstants.DOUBLE_FILLVAL
-    de.TOF3 = np.ones(de.DE_COUNT) * GlobalConstants.DOUBLE_FILLVAL
-    de.CKSM = np.ones(de.DE_COUNT) * GlobalConstants.DOUBLE_FILLVAL
-    de.POS = np.ones(de.DE_COUNT) * GlobalConstants.DOUBLE_FILLVAL
+    de.DE_TIME = np.ones(de.DE_COUNT) * np.float64(-1.0e31)
+    de.ESA_STEP = np.ones(de.DE_COUNT) * np.float64(-1.0e31)
+    de.MODE = np.ones(de.DE_COUNT) * np.float64(-1.0e31)
+    de.TOF0 = np.ones(de.DE_COUNT) * np.float64(-1.0e31)
+    de.TOF1 = np.ones(de.DE_COUNT) * np.float64(-1.0e31)
+    de.TOF2 = np.ones(de.DE_COUNT) * np.float64(-1.0e31)
+    de.TOF3 = np.ones(de.DE_COUNT) * np.float64(-1.0e31)
+    de.CKSM = np.ones(de.DE_COUNT) * np.float64(-1.0e31)
+    de.POS = np.ones(de.DE_COUNT) * np.float64(-1.0e31)
     return de
 
 
@@ -83,11 +82,11 @@ def test_parse_data_case_0(single_de):
     expected_mode = np.array([1])
     # tofs and cksm are bit shifted to the left by 1 during decompression
     expected_tof0 = np.array([0 << 1])
-    expected_tof1 = np.array([GlobalConstants.DOUBLE_FILLVAL])
+    expected_tof1 = np.array([np.float64(-1.0e31)])
     expected_tof2 = np.array([2 << 1])
     expected_tof3 = np.array([3 << 1])
     expected_cksm = np.array([0 << 1])
-    expected_pos = np.array([GlobalConstants.DOUBLE_FILLVAL])
+    expected_pos = np.array([np.float64(-1.0e31)])
 
     # Act
     single_de._decompress_data()
@@ -119,12 +118,12 @@ def test_parse_data_case_10(single_de):
     expected_time = np.array([100])
     expected_energy = np.array([2])
     expected_mode = np.array([1])
-    expected_tof0 = np.array([GlobalConstants.DOUBLE_FILLVAL])
+    expected_tof0 = np.array([np.float64(-1.0e31)])
     # tofs and cksm are bit shifted to the left by 1 during decompression
     expected_tof1 = np.array([1 << 1])
-    expected_tof2 = np.array([GlobalConstants.DOUBLE_FILLVAL])
-    expected_tof3 = np.array([GlobalConstants.DOUBLE_FILLVAL])
-    expected_cksm = np.array([GlobalConstants.DOUBLE_FILLVAL])
+    expected_tof2 = np.array([np.float64(-1.0e31)])
+    expected_tof3 = np.array([np.float64(-1.0e31)])
+    expected_cksm = np.array([np.float64(-1.0e31)])
     expected_pos = np.array([0])
 
     # Act
@@ -188,12 +187,12 @@ def test_decompress_data_multi_de(multi_de):
     expected_energy = np.array([2, 2])
     expected_mode = np.array([1, 1])
     # tofs and cksm are bit shifted to the left by 1 during decompression
-    expected_tof0 = np.array([0 << 1, GlobalConstants.DOUBLE_FILLVAL])
-    expected_tof1 = np.array([GlobalConstants.DOUBLE_FILLVAL, 1 << 1])
-    expected_tof2 = np.array([2 << 1, GlobalConstants.DOUBLE_FILLVAL])
-    expected_tof3 = np.array([3 << 1, GlobalConstants.DOUBLE_FILLVAL])
-    expected_cksm = np.array([0 << 1, GlobalConstants.DOUBLE_FILLVAL])
-    expected_pos = np.array([GlobalConstants.DOUBLE_FILLVAL, 0])
+    expected_tof0 = np.array([0 << 1, np.float64(-1.0e31)])
+    expected_tof1 = np.array([np.float64(-1.0e31), 1 << 1])
+    expected_tof2 = np.array([2 << 1, np.float64(-1.0e31)])
+    expected_tof3 = np.array([3 << 1, np.float64(-1.0e31)])
+    expected_cksm = np.array([0 << 1, np.float64(-1.0e31)])
+    expected_pos = np.array([np.float64(-1.0e31), 0])
 
     # Act
     multi_de._decompress_data()

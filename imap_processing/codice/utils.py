@@ -12,7 +12,7 @@ import numpy as np
 import space_packet_parser
 import xarray as xr
 
-from imap_processing.cdf.global_attrs import ConstantCoordinates
+from imap_processing.cdf import epoch_attrs
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import met_to_j2000ns
 
@@ -140,7 +140,7 @@ def create_hskp_dataset(  # type: ignore[no-untyped-def]
         ),
         name="epoch",
         dims=["epoch"],
-        attrs=ConstantCoordinates.EPOCH,
+        attrs=epoch_attrs,
     )
 
     dataset = xr.Dataset(

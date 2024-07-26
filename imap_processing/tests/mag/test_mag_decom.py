@@ -1,11 +1,21 @@
 from pathlib import Path
 
 import pandas as pd
+import pytest
 
-from imap_processing.cdf import global_attrs
+from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import load_cdf, write_cdf
-from imap_processing.mag import mag_cdf_attrs
+from imap_processing.mag.constants import DataMode
 from imap_processing.mag.l0.decom_mag import decom_packets, generate_dataset
+
+
+@pytest.fixture()
+def cdf_attrs():
+    test_attrs = ImapCdfAttributes()
+    test_attrs.add_instrument_global_attrs("mag")
+    test_attrs.add_instrument_variable_attrs("mag", "l1")
+    test_attrs.add_global_attribute("Data_version", "v001")
+    return test_attrs
 
 
 def test_mag_decom():
@@ -45,27 +55,33 @@ def test_mag_decom():
     assert len(l0) == len(expected_output.index)
 
 
-def test_mag_raw_xarray():
+def test_mag_raw_xarray(cdf_attrs):
     current_directory = Path(__file__).parent
     burst_test_file = current_directory / "mag_l0_test_data.pkts"
     packets = decom_packets(str(burst_test_file))
     l0_norm = packets["norm"]
     l0_burst = packets["burst"]
 
-    norm_data = generate_dataset(l0_norm, mag_cdf_attrs.mag_l1a_norm_raw_attrs.output())
-    burst_data = generate_dataset(
-        l0_burst, mag_cdf_attrs.mag_l1a_burst_raw_attrs.output()
+    norm_data = generate_dataset(l0_norm, DataMode.NORM, cdf_attrs)
+    burst_data = generate_dataset(l0_burst, DataMode.BURST, cdf_attrs)
+
+    # Logical_file_id is filled in at file creation time. The rest of the required
+    # values should be included.
+    assert all(
+        [
+            item is not None
+            for key, item in norm_data.attrs.items()
+            if key != "Logical_file_id"
+        ]
     )
 
-    required_attrs = list(
-        global_attrs.GlobalInstrumentAttrs("", "", "").output().keys()
+    assert all(
+        [
+            item is not None
+            for key, item in burst_data.attrs.items()
+            if key != "Logical_file_id"
+        ]
     )
-
-    assert all([item in list(norm_data.attrs.keys()) for item in required_attrs])
-    assert all([item is not None for _, item in norm_data.attrs.items()])
-
-    assert all([item in list(burst_data.attrs.keys()) for item in required_attrs])
-    assert all([item is not None for _, item in burst_data.attrs.items()])
 
     expected_norm_len = 17
     assert norm_data.sizes["epoch"] == expected_norm_len
@@ -74,17 +90,15 @@ def test_mag_raw_xarray():
     assert burst_data.sizes["epoch"] == expected_burst_len
 
 
-def test_mag_raw_cdf_generation():
+def test_mag_raw_cdf_generation(cdf_attrs):
     current_directory = Path(__file__).parent
     test_file = current_directory / "mag_l0_test_data.pkts"
     packets = decom_packets(str(test_file))
     l0_norm = packets["norm"]
     l0_burst = packets["burst"]
 
-    norm_data = generate_dataset(l0_norm, mag_cdf_attrs.mag_l1a_norm_raw_attrs.output())
-    burst_data = generate_dataset(
-        l0_burst, mag_cdf_attrs.mag_l1a_burst_raw_attrs.output()
-    )
+    norm_data = generate_dataset(l0_norm, DataMode.NORM, cdf_attrs)
+    burst_data = generate_dataset(l0_burst, DataMode.BURST, cdf_attrs)
 
     output = write_cdf(norm_data)
     assert output.exists()

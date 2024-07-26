@@ -13,14 +13,14 @@ default: &default
 
 imap_mag_l1a_norm-raw:
     <<: *default
-    Data_type: L1A_raw-norm>Level-1A raw normal rate
+    Data_type: L1A_norm-raw>Level-1A raw normal rate
     Logical_source: imap_mag_l1a_norm-raw
     Logical_source_description: IMAP Mission MAG Normal Rate Instrument Level-1A Data.
     Data_level: L1A
 
 imap_mag_l1a_burst-raw:
     <<: *default
-    Data_type: L1A_raw-burst>Level-1A raw burst rate
+    Data_type: L1A_burst-raw>Level-1A raw burst rate
     Logical_source: imap_mag_l1a_burst-raw
     Logical_source_description: IMAP Mission MAG Burst Rate Instrument Level-1A Data.
     Data_level: L1A
