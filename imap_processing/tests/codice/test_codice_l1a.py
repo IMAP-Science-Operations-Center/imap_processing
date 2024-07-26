@@ -6,9 +6,10 @@ import numpy as np
 import pytest
 import xarray as xr
 
-from imap_processing import imap_module_directory
 from imap_processing.cdf.utils import load_cdf, write_cdf
 from imap_processing.codice.codice_l1a import process_codice_l1a
+
+from .conftest import TEST_PACKETS, VALIDATION_DATA
 
 # TODO: Add test that processes a file with multiple APIDs
 
@@ -62,42 +63,6 @@ EXPECTED_LOGICAL_SOURCE = [
     "imap_codice_l1a_lo-sw-species",
     "imap_codice_l1a_lo-nsw-species",
     "imap_codice_l1a_lo-pha",
-]
-TEST_PACKETS = [
-    Path(f"{imap_module_directory}/tests/codice/data/imap_codice_l0_hskp_20100101_v001.pkts"),
-    Path(f"{imap_module_directory}/tests/codice/data/imap_codice_l0_hi-counters-aggregated_20240429_v001.pkts"),
-    Path(f"{imap_module_directory}/tests/codice/data/imap_codice_l0_hi-counters-singles_20240429_v001.pkts"),
-    Path(f"{imap_module_directory}/tests/codice/data/imap_codice_l0_hi-omni_20240429_v001.pkts"),
-    Path(f"{imap_module_directory}/tests/codice/data/imap_codice_l0_hi-sectored_20240429_v001.pkts"),
-    Path(f"{imap_module_directory}/tests/codice/data/imap_codice_l0_hi-pha_20240429_v001.pkts"),
-    Path(f"{imap_module_directory}/tests/codice/data/imap_codice_l0_lo-counters-aggregated_20240429_v001.pkts"),
-    Path(f"{imap_module_directory}/tests/codice/data/imap_codice_l0_lo-counters-singles_20240429_v001.pkts"),
-    Path(f"{imap_module_directory}/tests/codice/data/imap_codice_l0_lo-sw-angular_20240429_v001.pkts"),
-    Path(f"{imap_module_directory}/tests/codice/data/imap_codice_l0_lo-nsw-angular_20240429_v001.pkts"),
-    Path(f"{imap_module_directory}/tests/codice/data/imap_codice_l0_lo-sw-priority_20240429_v001.pkts"),
-    Path(f"{imap_module_directory}/tests/codice/data/imap_codice_l0_lo-nsw-priority_20240429_v001.pkts"),
-    Path(f"{imap_module_directory}/tests/codice/data/imap_codice_l0_lo-sw-species_20240429_v001.pkts"),
-    Path(f"{imap_module_directory}/tests/codice/data/imap_codice_l0_lo-nsw-species_20240429_v001.pkts"),
-    Path(f"{imap_module_directory}/tests/codice/data/imap_codice_l0_lo-pha_20240429_v001.pkts"),
-]  # fmt: skip
-
-# Placeholder for validation data files
-VALIDATION_DATA = [
-    f"{imap_module_directory}/tests/codice/data/validation_hskp.cdf",
-    f"{imap_module_directory}/tests/codice/data/validation_hi-counters-aggregated.cdf",
-    f"{imap_module_directory}/tests/codice/data/validation_hi-counters-singles.cdf",
-    f"{imap_module_directory}/tests/codice/data/validation_hi-omni.cdf",
-    f"{imap_module_directory}/tests/codice/data/validation_hi-sectored.cdf",
-    f"{imap_module_directory}/tests/codice/data/validation_hi-pha.cdf",
-    f"{imap_module_directory}/tests/codice/data/validation_lo-counters-aggregated.cdf",
-    f"{imap_module_directory}/tests/codice/data/validation_lo-counters-singles.cdf",
-    f"{imap_module_directory}/tests/codice/data/validation_lo-sw-angular.cdf",
-    f"{imap_module_directory}/tests/codice/data/validation_lo-nsw-angular.cdf",
-    f"{imap_module_directory}/tests/codice/data/validation_lo-sw-priority.cdf",
-    f"{imap_module_directory}/tests/codice/data/validation_lo-nsw-priority.cdf",
-    f"{imap_module_directory}/tests/codice/data/validation_lo-sw-species.cdf",
-    f"{imap_module_directory}/tests/codice/data/validation_lo-nsw-species.cdf",
-    f"{imap_module_directory}/tests/codice/data/validation_lo-pha.cdf",
 ]
 
 
