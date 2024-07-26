@@ -7,7 +7,6 @@ from pathlib import Path
 import numpy as np
 import xarray as xr
 
-from imap_processing.cdf import epoch_attrs
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import J2000_EPOCH, met_to_j2000ns
 from imap_processing.mag.constants import DataMode, PrimarySensor
@@ -301,7 +300,7 @@ def generate_dataset(
         time_data,
         name="epoch",
         dims=["epoch"],
-        attrs=epoch_attrs,
+        attrs=attribute_manager.get_variable_attributes("epoch"),
     )
 
     vectors = xr.DataArray(

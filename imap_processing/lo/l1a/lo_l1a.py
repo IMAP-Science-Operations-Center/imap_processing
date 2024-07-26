@@ -7,7 +7,6 @@ from typing import Any
 
 import xarray as xr
 
-from imap_processing.cdf import epoch_attrs
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import met_to_j2000ns
 from imap_processing.lo.l0.data_classes.science_direct_events import ScienceDirectEvents
@@ -111,7 +110,7 @@ def create_datasets(
         data=epoch_converted_time,
         name="epoch",
         dims=["epoch"],
-        attrs=epoch_attrs,
+        attrs=attr_mgr.get_variable_attributes("epoch"),
     )
 
     # Set any extra coordinates and initialize the dataset

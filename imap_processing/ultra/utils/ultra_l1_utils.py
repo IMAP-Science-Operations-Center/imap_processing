@@ -1,11 +1,8 @@
 """Create dataset."""
 
-from pathlib import Path
-
 import xarray as xr
 
-from imap_processing.cdf import epoch_attrs
-from imap_processing.cdf.cdf_attribute_manager import CdfAttributeManager
+from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 
 
 def create_dataset(data_dict: dict, name: str, level: str) -> xr.Dataset:
@@ -26,16 +23,14 @@ def create_dataset(data_dict: dict, name: str, level: str) -> xr.Dataset:
     dataset : xarray.Dataset
         Data in xarray format.
     """
-    cdf_manager = CdfAttributeManager(Path(__file__).parents[2] / "cdf" / "config")
-    cdf_manager.load_global_attributes("imap_default_global_cdf_attrs.yaml")
-    cdf_manager.load_global_attributes("imap_ultra_global_cdf_attrs.yaml")
-    cdf_manager.load_variable_attributes(f"imap_ultra_{level}_variable_attrs.yaml")
-
+    cdf_manager = ImapCdfAttributes()
+    cdf_manager.add_instrument_global_attrs("ultra")
+    cdf_manager.add_instrument_variable_attrs("ultra", level)
     epoch_time = xr.DataArray(
         data_dict["epoch"],
         name="epoch",
         dims=["epoch"],
-        attrs=epoch_attrs,
+        attrs=cdf_manager.get_variable_attributes("epoch"),
     )
 
     dataset = xr.Dataset(

@@ -10,7 +10,6 @@ import numpy as np
 import xarray as xr
 
 from imap_processing import decom, imap_module_directory
-from imap_processing.cdf import epoch_attrs
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import met_to_j2000ns
 from imap_processing.ultra.l0.decom_ultra import process_ultra_apids
@@ -75,7 +74,7 @@ def initiate_data_arrays(decom_ultra: dict, apid: int) -> xr.Dataset:
         ),
         name="epoch",
         dims=["epoch"],
-        attrs=epoch_attrs,
+        attrs=cdf_manager.get_variable_attributes("epoch"),
     )
 
     sci_cdf_attrs = cdf_manager.get_global_attributes("imap_ultra_l1a_sci")

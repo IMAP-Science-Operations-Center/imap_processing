@@ -3,7 +3,6 @@
 import numpy as np
 import xarray as xr
 
-from imap_processing.cdf import epoch_attrs
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 
 # define the names of the 24 counter arrays
@@ -100,7 +99,7 @@ def allocate_histogram_dataset(num_packets: int) -> xr.Dataset:
         np.empty(num_packets, dtype="datetime64[ns]"),
         name="epoch",
         dims=["epoch"],
-        attrs=epoch_attrs,
+        attrs=attr_mgr.get_variable_attributes("epoch"),
     )
     # Histogram data is binned in 90, 4-degree bins
     coords["angle"] = xr.DataArray(

@@ -12,7 +12,6 @@ import numpy as np
 import space_packet_parser
 import xarray as xr
 
-from imap_processing.cdf import epoch_attrs
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import met_to_j2000ns
 from imap_processing.idex.l0.idex_l0 import decom_packets
@@ -594,7 +593,7 @@ class RawDustEvent:
             data=[self.impact_time],
             dims=("epoch"),
             # attrs=ConstantCoordinates.EPOCH,
-            attrs=epoch_attrs,
+            attrs=idex_attrs.get_variable_attributes("epoch"),
         )
 
         time_low_sr_xr = xr.DataArray(

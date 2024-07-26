@@ -22,7 +22,6 @@ import space_packet_parser
 import xarray as xr
 
 from imap_processing import imap_module_directory
-from imap_processing.cdf import epoch_attrs
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import IMAP_EPOCH, met_to_j2000ns
 from imap_processing.codice import constants
@@ -109,7 +108,7 @@ class CoDICEL1aPipeline:
             met_to_j2000ns(met),  # TODO: Fix after SIT-3 (see note below)
             name="epoch",
             dims=["epoch"],
-            attrs=epoch_attrs,
+            attrs=cdf_attrs.get_variable_attributes("epoch"),
         )
         energy_steps = xr.DataArray(
             np.arange(self.num_energy_steps),

@@ -4,7 +4,6 @@ import numpy as np
 import pytest
 import xarray as xr
 
-from imap_processing.cdf import epoch_attrs
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.glows.l1b.glows_l1b import glows_l1b, process_de, process_histogram
 from imap_processing.glows.l1b.glows_l1b_data import (
@@ -46,7 +45,7 @@ def hist_dataset():
         np.arange(20),
         name="epoch",
         dims=["epoch"],
-        attrs=epoch_attrs,
+        attrs=cdf_attrs.get_variable_attributes("epoch"),
     )
 
     bins = xr.DataArray(np.arange(3600), name="bins", dims=["bins"])
@@ -103,7 +102,7 @@ def de_dataset():
         np.arange(20),
         name="epoch",
         dims=["epoch"],
-        attrs=epoch_attrs,
+        attrs=cdf_attrs.get_variable_attributes("epoch"),
     )
 
     per_second = xr.DataArray(np.arange(2295), name="per_second", dims=["per_second"])

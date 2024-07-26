@@ -7,7 +7,6 @@ from typing import Optional
 import numpy as np
 import xarray as xr
 
-from imap_processing.cdf import epoch_attrs
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 
 logger = logging.getLogger(__name__)
@@ -104,7 +103,7 @@ def allocate_pset_dataset(n_esa_steps: int, sensor_str: str) -> xr.Dataset:
         np.empty(1, dtype=np.int64),  # TODO: get dtype from cdf attrs?
         name="epoch",
         dims=["epoch"],
-        attrs=epoch_attrs,
+        attrs=attr_mgr.get_variable_attributes("epoch"),
     )
     attrs = attr_mgr.get_variable_attributes(
         "hi_pset_esa_step", check_schema=False
@@ -198,7 +197,7 @@ def full_dataarray(
     name : str
         Variable name.
     attrs : dict
-        CDF variable attributes. Usually retrieved from CdfAttributeManager.
+        CDF variable attributes. Usually retrieved from ImapCdfAttributes.
     coords : dict
         Coordinate variables for the Dataset.
     shape : int or tuple

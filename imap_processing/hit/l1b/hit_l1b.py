@@ -6,7 +6,6 @@ from dataclasses import fields
 import numpy as np
 import xarray as xr
 
-from imap_processing.cdf import epoch_attrs
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import met_to_j2000ns
 from imap_processing.hit.l0.data_classes.housekeeping import Housekeeping
@@ -101,7 +100,7 @@ def create_hk_dataset(attr_mgr: ImapCdfAttributes) -> xr.Dataset:
         data=epoch_converted_time,
         name="epoch",
         dims=["epoch"],
-        attrs=epoch_attrs,
+        attrs=attr_mgr.get_variable_attributes("epoch"),
     )
 
     adc_channels = xr.DataArray(
