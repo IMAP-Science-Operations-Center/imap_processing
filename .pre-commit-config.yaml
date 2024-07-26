@@ -41,6 +41,6 @@ repos:
     rev: 'v1.10.0'
     hooks:
       - id: mypy
-        exclude: .*(tests|docs|cdf_attrs).*
+        exclude: .*(tests|docs).*
         additional_dependencies: [numpy==1.26.4]
 
