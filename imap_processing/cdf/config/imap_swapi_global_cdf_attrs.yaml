@@ -24,3 +24,10 @@ imap_swapi_l1_hk:
   Data_type: L1_HK>Level-1B Housekeeping data
   Logical_source: imap_swapi_l1_hk
   Logical_source_description: SWAPI Instrument Level-1 Housekeeping Data
+
+imap_swapi_l2_sci:
+  <<: *instrument_base
+  Data_level: 1
+  Data_type: L2_SCI>Level-2 Science data in 1 minute resolution
+  Logical_source: imap_swapi_l2_sci-1min
+  Logical_source_description: SWAPI Instrument Level-1 Science Data in 1 minute resolution

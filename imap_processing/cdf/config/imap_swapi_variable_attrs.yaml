@@ -58,6 +58,19 @@ uncertainty_default: &uncertainty_default
   VAR_TYPE: data
   SCALETYP: linear
 
+rate_default: &rate_default
+  DEPEND_0: epoch
+  DEPEND_1: energy
+  DISPLAY_TYPE: spectrogram
+  LABL_PTR_1: energy_label
+  FILLVAL: -1.0000000E+31
+  FORMAT: E19.5
+  UNITS: counts
+  VALIDMIN: 0.0
+  VALIDMAX: 1.7976931348623157e+308 # TODO: find actual value
+  VAR_TYPE: data
+  SCALETYP: linear
+
 pcem_counts:
   <<: *counts_default
   CATDESC: Primary Channel Electron Multiplier (CEM)  Counts
@@ -102,3 +115,18 @@ coin_uncertainty:
   <<: *uncertainty_default
   CATDESC: Coincidence uncertainty
   FIELDNAM: Coincidence Uncertainty
+
+pcem_rate:
+  <<: *rate_default
+  CATDESC: Primary Channel Electron Multiplier (CEM) Rates
+  FIELDNAM: Primary CEM Rates
+
+scem_rate:
+  <<: *rate_default
+  CATDESC: Secondary Channel Electron Multiplier (CEM) Rates
+  FIELDNnam: Secondary CEM Rates
+
+coin_rate:
+  <<: *rate_default
+  CATDESC: Coincidence Rates
+  FIELDNAM: Coincidence Rates
