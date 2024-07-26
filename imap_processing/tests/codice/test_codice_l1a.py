@@ -1,5 +1,6 @@
 """Tests the L1a processing for decommutated CoDICE data"""
 
+import logging
 from pathlib import Path
 
 import numpy as np
@@ -10,6 +11,9 @@ from imap_processing.cdf.utils import load_cdf, write_cdf
 from imap_processing.codice.codice_l1a import process_codice_l1a
 
 from .conftest import TEST_PACKETS, VALIDATION_DATA
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 # TODO: Add test that processes a file with multiple APIDs
 
@@ -80,7 +84,7 @@ def test_l1a_data(request) -> xr.Dataset:
 
     # Write the dataset to a CDF so it can be manually inspected as well
     file_path = write_cdf(dataset)
-    print(f"CDF file written to {file_path}")
+    logger.info(f"CDF file written to {file_path}")
 
     return dataset
 
