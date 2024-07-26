@@ -156,7 +156,7 @@ paths:
           schema:
             type: string
         - in: query
-          name: filename WIP
+          name: filename (WIP)
           description: The full filename of the desired file (e.g. ``imap_mag_l1a_burst_20240105_20240105_v01-01.pkts``).
           required: false
           schema:
