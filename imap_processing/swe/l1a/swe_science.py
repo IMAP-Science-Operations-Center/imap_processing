@@ -6,6 +6,7 @@ import logging
 import numpy as np
 import xarray as xr
 
+from imap_processing.cdf import epoch_attrs
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import met_to_j2000ns
 from imap_processing.swe.utils.swe_utils import (
@@ -154,7 +155,7 @@ def swe_science(decom_data: list, data_version: str) -> xr.Dataset:
         epoch_converted_time,
         name="epoch",
         dims=["epoch"],
-        attrs=cdf_attrs.get_variable_attributes("epoch"),
+        attrs=epoch_attrs,
     )
 
     spin_angle = xr.DataArray(

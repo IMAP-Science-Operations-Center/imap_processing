@@ -8,6 +8,7 @@ import pandas as pd
 import xarray as xr
 
 from imap_processing import imap_module_directory
+from imap_processing.cdf import epoch_attrs
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 
 logger = logging.getLogger(__name__)
@@ -451,7 +452,7 @@ def swe_l1b_science(l1a_data: xr.Dataset, data_version: str) -> xr.Dataset:
         l1a_data["epoch"].data[full_cycle_data_indices].reshape(-1, 4)[:, 0],
         name="epoch",
         dims=["epoch"],
-        attrs=cdf_attrs.get_variable_attributes("epoch"),
+        attrs=epoch_attrs,
     )
 
     energy = xr.DataArray(
