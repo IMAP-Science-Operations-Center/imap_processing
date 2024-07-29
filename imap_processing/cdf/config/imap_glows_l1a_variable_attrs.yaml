@@ -11,9 +11,9 @@ default_attrs: &default_attrs
   DISPLAY_TYPE: no_plot
   TIME_BASE: J2000
   # Guess from other l1a sections, but optional?
-  TIME_SCALE: Terrestrial Time
+  #TIME_SCALE: Terrestrial Time
   # Guess from other l1a sections, prob wrong
-  REFERENCE_POSITION: Rotating Earth Geoid
+  #REFERENCE_POSITION: Rotating Earth Geoid
   # Guess from other l1a sections
   UNITS: ' '
   FILLVAL: *int_fillval
@@ -37,20 +37,19 @@ epoch:
   TIME_SCALE: Terrestrial Time
   REFERENCE_POSITION: Rotating Earth Geoid
 
-# Information from glows_cdf_attrs.py
 bins_attrs:
   <<:  *default_attrs
-  VALIDMMIN: 0
-  VALIDMAX: 70
-  CATDESC: Counts of direct events for photon impacts
+  VALIDMIN: 0
+  VALIDMAX: 3599
+  CATDESC: Histogram bin number
   FIELDNAM: Counts of direct events
-  # FORMAT is different from glows_cdf_attrs.py
-  # Changed this in order to avoid warnings
-  # Int with 10 digits
-  FORMAT: I10
+  FORMAT: I5
   VAR_TYPE: support_data
-  DISPLAY_TYPE: time_series
+  DISPLAY_TYPE: no_plot
   LABLAXIS: Counts
+  FILLVAL: -32768
+  MONOTON: INCREASE
+  SCALETYP: linear
 
 per_second_attrs:
   <<:  *default_attrs
@@ -80,22 +79,23 @@ event_attrs:
   DISPLAY_TYPE: time_series
   LABLAXIS: Counts
 
-direct_event_attrs:
+direct_events:
   <<:  *default_attrs
   DEPEND_O: epoch
   DEPEND_1: per_second
   DEPEND_2: direct_event
   VALIDMIN: 0
   VALIDMAX: 300
-  CATDESC: Direct events recorded approximately per second
-  FIELDNAM: List of direct events, binned per second
+  CATDESC: Direct events grouped by epoch seconds
+  FIELDNAM: Direct events
   # FORMAT is different from glows_cdf_attrs.py
   # Changed this in order to avoid warnings
   # Int with 10 digits
   FORMAT: I10
   VAR_TYPE: data
-  DISPLAY_TYPE: time_series
+  DISPLAY_TYPE: no_plot
   LABLAXIS: Counts
+  FILLVAL: 4294967295
 
 histogram_attrs:
   <<:  *default_attrs
