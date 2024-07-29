@@ -5,7 +5,6 @@ import numpy as np
 import pytest
 import xarray as xr
 
-from imap_processing.cdf import epoch_attrs
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import (
     IMAP_EPOCH,
@@ -42,7 +41,7 @@ def test_dataset():
             "Logical_file_id": "imap_swe_l1a_sci_20100101_v001",
         },
     )
-    dataset["epoch"].attrs = epoch_attrs
+    dataset["epoch"].attrs = swe_attrs.get_variable_attributes("epoch")
     dataset["epoch"].attrs["DEPEND_0"] = "epoch"
 
     return dataset

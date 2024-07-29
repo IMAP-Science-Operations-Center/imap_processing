@@ -9,22 +9,6 @@ default_attrs: &default
   VAR_TYPE: data
   UNITS: ' '
 
-epoch:
-  CATDESC: Time, number of nanoseconds since J2000 with leap seconds included
-  FIELDNAM: epoch
-  LABLAXIS: epoch
-  FILLVAL: -9223372036854775808
-  FORMAT: " " # Supposedly not required, fails in xarray_to_cdf
-  VALIDMIN: -9223372036854775808
-  VALIDMAX: 9223372036854775807
-  UNITS: ns
-  VAR_TYPE: support_data
-  SCALETYP: linear
-  MONOTON: INCREASE
-  TIME_BASE: J2000
-  TIME_SCALE: Terrestrial Time
-  REFERENCE_POSITION: Rotating Earth Geoid
-
 direction_vec_label:
   CATDESC: Directional vector for each direct event
   FIELDNAM: Direction Vector (X, Y, Z)

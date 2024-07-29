@@ -10,7 +10,6 @@ import pandas as pd
 import xarray as xr
 from space_packet_parser import parser, xtcedef
 
-from imap_processing.cdf import epoch_attrs
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import met_to_j2000ns
 
@@ -203,7 +202,7 @@ def create_dataset(
         metadata_arrays[spacecraft_time_key],
         name="epoch",
         dims=["epoch"],
-        attrs=epoch_attrs,
+        attrs=cdf_manager.get_variable_attributes("epoch"),
     )
 
     dataset = xr.Dataset(
