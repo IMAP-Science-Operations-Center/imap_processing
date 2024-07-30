@@ -5,7 +5,7 @@ import pandas as pd
 import pytest
 import xarray as xr
 
-from imap_processing import utils
+from imap_processing import imap_module_directory, utils
 
 
 def test_convert_raw_to_eu(tmp_path):
@@ -69,3 +69,38 @@ def test_convert_raw_to_eu(tmp_path):
         eu_dataset = utils.convert_raw_to_eu(
             dn_dataset.copy(), test_csv.absolute(), "PACKET_1", comment="#"
         )
+
+
+@pytest.mark.parametrize(
+    "use_derived_value, expected_mode", [(True, "HVENG"), (False, 2)]
+)
+def test_packet_file_to_datasets(use_derived_value, expected_mode):
+    """
+    Test that all datatypes aren't all int64 and that we get
+    uint8/uint16 from header items as expected.
+
+    Test that we get multiple apids in the output.
+    """
+    test_file = "tests/swapi/l0_data/imap_swapi_l0_raw_20231012_v001.pkts"
+    packet_files = imap_module_directory / test_file
+    packet_definition = (
+        imap_module_directory / "swapi/packet_definitions/swapi_packet_definition.xml"
+    )
+    datasets_by_apid = utils.packet_file_to_datasets(
+        packet_files, packet_definition, use_derived_value=use_derived_value
+    )
+    # 3 apids in the test data
+    assert len(datasets_by_apid) == 3
+    data = datasets_by_apid[1188]
+    assert data["sec_hdr_flg"].dtype == np.uint8
+    assert data["pkt_apid"].dtype == np.uint16
+    np.testing.assert_array_equal(data["mode"], [expected_mode] * len(data["mode"]))
+
+
+def test__create_minimum_dtype_array():
+    """Test expected return types for minimum data types."""
+    result = utils._create_minimum_dtype_array([1, 2, 3], "uint8")
+    assert result.dtype == np.dtype("uint8")
+    # fallback to a generic array if the requested dtype can't be satisfied
+    result = utils._create_minimum_dtype_array(["a", "b", "c"], "uint8")
+    assert result.dtype == np.dtype("<U1")
