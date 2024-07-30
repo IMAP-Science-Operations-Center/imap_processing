@@ -63,7 +63,7 @@ def filter_good_data(full_sweep_sci: xr.Dataset) -> np.ndarray:
     # Use bad data cycle indices to find all good data indices.
     # Then that will used to filter good sweep data.
     all_indices = np.arange(len(full_sweep_sci["epoch"].data))
-    good_data_indices = np.setdiff1d(all_indices, bad_cycle_indices)
+    good_data_indices: np.ndarray = np.setdiff1d(all_indices, bad_cycle_indices)
 
     return good_data_indices
 
@@ -142,7 +142,8 @@ def find_sweep_starts(packets: xr.Dataset) -> np.ndarray:
         Array of indices of start cycle.
     """
     if packets["epoch"].size < 12:
-        return np.array([], np.int64)
+        start_cycle_set: np.ndarray = np.array([], np.int64)
+        return start_cycle_set
 
     # calculate time difference between consecutive sweep
     diff = packets["epoch"].data[1:] - packets["epoch"].data[:-1]
@@ -172,7 +173,8 @@ def find_sweep_starts(packets: xr.Dataset) -> np.ndarray:
         & ione[9:-1]
         & ione[10:]
     )
-    return np.where(valid)[0]
+    start_cycle: np.ndarray = np.where(valid)[0]
+    return start_cycle
 
 
 def get_indices_of_full_sweep(packets: xr.Dataset) -> np.ndarray:
@@ -205,7 +207,9 @@ def get_indices_of_full_sweep(packets: xr.Dataset) -> np.ndarray:
     #   Eg. [[0, 1, 2, 3, ....., 11]]
     # then we add both of them together to get an array of shape(n, 4)
     #   Eg. [[3, 4, 5, 6,...14], [8, 9, 10, 11, ..., 19]]
-    full_cycles_indices = indices_of_start[..., None] + np.arange(12)[None, ...]
+    full_cycles_indices: np.ndarray = (
+        indices_of_start[..., None] + np.arange(12)[None, ...]
+    )
     return full_cycles_indices.reshape(-1)
 
 
