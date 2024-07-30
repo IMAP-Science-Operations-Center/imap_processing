@@ -55,23 +55,6 @@ default_float32_attrs: &default_float32
   VALIDMAX: 3.4028235e+38
   dtype: float32
 
-default_epoch: &default_epoch
-  CATDESC: Time, number of nanoseconds since J2000 with leap seconds included
-  FIELDNAM: epoch
-  LABLAXIS: epoch
-  FILLVAL: -9223372036854775808
-  FORMAT: " " # Supposedly not required, fails in xarray_to_cdf
-  VALIDMIN: -9223372036854775808
-  VALIDMAX: 9223372036854775807
-  UNITS: ns
-  VAR_TYPE: support_data
-  SCALETYP: linear
-  MONOTON: INCREASE
-  TIME_BASE: J2000
-  TIME_SCALE: Terrestrial Time
-  REFERENCE_POSITION: Rotating Earth Geoid
-  dtype: int64
-
 default_ccsds_met: &hi_ccsds_met
   <<: *default_uint32
   CATDESC: CCSDS mission elapsed time (MET). 32-bit integer value that represents the MET in seconds.
@@ -103,10 +86,6 @@ hi_de_de_tag:
   CATDESC: Ticks (nominally 2 ms) since last meta-event
   FIELDNAM: Direct Event Time Tag
   LABLAXIS: DE Time Tag
-
-hi_de_epoch:
-  <<: *default_epoch
-  CATDESC: Direct Event time, number of nanoseconds since J2000 with leap seconds included
 
 hi_de_esa_stepping_num:
   <<: *hi_esa_stepping_num
@@ -178,8 +157,6 @@ hi_de_tof_3:
     the direct event. 1023 is the value used to indicate no event was registered.
 
 # ======= L1A HIST Section =======
-hi_hist_epoch:
-  <<: *default_epoch
 
 hi_hist_angle:
   SCALE_TYPE: linear
@@ -317,8 +294,6 @@ hi_de_nominal_bin:
   VALIDMAX: 89
 
 # ======= L1C PSET Section =======
-hi_pset_epoch:
-  <<: *default_epoch
 
 hi_pset_esa_step:
   <<: *default_esa_step

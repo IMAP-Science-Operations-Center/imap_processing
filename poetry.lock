@@ -1741,10 +1741,10 @@ test = ["big-O", "importlib-resources", "jaraco.functools", "jaraco.itertools", 
 [extras]
 dev = ["mypy", "pre-commit", "ruff"]
 doc = ["numpydoc", "pydata-sphinx-theme", "sphinx", "sphinxcontrib-openapi"]
-test = ["pytest", "pytest-cov"]
+test = ["openpyxl", "pytest", "pytest-cov"]
 tools = ["openpyxl", "pandas"]
 
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9,<4"
-content-hash = "894f6f0effe557a84748490901981b131754feca8c9204894901b391b8ef6461"
+content-hash = "28cbb877e15c362c80541a8cebd35f12575cd86802c902505b4db1f65640d37e"

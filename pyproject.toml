@@ -56,7 +56,7 @@ mypy = {version="^1.10.1", optional=true}
 [tool.poetry.extras]
 dev = ["pre-commit", "ruff", "mypy"]
 doc = ["numpydoc", "pydata-sphinx-theme", "sphinx", "sphinxcontrib-openapi"]
-test = ["pytest", "pytest-cov"]
+test = ["openpyxl", "pytest", "pytest-cov"]
 tools= ["openpyxl", "pandas"]
 
 [project.urls]

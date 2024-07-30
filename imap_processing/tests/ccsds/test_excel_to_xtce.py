@@ -12,21 +12,36 @@ pytest.importorskip("openpyxl")
 
 
 @pytest.fixture()
-def filepath(tmpdir):
-    p = Path(tmpdir / "test_file.xlsx").resolve()
-    p.touch()
+def excel_file():
+    p = Path(__file__).parent / "test_data" / "excel_to_xtce_test_file.xlsx"
     return p
+
+
+def test_generated_xml(excel_file, tmp_path):
+    """Make sure we are producing the expected contents within the XML file.
+
+    To produce a new expected output file the following command can be used.
+    imap_xtce imap_processing/tests/ccsds/test_data/excel_to_xtce_test_file.xlsx
+        --output imap_processing/tests/ccsds/test_data/expected_output.xml
+    """
+    generator = excel_to_xtce.XTCEGenerator(excel_file)
+    output_file = tmp_path / "output.xml"
+    generator.to_xml(output_file)
+
+    expected_file = excel_file.parent / "expected_output.xml"
+    with open(output_file) as f, open(expected_file) as f_expected:
+        assert f.read() == f_expected.read()
 
 
 # General test
 @mock.patch("imap_processing.ccsds.excel_to_xtce.XTCEGenerator")
-def test_main_general(mock_input, filepath):
+def test_main_general(mock_input, excel_file):
     """Testing base main function."""
     test_args = [
         "test_script",
         "--output",
         "swe.xml",
-        f"{filepath}",
+        f"{excel_file}",
     ]
     with mock.patch.object(sys, "argv", test_args):
         excel_to_xtce.main()

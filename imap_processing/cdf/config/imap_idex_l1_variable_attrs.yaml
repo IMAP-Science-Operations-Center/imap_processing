@@ -32,23 +32,6 @@ l1_target_base: &l1_target_base
   <<: *l1_data_base
   DEPEND_1: time_low_sr
 
-epoch:
-  <<:  *l1_data_base
-  CATDESC: Time, number of nanoseconds since J2000 with leap seconds included
-  FIELDNAM: epoch
-  FILLVAL: *int_fillval
-  LABLAXIS: epoch
-  FORMAT: ""  # Supposedly not required, fails in xarray_to_cdf
-  UNITS: ns
-  VALIDMIN: *min_epoch
-  VALIDMAX: *max_epoch
-  VAR_TYPE: support_data
-  SCALETYP: linear
-  MONOTON: INCREASE
-  TIME_BASE: J2000
-  TIME_SCALE: Terrestrial Time
-  REFERENCE_POSITION: Rotating Earth Geoid
-
 sample_rate_base: &sample_rate_base
   DISPLAY_TYPE: no_plot
   CATDESC: ""

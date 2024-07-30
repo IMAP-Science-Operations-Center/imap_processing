@@ -1,22 +1,6 @@
 int_fillval: &int_fillval -9223372036854775808
 valid_max: &valid_max 3155630469184000000
 
-epoch_dim:
-  CATDESC: Time, number of nanoseconds since J2000 with leap seconds included
-  FIELDNAM: epoch
-  FILLVAL: *int_fillval
-  LABLAXIS: epoch
-  FORMAT: ' '  # Supposedly not required fails in xarray_to_cdf
-  UNITS: ns
-  VALIDMIN: -315575942816000000
-  VALIDMAX: 3155630469184000000
-  VAR_TYPE: support_data
-  SCALETYP: linear
-  MONOTON: INCREASE
-  TIME_BASE: J2000
-  TIME_SCALE: Terrestrial Time
-  REFERENCE_POSITION: Rotating Earth Geoid
-
 default_attrs: &default
   # Assumed values for all variable attrs unless overwritten
   DEPEND_0: epoch
