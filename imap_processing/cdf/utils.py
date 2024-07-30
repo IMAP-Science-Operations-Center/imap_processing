@@ -7,9 +7,11 @@ from typing import Optional
 
 import imap_data_access
 import numpy as np
+import pandas as pd
 import xarray as xr
 from cdflib.xarray import cdf_to_xarray, xarray_to_cdf
 from cdflib.xarray.cdf_to_xarray import ISTP_TO_XARRAY_ATTRS
+from numpy.typing import ArrayLike
 
 import imap_processing
 from imap_processing._version import __version__, __version_tuple__  # noqa: F401
@@ -26,7 +28,7 @@ J2000_EPOCH = np.datetime64("2000-01-01T11:58:55.816", "ns")
 def met_to_j2000ns(
     met: np.typing.ArrayLike,
     reference_epoch: Optional[np.datetime64] = IMAP_EPOCH,
-) -> np.typing.ArrayLike:
+) -> ArrayLike:
     """
     Convert mission elapsed time (MET) to nanoseconds from J2000.
 
@@ -56,10 +58,10 @@ def met_to_j2000ns(
     #       to 32bit and overflow due to the nanosecond multiplication
     time_array = (np.asarray(met, dtype=float) * 1e9).astype(np.int64)
     # Calculate the time difference between our reference system and J2000
-    j2000_offset = (
-        (reference_epoch - J2000_EPOCH).astype("timedelta64[ns]").astype(np.int64)
-    )
-    return j2000_offset + time_array
+    if isinstance(reference_epoch, np.datetime64):
+        calculate_epoch: pd.DataFrame = reference_epoch - J2000_EPOCH
+        j2000_offset = calculate_epoch.astype("timedelta64[ns]").astype(np.int64)
+        return j2000_offset + time_array
 
 
 def load_cdf(
