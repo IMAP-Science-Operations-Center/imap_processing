@@ -277,7 +277,7 @@ class ScienceCounts(LoBase):
         binary_string: BinaryString,
         decompression: Decompress,
         data_shape: tuple[int, int],
-    ) -> np.array:
+    ) -> np.ndarray:
         """
         Parse a single section of data in the science counts data binary.
 
@@ -292,7 +292,7 @@ class ScienceCounts(LoBase):
 
         Returns
         -------
-        np.array
+        np.ndarray
             Data array.
         """
         # Use the decompression method to get the bit length
@@ -353,4 +353,5 @@ class ScienceCounts(LoBase):
                 extracted_integer, decompression, DECOMPRESSION_TABLES
             )
             data_list.append(decompressed_integer)
-        return np.array(data_list)
+        data_list_array: np.ndarray = np.array(data_list)
+        return data_list_array
