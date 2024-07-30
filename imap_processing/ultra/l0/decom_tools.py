@@ -193,7 +193,7 @@ def decompress_image(
     # Compressed pixel matrix
     p = np.zeros((rows, cols), dtype=np.uint16)
     # Decompressed pixel matrix
-    p_decom = np.zeros((rows, cols), dtype=np.int16)
+    p_decom: np.ndarray = np.zeros((rows, cols), dtype=np.int16)
 
     pos = 0  # Starting position in the binary string
 
