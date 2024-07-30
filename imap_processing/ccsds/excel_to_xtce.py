@@ -262,7 +262,7 @@ class XTCEGenerator:
         length_in_bits = int(row["lengthInBits"])
 
         # Add the parameterTypeRef for this row
-        if "UINT" in row["dataType"]:
+        if "UINT" in row["dataType"] or "FILL" in row["dataType"]:
             parameter_type = Et.SubElement(
                 self._parameter_type_set, "xtce:IntegerParameterType"
             )
@@ -282,6 +282,15 @@ class XTCEGenerator:
             encoding = Et.SubElement(parameter_type, "xtce:IntegerDataEncoding")
             encoding.attrib["sizeInBits"] = str(length_in_bits)
             encoding.attrib["encoding"] = "signed"
+
+        elif "FLOAT" in row["dataType"]:
+            parameter_type = Et.SubElement(
+                self._parameter_type_set, "xtce:FloatParameterType"
+            )
+            parameter_type.attrib["name"] = name
+            encoding = Et.SubElement(parameter_type, "xtce:FloatDataEncoding")
+            encoding.attrib["sizeInBits"] = str(length_in_bits)
+            encoding.attrib["encoding"] = "IEEE-754"
 
         elif "BYTE" in row["dataType"]:
             parameter_type = Et.SubElement(
@@ -311,6 +320,8 @@ class XTCEGenerator:
             # TODO: Do we want to allow fixed length values?
             # fixed_value = Et.SubElement(size_in_bits, "xtce:FixedValue")
             # fixed_value.text = str(row["lengthInBits"])
+        else:
+            raise ValueError(f"Unknown data type for {name}: {row['dataType']}")
 
         if row["convertAs"] == "ANALOG":
             # Go look up the conversion in the AnalogConversions tab
