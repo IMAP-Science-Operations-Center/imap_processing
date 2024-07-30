@@ -19,24 +19,6 @@ default_attrs: &default_attrs
   FILLVAL: *int_fillval
   VALIDMIN: *min_epoch
 
-# Information found in cdf.config.global_attrs.py EPOCH, and cdf.defaults.py
-epoch:
-  <<:  *default_attrs
-  CATDESC: Time, number of nanoseconds since J2000 with leap seconds included
-  FIELDNAM: epoch
-  FILLVAL: *int_fillval # GlobalConstants.INT_FILLVAL,
-  LABLAXIS: epoch
-  FORMAT: ""  # Supposedly not required, fails in xarray_to_cdf
-  UNITS: ns
-  VALIDMIN: *min_epoch # GlobalConstants.MIN_EPOCH
-  VALIDMAX: *max_epoch # GlobalConstants.MAX_EPOCH
-  VAR_TYPE: support_data
-  SCALETYP: linear
-  MONOTON: INCREASE
-  TIME_BASE: J2000
-  TIME_SCALE: Terrestrial Time
-  REFERENCE_POSITION: Rotating Earth Geoid
-
 # Information from glows_cdf_attrs.py
 bins_attrs:
   <<:  *default_attrs
