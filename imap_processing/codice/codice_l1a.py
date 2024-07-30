@@ -108,7 +108,7 @@ class CoDICEL1aPipeline:
             met_to_j2000ns(met),  # TODO: Fix after SIT-3 (see note below)
             name="epoch",
             dims=["epoch"],
-            attrs=cdf_attrs.get_variable_attributes("epoch_attrs"),
+            attrs=cdf_attrs.get_variable_attributes("epoch"),
         )
         energy_steps = xr.DataArray(
             np.arange(self.num_energy_steps),

@@ -18,22 +18,6 @@ de_default_attrs: &de_default
   DEPEND_1: direct_events
   UNITS: ' '
 
-epoch:
-  CATDESC: Time, number of nanoseconds since J2000 with leap seconds included
-  FIELDNAM: epoch
-  LABLAXIS: epoch
-  FILLVAL: -9223372036854775808
-  FORMAT: " " # Supposedly not required, fails in xarray_to_cdf
-  VALIDMIN: -9223372036854775808
-  VALIDMAX: 9223372036854775807
-  UNITS: ns
-  VAR_TYPE: support_data
-  SCALETYP: linear
-  MONOTON: INCREASE
-  TIME_BASE: J2000
-  TIME_SCALE: Terrestrial Time
-  REFERENCE_POSITION: Rotating Earth Geoid
-
 # Re-used Coordinate
 esa_step:
   <<: *de_default
