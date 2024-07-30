@@ -238,7 +238,9 @@ def generate_de_dataset(
         np.arange(4),
         name="direct_event",
         dims=["direct_event"],
-        attrs=glows_cdf_attributes.get_variable_attributes("event_attrs"),
+        attrs=glows_cdf_attributes.get_variable_attributes(
+            "direct_event_components_attrs"
+        ),
     )
 
     # TODO come up with a better name
@@ -246,7 +248,7 @@ def generate_de_dataset(
         np.arange(direct_events.shape[1]),
         name="per_second",
         dims=["per_second"],
-        attrs=glows_cdf_attributes.get_variable_attributes("per_second_attrs"),
+        attrs=glows_cdf_attributes.get_variable_attributes("within_the_second"),
     )
 
     de = xr.DataArray(
@@ -258,7 +260,7 @@ def generate_de_dataset(
             "per_second": per_second,
             "direct_event": direct_event,
         },
-        attrs=glows_cdf_attributes.get_variable_attributes("direct_event_attrs"),
+        attrs=glows_cdf_attributes.get_variable_attributes("direct_events"),
     )
 
     # TODO: This is the weird global attribute.
@@ -386,7 +388,9 @@ def generate_histogram_dataset(
         name="histograms",
         dims=["epoch", "bins"],
         coords={"epoch": epoch_time, "bins": bins},
-        attrs=glows_cdf_attributes.get_variable_attributes("histogram_attrs"),
+        attrs=glows_cdf_attributes.get_variable_attributes(
+            "histogram"
+        ),  # Used to be histogram_attrs
     )
 
     attrs = glows_cdf_attributes.get_global_attributes("imap_glows_l1a_hist")

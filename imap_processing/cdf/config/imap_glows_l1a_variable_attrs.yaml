@@ -118,7 +118,8 @@ pkts_file_name:
   LABLAXIS: File name
   VALIDMAX: # TBD: what is validmax for a string?
   VALIDMIN: # TBD: what is validmin for a string?
-  VAR_TYPE: metadat
+  VAR_TYPE: metadata
+
 last_spin_id:
   <<: *metadata_attrs
   CATDESC: The ordinal number of the last spin during histogram accumulation
