@@ -106,7 +106,7 @@ def _get_particle_velocity(
     imap_dps_velocity = state[3:6]
 
     # Particle velocity in the DPS frame wrt to the heliosphere
-    ultra_velocity_heliosphere_frame = imap_dps_velocity + dps_velocity
+    ultra_velocity_heliosphere_frame: np.ndarray = imap_dps_velocity + dps_velocity
 
     return ultra_velocity_heliosphere_frame
 
