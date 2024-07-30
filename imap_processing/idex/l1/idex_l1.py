@@ -442,7 +442,7 @@ class RawDustEvent:
             Low time sample data array.
         """
         time_low_sr_init = np.linspace(0, num_samples, num_samples)
-        time_low_sr_data = (
+        time_low_sr_data: np.ndarray = (
             self.LOW_SAMPLE_RATE * time_low_sr_init - self.low_sample_trigger_time
         )
         return time_low_sr_data
@@ -468,7 +468,7 @@ class RawDustEvent:
             High sample time data array.
         """
         time_high_sr_init = np.linspace(0, num_samples, num_samples)
-        time_high_sr_data = (
+        time_high_sr_data: np.ndarray = (
             self.HIGH_SAMPLE_RATE * time_high_sr_init - self.high_sample_trigger_time
         )
         return time_high_sr_data
