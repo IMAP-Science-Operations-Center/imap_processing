@@ -108,10 +108,11 @@ class MagL0:
         """
         # Convert string output from space_packet_parser to numpy array of
         # big-endian bytes
-        self.VECTORS = np.frombuffer(
-            int(self.VECTORS, 2).to_bytes(len(self.VECTORS) // 8, "big"),
-            dtype=np.dtype(">b"),
-        )
+        if isinstance(self.VECTORS, str):
+            self.VECTORS = np.frombuffer(
+                int(self.VECTORS, 2).to_bytes(len(self.VECTORS) // 8, "big"),
+                dtype=np.dtype(">b"),
+            )
 
         # Remove buffer from end of vectors. Vector data needs to be in 50 bit chunks,
         # and may have an extra byte at the end from CCSDS padding.

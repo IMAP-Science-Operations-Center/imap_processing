@@ -190,7 +190,7 @@ class MagL1a:
     is_mago: bool
     is_active: int
     shcoarse: int
-    vectors: np.array
+    vectors: np.ndarray
     starting_packet: InitVar[MagL1aPacketProperties]
     packet_definitions: dict[np.datetime64, MagL1aPacketProperties] = field(init=False)
     most_recent_sequence: int = field(init=False)
@@ -216,14 +216,14 @@ class MagL1a:
         self.most_recent_sequence = starting_packet.src_seq_ctr
 
     def append_vectors(
-        self, additional_vectors: np.array, packet_properties: MagL1aPacketProperties
+        self, additional_vectors: np.ndarray, packet_properties: MagL1aPacketProperties
     ) -> None:
         """
         Append additional vectors to the current vectors array.
 
         Parameters
         ----------
-        additional_vectors : numpy.array
+        additional_vectors : numpy.ndarray
             New vectors to append.
         packet_properties : MagL1aPacketProperties
             Additional vector definition to add to the l0_packets dictionary.
@@ -244,7 +244,7 @@ class MagL1a:
     @staticmethod
     def calculate_vector_time(
         vectors: np.ndarray, vectors_per_sec: int, start_time: TimeTuple
-    ) -> np.array:
+    ) -> np.ndarray:
         """
         Add timestamps to the vector list, turning the shape from (n, 4) to (n, 5).
 
@@ -253,7 +253,7 @@ class MagL1a:
 
         Parameters
         ----------
-        vectors : numpy.array
+        vectors : numpy.ndarray
             List of magnetic vector samples, starting at start_time. Shape of (n, 4).
         vectors_per_sec : int
             Number of vectors per second.
@@ -281,7 +281,9 @@ class MagL1a:
             ),
             (vectors.shape[0], -1),
         )
-        vector_objects = np.concatenate([vectors, times], axis=1, dtype=np.int64)
+        vector_objects: np.ndarray = np.concatenate(
+            [vectors, times], axis=1, dtype=np.int64
+        )
         return vector_objects
 
     @staticmethod
