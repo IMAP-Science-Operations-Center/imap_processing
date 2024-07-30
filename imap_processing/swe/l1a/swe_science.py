@@ -112,7 +112,7 @@ def swe_science(decom_data: list, data_version: str) -> xr.Dataset:
     science_array = []
     raw_science_array = []
 
-    metadata_arrays: np.array = collections.defaultdict(list)
+    metadata_arrays: dict = collections.defaultdict(list)
 
     # We know we can only have 8 bit numbers input, so iterate over all
     # possibilities once up front
@@ -133,7 +133,8 @@ def swe_science(decom_data: list, data_version: str) -> xr.Dataset:
         # where 1260 = 180 x 7 CEMs
         # Take the "raw_counts" indices/counts mapping from
         # decompression_table and then reshape the return
-        uncompress_data = np.take(decompression_table, raw_counts).reshape(180, 7)
+        uncompress_data_ndarray: np.ndarray = np.take(decompression_table, raw_counts)
+        uncompress_data = uncompress_data_ndarray.reshape(180, 7)
         # Save raw counts data as well
         raw_counts = raw_counts.reshape(180, 7)
 
