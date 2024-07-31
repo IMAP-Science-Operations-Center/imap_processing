@@ -3,20 +3,6 @@
 from enum import IntFlag
 
 
-class CommonFlags(IntFlag):
-    """Common quality flags."""
-
-    NONE = 0x0
-    INF = 2**0  # bit 0, Infinite value
-    NEG = 2**1  # bit 1, Negative value
-
-
-class ENAFlags(IntFlag):
-    """Common ENA flags."""
-
-    BADSPIN = 2**2  # bit 2, Bad spin
-
-
 class ModifyFlags(IntFlag):
     """
     Quality flags modified.
@@ -40,6 +26,20 @@ class ModifyFlags(IntFlag):
 
         members = [member for member in ModifyFlags if member & self == member]
         return "|".join(str(m).split(".", 1)[-1] for m in members if m != 0x0)
+
+
+class CommonFlags(ModifyFlags):
+    """Common quality flags."""
+
+    NONE = 0x0
+    INF = 2**0  # bit 0, Infinite value
+    NEG = 2**1  # bit 1, Negative value
+
+
+class ENAFlags(ModifyFlags):
+    """Common ENA flags."""
+
+    BADSPIN = 2**2  # bit 2, Bad spin
 
 
 class ImapUltraFlags(ModifyFlags):
