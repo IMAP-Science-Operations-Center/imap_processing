@@ -3,6 +3,24 @@
 from enum import IntFlag
 
 
+class FlagNameMixin:
+    @property
+    def name(self) -> str:
+        """
+        Override the default name property to handle combined flags.
+
+        Returns
+        -------
+        combined_name : str
+            The combined name of the individual flags.
+        """
+        if self._name_ is not None:
+            return self._name_
+
+        members = [member for member in self.__class__ if member & self == member]
+        return "|".join(str(m).split(".", 1)[-1] for m in members if m != 0x0)
+
+
 class CommonFlags(IntFlag):
     """Common quality flags."""
 
@@ -17,7 +35,7 @@ class ENAFlags(IntFlag):
     BADSPIN = 2**2  # bit 2, Bad spin
 
 
-class ImapUltraFlags(IntFlag):
+class ImapUltraFlags(FlagNameMixin, IntFlag):
     """IMAP Ultra flags."""
 
     NONE = CommonFlags.NONE
@@ -27,7 +45,7 @@ class ImapUltraFlags(IntFlag):
     FLAG1 = 2**3  # bit 2
 
 
-class ImapLoFlags(IntFlag):
+class ImapLoFlags(FlagNameMixin, IntFlag):
     """IMAP Lo flags."""
 
     NONE = CommonFlags.NONE
@@ -37,7 +55,7 @@ class ImapLoFlags(IntFlag):
     FLAG2 = 2**3  # bit 2
 
 
-class HitFlags(IntFlag):
+class HitFlags(FlagNameMixin, IntFlag):
     """Hit flags."""
 
     NONE = CommonFlags.NONE
