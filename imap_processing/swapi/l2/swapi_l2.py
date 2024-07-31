@@ -5,7 +5,6 @@ import logging
 import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
-from imap_processing.swapi.swapi_utils import SWAPIAPID
 
 logger = logging.getLogger(__name__)
 
@@ -41,12 +40,6 @@ def swapi_l2(l1_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
     data : xarray.Dataset
         Processed data to L2.
     """
-    apid = int(l1_dataset.attrs["Apid"])
-    # Right now, we don't process any other apid besides science packet
-    # to L2
-    if apid != SWAPIAPID.SWP_SCI:
-        raise ValueError(f"APID {apid} is not supported for L2 processing")
-
     # Load the CDF attributes
     cdf_manager = ImapCdfAttributes()
     cdf_manager.add_instrument_global_attrs("swapi")
@@ -61,9 +54,8 @@ def swapi_l2(l1_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
         "swp_scem_flags",
         "swp_coin_flags",
     ]
-    l2_dataset = l1_dataset[l1_data_keys].copy()
-    # Copy over attributes
-    l2_dataset.attrs = l1_dataset.attrs
+    l2_dataset = l1_dataset[l1_data_keys]
+
     # Update L2 specific attributes
     l2_dataset.attrs["Data_version"] = data_version
     l2_global_attrs = cdf_manager.get_global_attributes("imap_swapi_l2_sci")
