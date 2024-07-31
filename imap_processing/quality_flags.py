@@ -26,22 +26,6 @@ class ImapUltraFlags(IntFlag):
     BADSPIN = ENAFlags.BADSPIN  # bit 2
     FLAG1 = 2**3  # bit 2
 
-    @property
-    def name(self) -> str:
-        """
-        Override the default name property to handle combined flags.
-
-        Returns
-        -------
-        combined_name : str
-            The combined name of the individual flags.
-        """
-        if self._name_ is not None:
-            return self._name_
-
-        members = [member for member in ImapUltraFlags if member & self == member]
-        return "|".join(str(m).split(".", 1)[-1] for m in members if m != 0x0)
-
 
 class ImapLoFlags(IntFlag):
     """IMAP Lo flags."""
@@ -52,22 +36,6 @@ class ImapLoFlags(IntFlag):
     BADSPIN = ENAFlags.BADSPIN  # bit 2
     FLAG2 = 2**3  # bit 2
 
-    @property
-    def name(self) -> str:
-        """
-        Override the default name property to handle combined flags.
-
-        Returns
-        -------
-        combined_name : str
-            The combined name of the individual flags.
-        """
-        if self._name_ is not None:
-            return self._name_
-
-        members = [member for member in ImapLoFlags if member & self == member]
-        return "|".join(str(m).split(".", 1)[-1] for m in members if m != 0x0)
-
 
 class HitFlags(IntFlag):
     """Hit flags."""
@@ -76,19 +44,3 @@ class HitFlags(IntFlag):
     INF = CommonFlags.INF  # bit 0
     NEG = CommonFlags.NEG  # bit 1
     FLAG3 = 2**2  # bit 2
-
-    @property
-    def name(self) -> str:
-        """
-        Override the default name property to handle combined flags.
-
-        Returns
-        -------
-        combined_name : str
-            The combined name of the individual flags.
-        """
-        if self._name_ is not None:
-            return self._name_
-
-        members = [member for member in HitFlags if member & self == member]
-        return "|".join(str(m).split(".", 1)[-1] for m in members if m != 0x0)
