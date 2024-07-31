@@ -105,7 +105,7 @@ def decompress_count(
     # Decompress counts based on compression indicators
     # If 0, value is already decompressed. If 1, value is compressed.
     # If 1 and count is 0xFFFF, value is overflow.
-    new_count: np.ndarray = copy.deepcopy(count_data).astype(np.int32)
+    new_count = np.array(count_data, dtype=np.int32)
 
     # If data is compressed, decompress it
     compressed_indices = compression_flag == 1
