@@ -391,6 +391,18 @@ def packet_file_to_datasets(
         )
         ds = ds.sortby("epoch")
 
+        # Strip any leading characters before "." from the field names which was due
+        # to the packet_name being a part of the variable name in the XTCE definition
+        ds = ds.rename(
+            {
+                # partition splits the string into 3 parts: before ".", ".", after "."
+                # if there was no ".", the second part is an empty string, so we use
+                # the original key in that case
+                key: key.partition(".")[2] or key
+                for key in ds.variables
+            }
+        )
+
         dataset_by_apid[apid] = ds
 
     return dataset_by_apid

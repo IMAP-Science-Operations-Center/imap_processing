@@ -226,7 +226,9 @@ class XTCEGenerator:
                 if pd.isna(row.get("packetName")):
                     # This is a poorly formatted row, skip it
                     continue
-                name = f"{row['packetName']}_{row['mnemonic']}"
+                # separate the packet name and mnemonic with a period
+                # a hyphen is sometimes in the packet name or mnemonic already
+                name = f"{row['packetName']}.{row['mnemonic']}"
                 parameter_ref_entry = Et.SubElement(
                     packet_entry_list, "xtce:ParameterRefEntry"
                 )
@@ -247,7 +249,7 @@ class XTCEGenerator:
         """
         parameter = Et.SubElement(self._parameter_set, "xtce:Parameter")
         # Combine the packet name and mnemonic to create a unique parameter name
-        name = f"{row['packetName']}_{row['mnemonic']}"
+        name = f"{row['packetName']}.{row['mnemonic']}"
         parameter.attrib["name"] = name
         # UINT8, ...
         parameter.attrib["parameterTypeRef"] = name
