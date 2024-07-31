@@ -57,7 +57,9 @@ class ImapLoFlags(FlagNameMixin):
     FLAG2 = 2**3  # bit 2
 
 
-class HitFlags(FlagNameMixin,):
+class HitFlags(
+    FlagNameMixin,
+):
     """Hit flags."""
 
     NONE = CommonFlags.NONE
