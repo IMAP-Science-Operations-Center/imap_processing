@@ -13,79 +13,104 @@ x_front:
   CATDESC: x front position
   FIELDNAM: Event x-position on front foil
   LABLAXIS: x front position
-  # TODO: come back to format
-  UNITS: mm
+  VALIDMIN: -1e6
+  FORMAT: F12.6
+  UNITS: mm / 100
 
 y_front:
   <<: *default
   CATDESC: y front position
   FIELDNAM: Event y-position on front foil
   LABLAXIS: y front position
-  # TODO: come back to format
-  UNITS: mm
+  VALIDMIN: -1e6
+  FORMAT: F12.6
+  UNITS: mm / 100
 
 x_back:
   <<: *default
   CATDESC: x back position
   FIELDNAM: x_back
   LABLAXIS: x back position
-  # TODO: come back to format
-  UNITS: mm
+  VALIDMIN: -1e6
+  FORMAT: F12.6
+  UNITS: mm / 100
 
 y_back:
   <<: *default
   CATDESC: y back position
   FIELDNAM: y_back
   LABLAXIS: y back position
-  # TODO: come back to format
-  UNITS: mm
+  VALIDMIN: -1e6
+  FORMAT: F12.6
+  UNITS: mm / 100
 
 x_coin:
   <<: *default
   CATDESC: x coincidence position
   FIELDNAM: x_coin
   LABLAXIS: x coincidence position
-  # TODO: come back to format
-  UNITS: mm
+  VALIDMIN: -1e6
+  FORMAT: F12.6
+  UNITS: mm / 100
 
 tof_start_stop:
   <<: *default
   CATDESC: Particle time of flight from start to stop
   FIELDNAM: tof_start_stop
   LABLAXIS: tof start stop
-  # TODO: come back to format
-  UNITS: ns
+  VALIDMIN: -1e6
+  FORMAT: F12.6
+  UNITS: nanosecond / 10
 
 tof_stop_coin:
   <<: *default
   CATDESC: Particle time of flight from stop to coincidence
   FIELDNAM: tof_stop_coin
   LABLAXIS: tof stop coin
-  # TODO: come back to format
-  UNITS: ns
+  VALIDMIN: -1e6
+  FORMAT: F12.6
+  UNITS: nanosecond / 10
 
 tof_corrected:
   <<: *default
   CATDESC: Corrected time of flight
   FIELDNAM: tof_corrected
   LABLAXIS: tof corrected
-  # TODO: come back to format
-  UNITS: ns
+  VALIDMIN: -1e6
+  FORMAT: F12.6
+  UNITS: nanosecond / 10
 
-eventtype:
+event_type:
   <<: *default
+  VALIDMAX: 15
   CATDESC: Eventtype (1-2 top and bottom stop types; 8-15 ssd stop types)
-  FIELDNAM: eventtype
-  LABLAXIS: eventtype
-  # TODO: come back to format
-  UNITS: " "
+  FIELDNAM: Event type
+  FORMAT: I2
+  LABLAXIS: event type
+
+coincidence_type:
+  <<: *default
+  VALIDMAX: 2
+  CATDESC: Coincidence type for the direct event (1-2 top and bottom)
+  FIELDNAM: Coincidence type
+  FORMAT: I1
+  LABLAXIS: coincidence type
+
+start_type:
+  <<: *default
+  VALIDMAX: 2
+  CATDESC: Start type for the direct event (1-2 left and right)
+  FIELDNAM: Start type
+  FORMAT: I1
+  LABLAXIS: start type
 
 vx_ultra:
   <<: *default
   CATDESC: Normalized component of the velocity vector in x direction in the instrument frame.
   FIELDNAM: vx_ultra
   LABLAXIS: vx ultra
-  # TODO: come back to format
+  VALIDMIN: -1e6
+  FORMAT: F12.6
   UNITS: " "
 
 vy_ultra:
@@ -93,7 +118,8 @@ vy_ultra:
   CATDESC: Normalized component of the velocity vector in y direction in the instrument frame.
   FIELDNAM: vy_ultra
   LABLAXIS: vy ultra
-  # TODO: come back to format
+  VALIDMIN: -1e6
+  FORMAT: F12.6
   UNITS: " "
 
 vz_ultra:
@@ -101,7 +127,8 @@ vz_ultra:
   CATDESC: Normalized component of the velocity vector in z direction in the instrument frame.
   FIELDNAM: vz_ultra
   LABLAXIS: vz ultra
-  # TODO: come back to format
+  VALIDMIN: -1e6
+  FORMAT: F12.6
   UNITS: " "
 
 energy:
@@ -109,16 +136,33 @@ energy:
   CATDESC: Energy measured using the pulse height from the stop anode (DN) or Energy measured using the SSD (keV) depending on eventtype.
   FIELDNAM: energy
   LABLAXIS: energy
-  # TODO: come back to format
+  VALIDMIN: -1e6
+  FORMAT: F12.6
   UNITS: keV
 
 species:
   <<: *default
-  CATDESC: Species bin.
+  CATDESC: Species bin (0-255).
   FIELDNAM: species
   LABLAXIS: species
-  # TODO: come back to format
+  FORMAT: I2
   UNITS: " "
+
+front_back_distance:
+  <<: *default
+  CATDESC: Distance front to back.
+  FIELDNAM: front_back_distance
+  LABLAXIS: front_back_distance
+  FORMAT: F12.6
+  UNITS: mm / 100
+
+path_length:
+  <<: *default
+  CATDESC: Path length.
+  FIELDNAM: path_length
+  LABLAXIS: path_length
+  FORMAT: F12.6
+  UNITS: mm / 100
 
 event_efficiency:
   <<: *default
@@ -205,8 +249,17 @@ eventtimes:
   CATDESC: Event times calculated from event and universal spin table.
   FIELDNAM: eventtimes
   LABLAXIS: event times
-  # TODO: come back to format
-  UNITS: " "
+  FORMAT: F20.6
+  UNITS: seconds
+
+de_event_met:
+  <<: *default
+  CATDESC: Mission Elapsed Time (MET) of Direct Event
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: Mission Elapsed Time
+  LABLAXIS: DE MET
+  FORMAT: I20
+  UNITS: seconds
 
 spin_number:
   <<: *default
