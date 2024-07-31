@@ -3,7 +3,9 @@
 from enum import IntFlag
 
 
-class FlagNameMixin:
+class FlagNameMixin(IntFlag):
+    """Modifies flags for Python versions < 3.11."""
+
     @property
     def name(self) -> str:
         """
@@ -35,7 +37,7 @@ class ENAFlags(IntFlag):
     BADSPIN = 2**2  # bit 2, Bad spin
 
 
-class ImapUltraFlags(FlagNameMixin, IntFlag):
+class ImapUltraFlags(FlagNameMixin):
     """IMAP Ultra flags."""
 
     NONE = CommonFlags.NONE
@@ -45,7 +47,7 @@ class ImapUltraFlags(FlagNameMixin, IntFlag):
     FLAG1 = 2**3  # bit 2
 
 
-class ImapLoFlags(FlagNameMixin, IntFlag):
+class ImapLoFlags(FlagNameMixin):
     """IMAP Lo flags."""
 
     NONE = CommonFlags.NONE
@@ -55,7 +57,7 @@ class ImapLoFlags(FlagNameMixin, IntFlag):
     FLAG2 = 2**3  # bit 2
 
 
-class HitFlags(FlagNameMixin, IntFlag):
+class HitFlags(FlagNameMixin,):
     """Hit flags."""
 
     NONE = CommonFlags.NONE
