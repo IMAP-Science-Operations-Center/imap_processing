@@ -299,9 +299,11 @@ def _create_minimum_dtype_array(values: list, dtype: str) -> np.ndarray:
         The array of values.
     """
     try:
-        return np.array(values, dtype=dtype)
+        dtype_array: np.ndarray = np.array(values, dtype=dtype)
+        return dtype_array
     except ValueError:
-        return np.array(values)
+        regular_array: np.ndarray = np.array(values)
+        return regular_array
 
 
 def packet_file_to_datasets(
