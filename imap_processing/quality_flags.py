@@ -23,7 +23,7 @@ class FlagNameMixin(IntFlag):
         return "|".join(str(m).split(".", 1)[-1] for m in members if m != 0x0)
 
 
-class CommonFlags(IntFlag):
+class CommonFlags(FlagNameMixin):
     """Common quality flags."""
 
     NONE = 0x0
@@ -31,7 +31,7 @@ class CommonFlags(IntFlag):
     NEG = 2**1  # bit 1, Negative value
 
 
-class ENAFlags(IntFlag):
+class ENAFlags(FlagNameMixin):
     """Common ENA flags."""
 
     BADSPIN = 2**2  # bit 2, Bad spin
