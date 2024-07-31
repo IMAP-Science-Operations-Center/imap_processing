@@ -1,44 +1,71 @@
-from imap_processing.quality_flags import QualityFlags
+"""Test bitwise flagging."""
+
+import numpy as np
+
+from imap_processing.quality_flags import HitFlags, ImapLoFlags, ImapUltraFlags
 
 
 def test_quality_flags():
-    """Test the QualityFlags bitwise operations."""
+    """Test the bitwise operations."""
 
     # Test individual flags
-    assert QualityFlags.NONE == 0x0
-    assert QualityFlags.INF == 2**0
-    assert QualityFlags.MISSING_TELEM == 2**1
-    assert QualityFlags.NEG == 2**2
-    assert QualityFlags.RES1 == 2**3
-    assert QualityFlags.BAD_SPIN == 2**4
-    assert QualityFlags.FOV == 2**5
+    assert HitFlags.NONE == 0x0
+    assert ImapUltraFlags.NONE == 0x0
+    assert ImapLoFlags.NONE == 0x0
+    assert HitFlags.INF == 2**0
+    assert ImapUltraFlags.INF == 2**0
+    assert ImapLoFlags.INF == 2**0
+    assert HitFlags.NEG == 2**1
+    assert ImapUltraFlags.NEG == 2**1
+    assert ImapLoFlags.NEG == 2**1
+    assert ImapUltraFlags.BADSPIN == 2**2
+    assert ImapLoFlags.BADSPIN == 2**2
+    assert ImapUltraFlags.FLAG1 == 2**3
+    assert ImapLoFlags.FLAG2 == 2**3
+    assert HitFlags.FLAG3 == 2**2
 
-    flag = QualityFlags.INF | QualityFlags.RES1
-    assert flag & QualityFlags.INF
-    assert flag & QualityFlags.RES1
-    assert not flag & QualityFlags.MISSING_TELEM
-
-    assert QualityFlags.NONE.name == "NONE"
-    assert QualityFlags.INF.name == "INF"
-    combined_flags = QualityFlags.INF | QualityFlags.RES1
-    assert combined_flags.name == "INF|RES1"
-
-    combined_flags = QualityFlags.MISSING_TELEM | QualityFlags.FOV
-    assert combined_flags.name == "MISSING_TELEM|FOV"
-
-    combined_flags = (
-        QualityFlags.INF
-        | QualityFlags.MISSING_TELEM
-        | QualityFlags.NEG
-        | QualityFlags.RES1
+    # Test combined flags for Ultra
+    flag = (
+        ImapUltraFlags.INF
+        | ImapUltraFlags.NEG
+        | ImapUltraFlags.BADSPIN
+        | ImapUltraFlags.FLAG1
     )
-    assert combined_flags.name == "INF|MISSING_TELEM|NEG|RES1"
+    assert flag & ImapUltraFlags.INF
+    assert flag & ImapUltraFlags.BADSPIN
+    assert flag & ImapUltraFlags.FLAG1
+    assert flag.name == "INF|NEG|BADSPIN|FLAG1"
+    assert flag.value == 15
 
-    combined_flags = QualityFlags.BAD_SPIN | QualityFlags.FOV | QualityFlags.INF
-    assert combined_flags.name == "INF|BAD_SPIN|FOV"
+    # Test combined flags for Lo
+    flag = ImapLoFlags.INF | ImapLoFlags.NEG | ImapLoFlags.BADSPIN | ImapLoFlags.FLAG2
+    assert flag & ImapLoFlags.INF
+    assert flag & ImapLoFlags.BADSPIN
+    assert flag & ImapLoFlags.FLAG2
+    assert flag.name == "INF|NEG|BADSPIN|FLAG2"
+    assert flag.value == 15
 
-    combined_flags = QualityFlags.FOV | QualityFlags.RES1 | QualityFlags.MISSING_TELEM
-    assert combined_flags.name == "MISSING_TELEM|RES1|FOV"
+    # Test combined flags for HIT
+    flag = HitFlags.INF | HitFlags.NEG | HitFlags.FLAG3
+    assert flag & HitFlags.INF
+    assert flag & HitFlags.FLAG3
+    assert flag.name == "INF|NEG|FLAG3"
+    assert flag.value == 7
 
-    combined_flags = QualityFlags.BAD_SPIN | QualityFlags.FOV
-    assert combined_flags.name == "BAD_SPIN|FOV"
+    # Test use-case for Ultra
+    data = np.array([-6, np.inf, 2, 3])
+    quality = np.array(
+        [
+            ImapUltraFlags.INF | ImapUltraFlags.NEG,
+            ImapUltraFlags.INF,
+            ImapUltraFlags.NONE,
+            ImapUltraFlags.NONE,
+        ]
+    )
+    # Select data without INF flags
+    non_inf_mask = (quality & ImapUltraFlags.INF.value) == 0
+    np.array_equal(data[non_inf_mask], np.array([-6, 2, 3]))
+
+    # Select data without NEG or INF flags
+    non_neg_mask = (quality & ImapUltraFlags.NEG.value) == 0
+    np.array_equal(data[non_inf_mask & non_neg_mask], np.array([2, 3]))
