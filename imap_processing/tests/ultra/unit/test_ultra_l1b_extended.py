@@ -23,7 +23,7 @@ def test_get_front_x_position(
         de_dataset["START_POS_TDC"].data,
     )
 
-    assert xf == pytest.approx(df_filt["Xf"].astype("float"), 1e-3)
+    assert xf == pytest.approx(df_filt["Xf"].astype("float"), 1e-5)
 
 
 def test_get_front_y_position(
@@ -39,4 +39,4 @@ def test_get_front_y_position(
         de_dataset["START_TYPE"].data, df_filt.Yb.values.astype("float")
     )
 
-    assert yf == pytest.approx(df_filt["Yf"].astype("float"), abs=1e-3)
+    assert yf == pytest.approx(df_filt["Yf"].astype("float"), abs=1e-5)
