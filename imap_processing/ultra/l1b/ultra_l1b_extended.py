@@ -33,6 +33,7 @@ def get_front_x_position(
     xf : np.array
         X front position (hundredths of a millimeter).
     """
+    # Left and right start types.
     indices = np.where((start_type == 1) | (start_type == 2))
 
     xftsc = get_image_params("XFTSC")
@@ -95,8 +96,9 @@ def get_front_y_position(
     trig_constant = 81.92
 
     # Compute adjustments for left start type
-    dy_lut_left = np.around(
+    dy_lut_left = np.floor(
         (yf_estimate_left - yb[start_type_left] / 100) * n_elements / trig_constant
+        + 0.5
     )
     # y adjustment in mm
     y_adjust_left = get_y_adjust(dy_lut_left) / 100
@@ -108,8 +110,9 @@ def get_front_y_position(
     d[index_left] = (slit_z - distance_adjust_left) * 100
 
     # Compute adjustments for right start type
-    dy_lut_right = np.around(
+    dy_lut_right = np.floor(
         (yb[start_type_right] / 100 - yf_estimate_right) * n_elements / trig_constant
+        + 0.5
     )
     # y adjustment in mm
     y_adjust_right = get_y_adjust(dy_lut_right) / 100
