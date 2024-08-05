@@ -1,8 +1,7 @@
 """SWAPI level-1 processing code."""
 
-import copy
-
 import numpy as np
+import numpy.typing as npt
 import xarray as xr
 
 from imap_processing import imap_module_directory
@@ -11,7 +10,7 @@ from imap_processing.swapi.swapi_utils import SWAPIAPID, SWAPIMODE
 from imap_processing.utils import packet_file_to_datasets
 
 
-def filter_good_data(full_sweep_sci: xr.Dataset) -> np.ndarray:
+def filter_good_data(full_sweep_sci: xr.Dataset) -> npt.NDArray:
     """
     Filter out bad data sweep indices.
 
@@ -63,14 +62,14 @@ def filter_good_data(full_sweep_sci: xr.Dataset) -> np.ndarray:
     # Use bad data cycle indices to find all good data indices.
     # Then that will used to filter good sweep data.
     all_indices = np.arange(len(full_sweep_sci["epoch"].data))
-    good_data_indices: np.ndarray = np.setdiff1d(all_indices, bad_cycle_indices)
+    good_data_indices = np.setdiff1d(all_indices, bad_cycle_indices)
 
     return good_data_indices
 
 
 def decompress_count(
     count_data: np.ndarray, compression_flag: np.ndarray
-) -> np.ndarray:
+) -> npt.NDArray:
     """
     Will decompress counts based on compression indicators.
 
@@ -120,7 +119,7 @@ def decompress_count(
     return new_count
 
 
-def find_sweep_starts(packets: xr.Dataset) -> np.ndarray:
+def find_sweep_starts(packets: xr.Dataset) -> npt.NDArray:
     """
     Find index of where new cycle started.
 
@@ -142,7 +141,7 @@ def find_sweep_starts(packets: xr.Dataset) -> np.ndarray:
         Array of indices of start cycle.
     """
     if packets["epoch"].size < 12:
-        start_cycle_set: np.ndarray = np.array([], np.int64)
+        start_cycle_set = np.array([], np.int64)
         return start_cycle_set
 
     # calculate time difference between consecutive sweep
@@ -173,7 +172,7 @@ def find_sweep_starts(packets: xr.Dataset) -> np.ndarray:
         & ione[9:-1]
         & ione[10:]
     )
-    start_cycle: np.ndarray = np.where(valid)[0]
+    start_cycle = np.where(valid)[0]
     return start_cycle
 
 
