@@ -9,6 +9,7 @@ from collections import namedtuple
 from enum import IntEnum
 
 import numpy as np
+import numpy.typing as npt
 import space_packet_parser
 import xarray as xr
 
@@ -421,7 +422,7 @@ class RawDustEvent:
             ]
         return ints
 
-    def _calc_low_sample_resolution(self, num_samples: int) -> np.ndarray:
+    def _calc_low_sample_resolution(self, num_samples: int) -> npt.NDArray:
         """
         Calculate the resolution of the low samples.
 
@@ -442,12 +443,12 @@ class RawDustEvent:
             Low time sample data array.
         """
         time_low_sr_init = np.linspace(0, num_samples, num_samples)
-        time_low_sr_data: np.ndarray = (
+        time_low_sr_data = (
             self.LOW_SAMPLE_RATE * time_low_sr_init - self.low_sample_trigger_time
         )
         return time_low_sr_data
 
-    def _calc_high_sample_resolution(self, num_samples: int) -> np.ndarray:
+    def _calc_high_sample_resolution(self, num_samples: int) -> npt.NDArray:
         """
         Calculate the resolution of high samples.
 
@@ -468,7 +469,7 @@ class RawDustEvent:
             High sample time data array.
         """
         time_high_sr_init = np.linspace(0, num_samples, num_samples)
-        time_high_sr_data: np.ndarray = (
+        time_high_sr_data = (
             self.HIGH_SAMPLE_RATE * time_high_sr_init - self.high_sample_trigger_time
         )
         return time_high_sr_data
