@@ -5,23 +5,23 @@ import pandas as pd
 
 from imap_processing import imap_module_directory
 
-base_path = imap_module_directory / "ultra" / "lookup_tables"
+BASE_PATH = imap_module_directory / "ultra" / "lookup_tables"
 
-_YADJUST_DF = pd.read_csv(base_path / "yadjust.csv").set_index("dYLUT")
+_YADJUST_DF = pd.read_csv(BASE_PATH / "yadjust.csv").set_index("dYLUT")
 _TDC_NORM_DF_ULTRA45 = pd.read_csv(
-    base_path / "ultra45_tdc_norm.csv", header=1, index_col="Index"
+    BASE_PATH / "ultra45_tdc_norm.csv", header=1, index_col="Index"
 )
 _TDC_NORM_DF_ULTRA90 = pd.read_csv(
-    base_path / "ultra90_tdc_norm.csv", header=1, index_col="Index"
+    BASE_PATH / "ultra90_tdc_norm.csv", header=1, index_col="Index"
 )
 _BACK_POS_DF_ULTRA45 = pd.read_csv(
-    base_path / "ultra45_back-pos-luts.csv", index_col="Index_offset"
+    BASE_PATH / "ultra45_back-pos-luts.csv", index_col="Index_offset"
 )
 _BACK_POS_DF_ULTRA90 = pd.read_csv(
-    base_path / "ultra90_back-pos-luts.csv", index_col="Index_offset"
+    BASE_PATH / "ultra90_back-pos-luts.csv", index_col="Index_offset"
 )
-_ENERGY_NORM_DF = pd.read_csv(base_path / "EgyNorm.mem.csv")
-_IMAGE_PARAMS_DF = pd.read_csv(base_path / "FM45_Startup1_ULTRA_IMGPARAMS_20240719.csv")
+_ENERGY_NORM_DF = pd.read_csv(BASE_PATH / "EgyNorm.mem.csv")
+_IMAGE_PARAMS_DF = pd.read_csv(BASE_PATH / "FM45_Startup1_ULTRA_IMGPARAMS_20240719.csv")
 
 
 def get_y_adjust(dy_lut: np.ndarray) -> np.ndarray:
