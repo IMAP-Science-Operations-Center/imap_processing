@@ -30,7 +30,7 @@ def filter_good_data(full_sweep_sci: xr.Dataset) -> npt.NDArray:
 
     Returns
     -------
-    numpy.ndarray
+    good_data_indices : numpy.ndarray
         Good data sweep indices.
     """
     # PLAN_ID for current sweep should all be one value and
@@ -100,7 +100,7 @@ def decompress_count(
 
     Returns
     -------
-    numpy.ndarray
+    new_count : numpy.ndarray
         Array with decompressed counts.
     """
     # Decompress counts based on compression indicators
@@ -139,7 +139,7 @@ def find_sweep_starts(packets: xr.Dataset) -> npt.NDArray:
 
     Returns
     -------
-    numpy.ndarray
+    indices_start : numpy.ndarray
         Array of indices of start cycle.
     """
     if packets["epoch"].size < 12:
@@ -196,7 +196,7 @@ def get_indices_of_full_sweep(packets: xr.Dataset) -> npt.NDArray:
 
     Returns
     -------
-    numpy.ndarray
+    full_cycle_indices : numpy.ndarray
         1D array with indices of full cycle data.
     """
     indices_of_start = find_sweep_starts(packets)
