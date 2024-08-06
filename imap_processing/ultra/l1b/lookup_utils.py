@@ -158,5 +158,5 @@ def get_image_params(image: str) -> np.float64:
     value : np.float64
         Image parameter value from the CSV file.
     """
-    value : np.float64 = _IMAGE_PARAMS_DF[image].values[0]
+    value: np.float64 = _IMAGE_PARAMS_DF[image].values[0]
     return value
