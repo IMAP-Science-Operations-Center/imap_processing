@@ -4,6 +4,7 @@ import logging
 from typing import Any
 
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
 import xarray as xr
 
@@ -70,7 +71,7 @@ def read_lookup_table(table_index_value: int) -> Any:
         raise ValueError("Error: Invalid table index value")
 
 
-def deadtime_correction(counts: np.ndarray, acq_duration: int) -> np.ndarray:
+def deadtime_correction(counts: np.ndarray, acq_duration: int) -> npt.NDArray:
     """
     Calculate deadtime correction.
 
@@ -114,11 +115,11 @@ def deadtime_correction(counts: np.ndarray, acq_duration: int) -> np.ndarray:
     deadtime = 1.5e-6
     correct = 1.0 - (deadtime * counts / acq_duration)
     correct = np.maximum(0.1, correct)
-    corrected_count: np.ndarray = np.divide(counts, correct)
+    corrected_count = np.divide(counts, correct)
     return corrected_count
 
 
-def convert_counts_to_rate(data: np.ndarray, acq_duration: int) -> np.ndarray:
+def convert_counts_to_rate(data: np.ndarray, acq_duration: int) -> npt.NDArray:
     """
     Convert counts to rate using sampling time.
 
@@ -139,7 +140,7 @@ def convert_counts_to_rate(data: np.ndarray, acq_duration: int) -> np.ndarray:
     # convert milliseconds to seconds
     # Todo: check with SWE team about int or float types.
     acq_duration = int(acq_duration / 1000.0)
-    count_rates: np.ndarray = data / acq_duration
+    count_rates = data / acq_duration
     return count_rates
 
 
@@ -207,7 +208,7 @@ def apply_in_flight_calibration(data: np.ndarray) -> None:
 
 def populate_full_cycle_data(
     l1a_data: xr.Dataset, packet_index: int, esa_table_num: int
-) -> np.ndarray:
+) -> npt.NDArray:
     """
     Populate full cycle data array using esa lookup table and l1a_data.
 
@@ -232,7 +233,7 @@ def populate_full_cycle_data(
     # in odd column every six steps.
     if esa_table_num == 0:
         # create new full cycle data array
-        full_cycle_data: np.ndarray = np.zeros((24, 30, 7))
+        full_cycle_data = np.zeros((24, 30, 7))
 
         # Initialize esa_step_number and column_index.
         # esa_step_number goes from 0 to 719 range where
@@ -278,7 +279,7 @@ def populate_full_cycle_data(
     return full_cycle_data
 
 
-def find_cycle_starts(cycles: np.ndarray) -> np.ndarray:
+def find_cycle_starts(cycles: np.ndarray) -> npt.NDArray:
     """
     Find index of where new cycle started.
 
@@ -295,8 +296,7 @@ def find_cycle_starts(cycles: np.ndarray) -> np.ndarray:
         Array of indices of start cycle.
     """
     if cycles.size < 4:
-        start_cycle_: np.ndarray = np.array([], np.int64)
-        return start_cycle_
+        return np.array([], np.int64)
 
     # calculate difference between consecutive cycles
     diff = cycles[1:] - cycles[:-1]
@@ -311,11 +311,11 @@ def find_cycle_starts(cycles: np.ndarray) -> np.ndarray:
     # [0 0 0 1 0 0 0 0 0 0 0 0 1 0 0 0 0]      # And all?
     ione = diff == 1
     valid = (cycles == 0)[:-3] & ione[:-2] & ione[1:-1] & ione[2:]
-    start_cycle: np.ndarray = np.where(valid)[0]
+    start_cycle = np.where(valid)[0]
     return start_cycle
 
 
-def get_indices_of_full_cycles(quarter_cycle: np.ndarray) -> np.ndarray:
+def get_indices_of_full_cycles(quarter_cycle: np.ndarray) -> npt.NDArray:
     """
     Get indices of full cycles.
 
@@ -336,9 +336,7 @@ def get_indices_of_full_cycles(quarter_cycle: np.ndarray) -> np.ndarray:
     #   Eg. [[0, 1, 2, 3]]
     # then we add both of them together to get an array of shape(n, 4)
     #   Eg. [[3, 4, 5, 6], [8, 9, 10, 11]]
-    full_cycles_indices: np.ndarray = (
-        indices_of_start[..., None] + np.arange(4)[None, ...]
-    )
+    full_cycles_indices = indices_of_start[..., None] + np.arange(4)[None, ...]
     return full_cycles_indices.reshape(-1)
 
 
