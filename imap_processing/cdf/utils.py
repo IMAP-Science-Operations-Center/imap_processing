@@ -56,10 +56,10 @@ def met_to_j2000ns(
     #       to 32bit and overflow due to the nanosecond multiplication
     time_array = (np.asarray(met, dtype=float) * 1e9).astype(np.int64)
     # Calculate the time difference between our reference system and J2000
-    j2000_offset = (
-        (reference_epoch - J2000_EPOCH).astype("timedelta64[ns]").astype(np.int64)
-    )
-    return j2000_offset + time_array
+    if isinstance(reference_epoch, np.datetime64):
+        place_holder: np.timedelta64 = (reference_epoch - J2000_EPOCH).astype("timedelta64[ns]")
+        j2000_offset: np.int64 = place_holder.astype(np.int64)
+        return j2000_offset + time_array
 
 
 def load_cdf(
