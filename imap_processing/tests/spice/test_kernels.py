@@ -3,7 +3,7 @@
 import pytest
 import spiceypy as spice
 
-from imap_processing import kernels
+from imap_processing.spice import kernels
 
 
 @kernels.ensure_spice
@@ -43,6 +43,6 @@ def double_wrap_et2utc_tk_only(et, fmt, prec):
         double_wrap_et2utc_tk_only,
     ],
 )
-def test_ensure_spice_emus_mk_path(func):
-    """Test functionality of ensure spice with EMUS_METAKERNEL_PATH set"""
+def test_ensure_spice_emus_mk_path(func, use_test_metakernel):
+    """Test functionality of ensure spice with SPICE_METAKERNEL set"""
     assert func(577365941.184, "ISOC", 3) == "2018-04-18T23:24:31.998"
