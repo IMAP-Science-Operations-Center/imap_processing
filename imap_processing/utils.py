@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Optional, Union
 
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
 import xarray as xr
 from space_packet_parser import parser, xtcedef
@@ -279,7 +280,7 @@ def _get_minimum_numpy_datatype(  # noqa: PLR0912 - Too many branches
     return datatype
 
 
-def _create_minimum_dtype_array(values: list, dtype: str) -> np.ndarray:
+def _create_minimum_dtype_array(values: list, dtype: str) -> npt.NDArray:
     """
     Create an array with the minimum datatype.
 
@@ -295,15 +296,13 @@ def _create_minimum_dtype_array(values: list, dtype: str) -> np.ndarray:
 
     Returns
     -------
-    array : np.array
+    array : np.ndarray
         The array of values.
     """
     try:
-        dtype_array: np.ndarray = np.array(values, dtype=dtype)
-        return dtype_array
+        return np.array(values, dtype=dtype)
     except ValueError:
-        regular_array: np.ndarray = np.array(values)
-        return regular_array
+        return np.array(values)
 
 
 def packet_file_to_datasets(
