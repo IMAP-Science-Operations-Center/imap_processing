@@ -112,7 +112,7 @@ def swe_science(decom_data: list, data_version: str) -> xr.Dataset:
     science_array = []
     raw_science_array = []
 
-    metadata_arrays: np.ndarray =collections.defaultdict(list)
+    metadata_arrays: np.ndarray =np.array(collections.defaultdict(list))
 
     # We know we can only have 8 bit numbers input, so iterate over all
     # possibilities once up front
@@ -142,7 +142,7 @@ def swe_science(decom_data: list, data_version: str) -> xr.Dataset:
         # Save data as np.int64 to be complaint with ISTP' FILLVAL
         science_array.append(uncompress_data.astype(np.int64))
         raw_science_array.append(raw_counts.astype(np.int64))
-        metadata_arrays = add_metadata_to_array(data_packet, metadata_arrays)
+        metadata_arrays = np.array(add_metadata_to_array(data_packet, dict(enumerate(metadata_arrays.flatten(), 1))))
 
     # Load CDF attrs
     cdf_attrs = ImapCdfAttributes()
@@ -218,7 +218,7 @@ def swe_science(decom_data: list, data_version: str) -> xr.Dataset:
     dataset["raw_science_data"] = raw_science_xarray
 
     # create xarray dataset for each metadata field
-    for key, value in metadata_arrays.items():
+    for key, value in metadata_arrays.item():
         # Lowercase the key to be complaint with ISTP's metadata field
         metadata_field = key.lower()
         dataset[metadata_field] = xr.DataArray(
