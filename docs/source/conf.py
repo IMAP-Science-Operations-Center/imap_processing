@@ -37,7 +37,6 @@ release = imap_processing.__version__
 # ones.
 extensions = [
     "sphinx.ext.autodoc",
-    "sphinx_autodoc_typehints",
     "sphinx.ext.autosectionlabel",
     "sphinx.ext.autosummary",
     "sphinx.ext.intersphinx",  # Link to other projects' documentation
