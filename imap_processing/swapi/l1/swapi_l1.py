@@ -30,7 +30,7 @@ def filter_good_data(full_sweep_sci: xr.Dataset) -> npt.NDArray:
 
     Returns
     -------
-    good_data_indices : numpy._typing._array_like._ScalarType_co
+    good_data_indices : np.ndarray
         Good data sweep indices.
     """
     # PLAN_ID for current sweep should all be one value and
