@@ -1,6 +1,7 @@
 """Ultra Decompression Tools."""
 
 import numpy as np
+import numpy.typing as npt
 import space_packet_parser
 
 from imap_processing.ultra.l0.ultra_utils import (
@@ -154,7 +155,7 @@ def decompress_image(
     binary_data: str,
     width_bit: int,
     mantissa_bit_length: int,
-) -> np.ndarray:
+) -> npt.NDArray:
     """
     Will decompress a binary string representing an image into a matrix of pixel values.
 
@@ -193,7 +194,7 @@ def decompress_image(
     # Compressed pixel matrix
     p = np.zeros((rows, cols), dtype=np.uint16)
     # Decompressed pixel matrix
-    p_decom: np.ndarray = np.zeros((rows, cols), dtype=np.int16)
+    p_decom = np.zeros((rows, cols), dtype=np.int16)
 
     pos = 0  # Starting position in the binary string
 
