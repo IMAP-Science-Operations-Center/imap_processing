@@ -37,6 +37,7 @@ release = imap_processing.__version__
 # ones.
 extensions = [
     "sphinx.ext.autodoc",
+    "sphinx_autodoc_typehints",
     "sphinx.ext.autosectionlabel",
     "sphinx.ext.autosummary",
     "sphinx.ext.intersphinx",  # Link to other projects' documentation
@@ -44,7 +45,6 @@ extensions = [
     "sphinx.ext.napoleon",
     "sphinxcontrib.openapi",
     "numpydoc",
-    "sphinx_autodoc_typehints",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
