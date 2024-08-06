@@ -112,7 +112,7 @@ def swe_science(decom_data: list, data_version: str) -> xr.Dataset:
     science_array = []
     raw_science_array = []
 
-    metadata_arrays = np.array(collections.defaultdict(list))
+    metadata_arrays: np.ndarray =collections.defaultdict(list)
 
     # We know we can only have 8 bit numbers input, so iterate over all
     # possibilities once up front
