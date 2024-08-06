@@ -14,5 +14,6 @@ python:
       path: .
       extra_requirements:
         - doc
+        - spinx-autodoc-typehints
 
 
