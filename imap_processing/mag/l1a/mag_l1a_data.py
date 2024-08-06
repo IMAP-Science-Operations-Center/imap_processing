@@ -6,6 +6,7 @@ from dataclasses import InitVar, dataclass, field
 from math import floor
 
 import numpy as np
+import numpy.typing as npt
 
 from imap_processing.cdf.utils import J2000_EPOCH, met_to_j2000ns
 
@@ -190,7 +191,7 @@ class MagL1a:
     is_mago: bool
     is_active: int
     shcoarse: int
-    vectors: np.array
+    vectors: np.ndarray
     starting_packet: InitVar[MagL1aPacketProperties]
     packet_definitions: dict[np.datetime64, MagL1aPacketProperties] = field(init=False)
     most_recent_sequence: int = field(init=False)
@@ -216,14 +217,14 @@ class MagL1a:
         self.most_recent_sequence = starting_packet.src_seq_ctr
 
     def append_vectors(
-        self, additional_vectors: np.array, packet_properties: MagL1aPacketProperties
+        self, additional_vectors: np.ndarray, packet_properties: MagL1aPacketProperties
     ) -> None:
         """
         Append additional vectors to the current vectors array.
 
         Parameters
         ----------
-        additional_vectors : numpy.array
+        additional_vectors : numpy.ndarray
             New vectors to append.
         packet_properties : MagL1aPacketProperties
             Additional vector definition to add to the l0_packets dictionary.
@@ -244,7 +245,7 @@ class MagL1a:
     @staticmethod
     def calculate_vector_time(
         vectors: np.ndarray, vectors_per_sec: int, start_time: TimeTuple
-    ) -> np.array:
+    ) -> npt.NDArray:
         """
         Add timestamps to the vector list, turning the shape from (n, 4) to (n, 5).
 
