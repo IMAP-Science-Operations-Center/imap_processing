@@ -12,7 +12,7 @@ from imap_processing.swapi.swapi_utils import SWAPIAPID, SWAPIMODE
 from imap_processing.utils import packet_file_to_datasets
 
 
-def filter_good_data(full_sweep_sci: xr.Dataset) -> np.ndarray[np.dtype[np.int64], np.dtype[np.int64]]:
+def filter_good_data(full_sweep_sci: xr.Dataset) -> np.ndarray:
     """
     Filter out bad data sweep indices.
 
@@ -71,7 +71,7 @@ def filter_good_data(full_sweep_sci: xr.Dataset) -> np.ndarray[np.dtype[np.int64
 
 def decompress_count(
     count_data: np.ndarray, compression_flag: np.ndarray
-) -> np.ndarray[np.dtype[np.int32], np.dtype[np.int32]]:
+) -> np.ndarray:
     """
     Will decompress counts based on compression indicators.
 
