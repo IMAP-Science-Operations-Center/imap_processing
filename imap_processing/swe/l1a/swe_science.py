@@ -112,7 +112,7 @@ def swe_science(decom_data: list, data_version: str) -> xr.Dataset:
     science_array = []
     raw_science_array = []
 
-    metadata_arrays: np.array = collections.defaultdict(list)
+    metadata_arrays: np.array = collections.defaultdict(list)  # type: ignore[valid-type]
 
     # We know we can only have 8 bit numbers input, so iterate over all
     # possibilities once up front
@@ -133,8 +133,8 @@ def swe_science(decom_data: list, data_version: str) -> xr.Dataset:
         # where 1260 = 180 x 7 CEMs
         # Take the "raw_counts" indices/counts mapping from
         # decompression_table and then reshape the return
-        #place_holder: np.ndarray = np.take(decompression_table, raw_counts)
-        uncompress_data = np.take(decompression_table, raw_counts).reshape(180, 7)
+        place_holder: np.ndarray = np.take(decompression_table, raw_counts)
+        uncompress_data = place_holder.reshape(180, 7)
         # Save raw counts data as well
         raw_counts = raw_counts.reshape(180, 7)
 
@@ -142,7 +142,7 @@ def swe_science(decom_data: list, data_version: str) -> xr.Dataset:
         # Save data as np.int64 to be complaint with ISTP' FILLVAL
         science_array.append(uncompress_data.astype(np.int64))
         raw_science_array.append(raw_counts.astype(np.int64))
-        metadata_arrays = add_metadata_to_array(data_packet,metadata_arrays)
+        metadata_arrays = add_metadata_to_array(data_packet, metadata_arrays)
 
     # Load CDF attrs
     cdf_attrs = ImapCdfAttributes()
@@ -150,7 +150,7 @@ def swe_science(decom_data: list, data_version: str) -> xr.Dataset:
     cdf_attrs.add_instrument_variable_attrs("swe", "l1a")
     cdf_attrs.add_global_attribute("Data_version", data_version)
 
-    epoch_converted_time = met_to_j2000ns(metadata_arrays["SHCOARSE"])
+    epoch_converted_time = met_to_j2000ns(metadata_arrays["SHCOARSE"])  # type: ignore[index]
     epoch_time = xr.DataArray(
         epoch_converted_time,
         name="epoch",
@@ -218,7 +218,7 @@ def swe_science(decom_data: list, data_version: str) -> xr.Dataset:
     dataset["raw_science_data"] = raw_science_xarray
 
     # create xarray dataset for each metadata field
-    for key, value in metadata_arrays.items():
+    for key, value in metadata_arrays.items():  # type: ignore[attr-defined]
         # Lowercase the key to be complaint with ISTP's metadata field
         metadata_field = key.lower()
         dataset[metadata_field] = xr.DataArray(
