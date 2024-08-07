@@ -11,10 +11,10 @@ The SDC provides a REST API that allows users to upload and download files, as
 well as query for file metadata. The following documentation describes the
 various endpoints that are supported and how to use them.
 
-The API can be accessed from the following URL [WIP]: https://api.dev.imap-mission.com
-
 *Note: Several sections and links begin with* [WIP]. *As development on the API is ongoing, this indicates
 that the full implementation of the functionality is yet to be completed.*
+
+The API can be accessed from the following URL [WIP]: https://api.dev.imap-mission.com
 
 .. openapi:: openapi.yml
    :group:

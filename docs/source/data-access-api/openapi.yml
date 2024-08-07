@@ -144,7 +144,7 @@ paths:
             type: string
         - in: query
           name: version
-          description: The version of data product in the format ``vXX-YY`` (e.g. ``v01-01``). You can also choose to
+          description: The version of data product in the format ``vNNN`` (e.g. ``v001``). You can also choose to
             query ``--version latest`` in order to receive the most recent version of a file.
           required: false
           schema:
@@ -155,24 +155,24 @@ paths:
           required: false
           schema:
             type: string
-        - in: query
-          name: filename
-          description: WIP -- The full filename of the desired file (e.g. ``imap_mag_l1a_burst_20240105_20240105_v01-01.pkts``).
-          required: false
-          schema:
-            type: string
-        - in: query
-          name: N_days_ago
-          description: WIP -- Returns all files acquired in the last 'N' days (with 'N' representing a numeric value).
-          required: false
-          schema:
-            type: string
-        - in: query
-          name: today
-          description: WIP -- Returns all files acquired in the last 24 hours.
-          required: false
-          schema:
-            type: string
+#        - in: query
+#          name: filename
+#          description: WIP -- The full filename of the desired file (e.g. ``imap_mag_l1a_burst_20240105_20240105_v01-01.pkts``).
+#          required: false
+#          schema:
+#            type: string
+#        - in: query
+#          name: N_days_ago
+#          description: WIP -- Returns all files acquired in the last 'N' days (with 'N' representing a numeric value).
+#          required: false
+#          schema:
+#            type: string
+#        - in: query
+#          name: today
+#          description: WIP -- Returns all files acquired in the last 24 hours.
+#          required: false
+#          schema:
+#            type: string
       responses:
         '200':
           description: Successful query
