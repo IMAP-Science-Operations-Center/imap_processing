@@ -113,7 +113,7 @@ nitpick_ignore_regex = [
     (r"py:.*", r".*InitVar*"),
     (r"py:.*", r".*.glows.utils.constants.TimeTuple.*"),
     (r"py:.*", r".*glows.utils.constants.DirectEvent.*"),
-    (r"py:.*", r".*numpy.int.*"),
+    (r"py:.*", r".*npt.NDArray.*"),
     (r"py:.*", r".*np.ndarray.*"),
 ]
 
