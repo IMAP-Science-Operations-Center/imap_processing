@@ -319,6 +319,11 @@ def packet_file_to_datasets(
     packet definition, the ``derived_value`` will be the converted value.
     The dimension of the dataset will be the time field in J2000 nanoseconds.
 
+    Note: While this is a general function intended to work for all
+    instruments, this cannot be used for IDEX due to the complex nature of
+    the xml file. IDEX will continue to use PacketParser and RawDustEvents
+    found in idex_l1.py.
+
     Parameters
     ----------
     packet_file : str
