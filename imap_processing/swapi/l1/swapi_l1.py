@@ -12,7 +12,7 @@ from imap_processing.swapi.swapi_utils import SWAPIAPID, SWAPIMODE
 from imap_processing.utils import packet_file_to_datasets
 
 
-def filter_good_data(full_sweep_sci: xr.Dataset) -> npt.NDArray:
+def filter_good_data(full_sweep_sci: xr.Dataset) -> np.ndarray[np.dtype[np.int64], np.dtype[np.int64]]:
     """
     Filter out bad data sweep indices.
 
@@ -64,14 +64,14 @@ def filter_good_data(full_sweep_sci: xr.Dataset) -> npt.NDArray:
     # Use bad data cycle indices to find all good data indices.
     # Then that will used to filter good sweep data.
     all_indices = np.arange(len(full_sweep_sci["epoch"].data))
-    good_data_indices = np.setdiff1d(all_indices, bad_cycle_indices)
+    good_data_indices = np.setdiff1d(all_indices, bad_cycle_indices) # type: np.ndarray
 
     return good_data_indices
 
 
 def decompress_count(
     count_data: np.ndarray, compression_flag: np.ndarray
-) -> npt.NDArray:
+) -> np.ndarray[np.dtype[np.int32], np.dtype[np.int32]]:
     """
     Will decompress counts based on compression indicators.
 
@@ -106,7 +106,7 @@ def decompress_count(
     # Decompress counts based on compression indicators
     # If 0, value is already decompressed. If 1, value is compressed.
     # If 1 and count is 0xFFFF, value is overflow.
-    new_count = copy.deepcopy(count_data).astype(np.int32)
+    new_count = copy.deepcopy(count_data).astype(np.int32) # type: np.ndarray
 
     # If data is compressed, decompress it
     compressed_indices = compression_flag == 1
@@ -121,7 +121,7 @@ def decompress_count(
     return new_count
 
 
-def find_sweep_starts(packets: xr.Dataset) -> npt.NDArray:
+def find_sweep_starts(packets: xr.Dataset) -> np.ndarray:
     """
     Find index of where new cycle started.
 
@@ -143,7 +143,8 @@ def find_sweep_starts(packets: xr.Dataset) -> npt.NDArray:
         Array of indices of start cycle.
     """
     if packets["epoch"].size < 12:
-        return np.array([], np.int64)
+        indices_start = np.array([], np.int64) # type: np.ndarray
+        return indices_start
 
     # calculate time difference between consecutive sweep
     diff = packets["epoch"].data[1:] - packets["epoch"].data[:-1]
@@ -173,7 +174,8 @@ def find_sweep_starts(packets: xr.Dataset) -> npt.NDArray:
         & ione[9:-1]
         & ione[10:]
     )
-    return np.where(valid)[0]
+    indices = np.where(valid)[0] # type: np.ndarray
+    return indices
 
 
 def get_indices_of_full_sweep(packets: xr.Dataset) -> npt.NDArray:
@@ -206,7 +208,7 @@ def get_indices_of_full_sweep(packets: xr.Dataset) -> npt.NDArray:
     #   Eg. [[0, 1, 2, 3, ....., 11]]
     # then we add both of them together to get an array of shape(n, 4)
     #   Eg. [[3, 4, 5, 6,...14], [8, 9, 10, 11, ..., 19]]
-    full_cycles_indices = indices_of_start[..., None] + np.arange(12)[None, ...]
+    full_cycles_indices = indices_of_start[..., None] + np.arange(12)[None, ...] # type: np.ndarray
     return full_cycles_indices.reshape(-1)
 
 
