@@ -20,15 +20,6 @@ def _set_global_config(monkeypatch, tmp_path):
 
 
 @pytest.fixture(scope="session")
-def monkeypatch_session():
-    from _pytest.monkeypatch import MonkeyPatch
-
-    m = MonkeyPatch()
-    yield m
-    m.undo()
-
-
-@pytest.fixture(scope="session")
 def imap_tests_path():
     return imap_module_directory / "tests"
 
@@ -46,7 +37,7 @@ def _autoclear_spice():
 
 @pytest.fixture(scope="session")
 def spice_test_data_path(imap_tests_path):
-    return imap_tests_path / "spice/test_data"
+    return imap_module_directory.parent / "tools/tests/test_data/spice"
 
 
 @pytest.fixture()
