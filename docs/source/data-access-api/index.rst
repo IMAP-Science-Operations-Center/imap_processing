@@ -31,25 +31,24 @@ Base Command Arguments
         imap-data-access download # or
         imap-data-access upload
 
-Add the -h flag to helo with any base command for more information.
+Add the -h flag with any base command for more information on use and functionality.
 
 
 .. openapi:: openapi.yml
    :group:
    :include: /upload
 
-When uploading files to the API, ensure these files are stored properly in a ``data`` directory. Then,
-ensure your working directory is one level above the ``data`` directory in order to properly upload files (see data directory section for more detail).
+When uploading files to the API, ensure these files are stored properly in a ``data`` directory (see the Data Directory section below for more information). Then,
+ensure your working directory is one level above ``data`` in order to properly upload files.
 
-[WIP] Certain ancillary files can also be uploaded to the API. For more specific information regarding these files, visit
+[WIP] Certain ancillary files can also be uploaded to the API. For more specific information regarding this, visit
 `Ancillary Files <https://imap-processing.readthedocs.io/en/latest/data-access-api/calibration-files.html>`_
 
 **Example Usage:**
 
     .. code-block:: bash
 
-        $ imap-data-access upload /imap/swe/l1a/2024/01/imap_swe_l1a_sci_20240105_v001.cdf
-        Successfully uploaded the file to the IMAP SDC
+        imap-data-access upload /imap/swe/l1a/2024/01/imap_swe_l1a_sci_20240105_v001.cdf
 
 See also:
 
@@ -78,18 +77,16 @@ See also:
    :include: /download
 
 It is important to note that your working directory will be established as the default directory. I.e, the ``data``
-directory--which files are downloaded to--will automatically be placed in this file path. Choose your working directory
+directory ( to which files are downloaded) will automatically be placed in this file path. Choose your working directory
 accordingly to suit your desires.
 
-When downloading a file from the API, different folders within the ``data`` directory will be made to better
-organize the files. See the example file path: ``data/imap/swe/l0/2024/01/imap_swe_l0_sci_20240105_20240105_v00-01.pkts``
+When downloading a file from the API, different folders within the ``data`` directory will be created for proper storage. See the example file path: ``data/imap/swe/l0/2024/01/imap_swe_l0_sci_20240105_20240105_v00-01.pkts``
 
 **Example Usage:**
 
 .. code-block:: bash
 
     imap-data-access upload /imap/swe/l1a/2024/01/imap_swe_l1a_sci_20240105_v001.cdf
-    Successfully uploaded the file to the IMAP SDC
 
 See also:
 
@@ -115,6 +112,7 @@ See also:
 .. code-block:: bash
 
     imap-data-access query --start-date 20240101 --end-date 20241231 --output-format json
+    # The following line is returned:
     [{'file_path': 'imap/swe/l0/2024/01/imap_swe_l0_sci_20240105_v001.pkts', 'instrument': 'swe', 'data_level': 'l0', 'descriptor': 'sci', 'start_date': '20240105', 'version': 'v001', 'extension': 'pkts'}, {'file_path': 'imap/swe/l0/2024/01/imap_swe_l0_sci_20240105_v001.pkts', 'instrument': 'swe', 'data_level': 'l0', 'descriptor': 'sci', 'start_date': '20240105', 'version': 'v001', 'extension': 'pkts'}]
 
 See also:
@@ -132,6 +130,10 @@ See also:
 
 Importing as a Package
 ======================
+Imap data access can also be imported and used as a python package if desired.
+
+**Example Usage:**
+
     .. code-block:: bash
 
         import imap_data_access
