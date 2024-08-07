@@ -19,10 +19,10 @@ from imap_processing.utils import packet_file_to_datasets
 
 
 @pytest.fixture(scope="session")
-def decom_test_data():
+def decom_test_data(swapi_l0_test_data_path):
     """Read test data from file"""
-    test_file = "tests/swapi/l0_data/imap_swapi_l0_raw_20231012_v001.pkts"
-    packet_files = imap_module_directory / test_file
+    test_file = "imap_swapi_l0_raw_20231012_v001.pkts"
+    packet_files = imap_module_directory / swapi_l0_test_data_path / test_file
     packet_definition = (
         f"{imap_module_directory}/swapi/packet_definitions/swapi_packet_definition.xml"
     )
@@ -316,13 +316,14 @@ def test_process_swapi_science(decom_test_data):
     assert cdf_path.name == cdf_filename
 
 
-def test_swapi_l1_cdf():
+def test_swapi_l1_cdf(swapi_l0_test_data_path):
     """Test housekeeping processing and CDF file creation"""
-    l0_data_path = (
-        f"{imap_module_directory}/tests/swapi/l0_data/"
-        "imap_swapi_l0_raw_20231012_v001.pkts"
-    )
-    processed_data = swapi_l1(l0_data_path, data_version="v001")
+    test_packet_file = swapi_l0_test_data_path / "imap_swapi_l0_raw_20231012_v001.pkts"
+    processed_data = swapi_l1(test_packet_file, data_version="v001")
+
+    assert processed_data[0].attrs["Apid"] == f"{SWAPIAPID.SWP_SCI}"
+    assert processed_data[0].attrs["Plan_id"] == "0"
+    assert processed_data[0].attrs["Sweep_table"] == "0"
 
     # Test CDF File
     # sci cdf file

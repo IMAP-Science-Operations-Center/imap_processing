@@ -10,16 +10,15 @@ from imap_processing.utils import group_by_apid
 
 
 @pytest.fixture(scope="session")
-def decom_test_data():
+def decom_test_data(swapi_l0_test_data_path):
     """Read test data from file"""
-    test_folder_path = "tests/swapi/l0_data"
-    packet_files = list(imap_module_directory.glob(f"{test_folder_path}/*.pkts"))
+    test_file = "imap_swapi_l0_raw_20231012_v001.pkts"
+    packet_file = imap_module_directory / swapi_l0_test_data_path / test_file
     packet_definition = (
         f"{imap_module_directory}/swapi/packet_definitions/swapi_packet_definition.xml"
     )
     data_list = []
-    for packet_file in packet_files:
-        data_list.extend(decom_packets(packet_file, packet_definition))
+    data_list.extend(decom_packets(packet_file, packet_definition))
     return data_list
 
 
@@ -39,12 +38,11 @@ def test_number_of_packets(decom_test_data):
     assert len(aut_packets) == expected_aut_packets
 
 
-def test_swapi_sci_data(decom_test_data):
+def test_swapi_sci_data(decom_test_data, swapi_l0_validation_data_path):
     """This test and validate raw data of SWAPI raw science data."""
     # read validation data
-    test_data_path = imap_module_directory / "tests/swapi/l0_validation_data"
     raw_validation_data = pd.read_csv(
-        test_data_path / "idle_export_eu.SWP_SCI_20231012_125245.csv",
+        swapi_l0_validation_data_path / "idle_export_eu.SWP_SCI_20231012_125245.csv",
         index_col="SHCOARSE",
     )
 
@@ -77,12 +75,11 @@ def test_swapi_sci_data(decom_test_data):
             )
 
 
-def test_swapi_hk_data(decom_test_data):
+def test_swapi_hk_data(decom_test_data, swapi_l0_validation_data_path):
     """This test and validate raw data of SWAPI raw housekeeping data."""
     # read validation data
-    test_data_path = imap_module_directory / "tests/swapi/l0_validation_data"
     raw_validation_data = pd.read_csv(
-        test_data_path / "idle_export_raw.SWP_HK_20231012_125245.csv",
+        swapi_l0_validation_data_path / "idle_export_raw.SWP_HK_20231012_125245.csv",
         index_col="SHCOARSE",
     )
 
@@ -113,12 +110,11 @@ def test_swapi_hk_data(decom_test_data):
             assert value.raw_value == validation_data[key]
 
 
-def test_swapi_aut_data(decom_test_data):
+def test_swapi_aut_data(decom_test_data, swapi_l0_validation_data_path):
     """This test and validate raw data of SWAPI raw autonomy data."""
     # read validation data
-    test_data_path = imap_module_directory / "tests/swapi/l0_validation_data"
     raw_validation_data = pd.read_csv(
-        test_data_path / "idle_export_raw.SWP_AUT_20231012_125245.csv",
+        swapi_l0_validation_data_path / "idle_export_raw.SWP_AUT_20231012_125245.csv",
         index_col="SHCOARSE",
     )
 
