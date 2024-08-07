@@ -12,7 +12,7 @@ from imap_processing.swapi.swapi_utils import SWAPIAPID, SWAPIMODE
 from imap_processing.utils import packet_file_to_datasets
 
 
-def filter_good_data(full_sweep_sci: xr.Dataset) -> np.ndarray:
+def filter_good_data(full_sweep_sci: xr.Dataset) -> npt.NDArray:
     """
     Filter out bad data sweep indices.
 
