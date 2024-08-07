@@ -12,7 +12,7 @@ from imap_processing.swapi.swapi_utils import SWAPIAPID, SWAPIMODE
 from imap_processing.utils import packet_file_to_datasets
 
 
-def filter_good_data(full_sweep_sci: xr.Dataset) -> np.ndarray:
+def filter_good_data(full_sweep_sci: xr.Dataset) -> npt.NDArray:
     """
     Filter out bad data sweep indices.
 
@@ -71,7 +71,7 @@ def filter_good_data(full_sweep_sci: xr.Dataset) -> np.ndarray:
 
 def decompress_count(
     count_data: np.ndarray, compression_flag: np.ndarray
-) -> np.ndarray:
+) -> npt.NDArray:
     """
     Will decompress counts based on compression indicators.
 
@@ -121,7 +121,7 @@ def decompress_count(
     return new_count
 
 
-def find_sweep_starts(packets: xr.Dataset) -> np.ndarray:
+def find_sweep_starts(packets: xr.Dataset) -> npt.NDArray:
     """
     Find index of where new cycle started.
 
