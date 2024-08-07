@@ -178,7 +178,7 @@ def find_sweep_starts(packets: xr.Dataset) -> np.ndarray:
     return indices
 
 
-def get_indices_of_full_sweep(packets: xr.Dataset) -> npt.NDArray:
+def get_indices_of_full_sweep(packets: xr.Dataset) -> np.ndarray:
     """
     Get indices of full cycles.
 
