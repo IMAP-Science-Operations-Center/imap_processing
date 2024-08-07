@@ -71,7 +71,7 @@ def read_lookup_table(table_index_value: int) -> Any:
         raise ValueError("Error: Invalid table index value")
 
 
-def deadtime_correction(counts: np.ndarray, acq_duration: int) -> npt.NDArray:
+def deadtime_correction(counts: np.ndarray, acq_duration: int) -> np.ndarray:
     """
     Calculate deadtime correction.
 
@@ -207,7 +207,7 @@ def apply_in_flight_calibration(data: np.ndarray) -> None:
 
 def populate_full_cycle_data(
     l1a_data: xr.Dataset, packet_index: int, esa_table_num: int
-) -> npt.NDArray:
+) -> np.ndarray:
     """
     Populate full cycle data array using esa lookup table and l1a_data.
 
@@ -278,7 +278,7 @@ def populate_full_cycle_data(
     return full_cycle_data
 
 
-def find_cycle_starts(cycles: np.ndarray) -> npt.NDArray:
+def find_cycle_starts(cycles: np.ndarray) -> np.ndarray:
     """
     Find index of where new cycle started.
 
@@ -313,7 +313,7 @@ def find_cycle_starts(cycles: np.ndarray) -> npt.NDArray:
     return np.where(valid)[0]
 
 
-def get_indices_of_full_cycles(quarter_cycle: np.ndarray) -> npt.NDArray:
+def get_indices_of_full_cycles(quarter_cycle: np.ndarray) -> np.ndarray:
     """
     Get indices of full cycles.
 
