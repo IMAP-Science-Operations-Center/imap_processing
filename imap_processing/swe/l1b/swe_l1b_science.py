@@ -4,7 +4,6 @@ import logging
 from typing import Any
 
 import numpy as np
-import numpy.typing as npt
 import pandas as pd
 import xarray as xr
 
@@ -119,7 +118,7 @@ def deadtime_correction(counts: np.ndarray, acq_duration: int) -> np.ndarray:
     return corrected_count
 
 
-def convert_counts_to_rate(data: np.ndarray, acq_duration: int) -> npt.NDArray:
+def convert_counts_to_rate(data: np.ndarray, acq_duration: int) -> np.ndarray:
     """
     Convert counts to rate using sampling time.
 
