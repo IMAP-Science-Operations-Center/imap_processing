@@ -218,7 +218,7 @@ def swe_science(decom_data: list, data_version: str) -> xr.Dataset:
     dataset["raw_science_data"] = raw_science_xarray
 
     # create xarray dataset for each metadata field
-    for key, value in metadata_arrays.item():
+    for key, value in metadata_arrays.items():
         # Lowercase the key to be complaint with ISTP's metadata field
         metadata_field = key.lower()
         dataset[metadata_field] = xr.DataArray(
