@@ -1,7 +1,7 @@
 """Various utility classes and functions to support SWE processing."""
 
 from enum import IntEnum
-import numpy as np
+
 import space_packet_parser
 
 

@@ -4,8 +4,8 @@
 import dataclasses
 import json
 from dataclasses import InitVar, dataclass, field
-from typing import Optional
 from pathlib import Path
+from typing import Optional
 
 import numpy as np
 

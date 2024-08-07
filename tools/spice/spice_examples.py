@@ -8,7 +8,6 @@ https://spiceypy.readthedocs.io/en/main/documentation.html.
 
 import logging
 
-import numpy as np
 import numpy.typing as npt
 import spiceypy as spice
 
