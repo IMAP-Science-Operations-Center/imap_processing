@@ -16,6 +16,24 @@ that the full implementation of the functionality is yet to be completed.*
 
 The API can be accessed from the following URL [WIP]: https://api.dev.imap-mission.com
 
+To Install
+==========
+    .. code-block:: bash
+
+        pip install imap-data-access
+
+Base Command Arguments
+======================
+    .. code-block:: bash
+
+        imap-data-access -h # or
+        imap-data-access query # or
+        imap-data-access download # or
+        imap-data-access upload
+
+    Add the -h flag to helo with any base command for more information.
+
+
 .. openapi:: openapi.yml
    :group:
    :include: /upload
@@ -90,6 +108,108 @@ organize the files. See the example file path: ``data/imap/swe/l0/2024/01/imap_s
 
    {"statusCode": 200, "headers": {"Content-Type": "application/json", "Access-Control-Allow-Origin": "*"}, "body": [{"file_path": "imap/swe/l0/2024/01/imap_swe_l0_sci_20240105_20240105_v00-05.pkts", "instrument": "swe", "data_level": "l0", "descriptor": "sci", "start_date": "20240105", "end_date": "20240105", "version": "v00-05", "extension": "pkts"}]}
    {"statusCode": 400, "headers": {"Content-Type": "application/json", "Access-Control-Allow-Origin": "*"}, "body": "<param> is not a valid query parameter. Valid query parameters are: ['file_path', 'instrument', 'data_level', 'descriptor', 'start_date', 'end_date', 'version', 'extension']"}
+
+Importing as a Package
+======================
+    .. code-block:: bash
+
+        import imap_data_access
+
+        # Search for files
+        results = imap_data_access.query(instrument="mag", data_level="l0")
+        # results is a list of dictionaries
+        # [{'file_path': 'imap/swe/l0/2024/01/imap_swe_l0_sci_20240105_v001.pkts', 'instrument': 'swe', 'data_level': 'l0', 'descriptor': 'sci', 'start_date': '20240105','version': 'v001', 'extension': 'pkts'}, {'file_path': 'imap/swe/l0/2024/01/imap_swe_l0_sci_20240105_v001.pkts', 'instrument': 'swe', 'data_level': 'l0', 'descriptor': 'sci', 'start_date': '20240105', 'version': 'v001', 'extension': 'pkts'}]
+
+        # Download a file that was returned from the search
+        imap_data_access.download("imap/mag/l0/2024/01/imap_mag_l0_raw_202040101_v001.pkts")
+
+        # Upload a calibration file that exists locally
+        imap_data_access.upload("imap/swe/l1a/2024/01/imap_swe_l1a_sci_20240105_v001.cdf")
+
+Configuration
+=============
+**Data Directory**
+
+The folder structure for data files within the IMAP SDC is rigidly defined, so the data access will mimic that structure to make sure all data is stored in the same hierarchical structure as the SDC. This will enable seamless transition between a user's local system and the SDC. This is only used for downloads.
+A user's root data location can be specified as an environment variable IMAP_DATA_DIR or through a configuration dictionary within the package itself imap_data_access.config["DATA_DIR"]. If the IMAP_DATA_DIR variable is not set, the program defaults to the user's current working directory + data/.
+The following is the directory structure the IMAP SDC uses.
+
+    .. code-block:: bash
+
+        <IMAP_DATA_DIR>/
+          imap/
+            <instrument>/
+              <data_level>/
+                <year>/
+                  <month>/
+                    <filename>
+
+for example, with ``IMAP_DATA_DIR=/data:``
+
+    .. code-block:: bash
+
+        /data/
+          imap/
+            swe/
+              l0/
+                2024/
+                  01/
+                    imap_swe_l0_sci_20240105_v001.pkts
+
+**Data Access URL**
+
+To change the default URL that the package accesses, you can set the environment variable ``IMAP_DATA_ACCESS_URL`` or within the package ``imap_data_access.config["DATA_ACCESS_URL"]``. The default is the development server https://api.dev.imap-mission.com.
+
+Troubleshooting
+===============
+**Network Issues**
+
+**SSL**
+
+If you encounter SSL errors similar to the following:
+
+    .. code-block:: bash
+
+        urllib.error.URLError: <urlopen error [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:997)>
+
+That generally means the Python environment you're using is not finding your system's root certificates properly. This means you need to tell Python how to find those certificates with the following potential solutions.
+
+#. Upgrade the certifi package
+
+    .. code-block:: bash
+
+            pip install --upgrade certifi
+
+#. Install system certificates -- Depending on the Python version you installed the program with the command will look something like this:
+
+    .. code-block:: bash
+
+            /Applications/Python\ 3.10/Install\ Certificates.command
+
+**HTTP Error 502: BadGateway**
+
+This could mean that the service is temporarily down. If you continue to encounter this, reach out to the IMAP SDC at imap-sdc@lasp.colorado.edu.
+
+**FileNotFoundError**
+
+This could mean that the local data directory is not set up with the same paths as the SDC. See the data directory section for an example of how to set this up.
+
+File Validation
+===============
+
+This package validates filenames and paths to check they follow our standards, as defined by the filename conventions. There is also a class available for use by other packages to create filepaths and filenames that follow the IMAP SDC conventions.
+
+To use this class, use ``imap_data_access.ScienceFilePath``.
+
+Usage:
+
+    .. code-block:: bash
+
+        science_file = imap_data_access.ScienceFilePath("imap_swe_l0_sci_20240101_v001.pkts")
+
+        # Filepath = /imap/swe/l0/2024/01/imap_swe_l0_sci_20240101_v001.pkts
+        filepath = science_file.construct_path()
+
 
 Other pages
 ===========
