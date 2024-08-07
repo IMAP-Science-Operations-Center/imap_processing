@@ -24,10 +24,10 @@
 			<xtce:IntegerParameterType name="PKT_LEN" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="16" encoding="unsigned" />
 			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="TEST_PACKET_SHCOARSE" signed="false">
+			<xtce:IntegerParameterType name="TEST_PACKET.SHCOARSE" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="32" encoding="unsigned" />
 			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="TEST_PACKET_VAR_UINT" signed="false">
+			<xtce:IntegerParameterType name="TEST_PACKET.VAR_UINT" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="2" encoding="unsigned">
 					<xtce:DefaultCalibrator>
 						<xtce:PolynomialCalibrator>
@@ -37,13 +37,13 @@
 					</xtce:DefaultCalibrator>
 				</xtce:IntegerDataEncoding>
 			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="TEST_PACKET_VAR_INT" signed="true">
+			<xtce:IntegerParameterType name="TEST_PACKET.VAR_INT" signed="true">
 				<xtce:IntegerDataEncoding sizeInBits="4" encoding="signed" />
 			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="TEST_PACKET_VAR_SINT" signed="true">
+			<xtce:IntegerParameterType name="TEST_PACKET.VAR_SINT" signed="true">
 				<xtce:IntegerDataEncoding sizeInBits="5" encoding="signed" />
 			</xtce:IntegerParameterType>
-			<xtce:BinaryParameterType name="TEST_PACKET_VAR_BYTE">
+			<xtce:BinaryParameterType name="TEST_PACKET.VAR_BYTE">
 				<xtce:BinaryDataEncoding bitOrder="mostSignificantBitFirst">
 					<xtce:SizeInBits>
 						<xtce:DynamicValue>
@@ -53,16 +53,16 @@
 					</xtce:SizeInBits>
 				</xtce:BinaryDataEncoding>
 			</xtce:BinaryParameterType>
-			<xtce:IntegerParameterType name="TEST_PACKET_VAR_FILL" signed="false">
+			<xtce:IntegerParameterType name="TEST_PACKET.VAR_FILL" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="3" encoding="unsigned" />
 			</xtce:IntegerParameterType>
-			<xtce:FloatParameterType name="TEST_PACKET_VAR_FLOAT">
+			<xtce:FloatParameterType name="TEST_PACKET.VAR_FLOAT">
 				<xtce:FloatDataEncoding sizeInBits="32" encoding="IEEE-754" />
 			</xtce:FloatParameterType>
-			<xtce:IntegerParameterType name="TEST_PACKET2_SHCOARSE" signed="false">
+			<xtce:IntegerParameterType name="TEST_PACKET2.SHCOARSE" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="32" encoding="unsigned" />
 			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="TEST_PACKET2_VAR1" signed="false">
+			<xtce:IntegerParameterType name="TEST_PACKET2.VAR1" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="2" encoding="unsigned" />
 			</xtce:IntegerParameterType>
 		</xtce:ParameterTypeSet>
@@ -88,31 +88,31 @@
 			<xtce:Parameter name="PKT_LEN" parameterTypeRef="PKT_LEN">
 				<xtce:LongDescription>CCSDS Packet Length (number of bytes after Packet length minus 1)</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="TEST_PACKET_SHCOARSE" parameterTypeRef="TEST_PACKET_SHCOARSE">
+			<xtce:Parameter name="TEST_PACKET.SHCOARSE" parameterTypeRef="TEST_PACKET.SHCOARSE">
 				<xtce:LongDescription>Mission elapsed time</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="TEST_PACKET_VAR_UINT" parameterTypeRef="TEST_PACKET_VAR_UINT">
+			<xtce:Parameter name="TEST_PACKET.VAR_UINT" parameterTypeRef="TEST_PACKET.VAR_UINT">
 				<xtce:LongDescription>Unsgned integer data with conversion</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="TEST_PACKET_VAR_INT" parameterTypeRef="TEST_PACKET_VAR_INT">
+			<xtce:Parameter name="TEST_PACKET.VAR_INT" parameterTypeRef="TEST_PACKET.VAR_INT">
 				<xtce:LongDescription>Integer data</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="TEST_PACKET_VAR_SINT" parameterTypeRef="TEST_PACKET_VAR_SINT">
+			<xtce:Parameter name="TEST_PACKET.VAR_SINT" parameterTypeRef="TEST_PACKET.VAR_SINT">
 				<xtce:LongDescription>Signed integer data</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="TEST_PACKET_VAR_BYTE" parameterTypeRef="TEST_PACKET_VAR_BYTE">
+			<xtce:Parameter name="TEST_PACKET.VAR_BYTE" parameterTypeRef="TEST_PACKET.VAR_BYTE">
 				<xtce:LongDescription>Binary data - variable length</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="TEST_PACKET_VAR_FILL" parameterTypeRef="TEST_PACKET_VAR_FILL">
+			<xtce:Parameter name="TEST_PACKET.VAR_FILL" parameterTypeRef="TEST_PACKET.VAR_FILL">
 				<xtce:LongDescription>Fill data</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="TEST_PACKET_VAR_FLOAT" parameterTypeRef="TEST_PACKET_VAR_FLOAT">
+			<xtce:Parameter name="TEST_PACKET.VAR_FLOAT" parameterTypeRef="TEST_PACKET.VAR_FLOAT">
 				<xtce:LongDescription>Float data</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="TEST_PACKET2_SHCOARSE" parameterTypeRef="TEST_PACKET2_SHCOARSE">
+			<xtce:Parameter name="TEST_PACKET2.SHCOARSE" parameterTypeRef="TEST_PACKET2.SHCOARSE">
 				<xtce:LongDescription>Mission elapsed time</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="TEST_PACKET2_VAR1" parameterTypeRef="TEST_PACKET2_VAR1" shortDescription="Variable 1 short desc">
+			<xtce:Parameter name="TEST_PACKET2.VAR1" parameterTypeRef="TEST_PACKET2.VAR1" shortDescription="Variable 1 short desc">
 				<xtce:LongDescription>Variable 1 - long desc</xtce:LongDescription>
 			</xtce:Parameter>
 		</xtce:ParameterSet>
@@ -135,13 +135,13 @@
 					</xtce:RestrictionCriteria>
 				</xtce:BaseContainer>
 				<xtce:EntryList>
-					<xtce:ParameterRefEntry parameterRef="TEST_PACKET_SHCOARSE" />
-					<xtce:ParameterRefEntry parameterRef="TEST_PACKET_VAR_UINT" />
-					<xtce:ParameterRefEntry parameterRef="TEST_PACKET_VAR_INT" />
-					<xtce:ParameterRefEntry parameterRef="TEST_PACKET_VAR_SINT" />
-					<xtce:ParameterRefEntry parameterRef="TEST_PACKET_VAR_BYTE" />
-					<xtce:ParameterRefEntry parameterRef="TEST_PACKET_VAR_FILL" />
-					<xtce:ParameterRefEntry parameterRef="TEST_PACKET_VAR_FLOAT" />
+					<xtce:ParameterRefEntry parameterRef="TEST_PACKET.SHCOARSE" />
+					<xtce:ParameterRefEntry parameterRef="TEST_PACKET.VAR_UINT" />
+					<xtce:ParameterRefEntry parameterRef="TEST_PACKET.VAR_INT" />
+					<xtce:ParameterRefEntry parameterRef="TEST_PACKET.VAR_SINT" />
+					<xtce:ParameterRefEntry parameterRef="TEST_PACKET.VAR_BYTE" />
+					<xtce:ParameterRefEntry parameterRef="TEST_PACKET.VAR_FILL" />
+					<xtce:ParameterRefEntry parameterRef="TEST_PACKET.VAR_FLOAT" />
 				</xtce:EntryList>
 			</xtce:SequenceContainer>
 			<xtce:SequenceContainer name="TEST_PACKET2">
@@ -151,8 +151,8 @@
 					</xtce:RestrictionCriteria>
 				</xtce:BaseContainer>
 				<xtce:EntryList>
-					<xtce:ParameterRefEntry parameterRef="TEST_PACKET2_SHCOARSE" />
-					<xtce:ParameterRefEntry parameterRef="TEST_PACKET2_VAR1" />
+					<xtce:ParameterRefEntry parameterRef="TEST_PACKET2.SHCOARSE" />
+					<xtce:ParameterRefEntry parameterRef="TEST_PACKET2.VAR1" />
 				</xtce:EntryList>
 			</xtce:SequenceContainer>
 		</xtce:ContainerSet>

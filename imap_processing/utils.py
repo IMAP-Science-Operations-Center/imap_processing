@@ -226,6 +226,84 @@ def create_dataset(
     return dataset
 
 
+def _get_minimum_numpy_datatype(  # noqa: PLR0912 - Too many branches
+    name: str, definition: xtcedef.XtcePacketDefinition
+) -> str:
+    """
+    Get the minimum datatype for a given variable.
+
+    Parameters
+    ----------
+    name : str
+        The variable name.
+    definition : xtcedef.XtcePacketDefinition
+        The XTCE packet definition.
+
+    Returns
+    -------
+    datatype : str
+        The minimum datatype.
+    """
+    data_encoding = definition.named_parameters[name].parameter_type.encoding
+
+    if isinstance(data_encoding, xtcedef.NumericDataEncoding):
+        nbits = data_encoding.size_in_bits
+        if isinstance(data_encoding, xtcedef.IntegerDataEncoding):
+            datatype = "int"
+            if data_encoding.encoding == "unsigned":
+                datatype = "uint"
+            if nbits <= 8:
+                datatype += "8"
+            elif nbits <= 16:
+                datatype += "16"
+            elif nbits <= 32:
+                datatype += "32"
+            else:
+                datatype += "64"
+        elif isinstance(data_encoding, xtcedef.FloatDataEncoding):
+            datatype = "float"
+            if nbits == 32:
+                datatype += "32"
+            else:
+                datatype += "64"
+    elif isinstance(data_encoding, xtcedef.BinaryDataEncoding):
+        # TODO: Binary string representation right now, do we want bytes or
+        # something else like the new StringDType instead?
+        datatype = "str"
+    elif isinstance(data_encoding, xtcedef.StringDataEncoding):
+        # TODO: Use the new StringDType instead?
+        datatype = "str"
+    else:
+        raise ValueError(f"Unsupported data encoding: {data_encoding}")
+
+    return datatype
+
+
+def _create_minimum_dtype_array(values: list, dtype: str) -> np.ndarray:
+    """
+    Create an array with the minimum datatype.
+
+    If it can't be coerced to that datatype, fallback to general array creation
+    without a specific datatype. This can happen with derived values.
+
+    Parameters
+    ----------
+    values : list
+        List of values.
+    dtype : str
+        The datatype.
+
+    Returns
+    -------
+    array : np.array
+        The array of values.
+    """
+    try:
+        return np.array(values, dtype=dtype)
+    except ValueError:
+        return np.array(values)
+
+
 def packet_file_to_datasets(
     packet_file: Union[str, Path],
     xtce_packet_definition: Union[str, Path],
@@ -261,6 +339,8 @@ def packet_file_to_datasets(
     # dataset per apid.
     # {apid1: dataset1, apid2: dataset2, ...}
     data_dict: dict[int, dict] = dict()
+    # Also keep track of the datatype mapping for each field
+    datatype_mapping: dict[int, dict] = dict()
 
     # Set up the parser from the input packet definition
     packet_definition = xtcedef.XtcePacketDefinition(xtce_packet_definition)
@@ -273,6 +353,7 @@ def packet_file_to_datasets(
             if apid not in data_dict:
                 # This is the first packet for this APID
                 data_dict[apid] = collections.defaultdict(list)
+                datatype_mapping[apid] = dict()
 
             # TODO: Do we want to give an option to remove the header content?
             packet_content = packet.data | packet.header
@@ -283,19 +364,44 @@ def packet_file_to_datasets(
                     # Use the derived value if it exists, otherwise use the raw value
                     val = value.derived_value or val
                 data_dict[apid][key].append(val)
+                if key not in datatype_mapping[apid]:
+                    # Add this datatype to the mapping
+                    datatype_mapping[apid][key] = _get_minimum_numpy_datatype(
+                        key, packet_definition
+                    )
 
     dataset_by_apid = {}
-    # Convert each apid's data to an xarray dataset
+
     for apid, data in data_dict.items():
         # The time key is always the first key in the data dictionary on IMAP
         time_key = next(iter(data.keys()))
         # Convert to J2000 time and use that as our primary dimension
         time_data = met_to_j2000ns(data[time_key])
         ds = xr.Dataset(
-            {key.lower(): ("epoch", val) for key, val in data.items()},
+            {
+                key.lower(): (
+                    "epoch",
+                    _create_minimum_dtype_array(
+                        list_of_values, dtype=datatype_mapping[apid][key]
+                    ),
+                )
+                for key, list_of_values in data.items()
+            },
             coords={"epoch": time_data},
         )
         ds = ds.sortby("epoch")
+
+        # Strip any leading characters before "." from the field names which was due
+        # to the packet_name being a part of the variable name in the XTCE definition
+        ds = ds.rename(
+            {
+                # partition splits the string into 3 parts: before ".", ".", after "."
+                # if there was no ".", the second part is an empty string, so we use
+                # the original key in that case
+                key: key.partition(".")[2] or key
+                for key in ds.variables
+            }
+        )
 
         dataset_by_apid[apid] = ds
 

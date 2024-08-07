@@ -51,6 +51,7 @@ from imap_processing.mag.l1a.mag_l1a import mag_l1a
 from imap_processing.mag.l1b.mag_l1b import mag_l1b
 from imap_processing.mag.l1c.mag_l1c import mag_l1c
 from imap_processing.swapi.l1.swapi_l1 import swapi_l1
+from imap_processing.swapi.l2.swapi_l2 import swapi_l2
 from imap_processing.swe.l1a.swe_l1a import swe_l1a
 from imap_processing.swe.l1b.swe_l1b import swe_l1b
 from imap_processing.ultra.l1a import ultra_l1a
@@ -725,6 +726,15 @@ class Swapi(ProcessInstrument):
                 )
             # process data
             datasets = [swapi_l1(dependencies[0], self.version)]
+        elif self.data_level == "l2":
+            if len(dependencies) > 1:
+                raise ValueError(
+                    f"Unexpected dependencies found for SWAPI L2:"
+                    f"{dependencies}. Expected only one dependency."
+                )
+            # process data
+            l1_dataset = load_cdf(dependencies[0])
+            datasets = [swapi_l2(l1_dataset, self.version)]
 
         return datasets
 

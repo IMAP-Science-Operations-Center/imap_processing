@@ -105,7 +105,7 @@ def decompress_count(
     # Decompress counts based on compression indicators
     # If 0, value is already decompressed. If 1, value is compressed.
     # If 1 and count is 0xFFFF, value is overflow.
-    new_count = copy.deepcopy(count_data)
+    new_count = copy.deepcopy(count_data).astype(np.int32)
 
     # If data is compressed, decompress it
     compressed_indices = compression_flag == 1
@@ -488,17 +488,16 @@ def process_swapi_science(sci_dataset: xr.Dataset, data_version: str) -> xr.Data
     )
 
     # Add other global attributes
+    # TODO: add others like below once add_global_attribute is fixed
     cdf_manager.add_global_attribute("Data_version", data_version)
-    cdf_manager.add_global_attribute(
-        "sweep_table", f"{sci_dataset['sweep_table'].data[0]}"
-    )
-    cdf_manager.add_global_attribute(
-        "plan_id", f"{sci_dataset['plan_id_science'].data[0]}"
-    )
+    l1_global_attrs = cdf_manager.get_global_attributes("imap_swapi_l1_sci")
+    l1_global_attrs["Sweep_table"] = f"{sci_dataset['sweep_table'].data[0]}"
+    l1_global_attrs["Plan_id"] = f"{sci_dataset['plan_id_science'].data[0]}"
+    l1_global_attrs["Apid"] = f"{sci_dataset['pkt_apid'].data[0]}"
 
     dataset = xr.Dataset(
         coords={"epoch": epoch_time, "energy": energy, "energy_label": energy_label},
-        attrs=cdf_manager.get_global_attributes("imap_swapi_l1_sci"),
+        attrs=l1_global_attrs,
     )
 
     dataset["swp_pcem_counts"] = xr.DataArray(
