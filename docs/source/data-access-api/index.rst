@@ -32,7 +32,6 @@ Base Command Arguments
         imap-data-access upload
 
 Add the -h flag with any base command for more information on use and functionality.
-=======
 
 .. openapi:: openapi.yml
    :group:
