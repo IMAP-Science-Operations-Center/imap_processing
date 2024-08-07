@@ -133,8 +133,8 @@ def swe_science(decom_data: list, data_version: str) -> xr.Dataset:
         # where 1260 = 180 x 7 CEMs
         # Take the "raw_counts" indices/counts mapping from
         # decompression_table and then reshape the return
-        place_holder: np.ndarray = np.take(decompression_table, raw_counts)
-        uncompress_data = place_holder.reshape(180, 7)
+        #place_holder: np.ndarray = np.take(decompression_table, raw_counts)
+        uncompress_data = np.take(decompression_table, raw_counts).reshape(180, 7)
         # Save raw counts data as well
         raw_counts = raw_counts.reshape(180, 7)
 
