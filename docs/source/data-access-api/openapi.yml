@@ -52,6 +52,7 @@ paths:
                 items:
                   type: string
 
+
   '/download/{filepath}':
     get:
       tags:
@@ -143,7 +144,8 @@ paths:
             type: string
         - in: query
           name: version
-          description: The version of data product in the format ``vXX-YY`` (e.g. ``v01-01``).
+          description: The version of data product in the format ``vNNN`` (e.g. ``v001``). You can also choose to
+            query ``--version latest`` in order to receive the most recent version of a file.
           required: false
           schema:
             type: string

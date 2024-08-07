@@ -332,6 +332,12 @@ def packet_file_to_datasets(
     -------
     datasets : dict
         Mapping from apid to xarray dataset, one dataset per apid.
+
+    Notes
+    -----
+    This function only handles packet definitions with the same variable structure
+    across all packets with the same ApId. For example, this cannot be used for IDEX
+    due to the conditional XML structure defined for their science packet.
     """
     # Set up containers to store our data
     # We are getting a packet file that may contain multiple apids
