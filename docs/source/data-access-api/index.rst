@@ -31,7 +31,7 @@ Base Command Arguments
         imap-data-access download # or
         imap-data-access upload
 
-    Add the -h flag to helo with any base command for more information.
+Add the -h flag to helo with any base command for more information.
 
 
 .. openapi:: openapi.yml
@@ -39,16 +39,23 @@ Base Command Arguments
    :include: /upload
 
 When uploading files to the API, ensure these files are stored properly in a ``data`` directory. Then,
-ensure your working directory is one level above the ``data`` directory in order to properly upload files.
+ensure your working directory is one level above the ``data`` directory in order to properly upload files (see data directory section for more detail).
 
 [WIP] Certain ancillary files can also be uploaded to the API. For more specific information regarding these files, visit
 `Ancillary Files <https://imap-processing.readthedocs.io/en/latest/data-access-api/calibration-files.html>`_
 
 **Example Usage:**
 
-.. code-block:: bash
+    .. code-block:: bash
 
-   curl -X GET -H "Accept: application/json" https://api.dev.imap-mission.com/upload/imap/swe/l0/2024/01/imap_swe_l0_sci_20240105_20240105_v00-01.pkts
+        $ imap-data-access upload /imap/swe/l1a/2024/01/imap_swe_l1a_sci_20240105_v001.cdf
+        Successfully uploaded the file to the IMAP SDC
+
+See also:
+
+    .. code-block:: bash
+
+       curl -X GET -H "Accept: application/json" https://api.dev.imap-mission.com/upload/imap/swe/l0/2024/01/imap_swe_l0_sci_20240105_20240105_v00-01.pkts
 
 **Possible Responses:**
 
@@ -81,6 +88,13 @@ organize the files. See the example file path: ``data/imap/swe/l0/2024/01/imap_s
 
 .. code-block:: bash
 
+    imap-data-access upload /imap/swe/l1a/2024/01/imap_swe_l1a_sci_20240105_v001.cdf
+    Successfully uploaded the file to the IMAP SDC
+
+See also:
+
+.. code-block:: bash
+
    curl -X GET -H "Accept: application/json" https://api.dev.imap-mission.com/download/imap/swe/l0/2024/01/imap_swe_l0_sci_20240105_20240105_v00-01.pkts
 
 **Possible Responses:**
@@ -97,6 +111,13 @@ organize the files. See the example file path: ``data/imap/swe/l0/2024/01/imap_s
    :include: /query
 
 **Example Usage:**
+
+.. code-block:: bash
+
+    imap-data-access query --start-date 20240101 --end-date 20241231 --output-format json
+    [{'file_path': 'imap/swe/l0/2024/01/imap_swe_l0_sci_20240105_v001.pkts', 'instrument': 'swe', 'data_level': 'l0', 'descriptor': 'sci', 'start_date': '20240105', 'version': 'v001', 'extension': 'pkts'}, {'file_path': 'imap/swe/l0/2024/01/imap_swe_l0_sci_20240105_v001.pkts', 'instrument': 'swe', 'data_level': 'l0', 'descriptor': 'sci', 'start_date': '20240105', 'version': 'v001', 'extension': 'pkts'}]
+
+See also:
 
 .. code-block:: bash
 
