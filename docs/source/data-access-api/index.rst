@@ -32,7 +32,7 @@ Base Command Arguments
         imap-data-access upload
 
 Add the -h flag with any base command for more information on use and functionality.
-
+=======
 
 .. openapi:: openapi.yml
    :group:
@@ -41,7 +41,7 @@ Add the -h flag with any base command for more information on use and functional
 When uploading files to the API, ensure these files are stored properly in a ``data`` directory (see the Data Directory section below for more information). Then,
 ensure your working directory is one level above ``data`` in order to properly upload files.
 
-[WIP] Certain ancillary files can also be uploaded to the API. For more specific information regarding this, visit
+[WIP] Certain ancillary files can also be uploaded to the API. For more specific information regarding these files, visit
 `Ancillary Files <https://imap-processing.readthedocs.io/en/latest/data-access-api/calibration-files.html>`_
 
 **Example Usage:**
@@ -77,10 +77,11 @@ See also:
    :include: /download
 
 It is important to note that your working directory will be established as the default directory. I.e, the ``data``
-directory ( to which files are downloaded) will automatically be placed in this file path. Choose your working directory
+directory (to which files are downloaded) will automatically be placed in this file path. Choose your working directory
 accordingly to suit your desires.
 
-When downloading a file from the API, different folders within the ``data`` directory will be created for proper storage. See the example file path: ``data/imap/swe/l0/2024/01/imap_swe_l0_sci_20240105_20240105_v00-01.pkts``
+When downloading a file from the API, different folders within the ``data`` directory will be made to better
+organize the downloaded files. See the example path: ``data/imap/swe/l0/2024/01/imap_swe_l0_sci_20240105_20240105_v00-01.pkts``
 
 **Example Usage:**
 
@@ -221,7 +222,6 @@ File Validation
 ===============
 
 This package validates filenames and paths to check they follow our standards, as defined by the filename conventions. There is also a class available for use by other packages to create filepaths and filenames that follow the IMAP SDC conventions.
-
 To use this class, use ``imap_data_access.ScienceFilePath``.
 
 Usage:
