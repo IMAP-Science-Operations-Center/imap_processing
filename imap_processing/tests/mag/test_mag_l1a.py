@@ -47,7 +47,7 @@ def test_compare_validation_data():
         assert l1_magi.vectors[index][3] == validation_data["rng_sec"][index]
 
 
-def test_process_vector_data():
+def test_process_uncompressed_vector_data():
     expected_vector_data = [[1001, 1002, -3001, 3], [2001, -2002, -3333, 1]]
 
     # 100 bits, created by hand by appending all bits from expected_vector_data into one
@@ -61,7 +61,7 @@ def test_process_vector_data():
 
     # 36 bytes
     (primary_vectors, secondary_vectors) = MagL1a.process_vector_data(
-        input_data, total_primary_vectors, total_secondary_vectors
+        input_data, total_primary_vectors, total_secondary_vectors, 0
     )
 
     assert primary_vectors[0][0] == expected_vector_data[0][0]

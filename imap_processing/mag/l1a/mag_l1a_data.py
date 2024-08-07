@@ -286,10 +286,38 @@ class MagL1a:
 
     @staticmethod
     def process_vector_data(
+            vector_data: np.ndarray, primary_count: int, secondary_count: int,
+            compression: int
+    ) -> tuple[np.ndarray, np.ndarray]:
+
+        if compression:
+            return MagL1a.process_compressed_vectors(vector_data, primary_count, secondary_count)
+
+        return MagL1a.process_uncompressed_vectors(vector_data, primary_count, secondary_count)
+
+    @staticmethod
+    def process_compressed_vectors(vector_data: np.ndarray, primary_count: int, secondary_count: int) -> tuple[np.ndarray, np.ndarray]:
+        """
+        Given raw compressed packet data, process into Vectors.
+
+        Parameters
+        ----------
+        vector_data
+        primary_count
+        secondary_count
+
+        Returns
+        -------
+
+        """
+        raise NotImplementedError
+
+    @staticmethod
+    def process_uncompressed_vectors(
         vector_data: np.ndarray, primary_count: int, secondary_count: int
     ) -> tuple[np.ndarray, np.ndarray]:
         """
-        Given raw packet data, process into Vectors.
+        Given raw uncompressed packet data, process into Vectors.
 
         Vectors are grouped into primary sensor and secondary sensor, and returned as a
         tuple (primary sensor vectors, secondary sensor vectors).
