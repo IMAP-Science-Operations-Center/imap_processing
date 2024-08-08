@@ -1,11 +1,12 @@
 int_fillval: &int_fillval -9223372036854775808
-int_uint32: &int_uint32 4294967295
-int_uint32_min_one: &int_uint32_min_one 4294967294
-int_uint16: &int_uint16 65535
+max_uint32: &max_uint32 4294967295
+max_uint32_min_one: &max_uint32_min_one 4294967294
+max_uint16: &max_uint16 65535
 min_epoch: &min_epoch -315575942816000000
 max_epoch: &max_epoch 3155630469184000000
 
 default_attrs: &default_attrs
+  # TODO: Remove unneeded attributes once SAMMI is fixed
   RESOLUTION: ' '
   DISPLAY_TYPE: no_plot
   TIME_BASE: J2000
@@ -14,25 +15,6 @@ default_attrs: &default_attrs
   UNITS: ' '
   FILLVAL: *int_fillval
   VALIDMIN: *min_epoch
-
-epoch:
-  <<:  *default_attrs
-  CATDESC: Time, number of nanoseconds since J2000 with leap seconds included
-  FIELDNAM: epoch
-  FILLVAL: *int_fillval
-  LABLAXIS: epoch
-  FORMAT: ""
-  UNITS: ns
-  VALIDMIN: *min_epoch
-  VALIDMAX: *max_epoch
-  VAR_TYPE: support_data
-  SCALETYP: linear
-  MONOTON: INCREASE
-  TIME_BASE: J2000
-  TIME_SCALE: Terrestrial Time
-  REFERENCE_POSITION: Rotating Earth Geoid
-  DISPLAY_TYPE: no_plot
-  RESOLUTION: ' '
 
 bins_attrs:
   <<:  *default_attrs
@@ -75,13 +57,13 @@ direct_events:
   DEPEND_1: per_second
   DEPEND_2: direct_event_components
   VALIDMIN: 0
-  VALIDMAX: *int_uint32
+  VALIDMAX: *max_uint32
   CATDESC: Direct events grouped by epoch seconds
   FIELDNAM: Direct events
   FORMAT: I10
   VAR_TYPE: data
   LABLAXIS: Counts
-  FILLVAL: *int_uint32_min_one
+  FILLVAL: *max_uint32_min_one
 
 histogram:
   <<:  *default_attrs
@@ -94,7 +76,7 @@ histogram:
   FORMAT: I4
   DISPLAY_TYPE: time_series
   LABLAXIS: Counts
-  FILL_VAL: *int_uint16
+  FILL_VAL: *max_uint16
   UNITS: counts
   VAR_TYPE: data
 
@@ -124,10 +106,10 @@ last_spin_id:
   <<: *metadata_attrs
   CATDESC: The ordinal number of the last spin during histogram accumulation
   FIELDNAM: Number of the last spin in histogram
-  FILLVAL: *int_uint32
+  FILLVAL: *max_uint32
   FORMAT: I11
   LABLAXIS: Spin number
-  VALIDMAX: *int_uint32_min_one
+  VALIDMAX: *max_uint32_min_one
 
 imap_start_time:
   <<: *metadata_attrs
@@ -177,10 +159,10 @@ flags_set_onboard:
   <<: *metadata_attrs
   CATDESC: Binary mask with histogram flags set onboard
   FIELDNAM: Mask with histogram flags set onboard
-  FILLVAL: *int_uint32
+  FILLVAL: *max_uint32
   FORMAT: I6
   LABLAXIS: Mask value
-  VALIDMAX: *int_uint16
+  VALIDMAX: *max_uint16
 
 is_generated_on_ground:
   <<: *metadata_attrs
@@ -214,7 +196,7 @@ number_of_bins_per_histogram:
   <<: *metadata_attrs
   CATDESC: Number of histogram bins
   FIELDNAM: Number of histogram bins
-  FILLVAL: *int_uint16
+  FILLVAL: *max_uint16
   FORMAT: I5
   LABLAXIS: Num of bins
   VALIDMAX: 3600
@@ -227,13 +209,13 @@ number_of_events:
   FILLVAL: *int_fillval
   FORMAT: I11
   LABLAXIS: Num of counts
-  VALIDMAX: *int_uint32
+  VALIDMAX: *max_uint32
 
 filter_temperature_average:
   <<: *metadata_attrs
   CATDESC: Uint-encoded spin-block-averaged filter temperature
   FIELDNAM: Average filter temperature
-  FILLVAL: *int_uint16
+  FILLVAL: *max_uint16
   FORMAT: I4
   LABLAXIS: Avgd Temperature
   VALIDMAX: 255
@@ -242,19 +224,19 @@ filter_temperature_variance:
   <<: *metadata_attrs
   CATDESC: Uint-encoded spin-block-averaged variance of filter temperature
   FIELDNAM: Variance of filter temperature
-  FILLVAL: *int_uint32
+  FILLVAL: *max_uint32
   FORMAT: I6
   LABLAXIS: Variance
-  VALIDMAX: *int_uint16
+  VALIDMAX: *max_uint16
 
 hv_voltage_average:
   <<: *metadata_attrs
   CATDESC: Uint-encoded spin-block-averaged CEM voltage
   FIELDNAM: Uint-encoded averaged CEM voltage
-  FILLVAL: *int_uint32
+  FILLVAL: *max_uint32
   FORMAT: I6
   LABLAXIS: Avg voltage
-  VALIDMAX: *int_uint16
+  VALIDMAX: *max_uint16
 
 hv_voltage_variance:
   <<: *metadata_attrs
@@ -262,7 +244,7 @@ hv_voltage_variance:
   FIELDNAM: Uint encoded HV voltage variance
   FILLVAL: *int_fillval
   LABLAXIS: Variance
-  VALIDMAX: *int_uint32
+  VALIDMAX: *max_uint32
 
 spin_period_average:
   <<: *metadata_attrs
@@ -270,7 +252,7 @@ spin_period_average:
   DEPEND_0: epoch
   DISPLAY_TYPE: time_series
   FIELDNAM: Uint-encoded average spin period
-  FILLVAL: *int_uint32
+  FILLVAL: *max_uint32
   FORMAT: I6
   LABLAXIS: Spin period
   UNITS: ' '
@@ -285,13 +267,13 @@ spin_period_variance:
   FILLVAL: *int_fillval
   FORMAT: I10
   LABLAXIS: Variance
-  VALIDMAX: *int_uint32
+  VALIDMAX: *max_uint32
 
 pulse_length_average:
   <<: *metadata_attrs
   CATDESC: Uint-encoded spin-block-averaged pulse length
   FIELDNAM: Averaged pulse length
-  FILLVAL: *int_uint16
+  FILLVAL: *max_uint16
   FORMAT: I4
   LABLAXIS: Avg pulse len
   VALIDMAX: 255
@@ -300,10 +282,10 @@ pulse_length_variance:
   <<: *metadata_attrs
   CATDESC: Uint encoded spin-block-averaged variance of pulse length
   FIELDNAM: Variance of pulse length
-  FILLVAL: *int_uint32
+  FILLVAL: *max_uint32
   FORMAT: I10
   LABLAXIS: Variance
-  VALIDMAX: *int_uint16
+  VALIDMAX: *max_uint16
 # End of not-in--dicts in generate_de_dataset
 
 # support_data
@@ -312,7 +294,7 @@ seq_count_in_pkts_file:
 # TBD: problem with several values associated with one epoch value
   CATDESC: Ordinal number of a packet in a sequence of multiple CCSDS packets
   FIELDNAM: Packet sequence counter
-  FILLVAL: *int_uint32
+  FILLVAL: *max_uint32
   FORMAT: I6
   LABLAXIS: Counter
   VALIDMAX: 65534 # uint16_max - 1, because it must be less than VALIDMAX for number_of_de_packets
@@ -321,10 +303,10 @@ number_of_de_packets:
   <<: *metadata_attrs
   CATDESC: Number of packets for a given portion (second) of direct-event data
   FIELDNAM: Number of DE packets
-  FILLVAL: *int_uint32
+  FILLVAL: *max_uint32
   FORMAT: I5
   LABLAXIS: Num of packets
-  VALIDMAX: *int_uint16
+  VALIDMAX: *max_uint16
 # End of support data
 
 # data_every_second in glows_l1a.py
@@ -332,29 +314,29 @@ imap_sclk_last_pps:
   <<: *metadata_attrs
   CATDESC: IMAP-clock seconds for last PPS
   FIELDNAM: IMAP-clock seconds for last PPS
-  FILLVAL: *int_uint32
+  FILLVAL: *max_uint32
   FORMAT: I11
   LABLAXIS: IMAP seconds
   UNITS: seconds
-  VALIDMAX: *int_uint32_min_one
+  VALIDMAX: *max_uint32_min_one
 
 glows_sclk_last_pps:
   <<: *metadata_attrs
   CATDESC: GLOWS-clock seconds for last PPS
   FIELDNAM: GLOWS-clock seconds for last PPS
   DISPLAY_TYPE: no_plot
-  FILLVAL: *int_uint32
+  FILLVAL: *max_uint32
   FORMAT: I11
   LABLAXIS: GLOWS seconds
   UNITS: seconds
-  VALIDMAX: *int_uint32_min_one
+  VALIDMAX: *max_uint32_min_one
 
 glows_ssclk_last_pps:
   <<: *metadata_attrs
   CATDESC: GLOWS-clock subseconds for last PPS
   FIELDNAM: GLOWS-clock subseconds for last PPS
   DISPLAY_TYPE: no_plot
-  FILLVAL: *int_uint32
+  FILLVAL: *max_uint32
   LABLAXIS: GLOWS subseconds
   VALIDMAX: 1999999
 
@@ -362,11 +344,11 @@ imap_sclk_next_pps:
   <<: *metadata_attrs
   CATDESC: IMAP-clock seconds for next PPS
   FIELDNAM: IMAP-clock seconds for next PPS
-  FILLVAL: *int_uint32
+  FILLVAL: *max_uint32
   FORMAT: I11
   LABLAXIS: IMAP seconds
   UNITS: seconds
-  VALIDMAX: *int_uint32_min_one
+  VALIDMAX: *max_uint32_min_one
 
 catbed_heater_active:
   <<: *metadata_attrs
@@ -404,7 +386,7 @@ spin_period:
   <<: *metadata_attrs
   CATDESC: Uint encoded spin period value
   FIELDNAM: Uint encoded spin period value
-  FILLVAL: *int_uint16
+  FILLVAL: *max_uint16
   FORMAT: I6
   LABLAXIS: Spin period
   VALIDMAX: 50000 # TBC 15.38 s where 20.9712 s = 65535, rounded up
@@ -414,35 +396,35 @@ spin_phase_at_next_pps:
   <<: *metadata_attrs
   CATDESC: Uint encoded next spin phase value
   FIELDNAM: Uint encoded next spin phase value
-  FILLVAL: *int_uint32
+  FILLVAL: *max_uint32
   FORMAT: I6
   LABLAXIS: Spin phase
-  VALIDMAX: *int_uint16
+  VALIDMAX: *max_uint16
 
 number_of_completed_spins:
   <<: *metadata_attrs
   CATDESC: Number of completed spins
   FIELDNAM: Number of completed spins
-  FILLVAL: *int_uint32
+  FILLVAL: *max_uint32
   FORMAT: I11
   LABLAXIS: Num of spins
-  VALIDMAX: *int_uint32_min_one
+  VALIDMAX: *max_uint32_min_one
 
 filter_temperature:
   <<: *metadata_attrs
   CATDESC: Uint encoded filter temperature
   FIELDNAM: Filter temperature
-  FILLVAL: *int_uint32
+  FILLVAL: *max_uint32
   FORMAT: I6
   LABLAXIS: Temperature
-  VALIDMAX: *int_uint16
+  VALIDMAX: *max_uint16
   DISPLAY_TYPE: time_series
 
 hv_voltage:
   <<: *metadata_attrs
   CATDESC: Uint encoded CEM voltage
   FIELDNAM: Uint encoded CEM voltage
-  FILLVAL: *int_uint32
+  FILLVAL: *max_uint32
   FORMAT: I6
   LABLAXIS: Voltage
   VALIDMAX: 65635 # Is this a typo?
@@ -518,6 +500,6 @@ flight_software_version:
   <<: *metadata_attrs
   CATDESC: GLOWS flight software version
   FIELDNAM: GLOWS flight software version
-  FILLVAL: *int_uint32
+  FILLVAL: *max_uint32
   LABLAXIS: Version
   VALIDMAX: 16777215
