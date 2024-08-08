@@ -244,20 +244,20 @@ def generate_de_dataset(
     )
 
     # TODO come up with a better name
-    per_second = xr.DataArray(
+    within_the_second = xr.DataArray(
         np.arange(direct_events.shape[1]),
-        name="per_second",
-        dims=["per_second"],
+        name="within_the_second",
+        dims=["within_the_second"],
         attrs=glows_cdf_attributes.get_variable_attributes("within_the_second"),
     )
 
     de = xr.DataArray(
         direct_events,
         name="direct_events",
-        dims=["epoch", "per_second", "direct_event"],
+        dims=["epoch", "within_the_second", "direct_event"],
         coords={
             "epoch": epoch_time,
-            "per_second": per_second,
+            "within_the_second": within_the_second,
             "direct_event": direct_event,
         },
         attrs=glows_cdf_attributes.get_variable_attributes("direct_events"),
