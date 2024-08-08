@@ -143,8 +143,7 @@ def find_sweep_starts(packets: xr.Dataset) -> npt.NDArray:
         Array of indices of start cycle.
     """
     if packets["epoch"].size < 12:
-        indices_start = np.array([], np.int64)
-        return indices_start
+        return np.array([], np.int64)
 
     # calculate time difference between consecutive sweep
     diff = packets["epoch"].data[1:] - packets["epoch"].data[:-1]
@@ -174,8 +173,7 @@ def find_sweep_starts(packets: xr.Dataset) -> npt.NDArray:
         & ione[9:-1]
         & ione[10:]
     )
-    indices = np.where(valid)[0]
-    return indices
+    return np.where(valid)[0]
 
 
 def get_indices_of_full_sweep(packets: xr.Dataset) -> npt.NDArray:
