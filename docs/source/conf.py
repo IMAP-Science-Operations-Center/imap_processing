@@ -113,6 +113,9 @@ nitpick_ignore_regex = [
     (r"py:.*", r".*InitVar*"),
     (r"py:.*", r".*.glows.utils.constants.TimeTuple.*"),
     (r"py:.*", r".*glows.utils.constants.DirectEvent.*"),
+    (r"py:.*", r".*numpy.int.*"),
+    (r"py:.*", r".*np.ndarray.*"),
+    (r"py:.*", r".*numpy._typing._array_like._ScalarType_co.*"),
 ]
 
 # Ignore the inherited members from the <instrument>APID IntEnum class

@@ -3,6 +3,7 @@
 import copy
 
 import numpy as np
+import numpy.typing as npt
 import xarray as xr
 
 from imap_processing import imap_module_directory
@@ -11,7 +12,7 @@ from imap_processing.swapi.swapi_utils import SWAPIAPID, SWAPIMODE
 from imap_processing.utils import packet_file_to_datasets
 
 
-def filter_good_data(full_sweep_sci: xr.Dataset) -> np.ndarray:
+def filter_good_data(full_sweep_sci: xr.Dataset) -> npt.NDArray:
     """
     Filter out bad data sweep indices.
 
@@ -29,7 +30,7 @@ def filter_good_data(full_sweep_sci: xr.Dataset) -> np.ndarray:
 
     Returns
     -------
-    numpy.ndarray
+    good_data_indices : numpy.ndarray
         Good data sweep indices.
     """
     # PLAN_ID for current sweep should all be one value and
@@ -70,7 +71,7 @@ def filter_good_data(full_sweep_sci: xr.Dataset) -> np.ndarray:
 
 def decompress_count(
     count_data: np.ndarray, compression_flag: np.ndarray
-) -> np.ndarray:
+) -> npt.NDArray:
     """
     Will decompress counts based on compression indicators.
 
@@ -99,7 +100,7 @@ def decompress_count(
 
     Returns
     -------
-    numpy.ndarray
+    new_count : numpy.ndarray
         Array with decompressed counts.
     """
     # Decompress counts based on compression indicators
@@ -120,7 +121,7 @@ def decompress_count(
     return new_count
 
 
-def find_sweep_starts(packets: xr.Dataset) -> np.ndarray:
+def find_sweep_starts(packets: xr.Dataset) -> npt.NDArray:
     """
     Find index of where new cycle started.
 
@@ -138,7 +139,7 @@ def find_sweep_starts(packets: xr.Dataset) -> np.ndarray:
 
     Returns
     -------
-    numpy.ndarray
+    indices_start : numpy.ndarray
         Array of indices of start cycle.
     """
     if packets["epoch"].size < 12:
@@ -175,7 +176,7 @@ def find_sweep_starts(packets: xr.Dataset) -> np.ndarray:
     return np.where(valid)[0]
 
 
-def get_indices_of_full_sweep(packets: xr.Dataset) -> np.ndarray:
+def get_indices_of_full_sweep(packets: xr.Dataset) -> npt.NDArray:
     """
     Get indices of full cycles.
 
@@ -195,7 +196,7 @@ def get_indices_of_full_sweep(packets: xr.Dataset) -> np.ndarray:
 
     Returns
     -------
-    numpy.ndarray
+    full_cycle_indices : numpy.ndarray
         1D array with indices of full cycle data.
     """
     indices_of_start = find_sweep_starts(packets)

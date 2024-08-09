@@ -179,7 +179,9 @@ class ScienceDirectEvents(LoBase):
 
             # Case decoder indicates which parts of the data
             # are transmitted for each case.
-            case_decoder = CASE_DECODER[(case_number, self.MODE[de_idx])]
+            case_decoder = CASE_DECODER[(case_number, self.MODE[de_idx])]  # type: ignore[index]
+            # Todo Mypy Error: Invalid index type "tuple[int, ndarray[Any, Any]]" for
+            # "dict[tuple[int, int], TOFFields]"; expected type "tuple[int, int]"
 
             # Check the case decoder to see if the TOF field was
             # transmitted for this case. Then grab the bits from

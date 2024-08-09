@@ -1,6 +1,7 @@
 """Contains tools for lookup tables for l1b."""
 
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
 
 from imap_processing import imap_module_directory
@@ -24,7 +25,7 @@ _ENERGY_NORM_DF = pd.read_csv(BASE_PATH / "EgyNorm.mem.csv")
 _IMAGE_PARAMS_DF = pd.read_csv(BASE_PATH / "FM45_Startup1_ULTRA_IMGPARAMS_20240719.csv")
 
 
-def get_y_adjust(dy_lut: np.ndarray) -> np.ndarray:
+def get_y_adjust(dy_lut: np.ndarray) -> npt.NDArray:
     """
     Adjust the front yf position based on the particle's trajectory.
 
@@ -45,7 +46,7 @@ def get_y_adjust(dy_lut: np.ndarray) -> np.ndarray:
     return _YADJUST_DF["dYAdj"].values[dy_lut]
 
 
-def get_norm(dn: np.ndarray, key: str, file_label: str) -> np.ndarray:
+def get_norm(dn: np.ndarray, key: str, file_label: str) -> npt.NDArray:
     """
     Correct mismatches between the stop Time to Digital Converters (TDCs).
 
@@ -80,7 +81,7 @@ def get_norm(dn: np.ndarray, key: str, file_label: str) -> np.ndarray:
     return tdc_norm_df[key].values[dn]
 
 
-def get_back_position(back_index: np.ndarray, key: str, file_label: str) -> np.ndarray:
+def get_back_position(back_index: np.ndarray, key: str, file_label: str) -> npt.NDArray:
     """
     Convert normalized TDC values using lookup tables.
 
@@ -113,7 +114,7 @@ def get_back_position(back_index: np.ndarray, key: str, file_label: str) -> np.n
     return back_pos_df[key].values[back_index]
 
 
-def get_energy_norm(ssd: np.ndarray, composite_energy: np.ndarray) -> np.ndarray:
+def get_energy_norm(ssd: np.ndarray, composite_energy: np.ndarray) -> npt.NDArray:
     """
     Normalize composite energy per SSD using a lookup table.
 
@@ -157,4 +158,5 @@ def get_image_params(image: str) -> np.float64:
     value : np.float64
         Image parameter value from the CSV file.
     """
-    return _IMAGE_PARAMS_DF[image].values[0]
+    value: np.float64 = _IMAGE_PARAMS_DF[image].values[0]
+    return value
