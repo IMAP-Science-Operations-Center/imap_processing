@@ -4,6 +4,7 @@ import logging
 from typing import Any
 
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
 import xarray as xr
 
@@ -70,7 +71,7 @@ def read_lookup_table(table_index_value: int) -> Any:
         raise ValueError("Error: Invalid table index value")
 
 
-def deadtime_correction(counts: np.ndarray, acq_duration: int) -> np.ndarray:
+def deadtime_correction(counts: np.ndarray, acq_duration: int) -> npt.NDArray:
     """
     Calculate deadtime correction.
 
@@ -118,7 +119,7 @@ def deadtime_correction(counts: np.ndarray, acq_duration: int) -> np.ndarray:
     return corrected_count
 
 
-def convert_counts_to_rate(data: np.ndarray, acq_duration: int) -> np.ndarray:
+def convert_counts_to_rate(data: np.ndarray, acq_duration: int) -> npt.NDArray:
     """
     Convert counts to rate using sampling time.
 
@@ -206,7 +207,7 @@ def apply_in_flight_calibration(data: np.ndarray) -> None:
 
 def populate_full_cycle_data(
     l1a_data: xr.Dataset, packet_index: int, esa_table_num: int
-) -> np.ndarray:
+) -> npt.NDArray:
     """
     Populate full cycle data array using esa lookup table and l1a_data.
 
@@ -277,7 +278,7 @@ def populate_full_cycle_data(
     return full_cycle_data
 
 
-def find_cycle_starts(cycles: np.ndarray) -> np.ndarray:
+def find_cycle_starts(cycles: np.ndarray) -> npt.NDArray:
     """
     Find index of where new cycle started.
 
@@ -312,7 +313,7 @@ def find_cycle_starts(cycles: np.ndarray) -> np.ndarray:
     return np.where(valid)[0]
 
 
-def get_indices_of_full_cycles(quarter_cycle: np.ndarray) -> np.ndarray:
+def get_indices_of_full_cycles(quarter_cycle: np.ndarray) -> npt.NDArray:
     """
     Get indices of full cycles.
 

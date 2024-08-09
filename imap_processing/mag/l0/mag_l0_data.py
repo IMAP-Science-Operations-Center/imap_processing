@@ -109,7 +109,9 @@ class MagL0:
         # Convert string output from space_packet_parser to numpy array of
         # big-endian bytes
         self.VECTORS = np.frombuffer(
-            int(self.VECTORS, 2).to_bytes(len(self.VECTORS) // 8, "big"),
+            int(self.VECTORS, 2).to_bytes(len(self.VECTORS) // 8, "big"),  # type: ignore[arg-type]
+            # TODO Check MYPY Error: Argument 1 to "int" has incompatible type
+            # "Union[ndarray[Any, Any], str]"; expected "Union[str, bytes, bytearray]"
             dtype=np.dtype(">b"),
         )
 
