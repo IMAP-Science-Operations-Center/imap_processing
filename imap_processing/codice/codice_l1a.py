@@ -412,7 +412,9 @@ def process_codice_l1a(file_path: Path, data_version: str) -> xr.Dataset:
             apid = CODICEAPID.COD_HI_SECT_SPECIES_COUNTS
             table_id, plan_id, plan_step, view_id = (1, 0, 0, 6)
 
-        met0 = (np.datetime64("2024-04-29T00:00") - IMAP_EPOCH).astype("timedelta64[s]")
+        met0: np.timedelta64 = (np.datetime64("2024-04-29T00:00") - IMAP_EPOCH).astype(
+            "timedelta64[s]"
+        )
         met0 = met0.astype(np.int64)
         met = [met0, met0 + 1]  # Using this to match the other data products
         science_values = ""  # Currently don't have simulated data for this

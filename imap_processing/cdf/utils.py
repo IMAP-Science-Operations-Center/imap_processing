@@ -3,7 +3,6 @@
 import logging
 import re
 from pathlib import Path
-from typing import Optional
 
 import imap_data_access
 import numpy as np
@@ -25,8 +24,8 @@ J2000_EPOCH = np.datetime64("2000-01-01T11:58:55.816", "ns")
 
 def met_to_j2000ns(
     met: np.typing.ArrayLike,
-    reference_epoch: Optional[np.datetime64] = IMAP_EPOCH,
-) -> np.typing.ArrayLike:
+    reference_epoch: np.datetime64 = IMAP_EPOCH,
+) -> np.typing.NDArray[np.int64]:
     """
     Convert mission elapsed time (MET) to nanoseconds from J2000.
 
@@ -56,10 +55,10 @@ def met_to_j2000ns(
     #       to 32bit and overflow due to the nanosecond multiplication
     time_array = (np.asarray(met, dtype=float) * 1e9).astype(np.int64)
     # Calculate the time difference between our reference system and J2000
-    j2000_offset = (
-        (reference_epoch - J2000_EPOCH).astype("timedelta64[ns]").astype(np.int64)
-    )
-    return j2000_offset + time_array
+    j2000_offset: np.typing.NDArray[np.datetime64] = (
+        reference_epoch - J2000_EPOCH
+    ).astype("datetime64[ns]")
+    return j2000_offset.astype(np.int64) + time_array
 
 
 def load_cdf(
