@@ -1,358 +1,499 @@
-# Info found in cdf.defaults.py
-# Info defined from glows_cdf_attrs
 int_fillval: &int_fillval -9223372036854775808
+max_uint32: &max_uint32 4294967295
+max_uint32_min_one: &max_uint32_min_one 4294967294
+max_uint16: &max_uint16 65535
 min_epoch: &min_epoch -315575942816000000
 max_epoch: &max_epoch 3155630469184000000
 
-#Information taken from CDF warnings of missing attributes
 default_attrs: &default_attrs
-  # Resolution is optional?
+  # TODO: Remove unneeded attributes once SAMMI is fixed
   RESOLUTION: ' '
   DISPLAY_TYPE: no_plot
   TIME_BASE: J2000
-  # Guess from other l1a sections, but optional?
   TIME_SCALE: Terrestrial Time
-  # Guess from other l1a sections, prob wrong
   REFERENCE_POSITION: Rotating Earth Geoid
-  # Guess from other l1a sections
   UNITS: ' '
   FILLVAL: *int_fillval
   VALIDMIN: *min_epoch
 
-# Information from glows_cdf_attrs.py
+support_data_defaults: &support_data_defaults
+  <<: *default_attrs
+  DEPEND_0: epoch
+  VALIDMIN: 0
+  VALIDMAX: 1
+  DISPLAY_TYPE: time_series
+  VAR_TYPE: support_data
+  FORMAT: I10
+  RESOLUTION: ISO8601
+
 bins_attrs:
   <<:  *default_attrs
-  VALIDMMIN: 0
-  VALIDMAX: 70
-  CATDESC: Counts of direct events for photon impacts
-  FIELDNAM: Counts of direct events
-  # FORMAT is different from glows_cdf_attrs.py
-  # Changed this in order to avoid warnings
-  # Int with 10 digits
+  VALIDMIN: 0
+  VALIDMAX: 3599
+  CATDESC: Histogram bin number
+  FIELDNAM: Bin number
+  FORMAT: I5
+  VAR_TYPE: support_data
+  LABLAXIS: Counts
+  FILLVAL: -32768
+  MONOTON: INCREASE
+  SCALETYP: linear
+
+within_the_second: # Used to be per_second_attrs
+  <<:  *default_attrs
+  VALIDMIN: 0
+  VALIDMAX: 50000
+  CATDESC: Direct events recorded in individual seconds # TBD any ideas how to define it
+  FIELDNAM: Direct events within a second
   FORMAT: I10
   VAR_TYPE: support_data
   DISPLAY_TYPE: time_series
-  LABLAXIS: Counts
+  LABLAXIS: Direct Events
 
-per_second_attrs:
+direct_event_components_attrs:
   <<:  *default_attrs
-  VALIDMMIN: 0
-  VALIDMAX: 300
-  CATDESC: Direct events recorded approximately per second
-  FIELDNAM: List of direct events
-  # FORMAT is different from glows_cdf_attrs.py
-  # Changed this in order to avoid warnings
-  # Int with 10 digits
-  FORMAT: I10
+  VALIDMIN: 0
+  VALIDMAX: 3
+  CATDESC: Components of a direct event (seconds, subseconds, impulse_length, multi_event)
+  FIELDNAM: Direct event components
+  FORMAT: I2
   VAR_TYPE: support_data
-  DISPLAY_TYPE: time_series
-  LABLAXIS: Counts
+  LABLAXIS: Components
+  FILLVAL: 255
 
-event_attrs:
-  <<:  *default_attrs
-  VALIDMMIN: 0
-  VALIDMAX: 300
-  CATDESC: Direct events recorded approximately per second
-  FIELDNAM: List of direct events
-  # FORMAT is different from glows_cdf_attrs.py
-  # Changed this in order to avoid warnings
-  # Int with 10 digits
-  FORMAT: I10
-  VAR_TYPE: data
-  DISPLAY_TYPE: time_series
-  LABLAXIS: Counts
-
-direct_event_attrs:
+direct_events:
   <<:  *default_attrs
   DEPEND_O: epoch
-  DEPEND_1: per_second
-  DEPEND_2: direct_event
+  DEPEND_1: within_the_second
+  DEPEND_2: direct_event_components
   VALIDMIN: 0
-  VALIDMAX: 300
-  CATDESC: Direct events recorded approximately per second
-  FIELDNAM: List of direct events, binned per second
-  # FORMAT is different from glows_cdf_attrs.py
-  # Changed this in order to avoid warnings
-  # Int with 10 digits
+  VALIDMAX: *max_uint32
+  CATDESC: Direct events grouped by epoch seconds
+  FIELDNAM: Direct events
   FORMAT: I10
   VAR_TYPE: data
-  DISPLAY_TYPE: time_series
   LABLAXIS: Counts
+  FILLVAL: *max_uint32_min_one
 
-histogram_attrs:
+histogram:
   <<:  *default_attrs
   VALIDMIN: 0
-  VALIDMAX: 70
-  CATDESC: Histogram of photon counts
+  VALIDMAX: 255
+  CATDESC: Histogram of photon counts in scanning-circle bins
   DEPEND_0: epoch
   DEPEND_1: bins
   FIELDNAM: Histogram of photon counts
-  # FORMAT is different from glows_cdf_attrs.py
-  # Changed this in order to avoid warnings
-  # Float with 4 digits
-  FORMAT: F7.4
+  FORMAT: I4
   DISPLAY_TYPE: time_series
   LABLAXIS: Counts
-  FILL_VAL: *int_fillval
+  FILL_VAL: *max_uint16
   UNITS: counts
   VAR_TYPE: data
 
-metadata_attrs: &metadata_attrs
-  <<:  *default_attrs
-  DEPEND_0: epoch
-  VALIDMIN: 0
-  VALIDMAX: 1000000000
-  DISPLAY_TYPE: time_series
-  FILL_VAL: *int_fillval
-  VAR_TYPE: metadata
-  FORMAT: I10
-  LABLAXIS: Metadata
-  RESOLUTION: ISO8601
-
 pkts_file_name:
-  <<: *metadata_attrs
-  CATDESC: Input filename for packets data
-  FIELDNAM: Input filename
+  <<: *support_data_defaults
+  CATDESC: Name of input file with CCSDS packets data
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: Packets-data input filename
+  FILLVAL: # TBD: what is fillval for strings?
+  FORMAT: S256 # TBC
+  LABLAXIS: File name
+  VALIDMAX: # TBD: what is validmax for a string?
+  VALIDMIN: # TBD: what is validmin for a string?
+  VAR_TYPE: metadata
 
 last_spin_id:
-  <<: *metadata_attrs
-  CATDESC: The ID of the last spin in the block
-  FIELDNAM: Last spin ID
+  <<: *support_data_defaults
+  CATDESC: The ordinal number of the last spin during histogram accumulation
+  FIELDNAM: Number of the last spin in histogram
+  FILLVAL: *max_uint32
+  FORMAT: I11
+  LABLAXIS: Spin number
+  VALIDMAX: *max_uint32_min_one
 
 imap_start_time:
-  <<: *metadata_attrs
-  CATDESC: Start time of the block, in seconds, in IMAP spacecraft clock time
-  FIELDNAM: Start time in seconds in IMAP time
-  # FORMAT is different from glows_cdf_attrs.py
-  # Changed this in order to avoid warnings
-  # Can range from F0 to F0.9
+  <<: *support_data_defaults
+  CATDESC: Histogram start time, IMAP-clock seconds
+  FIELDNAM: Histogram start time, IMAP-clock seconds
+  # TODO: Presumably float64 max or min should be here?
+  FILLVAL: *int_fillval
   FORMAT: F16.6
   UNITS: seconds
+  LABLAXIS: Start time
+  VALIDMAX: 4294967295.0
+  VALIDMIN: 0.0
 
 imap_time_offset:
-  <<: *metadata_attrs
-  CATDESC: End time of the block, in seconds, in IMAP spacecraft clock time
-  FIELDNAM: End time in seconds in IMAP time
-  # FORMAT is different from glows_cdf_attrs.py
-  # Changed this in order to avoid warnings
-  # Can range from F0 to F0.9
-  FORMAT: F16.6
+  <<: *support_data_defaults
+  CATDESC: Accumulation time in seconds for GLOWS histogram
+  FIELDNAM: Histogram accumulation time
+   # TODO: Presumably float64 max or min should be here?
+  FILLVAL: *int_fillval
+  FORMAT: F12.6
   UNITS: seconds
+  LABLAXIS: Duration
+  VALIDMAX: 4000.0
+  VALIDMIN: 0.0
 
 glows_start_time:
-  <<: *metadata_attrs
-  CATDESC: Start time of the block, in seconds, in GLOWS clock time
-  FIELDNAM: Start time in seconds in GLOWS time
-  # FORMAT is different from glows_cdf_attrs.py
-  # Changed this in order to avoid warnings
-  # Can range from F0 to F0.9
+  <<: *support_data_defaults
+  CATDESC: Histogram start time, GLOWS-clock seconds
+  FIELDNAM: Histogram start time, GLOWS-clock seconds
+  FILLVAL: *int_fillval
   FORMAT: F16.6
   UNITS: seconds
+  LABLAXIS: Start time
+  VALIDMAX: 4294967295.0
+  VALIDMIN: 0.0
 
 glows_time_offset:
-  <<: *metadata_attrs
-  CATDESC: End time of the block, in seconds, in GLOWS clock time
-  FIELDNAM: End time in seconds in GLOWS time
-  # FORMAT is different from glows_cdf_attrs.py
-  # Changed this in order to avoid warnings
-  # Can range from F0 to F0.9
-  FORMAT: F16.6
+  <<: *support_data_defaults
+  CATDESC: Accumulation time in seconds for GLOWS histogram
+  FIELDNAM: Histogram accumulation time
+  FILLVAL: *int_fillval
+  FORMAT: F12.6
   UNITS: seconds
+  LABLAXIS: Duration
+  VALIDMAX: 4000.0 # 15.38 s per spin x 256 spins = 3937.3 s, then rounded up
+  VALIDMIN: 0.0
 
 flags_set_onboard:
-  <<: *metadata_attrs
-  CATDESC: FLags for bad data
-  FIELDNAM: Flags for missing or bad data
+  # TODO: Verify uint32 fillval and uint16 validmax
+  <<: *support_data_defaults
+  CATDESC: Binary mask with histogram flags set onboard
+  FIELDNAM: Mask with histogram flags set onboard
+  FILLVAL: *max_uint32
+  FORMAT: I6
+  LABLAXIS: Mask value
+  VALIDMAX: *max_uint16
 
 is_generated_on_ground:
-  <<: *metadata_attrs
-  CATDESC: Indicates if the histogram data was generated on the ground
-  FIELDNAM: Histogram data generated on ground
+  <<: *support_data_defaults
+  CATDESC: Flag indicating where histogram data was generated (1 - on the ground, 0 - onboard)
+  FIELDNAM: Histogram-creation-site flag
+  FILLVAL: -128
+  FORMAT: I2
+  LABLAXIS: Flag
+  VALIDMAX: 1
 
 number_of_spins_per_block:
-  <<: *metadata_attrs
-  CATDESC: Number of spins per block
+  <<: *support_data_defaults
+  CATDESC: Number of spins per block during accumulation of histogram
   FIELDNAM: Number of spins per block
-
-number_of_spins_per_histogram:
-  <<: *metadata_attrs
-  CATDESC: Number of histogram bins
-  FIELDNAM: Number of histogram bins
+  FILLVAL: 65535
+  FORMAT: I4
+  LABLAXIS: Num of spins
+  VALIDMAX: 256
+  VALIDMIN: 1
 
 number_of_bins_per_histogram:
-  <<: *metadata_attrs
+  <<: *support_data_defaults
   CATDESC: Number of histogram bins
   FIELDNAM: Number of histogram bins
+  FILLVAL: *max_uint16
+  FORMAT: I5
+  LABLAXIS: Num of bins
+  VALIDMAX: 3600
+  VALIDMIN: 225
 
 number_of_events:
-  <<: *metadata_attrs
-  CATDESC: Total number of events or counts in the histogram
-  FIELDNAM: Total number of histogram events
+  <<: *support_data_defaults
+  CATDESC: Total number of events/counts in the histogram
+  FIELDNAM: Total number of counts in histogram
+  FILLVAL: *int_fillval
+  FORMAT: I11
+  LABLAXIS: Num of counts
+  VALIDMAX: *max_uint32
 
 filter_temperature_average:
-  <<: *metadata_attrs
-  CATDESC: Filter temperature, averaged per block, and unit encoded
-  FIELDNAM: Average filter temperature, unit encoded
+  <<: *support_data_defaults
+  CATDESC: Uint-encoded spin-block-averaged filter temperature
+  FIELDNAM: Average filter temperature
+  FILLVAL: *max_uint16
+  FORMAT: I4
+  LABLAXIS: Avgd Temperature
+  VALIDMAX: 255
 
 filter_temperature_variance:
-  <<: *metadata_attrs
-  CATDESC: Filter temperature variance, per block, and unit encoded.
-  FIELDNAM: Uint encoded filter temperature variance
+  <<: *support_data_defaults
+  CATDESC: Uint-encoded spin-block-averaged variance of filter temperature
+  FIELDNAM: Variance of filter temperature
+  FILLVAL: *max_uint32
+  FORMAT: I6
+  LABLAXIS: Variance
+  VALIDMAX: *max_uint16
 
 hv_voltage_average:
-  <<: *metadata_attrs
-  CATDESC: block averaged HV voltage on the CEM, uint encoded
-  FIELDNAM: Uint encoded average HV voltage
+  <<: *support_data_defaults
+  CATDESC: Uint-encoded spin-block-averaged CEM voltage
+  FIELDNAM: Uint-encoded averaged CEM voltage
+  FILLVAL: *max_uint32
+  FORMAT: I6
+  LABLAXIS: Avg voltage
+  VALIDMAX: *max_uint16
 
 hv_voltage_variance:
-  <<: *metadata_attrs
+  <<: *support_data_defaults
   CATDESC: variance of  HV voltage on the CEM, uint encoded
   FIELDNAM: Uint encoded HV voltage variance
+  FILLVAL: *int_fillval
+  LABLAXIS: Variance
+  VALIDMAX: *max_uint32
 
 spin_period_average:
-  <<: *metadata_attrs
-  CATDESC: Block averaged spin period, uint encoded
-  FIELDNAM: Average spin period, uint encoded
+  <<: *support_data_defaults
+  CATDESC: Uint-encoded spin-block-averaged spin period
+  DEPEND_0: epoch
+  DISPLAY_TYPE: time_series
+  FIELDNAM: Uint-encoded average spin period
+  FILLVAL: *max_uint32
+  FORMAT: I6
+  LABLAXIS: Spin period
+  UNITS: ' '
+  VALIDMAX: 50000 # TBC 15.38 s where 20.9712 s = 65535, rounded up
+  VALIDMIN: 45000 # TBC 14.63 s where 20.9712 s = 65535, rounded down
+  VAR_TYPE: support_data
 
 spin_period_variance:
-  <<: *metadata_attrs
-  CATDESC: Variance of spin period, uint encoded
-  FIELDNAM: Variance of spin period, uint encoded
+  <<: *support_data_defaults
+  CATDESC: Uint-encoded spin-block-averaged variance of spin period
+  FIELDNAM: Uint-encoded variance of spin period
+  FILLVAL: *int_fillval
+  FORMAT: I10
+  LABLAXIS: Variance
+  VALIDMAX: *max_uint32
 
 pulse_length_average:
-  <<: *metadata_attrs
-  CATDESC: Block averaged impulse length, uint encoded
-  FIELDNAM: Block averaged impulse length, uint encoded
+  <<: *support_data_defaults
+  CATDESC: Uint-encoded spin-block-averaged pulse length
+  FIELDNAM: Averaged pulse length
+  FILLVAL: *max_uint16
+  FORMAT: I4
+  LABLAXIS: Avg pulse len
+  VALIDMAX: 255
 
 pulse_length_variance:
-  <<: *metadata_attrs
-  CATDESC: Variance of impulse length, uint encoded
-  FIELDNAM: Variance of impulse length, uint encoded
+  <<: *support_data_defaults
+  CATDESC: Uint encoded spin-block-averaged variance of pulse length
+  FIELDNAM: Variance of pulse length
+  FILLVAL: *max_uint32
+  FORMAT: I10
+  LABLAXIS: Variance
+  VALIDMAX: *max_uint16
 # End of not-in--dicts in generate_de_dataset
 
 # support_data
 seq_count_in_pkts_file:
-  <<: *metadata_attrs
-  CATDESC: Sequence counter from packet
-  FIELDNAM: Sequence counter
+  <<: *support_data_defaults
+# TBD: problem with several values associated with one epoch value
+  CATDESC: Ordinal number of a packet in a sequence of multiple CCSDS packets
+  FIELDNAM: Packet sequence counter
+  FILLVAL: *max_uint32
+  FORMAT: I6
+  LABLAXIS: Counter
+  VALIDMAX: 65534 # uint16_max - 1, because it must be less than VALIDMAX for number_of_de_packets
 
 number_of_de_packets:
-  <<: *metadata_attrs
-  CATDESC: Number of DE packets
+  <<: *support_data_defaults
+  CATDESC: Number of packets for a given portion (second) of direct-event data
   FIELDNAM: Number of DE packets
+  FILLVAL: *max_uint32
+  FORMAT: I5
+  LABLAXIS: Num of packets
+  VALIDMAX: *max_uint16
 # End of support data
 
 # data_every_second in glows_l1a.py
 imap_sclk_last_pps:
-  <<: *metadata_attrs
-  CATDESC: IMAP seconds for last PPS
-  FIELDNAM: IMAP seconds for last PPS
+  <<: *support_data_defaults
+  CATDESC: IMAP-clock seconds for last PPS
+  FIELDNAM: IMAP-clock seconds for last PPS
+  FILLVAL: *max_uint32
+  FORMAT: I11
+  LABLAXIS: IMAP seconds
+  UNITS: seconds
+  VALIDMAX: *max_uint32_min_one
 
 glows_sclk_last_pps:
-  <<: *metadata_attrs
-  CATDESC: GLOWS seconds for last PPS
-  FIELDNAM: GLOWS seconds for last PPS
+  <<: *support_data_defaults
+  CATDESC: GLOWS-clock seconds for last PPS
+  FIELDNAM: GLOWS-clock seconds for last PPS
+  DISPLAY_TYPE: no_plot
+  FILLVAL: *max_uint32
+  FORMAT: I11
+  LABLAXIS: GLOWS seconds
+  UNITS: seconds
+  VALIDMAX: *max_uint32_min_one
 
 glows_ssclk_last_pps:
-  <<: *metadata_attrs
-  CATDESC: GLOWS subseconds for last PPS, with a max of 2000000
-  FIELDNAM: GLOWS subseconds for last PPS
+  <<: *support_data_defaults
+  CATDESC: GLOWS-clock subseconds for last PPS
+  FIELDNAM: GLOWS-clock subseconds for last PPS
+  DISPLAY_TYPE: no_plot
+  FILLVAL: *max_uint32
+  LABLAXIS: GLOWS subseconds
+  VALIDMAX: 1999999
 
 imap_sclk_next_pps:
-  <<: *metadata_attrs
-  CATDESC: IMAP seconds for next PPS
-  FIELDNAM: IMAP seconds for next PPS
+  <<: *support_data_defaults
+  CATDESC: IMAP-clock seconds for next PPS
+  FIELDNAM: IMAP-clock seconds for next PPS
+  FILLVAL: *max_uint32
+  FORMAT: I11
+  LABLAXIS: IMAP seconds
+  UNITS: seconds
+  VALIDMAX: *max_uint32_min_one
 
 catbed_heater_active:
-  <<: *metadata_attrs
-  CATDESC: Indicates if the heater is active
-  FIELDNAM: Heater active flag
+  <<: *support_data_defaults
+  CATDESC: Catbed-heater activity flag (1 - active, 0 - not active)
+  FIELDNAM: Catbed-heater activity flag
+  FILLVAL: -128
+  FORMAT: I2
+  LABLAXIS: Flag
 
 spin_period_valid:
-  <<: *metadata_attrs
-  CATDESC: indicates if the spin phase is valid
-  FIELDNAM: valid spin phase flag
+  <<: *support_data_defaults
+  CATDESC: Spin-period-validity flag (1 - valid, 0 - invalid)
+  FIELDNAM: Spin-period-validity flag
+  FILLVAL: -128
+  FORMAT: I2
+  LABLAXIS: Flag
 
 spin_phase_at_next_pps_valid:
-  <<: *metadata_attrs
-  CATDESC: Indicates if the spin phase at next PPS is valid
-  FIELDNAM: Spin phase at next PPS is valid
+  <<: *support_data_defaults
+  CATDESC: Spin-phase-at-next-PPS validity flag (1 - valid, 0 - invalid)
+  FIELDNAM: Spin-phase-at-next-PPS validity flag
+  FILLVAL: -128
+  FORMAT: I2
+  LABLAXIS: Flag
 
 spin_period_source:
-  <<: *metadata_attrs
-  CATDESC: Flag - Spin period source
-  FIELDNAM: Flag - Spin period source
+  <<: *support_data_defaults
+  CATDESC: Spin-period-source flag (0 - from ITF, 1 - estimated by GLOWS AppSW)
+  FIELDNAM: Spin-period-source flag
+  FILLVAL: -128
+  FORMAT: I2
+  LABLAXIS: Flag
 
 spin_period:
-  <<: *metadata_attrs
+  <<: *support_data_defaults
   CATDESC: Uint encoded spin period value
   FIELDNAM: Uint encoded spin period value
+  FILLVAL: *max_uint16
+  FORMAT: I6
+  LABLAXIS: Spin period
+  VALIDMAX: 50000 # TBC 15.38 s where 20.9712 s = 65535, rounded up
+  VALIDMIN: 45000 # TBC 14.63 s where 20.9712 s = 65535, rounded down
 
 spin_phase_at_next_pps:
-  <<: *metadata_attrs
+  <<: *support_data_defaults
   CATDESC: Uint encoded next spin phase value
   FIELDNAM: Uint encoded next spin phase value
+  FILLVAL: *max_uint32
+  FORMAT: I6
+  LABLAXIS: Spin phase
+  VALIDMAX: *max_uint16
 
 number_of_completed_spins:
-  <<: *metadata_attrs
-  CATDESC: Number of spins, from onboard
-  FIELDNAM: Number of spins, from onboard
+  <<: *support_data_defaults
+  CATDESC: Number of completed spins
+  FIELDNAM: Number of completed spins
+  FILLVAL: *max_uint32
+  FORMAT: I11
+  LABLAXIS: Num of spins
+  VALIDMAX: *max_uint32_min_one
 
 filter_temperature:
-  <<: *metadata_attrs
-  CATDESC: Uint encoded temperature
-  FIELDNAM: Uint encoded temperature
+  <<: *support_data_defaults
+  CATDESC: Uint encoded filter temperature
+  FIELDNAM: Filter temperature
+  FILLVAL: *max_uint32
+  FORMAT: I6
+  LABLAXIS: Temperature
+  VALIDMAX: *max_uint16
+  DISPLAY_TYPE: time_series
 
 hv_voltage:
-  <<: *metadata_attrs
-  CATDESC: Uint encoded voltage
-  FIELDNAM: Uint encoded voltage
+  <<: *support_data_defaults
+  CATDESC: Uint encoded CEM voltage
+  FIELDNAM: Uint encoded CEM voltage
+  FILLVAL: *max_uint32
+  FORMAT: I6
+  LABLAXIS: Voltage
+  VALIDMAX: *max_uint16
 
 glows_time_on_pps_valid:
-  <<: *metadata_attrs
-  CATDESC: Indicates if the glows time is valid
-  FIELDNAM: Flag - is glows time valid
+  <<: *support_data_defaults
+  CATDESC: GLOWS-time-on-PPS-arrival validity flag (1 - valid, 0 - not valid)
+  FIELDNAM: GLOWS time validity flag
+  FILLVAL: -128
+  FORMAT: I2
+  LABLAXIS: Flag
 
 time_status_valid:
-  <<: *metadata_attrs
-  CATDESC: Flag - valid time status
-  FIELDNAM: Flag - valid time status
+  <<: *support_data_defaults
+  CATDESC: Time-status-data-structure-validity flag (1 - valid, 0 - invalid)
+  FIELDNAM: Time-status-structure-validity flag
+  FILLVAL: -128
+  FORMAT: I2
+  LABLAXIS: Flag
 
 housekeeping_valid:
-  <<: *metadata_attrs
-  CATDESC: Flag - valid housekeeping
-  FIELDNAM: Flag - valid housekeeping
+  <<: *support_data_defaults
+  CATDESC: GLOWS housekeeping validity flag (1 - valid, 0 - invalid)
+  FIELDNAM: Housekeeping validity flag
+  FILLVAL: -128
+  FORMAT: I2
+  LABLAXIS: Flag
 
 is_pps_autogenerated:
-  <<: *metadata_attrs
-  CATDESC: Indicates if PPS is autogenerated
-  FIELDNAM: Indicates if PPS is autogenerated
+  <<: *support_data_defaults
+  CATDESC: Flag indicating whether PPS is autogenerated (1 - autogenerated, 0 - external)
+  FIELDNAM: Autogenerated-PPS flag
+  FILLVAL: -128
+  FORMAT: I2
+  LABLAXIS: Flag
 
 hv_test_in_progress:
-  <<: *metadata_attrs
-  CATDESC: Flag
-  FIELDNAM: Flag
+  <<: *support_data_defaults
+  CATDESC: HV-test-in-progress flag (1 - test is on, 0 - test is off)
+  FIELDNAM: HV-test-in-progress flag
+  FILLVAL: -128
+  FORMAT: I2
+  LABLAXIS: Flag
 
 pulse_test_in_progress:
-  <<: *metadata_attrs
-  CATDESC: FLag
-  FIELDNAM: Flag
+  <<: *support_data_defaults
+  CATDESC: Pulse-test-in-progress flag (1 - test is on, 0 - test is off)
+  FIELDNAM: Pulse-test-in-progress flag
+  FILLVAL: -128 # int8_min
+  FORMAT: I2
+  LABLAXIS: Flag
 
 memory_error_detected:
-  <<: *metadata_attrs
-  CATDESC: Flag
-  FIELDNAM: Flag
+  <<: *support_data_defaults
+  CATDESC: Memory-error flag (1 - error detected, 0 - no error)
+  FIELDNAM: Memory-error flag
+  FILLVAL: -128
+  FORMAT: I2
+  LABLAXIS: Flag
 # End of data_every_second
 
-# Commented out in support_data
-# Do I include *metadata_attrs?
-missing_packet_sequences:
-  <<: *metadata_attrs
-  CATDESC: Missing packet sequence numbers
+missing_packets_sequence: # Used to be missing_packets_sequence
+  <<: *support_data_defaults
+  CATDESC: Missing packet sequence numbers # Make it a string
   FIELDNAM: Missing packet sequences
+  FILLVAL: *int_fillval
+  FORMAT: I10
+  LABLAXIS: Metadata
+  VALIDMAX: 1000000000
+  VAR_TYPE: metadata
 
 flight_software_version:
-  <<: *metadata_attrs
-  CATDESC: Flight software version
-  FIELDNAM: Flight software version
-# End of commented out support_data
+  <<: *support_data_defaults
+  CATDESC: GLOWS flight software version
+  FIELDNAM: GLOWS flight software version
+  FILLVAL: *max_uint32
+  LABLAXIS: Version
+  VALIDMAX: 16777215
