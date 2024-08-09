@@ -64,7 +64,7 @@ direct_event_components_attrs:
 direct_events:
   <<:  *default_attrs
   DEPEND_O: epoch
-  DEPEND_1: per_second
+  DEPEND_1: within_the_second
   DEPEND_2: direct_event_components
   VALIDMIN: 0
   VALIDMAX: *max_uint32
