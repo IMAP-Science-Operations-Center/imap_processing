@@ -7,23 +7,33 @@ The `imap-data-access <https://github.com/IMAP-Science-Operations-Center/imap-da
 repository provides programmatic access and a command-line utility for
 interacting with the API. It is the preferred way to use the API.
 
-The SDC provides a REST API that allows users to upload and download files, as
+The SDC further provides a REST API that allows users to upload and download files, as
 well as query for file metadata. The following documentation describes the
 various endpoints that are supported and how to use them.
+
+The following documentation covers both functionalities starting with the CLI use, and moving to the REST API usage afterwards.
 
 *Note: Several sections and links begin with* [WIP]. *As development on the API is ongoing, this indicates
 that the full implementation of the functionality is yet to be completed.*
 
 The API can be accessed from the following URL [WIP]: https://api.dev.imap-mission.com
 
+Command Line Utility
+====================
 To Install
-==========
+----------
+
+Run the following command to use the data access API CLI.
+
     .. code-block:: bash
 
         pip install imap-data-access
 
 Base Command Arguments
-======================
+----------------------
+
+The following are the base command arguments for the CLI:
+
     .. code-block:: bash
 
         imap-data-access -h # or
@@ -33,43 +43,27 @@ Base Command Arguments
 
 Add the -h flag with any base command for more information on use and functionality.
 
+Query to search for data
+------------------------
+
+You can search for files in the database using the command ``query`` and different parameters either alone or in conjunction with each other.
+
 .. openapi:: openapi.yml
    :group:
-   :include: /upload
-
-When uploading files to the API, ensure these files are stored properly in a ``data`` directory (see the Data Directory section below for more information). Then,
-ensure your working directory is one level above ``data`` in order to properly upload files.
-
-[WIP] Certain ancillary files can also be uploaded to the API. For more specific information regarding these files, visit
-`Ancillary Files <https://imap-processing.readthedocs.io/en/latest/data-access-api/calibration-files.html>`_
+   :include: /query
 
 **Example Usage:**
 
-    .. code-block:: bash
+.. code-block:: bash
 
-        imap-data-access upload /imap/swe/l1a/2024/01/imap_swe_l1a_sci_20240105_v001.cdf
+    imap-data-access query --start-date 20240101 --end-date 20241231 --output-format json
+    # The following line is returned:
+    [{'file_path': 'imap/swe/l0/2024/01/imap_swe_l0_sci_20240105_v001.pkts', 'instrument': 'swe', 'data_level': 'l0', 'descriptor': 'sci', 'start_date': '20240105', 'version': 'v001', 'extension': 'pkts'}, {'file_path': 'imap/swe/l0/2024/01/imap_swe_l0_sci_20240105_v001.pkts', 'instrument': 'swe', 'data_level': 'l0', 'descriptor': 'sci', 'start_date': '20240105', 'version': 'v001', 'extension': 'pkts'}]
 
-See also:
+Download a file
+---------------
 
-    .. code-block:: bash
-
-       curl -X GET -H "Accept: application/json" https://api.dev.imap-mission.com/upload/imap/swe/l0/2024/01/imap_swe_l0_sci_20240105_20240105_v00-01.pkts
-
-**Possible Responses:**
-
-.. code-block:: json
-
-   {"statusCode": 200, "body": "https://sds-data-<aws_account_number>.s3.amazon.com/imap/swe/l0/2024/01/imap_swe_l0_sci_20240105_20240105_v00-01.pkts?<credentials-string>"}
-   {"statusCode": 400, "body": "Invalid filename. Expected - <mission>_<instrument>_<datalevel>_<descriptor>_<startdate>_<enddate>_<version>.<extension>"}
-   {"statusCode": 400, "body": "Invalid mission."}
-   {"statusCode": 400, "body": "Invalid instrument. Please choose from {'ultra-45', 'codice', 'glows', 'hit', 'lo', 'mag', 'swe', 'hi-45', 'idex', 'ultra-90', 'hi-90', 'swapi'}"}
-   {"statusCode": 400, "body": "Invalid data level. Please choose from {'l0', 'l1', 'l1a', 'l1b', 'l1c', 'l1d', 'l2'}"}
-   {"statusCode": 400, "body": "Invalid start date format. Please use YYYYMMDD format."}
-   {"statusCode": 400, "body": "Invalid end date format. Please use YYYYMMDD format."}
-   {"statusCode": 400, "body": "Invalid version format. Please use vxx-xx format."}
-   {"statusCode": 400, "body": "Invalid extension. Extension should be pkts for data level l0 and cdf for data level higher than l0"}
-   {"statusCode": 409, "body": "https://sds-data-<aws_account_number>.s3.amazon.com/imap/swe/l0/2024/01/imap_swe_l0_sci_20240105_20240105_v00-01.pkts already exists."}
-
+You can download files form the database using the command ``download``.
 
 .. openapi:: openapi.yml
    :group:
@@ -88,47 +82,28 @@ organize the downloaded files. See the example path: ``data/imap/swe/l0/2024/01/
 
     imap-data-access upload /imap/swe/l1a/2024/01/imap_swe_l1a_sci_20240105_v001.cdf
 
-See also:
+Upload a file
+-------------
 
-.. code-block:: bash
-
-   curl -X GET -H "Accept: application/json" https://api.dev.imap-mission.com/download/imap/swe/l0/2024/01/imap_swe_l0_sci_20240105_20240105_v00-01.pkts
-
-**Possible Responses:**
-
-.. code-block:: json
-
-   {"statusCode": 302, "headers": {"Content-Type": "text/html", "Location": "s3://sds-data/imap/swe/l0/2024/01/imap_swe_l0_sci_20240105_20240105_v00-01"}, "body": {"download_url": "s3://sds-data/imap/swe/l0/2024/01/imap_swe_l0_sci_20240105_20240105_v00-01"}}
-   {"statusCode": 400, "body": "No file requested for download. Please provide a filename in the path. Eg. /download/path/to/file/filename.pkts"}
-   {"statusCode": 404, "body": "File not found, make sure you include the full path to the file in the request, e.g. /download/path/to/file/filename.pkts"}
-
+Similarly, you may upload a file to the data base using the command ``upload``.
 
 .. openapi:: openapi.yml
    :group:
-   :include: /query
+   :include: /upload
+
+When uploading files to the API, ensure these files are stored properly in a ``data`` directory (see the Data Directory section below for more information). Then,
+ensure your working directory is one level above ``data`` in order to properly upload files.
+
+[WIP] Certain ancillary files can also be uploaded to the API. For more specific information regarding these files, visit
+`Ancillary Files <https://imap-processing.readthedocs.io/en/latest/data-access-api/calibration-files.html>`_
 
 **Example Usage:**
 
-.. code-block:: bash
+    .. code-block:: bash
 
-    imap-data-access query --start-date 20240101 --end-date 20241231 --output-format json
-    # The following line is returned:
-    [{'file_path': 'imap/swe/l0/2024/01/imap_swe_l0_sci_20240105_v001.pkts', 'instrument': 'swe', 'data_level': 'l0', 'descriptor': 'sci', 'start_date': '20240105', 'version': 'v001', 'extension': 'pkts'}, {'file_path': 'imap/swe/l0/2024/01/imap_swe_l0_sci_20240105_v001.pkts', 'instrument': 'swe', 'data_level': 'l0', 'descriptor': 'sci', 'start_date': '20240105', 'version': 'v001', 'extension': 'pkts'}]
+        imap-data-access upload /imap/swe/l1a/2024/01/imap_swe_l1a_sci_20240105_v001.cdf
 
-See also:
-
-.. code-block:: bash
-
-   curl -X GET -H "Accept: application/json" https://api.dev.imap-mission.com/query?instrument=swe&data_level=l0&descriptor=sci&start_date=20240105&end_date=20240105&extension=pkts
-
-**Possible Responses:**
-
-.. code-block:: json
-
-   {"statusCode": 200, "headers": {"Content-Type": "application/json", "Access-Control-Allow-Origin": "*"}, "body": [{"file_path": "imap/swe/l0/2024/01/imap_swe_l0_sci_20240105_20240105_v00-05.pkts", "instrument": "swe", "data_level": "l0", "descriptor": "sci", "start_date": "20240105", "end_date": "20240105", "version": "v00-05", "extension": "pkts"}]}
-   {"statusCode": 400, "headers": {"Content-Type": "application/json", "Access-Control-Allow-Origin": "*"}, "body": "<param> is not a valid query parameter. Valid query parameters are: ['file_path', 'instrument', 'data_level', 'descriptor', 'start_date', 'end_date', 'version', 'extension']"}
-
-Importing as a Package
+Importing as a package
 ======================
 Imap data access can also be imported and used as a python package if desired.
 
@@ -151,7 +126,8 @@ Imap data access can also be imported and used as a python package if desired.
 
 Configuration
 =============
-**Data Directory**
+Data Directory
+--------------
 
 The folder structure for data files within the IMAP SDC is rigidly defined, so the data access will mimic that structure to make sure all data is stored in the same hierarchical structure as the SDC. This will enable seamless transition between a user's local system and the SDC. This is only used for downloads.
 A user's root data location can be specified as an environment variable IMAP_DATA_DIR or through a configuration dictionary within the package itself imap_data_access.config["DATA_DIR"]. If the IMAP_DATA_DIR variable is not set, the program defaults to the user's current working directory + data/.
@@ -179,13 +155,30 @@ for example, with ``IMAP_DATA_DIR=/data:``
                   01/
                     imap_swe_l0_sci_20240105_v001.pkts
 
-**Data Access URL**
+Data Access URL
+---------------
 
 To change the default URL that the package accesses, you can set the environment variable ``IMAP_DATA_ACCESS_URL`` or within the package ``imap_data_access.config["DATA_ACCESS_URL"]``. The default is the development server https://api.dev.imap-mission.com.
 
+File Validation
+===============
+
+This package validates filenames and paths to check they follow our standards, as defined by the filename conventions. There is also a class available for use by other packages to create filepaths and filenames that follow the IMAP SDC conventions.
+To use this class, use ``imap_data_access.ScienceFilePath``.
+
+Usage:
+
+    .. code-block:: bash
+
+        science_file = imap_data_access.ScienceFilePath("imap_swe_l0_sci_20240101_v001.pkts")
+
+        # Filepath = /imap/swe/l0/2024/01/imap_swe_l0_sci_20240101_v001.pkts
+        filepath = science_file.construct_path()
+
 Troubleshooting
 ===============
-**Network Issues**
+Network Issues
+--------------
 
 **SSL**
 
@@ -213,25 +206,69 @@ That generally means the Python environment you're using is not finding your sys
 
 This could mean that the service is temporarily down. If you continue to encounter this, reach out to the IMAP SDC at imap-sdc@lasp.colorado.edu.
 
-**FileNotFoundError**
+FileNotFoundError
+-----------------
 
 This could mean that the local data directory is not set up with the same paths as the SDC. See the data directory section for an example of how to set this up.
 
-File Validation
-===============
+REST API Specification
+======================
+Upload
+------
 
-This package validates filenames and paths to check they follow our standards, as defined by the filename conventions. There is also a class available for use by other packages to create filepaths and filenames that follow the IMAP SDC conventions.
-To use this class, use ``imap_data_access.ScienceFilePath``.
-
-Usage:
+**Example Usage:**
 
     .. code-block:: bash
 
-        science_file = imap_data_access.ScienceFilePath("imap_swe_l0_sci_20240101_v001.pkts")
+       curl -X GET -H "Accept: application/json" https://api.dev.imap-mission.com/upload/imap/swe/l0/2024/01/imap_swe_l0_sci_20240105_20240105_v00-01.pkts
 
-        # Filepath = /imap/swe/l0/2024/01/imap_swe_l0_sci_20240101_v001.pkts
-        filepath = science_file.construct_path()
+**Possible Responses:**
 
+.. code-block:: json
+
+   {"statusCode": 200, "body": "https://sds-data-<aws_account_number>.s3.amazon.com/imap/swe/l0/2024/01/imap_swe_l0_sci_20240105_20240105_v00-01.pkts?<credentials-string>"}
+   {"statusCode": 400, "body": "Invalid filename. Expected - <mission>_<instrument>_<datalevel>_<descriptor>_<startdate>_<enddate>_<version>.<extension>"}
+   {"statusCode": 400, "body": "Invalid mission."}
+   {"statusCode": 400, "body": "Invalid instrument. Please choose from {'ultra-45', 'codice', 'glows', 'hit', 'lo', 'mag', 'swe', 'hi-45', 'idex', 'ultra-90', 'hi-90', 'swapi'}"}
+   {"statusCode": 400, "body": "Invalid data level. Please choose from {'l0', 'l1', 'l1a', 'l1b', 'l1c', 'l1d', 'l2'}"}
+   {"statusCode": 400, "body": "Invalid start date format. Please use YYYYMMDD format."}
+   {"statusCode": 400, "body": "Invalid end date format. Please use YYYYMMDD format."}
+   {"statusCode": 400, "body": "Invalid version format. Please use vxx-xx format."}
+   {"statusCode": 400, "body": "Invalid extension. Extension should be pkts for data level l0 and cdf for data level higher than l0"}
+   {"statusCode": 409, "body": "https://sds-data-<aws_account_number>.s3.amazon.com/imap/swe/l0/2024/01/imap_swe_l0_sci_20240105_20240105_v00-01.pkts already exists."}
+
+
+Download
+--------
+
+**Example Usage:**
+
+.. code-block:: bash
+
+   curl -X GET -H "Accept: application/json" https://api.dev.imap-mission.com/download/imap/swe/l0/2024/01/imap_swe_l0_sci_20240105_20240105_v00-01.pkts
+
+**Possible Responses:**
+
+.. code-block:: json
+
+   {"statusCode": 302, "headers": {"Content-Type": "text/html", "Location": "s3://sds-data/imap/swe/l0/2024/01/imap_swe_l0_sci_20240105_20240105_v00-01"}, "body": {"download_url": "s3://sds-data/imap/swe/l0/2024/01/imap_swe_l0_sci_20240105_20240105_v00-01"}}
+   {"statusCode": 400, "body": "No file requested for download. Please provide a filename in the path. Eg. /download/path/to/file/filename.pkts"}
+   {"statusCode": 404, "body": "File not found, make sure you include the full path to the file in the request, e.g. /download/path/to/file/filename.pkts"}
+
+Query
+------
+**Example Usage:**
+
+.. code-block:: bash
+
+   curl -X GET -H "Accept: application/json" https://api.dev.imap-mission.com/query?instrument=swe&data_level=l0&descriptor=sci&start_date=20240105&end_date=20240105&extension=pkts
+
+**Possible Responses:**
+
+.. code-block:: json
+
+   {"statusCode": 200, "headers": {"Content-Type": "application/json", "Access-Control-Allow-Origin": "*"}, "body": [{"file_path": "imap/swe/l0/2024/01/imap_swe_l0_sci_20240105_20240105_v00-05.pkts", "instrument": "swe", "data_level": "l0", "descriptor": "sci", "start_date": "20240105", "end_date": "20240105", "version": "v00-05", "extension": "pkts"}]}
+   {"statusCode": 400, "headers": {"Content-Type": "application/json", "Access-Control-Allow-Origin": "*"}, "body": "<param> is not a valid query parameter. Valid query parameters are: ['file_path', 'instrument', 'data_level', 'descriptor', 'start_date', 'end_date', 'version', 'extension']"}
 
 Other pages
 ===========
