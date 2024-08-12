@@ -37,7 +37,7 @@ def _autoclear_spice():
 
 @pytest.fixture(scope="session")
 def spice_test_data_path(imap_tests_path):
-    return imap_module_directory.parent / "tools/tests/test_data/spice"
+    return imap_tests_path / "spice/test_data"
 
 
 @pytest.fixture()
@@ -59,7 +59,7 @@ def furnish_sclk(spice_test_data_path):
 
 
 @pytest.fixture()
-def use_test_metakernel(tmpdir_factory, monkeypatch, spice_test_data_path):
+def use_test_metakernel(monkeypatch, spice_test_data_path):
     """For the whole test session, set the SPICE_METAKERNEL environment variable
     Prime the test metakernel by creating it from the template metakernel
     (allows using absolute paths on any dev system)"""
@@ -119,10 +119,9 @@ def use_test_metakernel(tmpdir_factory, monkeypatch, spice_test_data_path):
                         kernel = kernel[stop_idx:]
         return kernels_to_load
 
-    metakernel_path = tmpdir_factory.mktemp("spice")
-    metakernel = metakernel_path.join("imap_2024_v001.tm")
+    metakernel_path = imap_data_access.config["DATA_DIR"] / "imap_2024_v001.tm"
     kernels_to_load = get_test_kernels_to_load()
-    make_metakernel_from_kernels(metakernel, kernels_to_load)
-    monkeypatch.setenv("SPICE_METAKERNEL", str(metakernel))
-    yield str(metakernel)
+    make_metakernel_from_kernels(metakernel_path, kernels_to_load)
+    monkeypatch.setenv("SPICE_METAKERNEL", str(metakernel_path))
+    yield str(metakernel_path)
     spice.kclear()
