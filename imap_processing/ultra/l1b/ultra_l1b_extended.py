@@ -2,19 +2,18 @@
 
 import numpy as np
 
-from imap_processing.ultra.l1b.l1b_extended_config import (
-    D_SLIT_FOIL,
-    N_ELEMENTS,
-    SLIT_Z,
-    TRIG_CONSTANT,
-    YF_ESTIMATE_LEFT,
-    YF_ESTIMATE_RIGHT,
-)
 from imap_processing.ultra.l1b.lookup_utils import (
     get_image_params,
     get_y_adjust,
 )
 
+# Constants in IMAP-Ultra Flight Software Specification document.
+D_SLIT_FOIL = 3.39  # shortest distance from slit to foil (mm)
+SLIT_Z = 44.89  # position of slit on Z axis (mm)
+YF_ESTIMATE_LEFT = 40.0  # front position of particle for left shutter (mm)
+YF_ESTIMATE_RIGHT = -40  # front position of particle for right shutter (mm)
+N_ELEMENTS = 256  # number of elements in lookup table
+TRIG_CONSTANT = 81.92  # trigonometric constant (mm)
 # TODO: make lookup tables into config files.
 
 
@@ -42,7 +41,7 @@ def get_front_x_position(
         X front position (hundredths of a millimeter).
     """
     # Left and right start types.
-    indices = np.where((start_type == 1) | (start_type == 2))
+    indices = np.nonzero((start_type == 1) | (start_type == 2))
 
     xftsc = get_image_params("XFTSC")
     xft_lt_off = get_image_params("XFTLTOFF")
@@ -80,8 +79,8 @@ def get_front_y_position(
         Front y position in hundredths of a millimeter.
     """
     # Determine start types
-    index_left = np.where(start_type == 1)
-    index_right = np.where(start_type == 2)
+    index_left = np.nonzero(start_type == 1)
+    index_right = np.nonzero(start_type == 2)
 
     yf = np.zeros(len(start_type))
     d = np.zeros(len(start_type))
