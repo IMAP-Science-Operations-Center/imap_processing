@@ -1,6 +1,7 @@
 """Calculates Extended Raw Events for ULTRA L1b."""
 
 import numpy as np
+from numpy import ndarray
 
 from imap_processing.ultra.l1b.lookup_utils import (
     get_image_params,
@@ -17,9 +18,7 @@ TRIG_CONSTANT = 81.92  # trigonometric constant (mm)
 # TODO: make lookup tables into config files.
 
 
-def get_front_x_position(
-    start_type: np.array, start_position_tdc: np.array
-) -> np.array:
+def get_front_x_position(start_type: ndarray, start_position_tdc: ndarray) -> ndarray:
     """
     Calculate the front xf position.
 
@@ -51,12 +50,10 @@ def get_front_x_position(
     # Calculate xf and convert to hundredths of a millimeter
     xf = (xftsc * -start_position_tdc[indices] + xft_off) * 100
 
-    return xf
+    return np.array(xf)
 
 
-def get_front_y_position(
-    start_type: np.array, yb: np.array
-) -> tuple[np.array, np.array]:
+def get_front_y_position(start_type: ndarray, yb: ndarray) -> tuple[ndarray, ndarray]:
     """
     Compute the adjustments for the front y position and distance front to back.
 
@@ -111,4 +108,4 @@ def get_front_y_position(
     # hundredths of a millimeter
     d[index_right] = (SLIT_Z - distance_adjust_right) * 100
 
-    return d, yf
+    return np.array(d), np.array(yf)
