@@ -109,3 +109,30 @@ def get_front_y_position(start_type: ndarray, yb: ndarray) -> tuple[ndarray, nda
     d[index_right] = (SLIT_Z - distance_adjust_right) * 100
 
     return np.array(d), np.array(yf)
+
+
+def get_path_length(front_position: tuple, back_position: tuple, d: float) -> float:
+    """
+    Calculate the path length.
+
+    Parameters
+    ----------
+    front_position : tuple of floats
+        Front position (xf,yf) (hundredths of a millimeter).
+    back_position : tuple of floats
+        Back position (xb,yb) (hundredths of a millimeter).
+    d : float
+        Distance from slit to foil (hundredths of a millimeter).
+
+    Returns
+    -------
+    r : float
+        Path length (hundredths of a millimeter).
+    """
+    r: float = np.sqrt(
+        (front_position[0] - back_position[0]) ** 2
+        + (front_position[1] - back_position[1]) ** 2
+        + (d) ** 2
+    )
+
+    return r
