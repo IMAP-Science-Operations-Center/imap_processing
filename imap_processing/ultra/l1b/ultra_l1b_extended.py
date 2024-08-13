@@ -50,7 +50,7 @@ def get_front_x_position(start_type: ndarray, start_position_tdc: ndarray) -> nd
     # Calculate xf and convert to hundredths of a millimeter
     xf = (xftsc * -start_position_tdc[indices] + xft_off) * 100
 
-    return np.array(xf, dtype=np.float64)
+    return xf
 
 
 def get_front_y_position(start_type: ndarray, yb: ndarray) -> tuple[ndarray, ndarray]:
