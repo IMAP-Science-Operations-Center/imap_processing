@@ -29,14 +29,14 @@ def get_front_x_position(start_type: ndarray, start_position_tdc: ndarray) -> nd
 
     Parameters
     ----------
-    start_type : np.array
+    start_type : ndarray
         Start Type: 1=Left, 2=Right.
-    start_position_tdc : np.array
+    start_position_tdc : ndarray
         Start Position Time to Digital Converter (TDC).
 
     Returns
     -------
-    xf : np.array
+    xf : ndarray
         X front position (hundredths of a millimeter).
     """
     # Left and right start types.
@@ -50,7 +50,7 @@ def get_front_x_position(start_type: ndarray, start_position_tdc: ndarray) -> nd
     # Calculate xf and convert to hundredths of a millimeter
     xf = (xftsc * -start_position_tdc[indices] + xft_off) * 100
 
-    return np.array(xf)
+    return np.array(xf, dtype=np.float64)
 
 
 def get_front_y_position(start_type: ndarray, yb: ndarray) -> tuple[ndarray, ndarray]:
