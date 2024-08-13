@@ -48,9 +48,9 @@ def get_front_x_position(start_type: ndarray, start_position_tdc: ndarray) -> nd
     xft_off = np.where(start_type[indices] == 1, xft_lt_off, xft_rt_off)
 
     # Calculate xf and convert to hundredths of a millimeter
-    xf = (xftsc * -start_position_tdc[indices] + xft_off) * 100
+    xf: ndarray = (xftsc * -start_position_tdc[indices] + xft_off) * 100
 
-    return np.asarray(xf, dtype=np.float64)
+    return xf
 
 
 def get_front_y_position(start_type: ndarray, yb: ndarray) -> tuple[ndarray, ndarray]:
