@@ -1,3 +1,5 @@
+"""Tests Extended Raw Events for ULTRA L1b."""
+
 import pandas as pd
 import pytest
 
