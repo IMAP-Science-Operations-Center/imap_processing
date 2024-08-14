@@ -11,8 +11,6 @@ The SDC further provides a REST API that allows users to upload and download fil
 well as query for file metadata. The following documentation describes the
 various endpoints that are supported and how to use them.
 
-The following documentation covers both functionalities starting with the CLI use, and moving to the REST API usage afterwards.
-
 *Note: Several sections and links begin with* [WIP]. *As development on the API is ongoing, this indicates
 that the full implementation of the functionality is yet to be completed.*
 
@@ -23,7 +21,7 @@ Command Line Utility
 To Install
 ----------
 
-Run the following command to use the data access API CLI.
+Run the following command to use the API CLI.
 
     .. code-block:: bash
 
@@ -32,7 +30,7 @@ Run the following command to use the data access API CLI.
 Base Command Arguments
 ----------------------
 
-The following are the base command arguments for the CLI:
+The following are base command arguments for the CLI:
 
     .. code-block:: bash
 
@@ -42,11 +40,6 @@ The following are the base command arguments for the CLI:
         imap-data-access upload
 
 Add the -h flag with any base command for more information on use and functionality.
-
-Query to search for data
-------------------------
-
-You can search for files in the database using the command ``query`` and different parameters either alone or in conjunction with each other.
 
 .. openapi:: openapi.yml
    :group:
@@ -60,10 +53,6 @@ You can search for files in the database using the command ``query`` and differe
     # The following line is returned:
     [{'file_path': 'imap/swe/l0/2024/01/imap_swe_l0_sci_20240105_v001.pkts', 'instrument': 'swe', 'data_level': 'l0', 'descriptor': 'sci', 'start_date': '20240105', 'version': 'v001', 'extension': 'pkts'}, {'file_path': 'imap/swe/l0/2024/01/imap_swe_l0_sci_20240105_v001.pkts', 'instrument': 'swe', 'data_level': 'l0', 'descriptor': 'sci', 'start_date': '20240105', 'version': 'v001', 'extension': 'pkts'}]
 
-Download a file
----------------
-
-You can download files form the database using the command ``download``.
 
 .. openapi:: openapi.yml
    :group:
@@ -81,11 +70,6 @@ organize the downloaded files. See the example path: ``data/imap/swe/l0/2024/01/
 .. code-block:: bash
 
     imap-data-access upload /imap/swe/l1a/2024/01/imap_swe_l1a_sci_20240105_v001.cdf
-
-Upload a file
--------------
-
-Similarly, you may upload a file to the data base using the command ``upload``.
 
 .. openapi:: openapi.yml
    :group:
