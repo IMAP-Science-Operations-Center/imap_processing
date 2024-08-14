@@ -1,14 +1,15 @@
 """Calculates Extended Raw Events for ULTRA L1b."""
 
 from enum import Enum
+
 import numpy as np
-from numpy import ndarray
 import xarray
+from numpy import ndarray
 
 from imap_processing.ultra.l1b.lookup_utils import (
     get_back_position,
-    get_norm,
     get_image_params,
+    get_norm,
     get_y_adjust,
 )
 
@@ -24,6 +25,7 @@ TRIG_CONSTANT = 81.92  # trigonometric constant (mm)
 
 class StopType(Enum):
     """Stop Type: 1=Top, 2=Bottom."""
+
     Top = 1
     Bottom = 2
 
@@ -122,7 +124,7 @@ def get_front_y_position(start_type: ndarray, yb: ndarray) -> tuple[ndarray, nda
 
 
 def get_ph_tof_and_back_positions(
-    de_dataset: xarray.Dataset, xf: np.array, sensor: str
+    de_dataset: xarray.Dataset, xf: np.ndarray, sensor: str
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """
     Calculate back xb, yb position and tof.
@@ -157,8 +159,11 @@ def get_ph_tof_and_back_positions(
     yb : np.array
         Back positions in y direction (hundredths of a millimeter).
     """
-    indices = np.where(np.isin(de_dataset["STOP_TYPE"], [1, 2]))[0]
-    xf = xf[indices]
+    indices = np.where(
+        np.isin(de_dataset["STOP_TYPE"], [StopType.Top.value, StopType.Bottom.value])
+    )[0]
+
+    xf_ph = xf[indices]
 
     # There are mismatches between the stop TDCs, i.e., SpN, SpS, SpE, and SpW.
     # This normalizes the TDCs
@@ -191,8 +196,8 @@ def get_ph_tof_and_back_positions(
     # Stop Type: 1=Top, 2=Bottom
     # Convert converts normalized TDC values into units of
     # hundredths of a millimeter using lookup tables.
-    index_top = indices[de_dataset["STOP_TYPE"].data[indices] == 1]
-    stop_type_top = de_dataset["STOP_TYPE"].data[indices] == 1
+    index_top = indices[de_dataset["STOP_TYPE"].data[indices] == StopType.Top.value]
+    stop_type_top = de_dataset["STOP_TYPE"].data[indices] == StopType.Top.value
     xb[index_top] = get_back_position(xb_index[stop_type_top], "XBkTp", sensor)
     yb[index_top] = get_back_position(yb_index[stop_type_top], "YBkTp", sensor)
 
@@ -200,10 +205,12 @@ def get_ph_tof_and_back_positions(
     t2[index_top] = get_image_params("TOFSC") * t1[stop_type_top] + get_image_params(
         "TOFTPOFF"
     )
-    tof[index_top] = t2[index_top] + xf[stop_type_top] * get_image_params("XFTTOF")
+    tof[index_top] = t2[index_top] + xf_ph[stop_type_top] * get_image_params("XFTTOF")
 
-    index_bottom = indices[de_dataset["STOP_TYPE"].data[indices] == 2]
-    stop_type_bottom = de_dataset["STOP_TYPE"].data[indices] == 2
+    index_bottom = indices[
+        de_dataset["STOP_TYPE"].data[indices] == StopType.Bottom.value
+    ]
+    stop_type_bottom = de_dataset["STOP_TYPE"].data[indices] == StopType.Bottom.value
     xb[index_bottom] = get_back_position(xb_index[stop_type_bottom], "XBkBt", sensor)
     yb[index_bottom] = get_back_position(yb_index[stop_type_bottom], "YBkBt", sensor)
 
@@ -211,9 +218,11 @@ def get_ph_tof_and_back_positions(
     t2[index_bottom] = get_image_params("TOFSC") * t1[
         stop_type_bottom
     ] + get_image_params("TOFBTOFF")  # 10*ns
-    tof[index_bottom] = t2[index_bottom] + xf[stop_type_bottom] * get_image_params(
+
+    tof[index_bottom] = t2[index_bottom] + xf_ph[stop_type_bottom] * get_image_params(
         "XFTTOF"
     )
+
     # Multiply by 100 to get tenths of a nanosecond.
     tof = tof[indices] * 100
     t2 = t2[indices]

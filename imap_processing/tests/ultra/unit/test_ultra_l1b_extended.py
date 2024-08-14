@@ -5,6 +5,7 @@ import pandas as pd
 import pytest
 
 from imap_processing.ultra.l1b.ultra_l1b_extended import (
+    StopType,
     get_front_x_position,
     get_front_y_position,
     get_path_length,
@@ -77,8 +78,10 @@ def test_get_ph_tof_and_back_positions(
     )
 
     ph_indices = np.where(
-        (de_dataset["STOP_TYPE"] == 1) | (de_dataset["STOP_TYPE"] == 2)
+        np.isin(de_dataset["STOP_TYPE"], [StopType.Top.value, StopType.Bottom.value])
     )[0]
+
     selected_rows = df_filt.iloc[ph_indices]
+
     np.testing.assert_array_equal(ph_xb, selected_rows["Xb"].astype("float"))
     np.testing.assert_array_equal(ph_yb, selected_rows["Yb"].astype("float"))
