@@ -89,7 +89,7 @@ class CoDICEL1aPipeline:
         apid : int
             The APID of interest.
         """
-        config = constants.DATA_PRODUCT_CONFIGURATIONS.get(apid)  # type: ignore[call-overload]
+        config = constants.DATA_PRODUCT_CONFIGURATIONS.get(apid)
         self.num_counters = config["num_counters"]
         self.num_energy_steps = config["num_energy_steps"]
         self.variable_names = config["variable_names"]
@@ -323,7 +323,7 @@ def create_event_dataset(
         met_to_j2000ns(met),  # TODO: Fix after SIT-3 (see note below)
         name="epoch",
         dims=["epoch"],
-        attrs=cdf_attrs.get_variable_attributes("epoch_attrs"),
+        attrs=cdf_attrs.get_variable_attributes("epoch"),
     )
 
     # Create the dataset to hold the data variables
@@ -376,7 +376,7 @@ def create_hskp_dataset(
         ),
         name="epoch",
         dims=["epoch"],
-        attrs=cdf_attrs.get_variable_attributes("epoch_attrs"),
+        attrs=cdf_attrs.get_variable_attributes("epoch"),
     )
 
     dataset = xr.Dataset(
