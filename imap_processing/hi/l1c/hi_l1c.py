@@ -99,13 +99,11 @@ def allocate_pset_dataset(n_esa_steps: int, sensor_str: str) -> xr.Dataset:
     # preallocate coordinates xr.DataArrays
     coords = dict()
     # epoch coordinate has only 1 entry for pointing set
-    attrs = attr_mgr.get_variable_attributes("hi_pset_epoch", check_schema=False).copy()
-    dtype = attrs.pop("dtype")
     coords["epoch"] = xr.DataArray(
-        np.empty(1, dtype=dtype),
+        np.empty(1, dtype=np.int64),  # TODO: get dtype from cdf attrs?
         name="epoch",
         dims=["epoch"],
-        attrs=attrs,
+        attrs=attr_mgr.get_variable_attributes("epoch"),
     )
     attrs = attr_mgr.get_variable_attributes(
         "hi_pset_esa_step", check_schema=False
@@ -199,7 +197,7 @@ def full_dataarray(
     name : str
         Variable name.
     attrs : dict
-        CDF variable attributes. Usually retrieved from CdfAttributeManager.
+        CDF variable attributes. Usually retrieved from ImapCdfAttributes.
     coords : dict
         Coordinate variables for the Dataset.
     shape : int or tuple

@@ -3,7 +3,6 @@
 import numpy as np
 import xarray as xr
 
-from imap_processing.cdf import epoch_attrs
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import J2000_EPOCH
 from imap_processing.lo.l0.lo_apid import LoAPID
@@ -71,7 +70,7 @@ def create_lo_scide_dataset(sci_de: list) -> xr.Dataset:
         epoch_times,
         dims=["epoch"],
         name="epoch",
-        attrs=epoch_attrs,
+        attrs=cdf_manager.get_variable_attributes("epoch"),
     )
     sci_de_energy = xr.DataArray(
         np.concatenate([sci_de_data.ENERGY for sci_de_data in sci_de]),

@@ -45,7 +45,7 @@ def hist_dataset():
         np.arange(20),
         name="epoch",
         dims=["epoch"],
-        attrs=cdf_attrs.get_variable_attributes("epoch_dim"),
+        attrs=cdf_attrs.get_variable_attributes("epoch"),
     )
 
     bins = xr.DataArray(np.arange(3600), name="bins", dims=["bins"])
@@ -102,7 +102,7 @@ def de_dataset():
         np.arange(20),
         name="epoch",
         dims=["epoch"],
-        attrs=cdf_attrs.get_variable_attributes("epoch_dim"),
+        attrs=cdf_attrs.get_variable_attributes("epoch"),
     )
 
     per_second = xr.DataArray(np.arange(2295), name="per_second", dims=["per_second"])

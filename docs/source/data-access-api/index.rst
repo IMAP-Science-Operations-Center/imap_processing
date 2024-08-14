@@ -11,13 +11,20 @@ The SDC provides a REST API that allows users to upload and download files, as
 well as query for file metadata. The following documentation describes the
 various endpoints that are supported and how to use them.
 
-The API can be accessed from the following URL: https://api.dev.imap-mission.com
+*Note: Several sections and links begin with* [WIP]. *As development on the API is ongoing, this indicates
+that the full implementation of the functionality is yet to be completed.*
 
-
+The API can be accessed from the following URL [WIP]: https://api.dev.imap-mission.com
 
 .. openapi:: openapi.yml
    :group:
    :include: /upload
+
+When uploading files to the API, ensure these files are stored properly in a ``data`` directory. Then,
+ensure your working directory is one level above the ``data`` directory in order to properly upload files.
+
+[WIP] Certain ancillary files can also be uploaded to the API. For more specific information regarding these files, visit
+`Ancillary Files <https://imap-processing.readthedocs.io/en/latest/data-access-api/calibration-files.html>`_
 
 **Example Usage:**
 
@@ -44,6 +51,13 @@ The API can be accessed from the following URL: https://api.dev.imap-mission.com
 .. openapi:: openapi.yml
    :group:
    :include: /download
+
+It is important to note that your working directory will be established as the default directory. I.e, the ``data``
+directory--which files are downloaded to--will automatically be placed in this file path. Choose your working directory
+accordingly to suit your desires.
+
+When downloading a file from the API, different folders within the ``data`` directory will be made to better
+organize the files. See the example file path: ``data/imap/swe/l0/2024/01/imap_swe_l0_sci_20240105_20240105_v00-01.pkts``
 
 **Example Usage:**
 

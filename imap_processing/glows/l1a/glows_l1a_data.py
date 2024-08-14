@@ -242,6 +242,7 @@ class HistogramL1A:
 
         # use start ID and offset to calculate the last spin ID in the block
         self.last_spin_id = l0.STARTID + l0.ENDID
+        # TODO add first spin ID
 
         # TODO: This sanity check should probably exist in the final code. However,
         # the emulator code does not properly set these values.

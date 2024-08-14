@@ -4,8 +4,7 @@ import numpy as np
 import pytest
 import xarray as xr
 
-from imap_processing import imap_module_directory
-from imap_processing.cdf.cdf_attribute_manager import CdfAttributeManager
+from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.hi.l1a.hi_l1a import hi_l1a
 from imap_processing.hi.l1b.hi_l1b import hi_l1b
 from imap_processing.hi.l1c import hi_l1c
@@ -61,7 +60,7 @@ def test_full_dataarray(name, shape, expected_shape):
         "esa_step": xr.DataArray(np.arange(10)),
         "spin_angle_bin": xr.DataArray(np.arange(360)),
     }
-    cdf_manager = CdfAttributeManager(imap_module_directory / "cdf" / "config")
+    cdf_manager = ImapCdfAttributes()
     cdf_manager.load_variable_attributes("imap_hi_variable_attrs.yaml")
 
     dataarray = hi_l1c.full_dataarray(

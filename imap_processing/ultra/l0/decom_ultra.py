@@ -31,7 +31,7 @@ logger = logging.getLogger(__name__)
 def append_tof_params(
     decom_data: dict,
     packet: Packet,
-    decompressed_data: list,
+    decompressed_data: np.ndarray,
     data_dict: dict,
     stacked_dict: dict,
 ) -> None:

@@ -41,9 +41,5 @@ repos:
     rev: 'v1.10.0'
     hooks:
       - id: mypy
-        pass_filenames: false
-        args: [ ., --strict, --explicit-package-bases,
-                  --disable-error-code, import-untyped,
-                  --disable-error-code, import-not-found,
-                  --disable-error-code, no-untyped-call,
-                  --disable-error-code, type-arg ]
+        exclude: .*(tests|docs).*
+        additional_dependencies: [ numpy==1.26.4 ]
