@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='utf-8'?>
 <xtce:SpaceSystem xmlns:xtce="http://www.omg.org/space/xtce" name="P_ILO_SCI_CNT">
-	<xtce:Header date="2023-11" version="1.0" author="IMAP SDC" />
+	<xtce:Header date="2024-07" version="1.0" author="IMAP SDC" />
 	<xtce:TelemetryMetaData>
 		<xtce:ParameterTypeSet>
 			<xtce:IntegerParameterType name="UINT1" signed="false">
@@ -55,15 +55,11 @@
 			<xtce:Parameter name="PKT_LEN" parameterTypeRef="UINT16">
 				<xtce:LongDescription>CCSDS Packet Length (number of bytes after Packet length minus 1)</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="SHCOARSE" parameterTypeRef="UINT32">
-				<xtce:ShortDescription>CCSDS Secondary Header MET</xtce:ShortDescription>
+			<xtce:Parameter name="SHCOARSE" parameterTypeRef="UINT32" shortDescription="CCSDS Secondary Header MET">
 				<xtce:LongDescription>CCSDS Secondary Header MET</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="SCI_CNT" parameterTypeRef="BYTE26880">
-				<xtce:ShortDescription>Science Count Data</xtce:ShortDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="CHKSUM" parameterTypeRef="UINT16">
-				<xtce:ShortDescription>16-bit CRC checksum</xtce:ShortDescription>
+			<xtce:Parameter name="SCI_CNT" parameterTypeRef="BYTE26880" shortDescription="Binary SCI DE data" />
+			<xtce:Parameter name="CHKSUM" parameterTypeRef="UINT16" shortDescription="16-bit CRC checksum">
 				<xtce:LongDescription>16-bit CRC checksum</xtce:LongDescription>
 			</xtce:Parameter>
 		</xtce:ParameterSet>
