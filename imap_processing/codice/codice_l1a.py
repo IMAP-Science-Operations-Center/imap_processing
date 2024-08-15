@@ -80,7 +80,7 @@ class CoDICEL1aPipeline:
         self.plan_step = plan_step
         self.view_id = view_id
 
-    def configure_data_products(self, apid: int) -> None:
+    def configure_data_products(self, apid: str) -> None:
         """
         Set the various settings for defining the data products.
 
