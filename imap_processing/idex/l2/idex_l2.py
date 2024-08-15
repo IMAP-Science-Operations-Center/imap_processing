@@ -73,8 +73,6 @@ class L2Processor:
         # Now l1 data is stored in a xarray.
         self.l1_data = load_cdf(Path(l1_file))
 
-        print(self.l1_data["Target_High"])
-
         # TODO: Perhaps I want to make this just code inside the
         #  init rather than a function?
         self.l2_attrs = get_idex_attrs(data_version)
@@ -175,6 +173,8 @@ class L2Processor:
                 discharge_time_fit = constants.FILLVAL
                 fit_uncertainty = constants.FILLVAL
 
+            variable_lower = variable.lower()
+
             time_of_impact_fit_xr = xr.DataArray(
                 # Target_High_model_time_of_impact
                 # Ion_Grid_model_time_of_impact
@@ -182,6 +182,9 @@ class L2Processor:
                 data=[time_of_impact_fit],
                 dims=("epoch"),
                 # TODO: attrs
+                attrs=self.l2_attrs.get_variable_attributes(
+                    f"{variable_lower}_model_time_of_impact"
+                ),
             )
 
             constant_offset_fit_xr = xr.DataArray(
@@ -191,6 +194,9 @@ class L2Processor:
                 data=[constant_offset_fit],
                 dims=("epoch"),
                 # TODO: attrs
+                attrs=self.l2_attrs.get_variable_attributes(
+                    f"{variable_lower}__model_constant_offset"
+                ),
             )
 
             amplitude_fit_xr = xr.DataArray(
@@ -200,6 +206,9 @@ class L2Processor:
                 data=[amplitude_fit],
                 dims=("epoch"),
                 # TODO: attrs
+                attrs=self.l2_attrs.get_variable_attributes(
+                    f"{variable_lower}_model_amplitude"
+                ),
             )
 
             rise_time_fit_xr = xr.DataArray(
@@ -209,6 +218,9 @@ class L2Processor:
                 data=[rise_time_fit],
                 dims=("epoch"),
                 # TODO: attrs
+                attrs=self.l2_attrs.get_variable_attributes(
+                    f"{variable_lower}_model_rise_time"
+                ),
             )
 
             discharge_time_xr = xr.DataArray(
@@ -218,6 +230,9 @@ class L2Processor:
                 data=[discharge_time_fit],
                 dims=("epoch"),
                 # TODO: attrs
+                attrs=self.l2_attrs.get_variable_attributes(
+                    f"{variable_lower}_discharge_time"
+                ),
             )
 
             fit_uncertainty_xr = xr.DataArray(
@@ -227,6 +242,9 @@ class L2Processor:
                 data=[fit_uncertainty],
                 dims=("epoch"),
                 # TODO: attrs
+                attrs=self.l2_attrs.get_variable_attributes(
+                    f"{variable_lower}_model_uncertainty"
+                ),
             )
 
             model_fit_list.append(
@@ -419,12 +437,17 @@ class L2Processor:
                         "Error fitting TOF Model.  Defaulting to FILLVALS. " + str(e)
                     )
 
+            variable_lower = variable.lower()
+
             amplitude_xr = xr.DataArray(
                 # TOF_Low_model_masses_amplitude
                 name=f"{variable}_model_masses_amplitude",
                 data=[mass_amplitudes],
                 dims=("epoch", "mass_number"),
                 # TODO: Attrs
+                attrs=self.l2_attrs.get_variable_attributes(
+                    f"{variable_lower}_model_masses_amplitude"
+                ),
             )
 
             center_xr = xr.DataArray(
@@ -433,6 +456,9 @@ class L2Processor:
                 data=[mass_centers],
                 dims=("epoch", "mass_number"),
                 # TODO: Attrs
+                attrs=self.l2_attrs.get_variable_attributes(
+                    f"{variable_lower}_model_masses_center"
+                ),
             )
 
             sigma_xr = xr.DataArray(
@@ -441,6 +467,9 @@ class L2Processor:
                 data=[mass_sigmas],
                 dims=("epoch", "mass_number"),
                 # TODO: Attrs
+                attrs=self.l2_attrs.get_variable_attributes(
+                    f"{variable_lower}_model_masses_sigma"
+                ),
             )
 
             gamma_xr = xr.DataArray(
@@ -449,6 +478,9 @@ class L2Processor:
                 data=[mass_gammas],
                 dims=("epoch", "mass_number"),
                 # TODO: Attrs
+                attrs=self.l2_attrs.get_variable_attributes(
+                    f"{variable_lower}_model_masses_gamma"
+                ),
             )
 
             tof_model_parameters_list.append(
@@ -489,7 +521,6 @@ class L2Processor:
         )
         result = model.fit(y, params, x=x)
         return result
-        # return result.best_values
 
     def write_l2_cdf(self) -> str:
         """
@@ -500,120 +531,6 @@ class L2Processor:
         l2_file_name : str
             The file name of the l2 file.
         """
-        # TODO: Do I need a get_global_attributes line here?
-        # self.l2_data.attrs = idex_cdf_attrs.idex_l2_global_attrs
-
-        for var in self.l2_data:
-            if "_model_amplitude" in var:
-                self.l2_data[var].attrs = {
-                    "CATDESC": var,
-                    "FIELDNAM": var,
-                    "LABLAXIS": var,
-                    "VAR_NOTES": f"The amplitude of the response for "
-                    f"{var.replace('_model_amplitude', '')}",
-                }
-                # | idex_cdf_attrs.model_amplitude_base
-                # self.l2_attrs.get_variable_attributes("model_amplitude_base")
-
-            if "_model_uncertainty" in var:
-                self.l2_data[var].attrs = {
-                    "CATDESC": var,
-                    "FIELDNAM": var,
-                    "LABLAXIS": var,
-                    "VAR_NOTES": f"The uncertainty in the model of the response for "
-                    f"{var.replace('_model_amplitude', '')}",
-                }
-                # | idex_cdf_attrs.model_dimensionless_base
-                # self.l2_attrs.get_variable_attributes("model_dimensionless_base")
-
-            if "_model_constant_offset" in var:
-                self.l2_data[var].attrs = {
-                    "CATDESC": var,
-                    "FIELDNAM": var,
-                    "VAR_NOTES": f"The constant offset of the response for "
-                    f"{var.replace('_model_constant_offset', '')}",
-                }
-                # | idex_cdf_attrs.model_amplitude_base
-                # self.l2_attrs.get_variable_attributes("model_amplitude_base")
-
-            if "_model_time_of_impact" in var:
-                self.l2_data[var].attrs = {
-                    "CATDESC": var,
-                    "FIELDNAM": var,
-                    "LABLAXIS": var,
-                    "VAR_NOTES": f"The time of impact for "
-                    f"{var.replace('_model_time_of_impact', '')}",
-                }
-                # | idex_cdf_attrs.model_time_base
-                # self.l2_attrs.get_variable_attributes("model_time_base")
-
-            if "_model_rise_time" in var:
-                self.l2_data[var].attrs = {
-                    "CATDESC": var,
-                    "FIELDNAM": var,
-                    "LABLAXIS": var,
-                    "VAR_NOTES": f"The rise time of the response for "
-                    f"{var.replace('_model_rise_time', '')}",
-                }
-                # | idex_cdf_attrs.model_time_base
-                # self.l2_attrs.get_variable_attributes("model_time_base")
-
-            if "_model_discharge_time" in var:
-                self.l2_data[var].attrs = {
-                    "CATDESC": var,
-                    "FIELDNAM": var,
-                    "LABLAXIS": var,
-                    "VAR_NOTES": f"The discharge time of the response for "
-                    f"{var.replace('_model_discharge_time', '')}",
-                }
-                # | idex_cdf_attrs.model_time_base
-                # self.l2_attrs.get_variable_attributes("model_time_base")
-            if "_model_masses_amplitude" in var:
-                self.l2_data[var].attrs = {
-                    "CATDESC": var,
-                    "FIELDNAM": var,
-                    "LABLAXIS": var,
-                    "VAR_NOTES": f"The amplitude of the first 50 peaks in "
-                    f"{var.replace('_Model_Masses_Amplitude', '')}",
-                }
-                # | idex_cdf_attrs.tof_model_amplitude_base
-                # self.l2_attrs.get_variable_attributes("tof_model_amplitude_base")
-
-            if "_model_masses_center" in var:
-                self.l2_data[var].attrs = {
-                    "CATDESC": var,
-                    "FIELDNAM": var,
-                    "LABLAXIS": var,
-                    "VAR_NOTES": f"The center of the first 50 peaks in "
-                    f"{var.replace('_model_masses_center', '')}",
-                }
-                # | idex_cdf_attrs.tof_model_dimensionless_base
-                # self.l2_attrs.get_variable_attributes("tof_model_amplitude_base")
-
-            if "_model_masses_sigma" in var:
-                self.l2_data[var].attrs = {
-                    "CATDESC": var,
-                    "FIELDNAM": var,
-                    "LABLAXIS": var,
-                    "VAR_NOTES": f"The sigma of the fitted exponentially modified "
-                    f"gaussian to the first 50 peaks in "
-                    f"{var.replace('_model_masses_sigma', '')}",
-                }
-                # | idex_cdf_attrs.tof_model_dimensionless_base
-                # self.l2_attrs.get_variable_attributes("tof_model_dimensionless_base")
-
-            if "_model_masses_gamma" in var:
-                self.l2_data[var].attrs = {
-                    "CATDESC": var,
-                    "FIELDNAM": var,
-                    "LABLAXIS": var,
-                    "VAR_NOTES": f"The gamma of the fitted exponentially modified"
-                    f" gaussian to the first 50 peaks in "
-                    f"{var.replace('_model_masses_gamma', '')}",
-                }
-                # | idex_cdf_attrs.tof_model_dimensionless_base
-                # self.l2_attrs.get_variable_attributes("tof_model_dimensionless_base")
-
         l2_file_name = self.l1_file.replace("_l1_", "_l2_")
 
         xarray_to_cdf(self.l2_data, l2_file_name)

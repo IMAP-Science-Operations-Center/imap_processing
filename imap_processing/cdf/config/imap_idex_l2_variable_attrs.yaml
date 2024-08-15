@@ -85,6 +85,19 @@ target_high_model_constant_offset:
   FIELDNAM: target_high_model_constant_offset
   VAR_NOTES: The constant offset of the response for target_high
 
+ion_grid_model_constant_offset:
+  <<: *model_amplitude_base
+  CATDESC: ion_grid_model_constant_offset
+  FIELDNAM: ion_grid_model_constant_offset
+  VAR_NOTES: The constant offset of the response for ion grid
+
+target_high_model_time_of_impact:
+  <<: *model_time_base
+  CATDESC: target_high_model_time_of_impact
+  FIELDNAM: target_high_model_time_of_impact
+  LABLAXIS: target_high_model_time_of_impact
+  VAR_NOTES: The time of impact for target_high
+
 ion_grid_model_time_of_impact:
   <<: *model_time_base
   CATDESC: ion_grid_model_time_of_impact
@@ -122,9 +135,9 @@ ion_grid_model_discharge_time:
 
 tof_low_model_masses_amplitude:
   <<: *tof_model_amplitude_base
-  CATDESC: ion_grid_model_discharge_time
-  FIELDNAM: ion_grid_model_discharge_time
-  LABLAXIS: ion_grid_model_discharge_time
+  CATDESC: tof_low_model_masses_amplitude
+  FIELDNAM: tof_low_model_masses_amplitude
+  LABLAXIS: tof_low_model_masses_amplitude
   VAR_NOTES: The amplitude of the first 50 peaks in tof_low
 
 tof_low_model_masses_center:
