@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='utf-8'?>
 <xtce:SpaceSystem xmlns:xtce="http://www.omg.org/space/xtce" name="P_COD_HI_PHA">
-	<xtce:Header date="2023-10" version="1.0" author="IMAP SDC" />
+	<xtce:Header date="2024-07" version="1.0" author="IMAP SDC" />
 	<xtce:TelemetryMetaData>
 		<xtce:ParameterTypeSet>
 			<xtce:IntegerParameterType name="UINT1" signed="false">
@@ -12,11 +12,11 @@
 			<xtce:IntegerParameterType name="UINT3" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="3" encoding="unsigned" />
 			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT4" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="4" encoding="unsigned" />
+			</xtce:IntegerParameterType>
 			<xtce:IntegerParameterType name="UINT11" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="11" encoding="unsigned" />
-			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="UINT12" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned" />
 			</xtce:IntegerParameterType>
 			<xtce:IntegerParameterType name="UINT14" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="14" encoding="unsigned" />
@@ -27,17 +27,14 @@
 			<xtce:IntegerParameterType name="UINT20" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="20" encoding="unsigned" />
 			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="UINT31" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="31" encoding="unsigned" />
-			</xtce:IntegerParameterType>
 			<xtce:IntegerParameterType name="UINT32" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="32" encoding="unsigned" />
 			</xtce:IntegerParameterType>
-			<xtce:BinaryParameterType name="BYTE276480">
+			<xtce:BinaryParameterType name="HI_PHA_BITS">
 				<xtce:UnitSet />
 				<xtce:BinaryDataEncoding bitOrder="mostSignificantBitFirst">
 					<xtce:SizeInBits>
-						<xtce:FixedValue>276480</xtce:FixedValue>
+						<xtce:FixedValue>5760</xtce:FixedValue>
 					</xtce:SizeInBits>
 				</xtce:BinaryDataEncoding>
 			</xtce:BinaryParameterType>
@@ -64,73 +61,64 @@
 			<xtce:Parameter name="PKT_LEN" parameterTypeRef="UINT16">
 				<xtce:LongDescription>CCSDS Packet Length (number of bytes after Packet length minus 1)</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="SHCOARSE" parameterTypeRef="UINT32">
-				<xtce:ShortDescription>S/C Time - Seconds</xtce:ShortDescription>
-				<xtce:LongDescription>Secondary Header - Whole-seconds part of SCLK</xtce:LongDescription>
+			<xtce:Parameter name="SHCOARSE" parameterTypeRef="UINT32" shortDescription="S/C TIME - SECONDS">
+				<xtce:LongDescription>SECONDARY HEADER - WHOLE-SECONDS PART OF SCLK</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="PACKET_VERSION" parameterTypeRef="UINT16">
-				<xtce:ShortDescription>Packet Version</xtce:ShortDescription>
-				<xtce:LongDescription>Packet version - this will be incremented each time the format of the packet changesCOD_LO_PHA.</xtce:LongDescription>
+			<xtce:Parameter name="PACKET_VERSION" parameterTypeRef="UINT16" shortDescription="PACKET VERSION">
+				<xtce:LongDescription>PACKET VERSION - THIS WILL BE INCREMENTED EACH TIME THE FORMAT OF THE PACKET CHANGESCOD_LO_PHA.</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="SPIN_PERIOD" parameterTypeRef="UINT16">
-				<xtce:ShortDescription>Spin Period reported by the Spacecraft</xtce:ShortDescription>
-				<xtce:LongDescription>Spin period reported by the Spacecraft in the Time and Status message.  Reported period is the period that was active when the 16-spin acquisition cycle started.</xtce:LongDescription>
+			<xtce:Parameter name="SPIN_PERIOD" parameterTypeRef="UINT16" shortDescription="SPIN PERIOD REPORTED BY THE SPACECRAFT">
+				<xtce:LongDescription>SPIN PERIOD REPORTED BY THE SPACECRAFT IN THE TIME AND STATUS MESSAGE.  REPORTED PERIOD IS THE PERIOD THAT WAS ACTIVE WHEN THE 16-SPIN ACQUISITION CYCLE STARTED.</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="ACQ_START_SECONDS" parameterTypeRef="UINT32">
-				<xtce:ShortDescription>Acquisition Start Time (Seconds)</xtce:ShortDescription>
-				<xtce:LongDescription>Full-seconds portion of the time at which the 16-spin cycle started</xtce:LongDescription>
+			<xtce:Parameter name="ACQ_START_SECONDS" parameterTypeRef="UINT32" shortDescription="ACQUISITION START TIME (SECONDS)">
+				<xtce:LongDescription>FULL-SECONDS PORTION OF THE TIME AT WHICH THE 16-SPIN CYCLE STARTED</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="ACQ_START_SUBSECONDS" parameterTypeRef="UINT20">
-				<xtce:ShortDescription>Acquisition Start Time (Subseconds)</xtce:ShortDescription>
-				<xtce:LongDescription>Sub-seconds portion of the time at which the 16-spin cycle started</xtce:LongDescription>
+			<xtce:Parameter name="ACQ_START_SUBSECONDS" parameterTypeRef="UINT20" shortDescription="ACQUISITION START TIME (SUBSECONDS)">
+				<xtce:LongDescription>SUB-SECONDS PORTION OF THE TIME AT WHICH THE 16-SPIN CYCLE STARTED</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="SPARE_1" parameterTypeRef="UINT12">
-				<xtce:ShortDescription>Spare for alignment</xtce:ShortDescription>
-				<xtce:LongDescription>Spare for alignment</xtce:LongDescription>
+			<xtce:Parameter name="SPARE_1" parameterTypeRef="UINT2" shortDescription="SPARE FOR ALIGNMENT">
+				<xtce:LongDescription>SPARE FOR ALIGNMENT</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="TOTAL_TCR_COUNT" parameterTypeRef="UINT32">
-				<xtce:ShortDescription>Total number of TCR events</xtce:ShortDescription>
-				<xtce:LongDescription>Total number of TCR events that occurred during the collection cycle</xtce:LongDescription>
+			<xtce:Parameter name="ST_BIAS_GAIN_MODE" parameterTypeRef="UINT2" shortDescription="BIAS GAIN MODE (SUPRATHERMAL)">
+				<xtce:LongDescription>BIAS GAIN MODE FOR THE SUPRATHERMAL SECTOR</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="TOTAL_DCR_COUNT" parameterTypeRef="UINT32">
-				<xtce:ShortDescription>Total number of DCR events</xtce:ShortDescription>
-				<xtce:LongDescription>Total number of DCR events that occurred during the collection cycle</xtce:LongDescription>
+			<xtce:Parameter name="SW_BIAS_GAIN_MODE" parameterTypeRef="UINT2" shortDescription="BIAS GAIN MODE (SOLARWIND)">
+				<xtce:LongDescription>BIAS GAIN MODE FOR THE SOLARWIND SECTOR</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="TOTAL_SSD_COUNT" parameterTypeRef="UINT32">
-				<xtce:ShortDescription>Total number of APD-Only events</xtce:ShortDescription>
-				<xtce:LongDescription>Total number of APD-Only events that occurred during the collection cycle</xtce:LongDescription>
+			<xtce:Parameter name="PRIORITY" parameterTypeRef="UINT4" shortDescription="PRIORITY INCLUDED IN THIS PACKET" />
+			<xtce:Parameter name="SUSPECT" parameterTypeRef="UINT1" shortDescription="INDICATES A DATA QUALITY ISSUE">
+				<xtce:LongDescription>INDICATES THAT THERE WAS SOME ERROR DETECTED DURING ACQUISITION OR PROCESSING OF THE DATA.  ERRORS COULD INCLUDE CORRUPTED ACQUISITION MEMORY (I.E. EDAC ERRORS), TIMING VIOLATIONS, OR OTHER EVENTS THAT INTERRUPTED OR OTHERWISE AFFECTED DATA COLLECTION.</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="NUM_EVENTS" parameterTypeRef="UINT32">
-				<xtce:ShortDescription>Number of events included in this packet</xtce:ShortDescription>
-				<xtce:LongDescription>Number of events selected for downlink (i.e. number of events in the Event_Data array)</xtce:LongDescription>
+			<xtce:Parameter name="COMPRESSED" parameterTypeRef="UINT1" shortDescription="WHETHER THE EVENT DATA IS COMPRESSED">
+				<xtce:LongDescription>WHETHER THE EVENT DATA IS COMPRESSED.  IF 1/YES, EVENT_DATA ARRAY IS COMPRESSED USING THE RICE COMPRESSION ALGORITHM.</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="COMPRESSED" parameterTypeRef="UINT1">
-				<xtce:ShortDescription>Whether the event data is compressed</xtce:ShortDescription>
-				<xtce:LongDescription>Whether the event data is compressed.  If 1/Yes, Event_Data array is compressed using the Rice compression algorithm.</xtce:LongDescription>
+			<xtce:Parameter name="NUM_EVENTS" parameterTypeRef="UINT32" shortDescription="NUMBER OF EVENTS INCLUDED IN THIS PACKET">
+				<xtce:LongDescription>NUMBER OF EVENTS SELECTED FOR DOWNLINK (I.E. NUMBER OF EVENTS IN THE EVENT_DATA ARRAY)</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="BYTE_COUNT" parameterTypeRef="UINT31">
-				<xtce:ShortDescription>Number of bytes in the Event Data array</xtce:ShortDescription>
-				<xtce:LongDescription>Number of bytes in the Event_Data array.  If compressed, this value represents the length of the compressed data.</xtce:LongDescription>
+			<xtce:Parameter name="BYTE_COUNT" parameterTypeRef="UINT32" shortDescription="NUMBER OF BYTES IN THE EVENT DATA ARRAY">
+				<xtce:LongDescription>NUMBER OF BYTES IN THE EVENT_DATA ARRAY.  IF COMPRESSED, THIS VALUE REPRESENTS THE LENGTH OF THE COMPRESSED DATA.</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="EVENT_DATA" parameterTypeRef="BYTE276480">
-				<xtce:ShortDescription>Event Data</xtce:ShortDescription>
-				<xtce:LongDescription>Optionally compressed array of Event Data
+			<xtce:Parameter name="EVENT_DATA" parameterTypeRef="HI_PHA_BITS" shortDescription="EVENT DATA">
+				<xtce:LongDescription>OPTIONALLY COMPRESSED ARRAY OF EVENT DATA
 
-Format is TBD; some considerations/options:
-- Full events have a lot of redundant data (e.g. will have many events with the same priority/spin/spin phase information).  How well does compression to deal with the redundancy?
-- Could include mini-headers for each (priority,spin, spin-phase) group and strip the redundant data from the events
-- Should events be tightly packed, or can we pad out to 64-bit word boundaries?  How well does compression compensate for the extra bits?
+FORMAT IS TBD; SOME CONSIDERATIONS/OPTIONS:
+- FULL EVENTS HAVE A LOT OF REDUNDANT DATA (E.G. WILL HAVE MANY EVENTS WITH THE SAME PRIORITY/SPIN/SPIN PHASE INFORMATION).  HOW WELL DOES COMPRESSION TO DEAL WITH THE REDUNDANCY?
+- COULD INCLUDE MINI-HEADERS FOR EACH (PRIORITY,SPIN, SPIN-PHASE) GROUP AND STRIP THE REDUNDANT DATA FROM THE EVENTS
+- SHOULD EVENTS BE TIGHTLY PACKED, OR CAN WE PAD OUT TO 64-BIT WORD BOUNDARIES?  HOW WELL DOES COMPRESSION COMPENSATE FOR THE EXTRA BITS?
 
-Each event consists of:
-- 10-bit TOF
--  9-bit SSD Energy
--  2-bit Energy Range
--  7-bit Spin Angle
--  4-bit SSD Position
--  4-bit Spin Number
--  2-bit PHA Type
+EACH EVENT CONSISTS OF:
+- 10-BIT TOF
+-  9-BIT SSD ENERGY
+-  2-BIT ENERGY RANGE
+-  7-BIT SPIN ANGLE
+-  4-BIT SSD POSITION
+-  4-BIT SPIN NUMBER
+-  2-BIT PHA TYPE
 
-TBD: Events may be tightly packed, or may have spares added to keep each event byte-aligned.  In either case, there may be up to 1 byte of padding to keep the total size of the packet even.</xtce:LongDescription>
+TBD: EVENTS MAY BE TIGHTLY PACKED, OR MAY HAVE SPARES ADDED TO KEEP EACH EVENT BYTE-ALIGNED.  IN EITHER CASE, THERE MAY BE UP TO 1 BYTE OF PADDING TO KEEP THE TOTAL SIZE OF THE PACKET EVEN.</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="CHKSUM" parameterTypeRef="UINT16">
+				<xtce:LongDescription>PACKET CHECKSUM</xtce:LongDescription>
 			</xtce:Parameter>
 		</xtce:ParameterSet>
 		<xtce:ContainerSet>
@@ -158,13 +146,15 @@ TBD: Events may be tightly packed, or may have spares added to keep each event b
 					<xtce:ParameterRefEntry parameterRef="ACQ_START_SECONDS" />
 					<xtce:ParameterRefEntry parameterRef="ACQ_START_SUBSECONDS" />
 					<xtce:ParameterRefEntry parameterRef="SPARE_1" />
-					<xtce:ParameterRefEntry parameterRef="TOTAL_TCR_COUNT" />
-					<xtce:ParameterRefEntry parameterRef="TOTAL_DCR_COUNT" />
-					<xtce:ParameterRefEntry parameterRef="TOTAL_SSD_COUNT" />
-					<xtce:ParameterRefEntry parameterRef="NUM_EVENTS" />
+					<xtce:ParameterRefEntry parameterRef="ST_BIAS_GAIN_MODE" />
+					<xtce:ParameterRefEntry parameterRef="SW_BIAS_GAIN_MODE" />
+					<xtce:ParameterRefEntry parameterRef="PRIORITY" />
+					<xtce:ParameterRefEntry parameterRef="SUSPECT" />
 					<xtce:ParameterRefEntry parameterRef="COMPRESSED" />
+					<xtce:ParameterRefEntry parameterRef="NUM_EVENTS" />
 					<xtce:ParameterRefEntry parameterRef="BYTE_COUNT" />
 					<xtce:ParameterRefEntry parameterRef="EVENT_DATA" />
+					<xtce:ParameterRefEntry parameterRef="CHKSUM" />
 				</xtce:EntryList>
 			</xtce:SequenceContainer>
 		</xtce:ContainerSet>

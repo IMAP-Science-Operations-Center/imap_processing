@@ -3,16 +3,16 @@
 import copy
 
 import numpy as np
+import numpy.typing as npt
 import xarray as xr
 
 from imap_processing import imap_module_directory
-from imap_processing.cdf import epoch_attrs
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.swapi.swapi_utils import SWAPIAPID, SWAPIMODE
 from imap_processing.utils import packet_file_to_datasets
 
 
-def filter_good_data(full_sweep_sci: xr.Dataset) -> np.ndarray:
+def filter_good_data(full_sweep_sci: xr.Dataset) -> npt.NDArray:
     """
     Filter out bad data sweep indices.
 
@@ -30,7 +30,7 @@ def filter_good_data(full_sweep_sci: xr.Dataset) -> np.ndarray:
 
     Returns
     -------
-    numpy.ndarray
+    good_data_indices : numpy.ndarray
         Good data sweep indices.
     """
     # PLAN_ID for current sweep should all be one value and
@@ -71,7 +71,7 @@ def filter_good_data(full_sweep_sci: xr.Dataset) -> np.ndarray:
 
 def decompress_count(
     count_data: np.ndarray, compression_flag: np.ndarray
-) -> np.ndarray:
+) -> npt.NDArray:
     """
     Will decompress counts based on compression indicators.
 
@@ -100,13 +100,13 @@ def decompress_count(
 
     Returns
     -------
-    numpy.ndarray
+    new_count : numpy.ndarray
         Array with decompressed counts.
     """
     # Decompress counts based on compression indicators
     # If 0, value is already decompressed. If 1, value is compressed.
     # If 1 and count is 0xFFFF, value is overflow.
-    new_count = copy.deepcopy(count_data)
+    new_count = copy.deepcopy(count_data).astype(np.int32)
 
     # If data is compressed, decompress it
     compressed_indices = compression_flag == 1
@@ -121,7 +121,7 @@ def decompress_count(
     return new_count
 
 
-def find_sweep_starts(packets: xr.Dataset) -> np.ndarray:
+def find_sweep_starts(packets: xr.Dataset) -> npt.NDArray:
     """
     Find index of where new cycle started.
 
@@ -139,7 +139,7 @@ def find_sweep_starts(packets: xr.Dataset) -> np.ndarray:
 
     Returns
     -------
-    numpy.ndarray
+    indices_start : numpy.ndarray
         Array of indices of start cycle.
     """
     if packets["epoch"].size < 12:
@@ -176,7 +176,7 @@ def find_sweep_starts(packets: xr.Dataset) -> np.ndarray:
     return np.where(valid)[0]
 
 
-def get_indices_of_full_sweep(packets: xr.Dataset) -> np.ndarray:
+def get_indices_of_full_sweep(packets: xr.Dataset) -> npt.NDArray:
     """
     Get indices of full cycles.
 
@@ -196,7 +196,7 @@ def get_indices_of_full_sweep(packets: xr.Dataset) -> np.ndarray:
 
     Returns
     -------
-    numpy.ndarray
+    full_cycle_indices : numpy.ndarray
         1D array with indices of full cycle data.
     """
     indices_of_start = find_sweep_starts(packets)
@@ -470,7 +470,7 @@ def process_swapi_science(sci_dataset: xr.Dataset, data_version: str) -> xr.Data
         epoch_values,
         name="epoch",
         dims=["epoch"],
-        attrs=epoch_attrs,
+        attrs=cdf_manager.get_variable_attributes("epoch"),
     )
 
     # There are 72 energy steps
@@ -489,17 +489,16 @@ def process_swapi_science(sci_dataset: xr.Dataset, data_version: str) -> xr.Data
     )
 
     # Add other global attributes
+    # TODO: add others like below once add_global_attribute is fixed
     cdf_manager.add_global_attribute("Data_version", data_version)
-    cdf_manager.add_global_attribute(
-        "sweep_table", f"{sci_dataset['sweep_table'].data[0]}"
-    )
-    cdf_manager.add_global_attribute(
-        "plan_id", f"{sci_dataset['plan_id_science'].data[0]}"
-    )
+    l1_global_attrs = cdf_manager.get_global_attributes("imap_swapi_l1_sci")
+    l1_global_attrs["Sweep_table"] = f"{sci_dataset['sweep_table'].data[0]}"
+    l1_global_attrs["Plan_id"] = f"{sci_dataset['plan_id_science'].data[0]}"
+    l1_global_attrs["Apid"] = f"{sci_dataset['pkt_apid'].data[0]}"
 
     dataset = xr.Dataset(
         coords={"epoch": epoch_time, "energy": energy, "energy_label": energy_label},
-        attrs=cdf_manager.get_global_attributes("imap_swapi_l1_sci"),
+        attrs=l1_global_attrs,
     )
 
     dataset["swp_pcem_counts"] = xr.DataArray(

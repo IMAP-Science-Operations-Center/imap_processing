@@ -8,7 +8,7 @@ https://spiceypy.readthedocs.io/en/main/documentation.html.
 
 import logging
 
-import numpy as np
+import numpy.typing as npt
 import spiceypy as spice
 
 # Logger setup
@@ -68,7 +68,7 @@ def get_attitude_timerange(ck_kernel: str, id: int) -> tuple:
 
 def _get_particle_velocity(
     direct_events: dict,
-) -> np.ndarray:
+) -> npt.NDArray:
     """
     Get the particle velocity in the heliosphere frame.
 

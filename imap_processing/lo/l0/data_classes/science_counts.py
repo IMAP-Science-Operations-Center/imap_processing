@@ -3,6 +3,7 @@
 from dataclasses import dataclass
 
 import numpy as np
+import numpy.typing as npt
 import space_packet_parser
 
 from imap_processing.ccsds.ccsds_data import CcsdsData
@@ -279,7 +280,7 @@ class ScienceCounts(LoBase):
         binary_string: BinaryString,
         decompression: Decompress,
         data_shape: tuple[int, int],
-    ) -> np.array:
+    ) -> npt.NDArray:
         """
         Parse a single section of data in the science counts data binary.
 
@@ -330,7 +331,7 @@ class ScienceCounts(LoBase):
         section_length: int,
         bit_length: int,
         decompression: Decompress,
-    ) -> np.ndarray:
+    ) -> npt.NDArray:
         """
         Extract and decompress science count binary data section.
 

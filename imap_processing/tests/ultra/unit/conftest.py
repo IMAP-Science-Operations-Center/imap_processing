@@ -3,10 +3,16 @@
 import sys
 from pathlib import Path
 
+import numpy as np
 import pytest
 
 from imap_processing import decom
 from imap_processing.ultra.l0.decom_ultra import process_ultra_apids
+from imap_processing.ultra.l0.ultra_utils import (
+    ULTRA_AUX,
+    ULTRA_EVENTS,
+)
+from imap_processing.ultra.l1a import ultra_l1a
 from imap_processing.utils import group_by_apid
 
 
@@ -161,3 +167,44 @@ def decom_test_data(request, xtce_path):
 
     data_packet_list = process_ultra_apids(grouped_data[apid], apid)
     return data_packet_list, packets
+
+
+@pytest.fixture()
+def events_fsw_comparison_theta_0():
+    """FSW test data."""
+    filename = (
+        "FM45_40P_Phi28p5_BeamCal_LinearScan_phi28.50_theta-0.00"
+        "_Ultra_Image_Raw_Event_20240207T102746_withFSWcalcs.csv"
+    )
+    return (
+        Path(sys.modules[__name__.split(".")[0]].__file__).parent
+        / "tests"
+        / "ultra"
+        / "test_data"
+        / "l0"
+        / filename
+    )
+
+
+@pytest.fixture()
+def de_dataset(ccsds_path_theta_0, xtce_path):
+    """L1A test data"""
+    packets = decom.decom_packets(ccsds_path_theta_0, xtce_path)
+    grouped_data = group_by_apid(packets)
+    decom_ultra_events = process_ultra_apids(
+        grouped_data[ULTRA_EVENTS.apid[0]], ULTRA_EVENTS.apid[0]
+    )
+    decom_ultra_aux = process_ultra_apids(
+        grouped_data[ULTRA_AUX.apid[0]], ULTRA_AUX.apid[0]
+    )
+    dataset = ultra_l1a.create_dataset(
+        {
+            ULTRA_EVENTS.apid[0]: decom_ultra_events,
+            ULTRA_AUX.apid[0]: decom_ultra_aux,
+        }
+    )
+    # Remove start_type with fill values
+    l1a_de_dataset = dataset.where(
+        dataset["START_TYPE"] != np.iinfo(np.int64).min, drop=True
+    )
+    return l1a_de_dataset

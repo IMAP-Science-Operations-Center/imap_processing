@@ -99,7 +99,7 @@ def allocate_histogram_dataset(num_packets: int) -> xr.Dataset:
         np.empty(num_packets, dtype="datetime64[ns]"),
         name="epoch",
         dims=["epoch"],
-        attrs=attr_mgr.get_variable_attributes("hi_hist_epoch"),
+        attrs=attr_mgr.get_variable_attributes("epoch"),
     )
     # Histogram data is binned in 90, 4-degree bins
     coords["angle"] = xr.DataArray(
