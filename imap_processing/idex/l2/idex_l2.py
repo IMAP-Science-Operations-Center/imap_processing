@@ -1,8 +1,10 @@
 """
 Perform IDEX l2 Processing.
 
-This module processes decommutated IDEX packets and creates l2 data products.
+TODO Finish Docstring.
 """
+
+# ruff: noqa: PLR0913
 
 import logging
 from pathlib import Path
@@ -11,6 +13,7 @@ import lmfit
 import numpy as np
 import xarray as xr
 from cdflib.xarray import xarray_to_cdf
+from lmfit.model import ModelResult
 from scipy.optimize import curve_fit
 from scipy.signal import butter, filtfilt, find_peaks
 from scipy.special import erfc
@@ -18,8 +21,6 @@ from scipy.special import erfc
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import load_cdf
 from imap_processing.idex import constants
-
-# from . import idex_cdf_attrs
 
 
 def get_idex_attrs(data_version: str) -> ImapCdfAttributes:
@@ -45,17 +46,14 @@ def get_idex_attrs(data_version: str) -> ImapCdfAttributes:
 
 class L2Processor:
     """
-    Example
-    -------
-    from imap_processing.idex.idex_packet_parser import PacketParser
-    from imap_processing.idex.l2_processing import L2Processor
+    L2 processing class.
 
-    l0_file = "imap_processing/idex/tests/imap_idex_l0_20230725_v01-00.pkts"
-    l1_data = PacketParser(l0_file)
-    l1_data.write_cdf_file("20230725")
-
-    l2_data = L2Processor('imap_idex_l1_20230725_v01.cdf')
-    l2_data.write_l2_cdf()
+    Parameters
+    ----------
+    l1_file : str
+        File path to l1 file being processed to l2 data.
+    data_version : str
+        The version of the data product being created.
     """
 
     def __init__(self, l1_file: str, data_version: str):
@@ -64,15 +62,22 @@ class L2Processor:
 
         Parameters
         ----------
-        l1_file: str
-            File path to l1 file being processed to l2 data
+        l1_file : str
+            File path to l1 file being processed to l2 data.
         data_version : str
             The version of the data product being created.
         """
         self.l1_file = l1_file
 
         # Switched from cdf_to_xarray to load_cdf function
+        # Now l1 data is stored in a xarray.
         self.l1_data = load_cdf(Path(l1_file))
+
+        print(self.l1_data["Target_High"])
+
+        # TODO: Perhaps I want to make this just code inside the
+        #  init rather than a function?
+        self.l2_attrs = get_idex_attrs(data_version)
 
         target_signal_model_dataset = self.model_fitter(
             "Target_High", constants.TARGET_HIGH_CALIBRATION, butterworth_filter=False
@@ -93,35 +98,30 @@ class L2Processor:
             ]
         )
 
-        # TODO: Perhaps I want to make this just code inside the
-        #  init rather than a function?
-        self.l2_attrs = get_idex_attrs(data_version)
-
     def model_fitter(
         self,
         variable: str,
         amplitude_calibration: float,
         butterworth_filter: bool = False,
-    ):
+    ) -> xr:
         """
         Function/method description.
 
         Parameters
         ----------
-        variable: str
-            Something
+        variable : str
+            Something.
 
-        amplitude_calibration: float
-            Something
+        amplitude_calibration : float
+            Something.
 
-        butterworth_filter: bool
-            Something
+        butterworth_filter : bool
+            Something.
 
         Returns
         -------
-        xr.concat
-            Something
-
+        xr.concat : xarray
+            Something.
         """
         model_fit_list = []
         for impact in self.l1_data[variable]:
@@ -130,6 +130,7 @@ class L2Processor:
                 # TODO: What should the impact time be? in RawDustEvents
                 data=[impact["epoch"].data],
                 dims=("epoch"),
+                # TODO: Double check that this is correct
                 attrs=self.l2_attrs.get_variable_attributes("epoch"),
             )
 
@@ -175,42 +176,54 @@ class L2Processor:
                 fit_uncertainty = constants.FILLVAL
 
             time_of_impact_fit_xr = xr.DataArray(
-                name=f"{variable}_Model_Time_Of_Impact",
+                # Target_High_model_time_of_impact
+                # Ion_Grid_model_time_of_impact
+                name=f"{variable}_model_time_of_impact",
                 data=[time_of_impact_fit],
                 dims=("epoch"),
                 # TODO: attrs
             )
 
             constant_offset_fit_xr = xr.DataArray(
-                name=f"{variable}_Model_Constant_Offset",
+                # Target_High_model_constant_offset
+                # Ion_Grid_model_time_of_impact
+                name=f"{variable}_model_constant_offset",
                 data=[constant_offset_fit],
                 dims=("epoch"),
                 # TODO: attrs
             )
 
             amplitude_fit_xr = xr.DataArray(
-                name=f"{variable}_Model_Amplitude",
+                # Target_High_model_amplitude
+                # Ion_Grid_model_amplitude
+                name=f"{variable}_model_amplitude",
                 data=[amplitude_fit],
                 dims=("epoch"),
                 # TODO: attrs
             )
 
             rise_time_fit_xr = xr.DataArray(
-                name=f"{variable}_Model_Rise_time",
+                # Target_High_model_rise_time
+                # Ion_Grid_model_rise_time
+                name=f"{variable}_model_rise_time",
                 data=[rise_time_fit],
                 dims=("epoch"),
                 # TODO: attrs
             )
 
             discharge_time_xr = xr.DataArray(
-                name=f"{variable}_Model_Discharge_time",
+                # Target_High_model_discharge_time
+                # Ion_Grid_model_discharge_time
+                name=f"{variable}_model_discharge_time",
                 data=[discharge_time_fit],
                 dims=("epoch"),
                 # TODO: attrs
             )
 
             fit_uncertainty_xr = xr.DataArray(
-                name=f"{variable}_Model_Uncertainty",
+                # Target_High_model_uncertainty
+                # Ion_Grid_model_uncertainty
+                name=f"{variable}_model_uncertainty",
                 data=[fit_uncertainty],
                 dims=("epoch"),
                 # TODO: attrs
@@ -219,12 +232,12 @@ class L2Processor:
             model_fit_list.append(
                 xr.Dataset(
                     data_vars={
-                        f"{variable}_Model_Time_Of_Impact": time_of_impact_fit_xr,
-                        f"{variable}_Model_Constant_Offset": constant_offset_fit_xr,
-                        f"{variable}_Model_Amplitude": amplitude_fit_xr,
-                        f"{variable}_Model_Rise_Time": rise_time_fit_xr,
-                        f"{variable}_Model_Discharge_Time": discharge_time_xr,
-                        f"{variable}_Model_Uncertainty": fit_uncertainty_xr,
+                        f"{variable}_model_time_Of_impact": time_of_impact_fit_xr,
+                        f"{variable}_model_constant_offset": constant_offset_fit_xr,
+                        f"{variable}_model_amplitude": amplitude_fit_xr,
+                        f"{variable}_model_rise_time": rise_time_fit_xr,
+                        f"{variable}_model_discharge_time": discharge_time_xr,
+                        f"{variable}_model_uncertainty": fit_uncertainty_xr,
                     },
                     coords={"epoch": epoch_xr},
                 )
@@ -234,31 +247,103 @@ class L2Processor:
 
     @staticmethod
     def idex_response_function(
-        x, time_of_impact, constant_offset, amplitude, rise_time, discharge_time
-    ):
+        x: int,
+        time_of_impact: int,
+        constant_offset: int,
+        amplitude: int,
+        rise_time: int,
+        discharge_time: int,
+    ) -> float:
         """
-        Docstring.
+        Function/method description.
+
+        Parameters
+        ----------
+        x : int
+            Something.
+
+        time_of_impact : int
+            Something.
+
+        constant_offset : int
+            Something.
+
+        amplitude : int
+            Something.
+
+        rise_time : int
+            Something.
+
+        discharge_time : int
+            Something.
+
+        Returns
+        -------
+        result : Union[int, float]
+            Something.
         """
         heaviside = np.heaviside(x - time_of_impact, 0)
         exponent_1 = 1.0 - np.exp(-(x - time_of_impact) / rise_time)
         exponent_2 = np.exp(-(x - time_of_impact) / discharge_time)
-        return constant_offset + (heaviside * amplitude * exponent_1 * exponent_2)
+        result: float = constant_offset + (
+            heaviside * amplitude * exponent_1 * exponent_2
+        )
+        return result
 
     # fmt: skip
 
     # Create a model for exponentially modified Gaussian
     @staticmethod
-    def expgaussian(x, amplitude, center, sigma, gamma):
+    def expgaussian(
+        x: int, amplitude: int, center: int, sigma: int, gamma: int
+    ) -> float:
         """
-        Docstring.
+        Function/method description.
+
+        Parameters
+        ----------
+        x : int
+            Something.
+
+        amplitude : int
+            Something.
+
+        center : int
+            Something.
+
+        sigma : int
+            Something.
+
+        gamma : int
+            Something.
+
+        Returns
+        -------
+        result : float
+            Something.
         """
         dx = center - x
-        return amplitude * np.exp(gamma * dx) * erfc(dx / (np.sqrt(2) * sigma))
+
+        result: float = amplitude * np.exp(gamma * dx) * erfc(dx / (np.sqrt(2) * sigma))
+        return result
 
     @staticmethod
-    def butter_lowpass_filter(data, time):
+    def butter_lowpass_filter(data: str, time: list) -> np.ndarray:
         """
-        Docstring.
+        Function/method description.
+
+        Parameters
+        ----------
+        data : str
+            Something.
+
+        time : list
+            Something.
+
+        Returns
+        -------
+        y : np.ndarray
+            Something.
         """
         # Filter requirements.
         t = time[1] - time[0]  # |\Sample Period (s)
@@ -269,27 +354,32 @@ class L2Processor:
         normal_cutoff = cutoff / nyq
         # Get the filter coefficients
         b, a, _ = butter(order, normal_cutoff, btype="low", analog=False)
-        y = filtfilt(b, a, data)
+        y: np.ndarray = filtfilt(b, a, data)
         return y
 
-    def fit_tof_model(self, variable, peak_prominence):
+    def fit_tof_model(self, variable: str, peak_prominence: int) -> xr:
         """
         Function/method description.
 
         Parameters
         ----------
-        variable: str
-            Something
+        variable : str
+            Something.
 
-        peak_prominence
-            Something
+        peak_prominence : int
+            Something.
+
+        Returns
+        -------
+        xr.concat : xarray
+            Something.
         """
         mass_number_xr = xr.DataArray(
             name="mass_number",
             data=np.linspace(1, 50, 50),
             dims=("mass_number"),
-            # TODO: Attrs
-            # attrs = self.l2_attrs.get_variable_attributes((mass_number_attrs))
+            # TODO: check this is correct
+            attrs=self.l2_attrs.get_variable_attributes("mass_number_attrs"),
         )
 
         tof_model_parameters_list = []
@@ -317,7 +407,7 @@ class L2Processor:
                     i += 1
                     fit_params = self.fit_expgaussian(
                         x[peak - 10 : peak + 10], y[peak - 10 : peak + 10]
-                    )
+                    ).best_values
                     (
                         mass_amplitudes[i],
                         mass_centers[i],
@@ -330,6 +420,7 @@ class L2Processor:
                     )
 
             amplitude_xr = xr.DataArray(
+                # TOF_Low_model_masses_amplitude
                 name=f"{variable}_model_masses_amplitude",
                 data=[mass_amplitudes],
                 dims=("epoch", "mass_number"),
@@ -337,6 +428,7 @@ class L2Processor:
             )
 
             center_xr = xr.DataArray(
+                # TOF_Low_model_masses_center
                 name=f"{variable}_model_masses_center",
                 data=[mass_centers],
                 dims=("epoch", "mass_number"),
@@ -344,6 +436,7 @@ class L2Processor:
             )
 
             sigma_xr = xr.DataArray(
+                # TOF_Low_model_masses_sigma
                 name=f"{variable}_model_masses_sigma",
                 data=[mass_sigmas],
                 dims=("epoch", "mass_number"),
@@ -351,6 +444,7 @@ class L2Processor:
             )
 
             gamma_xr = xr.DataArray(
+                # TOF_Low_model_masses_gamma
                 name=f"{variable}_model_masses_gamma",
                 data=[mass_gammas],
                 dims=("epoch", "mass_number"),
@@ -372,20 +466,39 @@ class L2Processor:
         return xr.concat(tof_model_parameters_list, dim="epoch")
 
     # Fit the exponentially modified Gaussian
-    def fit_expgaussian(self, x, y):
+    def fit_expgaussian(self, x: str, y: str) -> ModelResult:
         """
         Function/method description.
+
+        Parameters
+        ----------
+        x : str
+            Something.
+
+        y : str
+            Something.
+
+        Returns
+        -------
+        result.best_value : dict
+            Something.
         """
         model = lmfit.Model(self.expgaussian)
         params = model.make_params(
             amplitude=max(y), center=x[np.argmax(y)], sigma=10.0, gamma=10.0
         )
         result = model.fit(y, params, x=x)
-        return result.best_values
+        return result
+        # return result.best_values
 
-    def write_l2_cdf(self):
+    def write_l2_cdf(self) -> str:
         """
         Function/method description.
+
+        Returns
+        -------
+        l2_file_name : str
+            The file name of the l2 file.
         """
         # TODO: Do I need a get_global_attributes line here?
         # self.l2_data.attrs = idex_cdf_attrs.idex_l2_global_attrs
@@ -483,7 +596,8 @@ class L2Processor:
                     "FIELDNAM": var,
                     "LABLAXIS": var,
                     "VAR_NOTES": f"The sigma of the fitted exponentially modified "
-                    f"gaussian to the first 50 peaks in {var.replace('_model_masses_sigma', '')}",
+                    f"gaussian to the first 50 peaks in "
+                    f"{var.replace('_model_masses_sigma', '')}",
                 }
                 # | idex_cdf_attrs.tof_model_dimensionless_base
                 # self.l2_attrs.get_variable_attributes("tof_model_dimensionless_base")
@@ -493,8 +607,9 @@ class L2Processor:
                     "CATDESC": var,
                     "FIELDNAM": var,
                     "LABLAXIS": var,
-                    "VAR_NOTES": f"The gamma of the fitted exponentially modified "
-                    f"gaussian to the first 50 peaks in {var.replace('_model_masses_gamma', '')}",
+                    "VAR_NOTES": f"The gamma of the fitted exponentially modified"
+                    f" gaussian to the first 50 peaks in "
+                    f"{var.replace('_model_masses_gamma', '')}",
                 }
                 # | idex_cdf_attrs.tof_model_dimensionless_base
                 # self.l2_attrs.get_variable_attributes("tof_model_dimensionless_base")
@@ -505,35 +620,33 @@ class L2Processor:
 
         return l2_file_name
 
-    def process_idex_l2(self, l1_file: str, data_version: str):
+    def process_idex_l2(self, l1_file: str, data_version: str) -> str:
         """
         Function/method description.
 
         Parameters
         ----------
-        l1_file: str
-            Something
+        l1_file : str
+            Something.
 
-        data_version: str
-            Something
+        data_version : str
+            Something.
 
         Returns
         -------
-        l2_cdf_file_name
+        l2_cdf_file_name : str
+            The file name of the l2 cdf.
 
         Notes
         -----
         Example usage ->
             from imap_processing.idex.idex_packet_parser import PacketParser
             from imap_processing.idex.l2_processing import L2Processor
-
             l0_file = "imap_processing/idex/tests/imap_idex_l0_20230725_v01-00.pkts"
             l1_data = PacketParser(l0_file)
             l1_data.write_cdf_file("20230725")
-
             l2_data = L2Processor('imap_idex_l1_20230725_v01.cdf')
             l2_data.write_l2_cdf()
-
         """
         l2_data = L2Processor(l1_file, data_version)
 
