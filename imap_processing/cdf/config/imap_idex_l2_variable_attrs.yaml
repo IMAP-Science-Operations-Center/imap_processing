@@ -2,11 +2,10 @@
 model_base: &model_base
   DEPEND_0: epoch
   DISPLAY_TYPE: time_series
-  FILLVAL: np.array([-1.e+31], dtype=np.float32),
+  FILLVAL: -1.0e+31
   FORMAT: E12.2
-  # TODO: make these not...
-  VALIDMIN: np.array([-1.e+31], dtype=np.float32),
-  VALIDMAX: np.array([1.e+31], dtype=np.float32),
+  VALIDMIN: -1.0e+31
+  VALIDMAX: -1.0e+31
   VAR_TYPE: data
   SCALETYP: linear
 
