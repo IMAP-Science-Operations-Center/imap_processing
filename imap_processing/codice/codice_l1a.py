@@ -80,16 +80,16 @@ class CoDICEL1aPipeline:
         self.plan_step = plan_step
         self.view_id = view_id
 
-    def configure_data_products(self, apid: str) -> None:
+    def configure_data_products(self, apid: int) -> None:
         """
         Set the various settings for defining the data products.
 
         Parameters
         ----------
-        apid : str
+        apid : int
             The APID of interest.
         """
-        config = constants.DATA_PRODUCT_CONFIGURATIONS.get(apid)
+        config = constants.DATA_PRODUCT_CONFIGURATIONS.get(apid)  # type: ignore[call-overload]
         self.num_counters = config["num_counters"]
         self.num_energy_steps = config["num_energy_steps"]
         self.variable_names = config["variable_names"]
