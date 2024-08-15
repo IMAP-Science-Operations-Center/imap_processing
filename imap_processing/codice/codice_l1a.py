@@ -86,7 +86,7 @@ class CoDICEL1aPipeline:
 
         Parameters
         ----------
-        apid : int
+        apid : str
             The APID of interest.
         """
         config = constants.DATA_PRODUCT_CONFIGURATIONS.get(apid)
