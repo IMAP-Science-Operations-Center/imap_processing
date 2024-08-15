@@ -43,7 +43,7 @@ def get_y_adjust(dy_lut: np.ndarray) -> npt.NDArray:
     yadj : np.ndarray
         Y adjustment (mm).
     """
-    return _YADJUST_DF["dYAdj"].values[dy_lut]
+    return _YADJUST_DF["dYAdj"].iloc[dy_lut].values
 
 
 def get_norm(dn: np.ndarray, key: str, file_label: str) -> npt.NDArray:

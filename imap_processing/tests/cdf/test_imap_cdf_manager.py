@@ -14,7 +14,7 @@ def test_add_instrument_global_attrs():
     # Testing data loaded in
     imap_instrument = imap_cdf_manager.get_global_attributes("imap_test_T1_test")
     assert imap_instrument["Data_type"] == "T1_test-one>Test-1 test one"
-    assert imap_instrument["Project"] == "STP>Solar-Terrestrial Physics"
+    assert imap_instrument["Project"] == "STP>Solar Terrestrial Probes"
 
     # Testing reloading data
     imap_cdf_manager.add_instrument_global_attrs("instrument2")
@@ -22,7 +22,7 @@ def test_add_instrument_global_attrs():
     # Testing data carried over, and overwritten
     instrument2_instrument = imap_cdf_manager.get_global_attributes("imap_swe_l1a_sci")
     assert instrument2_instrument["Data_type"] == "L1A_SCI>Level-1A Science data"
-    assert instrument2_instrument["Project"] == "STP>Solar-Terrestrial Physics"
+    assert instrument2_instrument["Project"] == "STP>Solar Terrestrial Probes"
 
 
 @mock.patch(
