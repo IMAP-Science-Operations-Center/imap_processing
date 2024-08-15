@@ -12,14 +12,15 @@ from pathlib import Path
 import lmfit
 import numpy as np
 import xarray as xr
-from cdflib.xarray import xarray_to_cdf
+
+# from cdflib.xarray import xarray_to_cdf
 from lmfit.model import ModelResult
 from scipy.optimize import curve_fit
 from scipy.signal import butter, filtfilt, find_peaks
 from scipy.special import erfc
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
-from imap_processing.cdf.utils import load_cdf
+from imap_processing.cdf.utils import load_cdf, write_cdf
 from imap_processing.idex import constants
 
 
@@ -127,7 +128,7 @@ class L2Processor:
                 name="epoch",
                 # TODO: What should the impact time be? in RawDustEvents
                 data=[impact["epoch"].data],
-                dims=("epoch"),
+                dims="epoch",
                 # TODO: Double check that this is correct
                 attrs=self.l2_attrs.get_variable_attributes("epoch"),
             )
@@ -180,7 +181,7 @@ class L2Processor:
                 # Ion_Grid_model_time_of_impact
                 name=f"{variable}_model_time_of_impact",
                 data=[time_of_impact_fit],
-                dims=("epoch"),
+                dims="epoch",
                 # TODO: attrs
                 attrs=self.l2_attrs.get_variable_attributes(
                     f"{variable_lower}_model_time_of_impact"
@@ -192,7 +193,7 @@ class L2Processor:
                 # Ion_Grid_model_time_of_impact
                 name=f"{variable}_model_constant_offset",
                 data=[constant_offset_fit],
-                dims=("epoch"),
+                dims="epoch",
                 # TODO: attrs
                 attrs=self.l2_attrs.get_variable_attributes(
                     f"{variable_lower}__model_constant_offset"
@@ -204,7 +205,7 @@ class L2Processor:
                 # Ion_Grid_model_amplitude
                 name=f"{variable}_model_amplitude",
                 data=[amplitude_fit],
-                dims=("epoch"),
+                dims="epoch",
                 # TODO: attrs
                 attrs=self.l2_attrs.get_variable_attributes(
                     f"{variable_lower}_model_amplitude"
@@ -216,7 +217,7 @@ class L2Processor:
                 # Ion_Grid_model_rise_time
                 name=f"{variable}_model_rise_time",
                 data=[rise_time_fit],
-                dims=("epoch"),
+                dims="epoch",
                 # TODO: attrs
                 attrs=self.l2_attrs.get_variable_attributes(
                     f"{variable_lower}_model_rise_time"
@@ -228,7 +229,7 @@ class L2Processor:
                 # Ion_Grid_model_discharge_time
                 name=f"{variable}_model_discharge_time",
                 data=[discharge_time_fit],
-                dims=("epoch"),
+                dims="epoch",
                 # TODO: attrs
                 attrs=self.l2_attrs.get_variable_attributes(
                     f"{variable_lower}_discharge_time"
@@ -240,7 +241,7 @@ class L2Processor:
                 # Ion_Grid_model_uncertainty
                 name=f"{variable}_model_uncertainty",
                 data=[fit_uncertainty],
-                dims=("epoch"),
+                dims="epoch",
                 # TODO: attrs
                 attrs=self.l2_attrs.get_variable_attributes(
                     f"{variable_lower}_model_uncertainty"
@@ -395,7 +396,7 @@ class L2Processor:
         mass_number_xr = xr.DataArray(
             name="mass_number",
             data=np.linspace(1, 50, 50),
-            dims=("mass_number"),
+            dims="mass_number",
             # TODO: check this is correct
             attrs=self.l2_attrs.get_variable_attributes("mass_number_attrs"),
         )
@@ -406,7 +407,7 @@ class L2Processor:
                 name="epoch",
                 # TODO: What should the impact time be? in RawDustEvents
                 data=[impact["epoch"].data],
-                dims=("epoch"),
+                dims="epoch",
                 attrs=self.l2_attrs.get_variable_attributes("epoch"),
             )
 
@@ -522,20 +523,17 @@ class L2Processor:
         result = model.fit(y, params, x=x)
         return result
 
-    def write_l2_cdf(self) -> str:
-        """
-        Function/method description.
-
-        Returns
-        -------
-        l2_file_name : str
-            The file name of the l2 file.
-        """
-        l2_file_name = self.l1_file.replace("_l1_", "_l2_")
-
-        xarray_to_cdf(self.l2_data, l2_file_name)
-
-        return l2_file_name
+    # def write_l2_cdf(self) -> Path:
+    #     """
+    #     Function/method description.
+    #
+    #     Returns
+    #     -------
+    #     l2_file_name : Path
+    #         The file name of the l2 file.
+    #     """
+    #
+    #     return write_cdf(self.l2_data)
 
     def process_idex_l2(self, l1_file: str, data_version: str) -> str:
         """
@@ -567,6 +565,4 @@ class L2Processor:
         """
         l2_data = L2Processor(l1_file, data_version)
 
-        l2_cdf_file_name = l2_data.write_l2_cdf()
-
-        return l2_cdf_file_name
+        return str(write_cdf(l2_data.l2_data))
