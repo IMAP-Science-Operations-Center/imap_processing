@@ -37,7 +37,8 @@ print(datasets_by_apid)
 
 # TODO: QUESTIONS:
 #  Should we check if first packet has group flag = 1 and if not,
-#  stop processing on the file?
+#  stop processing on the file? - Yes raise error so that failed job
+#  makes it to the database
 #  What epoch goes with each science frame? How do we handle this dimension?
 
 # Group science packets into groups of 20. (Convert this into a function)
@@ -51,6 +52,10 @@ for i in range(0, len(sci_dataset.epoch), 20):
     if i + 20 <= len(sci_dataset.epoch):
         seq_flgs_chunk = sci_dataset.seq_flgs[i : i + 20]
         science_data_chunk = sci_dataset.science_data[i : i + 20]
+        # TODO:
+        #  Add check for sequence counter to ensure it's incrementing by one
+        #  (src_seq_ctr)
+        #  Add handling for epoch values. Need to check with Grant and Eric
 
         # Check if the first packet is 1, the middle 18 packets are 0,
         # and the last packet is 2
@@ -61,6 +66,7 @@ for i in range(0, len(sci_dataset.epoch), 20):
         ):
             # If the chunk is valid, append the science data to the list
             valid_science_frames.append("".join(science_data_chunk.data))
+            # TODO: Split out the PHAs from science data
         else:
             # If the sequence doesn't match, you can either skip it or
             # raise a warning/error
