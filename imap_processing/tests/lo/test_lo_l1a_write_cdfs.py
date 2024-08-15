@@ -87,4 +87,4 @@ def test_write_lo_l1a_cdfs(direct_events):
 
     created_datasets = write_lo_l1a_cdfs(lo_data)
 
-    assert created_datasets[0].attrs["Logical_source"] == "imap_lo_l1a_scide"
+    assert created_datasets[0].attrs["Logical_source"] == "imap_lo_l1a_de"

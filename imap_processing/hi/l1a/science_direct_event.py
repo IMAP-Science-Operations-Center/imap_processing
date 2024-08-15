@@ -2,10 +2,8 @@
 
 import numpy as np
 import xarray as xr
-from space_packet_parser.parser import Packet
 
-from imap_processing import imap_module_directory
-from imap_processing.cdf.cdf_attribute_manager import CdfAttributeManager
+from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import met_to_j2000ns
 
 # TODO: read LOOKED_UP_DURATION_OF_TICK from
@@ -262,9 +260,9 @@ def create_dataset(de_data_list: list, packet_met_time: list) -> xr.Dataset:
         data_dict["ccsds_met"].append(packet_met_time[index])
 
     # Load the CDF attributes
-    cdf_manager = CdfAttributeManager(imap_module_directory / "cdf" / "config")
-    cdf_manager.load_global_attributes("imap_hi_global_cdf_attrs.yaml")
-    cdf_manager.load_variable_attributes("imap_hi_variable_attrs.yaml")
+    attr_mgr = ImapCdfAttributes()
+    attr_mgr.add_instrument_global_attrs("hi")
+    attr_mgr.load_variable_attributes("imap_hi_variable_attrs.yaml")
     # uncomment this once Maxine's PR is merged
     # attr_mgr.add_global_attribute("Data_version", data_version)
 
@@ -272,17 +270,17 @@ def create_dataset(de_data_list: list, packet_met_time: list) -> xr.Dataset:
         data_dict.pop("epoch"),
         name="epoch",
         dims=["epoch"],
-        attrs=cdf_manager.get_variable_attributes("hi_de_epoch"),
+        attrs=attr_mgr.get_variable_attributes("hi_de_epoch"),
     )
 
-    de_global_attrs = cdf_manager.get_global_attributes("imap_hi_l1a_de_attrs")
+    de_global_attrs = attr_mgr.get_global_attributes("imap_hi_l1a_de_attrs")
     dataset = xr.Dataset(
         coords={"epoch": epoch_time},
         attrs=de_global_attrs,
     )
 
     for var_name, data in data_dict.items():
-        attrs = cdf_manager.get_variable_attributes(
+        attrs = attr_mgr.get_variable_attributes(
             f"hi_de_{var_name}", check_schema=False
         ).copy()
         dtype = attrs.pop("dtype")
@@ -297,7 +295,7 @@ def create_dataset(de_data_list: list, packet_met_time: list) -> xr.Dataset:
     return dataset
 
 
-def science_direct_event(packets_data: list[Packet]) -> xr.Dataset:
+def science_direct_event(packets_data: xr.Dataset) -> xr.Dataset:
     """
     Unpack IMAP-Hi direct event data.
 
@@ -309,8 +307,8 @@ def science_direct_event(packets_data: list[Packet]) -> xr.Dataset:
 
     Parameters
     ----------
-    packets_data : list[space_packet_parser.ParsedPacket]
-        List of packets data.
+    packets_data : xarray.Dataset
+        Packets extracted into a dataset.
 
     Returns
     -------
@@ -324,14 +322,14 @@ def science_direct_event(packets_data: list[Packet]) -> xr.Dataset:
     # I am using extend to add another list to the
     # end of the list. This way, I don't need to flatten
     # the list later.
-    for data in packets_data:
+    for i, data in enumerate(packets_data["de_tof"].data):
         # break binary stream data into unit of 48-bits
-        event_48bits_list = break_into_bits_size(data.data["DE_TOF"].raw_value)
+        event_48bits_list = break_into_bits_size(data)
         # parse 48-bits into meaningful data such as metaevent or direct event
         de_data_list.extend([parse_direct_event(event) for event in event_48bits_list])
         # add packet time to packet_met_time
         packet_met_time.extend(
-            [data.data["CCSDS_MET"].raw_value] * len(event_48bits_list)
+            [packets_data["ccsds_met"].data[i]] * len(event_48bits_list)
         )
 
     # create dataset

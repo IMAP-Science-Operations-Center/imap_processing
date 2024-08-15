@@ -5,10 +5,11 @@ import pandas as pd
 
 from imap_processing.cdf.utils import met_to_j2000ns
 from imap_processing.mag.l0.decom_mag import decom_packets
-from imap_processing.mag.l1a.mag_l1a import process_packets
+from imap_processing.mag.l1a.mag_l1a import mag_l1a, process_packets
 from imap_processing.mag.l1a.mag_l1a_data import (
     MAX_FINE_TIME,
     MagL1a,
+    MagL1aPacketProperties,
     TimeTuple,
 )
 
@@ -22,7 +23,6 @@ def test_compare_validation_data():
     l1 = process_packets(l0["norm"])
     # Should have one day of data
     expected_day = np.datetime64("2023-11-30")
-    print(l1["mago"])
     l1_mago = l1["mago"][expected_day]
     l1_magi = l1["magi"][expected_day]
 
@@ -113,3 +113,70 @@ def test_calculate_vector_time():
         ]
     )
     assert (test_data == expected_data).all()
+
+
+def test_mag_l1a_data():
+    test_vectors = np.array(
+        [
+            [1, 2, 3, 4, 10000],
+            [5, 6, 7, 8, 10050],
+            [9, 10, 11, 12, 10100],
+            [13, 13, 11, 12, 10150],
+        ],
+        dtype=np.uint,
+    )
+    test_vecsec = 2
+    start_time = TimeTuple(10000, 0)
+
+    packet_properties = MagL1aPacketProperties(
+        435954628, start_time, test_vecsec, 1, 0, 0, 1
+    )
+    mag_l1a = MagL1a(True, True, 10000, test_vectors, packet_properties)
+
+    new_vectors = np.array(
+        [[13, 14, 15, 16, 10400], [16, 17, 18, 19, 10450]], dtype=np.uint
+    )
+
+    new_seq = 5
+    new_properties = MagL1aPacketProperties(
+        435954628, TimeTuple(10400, 0), test_vecsec, 0, new_seq, 0, 1
+    )
+    mag_l1a.append_vectors(new_vectors, new_properties)
+
+    assert np.array_equal(
+        mag_l1a.vectors,
+        np.array(
+            [
+                [1, 2, 3, 4, 10000],
+                [5, 6, 7, 8, 10050],
+                [9, 10, 11, 12, 10100],
+                [13, 13, 11, 12, 10150],
+                [13, 14, 15, 16, 10400],
+                [16, 17, 18, 19, 10450],
+            ],
+            dtype=np.uint,
+        ),
+    )
+    assert mag_l1a.missing_sequences == [1, 2, 3, 4]
+
+
+def test_mag_l1a():
+    current_directory = Path(__file__).parent
+    test_file = current_directory / "mag_l1_test_data.pkts"
+
+    output_data = mag_l1a(test_file, "v001")
+
+    # Test data is one day's worth of NORM data, so it should return one raw, one MAGO
+    # and one MAGI dataset
+    assert len(output_data) == 3
+    expected_logical_source = [
+        "imap_mag_l1a_norm-raw",
+        "imap_mag_l1a_norm-mago",
+        "imap_mag_l1a_norm-magi",
+    ]
+
+    for data_type in [data.attrs["Logical_source"] for data in output_data]:
+        assert data_type in expected_logical_source
+
+    for data in output_data:
+        assert data.attrs["Data_version"] == "v001"

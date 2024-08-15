@@ -1,0 +1,24 @@
+instrument_base: &instrument_base
+  Descriptor: IDEX>Interstellar Dust Experiment
+  TEXT: >
+    The Interstellar Dust Experiment (IDEX) is a time-of-flight (TOF)
+    dust impact ionization mass spectrometer on the IMAP mission that
+    provides the elemental composition, speed, and mass distributions
+    of interstellar dust and interplanetary dust particles. Each record
+    contains the data from a single dust impact. See
+    https://imap.princeton.edu/instruments/idex for more details.
+  Instrument_type:
+
+imap_idex_l1_sci:
+  <<: *instrument_base
+  Data_level: L1
+  Data_type: L1_SCI>Level-1 Science Data
+  Logical_source: imap_idex_l1_sci
+  Logical_source_description: IMAP Mission IDEX Instrument Level-1 Data.
+
+imap_idex_l2_sci:
+  <<: *instrument_base
+  Data_level: L2
+  Data_type: L2_SCI>Level-2 Science Data
+  Logical_source: idex_l2_global_attrs
+  Logical_source_description: IMAP Mission IDEX Instrument Level-2 Data

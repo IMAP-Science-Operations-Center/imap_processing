@@ -43,7 +43,7 @@ from imap_processing.hi.l1b import hi_l1b
 from imap_processing.hi.l1c import hi_l1c
 from imap_processing.hit.l1a.hit_l1a import hit_l1a
 from imap_processing.hit.l1b.hit_l1b import hit_l1b
-from imap_processing.idex.idex_packet_parser import PacketParser
+from imap_processing.idex.l1.idex_l1 import PacketParser
 from imap_processing.lo.l1a import lo_l1a
 from imap_processing.lo.l1b import lo_l1b
 from imap_processing.lo.l1c import lo_l1c
@@ -645,14 +645,13 @@ class Lo(ProcessInstrument):
 class Mag(ProcessInstrument):
     """Process MAG."""
 
-    # TODO: fixed in later PR
-    def do_processing(self, dependencies: list) -> list[xr.Dataset]:
+    def do_processing(self, dependencies: list[Path]) -> list[xr.Dataset]:
         """
         Perform MAG specific processing.
 
         Parameters
         ----------
-        dependencies : list
+        dependencies : list[Path]
             List of dependencies to process.
 
         Returns

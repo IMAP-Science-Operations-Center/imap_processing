@@ -35,6 +35,9 @@ class ImapCdfAttributes(CdfAttributeManager):
         else:
             super().__init__(source_dir)
 
+        # Load constants attrs that everyone uses
+        self.load_variable_attributes("imap_constant_attrs.yaml")
+
     def add_instrument_global_attrs(self, instrument: str) -> None:
         """
         Add instrument specific global attributes.
