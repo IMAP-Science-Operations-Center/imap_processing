@@ -196,7 +196,7 @@ class L2Processor:
                 dims="epoch",
                 # TODO: attrs
                 attrs=self.l2_attrs.get_variable_attributes(
-                    f"{variable_lower}__model_constant_offset"
+                    f"{variable_lower}_model_constant_offset"
                 ),
             )
 
@@ -232,7 +232,7 @@ class L2Processor:
                 dims="epoch",
                 # TODO: attrs
                 attrs=self.l2_attrs.get_variable_attributes(
-                    f"{variable_lower}_discharge_time"
+                    f"{variable_lower}_model_discharge_time"
                 ),
             )
 
