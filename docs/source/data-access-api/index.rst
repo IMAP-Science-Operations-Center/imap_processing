@@ -17,9 +17,9 @@ that the full implementation of the functionality is yet to be completed.*
 The API can be accessed from the following URL [WIP]: https://api.dev.imap-mission.com
 
 Command Line Utility
-====================
+--------------------
 To Install
-----------
+^^^^^^^^^^
 
 Run the following command to use the API CLI.
 
@@ -28,7 +28,7 @@ Run the following command to use the API CLI.
         pip install imap-data-access
 
 Base Command Arguments
-----------------------
+^^^^^^^^^^^^^^^^^^^^^^
 
 The following are base command arguments for the CLI:
 
@@ -41,10 +41,8 @@ The following are base command arguments for the CLI:
 
 Add the -h flag with any base command for more information on use and functionality.
 
-.. openapi:: openapi.yml
-   :group:
-   :include: /query
-
+Query
+^^^^^
 **Example Usage:**
 
 .. code-block:: bash
@@ -53,11 +51,8 @@ Add the -h flag with any base command for more information on use and functional
     # The following line is returned:
     [{'file_path': 'imap/swe/l0/2024/01/imap_swe_l0_sci_20240105_v001.pkts', 'instrument': 'swe', 'data_level': 'l0', 'descriptor': 'sci', 'start_date': '20240105', 'version': 'v001', 'extension': 'pkts'}, {'file_path': 'imap/swe/l0/2024/01/imap_swe_l0_sci_20240105_v001.pkts', 'instrument': 'swe', 'data_level': 'l0', 'descriptor': 'sci', 'start_date': '20240105', 'version': 'v001', 'extension': 'pkts'}]
 
-
-.. openapi:: openapi.yml
-   :group:
-   :include: /download
-
+Download
+^^^^^^^^
 It is important to note that your working directory will be established as the default directory. I.e, the ``data``
 directory (to which files are downloaded) will automatically be placed in this file path. Choose your working directory
 accordingly to suit your desires.
@@ -71,10 +66,8 @@ organize the downloaded files. See the example path: ``data/imap/swe/l0/2024/01/
 
     imap-data-access upload /imap/swe/l1a/2024/01/imap_swe_l1a_sci_20240105_v001.cdf
 
-.. openapi:: openapi.yml
-   :group:
-   :include: /upload
-
+Upload
+^^^^^^
 When uploading files to the API, ensure these files are stored properly in a ``data`` directory (see the Data Directory section below for more information). Then,
 ensure your working directory is one level above ``data`` in order to properly upload files.
 
@@ -88,7 +81,7 @@ ensure your working directory is one level above ``data`` in order to properly u
         imap-data-access upload /imap/swe/l1a/2024/01/imap_swe_l1a_sci_20240105_v001.cdf
 
 Importing as a package
-======================
+----------------------
 Imap data access can also be imported and used as a python package if desired.
 
 **Example Usage:**
@@ -109,9 +102,9 @@ Imap data access can also be imported and used as a python package if desired.
         imap_data_access.upload("imap/swe/l1a/2024/01/imap_swe_l1a_sci_20240105_v001.cdf")
 
 Configuration
-=============
-Data Directory
 --------------
+Data Directory
+^^^^^^^^^^^^^^
 
 The folder structure for data files within the IMAP SDC is rigidly defined, so the data access will mimic that structure to make sure all data is stored in the same hierarchical structure as the SDC. This will enable seamless transition between a user's local system and the SDC. This is only used for downloads.
 A user's root data location can be specified as an environment variable IMAP_DATA_DIR or through a configuration dictionary within the package itself imap_data_access.config["DATA_DIR"]. If the IMAP_DATA_DIR variable is not set, the program defaults to the user's current working directory + data/.
@@ -140,12 +133,12 @@ for example, with ``IMAP_DATA_DIR=/data:``
                     imap_swe_l0_sci_20240105_v001.pkts
 
 Data Access URL
----------------
+^^^^^^^^^^^^^^^
 
 To change the default URL that the package accesses, you can set the environment variable ``IMAP_DATA_ACCESS_URL`` or within the package ``imap_data_access.config["DATA_ACCESS_URL"]``. The default is the development server https://api.dev.imap-mission.com.
 
 File Validation
-===============
+---------------
 
 This package validates filenames and paths to check they follow our standards, as defined by the filename conventions. There is also a class available for use by other packages to create filepaths and filenames that follow the IMAP SDC conventions.
 To use this class, use ``imap_data_access.ScienceFilePath``.
@@ -160,9 +153,9 @@ Usage:
         filepath = science_file.construct_path()
 
 Troubleshooting
-===============
+---------------
 Network Issues
---------------
+^^^^^^^^^^^^^^
 
 **SSL**
 
@@ -191,14 +184,15 @@ That generally means the Python environment you're using is not finding your sys
 This could mean that the service is temporarily down. If you continue to encounter this, reach out to the IMAP SDC at imap-sdc@lasp.colorado.edu.
 
 FileNotFoundError
------------------
+^^^^^^^^^^^^^^^^^
 
 This could mean that the local data directory is not set up with the same paths as the SDC. See the data directory section for an example of how to set this up.
 
 REST API Specification
-======================
-Upload
-------
+----------------------
+.. openapi:: openapi.yml
+   :group:
+   :include: /upload
 
 **Example Usage:**
 
@@ -221,9 +215,9 @@ Upload
    {"statusCode": 400, "body": "Invalid extension. Extension should be pkts for data level l0 and cdf for data level higher than l0"}
    {"statusCode": 409, "body": "https://sds-data-<aws_account_number>.s3.amazon.com/imap/swe/l0/2024/01/imap_swe_l0_sci_20240105_20240105_v00-01.pkts already exists."}
 
-
-Download
---------
+.. openapi:: openapi.yml
+   :group:
+   :include: /download
 
 **Example Usage:**
 
@@ -239,8 +233,10 @@ Download
    {"statusCode": 400, "body": "No file requested for download. Please provide a filename in the path. Eg. /download/path/to/file/filename.pkts"}
    {"statusCode": 404, "body": "File not found, make sure you include the full path to the file in the request, e.g. /download/path/to/file/filename.pkts"}
 
-Query
-------
+.. openapi:: openapi.yml
+   :group:
+   :include: /query
+
 **Example Usage:**
 
 .. code-block:: bash
@@ -255,7 +251,7 @@ Query
    {"statusCode": 400, "headers": {"Content-Type": "application/json", "Access-Control-Allow-Origin": "*"}, "body": "<param> is not a valid query parameter. Valid query parameters are: ['file_path', 'instrument', 'data_level', 'descriptor', 'start_date', 'end_date', 'version', 'extension']"}
 
 Other pages
-===========
+-----------
 
 .. toctree::
     :maxdepth: 1
