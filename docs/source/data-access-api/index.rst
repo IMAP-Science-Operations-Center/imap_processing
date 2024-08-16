@@ -4,10 +4,10 @@ Data Access API
 ===============
 
 The `imap-data-access <https://github.com/IMAP-Science-Operations-Center/imap-data-access>`_
-repository provides programmatic access and a command-line utility for
+repository provides programmatic access, and a command-line utility for
 interacting with the API. It is the preferred way to use the API.
 
-The SDC further provides a REST API that allows users to upload and download files, as
+The SDC also provides a REST API that allows users to upload and download files as
 well as query for file metadata. The following documentation describes the
 various endpoints that are supported and how to use them.
 
@@ -20,7 +20,6 @@ Command Line Utility
 --------------------
 To Install
 ^^^^^^^^^^
-
 Run the following command to use the API CLI.
 
     .. code-block:: bash
@@ -29,7 +28,6 @@ Run the following command to use the API CLI.
 
 Base Command Arguments
 ^^^^^^^^^^^^^^^^^^^^^^
-
 The following are base command arguments for the CLI:
 
     .. code-block:: bash
@@ -43,6 +41,15 @@ Add the -h flag with any base command for more information on use and functional
 
 Query
 ^^^^^
+
+To query for files, you can use several parameters:
+
+    --instrument,
+    --data-level,
+    --descriptor,
+    etc.
+Further information is found in in the ``query -h`` menu. You can use parameters alone, or in combination.
+
 **Example Usage:**
 
 .. code-block:: bash
@@ -53,8 +60,11 @@ Query
 
 Download
 ^^^^^^^^
+
+To download files using the CLI tool, use the command ``download``. These will be placed in a ``data`` directory.
+
 It is important to note that your working directory will be established as the default directory. I.e, the ``data``
-directory (to which files are downloaded) will automatically be placed in this file path. Choose your working directory
+directory will automatically be placed in this file path. Choose your working directory
 accordingly to suit your desires.
 
 When downloading a file from the API, different folders within the ``data`` directory will be made to better
@@ -64,10 +74,14 @@ organize the downloaded files. See the example path: ``data/imap/swe/l0/2024/01/
 
 .. code-block:: bash
 
-    imap-data-access upload /imap/swe/l1a/2024/01/imap_swe_l1a_sci_20240105_v001.cdf
+    imap-data-access download imap/swe/l0/2024/01/imap_swe_l0_sci_20240105_v001.pkts
+
 
 Upload
 ^^^^^^
+
+Similarly, files can be uploaded to the API using the command ``upload``.
+
 When uploading files to the API, ensure these files are stored properly in a ``data`` directory (see the Data Directory section below for more information). Then,
 ensure your working directory is one level above ``data`` in order to properly upload files.
 
