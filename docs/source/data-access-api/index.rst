@@ -20,6 +20,7 @@ Command Line Utility
 --------------------
 To Install
 ^^^^^^^^^^
+
 Run the following command to use the API CLI.
 
     .. code-block:: bash
@@ -28,6 +29,7 @@ Run the following command to use the API CLI.
 
 Base Command Arguments
 ^^^^^^^^^^^^^^^^^^^^^^
+
 The following are base command arguments for the CLI:
 
     .. code-block:: bash
@@ -42,21 +44,17 @@ Add the -h flag with any base command for more information on use and functional
 Query
 ^^^^^
 
-To query for files, you can use several parameters:
+To query for files, you can use several parameters: ``--instrument``, ``--data-level``, ``--descriptor``, etc.
 
-    --instrument,
-    --data-level,
-    --descriptor,
-    etc.
 Further information is found in in the ``query -h`` menu. You can use parameters alone, or in combination.
 
 **Example Usage:**
 
-.. code-block:: bash
+    .. code-block:: bash
 
-    imap-data-access query --start-date 20240101 --end-date 20241231 --output-format json
-    # The following line is returned:
-    [{'file_path': 'imap/swe/l0/2024/01/imap_swe_l0_sci_20240105_v001.pkts', 'instrument': 'swe', 'data_level': 'l0', 'descriptor': 'sci', 'start_date': '20240105', 'version': 'v001', 'extension': 'pkts'}, {'file_path': 'imap/swe/l0/2024/01/imap_swe_l0_sci_20240105_v001.pkts', 'instrument': 'swe', 'data_level': 'l0', 'descriptor': 'sci', 'start_date': '20240105', 'version': 'v001', 'extension': 'pkts'}]
+        imap-data-access query --start-date 20240101 --end-date 20241231 --output-format json
+        # The following line is returned:
+        [{'file_path': 'imap/swe/l0/2024/01/imap_swe_l0_sci_20240105_v001.pkts', 'instrument': 'swe', 'data_level': 'l0', 'descriptor': 'sci', 'start_date': '20240105', 'version': 'v001', 'extension': 'pkts'}, {'file_path': 'imap/swe/l0/2024/01/imap_swe_l0_sci_20240105_v001.pkts', 'instrument': 'swe', 'data_level': 'l0', 'descriptor': 'sci', 'start_date': '20240105', 'version': 'v001', 'extension': 'pkts'}]
 
 Download
 ^^^^^^^^
@@ -72,9 +70,9 @@ organize the downloaded files. See the example path: ``data/imap/swe/l0/2024/01/
 
 **Example Usage:**
 
-.. code-block:: bash
+    .. code-block:: bash
 
-    imap-data-access download imap/swe/l0/2024/01/imap_swe_l0_sci_20240105_v001.pkts
+        imap-data-access download imap/swe/l0/2024/01/imap_swe_l0_sci_20240105_v001.pkts
 
 
 Upload
