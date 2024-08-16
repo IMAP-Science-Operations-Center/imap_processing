@@ -4,6 +4,7 @@ import numpy as np
 import pytest
 import spiceypy as spice
 
+from imap_processing import imap_module_directory
 from tools.spice.spice_examples import (
     _get_particle_velocity,
     build_annotated_events,
@@ -28,6 +29,12 @@ def kernels(kernel_directory):
     #  in the test_data/spice directory.
     kernels = list_files_with_extensions(
         kernel_directory, [".tsc", ".tls", ".tf", ".bsp", ".ck"]
+    )
+    # Some kernels were moved into imap_processing package
+    kernels.extend(
+        list_files_with_extensions(
+            imap_module_directory / "tests/spice/test_data", [".tsc", ".tls"]
+        )
     )
     return kernels
 
