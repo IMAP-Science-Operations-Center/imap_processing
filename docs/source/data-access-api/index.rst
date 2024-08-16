@@ -1,5 +1,29 @@
 .. _data-access-api:
 
+.. raw:: html
+
+    <div id="embedded-readme"></div>
+
+    <script>
+        fetch('https://raw.githubusercontent.com/IMAP-Science-Operations-Center/imap-data-access/main/README.md')
+            .then(response => response.text())
+            .then(text => {
+                // Define the header you want to extract
+                const header = '## File Validation';
+
+                // Use a regular expression to extract the section under the specified header
+                const regex = new RegExp(`${header}[^#]*`, 'g');
+                const match = text.match(regex);
+
+                if (match) {
+                    // Display the matched content under the header
+                    document.getElementById('embedded-readme').innerHTML = `<pre>${match[0]}</pre>`;
+                } else {
+                    document.getElementById('embedded-readme').innerHTML =  `<p>Header not found</p>`;
+                }
+            });
+    </script>
+
 Data Access API
 ===============
 
