@@ -39,6 +39,18 @@ esa_step:
   LABLAXIS: ESA
   LABL_PTR_1: esa_step_label
 
+shcoarse:
+  VALIDMIN: 0
+  VALIDMAX: 9223372036854775807
+  FILLVAL: -9223372036854775808
+  CATDESC: Mission Elapsed Time
+  DEPEND_0: epoch
+  FIELDNAM: Spacecraft Time
+  Units: ' '
+  FORMAT: I12
+  VAR_TYPE: support_data
+  LABLAXIS: SHCOARSE
+
 # Direct Events Attributes
 #direct_events:
 #  <<: *de_default
