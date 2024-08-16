@@ -21,7 +21,7 @@ Command Line Utility
 To Install
 ^^^^^^^^^^
 
-Run the following command to use the API CLI.
+Run the following command to use the API CLI:
 
     .. code-block:: bash
 
