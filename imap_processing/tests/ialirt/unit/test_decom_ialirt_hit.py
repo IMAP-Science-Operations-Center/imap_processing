@@ -78,12 +78,12 @@ def test_decom_packets(binary_packet_path, xtce_hit_path, hit_test_data):
 
     # Define test data names
     prefixes = ["L1A_TRIG", "IA_EVNT_TRIG", "A_EVNT_TRIG", "L3A_TRIG"]
-    HIT_FAST_RATE_1 = [f"{prefix}_{i:02d}" for i in range(15) for prefix in prefixes]
+    prefix_fast_rate_1 = [f"{prefix}_{i:02d}" for i in range(15) for prefix in prefixes]
 
     prefixes = ["L1B_TRIG", "IB_EVNT_TRIG", "B_EVNT_TRIG", "L3B_TRIG"]
-    HIT_FAST_RATE_2 = [f"{prefix}_{i:02d}" for i in range(15) for prefix in prefixes]
+    prefix_fast_rate_2 = [f"{prefix}_{i:02d}" for i in range(15) for prefix in prefixes]
 
-    HIT_SLOW_RATE = [
+    prefix_slow_rate = [
         "L1A",
         "L2A",
         "L3A",
@@ -93,27 +93,52 @@ def test_decom_packets(binary_packet_path, xtce_hit_path, hit_test_data):
         "L4IAHG",
         "L4OAHG",
     ]
-    HIT_SLOW_RATE.extend(["SLOW_RATE"] * 3)
-    HIT_SLOW_RATE.extend(["L1A0BHG", "L1B0BHG", "L1C0BHG", "L4IBHG", "L4OBHG"])
-    HIT_SLOW_RATE.extend([f"IALRT_RATE_{i}" for i in range(1, 21)])
-    HIT_SLOW_RATE.extend(
+    prefix_slow_rate.extend(["SLOW_RATE_08", "SLOW_RATE_09", "SLOW_RATE_10"])
+    prefix_slow_rate.extend(["L1A0BHG", "L1B0BHG", "L1C0BHG", "L4IBHG", "L4OBHG"])
+    prefix_slow_rate.extend([f"IALRT_RATE_{i}" for i in range(1, 21)])
+    prefix_slow_rate.extend(
         ["TRIG_IA_EVNT", "TRIG_IB_EVNT", "NASIDE_IALRT", "NBSIDE_IALRT"]
     )
-    HIT_SLOW_RATE.extend([f"ERATE_{i}" for i in range(1, 6)])
-    HIT_SLOW_RATE.extend(["L12A", "L123A", "PENA", "L12B", "L123B", "PENB"])
-    HIT_SLOW_RATE.extend(["SLOW_RATE"] * 4)
-    HIT_SLOW_RATE.extend(["H_06_08", "H_12_15", "H_15_70", "HE4_06_08", "HE4_15_70"])
+    prefix_slow_rate.extend([f"ERATE_{i}" for i in range(1, 6)])
+    prefix_slow_rate.extend(["L12A", "L123A", "PENA", "L12B", "L123B", "PENB"])
+    prefix_slow_rate.extend(
+        ["SLOW_RATE_51", "SLOW_RATE_52", "SLOW_RATE_53", "SLOW_RATE_54"]
+    )
+    prefix_slow_rate.extend(["H_06_08", "H_12_15", "H_15_70", "HE4_06_08", "HE4_15_70"])
 
     # The sequence begins where "HIT_MET" != 0
     start_index = hit_test_data.index[hit_test_data["MET"] != 0][0]
+
+    # Test Fast Rate 1
     ccsds_fast_rate_1 = fast_rate_1[start_index : start_index + 60]
+    test_fast_rate_1 = hit_test_data.loc[
+        start_index : start_index + 59,
+        hit_test_data.columns.str.startswith(tuple(prefix_fast_rate_1)),
+    ]
+    flat_test_fast_rate_1 = test_fast_rate_1.to_numpy().flatten()
+    np.testing.assert_array_equal(
+        ccsds_fast_rate_1.values,
+        flat_test_fast_rate_1[~np.isnan(flat_test_fast_rate_1)],
+    )
 
-    filtered_data = hit_test_data.loc[start_index : start_index + 59]
-    mask = filtered_data.columns.str.startswith(tuple(HIT_FAST_RATE_1))
-    selected_columns = filtered_data.columns[mask]
-    filtered_data_2 = filtered_data[selected_columns]
-    data_array = filtered_data_2.to_numpy()
-    flattened_array = data_array.flatten()
-    cleaned_array = flattened_array[~np.isnan(flattened_array)]
+    # Test Fast Rate 2
+    ccsds_fast_rate_2 = fast_rate_2[start_index : start_index + 60]
+    test_fast_rate_2 = hit_test_data.loc[
+        start_index : start_index + 59,
+        hit_test_data.columns.str.startswith(tuple(prefix_fast_rate_2)),
+    ]
+    flat_test_fast_rate_2 = test_fast_rate_2.to_numpy().flatten()
+    np.testing.assert_array_equal(
+        ccsds_fast_rate_2.values,
+        flat_test_fast_rate_2[~np.isnan(flat_test_fast_rate_2)],
+    )
 
-    np.testing.assert_array_equal(ccsds_fast_rate_1.values, cleaned_array)
+    # Test Slow Rate
+    ccsds_slow_rate = slow_rate[start_index : start_index + 60]
+    test_slow_rate = hit_test_data.loc[
+        start_index : start_index + 59, hit_test_data.columns.isin(prefix_slow_rate)
+    ]
+    flat_test_slow_rate = test_slow_rate.to_numpy().flatten()
+    np.testing.assert_array_equal(
+        ccsds_slow_rate.values, flat_test_slow_rate[~np.isnan(flat_test_slow_rate)]
+    )
