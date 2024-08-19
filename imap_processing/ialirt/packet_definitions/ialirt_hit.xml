@@ -557,6 +557,9 @@
 			</xtce:Parameter>
 			<!-- CoDICE LO -->
 			<!-- HIT -->
+			<xtce:Parameter name="HIT_SC_TICK" parameterTypeRef="uint32">
+				<xtce:LongDescription>Spacecraft tick</xtce:LongDescription>
+			</xtce:Parameter>
 			<xtce:Parameter name="HIT_MET" parameterTypeRef="uint32">
 				<xtce:LongDescription>Mission elapsed time</xtce:LongDescription>
 			</xtce:Parameter>
@@ -634,6 +637,7 @@
 				</xtce:BaseContainer>
 				<xtce:EntryList>
 					<!-- HIT -->
+					<xtce:ParameterRefEntry parameterRef="HIT_SC_TICK"/>
 					<xtce:ParameterRefEntry parameterRef="HIT_MET"/>
 					<xtce:ParameterRefEntry parameterRef="HIT_STATUS"/>
 					<xtce:ParameterRefEntry parameterRef="HIT_SPARE"/>
