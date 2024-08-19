@@ -557,16 +557,16 @@
 			</xtce:Parameter>
 			<!-- CoDICE LO -->
 			<!-- HIT -->
-			<xtce:Parameter name="HIT_SC_TICK" parameterTypeRef="uint32">
-				<xtce:LongDescription>Spacecraft tick</xtce:LongDescription>
+			<xtce:Parameter name="HIT_MET" parameterTypeRef="uint32">
+				<xtce:LongDescription>Mission elapsed time</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="HIT_STATUS" parameterTypeRef="instrument_status">
 				<xtce:LongDescription>1 = nominal, 0 = off-nominal</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="HIT_RESERVED" parameterTypeRef="uint1">
-				<xtce:LongDescription>Reserved</xtce:LongDescription>
+			<xtce:Parameter name="HIT_SPARE" parameterTypeRef="uint1">
+				<xtce:LongDescription>Spare</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="HIT_COUNTER" parameterTypeRef="uint6">
+			<xtce:Parameter name="HIT_SUBCOM" parameterTypeRef="uint6">
 				<xtce:LongDescription>Seconds counter</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="HIT_FAST_RATE_1" parameterTypeRef="uint16">
@@ -717,10 +717,10 @@
 					<xtce:ParameterRefEntry parameterRef="COD_LO_SPARE_0"/>
 					<!-- CoDICE LO -->
 					<!-- HIT -->
-					<xtce:ParameterRefEntry parameterRef="HIT_SC_TICK"/>
+					<xtce:ParameterRefEntry parameterRef="HIT_MET"/>
 					<xtce:ParameterRefEntry parameterRef="HIT_STATUS"/>
-					<xtce:ParameterRefEntry parameterRef="HIT_RESERVED"/>
-					<xtce:ParameterRefEntry parameterRef="HIT_COUNTER"/>
+					<xtce:ParameterRefEntry parameterRef="HIT_SPARE"/>
+					<xtce:ParameterRefEntry parameterRef="HIT_SUBCOM"/>
 					<xtce:ParameterRefEntry parameterRef="HIT_FAST_RATE_1"/>
 					<xtce:ParameterRefEntry parameterRef="HIT_FAST_RATE_2"/>
 					<xtce:ParameterRefEntry parameterRef="HIT_SLOW_RATE"/>

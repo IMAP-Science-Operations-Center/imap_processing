@@ -55,7 +55,7 @@ def generate_xarray(
     if time_keys is None:
         time_keys = {
             "SC": "SC_SCLK_SEC",
-            "HIT": "HIT_SC_TICK",
+            "HIT": "HIT_MET",
             "MAG": "MAG_ACQ",
             "COD_LO": "COD_LO_ACQ",
             "COD_HI": "COD_HI_ACQ",
