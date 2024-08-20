@@ -9,11 +9,11 @@ import numpy as np
 import pytest
 import spiceypy as spice
 
-from imap_processing.pointing_frame_handler import (
+from imap_processing.spice.pointing_frame_handler import (
     average_quaternions,
     create_pointing_frame,
     create_rotation_matrix,
-    get_coverage,
+    get_et_times,
 )
 
 
@@ -24,12 +24,11 @@ def kernel_path(tmp_path):
     test_dir = (
         Path(sys.modules[__name__.split(".")[0]].__file__).parent
         / "tests"
-        / "pointing_frame"
+        / "spice"
         / "test_data"
     )
 
     kernels = [
-        "de430.bsp",
         "naif0012.tls",
         "imap_science_0001.tf",
         "imap_sclk_0000.tsc",
@@ -57,25 +56,26 @@ def create_kernel_list(kernel_path):
 
 @pytest.fixture()
 def et_times(create_kernel_list):
-    """Tests get_coverage function."""
+    """Tests get_et_times function."""
     kernels, ck_kernel = create_kernel_list
 
     with spice.KernelPool(kernels):
-        et_start, et_end, et_times = get_coverage(str(ck_kernel[0]))
+        et_start, et_end, et_times = get_et_times(str(ck_kernel[0]))
 
     return et_times
 
 
 @pytest.mark.xfail(reason="Will fail unless kernels in pointing_frame/test_data.")
-def test_get_coverage(create_kernel_list):
-    """Tests get_coverage function."""
+def test_get_et_times(create_kernel_list):
+    """Tests get_et_times function."""
     kernels, ck_kernel = create_kernel_list
 
     with spice.KernelPool(kernels):
-        et_start, et_end, et_times = get_coverage(str(ck_kernel[0]))
+        et_start, et_end, et_times = get_et_times(str(ck_kernel[0]))
 
     assert et_start == 802008069.184905
     assert et_end == 802094467.184905
+    assert len(et_times) == 57599
 
 
 @pytest.mark.xfail(reason="Will fail unless kernels in pointing_frame/test_data.")
@@ -89,6 +89,7 @@ def test_average_quaternions(et_times, create_kernel_list):
     # Generated from MATLAB code results
     q_avg_expected = np.array([-0.6838, 0.5480, -0.4469, -0.1802])
     np.testing.assert_allclose(q_avg, q_avg_expected, atol=1e-4)
+    assert len(z_eclip_time) == 57599
 
 
 @pytest.mark.xfail(reason="Will fail unless kernels in pointing_frame/test_data.")
@@ -120,7 +121,7 @@ def test_create_pointing_frame(monkeypatch, kernel_path, create_kernel_list):
     kernels = [str(file) for file in kernel_path.iterdir()]
 
     with spice.KernelPool(kernels):
-        et_start, et_end, et_times = get_coverage(str(ck_kernel[0]))
+        et_start, et_end, et_times = get_et_times(str(ck_kernel[0]))
 
         rotation_matrix_1 = spice.pxform("ECLIPJ2000", "IMAP_DPS", et_start + 100)
         rotation_matrix_2 = spice.pxform("ECLIPJ2000", "IMAP_DPS", et_start + 1000)
@@ -134,21 +135,19 @@ def test_create_pointing_frame(monkeypatch, kernel_path, create_kernel_list):
     )
     np.testing.assert_allclose(rotation_matrix_1, rotation_matrix_expected, atol=1e-4)
 
+    # Verify imap_dps.bc has been created.
+    assert (kernel_path / "imap_dps.bc").exists()
 
-@pytest.mark.xfail(reason="Will fail unless kernels in pointing_frame/test_data.")
-def test_z_axis(create_kernel_list):
+
+@pytest.mark.skip(reason="Plotting only")
+def test_declination_plot(create_kernel_list, et_times):
     """Tests Inertial z axis and provides visualization."""
     kernels, ck_kernel = create_kernel_list
 
     with spice.KernelPool(kernels):
-        et_start, et_end, et_times = get_coverage(str(ck_kernel[0]))
-
         # Converts rectangular coordinates to spherical coordinates.
         q_avg, z_eclip_time = average_quaternions(et_times)
-        z_avg_expected = spice.q2m(list(q_avg))[:, 2]
         _, z_avg = create_rotation_matrix(et_times)
-
-        assert np.array_equal(z_avg, z_avg_expected)
 
         # Create visualization
         declination_list = []
@@ -169,7 +168,7 @@ def test_z_axis(create_kernel_list):
         np.full(len(et_times), avg_declination * 180 / np.pi),
         "-r",
         linewidth=2,
-        label="mean z-axis for pointing frame",
+        label="mean declination for pointing frame",
     )
     plt.xlabel("Ephemeris Time")
     plt.ylabel("Spacecraft Spin Axis Declination")

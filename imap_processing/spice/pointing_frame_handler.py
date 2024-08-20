@@ -7,9 +7,8 @@ Kernels that are required to run this code:
 1. imap_science_0001.tf - pointing frame kernel
 2. imap_sclk_0000.tsc - spacecraft clock kernel
 3. imap_wkcp.tf - spacecraft frame kernel
-4. de430.bsp - standard SPICE planetary ephemeris kernel
-5. naif0012.tls - standard NAIF leapsecond kernel
-6. imap_spin.bc - test attitude kernel available at:
+4. naif0012.tls - standard NAIF leapsecond kernel
+5. imap_spin.bc - test attitude kernel available at:
    https://lasp.colorado.edu/galaxy/display/IMAP/Data
 These need to be placed in tests/pointing_frame/test_data.
 
@@ -31,7 +30,7 @@ logger.setLevel(logging.INFO)
 # TODO : Add multiple pointings to the pointing frame.
 
 
-def get_coverage(ck_kernel: str) -> tuple[float, float, np.ndarray]:
+def get_et_times(ck_kernel: str) -> tuple[float, float, np.ndarray]:
     """
     Create the pointing frame.
 
@@ -87,6 +86,13 @@ def average_quaternions(et_times: np.ndarray) -> tuple[np.ndarray, list[np.ndarr
     aggregate = np.zeros((4, 4))
 
     for tdb in et_times:
+        # we use a quick and dirty method here for grabbing the quaternions
+        # from the attitude kernel.  Depending on how well the kernel input
+        # data is built and sampled, there may or may not be aliasing with this
+        # approach.  If it turns out that we need to pull the quaternions
+        # directly from the CK there are several routines that exist to do this
+        # but it's not straight forward.  We'll revisit this if needed.
+
         # Rotation matrix from IMAP spacecraft frame to ECLIPJ2000.
         # https://spiceypy.readthedocs.io/en/main/documentation.html#spiceypy.spiceypy.pxform
         body_rots = spice.pxform("IMAP_SPACECRAFT", "ECLIPJ2000", tdb)
@@ -175,7 +181,7 @@ def create_pointing_frame() -> Path:
     # Furnish the kernels.
     with spice.KernelPool(kernels):
         # Get timerange for the pointing frame kernel.
-        et_start, et_end, et_times = get_coverage(str(ck_kernel[0]))
+        et_start, et_end, et_times = get_et_times(str(ck_kernel[0]))
         # Create a rotation matrix
         rotation_matrix, _ = create_rotation_matrix(et_times)
 
