@@ -55,7 +55,7 @@ def create_kernel_list(kernel_path):
     return kernels, ck_kernel
 
 
-# @pytest.mark.xfail(reason="Will fail unless imap_spin.bc is in /test-data/spice/.")
+@pytest.mark.xfail(reason="Will fail unless kernels in pointing_frame/test_data.")
 def test_get_coverage(create_kernel_list):
     """Tests get_coverage function."""
     kernels, ck_kernel = create_kernel_list
@@ -67,7 +67,7 @@ def test_get_coverage(create_kernel_list):
     assert et_end == 802094467.184905
 
 
-# @pytest.mark.xfail(reason="Will fail unless imap_spin.bc is in /test-data/spice/.")
+@pytest.mark.xfail(reason="Will fail unless kernels in pointing_frame/test_data.")
 def test_create_pointing_frame(monkeypatch, kernel_path, create_kernel_list):
     """Tests create_pointing_frame function."""
     monkeypatch.setenv("EFS_MOUNT_PATH", str(kernel_path))
@@ -93,7 +93,7 @@ def test_create_pointing_frame(monkeypatch, kernel_path, create_kernel_list):
     np.testing.assert_allclose(rotation_matrix_1, rotation_matrix_expected, atol=1e-4)
 
 
-# @pytest.mark.xfail(reason="Will fail unless imap_spin.bc is in /test-data/spice/.")
+@pytest.mark.xfail(reason="Will fail unless kernels in pointing_frame/test_data.")
 def test_z_axis(create_kernel_list):
     """Tests Inertial z axis and provides visualization."""
     kernels, ck_kernel = create_kernel_list
