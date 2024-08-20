@@ -110,7 +110,7 @@ class MagL0:
         # big-endian bytes
         self.VECTORS = np.frombuffer(
             int(self.VECTORS, 2).to_bytes(len(self.VECTORS) // 8, "big"),
-            dtype=np.dtype(">b"),
+            dtype=np.dtype(">B"),
         )
 
         # Remove buffer from end of vectors. Vector data needs to be in 50 bit chunks,

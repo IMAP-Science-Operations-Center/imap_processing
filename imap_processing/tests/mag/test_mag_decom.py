@@ -1,5 +1,6 @@
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 import pytest
 
@@ -24,6 +25,12 @@ def test_mag_decom():
     packets = decom_packets(str(burst_test_file))
 
     l0 = packets["burst"] + packets["norm"]
+    print(str(packets["norm"][0].VECTORS).replace('  ', ' ').replace('  ', ' ').replace(' ', ', '))
+    bit_string = [str(x) for x in np.unpackbits(packets["norm"][0].VECTORS)]
+    print(''.join(bit_string))
+
+    print(packets["norm"][0])
+
 
     expected_output = pd.read_csv(current_directory / "mag_l0_test_output.csv")
     for index, test in enumerate(l0):

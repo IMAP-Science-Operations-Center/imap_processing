@@ -2,6 +2,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+import pytest
 
 from imap_processing.cdf.utils import met_to_j2000ns
 from imap_processing.mag.l0.decom_mag import decom_packets
@@ -12,6 +13,66 @@ from imap_processing.mag.l1a.mag_l1a_data import (
     MagL1aPacketProperties,
     TimeTuple,
 )
+
+
+@pytest.fixture
+def uncompressed_vector_bytearray():
+    input_data = np.array(
+        [2, 4, 8, 16, 16, 32, 192, 129, 194, 7, 68, 14, 176, 32, 160, 130, 161, 5
+            , 76, 8, 52, 32, 220, 65, 191, 2, 17, 8, 68, 16, 137, 192, 133, 2, 20, 132
+            , 41, 48, 33, 112, 133, 241, 11, 236, 8, 108, 33, 176, 67, 99, 2, 30, 8, 121
+            , 16, 243, 192, 136, 66, 33, 132, 67, 112, 34, 64, 137, 49, 18, 124, 8, 160,
+         34
+            , 132, 69, 11, 2, 43, 8, 174, 17, 92, 192, 139, 130, 46, 196, 93, 176, 35,
+         32
+            , 140, 129, 25, 28, 8, 212, 35, 84, 70, 175, 2, 3, 8, 15, 16, 31, 192, 129
+            , 194, 7, 4, 14, 112, 32, 160, 130, 161, 5, 76, 8, 52, 32, 220, 65, 187, 2
+            , 17, 8, 68, 16, 136, 192, 133, 2, 20, 68, 40, 240, 33, 112, 133, 225, 11,
+         220
+            , 8, 104, 33, 172, 67, 95, 2, 30, 8, 121, 16, 242, 192, 136, 66, 33, 132, 67
+            , 48, 34, 64, 137, 49, 18, 124, 8, 160, 34, 128, 69, 7, 2, 43, 8, 173, 17
+            , 91, 192, 139, 130, 46, 196, 93, 176, 35, 32, 140, 129, 25, 12, 8, 212, 35,
+         84
+            , 70, 171], dtype=np.uint8)
+    return input_data
+
+@pytest.fixture
+def expected_vectors():
+    primary_expected = np.array([[516, 2064, 4128, 3],
+                                 [519, 2077, 4154, 3],
+                                 [522, 2090, 4180, 3],
+                                 [525, 2103, 4207, 3],
+                                 [529, 2116, 4233, 3],
+                                 [532, 2130, 4260, 3],
+                                 [535, 2143, 4286, 3],
+                                 [539, 2156, 4312, 3],
+                                 [542, 2169, 4339, 3],
+                                 [545, 2182, 4365, 3],
+                                 [548, 2195, 4391, 3],
+                                 [552, 2209, 4418, 3],
+                                 [555, 2222, 4444, 3],
+                                 [558, 2235, 4470, 3],
+                                 [562, 2248, 4497, 3],
+                                 [565, 2261, 4523, 3]])
+
+    secondary_expected = np.array([[515, 2063, 4127, 3],
+                                   [519, 2076, 4153, 3],
+                                   [522, 2090, 4180, 3],
+                                   [525, 2103, 4206, 3],
+                                   [529, 2116, 4232, 3],
+                                   [532, 2129, 4259, 3],
+                                   [535, 2142, 4285, 3],
+                                   [538, 2155, 4311, 3],
+                                   [542, 2169, 4338, 3],
+                                   [545, 2182, 4364, 3],
+                                   [548, 2195, 4391, 3],
+                                   [552, 2208, 4417, 3],
+                                   [555, 2221, 4443, 3],
+                                   [558, 2235, 4470, 3],
+                                   [562, 2248, 4496, 3],
+                                   [565, 2261, 4522, 3]])
+
+    return (primary_expected, secondary_expected)
 
 
 def test_compare_validation_data():
@@ -47,6 +108,95 @@ def test_compare_validation_data():
         assert l1_magi.vectors[index][3] == validation_data["rng_sec"][index]
 
 
+def test_compressed_vector_data(expected_vectors):
+    # Values from test packet
+    primary_expected = expected_vectors[0]
+    secondary_expected = expected_vectors[1]
+
+    # Compression headers - indicating a 16 bit width and no range section
+    headers = "01000000"
+
+    # bit width of 16, generated from primary_expected and secondary_expected using
+    # encoding code from MAG team
+    # Validated with decoding code from mag team
+    primary_compressed = ("010111001001110010101101011100100111001010110101110010011000"
+                          "000001110001110010011100101011010110000101100000000110101110"
+                          "010011100101011100011100100111001010110101110010011000000001"
+                          "101011100100111001010110101110010011100101011100011000010110"
+                          "000000011010111001001110010101101011100100111001010111000111"
+                          "001001100000000110101110010011100101011")
+
+    secondary_compressed = ("000000100000001100001000000011110001000000011111111000111"
+                            "001001110010101101011000010110000000011010111001001110010"
+                            "101110001110010011100101011010111001001100000000110101110"
+                            "010011100101011010111001001110010101110001100001011000000"
+                            "001101011100100111001010110101110010011000000001110001110"
+                            "010011100101011010111001001110010101101011000010110000000"
+                            "011100011100100111001010110101110010011100101011")
+
+    padding = "0000000"  # Pad to byte boundary
+    input_data = np.array(
+        [int(i) for i in headers + primary_compressed + secondary_compressed + padding],
+        dtype=np.uint8)
+    print(len(input_data))
+    # print(input_data)
+    # Will be the input data format
+    input_data = np.packbits(input_data)
+    print(input_data)
+
+    (primary, secondary) = MagL1a.process_compressed_vectors(input_data, 16, 16)
+
+
+def test_real_uncompressed_vector_data(uncompressed_vector_bytearray, expected_vectors):
+    print(uncompressed_vector_bytearray.dtype)
+
+    primary_expected = expected_vectors[0]
+    secondary_expected = expected_vectors[1]
+
+    print(np.unpackbits(uncompressed_vector_bytearray).tolist())
+
+    (primary, secondary) = MagL1a.process_uncompressed_vectors(uncompressed_vector_bytearray,
+                                                               16,
+                                                               16)
+    assert np.array_equal(primary_expected, primary)
+    assert np.array_equal(secondary_expected, secondary)
+
+
+def test_unpack_one_vector(uncompressed_vector_bytearray, expected_vectors):
+    test_16bit_vector = np.unpackbits(uncompressed_vector_bytearray)[:50]
+
+    test_output = MagL1a.unpack_one_vector(test_16bit_vector, 16, 1)
+    assert all(test_output == expected_vectors[0][0])
+
+    expected_vectors = [-11, 28, 100, 1]
+    test_8bit_vector = np.array([1,1,1,1,0,1,0,1,0,0,0,1,1,1,0,0,0,1,1,0,0,1,0,0,0,1])
+    test_output = MagL1a.unpack_one_vector(test_8bit_vector, 8, 1)
+
+    assert all(test_output == expected_vectors)
+
+def test_twos_complement():
+    # -19 in binary
+    input_test = np.array([1, 1, 1, 0, 1, 1, 0, 1], dtype=np.uint8)
+    input_test_uint = np.packbits(input_test)
+
+    twos_complement = MagL1a.twos_complement(input_test_uint, 8)
+    assert twos_complement == -19
+    assert twos_complement.dtype == np.int32
+
+    # In 12 bits, the number is 237
+    twos_complement = MagL1a.twos_complement(input_test_uint, 12)
+    assert twos_complement == 237
+
+    # Higher bit number
+    # -19001 in 16 bits
+    input_test = np.array([1, 0, 1, 1, 0, 1, 0, 1, 1, 1, 0, 0, 0, 1, 1, 1],
+                          dtype=np.uint8)
+    input_test_uint = np.packbits(input_test)
+    twos_complement = MagL1a.twos_complement(input_test_uint, 16)
+
+    assert twos_complement == -19001
+
+
 def test_process_uncompressed_vector_data():
     expected_vector_data = [[1001, 1002, -3001, 3], [2001, -2002, -3333, 1]]
 
@@ -56,6 +206,9 @@ def test_process_uncompressed_vector_data():
     hex_string = "03E903EAF447C1F47E0BBCBED0"
     input_data = np.frombuffer(bytes.fromhex(hex_string), dtype=np.dtype(">b"))
 
+    print(input_data)
+    print(input_data.dtype)
+    print()
     total_primary_vectors = 1
     total_secondary_vectors = 1
 

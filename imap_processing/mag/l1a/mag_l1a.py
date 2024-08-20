@@ -42,6 +42,10 @@ def mag_l1a(packet_filepath: Path, data_version: str) -> list[xr.Dataset]:
     norm_data = packets["norm"]
     burst_data = packets["burst"]
 
+    print(np.unpackbits(norm_data[0].VECTORS))
+    print(len(np.unpackbits(norm_data[0].VECTORS)))
+    print(len(norm_data[0].VECTORS))
+
     input_files = [packet_filepath.name]
 
     # Create attribute manager and add MAG L1A attributes and global variables
