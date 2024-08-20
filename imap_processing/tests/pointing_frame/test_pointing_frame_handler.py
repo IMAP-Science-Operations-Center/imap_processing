@@ -63,10 +63,32 @@ def et_times(create_kernel_list):
     with spice.KernelPool(kernels):
         et_start, et_end, et_times = get_coverage(str(ck_kernel[0]))
 
+    return et_times
+
+
+@pytest.mark.xfail(reason="Will fail unless kernels in pointing_frame/test_data.")
+def test_get_coverage(create_kernel_list):
+    """Tests get_coverage function."""
+    kernels, ck_kernel = create_kernel_list
+
+    with spice.KernelPool(kernels):
+        et_start, et_end, et_times = get_coverage(str(ck_kernel[0]))
+
     assert et_start == 802008069.184905
     assert et_end == 802094467.184905
 
-    return et_times
+
+@pytest.mark.xfail(reason="Will fail unless kernels in pointing_frame/test_data.")
+def test_average_quaternions(et_times, create_kernel_list):
+    """Tests average_quaternions function."""
+
+    kernels, ck_kernel = create_kernel_list
+    with spice.KernelPool(kernels):
+        q_avg, z_eclip_time = average_quaternions(et_times)
+
+    # Generated from MATLAB code results
+    q_avg_expected = np.array([-0.6838, 0.5480, -0.4469, -0.1802])
+    np.testing.assert_allclose(q_avg, q_avg_expected, atol=1e-4)
 
 
 @pytest.mark.xfail(reason="Will fail unless kernels in pointing_frame/test_data.")

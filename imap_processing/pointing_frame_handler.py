@@ -100,7 +100,7 @@ def average_quaternions(et_times: np.ndarray) -> tuple[np.ndarray, list[np.ndarr
         body_quat = body_quat * np.sign(body_quat[0])
 
         # Aggregate quaternions into a single matrix.
-        aggregate += np.outer(np.abs(body_quat), body_quat)
+        aggregate += np.outer(body_quat, body_quat)
 
     # Reference: "On Averaging Rotations"
     # Link: https://link.springer.com/content/pdf/10.1023/A:1011129215388.pdf
