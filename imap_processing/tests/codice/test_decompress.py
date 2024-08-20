@@ -9,34 +9,37 @@ from imap_processing.codice.decompress import decompress
 from imap_processing.codice.utils import CoDICECompression
 
 # Test the algorithms using input value of 234 (picked randomly)
-LZMA_EXAMPLE = lzma.compress((234).to_bytes(1, byteorder="big"))
+lzma_bytes = lzma.compress((234).to_bytes(1, byteorder="big"))
+LZMA_EXAMPLE = "".join(format(byte, "08b") for byte in lzma_bytes)
 TEST_DATA = [
-    (234, CoDICECompression.NO_COMPRESSION, 234),
-    (234, CoDICECompression.LOSSY_A, 221184),
-    (234, CoDICECompression.LOSSY_B, 1441792),
-    (LZMA_EXAMPLE, CoDICECompression.LOSSLESS, 234),
-    (LZMA_EXAMPLE, CoDICECompression.LOSSY_A_LOSSLESS, 221184),
-    (LZMA_EXAMPLE, CoDICECompression.LOSSY_B_LOSSLESS, 1441792),
+    ("11101010", CoDICECompression.NO_COMPRESSION, [234]),
+    ("11101010", CoDICECompression.LOSSY_A, [221184]),
+    ("11101010", CoDICECompression.LOSSY_B, [1441792]),
+    (LZMA_EXAMPLE, CoDICECompression.LOSSLESS, [234]),
+    (LZMA_EXAMPLE, CoDICECompression.LOSSY_A_LOSSLESS, [221184]),
+    (LZMA_EXAMPLE, CoDICECompression.LOSSY_B_LOSSLESS, [1441792]),
 ]
 
 
 @pytest.mark.parametrize(
-    ("compressed_value", "algorithm", "expected_result"), TEST_DATA
+    ("compressed_binary", "algorithm", "expected_result"), TEST_DATA
 )
-def test_decompress(compressed_value: int, algorithm: IntEnum, expected_result: int):
+def test_decompress(
+    compressed_binary: str, algorithm: IntEnum, expected_result: list[int]
+):
     """Tests the ``decompress`` function
 
     Parameters
     ----------
-    compressed_value : int
-        The compressed value to test decompression on
+    compressed_binary : str
+        The compressed binary string to test decompression on
     algorithm : IntEnum
         The algorithm to use in decompression
-    expected_result : int
+    expected_result : list[int]
         The expected, decompressed value
     """
 
-    decompressed_value = decompress(compressed_value, algorithm)
+    decompressed_value = decompress(compressed_binary, algorithm)
     assert decompressed_value == expected_result
 
 
@@ -44,4 +47,4 @@ def test_decompress_raises():
     """Tests that the ``decompress`` function raises with an unknown algorithm"""
 
     with pytest.raises(ValueError, match="some_unsupported_algorithm"):
-        decompress(234, "some_unsupported_algorithm")
+        decompress("11101010", "some_unsupported_algorithm")
