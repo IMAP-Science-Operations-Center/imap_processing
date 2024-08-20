@@ -49,10 +49,6 @@ def get_coverage(ck_kernel: str) -> tuple[float, float, np.ndarray]:
     et_times : numpy.ndarray
         Array of times between et_start and et_end.
     """
-    # Each spin is 15 seconds. We want 10 quaternions per spin.
-    # duration / # samples (nominally 15/10 = 1.5 seconds)
-    step = 1.5
-
     # Get the spacecraft ID.
     # https://spiceypy.readthedocs.io/en/main/documentation.html#spiceypy.spiceypy.gipool
     id_imap_spacecraft = spice.gipool("FRAME_IMAP_SPACECRAFT", 0, 1)
@@ -64,7 +60,9 @@ def get_coverage(ck_kernel: str) -> tuple[float, float, np.ndarray]:
     cover = spice.ckcov(ck_kernel, int(id_imap_spacecraft), True, "SEGMENT", 0, "TDB")
     # https://spiceypy.readthedocs.io/en/main/documentation.html#spiceypy.spiceypy.wnfetd
     et_start, et_end = spice.wnfetd(cover, 0)
-    et_times = np.arange(et_start, et_end, step)
+    # Each spin is 15 seconds. We want 10 quaternions per spin.
+    # duration / # samples (nominally 15/10 = 1.5 seconds)
+    et_times = np.arange(et_start, et_end, 1.5)
 
     return et_start, et_end, et_times
 

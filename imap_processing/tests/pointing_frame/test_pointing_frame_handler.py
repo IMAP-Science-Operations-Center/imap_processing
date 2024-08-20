@@ -55,8 +55,8 @@ def create_kernel_list(kernel_path):
     return kernels, ck_kernel
 
 
-@pytest.mark.xfail(reason="Will fail unless kernels in pointing_frame/test_data.")
-def test_get_coverage(create_kernel_list):
+@pytest.fixture()
+def et_times(create_kernel_list):
     """Tests get_coverage function."""
     kernels, ck_kernel = create_kernel_list
 
@@ -66,8 +66,27 @@ def test_get_coverage(create_kernel_list):
     assert et_start == 802008069.184905
     assert et_end == 802094467.184905
 
+    return et_times
 
-@pytest.mark.xfail(reason="Will fail unless kernels in pointing_frame/test_data.")
+
+def test_create_rotation_matrix(et_times, kernel_path):
+    """Tests create_rotation_matrix function."""
+
+    kernels = [str(file) for file in kernel_path.iterdir()]
+
+    with spice.KernelPool(kernels):
+        rotation_matrix, z_avg = create_rotation_matrix(et_times)
+
+    rotation_matrix_expected = np.array(
+        [[0.0000, 0.0000, 1.0000], [0.9104, -0.4136, 0.0000], [0.4136, 0.9104, 0.0000]]
+    )
+    z_avg_expected = np.array([0.4136, 0.9104, 0.0000])
+
+    np.testing.assert_allclose(z_avg, z_avg_expected, atol=1e-4)
+    np.testing.assert_allclose(rotation_matrix, rotation_matrix_expected, atol=1e-4)
+
+
+# @pytest.mark.xfail(reason="Will fail unless kernels in pointing_frame/test_data.")
 def test_create_pointing_frame(monkeypatch, kernel_path, create_kernel_list):
     """Tests create_pointing_frame function."""
     monkeypatch.setenv("EFS_MOUNT_PATH", str(kernel_path))
@@ -93,7 +112,7 @@ def test_create_pointing_frame(monkeypatch, kernel_path, create_kernel_list):
     np.testing.assert_allclose(rotation_matrix_1, rotation_matrix_expected, atol=1e-4)
 
 
-@pytest.mark.xfail(reason="Will fail unless kernels in pointing_frame/test_data.")
+# @pytest.mark.xfail(reason="Will fail unless kernels in pointing_frame/test_data.")
 def test_z_axis(create_kernel_list):
     """Tests Inertial z axis and provides visualization."""
     kernels, ck_kernel = create_kernel_list
