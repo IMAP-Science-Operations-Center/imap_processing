@@ -334,7 +334,7 @@ class CoDICEL1aPipeline:
         # energy levels
         self.data = []
         for counter_data in science_values_unpacked:
-            data_array = [
+            data_array: list[list[int]] = [
                 counter_data[i : i + self.num_energy_steps]
                 for i in range(0, len(counter_data), self.num_energy_steps)
             ]
