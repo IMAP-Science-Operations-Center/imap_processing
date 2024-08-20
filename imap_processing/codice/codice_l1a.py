@@ -334,11 +334,11 @@ class CoDICEL1aPipeline:
         # energy levels
         self.data = []
         for counter_data in science_values_unpacked:
-            data_array: list[list[int]] = [
+            data_array = [
                 counter_data[i : i + self.num_energy_steps]
                 for i in range(0, len(counter_data), self.num_energy_steps)
             ]
-            self.data.append(data_array)
+            self.data.append(data_array)  # type: ignore[arg-type]
 
 
 def create_event_dataset(
