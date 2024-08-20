@@ -69,6 +69,7 @@ def et_times(create_kernel_list):
     return et_times
 
 
+@pytest.mark.xfail(reason="Will fail unless kernels in pointing_frame/test_data.")
 def test_create_rotation_matrix(et_times, kernel_path):
     """Tests create_rotation_matrix function."""
 
@@ -86,7 +87,7 @@ def test_create_rotation_matrix(et_times, kernel_path):
     np.testing.assert_allclose(rotation_matrix, rotation_matrix_expected, atol=1e-4)
 
 
-# @pytest.mark.xfail(reason="Will fail unless kernels in pointing_frame/test_data.")
+@pytest.mark.xfail(reason="Will fail unless kernels in pointing_frame/test_data.")
 def test_create_pointing_frame(monkeypatch, kernel_path, create_kernel_list):
     """Tests create_pointing_frame function."""
     monkeypatch.setenv("EFS_MOUNT_PATH", str(kernel_path))
@@ -112,7 +113,7 @@ def test_create_pointing_frame(monkeypatch, kernel_path, create_kernel_list):
     np.testing.assert_allclose(rotation_matrix_1, rotation_matrix_expected, atol=1e-4)
 
 
-# @pytest.mark.xfail(reason="Will fail unless kernels in pointing_frame/test_data.")
+@pytest.mark.xfail(reason="Will fail unless kernels in pointing_frame/test_data.")
 def test_z_axis(create_kernel_list):
     """Tests Inertial z axis and provides visualization."""
     kernels, ck_kernel = create_kernel_list
