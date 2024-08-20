@@ -61,6 +61,9 @@ def get_et_times(ck_kernel: str) -> tuple[float, float, np.ndarray]:
     et_start, et_end = spice.wnfetd(cover, 0)
     # Each spin is 15 seconds. We want 10 quaternions per spin.
     # duration / # samples (nominally 15/10 = 1.5 seconds)
+
+    et_start = 802008069.184905
+    et_end = 802094467.184905
     et_times = np.arange(et_start, et_end, 1.5)
 
     return et_start, et_end, et_times

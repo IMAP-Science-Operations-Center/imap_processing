@@ -33,7 +33,7 @@ def kernel_path(tmp_path):
         "imap_science_0001.tf",
         "imap_sclk_0000.tsc",
         "imap_wkcp.tf",
-        "imap_spin.bc",
+        "IMAP_spacecraft_attitude.bc",
     ]
 
     for file in test_dir.iterdir():
@@ -48,7 +48,9 @@ def create_kernel_list(kernel_path):
     """Create kernel lists."""
     kernels = [str(file) for file in kernel_path.iterdir()]
     ck_kernel = [
-        str(file) for file in kernel_path.iterdir() if file.name == "imap_spin.bc"
+        str(file)
+        for file in kernel_path.iterdir()
+        if file.name == "IMAP_spacecraft_attitude.bc"
     ]
 
     return kernels, ck_kernel
@@ -65,7 +67,7 @@ def et_times(create_kernel_list):
     return et_times
 
 
-@pytest.mark.xfail(reason="Will fail unless kernels in pointing_frame/test_data.")
+# @pytest.mark.xfail(reason="Will fail unless kernels in pointing_frame/test_data.")
 def test_get_et_times(create_kernel_list):
     """Tests get_et_times function."""
     kernels, ck_kernel = create_kernel_list
@@ -78,7 +80,7 @@ def test_get_et_times(create_kernel_list):
     assert len(et_times) == 57599
 
 
-@pytest.mark.xfail(reason="Will fail unless kernels in pointing_frame/test_data.")
+# @pytest.mark.xfail(reason="Will fail unless kernels in pointing_frame/test_data.")
 def test_average_quaternions(et_times, create_kernel_list):
     """Tests average_quaternions function."""
 
@@ -92,7 +94,7 @@ def test_average_quaternions(et_times, create_kernel_list):
     assert len(z_eclip_time) == 57599
 
 
-@pytest.mark.xfail(reason="Will fail unless kernels in pointing_frame/test_data.")
+# @pytest.mark.xfail(reason="Will fail unless kernels in pointing_frame/test_data.")
 def test_create_rotation_matrix(et_times, kernel_path):
     """Tests create_rotation_matrix function."""
 
@@ -110,7 +112,7 @@ def test_create_rotation_matrix(et_times, kernel_path):
     np.testing.assert_allclose(rotation_matrix, rotation_matrix_expected, atol=1e-4)
 
 
-@pytest.mark.xfail(reason="Will fail unless kernels in pointing_frame/test_data.")
+# @pytest.mark.xfail(reason="Will fail unless kernels in pointing_frame/test_data.")
 def test_create_pointing_frame(monkeypatch, kernel_path, create_kernel_list):
     """Tests create_pointing_frame function."""
     monkeypatch.setenv("EFS_MOUNT_PATH", str(kernel_path))
@@ -139,7 +141,7 @@ def test_create_pointing_frame(monkeypatch, kernel_path, create_kernel_list):
     assert (kernel_path / "imap_dps.bc").exists()
 
 
-@pytest.mark.skip(reason="Plotting only")
+# @pytest.mark.skip(reason="Plotting only")
 def test_declination_plot(create_kernel_list, et_times):
     """Tests Inertial z axis and provides visualization."""
     kernels, ck_kernel = create_kernel_list
