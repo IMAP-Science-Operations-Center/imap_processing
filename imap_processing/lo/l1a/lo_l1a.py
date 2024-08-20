@@ -53,8 +53,29 @@ def lo_l1a(dependency: Path, data_version: str) -> list[xr.Dataset]:
         datasets_by_apid[LoAPID.ILO_SCI_CNT] = add_dataset_attrs(
             datasets_by_apid[LoAPID.ILO_SCI_CNT], attr_mgr, logical_source
         )
+    # TEMPORARY: datasets are being removed until the logic
+    # is written to add the attributes in a future PR. I only
+    # have one sample dataset containing all the packets so I
+    # cannot test these easily in isolation
+    if LoAPID.ILO_SCI_DE in datasets_by_apid:
+        logical_source = "imap_lo_l1a_de"
+        del datasets_by_apid[LoAPID.ILO_SCI_DE]
+    if LoAPID.ILO_SPIN in datasets_by_apid:
+        logical_source = "imap_lo_l1a_spin"
+        del datasets_by_apid[LoAPID.ILO_SPIN]
+    if LoAPID.ILO_STAR in datasets_by_apid:
+        logical_source = "imap_lo_l1a_star"
+        del datasets_by_apid[LoAPID.ILO_STAR]
+    if LoAPID.ILO_APP_NHK in datasets_by_apid:
+        logical_source = "imap_lo_l1a_nhk"
+        del datasets_by_apid[LoAPID.ILO_APP_NHK]
+    if LoAPID.ILO_APP_SHK in datasets_by_apid:
+        logical_source = "imap_lo_l1a_shk"
+        del datasets_by_apid[LoAPID.ILO_APP_SHK]
+    if LoAPID.ILO_BOOT_HK in datasets_by_apid:
+        logical_source = "imap_lo_l1a_boot"
+        del datasets_by_apid[LoAPID.ILO_BOOT_HK]
 
-    # Temporary
     return [datasets_by_apid[LoAPID.ILO_SCI_CNT]]
 
 

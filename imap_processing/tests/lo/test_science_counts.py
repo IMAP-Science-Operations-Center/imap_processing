@@ -28,8 +28,8 @@ def science_count():
     return sc
 
 
-@pytest.skip()
 @pytest.fixture()
+@pytest.mark.skip()
 def sample_packet_data():
     # original file name:
     # Instrument_Emulator_ILO_Emulator_v3.4_HVSCI_Sample_20240627T204953.CCSDS
@@ -83,9 +83,7 @@ def test_science_counts(science_count):
     assert science_count.OXYGEN.shape == (60, 7)
 
 
-pytest.skip()
-
-
+@pytest.mark.skip()
 def test_validation_data(sample_packet_data):
     histogram_fields = [
         "START_A",
