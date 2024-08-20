@@ -75,8 +75,10 @@ class CoDICEL1aPipeline:
         Retrieve the acquisition times via the Lo stepping table.
     get_esa_sweep_values()
         Retrieve the ESA sweep values.
-    unpack_science_data()
-        Make 4D L1a data product from the decompressed science data.
+    unpack_hi_science_data()
+        Decompress, unpack, and restructure CoDICE-Hi data arrays.
+    unpack_lo_science_data()
+        Decompress, unpack, and restructure CoDICE-Lo data arrays.
     """
 
     def __init__(self, table_id: int, plan_id: int, plan_step: int, view_id: int):
@@ -274,7 +276,7 @@ class CoDICEL1aPipeline:
 
     def unpack_hi_science_data(self, science_values: str) -> None:
         """
-        Unpack the CoDICE-Hi science data from the packet.
+        Decompress, unpack, and restructure CoDICE-Hi data arrays.
 
         The science data within the packet is a compressed, binary string of
         values.
@@ -304,7 +306,7 @@ class CoDICEL1aPipeline:
 
     def unpack_lo_science_data(self, science_values: str) -> None:
         """
-        Unpack the CoDICE-Lo science data from the packet.
+        Decompress, unpack, and restructure CoDICE-Lo data arrays.
 
         The science data within the packet is a compressed, binary string of
         values. These data need to be divided up by species or priorities,
