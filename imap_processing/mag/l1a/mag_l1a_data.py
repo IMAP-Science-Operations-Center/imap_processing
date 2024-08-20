@@ -336,6 +336,10 @@ class MagL1a:
         primary_vectors = []
         secondary_vectors = []
 
+        # To avoid overflows, we need to cast the potentially 8 bit signed integers to
+        # int32 before the bitshifting operations below.
+        vector_data = vector_data.astype(np.int32)
+
         # Since the vectors are stored as 50 bit chunks but accessed via hex (4 bit
         # chunks) there is some shifting required for processing the bytes.
         # However, from a bit processing perspective, the first 48 bits of each 50 bit
