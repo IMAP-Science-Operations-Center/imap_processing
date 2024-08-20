@@ -1,4 +1,5 @@
-"""Generate Pointing Frame.
+"""
+Generate Pointing Frame.
 
 Notes
 -----
@@ -9,7 +10,7 @@ Kernels that are required to run this code:
 4. de430.bsp - standard SPICE planetary ephemeris kernel
 5. naif0012.tls - standard NAIF leapsecond kernel
 6. imap_spin.bc - test attitude kernel available at:
-https://lasp.colorado.edu/galaxy/display/IMAP/Data
+   https://lasp.colorado.edu/galaxy/display/IMAP/Data
 These need to be placed in tests/pointing_frame/test_data.
 
 References
@@ -30,8 +31,9 @@ logger.setLevel(logging.INFO)
 # TODO : Add multiple pointings to the pointing frame.
 
 
-def get_coverage(ck_kernel):
-    """Create the pointing frame.
+def get_coverage(ck_kernel: str) -> tuple[float, float, np.ndarray]:
+    """
+    Create the pointing frame.
 
     Parameters
     ----------
@@ -67,8 +69,9 @@ def get_coverage(ck_kernel):
     return et_start, et_end, et_times
 
 
-def average_quaternions(et_times):
-    """Average the quaternions.
+def average_quaternions(et_times: np.ndarray) -> tuple[np.ndarray, list[np.ndarray]]:
+    """
+    Average the quaternions.
 
     Parameters
     ----------
@@ -77,7 +80,7 @@ def average_quaternions(et_times):
 
     Returns
     -------
-    q_avg : np.array
+    q_avg : np.ndarray
         Average quaternion.
     z_eclip_time : list
         Z-axis of the ECLIPJ2000 frame. Used for plotting.
@@ -102,7 +105,7 @@ def average_quaternions(et_times):
         # Aggregate quaternions into a single matrix.
         aggregate += np.outer(body_quat, body_quat)
 
-    # Reference: Claus Gramkow "On Averaging Rotations"
+    # Reference: "On Averaging Rotations"
     # Link: https://link.springer.com/content/pdf/10.1023/A:1011129215388.pdf
     aggregate /= len(et_times)
 
@@ -122,8 +125,9 @@ def average_quaternions(et_times):
     return q_avg, z_eclip_time
 
 
-def create_rotation_matrix(et_times):
-    """Create a rotation matrix.
+def create_rotation_matrix(et_times: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """
+    Create a rotation matrix.
 
     Parameters
     ----------
@@ -132,9 +136,9 @@ def create_rotation_matrix(et_times):
 
     Returns
     -------
-    rotation_matrix : np.array
+    rotation_matrix : np.ndarray
         Rotation matrix.
-    z_avg : np.array
+    z_avg : np.ndarray
         Inertial z axis. Used for plotting.
     """
     # Averaged quaternions.
@@ -155,16 +159,17 @@ def create_rotation_matrix(et_times):
     return rotation_matrix, z_avg
 
 
-def create_pointing_frame():
-    """Create the pointing frame.
+def create_pointing_frame() -> Path:
+    """
+    Create the pointing frame.
 
     Returns
     -------
-    path_to_pointing_frame : str
+    path_to_pointing_frame : Path
         Path to dps frame.
     """
     # Mount path to EFS.
-    mount_path = Path(os.getenv("EFS_MOUNT_PATH"))
+    mount_path = Path(os.getenv("EFS_MOUNT_PATH", ""))
 
     # TODO: this part will change with ensure_spice decorator.
     kernels = [str(file) for file in mount_path.iterdir()]
