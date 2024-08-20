@@ -42,6 +42,7 @@ logger.setLevel(logging.INFO)
 # TODO: Use new packet_file_to_dataset() function to simplify things
 # TODO: Determine what should go in event data CDF and how it should be
 #       structured.
+# TODO: Make sure CDF attributes match expected nomenclature
 
 
 class CoDICEL1aPipeline:
@@ -286,13 +287,15 @@ class CoDICEL1aPipeline:
         self.compression_algorithm = constants.HI_COMPRESSION_ID_LOOKUP[self.view_id]
 
         # Decompress the binary string
-        science_values = decompress(science_values, self.compression_algorithm)
+        science_values_decompressed = decompress(
+            science_values, self.compression_algorithm
+        )
 
         # Divide up the data by the number of priorities or species
-        chunk_size = len(science_values) // self.num_counters
+        chunk_size = len(science_values_decompressed) // self.num_counters
         science_values_unpacked = [
-            science_values[i : i + chunk_size]
-            for i in range(0, len(science_values), chunk_size)
+            science_values_decompressed[i : i + chunk_size]
+            for i in range(0, len(science_values_decompressed), chunk_size)
         ]
 
         # TODO: Determine how to properly divide up hi data. For now, just use
@@ -315,13 +318,15 @@ class CoDICEL1aPipeline:
         self.compression_algorithm = constants.LO_COMPRESSION_ID_LOOKUP[self.view_id]
 
         # Decompress the binary string
-        science_values = decompress(science_values, self.compression_algorithm)
+        science_values_decompressed = decompress(
+            science_values, self.compression_algorithm
+        )
 
         # Divide up the data by the number of priorities or species
-        chunk_size = len(science_values) // self.num_counters
+        chunk_size = len(science_values_decompressed) // self.num_counters
         science_values_unpacked = [
-            science_values[i : i + chunk_size]
-            for i in range(0, len(science_values), chunk_size)
+            science_values_decompressed[i : i + chunk_size]
+            for i in range(0, len(science_values_decompressed), chunk_size)
         ]
 
         # Further divide up the data by energy levels
