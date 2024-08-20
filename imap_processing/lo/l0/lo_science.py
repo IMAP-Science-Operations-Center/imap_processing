@@ -1,7 +1,11 @@
-import xarray as xr
-import numpy as np
-import numpy.typing as npt
+"""Processing function for Lo Science Data."""
+
 from collections import namedtuple
+
+import numpy as np
+import xarray as xr
+
+from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.lo.l0.utils.bit_decompression import (
     DECOMPRESSION_TABLES,
     Decompress,
@@ -13,7 +17,7 @@ HistPacking = namedtuple(
     [
         "bit_length",
         "section_length",
-        "shape" # (azimuth, esa_step)
+        "shape",  # (azimuth, esa_step)
     ],
 )
 
@@ -43,7 +47,22 @@ hist_data_meta = {
 }
 
 
-def parse_histogram(dataset: xr.Dataset, attr_mgr) -> xr.Dataset:
+def parse_histogram(dataset: xr.Dataset, attr_mgr: ImapCdfAttributes) -> xr.Dataset:
+    """
+    Parse and decompress binary histogram data for Lo.
+
+    Parameters
+    ----------
+    dataset : xr.Dataset
+        Lo science counts from packets_to_dataset function.
+    attr_mgr : ImapCdfAttributes
+        CDF attribute manager for Lo L1A.
+
+    Returns
+    -------
+    dataset : xr.Dataset
+        Parsed and decompressed histogram data.
+    """
     hist_bin = dataset.sci_cnt
 
     # initialize the starting bit for the sections of data
@@ -51,14 +70,12 @@ def parse_histogram(dataset: xr.Dataset, attr_mgr) -> xr.Dataset:
     # for each field type in the histogram data
     for field in hist_data_meta:
         data_meta = hist_data_meta[field]
-        # for each histgram binary string decompress
+        # for each histogram binary string decompress
         # the data
         decompressed_data = [
             decompress(
-                bin_str,
-                data_meta.bit_length,
-                section_start,
-                data_meta.section_length)
+                bin_str, data_meta.bit_length, section_start, data_meta.section_length
+            )
             for bin_str in hist_bin.values
         ]
 
@@ -72,11 +89,12 @@ def parse_histogram(dataset: xr.Dataset, attr_mgr) -> xr.Dataset:
             for key, value in attr_mgr.get_variable_attributes(field).items()
             if "DEPEND" in key
         ]
-
         # reshape the decompressed data
         shaped_data = np.array(decompressed_data).reshape(data_shape)
         # add the data to the dataset
-        dataset[field] = xr.DataArray(shaped_data, dims=dims, attrs=attr_mgr.get_variable_attributes(field))
+        dataset[field] = xr.DataArray(
+            shaped_data, dims=dims, attrs=attr_mgr.get_variable_attributes(field)
+        )
 
         # increment for the start of the next section
         section_start += data_meta.section_length
@@ -84,7 +102,28 @@ def parse_histogram(dataset: xr.Dataset, attr_mgr) -> xr.Dataset:
     return dataset
 
 
-def decompress(bin_str: str, bits_per_index: int, section_start: int, section_length: int) -> list[int]:
+def decompress(
+    bin_str: str, bits_per_index: int, section_start: int, section_length: int
+) -> list[int]:
+    """
+    Parse and decompress binary histogram data for Lo.
+
+    Parameters
+    ----------
+    bin_str : str
+        Binary string to decompress.
+    bits_per_index : int
+        Number of bits per index of the data section.
+    section_start : int
+        The start bit for the section of data.
+    section_length : int
+        The length of the section of data.
+
+    Returns
+    -------
+    decompressed_ints : list[int]
+        Decompressed integers for the data section.
+    """
     # select the decompression method based on the bit length
     # of the compressed data
     if bits_per_index == 8:
@@ -97,7 +136,7 @@ def decompress(bin_str: str, bits_per_index: int, section_start: int, section_le
     # parse the binary, convert to integers, and decompress
     decompressed_ints = [
         decompress_int(
-            int(bin_str[i:i + bits_per_index], 2),
+            int(bin_str[i : i + bits_per_index], 2),
             decompress,
             DECOMPRESSION_TABLES,
         )

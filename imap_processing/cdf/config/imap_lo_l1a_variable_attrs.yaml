@@ -51,6 +51,17 @@ shcoarse:
   VAR_TYPE: support_data
   LABLAXIS: SHCOARSE
 
+epoch:
+  VALIDMIN: 0
+  VALIDMAX: 9223372036854775807
+  FILLVAL: -9223372036854775808
+  CATDESC: Epoch Time
+  DEPEND_0: epoch
+  FIELDNAM: Epoch time
+  Units: ' '
+  FORMAT: I12
+  VAR_TYPE: support_data
+  LABLAXIS: Epoch
 # Direct Events Attributes
 #direct_events:
 #  <<: *de_default
