@@ -4,7 +4,6 @@ import shutil
 import sys
 from pathlib import Path
 
-import matplotlib.pyplot as plt
 import numpy as np
 import pytest
 import spiceypy as spice
@@ -135,48 +134,3 @@ def test_create_pointing_frame(monkeypatch, kernel_path, ck_kernel):
 
     # Verify imap_dps.bc has been created.
     assert (kernel_path / "imap_dps.bc").exists()
-
-
-def declination_plot(kernels, et_times):
-    """Tests Inertial z axis and provides visualization."""
-
-    z_eclip_time = []
-
-    with spice.KernelPool(kernels):
-        # Converts rectangular coordinates to spherical coordinates.
-
-        for tdb in et_times:
-            # Rotation matrix from IMAP spacecraft frame to ECLIPJ2000.
-            body_rots = spice.pxform("IMAP_SPACECRAFT", "ECLIPJ2000", tdb)
-            # z-axis of the ECLIPJ2000 frame.
-            z_eclip_time.append(body_rots[:, 2])
-
-        q_avg = average_quaternions(et_times)
-        z_avg = spice.q2m(list(q_avg))[:, 2]
-
-        # Create visualization
-        declination_list = []
-        for time in z_eclip_time:
-            _, _, declination = spice.recrad(list(time))
-            declination_list.append(declination)
-
-        # Average declination.
-        _, _, avg_declination = spice.recrad(list(z_avg))
-
-    # Plotting for visualization
-    plt.figure()
-    plt.plot(
-        et_times, np.array(declination_list) * 180 / np.pi, "-b", label="Declination"
-    )
-    plt.plot(
-        et_times,
-        np.full(len(et_times), avg_declination * 180 / np.pi),
-        "-r",
-        linewidth=2,
-        label="mean declination for pointing frame",
-    )
-    plt.xlabel("Ephemeris Time")
-    plt.ylabel("Spacecraft Spin Axis Declination")
-    plt.ticklabel_format(useOffset=False)
-    plt.legend()
-    plt.show()
