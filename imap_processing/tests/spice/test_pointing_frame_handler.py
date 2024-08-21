@@ -1,9 +1,5 @@
 """Tests Pointing Frame Generation."""
 
-import shutil
-import sys
-from pathlib import Path
-
 import numpy as np
 import pytest
 import spiceypy as spice
@@ -17,44 +13,20 @@ from imap_processing.spice.pointing_frame_handler import (
 
 
 @pytest.fixture()
-def kernel_path(tmp_path):
-    """Create path to kernels."""
-
-    test_dir = (
-        Path(sys.modules[__name__.split(".")[0]].__file__).parent
-        / "tests"
-        / "spice"
-        / "test_data"
-    )
-
-    kernels = [
-        "naif0012.tls",
-        "imap_science_0001.tf",
-        "imap_sclk_0000.tsc",
-        "imap_wkcp.tf",
-        "imap_spin.bc",
-    ]
-
-    for file in test_dir.iterdir():
-        if file.name in kernels:
-            shutil.copy(file, tmp_path / file.name)
-
-    return tmp_path
-
-
-@pytest.fixture()
-def kernels(kernel_path):
+def kernels(spice_test_data_path):
     """Create kernel list."""
-    kernels = [str(file) for file in kernel_path.iterdir()]
+    kernels = [str(file) for file in spice_test_data_path.iterdir()]
 
     return kernels
 
 
 @pytest.fixture()
-def ck_kernel(kernel_path):
+def ck_kernel(spice_test_data_path):
     """Create ck kernel."""
     ck_kernel = [
-        str(file) for file in kernel_path.iterdir() if file.name == "imap_spin.bc"
+        str(file)
+        for file in spice_test_data_path.iterdir()
+        if file.name == "imap_spin.bc"
     ]
 
     return ck_kernel
@@ -109,13 +81,13 @@ def test_create_rotation_matrix(et_times, kernels):
     np.testing.assert_allclose(rotation_matrix, rotation_matrix_expected, atol=1e-4)
 
 
-def test_create_pointing_frame(monkeypatch, kernel_path, ck_kernel):
+def test_create_pointing_frame(monkeypatch, spice_test_data_path, ck_kernel, tmp_path):
     """Tests create_pointing_frame function."""
-    monkeypatch.setenv("EFS_MOUNT_PATH", str(kernel_path))
+    monkeypatch.setenv("EFS_MOUNT_PATH", str(spice_test_data_path))
     create_pointing_frame()
 
     # After imap_dps.bc has been created.
-    kernels = [str(file) for file in kernel_path.iterdir()]
+    kernels = [str(file) for file in spice_test_data_path.iterdir()]
 
     with spice.KernelPool(kernels):
         et_start, et_end, et_times = get_et_times(str(ck_kernel[0]))
@@ -133,4 +105,4 @@ def test_create_pointing_frame(monkeypatch, kernel_path, ck_kernel):
     np.testing.assert_allclose(rotation_matrix_1, rotation_matrix_expected, atol=1e-4)
 
     # Verify imap_dps.bc has been created.
-    assert (kernel_path / "imap_dps.bc").exists()
+    assert (spice_test_data_path / "imap_dps.bc").exists()

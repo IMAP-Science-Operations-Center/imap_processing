@@ -32,7 +32,7 @@ logger.setLevel(logging.INFO)
 
 def get_et_times(ck_kernel: str) -> tuple[float, float, np.ndarray]:
     """
-    Create the pointing frame.
+    Get timerange for pointing start and stop.
 
     Parameters
     ----------
@@ -42,9 +42,9 @@ def get_et_times(ck_kernel: str) -> tuple[float, float, np.ndarray]:
     Returns
     -------
     et_start : float
-        Start time of ck_kernel.
+        Pointing start time.
     et_end : float
-        End time of ck_kernel.
+        Pointing end time.
     et_times : numpy.ndarray
         Array of times between et_start and et_end.
     """
@@ -80,7 +80,6 @@ def average_quaternions(et_times: np.ndarray) -> NDArray:
     q_avg : np.ndarray
         Average quaternion.
     """
-    z_eclip_time = []
     aggregate = np.zeros((4, 4))
 
     for tdb in et_times:
@@ -97,8 +96,6 @@ def average_quaternions(et_times: np.ndarray) -> NDArray:
         # Convert rotation matrix to quaternion.
         # https://spiceypy.readthedocs.io/en/main/documentation.html#spiceypy.spiceypy.m2q
         body_quat = spice.m2q(body_rots)
-        # z-axis of the ECLIPJ2000 frame.
-        z_eclip_time.append(body_rots[:, 2])
 
         # Standardize the quaternion so that they may be compared.
         body_quat = body_quat * np.sign(body_quat[0])
