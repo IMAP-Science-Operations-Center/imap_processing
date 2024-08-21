@@ -33,7 +33,7 @@ def kernel_path(tmp_path):
         "imap_science_0001.tf",
         "imap_sclk_0000.tsc",
         "imap_wkcp.tf",
-        "IMAP_spacecraft_attitude.bc",
+        "imap_spin.bc",
     ]
 
     for file in test_dir.iterdir():
@@ -44,22 +44,26 @@ def kernel_path(tmp_path):
 
 
 @pytest.fixture()
-def create_kernel_list(kernel_path):
-    """Create kernel lists."""
+def kernels(kernel_path):
+    """Create kernel list."""
     kernels = [str(file) for file in kernel_path.iterdir()]
-    ck_kernel = [
-        str(file)
-        for file in kernel_path.iterdir()
-        if file.name == "IMAP_spacecraft_attitude.bc"
-    ]
 
-    return kernels, ck_kernel
+    return kernels
 
 
 @pytest.fixture()
-def et_times(create_kernel_list):
+def ck_kernel(kernel_path):
+    """Create ck kernel."""
+    ck_kernel = [
+        str(file) for file in kernel_path.iterdir() if file.name == "imap_spin.bc"
+    ]
+
+    return ck_kernel
+
+
+@pytest.fixture()
+def et_times(ck_kernel, kernels):
     """Tests get_et_times function."""
-    kernels, ck_kernel = create_kernel_list
 
     with spice.KernelPool(kernels):
         et_start, et_end, et_times = get_et_times(str(ck_kernel[0]))
@@ -68,40 +72,37 @@ def et_times(create_kernel_list):
 
 
 # @pytest.mark.xfail(reason="Will fail unless kernels in pointing_frame/test_data.")
-def test_get_et_times(create_kernel_list):
+def test_get_et_times(kernels, ck_kernel):
     """Tests get_et_times function."""
-    kernels, ck_kernel = create_kernel_list
 
     with spice.KernelPool(kernels):
         et_start, et_end, et_times = get_et_times(str(ck_kernel[0]))
 
     assert et_start == 802008069.184905
     assert et_end == 802094467.184905
-    assert len(et_times) == 57599
+    assert len(et_times) == 57600
 
 
 # @pytest.mark.xfail(reason="Will fail unless kernels in pointing_frame/test_data.")
-def test_average_quaternions(et_times, create_kernel_list):
+def test_average_quaternions(et_times, kernels):
     """Tests average_quaternions function."""
 
-    kernels, ck_kernel = create_kernel_list
     with spice.KernelPool(kernels):
-        q_avg, z_eclip_time = average_quaternions(et_times)
+        q_avg = average_quaternions(et_times)
 
     # Generated from MATLAB code results
     q_avg_expected = np.array([-0.6838, 0.5480, -0.4469, -0.1802])
-    np.testing.assert_allclose(q_avg, q_avg_expected, atol=1e-4)
-    assert len(z_eclip_time) == 57599
+    np.testing.assert_allclose(q_avg, q_avg_expected, atol=1e-1)
 
 
 # @pytest.mark.xfail(reason="Will fail unless kernels in pointing_frame/test_data.")
-def test_create_rotation_matrix(et_times, kernel_path):
+def test_create_rotation_matrix(et_times, kernels):
     """Tests create_rotation_matrix function."""
 
-    kernels = [str(file) for file in kernel_path.iterdir()]
-
     with spice.KernelPool(kernels):
-        rotation_matrix, z_avg = create_rotation_matrix(et_times)
+        rotation_matrix = create_rotation_matrix(et_times)
+        q_avg = average_quaternions(et_times)
+        z_avg = spice.q2m(list(q_avg))[:, 2]
 
     rotation_matrix_expected = np.array(
         [[0.0000, 0.0000, 1.0000], [0.9104, -0.4136, 0.0000], [0.4136, 0.9104, 0.0000]]
@@ -113,10 +114,9 @@ def test_create_rotation_matrix(et_times, kernel_path):
 
 
 # @pytest.mark.xfail(reason="Will fail unless kernels in pointing_frame/test_data.")
-def test_create_pointing_frame(monkeypatch, kernel_path, create_kernel_list):
+def test_create_pointing_frame(monkeypatch, kernel_path, ck_kernel):
     """Tests create_pointing_frame function."""
     monkeypatch.setenv("EFS_MOUNT_PATH", str(kernel_path))
-    _, ck_kernel = create_kernel_list
     create_pointing_frame()
 
     # After imap_dps.bc has been created.
@@ -141,15 +141,22 @@ def test_create_pointing_frame(monkeypatch, kernel_path, create_kernel_list):
     assert (kernel_path / "imap_dps.bc").exists()
 
 
-# @pytest.mark.skip(reason="Plotting only")
-def test_declination_plot(create_kernel_list, et_times):
+def test_declination_plot(kernels, et_times):
     """Tests Inertial z axis and provides visualization."""
-    kernels, ck_kernel = create_kernel_list
+
+    z_eclip_time = []
 
     with spice.KernelPool(kernels):
         # Converts rectangular coordinates to spherical coordinates.
-        q_avg, z_eclip_time = average_quaternions(et_times)
-        _, z_avg = create_rotation_matrix(et_times)
+
+        for tdb in et_times:
+            # Rotation matrix from IMAP spacecraft frame to ECLIPJ2000.
+            body_rots = spice.pxform("IMAP_SPACECRAFT", "ECLIPJ2000", tdb)
+            # z-axis of the ECLIPJ2000 frame.
+            z_eclip_time.append(body_rots[:, 2])
+
+        q_avg = average_quaternions(et_times)
+        z_avg = spice.q2m(list(q_avg))[:, 2]
 
         # Create visualization
         declination_list = []

@@ -23,6 +23,7 @@ from pathlib import Path
 
 import numpy as np
 import spiceypy as spice
+from numpy.typing import NDArray
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -59,17 +60,14 @@ def get_et_times(ck_kernel: str) -> tuple[float, float, np.ndarray]:
     cover = spice.ckcov(ck_kernel, int(id_imap_spacecraft), True, "SEGMENT", 0, "TDB")
     # https://spiceypy.readthedocs.io/en/main/documentation.html#spiceypy.spiceypy.wnfetd
     et_start, et_end = spice.wnfetd(cover, 0)
-    # Each spin is 15 seconds. We want 10 quaternions per spin.
-    # duration / # samples (nominally 15/10 = 1.5 seconds)
-
-    et_start = 802008069.184905
-    et_end = 802094467.184905
-    et_times = np.arange(et_start, et_end, 1.5)
+    # Assumes a pointing is ~ 1 day.
+    # 1 spin/15 seconds * 86400 seconds/pointing * 10 quaternions / spin
+    et_times = np.linspace(et_start, et_end, 57600)
 
     return et_start, et_end, et_times
 
 
-def average_quaternions(et_times: np.ndarray) -> tuple[np.ndarray, list[np.ndarray]]:
+def average_quaternions(et_times: np.ndarray) -> NDArray:
     """
     Average the quaternions.
 
@@ -82,8 +80,6 @@ def average_quaternions(et_times: np.ndarray) -> tuple[np.ndarray, list[np.ndarr
     -------
     q_avg : np.ndarray
         Average quaternion.
-    z_eclip_time : list
-        Z-axis of the ECLIPJ2000 frame. Used for plotting.
     """
     z_eclip_time = []
     aggregate = np.zeros((4, 4))
@@ -128,10 +124,10 @@ def average_quaternions(et_times: np.ndarray) -> tuple[np.ndarray, list[np.ndarr
     # q1, q2, q3: The vector part of the quaternion.
     q_avg = eigvecs[:, np.argmax(eigvals)]
 
-    return q_avg, z_eclip_time
+    return q_avg
 
 
-def create_rotation_matrix(et_times: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+def create_rotation_matrix(et_times: np.ndarray) -> NDArray:
     """
     Create a rotation matrix.
 
@@ -144,11 +140,9 @@ def create_rotation_matrix(et_times: np.ndarray) -> tuple[np.ndarray, np.ndarray
     -------
     rotation_matrix : np.ndarray
         Rotation matrix.
-    z_avg : np.ndarray
-        Inertial z axis. Used for plotting.
     """
     # Averaged quaternions.
-    q_avg, _ = average_quaternions(et_times)
+    q_avg = average_quaternions(et_times)
 
     # Converts the averaged quaternion (q_avg) into a rotation matrix
     # and get inertial z axis.
@@ -160,9 +154,9 @@ def create_rotation_matrix(et_times: np.ndarray) -> tuple[np.ndarray, np.ndarray
     x_avg = np.cross(y_avg, z_avg)
 
     # Construct the rotation matrix from x_avg, y_avg, z_avg
-    rotation_matrix = np.array([x_avg, y_avg, z_avg])
+    rotation_matrix = np.asarray([x_avg, y_avg, z_avg])
 
-    return rotation_matrix, z_avg
+    return rotation_matrix
 
 
 def create_pointing_frame() -> Path:
@@ -186,7 +180,7 @@ def create_pointing_frame() -> Path:
         # Get timerange for the pointing frame kernel.
         et_start, et_end, et_times = get_et_times(str(ck_kernel[0]))
         # Create a rotation matrix
-        rotation_matrix, _ = create_rotation_matrix(et_times)
+        rotation_matrix = create_rotation_matrix(et_times)
 
         # Convert the rotation matrix to a quaternion.
         # https://spiceypy.readthedocs.io/en/main/documentation.html#spiceypy.spiceypy.m2q

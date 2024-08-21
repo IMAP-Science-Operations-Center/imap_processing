@@ -57,8 +57,9 @@ matplotlib = {version="^3.7.1", optional=true}
 [tool.poetry.extras]
 dev = ["pre-commit", "ruff", "mypy"]
 doc = ["numpydoc", "pydata-sphinx-theme", "sphinx", "sphinxcontrib-openapi"]
-test = ["openpyxl", "pytest", "pytest-cov", "matplotlib"]
+test = ["openpyxl", "pytest", "pytest-cov"]
 tools= ["openpyxl", "pandas"]
+plotting = ["matplotlib"]
 
 [project.urls]
 homepage = "https://github.com/IMAP-Science-Operations-Center"
