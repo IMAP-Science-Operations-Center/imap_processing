@@ -71,7 +71,6 @@ def et_times(ck_kernel, kernels):
     return et_times
 
 
-# @pytest.mark.xfail(reason="Will fail unless kernels in pointing_frame/test_data.")
 def test_get_et_times(kernels, ck_kernel):
     """Tests get_et_times function."""
 
@@ -83,7 +82,6 @@ def test_get_et_times(kernels, ck_kernel):
     assert len(et_times) == 57600
 
 
-# @pytest.mark.xfail(reason="Will fail unless kernels in pointing_frame/test_data.")
 def test_average_quaternions(et_times, kernels):
     """Tests average_quaternions function."""
 
@@ -95,7 +93,6 @@ def test_average_quaternions(et_times, kernels):
     np.testing.assert_allclose(q_avg, q_avg_expected, atol=1e-1)
 
 
-# @pytest.mark.xfail(reason="Will fail unless kernels in pointing_frame/test_data.")
 def test_create_rotation_matrix(et_times, kernels):
     """Tests create_rotation_matrix function."""
 
@@ -113,7 +110,6 @@ def test_create_rotation_matrix(et_times, kernels):
     np.testing.assert_allclose(rotation_matrix, rotation_matrix_expected, atol=1e-4)
 
 
-# @pytest.mark.xfail(reason="Will fail unless kernels in pointing_frame/test_data.")
 def test_create_pointing_frame(monkeypatch, kernel_path, ck_kernel):
     """Tests create_pointing_frame function."""
     monkeypatch.setenv("EFS_MOUNT_PATH", str(kernel_path))
