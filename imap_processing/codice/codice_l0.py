@@ -17,6 +17,7 @@ Notes
 from pathlib import Path
 
 from imap_processing import decom, imap_module_directory
+from imap_processing.codice import constants
 
 
 def decom_packets(packet_file: Path) -> list:
@@ -33,26 +34,8 @@ def decom_packets(packet_file: Path) -> list:
     list : list
         All the unpacked data.
     """
-    packet_to_xtce_mapping = {
-        "imap_codice_l0_hi-counters-aggregated_20240429_v001.pkts": "P_COD_HI_INST_COUNTS_AGGREGATED.xml",  # noqa
-        "imap_codice_l0_hi-counters-singles_20240429_v001.pkts": "P_COD_HI_INST_COUNTS_SINGLES.xml",  # noqa
-        "imap_codice_l0_hi-omni_20240429_v001.pkts": "P_COD_HI_OMNI_SPECIES_COUNTS.xml",
-        "imap_codice_l0_hi-sectored_20240429_v001.pkts": "P_COD_HI_SECT_SPECIES_COUNTS.xml",  # noqa
-        "imap_codice_l0_hi-pha_20240429_v001.pkts": "P_COD_HI_PHA.xml",
-        "imap_codice_l0_hskp_20100101_v001.pkts": "P_COD_NHK.xml",
-        "imap_codice_l0_lo-counters-aggregated_20240429_v001.pkts": "P_COD_LO_INST_COUNTS_AGGREGATED.xml",  # noqa
-        "imap_codice_l0_lo-counters-singles_20240429_v001.pkts": "P_COD_LO_INST_COUNTS_SINGLES.xml",  # noqa
-        "imap_codice_l0_lo-sw-angular_20240429_v001.pkts": "P_COD_LO_SW_ANGULAR_COUNTS.xml",  # noqa
-        "imap_codice_l0_lo-nsw-angular_20240429_v001.pkts": "P_COD_LO_NSW_ANGULAR_COUNTS.xml",  # noqa
-        "imap_codice_l0_lo-sw-priority_20240429_v001.pkts": "P_COD_LO_SW_PRIORITY_COUNTS.xml",  # noqa
-        "imap_codice_l0_lo-nsw-priority_20240429_v001.pkts": "P_COD_LO_NSW_PRIORITY_COUNTS.xml",  # noqa
-        "imap_codice_l0_lo-sw-species_20240429_v001.pkts": "P_COD_LO_SW_SPECIES_COUNTS.xml",  # noqa
-        "imap_codice_l0_lo-nsw-species_20240429_v001.pkts": "P_COD_LO_NSW_SPECIES_COUNTS.xml",  # noqa
-        "imap_codice_l0_lo-pha_20240429_v001.pkts": "P_COD_LO_PHA.xml",
-    }
-
     xtce_document = Path(
-        f"{imap_module_directory}/codice/packet_definitions/{packet_to_xtce_mapping[packet_file.name]}"
+        f"{imap_module_directory}/codice/packet_definitions/{constants.PACKET_TO_XTCE_MAPPING[packet_file.name]}"
     )
     decom_packet_list: list = decom.decom_packets(packet_file, xtce_document)
     return decom_packet_list

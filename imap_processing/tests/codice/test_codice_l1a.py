@@ -35,7 +35,7 @@ EXPECTED_ARRAY_SHAPES = [
     (1, 128),  # lo-pha
 ]
 EXPECTED_ARRAY_SIZES = [
-    123,  # hskp
+    129,  # hskp
     1,  # hi-counters-aggregated
     3,  # hi-counters-singles
     8,  # hi-omni
