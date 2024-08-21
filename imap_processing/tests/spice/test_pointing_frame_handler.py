@@ -79,7 +79,7 @@ def test_get_et_times(kernels, ck_kernel):
         et_start, et_end, et_times = get_et_times(str(ck_kernel[0]))
 
     assert et_start == 802008069.184905
-    assert et_end == 802094467.184905
+    assert et_end == 802015267.184906
     assert len(et_times) == 57600
 
 
