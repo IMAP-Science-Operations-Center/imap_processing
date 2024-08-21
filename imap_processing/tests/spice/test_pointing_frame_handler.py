@@ -22,14 +22,8 @@ def kernels(spice_test_data_path):
 
 @pytest.fixture()
 def ck_kernel(spice_test_data_path):
-    """Create ck kernel."""
-    ck_kernel = [
-        str(file)
-        for file in spice_test_data_path.iterdir()
-        if file.name == "imap_spin.bc"
-    ]
-
-    return ck_kernel
+    """Location of ck kernel to create pointing kernel from."""
+    return spice_test_data_path / "imap_spin.bc"
 
 
 @pytest.fixture()
@@ -37,7 +31,7 @@ def et_times(ck_kernel, kernels):
     """Tests get_et_times function."""
 
     with spice.KernelPool(kernels):
-        et_start, et_end, et_times = get_et_times(str(ck_kernel[0]))
+        et_start, et_end, et_times = get_et_times(str(ck_kernel))
 
     return et_times
 
@@ -46,7 +40,7 @@ def test_get_et_times(kernels, ck_kernel):
     """Tests get_et_times function."""
 
     with spice.KernelPool(kernels):
-        et_start, et_end, et_times = get_et_times(str(ck_kernel[0]))
+        et_start, et_end, et_times = get_et_times(str(ck_kernel))
 
     assert et_start == 802008069.184905
     assert et_end == 802015267.184906
@@ -90,7 +84,7 @@ def test_create_pointing_frame(monkeypatch, spice_test_data_path, ck_kernel, tmp
     kernels = [str(file) for file in spice_test_data_path.iterdir()]
 
     with spice.KernelPool(kernels):
-        et_start, et_end, et_times = get_et_times(str(ck_kernel[0]))
+        et_start, et_end, et_times = get_et_times(str(ck_kernel))
 
         rotation_matrix_1 = spice.pxform("ECLIPJ2000", "IMAP_DPS", et_start + 100)
         rotation_matrix_2 = spice.pxform("ECLIPJ2000", "IMAP_DPS", et_start + 1000)
