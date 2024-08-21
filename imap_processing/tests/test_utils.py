@@ -97,6 +97,16 @@ def test_packet_file_to_datasets(use_derived_value, expected_mode):
     np.testing.assert_array_equal(data["mode"], [expected_mode] * len(data["mode"]))
 
 
+def test_packet_file_to_datasets_flat_definition():
+    test_file = "tests/idex/imap_idex_l0_raw_20230725_v001.pkts"
+    packet_files = imap_module_directory / test_file
+    packet_definition = (
+        imap_module_directory / "idex/packet_definitions/idex_packet_definition.xml"
+    )
+    with pytest.raises(ValueError, match="Packet fields do not match"):
+        utils.packet_file_to_datasets(packet_files, packet_definition)
+
+
 def test__create_minimum_dtype_array():
     """Test expected return types for minimum data types."""
     result = utils._create_minimum_dtype_array([1, 2, 3], "uint8")
