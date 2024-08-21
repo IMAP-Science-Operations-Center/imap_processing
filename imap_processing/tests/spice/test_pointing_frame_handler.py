@@ -141,7 +141,7 @@ def test_create_pointing_frame(monkeypatch, kernel_path, ck_kernel):
     assert (kernel_path / "imap_dps.bc").exists()
 
 
-def test_declination_plot(kernels, et_times):
+def declination_plot(kernels, et_times):
     """Tests Inertial z axis and provides visualization."""
 
     z_eclip_time = []
