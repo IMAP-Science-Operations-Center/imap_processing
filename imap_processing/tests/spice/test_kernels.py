@@ -18,7 +18,7 @@ from imap_processing.spice.kernels import (
 
 @pytest.fixture()
 def kernels(spice_test_data_path):
-    """Furnish SPICE kernels for the entire test module."""
+    """List SPICE kernels."""
     kernels = [str(file) for file in spice_test_data_path.iterdir()]
     return kernels
 
