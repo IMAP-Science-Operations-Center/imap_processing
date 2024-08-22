@@ -19,6 +19,7 @@ from imap_processing.spice.kernels import (
 @pytest.fixture()
 def kernels(spice_test_data_path):
     """List SPICE kernels."""
+    # TODO: remove this fixture after ensure_spice update.
     kernels = [str(file) for file in spice_test_data_path.iterdir()]
     return kernels
 
@@ -26,6 +27,7 @@ def kernels(spice_test_data_path):
 @pytest.fixture()
 def et_times(kernels):
     """Tests get_et_times function."""
+    # TODO: remove spice.furnsh(kernels) after ensure_spice update.
     spice.furnsh(kernels)
 
     file, _, _, _ = spice.kdata(0, "ck")
@@ -103,6 +105,7 @@ def test_ensure_spice_key_error():
 
 def test_average_quaternions(et_times, kernels):
     """Tests average_quaternions function."""
+    # TODO: remove spice.furnsh(kernels) after ensure_spice update.
     spice.furnsh(kernels)
     q_avg = _average_quaternions(et_times)
 
@@ -113,6 +116,7 @@ def test_average_quaternions(et_times, kernels):
 
 def test_create_rotation_matrix(et_times, kernels):
     """Tests create_rotation_matrix function."""
+    # TODO: remove spice.furnsh(kernels) after ensure_spice update.
     spice.furnsh(kernels)
     rotation_matrix = _create_rotation_matrix(et_times)
     q_avg = _average_quaternions(et_times)
@@ -129,6 +133,7 @@ def test_create_rotation_matrix(et_times, kernels):
 
 def test_create_pointing_frame(spice_test_data_path, kernels):
     """Tests create_pointing_frame function."""
+    # TODO: remove spice.furnsh(kernels) after ensure_spice update.
     spice.furnsh(kernels)
     ck_kernel, _, _, _ = spice.kdata(0, "ck")
     et_start, et_end, et_times = _get_et_times(ck_kernel)
