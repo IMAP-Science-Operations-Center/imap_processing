@@ -1,7 +1,5 @@
 """Tests coverage for imap_processing/spice/kernels.py"""
 
-import os
-
 import numpy as np
 import pytest
 import spiceypy as spice
@@ -131,16 +129,16 @@ def test_create_rotation_matrix(et_times, kernels):
     np.testing.assert_allclose(rotation_matrix, rotation_matrix_expected, atol=1e-4)
 
 
-def test_create_pointing_frame(spice_test_data_path, kernels):
+def test_create_pointing_frame(spice_test_data_path, kernels, tmp_path):
     """Tests create_pointing_frame function."""
     # TODO: remove spice.furnsh(kernels) after ensure_spice update.
     spice.furnsh(kernels)
     ck_kernel, _, _, _ = spice.kdata(0, "ck")
     et_start, et_end, et_times = _get_et_times(ck_kernel)
-    create_pointing_frame()
+    create_pointing_frame(pointing_frame_dir=tmp_path)
 
     # After imap_dps.bc has been created.
-    dps_kernel = str(spice_test_data_path / "imap_dps.bc")
+    dps_kernel = str(tmp_path / "imap_dps.bc")
 
     spice.furnsh(dps_kernel)
     rotation_matrix_1 = spice.pxform("ECLIPJ2000", "IMAP_DPS", et_start + 100)
@@ -156,5 +154,4 @@ def test_create_pointing_frame(spice_test_data_path, kernels):
     np.testing.assert_allclose(rotation_matrix_1, rotation_matrix_expected, atol=1e-4)
 
     # Verify imap_dps.bc has been created.
-    assert (spice_test_data_path / "imap_dps.bc").exists()
-    os.remove(spice_test_data_path / "imap_dps.bc")
+    assert (tmp_path / "imap_dps.bc").exists()

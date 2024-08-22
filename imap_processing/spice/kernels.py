@@ -162,9 +162,14 @@ def ensure_spice(
 
 
 @ensure_spice
-def create_pointing_frame() -> Path:
+def create_pointing_frame(pointing_frame_dir: Optional[Path] = None) -> Path:
     """
     Create the pointing frame.
+
+    Parameters
+    ----------
+    pointing_frame_dir : Path
+        Directory of where pointing frame will be saved.
 
     Returns
     -------
@@ -184,7 +189,10 @@ def create_pointing_frame() -> Path:
     q_avg = spice.m2q(rotation_matrix)
 
     # TODO: come up with naming convention.
-    path_to_pointing_frame = directory / "imap_dps.bc"
+    if pointing_frame_dir is None:
+        path_to_pointing_frame = directory / "imap_dps.bc"
+    else:
+        path_to_pointing_frame = pointing_frame_dir / "imap_dps.bc"
 
     # Open a new CK file, returning the handle of the opened file.
     # https://spiceypy.readthedocs.io/en/main/documentation.html#spiceypy.spiceypy.ckopn
