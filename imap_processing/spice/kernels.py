@@ -169,79 +169,72 @@ def create_pointing_frame() -> Path:
     Returns
     -------
     path_to_pointing_frame : Path
-        Path to dps frame.
+        Path to pointing frame.
     """
-    # TODO: this part will change with ensure_spice decorator.
-    # Mount path to EFS.
-    mount_path = Path(os.getenv("EFS_MOUNT_PATH", ""))
+    ck_kernel, _, _, _ = spice.kdata(0, "ck")
+    directory = Path(ck_kernel).parent
 
-    # TODO: this part will change with ensure_spice decorator.
-    kernels = [str(file) for file in mount_path.iterdir()]
-    ck_kernel = [str(file) for file in mount_path.iterdir() if file.suffix == ".bc"]
+    # Get timerange for the pointing frame kernel.
+    et_start, et_end, et_times = _get_et_times(ck_kernel)
+    # Create a rotation matrix
+    rotation_matrix = _create_rotation_matrix(et_times)
 
-    # Furnish the kernels.
-    with spice.KernelPool(kernels):
-        # Get timerange for the pointing frame kernel.
-        et_start, et_end, et_times = _get_et_times(str(ck_kernel[0]))
-        # Create a rotation matrix
-        rotation_matrix = _create_rotation_matrix(et_times)
+    # Convert the rotation matrix to a quaternion.
+    # https://spiceypy.readthedocs.io/en/main/documentation.html#spiceypy.spiceypy.m2q
+    q_avg = spice.m2q(rotation_matrix)
 
-        # Convert the rotation matrix to a quaternion.
-        # https://spiceypy.readthedocs.io/en/main/documentation.html#spiceypy.spiceypy.m2q
-        q_avg = spice.m2q(rotation_matrix)
+    # TODO: come up with naming convention.
+    path_to_pointing_frame = directory / "imap_dps.bc"
 
-        # TODO: come up with naming convention.
-        path_to_pointing_frame = mount_path / "imap_dps.bc"
+    # Open a new CK file, returning the handle of the opened file.
+    # https://spiceypy.readthedocs.io/en/main/documentation.html#spiceypy.spiceypy.ckopn
+    handle = spice.ckopn(str(path_to_pointing_frame), "CK", 0)
+    # Get the SCLK ID.
+    # https://spiceypy.readthedocs.io/en/main/documentation.html#spiceypy.spiceypy.gipool
+    id_imap_sclk = spice.gipool("CK_-43000_SCLK", 0, 1)
+    # https://spiceypy.readthedocs.io/en/main/documentation.html#spiceypy.spiceypy.sce2c
+    # Convert start and end times to SCLK.
+    sclk_begtim = spice.sce2c(int(id_imap_sclk), et_start)
+    sclk_endtim = spice.sce2c(int(id_imap_sclk), et_end)
 
-        # Open a new CK file, returning the handle of the opened file.
-        # https://spiceypy.readthedocs.io/en/main/documentation.html#spiceypy.spiceypy.ckopn
-        handle = spice.ckopn(str(path_to_pointing_frame), "CK", 0)
-        # Get the SCLK ID.
-        # https://spiceypy.readthedocs.io/en/main/documentation.html#spiceypy.spiceypy.gipool
-        id_imap_sclk = spice.gipool("CK_-43000_SCLK", 0, 1)
-        # https://spiceypy.readthedocs.io/en/main/documentation.html#spiceypy.spiceypy.sce2c
-        # Convert start and end times to SCLK.
-        sclk_begtim = spice.sce2c(int(id_imap_sclk), et_start)
-        sclk_endtim = spice.sce2c(int(id_imap_sclk), et_end)
+    # Get the pointing frame ID.
+    # https://spiceypy.readthedocs.io/en/main/documentation.html#spiceypy.spiceypy.gipool
+    id_imap_dps = spice.gipool("FRAME_IMAP_DPS", 0, 1)
 
-        # Get the pointing frame ID.
-        # https://spiceypy.readthedocs.io/en/main/documentation.html#spiceypy.spiceypy.gipool
-        id_imap_dps = spice.gipool("FRAME_IMAP_DPS", 0, 1)
+    # Create the pointing frame kernel.
+    # https://spiceypy.readthedocs.io/en/main/documentation.html#spiceypy.spiceypy.ckw02
+    spice.ckw02(
+        # Handle of an open CK file.
+        handle,
+        # Start time of the segment.
+        sclk_begtim,
+        # End time of the segment.
+        sclk_endtim,
+        # Pointing frame ID.
+        int(id_imap_dps),
+        # Reference frame.
+        "ECLIPJ2000",  # Reference frame
+        # Identifier.
+        "IMAP_DPS",
+        # Number of pointing intervals.
+        1,
+        # Start times of individual pointing records within segment.
+        # Since there is only a single record this is equal to sclk_begtim.
+        np.array([sclk_begtim]),
+        # End times of individual pointing records within segment.
+        # Since there is only a single record this is equal to sclk_endtim.
+        np.array([sclk_endtim]),  # Single stop time
+        # Average quaternion.
+        q_avg,
+        # 0.0 Angular rotation terms.
+        np.array([0.0, 0.0, 0.0]),
+        # Rates (seconds per tick) at which the quaternion and
+        # angular velocity change.
+        np.array([1.0]),
+    )
 
-        # Create the pointing frame kernel.
-        # https://spiceypy.readthedocs.io/en/main/documentation.html#spiceypy.spiceypy.ckw02
-        spice.ckw02(
-            # Handle of an open CK file.
-            handle,
-            # Start time of the segment.
-            sclk_begtim,
-            # End time of the segment.
-            sclk_endtim,
-            # Pointing frame ID.
-            int(id_imap_dps),
-            # Reference frame.
-            "ECLIPJ2000",  # Reference frame
-            # Identifier.
-            "IMAP_DPS",
-            # Number of pointing intervals.
-            1,
-            # Start times of individual pointing records within segment.
-            # Since there is only a single record this is equal to sclk_begtim.
-            np.array([sclk_begtim]),
-            # End times of individual pointing records within segment.
-            # Since there is only a single record this is equal to sclk_endtim.
-            np.array([sclk_endtim]),  # Single stop time
-            # Average quaternion.
-            q_avg,
-            # 0.0 Angular rotation terms.
-            np.array([0.0, 0.0, 0.0]),
-            # Rates (seconds per tick) at which the quaternion and
-            # angular velocity change.
-            np.array([1.0]),
-        )
-
-        # Close CK file.
-        spice.ckcls(handle)
+    # Close CK file.
+    spice.ckcls(handle)
 
     return path_to_pointing_frame
 
