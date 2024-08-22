@@ -1,5 +1,7 @@
 """Tests Pointing Frame Generation."""
 
+import os
+
 import numpy as np
 import pytest
 import spiceypy as spice
@@ -44,7 +46,8 @@ def test_get_et_times(kernels, ck_kernel):
 
     assert et_start == 802008069.184905
     assert et_end == 802015267.184906
-    assert len(et_times) == 57600
+    assert et_times[0] == et_start
+    assert et_times[-1] == et_end
 
 
 def test_average_quaternions(et_times, kernels):
@@ -54,8 +57,8 @@ def test_average_quaternions(et_times, kernels):
         q_avg = average_quaternions(et_times)
 
     # Generated from MATLAB code results
-    q_avg_expected = np.array([-0.6838, 0.5480, -0.4469, -0.1802])
-    np.testing.assert_allclose(q_avg, q_avg_expected, atol=1e-1)
+    q_avg_expected = np.array([-0.6611, 0.4981, -0.5019, -0.2509])
+    np.testing.assert_allclose(q_avg, q_avg_expected, atol=1e-4)
 
 
 def test_create_rotation_matrix(et_times, kernels):
@@ -100,3 +103,4 @@ def test_create_pointing_frame(monkeypatch, spice_test_data_path, ck_kernel, tmp
 
     # Verify imap_dps.bc has been created.
     assert (spice_test_data_path / "imap_dps.bc").exists()
+    os.remove(spice_test_data_path / "imap_dps.bc")

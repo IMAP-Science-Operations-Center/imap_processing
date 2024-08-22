@@ -32,7 +32,7 @@ logger.setLevel(logging.INFO)
 
 def get_et_times(ck_kernel: str) -> tuple[float, float, np.ndarray]:
     """
-    Get timerange for pointing start and stop.
+    Get times for pointing start and stop.
 
     Parameters
     ----------
@@ -59,9 +59,9 @@ def get_et_times(ck_kernel: str) -> tuple[float, float, np.ndarray]:
     cover = spice.ckcov(ck_kernel, int(id_imap_spacecraft), True, "SEGMENT", 0, "TDB")
     # https://spiceypy.readthedocs.io/en/main/documentation.html#spiceypy.spiceypy.wnfetd
     et_start, et_end = spice.wnfetd(cover, 0)
-    # Assumes a pointing is ~ 1 day.
-    # 1 spin/15 seconds * 86400 seconds/pointing * 10 quaternions / spin
-    et_times = np.linspace(et_start, et_end, 57600)
+    # 1 spin/15 seconds; 10 quaternions / spin
+    num_samples = (et_end - et_start) / 15 * 10
+    et_times = np.linspace(et_start, et_end, int(num_samples))
 
     return et_start, et_end, et_times
 
@@ -81,7 +81,6 @@ def average_quaternions(et_times: np.ndarray) -> NDArray:
         Average quaternion.
     """
     aggregate = np.zeros((4, 4))
-
     for tdb in et_times:
         # we use a quick and dirty method here for grabbing the quaternions
         # from the attitude kernel.  Depending on how well the kernel input
@@ -99,7 +98,6 @@ def average_quaternions(et_times: np.ndarray) -> NDArray:
 
         # Standardize the quaternion so that they may be compared.
         body_quat = body_quat * np.sign(body_quat[0])
-
         # Aggregate quaternions into a single matrix.
         aggregate += np.outer(body_quat, body_quat)
 
