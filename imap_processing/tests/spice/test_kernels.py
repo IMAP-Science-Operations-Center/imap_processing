@@ -7,22 +7,22 @@ import pytest
 import spiceypy as spice
 from spiceypy.utils.exceptions import SpiceyError
 
-from imap_processing.spice import kernels
 from imap_processing.spice.kernels import (
     _average_quaternions,
     _create_rotation_matrix,
     _get_et_times,
     create_pointing_frame,
+    ensure_spice,
 )
 
 
-@kernels.ensure_spice
+@ensure_spice
 def single_wrap_et2utc(et, fmt, prec):
     """Directly decorate a spice function with ensure_spice for use in tests"""
     return spice.et2utc(et, fmt, prec)
 
 
-@kernels.ensure_spice
+@ensure_spice
 def double_wrap_et2utc(et, fmt, prec):
     """Decorate a spice function twice with ensure_spice for use in tests. This
     simulates some decorated outer functions that call lower level functions
@@ -30,13 +30,13 @@ def double_wrap_et2utc(et, fmt, prec):
     return single_wrap_et2utc(et, fmt, prec)
 
 
-@kernels.ensure_spice(time_kernels_only=True)
+@ensure_spice(time_kernels_only=True)
 def single_wrap_et2utc_tk_only(et, fmt, prec):
     """Directly wrap a spice function with optional time_kernels_only set True"""
     return spice.et2utc(et, fmt, prec)
 
 
-@kernels.ensure_spice(time_kernels_only=True)
+@ensure_spice(time_kernels_only=True)
 def double_wrap_et2utc_tk_only(et, fmt, prec):
     """Decorate a spice function twice with ensure_spice for use in tests. This
     simulates some decorated outer functions that call lower level functions
@@ -60,7 +60,7 @@ def test_ensure_spice_emus_mk_path(func, use_test_metakernel):
 
 def test_ensure_spice_time_kernels():
     """Test functionality of ensure spice with timekernels set"""
-    wrapped = kernels.ensure_spice(spice.et2utc, time_kernels_only=True)
+    wrapped = ensure_spice(spice.et2utc, time_kernels_only=True)
     # TODO: Update/remove this test when a decision has been made about
     #   whether IMAP will use the time_kernels_only functionality and the
     #   ensure_spice decorator has been update.
@@ -70,7 +70,7 @@ def test_ensure_spice_time_kernels():
 
 def test_ensure_spice_key_error():
     """Test functionality of ensure spice when all branches fail"""
-    wrapped = kernels.ensure_spice(spice.et2utc)
+    wrapped = ensure_spice(spice.et2utc)
     # The ensure_spice decorator should raise a SpiceyError when all attempts to
     # furnish a set of kernels with sufficient coverage for the spiceypy
     # functions that it decorates.
