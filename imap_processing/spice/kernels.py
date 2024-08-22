@@ -208,7 +208,7 @@ def create_pointing_frame(pointing_frame_dir: Optional[Path] = None) -> Path:
     # Get the pointing frame ID.
     # https://spiceypy.readthedocs.io/en/main/documentation.html#spiceypy.spiceypy.gipool
     id_imap_dps = spice.gipool("FRAME_IMAP_DPS", 0, 1)
-
+    # TODO: Figure out how to write new pointings to same CK kernel.
     # Create the pointing frame kernel.
     # https://spiceypy.readthedocs.io/en/main/documentation.html#spiceypy.spiceypy.ckw02
     spice.ckw02(
