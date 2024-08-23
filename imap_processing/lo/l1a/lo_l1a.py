@@ -72,7 +72,7 @@ def lo_l1a(dependency: Path, data_version: str) -> list[xr.Dataset]:
         logical_source = "imap_lo_l1a_boot"
         del datasets_by_apid[LoAPID.ILO_BOOT_HK]
 
-    return [datasets_by_apid[LoAPID.ILO_SCI_CNT]]
+    return list(datasets_by_apid.values())
 
 
 def add_dataset_attrs(
@@ -95,6 +95,8 @@ def add_dataset_attrs(
     dataset : xr.Dataset
         Data with attributes added.
     """
+    # TODO: may want up split up these if statements into their
+    # own functions
     if logical_source == "imap_lo_l1a_histogram":
         azimuth_60 = xr.DataArray(
             data=np.arange(0, 6),
