@@ -348,7 +348,8 @@ def test_compressed_vector_data(expected_vectors):
     (primary, secondary) = MagL1a.process_compressed_vectors(input_data, 16, 16)
 
     assert np.array_equal(primary[0], primary_expected[0])
-    print(primary.shape)
+    assert np.array_equal(secondary[0], secondary_expected[0])
+
     assert primary.shape[0] == 16
     assert secondary.shape[0] == 16
 
@@ -368,6 +369,21 @@ def test_real_uncompressed_vector_data(uncompressed_vector_bytearray, expected_v
     )
     assert np.array_equal(primary_expected, primary)
     assert np.array_equal(secondary_expected, secondary)
+
+
+def test_accumulate_vectors():
+    start_vector = np.array([1, 2, 3, 4], dtype=np.uint)
+
+    diff_vectors = [1, 1, 1, 3, 0, -3, -1, -10, 1]
+
+    expected_vectors = np.array([[1, 2, 3, 4],
+                                 [2, 3, 4, 4],
+                                 [5, 3, 1, 4],
+                                 [4, -7, 2, 4]])
+
+    test_vectors = MagL1a.accumulate_vectors(start_vector, diff_vectors, 4)
+
+    assert np.array_equal(test_vectors, expected_vectors)
 
 
 def test_unpack_one_vector(uncompressed_vector_bytearray, expected_vectors):

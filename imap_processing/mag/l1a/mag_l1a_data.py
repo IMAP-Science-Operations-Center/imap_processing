@@ -495,26 +495,21 @@ class MagL1a:
             Two arrays, each containing tuples of (x, y, z, sample_range) for each
             vector sample.
         """
-        # TODO
-        # - decode first vector to get starting point
-        # - for each vector after that - divide into 11 separated chunks
-        # - decode each chunk with fib + zigzag
-        # - Also check if > 60
-
-        # first vector is uncompressed, takes up compression_width bits
 
         bit_array = np.unpackbits(vector_data)
 
-        # Retrieve the first 6 bits to get the compression width and convert to int
+
+        # The first 8 bits are a header - 6 bits to indicate the compression width,
+        # 1 bit to indicate if there is a range data section, and 1 bit spare.
         compression_width = int("".join([str(i) for i in bit_array[:6]]), 2)
         has_range_data_section = int(str(bit_array[6]), 2)
 
         # The full vector includes 3 values of compression_width bits, plus 2 bits for
-        # the range, plus 8 to get past the compression width and range data section
+        # the range
         uncompressed_vector_size = compression_width * 3 + 2
+        # plus 8 to get past the compression width and range data section
         first_vector_width = uncompressed_vector_size + 8
 
-        # index 7 is a spare
         first_vector = MagL1a.unpack_one_vector(
             bit_array[8:first_vector_width], compression_width, True
         )
@@ -536,6 +531,10 @@ class MagL1a:
         )[0]
 
         fib_indices = [sequential_ones[0] + 1]
+
+        # This method has incorrect values if there are 3 sequential ones in a row.
+        # In this case, we drop the consecutive values. Here is also where we separate
+        # out the uncompressed secondary vector in the middle of the data.
         for seq_val in sequential_ones:
             if len(fib_indices) == end_of_primary_index + 1:
                 # When we hit the expected number of primary indices, we can assume
@@ -544,31 +543,29 @@ class MagL1a:
                 if seq_val < fib_indices[-1] + uncompressed_vector_size:
                     continue
                 else:
+                    # Now we have found the start index of the secondary vectors, and
+                    # we can continue with the normal compression processing for the
+                    # compressed secondary vectors.
                     secondary_vectors_start = fib_indices[-1] + uncompressed_vector_size
                     fib_indices.append(seq_val)
 
             if seq_val - fib_indices[-1] - 1 > 1:
                 fib_indices.append(seq_val + 1)
 
-        # Drop sequences that are part of the uncompressed secondary vector
-
         fib_bit_array = bit_array[first_vector_width:]  # Remove first vector
 
-        # todo: delete chunks that are the uncompressed primary vector
-        # print(f"Last index: {fib_indices[end_of_primary_index]}")
         primary_split_bits = np.split(
             fib_bit_array[: fib_indices[end_of_primary_index]],
             fib_indices[:end_of_primary_index],
         )
-        # print(f"Full primary bit count: {sum([len(i) for i in primary_split_bits])}")
 
-        # Check if any are > 50 bits long
+        # Check if any are > 60 bits long. If they are, the data switches to
+        # uncompressed starting after that index. This is expected to happen very
+        # rarely.
         switch_to_uncompressed_index = np.where(
             [len(i) > 60 for i in primary_split_bits]
         )[0]
 
-        # If any vectors are >60 bits long, switch to using normal uncompressed
-        # processing for the rest. This is expected to happen very rarely.
         if switch_to_uncompressed_index:
             vector_diffs = list(
                 map(
@@ -593,14 +590,15 @@ class MagL1a:
             first_vector, vector_diffs, primary_count
         )
 
+        # Secondary vector processing
+
         # Split up the bit array, skipping past the primary vector and uncompressed
         # starting vector
         secondary_split_bits = np.split(
-            fib_bit_array, fib_indices[end_of_primary_index + 1 :]
+            fib_bit_array, fib_indices[end_of_primary_index + 1:]
         )[1:]
-        # print(f"First secondary bits: {secondary_split_bits[0:5]}")
 
-        # Drop any buffer bits from the end
+        # Drop any buffer bits from the end (all zeros)
         if sum(secondary_split_bits[-1]) == 0:
             secondary_split_bits = secondary_split_bits[:-1]
 
@@ -627,37 +625,22 @@ class MagL1a:
         else:
             vector_diffs = list(map(MagL1a.decode_fib_zig_zag, secondary_split_bits))
 
+        print(type(vector_diffs[0]))
+
         secondary_vectors = MagL1a.accumulate_vectors(
             first_secondary_vector, vector_diffs, secondary_count
         )
 
-        # print(primary_vectors)
-
         # TODO - process the uncompressed vectors
         # TODO - add range section
-        # TODO - add range section
         # TODO - tests for both of those things
-
-        # split_validation_data = [[0,1,0,1,1], [1,0,0,1,0,0,1,1],[1,0,0,1,0,1,0,1,1],[0,1,0,1,1],[1,0,0,1,0,0,1,1],[1,0,0,1,0,1,0,1,1],[0,1,0,1,1],[1,0,0,1,0,0,1,1],[0,0,0,0,0,0,0,0,1,1],[1,0,0,0,1,1],[1,0,0,1,0,0,1,1],[1,0,0,1,0,1,0,1,1],[0,1,0,1,1],[0,0,0,0,1,0,1,1],[0,0,0,0,0,0,0,0,1,1],[0,1,0,1,1],[1,0,0,1,0,0,1,1],[1,0,0,1,0,1,0,1,1],[1,0,0,0,1,1],[1,0,0,1,0,0,1,1],[1,0,0,1,0,1,0,1,1],[0,1,0,1,1],[1,0,0,1,0,0,1,1],[0,0,0,0,0,0,0,0,1,1],[0,1,0,1,1],[1,0,0,1,0,0,1,1],[1,0,0,1,0,1,0,1,1],[0,1,0,1,1],[1,0,0,1,0,0,1,1],[1,0,0,1,0,1,0,1,1],[1,0,0,0,1,1],[0,0,0,0,1,0,1,1],[0,0,0,0,0,0,0,0,1,1],[0,1,0,1,1],[1,0,0,1,0,0,1,1],[1,0,0,1,0,1,0,1,1],[0,1,0,1,1],[1,0,0,1,0,0,1,1],[1,0,0,1,0,1,0,1,1],[1,0,0,0,1,1],[1,0,0,1,0,0,1,1],[0,0,0,0,0,0,0,0,1,1],[0,1,0,1,1],[1,0,0,1,0,0,1,1],[1,0,0,1,0,1,0,1,1]]
-        #
-        # for index, val in enumerate(split_validation_data):
-        #     assert np.array_equal(val, primary_split_bits[index])
-        #
-        # #print("SUCCESSFUL PRIMARY SPLIT")
-        #
-        # split_val_data_sec = [[1,0,0,0,1,1],[1,0,0,1,0,0,1,1],[1,0,0,1,0,1,0,1,1],[0,1,0,1,1],[0,0,0,0,1,0,1,1],[0,0,0,0,0,0,0,0,1,1],[0,1,0,1,1],[1,0,0,1,0,0,1,1],[1,0,0,1,0,1,0,1,1],[1,0,0,0,1,1],[1,0,0,1,0,0,1,1],[1,0,0,1,0,1,0,1,1],[0,1,0,1,1],[1,0,0,1,0,0,1,1],[0,0,0,0,0,0,0,0,1,1],[0,1,0,1,1],[1,0,0,1,0,0,1,1],[1,0,0,1,0,1,0,1,1],[0,1,0,1,1],[1,0,0,1,0,0,1,1],[1,0,0,1,0,1,0,1,1],[1,0,0,0,1,1],[0,0,0,0,1,0,1,1],[0,0,0,0,0,0,0,0,1,1],[0,1,0,1,1],[1,0,0,1,0,0,1,1],[1,0,0,1,0,1,0,1,1],[0,1,0,1,1],[1,0,0,1,0,0,1,1],[0,0,0,0,0,0,0,0,1,1],[1,0,0,0,1,1],[1,0,0,1,0,0,1,1],[1,0,0,1,0,1,0,1,1],[0,1,0,1,1],[1,0,0,1,0,0,1,1],[1,0,0,1,0,1,0,1,1],[0,1,0,1,1],[0,0,0,0,1,0,1,1],[0,0,0,0,0,0,0,0,1,1],[1,0,0,0,1,1],[1,0,0,1,0,0,1,1],[1,0,0,1,0,1,0,1,1],[0,1,0,1,1],[1,0,0,1,0,0,1,1],[1,0,0,1,0,1,0,1,1]]
-        # for index, val in enumerate(split_val_data_sec):
-        #     print(f"Split bits: {secondary_split_bits[index]}, expected value: {val}")
-        #     assert np.array_equal(val, secondary_split_bits[index])
-        #
-        # print("SUCCESSFUL SECONDARY SPLIT")
 
         return primary_vectors, secondary_vectors
 
     @staticmethod
     def accumulate_vectors(
         first_vector: np.ndarray,
-        vector_differences: list[np.ndarray],
+        vector_differences: list[int],
         vector_count: int,
     ) -> np.ndarray:
         """
@@ -706,8 +689,9 @@ class MagL1a:
         return vectors
 
     @staticmethod
-    def unpack_one_vector(vector_data: np.ndarray, width: int, has_range: int) \
-            -> np.ndarray:
+    def unpack_one_vector(
+        vector_data: np.ndarray, width: int, has_range: int
+    ) -> np.ndarray:
         """
         Unpack a single vector from the vector data.
 
@@ -819,9 +803,7 @@ class MagL1a:
 
         # Fibonacci decoding
         code = code[:-1]
-        # slow line
-        fib_values = [FIBONACCI_SEQUENCE[i] for i, bit in enumerate(code) if bit]
-        value = sum(fib_values) - 1
+        value = sum(FIBONACCI_SEQUENCE[:len(code)] * code) - 1
 
         # Zig-zag decode (to go from uint to signed int)
         value = (value >> 1) ^ (-(value & 1))
