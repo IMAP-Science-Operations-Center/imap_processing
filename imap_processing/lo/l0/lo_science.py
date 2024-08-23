@@ -22,6 +22,7 @@ HistPacking = namedtuple(
 )
 
 hist_data_meta = {
+    # field: bit_length, section_length, shape
     "start_a": HistPacking(12, 504, (6, 7)),
     "start_c": HistPacking(12, 504, (6, 7)),
     "stop_b0": HistPacking(12, 504, (6, 7)),
