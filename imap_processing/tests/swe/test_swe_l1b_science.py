@@ -2,11 +2,12 @@ import numpy as np
 import pytest
 
 from imap_processing import imap_module_directory
-from imap_processing.swe.l0 import decom_swe
 from imap_processing.swe.l1a.swe_science import swe_science
 from imap_processing.swe.l1b.swe_l1b_science import (
     get_indices_of_full_cycles,
 )
+from imap_processing.swe.utils.swe_utils import SWEAPID
+from imap_processing.utils import packet_file_to_datasets
 
 
 @pytest.fixture(scope="session")
@@ -29,11 +30,17 @@ def l1a_test_data():
         imap_module_directory
         / "tests/swe/l0_data/20230927173238_SWE_SCIENCE_packet.bin",
     ]
-    data = []
-    for packet_file in packet_files:
-        data.extend(decom_swe.decom_packets(packet_file))
+    dataset = packet_file_to_datasets(packet_files[0], use_derived_value=False)[
+        SWEAPID.SWE_SCIENCE
+    ]
+    for packet_file in packet_files[1:]:
+        dataset.merge(
+            packet_file_to_datasets(packet_file, use_derived_value=False)[
+                SWEAPID.SWE_SCIENCE
+            ]
+        )
     # Get unpacked science data
-    unpacked_data = swe_science(data, "001")
+    unpacked_data = swe_science(dataset, "001")
     return unpacked_data
 
 

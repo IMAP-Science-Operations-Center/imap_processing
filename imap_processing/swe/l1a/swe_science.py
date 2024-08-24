@@ -1,16 +1,12 @@
 """Contains code to perform SWE L1a science processing."""
 
-import collections
 import logging
 
 import numpy as np
 import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
-from imap_processing.cdf.utils import met_to_j2000ns
-from imap_processing.swe.utils.swe_utils import (
-    add_metadata_to_array,
-)
+from imap_processing.swe.utils.swe_utils import SWEAPID
 
 logger = logging.getLogger(__name__)
 
@@ -67,7 +63,7 @@ def decompressed_counts(cem_count: int) -> int:
     )
 
 
-def swe_science(decom_data: list, data_version: str) -> xr.Dataset:
+def swe_science(l0_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
     """
     SWE L1a science processing.
 
@@ -97,8 +93,8 @@ def swe_science(decom_data: list, data_version: str) -> xr.Dataset:
 
     Parameters
     ----------
-    decom_data : list
-        Decompressed packet data.
+    l0_dataset : xarray.Dataset
+        Raw packet data from SWE stored as an xarray dataset.
 
     data_version : str
         Data version for the 'Data_version' CDF attribute. This is the version of the
@@ -109,39 +105,30 @@ def swe_science(decom_data: list, data_version: str) -> xr.Dataset:
     dataset : xarray.Dataset
         The xarray dataset with data.
     """
-    science_array = []
-    raw_science_array = []
-
-    metadata_arrays: dict[list] = collections.defaultdict(list)
-
     # We know we can only have 8 bit numbers input, so iterate over all
     # possibilities once up front
     decompression_table = np.array([decompressed_counts(i) for i in range(256)])
 
-    for data_packet in decom_data:
-        # read raw data
-        binary_data = data_packet.data["SCIENCE_DATA"].raw_value
-        # read binary string to an int and then convert it to
-        # bytes. This is to convert the string to bytes.
-        # Eg. "0000000011110011" --> b'\x00\xf3'
-        # 1260 = 15 seconds x 12 energy steps x 7 CEMs
-        byte_data = int(binary_data, 2).to_bytes(1260, byteorder="big")
-        # convert bytes to numpy array of uint8
-        raw_counts = np.frombuffer(byte_data, dtype=np.uint8)
+    # Loop through each packet individually with a list comprehension and
+    # perform the following steps:
+    # 1. Turn the binary string  of 0s and 1s to an int
+    # 2. Convert the int into a bytes object of length 1260 (10080 / 8)
+    #    Eg. "0000000011110011" --> b'\x00\xf3'
+    #    1260 = 15 seconds x 12 energy steps x 7 CEMs
+    # 3. Read that bytes data to a numpy array of uint8 through the buffer protocol
+    # 4. Reshape the data to 180 x 7
+    raw_science_array = np.array(
+        [
+            np.frombuffer(
+                int(binary_string, 2).to_bytes(1260, byteorder="big"), dtype=np.uint8
+            ).reshape(180, 7)
+            for binary_string in l0_dataset["science_data"].values
+        ]
+    )
 
-        # Uncompress counts. Decompressed data is a list of 1260
-        # where 1260 = 180 x 7 CEMs
-        # Take the "raw_counts" indices/counts mapping from
-        # decompression_table and then reshape the return
-        uncompress_data = np.take(decompression_table, raw_counts).reshape(180, 7)  # type: ignore[attr-defined]
-        # Save raw counts data as well
-        raw_counts = raw_counts.reshape(180, 7)
-
-        # Save data with its metadata field to attrs and DataArray of xarray.
-        # Save data as np.int64 to be complaint with ISTP' FILLVAL
-        science_array.append(uncompress_data.astype(np.int64))
-        raw_science_array.append(raw_counts.astype(np.int64))
-        metadata_arrays = add_metadata_to_array(data_packet, metadata_arrays)
+    # Decompress the raw science data using numpy broadcasting logic
+    # science_array will be the same shape as raw_science_array (npackets, 180, 7)
+    science_array = decompression_table[raw_science_array]
 
     # Load CDF attrs
     cdf_attrs = ImapCdfAttributes()
@@ -149,9 +136,8 @@ def swe_science(decom_data: list, data_version: str) -> xr.Dataset:
     cdf_attrs.add_instrument_variable_attrs("swe", "l1a")
     cdf_attrs.add_global_attribute("Data_version", data_version)
 
-    epoch_converted_time = met_to_j2000ns(metadata_arrays["SHCOARSE"])
     epoch_time = xr.DataArray(
-        epoch_converted_time,
+        l0_dataset["epoch"],
         name="epoch",
         dims=["epoch"],
         attrs=cdf_attrs.get_variable_attributes("epoch"),
@@ -202,7 +188,7 @@ def swe_science(decom_data: list, data_version: str) -> xr.Dataset:
     # Add APID to global attrs for following processing steps
     l1a_global_attrs = cdf_attrs.get_global_attributes("imap_swe_l1a_sci")
     # Formatting to string to be complaint with ISTP
-    l1a_global_attrs["packet_apid"] = f"{decom_data[0].header['PKT_APID'].raw_value}"
+    l1a_global_attrs["packet_apid"] = SWEAPID.SWE_SCIENCE.value
     dataset = xr.Dataset(
         coords={
             "epoch": epoch_time,
@@ -215,16 +201,23 @@ def swe_science(decom_data: list, data_version: str) -> xr.Dataset:
     )
     dataset["science_data"] = science_xarray
     dataset["raw_science_data"] = raw_science_xarray
+    # TODO: Remove the header in packet_file_to_datasets
+    #       The science_data variable is also in the l1 dataset with different values
+    l0_dataset = l0_dataset.drop_vars(
+        [
+            "science_data",
+            "version",
+            "type",
+            "sec_hdr_flg",
+            "pkt_apid",
+            "seq_flgs",
+            "src_seq_ctr",
+            "pkt_len",
+        ]
+    )
+    for var_name, arr in l0_dataset.variables.items():
+        arr.attrs = cdf_attrs.get_variable_attributes(var_name)
+    dataset = dataset.merge(l0_dataset)
 
-    # create xarray dataset for each metadata field
-    for key, value in metadata_arrays.items():
-        # Lowercase the key to be complaint with ISTP's metadata field
-        metadata_field = key.lower()
-        dataset[metadata_field] = xr.DataArray(
-            value,
-            dims=["epoch"],
-            attrs=cdf_attrs.get_variable_attributes(metadata_field),
-        )
-
-    logger.info("SWE L1A science data process completed")
+    logger.info("SWE L1A science data processing completed.")
     return dataset

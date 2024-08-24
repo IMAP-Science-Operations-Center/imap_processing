@@ -1,18 +1,6 @@
 from imap_processing import imap_module_directory
 from imap_processing.cdf.utils import write_cdf
 from imap_processing.swe.l1a.swe_l1a import swe_l1a
-from imap_processing.swe.utils.swe_utils import (
-    SWEAPID,
-)
-from imap_processing.utils import group_by_apid
-
-
-def test_group_by_apid(decom_test_data):
-    grouped_data = group_by_apid(decom_test_data)
-
-    # check total dataset for swe science
-    total_science_data = grouped_data[SWEAPID.SWE_SCIENCE]
-    assert len(total_science_data) == 29
 
 
 def test_cdf_creation():
