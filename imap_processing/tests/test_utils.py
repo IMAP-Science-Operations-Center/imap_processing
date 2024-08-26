@@ -97,10 +97,26 @@ def test_packet_file_to_datasets(use_derived_value, expected_mode):
     np.testing.assert_array_equal(data["mode"], [expected_mode] * len(data["mode"]))
 
 
-def test__create_minimum_dtype_array():
+@pytest.mark.parametrize(
+    ("arr", "dtype", "expected_dtype"),
+    [
+        # Expected basic case
+        ([1, 2, 3], "uint8", "uint8"),
+        # We shouldn't go lower than requested either
+        ([1, 2, 3], "uint16", "uint16"),
+        # Can't cast negative, fallback to default
+        ([-1, 2, 3], "uint8", int),
+        # Small signed ints should be good
+        ([-1, 2, 3], "int8", "int8"),
+        # Can't cast strings to ints, fallback to default
+        (["a", "b", "c"], "uint8", "<U1"),
+        # Can't cast floats to ints, fallback to default
+        ([1, 2.5, 3], "uint8", float),
+        # Can't cast larger ints, fallback to default
+        ([1, 1000, 2000], "uint8", int),
+    ],
+)
+def test__create_minimum_dtype_array(arr, dtype, expected_dtype):
     """Test expected return types for minimum data types."""
-    result = utils._create_minimum_dtype_array([1, 2, 3], "uint8")
-    assert result.dtype == np.dtype("uint8")
-    # fallback to a generic array if the requested dtype can't be satisfied
-    result = utils._create_minimum_dtype_array(["a", "b", "c"], "uint8")
-    assert result.dtype == np.dtype("<U1")
+    result = utils._create_minimum_dtype_array(arr, dtype)
+    assert result.dtype == np.dtype(expected_dtype)

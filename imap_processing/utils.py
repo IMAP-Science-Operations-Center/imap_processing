@@ -299,10 +299,18 @@ def _create_minimum_dtype_array(values: list, dtype: str) -> npt.NDArray:
     array : np.array
         The array of values.
     """
+    # Create an initial array and then try to safely cast it to the desired dtype
+    x = np.asarray(values)
     try:
-        return np.array(values, dtype=dtype)
+        # ValueError: when trying to cast strings (enum states) to ints
+        y = x.astype(dtype, copy=False)
+        # We need to compare the arrays to see if we trimmed any values by
+        # casting to a smaller datatype (e.g. float64 to uint8, 2.1 to 2)
+        if np.array_equal(x, y):
+            return y
     except ValueError:
-        return np.array(values)
+        pass
+    return x
 
 
 def packet_file_to_datasets(
