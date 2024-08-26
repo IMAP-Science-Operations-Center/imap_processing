@@ -287,7 +287,6 @@ hi_de_nominal_bin:
   <<: *default_uint8
   CATDESC: Corresponding histogram angle bin for this Direct Event
   FIELDNAM: Histogram Bin Number
-  FILLVAL: 511
   FORMAT: I2
   LABLAXIS: Hist Bin \#
   VALIDMIN: 0
