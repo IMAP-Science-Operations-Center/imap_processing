@@ -162,22 +162,25 @@ def ensure_spice(
 
 
 @ensure_spice
-def create_pointing_frame(pointing_frame_dir: Optional[Path] = None) -> Path:
+def create_pointing_frame(pointing_frame_path: Optional[Path] = None) -> Path:
     """
     Create the pointing frame.
 
     Parameters
     ----------
-    pointing_frame_dir : Path
+    pointing_frame_path : Path
         Directory of where pointing frame will be saved.
 
     Returns
     -------
-    path_to_pointing_frame : Path
+    pointing_frame_path : Path
         Path to pointing frame.
+
+    References
+    ----------
+    https://numpydoc.readthedocs.io/en/latest/format.html#references
     """
     ck_kernel, _, _, _ = spice.kdata(0, "ck")
-    directory = Path(ck_kernel).parent
 
     # Get timerange for the pointing frame kernel.
     et_start, et_end, et_times = _get_et_times(ck_kernel)
@@ -189,14 +192,12 @@ def create_pointing_frame(pointing_frame_dir: Optional[Path] = None) -> Path:
     q_avg = spice.m2q(rotation_matrix)
 
     # TODO: come up with naming convention.
-    if pointing_frame_dir is None:
-        path_to_pointing_frame = directory / "imap_dps.bc"
-    else:
-        path_to_pointing_frame = pointing_frame_dir / "imap_dps.bc"
+    if pointing_frame_path is None:
+        pointing_frame_path = Path(ck_kernel).parent / "imap_dps.bc"
 
     # Open a new CK file, returning the handle of the opened file.
     # https://spiceypy.readthedocs.io/en/main/documentation.html#spiceypy.spiceypy.ckopn
-    handle = spice.ckopn(str(path_to_pointing_frame), "CK", 0)
+    handle = spice.ckopn(str(pointing_frame_path), "CK", 0)
     # Get the SCLK ID.
     # https://spiceypy.readthedocs.io/en/main/documentation.html#spiceypy.spiceypy.gipool
     id_imap_sclk = spice.gipool("CK_-43000_SCLK", 0, 1)
@@ -244,7 +245,7 @@ def create_pointing_frame(pointing_frame_dir: Optional[Path] = None) -> Path:
     # Close CK file.
     spice.ckcls(handle)
 
-    return path_to_pointing_frame
+    return pointing_frame_path
 
 
 @ensure_spice
@@ -271,6 +272,7 @@ def _get_et_times(ck_kernel: str) -> tuple[float, float, np.ndarray]:
     id_imap_spacecraft = spice.gipool("FRAME_IMAP_SPACECRAFT", 0, 1)
 
     # TODO: Queried pointing start and stop times here.
+    # TODO removing the @ensure_spice decorator when using the repointing table.
 
     # Get the coverage window
     # https://spiceypy.readthedocs.io/en/main/documentation.html#spiceypy.spiceypy.ckcov
@@ -340,7 +342,6 @@ def _average_quaternions(et_times: np.ndarray) -> NDArray:
     return q_avg
 
 
-@ensure_spice
 def _create_rotation_matrix(et_times: np.ndarray) -> NDArray:
     """
     Create a rotation matrix.

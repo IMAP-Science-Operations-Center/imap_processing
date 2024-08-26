@@ -15,26 +15,26 @@ from imap_processing.spice.kernels import (
 
 
 @pytest.fixture()
-def kernels(spice_test_data_path):
+def pointing_frame_kernels(spice_test_data_path):
     """List SPICE kernels."""
-    # TODO: remove this fixture after ensure_spice update.
-    kernels = [str(file) for file in spice_test_data_path.iterdir()]
+    required_kernels = [
+        "imap_science_0001.tf",
+        "imap_sclk_0000.tsc",
+        "imap_sim_ck_2hr_2secsampling_with_nutation.bc",
+        "imap_wkcp.tf",
+        "naif0012.tls",
+    ]
+    kernels = [str(spice_test_data_path / kernel) for kernel in required_kernels]
     return kernels
 
 
 @pytest.fixture()
-def et_times(kernels):
+def et_times(pointing_frame_kernels):
     """Tests get_et_times function."""
-    # TODO: remove spice.furnsh(kernels) after ensure_spice update.
-    spice.furnsh(kernels)
+    spice.furnsh(pointing_frame_kernels)
 
     file, _, _, _ = spice.kdata(0, "ck")
     et_start, et_end, et_times = _get_et_times(file)
-
-    assert et_start == 802008069.184905
-    assert et_end == 802015267.184906
-    assert et_times[0] == et_start
-    assert et_times[-1] == et_end
 
     return et_times
 
@@ -101,10 +101,9 @@ def test_ensure_spice_key_error():
         _ = wrapped(577365941.184, "ISOC", 3) == "2018-04-18T23:24:31.998"
 
 
-def test_average_quaternions(et_times, kernels):
+def test_average_quaternions(et_times, pointing_frame_kernels):
     """Tests average_quaternions function."""
-    # TODO: remove spice.furnsh(kernels) after ensure_spice update.
-    spice.furnsh(kernels)
+    spice.furnsh(pointing_frame_kernels)
     q_avg = _average_quaternions(et_times)
 
     # Generated from MATLAB code results
@@ -112,10 +111,9 @@ def test_average_quaternions(et_times, kernels):
     np.testing.assert_allclose(q_avg, q_avg_expected, atol=1e-4)
 
 
-def test_create_rotation_matrix(et_times, kernels):
+def test_create_rotation_matrix(et_times, pointing_frame_kernels):
     """Tests create_rotation_matrix function."""
-    # TODO: remove spice.furnsh(kernels) after ensure_spice update.
-    spice.furnsh(kernels)
+    spice.furnsh(pointing_frame_kernels)
     rotation_matrix = _create_rotation_matrix(et_times)
     q_avg = _average_quaternions(et_times)
     z_avg = spice.q2m(list(q_avg))[:, 2]
@@ -129,13 +127,12 @@ def test_create_rotation_matrix(et_times, kernels):
     np.testing.assert_allclose(rotation_matrix, rotation_matrix_expected, atol=1e-4)
 
 
-def test_create_pointing_frame(spice_test_data_path, kernels, tmp_path):
+def test_create_pointing_frame(spice_test_data_path, pointing_frame_kernels, tmp_path):
     """Tests create_pointing_frame function."""
-    # TODO: remove spice.furnsh(kernels) after ensure_spice update.
-    spice.furnsh(kernels)
+    spice.furnsh(pointing_frame_kernels)
     ck_kernel, _, _, _ = spice.kdata(0, "ck")
     et_start, et_end, et_times = _get_et_times(ck_kernel)
-    create_pointing_frame(pointing_frame_dir=tmp_path)
+    create_pointing_frame(pointing_frame_path=tmp_path / "imap_dps.bc")
 
     # After imap_dps.bc has been created.
     dps_kernel = str(tmp_path / "imap_dps.bc")
@@ -155,3 +152,19 @@ def test_create_pointing_frame(spice_test_data_path, kernels, tmp_path):
 
     # Verify imap_dps.bc has been created.
     assert (tmp_path / "imap_dps.bc").exists()
+
+
+@ensure_spice
+def test_et_times(pointing_frame_kernels):
+    """Tests get_et_times function."""
+    spice.furnsh(pointing_frame_kernels)
+
+    file, _, _, _ = spice.kdata(0, "ck")
+    et_start, et_end, et_times = _get_et_times(file)
+
+    assert et_start == 802008069.184905
+    assert et_end == 802015267.184906
+    assert et_times[0] == et_start
+    assert et_times[-1] == et_end
+
+    return et_times
