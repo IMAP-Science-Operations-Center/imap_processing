@@ -10,6 +10,7 @@ from imap_processing.ultra.l1b.ultra_l1b_extended import (
     get_front_y_position,
     get_path_length,
     get_ph_tof_and_back_positions,
+    get_ssd_back_position,
 )
 
 
@@ -85,3 +86,16 @@ def test_get_ph_tof_and_back_positions(
 
     np.testing.assert_array_equal(ph_xb, selected_rows["Xb"].astype("float"))
     np.testing.assert_array_equal(ph_yb, selected_rows["Yb"].astype("float"))
+
+
+def test_get_ssd_back_position(
+    de_dataset,
+    events_fsw_comparison_theta_0,
+):
+    """Tests get_ssd_back_position function."""
+    ssd_yb = get_ssd_back_position(de_dataset)
+
+    df = pd.read_csv(events_fsw_comparison_theta_0)
+    df_filt = df[(df["StartType"] != -1) & (df["StopType"] >= 8)]
+
+    np.testing.assert_array_equal(ssd_yb, df_filt["Yb"].astype("float"))
