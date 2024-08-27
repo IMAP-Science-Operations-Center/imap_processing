@@ -28,7 +28,9 @@ def test_lo_l1a(dependency, expected_logical_source):
 
 def test_lo_l1a_dataset():
     # Arrange
-    dependency = imap_module_directory / "../data/imap_lo_l0_raw_20240627_v001.pkts"
+    dependency = (
+        imap_module_directory / "tests/lo/test_cdfs/imap_lo_l0_raw_20240627_v001.pkts"
+    )
 
     histogram_fields = [
         "SHCOARSE",
