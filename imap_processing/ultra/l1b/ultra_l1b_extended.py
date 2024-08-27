@@ -198,30 +198,34 @@ def get_ph_tof_and_back_positions(
     # Stop Type: 1=Top, 2=Bottom
     # Convert converts normalized TDC values into units of
     # hundredths of a millimeter using lookup tables.
-    index_top = np.where(de_filtered["STOP_TYPE"].data == StopType.Top.value)[0]
     stop_type_top = de_filtered["STOP_TYPE"].data == StopType.Top.value
-    xb[index_top] = get_back_position(xb_index[stop_type_top], "XBkTp", sensor)
-    yb[index_top] = get_back_position(yb_index[stop_type_top], "YBkTp", sensor)
+    xb[stop_type_top] = get_back_position(xb_index[stop_type_top], "XBkTp", sensor)
+    yb[stop_type_top] = get_back_position(yb_index[stop_type_top], "YBkTp", sensor)
 
     # Correction for the propagation delay of the start anode and other effects.
-    t2[index_top] = get_image_params("TOFSC") * t1[stop_type_top] + get_image_params(
-        "TOFTPOFF"
+    t2[stop_type_top] = get_image_params("TOFSC") * t1[
+        stop_type_top
+    ] + get_image_params("TOFTPOFF")
+    tof[stop_type_top] = t2[stop_type_top] + xf_ph[stop_type_top] * get_image_params(
+        "XFTTOF"
     )
-    tof[index_top] = t2[index_top] + xf_ph[stop_type_top] * get_image_params("XFTTOF")
 
-    index_bottom = np.where(de_filtered["STOP_TYPE"].data == StopType.Bottom.value)[0]
     stop_type_bottom = de_filtered["STOP_TYPE"].data == StopType.Bottom.value
-    xb[index_bottom] = get_back_position(xb_index[stop_type_bottom], "XBkBt", sensor)
-    yb[index_bottom] = get_back_position(yb_index[stop_type_bottom], "YBkBt", sensor)
+    xb[stop_type_bottom] = get_back_position(
+        xb_index[stop_type_bottom], "XBkBt", sensor
+    )
+    yb[stop_type_bottom] = get_back_position(
+        yb_index[stop_type_bottom], "YBkBt", sensor
+    )
 
     # Correction for the propagation delay of the start anode and other effects.
-    t2[index_bottom] = get_image_params("TOFSC") * t1[
+    t2[stop_type_bottom] = get_image_params("TOFSC") * t1[
         stop_type_bottom
     ] + get_image_params("TOFBTOFF")  # 10*ns
 
-    tof[index_bottom] = t2[index_bottom] + xf_ph[stop_type_bottom] * get_image_params(
-        "XFTTOF"
-    )
+    tof[stop_type_bottom] = t2[stop_type_bottom] + xf_ph[
+        stop_type_bottom
+    ] * get_image_params("XFTTOF")
 
     # Multiply by 100 to get tenths of a nanosecond.
     tof = tof * 100
