@@ -1,11 +1,12 @@
 """Functions for furnishing and tracking SPICE kernels."""
 
-from contextlib import contextmanager
 import functools
 import logging
 import os
+from collections.abc import Generator
+from contextlib import contextmanager
 from pathlib import Path
-from typing import Any, Callable, Optional, Generator
+from typing import Any, Callable, Optional
 
 import numpy as np
 import spiceypy as spice
@@ -342,7 +343,7 @@ def _average_quaternions(et_times: np.ndarray) -> NDArray:
         # Aggregate quaternions into a single matrix.
         aggregate += np.outer(body_quat, body_quat)
 
-    # Reference: "On Averaging Rotations"
+    # Reference: "On Averaging Rotations".
     # Link: https://link.springer.com/content/pdf/10.1023/A:1011129215388.pdf
     aggregate /= len(et_times)
 
