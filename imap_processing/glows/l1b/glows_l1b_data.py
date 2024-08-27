@@ -490,16 +490,16 @@ class HistogramL1B:
     # )  # Could be datetime TODO: Can't put a string in data
     imap_spin_angle_bin_cntr: np.ndarray = field(init=False)  # Same size as bins
     histogram_flag_array: np.ndarray = field(init=False)
-    spin_period_ground_average: np.double = field(init=False)  # retrieved from SPICE?
-    spin_period_ground_std_dev: np.double = field(init=False)  # retrieved from SPICE?
+    spin_period_ground_average: np.double = field(init=False)  # Spin table
+    spin_period_ground_std_dev: np.double = field(init=False)  # Spin table
     position_angle_offset_average: np.double = field(init=False)  # retrieved from SPICE
     position_angle_offset_std_dev: np.double = field(init=False)  # retrieved from SPICE
-    spin_axis_orientation_std_dev: np.double = field(init=False)  # retrieved from SPICE
-    spin_axis_orientation_average: np.double = field(init=False)  # retrieved from SPICE
-    spacecraft_location_average: np.ndarray = field(init=False)  # retrieved from SPIC
-    spacecraft_location_std_dev: np.ndarray = field(init=False)  # retrieved from SPIC
-    spacecraft_velocity_average: np.ndarray = field(init=False)  # retrieved from SPIC
-    spacecraft_velocity_std_dev: np.ndarray = field(init=False)  # retrieved from SPIC
+    spin_axis_orientation_std_dev: np.double = field(init=False)  # retrieved from SPICE - CK
+    spin_axis_orientation_average: np.double = field(init=False)  # retrieved from SPICE - CK
+    spacecraft_location_average: np.ndarray = field(init=False)  # retrieved from SPICE
+    spacecraft_location_std_dev: np.ndarray = field(init=False)  # retrieved from SPICE
+    spacecraft_velocity_average: np.ndarray = field(init=False)  # retrieved from SPICE
+    spacecraft_velocity_std_dev: np.ndarray = field(init=False)  # retrieved from SPICE
     flags: np.ndarray = field(init=False)
     # TODO:
     # - Determine a good way to output flags as "human readable"

@@ -336,7 +336,7 @@ def test_compressed_vector_data(expected_vectors):
         "011100100111001010110101110010011100101011"
     )
 
-    padding = "0000000"  # Pad to byte boundary
+    padding = "00000"  # Pad to byte boundary
     input_data = np.array(
         [int(i) for i in headers + primary_compressed + secondary_compressed + padding],
         dtype=np.uint8,
@@ -359,6 +359,36 @@ def test_compressed_vector_data(expected_vectors):
     assert np.array_equal(primary, primary_expected)
     assert np.array_equal(secondary, secondary_expected)
 
+    # range data has 2 bits per vector, primary and then secondary in sequence.
+    range_primary = "00000000000000000101101011111111"
+
+    expected_range_primary = [0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 2, 2, 3, 3, 3, 3]
+
+    range_secondary = "01000000000000000101101011111101"
+    expected_range_secondary = [1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 2, 2, 3, 3, 3, 1]
+    # 16 bit width with range section
+    headers = "01000010"
+    # TODO: if there is a number of vectors that is not a multiple of 8,
+    #  is there also padding at the end of the range section?
+    input_data = np.array(
+        [int(i) for i in headers + primary_compressed + secondary_compressed +
+         padding + range_primary + range_secondary],
+        dtype=np.uint8,
+    )
+
+    input_data = np.packbits(input_data)
+
+    for i in range(len(expected_range_primary)):
+        primary_expected[i][3] = expected_range_primary[i]
+        secondary_expected[i][3] = expected_range_secondary[i]
+
+    (primary_with_range, secondary_with_range) = MagL1a.process_compressed_vectors(input_data, 16, 16)
+
+    assert primary_with_range.shape[0] == 16
+    assert secondary_with_range.shape[0] == 16
+
+    assert np.array_equal(primary_with_range, primary_expected)
+    assert np.array_equal(secondary_with_range, secondary_expected)
 
 def test_real_uncompressed_vector_data(uncompressed_vector_bytearray, expected_vectors):
     primary_expected = expected_vectors[0]

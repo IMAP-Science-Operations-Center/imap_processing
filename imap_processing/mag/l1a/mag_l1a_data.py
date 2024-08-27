@@ -218,7 +218,8 @@ class MagL1a:
         self.most_recent_sequence = starting_packet.src_seq_ctr
 
     def append_vectors(
-        self, additional_vectors: np.array, packet_properties: MagL1aPacketProperties
+            self, additional_vectors: np.array,
+            packet_properties: MagL1aPacketProperties
     ) -> None:
         """
         Append additional vectors to the current vectors array.
@@ -247,7 +248,7 @@ class MagL1a:
 
     @staticmethod
     def calculate_vector_time(
-        vectors: np.ndarray, vectors_per_sec: int, start_time: TimeTuple
+            vectors: np.ndarray, vectors_per_sec: int, start_time: TimeTuple
     ) -> np.array:
         """
         Add timestamps to the vector list, turning the shape from (n, 4) to (n, 5).
@@ -290,10 +291,10 @@ class MagL1a:
 
     @staticmethod
     def process_vector_data(
-        vector_data: np.ndarray,
-        primary_count: int,
-        secondary_count: int,
-        compression: int,
+            vector_data: np.ndarray,
+            primary_count: int,
+            secondary_count: int,
+            compression: int,
     ) -> tuple[np.ndarray, np.ndarray]:
         """
         Process raw vector data into Vectors.
@@ -331,7 +332,7 @@ class MagL1a:
 
     @staticmethod
     def process_uncompressed_vectors(
-        vector_data: np.ndarray, primary_count: int, secondary_count: int
+            vector_data: np.ndarray, primary_count: int, secondary_count: int
     ) -> tuple[np.ndarray, np.ndarray]:
         """
         Given raw uncompressed packet data, process into Vectors.
@@ -391,74 +392,74 @@ class MagL1a:
             if i % 4 == 0:  # start at bit 0, take 8 bits + 8bits
                 # pos = 0, 25, 50...
                 x = (
-                    ((vector_data[pos + 0] & 0xFF) << 8)
-                    | ((vector_data[pos + 1] & 0xFF) << 0)
-                ) & 0xFFFF
+                            ((vector_data[pos + 0] & 0xFF) << 8)
+                            | ((vector_data[pos + 1] & 0xFF) << 0)
+                    ) & 0xFFFF
                 y = (
-                    ((vector_data[pos + 2] & 0xFF) << 8)
-                    | ((vector_data[pos + 3] & 0xFF) << 0)
-                ) & 0xFFFF
+                            ((vector_data[pos + 2] & 0xFF) << 8)
+                            | ((vector_data[pos + 3] & 0xFF) << 0)
+                    ) & 0xFFFF
                 z = (
-                    ((vector_data[pos + 4] & 0xFF) << 8)
-                    | ((vector_data[pos + 5] & 0xFF) << 0)
-                ) & 0xFFFF
+                            ((vector_data[pos + 4] & 0xFF) << 8)
+                            | ((vector_data[pos + 5] & 0xFF) << 0)
+                    ) & 0xFFFF
                 rng = (vector_data[pos + 6] >> 6) & 0x3
                 pos += 6
             elif i % 4 == 1:  # start at bit 2, take 6 bits, 8 bit, 2 bits per vector
                 # pos = 6, 31...
                 x = (
-                    ((vector_data[pos + 0] & 0x3F) << 10)
-                    | ((vector_data[pos + 1] & 0xFF) << 2)
-                    | ((vector_data[pos + 2] >> 6) & 0x03)
-                ) & 0xFFFF
+                            ((vector_data[pos + 0] & 0x3F) << 10)
+                            | ((vector_data[pos + 1] & 0xFF) << 2)
+                            | ((vector_data[pos + 2] >> 6) & 0x03)
+                    ) & 0xFFFF
                 y = (
-                    ((vector_data[pos + 2] & 0x3F) << 10)
-                    | ((vector_data[pos + 3] & 0xFF) << 2)
-                    | ((vector_data[pos + 4] >> 6) & 0x03)
-                ) & 0xFFFF
+                            ((vector_data[pos + 2] & 0x3F) << 10)
+                            | ((vector_data[pos + 3] & 0xFF) << 2)
+                            | ((vector_data[pos + 4] >> 6) & 0x03)
+                    ) & 0xFFFF
                 z = (
-                    ((vector_data[pos + 4] & 0x3F) << 10)
-                    | ((vector_data[pos + 5] & 0xFF) << 2)
-                    | ((vector_data[pos + 6] >> 6) & 0x03)
-                ) & 0xFFFF
+                            ((vector_data[pos + 4] & 0x3F) << 10)
+                            | ((vector_data[pos + 5] & 0xFF) << 2)
+                            | ((vector_data[pos + 6] >> 6) & 0x03)
+                    ) & 0xFFFF
                 rng = (vector_data[pos + 6] >> 4) & 0x3
                 pos += 6
             elif i % 4 == 2:  # start at bit 4, take 4 bits, 8 bits, 4 bits per vector
                 # pos = 12, 37...
                 x = (
-                    ((vector_data[pos + 0] & 0x0F) << 12)
-                    | ((vector_data[pos + 1] & 0xFF) << 4)
-                    | ((vector_data[pos + 2] >> 4) & 0x0F)
-                ) & 0xFFFF
+                            ((vector_data[pos + 0] & 0x0F) << 12)
+                            | ((vector_data[pos + 1] & 0xFF) << 4)
+                            | ((vector_data[pos + 2] >> 4) & 0x0F)
+                    ) & 0xFFFF
                 y = (
-                    ((vector_data[pos + 2] & 0x0F) << 12)
-                    | ((vector_data[pos + 3] & 0xFF) << 4)
-                    | ((vector_data[pos + 4] >> 4) & 0x0F)
-                ) & 0xFFFF
+                            ((vector_data[pos + 2] & 0x0F) << 12)
+                            | ((vector_data[pos + 3] & 0xFF) << 4)
+                            | ((vector_data[pos + 4] >> 4) & 0x0F)
+                    ) & 0xFFFF
                 z = (
-                    ((vector_data[pos + 4] & 0x0F) << 12)
-                    | ((vector_data[pos + 5] & 0xFF) << 4)
-                    | ((vector_data[pos + 6] >> 4) & 0x0F)
-                ) & 0xFFFF
+                            ((vector_data[pos + 4] & 0x0F) << 12)
+                            | ((vector_data[pos + 5] & 0xFF) << 4)
+                            | ((vector_data[pos + 6] >> 4) & 0x0F)
+                    ) & 0xFFFF
                 rng = (vector_data[pos + 6] >> 2) & 0x3
                 pos += 6
             elif i % 4 == 3:  # start at bit 6, take 2 bits, 8 bits, 6 bits per vector
                 # pos = 18, 43...
                 x = (
-                    ((vector_data[pos + 0] & 0x03) << 14)
-                    | ((vector_data[pos + 1] & 0xFF) << 6)
-                    | ((vector_data[pos + 2] >> 2) & 0x3F)
-                ) & 0xFFFF
+                            ((vector_data[pos + 0] & 0x03) << 14)
+                            | ((vector_data[pos + 1] & 0xFF) << 6)
+                            | ((vector_data[pos + 2] >> 2) & 0x3F)
+                    ) & 0xFFFF
                 y = (
-                    ((vector_data[pos + 2] & 0x03) << 14)
-                    | ((vector_data[pos + 3] & 0xFF) << 6)
-                    | ((vector_data[pos + 4] >> 2) & 0x3F)
-                ) & 0xFFFF
+                            ((vector_data[pos + 2] & 0x03) << 14)
+                            | ((vector_data[pos + 3] & 0xFF) << 6)
+                            | ((vector_data[pos + 4] >> 2) & 0x3F)
+                    ) & 0xFFFF
                 z = (
-                    ((vector_data[pos + 4] & 0x03) << 14)
-                    | ((vector_data[pos + 5] & 0xFF) << 6)
-                    | ((vector_data[pos + 6] >> 2) & 0x3F)
-                ) & 0xFFFF
+                            ((vector_data[pos + 4] & 0x03) << 14)
+                            | ((vector_data[pos + 5] & 0xFF) << 6)
+                            | ((vector_data[pos + 6] >> 2) & 0x3F)
+                    ) & 0xFFFF
                 rng = (vector_data[pos + 6] >> 0) & 0x3
                 pos += 7
 
@@ -475,7 +476,7 @@ class MagL1a:
 
     @staticmethod
     def process_compressed_vectors(
-        vector_data: np.ndarray, primary_count: int, secondary_count: int
+            vector_data: np.ndarray, primary_count: int, secondary_count: int
     ) -> tuple[np.ndarray, np.ndarray]:
         """
         Given raw compressed packet data, process into Vectors.
@@ -498,11 +499,11 @@ class MagL1a:
 
         bit_array = np.unpackbits(vector_data)
 
-
         # The first 8 bits are a header - 6 bits to indicate the compression width,
         # 1 bit to indicate if there is a range data section, and 1 bit spare.
         compression_width = int("".join([str(i) for i in bit_array[:6]]), 2)
         has_range_data_section = int(str(bit_array[6]), 2)
+        print(has_range_data_section)
 
         # The full vector includes 3 values of compression_width bits, plus 2 bits for
         # the range
@@ -515,6 +516,10 @@ class MagL1a:
         )
 
         end_of_primary_index = (primary_count - 1) * 3 - 1
+        end_vector = len(bit_array) - (primary_count + secondary_count) * 2 * has_range_data_section
+
+        # Cut off the first vector width and the end range data section if it exists.
+        vector_bits = bit_array[first_vector_width - 1 : end_vector]
 
         # Shift the bit array over one to the left, then sum them up. This is used to
         # find all the places where two 1s occur next to each other, because the sum
@@ -524,8 +529,8 @@ class MagL1a:
         # The first bit is invalid, so we remove it at the end.
         sequential_ones = np.where(
             np.add(
-                bit_array[first_vector_width - 1 :],
-                np.roll(bit_array[first_vector_width - 1 :], 1),
+                vector_bits,
+                np.roll(vector_bits, 1),
             )[1:]
             == 2
         )[0]
@@ -552,10 +557,15 @@ class MagL1a:
             if seq_val - fib_indices[-1] - 1 > 1:
                 fib_indices.append(seq_val + 1)
 
-        fib_bit_array = bit_array[first_vector_width:]  # Remove first vector
+        # We can drop the first padding bit now that we are done with np.roll
+        vector_bits = vector_bits[1:]
+
+        print(f"End vector: {end_vector}")
+        print(f"Starting len: {len(bit_array)}")
+        print(f"ending bit len: {len(vector_bits)}")
 
         primary_split_bits = np.split(
-            fib_bit_array[: fib_indices[end_of_primary_index]],
+            vector_bits[: fib_indices[end_of_primary_index]],
             fib_indices[:end_of_primary_index],
         )
 
@@ -578,9 +588,9 @@ class MagL1a:
             start_uncompressed_index = sum(
                 len(i) for i in primary_split_bits[: switch_to_uncompressed_index + 1]
             )
-            uncompressed_vectors = fib_bit_array[
-                start_uncompressed_index:secondary_vectors_start
-            ]
+            uncompressed_vectors = vector_bits[
+                                   start_uncompressed_index:secondary_vectors_start
+                                   ]
 
         else:
             vector_diffs = list(map(MagL1a.decode_fib_zig_zag, primary_split_bits))
@@ -595,19 +605,20 @@ class MagL1a:
         # Split up the bit array, skipping past the primary vector and uncompressed
         # starting vector
         secondary_split_bits = np.split(
-            fib_bit_array, fib_indices[end_of_primary_index + 1:]
+            vector_bits, fib_indices[end_of_primary_index + 1:]
         )[1:]
-
+        print(f"Secondary len: {len(secondary_split_bits)}")
+        print(secondary_split_bits)
         # Drop any buffer bits from the end (all zeros)
         if sum(secondary_split_bits[-1]) == 0:
             secondary_split_bits = secondary_split_bits[:-1]
 
-        # print(f"Last bits: {secondary_split_bits[-1]}")
+        print(f"Last bits: {secondary_split_bits[-5:]}")
         #
         # print(fib_indices[end_of_primary_index])
         # print(secondary_vectors_start)
         first_secondary_vector = MagL1a.unpack_one_vector(
-            fib_bit_array[fib_indices[end_of_primary_index] : secondary_vectors_start],
+            vector_bits[fib_indices[end_of_primary_index]: secondary_vectors_start],
             compression_width,
             True,
         )
@@ -630,18 +641,65 @@ class MagL1a:
         secondary_vectors = MagL1a.accumulate_vectors(
             first_secondary_vector, vector_diffs, secondary_count
         )
+        # TODO: should the range vectors include the first vector?
 
         # TODO - process the uncompressed vectors
         # TODO - add range section
         # TODO - tests for both of those things
+        if has_range_data_section:
+            primary_vectors = MagL1a.process_range_data_section(
+                bit_array[end_vector:end_vector +primary_count*2], primary_vectors
+            )
+            secondary_vectors = MagL1a.process_range_data_section(
+                bit_array[end_vector +primary_count*2:end_vector+(primary_count+secondary_count)*2], secondary_vectors)
 
         return primary_vectors, secondary_vectors
 
     @staticmethod
+    def process_range_data_section(range_data: np.ndarray, vectors: np.ndarray) -> np.ndarray:
+        """
+        Given a range data section and vectors, return an updated vector array.
+
+        Each range value has 2 bits. range_data will have a length of n*2, where n is
+        the number of vectors in vectors.
+
+
+        Parameters
+        ----------
+        range_data: numpy.ndarray
+            Array of range values, where each value is one bit.
+        vectors:
+            Array of vectors, where each vector is a tuple of (x, y, z, range).
+            The range value will be overwritten by range_data, and x, y, z will remain
+            the same.
+
+        Returns
+        -------
+        numpy.ndarray
+            Updated array of vectors, identical to vectors with the range values
+            updated from range_data.
+        """
+        print(f"Lenght of range data: {len(range_data)}, length of vectors: {len(vectors)}")
+        if len(range_data) != len(vectors) * 2:
+            raise ValueError(
+                "Incorrect length for range_data, there should be two bits per vector."
+            )
+
+        updated_vectors = np.copy(vectors)
+        range_str = "".join([str(i) for i in range_data])
+        for i, vector in enumerate(vectors):
+            range_int = int(range_str[i*2:i*2+2], 2)
+            print(f"Calculating range {range} from {range_str[i*2:i*2+2]}")
+            updated_vectors[i][3] = range_int
+
+        return updated_vectors
+
+
+    @staticmethod
     def accumulate_vectors(
-        first_vector: np.ndarray,
-        vector_differences: list[int],
-        vector_count: int,
+            first_vector: np.ndarray,
+            vector_differences: list[int],
+            vector_count: int,
     ) -> np.ndarray:
         """
         Given a list of differences and the first vector, return calculated vectors.
@@ -690,7 +748,7 @@ class MagL1a:
 
     @staticmethod
     def unpack_one_vector(
-        vector_data: np.ndarray, width: int, has_range: int
+            vector_data: np.ndarray, width: int, has_range: int
     ) -> np.ndarray:
         """
         Unpack a single vector from the vector data.
@@ -729,8 +787,8 @@ class MagL1a:
         # take slices of the input data and pack from an array of bits to an array of
         # uint8 bytes
         x = np.packbits(vector_data[:width])
-        y = np.packbits(vector_data[width : 2 * width])
-        z = np.packbits(vector_data[2 * width : 3 * width])
+        y = np.packbits(vector_data[width: 2 * width])
+        z = np.packbits(vector_data[2 * width: 3 * width])
 
         range_string = "".join([str(i) for i in vector_data[-2:]])
 
