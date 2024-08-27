@@ -5,12 +5,13 @@ import pandas as pd
 import pytest
 
 from imap_processing.ultra.l1b.ultra_l1b_extended import (
+    StartType,
     StopType,
     get_front_x_position,
     get_front_y_position,
     get_path_length,
     get_ph_tof_and_back_positions,
-    get_ssd_back_position,
+    get_ssd_back_position_and_tof_offset,
 )
 
 
@@ -88,14 +89,33 @@ def test_get_ph_tof_and_back_positions(
     np.testing.assert_array_equal(ph_yb, selected_rows["Yb"].astype("float"))
 
 
-def test_get_ssd_back_position(
+def test_get_ssd_back_position_and_tof_offset(
     de_dataset,
     events_fsw_comparison_theta_0,
 ):
     """Tests get_ssd_back_position function."""
-    ssd_yb = get_ssd_back_position(de_dataset)
+    yb, tof_offset, ssd_number = get_ssd_back_position_and_tof_offset(de_dataset)
 
     df = pd.read_csv(events_fsw_comparison_theta_0)
     df_filt = df[(df["StartType"] != -1) & (df["StopType"] >= 8)]
 
-    np.testing.assert_array_equal(ssd_yb, df_filt["Yb"].astype("float"))
+    np.testing.assert_array_equal(yb, df_filt["Yb"].astype("float"))
+
+    tof_offset_lt = tof_offset[df_filt["StartType"] == StartType.Left.value]
+    tof_offset_rt = tof_offset[df_filt["StartType"] == StartType.Right.value]
+
+    ssd_number_lt = ssd_number[df_filt["StartType"] == StartType.Left.value]
+    ssd_number_rt = ssd_number[df_filt["StartType"] == StartType.Right.value]
+
+    np.testing.assert_array_equal(
+        tof_offset_lt[ssd_number_lt == 3],
+        np.full(len(tof_offset_lt[ssd_number_lt == 3]), -4.2),
+    )
+    np.testing.assert_array_equal(
+        tof_offset_rt[ssd_number_rt == 7],
+        np.full(len(tof_offset_rt[ssd_number_rt == 7]), -6),
+    )
+    np.testing.assert_array_equal(
+        tof_offset_rt[ssd_number_rt == 4],
+        np.full(len(tof_offset_rt[ssd_number_rt == 4]), -4),
+    )

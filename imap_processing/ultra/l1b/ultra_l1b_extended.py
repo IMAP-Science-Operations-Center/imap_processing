@@ -6,7 +6,6 @@ from typing import ClassVar
 import numpy as np
 import xarray
 from numpy import ndarray
-from numpy.typing import NDArray
 
 from imap_processing.ultra.l1b.lookup_utils import (
     get_back_position,
@@ -23,6 +22,13 @@ YF_ESTIMATE_RIGHT = -40  # front position of particle for right shutter (mm)
 N_ELEMENTS = 256  # number of elements in lookup table
 TRIG_CONSTANT = 81.92  # trigonometric constant (mm)
 # TODO: make lookup tables into config files.
+
+
+class StartType(Enum):
+    """Start Type: 1=Left, 2=Right."""
+
+    Left = 1
+    Right = 2
 
 
 class StopType(Enum):
@@ -263,14 +269,11 @@ def get_path_length(front_position: tuple, back_position: tuple, d: float) -> fl
     return r
 
 
-def get_ssd_back_position(
+def get_ssd_back_position_and_tof_offset(
     de_dataset: xarray.Dataset,
-) -> NDArray[np.float64]:
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
-    Calculate the Y SSD positions (yb) for the specified dataset.
-
-    This function calculates the back positions in the Y direction (yb)
-    for SSDs, expressed in hundredths of a millimeter.
+    Lookup the Y SSD positions (yb), TOF Offset, and SSD number.
 
     Parameters
     ----------
@@ -280,22 +283,37 @@ def get_ssd_back_position(
     Returns
     -------
     yb : np.ndarray
-        A NumPy array containing the calculated Y SSD positions
-        in hundredths of a millimeter for each relevant epoch
-        in the dataset.
+        Y SSD positions in hundredths of a millimeter.
+    tof_offset : np.ndarray
+        TOF offset.
+    ssd_number : np.ndarray
+        SSD number.
 
     Notes
     -----
     The X back position (xb) is assumed to be 0 for SSD.
     """
     indices = np.nonzero(np.isin(de_dataset["STOP_TYPE"], StopType.SSD.value))[0]
-    yb = np.zeros(len(indices), dtype=np.float64)
     de_filtered = de_dataset.isel(epoch=indices)
+
+    yb = np.zeros(len(indices), dtype=np.float64)
+    ssd_number = np.zeros(len(indices), dtype=int)
+    tof_offset = np.zeros(len(indices), dtype=np.float64)
 
     for i in range(8):
         # Multiply ybs times 100 to convert to hundredths of a millimeter.
         yb[de_filtered[f"SSD_FLAG_{i}"].data == 1] = (
             get_image_params(f"YBKSSD{i}") * 100
         )
+        ssd_number[de_filtered[f"SSD_FLAG_{i}"].data == 1] = i
 
-    return np.asarray(yb, dtype=np.float64)
+        tof_offset[
+            (de_filtered["START_TYPE"] == StartType.Left.value)
+            & (de_filtered[f"SSD_FLAG_{i}"].data == 1)
+        ] = get_image_params(f"TOFSSDLTOFF{i}")
+        tof_offset[
+            (de_filtered["START_TYPE"] == StartType.Right.value)
+            & (de_filtered[f"SSD_FLAG_{i}"].data == 1)
+        ] = get_image_params(f"TOFSSDRTOFF{i}")
+
+    return yb, tof_offset, ssd_number
