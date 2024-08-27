@@ -72,6 +72,7 @@ def lo_l1a(dependency: Path, data_version: str) -> list[xr.Dataset]:
         logical_source = "imap_lo_l1a_boot"
         del datasets_by_apid[LoAPID.ILO_BOOT_HK]
 
+    print(datasets_by_apid[LoAPID.ILO_SCI_CNT])
     return list(datasets_by_apid.values())
 
 
@@ -99,7 +100,7 @@ def add_dataset_attrs(
     # own functions
     if logical_source == "imap_lo_l1a_histogram":
         azimuth_60 = xr.DataArray(
-            data=np.arange(0, 6),
+            data=np.arange(0, 6, dtype=np.uint8),
             name="azimuth_60",
             dims=["azimuth_60"],
             attrs=attr_mgr.get_variable_attributes("azimuth_60"),
@@ -111,7 +112,7 @@ def add_dataset_attrs(
             attrs=attr_mgr.get_variable_attributes("azimuth_60_label"),
         )
         azimuth_6 = xr.DataArray(
-            data=np.arange(0, 60),
+            data=np.arange(0, 60, dtype=np.uint8),
             name="azimuth_6",
             dims=["azimuth_6"],
             attrs=attr_mgr.get_variable_attributes("azimuth_6"),
@@ -124,7 +125,7 @@ def add_dataset_attrs(
         )
 
         esa_step = xr.DataArray(
-            data=np.arange(1, 8),
+            data=np.arange(1, 8, dtype=np.uint8),
             name="esa_step",
             dims=["esa_step"],
             attrs=attr_mgr.get_variable_attributes("esa_step"),
@@ -148,7 +149,7 @@ def add_dataset_attrs(
             esa_step_label=esa_step_label,
         )
         dataset.attrs.update(attr_mgr.get_global_attributes(logical_source))
-        # remove the binary field from the dataset
+        # remove the binary field and CCSDS header from the dataset
         dataset = dataset.drop_vars(
             [
                 "sci_cnt",

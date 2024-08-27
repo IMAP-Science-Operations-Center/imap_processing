@@ -27,10 +27,10 @@ hist_data_meta = {
     "start_c": HistPacking(12, 504, (6, 7)),
     "stop_b0": HistPacking(12, 504, (6, 7)),
     "stop_b3": HistPacking(12, 504, (6, 7)),
-    "tof0": HistPacking(8, 336, (6, 7)),
-    "tof1": HistPacking(8, 336, (6, 7)),
-    "tof2": HistPacking(8, 336, (6, 7)),
-    "tof3": HistPacking(8, 336, (6, 7)),
+    "tof0_count": HistPacking(8, 336, (6, 7)),
+    "tof1_count": HistPacking(8, 336, (6, 7)),
+    "tof2_count": HistPacking(8, 336, (6, 7)),
+    "tof3_count": HistPacking(8, 336, (6, 7)),
     "tof0_tof1": HistPacking(8, 3360, (60, 7)),
     "tof0_tof2": HistPacking(8, 3360, (60, 7)),
     "tof1_tof2": HistPacking(8, 3360, (60, 7)),
@@ -91,7 +91,7 @@ def parse_histogram(dataset: xr.Dataset, attr_mgr: ImapCdfAttributes) -> xr.Data
             if "DEPEND" in key
         ]
         # reshape the decompressed data
-        shaped_data = np.array(decompressed_data).reshape(data_shape)
+        shaped_data = np.array(decompressed_data, dtype=np.uint32).reshape(data_shape)
         # add the data to the dataset
         dataset[field] = xr.DataArray(
             shaped_data, dims=dims, attrs=attr_mgr.get_variable_attributes(field)
