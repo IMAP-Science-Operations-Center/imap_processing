@@ -390,6 +390,53 @@ def test_compressed_vector_data(expected_vectors):
     assert np.array_equal(primary_with_range, primary_expected)
     assert np.array_equal(secondary_with_range, secondary_expected)
 
+
+def test_switch_to_uncompressed_vector_data(expected_vectors, uncompressed_vector_bytearray):
+    primary_compressed = (
+        "000000100000010000001000000100000001000000100000110101110010"
+        "011100101011010111001001110010101101011100100110000000011100"
+        "011100100111001010110101100001011000000001101011100100111001"
+        "010111000111001001110010101101011100100110000000011010111001"
+        "001110010101101011100100111001010111000110000101100000000110"
+        "101110010011100101011010111001001110010101110001110010011000"
+        "00000110000000000000000000001011100000000000010011000000000000000000100101011"
+    )
+
+    # 4 uncompressed vectors from uncompressed_vector_bytearray
+    uncompressed_bits = ("000000100000010000001000000100000001000000100000"
+                         "000000100000011100001000000111010001000000111010"
+                         "000000100000101000001000001010100001000001010100"
+                         "000000100000110100001000001101110001000001101111")
+
+    secondary_compressed = (
+        "0000001000000011000010000000111100010000000111111110001110"
+        "0100111001010110101100001011000000001101011100100111001010"
+        "1110001110010011100101011010111001001100000000110101110010"
+        "0111001010110101110010011100101011100011000010110000000011"
+        "0101110010011100101011010111001001100000000111000111001001"
+        "1100101011010111001001110010101101011000010110000000011100"
+        "01110010011100101011010111001001110010100000000000000000000"
+        "0000000000000000000000"
+        "000000000011"
+    )
+
+    uncompressed_expected_vectors = expected_vectors[0][:4]
+    print(len(primary_compressed))
+    # expected index at 448
+
+    headers = "01000000"
+
+    input_data = np.array(
+        [int(i) for i in headers + primary_compressed + uncompressed_bits + secondary_compressed + uncompressed_bits],
+        dtype=np.uint8,
+    )
+    input_data = np.packbits(input_data)
+    (primary, secondary) = MagL1a.process_compressed_vectors(input_data, 20, 0)
+    assert np.array_equal(primary[:16], expected_vectors)
+    assert np.array_equal(primary[16:], uncompressed_expected_vectors)
+
+
+
 def test_real_uncompressed_vector_data(uncompressed_vector_bytearray, expected_vectors):
     primary_expected = expected_vectors[0]
     secondary_expected = expected_vectors[1]
