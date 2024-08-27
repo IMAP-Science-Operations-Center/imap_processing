@@ -282,8 +282,7 @@ def get_ssd_back_position(
     yb : np.ndarray
         A NumPy array containing the calculated Y SSD positions
         in hundredths of a millimeter for each relevant epoch
-        in the dataset. The length of this array matches the number
-        of epochs where the STOP_TYPE is SSD.
+        in the dataset.
 
     Notes
     -----
