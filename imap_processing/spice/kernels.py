@@ -1,10 +1,11 @@
 """Functions for furnishing and tracking SPICE kernels."""
 
+from contextlib import contextmanager
 import functools
 import logging
 import os
 from pathlib import Path
-from typing import Any, Callable, Optional
+from typing import Any, Callable, Optional, Generator
 
 import numpy as np
 import spiceypy as spice
@@ -161,6 +162,28 @@ def ensure_spice(
         return _decorator
 
 
+@contextmanager
+def spice_ck_file(pointing_frame_path: str) -> Generator[int, None, None]:
+    """
+    Context manager for handling SPICE CK files.
+
+    Parameters
+    ----------
+    pointing_frame_path : str
+        Path to the CK file.
+
+    Yields
+    ------
+    handle : int
+        Handle to the opened CK file.
+    """
+    handle = spice.ckopn(pointing_frame_path, "CK", 0)
+    try:
+        yield handle
+    finally:
+        spice.ckcls(handle)
+
+
 @ensure_spice
 def create_pointing_frame(pointing_frame_path: Optional[Path] = None) -> Path:
     """
@@ -197,53 +220,50 @@ def create_pointing_frame(pointing_frame_path: Optional[Path] = None) -> Path:
 
     # Open a new CK file, returning the handle of the opened file.
     # https://spiceypy.readthedocs.io/en/main/documentation.html#spiceypy.spiceypy.ckopn
-    handle = spice.ckopn(str(pointing_frame_path), "CK", 0)
-    # Get the SCLK ID.
-    # https://spiceypy.readthedocs.io/en/main/documentation.html#spiceypy.spiceypy.gipool
-    id_imap_sclk = spice.gipool("CK_-43000_SCLK", 0, 1)
-    # https://spiceypy.readthedocs.io/en/main/documentation.html#spiceypy.spiceypy.sce2c
-    # Convert start and end times to SCLK.
-    sclk_begtim = spice.sce2c(int(id_imap_sclk), et_start)
-    sclk_endtim = spice.sce2c(int(id_imap_sclk), et_end)
+    with spice_ck_file(str(pointing_frame_path)) as handle:
+        # Get the SCLK ID.
+        # https://spiceypy.readthedocs.io/en/main/documentation.html#spiceypy.spiceypy.gipool
+        id_imap_sclk = spice.gipool("CK_-43000_SCLK", 0, 1)
+        # https://spiceypy.readthedocs.io/en/main/documentation.html#spiceypy.spiceypy.sce2c
+        # Convert start and end times to SCLK.
+        sclk_begtim = spice.sce2c(int(id_imap_sclk), et_start)
+        sclk_endtim = spice.sce2c(int(id_imap_sclk), et_end)
 
-    # Get the pointing frame ID.
-    # https://spiceypy.readthedocs.io/en/main/documentation.html#spiceypy.spiceypy.gipool
-    id_imap_dps = spice.gipool("FRAME_IMAP_DPS", 0, 1)
-    # TODO: Figure out how to write new pointings to same CK kernel.
-    # Create the pointing frame kernel.
-    # https://spiceypy.readthedocs.io/en/main/documentation.html#spiceypy.spiceypy.ckw02
-    spice.ckw02(
-        # Handle of an open CK file.
-        handle,
-        # Start time of the segment.
-        sclk_begtim,
-        # End time of the segment.
-        sclk_endtim,
-        # Pointing frame ID.
-        int(id_imap_dps),
-        # Reference frame.
-        "ECLIPJ2000",  # Reference frame
-        # Identifier.
-        "IMAP_DPS",
-        # Number of pointing intervals.
-        1,
-        # Start times of individual pointing records within segment.
-        # Since there is only a single record this is equal to sclk_begtim.
-        np.array([sclk_begtim]),
-        # End times of individual pointing records within segment.
-        # Since there is only a single record this is equal to sclk_endtim.
-        np.array([sclk_endtim]),  # Single stop time
-        # Average quaternion.
-        q_avg,
-        # 0.0 Angular rotation terms.
-        np.array([0.0, 0.0, 0.0]),
-        # Rates (seconds per tick) at which the quaternion and
-        # angular velocity change.
-        np.array([1.0]),
-    )
-
-    # Close CK file.
-    spice.ckcls(handle)
+        # Get the pointing frame ID.
+        # https://spiceypy.readthedocs.io/en/main/documentation.html#spiceypy.spiceypy.gipool
+        id_imap_dps = spice.gipool("FRAME_IMAP_DPS", 0, 1)
+        # TODO: Figure out how to write new pointings to same CK kernel.
+        # Create the pointing frame kernel.
+        # https://spiceypy.readthedocs.io/en/main/documentation.html#spiceypy.spiceypy.ckw02
+        spice.ckw02(
+            # Handle of an open CK file.
+            handle,
+            # Start time of the segment.
+            sclk_begtim,
+            # End time of the segment.
+            sclk_endtim,
+            # Pointing frame ID.
+            int(id_imap_dps),
+            # Reference frame.
+            "ECLIPJ2000",  # Reference frame
+            # Identifier.
+            "IMAP_DPS",
+            # Number of pointing intervals.
+            1,
+            # Start times of individual pointing records within segment.
+            # Since there is only a single record this is equal to sclk_begtim.
+            np.array([sclk_begtim]),
+            # End times of individual pointing records within segment.
+            # Since there is only a single record this is equal to sclk_endtim.
+            np.array([sclk_endtim]),  # Single stop time
+            # Average quaternion.
+            q_avg,
+            # 0.0 Angular rotation terms.
+            np.array([0.0, 0.0, 0.0]),
+            # Rates (seconds per tick) at which the quaternion and
+            # angular velocity change.
+            np.array([1.0]),
+        )
 
     return pointing_frame_path
 
