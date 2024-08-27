@@ -145,6 +145,7 @@ def get_ph_tof_and_back_positions(
         Data in xarray format.
     xf : np.array
         X front position in (hundredths of a millimeter).
+        Has same length as de_dataset.
     sensor : str
         Sensor name.
 
@@ -159,18 +160,19 @@ def get_ph_tof_and_back_positions(
     yb : np.array
         Back positions in y direction (hundredths of a millimeter).
     """
-    indices = np.where(
+    indices = np.nonzero(
         np.isin(de_dataset["STOP_TYPE"], [StopType.Top.value, StopType.Bottom.value])
     )[0]
+    de_filtered = de_dataset.isel(epoch=indices)
 
     xf_ph = xf[indices]
 
     # There are mismatches between the stop TDCs, i.e., SpN, SpS, SpE, and SpW.
     # This normalizes the TDCs
-    sp_n_norm = get_norm(de_dataset["STOP_NORTH_TDC"].data[indices], "SpN", sensor)
-    sp_s_norm = get_norm(de_dataset["STOP_SOUTH_TDC"].data[indices], "SpS", sensor)
-    sp_e_norm = get_norm(de_dataset["STOP_EAST_TDC"].data[indices], "SpE", sensor)
-    sp_w_norm = get_norm(de_dataset["STOP_WEST_TDC"].data[indices], "SpW", sensor)
+    sp_n_norm = get_norm(de_filtered["STOP_NORTH_TDC"].data, "SpN", sensor)
+    sp_s_norm = get_norm(de_filtered["STOP_SOUTH_TDC"].data, "SpS", sensor)
+    sp_e_norm = get_norm(de_filtered["STOP_EAST_TDC"].data, "SpE", sensor)
+    sp_w_norm = get_norm(de_filtered["STOP_WEST_TDC"].data, "SpW", sensor)
 
     # Convert normalized TDC values into units of hundredths of a
     # millimeter using lookup tables.
@@ -186,18 +188,18 @@ def get_ph_tof_and_back_positions(
     # Units in tenths of a nanosecond
     t1 = tofx + tofy  # /2 incorporated into scale
 
-    xb = np.zeros(len(de_dataset["STOP_TYPE"]))
-    yb = np.zeros(len(de_dataset["STOP_TYPE"]))
+    xb = np.zeros(len(indices))
+    yb = np.zeros(len(indices))
 
     # particle_tof (t2) used later to compute etof
-    t2 = np.zeros(len(de_dataset["STOP_TYPE"]))
-    tof = np.zeros(len(de_dataset["STOP_TYPE"]))
+    t2 = np.zeros(len(indices))
+    tof = np.zeros(len(indices))
 
     # Stop Type: 1=Top, 2=Bottom
     # Convert converts normalized TDC values into units of
     # hundredths of a millimeter using lookup tables.
-    index_top = indices[de_dataset["STOP_TYPE"].data[indices] == StopType.Top.value]
-    stop_type_top = de_dataset["STOP_TYPE"].data[indices] == StopType.Top.value
+    index_top = np.where(de_filtered["STOP_TYPE"].data == StopType.Top.value)[0]
+    stop_type_top = de_filtered["STOP_TYPE"].data == StopType.Top.value
     xb[index_top] = get_back_position(xb_index[stop_type_top], "XBkTp", sensor)
     yb[index_top] = get_back_position(yb_index[stop_type_top], "YBkTp", sensor)
 
@@ -207,10 +209,8 @@ def get_ph_tof_and_back_positions(
     )
     tof[index_top] = t2[index_top] + xf_ph[stop_type_top] * get_image_params("XFTTOF")
 
-    index_bottom = indices[
-        de_dataset["STOP_TYPE"].data[indices] == StopType.Bottom.value
-    ]
-    stop_type_bottom = de_dataset["STOP_TYPE"].data[indices] == StopType.Bottom.value
+    index_bottom = np.where(de_filtered["STOP_TYPE"].data == StopType.Bottom.value)[0]
+    stop_type_bottom = de_filtered["STOP_TYPE"].data == StopType.Bottom.value
     xb[index_bottom] = get_back_position(xb_index[stop_type_bottom], "XBkBt", sensor)
     yb[index_bottom] = get_back_position(yb_index[stop_type_bottom], "YBkBt", sensor)
 
@@ -224,10 +224,7 @@ def get_ph_tof_and_back_positions(
     )
 
     # Multiply by 100 to get tenths of a nanosecond.
-    tof = tof[indices] * 100
-    t2 = t2[indices]
-    xb = xb[indices]
-    yb = yb[indices]
+    tof = tof * 100
 
     return tof, t2, xb, yb
 

@@ -77,7 +77,7 @@ def test_get_ph_tof_and_back_positions(
         de_dataset, df_filt.Xf.astype("float").values, "ultra45"
     )
 
-    ph_indices = np.where(
+    ph_indices = np.nonzero(
         np.isin(de_dataset["STOP_TYPE"], [StopType.Top.value, StopType.Bottom.value])
     )[0]
 
