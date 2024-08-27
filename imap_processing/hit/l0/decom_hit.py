@@ -1,9 +1,11 @@
 """Decommutate HIT CCSDS data."""
 
+from collections import namedtuple
 from pathlib import Path
+
 import numpy as np
 import xarray as xr
-from collections import namedtuple
+
 from imap_processing import imap_module_directory
 from imap_processing.utils import packet_file_to_datasets
 
@@ -83,20 +85,20 @@ counts_data_structure = {
     # "sectorates": HITPacking(16, 16, ()),
     # "l4fgrates": HITPacking(16, 16, ()),
     # "l4bgrates": HITPacking(16, 16, ()),
-
 }
 
 
 def parse_data(bin_str: str, bits_per_index: int, start: int, end: int) -> list[int]:
-    parsed_data = [int(bin_str[i: i + bits_per_index], 2)
-                   for i in range(start, end, bits_per_index)]
+    parsed_data = [
+        int(bin_str[i : i + bits_per_index], 2)
+        for i in range(start, end, bits_per_index)
+    ]
 
     return parsed_data
 
 
 def parse_count_rates(dataset: xr.Dataset) -> None:
     """Parse bin of binary count rates data and update dataset"""
-
     counts_bin = dataset.count_rates_bin
 
     # initialize the starting bit for the sections of data
@@ -109,9 +111,7 @@ def parse_count_rates(dataset: xr.Dataset) -> None:
         bits_per_index = field_meta.bit_length
 
         parsed_data = [
-            parse_data(
-                bin_str, bits_per_index, section_start, section_end
-            )
+            parse_data(bin_str, bits_per_index, section_start, section_end)
             for bin_str in counts_bin.values
         ]
 
@@ -127,7 +127,7 @@ def parse_count_rates(dataset: xr.Dataset) -> None:
         # increment for the start of the next section
         section_start += field_meta.section_length
     for k, v in variables.items():
-        print(f'{k}:{v}')
+        print(f"{k}:{v}")
 
 
 def assemble_science_frames(sci_dataset: xr.Dataset) -> None:
