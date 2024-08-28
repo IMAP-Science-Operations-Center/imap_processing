@@ -75,10 +75,8 @@ class CoDICEL1aPipeline:
         Retrieve the acquisition times via the Lo stepping table.
     get_esa_sweep_values()
         Retrieve the ESA sweep values.
-    unpack_hi_science_data()
-        Decompress, unpack, and restructure CoDICE-Hi data arrays.
-    unpack_lo_science_data()
-        Decompress, unpack, and restructure CoDICE-Lo data arrays.
+    unpack_science_data()
+        Decompress, unpack, and restructure science data arrays.
     """
 
     def __init__(self, table_id: int, plan_id: int, plan_step: int, view_id: int):
