@@ -1,24 +1,25 @@
 """Functions to support HIT processing."""
 
 from enum import Enum
-from typing import ClassVar, List, Dict
+from typing import ClassVar
+
 import xarray as xr
 
 
 class HITPrefixes(Enum):
     """Create ENUM for each rate type."""
 
-    FAST_RATE_1: ClassVar[List[str]] = [
+    FAST_RATE_1: ClassVar[list[str]] = [
         f"{prefix}_{i:02d}"
         for i in range(15)
         for prefix in ["L1A_TRIG", "IA_EVNT_TRIG", "A_EVNT_TRIG", "L3A_TRIG"]
     ]
-    FAST_RATE_2: ClassVar[List[str]] = [
+    FAST_RATE_2: ClassVar[list[str]] = [
         f"{prefix}_{i:02d}"
         for i in range(15)
         for prefix in ["L1B_TRIG", "IB_EVNT_TRIG", "B_EVNT_TRIG", "L3B_TRIG"]
     ]
-    SLOW_RATE: ClassVar[List[str]] = [
+    SLOW_RATE: ClassVar[list[str]] = [
         "L1A",
         "L2A",
         "L3A",
@@ -63,7 +64,7 @@ def create_l1(
     fast_rate_1: xr.DataArray,
     fast_rate_2: xr.DataArray,
     slow_rate: xr.DataArray,
-) -> Dict[str, float]:
+) -> dict[str, float]:
     """
     Create L1 data dictionary.
 
@@ -99,7 +100,7 @@ def create_l1(
     return l1
 
 
-def process_hit(xarray_data: Dict[str, xr.Dataset]) -> Dict[str, float]:
+def process_hit(xarray_data: dict[str, xr.Dataset]) -> dict[str, float]:
     """
     Create L1 data dictionary.
 
@@ -114,29 +115,24 @@ def process_hit(xarray_data: Dict[str, xr.Dataset]) -> Dict[str, float]:
     hit_data : dict
         Dictionary final data product.
     """
-    # Extract the HIT data from the xarray dataset
     fast_rate_1 = xarray_data["HIT"]["HIT_FAST_RATE_1"]
     fast_rate_2 = xarray_data["HIT"]["HIT_SLOW_RATE"]
     slow_rate = xarray_data["HIT"]["HIT_SLOW_RATE"]
 
-    # Combine all prefixes and corresponding data into a single dictionary
     l1 = create_l1(fast_rate_1, fast_rate_2, slow_rate)
 
-    # Structure the data in a dictionary format suitable for DynamoDB
     hit_data = {
-        "HIT_lo_energy_e_A_side": (l1["IALRT_RATE_1"] + l1["IALRT_RATE_2"]).item(),
-        "HIT_medium_energy_e_A_side": (l1["IALRT_RATE_5"] + l1["IALRT_RATE_6"]).item(),
-        "HIT_high_energy_e_A_side": l1["IALRT_RATE_7"].item(),
-        "HIT_low_energy_e_B_side": (l1["IALRT_RATE_11"] + l1["IALRT_RATE_12"]).item(),
-        "HIT_medium_energy_e_B_side": (
-            l1["IALRT_RATE_15"] + l1["IALRT_RATE_16"]
-        ).item(),
-        "HIT_high_energy_e_B_side": l1["IALRT_RATE_17"].item(),
-        "HIT_medium_energy_H_omni": (l1["H_12_15"] + l1["H_15_70"]).item(),
-        "HIT_high_energy_H_A_side": l1["IALRT_RATE_8"].item(),
-        "HIT_high_energy_H_B_side": l1["IALRT_RATE_18"].item(),
-        "HIT_low_energy_He_omni": l1["HE4_06_08"].item(),
-        "HIT_high_energy_He_omni": l1["HE4_15_70"].item(),
+        "HIT_lo_energy_e_A_side": l1["IALRT_RATE_1"] + l1["IALRT_RATE_2"],
+        "HIT_medium_energy_e_A_side": l1["IALRT_RATE_5"] + l1["IALRT_RATE_6"],
+        "HIT_high_energy_e_A_side": l1["IALRT_RATE_7"],
+        "HIT_low_energy_e_B_side": l1["IALRT_RATE_11"] + l1["IALRT_RATE_12"],
+        "HIT_medium_energy_e_B_side": l1["IALRT_RATE_15"] + l1["IALRT_RATE_16"],
+        "HIT_high_energy_e_B_side": l1["IALRT_RATE_17"],
+        "HIT_medium_energy_H_omni": l1["H_12_15"] + l1["H_15_70"],
+        "HIT_high_energy_H_A_side": l1["IALRT_RATE_8"],
+        "HIT_high_energy_H_B_side": l1["IALRT_RATE_18"],
+        "HIT_low_energy_He_omni": l1["HE4_06_08"],
+        "HIT_high_energy_He_omni": l1["HE4_15_70"],
     }
 
     return hit_data
