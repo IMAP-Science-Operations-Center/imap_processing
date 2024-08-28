@@ -29,8 +29,6 @@ References
 import lzma
 from enum import IntEnum
 
-import bitarray
-
 from imap_processing.codice.constants import LOSSY_A_TABLE, LOSSY_B_TABLE
 from imap_processing.codice.utils import CoDICECompression
 
@@ -118,7 +116,9 @@ def decompress(compressed_binary: str, algorithm: IntEnum) -> list[int]:
         The 24- or 32-bit decompressed values.
     """
     # Convert the binary string to a byte stream
-    compressed_bytes = bitarray.bitarray(compressed_binary).tobytes()
+    compressed_bytes = int(compressed_binary, 2).to_bytes(
+        (len(compressed_binary) + 7) // 8, byteorder="big"
+    )
 
     # Apply the appropriate decompression algorithm
     if algorithm == CoDICECompression.NO_COMPRESSION:
