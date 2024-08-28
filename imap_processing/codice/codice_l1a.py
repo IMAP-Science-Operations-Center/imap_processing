@@ -101,8 +101,10 @@ class CoDICEL1aPipeline:
         self.num_counters = config["num_counters"]
         self.num_energy_steps = config["num_energy_steps"]
         self.num_spin_sectors = config["num_spin_sectors"]
+        self.num_positions = config["num_positions"]
         self.variable_names = config["variable_names"]
         self.dataset_name = config["dataset_name"]
+        self.instrument = config["instrument"]
 
     def create_science_dataset(self, met: np.int64, data_version: str) -> xr.Dataset:
         """
@@ -135,6 +137,12 @@ class CoDICEL1aPipeline:
             dims=["epoch"],
             attrs=cdf_attrs.get_variable_attributes("epoch"),
         )
+        inst_az = xr.DataArray(
+            np.arange(self.num_positions),
+            name="inst_az",
+            dims=["inst_az"],
+            attrs=cdf_attrs.get_variable_attributes("inst_az_attrs"),
+        )
         spin_sector = xr.DataArray(
             np.arange(self.num_spin_sectors),
             name="spin_sector",
@@ -160,6 +168,7 @@ class CoDICEL1aPipeline:
         dataset = xr.Dataset(
             coords={
                 "epoch": epoch,
+                "inst_az": inst_az,
                 "spin_sector": spin_sector,
                 "energy": energy_steps,
                 "energy_label": energy_label,
@@ -169,21 +178,34 @@ class CoDICEL1aPipeline:
 
         # Create a data variable for each counter
         for variable_data, variable_name in zip(self.data, self.variable_names):
-            variable_data_arr = np.array(variable_data).reshape(
-                1, self.num_spin_sectors, self.num_energy_steps
-            )
+            # Data arrays are structured depending on the instrument
+            if self.instrument == "lo":
+                variable_data_arr = np.array(variable_data).reshape(
+                    1, self.num_positions, self.num_spin_sectors, self.num_energy_steps
+                )
+                dims = ["epoch", "inst_az", "spin_sector", "energy"]
+            elif self.instrument == "hi":
+                variable_data_arr = np.array(variable_data).reshape(
+                    1, self.num_energy_steps, self.num_positions, self.num_spin_sectors
+                )
+                dims = ["epoch", "energy", "inst_az", "spin_sector"]
+
+            # Get the CDF attributes
             cdf_attrs_key = (
                 f"{self.dataset_name.split('imap_codice_l1a_')[-1]}-{variable_name}"
             )
+            attrs = cdf_attrs.get_variable_attributes(cdf_attrs_key)
+
+            # Create the CDF data variable
             dataset[variable_name] = xr.DataArray(
                 variable_data_arr,
                 name=variable_name,
-                dims=["epoch", "spin_sector", "energy"],
-                attrs=cdf_attrs.get_variable_attributes(cdf_attrs_key),
+                dims=dims,
+                attrs=attrs,
             )
 
         # Add ESA Sweep Values and acquisition times (lo only)
-        if "_lo_" in self.dataset_name:
+        if self.instrument == "lo":
             self.get_esa_sweep_values()
             self.get_acquisition_times()
             dataset["esa_sweep_values"] = xr.DataArray(
@@ -274,43 +296,15 @@ class CoDICEL1aPipeline:
         sweep_table = sweep_data[sweep_data["table_idx"] == sweep_table_id]
         self.esa_sweep_values = sweep_table["esa_v"].values
 
-    def unpack_hi_science_data(self, science_values: str) -> None:
+    def unpack_science_data(self, science_values: str) -> None:
         """
-        Decompress, unpack, and restructure CoDICE-Hi data arrays.
+        Decompress, unpack, and restructure science data arrays.
 
         The science data within the packet is a compressed, binary string of
-        values.
-
-        Parameters
-        ----------
-        science_values : str
-            A string of binary data representing the science values of the data.
-        """
-        self.compression_algorithm = constants.HI_COMPRESSION_ID_LOOKUP[self.view_id]
-
-        # Decompress the binary string
-        science_values_decompressed = decompress(
-            science_values, self.compression_algorithm
-        )
-
-        # Divide up the data by the number of priorities or species
-        chunk_size = len(science_values_decompressed) // self.num_counters
-        science_values_unpacked = [
-            science_values_decompressed[i : i + chunk_size]
-            for i in range(0, len(science_values_decompressed), chunk_size)
-        ]
-
-        # TODO: Determine how to properly divide up hi data. For now, just use
-        #       arrays for each counter
-        self.data = science_values_unpacked
-
-    def unpack_lo_science_data(self, science_values: str) -> None:
-        """
-        Decompress, unpack, and restructure CoDICE-Lo data arrays.
-
-        The science data within the packet is a compressed, binary string of
-        values. These data need to be divided up by species or priorities,
-        and re-arranged into 2D arrays representing energy and spin angle.
+        values. These data need to be divided up by species or priorities (or
+        what I am calling "counters" as a general term), and re-arranged into
+        3D arrays representing spin sectors, positions, and energies (the order
+        of which depends on the instrument).
 
         Parameters
         ----------
@@ -319,28 +313,31 @@ class CoDICEL1aPipeline:
         """
         self.compression_algorithm = constants.LO_COMPRESSION_ID_LOOKUP[self.view_id]
 
-        # Decompress the binary string
+        # Decompress the binary string into a list of integers
         science_values_decompressed = decompress(
             science_values, self.compression_algorithm
         )
 
-        # Divide up the data by the number of priorities or species
-        chunk_size = len(science_values_decompressed) // self.num_counters
-        science_values_unpacked = [
-            science_values_decompressed[i : i + chunk_size]
-            for i in range(0, len(science_values_decompressed), chunk_size)
-        ]
+        # Re-arrange the counter data
+        # For CoDICE-lo, data are a 3D arrays with a shape representing
+        # [<num_positions>,<num_spin_sectors>,<num_energy_steps>]
+        if self.instrument == "lo":
+            self.data = np.array(science_values_decompressed, dtype=np.uint).reshape(
+                self.num_counters,
+                self.num_positions,
+                self.num_spin_sectors,
+                self.num_energy_steps,
+            )
 
-        # Further divide up the data by energy levels
-        # The result is a [12,128] array representing 12 spin angles and 128
-        # energy levels
-        self.data = []
-        for counter_data in science_values_unpacked:
-            data_array = [
-                counter_data[i : i + self.num_energy_steps]
-                for i in range(0, len(counter_data), self.num_energy_steps)
-            ]
-            self.data.append(data_array)  # type: ignore[arg-type]
+        # For CoDICE-hi, data are a 3D array with a shape representing
+        # [<num_energy_steps>,<num_positions>,<num_spin_sectors>]
+        elif self.instrument == "hi":
+            self.data = np.array(science_values_decompressed, dtype=np.uint).reshape(
+                self.num_counters,
+                self.num_energy_steps,
+                self.num_positions,
+                self.num_spin_sectors,
+            )
 
 
 def create_event_dataset(
@@ -555,10 +552,7 @@ def process_codice_l1a(file_path: Path, data_version: str) -> xr.Dataset:
             # Run the pipeline to create a dataset for the product
             pipeline = CoDICEL1aPipeline(table_id, plan_id, plan_step, view_id)
             pipeline.configure_data_products(apid)
-            if "_lo_" in pipeline.dataset_name:
-                pipeline.unpack_lo_science_data(science_values)
-            elif "_hi_" in pipeline.dataset_name:
-                pipeline.unpack_hi_science_data(science_values)
+            pipeline.unpack_science_data(science_values)
             dataset = pipeline.create_science_dataset(met, data_version)
 
     logger.info(f"\nFinal data product:\n{dataset}\n")
