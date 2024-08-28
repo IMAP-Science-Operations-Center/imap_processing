@@ -19,19 +19,19 @@ logger.setLevel(logging.INFO)
 
 EXPECTED_ARRAY_SHAPES = [
     (99,),  # hskp
-    (1, 6, 1),  # hi-counters-aggregated
-    (1, 16, 1),  # hi-counters-singles
-    (1, 60, 1),  # hi-omni
-    (1, 1152, 1),  # hi-sectored
+    (1, 1, 6, 1),  # hi-counters-aggregated  # TODO: Double check with Joey
+    (1, 1, 16, 1),  # hi-counters-singles  # TODO: Double check with Joey
+    (1, 15, 4, 1),  # hi-omni  # TODO: Double check with Joey
+    (1, 8, 12, 12),  # hi-sectored
     (1, 1),  # hi-pha
-    (1, 36, 128),  # lo-counters-aggregated
-    (1, 144, 128),  # lo-counters-aggregated
-    (1, 60, 128),  # lo-sw-angular
-    (1, 228, 128),  # lo-nsw-angular
-    (1, 12, 128),  # lo-sw-priority
-    (1, 12, 128),  # lo-nsw-priority
-    (1, 1, 128),  # lo-sw-species
-    (1, 1, 128),  # lo-nsw-species
+    (1, 6, 6, 128),  # lo-counters-aggregated
+    (1, 24, 6, 128),  # lo-counters-singles
+    (1, 5, 12, 128),  # lo-sw-angular
+    (1, 19, 12, 128),  # lo-nsw-angular
+    (1, 1, 12, 128),  # lo-sw-priority
+    (1, 1, 12, 128),  # lo-nsw-priority
+    (1, 1, 1, 128),  # lo-sw-species
+    (1, 1, 1, 128),  # lo-nsw-species
     (1, 128),  # lo-pha
 ]
 EXPECTED_ARRAY_SIZES = [
