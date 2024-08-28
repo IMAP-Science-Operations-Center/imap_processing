@@ -1,22 +1,24 @@
 """Functions to support HIT processing."""
 
 from enum import Enum
+from typing import ClassVar, List, Dict
+import xarray as xr
 
 
 class HITPrefixes(Enum):
     """Create ENUM for each rate type."""
 
-    FAST_RATE_1 = [
+    FAST_RATE_1: ClassVar[List[str]] = [
         f"{prefix}_{i:02d}"
         for i in range(15)
         for prefix in ["L1A_TRIG", "IA_EVNT_TRIG", "A_EVNT_TRIG", "L3A_TRIG"]
     ]
-    FAST_RATE_2 = [
+    FAST_RATE_2: ClassVar[List[str]] = [
         f"{prefix}_{i:02d}"
         for i in range(15)
         for prefix in ["L1B_TRIG", "IB_EVNT_TRIG", "B_EVNT_TRIG", "L3B_TRIG"]
     ]
-    SLOW_RATE = [
+    SLOW_RATE: ClassVar[List[str]] = [
         "L1A",
         "L2A",
         "L3A",
@@ -57,7 +59,11 @@ class HITPrefixes(Enum):
     ]
 
 
-def create_l1(fast_rate_1, fast_rate_2, slow_rate):
+def create_l1(
+    fast_rate_1: xr.DataArray,
+    fast_rate_2: xr.DataArray,
+    slow_rate: xr.DataArray,
+) -> Dict[str, float]:
     """
     Create L1 data dictionary.
 
@@ -66,7 +72,7 @@ def create_l1(fast_rate_1, fast_rate_2, slow_rate):
     fast_rate_1 : xr.DataArray
         Fast rate 1 DataArray.
     fast_rate_2 : xr.DataArray
-        Fast rate 1 DataArray.
+        Fast rate 2 DataArray.
     slow_rate : xr.DataArray
         Slow rate DataArray.
 
@@ -93,7 +99,7 @@ def create_l1(fast_rate_1, fast_rate_2, slow_rate):
     return l1
 
 
-def process_hit(xarray_data):
+def process_hit(xarray_data: Dict[str, xr.Dataset]) -> Dict[str, float]:
     """
     Create L1 data dictionary.
 
