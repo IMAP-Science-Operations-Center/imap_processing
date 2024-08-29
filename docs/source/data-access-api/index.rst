@@ -7,8 +7,8 @@ The `imap-data-access <https://github.com/IMAP-Science-Operations-Center/imap-da
 repository provides a command-line utility and python package for
 interacting with the API programmatically. It is the preferred way to use the API.
 
-Users may also download, upload, and query via the REST API directly through the browser, or `curl` commands.
-The `REST API Specification`_ section below describes the various endpoints that are supported and how to use them.
+Users may also download, upload, and query via the REST API directly through the browser, or via `curl` commands.
+The `REST API Specification`_ section describes the various endpoints that are supported, and how to use them.
 
 *Note: Several sections and links begin with* [WIP]. *As development on the API is ongoing, this indicates
 that the full implementation of the functionality is yet to be completed.*
@@ -83,7 +83,7 @@ Upload
 
 Similarly, files can be uploaded to the API using the command ``upload``.
 
-When uploading files to the API, ensure these files are stored properly in a ``data`` directory (see the Data Directory section below for more information). Then,
+When uploading files to the API, ensure these files are stored properly in a ``data`` directory (see the `Data Directory`_ section below for more information). Then,
 ensure your working directory is one level above ``data`` in order to properly upload files.
 
 [WIP] Certain ancillary files can also be uploaded to the API. For more specific information regarding these files, visit
@@ -97,7 +97,7 @@ ensure your working directory is one level above ``data`` in order to properly u
 
 Importing as a package
 ----------------------
-Imap data access can also be imported and used as a python package if desired.
+Imap data access can also be imported and used as a python package.
 
 **Example Usage:**
 
@@ -127,7 +127,7 @@ Configuration
 Data Directory
 ^^^^^^^^^^^^^^
 
-The folder structure for data files within the IMAP SDC is rigidly defined, so the data access will mimic that structure to make sure all data is stored in the same hierarchical structure as the SDC. This will enable seamless transition between a user's local system and the SDC. This is only used for downloads.
+The folder structure for data files within the IMAP SDC is rigidly defined, so the data access api will mimic that structure to make sure all data is stored in the same hierarchical structure as the SDC. This will enable seamless transition between a user's local system and the SDC. This is only used for downloads.
 A user's root data location can be specified as an environment variable ``IMAP_DATA_DIR`` or through a configuration dictionary within the package itself (``imap_data_access.config["DATA_DIR"]``). If the ``IMAP_DATA_DIR`` variable is not set, the program defaults to the user's current working directory + ``data/``.
 The following is the directory structure the IMAP SDC uses.
 
@@ -161,7 +161,7 @@ To change the default URL that the package accesses, you can set the environment
 File Validation
 ---------------
 
-This package validates filenames and paths to check they follow our standards, as defined by the [filename conventions](https://imap-processing.readthedocs.io/en/latest/development-guide/style-guide/naming-conventions.html). There is also a class available for use by other packages to create filepaths and filenames that follow the IMAP SDC conventions.
+This package validates filenames and paths to check they follow our standards, as defined by the `filename conventions <https://imap-processing.readthedocs.io/en/latest/development-guide/style-guide/naming-conventions.html>`_. There is also a class available for use by other packages to create filepaths and filenames that follow the IMAP SDC conventions.
 To use this class, use ``imap_data_access.ScienceFilePath``.
 
 Usage:
@@ -194,7 +194,7 @@ That generally means the Python environment you're using is not finding your sys
 
             pip install --upgrade certifi
 
-#. Install system certificates -- Depending on the Python version you installed the program with the command will look something like this:
+#. Install system certificates -- Depending on the Python version you installed the program with, the command will look something like this:
 
     .. code-block:: bash
 
@@ -207,7 +207,7 @@ This could mean that the service is temporarily down. If you continue to encount
 FileNotFoundError
 ^^^^^^^^^^^^^^^^^
 
-This could mean that the local data directory is not set up with the same paths as the SDC. See the data directory section for an example of how to set this up.
+This could mean that the local data directory is not set up with the same paths as the SDC. See the `Data Directory`_ section for an example of how to set this up.
 
 .. _rest-api-specification:
 
