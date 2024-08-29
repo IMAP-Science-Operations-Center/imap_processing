@@ -1,7 +1,6 @@
 """Decommutates i-alirt packets and creates L1 data products."""
 
 import logging
-from typing import cast
 
 import xarray as xr
 
@@ -26,9 +25,6 @@ def generate_xarray(packet_file: str, xtce: str) -> dict[int, xr.Dataset]:
     alirt_dict : dict
         A dictionary of the dataset containing the decoded data fields.
     """
-    alirt_dict = cast(
-        dict[int, xr.Dataset],
-        packet_file_to_datasets(packet_file, xtce, use_derived_value=False),
-    )
+    alirt_dict = packet_file_to_datasets(packet_file, xtce, use_derived_value=False)
 
     return alirt_dict
