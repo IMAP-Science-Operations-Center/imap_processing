@@ -61,14 +61,15 @@ Further information is found in in the ``query -h`` menu. You can use parameters
 Download
 ^^^^^^^^
 
-To download files using the CLI tool, use the command ``download``. These will be placed in a ``data`` directory.
+To download files using the CLI tool, use the command ``download``. The downloaded files will be placed in a ``data`` directory.
 
 It is important to note that your working directory will be established as the default directory. I.e, the ``data``
 directory will automatically be placed in this file path. Choose your working directory
 accordingly to suit your desires.
 
 When downloading a file from the API, different folders within the ``data`` directory will be made to better
-organize the downloaded files. See the example path: ``data/imap/swe/l0/2024/01/imap_swe_l0_sci_20240105_20240105_v00-01.pkts``
+organize the downloaded files. See the example path: ``data/imap/swe/l0/2024/01/imap_swe_l0_sci_20240105_20240105_v00-01.pkts``.
+The ``data`` directory and its structure is further described here: `Data Directory`_
 
 **Example Usage:**
 
@@ -117,6 +118,7 @@ Imap data access can also be imported and used as a python package if desired.
 
 Configuration
 --------------
+.. _data-directory:
 Data Directory
 ^^^^^^^^^^^^^^
 
