@@ -481,6 +481,33 @@ class MagL1a:
         """
         Given raw compressed packet data, process into Vectors.
 
+        To do this, we need to decode the compressed data. The compressed data starts
+        with an 8 bit header that defines the width of the uncompressed vectors and
+        if there is a range data section. Then, the vector data follows, then the range
+        data section if it exists.
+
+        To decode, we start by decoding the first compression_width bits. This is an
+        uncompressed primary vector with range. Then, we proceed through the compressed
+        data, where each value is fibonacci and zig-zag encoded. This means each value
+        ends in 2 sequential ones (11). We split the data along these numbers until
+        we reach primary_count.
+
+        The secondary vectors are decoded the same way, starting directly after the last
+        primary vector with an uncompressed secondary starting vector and then
+        secondary_count compressed vectors.
+
+        The compressed values are differences from the previous vector, so after
+        decoding we accumulate the values starting from the first known vector. The
+        range data is copied from the starting vector if range_data_section is not
+        included.
+
+        Then, if a range data section is included, we decode it and assign it to each
+        vector. There are 2 * (primary_count + secondary_count) bits assigned for the
+        range data section.
+
+        If any compressed vectors are > 60 bits long, then we switch to uncompressed
+        vectors for the rest of the processing.
+
         Parameters
         ----------
         vector_data: numpy.ndarray
@@ -498,30 +525,26 @@ class MagL1a:
         """
 
         bit_array = np.unpackbits(vector_data)
-        print([str(i) for i in bit_array[:6]])
         # The first 8 bits are a header - 6 bits to indicate the compression width,
         # 1 bit to indicate if there is a range data section, and 1 bit spare.
         compression_width = int("".join([str(i) for i in bit_array[:6]]), 2)
         has_range_data_section = int(str(bit_array[6]), 2)
-        print(has_range_data_section)
 
         # The full vector includes 3 values of compression_width bits, plus 2 bits for
         # the range
         uncompressed_vector_size = compression_width * 3 + 2
-        print(compression_width)
         # plus 8 to get past the compression width and range data section
         first_vector_width = uncompressed_vector_size + 8
-        print(first_vector_width)
 
         first_vector = MagL1a.unpack_one_vector(
             bit_array[8:first_vector_width], compression_width, True
         )
 
-        end_of_primary_index = (primary_count - 1) * 3 - 1
-        end_vector = len(bit_array) - (primary_count + secondary_count) * 2 * has_range_data_section
+        end_vector = len(bit_array) - (
+                    primary_count + secondary_count) * 2 * has_range_data_section
 
         # Cut off the first vector width and the end range data section if it exists.
-        vector_bits = bit_array[first_vector_width - 1 : end_vector]
+        vector_bits = bit_array[first_vector_width - 1: end_vector]
 
         # Shift the bit array over one to the left, then sum them up. This is used to
         # find all the places where two 1s occur next to each other, because the sum
@@ -537,152 +560,146 @@ class MagL1a:
             == 2
         )[0]
 
-        fib_indices = [sequential_ones[0] + 1]
-
-        switch_to_uncompressed_index = None
-
-        # This method has incorrect values if there are 3 sequential ones in a row.
-        # In this case, we drop the consecutive values. Here is also where we separate
-        # out the uncompressed secondary vector in the middle of the data.
-        for seq_val in sequential_ones:
-            # TODO this will break with uncompressed vectors
-            if (len(fib_indices) == end_of_primary_index + 1 and
-                not switch_to_uncompressed_index) or (switch_to_uncompressed_index and
-                     seq_val > remaining_vector_bit_length):
-                # When we hit the expected number of primary indices, we can assume
-                # the next uncompressed_vector_size bits are the uncompressed secondary
-                # vector. These should be skipped in processing.
-                if seq_val < fib_indices[-1] + uncompressed_vector_size:
-                    continue
-                else:
-                    # Now we have found the start index of the secondary vectors, and
-                    # we can continue with the normal compression processing for the
-                    # compressed secondary vectors.
-                    secondary_vectors_start = fib_indices[-1] + uncompressed_vector_size
-                    fib_indices.append(seq_val)
-
-            if seq_val - fib_indices[-1] - 1 > 1:
-                fib_indices.append(seq_val + 1)
-
-            if len(fib_indices) % 3 == 0:
-                # for each vector (3 values), compute the length
-                vector_bit_length = fib_indices[-1] - fib_indices[-3]
-                # if the length is greater than 60 bits, we have reached the end of the
-                # compressed vectors. The rest of the data is uncompressed.
-                if vector_bit_length > 60:
-                    switch_to_uncompressed_index = fib_indices[-1]
-                    remaining_vector_bit_length = uncompressed_vector_size * (primary_count - len(fib_indices)/3)
-
-                    # At this point, fib_indices length is equal to some subset of
-                    # primary vectors.
-                    # we still need to find the breaking point for secondary vectors,
-                    # and skip through the seq_ones values in the uncompressed values.
-                    # we know how many bits remain after this point: 48*primary_count-len(fib_indices).
-
-        # We can drop the first padding bit now that we are done with np.roll
+        # The first bit is only needed for the np.roll step, so now we remove it.
+        # we are left with compressed primary vectors, and all the secondary vectors.
         vector_bits = vector_bits[1:]
+        # which indices within vector_bits are the end of a vector
+        primary_boundaries = [sequential_ones[0] + 1]
+        secondary_boundaries = []
+        vector_count = 1
+        end_primary_vector = None
 
-        print(f"End vector: {end_vector}")
-        print(f"Starting len: {len(bit_array)}")
-        print(f"ending bit len: {len(vector_bits)}")
-        print(f"Primary count: {primary_count}")
-        print(f"len of fib indices: {len(fib_indices)}")
-        print(f"End of primary index: {end_of_primary_index}")
+        for seq_val in sequential_ones:
+            if vector_count > primary_count + secondary_count:
+                break
 
+            # Add the end indices of each primary vector to primary_boundaries
+            # If we have 3 ones in a row, we should skip that index
+            if (vector_count < primary_count and
+                    (seq_val - primary_boundaries[-1] - 1 > 1)):
+                primary_boundaries.append(seq_val + 1)
 
+                # 3 boundaries equal one vector
+                if len(primary_boundaries) % 3 == 0:
+                    vector_count += 1
+                    # If the vector length is >60 bits, we switch to uncompressed.
+                    # So we skip past all the remaining seq_ones.
+                    if (len(primary_boundaries) > 4) and (
+                            primary_boundaries[-1] - primary_boundaries[
+                        -4] > 60) or (vector_count == 2 and primary_boundaries[-1] > 60):
+                        # Since we know how long each uncompressed vector is,
+                        # we can determine the end of the primary vectors.
+                        end_primary_vector = (primary_boundaries[-1] +
+                                              (primary_count - vector_count) *
+                                              uncompressed_vector_size)
+                        vector_count = primary_count
+
+            # If the vector count is equal to the primary count, we are in the first
+            # uncompressed secondary vector.
+            if vector_count == primary_count:
+                # We won't have assigned end_primary_vector unless we hit uncompressed
+                # vectors in the primary path. If there are no uncompressed values,
+                # we can use the end of primary_boundaries.
+                end_primary_vector = primary_boundaries[
+                    -1] if end_primary_vector is None else end_primary_vector
+                if seq_val >= end_primary_vector + uncompressed_vector_size:
+                    # We have found the first secondary vector
+                    secondary_boundaries = [seq_val]
+                    vector_count += 1
+
+            # If we're greater than primary_count, we are in the secondary vectors.
+            # Like before, we skip indices with 3 ones.
+            if (vector_count > primary_count and
+                    seq_val - secondary_boundaries[-1] - 1 > 1):
+                secondary_boundaries.append(seq_val + 1)
+                # We have the start of the secondary vectors in
+                # secondary_boundaries, so we need to subtract one to determine
+                # the vector count. (in primary_boundaries we know we start at 0.)
+                if (len(secondary_boundaries) - 1) % 3 == 0:
+                    vector_count += 1
+                    if secondary_boundaries[-1] - secondary_boundaries[-4] > 60:
+                        # The rest of the secondary values are uncompressed.
+                        vector_count = primary_count + secondary_count + 1
+
+        # Split along the boundaries of the primary vectors. This gives us a list of
+        # bit arrays, each corresponding to a primary value (1/3 of a vector).
         primary_split_bits = np.split(
-            vector_bits,
-            fib_indices[:end_of_primary_index],
+            vector_bits[:primary_boundaries[-1]],
+            primary_boundaries[:-1],
         )
-        print(f"Shape of primary_split_bits: {len(primary_split_bits)}")
 
-        # Check if any are > 60 bits long. If they are, the data switches to
-        # uncompressed starting after that index. This is expected to happen very
-        # rarely.
-        switch_to_uncompressed_index = np.where(
-            [(len(primary_split_bits[i])+len(primary_split_bits[i+1])+len(primary_split_bits[i+2]) > 60) for i in range(0, len(primary_split_bits), 3)]
-        )[0][0]
-        print(f"Switch to uncompressed index: {switch_to_uncompressed_index}")
-
-        if switch_to_uncompressed_index:
-            switch_to_uncompressed_index=switch_to_uncompressed_index * 3 + 1
-            vector_diffs = list(
-                map(
-                    MagL1a.decode_fib_zig_zag,
-                    primary_split_bits[: switch_to_uncompressed_index],
-                )
-            )
-
-            primary_vectors = MagL1a.accumulate_vectors(
-                first_vector, vector_diffs, switch_to_uncompressed_index
-            )
-            # TODO compute the rest of the vectors
-            # Find the start point of the uncompressed vectors
-            start_uncompressed_bit_index = fib_indices[switch_to_uncompressed_index]
-            print(f"Switching to uncompressed processing starting at {start_uncompressed_bit_index}")
-            uncompressed_vector_bits = np.split(vector_bits[
-                                   start_uncompressed_bit_index:secondary_vectors_start
-                                   ], primary_count - len(primary_vectors))
-            print(f"Uncompressed vectors len: {len(uncompressed_vector_bits)}")
-            uncompressed_vectors = list(map(
-                lambda x: MagL1a.unpack_one_vector(x, compression_width, False),
-                uncompressed_vector_bits
-            ))
-            primary_vectors = np.concatenate([primary_vectors, uncompressed_vectors])
-
-        else:
-            vector_diffs = list(map(MagL1a.decode_fib_zig_zag, primary_split_bits))
-            # print(vector_diffs)
+        vector_diffs = list(map(MagL1a.decode_fib_zig_zag, primary_split_bits))
 
         primary_vectors = MagL1a.accumulate_vectors(
             first_vector, vector_diffs, primary_count
         )
 
+        # If we are missing any vectors from primary_split_bits, we know we have
+        # uncompressed vectors to process.
+        primary_vector_missing = primary_count - len(primary_split_bits) // 3 - 1
+        vector_index = primary_count - primary_vector_missing
+        if primary_vector_missing:
+            uncompressed_vectors = vector_bits[
+                                   primary_boundaries[-1]:primary_boundaries[
+                                                              -1] + uncompressed_vector_size * primary_vector_missing]
+            for i in range(0, len(uncompressed_vectors), uncompressed_vector_size):
+                decoded_vector = MagL1a.unpack_one_vector(
+                    uncompressed_vectors[i:i + uncompressed_vector_size],
+                    compression_width,
+                    True,
+                )
+                primary_vectors[vector_index] = decoded_vector
+                vector_index += 1
+
         # Secondary vector processing
-
-        # Split up the bit array, skipping past the primary vector and uncompressed
-        # starting vector
-        secondary_split_bits = np.split(
-            vector_bits, fib_indices[end_of_primary_index + 1:]
-        )[1:]
-        # Drop any buffer bits from the end (all zeros)
-        if sum(secondary_split_bits[-1]) == 0:
-            secondary_split_bits = secondary_split_bits[:-1]
-
         first_secondary_vector = MagL1a.unpack_one_vector(
-            vector_bits[fib_indices[end_of_primary_index]: secondary_vectors_start],
+            vector_bits[
+            end_primary_vector:end_primary_vector + uncompressed_vector_size],
             compression_width,
             True,
         )
 
-        # Check if any are > 60 bits long
-        switch_to_uncompressed_index = np.where(
-            [len(i) > 60 for i in secondary_split_bits]
-        )[0]
+        # Split up the bit array, skipping past the primary vector and uncompressed
+        # starting vector
+        secondary_split_bits = np.split(
+            vector_bits[:secondary_boundaries[-1]], secondary_boundaries[:-1]
+        )[1:]
 
-        if switch_to_uncompressed_index:
-            vector_diffs = list(map(MagL1a.decode_fib_zig_zag, secondary_split_bits))
-            # TODO come back and finish this
-        else:
-            vector_diffs = list(map(MagL1a.decode_fib_zig_zag, secondary_split_bits))
+        vector_diffs = list(map(MagL1a.decode_fib_zig_zag, secondary_split_bits))
 
         secondary_vectors = MagL1a.accumulate_vectors(
             first_secondary_vector, vector_diffs, secondary_count
         )
 
-        # TODO: should the range vectors include the first vector?
+        secondary_vector_missing = secondary_count - len(secondary_split_bits) // 3 - 1
+        if secondary_vector_missing:
+            vector_index = secondary_count - secondary_vector_missing
+            uncompressed_vectors = vector_bits[
+                                   secondary_boundaries[-1]:secondary_boundaries[
+                                                                -1] + uncompressed_vector_size * secondary_vector_missing]
+            for i in range(0, len(uncompressed_vectors), uncompressed_vector_size):
+                decoded_vector = MagL1a.unpack_one_vector(
+                    uncompressed_vectors[i:i + uncompressed_vector_size],
+                    compression_width,
+                    True,
+                )
+                secondary_vectors[vector_index] = decoded_vector
+                vector_index += 1
 
+        # TODO: should the range vectors include the first vector?
         if has_range_data_section:
             primary_vectors = MagL1a.process_range_data_section(
-                bit_array[end_vector:end_vector +primary_count*2], primary_vectors
+                bit_array[end_vector:end_vector + primary_count * 2], primary_vectors
             )
             secondary_vectors = MagL1a.process_range_data_section(
-                bit_array[end_vector +primary_count*2:end_vector+(primary_count+secondary_count)*2], secondary_vectors)
+                bit_array[end_vector + primary_count * 2:end_vector + (
+                            primary_count + secondary_count) * 2], secondary_vectors)
 
         return primary_vectors, secondary_vectors
 
     @staticmethod
-    def process_range_data_section(range_data: np.ndarray, vectors: np.ndarray) -> np.ndarray:
+    def process_range_data_section(range_data: np.ndarray,
+                                   vectors: np.ndarray) -> np.ndarray:
         """
         Given a range data section and vectors, return an updated vector array.
 
@@ -705,7 +722,8 @@ class MagL1a:
             Updated array of vectors, identical to vectors with the range values
             updated from range_data.
         """
-        print(f"Lenght of range data: {len(range_data)}, length of vectors: {len(vectors)}")
+        print(
+            f"Lenght of range data: {len(range_data)}, length of vectors: {len(vectors)}")
         if len(range_data) != len(vectors) * 2:
             raise ValueError(
                 "Incorrect length for range_data, there should be two bits per vector."
@@ -714,12 +732,11 @@ class MagL1a:
         updated_vectors = np.copy(vectors)
         range_str = "".join([str(i) for i in range_data])
         for i, vector in enumerate(vectors):
-            range_int = int(range_str[i*2:i*2+2], 2)
-            print(f"Calculating range {range} from {range_str[i*2:i*2+2]}")
+            range_int = int(range_str[i * 2:i * 2 + 2], 2)
+            print(f"Calculating range {range} from {range_str[i * 2:i * 2 + 2]}")
             updated_vectors[i][3] = range_int
 
         return updated_vectors
-
 
     @staticmethod
     def accumulate_vectors(
@@ -810,8 +827,8 @@ class MagL1a:
 
         if len(vector_data) != width * 3 + 2 * has_range:
             raise ValueError(
-                f"Invalid length {len(vector_data)} for vector data. Expected {width*3}"
-                f" or {width*3+2} if has_range.")
+                f"Invalid length {len(vector_data)} for vector data. Expected {width * 3}"
+                f" or {width * 3 + 2} if has_range.")
         # TODO: could width ever be a non-multiple of 8? if yes pad with 0s at the
         #  beginning
         # take slices of the input data and pack from an array of bits to an array of

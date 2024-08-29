@@ -399,14 +399,16 @@ def test_switch_to_uncompressed_vector_data(expected_vectors, uncompressed_vecto
         "010111000111001001110010101101011100100110000000011010111001"
         "001110010101101011100100111001010111000110000101100000000110"
         "101110010011100101011010111001001110010101110001110010011000"
-        "00000110000000000000000000001011100000000000010011000000000000000000100101011"
+        "000001100000000000000000000010111000000000000000000000010011000000000000000000000000100101011"
     )
+    print(f"Primary compressed len: {len(primary_compressed)}")
 
     # 4 uncompressed vectors from uncompressed_vector_bytearray
-    uncompressed_bits = ("000000100000010000001000000100000001000000100000"
-                         "000000100000011100001000000111010001000000111010"
-                         "000000100000101000001000001010100001000001010100"
-                         "000000100000110100001000001101110001000001101111")
+    uncompressed_bits = ("00000010000001000000100000010000000100000010000011"
+                         "00000010000001110000100000011101000100000011101011"
+                         "00000010000010100000100000101010000100000101010011"
+                         "00000010000011010000100000110111000100000110111111")
+    print(f"total primary len: {len(primary_compressed) + len(uncompressed_bits)}")
 
     secondary_compressed = (
         "0000001000000011000010000000111100010000000111111110001110"
@@ -415,13 +417,14 @@ def test_switch_to_uncompressed_vector_data(expected_vectors, uncompressed_vecto
         "0111001010110101110010011100101011100011000010110000000011"
         "0101110010011100101011010111001001100000000111000111001001"
         "1100101011010111001001110010101101011000010110000000011100"
-        "01110010011100101011010111001001110010100000000000000000000"
-        "0000000000000000000000"
+        "011100100111001010110000000000000010111000000000000000000000010011100101"
         "000000000011"
     )
 
     uncompressed_expected_vectors = expected_vectors[0][:4]
     print(len(primary_compressed))
+    print(len(secondary_compressed))
+    print(len(primary_compressed)+len(secondary_compressed)+len(uncompressed_bits)*2)
     # expected index at 448
 
     headers = "01000000"
@@ -430,11 +433,32 @@ def test_switch_to_uncompressed_vector_data(expected_vectors, uncompressed_vecto
         [int(i) for i in headers + primary_compressed + uncompressed_bits + secondary_compressed + uncompressed_bits],
         dtype=np.uint8,
     )
+
     input_data = np.packbits(input_data)
-    (primary, secondary) = MagL1a.process_compressed_vectors(input_data, 20, 0)
-    assert np.array_equal(primary[:16], expected_vectors)
+    (primary, secondary) = MagL1a.process_compressed_vectors(input_data, 20, 20)
+
+    # The 16th compressed vector is bad because it needs to be >60 bits
+    assert np.array_equal(primary[:15], expected_vectors[0][:-1])
     assert np.array_equal(primary[16:], uncompressed_expected_vectors)
 
+    assert np.array_equal(secondary[:15], expected_vectors[1][:-1])
+    assert np.array_equal(secondary[16:], uncompressed_expected_vectors)
+
+    # Test if first primary vector is too long
+    primary_first_vector = "00000010000001000000100000010000000100000010000011"
+    primary_long_second_vector = ("0000000000000000000001011100000000000000000000001"
+                                  "0011000000000000000000000000100101011")
+
+    input_data = np.array(
+        [int(i) for i in headers + primary_first_vector + primary_long_second_vector + uncompressed_bits + secondary_compressed],
+        dtype=np.uint8
+    )
+    input_data = np.packbits(input_data)
+
+    (primary, secondary) = MagL1a.process_compressed_vectors(input_data, 6, 16)
+    assert len(primary) == 6
+    assert np.array_equal(primary[0], expected_vectors[0][0])
+    assert np.array_equal(primary[2:], uncompressed_expected_vectors)
 
 
 def test_real_uncompressed_vector_data(uncompressed_vector_bytearray, expected_vectors):
