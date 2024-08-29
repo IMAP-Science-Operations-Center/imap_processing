@@ -1,0 +1,161 @@
+# Level 2 variable base dictionaries
+model_base: &model_base
+  DEPEND_0: epoch
+  DISPLAY_TYPE: time_series
+  FILLVAL: -1.0e+31
+  FORMAT: E12.2
+  VALIDMIN: -1.0e+31
+  VALIDMAX: -1.0e+31
+  VAR_TYPE: data
+  SCALETYP: linear
+
+tof_model_base: &tof_model_base
+  <<: *model_base
+  DEPEND_1: mass_number
+
+model_amplitude_base: &model_amplitude_base
+  <<: *model_base
+  UNITS: dN
+
+model_time_base: &model_time_base
+  <<: *model_base
+  UNITS: s
+
+model_dimensionless_base: &model_dimensionless_base
+  <<: *model_base
+  UNITS: ' '
+
+tof_model_amplitude_base: &tof_model_amplitude_base
+  <<: *tof_model_base
+  UNITS: dN
+
+tof_model_time_base: &tof_model_time_base
+  <<: *tof_model_base
+  UNITS: s
+
+tof_model_dimensionless_base: &tof_model_dimensionless_base
+  <<: *tof_model_base
+  UNITS: ' '
+
+mass_number_attrs:
+  CATDESC: Mass number
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: mass_number
+  FILLVAL: ''
+  FORMAT: E12.2
+  LABLAXIS: mass_number
+  UNITS: ''
+  VALIDMIN: 1
+  VALIDMAX: 50
+  VAR_TYPE: support_data
+  VAR_NOTES: These represent the peaks of the TOF waveform
+
+target_high_model_amplitude:
+  <<: *model_amplitude_base
+  CATDESC: target_high_model_amplitude
+  FIELDNAM: target_high_model_amplitude
+  LABLAXIS: target_high_model_amplitude
+  VAR_NOTES: The amplitude of the response for target_high
+
+ion_grid_model_amplitude:
+  <<: *model_amplitude_base
+  CATDESC: ion_grid_model_amplitude
+  FIELDNAM: ion_grid_model_amplitude
+  LABLAXIS: ion_grid_model_amplitude
+  VAR_NOTES: The amplitude of the response for ion_grid
+
+target_high_model_uncertainty:
+  <<: *model_dimensionless_base
+  CATDESC: target_high_model_uncertainty
+  FIELDNAM: target_high_model_uncertainty
+  LABLAXIS: target_high_model_uncertainty
+  VAR_NOTES: The uncertainty in the model of the response for target_high
+
+ion_grid_model_uncertainty:
+  <<: *model_dimensionless_base
+  CATDESC: ion_grid_model_uncertainty
+  FIELDNAM: ion_grid_model_uncertainty
+  LABLAXIS: ion_grid_model_uncertainty
+  VAR_NOTES: The uncertainty in the model of the response for ion_grid
+
+target_high_model_constant_offset:
+  <<: *model_amplitude_base
+  CATDESC: target_high_model_constant_offset
+  FIELDNAM: target_high_model_constant_offset
+  VAR_NOTES: The constant offset of the response for target_high
+
+ion_grid_model_constant_offset:
+  <<: *model_amplitude_base
+  CATDESC: ion_grid_model_constant_offset
+  FIELDNAM: ion_grid_model_constant_offset
+  VAR_NOTES: The constant offset of the response for ion grid
+
+target_high_model_time_of_impact:
+  <<: *model_time_base
+  CATDESC: target_high_model_time_of_impact
+  FIELDNAM: target_high_model_time_of_impact
+  LABLAXIS: target_high_model_time_of_impact
+  VAR_NOTES: The time of impact for target_high
+
+ion_grid_model_time_of_impact:
+  <<: *model_time_base
+  CATDESC: ion_grid_model_time_of_impact
+  FIELDNAM: ion_grid_model_time_of_impact
+  LABLAXIS: ion_grid_model_time_of_impact
+  VAR_NOTES: The time of impact for ion_grid
+
+target_high_model_rise_time:
+  <<: *model_time_base
+  CATDESC: target_high_model_rise_time
+  FIELDNAM: target_high_model_rise_time
+  LABLAXIS: target_high_model_rise_time
+  VAR_NOTES: The rise time of the response for target_high
+
+ion_grid_model_rise_time:
+  <<: *model_time_base
+  CATDESC: ion_grid_model_rise_time
+  FIELDNAM: ion_grid_model_rise_time
+  LABLAXIS: ion_grid_model_rise_time
+  VAR_NOTES: The rise time of the response for ion_grid
+
+target_high_model_discharge_time:
+  <<: *model_time_base
+  CATDESC: target_high_model_discharge_time
+  FIELDNAM: target_high_model_discharge_time
+  LABLAXIS: target_high_model_discharge_time
+  VAR_NOTES: The discharge time of the response for target_high
+
+ion_grid_model_discharge_time:
+  <<: *model_time_base
+  CATDESC: ion_grid_model_discharge_time
+  FIELDNAM: ion_grid_model_discharge_time
+  LABLAXIS: ion_grid_model_discharge_time
+  VAR_NOTES: The discharge time of the response for ion_grid
+
+tof_low_model_masses_amplitude:
+  <<: *tof_model_amplitude_base
+  CATDESC: tof_low_model_masses_amplitude
+  FIELDNAM: tof_low_model_masses_amplitude
+  LABLAXIS: tof_low_model_masses_amplitude
+  VAR_NOTES: The amplitude of the first 50 peaks in tof_low
+
+tof_low_model_masses_center:
+  <<: *tof_model_amplitude_base
+  CATDESC: tof_low_model_masses_center
+  FIELDNAM: tof_low_model_masses_center
+  LABLAXIS: tof_low_model_masses_center
+  VAR_NOTES: The center of the first 50 peaks in tof_low
+
+tof_low_model_masses_sigma:
+  <<: *tof_model_dimensionless_base
+  CATDESC: tof_low_model_masses_sigma
+  FIELDNAM: tof_low_model_masses_sigma
+  LABLAXIS: tof_low_model_masses_sigma
+  VAR_NOTES: The sigma of the fitted exponentially modified gaussian to the first 50 peaks in tof_low
+
+tof_low_model_masses_gamma:
+  <<: *tof_model_dimensionless_base
+  CATDESC: tof_low_model_masses_gamma
+  FIELDNAM: tof_low_model_masses_gamma
+  LABLAXIS: tof_low_model_masses_gamma
+  VAR_NOTES: The gamma of the fitted exponentially modified gaussian to the first 50 peaks in tof_low
