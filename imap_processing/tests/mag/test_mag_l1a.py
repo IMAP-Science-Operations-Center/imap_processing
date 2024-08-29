@@ -401,14 +401,12 @@ def test_switch_to_uncompressed_vector_data(expected_vectors, uncompressed_vecto
         "101110010011100101011010111001001110010101110001110010011000"
         "000001100000000000000000000010111000000000000000000000010011000000000000000000000000100101011"
     )
-    print(f"Primary compressed len: {len(primary_compressed)}")
 
     # 4 uncompressed vectors from uncompressed_vector_bytearray
     uncompressed_bits = ("00000010000001000000100000010000000100000010000011"
                          "00000010000001110000100000011101000100000011101011"
                          "00000010000010100000100000101010000100000101010011"
                          "00000010000011010000100000110111000100000110111111")
-    print(f"total primary len: {len(primary_compressed) + len(uncompressed_bits)}")
 
     secondary_compressed = (
         "0000001000000011000010000000111100010000000111111110001110"
@@ -422,10 +420,6 @@ def test_switch_to_uncompressed_vector_data(expected_vectors, uncompressed_vecto
     )
 
     uncompressed_expected_vectors = expected_vectors[0][:4]
-    print(len(primary_compressed))
-    print(len(secondary_compressed))
-    print(len(primary_compressed)+len(secondary_compressed)+len(uncompressed_bits)*2)
-    # expected index at 448
 
     headers = "01000000"
 
@@ -459,6 +453,57 @@ def test_switch_to_uncompressed_vector_data(expected_vectors, uncompressed_vecto
     assert len(primary) == 6
     assert np.array_equal(primary[0], expected_vectors[0][0])
     assert np.array_equal(primary[2:], uncompressed_expected_vectors)
+
+def test_different_compression_width():
+    # Compression headers - indicating a 12 bit width and no range section
+    headers = "00110000"
+
+    primary_compressed = (
+        "0101110010"
+        "011100101011010111001001110010101101011100100110000000011100"
+        "011100100111001010110101100001011000000001101011100100111001"
+        "010111000111001001110010101101011100100110000000011010111001"
+        "001110010101101011100100111001010111000110000101100000000110"
+        "101110010011100101011010111001001110010101110001110010011000"
+        "00000110101110010011100101011"
+    )
+
+    secondary_compressed = (
+        "10001110"
+        "0100111001010110101100001011000000001101011100100111001010"
+        "1110001110010011100101011010111001001100000000110101110010"
+        "0111001010110101110010011100101011100011000010110000000011"
+        "0101110010011100101011010111001001100000000111000111001001"
+        "1100101011010111001001110010101101011000010110000000011100"
+        "011100100111001010110101110010011100101011"
+    )
+
+    first_primary_vector = "00100000010010000001000000000010000011"
+    first_secondary_vector = "00000001011000000000000011111111111101"
+
+    expected_first_vector = [516, -2032, 32, 3]
+    expected_second_vector = [22, 0, -1, 1]
+
+    padding = "00000"  # Pad to byte boundary
+
+    input_data = np.array(
+        [int(i) for i in headers + first_primary_vector + primary_compressed +
+         first_secondary_vector + secondary_compressed + padding],
+        dtype=np.uint8,
+    )
+
+    input_data = np.packbits(input_data)
+    (primary, secondary) = MagL1a.process_compressed_vectors(input_data, 16,
+                                                             16)
+
+    assert np.array_equal(primary[0], expected_first_vector)
+    assert np.array_equal(secondary[0], expected_second_vector)
+
+    assert sum(primary[-1]) != 0
+    assert sum(secondary[-1]) != 0
+
+    assert len(primary) == 16
+    assert len(secondary) == 16
 
 
 def test_real_uncompressed_vector_data(uncompressed_vector_bytearray, expected_vectors):
@@ -501,6 +546,14 @@ def test_unpack_one_vector(uncompressed_vector_bytearray, expected_vectors):
 
     assert all(test_output == expected_vectors)
 
+    test_12bit_vector = np.array(
+        [0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1, 0,
+         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+         1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1])
+
+    test_output = MagL1a.unpack_one_vector(test_12bit_vector, 12, 0)
+    expected_vectors = [22, 0, -1, 0]
+    assert all(test_output == expected_vectors)
 
 def test_twos_complement():
     # -19 in binary

@@ -236,8 +236,6 @@ class MagL1a:
         self.vectors = np.concatenate([self.vectors, additional_vectors])
         self.packet_definitions[self.start_time] = packet_properties
 
-        print(self.vectors.shape)
-
         # Every additional packet should be the next one in the sequence, if not, add
         # the missing sequence(s) to the gap data
         if not self.most_recent_sequence + 1 == vector_sequence:
@@ -359,7 +357,6 @@ class MagL1a:
             vector sample.
         """
 
-        # TODO: error handling
         def to_signed16(n: int) -> int:
             """
             Convert an integer to a signed 16-bit integer.
@@ -722,8 +719,6 @@ class MagL1a:
             Updated array of vectors, identical to vectors with the range values
             updated from range_data.
         """
-        print(
-            f"Lenght of range data: {len(range_data)}, length of vectors: {len(vectors)}")
         if len(range_data) != len(vectors) * 2:
             raise ValueError(
                 "Incorrect length for range_data, there should be two bits per vector."
@@ -733,7 +728,6 @@ class MagL1a:
         range_str = "".join([str(i) for i in range_data])
         for i, vector in enumerate(vectors):
             range_int = int(range_str[i * 2:i * 2 + 2], 2)
-            print(f"Calculating range {range} from {range_str[i * 2:i * 2 + 2]}")
             updated_vectors[i][3] = range_int
 
         return updated_vectors
@@ -822,20 +816,18 @@ class MagL1a:
             raise ValueError(
                 "unpack_one_vector method is expecting an array of bits as" "input."
             )
-        if width % 8 != 0:
-            raise ValueError("Width of the vector data should be a multiple of 8.")
 
         if len(vector_data) != width * 3 + 2 * has_range:
             raise ValueError(
                 f"Invalid length {len(vector_data)} for vector data. Expected {width * 3}"
                 f" or {width * 3 + 2} if has_range.")
-        # TODO: could width ever be a non-multiple of 8? if yes pad with 0s at the
-        #  beginning
+        padding = np.zeros(8 - (width % 8), dtype=np.uint8)
+
         # take slices of the input data and pack from an array of bits to an array of
         # uint8 bytes
-        x = np.packbits(vector_data[:width])
-        y = np.packbits(vector_data[width: 2 * width])
-        z = np.packbits(vector_data[2 * width: 3 * width])
+        x = np.packbits(np.concatenate((padding, vector_data[:width])))
+        y = np.packbits(np.concatenate((padding, vector_data[width: 2 * width])))
+        z = np.packbits(np.concatenate((padding, vector_data[2 * width: 3 * width])))
 
         range_string = "".join([str(i) for i in vector_data[-2:]])
 
@@ -876,7 +868,6 @@ class MagL1a:
             two's complement of the input value, as a signed int.
         """
         integer_value = int.from_bytes(value, "big")
-
         if (integer_value & (1 << (bits - 1))) != 0:
             output_value = integer_value - (1 << bits)
         else:
@@ -905,7 +896,6 @@ class MagL1a:
                 f"Error when decoding {code} - fibonacci encoded values "
                 f"should end in 2 sequential ones."
             )
-        print(code)
 
         # Fibonacci decoding
         code = code[:-1]
