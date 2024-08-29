@@ -22,7 +22,7 @@ from imap_processing.idex.l0.idex_l0 import decom_packets
 logger = logging.getLogger(__name__)
 
 # TODO: Generate quicklook plots
-# TODO: Currently to code assumes that one L0 file will produce one L1 file.
+# TODO: Currently the code assumes that one L0 file will produce one L1 file.
 #       Is this a valid assumption?
 
 # Create a large dictionary of values from the FPGA header that need to be
