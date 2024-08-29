@@ -49,6 +49,13 @@ imap_codice_l1a_hi_sectored:
     Logical_source: imap_codice_l1a_hi-sectored
     Logical_source_description: IMAP Mission CoDICE Hi Level-1A Sectored Data.
 
+imap_codice_l1a_hi_pha:
+    <<: *instrument_base
+    Data_level: 1A
+    Data_type: L1A_hi-pha->Level-1A Hi Event Data
+    Logical_source: imap_codice_l1a_hi-pha
+    Logical_source_description: IMAP Mission CoDICE Hi Level-1A Event Data.
+
 imap_codice_l1a_lo_counters_aggregated:
     <<: *instrument_base
     Data_level: 1A
@@ -104,6 +111,13 @@ imap_codice_l1a_lo_nsw_species:
     Data_type: L1A_lo-nsw-species->Level-1A Lo Non-Sunward Species Counts Data
     Logical_source: imap_codice_l1a_lo-nsw-species
     Logical_source_description: IMAP Mission CoDICE Lo Level-1A Non-Sunward Species Counts Data.
+
+imap_codice_l1a_lo_pha:
+    <<: *instrument_base
+    Data_level: 1A
+    Data_type: L1A_lo-pha->Level-1A Lo Event Data
+    Logical_source: imap_codice_l1a_lo-pha
+    Logical_source_description: IMAP Mission CoDICE Lo Level-1A Event Data.
 
 # L1b
 imap_codice_l1b_hskp:
