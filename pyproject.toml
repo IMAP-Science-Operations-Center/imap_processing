@@ -38,7 +38,7 @@ space_packet_parser = ">=4.2.0"
 spiceypy = ">=6.0.0"
 xarray = '>=2023.0.0'
 pyyaml = "^6.0.1"
-numpy = "^1.26.4"
+numpy = "<=3"
 
 # Optional dependencies
 numpydoc = {version="^1.5.0", optional=true}
@@ -118,6 +118,13 @@ checks = ["all", #report on all checks, except the following
 exclude = ['__init__' ] # don't report on objects that match any of these regex
 
 [tool.mypy]
-follow_imports = 'skip'
-ignore_missing_imports = 'true'
-exclude = ["tests", "docs"]
+disable_error_code = ['import-not-found', # Unable to locate module or package specified
+                'import-untyped', # The import lacks type information
+                'no-untyped-call', # Function calls are only made to functions that are fully typed
+                'type-arg' ] # Requires type arguments to be specified in list[] and dict[]
+strict = true
+explicit_package_bases = true
+follow_imports = 'skip' #may want to remove
+exclude = ["tests"]
+packages = ["imap_processing" , "tools"]
+plugins = 'numpy.typing.mypy_plugin'

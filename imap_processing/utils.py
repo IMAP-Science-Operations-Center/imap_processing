@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Optional, Union
 
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
 import xarray as xr
 from space_packet_parser import parser, xtcedef
@@ -279,7 +280,7 @@ def _get_minimum_numpy_datatype(  # noqa: PLR0912 - Too many branches
     return datatype
 
 
-def _create_minimum_dtype_array(values: list, dtype: str) -> np.ndarray:
+def _create_minimum_dtype_array(values: list, dtype: str) -> npt.NDArray:
     """
     Create an array with the minimum datatype.
 
@@ -332,6 +333,12 @@ def packet_file_to_datasets(
     -------
     datasets : dict
         Mapping from apid to xarray dataset, one dataset per apid.
+
+    Notes
+    -----
+    This function only handles packet definitions with the same variable structure
+    across all packets with the same ApId. For example, this cannot be used for IDEX
+    due to the conditional XML structure defined for their science packet.
     """
     # Set up containers to store our data
     # We are getting a packet file that may contain multiple apids

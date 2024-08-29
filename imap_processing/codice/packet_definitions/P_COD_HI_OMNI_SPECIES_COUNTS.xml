@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='utf-8'?>
 <xtce:SpaceSystem xmlns:xtce="http://www.omg.org/space/xtce" name="P_COD_HI_OMNI_SPECIES_COUNTS">
-	<xtce:Header date="2024-06" version="1.0" author="IMAP SDC" />
+	<xtce:Header date="2024-07" version="1.0" author="IMAP SDC" />
 	<xtce:TelemetryMetaData>
 		<xtce:ParameterTypeSet>
 			<xtce:IntegerParameterType name="UINT1" signed="false">
@@ -39,11 +39,11 @@
 			<xtce:IntegerParameterType name="UINT32" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="32" encoding="unsigned" />
 			</xtce:IntegerParameterType>
-			<xtce:BinaryParameterType name="HI_OMNI_SPECIES_BITS">
+			<xtce:BinaryParameterType name="HI_SECT_SPECIES_COUNTS_BITS">
 				<xtce:UnitSet />
 				<xtce:BinaryDataEncoding bitOrder="mostSignificantBitFirst">
 					<xtce:SizeInBits>
-						<xtce:FixedValue>28704768</xtce:FixedValue>
+						<xtce:FixedValue>1376</xtce:FixedValue>
 					</xtce:SizeInBits>
 				</xtce:BinaryDataEncoding>
 			</xtce:BinaryParameterType>
@@ -124,7 +124,7 @@
 			<xtce:Parameter name="BYTE_COUNT" parameterTypeRef="UINT23" shortDescription="NUMBER OF BYTES IN THE DATA ARRAY">
 				<xtce:LongDescription>NUMBER OF BYTES IN THE DATA ARRAY.  IF COMPRESSED, THIS VALUE REPRESENTS THE LENGTH OF THE COMPRESSED DATA.</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="DATA" parameterTypeRef="HI_OMNI_SPECIES_BITS" shortDescription="DATA ARRAY">
+			<xtce:Parameter name="DATA" parameterTypeRef="HI_SECT_SPECIES_COUNTS_BITS" shortDescription="DATA ARRAY">
 				<xtce:LongDescription>COUNTER DATA
 
 VARIABLE LENGTH; MAXIMUM (BASED ON UNCOLLAPSED, UNCOMPRESSED DATA, AND ASSUMING ALL 146 SQRT(2) SPECEIS COUNTERS INCLUDED):

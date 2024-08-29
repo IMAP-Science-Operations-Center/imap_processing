@@ -54,7 +54,7 @@ class StarSensor(LoBase):
     SHCOARSE: int
     COUNT: int
     DATA_COMPRESSED: str
-    DATA: np.array
+    DATA: np.ndarray
 
     # TODO: Because test data does not currently exist, the init function contents
     # must be commented out for the unit tests to run properly

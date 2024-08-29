@@ -38,6 +38,7 @@ def decom_packets(packet_file: Path) -> list:
         "imap_codice_l0_hi-counters-singles_20240429_v001.pkts": "P_COD_HI_INST_COUNTS_SINGLES.xml",  # noqa
         "imap_codice_l0_hi-omni_20240429_v001.pkts": "P_COD_HI_OMNI_SPECIES_COUNTS.xml",
         "imap_codice_l0_hi-sectored_20240429_v001.pkts": "P_COD_HI_SECT_SPECIES_COUNTS.xml",  # noqa
+        "imap_codice_l0_hi-pha_20240429_v001.pkts": "P_COD_HI_PHA.xml",
         "imap_codice_l0_hskp_20100101_v001.pkts": "P_COD_NHK.xml",
         "imap_codice_l0_lo-counters-aggregated_20240429_v001.pkts": "P_COD_LO_INST_COUNTS_AGGREGATED.xml",  # noqa
         "imap_codice_l0_lo-counters-singles_20240429_v001.pkts": "P_COD_LO_INST_COUNTS_SINGLES.xml",  # noqa
@@ -47,6 +48,7 @@ def decom_packets(packet_file: Path) -> list:
         "imap_codice_l0_lo-nsw-priority_20240429_v001.pkts": "P_COD_LO_NSW_PRIORITY_COUNTS.xml",  # noqa
         "imap_codice_l0_lo-sw-species_20240429_v001.pkts": "P_COD_LO_SW_SPECIES_COUNTS.xml",  # noqa
         "imap_codice_l0_lo-nsw-species_20240429_v001.pkts": "P_COD_LO_NSW_SPECIES_COUNTS.xml",  # noqa
+        "imap_codice_l0_lo-pha_20240429_v001.pkts": "P_COD_LO_PHA.xml",
     }
 
     xtce_document = Path(

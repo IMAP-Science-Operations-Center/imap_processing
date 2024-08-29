@@ -13,6 +13,7 @@ Notes
 
 from __future__ import annotations
 
+import collections
 import logging
 from pathlib import Path
 
@@ -23,19 +24,19 @@ import xarray as xr
 
 from imap_processing import imap_module_directory
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
-from imap_processing.cdf.utils import IMAP_EPOCH, met_to_j2000ns
+from imap_processing.cdf.utils import met_to_j2000ns
 from imap_processing.codice import constants
 from imap_processing.codice.codice_l0 import decom_packets
-from imap_processing.codice.utils import CODICEAPID, create_hskp_dataset
+from imap_processing.codice.utils import CODICEAPID, add_metadata_to_array
 from imap_processing.utils import group_by_apid, sort_by_time
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 # TODO: Decom data arrays need to be decompressed
-# TODO: Add metadata attrs to science dataset?
 # TODO: In decommutation, how to have a variable length data and then a checksum
-#       after it?
+#       after it? (Might be fixed with new XTCE script updates)
+# TODO: Add support for decomming multiple APIDs from a single file
 
 
 class CoDICEL1aPipeline:
@@ -60,12 +61,12 @@ class CoDICEL1aPipeline:
 
     Methods
     -------
+    configure_data_products()
+        Set the various settings for defining the data products.
     create_science_dataset()
         Create an ``xarray`` dataset for the unpacked science data.
     get_acquisition_times()
         Retrieve the acquisition times via the Lo stepping table.
-    get_data_products()
-        Retrieve the lo data products.
     get_esa_sweep_values()
         Retrieve the ESA sweep values.
     unpack_science_data()
@@ -78,6 +79,21 @@ class CoDICEL1aPipeline:
         self.plan_id = plan_id
         self.plan_step = plan_step
         self.view_id = view_id
+
+    def configure_data_products(self, apid: int) -> None:
+        """
+        Set the various settings for defining the data products.
+
+        Parameters
+        ----------
+        apid : int
+            The APID of interest.
+        """
+        config = constants.DATA_PRODUCT_CONFIGURATIONS.get(apid)  # type: ignore[call-overload]
+        self.num_counters = config["num_counters"]
+        self.num_energy_steps = config["num_energy_steps"]
+        self.variable_names = config["variable_names"]
+        self.dataset_name = config["dataset_name"]
 
     def create_science_dataset(self, met: np.int64, data_version: str) -> xr.Dataset:
         """
@@ -140,7 +156,7 @@ class CoDICEL1aPipeline:
             # TODO: Currently, cdflib doesn't properly write/read CDF files that
             #       have a single epoch value. To get around this for now, use
             #       two epoch values and reshape accordingly. Revisit this after
-            #       SIT-3.
+            #       SIT-3. See https://github.com/MAVENSDC/cdflib/issues/268
             variable_data_arr = np.array(list(variable_data) * 2, dtype=int).reshape(
                 2, self.num_energy_steps
             )
@@ -156,6 +172,8 @@ class CoDICEL1aPipeline:
 
         # Add ESA Sweep Values and acquisition times (lo only)
         if "_lo_" in self.dataset_name:
+            self.get_esa_sweep_values()
+            self.get_acquisition_times()
             dataset["esa_sweep_values"] = xr.DataArray(
                 self.esa_sweep_values,
                 dims=["energy"],
@@ -212,23 +230,6 @@ class CoDICEL1aPipeline:
         for step_number in range(128):
             row_number = np.argmax(energy_steps == str(step_number), axis=1).argmax()
             self.acquisition_times.append(lo_stepping_values.acq_time[row_number])
-
-    def get_data_products(self, apid: int) -> None:
-        """
-        Retrieve various settings for defining the data products.
-
-        Parameters
-        ----------
-        apid : int
-            The APID of interest.
-        """
-        config = constants.DATA_PRODUCT_CONFIGURATIONS.get(apid)  # type: ignore[call-overload]
-        # TODO Change, No overload variant of "get" of
-        #  "dict" matches argument type "str".
-        self.num_counters = config["num_counters"]
-        self.num_energy_steps = config["num_energy_steps"]
-        self.variable_names = config["variable_names"]
-        self.dataset_name = config["dataset_name"]
 
     def get_esa_sweep_values(self) -> None:
         """
@@ -290,6 +291,119 @@ class CoDICEL1aPipeline:
         self.data = [["1"] * 128] * self.num_counters
 
 
+def create_event_dataset(
+    met: list[int], event_data: str, dataset_name: str, data_version: str
+) -> xr.Dataset:
+    """
+    Create dataset for event data.
+
+    Parameters
+    ----------
+    met : list[int]
+        The Mission Elapsed Time of the data.
+    event_data : str
+        A string of binary numbers representing the event data.
+    dataset_name : str
+        The name for the dataset.
+    data_version : str
+        Version of the data product being created.
+
+    Returns
+    -------
+    dataset : xarray.Dataset
+        Xarray dataset containing the event data.
+    """
+    cdf_attrs = ImapCdfAttributes()
+    cdf_attrs.add_instrument_global_attrs("codice")
+    cdf_attrs.add_instrument_variable_attrs("codice", "l1a")
+    cdf_attrs.add_global_attribute("Data_version", data_version)
+
+    # Define coordinates
+    epoch = xr.DataArray(
+        met_to_j2000ns(met),  # TODO: Fix after SIT-3 (see note below)
+        name="epoch",
+        dims=["epoch"],
+        attrs=cdf_attrs.get_variable_attributes("epoch"),
+    )
+
+    # Create the dataset to hold the data variables
+    dataset = xr.Dataset(
+        coords={
+            "epoch": epoch,
+        },
+        attrs=cdf_attrs.get_global_attributes(dataset_name),
+    )
+
+    # TODO: Determine what should go in event data CDF and how it should be
+    # structured.
+
+    return dataset
+
+
+def create_hskp_dataset(
+    packets: list[space_packet_parser.parser.Packet],
+    data_version: str,
+) -> xr.Dataset:
+    """
+    Create dataset for each metadata field for housekeeping data.
+
+    Parameters
+    ----------
+    packets : list[space_packet_parser.parser.Packet]
+        The list of packets to process.
+    data_version : str
+        Version of the data product being created.
+
+    Returns
+    -------
+    dataset : xarray.Dataset
+        Xarray dataset containing the metadata.
+    """
+    cdf_attrs = ImapCdfAttributes()
+    cdf_attrs.add_instrument_global_attrs("codice")
+    cdf_attrs.add_instrument_variable_attrs("codice", "l1a")
+    cdf_attrs.add_global_attribute("Data_version", data_version)
+
+    metadata_arrays: dict = collections.defaultdict(list)
+
+    for packet in packets:
+        add_metadata_to_array(packet, metadata_arrays)
+
+    epoch = xr.DataArray(
+        met_to_j2000ns(
+            metadata_arrays["SHCOARSE"],
+            reference_epoch=np.datetime64("2010-01-01T00:01:06.184", "ns"),
+        ),
+        name="epoch",
+        dims=["epoch"],
+        attrs=cdf_attrs.get_variable_attributes("epoch"),
+    )
+
+    dataset = xr.Dataset(
+        coords={"epoch": epoch},
+        attrs=cdf_attrs.get_global_attributes("imap_codice_l1a_hskp"),
+    )
+
+    # TODO: Change 'TBD' catdesc and fieldname
+    # Once housekeeping packet definition file is re-generated with updated
+    # version of space_packet_parser, can get fieldname and catdesc info via:
+    #    for key, value in (packet.header | packet.data).items():
+    #      fieldname = value.short_description
+    #      catdesc = value.long_description
+    # I am holding off making this change until I acquire updated housekeeping
+    # packets/validation data that match the latest telemetry definitions
+    for key, value in metadata_arrays.items():
+        attrs = cdf_attrs.get_variable_attributes("codice_support_attrs")
+        attrs["CATDESC"] = "TBD"
+        attrs["DEPEND_0"] = "epoch"
+        attrs["FIELDNAM"] = "TBD"
+        attrs["LABLAXIS"] = key
+
+        dataset[key] = xr.DataArray(value, dims=["epoch"], attrs=attrs)
+
+    return dataset
+
+
 def get_params(packet: space_packet_parser.parser.Packet) -> tuple[int, int, int, int]:
     """
     Return the four 'main' parameters used for l1a processing.
@@ -343,86 +457,57 @@ def process_codice_l1a(file_path: Path, data_version: str) -> xr.Dataset:
     dataset : xarray.Dataset
         The ``xarray`` dataset containing the science data and supporting metadata.
     """
-    # TODO: Once simulated data for codice-hi is acquired, there shouldn't be a
-    # need to split the processing based on the file_path, so this function can
-    # be simplified.
+    # TODO: Use new packet_file_to_dataset() function to simplify things
 
-    apids_for_lo_science_processing = [
-        CODICEAPID.COD_LO_INST_COUNTS_AGGREGATED,
-        CODICEAPID.COD_LO_INST_COUNTS_SINGLES,
-        CODICEAPID.COD_LO_SW_ANGULAR_COUNTS,
-        CODICEAPID.COD_LO_NSW_ANGULAR_COUNTS,
-        CODICEAPID.COD_LO_SW_PRIORITY_COUNTS,
-        CODICEAPID.COD_LO_NSW_PRIORITY_COUNTS,
-        CODICEAPID.COD_LO_SW_SPECIES_COUNTS,
-        CODICEAPID.COD_LO_NSW_SPECIES_COUNTS,
-    ]
+    # Decom the packets, group data by APID, and sort by time
+    packets = decom_packets(file_path)
+    grouped_data = group_by_apid(packets)
 
-    # TODO: Temporary workaround in order to create hi data products in absence
-    #       of simulated data
-    if file_path.name.startswith(("imap_codice_l0_lo", "imap_codice_l0_hskp")):
-        # Decom the packets, group data by APID, and sort by time
-        packets = decom_packets(file_path)
-        grouped_data = group_by_apid(packets)
+    for apid in grouped_data:
+        logger.info(f"\nProcessing {CODICEAPID(apid).name} packet")
 
-        for apid in grouped_data:
-            logger.info(f"\nProcessing {CODICEAPID(apid).name} packet")
+        if apid == CODICEAPID.COD_NHK:
+            packets = grouped_data[apid]
+            sorted_packets = sort_by_time(packets, "SHCOARSE")
+            dataset = create_hskp_dataset(sorted_packets, data_version)
 
-            if apid == CODICEAPID.COD_NHK:
-                packets = grouped_data[apid]
-                sorted_packets = sort_by_time(packets, "SHCOARSE")
-                dataset = create_hskp_dataset(sorted_packets, data_version)
+        elif apid in [CODICEAPID.COD_LO_PHA, CODICEAPID.COD_HI_PHA]:
+            if apid == CODICEAPID.COD_LO_PHA:
+                dataset_name = "imap_codice_l1a_lo_pha"
+            elif apid == CODICEAPID.COD_HI_PHA:
+                dataset_name = "imap_codice_l1a_hi_pha"
 
-            elif apid in apids_for_lo_science_processing:
-                # Sort the packets by time
-                packets = sort_by_time(grouped_data[apid], "SHCOARSE")
+            # Sort the packets by time
+            packets = sort_by_time(grouped_data[apid], "SHCOARSE")
 
-                # Determine the start time of the packet
-                met = packets[0].data["ACQ_START_SECONDS"].raw_value
-                met = [met, met + 1]  # TODO: Remove after SIT-3
-                # Extract the data
-                science_values = packets[0].data["DATA"].raw_value
+            # Determine the start time of the packet
+            met = packets[0].data["ACQ_START_SECONDS"].raw_value
+            met = [met, met + 1]  # TODO: Remove after cdflib fix
 
-                # Get the four "main" parameters for processing
-                table_id, plan_id, plan_step, view_id = get_params(packets[0])
+            # Extract the data
+            event_data = packets[0].data["EVENT_DATA"].raw_value
 
-                # Run the pipeline to create a dataset for the product
-                pipeline = CoDICEL1aPipeline(table_id, plan_id, plan_step, view_id)
-                pipeline.get_esa_sweep_values()
-                pipeline.get_acquisition_times()
-                pipeline.get_data_products(apid)
-                pipeline.unpack_science_data(science_values)
-                dataset = pipeline.create_science_dataset(met, data_version)
+            # Create the dataset
+            dataset = create_event_dataset(met, event_data, dataset_name, data_version)
 
-    # TODO: Temporary workaround in order to create hi data products in absence
-    #       of simulated data. This is essentially the same process as is for
-    #       lo, but don't try to decom any packets, just define the data
-    #       outright.
-    elif file_path.name.startswith("imap_codice_l0_hi"):
-        if file_path.name.startswith("imap_codice_l0_hi-counters-aggregated"):
-            apid = CODICEAPID.COD_HI_INST_COUNTS_AGGREGATED
-            table_id, plan_id, plan_step, view_id = (1, 0, 0, 3)
-        elif file_path.name.startswith("imap_codice_l0_hi-counters-singles"):
-            apid = CODICEAPID.COD_HI_INST_COUNTS_SINGLES
-            table_id, plan_id, plan_step, view_id = (1, 0, 0, 4)
-        elif file_path.name.startswith("imap_codice_l0_hi-omni"):
-            apid = CODICEAPID.COD_HI_OMNI_SPECIES_COUNTS
-            table_id, plan_id, plan_step, view_id = (1, 0, 0, 5)
-        elif file_path.name.startswith("imap_codice_l0_hi-sectored"):
-            apid = CODICEAPID.COD_HI_SECT_SPECIES_COUNTS
-            table_id, plan_id, plan_step, view_id = (1, 0, 0, 6)
+        elif apid in constants.APIDS_FOR_SCIENCE_PROCESSING:
+            # Sort the packets by time
+            packets = sort_by_time(grouped_data[apid], "SHCOARSE")
 
-        met0 = (np.datetime64("2024-04-29T00:00") - IMAP_EPOCH).astype("timedelta64[s]")
-        met0 = met0.astype(np.int64)
-        met = [met0, met0 + 1]  # Using this to match the other data products
-        science_values = ""  # Currently don't have simulated data for this
+            # Determine the start time of the packet
+            met = packets[0].data["ACQ_START_SECONDS"].raw_value
+            met = [met, met + 1]  # TODO: Remove after cdflib fix
+            # Extract the data
+            science_values = packets[0].data["DATA"].raw_value
 
-        pipeline = CoDICEL1aPipeline(table_id, plan_id, plan_step, view_id)
-        pipeline.get_data_products(apid)
-        pipeline.unpack_science_data(science_values)
-        dataset = pipeline.create_science_dataset(met, data_version)
+            # Get the four "main" parameters for processing
+            table_id, plan_id, plan_step, view_id = get_params(packets[0])
 
-    # Write dataset to CDF
+            # Run the pipeline to create a dataset for the product
+            pipeline = CoDICEL1aPipeline(table_id, plan_id, plan_step, view_id)
+            pipeline.configure_data_products(apid)
+            pipeline.unpack_science_data(science_values)
+            dataset = pipeline.create_science_dataset(met, data_version)
+
     logger.info(f"\nFinal data product:\n{dataset}\n")
-
     return dataset
