@@ -8,7 +8,7 @@ repository provides a command-line utility and python package for
 interacting with the API programmatically. It is the preferred way to use the API.
 
 Users may also download, upload, and query via the REST API directly through the browser, or `curl` commands.
-The :ref:`REST API Specification <rest-api-specification>` section below describes the various endpoints that are supported and how to use them.
+The `REST API Specification`_ section below describes the various endpoints that are supported and how to use them.
 
 *Note: Several sections and links begin with* [WIP]. *As development on the API is ongoing, this indicates
 that the full implementation of the functionality is yet to be completed.*
@@ -198,6 +198,8 @@ FileNotFoundError
 ^^^^^^^^^^^^^^^^^
 
 This could mean that the local data directory is not set up with the same paths as the SDC. See the data directory section for an example of how to set this up.
+
+.. _rest-api-specification:
 
 REST API Specification
 ----------------------
