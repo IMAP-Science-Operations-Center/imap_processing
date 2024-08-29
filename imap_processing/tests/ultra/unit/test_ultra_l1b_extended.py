@@ -1,12 +1,15 @@
 """Tests Extended Raw Events for ULTRA L1b."""
 
+import numpy as np
 import pandas as pd
 import pytest
 
 from imap_processing.ultra.l1b.ultra_l1b_extended import (
+    StopType,
     get_front_x_position,
     get_front_y_position,
     get_path_length,
+    get_ph_tof_and_back_positions,
 )
 
 
@@ -59,3 +62,26 @@ def test_get_path_length(de_dataset, yf_fixture):
     test_yb = df_filt["Yb"].astype("float").values
     r = get_path_length((test_xf, test_yf), (test_xb, test_yb), d)
     assert r == pytest.approx(df_filt["r"].astype("float"), abs=1e-5)
+
+
+def test_get_ph_tof_and_back_positions(
+    de_dataset,
+    events_fsw_comparison_theta_0,
+):
+    """Tests get_ph_tof_and_back_positions function."""
+
+    df = pd.read_csv(events_fsw_comparison_theta_0)
+    df_filt = df[df["StartType"] != -1]
+
+    _, _, ph_xb, ph_yb = get_ph_tof_and_back_positions(
+        de_dataset, df_filt.Xf.astype("float").values, "ultra45"
+    )
+
+    ph_indices = np.nonzero(
+        np.isin(de_dataset["STOP_TYPE"], [StopType.Top.value, StopType.Bottom.value])
+    )[0]
+
+    selected_rows = df_filt.iloc[ph_indices]
+
+    np.testing.assert_array_equal(ph_xb, selected_rows["Xb"].astype("float"))
+    np.testing.assert_array_equal(ph_yb, selected_rows["Yb"].astype("float"))

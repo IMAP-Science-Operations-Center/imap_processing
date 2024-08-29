@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='utf-8'?>
 <xtce:SpaceSystem xmlns:xtce="http://www.omg.org/space/xtce" name="P_COD_HI_INST_COUNTS_AGGREGATED">
-	<xtce:Header date="2024-06" version="1.0" author="IMAP SDC" />
+	<xtce:Header date="2024-07" version="1.0" author="IMAP SDC" />
 	<xtce:TelemetryMetaData>
 		<xtce:ParameterTypeSet>
 			<xtce:IntegerParameterType name="UINT1" signed="false">
@@ -43,7 +43,7 @@
 				<xtce:UnitSet />
 				<xtce:BinaryDataEncoding bitOrder="mostSignificantBitFirst">
 					<xtce:SizeInBits>
-						<xtce:FixedValue>4325376</xtce:FixedValue>
+						<xtce:FixedValue>512</xtce:FixedValue>
 					</xtce:SizeInBits>
 				</xtce:BinaryDataEncoding>
 			</xtce:BinaryParameterType>
