@@ -1,9 +1,13 @@
 """Functions to support HIT processing."""
 
+import logging
 from enum import Enum
 from typing import ClassVar
 
+import numpy as np
 import xarray as xr
+
+logger = logging.getLogger(__name__)
 
 
 class HITPrefixes(Enum):
@@ -60,6 +64,44 @@ class HITPrefixes(Enum):
     ]
 
 
+def find_groups(data: xr.Dataset) -> xr.Dataset:
+    """
+    Find groups in the data.
+
+    Parameters
+    ----------
+    data : xr.Dataset
+        HIT Dataset.
+
+    Returns
+    -------
+    grouped_data : xr.Dataset
+        Grouped data.
+    """
+    subcom_range = (0, 59)
+
+    data = data.sortby("HIT_SC_TICK", ascending=True)
+
+    # Filter out data before the first subcom=0 and after the last subcom=59
+    start_sc_ticks = data["HIT_SC_TICK"][(data["HIT_SUBCOM"] == subcom_range[0]).values]
+    start_sc_tick = start_sc_ticks.data.min()
+    last_sc_ticks = data["HIT_SC_TICK"][([data["HIT_SUBCOM"] == subcom_range[-1]][-1])]
+    last_sc_tick = last_sc_ticks.data.max()
+
+    grouped_data = data.where(
+        (data["HIT_SC_TICK"] >= start_sc_tick) & (data["HIT_SC_TICK"] <= last_sc_tick),
+        drop=True,
+    )
+
+    # Create group labels
+    group_labels = np.searchsorted(
+        start_sc_ticks, grouped_data["HIT_SC_TICK"], side="right"
+    )
+    grouped_data["group"] = ("group", group_labels)
+
+    return grouped_data
+
+
 def create_l1(
     fast_rate_1: xr.DataArray,
     fast_rate_2: xr.DataArray,
@@ -100,7 +142,7 @@ def create_l1(
     return l1
 
 
-def process_hit(xarray_data: dict[str, xr.Dataset]) -> dict[str, float]:
+def process_hit(xarray_data: xr.Dataset) -> list[dict]:
     """
     Create L1 data dictionary.
 
@@ -115,24 +157,54 @@ def process_hit(xarray_data: dict[str, xr.Dataset]) -> dict[str, float]:
     hit_data : dict
         Dictionary final data product.
     """
-    fast_rate_1 = xarray_data["HIT"]["HIT_FAST_RATE_1"]
-    fast_rate_2 = xarray_data["HIT"]["HIT_SLOW_RATE"]
-    slow_rate = xarray_data["HIT"]["HIT_SLOW_RATE"]
+    hit_data = []
+    grouped_data = find_groups(xarray_data)
 
-    l1 = create_l1(fast_rate_1, fast_rate_2, slow_rate)
+    for group in np.unique(grouped_data["group"]):
+        fast_rate_1 = grouped_data["HIT_FAST_RATE_1"][
+            (grouped_data["group"] == group).values
+        ]
+        fast_rate_2 = grouped_data["HIT_FAST_RATE_2"][
+            (grouped_data["group"] == group).values
+        ]
+        slow_rate = grouped_data["HIT_SLOW_RATE"][
+            (grouped_data["group"] == group).values
+        ]
+        met = int(grouped_data["HIT_MET"][(grouped_data["group"] == group).values][0])
 
-    hit_data = {
-        "HIT_lo_energy_e_A_side": l1["IALRT_RATE_1"] + l1["IALRT_RATE_2"],
-        "HIT_medium_energy_e_A_side": l1["IALRT_RATE_5"] + l1["IALRT_RATE_6"],
-        "HIT_high_energy_e_A_side": l1["IALRT_RATE_7"],
-        "HIT_low_energy_e_B_side": l1["IALRT_RATE_11"] + l1["IALRT_RATE_12"],
-        "HIT_medium_energy_e_B_side": l1["IALRT_RATE_15"] + l1["IALRT_RATE_16"],
-        "HIT_high_energy_e_B_side": l1["IALRT_RATE_17"],
-        "HIT_medium_energy_H_omni": l1["H_12_15"] + l1["H_15_70"],
-        "HIT_high_energy_H_A_side": l1["IALRT_RATE_8"],
-        "HIT_high_energy_H_B_side": l1["IALRT_RATE_18"],
-        "HIT_low_energy_He_omni": l1["HE4_06_08"],
-        "HIT_high_energy_He_omni": l1["HE4_15_70"],
-    }
+        # Verify that each group has 60 datapoints
+        if len(slow_rate.data) != 60:
+            logger.debug(
+                f"Incorrect number of packets: {len(slow_rate.data)} "
+                f"for met {met}. Skipping."
+            )
+            continue
+
+        l1 = create_l1(fast_rate_1, fast_rate_2, slow_rate)
+
+        hit_data.append(
+            {
+                "met": met,
+                "hit_lo_energy_e_A_side": float(
+                    l1["IALRT_RATE_1"] + l1["IALRT_RATE_2"]
+                ),
+                "hit_medium_energy_e_A_side": float(
+                    l1["IALRT_RATE_5"] + l1["IALRT_RATE_6"]
+                ),
+                "hit_high_energy_e_A_side": float(l1["IALRT_RATE_7"]),
+                "hit_low_energy_e_B_side": float(
+                    l1["IALRT_RATE_11"] + l1["IALRT_RATE_12"]
+                ),
+                "hit_medium_energy_e_B_side": float(
+                    l1["IALRT_RATE_15"] + l1["IALRT_RATE_16"]
+                ),
+                "hit_high_energy_e_B_side": float(l1["IALRT_RATE_17"]),
+                "hit_medium_energy_H_omni": float(l1["H_12_15"] + l1["H_15_70"]),
+                "hit_high_energy_H_A_side": float(l1["IALRT_RATE_8"]),
+                "hit_high_energy_H_B_side": float(l1["IALRT_RATE_18"]),
+                "hit_low_energy_He_omni": float(l1["HE4_06_08"]),
+                "hit_high_energy_He_omni": float(l1["HE4_15_70"]),
+            }
+        )
 
     return hit_data
