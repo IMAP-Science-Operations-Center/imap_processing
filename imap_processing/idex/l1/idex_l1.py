@@ -525,12 +525,12 @@ class RawDustEvent:
         # Gather the huge number of trigger info metadata
         trigger_vars = {}
         for var, value in self.trigger_values.items():
-            trigger_description = TRIGGER_DESCRIPTION_DICT[var]
+            trigger_desc = TRIGGER_DESCRIPTION_DICT[var]
             trigger_vars[var] = xr.DataArray(
                 name=var,
                 data=[value],
                 dims=("epoch"),
-                attrs=idex_attrs.get_variable_attributes(trigger_description.name),
+                attrs=idex_attrs.get_variable_attributes(trigger_desc.name),
             )
 
         # Process the 6 primary data variables
