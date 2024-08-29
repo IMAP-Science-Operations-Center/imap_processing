@@ -174,7 +174,7 @@ def process_hit(xarray_data: xr.Dataset) -> list[dict]:
 
         # Verify that each group has 60 datapoints
         if len(slow_rate.data) != 60:
-            logger.debug(
+            logger.info(
                 f"Incorrect number of packets: {len(slow_rate.data)} "
                 f"for met {met}. Skipping."
             )

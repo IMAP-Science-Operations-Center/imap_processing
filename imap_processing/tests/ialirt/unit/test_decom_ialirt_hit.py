@@ -5,7 +5,12 @@ import pytest
 from imap_processing import imap_module_directory
 from imap_processing.decom import decom_packets
 from imap_processing.ialirt.l0.decom_ialirt import generate_xarray
-from imap_processing.ialirt.l0.process_hit import HITPrefixes, create_l1, process_hit
+from imap_processing.ialirt.l0.process_hit import (
+    HITPrefixes,
+    create_l1,
+    find_groups,
+    process_hit,
+)
 
 
 @pytest.fixture(scope="session")
@@ -30,15 +35,6 @@ def binary_packet_path():
 @pytest.fixture(scope="session")
 def hit_test_data():
     """Returns the xtce auxiliary directory."""
-    header_path = (
-        imap_module_directory
-        / "tests"
-        / "ialirt"
-        / "test_data"
-        / "l0"
-        / "hit_ialirt_sample_header.csv"
-    )
-    header = list(pd.read_csv(header_path).columns)
 
     data_path = (
         imap_module_directory
@@ -48,9 +44,7 @@ def hit_test_data():
         / "l0"
         / "hit_ialirt_sample.csv"
     )
-    data = pd.read_csv(
-        data_path, header=None, names=header, na_values=[" ", ""]
-    ).astype("float")
+    data = pd.read_csv(data_path, na_values=[" ", ""])
 
     return data
 
@@ -60,6 +54,15 @@ def decom_packets_data(binary_packet_path, xtce_hit_path):
     """Read packet data from file using decom_packets"""
     data_packet_list = decom_packets(binary_packet_path, xtce_hit_path)
     return data_packet_list
+
+
+@pytest.fixture()
+def xarray_data(binary_packet_path, xtce_hit_path):
+    """Create xarray data"""
+    xarray_data = generate_xarray(
+        binary_packet_path, xtce_hit_path, time_keys={"HIT": "HIT_SC_TICK"}
+    )
+    return xarray_data
 
 
 def test_length(decom_packets_data, hit_test_data):
@@ -125,24 +128,28 @@ def test_prefixes():
     assert HITPrefixes.SLOW_RATE.value == expected_slow_rate
 
 
-def test_create_l1(binary_packet_path, xtce_hit_path, hit_test_data):
+def test_find_groups(xarray_data):
+    """Tests find_groups"""
+
+    filtered_data = find_groups(xarray_data["HIT"])
+
+    assert filtered_data["HIT_SUBCOM"].values[0] == 0
+    assert filtered_data["HIT_SUBCOM"].values[-1] == 59
+    assert len(filtered_data["HIT_SUBCOM"]) / 60 == 15
+    assert len(filtered_data["HIT_SC_TICK"][filtered_data["HIT_SUBCOM"] == 0]) == 15
+    assert len(filtered_data["HIT_SC_TICK"][filtered_data["HIT_SUBCOM"] == 59]) == 15
+
+
+def test_create_l1(xarray_data):
     """Tests create_l1"""
 
-    xarray_data = generate_xarray(
-        binary_packet_path, xtce_hit_path, time_keys={"HIT": "HIT_SC_TICK"}
-    )
-    fast_rate_1 = xarray_data["HIT"]["HIT_FAST_RATE_1"]
-    fast_rate_2 = xarray_data["HIT"]["HIT_FAST_RATE_2"]
-    slow_rate = xarray_data["HIT"]["HIT_SLOW_RATE"]
+    filtered_data = find_groups(xarray_data["HIT"])
 
-    # The sequence begins where "HIT_MET" != 0
-    start_index = hit_test_data.index[hit_test_data["MET"] != 0][3]
+    fast_rate_1 = filtered_data["HIT_FAST_RATE_1"][(filtered_data["group"] == 4).values]
+    fast_rate_2 = filtered_data["HIT_FAST_RATE_2"][(filtered_data["group"] == 4).values]
+    slow_rate = filtered_data["HIT_SLOW_RATE"][(filtered_data["group"] == 4).values]
 
-    fast_rate_1_subset = fast_rate_1[start_index : start_index + 60]
-    fast_rate_2_subset = fast_rate_2[start_index : start_index + 60]
-    slow_rate_subset = slow_rate[start_index : start_index + 60]
-
-    l1 = create_l1(fast_rate_1_subset, fast_rate_2_subset, slow_rate_subset)
+    l1 = create_l1(fast_rate_1, fast_rate_2, slow_rate)
 
     assert l1["L1A_TRIG_08"] == 39
     assert l1["L3A_TRIG_10"] == 7
@@ -150,45 +157,43 @@ def test_create_l1(binary_packet_path, xtce_hit_path, hit_test_data):
     assert l1["L4IBHG"] == 2
 
 
-def test_process_hit(binary_packet_path, xtce_hit_path, hit_test_data):
+def test_process_hit(xarray_data, caplog):
+    """Tests process_hit."""
+
+    # Tests that it functions normally
+    hit_product = process_hit(xarray_data["HIT"])
+    assert len(hit_product) == 15
+
+    # Make a subset of data that has values to check the calculations of process hit.
+    indices = (xarray_data["HIT"]["HIT_MET"] != 0).values.nonzero()[0]
+    xarray_data["HIT"]["HIT_SLOW_RATE"].values[indices[0] : indices[0] + 60] = 2
+    subset = xarray_data["HIT"].isel(HIT_SC_TICK=slice(indices[0], indices[0] + 60))
+
+    hit_product = process_hit(subset)
+
+    assert hit_product[0]["hit_lo_energy_e_A_side"] == 4
+    assert hit_product[0]["hit_medium_energy_e_A_side"] == 4
+    assert hit_product[0]["hit_low_energy_e_B_side"] == 4
+    assert hit_product[0]["hit_high_energy_e_B_side"] == 2
+    assert hit_product[0]["hit_medium_energy_H_omni"] == 4
+    assert hit_product[0]["hit_high_energy_He_omni"] == 2
+
+    # Create a scrambled set of subcom values.
+    xarray_data["HIT"]["HIT_SUBCOM"].values[indices[0] : indices[0] + 60] = [
+        i for i in range(29) for _ in range(2)
+    ] + [59, 59]
+
+    # Check if the logger was called with the expected message
+    with caplog.at_level("INFO"):
+        process_hit(subset)
+        assert any(
+            "Incorrect number of packets" in record.message for record in caplog.records
+        )
+
+
+def test_decom_packets(xarray_data, hit_test_data):
     """This function checks that all instrument parameters are accounted for."""
 
-    xarray_data = generate_xarray(
-        binary_packet_path, xtce_hit_path, time_keys={"HIT": "HIT_SC_TICK"}
-    )
-    hit_data = xarray_data["HIT"]
-    non_zero_indices = (hit_data["HIT_MET"] != 0).values.nonzero()[0]
-    third_non_zero_index = non_zero_indices[3]
-    subset = hit_data.isel(
-        HIT_SC_TICK=slice(third_non_zero_index, third_non_zero_index + 60)
-    )
-
-    hit_product = process_hit({"HIT": subset})
-    assert hit_product["HIT_medium_energy_e_B_side"] == 1
-
-    # replace values for the test to spot-check
-    hit_data["HIT_SLOW_RATE"].values[
-        third_non_zero_index : third_non_zero_index + 60
-    ] = 2
-    subset = hit_data.isel(
-        HIT_SC_TICK=slice(third_non_zero_index, third_non_zero_index + 60)
-    )
-
-    hit_product_2 = process_hit({"HIT": subset})
-    assert hit_product_2["HIT_lo_energy_e_A_side"] == 4
-    assert hit_product_2["HIT_medium_energy_e_A_side"] == 4
-    assert hit_product_2["HIT_low_energy_e_B_side"] == 4
-    assert hit_product_2["HIT_high_energy_e_B_side"] == 2
-    assert hit_product_2["HIT_medium_energy_H_omni"] == 4
-    assert hit_product_2["HIT_high_energy_He_omni"] == 2
-
-
-def test_decom_packets(binary_packet_path, xtce_hit_path, hit_test_data):
-    """This function checks that all instrument parameters are accounted for."""
-
-    xarray_data = generate_xarray(
-        binary_packet_path, xtce_hit_path, time_keys={"HIT": "HIT_SC_TICK"}
-    )
     fast_rate_1 = xarray_data["HIT"]["HIT_FAST_RATE_1"]
     fast_rate_2 = xarray_data["HIT"]["HIT_FAST_RATE_2"]
     slow_rate = xarray_data["HIT"]["HIT_SLOW_RATE"]
