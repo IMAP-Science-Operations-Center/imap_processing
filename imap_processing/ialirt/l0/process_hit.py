@@ -80,22 +80,22 @@ def find_groups(data: xr.Dataset) -> xr.Dataset:
     """
     subcom_range = (0, 59)
 
-    data = data.sortby("HIT_SC_TICK", ascending=True)
+    data = data.sortby("hit_sc_tick", ascending=True)
 
     # Filter out data before the first subcom=0 and after the last subcom=59
-    start_sc_ticks = data["HIT_SC_TICK"][(data["HIT_SUBCOM"] == subcom_range[0]).values]
+    start_sc_ticks = data["hit_sc_tick"][(data["hit_subcom"] == subcom_range[0]).values]
     start_sc_tick = start_sc_ticks.data.min()
-    last_sc_ticks = data["HIT_SC_TICK"][([data["HIT_SUBCOM"] == subcom_range[-1]][-1])]
+    last_sc_ticks = data["hit_sc_tick"][([data["hit_subcom"] == subcom_range[-1]][-1])]
     last_sc_tick = last_sc_ticks.data.max()
 
     grouped_data = data.where(
-        (data["HIT_SC_TICK"] >= start_sc_tick) & (data["HIT_SC_TICK"] <= last_sc_tick),
+        (data["hit_sc_tick"] >= start_sc_tick) & (data["hit_sc_tick"] <= last_sc_tick),
         drop=True,
     )
 
     # Create group labels
     group_labels = np.searchsorted(
-        start_sc_ticks, grouped_data["HIT_SC_TICK"], side="right"
+        start_sc_ticks, grouped_data["hit_sc_tick"], side="right"
     )
     grouped_data["group"] = ("group", group_labels)
 
@@ -161,16 +161,16 @@ def process_hit(xarray_data: xr.Dataset) -> list[dict]:
     grouped_data = find_groups(xarray_data)
 
     for group in np.unique(grouped_data["group"]):
-        fast_rate_1 = grouped_data["HIT_FAST_RATE_1"][
+        fast_rate_1 = grouped_data["hit_fast_rate_1"][
             (grouped_data["group"] == group).values
         ]
-        fast_rate_2 = grouped_data["HIT_FAST_RATE_2"][
+        fast_rate_2 = grouped_data["hit_fast_rate_2"][
             (grouped_data["group"] == group).values
         ]
-        slow_rate = grouped_data["HIT_SLOW_RATE"][
+        slow_rate = grouped_data["hit_slow_rate"][
             (grouped_data["group"] == group).values
         ]
-        met = int(grouped_data["HIT_MET"][(grouped_data["group"] == group).values][0])
+        met = int(grouped_data["hit_met"][(grouped_data["group"] == group).values][0])
 
         # Verify that each group has 60 datapoints
         if len(slow_rate.data) != 60:
