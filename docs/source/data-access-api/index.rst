@@ -108,7 +108,10 @@ Imap data access can also be imported and used as a python package if desired.
         # Search for files
         results = imap_data_access.query(instrument="mag", data_level="l0")
         # results is a list of dictionaries
-        # [{'file_path': 'imap/swe/l0/2024/01/imap_swe_l0_sci_20240105_v001.pkts', 'instrument': 'swe', 'data_level': 'l0', 'descriptor': 'sci', 'start_date': '20240105','version': 'v001', 'extension': 'pkts'}, {'file_path': 'imap/swe/l0/2024/01/imap_swe_l0_sci_20240105_v001.pkts', 'instrument': 'swe', 'data_level': 'l0', 'descriptor': 'sci', 'start_date': '20240105', 'version': 'v001', 'extension': 'pkts'}]
+        # [{'file_path': 'imap/swe/l0/2024/01/imap_swe_l0_sci_20240105_v001.pkts', 'instrument': 'swe',
+                'data_level': 'l0', 'descriptor': 'sci', 'start_date': '20240105','version': 'v001', 'extension': 'pkts'},
+            {'file_path': 'imap/swe/l0/2024/01/imap_swe_l0_sci_20240105_v001.pkts', 'instrument': 'swe',
+                'data_level': 'l0', 'descriptor': 'sci', 'start_date': '20240105', 'version': 'v001', 'extension': 'pkts'}]
 
         # Download a file that was returned from the search
         imap_data_access.download("imap/mag/l0/2024/01/imap_mag_l0_raw_202040101_v001.pkts")
@@ -125,7 +128,7 @@ Data Directory
 ^^^^^^^^^^^^^^
 
 The folder structure for data files within the IMAP SDC is rigidly defined, so the data access will mimic that structure to make sure all data is stored in the same hierarchical structure as the SDC. This will enable seamless transition between a user's local system and the SDC. This is only used for downloads.
-A user's root data location can be specified as an environment variable IMAP_DATA_DIR or through a configuration dictionary within the package itself imap_data_access.config["DATA_DIR"]. If the IMAP_DATA_DIR variable is not set, the program defaults to the user's current working directory + data/.
+A user's root data location can be specified as an environment variable ``IMAP_DATA_DIR`` or through a configuration dictionary within the package itself (``imap_data_access.config["DATA_DIR"]``). If the ``IMAP_DATA_DIR`` variable is not set, the program defaults to the user's current working directory + ``data/``.
 The following is the directory structure the IMAP SDC uses.
 
     .. code-block:: bash
@@ -153,12 +156,12 @@ for example, with ``IMAP_DATA_DIR=/data:``
 Data Access URL
 ^^^^^^^^^^^^^^^
 
-To change the default URL that the package accesses, you can set the environment variable ``IMAP_DATA_ACCESS_URL`` or within the package ``imap_data_access.config["DATA_ACCESS_URL"]``. The default is the development server https://api.dev.imap-mission.com.
+To change the default URL that the package accesses, you can set the environment variable ``IMAP_DATA_ACCESS_URL`` or within the package ``imap_data_access.config["DATA_ACCESS_URL"]``. The default is the development server (``https://api.dev.imap-mission.com``).
 
 File Validation
 ---------------
 
-This package validates filenames and paths to check they follow our standards, as defined by the filename conventions. There is also a class available for use by other packages to create filepaths and filenames that follow the IMAP SDC conventions.
+This package validates filenames and paths to check they follow our standards, as defined by the [filename conventions](https://imap-processing.readthedocs.io/en/latest/development-guide/style-guide/naming-conventions.html). There is also a class available for use by other packages to create filepaths and filenames that follow the IMAP SDC conventions.
 To use this class, use ``imap_data_access.ScienceFilePath``.
 
 Usage:
