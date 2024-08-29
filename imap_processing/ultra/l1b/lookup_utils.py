@@ -78,7 +78,9 @@ def get_norm(dn: np.ndarray, key: str, file_label: str) -> npt.NDArray:
     else:
         tdc_norm_df = _TDC_NORM_DF_ULTRA90
 
-    return tdc_norm_df[key].values[dn]
+    dn_norm = tdc_norm_df[key].iloc[dn].values
+
+    return dn_norm
 
 
 def get_back_position(back_index: np.ndarray, key: str, file_label: str) -> npt.NDArray:

@@ -1,14 +1,20 @@
 # <=== Defaults ===>
 default_attrs: &default
-  # Assumed values for all variable attrs unless overwritten
-  DISPLAY_TYPE: no_plot
-  FILLVAL: -9223372036854775808
-  FORMAT: I12
-  UNITS: dN
-  VALIDMIN: -9223372036854775808
-  VALIDMAX: 9223372036854775807
-  VAR_TYPE: data
-  SCALETYP: linear
+    CATDESC: ""
+    DISPLAY_TYPE: no_plot
+    FIELDNAM: ""
+    FILLVAL: -9223372036854775808
+    FORMAT: I12
+    LABLAXIS: ""
+    REFERENCE_POSITION: ""
+    RESOLUTION: ""
+    SCALETYP: linear
+    TIME_BASE: ""
+    TIME_SCALE: ""
+    UNITS: dN
+    VALIDMIN: -9223372036854775808
+    VALIDMAX: 9223372036854775807
+    VAR_TYPE: data
 
 codice_support_attrs: &support_default
     <<: *default
@@ -29,23 +35,32 @@ energy_attrs:
 # <=== Labels ===>
 energy_label:
     CATDESC: Energy per charge (E/q) sweeping step
+    DISPLAY_TYPE: ""
     FIELDNAM: Energy step
+    FILLVAL: ""
     FORMAT: A3
+    LABLAXIS: ""
+    REFERENCE_POSITION: ""
+    RESOLUTION: ""
+    TIME_BASE: ""
+    TIME_SCALE: ""
+    UNITS: ""
+    VALIDMAX: ""
+    VALIDMIN: ""
     VAR_TYPE: metadata
 
 # <=== Dataset Attributes ===>
-# TODO: resolve ISTP warning: Width of F10 FORMAT may be insufficient for
-#       values.  Adjust FORMAT or VALIDMIN/VALIDMAX value to resolve.
 acquisition_times_attrs:
     <<: *default
     CATDESC: Time of acquisition for the energy step
+    DEPEND_1: energy
     FIELDNAM: Acquisition Time
-    FILLVAL: 1.7976931348623157e+308
+    FILLVAL: .NAN
     FORMAT: F10.3
     LABLAXIS: Acq Time
     UNITS: ms
     VALIDMIN: 0
-    VALIDMAX: 1.7976931348623157e+308
+    VALIDMAX: 1000
     VAR_TYPE: support_data
 
 counters_attrs: &counters
@@ -55,16 +70,15 @@ counters_attrs: &counters
     DEPEND_1: energy
     DISPLAY_TYPE: time_series
     FIELDNAM: Fill in at creation
-    FILLVAL: 1.7976931348623157e+308
-    FORMAT: F10.3
     LABL_PTR_1: energy_label
-    UNITS: rates
+    UNITS: counts
     VALIDMIN: 0
-    VALIDMAX: 1.7976931348623157e+308
+    VALIDMAX: 8388607  # max value for a signed 24-bit integer
 
 esa_sweep_attrs:
     <<: *default
     CATDESC: ElectroStatic Analyzer Energy Values
+    DEPEND_1: energy
     FIELDNAM: ESA Voltage
     FORMAT: I19
     LABLAXIS: ESA V
