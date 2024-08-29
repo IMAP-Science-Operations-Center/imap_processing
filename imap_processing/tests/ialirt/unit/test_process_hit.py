@@ -34,9 +34,7 @@ def xarray_data(binary_packet_path, xtce_hit_path):
     """Create xarray data"""
     apid = 1253
 
-    xarray_data = generate_xarray(
-        binary_packet_path, xtce_hit_path, time_keys={"HIT": "HIT_SC_TICK"}
-    )[apid]
+    xarray_data = generate_xarray(binary_packet_path, xtce_hit_path)[apid]
     return xarray_data
 
 

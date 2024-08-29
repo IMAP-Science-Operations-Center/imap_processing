@@ -85,57 +85,10 @@ def test_enumerated(decom_packets_data):
 
 
 def test_generate_xarray(binary_packet_path, xtce_ialirt_path, decom_packets_data):
-    """This function checks that all instrument parameters are accounted for."""
+    """This function checks that all instrument parameters are correct length."""
 
-    instrument_lengths = {}
-    instruments = ["SC", "HIT", "MAG", "COD_LO", "COD_HI", "SWE", "SWAPI"]
+    apid = 478
+    xarray_data = generate_xarray(binary_packet_path, xtce_ialirt_path)[apid]
 
-    xarray_data = generate_xarray(binary_packet_path, xtce_ialirt_path)
-
-    # Assert that all parameters are the same
-    # between packet data and generated xarray
-    for instrument in instruments:
-        instrument_list = list(xarray_data[instrument].coords)
-        instrument_list.extend(list(xarray_data[instrument].data_vars))
-
-        # Create a dictionary of the number of parameters for each instrument
-        instrument_lengths[instrument] = len(instrument_list)
-
-        packet_data_keys_set = set(decom_packets_data[0].data.keys())
-        instrument_list_set = set(instrument_list)
-
-        # Assert that the instrument parameters from the xarray are
-        # a subset of the packet data
-        assert instrument_list_set.issubset(packet_data_keys_set) is True
-
-    # Assert that the length of parameters is the same
-    # between packet data and generated xarray
-    assert sum(instrument_lengths.values()) == len(
-        list(decom_packets_data[0].data.keys())
-    )
-
-    # Check that all the dimensions are the correct length
-    # example:len(xarray_data['HIT'].coords['HIT_SC_TICK'].values) == 32
-    for instrument in instruments:
-        for dimension_name in xarray_data[instrument].dims:
-            assert len(xarray_data[instrument].coords[dimension_name].values) == 32
-
-
-def test_unexpected_key(binary_packet_path, xtce_ialirt_path, decom_packets_data):
-    """
-    This function tests that a ValueError is raised when an unexpected
-    key is encountered.
-    """
-
-    time_keys = {
-        "UNEXPECTED": "SC_SCLK_SEC",
-        "HIT": "HIT_SC_TICK",
-        "MAG": "MAG_ACQ",
-        "COD_LO": "COD_LO_ACQ",
-        "COD_HI": "COD_HI_ACQ",
-        "SWE": "SWE_ACQ_SEC",
-        "SWAPI": "SWAPI_ACQ",
-    }
-
-    with pytest.raises(ValueError, match=r"Unexpected key '.*' found in packet data."):
-        generate_xarray(binary_packet_path, xtce_ialirt_path, time_keys=time_keys)
+    for key in xarray_data.keys():
+        assert len(xarray_data[key]) == 32
