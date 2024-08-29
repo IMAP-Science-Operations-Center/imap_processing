@@ -1,19 +1,21 @@
 """Decommutate IDEX CCSDS packets."""
 
 import logging
+from pathlib import Path
+from typing import Union
 
 from imap_processing import decom, imap_module_directory
 
 logger = logging.getLogger(__name__)
 
 
-def decom_packets(packet_file: str) -> list:
+def decom_packets(packet_file: Union[str, Path]) -> list:
     """
     Decom IDEX data packets using IDEX packet definition.
 
     Parameters
     ----------
-    packet_file : str
+    packet_file : pathlib.Path | str
         String to data packet path with filename.
 
     Returns
