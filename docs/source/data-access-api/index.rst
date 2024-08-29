@@ -4,12 +4,11 @@ Data Access API
 ===============
 
 The `imap-data-access <https://github.com/IMAP-Science-Operations-Center/imap-data-access>`_
-repository provides programmatic access, and a command-line utility for
-interacting with the API. It is the preferred way to use the API.
+repository provides a command-line utility and python package for
+interacting with the API programmatically. It is the preferred way to use the API.
 
-The SDC also provides a REST API that allows users to upload and download files as
-well as query for file metadata. The following documentation describes the
-various endpoints that are supported and how to use them.
+Users may also download, upload, and query via the REST API directly through the browser, or `curl` commands.
+The :ref:`REST API Specification <index.html#rest-api-specification>` section below describes the various endpoints that are supported and how to use them.
 
 *Note: Several sections and links begin with* [WIP]. *As development on the API is ongoing, this indicates
 that the full implementation of the functionality is yet to be completed.*
