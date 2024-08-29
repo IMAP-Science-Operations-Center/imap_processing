@@ -118,7 +118,9 @@ Imap data access can also be imported and used as a python package if desired.
 
 Configuration
 --------------
+
 .. _data-directory:
+
 Data Directory
 ^^^^^^^^^^^^^^
 
