@@ -34,7 +34,7 @@ def decom_packets(packet_file: Path) -> dict[int, xr.Dataset]:
 
     Returns
     -------
-    packets : dict[int, xr.Dataset]
+    packets : dict[int, xarray.Dataset]
         Mapping from apid to ``xarray`` dataset, one dataset per apid.
     """
     xtce_packet_definition = Path(
