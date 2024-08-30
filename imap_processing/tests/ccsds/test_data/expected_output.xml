@@ -48,7 +48,7 @@
 					<xtce:SizeInBits>
 						<xtce:DynamicValue>
 							<xtce:ParameterInstanceRef parameterRef="PKT_LEN" />
-							<xtce:LinearAdjustment slope="8" intercept="-70" />
+							<xtce:LinearAdjustment slope="8" intercept="-71" />
 						</xtce:DynamicValue>
 					</xtce:SizeInBits>
 				</xtce:BinaryDataEncoding>
@@ -59,6 +59,13 @@
 			<xtce:FloatParameterType name="TEST_PACKET.VAR_FLOAT">
 				<xtce:FloatDataEncoding sizeInBits="32" encoding="IEEE-754" />
 			</xtce:FloatParameterType>
+			<xtce:EnumeratedParameterType name="TEST_PACKET.VAR_STATE" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
+				<xtce:EnumerationList>
+					<xtce:Enumeration value="0" label="OFF" />
+					<xtce:Enumeration value="1" label="ON" />
+				</xtce:EnumerationList>
+			</xtce:EnumeratedParameterType>
 			<xtce:IntegerParameterType name="TEST_PACKET2.SHCOARSE" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="32" encoding="unsigned" />
 			</xtce:IntegerParameterType>
@@ -109,11 +116,14 @@
 			<xtce:Parameter name="TEST_PACKET.VAR_FLOAT" parameterTypeRef="TEST_PACKET.VAR_FLOAT">
 				<xtce:LongDescription>Float data</xtce:LongDescription>
 			</xtce:Parameter>
+			<xtce:Parameter name="TEST_PACKET.VAR_STATE" parameterTypeRef="TEST_PACKET.VAR_STATE">
+				<xtce:LongDescription>State data</xtce:LongDescription>
+			</xtce:Parameter>
 			<xtce:Parameter name="TEST_PACKET2.SHCOARSE" parameterTypeRef="TEST_PACKET2.SHCOARSE">
 				<xtce:LongDescription>Mission elapsed time</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="TEST_PACKET2.VAR1" parameterTypeRef="TEST_PACKET2.VAR1" shortDescription="Variable 1 short desc">
-				<xtce:LongDescription>Variable 1 - long desc</xtce:LongDescription>
+			<xtce:Parameter name="TEST_PACKET2.VAR1" parameterTypeRef="TEST_PACKET2.VAR1" shortDescription="Variable 1 short description">
+				<xtce:LongDescription>Variable 1 long description</xtce:LongDescription>
 			</xtce:Parameter>
 		</xtce:ParameterSet>
 		<xtce:ContainerSet>
@@ -142,6 +152,7 @@
 					<xtce:ParameterRefEntry parameterRef="TEST_PACKET.VAR_BYTE" />
 					<xtce:ParameterRefEntry parameterRef="TEST_PACKET.VAR_FILL" />
 					<xtce:ParameterRefEntry parameterRef="TEST_PACKET.VAR_FLOAT" />
+					<xtce:ParameterRefEntry parameterRef="TEST_PACKET.VAR_STATE" />
 				</xtce:EntryList>
 			</xtce:SequenceContainer>
 			<xtce:SequenceContainer name="TEST_PACKET2">

@@ -251,7 +251,6 @@ class XTCEGenerator:
         # Combine the packet name and mnemonic to create a unique parameter name
         name = f"{row['packetName']}.{row['mnemonic']}"
         parameter.attrib["name"] = name
-        # UINT8, ...
         parameter.attrib["parameterTypeRef"] = name
 
         # Add descriptions if they exist
@@ -329,6 +328,10 @@ class XTCEGenerator:
             # Go look up the conversion in the AnalogConversions tab
             # and add it to the encoding
             self._add_analog_conversion(row, encoding)
+        elif row["convertAs"] == "STATE":
+            # Go look up the states in the States tab
+            # and add them to the parameter type
+            self._add_state_conversion(row, parameter_type)
 
     def _add_analog_conversion(self, row: pd.Series, encoding: Et.Element) -> None:
         """
@@ -362,6 +365,34 @@ class XTCEGenerator:
                 term = Et.SubElement(polynomial_calibrator, "xtce:Term")
                 term.attrib["coefficient"] = str(conversion[col])
                 term.attrib["exponent"] = str(i)
+
+    def _add_state_conversion(self, row: pd.Series, parameter_type: Et.Element) -> None:
+        """
+        Add a state conversion to the parameter type.
+
+        Changing from an IntegerParameterType to an EnumeratedParameterType. Adding
+        the list of state mappings to the parameter type.
+
+        Parameters
+        ----------
+        row : pandas.Row
+            Row to be added to the XTCE file, containing mnemonic, packetName.
+        parameter_type : Element
+            The parameter type element to add the conversion to.
+        """
+        # It is an EnumeratedParameterType rather than an IntegerParameterType
+        parameter_type.tag = "xtce:EnumeratedParameterType"
+        enumeration_list = Et.SubElement(parameter_type, "xtce:EnumerationList")
+        # Lookup the enumeration states for this parameter from the States sheet
+        state_sheet = self.sheets["States"]
+        state_sheet = state_sheet.loc[
+            (state_sheet["packetName"] == row["packetName"])
+            & (state_sheet["mnemonic"] == row["mnemonic"])
+        ]
+        for _, state_row in state_sheet.iterrows():
+            enumeration = Et.SubElement(enumeration_list, "xtce:Enumeration")
+            enumeration.attrib["value"] = str(state_row["value"])
+            enumeration.attrib["label"] = str(state_row["state"])
 
     def to_xml(self, output_xml_path: Path) -> None:
         """
