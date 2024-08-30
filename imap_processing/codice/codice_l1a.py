@@ -320,7 +320,7 @@ class CoDICEL1aPipeline:
         # For CoDICE-lo, data are a 3D arrays with a shape representing
         # [<num_positions>,<num_spin_sectors>,<num_energy_steps>]
         if self.instrument == "lo":
-            self.data = np.array(science_values_decompressed, dtype=np.uint).reshape(
+            self.data = np.array(science_values_decompressed, dtype=np.uint32).reshape(
                 self.num_counters,
                 self.num_positions,
                 self.num_spin_sectors,
@@ -330,7 +330,7 @@ class CoDICEL1aPipeline:
         # For CoDICE-hi, data are a 3D array with a shape representing
         # [<num_energy_steps>,<num_positions>,<num_spin_sectors>]
         elif self.instrument == "hi":
-            self.data = np.array(science_values_decompressed, dtype=np.uint).reshape(
+            self.data = np.array(science_values_decompressed, dtype=np.uint32).reshape(
                 self.num_counters,
                 self.num_energy_steps,
                 self.num_positions,
