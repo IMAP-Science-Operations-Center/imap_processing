@@ -12,6 +12,9 @@ PUI = PickUp Ion
 ESA = ElectroStatic Analyzer
 """
 
+# TODO: What to do in the case of a value of 255 in LOSSY_A and LOSSY_B
+#       compression?
+
 from imap_processing.codice.utils import CODICEAPID, CoDICECompression
 
 APIDS_FOR_SCIENCE_PROCESSING = [
@@ -76,75 +79,111 @@ HI_SECT_SPECIES_NAMES = ["h", "he3he4", "cno", "fe"]
 DATA_PRODUCT_CONFIGURATIONS = {
     CODICEAPID.COD_HI_INST_COUNTS_AGGREGATED: {
         "num_counters": 1,
-        "num_energy_steps": 128,
+        "num_energy_steps": 1,  # TODO: Double check with Joey
+        "num_positions": 6,  # TODO: Double check with Joey
+        "num_spin_sectors": 1,
         "variable_names": HI_INST_COUNTS_AGGREGATED_NAMES,
         "dataset_name": "imap_codice_l1a_hi_counters_aggregated",
+        "instrument": "hi",
     },
     CODICEAPID.COD_HI_INST_COUNTS_SINGLES: {
         "num_counters": 3,
-        "num_energy_steps": 128,
+        "num_energy_steps": 1,  # TODO: Double check with Joey
+        "num_positions": 16,  # TODO: Double check with Joey
+        "num_spin_sectors": 1,
         "variable_names": HI_INST_COUNTS_SINGLES_NAMES,
         "dataset_name": "imap_codice_l1a_hi_counters_singles",
+        "instrument": "hi",
     },
     CODICEAPID.COD_HI_OMNI_SPECIES_COUNTS: {
         "num_counters": 8,
-        "num_energy_steps": 128,
+        "num_energy_steps": 15,  # TODO: Double check with Joey
+        "num_positions": 4,  # TODO: Double check with Joey
+        "num_spin_sectors": 1,
         "variable_names": HI_OMNI_SPECIES_NAMES,
         "dataset_name": "imap_codice_l1a_hi_omni",
+        "instrument": "hi",
     },
     CODICEAPID.COD_HI_SECT_SPECIES_COUNTS: {
         "num_counters": 4,
-        "num_energy_steps": 128,
+        "num_energy_steps": 8,
+        "num_positions": 12,
+        "num_spin_sectors": 12,
         "variable_names": HI_SECT_SPECIES_NAMES,
         "dataset_name": "imap_codice_l1a_hi_sectored",
+        "instrument": "hi",
     },
     CODICEAPID.COD_LO_INST_COUNTS_AGGREGATED: {
         "num_counters": 1,
         "num_energy_steps": 128,
+        "num_positions": 6,
+        "num_spin_sectors": 6,
         "variable_names": LO_INST_COUNTS_AGGREGATED_NAMES,
         "dataset_name": "imap_codice_l1a_lo_counters_aggregated",
+        "instrument": "lo",
     },
     CODICEAPID.COD_LO_INST_COUNTS_SINGLES: {
         "num_counters": 1,
         "num_energy_steps": 128,
+        "num_positions": 24,
+        "num_spin_sectors": 6,
         "variable_names": LO_INST_COUNTS_SINGLES_NAMES,
         "dataset_name": "imap_codice_l1a_lo_counters_singles",
+        "instrument": "lo",
     },
     CODICEAPID.COD_LO_SW_ANGULAR_COUNTS: {
         "num_counters": 4,
         "num_energy_steps": 128,
+        "num_positions": 5,
+        "num_spin_sectors": 12,
         "variable_names": LO_SW_ANGULAR_NAMES,
         "dataset_name": "imap_codice_l1a_lo_sw_angular",
+        "instrument": "lo",
     },
     CODICEAPID.COD_LO_NSW_ANGULAR_COUNTS: {
         "num_counters": 1,
         "num_energy_steps": 128,
+        "num_positions": 19,
+        "num_spin_sectors": 12,
         "variable_names": LO_NSW_ANGULAR_NAMES,
         "dataset_name": "imap_codice_l1a_lo_nsw_angular",
+        "instrument": "lo",
     },
     CODICEAPID.COD_LO_SW_PRIORITY_COUNTS: {
         "num_counters": 5,
         "num_energy_steps": 128,
+        "num_positions": 1,
+        "num_spin_sectors": 12,
         "variable_names": LO_SW_PRIORITY_NAMES,
         "dataset_name": "imap_codice_l1a_lo_sw_priority",
+        "instrument": "lo",
     },
     CODICEAPID.COD_LO_NSW_PRIORITY_COUNTS: {
         "num_counters": 2,
         "num_energy_steps": 128,
+        "num_positions": 1,
+        "num_spin_sectors": 12,
         "variable_names": LO_NSW_PRIORITY_NAMES,
         "dataset_name": "imap_codice_l1a_lo_nsw_priority",
+        "instrument": "lo",
     },
     CODICEAPID.COD_LO_SW_SPECIES_COUNTS: {
         "num_counters": 16,
         "num_energy_steps": 128,
+        "num_positions": 1,
+        "num_spin_sectors": 1,
         "variable_names": LO_SW_SPECIES_NAMES,
         "dataset_name": "imap_codice_l1a_lo_sw_species",
+        "instrument": "lo",
     },
     CODICEAPID.COD_LO_NSW_SPECIES_COUNTS: {
         "num_counters": 8,
         "num_energy_steps": 128,
+        "num_positions": 1,
+        "num_spin_sectors": 1,
         "variable_names": LO_NSW_SPECIES_NAMES,
         "dataset_name": "imap_codice_l1a_lo_nsw_species",
+        "instrument": "lo",
     },
 }
 
@@ -177,25 +216,6 @@ HI_COMPRESSION_ID_LOOKUP = {
     7: CoDICECompression.LOSSY_A_LOSSLESS,
     8: CoDICECompression.LOSSY_A_LOSSLESS,
     9: CoDICECompression.LOSSY_A_LOSSLESS,
-}
-
-# Collapse table ID lookup table for Lo data products
-# The key is the view_id and the value is the ID for the collapse table
-LO_COLLAPSE_TABLE_ID_LOOKUP = {0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6, 7: 7, 8: 8}
-
-# Collapse table ID lookup table for Hi data products
-# The key is the view_id and the value is the ID for the collapse table
-Hi_COLLAPSE_TABLE_ID_LOOKUP = {
-    0: 8,
-    1: 9,
-    2: 10,
-    3: 0,
-    4: 1,
-    5: 2,
-    6: 4,
-    7: 5,
-    8: 6,
-    9: 7,
 }
 
 # ESA Sweep table ID lookup table
@@ -538,6 +558,7 @@ LOSSY_A_TABLE = {
     252: 475136,
     253: 491520,
     254: 507904,
+    255: 999999,
 }
 
 LOSSY_B_TABLE = {
@@ -796,4 +817,5 @@ LOSSY_B_TABLE = {
     252: 6815744,
     253: 7340032,
     254: 7864320,
+    255: 9999999,
 }

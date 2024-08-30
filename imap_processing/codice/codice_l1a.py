@@ -27,16 +27,22 @@ from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import met_to_j2000ns
 from imap_processing.codice import constants
 from imap_processing.codice.codice_l0 import decom_packets
+from imap_processing.codice.decompress import decompress
 from imap_processing.codice.utils import CODICEAPID, add_metadata_to_array
 from imap_processing.utils import group_by_apid, sort_by_time
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-# TODO: Decom data arrays need to be decompressed
 # TODO: In decommutation, how to have a variable length data and then a checksum
 #       after it? (Might be fixed with new XTCE script updates)
 # TODO: Add support for decomming multiple APIDs from a single file
+# TODO: Add these as variables in CDF: SPIN_PERIOD, ST_BIAS_GAIN_MODE,
+#       SW_BIAS_GAIN_MODE, RGFO_HALF_SPIN, NSO_HALF_SPIN, DATA_QUALITY
+# TODO: Use new packet_file_to_dataset() function to simplify things
+# TODO: Determine what should go in event data CDF and how it should be
+#       structured.
+# TODO: Make sure CDF attributes match expected nomenclature
 
 
 class CoDICEL1aPipeline:
@@ -70,7 +76,7 @@ class CoDICEL1aPipeline:
     get_esa_sweep_values()
         Retrieve the ESA sweep values.
     unpack_science_data()
-        Make 4D L1a data product from the decompressed science data.
+        Decompress, unpack, and restructure science data arrays.
     """
 
     def __init__(self, table_id: int, plan_id: int, plan_step: int, view_id: int):
@@ -92,8 +98,11 @@ class CoDICEL1aPipeline:
         config = constants.DATA_PRODUCT_CONFIGURATIONS.get(apid)  # type: ignore[call-overload]
         self.num_counters = config["num_counters"]
         self.num_energy_steps = config["num_energy_steps"]
+        self.num_spin_sectors = config["num_spin_sectors"]
+        self.num_positions = config["num_positions"]
         self.variable_names = config["variable_names"]
         self.dataset_name = config["dataset_name"]
+        self.instrument = config["instrument"]
 
     def create_science_dataset(self, met: np.int64, data_version: str) -> xr.Dataset:
         """
@@ -121,10 +130,22 @@ class CoDICEL1aPipeline:
 
         # Define coordinates
         epoch = xr.DataArray(
-            met_to_j2000ns(met),  # TODO: Fix after SIT-3 (see note below)
+            [met_to_j2000ns(met)],
             name="epoch",
             dims=["epoch"],
             attrs=cdf_attrs.get_variable_attributes("epoch"),
+        )
+        inst_az = xr.DataArray(
+            np.arange(self.num_positions),
+            name="inst_az",
+            dims=["inst_az"],
+            attrs=cdf_attrs.get_variable_attributes("inst_az_attrs"),
+        )
+        spin_sector = xr.DataArray(
+            np.arange(self.num_spin_sectors),
+            name="spin_sector",
+            dims=["spin_sector"],
+            attrs=cdf_attrs.get_variable_attributes("spin_sector_attrs"),
         )
         energy_steps = xr.DataArray(
             np.arange(self.num_energy_steps),
@@ -145,6 +166,8 @@ class CoDICEL1aPipeline:
         dataset = xr.Dataset(
             coords={
                 "epoch": epoch,
+                "inst_az": inst_az,
+                "spin_sector": spin_sector,
                 "energy": energy_steps,
                 "energy_label": energy_label,
             },
@@ -153,25 +176,34 @@ class CoDICEL1aPipeline:
 
         # Create a data variable for each counter
         for variable_data, variable_name in zip(self.data, self.variable_names):
-            # TODO: Currently, cdflib doesn't properly write/read CDF files that
-            #       have a single epoch value. To get around this for now, use
-            #       two epoch values and reshape accordingly. Revisit this after
-            #       SIT-3. See https://github.com/MAVENSDC/cdflib/issues/268
-            variable_data_arr = np.array(list(variable_data) * 2, dtype=int).reshape(
-                2, self.num_energy_steps
-            )
+            # Data arrays are structured depending on the instrument
+            if self.instrument == "lo":
+                variable_data_arr = np.array(variable_data).reshape(
+                    1, self.num_positions, self.num_spin_sectors, self.num_energy_steps
+                )
+                dims = ["epoch", "inst_az", "spin_sector", "energy"]
+            elif self.instrument == "hi":
+                variable_data_arr = np.array(variable_data).reshape(
+                    1, self.num_energy_steps, self.num_positions, self.num_spin_sectors
+                )
+                dims = ["epoch", "energy", "inst_az", "spin_sector"]
+
+            # Get the CDF attributes
             cdf_attrs_key = (
                 f"{self.dataset_name.split('imap_codice_l1a_')[-1]}-{variable_name}"
             )
+            attrs = cdf_attrs.get_variable_attributes(cdf_attrs_key)
+
+            # Create the CDF data variable
             dataset[variable_name] = xr.DataArray(
                 variable_data_arr,
                 name=variable_name,
-                dims=["epoch", "energy"],
-                attrs=cdf_attrs.get_variable_attributes(cdf_attrs_key),
+                dims=dims,
+                attrs=attrs,
             )
 
         # Add ESA Sweep Values and acquisition times (lo only)
-        if "_lo_" in self.dataset_name:
+        if self.instrument == "lo":
             self.get_esa_sweep_values()
             self.get_acquisition_times()
             dataset["esa_sweep_values"] = xr.DataArray(
@@ -264,12 +296,13 @@ class CoDICEL1aPipeline:
 
     def unpack_science_data(self, science_values: str) -> None:
         """
-        Unpack the science data from the packet.
+        Decompress, unpack, and restructure science data arrays.
 
-        For LO SW Species Counts data, the science data within the packet is a
-        blob of compressed values of length 2048 bits (16 species * 128 energy
-        levels). These data need to be divided up by species so that each
-        species can have their own data variable in the L1A CDF file.
+        The science data within the packet is a compressed, binary string of
+        values. These data need to be divided up by species or priorities (or
+        what I am calling "counters" as a general term), and re-arranged into
+        3D arrays representing spin sectors, positions, and energies (the order
+        of which depends on the instrument).
 
         Parameters
         ----------
@@ -277,18 +310,32 @@ class CoDICEL1aPipeline:
             A string of binary data representing the science values of the data.
         """
         self.compression_algorithm = constants.LO_COMPRESSION_ID_LOOKUP[self.view_id]
-        self.collapse_table_id = constants.LO_COLLAPSE_TABLE_ID_LOOKUP[self.view_id]
 
-        # TODO: Turn this back on after SIT-3
-        # For SIT-3, just create appropriate length data arrays of all ones
-        # Divide up the data by the number of priorities or species
-        # science_values = packets[0].data["DATA"].raw_value
-        # num_bits = len(science_values)
-        # chunk_size = len(science_values) // self.num_counters
-        # self.data = [
-        #     science_values[i : i + chunk_size] for i in range(0, num_bits, chunk_size)
-        # ]
-        self.data = [["1"] * 128] * self.num_counters
+        # Decompress the binary string into a list of integers
+        science_values_decompressed = decompress(
+            science_values, self.compression_algorithm
+        )
+
+        # Re-arrange the counter data
+        # For CoDICE-lo, data are a 3D arrays with a shape representing
+        # [<num_positions>,<num_spin_sectors>,<num_energy_steps>]
+        if self.instrument == "lo":
+            self.data = np.array(science_values_decompressed, dtype=np.uint32).reshape(
+                self.num_counters,
+                self.num_positions,
+                self.num_spin_sectors,
+                self.num_energy_steps,
+            )
+
+        # For CoDICE-hi, data are a 3D array with a shape representing
+        # [<num_energy_steps>,<num_positions>,<num_spin_sectors>]
+        elif self.instrument == "hi":
+            self.data = np.array(science_values_decompressed, dtype=np.uint32).reshape(
+                self.num_counters,
+                self.num_energy_steps,
+                self.num_positions,
+                self.num_spin_sectors,
+            )
 
 
 def create_event_dataset(
@@ -333,9 +380,6 @@ def create_event_dataset(
         },
         attrs=cdf_attrs.get_global_attributes(dataset_name),
     )
-
-    # TODO: Determine what should go in event data CDF and how it should be
-    # structured.
 
     return dataset
 
@@ -385,13 +429,15 @@ def create_hskp_dataset(
     )
 
     # TODO: Change 'TBD' catdesc and fieldname
-    # Once housekeeping packet definition file is re-generated with updated
-    # version of space_packet_parser, can get fieldname and catdesc info via:
-    #    for key, value in (packet.header | packet.data).items():
-    #      fieldname = value.short_description
-    #      catdesc = value.long_description
-    # I am holding off making this change until I acquire updated housekeeping
-    # packets/validation data that match the latest telemetry definitions
+    #       Once housekeeping packet definition file is re-generated with
+    #       updated version of space_packet_parser, can get fieldname and
+    #       catdesc info via:
+    #           for key, value in (packet.header | packet.data).items():
+    #               fieldname = value.short_description
+    #              catdesc = value.long_description
+    #       I am holding off making this change until I acquire updated
+    #       housekeeping packets/validation data that match the latest telemetry
+    #       definitions
     for key, value in metadata_arrays.items():
         attrs = cdf_attrs.get_variable_attributes("codice_support_attrs")
         attrs["CATDESC"] = "TBD"
@@ -457,8 +503,6 @@ def process_codice_l1a(file_path: Path, data_version: str) -> xr.Dataset:
     dataset : xarray.Dataset
         The ``xarray`` dataset containing the science data and supporting metadata.
     """
-    # TODO: Use new packet_file_to_dataset() function to simplify things
-
     # Decom the packets, group data by APID, and sort by time
     packets = decom_packets(file_path)
     grouped_data = group_by_apid(packets)
@@ -496,7 +540,7 @@ def process_codice_l1a(file_path: Path, data_version: str) -> xr.Dataset:
 
             # Determine the start time of the packet
             met = packets[0].data["ACQ_START_SECONDS"].raw_value
-            met = [met, met + 1]  # TODO: Remove after cdflib fix
+
             # Extract the data
             science_values = packets[0].data["DATA"].raw_value
 
@@ -510,4 +554,5 @@ def process_codice_l1a(file_path: Path, data_version: str) -> xr.Dataset:
             dataset = pipeline.create_science_dataset(met, data_version)
 
     logger.info(f"\nFinal data product:\n{dataset}\n")
+
     return dataset

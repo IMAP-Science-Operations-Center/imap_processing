@@ -32,6 +32,28 @@ energy_attrs:
     VALIDMAX: 127
     VAR_TYPE: support_data
 
+inst_az_attrs:
+    <<: *default
+    CATDESC: Azimuth
+    FIELDNAM: Azimuth
+    FORMAT: I2
+    LABLAXIS: Azimuth
+    UNITS: ' '
+    VALIDMIN: 0
+    VALIDMAX: 31
+    VAR_TYPE: support_data
+
+spin_sector_attrs:
+    <<: *default
+    CATDESC: Spin sector indicating range of spin angles
+    FIELDNAM: Spin sector
+    FORMAT: I4
+    LABLAXIS: spin sector
+    UNITS: ' '
+    VALIDMIN: 0
+    VALIDMAX: 1152
+    VAR_TYPE: support_data
+
 # <=== Labels ===>
 energy_label:
     CATDESC: Energy per charge (E/q) sweeping step
