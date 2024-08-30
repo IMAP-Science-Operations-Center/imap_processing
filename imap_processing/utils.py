@@ -348,6 +348,8 @@ def packet_file_to_datasets(
     data_dict: dict[int, dict] = dict()
     # Also keep track of the datatype mapping for each field
     datatype_mapping: dict[int, dict] = dict()
+    # Keep track of which variables (keys) are in the dataset
+    variable_mapping: dict[int, set] = dict()
 
     # Set up the parser from the input packet definition
     packet_definition = xtcedef.XtcePacketDefinition(xtce_packet_definition)
@@ -361,6 +363,14 @@ def packet_file_to_datasets(
                 # This is the first packet for this APID
                 data_dict[apid] = collections.defaultdict(list)
                 datatype_mapping[apid] = dict()
+                variable_mapping[apid] = packet.data.keys()
+            if variable_mapping[apid] != packet.data.keys():
+                raise ValueError(
+                    f"Packet fields do not match for APID {apid}. This could be "
+                    f"due to a conditional packet definition in the XTCE, while this "
+                    f"function currently only supports flat packet definitions."
+                    f"\nExpected: {variable_mapping[apid]},\ngot: {packet.data.keys()}"
+                )
 
             # TODO: Do we want to give an option to remove the header content?
             packet_content = packet.data | packet.header
