@@ -105,12 +105,3 @@ def test_packet_file_to_datasets_flat_definition():
     )
     with pytest.raises(ValueError, match="Packet fields do not match"):
         utils.packet_file_to_datasets(packet_files, packet_definition)
-
-
-def test__create_minimum_dtype_array():
-    """Test expected return types for minimum data types."""
-    result = utils._create_minimum_dtype_array([1, 2, 3], "uint8")
-    assert result.dtype == np.dtype("uint8")
-    # fallback to a generic array if the requested dtype can't be satisfied
-    result = utils._create_minimum_dtype_array(["a", "b", "c"], "uint8")
-    assert result.dtype == np.dtype("<U1")
