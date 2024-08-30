@@ -16,11 +16,14 @@ Notes
 
 from pathlib import Path
 
-from imap_processing import decom, imap_module_directory
+import xarray as xr
+
+from imap_processing import imap_module_directory
 from imap_processing.codice import constants
+from imap_processing.utils import packet_file_to_datasets
 
 
-def decom_packets(packet_file: Path) -> list:
+def decom_packets(packet_file: Path) -> dict[int, xr.Dataset]:
     """
     Decom CoDICE data packets using CoDICE packet definition.
 
@@ -31,11 +34,12 @@ def decom_packets(packet_file: Path) -> list:
 
     Returns
     -------
-    list : list
-        All the unpacked data.
+    packets : dict[int, xr.Dataset]
+        Mapping from apid to ``xarray`` dataset, one dataset per apid.
     """
-    xtce_document = Path(
+    xtce_packet_definition = Path(
         f"{imap_module_directory}/codice/packet_definitions/{constants.PACKET_TO_XTCE_MAPPING[packet_file.name]}"
     )
-    decom_packet_list: list = decom.decom_packets(packet_file, xtce_document)
-    return decom_packet_list
+    packets = packet_file_to_datasets(packet_file, xtce_packet_definition)
+
+    return packets
