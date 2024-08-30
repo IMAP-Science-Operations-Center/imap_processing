@@ -188,6 +188,13 @@ class MagL1a:
     append_vectors()
     calculate_vector_time()
     process_vector_data()
+    process_uncompressed_vectors()
+    process_compressed_vectors()
+    process_range_data_section()
+    accumulate_vectors()
+    unpack_one_vector()
+    decode_fib_zig_zag()
+    twos_complement()
     """
 
     is_mago: bool
