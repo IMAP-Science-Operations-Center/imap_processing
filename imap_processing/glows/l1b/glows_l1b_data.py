@@ -495,8 +495,8 @@ class HistogramL1B:
     spin_period_ground_std_dev: np.double = field(init=False)  # Spin table
     position_angle_offset_average: np.double = field(init=False)  # retrieved from SPICE
     position_angle_offset_std_dev: np.double = field(init=False)  # retrieved from SPICE
-    spin_axis_orientation_std_dev: np.double = field(init=False)  # retrieved from SPICE - CK
-    spin_axis_orientation_average: np.double = field(init=False)  # retrieved from SPICE - CK
+    spin_axis_orientation_std_dev: np.double = field(init=False)  # SPICE - CK
+    spin_axis_orientation_average: np.double = field(init=False)  # SPICE - CK
     spacecraft_location_average: np.ndarray = field(init=False)  # retrieved from SPICE
     spacecraft_location_std_dev: np.ndarray = field(init=False)  # retrieved from SPICE
     spacecraft_velocity_average: np.ndarray = field(init=False)  # retrieved from SPICE

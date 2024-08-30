@@ -371,8 +371,15 @@ def test_compressed_vector_data(expected_vectors):
     # TODO: if there is a number of vectors that is not a multiple of 8,
     #  is there also padding at the end of the range section?
     input_data = np.array(
-        [int(i) for i in headers + primary_compressed + secondary_compressed +
-         padding + range_primary + range_secondary],
+        [
+            int(i)
+            for i in headers
+            + primary_compressed
+            + secondary_compressed
+            + padding
+            + range_primary
+            + range_secondary
+        ],
         dtype=np.uint8,
     )
 
@@ -382,7 +389,9 @@ def test_compressed_vector_data(expected_vectors):
         primary_expected[i][3] = expected_range_primary[i]
         secondary_expected[i][3] = expected_range_secondary[i]
 
-    (primary_with_range, secondary_with_range) = MagL1a.process_compressed_vectors(input_data, 16, 16)
+    (primary_with_range, secondary_with_range) = MagL1a.process_compressed_vectors(
+        input_data, 16, 16
+    )
 
     assert primary_with_range.shape[0] == 16
     assert secondary_with_range.shape[0] == 16
@@ -391,7 +400,9 @@ def test_compressed_vector_data(expected_vectors):
     assert np.array_equal(secondary_with_range, secondary_expected)
 
 
-def test_switch_to_uncompressed_vector_data(expected_vectors, uncompressed_vector_bytearray):
+def test_switch_to_uncompressed_vector_data(
+    expected_vectors, uncompressed_vector_bytearray
+):
     primary_compressed = (
         "000000100000010000001000000100000001000000100000110101110010"
         "011100101011010111001001110010101101011100100110000000011100"
@@ -399,14 +410,17 @@ def test_switch_to_uncompressed_vector_data(expected_vectors, uncompressed_vecto
         "010111000111001001110010101101011100100110000000011010111001"
         "001110010101101011100100111001010111000110000101100000000110"
         "101110010011100101011010111001001110010101110001110010011000"
-        "000001100000000000000000000010111000000000000000000000010011000000000000000000000000100101011"
+        "000001100000000000000000000010111000000000000000000000010011"
+        "000000000000000000000000100101011"
     )
 
     # 4 uncompressed vectors from uncompressed_vector_bytearray
-    uncompressed_bits = ("00000010000001000000100000010000000100000010000011"
-                         "00000010000001110000100000011101000100000011101011"
-                         "00000010000010100000100000101010000100000101010011"
-                         "00000010000011010000100000110111000100000110111111")
+    uncompressed_bits = (
+        "00000010000001000000100000010000000100000010000011"
+        "00000010000001110000100000011101000100000011101011"
+        "00000010000010100000100000101010000100000101010011"
+        "00000010000011010000100000110111000100000110111111"
+    )
 
     secondary_compressed = (
         "0000001000000011000010000000111100010000000111111110001110"
@@ -415,8 +429,8 @@ def test_switch_to_uncompressed_vector_data(expected_vectors, uncompressed_vecto
         "0111001010110101110010011100101011100011000010110000000011"
         "0101110010011100101011010111001001100000000111000111001001"
         "1100101011010111001001110010101101011000010110000000011100"
-        "011100100111001010110000000000000010111000000000000000000000010011100101"
-        "000000000011"
+        "0111001001110010101100000000000000101110000000000000000000"
+        "00010011100101000000000011"
     )
 
     uncompressed_expected_vectors = expected_vectors[0][:4]
@@ -424,7 +438,14 @@ def test_switch_to_uncompressed_vector_data(expected_vectors, uncompressed_vecto
     headers = "01000000"
 
     input_data = np.array(
-        [int(i) for i in headers + primary_compressed + uncompressed_bits + secondary_compressed + uncompressed_bits],
+        [
+            int(i)
+            for i in headers
+            + primary_compressed
+            + uncompressed_bits
+            + secondary_compressed
+            + uncompressed_bits
+        ],
         dtype=np.uint8,
     )
 
@@ -440,12 +461,21 @@ def test_switch_to_uncompressed_vector_data(expected_vectors, uncompressed_vecto
 
     # Test if first primary vector is too long
     primary_first_vector = "00000010000001000000100000010000000100000010000011"
-    primary_long_second_vector = ("0000000000000000000001011100000000000000000000001"
-                                  "0011000000000000000000000000100101011")
+    primary_long_second_vector = (
+        "0000000000000000000001011100000000000000000000001"
+        "0011000000000000000000000000100101011"
+    )
 
     input_data = np.array(
-        [int(i) for i in headers + primary_first_vector + primary_long_second_vector + uncompressed_bits + secondary_compressed],
-        dtype=np.uint8
+        [
+            int(i)
+            for i in headers
+            + primary_first_vector
+            + primary_long_second_vector
+            + uncompressed_bits
+            + secondary_compressed
+        ],
+        dtype=np.uint8,
     )
     input_data = np.packbits(input_data)
 
@@ -453,6 +483,7 @@ def test_switch_to_uncompressed_vector_data(expected_vectors, uncompressed_vecto
     assert len(primary) == 6
     assert np.array_equal(primary[0], expected_vectors[0][0])
     assert np.array_equal(primary[2:], uncompressed_expected_vectors)
+
 
 def test_different_compression_width():
     # Compression headers - indicating a 12 bit width and no range section
@@ -487,14 +518,20 @@ def test_different_compression_width():
     padding = "00000"  # Pad to byte boundary
 
     input_data = np.array(
-        [int(i) for i in headers + first_primary_vector + primary_compressed +
-         first_secondary_vector + secondary_compressed + padding],
+        [
+            int(i)
+            for i in headers
+            + first_primary_vector
+            + primary_compressed
+            + first_secondary_vector
+            + secondary_compressed
+            + padding
+        ],
         dtype=np.uint8,
     )
 
     input_data = np.packbits(input_data)
-    (primary, secondary) = MagL1a.process_compressed_vectors(input_data, 16,
-                                                             16)
+    (primary, secondary) = MagL1a.process_compressed_vectors(input_data, 16, 16)
 
     assert np.array_equal(primary[0], expected_first_vector)
     assert np.array_equal(secondary[0], expected_second_vector)
@@ -522,10 +559,9 @@ def test_accumulate_vectors():
 
     diff_vectors = [1, 1, 1, 3, 0, -3, -1, -10, 1]
 
-    expected_vectors = np.array([[1, 2, 3, 4],
-                                 [2, 3, 4, 4],
-                                 [5, 3, 1, 4],
-                                 [4, -7, 2, 4]])
+    expected_vectors = np.array(
+        [[1, 2, 3, 4], [2, 3, 4, 4], [5, 3, 1, 4], [4, -7, 2, 4]]
+    )
 
     test_vectors = MagL1a.accumulate_vectors(start_vector, diff_vectors, 4)
 
@@ -547,13 +583,50 @@ def test_unpack_one_vector(uncompressed_vector_bytearray, expected_vectors):
     assert all(test_output == expected_vectors)
 
     test_12bit_vector = np.array(
-        [0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1, 0,
-         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-         1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1])
+        [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            1,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+        ]
+    )
 
     test_output = MagL1a.unpack_one_vector(test_12bit_vector, 12, 0)
     expected_vectors = [22, 0, -1, 0]
     assert all(test_output == expected_vectors)
+
 
 def test_twos_complement():
     # -19 in binary

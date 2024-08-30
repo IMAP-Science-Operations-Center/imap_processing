@@ -106,15 +106,13 @@ class MagL0:
         Also convert encoded "VECSEC" (vectors per second) into proper vectors per
         second values.
         """
-        # Convert string output from space_packet_parser to numpy array of
-        # big-endian bytes
-        self.VECTORS = np.frombuffer(
-            int(self.VECTORS, 2).to_bytes(len(self.VECTORS) // 8, "big"),
-            # type: ignore[arg-type]
-            # TODO Check MYPY Error: Argument 1 to "int" has incompatible type
-            # "Union[ndarray[Any, Any], str]"; expected "Union[str, bytes, bytearray]"
-            dtype=np.dtype(">B"),
-        )
+        if isinstance(self.VECTORS, str):
+            # Convert string output from space_packet_parser to numpy array of
+            # big-endian bytes
+            self.VECTORS = np.frombuffer(
+                int(self.VECTORS, 2).to_bytes(len(self.VECTORS) // 8, "big"),
+                dtype=np.dtype(">B"),
+            )
 
         # Remove buffer from end of vectors. Vector data needs to be in 50 bit chunks,
         # and may have an extra byte at the end from CCSDS padding.
