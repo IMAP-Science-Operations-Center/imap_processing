@@ -6,7 +6,6 @@ from pathlib import Path
 from typing import Optional, Union
 
 import numpy as np
-import numpy.typing as npt
 import pandas as pd
 import xarray as xr
 from space_packet_parser import parser, xtcedef
@@ -228,8 +227,8 @@ def create_dataset(
 
 
 def _get_minimum_numpy_datatype(  # noqa: PLR0912 - Too many branches
-    name: str, definition: xtcedef.XtcePacketDefinition
-) -> str:
+    name: str, definition: xtcedef.XtcePacketDefinition, use_derived_value: bool = True
+) -> Optional[str]:
     """
     Get the minimum datatype for a given variable.
 
@@ -239,6 +238,8 @@ def _get_minimum_numpy_datatype(  # noqa: PLR0912 - Too many branches
         The variable name.
     definition : xtcedef.XtcePacketDefinition
         The XTCE packet definition.
+    use_derived_value : bool, default True
+        Whether or not the derived value from the XTCE definition was used.
 
     Returns
     -------
@@ -247,7 +248,21 @@ def _get_minimum_numpy_datatype(  # noqa: PLR0912 - Too many branches
     """
     data_encoding = definition.named_parameters[name].parameter_type.encoding
 
-    if isinstance(data_encoding, xtcedef.NumericDataEncoding):
+    if use_derived_value and isinstance(
+        definition.named_parameters[name].parameter_type,
+        xtcedef.EnumeratedParameterType,
+    ):
+        # We don't have a way of knowing what is enumerated,
+        # let numpy infer the datatype
+        return None
+    elif isinstance(data_encoding, xtcedef.NumericDataEncoding):
+        if use_derived_value and (
+            data_encoding.context_calibrators is not None
+            or data_encoding.default_calibrator is not None
+        ):
+            # If there are calibrators, we need to default to None and
+            # let numpy infer the datatype
+            return None
         nbits = data_encoding.size_in_bits
         if isinstance(data_encoding, xtcedef.IntegerDataEncoding):
             datatype = "int"
@@ -278,31 +293,6 @@ def _get_minimum_numpy_datatype(  # noqa: PLR0912 - Too many branches
         raise ValueError(f"Unsupported data encoding: {data_encoding}")
 
     return datatype
-
-
-def _create_minimum_dtype_array(values: list, dtype: str) -> npt.NDArray:
-    """
-    Create an array with the minimum datatype.
-
-    If it can't be coerced to that datatype, fallback to general array creation
-    without a specific datatype. This can happen with derived values.
-
-    Parameters
-    ----------
-    values : list
-        List of values.
-    dtype : str
-        The datatype.
-
-    Returns
-    -------
-    array : np.array
-        The array of values.
-    """
-    try:
-        return np.array(values, dtype=dtype)
-    except ValueError:
-        return np.array(values)
 
 
 def packet_file_to_datasets(
@@ -348,6 +338,8 @@ def packet_file_to_datasets(
     data_dict: dict[int, dict] = dict()
     # Also keep track of the datatype mapping for each field
     datatype_mapping: dict[int, dict] = dict()
+    # Keep track of which variables (keys) are in the dataset
+    variable_mapping: dict[int, set] = dict()
 
     # Set up the parser from the input packet definition
     packet_definition = xtcedef.XtcePacketDefinition(xtce_packet_definition)
@@ -361,6 +353,14 @@ def packet_file_to_datasets(
                 # This is the first packet for this APID
                 data_dict[apid] = collections.defaultdict(list)
                 datatype_mapping[apid] = dict()
+                variable_mapping[apid] = packet.data.keys()
+            if variable_mapping[apid] != packet.data.keys():
+                raise ValueError(
+                    f"Packet fields do not match for APID {apid}. This could be "
+                    f"due to a conditional packet definition in the XTCE, while this "
+                    f"function currently only supports flat packet definitions."
+                    f"\nExpected: {variable_mapping[apid]},\ngot: {packet.data.keys()}"
+                )
 
             # TODO: Do we want to give an option to remove the header content?
             packet_content = packet.data | packet.header
@@ -374,7 +374,7 @@ def packet_file_to_datasets(
                 if key not in datatype_mapping[apid]:
                     # Add this datatype to the mapping
                     datatype_mapping[apid][key] = _get_minimum_numpy_datatype(
-                        key, packet_definition
+                        key, packet_definition, use_derived_value=use_derived_value
                     )
 
     dataset_by_apid = {}
@@ -388,9 +388,7 @@ def packet_file_to_datasets(
             {
                 key.lower(): (
                     "epoch",
-                    _create_minimum_dtype_array(
-                        list_of_values, dtype=datatype_mapping[apid][key]
-                    ),
+                    np.asarray(list_of_values, dtype=datatype_mapping[apid][key]),
                 )
                 for key, list_of_values in data.items()
             },
