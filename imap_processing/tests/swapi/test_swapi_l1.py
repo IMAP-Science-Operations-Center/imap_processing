@@ -37,7 +37,7 @@ def test_filter_good_data():
     total_sweeps = 3
     ds = xr.Dataset(
         {
-            "plan_id_science": xr.DataArray(np.full((total_sweeps * 12), 1)),
+            "plan_id": xr.DataArray(np.full((total_sweeps * 12), 1)),
             "sweep_table": xr.DataArray(np.repeat(np.arange(total_sweeps), 12)),
             "mode": xr.DataArray(np.full((total_sweeps * 12), SWAPIMODE.HVENG.value)),
         },
@@ -68,9 +68,9 @@ def test_filter_good_data():
     expected = [12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23]
     np.testing.assert_array_equal(filter_good_data(ds), expected)
 
-    # Check for bad plan_id_science data.
+    # Check for bad plan_id data.
     ds["sweep_table"] = xr.DataArray(np.repeat(np.arange(total_sweeps), 12))
-    ds["plan_id_science"][24 : total_sweeps * 12] = np.arange(0, 12)
+    ds["plan_id"][24 : total_sweeps * 12] = np.arange(0, 12)
     np.testing.assert_array_equal(filter_good_data(ds), np.arange(0, 24))
 
 
@@ -302,7 +302,7 @@ def test_process_swapi_science(decom_test_data):
     )
 
     # make PLAN_ID data incorrect
-    ds_data["plan_id_science"][:12] = np.arange(12)
+    ds_data["plan_id"][:12] = np.arange(12)
     processed_data = process_swapi_science(ds_data, data_version="001")
 
     # Test dataset dimensions
