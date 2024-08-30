@@ -175,12 +175,22 @@ class CoDICEL1aPipeline:
             # Data arrays are structured depending on the instrument
             if self.instrument == "lo":
                 variable_data_arr = np.array(variable_data).reshape(
-                    1, self.num_positions, self.num_spin_sectors, self.num_energy_steps
+                    (
+                        1,
+                        self.num_positions,
+                        self.num_spin_sectors,
+                        self.num_energy_steps,
+                    )
                 )
                 dims = ["epoch", "inst_az", "spin_sector", "energy"]
             elif self.instrument == "hi":
                 variable_data_arr = np.array(variable_data).reshape(
-                    1, self.num_energy_steps, self.num_positions, self.num_spin_sectors
+                    (
+                        1,
+                        self.num_energy_steps,
+                        self.num_positions,
+                        self.num_spin_sectors,
+                    )
                 )
                 dims = ["epoch", "energy", "inst_az", "spin_sector"]
 
@@ -317,20 +327,24 @@ class CoDICEL1aPipeline:
         # [<num_positions>,<num_spin_sectors>,<num_energy_steps>]
         if self.instrument == "lo":
             self.data = np.array(science_values_decompressed, dtype=np.uint32).reshape(
-                self.num_counters,
-                self.num_positions,
-                self.num_spin_sectors,
-                self.num_energy_steps,
+                (
+                    self.num_counters,
+                    self.num_positions,
+                    self.num_spin_sectors,
+                    self.num_energy_steps,
+                )
             )
 
         # For CoDICE-hi, data are a 3D array with a shape representing
         # [<num_energy_steps>,<num_positions>,<num_spin_sectors>]
         elif self.instrument == "hi":
             self.data = np.array(science_values_decompressed, dtype=np.uint32).reshape(
-                self.num_counters,
-                self.num_energy_steps,
-                self.num_positions,
-                self.num_spin_sectors,
+                (
+                    self.num_counters,
+                    self.num_energy_steps,
+                    self.num_positions,
+                    self.num_spin_sectors,
+                )
             )
 
 
