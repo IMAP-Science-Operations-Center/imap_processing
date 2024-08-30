@@ -192,7 +192,7 @@ def process_packets(
             # this is because mypy expects both to have the attributes
             primary_packet_data.total_vectors,
             secondary_packet_data.total_vectors,
-            mag_l0.COMPRESSION
+            mag_l0.COMPRESSION,
         )
 
         primary_timestamped_vectors = MagL1a.calculate_vector_time(
