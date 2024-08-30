@@ -315,12 +315,10 @@ class CoDICEL1aPipeline:
         science_values : str
             A string of binary data representing the science values of the data.
         """
-        self.compression_algorithm = constants.LO_COMPRESSION_ID_LOOKUP[self.view_id]
+        compression_algorithm = constants.LO_COMPRESSION_ID_LOOKUP[self.view_id]
 
         # Decompress the binary string into a list of integers
-        science_values_decompressed = decompress(
-            science_values, self.compression_algorithm
-        )
+        science_values_decompressed = decompress(science_values, compression_algorithm)
 
         # Re-arrange the counter data
         # For CoDICE-lo, data are a 3D arrays with a shape representing
