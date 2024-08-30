@@ -273,9 +273,6 @@ attribute_key:
         metadata
         ignore_data
     alternate: null
-
-
-
   COORDINATE_SYSTEM:
     description: >
       All variables for which the values are dependent on the system of coordinates are
