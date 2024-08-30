@@ -56,7 +56,7 @@ def _apply_lossy_a(compressed_bytes: bytes) -> list[int]:
 
 def _apply_lossy_b(compressed_bytes: bytes) -> list[int]:
     """
-    Apply 8-bit to 32-bit Lossy A decompression algorithm.
+    Apply 8-bit to 32-bit Lossy B decompression algorithm.
 
     The Lossy B algorithm uses a lookup table imported into this module.
 
