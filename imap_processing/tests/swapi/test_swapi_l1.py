@@ -79,7 +79,7 @@ def test_decompress_count():
     # compressed + no-overflow, compressed + overflow, no compression
     raw_values = np.array([[12, 0xFFFF, 12]])
     compression_flag = np.array([[1, 1, 0]])
-    expected = np.array([[12 * 16, -1, 12]])
+    expected = np.array([[12 * 16, np.iinfo(np.int32).max, 12]], dtype=np.int32)
     returned_value = decompress_count(raw_values, compression_flag)
     np.testing.assert_array_equal(returned_value, expected)
 
@@ -220,8 +220,6 @@ def test_process_swapi_science(decom_test_data):
         "epoch": 3,
         "energy": 72,
         "energy_label": 72,
-        "flags": 13,
-        "flags_label": 13,
     }
     # Test epoch data is correct
     expected_epoch_datetime = met_to_j2000ns([48, 60, 72])
@@ -321,8 +319,6 @@ def test_process_swapi_science(decom_test_data):
         "epoch": 2,
         "energy": 72,
         "energy_label": 72,
-        "flags": 13,
-        "flags_label": 13,
     }
 
     # Test CDF File

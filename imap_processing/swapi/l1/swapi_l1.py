@@ -8,6 +8,7 @@ import xarray as xr
 
 from imap_processing import imap_module_directory
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
+from imap_processing.quality_flags import SWAPIFlags
 from imap_processing.swapi.swapi_utils import SWAPIAPID, SWAPIMODE
 from imap_processing.utils import packet_file_to_datasets
 
@@ -475,26 +476,12 @@ def process_swapi_science(
     # ===================================================================
     # Quality flags
     # ===================================================================
-    flags_name = [
-        "swp_pcem_comp",
-        "swp_scem_comp",
-        "swp_coin_comp",
-        "ovr_t_st",
-        "und_t_st",
-        "pcem_cnt_st",
-        "scem_cnt_st",
-        "pcem_v_st",
-        "pcem_i_st",
-        "pcem_int_st",
-        "scem_v_st",
-        "scem_i_st",
-        "scem_int_st",
-    ]
-    quality_flags_data = []
+    quality_flags_data = np.zeros((total_full_sweeps, 72), np.uint16)
+
     # Add science data quality flags
-    quality_flags_data.append(pcem_compression_flags)
-    quality_flags_data.append(scem_compression_flags)
-    quality_flags_data.append(coin_compression_flags)
+    quality_flags_data[pcem_compression_flags == 1] |= SWAPIFlags.SWP_PCEM_COMP
+    quality_flags_data[scem_compression_flags == 1] |= SWAPIFlags.SWP_SCEM_COMP
+    quality_flags_data[coin_compression_flags == 1] |= SWAPIFlags.SWP_COIN_COMP
 
     # Add housekeeping-derived quality flags
     # --------------------------------------
@@ -506,45 +493,44 @@ def process_swapi_science(
     good_sweep_times = good_sweep_sci["epoch"].data
     good_sweep_hk_data = hk_dataset.sel({"epoch": good_sweep_times})
 
-    # Since there will be one SWAPI HK packet for each SWAPI SCI packets, as
-    # both are recorded at 1 Hz(1 second), we can use this information to set
-    # quality flag for each science packet's data. Each packet contains
-    # information of one sequence data. Each sequence's
-    # PCEM_CNT0, PCEM_CNT1, PCEM_CNT2, PCEM_CNT3, PCEM_CNT4,
-    # PCEM_CNT5 data is coming from the same sciene packet and therefore
-    # it's going to share the same HK quality flag. That's why HK quality
-    # flag is repeated 6 times for each sequence(aka packet).
-    for flag_name in flags_name[3:]:
-        quality_flags_data.append(
-            np.repeat(good_sweep_hk_data[flag_name].data, 6).reshape(-1, 72)
-        )
+    # Since there is one SWAPI HK packet for each SWAPI SCI packet,
+    # and both are recorded at 1 Hz (1 packet per second),
+    # we can leverage this to set the quality flags for each science
+    # packet's data. Each SWAPI science packet represents
+    # one sequence of data, where the sequence includes measurements
+    # like PCEM_CNT0, PCEM_CNT1, PCEM_CNT2, PCEM_CNT3,
+    # PCEM_CNT4, and PCEM_CNT5. Because all these measurements come
+    # from the same science packet, they should share
+    # the same HK quality flag. This is why the HK quality flag is
+    # repeated 6 times, once for each measurement within
+    # the sequence (each packet corresponds to one sequence).
 
-    # Before, individual quality flags data were in this shape:
-    #   (number_of_sweep, energy_step)
-    # Now, to group array of flags data into this shape:
-    #   (number_of_sweep, number_of_flags, energy_step)
-    # With this, each sweep has its quality flag.
-    quality_flags_data = np.stack(quality_flags_data, axis=1)
+    hk_flags_name = [
+        "OVR_T_ST",
+        "UND_T_ST",
+        "PCEM_CNT_ST",
+        "SCEM_CNT_ST",
+        "PCEM_V_ST",
+        "PCEM_I_ST",
+        "PCEM_INT_ST",
+        "SCEM_V_ST",
+        "SCEM_I_ST",
+        "SCEM_INT_ST",
+    ]
+
+    for flag_name in hk_flags_name:
+        current_flag = np.repeat(good_sweep_hk_data[flag_name.lower()].data, 6).reshape(
+            -1, 72
+        )
+        # Use getattr to dynamically access the flag in SWAPIFlags class
+        flag_to_set = getattr(SWAPIFlags, flag_name)
+        # set the quality flag for each data
+        quality_flags_data[current_flag == 1] |= flag_to_set
 
     swp_flags = xr.DataArray(
-        np.array(quality_flags_data, dtype=np.uint8),
-        dims=["epoch", "flags", "energy"],
+        quality_flags_data,
+        dims=["epoch", "energy"],
         attrs=cdf_manager.get_variable_attributes("flags_default"),
-    )
-
-    # Quality flags of sweep data
-    flags = xr.DataArray(
-        np.arange(13),
-        name="flags",
-        dims=["flags"],
-        attrs=cdf_manager.get_variable_attributes("flags"),
-    )
-
-    flags_label = xr.DataArray(
-        flags_name,
-        name="flags_label",
-        dims=["flags_label"],
-        attrs=cdf_manager.get_variable_attributes("flags_label"),
     )
 
     # ===================================================================
@@ -589,8 +575,6 @@ def process_swapi_science(
             "epoch": epoch_time,
             "energy": energy,
             "energy_label": energy_label,
-            "flags": flags,
-            "flags_label": flags_label,
         },
         attrs=l1_global_attrs,
     )
@@ -620,8 +604,9 @@ def process_swapi_science(
     # Uncertainty is quantified for the PCEM, SCEM, and COIN counts.
     # The Poisson contribution is
     #   uncertainty = sqrt(count)
-
-    # TODO: fill in with actual formula once SWAPI provides it.
+    # TODO:
+    # Above uncertaintly formula will change in the future.
+    # Replace it with actual formula once SWAPI provides it.
     # Right now, we are using sqrt(count) as a placeholder
     dataset["swp_pcem_err_plus"] = xr.DataArray(
         np.sqrt(swp_pcem_counts),

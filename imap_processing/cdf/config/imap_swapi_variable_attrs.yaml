@@ -11,29 +11,11 @@ energy:
   VALIDMIN: 0
   VAR_TYPE: support_data
 
-flags:
-  CATDESC: Data quality flags
-  FIELDNAM: Quality Flags
-  FILLVAL: -9223370000000000000
-  FORMAT: I2
-  LABLAXIS: Flags
-  SCALE_TYP: linear
-  UNITS: " "
-  VALIDMAX: 1
-  VALIDMIN: 0
-  VAR_TYPE: support_data
-
 # <=== LABL_PTR_i Attributes ===>
 energy_label:
   CATDESC: Energy step id in lookup table
   FIELDNAM: Energy Step
   FORMAT: A2
-  VAR_TYPE: metadata
-
-flags_label:
-  CATDESC: Data quality flags
-  FIELDNAM: Quality Flags
-  FORMAT: A20
   VAR_TYPE: metadata
 
 # <=== Data Variables ===>
@@ -55,11 +37,9 @@ flags_default:
   FIELDNAM: Quality Flag
   LABLAXIS: Flags
   DEPEND_0: epoch
-  DEPEND_1: flags
-  DEPEND_2: energy
+  DEPEND_1: energy
   DISPLAY_TYPE: spectrogram
-  LABL_PTR_1: flags_label
-  LABL_PTR_2: energy_label
+  LABL_PTR_1: energy_label
   FILLVAL: 4294967295
   FORMAT: I1
   UNITS: ' '

@@ -50,8 +50,6 @@ def swapi_l2(l1_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
         "epoch",
         "energy",
         "energy_label",
-        "flags",
-        "flags_label",
         "swp_flags",
     ]
     l2_dataset = l1_dataset[l1_data_keys]
