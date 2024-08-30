@@ -552,29 +552,3 @@ def process_codice_l1a(file_path: Path, data_version: str) -> xr.Dataset:
     logger.info(f"\nFinal data product:\n{dataset}\n")
 
     return dataset
-
-
-if __name__ == "__main__":
-    TEST_DATA_PATH = imap_module_directory / "tests" / "codice" / "data"
-
-    TEST_PACKETS = [
-        TEST_DATA_PATH / "imap_codice_l0_hskp_20100101_v001.pkts",
-        TEST_DATA_PATH / "imap_codice_l0_hi-counters-aggregated_20240429_v001.pkts",
-        TEST_DATA_PATH / "imap_codice_l0_hi-counters-singles_20240429_v001.pkts",
-        TEST_DATA_PATH / "imap_codice_l0_hi-omni_20240429_v001.pkts",
-        TEST_DATA_PATH / "imap_codice_l0_hi-sectored_20240429_v001.pkts",
-        TEST_DATA_PATH / "imap_codice_l0_hi-pha_20240429_v001.pkts",
-        TEST_DATA_PATH / "imap_codice_l0_lo-counters-aggregated_20240429_v001.pkts",
-        TEST_DATA_PATH / "imap_codice_l0_lo-counters-singles_20240429_v001.pkts",
-        TEST_DATA_PATH / "imap_codice_l0_lo-sw-angular_20240429_v001.pkts",
-        TEST_DATA_PATH / "imap_codice_l0_lo-nsw-angular_20240429_v001.pkts",
-        TEST_DATA_PATH / "imap_codice_l0_lo-sw-priority_20240429_v001.pkts",
-        TEST_DATA_PATH / "imap_codice_l0_lo-nsw-priority_20240429_v001.pkts",
-        TEST_DATA_PATH / "imap_codice_l0_lo-sw-species_20240429_v001.pkts",
-        TEST_DATA_PATH / "imap_codice_l0_lo-nsw-species_20240429_v001.pkts",
-        TEST_DATA_PATH / "imap_codice_l0_lo-pha_20240429_v001.pkts",
-    ]
-
-    for file_path in TEST_PACKETS:
-        dataset = process_codice_l1a(file_path, "001")
-        print(dataset)
