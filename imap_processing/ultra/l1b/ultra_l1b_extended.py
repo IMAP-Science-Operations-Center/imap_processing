@@ -301,19 +301,17 @@ def get_ssd_back_position_and_tof_offset(
     tof_offset = np.zeros(len(indices), dtype=np.float64)
 
     for i in range(8):
+        ssd_flag_mask = de_filtered[f"SSD_FLAG_{i}"].data == 1
+
         # Multiply ybs times 100 to convert to hundredths of a millimeter.
-        yb[de_filtered[f"SSD_FLAG_{i}"].data == 1] = (
-            get_image_params(f"YBKSSD{i}") * 100
-        )
-        ssd_number[de_filtered[f"SSD_FLAG_{i}"].data == 1] = i
+        yb[ssd_flag_mask] = get_image_params(f"YBKSSD{i}") * 100
+        ssd_number[ssd_flag_mask] = i
 
         tof_offset[
-            (de_filtered["START_TYPE"] == StartType.Left.value)
-            & (de_filtered[f"SSD_FLAG_{i}"].data == 1)
+            (de_filtered["START_TYPE"] == StartType.Left.value) & ssd_flag_mask
         ] = get_image_params(f"TOFSSDLTOFF{i}")
         tof_offset[
-            (de_filtered["START_TYPE"] == StartType.Right.value)
-            & (de_filtered[f"SSD_FLAG_{i}"].data == 1)
+            (de_filtered["START_TYPE"] == StartType.Right.value) & ssd_flag_mask
         ] = get_image_params(f"TOFSSDRTOFF{i}")
 
     return yb, tof_offset, ssd_number

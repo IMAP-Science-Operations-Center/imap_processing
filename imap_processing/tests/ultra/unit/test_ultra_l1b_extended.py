@@ -119,3 +119,11 @@ def test_get_ssd_back_position_and_tof_offset(
         tof_offset_rt[ssd_number_rt == 4],
         np.full(len(tof_offset_rt[ssd_number_rt == 4]), -4),
     )
+
+    assert np.all(ssd_number_lt >= 0), "Values in ssd_number_lt out of range."
+
+    assert np.all(ssd_number_lt <= 7), "Values in ssd_number_lt out of range."
+
+    assert np.all(ssd_number_rt >= 0), "Values in ssd_number_rt out of range."
+
+    assert np.all(ssd_number_rt <= 7), "Values in ssd_number_rt out of range."
