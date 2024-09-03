@@ -1,7 +1,5 @@
 """Tests the L1 processing for decommutated IDEX data"""
 
-from pathlib import Path
-
 import numpy as np
 import pytest
 import xarray as xr
@@ -9,22 +7,6 @@ from cdflib.xarray.xarray_to_cdf import ISTPError
 
 from imap_processing import imap_module_directory
 from imap_processing.cdf.utils import load_cdf, write_cdf
-from imap_processing.idex.l1.idex_l1 import PacketParser
-
-
-@pytest.fixture()
-def decom_test_data() -> xr.Dataset:
-    """Return a ``xarray`` dataset containing test data.
-
-    Returns
-    -------
-    dataset : xarray.Dataset
-        A ``xarray`` dataset containing the test data
-    """
-    test_file = Path(
-        f"{imap_module_directory}/tests/idex/imap_idex_l0_raw_20230725_v001.pkts"
-    )
-    return PacketParser(test_file, "v001").data
 
 
 def test_idex_cdf_file(decom_test_data: xr.Dataset):
