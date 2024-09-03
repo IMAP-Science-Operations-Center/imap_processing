@@ -1,6 +1,7 @@
 """Calculates Extended Raw Events for ULTRA L1b."""
 
 from enum import Enum
+from typing import ClassVar
 
 import numpy as np
 import xarray
@@ -23,11 +24,19 @@ TRIG_CONSTANT = 81.92  # trigonometric constant (mm)
 # TODO: make lookup tables into config files.
 
 
+class StartType(Enum):
+    """Start Type: 1=Left, 2=Right."""
+
+    Left = 1
+    Right = 2
+
+
 class StopType(Enum):
-    """Stop Type: 1=Top, 2=Bottom."""
+    """Stop Type: 1=Top, 2=Bottom, SSD: 8-15."""
 
     Top = 1
     Bottom = 2
+    SSD: ClassVar[list[int]] = [8, 9, 10, 11, 12, 13, 14, 15]
 
 
 def get_front_x_position(start_type: ndarray, start_position_tdc: ndarray) -> ndarray:
@@ -258,3 +267,51 @@ def get_path_length(front_position: tuple, back_position: tuple, d: float) -> fl
     )
 
     return r
+
+
+def get_ssd_back_position_and_tof_offset(
+    de_dataset: xarray.Dataset,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """
+    Lookup the Y SSD positions (yb), TOF Offset, and SSD number.
+
+    Parameters
+    ----------
+    de_dataset : xarray.Dataset
+        The input dataset containing STOP_TYPE and SSD_FLAG data.
+
+    Returns
+    -------
+    yb : np.ndarray
+        Y SSD positions in hundredths of a millimeter.
+    tof_offset : np.ndarray
+        TOF offset.
+    ssd_number : np.ndarray
+        SSD number.
+
+    Notes
+    -----
+    The X back position (xb) is assumed to be 0 for SSD.
+    """
+    indices = np.nonzero(np.isin(de_dataset["STOP_TYPE"], StopType.SSD.value))[0]
+    de_filtered = de_dataset.isel(epoch=indices)
+
+    yb = np.zeros(len(indices), dtype=np.float64)
+    ssd_number = np.zeros(len(indices), dtype=int)
+    tof_offset = np.zeros(len(indices), dtype=np.float64)
+
+    for i in range(8):
+        ssd_flag_mask = de_filtered[f"SSD_FLAG_{i}"].data == 1
+
+        # Multiply ybs times 100 to convert to hundredths of a millimeter.
+        yb[ssd_flag_mask] = get_image_params(f"YBKSSD{i}") * 100
+        ssd_number[ssd_flag_mask] = i
+
+        tof_offset[
+            (de_filtered["START_TYPE"] == StartType.Left.value) & ssd_flag_mask
+        ] = get_image_params(f"TOFSSDLTOFF{i}")
+        tof_offset[
+            (de_filtered["START_TYPE"] == StartType.Right.value) & ssd_flag_mask
+        ] = get_image_params(f"TOFSSDRTOFF{i}")
+
+    return yb, tof_offset, ssd_number
