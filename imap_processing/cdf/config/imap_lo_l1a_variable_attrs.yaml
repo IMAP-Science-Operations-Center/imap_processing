@@ -21,6 +21,7 @@ de_default_attrs: &de_default
 
 # Re-used Coordinate
 esa_step_label:
+  FILLVAL: 255
   CATDESC: ESA Steps
   FIELDNAM: ESA Steps
   FORMAT: A1
@@ -58,7 +59,7 @@ epoch:
   CATDESC: Epoch Time
   DEPEND_0: epoch
   FIELDNAM: Epoch time
-  Units: ' '
+  Units: 'ns'
   FORMAT: I12
   VAR_TYPE: support_data
   LABLAXIS: Epoch

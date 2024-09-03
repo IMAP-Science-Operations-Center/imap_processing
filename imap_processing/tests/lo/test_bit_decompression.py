@@ -10,7 +10,7 @@ from imap_processing.lo.l0.utils.bit_decompression import (
 @pytest.mark.parametrize(
     ("decompression", "compressed_value", "expected_decompressed_int"),
     [
-        (Decompress.DECOMPRESS8TO16, 209, 9537),
+        (Decompress.DECOMPRESS8TO16, [209, 209], [9537, 9537]),
         (Decompress.DECOMPRESS8TO12, 205, 1229),
         (Decompress.DECOMPRESS12TO16, 4068, 62908),
     ],

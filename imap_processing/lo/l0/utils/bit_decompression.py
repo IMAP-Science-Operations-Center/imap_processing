@@ -27,7 +27,7 @@ DECOMPRESSION_TABLES = {
 
 
 def decompress_int(
-    compressed_value: int, decompression: Decompress, decompression_lookup: dict
+    compressed_values: list, decompression: Decompress, decompression_lookup: dict
 ) -> Any:
     # No idea what the correct type is for the return. Mypy says it is Any
     """
@@ -35,8 +35,8 @@ def decompress_int(
 
     Parameters
     ----------
-    compressed_value : int
-        A compressed integer.
+    compressed_values : list
+        Compressed integers.
     decompression : Decompress
         The decompression to use.
     decompression_lookup : dict
@@ -59,4 +59,5 @@ def decompress_int(
             + "Decompress.DECOMPRESS8TO12"
         )
     data = decompression_lookup[decompression]
-    return data[compressed_value][1]
+    print(f"DATA: {data}")
+    return data[tuple(compressed_values)][1]

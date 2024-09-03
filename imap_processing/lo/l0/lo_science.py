@@ -21,7 +21,7 @@ HistPacking = namedtuple(
     ],
 )
 
-hist_data_meta = {
+HIST_DATA_META = {
     # field: bit_length, section_length, shape
     "start_a": HistPacking(12, 504, (6, 7)),
     "start_c": HistPacking(12, 504, (6, 7)),
@@ -69,8 +69,8 @@ def parse_histogram(dataset: xr.Dataset, attr_mgr: ImapCdfAttributes) -> xr.Data
     # initialize the starting bit for the sections of data
     section_start = 0
     # for each field type in the histogram data
-    for field in hist_data_meta:
-        data_meta = hist_data_meta[field]
+    for field in HIST_DATA_META:
+        data_meta = HIST_DATA_META[field]
         # for each histogram binary string decompress
         # the data
         decompressed_data = [
@@ -134,14 +134,17 @@ def decompress(
     else:
         raise ValueError(f"Invalid bits_per_index: {bits_per_index}")
 
-    # parse the binary, convert to integers, and decompress
-    decompressed_ints = [
-        decompress_int(
-            int(bin_str[i : i + bits_per_index], 2),
-            decompress,
-            DECOMPRESSION_TABLES,
-        )
+    # parse the binary and convert to integers
+    raw_ints = [
+        int(bin_str[i: i + bits_per_index], 2)
         for i in range(section_start, section_start + section_length, bits_per_index)
     ]
+
+    #decompress raw integers
+    decompressed_ints = decompress_int(
+        raw_ints,
+        decompress,
+        DECOMPRESSION_TABLES,
+    )
 
     return decompressed_ints
