@@ -360,12 +360,13 @@ def test_compressed_vector_data(expected_vectors):
     assert np.array_equal(secondary, secondary_expected)
 
     # range data has 2 bits per vector, primary and then secondary in sequence.
-    range_primary = "00000000000000000101101011111111"
+    # It excludes the first vector, making the length (primary_count - 1) * 2
+    range_primary = "000000000000000101101011111111"
 
-    expected_range_primary = [0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 2, 2, 3, 3, 3, 3]
+    expected_range_primary = [3, 0, 0, 0, 0, 0, 0, 0, 1, 1, 2, 2, 3, 3, 3, 3]
 
-    range_secondary = "01000000000000000101101011111101"
-    expected_range_secondary = [1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 2, 2, 3, 3, 3, 1]
+    range_secondary = "000000000000000101101011111101"
+    expected_range_secondary = [3, 0, 0, 0, 0, 0, 0, 0, 1, 1, 2, 2, 3, 3, 3, 1]
     # 16 bit width with range section
     headers = "01000010"
     # TODO: if there is a number of vectors that is not a multiple of 8,

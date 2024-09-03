@@ -708,15 +708,15 @@ class MagL1a:
                 secondary_vectors[vector_index] = decoded_vector
                 vector_index += 1
 
-        # TODO: should the range vectors include the first vector?
         if has_range_data_section:
             primary_vectors = MagL1a.process_range_data_section(
-                bit_array[end_vector : end_vector + primary_count * 2], primary_vectors
+                bit_array[end_vector : end_vector + (primary_count - 1) * 2],
+                primary_vectors,
             )
             secondary_vectors = MagL1a.process_range_data_section(
                 bit_array[
-                    end_vector + primary_count * 2 : end_vector
-                    + (primary_count + secondary_count) * 2
+                    end_vector + (primary_count - 1) * 2 : end_vector
+                    + (primary_count + secondary_count - 2) * 2
                 ],
                 secondary_vectors,
             )
@@ -748,17 +748,17 @@ class MagL1a:
             Updated array of vectors, identical to vectors with the range values
             updated from range_data.
         """
-        if len(range_data) != len(vectors) * 2:
+        if len(range_data) != (len(vectors) - 1) * 2:
             raise ValueError(
-                "Incorrect length for range_data, there should be two bits per vector."
+                "Incorrect length for range_data, there should be two bits per vector, "
+                "excluding the first."
             )
 
         updated_vectors: np.ndarray = np.copy(vectors)
         range_str = "".join([str(i) for i in range_data])
-        for i in range(len(vectors)):
+        for i in range(len(vectors) - 1):
             range_int = int(range_str[i * 2 : i * 2 + 2], 2)
-            updated_vectors[i][3] = range_int
-
+            updated_vectors[i + 1][3] = range_int
         return updated_vectors
 
     @staticmethod
