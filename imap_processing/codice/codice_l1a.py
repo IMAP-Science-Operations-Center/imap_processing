@@ -22,7 +22,6 @@ import xarray as xr
 
 from imap_processing import imap_module_directory
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
-from imap_processing.cdf.utils import met_to_j2000ns
 from imap_processing.codice import constants
 from imap_processing.codice.decompress import decompress
 from imap_processing.codice.utils import CODICEAPID
@@ -100,7 +99,9 @@ class CoDICEL1aPipeline:
         self.dataset_name = config["dataset_name"]
         self.instrument = config["instrument"]
 
-    def create_science_dataset(self, met: np.int64, data_version: str) -> xr.Dataset:
+    def create_science_dataset(
+        self, packet: xr.Dataset, data_version: str
+    ) -> xr.Dataset:
         """
         Create an ``xarray`` dataset for the unpacked science data.
 
@@ -108,8 +109,8 @@ class CoDICEL1aPipeline:
 
         Parameters
         ----------
-        met : numpy.int64
-            The mission elapsed time of the packet, used to determine epoch data.
+        packet : xarray.Dataset
+            The packet to process.
         data_version : str
             Version of the data product being created.
 
@@ -126,7 +127,7 @@ class CoDICEL1aPipeline:
 
         # Define coordinates
         epoch = xr.DataArray(
-            [met_to_j2000ns(met)],
+            packet.epoch,
             name="epoch",
             dims=["epoch"],
             attrs=cdf_attrs.get_variable_attributes("epoch"),
@@ -371,9 +372,6 @@ def create_event_dataset(
     elif apid == CODICEAPID.COD_HI_PHA:
         dataset_name = "imap_codice_l1a_hi_pha"
 
-    # Determine the start time of the packet
-    met = packet.acq_start_seconds.data[0]
-
     # Extract the data
     # event_data = packet.event_data.data (Currently turned off, see TODO)
 
@@ -384,7 +382,7 @@ def create_event_dataset(
 
     # Define coordinates
     epoch = xr.DataArray(
-        met_to_j2000ns([met]),
+        packet.epoch,
         name="epoch",
         dims=["epoch"],
         attrs=cdf_attrs.get_variable_attributes("epoch"),
@@ -426,10 +424,7 @@ def create_hskp_dataset(
     cdf_attrs.add_global_attribute("Data_version", data_version)
 
     epoch = xr.DataArray(
-        met_to_j2000ns(
-            packet.shcoarse.data,
-            reference_epoch=np.datetime64("2010-01-01T00:01:06.184", "ns"),
-        ),
+        packet.epoch,
         name="epoch",
         dims=["epoch"],
         attrs=cdf_attrs.get_variable_attributes("epoch"),
@@ -493,10 +488,10 @@ def get_params(packet: xr.Dataset) -> tuple[int, int, int, int]:
     view_id : int
         Provides information about how data was collapsed and/or compressed.
     """
-    table_id = packet.table_id.data[0]
-    plan_id = packet.plan_id.data[0]
-    plan_step = packet.plan_step.data[0]
-    view_id = packet.view_id.data[0]
+    table_id = int(packet.table_id.data)
+    plan_id = int(packet.plan_id.data)
+    plan_step = int(packet.plan_step.data)
+    view_id = int(packet.view_id.data)
 
     return table_id, plan_id, plan_step, view_id
 
@@ -534,9 +529,6 @@ def process_codice_l1a(file_path: Path, data_version: str) -> xr.Dataset:
             dataset = create_event_dataset(apid, packet, data_version)
 
         elif apid in constants.APIDS_FOR_SCIENCE_PROCESSING:
-            # Determine the start time of the packet
-            met = packet.acq_start_seconds.data[0]
-
             # Extract the data
             science_values = packet.data.data[0]
 
@@ -547,7 +539,7 @@ def process_codice_l1a(file_path: Path, data_version: str) -> xr.Dataset:
             pipeline = CoDICEL1aPipeline(table_id, plan_id, plan_step, view_id)
             pipeline.configure_data_products(apid)
             pipeline.unpack_science_data(science_values)
-            dataset = pipeline.create_science_dataset(met, data_version)
+            dataset = pipeline.create_science_dataset(packet, data_version)
 
     logger.info(f"\nFinal data product:\n{dataset}\n")
 
