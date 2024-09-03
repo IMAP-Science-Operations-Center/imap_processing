@@ -3,6 +3,7 @@
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
+import xarray as xr
 
 from imap_processing import imap_module_directory
 
@@ -46,7 +47,7 @@ def get_y_adjust(dy_lut: np.ndarray) -> npt.NDArray:
     return _YADJUST_DF["dYAdj"].iloc[dy_lut].values
 
 
-def get_norm(dn: np.ndarray, key: str, file_label: str) -> npt.NDArray:
+def get_norm(dn: xr.DataArray, key: str, file_label: str) -> npt.NDArray:
     """
     Correct mismatches between the stop Time to Digital Converters (TDCs).
 

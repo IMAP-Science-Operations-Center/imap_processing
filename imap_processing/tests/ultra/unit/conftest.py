@@ -173,8 +173,8 @@ def decom_test_data(request, xtce_path):
 def events_fsw_comparison_theta_0():
     """FSW test data."""
     filename = (
-        "FM45_40P_Phi28p5_BeamCal_LinearScan_phi28.50_theta-0.00"
-        "_Ultra_Image_Raw_Event_20240207T102746_withFSWcalcs.csv"
+        "ultra45_raw_sc_ultrarawimg_withFSWcalcs_FM45_40P_Phi28p5_"
+        "BeamCal_LinearScan_phi2850_theta-000_20240207T102740.csv"
     )
     return (
         Path(sys.modules[__name__.split(".")[0]].__file__).parent
