@@ -350,25 +350,25 @@ def get_coincidence_positions(
 
     Returns
     -------
-    etof_sorted : np.ndarray
+    etof : np.ndarray
         Time for the electrons to travel back to
         coincidence anode (tenths of a nanosecond).
-    xc_sorted : np.ndarray
+    xc : np.ndarray
         X coincidence position (hundredths of a millimeter).
     """
     index_top = np.nonzero(np.isin(de_dataset["COIN_TYPE"], CoinType.Top.value))[0]
     de_top = de_dataset.isel(epoch=index_top)
 
-    index_bottom = np.nonzero(np.isin(de_dataset["COIN_TYPE"], CoinType.Bottom.value))[0]
+    index_bottom = np.nonzero(np.isin(de_dataset["COIN_TYPE"], CoinType.Bottom.value))[
+        0
+    ]
     de_bottom = de_dataset.isel(epoch=index_bottom)
 
     t1 = np.zeros(len(de_dataset["COIN_TYPE"]), dtype=np.float64)
     t2 = np.zeros(len(de_dataset["COIN_TYPE"]), dtype=np.float64)
 
-    # TODO: what should this fill value be?
-    fill_value = np.iinfo(np.int64).min
-    xc = np.full(len(de_dataset["COIN_TYPE"]), fill_value, dtype=np.float64)
-    etof = np.full(len(de_dataset["COIN_TYPE"]), fill_value, dtype=np.float64)
+    xc = np.zeros(len(de_dataset["COIN_TYPE"]), dtype=np.float64)
+    etof = np.zeros(len(de_dataset["COIN_TYPE"]), dtype=np.float64)
 
     # Normalized TDCs
     # For the stop anode, there are mismatches between the coincidence TDCs,
@@ -384,24 +384,31 @@ def get_coincidence_positions(
         coin_s_norm_top - coin_n_norm_top
     ) + get_image_params("XCOINTPOFF")  # millimeter
     # Time for the electrons to travel back to coincidence anode.
-    t2[index_top] = get_image_params("ETOFSC") * t1[index_top] + get_image_params("ETOFTPOFF")
-    etof[index_top] = t2[index_top] - particle_tof[index_top]
+    t2[index_top] = get_image_params("ETOFSC") * t1[index_top] + get_image_params(
+        "ETOFTPOFF"
+    )
+
+    # Multiply by 10 to convert to tenths of a nanosecond.
+    etof[index_top] = t2[index_top] * 10 - particle_tof[index_top]
 
     # TpCoinNNorm Bottom
-    coin_n_norm_bottom = get_norm(
-        de_bottom["COIN_NORTH_TDC"], "CoinN", sensor
-    )
+    coin_n_norm_bottom = get_norm(de_bottom["COIN_NORTH_TDC"], "CoinN", sensor)
     # TpCoinSNorm Bottom
-    coin_s_norm_bottom = get_norm(
-        de_bottom["COIN_SOUTH_TDC"], "CoinS", sensor
-    )
-    t1[index_bottom] = coin_n_norm_bottom + coin_s_norm_bottom  # /2 incorporated into scale
+    coin_s_norm_bottom = get_norm(de_bottom["COIN_SOUTH_TDC"], "CoinS", sensor)
+    t1[index_bottom] = (
+        coin_n_norm_bottom + coin_s_norm_bottom
+    )  # /2 incorporated into scale
     xc[index_bottom] = get_image_params("XCOINBTSC") * (
-       coin_s_norm_bottom - coin_n_norm_bottom
+        coin_s_norm_bottom - coin_n_norm_bottom
     ) + get_image_params("XCOINBTOFF")  # millimeter
+
     # Time for the electrons to travel back to coincidence anode.
-    t2[index_bottom] = get_image_params("ETOFSC") * t1[index_bottom] + get_image_params("ETOFBTOFF")
-    etof[index_bottom] = t2[index_bottom] - particle_tof[index_bottom]
+    t2[index_bottom] = get_image_params("ETOFSC") * t1[index_bottom] + get_image_params(
+        "ETOFBTOFF"
+    )
+
+    # Multiply by 10 to convert to tenths of a nanosecond.
+    etof[index_bottom] = t2[index_bottom] * 10 - particle_tof[index_bottom]
 
     # Convert to hundredths of a millimeter by multiplying times 100
-    return etof, xc*100
+    return etof, xc * 100

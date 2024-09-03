@@ -7,7 +7,6 @@ import pytest
 from imap_processing.ultra.l1b.ultra_l1b_extended import (
     StartType,
     StopType,
-    CoinType,
     get_coincidence_positions,
     get_front_x_position,
     get_front_y_position,
@@ -88,7 +87,9 @@ def test_get_ph_tof_and_back_positions(
 
     np.testing.assert_array_equal(ph_xb, selected_rows["Xb"].astype("float"))
     np.testing.assert_array_equal(ph_yb, selected_rows["Yb"].astype("float"))
-    np.testing.assert_allclose(ph_tof, selected_rows["TOF"].astype("float"), atol=1e-5, rtol=0)
+    np.testing.assert_allclose(
+        ph_tof, selected_rows["TOF"].astype("float"), atol=1e-5, rtol=0
+    )
 
 
 def test_get_ssd_back_position_and_tof_offset(
@@ -134,36 +135,22 @@ def test_get_ssd_back_position_and_tof_offset(
 def test_get_coincidence_positions(de_dataset, yf_fixture):
     """Tests get_coincidence_positions function."""
     df_filt, _, _ = yf_fixture
-    tof = df_filt["TOF"].astype("float").values
+    # Get particle tof (t2).
+    _, t2, _, _ = get_ph_tof_and_back_positions(
+        de_dataset, df_filt.Xf.astype("float").values, "ultra45"
+    )
 
-    etof, xc = get_coincidence_positions(de_dataset, tof, "ultra45")
-
-    coin_indices = np.nonzero(
-        np.isin(de_dataset["COIN_TYPE"], [CoinType.Top.value, CoinType.Bottom.value])
+    # Filter for stop type.
+    indices = np.nonzero(
+        np.isin(de_dataset["STOP_TYPE"], [StopType.Top.value, StopType.Bottom.value])
     )[0]
+    de_filtered = de_dataset.isel(epoch=indices)
+    rows = df_filt.iloc[indices]
 
-    coin_rows = df_filt.iloc[coin_indices]
+    # Get coincidence position and eTOF.
+    etof, xc = get_coincidence_positions(de_filtered, t2, "ultra45")
 
-    np.testing.assert_allclose(xc[coin_indices],
-                               coin_rows["Xc"].astype("float"), atol=1e-4, rtol=0)
-
-    # look at etof
-    coin_top_indices = np.nonzero(
-        np.isin(de_dataset["COIN_TYPE"], [CoinType.Top.value])
-    )[0]
-    coin_bottom_indices = np.nonzero(
-        np.isin(de_dataset["COIN_TYPE"], [CoinType.Bottom.value])
-    )[0]
-
-    top_rows = df_filt.iloc[coin_top_indices]
-    bottom_rows = df_filt.iloc[coin_bottom_indices]
-
-    np.testing.assert_allclose(etof[coin_bottom_indices],
-                               bottom_rows["eTOF"].astype("float"))
-
-    # assert top
-    np.testing.assert_allclose(etof[coin_top_indices],
-                               top_rows["eTOF"].astype("float"))
-
-
-    print('hi')
+    np.testing.assert_allclose(xc, rows["Xc"].astype("float"), atol=1e-4, rtol=0)
+    np.testing.assert_allclose(
+        etof, rows["eTOF"].astype("float").values, rtol=0, atol=1e-06
+    )
