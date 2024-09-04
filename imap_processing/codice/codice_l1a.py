@@ -23,9 +23,9 @@ import xarray as xr
 from imap_processing import imap_module_directory
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.codice import constants
+from imap_processing.codice.codice_l0 import decom_packets
 from imap_processing.codice.decompress import decompress
 from imap_processing.codice.utils import CODICEAPID
-from imap_processing.utils import packet_file_to_datasets
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -511,14 +511,7 @@ def process_codice_l1a(file_path: Path, data_version: str) -> xr.Dataset:
         The ``xarray`` dataset containing the science data and supporting metadata.
     """
     # Decom the packets, group data by APID, and sort by time
-    if "hskp" in str(file_path):
-        xtce_filename = "P_COD_NHK.xml"
-    else:
-        xtce_filename = "codice_packet_definition.xml"
-    xtce_packet_definition = Path(
-        f"{imap_module_directory}/codice/packet_definitions/{xtce_filename}"
-    )
-    packets = packet_file_to_datasets(file_path, xtce_packet_definition)
+    packets = decom_packets(file_path)
 
     for apid in packets:
         packet = packets[apid]

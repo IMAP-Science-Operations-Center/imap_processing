@@ -36,6 +36,11 @@ def decom_packets(packet_file: Path) -> dict[int, xr.Dataset]:
     packets : dict[int, xarray.Dataset]
         Mapping from apid to ``xarray`` dataset, one dataset per apid.
     """
+    # TODO: Currently need to use the 'old' packet definition for housekeeping
+    #       because the test housekeeping packet has LAST_OPCODE=0, and the
+    #       telemetry definition "STATES" tab doesn't allow for a 0 value for
+    #       this. Need to figure out if the test packet is bad, or the telemetry
+    #       definition is wrong.
     if "hskp" in str(packet_file):
         xtce_filename = "P_COD_NHK.xml"
     else:
