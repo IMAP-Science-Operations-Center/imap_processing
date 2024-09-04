@@ -536,11 +536,11 @@ class MagL1a:
         compression_width = int("".join([str(i) for i in bit_array[:6]]), 2)
         has_range_data_section = int(str(bit_array[6]), 2)
 
-        # The full vector includes 3 values of compression_width bits, plus 2 bits for
-        # the range
-        uncompressed_vector_size = compression_width * 3 + 2
+        # The full vector includes 3 values of compression_width bits, and excludes
+        # range.
+        uncompressed_vector_size = compression_width * 3
         # plus 8 to get past the compression width and range data section
-        first_vector_width = uncompressed_vector_size + 8
+        first_vector_width = uncompressed_vector_size + 8 + 2
 
         first_vector = MagL1a.unpack_one_vector(
             bit_array[8:first_vector_width], compression_width, True
@@ -617,7 +617,7 @@ class MagL1a:
                     if end_primary_vector == 0
                     else end_primary_vector
                 )
-                if seq_val >= end_primary_vector + uncompressed_vector_size:
+                if seq_val >= end_primary_vector + uncompressed_vector_size + 2:
                     # We have found the first secondary vector
                     secondary_boundaries = [seq_val]
                     vector_count += 1
@@ -665,15 +665,16 @@ class MagL1a:
                 decoded_vector = MagL1a.unpack_one_vector(
                     uncompressed_vectors[i : i + uncompressed_vector_size],
                     compression_width,
-                    True,
+                    False,
                 )
                 primary_vectors[vector_index] = decoded_vector
+                primary_vectors[vector_index][3] = first_vector[3]
                 vector_index += 1
 
         # Secondary vector processing
         first_secondary_vector = MagL1a.unpack_one_vector(
             vector_bits[
-                end_primary_vector : end_primary_vector + uncompressed_vector_size
+                end_primary_vector : end_primary_vector + uncompressed_vector_size + 2
             ],
             compression_width,
             True,
@@ -703,11 +704,14 @@ class MagL1a:
                 decoded_vector = MagL1a.unpack_one_vector(
                     uncompressed_vectors[i : i + uncompressed_vector_size],
                     compression_width,
-                    True,
+                    False,
                 )
                 secondary_vectors[vector_index] = decoded_vector
+                secondary_vectors[vector_index][3] = first_secondary_vector[3]
                 vector_index += 1
 
+        # If there is a range data section, it describes all the data, compressed or
+        # uncompressed.
         if has_range_data_section:
             primary_vectors = MagL1a.process_range_data_section(
                 bit_array[end_vector : end_vector + (primary_count - 1) * 2],
