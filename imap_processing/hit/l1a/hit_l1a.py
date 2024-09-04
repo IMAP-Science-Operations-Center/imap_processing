@@ -79,7 +79,6 @@ def hit_l1a(packet_file: str, data_version: str) -> list[xr.Dataset]:
         else:
             raise Exception(f"Unknown APID [{apid}]")
 
-
     # create the attribute manager for this data level
     attr_mgr = ImapCdfAttributes()
     attr_mgr.add_instrument_global_attrs(instrument="hit")
@@ -92,6 +91,7 @@ def hit_l1a(packet_file: str, data_version: str) -> list[xr.Dataset]:
 
     return list(datasets.values())
 
+
 def process_housekeeping(dataset, attr_mgr):
     logger.info("Creating datasets for HIT L1A data")
 
@@ -100,7 +100,6 @@ def process_housekeeping(dataset, attr_mgr):
     # TODO: process leak variables
     # TODO: update dataset attributes and coordinates
     # TODO: loop through dataset variable names update dims and assign attributes
-
 
     # # Create xarray data arrays for dependencies
     # epoch_time = xr.DataArray(
@@ -133,9 +132,8 @@ def process_housekeeping(dataset, attr_mgr):
             for key, value in attr_mgr.get_variable_attributes(field).items()  # type: ignore[arg-type]
             if "DEPEND" in key
         ]
-        data_array.attrs=attr_mgr.get_variable_attributes(field)
-        data_array.dims=dims
-
+        data_array.attrs = attr_mgr.get_variable_attributes(field)
+        data_array.dims = dims
 
     exit()
 
@@ -187,6 +185,7 @@ def process_housekeeping(dataset, attr_mgr):
     processed_data[apid] = dataset
     logger.info("HIT L1A datasets created")
     return processed_data
+
 
 def create_datasets(data: dict, attr_mgr: ImapCdfAttributes) -> dict:
     """
@@ -315,5 +314,7 @@ def create_datasets(data: dict, attr_mgr: ImapCdfAttributes) -> dict:
     logger.info("HIT L1A datasets created")
     return processed_data
 
-if __name__ == "__main__":
 
+if __name__ == "__main__":
+    packet_file = imap_module_directory / "tests/hit/test_data/hskp_sample.ccsds"
+    hit_l1a(packet_file, 0)
