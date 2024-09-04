@@ -15,12 +15,8 @@ from imap_processing.lo.l0.utils.bit_decompression import (
 from imap_processing.lo.l0.utils.lo_base import LoBase
 
 
-# Temporarily ignoring this mypy error: Class cannot subclass "LoBase" (has type "Any")
-# This data class will soon be removed and LoBase will
-# no longer be used by the time star sensor is integrated into the
-# L1A processing pipeline
 @dataclass
-class StarSensor(LoBase):  # type: ignore
+class StarSensor(LoBase):
     """
     L1A Star Sensor data class.
 
