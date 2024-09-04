@@ -8,10 +8,9 @@ from enum import IntEnum
 import numpy as np
 import xarray as xr
 
-from imap_processing import decom, imap_module_directory, utils
+from imap_processing import imap_module_directory
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
-from imap_processing.hit.l0.data_classes.housekeeping import Housekeeping
-from imap_processing.spice.time import met_to_j2000ns
+from imap_processing.utils import packet_file_to_datasets
 
 logger = logging.getLogger(__name__)
 
@@ -53,10 +52,33 @@ def hit_l1a(packet_file: str, data_version: str) -> list[xr.Dataset]:
     cdf_filepaths : list[xarray.Dataset]
         List of Datasets of L1A processed data.
     """
-    # Decom, sort, and group packets by apid
-    packets = decom_packets(packet_file)
-    sorted_packets = utils.sort_by_time(packets, "SHCOARSE")
-    grouped_data = group_data(sorted_packets)
+    # TODO add logging
+    # example: logger.debug(f"Grouping housekeeping packets - APID: {apid}")
+
+    # Unpack ccsds file
+    packet_definition = (
+        imap_module_directory / "hit/packet_definitions/hit_packet_definitions.xml"
+    )
+    datasets_by_apid = packet_file_to_datasets(
+        packet_file=packet_file,
+        xtce_packet_definition=packet_definition,
+    )
+
+    for apid in datasets_by_apid:
+        if apid == HitAPID.HIT_HSKP:
+            process_housekeeping(datasets_by_apid[apid])
+            # TODO define keys to skip for each apid. Currently just have
+            #  a list for housekeeping. Some of these may change later.
+            #  leak_i_raw can be handled in the housekeeping class as an
+            #  InitVar so that it doesn't show up when you extract the object's
+            #  field names.
+        elif apid == HitAPID.HIT_SCIENCE:
+            logical_source = "imap_hit_l1a_sci-counts"
+            # TODO what about pulse height? It has the same apid.
+            #  Will need to approach this differently
+        else:
+            raise Exception(f"Unknown APID [{apid}]")
+
 
     # create the attribute manager for this data level
     attr_mgr = ImapCdfAttributes()
@@ -65,64 +87,106 @@ def hit_l1a(packet_file: str, data_version: str) -> list[xr.Dataset]:
     attr_mgr.add_global_attribute("Data_version", data_version)
 
     # Create datasets
-    datasets = create_datasets(grouped_data, attr_mgr)
+    logger.info("Creating datasets for HIT L1A data")
+    datasets = create_datasets(datasets_by_apid, attr_mgr)
 
     return list(datasets.values())
 
+def process_housekeeping(dataset, attr_mgr):
+    logger.info("Creating datasets for HIT L1A data")
 
-def decom_packets(packet_file: str) -> list:
-    """
-    Unpack and decode packets using CCSDS file and XTCE packet definitions.
+    logical_source = "imap_hit_l1a_hk"
 
-    Parameters
-    ----------
-    packet_file : str
-        Path to the CCSDS data packet file.
-
-    Returns
-    -------
-    unpacked_packets : list
-        List of all the unpacked data.
-    """
-    # TODO: update path to use a combined packets xtce file
-    xtce_file = imap_module_directory / "hit/packet_definitions/P_HIT_HSKP.xml"
-    logger.debug(f"Unpacking {packet_file} using xtce definitions in {xtce_file}")
-    unpacked_packets: list = decom.decom_packets(packet_file, xtce_file)
-    logger.debug(f"{packet_file} unpacked")
-    return unpacked_packets
+    # TODO: process leak variables
+    # TODO: update dataset attributes and coordinates
+    # TODO: loop through dataset variable names update dims and assign attributes
 
 
-def group_data(unpacked_data: list) -> dict:
-    """
-    Group data by apid.
+    # # Create xarray data arrays for dependencies
+    # epoch_time = xr.DataArray(
+    #     epoch_converted_times,
+    #     name="epoch",
+    #     dims=["epoch"],
+    #     attrs=attr_mgr.get_variable_attributes("epoch"),
+    # )
 
-    Parameters
-    ----------
-    unpacked_data : list
-        Packet list.
+    adc_channels = xr.DataArray(
+        np.arange(64, dtype=np.uint16),
+        name="adc_channels",
+        dims=["adc_channels"],
+        attrs=attr_mgr.get_variable_attributes("adc_channels"),
+    )
 
-    Returns
-    -------
-    grouped_data : dict
-        Grouped data by apid.
-    """
-    logger.debug("Grouping packet values for each apid")
-    grouped_data: dict = utils.group_by_apid(unpacked_data)
+    # NOTE: LABL_PTR_1 should be CDF_CHAR.
+    adc_channels_label = xr.DataArray(
+        adc_channels.values.astype(str),
+        name="adc_channels_label",
+        dims=["adc_channels_label"],
+        attrs=attr_mgr.get_variable_attributes("adc_channels_label"),
+    )
 
-    # Create data classes for each packet
-    for apid in grouped_data:
-        if apid == HitAPID.HIT_HSKP:
-            logger.debug(f"Grouping housekeeping packets - APID: {apid}")
-            grouped_data[apid] = [
-                Housekeeping(packet, "0.0", "hskp_sample.ccsds")
-                for packet in grouped_data[apid]
+    for field, data_array in dataset.data_vars.items():
+        # Create a list of all the dimensions using the DEPEND_I keys in the
+        # attributes
+        dims = [
+            value
+            for key, value in attr_mgr.get_variable_attributes(field).items()  # type: ignore[arg-type]
+            if "DEPEND" in key
+        ]
+        data_array.attrs=attr_mgr.get_variable_attributes(field)
+        data_array.dims=dims
+
+
+    exit()
+
+    # Create xarray dataset
+    dataset = xr.Dataset(
+        coords={
+            "epoch": epoch_time,
+            "adc_channels": adc_channels,
+            "adc_channels_label": adc_channels_label,
+        },
+        attrs=attr_mgr.get_global_attributes(logical_source),
+    )
+
+    # Create xarray data array for each metadata field
+    for field, data in metadata_arrays.items():  # type: ignore[assignment]
+        # TODO Error, Incompatible types in assignment
+        # (expression has type "str", variable has type "Field[Any]")
+        # AND
+        # Incompatible types in assignment
+        # (expression has type "list[Any]", variable has type "dict[Any, Any]")
+        if field not in skip_keys:  # type: ignore[comparison-overlap]
+            # TODO Error, Non-overlapping container check
+            # (element type: "Field[Any]", container item type: "str")
+
+            # Create a list of all the dimensions using the DEPEND_I keys in the
+            # attributes
+            dims = [
+                value
+                for key, value in attr_mgr.get_variable_attributes(field).items()  # type: ignore[arg-type]
+                if "DEPEND" in key
             ]
-        else:
-            raise RuntimeError(f"Encountered unexpected APID [{apid}]")
+            if field == "leak_i":  # type: ignore[comparison-overlap]
+                # TODO Error,  Non-overlapping equality check
+                # (left operand type: "Field[Any]",
+                # right operand type: "Literal['leak_i']")
 
-    logger.debug("Finished grouping packet data")
-    return grouped_data
-
+                # 2D array - needs two dims
+                dataset[field] = xr.DataArray(
+                    data,
+                    dims=dims,
+                    attrs=attr_mgr.get_variable_attributes(field),  # type: ignore[arg-type]
+                )
+            else:
+                dataset[field] = xr.DataArray(
+                    data,
+                    dims=dims,
+                    attrs=attr_mgr.get_variable_attributes(field),  # type: ignore[arg-type]
+                )
+    processed_data[apid] = dataset
+    logger.info("HIT L1A datasets created")
+    return processed_data
 
 def create_datasets(data: dict, attr_mgr: ImapCdfAttributes) -> dict:
     """
@@ -250,3 +314,6 @@ def create_datasets(data: dict, attr_mgr: ImapCdfAttributes) -> dict:
         processed_data[apid] = dataset
     logger.info("HIT L1A datasets created")
     return processed_data
+
+if __name__ == "__main__":
+
