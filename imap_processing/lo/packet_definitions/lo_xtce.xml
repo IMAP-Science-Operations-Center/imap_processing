@@ -2940,7 +2940,7 @@
 			<xtce:Parameter name="ILO_SCI_CNT.SHCOARSE" parameterTypeRef="ILO_SCI_CNT.SHCOARSE" shortDescription="CCSDS Secondary Header MET">
 				<xtce:LongDescription>CCSDS Secondary Header MET</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="ILO_SCI_CNT.SCI_CNT" parameterTypeRef="ILO_SCI_CNT.SCI_CNT" shortDescription="Binary SCI DE data" />
+			<xtce:Parameter name="ILO_SCI_CNT.SCI_CNT" parameterTypeRef="ILO_SCI_CNT.SCI_CNT" shortDescription="Binary Science Count data" />
 			<xtce:Parameter name="ILO_SCI_CNT.CHKSUM" parameterTypeRef="ILO_SCI_CNT.CHKSUM" shortDescription="16-bit CRC checksum">
 				<xtce:LongDescription>16-bit CRC checksum</xtce:LongDescription>
 			</xtce:Parameter>

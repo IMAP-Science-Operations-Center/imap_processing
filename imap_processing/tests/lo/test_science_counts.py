@@ -1,3 +1,4 @@
+import numpy as np
 import pytest
 
 from imap_processing import imap_module_directory
@@ -91,7 +92,7 @@ def test_decompress_8_to_16_bit():
     out = decompress(bin_str, bits_per_index, section_start, section_length)
 
     # Assert
-    assert out == expected
+    np.testing.assert_equal(out, expected)
 
 
 def test_decompress_12_to_16_bit():
@@ -110,4 +111,4 @@ def test_decompress_12_to_16_bit():
     out = decompress(bin_str, bits_per_index, section_start, section_length)
 
     # Assert
-    assert out == expected
+    np.testing.assert_equal(out, expected)
