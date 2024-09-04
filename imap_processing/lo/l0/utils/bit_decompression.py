@@ -44,7 +44,7 @@ def decompress_int(
 
     Returns
     -------
-    decompressed :
+    decompressed : list
         The decompressed integer.
     """
     valid_decompression = [
@@ -59,5 +59,5 @@ def decompress_int(
             + "Decompress.DECOMPRESS8TO12"
         )
     data = decompression_lookup[decompression]
-    print(f"DATA: {data}")
-    return data[tuple(compressed_values)][1]
+
+    return data[compressed_values, 1]
