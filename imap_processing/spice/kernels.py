@@ -6,7 +6,7 @@ import os
 from collections.abc import Generator
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Any, Callable, Optional
+from typing import Any, Callable, Optional, Union, overload
 
 import numpy as np
 import spiceypy as spice
@@ -16,15 +16,29 @@ from spiceypy.utils.exceptions import SpiceyError
 logger = logging.getLogger(__name__)
 
 
+# Declarations to help with typing. Taken from mypy documentation on
+# decorator-factories:
+# https://mypy.readthedocs.io/en/stable/generics.html#decorator-factories
+# Bare decorator usage
+@overload
 def ensure_spice(
-    f_py: Optional[Callable] = None, time_kernels_only: bool = False
-) -> Callable:
+    __func: Callable[..., Any],
+) -> Callable[..., Any]: ...  # numpydoc ignore=GL08
+# Decorator with arguments
+@overload
+def ensure_spice(
+    *, time_kernels_only: bool = False
+) -> Callable[[Callable[..., Any]], Callable[..., Any]]: ...  # numpydoc ignore=GL08
+# Implementation
+def ensure_spice(
+    __func: Optional[Callable[..., Any]] = None, *, time_kernels_only: bool = False
+) -> Union[Callable[..., Any], Callable[[Callable[..., Any]], Callable[..., Any]]]:
     """
     Decorator/wrapper that automatically furnishes SPICE kernels.
 
     Parameters
     ----------
-    f_py : Callable
+    __func : Callable
         The function requiring SPICE that we are going to wrap if being used
         explicitly, otherwise None, in which case ensure_spice is being used,
         not as a function wrapper (see l2a_processing.py) but as a true
@@ -82,11 +96,6 @@ def ensure_spice(
         >>> wrapped = ensure_spice(spicey_func, time_kernels_only=True)
         ... result = wrapped(*args, **kwargs)
     """
-    if f_py and not callable(f_py):
-        raise ValueError(
-            f"Received a non-callable object {f_py} as the f_py argument to"
-            f"ensure_spice.  f_py must be a callable object."
-        )
 
     def _decorator(func: Callable[..., Callable]) -> Callable:
         """
@@ -157,8 +166,8 @@ def ensure_spice(
     # Note: This return was originally implemented as a ternary operator, but
     # this caused mypy to fail due to this bug:
     # https://github.com/python/mypy/issues/4134
-    if callable(f_py):
-        return _decorator(f_py)
+    if callable(__func):
+        return _decorator(__func)
     else:
         return _decorator
 
