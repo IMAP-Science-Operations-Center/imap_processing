@@ -2,6 +2,8 @@
 
 from enum import Enum
 
+import numpy as np
+
 
 class DataMode(Enum):
     """
@@ -100,4 +102,4 @@ FIBONACCI_SEQUENCE = [
     165580141,
 ]
 
-MAX_FINE_TIME = 65535  # maximum 16 bit unsigned int
+MAX_FINE_TIME = np.iinfo(np.uint16).max  # maximum 16 bit unsigned int

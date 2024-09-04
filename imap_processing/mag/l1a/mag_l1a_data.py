@@ -497,7 +497,7 @@ class MagL1a:
         uncompressed primary vector with range. Then, we proceed through the compressed
         data, where each value is fibonacci and zig-zag encoded. This means each value
         ends in 2 sequential ones (11). We split the data along these numbers until
-        we reach primary_count.
+        we reach primary_count vectors.
 
         The secondary vectors are decoded the same way, starting directly after the last
         primary vector with an uncompressed secondary starting vector and then

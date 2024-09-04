@@ -42,10 +42,6 @@ def mag_l1a(packet_filepath: Path, data_version: str) -> list[xr.Dataset]:
     norm_data = packets["norm"]
     burst_data = packets["burst"]
 
-    print(np.unpackbits(norm_data[0].VECTORS))
-    print(len(np.unpackbits(norm_data[0].VECTORS)))
-    print(len(norm_data[0].VECTORS))
-
     input_files = [packet_filepath.name]
 
     # Create attribute manager and add MAG L1A attributes and global variables
@@ -186,10 +182,7 @@ def process_packets(
         # byte boundaries are.
 
         primary_vectors, secondary_vectors = MagL1a.process_vector_data(
-            mag_l0.VECTORS.astype(dtype=np.int32),  # type: ignore[union-attr]
-            # TODO Maybe Change, Item "str" of "Union[Any, str]"
-            #  has no attribute "astype"
-            # this is because mypy expects both to have the attributes
+            mag_l0.VECTORS.astype(dtype=np.int32),
             primary_packet_data.total_vectors,
             secondary_packet_data.total_vectors,
             mag_l0.COMPRESSION,
