@@ -8,7 +8,7 @@ Paradigms for developing this module:
 * Always return numpy arrays for vectorized calls.
 """
 
-from enum import Enum
+from enum import IntEnum
 from typing import Union
 
 import numpy as np
@@ -17,7 +17,7 @@ import spiceypy as spice
 from imap_processing.spice.kernels import ensure_spice
 
 
-class SpiceBody(Enum):
+class SpiceBody(IntEnum):
     """Enum containing SPICE IDs for bodies that we use."""
 
     # A subset of IMAP Specific bodies as defined in imap_wkcp.tf
@@ -31,7 +31,7 @@ class SpiceBody(Enum):
     EARTH = 399
 
 
-class SpiceFrame(Enum):
+class SpiceFrame(IntEnum):
     """Enum containing SPICE IDs for reference frames, defined in imap_wkcp.tf."""
 
     # Standard SPICE Frames
