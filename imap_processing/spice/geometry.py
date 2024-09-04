@@ -62,7 +62,7 @@ def imap_state(
     observer: SpiceBody = SpiceBody.SUN,
 ) -> np.ndarray:
     """
-    Get the state (position and velocity) of the IMPA spacecraft.
+    Get the state (position and velocity) of the IMAP spacecraft.
 
     By default, the state is returned in the ECLIPJ2000 frame as observed by the Sun.
 
