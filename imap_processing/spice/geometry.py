@@ -8,6 +8,7 @@ Paradigms for developing this module:
 * Always return numpy arrays for vectorized calls.
 """
 
+import typing
 from enum import IntEnum
 from typing import Union
 
@@ -55,6 +56,7 @@ class SpiceFrame(IntEnum):
     IMAP_GLOWS = -43750
 
 
+@typing.no_type_check
 @ensure_spice
 def imap_state(
     et: Union[np.ndarray, float],
