@@ -34,23 +34,6 @@ EXPECTED_ARRAY_SHAPES = [
     (1, 1, 1, 128),  # lo-nsw-species
     (1, 128),  # lo-pha
 ]
-EXPECTED_ARRAY_SIZES = [
-    123,  # hskp
-    1,  # hi-counters-aggregated
-    3,  # hi-counters-singles
-    8,  # hi-omni
-    4,  # hi-sectored
-    0,  # hi-pha
-    3,  # lo-counters-aggregated
-    3,  # lo-counters-singles
-    6,  # lo-sw-angular
-    3,  # lo-nsw-angular
-    7,  # lo-sw-priority
-    4,  # lo-nsw-priority
-    18,  # lo-sw-species
-    10,  # lo-nsw-species
-    0,  # lo-pha
-]
 EXPECTED_LOGICAL_SOURCE = [
     "imap_codice_l1a_hskp",
     "imap_codice_l1a_hi-counters-aggregated",
@@ -67,6 +50,23 @@ EXPECTED_LOGICAL_SOURCE = [
     "imap_codice_l1a_lo-sw-species",
     "imap_codice_l1a_lo-nsw-species",
     "imap_codice_l1a_lo-pha",
+]
+EXPECTED_NUM_VARIABLES = [
+    129,  # hskp
+    1,  # hi-counters-aggregated
+    3,  # hi-counters-singles
+    8,  # hi-omni
+    4,  # hi-sectored
+    0,  # hi-pha
+    3,  # lo-counters-aggregated
+    3,  # lo-counters-singles
+    6,  # lo-sw-angular
+    3,  # lo-nsw-angular
+    7,  # lo-sw-priority
+    4,  # lo-nsw-priority
+    18,  # lo-sw-species
+    10,  # lo-nsw-species
+    0,  # lo-pha
 ]
 
 
@@ -134,26 +134,6 @@ def test_l1a_data_array_shape(test_l1a_data: xr.Dataset, expected_shape: tuple):
             assert dataset[variable].data.shape == expected_shape
 
 
-@pytest.mark.parametrize(
-    "test_l1a_data, expected_size",
-    list(zip(TEST_PACKETS, EXPECTED_ARRAY_SIZES)),
-    indirect=["test_l1a_data"],
-)
-def test_l1a_data_array_size(test_l1a_data: xr.Dataset, expected_size: int):
-    """Tests that the data arrays in the generated CDFs have the expected size.
-
-    Parameters
-    ----------
-    test_l1a_data : xarray.Dataset
-        A ``xarray`` dataset containing the test data
-    expected_size : int
-        The expected size of the data array
-    """
-
-    dataset = test_l1a_data
-    assert len(dataset) == expected_size
-
-
 @pytest.mark.skip("Awaiting validation data")
 @pytest.mark.parametrize(
     "test_l1a_data, validation_data",
@@ -185,3 +165,23 @@ def test_l1a_data_array_values(test_l1a_data: xr.Dataset, validation_data: Path)
             np.testing.assert_array_equal(
                 validation_data[variable].data, generated_dataset[variable].data[0]
             )
+
+
+@pytest.mark.parametrize(
+    "test_l1a_data, expected_num_variables",
+    list(zip(TEST_PACKETS, EXPECTED_NUM_VARIABLES)),
+    indirect=["test_l1a_data"],
+)
+def test_l1a_num_variables(test_l1a_data: xr.Dataset, expected_num_variables: int):
+    """Tests that the data arrays in the generated CDFs have the expected size.
+
+    Parameters
+    ----------
+    test_l1a_data : xarray.Dataset
+        A ``xarray`` dataset containing the test data
+    expected_num_variables : int
+        The expected number of data variables in the CDF
+    """
+
+    dataset = test_l1a_data
+    assert len(dataset) == expected_num_variables
