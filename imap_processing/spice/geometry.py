@@ -26,17 +26,17 @@ class SpiceBody(IntEnum):
     # IMAP Pointing Frame (Despun) as defined in iamp_science_0001.tf
     IMAP_DPS = -43901
     # Standard NAIF bodies
-    SOLAR_SYSTEM_BARYCENTER = 0
-    SUN = 10
-    EARTH = 399
+    SOLAR_SYSTEM_BARYCENTER = spice.bodn2c("SOLAR_SYSTEM_BARYCENTER")
+    SUN = spice.bodn2c("SUN")
+    EARTH = spice.bodn2c("EARTH")
 
 
 class SpiceFrame(IntEnum):
     """Enum containing SPICE IDs for reference frames, defined in imap_wkcp.tf."""
 
     # Standard SPICE Frames
-    J2000 = 1
-    ECLIPJ2000 = 17
+    J2000 = spice.irfnum("J2000")
+    ECLIPJ2000 = spice.irfnum("ECLIPJ2000")
     # IMAP specific as defined in imap_wkcp.tf
     IMAP_SPACECRAFT = -43000
     IMAP_LO_BASE = -43100

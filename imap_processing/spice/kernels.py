@@ -6,7 +6,7 @@ import os
 from collections.abc import Generator
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Any, Callable, Optional, overload
+from typing import Any, Callable, Optional, Union, overload
 
 import numpy as np
 import spiceypy as spice
@@ -32,7 +32,7 @@ def ensure_spice(
 # Implementation
 def ensure_spice(
     __func: Optional[Callable[..., Any]] = None, *, time_kernels_only: bool = False
-) -> Callable[..., Any] | Callable[[Callable[..., Any]], Callable[..., Any]]:
+) -> Union[Callable[..., Any], Callable[[Callable[..., Any]], Callable[..., Any]]]:
     """
     Decorator/wrapper that automatically furnishes SPICE kernels.
 
