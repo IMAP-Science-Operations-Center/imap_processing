@@ -25,5 +25,8 @@ to add exceptions or new requirements on a per-instrument or per-level basis.
 Detailed Description of File Processing
 ---------------------------------------
 
+For explicit descriptions of the tools and technical choices of the IMAP SDC, please refer to `Galaxy <https://lasp.colorado.edu/galaxy/display/IMAP/SDC+Architecture>`_.
+
+
 `Overview chart in Galaxy <https://lasp.colorado.edu/galaxy/display/IMAP/SDC+Processing+Architecture+Overview>`_
 
