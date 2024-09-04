@@ -6,32 +6,33 @@ import os
 from collections.abc import Generator
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Callable, Optional, ParamSpec, TypeVar, overload
+from typing import Any, Callable, Optional, overload
 
 import numpy as np
 import spiceypy as spice
 from numpy.typing import NDArray
 from spiceypy.utils.exceptions import SpiceyError
 
-P = ParamSpec("P")
-T = TypeVar("T")
 logger = logging.getLogger(__name__)
 
 
-# What is going on here? Taken from mypy help with declaring decorators
+# Declarations to help with typing. Taken from mypy documentation on
+# decorator-factories:
 # https://mypy.readthedocs.io/en/stable/generics.html#decorator-factories
 # Bare decorator usage
 @overload
-def ensure_spice(__func: Callable[P, T]) -> Callable[P, T]: ...  # numpydoc ignore=GL08
+def ensure_spice(
+    __func: Callable[..., Any],
+) -> Callable[..., Any]: ...  # numpydoc ignore=GL08
 # Decorator with arguments
 @overload
 def ensure_spice(
     *, time_kernels_only: bool = False
-) -> Callable[[Callable[P, T]], Callable[P, T]]: ...  # numpydoc ignore=GL08
+) -> Callable[[Callable[..., Any]], Callable[..., Any]]: ...  # numpydoc ignore=GL08
 # Implementation
 def ensure_spice(
-    __func: Optional[Callable[P, T]] = None, *, time_kernels_only: bool = False
-) -> Callable[P, T] | Callable[[Callable[P, T]], Callable[P, T]]:
+    __func: Optional[Callable[..., Any]] = None, *, time_kernels_only: bool = False
+) -> Callable[..., Any] | Callable[[Callable[..., Any]], Callable[..., Any]]:
     """
     Decorator/wrapper that automatically furnishes SPICE kernels.
 
@@ -96,7 +97,7 @@ def ensure_spice(
         ... result = wrapped(*args, **kwargs)
     """
 
-    def _decorator(func: Callable[P, T]) -> Callable[P, T]:
+    def _decorator(func: Callable[..., Callable]) -> Callable:
         """
         Decorate or wrap input function depending on how ensure_spice is used.
 
@@ -112,7 +113,7 @@ def ensure_spice(
         """
 
         @functools.wraps(func)
-        def wrapper_ensure_spice(*args: P.args, **kwargs: P.kwargs) -> T:
+        def wrapper_ensure_spice(*args: Any, **kwargs: Any) -> Any:
             """
             Wrap the function that ensure_spice is used on.
 
