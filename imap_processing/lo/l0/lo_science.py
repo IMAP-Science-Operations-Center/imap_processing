@@ -136,12 +136,12 @@ def decompress(
 
     # parse the binary and convert to integers
     raw_ints = [
-        int(bin_str[i: i + bits_per_index], 2)
+        int(bin_str[i : i + bits_per_index], 2)
         for i in range(section_start, section_start + section_length, bits_per_index)
     ]
 
-    #decompress raw integers
-    decompressed_ints = decompress_int(
+    # decompress raw integers
+    decompressed_ints: list[int] = decompress_int(
         raw_ints,
         decompress,
         DECOMPRESSION_TABLES,

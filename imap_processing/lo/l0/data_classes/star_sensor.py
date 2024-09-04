@@ -16,7 +16,11 @@ from imap_processing.lo.l0.utils.lo_base import LoBase
 
 
 @dataclass
-class StarSensor(LoBase):
+# Temporarily ignoring this mypy error: Class cannot subclass "LoBase" (has type "Any")
+# This data class will soon be removed and LoBase will
+# no longer be used by the time star sensor is integrated into the
+# L1A processing pipeline
+class StarSensor(LoBase):  # type: ignore
     """
     L1A Star Sensor data class.
 
@@ -90,7 +94,9 @@ class StarSensor(LoBase):
             extracted_integer = int(binary_string.next_bits(bit_length), 2)
             # The Star Sensor packet uses a 12 to 8 bit compression
             decompressed_integer = decompress_int(
-                extracted_integer, Decompress.DECOMPRESS8TO12, DECOMPRESSION_TABLES
+                [extracted_integer], Decompress.DECOMPRESS8TO12, DECOMPRESSION_TABLES
             )
-            data_list.append(decompressed_integer)
+            # TODO: Need to update this to work with decompress_int outputting
+            #  a list of ints. Remove function from loop during refactor
+            data_list.append(decompressed_integer[0])
         self.DATA = np.array(data_list)
