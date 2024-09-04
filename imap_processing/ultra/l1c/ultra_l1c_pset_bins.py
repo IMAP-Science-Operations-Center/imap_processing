@@ -1,12 +1,11 @@
-"""Creates bins for pointing sets"""
+"""Module to create energy bins for pointing sets."""
 
 import numpy as np
 
 
-def build_energy_bins():
+def build_energy_bins() -> tuple[np.ndarray, np.ndarray]:
     """
-    Build energy bin boundaries and midpoints for the
-    resolution (alpha) and lower and upper limits on energy (energy_bounds).
+    Build energy bin boundaries.
 
     Returns
     -------
