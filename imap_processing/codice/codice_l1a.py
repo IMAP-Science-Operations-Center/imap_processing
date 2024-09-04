@@ -30,8 +30,6 @@ from imap_processing.utils import packet_file_to_datasets
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-# TODO: In decommutation, how to have a variable length data and then a checksum
-#       after it? (Might be fixed with new XTCE script updates)
 # TODO: Add support for decomming multiple APIDs from a single file
 # TODO: Add these as variables in CDF: SPIN_PERIOD, ST_BIAS_GAIN_MODE,
 #       SW_BIAS_GAIN_MODE, RGFO_HALF_SPIN, NSO_HALF_SPIN, DATA_QUALITY
@@ -513,8 +511,12 @@ def process_codice_l1a(file_path: Path, data_version: str) -> xr.Dataset:
         The ``xarray`` dataset containing the science data and supporting metadata.
     """
     # Decom the packets, group data by APID, and sort by time
+    if "hskp" in str(file_path):
+        xtce_filename = "P_COD_NHK.xml"
+    else:
+        xtce_filename = "codice_packet_definition.xml"
     xtce_packet_definition = Path(
-        f"{imap_module_directory}/codice/packet_definitions/{constants.PACKET_TO_XTCE_MAPPING[file_path.name]}"
+        f"{imap_module_directory}/codice/packet_definitions/{xtce_filename}"
     )
     packets = packet_file_to_datasets(file_path, xtce_packet_definition)
 
