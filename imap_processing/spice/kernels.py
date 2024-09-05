@@ -198,7 +198,7 @@ def spice_ck_file(pointing_frame_path: Path) -> Generator[int, None, None]:
 
 
 @ensure_spice
-def create_pointing_frame(pointing_frame_path: Path) -> None:
+def create_pointing_frame(pointing_frame_path: Path) -> Path:
     """
     Create the pointing frame.
 
@@ -207,47 +207,55 @@ def create_pointing_frame(pointing_frame_path: Path) -> None:
     pointing_frame_path : Path
         Directory of where pointing frame will be saved.
 
+    Returns
+    -------
+    pointing_frame_path : Path
+        Path to pointing frame.
+
     References
     ----------
     https://numpydoc.readthedocs.io/en/latest/format.html#references
     """
-    # Get the CK kernel directory.
-    ck_kernel, _, _, _ = spice.kdata(0, "ck")
-
-    # Get the pointing frame ID.
+    # Get IDs.
     # https://spiceypy.readthedocs.io/en/main/documentation.html#spiceypy.spiceypy.gipool
     id_imap_dps = spice.gipool("FRAME_IMAP_DPS", 0, 1)
-
-    # Get the SCLK ID.
-    # https://spiceypy.readthedocs.io/en/main/documentation.html#spiceypy.spiceypy.gipool
     id_imap_sclk = spice.gipool("CK_-43000_SCLK", 0, 1)
 
     # If the pointing frame kernel already exists, find the last time.
     if pointing_frame_path.exists():
         # Get the last time in the pointing frame kernel.
-        cover = spice.ckcov(
+        pointing_cover = spice.ckcov(
             str(pointing_frame_path), int(id_imap_dps), True, "SEGMENT", 0, "TDB"
         )
-        num_segments = spice.wncard(cover)
-        _, et_end_pointing_frame = spice.wnfetd(cover, num_segments - 1)
+        num_segments = spice.wncard(pointing_cover)
+        _, et_end_pointing_frame = spice.wnfetd(pointing_cover, num_segments - 1)
+    else:
+        et_end_pointing_frame = None
 
     # TODO: Query for .csv file to get the pointing start and end times.
-    # TODO: Remove next two lines.
-    cover = spice.ckcov(ck_kernel, -43000, True, "INTERVAL", 0, "TDB")
-    num_intervals = spice.wncard(cover)
+    # TODO: Remove next four lines once query is added.
+    ck_kernel, _, _, _ = spice.kdata(0, "ck")
+    id_imap_spacecraft = spice.gipool("FRAME_IMAP_SPACECRAFT", 0, 1)
+    ck_cover = spice.ckcov(
+        ck_kernel, int(id_imap_spacecraft), True, "INTERVAL", 0, "TDB"
+    )
+    num_intervals = spice.wncard(ck_cover)
 
     with spice_ck_file(pointing_frame_path) as handle:
         # TODO: this will change to the number of pointings.
-        for i in range(num_intervals):
-            et_start, et_end = spice.wnfetd(cover, i)
+        for i in range(num_intervals - 1):
+            # TODO: this will change to pointing start and end time.
+            et_start, et_end = spice.wnfetd(ck_cover, i)
 
             # TODO: remove after query is added.
-            if et_start < et_end_pointing_frame:
+            if et_end_pointing_frame is not None and et_start < et_end_pointing_frame:
                 break
 
-            # Get times after the last pointing frame time.
+            # 1 spin/15 seconds; 10 quaternions / spin.
             num_samples = (et_end - et_start) / 15 * 10
-            et_times = np.linspace(et_start, et_end, int(num_samples))
+            et_times = np.linspace(
+                np.ceil(et_start), np.floor(et_end), int(num_samples)
+            )
 
             # Create a rotation matrix
             rotation_matrix = _create_rotation_matrix(et_times)
@@ -292,6 +300,46 @@ def create_pointing_frame(pointing_frame_path: Path) -> None:
                 # angular velocity change.
                 np.array([1.0]),
             )
+
+    return pointing_frame_path
+
+
+@ensure_spice
+def _get_et_times(ck_kernel: str) -> tuple[float, float, np.ndarray]:
+    """
+    Get times for pointing start and stop.
+
+    Parameters
+    ----------
+    ck_kernel : str
+        Path of ck_kernel used to create the pointing frame.
+
+    Returns
+    -------
+    et_start : float
+        Pointing start time.
+    et_end : float
+        Pointing end time.
+    et_times : numpy.ndarray
+        Array of times between et_start and et_end.
+    """
+    # Get the spacecraft ID.
+    # https://spiceypy.readthedocs.io/en/main/documentation.html#spiceypy.spiceypy.gipool
+    id_imap_spacecraft = spice.gipool("FRAME_IMAP_SPACECRAFT", 0, 1)
+
+    # TODO: Queried pointing start and stop times here.
+    # TODO removing the @ensure_spice decorator when using the repointing table.
+
+    # Get the coverage window
+    # https://spiceypy.readthedocs.io/en/main/documentation.html#spiceypy.spiceypy.ckcov
+    cover = spice.ckcov(ck_kernel, int(id_imap_spacecraft), True, "SEGMENT", 0, "TDB")
+    # https://spiceypy.readthedocs.io/en/main/documentation.html#spiceypy.spiceypy.wnfetd
+    et_start, et_end = spice.wnfetd(cover, 0)
+    # 1 spin/15 seconds; 10 quaternions / spin
+    num_samples = (et_end - et_start) / 15 * 10
+    et_times = np.linspace(et_start, et_end, int(num_samples))
+
+    return et_start, et_end, et_times
 
 
 @ensure_spice
