@@ -836,8 +836,7 @@ class MagL1a:
             8 (including only whole bytes).
         has_range : int
             1 if the vector data includes range data, 0 if not. The first vector always
-            has range data, it is only if the compression fails and we revert to
-            uncompressed data partway through that we skip the range.
+            has range data.
 
         Returns
         -------
@@ -927,7 +926,7 @@ class MagL1a:
         value: int
             Signed integer value, with fibonacci and zig-zag encoding removed.
         """
-        if code[-2] != 1 or code[-1] != 1:
+        if len(code) < 2 or code[-2] != 1 or code[-1] != 1:
             raise ValueError(
                 f"Error when decoding {code} - fibonacci encoded values "
                 f"should end in 2 sequential ones."
