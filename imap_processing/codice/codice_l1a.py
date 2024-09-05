@@ -68,7 +68,7 @@ class CoDICEL1aPipeline:
         Create an ``xarray`` dataset for the unpacked science data.
     get_acquisition_times()
         Retrieve the acquisition times via the Lo stepping table.
-    get_esa_sweep_values()
+    get_energy_table()
         Retrieve the ESA sweep values.
     unpack_science_data()
         Decompress, unpack, and restructure science data arrays.
