@@ -1,4 +1,4 @@
-"""Decommutate HIT CCSDS data."""
+"""Decommutate HIT CCSDS science data."""
 
 from collections import namedtuple
 from pathlib import Path
@@ -9,17 +9,6 @@ import xarray as xr
 from imap_processing import imap_module_directory
 from imap_processing.utils import packet_file_to_datasets
 
-# **********************************************************************
-# NOTES:
-# use_derived_value boolean flag (default True) whether to use
-# the derived value from the XTCE definition.
-#   True to get L1B housekeeping data with engineering units.
-#   False for L1A housekeeping data
-# sc_tick is the time the packet was created
-# Tweaked packet_file_to_datasets function to only return 40 packets
-# (2 frames for testing)
-# **********************************************************************
-
 HITPacking = namedtuple(
     "HITPacking",
     [
@@ -29,7 +18,7 @@ HITPacking = namedtuple(
     ],
 )
 
-counts_data_structure = {
+COUNTS_DATA_STRUCTURE = {
     # field: bit_length, section_length, shape
     # ------------------------------------------
     # science frame header
@@ -52,7 +41,7 @@ counts_data_structure = {
     "num_haz_acc_w_pha": HITPacking(16, 16, (1,)),
     "num_haz_acc_no_pha": HITPacking(16, 16, (1,)),
     # -------------------------------------------
-    "sngrates": HITPacking(16, 1856, (58, 2)),
+    "sngrates": HITPacking(16, 1856, (2, 58)),
     # -------------------------------------------
     # evrates
     "nread": HITPacking(16, 16, (1,)),
@@ -87,13 +76,15 @@ counts_data_structure = {
     "l4bgrates": HITPacking(16, 384, (24,)),
 }
 
-pha_data_structure = {
+PHA_DATA_STRUCTURE = {
     # field: bit_length, section_length, shape
     "pha_records": HITPacking(2, 29344, (917,)),
 }
 
 
-def parse_data(bin_str: str, bits_per_index: int, start: int, end: int):
+def parse_data(
+    bin_str: str, bits_per_index: int, start: int, end: int
+) -> list[int] or int:
     """
     Parse binary data
 
@@ -110,38 +101,56 @@ def parse_data(bin_str: str, bits_per_index: int, start: int, end: int):
 
     Returns
     -------
-    parsed_data : list
+    parsed_data : list or int
         Integers parsed from the binary string
-
     """
     parsed_data = [
-        int(bin_str[i: i + bits_per_index], 2)
+        int(bin_str[i : i + bits_per_index], 2)
         for i in range(start, end, bits_per_index)
     ]
     if len(parsed_data) < 2:
-        # Return single values to be put in a single array for a science frame
+        # Return value to be put in a 1D array for a science frame
         return parsed_data[0]
 
     return parsed_data
 
 
-def parse_count_rates(dataset: xr.Dataset) -> None:
-    """Parse bin of binary count rates data and update dataset"""
-    counts_bin = dataset.count_rates_bin
+def parse_count_rates(sci_dataset: xr.Dataset) -> None:
+    """
+    Parse binary count rates data and update dataset.
+
+    This function parses the binary count rates data,
+    stored as count_rates_binary in the dataset,
+    according to data structure details provided in
+    COUNTS_DATA_STRUCTURE. The parsed data, representing
+    integers, is added to the dataset as new data
+    fields.
+
+    Note: count_rates_binary is added to the dataset by
+    the assemble_science_frames function, which organizes
+    the binary science data packets by science frames.
+
+    Parameters
+    ----------
+    sci_dataset: xr.Dataset
+        Xarray dataset containing HIT science packets
+        from a CCSDS file
+
+    """
+    counts_binary = sci_dataset.count_rates_binary
     # initialize the starting bit for the sections of data
     section_start = 0
     variables = {}
-    # for each field type in counts_data_structure
-    for field, field_meta in counts_data_structure.items():
-        # for each binary string decommutate the data
+    # Decommutate binary data for each counts data field
+    for field, field_meta in COUNTS_DATA_STRUCTURE.items():
         section_end = section_start + field_meta.section_length
         bits_per_index = field_meta.bit_length
         parsed_data = [
             parse_data(bin_str, bits_per_index, section_start, section_end)
-            for bin_str in counts_bin.values
+            for bin_str in counts_binary.values
         ]
-        if field == 'sngrates':
-            # split arrays into high and low gain arrays. put into a function?
+        if field == "sngrates":
+            # Split into high and low gain arrays
             for i, data in enumerate(parsed_data):
                 high_gain = data[::2]  # Items at even indices 0, 2, 4, etc.
                 low_gain = data[1::2]  # Items at odd indices 1, 3, 5, etc.
@@ -150,32 +159,26 @@ def parse_count_rates(dataset: xr.Dataset) -> None:
         # TODO
         #  - subcommutate sectorates
         #  - decompress data
-        #  - Check with HIT team about erates and evrates. Should these be arrays containing all the sub fields
+        #  - Follow up with HIT team about erates and evrates. Should these be arrays containing all the sub fields
         #    or should each subfield be it's own data field/array
 
+        # Get dims for data variables (yaml file not created yet)
         if len(field_meta.shape) > 1:
-            data_shape = (len(counts_bin), field_meta.shape[1], field_meta.shape[0])  # needed for sngrates
-            dims = ["epoch_frame", "gain", "index"]
+            dims = ["epoch", "gain", f"{field}_index"]
+        elif field_meta.shape[0] > 1:
+            dims = ["epoch", f"{field}_index"]
         else:
-            if field_meta.shape[0] > 1:
-                data_shape = (len(counts_bin), field_meta.shape[0])
-                dims = ["epoch_frame", f"{field}_index"]
-            else:
-                # shape for list of single values (science header, erates, evrates)
-                data_shape = (len(counts_bin),)
-                dims = ["epoch_frame"]
+            dims = ["epoch"]
 
-        # reshape the data
-        shaped_data = np.array(parsed_data).reshape(data_shape)
-        variables[field] = shaped_data
-        science_dataset[field] = xr.DataArray(shaped_data, dims=dims, name=field)
-        # increment for the start of the next section of data
+        variables[field] = parsed_data
+        sci_dataset[field] = xr.DataArray(parsed_data, dims=dims, name=field)
+        # increment the start of the next section of data to parse
         section_start += field_meta.section_length
-    # for k, v in variables.items():
-    #     print(f"{k}:{v}")
+    for k, v in variables.items():
+        print(f"{k}:{v}")
 
 
-def get_starting_packet_index(seq_flgs: xr.DataArray, start=0) -> int:
+def get_starting_packet_index(seq_flgs: xr.DataArray, start_index=0) -> int:
     """
     Get index of starting packet for the next science frame
 
@@ -189,23 +192,23 @@ def get_starting_packet_index(seq_flgs: xr.DataArray, start=0) -> int:
 
     Parameters
     ----------
-    seq_flgs (xr.DataArray):
+    seq_flgs : (xr.DataArray):
         Array of sequence flags in a dataset
-    start : int
+    start_index : int
         Index to start from
 
     Returns
     -------
     flag_index : int
-        Index of starting packet in next science frame
+        Index of starting packet for next science frame
     """
-
-    for flag_index, flag in enumerate(seq_flgs[start:]):
+    for flag_index, flag in enumerate(seq_flgs[start_index:]):
         if flag == 1:
-            return flag_index
+            # return starting index of next science frame
+            return flag_index + start_index
 
 
-def is_valid_science_frame(seq_flgs: np.ndarray, src_seq_ctrs:np.ndarray) -> bool:
+def is_valid_science_frame(seq_flgs: np.ndarray, src_seq_ctrs: np.ndarray) -> bool:
     """
     Check for valid science frame.
 
@@ -217,7 +220,7 @@ def is_valid_science_frame(seq_flgs: np.ndarray, src_seq_ctrs:np.ndarray) -> boo
     18 packets should have a sequence flag equal to 0 and the final packet
     should have a sequence flag equal to 2
 
-    Valid science frame
+    Valid science frame sequence flags
     [1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 2]
 
     Additionally, packets have a sequence counter. This function also
@@ -229,9 +232,9 @@ def is_valid_science_frame(seq_flgs: np.ndarray, src_seq_ctrs:np.ndarray) -> boo
     Parameters
     ----------
     seq_flgs : numpy.ndarray
-        Array of sequence flags from a set of 20 packets
+        Array of sequence flags for a set of 20 packets
     src_seq_ctrs : numpy.ndarray
-        Array of sequence counters from a set of 20 packets
+        Array of sequence counters for a set of 20 packets
 
     Returns
     -------
@@ -239,16 +242,12 @@ def is_valid_science_frame(seq_flgs: np.ndarray, src_seq_ctrs:np.ndarray) -> boo
         Boolean for whether the science frame is valid
     """
     # Check sequence grouping flags
-    if not (
-            seq_flgs[0] == 1
-            and all(seq_flgs[1:19] == 0)
-            and seq_flgs[19] == 2
-    ):
+    if not (seq_flgs[0] == 1 and all(seq_flgs[1:19] == 0) and seq_flgs[19] == 2):
         # TODO log issue
         print(f"Invalid seq_flgs found: {seq_flgs}")
         return False
 
-    # Check if sequence counters are sequential
+    # Check that sequence counters are sequential
     if not np.all(np.diff(src_seq_ctrs) == 1):
         # TODO log issue
         print(f"Non-sequential src_seq_ctr found: {src_seq_ctrs}")
@@ -257,11 +256,41 @@ def is_valid_science_frame(seq_flgs: np.ndarray, src_seq_ctrs:np.ndarray) -> boo
     return True
 
 
-def assemble_science_frames(sci_dataset: xr.Dataset) -> None:
+def update_ccsds_header_data(sci_dataset) -> xr.Dataset:
+    """
+    Update dimensions of CCSDS header fields
+
+    The CCSDS header fields contain 1D arrays with
+    values from all the packets in the file. This
+    function updates the dimension for these fields
+    to use sc_tick instead of epoch. sc_tick is the
+    time the packet was created.
+
+    Parameters
+    ----------
+    sci_dataset: xr.Dataset
+        Xarray dataset containing HIT science packets
+        from a CCSDS file
+
+    Returns
+    -------
+    sci_dataset: xr.Dataset
+        Updated xarray dataset
+
+    """
+    # sc_tick contains spacecraft time per packet
+    sci_dataset.coords["sc_tick"] = sci_dataset["sc_tick"]
+    sci_dataset = sci_dataset.swap_dims({"epoch": "sc_tick"})
+    return sci_dataset
+
+
+def assemble_science_frames(sci_dataset: xr.Dataset) -> xr.Dataset:
     """Group packets into science frames
 
     HIT science frames (data from 1 minute) consist of 20 packets.
-    These are assembled using packet sequence grouping flags.
+    These are assembled from the binary science_data field in the
+    xarray dataset, which is a 1D array of science data from all
+    packets in the file, using packet sequence grouping flags.
 
         First packet has a sequence flag = 1
         Next 18 packets have a sequence flag = 0
@@ -273,62 +302,85 @@ def assemble_science_frames(sci_dataset: xr.Dataset) -> None:
         The first six packets contain count rates data
         The last 14 packets contain pulse height event data
 
-    Args:
-        sci_dataset (xr.Dataset): Xarray Dataset for science data
-                                  APID 1252
+    These groups are added to the dataset as count_rates_binary
+    and pha_binary.
+
+    Parameters
+    ----------
+    sci_dataset: xr.Dataset
+        Xarray Dataset for science data (APID 1252)
+
+    Returns
+    -------
+    sci_dataset: xr.Dataset
+        Updated xarray dataset with binary count rates and pulse
+        height event data per valid science frame added as new
+        data variables.
 
     """
+    # TODO: Figure out how to handle partial science frames at the
+    #  beginning and end of CCSDS files. These science frames are split
+    #  across CCSDS files and still need to be processed. Only discard
+    #  incomplete science frames in the middle of the CCSDS file.
+    #  The code currently skips all incomplete science frames.
+
     # Initialize lists to store data from valid science frames
-    count_rates_bin = []
-    pha_bin = []
+    count_rates_binary = []
+    pha_binary = []
     epoch_science_frame = []
 
-    i = 0
-    while i + 20 <= len(sci_dataset.epoch):
-        # Extract chunks for the current science frame
-        seq_flgs_chunk = sci_dataset.seq_flgs[i:i + 20].values
-        src_seq_ctr_chunk = sci_dataset.src_seq_ctr[i:i + 20].values
-        science_data_chunk = sci_dataset.science_data[i:i + 20]
-        epoch_data_chunk = sci_dataset.epoch[i:i + 20]
+    science_frame_start = 0
+    while science_frame_start + 20 <= len(sci_dataset.epoch):
+        # Extract chunks for the current science frame (20 packets)
+        seq_flgs_chunk = sci_dataset.seq_flgs[
+            science_frame_start : science_frame_start + 20
+        ].values
+        src_seq_ctr_chunk = sci_dataset.src_seq_ctr[
+            science_frame_start : science_frame_start + 20
+        ].values
+        science_data_chunk = sci_dataset.science_data[
+            science_frame_start : science_frame_start + 20
+        ]
+        epoch_data_chunk = sci_dataset.epoch[
+            science_frame_start : science_frame_start + 20
+        ]
 
         if is_valid_science_frame(seq_flgs_chunk, src_seq_ctr_chunk):
             # Append valid data to lists
-            count_rates_bin.append("".join(science_data_chunk.data[0:6]))
-            pha_bin.append("".join(science_data_chunk.data[6:]))
+            count_rates_binary.append("".join(science_data_chunk.data[0:6]))
+            pha_binary.append("".join(science_data_chunk.data[6:]))
             epoch_science_frame.append(epoch_data_chunk[0])
-            i += 20  # Move to the next science frame
+            science_frame_start += 20  # Move to the next science frame
         else:
-            print(f"Invalid science frame found with starting packet index = {i}")
-            start = get_starting_packet_index(sci_dataset.seq_flgs.values, start=i)
-            i += start
+            print(
+                f"Invalid science frame found with starting packet index = {science_frame_start}"
+            )
+            # Skip science frame and move on to the next science frame packets
+            # Get index for the first packet in the next science frame
+            start = get_starting_packet_index(
+                sci_dataset.seq_flgs.values, start_index=science_frame_start
+            )
+            science_frame_start = start
 
-    # TODO:
-    #  check and log if there are extra packets at end of file?
-    #  replace epoch with epoch for each science frame? If so, need to also group
-    #  CCSDS headers
-    #   sc_tick
-    #   version
-    #   type
-    #   sec_hdr_flg
-    #   pkt_apid
-    #   seq_flgs
-    #   src_seq_ctr
-    #   pkt_len
+    # TODO: check and log if there are extra packets at end of file
 
-    # Convert lists to xarray DataArrays and add as new data variables to the dataset
+    # Add new data variables to the dataset
     epoch_science_frame = np.array(epoch_science_frame)
-    sci_dataset.assign_coords(epoch_frame=epoch_science_frame)
-    # sci_dataset.assign_coords(epoch=epoch_science_frame)  # replace epoch?
-
-    sci_dataset["count_rates_bin"] = xr.DataArray(
-        count_rates_bin, dims=["group"], name="count_rates_bin"
+    # Replace epoch per packet dimension with epoch per science frame dimension
+    sci_dataset = sci_dataset.drop_vars("epoch")
+    sci_dataset.coords["epoch"] = epoch_science_frame
+    sci_dataset["count_rates_binary"] = xr.DataArray(
+        count_rates_binary, dims=["epoch"], name="count_rates_binary"
     )
-    sci_dataset["pha_bin"] = xr.DataArray(pha_bin, dims=["group"], name="pha_bin")
+    sci_dataset["pha_binary"] = xr.DataArray(
+        pha_binary, dims=["epoch"], name="pha_binary"
+    )
+    return sci_dataset
 
 
-def decom_hit(sci_dataset: xr.Dataset) -> None:
+def decom_hit(sci_dataset: xr.Dataset) -> xr.Dataset:
     """
-    Group and decode HIt science data packets
+    Group and decode HIT science data packets
 
     This function updates the science dataset with
     organized, decommutated, and decompressed data.
@@ -362,13 +414,24 @@ def decom_hit(sci_dataset: xr.Dataset) -> None:
         Xarray dataset containing HIT science packets
         from a CCSDS file
 
+    Returns
+    -------
+    sci_dataset: xr.Dataset
+        Updated xarray dataset with new fields for all count
+        rates and pulse height event data per valid science frame
+        needed for creating an L1A product.
     """
+    # Update ccsds header fields to use sc_tick as dimension
+    sci_dataset = update_ccsds_header_data(sci_dataset)
     # Group science packets into groups of 20
-    assemble_science_frames(sci_dataset)
+    sci_dataset = assemble_science_frames(sci_dataset)
     # Parse count rates data from binary and add to dataset
-    parse_count_rates(science_dataset)
+    parse_count_rates(sci_dataset)
+
     # TODO:
-    #  Parse PHA data from binary and add to dataset (function call)
+    #  Parse binary PHA data and add to dataset (function call)
+
+    return sci_dataset
 
 
 if __name__ == "__main__":
@@ -376,8 +439,7 @@ if __name__ == "__main__":
         imap_module_directory / "hit/packet_definitions/hit_packet_definitions.xml"
     )
 
-    # L0 file paths
-    # packet_file = Path(imap_module_directory / "tests/hit/test_data/hskp_sample.ccsds")
+    # L0 file path
     packet_file = Path(imap_module_directory / "tests/hit/test_data/sci_sample.ccsds")
 
     datasets_by_apid = packet_file_to_datasets(
@@ -386,7 +448,5 @@ if __name__ == "__main__":
     )
 
     science_dataset = datasets_by_apid[1252]
-    decom_hit(science_dataset)
+    science_dataset = decom_hit(science_dataset)
     print(science_dataset)
-
-
