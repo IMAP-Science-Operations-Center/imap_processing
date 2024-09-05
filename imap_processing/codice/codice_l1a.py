@@ -136,27 +136,19 @@ class CoDICEL1aPipeline:
             np.arange(self.num_positions),
             name="inst_az",
             dims=["inst_az"],
-            attrs=cdf_attrs.get_variable_attributes("inst_az_attrs"),
+            attrs=cdf_attrs.get_variable_attributes("inst_az"),
         )
         spin_sector = xr.DataArray(
             np.arange(self.num_spin_sectors),
             name="spin_sector",
             dims=["spin_sector"],
-            attrs=cdf_attrs.get_variable_attributes("spin_sector_attrs"),
+            attrs=cdf_attrs.get_variable_attributes("spin_sector"),
         )
-        energy_steps = xr.DataArray(
+        esa_step = xr.DataArray(
             np.arange(self.num_energy_steps),
-            name="energy",
-            dims=["energy"],
-            attrs=cdf_attrs.get_variable_attributes("energy_attrs"),
-        )
-
-        # Define labels
-        energy_label = xr.DataArray(
-            energy_steps.values.astype(str),
-            name="energy_label",
-            dims=["energy_label"],
-            attrs=cdf_attrs.get_variable_attributes("energy_label"),
+            name="esa_step",
+            dims=["esa_step"],
+            attrs=cdf_attrs.get_variable_attributes("esa_step"),
         )
 
         # Create the dataset to hold the data variables
@@ -165,8 +157,7 @@ class CoDICEL1aPipeline:
                 "epoch": epoch,
                 "inst_az": inst_az,
                 "spin_sector": spin_sector,
-                "energy": energy_steps,
-                "energy_label": energy_label,
+                "esa_step": esa_step,
             },
             attrs=cdf_attrs.get_global_attributes(self.dataset_name),
         )
@@ -183,7 +174,7 @@ class CoDICEL1aPipeline:
                         self.num_energy_steps,
                     )
                 )
-                dims = ["epoch", "inst_az", "spin_sector", "energy"]
+                dims = ["epoch", "inst_az", "spin_sector", "esa_step"]
             elif self.instrument == "hi":
                 variable_data_arr = np.array(variable_data).reshape(
                     (
@@ -193,7 +184,7 @@ class CoDICEL1aPipeline:
                         self.num_spin_sectors,
                     )
                 )
-                dims = ["epoch", "energy", "inst_az", "spin_sector"]
+                dims = ["epoch", "esa_step", "inst_az", "spin_sector"]
 
             # Get the CDF attributes
             cdf_attrs_key = (
@@ -211,17 +202,17 @@ class CoDICEL1aPipeline:
 
         # Add ESA Sweep Values and acquisition times (lo only)
         if self.instrument == "lo":
-            self.get_esa_sweep_values()
+            self.get_energy_table()
             self.get_acquisition_times()
             dataset["esa_sweep_values"] = xr.DataArray(
-                self.esa_sweep_values,
-                dims=["energy"],
-                attrs=cdf_attrs.get_variable_attributes("esa_sweep_attrs"),
+                self.energy_table,
+                dims=["esa_step"],
+                attrs=cdf_attrs.get_variable_attributes("energy_table"),
             )
             dataset["acquisition_times"] = xr.DataArray(
                 self.acquisition_times,
-                dims=["energy"],
-                attrs=cdf_attrs.get_variable_attributes("acquisition_times_attrs"),
+                dims=["esa_step"],
+                attrs=cdf_attrs.get_variable_attributes("acquisition_time_per_step"),
             )
 
         return dataset
@@ -270,7 +261,7 @@ class CoDICEL1aPipeline:
             row_number = np.argmax(energy_steps == str(step_number), axis=1).argmax()
             self.acquisition_times.append(lo_stepping_values.acq_time[row_number])
 
-    def get_esa_sweep_values(self) -> None:
+    def get_energy_table(self) -> None:
         """
         Retrieve the ESA sweep values.
 
@@ -299,7 +290,7 @@ class CoDICEL1aPipeline:
 
         # Get the appropriate values
         sweep_table = sweep_data[sweep_data["table_idx"] == sweep_table_id]
-        self.esa_sweep_values = sweep_table["esa_v"].values
+        self.energy_table = sweep_table["esa_v"].values
 
     def unpack_science_data(self, science_values: str) -> None:
         """
