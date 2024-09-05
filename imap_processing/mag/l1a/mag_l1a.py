@@ -182,7 +182,7 @@ def process_packets(
         # byte boundaries are.
 
         primary_vectors, secondary_vectors = MagL1a.process_vector_data(
-            mag_l0.VECTORS.astype(dtype=np.int32),
+            mag_l0.VECTORS.astype(dtype=np.int32),  # type: ignore [union-attr]
             primary_packet_data.total_vectors,
             secondary_packet_data.total_vectors,
             mag_l0.COMPRESSION,
