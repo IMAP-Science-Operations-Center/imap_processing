@@ -428,11 +428,6 @@ def process_swapi_science(
     dataset : xarray.Dataset
         Dataset.
     """
-    # pylint: disable=too-many-statements
-    # error:
-    # imap_processing/swapi/l1/swapi_l1.py:412:5: PLR0915
-    # Too many statements (51 > 50)
-
     # ====================================================
     # Step 1: Filter full cycle data
     # ====================================================
@@ -486,10 +481,9 @@ def process_swapi_science(
     # Add housekeeping-derived quality flags
     # --------------------------------------
     # Get times of good and full sweep data from science dataset.
-    # Then use these times to get housekeeping data.
-    # TODO: how to handle time delta between SWAPI HK and SWAPI SCI packets?
-    # For now, we assume that SHCOARSE in the SWAPI HK and SWAPI SCI packets
-    # are exactly equal at any given point, no significant time delta.
+    # Then use these times to get housekeeping data. Something is wrong if
+    # there is no science data that matches exactly one housekeeping data. It
+    # should be one-to-one matching per SWAPI team, Jamie Rankin.
     good_sweep_times = good_sweep_sci["epoch"].data
     good_sweep_hk_data = hk_dataset.sel({"epoch": good_sweep_times})
 

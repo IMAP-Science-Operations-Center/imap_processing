@@ -33,7 +33,7 @@ counts_default: &counts_default
   SCALETYP: linear
 
 flags_default:
-  CATDESC: Data quality flags.
+  CATDESC: Bitwise flag. There are 13 flags. See VAR_NOTES for more details.
   FIELDNAM: Quality Flag
   LABLAXIS: Flags
   DEPEND_0: epoch
@@ -44,12 +44,17 @@ flags_default:
   FORMAT: I1
   UNITS: ' '
   VALIDMIN: 0
-  VALIDMAX: 1
+  VALIDMAX: 32767
   VAR_TYPE: data
   SCALETYP: linear
   VAR_NOTES: >
     There are 13 flags in total, first three flags are from science packets
-    and remaining 10 flags are from housekeeping packets.
+    and remaining 10 flags are from housekeeping packets. Flags are stored
+    as bitwise flag. 32767 is the value when all 15-bits are 1s. Eg.
+    int('0111111111111111', 2). First two bits from right are saved to save defaults.
+    Then, the remaining 13 bits from right are used for 13 flags. The flags are
+    as follows, "OVR_T_ST", "UND_T_ST", "PCEM_CNT_ST", "SCEM_CNT_ST","PCEM_V_ST",
+    "PCEM_I_ST", "PCEM_INT_ST", "SCEM_V_ST", "SCEM_I_ST", "SCEM_INT_ST".
 
 uncertainty_default: &uncertainty_default
   DEPEND_0: epoch
