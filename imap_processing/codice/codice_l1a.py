@@ -435,22 +435,9 @@ def create_hskp_dataset(
         attrs=cdf_attrs.get_global_attributes("imap_codice_l1a_hskp"),
     )
 
-    # TODO: Change 'TBD' catdesc and fieldname
-    #       Once housekeeping packet definition file is re-generated with
-    #       updated version of space_packet_parser, can get fieldname and
-    #       catdesc info via:
-    #           for key, value in (packet.header | packet.data).items():
-    #               fieldname = value.short_description
-    #              catdesc = value.long_description
-    #       I am holding off making this change until I acquire updated
-    #       housekeeping packets/validation data that match the latest telemetry
-    #       definitions
     for variable in packet:
-        attrs = cdf_attrs.get_variable_attributes("codice_support_attrs")
-        attrs["CATDESC"] = "TBD"
+        attrs = cdf_attrs.get_variable_attributes(variable)
         attrs["DEPEND_0"] = "epoch"
-        attrs["FIELDNAM"] = "TBD"
-        attrs["LABLAXIS"] = variable
 
         dataset[variable] = xr.DataArray(
             packet[variable].data, dims=["epoch"], attrs=attrs
