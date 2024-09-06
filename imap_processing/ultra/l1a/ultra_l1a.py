@@ -11,7 +11,7 @@ import xarray as xr
 
 from imap_processing import decom, imap_module_directory
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
-from imap_processing.cdf.utils import met_to_j2000ns
+from imap_processing.spice.time import met_to_j2000ns
 from imap_processing.ultra.l0.decom_ultra import process_ultra_apids
 from imap_processing.ultra.l0.ultra_utils import (
     ULTRA_AUX,

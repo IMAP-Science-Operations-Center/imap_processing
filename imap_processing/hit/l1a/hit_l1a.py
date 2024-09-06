@@ -10,8 +10,8 @@ import xarray as xr
 
 from imap_processing import decom, imap_module_directory, utils
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
-from imap_processing.cdf.utils import met_to_j2000ns
 from imap_processing.hit.l0.data_classes.housekeeping import Housekeeping
+from imap_processing.spice.time import met_to_j2000ns
 
 logger = logging.getLogger(__name__)
 
@@ -227,7 +227,7 @@ def create_datasets(data: dict, attr_mgr: ImapCdfAttributes) -> dict:
                 # attributes
                 dims = [
                     value
-                    for key, value in attr_mgr.get_variable_attributes(field).items()  # type: ignore[arg-type]
+                    for key, value in attr_mgr.get_variable_attributes(field).items()
                     if "DEPEND" in key
                 ]
                 if field == "leak_i":  # type: ignore[comparison-overlap]
@@ -239,13 +239,13 @@ def create_datasets(data: dict, attr_mgr: ImapCdfAttributes) -> dict:
                     dataset[field] = xr.DataArray(
                         data,
                         dims=dims,
-                        attrs=attr_mgr.get_variable_attributes(field),  # type: ignore[arg-type]
+                        attrs=attr_mgr.get_variable_attributes(field),
                     )
                 else:
                     dataset[field] = xr.DataArray(
                         data,
                         dims=dims,
-                        attrs=attr_mgr.get_variable_attributes(field),  # type: ignore[arg-type]
+                        attrs=attr_mgr.get_variable_attributes(field),
                     )
         processed_data[apid] = dataset
     logger.info("HIT L1A datasets created")

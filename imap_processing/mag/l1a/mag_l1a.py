@@ -8,7 +8,7 @@ import numpy as np
 import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
-from imap_processing.cdf.utils import J2000_EPOCH, met_to_j2000ns
+from imap_processing.cdf.utils import J2000_EPOCH
 from imap_processing.mag.constants import DataMode, PrimarySensor
 from imap_processing.mag.l0 import decom_mag
 from imap_processing.mag.l0.mag_l0_data import MagL0
@@ -17,6 +17,7 @@ from imap_processing.mag.l1a.mag_l1a_data import (
     MagL1aPacketProperties,
     TimeTuple,
 )
+from imap_processing.spice.time import met_to_j2000ns
 
 logger = logging.getLogger(__name__)
 
@@ -182,7 +183,7 @@ def process_packets(
         # byte boundaries are.
 
         primary_vectors, secondary_vectors = MagL1a.process_vector_data(
-            mag_l0.VECTORS.astype(dtype=np.int32),  # type: ignore[union-attr]
+            mag_l0.VECTORS.astype(dtype=np.int32),
             # TODO Maybe Change, Item "str" of "Union[Any, str]"
             #  has no attribute "astype"
             # this is because mypy expects both to have the attributes

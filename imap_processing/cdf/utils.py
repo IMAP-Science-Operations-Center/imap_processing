@@ -22,45 +22,6 @@ IMAP_EPOCH = np.datetime64("2010-01-01T00:00:00", "ns")
 J2000_EPOCH = np.datetime64("2000-01-01T11:58:55.816", "ns")
 
 
-def met_to_j2000ns(
-    met: np.typing.ArrayLike,
-    reference_epoch: np.datetime64 = IMAP_EPOCH,
-) -> np.typing.NDArray[np.int64]:
-    """
-    Convert mission elapsed time (MET) to nanoseconds from J2000.
-
-    Parameters
-    ----------
-    met : array_like
-        Number of seconds since epoch according to the spacecraft clock.
-    reference_epoch : np.datetime64
-        The time of reference for the mission elapsed time. The standard
-        reference time for IMAP is January 1, 2010 00:00:00 UTC. Per APL's
-        IMAP Timekeeping System Design document.
-
-    Returns
-    -------
-    array_like or scalar, int64
-        The mission elapsed time converted to nanoseconds since the J2000 epoch.
-
-    Notes
-    -----
-    This conversion is temporary for now, and will need SPICE in the future to
-    account for spacecraft clock drift.
-    """
-    # Mission elapsed time is in seconds, convert to nanoseconds
-    # NOTE: We need to multiply the incoming met by 1e9 first because we could have
-    #       float input and we want to keep ns precision in those floats
-    # NOTE: We need int64 here when running on 32bit systems as plain int will default
-    #       to 32bit and overflow due to the nanosecond multiplication
-    time_array = (np.asarray(met, dtype=float) * 1e9).astype(np.int64)
-    # Calculate the time difference between our reference system and J2000
-    j2000_offset: np.typing.NDArray[np.datetime64] = (
-        reference_epoch - J2000_EPOCH
-    ).astype("datetime64[ns]")
-    return j2000_offset.astype(np.int64) + time_array
-
-
 def load_cdf(
     file_path: Path, remove_xarray_attrs: bool = True, **kwargs: dict
 ) -> xr.Dataset:

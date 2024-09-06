@@ -3,7 +3,8 @@ import pytest
 import xarray as xr
 
 from imap_processing import imap_module_directory
-from imap_processing.cdf.utils import met_to_j2000ns, write_cdf
+from imap_processing.cdf.utils import write_cdf
+from imap_processing.spice.time import met_to_j2000ns
 from imap_processing.swapi.l1.swapi_l1 import (
     SWAPIAPID,
     decompress_count,
