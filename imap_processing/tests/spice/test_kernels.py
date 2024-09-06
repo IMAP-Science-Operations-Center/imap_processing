@@ -241,3 +241,11 @@ def test_multiple_pointings(multiple_pointing_kernels, spice_test_data_path):
     assert num_intervals == num_intervals_expected
     assert et_start_pointing == et_start_expected
     assert et_end_pointing == et_end_expected
+
+    et_times = _get_et_times(et_start_pointing, et_end_pointing)
+
+    spice.furnsh(str(spice_test_data_path / "imap_pointing_frame.bc"))
+    rotation_matrix_1 = spice.pxform("ECLIPJ2000", "IMAP_DPS", et_times[100])
+    rotation_matrix_2 = spice.pxform("ECLIPJ2000", "IMAP_DPS", et_times[1000])
+
+    assert np.array_equal(rotation_matrix_1, rotation_matrix_2)
