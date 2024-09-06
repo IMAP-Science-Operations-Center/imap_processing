@@ -296,7 +296,7 @@ def create_pointing_frame(pointing_frame_path: Path):
             )
 
 
-def _get_et_times(et_start, et_end) -> float:
+def _get_et_times(et_start: float, et_end: float) -> float:
     """
     Get times for pointing start and stop.
 
