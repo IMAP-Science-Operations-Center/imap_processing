@@ -198,7 +198,7 @@ def spice_ck_file(pointing_frame_path: Path) -> Generator[int, None, None]:
 
 
 @ensure_spice
-def create_pointing_frame(pointing_frame_path: Path) -> Path:
+def create_pointing_frame(pointing_frame_path: Path):
     """
     Create the pointing frame.
 
@@ -206,11 +206,6 @@ def create_pointing_frame(pointing_frame_path: Path) -> Path:
     ----------
     pointing_frame_path : Path
         Directory of where pointing frame will be saved.
-
-    Returns
-    -------
-    pointing_frame_path : Path
-        Path to pointing frame.
 
     References
     ----------
@@ -243,19 +238,18 @@ def create_pointing_frame(pointing_frame_path: Path) -> Path:
 
     with spice_ck_file(pointing_frame_path) as handle:
         # TODO: this will change to the number of pointings.
-        for i in range(num_intervals - 1):
+        for i in range(num_intervals):
+            # Get the coverage window
             # TODO: this will change to pointing start and end time.
             et_start, et_end = spice.wnfetd(ck_cover, i)
+            et_times = _get_et_times(et_start, et_end)
 
             # TODO: remove after query is added.
-            if et_end_pointing_frame is not None and et_start < et_end_pointing_frame:
+            if (
+                et_end_pointing_frame is not None
+                and et_times[0] < et_end_pointing_frame
+            ):
                 break
-
-            # 1 spin/15 seconds; 10 quaternions / spin.
-            num_samples = (et_end - et_start) / 15 * 10
-            et_times = np.linspace(
-                np.ceil(et_start), np.floor(et_end), int(num_samples)
-            )
 
             # Create a rotation matrix
             rotation_matrix = _create_rotation_matrix(et_times)
@@ -266,8 +260,8 @@ def create_pointing_frame(pointing_frame_path: Path) -> Path:
 
             # https://spiceypy.readthedocs.io/en/main/documentation.html#spiceypy.spiceypy.sce2c
             # Convert start and end times to SCLK.
-            sclk_begtim = spice.sce2c(int(id_imap_sclk), et_start)
-            sclk_endtim = spice.sce2c(int(id_imap_sclk), et_end)
+            sclk_begtim = spice.sce2c(int(id_imap_sclk), et_times[0])
+            sclk_endtim = spice.sce2c(int(id_imap_sclk), et_times[-1])
 
             # Create the pointing frame kernel.
             # https://spiceypy.readthedocs.io/en/main/documentation.html#spiceypy.spiceypy.ckw02
@@ -301,45 +295,35 @@ def create_pointing_frame(pointing_frame_path: Path) -> Path:
                 np.array([1.0]),
             )
 
-    return pointing_frame_path
 
-
-@ensure_spice
-def _get_et_times(ck_kernel: str) -> tuple[float, float, np.ndarray]:
+def _get_et_times(et_start, et_end) -> float:
     """
     Get times for pointing start and stop.
 
     Parameters
     ----------
-    ck_kernel : str
-        Path of ck_kernel used to create the pointing frame.
-
-    Returns
-    -------
     et_start : float
         Pointing start time.
     et_end : float
         Pointing end time.
+
+    Returns
+    -------
     et_times : numpy.ndarray
         Array of times between et_start and et_end.
     """
-    # Get the spacecraft ID.
-    # https://spiceypy.readthedocs.io/en/main/documentation.html#spiceypy.spiceypy.gipool
-    id_imap_spacecraft = spice.gipool("FRAME_IMAP_SPACECRAFT", 0, 1)
-
     # TODO: Queried pointing start and stop times here.
     # TODO removing the @ensure_spice decorator when using the repointing table.
 
-    # Get the coverage window
-    # https://spiceypy.readthedocs.io/en/main/documentation.html#spiceypy.spiceypy.ckcov
-    cover = spice.ckcov(ck_kernel, int(id_imap_spacecraft), True, "SEGMENT", 0, "TDB")
-    # https://spiceypy.readthedocs.io/en/main/documentation.html#spiceypy.spiceypy.wnfetd
-    et_start, et_end = spice.wnfetd(cover, 0)
-    # 1 spin/15 seconds; 10 quaternions / spin
+    # 1 spin/15 seconds; 10 quaternions / spin.
     num_samples = (et_end - et_start) / 15 * 10
-    et_times = np.linspace(et_start, et_end, int(num_samples))
+    # There were rounding errors when using spice.pxform so np.ceil and np.floor
+    # were used to ensure the start and end times were included in the array.
+    et_times = np.linspace(
+        np.ceil(et_start * 1e6) / 1e6, np.floor(et_end * 1e6) / 1e6, int(num_samples)
+    )
 
-    return et_start, et_end, et_times
+    return et_times
 
 
 @ensure_spice
