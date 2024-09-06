@@ -227,7 +227,7 @@ def create_datasets(data: dict, attr_mgr: ImapCdfAttributes) -> dict:
                 # attributes
                 dims = [
                     value
-                    for key, value in attr_mgr.get_variable_attributes(field).items()
+                    for key, value in attr_mgr.get_variable_attributes(field).items()  # type: ignore[arg-type]
                     if "DEPEND" in key
                 ]
                 if field == "leak_i":  # type: ignore[comparison-overlap]
@@ -239,13 +239,13 @@ def create_datasets(data: dict, attr_mgr: ImapCdfAttributes) -> dict:
                     dataset[field] = xr.DataArray(
                         data,
                         dims=dims,
-                        attrs=attr_mgr.get_variable_attributes(field),
+                        attrs=attr_mgr.get_variable_attributes(field),  # type: ignore[arg-type]
                     )
                 else:
                     dataset[field] = xr.DataArray(
                         data,
                         dims=dims,
-                        attrs=attr_mgr.get_variable_attributes(field),
+                        attrs=attr_mgr.get_variable_attributes(field),  # type: ignore[arg-type]
                     )
         processed_data[apid] = dataset
     logger.info("HIT L1A datasets created")
