@@ -187,7 +187,7 @@ def test_et_times(pointing_frame_kernels):
 
 
 @ensure_spice
-def test_multiple_pointing(pointing_frame_kernels, tmp_path):
+def test_multiple_attempts(pointing_frame_kernels, tmp_path):
     """Tests create_pointing_frame function with multiple pointing kernels."""
     spice.furnsh(pointing_frame_kernels)
 
@@ -206,3 +206,38 @@ def test_multiple_pointing(pointing_frame_kernels, tmp_path):
     )
     num_intervals = spice.wncard(ck_cover)
     assert num_intervals == 1
+
+
+@ensure_spice
+def test_multiple_pointings(multiple_pointing_kernels, spice_test_data_path):
+    """Tests create_pointing_frame function with multiple pointing kernels."""
+    spice.furnsh(multiple_pointing_kernels)
+
+    create_pointing_frame(
+        pointing_frame_path=spice_test_data_path / "imap_pointing_frame.bc"
+    )
+    ck_cover_pointing = spice.ckcov(
+        str(spice_test_data_path / "imap_pointing_frame.bc"),
+        -43901,
+        True,
+        "INTERVAL",
+        0,
+        "TDB",
+    )
+    num_intervals = spice.wncard(ck_cover_pointing)
+    et_start_pointing, et_end_pointing = spice.wnfetd(ck_cover_pointing, 365)
+
+    ck_cover = spice.ckcov(
+        str(spice_test_data_path / "IMAP_spacecraft_attitude.bc"),
+        -43000,
+        True,
+        "INTERVAL",
+        0,
+        "TDB",
+    )
+    num_intervals_expected = spice.wncard(ck_cover)
+    et_start_expected, et_end_expected = spice.wnfetd(ck_cover, 365)
+
+    assert num_intervals == num_intervals_expected
+    assert et_start_pointing == et_start_expected
+    assert et_end_pointing == et_end_expected
