@@ -66,3 +66,26 @@ class HitFlags(
     INF = CommonFlags.INF  # bit 0
     NEG = CommonFlags.NEG  # bit 1
     FLAG3 = 2**2  # bit 2
+
+
+class SWAPIFlags(
+    FlagNameMixin,
+):
+    """SWAPI flags."""
+
+    NONE = CommonFlags.NONE
+    INF = CommonFlags.INF  # bit 0
+    NEG = CommonFlags.NEG  # bit 1
+    SWP_PCEM_COMP = 2**2  # bit 2
+    SWP_SCEM_COMP = 2**3  # bit 3
+    SWP_COIN_COMP = 2**4  # bit 4
+    OVR_T_ST = 2**5  # bit 5
+    UND_T_ST = 2**6  # bit 6
+    PCEM_CNT_ST = 2**7  # bit 7
+    SCEM_CNT_ST = 2**8  # bit 8
+    PCEM_V_ST = 2**9  # bit 9
+    PCEM_I_ST = 2**10  # bit 10
+    PCEM_INT_ST = 2**11  # bit 11
+    SCEM_V_ST = 2**12  # bit 12
+    SCEM_I_ST = 2**13  # bit 13
+    SCEM_INT_ST = 2**14  # bit 14

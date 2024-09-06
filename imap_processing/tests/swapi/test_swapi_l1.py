@@ -79,7 +79,7 @@ def test_decompress_count():
     # compressed + no-overflow, compressed + overflow, no compression
     raw_values = np.array([[12, 0xFFFF, 12]])
     compression_flag = np.array([[1, 1, 0]])
-    expected = np.array([[12 * 16, -1, 12]])
+    expected = np.array([[12 * 16, np.iinfo(np.int32).max, 12]], dtype=np.int32)
     returned_value = decompress_count(raw_values, compression_flag)
     np.testing.assert_array_equal(returned_value, expected)
 
@@ -211,10 +211,16 @@ def test_swapi_algorithm(decom_test_data):
 def test_process_swapi_science(decom_test_data):
     """Test process swapi science"""
     ds_data = decom_test_data[SWAPIAPID.SWP_SCI]
-    processed_data = process_swapi_science(ds_data, data_version="001")
+    processed_data = process_swapi_science(
+        ds_data, decom_test_data[SWAPIAPID.SWP_HK], data_version="001"
+    )
 
     # Test dataset dimensions
-    assert processed_data.sizes == {"epoch": 3, "energy": 72, "energy_label": 72}
+    assert processed_data.sizes == {
+        "epoch": 3,
+        "energy": 72,
+        "energy_label": 72,
+    }
     # Test epoch data is correct
     expected_epoch_datetime = met_to_j2000ns([48, 60, 72])
     np.testing.assert_array_equal(processed_data["epoch"].data, expected_epoch_datetime)
@@ -298,20 +304,27 @@ def test_process_swapi_science(decom_test_data):
     assert processed_data["swp_pcem_counts"].shape == (3, 72)
     # Test that we calculated uncertainty correctly
     np.testing.assert_allclose(
-        np.sqrt(processed_data["swp_pcem_counts"][0]), processed_data["swp_pcem_err"][0]
+        np.sqrt(processed_data["swp_pcem_counts"][0]),
+        processed_data["swp_pcem_err_plus"][0],
     )
 
     # make PLAN_ID data incorrect
     ds_data["plan_id_science"][:12] = np.arange(12)
-    processed_data = process_swapi_science(ds_data, data_version="001")
+    processed_data = process_swapi_science(
+        ds_data, decom_test_data[SWAPIAPID.SWP_HK], data_version="001"
+    )
 
     # Test dataset dimensions
-    assert processed_data.sizes == {"epoch": 2, "energy": 72, "energy_label": 72}
+    assert processed_data.sizes == {
+        "epoch": 2,
+        "energy": 72,
+        "energy_label": 72,
+    }
 
     # Test CDF File
     # This time mismatch is because of sample data. Sample data has
     # SHCOARSE time as 48, 60, 72. That's why time is different.
-    cdf_filename = "imap_swapi_l1_sci-1min_20100101_v001.cdf"
+    cdf_filename = "imap_swapi_l1_sci_20100101_v001.cdf"
     cdf_path = write_cdf(processed_data)
     assert cdf_path.name == cdf_filename
 
@@ -327,7 +340,7 @@ def test_swapi_l1_cdf(swapi_l0_test_data_path):
 
     # Test CDF File
     # sci cdf file
-    cdf_filename = "imap_swapi_l1_sci-1min_20100101_v001.cdf"
+    cdf_filename = "imap_swapi_l1_sci_20100101_v001.cdf"
     cdf_path = write_cdf(processed_data[0])
     assert cdf_path.name == cdf_filename
 

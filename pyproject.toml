@@ -80,7 +80,8 @@ lint.select = ["B", "D", "E", "F", "I", "N", "S", "W", "PL", "PT", "UP", "RUF"]
 # D104: Missing docstring in public package
 # PLR2004: Magic value in comparison
 # RUF200: pyproject missing field (poetry doesn't follow the spec)
-lint.ignore = ["D104", "PLR2004", "RUF200", "S311"]
+# PLR0915: too-many-statements error
+lint.ignore = ["D104", "PLR2004", "RUF200", "S311", "PLR0915"]
 
 [tool.ruff.lint.per-file-ignores]
 # S603 unchecked input in subprocess call is fine in our tests

@@ -13,9 +13,9 @@ def test_swapi_l2_cdf(swapi_l0_test_data_path):
 
     l2_dataset = swapi_l2(l1_dataset, data_version="v001")
     l2_cdf = write_cdf(l2_dataset)
-    assert l2_cdf.name == "imap_swapi_l2_sci-1min_20100101_v001.cdf"
+    assert l2_cdf.name == "imap_swapi_l2_sci_20100101_v001.cdf"
 
     # Test uncertainty variables are as expected
     np.testing.assert_array_equal(
-        l2_dataset["swp_pcem_unc"], l1_dataset["swp_pcem_err"] / TIME_PER_BIN
+        l2_dataset["swp_pcem_unc_plus"], l1_dataset["swp_pcem_err_plus"] / TIME_PER_BIN
     )
