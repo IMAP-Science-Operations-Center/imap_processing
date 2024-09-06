@@ -44,7 +44,7 @@ def spice_test_data_path(imap_tests_path):
 def furnish_test_lsk(spice_test_data_path):
     """Furnishes (temporarily) the testing LSK"""
     test_lsk = spice_test_data_path / "naif0012.tls"
-    spice.furnsh(test_lsk)
+    spice.furnsh(str(test_lsk))
     yield test_lsk
     spice.kclear()
 
@@ -53,7 +53,7 @@ def furnish_test_lsk(spice_test_data_path):
 def furnish_sclk(spice_test_data_path):
     """Furnishes (temporarily) the SCLK for JPSS stored in the package data directory"""
     test_sclk = spice_test_data_path / "imap_sclk_0000.tsc"
-    spice.furnsh(test_sclk)
+    spice.furnsh(str(test_sclk))
     yield test_sclk
     spice.kclear()
 
