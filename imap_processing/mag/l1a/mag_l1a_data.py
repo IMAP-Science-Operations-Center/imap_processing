@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import math
 from dataclasses import InitVar, dataclass, field
 from math import floor
 
@@ -326,12 +327,17 @@ class MagL1a:
             vector sample.
         """
         if compression:
+            # print("Starting vector data length: ", len(vector_data))
+            # If the vectors are compressed, we need them to be uint8 to convert to
+            # bits.
             return MagL1a.process_compressed_vectors(
-                vector_data, primary_count, secondary_count
+                vector_data.astype(np.uint8), primary_count, secondary_count
             )
 
+        # If the vectors are uncompressed, we need them to be int32, as there are
+        # bitshifting operations. Either way, the return type should be int32.
         return MagL1a.process_uncompressed_vectors(
-            vector_data, primary_count, secondary_count
+            vector_data.astype(np.int32), primary_count, secondary_count
         )
 
     @staticmethod
@@ -383,10 +389,6 @@ class MagL1a:
         pos = 0
         primary_vectors = []
         secondary_vectors = []
-
-        # To avoid overflows, we need to cast the potentially 8 bit signed integers to
-        # int32 before the bitshifting operations below.
-        vector_data = vector_data.astype(np.int32)
 
         # Since the vectors are stored as 50 bit chunks but accessed via hex (4 bit
         # chunks) there is some shifting required for processing the bytes.
@@ -571,20 +573,19 @@ class MagL1a:
         # The first bit is only needed for the np.roll step, so now we remove it.
         # we are left with compressed primary vectors, and all the secondary vectors.
         vector_bits = vector_bits[1:]
+        # print(f"Vector bits: {vector_bits}")
         # which indices within vector_bits are the end of a vector
         primary_boundaries = [sequential_ones[0] + 1]
         secondary_boundaries = []
         vector_count = 1
         end_primary_vector = 0
-
         for seq_val in sequential_ones:
             if vector_count > primary_count + secondary_count:
                 break
-
             # Add the end indices of each primary vector to primary_boundaries
             # If we have 3 ones in a row, we should skip that index
             if vector_count < primary_count and (
-                seq_val - primary_boundaries[-1] - 1 > 1
+                seq_val - primary_boundaries[-1] > 0
             ):
                 primary_boundaries.append(seq_val + 1)
 
@@ -618,15 +619,17 @@ class MagL1a:
                     else end_primary_vector
                 )
                 if seq_val >= end_primary_vector + uncompressed_vector_size + 2:
+                    # Split just after the uncompressed secondary vector
+                    secondary_boundaries = [end_primary_vector + uncompressed_vector_size + 2]
                     # We have found the first secondary vector
-                    secondary_boundaries = [seq_val]
+                    secondary_boundaries += [seq_val+1]
                     vector_count += 1
 
             # If we're greater than primary_count, we are in the secondary vectors.
             # Like before, we skip indices with 3 ones.
             if (
                 vector_count > primary_count
-                and seq_val - secondary_boundaries[-1] - 1 > 1
+                and seq_val - secondary_boundaries[-1] > 0
             ):
                 secondary_boundaries.append(seq_val + 1)
                 # We have the start of the secondary vectors in
@@ -641,9 +644,11 @@ class MagL1a:
         # Split along the boundaries of the primary vectors. This gives us a list of
         # bit arrays, each corresponding to a primary value (1/3 of a vector).
         primary_split_bits = np.split(
-            vector_bits[: primary_boundaries[-1]],
-            primary_boundaries[:-1],
-        )
+            vector_bits,
+            primary_boundaries,
+        )[:-1]
+        # print(f"Primary split bits: {primary_split_bits}")
+        # print(f"First vector: {first_vector}")
 
         vector_diffs = list(map(MagL1a.decode_fib_zig_zag, primary_split_bits))
 
@@ -653,7 +658,7 @@ class MagL1a:
 
         # If we are missing any vectors from primary_split_bits, we know we have
         # uncompressed vectors to process.
-        primary_vector_missing = primary_count - len(primary_split_bits) // 3 - 1
+        primary_vector_missing = primary_count - math.ceil(len(primary_split_bits) / 3) - 1
         vector_index = primary_count - primary_vector_missing
         if primary_vector_missing:
             primary_end = (
@@ -691,6 +696,9 @@ class MagL1a:
         secondary_vectors = MagL1a.accumulate_vectors(
             first_secondary_vector, vector_diffs, secondary_count
         )
+        # print(f"Secondary vectors: {secondary_vectors}")
+
+        secondary_vector_missing = secondary_count - math.ceil(len(secondary_split_bits) / 3) - 1
 
         secondary_vector_missing = secondary_count - len(secondary_split_bits) // 3 - 1
         if secondary_vector_missing:
@@ -802,7 +810,11 @@ class MagL1a:
         """
         vectors: np.ndarray = np.empty((vector_count, 4), dtype=np.int32)
         vectors[0] = first_vector
-
+        if len(vector_differences) % 3 != 0:
+            logger.error(f"Error! Computed compressed vector differences are not "
+                         f"divisible by 3 - meaning some data is missing. "
+                         "Expected length: %s, actual length: "
+                         "%s", vector_count * 3, len(vector_differences))
         index = 0
         vector_index = 1
         for diff in vector_differences:
@@ -850,10 +862,12 @@ class MagL1a:
             )
 
         if len(vector_data) != width * 3 + 2 * has_range:
-            raise ValueError(
+            logger.error(
                 f"Invalid length {len(vector_data)} for vector data. Expected "
                 f"{width * 3} or {width * 3 + 2} if has_range."
             )
+            return np.zeros(4, dtype=np.int32)
+            # TODO: should this raise an error? Update flags?
         padding = np.zeros(8 - (width % 8), dtype=np.uint8)
 
         # take slices of the input data and pack from an array of bits to an array of

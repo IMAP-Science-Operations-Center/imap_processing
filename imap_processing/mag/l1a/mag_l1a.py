@@ -142,8 +142,6 @@ def process_packets(
     mago = {}
 
     for mag_l0 in mag_l0_list:
-        if mag_l0.COMPRESSION:
-            raise NotImplementedError("Unable to process compressed data")
 
         primary_start_time = TimeTuple(mag_l0.PRI_COARSETM, mag_l0.PRI_FNTM)
         secondary_start_time = TimeTuple(mag_l0.SEC_COARSETM, mag_l0.SEC_FNTM)
@@ -182,7 +180,7 @@ def process_packets(
         # byte boundaries are.
 
         primary_vectors, secondary_vectors = MagL1a.process_vector_data(
-            mag_l0.VECTORS.astype(dtype=np.int32),  # type: ignore [union-attr]
+            mag_l0.VECTORS,
             primary_packet_data.total_vectors,
             secondary_packet_data.total_vectors,
             mag_l0.COMPRESSION,
