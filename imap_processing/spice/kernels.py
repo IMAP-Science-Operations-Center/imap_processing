@@ -198,7 +198,7 @@ def spice_ck_file(pointing_frame_path: Path) -> Generator[int, None, None]:
 
 
 @ensure_spice
-def create_pointing_frame(pointing_frame_path: Path):
+def create_pointing_frame(pointing_frame_path: Path) -> None:
     """
     Create the pointing frame.
 
@@ -296,7 +296,7 @@ def create_pointing_frame(pointing_frame_path: Path):
             )
 
 
-def _get_et_times(et_start: float, et_end: float) -> float:
+def _get_et_times(et_start: float, et_end: float) -> NDArray[np.float64]:
     """
     Get times for pointing start and stop.
 
