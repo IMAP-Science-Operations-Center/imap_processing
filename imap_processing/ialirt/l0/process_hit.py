@@ -1,8 +1,6 @@
 """Functions to support HIT processing."""
 
 import logging
-from enum import Enum
-from typing import ClassVar
 
 import numpy as np
 import xarray as xr
@@ -10,20 +8,19 @@ import xarray as xr
 logger = logging.getLogger(__name__)
 
 
-class HITPrefixes(Enum):
-    """Create ENUM for each rate type."""
-
-    FAST_RATE_1: ClassVar[list[str]] = [
+# HIT prefixes as defined by Table 37 of the HIT Algorithm Document.
+HIT_PREFIX_TO_RATE_TYPE = {
+    "FAST_RATE_1": [
         f"{prefix}_{i:02d}"
         for i in range(15)
         for prefix in ["L1A_TRIG", "IA_EVNT_TRIG", "A_EVNT_TRIG", "L3A_TRIG"]
-    ]
-    FAST_RATE_2: ClassVar[list[str]] = [
+    ],
+    "FAST_RATE_2": [
         f"{prefix}_{i:02d}"
         for i in range(15)
         for prefix in ["L1B_TRIG", "IB_EVNT_TRIG", "B_EVNT_TRIG", "L3B_TRIG"]
-    ]
-    SLOW_RATE: ClassVar[list[str]] = [
+    ],
+    "SLOW_RATE": [
         "L1A",
         "L2A",
         "L3A",
@@ -61,7 +58,8 @@ class HITPrefixes(Enum):
         "H_15_70",
         "HE4_06_08",
         "HE4_15_70",
-    ]
+    ],
+}
 
 
 def find_groups(data: xr.Dataset) -> xr.Dataset:
@@ -126,15 +124,19 @@ def create_l1(
     """
     fast_rate_1_dict = {
         prefix: value
-        for prefix, value in zip(HITPrefixes.FAST_RATE_1.value, fast_rate_1.data)
+        for prefix, value in zip(
+            HIT_PREFIX_TO_RATE_TYPE["FAST_RATE_1"], fast_rate_1.data
+        )
     }
     fast_rate_2_dict = {
         prefix: value
-        for prefix, value in zip(HITPrefixes.FAST_RATE_2.value, fast_rate_2.data)
+        for prefix, value in zip(
+            HIT_PREFIX_TO_RATE_TYPE["FAST_RATE_2"], fast_rate_2.data
+        )
     }
     slow_rate_dict = {
         prefix: value
-        for prefix, value in zip(HITPrefixes.SLOW_RATE.value, slow_rate.data)
+        for prefix, value in zip(HIT_PREFIX_TO_RATE_TYPE["SLOW_RATE"], slow_rate.data)
     }
 
     l1 = {**fast_rate_1_dict, **fast_rate_2_dict, **slow_rate_dict}

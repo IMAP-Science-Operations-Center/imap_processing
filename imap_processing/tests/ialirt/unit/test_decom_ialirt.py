@@ -2,7 +2,7 @@ import pytest
 
 from imap_processing import imap_module_directory
 from imap_processing.decom import decom_packets
-from imap_processing.ialirt.l0.decom_ialirt import generate_xarray
+from imap_processing.utils import packet_file_to_datasets
 
 IALIRT_PACKET_LENGTH = 1464
 
@@ -88,7 +88,7 @@ def test_generate_xarray(binary_packet_path, xtce_ialirt_path, decom_packets_dat
     """This function checks that all instrument parameters are correct length."""
 
     apid = 478
-    xarray_data = generate_xarray(binary_packet_path, xtce_ialirt_path)[apid]
+    xarray_data = packet_file_to_datasets(binary_packet_path, xtce_ialirt_path)[apid]
 
     for key in xarray_data.keys():
         assert len(xarray_data[key]) == 32

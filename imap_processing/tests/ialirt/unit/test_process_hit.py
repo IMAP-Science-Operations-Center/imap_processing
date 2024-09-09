@@ -1,13 +1,13 @@
 import pytest
 
 from imap_processing import imap_module_directory
-from imap_processing.ialirt.l0.decom_ialirt import generate_xarray
 from imap_processing.ialirt.l0.process_hit import (
-    HITPrefixes,
+    HIT_PREFIX_TO_RATE_TYPE,
     create_l1,
     find_groups,
     process_hit,
 )
+from imap_processing.utils import packet_file_to_datasets
 
 
 @pytest.fixture(scope="session")
@@ -34,7 +34,7 @@ def xarray_data(binary_packet_path, xtce_hit_path):
     """Create xarray data"""
     apid = 1253
 
-    xarray_data = generate_xarray(binary_packet_path, xtce_hit_path)[apid]
+    xarray_data = packet_file_to_datasets(binary_packet_path, xtce_hit_path)[apid]
     return xarray_data
 
 
@@ -91,9 +91,9 @@ def test_prefixes():
     ]
 
     # Perform the assertions
-    assert HITPrefixes.FAST_RATE_1.value == expected_fast_rate_1
-    assert HITPrefixes.FAST_RATE_2.value == expected_fast_rate_2
-    assert HITPrefixes.SLOW_RATE.value == expected_slow_rate
+    assert HIT_PREFIX_TO_RATE_TYPE["FAST_RATE_1"] == expected_fast_rate_1
+    assert HIT_PREFIX_TO_RATE_TYPE["FAST_RATE_2"] == expected_fast_rate_2
+    assert HIT_PREFIX_TO_RATE_TYPE["SLOW_RATE"] == expected_slow_rate
 
 
 def test_find_groups(xarray_data):
