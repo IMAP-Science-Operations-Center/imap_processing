@@ -15,20 +15,15 @@ def build_energy_bins() -> tuple[np.ndarray, np.ndarray]:
         Array of energy bin end values.
     """
     alpha = 0.05  # deltaE/E
-    energy_bounds = [3.5, 300]  # energy bounds for the Ultra grids
+    energy_start = 3.5  # energy start for the Ultra grids
+    n_bins = 90  # number of energy bins
 
     # Calculate energy step
     energy_step = (1 + alpha / 2) / (1 - alpha / 2)
 
-    # Create bins.
-    energy_bin_start = np.array([energy_bounds[0]])
-    while energy_bin_start[-1] * energy_step <= energy_bounds[-1]:
-        energy_bin_start = np.append(
-            energy_bin_start, energy_bin_start[-1] * energy_step
-        )
-
-    # Compute the end values for the bins
-    energy_bin_end = energy_bin_start[1:] * energy_step
-    energy_bin_end = np.insert(energy_bin_end, 0, energy_bounds[0] * energy_step)
+    # Create energy bins.
+    bin_edges = energy_start * energy_step ** np.arange(n_bins + 1)
+    energy_bin_start = bin_edges[:-1]
+    energy_bin_end = bin_edges[1:]
 
     return energy_bin_start, energy_bin_end
