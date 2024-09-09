@@ -321,31 +321,28 @@ def get_ssd_back_position_and_tof_offset(
     return yb, tof_offset, ssd_number
 
 
-def calculate_etof_xc(de_subset, particle_tof, sensor, location):
+def calculate_etof_xc(
+    de_subset: xarray.Dataset, particle_tof: np.ndarray, sensor: str, location: str
+) -> tuple[np.ndarray, np.ndarray]:
     """
     Calculate the etof and xc values for the given subset.
 
     Parameters
     ----------
-    t1 : np.ndarray
-        Array to store intermediate t1 values.
-    t2 : np.ndarray
-        Array to store intermediate t2 values.
-    xc : np.ndarray
-        Array to store xc values.
-    index_subset : np.ndarray
-        Indices of the subset within the original dataset.
     de_subset : xarray.Dataset
         Subset of the dataset for a specific COIN_TYPE.
     particle_tof : np.ndarray
         Particle time of flight (i.e. from start to stop).
     sensor : str
         Sensor name.
+    location : str
+        Location indicator, either 'TP' (Top) or 'BT' (Bottom).
 
     Returns
     -------
     etof : np.ndarray
-        Time for the electrons to travel back to the coincidence anode (tenths of a nanosecond).
+        Time for the electrons to travel back to the coincidence
+        anode (tenths of a nanosecond).
     xc : np.ndarray
         X coincidence position (millimeters).
     """
@@ -356,7 +353,6 @@ def calculate_etof_xc(de_subset, particle_tof, sensor, location):
     xc = get_image_params(f"XCOIN{location}SC") * (
         coin_s_norm - coin_n_norm
     ) + get_image_params(f"XCOIN{location}OFF")  # millimeter
-
 
     # Time for the electrons to travel back to coincidence anode.
     t2 = get_image_params("ETOFSC") * (coin_n_norm + coin_s_norm) + get_image_params(
@@ -413,17 +409,20 @@ def get_coincidence_positions(
     de_bottom = de_dataset.isel(epoch=index_bottom)
 
     etof = np.zeros(len(de_dataset["COIN_TYPE"]), dtype=np.float64)
+    xc_array = np.zeros(len(de_dataset["COIN_TYPE"]), dtype=np.float64)
 
     # Normalized TDCs
     # For the stop anode, there are mismatches between the coincidence TDCs,
     # i.e., CoinN and CoinS. They must be normalized via lookup tables.
-    etof_subset, xc = calculate_etof_xc(de_top, particle_tof, sensor, "TP")
-    etof[index_top] = etof_subset
-    xc[index_top] = xc
+    etof_top, xc_top = calculate_etof_xc(de_top, particle_tof[index_top], sensor, "TP")
+    etof[index_top] = etof_top
+    xc_array[index_top] = xc_top
 
-    etof_subset, xc = calculate_etof_xc(de_bottom, particle_tof, sensor, "BT")
-    etof[index_bottom] = etof_subset
-    xc[index_bottom] = xc
+    etof_bottom, xc_bottom = calculate_etof_xc(
+        de_bottom, particle_tof[index_bottom], sensor, "BT"
+    )
+    etof[index_bottom] = etof_bottom
+    xc_array[index_bottom] = xc_bottom
 
     # Convert to hundredths of a millimeter by multiplying times 100
-    return etof, xc * 100
+    return etof, xc_array * 100
