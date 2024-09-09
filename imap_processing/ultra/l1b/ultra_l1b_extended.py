@@ -39,6 +39,13 @@ class StopType(Enum):
     SSD: ClassVar[list[int]] = [8, 9, 10, 11, 12, 13, 14, 15]
 
 
+class CoinType(Enum):
+    """Coin Type: 1=Top, 2=Bottom."""
+
+    Top = 1
+    Bottom = 2
+
+
 def get_front_x_position(start_type: ndarray, start_position_tdc: ndarray) -> ndarray:
     """
     Calculate the front xf position.
@@ -161,7 +168,7 @@ def get_ph_tof_and_back_positions(
     Returns
     -------
     tof : np.array
-        Time of flight (tenths of a nanosecond).
+        Time of flight (nanoseconds).
     t2 : np.array
         Particle time of flight from start to stop (tenths of a nanosecond).
     xb : np.array
@@ -235,9 +242,6 @@ def get_ph_tof_and_back_positions(
     tof[stop_type_bottom] = t2[stop_type_bottom] + xf_ph[
         stop_type_bottom
     ] * get_image_params("XFTTOF")
-
-    # Multiply by 100 to get tenths of a nanosecond.
-    tof = tof * 100
 
     return tof, t2, xb, yb
 
@@ -315,3 +319,110 @@ def get_ssd_back_position_and_tof_offset(
         ] = get_image_params(f"TOFSSDRTOFF{i}")
 
     return yb, tof_offset, ssd_number
+
+
+def calculate_etof_xc(
+    de_subset: xarray.Dataset, particle_tof: np.ndarray, sensor: str, location: str
+) -> tuple[np.ndarray, np.ndarray]:
+    """
+    Calculate the etof and xc values for the given subset.
+
+    Parameters
+    ----------
+    de_subset : xarray.Dataset
+        Subset of the dataset for a specific COIN_TYPE.
+    particle_tof : np.ndarray
+        Particle time of flight (i.e. from start to stop).
+    sensor : str
+        Sensor name.
+    location : str
+        Location indicator, either 'TP' (Top) or 'BT' (Bottom).
+
+    Returns
+    -------
+    etof : np.ndarray
+        Time for the electrons to travel back to the coincidence
+        anode (tenths of a nanosecond).
+    xc : np.ndarray
+        X coincidence position (millimeters).
+    """
+    # CoinNNorm
+    coin_n_norm = get_norm(de_subset["COIN_NORTH_TDC"], "CoinN", sensor)
+    # CoinSNorm
+    coin_s_norm = get_norm(de_subset["COIN_SOUTH_TDC"], "CoinS", sensor)
+    xc = get_image_params(f"XCOIN{location}SC") * (
+        coin_s_norm - coin_n_norm
+    ) + get_image_params(f"XCOIN{location}OFF")  # millimeter
+
+    # Time for the electrons to travel back to coincidence anode.
+    t2 = get_image_params("ETOFSC") * (coin_n_norm + coin_s_norm) + get_image_params(
+        f"ETOF{location}OFF"
+    )
+
+    # Multiply by 10 to convert to tenths of a nanosecond.
+    etof = t2 * 10 - particle_tof
+
+    return etof, xc
+
+
+def get_coincidence_positions(
+    de_dataset: xarray.Dataset, particle_tof: np.ndarray, sensor: str
+) -> tuple[np.ndarray, np.ndarray]:
+    """
+    Calculate coincidence positions.
+
+    Calculate time for electrons to travel back to
+    the coincidence anode (etof) and the x coincidence position (xc).
+
+    The tof measured by the coincidence anode consists of the particle
+    tof from start to stop, plus the time for the electrons to travel
+    back to the coincidence anode.
+
+    Further description is available on pages 34-35 of
+    IMAP-Ultra Flight Software Specification document
+    (7523-9009_Rev_-.pdf).
+
+    Parameters
+    ----------
+    de_dataset : xarray.Dataset
+        Data in xarray format.
+    particle_tof : np.ndarray
+        Particle time of flight (i.e. from start to stop)
+        (tenths of a nanosecond).
+    sensor : str
+        Sensor name.
+
+    Returns
+    -------
+    etof : np.ndarray
+        Time for the electrons to travel back to
+        coincidence anode (tenths of a nanosecond).
+    xc : np.ndarray
+        X coincidence position (hundredths of a millimeter).
+    """
+    index_top = np.nonzero(np.isin(de_dataset["COIN_TYPE"], CoinType.Top.value))[0]
+    de_top = de_dataset.isel(epoch=index_top)
+
+    index_bottom = np.nonzero(np.isin(de_dataset["COIN_TYPE"], CoinType.Bottom.value))[
+        0
+    ]
+    de_bottom = de_dataset.isel(epoch=index_bottom)
+
+    etof = np.zeros(len(de_dataset["COIN_TYPE"]), dtype=np.float64)
+    xc_array = np.zeros(len(de_dataset["COIN_TYPE"]), dtype=np.float64)
+
+    # Normalized TDCs
+    # For the stop anode, there are mismatches between the coincidence TDCs,
+    # i.e., CoinN and CoinS. They must be normalized via lookup tables.
+    etof_top, xc_top = calculate_etof_xc(de_top, particle_tof[index_top], sensor, "TP")
+    etof[index_top] = etof_top
+    xc_array[index_top] = xc_top
+
+    etof_bottom, xc_bottom = calculate_etof_xc(
+        de_bottom, particle_tof[index_bottom], sensor, "BT"
+    )
+    etof[index_bottom] = etof_bottom
+    xc_array[index_bottom] = xc_bottom
+
+    # Convert to hundredths of a millimeter by multiplying times 100
+    return etof, xc_array * 100

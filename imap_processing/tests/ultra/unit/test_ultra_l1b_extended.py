@@ -5,8 +5,11 @@ import pandas as pd
 import pytest
 
 from imap_processing.ultra.l1b.ultra_l1b_extended import (
+    CoinType,
     StartType,
     StopType,
+    calculate_etof_xc,
+    get_coincidence_positions,
     get_front_x_position,
     get_front_y_position,
     get_path_length,
@@ -30,12 +33,11 @@ def yf_fixture(de_dataset, events_fsw_comparison_theta_0):
 
 def test_get_front_x_position(
     de_dataset,
-    events_fsw_comparison_theta_0,
+    yf_fixture,
 ):
     """Tests get_front_x_position function."""
 
-    df = pd.read_csv(events_fsw_comparison_theta_0)
-    df_filt = df[df["StartType"] != -1]
+    df_filt, _, _ = yf_fixture
 
     xf = get_front_x_position(
         de_dataset["START_TYPE"].data,
@@ -50,6 +52,7 @@ def test_get_front_y_position(yf_fixture):
     df_filt, d, yf = yf_fixture
 
     assert yf == pytest.approx(df_filt["Yf"].astype("float"), abs=1e-5)
+    assert d == pytest.approx(df_filt["d"].astype("float"), abs=1e-5)
 
 
 def test_get_path_length(de_dataset, yf_fixture):
@@ -68,14 +71,13 @@ def test_get_path_length(de_dataset, yf_fixture):
 
 def test_get_ph_tof_and_back_positions(
     de_dataset,
-    events_fsw_comparison_theta_0,
+    yf_fixture,
 ):
     """Tests get_ph_tof_and_back_positions function."""
 
-    df = pd.read_csv(events_fsw_comparison_theta_0)
-    df_filt = df[df["StartType"] != -1]
+    df_filt, _, _ = yf_fixture
 
-    _, _, ph_xb, ph_yb = get_ph_tof_and_back_positions(
+    ph_tof, _, ph_xb, ph_yb = get_ph_tof_and_back_positions(
         de_dataset, df_filt.Xf.astype("float").values, "ultra45"
     )
 
@@ -87,6 +89,9 @@ def test_get_ph_tof_and_back_positions(
 
     np.testing.assert_array_equal(ph_xb, selected_rows["Xb"].astype("float"))
     np.testing.assert_array_equal(ph_yb, selected_rows["Yb"].astype("float"))
+    np.testing.assert_allclose(
+        ph_tof, selected_rows["TOF"].astype("float"), atol=1e-5, rtol=0
+    )
 
 
 def test_get_ssd_back_position_and_tof_offset(
@@ -127,3 +132,75 @@ def test_get_ssd_back_position_and_tof_offset(
     assert np.all(ssd_number_rt >= 0), "Values in ssd_number_rt out of range."
 
     assert np.all(ssd_number_rt <= 7), "Values in ssd_number_rt out of range."
+
+
+def test_get_coincidence_positions(de_dataset, yf_fixture):
+    """Tests get_coincidence_positions function."""
+    df_filt, _, _ = yf_fixture
+    # Get particle tof (t2).
+    _, t2, _, _ = get_ph_tof_and_back_positions(
+        de_dataset, df_filt.Xf.astype("float").values, "ultra45"
+    )
+
+    # Filter for stop type.
+    indices = np.nonzero(
+        np.isin(de_dataset["STOP_TYPE"], [StopType.Top.value, StopType.Bottom.value])
+    )[0]
+    de_filtered = de_dataset.isel(epoch=indices)
+    rows = df_filt.iloc[indices]
+
+    # Get coincidence position and eTOF.
+    etof, xc = get_coincidence_positions(de_filtered, t2, "ultra45")
+
+    np.testing.assert_allclose(xc, rows["Xc"].astype("float"), atol=1e-4, rtol=0)
+    np.testing.assert_allclose(
+        etof, rows["eTOF"].astype("float").values, rtol=0, atol=1e-06
+    )
+
+
+def test_calculate_etof_xc(de_dataset, yf_fixture):
+    """Tests calculate_etof_xc function."""
+    df_filt, _, _ = yf_fixture
+    # Get particle tof (t2).
+    _, t2, _, _ = get_ph_tof_and_back_positions(
+        de_dataset, df_filt.Xf.astype("float").values, "ultra45"
+    )
+    # Filter based on STOP_TYPE.
+    indices = np.nonzero(
+        np.isin(de_dataset["STOP_TYPE"], [StopType.Top.value, StopType.Bottom.value])
+    )[0]
+    de_filtered = de_dataset.isel(epoch=indices)
+    df_filtered = df_filt.iloc[indices]
+
+    # Filter for COIN_TYPE Top and Bottom.
+    index_top = np.nonzero(np.isin(de_filtered["COIN_TYPE"], CoinType.Top.value))[0]
+    de_top = de_filtered.isel(epoch=index_top)
+    df_top = df_filtered.iloc[index_top]
+
+    index_bottom = np.nonzero(np.isin(de_filtered["COIN_TYPE"], CoinType.Bottom.value))[
+        0
+    ]
+    de_bottom = de_filtered.isel(epoch=index_bottom)
+    df_bottom = df_filtered.iloc[index_bottom]
+
+    # Calculate for Top and Bottom
+    etof_top, xc_top = calculate_etof_xc(de_top, t2[index_top], "ultra45", "TP")
+    etof_bottom, xc_bottom = calculate_etof_xc(
+        de_bottom, t2[index_bottom], "ultra45", "BT"
+    )
+
+    # Assertions for Top
+    np.testing.assert_allclose(
+        xc_top * 100, df_top["Xc"].astype("float"), atol=1e-4, rtol=0
+    )
+    np.testing.assert_allclose(
+        etof_top, df_top["eTOF"].astype("float").values, atol=1e-06, rtol=0
+    )
+
+    # Assertions for Bottom
+    np.testing.assert_allclose(
+        xc_bottom * 100, df_bottom["Xc"].astype("float"), atol=1e-4, rtol=0
+    )
+    np.testing.assert_allclose(
+        etof_bottom, df_bottom["eTOF"].astype("float").values, atol=1e-06, rtol=0
+    )
