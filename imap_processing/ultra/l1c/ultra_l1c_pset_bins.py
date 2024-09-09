@@ -45,10 +45,10 @@ def build_spatial_bins(spacing: float = 0.5) -> tuple[np.ndarray, np.ndarray]:
     el_bin_edges : np.ndarray
         Array of elevation bin boundary values.
     """
-    # Azimuth bins from 0 to 360 degrees
+    # Azimuth bins from 0 to 360 degrees.
     az_bin_edges = np.arange(0, 360 + spacing, spacing)
 
-    # Elevation bins from -90 to 90 degrees
+    # Elevation bins from -90 to 90 degrees.
     el_bin_edges = np.arange(-90, 90 + spacing, spacing)
 
     return az_bin_edges, el_bin_edges
