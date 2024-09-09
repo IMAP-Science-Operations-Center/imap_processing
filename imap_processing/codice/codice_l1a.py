@@ -511,30 +511,30 @@ def process_codice_l1a(file_path: Path, data_version: str) -> xr.Dataset:
         The ``xarray`` dataset containing the science data and supporting metadata.
     """
     # Decom the packets, group data by APID, and sort by time
-    packets = decom_packets(file_path)
+    datasets = decom_packets(file_path)
 
-    for apid in packets:
-        packet = packets[apid]
+    for apid in datasets:
+        packet_dataset = datasets[apid]
         logger.info(f"\nProcessing {CODICEAPID(apid).name} packet")
 
         if apid == CODICEAPID.COD_NHK:
-            dataset = create_hskp_dataset(packet, data_version)
+            dataset = create_hskp_dataset(packet_dataset, data_version)
 
         elif apid in [CODICEAPID.COD_LO_PHA, CODICEAPID.COD_HI_PHA]:
-            dataset = create_event_dataset(apid, packet, data_version)
+            dataset = create_event_dataset(apid, packet_dataset, data_version)
 
         elif apid in constants.APIDS_FOR_SCIENCE_PROCESSING:
             # Extract the data
-            science_values = packet.data.data[0]
+            science_values = packet_dataset.data.data[0]
 
             # Get the four "main" parameters for processing
-            table_id, plan_id, plan_step, view_id = get_params(packet)
+            table_id, plan_id, plan_step, view_id = get_params(packet_dataset)
 
             # Run the pipeline to create a dataset for the product
             pipeline = CoDICEL1aPipeline(table_id, plan_id, plan_step, view_id)
             pipeline.configure_data_products(apid)
             pipeline.unpack_science_data(science_values)
-            dataset = pipeline.create_science_dataset(packet, data_version)
+            dataset = pipeline.create_science_dataset(packet_dataset, data_version)
 
     logger.info(f"\nFinal data product:\n{dataset}\n")
 
