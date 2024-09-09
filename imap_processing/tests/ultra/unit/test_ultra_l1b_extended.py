@@ -5,8 +5,10 @@ import pandas as pd
 import pytest
 
 from imap_processing.ultra.l1b.ultra_l1b_extended import (
+    CoinType,
     StartType,
     StopType,
+    calculate_etof_xc,
     get_coincidence_positions,
     get_front_x_position,
     get_front_y_position,
@@ -153,4 +155,52 @@ def test_get_coincidence_positions(de_dataset, yf_fixture):
     np.testing.assert_allclose(xc, rows["Xc"].astype("float"), atol=1e-4, rtol=0)
     np.testing.assert_allclose(
         etof, rows["eTOF"].astype("float").values, rtol=0, atol=1e-06
+    )
+
+
+def test_calculate_etof_xc(de_dataset, yf_fixture):
+    """Tests calculate_etof_xc function."""
+    df_filt, _, _ = yf_fixture
+    # Get particle tof (t2).
+    _, t2, _, _ = get_ph_tof_and_back_positions(
+        de_dataset, df_filt.Xf.astype("float").values, "ultra45"
+    )
+    # Filter based on STOP_TYPE.
+    indices = np.nonzero(
+        np.isin(de_dataset["STOP_TYPE"], [StopType.Top.value, StopType.Bottom.value])
+    )[0]
+    de_filtered = de_dataset.isel(epoch=indices)
+    df_filtered = df_filt.iloc[indices]
+
+    # Filter for COIN_TYPE Top and Bottom.
+    index_top = np.nonzero(np.isin(de_filtered["COIN_TYPE"], CoinType.Top.value))[0]
+    de_top = de_filtered.isel(epoch=index_top)
+    df_top = df_filtered.iloc[index_top]
+
+    index_bottom = np.nonzero(np.isin(de_filtered["COIN_TYPE"], CoinType.Bottom.value))[
+        0
+    ]
+    de_bottom = de_filtered.isel(epoch=index_bottom)
+    df_bottom = df_filtered.iloc[index_bottom]
+
+    # Calculate for Top and Bottom
+    etof_top, xc_top = calculate_etof_xc(de_top, t2[index_top], "ultra45", "TP")
+    etof_bottom, xc_bottom = calculate_etof_xc(
+        de_bottom, t2[index_bottom], "ultra45", "BT"
+    )
+
+    # Assertions for Top
+    np.testing.assert_allclose(
+        xc_top * 100, df_top["Xc"].astype("float"), atol=1e-4, rtol=0
+    )
+    np.testing.assert_allclose(
+        etof_top, df_top["eTOF"].astype("float").values, atol=1e-06, rtol=0
+    )
+
+    # Assertions for Bottom
+    np.testing.assert_allclose(
+        xc_bottom * 100, df_bottom["Xc"].astype("float"), atol=1e-4, rtol=0
+    )
+    np.testing.assert_allclose(
+        etof_bottom, df_bottom["eTOF"].astype("float").values, atol=1e-06, rtol=0
     )
