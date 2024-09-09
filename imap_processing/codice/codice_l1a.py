@@ -437,7 +437,6 @@ def create_hskp_dataset(
 
     for variable in packet:
         attrs = cdf_attrs.get_variable_attributes(variable)
-        attrs["DEPEND_0"] = "epoch"
 
         dataset[variable] = xr.DataArray(
             packet[variable].data, dims=["epoch"], attrs=attrs

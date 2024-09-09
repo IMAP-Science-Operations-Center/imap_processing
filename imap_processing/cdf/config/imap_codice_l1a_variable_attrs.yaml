@@ -450,23 +450,23 @@ shcoarse:
 
 packet_version:
     <<: *default
-    CATDESC: Packet version - this will be incremented each time the format of the packet changes.
     FIELDNAM: Packet Version
     LABLAXIS: PACKET_VERSION
+    VAR_NOTES: Packet version - this will be incremented each time the format of the packet changes.
     VAR_TYPE: support_data
 
 cmdexe:
     <<: *default
     lablaxis: CMDEXE
-    CATDESC: Number of commands that have been executed. Counts 0-255, then rolls over to 0.  Reset via CLR_LATCHED_SINGLE(COMMAND_COUNTS) [also resets cmdjrct, cmdacc, itf_error counts)
     FIELDNAM: Number of commands executed
+    VAR_NOTES: Number of commands that have been executed. Counts 0-255, then rolls over to 0.  Reset via CLR_LATCHED_SINGLE(COMMAND_COUNTS) [also resets cmdjrct, cmdacc, itf_error counts)
     VAR_TYPE: support_data
 
 cmdrjct:
     <<: *default
     LABLAXIS: CMDRJCT
     FIELDNAM: Number of commands rejected
-    CATDESC: Number of commands that have been rejected. Counts 0-255, then rolls over to 0.  Reset via CLR_LATCHED_SINGLE(COMMAND_COUNTS) [also resets cmdexe, cmdacc, itf_error counts)
+    VAR_NOTES: Number of commands that have been rejected. Counts 0-255, then rolls over to 0.  Reset via CLR_LATCHED_SINGLE(COMMAND_COUNTS) [also resets cmdexe, cmdacc, itf_error counts)
     VAR_TYPE: support_data
 
 last_opcode:
@@ -501,7 +501,7 @@ itf_err_cnt:
     <<: *default
     LABLAXIS: ITF_ERR_CNT
     FIELDNAM: Number of ITF errors encountered
-    CATDESC: Number of ITF Errors that have been detected; counts 0-3, then rolls over to 0.   Reset via CLR_LATCHED_SINGLE(COMMAND_COUNTS) [also resets cmdexe, cmdjrct, cmdacc counts)
+    VAR_NOTES: Number of ITF Errors that have been detected; counts 0-3, then rolls over to 0.   Reset via CLR_LATCHED_SINGLE(COMMAND_COUNTS) [also resets cmdexe, cmdjrct, cmdacc counts)
     VAR_TYPE: support_data
 
 spin_cnt:
@@ -515,7 +515,7 @@ missed_pps_cnt:
     <<: *default
     LABLAXIS: MISSED_PPS_CNT
     FIELDNAM: Number of missed PPS pulses
-    CATDESC: Number of missed PPS pulses.  Counts 0-3, then freezes at 3.  Reset via CLR_LATCHED_SINGLE(PPS_STATS)
+    VAR_NOTES: Number of missed PPS pulses.  Counts 0-3, then freezes at 3.  Reset via CLR_LATCHED_SINGLE(PPS_STATS)
     VAR_TYPE: support_data
 
 wdog_timeout_cnt:
@@ -529,7 +529,7 @@ hv_plug:
     <<: *default
     LABLAXIS: HV_PLUG
     FIELDNAM: Status of the HV Disable Plug
-    CATDESC: Current status of the HV SAFE/DISABLE plugs -- "SAFE" - all HVPS outputs provide 1/10 the commanded voltage; "DIS" - all HVPS outputs provide 0V, regardless of commanded voltage; "FULL" - HVPS outputs provide the full commanded voltage
+    VAR_NOTES: Current status of the HV SAFE/DISABLE plugs -- "SAFE" - all HVPS outputs provide 1/10 the commanded voltage; "DIS" - all HVPS outputs provide 0V, regardless of commanded voltage; "FULL" - HVPS outputs provide the full commanded voltage
     VAR_TYPE: support_data
 
 cmd_fifo_overrun_cnt:
@@ -1058,7 +1058,7 @@ fdc_trigger_cnt_fsw:
     <<: *default
     LABLAXIS: FDC_TRIGGER_CNT_FSW
     FIELDNAM: Indicates whether any CATEGORY 1 limits have triggered
-    CATDESC: Indicates whether any CATEGORY 1 limits have triggered -- 2 bits -- 0=No triggers; 1=One trigger; 2=Two triggers; 3=More than two triggers
+    VAR_NOTES: Indicates whether any CATEGORY 1 limits have triggered -- 2 bits -- 0=No triggers; 1=One trigger; 2=Two triggers; 3=More than two triggers
     VAR_TYPE: support_data
 
 fdc_trigger_cnt_hvps:
@@ -1135,7 +1135,7 @@ round_robin_index:
     <<: *default
     LABLAXIS: ROUND_ROBIN_INDEX
     FIELDNAM: Round Robin Parameter Report Index
-    CATDESC: Current index for the Round Robin parameter reporting.  The Round Robin mechanism reports one value from the Parameter Table each time this packet is generated.
+    VAR_NOTES: Current index for the Round Robin parameter reporting.  The Round Robin mechanism reports one value from the Parameter Table each time this packet is generated.
     VAR_TYPE: support_data
 
 round_robin_value:
