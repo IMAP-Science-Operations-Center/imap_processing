@@ -70,7 +70,7 @@ raw_counts:
   FIELDNAM: Raw Counts
   FORMAT: I3
   UNITS: counts
-  VALIDMAX: 256
+  VALIDMAX: 255
   VALIDMIN: 0
   VAR_TYPE: data
 
