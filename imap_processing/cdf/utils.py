@@ -18,7 +18,6 @@ logger = logging.getLogger(__name__)
 
 # Reference start time (launch time or epoch)
 # DEFAULT_EPOCH = np.datetime64("2010-01-01T00:01:06.184", "ns")
-IMAP_EPOCH = np.datetime64("2010-01-01T00:00:00", "ns")
 J2000_EPOCH = np.datetime64("2000-01-01T11:58:55.816", "ns")
 
 

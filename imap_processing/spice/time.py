@@ -44,8 +44,8 @@ def met_to_j2000ns(
     return np.asarray(_sct2e_wrapper(sclk_ticks) * 1e9, dtype=np.int64)
 
 
-@ensure_spice(time_kernels_only=True)
 @typing.no_type_check
+@ensure_spice
 def _sct2e_wrapper(
     sclk_ticks: Union[float, Collection[float]],
 ) -> Union[float, np.ndarray]:

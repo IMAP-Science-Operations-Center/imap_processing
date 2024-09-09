@@ -1,5 +1,6 @@
 """Global pytest configuration for the package."""
 
+import os
 import re
 
 import imap_data_access
@@ -41,11 +42,14 @@ def spice_test_data_path(imap_tests_path):
 
 
 @pytest.fixture()
-def furnish_test_lsk(spice_test_data_path):
-    """Furnishes (temporarily) the testing LSK"""
+def furnish_time_kernels(spice_test_data_path):
+    """Furnishes (temporarily) the testing LSK and SCLK"""
+    spice.kclear()
     test_lsk = spice_test_data_path / "naif0012.tls"
+    test_sclk = spice_test_data_path / "imap_sclk_0000.tsc"
     spice.furnsh(str(test_lsk))
-    yield test_lsk
+    spice.furnsh(str(test_sclk))
+    yield test_lsk, test_sclk
     spice.kclear()
 
 
@@ -58,11 +62,30 @@ def furnish_sclk(spice_test_data_path):
     spice.kclear()
 
 
-@pytest.fixture()
-def use_test_metakernel(monkeypatch, spice_test_data_path):
-    """For the whole test session, set the SPICE_METAKERNEL environment variable
-    Prime the test metakernel by creating it from the template metakernel
-    (allows using absolute paths on any dev system)"""
+@pytest.fixture(scope="session")
+def monkeypatch_session():
+    from _pytest.monkeypatch import MonkeyPatch
+
+    m = MonkeyPatch()
+    yield m
+    m.undo()
+
+
+@pytest.fixture(scope="session", autouse=True)
+def use_test_metakernel(monkeypatch_session, tmpdir_factory, spice_test_data_path):
+    """Generate a metakernel from the template metakernel by injecting the local
+    path into the metakernel and set the SPICE_METAKERNEL environment variable.
+
+    Notes
+    -----
+    - This fixture needs to `scope=session` so that the SPICE_METAKERNEL
+    environment variable is available for other fixtures that require time
+    conversions using spice.
+    - No furnishing of kernels occur as part of this fixture. This allows other
+    fixtures with lesser scope or individual tests to override the environment
+    variable as needed. Use the `metakernel_path_not_set` fixture in tests that
+    need to override the environment variable.
+    """
 
     def make_metakernel_from_kernels(metakernel, kernels):
         """Helper function that writes a test metakernel from a list of filenames"""
@@ -119,9 +142,16 @@ def use_test_metakernel(monkeypatch, spice_test_data_path):
                         kernel = kernel[stop_idx:]
         return kernels_to_load
 
-    metakernel_path = imap_data_access.config["DATA_DIR"] / "imap_2024_v001.tm"
+    metakernel_path = tmpdir_factory.mktemp("spice") / "imap_2024_v001.tm"
     kernels_to_load = get_test_kernels_to_load()
     make_metakernel_from_kernels(metakernel_path, kernels_to_load)
-    monkeypatch.setenv("SPICE_METAKERNEL", str(metakernel_path))
+    monkeypatch_session.setenv("SPICE_METAKERNEL", str(metakernel_path))
     yield str(metakernel_path)
     spice.kclear()
+
+
+@pytest.fixture()
+def _metakernel_path_not_set(monkeypatch):
+    """Temporarily unsets the EMUS_METAKERNEL_PATH environment variable"""
+    if os.getenv("SPICE_METAKERNEL", None) is not None:
+        monkeypatch.delenv("SPICE_METAKERNEL")
