@@ -321,6 +321,54 @@ def get_ssd_back_position_and_tof_offset(
     return yb, tof_offset, ssd_number
 
 
+def calculate_etof_xc(de_subset, particle_tof, sensor, location):
+    """
+    Calculate the etof and xc values for the given subset.
+
+    Parameters
+    ----------
+    t1 : np.ndarray
+        Array to store intermediate t1 values.
+    t2 : np.ndarray
+        Array to store intermediate t2 values.
+    xc : np.ndarray
+        Array to store xc values.
+    index_subset : np.ndarray
+        Indices of the subset within the original dataset.
+    de_subset : xarray.Dataset
+        Subset of the dataset for a specific COIN_TYPE.
+    particle_tof : np.ndarray
+        Particle time of flight (i.e. from start to stop).
+    sensor : str
+        Sensor name.
+
+    Returns
+    -------
+    etof : np.ndarray
+        Time for the electrons to travel back to the coincidence anode (tenths of a nanosecond).
+    xc : np.ndarray
+        X coincidence position (millimeters).
+    """
+    # CoinNNorm
+    coin_n_norm = get_norm(de_subset["COIN_NORTH_TDC"], "CoinN", sensor)
+    # CoinSNorm
+    coin_s_norm = get_norm(de_subset["COIN_SOUTH_TDC"], "CoinS", sensor)
+    xc = get_image_params(f"XCOIN{location}SC") * (
+        coin_s_norm - coin_n_norm
+    ) + get_image_params(f"XCOIN{location}OFF")  # millimeter
+
+
+    # Time for the electrons to travel back to coincidence anode.
+    t2 = get_image_params("ETOFSC") * (coin_n_norm + coin_s_norm) + get_image_params(
+        f"ETOF{location}OFF"
+    )
+
+    # Multiply by 10 to convert to tenths of a nanosecond.
+    etof = t2 * 10 - particle_tof
+
+    return etof, xc
+
+
 def get_coincidence_positions(
     de_dataset: xarray.Dataset, particle_tof: np.ndarray, sensor: str
 ) -> tuple[np.ndarray, np.ndarray]:
@@ -364,51 +412,18 @@ def get_coincidence_positions(
     ]
     de_bottom = de_dataset.isel(epoch=index_bottom)
 
-    t1 = np.zeros(len(de_dataset["COIN_TYPE"]), dtype=np.float64)
-    t2 = np.zeros(len(de_dataset["COIN_TYPE"]), dtype=np.float64)
-
-    xc = np.zeros(len(de_dataset["COIN_TYPE"]), dtype=np.float64)
     etof = np.zeros(len(de_dataset["COIN_TYPE"]), dtype=np.float64)
 
     # Normalized TDCs
     # For the stop anode, there are mismatches between the coincidence TDCs,
     # i.e., CoinN and CoinS. They must be normalized via lookup tables.
+    etof_subset, xc = calculate_etof_xc(de_top, particle_tof, sensor, "TP")
+    etof[index_top] = etof_subset
+    xc[index_top] = xc
 
-    # TpCoinNNorm Top
-    coin_n_norm_top = get_norm(de_top["COIN_NORTH_TDC"], "CoinN", sensor)
-    # TpCoinSNorm Top
-    coin_s_norm_top = get_norm(de_top["COIN_SOUTH_TDC"], "CoinS", sensor)
-
-    t1[index_top] = coin_n_norm_top + coin_s_norm_top  # /2 incorporated into scale
-    xc[index_top] = get_image_params("XCOINTPSC") * (
-        coin_s_norm_top - coin_n_norm_top
-    ) + get_image_params("XCOINTPOFF")  # millimeter
-    # Time for the electrons to travel back to coincidence anode.
-    t2[index_top] = get_image_params("ETOFSC") * t1[index_top] + get_image_params(
-        "ETOFTPOFF"
-    )
-
-    # Multiply by 10 to convert to tenths of a nanosecond.
-    etof[index_top] = t2[index_top] * 10 - particle_tof[index_top]
-
-    # TpCoinNNorm Bottom
-    coin_n_norm_bottom = get_norm(de_bottom["COIN_NORTH_TDC"], "CoinN", sensor)
-    # TpCoinSNorm Bottom
-    coin_s_norm_bottom = get_norm(de_bottom["COIN_SOUTH_TDC"], "CoinS", sensor)
-    t1[index_bottom] = (
-        coin_n_norm_bottom + coin_s_norm_bottom
-    )  # /2 incorporated into scale
-    xc[index_bottom] = get_image_params("XCOINBTSC") * (
-        coin_s_norm_bottom - coin_n_norm_bottom
-    ) + get_image_params("XCOINBTOFF")  # millimeter
-
-    # Time for the electrons to travel back to coincidence anode.
-    t2[index_bottom] = get_image_params("ETOFSC") * t1[index_bottom] + get_image_params(
-        "ETOFBTOFF"
-    )
-
-    # Multiply by 10 to convert to tenths of a nanosecond.
-    etof[index_bottom] = t2[index_bottom] * 10 - particle_tof[index_bottom]
+    etof_subset, xc = calculate_etof_xc(de_bottom, particle_tof, sensor, "BT")
+    etof[index_bottom] = etof_subset
+    xc[index_bottom] = xc
 
     # Convert to hundredths of a millimeter by multiplying times 100
     return etof, xc * 100
