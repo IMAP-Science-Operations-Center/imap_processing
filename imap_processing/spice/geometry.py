@@ -92,7 +92,7 @@ def imap_state(
     return np.asarray(state)
 
 
-def generate_spin_data(start_met: int, end_met: Optional[int] = None) -> dict:
+def generate_spin_data(start_met: float, end_met: Optional[float] = None) -> dict:
     """
     Generate a spin table CSV covering one or more days.
 
@@ -114,9 +114,9 @@ def generate_spin_data(start_met: int, end_met: Optional[int] = None) -> dict:
 
     Parameters
     ----------
-    start_met : int
+    start_met : float
         Provides the start time in Mission Elapsed Time (MET).
-    end_met : int
+    end_met : float
         Provides the end time in MET. If not provided, default to one day
         from start time.
 
@@ -166,7 +166,7 @@ def generate_spin_data(start_met: int, end_met: Optional[int] = None) -> dict:
     return spin_dict
 
 
-def get_spin_data(start_met: int, end_met: Optional[int] = None) -> dict:
+def get_spin_data(start_met: float, end_met: Optional[float] = None) -> dict:
     """
     Get spin data for a given time range.
 
@@ -185,9 +185,9 @@ def get_spin_data(start_met: int, end_met: Optional[int] = None) -> dict:
 
     Parameters
     ----------
-    start_met : int
+    start_met : float
         Provide the start time in Mission Elapsed Time (MET).
-    end_met : int
+    end_met : float
         Provide the end time in MET. If not provided, default to one day
         from start time.
 
@@ -209,7 +209,7 @@ def get_spin_data(start_met: int, end_met: Optional[int] = None) -> dict:
 
 
 def get_spacecraft_spin_phase(
-    query_times: Union[float, np.ndarray], spin_data: dict
+    query_times: Union[float, np.ndarray[float]],
 ) -> Union[float, np.ndarray]:
     """
     Get the spacecraft spin phase for the input query times.
@@ -221,10 +221,8 @@ def get_spacecraft_spin_phase(
 
     Parameters
     ----------
-    query_times : float or np.ndarray
+    query_times : float or np.ndarray[float]
         Query times in Mission Elapsed Time (MET).
-    spin_data : dict
-        Spin data for the spacecraft.
 
     Returns
     -------
@@ -233,5 +231,7 @@ def get_spacecraft_spin_phase(
     """
     # TODO: Write code to calculate spin phase for the input query times
     if isinstance(query_times, float):
-        query_times = np.asarray([query_times])
+        query_times = np.array([query_times])
+    # TODO: call get_spin_data function to get spin data for the input
+    # query times. And finish remaining implementation in upcoming PR.
     return query_times
