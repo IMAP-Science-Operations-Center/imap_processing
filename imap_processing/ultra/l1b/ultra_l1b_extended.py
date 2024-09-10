@@ -1,9 +1,9 @@
 """Calculates Extended Raw Events for ULTRA L1b."""
 
+import logging
 from enum import Enum
 from typing import ClassVar
 
-import logging
 import numpy as np
 import xarray
 from numpy import ndarray
@@ -481,7 +481,7 @@ def get_particle_velocity(
     vhat_y = -v_y / magnitude_v
     vhat_z = -v_z / magnitude_v
 
-    vhat_x[tof < 0] = np.iinfo(np.int64).min # used as fillvals
+    vhat_x[tof < 0] = np.iinfo(np.int64).min  # used as fillvals
     vhat_y[tof < 0] = np.iinfo(np.int64).min
     vhat_z[tof < 0] = np.iinfo(np.int64).min
 
@@ -523,18 +523,25 @@ def get_ssd_tof(
         SSD number.
     """
     _, tof_offset, ssd_number = get_ssd_back_position_and_tof_offset(de_dataset)
-    ssd_indices = np.where(de_dataset["STOP_TYPE"] >= 8)[0]
+    indices = np.nonzero(np.isin(de_dataset["STOP_TYPE"], [StopType.SSD.value]))[0]
 
-    time = (
-        get_image_params("TOFSSDSC") * de_dataset["COIN_DISCRETE_TDC"].data[ssd_indices]
-        + tof_offset
-    )
+    de_discrete = de_dataset.isel(epoch=indices)["COIN_DISCRETE_TDC"]
+
+    # Example for first data point:
+    # time = 0.196525430390693 ns * 22 * 5.9 ns = -1.6764405399999998 ns
+    time = get_image_params("TOFSSDSC") * de_discrete.values + tof_offset
 
     # The scale factor and offsets, and a multiplier to convert xf to a tof offset.
+    # Convert xf to mm by dividing by 100.
+    # Example for first data point:
+    # tof = -1.6764405399999998 ns + 5.9 ns +
+    # -20.25722656 mm * 0.0184042553191489 ns / mm
+    # tof = 3.8507402903319163
     tof = (
         time
         + get_image_params("TOFSSDTOTOFF")
-        + xf[ssd_indices] * get_image_params("XFTTOF")
+        + xf[indices] / 100 * get_image_params("XFTTOF")
     )
 
-    return tof, ssd_number
+    # Convert TOF to tenths of a nanosecond.
+    return tof * 10

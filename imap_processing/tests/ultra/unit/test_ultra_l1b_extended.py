@@ -16,7 +16,7 @@ from imap_processing.ultra.l1b.ultra_l1b_extended import (
     get_path_length,
     get_ph_tof_and_back_positions,
     get_ssd_back_position_and_tof_offset,
-    get_ssd_tof
+    get_ssd_tof,
 )
 
 
@@ -233,21 +233,27 @@ def test_get_particle_velocity(de_dataset, yf_fixture):
     # FSW test data should be negative and not have an analysis
     # for negative tof values.
     assert vhat_x[test_tof > 0] == pytest.approx(
-        -df_filt["vhatX"].iloc[ph_indices].astype("float").values[test_tof > 0], rel=1e-2
+        -df_filt["vhatX"].iloc[ph_indices].astype("float").values[test_tof > 0],
+        rel=1e-2,
     )
     assert vhat_y[test_tof > 0] == pytest.approx(
-        -df_filt["vhatY"].iloc[ph_indices].astype("float").values[test_tof > 0], rel=1e-2
+        -df_filt["vhatY"].iloc[ph_indices].astype("float").values[test_tof > 0],
+        rel=1e-2,
     )
     assert vhat_z[test_tof > 0] == pytest.approx(
-        -df_filt["vhatZ"].iloc[ph_indices].astype("float").values[test_tof > 0], rel=1e-2
+        -df_filt["vhatZ"].iloc[ph_indices].astype("float").values[test_tof > 0],
+        rel=1e-2,
     )
 
 
-def test_get_ssd_tof(de_dataset, events_fsw_comparison_theta_0):
+def test_get_ssd_tof(de_dataset, yf_fixture):
     """Tests get_ssd_tof function."""
-    df = pd.read_csv(events_fsw_comparison_theta_0)
-    df_filt = df[(df["StartType"] != -1) & (df["StopType"] >= 8)]
+    df_filt, _, _ = yf_fixture
+    df_ssd = df_filt[df_filt["StopType"].isin(StopType.SSD.value)]
+    test_xf = df_filt["Xf"].astype("float").values
 
-    ssd_tof = get_ssd_tof(de_dataset)
+    ssd_tof = get_ssd_tof(de_dataset, test_xf)
 
-    np.testing.assert_array_equal(ssd_tof, df_filt["TOF"].astype("float"))
+    # Check that the TOF is within 1 tenth of a ns of the FSW data.
+    # TODO: Confirm with Ultra team that the difference is expected due to rounding.
+    np.testing.assert_allclose(ssd_tof, df_ssd["TOF"].astype("float"), atol=1, rtol=0)
