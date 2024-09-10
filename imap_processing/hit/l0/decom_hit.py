@@ -9,6 +9,9 @@ import xarray as xr
 from imap_processing import imap_module_directory
 from imap_processing.utils import packet_file_to_datasets
 
+# Structure to hold binary details for a
+# section of science data. Used to unpack
+# the binary string.
 HITPacking = namedtuple(
     "HITPacking",
     [
@@ -18,6 +21,7 @@ HITPacking = namedtuple(
     ],
 )
 
+# Dict of data structure for counts rates data
 COUNTS_DATA_STRUCTURE = {
     # field: bit_length, section_length, shape
     # ------------------------------------------
@@ -27,55 +31,69 @@ COUNTS_DATA_STRUCTURE = {
     "hdr_status_bits": HITPacking(8, 8, (1,)),
     "hdr_minute_cnt": HITPacking(8, 8, (1,)),
     # ------------------------------------------
-    # spare
+    # spare bits. Contains no data
     "spare": HITPacking(24, 24, (1,)),
     # ------------------------------------------
-    # erates
-    "livetime": HITPacking(16, 16, (1,)),
-    "num_trig": HITPacking(16, 16, (1,)),
-    "num_reject": HITPacking(16, 16, (1,)),
-    "num_acc_w_pha": HITPacking(16, 16, (1,)),
-    "num_acc_no_pha": HITPacking(16, 16, (1,)),
-    "num_haz_trig": HITPacking(16, 16, (1,)),
-    "num_haz_reject": HITPacking(16, 16, (1,)),
-    "num_haz_acc_w_pha": HITPacking(16, 16, (1,)),
-    "num_haz_acc_no_pha": HITPacking(16, 16, (1,)),
+    # erates - contains livetime counters
+    "livetime": HITPacking(16, 16, (1,)),  # livetime counter
+    "num_trig": HITPacking(16, 16, (1,)),  # number of triggers
+    "num_reject": HITPacking(16, 16, (1,)),  # number of rejected events
+    "num_acc_w_pha": HITPacking(
+        16, 16, (1,)
+    ),  # number of accepted events with PHA data
+    "num_acc_no_pha": HITPacking(16, 16, (1,)),  # number of events without PHA data
+    "num_haz_trig": HITPacking(16, 16, (1,)),  # number of triggers with hazard flag
+    "num_haz_reject": HITPacking(
+        16, 16, (1,)
+    ),  # number of rejected events with hazard flag
+    "num_haz_acc_w_pha": HITPacking(
+        16, 16, (1,)
+    ),  # number of accepted hazard events with PHA data
+    "num_haz_acc_no_pha": HITPacking(
+        16, 16, (1,)
+    ),  # number of hazard events without PHA data
     # -------------------------------------------
-    "sngrates": HITPacking(16, 1856, (2, 58)),
+    "sngrates": HITPacking(16, 1856, (2, 58)),  # single rates
     # -------------------------------------------
-    # evrates
-    "nread": HITPacking(16, 16, (1,)),
-    "nhazard": HITPacking(16, 16, (1,)),
-    "nadcstim": HITPacking(16, 16, (1,)),
-    "nodd": HITPacking(16, 16, (1,)),
-    "noddfix": HITPacking(16, 16, (1,)),
-    "nmulti": HITPacking(16, 16, (1,)),
-    "nmultifix": HITPacking(16, 16, (1,)),
-    "nbadtraj": HITPacking(16, 16, (1,)),
-    "nl2": HITPacking(16, 16, (1,)),
-    "nl3": HITPacking(16, 16, (1,)),
-    "nl4": HITPacking(16, 16, (1,)),
-    "npen": HITPacking(16, 16, (1,)),
-    "nformat": HITPacking(16, 16, (1,)),
-    "naside": HITPacking(16, 16, (1,)),
-    "nbside": HITPacking(16, 16, (1,)),
-    "nerror": HITPacking(16, 16, (1,)),
-    "nbadtags": HITPacking(16, 16, (1,)),
+    # evprates - contains event processing rates
+    "nread": HITPacking(16, 16, (1,)),  # events read from event fifo
+    "nhazard": HITPacking(16, 16, (1,)),  # events tagged with hazard flag
+    "nadcstim": HITPacking(16, 16, (1,)),  # adc-stim events
+    "nodd": HITPacking(16, 16, (1,)),  # odd events
+    "noddfix": HITPacking(16, 16, (1,)),  # odd events that were fixed in sw
+    "nmulti": HITPacking(
+        16, 16, (1,)
+    ),  # events with multiple hits in a single detector
+    "nmultifix": HITPacking(16, 16, (1,)),  # multi events that were fixed in sw
+    "nbadtraj": HITPacking(16, 16, (1,)),  # bad trajectory
+    "nl2": HITPacking(16, 16, (1,)),  # events sorted into L12 event category
+    "nl3": HITPacking(16, 16, (1,)),  # events sorted into L123 event category
+    "nl4": HITPacking(16, 16, (1,)),  # events sorted into L1423 event category
+    "npen": HITPacking(16, 16, (1,)),  # events sorted into penetrating event category
+    "nformat": HITPacking(16, 16, (1,)),  # nothing currently goes in this slot
+    "naside": HITPacking(16, 16, (1,)),  # A-side events
+    "nbside": HITPacking(16, 16, (1,)),  # B-side events
+    "nerror": HITPacking(16, 16, (1,)),  # events that caused a processing error
+    "nbadtags": HITPacking(
+        16, 16, (1,)
+    ),  # events with inconsistent tags vs pulse heights
     # -------------------------------------------
-    "coinrates": HITPacking(16, 416, (26,)),
-    "bufrates": HITPacking(16, 512, (32,)),
-    "l2fgrates": HITPacking(16, 2112, (132,)),
-    "l2bgrates": HITPacking(16, 192, (12,)),
-    "l3fgrates": HITPacking(16, 2672, (167,)),
-    "l3bgrates": HITPacking(16, 192, (12,)),
-    "penfgrates": HITPacking(16, 528, (33,)),
-    "penbgrates": HITPacking(16, 240, (15,)),
-    "ialirtrates": HITPacking(16, 320, (20,)),
-    "sectorates": HITPacking(16, 1920, (120,)),
-    "l4fgrates": HITPacking(16, 768, (48,)),
-    "l4bgrates": HITPacking(16, 384, (24,)),
+    # other rates
+    "coinrates": HITPacking(16, 416, (26,)),  # coincidence rates
+    "bufrates": HITPacking(16, 512, (32,)),  # priority buffer rates
+    "l2fgrates": HITPacking(16, 2112, (132,)),  # range 2 foreground rates
+    "l2bgrates": HITPacking(16, 192, (12,)),  # range 2 background rates
+    "l3fgrates": HITPacking(16, 2672, (167,)),  # range 3 foreground rates
+    "l3bgrates": HITPacking(16, 192, (12,)),  # range 3 background rates
+    "penfgrates": HITPacking(16, 528, (33,)),  # range 4 foreground rates
+    "penbgrates": HITPacking(16, 240, (15,)),  # range 4 background rates
+    "ialirtrates": HITPacking(16, 320, (20,)),  # ialirt rates
+    "sectorates": HITPacking(16, 1920, (120,)),  # sectored rates
+    "l4fgrates": HITPacking(16, 768, (48,)),  # all range foreground rates
+    "l4bgrates": HITPacking(16, 384, (24,)),  # all range foreground rates
 }
 
+# Dict of data structure for pulse height event data
 PHA_DATA_STRUCTURE = {
     # field: bit_length, section_length, shape
     "pha_records": HITPacking(2, 29344, (917,)),
@@ -278,6 +296,7 @@ def update_ccsds_header_data(sci_dataset: xr.Dataset) -> xr.Dataset:
     # sc_tick contains spacecraft time per packet
     sci_dataset.coords["sc_tick"] = sci_dataset["sc_tick"]
     sci_dataset = sci_dataset.swap_dims({"epoch": "sc_tick"})
+    # TODO: status bits needs to be further parsed (table 10 in algorithm doc)
     return sci_dataset
 
 
@@ -363,7 +382,8 @@ def assemble_science_frames(sci_dataset: xr.Dataset) -> xr.Dataset:
                 science_frame_start = start
                 print(
                     f"Next science frame found with starting packet index = "
-                    f"{science_frame_start}")
+                    f"{science_frame_start}"
+                )
                 # TODO: for skipped science frames, remove corresponding values from ccsds
                 #  headers as well? Those fields contain values from all packets in a file
             else:
