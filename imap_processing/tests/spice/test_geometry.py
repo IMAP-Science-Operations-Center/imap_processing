@@ -6,6 +6,7 @@ import pytest
 from imap_processing.spice.geometry import (
     SpiceBody,
     get_spacecraft_spin_phase,
+    get_spin_data,
     imap_state,
 )
 
@@ -38,7 +39,7 @@ def test_get_spacecraft_spin_phase(generate_spin_data):
     """Test get_spacecraft_spin_phase() with generated spin data."""
 
     start_time = 453051323
-    spin_data = generate_spin_data(start_met=start_time)
+    spin_data = get_spin_data(start_met=start_time)
 
     query_times = [start_time]
 
