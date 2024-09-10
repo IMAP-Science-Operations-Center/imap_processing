@@ -7,6 +7,7 @@ from typing import ClassVar
 import numpy as np
 import xarray
 from numpy import ndarray
+from numpy.typing import NDArray
 
 from imap_processing.ultra.l1b.lookup_utils import (
     get_back_position,
@@ -433,8 +434,11 @@ def get_coincidence_positions(
 
 
 def get_particle_velocity(
-    front_position: tuple, back_position: tuple, d: np.array, tof: np.array
-) -> tuple[np.array, np.array, np.array]:
+    front_position: tuple[float, float],
+    back_position: tuple[float, float],
+    d: np.ndarray,
+    tof: np.ndarray,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Determine the particle velocity.
 
@@ -488,9 +492,7 @@ def get_particle_velocity(
     return vhat_x, vhat_y, vhat_z
 
 
-def get_ssd_tof(
-    de_dataset: xarray.Dataset, xf: np.array
-) -> tuple[np.ndarray, np.ndarray]:
+def get_ssd_tof(de_dataset: xarray.Dataset, xf: np.ndarray) -> NDArray[np.float64]:
     """
     Calculate back xb, yb position for the SSDs.
 
@@ -519,29 +521,21 @@ def get_ssd_tof(
     -------
     tof : np.ndarray
         Time of flight (tenths of a nanosecond).
-    ssd : np.ndarray
-        SSD number.
     """
     _, tof_offset, ssd_number = get_ssd_back_position_and_tof_offset(de_dataset)
     indices = np.nonzero(np.isin(de_dataset["STOP_TYPE"], [StopType.SSD.value]))[0]
 
     de_discrete = de_dataset.isel(epoch=indices)["COIN_DISCRETE_TDC"]
 
-    # Example for first data point:
-    # time = 0.196525430390693 ns * 22 * 5.9 ns = -1.6764405399999998 ns
     time = get_image_params("TOFSSDSC") * de_discrete.values + tof_offset
 
     # The scale factor and offsets, and a multiplier to convert xf to a tof offset.
     # Convert xf to mm by dividing by 100.
-    # Example for first data point:
-    # tof = -1.6764405399999998 ns + 5.9 ns +
-    # -20.25722656 mm * 0.0184042553191489 ns / mm
-    # tof = 3.8507402903319163
     tof = (
         time
         + get_image_params("TOFSSDTOTOFF")
         + xf[indices] / 100 * get_image_params("XFTTOF")
-    )
+    ) * 10
 
     # Convert TOF to tenths of a nanosecond.
-    return tof * 10
+    return np.asarray(tof, dtype=np.float64)
