@@ -227,6 +227,7 @@ def get_ph_tof_and_back_positions(
     t2[stop_type_top] = get_image_params("TOFSC") * t1[
         stop_type_top
     ] + get_image_params("TOFTPOFF")
+    # Variable xf_ph divided by 10 to convert to mm.
     tof[stop_type_top] = t2[stop_type_top] + xf_ph[
         stop_type_top
     ] / 10 * get_image_params("XFTTOF")
