@@ -64,7 +64,10 @@ HIT_PREFIX_TO_RATE_TYPE = {
 
 def find_groups(data: xr.Dataset) -> xr.Dataset:
     """
-    Find groups in the data.
+    Find all occurrences of the sequential set of 60 values 0-59.
+
+    If a value is missing, or we are starting/ending
+    in the middle of a sequence we do not count that as a valid group.
 
     Parameters
     ----------
@@ -80,21 +83,29 @@ def find_groups(data: xr.Dataset) -> xr.Dataset:
 
     data = data.sortby("hit_sc_tick", ascending=True)
 
-    # Filter out data before the first subcom=0 and after the last subcom=59
+    # Use hit_subcom == 0 to define the beginning of the group.
+    # Find hit_sc_tick at this index and use it as the beginning time for the group.
     start_sc_ticks = data["hit_sc_tick"][(data["hit_subcom"] == subcom_range[0]).values]
     start_sc_tick = start_sc_ticks.data.min()
+    # Use hit_subcom == 59 to define the end of the group.
     last_sc_ticks = data["hit_sc_tick"][([data["hit_subcom"] == subcom_range[-1]][-1])]
     last_sc_tick = last_sc_ticks.data.max()
 
+    # Filter out data before the first subcom=0 and after the last subcom=59.
     grouped_data = data.where(
         (data["hit_sc_tick"] >= start_sc_tick) & (data["hit_sc_tick"] <= last_sc_tick),
         drop=True,
     )
 
-    # Create group labels
+    # Assign labels based on the hit_sc_tick start times.
     group_labels = np.searchsorted(
         start_sc_ticks, grouped_data["hit_sc_tick"], side="right"
     )
+    # Example:
+    # grouped_data.coords
+    # Coordinates:
+    #   * epoch    (epoch) int64 7kB 315922822184000000 ... 315923721184000000
+    #   * group    (group) int64 7kB 1 1 1 1 1 1 1 1 1 ... 15 15 15 15 15 15 15 15 15
     grouped_data["group"] = ("group", group_labels)
 
     return grouped_data
@@ -161,8 +172,21 @@ def process_hit(xarray_data: xr.Dataset) -> list[dict]:
     """
     hit_data = []
     grouped_data = find_groups(xarray_data)
+    unique_groups = np.unique(grouped_data["group"])
 
-    for group in np.unique(grouped_data["group"]):
+    for group in unique_groups:
+        # Subcom values for the group should be 0-59 with no duplicates.
+        subcom_values = grouped_data["hit_subcom"][
+            (grouped_data["group"] == group).values
+        ]
+
+        # Ensure no duplicates and all values from 0 to 59 are present
+        if not np.array_equal(subcom_values, np.arange(60)):
+            raise ValueError(
+                f"Group {group} does not contain all values from 0 to "
+                f"59 without duplicates."
+            )
+
         fast_rate_1 = grouped_data["hit_fast_rate_1"][
             (grouped_data["group"] == group).values
         ]
@@ -173,14 +197,6 @@ def process_hit(xarray_data: xr.Dataset) -> list[dict]:
             (grouped_data["group"] == group).values
         ]
         met = int(grouped_data["hit_met"][(grouped_data["group"] == group).values][0])
-
-        # Verify that each group has 60 datapoints
-        if len(slow_rate.data) != 60:
-            logger.info(
-                f"Incorrect number of packets: {len(slow_rate.data)} "
-                f"for met {met}. Skipping."
-            )
-            continue
 
         l1 = create_l1(fast_rate_1, fast_rate_2, slow_rate)
 

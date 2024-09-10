@@ -125,7 +125,7 @@ def test_create_l1(xarray_data):
     assert l1["L4IBHG"] == 2
 
 
-def test_process_hit(xarray_data, caplog):
+def test_process_hit(xarray_data):
     """Tests process_hit."""
 
     # Tests that it functions normally
@@ -151,9 +151,7 @@ def test_process_hit(xarray_data, caplog):
         i for i in range(29) for _ in range(2)
     ] + [59, 59]
 
-    # Check if the logger was called with the expected message
-    with caplog.at_level("INFO"):
+    with pytest.raises(
+        ValueError, match="does not contain all values from 0 to 59 without duplicates"
+    ):
         process_hit(subset)
-        assert any(
-            "Incorrect number of packets" in record.message for record in caplog.records
-        )
