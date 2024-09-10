@@ -8,8 +8,8 @@ from typing import Any
 import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
-from imap_processing.cdf.utils import met_to_j2000ns
 from imap_processing.lo.l0.data_classes.science_direct_events import ScienceDirectEvents
+from imap_processing.spice.time import met_to_j2000ns
 
 
 def lo_l1a(dependency: Path, data_version: str) -> list[Path]:

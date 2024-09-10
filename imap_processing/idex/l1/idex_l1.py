@@ -16,8 +16,8 @@ import space_packet_parser
 import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
-from imap_processing.cdf.utils import met_to_j2000ns
 from imap_processing.idex.l0.idex_l0 import decom_packets
+from imap_processing.spice.time import met_to_j2000ns
 
 logger = logging.getLogger(__name__)
 
@@ -322,9 +322,7 @@ class RawDustEvent:
         # Get the datetime of Jan 1 2012 as the start date
         met = seconds_since_launch + microseconds_since_last_second * 1e-6
 
-        self.impact_time = met_to_j2000ns(
-            met, reference_epoch=np.datetime64("2012-01-01T00:00:00.000000000")
-        )
+        self.impact_time = met_to_j2000ns(met)
 
     def _set_sample_trigger_times(
         self, packet: space_packet_parser.parser.Packet
