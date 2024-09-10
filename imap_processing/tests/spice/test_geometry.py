@@ -5,6 +5,7 @@ import pytest
 
 from imap_processing.spice.geometry import (
     SpiceBody,
+    get_spacecraft_spin_phase,
     imap_state,
 )
 
@@ -31,3 +32,26 @@ def test_imap_state_ecliptic(use_test_metakernel):
     """Tests retrieving IMAP state in the ECLIPJ2000 frame"""
     state = imap_state(798033670)
     assert state.shape == (6,)
+
+
+def test_get_spacecraft_spin_phase(generate_spin_data):
+    """Test get_spacecraft_spin_phase() with generated spin data."""
+
+    start_time = 453051323
+    spin_data = generate_spin_data(start_met=start_time)
+
+    query_times = [start_time]
+
+    spin_phases = get_spacecraft_spin_phase(
+        query_times=query_times, spin_data=spin_data
+    )
+
+    # Uncomment this once spin phase calculation is implemented
+    # assert np.all(
+    #     (spin_phases >= 0) & (spin_phases <= 1)
+    # ), "Spin phases must be in [0, 1] range."
+
+    # Ensure the length of spin phases matches the query times
+    assert len(spin_phases) == len(
+        query_times
+    ), "Spin phases length should match query times length."

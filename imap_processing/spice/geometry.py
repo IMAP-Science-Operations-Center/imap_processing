@@ -10,7 +10,7 @@ Paradigms for developing this module:
 
 import typing
 from enum import IntEnum
-from typing import Union
+from typing import Optional, Union
 
 import numpy as np
 import spiceypy as spice
@@ -87,3 +87,72 @@ def imap_state(
         SpiceBody.IMAP.name, et, ref_frame.name, "NONE", observer.name
     )
     return np.asarray(state)
+
+
+def get_spin_data(start_met: int, end_met: Optional[int]) -> dict:
+    """
+    Get spin data for a given time range.
+
+    This function queries spin data for the input date range. Spin
+    table contains the following fields:
+        (
+            spin_number,
+            spin_start_sec,
+            spin_start_subsec,
+            spin_period_sec,
+            spin_period_valid,
+            spin_phas_valid,
+            spin_period_source,
+            thruster_firing
+        )
+
+    Parameters
+    ----------
+    start_met : int
+        Provide the start time in Mission Elapsed Time (MET).
+    end_met : int
+        Provide the end time in MET. If not provided, default to one day
+        from start time.
+
+    Returns
+    -------
+    spin_data : dict
+        Spin data. It's a dictionary with keys and values as numpy arrays.
+    """
+    if end_met is None:
+        # end time is one day after start time
+        end_met = start_met + 86400
+
+    # TODO: write code to query spin database and return all spin data
+    # for the input date range once we have actual infrastructure in place.
+
+    return dict()
+
+
+def get_spacecraft_spin_phase(
+    query_times: Union[float, np.ndarray], spin_data: dict
+) -> Union[float, np.ndarray]:
+    """
+    Get the spacecraft spin phase for the input query times.
+
+    Formula to calculate spin phase:
+        spin_phase = (
+            query_times - (spin_start_seconds + spin_start_subseconds)
+        ) / spin_period_sec
+
+    Parameters
+    ----------
+    query_times : float or np.ndarray
+        Query times in Mission Elapsed Time (MET).
+    spin_data : dict
+        Spin data for the spacecraft.
+
+    Returns
+    -------
+    spin_phase : float or np.ndarray
+        Spin phase for the input query times.
+    """
+    # TODO: Write code to calculate spin phase for the input query times
+    if isinstance(query_times, float):
+        query_times = np.asarray([query_times])
+    return query_times
