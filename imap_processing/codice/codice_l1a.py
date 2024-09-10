@@ -62,16 +62,24 @@ class CoDICEL1aPipeline:
 
     Methods
     -------
-    configure_data_products()
-        Set the various settings for defining the data products.
-    create_science_dataset()
-        Create an ``xarray`` dataset for the unpacked science data.
+    decompress_data(science_values)
+        Perform decompression on the data.
+    define_coordinates()
+        Create ``xr.DataArrays`` for the coords needed in the final dataset.
+    define_data_variables()
+        Define and add the appropriate data variables to the dataset.
+    define_dimensions()
+        Define the dimensions of the data arrays for the final dataset.
+    define_support_variables()
+        Define and add 'support' CDF data variables to the dataset.
     get_acquisition_times()
         Retrieve the acquisition times via the Lo stepping table.
     get_esa_sweep_values()
         Retrieve the ESA sweep values.
-    unpack_science_data()
-        Decompress, unpack, and restructure science data arrays.
+    reshape_data()
+        Reshape the data arrays based on the data product being made.
+    set_data_product_config()
+        Set the various settings for defining the data products.
     """
 
     def __init__(self, table_id: int, plan_id: int, plan_step: int, view_id: int):
@@ -81,134 +89,141 @@ class CoDICEL1aPipeline:
         self.plan_step = plan_step
         self.view_id = view_id
 
-    def configure_data_products(self, apid: int) -> None:
+    def decompress_data(self, science_values: str) -> None:
         """
-        Set the various settings for defining the data products.
+        Perform decompression on the data.
+
+        The science data within the packet is a compressed, binary string of
+        values. Apply the appropriate decompression algorithm to get an array
+        of decompressed values.
 
         Parameters
         ----------
-        apid : int
-            The APID of interest.
+        science_values : str
+            A string of binary data representing the science values of the data.
         """
-        config = constants.DATA_PRODUCT_CONFIGURATIONS.get(apid)  # type: ignore[call-overload]
-        self.num_counters = config["num_counters"]
-        self.num_energy_steps = config["num_energy_steps"]
-        self.num_spin_sectors = config["num_spin_sectors"]
-        self.num_positions = config["num_positions"]
-        self.variable_names = config["variable_names"]
-        self.dataset_name = config["dataset_name"]
-        self.instrument = config["instrument"]
+        compression_algorithm = constants.LO_COMPRESSION_ID_LOOKUP[self.view_id]
 
-    def create_science_dataset(
-        self, packet: xr.Dataset, data_version: str
-    ) -> xr.Dataset:
+        # Decompress the binary string into a list of integers
+        self.data = decompress(science_values, compression_algorithm)
+
+    def define_coordinates(self) -> None:
         """
-        Create an ``xarray`` dataset for the unpacked science data.
+        Create ``xr.DataArrays`` for the coords needed in the final dataset.
 
-        The dataset can then be written to a CDF file.
-
-        Parameters
-        ----------
-        packet : xarray.Dataset
-            The packet to process.
-        data_version : str
-            Version of the data product being created.
-
-        Returns
-        -------
-        dataset : xarray.Dataset
-            The ``xarray`` dataset containing the science data and supporting metadata.
+        The coordinates for the dataset depend on the data product being made.
         """
-        # Set the CDF attrs
-        cdf_attrs = ImapCdfAttributes()
-        cdf_attrs.add_instrument_global_attrs("codice")
-        cdf_attrs.add_instrument_variable_attrs("codice", "l1a")
-        cdf_attrs.add_global_attribute("Data_version", data_version)
-
-        # Define coordinates
         epoch = xr.DataArray(
-            packet.epoch,
+            self.packet.epoch,
             name="epoch",
             dims=["epoch"],
-            attrs=cdf_attrs.get_variable_attributes("epoch"),
+            attrs=self.cdf_attrs.get_variable_attributes("epoch"),
         )
         inst_az = xr.DataArray(
             np.arange(self.num_positions),
             name="inst_az",
             dims=["inst_az"],
-            attrs=cdf_attrs.get_variable_attributes("inst_az_attrs"),
+            attrs=self.cdf_attrs.get_variable_attributes("inst_az_attrs"),
         )
         spin_sector = xr.DataArray(
             np.arange(self.num_spin_sectors),
             name="spin_sector",
             dims=["spin_sector"],
-            attrs=cdf_attrs.get_variable_attributes("spin_sector_attrs"),
+            attrs=self.cdf_attrs.get_variable_attributes("spin_sector_attrs"),
         )
         energy_steps = xr.DataArray(
             np.arange(self.num_energy_steps),
             name="energy",
             dims=["energy"],
-            attrs=cdf_attrs.get_variable_attributes("energy_attrs"),
+            attrs=self.cdf_attrs.get_variable_attributes("energy_attrs"),
         )
-
-        # Define labels
         energy_label = xr.DataArray(
             energy_steps.values.astype(str),
             name="energy_label",
             dims=["energy_label"],
-            attrs=cdf_attrs.get_variable_attributes("energy_label"),
+            attrs=self.cdf_attrs.get_variable_attributes("energy_label"),
         )
 
-        # Create the dataset to hold the data variables
+        self.coords = {
+            "epoch": epoch,
+            "inst_az": inst_az,
+            "spin_sector": spin_sector,
+            "energy": energy_steps,
+            "energy_label": energy_label,
+        }
+
+    def define_data_variables(self) -> xr.Dataset:
+        """
+        Define and add the appropriate data variables to the dataset.
+
+        The data variables included in the dataset depend on the data product
+        being made. The method returns the ``xarray.Dataset`` object that can
+        then be written to a CDF file.
+
+        Returns
+        -------
+        dataset : xarray.Dataset
+            The 'final' ``xarray`` dataset.
+        """
+        # Create the main dataset to hold all the variables
         dataset = xr.Dataset(
-            coords={
-                "epoch": epoch,
-                "inst_az": inst_az,
-                "spin_sector": spin_sector,
-                "energy": energy_steps,
-                "energy_label": energy_label,
-            },
-            attrs=cdf_attrs.get_global_attributes(self.dataset_name),
+            coords=self.coords,
+            attrs=self.cdf_attrs.get_global_attributes(self.dataset_name),
         )
 
         # Create a data variable for each counter
         for variable_data, variable_name in zip(self.data, self.variable_names):
-            # Data arrays are structured depending on the instrument
-            if self.instrument == "lo":
-                variable_data_arr = np.array(variable_data).reshape(
-                    (
-                        1,
-                        self.num_positions,
-                        self.num_spin_sectors,
-                        self.num_energy_steps,
-                    )
-                )
-                dims = ["epoch", "inst_az", "spin_sector", "energy"]
-            elif self.instrument == "hi":
-                variable_data_arr = np.array(variable_data).reshape(
-                    (
-                        1,
-                        self.num_energy_steps,
-                        self.num_positions,
-                        self.num_spin_sectors,
-                    )
-                )
-                dims = ["epoch", "energy", "inst_az", "spin_sector"]
+            # Reshape to 4 dimensions to allow for epoch dimension
+            reshaped_variable_data = np.expand_dims(variable_data, axis=0)
 
             # Get the CDF attributes
             cdf_attrs_key = (
                 f"{self.dataset_name.split('imap_codice_l1a_')[-1]}-{variable_name}"
             )
-            attrs = cdf_attrs.get_variable_attributes(cdf_attrs_key)
+            attrs = self.cdf_attrs.get_variable_attributes(cdf_attrs_key)
 
             # Create the CDF data variable
             dataset[variable_name] = xr.DataArray(
-                variable_data_arr,
+                reshaped_variable_data,
                 name=variable_name,
-                dims=dims,
+                dims=self.dims,  # type: ignore[has-type]
                 attrs=attrs,
             )
 
+        # Add support data variables based on data product
+        dataset = self.define_support_variables(dataset)
+
+        return dataset
+
+    def define_dimensions(self) -> None:
+        """
+        Define the dimensions of the data arrays for the final dataset.
+
+        The dimensions for the dataset depend on the data product being made.
+        """
+        if self.instrument == "lo":
+            self.dims = ["epoch", "inst_az", "spin_sector", "energy"]
+        elif self.instrument == "hi":
+            self.dims = ["epoch", "energy", "inst_az", "spin_sector"]
+
+    def define_support_variables(self, dataset: xr.Dataset) -> xr.Dataset:
+        """
+        Define and add 'support' CDF data variables to the dataset.
+
+        These variables include instrument metadata, energies, times, etc. that
+        help further define the L1a CDF data product. The variables included
+        depend on the data product being made.
+
+        Parameters
+        ----------
+        dataset : xarray.Dataset
+            ``xarray`` dataset for the data product.
+
+        Returns
+        -------
+        dataset : xarray.Dataset
+            ``xarray`` dataset for the data product, with added support variables.
+        """
         # Add ESA Sweep Values and acquisition times (lo only)
         if self.instrument == "lo":
             self.get_esa_sweep_values()
@@ -216,12 +231,12 @@ class CoDICEL1aPipeline:
             dataset["esa_sweep_values"] = xr.DataArray(
                 self.esa_sweep_values,
                 dims=["energy"],
-                attrs=cdf_attrs.get_variable_attributes("esa_sweep_attrs"),
+                attrs=self.cdf_attrs.get_variable_attributes("esa_sweep_attrs"),
             )
             dataset["acquisition_times"] = xr.DataArray(
                 self.acquisition_times,
                 dims=["energy"],
-                attrs=cdf_attrs.get_variable_attributes("acquisition_times_attrs"),
+                attrs=self.cdf_attrs.get_variable_attributes("acquisition_times_attrs"),
             )
 
         return dataset
@@ -301,31 +316,19 @@ class CoDICEL1aPipeline:
         sweep_table = sweep_data[sweep_data["table_idx"] == sweep_table_id]
         self.esa_sweep_values = sweep_table["esa_v"].values
 
-    def unpack_science_data(self, science_values: str) -> None:
+    def reshape_data(self) -> None:
         """
-        Decompress, unpack, and restructure science data arrays.
+        Reshape the data arrays based on the data product being made.
 
-        The science data within the packet is a compressed, binary string of
-        values. These data need to be divided up by species or priorities (or
+        These data need to be divided up by species or priorities (or
         what I am calling "counters" as a general term), and re-arranged into
-        3D arrays representing spin sectors, positions, and energies (the order
-        of which depends on the instrument).
-
-        Parameters
-        ----------
-        science_values : str
-            A string of binary data representing the science values of the data.
+        3D arrays representing dimensions such as spin sectors, positions, and
+        energies (depending on the data product).
         """
-        compression_algorithm = constants.LO_COMPRESSION_ID_LOOKUP[self.view_id]
-
-        # Decompress the binary string into a list of integers
-        science_values_decompressed = decompress(science_values, compression_algorithm)
-
-        # Re-arrange the counter data
         # For CoDICE-lo, data are a 3D arrays with a shape representing
         # [<num_positions>,<num_spin_sectors>,<num_energy_steps>]
         if self.instrument == "lo":
-            self.data = np.array(science_values_decompressed, dtype=np.uint32).reshape(
+            self.data = np.array(self.data, dtype=np.uint32).reshape(
                 (
                     self.num_counters,
                     self.num_positions,
@@ -337,7 +340,7 @@ class CoDICEL1aPipeline:
         # For CoDICE-hi, data are a 3D array with a shape representing
         # [<num_energy_steps>,<num_positions>,<num_spin_sectors>]
         elif self.instrument == "hi":
-            self.data = np.array(science_values_decompressed, dtype=np.uint32).reshape(
+            self.data = np.array(self.data, dtype=np.uint32).reshape(
                 (
                     self.num_counters,
                     self.num_energy_steps,
@@ -345,6 +348,39 @@ class CoDICEL1aPipeline:
                     self.num_spin_sectors,
                 )
             )
+
+    def set_data_product_config(
+        self, apid: int, packet: xr.Dataset, data_version: str
+    ) -> None:
+        """
+        Set the various settings for defining the data products.
+
+        Parameters
+        ----------
+        apid : int
+            The APID of interest.
+        packet : xarray.Dataset
+            A packet for the APID of interest.
+        data_version : str
+            Version of the data product being created.
+        """
+        self.packet = packet
+
+        # Gather and set various configurations of the data product
+        config = constants.DATA_PRODUCT_CONFIGURATIONS.get(apid)  # type: ignore[call-overload]
+        self.num_counters = config["num_counters"]
+        self.num_energy_steps = config["num_energy_steps"]
+        self.num_spin_sectors = config["num_spin_sectors"]
+        self.num_positions = config["num_positions"]
+        self.variable_names = config["variable_names"]
+        self.dataset_name = config["dataset_name"]
+        self.instrument = config["instrument"]
+
+        # Gather and set the CDF attributes
+        self.cdf_attrs = ImapCdfAttributes()
+        self.cdf_attrs.add_instrument_global_attrs("codice")
+        self.cdf_attrs.add_instrument_variable_attrs("codice", "l1a")
+        self.cdf_attrs.add_global_attribute("Data_version", data_version)
 
 
 def create_event_dataset(
@@ -537,9 +573,12 @@ def process_codice_l1a(file_path: Path, data_version: str) -> xr.Dataset:
 
             # Run the pipeline to create a dataset for the product
             pipeline = CoDICEL1aPipeline(table_id, plan_id, plan_step, view_id)
-            pipeline.configure_data_products(apid)
-            pipeline.unpack_science_data(science_values)
-            dataset = pipeline.create_science_dataset(packet, data_version)
+            pipeline.set_data_product_config(apid, packet, data_version)
+            pipeline.decompress_data(science_values)
+            pipeline.reshape_data()
+            pipeline.define_coordinates()
+            pipeline.define_dimensions()
+            dataset = pipeline.define_data_variables()
 
     logger.info(f"\nFinal data product:\n{dataset}\n")
 
