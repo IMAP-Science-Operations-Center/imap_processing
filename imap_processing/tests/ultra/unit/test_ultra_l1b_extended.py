@@ -254,7 +254,6 @@ def test_get_ssd_tof(de_dataset, yf_fixture):
 
     ssd_tof = get_ssd_tof(de_dataset, test_xf)
 
-    # Check that the TOF is within 1 tenth of a ns of the FSW data.
     np.testing.assert_allclose(
         ssd_tof, df_ssd["TOF"].astype("float"), atol=1e-05, rtol=0
     )
