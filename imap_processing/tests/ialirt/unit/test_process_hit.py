@@ -1,3 +1,5 @@
+import numpy as np
+import pandas as pd
 import pytest
 
 from imap_processing import imap_module_directory
@@ -27,6 +29,22 @@ def binary_packet_path():
         / "l0"
         / "hit_ialirt_sample.ccsds"
     )
+
+
+@pytest.fixture(scope="session")
+def hit_test_data():
+    """Returns the xtce auxiliary directory."""
+    data_path = (
+        imap_module_directory
+        / "tests"
+        / "ialirt"
+        / "test_data"
+        / "l0"
+        / "hit_ialirt_sample.csv"
+    )
+    data = pd.read_csv(data_path, na_values=[" ", ""]).astype("float")
+
+    return data
 
 
 @pytest.fixture()
@@ -101,11 +119,9 @@ def test_find_groups(xarray_data):
 
     filtered_data = find_groups(xarray_data)
 
-    assert filtered_data["hit_subcom"].values[0] == 0
-    assert filtered_data["hit_subcom"].values[-1] == 59
-    assert len(filtered_data["hit_subcom"]) / 60 == 15
-    assert len(filtered_data["hit_sc_tick"][filtered_data["hit_subcom"] == 0]) == 15
-    assert len(filtered_data["hit_sc_tick"][filtered_data["hit_subcom"] == 59]) == 15
+    np.testing.assert_array_equal(
+        filtered_data["hit_subcom"], np.tile(np.arange(60), 15)
+    )
 
 
 def test_create_l1(xarray_data):
@@ -155,3 +171,56 @@ def test_process_hit(xarray_data):
         ValueError, match="does not contain all values from 0 to 59 without duplicates"
     ):
         process_hit(subset)
+
+
+def test_decom_packets(xarray_data, hit_test_data):
+    """This function checks that all instrument parameters are accounted for."""
+
+    fast_rate_1 = xarray_data["hit_fast_rate_1"]
+    fast_rate_2 = xarray_data["hit_fast_rate_2"]
+    slow_rate = xarray_data["hit_slow_rate"]
+
+    groups = np.arange(15)
+
+    for group in groups:
+        # The sequence begins where "HIT_MET" != 0
+        start_index = hit_test_data.index[hit_test_data["MET"] != 0][group]
+
+        # Test Fast Rate 1
+        ccsds_fast_rate_1 = fast_rate_1[start_index : start_index + 60]
+        test_fast_rate_1 = hit_test_data.loc[
+            start_index : start_index + 59,
+            hit_test_data.columns.str.startswith(
+                tuple(HIT_PREFIX_TO_RATE_TYPE["FAST_RATE_1"])
+            ),
+        ]
+        flat_test_fast_rate_1 = test_fast_rate_1.to_numpy().flatten()
+        np.testing.assert_array_equal(
+            ccsds_fast_rate_1.values,
+            flat_test_fast_rate_1[~np.isnan(flat_test_fast_rate_1)],
+        )
+
+        # Test Fast Rate 2
+        ccsds_fast_rate_2 = fast_rate_2[start_index : start_index + 60]
+        test_fast_rate_2 = hit_test_data.loc[
+            start_index : start_index + 59,
+            hit_test_data.columns.str.startswith(
+                tuple(HIT_PREFIX_TO_RATE_TYPE["FAST_RATE_2"])
+            ),
+        ]
+        flat_test_fast_rate_2 = test_fast_rate_2.to_numpy().flatten()
+        np.testing.assert_array_equal(
+            ccsds_fast_rate_2.values,
+            flat_test_fast_rate_2[~np.isnan(flat_test_fast_rate_2)],
+        )
+
+        # Test Slow Rate
+        ccsds_slow_rate = slow_rate[start_index : start_index + 60]
+        test_slow_rate = hit_test_data.loc[
+            start_index : start_index + 59,
+            hit_test_data.columns.isin(HIT_PREFIX_TO_RATE_TYPE["SLOW_RATE"]),
+        ]
+        flat_test_slow_rate = test_slow_rate.to_numpy().flatten()
+        np.testing.assert_array_equal(
+            ccsds_slow_rate.values, flat_test_slow_rate[~np.isnan(flat_test_slow_rate)]
+        )

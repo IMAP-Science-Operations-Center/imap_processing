@@ -85,11 +85,11 @@ def find_groups(data: xr.Dataset) -> xr.Dataset:
 
     # Use hit_subcom == 0 to define the beginning of the group.
     # Find hit_sc_tick at this index and use it as the beginning time for the group.
-    start_sc_ticks = data["hit_sc_tick"][(data["hit_subcom"] == subcom_range[0]).values]
-    start_sc_tick = start_sc_ticks.data.min()
+    start_sc_ticks = data["hit_sc_tick"][(data["hit_subcom"] == subcom_range[0])]
+    start_sc_tick = start_sc_ticks.min()
     # Use hit_subcom == 59 to define the end of the group.
     last_sc_ticks = data["hit_sc_tick"][([data["hit_subcom"] == subcom_range[-1]][-1])]
-    last_sc_tick = last_sc_ticks.data.max()
+    last_sc_tick = last_sc_ticks.max()
 
     # Filter out data before the first subcom=0 and after the last subcom=59.
     grouped_data = data.where(
@@ -203,25 +203,17 @@ def process_hit(xarray_data: xr.Dataset) -> list[dict]:
         hit_data.append(
             {
                 "met": met,
-                "hit_lo_energy_e_A_side": float(
-                    l1["IALRT_RATE_1"] + l1["IALRT_RATE_2"]
-                ),
-                "hit_medium_energy_e_A_side": float(
-                    l1["IALRT_RATE_5"] + l1["IALRT_RATE_6"]
-                ),
-                "hit_high_energy_e_A_side": float(l1["IALRT_RATE_7"]),
-                "hit_low_energy_e_B_side": float(
-                    l1["IALRT_RATE_11"] + l1["IALRT_RATE_12"]
-                ),
-                "hit_medium_energy_e_B_side": float(
-                    l1["IALRT_RATE_15"] + l1["IALRT_RATE_16"]
-                ),
-                "hit_high_energy_e_B_side": float(l1["IALRT_RATE_17"]),
-                "hit_medium_energy_H_omni": float(l1["H_12_15"] + l1["H_15_70"]),
-                "hit_high_energy_H_A_side": float(l1["IALRT_RATE_8"]),
-                "hit_high_energy_H_B_side": float(l1["IALRT_RATE_18"]),
-                "hit_low_energy_He_omni": float(l1["HE4_06_08"]),
-                "hit_high_energy_He_omni": float(l1["HE4_15_70"]),
+                "hit_lo_energy_e_A_side": l1["IALRT_RATE_1"] + l1["IALRT_RATE_2"],
+                "hit_medium_energy_e_A_side": l1["IALRT_RATE_5"] + l1["IALRT_RATE_6"],
+                "hit_high_energy_e_A_side": l1["IALRT_RATE_7"],
+                "hit_low_energy_e_B_side": l1["IALRT_RATE_11"] + l1["IALRT_RATE_12"],
+                "hit_medium_energy_e_B_side": l1["IALRT_RATE_15"] + l1["IALRT_RATE_16"],
+                "hit_high_energy_e_B_side": l1["IALRT_RATE_17"],
+                "hit_medium_energy_H_omni": l1["H_12_15"] + l1["H_15_70"],
+                "hit_high_energy_H_A_side": l1["IALRT_RATE_8"],
+                "hit_high_energy_H_B_side": l1["IALRT_RATE_18"],
+                "hit_low_energy_He_omni": l1["HE4_06_08"],
+                "hit_high_energy_He_omni": l1["HE4_15_70"],
             }
         )
 
