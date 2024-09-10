@@ -147,8 +147,10 @@ def test_create_pointing_frame(
     spice_test_data_path, pointing_frame_kernels, tmp_path, et_times
 ):
     """Tests create_pointing_frame function."""
+    spice.kclear()
     spice.furnsh(pointing_frame_kernels)
-    create_pointing_frame(pointing_frame_path=tmp_path / "imap_dps.bc")
+    create_pointing_frame(pointing_frame_path=tmp_path / "imap_dps.bc",
+                          ck_path=spice_test_data_path / "imap_sim_ck_2hr_2secsampling_with_nutation.bc")
 
     # After imap_dps.bc has been created.
     dps_kernel = str(tmp_path / "imap_dps.bc")
@@ -169,8 +171,15 @@ def test_create_pointing_frame(
     # Verify imap_dps.bc has been created.
     assert (tmp_path / "imap_dps.bc").exists()
 
+    # Tests error handling when incorrect kernel is loaded.
+    spice.furnsh(pointing_frame_kernels)
+    with pytest.raises(ValueError, match="Error: Expected CK kernel badname_kernel.bc"):  # Replace match string with expected error message
+        create_pointing_frame(
+            pointing_frame_path=tmp_path / "imap_dps.bc",
+            ck_path="badname_kernel.bc"
+        )
 
-@ensure_spice
+
 def test_et_times(pointing_frame_kernels):
     """Tests get_et_times function."""
     spice.furnsh(pointing_frame_kernels)
@@ -186,21 +195,22 @@ def test_et_times(pointing_frame_kernels):
     return et_times
 
 
-@ensure_spice
-def test_multiple_attempts(pointing_frame_kernels, tmp_path):
+def test_multiple_attempts(pointing_frame_kernels, tmp_path, spice_test_data_path):
     """Tests create_pointing_frame function with multiple pointing kernels."""
     spice.furnsh(pointing_frame_kernels)
 
     # Check that a single segment is added regardless of how many times
     # create_pointing_frame is called.
-    create_pointing_frame(pointing_frame_path=tmp_path / "imap_dps.bc")
+    create_pointing_frame(pointing_frame_path=tmp_path / "imap_dps.bc",
+                          ck_path=spice_test_data_path / "imap_sim_ck_2hr_2secsampling_with_nutation.bc")
     ck_cover = spice.ckcov(
         str(tmp_path / "imap_dps.bc"), -43901, True, "INTERVAL", 0, "TDB"
     )
     num_intervals = spice.wncard(ck_cover)
     assert num_intervals == 1
 
-    create_pointing_frame(pointing_frame_path=tmp_path / "imap_dps.bc")
+    create_pointing_frame(pointing_frame_path=tmp_path / "imap_dps.bc",
+                          ck_path=spice_test_data_path / "imap_sim_ck_2hr_2secsampling_with_nutation.bc")
     ck_cover = spice.ckcov(
         str(tmp_path / "imap_dps.bc"), -43901, True, "INTERVAL", 0, "TDB"
     )
@@ -208,13 +218,13 @@ def test_multiple_attempts(pointing_frame_kernels, tmp_path):
     assert num_intervals == 1
 
 
-@ensure_spice
 def test_multiple_pointings(multiple_pointing_kernels, spice_test_data_path):
     """Tests create_pointing_frame function with multiple pointing kernels."""
     spice.furnsh(multiple_pointing_kernels)
 
     create_pointing_frame(
-        pointing_frame_path=spice_test_data_path / "imap_pointing_frame.bc"
+        pointing_frame_path=spice_test_data_path / "imap_pointing_frame.bc",
+        ck_path=spice_test_data_path / "IMAP_spacecraft_attitude.bc",
     )
     ck_cover_pointing = spice.ckcov(
         str(spice_test_data_path / "imap_pointing_frame.bc"),

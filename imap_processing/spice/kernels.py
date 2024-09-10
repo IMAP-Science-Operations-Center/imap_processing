@@ -173,7 +173,7 @@ def ensure_spice(
 
 
 @contextmanager
-def spice_ck_file(pointing_frame_path: Path) -> Generator[int, None, None]:
+def open_spice_ck_file(pointing_frame_path: Path) -> Generator[int, None, None]:
     """
     Context manager for handling SPICE CK files.
 
@@ -198,23 +198,50 @@ def spice_ck_file(pointing_frame_path: Path) -> Generator[int, None, None]:
 
 
 @ensure_spice
-def create_pointing_frame(pointing_frame_path: Path) -> None:
+def create_pointing_frame(pointing_frame_path: Path, ck_path: Path) -> None:
     """
     Create the pointing frame.
 
     Parameters
     ----------
     pointing_frame_path : Path
-        Directory of where pointing frame will be saved.
+        Location of pointing frame kernel.
+    ck_path : Path
+        Location of the CK kernel.
 
     References
     ----------
     https://numpydoc.readthedocs.io/en/latest/format.html#references
+
+    Notes
+    -----
+    Kernels required to be furnished:
+    "imap_science_0001.tf",
+    "imap_sclk_0000.tsc",
+    "imap_sim_ck_2hr_2secsampling_with_nutation.bc" or
+    "IMAP_spacecraft_attitude.bc",
+    "imap_wkcp.tf",
+    "naif0012.tls"
+
+    Assumptions:
+    - The MOC has removed timeframe in which nutation/procession are present.
+    TODO: We may come back and have a check for this.
+    - We will continue to append to the pointing frame kernel.
+    TODO: Figure out how we want to handle the file size becoming too large.
+    - For now we can only furnish a single ck kernel.
+    TODO: This will not be the case once we add the ability to query the .csv.
     """
     # Get IDs.
     # https://spiceypy.readthedocs.io/en/main/documentation.html#spiceypy.spiceypy.gipool
     id_imap_dps = spice.gipool("FRAME_IMAP_DPS", 0, 1)
     id_imap_sclk = spice.gipool("CK_-43000_SCLK", 0, 1)
+
+    # Verify that only ck_path kernel is loaded.
+    count = spice.ktotal("ck")
+    loaded_ck_kernel, _, _, _ = spice.kdata(count - 1, "ck")
+
+    if count != 1 or str(ck_path) != loaded_ck_kernel:
+        raise ValueError(f"Error: Expected CK kernel {ck_path}")
 
     # If the pointing frame kernel already exists, find the last time.
     if pointing_frame_path.exists():
@@ -229,14 +256,13 @@ def create_pointing_frame(pointing_frame_path: Path) -> None:
 
     # TODO: Query for .csv file to get the pointing start and end times.
     # TODO: Remove next four lines once query is added.
-    ck_kernel, _, _, _ = spice.kdata(0, "ck")
     id_imap_spacecraft = spice.gipool("FRAME_IMAP_SPACECRAFT", 0, 1)
     ck_cover = spice.ckcov(
-        ck_kernel, int(id_imap_spacecraft), True, "INTERVAL", 0, "TDB"
+        str(ck_path), int(id_imap_spacecraft), True, "INTERVAL", 0, "TDB"
     )
     num_intervals = spice.wncard(ck_cover)
 
-    with spice_ck_file(pointing_frame_path) as handle:
+    with open_spice_ck_file(pointing_frame_path) as handle:
         # TODO: this will change to the number of pointings.
         for i in range(num_intervals):
             # Get the coverage window
