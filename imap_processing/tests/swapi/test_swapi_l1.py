@@ -90,7 +90,8 @@ def test_find_sweep_starts():
     time = np.arange(26)
     sequence_number = time % 12
     ds = xr.Dataset(
-        {"seq_number": sequence_number}, coords={"epoch": met_to_j2000ns(time)}
+        {"seq_number": sequence_number, "shcoarse": np.arange(1, 27, 1)},
+        coords={"epoch": met_to_j2000ns(time)},
     )
 
     start_indices = find_sweep_starts(ds)
@@ -112,7 +113,8 @@ def test_get_full_indices():
     time = np.arange(26)
     sequence_number = time % 12
     ds = xr.Dataset(
-        {"seq_number": sequence_number}, coords={"epoch": met_to_j2000ns(time)}
+        {"seq_number": sequence_number, "shcoarse": np.arange(1, 27, 1)},
+        coords={"epoch": met_to_j2000ns(time)},
     )
 
     sweep_indices = get_indices_of_full_sweep(ds)

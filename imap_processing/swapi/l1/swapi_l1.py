@@ -145,11 +145,13 @@ def find_sweep_starts(packets: xr.Dataset) -> npt.NDArray:
     indices_start : numpy.ndarray
         Array of indices of start cycle.
     """
-    if packets["epoch"].size < 12:
+    if packets["shcoarse"].size < 12:
         return np.array([], np.int64)
 
     # calculate time difference between consecutive sweep
-    diff = packets["epoch"].data[1:] - packets["epoch"].data[:-1]
+    diff = packets["shcoarse"].data[1:] - packets["shcoarse"].data[:-1]
+    # Time difference between consecutive sweep should be 1 second.
+    ione = diff == 1  # 1 second
 
     # This uses sliding window to find index where cycle starts.
     # This is what this below code line is doing:
@@ -159,8 +161,6 @@ def find_sweep_starts(packets: xr.Dataset) -> npt.NDArray:
     #     [0 1 1 1 0 1 0 0 1 0 1 1 1 0 1 0 0]  # Next diff is one?
     #
     # [0 0 0 1 0 0 0 0 0 0 0 0 1 0 0 0 0]      # And all?
-
-    ione = diff == 1e9  # 1 second
 
     valid = (
         (packets["seq_number"] == 0)[:-11]
