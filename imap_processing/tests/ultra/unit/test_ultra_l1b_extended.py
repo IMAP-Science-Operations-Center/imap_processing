@@ -255,5 +255,6 @@ def test_get_ssd_tof(de_dataset, yf_fixture):
     ssd_tof = get_ssd_tof(de_dataset, test_xf)
 
     # Check that the TOF is within 1 tenth of a ns of the FSW data.
-    # TODO: Confirm with Ultra team that the difference is expected due to rounding.
-    np.testing.assert_allclose(ssd_tof, df_ssd["TOF"].astype("float"), atol=1, rtol=0)
+    np.testing.assert_allclose(
+        ssd_tof, df_ssd["TOF"].astype("float"), atol=1e-05, rtol=0
+    )

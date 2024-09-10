@@ -227,9 +227,9 @@ def get_ph_tof_and_back_positions(
     t2[stop_type_top] = get_image_params("TOFSC") * t1[
         stop_type_top
     ] + get_image_params("TOFTPOFF")
-    tof[stop_type_top] = t2[stop_type_top] + xf_ph[stop_type_top] * get_image_params(
-        "XFTTOF"
-    )
+    tof[stop_type_top] = t2[stop_type_top] + xf_ph[
+        stop_type_top
+    ] / 10 * get_image_params("XFTTOF")
 
     stop_type_bottom = de_filtered["STOP_TYPE"].data == StopType.Bottom.value
     xb[stop_type_bottom] = get_back_position(
@@ -244,9 +244,10 @@ def get_ph_tof_and_back_positions(
         stop_type_bottom
     ] + get_image_params("TOFBTOFF")  # 10*ns
 
+    # Variable xf_ph divided by 10 to convert to mm.
     tof[stop_type_bottom] = t2[stop_type_bottom] + xf_ph[
         stop_type_bottom
-    ] * get_image_params("XFTTOF")
+    ] / 10 * get_image_params("XFTTOF")
 
     return tof, t2, xb, yb
 
