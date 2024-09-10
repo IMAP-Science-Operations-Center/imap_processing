@@ -151,7 +151,7 @@ def use_test_metakernel(monkeypatch_session, tmpdir_factory, spice_test_data_pat
 
 
 @pytest.fixture()
-def _metakernel_path_not_set(monkeypatch):
-    """Temporarily unsets the EMUS_METAKERNEL_PATH environment variable"""
+def _unset_metakernel_path(monkeypatch):
+    """Temporarily unsets the SPICE_METAKERNEL environment variable"""
     if os.getenv("SPICE_METAKERNEL", None) is not None:
         monkeypatch.delenv("SPICE_METAKERNEL")

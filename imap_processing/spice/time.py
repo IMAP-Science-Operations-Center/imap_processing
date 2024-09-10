@@ -11,7 +11,7 @@ import spiceypy as spice
 from imap_processing.spice import IMAP_SC_ID
 from imap_processing.spice.kernels import ensure_spice
 
-TICK_DURATION = 2e-5  # 20 microseconds
+TICK_DURATION = 2e-5  # 20 microseconds as defined in imap_sclk_0000.tsc
 
 
 def met_to_j2000ns(
