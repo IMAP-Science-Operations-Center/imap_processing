@@ -166,7 +166,7 @@ class CoDICEL1aPipeline:
             dataset[variable_name] = xr.DataArray(
                 reshaped_variable_data,
                 name=variable_name,
-                dims=self.dims,  # type: ignore[has-type]
+                dims=self.dims,
                 attrs=attrs,
             )
 
