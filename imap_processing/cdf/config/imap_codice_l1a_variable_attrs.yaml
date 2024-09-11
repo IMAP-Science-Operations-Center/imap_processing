@@ -34,7 +34,7 @@ esa_step:
     SI_CONVERSION: " > "
     UNITS: ' '
     VALIDMIN: 0
-    VALIDMAX: 128
+    VALIDMAX: 127
     VAR_TYPE: support_data
 
 inst_az:
