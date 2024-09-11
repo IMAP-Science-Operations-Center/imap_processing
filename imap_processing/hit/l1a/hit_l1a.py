@@ -250,5 +250,4 @@ def process_housekeeping(
             attrs=attr_mgr.get_variable_attributes(field),
         )
 
-    logger.info("HIT L1A housekeeping dataset created")
     return dataset
