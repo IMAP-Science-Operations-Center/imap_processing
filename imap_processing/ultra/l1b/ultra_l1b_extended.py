@@ -11,6 +11,7 @@ from numpy.typing import NDArray
 
 from imap_processing.ultra.l1b.lookup_utils import (
     get_back_position,
+    get_energy_norm,
     get_image_params,
     get_norm,
     get_y_adjust,
@@ -41,6 +42,7 @@ class StopType(Enum):
 
     Top = 1
     Bottom = 2
+    PH: ClassVar[list[int]] = [1, 2]
     SSD: ClassVar[list[int]] = [8, 9, 10, 11, 12, 13, 14, 15]
 
 
@@ -541,3 +543,107 @@ def get_ssd_tof(de_dataset: xarray.Dataset, xf: np.ndarray) -> NDArray[np.float6
 
     # Convert TOF to tenths of a nanosecond.
     return np.asarray(tof, dtype=np.float64)
+
+
+def get_energy_pulse_height(
+    stop_type: np.array, energy: np.array, xb: np.array, yb: np.array
+) -> np.array:
+    """
+    Calculate the pulse-height energy.
+
+    Calculate the energy measured using the
+    pulse height from the stop anode.
+    Lookup tables (lut) are used for corrections.
+    Further description is available on pages 40-41 of
+    IMAP-Ultra Flight Software Specification document
+    (7523-9009_Rev_-.pdf).
+
+    Parameters
+    ----------
+    stop_type : np.array
+        Stop type: 1=Top, 2=Bottom.
+    energy : np.array
+        Energy measured using the pulse height.
+    xb : np.array
+        X back position (hundredths of a millimeter).
+    yb : np.array
+        Y back position (hundredths of a millimeter).
+
+    Returns
+    -------
+    energy : np.array
+        Energy measured using the pulse height
+        from the stop anode (DN).
+    """
+    indices_top = np.where(stop_type == 1)[0]
+    indices_bottom = np.where(stop_type == 2)[0]
+
+    xlut = np.zeros(len(stop_type))
+    ylut = np.zeros(len(stop_type))
+    energy_ph = np.zeros(len(stop_type))
+
+    # Stop type 1
+    xlut[indices_top] = (xb[indices_top] / 100 - 25 / 2) * 20 / 50  # mm
+    ylut[indices_top] = (yb[indices_top] / 100 + 82 / 2) * 32 / 82  # mm
+    # Stop type 2
+    xlut[indices_bottom] = (xb[indices_bottom] / 100 + 50 + 25 / 2) * 20 / 50  # mm
+    ylut[indices_bottom] = (yb[indices_bottom] / 100 + 82 / 2) * 32 / 82  # mm
+
+    # TODO: waiting on these lookup tables: SpTpPHCorr, SpBtPHCorr
+    energy_ph[indices_top] = energy[
+        indices_top
+    ]  # - get_image_params("SpTpPHOffset") * SpTpPHCorr[
+    # xlut[indices_top], ylut[indices_top]] / 1024
+
+    energy_ph[indices_bottom] = energy[
+        indices_bottom
+    ]  # - get_image_params("SpBtPHOffset") * SpBtPHCorr[
+    # xlut[indices_bottom], ylut[indices_bottom]]/1024
+
+    return energy_ph
+
+
+def get_energy_ssd(de_dataset: xarray.Dataset, ssd: np.array) -> np.ndarray:
+    """
+    Get SSD energy.
+
+    For SSD events, the SSD itself provides a direct
+    measurement of the energy. To cover higher energies,
+    a so-called composite energy is calculated using the
+    SSD energy and SSD energy pulse width.
+    The result is then normalized per SSD via a lookup table.
+    Further description is available on pages 41 of
+    IMAP-Ultra Flight Software Specification document
+    (7523-9009_Rev_-.pdf).
+
+    Parameters
+    ----------
+    de_dataset : xarray.Dataset
+        Events dataset.
+    ssd : np.array
+        SSD number.
+
+    Returns
+    -------
+    energy : np.ndarray
+        Energy measured using the SSD.
+    """
+    # DN threshold for composite energy.
+    composite_energy_threshold = 1707
+
+    ssd_indices = np.where(de_dataset["STOP_TYPE"] >= 8)[0]
+    energy = de_dataset["ENERGY_PH"].data[ssd_indices]
+
+    composite_energy = np.empty(len(energy), dtype=np.float64)
+
+    composite_energy[energy >= composite_energy_threshold] = (
+        composite_energy_threshold
+        + de_dataset["PULSE_WIDTH"][ssd_indices][energy >= composite_energy_threshold]
+    )
+    composite_energy[energy < composite_energy_threshold] = energy[
+        energy < composite_energy_threshold
+    ]
+
+    energy_norm = get_energy_norm(ssd, composite_energy)
+
+    return energy_norm
