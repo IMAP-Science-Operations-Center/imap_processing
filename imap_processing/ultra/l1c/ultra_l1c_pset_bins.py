@@ -1,9 +1,9 @@
-"""Module to create bins for pointing sets."""
+"""Module to create and populate bins for pointing sets."""
 
 import numpy as np
 
 
-def build_energy_bins() -> tuple[np.ndarray, np.ndarray]:
+def build_energy_bins() -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Build energy bin boundaries.
 
@@ -13,6 +13,8 @@ def build_energy_bins() -> tuple[np.ndarray, np.ndarray]:
         Array of energy bin start values.
     energy_bin_end : np.ndarray
         Array of energy bin end values.
+    energy_bin_midpoints : np.ndarray
+        Array of energy bin midpoint values.
     """
     alpha = 0.05  # deltaE/E
     energy_start = 3.5  # energy start for the Ultra grids
@@ -26,7 +28,9 @@ def build_energy_bins() -> tuple[np.ndarray, np.ndarray]:
     energy_bin_start = bin_edges[:-1]
     energy_bin_end = bin_edges[1:]
 
-    return energy_bin_start, energy_bin_end, az_bin_midpoints, el_bin_midpoints
+    energy_bin_midpoints = np.sqrt(energy_bin_start * energy_bin_end)
+
+    return energy_bin_start, energy_bin_end, energy_bin_midpoints
 
 
 def build_spatial_bins(
@@ -133,11 +137,11 @@ def bin_space(vx_dps_sc, vy_dps_sc, vz_dps_sc) -> tuple[np.ndarray, np.ndarray]:
 
     az, el = cartesian_to_spherical(vx_dps_sc, vy_dps_sc, vz_dps_sc)
 
-    # Find the appropriate bin index using searchsorted
+    # Find the appropriate bin index.
     az_bin_idx = np.searchsorted(az_bin_edges, np.degrees(az), side="right") - 1
     el_bin_idx = np.searchsorted(el_bin_edges, np.degrees(el), side="right") - 1
 
-    # Assign the corresponding midpoints
+    # Assign the corresponding midpoints.
     az_midpoint = az_bin_midpoints[az_bin_idx]
     el_midpoint = el_bin_midpoints[el_bin_idx]
 

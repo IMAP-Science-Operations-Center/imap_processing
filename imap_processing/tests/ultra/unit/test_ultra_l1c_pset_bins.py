@@ -26,7 +26,8 @@ def test_build_energy_bins():
 
 def test_build_spatial_bins():
     """Tests build_spatial_bins function."""
-    az_bin_edges, el_bin_edges = build_spatial_bins()
+    az_bin_edges, el_bin_edges, \
+        az_bin_midpoints, el_bin_midpoints = build_spatial_bins()
 
     assert az_bin_edges[0] == 0
     assert az_bin_edges[-1] == 360
@@ -47,8 +48,12 @@ def test_cartesian_to_spherical():
     az, el = cartesian_to_spherical(vx_sc, vy_sc, vz_sc)
 
     # MATLAB code outputs:
-    assert az == np.array([1.313003856057083, 2.348915185230239])
-    assert el == np.array([-0.701366480008680, -0.889015692861197])
+    np.testing.assert_allclose(
+        az, np.array([1.31300, 2.34891]), atol=1e-05, rtol=0
+    )
+    np.testing.assert_allclose(
+        el, np.array([-0.70136, -0.88901]), atol=1e-05, rtol=0
+    )
 
 
 def test_bin_space():
@@ -61,8 +66,8 @@ def test_bin_space():
     az_midpoint, el_midpoint = bin_space(vx_sc, vy_sc, vz_sc)
     az, el = cartesian_to_spherical(vx_sc, vy_sc, vz_sc)
 
-    az_within_tolerance = np.abs(az - az_midpoint) <= 0.25
-    el_within_tolerance = np.abs(el - el_midpoint) <= 0.25
+    az_within_tolerance = np.abs(np.degrees(az) - az_midpoint) <= 0.25
+    el_within_tolerance = np.abs(np.degrees(el) - el_midpoint) <= 0.25
 
     assert np.all(az_within_tolerance)
     assert np.all(el_within_tolerance)
