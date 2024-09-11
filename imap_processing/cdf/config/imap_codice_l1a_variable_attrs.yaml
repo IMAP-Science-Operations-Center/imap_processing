@@ -25,7 +25,7 @@ codice_support_attrs: &support_default
     VAR_TYPE: support_data
 
 # <=== Coordinates ===>
-energy_attrs:
+energy_steps:
     <<: *default
     CATDESC: Energy per charge (E/q) sweeping step
     FIELDNAM: Energy step
@@ -36,7 +36,7 @@ energy_attrs:
     VALIDMAX: 127
     VAR_TYPE: support_data
 
-inst_az_attrs:
+inst_az:
     <<: *default
     CATDESC: Azimuth
     FIELDNAM: Azimuth
@@ -47,7 +47,7 @@ inst_az_attrs:
     VALIDMAX: 31
     VAR_TYPE: support_data
 
-spin_sector_attrs:
+spin_sector:
     <<: *default
     CATDESC: Spin sector indicating range of spin angles
     FIELDNAM: Spin sector
@@ -79,7 +79,7 @@ energy_label:
 acquisition_times_attrs:
     <<: *default
     CATDESC: Time of acquisition for the energy step
-    DEPEND_1: energy
+    DEPEND_1: energy_steps
     FIELDNAM: Acquisition Time
     FILLVAL: .NAN
     FORMAT: F10.3
@@ -93,7 +93,7 @@ counters_attrs: &counters
     <<: *default
     CATDESC: Fill in at creation
     DEPEND_0: epoch
-    DEPEND_1: energy
+    DEPEND_1: energy_steps
     DISPLAY_TYPE: time_series
     FIELDNAM: Fill in at creation
     LABL_PTR_1: energy_label
@@ -104,7 +104,7 @@ counters_attrs: &counters
 esa_sweep_attrs:
     <<: *default
     CATDESC: ElectroStatic Analyzer Energy Values
-    DEPEND_1: energy
+    DEPEND_1: energy_steps
     FIELDNAM: ESA Voltage
     FORMAT: I19
     LABLAXIS: ESA V

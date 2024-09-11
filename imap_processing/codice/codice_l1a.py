@@ -30,14 +30,9 @@ from imap_processing.utils import packet_file_to_datasets
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-# TODO: In decommutation, how to have a variable length data and then a checksum
-#       after it? (Might be fixed with new XTCE script updates)
 # TODO: Add support for decomming multiple APIDs from a single file
-# TODO: Add these as variables in CDF: SPIN_PERIOD, ST_BIAS_GAIN_MODE,
-#       SW_BIAS_GAIN_MODE, RGFO_HALF_SPIN, NSO_HALF_SPIN, DATA_QUALITY
 # TODO: Determine what should go in event data CDF and how it should be
 #       structured.
-# TODO: Make sure CDF attributes match expected nomenclature
 
 
 class CoDICEL1aPipeline:
@@ -113,44 +108,31 @@ class CoDICEL1aPipeline:
 
         The coordinates for the dataset depend on the data product being made.
         """
-        epoch = xr.DataArray(
-            self.packet.epoch,
-            name="epoch",
-            dims=["epoch"],
-            attrs=self.cdf_attrs.get_variable_attributes("epoch"),
-        )
-        inst_az = xr.DataArray(
-            np.arange(self.num_positions),
-            name="inst_az",
-            dims=["inst_az"],
-            attrs=self.cdf_attrs.get_variable_attributes("inst_az_attrs"),
-        )
-        spin_sector = xr.DataArray(
-            np.arange(self.num_spin_sectors),
-            name="spin_sector",
-            dims=["spin_sector"],
-            attrs=self.cdf_attrs.get_variable_attributes("spin_sector_attrs"),
-        )
-        energy_steps = xr.DataArray(
-            np.arange(self.num_energy_steps),
-            name="energy",
-            dims=["energy"],
-            attrs=self.cdf_attrs.get_variable_attributes("energy_attrs"),
-        )
-        energy_label = xr.DataArray(
-            energy_steps.values.astype(str),
-            name="energy_label",
-            dims=["energy_label"],
-            attrs=self.cdf_attrs.get_variable_attributes("energy_label"),
-        )
+        self.coords = {}
 
-        self.coords = {
-            "epoch": epoch,
-            "inst_az": inst_az,
-            "spin_sector": spin_sector,
-            "energy": energy_steps,
-            "energy_label": energy_label,
-        }
+        for name in self.coords_to_include:
+            if name == "epoch":
+                values = self.packet.epoch
+            elif name == "inst_az":
+                values = np.arange(self.num_positions)
+            elif name == "spin_sector":
+                values = np.arange(self.num_spin_sectors)
+            elif name == "energy_steps":
+                values = np.arange(self.num_energy_steps)
+            elif name == "energy_label":
+                values = np.arange(self.num_energy_steps).astype(str)
+            else:
+                # TODO: Need to implement other types of coords
+                continue
+
+            coord = xr.DataArray(
+                values,
+                name=name,
+                dims=[name],
+                attrs=self.cdf_attrs.get_variable_attributes(name),
+            )
+
+            self.coords[name] = coord
 
     def define_data_variables(self) -> xr.Dataset:
         """
@@ -195,17 +177,6 @@ class CoDICEL1aPipeline:
 
         return dataset
 
-    def define_dimensions(self) -> None:
-        """
-        Define the dimensions of the data arrays for the final dataset.
-
-        The dimensions for the dataset depend on the data product being made.
-        """
-        if self.instrument == "lo":
-            self.dims = ["epoch", "inst_az", "spin_sector", "energy"]
-        elif self.instrument == "hi":
-            self.dims = ["epoch", "energy", "inst_az", "spin_sector"]
-
     def define_support_variables(self, dataset: xr.Dataset) -> xr.Dataset:
         """
         Define and add 'support' CDF data variables to the dataset.
@@ -224,24 +195,34 @@ class CoDICEL1aPipeline:
         dataset : xarray.Dataset
             ``xarray`` dataset for the data product, with added support variables.
         """
-        # Add ESA Sweep Values and acquisition times (lo only)
-        if self.instrument == "lo":
-            self.get_esa_sweep_values()
-            self.get_acquisition_times()
-            dataset["esa_sweep_values"] = xr.DataArray(
-                self.esa_sweep_values,
-                dims=["energy"],
-                attrs=self.cdf_attrs.get_variable_attributes("esa_sweep_attrs"),
-            )
-            dataset["acquisition_times"] = xr.DataArray(
-                self.acquisition_times,
-                dims=["energy"],
-                attrs=self.cdf_attrs.get_variable_attributes("acquisition_times_attrs"),
+        for variable_name in self.support_variables:
+            if variable_name == "energy_table":
+                variable_data = self.get_esa_sweep_values()
+                dims = ["energy_steps"]
+                attrs = self.cdf_attrs.get_variable_attributes("esa_sweep_attrs")
+
+            elif variable_name == "acquisition_time_per_step":
+                variable_data = self.get_acquisition_times()
+                dims = ["energy_steps"]
+                attrs = self.cdf_attrs.get_variable_attributes(
+                    "acquisition_times_attrs"
+                )
+
+            else:
+                # TODO: Need to implement methods to gather and set other
+                #       support attributes
+                continue
+
+            # Add variable to the dataset
+            dataset[variable_name] = xr.DataArray(
+                variable_data,
+                dims=dims,
+                attrs=attrs,
             )
 
         return dataset
 
-    def get_acquisition_times(self) -> None:
+    def get_acquisition_times(self) -> list[float]:
         """
         Retrieve the acquisition times via the Lo stepping table.
 
@@ -253,6 +234,11 @@ class CoDICEL1aPipeline:
         provides the timing for a given energy step, and most importantly
         provides the "acquisition time", which is the acquisition time, in
         milliseconds, for the energy step.
+
+        Returns
+        -------
+        acquisition_times : list[float]
+            The list of acquisition times from the Lo stepping table.
         """
         # Read in the Lo stepping data table
         lo_stepping_data_file = Path(
@@ -271,7 +257,7 @@ class CoDICEL1aPipeline:
         ]
 
         # Create a list for the acquisition times
-        self.acquisition_times = []
+        acquisition_times = []
 
         # Only need the energy columns from the table
         energy_steps = lo_stepping_values[
@@ -283,9 +269,11 @@ class CoDICEL1aPipeline:
         # it to the list
         for step_number in range(128):
             row_number = np.argmax(energy_steps == str(step_number), axis=1).argmax()
-            self.acquisition_times.append(lo_stepping_values.acq_time[row_number])
+            acquisition_times.append(lo_stepping_values.acq_time[row_number])
 
-    def get_esa_sweep_values(self) -> None:
+        return acquisition_times
+
+    def get_esa_sweep_values(self) -> list[float]:
         """
         Retrieve the ESA sweep values.
 
@@ -300,6 +288,11 @@ class CoDICEL1aPipeline:
 
         The ESA sweep table defines the voltage steps that are used to cover the
         full energy per charge range.
+
+        Returns
+        -------
+        esa_sweep_values : list[float]
+            The list of ESA sweep values (i.e. voltage steps).
         """
         # Read in the ESA sweep data table
         esa_sweep_data_file = Path(
@@ -314,7 +307,9 @@ class CoDICEL1aPipeline:
 
         # Get the appropriate values
         sweep_table = sweep_data[sweep_data["table_idx"] == sweep_table_id]
-        self.esa_sweep_values = sweep_table["esa_v"].values
+        esa_sweep_values = sweep_table["esa_v"].values
+
+        return esa_sweep_values
 
     def reshape_data(self) -> None:
         """
@@ -368,13 +363,16 @@ class CoDICEL1aPipeline:
 
         # Gather and set various configurations of the data product
         config = constants.DATA_PRODUCT_CONFIGURATIONS.get(apid)  # type: ignore[call-overload]
+        self.coords_to_include = config["coords"]
+        self.dataset_name = config["dataset_name"]
+        self.dims = config["dims"]
+        self.instrument = config["instrument"]
         self.num_counters = config["num_counters"]
         self.num_energy_steps = config["num_energy_steps"]
-        self.num_spin_sectors = config["num_spin_sectors"]
         self.num_positions = config["num_positions"]
+        self.num_spin_sectors = config["num_spin_sectors"]
+        self.support_variables = config["support_variables"]
         self.variable_names = config["variable_names"]
-        self.dataset_name = config["dataset_name"]
-        self.instrument = config["instrument"]
 
         # Gather and set the CDF attributes
         self.cdf_attrs = ImapCdfAttributes()
@@ -471,16 +469,6 @@ def create_hskp_dataset(
         attrs=cdf_attrs.get_global_attributes("imap_codice_l1a_hskp"),
     )
 
-    # TODO: Change 'TBD' catdesc and fieldname
-    #       Once housekeeping packet definition file is re-generated with
-    #       updated version of space_packet_parser, can get fieldname and
-    #       catdesc info via:
-    #           for key, value in (packet.header | packet.data).items():
-    #               fieldname = value.short_description
-    #              catdesc = value.long_description
-    #       I am holding off making this change until I acquire updated
-    #       housekeeping packets/validation data that match the latest telemetry
-    #       definitions
     for variable in packet:
         attrs = cdf_attrs.get_variable_attributes("codice_support_attrs")
         attrs["CATDESC"] = "TBD"
@@ -577,7 +565,6 @@ def process_codice_l1a(file_path: Path, data_version: str) -> xr.Dataset:
             pipeline.decompress_data(science_values)
             pipeline.reshape_data()
             pipeline.define_coordinates()
-            pipeline.define_dimensions()
             dataset = pipeline.define_data_variables()
 
     logger.info(f"\nFinal data product:\n{dataset}\n")
