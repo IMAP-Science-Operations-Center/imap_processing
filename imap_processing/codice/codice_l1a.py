@@ -23,15 +23,13 @@ import xarray as xr
 from imap_processing import imap_module_directory
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.codice import constants
+from imap_processing.codice.codice_l0 import decom_packets
 from imap_processing.codice.decompress import decompress
 from imap_processing.codice.utils import CODICEAPID
-from imap_processing.utils import packet_file_to_datasets
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-# TODO: In decommutation, how to have a variable length data and then a checksum
-#       after it? (Might be fixed with new XTCE script updates)
 # TODO: Add support for decomming multiple APIDs from a single file
 # TODO: Add these as variables in CDF: SPIN_PERIOD, ST_BIAS_GAIN_MODE,
 #       SW_BIAS_GAIN_MODE, RGFO_HALF_SPIN, NSO_HALF_SPIN, DATA_QUALITY
@@ -68,7 +66,7 @@ class CoDICEL1aPipeline:
         Create an ``xarray`` dataset for the unpacked science data.
     get_acquisition_times()
         Retrieve the acquisition times via the Lo stepping table.
-    get_esa_sweep_values()
+    get_energy_table()
         Retrieve the ESA sweep values.
     unpack_science_data()
         Decompress, unpack, and restructure science data arrays.
@@ -136,27 +134,19 @@ class CoDICEL1aPipeline:
             np.arange(self.num_positions),
             name="inst_az",
             dims=["inst_az"],
-            attrs=cdf_attrs.get_variable_attributes("inst_az_attrs"),
+            attrs=cdf_attrs.get_variable_attributes("inst_az"),
         )
         spin_sector = xr.DataArray(
             np.arange(self.num_spin_sectors),
             name="spin_sector",
             dims=["spin_sector"],
-            attrs=cdf_attrs.get_variable_attributes("spin_sector_attrs"),
+            attrs=cdf_attrs.get_variable_attributes("spin_sector"),
         )
-        energy_steps = xr.DataArray(
+        esa_step = xr.DataArray(
             np.arange(self.num_energy_steps),
-            name="energy",
-            dims=["energy"],
-            attrs=cdf_attrs.get_variable_attributes("energy_attrs"),
-        )
-
-        # Define labels
-        energy_label = xr.DataArray(
-            energy_steps.values.astype(str),
-            name="energy_label",
-            dims=["energy_label"],
-            attrs=cdf_attrs.get_variable_attributes("energy_label"),
+            name="esa_step",
+            dims=["esa_step"],
+            attrs=cdf_attrs.get_variable_attributes("esa_step"),
         )
 
         # Create the dataset to hold the data variables
@@ -165,8 +155,7 @@ class CoDICEL1aPipeline:
                 "epoch": epoch,
                 "inst_az": inst_az,
                 "spin_sector": spin_sector,
-                "energy": energy_steps,
-                "energy_label": energy_label,
+                "esa_step": esa_step,
             },
             attrs=cdf_attrs.get_global_attributes(self.dataset_name),
         )
@@ -183,7 +172,7 @@ class CoDICEL1aPipeline:
                         self.num_energy_steps,
                     )
                 )
-                dims = ["epoch", "inst_az", "spin_sector", "energy"]
+                dims = ["epoch", "inst_az", "spin_sector", "esa_step"]
             elif self.instrument == "hi":
                 variable_data_arr = np.array(variable_data).reshape(
                     (
@@ -193,7 +182,7 @@ class CoDICEL1aPipeline:
                         self.num_spin_sectors,
                     )
                 )
-                dims = ["epoch", "energy", "inst_az", "spin_sector"]
+                dims = ["epoch", "esa_step", "inst_az", "spin_sector"]
 
             # Get the CDF attributes
             cdf_attrs_key = (
@@ -211,17 +200,17 @@ class CoDICEL1aPipeline:
 
         # Add ESA Sweep Values and acquisition times (lo only)
         if self.instrument == "lo":
-            self.get_esa_sweep_values()
+            self.get_energy_table()
             self.get_acquisition_times()
             dataset["esa_sweep_values"] = xr.DataArray(
-                self.esa_sweep_values,
-                dims=["energy"],
-                attrs=cdf_attrs.get_variable_attributes("esa_sweep_attrs"),
+                self.energy_table,
+                dims=["esa_step"],
+                attrs=cdf_attrs.get_variable_attributes("energy_table"),
             )
             dataset["acquisition_times"] = xr.DataArray(
                 self.acquisition_times,
-                dims=["energy"],
-                attrs=cdf_attrs.get_variable_attributes("acquisition_times_attrs"),
+                dims=["esa_step"],
+                attrs=cdf_attrs.get_variable_attributes("acquisition_time_per_step"),
             )
 
         return dataset
@@ -270,7 +259,7 @@ class CoDICEL1aPipeline:
             row_number = np.argmax(energy_steps == str(step_number), axis=1).argmax()
             self.acquisition_times.append(lo_stepping_values.acq_time[row_number])
 
-    def get_esa_sweep_values(self) -> None:
+    def get_energy_table(self) -> None:
         """
         Retrieve the ESA sweep values.
 
@@ -299,7 +288,7 @@ class CoDICEL1aPipeline:
 
         # Get the appropriate values
         sweep_table = sweep_data[sweep_data["table_idx"] == sweep_table_id]
-        self.esa_sweep_values = sweep_table["esa_v"].values
+        self.energy_table = sweep_table["esa_v"].values
 
     def unpack_science_data(self, science_values: str) -> None:
         """
@@ -499,33 +488,30 @@ def process_codice_l1a(file_path: Path, data_version: str) -> xr.Dataset:
         The ``xarray`` dataset containing the science data and supporting metadata.
     """
     # Decom the packets, group data by APID, and sort by time
-    xtce_packet_definition = Path(
-        f"{imap_module_directory}/codice/packet_definitions/{constants.PACKET_TO_XTCE_MAPPING[file_path.name]}"
-    )
-    packets = packet_file_to_datasets(file_path, xtce_packet_definition)
+    datasets = decom_packets(file_path)
 
-    for apid in packets:
-        packet = packets[apid]
+    for apid in datasets:
+        packet_dataset = datasets[apid]
         logger.info(f"\nProcessing {CODICEAPID(apid).name} packet")
 
         if apid == CODICEAPID.COD_NHK:
-            dataset = create_hskp_dataset(packet, data_version)
+            dataset = create_hskp_dataset(packet_dataset, data_version)
 
         elif apid in [CODICEAPID.COD_LO_PHA, CODICEAPID.COD_HI_PHA]:
-            dataset = create_event_dataset(apid, packet, data_version)
+            dataset = create_event_dataset(apid, packet_dataset, data_version)
 
         elif apid in constants.APIDS_FOR_SCIENCE_PROCESSING:
             # Extract the data
-            science_values = packet.data.data[0]
+            science_values = packet_dataset.data.data[0]
 
             # Get the four "main" parameters for processing
-            table_id, plan_id, plan_step, view_id = get_params(packet)
+            table_id, plan_id, plan_step, view_id = get_params(packet_dataset)
 
             # Run the pipeline to create a dataset for the product
             pipeline = CoDICEL1aPipeline(table_id, plan_id, plan_step, view_id)
             pipeline.configure_data_products(apid)
             pipeline.unpack_science_data(science_values)
-            dataset = pipeline.create_science_dataset(packet, data_version)
+            dataset = pipeline.create_science_dataset(packet_dataset, data_version)
 
     logger.info(f"\nFinal data product:\n{dataset}\n")
 

@@ -19,7 +19,6 @@ from pathlib import Path
 import xarray as xr
 
 from imap_processing import imap_module_directory
-from imap_processing.codice import constants
 from imap_processing.utils import packet_file_to_datasets
 
 
@@ -34,12 +33,22 @@ def decom_packets(packet_file: Path) -> dict[int, xr.Dataset]:
 
     Returns
     -------
-    packets : dict[int, xarray.Dataset]
+    datasets : dict[int, xarray.Dataset]
         Mapping from apid to ``xarray`` dataset, one dataset per apid.
     """
+    # TODO: Currently need to use the 'old' packet definition for housekeeping
+    #       because the simulated housekeeping data being used has various
+    #       mis-matches from the telemetry definition. This may be updated
+    #       once new simulated housekeeping data are acquired.
+    if "hskp" in str(packet_file):
+        xtce_filename = "P_COD_NHK.xml"
+    else:
+        xtce_filename = "codice_packet_definition.xml"
     xtce_packet_definition = Path(
-        f"{imap_module_directory}/codice/packet_definitions/{constants.PACKET_TO_XTCE_MAPPING[packet_file.name]}"
+        f"{imap_module_directory}/codice/packet_definitions/{xtce_filename}"
     )
-    packets = packet_file_to_datasets(packet_file, xtce_packet_definition)
+    datasets: dict[int, xr.Dataset] = packet_file_to_datasets(
+        packet_file, xtce_packet_definition
+    )
 
-    return packets
+    return datasets

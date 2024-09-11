@@ -3,7 +3,6 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from imap_processing.cdf.utils import met_to_j2000ns
 from imap_processing.mag.l0.decom_mag import decom_packets
 from imap_processing.mag.l1a.mag_l1a import mag_l1a, process_packets
 from imap_processing.mag.l1a.mag_l1a_data import (
@@ -12,6 +11,7 @@ from imap_processing.mag.l1a.mag_l1a_data import (
     MagL1aPacketProperties,
     TimeTuple,
 )
+from imap_processing.spice.time import met_to_j2000ns
 
 
 def test_compare_validation_data():

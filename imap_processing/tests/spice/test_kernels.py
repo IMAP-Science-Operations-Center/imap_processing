@@ -81,6 +81,7 @@ def test_ensure_spice_emus_mk_path(func, use_test_metakernel):
     assert func(577365941.184, "ISOC", 3) == "2018-04-18T23:24:31.998"
 
 
+@pytest.mark.usefixtures("_unset_metakernel_path")
 def test_ensure_spice_time_kernels():
     """Test functionality of ensure spice with timekernels set"""
     wrapped = ensure_spice(spice.et2utc, time_kernels_only=True)
@@ -91,6 +92,7 @@ def test_ensure_spice_time_kernels():
         _ = wrapped(577365941.184, "ISOC", 3) == "2018-04-18T23:24:31.998"
 
 
+@pytest.mark.usefixtures("_unset_metakernel_path")
 def test_ensure_spice_key_error():
     """Test functionality of ensure spice when all branches fail"""
     wrapped = ensure_spice(spice.et2utc)

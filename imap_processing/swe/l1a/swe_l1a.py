@@ -4,17 +4,17 @@ import logging
 
 import xarray as xr
 
-from imap_processing.swe.l0 import decom_swe
+from imap_processing import imap_module_directory
 from imap_processing.swe.l1a.swe_science import swe_science
 from imap_processing.swe.utils.swe_utils import (
     SWEAPID,
 )
-from imap_processing.utils import group_by_apid, sort_by_time
+from imap_processing.utils import packet_file_to_datasets
 
 logger = logging.getLogger(__name__)
 
 
-def swe_l1a(file_path: str, data_version: str) -> xr.Dataset:
+def swe_l1a(packet_file: str, data_version: str) -> xr.Dataset:
     """
     Will process SWE l0 data into l1a data.
 
@@ -24,8 +24,8 @@ def swe_l1a(file_path: str, data_version: str) -> xr.Dataset:
 
     Parameters
     ----------
-    file_path : str
-        Path where data is downloaded.
+    packet_file : str
+        Path where the raw packet file is stored.
     data_version : str
         Data version to write to CDF files and the Data_version CDF attribute.
         Should be in the format Vxxx.
@@ -35,15 +35,14 @@ def swe_l1a(file_path: str, data_version: str) -> xr.Dataset:
     List
         List of xarray.Dataset.
     """
-    packets = decom_swe.decom_packets(file_path)
+    xtce_document = (
+        f"{imap_module_directory}/swe/packet_definitions/swe_packet_definition.xml"
+    )
+    datasets_by_apid = packet_file_to_datasets(
+        packet_file, xtce_document, use_derived_value=False
+    )
 
-    # group data by appId
-    grouped_data = group_by_apid(packets)
-
-    # TODO: figure out how to handle non-science data error
-    # Process science data packets
-    # sort data by acquisition time
-    sorted_packets = sort_by_time(grouped_data[SWEAPID.SWE_SCIENCE], "ACQ_START_COARSE")
-    logger.debug("Processing science data for [%s] packets", len(sorted_packets))
-
-    return swe_science(decom_data=sorted_packets, data_version=data_version)
+    # TODO: figure out how to handle non-science data
+    return swe_science(
+        l0_dataset=datasets_by_apid[SWEAPID.SWE_SCIENCE], data_version=data_version
+    )

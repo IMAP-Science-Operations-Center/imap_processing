@@ -8,6 +8,7 @@ import xarray as xr
 
 from imap_processing import imap_module_directory
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
+from imap_processing.quality_flags import SWAPIFlags
 from imap_processing.swapi.swapi_utils import SWAPIAPID, SWAPIMODE
 from imap_processing.utils import packet_file_to_datasets
 
@@ -111,13 +112,15 @@ def decompress_count(
     # If data is compressed, decompress it
     compressed_indices = compression_flag == 1
     new_count[compressed_indices] *= 16
-    # TODO: add data type check here.
+
     # If the data was compressed and the count was 0xFFFF, mark it as an overflow
     if np.any(count_data < 0):
         raise ValueError(
             "Count data type must be unsigned int and should not contain negative value"
         )
-    new_count[compressed_indices & (count_data == 0xFFFF)] = -1
+
+    # SWAPI suggested using big value to indicate overflow.
+    new_count[compressed_indices & (count_data == 0xFFFF)] = np.iinfo(np.int32).max
     return new_count
 
 
@@ -142,11 +145,13 @@ def find_sweep_starts(packets: xr.Dataset) -> npt.NDArray:
     indices_start : numpy.ndarray
         Array of indices of start cycle.
     """
-    if packets["epoch"].size < 12:
+    if packets["shcoarse"].size < 12:
         return np.array([], np.int64)
 
     # calculate time difference between consecutive sweep
-    diff = packets["epoch"].data[1:] - packets["epoch"].data[:-1]
+    diff = packets["shcoarse"].data[1:] - packets["shcoarse"].data[:-1]
+    # Time difference between consecutive sweep should be 1 second.
+    ione = diff == 1  # 1 second
 
     # This uses sliding window to find index where cycle starts.
     # This is what this below code line is doing:
@@ -156,8 +161,6 @@ def find_sweep_starts(packets: xr.Dataset) -> npt.NDArray:
     #     [0 1 1 1 0 1 0 0 1 0 1 1 1 0 1 0 0]  # Next diff is one?
     #
     # [0 0 0 1 0 0 0 0 0 0 0 0 1 0 0 0 0]      # And all?
-
-    ione = diff == 1e9  # 1 second
 
     valid = (
         (packets["seq_number"] == 0)[:-11]
@@ -405,7 +408,9 @@ def process_sweep_data(full_sweep_sci: xr.Dataset, cem_prefix: str) -> xr.Datase
     return all_cem_data
 
 
-def process_swapi_science(sci_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
+def process_swapi_science(
+    sci_dataset: xr.Dataset, hk_dataset: xr.Dataset, data_version: str
+) -> xr.Dataset:
     """
     Will process SWAPI science data and create CDF file.
 
@@ -413,6 +418,8 @@ def process_swapi_science(sci_dataset: xr.Dataset, data_version: str) -> xr.Data
     ----------
     sci_dataset : xarray.Dataset
         L0 data.
+    hk_dataset : xarray.Dataset
+        Housekeeping data.
     data_version : str
         Version of the data product being created.
 
@@ -454,17 +461,78 @@ def process_swapi_science(sci_dataset: xr.Dataset, data_version: str) -> xr.Data
     swp_scem_counts = decompress_count(raw_scem_count, scem_compression_flags)
     swp_coin_counts = decompress_count(raw_coin_count, coin_compression_flags)
 
+    # ====================================================
+    # Load the CDF attributes
+    # ====================================================
+    cdf_manager = ImapCdfAttributes()
+    cdf_manager.add_instrument_global_attrs("swapi")
+    cdf_manager.load_variable_attributes("imap_swapi_variable_attrs.yaml")
+
+    # ===================================================================
+    # Quality flags
+    # ===================================================================
+    quality_flags_data = np.zeros((total_full_sweeps, 72), np.uint16)
+
+    # Add science data quality flags
+    quality_flags_data[pcem_compression_flags == 1] |= SWAPIFlags.SWP_PCEM_COMP
+    quality_flags_data[scem_compression_flags == 1] |= SWAPIFlags.SWP_SCEM_COMP
+    quality_flags_data[coin_compression_flags == 1] |= SWAPIFlags.SWP_COIN_COMP
+
+    # Add housekeeping-derived quality flags
+    # --------------------------------------
+    # Get times of good and full sweep data from science dataset.
+    # Then use these times to get housekeeping data. Something is wrong if
+    # there is no science data that matches exactly one housekeeping data. It
+    # should be one-to-one matching per SWAPI team, Jamie Rankin.
+    good_sweep_times = good_sweep_sci["epoch"].data
+    good_sweep_hk_data = hk_dataset.sel({"epoch": good_sweep_times})
+
+    # Since there is one SWAPI HK packet for each SWAPI SCI packet,
+    # and both are recorded at 1 Hz (1 packet per second),
+    # we can leverage this to set the quality flags for each science
+    # packet's data. Each SWAPI science packet represents
+    # one sequence of data, where the sequence includes measurements
+    # like PCEM_CNT0, PCEM_CNT1, PCEM_CNT2, PCEM_CNT3,
+    # PCEM_CNT4, and PCEM_CNT5. Because all these measurements come
+    # from the same science packet, they should share
+    # the same HK quality flag. This is why the HK quality flag is
+    # repeated 6 times, once for each measurement within
+    # the sequence (each packet corresponds to one sequence).
+
+    hk_flags_name = [
+        "OVR_T_ST",
+        "UND_T_ST",
+        "PCEM_CNT_ST",
+        "SCEM_CNT_ST",
+        "PCEM_V_ST",
+        "PCEM_I_ST",
+        "PCEM_INT_ST",
+        "SCEM_V_ST",
+        "SCEM_I_ST",
+        "SCEM_INT_ST",
+    ]
+
+    for flag_name in hk_flags_name:
+        current_flag = np.repeat(good_sweep_hk_data[flag_name.lower()].data, 6).reshape(
+            -1, 72
+        )
+        # Use getattr to dynamically access the flag in SWAPIFlags class
+        flag_to_set = getattr(SWAPIFlags, flag_name)
+        # set the quality flag for each data
+        quality_flags_data[current_flag == 1] |= flag_to_set
+
+    swp_flags = xr.DataArray(
+        quality_flags_data,
+        dims=["epoch", "energy"],
+        attrs=cdf_manager.get_variable_attributes("flags_default"),
+    )
+
     # ===================================================================
     # Step 3: Create xarray.Dataset
     # ===================================================================
 
     # epoch time. Should be same dimension as number of good sweeps
     epoch_values = good_sweep_sci["epoch"].data.reshape(total_full_sweeps, 12)[:, 0]
-
-    # Load the CDF attributes
-    cdf_manager = ImapCdfAttributes()
-    cdf_manager.add_instrument_global_attrs("swapi")
-    cdf_manager.load_variable_attributes("imap_swapi_variable_attrs.yaml")
 
     epoch_time = xr.DataArray(
         epoch_values,
@@ -497,7 +565,11 @@ def process_swapi_science(sci_dataset: xr.Dataset, data_version: str) -> xr.Data
     l1_global_attrs["Apid"] = f"{sci_dataset['pkt_apid'].data[0]}"
 
     dataset = xr.Dataset(
-        coords={"epoch": epoch_time, "energy": energy, "energy_label": energy_label},
+        coords={
+            "epoch": epoch_time,
+            "energy": energy,
+            "energy_label": energy_label,
+        },
         attrs=l1_global_attrs,
     )
 
@@ -517,24 +589,8 @@ def process_swapi_science(sci_dataset: xr.Dataset, data_version: str) -> xr.Data
         attrs=cdf_manager.get_variable_attributes("coin_counts"),
     )
 
-    # L1 quality flags
-    # TODO: Should these be kept in raw format rather than derived into strings?
-    dataset["swp_pcem_flags"] = xr.DataArray(
-        np.array(pcem_compression_flags, dtype=np.uint8),
-        dims=["epoch", "energy"],
-        attrs=cdf_manager.get_variable_attributes("pcem_flags"),
-    )
-    dataset["swp_scem_flags"] = xr.DataArray(
-        np.array(scem_compression_flags, dtype=np.uint8),
-        dims=["epoch", "energy"],
-        attrs=cdf_manager.get_variable_attributes("scem_flags"),
-    )
-    dataset["swp_coin_flags"] = xr.DataArray(
-        np.array(coin_compression_flags, dtype=np.uint8),
-        dims=["epoch", "energy"],
-        attrs=cdf_manager.get_variable_attributes("coin_flags"),
-    )
-
+    # Add quality flags to the dataset
+    dataset["swp_flags"] = swp_flags
     # ===================================================================
     # Step 4: Calculate uncertainty
     # ===================================================================
@@ -542,17 +598,36 @@ def process_swapi_science(sci_dataset: xr.Dataset, data_version: str) -> xr.Data
     # Uncertainty is quantified for the PCEM, SCEM, and COIN counts.
     # The Poisson contribution is
     #   uncertainty = sqrt(count)
-    dataset["swp_pcem_err"] = xr.DataArray(
+    # TODO:
+    # Above uncertaintly formula will change in the future.
+    # Replace it with actual formula once SWAPI provides it.
+    # Right now, we are using sqrt(count) as a placeholder
+    dataset["swp_pcem_err_plus"] = xr.DataArray(
         np.sqrt(swp_pcem_counts),
         dims=["epoch", "energy"],
         attrs=cdf_manager.get_variable_attributes("pcem_uncertainty"),
     )
-    dataset["swp_scem_err"] = xr.DataArray(
+    dataset["swp_pcem_err_minus"] = xr.DataArray(
+        np.sqrt(swp_pcem_counts),
+        dims=["epoch", "energy"],
+        attrs=cdf_manager.get_variable_attributes("pcem_uncertainty"),
+    )
+    dataset["swp_scem_err_plus"] = xr.DataArray(
         np.sqrt(swp_scem_counts),
         dims=["epoch", "energy"],
         attrs=cdf_manager.get_variable_attributes("scem_uncertainty"),
     )
-    dataset["swp_coin_err"] = xr.DataArray(
+    dataset["swp_scem_err_minus"] = xr.DataArray(
+        np.sqrt(swp_scem_counts),
+        dims=["epoch", "energy"],
+        attrs=cdf_manager.get_variable_attributes("scem_uncertainty"),
+    )
+    dataset["swp_coin_err_plus"] = xr.DataArray(
+        np.sqrt(swp_coin_counts),
+        dims=["epoch", "energy"],
+        attrs=cdf_manager.get_variable_attributes("coin_uncertainty"),
+    )
+    dataset["swp_coin_err_minus"] = xr.DataArray(
         np.sqrt(swp_coin_counts),
         dims=["epoch", "energy"],
         attrs=cdf_manager.get_variable_attributes("coin_uncertainty"),
@@ -587,14 +662,17 @@ def swapi_l1(file_path: str, data_version: str) -> xr.Dataset:
         file_path, xtce_definition, use_derived_value=False
     )
     processed_data = []
+
     for apid, ds_data in datasets.items():
         # Right now, we only process SWP_HK and SWP_SCI
         # other packets are not process in this processing pipeline
         # If appId is science, then the file should contain all data of science appId
 
         if apid == SWAPIAPID.SWP_SCI.value:
-            data = process_swapi_science(ds_data, data_version)
-            processed_data.append(data)
+            sci_dataset = process_swapi_science(
+                ds_data, datasets[SWAPIAPID.SWP_HK], data_version
+            )
+            processed_data.append(sci_dataset)
         if apid == SWAPIAPID.SWP_HK.value:
             # Add HK datalevel attrs
             # TODO: ask SWAPI if we need to process HK if we can use WebPODA
