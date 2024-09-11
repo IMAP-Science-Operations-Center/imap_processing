@@ -209,17 +209,13 @@ def create_pointing_frame(pointing_frame_path: Path, ck_path: Path) -> None:
     ck_path : Path
         Location of the CK kernel.
 
-    References
-    ----------
-    https://numpydoc.readthedocs.io/en/latest/format.html#references
-
     Notes
     -----
     Kernels required to be furnished:
     "imap_science_0001.tf",
     "imap_sclk_0000.tsc",
     "imap_sim_ck_2hr_2secsampling_with_nutation.bc" or
-    "IMAP_spacecraft_attitude.bc",
+    "sim_1yr_imap_attitude.bc",
     "imap_wkcp.tf",
     "naif0012.tls"
 
@@ -230,6 +226,10 @@ def create_pointing_frame(pointing_frame_path: Path, ck_path: Path) -> None:
     TODO: Figure out how we want to handle the file size becoming too large.
     - For now we can only furnish a single ck kernel.
     TODO: This will not be the case once we add the ability to query the .csv.
+
+    References
+    ----------
+    https://numpydoc.readthedocs.io/en/latest/format.html#references
     """
     # Get IDs.
     # https://spiceypy.readthedocs.io/en/main/documentation.html#spiceypy.spiceypy.gipool

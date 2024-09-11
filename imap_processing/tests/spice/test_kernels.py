@@ -34,7 +34,7 @@ def multiple_pointing_kernels(spice_test_data_path):
     required_kernels = [
         "imap_science_0001.tf",
         "imap_sclk_0000.tsc",
-        "IMAP_spacecraft_attitude.bc",
+        "sim_1yr_imap_attitude.bc",
         "imap_wkcp.tf",
         "naif0012.tls",
     ]
@@ -225,16 +225,16 @@ def test_multiple_attempts(pointing_frame_kernels, tmp_path, spice_test_data_pat
     assert num_intervals == 1
 
 
-def test_multiple_pointings(multiple_pointing_kernels, spice_test_data_path):
+def test_multiple_pointings(pointing_frame_kernels, spice_test_data_path, tmp_path):
     """Tests create_pointing_frame function with multiple pointing kernels."""
-    spice.furnsh(multiple_pointing_kernels)
+    spice.furnsh(pointing_frame_kernels)
 
     create_pointing_frame(
-        pointing_frame_path=spice_test_data_path / "imap_pointing_frame.bc",
-        ck_path=spice_test_data_path / "IMAP_spacecraft_attitude.bc",
+        pointing_frame_path=tmp_path / "imap_pointing_frame.bc",
+        ck_path=spice_test_data_path / "imap_sim_ck_2hr_2secsampling_with_nutation.bc",
     )
     ck_cover_pointing = spice.ckcov(
-        str(spice_test_data_path / "imap_pointing_frame.bc"),
+        str(tmp_path / "imap_pointing_frame.bc"),
         -43901,
         True,
         "INTERVAL",
@@ -242,10 +242,10 @@ def test_multiple_pointings(multiple_pointing_kernels, spice_test_data_path):
         "TDB",
     )
     num_intervals = spice.wncard(ck_cover_pointing)
-    et_start_pointing, et_end_pointing = spice.wnfetd(ck_cover_pointing, 365)
+    et_start_pointing, et_end_pointing = spice.wnfetd(ck_cover_pointing, 0)
 
     ck_cover = spice.ckcov(
-        str(spice_test_data_path / "IMAP_spacecraft_attitude.bc"),
+        str(spice_test_data_path / "imap_sim_ck_2hr_2secsampling_with_nutation.bc"),
         -43000,
         True,
         "INTERVAL",
@@ -253,7 +253,7 @@ def test_multiple_pointings(multiple_pointing_kernels, spice_test_data_path):
         "TDB",
     )
     num_intervals_expected = spice.wncard(ck_cover)
-    et_start_expected, et_end_expected = spice.wnfetd(ck_cover, 365)
+    et_start_expected, et_end_expected = spice.wnfetd(ck_cover, 0)
 
     assert num_intervals == num_intervals_expected
     assert et_start_pointing == et_start_expected
@@ -261,7 +261,7 @@ def test_multiple_pointings(multiple_pointing_kernels, spice_test_data_path):
 
     et_times = _get_et_times(et_start_pointing, et_end_pointing)
 
-    spice.furnsh(str(spice_test_data_path / "imap_pointing_frame.bc"))
+    spice.furnsh(str(tmp_path / "imap_pointing_frame.bc"))
     rotation_matrix_1 = spice.pxform("ECLIPJ2000", "IMAP_DPS", et_times[100])
     rotation_matrix_2 = spice.pxform("ECLIPJ2000", "IMAP_DPS", et_times[1000])
 
