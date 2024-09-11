@@ -1,10 +1,13 @@
 # TODO: Some currently blank attributes may be removed once
-# cdf_attribute_manager.py is updated to only check required attributes.
-# See comment here:
-# https://github.com/IMAP-Science-Operations-Center/imap_processing/pull/711#discussion_r1690212527
+#       cdf_attribute_manager.py is updated to only check required attributes.
+#       See comment here:
+#       https://github.com/IMAP-Science-Operations-Center/imap_processing/pull/711#discussion_r1690212527
+
+# TODO: Add any missing CATDESCs
+
 # <=== Defaults ===>
 default_attrs: &default
-    CATDESC: ""
+    CATDESC: " "
     DISPLAY_TYPE: no_plot
     FIELDNAM: ""
     FILLVAL: -9223372036854775808
