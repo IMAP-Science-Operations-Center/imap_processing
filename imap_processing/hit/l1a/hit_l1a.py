@@ -47,7 +47,7 @@ def hit_l1a(packet_file: str, data_version: str) -> list[xr.Dataset]:
 
     Returns
     -------
-    cdf_filepaths : list[xarray.Dataset]
+    processed_data : list[xarray.Dataset]
         List of Datasets of L1A processed data.
     """
     # TODO add logging
@@ -187,7 +187,7 @@ def process_housekeeping(
 
     logical_source = "imap_hit_l1a_hk"
 
-    # Skip keys that are not CDF data variables
+    # Drop keys that are not CDF data variables
     drop_keys = [
         "pkt_apid",
         "sc_tick",
