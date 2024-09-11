@@ -178,13 +178,16 @@ def process_packets(
         # now we know the number of secs of data in the packet, and the data rates of
         # each sensor, we can calculate how much data is in this packet and where the
         # byte boundaries are.
-
-        primary_vectors, secondary_vectors = MagL1a.process_vector_data(
-            mag_l0.VECTORS,
-            primary_packet_data.total_vectors,
-            secondary_packet_data.total_vectors,
-            mag_l0.COMPRESSION,
-        )
+        try:
+            primary_vectors, secondary_vectors = MagL1a.process_vector_data(
+                mag_l0.VECTORS,
+                primary_packet_data.total_vectors,
+                secondary_packet_data.total_vectors,
+                mag_l0.COMPRESSION,
+            )
+        except ValueError as e:
+            print(f"Failed to process vectors for {mag_l0.SHCOARSE}")
+            raise e
 
         primary_timestamped_vectors = MagL1a.calculate_vector_time(
             primary_vectors,

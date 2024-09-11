@@ -327,7 +327,12 @@ def test_compressed_vector_data(expected_vectors):
     )
 
     secondary_compressed = (
-        "0000001000000011000010000000111100010000000111111110001110"
+        "0000001000"
+        "0000110000"
+        "1000000011"
+        "1100010000"
+        "0001111111"
+        "10001110"
         "0100111001010110101100001011000000001101011100100111001010"
         "1110001110010011100101011010111001001100000000110101110010"
         "0111001010110101110010011100101011100011000010110000000011"
@@ -364,13 +369,10 @@ def test_compressed_vector_data(expected_vectors):
     range_primary = "000000000000000101101011111111"
 
     expected_range_primary = [3, 0, 0, 0, 0, 0, 0, 0, 1, 1, 2, 2, 3, 3, 3, 3]
-
     range_secondary = "000000000000000101101011111101"
     expected_range_secondary = [3, 0, 0, 0, 0, 0, 0, 0, 1, 1, 2, 2, 3, 3, 3, 1]
     # 16 bit width with range section
     headers = "01000010"
-    # TODO: if there is a number of vectors that is not a multiple of 8,
-    #  is there also padding at the end of the range section?
     input_data = np.array(
         [
             int(i)
@@ -384,6 +386,8 @@ def test_compressed_vector_data(expected_vectors):
         dtype=np.uint8,
     )
 
+    # In this step, input_data is automatically padded to a byte boundary by adding
+    # zeros to the end
     input_data = np.packbits(input_data)
 
     for i in range(len(expected_range_primary)):
@@ -423,7 +427,6 @@ def test_switch_to_uncompressed_vector_data(
         "000000100000110100001000001101110001000001101111"
     )
 
-    # TODO fix test
     secondary_compressed = (
         "0000001000000011000010000000111100010000000111111110001110"
         "0100111001010110101100001011000000001101011100100111001010"

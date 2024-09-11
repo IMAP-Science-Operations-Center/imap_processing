@@ -116,8 +116,9 @@ class MagL0:
 
         # Remove buffer from end of vectors. Vector data needs to be in 50 bit chunks,
         # and may have an extra byte at the end from CCSDS padding.
-        if len(self.VECTORS) % 2:
-            self.VECTORS = self.VECTORS[:-1]
+        # TODO: move this check into process_uncompressed_vectors
+        # if len(self.VECTORS) % 2:
+        #     self.VECTORS = self.VECTORS[:-1]
 
         self.PRI_VECSEC = 2**self.PRI_VECSEC
         self.SEC_VECSEC = 2**self.SEC_VECSEC
