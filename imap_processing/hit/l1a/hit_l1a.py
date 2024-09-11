@@ -1,8 +1,6 @@
 """Decommutate HIT CCSDS data and create L1a data products."""
 
 import logging
-from collections import defaultdict
-from dataclasses import fields
 from enum import IntEnum
 
 import numpy as np
@@ -53,62 +51,163 @@ def hit_l1a(packet_file: str, data_version: str) -> list[xr.Dataset]:
         List of Datasets of L1A processed data.
     """
     # TODO add logging
-    # example: logger.debug(f"Grouping housekeeping packets - APID: {apid}")
 
     # Unpack ccsds file
     packet_definition = (
-        imap_module_directory / "hit/packet_definitions/hit_packet_definitions.xml"
+        imap_module_directory / "hit/packet_definitions/" "hit_packet_definitions.xml"
     )
     datasets_by_apid = packet_file_to_datasets(
         packet_file=packet_file,
         xtce_packet_definition=packet_definition,
     )
 
-    for apid in datasets_by_apid:
-        if apid == HitAPID.HIT_HSKP:
-            process_housekeeping(datasets_by_apid[apid])
-            # TODO define keys to skip for each apid. Currently just have
-            #  a list for housekeeping. Some of these may change later.
-            #  leak_i_raw can be handled in the housekeeping class as an
-            #  InitVar so that it doesn't show up when you extract the object's
-            #  field names.
-        elif apid == HitAPID.HIT_SCIENCE:
-            logical_source = "imap_hit_l1a_sci-counts"
-            # TODO what about pulse height? It has the same apid.
-            #  Will need to approach this differently
-        else:
-            raise Exception(f"Unknown APID [{apid}]")
-
-    # create the attribute manager for this data level
+    # Create the attribute manager for this data level
     attr_mgr = ImapCdfAttributes()
     attr_mgr.add_instrument_global_attrs(instrument="hit")
     attr_mgr.add_instrument_variable_attrs(instrument="hit", level="l1a")
     attr_mgr.add_global_attribute("Data_version", data_version)
 
-    # Create datasets
-    logger.info("Creating datasets for HIT L1A data")
-    datasets = create_datasets(datasets_by_apid, attr_mgr)
+    # Process science to l1a.
+    processed_data = []
+    for apid in datasets_by_apid:
+        if apid == HitAPID.HIT_HSKP:
+            housekeeping_dataset = process_housekeeping(
+                datasets_by_apid[apid], attr_mgr
+            )
+            processed_data.append(housekeeping_dataset)
+        elif apid == HitAPID.HIT_SCIENCE:
+            # TODO complete science data processing
+            print("Skipping science data for now")
+            # science_dataset = process_science(datasets_by_apid[apid], attr_mgr)
+        else:
+            raise Exception(f"Unknown APID [{apid}]")
 
-    return list(datasets.values())
+    return processed_data
 
 
-def process_housekeeping(dataset, attr_mgr):
-    logger.info("Creating datasets for HIT L1A data")
+def concatenate_leak_variables(dataset: xr.Dataset) -> xr.Dataset:
+    """
+    Concatenate leak variables in the dataset.
+
+    Updates the housekeeping dataset to replace the individual
+    leak_i_00, leak_i_01, ..., leak_i_63 variables with a single
+    leak_i variable as a 2D array. This variable represents
+    leakage current [Voltage] data.
+
+    Parameters
+    ----------
+    dataset : xarray.Dataset
+        Dataset containing 64 leak variables.
+
+    Returns
+    -------
+    dataset : xarray.Dataset
+        Updated dataset with concatenated leak variables.
+    """
+    # Stack 64 leak variables (leak_00, leak_01, ..., leak_63)
+    leak_vars = [dataset[f"leak_i_{i:02d}"] for i in range(64)]
+
+    # Concatenate along 'leak_index' and reorder dimensions
+    stacked_leaks = xr.concat(leak_vars, dim="leak_index").transpose(
+        "epoch", "leak_index"
+    )
+    dataset["leak_i"] = stacked_leaks
+
+    # Drop the individual leak variables
+    updated_dataset = dataset.drop_vars([f"leak_i_{i:02d}" for i in range(64)])
+
+    return updated_dataset
+
+
+def process_science(dataset: xr.Dataset, attr_mgr: ImapCdfAttributes) -> xr.Dataset:
+    """
+    Will process science dataset for CDF product.
+
+    Process binary science data for CDF creation. The data is
+    grouped into science frames, decommutated and decompressed,
+    and split into count rates and event datasets. Updates the
+    dataset attributes and coordinates and data variable
+    dimensions according to specifications in a cdf yaml file.
+
+    Parameters
+    ----------
+    dataset : xarray.Dataset
+        Dataset containing HIT science data.
+
+    attr_mgr : ImapCdfAttributes
+        Attribute manager used to get the data product field's attributes.
+
+    Returns
+    -------
+    dataset : xarray.Dataset
+        An updated dataset ready for CDF conversion.
+    """
+    logger.info("Creating HIT L1A science datasets")
+
+    # Logical sources for the two products.
+    # logical_sources = ["imap_hit_l1a_sci-counts", "imap_hit_l1a_pulse-height-event"]
+
+    # TODO: Complete this function
+    #  - call decom_hit.py to decommutate the science data
+    #  - split the science data into count rates and event datasets
+    #  - update dimensions and add attributes to the dataset and data arrays
+    #  - return list of two datasets (count rates and events)?
+
+    # logger.info("HIT L1A event dataset created")
+    # logger.info("HIT L1A count rates dataset created")
+
+    return dataset
+
+
+def process_housekeeping(
+    dataset: xr.Dataset, attr_mgr: ImapCdfAttributes
+) -> xr.Dataset:
+    """
+    Will process housekeeping dataset for CDF product.
+
+    Updates the housekeeping dataset to replace with a single
+    leak_i variable as a 2D array. Also updates the dataset
+    attributes and coordinates and data variable dimensions
+    according to specifications in a cdf yaml file.
+
+    Parameters
+    ----------
+    dataset : xarray.Dataset
+        Dataset containing HIT housekeeping data.
+
+    attr_mgr : ImapCdfAttributes
+        Attribute manager used to get the data product field's attributes.
+
+    Returns
+    -------
+    dataset : xarray.Dataset
+        An updated dataset ready for CDF conversion.
+    """
+    logger.info("Creating HIT L1A housekeeping dataset")
 
     logical_source = "imap_hit_l1a_hk"
 
-    # TODO: process leak variables
-    # TODO: update dataset attributes and coordinates
-    # TODO: loop through dataset variable names update dims and assign attributes
+    # Skip keys that are not CDF data variables
+    drop_keys = [
+        "pkt_apid",
+        "sc_tick",
+        "version",
+        "type",
+        "sec_hdr_flg",
+        "seq_flgs",
+        "src_seq_ctr",
+        "pkt_len",
+        "hskp_spare1",
+        "hskp_spare2",
+        "hskp_spare3",
+        "hskp_spare4",
+        "hskp_spare5",
+    ]
 
-    # # Create xarray data arrays for dependencies
-    # epoch_time = xr.DataArray(
-    #     epoch_converted_times,
-    #     name="epoch",
-    #     dims=["epoch"],
-    #     attrs=attr_mgr.get_variable_attributes("epoch"),
-    # )
+    # Drop variables not needed for CDF
+    dataset = dataset.drop_vars(drop_keys)
 
+    # Create data arrays for dependencies
     adc_channels = xr.DataArray(
         np.arange(64, dtype=np.uint16),
         name="adc_channels",
@@ -124,197 +223,32 @@ def process_housekeeping(dataset, attr_mgr):
         attrs=attr_mgr.get_variable_attributes("adc_channels_label"),
     )
 
-    for field, data_array in dataset.data_vars.items():
-        # Create a list of all the dimensions using the DEPEND_I keys in the
+    # Update dataset coordinates and attributes
+    dataset = dataset.assign_coords(
+        {
+            "adc_channels": adc_channels,
+            "adc_channels_label": adc_channels_label,
+        }
+    )
+    dataset.attrs = attr_mgr.get_global_attributes(logical_source)
+
+    # Stack 64 leak variables (leak_00, leak_01, ..., leak_63)
+    dataset = concatenate_leak_variables(dataset)
+
+    # Assign attributes and dimensions to each data array in the Dataset
+    for field, data in dataset.data_vars.items():
+        # Create a list of dimensions using the DEPEND_I keys in the
         # attributes
         dims = [
             value
-            for key, value in attr_mgr.get_variable_attributes(field).items()  # type: ignore[arg-type]
+            for key, value in attr_mgr.get_variable_attributes(field).items()
             if "DEPEND" in key
         ]
-        data_array.attrs = attr_mgr.get_variable_attributes(field)
-        data_array.dims = dims
-
-    exit()
-
-    # Create xarray dataset
-    dataset = xr.Dataset(
-        coords={
-            "epoch": epoch_time,
-            "adc_channels": adc_channels,
-            "adc_channels_label": adc_channels_label,
-        },
-        attrs=attr_mgr.get_global_attributes(logical_source),
-    )
-
-    # Create xarray data array for each metadata field
-    for field, data in metadata_arrays.items():  # type: ignore[assignment]
-        # TODO Error, Incompatible types in assignment
-        # (expression has type "str", variable has type "Field[Any]")
-        # AND
-        # Incompatible types in assignment
-        # (expression has type "list[Any]", variable has type "dict[Any, Any]")
-        if field not in skip_keys:  # type: ignore[comparison-overlap]
-            # TODO Error, Non-overlapping container check
-            # (element type: "Field[Any]", container item type: "str")
-
-            # Create a list of all the dimensions using the DEPEND_I keys in the
-            # attributes
-            dims = [
-                value
-                for key, value in attr_mgr.get_variable_attributes(field).items()  # type: ignore[arg-type]
-                if "DEPEND" in key
-            ]
-            if field == "leak_i":  # type: ignore[comparison-overlap]
-                # TODO Error,  Non-overlapping equality check
-                # (left operand type: "Field[Any]",
-                # right operand type: "Literal['leak_i']")
-
-                # 2D array - needs two dims
-                dataset[field] = xr.DataArray(
-                    data,
-                    dims=dims,
-                    attrs=attr_mgr.get_variable_attributes(field),  # type: ignore[arg-type]
-                )
-            else:
-                dataset[field] = xr.DataArray(
-                    data,
-                    dims=dims,
-                    attrs=attr_mgr.get_variable_attributes(field),  # type: ignore[arg-type]
-                )
-    processed_data[apid] = dataset
-    logger.info("HIT L1A datasets created")
-    return processed_data
-
-
-def create_datasets(data: dict, attr_mgr: ImapCdfAttributes) -> dict:
-    """
-    Create a dataset for each APID in the data.
-
-    Parameters
-    ----------
-    data : dict
-        A single dictionary containing data for all instances of an APID.
-    attr_mgr : ImapCdfAttributes
-        Attribute manager used to get the data product field's attributes.
-
-    Returns
-    -------
-    processed_data : dict
-        A dictionary containing xarray.Dataset for each APID. Each dataset in the
-        dictionary will be converted to a CDF.
-    """
-    logger.info("Creating datasets for HIT L1A data")
-
-    skip_keys = [
-        "shcoarse",
-        "ground_sw_version",
-        "packet_file_name",
-        "ccsds_header",
-        "leak_i_raw",
-    ]
-
-    processed_data = {}
-    for apid, data_packets in data.items():
-        if apid == HitAPID.HIT_HSKP:
-            logical_source = "imap_hit_l1a_hk"
-            # TODO define keys to skip for each apid. Currently just have
-            #  a list for housekeeping. Some of these may change later.
-            #  leak_i_raw can be handled in the housekeeping class as an
-            #  InitVar so that it doesn't show up when you extract the object's
-            #  field names.
-        elif apid == HitAPID.HIT_SCIENCE:
-            logical_source = "imap_hit_l1a_sci-counts"
-            # TODO what about pulse height? It has the same apid.
-            #  Will need to approach this differently
-        else:
-            raise Exception(f"Unknown APID [{apid}]")
-        metadata_arrays = defaultdict(list)
-        for packet in data_packets:
-            # Add metadata to an array
-            for field in fields(packet):
-                field_name = field.name
-                field_value = getattr(packet, field_name)
-                # convert key to lower case to match SPDF requirement
-                data_key = field_name.lower()
-                metadata_arrays[data_key].append(field_value)
-
-        # Convert integers into datetime64[s]
-        epoch_converted_times = met_to_j2000ns(metadata_arrays["shcoarse"])
-
-        # Create xarray data arrays for dependencies
-        epoch_time = xr.DataArray(
-            epoch_converted_times,
-            name="epoch",
-            dims=["epoch"],
-            attrs=attr_mgr.get_variable_attributes("epoch"),
+        dataset[field] = xr.DataArray(
+            data,
+            dims=dims,
+            attrs=attr_mgr.get_variable_attributes(field),
         )
 
-        adc_channels = xr.DataArray(
-            np.arange(64, dtype=np.uint16),
-            name="adc_channels",
-            dims=["adc_channels"],
-            attrs=attr_mgr.get_variable_attributes("adc_channels"),
-        )
-
-        # NOTE: LABL_PTR_1 should be CDF_CHAR.
-        adc_channels_label = xr.DataArray(
-            adc_channels.values.astype(str),
-            name="adc_channels_label",
-            dims=["adc_channels_label"],
-            attrs=attr_mgr.get_variable_attributes("adc_channels_label"),
-        )
-
-        # Create xarray dataset
-        dataset = xr.Dataset(
-            coords={
-                "epoch": epoch_time,
-                "adc_channels": adc_channels,
-                "adc_channels_label": adc_channels_label,
-            },
-            attrs=attr_mgr.get_global_attributes(logical_source),
-        )
-
-        # Create xarray data array for each metadata field
-        for field, data in metadata_arrays.items():  # type: ignore[assignment]
-            # TODO Error, Incompatible types in assignment
-            # (expression has type "str", variable has type "Field[Any]")
-            # AND
-            # Incompatible types in assignment
-            # (expression has type "list[Any]", variable has type "dict[Any, Any]")
-            if field not in skip_keys:  # type: ignore[comparison-overlap]
-                # TODO Error, Non-overlapping container check
-                # (element type: "Field[Any]", container item type: "str")
-
-                # Create a list of all the dimensions using the DEPEND_I keys in the
-                # attributes
-                dims = [
-                    value
-                    for key, value in attr_mgr.get_variable_attributes(field).items()  # type: ignore[arg-type]
-                    if "DEPEND" in key
-                ]
-                if field == "leak_i":  # type: ignore[comparison-overlap]
-                    # TODO Error,  Non-overlapping equality check
-                    # (left operand type: "Field[Any]",
-                    # right operand type: "Literal['leak_i']")
-
-                    # 2D array - needs two dims
-                    dataset[field] = xr.DataArray(
-                        data,
-                        dims=dims,
-                        attrs=attr_mgr.get_variable_attributes(field),  # type: ignore[arg-type]
-                    )
-                else:
-                    dataset[field] = xr.DataArray(
-                        data,
-                        dims=dims,
-                        attrs=attr_mgr.get_variable_attributes(field),  # type: ignore[arg-type]
-                    )
-        processed_data[apid] = dataset
-    logger.info("HIT L1A datasets created")
-    return processed_data
-
-
-if __name__ == "__main__":
-    packet_file = imap_module_directory / "tests/hit/test_data/hskp_sample.ccsds"
-    hit_l1a(packet_file, 0)
+    logger.info("HIT L1A housekeeping dataset created")
+    return dataset
