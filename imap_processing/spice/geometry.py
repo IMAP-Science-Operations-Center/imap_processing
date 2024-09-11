@@ -17,8 +17,8 @@ import numpy as np
 import pandas as pd
 import spiceypy as spice
 
-from imap_processing.cdf.utils import met_to_j2000ns
 from imap_processing.spice.kernels import ensure_spice
+from imap_processing.spice.time import met_to_j2000ns
 
 
 class SpiceBody(IntEnum):
@@ -92,7 +92,9 @@ def imap_state(
     return np.asarray(state)
 
 
-def generate_spin_data(start_met: float, end_met: Optional[float] = None) -> dict:
+def generate_spin_data(
+    start_met: float, end_met: Optional[float] = None
+) -> pd.DataFrame:
     """
     Generate a spin table CSV covering one or more days.
 
@@ -122,7 +124,7 @@ def generate_spin_data(start_met: float, end_met: Optional[float] = None) -> dic
 
     Returns
     -------
-    spin_df : dict
+    spin_df : pandas.DataFrame
         Spin data. May need to save data to CSV file.
     """
     if end_met is None:
@@ -163,10 +165,11 @@ def generate_spin_data(start_met: float, end_met: Optional[float] = None) -> dic
     spin_dict["spin_period_valid"][repointing_times_index] = 0
     spin_dict["spin_phas_valid"][repointing_times_index] = 0
 
-    return spin_dict
+    spin_df = pd.DataFrame.from_dict(spin_dict)
+    return spin_df
 
 
-def get_spin_data(start_met: float, end_met: Optional[float] = None) -> dict:
+def get_spin_data(start_met: float, end_met: Optional[float] = None) -> pd.DataFrame:
     """
     Get spin data for a given time range.
 
@@ -193,7 +196,7 @@ def get_spin_data(start_met: float, end_met: Optional[float] = None) -> dict:
 
     Returns
     -------
-    spin_data : dict
+    spin_data : pandas.DataFrame
         Spin data. It's a dictionary with keys and values as numpy arrays.
     """
     if end_met is None:
@@ -209,19 +212,19 @@ def get_spin_data(start_met: float, end_met: Optional[float] = None) -> dict:
 
 
 def get_spacecraft_spin_phase(
-    query_times: Union[float, np.ndarray[float]],
+    query_met_times: Union[float, np.ndarray[float]],
 ) -> Union[float, np.ndarray]:
     """
     Get the spacecraft spin phase for the input query times.
 
     Formula to calculate spin phase:
         spin_phase = (
-            query_times - (spin_start_seconds + spin_start_subseconds)
+            query_met_times - (spin_start_seconds + spin_start_subseconds)
         ) / spin_period_sec
 
     Parameters
     ----------
-    query_times : float or np.ndarray[float]
+    query_met_times : float or np.ndarray[float]
         Query times in Mission Elapsed Time (MET).
 
     Returns
@@ -230,8 +233,8 @@ def get_spacecraft_spin_phase(
         Spin phase for the input query times.
     """
     # TODO: Write code to calculate spin phase for the input query times
-    if isinstance(query_times, float):
-        query_times = np.array([query_times])
+    if isinstance(query_met_times, float):
+        query_met_times = np.array([query_met_times])
     # TODO: call get_spin_data function to get spin data for the input
     # query times. And finish remaining implementation in upcoming PR.
-    return query_times
+    return np.zeros_like(query_met_times)
