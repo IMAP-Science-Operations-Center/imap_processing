@@ -69,7 +69,7 @@ class CoDICEL1aPipeline:
         Define and add 'support' CDF data variables to the dataset.
     get_acquisition_times()
         Retrieve the acquisition times via the Lo stepping table.
-    get_esa_sweep_values()
+    get_energy_table()
         Retrieve the ESA sweep values.
     reshape_data()
         Reshape the data arrays based on the data product being made.
@@ -117,10 +117,8 @@ class CoDICEL1aPipeline:
                 values = np.arange(self.num_positions)
             elif name == "spin_sector":
                 values = np.arange(self.num_spin_sectors)
-            elif name == "energy_steps":
+            elif name == "esa_step":
                 values = np.arange(self.num_energy_steps)
-            elif name == "energy_label":
-                values = np.arange(self.num_energy_steps).astype(str)
             else:
                 # TODO: Need to implement other types of coords
                 continue
@@ -197,15 +195,15 @@ class CoDICEL1aPipeline:
         """
         for variable_name in self.support_variables:
             if variable_name == "energy_table":
-                variable_data = self.get_esa_sweep_values()
-                dims = ["energy_steps"]
-                attrs = self.cdf_attrs.get_variable_attributes("esa_sweep_attrs")
+                variable_data = self.get_energy_table()
+                dims = ["esa_step"]
+                attrs = self.cdf_attrs.get_variable_attributes("esa_step")
 
             elif variable_name == "acquisition_time_per_step":
                 variable_data = self.get_acquisition_times()
-                dims = ["energy_steps"]
+                dims = ["esa_step"]
                 attrs = self.cdf_attrs.get_variable_attributes(
-                    "acquisition_times_attrs"
+                    "acquisition_time_per_step"
                 )
 
             else:
@@ -273,7 +271,7 @@ class CoDICEL1aPipeline:
 
         return acquisition_times
 
-    def get_esa_sweep_values(self) -> list[float]:
+    def get_energy_table(self) -> list[float]:
         """
         Retrieve the ESA sweep values.
 
@@ -291,7 +289,7 @@ class CoDICEL1aPipeline:
 
         Returns
         -------
-        esa_sweep_values : list[float]
+        energy_table : list[float]
             The list of ESA sweep values (i.e. voltage steps).
         """
         # Read in the ESA sweep data table
@@ -307,9 +305,9 @@ class CoDICEL1aPipeline:
 
         # Get the appropriate values
         sweep_table = sweep_data[sweep_data["table_idx"] == sweep_table_id]
-        esa_sweep_values = sweep_table["esa_v"].values
+        energy_table = sweep_table["esa_v"].values
 
-        return esa_sweep_values
+        return energy_table
 
     def reshape_data(self) -> None:
         """
