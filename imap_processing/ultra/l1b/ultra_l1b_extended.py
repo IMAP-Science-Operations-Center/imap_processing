@@ -546,8 +546,8 @@ def get_ssd_tof(de_dataset: xarray.Dataset, xf: np.ndarray) -> NDArray[np.float6
 
 
 def get_energy_pulse_height(
-    stop_type: np.array, energy: np.array, xb: np.array, yb: np.array
-) -> np.array:
+    stop_type: np.ndarray, energy: np.ndarray, xb: np.ndarray, yb: np.ndarray
+) -> np.ndarray:
     """
     Calculate the pulse-height energy.
 
@@ -560,27 +560,27 @@ def get_energy_pulse_height(
 
     Parameters
     ----------
-    stop_type : np.array
+    stop_type : np.ndarray
         Stop type: 1=Top, 2=Bottom.
-    energy : np.array
+    energy : np.ndarray
         Energy measured using the pulse height.
-    xb : np.array
+    xb : np.ndarray
         X back position (hundredths of a millimeter).
-    yb : np.array
+    yb : np.ndarray
         Y back position (hundredths of a millimeter).
 
     Returns
     -------
-    energy : np.array
+    energy_ph : np.ndarray
         Energy measured using the pulse height
         from the stop anode (DN).
     """
     indices_top = np.where(stop_type == 1)[0]
     indices_bottom = np.where(stop_type == 2)[0]
 
-    xlut = np.zeros(len(stop_type))
-    ylut = np.zeros(len(stop_type))
-    energy_ph = np.zeros(len(stop_type))
+    xlut = np.zeros(len(stop_type), dtype=np.float64)
+    ylut = np.zeros(len(stop_type), dtype=np.float64)
+    energy_ph = np.zeros(len(stop_type), dtype=np.float64)
 
     # Stop type 1
     xlut[indices_top] = (xb[indices_top] / 100 - 25 / 2) * 20 / 50  # mm
@@ -598,12 +598,12 @@ def get_energy_pulse_height(
     energy_ph[indices_bottom] = energy[
         indices_bottom
     ]  # - get_image_params("SpBtPHOffset") * SpBtPHCorr[
-    # xlut[indices_bottom], ylut[indices_bottom]]/1024
+    # xlut[indices_bottom], ylut[indices_bottom]] / 1024
 
     return energy_ph
 
 
-def get_energy_ssd(de_dataset: xarray.Dataset, ssd: np.array) -> np.ndarray:
+def get_energy_ssd(de_dataset: xarray.Dataset, ssd: np.ndarray) -> np.ndarray:
     """
     Get SSD energy.
 
@@ -620,25 +620,25 @@ def get_energy_ssd(de_dataset: xarray.Dataset, ssd: np.array) -> np.ndarray:
     ----------
     de_dataset : xarray.Dataset
         Events dataset.
-    ssd : np.array
+    ssd : np.ndarray
         SSD number.
 
     Returns
     -------
-    energy : np.ndarray
+    energy_norm : np.ndarray
         Energy measured using the SSD.
     """
     # DN threshold for composite energy.
     composite_energy_threshold = 1707
 
-    ssd_indices = np.where(de_dataset["STOP_TYPE"] >= 8)[0]
+    ssd_indices = np.where(de_dataset["STOP_TYPE"].data >= 8)[0]
     energy = de_dataset["ENERGY_PH"].data[ssd_indices]
 
     composite_energy = np.empty(len(energy), dtype=np.float64)
 
     composite_energy[energy >= composite_energy_threshold] = (
         composite_energy_threshold
-        + de_dataset["PULSE_WIDTH"][ssd_indices][energy >= composite_energy_threshold]
+        + de_dataset["PULSE_WIDTH"].data[ssd_indices][energy >= composite_energy_threshold]
     )
     composite_energy[energy < composite_energy_threshold] = energy[
         energy < composite_energy_threshold
