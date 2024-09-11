@@ -590,14 +590,14 @@ def get_energy_pulse_height(
     ylut[indices_bottom] = (yb[indices_bottom] / 100 + 82 / 2) * 32 / 82  # mm
 
     # TODO: waiting on these lookup tables: SpTpPHCorr, SpBtPHCorr
-    energy_ph[indices_top] = energy[
-        indices_top
-    ]  # - get_image_params("SpTpPHOffset") * SpTpPHCorr[
+    energy_ph[indices_top] = energy[indices_top] - get_image_params(
+        "SPTPPHOFF"
+    )  # * SpTpPHCorr[
     # xlut[indices_top], ylut[indices_top]] / 1024
 
-    energy_ph[indices_bottom] = energy[
-        indices_bottom
-    ]  # - get_image_params("SpBtPHOffset") * SpBtPHCorr[
+    energy_ph[indices_bottom] = energy[indices_bottom] - get_image_params(
+        "SPBTPHOFF"
+    )  # * SpBtPHCorr[
     # xlut[indices_bottom], ylut[indices_bottom]] / 1024
 
     return energy_ph
