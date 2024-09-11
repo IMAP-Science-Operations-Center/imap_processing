@@ -8,7 +8,8 @@ from math import floor
 import numpy as np
 import numpy.typing as npt
 
-from imap_processing.cdf.utils import J2000_EPOCH, met_to_j2000ns
+from imap_processing.cdf.utils import J2000_EPOCH
+from imap_processing.spice.time import met_to_j2000ns
 
 MAX_FINE_TIME = 65535  # maximum 16 bit unsigned int
 

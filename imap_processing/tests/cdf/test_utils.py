@@ -7,12 +7,10 @@ import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import (
-    IMAP_EPOCH,
-    J2000_EPOCH,
     load_cdf,
-    met_to_j2000ns,
     write_cdf,
 )
+from imap_processing.spice.time import met_to_j2000ns
 
 
 @pytest.fixture()
@@ -45,29 +43,6 @@ def test_dataset():
     dataset["epoch"].attrs["DEPEND_0"] = "epoch"
 
     return dataset
-
-
-def test_met_to_j2000ns():
-    """Tests the ``met_to_j2000ns`` function"""
-    imap_epoch_offset = (IMAP_EPOCH - J2000_EPOCH).astype(np.int64)
-    assert met_to_j2000ns(0) == imap_epoch_offset
-    assert met_to_j2000ns(1) == imap_epoch_offset + 1e9
-    # Large input should work (avoid overflow with int32 SHCOARSE inputs)
-    assert met_to_j2000ns(np.int32(2**30)) == imap_epoch_offset + 2**30 * 1e9
-    assert met_to_j2000ns(0).dtype == np.int64
-    # Float input should work
-    assert met_to_j2000ns(0.0) == imap_epoch_offset
-    assert met_to_j2000ns(1.2) == imap_epoch_offset + 1.2e9
-    # Negative input should work
-    assert met_to_j2000ns(-1) == imap_epoch_offset - 1e9
-    # array-like input should work
-    output = met_to_j2000ns([0, 1])
-    np.testing.assert_array_equal(output, [imap_epoch_offset, imap_epoch_offset + 1e9])
-    # Different reference epoch should shift the result
-    different_epoch_time = IMAP_EPOCH + np.timedelta64(2, "ns")
-    assert (
-        met_to_j2000ns(0, reference_epoch=different_epoch_time) == imap_epoch_offset + 2
-    )
 
 
 def test_load_cdf(test_dataset):

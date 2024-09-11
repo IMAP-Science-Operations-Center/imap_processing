@@ -1,11 +1,13 @@
 """Calculates Extended Raw Events for ULTRA L1b."""
 
+import logging
 from enum import Enum
 from typing import ClassVar
 
 import numpy as np
 import xarray
 from numpy import ndarray
+from numpy.typing import NDArray
 
 from imap_processing.ultra.l1b.lookup_utils import (
     get_back_position,
@@ -13,6 +15,8 @@ from imap_processing.ultra.l1b.lookup_utils import (
     get_norm,
     get_y_adjust,
 )
+
+logger = logging.getLogger(__name__)
 
 # Constants in IMAP-Ultra Flight Software Specification document.
 D_SLIT_FOIL = 3.39  # shortest distance from slit to foil (mm)
@@ -22,6 +26,7 @@ YF_ESTIMATE_RIGHT = -40  # front position of particle for right shutter (mm)
 N_ELEMENTS = 256  # number of elements in lookup table
 TRIG_CONSTANT = 81.92  # trigonometric constant (mm)
 # TODO: make lookup tables into config files.
+# TODO: put logic from Ultra FSW in here.
 
 
 class StartType(Enum):
@@ -222,9 +227,10 @@ def get_ph_tof_and_back_positions(
     t2[stop_type_top] = get_image_params("TOFSC") * t1[
         stop_type_top
     ] + get_image_params("TOFTPOFF")
-    tof[stop_type_top] = t2[stop_type_top] + xf_ph[stop_type_top] * get_image_params(
-        "XFTTOF"
-    )
+    # Variable xf_ph divided by 10 to convert to mm.
+    tof[stop_type_top] = t2[stop_type_top] + xf_ph[
+        stop_type_top
+    ] / 10 * get_image_params("XFTTOF")
 
     stop_type_bottom = de_filtered["STOP_TYPE"].data == StopType.Bottom.value
     xb[stop_type_bottom] = get_back_position(
@@ -239,9 +245,10 @@ def get_ph_tof_and_back_positions(
         stop_type_bottom
     ] + get_image_params("TOFBTOFF")  # 10*ns
 
+    # Variable xf_ph divided by 10 to convert to mm.
     tof[stop_type_bottom] = t2[stop_type_bottom] + xf_ph[
         stop_type_bottom
-    ] * get_image_params("XFTTOF")
+    ] / 10 * get_image_params("XFTTOF")
 
     return tof, t2, xb, yb
 
@@ -426,3 +433,111 @@ def get_coincidence_positions(
 
     # Convert to hundredths of a millimeter by multiplying times 100
     return etof, xc_array * 100
+
+
+def get_particle_velocity(
+    front_position: tuple[float, float],
+    back_position: tuple[float, float],
+    d: np.ndarray,
+    tof: np.ndarray,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """
+    Determine the particle velocity.
+
+    The equation is: velocity = ((xf - xb), (yf - yb), d).
+
+    Further description is available on pages 39 of
+    IMAP-Ultra Flight Software Specification document
+    (7523-9009_Rev_-.pdf).
+
+    Parameters
+    ----------
+    front_position : tuple
+        Front position (xf,yf) (hundredths of a millimeter).
+    back_position : tuple
+        Back position (xb,yb) (hundredths of a millimeter).
+    d : np.array
+        Distance from slit to foil (hundredths of a millimeter).
+    tof : np.array
+        Time of flight (tenths of a nanosecond).
+
+    Returns
+    -------
+    vhat_x : np.array
+        Normalized component of the velocity vector in x direction.
+    vhat_y : np.array
+        Normalized component of the velocity vector in y direction.
+    vhat_z : np.array
+        Normalized component of the velocity vector in z direction.
+    """
+    if tof[tof < 0].any():
+        logger.info("Negative tof values found.")
+
+    delta_x = front_position[0] - back_position[0]
+    delta_y = front_position[1] - back_position[1]
+
+    v_x = delta_x / tof
+    v_y = delta_y / tof
+    v_z = d / tof
+
+    # Magnitude of the velocity vector
+    magnitude_v = np.sqrt(v_x**2 + v_y**2 + v_z**2)
+
+    vhat_x = -v_x / magnitude_v
+    vhat_y = -v_y / magnitude_v
+    vhat_z = -v_z / magnitude_v
+
+    vhat_x[tof < 0] = np.iinfo(np.int64).min  # used as fillvals
+    vhat_y[tof < 0] = np.iinfo(np.int64).min
+    vhat_z[tof < 0] = np.iinfo(np.int64).min
+
+    return vhat_x, vhat_y, vhat_z
+
+
+def get_ssd_tof(de_dataset: xarray.Dataset, xf: np.ndarray) -> NDArray[np.float64]:
+    """
+    Calculate back xb, yb position for the SSDs.
+
+    An incoming particle could miss the stop anodes and instead
+    hit one of the SSDs between the anodes. Which SSD is hit
+    gives a coarse measurement of the y back position;
+    the x back position will be fixed.
+
+    Before hitting the SSD, particles pass through the stop foil;
+    dislodged electrons are accelerated back towards the coincidence anode.
+    The Coincidence Discrete provides a measure of the TOF.
+    A scale factor and offsets, and a multiplier convert xf to a tof offset.
+
+    Further description is available on pages 36 of
+    IMAP-Ultra Flight Software Specification document
+    (7523-9009_Rev_-.pdf).
+
+    Parameters
+    ----------
+    de_dataset : xarray.Dataset
+        Data in xarray format.
+    xf : np.array
+        Front x position (hundredths of a millimeter).
+
+    Returns
+    -------
+    tof : np.ndarray
+        Time of flight (tenths of a nanosecond).
+    """
+    _, tof_offset, ssd_number = get_ssd_back_position_and_tof_offset(de_dataset)
+    indices = np.nonzero(np.isin(de_dataset["STOP_TYPE"], [StopType.SSD.value]))[0]
+
+    de_discrete = de_dataset.isel(epoch=indices)["COIN_DISCRETE_TDC"]
+
+    time = get_image_params("TOFSSDSC") * de_discrete.values + tof_offset
+
+    # The scale factor and offsets, and a multiplier to convert xf to a tof offset.
+    # Convert xf to mm by dividing by 100.
+    tof = (
+        time
+        + get_image_params("TOFSSDTOTOFF")
+        + xf[indices] / 100 * get_image_params("XFTTOF")
+    ) * 10
+
+    # Convert TOF to tenths of a nanosecond.
+    return np.asarray(tof, dtype=np.float64)

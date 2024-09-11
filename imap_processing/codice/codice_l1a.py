@@ -23,9 +23,9 @@ import xarray as xr
 from imap_processing import imap_module_directory
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.codice import constants
+from imap_processing.codice.codice_l0 import decom_packets
 from imap_processing.codice.decompress import decompress
 from imap_processing.codice.utils import CODICEAPID
-from imap_processing.utils import packet_file_to_datasets
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -112,7 +112,7 @@ class CoDICEL1aPipeline:
 
         for name in self.coords_to_include:
             if name == "epoch":
-                values = self.packet.epoch
+                values = self.packet_dataset.epoch
             elif name == "inst_az":
                 values = np.arange(self.num_positions)
             elif name == "spin_sector":
@@ -359,7 +359,7 @@ class CoDICEL1aPipeline:
         data_version : str
             Version of the data product being created.
         """
-        self.packet = packet
+        self.packet_dataset = packet
 
         # Gather and set various configurations of the data product
         config = constants.DATA_PRODUCT_CONFIGURATIONS.get(apid)  # type: ignore[call-overload]
@@ -537,31 +537,28 @@ def process_codice_l1a(file_path: Path, data_version: str) -> xr.Dataset:
         The ``xarray`` dataset containing the science data and supporting metadata.
     """
     # Decom the packets, group data by APID, and sort by time
-    xtce_packet_definition = Path(
-        f"{imap_module_directory}/codice/packet_definitions/{constants.PACKET_TO_XTCE_MAPPING[file_path.name]}"
-    )
-    packets = packet_file_to_datasets(file_path, xtce_packet_definition)
+    datasets = decom_packets(file_path)
 
-    for apid in packets:
-        packet = packets[apid]
+    for apid in datasets:
+        packet_dataset = datasets[apid]
         logger.info(f"\nProcessing {CODICEAPID(apid).name} packet")
 
         if apid == CODICEAPID.COD_NHK:
-            dataset = create_hskp_dataset(packet, data_version)
+            dataset = create_hskp_dataset(packet_dataset, data_version)
 
         elif apid in [CODICEAPID.COD_LO_PHA, CODICEAPID.COD_HI_PHA]:
-            dataset = create_event_dataset(apid, packet, data_version)
+            dataset = create_event_dataset(apid, packet_dataset, data_version)
 
         elif apid in constants.APIDS_FOR_SCIENCE_PROCESSING:
             # Extract the data
-            science_values = packet.data.data[0]
+            science_values = packet_dataset.data.data[0]
 
             # Get the four "main" parameters for processing
-            table_id, plan_id, plan_step, view_id = get_params(packet)
+            table_id, plan_id, plan_step, view_id = get_params(packet_dataset)
 
             # Run the pipeline to create a dataset for the product
             pipeline = CoDICEL1aPipeline(table_id, plan_id, plan_step, view_id)
-            pipeline.set_data_product_config(apid, packet, data_version)
+            pipeline.set_data_product_config(apid, packet_dataset, data_version)
             pipeline.decompress_data(science_values)
             pipeline.reshape_data()
             pipeline.define_coordinates()

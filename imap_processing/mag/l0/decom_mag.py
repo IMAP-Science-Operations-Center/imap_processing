@@ -14,9 +14,9 @@ from space_packet_parser import parser, xtcedef
 from imap_processing import imap_module_directory
 from imap_processing.ccsds.ccsds_data import CcsdsData
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
-from imap_processing.cdf.utils import met_to_j2000ns
 from imap_processing.mag.constants import DataMode
 from imap_processing.mag.l0.mag_l0_data import MagL0, Mode
+from imap_processing.spice.time import met_to_j2000ns
 
 logger = logging.getLogger(__name__)
 
