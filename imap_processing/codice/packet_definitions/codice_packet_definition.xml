@@ -45,6 +45,7 @@
 			<xtce:EnumeratedParameterType name="COD_NHK.LAST_OPCODE" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="16" encoding="unsigned" />
 				<xtce:EnumerationList>
+					<xtce:Enumeration value="0" label="ERROR" />
 					<xtce:Enumeration value="4096" label="COD_NOOP" />
 					<xtce:Enumeration value="4097" label="COD_RESET" />
 					<xtce:Enumeration value="4098" label="COD_SHUTDOWN" />
