@@ -12,9 +12,11 @@ from imap_processing.ultra.l1b.ultra_l1b_extended import (
     get_coincidence_positions,
     get_front_x_position,
     get_front_y_position,
+    get_particle_velocity,
     get_path_length,
     get_ph_tof_and_back_positions,
     get_ssd_back_position_and_tof_offset,
+    get_ssd_tof,
 )
 
 
@@ -203,4 +205,55 @@ def test_calculate_etof_xc(de_dataset, yf_fixture):
     )
     np.testing.assert_allclose(
         etof_bottom, df_bottom["eTOF"].astype("float").values, atol=1e-06, rtol=0
+    )
+
+
+def test_get_particle_velocity(de_dataset, yf_fixture):
+    """Tests get_particle_velocity function."""
+    df_filt, _, _ = yf_fixture
+
+    ph_indices = np.nonzero(
+        np.isin(de_dataset["STOP_TYPE"], [StopType.Top.value, StopType.Bottom.value])
+    )[0]
+
+    ph_rows = df_filt.iloc[ph_indices]
+    test_xf = ph_rows["Xf"].astype("float").values
+    test_yf = ph_rows["Yf"].astype("float").values
+    test_xb = ph_rows["Xb"].astype("float").values
+    test_yb = ph_rows["Yb"].astype("float").values
+    test_d = ph_rows["d"].astype("float").values
+    test_tof = ph_rows["TOF"].astype("float").values
+
+    vhat_x, vhat_y, vhat_z = get_particle_velocity(
+        (test_xf, test_yf),
+        (test_xb, test_yb),
+        test_d,
+        test_tof,
+    )
+    # FSW test data should be negative and not have an analysis
+    # for negative tof values.
+    assert vhat_x[test_tof > 0] == pytest.approx(
+        -df_filt["vhatX"].iloc[ph_indices].astype("float").values[test_tof > 0],
+        rel=1e-2,
+    )
+    assert vhat_y[test_tof > 0] == pytest.approx(
+        -df_filt["vhatY"].iloc[ph_indices].astype("float").values[test_tof > 0],
+        rel=1e-2,
+    )
+    assert vhat_z[test_tof > 0] == pytest.approx(
+        -df_filt["vhatZ"].iloc[ph_indices].astype("float").values[test_tof > 0],
+        rel=1e-2,
+    )
+
+
+def test_get_ssd_tof(de_dataset, yf_fixture):
+    """Tests get_ssd_tof function."""
+    df_filt, _, _ = yf_fixture
+    df_ssd = df_filt[df_filt["StopType"].isin(StopType.SSD.value)]
+    test_xf = df_filt["Xf"].astype("float").values
+
+    ssd_tof = get_ssd_tof(de_dataset, test_xf)
+
+    np.testing.assert_allclose(
+        ssd_tof, df_ssd["TOF"].astype("float"), atol=1e-05, rtol=0
     )
