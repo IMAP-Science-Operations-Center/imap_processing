@@ -547,11 +547,11 @@ def get_ssd_tof(de_dataset: xarray.Dataset, xf: np.ndarray) -> NDArray[np.float6
 
 def get_energy_pulse_height(
     stop_type: np.ndarray, energy: np.ndarray, xb: np.ndarray, yb: np.ndarray
-) -> np.ndarray:
+) -> NDArray[np.float64]:
     """
     Calculate the pulse-height energy.
 
-    Calculate the energy measured using the
+    Calculate energy measured using the
     pulse height from the stop anode.
     Lookup tables (lut) are used for corrections.
     Further description is available on pages 40-41 of
@@ -603,7 +603,7 @@ def get_energy_pulse_height(
     return energy_ph
 
 
-def get_energy_ssd(de_dataset: xarray.Dataset, ssd: np.ndarray) -> np.ndarray:
+def get_energy_ssd(de_dataset: xarray.Dataset, ssd: np.ndarray) -> NDArray[np.float64]:
     """
     Get SSD energy.
 
@@ -638,7 +638,9 @@ def get_energy_ssd(de_dataset: xarray.Dataset, ssd: np.ndarray) -> np.ndarray:
 
     composite_energy[energy >= composite_energy_threshold] = (
         composite_energy_threshold
-        + de_dataset["PULSE_WIDTH"].data[ssd_indices][energy >= composite_energy_threshold]
+        + de_dataset["PULSE_WIDTH"].data[ssd_indices][
+            energy >= composite_energy_threshold
+        ]
     )
     composite_energy[energy < composite_energy_threshold] = energy[
         energy < composite_energy_threshold
