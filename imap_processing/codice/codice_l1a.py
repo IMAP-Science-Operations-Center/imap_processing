@@ -305,7 +305,7 @@ class CoDICEL1aPipeline:
 
         # Get the appropriate values
         sweep_table = sweep_data[sweep_data["table_idx"] == sweep_table_id]
-        energy_table = sweep_table["esa_v"].values
+        energy_table: list[float] = sweep_table["esa_v"].values
 
         return energy_table
 
