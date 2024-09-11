@@ -72,6 +72,9 @@ filterwarnings = [
     "ignore:Converting non-nanosecond:UserWarning:cdflib",
     "ignore:datetime.datetime.utcfromtimestamp:DeprecationWarning:cdflib",
 ]
+markers = [
+    "external_kernel: marks tests as requiring external SPICE kernels (deselect with '-m \"not external_kernel\"')",
+]
 
 
 [tool.ruff]

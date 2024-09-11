@@ -177,3 +177,7 @@ cython_debug/
 
 # Data that is downloaded
 data/
+
+# Ignore specific SPICE kernels that get downloaded from NAIF automatically for tests
+# marked with @pytest.mark.external_kernel
+**/de440*.bsp
