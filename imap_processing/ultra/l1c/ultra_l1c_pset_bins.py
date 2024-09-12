@@ -1,9 +1,10 @@
-"""Module to create and populate bins for pointing sets."""
+"""Module to create energy bins for pointing sets."""
 
 import numpy as np
+from numpy.typing import NDArray
 
 
-def build_energy_bins() -> tuple[np.ndarray, np.ndarray]:
+def build_energy_bins() -> NDArray[np.float64]:
     """
     Build energy bin boundaries.
 
@@ -11,18 +12,19 @@ def build_energy_bins() -> tuple[np.ndarray, np.ndarray]:
     -------
     energy_bin_edges : np.ndarray
         Array of energy bin edges.
-    energy_bin_mean : np.ndarray
-        Array of energy bin midpoint values.
     """
-    alpha = 0.05  # deltaE/E
-    energy_start = 3.5  # energy start for the Ultra grids
-    n_bins = 90  # number of energy bins
+    # TODO: these value will almost certainly change.
+    alpha = 0.2  # deltaE/E
+    energy_start = 3.385  # energy start for the Ultra grids
+    n_bins = 23  # number of energy bins
 
     # Calculate energy step
     energy_step = (1 + alpha / 2) / (1 - alpha / 2)
 
     # Create energy bins.
     energy_bin_edges = energy_start * energy_step ** np.arange(n_bins + 1)
+    # Add a zero to the left side for outliers and round to nearest 3 decimal places.
+    energy_bin_edges = np.around(np.insert(energy_bin_edges, 0, 0), 3)
 
     return energy_bin_edges
 
@@ -137,9 +139,9 @@ def bin_space(
     el_degrees = np.degrees(el)
 
     # If azimuth is exactly 360 degrees it is placed in last bin.
-    az_degrees[az_degrees >= az_bin_edges[-1]] = az_bin_midpoints[-1]
+    az_degrees[az_degrees == az_bin_edges[-1]] = az_bin_midpoints[-1]
     # If elevation is exactly 90 degrees it is placed in last bin.
-    el_degrees[el_degrees >= el_bin_edges[-1]] = el_bin_midpoints[-1]
+    el_degrees[el_degrees == el_bin_edges[-1]] = el_bin_midpoints[-1]
 
     # Find the appropriate bin index.
     az_bin_idx = np.searchsorted(az_bin_edges, az_degrees, side="right") - 1
@@ -152,7 +154,7 @@ def bin_space(
     return az_midpoint, el_midpoint
 
 
-def bin_energy(energy: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+def bin_energy(energy: np.ndarray) -> NDArray[np.float64]:
     """
     Bin the particle.
 
@@ -163,19 +165,12 @@ def bin_energy(energy: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
 
     Returns
     -------
-    energy_mean : np.ndarray
-        Mean energy value.
+    energy_start : np.ndarray
+        Start of energy bin.
     """
     energy_bin_edges = build_energy_bins()
-
-    # If energy is exactly equal to the last bin edge it is placed in last bin.
-    energy[energy >= energy_bin_edges[-1]] = energy_bin_mean[-1]
 
     # Find the appropriate bin index.
     energy_bin_idx = np.searchsorted(energy_bin_edges, energy, side="right") - 1
 
-    # Assign the corresponding means.
-    az_mean = energy_bin_mean[energy_bin_idx]
-    el_mean = energy_bin_mean[energy_bin_idx]
-
-    return az_mean, el_mean
+    return energy_bin_edges[energy_bin_idx]

@@ -3,6 +3,7 @@
 import numpy as np
 
 from imap_processing.ultra.l1c.ultra_l1c_pset_bins import (
+    bin_energy,
     bin_space,
     build_energy_bins,
     build_spatial_bins,
@@ -16,13 +17,14 @@ def test_build_energy_bins():
     energy_bin_start = energy_bin_edges[:-1]
     energy_bin_end = energy_bin_edges[1:]
 
-    assert energy_bin_start[0] == 3.5
-    assert len(energy_bin_edges) == 91
+    assert energy_bin_start[0] == 0
+    assert energy_bin_start[1] == 3.385
+    assert len(energy_bin_edges) == 25
 
     # Comparison to expected values.
-    np.testing.assert_allclose(energy_bin_end[0], 3.6795, atol=1e-4)
-    np.testing.assert_allclose(energy_bin_start[-1], 299.9724, atol=1e-4)
-    np.testing.assert_allclose(energy_bin_end[-1], 315.3556, atol=1e-4)
+    np.testing.assert_allclose(energy_bin_end[1], 4.137, atol=1e-4)
+    np.testing.assert_allclose(energy_bin_start[-1], 279.810, atol=1e-4)
+    np.testing.assert_allclose(energy_bin_end[-1], 341.989, atol=1e-4)
 
 
 def test_build_spatial_bins():
@@ -79,3 +81,11 @@ def test_bin_space():
 
     assert np.all(az_within_tolerance)
     assert np.all(el_within_tolerance)
+
+
+def test_bin_energy():
+    """Tests bin_energy function."""
+    energy = np.array([3.384, 3.385, 341.989, 342])
+    bin = bin_energy(energy)
+
+    np.testing.assert_equal(bin, (0, 3.385, 341.989, 341.989))
