@@ -21,7 +21,7 @@ The general filename convention is as follows::
   * CoDICE: ``l0``, ``l1a``, ``l1b``, ``l2``, ``l3``
   * GLOWS: ``l0``, ``l1a``, ``l1b``, ``l2``, ``l3a``, ``l3b``, ``l3c``, ``l3d``
   * HIT: ``l0``, ``l1a``, ``l1b``, ``l2``, ``l3``
-  * IDEX: ``l0``, ``l1``, ``l2``, ``l3``
+  * IDEX: ``l0``, ``l1a``, ``l1b``, ``l2``, ``l3``
   * IMAP-Hi: ``l0``, ``l1a``, ``l1b``, ``l1c``, ``l2``, ``l3``
   * IMAP-Lo: ``l0``, ``l1a``, ``l1b``, ``l1c``, ``l2``
   * IMAP-Ultra: ``l0``, ``l1a``, ``l1b``, ``l1c``, ``l2``, ``l3``
@@ -58,7 +58,7 @@ The general filename convention is as follows::
 
 Here are a few examples of acceptable filenames:
 
-* ``imap_idex_l0_20261206_v001.pkts``
+* ``imap_idex_l0_raw_20261206_v001.pkts``
 
   An IDEX L0 packet file containing data from the single day of ``2026-12-06``
 
