@@ -11,7 +11,7 @@ from imap_processing.utils import packet_file_to_datasets
 
 # Structure to hold binary details for a
 # section of science data. Used to unpack
-# the binary string.
+# binary data.
 HITPacking = namedtuple(
     "HITPacking",
     [
@@ -21,7 +21,7 @@ HITPacking = namedtuple(
     ],
 )
 
-# Dict of data structure for counts rates data
+# Define data structure for counts rates data
 COUNTS_DATA_STRUCTURE = {
     # field: bit_length, section_length, shape
     # ------------------------------------------
@@ -78,7 +78,7 @@ COUNTS_DATA_STRUCTURE = {
         16, 16, (1,)
     ),  # events with inconsistent tags vs pulse heights
     # -------------------------------------------
-    # other rates
+    # other count rates
     "coinrates": HITPacking(16, 416, (26,)),  # coincidence rates
     "bufrates": HITPacking(16, 512, (32,)),  # priority buffer rates
     "l2fgrates": HITPacking(16, 2112, (132,)),  # range 2 foreground rates
@@ -93,7 +93,7 @@ COUNTS_DATA_STRUCTURE = {
     "l4bgrates": HITPacking(16, 384, (24,)),  # all range foreground rates
 }
 
-# Dict of data structure for pulse height event data
+# Define data structure for pulse height event data
 PHA_DATA_STRUCTURE = {
     # field: bit_length, section_length, shape
     "pha_records": HITPacking(2, 29344, (917,)),
@@ -173,11 +173,12 @@ def parse_count_rates(sci_dataset: xr.Dataset) -> None:
                 parsed_data[i] = [high_gain, low_gain]
 
         # TODO
+        #  - status bits needs to be further parsed (table 10 in algorithm doc)
         #  - subcommutate sectorates
         #  - decompress data
         #  - Follow up with HIT team about erates and evrates.
-        #    Should these be arrays containing all the sub fields
-        #    or should each subfield be it's own data field/array
+        #    (i.e.Should these be arrays containing all the sub fields
+        #    or should each subfield be it's own data field/array)
 
         # Get dims for data variables (yaml file not created yet)
         if len(field_meta.shape) > 1:
@@ -277,10 +278,14 @@ def update_ccsds_header_data(sci_dataset: xr.Dataset) -> xr.Dataset:
     Update dimensions of CCSDS header fields.
 
     The CCSDS header fields contain 1D arrays with
-    values from all the packets in the file. This
-    function updates the dimension for these fields
-    to use sc_tick instead of epoch. sc_tick is the
-    time the packet was created.
+    values from all the packets in the file.
+    While the epoch dimension contains time per packet,
+    it will be updated later in the process to represent
+    time per science frame, so another time dimension is
+    needed for the ccsds header fields.This function
+    updates the dimension for these fields to use sc_tick
+    instead of epoch. sc_tick is the time the packet was
+    created.
 
     Parameters
     ----------
@@ -296,7 +301,6 @@ def update_ccsds_header_data(sci_dataset: xr.Dataset) -> xr.Dataset:
     # sc_tick contains spacecraft time per packet
     sci_dataset.coords["sc_tick"] = sci_dataset["sc_tick"]
     sci_dataset = sci_dataset.swap_dims({"epoch": "sc_tick"})
-    # TODO: status bits needs to be further parsed (table 10 in algorithm doc)
     return sci_dataset
 
 
@@ -363,7 +367,9 @@ def assemble_science_frames(sci_dataset: xr.Dataset) -> xr.Dataset:
 
         if is_valid_science_frame(seq_flgs_chunk, src_seq_ctr_chunk):
             # Append valid data to lists
+            # First 6 packets contain count rates data
             count_rates_binary.append("".join(science_data_chunk.data[0:6]))
+            # Last 14 packets contain pulse height event data
             pha_binary.append("".join(science_data_chunk.data[6:]))
             # Just take first packet's epoch for the science frame
             epoch_science_frame.append(epoch_data_chunk[0])
