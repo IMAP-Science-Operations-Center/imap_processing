@@ -33,6 +33,7 @@ def lo_l1a(dependency: Path, data_version: str) -> list[xr.Dataset]:
     datasets_by_apid = packet_file_to_datasets(
         packet_file=dependency.resolve(),
         xtce_packet_definition=xtce_file.resolve(),
+        use_derived_value=False,
     )
 
     # create the attribute manager for this data level
