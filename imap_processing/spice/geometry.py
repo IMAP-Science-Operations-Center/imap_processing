@@ -10,15 +10,14 @@ Paradigms for developing this module:
 
 import typing
 from enum import IntEnum
-from typing import Optional, Union
+from pathlib import Path
+from typing import Union
 
-import cdflib
 import numpy as np
 import pandas as pd
 import spiceypy as spice
 
 from imap_processing.spice.kernels import ensure_spice
-from imap_processing.spice.time import met_to_j2000ns
 
 
 class SpiceBody(IntEnum):
@@ -92,89 +91,11 @@ def imap_state(
     return np.asarray(state)
 
 
-def generate_spin_data(
-    start_met: float, end_met: Optional[float] = None
-) -> pd.DataFrame:
+def get_spin_data(path_to_spin_file: Path) -> pd.DataFrame:
     """
-    Generate a spin table CSV covering one or more days.
+    Read spin file and return spin data.
 
-    Spin table contains the following fields:
-        (
-        spin_number,
-        spin_start_sec,
-        spin_start_subsec,
-        spin_period_sec,
-        spin_period_valid,
-        spin_phas_valid,
-        spin_period_source,
-        thruster_firing
-        )
-    This function creates spin data using start MET and end MET time.
-    Each spin start data uses the nominal 15 second spin period. The spins that
-    occur from 00:00(Mid-night) to 00:10 UTC are marked with flags for
-    thruster firing, invalid spin period, and invalid spin phase.
-
-    Parameters
-    ----------
-    start_met : float
-        Provides the start time in Mission Elapsed Time (MET).
-    end_met : float
-        Provides the end time in MET. If not provided, default to one day
-        from start time.
-
-    Returns
-    -------
-    spin_df : pandas.DataFrame
-        Spin data. May need to save data to CSV file.
-    """
-    if end_met is None:
-        # end_time is one day after start_time
-        end_met = start_met + 86400
-
-    # Create spin start second data of 15 seconds increment
-    spin_start_sec = np.arange(start_met, end_met, 15)
-
-    spin_dict = {
-        "spin_number": np.arange(spin_start_sec.size, dtype=np.uint32),
-        "spin_start_sec": spin_start_sec,
-        "spin_start_subsec": np.full(spin_start_sec.size, 0, dtype=np.uint32),
-        "spin_period_sec": np.full(spin_start_sec.size, 15.0, dtype=np.float32),
-        "spin_period_valid": np.ones(spin_start_sec.size, dtype=np.uint8),
-        "spin_phas_valid": np.ones(spin_start_sec.size, dtype=np.uint8),
-        "spin_period_source": np.zeros(spin_start_sec.size, dtype=np.uint8),
-        "thruster_firing": np.zeros(spin_start_sec.size, dtype=np.uint8),
-    }
-
-    # Convert spin_start_sec to datetime to set repointing times flags
-    spin_start_dates = met_to_j2000ns(spin_start_sec)
-    spin_start_dates = cdflib.cdfepoch.to_datetime(spin_start_dates)
-
-    # Convert DatetimeIndex to Series for using .dt accessor
-    spin_start_dates_series = pd.Series(spin_start_dates)
-
-    # Find index of all timestamps that fall within 10 minutes after midnight
-    repointing_times = spin_start_dates_series[
-        (spin_start_dates_series.dt.time >= pd.Timestamp("00:00:00").time())
-        & (spin_start_dates_series.dt.time < pd.Timestamp("00:10:00").time())
-    ]
-
-    repointing_times_index = repointing_times.index
-
-    # Use the repointing times to set thruster firing flag and spin period valid
-    spin_dict["thruster_firing"][repointing_times_index] = 1
-    spin_dict["spin_period_valid"][repointing_times_index] = 0
-    spin_dict["spin_phas_valid"][repointing_times_index] = 0
-
-    spin_df = pd.DataFrame.from_dict(spin_dict)
-    return spin_df
-
-
-def get_spin_data(start_met: float, end_met: Optional[float] = None) -> pd.DataFrame:
-    """
-    Get spin data for a given time range.
-
-    This function queries spin data for the input date range. Spin
-    table contains the following fields:
+    Spin data should contains the following fields:
         (
             spin_number,
             spin_start_sec,
@@ -188,27 +109,19 @@ def get_spin_data(start_met: float, end_met: Optional[float] = None) -> pd.DataF
 
     Parameters
     ----------
-    start_met : float
-        Provide the start time in Mission Elapsed Time (MET).
-    end_met : float
-        Provide the end time in MET. If not provided, default to one day
-        from start time.
+    path_to_spin_file : pathlib.Path
+        Input CSV file containing spin data.
 
     Returns
     -------
     spin_data : pandas.DataFrame
-        Spin data. It's a dictionary with keys and values as numpy arrays.
+        Spin data.
     """
-    if end_met is None:
-        # end time is one day after start time
-        end_met = start_met + 86400
-
-    # TODO: write code to query spin database and return all spin data
-    # for the input date range once we have actual infrastructure in place.
-
-    # Call generate_spin_data function temporarily that generates sample spin data for
-    # the given date range.
-    return generate_spin_data(start_met, end_met)
+    # TODO: change this function if file type of spin data changes
+    # or if spin data is stored in a database
+    if path_to_spin_file.suffix != ".csv":
+        raise ValueError("Input file must be a CSV file.")
+    return pd.read_csv(path_to_spin_file)
 
 
 def get_spacecraft_spin_phase(
