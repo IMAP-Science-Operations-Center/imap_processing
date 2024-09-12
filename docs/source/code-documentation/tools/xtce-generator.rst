@@ -125,6 +125,13 @@ the conversion details.
      - Apply an analog conversion
      -
    * - MY_INSTRUMENT_HK
+     - VARIABLE_ENUMERATED
+     - 1
+     - UINT
+     - STATE
+     - Apply an enumeration state
+     -
+   * - MY_INSTRUMENT_HK
      - VARIABLE_LENGTH_BINARY_SCIENCE
      - 100
      - BYTE
@@ -164,3 +171,26 @@ coefficients defined from ``c0`` to ``c7`` to define the order of the polynomial
      -
      -
      -
+
+States tab (optional)
+~~~~~~~~~~~~~~~~~~~~~
+
+Packet parsing can also apply enumeration/state conversions to the data being read in.
+For example, to change from a raw unsigned integer value to a "VALID" / "INVALID" string.
+The ``States`` tab is used to define these enumerations.
+
+.. list-table:: States
+   :header-rows: 1
+
+   * - packetName
+     - mnemonic
+     - value
+     - state
+   * - MY_INSTRUMENT_HK
+     - VARIABLE_ENUMERATED
+     - 0
+     - INVALID
+   * - MY_INSTRUMENT_HK
+     - VARIABLE_ENUMERATED
+     - 1
+     - VALID

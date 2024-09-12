@@ -1,12 +1,22 @@
 """Calculates Extended Raw Events for ULTRA L1b."""
 
+import logging
+from enum import Enum
+from typing import ClassVar
+
 import numpy as np
+import xarray
 from numpy import ndarray
+from numpy.typing import NDArray
 
 from imap_processing.ultra.l1b.lookup_utils import (
+    get_back_position,
     get_image_params,
+    get_norm,
     get_y_adjust,
 )
+
+logger = logging.getLogger(__name__)
 
 # Constants in IMAP-Ultra Flight Software Specification document.
 D_SLIT_FOIL = 3.39  # shortest distance from slit to foil (mm)
@@ -16,6 +26,29 @@ YF_ESTIMATE_RIGHT = -40  # front position of particle for right shutter (mm)
 N_ELEMENTS = 256  # number of elements in lookup table
 TRIG_CONSTANT = 81.92  # trigonometric constant (mm)
 # TODO: make lookup tables into config files.
+# TODO: put logic from Ultra FSW in here.
+
+
+class StartType(Enum):
+    """Start Type: 1=Left, 2=Right."""
+
+    Left = 1
+    Right = 2
+
+
+class StopType(Enum):
+    """Stop Type: 1=Top, 2=Bottom, SSD: 8-15."""
+
+    Top = 1
+    Bottom = 2
+    SSD: ClassVar[list[int]] = [8, 9, 10, 11, 12, 13, 14, 15]
+
+
+class CoinType(Enum):
+    """Coin Type: 1=Top, 2=Bottom."""
+
+    Top = 1
+    Bottom = 2
 
 
 def get_front_x_position(start_type: ndarray, start_position_tdc: ndarray) -> ndarray:
@@ -111,6 +144,115 @@ def get_front_y_position(start_type: ndarray, yb: ndarray) -> tuple[ndarray, nda
     return np.array(d), np.array(yf)
 
 
+def get_ph_tof_and_back_positions(
+    de_dataset: xarray.Dataset, xf: np.ndarray, sensor: str
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """
+    Calculate back xb, yb position and tof.
+
+    An incoming particle may trigger pulses from one of the stop anodes.
+    If so, four pulses are produced, one each from the north, south,
+    east, and west sides.
+
+    The Time Of Flight (tof) and the position of the particle at the
+    back of the sensor are measured using the timing of the pulses.
+    Further description is available on pages 32-33 of
+    IMAP-Ultra Flight Software Specification document
+    (7523-9009_Rev_-.pdf).
+
+    Parameters
+    ----------
+    de_dataset : xarray.Dataset
+        Data in xarray format.
+    xf : np.array
+        X front position in (hundredths of a millimeter).
+        Has same length as de_dataset.
+    sensor : str
+        Sensor name.
+
+    Returns
+    -------
+    tof : np.array
+        Time of flight (nanoseconds).
+    t2 : np.array
+        Particle time of flight from start to stop (tenths of a nanosecond).
+    xb : np.array
+        Back positions in x direction (hundredths of a millimeter).
+    yb : np.array
+        Back positions in y direction (hundredths of a millimeter).
+    """
+    indices = np.nonzero(
+        np.isin(de_dataset["STOP_TYPE"], [StopType.Top.value, StopType.Bottom.value])
+    )[0]
+    de_filtered = de_dataset.isel(epoch=indices)
+
+    xf_ph = xf[indices]
+
+    # There are mismatches between the stop TDCs, i.e., SpN, SpS, SpE, and SpW.
+    # This normalizes the TDCs
+    sp_n_norm = get_norm(de_filtered["STOP_NORTH_TDC"].data, "SpN", sensor)
+    sp_s_norm = get_norm(de_filtered["STOP_SOUTH_TDC"].data, "SpS", sensor)
+    sp_e_norm = get_norm(de_filtered["STOP_EAST_TDC"].data, "SpE", sensor)
+    sp_w_norm = get_norm(de_filtered["STOP_WEST_TDC"].data, "SpW", sensor)
+
+    # Convert normalized TDC values into units of hundredths of a
+    # millimeter using lookup tables.
+    xb_index = sp_s_norm - sp_n_norm + 2047
+    yb_index = sp_e_norm - sp_w_norm + 2047
+
+    # Convert xf to a tof offset
+    tofx = sp_n_norm + sp_s_norm
+    tofy = sp_e_norm + sp_w_norm
+
+    # tof is the average of the two tofs measured in the X and Y directions,
+    # tofx and tofy
+    # Units in tenths of a nanosecond
+    t1 = tofx + tofy  # /2 incorporated into scale
+
+    xb = np.zeros(len(indices))
+    yb = np.zeros(len(indices))
+
+    # particle_tof (t2) used later to compute etof
+    t2 = np.zeros(len(indices))
+    tof = np.zeros(len(indices))
+
+    # Stop Type: 1=Top, 2=Bottom
+    # Convert converts normalized TDC values into units of
+    # hundredths of a millimeter using lookup tables.
+    stop_type_top = de_filtered["STOP_TYPE"].data == StopType.Top.value
+    xb[stop_type_top] = get_back_position(xb_index[stop_type_top], "XBkTp", sensor)
+    yb[stop_type_top] = get_back_position(yb_index[stop_type_top], "YBkTp", sensor)
+
+    # Correction for the propagation delay of the start anode and other effects.
+    t2[stop_type_top] = get_image_params("TOFSC") * t1[
+        stop_type_top
+    ] + get_image_params("TOFTPOFF")
+    # Variable xf_ph divided by 10 to convert to mm.
+    tof[stop_type_top] = t2[stop_type_top] + xf_ph[
+        stop_type_top
+    ] / 10 * get_image_params("XFTTOF")
+
+    stop_type_bottom = de_filtered["STOP_TYPE"].data == StopType.Bottom.value
+    xb[stop_type_bottom] = get_back_position(
+        xb_index[stop_type_bottom], "XBkBt", sensor
+    )
+    yb[stop_type_bottom] = get_back_position(
+        yb_index[stop_type_bottom], "YBkBt", sensor
+    )
+
+    # Correction for the propagation delay of the start anode and other effects.
+    t2[stop_type_bottom] = get_image_params("TOFSC") * t1[
+        stop_type_bottom
+    ] + get_image_params("TOFBTOFF")  # 10*ns
+
+    # Variable xf_ph divided by 10 to convert to mm.
+    tof[stop_type_bottom] = t2[stop_type_bottom] + xf_ph[
+        stop_type_bottom
+    ] / 10 * get_image_params("XFTTOF")
+
+    return tof, t2, xb, yb
+
+
 def get_path_length(front_position: tuple, back_position: tuple, d: float) -> float:
     """
     Calculate the path length.
@@ -136,3 +278,266 @@ def get_path_length(front_position: tuple, back_position: tuple, d: float) -> fl
     )
 
     return r
+
+
+def get_ssd_back_position_and_tof_offset(
+    de_dataset: xarray.Dataset,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """
+    Lookup the Y SSD positions (yb), TOF Offset, and SSD number.
+
+    Parameters
+    ----------
+    de_dataset : xarray.Dataset
+        The input dataset containing STOP_TYPE and SSD_FLAG data.
+
+    Returns
+    -------
+    yb : np.ndarray
+        Y SSD positions in hundredths of a millimeter.
+    tof_offset : np.ndarray
+        TOF offset.
+    ssd_number : np.ndarray
+        SSD number.
+
+    Notes
+    -----
+    The X back position (xb) is assumed to be 0 for SSD.
+    """
+    indices = np.nonzero(np.isin(de_dataset["STOP_TYPE"], StopType.SSD.value))[0]
+    de_filtered = de_dataset.isel(epoch=indices)
+
+    yb = np.zeros(len(indices), dtype=np.float64)
+    ssd_number = np.zeros(len(indices), dtype=int)
+    tof_offset = np.zeros(len(indices), dtype=np.float64)
+
+    for i in range(8):
+        ssd_flag_mask = de_filtered[f"SSD_FLAG_{i}"].data == 1
+
+        # Multiply ybs times 100 to convert to hundredths of a millimeter.
+        yb[ssd_flag_mask] = get_image_params(f"YBKSSD{i}") * 100
+        ssd_number[ssd_flag_mask] = i
+
+        tof_offset[
+            (de_filtered["START_TYPE"] == StartType.Left.value) & ssd_flag_mask
+        ] = get_image_params(f"TOFSSDLTOFF{i}")
+        tof_offset[
+            (de_filtered["START_TYPE"] == StartType.Right.value) & ssd_flag_mask
+        ] = get_image_params(f"TOFSSDRTOFF{i}")
+
+    return yb, tof_offset, ssd_number
+
+
+def calculate_etof_xc(
+    de_subset: xarray.Dataset, particle_tof: np.ndarray, sensor: str, location: str
+) -> tuple[np.ndarray, np.ndarray]:
+    """
+    Calculate the etof and xc values for the given subset.
+
+    Parameters
+    ----------
+    de_subset : xarray.Dataset
+        Subset of the dataset for a specific COIN_TYPE.
+    particle_tof : np.ndarray
+        Particle time of flight (i.e. from start to stop).
+    sensor : str
+        Sensor name.
+    location : str
+        Location indicator, either 'TP' (Top) or 'BT' (Bottom).
+
+    Returns
+    -------
+    etof : np.ndarray
+        Time for the electrons to travel back to the coincidence
+        anode (tenths of a nanosecond).
+    xc : np.ndarray
+        X coincidence position (millimeters).
+    """
+    # CoinNNorm
+    coin_n_norm = get_norm(de_subset["COIN_NORTH_TDC"], "CoinN", sensor)
+    # CoinSNorm
+    coin_s_norm = get_norm(de_subset["COIN_SOUTH_TDC"], "CoinS", sensor)
+    xc = get_image_params(f"XCOIN{location}SC") * (
+        coin_s_norm - coin_n_norm
+    ) + get_image_params(f"XCOIN{location}OFF")  # millimeter
+
+    # Time for the electrons to travel back to coincidence anode.
+    t2 = get_image_params("ETOFSC") * (coin_n_norm + coin_s_norm) + get_image_params(
+        f"ETOF{location}OFF"
+    )
+
+    # Multiply by 10 to convert to tenths of a nanosecond.
+    etof = t2 * 10 - particle_tof
+
+    return etof, xc
+
+
+def get_coincidence_positions(
+    de_dataset: xarray.Dataset, particle_tof: np.ndarray, sensor: str
+) -> tuple[np.ndarray, np.ndarray]:
+    """
+    Calculate coincidence positions.
+
+    Calculate time for electrons to travel back to
+    the coincidence anode (etof) and the x coincidence position (xc).
+
+    The tof measured by the coincidence anode consists of the particle
+    tof from start to stop, plus the time for the electrons to travel
+    back to the coincidence anode.
+
+    Further description is available on pages 34-35 of
+    IMAP-Ultra Flight Software Specification document
+    (7523-9009_Rev_-.pdf).
+
+    Parameters
+    ----------
+    de_dataset : xarray.Dataset
+        Data in xarray format.
+    particle_tof : np.ndarray
+        Particle time of flight (i.e. from start to stop)
+        (tenths of a nanosecond).
+    sensor : str
+        Sensor name.
+
+    Returns
+    -------
+    etof : np.ndarray
+        Time for the electrons to travel back to
+        coincidence anode (tenths of a nanosecond).
+    xc : np.ndarray
+        X coincidence position (hundredths of a millimeter).
+    """
+    index_top = np.nonzero(np.isin(de_dataset["COIN_TYPE"], CoinType.Top.value))[0]
+    de_top = de_dataset.isel(epoch=index_top)
+
+    index_bottom = np.nonzero(np.isin(de_dataset["COIN_TYPE"], CoinType.Bottom.value))[
+        0
+    ]
+    de_bottom = de_dataset.isel(epoch=index_bottom)
+
+    etof = np.zeros(len(de_dataset["COIN_TYPE"]), dtype=np.float64)
+    xc_array = np.zeros(len(de_dataset["COIN_TYPE"]), dtype=np.float64)
+
+    # Normalized TDCs
+    # For the stop anode, there are mismatches between the coincidence TDCs,
+    # i.e., CoinN and CoinS. They must be normalized via lookup tables.
+    etof_top, xc_top = calculate_etof_xc(de_top, particle_tof[index_top], sensor, "TP")
+    etof[index_top] = etof_top
+    xc_array[index_top] = xc_top
+
+    etof_bottom, xc_bottom = calculate_etof_xc(
+        de_bottom, particle_tof[index_bottom], sensor, "BT"
+    )
+    etof[index_bottom] = etof_bottom
+    xc_array[index_bottom] = xc_bottom
+
+    # Convert to hundredths of a millimeter by multiplying times 100
+    return etof, xc_array * 100
+
+
+def get_particle_velocity(
+    front_position: tuple[float, float],
+    back_position: tuple[float, float],
+    d: np.ndarray,
+    tof: np.ndarray,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """
+    Determine the particle velocity.
+
+    The equation is: velocity = ((xf - xb), (yf - yb), d).
+
+    Further description is available on pages 39 of
+    IMAP-Ultra Flight Software Specification document
+    (7523-9009_Rev_-.pdf).
+
+    Parameters
+    ----------
+    front_position : tuple
+        Front position (xf,yf) (hundredths of a millimeter).
+    back_position : tuple
+        Back position (xb,yb) (hundredths of a millimeter).
+    d : np.array
+        Distance from slit to foil (hundredths of a millimeter).
+    tof : np.array
+        Time of flight (tenths of a nanosecond).
+
+    Returns
+    -------
+    vhat_x : np.array
+        Normalized component of the velocity vector in x direction.
+    vhat_y : np.array
+        Normalized component of the velocity vector in y direction.
+    vhat_z : np.array
+        Normalized component of the velocity vector in z direction.
+    """
+    if tof[tof < 0].any():
+        logger.info("Negative tof values found.")
+
+    delta_x = front_position[0] - back_position[0]
+    delta_y = front_position[1] - back_position[1]
+
+    v_x = delta_x / tof
+    v_y = delta_y / tof
+    v_z = d / tof
+
+    # Magnitude of the velocity vector
+    magnitude_v = np.sqrt(v_x**2 + v_y**2 + v_z**2)
+
+    vhat_x = -v_x / magnitude_v
+    vhat_y = -v_y / magnitude_v
+    vhat_z = -v_z / magnitude_v
+
+    vhat_x[tof < 0] = np.iinfo(np.int64).min  # used as fillvals
+    vhat_y[tof < 0] = np.iinfo(np.int64).min
+    vhat_z[tof < 0] = np.iinfo(np.int64).min
+
+    return vhat_x, vhat_y, vhat_z
+
+
+def get_ssd_tof(de_dataset: xarray.Dataset, xf: np.ndarray) -> NDArray[np.float64]:
+    """
+    Calculate back xb, yb position for the SSDs.
+
+    An incoming particle could miss the stop anodes and instead
+    hit one of the SSDs between the anodes. Which SSD is hit
+    gives a coarse measurement of the y back position;
+    the x back position will be fixed.
+
+    Before hitting the SSD, particles pass through the stop foil;
+    dislodged electrons are accelerated back towards the coincidence anode.
+    The Coincidence Discrete provides a measure of the TOF.
+    A scale factor and offsets, and a multiplier convert xf to a tof offset.
+
+    Further description is available on pages 36 of
+    IMAP-Ultra Flight Software Specification document
+    (7523-9009_Rev_-.pdf).
+
+    Parameters
+    ----------
+    de_dataset : xarray.Dataset
+        Data in xarray format.
+    xf : np.array
+        Front x position (hundredths of a millimeter).
+
+    Returns
+    -------
+    tof : np.ndarray
+        Time of flight (tenths of a nanosecond).
+    """
+    _, tof_offset, ssd_number = get_ssd_back_position_and_tof_offset(de_dataset)
+    indices = np.nonzero(np.isin(de_dataset["STOP_TYPE"], [StopType.SSD.value]))[0]
+
+    de_discrete = de_dataset.isel(epoch=indices)["COIN_DISCRETE_TDC"]
+
+    time = get_image_params("TOFSSDSC") * de_discrete.values + tof_offset
+
+    # The scale factor and offsets, and a multiplier to convert xf to a tof offset.
+    # Convert xf to mm by dividing by 100.
+    tof = (
+        time
+        + get_image_params("TOFSSDTOTOFF")
+        + xf[indices] / 100 * get_image_params("XFTTOF")
+    ) * 10
+
+    # Convert TOF to tenths of a nanosecond.
+    return np.asarray(tof, dtype=np.float64)

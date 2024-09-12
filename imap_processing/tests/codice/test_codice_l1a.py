@@ -19,37 +19,20 @@ logger.setLevel(logging.INFO)
 
 EXPECTED_ARRAY_SHAPES = [
     (99,),  # hskp
-    (1, 128),  # hi-counters-aggregated
-    (1, 128),  # hi-counters-singles
-    (1, 128),  # hi-omni
-    (1, 128),  # hi-sectored
-    (1, 128),  # hi-pha
-    (1, 128),  # lo-counters-aggregated
-    (1, 128),  # lo-counters-aggregated
-    (1, 128),  # lo-sw-angular
-    (1, 128),  # lo-nsw-angular
-    (1, 128),  # lo-sw-priority
-    (1, 128),  # lo-nsw-priority
-    (1, 128),  # lo-sw-species
-    (1, 128),  # lo-nsw-species
+    (1, 1, 6, 1),  # hi-counters-aggregated  # TODO: Double check with Joey
+    (1, 1, 16, 1),  # hi-counters-singles  # TODO: Double check with Joey
+    (1, 15, 4, 1),  # hi-omni  # TODO: Double check with Joey
+    (1, 8, 12, 12),  # hi-sectored
+    (1, 1),  # hi-pha
+    (1, 6, 6, 128),  # lo-counters-aggregated
+    (1, 24, 6, 128),  # lo-counters-singles
+    (1, 5, 12, 128),  # lo-sw-angular
+    (1, 19, 12, 128),  # lo-nsw-angular
+    (1, 1, 12, 128),  # lo-sw-priority
+    (1, 1, 12, 128),  # lo-nsw-priority
+    (1, 1, 1, 128),  # lo-sw-species
+    (1, 1, 1, 128),  # lo-nsw-species
     (1, 128),  # lo-pha
-]
-EXPECTED_ARRAY_SIZES = [
-    123,  # hskp
-    1,  # hi-counters-aggregated
-    3,  # hi-counters-singles
-    8,  # hi-omni
-    4,  # hi-sectored
-    0,  # hi-pha
-    3,  # lo-counters-aggregated
-    3,  # lo-counters-singles
-    6,  # lo-sw-angular
-    3,  # lo-nsw-angular
-    7,  # lo-sw-priority
-    4,  # lo-nsw-priority
-    18,  # lo-sw-species
-    10,  # lo-nsw-species
-    0,  # lo-pha
 ]
 EXPECTED_LOGICAL_SOURCE = [
     "imap_codice_l1a_hskp",
@@ -67,6 +50,23 @@ EXPECTED_LOGICAL_SOURCE = [
     "imap_codice_l1a_lo-sw-species",
     "imap_codice_l1a_lo-nsw-species",
     "imap_codice_l1a_lo-pha",
+]
+EXPECTED_NUM_VARIABLES = [
+    129,  # hskp
+    1,  # hi-counters-aggregated
+    3,  # hi-counters-singles
+    8,  # hi-omni
+    4,  # hi-sectored
+    0,  # hi-pha
+    3,  # lo-counters-aggregated
+    3,  # lo-counters-singles
+    6,  # lo-sw-angular
+    3,  # lo-nsw-angular
+    7,  # lo-sw-priority
+    4,  # lo-nsw-priority
+    18,  # lo-sw-species
+    10,  # lo-nsw-species
+    0,  # lo-pha
 ]
 
 
@@ -110,9 +110,6 @@ def test_l1a_cdf_filenames(test_l1a_data: xr.Dataset, expected_logical_source: s
     assert dataset.attrs["Logical_source"] == expected_logical_source
 
 
-@pytest.mark.xfail(
-    reason="Currently failing due to cdflib/epoch issue. See https://github.com/MAVENSDC/cdflib/issues/268"
-)
 @pytest.mark.parametrize(
     "test_l1a_data, expected_shape",
     list(zip(TEST_PACKETS, EXPECTED_ARRAY_SHAPES)),
@@ -135,26 +132,6 @@ def test_l1a_data_array_shape(test_l1a_data: xr.Dataset, expected_shape: tuple):
             assert dataset[variable].data.shape == (128,)
         else:
             assert dataset[variable].data.shape == expected_shape
-
-
-@pytest.mark.parametrize(
-    "test_l1a_data, expected_size",
-    list(zip(TEST_PACKETS, EXPECTED_ARRAY_SIZES)),
-    indirect=["test_l1a_data"],
-)
-def test_l1a_data_array_size(test_l1a_data: xr.Dataset, expected_size: int):
-    """Tests that the data arrays in the generated CDFs have the expected size.
-
-    Parameters
-    ----------
-    test_l1a_data : xarray.Dataset
-        A ``xarray`` dataset containing the test data
-    expected_size : int
-        The expected size of the data array
-    """
-
-    dataset = test_l1a_data
-    assert len(dataset) == expected_size
 
 
 @pytest.mark.skip("Awaiting validation data")
@@ -188,3 +165,23 @@ def test_l1a_data_array_values(test_l1a_data: xr.Dataset, validation_data: Path)
             np.testing.assert_array_equal(
                 validation_data[variable].data, generated_dataset[variable].data[0]
             )
+
+
+@pytest.mark.parametrize(
+    "test_l1a_data, expected_num_variables",
+    list(zip(TEST_PACKETS, EXPECTED_NUM_VARIABLES)),
+    indirect=["test_l1a_data"],
+)
+def test_l1a_num_variables(test_l1a_data: xr.Dataset, expected_num_variables: int):
+    """Tests that the data arrays in the generated CDFs have the expected size.
+
+    Parameters
+    ----------
+    test_l1a_data : xarray.Dataset
+        A ``xarray`` dataset containing the test data
+    expected_num_variables : int
+        The expected number of data variables in the CDF
+    """
+
+    dataset = test_l1a_data
+    assert len(dataset) == expected_num_variables
