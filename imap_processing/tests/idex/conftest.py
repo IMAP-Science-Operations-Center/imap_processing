@@ -4,7 +4,7 @@ import pytest
 import xarray as xr
 
 from imap_processing import imap_module_directory
-from imap_processing.idex.idex_l1 import PacketParser
+from imap_processing.idex.idex_l1a import PacketParser
 
 
 @pytest.fixture()
