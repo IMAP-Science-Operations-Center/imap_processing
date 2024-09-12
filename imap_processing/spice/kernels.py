@@ -187,6 +187,9 @@ def open_spice_ck_file(pointing_frame_path: Path) -> Generator[int, None, None]:
     handle : int
         Handle to the opened CK file.
     """
+    # TODO: We will need to figure out if ck kernel changes
+    # and how that will affect appending to the pointing
+    # frame kernel.
     if pointing_frame_path.exists():
         handle = spice.dafopw(str(pointing_frame_path))
     else:
