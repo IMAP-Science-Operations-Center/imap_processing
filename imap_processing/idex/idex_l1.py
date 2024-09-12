@@ -16,7 +16,7 @@ import space_packet_parser
 import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
-from imap_processing.idex.l0.idex_l0 import decom_packets
+from imap_processing.idex.idex_l0 import decom_packets
 from imap_processing.spice.time import met_to_j2000ns
 
 logger = logging.getLogger(__name__)
