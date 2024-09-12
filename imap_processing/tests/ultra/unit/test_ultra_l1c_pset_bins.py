@@ -12,7 +12,9 @@ from imap_processing.ultra.l1c.ultra_l1c_pset_bins import (
 
 def test_build_energy_bins():
     """Tests build_energy_bins function."""
-    energy_bin_start, energy_bin_end, energy_bin_mean = build_energy_bins()
+    energy_bin_edges, energy_bin_mean = build_energy_bins()
+    energy_bin_start = energy_bin_edges[:-1]
+    energy_bin_end = energy_bin_edges[1:]
 
     assert energy_bin_start[0] == 3.5
     assert len(energy_bin_start) == 90
