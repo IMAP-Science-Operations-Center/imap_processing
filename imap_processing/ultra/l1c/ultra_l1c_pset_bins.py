@@ -24,10 +24,7 @@ def build_energy_bins() -> tuple[np.ndarray, np.ndarray]:
     # Create energy bins.
     energy_bin_edges = energy_start * energy_step ** np.arange(n_bins + 1)
 
-    # Calculate the geometric mean.
-    energy_bin_mean = np.sqrt(energy_bin_edges[:-1] * energy_bin_edges[1:])
-
-    return energy_bin_edges, energy_bin_mean
+    return energy_bin_edges
 
 
 def build_spatial_bins(
@@ -169,9 +166,7 @@ def bin_energy(energy: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
     energy_mean : np.ndarray
         Mean energy value.
     """
-    # TODO: Use quality flags to filter out energies beyond threshold.
-
-    energy_bin_edges, energy_bin_mean = build_energy_bins()
+    energy_bin_edges = build_energy_bins()
 
     # If energy is exactly equal to the last bin edge it is placed in last bin.
     energy[energy >= energy_bin_edges[-1]] = energy_bin_mean[-1]

@@ -12,27 +12,17 @@ from imap_processing.ultra.l1c.ultra_l1c_pset_bins import (
 
 def test_build_energy_bins():
     """Tests build_energy_bins function."""
-    energy_bin_edges, energy_bin_mean = build_energy_bins()
+    energy_bin_edges = build_energy_bins()
     energy_bin_start = energy_bin_edges[:-1]
     energy_bin_end = energy_bin_edges[1:]
 
     assert energy_bin_start[0] == 3.5
-    assert len(energy_bin_start) == 90
-    assert len(energy_bin_end) == 90
-    assert len(energy_bin_mean) == 90
+    assert len(energy_bin_edges) == 91
 
     # Comparison to expected values.
     np.testing.assert_allclose(energy_bin_end[0], 3.6795, atol=1e-4)
     np.testing.assert_allclose(energy_bin_start[-1], 299.9724, atol=1e-4)
     np.testing.assert_allclose(energy_bin_end[-1], 315.3556, atol=1e-4)
-
-    # Calculate expected geometric mean for the first bin.
-    expected_mean_first = np.sqrt(3.5 * 3.6795)
-    np.testing.assert_allclose(energy_bin_mean[0], expected_mean_first, atol=1e-4)
-
-    # Calculate expected geometric mean for the last bin.
-    expected_mean_last = np.sqrt(299.9724 * 315.3556)
-    np.testing.assert_allclose(energy_bin_mean[-1], expected_mean_last, atol=1e-4)
 
 
 def test_build_spatial_bins():
