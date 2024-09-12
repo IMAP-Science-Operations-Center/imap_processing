@@ -1,5 +1,6 @@
 """Tests coverage for imap_processing/spice/geometry.py"""
 
+import os
 from pathlib import Path
 
 import numpy as np
@@ -56,13 +57,15 @@ def test_get_spacecraft_spin_phase(generate_spin_data):
 
 def test_get_spin_data(generate_spin_data, tmpdir):
     """Test get_spin_data() with generated spin data."""
+
     # SWE test data time minus 56120 seconds to get mid-night time
     start_time = 453051323.0 - 56120
     spin_df = generate_spin_data(start_time)
     spin_csv_file_path = Path(tmpdir) / "spin_data.spin.csv"
     spin_df.to_csv(spin_csv_file_path, index=False)
+    os.environ["SPIN_DATA_FILEPATH"] = str(spin_csv_file_path)
 
-    spin_data = get_spin_data(path_to_spin_file=spin_csv_file_path)
+    spin_data = get_spin_data()
 
     assert len(spin_data.keys()) == 8, "Spin data must have 8 fields."
     assert len(spin_data) == 5760, "One day should have 5,760 records of 15 seconds."

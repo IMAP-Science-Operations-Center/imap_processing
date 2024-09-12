@@ -8,6 +8,7 @@ Paradigms for developing this module:
 * Always return numpy arrays for vectorized calls.
 """
 
+import os
 import typing
 from enum import IntEnum
 from pathlib import Path
@@ -91,9 +92,13 @@ def imap_state(
     return np.asarray(state)
 
 
-def get_spin_data(path_to_spin_file: Path) -> pd.DataFrame:
+def get_spin_data() -> pd.DataFrame:
     """
-    Read spin file and return spin data.
+    Read spin file using environment variable and return spin data.
+
+    SPIN_DATA_FILEPATH environment variable would be a fixed value.
+    It could be s3 filepath that can be used to download the data
+    through API or it could be path EFS or Batch volume mount path.
 
     Spin data should contains the following fields:
         (
@@ -107,18 +112,18 @@ def get_spin_data(path_to_spin_file: Path) -> pd.DataFrame:
             thruster_firing
         )
 
-    Parameters
-    ----------
-    path_to_spin_file : pathlib.Path
-        Input CSV file containing spin data.
-
     Returns
     -------
     spin_data : pandas.DataFrame
         Spin data.
     """
-    # TODO: change this function if file type of spin data changes
-    # or if spin data is stored in a database
+    spin_data_filepath = os.getenv("SPIN_DATA_FILEPATH")
+    if spin_data_filepath is not None:
+        path_to_spin_file = Path(spin_data_filepath)
+    else:
+        # Handle the case where the environment variable is not set
+        raise ValueError("SPIN_DATA_FILEPATH environment variable is not set.")
+
     if path_to_spin_file.suffix != ".csv":
         raise ValueError("Input file must be a CSV file.")
     return pd.read_csv(path_to_spin_file)
