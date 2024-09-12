@@ -272,12 +272,139 @@ def expected_vectors():
     return (primary_expected, secondary_expected)
 
 
+@pytest.fixture()
+def raw_compressed_vectors():
+    # compressed vectors, without the first starting uncompressed vector.
+    # 15 primary vectors and 15 secondary vectors, corresponding to most of
+    # the vectors in expected_vectors.
+    primary_compressed = (
+        "0101110010"
+        "011100101011010111001001110010101101011100100110000000011100"
+        "011100100111001010110101100001011000000001101011100100111001"
+        "010111000111001001110010101101011100100110000000011010111001"
+        "001110010101101011100100111001010111000110000101100000000110"
+        "101110010011100101011010111001001110010101110001110010011000"
+        "00000110101110010011100101011"
+    )
+
+    secondary_compressed = (
+        "10001110"
+        "0100111001010110101100001011000000001101011100100111001010"
+        "1110001110010011100101011010111001001100000000110101110010"
+        "0111001010110101110010011100101011100011000010110000000011"
+        "0101110010011100101011010111001001100000000111000111001001"
+        "1100101011010111001001110010101101011000010110000000011100"
+        "011100100111001010110101110010011100101011"
+    )
+    return primary_compressed, secondary_compressed
+
+
+def test_different_vector_rates(
+    uncompressed_vector_bytearray, expected_vectors, raw_compressed_vectors
+):
+    current_directory = Path(__file__).parent
+    test_file = current_directory / "mag_l1_test_data.pkts"
+    # Test file contains only normal packets
+    l0 = decom_packets(test_file)["norm"][0]
+
+    # overwrite vectors and different vector rates
+
+    l0.PRI_VECSEC = 4  # twice as many primary vectors as secondary vectors - 32 vectors
+    l0.VECTORS = np.concatenate(
+        (
+            uncompressed_vector_bytearray[:100],
+            uncompressed_vector_bytearray[:100],
+            uncompressed_vector_bytearray[100:],
+        )
+    )
+    l1 = process_packets([l0])
+    expected_day = np.datetime64("2023-11-30")
+
+    assert len(l1["magi"][expected_day].vectors) == 16
+    assert len(l1["mago"][expected_day].vectors) == 32
+
+    assert np.array_equal(
+        l1["mago"][expected_day].vectors[:, :4],
+        np.concatenate((expected_vectors[0], expected_vectors[0])),
+    )
+    assert np.array_equal(l1["magi"][expected_day].vectors[:, :4], expected_vectors[1])
+
+    # compressed data
+    # Compression headers - indicating a 16 bit width and no range section
+    headers = "01000000"
+
+    # 50 bits each - 16 bits per vector value, 2 bits for range.
+    first_primary_vector = "00000010000001000000100000010000000100000010000011"
+    first_secondary_vector = "00000010000000110000100000001111000100000001111111"
+
+    primary_compressed = (
+        first_primary_vector + raw_compressed_vectors[0] + raw_compressed_vectors[0]
+    )
+    secondary_compressed = first_secondary_vector + raw_compressed_vectors[1]
+
+    input_data = np.array(
+        [int(i) for i in headers + primary_compressed + secondary_compressed],
+        dtype=np.uint8,
+    )
+
+    # Will be the input data format
+    input_data = np.packbits(input_data)
+
+    (primary, secondary) = MagL1a.process_compressed_vectors(input_data, 31, 16)
+
+    assert (primary > 0).all()
+    assert np.array_equal(primary[:16], expected_vectors[0])
+    assert np.array_equal(secondary, expected_vectors[1])
+
+
+def test_padding_uncompressed(expected_vectors):
+    # Test if the padding falls directly on a byte boundary
+    headers = "01000000"
+
+    # 50 bits each - 16 bits per vector value, 2 bits for range.
+    first_primary_vector = "00000010000001000000100000010000000100000010000011"
+    first_secondary_vector = "00000010000000110000100000001111000100000001111111"
+
+    primary_vectors = "11111111111011"
+    secondary_vectors = "11111111111011"
+
+    last_vector = expected_vectors[0][0].copy()
+    last_vector[2] = last_vector[2] - 2
+
+    input_data = np.array(
+        [
+            int(i)
+            for i in headers
+            + first_primary_vector
+            + primary_vectors
+            + first_secondary_vector
+            + secondary_vectors
+        ],
+        dtype=np.uint8,
+    )
+
+    # Will be the input data format
+    input_data = np.packbits(input_data)
+
+    (primary, secondary) = MagL1a.process_compressed_vectors(input_data, 3, 3)
+
+    assert np.array_equal(primary[0], expected_vectors[0][0])
+    assert np.array_equal(primary[1], expected_vectors[0][0])
+    assert np.array_equal(primary[2], last_vector)
+
+    last_vector = expected_vectors[1][0].copy()
+    last_vector[2] = last_vector[2] - 2
+
+    assert np.array_equal(secondary[0], expected_vectors[1][0])
+    assert np.array_equal(secondary[1], expected_vectors[1][0])
+    assert np.array_equal(secondary[2], last_vector)
+
+
 def test_compare_validation_data():
     current_directory = Path(__file__).parent
     test_file = current_directory / "mag_l1_test_data.pkts"
     # Test file contains only normal packets
     l0 = decom_packets(test_file)
-
     l1 = process_packets(l0["norm"])
     # Should have one day of data
     expected_day = np.datetime64("2023-11-30")
@@ -305,7 +432,7 @@ def test_compare_validation_data():
         assert l1_magi.vectors[index][3] == validation_data["rng_sec"][index]
 
 
-def test_compressed_vector_data(expected_vectors):
+def test_compressed_vector_data(expected_vectors, raw_compressed_vectors):
     # Values from test packet
     primary_expected = expected_vectors[0]
     secondary_expected = expected_vectors[1]
@@ -313,33 +440,12 @@ def test_compressed_vector_data(expected_vectors):
     # Compression headers - indicating a 16 bit width and no range section
     headers = "01000000"
 
-    # bit width of 16, generated from primary_expected and secondary_expected using
-    # encoding code from MAG team
-    # Validated with decoding code from mag team
-    primary_compressed = (
-        "000000100000010000001000000100000001000000100000110101110010"
-        "011100101011010111001001110010101101011100100110000000011100"
-        "011100100111001010110101100001011000000001101011100100111001"
-        "010111000111001001110010101101011100100110000000011010111001"
-        "001110010101101011100100111001010111000110000101100000000110"
-        "101110010011100101011010111001001110010101110001110010011000"
-        "00000110101110010011100101011"
-    )
+    # 50 bits each - 16 bits per vector value, 2 bits for range.
+    first_primary_vector = "00000010000001000000100000010000000100000010000011"
+    first_secondary_vector = "00000010000000110000100000001111000100000001111111"
 
-    secondary_compressed = (
-        "0000001000"
-        "0000110000"
-        "1000000011"
-        "1100010000"
-        "0001111111"
-        "10001110"
-        "0100111001010110101100001011000000001101011100100111001010"
-        "1110001110010011100101011010111001001100000000110101110010"
-        "0111001010110101110010011100101011100011000010110000000011"
-        "0101110010011100101011010111001001100000000111000111001001"
-        "1100101011010111001001110010101101011000010110000000011100"
-        "011100100111001010110101110010011100101011"
-    )
+    primary_compressed = first_primary_vector + raw_compressed_vectors[0]
+    secondary_compressed = first_secondary_vector + raw_compressed_vectors[1]
 
     padding = "00000"  # Pad to byte boundary
     input_data = np.array(
@@ -490,32 +596,15 @@ def test_switch_to_uncompressed_vector_data(
     assert np.array_equal(primary[2:], uncompressed_expected_vectors)
 
 
-def test_different_compression_width():
+def test_different_compression_width(raw_compressed_vectors):
     # Compression headers - indicating a 12 bit width and no range section
     headers = "00110000"
 
-    primary_compressed = (
-        "0101110010"
-        "011100101011010111001001110010101101011100100110000000011100"
-        "011100100111001010110101100001011000000001101011100100111001"
-        "010111000111001001110010101101011100100110000000011010111001"
-        "001110010101101011100100111001010111000110000101100000000110"
-        "101110010011100101011010111001001110010101110001110010011000"
-        "00000110101110010011100101011"
-    )
-
-    secondary_compressed = (
-        "10001110"
-        "0100111001010110101100001011000000001101011100100111001010"
-        "1110001110010011100101011010111001001100000000110101110010"
-        "0111001010110101110010011100101011100011000010110000000011"
-        "0101110010011100101011010111001001100000000111000111001001"
-        "1100101011010111001001110010101101011000010110000000011100"
-        "011100100111001010110101110010011100101011"
-    )
-
     first_primary_vector = "00100000010010000001000000000010000011"
     first_secondary_vector = "00000001011000000000000011111111111101"
+
+    primary_compressed = raw_compressed_vectors[0]
+    secondary_compressed = raw_compressed_vectors[1]
 
     expected_first_vector = [516, -2032, 32, 3]
     expected_second_vector = [22, 0, -1, 1]
