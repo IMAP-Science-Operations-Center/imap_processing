@@ -3,17 +3,15 @@
 import numpy as np
 
 
-def build_energy_bins() -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+def build_energy_bins() -> tuple[np.ndarray, np.ndarray]:
     """
     Build energy bin boundaries.
 
     Returns
     -------
-    energy_bin_start : np.ndarray
-        Array of energy bin start values.
-    energy_bin_end : np.ndarray
-        Array of energy bin end values.
-    energy_bin_midpoints : np.ndarray
+    energy_bin_edges : np.ndarray
+        Array of energy bin edges.
+    energy_bin_mean : np.ndarray
         Array of energy bin midpoint values.
     """
     alpha = 0.05  # deltaE/E
@@ -24,13 +22,12 @@ def build_energy_bins() -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     energy_step = (1 + alpha / 2) / (1 - alpha / 2)
 
     # Create energy bins.
-    bin_edges = energy_start * energy_step ** np.arange(n_bins + 1)
-    energy_bin_start = bin_edges[:-1]
-    energy_bin_end = bin_edges[1:]
+    energy_bin_edges = energy_start * energy_step ** np.arange(n_bins + 1)
 
-    energy_bin_midpoints = np.sqrt(energy_bin_start * energy_bin_end)
+    # Calculate the geometric mean.
+    energy_bin_mean = np.sqrt(energy_bin_edges[:-1] * energy_bin_edges[1:])
 
-    return energy_bin_start, energy_bin_end, energy_bin_midpoints
+    return energy_bin_edges, energy_bin_mean
 
 
 def build_spatial_bins(
@@ -67,18 +64,18 @@ def build_spatial_bins(
 
 
 def cartesian_to_spherical(
-    vx_dps_sc: np.ndarray, vy_dps_sc: np.ndarray, vz_dps_sc: np.ndarray
+    vx: np.ndarray, vy: np.ndarray, vz: np.ndarray
 ) -> tuple[np.ndarray, np.ndarray]:
     """
     Convert cartesian coordinates to spherical coordinates.
 
     Parameters
     ----------
-    vx_dps_sc : np.ndarray
+    vx : np.ndarray
         The x-components of the velocity vector.
-    vy_dps_sc : np.ndarray
+    vy : np.ndarray
         The y-components of the velocity vector.
-    vz_dps_sc : np.ndarray
+    vz : np.ndarray
         The z-components of the velocity vector.
 
     Returns
@@ -89,11 +86,11 @@ def cartesian_to_spherical(
         The elevation angles in degrees.
     """
     # Magnitude of the velocity vector
-    magnitude_v = np.sqrt(vx_dps_sc**2 + vy_dps_sc**2 + vz_dps_sc**2)
+    magnitude_v = np.sqrt(vx**2 + vy**2 + vz**2)
 
-    vhat_x = -vx_dps_sc / magnitude_v
-    vhat_y = -vy_dps_sc / magnitude_v
-    vhat_z = -vz_dps_sc / magnitude_v
+    vhat_x = -vx / magnitude_v
+    vhat_y = -vy / magnitude_v
+    vhat_z = -vz / magnitude_v
 
     # Convert from cartesian to spherical coordinates (azimuth, elevation)
     # Radius (magnitude)
@@ -111,38 +108,79 @@ def cartesian_to_spherical(
     return az, el
 
 
-def bin_space(vx_dps_sc, vy_dps_sc, vz_dps_sc) -> tuple[np.ndarray, np.ndarray]:
+def bin_space(
+    vx: np.ndarray, vy: np.ndarray, vz: np.ndarray
+) -> tuple[np.ndarray, np.ndarray]:
     """
-    Bin particle.
+    Bin the particle.
 
     Parameters
     ----------
-    vx_dps_sc : float, optional
-        The bin spacing in degrees (default is 0.5 degrees).
-    vy_dps_sc : float, optional
-        The bin spacing in degrees (default is 0.5 degrees).
-    vz_dps_sc : float, optional
-        The bin spacing in degrees (default is 0.5 degrees).
+    vx : np.ndarray
+        The x-components of the velocity vector.
+    vy : np.ndarray
+        The y-components of the velocity vector.
+    vz : np.ndarray
+        The z-components of the velocity vector.
 
     Returns
     -------
     az_midpoint : np.ndarray
-        Array of azimuth bin boundary values.
+        Array of azimuth midpoint values.
     el_midpoint : np.ndarray
-        Array of elevation bin boundary values.
+        Array of elevation midpoint values.
     """
     az_bin_edges, el_bin_edges, az_bin_midpoints, el_bin_midpoints = (
         build_spatial_bins()
     )
 
-    az, el = cartesian_to_spherical(vx_dps_sc, vy_dps_sc, vz_dps_sc)
+    az, el = cartesian_to_spherical(vx, vy, vz)
+
+    az_degrees = np.degrees(az)
+    el_degrees = np.degrees(el)
+
+    # If azimuth is exactly 360 degrees it is placed in last bin.
+    az_degrees[az_degrees >= az_bin_edges[-1]] = az_bin_midpoints[-1]
+    # If elevation is exactly 90 degrees it is placed in last bin.
+    el_degrees[el_degrees >= el_bin_edges[-1]] = el_bin_midpoints[-1]
 
     # Find the appropriate bin index.
-    az_bin_idx = np.searchsorted(az_bin_edges, np.degrees(az), side="right") - 1
-    el_bin_idx = np.searchsorted(el_bin_edges, np.degrees(el), side="right") - 1
+    az_bin_idx = np.searchsorted(az_bin_edges, az_degrees, side="right") - 1
+    el_bin_idx = np.searchsorted(el_bin_edges, el_degrees, side="right") - 1
 
     # Assign the corresponding midpoints.
     az_midpoint = az_bin_midpoints[az_bin_idx]
     el_midpoint = el_bin_midpoints[el_bin_idx]
 
     return az_midpoint, el_midpoint
+
+
+def bin_energy(energy: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """
+    Bin the particle.
+
+    Parameters
+    ----------
+    energy : np.ndarray
+        Particle energy.
+
+    Returns
+    -------
+    energy_mean : np.ndarray
+        Mean energy value.
+    """
+    # TODO: Use quality flags to filter out energies beyond threshold.
+
+    energy_bin_edges, energy_bin_mean = build_energy_bins()
+
+    # If energy is exactly equal to the last bin edge it is placed in last bin.
+    energy[energy >= energy_bin_edges[-1]] = energy_bin_mean[-1]
+
+    # Find the appropriate bin index.
+    energy_bin_idx = np.searchsorted(energy_bin_edges, energy, side="right") - 1
+
+    # Assign the corresponding means.
+    az_mean = energy_bin_mean[energy_bin_idx]
+    el_mean = energy_bin_mean[energy_bin_idx]
+
+    return az_mean, el_mean

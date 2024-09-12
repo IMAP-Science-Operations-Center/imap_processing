@@ -12,22 +12,32 @@ from imap_processing.ultra.l1c.ultra_l1c_pset_bins import (
 
 def test_build_energy_bins():
     """Tests build_energy_bins function."""
-    energy_bin_start, energy_bin_end = build_energy_bins()
+    energy_bin_start, energy_bin_end, energy_bin_mean = build_energy_bins()
 
     assert energy_bin_start[0] == 3.5
     assert len(energy_bin_start) == 90
     assert len(energy_bin_end) == 90
+    assert len(energy_bin_mean) == 90
 
     # Comparison to expected values.
     np.testing.assert_allclose(energy_bin_end[0], 3.6795, atol=1e-4)
     np.testing.assert_allclose(energy_bin_start[-1], 299.9724, atol=1e-4)
     np.testing.assert_allclose(energy_bin_end[-1], 315.3556, atol=1e-4)
 
+    # Calculate expected geometric mean for the first bin.
+    expected_mean_first = np.sqrt(3.5 * 3.6795)
+    np.testing.assert_allclose(energy_bin_mean[0], expected_mean_first, atol=1e-4)
+
+    # Calculate expected geometric mean for the last bin.
+    expected_mean_last = np.sqrt(299.9724 * 315.3556)
+    np.testing.assert_allclose(energy_bin_mean[-1], expected_mean_last, atol=1e-4)
+
 
 def test_build_spatial_bins():
     """Tests build_spatial_bins function."""
-    az_bin_edges, el_bin_edges, \
-        az_bin_midpoints, el_bin_midpoints = build_spatial_bins()
+    az_bin_edges, el_bin_edges, az_bin_midpoints, el_bin_midpoints = (
+        build_spatial_bins()
+    )
 
     assert az_bin_edges[0] == 0
     assert az_bin_edges[-1] == 360
@@ -37,6 +47,14 @@ def test_build_spatial_bins():
     assert el_bin_edges[-1] == 90
     assert len(el_bin_edges) == 361
 
+    assert len(az_bin_midpoints) == 720
+    np.testing.assert_allclose(az_bin_midpoints[0], 0.25, atol=1e-4)
+    np.testing.assert_allclose(az_bin_midpoints[-1], 359.75, atol=1e-4)
+
+    assert len(el_bin_midpoints) == 360
+    np.testing.assert_allclose(el_bin_midpoints[0], -89.75, atol=1e-4)
+    np.testing.assert_allclose(el_bin_midpoints[-1], 89.75, atol=1e-4)
+
 
 def test_cartesian_to_spherical():
     """Tests cartesian_to_spherical function."""
@@ -45,23 +63,21 @@ def test_cartesian_to_spherical():
     vy_sc = np.array([-707.5707, -516.0282])
     vz_sc = np.array([618.0569, 892.6931])
 
-    az, el = cartesian_to_spherical(vx_sc, vy_sc, vz_sc)
+    az_sc, el_sc = cartesian_to_spherical(vx_sc, vy_sc, vz_sc)
 
     # MATLAB code outputs:
+    np.testing.assert_allclose(az_sc, np.array([1.31300, 2.34891]), atol=1e-05, rtol=0)
     np.testing.assert_allclose(
-        az, np.array([1.31300, 2.34891]), atol=1e-05, rtol=0
-    )
-    np.testing.assert_allclose(
-        el, np.array([-0.70136, -0.88901]), atol=1e-05, rtol=0
+        el_sc, np.array([-0.70136, -0.88901]), atol=1e-05, rtol=0
     )
 
 
 def test_bin_space():
     """Tests bin_space function."""
     # Example particle velocity in the pointing frame wrt s/c.
-    vx_sc = np.array([-186.5575, 508.5697])
-    vy_sc = np.array([-707.5707, -516.0282])
-    vz_sc = np.array([618.0569, 892.6931])
+    vx_sc = np.array([-186.5575, 508.5697, 0])
+    vy_sc = np.array([-707.5707, -516.0282, 0])
+    vz_sc = np.array([618.0569, 892.6931, -1])
 
     az_midpoint, el_midpoint = bin_space(vx_sc, vy_sc, vz_sc)
     az, el = cartesian_to_spherical(vx_sc, vy_sc, vz_sc)
