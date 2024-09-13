@@ -107,7 +107,7 @@ def get_spin_data() -> pd.DataFrame:
             spin_start_subsec,
             spin_period_sec,
             spin_period_valid,
-            spin_phas_valid,
+            spin_phase_valid,
             spin_period_source,
             thruster_firing
         )

@@ -291,7 +291,7 @@ def generate_spin_data():
             spin_start_subsec,
             spin_period_sec,
             spin_period_valid,
-            spin_phas_valid,
+            spin_phase_valid,
             spin_period_source,
             thruster_firing
             )
@@ -327,7 +327,7 @@ def generate_spin_data():
                 "spin_start_subsec": np.zeros(nspins, dtype=np.uint32),
                 "spin_period_sec": np.full(nspins, 15.0, dtype=np.float32),
                 "spin_period_valid": np.ones(nspins, dtype=np.uint8),
-                "spin_phas_valid": np.ones(nspins, dtype=np.uint8),
+                "spin_phase_valid": np.ones(nspins, dtype=np.uint8),
                 "spin_period_source": np.zeros(nspins, dtype=np.uint8),
                 "thruster_firing": np.zeros(nspins, dtype=np.uint8),
             }
@@ -351,7 +351,7 @@ def generate_spin_data():
         # Use the repointing times to set thruster firing flag and spin period valid
         spin_df.loc[repointing_times_index.values, "thruster_firing"] = 1
         spin_df.loc[repointing_times_index.values, "spin_period_valid"] = 0
-        spin_df.loc[repointing_times_index.values, "spin_phas_valid"] = 0
+        spin_df.loc[repointing_times_index.values, "spin_phase_valid"] = 0
 
         return spin_df
 
