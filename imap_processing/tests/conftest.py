@@ -269,6 +269,17 @@ def _unset_metakernel_path(monkeypatch):
 
 
 @pytest.fixture()
+def _set_spin_data_filepath(monkeypatch, tmpdir, generate_spin_data):
+    """Set the SPIN_DATA_FILEPATH environment variable"""
+    # SWE test data time minus 56120 seconds to get mid-night time
+    start_time = 453051323.0 - 56120
+    spin_df = generate_spin_data(start_time)
+    spin_csv_file_path = tmpdir / "spin_data.spin.csv"
+    spin_df.to_csv(spin_csv_file_path, index=False)
+    monkeypatch.setenv("SPIN_DATA_FILEPATH", str(spin_csv_file_path))
+
+
+@pytest.fixture()
 def generate_spin_data():
     def make_data(start_met: int, end_met: Optional[int] = None) -> pd.DataFrame:
         """
@@ -305,18 +316,22 @@ def generate_spin_data():
             end_met = start_met + 86400
 
         # Create spin start second data of 15 seconds increment
-        spin_start_sec = np.arange(start_met, end_met, 15)
+        spin_start_sec = np.arange(start_met, end_met + 1, 15)
 
-        spin_dict = {
-            "spin_number": np.arange(spin_start_sec.size, dtype=np.uint32),
-            "spin_start_sec": spin_start_sec,
-            "spin_start_subsec": np.full(spin_start_sec.size, 0, dtype=np.uint32),
-            "spin_period_sec": np.full(spin_start_sec.size, 15.0, dtype=np.float32),
-            "spin_period_valid": np.ones(spin_start_sec.size, dtype=np.uint8),
-            "spin_phas_valid": np.ones(spin_start_sec.size, dtype=np.uint8),
-            "spin_period_source": np.zeros(spin_start_sec.size, dtype=np.uint8),
-            "thruster_firing": np.zeros(spin_start_sec.size, dtype=np.uint8),
-        }
+        nspins = len(spin_start_sec)
+
+        spin_df = pd.DataFrame.from_dict(
+            {
+                "spin_number": np.arange(nspins, dtype=np.uint32),
+                "spin_start_sec": spin_start_sec,
+                "spin_start_subsec": np.zeros(nspins, dtype=np.uint32),
+                "spin_period_sec": np.full(nspins, 15.0, dtype=np.float32),
+                "spin_period_valid": np.ones(nspins, dtype=np.uint8),
+                "spin_phas_valid": np.ones(nspins, dtype=np.uint8),
+                "spin_period_source": np.zeros(nspins, dtype=np.uint8),
+                "thruster_firing": np.zeros(nspins, dtype=np.uint8),
+            }
+        )
 
         # Convert spin_start_sec to datetime to set repointing times flags
         spin_start_dates = met_to_j2000ns(spin_start_sec)
@@ -334,11 +349,10 @@ def generate_spin_data():
         repointing_times_index = repointing_times.index
 
         # Use the repointing times to set thruster firing flag and spin period valid
-        spin_dict["thruster_firing"][repointing_times_index] = 1
-        spin_dict["spin_period_valid"][repointing_times_index] = 0
-        spin_dict["spin_phas_valid"][repointing_times_index] = 0
+        spin_df.loc[repointing_times_index.values, "thruster_firing"] = 1
+        spin_df.loc[repointing_times_index.values, "spin_period_valid"] = 0
+        spin_df.loc[repointing_times_index.values, "spin_phas_valid"] = 0
 
-        spin_df = pd.DataFrame.from_dict(spin_dict)
         return spin_df
 
     return make_data

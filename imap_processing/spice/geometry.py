@@ -124,8 +124,6 @@ def get_spin_data() -> pd.DataFrame:
         # Handle the case where the environment variable is not set
         raise ValueError("SPIN_DATA_FILEPATH environment variable is not set.")
 
-    if path_to_spin_file.suffix != ".csv":
-        raise ValueError("Input file must be a CSV file.")
     return pd.read_csv(path_to_spin_file)
 
 
