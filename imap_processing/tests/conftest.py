@@ -1,7 +1,7 @@
 """Global pytest configuration for the package."""
 
-import os
 import logging
+import os
 import re
 import time
 
@@ -122,6 +122,7 @@ def furnish_sclk(spice_test_data_path):
 @pytest.fixture(scope="session")
 def monkeypatch_session():
     from _pytest.monkeypatch import MonkeyPatch
+
     m = MonkeyPatch()
     yield m
     m.undo()
@@ -175,8 +176,7 @@ def get_test_kernels_to_load(template_path, kernel_dir_path):
                         [m.start() for m in re.finditer("/", kernel)]
                     )
                     stop_idx = (
-                            slash_positions[slash_positions < max_line_length - 1].max()
-                            + 1
+                        slash_positions[slash_positions < max_line_length - 1].max() + 1
                     )
                     kernels_to_load.append(kernel[0:stop_idx] + "+")
                     kernel = kernel[stop_idx:]
@@ -208,7 +208,9 @@ def session_test_metakernel(monkeypatch_session, tmpdir_factory, spice_test_data
 
 
 @pytest.fixture()
-def use_test_metakernel(request, monkeypatch, spice_test_data_path, session_test_metakernel):
+def use_test_metakernel(
+    request, monkeypatch, spice_test_data_path, session_test_metakernel
+):
     """
     Generate a metakernel and set SPICE_METAKERNEL environment variable.
 
