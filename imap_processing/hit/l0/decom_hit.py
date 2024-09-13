@@ -193,52 +193,94 @@ def parse_count_rates(sci_dataset: xr.Dataset) -> None:
         section_start += field_meta.section_length
 
 
-def is_valid_science_frame(seq_flgs: np.ndarray, src_seq_ctrs: np.ndarray) -> bool:
+def is_sequential(counters: np.ndarray) -> bool:
     """
-    Check for valid science frame.
-
-    Each science data packet has a sequence grouping flag that can equal
-    0, 1, or 2. These flags are used to group 20 packets into science
-    frames. This function checks if the sequence flags for a set of 20
-    data packets have values that form a complete science frame.
-    The first packet should have a sequence flag equal to 1. The middle
-    18 packets should have a sequence flag equal to 0 and the final packet
-    should have a sequence flag equal to 2.
-
-    Valid science frame sequence flags
-    [1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 2]
-
-    Additionally, packets have a sequence counter. This function also
-    checks if the counters are in sequential order.
-
-    Both conditions need to be met for a science frame to be considered
-    valid.
+    Check if an array of packet sequence counters is sequential.
 
     Parameters
     ----------
-    seq_flgs : numpy.ndarray
-        Array of sequence flags for a set of 20 packets.
-    src_seq_ctrs : numpy.ndarray
-        Array of sequence counters for a set of 20 packets.
+    counters : np.ndarray
+        Array of packet sequence counters.
 
     Returns
     -------
-    boolean : bool
-        Boolean for whether the science frame is valid.
+    bool
+        True if the sequence counters are sequential, False otherwise.
     """
-    # Check sequence grouping flags
-    if not (seq_flgs[0] == 1 and all(seq_flgs[1:19] == 0) and seq_flgs[19] == 2):
-        # TODO log issue
-        print(f"Invalid seq_flgs found: {seq_flgs}")
-        return False
+    return np.all(np.diff(counters) == 1)
 
-    # Check that sequence counters are sequential
-    if not np.all(np.diff(src_seq_ctrs) == 1):
-        # TODO log issue
-        print(f"Non-sequential src_seq_ctr found: {src_seq_ctrs}")
-        return False
 
-    return True
+def find_valid_starting_indices(flags: np.ndarray, counters: np.ndarray) -> np.ndarray:
+    """
+    Find valid starting indices for science frames.
+
+    This function finds the starting indices of valid science frames.
+    A valid science frame has the following packet grouping flags:
+
+            First packet: 1
+            Next 18 packets: 0
+            Last packet: 2
+
+    The packet sequence counters for the identified science frames must
+    be sequential. Only the starting indices of valid science frames are
+    returned.
+
+    Parameters
+    ----------
+    flags : np.ndarray
+        Array of packet grouping flags.
+    counters : np.ndarray
+        Array of packet sequence counters.
+
+    Returns
+    -------
+    valid_indices : np.ndarray
+        Array of valid indices for science frames.
+    """
+    # Define the pattern of grouping flags in a complete science frame.
+    flag_pattern = np.array(
+        [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2]
+    )
+    # Use sliding windows to compare segments of the array with the pattern
+    window_size = len(flag_pattern)
+    # Create a sliding window view of the array
+    windows = np.lib.stride_tricks.sliding_window_view(flags, window_size)
+    # Find where the windows match the pattern
+    matches = np.all(windows == flag_pattern, axis=1)
+    # Get the starting indices of matches
+    match_indices = np.where(matches)[0]
+    valid_indices = get_valid_indices(match_indices, counters, window_size)
+    return valid_indices
+
+
+def get_valid_indices(
+    indices: np.ndarray, counters: np.ndarray, size: int
+) -> np.ndarray:
+    """
+    Get valid indices for science frames.
+
+    Check if the packet sequence counters for the science frames
+    are sequential. If they are, the science frame is valid and
+    an updated array of valid indices is returned.
+
+    Parameters
+    ----------
+    indices : np.ndarray
+        Array of indices where the packet grouping flags match the pattern.
+    counters : np.ndarray
+        Array of packet sequence counters.
+    size : int
+        Size of science frame. 20 packets per science frame.
+
+    Returns
+    -------
+    valid_indices : np.ndarray
+        Array of valid indices for science frames.
+    """
+    # Check if the packet sequence counters are sequential by getting an array
+    # of boolean values where True indicates the counters are sequential.
+    sequential_check = [is_sequential(counters[idx : idx + size]) for idx in indices]
+    return indices[sequential_check]
 
 
 def update_ccsds_header_data(sci_dataset: xr.Dataset) -> xr.Dataset:
@@ -279,11 +321,7 @@ def assemble_science_frames(sci_dataset: xr.Dataset) -> xr.Dataset:
     HIT science frames (data from 1 minute) consist of 20 packets.
     These are assembled from the binary science_data field in the
     xarray dataset, which is a 1D array of science data from all
-    packets in the file, using packet sequence grouping flags.
-
-        First packet has a sequence flag = 1
-        Next 18 packets have a sequence flag = 0
-        Last packet has a sequence flag = 2
+    packets in the file, by using packet grouping flags.
 
     The science frame is further categorized into
     L1A data products -> count rates and event data.
@@ -313,78 +351,55 @@ def assemble_science_frames(sci_dataset: xr.Dataset) -> xr.Dataset:
     #  in the middle of the CCSDS file. The code currently skips all
     #  incomplete science frames.
 
-    # Initialize lists to store data from valid science frames
-    count_rates_binary = []
-    pha_binary = []
-    epoch_science_frame = []
-
     # Convert sequence flags and counters to NumPy arrays for vectorized operations
     seq_flgs = sci_dataset.seq_flgs.values
-    src_seq_ctrs = sci_dataset.src_seq_ctr.values
+    seq_ctrs = sci_dataset.src_seq_ctr.values
     science_data = sci_dataset.science_data.values
     epoch_data = sci_dataset.epoch.values
 
-    # Define number of packets in the file and a science frame
-    total_packets = len(seq_flgs)
-    packets_in_frame = 20
+    # Number of packets in the file
+    total_packets = len(epoch_data)
+    frame_size = 20
 
-    # Find indices where sequence flag is 1 (the start of a science frame)
-    # and filter for indices that are 20 packets apart. These will be the
-    # starting indices for science frames in the science data.
-    start_indices: np.array = np.where(seq_flgs == 1)[0]
-    valid_start_indices = start_indices[np.where(np.diff(start_indices) == 20)[0]]
-    last_index_of_frame = None
+    # Find starting indices for valid science frames
+    starting_indices = find_valid_starting_indices(seq_flgs, seq_ctrs)
 
-    if valid_start_indices[0] != 0:
-        # The first start index is not at the beginning of the file.
+    # Check for extra packets at start and end of file
+    # TODO: Will need to handle these extra packets when processing multiple files
+    if starting_indices[0] != 0:
+        # The first science frame start index is not at the beginning of the file.
         print(
-            f"{valid_start_indices[0]} packets at start of file belong to science frame from previous day's ccsds file"
+            f"{starting_indices[0]} packets at start of file belong to science frame from previous day's ccsds file"
         )
-        # TODO: Will need to handle these packets when processing multiple files
-
-    for i, start in enumerate(valid_start_indices):
-        # Get sequence flags and counters corresponding to this science frame
-        seq_flgs_chunk = seq_flgs[start : start + packets_in_frame]
-        src_seq_ctr_chunk = src_seq_ctrs[start : start + packets_in_frame]
-
-        # Check for valid science frames with proper sequence flags and counters
-        # and append corresponding science data to lists.
-        if is_valid_science_frame(seq_flgs_chunk, src_seq_ctr_chunk):
-            science_data_chunk = science_data[start : start + packets_in_frame]
-            epoch_data_chunk = epoch_data[start : start + packets_in_frame]
-            # First 6 packets contain count rates data
-            count_rates_binary.append("".join(science_data_chunk[:6]))
-            # Last 14 packets contain pulse height event data
-            pha_binary.append("".join(science_data_chunk[6:]))
-            # Just take first packet's epoch for the science frame
-            epoch_science_frame.append(epoch_data_chunk[0])
-            last_index_of_frame = start + packets_in_frame
-        else:
-            # TODO: log issue
-            # Skip invalid science frame and move on to the next one
-            print(
-                f"Invalid science frame found with starting packet index = " f"{start}"
-            )
-
-    if last_index_of_frame:
-        remaining_packets = total_packets - last_index_of_frame
-        if remaining_packets < packets_in_frame:
-            # TODO: log extra packets at end of file.
-            #  Need to handle these packets that belong to the next day's science frame.
+    last_index_of_last_frame = starting_indices[-1] + frame_size
+    if last_index_of_last_frame:
+        remaining_packets = total_packets - last_index_of_last_frame
+        if 0 < remaining_packets < frame_size:
             print(
                 f"{remaining_packets} packets at end of file belong to science frame from next day's ccsds file"
             )
 
+    # Extract data per science frame and organize by L1A data products
+    count_rates = []
+    pha = []
+    epoch_per_science_frame = np.array([])
+    for idx in starting_indices:
+        # Data from 20 packets in a science frame
+        science_data_frame = science_data[idx : idx + frame_size]
+        # First 6 packets contain count rates data in binary
+        count_rates.append("".join(science_data_frame[:6]))
+        # Last 14 packets contain pulse height event data in binary
+        pha.append("".join(science_data_frame[6:]))
+        # Get first packet's epoch for the science frame
+        epoch_per_science_frame = np.append(epoch_per_science_frame, epoch_data[idx])
+
     # Add new data variables to the dataset
-    epoch_science_frame = np.array(epoch_science_frame)
     sci_dataset = sci_dataset.drop_vars("epoch")
-    sci_dataset.coords["epoch"] = epoch_science_frame
+    sci_dataset.coords["epoch"] = epoch_per_science_frame
     sci_dataset["count_rates_binary"] = xr.DataArray(
-        count_rates_binary, dims=["epoch"], name="count_rates_binary"
+        count_rates, dims=["epoch"], name="count_rates_binary"
     )
-    sci_dataset["pha_binary"] = xr.DataArray(
-        pha_binary, dims=["epoch"], name="pha_binary"
-    )
+    sci_dataset["pha_binary"] = xr.DataArray(pha, dims=["epoch"], name="pha_binary")
     return sci_dataset
 
 
@@ -433,8 +448,10 @@ def decom_hit(sci_dataset: xr.Dataset) -> xr.Dataset:
     """
     # Update ccsds header fields to use sc_tick as dimension
     sci_dataset = update_ccsds_header_data(sci_dataset)
+
     # Group science packets into groups of 20
     sci_dataset = assemble_science_frames(sci_dataset)
+
     # Parse count rates data from binary and add to dataset
     parse_count_rates(sci_dataset)
 
