@@ -107,8 +107,8 @@ def deadtime_correction(counts: np.ndarray, acq_duration: int) -> npt.NDArray:
         Corrected counts.
     """
     # deadtime is 360 ns
-    deadtime = 360e-9
-    correct = 1.0 - (deadtime * counts / acq_duration)
+    deadtime = 360e-9 / 1e9  # convert to seconds
+    correct = 1.0 - (deadtime * counts / acq_duration / 1000.0)
     correct = np.maximum(0.1, correct)
     corrected_count = np.divide(counts, correct)
     return corrected_count
