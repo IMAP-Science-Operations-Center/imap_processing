@@ -337,19 +337,21 @@ def assemble_science_frames(sci_dataset: xr.Dataset) -> xr.Dataset:
 
     if valid_start_indices[0] != 0:
         # The first start index is not at the beginning of the file.
-        print(f"{valid_start_indices[0]} packets at start of file belong to science frame from previous day's ccsds file")
+        print(
+            f"{valid_start_indices[0]} packets at start of file belong to science frame from previous day's ccsds file"
+        )
         # TODO: Will need to handle these packets when processing multiple files
 
     for i, start in enumerate(valid_start_indices):
         # Get sequence flags and counters corresponding to this science frame
-        seq_flgs_chunk = seq_flgs[start:start + packets_in_frame]
-        src_seq_ctr_chunk = src_seq_ctrs[start:start + packets_in_frame]
+        seq_flgs_chunk = seq_flgs[start : start + packets_in_frame]
+        src_seq_ctr_chunk = src_seq_ctrs[start : start + packets_in_frame]
 
         # Check for valid science frames with proper sequence flags and counters
         # and append corresponding science data to lists.
         if is_valid_science_frame(seq_flgs_chunk, src_seq_ctr_chunk):
-            science_data_chunk = science_data[start:start + packets_in_frame]
-            epoch_data_chunk = epoch_data[start:start + packets_in_frame]
+            science_data_chunk = science_data[start : start + packets_in_frame]
+            epoch_data_chunk = epoch_data[start : start + packets_in_frame]
             # First 6 packets contain count rates data
             count_rates_binary.append("".join(science_data_chunk[:6]))
             # Last 14 packets contain pulse height event data
@@ -361,15 +363,17 @@ def assemble_science_frames(sci_dataset: xr.Dataset) -> xr.Dataset:
             # TODO: log issue
             # Skip invalid science frame and move on to the next one
             print(
-                f"Invalid science frame found with starting packet index = "
-                f"{start}")
+                f"Invalid science frame found with starting packet index = " f"{start}"
+            )
 
     if last_index_of_frame:
         remaining_packets = total_packets - last_index_of_frame
         if remaining_packets < packets_in_frame:
             # TODO: log extra packets at end of file.
             #  Need to handle these packets that belong to the next day's science frame.
-            print(f"{remaining_packets} packets at end of file belong to science frame from next day's ccsds file")
+            print(
+                f"{remaining_packets} packets at end of file belong to science frame from next day's ccsds file"
+            )
 
     # Add new data variables to the dataset
     epoch_science_frame = np.array(epoch_science_frame)
@@ -431,7 +435,6 @@ def decom_hit(sci_dataset: xr.Dataset) -> xr.Dataset:
     sci_dataset = update_ccsds_header_data(sci_dataset)
     # Group science packets into groups of 20
     sci_dataset = assemble_science_frames(sci_dataset)
-
     # Parse count rates data from binary and add to dataset
     parse_count_rates(sci_dataset)
 
