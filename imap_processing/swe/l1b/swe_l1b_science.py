@@ -219,6 +219,8 @@ def populate_full_cycle_data(
     -------
     numpy.ndarray
         Array with full cycle data populated.
+    numpy.ndarray
+        Array with acquisition times.
     """
     esa_lookup_table = read_lookup_table(esa_table_num)
 
@@ -228,6 +230,11 @@ def populate_full_cycle_data(
     if esa_table_num == 0:
         # create new full cycle data array
         full_cycle_data = np.zeros((24, 30, 7))
+        # SWE needs to store acquisition time of each count data point
+        # to use in level 2 processing to calculate
+        # spin phase. This is done below by using information from
+        # science packet.
+        acquisition_times = np.zeros((24, 30, 7))
 
         # Initialize esa_step_number and column_index.
         # esa_step_number goes from 0 to 719 range where
@@ -247,6 +254,21 @@ def populate_full_cycle_data(
             # Convert counts to rate
             counts_rate = convert_counts_to_rate(corrected_counts, acq_duration)
 
+            # Each quarter cycle data should have same acquisition start time coarse
+            # and fine value. We will use that as base time to calculate each
+            # acquisition time for each count data. Acquisition time of each count
+            # data point will be calculated using this formula:
+            #   base_quarter_cycle_acq_time = acq_start_coarse +
+            #                                 acq_start_fine / 1000000
+            #   each_count_acq_time = base_quarter_cycle_acq_time +
+            #                         (step * acq_duration / 1000)
+            # where step goes from 0 to 179, acq_start_coarse is in seconds and
+            # acq_start_fine is in microseconds and acq_duration is in milliseconds.
+            base_quarter_cycle_acq_time = (
+                l1a_data["acq_start_coarse"].data[packet_index + index]
+                + l1a_data["acq_start_fine"].data[packet_index + index] / 1000000
+            )
+
             # Go through each quarter cycle's 180 ESA measurements
             # and put counts rate in full cycle data array
             for step in range(180):
@@ -260,6 +282,10 @@ def populate_full_cycle_data(
                     column_index += 1
                 # Put counts rate in full cycle data array
                 full_cycle_data[esa_voltage_row_index][column_index] = counts_rate[step]
+                # Put acquisition time in acquisition_times array
+                acquisition_times[esa_voltage_row_index][column_index] = (
+                    base_quarter_cycle_acq_time + (step * acq_duration / 1000)
+                )
                 esa_step_number += 1
 
             # reset column index for next quarter cycle
@@ -270,7 +296,7 @@ def populate_full_cycle_data(
     # data. But for now, we are advice to continue with current setup and can
     # add/change it when we get real data.
 
-    return full_cycle_data
+    return full_cycle_data, acquisition_times
 
 
 def find_cycle_starts(cycles: np.ndarray) -> npt.NDArray:
@@ -376,7 +402,8 @@ def swe_l1b_science(l1a_data: xr.Dataset, data_version: str) -> xr.Dataset:
 
     # Array to store list of table populated with data
     # of full cycles
-    all_data = []
+    full_cycle_science_data = []
+    full_cycle_acq_times = []
     packet_index = 0
     l1a_data_copy = l1a_data.copy(deep=True)
 
@@ -423,12 +450,13 @@ def swe_l1b_science(l1a_data: xr.Dataset, data_version: str) -> xr.Dataset:
         if esa_table_num == 1:
             continue
 
-        full_cycle_data = populate_full_cycle_data(
+        full_cycle_data, acq_times = populate_full_cycle_data(
             full_cycle_l1a_data, packet_index, esa_table_num
         )
 
         # save full data array to file
-        all_data.append(full_cycle_data)
+        full_cycle_science_data.append(full_cycle_data)
+        full_cycle_acq_times.append(acq_times)
 
     # ------------------------------------------------------------------
     # Save data to dataset.
@@ -532,9 +560,14 @@ def swe_l1b_science(l1a_data: xr.Dataset, data_version: str) -> xr.Dataset:
     )
 
     dataset["science_data"] = xr.DataArray(
-        all_data,
+        full_cycle_science_data,
         dims=["epoch", "energy", "angle", "cem"],
         attrs=cdf_attrs.get_variable_attributes("science_data"),
+    )
+    dataset["sci_acquisition_time"] = xr.DataArray(
+        full_cycle_acq_times,
+        dims=["epoch", "energy", "angle", "cem"],
+        attrs=cdf_attrs.get_variable_attributes("sci_acquisition_time"),
     )
 
     # create xarray dataset for each metadata field

@@ -105,6 +105,24 @@ science_data:
     Metadata field acq_duration is 17 uint. Max value of uint17 is 131071.
     Dividing max counts by acq_duration gave validmax
 
+sci_acquisition_time:
+  <<: *default
+  CATDESC: Acquisition time organized by voltage step and spin sector and CEM
+  DEPEND_1: energy
+  DEPEND_2: angle
+  DEPEND_3: cem
+  LABL_PTR_1: energy_label
+  LABL_PTR_2: angle_label
+  LABL_PTR_3: cem_label
+  DISPLAY_TYPE: spectrogram
+  FIELDNAM: Acquisition by volt step and spin sector and CEM
+  FILLVAL: -1.0000000E+31
+  LABLAXIS: Count Acq Time
+  UNITS: sec
+  VAR_TYPE: support_data
+  VAR_NOTES: >
+    This stores acquisition times of each count data.
+
 shcoarse:
   <<: *default
   DEPEND_1: cycle
