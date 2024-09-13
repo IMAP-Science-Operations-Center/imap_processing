@@ -1,5 +1,6 @@
 """IMAP-Lo L1A Data Processing."""
 
+import logging
 from pathlib import Path
 
 import numpy as np
@@ -10,6 +11,9 @@ from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.lo.l0.lo_apid import LoAPID
 from imap_processing.lo.l0.lo_science import parse_histogram
 from imap_processing.utils import packet_file_to_datasets
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 
 def lo_l1a(dependency: Path, data_version: str) -> list[xr.Dataset]:
@@ -30,6 +34,8 @@ def lo_l1a(dependency: Path, data_version: str) -> list[xr.Dataset]:
         Location of created CDF files.
     """
     xtce_file = imap_module_directory / "lo/packet_definitions/lo_xtce.xml"
+
+    logger.info("\nDecommutating packets and converting to dataset")
     datasets_by_apid = packet_file_to_datasets(
         packet_file=dependency.resolve(),
         xtce_packet_definition=xtce_file.resolve(),
@@ -42,6 +48,10 @@ def lo_l1a(dependency: Path, data_version: str) -> list[xr.Dataset]:
     attr_mgr.add_instrument_variable_attrs(instrument="lo", level="l1a")
     attr_mgr.add_global_attribute("Data_version", data_version)
 
+    logger.info(
+        f"\nProcessing {LoAPID(LoAPID.ILO_SCI_CNT).name} "
+        f"packet (APID: {LoAPID.ILO_SCI_CNT.value})"
+    )
     if LoAPID.ILO_SCI_CNT in datasets_by_apid:
         logical_source = "imap_lo_l1a_histogram"
         datasets_by_apid[LoAPID.ILO_SCI_CNT] = parse_histogram(
@@ -52,6 +62,7 @@ def lo_l1a(dependency: Path, data_version: str) -> list[xr.Dataset]:
         )
 
     good_apids = [LoAPID.ILO_SCI_CNT]
+    logger.info(f"\nReturning datasets: {[LoAPID(apid) for apid in good_apids]}")
     return [datasets_by_apid[good_apid] for good_apid in good_apids]
 
 

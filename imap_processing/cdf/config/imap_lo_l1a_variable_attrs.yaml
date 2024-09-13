@@ -21,21 +21,20 @@ de_default_attrs: &de_default
 
 # Re-used Coordinate
 esa_step_label:
-  FILLVAL: 255
-  CATDESC: ESA Steps
-  FIELDNAM: ESA Steps
-  FORMAT: A1
-  VAR_TYPE: metadata
+   CATDESC: ESA Steps
+   FIELDNAM: ESA Steps
+   FORMAT: A1
+   VAR_TYPE: metadata
 
 esa_step:
   VALIDMIN: 1
   VALIDMAX: 7
-  FILLVAL: -9223372036854775808
+  FILLVAL: 255
   CATDESC: Energy Step
   DEPEND_1: esa_step
   FIELDNAM: Energy Step
   UNITS: ' '
-  FORMAT: I1
+  FORMAT: I3
   VAR_TYPE: support_data
   LABLAXIS: ESA
   LABL_PTR_1: esa_step_label
@@ -170,18 +169,18 @@ de_count:
 azimuth_6_label:
   CATDESC: azimuth spin bins (<num packets>, 6 degrees)
   FIELDNAM: Azimuth bins
-  FORMAT: A2
+  FORMAT: A3
   VAR_TYPE: metadata
 
 azimuth_6:
   VALIDMIN: 0
   VALIDMAX: 59
-  FILLVAL: -9223372036854775808
+  FILLVAL: 255
   CATDESC: azimuth spin bins (<num packets>, 6 degrees)
   FIELDNAM: Azimuth bins
   DEPEND_1: azimuth_6
   UNITS: ' '
-  FORMAT: I2
+  FORMAT: I3
   VAR_TYPE: support_data
   LABLAXIS: Az bins
   LABL_PTR_1: azimuth_6_label
@@ -189,17 +188,17 @@ azimuth_6:
 azimuth_60_label:
   CATDESC: azimuth spin bins (<num packets>, 60 degrees)
   FIELDNAM: Azimuth bins
-  FORMAT: A1
+  FORMAT: A3
   VAR_TYPE: metadata
 
 azimuth_60:
   VALIDMIN: 0
   VALIDMAX: 5
-  FILLVAL: -9223372036854775808
+  FILLVAL: 255
   CATDESC: azimuth spin bins (<num packets>, 60 degrees)
   FIELDNAM: Azimuth bins
   DEPEND_1: azimuth_60
-  FORMAT: I1
+  FORMAT: I3
   UNITS: ' '
   VAR_TYPE: support_data
   LABLAXIS: Az bins
@@ -384,7 +383,7 @@ pos1:
   DEPEND_2: esa_step
   FIELDNAM: Position 1 count
   FORMAT: I12
-  LABLAXIS: position 1 coun
+  LABLAXIS: position 1 count
 
 pos2:
   <<: *default
