@@ -106,11 +106,8 @@ def deadtime_correction(counts: np.ndarray, acq_duration: int) -> npt.NDArray:
     corrected_count : numpy.ndarray
         Corrected counts.
     """
-    # deadtime will be constant once it's defined.
-    # This deadtime value is from previous mission. SWE
-    # will give new one once they have it ready.
-    # TODO: update deadtime when we get new number
-    deadtime = 1.5e-6
+    # deadtime is 360 ns
+    deadtime = 360e-9
     correct = 1.0 - (deadtime * counts / acq_duration)
     correct = np.maximum(0.1, correct)
     corrected_count = np.divide(counts, correct)
