@@ -483,7 +483,7 @@ class MagL1a:
         )
 
     @staticmethod
-    def process_compressed_vectors(  # noqa: PLR0912, PLR0915
+    def process_compressed_vectors(
         vector_data: np.ndarray, primary_count: int, secondary_count: int
     ) -> tuple[np.ndarray, np.ndarray]:
         """
@@ -654,35 +654,15 @@ class MagL1a:
             vector_bits,
             primary_boundaries,
         )[:-1]
-
-        vector_diffs = list(map(MagL1a.decode_fib_zig_zag, primary_split_bits))
-        primary_vectors = MagL1a.accumulate_vectors(
-            first_vector, vector_diffs, primary_count
+        primary_vectors = MagL1a._process_vector_section(
+            vector_bits,
+            primary_split_bits,
+            primary_boundaries[-1],
+            first_vector,
+            primary_count,
+            uncompressed_vector_size,
+            compression_width,
         )
-        # If we are missing any vectors from primary_split_bits, we know we have
-        # uncompressed vectors to process.
-        primary_vector_missing = (
-            primary_count - math.ceil(len(primary_split_bits) / 3) - 1
-        )
-        vector_index = primary_count - primary_vector_missing
-        if primary_vector_missing:
-            primary_end = (
-                primary_boundaries[-1]
-                + uncompressed_vector_size * primary_vector_missing
-            )
-            uncompressed_vectors = vector_bits[primary_boundaries[-1] : primary_end + 1]
-
-            for i in range(primary_vector_missing):
-                decoded_vector = MagL1a.unpack_one_vector(
-                    uncompressed_vectors[
-                        i * uncompressed_vector_size : (i + 1)
-                        * uncompressed_vector_size
-                    ],
-                    compression_width,
-                    False,
-                )
-                primary_vectors[vector_index + i] = decoded_vector
-                primary_vectors[vector_index + i][3] = first_vector[3]
 
         # Secondary vector processing
         first_secondary_vector = MagL1a.unpack_one_vector(
@@ -699,35 +679,15 @@ class MagL1a:
             vector_bits[: secondary_boundaries[-1]], secondary_boundaries[:-1]
         )[1:]
 
-        vector_diffs = list(map(MagL1a.decode_fib_zig_zag, secondary_split_bits))
-
-        secondary_vectors = MagL1a.accumulate_vectors(
-            first_secondary_vector, vector_diffs, secondary_count
+        secondary_vectors = MagL1a._process_vector_section(
+            vector_bits,
+            secondary_split_bits,
+            secondary_boundaries[-1],
+            first_secondary_vector,
+            secondary_count,
+            uncompressed_vector_size,
+            compression_width,
         )
-        secondary_vector_missing = (
-            secondary_count - math.ceil(len(secondary_split_bits) / 3) - 1
-        )
-        if secondary_vector_missing:
-            vector_index = secondary_count - secondary_vector_missing
-            secondary_end = (
-                secondary_boundaries[-1]
-                + uncompressed_vector_size * secondary_vector_missing
-            )
-            uncompressed_vectors = vector_bits[
-                secondary_boundaries[-1] : secondary_end + 1
-            ]
-
-            for i in range(secondary_vector_missing):
-                decoded_vector = MagL1a.unpack_one_vector(
-                    uncompressed_vectors[
-                        i * uncompressed_vector_size : (i + 1)
-                        * uncompressed_vector_size
-                    ],
-                    compression_width,
-                    False,
-                )
-                secondary_vectors[vector_index + i] = decoded_vector
-                secondary_vectors[vector_index + i][3] = first_vector[3]
 
         # If there is a range data section, it describes all the data, compressed or
         # uncompressed.
@@ -744,6 +704,69 @@ class MagL1a:
                 secondary_vectors,
             )
         return primary_vectors, secondary_vectors
+
+    @staticmethod
+    def _process_vector_section(  # noqa: PLR0913
+        vector_bits: np.ndarray,
+        split_bits: list,
+        last_index: int,
+        first_vector: np.ndarray,
+        vector_count: int,
+        uncompressed_vector_size: int,
+        compression_width: int,
+    ) -> np.ndarray:
+        """
+        Generate a section of vector data, primary or secondary.
+
+        Should only be used by process_compressed_vectors.
+
+        Parameters
+        ----------
+        vector_bits : numpy.ndarray
+            Numpy array of bits, representing the vector data. Does not include the
+            first primary vector.
+        split_bits : list
+            An array of where to split vector bits, by passing in a list of indices.
+        last_index : int
+            The index of the last vector in the section (primary or secondary).
+        first_vector : numpy.ndarray
+            The first vector in the section, (x, y, z, range).
+        vector_count : numpy.ndarray
+            The number of vectors in the section (primary or secondary).
+        uncompressed_vector_size : int
+            The size of an uncompressed vector in bits.
+        compression_width : int
+            The width of the uncompressed values - uncompressed_vector_size/3.
+
+        Returns
+        -------
+        numpy.ndarray
+            An array of processed vectors.
+        """
+        vector_diffs = list(map(MagL1a.decode_fib_zig_zag, split_bits))
+        vectors = MagL1a.accumulate_vectors(first_vector, vector_diffs, vector_count)
+        # If we are missing any vectors from primary_split_bits, we know we have
+        # uncompressed vectors to process.
+        compressed_count = math.ceil(len(split_bits) / 3) + 1
+        uncompressed_count = vector_count - compressed_count
+
+        if uncompressed_count:
+            end = last_index + uncompressed_vector_size * uncompressed_count
+            uncompressed_vectors = vector_bits[last_index : end + 1]
+
+            for i in range(uncompressed_count):
+                decoded_vector = MagL1a.unpack_one_vector(
+                    uncompressed_vectors[
+                        i * uncompressed_vector_size : (i + 1)
+                        * uncompressed_vector_size
+                    ],
+                    compression_width,
+                    False,
+                )
+                vectors[i + compressed_count] = decoded_vector
+                vectors[i + compressed_count][3] = vectors[0][3]
+
+        return vectors
 
     @staticmethod
     def process_range_data_section(
