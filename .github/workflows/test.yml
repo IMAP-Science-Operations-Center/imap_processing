@@ -39,9 +39,11 @@ jobs:
 
       - name: Testing
         id: test
+        env:
+          RUN_EXTERNAL_KERNEL_MARK = ${{ contains(matrix.os, 'ubuntu') && matrix.python-version == '3.9' }}
         run: |
           # Ignore the network marks from the remote test environment
-          poetry run pytest --color=yes --cov --cov-report=xml
+          poetry run pytest --color=yes --cov --cov-report=xml ${!RUN_EXTERNAL_KERNEL_MARK:+-m "not external_kernel"}
 
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v4
