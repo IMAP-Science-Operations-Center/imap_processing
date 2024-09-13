@@ -193,38 +193,6 @@ def parse_count_rates(sci_dataset: xr.Dataset) -> None:
         section_start += field_meta.section_length
 
 
-def get_starting_packet_index(seq_flgs: xr.DataArray, start_index=0) -> int | None:
-    """
-    Get index of starting packet for the next science frame.
-
-    The sequence flag of the first packet in a science frame,
-    which consists of 20 packets, will have a value of 1. Given
-    a starting index, this function will find the next packet
-    in the dataset with a sequence flag = 1 and return that index.
-
-    This function is used to skip invalid packets and begin
-    processing the next science frame in the dataset.
-
-    Parameters
-    ----------
-    seq_flgs : xr.DataArray
-        Array of sequence flags in a dataset.
-    start_index : int
-        Starting index to find the first packet in a
-        science frame from an array of sequence flags.
-
-    Returns
-    -------
-    flag_index : int
-        Index of starting packet for next science frame.
-    """
-    for flag_index, flag in enumerate(seq_flgs[start_index:]):
-        if flag == 1:
-            # return starting index of next science frame
-            return flag_index + start_index
-    return None
-
-
 def is_valid_science_frame(seq_flgs: np.ndarray, src_seq_ctrs: np.ndarray) -> bool:
     """
     Check for valid science frame.
@@ -340,70 +308,71 @@ def assemble_science_frames(sci_dataset: xr.Dataset) -> xr.Dataset:
     """
     # TODO: Figure out how to handle partial science frames at the
     #  beginning and end of CCSDS files. These science frames are split
-    #  across CCSDS files and still need to be processed. Only discard
-    #  incomplete science frames in the middle of the CCSDS file.
-    #  The code currently skips all incomplete science frames.
+    #  across CCSDS files and still need to be processed with packets
+    #  from the previous file. Only discard incomplete science frames
+    #  in the middle of the CCSDS file. The code currently skips all
+    #  incomplete science frames.
 
     # Initialize lists to store data from valid science frames
     count_rates_binary = []
     pha_binary = []
     epoch_science_frame = []
 
-    science_frame_start = 0
-    while science_frame_start + 20 <= len(sci_dataset.epoch):
-        # Extract chunks for the current science frame (20 packets)
-        seq_flgs_chunk = sci_dataset.seq_flgs[
-            science_frame_start : science_frame_start + 20
-        ].values
-        src_seq_ctr_chunk = sci_dataset.src_seq_ctr[
-            science_frame_start : science_frame_start + 20
-        ].values
-        science_data_chunk = sci_dataset.science_data[
-            science_frame_start : science_frame_start + 20
-        ]
-        epoch_data_chunk = sci_dataset.epoch[
-            science_frame_start : science_frame_start + 20
-        ]
+    # Convert sequence flags and counters to NumPy arrays for vectorized operations
+    seq_flgs = sci_dataset.seq_flgs.values
+    src_seq_ctrs = sci_dataset.src_seq_ctr.values
+    science_data = sci_dataset.science_data.values
+    epoch_data = sci_dataset.epoch.values
 
+    # Define number of packets in the file and a science frame
+    total_packets = len(seq_flgs)
+    packets_in_frame = 20
+
+    # Find indices where sequence flag is 1 (the start of a science frame)
+    # and filter for indices that are 20 packets apart. These will be the
+    # starting indices for science frames in the science data.
+    start_indices: np.array = np.where(seq_flgs == 1)[0]
+    valid_start_indices = start_indices[np.where(np.diff(start_indices) == 20)[0]]
+    last_index_of_frame = None
+
+    if valid_start_indices[0] != 0:
+        # The first start index is not at the beginning of the file.
+        print(f"{valid_start_indices[0]} packets at start of file belong to science frame from previous day's ccsds file")
+        # TODO: Will need to handle these packets when processing multiple files
+
+    for i, start in enumerate(valid_start_indices):
+        # Get sequence flags and counters corresponding to this science frame
+        seq_flgs_chunk = seq_flgs[start:start + packets_in_frame]
+        src_seq_ctr_chunk = src_seq_ctrs[start:start + packets_in_frame]
+
+        # Check for valid science frames with proper sequence flags and counters
+        # and append corresponding science data to lists.
         if is_valid_science_frame(seq_flgs_chunk, src_seq_ctr_chunk):
-            # Append valid data to lists
+            science_data_chunk = science_data[start:start + packets_in_frame]
+            epoch_data_chunk = epoch_data[start:start + packets_in_frame]
             # First 6 packets contain count rates data
-            count_rates_binary.append("".join(science_data_chunk.data[0:6]))
+            count_rates_binary.append("".join(science_data_chunk[:6]))
             # Last 14 packets contain pulse height event data
-            pha_binary.append("".join(science_data_chunk.data[6:]))
+            pha_binary.append("".join(science_data_chunk[6:]))
             # Just take first packet's epoch for the science frame
             epoch_science_frame.append(epoch_data_chunk[0])
-            science_frame_start += 20  # Move to the next science frame
+            last_index_of_frame = start + packets_in_frame
         else:
+            # TODO: log issue
+            # Skip invalid science frame and move on to the next one
             print(
                 f"Invalid science frame found with starting packet index = "
-                f"{science_frame_start}"
-            )
-            # Skip science frame and move on to the next science frame packets
-            # Get index for the first packet in the next science frame
-            start = get_starting_packet_index(
-                sci_dataset.seq_flgs.values, start_index=science_frame_start
-            )
-            if start:
-                science_frame_start = start
-                print(
-                    f"Next science frame found with starting packet index = "
-                    f"{science_frame_start}"
-                )
-                # TODO: for skipped science frames, remove corresponding values from ccsds
-                #  headers as well? Those fields contain values from all packets in a file
-            else:
-                # TODO raise error or log issue
-                print("No other valid science frames found in the file")
-                break
+                f"{start}")
 
-    # TODO: check and log if there are extra packets at end of file
-    # TODO: add all dimensions to coordinates or just do that in hit_l1a.py
-    #       when the cdf yaml is used to update all the dimension names?
+    if last_index_of_frame:
+        remaining_packets = total_packets - last_index_of_frame
+        if remaining_packets < packets_in_frame:
+            # TODO: log extra packets at end of file.
+            #  Need to handle these packets that belong to the next day's science frame.
+            print(f"{remaining_packets} packets at end of file belong to science frame from next day's ccsds file")
 
     # Add new data variables to the dataset
     epoch_science_frame = np.array(epoch_science_frame)
-    # Replace epoch per packet dimension with epoch per science frame dimension
     sci_dataset = sci_dataset.drop_vars("epoch")
     sci_dataset.coords["epoch"] = epoch_science_frame
     sci_dataset["count_rates_binary"] = xr.DataArray(
@@ -462,6 +431,7 @@ def decom_hit(sci_dataset: xr.Dataset) -> xr.Dataset:
     sci_dataset = update_ccsds_header_data(sci_dataset)
     # Group science packets into groups of 20
     sci_dataset = assemble_science_frames(sci_dataset)
+
     # Parse count rates data from binary and add to dataset
     parse_count_rates(sci_dataset)
 
