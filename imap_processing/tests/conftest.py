@@ -149,8 +149,8 @@ def make_metakernel_from_kernels(metakernel, kernels):
         # Add a comma and EOL to the end of each kernel path except the last.
         formatted_kernels = [kern + ",\n" for kern in kernels_with_quotes[0:-1]]
         # Add ')' to the last kernel
-        formated_kernels.append(kernels_with_quotes[-1] + "\n)\n\n")
-        mk.writelines(formated_kernels)
+        formatted_kernels.append(kernels_with_quotes[-1] + "\n)\n\n")
+        mk.writelines(formatted_kernels)
 
 
 def get_test_kernels_to_load(template_path, kernel_dir_path):
