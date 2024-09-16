@@ -16,10 +16,13 @@ Notes
 
 from pathlib import Path
 
-from imap_processing import decom, imap_module_directory
+import xarray as xr
+
+from imap_processing import imap_module_directory
+from imap_processing.utils import packet_file_to_datasets
 
 
-def decom_packets(packet_file: Path) -> list:
+def decom_packets(packet_file: Path) -> dict[int, xr.Dataset]:
     """
     Decom CoDICE data packets using CoDICE packet definition.
 
@@ -30,29 +33,22 @@ def decom_packets(packet_file: Path) -> list:
 
     Returns
     -------
-    list : list
-        All the unpacked data.
+    datasets : dict[int, xarray.Dataset]
+        Mapping from apid to ``xarray`` dataset, one dataset per apid.
     """
-    packet_to_xtce_mapping = {
-        "imap_codice_l0_hi-counters-aggregated_20240429_v001.pkts": "P_COD_HI_INST_COUNTS_AGGREGATED.xml",  # noqa
-        "imap_codice_l0_hi-counters-singles_20240429_v001.pkts": "P_COD_HI_INST_COUNTS_SINGLES.xml",  # noqa
-        "imap_codice_l0_hi-omni_20240429_v001.pkts": "P_COD_HI_OMNI_SPECIES_COUNTS.xml",
-        "imap_codice_l0_hi-sectored_20240429_v001.pkts": "P_COD_HI_SECT_SPECIES_COUNTS.xml",  # noqa
-        "imap_codice_l0_hi-pha_20240429_v001.pkts": "P_COD_HI_PHA.xml",
-        "imap_codice_l0_hskp_20100101_v001.pkts": "P_COD_NHK.xml",
-        "imap_codice_l0_lo-counters-aggregated_20240429_v001.pkts": "P_COD_LO_INST_COUNTS_AGGREGATED.xml",  # noqa
-        "imap_codice_l0_lo-counters-singles_20240429_v001.pkts": "P_COD_LO_INST_COUNTS_SINGLES.xml",  # noqa
-        "imap_codice_l0_lo-sw-angular_20240429_v001.pkts": "P_COD_LO_SW_ANGULAR_COUNTS.xml",  # noqa
-        "imap_codice_l0_lo-nsw-angular_20240429_v001.pkts": "P_COD_LO_NSW_ANGULAR_COUNTS.xml",  # noqa
-        "imap_codice_l0_lo-sw-priority_20240429_v001.pkts": "P_COD_LO_SW_PRIORITY_COUNTS.xml",  # noqa
-        "imap_codice_l0_lo-nsw-priority_20240429_v001.pkts": "P_COD_LO_NSW_PRIORITY_COUNTS.xml",  # noqa
-        "imap_codice_l0_lo-sw-species_20240429_v001.pkts": "P_COD_LO_SW_SPECIES_COUNTS.xml",  # noqa
-        "imap_codice_l0_lo-nsw-species_20240429_v001.pkts": "P_COD_LO_NSW_SPECIES_COUNTS.xml",  # noqa
-        "imap_codice_l0_lo-pha_20240429_v001.pkts": "P_COD_LO_PHA.xml",
-    }
-
-    xtce_document = Path(
-        f"{imap_module_directory}/codice/packet_definitions/{packet_to_xtce_mapping[packet_file.name]}"
+    # TODO: Currently need to use the 'old' packet definition for housekeeping
+    #       because the simulated housekeeping data being used has various
+    #       mis-matches from the telemetry definition. This may be updated
+    #       once new simulated housekeeping data are acquired.
+    if "hskp" in str(packet_file):
+        xtce_filename = "P_COD_NHK.xml"
+    else:
+        xtce_filename = "codice_packet_definition.xml"
+    xtce_packet_definition = Path(
+        f"{imap_module_directory}/codice/packet_definitions/{xtce_filename}"
     )
-    decom_packet_list: list = decom.decom_packets(packet_file, xtce_document)
-    return decom_packet_list
+    datasets: dict[int, xr.Dataset] = packet_file_to_datasets(
+        packet_file, xtce_packet_definition
+    )
+
+    return datasets

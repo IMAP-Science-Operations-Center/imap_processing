@@ -5,22 +5,34 @@ from pathlib import Path
 
 import pandas as pd
 import pytest
-import space_packet_parser
+import xarray as xr
 
 from imap_processing import imap_module_directory
 from imap_processing.codice import codice_l0
 from imap_processing.codice.codice_l1a import create_hskp_dataset
 from imap_processing.utils import convert_raw_to_eu
 
+# Define the CCSDS header fields (which will be ignored in these tests)
+CCSDS_HEADER_FIELDS = [
+    "shcoarse",
+    "version",
+    "type",
+    "sec_hdr_flg",
+    "pkt_apid",
+    "seq_flgs",
+    "src_seq_ctr",
+    "pkt_len",
+]
+
 
 @pytest.fixture(scope="session")
-def decom_test_data() -> list:
-    """Read test data from file
+def decom_test_data() -> xr.Dataset:
+    """Read test data from file and return a decommutated housekeeping packet.
 
     Returns
     -------
-    data_packet_list : list[space_packet_parser.parser.Packet]
-        The list of decommutated packets
+    packet : xr.Dataset
+        A decommutated housekeeping packet
     """
 
     packet_file = Path(
@@ -28,14 +40,9 @@ def decom_test_data() -> list:
         f"imap_codice_l0_hskp_20100101_v001.pkts"
     )
 
-    data_packet_list = codice_l0.decom_packets(packet_file)
-    data_packet_list = [
-        packet
-        for packet in data_packet_list
-        if packet.header["PKT_APID"].raw_value == 1136
-    ]
+    packet = codice_l0.decom_packets(packet_file)[1136]
 
-    return data_packet_list
+    return packet
 
 
 @pytest.fixture(scope="session")
@@ -63,15 +70,15 @@ def validation_data() -> pd.core.frame.DataFrame:
 
 
 def test_eu_hskp_data(
-    decom_test_data: list[space_packet_parser.parser.Packet],
+    decom_test_data: xr.Dataset,
     validation_data: pd.core.frame.DataFrame,
 ):
     """Compare the engineering unit (EU) housekeeping data to the validation data.
 
     Parameters
     ----------
-    decom_test_data : list[space_packet_parser.parser.Packet]
-        The decommutated housekeeping packet data
+    decom_test_data : xr.Dataset
+        The decommutated housekeeping packet
     validation_data : pandas.core.frame.DataFrame
         The validation data to compare against
     """
@@ -82,80 +89,56 @@ def test_eu_hskp_data(
         imap_module_directory / "tests/codice/data/eu_unit_lookup_table.csv",
         "P_COD_NHK",
     )
-    first_data = decom_test_data[0]
-    validation_row = validation_data.loc[first_data.data["SHCOARSE"].raw_value]
 
-    # Determine the number of CCSDS header fields (7 is standard)
-    num_ccsds_header_fields = 7
+    validation_row = validation_data.loc[decom_test_data.shcoarse]
 
     # Compare EU values of housekeeping data, skipping CCSDS header fields
-    for idx, field in enumerate(eu_hk_data):
-        # Skip the first num_ccsds_header_fields fields
-        if idx < num_ccsds_header_fields:
-            continue
-        # Skip SHCOARSE
-        if field == "SHCOARSE":
+    for field in eu_hk_data:
+        # Skip header values
+        if field in CCSDS_HEADER_FIELDS:
             continue
 
-        eu_values = eu_hk_data[field].data
-        validation_values = validation_row[field]
+        eu_values = getattr(eu_hk_data, field).data
+        validation_values = validation_row[field.upper()]
 
         # Compare each individual element
-        for eu_val, validation_val in zip(eu_values, [validation_values]):
+        for eu_val, validation_val in zip(eu_values, validation_values):
             assert round(eu_val, 5) == round(validation_val, 5)
 
 
 def test_raw_hskp_data(
-    decom_test_data: list[space_packet_parser.parser.Packet],
+    decom_test_data: xr.Dataset,
     validation_data: pd.core.frame.DataFrame,
 ):
     """Compare the raw housekeeping data to the validation data.
 
     Parameters
     ----------
-    decom_test_data : list[space_packet_parser.parser.Packet]
-        The decommutated housekeeping packet data
+    decom_test_data : xr.Dataset
+        The decommutated housekeeping packet
     validation_data : pandas.core.frame.DataFrame
         The validation data to compare against
     """
 
-    first_data = decom_test_data[0]
-    validation_row = validation_data.loc[first_data.data["SHCOARSE"].raw_value]
+    validation_row = validation_data.loc[decom_test_data.shcoarse]
 
     # Compare raw values of housekeeping data
-    for key, value in first_data.data.items():
-        if key == "SHCOARSE":
-            assert value.raw_value == validation_row.name
-            continue
-        assert value.raw_value == validation_row[key]
+    for field in decom_test_data:
+        if field not in CCSDS_HEADER_FIELDS:
+            raw_values = getattr(decom_test_data, field).data
+            validation_values = validation_row[field.upper()]
+            for raw_value, validation_value in zip(raw_values, validation_values):
+                assert raw_value == validation_value
 
 
-def test_total_packets_in_data_file(
-    decom_test_data: list[space_packet_parser.parser.Packet],
-):
+def test_total_packets_in_data_file(decom_test_data: xr.Dataset):
     """Test if total packets in data file is correct
 
     Parameters
     ----------
-    decom_test_data : list[space_packet_parser.parser.Packet]
-        The decommutated housekeeping packet data
+    decom_test_data : xr.Dataset
+        The decommutated housekeeping packet
     """
 
     total_packets = 99
-    assert len(decom_test_data) == total_packets
-
-
-def test_ways_to_get_data(decom_test_data: list[space_packet_parser.parser.Packet]):
-    """Test if data can be retrieved using different ways
-
-    Parameters
-    ----------
-    decom_test_data : list[space_packet_parser.parser.Packet]
-        The decommutated housekeeping packet data
-    """
-
-    data_value_using_key = decom_test_data[0].data
-    data_value_using_list = decom_test_data[0][1]
-
-    # Check if data is same
-    assert data_value_using_key == data_value_using_list
+    assert len(decom_test_data.epoch) == total_packets

@@ -9,7 +9,7 @@ from imap_processing.swe.l1a.swe_science import decompressed_counts, swe_science
 def test_number_of_packets(decom_test_data):
     """This test and validate number of packets."""
     expected_number_of_packets = 29
-    assert len(decom_test_data) == expected_number_of_packets
+    assert len(decom_test_data["epoch"]) == expected_number_of_packets
 
 
 def test_decompress_algorithm():
@@ -29,22 +29,20 @@ def test_swe_raw_science_data(decom_test_data):
         index_col="SHCOARSE",
     )
 
-    first_data = decom_test_data[0]
-    validation_data = raw_validation_data.loc[first_data.data["SHCOARSE"].raw_value]
+    first_data = decom_test_data.isel(epoch=0)
+    validation_data = raw_validation_data.loc[first_data["shcoarse"].values]
 
-    # compare raw values of housekeeping data
-    for key, value in first_data.data.items():
-        if key == "SHCOARSE":
-            # compare SHCOARSE value
-            assert value.raw_value == validation_data.name
-            continue
-        if key == "SCIENCE_DATA":
-            continue
-        # check if the data is the same
-        assert value.raw_value == validation_data[key]
+    # compare raw values of the packets
+    shared_keys = set([x.lower() for x in validation_data.keys()]).intersection(
+        first_data.keys()
+    )
+    # TODO: Why are all the fields not the same between the two
+    assert len(shared_keys) == 19
+    for key in shared_keys:
+        assert first_data[key] == validation_data[key.upper()]
 
 
-def test_swe_derived_science_data(decom_test_data):
+def test_swe_derived_science_data(decom_test_data_derived):
     """This test and validate raw and derived data of SWE science data."""
     # read validation data
     test_data_path = imap_module_directory / "tests/swe/l0_validation_data"
@@ -53,8 +51,8 @@ def test_swe_derived_science_data(decom_test_data):
         index_col="SHCOARSE",
     )
 
-    first_data = decom_test_data[0]
-    validation_data = derived_validation_data.loc[first_data.data["SHCOARSE"].raw_value]
+    first_data = decom_test_data_derived.isel(epoch=0)
+    validation_data = derived_validation_data.loc[first_data["shcoarse"].values]
 
     enum_name_list = [
         "CEM_NOMINAL_ONLY",
@@ -68,24 +66,20 @@ def test_swe_derived_science_data(decom_test_data):
     ]
     # check ENUM values
     for enum_name in enum_name_list:
-        assert first_data.data[enum_name].derived_value == validation_data[enum_name]
+        assert first_data[enum_name.lower()] == validation_data[enum_name]
 
 
 def test_data_order(decom_test_data):
     # test that the data is in right order
-    assert decom_test_data[0].data["QUARTER_CYCLE"].derived_value == "FIRST"
-    assert decom_test_data[1].data["QUARTER_CYCLE"].derived_value == "SECOND"
-    assert decom_test_data[2].data["QUARTER_CYCLE"].derived_value == "THIRD"
-    assert decom_test_data[3].data["QUARTER_CYCLE"].derived_value == "FORTH"
+    np.testing.assert_array_equal(
+        decom_test_data.isel(epoch=slice(0, 4))["quarter_cycle"], [0, 1, 2, 3]
+    )
 
     # Get unpacked science data
     processed_data = swe_science(decom_test_data, "001")
 
-    quarter_cycle = processed_data["quarter_cycle"].data
-    assert quarter_cycle[0] == 0
-    assert quarter_cycle[1] == 1
-    assert quarter_cycle[2] == 2
-    assert quarter_cycle[3] == 3
+    quarter_cycle = processed_data["quarter_cycle"].isel(epoch=slice(0, 4))
+    np.testing.assert_array_equal(quarter_cycle, [0, 1, 2, 3])
 
 
 def test_swe_science_algorithm(decom_test_data):

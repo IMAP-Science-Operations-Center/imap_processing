@@ -1,0 +1,186 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<xtce:SpaceSystem xmlns:xtce="http://www.omg.org/space/xtce" name="ialirt">
+	<xtce:Header date="2023-08-24T07:53:00MST" version="1.0" author="IMAP SDC" />
+	<xtce:TelemetryMetaData>
+		<xtce:ParameterTypeSet>
+			<!-- This file was manually created using content from:
+			I-ALiRT Packet Definitions: https://lasp.colorado.edu/galaxy/x/44nKCQ
+            -->
+			<xtce:IntegerParameterType name="uint1" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
+				<xtce:UnitSet />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint2" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="2" encoding="unsigned" />
+				<xtce:UnitSet />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint3" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="3" encoding="unsigned" />
+				<xtce:UnitSet />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint6" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="6" encoding="unsigned" />
+				<xtce:UnitSet />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint11" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="11" encoding="unsigned" />
+				<xtce:UnitSet />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint14" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="14" encoding="unsigned" />
+				<xtce:UnitSet />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint16" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="16" encoding="unsigned" />
+				<xtce:UnitSet />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint24" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="24" encoding="unsigned" />
+				<xtce:UnitSet />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint32" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="32" encoding="unsigned" />
+				<xtce:UnitSet />
+			</xtce:IntegerParameterType>
+						<!-- Enumerated Data Types -->
+			<xtce:EnumeratedParameterType name="instrument_status" signed="false">
+                <xtce:UnitSet/>
+                <xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned"/>
+                <xtce:EnumerationList>
+                    <xtce:Enumeration label="OFF-NOMINAL" value="0"/>
+                    <xtce:Enumeration label="NOMINAL" value="1"/>
+                </xtce:EnumerationList>
+            </xtce:EnumeratedParameterType>
+		</xtce:ParameterTypeSet>
+        <xtce:ParameterSet>
+            <!-- Within the ParameterSet, utilize the data types defined in the ParameterTypeSet to create variables
+            with their respective data types. -->
+
+            <!--CCSDS Header Elements-->
+			<xtce:Parameter name="VERSION" parameterTypeRef="uint3">
+				<xtce:LongDescription>CCSDS Packet Version Number (always 0)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="TYPE" parameterTypeRef="uint1">
+				<xtce:LongDescription>CCSDS Packet Type Indicator (0=telemetry)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SEC_HDR_FLG" parameterTypeRef="uint1">
+				<xtce:LongDescription>CCSDS Packet Secondary Header Flag (always 1)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PKT_APID" parameterTypeRef="uint11">
+				<xtce:LongDescription>CCSDS Packet Application Process ID</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SEQ_FLGS" parameterTypeRef="uint2">
+				<xtce:LongDescription>CCSDS Packet Grouping Flags (3=not part of group)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SRC_SEQ_CTR" parameterTypeRef="uint14">
+				<xtce:LongDescription>CCSDS Packet Sequence Count (increments with each new packet)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PKT_LEN" parameterTypeRef="uint16">
+				<xtce:LongDescription>CCSDS Packet Length (number of bytes after Packet length minus 1)</xtce:LongDescription>
+			</xtce:Parameter>
+			<!-- HIT -->
+			<xtce:Parameter name="HIT_SC_TICK" parameterTypeRef="uint32">
+				<xtce:LongDescription>Spacecraft tick</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="HIT_MET" parameterTypeRef="uint32">
+				<xtce:LongDescription>Mission elapsed time</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="HIT_STATUS" parameterTypeRef="instrument_status">
+				<xtce:LongDescription>1 = nominal, 0 = off-nominal</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="HIT_SPARE" parameterTypeRef="uint1">
+				<xtce:LongDescription>Spare</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="HIT_SUBCOM" parameterTypeRef="uint6">
+				<xtce:LongDescription>Seconds counter</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="HIT_FAST_RATE_1" parameterTypeRef="uint16">
+				<xtce:LongDescription>4 second cadence</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="HIT_FAST_RATE_2" parameterTypeRef="uint16">
+				<xtce:LongDescription>4 second cadence</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="HIT_SLOW_RATE" parameterTypeRef="uint16">
+				<xtce:LongDescription>1 minute cadence</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="HIT_EVENT_DATA_00" parameterTypeRef="uint32">
+				<xtce:LongDescription>event data 00</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="HIT_EVENT_DATA_01" parameterTypeRef="uint32">
+				<xtce:LongDescription>event data 01</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="HIT_EVENT_DATA_02" parameterTypeRef="uint32">
+				<xtce:LongDescription>event data 02</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="HIT_EVENT_DATA_03" parameterTypeRef="uint32">
+				<xtce:LongDescription>event data 03</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="HIT_EVENT_DATA_04" parameterTypeRef="uint32">
+				<xtce:LongDescription>event data 04</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="HIT_EVENT_DATA_05" parameterTypeRef="uint32">
+				<xtce:LongDescription>event data 05</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="HIT_EVENT_DATA_06" parameterTypeRef="uint32">
+				<xtce:LongDescription>event data 06</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="HIT_EVENT_DATA_07" parameterTypeRef="uint32">
+				<xtce:LongDescription>event data 07</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="HIT_EVENT_DATA_08" parameterTypeRef="uint32">
+				<xtce:LongDescription>event data 08</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="HIT_EVENT_DATA_09" parameterTypeRef="uint32">
+				<xtce:LongDescription>event data 09</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="HIT_EVENT_DATA_10" parameterTypeRef="uint24">
+				<xtce:LongDescription>event data 10</xtce:LongDescription>
+			</xtce:Parameter>
+			<!-- HIT -->
+		</xtce:ParameterSet>
+		<!-- End metadata -->
+		<xtce:ContainerSet>
+			<xtce:SequenceContainer name="CCSDSPacket" >
+				<xtce:EntryList>
+					<xtce:ParameterRefEntry parameterRef="VERSION" />
+					<xtce:ParameterRefEntry parameterRef="TYPE" />
+					<xtce:ParameterRefEntry parameterRef="SEC_HDR_FLG" />
+					<xtce:ParameterRefEntry parameterRef="PKT_APID" />
+					<xtce:ParameterRefEntry parameterRef="SEQ_FLGS" />
+					<xtce:ParameterRefEntry parameterRef="SRC_SEQ_CTR" />
+					<xtce:ParameterRefEntry parameterRef="PKT_LEN" />
+				</xtce:EntryList>
+			</xtce:SequenceContainer>
+			<xtce:SequenceContainer name="IALiRTPacket">
+				<xtce:BaseContainer containerRef="CCSDSPacket">
+					<xtce:RestrictionCriteria>
+						<xtce:Comparison parameterRef="PKT_APID" value="1253" useCalibratedValue="false" />
+					</xtce:RestrictionCriteria>
+				</xtce:BaseContainer>
+				<xtce:EntryList>
+					<!-- HIT -->
+					<xtce:ParameterRefEntry parameterRef="HIT_SC_TICK"/>
+					<xtce:ParameterRefEntry parameterRef="HIT_MET"/>
+					<xtce:ParameterRefEntry parameterRef="HIT_STATUS"/>
+					<xtce:ParameterRefEntry parameterRef="HIT_SPARE"/>
+					<xtce:ParameterRefEntry parameterRef="HIT_SUBCOM"/>
+					<xtce:ParameterRefEntry parameterRef="HIT_FAST_RATE_1"/>
+					<xtce:ParameterRefEntry parameterRef="HIT_FAST_RATE_2"/>
+					<xtce:ParameterRefEntry parameterRef="HIT_SLOW_RATE"/>
+					<xtce:ParameterRefEntry parameterRef="HIT_EVENT_DATA_00"/>
+					<xtce:ParameterRefEntry parameterRef="HIT_EVENT_DATA_01"/>
+					<xtce:ParameterRefEntry parameterRef="HIT_EVENT_DATA_02"/>
+					<xtce:ParameterRefEntry parameterRef="HIT_EVENT_DATA_03"/>
+					<xtce:ParameterRefEntry parameterRef="HIT_EVENT_DATA_04"/>
+					<xtce:ParameterRefEntry parameterRef="HIT_EVENT_DATA_05"/>
+					<xtce:ParameterRefEntry parameterRef="HIT_EVENT_DATA_06"/>
+					<xtce:ParameterRefEntry parameterRef="HIT_EVENT_DATA_07"/>
+					<xtce:ParameterRefEntry parameterRef="HIT_EVENT_DATA_08"/>
+					<xtce:ParameterRefEntry parameterRef="HIT_EVENT_DATA_09"/>
+					<xtce:ParameterRefEntry parameterRef="HIT_EVENT_DATA_10"/>
+					<!-- HIT -->
+				</xtce:EntryList>
+			</xtce:SequenceContainer>
+		</xtce:ContainerSet>
+	</xtce:TelemetryMetaData>
+</xtce:SpaceSystem>
