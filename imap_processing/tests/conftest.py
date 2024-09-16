@@ -52,33 +52,33 @@ def _download_de440s(spice_test_data_path):
     kernel_name = kernel_url.split("/")[-1]
     local_filepath = spice_test_data_path / kernel_name
 
-    if not local_filepath.exists():
-        allowed_attempts = 3
-        for attempt_number in range(allowed_attempts):
-            try:
-                with requests.get(kernel_url, stream=True, timeout=30) as r:
-                    r.raise_for_status()
-                    with open(local_filepath, "wb") as f:
-                        for chunk in r.iter_content(chunk_size=8192):
-                            f.write(chunk)
-                break
-            except requests.exceptions.RequestException as error:
-                logger.info(f"Request failed. {error}")
-                if attempt_number < allowed_attempts:
-                    logger.info(
-                        f"Trying again, retries left "
-                        f"{allowed_attempts - attempt_number}, "
-                        f"Exception: {error}"
-                    )
-                    time.sleep(1)
-                else:
-                    logger.error(
-                        f"Failed to download file after {allowed_attempts} "
-                        f"attempts, Final Error: {error}"
-                    )
-                    raise
-
-        logger.info("Cached kernel file to %s", local_filepath)
+    if local_filepath.exists():
+        return
+    allowed_attempts = 3
+    for attempt_number in range(allowed_attempts):
+        try:
+            with requests.get(kernel_url, stream=True, timeout=30) as r:
+                r.raise_for_status()
+                with open(local_filepath, "wb") as f:
+                    for chunk in r.iter_content(chunk_size=8192):
+                        f.write(chunk)
+            logger.info("Cached kernel file to %s", local_filepath)
+            break
+        except requests.exceptions.RequestException as error:
+            logger.info(f"Request failed. {error}")
+            if attempt_number < allowed_attempts:
+                logger.info(
+                    f"Trying again, retries left "
+                    f"{allowed_attempts - attempt_number}, "
+                    f"Exception: {error}"
+                )
+                time.sleep(1)
+            else:
+                logger.error(
+                    f"Failed to download file after {allowed_attempts} "
+                    f"attempts, Final Error: {error}"
+                )
+                raise
 
 
 def pytest_collection_modifyitems(items):
