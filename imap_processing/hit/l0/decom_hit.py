@@ -241,14 +241,17 @@ def find_valid_starting_indices(flags: np.ndarray, counters: np.ndarray) -> np.n
     flag_pattern = np.array(
         [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2]
     )
-    # Use sliding windows to compare segments of the array with the pattern
+    # Use sliding windows to compare segments of the array (20 packets) with the pattern.
+    # This generates an array of overlapping sub-arrays, each of length 20, from the flags
+    # array and is used to slide the "window" across the array and compare the sub-arrays
+    # with the predefined pattern.
     window_size = len(flag_pattern)
-    # Create a sliding window view of the array
     windows = np.lib.stride_tricks.sliding_window_view(flags, window_size)
     # Find where the windows match the pattern
     matches = np.all(windows == flag_pattern, axis=1)
     # Get the starting indices of matches
     match_indices = np.where(matches)[0]
+    # Filter for only indices from valid science frames with sequential counters
     valid_indices = get_valid_indices(match_indices, counters, window_size)
     return valid_indices
 
