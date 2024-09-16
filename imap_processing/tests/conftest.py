@@ -147,7 +147,7 @@ def make_metakernel_from_kernels(metakernel, kernels):
         # Put single quotes around every kernel name
         kernels_with_quotes = ["    '" + kern + "'" for kern in kernels]
         # Add a comma and EOL to the end of each kernel path except the last.
-        formated_kernels = [kern + ",\n" for kern in kernels_with_quotes[0:-1]]
+        formatted_kernels = [kern + ",\n" for kern in kernels_with_quotes[0:-1]]
         # Add ')' to the last kernel
         formated_kernels.append(kernels_with_quotes[-1] + "\n)\n\n")
         mk.writelines(formated_kernels)
