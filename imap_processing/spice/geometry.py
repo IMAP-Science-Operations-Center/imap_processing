@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import Union
 
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
 import spiceypy as spice
 
@@ -128,8 +129,8 @@ def get_spin_data() -> pd.DataFrame:
 
 
 def get_spacecraft_spin_phase(
-    query_met_times: Union[float, np.ndarray[float]],
-) -> Union[float, np.ndarray]:
+    query_met_times: Union[float, npt.NDArray],
+) -> Union[float, npt.NDArray]:
     """
     Get the spacecraft spin phase for the input query times.
 
@@ -140,7 +141,7 @@ def get_spacecraft_spin_phase(
 
     Parameters
     ----------
-    query_met_times : float or np.ndarray[float]
+    query_met_times : float or np.ndarray
         Query times in Mission Elapsed Time (MET).
 
     Returns
@@ -148,9 +149,13 @@ def get_spacecraft_spin_phase(
     spin_phase : float or np.ndarray
         Spin phase for the input query times.
     """
-    # TODO: Write code to calculate spin phase for the input query times
     if isinstance(query_met_times, float):
-        query_met_times = np.array([query_met_times])
-    # TODO: call get_spin_data function to get spin data for the input
-    # query times. And finish remaining implementation in upcoming PR.
-    return np.zeros_like(query_met_times)
+        # TODO: call get_spin_data function to get spin data for the
+        # input query times
+        # Here, return a float (dummy implementation)
+        return 0.0  # Replace this with actual logic to calculate spin phase
+
+    # Return an ndarray of the same shape, filled with 0.0 for
+    # now (dummy implementation)
+    # TODO: Replace with actual logic to calculate spin phase
+    return np.array(query_met_times, dtype=float)

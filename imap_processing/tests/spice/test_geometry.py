@@ -43,8 +43,16 @@ def test_get_spacecraft_spin_phase(generate_spin_data):
 
     spin_phases = get_spacecraft_spin_phase(query_met_times=start_time)
 
-    # Ensure the length of spin phases matches the query times
-    assert len(spin_phases) == 1, "Spin phases length should match query times length."
+    assert isinstance(spin_phases, float), "Spin phase must be a float."
+
+    start_time = np.array([453051323.0, 453051324.0])
+
+    spin_phases = get_spacecraft_spin_phase(query_met_times=start_time)
+
+    assert isinstance(spin_phases, np.ndarray), "Spin phase must be a numpy.ndarray."
+    assert (
+        len(spin_phases) == 2
+    ), "Spin phase must have the same length as query_met_times."
 
 
 @pytest.mark.usefixtures("_set_spin_data_filepath")
