@@ -23,7 +23,7 @@ The explicit code interfaces and structure are described in the :ref:`code-docum
    development-guide/index
    project-management/index
    external-tools/index
-   data-access-api/index
+   data-access/index
 
 If you make use of any ``imap_processing`` code, please consider citing it in your research.
 `https://zenodo.org/record/11168295 <https://zenodo.org/record/11168295>`_
