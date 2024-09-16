@@ -762,7 +762,7 @@ def test_process_uncompressed_vector_data():
     # values)
     hex_string = "03E903EAF447C1F47E0BBCBED0"
     input_data = np.frombuffer(bytes.fromhex(hex_string), dtype=np.dtype(">b"))
-
+    print(input_data)
     total_primary_vectors = 1
     total_secondary_vectors = 1
 

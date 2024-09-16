@@ -47,8 +47,10 @@ def test_mag_decom():
 
         # Remove bytes for header and previous attributes from CCSDS_HEX,
         # remaining bytes are vectors
+        # This also removes the buffer from the end of the vectors. The buffer is
+        # not part of the validation data, but does not affect processing.
         assert (
-            test.VECTORS.tobytes().hex()
+            test.VECTORS.tobytes().hex()[:-2]
             == expected_output["CCSDS_HEX"][index][54:].lower()
         )
 
