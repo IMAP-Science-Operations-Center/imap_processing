@@ -649,3 +649,111 @@ def get_energy_ssd(de_dataset: xarray.Dataset, ssd: np.ndarray) -> NDArray[np.fl
     energy_norm = get_energy_norm(ssd, composite_energy)
 
     return energy_norm
+
+
+def determine_species_pulse_height(
+    energy: np.ndarray, tof: np.ndarray, r: np.ndarray
+) -> tuple[np.ndarray, np.ndarray]:
+    """
+    Determine the species for pulse-height events.
+
+    Species is determined from the particle energy and velocity.
+    For velocity, the particle TOF is normalized with respect
+    to a fixed distance dmin between the front and back detectors.
+    The normalized TOF is termed the corrected TOF (ctof).
+    Particle species are determined from
+    the energy and ctof using a lookup table.
+
+    Further description is available on pages 42-44 of
+    IMAP-Ultra Flight Software Specification document
+    (7523-9009_Rev_-.pdf).
+
+    Parameters
+    ----------
+    energy : np.ndarray
+        Energy from the SSD event (keV).
+    tof : np.ndarray
+        Time of flight of the SSD event (tenths of a nanosecond).
+    r : np.ndarray
+        Path length (hundredths of a millimeter).
+
+    Returns
+    -------
+    ctof : np.array
+        Corrected TOF.
+    bin : np.array
+        Species bin.
+    """
+    z_dstop = 2.6 / 2  # position of stop foil on Z axis (mm)
+    z_ds = 46.19 - z_dstop  # position of slit on Z axis (mm)
+    df = 3.39  # distance from slit to foil (mm)
+
+    # PH event TOF normalization to Z axis
+    dmin = z_ds - np.sqrt(2) * df  # (mm)
+
+    # Multiply times 100 to convert to hundredths of a millimeter.
+    ctof = tof * dmin * 100 / r  # (tenths of a ns)
+    # TODO: need lookup tables
+    # placeholder
+    bin = np.zeros(len(ctof))
+    # bin = PHxTOFSpecies[ctof, energy]
+
+    return ctof, bin
+
+
+def determine_species_ssd(
+    energy: np.ndarray, tof: np.ndarray, r: np.ndarray
+) -> tuple[np.ndarray, np.ndarray]:
+    """
+    Determine the species for SSD events.
+
+    Species is determined from the particle's energy and velocity.
+    For velocity, the particle's TOF is normalized with respect
+    to a fixed distance dmin between the front and back detectors.
+    For SSD events, an adjustment is also made to the path length
+    to account for the shorter distances that such events
+    travel to reach the detector. The normalized TOF is termed
+    the corrected tof (ctof). Particle species are determined from
+    the energy and cTOF using a lookup table.
+
+    Further description is available on pages 42-44 of
+    IMAP-Ultra Flight Software Specification document
+    (7523-9009_Rev_-.pdf).
+
+    Parameters
+    ----------
+    energy : np.ndarray
+        Energy from the SSD event (keV).
+    tof : np.ndarray
+        Time of flight of the SSD event (tenths of a nanosecond).
+    r : np.ndarray
+        Path length (hundredths of a millimeter).
+
+    Returns
+    -------
+    ctof : np.ndarray
+        Corrected TOF.
+    bin : np.ndarray
+        Species bin.
+    """
+    z_dstop = 2.6 / 2  # position of stop foil on Z axis (mm)
+    z_ds = 46.19 - z_dstop  # position of slit on Z axis (mm)
+    df = 3.39  # distance from slit to foil (mm)
+
+    # SSD event TOF normalization to Z axis
+    dmin = z_ds - np.sqrt(2) * df  # (mm)
+    dmin_ssd_ctof = dmin**2 / (dmin - z_dstop)  # (mm)
+    # Multiply times 100 to convert to hundredths of a millimeter.
+    ctof = tof * dmin_ssd_ctof * 100 / r  # (tenths of a ns)
+
+    bin = np.zeros(len(ctof))  # placeholder
+
+    # TODO: get these lookup tables
+    # if r < get_image_params("PathSteepThresh"):
+    #     # bin = ExTOFSpeciesSteep[energy, ctof]
+    # elif r < get_image_params("PathMediumThresh"):
+    #     # bin = ExTOFSpeciesMedium[energy, ctof]
+    # else:
+    #     # bin = ExTOFSpeciesFlat[energy, ctof]
+
+    return ctof, bin
