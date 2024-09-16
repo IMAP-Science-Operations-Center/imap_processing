@@ -179,7 +179,7 @@ def process_packets(
         # each sensor, we can calculate how much data is in this packet and where the
         # byte boundaries are.
         primary_vectors, secondary_vectors = MagL1a.process_vector_data(
-            mag_l0.VECTORS,
+            mag_l0.VECTORS,  # type: ignore
             primary_packet_data.total_vectors,
             secondary_packet_data.total_vectors,
             mag_l0.COMPRESSION,
