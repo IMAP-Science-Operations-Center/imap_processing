@@ -1,7 +1,7 @@
 Data Dependency Management
 ==========================
 
-The IMAP science data center utilizes an event-based processing system that allows for
+The IMAP Science Data Center (SDC) utilizes an event-based processing system that allows for
 processing as soon as data is available. This system is designed to be flexible to
 accommodate the various requirements and inter-dependencies for all 10 instruments.
 
@@ -38,10 +38,10 @@ This section is intended to act as a high level overview for the data processing
 `Up to date overview chart in Galaxy <https://lasp.colorado.edu/galaxy/display/IMAP/SDC+Processing+Architecture+Overview>`_
 
 Each science file that arrives is treated the same, regardless of level or instrument. When a file is placed in the file storage system, it triggers a step to index the file ("indexer lambda").
-This step adds the file to the database and triggers the next step in processing (batch starter lambda).
+This step adds the file to the database and triggers the next step in processing ("batch starter lambda").
 
-This step is what determines if a instrument and level is ready for processing, by checking dependencies. For each file that arrives, the system check to see what the downstream dependencies are -
-meaning, what future files need this file in order to complete processing. For example, if a MAG L1A file arrived, this step would determine that the MAG L1B mago and magi files are dependent on
+This step is what determines if a instrument and level is ready for processing, by checking dependencies. For each file that arrives, the system checks to see what the downstream dependencies are -
+meaning, what future files need this file in order to complete processing. For example, if a MAG L1A file arrived, this step would determine that the MAG L1B ``mago`` and ``magi`` files are dependent on
 the L1A file, and therefore MAG L1B may be ready to begin processing.
 
 Then, for each anticipated job, the batch starter process checks to see if all the upstream dependencies are met. Although we know we have one of the upstream dependencies for an expected job,
@@ -70,10 +70,12 @@ The database has the following structure:
 ========== ===== ========== ===================== ================ ===================== ======================== ======================
 instrument level descriptor dependency_instrument dependency_level dependency_descriptor relationship_description DOWNSTREAM or UPSTREAM
 ========== ===== ========== ===================== ================ ===================== ======================== ======================
+mag        l1a   norm-mago  mag                   l0               raw                   HARD                     UPSTREAM
 mag        l1a   norm-mago  mag                   l1b              norm-mago             HARD                     DOWNSTREAM
 mag        l1a   norm-magi  mag                   l1b              norm-magi             HARD                     DOWNSTREAM
 mag        l1d   norm       swapi                 l3               sci                   HARD                     DOWNSTREAM
 swapi      l2    sci        swapi                 l3               sci                   HARD                     DOWNSTREAM
+
 ========== ===== ========== ===================== ================ ===================== ======================== ======================
 
 Dependency Types
