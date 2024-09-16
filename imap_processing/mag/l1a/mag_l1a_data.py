@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import logging
 import math
 from dataclasses import InitVar, dataclass, field
 from math import floor
@@ -11,9 +10,12 @@ import numpy as np
 import numpy.typing as npt
 
 from imap_processing.cdf.utils import J2000_EPOCH, met_to_j2000ns
-from imap_processing.mag.constants import FIBONACCI_SEQUENCE, MAX_FINE_TIME
-
-logger = logging.getLogger(__name__)
+from imap_processing.mag.constants import (
+    AXIS_COUNT,
+    FIBONACCI_SEQUENCE,
+    MAX_FINE_TIME,
+    RANGE_BIT_WIDTH,
+)
 
 
 @dataclass
@@ -535,13 +537,13 @@ class MagL1a:
         # The first 8 bits are a header - 6 bits to indicate the compression width,
         # 1 bit to indicate if there is a range data section, and 1 bit spare.
         compression_width = int("".join([str(i) for i in bit_array[:6]]), 2)
-        has_range_data_section = int(str(bit_array[6]), 2)
+        has_range_data_section = bit_array[6] == 1
 
         # The full vector includes 3 values of compression_width bits, and excludes
         # range.
-        uncompressed_vector_size = compression_width * 3
+        uncompressed_vector_size = compression_width * AXIS_COUNT
         # plus 8 to get past the compression width and range data section
-        first_vector_width = uncompressed_vector_size + 8 + 2
+        first_vector_width = uncompressed_vector_size + 8 + RANGE_BIT_WIDTH
         first_vector = MagL1a.unpack_one_vector(
             bit_array[8:first_vector_width], compression_width, True
         )
@@ -598,7 +600,7 @@ class MagL1a:
                 primary_boundaries.append(seq_val + 1)
 
                 # 3 boundaries equal one vector
-                if len(primary_boundaries) % 3 == 0:
+                if len(primary_boundaries) % AXIS_COUNT == 0:
                     vector_count += 1
                     # If the vector length is >60 bits, we switch to uncompressed.
                     # So we skip past all the remaining seq_ones.
@@ -642,7 +644,7 @@ class MagL1a:
                 # We have the start of the secondary vectors in
                 # secondary_boundaries, so we need to subtract one to determine
                 # the vector count. (in primary_boundaries we know we start at 0.)
-                if (len(secondary_boundaries) - 1) % 3 == 0:
+                if (len(secondary_boundaries) - 1) % AXIS_COUNT == 0:
                     vector_count += 1
                     if secondary_boundaries[-1] - secondary_boundaries[-4] > 60:
                         # The rest of the secondary values are uncompressed.
@@ -747,7 +749,7 @@ class MagL1a:
         vectors = MagL1a.accumulate_vectors(first_vector, vector_diffs, vector_count)
         # If we are missing any vectors from primary_split_bits, we know we have
         # uncompressed vectors to process.
-        compressed_count = math.ceil(len(split_bits) / 3) + 1
+        compressed_count = math.ceil(len(split_bits) / AXIS_COUNT) + 1
         uncompressed_count = vector_count - compressed_count
 
         if uncompressed_count:
@@ -843,13 +845,13 @@ class MagL1a:
         """
         vectors: np.ndarray = np.empty((vector_count, 4), dtype=np.int32)
         vectors[0] = first_vector
-        if len(vector_differences) % 3 != 0:
+        if len(vector_differences) % AXIS_COUNT != 0:
             raise ValueError(
                 "Error! Computed compressed vector differences are not "
                 "divisible by 3 - meaning some data is missing. "
                 "Expected length: %s, actual length: "
                 "%s",
-                vector_count * 3,
+                vector_count * AXIS_COUNT,
                 len(vector_differences),
             )
         index = 0
@@ -897,10 +899,11 @@ class MagL1a:
                 "unpack_one_vector method is expecting an array of bits as" "input."
             )
 
-        if len(vector_data) != width * 3 + 2 * has_range:
-            logger.error(
+        if len(vector_data) != width * AXIS_COUNT + RANGE_BIT_WIDTH * has_range:
+            raise ValueError(
                 f"Invalid length {len(vector_data)} for vector data. Expected "
-                f"{width * 3} or {width * 3 + 2} if has_range."
+                f"{width * AXIS_COUNT} or {width * AXIS_COUNT + RANGE_BIT_WIDTH} if "
+                f"has_range."
             )
         padding = np.zeros(8 - (width % 8), dtype=np.uint8)
 
