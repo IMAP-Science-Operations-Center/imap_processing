@@ -9,7 +9,7 @@ instrument_base: &instrument_base
     https://imap.princeton.edu/instruments/idex for more details.
   Instrument_type:
 
-imap_idex_l1_sci:
+imap_idex_l1a_sci:
   <<: *instrument_base
   Data_level: L1
   Data_type: L1_SCI>Level-1 Science Data
