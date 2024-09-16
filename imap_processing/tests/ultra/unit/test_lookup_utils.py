@@ -57,7 +57,7 @@ def test_get_egy_norm():
 
     norm_composite_energy = get_energy_norm(np.array([2]), np.array([2]))
 
-    assert norm_composite_energy == egy_norm_df.iloc[2 * 4096 + 2]["NormEnergy"]
+    assert int(norm_composite_energy) == egy_norm_df.iloc[2 * 4096 + 2]["NormEnergy"]
 
 
 def test_get_image_params():
