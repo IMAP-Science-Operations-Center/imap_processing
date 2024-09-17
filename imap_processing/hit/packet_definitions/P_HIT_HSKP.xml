@@ -1,0 +1,344 @@
+<?xml version='1.0' encoding='utf-8'?>
+<xtce:SpaceSystem xmlns:xtce="http://www.omg.org/space/xtce" name="P_HIT_HSKP">
+	<xtce:Header date="2024-02" version="1.0" author="IMAP SDC" />
+	<xtce:TelemetryMetaData>
+		<xtce:ParameterTypeSet>
+			<xtce:IntegerParameterType name="UINT1" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT2" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="2" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT3" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="3" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT4" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="4" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT6" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="6" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT8" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="8" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT11" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="11" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT12" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT14" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="14" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT16" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="16" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT18" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="18" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="UINT32" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="32" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:BinaryParameterType name="BYTE640">
+				<xtce:UnitSet />
+				<xtce:BinaryDataEncoding bitOrder="mostSignificantBitFirst">
+					<xtce:SizeInBits>
+						<xtce:FixedValue>640</xtce:FixedValue>
+					</xtce:SizeInBits>
+				</xtce:BinaryDataEncoding>
+			</xtce:BinaryParameterType>
+		</xtce:ParameterTypeSet>
+		<xtce:ParameterSet>
+			<xtce:Parameter name="VERSION" parameterTypeRef="UINT3">
+				<xtce:LongDescription>CCSDS Packet Version Number (always 0)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="TYPE" parameterTypeRef="UINT1">
+				<xtce:LongDescription>CCSDS Packet Type Indicator (0=telemetry)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SEC_HDR_FLG" parameterTypeRef="UINT1">
+				<xtce:LongDescription>CCSDS Packet Secondary Header Flag (always 1)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PKT_APID" parameterTypeRef="UINT11">
+				<xtce:LongDescription>CCSDS Packet Application Process ID</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SEQ_FLGS" parameterTypeRef="UINT2">
+				<xtce:LongDescription>CCSDS Packet Grouping Flags (3=not part of group)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SRC_SEQ_CTR" parameterTypeRef="UINT14">
+				<xtce:LongDescription>CCSDS Packet Sequence Count (increments with each new packet)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PKT_LEN" parameterTypeRef="UINT16">
+				<xtce:LongDescription>CCSDS Packet Length (number of bytes after Packet length minus 1)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SHCOARSE" parameterTypeRef="UINT32">
+				<xtce:ShortDescription>Spacecraft tick</xtce:ShortDescription>
+				<xtce:LongDescription>Spacecraft tick</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="MODE" parameterTypeRef="UINT4">
+				<xtce:ShortDescription>Mode (0=boot, 1=maint, 2=stdby, 3=science</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="FSW_VERSION_A" parameterTypeRef="UINT2">
+				<xtce:ShortDescription>FSW version number (A.B.C bits)</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="FSW_VERSION_B" parameterTypeRef="UINT4">
+				<xtce:ShortDescription>FSW version number (A.B.C bits)</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="FSW_VERSION_C" parameterTypeRef="UINT6">
+				<xtce:ShortDescription>FSW version number (A.B.C bits)</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="NUM_GOOD_CMDS" parameterTypeRef="UINT8">
+				<xtce:ShortDescription>Number of good commands</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="LAST_GOOD_CMD" parameterTypeRef="UINT8">
+				<xtce:ShortDescription>Last good command</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="LAST_GOOD_SEQ_NUM" parameterTypeRef="UINT8">
+				<xtce:ShortDescription>Last good sequence number</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="NUM_BAD_CMDS" parameterTypeRef="UINT8">
+				<xtce:ShortDescription>Number of bad commands</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="LAST_BAD_CMD" parameterTypeRef="UINT8">
+				<xtce:ShortDescription>Last bad command</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="LAST_BAD_SEQ_NUM" parameterTypeRef="UINT8">
+				<xtce:ShortDescription>Last bad sequence number</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="FEE_RUNNING" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>FEE running (1) or reset (0)</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="MRAM_DISABLED" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>MRAM disabled (1) or enabled (0)</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="HSKP_SPARE1" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>spare</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="ENABLE_50KHZ" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>50kHz enabled (1) or disabled (0)</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="ENABLE_HVPS" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>HVPS enabled (1) or disabled (0)</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="TABLE_STATUS" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Table status  OK (1) or error (0)</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="HEATER_CONTROL" parameterTypeRef="UINT2">
+				<xtce:ShortDescription>Heater control (0=none, 1=pri, 2=sec)</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="ADC_MODE" parameterTypeRef="UINT2">
+				<xtce:ShortDescription>ADC mode (0=quiet, 1=normal, 2=adcstim, 3=adcThreshold?)</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DYN_THRESH_LVL" parameterTypeRef="UINT2">
+				<xtce:ShortDescription>Dynamic threshold level (0-3)</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="HSKP_SPARE2" parameterTypeRef="UINT2">
+				<xtce:ShortDescription>spare</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="NUM_EVNT_LAST_HK" parameterTypeRef="UINT18">
+				<xtce:ShortDescription>Number of events since last HK update</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="NUM_ERRORS" parameterTypeRef="UINT8">
+				<xtce:ShortDescription>Number of errors</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="LAST_ERROR_NUM" parameterTypeRef="UINT8">
+				<xtce:ShortDescription>Last error number</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="CODE_CHECKSUM" parameterTypeRef="UINT16">
+				<xtce:ShortDescription>Code checksum</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SPIN_PERIOD_SHORT" parameterTypeRef="UINT16">
+				<xtce:ShortDescription>Spin period at t=0</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SPIN_PERIOD_LONG" parameterTypeRef="UINT16">
+				<xtce:ShortDescription>Spin period at t=0</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="LEAK_I_RAW" parameterTypeRef="BYTE640" />
+			<xtce:Parameter name="PHASIC_STAT" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>PHASIC status</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="ACTIVE_HEATER" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Active heater</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="HEATER_ON" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Heater on/off</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="TEST_PULSER_ON" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>Test pulser on/off</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DAC0_ENABLE" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>DAC_0 enable</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="DAC1_ENABLE" parameterTypeRef="UINT1">
+				<xtce:ShortDescription>DAC_1 enable</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="HSKP_SPARE3" parameterTypeRef="UINT2">
+				<xtce:ShortDescription>Reserved</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PREAMP_L234A" parameterTypeRef="UINT12">
+				<xtce:ShortDescription>Preamp L234A</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PREAMP_L1A" parameterTypeRef="UINT12">
+				<xtce:ShortDescription>Preamp L1A</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PREAMP_L1B" parameterTypeRef="UINT12">
+				<xtce:ShortDescription>Preamp L1B</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PREAMP_L234B" parameterTypeRef="UINT12">
+				<xtce:ShortDescription>Preamp L234B</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="TEMP0" parameterTypeRef="UINT12">
+				<xtce:ShortDescription>FEE LDO Regulator</xtce:ShortDescription>
+				<xtce:LongDescription>Mounted on the board next to the low-dropout regulator</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="TEMP1" parameterTypeRef="UINT12">
+				<xtce:ShortDescription>Primary Heater</xtce:ShortDescription>
+				<xtce:LongDescription>Mounted on the board next to the primary heater circuit</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="TEMP2" parameterTypeRef="UINT12">
+				<xtce:ShortDescription>FEE FPGA</xtce:ShortDescription>
+				<xtce:LongDescription>Mounted on the board next to the FPGA</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="TEMP3" parameterTypeRef="UINT12">
+				<xtce:ShortDescription>Secondary Heater</xtce:ShortDescription>
+				<xtce:LongDescription>Mounted on the board next to the secondary heater</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="HSKP_SPARE4" parameterTypeRef="UINT8" />
+			<xtce:Parameter name="ANALOG_TEMP" parameterTypeRef="UINT12">
+				<xtce:ShortDescription>Chassis temp</xtce:ShortDescription>
+				<xtce:LongDescription>Mounted on analog board, close to thermostats, heaters, and chassis</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="HVPS_TEMP" parameterTypeRef="UINT12">
+				<xtce:ShortDescription>Board temp</xtce:ShortDescription>
+				<xtce:LongDescription>Mounted inside the faraday cage in the middle of the board near the connector side.</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="IDPU_TEMP" parameterTypeRef="UINT12">
+				<xtce:ShortDescription>LDO Temp</xtce:ShortDescription>
+				<xtce:LongDescription>Mounted on top of the low-dropout regulator</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="LVPS_TEMP" parameterTypeRef="UINT12">
+				<xtce:ShortDescription>Board temp</xtce:ShortDescription>
+				<xtce:LongDescription>Mounted in the middle of the board on the opposite side of the hottest component</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="EBOX_3D4VD" parameterTypeRef="UINT12">
+				<xtce:ShortDescription>3.4VD Ebox (digital)</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="EBOX_5D1VD" parameterTypeRef="UINT12">
+				<xtce:ShortDescription>5.1VD Ebox (digital)</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="EBOX_P12VA" parameterTypeRef="UINT12">
+				<xtce:ShortDescription>+12VA Ebox (analog)</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="EBOX_M12VA" parameterTypeRef="UINT12">
+				<xtce:ShortDescription>-12VA Ebox (analog)</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="EBOX_P5D7VA" parameterTypeRef="UINT12">
+				<xtce:ShortDescription>+5.7VA Ebox (analog)</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="EBOX_M5D7VA" parameterTypeRef="UINT12">
+				<xtce:ShortDescription>-5.7VA Ebox (analog)</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="REF_P5V" parameterTypeRef="UINT12">
+				<xtce:ShortDescription>+5Vref</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="L1AB_BIAS" parameterTypeRef="UINT12">
+				<xtce:ShortDescription>L1A/B Bias</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="L2AB_BIAS" parameterTypeRef="UINT12">
+				<xtce:ShortDescription>L2A/B Bias</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="L34A_BIAS" parameterTypeRef="UINT12">
+				<xtce:ShortDescription>L3/4A Bias</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="L34B_BIAS" parameterTypeRef="UINT12">
+				<xtce:ShortDescription>L3/4B Bias</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="EBOX_P2D0VD" parameterTypeRef="UINT12">
+				<xtce:ShortDescription>+2.0VD Ebox (digital)</xtce:ShortDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="HSKP_SPARE5" parameterTypeRef="UINT16" />
+		</xtce:ParameterSet>
+		<xtce:ContainerSet>
+			<xtce:SequenceContainer name="CCSDSPacket">
+				<xtce:EntryList>
+					<xtce:ParameterRefEntry parameterRef="VERSION" />
+					<xtce:ParameterRefEntry parameterRef="TYPE" />
+					<xtce:ParameterRefEntry parameterRef="SEC_HDR_FLG" />
+					<xtce:ParameterRefEntry parameterRef="PKT_APID" />
+					<xtce:ParameterRefEntry parameterRef="SEQ_FLGS" />
+					<xtce:ParameterRefEntry parameterRef="SRC_SEQ_CTR" />
+					<xtce:ParameterRefEntry parameterRef="PKT_LEN" />
+				</xtce:EntryList>
+			</xtce:SequenceContainer>
+			<xtce:SequenceContainer name="P_HIT_HSKP">
+				<xtce:BaseContainer containerRef="CCSDSPacket">
+					<xtce:RestrictionCriteria>
+						<xtce:Comparison parameterRef="PKT_APID" value="1251" useCalibratedValue="false" />
+					</xtce:RestrictionCriteria>
+				</xtce:BaseContainer>
+				<xtce:EntryList>
+					<xtce:ParameterRefEntry parameterRef="SHCOARSE" />
+					<xtce:ParameterRefEntry parameterRef="MODE" />
+					<xtce:ParameterRefEntry parameterRef="FSW_VERSION_A" />
+					<xtce:ParameterRefEntry parameterRef="FSW_VERSION_B" />
+					<xtce:ParameterRefEntry parameterRef="FSW_VERSION_C" />
+					<xtce:ParameterRefEntry parameterRef="NUM_GOOD_CMDS" />
+					<xtce:ParameterRefEntry parameterRef="LAST_GOOD_CMD" />
+					<xtce:ParameterRefEntry parameterRef="LAST_GOOD_SEQ_NUM" />
+					<xtce:ParameterRefEntry parameterRef="NUM_BAD_CMDS" />
+					<xtce:ParameterRefEntry parameterRef="LAST_BAD_CMD" />
+					<xtce:ParameterRefEntry parameterRef="LAST_BAD_SEQ_NUM" />
+					<xtce:ParameterRefEntry parameterRef="FEE_RUNNING" />
+					<xtce:ParameterRefEntry parameterRef="MRAM_DISABLED" />
+					<xtce:ParameterRefEntry parameterRef="HSKP_SPARE1" />
+					<xtce:ParameterRefEntry parameterRef="ENABLE_50KHZ" />
+					<xtce:ParameterRefEntry parameterRef="ENABLE_HVPS" />
+					<xtce:ParameterRefEntry parameterRef="TABLE_STATUS" />
+					<xtce:ParameterRefEntry parameterRef="HEATER_CONTROL" />
+					<xtce:ParameterRefEntry parameterRef="ADC_MODE" />
+					<xtce:ParameterRefEntry parameterRef="DYN_THRESH_LVL" />
+					<xtce:ParameterRefEntry parameterRef="HSKP_SPARE2" />
+					<xtce:ParameterRefEntry parameterRef="NUM_EVNT_LAST_HK" />
+					<xtce:ParameterRefEntry parameterRef="NUM_ERRORS" />
+					<xtce:ParameterRefEntry parameterRef="LAST_ERROR_NUM" />
+					<xtce:ParameterRefEntry parameterRef="CODE_CHECKSUM" />
+					<xtce:ParameterRefEntry parameterRef="SPIN_PERIOD_SHORT" />
+					<xtce:ParameterRefEntry parameterRef="SPIN_PERIOD_LONG" />
+					<xtce:ParameterRefEntry parameterRef="LEAK_I_RAW" />
+					<xtce:ParameterRefEntry parameterRef="PHASIC_STAT" />
+					<xtce:ParameterRefEntry parameterRef="ACTIVE_HEATER" />
+					<xtce:ParameterRefEntry parameterRef="HEATER_ON" />
+					<xtce:ParameterRefEntry parameterRef="TEST_PULSER_ON" />
+					<xtce:ParameterRefEntry parameterRef="DAC0_ENABLE" />
+					<xtce:ParameterRefEntry parameterRef="DAC1_ENABLE" />
+					<xtce:ParameterRefEntry parameterRef="HSKP_SPARE3" />
+					<xtce:ParameterRefEntry parameterRef="PREAMP_L234A" />
+					<xtce:ParameterRefEntry parameterRef="PREAMP_L1A" />
+					<xtce:ParameterRefEntry parameterRef="PREAMP_L1B" />
+					<xtce:ParameterRefEntry parameterRef="PREAMP_L234B" />
+					<xtce:ParameterRefEntry parameterRef="TEMP0" />
+					<xtce:ParameterRefEntry parameterRef="TEMP1" />
+					<xtce:ParameterRefEntry parameterRef="TEMP2" />
+					<xtce:ParameterRefEntry parameterRef="TEMP3" />
+					<xtce:ParameterRefEntry parameterRef="HSKP_SPARE4" />
+					<xtce:ParameterRefEntry parameterRef="ANALOG_TEMP" />
+					<xtce:ParameterRefEntry parameterRef="HVPS_TEMP" />
+					<xtce:ParameterRefEntry parameterRef="IDPU_TEMP" />
+					<xtce:ParameterRefEntry parameterRef="LVPS_TEMP" />
+					<xtce:ParameterRefEntry parameterRef="EBOX_3D4VD" />
+					<xtce:ParameterRefEntry parameterRef="EBOX_5D1VD" />
+					<xtce:ParameterRefEntry parameterRef="EBOX_P12VA" />
+					<xtce:ParameterRefEntry parameterRef="EBOX_M12VA" />
+					<xtce:ParameterRefEntry parameterRef="EBOX_P5D7VA" />
+					<xtce:ParameterRefEntry parameterRef="EBOX_M5D7VA" />
+					<xtce:ParameterRefEntry parameterRef="REF_P5V" />
+					<xtce:ParameterRefEntry parameterRef="L1AB_BIAS" />
+					<xtce:ParameterRefEntry parameterRef="L2AB_BIAS" />
+					<xtce:ParameterRefEntry parameterRef="L34A_BIAS" />
+					<xtce:ParameterRefEntry parameterRef="L34B_BIAS" />
+					<xtce:ParameterRefEntry parameterRef="EBOX_P2D0VD" />
+					<xtce:ParameterRefEntry parameterRef="HSKP_SPARE5" />
+				</xtce:EntryList>
+			</xtce:SequenceContainer>
+		</xtce:ContainerSet>
+	</xtce:TelemetryMetaData>
+</xtce:SpaceSystem>
