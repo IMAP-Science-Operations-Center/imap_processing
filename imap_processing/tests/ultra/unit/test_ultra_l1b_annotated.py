@@ -35,8 +35,12 @@ def kernels(spice_test_data_path):
 def test_get_particle_velocity(kernels):
     """Tests get_particle_velocity function."""
     spice.furnsh(kernels)
+    import pickle
 
-    time = np.array([0.0])
+    with open("../tests/test_data/spice/spice_examples/direct_events.pkl", "rb") as file:
+        directEvents = pickle.load(file)
+
+    time = directEvents['tdb']
     ultra_velocity = np.array([0.0])
 
     velocity = get_particle_velocity(time, ultra_velocity)
