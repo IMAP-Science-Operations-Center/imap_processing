@@ -2,11 +2,11 @@
 
 from collections import namedtuple
 from pathlib import Path
+from typing import List, Union
 
 import numpy as np
 import xarray as xr
 
-from typing import Union, List
 from imap_processing import imap_module_directory
 from imap_processing.utils import packet_file_to_datasets
 
@@ -396,6 +396,8 @@ def assemble_science_frames(sci_dataset: xr.Dataset) -> xr.Dataset:
         pha.append("".join(science_data_frame[6:]))
         # Get first packet's epoch for the science frame
         epoch_per_science_frame = np.append(epoch_per_science_frame, epoch_data[idx])
+        # TODO: Filter ccsds header fields to only include packets from the
+        #  valid science frames. Doesn't need to be grouped by frames though
 
     # Add new data variables to the dataset
     sci_dataset = sci_dataset.drop_vars("epoch")

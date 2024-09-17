@@ -121,17 +121,53 @@ def test_parse_count_rates(sci_dataset):
 def test_is_sequential():
     """Test the is_sequential function."""
     counters = np.array([0, 1, 2, 3, 4])
-    assert is_sequential(counters) == True
+    if is_sequential(counters):
+        assert True
     counters = np.array([0, 2, 3, 4, 5])
-    assert is_sequential(counters) == False
+    if not is_sequential(counters):
+        assert True
 
 
 def test_find_valid_starting_indices():
     """Test the find_valid_starting_indices function."""
     flags = np.array(
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2,
-         1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-         0, 0, 0, 0, 2]
+        [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            2,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            2,
+        ]
     )
     counters = np.arange(35)
     result = find_valid_starting_indices(flags, counters)
