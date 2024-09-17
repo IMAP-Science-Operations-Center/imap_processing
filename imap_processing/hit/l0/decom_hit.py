@@ -6,6 +6,7 @@ from pathlib import Path
 import numpy as np
 import xarray as xr
 
+from typing import Union, List
 from imap_processing import imap_module_directory
 from imap_processing.utils import packet_file_to_datasets
 
@@ -102,7 +103,7 @@ PHA_DATA_STRUCTURE = {
 
 def parse_data(
     bin_str: str, bits_per_index: int, start: int, end: int
-) -> list[int] | int:
+) -> Union[List[int], int]:
     """
     Parse binary data.
 
