@@ -32,7 +32,7 @@ def get_particle_velocity(
     # https://spiceypy.readthedocs.io/en/main/
     # documentation.html#spiceypy.spiceypy.pxform
     spacecraft_velocity = spice.mxv(
-        spice.pxform("IMAP_SPACECRAFT", "IMAP_DPS", time), ultra_velocity
+        spice.pxform("IMAP_SPACECRAFT", "IMAP_DPS", list(time)), ultra_velocity
     )
 
     return spacecraft_velocity

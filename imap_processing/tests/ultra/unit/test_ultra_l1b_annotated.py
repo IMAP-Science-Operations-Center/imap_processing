@@ -19,6 +19,16 @@ def kernels(spice_test_data_path):
         "sim_1yr_imap_pointing_frame.bc",
     ]
     kernels = [str(spice_test_data_path / kernel) for kernel in required_kernels]
+
+    kernels = ['/Users/lasa6858/Desktop/ultra/ultra_prototype_v1/kernels/imap_static_kernels_euler.tm',
+               '/Users/lasa6858/Desktop/ultra/ultra_prototype_v1/kernels/naif0012.tls',
+               '/Users/lasa6858/Desktop/ultra/ultra_prototype_v1/kernels/imap_frames_demo_euler.tf',
+               '/Users/lasa6858/Desktop/ultra/ultra_prototype_v1/kernels/imap_ultra_instrument_demo.ti',
+               '/Users/lasa6858/Desktop/ultra/ultra_prototype_v1/kernels/de440.bsp',
+               '/Users/lasa6858/Desktop/ultra/ultra_prototype_v1/kernels/earth_000101_230322_221227.bpc',
+               '/Users/lasa6858/Desktop/ultra/ultra_prototype_v1/kernels/imap_spk_demo.bsp',
+               '/Users/lasa6858/Desktop/ultra/ultra_prototype_v1/kernels/imap_sclk_0000.tsc']
+
     return kernels
 
 
