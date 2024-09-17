@@ -37,7 +37,7 @@ def test_get_particle_velocity(kernels):
     spice.furnsh(kernels)
     import pickle
 
-    with open("../tests/test_data/spice/spice_examples/direct_events.pkl", "rb") as file:
+    with open("/Users/lasa6858/Desktop/directEvents.pkl", "rb") as file:
         directEvents = pickle.load(file)
 
     time = directEvents['tdb']
