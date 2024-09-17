@@ -286,7 +286,7 @@ def get_valid_indices(
     return indices[sequential_check]
 
 
-def update_ccsds_header_data(sci_dataset: xr.Dataset) -> xr.Dataset:
+def update_ccsds_header_dims(sci_dataset: xr.Dataset) -> xr.Dataset:
     """
     Update dimensions of CCSDS header fields.
 
@@ -450,7 +450,7 @@ def decom_hit(sci_dataset: xr.Dataset) -> xr.Dataset:
         needed for creating an L1A product.
     """
     # Update ccsds header fields to use sc_tick as dimension
-    sci_dataset = update_ccsds_header_data(sci_dataset)
+    sci_dataset = update_ccsds_header_dims(sci_dataset)
 
     # Group science packets into groups of 20
     sci_dataset = assemble_science_frames(sci_dataset)
