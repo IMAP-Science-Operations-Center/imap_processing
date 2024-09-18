@@ -7,36 +7,41 @@ from numpy.typing import NDArray
 from imap_processing.spice.kernels import ensure_spice
 
 
-@ensure_spice
+@ensure_spice  # type: ignore
 def get_particle_velocity(
-    time: float,
-    ultra_velocity: np.ndarray,
-) -> NDArray:
+    time: np.ndarray,
+    instrument_velocity: np.ndarray,
+    instrument_frame: str,
+) -> NDArray[np.float64]:
     """
     Get the particle velocity in the pointing (DPS) frame wrt the spacecraft.
 
     Parameters
     ----------
-    time : float
-        Time in met.
-    ultra_velocity : np.ndarray
+    time : np.ndarray
+        Ephemeris time.
+    instrument_velocity : np.ndarray
         Particle velocity in the instrument frame.
+    instrument_frame : str
+        Instrument frame.
 
     Returns
     -------
     spacecraft_velocity : np.ndarray
         Particle velocity in the spacecraft frame.
+
+    References
+    ----------
+    https://spiceypy.readthedocs.io/en/main/documentation.html#spiceypy.spiceypy
     """
-    # Particle velocity in the pointing (DPS) frame wrt the spacecraft.
-    # https://spiceypy.readthedocs.io/en/main/documentation.html#spiceypy.spiceypy.mxv
-    # https://spiceypy.readthedocs.io/en/main/
-    # documentation.html#spiceypy.spiceypy.pxform
+    # Particle velocity in the pointing (DPS) frame wrt spacecraft.
+    spacecraft_velocity = np.zeros((len(time), 3), dtype=np.float64)
 
-    #spacecraft_velocity = spice.mxv(
-    #    spice.pxform("IMAP_SPACECRAFT", "IMAP_DPS", time), ultra_velocity
-    #)
-    spacecraft_velocities = spice.mxv(
-            spice.pxform("IMAP_BODY", "IMAP_DPS", time), ultra_velocity
-    )
+    for index in range(len(time)):
+        # Get and apply the rotation matrix to the particle velocity.
+        spacecraft_velocity[index] = spice.mxv(
+            spice.pxform(instrument_frame, "IMAP_DPS", time[index]),
+            instrument_velocity[index],
+        )
 
-    return spacecraft_velocities
+    return spacecraft_velocity

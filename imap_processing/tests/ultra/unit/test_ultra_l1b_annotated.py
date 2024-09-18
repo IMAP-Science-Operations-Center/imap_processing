@@ -20,29 +20,34 @@ def kernels(spice_test_data_path):
     ]
     kernels = [str(spice_test_data_path / kernel) for kernel in required_kernels]
 
-    kernels = ['/Users/lasa6858/Desktop/ultra/ultra_prototype_v1/kernels/imap_static_kernels_euler.tm',
-               '/Users/lasa6858/Desktop/ultra/ultra_prototype_v1/kernels/naif0012.tls',
-               '/Users/lasa6858/Desktop/ultra/ultra_prototype_v1/kernels/imap_frames_demo_euler.tf',
-               '/Users/lasa6858/Desktop/ultra/ultra_prototype_v1/kernels/imap_ultra_instrument_demo.ti',
-               '/Users/lasa6858/Desktop/ultra/ultra_prototype_v1/kernels/de440.bsp',
-               '/Users/lasa6858/Desktop/ultra/ultra_prototype_v1/kernels/earth_000101_230322_221227.bpc',
-               '/Users/lasa6858/Desktop/ultra/ultra_prototype_v1/kernels/imap_spk_demo.bsp',
-               '/Users/lasa6858/Desktop/ultra/ultra_prototype_v1/kernels/imap_sclk_0000.tsc']
-
     return kernels
 
 
-def test_get_particle_velocity(kernels):
+def test_get_particle_velocity(spice_test_data_path, kernels):
     """Tests get_particle_velocity function."""
     spice.furnsh(kernels)
-    import pickle
 
-    with open("/Users/lasa6858/Desktop/directEvents.pkl", "rb") as file:
-        directEvents = pickle.load(file)
+    id_imap_dps = spice.gipool("FRAME_IMAP_DPS", 0, 1)
+    pointing_cover = spice.ckcov(
+        str(spice_test_data_path / "sim_1yr_imap_pointing_frame.bc"),
+        int(id_imap_dps),
+        True,
+        "SEGMENT",
+        0,
+        "TDB",
+    )
+    # Get start and end time of first interval
+    start, _ = spice.wnfetd(pointing_cover, 0)
 
-    time = 7.979472704900000e+08
-    ultra_velocity = np.array([132.5815, 166.2192, -1129.8772])
+    times = np.array([start])
 
-    velocities = get_particle_velocity(time, ultra_velocity)
+    instrument_velocity = np.array([[41.18609, -471.24467, -832.8784]])
 
-    print("hi")
+    velocity_45 = get_particle_velocity(times, instrument_velocity, "IMAP_ULTRA_45")
+    velocity_90 = get_particle_velocity(times, instrument_velocity, "IMAP_ULTRA_90")
+
+    # Compute the magnitude of the velocity vectors in both frames
+    magnitude_45 = np.linalg.norm(velocity_45[0])
+    magnitude_90 = np.linalg.norm(velocity_90[0])
+
+    assert np.allclose(magnitude_45, magnitude_90, atol=1e-6)
