@@ -54,11 +54,12 @@ def hit_l1a(packet_file: str, data_version: str) -> list[xr.Dataset]:
 
     # Unpack ccsds file
     packet_definition = (
-        imap_module_directory / "hit/packet_definitions/" "hit_packet_definitions.xml"
+        imap_module_directory / "hit/packet_definitions/hit_packet_definitions.xml"
     )
     datasets_by_apid = packet_file_to_datasets(
         packet_file=packet_file,
         xtce_packet_definition=packet_definition,
+        use_derived_value=False,
     )
 
     # Create the attribute manager for this data level
@@ -68,21 +69,18 @@ def hit_l1a(packet_file: str, data_version: str) -> list[xr.Dataset]:
     attr_mgr.add_global_attribute("Data_version", data_version)
 
     # Process science to l1a.
-    processed_data = []
-    for apid in datasets_by_apid:
-        if apid == HitAPID.HIT_HSKP:
-            housekeeping_dataset = process_housekeeping(
-                datasets_by_apid[apid], attr_mgr
-            )
-            processed_data.append(housekeeping_dataset)
-        elif apid == HitAPID.HIT_SCIENCE:
-            # TODO complete science data processing
-            print("Skipping science data for now")
-            # science_dataset = process_science(datasets_by_apid[apid], attr_mgr)
-        else:
-            raise Exception(f"Unknown APID [{apid}]")
+    if HitAPID.HIT_HSKP in datasets_by_apid:
+        datasets_by_apid[HitAPID.HIT_HSKP] = process_housekeeping(
+            datasets_by_apid[HitAPID.HIT_HSKP], attr_mgr
+        )
+    if HitAPID.HIT_SCIENCE in datasets_by_apid:
+        # TODO complete science data processing
+        print("Skipping science data for now")
+        datasets_by_apid[HitAPID.HIT_SCIENCE] = process_science(
+            datasets_by_apid[HitAPID.HIT_SCIENCE], attr_mgr
+        )
 
-    return processed_data
+    return list(datasets_by_apid.values())
 
 
 def concatenate_leak_variables(dataset: xr.Dataset) -> xr.Dataset:
@@ -209,7 +207,7 @@ def process_housekeeping(
 
     # Create data arrays for dependencies
     adc_channels = xr.DataArray(
-        np.arange(64, dtype=np.uint16),
+        np.arange(64, dtype=np.uint8),
         name="adc_channels",
         dims=["adc_channels"],
         attrs=attr_mgr.get_variable_attributes("adc_channels"),
