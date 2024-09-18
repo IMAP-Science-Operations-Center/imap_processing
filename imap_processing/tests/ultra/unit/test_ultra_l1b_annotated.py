@@ -40,8 +40,8 @@ def test_get_particle_velocity(kernels):
     with open("/Users/lasa6858/Desktop/directEvents.pkl", "rb") as file:
         directEvents = pickle.load(file)
 
-    time = directEvents['tdb']
-    ultra_velocity = directEvents["vultra"]
+    time = 7.979472704900000e+08
+    ultra_velocity = np.array([132.5815, 166.2192, -1129.8772])
 
     velocities = get_particle_velocity(time, ultra_velocity)
 

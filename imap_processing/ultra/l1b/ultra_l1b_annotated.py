@@ -9,7 +9,7 @@ from imap_processing.spice.kernels import ensure_spice
 
 @ensure_spice
 def get_particle_velocity(
-    times: np.ndarray,
+    time: float,
     ultra_velocity: np.ndarray,
 ) -> NDArray:
     """
@@ -17,7 +17,7 @@ def get_particle_velocity(
 
     Parameters
     ----------
-    times : np.ndarray
+    time : float
         Time in met.
     ultra_velocity : np.ndarray
         Particle velocity in the instrument frame.
@@ -31,14 +31,12 @@ def get_particle_velocity(
     # https://spiceypy.readthedocs.io/en/main/documentation.html#spiceypy.spiceypy.mxv
     # https://spiceypy.readthedocs.io/en/main/
     # documentation.html#spiceypy.spiceypy.pxform
-    spacecraft_velocities = np.zeros((times.size, 3))
 
-    for index in range(len(times)):
-        #spacecraft_velocity = spice.mxv(
-        #    spice.pxform("IMAP_SPACECRAFT", "IMAP_DPS", time), ultra_velocity
-        #)
-        spacecraft_velocities[index] = spice.mxv(
-            spice.pxform("IMAP_BODY", "IMAP_DPS", times[index]), ultra_velocity[index]
-        )
+    #spacecraft_velocity = spice.mxv(
+    #    spice.pxform("IMAP_SPACECRAFT", "IMAP_DPS", time), ultra_velocity
+    #)
+    spacecraft_velocities = spice.mxv(
+            spice.pxform("IMAP_BODY", "IMAP_DPS", time), ultra_velocity
+    )
 
     return spacecraft_velocities
