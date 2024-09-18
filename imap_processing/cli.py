@@ -622,8 +622,7 @@ class Lo(ProcessInstrument):
                     f"Unexpected dependencies found for IMAP-Lo L1A:"
                     f"{dependencies}. Expected only one dependency."
                 )
-            # TODO: This is returning the wrong type
-            datasets = [lo_l1a.lo_l1a(dependencies[0], self.version)]
+            datasets = lo_l1a.lo_l1a(dependencies[0], self.version)
 
         elif self.data_level == "l1b":
             data_dict = {}

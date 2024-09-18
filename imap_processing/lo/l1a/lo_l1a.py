@@ -1,24 +1,28 @@
 """IMAP-Lo L1A Data Processing."""
 
-from collections import namedtuple
-from dataclasses import Field, fields
+import logging
 from pathlib import Path
-from typing import Any
 
+import numpy as np
 import xarray as xr
 
+from imap_processing import imap_module_directory
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
-from imap_processing.lo.l0.data_classes.science_direct_events import ScienceDirectEvents
-from imap_processing.spice.time import met_to_j2000ns
+from imap_processing.lo.l0.lo_apid import LoAPID
+from imap_processing.lo.l0.lo_science import parse_histogram
+from imap_processing.utils import packet_file_to_datasets
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 
-def lo_l1a(dependency: Path, data_version: str) -> list[Path]:
+def lo_l1a(dependency: Path, data_version: str) -> list[xr.Dataset]:
     """
     Will process IMAP-Lo L0 data into L1A CDF data products.
 
     Parameters
     ----------
-    dependency : dict
+    dependency : Path
         Dependency file needed for data product creation.
         Should always be only one for L1A.
     data_version : str
@@ -29,15 +33,14 @@ def lo_l1a(dependency: Path, data_version: str) -> list[Path]:
     created_file_paths : list[Path]
         Location of created CDF files.
     """
-    # TODO: decom the CCSDS file
+    xtce_file = imap_module_directory / "lo/packet_definitions/lo_xtce.xml"
 
-    # TODO: sort the decommed packets by SHCOARSE
-
-    # TODO: group the packets by APID
-
-    # TODO: Loop through packets
-    # TODO: Inside Loop: Check for each APID and Initialize data
-    #  class object with packet contents, add to list
+    logger.info("\nDecommutating packets and converting to dataset")
+    datasets_by_apid = packet_file_to_datasets(
+        packet_file=dependency.resolve(),
+        xtce_packet_definition=xtce_file.resolve(),
+        use_derived_value=False,
+    )
 
     # create the attribute manager for this data level
     attr_mgr = ImapCdfAttributes()
@@ -45,140 +48,110 @@ def lo_l1a(dependency: Path, data_version: str) -> list[Path]:
     attr_mgr.add_instrument_variable_attrs(instrument="lo", level="l1a")
     attr_mgr.add_global_attribute("Data_version", data_version)
 
-    # TODO: replace with real processing when sample data is available
-    # Temporary code until I get sample data. The fields will still be pulled
-    # from the data classes, but the data class will be determined by the
-    # APID in the decommed file and the data class will first be populated
-    # with the packet data.
-    packet_file_name = dependency.name
-    if "_de_" in packet_file_name:
-        data_fields = fields(ScienceDirectEvents)
-        logical_source = "imap_lo_l1a_de"
-    elif "_spin_" in packet_file_name:
-        # Spin data class doesn't exist yet. fake the fields() output
-        data_field_tup = namedtuple("data_field_tup", ["name"])
-        data_fields = [  # type: ignore[assignment]
-            # TODO, The errors are because the fake data is not in the correct format.
-            data_field_tup("NUM_COMPLETED"),
-            data_field_tup("ACQ_END"),
-            data_field_tup("SPIN_SECONDS"),
-            data_field_tup("SPIN_SUBSECONDS"),
-            data_field_tup("ESA_P_DAC"),
-            data_field_tup("ESA_N_DAC"),
-            data_field_tup("VAL_PERIOD"),
-            data_field_tup("VAL_SPIN"),
-            data_field_tup("SOURCE"),
-        ]
-        logical_source = "imap_lo_l1a_spin"
+    logger.info(
+        f"\nProcessing {LoAPID(LoAPID.ILO_SCI_CNT).name} "
+        f"packet (APID: {LoAPID.ILO_SCI_CNT.value})"
+    )
+    if LoAPID.ILO_SCI_CNT in datasets_by_apid:
+        logical_source = "imap_lo_l1a_histogram"
+        datasets_by_apid[LoAPID.ILO_SCI_CNT] = parse_histogram(
+            datasets_by_apid[LoAPID.ILO_SCI_CNT], attr_mgr
+        )
+        datasets_by_apid[LoAPID.ILO_SCI_CNT] = add_dataset_attrs(
+            datasets_by_apid[LoAPID.ILO_SCI_CNT], attr_mgr, logical_source
+        )
 
-    dataset: list[Path] = create_datasets(attr_mgr, logical_source, data_fields)
-
-    return dataset
+    good_apids = [LoAPID.ILO_SCI_CNT]
+    logger.info(f"\nReturning datasets: {[LoAPID(apid) for apid in good_apids]}")
+    return [datasets_by_apid[good_apid] for good_apid in good_apids]
 
 
-# TODO: This is going to work differently when I sample data.
-#  The data_fields input is temporary.
-def create_datasets(
-    attr_mgr: ImapCdfAttributes,
-    logical_source: str,
-    data_fields: tuple[Field[Any], ...],
+def add_dataset_attrs(
+    dataset: xr.Dataset, attr_mgr: ImapCdfAttributes, logical_source: str
 ) -> xr.Dataset:
     """
-    Create a dataset using the populated data classes.
+    Add Attributes to the dataset.
 
     Parameters
     ----------
+    dataset : xr.Dataset
+        Lo dataset from packets_to_dataset function.
     attr_mgr : ImapCdfAttributes
-        Attribute manager used to get the data product field's attributes.
+        CDF attribute manager for Lo L1A.
     logical_source : str
-        The logical source of the data product that's being created.
-    data_fields : list[dataclasses.Field]
-        List of Fields for data classes.
+        Logical source for the data.
 
     Returns
     -------
-    dataset : xarray.Dataset
-        Dataset with all data product fields in xarray.DataArray.
+    dataset : xr.Dataset
+        Data with attributes added.
     """
-    # Convert each packet's spacecraft time to an absolute epoch time
-    # TODO: replace temp hardcoded values with packet values
-    epoch_converted_time = met_to_j2000ns([0, 1, 2])
-
-    # Create a data array for the poch time
-    # TODO: might need to update the attrs to use new YAML file
-    epoch_time = xr.DataArray(
-        data=epoch_converted_time,
-        name="epoch",
-        dims=["epoch"],
-        attrs=attr_mgr.get_variable_attributes("epoch"),
-    )
-
-    # Set any extra coordinates and initialize the dataset
-    # based on the L1A data product that will be created
-    # by the current packets
-    if logical_source == "imap_lo_l1a_spin":
-        # The spin packet contains a variable number of spins in each
-        # packet. To avoid needing to use a 2-dimensional array to
-        # store the spin fields, epoch will not be used for many
-        # of the fields. They will instead use the coordinate `spin`
-        # which is an index of each spin in the pointing (0 to num spins in pointing)
-        spin = xr.DataArray(
-            data=[0, 1, 2],
-            name="spin",
-            dims=["spin"],
-            attrs=attr_mgr.get_variable_attributes("spin"),
+    # TODO: may want up split up these if statements into their
+    # own functions
+    if logical_source == "imap_lo_l1a_histogram":
+        azimuth_60 = xr.DataArray(
+            data=np.arange(0, 6, dtype=np.uint8),
+            name="azimuth_60",
+            dims=["azimuth_60"],
+            attrs=attr_mgr.get_variable_attributes("azimuth_60"),
+        )
+        azimuth_60_label = xr.DataArray(
+            data=azimuth_60.values.astype(str),
+            name="azimuth_60_label",
+            dims=["azimuth_60_label"],
+            attrs=attr_mgr.get_variable_attributes("azimuth_60_label"),
+        )
+        azimuth_6 = xr.DataArray(
+            data=np.arange(0, 60, dtype=np.uint8),
+            name="azimuth_6",
+            dims=["azimuth_6"],
+            attrs=attr_mgr.get_variable_attributes("azimuth_6"),
+        )
+        azimuth_6_label = xr.DataArray(
+            data=azimuth_6.values.astype(str),
+            name="azimuth_6_label",
+            dims=["azimuth_6_label"],
+            attrs=attr_mgr.get_variable_attributes("azimuth_6_label"),
         )
 
-        dataset = xr.Dataset(
-            coords={"epoch": epoch_time, "spin": spin},
-            attrs=attr_mgr.get_global_attributes(logical_source),
+        esa_step = xr.DataArray(
+            data=np.arange(1, 8, dtype=np.uint8),
+            name="esa_step",
+            dims=["esa_step"],
+            attrs=attr_mgr.get_variable_attributes("esa_step"),
+        )
+        esa_step_label = xr.DataArray(
+            esa_step.values.astype(str),
+            name="esa_step_label",
+            dims=["esa_step_label"],
+            attrs=attr_mgr.get_variable_attributes("esa_step_label"),
         )
 
-    elif logical_source == "imap_lo_l1a_de":
-        # The de packet contains a variable number of events in each
-        # packet. To avoid needing to use a 2-dimensional array to
-        # store the de fields, epoch will not be used for many
-        # of the fields and they will instead use the coordinate `direct_events`
-        # which is an index of each event in the pointing (0 to num de in pointing)
-        direct_events = xr.DataArray(
-            data=[0, 1, 2],
-            name="direct_events",
-            dims=["direct_events"],
-            attrs=attr_mgr.get_variable_attributes("direct_events"),
-        )
+        dataset.shcoarse.attrs.update(attr_mgr.get_variable_attributes("shcoarse"))
+        dataset.epoch.attrs.update(attr_mgr.get_variable_attributes("epoch"))
 
-        dataset = xr.Dataset(
-            coords={"epoch": epoch_time, "direct_events": direct_events},
-            attrs=attr_mgr.get_global_attributes(logical_source),
+        dataset = dataset.assign_coords(
+            azimuth_60=azimuth_60,
+            azimuth_60_label=azimuth_60_label,
+            azimuth_6=azimuth_6,
+            azimuth_6_label=azimuth_6_label,
+            esa_step=esa_step,
+            esa_step_label=esa_step_label,
         )
-
-    # Loop through the data fields that were pulled from the
-    # data class. These should match the field names given
-    # to each field in the YAML attribute file
-    for data_field in data_fields:
-        field = data_field.name.lower()
-        # TODO: should add ground_sw_version and packet_file_name to
-        # CDF and should use IntVar for DATA. Should only need to skip
-        # SHCOARSE and ccsds_header (unless Lo wants this in the CDF as well).
-        if field not in [
-            "shcoarse",
-            "ground_sw_version",
-            "packet_file_name",
-            "ccsds_header",
-            "data",
-        ]:
-            # Create a list of all the dimensions using the DEPEND_I keys in the
-            # YAML attributes
-            dims = [
-                value
-                for key, value in attr_mgr.get_variable_attributes(field).items()
-                if "DEPEND" in key
+        dataset.attrs.update(attr_mgr.get_global_attributes(logical_source))
+        # remove the binary field and CCSDS header from the dataset
+        dataset = dataset.drop_vars(
+            [
+                "sci_cnt",
+                "chksum",
+                "version",
+                "type",
+                "sec_hdr_flg",
+                "pkt_apid",
+                "seq_flgs",
+                "src_seq_ctr",
+                "pkt_len",
             ]
-
-            # Create a data array for the current field and add it to the dataset
-            # TODO: need to update to use packet data once that's available
-            dataset[field] = xr.DataArray(
-                [1, 1, 1], dims=dims, attrs=attr_mgr.get_variable_attributes(field)
-            )
+        )
 
     return dataset

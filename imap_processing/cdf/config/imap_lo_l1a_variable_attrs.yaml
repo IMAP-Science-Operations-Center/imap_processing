@@ -1,6 +1,7 @@
 default_attrs: &default
   # Assumed values for all variable attrs unless overwritten
   DISPLAY_TYPE: time_series
+  DEPEND_0: epoch
   FILLVAL: -9223372036854775808
   FORMAT: I12
   VALIDMIN: 0
@@ -19,14 +20,48 @@ de_default_attrs: &de_default
   UNITS: ' '
 
 # Re-used Coordinate
+esa_step_label:
+   CATDESC: ESA Steps
+   FIELDNAM: ESA Steps
+   FORMAT: A1
+   VAR_TYPE: metadata
+
 esa_step:
-  <<: *de_default
   VALIDMIN: 1
   VALIDMAX: 7
+  FILLVAL: 255
   CATDESC: Energy Step
+  DEPEND_1: esa_step
   FIELDNAM: Energy Step
-  FORMAT: I1
+  UNITS: ' '
+  FORMAT: I3
+  VAR_TYPE: support_data
   LABLAXIS: ESA
+  LABL_PTR_1: esa_step_label
+
+shcoarse:
+  VALIDMIN: 0
+  VALIDMAX: 9223372036854775807
+  FILLVAL: -9223372036854775808
+  CATDESC: Mission Elapsed Time
+  DEPEND_0: epoch
+  FIELDNAM: Spacecraft Time
+  Units: ' '
+  FORMAT: I12
+  VAR_TYPE: support_data
+  LABLAXIS: SHCOARSE
+
+epoch:
+  VALIDMIN: 0
+  VALIDMAX: 9223372036854775807
+  FILLVAL: -9223372036854775808
+  CATDESC: Epoch Time
+  DEPEND_0: epoch
+  FIELDNAM: Epoch time
+  Units: 'ns'
+  FORMAT: I12
+  VAR_TYPE: support_data
+  LABLAXIS: Epoch
 
 # Direct Events Attributes
 direct_events:
@@ -131,25 +166,43 @@ de_count:
 # Histogram Attributes
 
 ## Coordinates
-azimuth_6:
-  <<: *default
-  VALIDMIN: 0
-  VALIDMAX: 59
+azimuth_6_label:
   CATDESC: azimuth spin bins (<num packets>, 6 degrees)
   FIELDNAM: Azimuth bins
-  FORMAT: I2
+  FORMAT: A3
+  VAR_TYPE: metadata
+
+azimuth_6:
+  VALIDMIN: 0
+  VALIDMAX: 59
+  FILLVAL: 255
+  CATDESC: azimuth spin bins (<num packets>, 6 degrees)
+  FIELDNAM: Azimuth bins
+  DEPEND_1: azimuth_6
+  UNITS: ' '
+  FORMAT: I3
   VAR_TYPE: support_data
   LABLAXIS: Az bins
+  LABL_PTR_1: azimuth_6_label
 
-azimuth_60:
-  <<: *default
-  VALIDMIN: 0
-  VALIDMAX: 5
+azimuth_60_label:
   CATDESC: azimuth spin bins (<num packets>, 60 degrees)
   FIELDNAM: Azimuth bins
-  FORMAT: I1
+  FORMAT: A3
+  VAR_TYPE: metadata
+
+azimuth_60:
+  VALIDMIN: 0
+  VALIDMAX: 5
+  FILLVAL: 255
+  CATDESC: azimuth spin bins (<num packets>, 60 degrees)
+  FIELDNAM: Azimuth bins
+  DEPEND_1: azimuth_60
+  FORMAT: I3
+  UNITS: ' '
   VAR_TYPE: support_data
   LABLAXIS: Az bins
+  LABL_PTR_1: azimuth_60_label
 
 ## Fields
 start_a:
@@ -330,7 +383,7 @@ pos1:
   DEPEND_2: esa_step
   FIELDNAM: Position 1 count
   FORMAT: I12
-  LABLAXIS: position 1 coun
+  LABLAXIS: position 1 count
 
 pos2:
   <<: *default
