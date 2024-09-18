@@ -36,6 +36,7 @@ def test_imap_state_ecliptic(use_test_metakernel):
     assert state.shape == (6,)
 
 
+@pytest.mark.usefixtures("_set_spin_data_filepath")
 def test_get_spacecraft_spin_phase(generate_spin_data):
     """Test get_spacecraft_spin_phase() with generated spin data."""
 
