@@ -4,14 +4,18 @@ import logging
 import os
 import re
 import time
+from typing import Optional
 
+import cdflib
 import imap_data_access
 import numpy as np
+import pandas as pd
 import pytest
 import requests
 import spiceypy as spice
 
 from imap_processing import imap_module_directory
+from imap_processing.spice.time import met_to_j2000ns
 
 
 @pytest.fixture(autouse=True)
@@ -262,3 +266,93 @@ def _unset_metakernel_path(monkeypatch):
     """Temporarily unsets the SPICE_METAKERNEL environment variable"""
     if os.getenv("SPICE_METAKERNEL", None) is not None:
         monkeypatch.delenv("SPICE_METAKERNEL")
+
+
+@pytest.fixture()
+def _set_spin_data_filepath(monkeypatch, tmpdir, generate_spin_data):
+    """Set the SPIN_DATA_FILEPATH environment variable"""
+    # SWE test data time minus 56120 seconds to get mid-night time
+    start_time = 453051323.0 - 56120
+    spin_df = generate_spin_data(start_time)
+    spin_csv_file_path = tmpdir / "spin_data.spin.csv"
+    spin_df.to_csv(spin_csv_file_path, index=False)
+    monkeypatch.setenv("SPIN_DATA_FILEPATH", str(spin_csv_file_path))
+
+
+@pytest.fixture()
+def generate_spin_data():
+    def make_data(start_met: int, end_met: Optional[int] = None) -> pd.DataFrame:
+        """
+        Generate a spin table CSV covering one or more days.
+        Spin table contains the following fields:
+            (
+            spin_number,
+            spin_start_sec,
+            spin_start_subsec,
+            spin_period_sec,
+            spin_period_valid,
+            spin_phase_valid,
+            spin_period_source,
+            thruster_firing
+            )
+        This function creates spin data using start MET and end MET time.
+        Each spin start data uses the nominal 15 second spin period. The spins that
+        occur from 00:00(Mid-night) to 00:10 UTC are marked with flags for
+        thruster firing, invalid spin period, and invalid spin phase.
+        Parameters
+        ----------
+        start_met : int
+            Provides the start time in Mission Elapsed Time (MET).
+        end_met : int
+            Provides the end time in MET. If not provided, default to one day
+            from start time.
+        Returns
+        -------
+        spin_df : pd.DataFrame
+            Spin data.
+        """
+        if end_met is None:
+            # end_time is one day after start_time
+            end_met = start_met + 86400
+
+        # Create spin start second data of 15 seconds increment
+        spin_start_sec = np.arange(start_met, end_met + 1, 15)
+
+        nspins = len(spin_start_sec)
+
+        spin_df = pd.DataFrame.from_dict(
+            {
+                "spin_number": np.arange(nspins, dtype=np.uint32),
+                "spin_start_sec": spin_start_sec,
+                "spin_start_subsec": np.zeros(nspins, dtype=np.uint32),
+                "spin_period_sec": np.full(nspins, 15.0, dtype=np.float32),
+                "spin_period_valid": np.ones(nspins, dtype=np.uint8),
+                "spin_phase_valid": np.ones(nspins, dtype=np.uint8),
+                "spin_period_source": np.zeros(nspins, dtype=np.uint8),
+                "thruster_firing": np.zeros(nspins, dtype=np.uint8),
+            }
+        )
+
+        # Convert spin_start_sec to datetime to set repointing times flags
+        spin_start_dates = met_to_j2000ns(spin_start_sec)
+        spin_start_dates = cdflib.cdfepoch.to_datetime(spin_start_dates)
+
+        # Convert DatetimeIndex to Series for using .dt accessor
+        spin_start_dates_series = pd.Series(spin_start_dates)
+
+        # Find index of all timestamps that fall within 10 minutes after midnight
+        repointing_times = spin_start_dates_series[
+            (spin_start_dates_series.dt.time >= pd.Timestamp("00:00:00").time())
+            & (spin_start_dates_series.dt.time < pd.Timestamp("00:10:00").time())
+        ]
+
+        repointing_times_index = repointing_times.index
+
+        # Use the repointing times to set thruster firing flag and spin period valid
+        spin_df.loc[repointing_times_index.values, "thruster_firing"] = 1
+        spin_df.loc[repointing_times_index.values, "spin_period_valid"] = 0
+        spin_df.loc[repointing_times_index.values, "spin_phase_valid"] = 0
+
+        return spin_df
+
+    return make_data
