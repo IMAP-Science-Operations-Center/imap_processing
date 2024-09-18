@@ -43,6 +43,6 @@ def test_get_particle_velocity(kernels):
     time = directEvents['tdb']
     ultra_velocity = directEvents["vultra"]
 
-    velocity = get_particle_velocity(time, ultra_velocity)
+    velocities = get_particle_velocity(time, ultra_velocity)
 
     print("hi")
