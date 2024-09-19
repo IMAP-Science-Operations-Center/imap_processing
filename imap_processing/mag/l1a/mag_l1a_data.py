@@ -13,6 +13,7 @@ from imap_processing.cdf.utils import J2000_EPOCH
 from imap_processing.mag.constants import (
     AXIS_COUNT,
     FIBONACCI_SEQUENCE,
+    MAX_COMPRESSED_VECTOR_BITS,
     MAX_FINE_TIME,
     RANGE_BIT_WIDTH,
 )
@@ -516,8 +517,8 @@ class MagL1a:
         vector. There are 2 * (primary_count + secondary_count) bits assigned for the
         range data section.
 
-        If any compressed vectors are > 60 bits long, then we switch to uncompressed
-        vectors for the rest of the processing.
+        If any compressed vectors are > 60 bits long (MAX_COMPRESSED_VECTOR_BITS), then
+        we switch to uncompressed vectors for the rest of the processing.
 
         Parameters
         ----------
@@ -607,8 +608,14 @@ class MagL1a:
                     # So we skip past all the remaining seq_ones.
                     if (
                         (len(primary_boundaries) > 4)
-                        and (primary_boundaries[-1] - primary_boundaries[-4] > 60)
-                        or (vector_count == 2 and primary_boundaries[-1] > 60)
+                        and (
+                            primary_boundaries[-1] - primary_boundaries[-4]
+                            > MAX_COMPRESSED_VECTOR_BITS
+                        )
+                        or (
+                            vector_count == 2
+                            and primary_boundaries[-1] > MAX_COMPRESSED_VECTOR_BITS
+                        )
                     ):
                         # Since we know how long each uncompressed vector is,
                         # we can determine the end of the primary vectors.
@@ -647,7 +654,10 @@ class MagL1a:
                 # the vector count. (in primary_boundaries we know we start at 0.)
                 if (len(secondary_boundaries) - 1) % AXIS_COUNT == 0:
                     vector_count += 1
-                    if secondary_boundaries[-1] - secondary_boundaries[-4] > 60:
+                    if (
+                        secondary_boundaries[-1] - secondary_boundaries[-4]
+                        > MAX_COMPRESSED_VECTOR_BITS
+                    ):
                         # The rest of the secondary values are uncompressed.
                         vector_count = primary_count + secondary_count + 1
 
@@ -747,7 +757,9 @@ class MagL1a:
             An array of processed vectors.
         """
         vector_diffs = list(map(MagL1a.decode_fib_zig_zag, split_bits))
-        vectors = MagL1a.accumulate_vectors(first_vector, vector_diffs, vector_count)
+        vectors = MagL1a.convert_diffs_to_vectors(
+            first_vector, vector_diffs, vector_count
+        )
         # If we are missing any vectors from primary_split_bits, we know we have
         # uncompressed vectors to process.
         compressed_count = math.ceil(len(split_bits) / AXIS_COUNT) + 1
@@ -784,7 +796,8 @@ class MagL1a:
         Parameters
         ----------
         range_data : numpy.ndarray
-            Array of range values, where each value is one bit.
+            Array of range values, where each value is one bit. The range values have
+            2 bits per vector, so range data should be 2 * len(vectors) - 1 in length.
         vectors : numpy.ndarray
             Array of vectors, where each vector is a tuple of (x, y, z, range).
             The range value will be overwritten by range_data, and x, y, z will remain
@@ -810,7 +823,7 @@ class MagL1a:
         return updated_vectors
 
     @staticmethod
-    def accumulate_vectors(
+    def convert_diffs_to_vectors(
         first_vector: np.ndarray,
         vector_differences: list[int],
         vector_count: int,

@@ -461,6 +461,8 @@ def test_compressed_vector_data(expected_vectors, raw_compressed_vectors):
     assert np.array_equal(primary[0], primary_expected[0])
     assert np.array_equal(secondary[0], secondary_expected[0])
 
+    # There should be 16 vectors for both primary and secondary, with 4 values per
+    # vector.
     assert primary.shape[0] == 16
     assert secondary.shape[0] == 16
 
@@ -474,6 +476,7 @@ def test_compressed_vector_data(expected_vectors, raw_compressed_vectors):
     # It excludes the first vector, making the length (primary_count - 1) * 2
     range_primary = "000000000000000101101011111111"
 
+    # This includes the first range value and all the ranges from range_primary
     expected_range_primary = [3, 0, 0, 0, 0, 0, 0, 0, 1, 1, 2, 2, 3, 3, 3, 3]
     range_secondary = "000000000000000101101011111101"
     expected_range_secondary = [3, 0, 0, 0, 0, 0, 0, 0, 1, 1, 2, 2, 3, 3, 3, 1]
@@ -649,76 +652,41 @@ def test_real_uncompressed_vector_data(uncompressed_vector_bytearray, expected_v
 
 
 def test_accumulate_vectors():
-    start_vector = np.array([1, 2, 3, 4], dtype=np.uint)
+    range = 4
+    start_vector = np.array([1, 2, 3, range], dtype=np.uint)
 
     diff_vectors = [1, 1, 1, 3, 0, -3, -1, -10, 1]
 
     expected_vectors = np.array(
-        [[1, 2, 3, 4], [2, 3, 4, 4], [5, 3, 1, 4], [4, -7, 2, 4]]
+        [[1, 2, 3, range], [2, 3, 4, range], [5, 3, 1, range], [4, -7, 2, range]]
     )
 
-    test_vectors = MagL1a.accumulate_vectors(start_vector, diff_vectors, 4)
+    test_vectors = MagL1a.convert_diffs_to_vectors(start_vector, diff_vectors, 4)
 
     assert np.array_equal(test_vectors, expected_vectors)
 
 
-def test_unpack_one_vector(uncompressed_vector_bytearray, expected_vectors):
-    test_16bit_vector = np.unpackbits(uncompressed_vector_bytearray)[:50]
+sixteen_bits = "00000010000001000000100000010000000100000010000011"
+twelve_bits = "000000010110000000000000111111111111"
+eighteenbits = "000000100000010010000010000001000011000100000010000001"
+twentybits = "00010100000010000001001000001000000100001100010000001000000101"
 
-    test_output = MagL1a.unpack_one_vector(test_16bit_vector, 16, 1)
-    assert all(test_output == expected_vectors[0][0])
 
-    expected_vectors = [-11, 28, 100, 1]
-    test_8bit_vector = np.array(
-        [1, 1, 1, 1, 0, 1, 0, 1, 0, 0, 0, 1, 1, 1, 0, 0, 0, 1, 1, 0, 0, 1, 0, 0, 0, 1]
-    )
-    test_output = MagL1a.unpack_one_vector(test_8bit_vector, 8, 1)
-
-    assert all(test_output == expected_vectors)
-
-    test_12bit_vector = np.array(
-        [
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            1,
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-        ]
-    )
-
-    test_output = MagL1a.unpack_one_vector(test_12bit_vector, 12, 0)
-    expected_vectors = [22, 0, -1, 0]
+@pytest.mark.parametrize(
+    "vector_string, expected_vectors, width, include_range",
+    [
+        (sixteen_bits, [516, 2064, 4128, 3], 16, 1),
+        (twelve_bits, [22, 0, -1, 0], 12, 0),
+        (eighteenbits, [2066, 8259, 16513, 0], 18, 0),
+        (twentybits, [82049, 133136, -245631, 1], 20, 1),
+    ],
+    ids=["16bit", "12bit", "18bit", "20bit"],
+)
+def test_unpack_one_vector(
+    vector_string, expected_vectors, uncompressed_vector_bytearray, width, include_range
+):
+    test_vector = np.array([int(i) for i in vector_string], dtype=np.uint8)
+    test_output = MagL1a.unpack_one_vector(test_vector, width, include_range)
     assert all(test_output == expected_vectors)
 
 
@@ -762,7 +730,6 @@ def test_process_uncompressed_vector_data():
     # values)
     hex_string = "03E903EAF447C1F47E0BBCBED0"
     input_data = np.frombuffer(bytes.fromhex(hex_string), dtype=np.dtype(">b"))
-    print(input_data)
     total_primary_vectors = 1
     total_secondary_vectors = 1
 

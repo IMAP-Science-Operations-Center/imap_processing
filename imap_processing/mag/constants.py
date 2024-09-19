@@ -105,3 +105,4 @@ FIBONACCI_SEQUENCE = [
 MAX_FINE_TIME = np.iinfo(np.uint16).max  # maximum 16 bit unsigned int
 AXIS_COUNT = 3
 RANGE_BIT_WIDTH = 2
+MAX_COMPRESSED_VECTOR_BITS = 60
