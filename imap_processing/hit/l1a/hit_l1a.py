@@ -234,7 +234,7 @@ def process_housekeeping(
     dataset = concatenate_leak_variables(dataset)
 
     # Assign attributes and dimensions to each data array in the Dataset
-    for field, data in dataset.data_vars.items():
+    for field in dataset.data_vars.keys():
         # Create a list of dimensions using the DEPEND_I keys in the
         # attributes
         dims = [
@@ -242,10 +242,7 @@ def process_housekeeping(
             for key, value in attr_mgr.get_variable_attributes(field).items()
             if "DEPEND" in key
         ]
-        dataset[field] = xr.DataArray(
-            data,
-            dims=dims,
-            attrs=attr_mgr.get_variable_attributes(field),
-        )
+        dataset[field].attrs = attr_mgr.get_variable_attributes(field)
+        dataset[field].assign_coords(dims)
 
     return dataset
