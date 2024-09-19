@@ -2,6 +2,7 @@
 
 import numpy as np
 from numpy.typing import NDArray
+from typing import Any
 
 
 def build_energy_bins() -> NDArray[np.float64]:
@@ -108,7 +109,7 @@ def cartesian_to_spherical(
 
 def bin_space(
     v: tuple[np.ndarray, np.ndarray, np.ndarray],
-) -> np.ndarray:
+) -> tuple[np.ndarray[Any, Any], np.ndarray[Any, Any]]:
     """
     Bin the particle.
 
@@ -119,10 +120,10 @@ def bin_space(
 
     Returns
     -------
-    az_midpoint : np.ndarray
-        Array of azimuth midpoint values.
-    el_midpoint : np.ndarray
-        Array of elevation midpoint values.
+    unique_bin_ids : np.ndarray
+        Bin ids.
+    counts : np.ndarray
+        Event counts.
     """
     az_bin_edges, el_bin_edges, az_bin_midpoints, el_bin_midpoints = (
         build_spatial_bins()
@@ -142,10 +143,12 @@ def bin_space(
     az_bin_idx = np.searchsorted(az_bin_edges, az_degrees, side="right") - 1
     el_bin_idx = np.searchsorted(el_bin_edges, el_degrees, side="right") - 1
 
+    # Create flattened version of the 2D data array.
     bin_id = az_bin_idx * len(el_bin_midpoints) + el_bin_idx
-    _, counts = np.unique(bin_id, return_counts=True)
+    # Counts for each unique bin_id.
+    unique_bin_ids, counts = np.unique(bin_id, return_counts=True)
 
-    return bin_id
+    return unique_bin_ids, counts
 
 
 def bin_energy(energy: np.ndarray) -> NDArray[np.float64]:

@@ -75,26 +75,29 @@ def test_bin_space():
     vz_sc = np.array([618.0569, 892.6931, 892.6931, -1])
 
     v = np.column_stack((vx_sc, vy_sc, vz_sc))
-    # 259200
-    bin_id = bin_space(v)
+    bin_id, counts = bin_space(v)
 
     az_bin_edges, el_bin_edges, az_bin_midpoints, el_bin_midpoints = (
         build_spatial_bins()
     )
-    expected_az, expected_el, _ = cartesian_to_spherical(v)
+    actual_az, actual_el, _ = cartesian_to_spherical(v)
 
-    expected_az_degrees = np.degrees(expected_az)
-    expected_el_degrees = np.degrees(expected_el)
+    # Transform flat index bin_id back to 2D grid coordinates.
+    az_indices, el_indices = divmod(bin_id, len(el_bin_midpoints))
 
-    # Assert that we can back-calculate the bin.
-    az_indices = bin_id // len(el_bin_midpoints)
-    el_indices = bin_id % len(el_bin_midpoints)
-
-    # Make certain this is binned properly.
     az_bin = az_bin_midpoints[az_indices]
     el_bin = el_bin_midpoints[el_indices]
 
-    print("hi")
+    az_within_tolerance = (
+        np.abs(np.sort(az_bin) - np.degrees(np.unique(actual_az))) <= 0.25
+    )
+    el_within_tolerance = (
+        np.abs(np.sort(el_bin) - np.degrees(np.unique(actual_el))) <= 0.25
+    )
+
+    assert np.all(az_within_tolerance)
+    assert np.all(el_within_tolerance)
+    assert np.array_equal(counts, np.array([1, 2, 1]))
 
 
 def test_bin_energy():
