@@ -82,7 +82,9 @@ def cartesian_to_spherical(
     r : np.ndarray
         The radii, or magnitudes, of the vectors.
     """
-    vx, vy, vz = v
+    vx, vy, vz = np.hsplit(v, 3)
+    vx, vy, vz = vx.flatten(), vy.flatten(), vz.flatten()  # Flatten the arrays
+
     # Magnitude of the velocity vector
     magnitude_v = np.sqrt(vx**2 + vy**2 + vz**2)
 
