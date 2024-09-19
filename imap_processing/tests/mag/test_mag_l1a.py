@@ -220,7 +220,7 @@ def uncompressed_vector_bytearray():
             70,
             171,
         ],
-        dtype=np.uint8,
+        dtype=np.uint32,
     )
     return input_data
 
