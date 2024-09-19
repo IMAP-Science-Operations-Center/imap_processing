@@ -2,7 +2,6 @@
 
 import numpy as np
 from numpy.typing import NDArray
-from typing import Any
 
 
 def build_energy_bins() -> NDArray[np.float64]:
@@ -83,7 +82,7 @@ def cartesian_to_spherical(
     r : np.ndarray
         The radii, or magnitudes, of the vectors.
     """
-    vx, vy, vz = v[:, 0], v[:, 1], v[:, 2]
+    vx, vy, vz = v
     # Magnitude of the velocity vector
     magnitude_v = np.sqrt(vx**2 + vy**2 + vz**2)
 
@@ -109,7 +108,7 @@ def cartesian_to_spherical(
 
 def bin_space(
     v: tuple[np.ndarray, np.ndarray, np.ndarray],
-) -> tuple[np.ndarray[Any, Any], np.ndarray[Any, Any]]:
+) -> tuple[np.ndarray, np.ndarray]:
     """
     Bin the particle.
 
