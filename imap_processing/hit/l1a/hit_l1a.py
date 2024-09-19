@@ -83,19 +83,23 @@ def hit_l1a(packet_file: str, data_version: str) -> list[xr.Dataset]:
     return list(datasets_by_apid.values())
 
 
-def concatenate_leak_variables(dataset: xr.Dataset) -> xr.Dataset:
+def concatenate_leak_variables(
+    dataset: xr.Dataset, adc_channels: xr.DataArray
+) -> xr.Dataset:
     """
     Concatenate leak variables in the dataset.
 
     Updates the housekeeping dataset to replace the individual
     leak_i_00, leak_i_01, ..., leak_i_63 variables with a single
-    leak_i variable as a 2D array. This variable represents
-    leakage current [Voltage] data.
+    leak_i variable as a 2D array. "i" here represents current
+    in the leakage current [Voltage] data.
 
     Parameters
     ----------
     dataset : xarray.Dataset
         Dataset containing 64 leak variables.
+    adc_channels : xarray.DataArray
+        DataArray to be used as a dimension for the concatenated leak variables.
 
     Returns
     -------
@@ -105,9 +109,9 @@ def concatenate_leak_variables(dataset: xr.Dataset) -> xr.Dataset:
     # Stack 64 leak variables (leak_00, leak_01, ..., leak_63)
     leak_vars = [dataset[f"leak_i_{i:02d}"] for i in range(64)]
 
-    # Concatenate along 'leak_index' and reorder dimensions
-    stacked_leaks = xr.concat(leak_vars, dim="leak_index").transpose(
-        "epoch", "leak_index"
+    # Concatenate along 'adc_channels' and reorder dimensions
+    stacked_leaks = xr.concat(leak_vars, dim=adc_channels).transpose(
+        "epoch", "adc_channels"
     )
     dataset["leak_i"] = stacked_leaks
 
@@ -231,17 +235,17 @@ def process_housekeeping(
     dataset.attrs = attr_mgr.get_global_attributes(logical_source)
 
     # Stack 64 leak variables (leak_00, leak_01, ..., leak_63)
-    dataset = concatenate_leak_variables(dataset)
+    dataset = concatenate_leak_variables(dataset, adc_channels)
 
     # Assign attributes and dimensions to each data array in the Dataset
     for field in dataset.data_vars.keys():
-        # Create a list of dimensions using the DEPEND_I keys in the
+        # Create a dict of dimensions using the DEPEND_I keys in the
         # attributes
-        dims = [
-            value
+        dims = {
+            key: value
             for key, value in attr_mgr.get_variable_attributes(field).items()
             if "DEPEND" in key
-        ]
+        }
         dataset[field].attrs = attr_mgr.get_variable_attributes(field)
         dataset[field].assign_coords(dims)
 
