@@ -1,3 +1,4 @@
+import numpy as np
 import pytest
 import xarray as xr
 
@@ -66,12 +67,32 @@ def test_hit_l1a(packet_filepath):
 def test_concatenate_leak_variables(housekeeping_dataset):
     """Test concatenation of leak_i variables"""
 
-    # Call the function
-    updated_dataset = concatenate_leak_variables(housekeeping_dataset)
+    # Create data array for leak_i dependency
+    adc_channels = xr.DataArray(
+        np.arange(64, dtype=np.uint8),
+        name="adc_channels",
+        dims=["adc_channels"],
+    )
+
+    updated_dataset = concatenate_leak_variables(housekeeping_dataset, adc_channels)
 
     # Assertions
+    # ----------------
     assert "leak_i" in updated_dataset
     assert updated_dataset["leak_i"].shape == (88, 64)
+    for i in range(64):
+        # Check if the values in the `leak_i` variable match the values in
+        # the original `leak_i_XX` variable.
+        #  - First access the `leak_i` variable in the `updated_dataset`.
+        #    The [:, i] selects all rows (`:`) and the `i`-th column of the `leak_i`
+        #    variable.
+        #  - Then access the `leak_i_XX` variable in the `housekeeping_dataset`.
+        #    The `f"leak_i_{i:02d}"` selects the variable with the name `leak_i_XX`
+        #    where `XX` is the `i`-th value.
+        #  - Compare values
+        np.testing.assert_array_equal(
+            updated_dataset["leak_i"][:, i], housekeeping_dataset[f"leak_i_{i:02d}"]
+        )
 
 
 def test_process_housekeeping(housekeeping_dataset, attribute_manager):
