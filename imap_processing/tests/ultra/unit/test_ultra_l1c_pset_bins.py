@@ -56,8 +56,9 @@ def test_cartesian_to_spherical():
     vx_sc = np.array([-186.5575, 508.5697])
     vy_sc = np.array([-707.5707, -516.0282])
     vz_sc = np.array([618.0569, 892.6931])
+    v = np.column_stack((vx_sc, vy_sc, vz_sc))
 
-    az_sc, el_sc = cartesian_to_spherical(vx_sc, vy_sc, vz_sc)
+    az_sc, el_sc, r = cartesian_to_spherical(v)
 
     # MATLAB code outputs:
     np.testing.assert_allclose(az_sc, np.array([1.31300, 2.34891]), atol=1e-05, rtol=0)

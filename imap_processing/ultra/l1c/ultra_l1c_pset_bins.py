@@ -62,20 +62,14 @@ def build_spatial_bins(
     return az_bin_edges, el_bin_edges, az_bin_midpoints, el_bin_midpoints
 
 
-def cartesian_to_spherical(
-    vx: np.ndarray, vy: np.ndarray, vz: np.ndarray
-) -> tuple[np.ndarray, np.ndarray]:
+def cartesian_to_spherical(v: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Convert cartesian coordinates to spherical coordinates.
 
     Parameters
     ----------
-    vx : np.ndarray
-        The x-components of the velocity vector.
-    vy : np.ndarray
-        The y-components of the velocity vector.
-    vz : np.ndarray
-        The z-components of the velocity vector.
+    v : tuple[np.ndarray, np.ndarray, np.ndarray]
+        The x,y,z-components of the velocity vector.
 
     Returns
     -------
@@ -83,7 +77,10 @@ def cartesian_to_spherical(
         The azimuth angles in degrees.
     el : np.ndarray
         The elevation angles in degrees.
+    r : np.ndarray
+        The radii, or magnitudes, of the vectors.
     """
+    vx, vy, vz = v[:, 0], v[:, 1], v[:, 2]
     # Magnitude of the velocity vector
     magnitude_v = np.sqrt(vx**2 + vy**2 + vz**2)
 
@@ -104,7 +101,7 @@ def cartesian_to_spherical(
     # Ensure azimuth is from 0 to 2PI
     az = az % (2 * np.pi)
 
-    return az, el
+    return az, el, r
 
 
 def bin_space(
@@ -133,7 +130,8 @@ def bin_space(
         build_spatial_bins()
     )
 
-    az, el = cartesian_to_spherical(vx, vy, vz)
+    v = np.column_stack((vx, vy, vz))
+    az, el, _ = cartesian_to_spherical(v)
 
     az_degrees = np.degrees(az)
     el_degrees = np.degrees(el)
