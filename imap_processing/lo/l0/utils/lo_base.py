@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass, fields
 
-import space_packet_parser
+from space_packet_parser.parser import Packet
 
 from imap_processing.ccsds.ccsds_data import CcsdsData
 
@@ -31,7 +31,7 @@ class LoBase:
     packet_file_name: str
     ccsds_header: CcsdsData
 
-    def set_attributes(self, packet: space_packet_parser.parser.Packet) -> None:
+    def set_attributes(self, packet: Packet) -> None:
         """
         Set dataclass attributes with packet data.
 

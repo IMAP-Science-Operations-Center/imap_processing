@@ -43,7 +43,7 @@ from imap_processing.hi.l1b import hi_l1b
 from imap_processing.hi.l1c import hi_l1c
 from imap_processing.hit.l1a.hit_l1a import hit_l1a
 from imap_processing.hit.l1b.hit_l1b import hit_l1b
-from imap_processing.idex.l1.idex_l1 import PacketParser
+from imap_processing.idex.idex_l1a import PacketParser
 from imap_processing.lo.l1a import lo_l1a
 from imap_processing.lo.l1b import lo_l1b
 from imap_processing.lo.l1c import lo_l1c
@@ -622,8 +622,7 @@ class Lo(ProcessInstrument):
                     f"Unexpected dependencies found for IMAP-Lo L1A:"
                     f"{dependencies}. Expected only one dependency."
                 )
-            # TODO: This is returning the wrong type
-            datasets = [lo_l1a.lo_l1a(dependencies[0], self.version)]
+            datasets = lo_l1a.lo_l1a(dependencies[0], self.version)
 
         elif self.data_level == "l1b":
             data_dict = {}

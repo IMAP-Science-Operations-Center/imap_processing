@@ -1,7 +1,7 @@
 """
-Perform IDEX L1 Processing.
+Perform IDEX L1a Processing.
 
-This module processes decommutated IDEX packets and creates L1 data products.
+This module processes decommutated IDEX packets and creates L1a data products.
 """
 
 import logging
@@ -16,14 +16,12 @@ import space_packet_parser
 import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
-from imap_processing.idex.l0.idex_l0 import decom_packets
+from imap_processing.idex.idex_l0 import decom_packets
 from imap_processing.spice.time import met_to_j2000ns
 
 logger = logging.getLogger(__name__)
 
 # TODO: Generate quicklook plots
-# TODO: Currently the code assumes that one L0 file will produce one L1 file.
-#       Is this a valid assumption?
 
 # Create a large dictionary of values from the FPGA header that need to be
 # captured into the CDF file.  They are lumped together because they share
@@ -91,9 +89,9 @@ class Scitype(IntEnum):
 
 class PacketParser:
     """
-    IDEX packet parsing class.
+    IDEX L1a packet parsing class.
 
-    Encapsulates the decom work needed to decom a daily file of IDEX data
+    Encapsulates the decom work needed to decom a daily file of IDEX L0 data
     received from the POC. The class is instantiated with a reference to a L0
     file as it exists on the local file system.
 
@@ -108,10 +106,10 @@ class PacketParser:
     --------
     .. code-block:: python
 
-        from imap_processing.idex.idex_l1 import PacketParser
+        from imap_processing.idex.idex_l1a import PacketParser
         l0_file = "imap_processing/tests/idex/imap_idex_l0_sci_20230725_v001.pkts"
-        l1_data = PacketParser(l0_file, data_version)
-        l1_data.write_l1_cdf()
+        l1a_data = PacketParser(l0_file, data_version)
+        l1a_data.write_l1a_cdf()
     """
 
     def __init__(self, packet_file: Union[str, Path], data_version: str) -> None:
@@ -127,7 +125,7 @@ class PacketParser:
 
         Notes
         -----
-            Currently assumes one L0 file will generate exactly one L1 file.
+            Currently assumes one L0 file will generate exactly one L1a file.
         """
         decom_packet_list = decom_packets(packet_file)
 
@@ -157,7 +155,7 @@ class PacketParser:
 
         self.data = xr.concat(processed_dust_impact_list, dim="epoch")
         idex_attrs = get_idex_attrs(data_version)
-        self.data.attrs = idex_attrs.get_global_attributes("imap_idex_l1_sci")
+        self.data.attrs = idex_attrs.get_global_attributes("imap_idex_l1a_sci")
 
 
 class RawDustEvent:
@@ -624,10 +622,10 @@ def get_idex_attrs(data_version: str) -> ImapCdfAttributes:
     Returns
     -------
     idex_attrs : ImapCdfAttributes
-        Imap object with l1a attribute files loaded in.
+        The IDEX L1a CDF attributes.
     """
     idex_attrs = ImapCdfAttributes()
     idex_attrs.add_instrument_global_attrs("idex")
-    idex_attrs.add_instrument_variable_attrs("idex", "l1")
+    idex_attrs.add_instrument_variable_attrs("idex", "l1a")
     idex_attrs.add_global_attribute("Data_version", data_version)
     return idex_attrs

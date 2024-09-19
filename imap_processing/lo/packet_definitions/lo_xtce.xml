@@ -2232,7 +2232,7 @@
 			<xtce:IntegerParameterType name="ILO_SCI_CNT.SHCOARSE" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="32" encoding="unsigned" />
 			</xtce:IntegerParameterType>
-			<xtce:BinaryParameterType name="ILO_SCI_CNT.SCI_DE">
+			<xtce:BinaryParameterType name="ILO_SCI_CNT.SCI_CNT">
 				<xtce:BinaryDataEncoding bitOrder="mostSignificantBitFirst">
 					<xtce:SizeInBits>
 						<xtce:DynamicValue>
@@ -2940,7 +2940,7 @@
 			<xtce:Parameter name="ILO_SCI_CNT.SHCOARSE" parameterTypeRef="ILO_SCI_CNT.SHCOARSE" shortDescription="CCSDS Secondary Header MET">
 				<xtce:LongDescription>CCSDS Secondary Header MET</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="ILO_SCI_CNT.SCI_DE" parameterTypeRef="ILO_SCI_CNT.SCI_DE" shortDescription="Binary SCI DE data" />
+			<xtce:Parameter name="ILO_SCI_CNT.SCI_CNT" parameterTypeRef="ILO_SCI_CNT.SCI_CNT" shortDescription="Binary Science Count data" />
 			<xtce:Parameter name="ILO_SCI_CNT.CHKSUM" parameterTypeRef="ILO_SCI_CNT.CHKSUM" shortDescription="16-bit CRC checksum">
 				<xtce:LongDescription>16-bit CRC checksum</xtce:LongDescription>
 			</xtce:Parameter>
@@ -3488,7 +3488,7 @@
 				</xtce:BaseContainer>
 				<xtce:EntryList>
 					<xtce:ParameterRefEntry parameterRef="ILO_SCI_CNT.SHCOARSE" />
-					<xtce:ParameterRefEntry parameterRef="ILO_SCI_CNT.SCI_DE" />
+					<xtce:ParameterRefEntry parameterRef="ILO_SCI_CNT.SCI_CNT" />
 					<xtce:ParameterRefEntry parameterRef="ILO_SCI_CNT.CHKSUM" />
 				</xtce:EntryList>
 			</xtce:SequenceContainer>

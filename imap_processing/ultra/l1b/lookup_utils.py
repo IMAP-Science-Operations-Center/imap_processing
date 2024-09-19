@@ -140,7 +140,7 @@ def get_energy_norm(ssd: np.ndarray, composite_energy: np.ndarray) -> npt.NDArra
     """
     row_number = ssd * 4096 + composite_energy
 
-    return _ENERGY_NORM_DF["NormEnergy"].values[row_number]
+    return _ENERGY_NORM_DF["NormEnergy"].iloc[row_number]
 
 
 def get_image_params(image: str) -> np.float64:

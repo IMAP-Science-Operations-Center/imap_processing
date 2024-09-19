@@ -116,7 +116,7 @@ nitpick_ignore_regex = [
     (r"py:.*", r".*numpy.int.*"),
     (r"py:.*", r".*np.ndarray.*"),
     (r"py:.*", r".*numpy._typing._array_like._ScalarType_co.*"),
-    (r"py:.*", r".*idex.l1.TRIGGER_DESCRIPTION.*"),
+    (r"py:.*", r".*idex.l1a.TRIGGER_DESCRIPTION.*"),
 ]
 
 # Ignore the inherited members from the <instrument>APID IntEnum class

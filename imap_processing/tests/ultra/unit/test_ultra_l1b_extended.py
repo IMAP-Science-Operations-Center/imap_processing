@@ -10,6 +10,8 @@ from imap_processing.ultra.l1b.ultra_l1b_extended import (
     StopType,
     calculate_etof_xc,
     get_coincidence_positions,
+    get_energy_pulse_height,
+    get_energy_ssd,
     get_front_x_position,
     get_front_y_position,
     get_particle_velocity,
@@ -257,3 +259,33 @@ def test_get_ssd_tof(de_dataset, yf_fixture):
     np.testing.assert_allclose(
         ssd_tof, df_ssd["TOF"].astype("float"), atol=1e-05, rtol=0
     )
+
+
+def test_get_energy_ssd(de_dataset, yf_fixture):
+    """Tests get_energy_ssd function."""
+    df_filt, _, _ = yf_fixture
+    df_ssd = df_filt[df_filt["StopType"].isin(StopType.SSD.value)]
+    _, _, ssd_number = get_ssd_back_position_and_tof_offset(de_dataset)
+    energy = get_energy_ssd(de_dataset, ssd_number)
+    test_energy = df_ssd["Energy"].astype("float")
+
+    assert np.array_equal(test_energy, energy)
+
+
+def test_get_energy_pulse_height(de_dataset, yf_fixture):
+    """Tests get_energy_ssd function."""
+    df_filt, _, _ = yf_fixture
+    df_ph = df_filt[df_filt["StopType"].isin(StopType.PH.value)]
+    ph_indices = np.nonzero(
+        np.isin(de_dataset["STOP_TYPE"], [StopType.Top.value, StopType.Bottom.value])
+    )[0]
+
+    test_xb = df_filt["Xb"].astype("float").values
+    test_yb = df_filt["Yb"].astype("float").values
+
+    energy = get_energy_pulse_height(
+        de_dataset["STOP_TYPE"].data, de_dataset["ENERGY_PH"].data, test_xb, test_yb
+    )
+    test_energy = df_ph["Energy"].astype("float")
+
+    assert np.array_equal(test_energy, energy[ph_indices])
