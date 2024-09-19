@@ -62,7 +62,9 @@ def build_spatial_bins(
     return az_bin_edges, el_bin_edges, az_bin_midpoints, el_bin_midpoints
 
 
-def cartesian_to_spherical(v: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+def cartesian_to_spherical(
+    v: tuple[np.ndarray, np.ndarray, np.ndarray],
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Convert cartesian coordinates to spherical coordinates.
 
@@ -105,19 +107,15 @@ def cartesian_to_spherical(v: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.nd
 
 
 def bin_space(
-    vx: np.ndarray, vy: np.ndarray, vz: np.ndarray
-) -> tuple[np.ndarray, np.ndarray]:
+    v: tuple[np.ndarray, np.ndarray, np.ndarray],
+) -> np.ndarray:
     """
     Bin the particle.
 
     Parameters
     ----------
-    vx : np.ndarray
-        The x-components of the velocity vector.
-    vy : np.ndarray
-        The y-components of the velocity vector.
-    vz : np.ndarray
-        The z-components of the velocity vector.
+    v : tuple[np.ndarray, np.ndarray, np.ndarray]
+        The x,y,z-components of the velocity vector.
 
     Returns
     -------
@@ -130,7 +128,6 @@ def bin_space(
         build_spatial_bins()
     )
 
-    v = np.column_stack((vx, vy, vz))
     az, el, _ = cartesian_to_spherical(v)
 
     az_degrees = np.degrees(az)
@@ -145,11 +142,10 @@ def bin_space(
     az_bin_idx = np.searchsorted(az_bin_edges, az_degrees, side="right") - 1
     el_bin_idx = np.searchsorted(el_bin_edges, el_degrees, side="right") - 1
 
-    # Assign the corresponding midpoints.
-    az_midpoint = az_bin_midpoints[az_bin_idx]
-    el_midpoint = el_bin_midpoints[el_bin_idx]
+    bin_id = az_bin_idx * len(el_bin_midpoints) + el_bin_idx
+    _, counts = np.unique(bin_id, return_counts=True)
 
-    return az_midpoint, el_midpoint
+    return bin_id
 
 
 def bin_energy(energy: np.ndarray) -> NDArray[np.float64]:

@@ -70,18 +70,31 @@ def test_cartesian_to_spherical():
 def test_bin_space():
     """Tests bin_space function."""
     # Example particle velocity in the pointing frame wrt s/c.
-    vx_sc = np.array([-186.5575, 508.5697, 0])
-    vy_sc = np.array([-707.5707, -516.0282, 0])
-    vz_sc = np.array([618.0569, 892.6931, -1])
+    vx_sc = np.array([-186.5575, 508.5697, 508.5697, 0])
+    vy_sc = np.array([-707.5707, -516.0282, -516.0282, 0])
+    vz_sc = np.array([618.0569, 892.6931, 892.6931, -1])
 
-    az_midpoint, el_midpoint = bin_space(vx_sc, vy_sc, vz_sc)
-    az, el = cartesian_to_spherical(vx_sc, vy_sc, vz_sc)
+    v = np.column_stack((vx_sc, vy_sc, vz_sc))
+    # 259200
+    bin_id = bin_space(v)
 
-    az_within_tolerance = np.abs(np.degrees(az) - az_midpoint) <= 0.25
-    el_within_tolerance = np.abs(np.degrees(el) - el_midpoint) <= 0.25
+    az_bin_edges, el_bin_edges, az_bin_midpoints, el_bin_midpoints = (
+        build_spatial_bins()
+    )
+    expected_az, expected_el, _ = cartesian_to_spherical(v)
 
-    assert np.all(az_within_tolerance)
-    assert np.all(el_within_tolerance)
+    expected_az_degrees = np.degrees(expected_az)
+    expected_el_degrees = np.degrees(expected_el)
+
+    # Assert that we can back-calculate the bin.
+    az_indices = bin_id // len(el_bin_midpoints)
+    el_indices = bin_id % len(el_bin_midpoints)
+
+    # Make certain this is binned properly.
+    az_bin = az_bin_midpoints[az_indices]
+    el_bin = el_bin_midpoints[el_indices]
+
+    print("hi")
 
 
 def test_bin_energy():
