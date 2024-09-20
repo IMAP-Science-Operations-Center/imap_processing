@@ -257,6 +257,7 @@ class ProcessInstrument(ABC):
 
         # Convert string into a dictionary
         self.dependencies = loads(dependency_str.replace("'", '"'))
+        self._dependency_list: list = []
 
         self.start_date = start_date
         self.end_date = end_date
@@ -356,7 +357,8 @@ class ProcessInstrument(ABC):
         list[Path]
             List of dependencies downloaded from the IMAP SDC.
         """
-        return self.download_dependencies()
+        self._dependency_list = self.download_dependencies()
+        return self._dependency_list
 
     @abstractmethod
     def do_processing(self, dependencies: list) -> list[xr.Dataset]:
@@ -393,7 +395,10 @@ class ProcessInstrument(ABC):
             A list of datasets (products) produced by do_processing method.
         """
         logger.info("Writing products to local storage")
-        products = [write_cdf(dataset) for dataset in datasets]
+        products = [
+            write_cdf(dataset, parent_files=self._dependency_list)
+            for dataset in datasets
+        ]
         self.upload_products(products)
 
 
