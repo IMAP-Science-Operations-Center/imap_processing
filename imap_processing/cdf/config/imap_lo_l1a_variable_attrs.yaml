@@ -27,13 +27,13 @@ default_uint32_attrs: &default_uint32
   VALIDMAX: 4294967295
   dtype: uint32
 
-default_uint64_attrs: &default_uint64
+default_int64_attrs: &default_int64
   <<: *default
   FILLVAL: 18446744073709551615
   FORMAT: I20
   VALIDMIN: 0
   VALIDMAX: 18446744073709551615
-  dtype: uint64
+  dtype: int64
 
 default_int32_attrs: &default_int32
   <<: *default
@@ -74,7 +74,7 @@ spin_default_attrs: &spin_default
 
 # Re-used Coordinate
 epoch:
-  <<: *default_uint32
+  <<: *default_int64
   CATDESC: Epoch Time
   DEPEND_0: epoch
   FIELDNAM: Epoch time
