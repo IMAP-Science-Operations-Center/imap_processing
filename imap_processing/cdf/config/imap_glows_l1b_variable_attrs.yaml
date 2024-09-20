@@ -39,7 +39,7 @@ flag_dim:
   LABLAXIS: Flags
   UNITS: ' '
 
-per_second_dim:
+within_the_second:
   <<: *default_coords
   VALIDMIN: 0
   VALIDMAX: 300
@@ -59,7 +59,7 @@ ecliptic_dim:
   FILLVAL: *int_fillval
 
 histogram_dim:
-  <<: *default
+  <<: *default_coords
   VALIDMIN: 0
   VALIDMAX: 70
   CATDESC: Histogram of direct events for photon impacts
@@ -95,6 +95,11 @@ flags_set_onboard:
     HV test, pulse test, memory error]
   FIELDNAM: Flags set onboard for missing or bad data
   UNITS: ' '
+
+first_spin_id:
+  <<: *metadata_default
+  CATDESC: Last spin ID
+  FIELDNAM: Last spin ID
 
 last_spin_id:
   <<: *metadata_default
@@ -321,7 +326,7 @@ spin_phase_at_next_pps:
 
 direct_event_glows_times:
   <<: *metadata_default
-  DEPEND_1: per_second
+  DEPEND_1: within_the_second
   CATDESC: >
     An array of times for direct events from the GLOWS clock, with subseconds as the
     decimal part of the float.
@@ -329,6 +334,6 @@ direct_event_glows_times:
 
 direct_event_pulse_lengths:
   <<: *metadata_default
-  DEPEND_1: per_second
+  DEPEND_1: within_the_second
   CATDESC: An array of pulse lengths for direct events in microseconds
   FIELDNAM: Direct event pulse lengths (us)

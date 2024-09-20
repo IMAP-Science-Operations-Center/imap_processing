@@ -12,7 +12,7 @@ from imap_processing.glows.l0 import decom_glows
 def decom_test_data():
     """Read test data from file"""
     current_directory = Path(__file__).parent
-    packet_path = current_directory / "glows_test_packet_20110921_v01.pkts"
+    packet_path = current_directory / "validation_data" / "glows_test_packet_20110921_v01.pkts"
     data_packet_list = decom_glows.decom_packets(packet_path)
     return data_packet_list
 

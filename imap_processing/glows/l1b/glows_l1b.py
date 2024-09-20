@@ -65,7 +65,7 @@ def glows_l1b(input_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
             dims=["ecliptic"],
             attrs=cdf_attrs.get_variable_attributes("ecliptic_dim"),
         )
-
+        # print(cdf_attrs.get_variable_attributes("bin_dim"))
         bin_data = xr.DataArray(
             input_dataset["bins"],
             name="bins",
@@ -86,26 +86,35 @@ def glows_l1b(input_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
             },
             attrs=cdf_attrs.get_global_attributes("imap_glows_l1b_hist"),
         )
+        # print(output_dataset["bins"].attrs)
 
         # Since we know the output_dataarrays are in the same order as the fields in the
         # HistogramL1B dataclass, we can use dataclasses.fields to get the field names.
 
         fields = dataclasses.fields(HistogramL1B)
-
+        # TODO fix this - does each epoch have a histogram value?
         for index, dataarray in enumerate(output_dataarrays):
             # Dataarray is already an xr.DataArray type, so we can just assign it
+            # print(f"bins {output_dataset['bins'].attrs}")
+            # print(f"Dataarray {dataarray['bins'].attrs}")
             output_dataset[fields[index].name] = dataarray
             output_dataset[
                 fields[index].name
             ].attrs = cdf_attrs.get_variable_attributes(fields[index].name)
 
+            # print(f"Getting attrs {fields[index].name} as {cdf_attrs.get_variable_attributes(fields[index].name)}")
+
+        # print(f"Coords {output_dataset.coords}")
+        output_dataset['bins'] = bin_data
+
+
     elif "de" in logical_source:
         output_dataarrays = process_de(input_dataset)
-        per_second_data = xr.DataArray(
-            input_dataset["per_second"],
-            name="per_second",
-            dims=["per_second"],
-            attrs=cdf_attrs.get_variable_attributes("per_second_dim"),
+        within_the_second_data = xr.DataArray(
+            input_dataset["within_the_second"],
+            name="within_the_second",
+            dims=["within_the_second"],
+            attrs=cdf_attrs.get_variable_attributes("within_the_second"),
         )
 
         flag_data = xr.DataArray(
@@ -118,7 +127,7 @@ def glows_l1b(input_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
         output_dataset = xr.Dataset(
             coords={
                 "epoch": data_epoch,
-                "per_second": per_second_data,
+                "within_the_second": within_the_second_data,
                 "flag_dim": flag_data,
             },
             attrs=cdf_attrs.get_global_attributes("imap_glows_l1b_de"),
@@ -178,8 +187,8 @@ def process_de(l1a: xr.Dataset) -> tuple[xr.DataArray]:
 
     output_dimension_mapping = {
         "de_flags": ["flag_dim"],
-        "direct_event_glows_times": ["per_second"],
-        "direct_event_pulse_lengths": ["per_second"],
+        "direct_event_glows_times": ["within_the_second"],
+        "direct_event_pulse_lengths": ["within_the_second"],
     }
 
     # For each attribute, retrieve the dims from output_dimension_mapping or use an
@@ -192,7 +201,7 @@ def process_de(l1a: xr.Dataset) -> tuple[xr.DataArray]:
 
     # Set the two direct event dimensions. This is the only multi-dimensional L1A
     # (input) variable.
-    input_dims[0] = ["per_second", "direct_event"]
+    input_dims[0] = ["within_the_second", "direct_event"]
 
     l1b_fields: tuple = xr.apply_ufunc(
         lambda *args: tuple(dataclasses.asdict(DirectEventL1B(*args)).values()),

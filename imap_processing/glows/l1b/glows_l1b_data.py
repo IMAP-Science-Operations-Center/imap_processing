@@ -395,6 +395,8 @@ class HistogramL1B:
         array of block-accumulated count numbers
     flight_software_version: str
     seq_count_in_pkts_file: int
+    first_spin_id: int
+        The start ID
     last_spin_id: int
         The ID of the previous spin
     flags_set_onboard: int
@@ -468,6 +470,7 @@ class HistogramL1B:
     seq_count_in_pkts_file: int
     # l1a_file_name: str TODO: add this
     # ancillary_data_files: np.ndarray TODO Add this
+    first_spin_id: int
     last_spin_id: int
     flags_set_onboard: int  # TODO: this should be renamed in L1B
     is_generated_on_ground: int
