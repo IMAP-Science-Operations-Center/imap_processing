@@ -12,7 +12,7 @@ import os
 import typing
 from enum import IntEnum
 from pathlib import Path
-from typing import Any, Callable, Union
+from typing import Union
 
 import numpy as np
 import numpy.typing as npt
@@ -265,8 +265,7 @@ def frame_transform(
                 f"Position has {len(position)} elements and et has {len(et)} elements."
             )
 
-    vec_pxform = get_vec_pxform()
-    rotate = vec_pxform(from_frame.name, to_frame.name, et)
+    rotate = get_rotation_matrix(from_frame, to_frame, et)
 
     if hasattr(rotate[0][0], "__len__"):
         result = np.array(
@@ -281,22 +280,37 @@ def frame_transform(
     return result
 
 
-def get_vec_pxform() -> Callable[..., Any]:
+def get_rotation_matrix(
+    from_frame: SpiceFrame, to_frame: SpiceFrame, et: Union[float, npt.NDArray]
+) -> npt.NDArray:
     """
-    Return a vectorized form of spice.pxform function.
+    Get the rotation matrix/matrices that can be used to transform between frames.
 
+    This is a vectorized wrapper around `spiceypy.pxform`
     "Return the matrix that transforms position vectors from one specified frame
     to another at a specified epoch."
     https://naif.jpl.nasa.gov/pub/naif/toolkit_docs/C/cspice/pxform_c.html
 
+    Parameters
+    ----------
+    from_frame : SpiceFrame
+        Reference frame to transform from.
+    to_frame : SpiceFrame
+        Reference frame to transform to.
+    et : float or npt.NDArray
+        Ephemeris time(s) for which to get the rotation matrices.
+
     Returns
     -------
-    vectorized_pxform : Callable
-        `spice.pxform` wrapped with `numpy.vectorize`.
+    rotation : npt.NDArray
+        If et is a float, the returned rotation matrix is of shape (3, 3). If
+        et is a np.ndarray, the returned rotation matrix is of shape (n, 3, 3)
+        where n matches the number of elements in et.
     """
-    return np.vectorize(
+    vec_pxform = np.vectorize(
         spice.pxform,
         excluded=["fromstr", "tostr"],
         signature="(),(),()->(3,3)",
         otypes=[np.float64],
     )
+    return vec_pxform(from_frame.name, to_frame.name, et)

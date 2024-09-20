@@ -9,6 +9,7 @@ from imap_processing.spice.geometry import (
     SpiceBody,
     SpiceFrame,
     frame_transform,
+    get_rotation_matrix,
     get_spacecraft_spin_phase,
     get_spin_data,
     imap_state,
@@ -111,35 +112,35 @@ def test_get_spin_data():
     }, "Spin data must have the specified fields."
 
 
-def test_frame_transform(furnish_time_kernels, spice_test_data_path):
+def test_frame_transform(furnish_kernels):
     """Test transformation of vectors from one frame to another, with the option
     to normalize the result."""
     # This test requires an IMAP attitude kernel and pointing (despun) kernel
-    for k in [
+    kernels = [
+        "naif0012.tls",
         "imap_wkcp.tf",
         "imap_science_0001.tf",
         "sim_1yr_imap_attitude.bc",
         "sim_1yr_imap_pointing_frame.bc",
-    ]:
-        spice.furnsh(str(spice_test_data_path / k))
+    ]
+    with furnish_kernels(kernels):
+        et = spice.utc2et("2025-04-30T12:00:00.000")
+        result1 = frame_transform(
+            SpiceFrame.IMAP_ULTRA_45, SpiceFrame.IMAP_DPS, et, np.array([1, 0, 0])
+        )
+        result2 = frame_transform(
+            SpiceFrame.IMAP_DPS, SpiceFrame.IMAP_ULTRA_45, et, result1
+        )
+        np.testing.assert_array_almost_equal(result2, [1, 0, 0])
 
-    et = spice.utc2et("2025-04-30T12:00:00.000")
-    result1 = frame_transform(
-        SpiceFrame.IMAP_ULTRA_45, SpiceFrame.IMAP_DPS, et, np.array([1, 0, 0])
-    )
-    result2 = frame_transform(
-        SpiceFrame.IMAP_DPS, SpiceFrame.IMAP_ULTRA_45, et, result1
-    )
-    np.testing.assert_array_almost_equal(result2, [1, 0, 0])
+        vec_result = frame_transform(
+            SpiceFrame.IMAP_HI_90,
+            SpiceFrame.IMAP_DPS,
+            np.array([et, et + 10]),
+            np.array([[1, 0, 0], [1, 2, 3]]),
+        )
 
-    vec_result = frame_transform(
-        SpiceFrame.IMAP_HI_90,
-        SpiceFrame.IMAP_DPS,
-        np.array([et, et + 10]),
-        np.array([[1, 0, 0], [1, 2, 3]]),
-    )
-
-    assert vec_result.shape == (2, 3)
+        assert vec_result.shape == (2, 3)
 
 
 def test_frame_transform_exceptions():
@@ -177,3 +178,26 @@ def test_frame_transform_exceptions():
             np.arange(2),
             np.arange(9).reshape((3, 3)),
         )
+
+
+def test_get_rotation_matrix(furnish_kernels):
+    """Test coverage for get_rotation_matrix()."""
+    kernels = [
+        "naif0012.tls",
+        "imap_wkcp.tf",
+        "imap_science_0001.tf",
+        "sim_1yr_imap_attitude.bc",
+        "sim_1yr_imap_pointing_frame.bc",
+    ]
+    with furnish_kernels(kernels):
+        et = spice.utc2et("2025-09-30T12:00:00.000")
+        # test input of float
+        rotation = get_rotation_matrix(
+            SpiceFrame.IMAP_IDEX, SpiceFrame.IMAP_SPACECRAFT, et
+        )
+        assert rotation.shape == (3, 3)
+        # test array of et input
+        rotation = get_rotation_matrix(
+            SpiceFrame.IMAP_IDEX, SpiceFrame.IMAP_SPACECRAFT, np.arange(10) + et
+        )
+        assert rotation.shape == (10, 3, 3)
