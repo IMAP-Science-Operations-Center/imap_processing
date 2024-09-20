@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from dataclasses import InitVar, dataclass, field
 from math import floor
 
@@ -9,9 +10,14 @@ import numpy as np
 import numpy.typing as npt
 
 from imap_processing.cdf.utils import J2000_EPOCH
+from imap_processing.mag.constants import (
+    AXIS_COUNT,
+    FIBONACCI_SEQUENCE,
+    MAX_COMPRESSED_VECTOR_BITS,
+    MAX_FINE_TIME,
+    RANGE_BIT_WIDTH,
+)
 from imap_processing.spice.time import met_to_j2000ns
-
-MAX_FINE_TIME = 65535  # maximum 16 bit unsigned int
 
 
 @dataclass
@@ -72,7 +78,7 @@ class TimeTuple:
         seconds : float
             Time in seconds.
         """
-        return self.coarse_time + self.fine_time / MAX_FINE_TIME
+        return float(self.coarse_time + self.fine_time / MAX_FINE_TIME)
 
 
 @dataclass
@@ -186,7 +192,15 @@ class MagL1a:
     -------
     append_vectors()
     calculate_vector_time()
+    convert_diffs_to_vectors()
     process_vector_data()
+    process_uncompressed_vectors()
+    process_compressed_vectors()
+    process_range_data_section()
+    _process_vector_section()
+    unpack_one_vector()
+    decode_fib_zig_zag()
+    twos_complement()
     """
 
     is_mago: bool
@@ -288,10 +302,54 @@ class MagL1a:
 
     @staticmethod
     def process_vector_data(
+        vector_data: np.ndarray,
+        primary_count: int,
+        secondary_count: int,
+        compression: int,
+    ) -> tuple[np.ndarray, np.ndarray]:
+        """
+        Transform raw vector data into Vectors.
+
+        Vectors are grouped into primary sensor and secondary sensor, and returned as a
+        tuple (primary sensor vectors, secondary sensor vectors).
+
+        Parameters
+        ----------
+        vector_data : numpy.ndarray
+            Raw vector data, in bytes. Contains both primary and secondary vector data.
+            Can be either compressed or uncompressed.
+        primary_count : int
+            Count of the number of primary vectors.
+        secondary_count : int
+            Count of the number of secondary vectors.
+        compression : int
+            Flag indicating if the data is compressed (1) or uncompressed (0).
+
+        Returns
+        -------
+        (primary, secondary): (numpy.ndarray, numpy.ndarray)
+            Two arrays, each containing tuples of (x, y, z, sample_range) for each
+            vector sample.
+        """
+        if compression:
+            # If the vectors are compressed, we need them to be uint8 to convert to
+            # bits.
+            return MagL1a.process_compressed_vectors(
+                vector_data.astype(np.uint8), primary_count, secondary_count
+            )
+
+        # If the vectors are uncompressed, we need them to be int32, as there are
+        # bitshifting operations. Either way, the return type should be int32.
+        return MagL1a.process_uncompressed_vectors(
+            vector_data.astype(np.int32), primary_count, secondary_count
+        )
+
+    @staticmethod
+    def process_uncompressed_vectors(
         vector_data: np.ndarray, primary_count: int, secondary_count: int
     ) -> tuple[np.ndarray, np.ndarray]:
         """
-        Given raw packet data, process into Vectors.
+        Given raw uncompressed packet data, process into Vectors.
 
         Vectors are grouped into primary sensor and secondary sensor, and returned as a
         tuple (primary sensor vectors, secondary sensor vectors).
@@ -315,7 +373,6 @@ class MagL1a:
             vector sample.
         """
 
-        # TODO: error handling
         def to_signed16(n: int) -> int:
             """
             Convert an integer to a signed 16-bit integer.
@@ -336,10 +393,6 @@ class MagL1a:
         pos = 0
         primary_vectors = []
         secondary_vectors = []
-
-        # To avoid overflows, we need to cast the potentially 8 bit signed integers to
-        # int32 before the bitshifting operations below.
-        vector_data = vector_data.astype(np.int32)
 
         # Since the vectors are stored as 50 bit chunks but accessed via hex (4 bit
         # chunks) there is some shifting required for processing the bytes.
@@ -430,6 +483,525 @@ class MagL1a:
                 secondary_vectors.append(vector)
 
         return (
-            np.array(primary_vectors, dtype=np.int64),
-            np.array(secondary_vectors, dtype=np.int64),
+            np.array(primary_vectors, dtype=np.int32),
+            np.array(secondary_vectors, dtype=np.int32),
         )
+
+    @staticmethod
+    def process_compressed_vectors(
+        vector_data: np.ndarray, primary_count: int, secondary_count: int
+    ) -> tuple[np.ndarray, np.ndarray]:
+        """
+        Given raw compressed packet data, process into Vectors.
+
+        To do this, we need to decode the compressed data. The compressed data starts
+        with an 8 bit header that defines the width of the uncompressed vectors and
+        if there is a range data section. Then, the vector data follows, then the range
+        data section if it exists.
+
+        To decode, we start by decoding the first compression_width bits. This is an
+        uncompressed primary vector with range. Then, we proceed through the compressed
+        data, where each value is fibonacci and zig-zag encoded. This means each value
+        ends in 2 sequential ones (11). We split the data along these numbers until
+        we reach primary_count vectors.
+
+        The secondary vectors are decoded the same way, starting directly after the last
+        primary vector with an uncompressed secondary starting vector and then
+        secondary_count compressed vectors.
+
+        The compressed values are differences from the previous vector, so after
+        decoding we accumulate the values starting from the first known vector. The
+        range data is copied from the starting vector if range_data_section is not
+        included.
+
+        Then, if a range data section is included, we decode it and assign it to each
+        vector. There are 2 * (primary_count + secondary_count) bits assigned for the
+        range data section.
+
+        If any compressed vectors are > 60 bits long (MAX_COMPRESSED_VECTOR_BITS), then
+        we switch to uncompressed vectors for the rest of the processing.
+
+        Parameters
+        ----------
+        vector_data : numpy.ndarray
+            Raw vector data, in bytes. Contains both primary and secondary vector data.
+        primary_count : int
+            Count of the number of primary vectors.
+        secondary_count : int
+            Count of the number of secondary vectors.
+
+        Returns
+        -------
+        (primary, secondary): (numpy.ndarray, numpy.ndarray)
+            Two arrays, each containing tuples of (x, y, z, sample_range) for each
+            vector sample.
+        """
+        bit_array = np.unpackbits(vector_data)
+        # The first 8 bits are a header - 6 bits to indicate the compression width,
+        # 1 bit to indicate if there is a range data section, and 1 bit spare.
+        compression_width = int("".join([str(i) for i in bit_array[:6]]), 2)
+        has_range_data_section = bit_array[6] == 1
+
+        # The full vector includes 3 values of compression_width bits, and excludes
+        # range.
+        uncompressed_vector_size = compression_width * AXIS_COUNT
+        # plus 8 to get past the compression width and range data section
+        first_vector_width = uncompressed_vector_size + 8 + RANGE_BIT_WIDTH
+        first_vector = MagL1a.unpack_one_vector(
+            bit_array[8:first_vector_width], compression_width, True
+        )
+
+        # The range data length has 2 bits per vector, minus 2 for the uncompressed
+        # first vectors in the primary and secondary sensors.
+        # Then, the range data length is padded to the nearest 8 bits.
+        expected_range_data_length = (primary_count + secondary_count - 2) * 2
+        end_padding = expected_range_data_length // 8 * 8 - expected_range_data_length
+
+        end_vector = len(bit_array) - (
+            (expected_range_data_length - end_padding) * has_range_data_section
+        )
+
+        # Cut off the first vector width and the end range data section if it exists.
+        vector_bits = bit_array[first_vector_width - 1 : end_vector]
+
+        # Shift the bit array over one to the left, then sum them up. This is used to
+        # find all the places where two 1s occur next to each other, because the sum
+        # will be 2 for those indices.
+        # For example: [0 0 1 0 1 1] + [1 0 0 1 0 1] = [1 0 1 1 1 2], so the last index
+        # has 2 ones in a row.
+        # The first bit is invalid, so we remove it at the end.
+        sequential_ones = np.where(
+            np.add(
+                vector_bits,
+                np.roll(vector_bits, 1),
+            )[1:]
+            == 2
+        )[0]
+        # The first bit is only needed for the np.roll step, so now we remove it.
+        # we are left with compressed primary vectors, and all the secondary vectors.
+        vector_bits = vector_bits[1:]
+
+        # that unneeded first bit might give us a false first sequential ones value,
+        # so if the first index has 2 ones, skip it.
+        primary_boundaries = [
+            (
+                sequential_ones[0] + 1
+                if sequential_ones[0] != 0
+                else sequential_ones[1] + 1
+            )
+        ]
+        secondary_boundaries = []
+        vector_count = 1
+        end_primary_vector = 0
+        for seq_val in sequential_ones:
+            if vector_count > primary_count + secondary_count:
+                break
+            # Add the end indices of each primary vector to primary_boundaries
+            # If we have 3 ones in a row, we should skip that index
+
+            if vector_count < primary_count and (seq_val - primary_boundaries[-1] > 0):
+                primary_boundaries.append(seq_val + 1)
+
+                # 3 boundaries equal one vector
+                if len(primary_boundaries) % AXIS_COUNT == 0:
+                    vector_count += 1
+                    # If the vector length is >60 bits, we switch to uncompressed.
+                    # So we skip past all the remaining seq_ones.
+                    if (
+                        (len(primary_boundaries) > 4)
+                        and (
+                            primary_boundaries[-1] - primary_boundaries[-4]
+                            > MAX_COMPRESSED_VECTOR_BITS
+                        )
+                        or (
+                            vector_count == 2
+                            and primary_boundaries[-1] > MAX_COMPRESSED_VECTOR_BITS
+                        )
+                    ):
+                        # Since we know how long each uncompressed vector is,
+                        # we can determine the end of the primary vectors.
+                        end_primary_vector = (
+                            primary_boundaries[-1]
+                            + (primary_count - vector_count) * uncompressed_vector_size
+                        )
+                        vector_count = primary_count
+
+            # If the vector count is equal to the primary count, we are in the first
+            # uncompressed secondary vector.
+            if vector_count == primary_count:
+                # We won't have assigned end_primary_vector unless we hit uncompressed
+                # vectors in the primary path. If there are no uncompressed values,
+                # we can use the end of primary_boundaries.
+                end_primary_vector = (
+                    primary_boundaries[-1]
+                    if end_primary_vector == 0
+                    else end_primary_vector
+                )
+                if seq_val > end_primary_vector + uncompressed_vector_size + 2:
+                    # Split just after the uncompressed secondary vector
+                    secondary_boundaries = [
+                        end_primary_vector + uncompressed_vector_size + 2
+                    ]
+                    # We have found the first secondary vector
+                    secondary_boundaries += [seq_val + 1]
+                    vector_count += 1
+
+            # If we're greater than primary_count, we are in the secondary vectors.
+            # Like before, we skip indices with 3 ones.
+            if vector_count > primary_count and seq_val - secondary_boundaries[-1] > 0:
+                secondary_boundaries.append(seq_val + 1)
+                # We have the start of the secondary vectors in
+                # secondary_boundaries, so we need to subtract one to determine
+                # the vector count. (in primary_boundaries we know we start at 0.)
+                if (len(secondary_boundaries) - 1) % AXIS_COUNT == 0:
+                    vector_count += 1
+                    if (
+                        secondary_boundaries[-1] - secondary_boundaries[-4]
+                        > MAX_COMPRESSED_VECTOR_BITS
+                    ):
+                        # The rest of the secondary values are uncompressed.
+                        vector_count = primary_count + secondary_count + 1
+
+        # Split along the boundaries of the primary vectors. This gives us a list of
+        # bit arrays, each corresponding to a primary value (1/3 of a vector).
+        primary_split_bits = np.split(
+            vector_bits,
+            primary_boundaries,
+        )[:-1]
+        primary_vectors = MagL1a._process_vector_section(
+            vector_bits,
+            primary_split_bits,
+            primary_boundaries[-1],
+            first_vector,
+            primary_count,
+            uncompressed_vector_size,
+            compression_width,
+        )
+
+        # Secondary vector processing
+        first_secondary_vector = MagL1a.unpack_one_vector(
+            vector_bits[
+                end_primary_vector : end_primary_vector + uncompressed_vector_size + 2
+            ],
+            compression_width,
+            True,
+        )
+
+        # Split up the bit array, skipping past the primary vector and uncompressed
+        # starting vector
+        secondary_split_bits = np.split(
+            vector_bits[: secondary_boundaries[-1]], secondary_boundaries[:-1]
+        )[1:]
+
+        secondary_vectors = MagL1a._process_vector_section(
+            vector_bits,
+            secondary_split_bits,
+            secondary_boundaries[-1],
+            first_secondary_vector,
+            secondary_count,
+            uncompressed_vector_size,
+            compression_width,
+        )
+
+        # If there is a range data section, it describes all the data, compressed or
+        # uncompressed.
+        if has_range_data_section:
+            primary_vectors = MagL1a.process_range_data_section(
+                bit_array[end_vector : end_vector + (primary_count - 1) * 2],
+                primary_vectors,
+            )
+            secondary_vectors = MagL1a.process_range_data_section(
+                bit_array[
+                    end_vector + (primary_count - 1) * 2 : end_vector
+                    + (primary_count + secondary_count - 2) * 2
+                ],
+                secondary_vectors,
+            )
+        return primary_vectors, secondary_vectors
+
+    @staticmethod
+    def _process_vector_section(  # noqa: PLR0913
+        vector_bits: np.ndarray,
+        split_bits: list,
+        last_index: int,
+        first_vector: np.ndarray,
+        vector_count: int,
+        uncompressed_vector_size: int,
+        compression_width: int,
+    ) -> np.ndarray:
+        """
+        Generate a section of vector data, primary or secondary.
+
+        Should only be used by process_compressed_vectors.
+
+        Parameters
+        ----------
+        vector_bits : numpy.ndarray
+            Numpy array of bits, representing the vector data. Does not include the
+            first primary vector.
+        split_bits : list
+            An array of where to split vector bits, by passing in a list of indices.
+        last_index : int
+            The index of the last vector in the section (primary or secondary).
+        first_vector : numpy.ndarray
+            The first vector in the section, (x, y, z, range).
+        vector_count : numpy.ndarray
+            The number of vectors in the section (primary or secondary).
+        uncompressed_vector_size : int
+            The size of an uncompressed vector in bits.
+        compression_width : int
+            The width of the uncompressed values - uncompressed_vector_size/3.
+
+        Returns
+        -------
+        numpy.ndarray
+            An array of processed vectors.
+        """
+        vector_diffs = list(map(MagL1a.decode_fib_zig_zag, split_bits))
+        vectors = MagL1a.convert_diffs_to_vectors(
+            first_vector, vector_diffs, vector_count
+        )
+        # If we are missing any vectors from primary_split_bits, we know we have
+        # uncompressed vectors to process.
+        compressed_count = math.ceil(len(split_bits) / AXIS_COUNT) + 1
+        uncompressed_count = vector_count - compressed_count
+
+        if uncompressed_count:
+            end = last_index + uncompressed_vector_size * uncompressed_count
+            uncompressed_vectors = vector_bits[last_index : end + 1]
+
+            for i in range(uncompressed_count):
+                decoded_vector = MagL1a.unpack_one_vector(
+                    uncompressed_vectors[
+                        i * uncompressed_vector_size : (i + 1)
+                        * uncompressed_vector_size
+                    ],
+                    compression_width,
+                    False,
+                )
+                vectors[i + compressed_count] = decoded_vector
+                vectors[i + compressed_count][3] = vectors[0][3]
+
+        return vectors
+
+    @staticmethod
+    def process_range_data_section(
+        range_data: np.ndarray, vectors: np.ndarray
+    ) -> np.ndarray:
+        """
+        Given a range data section and vectors, return an updated vector array.
+
+        Each range value has 2 bits. range_data will have a length of n*2, where n is
+        the number of vectors in vectors.
+
+        Parameters
+        ----------
+        range_data : numpy.ndarray
+            Array of range values, where each value is one bit. The range values have
+            2 bits per vector, so range data should be 2 * len(vectors) - 1 in length.
+        vectors : numpy.ndarray
+            Array of vectors, where each vector is a tuple of (x, y, z, range).
+            The range value will be overwritten by range_data, and x, y, z will remain
+            the same.
+
+        Returns
+        -------
+        numpy.ndarray
+            Updated array of vectors, identical to vectors with the range values
+            updated from range_data.
+        """
+        if len(range_data) != (len(vectors) - 1) * 2:
+            raise ValueError(
+                "Incorrect length for range_data, there should be two bits per vector, "
+                "excluding the first."
+            )
+
+        updated_vectors: np.ndarray = np.copy(vectors)
+        range_str = "".join([str(i) for i in range_data])
+        for i in range(len(vectors) - 1):
+            range_int = int(range_str[i * 2 : i * 2 + 2], 2)
+            updated_vectors[i + 1][3] = range_int
+        return updated_vectors
+
+    @staticmethod
+    def convert_diffs_to_vectors(
+        first_vector: np.ndarray,
+        vector_differences: list[int],
+        vector_count: int,
+    ) -> np.ndarray:
+        """
+        Given a list of differences and the first vector, return calculated vectors.
+
+        This is calculated as follows:
+            vector[i][0] = vector[i-1][0] + vector_differences[i][0]
+            vector[i][1] = vector[i-1][1] + vector_differences[i][1]
+            vector[i][2] = vector[i-1][2] + vector_differences[i][2]
+            vector[i][3] = first_vector[3]
+
+        The third element of the array is the range value, which we assume is the same
+        as the first vector.
+
+        Parameters
+        ----------
+        first_vector : numpy.ndarray
+            A numpy array of 3 signed integers and a range value, representing the
+            start vector.
+        vector_differences : numpy.ndarray
+            A numpy array of shape (expected_vector_count, 4) of signed integers,
+            representing the differences between vectors.
+        vector_count : int
+            The expected number of vectors in the output.
+
+        Returns
+        -------
+        numpy.ndarray
+            A numpy array of shape (expected_vector_count, 4) of signed integers,
+            representing the calculated vectors.
+        """
+        vectors: np.ndarray = np.empty((vector_count, 4), dtype=np.int32)
+        vectors[0] = first_vector
+        if len(vector_differences) % AXIS_COUNT != 0:
+            raise ValueError(
+                "Error! Computed compressed vector differences are not "
+                "divisible by 3 - meaning some data is missing. "
+                "Expected length: %s, actual length: "
+                "%s",
+                vector_count * AXIS_COUNT,
+                len(vector_differences),
+            )
+        index = 0
+        vector_index = 1
+        for diff in vector_differences:
+            vectors[vector_index][index] = vectors[vector_index - 1][index] + diff
+            index += 1
+            if index == 3:
+                # Update range section to match that of the first vector
+                vectors[vector_index][3] = vectors[0][3]
+                index = 0
+                vector_index += 1
+        return vectors
+
+    @staticmethod
+    def unpack_one_vector(
+        vector_data: np.ndarray, width: int, has_range: int
+    ) -> np.ndarray:
+        """
+        Unpack a single vector from the vector data.
+
+        Input should be a numpy array of bits, eg [0, 0, 0, 1], of the length width*3,
+        or width*3 + 2 if has_range is True.
+
+        Parameters
+        ----------
+        vector_data : numpy.ndarray
+            Vector data for the vector to unpack. This is uncompressed data as a numpy
+            array of bits (the output of np.unpackbits).
+        width : int
+            The width of each vector component in bits. This needs to be a multiple of
+            8 (including only whole bytes).
+        has_range : int
+            1 if the vector data includes range data, 0 if not. The first vector always
+            has range data.
+
+        Returns
+        -------
+        numpy.ndarray
+            Unpacked vector data as a numpy array of 3 signed ints plus a range (0 if
+            has_range is False).
+        """
+        if np.any(vector_data > 1):
+            raise ValueError(
+                "unpack_one_vector method is expecting an array of bits as" "input."
+            )
+
+        if len(vector_data) != width * AXIS_COUNT + RANGE_BIT_WIDTH * has_range:
+            raise ValueError(
+                f"Invalid length {len(vector_data)} for vector data. Expected "
+                f"{width * AXIS_COUNT} or {width * AXIS_COUNT + RANGE_BIT_WIDTH} if "
+                f"has_range."
+            )
+        padding = np.zeros(8 - (width % 8), dtype=np.uint8)
+
+        # take slices of the input data and pack from an array of bits to an array of
+        # uint8 bytes
+        x = np.packbits(np.concatenate((padding, vector_data[:width])))
+        y = np.packbits(np.concatenate((padding, vector_data[width : 2 * width])))
+        z = np.packbits(np.concatenate((padding, vector_data[2 * width : 3 * width])))
+
+        range_string = "".join([str(i) for i in vector_data[-2:]])
+
+        rng = int(range_string, 2) if has_range else 0
+
+        # Convert to signed integers using twos complement
+        signed_vals: np.ndarray = np.array(
+            [
+                MagL1a.twos_complement(x, width),
+                MagL1a.twos_complement(y, width),
+                MagL1a.twos_complement(z, width),
+                rng,
+            ],
+            dtype=np.int32,
+        )
+        return signed_vals
+
+    @staticmethod
+    def twos_complement(value: np.ndarray, bits: int) -> np.int32:
+        """
+        Compute the two's complement of an integer.
+
+        This function will return the two's complement of a given bytearray value.
+        The input value should be a bytearray or a numpy array of uint8 values.
+
+        If the integer with respect to the number of bits does not have a sign bit
+        set (first bit is 0), then the input value is returned without modification.
+
+        Parameters
+        ----------
+        value : numpy.ndarray
+            An array of bytes representing an integer. In numpy, this should be an
+            array of uint8 values.
+        bits : int
+            Number of bits to use for the 2's complement.
+
+        Returns
+        -------
+        numpy.int32
+            Two's complement of the input value, as a signed int.
+        """
+        integer_value = int.from_bytes(value, "big")
+        if (integer_value & (1 << (bits - 1))) != 0:
+            output_value = integer_value - (1 << bits)
+        else:
+            output_value = integer_value
+        return np.int32(output_value)
+
+    @staticmethod
+    def decode_fib_zig_zag(code: np.ndarray) -> int:
+        """
+        Decode a fibonacci and zig-zag encoded value.
+
+        Parameters
+        ----------
+        code : numpy.ndarray
+            The code to decode, in the form of an array of bits (eg [0, 1, 0, 1, 1]).
+            This should always end in 2 ones (which indicates the end of a fibonacci
+            encoding).
+
+        Returns
+        -------
+        value: int
+            Signed integer value, with fibonacci and zig-zag encoding removed.
+        """
+        if len(code) < 2 or code[-2] != 1 or code[-1] != 1:
+            raise ValueError(
+                f"Error when decoding {code} - fibonacci encoded values "
+                f"should end in 2 sequential ones."
+            )
+
+        # Fibonacci decoding
+        code = code[:-1]
+        value: int = sum(FIBONACCI_SEQUENCE[: len(code)] * code) - 1
+        # Zig-zag decode (to go from uint to signed int)
+        value = int((value >> 1) ^ (-(value & 1)))
+
+        return value
