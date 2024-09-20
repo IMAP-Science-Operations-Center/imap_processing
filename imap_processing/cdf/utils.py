@@ -133,7 +133,7 @@ def write_cdf(
         # Include the current files if there are any and include just the filename
         # [file1.txt, file2.cdf, ...]
         dataset.attrs["Parents"] = dataset.attrs.get("Parents", []) + [
-            p.name for p in parent_files
+            parent_file.name for parent_file in parent_files
         ]
 
     # Convert the xarray object to a CDF
