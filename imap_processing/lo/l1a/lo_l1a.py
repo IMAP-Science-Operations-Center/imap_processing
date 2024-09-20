@@ -9,7 +9,7 @@ import xarray as xr
 from imap_processing import imap_module_directory
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.lo.l0.lo_apid import LoAPID
-from imap_processing.lo.l0.lo_science import parse_histogram, parse_events
+from imap_processing.lo.l0.lo_science import parse_events, parse_histogram
 from imap_processing.utils import packet_file_to_datasets
 
 logger = logging.getLogger(__name__)
