@@ -4,7 +4,8 @@ FROM public.ecr.aws/docker/library/python:3.10-slim
 # TODO: delete this section once imap_processing is released
 ARG DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y git
-RUN pip install git+https://github.com/IMAP-Science-Operations-Center/imap_processing.git@dev
+#RUN pip install git+https://github.com/IMAP-Science-Operations-Center/imap_processing.git@dev
+RUN pip install git+https://github.com/maxinelasp/imap_processing.git@mag_l1a_compression
 
 # Uncomment this once imap_processing is released
 # RUN pip install imap_processing

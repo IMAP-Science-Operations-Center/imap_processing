@@ -1,0 +1,1276 @@
+<?xml version='1.0' encoding='utf-8'?>
+<xtce:SpaceSystem xmlns:xtce="http://www.omg.org/space/xtce" name="HIT">
+	<xtce:Header date="2024-03-21" version="13" author="IMAP SDC" />
+	<xtce:TelemetryMetaData>
+		<xtce:ParameterTypeSet>
+			<xtce:IntegerParameterType name="VERSION" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="3" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="TYPE" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="SEC_HDR_FLG" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="PKT_APID" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="11" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="SEQ_FLGS" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="2" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="SRC_SEQ_CTR" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="14" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="PKT_LEN" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="16" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.SC_TICK" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="32" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.MODE" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="4" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.FSW_VERSION_A" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="2" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.FSW_VERSION_B" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="4" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.FSW_VERSION_C" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="6" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.NUM_GOOD_CMDS" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="8" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.LAST_GOOD_CMD" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="8" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.LAST_GOOD_SEQ_NUM" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="8" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.NUM_BAD_CMDS" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="8" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.LAST_BAD_CMD" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="8" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.LAST_BAD_SEQ_NUM" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="8" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.FEE_RUNNING" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.MRAM_DISABLED" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.HSKP_SPARE1" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.ENABLE_50KHZ" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.ENABLE_HVPS" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.TABLE_STATUS" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.HEATER_CONTROL" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="2" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.ADC_MODE" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="2" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.DYN_THRESH_LVL" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="2" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.HSKP_SPARE2" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="2" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.NUM_EVNT_LAST_HK" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="18" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.NUM_ERRORS" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="8" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.LAST_ERROR_NUM" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="8" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.CODE_CHECKSUM" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="16" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.SPIN_PERIOD_SHORT" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="16" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.SPIN_PERIOD_LONG" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="16" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.LEAK_I_63" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="10" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="0.00488758553274682" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.LEAK_I_62" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="10" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="0.00488758553274682" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.LEAK_I_61" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="10" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="0.00488758553274682" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.LEAK_I_60" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="10" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="0.00488758553274682" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.LEAK_I_59" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="10" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="0.00488758553274682" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.LEAK_I_58" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="10" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="0.00488758553274682" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.LEAK_I_57" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="10" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="0.00488758553274682" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.LEAK_I_56" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="10" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="0.00488758553274682" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.LEAK_I_55" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="10" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="0.00488758553274682" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.LEAK_I_54" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="10" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="0.00488758553274682" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.LEAK_I_53" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="10" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="0.00488758553274682" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.LEAK_I_52" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="10" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="0.00488758553274682" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.LEAK_I_51" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="10" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="0.00488758553274682" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.LEAK_I_50" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="10" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="0.00488758553274682" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.LEAK_I_49" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="10" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="0.00488758553274682" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.LEAK_I_48" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="10" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="0.00488758553274682" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.LEAK_I_47" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="10" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="0.00488758553274682" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.LEAK_I_46" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="10" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="0.00488758553274682" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.LEAK_I_45" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="10" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="0.00488758553274682" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.LEAK_I_44" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="10" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="0.00488758553274682" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.LEAK_I_43" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="10" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="0.00488758553274682" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.LEAK_I_42" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="10" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="0.00488758553274682" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.LEAK_I_41" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="10" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="0.00488758553274682" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.LEAK_I_40" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="10" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="0.00488758553274682" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.LEAK_I_39" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="10" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="0.00488758553274682" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.LEAK_I_38" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="10" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="0.00488758553274682" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.LEAK_I_37" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="10" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="0.00488758553274682" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.LEAK_I_36" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="10" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="0.00488758553274682" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.LEAK_I_35" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="10" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="0.00488758553274682" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.LEAK_I_34" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="10" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="0.00488758553274682" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.LEAK_I_33" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="10" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="0.00488758553274682" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.LEAK_I_32" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="10" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="0.00488758553274682" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.LEAK_I_31" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="10" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="0.00488758553274682" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.LEAK_I_30" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="10" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="0.00488758553274682" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.LEAK_I_29" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="10" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="0.00488758553274682" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.LEAK_I_28" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="10" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="0.00488758553274682" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.LEAK_I_27" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="10" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="0.00488758553274682" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.LEAK_I_26" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="10" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="0.00488758553274682" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.LEAK_I_25" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="10" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="0.00488758553274682" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.LEAK_I_24" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="10" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="0.00488758553274682" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.LEAK_I_23" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="10" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="0.00488758553274682" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.LEAK_I_22" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="10" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="0.00488758553274682" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.LEAK_I_21" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="10" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="0.00488758553274682" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.LEAK_I_20" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="10" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="0.00488758553274682" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.LEAK_I_19" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="10" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="0.00488758553274682" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.LEAK_I_18" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="10" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="0.00488758553274682" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.LEAK_I_17" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="10" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="0.00488758553274682" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.LEAK_I_16" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="10" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="0.00488758553274682" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.LEAK_I_15" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="10" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="0.00488758553274682" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.LEAK_I_14" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="10" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="0.00488758553274682" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.LEAK_I_13" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="10" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="0.00488758553274682" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.LEAK_I_12" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="10" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="0.00488758553274682" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.LEAK_I_11" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="10" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="0.00488758553274682" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.LEAK_I_10" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="10" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="0.00488758553274682" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.LEAK_I_09" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="10" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="0.00488758553274682" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.LEAK_I_08" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="10" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="0.00488758553274682" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.LEAK_I_07" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="10" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="0.00488758553274682" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.LEAK_I_06" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="10" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="0.00488758553274682" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.LEAK_I_05" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="10" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="0.00488758553274682" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.LEAK_I_04" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="10" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="0.00488758553274682" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.LEAK_I_03" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="10" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="0.00488758553274682" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.LEAK_I_02" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="10" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="0.00488758553274682" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.LEAK_I_01" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="10" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="0.004887585532746823" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.LEAK_I_00" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="10" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="0.004887585532746823" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.PHASIC_STAT" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.ACTIVE_HEATER" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.HEATER_ON" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.TEST_PULSER_ON" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.DAC0_ENABLE" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.DAC1_ENABLE" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.HSKP_SPARE3" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="2" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.PREAMP_L234A" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="0.00121" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.PREAMP_L1A" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="0.00121" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.PREAMP_L1B" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="0.00121" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.PREAMP_L234B" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="0.00121" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.TEMP0" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="-999.0" exponent="0" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.TEMP1" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="-999.0" exponent="0" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.TEMP2" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="-999.0" exponent="0" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.TEMP3" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="-999.0" exponent="0" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.HSKP_SPARE4" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="8" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.ANALOG_TEMP" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="-999.0" exponent="0" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.HVPS_TEMP" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="-999.0" exponent="0" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.IDPU_TEMP" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="-999.0" exponent="0" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.LVPS_TEMP" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="-999.0" exponent="0" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.EBOX_3D4VD" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="0.001242" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.EBOX_5D1VD" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="0.00151" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.EBOX_P12VA" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="0.004007" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.EBOX_M12VA" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="-13.95" exponent="0" />
+							<xtce:Term coefficient="0.00468" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.EBOX_P5D7VA" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="0.001835" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.EBOX_M5D7VA" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="-7.274" exponent="0" />
+							<xtce:Term coefficient="0.003028" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.REF_P5V" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="0.001526" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.L1AB_BIAS" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="-0.98574" exponent="0" />
+							<xtce:Term coefficient="0.0056389" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.L2AB_BIAS" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="-0.94715" exponent="0" />
+							<xtce:Term coefficient="0.0056063" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.L34A_BIAS" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="-12.775" exponent="0" />
+							<xtce:Term coefficient="0.066753" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.L34B_BIAS" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="-12.461" exponent="0" />
+							<xtce:Term coefficient="0.066097" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.EBOX_P2D0VD" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="0.001225" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_HSKP.HSKP_SPARE5" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="16" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="HIT_SCIENCE.SC_TICK" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="32" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:BinaryParameterType name="HIT_SCIENCE.SCIENCE_DATA">
+				<xtce:BinaryDataEncoding bitOrder="mostSignificantBitFirst">
+					<xtce:SizeInBits>
+						<xtce:DynamicValue>
+							<xtce:ParameterInstanceRef parameterRef="PKT_LEN" />
+							<xtce:LinearAdjustment slope="8" intercept="-24" />
+						</xtce:DynamicValue>
+					</xtce:SizeInBits>
+				</xtce:BinaryDataEncoding>
+			</xtce:BinaryParameterType>
+		</xtce:ParameterTypeSet>
+		<xtce:ParameterSet>
+			<xtce:Parameter name="VERSION" parameterTypeRef="VERSION">
+				<xtce:LongDescription>CCSDS Packet Version Number (always 0)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="TYPE" parameterTypeRef="TYPE">
+				<xtce:LongDescription>CCSDS Packet Type Indicator (0=telemetry)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SEC_HDR_FLG" parameterTypeRef="SEC_HDR_FLG">
+				<xtce:LongDescription>CCSDS Packet Secondary Header Flag (always 1)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PKT_APID" parameterTypeRef="PKT_APID">
+				<xtce:LongDescription>CCSDS Packet Application Process ID</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SEQ_FLGS" parameterTypeRef="SEQ_FLGS">
+				<xtce:LongDescription>CCSDS Packet Grouping Flags (3=not part of group)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SRC_SEQ_CTR" parameterTypeRef="SRC_SEQ_CTR">
+				<xtce:LongDescription>CCSDS Packet Sequence Count (increments with each new packet)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PKT_LEN" parameterTypeRef="PKT_LEN">
+				<xtce:LongDescription>CCSDS Packet Length (number of bytes after Packet length minus 1)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="HIT_HSKP.SC_TICK" parameterTypeRef="HIT_HSKP.SC_TICK" shortDescription="Spacecraft tick">
+				<xtce:LongDescription>Spacecraft tick</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="HIT_HSKP.MODE" parameterTypeRef="HIT_HSKP.MODE" shortDescription="Mode (0=boot, 1=maint, 2=stdby, 3=science" />
+			<xtce:Parameter name="HIT_HSKP.FSW_VERSION_A" parameterTypeRef="HIT_HSKP.FSW_VERSION_A" shortDescription="FSW version number (A.B.C bits)" />
+			<xtce:Parameter name="HIT_HSKP.FSW_VERSION_B" parameterTypeRef="HIT_HSKP.FSW_VERSION_B" shortDescription="FSW version number (A.B.C bits)" />
+			<xtce:Parameter name="HIT_HSKP.FSW_VERSION_C" parameterTypeRef="HIT_HSKP.FSW_VERSION_C" shortDescription="FSW version number (A.B.C bits)" />
+			<xtce:Parameter name="HIT_HSKP.NUM_GOOD_CMDS" parameterTypeRef="HIT_HSKP.NUM_GOOD_CMDS" shortDescription="Number of good commands" />
+			<xtce:Parameter name="HIT_HSKP.LAST_GOOD_CMD" parameterTypeRef="HIT_HSKP.LAST_GOOD_CMD" shortDescription="Last good command" />
+			<xtce:Parameter name="HIT_HSKP.LAST_GOOD_SEQ_NUM" parameterTypeRef="HIT_HSKP.LAST_GOOD_SEQ_NUM" shortDescription="Last good sequence number" />
+			<xtce:Parameter name="HIT_HSKP.NUM_BAD_CMDS" parameterTypeRef="HIT_HSKP.NUM_BAD_CMDS" shortDescription="Number of bad commands" />
+			<xtce:Parameter name="HIT_HSKP.LAST_BAD_CMD" parameterTypeRef="HIT_HSKP.LAST_BAD_CMD" shortDescription="Last bad command" />
+			<xtce:Parameter name="HIT_HSKP.LAST_BAD_SEQ_NUM" parameterTypeRef="HIT_HSKP.LAST_BAD_SEQ_NUM" shortDescription="Last bad sequence number" />
+			<xtce:Parameter name="HIT_HSKP.FEE_RUNNING" parameterTypeRef="HIT_HSKP.FEE_RUNNING" shortDescription="FEE running (1) or reset (0)" />
+			<xtce:Parameter name="HIT_HSKP.MRAM_DISABLED" parameterTypeRef="HIT_HSKP.MRAM_DISABLED" shortDescription="MRAM disabled (1) or enabled (0)" />
+			<xtce:Parameter name="HIT_HSKP.HSKP_SPARE1" parameterTypeRef="HIT_HSKP.HSKP_SPARE1" shortDescription="spare" />
+			<xtce:Parameter name="HIT_HSKP.ENABLE_50KHZ" parameterTypeRef="HIT_HSKP.ENABLE_50KHZ" shortDescription="50kHz enabled (1) or disabled (0)" />
+			<xtce:Parameter name="HIT_HSKP.ENABLE_HVPS" parameterTypeRef="HIT_HSKP.ENABLE_HVPS" shortDescription="HVPS enabled (1) or disabled (0)" />
+			<xtce:Parameter name="HIT_HSKP.TABLE_STATUS" parameterTypeRef="HIT_HSKP.TABLE_STATUS" shortDescription="Table status  OK (1) or error (0)" />
+			<xtce:Parameter name="HIT_HSKP.HEATER_CONTROL" parameterTypeRef="HIT_HSKP.HEATER_CONTROL" shortDescription="Heater control (0=none, 1=pri, 2=sec)" />
+			<xtce:Parameter name="HIT_HSKP.ADC_MODE" parameterTypeRef="HIT_HSKP.ADC_MODE" shortDescription="ADC mode (0=quiet, 1=normal, 2=adcstim, 3=adcThreshold?)" />
+			<xtce:Parameter name="HIT_HSKP.DYN_THRESH_LVL" parameterTypeRef="HIT_HSKP.DYN_THRESH_LVL" shortDescription="Dynamic threshold level (0-3)" />
+			<xtce:Parameter name="HIT_HSKP.HSKP_SPARE2" parameterTypeRef="HIT_HSKP.HSKP_SPARE2" shortDescription="spare" />
+			<xtce:Parameter name="HIT_HSKP.NUM_EVNT_LAST_HK" parameterTypeRef="HIT_HSKP.NUM_EVNT_LAST_HK" shortDescription="Number of events since last HK update" />
+			<xtce:Parameter name="HIT_HSKP.NUM_ERRORS" parameterTypeRef="HIT_HSKP.NUM_ERRORS" shortDescription="Number of errors" />
+			<xtce:Parameter name="HIT_HSKP.LAST_ERROR_NUM" parameterTypeRef="HIT_HSKP.LAST_ERROR_NUM" shortDescription="Last error number" />
+			<xtce:Parameter name="HIT_HSKP.CODE_CHECKSUM" parameterTypeRef="HIT_HSKP.CODE_CHECKSUM" shortDescription="Code checksum" />
+			<xtce:Parameter name="HIT_HSKP.SPIN_PERIOD_SHORT" parameterTypeRef="HIT_HSKP.SPIN_PERIOD_SHORT" shortDescription="Spin period at t=0" />
+			<xtce:Parameter name="HIT_HSKP.SPIN_PERIOD_LONG" parameterTypeRef="HIT_HSKP.SPIN_PERIOD_LONG" shortDescription="Spin period at t=0" />
+			<xtce:Parameter name="HIT_HSKP.LEAK_I_63" parameterTypeRef="HIT_HSKP.LEAK_I_63" shortDescription="Leakage current [V]" />
+			<xtce:Parameter name="HIT_HSKP.LEAK_I_62" parameterTypeRef="HIT_HSKP.LEAK_I_62" shortDescription="Leakage current [V]" />
+			<xtce:Parameter name="HIT_HSKP.LEAK_I_61" parameterTypeRef="HIT_HSKP.LEAK_I_61" shortDescription="Leakage current [V]" />
+			<xtce:Parameter name="HIT_HSKP.LEAK_I_60" parameterTypeRef="HIT_HSKP.LEAK_I_60" shortDescription="Leakage current [V]" />
+			<xtce:Parameter name="HIT_HSKP.LEAK_I_59" parameterTypeRef="HIT_HSKP.LEAK_I_59" shortDescription="Leakage current [V]" />
+			<xtce:Parameter name="HIT_HSKP.LEAK_I_58" parameterTypeRef="HIT_HSKP.LEAK_I_58" shortDescription="Leakage current [V]" />
+			<xtce:Parameter name="HIT_HSKP.LEAK_I_57" parameterTypeRef="HIT_HSKP.LEAK_I_57" shortDescription="Leakage current [V]" />
+			<xtce:Parameter name="HIT_HSKP.LEAK_I_56" parameterTypeRef="HIT_HSKP.LEAK_I_56" shortDescription="Leakage current [V]" />
+			<xtce:Parameter name="HIT_HSKP.LEAK_I_55" parameterTypeRef="HIT_HSKP.LEAK_I_55" shortDescription="Leakage current [V]" />
+			<xtce:Parameter name="HIT_HSKP.LEAK_I_54" parameterTypeRef="HIT_HSKP.LEAK_I_54" shortDescription="Leakage current [V]" />
+			<xtce:Parameter name="HIT_HSKP.LEAK_I_53" parameterTypeRef="HIT_HSKP.LEAK_I_53" shortDescription="Leakage current [V]" />
+			<xtce:Parameter name="HIT_HSKP.LEAK_I_52" parameterTypeRef="HIT_HSKP.LEAK_I_52" shortDescription="Leakage current [V]" />
+			<xtce:Parameter name="HIT_HSKP.LEAK_I_51" parameterTypeRef="HIT_HSKP.LEAK_I_51" shortDescription="Leakage current [V]" />
+			<xtce:Parameter name="HIT_HSKP.LEAK_I_50" parameterTypeRef="HIT_HSKP.LEAK_I_50" shortDescription="Leakage current [V]" />
+			<xtce:Parameter name="HIT_HSKP.LEAK_I_49" parameterTypeRef="HIT_HSKP.LEAK_I_49" shortDescription="Leakage current [V]" />
+			<xtce:Parameter name="HIT_HSKP.LEAK_I_48" parameterTypeRef="HIT_HSKP.LEAK_I_48" shortDescription="Leakage current [V]" />
+			<xtce:Parameter name="HIT_HSKP.LEAK_I_47" parameterTypeRef="HIT_HSKP.LEAK_I_47" shortDescription="Leakage current [V]" />
+			<xtce:Parameter name="HIT_HSKP.LEAK_I_46" parameterTypeRef="HIT_HSKP.LEAK_I_46" shortDescription="Leakage current [V]" />
+			<xtce:Parameter name="HIT_HSKP.LEAK_I_45" parameterTypeRef="HIT_HSKP.LEAK_I_45" shortDescription="Leakage current [V]" />
+			<xtce:Parameter name="HIT_HSKP.LEAK_I_44" parameterTypeRef="HIT_HSKP.LEAK_I_44" shortDescription="Leakage current [V]" />
+			<xtce:Parameter name="HIT_HSKP.LEAK_I_43" parameterTypeRef="HIT_HSKP.LEAK_I_43" shortDescription="Leakage current [V]" />
+			<xtce:Parameter name="HIT_HSKP.LEAK_I_42" parameterTypeRef="HIT_HSKP.LEAK_I_42" shortDescription="Leakage current [V]" />
+			<xtce:Parameter name="HIT_HSKP.LEAK_I_41" parameterTypeRef="HIT_HSKP.LEAK_I_41" shortDescription="Leakage current [V]" />
+			<xtce:Parameter name="HIT_HSKP.LEAK_I_40" parameterTypeRef="HIT_HSKP.LEAK_I_40" shortDescription="Leakage current [V]" />
+			<xtce:Parameter name="HIT_HSKP.LEAK_I_39" parameterTypeRef="HIT_HSKP.LEAK_I_39" shortDescription="Leakage current [V]" />
+			<xtce:Parameter name="HIT_HSKP.LEAK_I_38" parameterTypeRef="HIT_HSKP.LEAK_I_38" shortDescription="Leakage current [V]" />
+			<xtce:Parameter name="HIT_HSKP.LEAK_I_37" parameterTypeRef="HIT_HSKP.LEAK_I_37" shortDescription="Leakage current [V]" />
+			<xtce:Parameter name="HIT_HSKP.LEAK_I_36" parameterTypeRef="HIT_HSKP.LEAK_I_36" shortDescription="Leakage current [V]" />
+			<xtce:Parameter name="HIT_HSKP.LEAK_I_35" parameterTypeRef="HIT_HSKP.LEAK_I_35" shortDescription="Leakage current [V]" />
+			<xtce:Parameter name="HIT_HSKP.LEAK_I_34" parameterTypeRef="HIT_HSKP.LEAK_I_34" shortDescription="Leakage current [V]" />
+			<xtce:Parameter name="HIT_HSKP.LEAK_I_33" parameterTypeRef="HIT_HSKP.LEAK_I_33" shortDescription="Leakage current [V]" />
+			<xtce:Parameter name="HIT_HSKP.LEAK_I_32" parameterTypeRef="HIT_HSKP.LEAK_I_32" shortDescription="Leakage current [V]" />
+			<xtce:Parameter name="HIT_HSKP.LEAK_I_31" parameterTypeRef="HIT_HSKP.LEAK_I_31" shortDescription="Leakage current [V]" />
+			<xtce:Parameter name="HIT_HSKP.LEAK_I_30" parameterTypeRef="HIT_HSKP.LEAK_I_30" shortDescription="Leakage current [V]" />
+			<xtce:Parameter name="HIT_HSKP.LEAK_I_29" parameterTypeRef="HIT_HSKP.LEAK_I_29" shortDescription="Leakage current [V]" />
+			<xtce:Parameter name="HIT_HSKP.LEAK_I_28" parameterTypeRef="HIT_HSKP.LEAK_I_28" shortDescription="Leakage current [V]" />
+			<xtce:Parameter name="HIT_HSKP.LEAK_I_27" parameterTypeRef="HIT_HSKP.LEAK_I_27" shortDescription="Leakage current [V]" />
+			<xtce:Parameter name="HIT_HSKP.LEAK_I_26" parameterTypeRef="HIT_HSKP.LEAK_I_26" shortDescription="Leakage current [V]" />
+			<xtce:Parameter name="HIT_HSKP.LEAK_I_25" parameterTypeRef="HIT_HSKP.LEAK_I_25" shortDescription="Leakage current [V]" />
+			<xtce:Parameter name="HIT_HSKP.LEAK_I_24" parameterTypeRef="HIT_HSKP.LEAK_I_24" shortDescription="Leakage current [V]" />
+			<xtce:Parameter name="HIT_HSKP.LEAK_I_23" parameterTypeRef="HIT_HSKP.LEAK_I_23" shortDescription="Leakage current [V]" />
+			<xtce:Parameter name="HIT_HSKP.LEAK_I_22" parameterTypeRef="HIT_HSKP.LEAK_I_22" shortDescription="Leakage current [V]" />
+			<xtce:Parameter name="HIT_HSKP.LEAK_I_21" parameterTypeRef="HIT_HSKP.LEAK_I_21" shortDescription="Leakage current [V]" />
+			<xtce:Parameter name="HIT_HSKP.LEAK_I_20" parameterTypeRef="HIT_HSKP.LEAK_I_20" shortDescription="Leakage current [V]" />
+			<xtce:Parameter name="HIT_HSKP.LEAK_I_19" parameterTypeRef="HIT_HSKP.LEAK_I_19" shortDescription="Leakage current [V]" />
+			<xtce:Parameter name="HIT_HSKP.LEAK_I_18" parameterTypeRef="HIT_HSKP.LEAK_I_18" shortDescription="Leakage current [V]" />
+			<xtce:Parameter name="HIT_HSKP.LEAK_I_17" parameterTypeRef="HIT_HSKP.LEAK_I_17" shortDescription="Leakage current [V]" />
+			<xtce:Parameter name="HIT_HSKP.LEAK_I_16" parameterTypeRef="HIT_HSKP.LEAK_I_16" shortDescription="Leakage current [V]" />
+			<xtce:Parameter name="HIT_HSKP.LEAK_I_15" parameterTypeRef="HIT_HSKP.LEAK_I_15" shortDescription="Leakage current [V]" />
+			<xtce:Parameter name="HIT_HSKP.LEAK_I_14" parameterTypeRef="HIT_HSKP.LEAK_I_14" shortDescription="Leakage current [V]" />
+			<xtce:Parameter name="HIT_HSKP.LEAK_I_13" parameterTypeRef="HIT_HSKP.LEAK_I_13" shortDescription="Leakage current [V]" />
+			<xtce:Parameter name="HIT_HSKP.LEAK_I_12" parameterTypeRef="HIT_HSKP.LEAK_I_12" shortDescription="Leakage current [V]" />
+			<xtce:Parameter name="HIT_HSKP.LEAK_I_11" parameterTypeRef="HIT_HSKP.LEAK_I_11" shortDescription="Leakage current [V]" />
+			<xtce:Parameter name="HIT_HSKP.LEAK_I_10" parameterTypeRef="HIT_HSKP.LEAK_I_10" shortDescription="Leakage current [V]" />
+			<xtce:Parameter name="HIT_HSKP.LEAK_I_09" parameterTypeRef="HIT_HSKP.LEAK_I_09" shortDescription="Leakage current [V]" />
+			<xtce:Parameter name="HIT_HSKP.LEAK_I_08" parameterTypeRef="HIT_HSKP.LEAK_I_08" shortDescription="Leakage current [V]" />
+			<xtce:Parameter name="HIT_HSKP.LEAK_I_07" parameterTypeRef="HIT_HSKP.LEAK_I_07" shortDescription="Leakage current [V]" />
+			<xtce:Parameter name="HIT_HSKP.LEAK_I_06" parameterTypeRef="HIT_HSKP.LEAK_I_06" shortDescription="Leakage current [V]" />
+			<xtce:Parameter name="HIT_HSKP.LEAK_I_05" parameterTypeRef="HIT_HSKP.LEAK_I_05" shortDescription="Leakage current [V]" />
+			<xtce:Parameter name="HIT_HSKP.LEAK_I_04" parameterTypeRef="HIT_HSKP.LEAK_I_04" shortDescription="Leakage current [V]" />
+			<xtce:Parameter name="HIT_HSKP.LEAK_I_03" parameterTypeRef="HIT_HSKP.LEAK_I_03" shortDescription="Leakage current [V]" />
+			<xtce:Parameter name="HIT_HSKP.LEAK_I_02" parameterTypeRef="HIT_HSKP.LEAK_I_02" shortDescription="Leakage current [V]" />
+			<xtce:Parameter name="HIT_HSKP.LEAK_I_01" parameterTypeRef="HIT_HSKP.LEAK_I_01" shortDescription="Leakage current [V]" />
+			<xtce:Parameter name="HIT_HSKP.LEAK_I_00" parameterTypeRef="HIT_HSKP.LEAK_I_00" shortDescription="Leakage current [V]" />
+			<xtce:Parameter name="HIT_HSKP.PHASIC_STAT" parameterTypeRef="HIT_HSKP.PHASIC_STAT" shortDescription="PHASIC status" />
+			<xtce:Parameter name="HIT_HSKP.ACTIVE_HEATER" parameterTypeRef="HIT_HSKP.ACTIVE_HEATER" shortDescription="Active heater" />
+			<xtce:Parameter name="HIT_HSKP.HEATER_ON" parameterTypeRef="HIT_HSKP.HEATER_ON" shortDescription="Heater on/off" />
+			<xtce:Parameter name="HIT_HSKP.TEST_PULSER_ON" parameterTypeRef="HIT_HSKP.TEST_PULSER_ON" shortDescription="Test pulser on/off" />
+			<xtce:Parameter name="HIT_HSKP.DAC0_ENABLE" parameterTypeRef="HIT_HSKP.DAC0_ENABLE" shortDescription="DAC_0 enable" />
+			<xtce:Parameter name="HIT_HSKP.DAC1_ENABLE" parameterTypeRef="HIT_HSKP.DAC1_ENABLE" shortDescription="DAC_1 enable" />
+			<xtce:Parameter name="HIT_HSKP.HSKP_SPARE3" parameterTypeRef="HIT_HSKP.HSKP_SPARE3" shortDescription="Reserved" />
+			<xtce:Parameter name="HIT_HSKP.PREAMP_L234A" parameterTypeRef="HIT_HSKP.PREAMP_L234A" shortDescription="Preamp L234A" />
+			<xtce:Parameter name="HIT_HSKP.PREAMP_L1A" parameterTypeRef="HIT_HSKP.PREAMP_L1A" shortDescription="Preamp L1A" />
+			<xtce:Parameter name="HIT_HSKP.PREAMP_L1B" parameterTypeRef="HIT_HSKP.PREAMP_L1B" shortDescription="Preamp L1B" />
+			<xtce:Parameter name="HIT_HSKP.PREAMP_L234B" parameterTypeRef="HIT_HSKP.PREAMP_L234B" shortDescription="Preamp L234B" />
+			<xtce:Parameter name="HIT_HSKP.TEMP0" parameterTypeRef="HIT_HSKP.TEMP0" shortDescription="FEE LDO Regulator">
+				<xtce:LongDescription>Mounted on the board next to the low-dropout regulator</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="HIT_HSKP.TEMP1" parameterTypeRef="HIT_HSKP.TEMP1" shortDescription="Primary Heater">
+				<xtce:LongDescription>Mounted on the board next to the primary heater circuit</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="HIT_HSKP.TEMP2" parameterTypeRef="HIT_HSKP.TEMP2" shortDescription="FEE FPGA">
+				<xtce:LongDescription>Mounted on the board next to the FPGA</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="HIT_HSKP.TEMP3" parameterTypeRef="HIT_HSKP.TEMP3" shortDescription="Secondary Heater">
+				<xtce:LongDescription>Mounted on the board next to the secondary heater</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="HIT_HSKP.HSKP_SPARE4" parameterTypeRef="HIT_HSKP.HSKP_SPARE4" />
+			<xtce:Parameter name="HIT_HSKP.ANALOG_TEMP" parameterTypeRef="HIT_HSKP.ANALOG_TEMP" shortDescription="Chassis temp">
+				<xtce:LongDescription>Mounted on analog board, close to thermostats, heaters, and chassis</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="HIT_HSKP.HVPS_TEMP" parameterTypeRef="HIT_HSKP.HVPS_TEMP" shortDescription="Board temp">
+				<xtce:LongDescription>Mounted inside the faraday cage in the middle of the board near the connector side.</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="HIT_HSKP.IDPU_TEMP" parameterTypeRef="HIT_HSKP.IDPU_TEMP" shortDescription="LDO Temp">
+				<xtce:LongDescription>Mounted on top of the low-dropout regulator</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="HIT_HSKP.LVPS_TEMP" parameterTypeRef="HIT_HSKP.LVPS_TEMP" shortDescription="Board temp">
+				<xtce:LongDescription>Mounted in the middle of the board on the opposite side of the hottest component</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="HIT_HSKP.EBOX_3D4VD" parameterTypeRef="HIT_HSKP.EBOX_3D4VD" shortDescription="3.4VD Ebox (digital)" />
+			<xtce:Parameter name="HIT_HSKP.EBOX_5D1VD" parameterTypeRef="HIT_HSKP.EBOX_5D1VD" shortDescription="5.1VD Ebox (digital)" />
+			<xtce:Parameter name="HIT_HSKP.EBOX_P12VA" parameterTypeRef="HIT_HSKP.EBOX_P12VA" shortDescription="+12VA Ebox (analog)" />
+			<xtce:Parameter name="HIT_HSKP.EBOX_M12VA" parameterTypeRef="HIT_HSKP.EBOX_M12VA" shortDescription="-12VA Ebox (analog)" />
+			<xtce:Parameter name="HIT_HSKP.EBOX_P5D7VA" parameterTypeRef="HIT_HSKP.EBOX_P5D7VA" shortDescription="+5.7VA Ebox (analog)" />
+			<xtce:Parameter name="HIT_HSKP.EBOX_M5D7VA" parameterTypeRef="HIT_HSKP.EBOX_M5D7VA" shortDescription="-5.7VA Ebox (analog)" />
+			<xtce:Parameter name="HIT_HSKP.REF_P5V" parameterTypeRef="HIT_HSKP.REF_P5V" shortDescription="+5Vref" />
+			<xtce:Parameter name="HIT_HSKP.L1AB_BIAS" parameterTypeRef="HIT_HSKP.L1AB_BIAS" shortDescription="L1A/B Bias" />
+			<xtce:Parameter name="HIT_HSKP.L2AB_BIAS" parameterTypeRef="HIT_HSKP.L2AB_BIAS" shortDescription="L2A/B Bias" />
+			<xtce:Parameter name="HIT_HSKP.L34A_BIAS" parameterTypeRef="HIT_HSKP.L34A_BIAS" shortDescription="L3/4A Bias" />
+			<xtce:Parameter name="HIT_HSKP.L34B_BIAS" parameterTypeRef="HIT_HSKP.L34B_BIAS" shortDescription="L3/4B Bias" />
+			<xtce:Parameter name="HIT_HSKP.EBOX_P2D0VD" parameterTypeRef="HIT_HSKP.EBOX_P2D0VD" shortDescription="+2.0VD Ebox (digital)" />
+			<xtce:Parameter name="HIT_HSKP.HSKP_SPARE5" parameterTypeRef="HIT_HSKP.HSKP_SPARE5" />
+			<xtce:Parameter name="HIT_SCIENCE.SC_TICK" parameterTypeRef="HIT_SCIENCE.SC_TICK" shortDescription="Spacecraft tick">
+				<xtce:LongDescription>CCSDS Packet Sec Header</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="HIT_SCIENCE.SCIENCE_DATA" parameterTypeRef="HIT_SCIENCE.SCIENCE_DATA" shortDescription="Science data ">
+				<xtce:LongDescription>262 byte chunks of science data</xtce:LongDescription>
+			</xtce:Parameter>
+		</xtce:ParameterSet>
+		<xtce:ContainerSet>
+			<xtce:SequenceContainer name="CCSDSPacket" abstract="true">
+				<xtce:EntryList>
+					<xtce:ParameterRefEntry parameterRef="VERSION" />
+					<xtce:ParameterRefEntry parameterRef="TYPE" />
+					<xtce:ParameterRefEntry parameterRef="SEC_HDR_FLG" />
+					<xtce:ParameterRefEntry parameterRef="PKT_APID" />
+					<xtce:ParameterRefEntry parameterRef="SEQ_FLGS" />
+					<xtce:ParameterRefEntry parameterRef="SRC_SEQ_CTR" />
+					<xtce:ParameterRefEntry parameterRef="PKT_LEN" />
+				</xtce:EntryList>
+			</xtce:SequenceContainer>
+			<xtce:SequenceContainer name="HIT_HSKP">
+				<xtce:BaseContainer containerRef="CCSDSPacket">
+					<xtce:RestrictionCriteria>
+						<xtce:Comparison parameterRef="PKT_APID" value="1251" useCalibratedValue="false" />
+					</xtce:RestrictionCriteria>
+				</xtce:BaseContainer>
+				<xtce:EntryList>
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.SC_TICK" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.MODE" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.FSW_VERSION_A" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.FSW_VERSION_B" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.FSW_VERSION_C" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.NUM_GOOD_CMDS" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.LAST_GOOD_CMD" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.LAST_GOOD_SEQ_NUM" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.NUM_BAD_CMDS" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.LAST_BAD_CMD" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.LAST_BAD_SEQ_NUM" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.FEE_RUNNING" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.MRAM_DISABLED" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.HSKP_SPARE1" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.ENABLE_50KHZ" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.ENABLE_HVPS" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.TABLE_STATUS" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.HEATER_CONTROL" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.ADC_MODE" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.DYN_THRESH_LVL" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.HSKP_SPARE2" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.NUM_EVNT_LAST_HK" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.NUM_ERRORS" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.LAST_ERROR_NUM" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.CODE_CHECKSUM" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.SPIN_PERIOD_SHORT" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.SPIN_PERIOD_LONG" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.LEAK_I_63" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.LEAK_I_62" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.LEAK_I_61" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.LEAK_I_60" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.LEAK_I_59" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.LEAK_I_58" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.LEAK_I_57" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.LEAK_I_56" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.LEAK_I_55" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.LEAK_I_54" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.LEAK_I_53" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.LEAK_I_52" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.LEAK_I_51" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.LEAK_I_50" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.LEAK_I_49" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.LEAK_I_48" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.LEAK_I_47" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.LEAK_I_46" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.LEAK_I_45" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.LEAK_I_44" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.LEAK_I_43" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.LEAK_I_42" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.LEAK_I_41" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.LEAK_I_40" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.LEAK_I_39" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.LEAK_I_38" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.LEAK_I_37" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.LEAK_I_36" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.LEAK_I_35" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.LEAK_I_34" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.LEAK_I_33" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.LEAK_I_32" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.LEAK_I_31" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.LEAK_I_30" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.LEAK_I_29" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.LEAK_I_28" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.LEAK_I_27" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.LEAK_I_26" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.LEAK_I_25" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.LEAK_I_24" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.LEAK_I_23" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.LEAK_I_22" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.LEAK_I_21" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.LEAK_I_20" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.LEAK_I_19" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.LEAK_I_18" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.LEAK_I_17" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.LEAK_I_16" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.LEAK_I_15" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.LEAK_I_14" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.LEAK_I_13" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.LEAK_I_12" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.LEAK_I_11" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.LEAK_I_10" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.LEAK_I_09" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.LEAK_I_08" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.LEAK_I_07" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.LEAK_I_06" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.LEAK_I_05" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.LEAK_I_04" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.LEAK_I_03" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.LEAK_I_02" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.LEAK_I_01" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.LEAK_I_00" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.PHASIC_STAT" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.ACTIVE_HEATER" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.HEATER_ON" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.TEST_PULSER_ON" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.DAC0_ENABLE" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.DAC1_ENABLE" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.HSKP_SPARE3" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.PREAMP_L234A" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.PREAMP_L1A" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.PREAMP_L1B" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.PREAMP_L234B" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.TEMP0" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.TEMP1" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.TEMP2" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.TEMP3" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.HSKP_SPARE4" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.ANALOG_TEMP" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.HVPS_TEMP" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.IDPU_TEMP" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.LVPS_TEMP" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.EBOX_3D4VD" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.EBOX_5D1VD" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.EBOX_P12VA" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.EBOX_M12VA" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.EBOX_P5D7VA" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.EBOX_M5D7VA" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.REF_P5V" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.L1AB_BIAS" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.L2AB_BIAS" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.L34A_BIAS" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.L34B_BIAS" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.EBOX_P2D0VD" />
+					<xtce:ParameterRefEntry parameterRef="HIT_HSKP.HSKP_SPARE5" />
+				</xtce:EntryList>
+			</xtce:SequenceContainer>
+			<xtce:SequenceContainer name="HIT_SCIENCE">
+				<xtce:BaseContainer containerRef="CCSDSPacket">
+					<xtce:RestrictionCriteria>
+						<xtce:Comparison parameterRef="PKT_APID" value="1252" useCalibratedValue="false" />
+					</xtce:RestrictionCriteria>
+				</xtce:BaseContainer>
+				<xtce:EntryList>
+					<xtce:ParameterRefEntry parameterRef="HIT_SCIENCE.SC_TICK" />
+					<xtce:ParameterRefEntry parameterRef="HIT_SCIENCE.SCIENCE_DATA" />
+				</xtce:EntryList>
+			</xtce:SequenceContainer>
+		</xtce:ContainerSet>
+	</xtce:TelemetryMetaData>
+</xtce:SpaceSystem>
