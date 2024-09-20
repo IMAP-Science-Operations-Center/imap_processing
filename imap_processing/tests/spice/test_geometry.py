@@ -3,9 +3,12 @@
 import numpy as np
 import pandas as pd
 import pytest
+import spiceypy as spice
 
 from imap_processing.spice.geometry import (
     SpiceBody,
+    SpiceFrame,
+    frame_transform,
     get_spacecraft_spin_phase,
     get_spin_data,
     imap_state,
@@ -106,3 +109,71 @@ def test_get_spin_data():
         "thruster_firing",
         "spin_start_time",
     }, "Spin data must have the specified fields."
+
+
+def test_frame_transform(furnish_time_kernels, spice_test_data_path):
+    """Test transformation of vectors from one frame to another, with the option
+    to normalize the result."""
+    # This test requires an IMAP attitude kernel and pointing (despun) kernel
+    for k in [
+        "imap_wkcp.tf",
+        "imap_science_0001.tf",
+        "sim_1yr_imap_attitude.bc",
+        "sim_1yr_imap_pointing_frame.bc",
+    ]:
+        spice.furnsh(str(spice_test_data_path / k))
+
+    et = spice.utc2et("2025-04-30T12:00:00.000")
+    result1 = frame_transform(
+        SpiceFrame.IMAP_ULTRA_45, SpiceFrame.IMAP_DPS, et, np.array([1, 0, 0])
+    )
+    result2 = frame_transform(
+        SpiceFrame.IMAP_DPS, SpiceFrame.IMAP_ULTRA_45, et, result1
+    )
+    np.testing.assert_array_almost_equal(result2, [1, 0, 0])
+
+    vec_result = frame_transform(
+        SpiceFrame.IMAP_HI_90,
+        SpiceFrame.IMAP_DPS,
+        np.array([et, et + 10]),
+        np.array([[1, 0, 0], [1, 2, 3]]),
+    )
+
+    assert vec_result.shape == (2, 3)
+
+
+def test_frame_transform_exceptions():
+    """Test that the proper exceptions get raised when input arguments are invalid."""
+    with pytest.raises(
+        ValueError, match="Position vectors with one dimension must have 3 elements."
+    ):
+        frame_transform(
+            SpiceFrame.IMAP_SPACECRAFT, SpiceFrame.IMAP_CODICE, 0, np.arange(4)
+        )
+    with pytest.raises(
+        ValueError,
+        match="Ephemeris time must be float when single position vector is provided.",
+    ):
+        frame_transform(
+            SpiceFrame.ECLIPJ2000,
+            SpiceFrame.IMAP_HIT,
+            np.asarray(0),
+            np.array([1, 0, 0]),
+        )
+    with pytest.raises(ValueError, match="Invalid position shape: "):
+        frame_transform(
+            SpiceFrame.ECLIPJ2000,
+            SpiceFrame.IMAP_HIT,
+            np.arange(2),
+            np.arange(4).reshape((2, 2)),
+        )
+    with pytest.raises(
+        ValueError,
+        match="Mismatch in number of position vectors and Ephemeris times provided.",
+    ):
+        frame_transform(
+            SpiceFrame.ECLIPJ2000,
+            SpiceFrame.IMAP_HIT,
+            np.arange(2),
+            np.arange(9).reshape((3, 3)),
+        )

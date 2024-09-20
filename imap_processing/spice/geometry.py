@@ -58,6 +58,8 @@ class SpiceFrame(IntEnum):
     IMAP_HIT = -43500
     IMAP_IDEX = -43700
     IMAP_GLOWS = -43750
+    # IMAP Pointing Frame (Despun) as defined in iamp_science_0001.tf
+    IMAP_DPS = -43901
 
 
 @typing.no_type_check
@@ -253,10 +255,14 @@ def frame_transform(
             )
     elif position.ndim == 2:
         if not position.shape[1] == 3:
-            raise ValueError("Each input position vector must have 3 elements.")
+            raise ValueError(
+                f"Invalid position shape: {position.shape}. "
+                f"Each input position vector must have 3 elements."
+            )
         if not len(position) == len(et):
             raise ValueError(
                 "Mismatch in number of position vectors and Ephemeris times provided."
+                f"Position has {len(position)} elements and et has {len(et)} elements."
             )
 
     vec_pxform = get_vec_pxform()
