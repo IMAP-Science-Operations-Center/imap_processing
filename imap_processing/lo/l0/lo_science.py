@@ -194,112 +194,47 @@ def parse_events(dataset: xr.Dataset, attr_mgr: ImapCdfAttributes) -> xr.Dataset
             bit_pos += 4
             print("case number", case_number)
 
-            de_time.append(
-                int(
-                    dataset["data"].values[pkt_idx][
-                        bit_pos : bit_pos + DATA_BITS.DE_TIME
-                    ],
-                    2,
-                )
-            )
+            de_time.append(parse_de_bin(dataset, pkt_idx, bit_pos, DATA_BITS.DE_TIME))
             bit_pos += DATA_BITS.DE_TIME
             print("de_time", de_time)
-            esa_step.append(
-                int(
-                    dataset["data"].values[pkt_idx][
-                        bit_pos : bit_pos + DATA_BITS.ESA_STEP
-                    ],
-                    2,
-                )
-            )
+            esa_step.append(parse_de_bin(dataset, pkt_idx, bit_pos, DATA_BITS.ESA_STEP))
             bit_pos += DATA_BITS.ESA_STEP
             print("esa_step", esa_step)
-            mode.append(
-                int(
-                    dataset["data"].values[pkt_idx][bit_pos : bit_pos + DATA_BITS.MODE],
-                    2,
-                )
-            )
+            mode.append(parse_de_bin(dataset, pkt_idx, bit_pos, DATA_BITS.MODE))
             bit_pos += DATA_BITS.MODE
             print("mode", mode)
 
             case_decoder = CASE_DECODER[(case_number, mode[-1])]
 
+            # Check which TOF fields should have been transmitted for this
+            # case number / mode combination and decompress them.
             if case_decoder.TOF0:
-                tof0.append(
-                    int(
-                        dataset["data"].values[pkt_idx][
-                            bit_pos : bit_pos + DATA_BITS.TOF0
-                        ],
-                        2,
-                    )
-                    << DE_BIT_SHIFT
-                )
+                tof0.append(parse_de_bin(dataset, pkt_idx, bit_pos, DATA_BITS.TOF0, DE_BIT_SHIFT))
                 bit_pos += DATA_BITS.TOF0
             else:
                 tof0.append(attr_mgr.get_variable_attributes("tof0")["FILLVAL"])
             if case_decoder.TOF1:
-                tof1.append(
-                    int(
-                        dataset["data"].values[pkt_idx][
-                            bit_pos : bit_pos + DATA_BITS.TOF1
-                        ],
-                        2,
-                    )
-                    << DE_BIT_SHIFT
-                )
+                tof1.append(parse_de_bin(dataset, pkt_idx, bit_pos, DATA_BITS.TOF1, DE_BIT_SHIFT))
                 bit_pos += DATA_BITS.TOF1
             else:
                 tof1.append(attr_mgr.get_variable_attributes("tof1")["FILLVAL"])
             if case_decoder.TOF2:
-                tof2.append(
-                    int(
-                        dataset["data"].values[pkt_idx][
-                            bit_pos : bit_pos + DATA_BITS.TOF2
-                        ],
-                        2,
-                    )
-                    << DE_BIT_SHIFT
-                )
+                tof2.append(parse_de_bin(dataset, pkt_idx, bit_pos, DATA_BITS.TOF2, DE_BIT_SHIFT))
                 bit_pos += DATA_BITS.TOF2
             else:
                 tof2.append(attr_mgr.get_variable_attributes("tof2")["FILLVAL"])
             if case_decoder.TOF3:
-                tof3.append(
-                    int(
-                        dataset["data"].values[pkt_idx][
-                            bit_pos : bit_pos + DATA_BITS.TOF3
-                        ],
-                        2,
-                    )
-                    << DE_BIT_SHIFT
-                )
+                tof3.append(parse_de_bin(dataset, pkt_idx, bit_pos, DATA_BITS.TOF3, DE_BIT_SHIFT))
                 bit_pos += DATA_BITS.TOF3
             else:
                 tof3.append(attr_mgr.get_variable_attributes("tof3")["FILLVAL"])
             if case_decoder.CKSM:
-                cksm.append(
-                    int(
-                        dataset["data"].values[pkt_idx][
-                            bit_pos : bit_pos + DATA_BITS.CKSM
-                        ],
-                        2,
-                    )
-                    << DE_BIT_SHIFT
-                )
+                cksm.append(parse_de_bin(dataset, pkt_idx, bit_pos, DATA_BITS.CKSM, DE_BIT_SHIFT))
                 bit_pos += DATA_BITS.CKSM
             else:
                 cksm.append(attr_mgr.get_variable_attributes("cksm")["FILLVAL"])
             if case_decoder.POS:
-                pos.append(
-                    int(
-                        dataset["data"].values[pkt_idx][
-                            bit_pos : bit_pos + DATA_BITS.POS
-                        ],
-                        2,
-                    )
-                    << DE_BIT_SHIFT
-                )
+                pos.append(parse_de_bin(dataset, pkt_idx, bit_pos, DATA_BITS.POS, DE_BIT_SHIFT))
                 bit_pos += DATA_BITS.POS
             else:
                 pos.append(attr_mgr.get_variable_attributes("pos")["FILLVAL"])
@@ -330,3 +265,11 @@ def parse_events(dataset: xr.Dataset, attr_mgr: ImapCdfAttributes) -> xr.Dataset
     print("tof3", tof3)
     print("cksm", cksm)
     print("pos", pos)
+
+def parse_de_bin(dataset, pkt_idx, bit_pos, bit_length, bit_shift=0):
+    return int(
+        dataset["data"].values[pkt_idx][
+        bit_pos: bit_pos + bit_length
+        ],
+        2,
+    ) << bit_shift
