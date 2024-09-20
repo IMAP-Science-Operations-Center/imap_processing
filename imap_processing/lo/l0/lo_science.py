@@ -11,6 +11,11 @@ from imap_processing.lo.l0.utils.bit_decompression import (
     Decompress,
     decompress_int,
 )
+from imap_processing.lo.l0.decompression_tables.decompression_tables import (
+    CASE_DECODER,
+    DATA_BITS,
+    DE_BIT_SHIFT,
+)
 
 HistPacking = namedtuple(
     "HistPacking",
@@ -148,3 +153,130 @@ def decompress(
     )
 
     return decompressed_ints
+
+def parse_events(dataset: xr.Dataset, attr_mgr: ImapCdfAttributes) -> xr.Dataset:
+
+    """
+    Parse and decompress binary direct event data for Lo.
+
+    Parameters
+    ----------
+    dataset : xr.Dataset
+        Lo science direct events from packets_to_dataset function.
+    attr_mgr : ImapCdfAttributes
+        CDF attribute manager for Lo L1A.
+
+    Returns
+    -------
+    dataset : xr.Dataset
+        Parsed and decompressed direct event data.
+    """
+    # get the binary data for the direct events
+    de_time = []
+    esa_step = []
+    mode = []
+    tof0 = []
+    tof1 = []
+    tof2 = []
+    tof3 = []
+    cksm = []
+    pos = []
+    for pkt_idx, de_count in enumerate(dataset["count"].values):
+        bit_pos = 0
+        for de in range(de_count):
+            print("pkt_idx",pkt_idx)
+            print("de_count",de_count)
+            print("de",de)
+            print("data length", len(dataset["data"].values[pkt_idx]))
+            print("bit pos", bit_pos)
+            print("shcoarse", dataset["shcoarse"][pkt_idx])
+            case_number = int(dataset["data"].values[de][bit_pos:bit_pos + 4], 2)
+            bit_pos += 4
+            print("case number", case_number)
+
+            de_time.append(int(dataset["data"].values[pkt_idx][bit_pos:bit_pos + DATA_BITS.DE_TIME], 2))
+            bit_pos += DATA_BITS.DE_TIME
+            print("de_time", de_time)
+            esa_step.append(int(dataset["data"].values[pkt_idx][bit_pos:bit_pos + DATA_BITS.ESA_STEP], 2))
+            bit_pos += DATA_BITS.ESA_STEP
+            print("esa_step", esa_step)
+            mode.append(int(dataset["data"].values[pkt_idx][bit_pos:bit_pos + DATA_BITS.MODE], 2))
+            bit_pos += DATA_BITS.MODE
+            print("mode", mode)
+
+            case_decoder = CASE_DECODER[(case_number, mode[-1])]
+
+            if case_decoder.TOF0:
+                tof0.append(
+                    int(dataset["data"].values[pkt_idx][bit_pos:bit_pos + DATA_BITS.TOF0], 2) << DE_BIT_SHIFT
+                )
+                bit_pos += DATA_BITS.TOF0
+            else:
+                tof0.append(attr_mgr.get_variable_attributes("tof0")["FILLVAL"])
+            if case_decoder.TOF1:
+                tof1.append(
+                    int(dataset["data"].values[pkt_idx][bit_pos:bit_pos + DATA_BITS.TOF1], 2) << DE_BIT_SHIFT
+                )
+                bit_pos += DATA_BITS.TOF1
+            else:
+                tof1.append(attr_mgr.get_variable_attributes("tof1")["FILLVAL"])
+            if case_decoder.TOF2:
+                tof2.append(
+                    int(dataset["data"].values[pkt_idx][bit_pos:bit_pos + DATA_BITS.TOF2], 2) << DE_BIT_SHIFT
+                            )
+                bit_pos += DATA_BITS.TOF2
+            else:
+                tof2.append(attr_mgr.get_variable_attributes("tof2")["FILLVAL"])
+            if case_decoder.TOF3:
+                tof3.append(
+                    int(dataset["data"].values[pkt_idx][bit_pos:bit_pos + DATA_BITS.TOF3], 2) << DE_BIT_SHIFT
+                )
+                bit_pos += DATA_BITS.TOF3
+            else:
+                tof3.append(attr_mgr.get_variable_attributes("tof3")["FILLVAL"])
+            if case_decoder.CKSM:
+                cksm.append(
+                    int(dataset["data"].values[pkt_idx][bit_pos:bit_pos + DATA_BITS.CKSM], 2) << DE_BIT_SHIFT
+                )
+                bit_pos += DATA_BITS.CKSM
+            else:
+                cksm.append(attr_mgr.get_variable_attributes("cksm")["FILLVAL"])
+            if case_decoder.POS:
+                pos.append(
+                    int(dataset["data"].values[pkt_idx][bit_pos:bit_pos + DATA_BITS.POS], 2) << DE_BIT_SHIFT
+                )
+                bit_pos += DATA_BITS.POS
+            else:
+                pos.append(attr_mgr.get_variable_attributes("pos")["FILLVAL"])
+
+
+
+
+            print("tof0", tof0)
+            print("tof1", tof1)
+            print("tof2", tof2)
+            print("tof3", tof3)
+            print("cksm", cksm)
+            print("pos", pos)
+
+    dataset["de_time"] = de_time
+    dataset["esa_step"] = esa_step
+    dataset["mode"] = mode
+    dataset["tof0"] = tof0
+    dataset["tof1"] = tof1
+    dataset["tof2"] = tof2
+    dataset["tof3"] = tof3
+    dataset["cksm"] = cksm
+    dataset["pos"] = pos
+    #print all these vallues:
+    print("de_time",de_time)
+    print("esa_step",esa_step)
+    print("mode",mode)
+    print("tof0",tof0)
+    print("tof1",tof1)
+    print("tof2",tof2)
+    print("tof3",tof3)
+    print("cksm",cksm)
+    print("pos",pos)
+
+
