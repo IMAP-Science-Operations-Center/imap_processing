@@ -2,7 +2,6 @@
 
 from collections import namedtuple
 from pathlib import Path
-from typing import List, Union
 
 import numpy as np
 import xarray as xr
@@ -101,9 +100,7 @@ PHA_DATA_STRUCTURE = {
 }
 
 
-def parse_data(
-    bin_str: str, bits_per_index: int, start: int, end: int
-) -> Union[List[int], int]:
+def parse_data(bin_str: str, bits_per_index: int, start: int, end: int) -> list:
     """
     Parse binary data.
 
@@ -120,17 +117,13 @@ def parse_data(
 
     Returns
     -------
-    parsed_data : list or int
+    parsed_data : list
         Integers parsed from the binary string.
     """
     parsed_data = [
         int(bin_str[i : i + bits_per_index], 2)
         for i in range(start, end, bits_per_index)
     ]
-    if len(parsed_data) < 2:
-        # Return value to be put in a 1D array for a science frame
-        return parsed_data[0]
-
     return parsed_data
 
 
@@ -166,6 +159,10 @@ def parse_count_rates(sci_dataset: xr.Dataset) -> None:
             parse_data(bin_str, bits_per_index, section_start, section_end)
             for bin_str in counts_binary.values
         ]
+        if field_meta.shape[0] == 1:
+            # flatten data into a 1D array
+            parsed_data = list(np.array(parsed_data).flat)
+
         if field == "sngrates":
             # Split into high and low gain arrays
             for i, data in enumerate(parsed_data):
@@ -194,7 +191,7 @@ def parse_count_rates(sci_dataset: xr.Dataset) -> None:
         section_start += field_meta.section_length
 
 
-def is_sequential(counters: np.ndarray) -> bool:
+def is_sequential(counters: np.ndarray) -> np.bool_:
     """
     Check if an array of packet sequence counters is sequential.
 
@@ -242,10 +239,10 @@ def find_valid_starting_indices(flags: np.ndarray, counters: np.ndarray) -> np.n
     flag_pattern = np.array(
         [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2]
     )
-    # Use sliding windows to compare segments of the array (20 packets) with the pattern.
-    # This generates an array of overlapping sub-arrays, each of length 20, from the flags
-    # array and is used to slide the "window" across the array and compare the sub-arrays
-    # with the predefined pattern.
+    # Use sliding windows to compare segments of the array (20 packets) with the
+    # pattern. This generates an array of overlapping sub-arrays, each of length
+    # 20, from the flags array and is used to slide the "window" across the array
+    # and compare the sub-arrays with the predefined pattern.
     window_size = len(flag_pattern)
     windows = np.lib.stride_tricks.sliding_window_view(flags, window_size)
     # Find where the windows match the pattern
@@ -373,14 +370,16 @@ def assemble_science_frames(sci_dataset: xr.Dataset) -> xr.Dataset:
     if starting_indices[0] != 0:
         # The first science frame start index is not at the beginning of the file.
         print(
-            f"{starting_indices[0]} packets at start of file belong to science frame from previous day's ccsds file"
+            f"{starting_indices[0]} packets at start of file belong to science frame "
+            f"from previous day's ccsds file"
         )
     last_index_of_last_frame = starting_indices[-1] + frame_size
     if last_index_of_last_frame:
         remaining_packets = total_packets - last_index_of_last_frame
         if 0 < remaining_packets < frame_size:
             print(
-                f"{remaining_packets} packets at end of file belong to science frame from next day's ccsds file"
+                f"{remaining_packets} packets at end of file belong to science frame "
+                f"from next day's ccsds file"
             )
 
     # Extract data per science frame and organize by L1A data products
