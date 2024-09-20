@@ -1,11 +1,47 @@
 default_attrs: &default
   # Assumed values for all variable attrs unless overwritten
   DISPLAY_TYPE: time_series
-  FILLVAL: -9223372036854775808
-  FORMAT: I12
-  VALIDMIN: 0
-  VALIDMAX: 9223372036854775807
   UNITS: ' '
+
+default_uint8_attrs: &default_uint8
+  <<: *default
+  FILLVAL: 255
+  FORMAT: I3
+  VALIDMIN: 0
+  VALIDMAX: 255
+  dtype: uint8
+
+default_uint16_attrs: &default_uint16
+  <<: *default
+  FILLVAL: 65535
+  FORMAT: I5
+  VALIDMIN: 0
+  VALIDMAX: 65535
+  dtype: uint16
+
+default_uint32_attrs: &default_uint32
+  <<: *default
+  FILLVAL: 4294967295
+  FORMAT: I10
+  VALIDMIN: 0
+  VALIDMAX: 4294967295
+  dtype: uint32
+
+default_uint64_attrs: &default_uint64
+  <<: *default
+  FILLVAL: 18446744073709551615
+  FORMAT: I20
+  VALIDMIN: 0
+  VALIDMAX: 18446744073709551615
+  dtype: uint64
+
+default_int32_attrs: &default_int32
+  <<: *default
+  FILLVAL: -2147483648
+  FORMAT: I10
+  VALIDMIN: -2147483648
+  VALIDMAX: 2147483647
+  dtype: int32
 
 coord_default_attrs: &coord_default
   <<: *default
@@ -17,14 +53,14 @@ de_default_attrs: &de_default
   DEPEND_1: direct_events
 
 hist_az_60_default: &hist_az_60_default
-  <<: *default
+  <<: *default_uint32
   VAR_TYPE: data
   DEPEND_0: epoch
   DEPEND_1: azimuth_60
   DEPEND_2: esa_step
 
 hist_az_6_default: &hist_az_6_default
-  <<: *default
+  <<: *default_uint32
   VAR_TYPE: data
   DEPEND_0: epoch
   DEPEND_1: azimuth_6
@@ -38,14 +74,11 @@ spin_default_attrs: &spin_default
 
 # Re-used Coordinate
 epoch:
-  VALIDMIN: 0
-  VALIDMAX: 9223372036854775807
-  FILLVAL: -9223372036854775808
+  <<: *default_uint32
   CATDESC: Epoch Time
   DEPEND_0: epoch
   FIELDNAM: Epoch time
   Units: 'ns'
-  FORMAT: I12
   VAR_TYPE: support_data
   LABLAXIS: Epoch
 
@@ -57,28 +90,30 @@ esa_step_label:
 
 esa_step:
   <<: *coord_default
+  <<: *default_uint8
   VALIDMIN: 1
   VALIDMAX: 7
-  FILLVAL: 255
+  FORMAT: I1
   CATDESC: Energy Step
   DEPEND_1: esa_step
   FIELDNAM: Energy Step
-  FORMAT: I3
   LABLAXIS: ESA
   LABL_PTR_1: esa_step_label
 
 shcoarse:
-  <<: *default
+  <<: *default_uint32
   CATDESC: Mission Elapsed Time
   DEPEND_0: epoch
   FIELDNAM: Spacecraft Time
   Units: 'ns'
+  VAR_TYPE: support_data
   LABLAXIS: SHCOARSE
 
 # Direct Events Attributes
 ## Coordinates
 direct_events:
   <<: *de_default
+  <<: *default_uint32
   CATDESC: Index of number of direct events for pointing
   FIELDNAM: direct_events
   LABLAXIS: DE
@@ -86,7 +121,9 @@ direct_events:
 ## Fields
 de_time:
   <<: *de_default
+  <<: *default_uint16
   VALIDMAX: 4096
+  FORMAT: I4
   CATDESC: Time relative to spin start
   FIELDNAM: Direct Event Time
   UNITS: microseconds
@@ -94,47 +131,52 @@ de_time:
 
 mode:
   <<: *de_default
-  VALIDMIN: 0
+  <<: *default_uint8
   VALIDMAX: 1
+  FORMAT: I1
   CATDESC: Energy Stepping Mode
   FIELDNAM: ESA Mode
-  FORMAT: I1
   LABLAXIS: ESA Mode
 
 tof0:
   <<: *de_default
+  <<: *default_uint16
   VALIDMAX: 4096
+  FORMAT: I4
   CATDESC: Time of Flight
   FIELDNAM: Time of Flight 2
-  FORMAT: I4
   LABLAXIS: ToF 0
 
 tof1:
   <<: *de_default
+  <<: *default_uint16
   VALIDMAX: 4096
+  FORMAT: I4
   CATDESC: Time of Flight
   FIELDNAM: Time of Flight 1
-  FORMAT: I4
   LABLAXIS: ToF 1
 
 tof2:
   <<: *de_default
+  <<: *default_uint16
   VALIDMAX: 4096
+  FORMAT: I4
   CATDESC: Time of Flight
   FIELDNAM: Time of Flight 2
-  FORMAT: I4
   LABLAXIS: ToF 2
 
 tof3:
   <<: *de_default
+  <<: *default_uint16
   VALIDMAX: 4096
+  FORMAT: I4
   CATDESC: Time of Flight
   FIELDNAM: Time of Flight 3
-  FORMAT: I4
   LABLAXIS: ToF 3
 
 cksm:
   <<: *de_default
+  <<: *default_uint8
   VALIDMAX: 15
   CATDESC: checksum TBD
   FIELDNAM: Checksum
@@ -143,27 +185,29 @@ cksm:
 
 pos:
   <<: *de_default
+  <<: *default_uint8
   VALIDMAX: 4
+  FORMAT: I1
   CATDESC: Stop position
   FIELDNAM: Stop Position
-  FORMAT: I1
   LABLAXIS: Stop Position
 
 coincidence_type:
   <<: *de_default
+  <<: *default_uint8
   VALIDMAX: 15
+  FORMAT: I2
   CATDESC: Direct Event Coincidence Type
   FIELDNAM: Coincidence Type
-  FORMAT: I2
   LABLAXIS: Coincidence Type
 
 de_count:
   <<: *default
+  <<: *default_uint16
   VALIDMAX: 32767
   DEPEND_0: epoch
   CATDESC: Direct Event Counts
   FIELDNAM: Direct Event Count
-  FORMAT: I5
   LABLAXIS: Direct Event Count
 # Direct Events Attributes - END
 
@@ -177,12 +221,11 @@ azimuth_6_label:
 
 azimuth_6:
   <<: *coord_default
+  <<: *default_uint8
   VALIDMAX: 59
-  FILLVAL: 255
   CATDESC: azimuth spin bins (<num packets>, 6 degrees)
   FIELDNAM: Azimuth bins
   DEPEND_1: azimuth_6
-  FORMAT: I3
   LABLAXIS: Az bins
   LABL_PTR_1: azimuth_6_label
 
@@ -194,12 +237,11 @@ azimuth_60_label:
 
 azimuth_60:
   <<: *coord_default
+  <<: *default_uint8
   VALIDMAX: 5
-  FILLVAL: 255
   CATDESC: azimuth spin bins (<num packets>, 60 degrees)
   FIELDNAM: Azimuth bins
   DEPEND_1: azimuth_60
-  FORMAT: I3
   LABLAXIS: Az bins
   LABL_PTR_1: azimuth_60_label
 
@@ -341,13 +383,14 @@ oxygen:
 ## Coordinates
 star_sample:
   <<: *coord_default
+  <<: *default_uint16
   VALIDMAX: 719
   CATDESC: indices of star sensor samples for pointing
   FIELDNAM: Star Sensor Sample Indices in Pointing
 
 ## Fields
 star_sensor:
-  <<: *default
+  <<: *default_uint32
   CATDESC: Star Sensor FIFO Data
   DEPEND_1: star_sample
   VAR_TYPE: support_data
@@ -355,7 +398,7 @@ star_sensor:
   LABLAXIS: star sensor FIFO data
 
 count:
-  <<: *default
+  <<: *default_uint16
   CATDESC: Number of star sensor samples in packet
   FIELDNAM: Number of star sensor samples
   DEPEND_0: epoch
@@ -366,7 +409,7 @@ count:
 # Spin Attributes
 ## Spin Coordinates
 spin:
-  <<: *default
+  <<: *default_uint16
   CATDESC: Spin numbers in pointing
   FIELDNAM: Spin numbers
   DEPEND_1: spin
@@ -376,7 +419,7 @@ spin:
 
 ## Spin Fields
 num_completed:
-  <<: *default
+  <<: *default_uint16
   DEPEND_0: epoch
   VAR_TYPE: support_data
   CATDESC: Number of spins completed
@@ -384,7 +427,7 @@ num_completed:
   LABLAXIS: number of spins completed
 
 acq_end:
-  <<: *default
+  <<: *default_uint32
   DEPEND_0: epoch
   VAR_TYPE: support_data
   CATDESC: Acquisition End
@@ -394,6 +437,7 @@ acq_end:
 
 spin_seconds:
   <<: *spin_default
+  <<: *default_uint32
   CATDESC: Spin Start Seconds Time
   FIELDNAM: Spin Start Seconds Time
   UNITS: ns
@@ -401,38 +445,43 @@ spin_seconds:
 
 spin_subseconds:
   <<: *spin_default
+  <<: *default_uint32
   CATDESC: Spin Start Sub-Seconds Time
   FIELDNAM: Spin Start Sub-Seconds Time
   LABLAXIS: spin start sub-seconds time
 
 esa_p_dac:
   <<: *spin_default
+  <<: *default_uint32
   CATDESC: Positive ESA Set Point
   FIELDNAM: Positive ESA Set Point
   LABLAXIS: Positive ESA Set Point
 
 esa_n_dac:
   <<: *spin_default
+  <<: *default_uint32
   CATDESC: Negative ESA Set Point
   FIELDNAM: Negative ESA Set Point
   LABLAXIS: Negative ESA Set Point
 
 val_period:
   <<: *spin_default
+  <<: *default_uint32
   CATDESC: Valid Spin Period
   FIELDNAM: Valid Spin Period
   LABLAXIS: valid spin period
 
 val_spin:
   <<: *spin_default
+  <<: *default_uint32
   CATDESC: Valid Spin Phase
   FIELDNAM: Valid Spin Phase
   LABLAXIS: valid spin phase
 
 source:
-  <<: *default
+  <<: *spin_default
+  <<: *default_uint32
   CATDESC: Spin Period Source
-  DEPEND_1: spin
   FIELDNAM: Spin Period Source
   LABLAXIS: spin period source
 # Spin Attributes - END
