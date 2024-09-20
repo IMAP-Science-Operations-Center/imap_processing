@@ -298,7 +298,7 @@ def _get_minimum_numpy_datatype(  # noqa: PLR0912 - Too many branches
 def packet_file_to_datasets(
     packet_file: Union[str, Path],
     xtce_packet_definition: Union[str, Path],
-    use_derived_value: bool = True,
+    use_derived_value: bool = False,
 ) -> dict[int, xr.Dataset]:
     """
     Convert a packet file to xarray datasets.
@@ -316,7 +316,7 @@ def packet_file_to_datasets(
         Path to data packet path with filename.
     xtce_packet_definition : str
         Path to XTCE file with filename.
-    use_derived_value : bool, default True
+    use_derived_value : bool, default False
         Whether or not to use the derived value from the XTCE definition.
 
     Returns
