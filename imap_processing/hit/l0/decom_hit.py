@@ -1,13 +1,11 @@
 """Decommutate HIT CCSDS science data."""
 
 from collections import namedtuple
-from pathlib import Path
 
 import numpy as np
 import xarray as xr
 
-from imap_processing import imap_module_directory
-from imap_processing.utils import packet_file_to_datasets
+# TODO: Consider moving global values into a config file
 
 # Structure to hold binary details for a
 # section of science data. Used to unpack
@@ -98,6 +96,12 @@ PHA_DATA_STRUCTURE = {
     # field: bit_length, section_length, shape
     "pha_records": HITPacking(2, 29344, (917,)),
 }
+
+# Define the pattern of grouping flags in a complete science frame.
+FLAG_PATTERN = np.array([1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2])
+
+# Define size of science frame (num of packets)
+FRAME_SIZE = len(FLAG_PATTERN)
 
 
 def parse_data(bin_str: str, bits_per_index: int, start: int, end: int) -> list:
@@ -235,22 +239,20 @@ def find_valid_starting_indices(flags: np.ndarray, counters: np.ndarray) -> np.n
     valid_indices : np.ndarray
         Array of valid indices for science frames.
     """
-    # Define the pattern of grouping flags in a complete science frame.
-    flag_pattern = np.array(
-        [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2]
-    )
+    # TODO: consider combining functions to get valid indices to reduce
+    #  code tracing
+
     # Use sliding windows to compare segments of the array (20 packets) with the
     # pattern. This generates an array of overlapping sub-arrays, each of length
     # 20, from the flags array and is used to slide the "window" across the array
     # and compare the sub-arrays with the predefined pattern.
-    window_size = len(flag_pattern)
-    windows = np.lib.stride_tricks.sliding_window_view(flags, window_size)
+    windows = np.lib.stride_tricks.sliding_window_view(flags, FRAME_SIZE)
     # Find where the windows match the pattern
-    matches = np.all(windows == flag_pattern, axis=1)
+    matches = np.all(windows == FLAG_PATTERN, axis=1)
     # Get the starting indices of matches
     match_indices = np.where(matches)[0]
     # Filter for only indices from valid science frames with sequential counters
-    valid_indices = get_valid_indices(match_indices, counters, window_size)
+    valid_indices = get_valid_indices(match_indices, counters, FRAME_SIZE)
     return valid_indices
 
 
@@ -360,7 +362,6 @@ def assemble_science_frames(sci_dataset: xr.Dataset) -> xr.Dataset:
 
     # Number of packets in the file
     total_packets = len(epoch_data)
-    frame_size = 20
 
     # Find starting indices for valid science frames
     starting_indices = find_valid_starting_indices(seq_flgs, seq_ctrs)
@@ -373,10 +374,10 @@ def assemble_science_frames(sci_dataset: xr.Dataset) -> xr.Dataset:
             f"{starting_indices[0]} packets at start of file belong to science frame "
             f"from previous day's ccsds file"
         )
-    last_index_of_last_frame = starting_indices[-1] + frame_size
+    last_index_of_last_frame = starting_indices[-1] + FRAME_SIZE
     if last_index_of_last_frame:
         remaining_packets = total_packets - last_index_of_last_frame
-        if 0 < remaining_packets < frame_size:
+        if 0 < remaining_packets < FRAME_SIZE:
             print(
                 f"{remaining_packets} packets at end of file belong to science frame "
                 f"from next day's ccsds file"
@@ -388,7 +389,7 @@ def assemble_science_frames(sci_dataset: xr.Dataset) -> xr.Dataset:
     epoch_per_science_frame = np.array([])
     for idx in starting_indices:
         # Data from 20 packets in a science frame
-        science_data_frame = science_data[idx : idx + frame_size]
+        science_data_frame = science_data[idx : idx + FRAME_SIZE]
         # First 6 packets contain count rates data in binary
         count_rates.append("".join(science_data_frame[:6]))
         # Last 14 packets contain pulse height event data in binary
@@ -464,22 +465,3 @@ def decom_hit(sci_dataset: xr.Dataset) -> xr.Dataset:
     #  Parse binary PHA data and add to dataset (function call)
 
     return sci_dataset
-
-
-# TODO: remove main after code is finalized
-if __name__ == "__main__":
-    packet_definition = (
-        imap_module_directory / "hit/packet_definitions/hit_packet_definitions.xml"
-    )
-
-    # L0 file path
-    packet_file = Path(imap_module_directory / "tests/hit/test_data/sci_sample.ccsds")
-
-    datasets_by_apid = packet_file_to_datasets(
-        packet_file=packet_file,
-        xtce_packet_definition=packet_definition,
-    )
-
-    science_dataset = datasets_by_apid[1252]
-    science_dataset = decom_hit(science_dataset)
-    print(science_dataset)
