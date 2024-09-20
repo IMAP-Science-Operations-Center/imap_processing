@@ -38,15 +38,15 @@ def sci_dataset():
 
 def test_parse_data():
     """Test the parse_data function."""
-    # Test parsing a single value
+    # Test parsing a single integer
     bin_str = "110"
     bits_per_index = 2
     start = 0
     end = 2
     result = parse_data(bin_str, bits_per_index, start, end)
-    assert result == 3  # 11 in binary is 3
+    assert result == [3]  # 11 in binary is 3
 
-    # Test parsing multiple values
+    # Test parsing multiple integers
     bin_str = "110010101011"
     bits_per_index = 2
     start = 0
