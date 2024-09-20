@@ -12,7 +12,7 @@ import os
 import typing
 from enum import IntEnum
 from pathlib import Path
-from typing import Union
+from typing import Any, Callable, Union
 
 import numpy as np
 import numpy.typing as npt
@@ -213,3 +213,84 @@ def get_spacecraft_spin_phase(
     if is_scalar:
         return spin_phases[0]
     return spin_phases
+
+
+@typing.no_type_check
+@ensure_spice
+def frame_transform(
+    from_frame: SpiceFrame,
+    to_frame: SpiceFrame,
+    et: Union[float, npt.NDArray],
+    position: npt.NDArray,
+) -> npt.NDArray:
+    """
+    Transform an <x, y, z> vector between reference frames (rotation only).
+
+    Parameters
+    ----------
+    from_frame : SpiceFrame
+        Reference frame of input vector(s).
+    to_frame : SpiceFrame
+        Reference frame of output vector(s).
+    et : float or npt.NDArray
+        Ephemeris time(s) corresponding to position(s).
+    position : npt.NDArray
+        <x, y, z> vector or array of vectors in reference frame `from_frame`.
+
+    Returns
+    -------
+    result : npt.NDArray
+        3d position vector(s) in reference frame `to_frame`.
+    """
+    if position.ndim == 1:
+        if not len(position) == 3:
+            raise ValueError(
+                "Position vectors with one dimension must have 3 elements."
+            )
+        if not isinstance(et, float):
+            raise ValueError(
+                "Ephemeris time must be float when single position vector is provided."
+            )
+    elif position.ndim == 2:
+        if not position.shape[1] == 3:
+            raise ValueError("Each input position vector must have 3 elements.")
+        if not len(position) == len(et):
+            raise ValueError(
+                "Mismatch in number of position vectors and Ephemeris times provided."
+            )
+
+    vec_pxform = get_vec_pxform()
+    rotate = vec_pxform(from_frame.name, to_frame.name, et)
+
+    if hasattr(rotate[0][0], "__len__"):
+        result = np.array(
+            [
+                np.matmul(rotate, pos).astype(np.float64)
+                for rotate, pos in zip(rotate, position)
+            ]
+        )
+    else:
+        result = np.matmul(rotate, position).astype(np.float64)
+
+    return result
+
+
+def get_vec_pxform() -> Callable[..., Any]:
+    """
+    Return a vectorized form of spice.pxform function.
+
+    "Return the matrix that transforms position vectors from one specified frame
+    to another at a specified epoch."
+    https://naif.jpl.nasa.gov/pub/naif/toolkit_docs/C/cspice/pxform_c.html
+
+    Returns
+    -------
+    vectorized_pxform : Callable
+        `spice.pxform` wrapped with `numpy.vectorize`.
+    """
+    return np.vectorize(
+        spice.pxform,
+        excluded=["fromstr", "tostr"],
+        signature="(),(),()->(3,3)",
+        otypes=[np.float64],
+    )
