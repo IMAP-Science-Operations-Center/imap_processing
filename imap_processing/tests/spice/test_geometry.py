@@ -77,4 +77,5 @@ def test_get_spin_data():
         "spin_phase_valid",
         "spin_period_source",
         "thruster_firing",
+        "spin_start_time",
     }, "Spin data must have the specified fields."

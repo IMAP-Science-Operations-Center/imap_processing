@@ -125,7 +125,14 @@ def get_spin_data() -> pd.DataFrame:
         # Handle the case where the environment variable is not set
         raise ValueError("SPIN_DATA_FILEPATH environment variable is not set.")
 
-    return pd.read_csv(path_to_spin_file)
+    spin_df = pd.read_csv(path_to_spin_file)
+    # Combine spin_start_sec and spin_start_subsec to get the spin start
+    # time in seconds. The spin start subseconds are in milliseconds.
+    spin_df["spin_start_time"] = (
+        spin_df["spin_start_sec"] + spin_df["spin_start_subsec"] / 1e3
+    )
+
+    return spin_df
 
 
 def get_spacecraft_spin_phase(
@@ -151,43 +158,44 @@ def get_spacecraft_spin_phase(
     """
     spin_df = get_spin_data()
 
-    # Combine spin_start_sec and spin_start_subsec to get the spin start
-    # time in seconds. The spin start subseconds are in milliseconds.
-    # TODO: Decide if we should do this calculation in the data itself
-    # or in get_spin_data function.
-    spin_df["spin_start_time"] = (
-        spin_df["spin_start_sec"] + spin_df["spin_start_subsec"] / 1e3
-    )
-
-    if isinstance(query_met_times, float):
-        # calculate spin phase for a single query time
-        mask = spin_df["spin_start_time"] <= query_met_times
-        if mask.any():
-            last_spin = spin_df[mask].iloc[-1]
-            return (query_met_times - last_spin["spin_start_time"]) / last_spin[
-                "spin_period_sec"
-            ]
-        else:
-            raise ValueError(
-                f"No spin data found for this data time: {query_met_times}"
-            )
+    # Ensure query_met_times is an array
+    query_met_times = np.asarray(query_met_times)
+    is_scalar = query_met_times.ndim == 0
+    if is_scalar:
+        # Force scalar to array because np.asarray() will not
+        # convert scalar to array
+        query_met_times = np.atleast_1d(query_met_times)
 
     # Create an empty array to store spin phase results
     spin_phases = np.zeros_like(query_met_times)
 
-    # Loop through each query time and find the corresponding spin start time
-    for i, data_time in enumerate(query_met_times):
-        # Find the row where the spin start time is less than or
-        # equal to the query time
-        mask = spin_df["spin_start_time"] <= data_time
+    # Find all spin time that are less or equal to query_met_times.
+    # To do that, use side right, a[i-1] <= v < a[i], in the searchsorted.
+    # Eg.
+    # >>> df['a']
+    # array([0, 15, 30, 45, 60])
+    # >>> np.searchsorted(df['a'], [0, 13, 15, 32, 70], side='right')
+    # array([1, 1, 2, 3, 5])
+    last_spin_indices = np.searchsorted(
+        spin_df["spin_start_time"], query_met_times, side="right"
+    )
+    # Use np.clip to ensure that the last_spin_indices are within the range.
+    # >>> np.clip(x, 0, len(df['a']) -1 )
+    # array([1, 1, 2, 3, 4])
+    last_spin_indices = np.clip(last_spin_indices, 0, len(spin_df) - 1)
 
-        if mask.any():
-            # Get the last spin before or at the query time
-            last_spin = spin_df[mask].iloc[-1]
-            # Calculate spin phase using the formula
-            spin_phases[i] = (data_time - last_spin["spin_start_time"]) / last_spin[
-                "spin_period_sec"
-            ]
-        else:
-            raise ValueError(f"No spin data found for this data time: {data_time}")
+    # Calculate spin phase
+    spin_phases = (
+        query_met_times - spin_df["spin_start_time"].values[last_spin_indices]
+    ) / spin_df["spin_period_sec"].values[last_spin_indices]
+
+    # Check for spin phase that are not valid spin phase.
+    # Right now, we are checking that the spin phase is between 0 and 1.
+    # TODO: filter out more invalid spin phase using spin_phase_valid,
+    # spin_period_valid columns.
+    invalid_spin_phase = (spin_phases < 0) | (spin_phases > 1)
+    spin_phases[invalid_spin_phase] = np.nan
+
+    if is_scalar:
+        return spin_phases[0]
     return spin_phases
