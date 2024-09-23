@@ -261,7 +261,7 @@ def populate_full_cycle_data(
             #   base_quarter_cycle_acq_time = acq_start_coarse +
             #                                 acq_start_fine / 1000000
             #   each_count_acq_time = base_quarter_cycle_acq_time +
-            #                         (step * acq_duration / 1000)
+            #                         (step * ( acq_duration + settle_duration) / 1000 )
             # where step goes from 0 to 179, acq_start_coarse is in seconds and
             # acq_start_fine is in microseconds and acq_duration is in milliseconds.
             base_quarter_cycle_acq_time = (
