@@ -15,10 +15,12 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 import pandas as pd
 import xarray as xr
+from numpy.typing import NDArray
 
 from imap_processing import imap_module_directory
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
@@ -110,15 +112,15 @@ class CoDICEL1aPipeline:
         """
         self.coords = {}
 
-        for name in self.coords_to_include:
+        for name in self.config["coords"]:
             if name == "epoch":
                 values = self.packet_dataset.epoch
             elif name == "inst_az":
-                values = np.arange(self.num_positions)
+                values = np.arange(self.config["num_positions"])
             elif name == "spin_sector":
-                values = np.arange(self.num_spin_sectors)
+                values = np.arange(self.config["num_spin_sectors"])
             elif name == "esa_step":
-                values = np.arange(self.num_energy_steps)
+                values = np.arange(self.config["num_energy_steps"])
             else:
                 # TODO: Need to implement other types of coords
                 continue
@@ -148,25 +150,26 @@ class CoDICEL1aPipeline:
         # Create the main dataset to hold all the variables
         dataset = xr.Dataset(
             coords=self.coords,
-            attrs=self.cdf_attrs.get_global_attributes(self.dataset_name),
+            attrs=self.cdf_attrs.get_global_attributes(self.config["dataset_name"]),
         )
 
         # Create a data variable for each counter
-        for variable_data, variable_name in zip(self.data, self.variable_names):
+        for variable_data, variable_name in zip(
+            self.data, self.config["variable_names"]
+        ):
             # Reshape to 4 dimensions to allow for epoch dimension
             reshaped_variable_data = np.expand_dims(variable_data, axis=0)
 
             # Get the CDF attributes
-            cdf_attrs_key = (
-                f"{self.dataset_name.split('imap_codice_l1a_')[-1]}-{variable_name}"
-            )
+            descriptor = self.config["dataset_name"].split("imap_codice_l1a_")[-1]
+            cdf_attrs_key = f"{descriptor}-{variable_name}"
             attrs = self.cdf_attrs.get_variable_attributes(cdf_attrs_key)
 
             # Create the CDF data variable
             dataset[variable_name] = xr.DataArray(
                 reshaped_variable_data,
                 name=variable_name,
-                dims=self.dims,
+                dims=self.config["dims"],
                 attrs=attrs,
             )
 
@@ -193,7 +196,7 @@ class CoDICEL1aPipeline:
         dataset : xarray.Dataset
             ``xarray`` dataset for the data product, with added support variables.
         """
-        for variable_name in self.support_variables:
+        for variable_name in self.config["support_variables"]:
             if variable_name == "energy_table":
                 variable_data = self.get_energy_table()
                 dims = ["esa_step"]
@@ -271,7 +274,7 @@ class CoDICEL1aPipeline:
 
         return acquisition_times
 
-    def get_energy_table(self) -> list[float]:
+    def get_energy_table(self) -> NDArray[float]:
         """
         Retrieve the ESA sweep values.
 
@@ -289,7 +292,7 @@ class CoDICEL1aPipeline:
 
         Returns
         -------
-        energy_table : list[float]
+        energy_table : NDArray[float]
             The list of ESA sweep values (i.e. voltage steps).
         """
         # Read in the ESA sweep data table
@@ -305,7 +308,7 @@ class CoDICEL1aPipeline:
 
         # Get the appropriate values
         sweep_table = sweep_data[sweep_data["table_idx"] == sweep_table_id]
-        energy_table: list[float] = sweep_table["esa_v"].values
+        energy_table: NDArray[float] = sweep_table["esa_v"].values
 
         return energy_table
 
@@ -320,25 +323,25 @@ class CoDICEL1aPipeline:
         """
         # For CoDICE-lo, data are a 3D arrays with a shape representing
         # [<num_positions>,<num_spin_sectors>,<num_energy_steps>]
-        if self.instrument == "lo":
+        if self.config["instrument"] == "lo":
             self.data = np.array(self.data, dtype=np.uint32).reshape(
                 (
-                    self.num_counters,
-                    self.num_positions,
-                    self.num_spin_sectors,
-                    self.num_energy_steps,
+                    self.config["num_counters"],
+                    self.config["num_positions"],
+                    self.config["num_spin_sectors"],
+                    self.config["num_energy_steps"],
                 )
             )
 
         # For CoDICE-hi, data are a 3D array with a shape representing
         # [<num_energy_steps>,<num_positions>,<num_spin_sectors>]
-        elif self.instrument == "hi":
+        elif self.config["instrument"] == "hi":
             self.data = np.array(self.data, dtype=np.uint32).reshape(
                 (
-                    self.num_counters,
-                    self.num_energy_steps,
-                    self.num_positions,
-                    self.num_spin_sectors,
+                    self.config["num_counters"],
+                    self.config["num_energy_steps"],
+                    self.config["num_positions"],
+                    self.config["num_spin_sectors"],
                 )
             )
 
@@ -357,20 +360,12 @@ class CoDICEL1aPipeline:
         data_version : str
             Version of the data product being created.
         """
+        # Set the packet dataset so that it can be easily called from various
+        # methods
         self.packet_dataset = packet
 
-        # Gather and set various configurations of the data product
-        config = constants.DATA_PRODUCT_CONFIGURATIONS.get(apid)  # type: ignore[call-overload]
-        self.coords_to_include = config["coords"]
-        self.dataset_name = config["dataset_name"]
-        self.dims = config["dims"]
-        self.instrument = config["instrument"]
-        self.num_counters = config["num_counters"]
-        self.num_energy_steps = config["num_energy_steps"]
-        self.num_positions = config["num_positions"]
-        self.num_spin_sectors = config["num_spin_sectors"]
-        self.support_variables = config["support_variables"]
-        self.variable_names = config["variable_names"]
+        # Set various configurations of the data product
+        self.config: dict[str, Any] = constants.DATA_PRODUCT_CONFIGURATIONS.get(apid)  # type: ignore[assignment]
 
         # Gather and set the CDF attributes
         self.cdf_attrs = ImapCdfAttributes()
@@ -400,9 +395,9 @@ def create_event_dataset(
         Xarray dataset containing the event data.
     """
     if apid == CODICEAPID.COD_LO_PHA:
-        dataset_name = "imap_codice_l1a_lo_pha"
+        dataset_name = "imap_codice_l1a_lo-pha"
     elif apid == CODICEAPID.COD_HI_PHA:
-        dataset_name = "imap_codice_l1a_hi_pha"
+        dataset_name = "imap_codice_l1a_hi-pha"
 
     # Extract the data
     # event_data = packet.event_data.data (Currently turned off, see TODO)

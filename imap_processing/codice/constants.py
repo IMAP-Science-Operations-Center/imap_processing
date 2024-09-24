@@ -34,13 +34,19 @@ APIDS_FOR_SCIENCE_PROCESSING = [
 
 
 # CDF-friendly names for lo data products
-LO_INST_COUNTS_AGGREGATED_NAMES = ["aggregated"]
-LO_INST_COUNTS_SINGLES_NAMES = ["apd_singles"]
-LO_SW_ANGULAR_NAMES = ["hplus", "heplusplus", "oplus6", "fe_loq"]
-LO_NSW_ANGULAR_NAMES = ["heplusplus"]
-LO_SW_PRIORITY_NAMES = ["p0_tcrs", "p1_hplus", "p2_heplusplus", "p3_heavies", "p4_dcrs"]
-LO_NSW_PRIORITY_NAMES = ["p5_heavies", "p6_hplus_heplusplus"]
-LO_SW_SPECIES_NAMES = [
+LO_INST_COUNTS_AGGREGATED_VARIABLE_NAMES = ["aggregated"]
+LO_INST_COUNTS_SINGLES_VARIABLE_NAMES = ["apd_singles"]
+LO_SW_ANGULAR_VARIABLE_NAMES = ["hplus", "heplusplus", "oplus6", "fe_loq"]
+LO_NSW_ANGULAR_VARIABLE_NAMES = ["heplusplus"]
+LO_SW_PRIORITY_VARIABLE_NAMES = [
+    "p0_tcrs",
+    "p1_hplus",
+    "p2_heplusplus",
+    "p3_heavies",
+    "p4_dcrs",
+]
+LO_NSW_PRIORITY_VARIABLE_NAMES = ["p5_heavies", "p6_hplus_heplusplus"]
+LO_SW_SPECIES_VARIABLE_NAMES = [
     "hplus",
     "heplusplus",
     "cplus4",
@@ -58,7 +64,7 @@ LO_SW_SPECIES_NAMES = [
     "heplus",
     "cnoplus",
 ]
-LO_NSW_SPECIES_NAMES = [
+LO_NSW_SPECIES_VARIABLE_NAMES = [
     "hplus",
     "heplusplus",
     "c",
@@ -70,10 +76,10 @@ LO_NSW_SPECIES_NAMES = [
 ]
 
 # CDF-friendly names for hi data products
-HI_INST_COUNTS_AGGREGATED_NAMES = ["aggregated"]
-HI_INST_COUNTS_SINGLES_NAMES = ["tcr", "ssdo", "stssd"]
-HI_OMNI_SPECIES_NAMES = ["h", "he3", "he4", "c", "o", "ne_mg_si", "fe", "uh"]
-HI_SECT_SPECIES_NAMES = ["h", "he3he4", "cno", "fe"]
+HI_INST_COUNTS_AGGREGATED_VARIABLE_NAMES = ["aggregated"]
+HI_INST_COUNTS_SINGLES_VARIABLE_NAMES = ["tcr", "ssdo", "stssd"]
+HI_OMNI_SPECIES_VARIABLE_NAMES = ["h", "he3", "he4", "c", "o", "ne_mg_si", "fe", "uh"]
+HI_SECT_SPECIES_VARIABLE_NAMES = ["h", "he3he4", "cno", "fe"]
 
 # TODO: Hi products shape should be energy x ssd index x spin sector (8*12*12)
 DATA_PRODUCT_CONFIGURATIONS = {
@@ -85,7 +91,7 @@ DATA_PRODUCT_CONFIGURATIONS = {
             "esa_step",
             "energy_label",
         ],  # TODO: These will likely change
-        "dataset_name": "imap_codice_l1a_hi_counters_aggregated",
+        "dataset_name": "imap_codice_l1a_hi-counters-aggregated",
         "dims": [
             "epoch",
             "esa_step",
@@ -98,7 +104,7 @@ DATA_PRODUCT_CONFIGURATIONS = {
         "num_positions": 6,  # TODO: Double check with Joey
         "num_spin_sectors": 1,
         "support_variables": [],  # TODO: Double check with Joey
-        "variable_names": HI_INST_COUNTS_AGGREGATED_NAMES,
+        "variable_names": HI_INST_COUNTS_AGGREGATED_VARIABLE_NAMES,
     },
     CODICEAPID.COD_HI_INST_COUNTS_SINGLES: {
         "coords": [
@@ -108,7 +114,7 @@ DATA_PRODUCT_CONFIGURATIONS = {
             "esa_step",
             "energy_label",
         ],  # TODO: These will likely change
-        "dataset_name": "imap_codice_l1a_hi_counters_singles",
+        "dataset_name": "imap_codice_l1a_hi-counters-singles",
         "dims": [
             "epoch",
             "esa_step",
@@ -121,7 +127,7 @@ DATA_PRODUCT_CONFIGURATIONS = {
         "num_positions": 16,  # TODO: Double check with Joey
         "num_spin_sectors": 1,
         "support_variables": [],  # No support variables for this one
-        "variable_names": HI_INST_COUNTS_SINGLES_NAMES,
+        "variable_names": HI_INST_COUNTS_SINGLES_VARIABLE_NAMES,
     },
     CODICEAPID.COD_HI_OMNI_SPECIES_COUNTS: {
         "coords": [
@@ -131,7 +137,7 @@ DATA_PRODUCT_CONFIGURATIONS = {
             "esa_step",
             "energy_label",
         ],  # TODO: These will likely change
-        "dataset_name": "imap_codice_l1a_hi_omni",
+        "dataset_name": "imap_codice_l1a_hi-omni",
         "dims": [
             "epoch",
             "esa_step",
@@ -144,7 +150,7 @@ DATA_PRODUCT_CONFIGURATIONS = {
         "num_positions": 4,  # TODO: Double check with Joey
         "num_spin_sectors": 1,
         "support_variables": ["data_quality", "spin_period"],
-        "variable_names": HI_OMNI_SPECIES_NAMES,
+        "variable_names": HI_OMNI_SPECIES_VARIABLE_NAMES,
     },
     CODICEAPID.COD_HI_SECT_SPECIES_COUNTS: {
         "coords": [
@@ -154,7 +160,7 @@ DATA_PRODUCT_CONFIGURATIONS = {
             "esa_step",
             "energy_label",
         ],  # TODO: These will likely change
-        "dataset_name": "imap_codice_l1a_hi_sectored",
+        "dataset_name": "imap_codice_l1a_hi-sectored",
         "dims": [
             "epoch",
             "esa_step",
@@ -167,7 +173,7 @@ DATA_PRODUCT_CONFIGURATIONS = {
         "num_positions": 12,
         "num_spin_sectors": 12,
         "support_variables": ["data_quality", "spin_period"],
-        "variable_names": HI_SECT_SPECIES_NAMES,
+        "variable_names": HI_SECT_SPECIES_VARIABLE_NAMES,
     },
     CODICEAPID.COD_LO_INST_COUNTS_AGGREGATED: {
         "coords": [
@@ -177,7 +183,7 @@ DATA_PRODUCT_CONFIGURATIONS = {
             "esa_step",
             "energy_label",
         ],  # TODO: These will likely change
-        "dataset_name": "imap_codice_l1a_lo_counters_aggregated",
+        "dataset_name": "imap_codice_l1a_lo-counters-aggregated",
         "dims": ["epoch", "inst_az", "spin_sector", "esa_step"],
         "instrument": "lo",
         "num_counters": 1,
@@ -188,7 +194,7 @@ DATA_PRODUCT_CONFIGURATIONS = {
             "energy_table",
             "acquisition_time_per_step",
         ],  # TODO: Double check with Joey
-        "variable_names": LO_INST_COUNTS_AGGREGATED_NAMES,
+        "variable_names": LO_INST_COUNTS_AGGREGATED_VARIABLE_NAMES,
     },
     CODICEAPID.COD_LO_INST_COUNTS_SINGLES: {
         "coords": [
@@ -198,7 +204,7 @@ DATA_PRODUCT_CONFIGURATIONS = {
             "esa_step",
             "energy_label",
         ],  # TODO: These will likely change
-        "dataset_name": "imap_codice_l1a_lo_counters_singles",
+        "dataset_name": "imap_codice_l1a_lo-counters-singles",
         "dims": ["epoch", "inst_az", "spin_sector", "esa_step"],
         "instrument": "lo",
         "num_counters": 1,
@@ -216,11 +222,11 @@ DATA_PRODUCT_CONFIGURATIONS = {
             "data_quality",
             "spin_period",
         ],
-        "variable_names": LO_INST_COUNTS_SINGLES_NAMES,
+        "variable_names": LO_INST_COUNTS_SINGLES_VARIABLE_NAMES,
     },
     CODICEAPID.COD_LO_SW_ANGULAR_COUNTS: {
         "coords": ["epoch", "inst_az", "spin_sector", "esa_step", "energy_label"],
-        "dataset_name": "imap_codice_l1a_lo_sw_angular",
+        "dataset_name": "imap_codice_l1a_lo-sw-angular",
         "dims": ["epoch", "inst_az", "spin_sector", "esa_step"],
         "instrument": "lo",
         "num_counters": 4,
@@ -237,11 +243,11 @@ DATA_PRODUCT_CONFIGURATIONS = {
             "data_quality",
             "spin_period",
         ],
-        "variable_names": LO_SW_ANGULAR_NAMES,
+        "variable_names": LO_SW_ANGULAR_VARIABLE_NAMES,
     },
     CODICEAPID.COD_LO_NSW_ANGULAR_COUNTS: {
         "coords": ["epoch", "inst_az", "spin_sector", "esa_step", "energy_label"],
-        "dataset_name": "imap_codice_l1a_lo_nsw_angular",
+        "dataset_name": "imap_codice_l1a_lo-nsw-angular",
         "dims": ["epoch", "inst_az", "spin_sector", "esa_step"],
         "instrument": "lo",
         "num_counters": 1,
@@ -258,11 +264,11 @@ DATA_PRODUCT_CONFIGURATIONS = {
             "data_quality",
             "spin_period",
         ],
-        "variable_names": LO_NSW_ANGULAR_NAMES,
+        "variable_names": LO_NSW_ANGULAR_VARIABLE_NAMES,
     },
     CODICEAPID.COD_LO_SW_PRIORITY_COUNTS: {
         "coords": ["epoch", "inst_az", "spin_sector", "esa_step", "energy_label"],
-        "dataset_name": "imap_codice_l1a_lo_sw_priority",
+        "dataset_name": "imap_codice_l1a_lo-sw-priority",
         "dims": ["epoch", "inst_az", "spin_sector", "esa_step"],
         "instrument": "lo",
         "num_counters": 5,
@@ -279,11 +285,11 @@ DATA_PRODUCT_CONFIGURATIONS = {
             "data_quality",
             "spin_period",
         ],
-        "variable_names": LO_SW_PRIORITY_NAMES,
+        "variable_names": LO_SW_PRIORITY_VARIABLE_NAMES,
     },
     CODICEAPID.COD_LO_NSW_PRIORITY_COUNTS: {
         "coords": ["epoch", "inst_az", "spin_sector", "esa_step", "energy_label"],
-        "dataset_name": "imap_codice_l1a_lo_nsw_priority",
+        "dataset_name": "imap_codice_l1a_lo-nsw-priority",
         "dims": ["epoch", "inst_az", "spin_sector", "esa_step"],
         "instrument": "lo",
         "num_counters": 2,
@@ -300,11 +306,11 @@ DATA_PRODUCT_CONFIGURATIONS = {
             "data_quality",
             "spin_period",
         ],
-        "variable_names": LO_NSW_PRIORITY_NAMES,
+        "variable_names": LO_NSW_PRIORITY_VARIABLE_NAMES,
     },
     CODICEAPID.COD_LO_SW_SPECIES_COUNTS: {
         "coords": ["epoch", "inst_az", "spin_sector", "esa_step", "energy_label"],
-        "dataset_name": "imap_codice_l1a_lo_sw_species",
+        "dataset_name": "imap_codice_l1a_lo-sw-species",
         "dims": ["epoch", "inst_az", "spin_sector", "esa_step"],
         "instrument": "lo",
         "num_counters": 16,
@@ -321,11 +327,11 @@ DATA_PRODUCT_CONFIGURATIONS = {
             "data_quality",
             "spin_period",
         ],
-        "variable_names": LO_SW_SPECIES_NAMES,
+        "variable_names": LO_SW_SPECIES_VARIABLE_NAMES,
     },
     CODICEAPID.COD_LO_NSW_SPECIES_COUNTS: {
         "coords": ["epoch", "inst_az", "spin_sector", "esa_step", "energy_label"],
-        "dataset_name": "imap_codice_l1a_lo_nsw_species",
+        "dataset_name": "imap_codice_l1a_lo-nsw-species",
         "dims": ["epoch", "inst_az", "spin_sector", "esa_step"],
         "instrument": "lo",
         "num_counters": 8,
@@ -342,7 +348,7 @@ DATA_PRODUCT_CONFIGURATIONS = {
             "data_quality",
             "spin_period",
         ],
-        "variable_names": LO_NSW_SPECIES_NAMES,
+        "variable_names": LO_NSW_SPECIES_VARIABLE_NAMES,
     },
 }
 
