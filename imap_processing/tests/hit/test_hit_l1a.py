@@ -16,7 +16,9 @@ from imap_processing.utils import packet_file_to_datasets
 @pytest.fixture(scope="module")
 def packet_filepath():
     """Set path to test data file"""
-    return imap_module_directory / "tests/hit/test_data/hskp_sample.ccsds"
+    return (
+        imap_module_directory / "tests/hit/test_data/imap_hit_l0_hk_20100105_v001.pkts"
+    )
 
 
 @pytest.fixture(scope="module")
