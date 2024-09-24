@@ -31,13 +31,13 @@ default_uint32_attrs: &default_uint32
   VALIDMAX: 4294967295
   dtype: uint32
 
-default_uint64_attrs: &default_uint64
+default_int64_attrs: &default_int64
   <<: *default
   FILLVAL: 18446744073709551615
   FORMAT: I20
   VALIDMIN: 0
   VALIDMAX: 18446744073709551615
-  dtype: uint64
+  dtype: int64
 
 default_int32_attrs: &default_int32
   <<: *default
@@ -91,7 +91,7 @@ hi_de_esa_stepping_num:
   <<: *hi_esa_stepping_num
 
 hi_de_event_met:
-  <<: *default_uint64
+  <<: *default_int64
   CATDESC: Mission Elapsed Time (MET) of Direct Event
   DISPLAY_TYPE: no_plot
   FIELDNAM: Time since (TODO - what is the def of MET?)
@@ -101,7 +101,7 @@ hi_de_event_met:
   SCALE_TYP: linear
 
 hi_de_meta_event_met:
-  <<: *default_uint64
+  <<: *default_int64
   CATDESC: Mission elapsed time (MET) of last meta-event
   DISPLAY_TYPE: no_plot
   FIELDNAM: Meta-event Mission Elapsed Time
@@ -111,7 +111,7 @@ hi_de_meta_event_met:
   VALIDMAX: 4294967295
   VAR_TYPE: support_data
   SCALE_TYP: linear
-  dtype: uint64
+  dtype: int64
 
 hi_de_trigger_id:
   <<: *default_uint8
