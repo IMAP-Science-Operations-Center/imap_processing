@@ -365,7 +365,7 @@ class CoDICEL1aPipeline:
         self.packet_dataset = packet
 
         # Set various configurations of the data product
-        self.config: dict[str, Any] = constants.DATA_PRODUCT_CONFIGURATIONS.get(apid)  # type: ignore[assignment]
+        self.config: dict[str, Any] = constants.DATA_PRODUCT_CONFIGURATIONS.get(apid)  # type: ignore
 
         # Gather and set the CDF attributes
         self.cdf_attrs = ImapCdfAttributes()
