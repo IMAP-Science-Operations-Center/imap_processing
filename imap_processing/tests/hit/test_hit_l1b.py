@@ -11,7 +11,9 @@ from imap_processing.hit.l1b import hit_l1b
 def dependency():
     """Get L1A data from test packet file"""
 
-    packet_filepath = imap_module_directory / "tests/hit/test_data/hskp_sample.ccsds"
+    packet_filepath = (
+        imap_module_directory / "tests/hit/test_data/imap_hit_l0_hk_20100105_v001.pkts"
+    )
     l1a_data = hit_l1a.hit_l1a(packet_filepath, "001")[0]
 
     return l1a_data
