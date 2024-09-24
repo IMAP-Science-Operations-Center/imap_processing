@@ -189,12 +189,24 @@ def get_spacecraft_spin_phase(
         query_met_times - spin_df["spin_start_time"].values[last_spin_indices]
     ) / spin_df["spin_period_sec"].values[last_spin_indices]
 
-    # Check for spin phase that are not valid spin phase.
-    # Right now, we are checking that the spin phase is between 0 and 1.
-    # TODO: filter out more invalid spin phase using spin_phase_valid,
-    # spin_period_valid columns.
-    invalid_spin_phase = (spin_phases < 0) | (spin_phases > 1)
-    spin_phases[invalid_spin_phase] = np.nan
+    # Check for invalid spin phase using below checks:
+    # 1. Check that the spin period is valid. To do that, calculate the
+    #   time difference between the query_met_times and the spin start time.
+    #   Check that the time difference is within the spin period.
+    # 2. Check that the spin phase is valid range, [0, 1].
+    # 3. Check invalid spin phase using spin_phase_valid,
+    #   spin_period_valid columns.
+    time_diff = query_met_times - spin_df["spin_start_time"].values[last_spin_indices]
+    invalid_spin_period = (
+        time_diff > spin_df["spin_period_valid"].values[last_spin_indices]
+    )
+    invalid_spin_phase_range = (spin_phases < 0) | (spin_phases > 1)
+
+    invalid_spins = (spin_df["spin_phase_valid"].values[last_spin_indices] == 0) | (
+        spin_df["spin_period_valid"].values[last_spin_indices] == 0
+    )
+    bad_spin_phases = invalid_spin_period | invalid_spin_phase_range | invalid_spins
+    spin_phases[bad_spin_phases] = np.nan
 
     if is_scalar:
         return spin_phases[0]
