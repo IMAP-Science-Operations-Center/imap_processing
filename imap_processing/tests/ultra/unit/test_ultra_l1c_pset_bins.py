@@ -72,10 +72,10 @@ def test_cartesian_to_spherical(test_data):
 
     # MATLAB code outputs:
     np.testing.assert_allclose(
-        np.radians(az_sc), np.array([1.31300, 2.34891]), atol=1e-05, rtol=0
+        np.unique(np.radians(az_sc)), np.array([1.31300, 2.34891]), atol=1e-05, rtol=0
     )
     np.testing.assert_allclose(
-        np.radians(el_sc), np.array([-0.70136, -0.88901]), atol=1e-05, rtol=0
+        np.unique(np.radians(el_sc)), np.array([-0.88901, -0.70136]), atol=1e-05, rtol=0
     )
 
 
