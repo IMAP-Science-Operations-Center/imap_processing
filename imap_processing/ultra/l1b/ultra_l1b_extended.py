@@ -645,9 +645,38 @@ def get_energy_ssd(de_dataset: xarray.Dataset, ssd: np.ndarray) -> NDArray[np.fl
     return energy_norm
 
 
+def get_ctof(tof: np.ndarray, r: np.ndarray) -> NDArray:
+    """
+    Calculate the corrected TOF.
+
+    The corrected TOF (ctof) is the TOF normalized with respect
+    to a fixed distance dmin between the front and back detectors.
+    The normalized TOF is termed the corrected TOF (ctof).
+    Further description is available on pages 42-44 of
+    IMAP-Ultra Flight Software Specification document
+    (7523-9009_Rev_-.pdf).
+
+    Parameters
+    ----------
+    tof : np.ndarray
+        Time of flight (tenths of a nanosecond).
+    r : np.ndarray
+        Path length (hundredths of a millimeter).
+
+    Returns
+    -------
+    ctof : np.ndarray
+        Corrected TOF (tenths of a ns).
+    """
+    # Multiply times 100 to convert to hundredths of a millimeter.
+    ctof = tof * UltraConstants.DMIN * 100 / r
+
+    return ctof
+
+
 def determine_species_pulse_height(
     energy: np.ndarray, tof: np.ndarray, r: np.ndarray
-) -> tuple[np.ndarray, np.ndarray]:
+) -> NDArray:
     """
     Determine the species for pulse-height events.
 
@@ -673,25 +702,22 @@ def determine_species_pulse_height(
 
     Returns
     -------
-    ctof : np.array
-        Corrected TOF.
     bin : np.array
         Species bin.
     """
     # PH event TOF normalization to Z axis
-    # Multiply times 100 to convert to hundredths of a millimeter.
-    ctof = tof * UltraConstants.DMIN * 100 / r  # (tenths of a ns)
+    ctof = get_ctof(tof, r)
     # TODO: need lookup tables
     # placeholder
     bin = np.zeros(len(ctof))
     # bin = PHxTOFSpecies[ctof, energy]
 
-    return ctof, bin
+    return bin
 
 
 def determine_species_ssd(
     energy: np.ndarray, tof: np.ndarray, r: np.ndarray
-) -> tuple[np.ndarray, np.ndarray]:
+) -> NDArray:
     """
     Determine the species for SSD events.
 
@@ -719,14 +745,11 @@ def determine_species_ssd(
 
     Returns
     -------
-    ctof : np.ndarray
-        Corrected TOF.
     bin : np.ndarray
         Species bin.
     """
     # SSD event TOF normalization to Z axis
-    # Multiply times 100 to convert to hundredths of a millimeter.
-    ctof = tof * UltraConstants.DMIN_SSD_CTOF * 100 / r  # (tenths of a ns)
+    ctof = get_ctof(tof, r)
 
     bin = np.zeros(len(ctof))  # placeholder
 
@@ -738,4 +761,4 @@ def determine_species_ssd(
     # else:
     #     # bin = ExTOFSpeciesFlat[energy, ctof]
 
-    return ctof, bin
+    return bin

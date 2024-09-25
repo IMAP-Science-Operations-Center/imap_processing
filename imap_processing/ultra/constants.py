@@ -10,11 +10,6 @@ class UltraConstants:
 
     Attributes
     ----------
-    SUBSECOND_LIMIT: int
-        Subsecond limit for GLOWS clock (and consequently also onboard-interpolated
-        IMAP clock)
-    SCAN_CIRCLE_ANGULAR_RADIUS: float
-        Angular radius of IMAP/GLOWS scanning circle [deg]
     D_SLIT_FOIL: float
         Shortest distance from slit to foil [mm]
     SLIT_Z: float
@@ -40,9 +35,6 @@ class UltraConstants:
     DMIN_SSD_CTOF: float
         SSD-specific correction to DMIN for time-of-flight normalization
     """
-
-    SUBSECOND_LIMIT: int = 2_000_000
-    SCAN_CIRCLE_ANGULAR_RADIUS: float = 75.0
 
     D_SLIT_FOIL: float = 3.39
     SLIT_Z: float = 44.89
