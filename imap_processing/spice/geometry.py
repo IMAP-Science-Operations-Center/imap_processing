@@ -202,7 +202,7 @@ def get_spacecraft_spin_phase(
     # 1. Check that the spin phase is in valid range, [0, 1].
     # 2. Check invalid spin phase using spin_phase_valid,
     #   spin_period_valid columns.
-    invalid_spin_phase_range = (spin_phases < 0) | (spin_phases > 1)
+    invalid_spin_phase_range = (spin_phases < 0) | (spin_phases >= 1)
 
     invalid_spins = (spin_df["spin_phase_valid"].values[last_spin_indices] == 0) | (
         spin_df["spin_period_valid"].values[last_spin_indices] == 0
