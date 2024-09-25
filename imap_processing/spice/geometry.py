@@ -220,24 +220,24 @@ def get_spacecraft_spin_phase(
 @typing.no_type_check
 @ensure_spice
 def frame_transform(
-    from_frame: SpiceFrame,
-    to_frame: SpiceFrame,
     et: Union[float, npt.NDArray],
     position: npt.NDArray,
+    from_frame: SpiceFrame,
+    to_frame: SpiceFrame,
 ) -> npt.NDArray:
     """
     Transform an <x, y, z> vector between reference frames (rotation only).
 
     Parameters
     ----------
-    from_frame : SpiceFrame
-        Reference frame of input vector(s).
-    to_frame : SpiceFrame
-        Reference frame of output vector(s).
     et : float or npt.NDArray
         Ephemeris time(s) corresponding to position(s).
     position : npt.NDArray
         <x, y, z> vector or array of vectors in reference frame `from_frame`.
+    from_frame : SpiceFrame
+        Reference frame of input vector(s).
+    to_frame : SpiceFrame
+        Reference frame of output vector(s).
 
     Returns
     -------
@@ -267,7 +267,7 @@ def frame_transform(
 
     # rotate will have shape = (3, 3) or (n, 3, 3)
     # position will have shape = (3,) or (n, 3)
-    rotate = get_rotation_matrix(from_frame, to_frame, et)
+    rotate = get_rotation_matrix(et, from_frame, to_frame)
     # adding a dimension to position results in the following input and output
     # shapes from matrix multiplication
     # Single et/position:      (3, 3),(3, 1) -> (3, 1)
@@ -278,7 +278,9 @@ def frame_transform(
 
 
 def get_rotation_matrix(
-    from_frame: SpiceFrame, to_frame: SpiceFrame, et: Union[float, npt.NDArray]
+    et: Union[float, npt.NDArray],
+    from_frame: SpiceFrame,
+    to_frame: SpiceFrame,
 ) -> npt.NDArray:
     """
     Get the rotation matrix/matrices that can be used to transform between frames.
@@ -290,12 +292,12 @@ def get_rotation_matrix(
 
     Parameters
     ----------
+    et : float or npt.NDArray
+        Ephemeris time(s) for which to get the rotation matrices.
     from_frame : SpiceFrame
         Reference frame to transform from.
     to_frame : SpiceFrame
         Reference frame to transform to.
-    et : float or npt.NDArray
-        Ephemeris time(s) for which to get the rotation matrices.
 
     Returns
     -------

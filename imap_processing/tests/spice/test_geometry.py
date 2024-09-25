@@ -128,7 +128,7 @@ def test_frame_transform(furnish_kernels):
         et_0 = spice.utc2et("2025-04-30T12:00:00.000")
         position = np.arange(3) + 1
         result_0 = frame_transform(
-            SpiceFrame.IMAP_ULTRA_45, SpiceFrame.IMAP_DPS, et_0, position
+            et_0, position, SpiceFrame.IMAP_ULTRA_45, SpiceFrame.IMAP_DPS
         )
         # compare against pure SPICE calculation
         rotation_matrix = spice.pxform(
@@ -141,10 +141,7 @@ def test_frame_transform(furnish_kernels):
         ets = np.array([et_0, et_0 + 10])
         positions = np.array([[1, 1, 1], [1, 2, 3]])
         vec_result = frame_transform(
-            SpiceFrame.IMAP_HI_90,
-            SpiceFrame.IMAP_DPS,
-            ets,
-            positions,
+            ets, positions, SpiceFrame.IMAP_HI_90, SpiceFrame.IMAP_DPS
         )
 
         assert vec_result.shape == (2, 3)
@@ -163,34 +160,34 @@ def test_frame_transform_exceptions():
         ValueError, match="Position vectors with one dimension must have 3 elements."
     ):
         frame_transform(
-            SpiceFrame.IMAP_SPACECRAFT, SpiceFrame.IMAP_CODICE, 0, np.arange(4)
+            0, np.arange(4), SpiceFrame.IMAP_SPACECRAFT, SpiceFrame.IMAP_CODICE
         )
     with pytest.raises(
         ValueError,
         match="Ephemeris time must be float when single position vector is provided.",
     ):
         frame_transform(
-            SpiceFrame.ECLIPJ2000,
-            SpiceFrame.IMAP_HIT,
             np.asarray(0),
             np.array([1, 0, 0]),
+            SpiceFrame.ECLIPJ2000,
+            SpiceFrame.IMAP_HIT,
         )
     with pytest.raises(ValueError, match="Invalid position shape: "):
         frame_transform(
-            SpiceFrame.ECLIPJ2000,
-            SpiceFrame.IMAP_HIT,
             np.arange(2),
             np.arange(4).reshape((2, 2)),
+            SpiceFrame.ECLIPJ2000,
+            SpiceFrame.IMAP_HIT,
         )
     with pytest.raises(
         ValueError,
         match="Mismatch in number of position vectors and Ephemeris times provided.",
     ):
         frame_transform(
-            SpiceFrame.ECLIPJ2000,
-            SpiceFrame.IMAP_HIT,
             np.arange(2),
             np.arange(9).reshape((3, 3)),
+            SpiceFrame.ECLIPJ2000,
+            SpiceFrame.IMAP_HIT,
         )
 
 
@@ -207,11 +204,11 @@ def test_get_rotation_matrix(furnish_kernels):
         et = spice.utc2et("2025-09-30T12:00:00.000")
         # test input of float
         rotation = get_rotation_matrix(
-            SpiceFrame.IMAP_IDEX, SpiceFrame.IMAP_SPACECRAFT, et
+            et, SpiceFrame.IMAP_IDEX, SpiceFrame.IMAP_SPACECRAFT
         )
         assert rotation.shape == (3, 3)
         # test array of et input
         rotation = get_rotation_matrix(
-            SpiceFrame.IMAP_IDEX, SpiceFrame.IMAP_SPACECRAFT, np.arange(10) + et
+            np.arange(10) + et, SpiceFrame.IMAP_IDEX, SpiceFrame.IMAP_SPACECRAFT
         )
         assert rotation.shape == (10, 3, 3)
