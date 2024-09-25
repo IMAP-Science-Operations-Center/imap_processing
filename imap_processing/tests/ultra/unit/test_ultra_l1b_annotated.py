@@ -4,6 +4,7 @@ import numpy as np
 import pytest
 import spiceypy as spice
 
+from imap_processing.spice.geometry import SpiceFrame
 from imap_processing.ultra.l1b.ultra_l1b_annotated import get_particle_velocity
 
 
@@ -27,10 +28,9 @@ def test_get_particle_velocity(spice_test_data_path, kernels):
     """Tests get_particle_velocity function."""
     spice.furnsh(kernels)
 
-    id_imap_dps = spice.gipool("FRAME_IMAP_DPS", 0, 1)
     pointing_cover = spice.ckcov(
         str(spice_test_data_path / "sim_1yr_imap_pointing_frame.bc"),
-        int(id_imap_dps),
+        SpiceFrame.IMAP_DPS.value,
         True,
         "SEGMENT",
         0,
@@ -43,8 +43,12 @@ def test_get_particle_velocity(spice_test_data_path, kernels):
 
     instrument_velocity = np.array([[41.18609, -471.24467, -832.8784]])
 
-    velocity_45 = get_particle_velocity(times, instrument_velocity, "IMAP_ULTRA_45")
-    velocity_90 = get_particle_velocity(times, instrument_velocity, "IMAP_ULTRA_90")
+    velocity_45 = get_particle_velocity(
+        times, instrument_velocity, SpiceFrame.IMAP_ULTRA_45, SpiceFrame.IMAP_DPS
+    )
+    velocity_90 = get_particle_velocity(
+        times, instrument_velocity, SpiceFrame.IMAP_ULTRA_90, SpiceFrame.IMAP_DPS
+    )
 
     # Compute the magnitude of the velocity vectors in both frames
     magnitude_45 = np.linalg.norm(velocity_45[0])

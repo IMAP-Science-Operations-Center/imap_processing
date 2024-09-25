@@ -6,6 +6,7 @@ import numpy as np
 import spiceypy as spice
 from numpy.typing import NDArray
 
+from imap_processing.spice.geometry import SpiceFrame
 from imap_processing.spice.kernels import ensure_spice
 
 
@@ -14,7 +15,8 @@ from imap_processing.spice.kernels import ensure_spice
 def get_particle_velocity(
     time: np.ndarray,
     instrument_velocity: np.ndarray,
-    instrument_frame: str,
+    instrument_frame: SpiceFrame,
+    pointing_frame: SpiceFrame,
 ) -> NDArray[np.float64]:
     """
     Get the particle velocity in the pointing (DPS) frame wrt the spacecraft.
@@ -25,8 +27,10 @@ def get_particle_velocity(
         Ephemeris time.
     instrument_velocity : np.ndarray
         Particle velocity in the instrument frame.
-    instrument_frame : str
+    instrument_frame : SpiceFrame
         Instrument frame.
+    pointing_frame : SpiceFrame
+        Pointing frame.
 
     Returns
     -------
@@ -43,7 +47,7 @@ def get_particle_velocity(
     for index in range(len(time)):
         # Get and apply the rotation matrix to the particle velocity.
         spacecraft_velocity[index] = spice.mxv(
-            spice.pxform(instrument_frame, "IMAP_DPS", time[index]),
+            spice.pxform(instrument_frame.name, pointing_frame.name, time[index]),
             instrument_velocity[index],
         )
 
