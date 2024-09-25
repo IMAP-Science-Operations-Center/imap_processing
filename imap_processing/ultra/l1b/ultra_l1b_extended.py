@@ -267,16 +267,16 @@ def get_path_length(front_position: tuple, back_position: tuple, d: float) -> fl
 
     Returns
     -------
-    r : float
-        Path length (hundredths of a millimeter).
+    path_length : float
+        Path length (r) (hundredths of a millimeter).
     """
-    r: float = np.sqrt(
+    path_length: float = np.sqrt(
         (front_position[0] - back_position[0]) ** 2
         + (front_position[1] - back_position[1]) ** 2
         + (d) ** 2
     )
 
-    return r
+    return path_length
 
 
 def get_ssd_back_position_and_tof_offset(
@@ -645,7 +645,7 @@ def get_energy_ssd(de_dataset: xarray.Dataset, ssd: np.ndarray) -> NDArray[np.fl
     return energy_norm
 
 
-def get_ctof(tof: np.ndarray, r: np.ndarray) -> NDArray:
+def get_ctof(tof: np.ndarray, path_length: np.ndarray) -> NDArray:
     """
     Calculate the corrected TOF.
 
@@ -660,8 +660,8 @@ def get_ctof(tof: np.ndarray, r: np.ndarray) -> NDArray:
     ----------
     tof : np.ndarray
         Time of flight (tenths of a nanosecond).
-    r : np.ndarray
-        Path length (hundredths of a millimeter).
+    path_length : np.ndarray
+        Path length (r) (hundredths of a millimeter).
 
     Returns
     -------
@@ -669,13 +669,13 @@ def get_ctof(tof: np.ndarray, r: np.ndarray) -> NDArray:
         Corrected TOF (tenths of a ns).
     """
     # Multiply times 100 to convert to hundredths of a millimeter.
-    ctof = tof * UltraConstants.DMIN * 100 / r
+    ctof = tof * UltraConstants.DMIN * 100 / path_length
 
     return ctof
 
 
 def determine_species_pulse_height(
-    energy: np.ndarray, tof: np.ndarray, r: np.ndarray
+    energy: np.ndarray, tof: np.ndarray, path_length: np.ndarray
 ) -> NDArray:
     """
     Determine the species for pulse-height events.
@@ -697,8 +697,8 @@ def determine_species_pulse_height(
         Energy from the SSD event (keV).
     tof : np.ndarray
         Time of flight of the SSD event (tenths of a nanosecond).
-    r : np.ndarray
-        Path length (hundredths of a millimeter).
+    path_length : np.ndarray
+        Path length (r) (hundredths of a millimeter).
 
     Returns
     -------
@@ -706,7 +706,7 @@ def determine_species_pulse_height(
         Species bin.
     """
     # PH event TOF normalization to Z axis
-    ctof = get_ctof(tof, r)
+    ctof = get_ctof(tof, path_length)
     # TODO: need lookup tables
     # placeholder
     bin = np.zeros(len(ctof))
@@ -716,7 +716,7 @@ def determine_species_pulse_height(
 
 
 def determine_species_ssd(
-    energy: np.ndarray, tof: np.ndarray, r: np.ndarray
+    energy: np.ndarray, tof: np.ndarray, path_length: np.ndarray
 ) -> NDArray:
     """
     Determine the species for SSD events.
@@ -740,8 +740,8 @@ def determine_species_ssd(
         Energy from the SSD event (keV).
     tof : np.ndarray
         Time of flight of the SSD event (tenths of a nanosecond).
-    r : np.ndarray
-        Path length (hundredths of a millimeter).
+    path_length : np.ndarray
+        Path length (r) (hundredths of a millimeter).
 
     Returns
     -------
@@ -749,7 +749,7 @@ def determine_species_ssd(
         Species bin.
     """
     # SSD event TOF normalization to Z axis
-    ctof = get_ctof(tof, r)
+    ctof = get_ctof(tof, path_length)
 
     bin = np.zeros(len(ctof))  # placeholder
 
