@@ -9,6 +9,7 @@ import xarray
 from numpy import ndarray
 from numpy.typing import NDArray
 
+from imap_processing.ultra.constants import UltraConstants
 from imap_processing.ultra.l1b.lookup_utils import (
     get_back_position,
     get_energy_norm,
@@ -18,16 +19,6 @@ from imap_processing.ultra.l1b.lookup_utils import (
 )
 
 logger = logging.getLogger(__name__)
-
-# Constants in IMAP-Ultra Flight Software Specification document.
-D_SLIT_FOIL = 3.39  # shortest distance from slit to foil (mm)
-SLIT_Z = 44.89  # position of slit on Z axis (mm)
-YF_ESTIMATE_LEFT = 40.0  # front position of particle for left shutter (mm)
-YF_ESTIMATE_RIGHT = -40  # front position of particle for right shutter (mm)
-N_ELEMENTS = 256  # number of elements in lookup table
-TRIG_CONSTANT = 81.92  # trigonometric constant (mm)
-# TODO: make lookup tables into config files.
-# TODO: put logic from Ultra FSW in here.
 
 
 class StartType(Enum):
@@ -119,29 +110,35 @@ def get_front_y_position(start_type: ndarray, yb: ndarray) -> tuple[ndarray, nda
 
     # Compute adjustments for left start type
     dy_lut_left = np.floor(
-        (YF_ESTIMATE_LEFT - yb[index_left] / 100) * N_ELEMENTS / TRIG_CONSTANT + 0.5
+        (UltraConstants.YF_ESTIMATE_LEFT - yb[index_left] / 100)
+        * UltraConstants.N_ELEMENTS
+        / UltraConstants.TRIG_CONSTANT
+        + 0.5
     )
     # y adjustment in mm
     y_adjust_left = get_y_adjust(dy_lut_left) / 100
     # hundredths of a millimeter
-    yf[index_left] = (YF_ESTIMATE_LEFT - y_adjust_left) * 100
+    yf[index_left] = (UltraConstants.YF_ESTIMATE_LEFT - y_adjust_left) * 100
     # distance adjustment in mm
-    distance_adjust_left = np.sqrt(2) * D_SLIT_FOIL - y_adjust_left
+    distance_adjust_left = np.sqrt(2) * UltraConstants.D_SLIT_FOIL - y_adjust_left
     # hundredths of a millimeter
-    d[index_left] = (SLIT_Z - distance_adjust_left) * 100
+    d[index_left] = (UltraConstants.SLIT_Z - distance_adjust_left) * 100
 
     # Compute adjustments for right start type
     dy_lut_right = np.floor(
-        (yb[index_right] / 100 - YF_ESTIMATE_RIGHT) * N_ELEMENTS / TRIG_CONSTANT + 0.5
+        (yb[index_right] / 100 - UltraConstants.YF_ESTIMATE_RIGHT)
+        * UltraConstants.N_ELEMENTS
+        / UltraConstants.TRIG_CONSTANT
+        + 0.5
     )
     # y adjustment in mm
     y_adjust_right = get_y_adjust(dy_lut_right) / 100
     # hundredths of a millimeter
-    yf[index_right] = (YF_ESTIMATE_RIGHT + y_adjust_right) * 100
+    yf[index_right] = (UltraConstants.YF_ESTIMATE_RIGHT + y_adjust_right) * 100
     # distance adjustment in mm
-    distance_adjust_right = np.sqrt(2) * D_SLIT_FOIL - y_adjust_right
+    distance_adjust_right = np.sqrt(2) * UltraConstants.D_SLIT_FOIL - y_adjust_right
     # hundredths of a millimeter
-    d[index_right] = (SLIT_Z - distance_adjust_right) * 100
+    d[index_right] = (UltraConstants.SLIT_Z - distance_adjust_right) * 100
 
     return np.array(d), np.array(yf)
 
@@ -628,22 +625,19 @@ def get_energy_ssd(de_dataset: xarray.Dataset, ssd: np.ndarray) -> NDArray[np.fl
     energy_norm : np.ndarray
         Energy measured using the SSD.
     """
-    # DN threshold for composite energy.
-    composite_energy_threshold = 1707
-
     ssd_indices = np.where(de_dataset["STOP_TYPE"].data >= 8)[0]
     energy = de_dataset["ENERGY_PH"].data[ssd_indices]
 
     composite_energy = np.empty(len(energy), dtype=np.float64)
 
-    composite_energy[energy >= composite_energy_threshold] = (
-        composite_energy_threshold
+    composite_energy[energy >= UltraConstants.COMPOSITE_ENERGY_THRESHOLD] = (
+        UltraConstants.COMPOSITE_ENERGY_THRESHOLD
         + de_dataset["PULSE_WIDTH"].data[ssd_indices][
-            energy >= composite_energy_threshold
+            energy >= UltraConstants.COMPOSITE_ENERGY_THRESHOLD
         ]
     )
-    composite_energy[energy < composite_energy_threshold] = energy[
-        energy < composite_energy_threshold
+    composite_energy[energy < UltraConstants.COMPOSITE_ENERGY_THRESHOLD] = energy[
+        energy < UltraConstants.COMPOSITE_ENERGY_THRESHOLD
     ]
 
     energy_norm = get_energy_norm(ssd, composite_energy)
@@ -684,15 +678,9 @@ def determine_species_pulse_height(
     bin : np.array
         Species bin.
     """
-    z_dstop = 2.6 / 2  # position of stop foil on Z axis (mm)
-    z_ds = 46.19 - z_dstop  # position of slit on Z axis (mm)
-    df = 3.39  # distance from slit to foil (mm)
-
     # PH event TOF normalization to Z axis
-    dmin = z_ds - np.sqrt(2) * df  # (mm)
-
     # Multiply times 100 to convert to hundredths of a millimeter.
-    ctof = tof * dmin * 100 / r  # (tenths of a ns)
+    ctof = tof * UltraConstants.DMIN * 100 / r  # (tenths of a ns)
     # TODO: need lookup tables
     # placeholder
     bin = np.zeros(len(ctof))
@@ -736,15 +724,9 @@ def determine_species_ssd(
     bin : np.ndarray
         Species bin.
     """
-    z_dstop = 2.6 / 2  # position of stop foil on Z axis (mm)
-    z_ds = 46.19 - z_dstop  # position of slit on Z axis (mm)
-    df = 3.39  # distance from slit to foil (mm)
-
     # SSD event TOF normalization to Z axis
-    dmin = z_ds - np.sqrt(2) * df  # (mm)
-    dmin_ssd_ctof = dmin**2 / (dmin - z_dstop)  # (mm)
     # Multiply times 100 to convert to hundredths of a millimeter.
-    ctof = tof * dmin_ssd_ctof * 100 / r  # (tenths of a ns)
+    ctof = tof * UltraConstants.DMIN_SSD_CTOF * 100 / r  # (tenths of a ns)
 
     bin = np.zeros(len(ctof))  # placeholder
 
