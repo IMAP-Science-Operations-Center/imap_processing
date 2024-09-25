@@ -110,6 +110,29 @@ def cartesian_to_spherical(
     return np.degrees(az), np.degrees(el), r
 
 
+def extract_non_zero_indices_and_counts(
+    hist: np.ndarray,
+) -> tuple[np.ndarray, np.ndarray]:
+    """
+    Extract indices and counts of non-zero elements from a histogram.
+
+    Parameters
+    ----------
+    hist : np.ndarray
+        3D histogram with counts for azimuth, elevation, and energy bins.
+
+    Returns
+    -------
+    non_zero_indices : np.ndarray
+        Array of indices of non-zero elements in the 3D histogram.
+    non_zero_counts : np.ndarray
+        Array of non-zero counts from the 3D histogram.
+    """
+    non_zero_indices = np.argwhere(hist > 0).T
+    non_zero_counts = hist[hist > 0]
+    return non_zero_indices, non_zero_counts
+
+
 def get_histogram(
     v: tuple[np.ndarray, np.ndarray, np.ndarray],
     energy: np.ndarray,
@@ -137,8 +160,6 @@ def get_histogram(
     -------
     hist : np.ndarray
         A 3D histogram array.
-    non_zero_counts : np.ndarray
-        An array of non-zero counts.
     """
     az, el, _ = cartesian_to_spherical(v)
 
@@ -147,16 +168,13 @@ def get_histogram(
         sample=(az, el, energy), bins=[az_bin_edges, el_bin_edges, energy_bin_edges]
     )
 
-    non_zero_counts = hist[hist > 0]
-
-    return hist, non_zero_counts
+    return hist
 
 
 def create_unique_identifiers(
     hist: np.ndarray,
     az_bin_midpoints: np.ndarray,
     el_bin_midpoints: np.ndarray,
-    non_zero_counts: np.ndarray,
 ) -> tuple:
     """
     Create unique identifiers for spatial bins and generate non-zero counts.
@@ -169,8 +187,6 @@ def create_unique_identifiers(
         Midpoints of the azimuth bins.
     el_bin_midpoints : np.ndarray
         Midpoints of the elevation bins.
-    non_zero_counts : np.ndarray
-        Counts of particles in each non-zero bin.
 
     Returns
     -------
@@ -181,16 +197,18 @@ def create_unique_identifiers(
     midpoints : tuple[np.ndarray, np.ndarray]
         Azimuth and elevation midpoints for the spatial bins.
     """
+    non_zero_indices, non_zero_counts = extract_non_zero_indices_and_counts(hist)
+
     # Extract the indices of all non-zero elements in the 3D hist array
-    az_bin_id, el_bin_id, energy_bin_id = np.argwhere(hist > 0).T
+    az_bin_id, el_bin_id, energy_bin_id = non_zero_indices
 
     # Unique identifier for spatial bins by combining azimuth and elevation indices
     bin_id = (np.unique(az_bin_id), np.unique(el_bin_id), np.unique(energy_bin_id))
 
     # Get unique azimuth and elevation midpoints
     midpoints = (
-        np.unique(az_bin_midpoints[az_bin_id]),
-        np.unique(el_bin_midpoints[el_bin_id]),
+        az_bin_midpoints[bin_id[0]],
+        el_bin_midpoints[bin_id[1]],
     )
 
     # Determine positions in unique coordinates for assigning counts
@@ -250,12 +268,12 @@ def bin_data(v: tuple[np.ndarray, np.ndarray, np.ndarray], energy: np.ndarray) -
     energy_bin_edges = build_energy_bins()
 
     # Compute the 3D histogram of the particle data
-    hist, non_zero_counts = get_histogram(
-        v, energy, az_bin_edges, el_bin_edges, energy_bin_edges
-    )
+    hist = get_histogram(v, energy, az_bin_edges, el_bin_edges, energy_bin_edges)
 
     # Get the starting edges for energy bins
     energy_bin_start = energy_bin_edges[:-1]
+
+    _, non_zero_counts = extract_non_zero_indices_and_counts(hist)
 
     # Create unique identifiers and map non-zero counts to 2D histogram array
     counts, bin_id, midpoints = create_unique_identifiers(

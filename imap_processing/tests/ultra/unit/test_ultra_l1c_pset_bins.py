@@ -9,6 +9,7 @@ from imap_processing.ultra.l1c.ultra_l1c_pset_bins import (
     build_spatial_bins,
     cartesian_to_spherical,
     create_unique_identifiers,
+    extract_non_zero_indices_and_counts,
     get_histogram,
 )
 
@@ -88,9 +89,8 @@ def test_get_histogram(test_data):
     )
     energy_bin_edges = build_energy_bins()
 
-    hist, non_zero_counts = get_histogram(
-        v, energy, az_bin_edges, el_bin_edges, energy_bin_edges
-    )
+    hist = get_histogram(v, energy, az_bin_edges, el_bin_edges, energy_bin_edges)
+    _, non_zero_counts = extract_non_zero_indices_and_counts(hist)
 
     assert hist.shape == (
         len(az_bin_edges) - 1,
@@ -123,9 +123,8 @@ def test_create_unique_identifiers(test_data):
     )
     energy_bin_edges = build_energy_bins()
 
-    hist, non_zero_counts = get_histogram(
-        v, energy, az_bin_edges, el_bin_edges, energy_bin_edges
-    )
+    hist = get_histogram(v, energy, az_bin_edges, el_bin_edges, energy_bin_edges)
+    _, non_zero_counts = extract_non_zero_indices_and_counts(hist)
 
     counts, bin_id, midpoints = create_unique_identifiers(
         hist, az_bin_midpoints, el_bin_midpoints, non_zero_counts
@@ -147,9 +146,7 @@ def test_bin_data(test_data):
     )
     energy_bin_edges = build_energy_bins()
 
-    hist, non_zero_counts = get_histogram(
-        v, energy, az_bin_edges, el_bin_edges, energy_bin_edges
-    )
+    hist = get_histogram(v, energy, az_bin_edges, el_bin_edges, energy_bin_edges)
 
     az_indices = bin_id[0]  # Attitude indices
     el_indices = bin_id[1]  # Elevation indices
@@ -161,3 +158,28 @@ def test_bin_data(test_data):
                 expected_count = hist[az_idx, el_idx, energy_idx]
                 actual_count = counts[i, j, k]
                 assert actual_count == expected_count
+
+
+def test_extract_non_zero_indices_and_counts():
+    """Tests extract_non_zero_indices_and_counts function."""
+    hist = np.array(
+        [
+            [[0, 0, 0], [1, 0, 2]],
+            [[0, 3, 0], [0, 0, 0]],
+        ]
+    )
+
+    expected_indices = np.array(
+        [
+            [0, 0, 1],
+            [0, 0, 2],
+            [1, 1, 0],
+        ]
+    ).T
+
+    expected_counts = np.array([1, 2, 3])
+
+    non_zero_indices, non_zero_counts = extract_non_zero_indices_and_counts(hist)
+
+    np.testing.assert_array_equal(non_zero_indices, expected_indices)
+    np.testing.assert_array_equal(non_zero_counts, expected_counts)
