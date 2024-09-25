@@ -37,23 +37,50 @@ def test_imap_state_ecliptic(use_test_metakernel):
 
 
 @pytest.mark.usefixtures("_set_spin_data_filepath")
-def test_get_spacecraft_spin_phase(generate_spin_data):
+@pytest.mark.parametrize(
+    "query_met_times, expected_type, expected_length",
+    [
+        (453051323.0, float, None),  # Scalar test
+        (np.array([453051323.0, 453051324.0]), float, 2),  # Array test
+        (np.array([]), None, 0),  # Empty array test
+        (np.array([453051323.0]), float, 1),  # Single element array test
+        # 452995203.0 is a midnight time which should have invalid spin
+        # phase and period flags on in the spin data file. The spin phase
+        # should be invalid.
+        (452995203.0, np.nan, None),
+        # Test that five minutes after midnight is also invalid since
+        # first 10 minutes after midnight are invalid.
+        (np.arange(452995203.0, 452995203.0 + 300), np.nan, 300),
+        (
+            [453011323.0],
+            np.nan,
+            1,
+        ),  # Test for spin phase that's outside of spin phase range
+        (
+            453011323.0,
+            np.nan,
+            None,
+        ),  # Test for spin phase that's outside of spin phase range
+    ],
+)
+def test_get_spacecraft_spin_phase(query_met_times, expected_type, expected_length):
     """Test get_spacecraft_spin_phase() with generated spin data."""
+    # Call the function
+    spin_phases = get_spacecraft_spin_phase(query_met_times=query_met_times)
 
-    start_time = 453051323.0
+    # Check the type of the result
+    if expected_type is np.nan:
+        assert np.isnan(spin_phases).all(), "Spin phase must be NaN."
+    elif isinstance(expected_type, float):
+        assert isinstance(spin_phases, float), "Spin phase must be a float."
 
-    spin_phases = get_spacecraft_spin_phase(query_met_times=start_time)
-
-    assert isinstance(spin_phases, float), "Spin phase must be a float."
-
-    start_time = np.array([453051323.0, 453051324.0])
-
-    spin_phases = get_spacecraft_spin_phase(query_met_times=start_time)
-
-    assert isinstance(spin_phases, np.ndarray), "Spin phase must be a numpy.ndarray."
-    assert (
-        len(spin_phases) == 2
-    ), "Spin phase must have the same length as query_met_times."
+    # If the expected length is None, it means we're testing a scalar
+    if expected_length is None:
+        assert isinstance(spin_phases, float), "Spin phase must be a float."
+    else:
+        assert (
+            len(spin_phases) == expected_length
+        ), f"Spin phase must have length {expected_length} for array input."
 
 
 @pytest.mark.usefixtures("_set_spin_data_filepath")
