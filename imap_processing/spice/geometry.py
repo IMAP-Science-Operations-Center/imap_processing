@@ -28,7 +28,7 @@ class SpiceBody(IntEnum):
     # A subset of IMAP Specific bodies as defined in imap_wkcp.tf
     IMAP = -43
     IMAP_SPACECRAFT = -43000
-    # IMAP Pointing Frame (Despun) as defined in iamp_science_0001.tf
+    # IMAP Pointing Frame (Despun) as defined in imap_science_0001.tf
     IMAP_DPS = -43901
     # Standard NAIF bodies
     SOLAR_SYSTEM_BARYCENTER = spice.bodn2c("SOLAR_SYSTEM_BARYCENTER")
@@ -227,6 +227,13 @@ def frame_transform(
 ) -> npt.NDArray:
     """
     Transform an <x, y, z> vector between reference frames (rotation only).
+
+    This function is a vectorized equivalent to performing the following SPICE
+    calls for each input time and position vector to perform the transform.
+    The matrix multiplication step is done using `numpy.matmul` rather than
+    `spice.mxv`.
+    >>> rotation_matrix = spice.pxform(from_frame, to_frame, et)
+    ... result = spice.mxv(rotation_matrix, position)
 
     Parameters
     ----------
