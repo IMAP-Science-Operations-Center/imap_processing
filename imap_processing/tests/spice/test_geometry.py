@@ -124,23 +124,37 @@ def test_frame_transform(furnish_kernels):
         "sim_1yr_imap_pointing_frame.bc",
     ]
     with furnish_kernels(kernels):
-        et = spice.utc2et("2025-04-30T12:00:00.000")
-        result1 = frame_transform(
-            SpiceFrame.IMAP_ULTRA_45, SpiceFrame.IMAP_DPS, et, np.array([1, 0, 0])
+        # Test single et and position calculation
+        et_0 = spice.utc2et("2025-04-30T12:00:00.000")
+        position = np.arange(3) + 1
+        result_0 = frame_transform(
+            SpiceFrame.IMAP_ULTRA_45, SpiceFrame.IMAP_DPS, et_0, position
         )
-        result2 = frame_transform(
-            SpiceFrame.IMAP_DPS, SpiceFrame.IMAP_ULTRA_45, et, result1
+        # compare against pure SPICE calculation
+        rotation_matrix = spice.pxform(
+            SpiceFrame.IMAP_ULTRA_45.name, SpiceFrame.IMAP_DPS.name, et_0
         )
-        np.testing.assert_array_almost_equal(result2, [1, 0, 0])
+        spice_result = spice.mxv(rotation_matrix, position)
+        np.testing.assert_allclose(result_0, spice_result, atol=1e-12)
 
+        # test multiple et and position calculation
+        ets = np.array([et_0, et_0 + 10])
+        positions = np.array([[1, 1, 1], [1, 2, 3]])
         vec_result = frame_transform(
             SpiceFrame.IMAP_HI_90,
             SpiceFrame.IMAP_DPS,
-            np.array([et, et + 10]),
-            np.array([[1, 0, 0], [1, 2, 3]]),
+            ets,
+            positions,
         )
 
         assert vec_result.shape == (2, 3)
+        # compare with direct spice calculations
+        for et, pos, result in zip(ets, positions, vec_result):
+            rotation_matrix = spice.pxform(
+                SpiceFrame.IMAP_HI_90.name, SpiceFrame.IMAP_DPS.name, et
+            )
+            spice_result = spice.mxv(rotation_matrix, pos)
+            np.testing.assert_allclose(result, spice_result, atol=1e-12)
 
 
 def test_frame_transform_exceptions():

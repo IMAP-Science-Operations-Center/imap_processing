@@ -265,17 +265,14 @@ def frame_transform(
                 f"Position has {len(position)} elements and et has {len(et)} elements."
             )
 
+    # rotate will have shape = (3, 3) or (n, 3, 3)
+    # position will have shape = (3,) or (n, 3)
     rotate = get_rotation_matrix(from_frame, to_frame, et)
-
-    if hasattr(rotate[0][0], "__len__"):
-        result = np.array(
-            [
-                np.matmul(rotate, pos).astype(np.float64)
-                for rotate, pos in zip(rotate, position)
-            ]
-        )
-    else:
-        result = np.matmul(rotate, position).astype(np.float64)
+    # adding a dimension to position results in the following input and output
+    # shapes from matrix multiplication
+    # Single et/position:      (3, 3),(3, 1) -> (3, 1)
+    # Multiple et/positions :  (n, 3, 3),(n, 3, 1) -> (n, 3, 1)
+    result = np.squeeze(rotate @ position[..., np.newaxis])
 
     return result
 
