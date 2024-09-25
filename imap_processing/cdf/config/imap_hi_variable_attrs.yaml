@@ -33,10 +33,10 @@ default_uint32_attrs: &default_uint32
 
 default_int64_attrs: &default_int64
   <<: *default
-  FILLVAL: 18446744073709551615
+  FILLVAL: -9223372036854775808
   FORMAT: I20
-  VALIDMIN: 0
-  VALIDMAX: 18446744073709551615
+  VALIDMIN: -9223372036854775808
+  VALIDMAX: 9223372036854775807
   dtype: int64
 
 default_int32_attrs: &default_int32
