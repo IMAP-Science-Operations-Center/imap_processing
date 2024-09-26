@@ -3,9 +3,13 @@
 import numpy as np
 import pandas as pd
 import pytest
+import spiceypy as spice
 
 from imap_processing.spice.geometry import (
     SpiceBody,
+    SpiceFrame,
+    frame_transform,
+    get_rotation_matrix,
     get_spacecraft_spin_phase,
     get_spin_data,
     imap_state,
@@ -106,3 +110,105 @@ def test_get_spin_data():
         "thruster_firing",
         "spin_start_time",
     }, "Spin data must have the specified fields."
+
+
+def test_frame_transform(furnish_kernels):
+    """Test transformation of vectors from one frame to another, with the option
+    to normalize the result."""
+    # This test requires an IMAP attitude kernel and pointing (despun) kernel
+    kernels = [
+        "naif0012.tls",
+        "imap_wkcp.tf",
+        "imap_science_0001.tf",
+        "sim_1yr_imap_attitude.bc",
+        "sim_1yr_imap_pointing_frame.bc",
+    ]
+    with furnish_kernels(kernels):
+        # Test single et and position calculation
+        et_0 = spice.utc2et("2025-04-30T12:00:00.000")
+        position = np.arange(3) + 1
+        result_0 = frame_transform(
+            et_0, position, SpiceFrame.IMAP_ULTRA_45, SpiceFrame.IMAP_DPS
+        )
+        # compare against pure SPICE calculation
+        rotation_matrix = spice.pxform(
+            SpiceFrame.IMAP_ULTRA_45.name, SpiceFrame.IMAP_DPS.name, et_0
+        )
+        spice_result = spice.mxv(rotation_matrix, position)
+        np.testing.assert_allclose(result_0, spice_result, atol=1e-12)
+
+        # test multiple et and position calculation
+        ets = np.array([et_0, et_0 + 10])
+        positions = np.array([[1, 1, 1], [1, 2, 3]])
+        vec_result = frame_transform(
+            ets, positions, SpiceFrame.IMAP_HI_90, SpiceFrame.IMAP_DPS
+        )
+
+        assert vec_result.shape == (2, 3)
+        # compare with direct spice calculations
+        for et, pos, result in zip(ets, positions, vec_result):
+            rotation_matrix = spice.pxform(
+                SpiceFrame.IMAP_HI_90.name, SpiceFrame.IMAP_DPS.name, et
+            )
+            spice_result = spice.mxv(rotation_matrix, pos)
+            np.testing.assert_allclose(result, spice_result, atol=1e-12)
+
+
+def test_frame_transform_exceptions():
+    """Test that the proper exceptions get raised when input arguments are invalid."""
+    with pytest.raises(
+        ValueError, match="Position vectors with one dimension must have 3 elements."
+    ):
+        frame_transform(
+            0, np.arange(4), SpiceFrame.IMAP_SPACECRAFT, SpiceFrame.IMAP_CODICE
+        )
+    with pytest.raises(
+        ValueError,
+        match="Ephemeris time must be float when single position vector is provided.",
+    ):
+        frame_transform(
+            np.asarray(0),
+            np.array([1, 0, 0]),
+            SpiceFrame.ECLIPJ2000,
+            SpiceFrame.IMAP_HIT,
+        )
+    with pytest.raises(ValueError, match="Invalid position shape: "):
+        frame_transform(
+            np.arange(2),
+            np.arange(4).reshape((2, 2)),
+            SpiceFrame.ECLIPJ2000,
+            SpiceFrame.IMAP_HIT,
+        )
+    with pytest.raises(
+        ValueError,
+        match="Mismatch in number of position vectors and Ephemeris times provided.",
+    ):
+        frame_transform(
+            np.arange(2),
+            np.arange(9).reshape((3, 3)),
+            SpiceFrame.ECLIPJ2000,
+            SpiceFrame.IMAP_HIT,
+        )
+
+
+def test_get_rotation_matrix(furnish_kernels):
+    """Test coverage for get_rotation_matrix()."""
+    kernels = [
+        "naif0012.tls",
+        "imap_wkcp.tf",
+        "imap_science_0001.tf",
+        "sim_1yr_imap_attitude.bc",
+        "sim_1yr_imap_pointing_frame.bc",
+    ]
+    with furnish_kernels(kernels):
+        et = spice.utc2et("2025-09-30T12:00:00.000")
+        # test input of float
+        rotation = get_rotation_matrix(
+            et, SpiceFrame.IMAP_IDEX, SpiceFrame.IMAP_SPACECRAFT
+        )
+        assert rotation.shape == (3, 3)
+        # test array of et input
+        rotation = get_rotation_matrix(
+            np.arange(10) + et, SpiceFrame.IMAP_IDEX, SpiceFrame.IMAP_SPACECRAFT
+        )
+        assert rotation.shape == (10, 3, 3)
