@@ -172,39 +172,46 @@ def parse_events(dataset: xr.Dataset, attr_mgr: ImapCdfAttributes) -> xr.Dataset
         Parsed and decompressed direct event data.
     """
     # get the binary data for the direct events
-    de_time = []
-    esa_step = []
-    mode = []
-    tof0 = []
-    tof1 = []
-    tof2 = []
-    tof3 = []
-    cksm = []
-    pos = []
+    num_de = np.sum(dataset["count"].values)
+    dataset["coincidence_type"] = xr.DataArray(np.full(num_de, attr_mgr.get_variable_attributes("coincidence_type")["FILLVAL"]), dims="direct_events")
+    dataset["de_time"] = xr.DataArray(np.full(num_de, attr_mgr.get_variable_attributes("de_time")["FILLVAL"]), dims="direct_events")
+    dataset["esa_step"] = xr.DataArray(np.full(num_de, attr_mgr.get_variable_attributes("esa_step")["FILLVAL"]), dims="direct_events")
+    dataset["mode"] = xr.DataArray(np.full(num_de, attr_mgr.get_variable_attributes("mode")["FILLVAL"]), dims="direct_events")
+    dataset["tof0"] = xr.DataArray(np.full(num_de, attr_mgr.get_variable_attributes("tof0")["FILLVAL"]), dims="direct_events")
+    dataset["tof1"] = xr.DataArray(np.full(num_de, attr_mgr.get_variable_attributes("tof1")["FILLVAL"]), dims="direct_events")
+    dataset["tof2"] = xr.DataArray(np.full(num_de, attr_mgr.get_variable_attributes("tof2")["FILLVAL"]), dims="direct_events")
+    dataset["tof3"] = xr.DataArray(np.full(num_de, attr_mgr.get_variable_attributes("tof3")["FILLVAL"]), dims="direct_events")
+    dataset["cksm"] = xr.DataArray(np.full(num_de, attr_mgr.get_variable_attributes("cksm")["FILLVAL"]), dims="direct_events")
+    dataset["pos"] = xr.DataArray(np.full(num_de, attr_mgr.get_variable_attributes("pos")["FILLVAL"]), dims="direct_events")
+    print("coincidence type", dataset["coincidence_type"])
+    pointing_de = 0
     for pkt_idx, de_count in enumerate(dataset["count"].values):
         bit_pos = 0
-        for de in range(de_count):
+        for pkt_de in range(de_count):
             print("pkt_idx", pkt_idx)
             print("de_count", de_count)
-            print("de", de)
+            print("de", pkt_de)
             print("data length", len(dataset["data"].values[pkt_idx]))
             print("bit pos", bit_pos)
-            print("shcoarse", dataset["shcoarse"][pkt_idx])
-            case_number = int(dataset["data"].values[de][bit_pos : bit_pos + 4], 2)
+            #print("shcoarse", dataset["shcoarse"][pkt_idx])
+            #print("data", dataset["data"].values[pkt_idx])
+            dataset["coincidence_type"].isel(direct_events=pointing_de).values = (
+                int(dataset["data"].values[pkt_idx][bit_pos : bit_pos + 4], 2))
+            print("coin calc", int(dataset["data"].values[pkt_idx][bit_pos: bit_pos + 4], 2))
+            print("coincidence type", dataset["coincidence_type"].isel(direct_events=pointing_de).values)
             bit_pos += 4
-            print("case number", case_number)
-
-            de_time.append(parse_de_bin(dataset, pkt_idx, bit_pos, DATA_BITS.DE_TIME))
+            dataset["de_time"].isel(direct_events=pointing_de).values = parse_de_bin(dataset, pkt_idx, bit_pos, DATA_BITS.DE_TIME)
             bit_pos += DATA_BITS.DE_TIME
-            print("de_time", de_time)
-            esa_step.append(parse_de_bin(dataset, pkt_idx, bit_pos, DATA_BITS.ESA_STEP))
+            dataset["esa_step"].isel(direct_events=pointing_de).values = parse_de_bin(dataset, pkt_idx, bit_pos, DATA_BITS.ESA_STEP)
             bit_pos += DATA_BITS.ESA_STEP
-            print("esa_step", esa_step)
-            mode.append(parse_de_bin(dataset, pkt_idx, bit_pos, DATA_BITS.MODE))
+            dataset["mode"].isel(direct_events=pointing_de).values = parse_de_bin(dataset, pkt_idx, bit_pos, DATA_BITS.MODE)
             bit_pos += DATA_BITS.MODE
-            print("mode", mode)
 
-            case_decoder = CASE_DECODER[(case_number, mode[-1])]
+            print("mode", dataset["mode"].isel(direct_events=pointing_de).values)
+            case_decoder = CASE_DECODER[
+                (dataset["coincidence_type"].isel(direct_events=pointing_de).values,
+                 dataset["mode"].isel(direct_events=pointing_de).values)
+            ]
 
             # Check which TOF fields should have been transmitted for this
             # case number / mode combination and decompress them.
@@ -245,7 +252,8 @@ def parse_events(dataset: xr.Dataset, attr_mgr: ImapCdfAttributes) -> xr.Dataset
             print("tof3", tof3)
             print("cksm", cksm)
             print("pos", pos)
-
+            pointing_de += 1
+    # get the dimension names from the CDF attr manager
     dataset["de_time"] = de_time
     dataset["esa_step"] = esa_step
     dataset["mode"] = mode
