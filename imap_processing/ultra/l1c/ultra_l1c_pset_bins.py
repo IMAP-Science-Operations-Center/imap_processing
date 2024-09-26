@@ -139,7 +139,7 @@ def get_histogram(
     az_bin_edges: np.ndarray,
     el_bin_edges: np.ndarray,
     energy_bin_edges: np.ndarray,
-) -> tuple[NDArray, NDArray]:
+) -> NDArray:
     """
     Compute a 3D histogram of the particle data.
 
@@ -273,14 +273,11 @@ def bin_data(v: tuple[np.ndarray, np.ndarray, np.ndarray], energy: np.ndarray) -
     # Get the starting edges for energy bins
     energy_bin_start = energy_bin_edges[:-1]
 
-    _, non_zero_counts = extract_non_zero_indices_and_counts(hist)
-
     # Create unique identifiers and map non-zero counts to 2D histogram array
     counts, bin_id, midpoints = create_unique_identifiers(
-        hist, az_bin_midpoints, el_bin_midpoints, non_zero_counts
+        hist, az_bin_midpoints, el_bin_midpoints
     )
 
-    _, _, energy_bin = np.argwhere(hist > 0).T
-    energy_edge_start = energy_bin_start[energy_bin]
+    energy_edge_start = energy_bin_start[bin_id[2]]
 
     return counts, bin_id, midpoints, energy_edge_start

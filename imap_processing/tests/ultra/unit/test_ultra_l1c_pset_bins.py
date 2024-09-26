@@ -127,7 +127,7 @@ def test_create_unique_identifiers(test_data):
     _, non_zero_counts = extract_non_zero_indices_and_counts(hist)
 
     counts, bin_id, midpoints = create_unique_identifiers(
-        hist, az_bin_midpoints, el_bin_midpoints, non_zero_counts
+        hist, az_bin_midpoints, el_bin_midpoints
     )
 
     assert counts.size == len(bin_id[0]) * len(bin_id[1]) * len(bin_id[2])
@@ -172,14 +172,13 @@ def test_extract_non_zero_indices_and_counts():
     expected_indices = np.array(
         [
             [0, 0, 1],
-            [0, 0, 2],
             [1, 1, 0],
+            [0, 2, 1],
         ]
-    ).T
+    )
 
     expected_counts = np.array([1, 2, 3])
 
     non_zero_indices, non_zero_counts = extract_non_zero_indices_and_counts(hist)
-
     np.testing.assert_array_equal(non_zero_indices, expected_indices)
     np.testing.assert_array_equal(non_zero_counts, expected_counts)
