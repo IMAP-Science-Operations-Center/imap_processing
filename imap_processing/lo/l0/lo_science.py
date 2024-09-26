@@ -173,16 +173,48 @@ def parse_events(dataset: xr.Dataset, attr_mgr: ImapCdfAttributes) -> xr.Dataset
     """
     # get the binary data for the direct events
     num_de = np.sum(dataset["count"].values)
-    dataset["coincidence_type"] = xr.DataArray(np.full(num_de, attr_mgr.get_variable_attributes("coincidence_type")["FILLVAL"]), dims="direct_events")
-    dataset["de_time"] = xr.DataArray(np.full(num_de, attr_mgr.get_variable_attributes("de_time")["FILLVAL"]), dims="direct_events")
-    dataset["esa_step"] = xr.DataArray(np.full(num_de, attr_mgr.get_variable_attributes("esa_step")["FILLVAL"]), dims="direct_events")
-    dataset["mode"] = xr.DataArray(np.full(num_de, attr_mgr.get_variable_attributes("mode")["FILLVAL"]), dims="direct_events")
-    dataset["tof0"] = xr.DataArray(np.full(num_de, attr_mgr.get_variable_attributes("tof0")["FILLVAL"]), dims="direct_events")
-    dataset["tof1"] = xr.DataArray(np.full(num_de, attr_mgr.get_variable_attributes("tof1")["FILLVAL"]), dims="direct_events")
-    dataset["tof2"] = xr.DataArray(np.full(num_de, attr_mgr.get_variable_attributes("tof2")["FILLVAL"]), dims="direct_events")
-    dataset["tof3"] = xr.DataArray(np.full(num_de, attr_mgr.get_variable_attributes("tof3")["FILLVAL"]), dims="direct_events")
-    dataset["cksm"] = xr.DataArray(np.full(num_de, attr_mgr.get_variable_attributes("cksm")["FILLVAL"]), dims="direct_events")
-    dataset["pos"] = xr.DataArray(np.full(num_de, attr_mgr.get_variable_attributes("pos")["FILLVAL"]), dims="direct_events")
+    dataset["coincidence_type"] = xr.DataArray(
+        np.full(
+            num_de, attr_mgr.get_variable_attributes("coincidence_type")["FILLVAL"]
+        ),
+        dims="direct_events",
+    )
+    dataset["de_time"] = xr.DataArray(
+        np.full(num_de, attr_mgr.get_variable_attributes("de_time")["FILLVAL"]),
+        dims="direct_events",
+    )
+    dataset["esa_step"] = xr.DataArray(
+        np.full(num_de, attr_mgr.get_variable_attributes("esa_step")["FILLVAL"]),
+        dims="direct_events",
+    )
+    dataset["mode"] = xr.DataArray(
+        np.full(num_de, attr_mgr.get_variable_attributes("mode")["FILLVAL"]),
+        dims="direct_events",
+    )
+    dataset["tof0"] = xr.DataArray(
+        np.full(num_de, attr_mgr.get_variable_attributes("tof0")["FILLVAL"]),
+        dims="direct_events",
+    )
+    dataset["tof1"] = xr.DataArray(
+        np.full(num_de, attr_mgr.get_variable_attributes("tof1")["FILLVAL"]),
+        dims="direct_events",
+    )
+    dataset["tof2"] = xr.DataArray(
+        np.full(num_de, attr_mgr.get_variable_attributes("tof2")["FILLVAL"]),
+        dims="direct_events",
+    )
+    dataset["tof3"] = xr.DataArray(
+        np.full(num_de, attr_mgr.get_variable_attributes("tof3")["FILLVAL"]),
+        dims="direct_events",
+    )
+    dataset["cksm"] = xr.DataArray(
+        np.full(num_de, attr_mgr.get_variable_attributes("cksm")["FILLVAL"]),
+        dims="direct_events",
+    )
+    dataset["pos"] = xr.DataArray(
+        np.full(num_de, attr_mgr.get_variable_attributes("pos")["FILLVAL"]),
+        dims="direct_events",
+    )
     print("coincidence type", dataset["coincidence_type"])
     pointing_de = 0
     for pkt_idx, de_count in enumerate(dataset["count"].values):
@@ -193,55 +225,92 @@ def parse_events(dataset: xr.Dataset, attr_mgr: ImapCdfAttributes) -> xr.Dataset
             print("de", pkt_de)
             print("data length", len(dataset["data"].values[pkt_idx]))
             print("bit pos", bit_pos)
-            #print("shcoarse", dataset["shcoarse"][pkt_idx])
-            #print("data", dataset["data"].values[pkt_idx])
-            dataset["coincidence_type"].isel(direct_events=pointing_de).values = (
-                int(dataset["data"].values[pkt_idx][bit_pos : bit_pos + 4], 2))
-            print("coin calc", int(dataset["data"].values[pkt_idx][bit_pos: bit_pos + 4], 2))
-            print("coincidence type", dataset["coincidence_type"].isel(direct_events=pointing_de).values)
+            # print("shcoarse", dataset["shcoarse"][pkt_idx])
+            # print("data", dataset["data"].values[pkt_idx])
+            dataset["coincidence_type"].isel(direct_events=pointing_de).values = int(
+                dataset["data"].values[pkt_idx][bit_pos : bit_pos + 4], 2
+            )
+            print(
+                "coin calc",
+                int(dataset["data"].values[pkt_idx][bit_pos : bit_pos + 4], 2),
+            )
+            print(
+                "coincidence type",
+                dataset["coincidence_type"].isel(direct_events=pointing_de).values,
+            )
             bit_pos += 4
-            dataset["de_time"].isel(direct_events=pointing_de).values = parse_de_bin(dataset, pkt_idx, bit_pos, DATA_BITS.DE_TIME)
+            dataset["de_time"].isel(direct_events=pointing_de).values = parse_de_bin(
+                dataset, pkt_idx, bit_pos, DATA_BITS.DE_TIME
+            )
             bit_pos += DATA_BITS.DE_TIME
-            dataset["esa_step"].isel(direct_events=pointing_de).values = parse_de_bin(dataset, pkt_idx, bit_pos, DATA_BITS.ESA_STEP)
+            dataset["esa_step"].isel(direct_events=pointing_de).values = parse_de_bin(
+                dataset, pkt_idx, bit_pos, DATA_BITS.ESA_STEP
+            )
             bit_pos += DATA_BITS.ESA_STEP
-            dataset["mode"].isel(direct_events=pointing_de).values = parse_de_bin(dataset, pkt_idx, bit_pos, DATA_BITS.MODE)
+            dataset["mode"].isel(direct_events=pointing_de).values = parse_de_bin(
+                dataset, pkt_idx, bit_pos, DATA_BITS.MODE
+            )
             bit_pos += DATA_BITS.MODE
 
             print("mode", dataset["mode"].isel(direct_events=pointing_de).values)
             case_decoder = CASE_DECODER[
-                (dataset["coincidence_type"].isel(direct_events=pointing_de).values,
-                 dataset["mode"].isel(direct_events=pointing_de).values)
+                (
+                    dataset["coincidence_type"].isel(direct_events=pointing_de).values,
+                    dataset["mode"].isel(direct_events=pointing_de).values,
+                )
             ]
 
             # Check which TOF fields should have been transmitted for this
             # case number / mode combination and decompress them.
             if case_decoder.TOF0:
-                tof0.append(parse_de_bin(dataset, pkt_idx, bit_pos, DATA_BITS.TOF0, DE_BIT_SHIFT))
+                tof0.append(
+                    parse_de_bin(
+                        dataset, pkt_idx, bit_pos, DATA_BITS.TOF0, DE_BIT_SHIFT
+                    )
+                )
                 bit_pos += DATA_BITS.TOF0
             else:
                 tof0.append(attr_mgr.get_variable_attributes("tof0")["FILLVAL"])
             if case_decoder.TOF1:
-                tof1.append(parse_de_bin(dataset, pkt_idx, bit_pos, DATA_BITS.TOF1, DE_BIT_SHIFT))
+                tof1.append(
+                    parse_de_bin(
+                        dataset, pkt_idx, bit_pos, DATA_BITS.TOF1, DE_BIT_SHIFT
+                    )
+                )
                 bit_pos += DATA_BITS.TOF1
             else:
                 tof1.append(attr_mgr.get_variable_attributes("tof1")["FILLVAL"])
             if case_decoder.TOF2:
-                tof2.append(parse_de_bin(dataset, pkt_idx, bit_pos, DATA_BITS.TOF2, DE_BIT_SHIFT))
+                tof2.append(
+                    parse_de_bin(
+                        dataset, pkt_idx, bit_pos, DATA_BITS.TOF2, DE_BIT_SHIFT
+                    )
+                )
                 bit_pos += DATA_BITS.TOF2
             else:
                 tof2.append(attr_mgr.get_variable_attributes("tof2")["FILLVAL"])
             if case_decoder.TOF3:
-                tof3.append(parse_de_bin(dataset, pkt_idx, bit_pos, DATA_BITS.TOF3, DE_BIT_SHIFT))
+                tof3.append(
+                    parse_de_bin(
+                        dataset, pkt_idx, bit_pos, DATA_BITS.TOF3, DE_BIT_SHIFT
+                    )
+                )
                 bit_pos += DATA_BITS.TOF3
             else:
                 tof3.append(attr_mgr.get_variable_attributes("tof3")["FILLVAL"])
             if case_decoder.CKSM:
-                cksm.append(parse_de_bin(dataset, pkt_idx, bit_pos, DATA_BITS.CKSM, DE_BIT_SHIFT))
+                cksm.append(
+                    parse_de_bin(
+                        dataset, pkt_idx, bit_pos, DATA_BITS.CKSM, DE_BIT_SHIFT
+                    )
+                )
                 bit_pos += DATA_BITS.CKSM
             else:
                 cksm.append(attr_mgr.get_variable_attributes("cksm")["FILLVAL"])
             if case_decoder.POS:
-                pos.append(parse_de_bin(dataset, pkt_idx, bit_pos, DATA_BITS.POS, DE_BIT_SHIFT))
+                pos.append(
+                    parse_de_bin(dataset, pkt_idx, bit_pos, DATA_BITS.POS, DE_BIT_SHIFT)
+                )
                 bit_pos += DATA_BITS.POS
             else:
                 pos.append(attr_mgr.get_variable_attributes("pos")["FILLVAL"])
@@ -274,10 +343,12 @@ def parse_events(dataset: xr.Dataset, attr_mgr: ImapCdfAttributes) -> xr.Dataset
     print("cksm", cksm)
     print("pos", pos)
 
+
 def parse_de_bin(dataset, pkt_idx, bit_pos, bit_length, bit_shift=0):
-    return int(
-        dataset["data"].values[pkt_idx][
-        bit_pos: bit_pos + bit_length
-        ],
-        2,
-    ) << bit_shift
+    return (
+        int(
+            dataset["data"].values[pkt_idx][bit_pos : bit_pos + bit_length],
+            2,
+        )
+        << bit_shift
+    )
