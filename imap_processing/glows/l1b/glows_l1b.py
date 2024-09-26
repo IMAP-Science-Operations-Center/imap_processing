@@ -86,7 +86,6 @@ def glows_l1b(input_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
             },
             attrs=cdf_attrs.get_global_attributes("imap_glows_l1b_hist"),
         )
-        # print(output_dataset["bins"].attrs)
 
         # Since we know the output_dataarrays are in the same order as the fields in the
         # HistogramL1B dataclass, we can use dataclasses.fields to get the field names.
@@ -95,8 +94,6 @@ def glows_l1b(input_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
         # TODO fix this - does each epoch have a histogram value?
         for index, dataarray in enumerate(output_dataarrays):
             # Dataarray is already an xr.DataArray type, so we can just assign it
-            # print(f"bins {output_dataset['bins'].attrs}")
-            # print(f"Dataarray {dataarray['bins'].attrs}")
             output_dataset[fields[index].name] = dataarray
             output_dataset[
                 fields[index].name
@@ -105,8 +102,7 @@ def glows_l1b(input_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
             # print(f"Getting attrs {fields[index].name} as {cdf_attrs.get_variable_attributes(fields[index].name)}")
 
         # print(f"Coords {output_dataset.coords}")
-        output_dataset['bins'] = bin_data
-
+        output_dataset["bins"] = bin_data
 
     elif "de" in logical_source:
         output_dataarrays = process_de(input_dataset)
@@ -243,7 +239,7 @@ def process_histogram(l1a: xr.Dataset) -> xr.Dataset:
     # This should include a mapping to every dimension in the output data besides epoch.
     # Only non-1D variables need to be in this mapping.
     output_dimension_mapping = {
-        "histograms": ["bins"],
+        "histogram": ["bins"],
         "imap_spin_angle_bin_cntr": ["bins"],
         "histogram_flag_array": ["bad_angle_flags", "bins"],
         "spacecraft_location_average": ["ecliptic"],

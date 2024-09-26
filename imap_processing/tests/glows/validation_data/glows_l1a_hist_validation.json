@@ -418,8 +418,7 @@
         "flags_set_onboard": "0x0000",
         "is_generated_on_ground": false
     }
-},
-{
+},{
     "first_spin_id": 0,
     "last_spin_id": 0,
     "block_header": {
@@ -432,6 +431,7 @@
         "seconds": 54233414,
         "subseconds": 1985560
     },
+
     "glows_end_time_offset": {
         "seconds": 119,
         "subseconds": 1998857

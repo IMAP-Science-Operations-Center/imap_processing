@@ -20,7 +20,9 @@ from imap_processing.glows.utils.constants import TimeTuple
 def l1a_data():
     """Read test data from file"""
     current_directory = Path(__file__).parent
-    packet_path = current_directory / "validation_data" / "glows_test_packet_20110921_v01.pkts"
+    packet_path = (
+        current_directory / "validation_data" / "glows_test_packet_20110921_v01.pkts"
+    )
     histogram_l0, de_l0 = decom_glows.decom_packets(packet_path)
 
     histogram_l1a = [HistogramL1A(hist) for hist in histogram_l0]

@@ -391,7 +391,7 @@ class HistogramL1B:
 
     Attributes
     ----------
-    histograms
+    histogram
         array of block-accumulated count numbers
     flight_software_version: str
     seq_count_in_pkts_file: int
@@ -464,7 +464,7 @@ class HistogramL1B:
         structure.
     """
 
-    histograms: np.ndarray
+    histogram: np.ndarray
     flight_software_version: str
     # pkts_file_name: str TODO: add this in L0
     seq_count_in_pkts_file: int

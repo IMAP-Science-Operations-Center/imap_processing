@@ -67,7 +67,7 @@ histogram_dim:
   FIELDNAM: Histogram of direct events
   FORMAT: F2.4
 
-histograms:
+histogram:
   <<: *default
   DEPEND_1: bins
   CATDESC: array of block-accumulated counts as histograms
