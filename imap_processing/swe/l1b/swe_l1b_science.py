@@ -566,10 +566,10 @@ def swe_l1b_science(l1a_data: xr.Dataset, data_version: str) -> xr.Dataset:
         dims=["epoch", "energy", "angle", "cem"],
         attrs=cdf_attrs.get_variable_attributes("science_data"),
     )
-    dataset["sci_acquisition_time"] = xr.DataArray(
+    dataset["sci_step_acq_time_sec"] = xr.DataArray(
         full_cycle_acq_times,
         dims=["epoch", "energy", "angle", "cem"],
-        attrs=cdf_attrs.get_variable_attributes("sci_acquisition_time"),
+        attrs=cdf_attrs.get_variable_attributes("sci_step_acq_time_sec"),
     )
 
     # create xarray dataset for each metadata field
