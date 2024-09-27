@@ -52,7 +52,7 @@ def read_lookup_table(table_index_value: int) -> pd.DataFrame:
 
     Returns
     -------
-    pd.DataFrame
+    pandas.DataFrame
         Line from lookup table todo check.
     """
     # This is equivalent of os.path.join in Path
