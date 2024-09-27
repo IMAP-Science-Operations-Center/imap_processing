@@ -250,6 +250,7 @@ def populate_full_cycle_data(
             decompressed_counts = l1a_data["science_data"].data[packet_index + index]
             # Do deadtime correction
             acq_duration = l1a_data["acq_duration"].data[packet_index + index]
+            settle_duration = l1a_data["settle_duration"].data[packet_index + index]
             corrected_counts = deadtime_correction(decompressed_counts, acq_duration)
             # Convert counts to rate
             counts_rate = convert_counts_to_rate(corrected_counts, acq_duration)
@@ -284,7 +285,8 @@ def populate_full_cycle_data(
                 full_cycle_data[esa_voltage_row_index][column_index] = counts_rate[step]
                 # Put acquisition time in acquisition_times array
                 acquisition_times[esa_voltage_row_index][column_index] = (
-                    base_quarter_cycle_acq_time + (step * acq_duration / 1000)
+                    base_quarter_cycle_acq_time
+                    + (step * (acq_duration + settle_duration) / 1000)
                 )
                 esa_step_number += 1
 
