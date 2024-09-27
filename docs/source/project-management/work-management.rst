@@ -1,4 +1,4 @@
-.. _work_management:
+.. _work-management:
 
 Work Management
 ===============
