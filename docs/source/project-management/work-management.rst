@@ -14,6 +14,7 @@ The SDC uses Github issues to track work. These issues are organized into two ty
     - tasks should be fairly static throughout development and will only change if an instrument changes their data products or levels
     - used to track the progress of implementation tasks
     - managed in the high-level board
+    - labeled with the "Repo: Parent Issue" GitHub label
 - Implementation tasks
     - define work that needs to be implemented
     - each task should be small enough to be handled in a single PR
@@ -63,7 +64,7 @@ Any changes in time allocation should also be reported.
 These changes will be added to the SIT planning document to keep the projected timeline up to date.
 
 Before Backlog Grooming
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~
 
 Prior to the backlog grooming, developers look through implementation tasks under their high-level tasks. The implementation tasks each developer identifies for the next release should be added to the board.
 The developers also tag each implementation task with an estimated time to complete the task and check that the sum of the work estimates are within the developer's capacity for the release.
