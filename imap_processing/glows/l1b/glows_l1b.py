@@ -99,9 +99,6 @@ def glows_l1b(input_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
                 fields[index].name
             ].attrs = cdf_attrs.get_variable_attributes(fields[index].name)
 
-            # print(f"Getting attrs {fields[index].name} as {cdf_attrs.get_variable_attributes(fields[index].name)}")
-
-        # print(f"Coords {output_dataset.coords}")
         output_dataset["bins"] = bin_data
 
     elif "de" in logical_source:
@@ -136,6 +133,8 @@ def glows_l1b(input_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
             output_dataset[
                 fields[index].name
             ].attrs = cdf_attrs.get_variable_attributes(fields[index].name)
+
+        output_dataset['within_the_second'] = within_the_second_data
 
     else:
         raise ValueError(

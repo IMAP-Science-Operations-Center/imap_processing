@@ -120,11 +120,8 @@ def test_validation_data_histogram():
                                  # 'spacecraft_location_std_dev',
                                  # 'spacecraft_velocity_average',
                                  # 'spacecraft_velocity_std_dev',
-                                 # 'flags'
     ]
 
-    # epoch = imap_start_time
-    # print(l1b_day_one['imap_start_time'].data)
     for index, validation_output in enumerate(out['output']):
         if validation_output['imap_start_time'] < 54259215:
             # day of 2011-09-20
@@ -139,10 +136,6 @@ def test_validation_data_histogram():
                 l1b.isel(epoch=l1b_index).imap_start_time.data)
 
         for key in validation_output:
-            if key == 'flags':
-                flag_array = [int(i) for i in validation_output[key].values()]
-                # assert np.array_equal(flag_array, l1b[key].isel(epoch=l1b_index).data)
-
             if key not in expected_matching_columns:
                 continue
 

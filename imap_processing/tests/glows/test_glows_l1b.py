@@ -368,6 +368,8 @@ def test_generate_histogram_dataset(hist_dataset):
 def test_generate_de_dataset(de_dataset):
     l1b_data = glows_l1b(de_dataset, "v001")
 
+    print(l1b_data['within_the_second'].attrs)
+
     output_path = write_cdf(l1b_data)
 
     assert Path.exists(output_path)
