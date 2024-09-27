@@ -480,12 +480,15 @@ def process_swapi_science(
 
     # Add housekeeping-derived quality flags
     # --------------------------------------
-    # Get times of good and full sweep data from science dataset.
-    # Then use these times to get housekeeping data. Something is wrong if
-    # there is no science data that matches exactly one housekeeping data. It
-    # should be one-to-one matching per SWAPI team, Jamie Rankin.
+    # The cadence of HK and SCI telemetry will not always be 1 second each.
+    # In fact, nominally in HVSCI, the HK_TLM comes every 60 seconds,
+    # SCI_TLM comes every 12 seconds.
+    # However, both HK and SCI telemetry are sampled once per second so
+    # since we are not processing in real-time, the ground processing
+    # algorithm should use the closest timestamp HK packet to fill in
+    # the data quality for the SCI data per SWAPI team.
     good_sweep_times = good_sweep_sci["epoch"].data
-    good_sweep_hk_data = hk_dataset.sel({"epoch": good_sweep_times})
+    good_sweep_hk_data = hk_dataset.sel({"epoch": good_sweep_times}, method="nearest")
 
     # Since there is one SWAPI HK packet for each SWAPI SCI packet,
     # and both are recorded at 1 Hz (1 packet per second),
