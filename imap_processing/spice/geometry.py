@@ -42,6 +42,8 @@ class SpiceFrame(IntEnum):
     # Standard SPICE Frames
     J2000 = spice.irfnum("J2000")
     ECLIPJ2000 = spice.irfnum("ECLIPJ2000")
+    # IMAP Pointing Frame (Despun) as defined in imap_science_0001.tf
+    IMAP_DPS = -43901
     # IMAP specific as defined in imap_wkcp.tf
     IMAP_SPACECRAFT = -43000
     IMAP_LO_BASE = -43100
@@ -58,8 +60,6 @@ class SpiceFrame(IntEnum):
     IMAP_HIT = -43500
     IMAP_IDEX = -43700
     IMAP_GLOWS = -43750
-    # IMAP Pointing Frame (Despun) as defined in iamp_science_0001.tf
-    IMAP_DPS = -43901
 
 
 @typing.no_type_check

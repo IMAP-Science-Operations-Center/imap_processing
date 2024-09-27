@@ -9,7 +9,10 @@ from imap_processing.ultra.l1b.ultra_l1b_extended import (
     StartType,
     StopType,
     calculate_etof_xc,
+    determine_species_pulse_height,
+    determine_species_ssd,
     get_coincidence_positions,
+    get_ctof,
     get_energy_pulse_height,
     get_energy_ssd,
     get_front_x_position,
@@ -289,3 +292,51 @@ def test_get_energy_pulse_height(de_dataset, yf_fixture):
     test_energy = df_ph["Energy"].astype("float")
 
     assert np.array_equal(test_energy, energy[ph_indices])
+
+
+def test_get_ctof(yf_fixture):
+    """Tests get_ctof function."""
+    df_filt, _, _ = yf_fixture
+
+    df_ph_ssd = df_filt[
+        df_filt["StopType"].isin([StopType.SSD.value, StopType.PH.value])
+    ]
+
+    ctof = get_ctof(
+        df_ph_ssd["TOF"].astype("float").to_numpy(),
+        df_ph_ssd["r"].astype("float").to_numpy(),
+    )
+
+    np.testing.assert_allclose(
+        ctof, df_ph_ssd["cTOF"].astype("float"), atol=1e-05, rtol=0
+    )
+
+
+def test_determine_species_ph(yf_fixture):
+    """Tests determine_species_ph function."""
+    df_filt, _, _ = yf_fixture
+    df_ph = df_filt[df_filt["StopType"].isin(StopType.PH.value)]
+
+    bin = determine_species_pulse_height(
+        df_ph["Energy"].astype("float").to_numpy(),
+        df_ph["TOF"].astype("float").to_numpy(),
+        df_ph["r"].astype("float").to_numpy(),
+    )
+
+    # TODO: add in bin values.
+    np.testing.assert_allclose(bin, np.zeros(len(bin)), atol=1e-05, rtol=0)
+
+
+def test_determine_species_ssd(yf_fixture):
+    """Tests determine_species_ssd function."""
+    df_filt, _, _ = yf_fixture
+    df_ssd = df_filt[df_filt["StopType"].isin(StopType.SSD.value)]
+
+    bin = determine_species_ssd(
+        df_ssd["Energy"].astype("float").to_numpy(),
+        df_ssd["TOF"].astype("float").to_numpy(),
+        df_ssd["r"].astype("float").to_numpy(),
+    )
+
+    # TODO: add in bin values.
+    np.testing.assert_allclose(bin, np.zeros(len(bin)), atol=1e-05, rtol=0)
