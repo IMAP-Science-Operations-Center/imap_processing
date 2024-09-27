@@ -219,25 +219,27 @@ def test_process_swapi_science(decom_test_data):
     cdf_filename = "imap_swapi_l1_sci_20240924_v001.cdf"
     cdf_path = write_cdf(processed_data)
     assert cdf_path.name == cdf_filename
+    cdf_path.rename(cdf_filename)
 
 
 def test_swapi_l1_cdf(swapi_l0_test_data_path):
     """Test housekeeping processing and CDF file creation"""
-    test_packet_file = swapi_l0_test_data_path / "imap_swapi_l0_raw_20231012_v001.pkts"
+    test_packet_file = swapi_l0_test_data_path / "imap_swapi_l0_raw_20240924_v001.pkts"
     processed_data = swapi_l1(test_packet_file, data_version="v001")
+    print(processed_data[0]["swp_pcem_counts"].shape)
 
     assert processed_data[0].attrs["Apid"] == f"{SWAPIAPID.SWP_SCI}"
-    assert processed_data[0].attrs["Plan_id"] == "0"
-    assert processed_data[0].attrs["Sweep_table"] == "0"
+    assert processed_data[0].attrs["Plan_id"] == "1"
+    assert processed_data[0].attrs["Sweep_table"] == "1"
 
     # Test CDF File
     # sci cdf file
-    cdf_filename = "imap_swapi_l1_sci_20100101_v001.cdf"
+    cdf_filename = "imap_swapi_l1_sci_20240924_v001.cdf"
     cdf_path = write_cdf(processed_data[0])
     assert cdf_path.name == cdf_filename
 
     # hk cdf file
-    cdf_filename = "imap_swapi_l1_hk_20100101_v001.cdf"
+    cdf_filename = "imap_swapi_l1_hk_20240924_v001.cdf"
     # Ignore ISTP checks for HK data
     cdf_path = write_cdf(processed_data[1], istp=False)
     assert cdf_path.name == cdf_filename
