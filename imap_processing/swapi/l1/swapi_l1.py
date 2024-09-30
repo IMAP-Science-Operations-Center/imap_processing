@@ -465,12 +465,6 @@ def process_swapi_science(
     # ====================================================
     total_packets = len(good_sweep_sci["seq_number"].data)
 
-    # # set x-axis range
-    # fig = plt.figure()
-    # plt.ylim(0, 1000)
-
-    # plt.plot(good_sweep_sci["epoch"].data, good_sweep_sci["pcem_cnt0"].data)
-    # plt.show()
     # It takes 12 sequence data to make one full sweep
     total_sequence = 12
     total_full_sweeps = total_packets // total_sequence

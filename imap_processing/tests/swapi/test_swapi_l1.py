@@ -30,14 +30,6 @@ def decom_test_data(swapi_l0_test_data_path):
     dataset_by_apid = packet_file_to_datasets(
         test_path / test_file, packet_definition, use_derived_value=False
     )
-    print(
-        dataset_by_apid[SWAPIAPID.SWP_SCI]["shcoarse"].data[0],
-        dataset_by_apid[SWAPIAPID.SWP_SCI]["shcoarse"].data[-1],
-    )
-    print(
-        dataset_by_apid[SWAPIAPID.SWP_HK]["shcoarse"].data[0],
-        dataset_by_apid[SWAPIAPID.SWP_HK]["shcoarse"].data[-1],
-    )
     return dataset_by_apid
 
 
