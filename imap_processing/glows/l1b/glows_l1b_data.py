@@ -335,6 +335,10 @@ class DirectEventL1B:
             "spin_period", self.spin_period
         )
 
+        self.spin_phase_at_next_pps = self.ancillary_parameters.decode(
+            "spin_phase", self.spin_phase_at_next_pps
+        )
+
         self.de_flags = np.array(
             [
                 catbed_heater_active,
