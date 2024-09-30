@@ -4,6 +4,9 @@ import numpy.typing as npt
 
 from imap_processing.swe.l1b.swe_l1b_science import read_lookup_table
 
+# TODO: add this to instrument status summary
+ENERGY_CONVERSION_FACTOR = 4.75
+
 
 def calculate_particle_energy(esa_table_num: int) -> npt.NDArray:
     """
@@ -26,6 +29,5 @@ def calculate_particle_energy(esa_table_num: int) -> npt.NDArray:
     esa_table = read_lookup_table(table_index_value=esa_table_num)
 
     # Convert voltage to electron energy in eV by apply conversion factor.
-    conversion_factor = 4.75
-    energy = esa_table["esa_v"] * conversion_factor
+    energy = esa_table["esa_v"] * ENERGY_CONVERSION_FACTOR
     return energy
