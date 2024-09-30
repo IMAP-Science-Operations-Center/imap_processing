@@ -11,6 +11,7 @@ The SDC uses Github issues to track work. These issues are organized into two ty
 
 - High-level tasks
     - used to track the progress of each instrument and data level
+    - used to track progress on infrastructure tasks (ie. Reprocessing high-level task)
     - tasks should be fairly static throughout development and will only change if an instrument changes their data products or levels
     - used to track the progress of implementation tasks
     - managed in the high-level board
