@@ -1,6 +1,7 @@
 """SWAPI level-1 processing code."""
 
 import copy
+import logging
 
 import numpy as np
 import numpy.typing as npt
@@ -11,6 +12,8 @@ from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.quality_flags import SWAPIFlags
 from imap_processing.swapi.swapi_utils import SWAPIAPID, SWAPIMODE
 from imap_processing.utils import packet_file_to_datasets
+
+logger = logging.getLogger(__name__)
 
 
 def filter_good_data(full_sweep_sci: xr.Dataset) -> npt.NDArray:
@@ -43,11 +46,11 @@ def filter_good_data(full_sweep_sci: xr.Dataset) -> npt.NDArray:
 
     sweep_indices = (sweep_table == sweep_table[:, 0, None]).all(axis=1)
     plan_id_indices = (plan_id == plan_id[:, 0, None]).all(axis=1)
-    # TODO: change comparison to SWAPIMODE.HVSCI once we have
-    # some HVSCI data
     # MODE should be HVSCI
-    mode_indices = (mode == SWAPIMODE.HVENG).all(axis=1)
+    mode_indices = (mode == SWAPIMODE.HVSCI).all(axis=1)
     bad_data_indices = sweep_indices & plan_id_indices & mode_indices
+
+    logger.debug(f"Bad data indices: {bad_data_indices}")
 
     # TODO: add checks for checksum
 
@@ -61,6 +64,19 @@ def filter_good_data(full_sweep_sci: xr.Dataset) -> npt.NDArray:
     bad_cycle_indices = cycle_start_indices[..., None] + np.arange(12)[
         None, ...
     ].reshape(-1)
+
+    logger.debug("Cycle data bad was due to one of below reason:")
+    logger.debug(
+        "Sweep table should be same: "
+        f"{full_sweep_sci['sweep_table'].data[bad_cycle_indices]}"
+    )
+    logger.debug(
+        "Plan ID should be same: "
+        f"{full_sweep_sci['plan_id_science'].data[bad_cycle_indices]}"
+    )
+    logger.debug(
+        f"Mode Id should be 3(HVSCI): {full_sweep_sci['mode'].data[bad_cycle_indices]}"
+    )
 
     # Use bad data cycle indices to find all good data indices.
     # Then that will used to filter good sweep data.
@@ -431,14 +447,17 @@ def process_swapi_science(
     # ====================================================
     # Step 1: Filter full cycle data
     # ====================================================
+    logger.info(
+        f"Sequence number before processing: \n{sci_dataset['seq_number'].data}"
+    )
     full_sweep_indices = get_indices_of_full_sweep(sci_dataset)
-
+    logger.info(f"Full sweep indices: \n{full_sweep_indices}")
     # Filter full sweep data using indices returned from above line
     full_sweep_sci = sci_dataset.isel({"epoch": full_sweep_indices})
 
     # Find indices of good sweep cycles
     good_data_indices = filter_good_data(full_sweep_sci)
-
+    logger.info(f"Good data sequence number: \n{good_data_indices}")
     good_sweep_sci = full_sweep_sci.isel({"epoch": good_data_indices})
 
     # ====================================================
