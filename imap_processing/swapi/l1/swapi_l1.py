@@ -703,7 +703,6 @@ def swapi_l1(file_path: str, data_version: str) -> xr.Dataset:
             processed_data.append(sci_dataset)
         if apid == SWAPIAPID.SWP_HK.value:
             # Add HK datalevel attrs
-            # TODO: ask SWAPI if we need to process HK if we can use WebPODA
             hk_attrs = ImapCdfAttributes()
             hk_attrs.add_instrument_global_attrs("swapi")
             hk_attrs.add_global_attribute("Data_version", data_version)

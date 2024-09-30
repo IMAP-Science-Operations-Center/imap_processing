@@ -1,5 +1,4 @@
 import numpy as np
-import pandas as pd
 import pytest
 import xarray as xr
 
@@ -28,73 +27,18 @@ def decom_test_data(swapi_l0_test_data_path):
     packet_definition = (
         f"{imap_module_directory}/swapi/packet_definitions/swapi_packet_definition.xml"
     )
-    original = packet_file_to_datasets(
+    dataset_by_apid = packet_file_to_datasets(
         test_path / test_file, packet_definition, use_derived_value=False
     )
-    # print(original.keys())
-    # print(original[SWAPIAPID.SWP_SCI])
-    # sci_data = original[SWAPIAPID.SWP_SCI]
-    # print(sci_data["seq_number"])
-    # human_datetime = cdflib.cdfepoch.to_datetime(sci_data["epoch"].data)
-    # print(human_datetime)
-    # x = np.arange(0, len(original[SWAPIAPID.SWP_SCI]["epoch"].data))[29:-4]
-    # y1 = original[SWAPIAPID.SWP_SCI]["pcem_cnt0"].data[29:-4]
-    # y2 = original[SWAPIAPID.SWP_SCI]["scem_cnt0"].data[29:-4]
-    # y3 = original[SWAPIAPID.SWP_SCI]["coin_cnt0"].data[29:-4]
-    # fig, ax = plt.subplots(nrows=3, ncols=1, sharex=True)
-    # fig.supxlabel('Time')
-    # ax[0].plot(x, y1, label="pcem_cnt0", linestyle="--")
-    # ax[1].plot(x, y2, label="scem_cnt0", linestyle="--")
-    # ax[2].plot(x, y3, label="coin_cnt0", linestyle="--")
-    # plt.legend(loc="upper left")
-    # plt.ylim(0, 1000)
-    # plt.show()
-
-    sci_file = "idle_export_raw.SWP_SCI_20240924_080204.csv"
-    l0_sci = pd.read_csv(test_path / sci_file)
-
-    # change column names to be lowercase
-    l0_sci.columns = l0_sci.columns.str.lower()
-    # drop timestamp and index columns
-    l0_sci = l0_sci.drop(columns=["timestamp"])
-    # add epoch column
-    l0_sci["epoch"] = met_to_j2000ns(l0_sci["shcoarse"])
-    # l0_human_datetime = cdflib.cdfepoch.to_datetime(l0_sci["epoch"])
-    # print("excel data datetime ", l0_human_datetime)
-    # set epoch as index
-    l0_sci = l0_sci.set_index("epoch")
-
-    # create dataset and set 'epoch' as dimension of all variables
-    sci_ds = xr.Dataset.from_dataframe(l0_sci)
-    sci_ds = sci_ds.sortby("epoch")
-
-    # Read hk data same way as sci data
-    hk_file = "idle_export_raw.SWP_HK_20240924_080204.csv"
-    l0_hk = pd.read_csv(test_path / hk_file)
-    # change column names to be lowercase
-    l0_hk.columns = l0_hk.columns.str.lower()
-    # add epoch column
-    l0_hk["epoch"] = met_to_j2000ns(l0_hk["shcoarse"])
-    # set epoch as index
-    l0_hk = l0_hk.set_index("epoch")
-
-    # drop timestamp and index columns
-    l0_hk = l0_hk.drop(columns=["timestamp"])
-    hk_ds = xr.Dataset.from_dataframe(l0_hk)
-    hk_ds = hk_ds.sortby("epoch")
-
-    dataset_by_apid = {
-        SWAPIAPID.SWP_SCI: sci_ds,
-        SWAPIAPID.SWP_HK: hk_ds,
-    }
-    # make sure xr.Dataset variable matches with original dataset
-    # print(sci_ds, original[SWAPIAPID.SWP_SCI])
-    # print data variables name of both datasets
-    # print("datavars comparison\n\n")
-    # print(list(sci_ds.data_vars), list(original[SWAPIAPID.SWP_SCI].data_vars))
-    print(dataset_by_apid)
-    assert set(sci_ds.data_vars) == set(original[SWAPIAPID.SWP_SCI].data_vars)
-    return original
+    print(
+        dataset_by_apid[SWAPIAPID.SWP_SCI]["shcoarse"].data[0],
+        dataset_by_apid[SWAPIAPID.SWP_SCI]["shcoarse"].data[-1],
+    )
+    print(
+        dataset_by_apid[SWAPIAPID.SWP_HK]["shcoarse"].data[0],
+        dataset_by_apid[SWAPIAPID.SWP_HK]["shcoarse"].data[-1],
+    )
+    return dataset_by_apid
 
 
 def test_filter_good_data():
@@ -233,27 +177,23 @@ def test_process_swapi_science(decom_test_data):
         "energy_label": 72,
     }
 
-    # # Test CDF File
-    # # This time mismatch is because of sample data. Sample data has
-    # # SHCOARSE time as 48, 60, 72. That's why time is different.
-    # cdf_filename = "imap_swapi_l1_sci_20240924_v001.cdf"
-    # cdf_path = write_cdf(processed_data)
-    # assert cdf_path.name == cdf_filename
-    # cdf_path.rename(cdf_filename)
+    # Test CDF File
+    cdf_filename = "imap_swapi_l1_sci_20240924_v001.cdf"
+    cdf_path = write_cdf(processed_data)
+    assert cdf_path.name == cdf_filename
+    cdf_path.rename(cdf_filename)
 
 
 def test_swapi_l1_cdf(swapi_l0_test_data_path):
     """Test housekeeping processing and CDF file creation"""
     test_packet_file = swapi_l0_test_data_path / "imap_swapi_l0_raw_20240924_v001.pkts"
     processed_data = swapi_l1(test_packet_file, data_version="v001")
-    print(processed_data[0]["swp_pcem_counts"].shape)
 
     assert processed_data[0].attrs["Apid"] == f"{SWAPIAPID.SWP_SCI}"
     assert processed_data[0].attrs["Plan_id"] == "1"
     assert processed_data[0].attrs["Sweep_table"] == "1"
 
     # Test CDF File
-    # sci cdf file
     cdf_filename = "imap_swapi_l1_sci_20240924_v001.cdf"
     cdf_path = write_cdf(processed_data[0])
     assert cdf_path.name == cdf_filename
