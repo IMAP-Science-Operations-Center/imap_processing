@@ -417,19 +417,19 @@ class HistogramL1B:
         IMAP spin angle ψ for bin centers, see Sec. -
     filter_temperature_average
         block-averaged value, decoded to Celsius degrees using Eq. (47)
-    filter_temperature_std_dev
+    filter_temperature_variance
         standard deviation (1 sigma), decoded to Celsius degrees using Eq. (51)
     hv_voltage_average
         block-averaged value, decoded to volts using Eq. (47)
-    hv_voltage_std_dev
+    hv_voltage_variance
         standard deviation (1 sigma), decoded to volts using Eq. (51)
     spin_period_average
         block-averaged onboard value, decoded to seconds using Eq. (47)
-    spin_period_std_dev
+    spin_period_variance
         standard deviation (1 sigma), decoded to seconds using Eq. (51)
     pulse_length_average
         block-averaged value, decoded to μs using Eq. (47)
-    pulse_length_std_dev
+    pulse_length_variance
     standard deviation (1 sigma), decoded to μs using Eq. (51)
     glows_start_time
         GLOWS clock, subseconds as decimal part of float, see Sec. -.1
@@ -444,24 +444,24 @@ class HistogramL1B:
         is_inside_excluded_region, is_excluded_by_instr_team, is_suspected_transient]
     spin_period_ground_average
         block-averaged value computed on ground, see Sec. -.1
-    spin_period_ground_std_dev
+    spin_period_ground_variance
         standard deviation (1 sigma), see Sec. -.1
     position_angle_offset_average
         block-averaged value in degrees, see Sec. - and -.1
-    position_angle_offset_std_dev
+    position_angle_offset_variance
         standard deviation (1 sigma), see Sec. - and -.1
-    spin_axis_orientation_std_dev
+    spin_axis_orientation_variance
         standard deviation( 1 sigma): ∆λ, ∆φ for ⟨λ⟩, ⟨φ⟩
     spin_axis_orientation_average
         block-averaged spin-axis ecliptic longitude ⟨λ⟩ and latitude ⟨φ⟩ in degrees
     spacecraft_location_average
         block-averaged Cartesian ecliptic coordinates ⟨X⟩, ⟨Y ⟩, ⟨Z⟩ [km] of IMAP
-    spacecraft_location_std_dev
+    spacecraft_location_variance
         standard deviations (1 sigma) ∆X, ∆Y , ∆Z for ⟨X⟩, ⟨Y ⟩, ⟨Z⟩
     spacecraft_velocity_average
         block-averaged values ⟨VX⟩, ⟨VY⟩, ⟨VZ⟩ [km/s] of IMAP velocity components
         (Cartesian ecliptic frame)
-    spacecraft_velocity_std_dev
+    spacecraft_velocity_variance
         standard deviations (1 sigma) ∆VX , ∆VY , ∆VZ for ⟨VX ⟩, ⟨VY ⟩, ⟨VZ ⟩
     flags
         flags for extra information, per histogram. This should be a human-readable

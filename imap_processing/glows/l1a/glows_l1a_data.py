@@ -145,7 +145,7 @@ class HistogramL1A:
     l0: InitVar[HistogramL0]
         HistogramL0 Data class containing the raw data from the histogram packet. This
         is only used to create the class and cannot be accessed from an instance.
-    histograms: list[int]
+    histogram: list[int]
         List of histogram data values
     flight_software_version: int
         Version of the flight software used to generate the data. Part of block header.
@@ -155,6 +155,8 @@ class HistogramL1A:
         Name of the packet file used to generate the data. Part of block header.
     seq_count_in_pkts_file: int
         Sequence count in the packet file, equal to SRC_SEQ_CTR Part of block header.
+    first_spin_id: int
+        ID of the first spin in block (computed with start spin and offset)
     last_spin_id: int
         ID of the last spin in block (computed with start spin and offset)
     imap_start_time: tuple[int, int]
