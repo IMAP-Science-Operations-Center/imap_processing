@@ -14,11 +14,7 @@ from imap_processing.glows.l1b.glows_l1b_data import (
     HistogramL1B,
 )
 
-# TODO: Write a test to actually compare the output of the CDF to the expected output
-# from the L1B code
-# I suspect that the histogram are only filling in the first epoch value and we need
-# to validate that.
-# Maybe: stack together histogram dataarrays and use merge?
+
 @pytest.fixture()
 def hist_dataset():
     variables = {
@@ -112,8 +108,9 @@ def de_dataset():
         attrs=cdf_attrs.get_variable_attributes("epoch"),
     )
 
-    within_the_second = xr.DataArray(np.arange(2295), name="within_the_second",
-                                     dims=["within_the_second"])
+    within_the_second = xr.DataArray(
+        np.arange(2295), name="within_the_second", dims=["within_the_second"]
+    )
     direct_event = xr.DataArray(
         np.arange(4), name="direct_event", dims=["direct_event"]
     )
@@ -124,14 +121,22 @@ def de_dataset():
     variables["filter_temperature"][0] = 100
 
     ds = xr.Dataset(
-        coords={"epoch": epoch, "within_the_second": within_the_second, "direct_event": direct_event},
+        coords={
+            "epoch": epoch,
+            "within_the_second": within_the_second,
+            "direct_event": direct_event,
+        },
         attrs=cdf_attrs.get_global_attributes("imap_glows_l1b_de"),
     )
 
     ds["direct_events"] = xr.DataArray(
         de_data,
         dims=["epoch", "within_the_second", "direct_event"],
-        coords={"epoch": epoch, "within_the_second": within_the_second, "direct_event": direct_event},
+        coords={
+            "epoch": epoch,
+            "within_the_second": within_the_second,
+            "direct_event": direct_event,
+        },
     )
 
     for var in variables:
@@ -368,7 +373,7 @@ def test_generate_histogram_dataset(hist_dataset):
 def test_generate_de_dataset(de_dataset):
     l1b_data = glows_l1b(de_dataset, "v001")
 
-    print(l1b_data['within_the_second'].attrs)
+    print(l1b_data["within_the_second"].attrs)
 
     output_path = write_cdf(l1b_data)
 

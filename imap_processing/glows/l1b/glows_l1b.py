@@ -65,7 +65,6 @@ def glows_l1b(input_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
             dims=["ecliptic"],
             attrs=cdf_attrs.get_variable_attributes("ecliptic_dim"),
         )
-        # print(cdf_attrs.get_variable_attributes("bin_dim"))
         bin_data = xr.DataArray(
             input_dataset["bins"],
             name="bins",
@@ -91,7 +90,6 @@ def glows_l1b(input_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
         # HistogramL1B dataclass, we can use dataclasses.fields to get the field names.
 
         fields = dataclasses.fields(HistogramL1B)
-        # TODO fix this - does each epoch have a histogram value?
         for index, dataarray in enumerate(output_dataarrays):
             # Dataarray is already an xr.DataArray type, so we can just assign it
             output_dataset[fields[index].name] = dataarray
@@ -134,7 +132,7 @@ def glows_l1b(input_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
                 fields[index].name
             ].attrs = cdf_attrs.get_variable_attributes(fields[index].name)
 
-        output_dataset['within_the_second'] = within_the_second_data
+        output_dataset["within_the_second"] = within_the_second_data
 
     else:
         raise ValueError(
