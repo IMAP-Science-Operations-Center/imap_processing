@@ -321,7 +321,7 @@ def generate_histogram_dataset(
     # TODO compute average temperature etc
     # Data in lists, for each of the 25 time varying datapoints in HistogramL1A
 
-    hist_data = np.zeros((len(hist_l1a_list), 3600))
+    hist_data = np.zeros((len(hist_l1a_list), 3600), dtype=np.int64)
 
     # TODO: add missing attributes
     support_data: dict = {

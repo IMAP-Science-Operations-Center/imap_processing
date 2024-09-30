@@ -569,11 +569,11 @@ class HistogramL1B:
             "pulse_length", self.pulse_length_std_dev
         )
 
-        self.histogram_flag_array = np.zeros((4, 3600))
+        self.histogram_flag_array = np.zeros((4, 3600), dtype=np.uint8)
         # self.unique_block_identifier = np.datetime_as_string(
         #     np.datetime64(int(self.imap_start_time), "ns"), "s"
         # )
-        self.flags = np.zeros((17, 3600))
+        self.flags = np.zeros((17, 3600), dtype=np.uint8)
 
     def output_data(self) -> tuple:
         """
