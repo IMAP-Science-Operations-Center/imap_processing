@@ -65,7 +65,7 @@ def filter_good_data(full_sweep_sci: xr.Dataset) -> npt.NDArray:
         None, ...
     ].reshape(-1)
 
-    logger.debug("Cycle data bad was due to one of below reason:")
+    logger.debug("Cycle data was bad due to one of below reasons:")
     logger.debug(
         "Sweep table should be same: "
         f"{full_sweep_sci['sweep_table'].data[bad_cycle_indices]}"
@@ -447,17 +447,12 @@ def process_swapi_science(
     # ====================================================
     # Step 1: Filter full cycle data
     # ====================================================
-    logger.info(
-        f"Sequence number before processing: \n{sci_dataset['seq_number'].data}"
-    )
     full_sweep_indices = get_indices_of_full_sweep(sci_dataset)
-    logger.info(f"Full sweep indices: \n{full_sweep_indices}")
     # Filter full sweep data using indices returned from above line
     full_sweep_sci = sci_dataset.isel({"epoch": full_sweep_indices})
 
     # Find indices of good sweep cycles
     good_data_indices = filter_good_data(full_sweep_sci)
-    logger.info(f"Good data sequence number: \n{good_data_indices}")
     good_sweep_sci = full_sweep_sci.isel({"epoch": good_data_indices})
 
     # ====================================================

@@ -156,15 +156,13 @@ def test_process_swapi_science(decom_test_data):
         processed_data["swp_pcem_err_plus"][0],
     )
 
-    # make PLAN_ID data incorrect
-    ds_data["plan_id_science"][:12] = np.arange(12)
+    # make PLAN_ID data incorrect. Now processed data should have less sweeps
+    ds_data["plan_id_science"].data[:24] = np.arange(24)
     processed_data = process_swapi_science(
         ds_data, decom_test_data[SWAPIAPID.SWP_HK], data_version="001"
     )
-
-    # Test dataset dimensions
     assert processed_data.sizes == {
-        "epoch": 11,
+        "epoch": 10,
         "energy": 72,
         "energy_label": 72,
     }
