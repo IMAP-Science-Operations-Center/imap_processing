@@ -69,7 +69,7 @@ def glows_l1b(input_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
             input_dataset["bins"],
             name="bins",
             dims=["bins"],
-            attrs=cdf_attrs.get_variable_attributes("bin_dim"),
+            attrs=cdf_attrs.get_variable_attributes("bins_attrs"),
         )
 
         output_dataarrays = process_histogram(input_dataset)
@@ -240,9 +240,9 @@ def process_histogram(l1a: xr.Dataset) -> xr.Dataset:
         "imap_spin_angle_bin_cntr": ["bins"],
         "histogram_flag_array": ["bad_angle_flags", "bins"],
         "spacecraft_location_average": ["ecliptic"],
-        "spacecraft_location_std_dev": ["ecliptic"],
+        "spacecraft_location_variance": ["ecliptic"],
         "spacecraft_velocity_average": ["ecliptic"],
-        "spacecraft_velocity_std_dev": ["ecliptic"],
+        "spacecraft_velocity_variance": ["ecliptic"],
         "flags": ["flag_dim", "bins"],
     }
 

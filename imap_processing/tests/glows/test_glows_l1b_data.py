@@ -97,37 +97,37 @@ def test_validation_data_histogram():
         out = json.load(f)
 
     # TODO block header, flags
-    expected_matching_columns = [
-        "glows_start_time",
-        "glows_end_time_offset",
-        "imap_start_time",
-        "imap_end_time_offset",
-        "number_of_spins_per_block",
-        "number_of_bins_per_histogram",
-        "histogram",
-        "number_of_events",
-        # 'imap_spin_angle_bin_cntr',
-        # 'histogram_flag_array',
-        "filter_temperature_average",
-        "filter_temperature_std_dev",
-        "hv_voltage_average",
-        "hv_voltage_std_dev",
-        "spin_period_average",
-        "spin_period_std_dev",
-        "pulse_length_average",
-        "pulse_length_std_dev",
+    expected_matching_columns = {
+        "glows_start_time": "glows_start_time",
+        "glows_end_time_offset": "glows_time_offset",
+        "imap_start_time": "imap_start_time",
+        "imap_end_time_offset": "imap_time_offset",
+        "number_of_spins_per_block": "number_of_spins_per_block",
+        "number_of_bins_per_histogram": "number_of_bins_per_histogram",
+        "histogram": "histogram",
+        "number_of_events": "number_of_events",
+        # "imap_spin_angle_bin_cntr": "imap_spin_angle_bin_cntr",
+        # "histogram_flag_array": "histogram_flag_array",
+        "filter_temperature_average": "filter_temperature_average",
+        "filter_temperature_std_dev": "filter_temperature_variance",
+        "hv_voltage_average": "hv_voltage_average",
+        "hv_voltage_std_dev": "hv_voltage_variance",
+        "spin_period_average": "spin_period_average",
+        "spin_period_std_dev": "spin_period_variance",
+        "pulse_length_average": "pulse_length_average",
+        "pulse_length_std_dev": "pulse_length_variance",
         # TODO uncomment when spice is complete
-        # 'spin_period_ground_average',
-        # 'spin_period_ground_std_dev',
-        # 'position_angle_offset_average',
-        # 'position_angle_offset_std_dev',
-        # 'spin_axis_orientation_average',
-        # 'spin_axis_orientation_std_dev',
-        # 'spacecraft_location_average',
-        # 'spacecraft_location_std_dev',
-        # 'spacecraft_velocity_average',
-        # 'spacecraft_velocity_std_dev',
-    ]
+        # "spin_period_ground_average": "spin_period_ground_average",
+        # "spin_period_ground_std_dev": "spin_period_ground_variance",
+        # "position_angle_offset_average": "position_angle_offset_average",
+        # "position_angle_offset_std_dev": "position_angle_offset_variance",
+        # "spin_axis_orientation_average": "spin_axis_orientation_average",
+        # "spin_axis_orientation_std_dev": "spin_axis_orientation_variance",
+        # "spacecraft_location_average": "spacecraft_location_average",
+        # "spacecraft_location_std_dev": "spacecraft_location_variance",
+        # "spacecraft_velocity_average": "spacecraft_velocity_average",
+        # "spacecraft_velocity_std_dev": "spacecraft_velocity_variance",
+    }
 
     for index, validation_output in enumerate(out["output"]):
         if validation_output["imap_start_time"] < 54259215:
@@ -144,11 +144,13 @@ def test_validation_data_histogram():
         )
 
         for key in validation_output:
-            if key not in expected_matching_columns:
+            if key not in expected_matching_columns.keys():
                 continue
 
             np.testing.assert_array_almost_equal(
-                l1b[key].isel(epoch=l1b_index).data, validation_output[key], decimal=1
+                l1b[expected_matching_columns[key]].isel(epoch=l1b_index).data,
+                validation_output[key],
+                decimal=1,
             )
 
 
