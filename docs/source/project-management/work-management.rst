@@ -71,7 +71,7 @@ The developers also tag each implementation task with an estimated time to compl
 
 During Backlog Grooming
 ~~~~~~~~~~~~~~~~~~~~~~~
-During the backlog grooming, the team will review the tasks in the release board and make sure that the tasks are well defined and that the team has a good understanding of what needs to be done.
+During the backlog grooming, the team reviews tasks in the release board, makes sure tasks are well defined, and everyone gets a team-wide view of the work that needs to be done.
 This includes checking for any gaps or dependencies that need to be addressed prior to the start of the release.
 
 The capacity of the team will also be reviewed to make sure that release plan is realistic.
