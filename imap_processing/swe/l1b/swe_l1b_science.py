@@ -7,8 +7,8 @@ import numpy.typing as npt
 import pandas as pd
 import xarray as xr
 
-from imap_processing import imap_module_directory
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
+from imap_processing.swe.utils.swe_utils import read_lookup_table
 
 logger = logging.getLogger(__name__)
 
@@ -41,32 +41,28 @@ esa_voltage_row_index_dict = {
 }
 
 
-def read_lookup_table(table_index_value: int) -> pd.DataFrame:
+def get_esa_dataframe(esa_table_number: int) -> pd.DataFrame:
     """
     Read lookup table from file.
 
     Parameters
     ----------
-    table_index_value : int
+    esa_table_number : int
         ESA table index number.
 
     Returns
     -------
-    pandas.DataFrame
-        Line from lookup table todo check.
+    esa_steps : pandas.DataFrame
+        ESA table_number and its associated values.
     """
-    # This is equivalent of os.path.join in Path
-    lookup_table_filepath = imap_module_directory / "swe/l1b/swe_esa_lookup_table.csv"
-    lookup_table = pd.read_csv(
-        lookup_table_filepath,
-    )
+    if esa_table_number not in [0, 1]:
+        raise ValueError(f"Unknown ESA table number {esa_table_number}")
 
-    if table_index_value == 0:
-        return lookup_table.loc[lookup_table["table_index"] == 0]
-    elif table_index_value == 1:
-        return lookup_table.loc[lookup_table["table_index"] == 1]
-    else:
-        raise ValueError("Error: Invalid table index value")
+    # Get the lookup table DataFrame
+    lookup_table = read_lookup_table()
+
+    esa_steps = lookup_table.loc[lookup_table["table_index"] == esa_table_number]
+    return esa_steps
 
 
 def deadtime_correction(counts: np.ndarray, acq_duration: int) -> npt.NDArray:
@@ -220,7 +216,7 @@ def populate_full_cycle_data(
     full_cycle_ds : xarray.Dataset
         Full cycle data and its acquisition times.
     """
-    esa_lookup_table = read_lookup_table(esa_table_num)
+    esa_lookup_table = get_esa_dataframe(esa_table_num)
 
     # If esa lookup table number is 0, then populate using esa lookup table data
     # with information that esa step ramps up in even column and ramps down
