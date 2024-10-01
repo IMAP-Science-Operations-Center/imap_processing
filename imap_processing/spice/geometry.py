@@ -241,6 +241,8 @@ def frame_transform(
         Ephemeris time(s) corresponding to position(s).
     position : npt.NDArray
         <x, y, z> vector or array of vectors in reference frame `from_frame`.
+        A single position vector may be provided for multiple `et` query times
+        but only a single position vector can be provided for a single `et`.
     from_frame : SpiceFrame
         Reference frame of input vector(s).
     to_frame : SpiceFrame
@@ -249,16 +251,12 @@ def frame_transform(
     Returns
     -------
     result : npt.NDArray
-        3d position vector(s) in reference frame `to_frame`.
+        3d Cartesian position vector(s) in reference frame `to_frame`.
     """
     if position.ndim == 1:
         if not len(position) == 3:
             raise ValueError(
                 "Position vectors with one dimension must have 3 elements."
-            )
-        if not isinstance(et, float):
-            raise ValueError(
-                "Ephemeris time must be float when single position vector is provided."
             )
     elif position.ndim == 2:
         if not position.shape[1] == 3:
@@ -278,6 +276,7 @@ def frame_transform(
     # adding a dimension to position results in the following input and output
     # shapes from matrix multiplication
     # Single et/position:      (3, 3),(3, 1) -> (3, 1)
+    # Multiple et single pos:  (n, 3, 3),(3, 1) -> (n, 3, 1)
     # Multiple et/positions :  (n, 3, 3),(n, 3, 1) -> (n, 3, 1)
     result = np.squeeze(rotate @ position[..., np.newaxis])
 
