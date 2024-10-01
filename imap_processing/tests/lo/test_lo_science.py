@@ -3,7 +3,7 @@ import pytest
 import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
-from imap_processing.lo.l0.lo_science import parse_events
+from imap_processing.lo.l0.lo_science import parse_de_bin, parse_events
 
 
 @pytest.fixture()
@@ -80,3 +80,8 @@ def test_parse_events(fake_de_dataset, attr_mgr):
     np.testing.assert_array_equal(dataset["tof3"].values, np.array([3 << 1, 65535]))
     np.testing.assert_array_equal(dataset["cksm"].values, np.array([0 << 1, 255]))
     np.testing.assert_array_equal(dataset["pos"].values, np.array([255, 0]))
+
+
+def test_parse_de_bin(fake_de_dataset):
+    parsed_int = parse_de_bin(fake_de_dataset, 0, 0, 4, 0)
+    assert parsed_int == 0
