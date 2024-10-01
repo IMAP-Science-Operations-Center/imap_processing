@@ -237,8 +237,8 @@ def generate_de_dataset(
     direct_event = xr.DataArray(
         # Corresponds to DirectEvent (seconds, subseconds, impulse_length, multi_event)
         np.arange(4),
-        name="direct_event",
-        dims=["direct_event"],
+        name="direct_event_components",
+        dims=["direct_event_components"],
         attrs=glows_cdf_attributes.get_variable_attributes(
             "direct_event_components_attrs"
         ),
@@ -255,11 +255,11 @@ def generate_de_dataset(
     de = xr.DataArray(
         direct_events,
         name="direct_events",
-        dims=["epoch", "within_the_second", "direct_event"],
+        dims=["epoch", "within_the_second", "direct_event_components"],
         coords={
             "epoch": epoch_time,
             "within_the_second": within_the_second,
-            "direct_event": direct_event,
+            "direct_event_components": direct_event,
         },
         attrs=glows_cdf_attributes.get_variable_attributes("direct_events"),
     )

@@ -194,7 +194,7 @@ def process_de(l1a: xr.Dataset) -> tuple[xr.DataArray]:
 
     # Set the two direct event dimensions. This is the only multi-dimensional L1A
     # (input) variable.
-    input_dims[0] = ["within_the_second", "direct_event"]
+    input_dims[0] = ["within_the_second", "direct_event_components"]
 
     l1b_fields: tuple = xr.apply_ufunc(
         lambda *args: tuple(dataclasses.asdict(DirectEventL1B(*args)).values()),

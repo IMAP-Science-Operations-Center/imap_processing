@@ -26,6 +26,20 @@ support_data_defaults: &support_data_defaults
   FORMAT: I10
   RESOLUTION: ISO8601
 
+time_data_defaults: &time_data_defaults
+  <<: *support_data_defaults
+  FILLVAL: *int_fillval
+  FORMAT: F16.6
+  UNITS: seconds
+  VALIDMAX: 4294967295.0
+  VALIDMIN: 0.0
+
+flag_data_defaults: &flag_data_defaults
+  <<: *support_data_defaults
+  FILLVAL: -128
+  FORMAT: I2
+  LABLAXIS: Flag
+
 bins_attrs:
   <<:  *default_attrs
   VALIDMIN: 0
@@ -41,14 +55,15 @@ bins_attrs:
 
 flag_dim:
   <<: *default_attrs
-  VALIDMIN: 0
-  VALIDMAX: 1
   FILLVAL: -1
   CATDESC: Flags for histogram information
   FIELDNAM: Flags for histogram information
-  LABLAXIS: Flags
-  VAR_TYPE: support_data
   UNITS: ' '
+  FORMAT: I2
+  LABLAXIS: Flags
+  VALIDMAX: 1
+  VALIDMIN: 0
+  VAR_TYPE: support_data
 
 within_the_second: # Used to be per_second_attrs
   <<:  *default_attrs
@@ -60,6 +75,17 @@ within_the_second: # Used to be per_second_attrs
   VAR_TYPE: support_data
   DISPLAY_TYPE: time_series
   LABLAXIS: Direct Events
+
+direct_event_components_attrs:
+  <<:  *default_attrs
+  VALIDMIN: 0
+  VALIDMAX: 3
+  CATDESC: Components of a direct event (seconds, subseconds, impulse_length, multi_event)
+  FIELDNAM: Direct event components
+  FORMAT: I2
+  VAR_TYPE: support_data
+  LABLAXIS: Components
+  FILLVAL: 255
 
 direct_events:
   <<:  *default_attrs
@@ -121,59 +147,36 @@ last_spin_id:
   VALIDMAX: *max_uint32_min_one
 
 imap_start_time:
-  <<: *support_data_defaults
+  <<: *time_data_defaults
   CATDESC: Histogram start time, IMAP-clock seconds
   FIELDNAM: Histogram start time, IMAP-clock seconds
-  # TODO: Presumably float64 max or min should be here?
-  FILLVAL: *int_fillval
-  FORMAT: F16.6
-  UNITS: seconds
   LABLAXIS: Start time
-  VALIDMAX: 4294967295.0
-  VALIDMIN: 0.0
 
 imap_time_offset:
-  <<: *support_data_defaults
+  <<: *time_data_defaults
   CATDESC: Accumulation time in seconds for GLOWS histogram
   FIELDNAM: Histogram accumulation time
-   # TODO: Presumably float64 max or min should be here?
-  FILLVAL: *int_fillval
-  FORMAT: F12.6
-  UNITS: seconds
   LABLAXIS: Duration
   VALIDMAX: 4000.0
-  VALIDMIN: 0.0
 
 glows_start_time:
-  <<: *support_data_defaults
+  <<: *time_data_defaults
   CATDESC: Histogram start time, GLOWS-clock seconds
   FIELDNAM: Histogram start time, GLOWS-clock seconds
-  FILLVAL: *int_fillval
-  FORMAT: F16.6
-  UNITS: seconds
   LABLAXIS: Start time
-  VALIDMAX: 4294967295.0
-  VALIDMIN: 0.0
 
 glows_time_offset:
-  <<: *support_data_defaults
+  <<: *time_data_defaults
   CATDESC: Accumulation time in seconds for GLOWS histogram
   FIELDNAM: Histogram accumulation time
-  FILLVAL: *int_fillval
-  FORMAT: F12.6
-  UNITS: seconds
   LABLAXIS: Duration
   VALIDMAX: 4000.0 # 15.38 s per spin x 256 spins = 3937.3 s, then rounded up
-  VALIDMIN: 0.0
 
 is_generated_on_ground:
-  <<: *support_data_defaults
+  <<: *flag_data_defaults
   CATDESC: Flag indicating where histogram data was generated (1 - on the ground, 0 - onboard)
   FIELDNAM: Histogram-creation-site flag
   FILLVAL: -128
-  FORMAT: I2
-  LABLAXIS: Flag
-  VALIDMAX: 1
 
 number_of_spins_per_block:
   <<: *support_data_defaults
@@ -410,67 +413,47 @@ number_of_de_packets:
 
 # data_every_second in glows_l1a.py
 imap_time_last_pps:
-  <<: *support_data_defaults
+  <<: *time_data_defaults
   CATDESC: IMAP-clock time for last PPS
   FIELDNAM: IMAP-clock time for last PPS
-  FILLVAL: *max_uint32
-  FORMAT: F16.6
   LABLAXIS: IMAP seconds
-  UNITS: seconds
   VALIDMAX: *max_uint32_min_one
 
 glows_time_last_pps:
-  <<: *support_data_defaults
+  <<: *time_data_defaults
   CATDESC: GLOWS-clock time for last PPS
   FIELDNAM: GLOWS-clock time for last PPS
   DISPLAY_TYPE: no_plot
-  FILLVAL: *max_uint32
-  FORMAT: F16.6
   LABLAXIS: GLOWS seconds
-  UNITS: seconds
   VALIDMAX: *max_uint32_min_one
 
 imap_time_next_pps:
-  <<: *support_data_defaults
+  <<: *time_data_defaults
   CATDESC: IMAP-clock time for next PPS
   FIELDNAM: IMAP-clock time for next PPS
   FILLVAL: *max_uint32
-  FORMAT: F16.6
   LABLAXIS: IMAP seconds
-  UNITS: seconds
   VALIDMAX: *max_uint32_min_one
 
 catbed_heater_active:
-  <<: *support_data_defaults
+  <<: *flag_data_defaults
   CATDESC: Catbed-heater activity flag (1 - active, 0 - not active)
   FIELDNAM: Catbed-heater activity flag
-  FILLVAL: -128
-  FORMAT: I2
-  LABLAXIS: Flag
 
 spin_period_valid:
-  <<: *support_data_defaults
+  <<: *flag_data_defaults
   CATDESC: Spin-period-validity flag (1 - valid, 0 - invalid)
   FIELDNAM: Spin-period-validity flag
-  FILLVAL: -128
-  FORMAT: I2
-  LABLAXIS: Flag
 
 spin_phase_at_next_pps_valid:
-  <<: *support_data_defaults
+  <<: *flag_data_defaults
   CATDESC: Spin-phase-at-next-PPS validity flag (1 - valid, 0 - invalid)
   FIELDNAM: Spin-phase-at-next-PPS validity flag
-  FILLVAL: -128
-  FORMAT: I2
-  LABLAXIS: Flag
 
 spin_period_source:
-  <<: *support_data_defaults
+  <<: *flag_data_defaults
   CATDESC: Spin-period-source flag (0 - from ITF, 1 - estimated by GLOWS AppSW)
   FIELDNAM: Spin-period-source flag
-  FILLVAL: -128
-  FORMAT: I2
-  LABLAXIS: Flag
 
 spin_period:
   <<: *support_data_defaults
@@ -529,78 +512,58 @@ hv_voltage:
   VALIDMAX: *max_uint16
 
 glows_time_on_pps_valid:
-  <<: *support_data_defaults
+  <<: *flag_data_defaults
   CATDESC: GLOWS-time-on-PPS-arrival validity flag (1 - valid, 0 - not valid)
   FIELDNAM: GLOWS time validity flag
-  FILLVAL: -128
-  FORMAT: I2
-  LABLAXIS: Flag
 
 time_status_valid:
-  <<: *support_data_defaults
+  <<: *flag_data_defaults
   CATDESC: Time-status-data-structure-validity flag (1 - valid, 0 - invalid)
   FIELDNAM: Time-status-structure-validity flag
-  FILLVAL: -128
-  FORMAT: I2
-  LABLAXIS: Flag
 
 housekeeping_valid:
-  <<: *support_data_defaults
+  <<: *flag_data_defaults
   CATDESC: GLOWS housekeeping validity flag (1 - valid, 0 - invalid)
   FIELDNAM: Housekeeping validity flag
-  FILLVAL: -128
-  FORMAT: I2
-  LABLAXIS: Flag
 
 is_pps_autogenerated:
-  <<: *support_data_defaults
+  <<: *flag_data_defaults
   CATDESC: Flag indicating whether PPS is autogenerated (1 - autogenerated, 0 - external)
   FIELDNAM: Autogenerated-PPS flag
-  FILLVAL: -128
-  FORMAT: I2
-  LABLAXIS: Flag
 
 hv_test_in_progress:
-  <<: *support_data_defaults
+  <<: *flag_data_defaults
   CATDESC: HV-test-in-progress flag (1 - test is on, 0 - test is off)
   FIELDNAM: HV-test-in-progress flag
-  FILLVAL: -128
-  FORMAT: I2
-  LABLAXIS: Flag
 
 pulse_test_in_progress:
-  <<: *support_data_defaults
+  <<: *flag_data_defaults
   CATDESC: Pulse-test-in-progress flag (1 - test is on, 0 - test is off)
   FIELDNAM: Pulse-test-in-progress flag
-  FILLVAL: -128 # int8_min
-  FORMAT: I2
-  LABLAXIS: Flag
 
 memory_error_detected:
-  <<: *support_data_defaults
+  <<: *flag_data_defaults
   CATDESC: Memory-error flag (1 - error detected, 0 - no error)
   FIELDNAM: Memory-error flag
-  FILLVAL: -128
-  FORMAT: I2
-  LABLAXIS: Flag
 # End of data_every_second
 
 direct_event_glows_times:
-  <<: *support_data_defaults
+  <<: *time_data_defaults
+  DEPEND_1: within_the_second
   CATDESC: IMAP-clock time for direct events
   FIELDNAM: IMAP-clock time for direct_events
+  LABLAXIS: Seconds
   FILLVAL: *max_uint32
-  FORMAT: F16.6
-  LABLAXIS: seconds
-  UNITS: seconds
   VALIDMAX: *max_uint32_min_one
 
 # TODO: review
 direct_event_pulse_lengths:
-  <<: *default_attrs
+  <<: *support_data_defaults
+  DEPEND_1: within_the_second
   VAR_TYPE: data
   CATDESC: Pulse lengths for direct events
   FIELDNAM: Pulse lengths for direct events
+  LABLAXIS: Pulse lengths
 
 missing_packets_sequence: # Used to be missing_packets_sequence
   <<: *support_data_defaults
@@ -632,18 +595,17 @@ flags_set_onboard:
 
 # TODO review this
 histogram_flag_array:
-  <<: *support_data_defaults
+  <<: *flag_data_defaults
   VALIDMIN: 0
   VALIDMAX: 1
-  FORMAT: I1
-  FILLVAL: 0
 
 de_flags:
-  <<: *support_data_defaults
+  <<: *flag_data_defaults
+  DEPEND_1: flag_dim
+  CATDESC: Flags for direct events
+  FIELDNAM: Flags for direct events
   VALIDMIN: 0
   VALIDMAX: 1
-  FORMAT: I1
-  FILLVAL: 0
 
 flags:
   <<: *support_data_defaults
