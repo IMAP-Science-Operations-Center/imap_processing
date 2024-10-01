@@ -9,7 +9,7 @@ import xarray as xr
 from imap_processing import imap_module_directory
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.lo.l0.lo_apid import LoAPID
-from imap_processing.lo.l0.lo_science import parse_events, parse_histogram
+from imap_processing.lo.l0.lo_science import parse_histogram
 from imap_processing.utils import packet_file_to_datasets
 
 logger = logging.getLogger(__name__)
@@ -59,11 +59,6 @@ def lo_l1a(dependency: Path, data_version: str) -> list[xr.Dataset]:
         )
         datasets_by_apid[LoAPID.ILO_SCI_CNT] = add_dataset_attrs(
             datasets_by_apid[LoAPID.ILO_SCI_CNT], attr_mgr, logical_source
-        )
-    if LoAPID.ILO_SCI_DE in datasets_by_apid:
-        logical_source = "imap_lo_l1a_de"
-        datasets_by_apid[LoAPID.ILO_SCI_DE] = parse_events(
-            datasets_by_apid[LoAPID.ILO_SCI_DE], attr_mgr
         )
 
     good_apids = [LoAPID.ILO_SCI_CNT]
