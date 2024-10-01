@@ -62,6 +62,24 @@ class SpiceFrame(IntEnum):
     IMAP_GLOWS = -43750
 
 
+# TODO: Update boresight for in-situ instruments
+# TODO: Confirm ENA boresight vectors
+BORESIGHT_LOOKUP = {
+    SpiceFrame.IMAP_LO.name: np.array([0, -1, 0]),
+    SpiceFrame.IMAP_HI_45.name: np.array([0, 1, 0]),
+    SpiceFrame.IMAP_HI_90.name: np.array([0, 1, 0]),
+    SpiceFrame.IMAP_ULTRA_45.name: np.array([0, 0, 1]),
+    SpiceFrame.IMAP_ULTRA_90.name: np.array([0, 0, 1]),
+    SpiceFrame.IMAP_MAG.name: np.array([0, 0, 1]),
+    SpiceFrame.IMAP_SWE.name: np.array([0, 0, 1]),
+    SpiceFrame.IMAP_SWAPI.name: np.array([0, 0, 1]),
+    SpiceFrame.IMAP_CODICE.name: np.array([0, 0, 1]),
+    SpiceFrame.IMAP_HIT.name: np.array([0, 0, 1]),
+    SpiceFrame.IMAP_IDEX.name: np.array([0, 0, 1]),
+    SpiceFrame.IMAP_GLOWS.name: np.array([0, 0, 1]),
+}
+
+
 @typing.no_type_check
 @ensure_spice
 def imap_state(
@@ -319,3 +337,42 @@ def get_rotation_matrix(
         otypes=[np.float64],
     )
     return vec_pxform(from_frame.name, to_frame.name, et)
+
+
+def instrument_pointing(
+    et: Union[float, npt.NDArray],
+    instrument: SpiceFrame,
+    to_frame: SpiceFrame,
+    cartesian: bool = False,
+) -> npt.NDArray:
+    """
+    Compute the instrument pointing at the specified times.
+
+    By default, the coordinates returned are Latitude/Longitude coordinates in
+    the reference frame `to_frame`. Cartesian coordinates can be returned if
+    desired by setting `cartesian=True`.
+
+    Parameters
+    ----------
+    et : float or npt.NDArray
+        Ephemeris time(s) to at which to compute instrument pointing.
+    instrument : SpiceFrame
+        Instrument reference frame to compute the pointing for.
+    to_frame : SpiceFrame
+        Reference frame in which the pointing is to be expressed.
+    cartesian : bool, optional
+        If set to True, the pointing is returned in Cartesian coordinates.
+
+    Returns
+    -------
+    pointing : npt.NDArray
+        The instrument pointing at the specified times.
+    """
+    pointing = frame_transform(
+        et, BORESIGHT_LOOKUP[instrument.name], instrument, to_frame
+    )
+    if cartesian:
+        return pointing
+    if isinstance(et, typing.Collection):
+        return np.array([spice.reclat(vec)[1:] for vec in pointing])
+    return np.array(spice.reclat(pointing)[1:])

@@ -13,6 +13,7 @@ from imap_processing.spice.geometry import (
     get_spacecraft_spin_phase,
     get_spin_data,
     imap_state,
+    instrument_pointing,
 )
 
 
@@ -214,3 +215,31 @@ def test_get_rotation_matrix(furnish_kernels):
             np.arange(10) + et, SpiceFrame.IMAP_IDEX, SpiceFrame.IMAP_SPACECRAFT
         )
         assert rotation.shape == (10, 3, 3)
+
+
+def test_instrument_pointing(furnish_kernels):
+    kernels = [
+        "naif0012.tls",
+        "imap_wkcp.tf",
+        "imap_science_0001.tf",
+        "sim_1yr_imap_attitude.bc",
+        "sim_1yr_imap_pointing_frame.bc",
+    ]
+    with furnish_kernels(kernels):
+        et = spice.utc2et("2025-06-12T12:00:00.000")
+        # Single et input
+        ins_pointing = instrument_pointing(
+            et, SpiceFrame.IMAP_HI_90, SpiceFrame.ECLIPJ2000
+        )
+        assert ins_pointing.shape == (2,)
+        # Multiple et input
+        et = np.array([et, et + 100, et + 1000])
+        ins_pointing = instrument_pointing(
+            et, SpiceFrame.IMAP_HI_90, SpiceFrame.ECLIPJ2000
+        )
+        assert ins_pointing.shape == (3, 2)
+        # Return cartesian coordinates
+        ins_pointing = instrument_pointing(
+            et, SpiceFrame.IMAP_HI_90, SpiceFrame.ECLIPJ2000, cartesian=True
+        )
+        assert ins_pointing.shape == (3, 3)
