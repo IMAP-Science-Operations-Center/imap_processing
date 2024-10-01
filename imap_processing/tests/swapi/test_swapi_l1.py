@@ -171,7 +171,6 @@ def test_process_swapi_science(decom_test_data):
     cdf_filename = "imap_swapi_l1_sci_20240924_v001.cdf"
     cdf_path = write_cdf(processed_data)
     assert cdf_path.name == cdf_filename
-    cdf_path.rename(cdf_filename)
 
 
 def test_swapi_l1_cdf(swapi_l0_test_data_path):
