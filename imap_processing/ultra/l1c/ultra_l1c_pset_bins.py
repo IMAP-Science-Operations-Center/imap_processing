@@ -65,15 +65,17 @@ def build_spatial_bins(
 
 
 def cartesian_to_spherical(
-    v: tuple[np.ndarray, np.ndarray, np.ndarray],
+    v: NDArray,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Convert cartesian coordinates to spherical coordinates.
 
     Parameters
     ----------
-    v : tuple[np.ndarray, np.ndarray, np.ndarray]
-        The x,y,z-components of the velocity vector.
+    v : np.ndarray
+        A NumPy array with shape (n, 3) where each
+        row represents a vector
+        with x, y, z-components.
 
     Returns
     -------
@@ -84,8 +86,9 @@ def cartesian_to_spherical(
     r : np.ndarray
         The radii, or magnitudes, of the vectors.
     """
-    vx, vy, vz = np.hsplit(v, 3)
-    vx, vy, vz = vx.flatten(), vy.flatten(), vz.flatten()  # Flatten the arrays
+    vx = v[:, 0]
+    vy = v[:, 1]
+    vz = v[:, 2]
 
     # Magnitude of the velocity vector
     magnitude_v = np.sqrt(vx**2 + vy**2 + vz**2)
@@ -94,12 +97,8 @@ def cartesian_to_spherical(
     vhat_y = -vy / magnitude_v
     vhat_z = -vz / magnitude_v
 
-    # Convert from cartesian to spherical coordinates (azimuth, elevation)
-    # Radius (magnitude)
-    r = np.sqrt(vhat_x**2 + vhat_y**2 + vhat_z**2)
-
     # Elevation angle (angle from the z-axis, range: [-pi/2, pi/2])
-    el = np.arcsin(vhat_z / r)
+    el = np.arcsin(vhat_z)
 
     # Azimuth angle (angle in the xy-plane, range: [0, 2*pi])
     az = np.arctan2(vhat_y, vhat_x)
@@ -107,7 +106,7 @@ def cartesian_to_spherical(
     # Ensure azimuth is from 0 to 2PI
     az = az % (2 * np.pi)
 
-    return np.degrees(az), np.degrees(el), r
+    return np.degrees(az), np.degrees(el), magnitude_v
 
 
 def get_histogram(
