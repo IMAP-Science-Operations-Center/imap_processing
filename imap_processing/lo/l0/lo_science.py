@@ -172,7 +172,7 @@ def parse_events(dataset: xr.Dataset, attr_mgr: ImapCdfAttributes) -> xr.Dataset
         Parsed and decompressed direct event data.
     """
     # TODO: Add logging. Want to wait until I have a better understanding of how the
-    # DEs spread across multiple packets will work first
+    #  DEs spread across multiple packets will work first
 
     # Sum each count to get the total number of direct events for the pointing
     num_de: int = np.sum(dataset["count"].values)
