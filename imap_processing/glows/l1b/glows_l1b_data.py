@@ -414,7 +414,7 @@ class HistogramL1B:
     number_of_events
         total number of events/counts in histogram
     imap_spin_angle_bin_cntr
-        IMAP spin angle ψ for bin centers, see Sec. -
+        IMAP spin angle ψ for bin centers
     filter_temperature_average
         block-averaged value, decoded to Celsius degrees using Eq. (47)
     filter_temperature_variance
@@ -432,24 +432,24 @@ class HistogramL1B:
     pulse_length_variance
     standard deviation (1 sigma), decoded to μs using Eq. (51)
     glows_start_time
-        GLOWS clock, subseconds as decimal part of float, see Sec. -.1
+        GLOWS clock, subseconds as decimal part of float
     glows_time_offset
-        GLOWS clock, subseconds as decimal part of float, see Sec. -.1
+        GLOWS clock, subseconds as decimal part of float
     imap_start_time
-        IMAP clock, subseconds as decimal part of float, see Sec. -.1
+        IMAP clock, subseconds as decimal part of float
     imap_time_offset
-        IMAP clock, subseconds as decimal part of float, see Sec. -.1
+        IMAP clock, subseconds as decimal part of float
     histogram_flag_array
         flags for bad-time information per bin, consisting of [is_close_to_uv_source,
         is_inside_excluded_region, is_excluded_by_instr_team, is_suspected_transient]
     spin_period_ground_average
-        block-averaged value computed on ground, see Sec. -.1
+        block-averaged value computed on ground
     spin_period_ground_variance
-        standard deviation (1 sigma), see Sec. -.1
+        standard deviation (1 sigma)
     position_angle_offset_average
-        block-averaged value in degrees, see Sec. - and -.1
+        block-averaged value in degrees
     position_angle_offset_variance
-        standard deviation (1 sigma), see Sec. - and -.1
+        standard deviation (1 sigma)
     spin_axis_orientation_variance
         standard deviation( 1 sigma): ∆λ, ∆φ for ⟨λ⟩, ⟨φ⟩
     spin_axis_orientation_average

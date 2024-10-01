@@ -1,22 +1,9 @@
 from collections import namedtuple
-from pathlib import Path
 
 import pytest
 from space_packet_parser.parser import ParsedDataItem
 
 from imap_processing.ccsds.ccsds_data import CcsdsData
-from imap_processing.glows.l0 import decom_glows
-
-
-@pytest.fixture(scope="module")
-def decom_test_data():
-    """Read test data from file"""
-    current_directory = Path(__file__).parent
-    packet_path = (
-        current_directory / "validation_data" / "glows_test_packet_20110921_v01.pkts"
-    )
-    data_packet_list = decom_glows.decom_packets(packet_path)
-    return data_packet_list
 
 
 def test_glows_decom_count(decom_test_data):

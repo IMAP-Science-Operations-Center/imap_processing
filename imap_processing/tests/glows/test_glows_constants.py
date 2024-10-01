@@ -12,5 +12,4 @@ from imap_processing.glows.utils.constants import TimeTuple
     ],
 )
 def test_to_seconds(time, expected_seconds):
-    print(time.to_seconds())
     assert abs(time.to_seconds() - expected_seconds) < 0.00001

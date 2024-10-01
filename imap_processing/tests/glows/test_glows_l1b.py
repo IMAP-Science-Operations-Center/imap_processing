@@ -112,7 +112,7 @@ def de_dataset():
         np.arange(2295), name="within_the_second", dims=["within_the_second"]
     )
     direct_event = xr.DataArray(
-        np.arange(4), name="direct_event", dims=["direct_event"]
+        np.arange(4), name="direct_event_components", dims=["direct_event_components"]
     )
 
     de_data = np.zeros((20, 2295, 4))
@@ -124,18 +124,18 @@ def de_dataset():
         coords={
             "epoch": epoch,
             "within_the_second": within_the_second,
-            "direct_event": direct_event,
+            "direct_event_components": direct_event,
         },
         attrs=cdf_attrs.get_global_attributes("imap_glows_l1b_de"),
     )
 
     ds["direct_events"] = xr.DataArray(
         de_data,
-        dims=["epoch", "within_the_second", "direct_event"],
+        dims=["epoch", "within_the_second", "direct_event_components"],
         coords={
             "epoch": epoch,
             "within_the_second": within_the_second,
-            "direct_event": direct_event,
+            "direct_event_components": direct_event,
         },
     )
 
@@ -372,8 +372,6 @@ def test_generate_histogram_dataset(hist_dataset):
 
 def test_generate_de_dataset(de_dataset):
     l1b_data = glows_l1b(de_dataset, "v001")
-
-    print(l1b_data["within_the_second"].attrs)
 
     output_path = write_cdf(l1b_data)
 

@@ -1,7 +1,6 @@
 import ast
 import dataclasses
 import json
-from functools import reduce
 from pathlib import Path
 
 import numpy as np
@@ -9,40 +8,13 @@ import pandas as pd
 import pytest
 
 from imap_processing.glows import __version__
-from imap_processing.glows.l0 import decom_glows
-from imap_processing.glows.l1a.glows_l1a import glows_l1a, process_de_l0
+from imap_processing.glows.l1a.glows_l1a import glows_l1a
 from imap_processing.glows.l1a.glows_l1a_data import (
     DirectEventL1A,
     HistogramL1A,
     StatusData,
 )
 from imap_processing.glows.utils.constants import DirectEvent, GlowsConstants, TimeTuple
-
-
-@pytest.fixture(scope="module")
-def decom_test_data():
-    """Read test data from file"""
-    current_directory = Path(__file__).parent
-    packet_path = (
-        current_directory / "validation_data" / "glows_test_packet_20110921_v01.pkts"
-    )
-    data_packet_list = decom_glows.decom_packets(packet_path)
-    return data_packet_list
-
-
-@pytest.fixture()
-def l1a_test_data(decom_test_data):
-    hist_l1a = []
-
-    for hist in decom_test_data[0]:
-        hist_l1a.append(HistogramL1A(hist))
-
-    de_l1a_dict = process_de_l0(decom_test_data[1])
-
-    # Flatten the dictionary to one list of DE values
-    de_l1a = reduce(list.__add__, [value for value in de_l1a_dict.values()])
-
-    return hist_l1a, de_l1a
 
 
 @pytest.fixture()

@@ -4,7 +4,6 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from imap_processing.glows.l1a.glows_l1a import glows_l1a
 from imap_processing.glows.l1b.glows_l1b import glows_l1b
 from imap_processing.glows.l1b.glows_l1b_data import AncillaryParameters, DirectEventL1B
 
@@ -75,15 +74,9 @@ def test_glows_l1b_de():
     assert np.allclose(pulse_len, expected_pulse)
 
 
-def test_validation_data_histogram():
-    input_data = (
-        Path(__file__).parent
-        / "validation_data"
-        / "glows_test_packet_20110921_v01.pkts"
-    )
-    l1a_data = glows_l1a(input_data, "v001")
-    hist_day_one = l1a_data[0]
-    hist_day_two = l1a_data[1]
+def test_validation_data_histogram(l1a_dataset):
+    hist_day_one = l1a_dataset[0]
+    hist_day_two = l1a_dataset[1]
 
     l1b_day_one = glows_l1b(hist_day_one, "v001")
     l1b_day_two = glows_l1b(hist_day_two, "v001")
@@ -154,14 +147,8 @@ def test_validation_data_histogram():
             )
 
 
-def test_validation_data_de():
-    input_data = (
-        Path(__file__).parent
-        / "validation_data"
-        / "glows_test_packet_20110921_v01.pkts"
-    )
-    l1a_data = glows_l1a(input_data, "v001")
-    de_data = l1a_data[2]
+def test_validation_data_de(l1a_dataset):
+    de_data = l1a_dataset[2]
 
     l1b = glows_l1b(de_data, "v001")
     validation_data = (
