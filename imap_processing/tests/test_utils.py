@@ -72,7 +72,8 @@ def test_convert_raw_to_eu(tmp_path):
 
 
 @pytest.mark.parametrize(
-    "use_derived_value, expected_mode", [(True, "HVENG"), (False, 2)]
+    "use_derived_value, expected_mode",
+    [(True, np.array(["HVENG", "HVSCI"])), (False, np.array([2, 3]))],
 )
 def test_packet_file_to_datasets(use_derived_value, expected_mode):
     """
@@ -81,7 +82,7 @@ def test_packet_file_to_datasets(use_derived_value, expected_mode):
 
     Test that we get multiple apids in the output.
     """
-    test_file = "tests/swapi/l0_data/imap_swapi_l0_raw_20231012_v001.pkts"
+    test_file = "tests/swapi/l0_data/imap_swapi_l0_raw_20240924_v001.pkts"
     packet_files = imap_module_directory / test_file
     packet_definition = (
         imap_module_directory / "swapi/packet_definitions/swapi_packet_definition.xml"
@@ -90,11 +91,11 @@ def test_packet_file_to_datasets(use_derived_value, expected_mode):
         packet_files, packet_definition, use_derived_value=use_derived_value
     )
     # 3 apids in the test data
-    assert len(datasets_by_apid) == 3
+    assert len(datasets_by_apid) == 4
     data = datasets_by_apid[1188]
     assert data["sec_hdr_flg"].dtype == np.uint8
     assert data["pkt_apid"].dtype == np.uint16
-    np.testing.assert_array_equal(data["mode"], [expected_mode] * len(data["mode"]))
+    np.testing.assert_array_equal(np.unique(data["mode"].data), expected_mode)
 
 
 def test_packet_file_to_datasets_flat_definition():

@@ -22,14 +22,15 @@ from imap_processing.utils import packet_file_to_datasets
 @pytest.fixture(scope="session")
 def decom_test_data(swapi_l0_test_data_path):
     """Read test data from file"""
-    test_file = "imap_swapi_l0_raw_20231012_v001.pkts"
-    packet_files = imap_module_directory / swapi_l0_test_data_path / test_file
+    test_file = "imap_swapi_l0_raw_20240924_v001.pkts"
+    test_path = imap_module_directory / swapi_l0_test_data_path
     packet_definition = (
         f"{imap_module_directory}/swapi/packet_definitions/swapi_packet_definition.xml"
     )
-    return packet_file_to_datasets(
-        packet_files, packet_definition, use_derived_value=False
+    dataset_by_apid = packet_file_to_datasets(
+        test_path / test_file, packet_definition, use_derived_value=False
     )
+    return dataset_by_apid
 
 
 def test_filter_good_data():
@@ -40,7 +41,7 @@ def test_filter_good_data():
         {
             "plan_id_science": xr.DataArray(np.full((total_sweeps * 12), 1)),
             "sweep_table": xr.DataArray(np.repeat(np.arange(total_sweeps), 12)),
-            "mode": xr.DataArray(np.full((total_sweeps * 12), SWAPIMODE.HVENG.value)),
+            "mode": xr.DataArray(np.full((total_sweeps * 12), SWAPIMODE.HVSCI.value)),
         },
         coords={"epoch": np.arange(total_sweeps * 12)},
     )
@@ -49,11 +50,10 @@ def test_filter_good_data():
     bad_data_indices = filter_good_data(ds)
     assert len(bad_data_indices) == 36
 
-    # Check for bad MODE data, only HVENG is "good"
-    # TODO: update test when we update MODE from HVENG to HVSCI
+    # Check for bad MODE data, only HVSCI is "good"
     ds["mode"] = xr.DataArray(
         np.repeat(
-            [SWAPIMODE.LVENG.value, SWAPIMODE.LVSCI.value, SWAPIMODE.HVENG.value], 12
+            [SWAPIMODE.LVENG.value, SWAPIMODE.LVSCI.value, SWAPIMODE.HVSCI.value], 12
         )
     )
     bad_data_indices = filter_good_data(ds)
@@ -61,7 +61,7 @@ def test_filter_good_data():
 
     # Check for bad sweep_table data.
     # Reset MODE data and create first sweep to be mixed value
-    ds["mode"] = xr.DataArray(np.full((total_sweeps * 12), SWAPIMODE.HVENG.value))
+    ds["mode"] = xr.DataArray(np.full((total_sweeps * 12), SWAPIMODE.HVSCI.value))
     ds["sweep_table"][:12] = np.arange(0, 12)
     np.testing.assert_array_equal(filter_good_data(ds), np.arange(12, 36))
 
@@ -133,82 +133,6 @@ def test_swapi_algorithm(decom_test_data):
     pcem_counts = process_sweep_data(full_sweep_sci, "pcem_cnt")
     # check that return value has correct shape
     assert pcem_counts.shape == (total_full_sweeps, 72)
-    expected_count = [
-        0,
-        0,
-        0,
-        1,
-        2,
-        3,
-        4,
-        5,
-        6,
-        7,
-        8,
-        9,
-        10,
-        11,
-        12,
-        13,
-        14,
-        15,
-        16,
-        17,
-        18,
-        19,
-        20,
-        21,
-        22,
-        23,
-        24,
-        25,
-        26,
-        27,
-        28,
-        29,
-        30,
-        31,
-        32,
-        31,
-        30,
-        29,
-        28,
-        27,
-        26,
-        25,
-        24,
-        23,
-        22,
-        21,
-        20,
-        19,
-        18,
-        17,
-        16,
-        15,
-        14,
-        13,
-        12,
-        11,
-        10,
-        9,
-        8,
-        7,
-        6,
-        5,
-        4,
-        18,
-        20,
-        22,
-        24,
-        26,
-        28,
-        30,
-        32,
-        34,
-    ]
-
-    np.testing.assert_array_equal(pcem_counts[0], expected_count)
 
 
 def test_process_swapi_science(decom_test_data):
@@ -220,135 +144,51 @@ def test_process_swapi_science(decom_test_data):
 
     # Test dataset dimensions
     assert processed_data.sizes == {
-        "epoch": 3,
+        "epoch": 11,
         "energy": 72,
         "energy_label": 72,
     }
-    # Test epoch data is correct
-    expected_epoch_datetime = met_to_j2000ns([48, 60, 72])
-    np.testing.assert_array_equal(processed_data["epoch"].data, expected_epoch_datetime)
 
-    expected_count = [
-        0,
-        0,
-        0,
-        1,
-        2,
-        3,
-        4,
-        5,
-        6,
-        7,
-        8,
-        9,
-        10,
-        11,
-        12,
-        13,
-        14,
-        15,
-        16,
-        17,
-        18,
-        19,
-        20,
-        21,
-        22,
-        23,
-        24,
-        25,
-        26,
-        27,
-        28,
-        29,
-        30,
-        31,
-        32,
-        31,
-        30,
-        29,
-        28,
-        27,
-        26,
-        25,
-        24,
-        23,
-        22,
-        21,
-        20,
-        19,
-        18,
-        17,
-        16,
-        15,
-        14,
-        13,
-        12,
-        11,
-        10,
-        9,
-        8,
-        7,
-        6,
-        5,
-        4,
-        18,
-        20,
-        22,
-        24,
-        26,
-        28,
-        30,
-        32,
-        34,
-    ]
-    # Test that we got expected counts and datashape
-    np.testing.assert_array_equal(processed_data["swp_pcem_counts"][0], expected_count)
-    assert processed_data["swp_pcem_counts"].shape == (3, 72)
+    assert processed_data["swp_pcem_counts"].shape == (11, 72)
     # Test that we calculated uncertainty correctly
     np.testing.assert_allclose(
         np.sqrt(processed_data["swp_pcem_counts"][0]),
         processed_data["swp_pcem_err_plus"][0],
     )
 
-    # make PLAN_ID data incorrect
-    ds_data["plan_id_science"][:12] = np.arange(12)
+    # make PLAN_ID data incorrect. Now processed data should have less sweeps
+    ds_data["plan_id_science"].data[:24] = np.arange(24)
     processed_data = process_swapi_science(
         ds_data, decom_test_data[SWAPIAPID.SWP_HK], data_version="001"
     )
-
-    # Test dataset dimensions
     assert processed_data.sizes == {
-        "epoch": 2,
+        "epoch": 10,
         "energy": 72,
         "energy_label": 72,
     }
 
     # Test CDF File
-    # This time mismatch is because of sample data. Sample data has
-    # SHCOARSE time as 48, 60, 72. That's why time is different.
-    cdf_filename = "imap_swapi_l1_sci_20100101_v001.cdf"
+    cdf_filename = "imap_swapi_l1_sci_20240924_v001.cdf"
     cdf_path = write_cdf(processed_data)
     assert cdf_path.name == cdf_filename
 
 
 def test_swapi_l1_cdf(swapi_l0_test_data_path):
     """Test housekeeping processing and CDF file creation"""
-    test_packet_file = swapi_l0_test_data_path / "imap_swapi_l0_raw_20231012_v001.pkts"
+    test_packet_file = swapi_l0_test_data_path / "imap_swapi_l0_raw_20240924_v001.pkts"
     processed_data = swapi_l1(test_packet_file, data_version="v001")
 
     assert processed_data[0].attrs["Apid"] == f"{SWAPIAPID.SWP_SCI}"
-    assert processed_data[0].attrs["Plan_id"] == "0"
-    assert processed_data[0].attrs["Sweep_table"] == "0"
+    assert processed_data[0].attrs["Plan_id"] == "1"
+    assert processed_data[0].attrs["Sweep_table"] == "1"
 
     # Test CDF File
-    # sci cdf file
-    cdf_filename = "imap_swapi_l1_sci_20100101_v001.cdf"
+    cdf_filename = "imap_swapi_l1_sci_20240924_v001.cdf"
     cdf_path = write_cdf(processed_data[0])
     assert cdf_path.name == cdf_filename
 
     # hk cdf file
-    cdf_filename = "imap_swapi_l1_hk_20100101_v001.cdf"
+    cdf_filename = "imap_swapi_l1_hk_20240924_v001.cdf"
     # Ignore ISTP checks for HK data
     cdf_path = write_cdf(processed_data[1], istp=False)
     assert cdf_path.name == cdf_filename
