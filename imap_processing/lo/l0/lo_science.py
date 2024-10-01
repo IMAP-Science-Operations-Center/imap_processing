@@ -283,6 +283,8 @@ def parse_events(dataset: xr.Dataset, attr_mgr: ImapCdfAttributes) -> xr.Dataset
 
             pointing_de += 1
 
+    return dataset
+
 
 def parse_de_bin(
     dataset: xr.Dataset, pkt_idx: int, bit_pos: int, bit_length: int, bit_shift: int = 0
