@@ -226,13 +226,16 @@ def populate_full_cycle_data(
     # with information that esa step ramps up in even column and ramps down
     # in odd column every six steps.
     if esa_table_num == 0:
+        energy_steps = 24
+        angle = 30
+        cem_detectors = 7
         # create new full cycle data array
-        full_cycle_data = np.zeros((24, 30, 7))
+        full_cycle_data = np.zeros((energy_steps, angle, cem_detectors))
         # SWE needs to store acquisition time of each count data point
         # to use in level 2 processing to calculate
         # spin phase. This is done below by using information from
         # science packet.
-        acquisition_times = np.zeros((24, 30, 7))
+        acquisition_times = np.zeros((energy_steps, angle, cem_detectors))
 
         # Initialize esa_step_number and column_index.
         # esa_step_number goes from 0 to 719 range where
