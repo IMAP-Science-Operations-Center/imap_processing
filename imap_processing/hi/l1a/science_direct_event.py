@@ -178,7 +178,7 @@ def create_dataset(de_data_list: list, packet_met_time: list) -> xr.Dataset:
         "event_met": list(),
         "ccsds_met": list(),
         "meta_event_met": list(),
-        "esa_stepping_num": list(),
+        "esa_step": list(),
         "trigger_id": list(),
         "tof_1": list(),
         "tof_2": list(),
@@ -246,7 +246,7 @@ def create_dataset(de_data_list: list, packet_met_time: list) -> xr.Dataset:
         )
         data_dict["event_met"].append(de_met_in_ns)
         data_dict["epoch"].append(met_to_j2000ns(de_met_in_ns / 1e9))
-        data_dict["esa_stepping_num"].append(current_esa_step)
+        data_dict["esa_step"].append(current_esa_step)
         # start_bitmask_data is 1, 2, 3 for detector A, B, C
         # respectively. This is used to identify which detector
         # was hit first for this current direct event.

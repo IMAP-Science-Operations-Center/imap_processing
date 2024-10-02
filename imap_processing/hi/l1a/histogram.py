@@ -117,7 +117,7 @@ def allocate_histogram_dataset(num_packets: int) -> xr.Dataset:
     data_vars["esa_stepping_num"] = xr.DataArray(
         np.empty(num_packets, dtype=np.uint8),
         dims=["epoch"],
-        attrs=attr_mgr.get_variable_attributes("hi_hist_esa_stepping_num"),
+        attrs=attr_mgr.get_variable_attributes("hi_hist_esa_step"),
     )
 
     # Allocate xarray.DataArray objects for the 24 90-element histogram counters
