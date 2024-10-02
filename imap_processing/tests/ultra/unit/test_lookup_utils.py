@@ -8,6 +8,7 @@ from imap_processing.ultra.l1b.lookup_utils import (
     get_image_params,
     get_norm,
     get_y_adjust,
+    lookup_bin,
 )
 
 BASE_PATH = imap_module_directory / "ultra" / "lookup_tables"
@@ -66,3 +67,22 @@ def test_get_image_params():
     image_params = get_image_params("XFTLTOFF")
 
     assert image_params == 49.3
+
+
+def test_lookup_bin():
+    index_path = BASE_PATH / "tofxe45steep-index.mem.csv"
+    index_df = pd.read_csv(index_path, header=None, names=["index"])
+    break_path = BASE_PATH / "tofxe45steep-break.mem.csv"
+
+    with open(break_path) as file:
+        lines = [line.strip().split(",") for line in file]
+
+    max_columns = max(len(line) for line in lines)
+    padded_lines = [line + [np.nan] * (max_columns - len(line)) for line in lines]
+    break_df = pd.DataFrame(padded_lines)
+
+    cTOF = 34.12543  # Example row value
+    energy = 2016  # Example energy (column) value
+    bin_number = lookup_bin(cTOF, energy, index_df, break_df)
+    print(f"Bin number: {bin_number}")
+    print("hi")

@@ -163,3 +163,16 @@ def get_image_params(image: str) -> np.float64:
     """
     value: np.float64 = _IMAGE_PARAMS_DF[image].values[0]
     return value
+
+
+def lookup_bin(cTOF, energy, index_table, breakpoint_table):
+    # Get the index from the index table using the cTOF row
+    index = index_table.loc[energy, "index"]
+    breakpoint_array = breakpoint_table.loc[index].astype("float").values
+    # Search for the bin by checking the thresholds in the breakpoint list
+    for threshold, bin_value in breakpoints:
+        if cTOF >= threshold:
+            return bin_value
+
+    # If no threshold matches, return the last bin (default case)
+    return breakpoints[-1][1] if breakpoints else None
