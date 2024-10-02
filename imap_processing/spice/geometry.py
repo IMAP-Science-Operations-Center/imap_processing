@@ -372,5 +372,5 @@ def instrument_pointing(
     if cartesian:
         return pointing
     if isinstance(et, typing.Collection):
-        return np.rad2deg(np.array([spice.reclat(vec)[1:] for vec in pointing]))
-    return np.rad2deg(np.array(spice.reclat(pointing)[1:]))
+        return np.rad2deg([spice.reclat(vec)[1:] for vec in pointing])
+    return np.rad2deg(spice.reclat(pointing)[1:])
