@@ -153,7 +153,7 @@ def test_decompress_data_multi_de(multi_de):
     # TOF1 not transmitted
     tof2_1 = "000000010"  # 2
     tof3_1 = "000011"  # 3
-    cksm_1 = "000"  # 0
+    cksm_1 = "0000"  # 0
     # POS not transmitted
 
     # DE Two

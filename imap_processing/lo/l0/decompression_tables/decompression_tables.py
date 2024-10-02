@@ -6,7 +6,7 @@ from collections import namedtuple
 # must be shifted by 1 bit to the left
 DE_BIT_SHIFT = 1
 
-# This named tupled will be used to store the bit length
+# This named tuple will be used to store the bit length
 # of each TOF field. This length will be used for unpacking
 # the TOF data.
 DataFields = namedtuple(
@@ -24,7 +24,7 @@ DataFields = namedtuple(
     ],
 )
 # the bit length for each field
-DATA_BITS = DataFields(12, 3, 1, 10, 9, 9, 6, 3, 1)
+DATA_BITS = DataFields(12, 3, 1, 10, 9, 9, 6, 4, 2)
 
 # This named tuple will be used to store which
 # TOF fields are transmitted for each case / mode.
@@ -61,7 +61,7 @@ CASE_DECODER = {
     (4, 1): TOFFields(True, False, False, False, False, True),
     (4, 0): TOFFields(True, False, False, True, False, False),
     (5, 0): TOFFields(True, False, True, False, False, False),
-    (6, 1): TOFFields(True, False, False, True, False, False),
+    (6, 1): TOFFields(True, False, False, False, False, True),
     (6, 0): TOFFields(True, False, False, True, False, False),
     (7, 0): TOFFields(True, False, False, False, False, False),
     (8, 0): TOFFields(False, True, True, False, False, True),
