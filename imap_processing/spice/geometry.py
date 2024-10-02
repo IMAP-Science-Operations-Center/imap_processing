@@ -62,6 +62,24 @@ class SpiceFrame(IntEnum):
     IMAP_GLOWS = -43750
 
 
+# TODO: Update boresight for in-situ instruments
+# TODO: Confirm ENA boresight vectors
+BORESIGHT_LOOKUP = {
+    SpiceFrame.IMAP_LO: np.array([0, -1, 0]),
+    SpiceFrame.IMAP_HI_45: np.array([0, 1, 0]),
+    SpiceFrame.IMAP_HI_90: np.array([0, 1, 0]),
+    SpiceFrame.IMAP_ULTRA_45: np.array([0, 0, 1]),
+    SpiceFrame.IMAP_ULTRA_90: np.array([0, 0, 1]),
+    SpiceFrame.IMAP_MAG: np.array([0, 0, 1]),
+    SpiceFrame.IMAP_SWE: np.array([0, 0, 1]),
+    SpiceFrame.IMAP_SWAPI: np.array([0, 0, 1]),
+    SpiceFrame.IMAP_CODICE: np.array([0, 0, 1]),
+    SpiceFrame.IMAP_HIT: np.array([0, 0, 1]),
+    SpiceFrame.IMAP_IDEX: np.array([0, 0, 1]),
+    SpiceFrame.IMAP_GLOWS: np.array([0, 0, 1]),
+}
+
+
 @typing.no_type_check
 @ensure_spice
 def imap_state(
@@ -241,6 +259,8 @@ def frame_transform(
         Ephemeris time(s) corresponding to position(s).
     position : npt.NDArray
         <x, y, z> vector or array of vectors in reference frame `from_frame`.
+        A single position vector may be provided for multiple `et` query times
+        but only a single position vector can be provided for a single `et`.
     from_frame : SpiceFrame
         Reference frame of input vector(s).
     to_frame : SpiceFrame
@@ -249,16 +269,12 @@ def frame_transform(
     Returns
     -------
     result : npt.NDArray
-        3d position vector(s) in reference frame `to_frame`.
+        3d Cartesian position vector(s) in reference frame `to_frame`.
     """
     if position.ndim == 1:
         if not len(position) == 3:
             raise ValueError(
                 "Position vectors with one dimension must have 3 elements."
-            )
-        if not isinstance(et, float):
-            raise ValueError(
-                "Ephemeris time must be float when single position vector is provided."
             )
     elif position.ndim == 2:
         if not position.shape[1] == 3:
@@ -278,6 +294,7 @@ def frame_transform(
     # adding a dimension to position results in the following input and output
     # shapes from matrix multiplication
     # Single et/position:      (3, 3),(3, 1) -> (3, 1)
+    # Multiple et single pos:  (n, 3, 3),(3, 1) -> (n, 3, 1)
     # Multiple et/positions :  (n, 3, 3),(n, 3, 1) -> (n, 3, 1)
     result = np.squeeze(rotate @ position[..., np.newaxis])
 
@@ -320,3 +337,40 @@ def get_rotation_matrix(
         otypes=[np.float64],
     )
     return vec_pxform(from_frame.name, to_frame.name, et)
+
+
+def instrument_pointing(
+    et: Union[float, npt.NDArray],
+    instrument: SpiceFrame,
+    to_frame: SpiceFrame,
+    cartesian: bool = False,
+) -> npt.NDArray:
+    """
+    Compute the instrument pointing at the specified times.
+
+    By default, the coordinates returned are Latitude/Longitude coordinates in
+    the reference frame `to_frame`. Cartesian coordinates can be returned if
+    desired by setting `cartesian=True`.
+
+    Parameters
+    ----------
+    et : float or npt.NDArray
+        Ephemeris time(s) to at which to compute instrument pointing.
+    instrument : SpiceFrame
+        Instrument reference frame to compute the pointing for.
+    to_frame : SpiceFrame
+        Reference frame in which the pointing is to be expressed.
+    cartesian : bool, optional
+        If set to True, the pointing is returned in Cartesian coordinates.
+
+    Returns
+    -------
+    pointing : npt.NDArray
+        The instrument pointing at the specified times.
+    """
+    pointing = frame_transform(et, BORESIGHT_LOOKUP[instrument], instrument, to_frame)
+    if cartesian:
+        return pointing
+    if isinstance(et, typing.Collection):
+        return np.rad2deg([spice.reclat(vec)[1:] for vec in pointing])
+    return np.rad2deg(spice.reclat(pointing)[1:])
