@@ -50,7 +50,7 @@ def hi_l1b(l1a_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
             l1a_dataset,
             conversion_table_path=conversion_table_path,
             packet_name=packet_enum.name,
-            comment="#",
+            comment="#",  # type: ignore[arg-type]
             # Todo error, Argument "comment" to "convert_raw_to_eu" has incompatible
             # type "str"; expected "dict[Any, Any]"
             converters={"mnemonic": str.lower},
