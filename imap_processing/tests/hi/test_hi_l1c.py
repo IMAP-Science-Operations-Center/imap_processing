@@ -35,7 +35,7 @@ def test_allocate_pset_dataset():
     np.testing.assert_array_equal(dataset.despun_z.data.shape, (1, 3))
     np.testing.assert_array_equal(dataset.hae_latitude.data.shape, (1, 3600))
     np.testing.assert_array_equal(dataset.hae_longitude.data.shape, (1, 3600))
-    n_esa_step = dataset.esa_step.data.size
+    n_esa_step = dataset.esa_energy_step.data.size
     for var in [
         "counts",
         "exposure_times",
@@ -57,7 +57,7 @@ def test_full_dataarray(name, shape, expected_shape):
     """Test coverage for full_dataarray function"""
     coords = {
         "epoch": xr.DataArray(np.array([0])),
-        "esa_step": xr.DataArray(np.arange(10)),
+        "esa_energy_step": xr.DataArray(np.arange(10)),
         "spin_angle_bin": xr.DataArray(np.arange(360)),
     }
     cdf_manager = ImapCdfAttributes()

@@ -50,7 +50,7 @@ def hi_l1b(l1a_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
             l1a_dataset,
             conversion_table_path=conversion_table_path,
             packet_name=packet_enum.name,
-            comment="#",  # type: ignore[arg-type]
+            comment="#",
             # Todo error, Argument "comment" to "convert_raw_to_eu" has incompatible
             # type "str"; expected "dict[Any, Any]"
             converters={"mnemonic": str.lower},
@@ -95,7 +95,7 @@ def annotate_direct_events(l1a_dataset: xr.Dataset) -> xr.Dataset:
     new_data_vars = dict()
     for var in [
         "coincidence_type",
-        "esa_step",
+        "esa_energy_step",
         "delta_t_ab",
         "delta_t_ac1",
         "delta_t_bc1",

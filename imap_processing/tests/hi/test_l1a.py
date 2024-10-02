@@ -19,7 +19,7 @@ def test_sci_de_decom(create_de_data):
 
     # unique ESA steps should be [1, 2]
     assert np.array_equal(
-        np.sort(np.unique(processed_data[0]["esa_stepping_num"].values)),
+        np.sort(np.unique(processed_data[0]["esa_step"].values)),
         np.array([1, 2]),
     )
     # unique trigger_id should be [1, 2, 3]

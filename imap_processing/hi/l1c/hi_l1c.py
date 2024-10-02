@@ -106,13 +106,13 @@ def allocate_pset_dataset(n_esa_steps: int, sensor_str: str) -> xr.Dataset:
         attrs=attr_mgr.get_variable_attributes("epoch"),
     )
     attrs = attr_mgr.get_variable_attributes(
-        "hi_pset_esa_step", check_schema=False
+        "hi_pset_esa_energy_step", check_schema=False
     ).copy()
     dtype = attrs.pop("dtype")
-    coords["esa_step"] = xr.DataArray(
+    coords["esa_energy_step"] = xr.DataArray(
         np.full(n_esa_steps, attrs["FILLVAL"], dtype=dtype),
-        name="esa_step",
-        dims=["esa_step"],
+        name="esa_energy_step",
+        dims=["esa_energy_step"],
         attrs=attrs,
     )
     # spin angle bins are 0.1 degree bins for full 360 degree spin
@@ -149,12 +149,12 @@ def allocate_pset_dataset(n_esa_steps: int, sensor_str: str) -> xr.Dataset:
         )
 
     # Generate label variables
-    data_vars["esa_step_label"] = xr.DataArray(
-        coords["esa_step"].values.astype(str),
-        name="esa_step_label",
-        dims=["esa_step"],
+    data_vars["esa_energy_step_label"] = xr.DataArray(
+        coords["esa_energy_step"].values.astype(str),
+        name="esa_energy_step_label",
+        dims=["esa_energy_step"],
         attrs=attr_mgr.get_variable_attributes(
-            "hi_pset_esa_step_label", check_schema=False
+            "hi_pset_esa_energy_step_label", check_schema=False
         ),
     )
     data_vars["spin_bin_label"] = xr.DataArray(
