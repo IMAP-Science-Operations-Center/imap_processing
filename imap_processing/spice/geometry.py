@@ -65,18 +65,18 @@ class SpiceFrame(IntEnum):
 # TODO: Update boresight for in-situ instruments
 # TODO: Confirm ENA boresight vectors
 BORESIGHT_LOOKUP = {
-    SpiceFrame.IMAP_LO.name: np.array([0, -1, 0]),
-    SpiceFrame.IMAP_HI_45.name: np.array([0, 1, 0]),
-    SpiceFrame.IMAP_HI_90.name: np.array([0, 1, 0]),
-    SpiceFrame.IMAP_ULTRA_45.name: np.array([0, 0, 1]),
-    SpiceFrame.IMAP_ULTRA_90.name: np.array([0, 0, 1]),
-    SpiceFrame.IMAP_MAG.name: np.array([0, 0, 1]),
-    SpiceFrame.IMAP_SWE.name: np.array([0, 0, 1]),
-    SpiceFrame.IMAP_SWAPI.name: np.array([0, 0, 1]),
-    SpiceFrame.IMAP_CODICE.name: np.array([0, 0, 1]),
-    SpiceFrame.IMAP_HIT.name: np.array([0, 0, 1]),
-    SpiceFrame.IMAP_IDEX.name: np.array([0, 0, 1]),
-    SpiceFrame.IMAP_GLOWS.name: np.array([0, 0, 1]),
+    SpiceFrame.IMAP_LO: np.array([0, -1, 0]),
+    SpiceFrame.IMAP_HI_45: np.array([0, 1, 0]),
+    SpiceFrame.IMAP_HI_90: np.array([0, 1, 0]),
+    SpiceFrame.IMAP_ULTRA_45: np.array([0, 0, 1]),
+    SpiceFrame.IMAP_ULTRA_90: np.array([0, 0, 1]),
+    SpiceFrame.IMAP_MAG: np.array([0, 0, 1]),
+    SpiceFrame.IMAP_SWE: np.array([0, 0, 1]),
+    SpiceFrame.IMAP_SWAPI: np.array([0, 0, 1]),
+    SpiceFrame.IMAP_CODICE: np.array([0, 0, 1]),
+    SpiceFrame.IMAP_HIT: np.array([0, 0, 1]),
+    SpiceFrame.IMAP_IDEX: np.array([0, 0, 1]),
+    SpiceFrame.IMAP_GLOWS: np.array([0, 0, 1]),
 }
 
 
@@ -368,11 +368,9 @@ def instrument_pointing(
     pointing : npt.NDArray
         The instrument pointing at the specified times.
     """
-    pointing = frame_transform(
-        et, BORESIGHT_LOOKUP[instrument.name], instrument, to_frame
-    )
+    pointing = frame_transform(et, BORESIGHT_LOOKUP[instrument], instrument, to_frame)
     if cartesian:
         return pointing
     if isinstance(et, typing.Collection):
-        return np.array([spice.reclat(vec)[1:] for vec in pointing])
-    return np.array(spice.reclat(pointing)[1:])
+        return np.rad2deg(np.array([spice.reclat(vec)[1:] for vec in pointing]))
+    return np.rad2deg(np.array(spice.reclat(pointing)[1:]))
