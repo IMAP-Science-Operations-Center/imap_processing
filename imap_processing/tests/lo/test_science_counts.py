@@ -5,7 +5,7 @@ from imap_processing.lo.l0.lo_science import decompress
 
 def test_decompress_8_to_16_bit():
     # Arrange
-    # 174 in binary (= 2206 decompressed)
+    # 174 in binary (= 4071 decompressed)
     idx0 = "10101110"
     # 20 in binary (= 20 decompressed)
     idx1 = "00010100"
@@ -13,7 +13,7 @@ def test_decompress_8_to_16_bit():
     bits_per_index = 8
     section_start = 0
     section_length = 16
-    expected = [2206, 20]
+    expected = [4071, 20]
 
     # Act
     out = decompress(bin_str, bits_per_index, section_start, section_length)
@@ -24,7 +24,7 @@ def test_decompress_8_to_16_bit():
 
 def test_decompress_12_to_16_bit():
     # Arrange
-    # 3643 in binary (= 33400 decompressed)
+    # 3643 in binary (= 35800 decompressed)
     idx0 = "111000111011"
     # 20 in binary (= 20 decompressed
     idx1 = "000000010100"
@@ -32,7 +32,7 @@ def test_decompress_12_to_16_bit():
     bits_per_index = 12
     section_start = 0
     section_length = 24
-    expected = [33400, 20]
+    expected = [35800, 20]
 
     # Act
     out = decompress(bin_str, bits_per_index, section_start, section_length)
