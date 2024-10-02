@@ -8,7 +8,6 @@ import pandas as pd
 import pytest
 
 from imap_processing.glows import __version__
-from imap_processing.glows.l1a.glows_l1a import glows_l1a
 from imap_processing.glows.l1a.glows_l1a_data import (
     DirectEventL1A,
     HistogramL1A,
@@ -488,14 +487,8 @@ def test_expected_de_results(l1a_test_data):
         )
 
 
-def test_expected_hist_results(l1a_test_data):
-    input_data = (
-        Path(__file__).parent
-        / "validation_data"
-        / "glows_test_packet_20110921_v01.pkts"
-    )
-
-    hist = glows_l1a(input_data, "v001")[0]
+def test_expected_hist_results(l1a_dataset):
+    hist = l1a_dataset[0]
     validation_data = (
         Path(__file__).parent / "validation_data" / "glows_l1a_hist_validation.json"
     )
