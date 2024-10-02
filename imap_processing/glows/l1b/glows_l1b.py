@@ -65,12 +65,11 @@ def glows_l1b(input_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
             dims=["ecliptic"],
             attrs=cdf_attrs.get_variable_attributes("ecliptic_dim"),
         )
-
         bin_data = xr.DataArray(
             input_dataset["bins"],
             name="bins",
             dims=["bins"],
-            attrs=cdf_attrs.get_variable_attributes("bin_dim"),
+            attrs=cdf_attrs.get_variable_attributes("bins_attrs"),
         )
 
         output_dataarrays = process_histogram(input_dataset)
@@ -91,7 +90,6 @@ def glows_l1b(input_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
         # HistogramL1B dataclass, we can use dataclasses.fields to get the field names.
 
         fields = dataclasses.fields(HistogramL1B)
-
         for index, dataarray in enumerate(output_dataarrays):
             # Dataarray is already an xr.DataArray type, so we can just assign it
             output_dataset[fields[index].name] = dataarray
@@ -99,13 +97,15 @@ def glows_l1b(input_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
                 fields[index].name
             ].attrs = cdf_attrs.get_variable_attributes(fields[index].name)
 
+        output_dataset["bins"] = bin_data
+
     elif "de" in logical_source:
         output_dataarrays = process_de(input_dataset)
-        per_second_data = xr.DataArray(
-            input_dataset["per_second"],
-            name="per_second",
-            dims=["per_second"],
-            attrs=cdf_attrs.get_variable_attributes("per_second_dim"),
+        within_the_second_data = xr.DataArray(
+            input_dataset["within_the_second"],
+            name="within_the_second",
+            dims=["within_the_second"],
+            attrs=cdf_attrs.get_variable_attributes("within_the_second"),
         )
 
         flag_data = xr.DataArray(
@@ -118,7 +118,7 @@ def glows_l1b(input_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
         output_dataset = xr.Dataset(
             coords={
                 "epoch": data_epoch,
-                "per_second": per_second_data,
+                "within_the_second": within_the_second_data,
                 "flag_dim": flag_data,
             },
             attrs=cdf_attrs.get_global_attributes("imap_glows_l1b_de"),
@@ -131,6 +131,8 @@ def glows_l1b(input_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
             output_dataset[
                 fields[index].name
             ].attrs = cdf_attrs.get_variable_attributes(fields[index].name)
+
+        output_dataset["within_the_second"] = within_the_second_data
 
     else:
         raise ValueError(
@@ -178,8 +180,8 @@ def process_de(l1a: xr.Dataset) -> tuple[xr.DataArray]:
 
     output_dimension_mapping = {
         "de_flags": ["flag_dim"],
-        "direct_event_glows_times": ["per_second"],
-        "direct_event_pulse_lengths": ["per_second"],
+        "direct_event_glows_times": ["within_the_second"],
+        "direct_event_pulse_lengths": ["within_the_second"],
     }
 
     # For each attribute, retrieve the dims from output_dimension_mapping or use an
@@ -192,7 +194,7 @@ def process_de(l1a: xr.Dataset) -> tuple[xr.DataArray]:
 
     # Set the two direct event dimensions. This is the only multi-dimensional L1A
     # (input) variable.
-    input_dims[0] = ["per_second", "direct_event"]
+    input_dims[0] = ["within_the_second", "direct_event_components"]
 
     l1b_fields: tuple = xr.apply_ufunc(
         lambda *args: tuple(dataclasses.asdict(DirectEventL1B(*args)).values()),
@@ -234,13 +236,13 @@ def process_histogram(l1a: xr.Dataset) -> xr.Dataset:
     # This should include a mapping to every dimension in the output data besides epoch.
     # Only non-1D variables need to be in this mapping.
     output_dimension_mapping = {
-        "histograms": ["bins"],
+        "histogram": ["bins"],
         "imap_spin_angle_bin_cntr": ["bins"],
         "histogram_flag_array": ["bad_angle_flags", "bins"],
         "spacecraft_location_average": ["ecliptic"],
-        "spacecraft_location_std_dev": ["ecliptic"],
+        "spacecraft_location_variance": ["ecliptic"],
         "spacecraft_velocity_average": ["ecliptic"],
-        "spacecraft_velocity_std_dev": ["ecliptic"],
+        "spacecraft_velocity_variance": ["ecliptic"],
         "flags": ["flag_dim", "bins"],
     }
 

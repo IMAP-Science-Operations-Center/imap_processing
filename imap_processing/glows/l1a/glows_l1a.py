@@ -237,8 +237,8 @@ def generate_de_dataset(
     direct_event = xr.DataArray(
         # Corresponds to DirectEvent (seconds, subseconds, impulse_length, multi_event)
         np.arange(4),
-        name="direct_event",
-        dims=["direct_event"],
+        name="direct_event_components",
+        dims=["direct_event_components"],
         attrs=glows_cdf_attributes.get_variable_attributes(
             "direct_event_components_attrs"
         ),
@@ -255,11 +255,11 @@ def generate_de_dataset(
     de = xr.DataArray(
         direct_events,
         name="direct_events",
-        dims=["epoch", "within_the_second", "direct_event"],
+        dims=["epoch", "within_the_second", "direct_event_components"],
         coords={
             "epoch": epoch_time,
             "within_the_second": within_the_second,
-            "direct_event": direct_event,
+            "direct_event_components": direct_event,
         },
         attrs=glows_cdf_attributes.get_variable_attributes("direct_events"),
     )
@@ -321,13 +321,14 @@ def generate_histogram_dataset(
     # TODO compute average temperature etc
     # Data in lists, for each of the 25 time varying datapoints in HistogramL1A
 
-    hist_data = np.zeros((len(hist_l1a_list), 3600))
+    hist_data = np.zeros((len(hist_l1a_list), 3600), dtype=np.int64)
 
     # TODO: add missing attributes
     support_data: dict = {
         "flight_software_version": [],
         # "pkts_file_name": [],
         "seq_count_in_pkts_file": [],
+        "first_spin_id": [],
         "last_spin_id": [],
         "flags_set_onboard": [],
         "is_generated_on_ground": [],
@@ -353,7 +354,7 @@ def generate_histogram_dataset(
     for index, hist in enumerate(hist_l1a_list):
         # TODO: Should this be MET?
         epoch_time = met_to_j2000ns(hist.imap_start_time.to_seconds())
-        hist_data[index] = hist.histograms
+        hist_data[index] = hist.histogram
 
         support_data["flags_set_onboard"].append(hist.flags["flags_set_onboard"])
         support_data["is_generated_on_ground"].append(
@@ -386,7 +387,7 @@ def generate_histogram_dataset(
 
     hist = xr.DataArray(
         hist_data,
-        name="histograms",
+        name="histogram",
         dims=["epoch", "bins"],
         coords={"epoch": epoch_time, "bins": bins},
         attrs=glows_cdf_attributes.get_variable_attributes(
@@ -401,7 +402,7 @@ def generate_histogram_dataset(
         attrs=attrs,
     )
 
-    output["histograms"] = hist
+    output["histogram"] = hist
 
     for key, value in support_data.items():
         output[key] = xr.DataArray(

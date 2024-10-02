@@ -102,6 +102,15 @@ pkts_file_name:
   VALIDMIN: # TBD: what is validmin for a string?
   VAR_TYPE: metadata
 
+first_spin_id:
+  <<: *support_data_defaults
+  CATDESC: The ordinal number of the first spin during histogram accumulation
+  FIELDNAM: Number of the first spin in histogram
+  FILLVAL: *max_uint32
+  FORMAT: I11
+  LABLAXIS: Spin number
+  VALIDMAX: *max_uint32_min_one
+
 last_spin_id:
   <<: *support_data_defaults
   CATDESC: The ordinal number of the last spin during histogram accumulation

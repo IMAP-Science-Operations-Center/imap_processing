@@ -17,6 +17,8 @@ epoch:
   TIME_BASE: J2000
   TIME_SCALE: Terrestrial Time
   REFERENCE_POSITION: Rotating Earth Geoid
+  RESOLUTION: ' '
+  DISPLAY_TYPE: time_series
 
 # <=== Data Variables ===>
 # Default Attrs for all metadata variables unless overridden

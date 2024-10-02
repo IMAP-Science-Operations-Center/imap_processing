@@ -171,7 +171,7 @@ class DirectEventL1B:
         Last PPS in IMAP clock format. Copied from imap_sclk_last_pps in L1A,
          In seconds.
     glows_time_last_pps: np.double
-        Last PPS in GLOWS clock format. Creaded from glows_sclk_last_pps and
+        Last PPS in GLOWS clock format. Created from glows_sclk_last_pps and
         glows_ssclk_last_pps in L1A. In seconds, with subseconds as decimal.
     glows_ssclk_last_pps: InitVar[np.double]
         Subseconds of the last PPS in GLOWS clock format. Used to update
@@ -335,6 +335,10 @@ class DirectEventL1B:
             "spin_period", self.spin_period
         )
 
+        self.spin_phase_at_next_pps = self.ancillary_parameters.decode(
+            "spin_phase", self.spin_phase_at_next_pps
+        )
+
         self.de_flags = np.array(
             [
                 catbed_heater_active,
@@ -391,10 +395,12 @@ class HistogramL1B:
 
     Attributes
     ----------
-    histograms
+    histogram
         array of block-accumulated count numbers
     flight_software_version: str
     seq_count_in_pkts_file: int
+    first_spin_id: int
+        The start ID
     last_spin_id: int
         The ID of the previous spin
     flags_set_onboard: int
@@ -408,66 +414,67 @@ class HistogramL1B:
     number_of_events
         total number of events/counts in histogram
     imap_spin_angle_bin_cntr
-        IMAP spin angle ψ for bin centers, see Sec. -
+        IMAP spin angle ψ for bin centers
     filter_temperature_average
         block-averaged value, decoded to Celsius degrees using Eq. (47)
-    filter_temperature_std_dev
+    filter_temperature_variance
         standard deviation (1 sigma), decoded to Celsius degrees using Eq. (51)
     hv_voltage_average
         block-averaged value, decoded to volts using Eq. (47)
-    hv_voltage_std_dev
+    hv_voltage_variance
         standard deviation (1 sigma), decoded to volts using Eq. (51)
     spin_period_average
         block-averaged onboard value, decoded to seconds using Eq. (47)
-    spin_period_std_dev
+    spin_period_variance
         standard deviation (1 sigma), decoded to seconds using Eq. (51)
     pulse_length_average
         block-averaged value, decoded to μs using Eq. (47)
-    pulse_length_std_dev
+    pulse_length_variance
     standard deviation (1 sigma), decoded to μs using Eq. (51)
     glows_start_time
-        GLOWS clock, subseconds as decimal part of float, see Sec. -.1
-    glows_end_time_offset
-        GLOWS clock, subseconds as decimal part of float, see Sec. -.1
+        GLOWS clock, subseconds as decimal part of float
+    glows_time_offset
+        GLOWS clock, subseconds as decimal part of float
     imap_start_time
-        IMAP clock, subseconds as decimal part of float, see Sec. -.1
-    imap_end_time_offset
-        IMAP clock, subseconds as decimal part of float, see Sec. -.1
+        IMAP clock, subseconds as decimal part of float
+    imap_time_offset
+        IMAP clock, subseconds as decimal part of float
     histogram_flag_array
         flags for bad-time information per bin, consisting of [is_close_to_uv_source,
         is_inside_excluded_region, is_excluded_by_instr_team, is_suspected_transient]
     spin_period_ground_average
-        block-averaged value computed on ground, see Sec. -.1
-    spin_period_ground_std_dev
-        standard deviation (1 sigma), see Sec. -.1
+        block-averaged value computed on ground
+    spin_period_ground_variance
+        standard deviation (1 sigma)
     position_angle_offset_average
-        block-averaged value in degrees, see Sec. - and -.1
-    position_angle_offset_std_dev
-        standard deviation (1 sigma), see Sec. - and -.1
-    spin_axis_orientation_std_dev
+        block-averaged value in degrees
+    position_angle_offset_variance
+        standard deviation (1 sigma)
+    spin_axis_orientation_variance
         standard deviation( 1 sigma): ∆λ, ∆φ for ⟨λ⟩, ⟨φ⟩
     spin_axis_orientation_average
         block-averaged spin-axis ecliptic longitude ⟨λ⟩ and latitude ⟨φ⟩ in degrees
     spacecraft_location_average
         block-averaged Cartesian ecliptic coordinates ⟨X⟩, ⟨Y ⟩, ⟨Z⟩ [km] of IMAP
-    spacecraft_location_std_dev
+    spacecraft_location_variance
         standard deviations (1 sigma) ∆X, ∆Y , ∆Z for ⟨X⟩, ⟨Y ⟩, ⟨Z⟩
     spacecraft_velocity_average
         block-averaged values ⟨VX⟩, ⟨VY⟩, ⟨VZ⟩ [km/s] of IMAP velocity components
         (Cartesian ecliptic frame)
-    spacecraft_velocity_std_dev
+    spacecraft_velocity_variance
         standard deviations (1 sigma) ∆VX , ∆VY , ∆VZ for ⟨VX ⟩, ⟨VY ⟩, ⟨VZ ⟩
     flags
         flags for extra information, per histogram. This should be a human-readable
         structure.
     """
 
-    histograms: np.ndarray
+    histogram: np.ndarray
     flight_software_version: str
     # pkts_file_name: str TODO: add this in L0
     seq_count_in_pkts_file: int
     # l1a_file_name: str TODO: add this
     # ancillary_data_files: np.ndarray TODO Add this
+    first_spin_id: int
     last_spin_id: int
     flags_set_onboard: int  # TODO: this should be renamed in L1B
     is_generated_on_ground: int
@@ -475,32 +482,32 @@ class HistogramL1B:
     number_of_bins_per_histogram: int
     number_of_events: int
     filter_temperature_average: np.double
-    filter_temperature_std_dev: np.double
+    filter_temperature_variance: np.double
     hv_voltage_average: np.double
-    hv_voltage_std_dev: np.double
+    hv_voltage_variance: np.double
     spin_period_average: np.double
-    spin_period_std_dev: np.double
+    spin_period_variance: np.double
     pulse_length_average: np.double
-    pulse_length_std_dev: np.double
+    pulse_length_variance: np.double
     imap_start_time: np.double  # No conversion needed from l1a->l1b
-    imap_end_time_offset: np.double  # No conversion needed from l1a->l1b
+    imap_time_offset: np.double  # No conversion needed from l1a->l1b
     glows_start_time: np.double  # No conversion needed from l1a->l1b
-    glows_end_time_offset: np.double  # No conversion needed from l1a->l1b
+    glows_time_offset: np.double  # No conversion needed from l1a->l1b
     # unique_block_identifier: str = field(
     #     init=False
     # )  # Could be datetime TODO: Can't put a string in data
     imap_spin_angle_bin_cntr: np.ndarray = field(init=False)  # Same size as bins
     histogram_flag_array: np.ndarray = field(init=False)
     spin_period_ground_average: np.double = field(init=False)  # retrieved from SPICE?
-    spin_period_ground_std_dev: np.double = field(init=False)  # retrieved from SPICE?
+    spin_period_ground_variance: np.double = field(init=False)  # retrieved from SPICE?
     position_angle_offset_average: np.double = field(init=False)  # retrieved from SPICE
-    position_angle_offset_std_dev: np.double = field(init=False)  # retrieved from SPICE
-    spin_axis_orientation_std_dev: np.double = field(init=False)  # retrieved from SPICE
+    position_angle_offset_variance: np.double = field(init=False)  # from SPICE
+    spin_axis_orientation_variance: np.double = field(init=False)  # from SPICE
     spin_axis_orientation_average: np.double = field(init=False)  # retrieved from SPICE
     spacecraft_location_average: np.ndarray = field(init=False)  # retrieved from SPIC
-    spacecraft_location_std_dev: np.ndarray = field(init=False)  # retrieved from SPIC
+    spacecraft_location_variance: np.ndarray = field(init=False)  # retrieved from SPIC
     spacecraft_velocity_average: np.ndarray = field(init=False)  # retrieved from SPIC
-    spacecraft_velocity_std_dev: np.ndarray = field(init=False)  # retrieved from SPIC
+    spacecraft_velocity_variance: np.ndarray = field(init=False)  # retrieved from SPIC
     flags: np.ndarray = field(init=False)
     # TODO:
     # - Determine a good way to output flags as "human readable"
@@ -517,15 +524,15 @@ class HistogramL1B:
         # TODO: These pieces will need to be filled in from SPICE kernels. For now,
         #  they are placeholders. GLOWS example code has better placeholders if needed.
         self.spin_period_ground_average = np.double(-999.9)
-        self.spin_period_ground_std_dev = np.double(-999.9)
+        self.spin_period_ground_variance = np.double(-999.9)
         self.position_angle_offset_average = np.double(-999.9)
-        self.position_angle_offset_std_dev = np.double(-999.9)
-        self.spin_axis_orientation_std_dev = np.double(-999.9)
+        self.position_angle_offset_variance = np.double(-999.9)
+        self.spin_axis_orientation_variance = np.double(-999.9)
         self.spin_axis_orientation_average = np.double(-999.9)
         self.spacecraft_location_average = np.array([-999.9, -999.9, -999.9])
-        self.spacecraft_location_std_dev = np.array([-999.9, -999.9, -999.9])
+        self.spacecraft_location_variance = np.array([-999.9, -999.9, -999.9])
         self.spacecraft_velocity_average = np.array([-999.9, -999.9, -999.9])
-        self.spacecraft_velocity_std_dev = np.array([-999.9, -999.9, -999.9])
+        self.spacecraft_velocity_variance = np.array([-999.9, -999.9, -999.9])
         # Will require some additional inputs
         self.imap_spin_angle_bin_cntr = np.zeros((3600,))
 
@@ -539,34 +546,34 @@ class HistogramL1B:
         self.filter_temperature_average = self.ancillary_parameters.decode(
             "filter_temperature", self.filter_temperature_average
         )
-        self.filter_temperature_std_dev = self.ancillary_parameters.decode_std_dev(
-            "filter_temperature", self.filter_temperature_std_dev
+        self.filter_temperature_variance = self.ancillary_parameters.decode_std_dev(
+            "filter_temperature", self.filter_temperature_variance
         )
 
         self.hv_voltage_average = self.ancillary_parameters.decode(
             "hv_voltage", self.hv_voltage_average
         )
-        self.hv_voltage_std_dev = self.ancillary_parameters.decode_std_dev(
-            "hv_voltage", self.hv_voltage_std_dev
+        self.hv_voltage_variance = self.ancillary_parameters.decode_std_dev(
+            "hv_voltage", self.hv_voltage_variance
         )
         self.spin_period_average = self.ancillary_parameters.decode(
             "spin_period", self.spin_period_average
         )
-        self.spin_period_std_dev = self.ancillary_parameters.decode_std_dev(
-            "spin_period", self.spin_period_std_dev
+        self.spin_period_variance = self.ancillary_parameters.decode_std_dev(
+            "spin_period", self.spin_period_variance
         )
         self.pulse_length_average = self.ancillary_parameters.decode(
             "pulse_length", self.pulse_length_average
         )
-        self.pulse_length_std_dev = self.ancillary_parameters.decode_std_dev(
-            "pulse_length", self.pulse_length_std_dev
+        self.pulse_length_variance = self.ancillary_parameters.decode_std_dev(
+            "pulse_length", self.pulse_length_variance
         )
 
-        self.histogram_flag_array = np.zeros((4, 3600))
+        self.histogram_flag_array = np.zeros((4, 3600), dtype=np.uint8)
         # self.unique_block_identifier = np.datetime_as_string(
         #     np.datetime64(int(self.imap_start_time), "ns"), "s"
         # )
-        self.flags = np.zeros((17, 3600))
+        self.flags = np.zeros((17, 3600), dtype=np.uint8)
 
     def output_data(self) -> tuple:
         """

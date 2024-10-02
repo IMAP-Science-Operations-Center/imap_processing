@@ -35,7 +35,7 @@ class TimeTuple:
         object.__setattr__(self, "seconds", final_seconds)
         object.__setattr__(self, "subseconds", final_subseconds)
 
-    def to_seconds(self) -> np.single:
+    def to_seconds(self) -> np.double:
         """
         Convert the TimeTuple to seconds.
 
@@ -44,7 +44,7 @@ class TimeTuple:
         np.single
             TimeTuple in seconds.
         """
-        return np.single(
+        return np.double(
             self.seconds + self.subseconds / GlowsConstants.SUBSECOND_LIMIT
         )
 
