@@ -61,6 +61,4 @@ def decompress_int(
     data = decompression_lookup[decompression]
     # use 2 for Mean column in table
     decompressed: list[int] = data[compressed_values, 2]
-    print("compressed_values", compressed_values)
-    print("decompressed", decompressed)
     return decompressed
