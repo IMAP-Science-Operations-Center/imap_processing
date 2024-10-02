@@ -214,6 +214,7 @@ ecliptic_dim:
   UNITS: km
   FILLVAL: *int_fillval
   VAR_TYPE: support_data
+  FORMAT: F6.6
 
 number_of_events:
   <<: *support_data_defaults
@@ -358,6 +359,7 @@ spin_axis_orientation_average:
 
 spacecraft_location_average:
   <<: *support_data_defaults
+  DEPEND_1: ecliptic
   CATDESC: spin-block averaged spacecraft location
   FIELDNAM: Averaged spacecraft location
   FILLVAL: *max_uint16
@@ -366,6 +368,7 @@ spacecraft_location_average:
 
 spacecraft_location_variance:
   <<: *support_data_defaults
+  DEPEND_1: ecliptic
   CATDESC: spin-block averaged variance of spacecraft location
   FIELDNAM: Variance of spacecraft location
   FILLVAL: *max_uint16
@@ -374,6 +377,7 @@ spacecraft_location_variance:
 
 spacecraft_velocity_average:
   <<: *support_data_defaults
+  DEPEND_1: ecliptic
   CATDESC: spin-block averaged spacecraft velocity
   FIELDNAM: Averaged spacecraft velocity
   FILLVAL: *max_uint16
@@ -382,6 +386,7 @@ spacecraft_velocity_average:
 
 spacecraft_velocity_variance:
   <<: *support_data_defaults
+  DEPEND_1: ecliptic
   CATDESC: spin-block averaged variance of spacecraft velocity
   FIELDNAM: Variance of spacecraft velocity
   FILLVAL: *max_uint16
@@ -468,6 +473,7 @@ spin_period:
 # TODO: Review this
 imap_spin_angle_bin_cntr:
   <<: *support_data_defaults
+  DEPEND_1: bins
   CATDESC: IMAP spin angle for bin center
   FIELDNAM: IMAP spin angle for bin center
   FILLVAL: *max_uint32
@@ -596,6 +602,10 @@ flags_set_onboard:
 # TODO review this
 histogram_flag_array:
   <<: *flag_data_defaults
+  CATDESC: Bad-time histogram flags
+  FIELDNAM: Bad-time histogram flags
+  DEPEND_1: bad_angle_flags # flag_dim
+  DEPEND_2: bins
   VALIDMIN: 0
   VALIDMAX: 1
 
@@ -609,6 +619,11 @@ de_flags:
 
 flags:
   <<: *support_data_defaults
+  CATDESC: Onboard flags for histogram information
+  FIELDNAM: Flags for histogram information
+  LABLAXIS: flags
+  DEPEND_1: flag_dim
+  DEPEND_2: bins
   VALIDMIN: 0
   VALIDMAX: 1
   FORMAT: I1
