@@ -1,5 +1,8 @@
 """Module to create bins for pointing sets."""
 
+from pathlib import Path
+
+import cdflib
 import numpy as np
 from numpy.typing import NDArray
 
@@ -145,3 +148,29 @@ def get_histogram(
     )
 
     return hist
+
+
+def get_pointing_frame_exposure_times(
+    constant_exposure: Path, n_spins: int, sensor: str
+) -> NDArray:
+    """
+    Compute a 2D array of the exposure.
+
+    Parameters
+    ----------
+    constant_exposure : Path
+        Path to file containing constant exposure data.
+    n_spins : int
+        Number of spins per pointing.
+    sensor : str
+        Sensor (45 or 90).
+
+    Returns
+    -------
+    exposure : np.ndarray
+        A 2D array with dimensions (az, el).
+    """
+    with cdflib.CDF(constant_exposure) as cdf_file:
+        exposure = cdf_file.varget(f"dps_grid{sensor}") * n_spins
+
+    return exposure
