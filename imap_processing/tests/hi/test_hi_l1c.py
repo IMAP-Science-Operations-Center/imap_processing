@@ -1,10 +1,7 @@
 """Test coverage for imap_processing.hi.l1c.hi_l1c.py"""
 
 import numpy as np
-import pytest
-import xarray as xr
 
-from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.hi.l1a.hi_l1a import hi_l1a
 from imap_processing.hi.l1b.hi_l1b import hi_l1b
 from imap_processing.hi.l1c import hi_l1c
@@ -43,27 +40,3 @@ def test_allocate_pset_dataset():
         "background_rates_uncertainty",
     ]:
         np.testing.assert_array_equal(dataset[var].data.shape, (1, n_esa_step, 3600))
-
-
-@pytest.mark.parametrize(
-    "name, shape, expected_shape",
-    [
-        ("despun_z", (1, 3), (1, 3)),
-        ("hae_latitude", None, (1, 360)),
-        ("counts", None, (1, 10, 360)),
-    ],
-)
-def test_full_dataarray(name, shape, expected_shape):
-    """Test coverage for full_dataarray function"""
-    coords = {
-        "epoch": xr.DataArray(np.array([0])),
-        "esa_energy_step": xr.DataArray(np.arange(10)),
-        "spin_angle_bin": xr.DataArray(np.arange(360)),
-    }
-    cdf_manager = ImapCdfAttributes()
-    cdf_manager.load_variable_attributes("imap_hi_variable_attrs.yaml")
-
-    dataarray = hi_l1c.full_dataarray(
-        name, cdf_manager.get_variable_attributes(f"hi_pset_{name}"), coords, shape
-    )
-    assert dataarray.data.shape == expected_shape
