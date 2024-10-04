@@ -1,18 +1,37 @@
 """IMAP-HI L1B processing module."""
 
 import logging
+from enum import IntEnum
 
+import numpy as np
 import xarray as xr
 
 from imap_processing import imap_module_directory
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
-from imap_processing.hi.utils import HIAPID, create_dataset_variables
+from imap_processing.hi.utils import HIAPID, HiConstants, create_dataset_variables
 from imap_processing.utils import convert_raw_to_eu
 
 logger = logging.getLogger(__name__)
 ATTR_MGR = ImapCdfAttributes()
 ATTR_MGR.add_instrument_global_attrs("hi")
 ATTR_MGR.load_variable_attributes("imap_hi_variable_attrs.yaml")
+
+
+class TriggerId(IntEnum):
+    """Int Enum class for trigger id values."""
+
+    A = 1
+    B = 2
+    C = 3
+
+
+class CoincidenceBitmap(IntEnum):
+    """Int Enum class for coincidence type bitmap values."""
+
+    A = 2**3
+    B = 2**2
+    C1 = 2**1
+    C2 = 2**0
 
 
 def hi_l1b(l1a_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
@@ -49,9 +68,7 @@ def hi_l1b(l1a_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
             l1a_dataset,
             conversion_table_path=conversion_table_path,
             packet_name=packet_enum.name,
-            comment="#",  # type: ignore[arg-type]
-            # Todo error, Argument "comment" to "convert_raw_to_eu" has incompatible
-            # type "str"; expected "dict[Any, Any]"
+            comment="#",
             converters={"mnemonic": str.lower},
         )
 
@@ -115,3 +132,110 @@ def annotate_direct_events(l1a_dataset: xr.Dataset) -> xr.Dataset:
     de_global_attrs = ATTR_MGR.get_global_attributes("imap_hi_l1b_de_attrs")
     l1b_dataset.attrs.update(**de_global_attrs)
     return l1b_dataset
+
+
+def compute_coincidence_type_and_time_deltas(dataset: xr.Dataset) -> None:
+    """
+    Compute coincidence type and time deltas.
+
+    Modifies the input xarray.DataSet in place. Uses existing L1A variables:
+    `trigger_id`, `tof_1`, `tof_2`, `tof_3` to compute L1B variables:
+    `coincidence_type`, `delta_t_ab`, `delta_t_ac1`, `delta_t_bc1`,
+    `delta_t_c1c2`.
+
+    Parameters
+    ----------
+    dataset : xarray.Dataset
+        The L1A/B dataset that results from reading in the L1A CDF and
+        allocating the new L1B DataArrays.
+
+    Returns
+    -------
+    None
+        Input `dataset` is modified in-place.
+    """
+    a_mask = dataset.trigger_id.values == TriggerId.A
+    b_mask = dataset.trigger_id.values == TriggerId.B
+    c_mask = dataset.trigger_id.values == TriggerId.C
+
+    tof_1_valid_mask = np.isin(
+        dataset.tof_1.values, HiConstants.TOF1_BAD_VALUES, invert=True
+    )
+    tof_2_valid_mask = np.isin(
+        dataset.tof_1.values, HiConstants.TOF2_BAD_VALUES, invert=True
+    )
+    tof_1and2_valid_mask = tof_1_valid_mask & tof_2_valid_mask
+    tof_3_valid_mask = np.isin(
+        dataset.tof_3.values, HiConstants.TOF3_BAD_VALUES, invert=True
+    )
+
+    # Table denoting how hit-first mask and valid TOF masks are used to set
+    # coincidence type bitmask
+    # -----------------------------------------------------------------------
+    # | Trigger ID  |  Hit First  | TOF 1 Valid | TOF 2 Valid | TOF 3 Valid |
+    # -----------------------------------------------------------------------
+    # |      1      |      A      |      B      |      C1     |      C2     |
+    # |      2      |      B      |      A      |      C1     |      C2     |
+    # |      3      |      C1     |      A      |      B      |      C2     |
+    # Set coincidence type bitmask
+    dataset.coincidence_type[a_mask | tof_1_valid_mask] &= CoincidenceBitmap.A
+    dataset.coincidence_type[
+        b_mask | (a_mask & tof_1_valid_mask) | (c_mask & tof_2_valid_mask)
+    ] &= CoincidenceBitmap.B
+    dataset.coincidence_type[
+        c_mask | (a_mask & tof_1_valid_mask) | (b_mask & tof_2_valid_mask)
+    ] &= CoincidenceBitmap.C1
+    dataset.coincidence_type[tof_3_valid_mask] &= CoincidenceBitmap.C2
+
+    # Table denoting how TOF is interpreted for each Trigger ID
+    # -----------------------------------------------------------------------
+    # | Trigger ID  |  Hit First  |    TOF 1    |    TOF 2    |    TOF 3    |
+    # -----------------------------------------------------------------------
+    # |      1      |      A      |  t_b - t_a  | t_c1 - t_a  | t_c2 - t_c1 |
+    # |      2      |      B      |  t_a - t_b  | t_c1 - t_b  | t_c2 - t_c1 |
+    # |      3      |      C      |  t_a - t_c1 | t_b  - t_c1 | t_c2 - t_c1 |
+    # delta_t_ab
+    dataset.delta_t_ab.values[a_mask & tof_1_valid_mask] = (
+        dataset.tof_1.values[a_mask & tof_1_valid_mask].astype(np.float32)
+        * HiConstants.TOF1_TICK
+    )
+    dataset.delta_t_ab.values[b_mask & tof_1_valid_mask] = (
+        -dataset.tof_1.values[b_mask & tof_1_valid_mask].astype(np.float32)
+        * HiConstants.TOF1_TICK
+    )
+    dataset.delta_t_ab.values[c_mask & tof_1and2_valid_mask] = (
+        dataset.tof_2.values[c_mask & tof_1and2_valid_mask].astype(np.float32)
+        * HiConstants.TOF2_TICK
+        - dataset.tof_1.values[c_mask & tof_1and2_valid_mask].astype(np.float32)
+        * HiConstants.TOF1_TICK
+    )
+
+    # delta_t_ac1
+    dataset.delta_t_ac1.values[a_mask & tof_2_valid_mask] = (
+        dataset.tof_2.values[a_mask & tof_2_valid_mask].astype(np.float32)
+        * HiConstants.TOF2_TICK
+    )
+    dataset.delta_t_ac1.values[b_mask & tof_1and2_valid_mask] = (
+        dataset.tof_2.values[b_mask & tof_1and2_valid_mask] * HiConstants.TOF2_TICK
+        - dataset.tof_1.values[b_mask & tof_1and2_valid_mask] * HiConstants.TOF1_TICK
+    )
+    dataset.delta_t_ac1.values[c_mask & tof_1_valid_mask] = (
+        -dataset.tof_1.values[c_mask & tof_1_valid_mask] * HiConstants.TOF1_TICK
+    )
+
+    # delta_t_bc1
+    dataset.delta_t_bc1.values[a_mask & tof_1_valid_mask & tof_2_valid_mask] = (
+        dataset.tof_2.values[a_mask & tof_1and2_valid_mask] * HiConstants.TOF2_TICK
+        - dataset.tof_1.values[a_mask & tof_1and2_valid_mask] * HiConstants.TOF1_TICK
+    )
+    dataset.delta_t_bc1.values[b_mask & tof_2_valid_mask] = (
+        dataset.tof_2.values[b_mask & tof_2_valid_mask] * HiConstants.TOF2_TICK
+    )
+    dataset.delta_t_bc1.values[c_mask & tof_2_valid_mask] = (
+        -dataset.tof_2.values[c_mask & tof_2_valid_mask] * HiConstants.TOF2_TICK
+    )
+
+    # delta_tc1c2
+    dataset.delta_t_c1c2.values[tof_3_valid_mask] = (
+        dataset.tof_3.values[tof_3_valid_mask] * HiConstants.TOF3_TICK
+    )

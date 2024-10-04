@@ -1,6 +1,7 @@
 """IMAP-Hi utils functions."""
 
 from collections.abc import Sequence
+from dataclasses import dataclass
 from enum import IntEnum
 from typing import Optional, Union
 
@@ -32,6 +33,38 @@ class HIAPID(IntEnum):
             "45sensor" or "90sensor".
         """
         return self.name[1:3] + "sensor"
+
+
+@dataclass(frozen=True)
+class HiConstants:
+    """
+    Constants for Hi instrument.
+
+    Attributes
+    ----------
+    TOF1_TICK : float
+        Duration of Time-of-Flight 1 clock tick.
+    TOF2_TICK : float
+        Duration of Time-of-Flight 2 clock tick.
+    TOF3_TICK : float
+        Duration of Time-of-Flight 3 clock tick.
+    TOF1_BAD_VALUES : tuple[int]
+        Tuple of values indicating TOF1 does not contain a valid time.
+    TOF2_BAD_VALUES : tuple[int]
+        Tuple of values indicating TOF2 does not contain a valid time.
+    TOF3_BAD_VALUES : tuple[int]
+        Tuple of values indicating TOF3 does not contain a valid time.
+    """
+
+    TOF1_TICK = 1e-9  # 1 ns
+    TOF2_TICK = 1e-9  # 1 ns
+    TOF3_TICK = 5e-10  # 0.5 ns
+
+    # These values are stored in the TOF telemetry when the TOF timer
+    # does not have valid data.
+    TOF1_BAD_VALUES = (511, 1023)
+    TOF2_BAD_VALUES = (1023,)
+    TOF3_BAD_VALUES = (1023,)
 
 
 def full_dataarray(
