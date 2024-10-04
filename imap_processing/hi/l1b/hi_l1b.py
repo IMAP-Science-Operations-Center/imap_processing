@@ -92,7 +92,33 @@ def annotate_direct_events(l1a_dataset: xr.Dataset) -> xr.Dataset:
         L1B direct event data.
     """
     n_epoch = l1a_dataset["epoch"].size
-    new_data_vars = dict()
+    new_data_vars = create_l1b_de_variables(n_epoch)
+    l1b_dataset = l1a_dataset.assign(new_data_vars)
+    l1b_dataset = l1b_dataset.drop_vars(
+        ["tof_1", "tof_2", "tof_3", "de_tag", "ccsds_met", "meta_event_met"]
+    )
+
+    de_global_attrs = ATTR_MGR.get_global_attributes("imap_hi_l1b_de_attrs")
+    l1b_dataset.attrs.update(**de_global_attrs)
+    return l1b_dataset
+
+
+def create_l1b_de_variables(n_de: int) -> dict[str, xr.DataArray]:
+    """
+    Instantiate Hi L1B Direct Event `xarray.DataArray` variables.
+
+    Parameters
+    ----------
+    n_de : int
+        Number of direct events to generate l1b de variables for.
+
+    Returns
+    -------
+    l1b_de_variables : dict[str, xarray.DataArray]
+        Dictionary of L1B specific direct event variables that need to be added
+        in the l1a dataset in L1B processing.
+    """
+    l1b_de_variables = dict()
     for var in [
         "coincidence_type",
         "esa_energy_step",
@@ -112,16 +138,9 @@ def annotate_direct_events(l1a_dataset: xr.Dataset) -> xr.Dataset:
         dtype = attrs.pop("dtype")
         if attrs["FILLVAL"] == "NaN":
             attrs["FILLVAL"] = np.nan
-        new_data_vars[var] = xr.DataArray(
-            data=np.full(n_epoch, attrs["FILLVAL"], dtype=np.dtype(dtype)),
+        l1b_de_variables[var] = xr.DataArray(
+            data=np.full(n_de, attrs["FILLVAL"], dtype=np.dtype(dtype)),
             dims=["epoch"],
             attrs=attrs,
         )
-    l1b_dataset = l1a_dataset.assign(new_data_vars)
-    l1b_dataset = l1b_dataset.drop_vars(
-        ["tof_1", "tof_2", "tof_3", "de_tag", "ccsds_met", "meta_event_met"]
-    )
-
-    de_global_attrs = ATTR_MGR.get_global_attributes("imap_hi_l1b_de_attrs")
-    l1b_dataset.attrs.update(**de_global_attrs)
-    return l1b_dataset
+    return l1b_de_variables
