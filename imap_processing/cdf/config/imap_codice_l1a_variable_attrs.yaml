@@ -12,7 +12,6 @@ default_attrs: &default
     FIELDNAM: ""
     FILLVAL: -9223372036854775808
     FORMAT: I12
-    LABLAXIS: ""
     REFERENCE_POSITION: ""
     RESOLUTION: ""
     SCALETYP: linear
