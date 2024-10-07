@@ -128,7 +128,7 @@ def test_l1a_data_array_shape(test_l1a_data: xr.Dataset, expected_shape: tuple):
 
     dataset = test_l1a_data
     for variable in dataset:
-        if variable in ["esa_sweep_values", "acquisition_times"]:
+        if variable in ["energy_table", "acquisition_time_per_step"]:
             assert dataset[variable].data.shape == (128,)
         else:
             assert dataset[variable].data.shape == expected_shape

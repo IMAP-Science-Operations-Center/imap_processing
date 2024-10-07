@@ -1,6 +1,7 @@
 """SWAPI level-1 processing code."""
 
 import copy
+import logging
 
 import numpy as np
 import numpy.typing as npt
@@ -11,6 +12,8 @@ from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.quality_flags import SWAPIFlags
 from imap_processing.swapi.swapi_utils import SWAPIAPID, SWAPIMODE
 from imap_processing.utils import packet_file_to_datasets
+
+logger = logging.getLogger(__name__)
 
 
 def filter_good_data(full_sweep_sci: xr.Dataset) -> npt.NDArray:
@@ -43,11 +46,11 @@ def filter_good_data(full_sweep_sci: xr.Dataset) -> npt.NDArray:
 
     sweep_indices = (sweep_table == sweep_table[:, 0, None]).all(axis=1)
     plan_id_indices = (plan_id == plan_id[:, 0, None]).all(axis=1)
-    # TODO: change comparison to SWAPIMODE.HVSCI once we have
-    # some HVSCI data
     # MODE should be HVSCI
-    mode_indices = (mode == SWAPIMODE.HVENG).all(axis=1)
+    mode_indices = (mode == SWAPIMODE.HVSCI).all(axis=1)
     bad_data_indices = sweep_indices & plan_id_indices & mode_indices
+
+    logger.debug(f"Bad data indices: {bad_data_indices}")
 
     # TODO: add checks for checksum
 
@@ -61,6 +64,19 @@ def filter_good_data(full_sweep_sci: xr.Dataset) -> npt.NDArray:
     bad_cycle_indices = cycle_start_indices[..., None] + np.arange(12)[
         None, ...
     ].reshape(-1)
+
+    logger.debug("Cycle data was bad due to one of below reasons:")
+    logger.debug(
+        "Sweep table should be same: "
+        f"{full_sweep_sci['sweep_table'].data[bad_cycle_indices]}"
+    )
+    logger.debug(
+        "Plan ID should be same: "
+        f"{full_sweep_sci['plan_id_science'].data[bad_cycle_indices]}"
+    )
+    logger.debug(
+        f"Mode Id should be 3(HVSCI): {full_sweep_sci['mode'].data[bad_cycle_indices]}"
+    )
 
     # Use bad data cycle indices to find all good data indices.
     # Then that will used to filter good sweep data.
@@ -432,13 +448,11 @@ def process_swapi_science(
     # Step 1: Filter full cycle data
     # ====================================================
     full_sweep_indices = get_indices_of_full_sweep(sci_dataset)
-
     # Filter full sweep data using indices returned from above line
     full_sweep_sci = sci_dataset.isel({"epoch": full_sweep_indices})
 
     # Find indices of good sweep cycles
     good_data_indices = filter_good_data(full_sweep_sci)
-
     good_sweep_sci = full_sweep_sci.isel({"epoch": good_data_indices})
 
     # ====================================================
@@ -480,12 +494,15 @@ def process_swapi_science(
 
     # Add housekeeping-derived quality flags
     # --------------------------------------
-    # Get times of good and full sweep data from science dataset.
-    # Then use these times to get housekeeping data. Something is wrong if
-    # there is no science data that matches exactly one housekeeping data. It
-    # should be one-to-one matching per SWAPI team, Jamie Rankin.
+    # The cadence of HK and SCI telemetry will not always be 1 second each.
+    # In fact, nominally in HVSCI, the HK_TLM comes every 60 seconds,
+    # SCI_TLM comes every 12 seconds.
+    # However, both HK and SCI telemetry are sampled once per second so
+    # since we are not processing in real-time, the ground processing
+    # algorithm should use the closest timestamp HK packet to fill in
+    # the data quality for the SCI data per SWAPI team.
     good_sweep_times = good_sweep_sci["epoch"].data
-    good_sweep_hk_data = hk_dataset.sel({"epoch": good_sweep_times})
+    good_sweep_hk_data = hk_dataset.sel({"epoch": good_sweep_times}, method="nearest")
 
     # Since there is one SWAPI HK packet for each SWAPI SCI packet,
     # and both are recorded at 1 Hz (1 packet per second),
@@ -675,7 +692,6 @@ def swapi_l1(file_path: str, data_version: str) -> xr.Dataset:
             processed_data.append(sci_dataset)
         if apid == SWAPIAPID.SWP_HK.value:
             # Add HK datalevel attrs
-            # TODO: ask SWAPI if we need to process HK if we can use WebPODA
             hk_attrs = ImapCdfAttributes()
             hk_attrs.add_instrument_global_attrs("swapi")
             hk_attrs.add_global_attribute("Data_version", data_version)

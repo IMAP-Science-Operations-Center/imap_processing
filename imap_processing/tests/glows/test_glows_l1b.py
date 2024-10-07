@@ -1,10 +1,12 @@
 import dataclasses
+from pathlib import Path
 
 import numpy as np
 import pytest
 import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
+from imap_processing.cdf.utils import write_cdf
 from imap_processing.glows.l1b.glows_l1b import glows_l1b, process_de, process_histogram
 from imap_processing.glows.l1b.glows_l1b_data import (
     AncillaryParameters,
@@ -18,6 +20,7 @@ def hist_dataset():
     variables = {
         "flight_software_version": np.zeros((20,)),
         "seq_count_in_pkts_file": np.zeros((20,)),
+        "first_spin_id": np.zeros((20,)),
         "last_spin_id": np.zeros((20,)),
         "flags_set_onboard": np.zeros((20,)),
         "is_generated_on_ground": np.zeros((20,)),
@@ -55,7 +58,7 @@ def hist_dataset():
         attrs=cdf_attrs.get_global_attributes("imap_glows_l1b_hist"),
     )
 
-    ds["histograms"] = xr.DataArray(
+    ds["histogram"] = xr.DataArray(
         np.zeros((20, 3600)),
         dims=["epoch", "bins"],
         coords={"epoch": epoch, "bins": bins},
@@ -105,9 +108,11 @@ def de_dataset():
         attrs=cdf_attrs.get_variable_attributes("epoch"),
     )
 
-    per_second = xr.DataArray(np.arange(2295), name="per_second", dims=["per_second"])
+    within_the_second = xr.DataArray(
+        np.arange(2295), name="within_the_second", dims=["within_the_second"]
+    )
     direct_event = xr.DataArray(
-        np.arange(4), name="direct_event", dims=["direct_event"]
+        np.arange(4), name="direct_event_components", dims=["direct_event_components"]
     )
 
     de_data = np.zeros((20, 2295, 4))
@@ -116,14 +121,22 @@ def de_dataset():
     variables["filter_temperature"][0] = 100
 
     ds = xr.Dataset(
-        coords={"epoch": epoch, "per_second": per_second, "direct_event": direct_event},
+        coords={
+            "epoch": epoch,
+            "within_the_second": within_the_second,
+            "direct_event_components": direct_event,
+        },
         attrs=cdf_attrs.get_global_attributes("imap_glows_l1b_de"),
     )
 
     ds["direct_events"] = xr.DataArray(
         de_data,
-        dims=["epoch", "per_second", "direct_event"],
-        coords={"epoch": epoch, "per_second": per_second, "direct_event": direct_event},
+        dims=["epoch", "within_the_second", "direct_event_components"],
+        coords={
+            "epoch": epoch,
+            "within_the_second": within_the_second,
+            "direct_event_components": direct_event,
+        },
     )
 
     for var in variables:
@@ -195,6 +208,7 @@ def test_histogram_mapping():
                 0,
                 0,
                 0,
+                0,
                 encoded_val,
                 encoded_val,
                 encoded_val,
@@ -211,13 +225,13 @@ def test_histogram_mapping():
         ).values()
     )
 
-    assert output[17] == time_val
+    assert output[18] == time_val
 
     # Correctly decoded temperature
-    assert output[9] - expected_temp < 0.1
+    assert output[10] - expected_temp < 0.1
 
 
-def test_process_histograms(hist_dataset):
+def test_process_histogram(hist_dataset):
     time_val = np.single(1111111.11)
     # A = 2.318
     # B = 69.5454
@@ -230,6 +244,7 @@ def test_process_histograms(hist_dataset):
     test_l1b = HistogramL1B(
         test_hists,
         "test",
+        0,
         0,
         0,
         0,
@@ -276,8 +291,8 @@ def test_process_de(de_dataset, ancillary_dict):
 def test_glows_l1b(de_dataset, hist_dataset):
     hist_output = glows_l1b(hist_dataset, "V001")
 
-    assert hist_output["histograms"].dims == ("epoch", "bins")
-    assert hist_output["histograms"].shape == (20, 3600)
+    assert hist_output["histogram"].dims == ("epoch", "bins")
+    assert hist_output["histogram"].shape == (20, 3600)
 
     # This needs to be added eventually, but is skipped for now.
     expected_de_data = [
@@ -293,33 +308,33 @@ def test_glows_l1b(de_dataset, hist_dataset):
     expected_hist_data = [
         # "unique_block_identifier", Left out until I determine where to put string data
         "glows_start_time",
-        "glows_end_time_offset",
+        "glows_time_offset",
         "imap_start_time",
-        "imap_end_time_offset",
+        "imap_time_offset",
         "number_of_spins_per_block",
         "number_of_bins_per_histogram",
-        "histograms",  # named histogram in alg doc
+        "histogram",  # named histogram in alg doc
         "number_of_events",
         "imap_spin_angle_bin_cntr",
         "histogram_flag_array",
         "filter_temperature_average",
-        "filter_temperature_std_dev",
+        "filter_temperature_variance",
         "hv_voltage_average",
-        "hv_voltage_std_dev",
+        "hv_voltage_variance",
         "spin_period_average",
-        "spin_period_std_dev",
+        "spin_period_variance",
         "pulse_length_average",
-        "pulse_length_std_dev",
+        "pulse_length_variance",
         "spin_period_ground_average",
-        "spin_period_ground_std_dev",
+        "spin_period_ground_variance",
         "position_angle_offset_average",
-        "position_angle_offset_std_dev",
-        "spin_axis_orientation_std_dev",
+        "position_angle_offset_variance",
+        "spin_axis_orientation_variance",
         "spin_axis_orientation_average",
         "spacecraft_location_average",
-        "spacecraft_location_std_dev",
+        "spacecraft_location_variance",
         "spacecraft_velocity_average",
-        "spacecraft_velocity_std_dev",
+        "spacecraft_velocity_variance",
         "flags",
     ]
 
@@ -346,3 +361,18 @@ def test_glows_l1b(de_dataset, hist_dataset):
 
     for key in expected_de_data:
         assert key in de_output
+
+
+def test_generate_histogram_dataset(hist_dataset):
+    l1b_data = glows_l1b(hist_dataset, "v001")
+    output_path = write_cdf(l1b_data)
+
+    assert Path.exists(output_path)
+
+
+def test_generate_de_dataset(de_dataset):
+    l1b_data = glows_l1b(de_dataset, "v001")
+
+    output_path = write_cdf(l1b_data)
+
+    assert Path.exists(output_path)

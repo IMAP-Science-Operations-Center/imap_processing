@@ -1,5 +1,7 @@
 """Tests for the ``cdf.utils`` module."""
 
+from pathlib import Path
+
 import imap_data_access
 import numpy as np
 import pytest
@@ -92,3 +94,16 @@ def test_written_and_loaded_dataset(test_dataset):
 
     new_dataset = load_cdf(write_cdf(test_dataset))
     assert str(test_dataset) == str(new_dataset)
+
+
+def test_parents_injection(test_dataset):
+    """Tests the ``write_cdf`` function for Parents attribute injection.
+
+    Parameters
+    ----------
+    test_dataset : xarray.Dataset
+        An ``xarray`` dataset object to test with
+    """
+    parent_paths = [Path("test_parent1.cdf"), Path("/abc/test_parent2.cdf")]
+    new_dataset = load_cdf(write_cdf(test_dataset, parent_files=parent_paths))
+    assert new_dataset.attrs["Parents"] == [p.name for p in parent_paths]

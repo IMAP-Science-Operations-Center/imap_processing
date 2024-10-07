@@ -6,7 +6,7 @@ from collections import namedtuple
 # must be shifted by 1 bit to the left
 DE_BIT_SHIFT = 1
 
-# This named tupled will be used to store the bit length
+# This named tuple will be used to store the bit length
 # of each TOF field. This length will be used for unpacking
 # the TOF data.
 DataFields = namedtuple(

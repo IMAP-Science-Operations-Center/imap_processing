@@ -95,7 +95,7 @@ def annotate_direct_events(l1a_dataset: xr.Dataset) -> xr.Dataset:
     new_data_vars = dict()
     for var in [
         "coincidence_type",
-        "esa_step",
+        "esa_energy_step",
         "delta_t_ab",
         "delta_t_ac1",
         "delta_t_bc1",

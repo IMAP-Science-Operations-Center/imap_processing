@@ -20,26 +20,28 @@ from imap_processing.glows.utils.constants import TimeTuple
 def l1a_data():
     """Read test data from file"""
     current_directory = Path(__file__).parent
-    packet_path = current_directory / "glows_test_packet_20110921_v01.pkts"
-    histograms_l0, de_l0 = decom_glows.decom_packets(packet_path)
+    packet_path = (
+        current_directory / "validation_data" / "glows_test_packet_20110921_v01.pkts"
+    )
+    histogram_l0, de_l0 = decom_glows.decom_packets(packet_path)
 
-    histograms_l1a = [HistogramL1A(hist) for hist in histograms_l0]
+    histogram_l1a = [HistogramL1A(hist) for hist in histogram_l0]
 
     de_l1a_dict = process_de_l0(de_l0)
 
     # Flatten the dictionary to one list of DE values
     de_l1a = reduce(list.__add__, [value for value in de_l1a_dict.values()])
 
-    return (histograms_l1a, de_l1a)
+    return (histogram_l1a, de_l1a)
 
 
 def test_generate_histogram_dataset(l1a_data):
-    histograms_l1a, _ = l1a_data
+    histogram_l1a, _ = l1a_data
     glows_attrs = create_glows_attr_obj("v001")
-    dataset = generate_histogram_dataset(histograms_l1a, glows_attrs)
+    dataset = generate_histogram_dataset(histogram_l1a, glows_attrs)
 
-    assert (dataset["histograms"].data[0] == histograms_l1a[0].histograms).all()
-    hist_dict = dataclasses.asdict(histograms_l1a[0])
+    assert (dataset["histogram"].data[0] == histogram_l1a[0].histogram).all()
+    hist_dict = dataclasses.asdict(histogram_l1a[0])
     for key, item in hist_dict.items():
         if key in [
             "imap_start_time",
@@ -57,11 +59,11 @@ def test_generate_histogram_dataset(l1a_data):
                 dataset["is_generated_on_ground"].data[0]
                 == item["is_generated_on_ground"]
             )
-        elif key not in ["histograms", "ground_software_version", "pkts_file_name"]:
+        elif key not in ["histogram", "ground_software_version", "pkts_file_name"]:
             assert dataset[key].data[0] == item
 
-    for i in range(len(dataset["histograms"].data)):
-        assert (dataset["histograms"].data[i] == histograms_l1a[i].histograms).all()
+    for i in range(len(dataset["histogram"].data)):
+        assert (dataset["histogram"].data[i] == histogram_l1a[i].histogram).all()
 
 
 def test_generate_de_dataset(l1a_data):

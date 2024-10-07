@@ -1,7 +1,6 @@
 """Contains code to perform SWE L1b science processing."""
 
 import logging
-from typing import Any
 
 import numpy as np
 import numpy.typing as npt
@@ -42,7 +41,7 @@ esa_voltage_row_index_dict = {
 }
 
 
-def read_lookup_table(table_index_value: int) -> Any:
+def read_lookup_table(table_index_value: int) -> pd.DataFrame:
     """
     Read lookup table from file.
 
@@ -53,14 +52,13 @@ def read_lookup_table(table_index_value: int) -> Any:
 
     Returns
     -------
-    list
+    pandas.DataFrame
         Line from lookup table todo check.
     """
     # This is equivalent of os.path.join in Path
     lookup_table_filepath = imap_module_directory / "swe/l1b/swe_esa_lookup_table.csv"
     lookup_table = pd.read_csv(
         lookup_table_filepath,
-        index_col="e_step",
     )
 
     if table_index_value == 0:

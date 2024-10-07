@@ -28,7 +28,7 @@ class SpiceBody(IntEnum):
     # A subset of IMAP Specific bodies as defined in imap_wkcp.tf
     IMAP = -43
     IMAP_SPACECRAFT = -43000
-    # IMAP Pointing Frame (Despun) as defined in iamp_science_0001.tf
+    # IMAP Pointing Frame (Despun) as defined in imap_science_0001.tf
     IMAP_DPS = -43901
     # Standard NAIF bodies
     SOLAR_SYSTEM_BARYCENTER = spice.bodn2c("SOLAR_SYSTEM_BARYCENTER")
@@ -42,6 +42,8 @@ class SpiceFrame(IntEnum):
     # Standard SPICE Frames
     J2000 = spice.irfnum("J2000")
     ECLIPJ2000 = spice.irfnum("ECLIPJ2000")
+    # IMAP Pointing Frame (Despun) as defined in imap_science_0001.tf
+    IMAP_DPS = -43901
     # IMAP specific as defined in imap_wkcp.tf
     IMAP_SPACECRAFT = -43000
     IMAP_LO_BASE = -43100
@@ -58,6 +60,24 @@ class SpiceFrame(IntEnum):
     IMAP_HIT = -43500
     IMAP_IDEX = -43700
     IMAP_GLOWS = -43750
+
+
+# TODO: Update boresight for in-situ instruments
+# TODO: Confirm ENA boresight vectors
+BORESIGHT_LOOKUP = {
+    SpiceFrame.IMAP_LO: np.array([0, -1, 0]),
+    SpiceFrame.IMAP_HI_45: np.array([0, 1, 0]),
+    SpiceFrame.IMAP_HI_90: np.array([0, 1, 0]),
+    SpiceFrame.IMAP_ULTRA_45: np.array([0, 0, 1]),
+    SpiceFrame.IMAP_ULTRA_90: np.array([0, 0, 1]),
+    SpiceFrame.IMAP_MAG: np.array([0, 0, 1]),
+    SpiceFrame.IMAP_SWE: np.array([0, 0, 1]),
+    SpiceFrame.IMAP_SWAPI: np.array([0, 0, 1]),
+    SpiceFrame.IMAP_CODICE: np.array([0, 0, 1]),
+    SpiceFrame.IMAP_HIT: np.array([0, 0, 1]),
+    SpiceFrame.IMAP_IDEX: np.array([0, 0, 1]),
+    SpiceFrame.IMAP_GLOWS: np.array([0, 0, 1]),
+}
 
 
 @typing.no_type_check
@@ -125,7 +145,14 @@ def get_spin_data() -> pd.DataFrame:
         # Handle the case where the environment variable is not set
         raise ValueError("SPIN_DATA_FILEPATH environment variable is not set.")
 
-    return pd.read_csv(path_to_spin_file)
+    spin_df = pd.read_csv(path_to_spin_file)
+    # Combine spin_start_sec and spin_start_subsec to get the spin start
+    # time in seconds. The spin start subseconds are in milliseconds.
+    spin_df["spin_start_time"] = (
+        spin_df["spin_start_sec"] + spin_df["spin_start_subsec"] / 1e3
+    )
+
+    return spin_df
 
 
 def get_spacecraft_spin_phase(
@@ -135,9 +162,7 @@ def get_spacecraft_spin_phase(
     Get the spacecraft spin phase for the input query times.
 
     Formula to calculate spin phase:
-        spin_phase = (
-            query_met_times - (spin_start_seconds + spin_start_subseconds)
-        ) / spin_period_sec
+        spin_phase = (query_met_times - spin_start_time) / spin_period_sec
 
     Parameters
     ----------
@@ -149,13 +174,203 @@ def get_spacecraft_spin_phase(
     spin_phase : float or np.ndarray
         Spin phase for the input query times.
     """
-    if isinstance(query_met_times, float):
-        # TODO: call get_spin_data function to get spin data for the
-        # input query times
-        # Here, return a float (dummy implementation)
-        return 0.0  # Replace this with actual logic to calculate spin phase
+    spin_df = get_spin_data()
 
-    # Return an ndarray of the same shape, filled with 0.0 for
-    # now (dummy implementation)
-    # TODO: Replace with actual logic to calculate spin phase
-    return np.array(query_met_times, dtype=float)
+    # Ensure query_met_times is an array
+    query_met_times = np.asarray(query_met_times)
+    is_scalar = query_met_times.ndim == 0
+    if is_scalar:
+        # Force scalar to array because np.asarray() will not
+        # convert scalar to array
+        query_met_times = np.atleast_1d(query_met_times)
+    # Empty array check
+    if query_met_times.size == 0:
+        return query_met_times
+
+    # Create an empty array to store spin phase results
+    spin_phases = np.zeros_like(query_met_times)
+
+    # Find all spin time that are less or equal to query_met_times.
+    # To do that, use side right, a[i-1] <= v < a[i], in the searchsorted.
+    # Eg.
+    # >>> df['a']
+    # array([0, 15, 30, 45, 60])
+    # >>> np.searchsorted(df['a'], [0, 13, 15, 32, 70], side='right')
+    # array([1, 1, 2, 3, 5])
+    last_spin_indices = np.searchsorted(
+        spin_df["spin_start_time"], query_met_times, side="right"
+    )
+    # Make sure input times are within the bounds of spin data
+    spin_df_start_time = spin_df["spin_start_time"].values[0]
+    spin_df_end_time = (
+        spin_df["spin_start_time"].values[-1] + spin_df["spin_period_sec"].values[-1]
+    )
+    input_start_time = query_met_times.min()
+    input_end_time = query_met_times.max()
+    if input_start_time < spin_df_start_time or input_end_time > spin_df_end_time:
+        raise ValueError(
+            f"Query times, {query_met_times} are outside of the spin data range, "
+            f"{spin_df_start_time, spin_df_end_time}."
+        )
+
+    # Calculate spin phase
+    spin_phases = (
+        query_met_times - spin_df["spin_start_time"].values[last_spin_indices]
+    ) / spin_df["spin_period_sec"].values[last_spin_indices]
+
+    # Check for invalid spin phase using below checks:
+    # 1. Check that the spin phase is in valid range, [0, 1).
+    # 2. Check invalid spin phase using spin_phase_valid,
+    #   spin_period_valid columns.
+    invalid_spin_phase_range = (spin_phases < 0) | (spin_phases >= 1)
+
+    invalid_spins = (spin_df["spin_phase_valid"].values[last_spin_indices] == 0) | (
+        spin_df["spin_period_valid"].values[last_spin_indices] == 0
+    )
+    bad_spin_phases = invalid_spin_phase_range | invalid_spins
+    spin_phases[bad_spin_phases] = np.nan
+
+    if is_scalar:
+        return spin_phases[0]
+    return spin_phases
+
+
+@typing.no_type_check
+@ensure_spice
+def frame_transform(
+    et: Union[float, npt.NDArray],
+    position: npt.NDArray,
+    from_frame: SpiceFrame,
+    to_frame: SpiceFrame,
+) -> npt.NDArray:
+    """
+    Transform an <x, y, z> vector between reference frames (rotation only).
+
+    This function is a vectorized equivalent to performing the following SPICE
+    calls for each input time and position vector to perform the transform.
+    The matrix multiplication step is done using `numpy.matmul` rather than
+    `spice.mxv`.
+    >>> rotation_matrix = spice.pxform(from_frame, to_frame, et)
+    ... result = spice.mxv(rotation_matrix, position)
+
+    Parameters
+    ----------
+    et : float or npt.NDArray
+        Ephemeris time(s) corresponding to position(s).
+    position : npt.NDArray
+        <x, y, z> vector or array of vectors in reference frame `from_frame`.
+        A single position vector may be provided for multiple `et` query times
+        but only a single position vector can be provided for a single `et`.
+    from_frame : SpiceFrame
+        Reference frame of input vector(s).
+    to_frame : SpiceFrame
+        Reference frame of output vector(s).
+
+    Returns
+    -------
+    result : npt.NDArray
+        3d Cartesian position vector(s) in reference frame `to_frame`.
+    """
+    if position.ndim == 1:
+        if not len(position) == 3:
+            raise ValueError(
+                "Position vectors with one dimension must have 3 elements."
+            )
+    elif position.ndim == 2:
+        if not position.shape[1] == 3:
+            raise ValueError(
+                f"Invalid position shape: {position.shape}. "
+                f"Each input position vector must have 3 elements."
+            )
+        if not len(position) == len(et):
+            raise ValueError(
+                "Mismatch in number of position vectors and Ephemeris times provided."
+                f"Position has {len(position)} elements and et has {len(et)} elements."
+            )
+
+    # rotate will have shape = (3, 3) or (n, 3, 3)
+    # position will have shape = (3,) or (n, 3)
+    rotate = get_rotation_matrix(et, from_frame, to_frame)
+    # adding a dimension to position results in the following input and output
+    # shapes from matrix multiplication
+    # Single et/position:      (3, 3),(3, 1) -> (3, 1)
+    # Multiple et single pos:  (n, 3, 3),(3, 1) -> (n, 3, 1)
+    # Multiple et/positions :  (n, 3, 3),(n, 3, 1) -> (n, 3, 1)
+    result = np.squeeze(rotate @ position[..., np.newaxis])
+
+    return result
+
+
+def get_rotation_matrix(
+    et: Union[float, npt.NDArray],
+    from_frame: SpiceFrame,
+    to_frame: SpiceFrame,
+) -> npt.NDArray:
+    """
+    Get the rotation matrix/matrices that can be used to transform between frames.
+
+    This is a vectorized wrapper around `spiceypy.pxform`
+    "Return the matrix that transforms position vectors from one specified frame
+    to another at a specified epoch."
+    https://naif.jpl.nasa.gov/pub/naif/toolkit_docs/C/cspice/pxform_c.html
+
+    Parameters
+    ----------
+    et : float or npt.NDArray
+        Ephemeris time(s) for which to get the rotation matrices.
+    from_frame : SpiceFrame
+        Reference frame to transform from.
+    to_frame : SpiceFrame
+        Reference frame to transform to.
+
+    Returns
+    -------
+    rotation : npt.NDArray
+        If et is a float, the returned rotation matrix is of shape (3, 3). If
+        et is a np.ndarray, the returned rotation matrix is of shape (n, 3, 3)
+        where n matches the number of elements in et.
+    """
+    vec_pxform = np.vectorize(
+        spice.pxform,
+        excluded=["fromstr", "tostr"],
+        signature="(),(),()->(3,3)",
+        otypes=[np.float64],
+    )
+    return vec_pxform(from_frame.name, to_frame.name, et)
+
+
+def instrument_pointing(
+    et: Union[float, npt.NDArray],
+    instrument: SpiceFrame,
+    to_frame: SpiceFrame,
+    cartesian: bool = False,
+) -> npt.NDArray:
+    """
+    Compute the instrument pointing at the specified times.
+
+    By default, the coordinates returned are Latitude/Longitude coordinates in
+    the reference frame `to_frame`. Cartesian coordinates can be returned if
+    desired by setting `cartesian=True`.
+
+    Parameters
+    ----------
+    et : float or npt.NDArray
+        Ephemeris time(s) to at which to compute instrument pointing.
+    instrument : SpiceFrame
+        Instrument reference frame to compute the pointing for.
+    to_frame : SpiceFrame
+        Reference frame in which the pointing is to be expressed.
+    cartesian : bool, optional
+        If set to True, the pointing is returned in Cartesian coordinates.
+
+    Returns
+    -------
+    pointing : npt.NDArray
+        The instrument pointing at the specified times.
+    """
+    pointing = frame_transform(et, BORESIGHT_LOOKUP[instrument], instrument, to_frame)
+    if cartesian:
+        return pointing
+    if isinstance(et, typing.Collection):
+        return np.rad2deg([spice.reclat(vec)[1:] for vec in pointing])
+    return np.rad2deg(spice.reclat(pointing)[1:])

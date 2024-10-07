@@ -17,7 +17,8 @@ class Decompress(Enum):
 # Load all decompression tables into a dictionary.
 DECOMPRESSION_TABLES = {
     enum: np.loadtxt(
-        Path(__file__).parent.parent / f"decompression_tables/{enum.value}_bit.csv",
+        Path(__file__).parent.parent
+        / f"decompression_tables/log10_{enum.value}_bit_uncompress.csv",
         delimiter=",",
         skiprows=1,
     )
@@ -58,5 +59,6 @@ def decompress_int(
             + "Decompress.DECOMPRESS8TO12"
         )
     data = decompression_lookup[decompression]
-    decompressed: list[int] = data[compressed_values, 1]
+    # use 2 for Mean column in table
+    decompressed: list[int] = data[compressed_values, 2]
     return decompressed

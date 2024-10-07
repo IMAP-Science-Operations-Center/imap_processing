@@ -31,13 +31,13 @@ default_uint32_attrs: &default_uint32
   VALIDMAX: 4294967295
   dtype: uint32
 
-default_uint64_attrs: &default_uint64
+default_int64_attrs: &default_int64
   <<: *default
-  FILLVAL: 18446744073709551615
+  FILLVAL: -9223372036854775808
   FORMAT: I20
-  VALIDMIN: 0
-  VALIDMAX: 18446744073709551615
-  dtype: uint64
+  VALIDMIN: -9223372036854775808
+  VALIDMAX: 9223372036854775807
+  dtype: int64
 
 default_int32_attrs: &default_int32
   <<: *default
@@ -63,13 +63,13 @@ default_ccsds_met: &hi_ccsds_met
   UNITS: sec
   VAR_TYPE: support_data
 
-hi_esa_stepping_num: &hi_esa_stepping_num
+hi_esa_step: &hi_esa_step
   <<: *default_uint8
   CATDESC: Zero based index indicates which row of onboard stepping table was used
-  FIELDNAM: ESA stepping number
+  FIELDNAM: ESA step
   FILLVAL: 255
   FORMAT: I2
-  LABLAXIS: Stepping Num
+  LABLAXIS: ESA step
   VALIDMIN: 0
   VALIDMAX: 16
   VAR_NOTES: >
@@ -87,11 +87,11 @@ hi_de_de_tag:
   FIELDNAM: Direct Event Time Tag
   LABLAXIS: DE Time Tag
 
-hi_de_esa_stepping_num:
-  <<: *hi_esa_stepping_num
+hi_de_esa_step:
+  <<: *hi_esa_step
 
 hi_de_event_met:
-  <<: *default_uint64
+  <<: *default_int64
   CATDESC: Mission Elapsed Time (MET) of Direct Event
   DISPLAY_TYPE: no_plot
   FIELDNAM: Time since (TODO - what is the def of MET?)
@@ -101,7 +101,7 @@ hi_de_event_met:
   SCALE_TYP: linear
 
 hi_de_meta_event_met:
-  <<: *default_uint64
+  <<: *default_int64
   CATDESC: Mission elapsed time (MET) of last meta-event
   DISPLAY_TYPE: no_plot
   FIELDNAM: Meta-event Mission Elapsed Time
@@ -111,7 +111,7 @@ hi_de_meta_event_met:
   VALIDMAX: 4294967295
   VAR_TYPE: support_data
   SCALE_TYP: linear
-  dtype: uint64
+  dtype: int64
 
 hi_de_trigger_id:
   <<: *default_uint8
@@ -174,8 +174,8 @@ hi_hist_angle:
 hi_hist_ccsds_met:
   <<: *hi_ccsds_met
 
-hi_hist_esa_stepping_num:
-  <<: *hi_esa_stepping_num
+hi_hist_esa_step:
+  <<: *hi_esa_step
 
 hi_hist_counters:
   <<: *default_uint16
@@ -201,7 +201,7 @@ hi_de_coincidence_type:
     made up of the ORed quantities: (A hit? 8:0) | (B hit? 4:0)
     | (C1 hit? 2:0) | (C2 hit? 1 : 0)
 
-default_esa_step: &default_esa_step
+default_esa_energy_step: &default_esa_energy_step
   CATDESC: Zero based energy step index
   FIELDNAM: ESA energy step
   FILLVAL: 255
@@ -209,9 +209,9 @@ default_esa_step: &default_esa_step
   VALIDMIN: 0
   VALIDMAX: 12
 
-hi_de_esa_step:
+hi_de_esa_energy_step:
   <<: *default_uint8
-  <<: *default_esa_step
+  <<: *default_esa_energy_step
   LABLAXIS: Energy Step
 
 default_delta_t: &default_delta_t
@@ -254,7 +254,7 @@ hi_de_spin_phase:
 hi_de_hae_latitude:
   <<: *default_float32
   CATDESC: Look direction HAE latitude
-  FIELDNAM: Ecliptic Lattitude
+  FIELDNAM: Ecliptic Latitude
   FORMAT: F5.2
   LABLAXIS: Lat
   VALIDMIN: -180
@@ -294,8 +294,8 @@ hi_de_nominal_bin:
 
 # ======= L1C PSET Section =======
 
-hi_pset_esa_step:
-  <<: *default_esa_step
+hi_pset_esa_energy_step:
+  <<: *default_esa_energy_step
   LABLAXIS: Energy Step
   UNITS: " "
   VALIDMIN: 0
@@ -369,9 +369,9 @@ hi_pset_counts:
   CATDESC: Binned direct events counts during good times
   FIELDNAM: Binned DE counts
   DEPEND_0: epoch
-  DEPEND_1: esa_step
+  DEPEND_1: esa_energy_step
   DEPEND_2: spin_angle_bin
-  LABL_PTR_1: esa_step_label
+  LABL_PTR_1: esa_energy_step_label
   LABL_PTR_2: spin_bin_label
   DISPLAY_TYPE: stack_plot
   FORMAT: I5
@@ -381,9 +381,9 @@ hi_pset_exposure_times:
   CATDESC: Exposure times for each bin during good times
   FIELDNAM: Bin exposure times
   DEPEND_0: epoch
-  DEPEND_1: esa_step
+  DEPEND_1: esa_energy_step
   DEPEND_2: spin_angle_bin
-  LABL_PTR_1: esa_step_label
+  LABL_PTR_1: esa_energy_step_label
   LABL_PTR_2: spin_bin_label
   UNITS: sec
   DISPLAY_TYPE: stack_plot
@@ -394,9 +394,9 @@ hi_pset_background_rates:
   CATDESC: Background count rates
   FIELDNAM: Background count rates
   DEPEND_0: epoch
-  DEPEND_1: esa_step
+  DEPEND_1: esa_energy_step
   DEPEND_2: spin_angle_bin
-  LABL_PTR_1: esa_step_label
+  LABL_PTR_1: esa_energy_step_label
   LABL_PTR_2: spin_bin_label
   UNITS: counts / s
   DISPLAY_TYPE: stack_plot
@@ -407,9 +407,9 @@ hi_pset_background_rates_uncertainty:
   CATDESC: Background count rate uncertainties
   FIELDNAM: Background count rate uncertainties
   DEPEND_0: epoch
-  DEPEND_1: esa_step
+  DEPEND_1: esa_energy_step
   DEPEND_2: spin_angle_bin
-  LABL_PTR_1: esa_step_label
+  LABL_PTR_1: esa_energy_step_label
   LABL_PTR_2: spin_bin_label
   UNITS: counts / s
   DISPLAY_TYPE: stack_plot
@@ -422,7 +422,7 @@ hi_pset_spin_bin_label:
   FORMAT: A4
   VAR_TYPE: metadata
 
-hi_pset_esa_step_label:
+hi_pset_esa_energy_step_label:
   CATDESC: Label esa step
   FIELDNAM: Label esa step
   FORMAT: A4

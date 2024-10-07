@@ -4,6 +4,8 @@ import logging
 import os
 import re
 import time
+from contextlib import contextmanager
+from pathlib import Path
 from typing import Optional
 
 import cdflib
@@ -121,6 +123,18 @@ def furnish_sclk(spice_test_data_path):
     spice.furnsh(str(test_sclk))
     yield test_sclk
     spice.kclear()
+
+
+@pytest.fixture()
+def furnish_kernels(spice_test_data_path):
+    """Return a function that will furnish an arbitrary list of kernels."""
+
+    @contextmanager
+    def furnish_kernels(kernels: list[Path]):
+        with spice.KernelPool([str(spice_test_data_path / k) for k in kernels]) as pool:
+            yield pool
+
+    return furnish_kernels
 
 
 @pytest.fixture(scope="session")

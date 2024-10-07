@@ -145,7 +145,7 @@ class HistogramL1A:
     l0: InitVar[HistogramL0]
         HistogramL0 Data class containing the raw data from the histogram packet. This
         is only used to create the class and cannot be accessed from an instance.
-    histograms: list[int]
+    histogram: list[int]
         List of histogram data values
     flight_software_version: int
         Version of the flight software used to generate the data. Part of block header.
@@ -155,6 +155,8 @@ class HistogramL1A:
         Name of the packet file used to generate the data. Part of block header.
     seq_count_in_pkts_file: int
         Sequence count in the packet file, equal to SRC_SEQ_CTR Part of block header.
+    first_spin_id: int
+        ID of the first spin in block (computed with start spin and offset)
     last_spin_id: int
         ID of the last spin in block (computed with start spin and offset)
     imap_start_time: tuple[int, int]
@@ -195,12 +197,13 @@ class HistogramL1A:
     """
 
     l0: InitVar[HistogramL0]
-    histograms: list[int] = field(init=False)
+    histogram: list[int] = field(init=False)
     # next four are in block header
     flight_software_version: int = field(init=False)
     ground_software_version: str = field(init=False)
     pkts_file_name: str = field(init=False)
     seq_count_in_pkts_file: int = field(init=False)
+    first_spin_id: int = field(init=False)
     last_spin_id: int = field(init=False)
     imap_start_time: TimeTuple = field(init=False)
     imap_time_offset: TimeTuple = field(init=False)
@@ -232,7 +235,7 @@ class HistogramL1A:
         l0 : HistogramL0
             Lo histogram data.
         """
-        self.histograms = list(l0.HISTOGRAM_DATA)
+        self.histogram = list(l0.HISTOGRAM_DATA)
 
         self.flight_software_version = l0.SWVER
         self.ground_software_version = __version__
@@ -242,7 +245,7 @@ class HistogramL1A:
 
         # use start ID and offset to calculate the last spin ID in the block
         self.last_spin_id = l0.STARTID + l0.ENDID
-        # TODO add first spin ID
+        self.first_spin_id = l0.STARTID
 
         # TODO: This sanity check should probably exist in the final code. However,
         # the emulator code does not properly set these values.
@@ -258,7 +261,8 @@ class HistogramL1A:
         self.glows_time_offset = TimeTuple(l0.GLXOFFSEC, l0.GLXOFFSUBSEC)
 
         # In L1a, these are left as unit encoded values.
-        self.number_of_spins_per_block = l0.SPINS
+        # TODO: This is plus one in validation code, why?
+        self.number_of_spins_per_block = l0.SPINS + 1
         self.number_of_bins_per_histogram = l0.NBINS
         self.number_of_events = l0.EVENTS
         self.filter_temperature_average = l0.TEMPAVG
