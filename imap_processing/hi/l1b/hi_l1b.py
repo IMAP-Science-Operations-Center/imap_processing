@@ -2,12 +2,11 @@
 
 import logging
 
-import numpy as np
 import xarray as xr
 
 from imap_processing import imap_module_directory
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
-from imap_processing.hi.utils import HIAPID
+from imap_processing.hi.utils import HIAPID, create_dataset_variables
 from imap_processing.utils import convert_raw_to_eu
 
 logger = logging.getLogger(__name__)
@@ -92,8 +91,7 @@ def annotate_direct_events(l1a_dataset: xr.Dataset) -> xr.Dataset:
         L1B direct event data.
     """
     n_epoch = l1a_dataset["epoch"].size
-    new_data_vars = dict()
-    for var in [
+    l1b_de_var_names = [
         "coincidence_type",
         "esa_energy_step",
         "delta_t_ab",
@@ -105,18 +103,10 @@ def annotate_direct_events(l1a_dataset: xr.Dataset) -> xr.Dataset:
         "hae_longitude",
         "quality_flag",
         "nominal_bin",
-    ]:
-        attrs = ATTR_MGR.get_variable_attributes(
-            f"hi_de_{var}", check_schema=False
-        ).copy()
-        dtype = attrs.pop("dtype")
-        if attrs["FILLVAL"] == "NaN":
-            attrs["FILLVAL"] = np.nan
-        new_data_vars[var] = xr.DataArray(
-            data=np.full(n_epoch, attrs["FILLVAL"], dtype=np.dtype(dtype)),
-            dims=["epoch"],
-            attrs=attrs,
-        )
+    ]
+    new_data_vars = create_dataset_variables(
+        l1b_de_var_names, (n_epoch,), att_manager_lookup_str="hi_de_{0}"
+    )
     l1b_dataset = l1a_dataset.assign(new_data_vars)
     l1b_dataset = l1b_dataset.drop_vars(
         ["tof_1", "tof_2", "tof_3", "de_tag", "ccsds_met", "meta_event_met"]
