@@ -107,14 +107,9 @@ def annotate_direct_events(l1a_dataset: xr.Dataset) -> xr.Dataset:
     l1b_dataset : xarray.Dataset
         L1B direct event data.
     """
-    n_epoch = l1a_dataset["epoch"].size
+    l1b_dataset = compute_coincidence_type_and_time_deltas(l1a_dataset)
     l1b_de_var_names = [
-        "coincidence_type",
         "esa_energy_step",
-        "delta_t_ab",
-        "delta_t_ac1",
-        "delta_t_bc1",
-        "delta_t_c1c2",
         "spin_phase",
         "hae_latitude",
         "hae_longitude",
@@ -122,9 +117,9 @@ def annotate_direct_events(l1a_dataset: xr.Dataset) -> xr.Dataset:
         "nominal_bin",
     ]
     new_data_vars = create_dataset_variables(
-        l1b_de_var_names, (n_epoch,), att_manager_lookup_str="hi_de_{0}"
+        l1b_de_var_names, l1a_dataset["epoch"].size, att_manager_lookup_str="hi_de_{0}"
     )
-    l1b_dataset = l1a_dataset.assign(new_data_vars)
+    l1b_dataset = l1b_dataset.assign(new_data_vars)
     l1b_dataset = l1b_dataset.drop_vars(
         ["tof_1", "tof_2", "tof_3", "de_tag", "ccsds_met", "meta_event_met"]
     )
@@ -134,14 +129,13 @@ def annotate_direct_events(l1a_dataset: xr.Dataset) -> xr.Dataset:
     return l1b_dataset
 
 
-def compute_coincidence_type_and_time_deltas(dataset: xr.Dataset) -> None:
+def compute_coincidence_type_and_time_deltas(dataset: xr.Dataset) -> xr.Dataset:
     """
     Compute coincidence type and time deltas.
 
-    Modifies the input xarray.DataSet in place. Uses existing L1A variables:
-    `trigger_id`, `tof_1`, `tof_2`, `tof_3` to compute L1B variables:
-    `coincidence_type`, `delta_t_ab`, `delta_t_ac1`, `delta_t_bc1`,
-    `delta_t_c1c2`.
+    Adds the new variables "coincidence_type", "delta_t_ab", "delta_t_ac1",
+    "delta_t_bc1", and "delta_t_c1c2" to the input xarray.Dataset and returns
+    the result.
 
     Parameters
     ----------
@@ -151,22 +145,36 @@ def compute_coincidence_type_and_time_deltas(dataset: xr.Dataset) -> None:
 
     Returns
     -------
-    None
+    xr.Dataset
         Input `dataset` is modified in-place.
     """
-    a_mask = dataset.trigger_id.values == TriggerId.A
-    b_mask = dataset.trigger_id.values == TriggerId.B
-    c_mask = dataset.trigger_id.values == TriggerId.C
+    new_data_vars = create_dataset_variables(
+        [
+            "coincidence_type",
+            "delta_t_ab",
+            "delta_t_ac1",
+            "delta_t_bc1",
+            "delta_t_c1c2",
+        ],
+        len(dataset.epoch),
+        "hi_de_{0}",
+    )
+    out_ds = dataset.assign(new_data_vars)
+
+    # compute masks needed for coincidence type and delta t calculations
+    a_mask = out_ds.trigger_id.values == TriggerId.A
+    b_mask = out_ds.trigger_id.values == TriggerId.B
+    c_mask = out_ds.trigger_id.values == TriggerId.C
 
     tof_1_valid_mask = np.isin(
-        dataset.tof_1.values, HiConstants.TOF1_BAD_VALUES, invert=True
+        out_ds.tof_1.values, HiConstants.TOF1_BAD_VALUES, invert=True
     )
     tof_2_valid_mask = np.isin(
-        dataset.tof_1.values, HiConstants.TOF2_BAD_VALUES, invert=True
+        out_ds.tof_1.values, HiConstants.TOF2_BAD_VALUES, invert=True
     )
     tof_1and2_valid_mask = tof_1_valid_mask & tof_2_valid_mask
     tof_3_valid_mask = np.isin(
-        dataset.tof_3.values, HiConstants.TOF3_BAD_VALUES, invert=True
+        out_ds.tof_3.values, HiConstants.TOF3_BAD_VALUES, invert=True
     )
 
     # Table denoting how hit-first mask and valid TOF masks are used to set
@@ -178,14 +186,14 @@ def compute_coincidence_type_and_time_deltas(dataset: xr.Dataset) -> None:
     # |      2      |      B      |      A      |      C1     |      C2     |
     # |      3      |      C1     |      A      |      B      |      C2     |
     # Set coincidence type bitmask
-    dataset.coincidence_type[a_mask | tof_1_valid_mask] &= CoincidenceBitmap.A
-    dataset.coincidence_type[
+    out_ds.coincidence_type[a_mask | tof_1_valid_mask] |= CoincidenceBitmap.A
+    out_ds.coincidence_type[
         b_mask | (a_mask & tof_1_valid_mask) | (c_mask & tof_2_valid_mask)
-    ] &= CoincidenceBitmap.B
-    dataset.coincidence_type[
+    ] |= CoincidenceBitmap.B
+    out_ds.coincidence_type[
         c_mask | (a_mask & tof_1_valid_mask) | (b_mask & tof_2_valid_mask)
-    ] &= CoincidenceBitmap.C1
-    dataset.coincidence_type[tof_3_valid_mask] &= CoincidenceBitmap.C2
+    ] |= CoincidenceBitmap.C1
+    out_ds.coincidence_type[tof_3_valid_mask] &= CoincidenceBitmap.C2
 
     # Table denoting how TOF is interpreted for each Trigger ID
     # -----------------------------------------------------------------------
@@ -195,47 +203,49 @@ def compute_coincidence_type_and_time_deltas(dataset: xr.Dataset) -> None:
     # |      2      |      B      |  t_a - t_b  | t_c1 - t_b  | t_c2 - t_c1 |
     # |      3      |      C      |  t_a - t_c1 | t_b  - t_c1 | t_c2 - t_c1 |
     # delta_t_ab
-    dataset.delta_t_ab.values[a_mask & tof_1_valid_mask] = (
-        dataset.tof_1.values[a_mask & tof_1_valid_mask].astype(np.float32)
+    out_ds.delta_t_ab.values[a_mask & tof_1_valid_mask] = (
+        out_ds.tof_1.values[a_mask & tof_1_valid_mask].astype(np.float32)
         * HiConstants.TOF1_TICK
     )
-    dataset.delta_t_ab.values[b_mask & tof_1_valid_mask] = (
-        -dataset.tof_1.values[b_mask & tof_1_valid_mask].astype(np.float32)
+    out_ds.delta_t_ab.values[b_mask & tof_1_valid_mask] = (
+        -out_ds.tof_1.values[b_mask & tof_1_valid_mask].astype(np.float32)
         * HiConstants.TOF1_TICK
     )
-    dataset.delta_t_ab.values[c_mask & tof_1and2_valid_mask] = (
-        dataset.tof_2.values[c_mask & tof_1and2_valid_mask].astype(np.float32)
+    out_ds.delta_t_ab.values[c_mask & tof_1and2_valid_mask] = (
+        out_ds.tof_2.values[c_mask & tof_1and2_valid_mask].astype(np.float32)
         * HiConstants.TOF2_TICK
-        - dataset.tof_1.values[c_mask & tof_1and2_valid_mask].astype(np.float32)
+        - out_ds.tof_1.values[c_mask & tof_1and2_valid_mask].astype(np.float32)
         * HiConstants.TOF1_TICK
     )
 
     # delta_t_ac1
-    dataset.delta_t_ac1.values[a_mask & tof_2_valid_mask] = (
-        dataset.tof_2.values[a_mask & tof_2_valid_mask].astype(np.float32)
+    out_ds.delta_t_ac1.values[a_mask & tof_2_valid_mask] = (
+        out_ds.tof_2.values[a_mask & tof_2_valid_mask].astype(np.float32)
         * HiConstants.TOF2_TICK
     )
-    dataset.delta_t_ac1.values[b_mask & tof_1and2_valid_mask] = (
-        dataset.tof_2.values[b_mask & tof_1and2_valid_mask] * HiConstants.TOF2_TICK
-        - dataset.tof_1.values[b_mask & tof_1and2_valid_mask] * HiConstants.TOF1_TICK
+    out_ds.delta_t_ac1.values[b_mask & tof_1and2_valid_mask] = (
+        out_ds.tof_2.values[b_mask & tof_1and2_valid_mask] * HiConstants.TOF2_TICK
+        - out_ds.tof_1.values[b_mask & tof_1and2_valid_mask] * HiConstants.TOF1_TICK
     )
-    dataset.delta_t_ac1.values[c_mask & tof_1_valid_mask] = (
-        -dataset.tof_1.values[c_mask & tof_1_valid_mask] * HiConstants.TOF1_TICK
+    out_ds.delta_t_ac1.values[c_mask & tof_1_valid_mask] = (
+        -out_ds.tof_1.values[c_mask & tof_1_valid_mask] * HiConstants.TOF1_TICK
     )
 
     # delta_t_bc1
-    dataset.delta_t_bc1.values[a_mask & tof_1_valid_mask & tof_2_valid_mask] = (
-        dataset.tof_2.values[a_mask & tof_1and2_valid_mask] * HiConstants.TOF2_TICK
-        - dataset.tof_1.values[a_mask & tof_1and2_valid_mask] * HiConstants.TOF1_TICK
+    out_ds.delta_t_bc1.values[a_mask & tof_1_valid_mask & tof_2_valid_mask] = (
+        out_ds.tof_2.values[a_mask & tof_1and2_valid_mask] * HiConstants.TOF2_TICK
+        - out_ds.tof_1.values[a_mask & tof_1and2_valid_mask] * HiConstants.TOF1_TICK
     )
-    dataset.delta_t_bc1.values[b_mask & tof_2_valid_mask] = (
-        dataset.tof_2.values[b_mask & tof_2_valid_mask] * HiConstants.TOF2_TICK
+    out_ds.delta_t_bc1.values[b_mask & tof_2_valid_mask] = (
+        out_ds.tof_2.values[b_mask & tof_2_valid_mask] * HiConstants.TOF2_TICK
     )
-    dataset.delta_t_bc1.values[c_mask & tof_2_valid_mask] = (
-        -dataset.tof_2.values[c_mask & tof_2_valid_mask] * HiConstants.TOF2_TICK
+    out_ds.delta_t_bc1.values[c_mask & tof_2_valid_mask] = (
+        -out_ds.tof_2.values[c_mask & tof_2_valid_mask] * HiConstants.TOF2_TICK
     )
 
     # delta_tc1c2
-    dataset.delta_t_c1c2.values[tof_3_valid_mask] = (
-        dataset.tof_3.values[tof_3_valid_mask] * HiConstants.TOF3_TICK
+    out_ds.delta_t_c1c2.values[tof_3_valid_mask] = (
+        out_ds.tof_3.values[tof_3_valid_mask] * HiConstants.TOF3_TICK
     )
+
+    return out_ds

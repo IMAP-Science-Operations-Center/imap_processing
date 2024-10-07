@@ -1,7 +1,11 @@
 """Test coverage for imap_processing.hi.l1b.hi_l1b.py"""
 
+from imap_processing.cdf.utils import load_cdf
 from imap_processing.hi.l1a.hi_l1a import hi_l1a
-from imap_processing.hi.l1b.hi_l1b import hi_l1b
+from imap_processing.hi.l1b.hi_l1b import (
+    compute_coincidence_type_and_time_deltas,
+    hi_l1b,
+)
 from imap_processing.hi.utils import HIAPID
 
 
@@ -29,3 +33,18 @@ def test_hi_l1b_de(create_de_data, tmp_path):
     l1b_dataset = hi_l1b(processed_data[0], data_version=data_version)
     assert l1b_dataset.attrs["Logical_source"] == "imap_hi_l1b_45sensor-de"
     assert len(l1b_dataset.data_vars) == 14
+
+
+def test_compute_coincidence_type_and_time_deltas(hi_l1a_test_file_path):
+    """Test coverage for
+    `imap_processing.hi.hi_l1b.compute_coincidence_type_and_time_deltas`."""
+    l1a_dataset = load_cdf(hi_l1a_test_file_path)
+    updated_dataset = compute_coincidence_type_and_time_deltas(l1a_dataset)
+    for var_name in [
+        "coincidence_type",
+        "delta_t_ab",
+        "delta_t_ac1",
+        "delta_t_bc1",
+        "delta_t_c1c2",
+    ]:
+        assert var_name in updated_dataset.data_vars
