@@ -60,8 +60,8 @@ default_attrs: &default
   SCALETYP: linear
 
 raw_counts:
-  <<: *default
   CATDESC: Raw Counts stored in 8bits length
+  DEPEND_0: epoch
   DEPEND_1: spin_angle
   DEPEND_2: polar_angle
   LABL_PTR_1: spin_angle_label
@@ -72,11 +72,12 @@ raw_counts:
   UNITS: counts
   VALIDMAX: 255
   VALIDMIN: 0
+  FILLVAL: -9223372036854775808
   VAR_TYPE: data
 
 science_data:
-  <<: *default
   CATDESC: Decompressed Counts
+  DEPEND_0: epoch
   DEPEND_1: spin_angle
   DEPEND_2: polar_angle
   LABL_PTR_1: spin_angle_label
@@ -87,6 +88,7 @@ science_data:
   UNITS: counts
   VALIDMAX: 66539
   VALIDMIN: 0
+  FILLVAL: -9223372036854775808
   VAR_TYPE: data
 
 shcoarse:
