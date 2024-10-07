@@ -9,7 +9,7 @@ from imap_processing.ultra.l1b.ultra_l1b_annotated import get_particle_velocity
 
 
 @pytest.fixture()
-def kernels(spice_test_data_path):
+def kernels(spice_test_data_path, _download_de440s):
     """List SPICE kernels."""
     required_kernels = [
         "imap_science_0001.tf",
@@ -18,6 +18,9 @@ def kernels(spice_test_data_path):
         "imap_wkcp.tf",
         "naif0012.tls",
         "sim_1yr_imap_pointing_frame.bc",
+        "de440s.bsp",
+        "earth_000101_230322_221227.bpc",
+        "imap_spk_demo.bsp",
     ]
     kernels = [str(spice_test_data_path / kernel) for kernel in required_kernels]
 
@@ -40,18 +43,21 @@ def test_get_particle_velocity(spice_test_data_path, kernels):
     start, _ = spice.wnfetd(pointing_cover, 0)
 
     times = np.array([start])
-
+    state, lt = spice.spkezr("IMAP", times, "IMAP_DPS", "NONE", "SUN")
     instrument_velocity = np.array([[41.18609, -471.24467, -832.8784]])
 
-    velocity_45 = get_particle_velocity(
+    sc_velocity_45, helio_velocity_45 = get_particle_velocity(
         times, instrument_velocity, SpiceFrame.IMAP_ULTRA_45, SpiceFrame.IMAP_DPS
     )
-    velocity_90 = get_particle_velocity(
+    sc_velocity_90, helio_velocity_90 = get_particle_velocity(
         times, instrument_velocity, SpiceFrame.IMAP_ULTRA_90, SpiceFrame.IMAP_DPS
     )
 
     # Compute the magnitude of the velocity vectors in both frames
-    magnitude_45 = np.linalg.norm(velocity_45[0])
-    magnitude_90 = np.linalg.norm(velocity_90[0])
+    magnitude_45 = np.linalg.norm(sc_velocity_45)
+    magnitude_90 = np.linalg.norm(sc_velocity_90)
+
+    helio_magnitude_45 = np.linalg.norm(helio_velocity_45)
+    helio_magnitude_90 = np.linalg.norm(helio_velocity_90)
 
     assert np.allclose(magnitude_45, magnitude_90, atol=1e-6)
