@@ -3,12 +3,16 @@
 import numpy as np
 import pytest
 
+from imap_processing import imap_module_directory
 from imap_processing.ultra.l1c.ultra_l1c_pset_bins import (
     build_energy_bins,
     build_spatial_bins,
     cartesian_to_spherical,
     get_histogram,
+    get_pointing_frame_exposure_times,
 )
+
+BASE_PATH = imap_module_directory / "ultra" / "lookup_tables"
 
 
 @pytest.fixture()
@@ -93,3 +97,22 @@ def test_get_histogram(test_data):
         len(el_bin_edges) - 1,
         len(energy_bin_edges) - 1,
     )
+
+
+def test_get_pointing_frame_exposure_times():
+    """Tests get_pointing_frame_exposure_times function."""
+
+    constant_exposure = BASE_PATH / "dps_grid45_compressed.cdf"
+    spins_per_pointing = 5760
+    exposure = get_pointing_frame_exposure_times(
+        constant_exposure, spins_per_pointing, "45"
+    )
+
+    assert exposure.shape == (720, 360)
+    # Assert that the exposure time at the highest azimuth is
+    # 15s x spins per pointing.
+    assert np.array_equal(
+        exposure[:, 359], np.full_like(exposure[:, 359], spins_per_pointing * 15)
+    )
+    # Assert that the exposure time at the lowest azimuth is 0 (no exposure).
+    assert np.array_equal(exposure[:, 0], np.full_like(exposure[:, 359], 0.0))
