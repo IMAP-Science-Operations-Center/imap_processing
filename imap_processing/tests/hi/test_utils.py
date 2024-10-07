@@ -52,8 +52,7 @@ def test_full_dataarray(name, shape, expected_shape):
     ],
 )
 def test_create_dataset_variables(var_names, shape, lookup_str):
-    """Test coverage for `imap_processing.hi.utils.create_l1b_de_variables`"""
-    shape = 5
+    """Test coverage for `imap_processing.hi.utils.create_dataset_variables`"""
     var_names = ["delta_t_ab", "delta_t_ac1", "delta_t_bc1"]
     l1b_de_vars = create_dataset_variables(
         var_names, shape, att_manager_lookup_str="hi_de_{0}"

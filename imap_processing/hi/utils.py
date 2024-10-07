@@ -64,10 +64,10 @@ def full_dataarray(
         Meeting input specifications.
     """
     _attrs = attrs.copy()
-    dtype = attrs.pop("dtype", None)
+    dtype = _attrs.pop("dtype", None)
 
     # extract dims keyword argument from DEPEND_i attributes
-    dims = [v for k, v in sorted(attrs.items()) if k.startswith("DEPEND")]
+    dims = [v for k, v in sorted(_attrs.items()) if k.startswith("DEPEND")]
     # define shape of the ndarray to generate
     if shape is None:
         shape = [coords[k].data.size for k in dims]  # type: ignore
@@ -75,10 +75,10 @@ def full_dataarray(
         dims.append("")
 
     data_array = xr.DataArray(
-        np.full(shape, attrs["FILLVAL"], dtype=dtype),
+        np.full(shape, _attrs["FILLVAL"], dtype=dtype),
         name=name,
         dims=dims,
-        attrs=attrs,
+        attrs=_attrs,
     )
     return data_array
 
