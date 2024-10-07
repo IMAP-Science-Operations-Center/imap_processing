@@ -19,7 +19,6 @@ def kernels(spice_test_data_path, _download_de440s):
         "naif0012.tls",
         "sim_1yr_imap_pointing_frame.bc",
         "de440s.bsp",
-        "earth_000101_230322_221227.bpc",
         "imap_spk_demo.bsp",
     ]
     kernels = [str(spice_test_data_path / kernel) for kernel in required_kernels]
@@ -43,7 +42,6 @@ def test_get_particle_velocity(spice_test_data_path, kernels):
     start, _ = spice.wnfetd(pointing_cover, 0)
 
     times = np.array([start])
-    state, lt = spice.spkezr("IMAP", times, "IMAP_DPS", "NONE", "SUN")
     instrument_velocity = np.array([[41.18609, -471.24467, -832.8784]])
 
     sc_velocity_45, helio_velocity_45 = get_particle_velocity(
@@ -56,8 +54,8 @@ def test_get_particle_velocity(spice_test_data_path, kernels):
     # Compute the magnitude of the velocity vectors in both frames
     magnitude_45 = np.linalg.norm(sc_velocity_45)
     magnitude_90 = np.linalg.norm(sc_velocity_90)
-
-    helio_magnitude_45 = np.linalg.norm(helio_velocity_45)
-    helio_magnitude_90 = np.linalg.norm(helio_velocity_90)
+    state, lt = spice.spkezr("IMAP", times, "IMAP_DPS", "NONE", "SUN")
 
     assert np.allclose(magnitude_45, magnitude_90, atol=1e-6)
+    assert np.array_equal(helio_velocity_45 - state[0][3:6], sc_velocity_45)
+    assert np.array_equal(helio_velocity_90 - state[0][3:6], sc_velocity_90)
