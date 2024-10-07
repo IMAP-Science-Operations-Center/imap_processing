@@ -5,6 +5,23 @@ max_uint16: &max_uint16 65535
 min_epoch: &min_epoch -315575942816000000
 max_epoch: &max_epoch 3155630469184000000
 
+# <=== Label Attributes ===>
+# LABL_PTR_i expects VAR_TYPE of metadata with char data type.
+# We need to define this if we have DEPEND_1 or more.
+# TODO: I am not sure what the FIELDNAM should be.
+# I tried best to match this: https://spdf.gsfc.nasa.gov/istp_guide/variables.html#Metadata_eg1
+within_the_second_label:
+  CATDESC: Direct events recorded in individual seconds
+  FIELDNAM: Direct events within a second
+  FORMAT: A5
+  VAR_TYPE: metadata
+
+bins_label:
+  CATDESC: Histogram bin number
+  FIELDNAM: Bin number
+  FORMAT: A4
+  VAR_TYPE: metadata
+
 default_attrs: &default_attrs
   # TODO: Remove unneeded attributes once SAMMI is fixed
   RESOLUTION: ' '
@@ -108,10 +125,10 @@ histogram:
   CATDESC: Histogram of photon counts in scanning-circle bins
   DEPEND_0: epoch
   DEPEND_1: bins
+  LABL_PTR_1: bins_label
   FIELDNAM: Histogram of photon counts
   FORMAT: I4
   DISPLAY_TYPE: time_series
-  LABLAXIS: Counts
   FILL_VAL: *max_uint16
   UNITS: counts
   VAR_TYPE: data
@@ -566,10 +583,10 @@ direct_event_glows_times:
 direct_event_pulse_lengths:
   <<: *support_data_defaults
   DEPEND_1: within_the_second
+  LABL_PTR_1: within_the_second_label
   VAR_TYPE: data
   CATDESC: Pulse lengths for direct events
   FIELDNAM: Pulse lengths for direct events
-  LABLAXIS: Pulse lengths
 
 missing_packets_sequence: # Used to be missing_packets_sequence
   <<: *support_data_defaults
