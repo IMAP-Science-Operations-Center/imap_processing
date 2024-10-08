@@ -33,7 +33,7 @@ def sort_by_time(packets: list, time_key: str) -> list:
     sorted_packets : list
         Sorted packets.
     """
-    sorted_packets = sorted(packets, key=lambda x: x.data[time_key].raw_value)
+    sorted_packets = sorted(packets, key=lambda x: x.data[time_key])
     return sorted_packets
 
 
@@ -173,9 +173,9 @@ def create_dataset(
 
     for data_packet in sorted_packets:
         data_to_include = (
-            (data_packet.header | data_packet.data)
+            (data_packet.header | data_packet.user_data)
             if include_header
-            else data_packet.data
+            else data_packet.user_data
         )
 
         # Drop keys using skip_keys
@@ -354,23 +354,24 @@ def packet_file_to_datasets(
                 # This is the first packet for this APID
                 data_dict[apid] = collections.defaultdict(list)
                 datatype_mapping[apid] = dict()
-                variable_mapping[apid] = packet.data.keys()
-            if variable_mapping[apid] != packet.data.keys():
+                variable_mapping[apid] = packet.user_data.keys()
+            if variable_mapping[apid] != packet.user_data.keys():
                 raise ValueError(
                     f"Packet fields do not match for APID {apid}. This could be "
                     f"due to a conditional packet definition in the XTCE, while this "
                     f"function currently only supports flat packet definitions."
-                    f"\nExpected: {variable_mapping[apid]},\ngot: {packet.data.keys()}"
+                    f"\nExpected: {variable_mapping[apid]},\n"
+                    f"got: {packet.user_data.keys()}"
                 )
 
             # TODO: Do we want to give an option to remove the header content?
-            packet_content = packet.data | packet.header
+            packet_content = packet.user_data | packet.header
 
             for key, value in packet_content.items():
                 val = value.raw_value
                 if use_derived_value:
                     # Use the derived value if it exists, otherwise use the raw value
-                    val = value.derived_value or val
+                    val = value
                 data_dict[apid][key].append(val)
                 if key not in datatype_mapping[apid]:
                     # Add this datatype to the mapping
