@@ -170,7 +170,7 @@ def compute_coincidence_type_and_time_deltas(dataset: xr.Dataset) -> xr.Dataset:
         out_ds.tof_1.values, HiConstants.TOF1_BAD_VALUES, invert=True
     )
     tof_2_valid_mask = np.isin(
-        out_ds.tof_1.values, HiConstants.TOF2_BAD_VALUES, invert=True
+        out_ds.tof_2.values, HiConstants.TOF2_BAD_VALUES, invert=True
     )
     tof_1and2_valid_mask = tof_1_valid_mask & tof_2_valid_mask
     tof_3_valid_mask = np.isin(
@@ -186,14 +186,14 @@ def compute_coincidence_type_and_time_deltas(dataset: xr.Dataset) -> xr.Dataset:
     # |      2      |      B      |      A      |      C1     |      C2     |
     # |      3      |      C1     |      A      |      B      |      C2     |
     # Set coincidence type bitmask
-    out_ds.coincidence_type[a_mask | tof_1_valid_mask] |= CoincidenceBitmap.A
+    out_ds.coincidence_type[a_mask | tof_1_valid_mask] |= CoincidenceBitmap.A.value
     out_ds.coincidence_type[
         b_mask | (a_mask & tof_1_valid_mask) | (c_mask & tof_2_valid_mask)
-    ] |= CoincidenceBitmap.B
+    ] |= CoincidenceBitmap.B.value
     out_ds.coincidence_type[
-        c_mask | (a_mask & tof_1_valid_mask) | (b_mask & tof_2_valid_mask)
-    ] |= CoincidenceBitmap.C1
-    out_ds.coincidence_type[tof_3_valid_mask] &= CoincidenceBitmap.C2
+        c_mask | (a_mask & tof_2_valid_mask) | (b_mask & tof_2_valid_mask)
+    ] |= CoincidenceBitmap.C1.value
+    out_ds.coincidence_type[tof_3_valid_mask] |= CoincidenceBitmap.C2.value
 
     # Table denoting how TOF is interpreted for each Trigger ID
     # -----------------------------------------------------------------------
@@ -205,47 +205,51 @@ def compute_coincidence_type_and_time_deltas(dataset: xr.Dataset) -> xr.Dataset:
     # delta_t_ab
     out_ds.delta_t_ab.values[a_mask & tof_1_valid_mask] = (
         out_ds.tof_1.values[a_mask & tof_1_valid_mask].astype(np.float32)
-        * HiConstants.TOF1_TICK
+        * HiConstants.TOF1_TICK_PER_NS
     )
     out_ds.delta_t_ab.values[b_mask & tof_1_valid_mask] = (
         -out_ds.tof_1.values[b_mask & tof_1_valid_mask].astype(np.float32)
-        * HiConstants.TOF1_TICK
+        * HiConstants.TOF1_TICK_PER_NS
     )
     out_ds.delta_t_ab.values[c_mask & tof_1and2_valid_mask] = (
         out_ds.tof_2.values[c_mask & tof_1and2_valid_mask].astype(np.float32)
-        * HiConstants.TOF2_TICK
+        * HiConstants.TOF2_TICK_PER_NS
         - out_ds.tof_1.values[c_mask & tof_1and2_valid_mask].astype(np.float32)
-        * HiConstants.TOF1_TICK
+        * HiConstants.TOF1_TICK_PER_NS
     )
 
     # delta_t_ac1
     out_ds.delta_t_ac1.values[a_mask & tof_2_valid_mask] = (
         out_ds.tof_2.values[a_mask & tof_2_valid_mask].astype(np.float32)
-        * HiConstants.TOF2_TICK
+        * HiConstants.TOF2_TICK_PER_NS
     )
     out_ds.delta_t_ac1.values[b_mask & tof_1and2_valid_mask] = (
-        out_ds.tof_2.values[b_mask & tof_1and2_valid_mask] * HiConstants.TOF2_TICK
-        - out_ds.tof_1.values[b_mask & tof_1and2_valid_mask] * HiConstants.TOF1_TICK
+        out_ds.tof_2.values[b_mask & tof_1and2_valid_mask]
+        * HiConstants.TOF2_TICK_PER_NS
+        - out_ds.tof_1.values[b_mask & tof_1and2_valid_mask]
+        * HiConstants.TOF1_TICK_PER_NS
     )
     out_ds.delta_t_ac1.values[c_mask & tof_1_valid_mask] = (
-        -out_ds.tof_1.values[c_mask & tof_1_valid_mask] * HiConstants.TOF1_TICK
+        -out_ds.tof_1.values[c_mask & tof_1_valid_mask] * HiConstants.TOF1_TICK_PER_NS
     )
 
     # delta_t_bc1
     out_ds.delta_t_bc1.values[a_mask & tof_1_valid_mask & tof_2_valid_mask] = (
-        out_ds.tof_2.values[a_mask & tof_1and2_valid_mask] * HiConstants.TOF2_TICK
-        - out_ds.tof_1.values[a_mask & tof_1and2_valid_mask] * HiConstants.TOF1_TICK
+        out_ds.tof_2.values[a_mask & tof_1and2_valid_mask]
+        * HiConstants.TOF2_TICK_PER_NS
+        - out_ds.tof_1.values[a_mask & tof_1and2_valid_mask]
+        * HiConstants.TOF1_TICK_PER_NS
     )
     out_ds.delta_t_bc1.values[b_mask & tof_2_valid_mask] = (
-        out_ds.tof_2.values[b_mask & tof_2_valid_mask] * HiConstants.TOF2_TICK
+        out_ds.tof_2.values[b_mask & tof_2_valid_mask] * HiConstants.TOF2_TICK_PER_NS
     )
     out_ds.delta_t_bc1.values[c_mask & tof_2_valid_mask] = (
-        -out_ds.tof_2.values[c_mask & tof_2_valid_mask] * HiConstants.TOF2_TICK
+        -out_ds.tof_2.values[c_mask & tof_2_valid_mask] * HiConstants.TOF2_TICK_PER_NS
     )
 
-    # delta_tc1c2
+    # delta_t_c1c2
     out_ds.delta_t_c1c2.values[tof_3_valid_mask] = (
-        out_ds.tof_3.values[tof_3_valid_mask] * HiConstants.TOF3_TICK
+        out_ds.tof_3.values[tof_3_valid_mask] * HiConstants.TOF3_TICK_PER_NS
     )
 
     return out_ds

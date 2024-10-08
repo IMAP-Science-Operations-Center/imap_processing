@@ -42,12 +42,12 @@ class HiConstants:
 
     Attributes
     ----------
-    TOF1_TICK : float
-        Duration of Time-of-Flight 1 clock tick.
-    TOF2_TICK : float
-        Duration of Time-of-Flight 2 clock tick.
-    TOF3_TICK : float
-        Duration of Time-of-Flight 3 clock tick.
+    TOF1_TICK_PER_NS : int
+        Duration of Time-of-Flight 1 clock tick in nanoseconds.
+    TOF2_TICK_PER_NS : int
+        Duration of Time-of-Flight 2 clock tick in nanoseconds.
+    TOF3_TICK_PER_NS : int
+        Duration of Time-of-Flight 3 clock tick in nanoseconds.
     TOF1_BAD_VALUES : tuple[int]
         Tuple of values indicating TOF1 does not contain a valid time.
     TOF2_BAD_VALUES : tuple[int]
@@ -56,9 +56,9 @@ class HiConstants:
         Tuple of values indicating TOF3 does not contain a valid time.
     """
 
-    TOF1_TICK = 1e-9  # 1 ns
-    TOF2_TICK = 1e-9  # 1 ns
-    TOF3_TICK = 5e-10  # 0.5 ns
+    TOF1_TICK_PER_NS = 1  # 1 ns
+    TOF2_TICK_PER_NS = 1  # 1 ns
+    TOF3_TICK_PER_NS = 2  # 0.5 ns
 
     # These values are stored in the TOF telemetry when the TOF timer
     # does not have valid data.
