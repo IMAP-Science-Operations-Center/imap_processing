@@ -178,18 +178,9 @@ def parse_events(dataset: xr.Dataset, attr_mgr: ImapCdfAttributes) -> xr.Dataset
     # Sum each count to get the total number of direct events for the pointing
     num_de: int = np.sum(dataset["count"].values)
 
-    de_fields = [
-        "coincidence_type",
-        "de_time",
-        "esa_step",
-        "mode",
-        "tof0",
-        "tof1",
-        "tof2",
-        "tof3",
-        "cksm",
-        "pos",
-    ]
+    de_fields = list(FIXED_FIELD_BITS._asdict().keys()) + list(
+        VARIABLE_FIELD_BITS._asdict().keys()
+    )
     # Initialize all Direct Event fields with their fill value
     # L1A Direct event data will not be tied to an epoch
     # data will use a direct event index for the pointing as its coordinate/dimension
