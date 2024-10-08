@@ -135,7 +135,7 @@ def compute_coincidence_type_and_time_deltas(dataset: xr.Dataset) -> xr.Dataset:
 
     Adds the new variables "coincidence_type", "delta_t_ab", "delta_t_ac1",
     "delta_t_bc1", and "delta_t_c1c2" to the input xarray.Dataset and returns
-    the result.
+    the updated xarray.Dataset.
 
     Parameters
     ----------
@@ -146,7 +146,7 @@ def compute_coincidence_type_and_time_deltas(dataset: xr.Dataset) -> xr.Dataset:
     Returns
     -------
     xr.Dataset
-        Input `dataset` is modified in-place.
+        Updated xarray.Dataset with 5 new variables added.
     """
     new_data_vars = create_dataset_variables(
         [

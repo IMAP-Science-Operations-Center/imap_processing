@@ -13,16 +13,6 @@ def hi_l0_test_data_path(hi_test_data_path):
     return hi_test_data_path / "l0"
 
 
-@pytest.fixture(scope="session")
-def hi_l1a_test_data_path(hi_test_data_path):
-    return hi_test_data_path / "l1a"
-
-
-@pytest.fixture(scope="session")
-def hi_l1a_test_file_path(hi_l1a_test_data_path):
-    return hi_l1a_test_data_path / "imap_hi_l1a_45sensor-de_20250415_v000.cdf"
-
-
 def create_metaevent(esa_step, met_subseconds, met_seconds):
     start_bitmask_data = 0  # META
     return (
