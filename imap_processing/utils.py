@@ -8,7 +8,7 @@ from typing import Optional, Union
 import numpy as np
 import pandas as pd
 import xarray as xr
-from space_packet_parser import parser, xtcedef
+from space_packet_parser import definitions, encodings, packets
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.spice.time import met_to_j2000ns
@@ -141,7 +141,7 @@ def convert_raw_to_eu(
 
 
 def create_dataset(
-    packets: list[parser.Packet],
+    packets: list[packets.CCSDSPacket],
     spacecraft_time_key: str = "shcoarse",
     include_header: bool = True,
     skip_keys: Optional[list[str]] = None,
@@ -227,7 +227,9 @@ def create_dataset(
 
 
 def _get_minimum_numpy_datatype(  # noqa: PLR0912 - Too many branches
-    name: str, definition: xtcedef.XtcePacketDefinition, use_derived_value: bool = True
+    name: str,
+    definition: definitions.XtcePacketDefinition,
+    use_derived_value: bool = True,
 ) -> Optional[str]:
     """
     Get the minimum datatype for a given variable.
@@ -236,7 +238,7 @@ def _get_minimum_numpy_datatype(  # noqa: PLR0912 - Too many branches
     ----------
     name : str
         The variable name.
-    definition : xtcedef.XtcePacketDefinition
+    definition : space_packet_parser.definitions.XtcePacketDefinition
         The XTCE packet definition.
     use_derived_value : bool, default True
         Whether or not the derived value from the XTCE definition was used.
@@ -250,12 +252,12 @@ def _get_minimum_numpy_datatype(  # noqa: PLR0912 - Too many branches
 
     if use_derived_value and isinstance(
         definition.named_parameters[name].parameter_type,
-        xtcedef.EnumeratedParameterType,
+        encodings.EnumeratedParameterType,
     ):
         # We don't have a way of knowing what is enumerated,
         # let numpy infer the datatype
         return None
-    elif isinstance(data_encoding, xtcedef.NumericDataEncoding):
+    elif isinstance(data_encoding, encodings.NumericDataEncoding):
         if use_derived_value and (
             data_encoding.context_calibrators is not None
             or data_encoding.default_calibrator is not None
@@ -264,7 +266,7 @@ def _get_minimum_numpy_datatype(  # noqa: PLR0912 - Too many branches
             # let numpy infer the datatype
             return None
         nbits = data_encoding.size_in_bits
-        if isinstance(data_encoding, xtcedef.IntegerDataEncoding):
+        if isinstance(data_encoding, encodings.IntegerDataEncoding):
             datatype = "int"
             if data_encoding.encoding == "unsigned":
                 datatype = "uint"
@@ -276,17 +278,17 @@ def _get_minimum_numpy_datatype(  # noqa: PLR0912 - Too many branches
                 datatype += "32"
             else:
                 datatype += "64"
-        elif isinstance(data_encoding, xtcedef.FloatDataEncoding):
+        elif isinstance(data_encoding, encodings.FloatDataEncoding):
             datatype = "float"
             if nbits == 32:
                 datatype += "32"
             else:
                 datatype += "64"
-    elif isinstance(data_encoding, xtcedef.BinaryDataEncoding):
+    elif isinstance(data_encoding, encodings.BinaryDataEncoding):
         # TODO: Binary string representation right now, do we want bytes or
         # something else like the new StringDType instead?
         datatype = "str"
-    elif isinstance(data_encoding, xtcedef.StringDataEncoding):
+    elif isinstance(data_encoding, encodings.StringDataEncoding):
         # TODO: Use the new StringDType instead?
         datatype = "str"
     else:
@@ -342,11 +344,10 @@ def packet_file_to_datasets(
     variable_mapping: dict[int, set] = dict()
 
     # Set up the parser from the input packet definition
-    packet_definition = xtcedef.XtcePacketDefinition(xtce_packet_definition)
-    packet_parser = parser.PacketParser(packet_definition)
+    packet_definition = definitions.XtcePacketDefinition(xtce_packet_definition)
 
     with open(packet_file, "rb") as binary_data:
-        packet_generator = packet_parser.generator(binary_data)
+        packet_generator = packet_definition.packet_generator(binary_data)
         for packet in packet_generator:
             apid = packet.header["PKT_APID"].raw_value
             if apid not in data_dict:

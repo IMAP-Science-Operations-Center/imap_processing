@@ -238,14 +238,14 @@ def decompress_image(
 
 
 def read_image_raw_events_binary(
-    packet: space_packet_parser.parser.Packet, decom_data: dict
+    packet: space_packet_parser.packets.CCSDSPacket, decom_data: dict
 ) -> dict:
     """
     Convert contents of binary string 'EVENTDATA' into values.
 
     Parameters
     ----------
-    packet : space_packet_parser.parser.Packet
+    packet : space_packet_parser.packets.CCSDSPacket
         Packet.
     decom_data : dict
         Parsed data.

@@ -6,7 +6,7 @@ from collections import defaultdict
 from typing import Any, Union
 
 import numpy as np
-from space_packet_parser.parser import Packet
+from space_packet_parser import packets
 
 from imap_processing.ccsds.ccsds_data import CcsdsData
 from imap_processing.ultra.l0.decom_tools import (
@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 
 def append_tof_params(
     decom_data: dict,
-    packet: Packet,
+    packet: packets.CCSDSPacket,
     decompressed_data: np.ndarray,
     data_dict: dict,
     stacked_dict: dict,
@@ -42,7 +42,7 @@ def append_tof_params(
     ----------
     decom_data : dict
         Dictionary to which the data is appended.
-    packet : space_packet_parser.parser.Packet
+    packet : space_packet_parser.packets.CCSDSPacket
         Individual packet.
     decompressed_data : list
         Data that has been decompressed.
@@ -79,7 +79,7 @@ def append_tof_params(
             data_dict[key].clear()
 
 
-def append_params(decom_data: dict, packet: Packet) -> None:
+def append_params(decom_data: dict, packet: packets.CCSDSPacket) -> None:
     # Todo Update what packet type is.
     """
     Append parsed items to a dictionary, including decompressed data if available.
@@ -88,7 +88,7 @@ def append_params(decom_data: dict, packet: Packet) -> None:
     ----------
     decom_data : dict
         Dictionary to which the data is appended.
-    packet : space_packet_parser.parser.Packet
+    packet : space_packet_parser.packets.CCSDSPacket
         Individual packet.
     """
     for key, item in packet.data.items():

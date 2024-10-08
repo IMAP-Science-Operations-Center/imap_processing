@@ -167,7 +167,7 @@ class RawDustEvent:
 
     Parameters
     ----------
-    header_packet : space_packet_parser.parser.Packet
+    header_packet : space_packet_parser.packets.CCSDSPacket
         The FPGA metadata event header.
     data_version : str
         The version of the data product being created.
@@ -217,7 +217,7 @@ class RawDustEvent:
     )
 
     def __init__(
-        self, header_packet: space_packet_parser.parser.Packet, data_version: str
+        self, header_packet: space_packet_parser.packets.CCSDSPacket, data_version: str
     ) -> None:
         """
         Initialize a raw dust event, with an FPGA Header Packet from IDEX.
@@ -230,7 +230,7 @@ class RawDustEvent:
 
         Parameters
         ----------
-        header_packet : space_packet_parser.parser.Packet
+        header_packet : space_packet_parser.packets.CCSDSPacket
             The FPGA metadata event header.
         data_version : str
             Data version for CDF filename, in the format ``vXXX``.
@@ -293,7 +293,7 @@ class RawDustEvent:
         else:
             logger.warning("Unknown science type received: [%s]", scitype)
 
-    def _set_impact_time(self, packet: space_packet_parser.parser.Packet) -> None:
+    def _set_impact_time(self, packet: space_packet_parser.packets.CCSDSPacket) -> None:
         """
         Calculate the impact time from the FPGA header information.
 
@@ -302,7 +302,7 @@ class RawDustEvent:
 
         Parameters
         ----------
-        packet : space_packet_parser.parser.Packet
+        packet : space_packet_parser.packets.CCSDSPacket
             The IDEX FPGA header packet.
 
         Notes
@@ -323,7 +323,7 @@ class RawDustEvent:
         self.impact_time = met_to_j2000ns(met)
 
     def _set_sample_trigger_times(
-        self, packet: space_packet_parser.parser.Packet
+        self, packet: space_packet_parser.packets.CCSDSPacket
     ) -> None:
         """
         Calculate the actual sample trigger time.
@@ -333,7 +333,7 @@ class RawDustEvent:
 
         Parameters
         ----------
-        packet : space_packet_parser.parser.Packet
+        packet : space_packet_parser.packets.CCSDSPacket
             The IDEX FPGA header packet info.
 
         Notes
@@ -488,13 +488,15 @@ class RawDustEvent:
         )
         return time_high_sr_data
 
-    def _populate_bit_strings(self, packet: space_packet_parser.parser.Packet) -> None:
+    def _populate_bit_strings(
+        self, packet: space_packet_parser.packets.CCSDSPacket
+    ) -> None:
         """
         Parse IDEX data packets to populate bit strings.
 
         Parameters
         ----------
-        packet : space_packet_parser.parser.Packet
+        packet : space_packet_parser.packets.CCSDSPacket
             A single science data packet for one of the 6.
             IDEX observables.
         """

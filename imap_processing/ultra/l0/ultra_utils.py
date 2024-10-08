@@ -279,7 +279,7 @@ def append_fillval(decom_data: dict, packet):  # type: ignore[no-untyped-def]
     ----------
     decom_data : dict
         Parsed data.
-    packet : space_packet_parser.parser.Packet
+    packet : space_packet_parser.packets.CCSDSPacket
         Packet.
     """
     for key in decom_data:

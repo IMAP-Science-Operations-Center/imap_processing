@@ -31,13 +31,13 @@ class HITBase:
     packet_file_name: str
     ccsds_header: CcsdsData
 
-    def parse_data(self, packet: space_packet_parser.parser.Packet) -> None:
+    def parse_data(self, packet: space_packet_parser.packets.CCSDSPacket) -> None:
         """
         Parse Lo L0 packet data.
 
         Parameters
         ----------
-        packet : space_packet_parser.parser.Packet
+        packet : space_packet_parser.packets.CCSDSPacket
             A single Lo L0 packet from space packet parser.
         """
         attributes = [field.name for field in fields(self)]

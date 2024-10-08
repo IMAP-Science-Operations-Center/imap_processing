@@ -213,7 +213,7 @@ class Housekeeping(HITBase):
 
     def __init__(
         self,
-        packet: space_packet_parser.parser.Packet,
+        packet: space_packet_parser.packets.CCSDSPacket,
         software_version: str,
         packet_file_name: str,
     ):

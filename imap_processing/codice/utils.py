@@ -65,7 +65,7 @@ def add_metadata_to_array(packet: space_packet_parser, metadata_arrays: dict) ->
 
     Parameters
     ----------
-    packet : space_packet_parser.parser.Packet
+    packet : space_packet_parser.packets.CCSDSPacket
         CODICE data packet.
     metadata_arrays : dict
         Metadata arrays.
