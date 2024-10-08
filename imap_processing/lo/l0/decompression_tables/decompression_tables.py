@@ -4,73 +4,77 @@ from collections import namedtuple
 
 # All TOFs and Checksum values that exist for a case
 # must be shifted by 1 bit to the left
-DE_BIT_SHIFT = 1
+DE_BIT_SHIFT = {
+    "tof0": 1,
+    "tof1": 1,
+    "tof2": 1,
+    "tof3": 1,
+    "cksm": 1,
+    "pos": 0,
+}
 
-# This named tuple will be used to store the bit length
-# of each TOF field. This length will be used for unpacking
-# the TOF data.
-DataFields = namedtuple(
-    "DataFields",
+# Named tuple for all the fixed fields in the
+# direct event. These fields will always be transmitted.
+FixedFields = namedtuple(
+    "FixedFields",
     [
-        "ABSENT",
-        "DE_TIME",
-        "ESA_STEP",
-        "MODE",
-        "TOF0",
-        "TOF1",
-        "TOF2",
-        "TOF3",
-        "CKSM",
-        "POS",
-    ],
-)
-# the bit length for each field
-DATA_BITS = DataFields(4, 12, 3, 1, 10, 9, 9, 6, 4, 2)
-
-# This named tuple will be used to store which
-# TOF fields are transmitted for each case / mode.
-# TIME, ENERGY, MODE are always transmitted and
-# therefore omitted from the tuple.
-TOFFields = namedtuple(
-    "TOFFields",
-    [
-        "TOF0",
-        "TOF1",
-        "TOF2",
-        "TOF3",
-        "CKSM",
-        "POS",
+        "coincidence_type",
+        "de_time",
+        "esa_step",
+        "mode",
     ],
 )
 
-# TODO:
-# For case 0 if mode = 1 TOF1 is not transmitted and is calculated using the checksum
-# For case 0 if mode = 0 TOF1 is transmitted
-# For cases 4, 6, 10, 12 if mode = 1 TOF3 is not transmitted, but can be calculated
-# from the position which is transmitted
-# For cases 4, 6, 8, 10, 12 if mode = 0 TOF3 is transmitted, position is not
-# No mode = 1 for case 13? Green highlight?
-# No mode = 1 for cases 2, 3, 5, 7, 9, 11
+# Named tuple for all the variable fields in the
+# direct event. These fields may or may not be transmitted
+# depending on the case and mode.
+VariableFields = namedtuple(
+    "VariableFields",
+    [
+        "tof0",
+        "tof1",
+        "tof2",
+        "tof3",
+        "cksm",
+        "pos",
+    ],
+)
+# number of bits for each fixed field
+# coincidence_type: 4 bits
+# de_time: 12 bits
+# esa_step: 3 bits
+# mode: 1 bit
+FIXED_FIELD_BITS = FixedFields(4, 12, 3, 1)
 
-# (case, mode): the TOF fields that are transmitted that case/mode.
+# number of bits for each variable field if it is transmitted
+# tof0: 10 bits
+# tof1: 9 bits
+# tof2: 9 bits
+# tof3: 6 bits
+# cksm: 4 bits
+# pos: 2 bits
+VARIABLE_FIELD_BITS = VariableFields(10, 9, 9, 6, 4, 2)
+
+# Variable fields that are transmitted for each case and mode.
+# (case, mode): tof0, tof1, tof2, tof3, cksm, pos
 CASE_DECODER = {
-    (0, 1): TOFFields(True, False, True, True, True, False),
-    (0, 0): TOFFields(True, True, True, True, False, False),
-    (1, 0): TOFFields(True, True, True, False, False, False),
-    (2, 0): TOFFields(True, True, False, False, False, True),
-    (3, 0): TOFFields(True, False, False, False, False, False),
-    (4, 1): TOFFields(True, False, False, False, False, True),
-    (4, 0): TOFFields(True, False, False, True, False, False),
-    (5, 0): TOFFields(True, False, True, False, False, False),
-    (6, 1): TOFFields(True, False, False, False, False, True),
-    (6, 0): TOFFields(True, False, False, True, False, False),
-    (7, 0): TOFFields(True, False, False, False, False, False),
-    (8, 0): TOFFields(False, True, True, False, False, True),
-    (9, 0): TOFFields(False, True, True, False, False, False),
-    (10, 1): TOFFields(False, True, False, False, False, True),
-    (10, 0): TOFFields(False, True, False, True, False, False),
-    (11, 0): TOFFields(False, True, False, False, False, False),
-    (12, 1): TOFFields(False, False, True, False, False, True),
-    (12, 0): TOFFields(False, False, True, True, False, False),
-    (13, 0): TOFFields(False, False, True, False, False, False),
+    (0, 1): VariableFields(True, False, True, True, True, False),
+    (0, 0): VariableFields(True, True, True, True, False, False),
+    (1, 0): VariableFields(True, True, True, False, False, False),
+    (2, 0): VariableFields(True, True, False, False, False, True),
+    (3, 0): VariableFields(True, False, False, False, False, False),
+    (4, 1): VariableFields(True, False, False, False, False, True),
+    (4, 0): VariableFields(True, False, False, True, False, False),
+    (5, 0): VariableFields(True, False, True, False, False, False),
+    (6, 1): VariableFields(True, False, False, False, False, True),
+    (6, 0): VariableFields(True, False, False, True, False, False),
+    (7, 0): VariableFields(True, False, False, False, False, False),
+    (8, 0): VariableFields(False, True, True, False, False, True),
+    (9, 0): VariableFields(False, True, True, False, False, False),
+    (10, 1): VariableFields(False, True, False, False, False, True),
+    (10, 0): VariableFields(False, True, False, True, False, False),
+    (11, 0): VariableFields(False, True, False, False, False, False),
+    (12, 1): VariableFields(False, False, True, False, False, True),
+    (12, 0): VariableFields(False, False, True, True, False, False),
+    (13, 0): VariableFields(False, False, True, False, False, False),
 }

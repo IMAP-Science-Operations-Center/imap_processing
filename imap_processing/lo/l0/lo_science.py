@@ -8,8 +8,9 @@ import xarray as xr
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.lo.l0.decompression_tables.decompression_tables import (
     CASE_DECODER,
-    DATA_BITS,
     DE_BIT_SHIFT,
+    FIXED_FIELD_BITS,
+    VARIABLE_FIELD_BITS,
 )
 from imap_processing.lo.l0.utils.bit_decompression import (
     DECOMPRESSION_TABLES,
@@ -211,7 +212,7 @@ def parse_events(dataset: xr.Dataset, attr_mgr: ImapCdfAttributes) -> xr.Dataset
             dataset = parse_fixed_fields(dataset, pkt_idx, pointing_de)
             # Parse the variable fields for the direct event
             # TOF0, TOF1, TOF2, TOF3, Checksum, Position
-            dataset = parse_variable_fields(dataset, pkt_idx, pointing_de, DE_BIT_SHIFT)
+            dataset = parse_variable_fields(dataset, pkt_idx, pointing_de)
 
             pointing_de += 1
 
@@ -242,35 +243,15 @@ def parse_fixed_fields(
     dataset : xr.Dataset
         Updated dataset with the fixed fields parsed.
     """
-    # Parse the first 4 bits of the DE data for the coincidence type
-    dataset["coincidence_type"].values[pointing_de] = parse_de_bin(
-        dataset, pkt_idx, DATA_BITS.ABSENT
-    )
-    dataset.attrs["bit_pos"] += DATA_BITS.ABSENT
-    # Parse the next set of bits for the direct event time
-    # direct event time: time of direct event relative to start of spin
-    dataset["de_time"].values[pointing_de] = parse_de_bin(
-        dataset, pkt_idx, DATA_BITS.DE_TIME
-    )
-    dataset.attrs["bit_pos"] += DATA_BITS.DE_TIME
-    # parse the next set of bits for the ESA Step
-    # ESA Step: Energy step from 1 to 7
-    dataset["esa_step"].values[pointing_de] = parse_de_bin(
-        dataset, pkt_idx, DATA_BITS.ESA_STEP
-    )
-    dataset.attrs["bit_pos"] += DATA_BITS.ESA_STEP
-    # parse the next set of bits for the mode
-    # Mode: Energy stepping mode 0 or 1
-    # this is used along with the coincidence type to determine which
-    # TOF fields are transmitted
-    dataset["mode"].values[pointing_de] = parse_de_bin(dataset, pkt_idx, DATA_BITS.MODE)
-    dataset.attrs["bit_pos"] += DATA_BITS.MODE
+    for field, bit_length in FIXED_FIELD_BITS._asdict().items():
+        dataset[field].values[pointing_de] = parse_de_bin(dataset, pkt_idx, bit_length)
+        dataset.attrs["bit_pos"] += bit_length
 
     return dataset
 
 
 def parse_variable_fields(
-    dataset: xr.Dataset, pkt_idx: int, pointing_de: int, bit_shift: int
+    dataset: xr.Dataset, pkt_idx: int, pointing_de: int
 ) -> xr.Dataset:
     """
     Parse the variable fields for a direct event.
@@ -289,8 +270,6 @@ def parse_variable_fields(
         Index of the packet for the pointing.
     pointing_de : int
         Index of the total direct event for the pointing.
-    bit_shift : int
-        Number of bits to shift the field to the left.
 
     Returns
     -------
@@ -306,38 +285,15 @@ def parse_variable_fields(
         )
     ]
 
-    # Check which TOF fields should have been transmitted for this
-    # case number / mode combination and decompress them.
-    if case_decoder.TOF0:
-        dataset["tof0"].values[pointing_de] = parse_de_bin(
-            dataset, pkt_idx, DATA_BITS.TOF0, bit_shift
-        )
-        dataset.attrs["bit_pos"] += DATA_BITS.TOF0
-    if case_decoder.TOF1:
-        dataset["tof1"].values[pointing_de] = parse_de_bin(
-            dataset, pkt_idx, DATA_BITS.TOF1, bit_shift
-        )
-        dataset.attrs["bit_pos"] += DATA_BITS.TOF1
-    if case_decoder.TOF2:
-        dataset["tof2"].values[pointing_de] = parse_de_bin(
-            dataset, pkt_idx, DATA_BITS.TOF2, bit_shift
-        )
-        dataset.attrs["bit_pos"] += DATA_BITS.TOF2
-    if case_decoder.TOF3:
-        dataset["tof3"].values[pointing_de] = parse_de_bin(
-            dataset, pkt_idx, DATA_BITS.TOF3, bit_shift
-        )
-        dataset.attrs["bit_pos"] += DATA_BITS.TOF3
-    if case_decoder.CKSM:
-        dataset["cksm"].values[pointing_de] = parse_de_bin(
-            dataset, pkt_idx, DATA_BITS.CKSM, bit_shift
-        )
-        dataset.attrs["bit_pos"] += DATA_BITS.CKSM
-    if case_decoder.POS:
-        dataset["pos"].values[pointing_de] = parse_de_bin(
-            dataset, pkt_idx, DATA_BITS.POS
-        )
-        dataset.attrs["bit_pos"] += DATA_BITS.POS
+    for field, field_exists in case_decoder._asdict().items():
+        # Check which TOF fields should have been transmitted for this
+        # case number / mode combination and decompress them.
+        if field_exists:
+            bit_length = VARIABLE_FIELD_BITS._asdict()[field]
+            dataset[field].values[pointing_de] = parse_de_bin(
+                dataset, pkt_idx, bit_length, DE_BIT_SHIFT[field]
+            )
+            dataset.attrs["bit_pos"] += bit_length
 
     return dataset
 
