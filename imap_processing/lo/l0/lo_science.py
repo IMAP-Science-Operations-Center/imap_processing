@@ -203,91 +203,147 @@ def parse_events(dataset: xr.Dataset, attr_mgr: ImapCdfAttributes) -> xr.Dataset
     # for each direct event packet in the pointing
     for pkt_idx, de_count in enumerate(dataset["count"].values):
         # initialize the bit position for the packet
-        bit_pos = 0
+        dataset.attrs["bit_pos"] = 0
         # for each direct event in the packet
         for _ in range(de_count):
-            # TODO: a lot more of the parsing could be pulled into a
-            #  function and loop through the DE fields to parse.
-            #  Will need to update the case decoder to index more easily
-            #  with a list and add field to decide if bit shift is needed.
-            #  Want to wait until multi-de packets are better understood first.
-
-            # Parse the first 4 bits of the DE data for the coincidence type
-            dataset["coincidence_type"].values[pointing_de] = parse_de_bin(
-                dataset, pkt_idx, bit_pos, 4
-            )
-            bit_pos += 4
-
-            # Parse the next set of bits for the direct event time
-            # direct event time: time of direct event relative to start of spin
-            dataset["de_time"].values[pointing_de] = parse_de_bin(
-                dataset, pkt_idx, bit_pos, DATA_BITS.DE_TIME
-            )
-            bit_pos += DATA_BITS.DE_TIME
-            # parse the next set of bits for the ESA Step
-            # ESA Step: Energy step from 1 to 7
-            dataset["esa_step"].values[pointing_de] = parse_de_bin(
-                dataset, pkt_idx, bit_pos, DATA_BITS.ESA_STEP
-            )
-            bit_pos += DATA_BITS.ESA_STEP
-            # parse the next set of bits for the mode
-            # Mode: Energy stepping mode 0 or 1
-            # this is used along with the coincidence type to determine which
-            # TOF fields are transmitted
-            dataset["mode"].values[pointing_de] = parse_de_bin(
-                dataset, pkt_idx, bit_pos, DATA_BITS.MODE
-            )
-            bit_pos += DATA_BITS.MODE
-
-            # The decoder defines which TOF fields are
-            # transmitted for this case and mode
-            case_decoder = CASE_DECODER[
-                (
-                    dataset["coincidence_type"].values[pointing_de],
-                    dataset["mode"].values[pointing_de],
-                )
-            ]
-
-            # Check which TOF fields should have been transmitted for this
-            # case number / mode combination and decompress them.
-            if case_decoder.TOF0:
-                dataset["tof0"].values[pointing_de] = parse_de_bin(
-                    dataset, pkt_idx, bit_pos, DATA_BITS.TOF0, DE_BIT_SHIFT
-                )
-                bit_pos += DATA_BITS.TOF0
-            if case_decoder.TOF1:
-                dataset["tof1"].values[pointing_de] = parse_de_bin(
-                    dataset, pkt_idx, bit_pos, DATA_BITS.TOF1, DE_BIT_SHIFT
-                )
-                bit_pos += DATA_BITS.TOF1
-            if case_decoder.TOF2:
-                dataset["tof2"].values[pointing_de] = parse_de_bin(
-                    dataset, pkt_idx, bit_pos, DATA_BITS.TOF2, DE_BIT_SHIFT
-                )
-                bit_pos += DATA_BITS.TOF2
-            if case_decoder.TOF3:
-                dataset["tof3"].values[pointing_de] = parse_de_bin(
-                    dataset, pkt_idx, bit_pos, DATA_BITS.TOF3, DE_BIT_SHIFT
-                )
-                bit_pos += DATA_BITS.TOF3
-            if case_decoder.CKSM:
-                dataset["cksm"].values[pointing_de] = parse_de_bin(
-                    dataset, pkt_idx, bit_pos, DATA_BITS.CKSM, DE_BIT_SHIFT
-                )
-                bit_pos += DATA_BITS.CKSM
-            if case_decoder.POS:
-                dataset["pos"].values[pointing_de] = parse_de_bin(
-                    dataset, pkt_idx, bit_pos, DATA_BITS.POS
-                )
-                bit_pos += DATA_BITS.POS
+            # Parse the fixed fields for the direct event
+            # Coincidence Type, Time, ESA Step, Mode
+            dataset = parse_fixed_fields(dataset, pkt_idx, pointing_de)
+            # Parse the variable fields for the direct event
+            # TOF0, TOF1, TOF2, TOF3, Checksum, Position
+            dataset = parse_variable_fields(dataset, pkt_idx, pointing_de, DE_BIT_SHIFT)
 
             pointing_de += 1
 
     return dataset
 
 
+def parse_fixed_fields(
+    dataset: xr.Dataset, pkt_idx: int, pointing_de: int
+) -> xr.Dataset:
+    """
+    Parse the fixed fields for a direct event.
+
+    Fixed fields are the fields that are always transmitted for
+    a direct event. These fields are the Coincidence Type,
+    Time, ESA Step, and Mode.
+
+    Parameters
+    ----------
+    dataset : xr.Dataset
+        Lo science direct events from packets_to_dataset function.
+    pkt_idx : int
+        Index of the packet for the pointing.
+    pointing_de : int
+        Index of the total direct event for the pointing.
+
+    Returns
+    -------
+    dataset : xr.Dataset
+        Updated dataset with the fixed fields parsed.
+    """
+    # Parse the first 4 bits of the DE data for the coincidence type
+    dataset["coincidence_type"].values[pointing_de] = parse_de_bin(
+        dataset, pkt_idx, DATA_BITS.ABSENT
+    )
+    dataset.attrs["bit_pos"] += DATA_BITS.ABSENT
+    # Parse the next set of bits for the direct event time
+    # direct event time: time of direct event relative to start of spin
+    dataset["de_time"].values[pointing_de] = parse_de_bin(
+        dataset, pkt_idx, DATA_BITS.DE_TIME
+    )
+    dataset.attrs["bit_pos"] += DATA_BITS.DE_TIME
+    # parse the next set of bits for the ESA Step
+    # ESA Step: Energy step from 1 to 7
+    dataset["esa_step"].values[pointing_de] = parse_de_bin(
+        dataset, pkt_idx, DATA_BITS.ESA_STEP
+    )
+    dataset.attrs["bit_pos"] += DATA_BITS.ESA_STEP
+    # parse the next set of bits for the mode
+    # Mode: Energy stepping mode 0 or 1
+    # this is used along with the coincidence type to determine which
+    # TOF fields are transmitted
+    dataset["mode"].values[pointing_de] = parse_de_bin(dataset, pkt_idx, DATA_BITS.MODE)
+    dataset.attrs["bit_pos"] += DATA_BITS.MODE
+
+    return dataset
+
+
+def parse_variable_fields(
+    dataset: xr.Dataset, pkt_idx: int, pointing_de: int, bit_shift: int
+) -> xr.Dataset:
+    """
+    Parse the variable fields for a direct event.
+
+    Variable fields are the fields that are not always transmitted.
+    Which fields are transmitted is determined by the Coincidence
+    type and Mode. These fields are TOF0, TOF1, TOF2, TOF3, Checksum,
+    and Position. All of these fields except for Position are bit
+    shifted to the right by 1 when packed into the CCSDS packets.
+
+    Parameters
+    ----------
+    dataset : xr.Dataset
+        Lo science direct events from packets_to_dataset function.
+    pkt_idx : int
+        Index of the packet for the pointing.
+    pointing_de : int
+        Index of the total direct event for the pointing.
+    bit_shift : int
+        Number of bits to shift the field to the left.
+
+    Returns
+    -------
+    dataset : xr.Dataset
+        Updated dataset with the fixed fields parsed.
+    """
+    # The decoder defines which TOF fields are
+    # transmitted for this case and mode
+    case_decoder = CASE_DECODER[
+        (
+            dataset["coincidence_type"].values[pointing_de],
+            dataset["mode"].values[pointing_de],
+        )
+    ]
+
+    # Check which TOF fields should have been transmitted for this
+    # case number / mode combination and decompress them.
+    if case_decoder.TOF0:
+        dataset["tof0"].values[pointing_de] = parse_de_bin(
+            dataset, pkt_idx, DATA_BITS.TOF0, bit_shift
+        )
+        dataset.attrs["bit_pos"] += DATA_BITS.TOF0
+    if case_decoder.TOF1:
+        dataset["tof1"].values[pointing_de] = parse_de_bin(
+            dataset, pkt_idx, DATA_BITS.TOF1, bit_shift
+        )
+        dataset.attrs["bit_pos"] += DATA_BITS.TOF1
+    if case_decoder.TOF2:
+        dataset["tof2"].values[pointing_de] = parse_de_bin(
+            dataset, pkt_idx, DATA_BITS.TOF2, bit_shift
+        )
+        dataset.attrs["bit_pos"] += DATA_BITS.TOF2
+    if case_decoder.TOF3:
+        dataset["tof3"].values[pointing_de] = parse_de_bin(
+            dataset, pkt_idx, DATA_BITS.TOF3, bit_shift
+        )
+        dataset.attrs["bit_pos"] += DATA_BITS.TOF3
+    if case_decoder.CKSM:
+        dataset["cksm"].values[pointing_de] = parse_de_bin(
+            dataset, pkt_idx, DATA_BITS.CKSM, bit_shift
+        )
+        dataset.attrs["bit_pos"] += DATA_BITS.CKSM
+    if case_decoder.POS:
+        dataset["pos"].values[pointing_de] = parse_de_bin(
+            dataset, pkt_idx, DATA_BITS.POS
+        )
+        dataset.attrs["bit_pos"] += DATA_BITS.POS
+
+    return dataset
+
+
 def parse_de_bin(
-    dataset: xr.Dataset, pkt_idx: int, bit_pos: int, bit_length: int, bit_shift: int = 0
+    dataset: xr.Dataset, pkt_idx: int, bit_length: int, bit_shift: int = 0
 ) -> int:
     """
     Parse a binary string for a direct event field.
@@ -298,8 +354,6 @@ def parse_de_bin(
         Lo science direct events from packets_to_dataset function.
     pkt_idx : int
         Index of the packet for the pointing.
-    bit_pos : int
-        Bit being parsed in the binary string.
     bit_length : int
         Length of the field in bits.
     bit_shift : int
@@ -310,10 +364,12 @@ def parse_de_bin(
     int
         Parsed integer for the direct event field.
     """
-    return (
+    bit_pos = dataset.attrs["bit_pos"]
+    parsed_int = (
         int(
             dataset["data"].values[pkt_idx][bit_pos : bit_pos + bit_length],
             2,
         )
         << bit_shift
     )
+    return parsed_int

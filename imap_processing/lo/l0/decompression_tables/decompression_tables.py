@@ -12,6 +12,7 @@ DE_BIT_SHIFT = 1
 DataFields = namedtuple(
     "DataFields",
     [
+        "ABSENT",
         "DE_TIME",
         "ESA_STEP",
         "MODE",
@@ -24,7 +25,7 @@ DataFields = namedtuple(
     ],
 )
 # the bit length for each field
-DATA_BITS = DataFields(12, 3, 1, 10, 9, 9, 6, 4, 2)
+DATA_BITS = DataFields(4, 12, 3, 1, 10, 9, 9, 6, 4, 2)
 
 # This named tuple will be used to store which
 # TOF fields are transmitted for each case / mode.

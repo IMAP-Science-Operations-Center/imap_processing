@@ -83,5 +83,6 @@ def test_parse_events(fake_de_dataset, attr_mgr):
 
 
 def test_parse_de_bin(fake_de_dataset):
-    parsed_int = parse_de_bin(fake_de_dataset, 0, 0, 4, 0)
+    fake_de_dataset.attrs["bit_pos"] = 0
+    parsed_int = parse_de_bin(fake_de_dataset, 0, 4, 0)
     assert parsed_int == 0
