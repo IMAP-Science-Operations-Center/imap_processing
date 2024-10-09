@@ -7,39 +7,42 @@ ultra_metadata_attrs:
   FORMAT: I19
   LABLAXIS: Metadata
   SCALE_TYP: linear
-  UNITS: " "
+  UNITS: ” ”
   VALIDMIN: -9223372036854775808
   VALIDMAX: 9223372036854775807
   VAR_TYPE: support_data
   DISPLAY_TYPE: time_series
-
 ultra_support_attrs:
   CATDESC: Metadata for Ultra data
   FIELDNAM: metadata
   FILLVAL: -9223370000000000000
   FORMAT: I19
-  LABLAXIS: "none"
+  LABLAXIS: “none”
   SCALE_TYP: linear
-  UNITS: " "
+  UNITS: ” ”
   VALIDMIN: -9223372036854775808
   VALIDMAX: 9223372036854775807
   VAR_TYPE: support_data
   DISPLAY_TYPE: time_series
-
 string_base_attrs:
   CATDESC: string metadata
   FIELDNAM: string_metadata
-  FORMAT: A80
-  VAR_TYPE: metadata
+  FILLVAL: -9223370000000000000
+  FORMAT: I1
+  LABLAXIS: “none”
+  SCALE_TYP: linear
+  VALIDMIN: 0
+  VALIDMAX: 1
+  VAR_TYPE: support_data
   DISPLAY_TYPE: no_plot
   DEPEND_0: epoch
-
+  UNITS: ” ”
 packet_data_attrs:
   CATDESC: packet data
   FIELDNAM: packet_data
   FILLVAL: -9223370000000000000
   FORMAT: I19
-  LABLAXIS: "none"
+  LABLAXIS: “none”
   SCALE_TYP: linear
   VALIDMIN: -9223372036854775808
   VALIDMAX: 9223372036854775807
