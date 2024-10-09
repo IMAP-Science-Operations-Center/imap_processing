@@ -131,9 +131,9 @@ class PacketParser:
 
         dust_events = {}
         for packet in decom_packet_list:
-            if "IDX__SCI0TYPE" in packet.data:
-                scitype = packet.data["IDX__SCI0TYPE"].raw_value
-                event_number = packet.data["IDX__SCI0EVTNUM"].derived_value
+            if "IDX__SCI0TYPE" in packet.user_data:
+                scitype = packet.user_data["IDX__SCI0TYPE"].raw_value
+                event_number = packet.user_data["IDX__SCI0EVTNUM"]
                 if scitype == Scitype.FIRST_PACKET:
                     # Initial packet for new dust event
                     # Further packets will fill in data
@@ -247,7 +247,7 @@ class RawDustEvent:
 
         # Iterate through the trigger description dictionary and pull out the values
         self.trigger_values = {
-            trigger.name: header_packet.data[trigger.packet_name].raw_value
+            trigger.name: header_packet.user_data[trigger.packet_name].raw_value
             for trigger in TRIGGER_DESCRIPTION_DICT.values()
         }
         logger.debug(
@@ -312,9 +312,9 @@ class RawDustEvent:
               testing.
         """
         # Number of seconds since epoch (nominally the launch time)
-        seconds_since_launch = packet.data["SHCOARSE"].derived_value
+        seconds_since_launch = packet.user_data["SHCOARSE"]
         # Number of 20 microsecond "ticks" since the last second
-        num_of_20_microsecond_increments = packet.data["SHFINE"].derived_value
+        num_of_20_microsecond_increments = packet.user_data["SHFINE"]
         # Number of microseconds since the last second
         microseconds_since_last_second = 20 * num_of_20_microsecond_increments
         # Get the datetime of Jan 1 2012 as the start date
@@ -353,15 +353,11 @@ class RawDustEvent:
         rather than the number of samples before triggering.
         """
         # Retrieve the number of samples of high gain delay
-        high_gain_delay = packet.data["IDX__TXHDRADC0IDELAY"].raw_value
+        high_gain_delay = packet.user_data["IDX__TXHDRADC0IDELAY"].raw_value
 
         # Retrieve number of low/high sample pre-trigger blocks
-        num_low_sample_pretrigger_blocks = packet.data[
-            "IDX__TXHDRLSPREBLOCKS"
-        ].derived_value
-        num_high_sample_pretrigger_blocks = packet.data[
-            "IDX__TXHDRHSPREBLOCKS"
-        ].derived_value
+        num_low_sample_pretrigger_blocks = packet.user_data["IDX__TXHDRLSPREBLOCKS"]
+        num_high_sample_pretrigger_blocks = packet.user_data["IDX__TXHDRHSPREBLOCKS"]
 
         # Calculate the low and high sample trigger times based on the high gain delay
         # and the number of high sample/low sample pretrigger blocks
@@ -500,8 +496,8 @@ class RawDustEvent:
             A single science data packet for one of the 6.
             IDEX observables.
         """
-        scitype = packet.data["IDX__SCI0TYPE"].raw_value
-        raw_science_bits = packet.data["IDX__SCI0RAW"].raw_value
+        scitype = packet.user_data["IDX__SCI0TYPE"].raw_value
+        raw_science_bits = packet.user_data["IDX__SCI0RAW"].raw_value
         self._append_raw_data(scitype, raw_science_bits)
 
     def process(self) -> xr.Dataset:

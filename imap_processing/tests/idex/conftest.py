@@ -19,4 +19,4 @@ def decom_test_data() -> xr.Dataset:
     test_file = Path(
         f"{imap_module_directory}/tests/idex/imap_idex_l0_raw_20230725_v001.pkts"
     )
-    return PacketParser(test_file, "001").data
+    return PacketParser(test_file, "001").user_data
