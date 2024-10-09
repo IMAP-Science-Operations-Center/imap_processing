@@ -1415,13 +1415,13 @@ files = [
 
 [[package]]
 name = "space-packet-parser"
-version = "5.0.0"
+version = "5.0.1"
 description = "A CCSDS telemetry packet decoding library based on the XTCE packet format description standard."
 optional = false
 python-versions = ">=3.9"
 files = [
-    {file = "space_packet_parser-5.0.0-py3-none-any.whl", hash = "sha256:961d983cf99ddc7f4add01a97ddef563388c4c3adc9c13c6bed7fa307bb1294e"},
-    {file = "space_packet_parser-5.0.0.tar.gz", hash = "sha256:feac57583633dc3bfb9b526f31ba097593cf9a4187fa60ba3c20a9e4be95de0a"},
+    {file = "space_packet_parser-5.0.1-py3-none-any.whl", hash = "sha256:f3f10cbc83aa306cce5c0689109c8cdbccab4da2515525b5657e0d53c1b6f4cc"},
+    {file = "space_packet_parser-5.0.1.tar.gz", hash = "sha256:f72b937ec6d1bfb426124e8b2d4e500784f3963c4f88ce22339f24bb249cfad8"},
 ]
 
 [package.dependencies]
