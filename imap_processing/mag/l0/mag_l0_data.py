@@ -97,7 +97,7 @@ class MagL0:
     PRI_FNTM: int
     SEC_COARSETM: int
     SEC_FNTM: int
-    VECTORS: np.ndarray | str
+    VECTORS: np.ndarray | bytes
 
     def __post_init__(self) -> None:
         """
@@ -106,11 +106,11 @@ class MagL0:
         Also convert encoded "VECSEC" (vectors per second) into proper vectors per
         second values.
         """
-        if isinstance(self.VECTORS, str):
-            # Convert string output from space_packet_parser to numpy array of
+        if isinstance(self.VECTORS, bytes):
+            # Convert byte output from space_packet_parser to numpy array of
             # big-endian bytes
             self.VECTORS = np.frombuffer(
-                int(self.VECTORS, 2).to_bytes(len(self.VECTORS) // 8, "big"),
+                self.VECTORS,
                 dtype=np.dtype(">B"),
             )
 

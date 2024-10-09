@@ -63,7 +63,7 @@ def decom_packets(
             apid = packet.header["PKT_APID"]
             # Do something with the packet data
             if apid == GlowsParams.HIST_APID.value:
-                values = [item for item in packet.user_data.values()]
+                values = [item.raw_value for item in packet.user_data.values()]
                 hist_l0 = HistogramL0(
                     __version__, filename, CcsdsData(packet.header), *values
                 )

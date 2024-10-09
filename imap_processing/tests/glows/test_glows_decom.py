@@ -94,21 +94,21 @@ def test_header(decom_test_data):
 
 def test_bytearrays(decom_test_data):
     for hist_test_data in decom_test_data[0]:
-        assert isinstance(hist_test_data.HISTOGRAM_DATA, bytearray)
+        assert isinstance(hist_test_data.HISTOGRAM_DATA, bytes)
 
     for de_test_data in decom_test_data[1]:
-        assert isinstance(de_test_data.DE_DATA, bytearray)
+        assert isinstance(de_test_data.DE_DATA, bytes)
 
     # print(decom_test_data[0][0].HISTOGRAM_DATA[:32].hex())
 
     # first 32 bytes, from original binary string of the first test histogram packet
-    expected_value_hist_partial = bytearray.fromhex(
+    expected_value_hist_partial = bytes.fromhex(
         "1D1E1E1D1D1E1E1E1E1D1D1E1F1D1E1E1F1D1E1E1F1E1E1E1F1F1E1E1E1F1F1E"
     )
 
     assert decom_test_data[0][0].HISTOGRAM_DATA[:32] == expected_value_hist_partial
 
-    expected_value_de_partial = bytearray.fromhex(
+    expected_value_de_partial = bytes.fromhex(
         "033B8512033B8511001E74D6033B851300010100B71B444400372B0109CB07D7"
     )
 

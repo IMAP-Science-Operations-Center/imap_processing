@@ -52,7 +52,7 @@ def decom_packets(packet_file_path: str | Path) -> dict[str, list[MagL0]]:
         for packet in mag_packets:
             apid = packet.header["PKT_APID"]
             if apid in (Mode.BURST, Mode.NORMAL):
-                values = [item for item in packet.user_data.values()]
+                values = [item.raw_value for item in packet.user_data.values()]
                 if apid == Mode.NORMAL:
                     norm_data.append(MagL0(CcsdsData(packet.header), *values))
                 else:

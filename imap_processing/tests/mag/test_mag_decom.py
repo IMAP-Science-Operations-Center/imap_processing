@@ -44,7 +44,6 @@ def test_mag_decom():
         assert test.PRI_FNTM == expected_output["PRI_FNTM"][index]
         assert test.SEC_COARSETM == expected_output["SEC_COARSETM"][index]
         assert test.SEC_FNTM == expected_output["SEC_FNTM"][index]
-
         # Remove bytes for header and previous attributes from CCSDS_HEX,
         # remaining bytes are vectors
         # This also removes the buffer from the end of the vectors. The buffer is
