@@ -107,6 +107,8 @@ nitpick_ignore_regex = [
     (r"py:.*", r".*CoDICECompression.*"),
     (r"py:.*", r".*.lo.l0.utils.*"),
     (r"py:.*", r".*.lo.l0.data_classes.*"),
+    (r"py:.*", r".*.hi.l1b.hi_l1b.CoincidenceBitmap.*"),
+    (r"py:.*", r".*.hi.l1b.hi_l1b.TriggerId.*"),
     (r"py:.*", r".*.hit.l0.utils.*"),
     (r"py:.*", r".*.hit.l0.data_classes.*"),
     (r"py:.*", r".*.hit.l1a.*"),

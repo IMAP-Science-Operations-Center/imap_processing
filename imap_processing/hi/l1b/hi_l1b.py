@@ -11,14 +11,9 @@ from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.hi.utils import HIAPID, HiConstants, create_dataset_variables
 from imap_processing.utils import convert_raw_to_eu
 
-logger = logging.getLogger(__name__)
-ATTR_MGR = ImapCdfAttributes()
-ATTR_MGR.add_instrument_global_attrs("hi")
-ATTR_MGR.load_variable_attributes("imap_hi_variable_attrs.yaml")
-
 
 class TriggerId(IntEnum):
-    """Int Enum class for trigger id values."""
+    """IntEnum class for trigger id values."""
 
     A = 1
     B = 2
@@ -26,12 +21,18 @@ class TriggerId(IntEnum):
 
 
 class CoincidenceBitmap(IntEnum):
-    """Int Enum class for coincidence type bitmap values."""
+    """IntEnum class for coincidence type bitmap values."""
 
     A = 2**3
     B = 2**2
     C1 = 2**1
     C2 = 2**0
+
+
+logger = logging.getLogger(__name__)
+ATTR_MGR = ImapCdfAttributes()
+ATTR_MGR.add_instrument_global_attrs("hi")
+ATTR_MGR.load_variable_attributes("imap_hi_variable_attrs.yaml")
 
 
 def hi_l1b(l1a_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
@@ -68,7 +69,9 @@ def hi_l1b(l1a_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
             l1a_dataset,
             conversion_table_path=conversion_table_path,
             packet_name=packet_enum.name,
-            comment="#",
+            comment="#",  # type: ignore[arg-type]
+            # Todo error, Argument "comment" to "convert_raw_to_eu" has incompatible
+            # type "str"; expected "dict[Any, Any]"
             converters={"mnemonic": str.lower},
         )
 
@@ -145,7 +148,7 @@ def compute_coincidence_type_and_time_deltas(dataset: xr.Dataset) -> xr.Dataset:
 
     Returns
     -------
-    xr.Dataset
+    xarray.Dataset
         Updated xarray.Dataset with 5 new variables added.
     """
     new_data_vars = create_dataset_variables(
@@ -162,9 +165,9 @@ def compute_coincidence_type_and_time_deltas(dataset: xr.Dataset) -> xr.Dataset:
     out_ds = dataset.assign(new_data_vars)
 
     # compute masks needed for coincidence type and delta t calculations
-    a_mask = out_ds.trigger_id.values == TriggerId.A
-    b_mask = out_ds.trigger_id.values == TriggerId.B
-    c_mask = out_ds.trigger_id.values == TriggerId.C
+    a_mask = out_ds.trigger_id.values == TriggerId.A.value
+    b_mask = out_ds.trigger_id.values == TriggerId.B.value
+    c_mask = out_ds.trigger_id.values == TriggerId.C.value
 
     tof_1_valid_mask = np.isin(
         out_ds.tof_1.values, HiConstants.TOF1_BAD_VALUES, invert=True
