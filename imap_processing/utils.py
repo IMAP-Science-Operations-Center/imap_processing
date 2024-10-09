@@ -33,7 +33,7 @@ def sort_by_time(packets: list, time_key: str) -> list:
     sorted_packets : list
         Sorted packets.
     """
-    sorted_packets = sorted(packets, key=lambda x: x.data[time_key])
+    sorted_packets = sorted(packets, key=lambda x: x.user_data[time_key])
     return sorted_packets
 
 

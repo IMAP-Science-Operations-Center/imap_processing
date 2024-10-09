@@ -70,7 +70,11 @@ def parse_histogram(dataset: xr.Dataset, attr_mgr: ImapCdfAttributes) -> xr.Data
     dataset : xr.Dataset
         Parsed and decompressed histogram data.
     """
-    hist_bin = dataset.sci_cnt
+    # TODO: improve this as needed
+    binary_str_val = []
+    for data in dataset.sci_cnt.values:
+        binary_str_val.append("".join(f"{byte:08b}" for byte in data))
+    hist_bin = binary_str_val
 
     # initialize the starting bit for the sections of data
     section_start = 0
@@ -83,7 +87,7 @@ def parse_histogram(dataset: xr.Dataset, attr_mgr: ImapCdfAttributes) -> xr.Data
             decompress(
                 bin_str, data_meta.bit_length, section_start, data_meta.section_length
             )
-            for bin_str in hist_bin.values
+            for bin_str in hist_bin
         ]
 
         # add on the epoch length (equal to number of packets) to the

@@ -99,9 +99,6 @@ convention = "numpy"
 imap_cli = 'imap_processing.cli:main'
 imap_xtce = 'imap_processing.ccsds.excel_to_xtce:main'
 
-[tool.codespell]
-ignore-words-list = "livetime"
-
 [tool.poetry-dynamic-versioning]
 enable = true
 vcs = "git"

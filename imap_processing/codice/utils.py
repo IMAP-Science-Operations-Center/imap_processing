@@ -88,7 +88,7 @@ def add_metadata_to_array(packet: space_packet_parser, metadata_arrays: dict) ->
     for key, value in packet.header.items():
         metadata_arrays.setdefault(key, []).append(value.raw_value)
 
-    for key, value in packet.data.items():
+    for key, value in packet.user_data.items():
         if key not in ignore_list:
             metadata_arrays.setdefault(key, []).append(value.raw_value)
 

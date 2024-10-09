@@ -283,7 +283,7 @@ def append_fillval(decom_data: dict, packet):  # type: ignore[no-untyped-def]
         Packet.
     """
     for key in decom_data:
-        if (key not in packet.header.keys()) and (key not in packet.data.keys()):
+        if (key not in packet.header.keys()) and (key not in packet.user_data.keys()):
             decom_data[key].append(np.iinfo(np.int64).min)
 
 

@@ -43,7 +43,7 @@ class HITBase:
         attributes = [field.name for field in fields(self)]
 
         # For each item in packet, assign it to the matching attribute in the class.
-        for key, item in packet.data.items():
+        for key, item in packet.user_data.items():
             value = (
                 item.derived_value if item.derived_value is not None else item.raw_value
             )

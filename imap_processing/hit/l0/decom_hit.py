@@ -357,7 +357,11 @@ def assemble_science_frames(sci_dataset: xr.Dataset) -> xr.Dataset:
     # Convert sequence flags and counters to NumPy arrays for vectorized operations
     seq_flgs = sci_dataset.seq_flgs.values
     seq_ctrs = sci_dataset.src_seq_ctr.values
-    science_data = sci_dataset.science_data.values
+    # TODO: improve this as needed
+    binary_str_val = []
+    for data in sci_dataset.science_data.values:
+        binary_str_val.append("".join(f"{byte:08b}" for byte in data))
+    science_data = binary_str_val
     epoch_data = sci_dataset.epoch.values
 
     # Number of packets in the file

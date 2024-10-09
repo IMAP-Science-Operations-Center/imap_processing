@@ -255,8 +255,8 @@ def read_image_raw_events_binary(
     decom_data : dict
         Each for loop appends to the existing dictionary.
     """
-    binary = packet.data["EVENTDATA"].raw_value
-    count = packet.data["COUNT"].derived_value
+    binary = packet.user_data["EVENTDATA"].raw_value
+    count = packet.user_data["COUNT"]
     # 166 bits per event
     event_length = 166 if count else 0
 
