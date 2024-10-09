@@ -365,7 +365,7 @@ class CoDICEL1aPipeline:
         self.packet_dataset = packet
 
         # Set various configurations of the data product
-        self.config: dict[str, Any] = constants.DATA_PRODUCT_CONFIGURATIONS.get(apid)  # type: ignore
+        self.config: dict[str, Any] = constants.DATA_PRODUCT_CONFIGURATIONS.get(apid)
 
         # Gather and set the CDF attributes
         self.cdf_attrs = ImapCdfAttributes()
@@ -541,6 +541,8 @@ def process_codice_l1a(file_path: Path, data_version: str) -> xr.Dataset:
         elif apid in constants.APIDS_FOR_SCIENCE_PROCESSING:
             # Extract the data
             science_values = packet_dataset.data.data[0]
+            # TODO: improve this as needed
+            science_values = "".join(f"{byte:08b}" for byte in science_values)
 
             # Get the four "main" parameters for processing
             table_id, plan_id, plan_step, view_id = get_params(packet_dataset)
