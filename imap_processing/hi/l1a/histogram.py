@@ -111,7 +111,7 @@ def allocate_histogram_dataset(num_packets: int) -> xr.Dataset:
     coords["angle_label"] = xr.DataArray(
         coords["angle"].data.astype(str),
         name="angle_label",
-        dims=["angle_label"],
+        dims=["angle"],
         attrs=attr_mgr.get_variable_attributes("hi_hist_angle_label"),
     )
 

@@ -1,11 +1,3 @@
-# <=== Label Attributes ===>
-# LABL_PTR_i expects VAR_TYPE of metadata with char data type
-hi_hist_angle_label:
-  CATDESC: Angle bin centers for histogram data.
-  FIELDNAM: ANGLE
-  FORMAT: A5
-  VAR_TYPE: metadata
-
 # ------- Default attributes section -------
 default_attrs: &default
   DEPEND_0: epoch
@@ -165,6 +157,13 @@ hi_de_tof_3:
     the direct event. 1023 is the value used to indicate no event was registered.
 
 # ======= L1A HIST Section =======
+# <=== Label Attributes ===>
+# LABL_PTR_i expects VAR_TYPE of metadata with char data type
+hi_hist_angle_label:
+  CATDESC: Angle bin centers for histogram data.
+  FIELDNAM: ANGLE
+  FORMAT: A5
+  VAR_TYPE: metadata
 
 hi_hist_angle:
   SCALE_TYPE: linear
