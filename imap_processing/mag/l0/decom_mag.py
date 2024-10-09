@@ -50,14 +50,9 @@ def decom_packets(packet_file_path: str | Path) -> dict[str, list[MagL0]]:
         mag_packets = packet_definition.packet_generator(binary_data)
 
         for packet in mag_packets:
-            apid = packet.header["PKT_APID"].derived_value
+            apid = packet.header["PKT_APID"]
             if apid in (Mode.BURST, Mode.NORMAL):
-                values = [
-                    item.derived_value
-                    if item.derived_value is not None
-                    else item.raw_value
-                    for item in packet.data.values()
-                ]
+                values = [item for item in packet.user_data.values()]
                 if apid == Mode.NORMAL:
                     norm_data.append(MagL0(CcsdsData(packet.header), *values))
                 else:

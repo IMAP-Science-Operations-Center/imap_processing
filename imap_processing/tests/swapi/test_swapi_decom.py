@@ -45,10 +45,10 @@ def test_swapi_sci_data(decom_test_data, swapi_l0_validation_data_path):
     grouped_data = group_by_apid(decom_test_data)
     sci_packets = grouped_data[SWAPIAPID.SWP_SCI]
     first_data = sci_packets[0]
-    validation_data = raw_validation_data.loc[first_data.data["SHCOARSE"].raw_value]
+    validation_data = raw_validation_data.loc[first_data["SHCOARSE"].raw_value]
 
     # compare raw values of validation data
-    for key, value in first_data.data.items():
+    for key, value in first_data.items():
         # check if the data is the same
         if key == "PLAN_ID_SCIENCE":
             # We had to work around this because HK and SCI packet uses
@@ -81,7 +81,7 @@ def test_swapi_hk_data(decom_test_data, swapi_l0_validation_data_path):
     grouped_data = group_by_apid(decom_test_data)
     hk_packets = grouped_data[SWAPIAPID.SWP_HK]
     first_data = hk_packets[0]
-    validation_data = raw_validation_data.loc[first_data.data["SHCOARSE"].raw_value]
+    validation_data = raw_validation_data.loc[first_data["SHCOARSE"].raw_value]
     bad_keys = [
         "N5_V",
         "SCEM_I",
@@ -95,7 +95,7 @@ def test_swapi_hk_data(decom_test_data, swapi_l0_validation_data_path):
         "CHKSUM",
     ]
     # compare raw values of validation data
-    for key, value in first_data.data.items():
+    for key, value in first_data.items():
         if key == "PLAN_ID_HK":
             # We had to work around this because HK and SCI packet uses
             # PLAN_ID but they uses different length of bits.

@@ -8,7 +8,7 @@ from typing import Optional, Union
 import numpy as np
 import pandas as pd
 import xarray as xr
-from space_packet_parser import definitions, encodings, packets
+from space_packet_parser import definitions, encodings, packets, parameters
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.spice.time import met_to_j2000ns
@@ -252,7 +252,7 @@ def _get_minimum_numpy_datatype(  # noqa: PLR0912 - Too many branches
 
     if use_derived_value and isinstance(
         definition.named_parameters[name].parameter_type,
-        encodings.EnumeratedParameterType,
+        parameters.EnumeratedParameterType,
     ):
         # We don't have a way of knowing what is enumerated,
         # let numpy infer the datatype
@@ -287,7 +287,7 @@ def _get_minimum_numpy_datatype(  # noqa: PLR0912 - Too many branches
     elif isinstance(data_encoding, encodings.BinaryDataEncoding):
         # TODO: Binary string representation right now, do we want bytes or
         # something else like the new StringDType instead?
-        datatype = "str"
+        datatype = "object"
     elif isinstance(data_encoding, encodings.StringDataEncoding):
         # TODO: Use the new StringDType instead?
         datatype = "str"
@@ -386,6 +386,23 @@ def packet_file_to_datasets(
         time_key = next(iter(data.keys()))
         # Convert to J2000 time and use that as our primary dimension
         time_data = met_to_j2000ns(data[time_key])
+        # data_dict = {}
+        # for key, list_of_values in data.items():
+        #     # Get the datatype for this field
+        #     datatype = datatype_mapping[apid][key]
+        #     if datatype == "object":
+        #         # convert <class bytes> to <class str>
+        #         # TODO: we all need to update our code to use <class bytes> instead
+        #         binary_str_val = [None] * len(list_of_values)
+        #         for index, data in enumerate(list_of_values):
+        #             binary_str_val[index] = ''.join(f'{byte:08b}' for byte in data)
+        #         # Update to new datatype and values
+        #         datatype = "str"
+        #         list_of_values = binary_str_val
+        #     data_dict[key.lower()] = (
+        #             "epoch",
+        #             np.asarray(list_of_values, dtype=datatype),
+        #         )
         ds = xr.Dataset(
             {
                 key.lower(): (
