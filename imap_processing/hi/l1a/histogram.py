@@ -60,9 +60,11 @@ def create_dataset(input_ds: xr.Dataset) -> xr.Dataset:
     #       It seems like we could try to reshape the arrays and do some numpy
     #       broadcasting rather than for-loops directly here
     for i_epoch, counters_binary_data in enumerate(input_ds["counters"].data):
+        # TODO: improve this as needed
+        binary_str_val = "".join(f"{byte:08b}" for byte in counters_binary_data)
         # unpack 24 arrays of 90 12-bit unsigned integers
         counter_ints = [
-            int(counters_binary_data[i * 12 : (i + 1) * 12], 2) for i in range(90 * 24)
+            int(binary_str_val[i * 12 : (i + 1) * 12], 2) for i in range(90 * 24)
         ]
         # populate the dataset with the unpacked integers
         for i_counter, counter in enumerate(

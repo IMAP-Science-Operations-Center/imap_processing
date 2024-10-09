@@ -328,8 +328,10 @@ def science_direct_event(packets_data: xr.Dataset) -> xr.Dataset:
     # end of the list. This way, I don't need to flatten
     # the list later.
     for i, data in enumerate(packets_data["de_tof"].data):
+        # TODO: improve this as needed
+        binary_str_val = "".join(f"{byte:08b}" for byte in data)
         # break binary stream data into unit of 48-bits
-        event_48bits_list = break_into_bits_size(data)
+        event_48bits_list = break_into_bits_size(binary_str_val)
         # parse 48-bits into meaningful data such as metaevent or direct event
         de_data_list.extend([parse_direct_event(event) for event in event_48bits_list])
         # add packet time to packet_met_time
