@@ -497,7 +497,10 @@ class RawDustEvent:
             IDEX observables.
         """
         scitype = packet.user_data["IDX__SCI0TYPE"].raw_value
-        raw_science_bits = packet.user_data["IDX__SCI0RAW"].raw_value
+        # TODO: improve this as needed
+        raw_science_bits = "".join(
+            f"{byte:08b}" for byte in packet.user_data["IDX__SCI0RAW"].raw_value
+        )
         self._append_raw_data(scitype, raw_science_bits)
 
     def process(self) -> xr.Dataset:
