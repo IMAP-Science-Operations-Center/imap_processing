@@ -126,28 +126,20 @@ def test_compute_coincidence_type_and_time_deltas(synthetic_trigger_id_and_tof_d
         updated_dataset.delta_t_ac1 != updated_dataset.delta_t_ac1.FILLVAL,
         np.logical_and(
             np.bitwise_and(updated_dataset.coincidence_type, CoincidenceBitmap.A.value),
-            np.bitwise_and(
-                updated_dataset.coincidence_type, CoincidenceBitmap.C1.value
-            ),
+            np.bitwise_and(updated_dataset.coincidence_type, CoincidenceBitmap.C1),
         ),
     )
     np.testing.assert_array_equal(
         updated_dataset.delta_t_bc1 != updated_dataset.delta_t_bc1.FILLVAL,
         np.logical_and(
             np.bitwise_and(updated_dataset.coincidence_type, CoincidenceBitmap.B.value),
-            np.bitwise_and(
-                updated_dataset.coincidence_type, CoincidenceBitmap.C1.value
-            ),
+            np.bitwise_and(updated_dataset.coincidence_type, CoincidenceBitmap.C1),
         ),
     )
     np.testing.assert_array_equal(
         updated_dataset.delta_t_c1c2 != updated_dataset.delta_t_c1c2.FILLVAL,
         np.logical_and(
-            np.bitwise_and(
-                updated_dataset.coincidence_type, CoincidenceBitmap.C1.value
-            ),
-            np.bitwise_and(
-                updated_dataset.coincidence_type, CoincidenceBitmap.C2.value
-            ),
+            np.bitwise_and(updated_dataset.coincidence_type, CoincidenceBitmap.C1),
+            np.bitwise_and(updated_dataset.coincidence_type, CoincidenceBitmap.C2),
         ),
     )

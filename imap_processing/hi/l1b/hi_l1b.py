@@ -165,9 +165,9 @@ def compute_coincidence_type_and_time_deltas(dataset: xr.Dataset) -> xr.Dataset:
     out_ds = dataset.assign(new_data_vars)
 
     # compute masks needed for coincidence type and delta t calculations
-    a_mask = out_ds.trigger_id.values == TriggerId.A.value
-    b_mask = out_ds.trigger_id.values == TriggerId.B.value
-    c_mask = out_ds.trigger_id.values == TriggerId.C.value
+    a_mask = out_ds.trigger_id.values == TriggerId.A
+    b_mask = out_ds.trigger_id.values == TriggerId.B
+    c_mask = out_ds.trigger_id.values == TriggerId.C
 
     tof_1_valid_mask = np.isin(
         out_ds.tof_1.values, HiConstants.TOF1_BAD_VALUES, invert=True
@@ -185,18 +185,18 @@ def compute_coincidence_type_and_time_deltas(dataset: xr.Dataset) -> xr.Dataset:
     # -----------------------------------------------------------------------
     # | Trigger ID  |  Hit First  | TOF 1 Valid | TOF 2 Valid | TOF 3 Valid |
     # -----------------------------------------------------------------------
-    # |      1      |      A      |      B      |      C1     |      C2     |
-    # |      2      |      B      |      A      |      C1     |      C2     |
-    # |      3      |      C1     |      A      |      B      |      C2     |
+    # |      1      |      A      |     A,B     |     A,C1    |    C1,C2    |
+    # |      2      |      B      |     A,B     |     B,C1    |    C1,C2    |
+    # |      3      |      C1     |     A,C1    |     B,C1    |    C1,C2    |
     # Set coincidence type bitmask
-    out_ds.coincidence_type[a_mask | tof_1_valid_mask] |= CoincidenceBitmap.A.value
+    out_ds.coincidence_type[a_mask | tof_1_valid_mask] |= CoincidenceBitmap.A
     out_ds.coincidence_type[
         b_mask | (a_mask & tof_1_valid_mask) | (c_mask & tof_2_valid_mask)
-    ] |= CoincidenceBitmap.B.value
-    out_ds.coincidence_type[
-        c_mask | (a_mask & tof_2_valid_mask) | (b_mask & tof_2_valid_mask)
-    ] |= CoincidenceBitmap.C1.value
-    out_ds.coincidence_type[tof_3_valid_mask] |= CoincidenceBitmap.C2.value
+    ] |= CoincidenceBitmap.B
+    out_ds.coincidence_type[c_mask | tof_2_valid_mask | tof_2_valid_mask] |= (
+        CoincidenceBitmap.C1.value
+    )
+    out_ds.coincidence_type[tof_3_valid_mask] |= CoincidenceBitmap.C2
 
     # Table denoting how TOF is interpreted for each Trigger ID
     # -----------------------------------------------------------------------
