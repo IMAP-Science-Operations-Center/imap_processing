@@ -6,6 +6,12 @@ import numpy as np
 import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
+from imap_processing.lo.l0.decompression_tables.decompression_tables import (
+    CASE_DECODER,
+    DE_BIT_SHIFT,
+    FIXED_FIELD_BITS,
+    VARIABLE_FIELD_BITS,
+)
 from imap_processing.lo.l0.utils.bit_decompression import (
     DECOMPRESSION_TABLES,
     Decompress,
@@ -148,3 +154,169 @@ def decompress(
     )
 
     return decompressed_ints
+
+
+def parse_events(dataset: xr.Dataset, attr_mgr: ImapCdfAttributes) -> xr.Dataset:
+    """
+    Parse and decompress binary direct event data for Lo.
+
+    Parameters
+    ----------
+    dataset : xr.Dataset
+        Lo science direct events from packets_to_dataset function.
+    attr_mgr : ImapCdfAttributes
+        CDF attribute manager for Lo L1A.
+
+    Returns
+    -------
+    dataset : xr.Dataset
+        Parsed and decompressed direct event data.
+    """
+    # TODO: Add logging. Want to wait until I have a better understanding of how the
+    #  DEs spread across multiple packets will work first
+
+    # Sum each count to get the total number of direct events for the pointing
+    num_de: int = np.sum(dataset["count"].values)
+
+    de_fields = list(FIXED_FIELD_BITS._asdict().keys()) + list(
+        VARIABLE_FIELD_BITS._asdict().keys()
+    )
+    # Initialize all Direct Event fields with their fill value
+    # L1A Direct event data will not be tied to an epoch
+    # data will use a direct event index for the pointing as its coordinate/dimension
+    for field in de_fields:
+        dataset[field] = xr.DataArray(
+            np.full(num_de, attr_mgr.get_variable_attributes(field)["FILLVAL"]),
+            dims="direct_events",
+        )
+
+    # The DE index for the entire pointing
+    pointing_de = 0
+    # for each direct event packet in the pointing
+    for pkt_idx, de_count in enumerate(dataset["count"].values):
+        # initialize the bit position for the packet
+        dataset.attrs["bit_pos"] = 0
+        # for each direct event in the packet
+        for _ in range(de_count):
+            # Parse the fixed fields for the direct event
+            # Coincidence Type, Time, ESA Step, Mode
+            dataset = parse_fixed_fields(dataset, pkt_idx, pointing_de)
+            # Parse the variable fields for the direct event
+            # TOF0, TOF1, TOF2, TOF3, Checksum, Position
+            dataset = parse_variable_fields(dataset, pkt_idx, pointing_de)
+
+            pointing_de += 1
+
+    return dataset
+
+
+def parse_fixed_fields(
+    dataset: xr.Dataset, pkt_idx: int, pointing_de: int
+) -> xr.Dataset:
+    """
+    Parse the fixed fields for a direct event.
+
+    Fixed fields are the fields that are always transmitted for
+    a direct event. These fields are the Coincidence Type,
+    Time, ESA Step, and Mode.
+
+    Parameters
+    ----------
+    dataset : xr.Dataset
+        Lo science direct events from packets_to_dataset function.
+    pkt_idx : int
+        Index of the packet for the pointing.
+    pointing_de : int
+        Index of the total direct event for the pointing.
+
+    Returns
+    -------
+    dataset : xr.Dataset
+        Updated dataset with the fixed fields parsed.
+    """
+    for field, bit_length in FIXED_FIELD_BITS._asdict().items():
+        dataset[field].values[pointing_de] = parse_de_bin(dataset, pkt_idx, bit_length)
+        dataset.attrs["bit_pos"] += bit_length
+
+    return dataset
+
+
+def parse_variable_fields(
+    dataset: xr.Dataset, pkt_idx: int, pointing_de: int
+) -> xr.Dataset:
+    """
+    Parse the variable fields for a direct event.
+
+    Variable fields are the fields that are not always transmitted.
+    Which fields are transmitted is determined by the Coincidence
+    type and Mode. These fields are TOF0, TOF1, TOF2, TOF3, Checksum,
+    and Position. All of these fields except for Position are bit
+    shifted to the right by 1 when packed into the CCSDS packets.
+
+    Parameters
+    ----------
+    dataset : xr.Dataset
+        Lo science direct events from packets_to_dataset function.
+    pkt_idx : int
+        Index of the packet for the pointing.
+    pointing_de : int
+        Index of the total direct event for the pointing.
+
+    Returns
+    -------
+    dataset : xr.Dataset
+        Updated dataset with the fixed fields parsed.
+    """
+    # The decoder defines which TOF fields are
+    # transmitted for this case and mode
+    case_decoder = CASE_DECODER[
+        (
+            dataset["coincidence_type"].values[pointing_de],
+            dataset["mode"].values[pointing_de],
+        )
+    ]
+
+    for field, field_exists in case_decoder._asdict().items():
+        # Check which TOF fields should have been transmitted for this
+        # case number / mode combination and decompress them.
+        if field_exists:
+            bit_length = VARIABLE_FIELD_BITS._asdict()[field]
+            dataset[field].values[pointing_de] = parse_de_bin(
+                dataset, pkt_idx, bit_length, DE_BIT_SHIFT[field]
+            )
+            dataset.attrs["bit_pos"] += bit_length
+
+    return dataset
+
+
+def parse_de_bin(
+    dataset: xr.Dataset, pkt_idx: int, bit_length: int, bit_shift: int = 0
+) -> int:
+    """
+    Parse a binary string for a direct event field.
+
+    Parameters
+    ----------
+    dataset : xr.Dataset
+        Lo science direct events from packets_to_dataset function.
+    pkt_idx : int
+        Index of the packet for the pointing.
+    bit_length : int
+        Length of the field in bits.
+    bit_shift : int
+        Number of bits to shift the field to the left.
+
+    Returns
+    -------
+    int
+        Parsed integer for the direct event field.
+    """
+    bit_pos = dataset.attrs["bit_pos"]
+    parsed_int = (
+        int(
+            dataset["data"].values[pkt_idx][bit_pos : bit_pos + bit_length],
+            2,
+        )
+        << bit_shift
+    )
+    return parsed_int
