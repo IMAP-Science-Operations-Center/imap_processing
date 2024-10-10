@@ -4,6 +4,7 @@ import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.lo.l0.lo_science import (
+    combine_segmented_packets,
     parse_de_bin,
     parse_events,
     parse_fixed_fields,
@@ -58,6 +59,36 @@ def fake_de_dataset():
         )
     )
 
+    return dataset
+
+
+@pytest.fixture()
+def seq_flag_fake_data():
+    dataset = xr.Dataset(
+        data_vars=dict(
+            seq_flgs=(["epoch"], np.array([1, 0, 0, 2, 3, 1, 0, 2, 1, 2])),
+            src_seq_ctr=(["epoch"], np.array([0, 1, 2, 3, 4, 5, 7, 8, 9, 10])),
+            shcoarse=(["epoch"], np.array([0, 0, 0, 0, 10, 20, 20, 20, 30, 30])),
+            data=(
+                ["epoch"],
+                np.array(
+                    [
+                        "0000000001",
+                        "0000000010",
+                        "0000000100",
+                        "0000001000",
+                        "0000010000",
+                        "0000100000",
+                        "0001000000",
+                        "0010000000",
+                        "0100000000",
+                        "1000000000",
+                    ]
+                ),
+            ),
+        ),
+        coords=dict(epoch=(["epoch"], np.array([0, 0, 0, 0, 10, 20, 20, 20, 30, 30]))),
+    )
     return dataset
 
 
@@ -146,3 +177,28 @@ def test_parse_de_bin(initialized_dataset):
     parsed_int = parse_de_bin(initialized_dataset, 0, 4, 0)
     # Assert
     assert parsed_int == 0
+
+
+def test_combine_segmented_packets(seq_flag_fake_data):
+    dataset = combine_segmented_packets(seq_flag_fake_data)
+
+    np.testing.assert_array_equal(
+        dataset["seq_flgs"].values, np.array([1, 0, 0, 2, 3, 1, 0, 2, 1, 2])
+    )
+    np.testing.assert_array_equal(
+        dataset["src_seq_ctr"].values, np.array([0, 1, 2, 3, 4, 5, 7, 8, 9, 10])
+    )
+    np.testing.assert_array_equal(
+        dataset["shcoarse"].values, np.array([0, 0, 0, 0, 10, 20, 20, 20, 30, 30])
+    )
+    np.testing.assert_array_equal(
+        dataset["events"].values,
+        np.array(
+            [
+                "0000000001000000001000000001000000001000",
+                "0000010000",
+                "01000000001000000000",
+            ]
+        ),
+    )
+    np.testing.assert_array_equal(dataset["epoch"].values, np.array([0, 10, 30]))
