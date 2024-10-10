@@ -14,13 +14,14 @@ from imap_processing.ultra.l0.ultra_utils import (
 )
 from imap_processing.ultra.l1a import ultra_l1a
 from imap_processing.utils import group_by_apid
+from imap_processing import imap_module_directory
 
 
 @pytest.fixture()
 def ccsds_path():
     """Returns the ccsds directory."""
     return (
-        Path(sys.modules[__name__.split(".")[0]].__file__).parent
+        imap_module_directory
         / "tests"
         / "ultra"
         / "test_data"
@@ -33,7 +34,7 @@ def ccsds_path():
 def ccsds_path_events():
     """Returns the ccsds directory."""
     return (
-        Path(sys.modules[__name__.split(".")[0]].__file__).parent
+        imap_module_directory
         / "tests"
         / "ultra"
         / "test_data"
@@ -46,7 +47,7 @@ def ccsds_path_events():
 def ccsds_path_theta_0():
     """Returns the ccsds directory."""
     return (
-        Path(sys.modules[__name__.split(".")[0]].__file__).parent
+        imap_module_directory
         / "tests"
         / "ultra"
         / "test_data"
@@ -60,7 +61,7 @@ def ccsds_path_theta_0():
 def ccsds_path_tof():
     """Returns the ccsds directory."""
     return (
-        Path(sys.modules[__name__.split(".")[0]].__file__).parent
+        imap_module_directory
         / "tests"
         / "ultra"
         / "test_data"
@@ -73,7 +74,7 @@ def ccsds_path_tof():
 def xtce_path():
     """Returns the xtce image rates directory."""
     return (
-        Path(sys.modules[__name__.split(".")[0]].__file__).parent
+        imap_module_directory
         / "ultra"
         / "packet_definitions"
         / "ULTRA_SCI_COMBINED.xml"
@@ -88,7 +89,7 @@ def rates_test_path():
         "20220530T225054.csv"
     )
     return (
-        Path(sys.modules[__name__.split(".")[0]].__file__).parent
+        imap_module_directory
         / "tests"
         / "ultra"
         / "test_data"
@@ -105,7 +106,7 @@ def aux_test_path():
         "20220530T225054.csv"
     )
     return (
-        Path(sys.modules[__name__.split(".")[0]].__file__).parent
+        imap_module_directory
         / "tests"
         / "ultra"
         / "test_data"
@@ -122,7 +123,7 @@ def events_test_path():
         "LinearScan_phi004_theta-001_20230821T121304.csv"
     )
     return (
-        Path(sys.modules[__name__.split(".")[0]].__file__).parent
+        imap_module_directory
         / "tests"
         / "ultra"
         / "test_data"
@@ -139,7 +140,7 @@ def tof_test_path():
         "Front212_20240124T063837.csv"
     )
     return (
-        Path(sys.modules[__name__.split(".")[0]].__file__).parent
+        imap_module_directory
         / "tests"
         / "ultra"
         / "test_data"
@@ -154,7 +155,7 @@ def decom_test_data(request, xtce_path):
     apid = request.param["apid"]
     filename = request.param["filename"]
     ccsds_path = (
-        Path(sys.modules[__name__.split(".")[0]].__file__).parent
+        imap_module_directory
         / "tests"
         / "ultra"
         / "test_data"
@@ -177,7 +178,7 @@ def events_fsw_comparison_theta_0():
         "BeamCal_LinearScan_phi2850_theta-000_20240207T102740.csv"
     )
     return (
-        Path(sys.modules[__name__.split(".")[0]].__file__).parent
+        imap_module_directory
         / "tests"
         / "ultra"
         / "test_data"

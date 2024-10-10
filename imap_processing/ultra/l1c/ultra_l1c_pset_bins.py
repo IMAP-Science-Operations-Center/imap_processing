@@ -5,6 +5,10 @@ from pathlib import Path
 import cdflib
 import numpy as np
 from numpy.typing import NDArray
+import spiceypy as spice
+import typing
+
+from imap_processing.spice.kernels import ensure_spice
 
 # TODO: add species binning.
 
@@ -115,6 +119,32 @@ def cartesian_to_spherical(
     return np.degrees(az), np.degrees(el), magnitude_v
 
 
+import numpy as np
+
+
+def spherical_to_cartesian(r, theta, phi):
+    """
+    Convert spherical coordinates to Cartesian coordinates.
+
+    Parameters:
+    r : array-like or float
+        Radius (distance from the origin).
+    theta : array-like or float
+        Azimuth angle in radians (measured from the x-axis).
+    phi : array-like or float
+        Elevation angle in radians (measured from the z-axis).
+
+    Returns:
+    x, y, z : tuple of arrays or floats
+        Cartesian coordinates.
+    """
+    x = r * np.cos(phi) * np.cos(theta)
+    y = r * np.cos(phi) * np.sin(theta)
+    z = r * np.sin(phi)
+
+    return x, y, z
+
+
 def get_histogram(
     v: tuple[np.ndarray, np.ndarray, np.ndarray],
     energy: np.ndarray,
@@ -179,8 +209,10 @@ def get_pointing_frame_exposure_times(
     return exposure
 
 
+@ensure_spice
+@typing.no_type_check
 def get_helio_exposure_times(
-    spacecraft_velocity,
+    time,
     constant_exposure,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
@@ -204,31 +236,49 @@ def get_helio_exposure_times(
     1. once per pointing
     2. use median time of pointing
     """
+    pointing_cover = spice.ckcov(
+        str("/Users/lasa6858/imap_processing/imap_processing/tests/spice/test_data/sim_1yr_imap_pointing_frame.bc"),
+        -43901, True, "SEGMENT", 0, "TDB"
+    )
+    num_segments = spice.wncard(pointing_cover)
+    _, et_end_pointing_frame = spice.wnfetd(pointing_cover, num_segments - 1)
+
+
     # Conversion factor for keV to joules.
-    kev_j = 1.6021766339999e-16
+    kev_j =1.602180000000000e-16
+    #kev_j = 1.6021766339999e-16
     # Mass of a hydrogen atom in kilograms.
-    hydrogen_mass = 1.6735575e-27
+    hydrogen_mass = 1.673557500000000e-27
+    #hydrogen_mass = 1.6735575e-27
 
     # Convert midpoint energy to a velocity.
-    _, energy_midpoints = build_energy_bins()
+    energy_bin_edges, energy_midpoints = build_energy_bins()
     az_bin_edges, el_bin_edges, az_bin_midpoints, el_bin_midpoints = (
         build_spatial_bins()
     )
-    exposure_3d = np.zeros((az_bin_midpoints, el_bin_midpoints, energy_midpoints))
+    exposure_3d = np.zeros((len(az_bin_midpoints),
+                            len(el_bin_midpoints),
+                            len(energy_midpoints)))
+    az_bin_midpoints = np.arange(0.25, 360, 0.5)
+    el_bin_midpoints = np.arange(-89.75, 90, 0.5)
+    az_grid, el_grid =  np.meshgrid(az_bin_midpoints, el_bin_midpoints[::-1])
+
+    x, y, z = spherical_to_cartesian(np.ones(el_grid.shape),
+                                     np.radians(az_grid),
+                                     np.radians(el_grid))
+    r_dps = np.vstack([x.ravel(), y.ravel(), z.ravel()])
 
     # 2D array with dimensions (az, el).
     sc_exposure = get_pointing_frame_exposure_times(constant_exposure, 5760, "45")
 
     # Spacecraft velocity in the pointing (DPS) frame wrt heliosphere.
-    #state, lt = spice.spkezr("IMAP", time, "IMAP_DPS", "NONE", "SUN")
-    #state, lt = spice.spkezr("EARTH", time, "J2000", "NONE", "SUN")
+    state, lt = spice.spkezr("IMAP", time, "IMAP_DPS", "NONE", "SUN")
 
     # Extract the velocity part of the state vector
-    # spacecraft_velocity = state[0][3:6]
-
-    # spherical -> cartesian to get vectors
-    # az_bin_midpoints, el_bin_midpoints to get r value (below wrong)
-    _, _, r_sc = cartesian_to_spherical(spacecraft_velocity)
+    spacecraft_velocity = state[3:6]
+    v = np.column_stack((spacecraft_velocity[0],
+                         spacecraft_velocity[1],
+                         spacecraft_velocity[2]))
 
 
     for i, energy_midpoint in enumerate(energy_midpoints):
@@ -239,7 +289,9 @@ def get_helio_exposure_times(
         # 2. at rest wrt to heliosphere
         # Build a cartesian vector for each grid.
         # v is magnitude in sc system
-        helio_velocity = spacecraft_velocity[0] + v_energy * r_sc[0]
+        spacecraft_velocity = spacecraft_velocity.reshape(3, 1)
+        helio_velocity = spacecraft_velocity + v_energy * r_dps
+        # Stopped here
         r_magnitudes = np.linalg.norm(helio_velocity)
         r_helio_normalized = helio_velocity / r_magnitudes
         v = np.column_stack(r_helio_normalized)
