@@ -327,10 +327,10 @@ def combine_segmented_packets(dataset: xr.Dataset) -> xr.Dataset:
     """
     Combine segmented packets.
 
-    If the number of bits need to pack the direct events exceeds the
+    If the number of bits needed to pack the direct events exceeds the
     maximum number of bits allowed in a packet, the direct events
     will be spread across multiple packets. This function will combine
-    the segmented binary into a single binary string.
+    the segmented binary into a single binary string for each epoch.
 
     Parameters
     ----------
@@ -359,6 +359,8 @@ def combine_segmented_packets(dataset: xr.Dataset) -> xr.Dataset:
     dataset = dataset.swap_dims({"epoch": "shcoarse"})
 
     # Find the valid groups of segmented packets
+    # returns a list of booleans for each group of segmented packets
+    # where true means the group is valid
     valid_groups = find_valid_groups(seq_ctrs, seg_starts, seg_ends)
 
     # Combine the segmented packets into a single binary string
