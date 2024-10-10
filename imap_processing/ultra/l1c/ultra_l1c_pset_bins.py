@@ -9,7 +9,7 @@ from numpy.typing import NDArray
 # TODO: add species binning.
 
 
-def build_energy_bins() -> NDArray[np.float64]:
+def build_energy_bins() -> tuple[np.ndarray, np.ndarray]:
     """
     Build energy bin boundaries.
 
@@ -17,6 +17,8 @@ def build_energy_bins() -> NDArray[np.float64]:
     -------
     energy_bin_edges : np.ndarray
         Array of energy bin edges.
+    energy_midpoints : np.ndarray
+        Array of energy bin midpoints.
     """
     # TODO: these value will almost certainly change.
     alpha = 0.2  # deltaE/E
@@ -30,8 +32,9 @@ def build_energy_bins() -> NDArray[np.float64]:
     energy_bin_edges = energy_start * energy_step ** np.arange(n_bins + 1)
     # Add a zero to the left side for outliers and round to nearest 3 decimal places.
     energy_bin_edges = np.around(np.insert(energy_bin_edges, 0, 0), 3)
+    energy_midpoints = (energy_bin_edges[:-1] + energy_bin_edges[1:]) / 2
 
-    return energy_bin_edges
+    return energy_bin_edges, energy_midpoints
 
 
 def build_spatial_bins(
@@ -174,3 +177,83 @@ def get_pointing_frame_exposure_times(
         exposure = cdf_file.varget(f"dps_grid{sensor}") * n_spins
 
     return exposure
+
+
+def get_helio_exposure_times(
+    spacecraft_velocity,
+    constant_exposure,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """
+    Compute a 3D array of the exposure in the helio frame.
+
+    Parameters
+    ----------
+    time : np.ndarray
+        Particle event time.
+    n_spins : int
+        Number of spins per pointing.
+    sensor : str
+        Sensor (45 or 90).
+
+    Returns
+    -------
+    exposure : np.ndarray
+        A 3D array with dimensions (az, el, energy).
+
+    Notes:
+    1. once per pointing
+    2. use median time of pointing
+    """
+    # Conversion factor for keV to joules.
+    kev_j = 1.6021766339999e-16
+    # Mass of a hydrogen atom in kilograms.
+    hydrogen_mass = 1.6735575e-27
+
+    # Convert midpoint energy to a velocity.
+    _, energy_midpoints = build_energy_bins()
+    az_bin_edges, el_bin_edges, az_bin_midpoints, el_bin_midpoints = (
+        build_spatial_bins()
+    )
+    exposure_3d = np.zeros((az_bin_midpoints, el_bin_midpoints, energy_midpoints))
+
+    # 2D array with dimensions (az, el).
+    sc_exposure = get_pointing_frame_exposure_times(constant_exposure, 5760, "45")
+
+    # Spacecraft velocity in the pointing (DPS) frame wrt heliosphere.
+    #state, lt = spice.spkezr("IMAP", time, "IMAP_DPS", "NONE", "SUN")
+    #state, lt = spice.spkezr("EARTH", time, "J2000", "NONE", "SUN")
+
+    # Extract the velocity part of the state vector
+    # spacecraft_velocity = state[0][3:6]
+
+    # spherical -> cartesian to get vectors
+    # az_bin_midpoints, el_bin_midpoints to get r value (below wrong)
+    _, _, r_sc = cartesian_to_spherical(spacecraft_velocity)
+
+
+    for i, energy_midpoint in enumerate(energy_midpoints):
+        # Convert the midpoint energy to a velocity (km/s)
+        v_energy = np.sqrt(2 * energy_midpoint * kev_j / hydrogen_mass) / 1e3
+
+        # 1. spacecraft_velocity[0] at rest wrt to spacecraft
+        # 2. at rest wrt to heliosphere
+        # Build a cartesian vector for each grid.
+        # v is magnitude in sc system
+        helio_velocity = spacecraft_velocity[0] + v_energy * r_sc[0]
+        r_magnitudes = np.linalg.norm(helio_velocity)
+        r_helio_normalized = helio_velocity / r_magnitudes
+        v = np.column_stack(r_helio_normalized)
+        az, el, _ = cartesian_to_spherical(v)
+
+        # Determine the bin indices for azimuth and elevation
+        az_index = np.digitize(az, az_bin_edges) - 1  # Convert to 0-based index
+        el_index = np.digitize(el, el_bin_edges) - 1  # Convert to 0-based index
+
+        # Ensure the indices are within bounds
+        az_index = np.clip(az_index, 0, az_bin_edges - 1)
+        el_index = np.clip(el_index, 0, el_bin_edges - 1)
+
+        # Populate the 3D array with the exposure value at the current bin
+        exposure_3d[az_index, el_index, i] = sc_exposure[az_index, el_index]
+
+    return exposure_3d
