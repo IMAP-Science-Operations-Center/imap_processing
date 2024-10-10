@@ -1,9 +1,9 @@
-import dataclasses
+from dataclasses import InitVar, dataclass, field
 
 import numpy as np
 
 
-@dataclasses.dataclass
+@dataclass
 class HistogramL2:
     """
     This class collects multiple HistogramL1B classes into one L2 per observational day.
@@ -67,23 +67,43 @@ class HistogramL2:
     # identifier: int  # comes from unique_block_identifier
     start_time: np.double
     end_time: np.double
-    daily_lightcurve: np.ndarray
-    filter_temperature_average: np.double
-    filter_temperature_variance: np.double
-    hv_voltage_average: np.double
-    hv_voltage_variance: np.double
-    spin_period_average: np.double
-    spin_period_variance: np.double
-    pulse_length_average: np.double
-    pulse_length_variance: np.double
-    spin_period_ground_average: np.double
-    spin_period_ground_variance: np.double
-    position_angle_offset_average: np.double
-    position_angle_offset_variance: np.double
-    spin_axis_orientation_variance: np.double
-    spacecraft_location_variance: np.double
-    spacecraft_velocity_variance: np.double
-    spin_axis_orientation_average: np.double
-    spacecraft_location_average: np.double
-    spacecraft_velocity_average: np.double
+    daily_lightcurve: np.ndarray = field(init=False)
+    filter_temperature_average: np.ndarray[np.double]
+    filter_temperature_variance: np.ndarray[np.double]
+    hv_voltage_average: np.ndarray[np.double]
+    hv_voltage_variance: np.ndarray[np.double]
+    spin_period_average: np.ndarray[np.double]
+    spin_period_variance: np.ndarray[np.double]
+    pulse_length_average: np.ndarray[np.double]
+    pulse_length_variance: np.ndarray[np.double]
+    spin_period_ground_average: np.ndarray[np.double]
+    spin_period_ground_variance: np.ndarray[np.double]
+    position_angle_offset_average: np.ndarray[np.double]
+    position_angle_offset_variance: np.ndarray[np.double]
+    spin_axis_orientation_variance: np.ndarray[np.double]
+    spacecraft_location_variance: np.ndarray[np.double]
+    spacecraft_velocity_variance: np.ndarray[np.double]
+    spin_axis_orientation_average: np.ndarray[np.double]
+    spacecraft_location_average: np.ndarray[np.double]
+    spacecraft_velocity_average: np.ndarray[np.double]
     bad_time_flag_occurrences: np.ndarray
+    histogram: InitVar[np.ndarray]
+
+    def __post_init__(self, histogram: np.ndarray) -> None:
+        self.daily_lightcurve = self.generate_lightcurve(histogram)
+
+    def generate_lightcurve(self, histogram: np.ndarray) -> np.ndarray:
+        """
+        Given an array of (n, bins) histograms, generate one lightcurve of size (bins).
+
+        Parameters
+        ----------
+        histogram
+
+        Returns
+        -------
+
+        """
+
+        return np.zeros(3600)
+

@@ -37,7 +37,7 @@ def glows_l2(input_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
     #  "active bad times" in ancillary file
 
     # TODO: compute averages for the range of L1B instances
-    
+
 
 # TODO: filter good times out
 def generate_l2(l1b_dataset: xr.Dataset) -> HistogramL2:
@@ -52,10 +52,11 @@ def generate_l2(l1b_dataset: xr.Dataset) -> HistogramL2:
                    'number_of_good_l1b_inputs': len(l1b_dataset['epoch']),
                    # TODO replace post-filter
                    # 'identifier': 'test', # TODO: retrieve from unique_block_identifier
+                   # TODO: start and end time should be only in good times
                    'start_time': l1b_dataset['epoch'].data[0],
                    'end_time': l1b_dataset['epoch'].data[-1],
+                   'histogram': l1b_dataset['histogram'].data,
                    # TODO is this type correct?
-                   'daily_lightcurve': None,
                    'bad_time_flag_occurrences': None,
                    'flight_software_version':
                        l1b_dataset['flight_software_version'].data[0],
@@ -67,7 +68,8 @@ def generate_l2(l1b_dataset: xr.Dataset) -> HistogramL2:
             var_outputs[var_name] = l1b_dataset[var_name].mean(dim="epoch").data
 
         if 'variance' in var_name:
-            var_outputs[var_name] = l1b_dataset[var_name].std(dim="epoch").data
+            expected_var = var_name.replace('variance', 'average')
+            var_outputs[var_name] = l1b_dataset[expected_var].std(dim="epoch").data
 
     output = HistogramL2(**var_outputs)
 
