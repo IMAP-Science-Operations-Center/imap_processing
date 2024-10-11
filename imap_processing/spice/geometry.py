@@ -2,6 +2,7 @@
 Functions for computing geometry, many of which use SPICE.
 
 Paradigms for developing this module:
+
 * Use @ensure_spice decorator on functions that directly wrap spiceypy functions
 * Vectorize everything at the lowest level possible (e.g. the decorated spiceypy
   wrapper function)
@@ -98,7 +99,7 @@ def imap_state(
         Epoch time(s) [J2000 seconds] to get the IMAP state for.
     ref_frame : SpiceFrame, optional
         Reference frame which the IMAP state is expressed in.
-    observer : SpiceBody, optional
+    observer : SpiceBody, default=SpiceBody.SUN
         Observing body.
 
     Returns
@@ -121,17 +122,15 @@ def get_spin_data() -> pd.DataFrame:
     It could be s3 filepath that can be used to download the data
     through API or it could be path EFS or Batch volume mount path.
 
-    Spin data should contains the following fields:
-        (
-            spin_number,
-            spin_start_sec,
-            spin_start_subsec,
-            spin_period_sec,
-            spin_period_valid,
-            spin_phase_valid,
-            spin_period_source,
-            thruster_firing
-        )
+    Spin data should contain the following fields:
+        * spin_number
+        * spin_start_sec
+        * spin_start_subsec
+        * spin_period_sec
+        * spin_period_valid
+        * spin_phase_valid
+        * spin_period_source
+        * thruster_firing
 
     Returns
     -------
@@ -255,9 +254,9 @@ def frame_transform(
 
     Parameters
     ----------
-    et : float or npt.NDArray
+    et : float or np.ndarray
         Ephemeris time(s) corresponding to position(s).
-    position : npt.NDArray
+    position : np.ndarray
         <x, y, z> vector or array of vectors in reference frame `from_frame`.
         A single position vector may be provided for multiple `et` query times
         but only a single position vector can be provided for a single `et`.
@@ -268,7 +267,7 @@ def frame_transform(
 
     Returns
     -------
-    result : npt.NDArray
+    result : np.ndarray
         3d Cartesian position vector(s) in reference frame `to_frame`.
     """
     if position.ndim == 1:
@@ -316,7 +315,7 @@ def get_rotation_matrix(
 
     Parameters
     ----------
-    et : float or npt.NDArray
+    et : float or np.ndarray
         Ephemeris time(s) for which to get the rotation matrices.
     from_frame : SpiceFrame
         Reference frame to transform from.
@@ -325,10 +324,10 @@ def get_rotation_matrix(
 
     Returns
     -------
-    rotation : npt.NDArray
-        If et is a float, the returned rotation matrix is of shape (3, 3). If
-        et is a np.ndarray, the returned rotation matrix is of shape (n, 3, 3)
-        where n matches the number of elements in et.
+    rotation : np.ndarray
+        If `et` is a float, the returned rotation matrix is of shape `(3, 3)`. If
+        `et` is a np.ndarray, the returned rotation matrix is of shape `(n, 3, 3)`
+        where `n` matches the number of elements in et.
     """
     vec_pxform = np.vectorize(
         spice.pxform,
@@ -354,18 +353,18 @@ def instrument_pointing(
 
     Parameters
     ----------
-    et : float or npt.NDArray
+    et : float or np.ndarray
         Ephemeris time(s) to at which to compute instrument pointing.
     instrument : SpiceFrame
         Instrument reference frame to compute the pointing for.
     to_frame : SpiceFrame
         Reference frame in which the pointing is to be expressed.
-    cartesian : bool, optional
+    cartesian : bool, default=False
         If set to True, the pointing is returned in Cartesian coordinates.
 
     Returns
     -------
-    pointing : npt.NDArray
+    pointing : np.ndarray
         The instrument pointing at the specified times.
     """
     pointing = frame_transform(et, BORESIGHT_LOOKUP[instrument], instrument, to_frame)
