@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -364,7 +365,9 @@ class CoDICEL1aPipeline:
         self.packet_dataset = packet
 
         # Set various configurations of the data product
-        self.config = constants.DATA_PRODUCT_CONFIGURATIONS.get(apid)
+        self.config: dict[str, Any] = constants.DATA_PRODUCT_CONFIGURATIONS.get(
+            apid
+        )  # mypy: allow-untyped-defs
 
         # Gather and set the CDF attributes
         self.cdf_attrs = ImapCdfAttributes()
