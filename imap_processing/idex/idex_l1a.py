@@ -131,7 +131,7 @@ class PacketParser:
 
         dust_events = {}
         for packet in decom_packet_list:
-            if "IDX__SCI0TYPE" in packet.user_data:
+            if "IDX__SCI0TYPE" in packet:
                 scitype = packet.user_data["IDX__SCI0TYPE"].raw_value
                 event_number = packet.user_data["IDX__SCI0EVTNUM"]
                 if scitype == Scitype.FIRST_PACKET:

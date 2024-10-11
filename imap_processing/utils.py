@@ -8,9 +8,8 @@ from typing import Optional, Union
 import numpy as np
 import pandas as pd
 import xarray as xr
-from space_packet_parser import definitions, encodings, packets, parameters
+from space_packet_parser import definitions, encodings, parameters
 
-from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.spice.time import met_to_j2000ns
 
 logger = logging.getLogger(__name__)
@@ -53,7 +52,7 @@ def group_by_apid(packets: list) -> dict:
     """
     grouped_packets: dict[list] = collections.defaultdict(list)
     for packet in packets:
-        apid = packet.header["PKT_APID"].raw_value
+        apid = packet["PKT_APID"]
         grouped_packets.setdefault(apid, []).append(packet)
     return grouped_packets
 
@@ -136,92 +135,6 @@ def convert_raw_to_eu(
                 f"Unexpected conversion type: {row['convertAs']} encountered in"
                 f" engineering unit conversion table: {conversion_table_path}"
             )
-
-    return dataset
-
-
-def create_dataset(
-    packets: list[packets.CCSDSPacket],
-    spacecraft_time_key: str = "shcoarse",
-    include_header: bool = True,
-    skip_keys: Optional[list[str]] = None,
-) -> xr.Dataset:
-    """
-    Create dataset for each metadata field.
-
-    Parameters
-    ----------
-    packets : list[Packet]
-        Packet list.
-    spacecraft_time_key : str
-        Default is "shcoarse" because many instrument uses it, optional.
-        This key is used to get spacecraft time for epoch dimension.
-    include_header : bool
-        Whether to include CCSDS header data in the dataset, optional.
-    skip_keys : list
-        Keys to skip in the metadata, optional.
-
-    Returns
-    -------
-    dataset : xr.dataset
-        Dataset with all metadata field data in xr.DataArray.
-    """
-    metadata_arrays = collections.defaultdict(list)
-    description_dict = {}
-
-    sorted_packets = sort_by_time(packets, spacecraft_time_key.upper())
-
-    for data_packet in sorted_packets:
-        data_to_include = (
-            (data_packet.header | data_packet.user_data)
-            if include_header
-            else data_packet.user_data
-        )
-
-        # Drop keys using skip_keys
-        if skip_keys is not None:
-            for key in skip_keys:
-                data_to_include.pop(key, None)
-
-        # Add metadata to array
-        for key, value in data_to_include.items():
-            # convert key to lower case to match SPDF requirement
-            data_key = key.lower()
-            metadata_arrays[data_key].append(value.raw_value)
-            # description should be same for all packets
-            description_dict[data_key] = (
-                value.long_description or value.short_description
-            )
-
-    # NOTE: At this point, we keep epoch time as raw value from packet
-    # which is in seconds and spacecraft time. Some instrument uses this
-    # raw value in processing.
-    # Load the CDF attributes
-    cdf_manager = ImapCdfAttributes()
-    epoch_time = xr.DataArray(
-        metadata_arrays[spacecraft_time_key],
-        name="epoch",
-        dims=["epoch"],
-        attrs=cdf_manager.get_variable_attributes("epoch"),
-    )
-
-    dataset = xr.Dataset(
-        coords={"epoch": epoch_time},
-    )
-
-    # create xarray dataset for each metadata field
-    for key, value in metadata_arrays.items():
-        # replace description and fieldname
-        data_attrs = cdf_manager.get_variable_attributes("metadata_attrs")
-        data_attrs["CATDESC"] = description_dict[key]
-        data_attrs["FIELDNAM"] = key
-        data_attrs["LABLAXIS"] = key
-
-        dataset[key] = xr.DataArray(
-            value,
-            dims=["epoch"],
-            attrs=data_attrs,
-        )
 
     return dataset
 
@@ -349,29 +262,26 @@ def packet_file_to_datasets(
     with open(packet_file, "rb") as binary_data:
         packet_generator = packet_definition.packet_generator(binary_data)
         for packet in packet_generator:
-            apid = packet.header["PKT_APID"].raw_value
+            apid = packet["PKT_APID"]
             if apid not in data_dict:
                 # This is the first packet for this APID
                 data_dict[apid] = collections.defaultdict(list)
                 datatype_mapping[apid] = dict()
-                variable_mapping[apid] = packet.user_data.keys()
-            if variable_mapping[apid] != packet.user_data.keys():
+                variable_mapping[apid] = packet.keys()
+            if variable_mapping[apid] != packet.keys():
                 raise ValueError(
                     f"Packet fields do not match for APID {apid}. This could be "
                     f"due to a conditional packet definition in the XTCE, while this "
                     f"function currently only supports flat packet definitions."
                     f"\nExpected: {variable_mapping[apid]},\n"
-                    f"got: {packet.user_data.keys()}"
+                    f"got: {packet.keys()}"
                 )
 
             # TODO: Do we want to give an option to remove the header content?
             packet_content = packet.user_data | packet.header
 
             for key, value in packet_content.items():
-                val = value.raw_value
-                if use_derived_value:
-                    # Use the derived value if it exists, otherwise use the raw value
-                    val = value
+                val = value if use_derived_value else value.raw_value
                 data_dict[apid][key].append(val)
                 if key not in datatype_mapping[apid]:
                     # Add this datatype to the mapping
@@ -386,23 +296,6 @@ def packet_file_to_datasets(
         time_key = next(iter(data.keys()))
         # Convert to J2000 time and use that as our primary dimension
         time_data = met_to_j2000ns(data[time_key])
-        # data_dict = {}
-        # for key, list_of_values in data.items():
-        #     # Get the datatype for this field
-        #     datatype = datatype_mapping[apid][key]
-        #     if datatype == "object":
-        #         # convert <class bytes> to <class str>
-        #         # TODO: we all need to update our code to use <class bytes> instead
-        #         binary_str_val = [None] * len(list_of_values)
-        #         for index, data in enumerate(list_of_values):
-        #             binary_str_val[index] = ''.join(f'{byte:08b}' for byte in data)
-        #         # Update to new datatype and values
-        #         datatype = "str"
-        #         list_of_values = binary_str_val
-        #     data_dict[key.lower()] = (
-        #             "epoch",
-        #             np.asarray(list_of_values, dtype=datatype),
-        #         )
         ds = xr.Dataset(
             {
                 key.lower(): (
@@ -414,6 +307,7 @@ def packet_file_to_datasets(
             coords={"epoch": time_data},
         )
         ds = ds.sortby("epoch")
+        print(f"epoch: {ds['epoch']}")
 
         # Strip any leading characters before "." from the field names which was due
         # to the packet_name being a part of the variable name in the XTCE definition

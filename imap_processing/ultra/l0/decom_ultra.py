@@ -91,8 +91,8 @@ def append_params(decom_data: dict, packet: packets.CCSDSPacket) -> None:
     packet : space_packet_parser.packets.CCSDSPacket
         Individual packet.
     """
-    for key, item in packet.user_data.items():
-        decom_data[key].append(item.raw_value)
+    for key, value in packet.user_data.items():
+        decom_data[key].append(value)
 
     ccsds_data = CcsdsData(packet.header)
     append_ccsds_fields(decom_data, ccsds_data)

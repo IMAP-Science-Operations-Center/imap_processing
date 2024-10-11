@@ -59,7 +59,7 @@ def test_aux_mode(decom_test_data):
     _, packets = decom_test_data
 
     for packet in packets:
-        if packet.header["PKT_APID"] == 880:
+        if packet["PKT_APID"] == 880:
             assert packet.user_data["HWMODE"] == "MODE0"
             assert packet.user_data["IMCENB"] == "MODE0"
             assert packet.user_data["LEFTDEFLECTIONCHARGE"] == "MODE0"

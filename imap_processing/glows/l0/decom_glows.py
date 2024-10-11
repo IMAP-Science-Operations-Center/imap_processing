@@ -60,7 +60,7 @@ def decom_packets(
         glows_packets = packet_definition.packet_generator(binary_data)
 
         for packet in glows_packets:
-            apid = packet.header["PKT_APID"]
+            apid = packet["PKT_APID"]
             # Do something with the packet data
             if apid == GlowsParams.HIST_APID.value:
                 values = [item.raw_value for item in packet.user_data.values()]
@@ -70,7 +70,7 @@ def decom_packets(
                 histdata.append(hist_l0)
 
             if apid == GlowsParams.DE_APID.value:
-                values = [item for item in packet.user_data.values()]
+                values = [item.raw_value for item in packet.user_data.values()]
 
                 de_l0 = DirectEventL0(
                     __version__, filename, CcsdsData(packet.header), *values

@@ -7,8 +7,6 @@ other CoDICE processing modules.
 
 from enum import IntEnum
 
-import space_packet_parser
-
 
 class CODICEAPID(IntEnum):
     """Create ENUM for CoDICE APIDs."""
@@ -57,39 +55,3 @@ class CoDICECompression(IntEnum):
     LOSSLESS = 3
     LOSSY_A_LOSSLESS = 4
     LOSSY_B_LOSSLESS = 5
-
-
-def add_metadata_to_array(packet: space_packet_parser, metadata_arrays: dict) -> dict:
-    """
-    Add metadata to the metadata_arrays.
-
-    Parameters
-    ----------
-    packet : space_packet_parser.packets.CCSDSPacket
-        CODICE data packet.
-    metadata_arrays : dict
-        Metadata arrays.
-
-    Returns
-    -------
-    metadata_arrays : dict
-        Updated metadata arrays with values.
-    """
-    ignore_list = [
-        "SPARE_1",
-        "SPARE_2",
-        "SPARE_3",
-        "SPARE_4",
-        "SPARE_5",
-        "SPARE_6",
-        "CHECKSUM",
-    ]
-
-    for key, value in packet.header.items():
-        metadata_arrays.setdefault(key, []).append(value.raw_value)
-
-    for key, value in packet.user_data.items():
-        if key not in ignore_list:
-            metadata_arrays.setdefault(key, []).append(value.raw_value)
-
-    return metadata_arrays
