@@ -97,10 +97,11 @@ def imap_state(
     ----------
     et : np.ndarray or float
         Epoch time(s) [J2000 seconds] to get the IMAP state for.
-    ref_frame : SpiceFrame, optional
-        Reference frame which the IMAP state is expressed in.
-    observer : SpiceBody, default=SpiceBody.SUN
-        Observing body.
+    ref_frame : SpiceFrame
+        Reference frame which the IMAP state is expressed in. Default is
+        SpiceFrame.ECLIPJ2000.
+    observer : SpiceBody
+        Observing body. Default is SpiceBody.SUN.
 
     Returns
     -------
@@ -359,8 +360,9 @@ def instrument_pointing(
         Instrument reference frame to compute the pointing for.
     to_frame : SpiceFrame
         Reference frame in which the pointing is to be expressed.
-    cartesian : bool, default=False
+    cartesian : bool
         If set to True, the pointing is returned in Cartesian coordinates.
+        Defaults to False.
 
     Returns
     -------

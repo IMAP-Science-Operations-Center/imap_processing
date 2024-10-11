@@ -216,9 +216,9 @@ def create_pointing_frame(pointing_frame_path: Path, ck_path: Path) -> None:
 
     Parameters
     ----------
-    pointing_frame_path : Path
+    pointing_frame_path : pathlib.Path
         Location of pointing frame kernel.
-    ck_path : Path
+    ck_path : pathlib.Path
         Location of the CK kernel.
 
     Notes
