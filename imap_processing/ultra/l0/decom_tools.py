@@ -256,8 +256,8 @@ def read_image_raw_events_binary(
         Each for loop appends to the existing dictionary.
     """
     # TODO: improve this as needed
-    binary = "".join(f"{byte:08b}" for byte in packet.user_data["EVENTDATA"].raw_value)
-    count = packet.user_data["COUNT"]
+    binary = "".join(f"{byte:08b}" for byte in packet["EVENTDATA"].raw_value)
+    count = packet["COUNT"]
     # 166 bits per event
     event_length = 166 if count else 0
 

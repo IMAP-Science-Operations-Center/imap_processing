@@ -59,14 +59,14 @@ def append_tof_params(
             data_dict[key].append(decompressed_data)
         # Keep appending all other data until SID = 7
         else:
-            data_dict[key].append(packet.user_data[key])
+            data_dict[key].append(packet[key])
 
     # Append CCSDS fields to the dictionary
     ccsds_data = CcsdsData(packet.header)
     append_ccsds_fields(data_dict, ccsds_data)
 
     # Once "SID" reaches 7, we have all the images and data for the single timestamp
-    if packet.user_data["SID"] == 7:
+    if packet["SID"] == 7:
         decom_data["SHCOARSE"].extend(list(set(data_dict["SHCOARSE"])))
         data_dict["SHCOARSE"].clear()
 
@@ -154,18 +154,16 @@ def process_ultra_tof(
     # For TOF we need to sort by time and then SID
     sorted_packets = sorted(
         sorted_packets,
-        key=lambda x: (x.user_data["SHCOARSE"].raw_value, x.user_data["SID"].raw_value),
+        key=lambda x: (x["SHCOARSE"].raw_value, x["SID"].raw_value),
     )
     if isinstance(ULTRA_TOF.mantissa_bit_length, int) and isinstance(
         ULTRA_TOF.width, int
     ):
         for packet in sorted_packets:
-            binary_data = "".join(
-                f"{byte:08b}" for byte in packet.user_data["PACKETDATA"]
-            )
+            binary_data = "".join(f"{byte:08b}" for byte in packet["PACKETDATA"])
             # Decompress the image data
             decompressed_data = decompress_image(
-                packet.user_data["P00"],
+                packet["P00"],
                 binary_data,
                 ULTRA_TOF.width,
                 ULTRA_TOF.mantissa_bit_length,
@@ -208,7 +206,7 @@ def process_ultra_events(sorted_packets: list, decom_data: dict) -> dict:
         # Here there are multiple images in a single packet,
         # so we need to loop through each image and decompress it.
         decom_data = read_image_raw_events_binary(packet, decom_data)
-        count = packet.user_data["COUNT"]
+        count = packet["COUNT"]
 
         if count == 0:
             append_params(decom_data, packet)
@@ -267,7 +265,7 @@ def process_ultra_rates(sorted_packets: list, decom_data: dict) -> dict:
         for packet in sorted_packets:
             # TODO: improve this as needed
             raw_binary_string = "".join(
-                f"{byte:08b}" for byte in packet.user_data["FASTDATA_00"].raw_value
+                f"{byte:08b}" for byte in packet["FASTDATA_00"].raw_value
             )
             decompressed_data = decompress_binary(
                 raw_binary_string,
