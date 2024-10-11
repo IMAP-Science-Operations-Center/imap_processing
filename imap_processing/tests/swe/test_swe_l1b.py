@@ -1,6 +1,5 @@
 import numpy as np
 import pandas as pd
-import pytest
 
 from imap_processing import imap_module_directory
 from imap_processing.cdf.utils import load_cdf, write_cdf
@@ -42,7 +41,6 @@ def test_swe_l1b(decom_test_data_derived):
         )
 
 
-@pytest.mark.xfail(reason="L1B requires updates")
 def test_cdf_creation():
     """Test that CDF file is created and has the correct name."""
     test_data_path = "tests/swe/l0_data/2024051010_SWE_SCIENCE_packet.bin"

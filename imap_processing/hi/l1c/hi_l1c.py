@@ -1,13 +1,12 @@
 """IMAP-HI l1c processing module."""
 
 import logging
-from collections.abc import Sized
-from typing import Optional
 
 import numpy as np
 import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
+from imap_processing.hi.utils import full_dataarray
 
 logger = logging.getLogger(__name__)
 
@@ -180,49 +179,3 @@ def allocate_pset_dataset(n_esa_steps: int, sensor_str: str) -> xr.Dataset:
     )
     dataset = xr.Dataset(data_vars=data_vars, coords=coords, attrs=pset_global_attrs)
     return dataset
-
-
-def full_dataarray(
-    name: str, attrs: dict, coords: dict, shape: Optional[Sized] = None
-) -> xr.DataArray:
-    """
-    Generate an empty xarray.DataArray with appropriate attributes.
-
-    Data in DataArray are filled with FILLVAL defined in attributes
-    retrieved from ATTR_MGR with shape matching coordinates defined by
-    dims or overridden by optional `shape` input.
-
-    Parameters
-    ----------
-    name : str
-        Variable name.
-    attrs : dict
-        CDF variable attributes. Usually retrieved from ImapCdfAttributes.
-    coords : dict
-        Coordinate variables for the Dataset.
-    shape : int or tuple
-        Shape of ndarray data array to instantiate in the xarray.DataArray.
-
-    Returns
-    -------
-    data_array : xarray.DataArray
-        Meeting input specifications.
-    """
-    _attrs = attrs.copy()
-    dtype = attrs.pop("dtype", None)
-
-    # extract dims keyword argument from DEPEND_i attributes
-    dims = [v for k, v in sorted(attrs.items()) if k.startswith("DEPEND")]
-    # define shape of the ndarray to generate
-    if shape is None:
-        shape = [coords[k].data.size for k in dims]
-    if len(shape) > len(dims):
-        dims.append("")
-
-    data_array = xr.DataArray(
-        np.full(shape, attrs["FILLVAL"], dtype=dtype),
-        name=name,
-        dims=dims,
-        attrs=attrs,
-    )
-    return data_array

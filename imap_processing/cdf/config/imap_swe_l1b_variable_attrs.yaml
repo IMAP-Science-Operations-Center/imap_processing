@@ -84,8 +84,8 @@ default_attrs: &default
   SCALETYP: linear
 
 science_data:
-  <<: *default
   CATDESC: Electron count rates organized by voltage step and spin sector and CEM
+  DEPEND_0: epoch
   DEPEND_1: energy
   DEPEND_2: angle
   DEPEND_3: cem
@@ -96,7 +96,6 @@ science_data:
   FIELDNAM: Counts rate by volt step and spin sector and CEM
   FORMAT: E14.7
   FILLVAL: -1.0000000E+31
-  LABLAXIS: Count Rates
   UNITS: counts/sec
   VALIDMAX: 0.000015514
   VALIDMIN: 0
@@ -104,6 +103,23 @@ science_data:
   VAR_NOTES: >
     Metadata field acq_duration is 17 uint. Max value of uint17 is 131071.
     Dividing max counts by acq_duration gave validmax
+
+sci_step_acq_time_sec:
+  CATDESC: Acquisition time organized by voltage step and spin sector and CEM
+  DEPEND_0: epoch
+  DEPEND_1: energy
+  DEPEND_2: angle
+  DEPEND_3: cem
+  LABL_PTR_1: energy_label
+  LABL_PTR_2: angle_label
+  LABL_PTR_3: cem_label
+  DISPLAY_TYPE: spectrogram
+  FIELDNAM: Acquisition by volt step and spin sector and CEM
+  FILLVAL: -1.0000000E+31
+  UNITS: sec
+  VAR_TYPE: support_data
+  VAR_NOTES: >
+    This stores acquisition times of each count data.
 
 shcoarse:
   <<: *default

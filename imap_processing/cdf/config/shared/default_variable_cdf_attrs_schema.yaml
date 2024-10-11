@@ -6,7 +6,7 @@ attribute_key:
     description: >
       fixed (0AD, 1900, 1970 (POSIX), J2000 (used by CDF_TIME_TT2000),
       4714 BC (Julian)) or flexible (provider-defined)
-    required: true    # NOT Required in ISTP Guide
+    required: false    # NOT Required in ISTP Guide
     overwrite: false
     valid_values: null
     alternate: null
@@ -14,7 +14,7 @@ attribute_key:
     description: >
       Using ISO8601 relative time format, for example: "1s" = 1 second.
       Resolution provides the smallest change in time that is measured.
-    required: true    # NOT Required in ISTP Guide
+    required: false    # NOT Required in ISTP Guide
     overwrite: false
     valid_values: null
     alternate: null
@@ -190,7 +190,7 @@ attribute_key:
     description: >
       Used to label a plot axis or to provide a heading for a data listing. This field is generally
       6-10 characters. Only one of LABLAXIS or LABL_PTR_i should be present.
-    required: true
+    required: false
     overwrite: false
     valid_values: null
     alternate: LABL_PTR_1

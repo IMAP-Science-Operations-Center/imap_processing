@@ -106,12 +106,9 @@ def deadtime_correction(counts: np.ndarray, acq_duration: int) -> npt.NDArray:
     corrected_count : numpy.ndarray
         Corrected counts.
     """
-    # deadtime will be constant once it's defined.
-    # This deadtime value is from previous mission. SWE
-    # will give new one once they have it ready.
-    # TODO: update deadtime when we get new number
-    deadtime = 1.5e-6
-    correct = 1.0 - (deadtime * counts / acq_duration)
+    # deadtime is 360 ns
+    deadtime = 360e-9
+    correct = 1.0 - (deadtime * counts / (acq_duration / 1000.0))
     correct = np.maximum(0.1, correct)
     corrected_count = np.divide(counts, correct)
     return corrected_count
@@ -220,8 +217,8 @@ def populate_full_cycle_data(
 
     Returns
     -------
-    numpy.ndarray
-        Array with full cycle data populated.
+    full_cycle_ds : xarray.Dataset
+        Full cycle data and its acquisition times.
     """
     esa_lookup_table = read_lookup_table(esa_table_num)
 
@@ -229,8 +226,16 @@ def populate_full_cycle_data(
     # with information that esa step ramps up in even column and ramps down
     # in odd column every six steps.
     if esa_table_num == 0:
+        energy_steps = 24
+        angle = 30
+        cem_detectors = 7
         # create new full cycle data array
-        full_cycle_data = np.zeros((24, 30, 7))
+        full_cycle_data = np.zeros((energy_steps, angle, cem_detectors))
+        # SWE needs to store acquisition time of each count data point
+        # to use in level 2 processing to calculate
+        # spin phase. This is done below by using information from
+        # science packet.
+        acquisition_times = np.zeros((energy_steps, angle, cem_detectors))
 
         # Initialize esa_step_number and column_index.
         # esa_step_number goes from 0 to 719 range where
@@ -246,9 +251,25 @@ def populate_full_cycle_data(
             decompressed_counts = l1a_data["science_data"].data[packet_index + index]
             # Do deadtime correction
             acq_duration = l1a_data["acq_duration"].data[packet_index + index]
+            settle_duration = l1a_data["settle_duration"].data[packet_index + index]
             corrected_counts = deadtime_correction(decompressed_counts, acq_duration)
             # Convert counts to rate
             counts_rate = convert_counts_to_rate(corrected_counts, acq_duration)
+
+            # Each quarter cycle data should have same acquisition start time coarse
+            # and fine value. We will use that as base time to calculate each
+            # acquisition time for each count data. Acquisition time of each count
+            # data point will be calculated using this formula:
+            #   base_quarter_cycle_acq_time = acq_start_coarse +
+            #                                 acq_start_fine / 1000000
+            #   each_count_acq_time = base_quarter_cycle_acq_time +
+            #                         (step * ( acq_duration + settle_duration) / 1000 )
+            # where step goes from 0 to 179, acq_start_coarse is in seconds and
+            # acq_start_fine is in microseconds and acq_duration is in milliseconds.
+            base_quarter_cycle_acq_time = (
+                l1a_data["acq_start_coarse"].data[packet_index + index]
+                + l1a_data["acq_start_fine"].data[packet_index + index] / 1000000
+            )
 
             # Go through each quarter cycle's 180 ESA measurements
             # and put counts rate in full cycle data array
@@ -263,6 +284,11 @@ def populate_full_cycle_data(
                     column_index += 1
                 # Put counts rate in full cycle data array
                 full_cycle_data[esa_voltage_row_index][column_index] = counts_rate[step]
+                # Put acquisition time in acquisition_times array
+                acquisition_times[esa_voltage_row_index][column_index] = (
+                    base_quarter_cycle_acq_time
+                    + (step * (acq_duration + settle_duration) / 1000)
+                )
                 esa_step_number += 1
 
             # reset column index for next quarter cycle
@@ -273,7 +299,15 @@ def populate_full_cycle_data(
     # data. But for now, we are advice to continue with current setup and can
     # add/change it when we get real data.
 
-    return full_cycle_data
+    # Store count data and acquisition times of full cycle data in xr.Dataset
+    full_cycle_ds = xr.Dataset(
+        {
+            "full_cycle_data": (["energy", "angle", "cem"], full_cycle_data),
+            "sci_step_acq_time_sec": (["energy", "angle", "cem"], acquisition_times),
+        }
+    )
+
+    return full_cycle_ds
 
 
 def find_cycle_starts(cycles: np.ndarray) -> npt.NDArray:
@@ -289,7 +323,7 @@ def find_cycle_starts(cycles: np.ndarray) -> npt.NDArray:
 
     Returns
     -------
-    numpy.ndarray
+    first_quarter_indices : numpy.ndarray
         Array of indices of start cycle.
     """
     if cycles.size < 4:
@@ -308,7 +342,8 @@ def find_cycle_starts(cycles: np.ndarray) -> npt.NDArray:
     # [0 0 0 1 0 0 0 0 0 0 0 0 1 0 0 0 0]      # And all?
     ione = diff == 1
     valid = (cycles == 0)[:-3] & ione[:-2] & ione[1:-1] & ione[2:]
-    return np.where(valid)[0]
+    first_quarter_indices = np.where(valid)[0]
+    return first_quarter_indices
 
 
 def get_indices_of_full_cycles(quarter_cycle: np.ndarray) -> npt.NDArray:
@@ -322,7 +357,7 @@ def get_indices_of_full_cycles(quarter_cycle: np.ndarray) -> npt.NDArray:
 
     Returns
     -------
-    numpy.ndarray
+    full_cycles_indices : numpy.ndarray
         1D array with indices of full cycle data.
     """
     indices_of_start = find_cycle_starts(quarter_cycle)
@@ -351,7 +386,7 @@ def filter_full_cycle_data(
 
     Returns
     -------
-    xarray.Dataset
+    l1a_data : xarray.Dataset
         L1A dataset with filtered metadata.
     """
     for key, value in l1a_data.items():
@@ -372,14 +407,15 @@ def swe_l1b_science(l1a_data: xr.Dataset, data_version: str) -> xr.Dataset:
 
     Returns
     -------
-    xarray.Dataset
+    dataset : xarray.Dataset
         Processed l1b data.
     """
     total_packets = len(l1a_data["science_data"].data)
 
     # Array to store list of table populated with data
     # of full cycles
-    all_data = []
+    full_cycle_science_data = []
+    full_cycle_acq_times = []
     packet_index = 0
     l1a_data_copy = l1a_data.copy(deep=True)
 
@@ -426,12 +462,13 @@ def swe_l1b_science(l1a_data: xr.Dataset, data_version: str) -> xr.Dataset:
         if esa_table_num == 1:
             continue
 
-        full_cycle_data = populate_full_cycle_data(
+        full_cycle_ds = populate_full_cycle_data(
             full_cycle_l1a_data, packet_index, esa_table_num
         )
 
         # save full data array to file
-        all_data.append(full_cycle_data)
+        full_cycle_science_data.append(full_cycle_ds["full_cycle_data"].data)
+        full_cycle_acq_times.append(full_cycle_ds["sci_step_acq_time_sec"].data)
 
     # ------------------------------------------------------------------
     # Save data to dataset.
@@ -535,9 +572,14 @@ def swe_l1b_science(l1a_data: xr.Dataset, data_version: str) -> xr.Dataset:
     )
 
     dataset["science_data"] = xr.DataArray(
-        all_data,
+        full_cycle_science_data,
         dims=["epoch", "energy", "angle", "cem"],
         attrs=cdf_attrs.get_variable_attributes("science_data"),
+    )
+    dataset["sci_step_acq_time_sec"] = xr.DataArray(
+        full_cycle_acq_times,
+        dims=["epoch", "energy", "angle", "cem"],
+        attrs=cdf_attrs.get_variable_attributes("sci_step_acq_time_sec"),
     )
 
     # create xarray dataset for each metadata field
