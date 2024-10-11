@@ -108,14 +108,18 @@ def allocate_histogram_dataset(num_packets: int) -> xr.Dataset:
         dims=["angle"],
         attrs=attr_mgr.get_variable_attributes("hi_hist_angle"),
     )
-    coords["angle_label"] = xr.DataArray(
-        coords["angle"].data.astype(str),
-        name="angle_label",
-        dims=["angle"],
-        attrs=attr_mgr.get_variable_attributes("hi_hist_angle_label"),
-    )
 
     data_vars = dict()
+    # Generate label variables
+    data_vars["angle_label"] = xr.DataArray(
+        coords["angle"].values.astype(str),
+        name="angle_label",
+        dims=["angle"],
+        attrs=attr_mgr.get_variable_attributes(
+            "hi_hist_angle_label", check_schema=False
+        ),
+    )
+    # Other data variables
     data_vars["ccsds_met"] = xr.DataArray(
         np.empty(num_packets, dtype=np.uint32),
         dims=["epoch"],
