@@ -63,7 +63,7 @@ def fake_de_dataset():
 
 
 @pytest.fixture()
-def seq_flag_fake_data():
+def segmented_pkts_fake_data():
     dataset = xr.Dataset(
         data_vars=dict(
             seq_flgs=(["epoch"], np.array([1, 0, 0, 2, 3, 1, 0, 2, 1, 2])),
@@ -179,8 +179,8 @@ def test_parse_de_bin(initialized_dataset):
     assert parsed_int == 0
 
 
-def test_combine_segmented_packets(seq_flag_fake_data):
-    dataset = combine_segmented_packets(seq_flag_fake_data)
+def test_combine_segmented_packets(segmented_pkts_fake_data):
+    dataset = combine_segmented_packets(segmented_pkts_fake_data)
 
     np.testing.assert_array_equal(
         dataset["seq_flgs"].values, np.array([1, 0, 0, 2, 3, 1, 0, 2, 1, 2])
