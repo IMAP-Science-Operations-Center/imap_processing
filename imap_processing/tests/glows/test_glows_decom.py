@@ -63,33 +63,32 @@ def test_bad_header():
 
 
 def test_header(decom_test_data):
-    print(decom_test_data[0][0].ccsds_header)
-    # expected_hist = CcsdsData(
-    #     {
-    #         "VERSION": ParsedDataItem("VERSION", 0, unit=None),
-    #         "TYPE": ParsedDataItem("TYPE", 0, unit=None),
-    #         "SEC_HDR_FLG": ParsedDataItem("SEC_HDR_FLG", 1, unit=None),
-    #         "PKT_APID": ParsedDataItem("PKT_APID", 1480, unit=None),
-    #         "SEQ_FLGS": ParsedDataItem("SEQ_FLGS", 3, unit=None),
-    #         "SRC_SEQ_CTR": ParsedDataItem("SRC_SEQ_CTR", 0, unit=None),
-    #         "PKT_LEN": ParsedDataItem("PKT_LEN", 3663, unit=None),
-    #     }
-    # )
+    expected_hist = CcsdsData(
+        {
+            "VERSION": 0,
+            "TYPE": 0,
+            "SEC_HDR_FLG": 1,
+            "PKT_APID": 1480,
+            "SEQ_FLGS": 3,
+            "SRC_SEQ_CTR": 0,
+            "PKT_LEN": 3663,
+        }
+    )
 
-    # assert expected_hist == decom_test_data[0][0].ccsds_header
-    # expected_de = CcsdsData(
-    #     {
-    #         "VERSION": ParsedDataItem("VERSION", 0, unit=None),
-    #         "TYPE": ParsedDataItem("TYPE", 0, unit=None),
-    #         "SEC_HDR_FLG": ParsedDataItem("SEC_HDR_FLG", 1, unit=None),
-    #         "PKT_APID": ParsedDataItem("PKT_APID", 1481, unit=None),
-    #         "SEQ_FLGS": ParsedDataItem("SEQ_FLGS", 3, unit=None),
-    #         "SRC_SEQ_CTR": ParsedDataItem("SRC_SEQ_CTR", 0, unit=None),
-    #         "PKT_LEN": ParsedDataItem("PKT_LEN", 2775, unit=None),
-    #     }
-    # )
+    assert expected_hist == decom_test_data[0][0].ccsds_header
+    expected_de = CcsdsData(
+        {
+            "VERSION": 0,
+            "TYPE": 0,
+            "SEC_HDR_FLG": 1,
+            "PKT_APID": 1481,
+            "SEQ_FLGS": 3,
+            "SRC_SEQ_CTR": 0,
+            "PKT_LEN": 2775,
+        }
+    )
 
-    # assert expected_de == decom_test_data[1][0].ccsds_header
+    assert expected_de == decom_test_data[1][0].ccsds_header
 
 
 def test_bytearrays(decom_test_data):
@@ -98,8 +97,6 @@ def test_bytearrays(decom_test_data):
 
     for de_test_data in decom_test_data[1]:
         assert isinstance(de_test_data.DE_DATA, bytes)
-
-    # print(decom_test_data[0][0].HISTOGRAM_DATA[:32].hex())
 
     # first 32 bytes, from original binary string of the first test histogram packet
     expected_value_hist_partial = bytes.fromhex(
