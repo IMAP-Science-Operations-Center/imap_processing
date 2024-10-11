@@ -116,6 +116,7 @@ class HistogramL0(GlowsL0):
     EVENTS: int
     HISTOGRAM_DATA: bytes
 
+
 @dataclass
 class DirectEventL0(GlowsL0):
     """
