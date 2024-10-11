@@ -165,20 +165,14 @@ def compute_coincidence_type_and_time_deltas(dataset: xr.Dataset) -> xr.Dataset:
     out_ds = dataset.assign(new_data_vars)
 
     # compute masks needed for coincidence type and delta t calculations
-    a_mask = out_ds.trigger_id.values == TriggerId.A
-    b_mask = out_ds.trigger_id.values == TriggerId.B
-    c_mask = out_ds.trigger_id.values == TriggerId.C
+    a_first = out_ds.trigger_id.values == TriggerId.A
+    b_first = out_ds.trigger_id.values == TriggerId.B
+    c_first = out_ds.trigger_id.values == TriggerId.C
 
-    tof_1_valid_mask = np.isin(
-        out_ds.tof_1.values, HiConstants.TOF1_BAD_VALUES, invert=True
-    )
-    tof_2_valid_mask = np.isin(
-        out_ds.tof_2.values, HiConstants.TOF2_BAD_VALUES, invert=True
-    )
-    tof_1and2_valid_mask = tof_1_valid_mask & tof_2_valid_mask
-    tof_3_valid_mask = np.isin(
-        out_ds.tof_3.values, HiConstants.TOF3_BAD_VALUES, invert=True
-    )
+    tof1_valid = np.isin(out_ds.tof_1.values, HiConstants.TOF1_BAD_VALUES, invert=True)
+    tof2_valid = np.isin(out_ds.tof_2.values, HiConstants.TOF2_BAD_VALUES, invert=True)
+    tof1and2_valid = tof1_valid & tof2_valid
+    tof3_valid = np.isin(out_ds.tof_3.values, HiConstants.TOF3_BAD_VALUES, invert=True)
 
     # Table denoting how hit-first mask and valid TOF masks are used to set
     # coincidence type bitmask
@@ -189,14 +183,12 @@ def compute_coincidence_type_and_time_deltas(dataset: xr.Dataset) -> xr.Dataset:
     # |      2      |      B      |     A,B     |     B,C1    |    C1,C2    |
     # |      3      |      C1     |     A,C1    |     B,C1    |    C1,C2    |
     # Set coincidence type bitmask
-    out_ds.coincidence_type[a_mask | tof_1_valid_mask] |= CoincidenceBitmap.A
+    out_ds.coincidence_type[a_first | tof1_valid] |= CoincidenceBitmap.A
     out_ds.coincidence_type[
-        b_mask | (a_mask & tof_1_valid_mask) | (c_mask & tof_2_valid_mask)
+        b_first | (a_first & tof1_valid) | (c_first & tof2_valid)
     ] |= CoincidenceBitmap.B
-    out_ds.coincidence_type[c_mask | tof_2_valid_mask | tof_2_valid_mask] |= (
-        CoincidenceBitmap.C1.value
-    )
-    out_ds.coincidence_type[tof_3_valid_mask] |= CoincidenceBitmap.C2
+    out_ds.coincidence_type[c_first | tof2_valid] |= CoincidenceBitmap.C1
+    out_ds.coincidence_type[tof3_valid] |= CoincidenceBitmap.C2
 
     # Table denoting how TOF is interpreted for each Trigger ID
     # -----------------------------------------------------------------------
@@ -205,54 +197,56 @@ def compute_coincidence_type_and_time_deltas(dataset: xr.Dataset) -> xr.Dataset:
     # |      1      |      A      |  t_b - t_a  | t_c1 - t_a  | t_c2 - t_c1 |
     # |      2      |      B      |  t_a - t_b  | t_c1 - t_b  | t_c2 - t_c1 |
     # |      3      |      C      |  t_a - t_c1 | t_b  - t_c1 | t_c2 - t_c1 |
-    # delta_t_ab
-    out_ds.delta_t_ab.values[a_mask & tof_1_valid_mask] = (
-        out_ds.tof_1.values[a_mask & tof_1_valid_mask].astype(np.float32)
-        * HiConstants.TOF1_TICK_PER_NS
-    )
-    out_ds.delta_t_ab.values[b_mask & tof_1_valid_mask] = (
-        -out_ds.tof_1.values[b_mask & tof_1_valid_mask].astype(np.float32)
-        * HiConstants.TOF1_TICK_PER_NS
-    )
-    out_ds.delta_t_ab.values[c_mask & tof_1and2_valid_mask] = (
-        out_ds.tof_2.values[c_mask & tof_1and2_valid_mask].astype(np.float32)
-        * HiConstants.TOF2_TICK_PER_NS
-        - out_ds.tof_1.values[c_mask & tof_1and2_valid_mask].astype(np.float32)
-        * HiConstants.TOF1_TICK_PER_NS
+
+    # Prepare for delta_t calculations by converting TOF values to nanoseconds
+    tof_1_ns = (out_ds.tof_1.values * HiConstants.TOF1_TICK_DUR).astype(np.int32)
+    tof_2_ns = (out_ds.tof_2.values * HiConstants.TOF2_TICK_DUR).astype(np.int32)
+    tof_3_ns = (out_ds.tof_3.values * HiConstants.TOF3_TICK_DUR).astype(np.int32)
+
+    # # ********** delta_t_ab = (t_b - t_a) **********
+    # Table: row 1, column 1
+    a_and_tof1 = a_first & tof1_valid
+    out_ds.delta_t_ab.values[a_and_tof1] = tof_1_ns[a_and_tof1]
+    # Table: row 2, column 1
+    b_and_tof1 = b_first & tof1_valid
+    out_ds.delta_t_ab.values[b_and_tof1] = -1 * tof_1_ns[b_and_tof1]
+    # Table: row 3, column 1 and 2
+    # delta_t_ab = (t_b - t_c1) - (t_a - t_c1) = (t_b - t_a)
+    c_and_tof1and2 = c_first & tof1and2_valid
+    out_ds.delta_t_ab.values[c_and_tof1and2] = (
+        tof_2_ns[c_and_tof1and2] - tof_1_ns[c_and_tof1and2]
     )
 
-    # delta_t_ac1
-    out_ds.delta_t_ac1.values[a_mask & tof_2_valid_mask] = (
-        out_ds.tof_2.values[a_mask & tof_2_valid_mask].astype(np.float32)
-        * HiConstants.TOF2_TICK_PER_NS
+    # ********** delta_t_ac1 = (t_c1 - t_a) **********
+    # Table: row 1, column 2
+    a_and_tof2 = a_first & tof2_valid
+    out_ds.delta_t_ac1.values[a_and_tof2] = tof_2_ns[a_and_tof2]
+    # Table: row 2, column 1 and 2
+    # delta_t_ac1 = (t_c1 - t_b) - (t_a - t_b) = (t_c1 - t_a)
+    b_and_tof1and2 = b_first & tof1and2_valid
+    out_ds.delta_t_ac1.values[b_and_tof1and2] = (
+        tof_2_ns[b_and_tof1and2] - tof_1_ns[b_and_tof1and2]
     )
-    out_ds.delta_t_ac1.values[b_mask & tof_1and2_valid_mask] = (
-        out_ds.tof_2.values[b_mask & tof_1and2_valid_mask]
-        * HiConstants.TOF2_TICK_PER_NS
-        - out_ds.tof_1.values[b_mask & tof_1and2_valid_mask]
-        * HiConstants.TOF1_TICK_PER_NS
-    )
-    out_ds.delta_t_ac1.values[c_mask & tof_1_valid_mask] = (
-        -out_ds.tof_1.values[c_mask & tof_1_valid_mask] * HiConstants.TOF1_TICK_PER_NS
-    )
+    # Table: row 3, column 1
+    c_and_tof1 = c_first & tof1_valid
+    out_ds.delta_t_ac1.values[c_and_tof1] = -1 * tof_1_ns[c_and_tof1]
 
-    # delta_t_bc1
-    out_ds.delta_t_bc1.values[a_mask & tof_1_valid_mask & tof_2_valid_mask] = (
-        out_ds.tof_2.values[a_mask & tof_1and2_valid_mask]
-        * HiConstants.TOF2_TICK_PER_NS
-        - out_ds.tof_1.values[a_mask & tof_1and2_valid_mask]
-        * HiConstants.TOF1_TICK_PER_NS
+    # ********** delta_t_bc1 = (t_c1 - t_b) **********
+    # Table: row 1, column 1 and 2
+    # delta_t_bc1 = (t_c1 - t_a) - (t_b - t_a) => (t_c1 - t_b)
+    a_and_tof1and2 = a_first & tof1and2_valid
+    out_ds.delta_t_bc1.values[a_and_tof1and2] = (
+        tof_2_ns[a_and_tof1and2] - tof_1_ns[a_and_tof1and2]
     )
-    out_ds.delta_t_bc1.values[b_mask & tof_2_valid_mask] = (
-        out_ds.tof_2.values[b_mask & tof_2_valid_mask] * HiConstants.TOF2_TICK_PER_NS
-    )
-    out_ds.delta_t_bc1.values[c_mask & tof_2_valid_mask] = (
-        -out_ds.tof_2.values[c_mask & tof_2_valid_mask] * HiConstants.TOF2_TICK_PER_NS
-    )
+    # Table: row 2, column 2
+    b_and_tof2 = b_first & tof2_valid
+    out_ds.delta_t_bc1.values[b_and_tof2] = tof_2_ns[b_and_tof2]
+    # Table: row 3, column 2
+    c_and_tof2 = c_first & tof2_valid
+    out_ds.delta_t_bc1.values[c_and_tof2] = -1 * tof_2_ns[c_and_tof2]
 
-    # delta_t_c1c2
-    out_ds.delta_t_c1c2.values[tof_3_valid_mask] = (
-        out_ds.tof_3.values[tof_3_valid_mask] * HiConstants.TOF3_TICK_PER_NS
-    )
+    # ********** delta_t_c1c2 = (t_c2 - t_c1) **********
+    # Table: all rows, column 3
+    out_ds.delta_t_c1c2.values[tof3_valid] = tof_3_ns[tof3_valid]
 
     return out_ds

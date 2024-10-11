@@ -98,7 +98,6 @@ def synthetic_trigger_id_and_tof_data():
 def test_compute_coincidence_type_and_time_deltas(synthetic_trigger_id_and_tof_data):
     """Test coverage for
     `imap_processing.hi.hi_l1b.compute_coincidence_type_and_time_deltas`."""
-    # l1a_dataset = load_cdf(hi_l1a_test_file_path)
     updated_dataset = compute_coincidence_type_and_time_deltas(
         synthetic_trigger_id_and_tof_data[0]
     )
