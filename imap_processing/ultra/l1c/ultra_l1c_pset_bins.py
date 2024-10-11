@@ -119,9 +119,6 @@ def cartesian_to_spherical(
     return np.degrees(az), np.degrees(el), magnitude_v
 
 
-import numpy as np
-
-
 def spherical_to_cartesian(r, theta, phi):
     """
     Convert spherical coordinates to Cartesian coordinates.
@@ -293,9 +290,8 @@ def get_helio_exposure_times(
         helio_velocity = spacecraft_velocity + v_energy * r_dps
         # Stopped here
         r_magnitudes = np.linalg.norm(helio_velocity)
-        r_helio_normalized = helio_velocity / r_magnitudes
-        v = np.column_stack(r_helio_normalized)
-        az, el, _ = cartesian_to_spherical(v)
+        r_helio_normalized = helio_velocity.T / np.linalg.norm(helio_velocity.T, axis=1, keepdims=True)
+        az, el, _ = cartesian_to_spherical(r_helio_normalized)
 
         # Determine the bin indices for azimuth and elevation
         az_index = np.digitize(az, az_bin_edges) - 1  # Convert to 0-based index
