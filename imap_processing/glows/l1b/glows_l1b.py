@@ -240,9 +240,9 @@ def process_histogram(l1a: xr.Dataset) -> xr.Dataset:
         "imap_spin_angle_bin_cntr": ["bins"],
         "histogram_flag_array": ["bad_angle_flags", "bins"],
         "spacecraft_location_average": ["ecliptic"],
-        "spacecraft_location_variance": ["ecliptic"],
+        "spacecraft_location_std_dev": ["ecliptic"],
         "spacecraft_velocity_average": ["ecliptic"],
-        "spacecraft_velocity_variance": ["ecliptic"],
+        "spacecraft_velocity_std_dev": ["ecliptic"],
         "flags": ["flag_dim", "bins"],
     }
 
