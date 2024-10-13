@@ -243,7 +243,7 @@ def process_histogram(l1a: xr.Dataset) -> xr.Dataset:
         "spacecraft_location_std_dev": ["ecliptic"],
         "spacecraft_velocity_average": ["ecliptic"],
         "spacecraft_velocity_std_dev": ["ecliptic"],
-        "flags": ["flag_dim", "bins"],
+        "flags": ["flag_dim"],
     }
 
     # For each attribute, retrieve the dims from output_dimension_mapping or use an
