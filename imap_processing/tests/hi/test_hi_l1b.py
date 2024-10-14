@@ -1,8 +1,16 @@
 """Test coverage for imap_processing.hi.l1b.hi_l1b.py"""
 
+import numpy as np
+import pytest
+import xarray as xr
+
 from imap_processing.hi.l1a.hi_l1a import hi_l1a
-from imap_processing.hi.l1b.hi_l1b import hi_l1b
-from imap_processing.hi.utils import HIAPID
+from imap_processing.hi.l1b.hi_l1b import (
+    CoincidenceBitmap,
+    compute_coincidence_type_and_time_deltas,
+    hi_l1b,
+)
+from imap_processing.hi.utils import HIAPID, HiConstants
 
 
 def test_hi_l1b_hk(hi_l0_test_data_path):
@@ -29,3 +37,108 @@ def test_hi_l1b_de(create_de_data, tmp_path):
     l1b_dataset = hi_l1b(processed_data[0], data_version=data_version)
     assert l1b_dataset.attrs["Logical_source"] == "imap_hi_l1b_45sensor-de"
     assert len(l1b_dataset.data_vars) == 14
+
+
+@pytest.fixture()
+def synthetic_trigger_id_and_tof_data():
+    """Create synthetic minimum dataset for testing the
+    coincidence_type_and_time_deltas algorithm."""
+    # The following coincidence type table shows possible values to consider
+    # Value| # Exp | Requirements to get this value
+    # -----|-------|-------------------------------
+    #   0  |   0   | Non-event not recorded
+    #   1  |   0   | Can't trigger c2 only
+    #   2  |   2   | trigger_id = 3, tof_3 invalid
+    #   3  |   2   | trigger_id = 3, tof_3 valid
+    #   4  |   2   | trigger_id = 2, no valid tofs
+    #   5  |   0   | B and C2 not possible?
+    #   6  |   4   | trigger_id = 2 OR 3, tof_2 valid
+    #   7  |   4   | trigger_id = 2 OR 3, tof_2/3 valid
+    #   8  |   2   | trigger_id = 3, no valid tofs
+    #   9  |   0   | A and C2 not possible?
+    #  10  |   3   | trigger_id = 1, tof_2 OR trigger_id = 3, tof_1
+    #  11  |   3   | trigger_id = 1, tof_2/3, OR trigger_id = 3, tof_1/3
+    #  12  |   2   | trigger_id = 1 OR 2, tof_1
+    #  13  |   0   | A/B and C2 not possible?
+    #  14  |   3   | trigger_id = 1 OR 2 OR 3, tof_1/2
+    #  15  |   3   | trigger_id = 1, 2, 3, tof_1/2/3
+
+    # Use meshgrid to get all combinations of trigger_id and tof valid/invalid
+    # Note: this generates 6 impossible occurrences where C1 is not triggered
+    #    but C2 is. Those are manually removed below.
+    ids = np.arange(3) + 1
+    tof1s = np.array(np.concatenate((HiConstants.TOF1_BAD_VALUES, [1])))
+    tof2s = np.array(np.concatenate((HiConstants.TOF2_BAD_VALUES, [2])))
+    tof3s = np.array(np.concatenate((HiConstants.TOF3_BAD_VALUES, [3])))
+    var_names = ["trigger_id", "tof_1", "tof_2", "tof_3"]
+    data = np.meshgrid(ids, tof1s, tof2s, tof3s)
+    data = [arr.flatten() for arr in data]
+    # Remove impossible combinations
+    good_inds = np.nonzero(
+        np.logical_not(
+            np.logical_and(data[0] != 3, ((data[2] >= 511) & (data[3] < 511)))
+        )
+    )
+    data = [arr[good_inds] for arr in data]
+    data_vars = {
+        n: xr.DataArray(arr, dims=["epoch"]) for n, arr in zip(var_names, data)
+    }
+    synthetic_l1a_ds = xr.Dataset(
+        coords={
+            "epoch": xr.DataArray(
+                np.arange(data_vars["trigger_id"].size), name="epoch", dims=["epoch"]
+            )
+        },
+        data_vars=data_vars,
+    )
+    expected_histogram = np.array([0, 0, 2, 2, 2, 0, 4, 4, 2, 0, 3, 3, 2, 0, 3, 3])
+    return synthetic_l1a_ds, expected_histogram
+
+
+def test_compute_coincidence_type_and_time_deltas(synthetic_trigger_id_and_tof_data):
+    """Test coverage for
+    `imap_processing.hi.hi_l1b.compute_coincidence_type_and_time_deltas`."""
+    updated_dataset = compute_coincidence_type_and_time_deltas(
+        synthetic_trigger_id_and_tof_data[0]
+    )
+    for var_name in [
+        "coincidence_type",
+        "delta_t_ab",
+        "delta_t_ac1",
+        "delta_t_bc1",
+        "delta_t_c1c2",
+    ]:
+        assert var_name in updated_dataset.data_vars
+    # verify coincidence type values
+    coincidence_hist, bins = np.histogram(
+        updated_dataset.coincidence_type, bins=np.arange(17)
+    )
+    np.testing.assert_array_equal(
+        coincidence_hist, synthetic_trigger_id_and_tof_data[1]
+    )
+    # verify delta_t values are valid in the correct locations
+    np.testing.assert_array_equal(
+        updated_dataset.delta_t_ab != updated_dataset.delta_t_ab.FILLVAL,
+        updated_dataset.coincidence_type >= 12,
+    )
+    np.testing.assert_array_equal(
+        updated_dataset.delta_t_ac1 != updated_dataset.delta_t_ac1.FILLVAL,
+        np.logical_and(
+            np.bitwise_and(updated_dataset.coincidence_type, CoincidenceBitmap.A.value),
+            np.bitwise_and(updated_dataset.coincidence_type, CoincidenceBitmap.C1),
+        ),
+    )
+    np.testing.assert_array_equal(
+        updated_dataset.delta_t_bc1 != updated_dataset.delta_t_bc1.FILLVAL,
+        np.logical_and(
+            np.bitwise_and(updated_dataset.coincidence_type, CoincidenceBitmap.B.value),
+            np.bitwise_and(updated_dataset.coincidence_type, CoincidenceBitmap.C1),
+        ),
+    )
+    np.testing.assert_array_equal(
+        updated_dataset.delta_t_c1c2 != updated_dataset.delta_t_c1c2.FILLVAL,
+        np.logical_and(
+            np.bitwise_and(updated_dataset.coincidence_type, CoincidenceBitmap.C1),
+            np.bitwise_and(updated_dataset.coincidence_type, CoincidenceBitmap.C2),
+        ),
+    )
