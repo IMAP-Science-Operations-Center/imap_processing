@@ -9,6 +9,7 @@ from imap_processing.ultra.l0.ultra_utils import (
     append_fillval,
     parse_event,
 )
+from imap_processing.utils import convert_to_binary
 
 
 def read_and_advance(
@@ -256,7 +257,7 @@ def read_image_raw_events_binary(
         Each for loop appends to the existing dictionary.
     """
     # TODO: improve this as needed
-    binary = "".join(f"{byte:08b}" for byte in packet["EVENTDATA"].raw_value)
+    binary = convert_to_binary(packet["EVENTDATA"].raw_value)
     count = packet["COUNT"]
     # 166 bits per event
     event_length = 166 if count else 0

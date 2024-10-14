@@ -307,7 +307,6 @@ def packet_file_to_datasets(
             coords={"epoch": time_data},
         )
         ds = ds.sortby("epoch")
-        print(f"epoch: {ds['epoch']}")
 
         # Strip any leading characters before "." from the field names which was due
         # to the packet_name being a part of the variable name in the XTCE definition
@@ -324,3 +323,21 @@ def packet_file_to_datasets(
         dataset_by_apid[apid] = ds
 
     return dataset_by_apid
+
+
+def convert_to_binary(bytes_data: list[bytes]) -> str:
+    """
+    Convert a list of bytes to a single byte string.
+
+    Parameters
+    ----------
+    bytes_data : list[bytes]
+        List of bytes to convert.
+
+    Returns
+    -------
+    binary_data : str
+        The binary string data.
+    """
+    binary_data = "".join(f"{byte:08b}" for byte in bytes_data)
+    return binary_data

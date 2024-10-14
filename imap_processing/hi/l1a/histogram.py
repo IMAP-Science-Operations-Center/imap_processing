@@ -4,6 +4,7 @@ import numpy as np
 import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
+from imap_processing.utils import convert_to_binary
 
 # define the names of the 24 counter arrays
 # contained in the histogram packet
@@ -59,9 +60,9 @@ def create_dataset(input_ds: xr.Dataset) -> xr.Dataset:
     # TODO: Look into avoiding the for-loops below
     #       It seems like we could try to reshape the arrays and do some numpy
     #       broadcasting rather than for-loops directly here
-    for i_epoch, counters_binary_data in enumerate(input_ds["counters"].data):
+    for i_epoch, counters_bytes_data in enumerate(input_ds["counters"].data):
         # TODO: improve this as needed
-        binary_str_val = "".join(f"{byte:08b}" for byte in counters_binary_data)
+        binary_str_val = convert_to_binary(counters_bytes_data)
         # unpack 24 arrays of 90 12-bit unsigned integers
         counter_ints = [
             int(binary_str_val[i * 12 : (i + 1) * 12], 2) for i in range(90 * 24)

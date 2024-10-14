@@ -17,6 +17,7 @@ from imap_processing.lo.l0.utils.bit_decompression import (
     Decompress,
     decompress_int,
 )
+from imap_processing.utils import convert_to_binary
 
 HistPacking = namedtuple(
     "HistPacking",
@@ -73,7 +74,7 @@ def parse_histogram(dataset: xr.Dataset, attr_mgr: ImapCdfAttributes) -> xr.Data
     # TODO: improve this as needed
     binary_str_val = []
     for data in dataset.sci_cnt.values:
-        binary_str_val.append("".join(f"{byte:08b}" for byte in data))
+        binary_str_val.append(convert_to_binary(data))
     hist_bin = binary_str_val
 
     # initialize the starting bit for the sections of data

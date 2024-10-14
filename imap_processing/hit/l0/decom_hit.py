@@ -5,6 +5,8 @@ from collections import namedtuple
 import numpy as np
 import xarray as xr
 
+from imap_processing.utils import convert_to_binary
+
 # TODO: Consider moving global values into a config file
 
 # Structure to hold binary details for a
@@ -360,7 +362,7 @@ def assemble_science_frames(sci_dataset: xr.Dataset) -> xr.Dataset:
     # TODO: improve this as needed
     binary_str_val = []
     for data in sci_dataset.science_data.values:
-        binary_str_val.append("".join(f"{byte:08b}" for byte in data))
+        binary_str_val.append(convert_to_binary(data))
     science_data = binary_str_val
     epoch_data = sci_dataset.epoch.values
 

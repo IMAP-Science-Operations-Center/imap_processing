@@ -5,6 +5,7 @@ import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.spice.time import met_to_j2000ns
+from imap_processing.utils import convert_to_binary
 
 # TODO: read LOOKED_UP_DURATION_OF_TICK from
 # instrument status summary later. This value
@@ -329,7 +330,7 @@ def science_direct_event(packets_data: xr.Dataset) -> xr.Dataset:
     # the list later.
     for i, data in enumerate(packets_data["de_tof"].data):
         # TODO: improve this as needed
-        binary_str_val = "".join(f"{byte:08b}" for byte in data)
+        binary_str_val = convert_to_binary(data)
         # break binary stream data into unit of 48-bits
         event_48bits_list = break_into_bits_size(binary_str_val)
         # parse 48-bits into meaningful data such as metaevent or direct event
