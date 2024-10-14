@@ -395,7 +395,7 @@ def find_valid_groups(
 
     Returns
     -------
-    valid_groups : list[bool]
+    valid_groups : list[np.bool_]
         Valid groups of segmented packets.
     """
     # Check if the sequence counters from the CCSDS header are sequential
