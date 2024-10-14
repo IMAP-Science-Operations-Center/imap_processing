@@ -349,9 +349,8 @@ def combine_segmented_packets(dataset: xr.Dataset) -> xr.Dataset:
     # 1 = start of a group of segmented packet
     # 2 = end of a group of segmented packets
     # 3 = unsegmented packet
-    seg_starts = np.where((seq_flgs == 1) | (seq_flgs == 3))[0]
-    seg_ends = np.where((seq_flgs == 2) | (seq_flgs == 3))[0]
-
+    seg_starts = np.nonzero((seq_flgs == 1) | (seq_flgs == 3))[0]
+    seg_ends = np.nonzero((seq_flgs == 2) | (seq_flgs == 3))[0]
     # Swap the epoch dimension for the shcoarse
     # the epoch dimension will be reduced to the
     # first epoch in each segment
