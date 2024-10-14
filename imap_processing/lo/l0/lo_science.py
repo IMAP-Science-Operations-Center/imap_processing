@@ -380,7 +380,7 @@ def combine_segmented_packets(dataset: xr.Dataset) -> xr.Dataset:
 
 def find_valid_groups(
     seq_ctrs: np.ndarray, seg_starts: np.ndarray, seg_ends: np.ndarray
-) -> list[bool]:
+) -> list[np.bool_]:
     """
     Find the valid groups of segmented packets.
 
