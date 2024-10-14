@@ -25,9 +25,18 @@ Instruments
    swapi
    swe
    ultra
-   cdf
 
-Utility functions can be found in modules within the top package level.
+Utilities
+---------
+In addition to top level modules for each instrument, there are a couple of
+tob level modules which contain utility code common to all instruments.
+
+.. toctree::
+   :maxdepth: 1
+
+   cdf
+   spice
+
 
 Processing
 ----------
