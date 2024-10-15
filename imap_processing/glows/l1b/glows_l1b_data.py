@@ -575,7 +575,7 @@ class HistogramL1B:
         # self.unique_block_identifier = np.datetime_as_string(
         #     np.datetime64(int(self.imap_start_time), "ns"), "s"
         # )
-        self.flags = np.zeros((17,), dtype=np.uint8)
+        self.flags = np.ones((17,), dtype=np.uint8)
 
     def output_data(self) -> tuple:
         """

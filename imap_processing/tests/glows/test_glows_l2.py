@@ -24,6 +24,6 @@ def test_generate_l2(l1b_hist_dataset):
     }
 
     assert np.isclose(l2.filter_temperature_average, expected_values["filter_temperature_average"], 0.01)
-    assert np.isclose(l2.filter_temperature_variance, expected_values["filter_temperature_std_dev"], 0.01)
+    assert np.isclose(l2.filter_temperature_std_dev, expected_values["filter_temperature_std_dev"], 0.01)
     assert np.isclose(l2.hv_voltage_average, expected_values["hv_voltage_average"], 0.01)
-    assert np.isclose(l2.hv_voltage_variance, expected_values["hv_voltage_std_dev"], 0.01)
+    assert np.isclose(l2.hv_voltage_std_dev, expected_values["hv_voltage_std_dev"], 0.01)

@@ -43,37 +43,37 @@ def glows_l2(input_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
 def generate_l2(l1b_dataset: xr.Dataset) -> HistogramL2:
     # most of the values from L1B are averaged over a day
 
+    # TODO filter bad times out
+    good_data = filter_good_times(l1b_dataset, np.ones((17,)))
+
     # one dataset collects multiple epoch values which need to be averaged down into
     # one value.
     all_variables = dataclasses.fields(HistogramL1B)
 
     # Generate outputs that are passed in directly from L1B
-    var_outputs = {'total_l1b_inputs': len(l1b_dataset['epoch']),
-                   'number_of_good_l1b_inputs': len(l1b_dataset['epoch']),
+    var_outputs = {'total_l1b_inputs': len(good_data['epoch']),
+                   'number_of_good_l1b_inputs': len(good_data['epoch']),
                    # TODO replace post-filter
                    # 'identifier': 'test', # TODO: retrieve from unique_block_identifier
                    # TODO: start and end time should be only in good times
-                   'start_time': l1b_dataset['epoch'].data[0],
-                   'end_time': l1b_dataset['epoch'].data[-1],
-                   'histogram': l1b_dataset['histogram'].data,
+                   'start_time': good_data['epoch'].data[0],
+                   'end_time': good_data['epoch'].data[-1],
+                   'histogram': good_data['histogram'].data,
                    # TODO is this type correct?
                    'bad_time_flag_occurrences': None,
                    'flight_software_version':
                        l1b_dataset['flight_software_version'].data[0],
                    }
 
+
+
     for field in all_variables:
         var_name = field.name
         if 'average' in var_name:
             var_outputs[var_name] = l1b_dataset[var_name].mean(dim="epoch").data
-
-        if 'variance' in var_name:
-            expected_var = var_name.replace('variance', 'average')
-            var_outputs[var_name] = l1b_dataset[expected_var].std(dim="epoch").data
+            var_outputs[var_name.replace('average', 'std_dev')] = l1b_dataset[var_name].std(dim="epoch").data
 
     output = HistogramL2(**var_outputs)
-
-    print(l1b_dataset.data_vars)
 
     return output
 
@@ -130,3 +130,16 @@ def split_data_by_observational_day(input_dataset: xr.Dataset) -> list[xr.Datase
 def create_l2_dataset(histogram_l2: HistogramL2,
                       attrs: ImapCdfAttributes) -> xr.Dataset:
     pass
+
+def filter_good_times(input: xr.Dataset, active_flags: np.ndarray) -> xr.Dataset:
+    # Loop through all times in the dataset and remove all the times that are bad
+    # due to flags
+    print(input['flags'].data.shape)
+    if len(active_flags) != input['flags'].shape[1]:
+        print("Active flags don't matched expected length")
+    # TODO: come back and check that this works
+    good_times = np.where(active_flags == input['flags'].data[1])[0]
+    print(good_times)
+
+    print(input.isel(epoch=good_times))
+    return input.isel(epoch=good_times)
