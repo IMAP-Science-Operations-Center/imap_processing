@@ -325,20 +325,19 @@ def packet_file_to_datasets(
     return dataset_by_apid
 
 
-def convert_to_binary(bytes_data: list[bytes]) -> str:
+def convert_to_binary_string(data: bytes) -> str:
     """
-    Convert a list of bytes to a single byte string.
+    Convert bytes to a string representation.
 
     Parameters
     ----------
-    bytes_data : list[bytes]
-        List of bytes to convert.
+    data : bytes
+        Bytes to convert to a binary string.
 
     Returns
     -------
     binary_data : str
-        The binary string data.
+        The binary data as a string.
     """
-    binary_data = "".join(f"{byte:08b}" for byte in bytes_data)  # type: ignore [str-bytes-safe]
-
-    return binary_data
+    binary_str_data = f"{int.from_bytes(data, byteorder='big'):0{len(data)*8}b}"
+    return binary_str_data

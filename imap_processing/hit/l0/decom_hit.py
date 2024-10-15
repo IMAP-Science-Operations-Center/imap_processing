@@ -5,7 +5,7 @@ from collections import namedtuple
 import numpy as np
 import xarray as xr
 
-from imap_processing.utils import convert_to_binary
+from imap_processing.utils import convert_to_binary_string
 
 # TODO: Consider moving global values into a config file
 
@@ -359,11 +359,9 @@ def assemble_science_frames(sci_dataset: xr.Dataset) -> xr.Dataset:
     # Convert sequence flags and counters to NumPy arrays for vectorized operations
     seq_flgs = sci_dataset.seq_flgs.values
     seq_ctrs = sci_dataset.src_seq_ctr.values
-    # TODO: improve this as needed
-    binary_str_val = []
-    for data in sci_dataset.science_data.values:
-        binary_str_val.append(convert_to_binary(data))
-    science_data = binary_str_val
+    science_data = [
+        convert_to_binary_string(data) for data in sci_dataset.science_data.values
+    ]
     epoch_data = sci_dataset.epoch.values
 
     # Number of packets in the file

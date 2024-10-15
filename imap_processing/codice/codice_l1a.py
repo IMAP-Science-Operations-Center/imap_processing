@@ -28,7 +28,7 @@ from imap_processing.codice import constants
 from imap_processing.codice.codice_l0 import decom_packets
 from imap_processing.codice.decompress import decompress
 from imap_processing.codice.utils import CODICEAPID
-from imap_processing.utils import convert_to_binary
+from imap_processing.utils import convert_to_binary_string
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -542,8 +542,7 @@ def process_codice_l1a(file_path: Path, data_version: str) -> xr.Dataset:
         elif apid in constants.APIDS_FOR_SCIENCE_PROCESSING:
             # Extract the data
             science_values = packet_dataset.data.data[0]
-            # TODO: improve this as needed
-            science_values = convert_to_binary(science_values)
+            science_values = convert_to_binary_string(science_values)
 
             # Get the four "main" parameters for processing
             table_id, plan_id, plan_step, view_id = get_params(packet_dataset)

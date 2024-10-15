@@ -18,6 +18,7 @@ import xarray as xr
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.idex.idex_l0 import decom_packets
 from imap_processing.spice.time import met_to_j2000ns
+from imap_processing.utils import convert_to_binary_string
 
 logger = logging.getLogger(__name__)
 
@@ -132,7 +133,7 @@ class PacketParser:
         dust_events = {}
         for packet in decom_packet_list:
             if "IDX__SCI0TYPE" in packet:
-                scitype = packet["IDX__SCI0TYPE"].raw_value
+                scitype = packet["IDX__SCI0TYPE"]
                 event_number = packet["IDX__SCI0EVTNUM"]
                 if scitype == Scitype.FIRST_PACKET:
                     # Initial packet for new dust event
@@ -497,10 +498,7 @@ class RawDustEvent:
             IDEX observables.
         """
         scitype = packet["IDX__SCI0TYPE"].raw_value
-        # TODO: improve this as needed
-        raw_science_bits = "".join(
-            f"{byte:08b}" for byte in packet["IDX__SCI0RAW"].raw_value
-        )
+        raw_science_bits = convert_to_binary_string(packet["IDX__SCI0RAW"])
         self._append_raw_data(scitype, raw_science_bits)
 
     def process(self) -> xr.Dataset:

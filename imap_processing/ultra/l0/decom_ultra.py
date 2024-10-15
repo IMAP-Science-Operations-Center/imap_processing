@@ -22,7 +22,7 @@ from imap_processing.ultra.l0.ultra_utils import (
     ULTRA_TOF,
     append_ccsds_fields,
 )
-from imap_processing.utils import convert_to_binary, sort_by_time
+from imap_processing.utils import convert_to_binary_string, sort_by_time
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -160,7 +160,7 @@ def process_ultra_tof(
         ULTRA_TOF.width, int
     ):
         for packet in sorted_packets:
-            binary_data = convert_to_binary(packet["PACKETDATA"])
+            binary_data = convert_to_binary_string(packet["PACKETDATA"])
             # Decompress the image data
             decompressed_data = decompress_image(
                 packet["P00"],
