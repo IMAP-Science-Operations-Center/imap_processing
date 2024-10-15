@@ -339,5 +339,6 @@ def convert_to_binary(bytes_data: list[bytes]) -> str:
     binary_data : str
         The binary string data.
     """
-    binary_data = "".join(f"{byte:08b}" for byte in bytes_data)
+    binary_data = "".join(f"{byte:08b}" for byte in bytes_data)  # type: ignore [str-bytes-safe]
+
     return binary_data
