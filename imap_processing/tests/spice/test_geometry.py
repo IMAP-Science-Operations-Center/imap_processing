@@ -85,6 +85,13 @@ def test_get_spacecraft_spin_phase(query_met_times, expected, fake_spin_data):
     np.testing.assert_array_almost_equal(spin_phases, expected)
 
 
+@pytest.mark.parametrize("query_met_times", [-1, 165])
+def test_get_spacecraft_spin_phase_value_error(query_met_times, fake_spin_data):
+    """Test get_spacecraft_spin_phase() for raising ValueError."""
+    with pytest.raises(ValueError, match="Query times"):
+        _ = get_spacecraft_spin_phase(query_met_times)
+
+
 @pytest.mark.usefixtures("_set_spin_data_filepath")
 def test_get_spin_data():
     """Test get_spin_data() with generated spin data."""
