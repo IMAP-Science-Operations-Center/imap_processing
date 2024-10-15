@@ -235,6 +235,74 @@ def get_spacecraft_spin_phase(
     return spin_phases
 
 
+def get_instrument_spin_phase(
+    query_met_times: Union[float, npt.NDArray],
+    instrument: SpiceFrame,
+) -> Union[float, npt.NDArray]:
+    """
+    Get the instrument spin phase for the input query times.
+
+    Formula to calculate spin phase:
+        `instrument_spin_phase = (spacecraft_spin_phase + instrument_spin_offset) % 1
+
+    Parameters
+    ----------
+    query_met_times : float or np.ndarray
+        Query times in Mission Elapsed Time (MET).
+    instrument : SpiceFrame
+        Instrument frame to calculate spin phase for.
+
+    Returns
+    -------
+    spin_phase : float or np.ndarray
+        Instrument spin phase for the input query times. Spin phase is a
+        floating point number in the range [0, 1) corresponding to the
+        spin angle / 360.
+    """
+    spacecraft_spin_phase = get_spacecraft_spin_phase(query_met_times)
+    instrument_spin_phase_offset = get_spacecraft_to_instrument_spin_phase_offset(
+        instrument
+    )
+    return (spacecraft_spin_phase + instrument_spin_phase_offset) % 1
+
+
+def get_spacecraft_to_instrument_spin_phase_offset(instrument: SpiceFrame) -> float:
+    """
+    Get the spin phase offset from the spacecraft to the instrument.
+
+    The spin phase offset is can be calculated using the instrument frame SPICE
+    kernel and the proper knowledge about which axis of the instrument frame
+    to use (typically the boresight). For now, the offset is a fixed lookup
+    based on Table 1: Nominal Instrument to S/C CS Transformations in 7516-0011_drw.pdf
+
+    Parameters
+    ----------
+    instrument : SpiceFrame
+        Instrument to get the spin phase offset for.
+
+    Returns
+    -------
+    spacecraft_to_instrument_spin_phase_offset : float
+        The spin phase offset from the spacecraft to the instrument.
+    """
+    # TODO: Implement retrieval from SPICE?
+    offset_lookup = {
+        SpiceFrame.IMAP_LO: 330 / 360,
+        SpiceFrame.IMAP_HI_45: 255 / 360,
+        SpiceFrame.IMAP_HI_90: 285 / 360,
+        SpiceFrame.IMAP_ULTRA_45: 33 / 360,
+        SpiceFrame.IMAP_ULTRA_90: 210 / 360,
+        SpiceFrame.IMAP_SWAPI: 168 / 360,
+        SpiceFrame.IMAP_IDEX: 90 / 360,
+        SpiceFrame.IMAP_CODICE: 136 / 360,
+        SpiceFrame.IMAP_HIT: 30 / 360,
+        SpiceFrame.IMAP_SWE: 153 / 360,
+        SpiceFrame.IMAP_GLOWS: 127 / 360,
+        SpiceFrame.IMAP_MAG: 0 / 360,
+    }
+    return offset_lookup[instrument]
+
+
 @typing.no_type_check
 @ensure_spice
 def frame_transform(
