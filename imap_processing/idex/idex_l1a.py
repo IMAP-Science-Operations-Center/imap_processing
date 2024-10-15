@@ -354,7 +354,7 @@ class RawDustEvent:
         rather than the number of samples before triggering.
         """
         # Retrieve the number of samples of high gain delay
-        high_gain_delay = packet["IDX__TXHDRADC0IDELAY"].raw_value
+        high_gain_delay = packet["IDX__TXHDRADC0IDELAY"]
 
         # Retrieve number of low/high sample pre-trigger blocks
         num_low_sample_pretrigger_blocks = packet["IDX__TXHDRLSPREBLOCKS"]
@@ -497,7 +497,7 @@ class RawDustEvent:
             A single science data packet for one of the 6.
             IDEX observables.
         """
-        scitype = packet["IDX__SCI0TYPE"].raw_value
+        scitype = packet["IDX__SCI0TYPE"]
         raw_science_bits = convert_to_binary_string(packet["IDX__SCI0RAW"])
         self._append_raw_data(scitype, raw_science_bits)
 

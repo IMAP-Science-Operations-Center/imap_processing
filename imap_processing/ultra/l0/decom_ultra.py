@@ -263,10 +263,7 @@ def process_ultra_rates(sorted_packets: list, decom_data: dict) -> dict:
         and isinstance(ULTRA_RATES.width, int)
     ):
         for packet in sorted_packets:
-            # TODO: improve this as needed
-            raw_binary_string = "".join(
-                f"{byte:08b}" for byte in packet["FASTDATA_00"].raw_value
-            )
+            raw_binary_string = convert_to_binary_string(packet["FASTDATA_00"])
             decompressed_data = decompress_binary(
                 raw_binary_string,
                 ULTRA_RATES.width,
