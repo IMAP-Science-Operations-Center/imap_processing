@@ -207,7 +207,7 @@ def get_spacecraft_spin_phase(
     )
     input_start_time = query_met_times.min()
     input_end_time = query_met_times.max()
-    if input_start_time < spin_df_start_time or input_end_time > spin_df_end_time:
+    if input_start_time < spin_df_start_time or input_end_time >= spin_df_end_time:
         raise ValueError(
             f"Query times, {query_met_times} are outside of the spin data range, "
             f"{spin_df_start_time, spin_df_end_time}."
