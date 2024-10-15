@@ -67,6 +67,11 @@ def fake_spin_data(monkeypatch, spice_test_data_path):
         # Test for time in missing spin
         (65, np.nan),
         (np.array([65.1, 66]), np.full(2, np.nan)),
+        # Combined test
+        (
+            np.array([7.5, 30, 61, 75, 106, 121, 136]),
+            np.array([0.5, 0, np.nan, 0, np.nan, np.nan, 1 / 15]),
+        ),
     ],
 )
 def test_get_spacecraft_spin_phase(query_met_times, expected, fake_spin_data):
