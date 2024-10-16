@@ -145,7 +145,7 @@ def get_spin_data() -> pd.DataFrame:
         # Handle the case where the environment variable is not set
         raise ValueError("SPIN_DATA_FILEPATH environment variable is not set.")
 
-    spin_df = pd.read_csv(path_to_spin_file)
+    spin_df = pd.read_csv(path_to_spin_file, comment="#")
     # Combine spin_start_sec and spin_start_subsec to get the spin start
     # time in seconds. The spin start subseconds are in milliseconds.
     spin_df["spin_start_time"] = (
@@ -197,8 +197,8 @@ def get_spacecraft_spin_phase(
     # array([0, 15, 30, 45, 60])
     # >>> np.searchsorted(df['a'], [0, 13, 15, 32, 70], side='right')
     # array([1, 1, 2, 3, 5])
-    last_spin_indices = np.searchsorted(
-        spin_df["spin_start_time"], query_met_times, side="right"
+    last_spin_indices = (
+        np.searchsorted(spin_df["spin_start_time"], query_met_times, side="right") - 1
     )
     # Make sure input times are within the bounds of spin data
     spin_df_start_time = spin_df["spin_start_time"].values[0]
@@ -207,7 +207,7 @@ def get_spacecraft_spin_phase(
     )
     input_start_time = query_met_times.min()
     input_end_time = query_met_times.max()
-    if input_start_time < spin_df_start_time or input_end_time > spin_df_end_time:
+    if input_start_time < spin_df_start_time or input_end_time >= spin_df_end_time:
         raise ValueError(
             f"Query times, {query_met_times} are outside of the spin data range, "
             f"{spin_df_start_time, spin_df_end_time}."
