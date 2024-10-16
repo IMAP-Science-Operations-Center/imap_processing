@@ -205,58 +205,6 @@ def get_pointing_frame_exposure_times(
 
     return exposure
 
-def get_bins(
-    az: np.ndarray, el: np.ndarray, energy: float, energy_bins: np.ndarray, spacing: float
-) -> tuple[np.ndarray, np.ndarray, int]:
-    """
-    Compute azimuth, elevation, and energy bin indices.
-
-    Parameters
-    ----------
-    az : np.ndarray
-        The azimuth angles in radians.
-    el : np.ndarray
-        The elevation angles in radians.
-    energy : float
-        The particle energy in keV.
-    energy_bins : np.ndarray
-        Array of energy bin edges.
-    spacing : float
-        Bin spacing in degrees.
-
-    Returns
-    -------
-    az_idx : np.ndarray
-        The azimuth bin indices.
-    el_idx : np.ndarray
-        The elevation bin indices.
-    energy_idx : int
-        The energy bin index.
-    """
-    # Azimuth bin index (azimuth in range [0, 2pi])
-    az_idx = np.floor(az / (2 * np.pi) * (360 / spacing)).astype(int)
-
-    # Elevation bin index (elevation in range [-pi/2, pi/2])
-    el_idx = np.floor((0.5 - el / np.pi) * (180 / spacing)).astype(int)
-
-    # Ensure azimuth and elevation indices are within bounds
-    az_idx = np.clip(az_idx, 0, int(360 / spacing) - 1)
-    el_idx = np.clip(el_idx, 0, int(180 / spacing) - 1)
-
-    # Energy bin index using logical indexing
-    energy_bin_check = (energy >= energy_bins[:, 0]) & (energy < energy_bins[:, 1])
-
-    # Check if energy is out of bounds and assign nearest bin
-    if not np.any(energy_bin_check):
-        if energy >= energy_bins[-1, 1]:
-            energy_idx = len(energy_bins) - 1
-        elif energy <= energy_bins[0, 0]:
-            energy_idx = 0
-    else:
-        energy_idx = np.argmax(energy_bin_check)
-
-    return az_idx, el_idx, energy_idx
-
 
 @ensure_spice
 @typing.no_type_check
@@ -313,6 +261,7 @@ def get_helio_exposure_times(
     x, y, z = spherical_to_cartesian(np.ones(el_grid.shape),
                                      np.radians(az_grid),
                                      np.radians(el_grid))
+    # stopped here
     r_dps = np.vstack([x.ravel(), y.ravel(), z.ravel()])
 
     # 2D array with dimensions (az, el).
@@ -326,7 +275,6 @@ def get_helio_exposure_times(
     v = np.column_stack((spacecraft_velocity[0],
                          spacecraft_velocity[1],
                          spacecraft_velocity[2]))
-
 
     for i, energy_midpoint in enumerate(energy_midpoints):
         # Convert the midpoint energy to a velocity (km/s)
