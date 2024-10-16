@@ -44,7 +44,7 @@ def met_to_j2000ns(
     return np.asarray(_sct2e_wrapper(sclk_ticks) * 1e9, dtype=np.int64)
 
 
-def j2000ns_to_j2000s(j2000ns: npt.ArrayLike) -> npt.NDArray[np.float64]:
+def j2000ns_to_j2000s(j2000ns: npt.ArrayLike) -> npt.NDArray[float]:
     """
     Convert the J2000 epoch nanoseconds to J2000 epoch seconds.
 
