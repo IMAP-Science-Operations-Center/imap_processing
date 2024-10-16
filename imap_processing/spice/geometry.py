@@ -270,10 +270,10 @@ def get_spacecraft_to_instrument_spin_phase_offset(instrument: SpiceFrame) -> fl
     """
     Get the spin phase offset from the spacecraft to the instrument.
 
-    The spin phase offset is can be calculated using the instrument frame SPICE
-    kernel and the proper knowledge about which axis of the instrument frame
-    to use (typically the boresight). For now, the offset is a fixed lookup
-    based on Table 1: Nominal Instrument to S/C CS Transformations in 7516-0011_drw.pdf
+    For now, the offset is a fixed lookup based on `Table 1: Nominal Instrument
+    to S/C CS Transformations` in document `7516-0011_drw.pdf`. These fixed
+    values will need to be updated based on calibration data or retrieved using
+    SPICE and the latest IMAP frame kernel.
 
     Parameters
     ----------
