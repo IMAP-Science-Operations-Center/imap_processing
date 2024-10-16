@@ -124,7 +124,6 @@ def test_get_spin_data():
     }, "Spin data must have the specified fields."
 
 
-@pytest.mark.usefixtures("_set_spin_data_filepath")
 @pytest.mark.parametrize(
     "instrument",
     [
@@ -142,12 +141,16 @@ def test_get_spin_data():
         SpiceFrame.IMAP_MAG,
     ],
 )
-def test_get_instrument_spin_phase(instrument):
+def test_get_instrument_spin_phase(instrument, fake_spin_data):
     """Test coverage for get_instrument_spin_phase()"""
-    ets = np.arange(18) + 453051323.0
+    ets = np.array([7.5, 30, 61, 75, 106, 121, 136])
+    expected_nan_mask = np.array([False, False, True, False, True, True, False])
     inst_phase = get_instrument_spin_phase(ets, instrument)
     assert inst_phase.shape == ets.shape
-    assert np.logical_and(0 <= inst_phase, inst_phase < 1).all()
+    np.testing.assert_array_equal(np.isnan(inst_phase), expected_nan_mask)
+    assert np.logical_and(
+        0 <= inst_phase[~expected_nan_mask], inst_phase[~expected_nan_mask] < 1
+    ).all()
 
 
 @pytest.mark.parametrize(

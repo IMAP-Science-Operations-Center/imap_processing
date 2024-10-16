@@ -243,7 +243,7 @@ def get_instrument_spin_phase(
     Get the instrument spin phase for the input query times.
 
     Formula to calculate spin phase:
-        `instrument_spin_phase = (spacecraft_spin_phase + instrument_spin_offset) % 1
+        instrument_spin_phase = (spacecraft_spin_phase + instrument_spin_offset) % 1
 
     Parameters
     ----------
