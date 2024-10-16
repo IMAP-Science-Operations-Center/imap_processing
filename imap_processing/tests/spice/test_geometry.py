@@ -9,8 +9,10 @@ from imap_processing.spice.geometry import (
     SpiceBody,
     SpiceFrame,
     frame_transform,
+    get_instrument_spin_phase,
     get_rotation_matrix,
     get_spacecraft_spin_phase,
+    get_spacecraft_to_instrument_spin_phase_offset,
     get_spin_data,
     imap_state,
     instrument_pointing,
@@ -120,6 +122,58 @@ def test_get_spin_data():
         "thruster_firing",
         "spin_start_time",
     }, "Spin data must have the specified fields."
+
+
+@pytest.mark.parametrize(
+    "instrument",
+    [
+        SpiceFrame.IMAP_LO,
+        SpiceFrame.IMAP_HI_45,
+        SpiceFrame.IMAP_HI_90,
+        SpiceFrame.IMAP_ULTRA_45,
+        SpiceFrame.IMAP_ULTRA_90,
+        SpiceFrame.IMAP_SWAPI,
+        SpiceFrame.IMAP_IDEX,
+        SpiceFrame.IMAP_CODICE,
+        SpiceFrame.IMAP_HIT,
+        SpiceFrame.IMAP_SWE,
+        SpiceFrame.IMAP_GLOWS,
+        SpiceFrame.IMAP_MAG,
+    ],
+)
+def test_get_instrument_spin_phase(instrument, fake_spin_data):
+    """Test coverage for get_instrument_spin_phase()"""
+    met_times = np.array([7.5, 30, 61, 75, 106, 121, 136])
+    expected_nan_mask = np.array([False, False, True, False, True, True, False])
+    inst_phase = get_instrument_spin_phase(met_times, instrument)
+    assert inst_phase.shape == met_times.shape
+    np.testing.assert_array_equal(np.isnan(inst_phase), expected_nan_mask)
+    assert np.logical_and(
+        0 <= inst_phase[~expected_nan_mask], inst_phase[~expected_nan_mask] < 1
+    ).all()
+
+
+@pytest.mark.parametrize(
+    "instrument, expected_offset",
+    [
+        (SpiceFrame.IMAP_LO, 330 / 360),
+        (SpiceFrame.IMAP_HI_45, 255 / 360),
+        (SpiceFrame.IMAP_HI_90, 285 / 360),
+        (SpiceFrame.IMAP_ULTRA_45, 33 / 360),
+        (SpiceFrame.IMAP_ULTRA_90, 210 / 360),
+        (SpiceFrame.IMAP_SWAPI, 168 / 360),
+        (SpiceFrame.IMAP_IDEX, 90 / 360),
+        (SpiceFrame.IMAP_CODICE, 136 / 360),
+        (SpiceFrame.IMAP_HIT, 30 / 360),
+        (SpiceFrame.IMAP_SWE, 153 / 360),
+        (SpiceFrame.IMAP_GLOWS, 127 / 360),
+        (SpiceFrame.IMAP_MAG, 0 / 360),
+    ],
+)
+def test_get_spacecraft_to_instrument_spin_phase_offset(instrument, expected_offset):
+    """Test coverage for get_spacecraft_to_instrument_spin_phase_offset()"""
+    result = get_spacecraft_to_instrument_spin_phase_offset(instrument)
+    assert result == expected_offset
 
 
 @pytest.mark.parametrize(
