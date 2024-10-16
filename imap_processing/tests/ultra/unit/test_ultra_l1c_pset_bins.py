@@ -3,6 +3,7 @@
 import numpy as np
 import pytest
 import spiceypy as spice
+from matplotlib import pyplot as plt
 
 from imap_processing import imap_module_directory
 from imap_processing.ultra.l1c.ultra_l1c_pset_bins import (
@@ -139,14 +140,64 @@ def test_get_pointing_frame_exposure_times():
 
 
 @pytest.mark.external_kernel()
-def test_et_helio_exposure_times(test_data, kernels):
+def test_et_helio_exposure_times(kernels):
     """Tests get_helio_exposure_times function."""
 
     spice.furnsh(kernels)
-    v, _ = test_data
     constant_exposure = BASE_PATH / "dps_grid45_compressed.cdf"
     start_time = 829485054.185627
     end_time = 829567884.185627
     mid_time = np.average([start_time, end_time])
 
-    get_helio_exposure_times(mid_time, constant_exposure)
+    # Call the function to get the computed 3D exposure array
+    exposure_3d = get_helio_exposure_times(mid_time, constant_exposure)
+
+    # Rebuild the bin edges and midpoints for validation
+    energy_bin_edges, energy_midpoints = build_energy_bins()
+    az_bin_edges, el_bin_edges, az_bin_midpoints, el_bin_midpoints = (
+        build_spatial_bins()
+    )
+
+
+    plt.figure(figsize=(8, 6))
+
+    # Plot the exposure for the given energy bin
+    plt.imshow(exposure_3d[:, :, 0], aspect='auto', origin='lower')
+
+    # Add colorbar with label
+    colorbar = plt.colorbar()
+    colorbar.set_label('Seconds')
+
+    # Set xticks and yticks
+    xticks = np.linspace(0, exposure_3d.shape[1], 9)  # 8 intervals
+    xticklabels = np.linspace(0, 360, 9)  # Azimuth range
+    plt.xticks(xticks, labels=np.round(xticklabels, 1))
+
+    yticks = np.linspace(0, exposure_3d.shape[0], 9)  # 8 intervals
+    yticklabels = np.linspace(-90, 90, 9)  # Elevation range
+    plt.yticks(yticks, labels=np.round(yticklabels, 1))
+
+    # Set axis labels
+    plt.xlabel('Azimuth (deg)')
+    plt.ylabel('Elevation (deg)')
+
+    plt.show()
+
+    # Check the dimensions of the exposure_3d array
+    assert exposure_3d.shape == (len(az_bin_midpoints), len(el_bin_midpoints), len(energy_midpoints))
+
+    # Test the azimuth and elevation binning by back-calculating based on the exposure_3d bins
+    for i in range(len(energy_midpoints)):
+        for az_idx in range(len(az_bin_midpoints)):
+            for el_idx in range(len(el_bin_midpoints)):
+                # Get the azimuth and elevation lower/upper bin edges
+                az_lower_edge = az_bin_edges[az_idx]
+                az_upper_edge = az_bin_edges[az_idx + 1]
+                el_lower_edge = el_bin_edges[el_idx]
+                el_upper_edge = el_bin_edges[el_idx + 1]
+
+                # Test if exposure_3d bin values match expected sc_exposure values
+                expected_exposure = exposure_3d[az_idx, el_idx, i]
+                sc_exposure_value = get_pointing_frame_exposure_times(constant_exposure, 5760, "45")[az_idx, el_idx]
+
+                assert expected_exposure == sc_exposure_value

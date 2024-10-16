@@ -205,6 +205,58 @@ def get_pointing_frame_exposure_times(
 
     return exposure
 
+def get_bins(
+    az: np.ndarray, el: np.ndarray, energy: float, energy_bins: np.ndarray, spacing: float
+) -> tuple[np.ndarray, np.ndarray, int]:
+    """
+    Compute azimuth, elevation, and energy bin indices.
+
+    Parameters
+    ----------
+    az : np.ndarray
+        The azimuth angles in radians.
+    el : np.ndarray
+        The elevation angles in radians.
+    energy : float
+        The particle energy in keV.
+    energy_bins : np.ndarray
+        Array of energy bin edges.
+    spacing : float
+        Bin spacing in degrees.
+
+    Returns
+    -------
+    az_idx : np.ndarray
+        The azimuth bin indices.
+    el_idx : np.ndarray
+        The elevation bin indices.
+    energy_idx : int
+        The energy bin index.
+    """
+    # Azimuth bin index (azimuth in range [0, 2pi])
+    az_idx = np.floor(az / (2 * np.pi) * (360 / spacing)).astype(int)
+
+    # Elevation bin index (elevation in range [-pi/2, pi/2])
+    el_idx = np.floor((0.5 - el / np.pi) * (180 / spacing)).astype(int)
+
+    # Ensure azimuth and elevation indices are within bounds
+    az_idx = np.clip(az_idx, 0, int(360 / spacing) - 1)
+    el_idx = np.clip(el_idx, 0, int(180 / spacing) - 1)
+
+    # Energy bin index using logical indexing
+    energy_bin_check = (energy >= energy_bins[:, 0]) & (energy < energy_bins[:, 1])
+
+    # Check if energy is out of bounds and assign nearest bin
+    if not np.any(energy_bin_check):
+        if energy >= energy_bins[-1, 1]:
+            energy_idx = len(energy_bins) - 1
+        elif energy <= energy_bins[0, 0]:
+            energy_idx = 0
+    else:
+        energy_idx = np.argmax(energy_bin_check)
+
+    return az_idx, el_idx, energy_idx
+
 
 @ensure_spice
 @typing.no_type_check
@@ -256,8 +308,6 @@ def get_helio_exposure_times(
     exposure_3d = np.zeros((len(az_bin_midpoints),
                             len(el_bin_midpoints),
                             len(energy_midpoints)))
-    az_bin_midpoints = np.arange(0.25, 360, 0.5)
-    el_bin_midpoints = np.arange(-89.75, 90, 0.5)
     az_grid, el_grid =  np.meshgrid(az_bin_midpoints, el_bin_midpoints[::-1])
 
     x, y, z = spherical_to_cartesian(np.ones(el_grid.shape),
@@ -291,17 +341,17 @@ def get_helio_exposure_times(
         # Stopped here
         r_magnitudes = np.linalg.norm(helio_velocity)
         r_helio_normalized = helio_velocity.T / np.linalg.norm(helio_velocity.T, axis=1, keepdims=True)
-        az, el, _ = cartesian_to_spherical(r_helio_normalized)
+        az, el, _ = cartesian_to_spherical(-r_helio_normalized)
 
-        # Determine the bin indices for azimuth and elevation
-        az_index = np.digitize(az, az_bin_edges) - 1  # Convert to 0-based index
-        el_index = np.digitize(el, el_bin_edges) - 1  # Convert to 0-based index
+        az_idx = np.digitize(az, az_bin_edges) - 1
+        el_idx = np.digitize(el, el_bin_edges) - 1
 
-        # Ensure the indices are within bounds
-        az_index = np.clip(az_index, 0, az_bin_edges - 1)
-        el_index = np.clip(el_index, 0, el_bin_edges - 1)
+        # Ensure az_idx and el_idx are within bounds
+        az_idx = np.clip(az_idx, 0, len(az_bin_edges) - 2)
+        el_idx = np.clip(el_idx, 0, len(el_bin_edges) - 2)
 
-        # Populate the 3D array with the exposure value at the current bin
-        exposure_3d[az_index, el_index, i] = sc_exposure[az_index, el_index]
+        # Populate the exposure_3d array
+        for idx, (azi, eli) in enumerate(zip(az_idx, el_idx)):
+            exposure_3d[azi, eli, i] = sc_exposure[azi, eli]
 
     return exposure_3d
