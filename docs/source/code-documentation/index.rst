@@ -15,6 +15,7 @@ Instruments
 .. toctree::
    :maxdepth: 1
 
+   cli
    codice
    glows
    hi
@@ -37,6 +38,8 @@ tob level modules which contain utility code common to all instruments.
    cdf
    spice
 
+
+Utility functions can be found in modules within the top package level.
 
 Processing
 ----------

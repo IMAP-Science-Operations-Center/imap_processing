@@ -18,6 +18,8 @@ Join the IMAP Git repository to be part of an exciting scientific endeavor, cont
 
 [IMAP Processing Documentation](https://imap-processing.readthedocs.io/en/latest/)
 
+[Getting started](https://imap-processing.readthedocs.io/en/latest/development-guide/getting-started.html)
+
 # Credits
 [LASP (Laboratory of Atmospheric and Space Physics)](https://lasp.colorado.edu/)
 ## Contributors ✨
