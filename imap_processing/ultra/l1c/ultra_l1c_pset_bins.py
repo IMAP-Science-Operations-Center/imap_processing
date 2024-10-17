@@ -253,8 +253,8 @@ def get_helio_exposure_times(
     az_bin_edges, el_bin_edges, az_bin_midpoints, el_bin_midpoints = (
         build_spatial_bins()
     )
-    exposure_3d = np.zeros((len(az_bin_midpoints),
-                            len(el_bin_midpoints),
+    exposure_3d = np.zeros((len(el_bin_midpoints),
+                            len(az_bin_midpoints),
                             len(energy_midpoints)))
     az_grid, el_grid =  np.meshgrid(az_bin_midpoints, el_bin_midpoints[::-1])
 
@@ -264,9 +264,11 @@ def get_helio_exposure_times(
     r_dps = np.vstack([x.flatten(order='F'),
                        y.flatten(order='F'),
                        z.flatten(order='F')])
-    # stopped here
+
     # 2D array with dimensions (az, el).
-    sc_exposure = get_pointing_frame_exposure_times(constant_exposure, 5760, "45")
+    # import matplotlib.pyplot as plt
+    with cdflib.CDF(constant_exposure) as cdf_file:
+        sc_exposure = cdf_file.varget(f"dps_grid45")
 
     # Spacecraft velocity in the pointing (DPS) frame wrt heliosphere.
     state, lt = spice.spkezr("IMAP", time, "IMAP_DPS", "NONE", "SUN")
@@ -287,20 +289,25 @@ def get_helio_exposure_times(
         # v is magnitude in sc system
         spacecraft_velocity = spacecraft_velocity.reshape(3, 1)
         helio_velocity = spacecraft_velocity + v_energy * r_dps
-        # Stopped here
-        r_magnitudes = np.linalg.norm(helio_velocity)
         r_helio_normalized = helio_velocity.T / np.linalg.norm(helio_velocity.T, axis=1, keepdims=True)
         az, el, _ = cartesian_to_spherical(-r_helio_normalized)
 
         az_idx = np.digitize(az, az_bin_edges) - 1
-        el_idx = np.digitize(el, el_bin_edges) - 1
+        el_idx = np.digitize(el, el_bin_edges[::-1]) - 1
+        energy_idx = np.digitize(energy_midpoint, energy_bin_edges) - 1
 
         # Ensure az_idx and el_idx are within bounds
         az_idx = np.clip(az_idx, 0, len(az_bin_edges) - 2)
         el_idx = np.clip(el_idx, 0, len(el_bin_edges) - 2)
+        energy_idx = np.clip(energy_idx, 0, len(energy_bin_edges) - 2)
 
-        # Populate the exposure_3d array
-        for idx, (azi, eli) in enumerate(zip(az_idx, el_idx)):
-            exposure_3d[azi, eli, i] = sc_exposure[azi, eli]
+        # Convert subscripts to linear indices for azimuth and elevation
+        grid_shape = az_grid.shape
+        idx_new = np.ravel_multi_index((el_idx, az_idx), grid_shape, order='F')
+
+        sc_exposure_T = sc_exposure.T
+        # Update exposure array
+        flattened = sc_exposure_T.flatten(order='F')[idx_new]
+        exposure_3d[:, :, i] = flattened.reshape(grid_shape, order='F')
 
     return exposure_3d

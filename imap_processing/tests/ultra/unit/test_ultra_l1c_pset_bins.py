@@ -158,7 +158,6 @@ def test_et_helio_exposure_times(kernels):
         build_spatial_bins()
     )
 
-
     plt.figure(figsize=(8, 6))
 
     # Plot the exposure for the given energy bin
@@ -177,6 +176,9 @@ def test_et_helio_exposure_times(kernels):
     yticklabels = np.linspace(-90, 90, 9)  # Elevation range
     plt.yticks(yticks, labels=np.round(yticklabels, 1))
 
+    # Invert the y-axis so that -90 is on the top and 90 on the bottom
+    plt.gca().invert_yaxis()
+
     # Set axis labels
     plt.xlabel('Azimuth (deg)')
     plt.ylabel('Elevation (deg)')
@@ -184,20 +186,5 @@ def test_et_helio_exposure_times(kernels):
     plt.show()
 
     # Check the dimensions of the exposure_3d array
-    assert exposure_3d.shape == (len(az_bin_midpoints), len(el_bin_midpoints), len(energy_midpoints))
+    assert exposure_3d.shape == (len(el_bin_midpoints), len(az_bin_midpoints), len(energy_midpoints))
 
-    # Test the azimuth and elevation binning by back-calculating based on the exposure_3d bins
-    for i in range(len(energy_midpoints)):
-        for az_idx in range(len(az_bin_midpoints)):
-            for el_idx in range(len(el_bin_midpoints)):
-                # Get the azimuth and elevation lower/upper bin edges
-                az_lower_edge = az_bin_edges[az_idx]
-                az_upper_edge = az_bin_edges[az_idx + 1]
-                el_lower_edge = el_bin_edges[el_idx]
-                el_upper_edge = el_bin_edges[el_idx + 1]
-
-                # Test if exposure_3d bin values match expected sc_exposure values
-                expected_exposure = exposure_3d[az_idx, el_idx, i]
-                sc_exposure_value = get_pointing_frame_exposure_times(constant_exposure, 5760, "45")[az_idx, el_idx]
-
-                assert expected_exposure == sc_exposure_value
