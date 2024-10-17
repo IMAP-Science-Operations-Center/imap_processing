@@ -1,4 +1,4 @@
-"""Functions for furnishing and tracking SPICE kernels."""
+"""Functions that generate, furnish, and retrieve metadata from SPICE kernels."""
 
 import functools
 import logging
@@ -61,6 +61,7 @@ def ensure_spice(
     https://stackoverflow.com/questions/5929107/decorators-with-parameters/60832711#60832711
 
     **Control flow overview:**
+
     1. Try simply calling the wrapped function naively.
         * SUCCESS? Great! We're done.
         * SpiceyError? Go to step 2.
@@ -72,31 +73,34 @@ def ensure_spice(
           step 3.
 
     3. Did we get the parameter time_kernels_only=True?
-    --> YES? We only need LSK and SCLK kernels to run this function. Go fetch
-        those and furnish and return the original function (so it can be re-run).
-    --> NO? Dang. This is sort of the end of the line. Re-raise the error
-        generated from the failed spiceypy function call but add a better
-        message to it.
+        * YES? We only need LSK and SCLK kernels to run this function. Go fetch
+          those and furnish and return the original function (so it can be re-run).
+        * NO? Dang. This is sort of the end of the line. Re-raise the error
+          generated from the failed spiceypy function call but add a better
+          message to it.
 
     Examples
     --------
     There are three ways to use this object
 
     1. A decorator with no arguments
+
         >>> @ensure_spice
         ... def my_spicey_func(a, b):
         ...     pass
 
     2. A decorator with parameters. This is useful
-    if we only need the latest SCLK and LSK kernels for the function involved.
+       if we only need the latest SCLK and LSK kernels for the function involved.
+
         >>> @ensure_spice(time_kernels_only=True)
         ... def my_spicey_time_func(a, b):
         ...     pass
 
     3. An explicit wrapper function, providing a dynamically set value for
-    parameters, e.g. time_kernels_only
+       parameters, e.g. time_kernels_only
+
         >>> wrapped = ensure_spice(spicey_func, time_kernels_only=True)
-        ... result = wrapped(*args, **kwargs)
+        ... result = wrapped(args, kwargs)
     """
 
     def _decorator(func: Callable[..., Callable]) -> Callable:
@@ -212,9 +216,9 @@ def create_pointing_frame(pointing_frame_path: Path, ck_path: Path) -> None:
 
     Parameters
     ----------
-    pointing_frame_path : Path
+    pointing_frame_path : pathlib.Path
         Location of pointing frame kernel.
-    ck_path : Path
+    ck_path : pathlib.Path
         Location of the CK kernel.
 
     Notes

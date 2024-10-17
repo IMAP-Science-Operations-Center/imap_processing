@@ -9,8 +9,10 @@ from imap_processing.spice.geometry import (
     SpiceBody,
     SpiceFrame,
     frame_transform,
+    get_instrument_spin_phase,
     get_rotation_matrix,
     get_spacecraft_spin_phase,
+    get_spacecraft_to_instrument_spin_phase_offset,
     get_spin_data,
     imap_state,
     instrument_pointing,
@@ -41,51 +43,60 @@ def test_imap_state_ecliptic(use_test_metakernel):
     assert state.shape == (6,)
 
 
-@pytest.mark.usefixtures("_set_spin_data_filepath")
+@pytest.fixture()
+def fake_spin_data(monkeypatch, spice_test_data_path):
+    """Generate fake spin dataframe for testing"""
+    fake_spin_path = spice_test_data_path / "fake_spin_data.csv"
+    monkeypatch.setenv("SPIN_DATA_FILEPATH", str(fake_spin_path))
+    return fake_spin_path
+
+
 @pytest.mark.parametrize(
-    "query_met_times, expected_type, expected_length",
+    "query_met_times, expected",
     [
-        (453051323.0, float, None),  # Scalar test
-        (np.array([453051323.0, 453051324.0]), float, 2),  # Array test
-        (np.array([]), None, 0),  # Empty array test
-        (np.array([453051323.0]), float, 1),  # Single element array test
-        # 452995203.0 is a midnight time which should have invalid spin
-        # phase and period flags on in the spin data file. The spin phase
-        # should be invalid.
-        (452995203.0, np.nan, None),
-        # Test that five minutes after midnight is also invalid since
-        # first 10 minutes after midnight are invalid.
-        (np.arange(452995203.0, 452995203.0 + 300), np.nan, 300),
+        (15, 0.0),  # Scalar test
+        (np.array([15.1, 30.1]), np.array([0.1 / 15, 0.1 / 15])),  # Array test
+        (np.array([]), None),  # Empty array test
+        (np.array([50]), np.array([5 / 15])),  # Single element array test
+        # The first spin has thruster firing set, but should return valid value
+        (5.0, 5 / 15),
+        # Test invalid spin period flag causes nan
+        (106.0, np.nan),
+        # Test invalid spin phase flag causes nans
+        (np.array([121, 122, 123]), np.full(3, np.nan)),
+        # Test that invalid spin period causes nans
+        (np.array([110, 111]), np.full(2, np.nan)),
+        # Test for time in missing spin
+        (65, np.nan),
+        (np.array([65.1, 66]), np.full(2, np.nan)),
+        # Combined test
         (
-            [453011323.0],
-            np.nan,
-            1,
-        ),  # Test for spin phase that's outside of spin phase range
-        (
-            453011323.0,
-            np.nan,
-            None,
-        ),  # Test for spin phase that's outside of spin phase range
+            np.array([7.5, 30, 61, 75, 106, 121, 136]),
+            np.array([0.5, 0, np.nan, 0, np.nan, np.nan, 1 / 15]),
+        ),
     ],
 )
-def test_get_spacecraft_spin_phase(query_met_times, expected_type, expected_length):
+def test_get_spacecraft_spin_phase(query_met_times, expected, fake_spin_data):
     """Test get_spacecraft_spin_phase() with generated spin data."""
     # Call the function
     spin_phases = get_spacecraft_spin_phase(query_met_times=query_met_times)
 
-    # Check the type of the result
-    if expected_type is np.nan:
-        assert np.isnan(spin_phases).all(), "Spin phase must be NaN."
-    elif isinstance(expected_type, float):
+    # Test the returned type
+    if isinstance(expected, float):
         assert isinstance(spin_phases, float), "Spin phase must be a float."
-
-    # If the expected length is None, it means we're testing a scalar
-    if expected_length is None:
-        assert isinstance(spin_phases, float), "Spin phase must be a float."
+    elif expected is None:
+        assert len(spin_phases) == 0, "Spin phase must be empty."
     else:
-        assert (
-            len(spin_phases) == expected_length
-        ), f"Spin phase must have length {expected_length} for array input."
+        assert spin_phases.shape == expected.shape
+    # Test the value
+    np.testing.assert_array_almost_equal(spin_phases, expected)
+
+
+@pytest.mark.parametrize("query_met_times", [-1, 165])
+def test_get_spacecraft_spin_phase_value_error(query_met_times, fake_spin_data):
+    """Test get_spacecraft_spin_phase() for raising ValueError."""
+    with pytest.raises(ValueError, match="Query times"):
+        _ = get_spacecraft_spin_phase(query_met_times)
 
 
 @pytest.mark.usefixtures("_set_spin_data_filepath")
@@ -111,6 +122,58 @@ def test_get_spin_data():
         "thruster_firing",
         "spin_start_time",
     }, "Spin data must have the specified fields."
+
+
+@pytest.mark.parametrize(
+    "instrument",
+    [
+        SpiceFrame.IMAP_LO,
+        SpiceFrame.IMAP_HI_45,
+        SpiceFrame.IMAP_HI_90,
+        SpiceFrame.IMAP_ULTRA_45,
+        SpiceFrame.IMAP_ULTRA_90,
+        SpiceFrame.IMAP_SWAPI,
+        SpiceFrame.IMAP_IDEX,
+        SpiceFrame.IMAP_CODICE,
+        SpiceFrame.IMAP_HIT,
+        SpiceFrame.IMAP_SWE,
+        SpiceFrame.IMAP_GLOWS,
+        SpiceFrame.IMAP_MAG,
+    ],
+)
+def test_get_instrument_spin_phase(instrument, fake_spin_data):
+    """Test coverage for get_instrument_spin_phase()"""
+    met_times = np.array([7.5, 30, 61, 75, 106, 121, 136])
+    expected_nan_mask = np.array([False, False, True, False, True, True, False])
+    inst_phase = get_instrument_spin_phase(met_times, instrument)
+    assert inst_phase.shape == met_times.shape
+    np.testing.assert_array_equal(np.isnan(inst_phase), expected_nan_mask)
+    assert np.logical_and(
+        0 <= inst_phase[~expected_nan_mask], inst_phase[~expected_nan_mask] < 1
+    ).all()
+
+
+@pytest.mark.parametrize(
+    "instrument, expected_offset",
+    [
+        (SpiceFrame.IMAP_LO, 330 / 360),
+        (SpiceFrame.IMAP_HI_45, 255 / 360),
+        (SpiceFrame.IMAP_HI_90, 285 / 360),
+        (SpiceFrame.IMAP_ULTRA_45, 33 / 360),
+        (SpiceFrame.IMAP_ULTRA_90, 210 / 360),
+        (SpiceFrame.IMAP_SWAPI, 168 / 360),
+        (SpiceFrame.IMAP_IDEX, 90 / 360),
+        (SpiceFrame.IMAP_CODICE, 136 / 360),
+        (SpiceFrame.IMAP_HIT, 30 / 360),
+        (SpiceFrame.IMAP_SWE, 153 / 360),
+        (SpiceFrame.IMAP_GLOWS, 127 / 360),
+        (SpiceFrame.IMAP_MAG, 0 / 360),
+    ],
+)
+def test_get_spacecraft_to_instrument_spin_phase_offset(instrument, expected_offset):
+    """Test coverage for get_spacecraft_to_instrument_spin_phase_offset()"""
+    result = get_spacecraft_to_instrument_spin_phase_offset(instrument)
+    assert result == expected_offset
 
 
 @pytest.mark.parametrize(

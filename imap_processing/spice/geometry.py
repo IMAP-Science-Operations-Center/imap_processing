@@ -2,6 +2,7 @@
 Functions for computing geometry, many of which use SPICE.
 
 Paradigms for developing this module:
+
 * Use @ensure_spice decorator on functions that directly wrap spiceypy functions
 * Vectorize everything at the lowest level possible (e.g. the decorated spiceypy
   wrapper function)
@@ -96,10 +97,11 @@ def imap_state(
     ----------
     et : np.ndarray or float
         Epoch time(s) [J2000 seconds] to get the IMAP state for.
-    ref_frame : SpiceFrame, optional
-        Reference frame which the IMAP state is expressed in.
-    observer : SpiceBody, optional
-        Observing body.
+    ref_frame : SpiceFrame
+        Reference frame which the IMAP state is expressed in. Default is
+        SpiceFrame.ECLIPJ2000.
+    observer : SpiceBody
+        Observing body. Default is SpiceBody.SUN.
 
     Returns
     -------
@@ -121,17 +123,15 @@ def get_spin_data() -> pd.DataFrame:
     It could be s3 filepath that can be used to download the data
     through API or it could be path EFS or Batch volume mount path.
 
-    Spin data should contains the following fields:
-        (
-            spin_number,
-            spin_start_sec,
-            spin_start_subsec,
-            spin_period_sec,
-            spin_period_valid,
-            spin_phase_valid,
-            spin_period_source,
-            thruster_firing
-        )
+    Spin data should contain the following fields:
+        * spin_number
+        * spin_start_sec
+        * spin_start_subsec
+        * spin_period_sec
+        * spin_period_valid
+        * spin_phase_valid
+        * spin_period_source
+        * thruster_firing
 
     Returns
     -------
@@ -145,7 +145,7 @@ def get_spin_data() -> pd.DataFrame:
         # Handle the case where the environment variable is not set
         raise ValueError("SPIN_DATA_FILEPATH environment variable is not set.")
 
-    spin_df = pd.read_csv(path_to_spin_file)
+    spin_df = pd.read_csv(path_to_spin_file, comment="#")
     # Combine spin_start_sec and spin_start_subsec to get the spin start
     # time in seconds. The spin start subseconds are in milliseconds.
     spin_df["spin_start_time"] = (
@@ -197,8 +197,8 @@ def get_spacecraft_spin_phase(
     # array([0, 15, 30, 45, 60])
     # >>> np.searchsorted(df['a'], [0, 13, 15, 32, 70], side='right')
     # array([1, 1, 2, 3, 5])
-    last_spin_indices = np.searchsorted(
-        spin_df["spin_start_time"], query_met_times, side="right"
+    last_spin_indices = (
+        np.searchsorted(spin_df["spin_start_time"], query_met_times, side="right") - 1
     )
     # Make sure input times are within the bounds of spin data
     spin_df_start_time = spin_df["spin_start_time"].values[0]
@@ -207,7 +207,7 @@ def get_spacecraft_spin_phase(
     )
     input_start_time = query_met_times.min()
     input_end_time = query_met_times.max()
-    if input_start_time < spin_df_start_time or input_end_time > spin_df_end_time:
+    if input_start_time < spin_df_start_time or input_end_time >= spin_df_end_time:
         raise ValueError(
             f"Query times, {query_met_times} are outside of the spin data range, "
             f"{spin_df_start_time, spin_df_end_time}."
@@ -235,6 +235,74 @@ def get_spacecraft_spin_phase(
     return spin_phases
 
 
+def get_instrument_spin_phase(
+    query_met_times: Union[float, npt.NDArray],
+    instrument: SpiceFrame,
+) -> Union[float, npt.NDArray]:
+    """
+    Get the instrument spin phase for the input query times.
+
+    Formula to calculate spin phase:
+        instrument_spin_phase = (spacecraft_spin_phase + instrument_spin_offset) % 1
+
+    Parameters
+    ----------
+    query_met_times : float or np.ndarray
+        Query times in Mission Elapsed Time (MET).
+    instrument : SpiceFrame
+        Instrument frame to calculate spin phase for.
+
+    Returns
+    -------
+    spin_phase : float or np.ndarray
+        Instrument spin phase for the input query times. Spin phase is a
+        floating point number in the range [0, 1) corresponding to the
+        spin angle / 360.
+    """
+    spacecraft_spin_phase = get_spacecraft_spin_phase(query_met_times)
+    instrument_spin_phase_offset = get_spacecraft_to_instrument_spin_phase_offset(
+        instrument
+    )
+    return (spacecraft_spin_phase + instrument_spin_phase_offset) % 1
+
+
+def get_spacecraft_to_instrument_spin_phase_offset(instrument: SpiceFrame) -> float:
+    """
+    Get the spin phase offset from the spacecraft to the instrument.
+
+    For now, the offset is a fixed lookup based on `Table 1: Nominal Instrument
+    to S/C CS Transformations` in document `7516-0011_drw.pdf`. These fixed
+    values will need to be updated based on calibration data or retrieved using
+    SPICE and the latest IMAP frame kernel.
+
+    Parameters
+    ----------
+    instrument : SpiceFrame
+        Instrument to get the spin phase offset for.
+
+    Returns
+    -------
+    spacecraft_to_instrument_spin_phase_offset : float
+        The spin phase offset from the spacecraft to the instrument.
+    """
+    # TODO: Implement retrieval from SPICE?
+    offset_lookup = {
+        SpiceFrame.IMAP_LO: 330 / 360,
+        SpiceFrame.IMAP_HI_45: 255 / 360,
+        SpiceFrame.IMAP_HI_90: 285 / 360,
+        SpiceFrame.IMAP_ULTRA_45: 33 / 360,
+        SpiceFrame.IMAP_ULTRA_90: 210 / 360,
+        SpiceFrame.IMAP_SWAPI: 168 / 360,
+        SpiceFrame.IMAP_IDEX: 90 / 360,
+        SpiceFrame.IMAP_CODICE: 136 / 360,
+        SpiceFrame.IMAP_HIT: 30 / 360,
+        SpiceFrame.IMAP_SWE: 153 / 360,
+        SpiceFrame.IMAP_GLOWS: 127 / 360,
+        SpiceFrame.IMAP_MAG: 0 / 360,
+    }
+    return offset_lookup[instrument]
+
+
 @typing.no_type_check
 @ensure_spice
 def frame_transform(
@@ -255,9 +323,9 @@ def frame_transform(
 
     Parameters
     ----------
-    et : float or npt.NDArray
+    et : float or np.ndarray
         Ephemeris time(s) corresponding to position(s).
-    position : npt.NDArray
+    position : np.ndarray
         <x, y, z> vector or array of vectors in reference frame `from_frame`.
         A single position vector may be provided for multiple `et` query times
         but only a single position vector can be provided for a single `et`.
@@ -268,7 +336,7 @@ def frame_transform(
 
     Returns
     -------
-    result : npt.NDArray
+    result : np.ndarray
         3d Cartesian position vector(s) in reference frame `to_frame`.
     """
     if position.ndim == 1:
@@ -316,7 +384,7 @@ def get_rotation_matrix(
 
     Parameters
     ----------
-    et : float or npt.NDArray
+    et : float or np.ndarray
         Ephemeris time(s) for which to get the rotation matrices.
     from_frame : SpiceFrame
         Reference frame to transform from.
@@ -325,10 +393,10 @@ def get_rotation_matrix(
 
     Returns
     -------
-    rotation : npt.NDArray
-        If et is a float, the returned rotation matrix is of shape (3, 3). If
-        et is a np.ndarray, the returned rotation matrix is of shape (n, 3, 3)
-        where n matches the number of elements in et.
+    rotation : np.ndarray
+        If `et` is a float, the returned rotation matrix is of shape `(3, 3)`. If
+        `et` is a np.ndarray, the returned rotation matrix is of shape `(n, 3, 3)`
+        where `n` matches the number of elements in et.
     """
     vec_pxform = np.vectorize(
         spice.pxform,
@@ -354,18 +422,19 @@ def instrument_pointing(
 
     Parameters
     ----------
-    et : float or npt.NDArray
+    et : float or np.ndarray
         Ephemeris time(s) to at which to compute instrument pointing.
     instrument : SpiceFrame
         Instrument reference frame to compute the pointing for.
     to_frame : SpiceFrame
         Reference frame in which the pointing is to be expressed.
-    cartesian : bool, optional
+    cartesian : bool
         If set to True, the pointing is returned in Cartesian coordinates.
+        Defaults to False.
 
     Returns
     -------
-    pointing : npt.NDArray
+    pointing : np.ndarray
         The instrument pointing at the specified times.
     """
     pointing = frame_transform(et, BORESIGHT_LOOKUP[instrument], instrument, to_frame)

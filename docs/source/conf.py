@@ -107,6 +107,8 @@ nitpick_ignore_regex = [
     (r"py:.*", r".*CoDICECompression.*"),
     (r"py:.*", r".*.lo.l0.utils.*"),
     (r"py:.*", r".*.lo.l0.data_classes.*"),
+    (r"py:.*", r".*.hi.l1b.hi_l1b.CoincidenceBitmap.*"),
+    (r"py:.*", r".*.hi.l1b.hi_l1b.TriggerId.*"),
     (r"py:.*", r".*.hit.l0.utils.*"),
     (r"py:.*", r".*.hit.l0.data_classes.*"),
     (r"py:.*", r".*.hit.l1a.*"),
@@ -117,6 +119,9 @@ nitpick_ignore_regex = [
     (r"py:.*", r".*np.ndarray.*"),
     (r"py:.*", r".*numpy._typing._array_like._ScalarType_co.*"),
     (r"py:.*", r".*idex.l1a.TRIGGER_DESCRIPTION.*"),
+    (r"py:.*", r".*.spice.geometry.SpiceBody.*"),
+    (r"py:.*", r".*.spice.geometry.SpiceFrame.*"),
+    (r"py:class", r"numpy._typing.*"),
 ]
 
 # Ignore the inherited members from the <instrument>APID IntEnum class

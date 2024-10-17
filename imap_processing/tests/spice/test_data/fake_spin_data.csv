@@ -1,0 +1,19 @@
+# This is a fake csv file for the sole purpose of testing the get_spacecraft_spin_phase function
+spin_number,spin_start_sec,spin_start_subsec,spin_period_sec,spin_period_valid,spin_phase_valid,spin_period_source,thruster_firing
+# Start with thruster firing
+0,0,0,15.0,1,1,0,1
+# Turn thruster firing off then 3 valid spins
+1,15,0,15.0,1,1,0,0
+2,30,0,15.0,1,1,0,0
+3,45,0,15.0,1,1,0,0
+# Missing spin then 2 good spins
+5,75,0,15.0,1,1,0,0
+6,90,0,15.0,1,1,0,0
+# invalid spin period
+7,105,0,15.0,0,1,0,0
+# invalid spin phase
+8,120,0,15.0,1,0,0,0
+# 1 good spin
+9,135,0,15.0,1,1,0,0
+# Thruster firing on
+10,150,0,15.0,1,1,0,1

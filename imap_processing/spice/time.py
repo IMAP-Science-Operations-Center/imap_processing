@@ -22,12 +22,12 @@ def met_to_j2000ns(
 
     Parameters
     ----------
-    met : array_like
+    met : float, numpy.ndarray
         Number of seconds since epoch according to the spacecraft clock.
 
     Returns
     -------
-    array_like or scalar, int64
+    numpy.ndarray[numpy.int64]
         The mission elapsed time converted to nanoseconds since the J2000 epoch.
 
     Notes

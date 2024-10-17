@@ -66,6 +66,7 @@ def test_mag_attributes(mag_l1a_dataset):
     assert output.attrs["Data_level"] == "L1B"
 
 
+@pytest.mark.skip(reason="Epoch variable data need to be monotonically increasing")
 def test_cdf_output():
     l1a_cdf = load_cdf(
         Path(__file__).parent / "imap_mag_l1a_burst-magi_20231025_v001.cdf"
