@@ -160,7 +160,7 @@ def compute_coincidence_type_and_time_deltas(dataset: xr.Dataset) -> xr.Dataset:
             "delta_t_c1c2",
         ],
         len(dataset.epoch),
-        "hi_de_{0}",
+        att_manager_lookup_str="hi_de_{0}",
     )
     out_ds = dataset.assign(new_data_vars)
 
@@ -276,15 +276,21 @@ def compute_hae_coordinates(dataset: xr.Dataset) -> xr.Dataset:
             "hae_longitude",
         ],
         len(dataset.epoch),
-        "hi_de_{0}",
+        att_manager_lookup_str="hi_de_{0}",
     )
     out_ds = dataset.assign(new_data_vars)
     et = np.asarray(dataset.epoch.values, dtype=np.float64) / 1e9
-    sensor_number = int(dataset.attrs["Logical_source"].split("_")[-1].split("-")[0])
-    lat_lon = instrument_pointing(
-        et, SpiceFrame(f"IMAP_HI_{sensor_number}"), SpiceFrame.ECLIPJ2000
+    # TODO: implement a Hi parser for getting the sensor number
+    sensor_number = int(
+        dataset.attrs["Logical_source"].split("_")[-1].split("-")[0][0:2]
     )
-    out_ds.hae_latitude.values = lat_lon[:, 0]
-    out_ds.hae_longitude.values = lat_lon[:, 1]
+    # TODO: For now, we are using SPICE to compute the look direction for each
+    #   direct event. This will eventually be replaced by the algorithm Paul
+    #   Janzen provided in the Hi Algorithm Document which should be faster
+    pointing_coordinates = instrument_pointing(
+        et, SpiceFrame[f"IMAP_HI_{sensor_number}"], SpiceFrame.ECLIPJ2000
+    )
+    out_ds.hae_latitude.values = pointing_coordinates[:, 0]
+    out_ds.hae_longitude.values = pointing_coordinates[:, 1]
 
     return out_ds
