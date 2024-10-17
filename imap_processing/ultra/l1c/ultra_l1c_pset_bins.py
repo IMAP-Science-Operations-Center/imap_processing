@@ -9,6 +9,7 @@ import spiceypy as spice
 import typing
 
 from imap_processing.spice.kernels import ensure_spice
+from imap_processing.ultra.constants import UltraConstants
 
 # TODO: add species binning.
 
@@ -119,20 +120,20 @@ def cartesian_to_spherical(
     return np.degrees(az), np.degrees(el), magnitude_v
 
 
-def spherical_to_cartesian(r, theta, phi):
+def spherical_to_cartesian(r: np.ndarray, theta: np.ndarray, phi: np.ndarray):
     """
     Convert spherical coordinates to Cartesian coordinates.
 
     Parameters:
-    r : array-like or float
-        Radius (distance from the origin).
-    theta : array-like or float
-        Azimuth angle in radians (measured from the x-axis).
+    r : np.ndarray
+        Radius.
+    theta : np.ndarray
+        Azimuth angle in radians.
     phi : array-like or float
-        Elevation angle in radians (measured from the z-axis).
+        Elevation angle in radians.
 
     Returns:
-    x, y, z : tuple of arrays or floats
+    x, y, z : tuple
         Cartesian coordinates.
     """
     x = r * np.cos(phi) * np.cos(theta)
@@ -233,34 +234,22 @@ def get_helio_exposure_times(
     1. once per pointing
     2. use median time of pointing
     """
-    pointing_cover = spice.ckcov(
-        str("/Users/lasa6858/imap_processing/imap_processing/tests/spice/test_data/sim_1yr_imap_pointing_frame.bc"),
-        -43901, True, "SEGMENT", 0, "TDB"
-    )
-    num_segments = spice.wncard(pointing_cover)
-    _, et_end_pointing_frame = spice.wnfetd(pointing_cover, num_segments - 1)
-
-
-    # Conversion factor for keV to joules.
-    kev_j =1.602180000000000e-16
-    #kev_j = 1.6021766339999e-16
-    # Mass of a hydrogen atom in kilograms.
-    hydrogen_mass = 1.673557500000000e-27
-    #hydrogen_mass = 1.6735575e-27
-
-    # Convert midpoint energy to a velocity.
+    # Get bins and midpoints.
     energy_bin_edges, energy_midpoints = build_energy_bins()
     az_bin_edges, el_bin_edges, az_bin_midpoints, el_bin_midpoints = (
         build_spatial_bins()
     )
+    # Initialize the exposure grid.
     exposure_3d = np.zeros((len(el_bin_midpoints),
                             len(az_bin_midpoints),
                             len(energy_midpoints)))
+
     az_grid, el_grid =  np.meshgrid(az_bin_midpoints, el_bin_midpoints[::-1])
 
     x, y, z = spherical_to_cartesian(np.ones(el_grid.shape),
                                      np.radians(az_grid),
                                      np.radians(el_grid))
+
     r_dps = np.vstack([x.flatten(order='F'),
                        y.flatten(order='F'),
                        z.flatten(order='F')])
@@ -281,7 +270,7 @@ def get_helio_exposure_times(
 
     for i, energy_midpoint in enumerate(energy_midpoints):
         # Convert the midpoint energy to a velocity (km/s)
-        v_energy = np.sqrt(2 * energy_midpoint * kev_j / hydrogen_mass) / 1e3
+        v_energy = np.sqrt(2 * energy_midpoint * UltraConstants.KEV_J / UltraConstants.MASS_H) / 1e3
 
         # 1. spacecraft_velocity[0] at rest wrt to spacecraft
         # 2. at rest wrt to heliosphere
