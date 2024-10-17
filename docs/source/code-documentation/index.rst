@@ -15,6 +15,7 @@ Instruments
 .. toctree::
    :maxdepth: 1
 
+   cli
    codice
    glows
    hi
@@ -26,6 +27,7 @@ Instruments
    swe
    ultra
    cdf
+
 
 Utility functions can be found in modules within the top package level.
 
