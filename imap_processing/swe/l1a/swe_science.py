@@ -119,9 +119,7 @@ def swe_science(l0_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
     # 4. Reshape the data to 180 x 7
     raw_science_array = np.array(
         [
-            np.frombuffer(
-                int(binary_string, 2).to_bytes(1260, byteorder="big"), dtype=np.uint8
-            ).reshape(180, 7)
+            np.frombuffer(binary_string, dtype=np.uint8).reshape(180, 7)
             for binary_string in l0_dataset["science_data"].values
         ]
     )

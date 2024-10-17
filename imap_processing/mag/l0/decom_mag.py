@@ -9,7 +9,7 @@ from pathlib import Path
 
 import numpy as np
 import xarray as xr
-from space_packet_parser import parser, xtcedef
+from space_packet_parser import definitions
 
 from imap_processing import imap_module_directory
 from imap_processing.ccsds.ccsds_data import CcsdsData
@@ -41,24 +41,18 @@ def decom_packets(packet_file_path: str | Path) -> dict[str, list[MagL0]]:
         f"{imap_module_directory}/mag/packet_definitions/MAG_SCI_COMBINED.xml"
     )
 
-    packet_definition = xtcedef.XtcePacketDefinition(xtce_document)
-    mag_parser = parser.PacketParser(packet_definition)
+    packet_definition = definitions.XtcePacketDefinition(xtce_document)
 
     norm_data = []
     burst_data = []
 
     with open(packet_file_path, "rb") as binary_data:
-        mag_packets = mag_parser.generator(binary_data)
+        mag_packets = packet_definition.packet_generator(binary_data)
 
         for packet in mag_packets:
-            apid = packet.header["PKT_APID"].derived_value
+            apid = packet["PKT_APID"]
             if apid in (Mode.BURST, Mode.NORMAL):
-                values = [
-                    item.derived_value
-                    if item.derived_value is not None
-                    else item.raw_value
-                    for item in packet.data.values()
-                ]
+                values = [item.raw_value for item in packet.user_data.values()]
                 if apid == Mode.NORMAL:
                     norm_data.append(MagL0(CcsdsData(packet.header), *values))
                 else:

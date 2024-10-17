@@ -9,6 +9,7 @@ from imap_processing.ultra.l0.ultra_utils import (
     append_fillval,
     parse_event,
 )
+from imap_processing.utils import convert_to_binary_string
 
 
 def read_and_advance(
@@ -238,14 +239,14 @@ def decompress_image(
 
 
 def read_image_raw_events_binary(
-    packet: space_packet_parser.parser.Packet, decom_data: dict
+    packet: space_packet_parser.packets.CCSDSPacket, decom_data: dict
 ) -> dict:
     """
     Convert contents of binary string 'EVENTDATA' into values.
 
     Parameters
     ----------
-    packet : space_packet_parser.parser.Packet
+    packet : space_packet_parser.packets.CCSDSPacket
         Packet.
     decom_data : dict
         Parsed data.
@@ -255,8 +256,8 @@ def read_image_raw_events_binary(
     decom_data : dict
         Each for loop appends to the existing dictionary.
     """
-    binary = packet.data["EVENTDATA"].raw_value
-    count = packet.data["COUNT"].derived_value
+    binary = convert_to_binary_string(packet["EVENTDATA"])
+    count = packet["COUNT"]
     # 166 bits per event
     event_length = 166 if count else 0
 

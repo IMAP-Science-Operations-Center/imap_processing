@@ -31,10 +31,10 @@ def test_aux_enumerated(decom_test_data):
     apid_data = grouped_data[880]
 
     for packet in apid_data:
-        assert packet.data["SPINPERIODVALID"].derived_value == "INVALID"
-        assert packet.data["SPINPHASEVALID"].derived_value == "VALID"
-        assert packet.data["SPINPERIODSOURCE"].derived_value == "NOMINAL"
-        assert packet.data["CATBEDHEATERFLAG"].derived_value == "UNFLAGGED"
+        assert packet["SPINPERIODVALID"] == "INVALID"
+        assert packet["SPINPHASEVALID"] == "VALID"
+        assert packet["SPINPERIODSOURCE"] == "NOMINAL"
+        assert packet["CATBEDHEATERFLAG"] == "UNFLAGGED"
         count += 1
 
     assert count == total_packets
@@ -59,11 +59,11 @@ def test_aux_mode(decom_test_data):
     _, packets = decom_test_data
 
     for packet in packets:
-        if packet.header["PKT_APID"].derived_value == 880:
-            assert packet.data["HWMODE"].derived_value == "MODE0"
-            assert packet.data["IMCENB"].derived_value == "MODE0"
-            assert packet.data["LEFTDEFLECTIONCHARGE"].derived_value == "MODE0"
-            assert packet.data["RIGHTDEFLECTIONCHARGE"].derived_value == "MODE0"
+        if packet["PKT_APID"] == 880:
+            assert packet["HWMODE"] == "MODE0"
+            assert packet["IMCENB"] == "MODE0"
+            assert packet["LEFTDEFLECTIONCHARGE"] == "MODE0"
+            assert packet["RIGHTDEFLECTIONCHARGE"] == "MODE0"
 
 
 @pytest.mark.parametrize(

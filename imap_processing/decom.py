@@ -8,7 +8,7 @@ to decommutate CCSDS packet data using a given XTCE packet definition.
 from pathlib import Path
 from typing import Union
 
-from space_packet_parser import parser, xtcedef
+from space_packet_parser import definitions
 
 
 def decom_packets(
@@ -32,9 +32,8 @@ def decom_packets(
     list
         List of all the unpacked data.
     """
-    packet_definition = xtcedef.XtcePacketDefinition(xtce_packet_definition)
-    packet_parser = parser.PacketParser(packet_definition)
+    packet_definition = definitions.XtcePacketDefinition(xtce_packet_definition)
 
     with open(packet_file, "rb") as binary_data:
-        packet_generator = packet_parser.generator(binary_data)
+        packet_generator = packet_definition.packet_generator(binary_data)
         return list(packet_generator)

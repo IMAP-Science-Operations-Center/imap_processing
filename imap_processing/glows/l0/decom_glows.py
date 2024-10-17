@@ -3,7 +3,7 @@
 from enum import Enum
 from pathlib import Path
 
-from space_packet_parser import parser, xtcedef
+from space_packet_parser import definitions
 
 from imap_processing import imap_module_directory
 from imap_processing.ccsds.ccsds_data import CcsdsData
@@ -49,8 +49,7 @@ def decom_packets(
         f"{imap_module_directory}/glows/packet_definitions/GLX_COMBINED.xml"
     )
 
-    packet_definition = xtcedef.XtcePacketDefinition(xtce_document)
-    glows_parser = parser.PacketParser(packet_definition)
+    packet_definition = definitions.XtcePacketDefinition(xtce_document)
 
     histdata = []
     dedata = []
@@ -58,30 +57,20 @@ def decom_packets(
     filename = packet_file_path.name
 
     with open(packet_file_path, "rb") as binary_data:
-        glows_packets = glows_parser.generator(binary_data)
+        glows_packets = packet_definition.packet_generator(binary_data)
 
         for packet in glows_packets:
-            apid = packet.header["PKT_APID"].derived_value
+            apid = packet["PKT_APID"]
             # Do something with the packet data
             if apid == GlowsParams.HIST_APID.value:
-                values = [
-                    item.derived_value
-                    if item.derived_value is not None
-                    else item.raw_value
-                    for item in packet.data.values()
-                ]
+                values = [item.raw_value for item in packet.user_data.values()]
                 hist_l0 = HistogramL0(
                     __version__, filename, CcsdsData(packet.header), *values
                 )
                 histdata.append(hist_l0)
 
             if apid == GlowsParams.DE_APID.value:
-                values = [
-                    item.derived_value
-                    if item.derived_value is not None
-                    else item.raw_value
-                    for item in packet.data.values()
-                ]
+                values = [item.raw_value for item in packet.user_data.values()]
 
                 de_l0 = DirectEventL0(
                     __version__, filename, CcsdsData(packet.header), *values
