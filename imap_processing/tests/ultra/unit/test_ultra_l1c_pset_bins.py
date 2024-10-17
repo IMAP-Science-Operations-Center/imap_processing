@@ -1,5 +1,6 @@
 "Tests bins for pointing sets"
 
+import cdflib
 import numpy as np
 import pytest
 import spiceypy as spice
@@ -149,8 +150,11 @@ def test_et_helio_exposure_times(kernels):
     end_time = 829567884.185627
     mid_time = np.average([start_time, end_time])
 
+    with cdflib.CDF(constant_exposure) as cdf_file:
+        sc_exposure = cdf_file.varget(f"dps_grid45")
+
     # Call the function to get the computed 3D exposure array
-    exposure_3d = get_helio_exposure_times(mid_time, constant_exposure)
+    exposure_3d = get_helio_exposure_times(mid_time, sc_exposure)
 
     # Rebuild the bin edges and midpoints for validation
     energy_bin_edges, energy_midpoints = build_energy_bins()
