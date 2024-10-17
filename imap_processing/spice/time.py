@@ -44,6 +44,26 @@ def met_to_j2000ns(
     return np.asarray(_sct2e_wrapper(sclk_ticks) * 1e9, dtype=np.int64)
 
 
+def j2000ns_to_j2000s(j2000ns: npt.ArrayLike) -> npt.NDArray[float]:
+    """
+    Convert the J2000 epoch nanoseconds to J2000 epoch seconds.
+
+    The common CDF coordinate `epoch` stores J2000 nanoseconds. SPICE requires
+    J2000 seconds be used. This is a common function to do that conversion.
+
+    Parameters
+    ----------
+    j2000ns : float, numpy.ndarray
+        Number of nanoseconds since the J2000 epoch.
+
+    Returns
+    -------
+    numpy.ndarray[float]
+        Number of seconds since the J2000 epoch.
+    """
+    return np.asarray(j2000ns, dtype=np.float64) / 1e9
+
+
 @typing.no_type_check
 @ensure_spice
 def _sct2e_wrapper(
