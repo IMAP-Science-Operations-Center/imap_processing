@@ -261,9 +261,10 @@ def get_helio_exposure_times(
     x, y, z = spherical_to_cartesian(np.ones(el_grid.shape),
                                      np.radians(az_grid),
                                      np.radians(el_grid))
+    r_dps = np.vstack([x.flatten(order='F'),
+                       y.flatten(order='F'),
+                       z.flatten(order='F')])
     # stopped here
-    r_dps = np.vstack([x.ravel(), y.ravel(), z.ravel()])
-
     # 2D array with dimensions (az, el).
     sc_exposure = get_pointing_frame_exposure_times(constant_exposure, 5760, "45")
 
