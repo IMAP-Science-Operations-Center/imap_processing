@@ -1,7 +1,7 @@
 .. _poetry-link:
 
-Poetry Setup
-============
+Poetry
+======
 
 We are using `Poetry <https://python-poetry.org/docs/>`_ for the dependency management in both ``sds-data-manager`` and ``imap_processing``. All dependency management should go through Poetry.
 
