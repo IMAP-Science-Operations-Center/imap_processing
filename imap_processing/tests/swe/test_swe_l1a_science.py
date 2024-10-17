@@ -1,6 +1,5 @@
 import numpy as np
 import pandas as pd
-import pytest
 
 from imap_processing import imap_module_directory
 from imap_processing.swe.l1a.swe_science import decompressed_counts, swe_science
@@ -97,33 +96,19 @@ def test_swe_science_algorithm(decom_test_data):
     assert len(spin_phase) == expected_length
 
 
-@pytest.mark.skip("Don't have validation data yet")
-def test_decompress_counts(decom_test_data):
+def test_decompress_counts(decom_test_data, l1a_validation_df):
     """Test decompress counts."""
-    test_data_path = imap_module_directory / "tests/swe/decompressed"
-    filepaths = [
-        "20230927173253_1st_quarter_decompressed.csv",
-        "20230927173308_2nd_quarter_decompressed.csv",
-        "20230927173323_3rd_quarter_decompressed.csv",
-        "20230927173238_4th_quarter_decompressed.csv",
-    ]
-    decompressed_data = swe_science(decom_test_data, "001")
+    raw_counts = l1a_validation_df.iloc[:, 1:8]
+    decompressed_counts = l1a_validation_df.iloc[:, 8:15]
 
-    for index in range(len(filepaths)):
-        instrument_decompressed_counts = pd.read_csv(
-            test_data_path / f"{filepaths[index]}", index_col="Index"
-        )
+    l1a_dataset = swe_science(decom_test_data, "001")
 
-        assert (
-            decompressed_data["quarter_cycle"].data[index]
-            == decom_test_data[index].data["QUARTER_CYCLE"].raw_value
-        )
-        sdc_decompressed_counts = (
-            decompressed_data["science_data"].data[index].reshape(180, 7)
-        )
-
-        for i in range(7):
-            cem_decompressed_counts = instrument_decompressed_counts[
-                f"CEM {i+1}"
-            ].values
-            assert np.all(sdc_decompressed_counts[:, i] == cem_decompressed_counts)
+    # compare raw counts
+    assert np.all(
+        l1a_dataset["raw_science_data"].data == raw_counts.values.reshape(29, 180, 7)
+    )
+    # compare decompressed counts
+    assert np.all(
+        l1a_dataset["science_data"].data
+        == decompressed_counts.values.reshape(29, 180, 7)
+    )
