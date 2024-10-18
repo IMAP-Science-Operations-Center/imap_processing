@@ -27,3 +27,9 @@ Our tests are run using pytest:
 
     poetry shell
     pytest
+
+Other Information
+-----------------
+
+Another source of useful links is the `internal IMAP help page <https://lasp.colorado.edu/galaxy/pages/viewpage.action?pageId=193401231>`_, or the
+`infrastructure documentation <https://sds-data-manager.readthedocs.io/en/latest/>`_.
