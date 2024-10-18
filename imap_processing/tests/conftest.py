@@ -100,8 +100,10 @@ def pytest_collection_modifyitems(items):
     | use_test_metakernel | use_test_metakernel |
     +---------------------+---------------------+
 
-    _download_de440s
-    fixture to any test marked with the `external_kernel`
+    Notes
+    -----
+    See the following link for details about this function, also known as a
+    pytest hook:
     https://docs.pytest.org/en/stable/reference/reference.html#pytest.hookspec.pytest_collection_modifyitems
     """
     for item in items:
