@@ -10,6 +10,7 @@ from imap_processing import imap_module_directory
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.hi.utils import HIAPID, HiConstants, create_dataset_variables
 from imap_processing.spice.geometry import SpiceFrame, instrument_pointing
+from imap_processing.spice.time import j2000ns_to_j2000s
 from imap_processing.utils import convert_raw_to_eu
 
 
@@ -279,7 +280,7 @@ def compute_hae_coordinates(dataset: xr.Dataset) -> xr.Dataset:
         att_manager_lookup_str="hi_de_{0}",
     )
     out_ds = dataset.assign(new_data_vars)
-    et = np.asarray(dataset.epoch.values, dtype=np.float64) / 1e9
+    et = j2000ns_to_j2000s(out_ds.epoch.values)
     # TODO: implement a Hi parser for getting the sensor number
     sensor_number = int(
         dataset.attrs["Logical_source"].split("_")[-1].split("-")[0][0:2]
