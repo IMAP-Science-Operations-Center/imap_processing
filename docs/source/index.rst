@@ -14,6 +14,8 @@ The Science Operations Center (SOC) is responsible for the data processing on th
 IMAP mission and being developed at
 `LASP (Laboratory of Atmospheric and Space Physics) <https://lasp.colorado.edu/>`_.
 
+To get started with the project: :ref:`getting-started`.
+
 The explicit code interfaces and structure are described in the :ref:`code-documentation`.
 
 .. toctree::
