@@ -162,14 +162,13 @@ def test_et_helio_exposure_times(kernels):
         build_spatial_bins()
     )
 
-    plt.figure(figsize=(8, 6))
-
     # Plot the exposure for the given energy bin
     plt.imshow(exposure_3d[:, :, 0], aspect='auto', origin='lower')
-
-    # Add colorbar with label
     colorbar = plt.colorbar()
+    plt.gca().invert_yaxis()
     colorbar.set_label('Seconds')
+    plt.xlabel('Azimuth (deg)')
+    plt.ylabel('Elevation (deg)')
 
     # Set xticks and yticks
     xticks = np.linspace(0, exposure_3d.shape[1], 9)  # 8 intervals
@@ -179,13 +178,6 @@ def test_et_helio_exposure_times(kernels):
     yticks = np.linspace(0, exposure_3d.shape[0], 9)  # 8 intervals
     yticklabels = np.linspace(-90, 90, 9)  # Elevation range
     plt.yticks(yticks, labels=np.round(yticklabels, 1))
-
-    # Invert the y-axis so that -90 is on the top and 90 on the bottom
-    plt.gca().invert_yaxis()
-
-    # Set axis labels
-    plt.xlabel('Azimuth (deg)')
-    plt.ylabel('Elevation (deg)')
 
     plt.show()
 
