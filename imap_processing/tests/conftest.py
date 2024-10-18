@@ -90,13 +90,25 @@ def _download_de440s(spice_test_data_path):
 def pytest_collection_modifyitems(items):
     """
     The use of this hook allows modification of test `Items` after tests have
-    been collected. In this case, it automatically adds the _download_de440s
-    fixture to any test marked with the `external_kernel`.
+    been collected. In this case, it automatically adds fixtures based on the
+    following table:
+
+    +---------------------+---------------------+
+    | pytest mark         | fixture added       |
+    +=====================+=====================+
+    | external_kernel     | _download_de440s    |
+    | use_test_metakernel | use_test_metakernel |
+    +---------------------+---------------------+
+
+    _download_de440s
+    fixture to any test marked with the `external_kernel`
     https://docs.pytest.org/en/stable/reference/reference.html#pytest.hookspec.pytest_collection_modifyitems
     """
     for item in items:
         if item.get_closest_marker("external_kernel") is not None:
             item.fixturenames.append("_download_de440s")
+        if item.get_closest_marker("use_test_metakernel") is not None:
+            item.fixturenames.append("use_test_metakernel")
 
 
 @pytest.fixture(scope="session")
@@ -258,10 +270,10 @@ def use_test_metakernel(
 
     2. Specify a different metakernel template
         >>> @pytest.mark.metakernel("other_template_mk.template")
-        ... def test_my_spicey_func(use_test_metakernel):
+        ... def test_my_spicey_func():
         ...     pass
     """
-    marker = request.node.get_closest_marker("metakernel")
+    marker = request.node.get_closest_marker("use_test_metakernel")
     if marker is None:
         yield session_test_metakernel
     else:
