@@ -271,7 +271,7 @@ def use_test_metakernel(
         ...     pass
 
     2. Specify a different metakernel template
-        >>> @pytest.mark.metakernel("other_template_mk.template")
+        >>> @pytest.mark.use_test_metakernel("other_template_mk.template")
         ... def test_my_spicey_func():
         ...     pass
     """

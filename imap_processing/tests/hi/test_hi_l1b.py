@@ -159,6 +159,13 @@ def test_compute_hae_coordinates(mock_instrument_pointing, sensor_number):
 
     # Mock out the instrument_pointing function to avoid needing kernels
     def side_effect_func(et, inst_frame: SpiceFrame, to_frame):
+        """
+        Side effect function to replace `geometry.instrument_pointing`.
+
+        The function signature matches the signature of `instrument_pointing`.
+        The output is the same type and shape as what `instrument_pointing` returns
+        but is filled with values that match the instrument sensor number.
+        """
         return np.full((et.size, 2), 45 if "45" in inst_frame.name else 90)
 
     mock_instrument_pointing.side_effect = side_effect_func
