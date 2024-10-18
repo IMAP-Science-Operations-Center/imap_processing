@@ -45,18 +45,18 @@ def test_swapi_sci_data(decom_test_data, swapi_l0_validation_data_path):
     grouped_data = group_by_apid(decom_test_data)
     sci_packets = grouped_data[SWAPIAPID.SWP_SCI]
     first_data = sci_packets[0]
-    validation_data = raw_validation_data.loc[first_data.data["SHCOARSE"].raw_value]
+    validation_data = raw_validation_data.loc[first_data["SHCOARSE"]]
 
     # compare raw values of validation data
-    for key, value in first_data.data.items():
+    for key, value in first_data.items():
         # check if the data is the same
         if key == "PLAN_ID_SCIENCE":
             # We had to work around this because HK and SCI packet uses
             # PLAN_ID but they uses different length of bits.
-            assert value.raw_value == validation_data["PLAN_ID"]
+            assert value == validation_data["PLAN_ID"]
         elif key == "SPARE_2_SCIENCE":
             # Same for this SPARE_2 as above case
-            assert value.raw_value == validation_data["SPARE_2"]
+            assert value == validation_data["SPARE_2"]
         elif key == "MODE":
             assert value.raw_value == validation_data[key]
         elif "RNG" in key:
@@ -81,7 +81,7 @@ def test_swapi_hk_data(decom_test_data, swapi_l0_validation_data_path):
     grouped_data = group_by_apid(decom_test_data)
     hk_packets = grouped_data[SWAPIAPID.SWP_HK]
     first_data = hk_packets[0]
-    validation_data = raw_validation_data.loc[first_data.data["SHCOARSE"].raw_value]
+    validation_data = raw_validation_data.loc[first_data["SHCOARSE"]]
     bad_keys = [
         "N5_V",
         "SCEM_I",
@@ -95,19 +95,19 @@ def test_swapi_hk_data(decom_test_data, swapi_l0_validation_data_path):
         "CHKSUM",
     ]
     # compare raw values of validation data
-    for key, value in first_data.data.items():
+    for key, value in first_data.items():
         if key == "PLAN_ID_HK":
             # We had to work around this because HK and SCI packet uses
             # PLAN_ID but they uses different length of bits.
-            assert value.raw_value == validation_data["PLAN_ID"]
+            assert value == validation_data["PLAN_ID"]
         elif key == "SPARE_2_HK":
             # Same for this SPARE_2 as PLAN_ID
-            assert value.raw_value == validation_data["SPARE_2"]
+            assert value == validation_data["SPARE_2"]
         elif key == "SHCOARSE":
             # for SHCOARSE we need the name of the column.
             # This is done because pandas removed it from the main columns
             # to make it the index.
-            assert value.raw_value == validation_data.name
+            assert value == validation_data.name
         elif key in bad_keys:
             # TODO: remove this elif after getting good validation data
             # Validation data has wrong value for N5_V

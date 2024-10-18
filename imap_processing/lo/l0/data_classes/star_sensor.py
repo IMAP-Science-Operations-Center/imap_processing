@@ -25,7 +25,7 @@ class StarSensor(LoBase):
 
     Parameters
     ----------
-    packet : space_packet_parser.parser.Packet
+    packet : space_packet_parser.packets.CCSDSPacket
         The packet.
     software_version : str
         Software version.
@@ -60,7 +60,7 @@ class StarSensor(LoBase):
     # must be commented out for the unit tests to run properly
     def __init__(
         self,
-        packet: space_packet_parser.parser.Packet,
+        packet: space_packet_parser.packets.CCSDSPacket,
         software_version: str,
         packet_file_name: str,
     ) -> None:

@@ -18,6 +18,7 @@ import xarray as xr
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.idex.idex_l0 import decom_packets
 from imap_processing.spice.time import met_to_j2000ns
+from imap_processing.utils import convert_to_binary_string
 
 logger = logging.getLogger(__name__)
 
@@ -131,9 +132,9 @@ class PacketParser:
 
         dust_events = {}
         for packet in decom_packet_list:
-            if "IDX__SCI0TYPE" in packet.data:
-                scitype = packet.data["IDX__SCI0TYPE"].raw_value
-                event_number = packet.data["IDX__SCI0EVTNUM"].derived_value
+            if "IDX__SCI0TYPE" in packet:
+                scitype = packet["IDX__SCI0TYPE"]
+                event_number = packet["IDX__SCI0EVTNUM"]
                 if scitype == Scitype.FIRST_PACKET:
                     # Initial packet for new dust event
                     # Further packets will fill in data
@@ -167,7 +168,7 @@ class RawDustEvent:
 
     Parameters
     ----------
-    header_packet : space_packet_parser.parser.Packet
+    header_packet : space_packet_parser.packets.CCSDSPacket
         The FPGA metadata event header.
     data_version : str
         The version of the data product being created.
@@ -217,7 +218,7 @@ class RawDustEvent:
     )
 
     def __init__(
-        self, header_packet: space_packet_parser.parser.Packet, data_version: str
+        self, header_packet: space_packet_parser.packets.CCSDSPacket, data_version: str
     ) -> None:
         """
         Initialize a raw dust event, with an FPGA Header Packet from IDEX.
@@ -230,7 +231,7 @@ class RawDustEvent:
 
         Parameters
         ----------
-        header_packet : space_packet_parser.parser.Packet
+        header_packet : space_packet_parser.packets.CCSDSPacket
             The FPGA metadata event header.
         data_version : str
             Data version for CDF filename, in the format ``vXXX``.
@@ -247,7 +248,7 @@ class RawDustEvent:
 
         # Iterate through the trigger description dictionary and pull out the values
         self.trigger_values = {
-            trigger.name: header_packet.data[trigger.packet_name].raw_value
+            trigger.name: header_packet[trigger.packet_name].raw_value
             for trigger in TRIGGER_DESCRIPTION_DICT.values()
         }
         logger.debug(
@@ -293,7 +294,7 @@ class RawDustEvent:
         else:
             logger.warning("Unknown science type received: [%s]", scitype)
 
-    def _set_impact_time(self, packet: space_packet_parser.parser.Packet) -> None:
+    def _set_impact_time(self, packet: space_packet_parser.packets.CCSDSPacket) -> None:
         """
         Calculate the impact time from the FPGA header information.
 
@@ -302,7 +303,7 @@ class RawDustEvent:
 
         Parameters
         ----------
-        packet : space_packet_parser.parser.Packet
+        packet : space_packet_parser.packets.CCSDSPacket
             The IDEX FPGA header packet.
 
         Notes
@@ -312,9 +313,9 @@ class RawDustEvent:
               testing.
         """
         # Number of seconds since epoch (nominally the launch time)
-        seconds_since_launch = packet.data["SHCOARSE"].derived_value
+        seconds_since_launch = packet["SHCOARSE"]
         # Number of 20 microsecond "ticks" since the last second
-        num_of_20_microsecond_increments = packet.data["SHFINE"].derived_value
+        num_of_20_microsecond_increments = packet["SHFINE"]
         # Number of microseconds since the last second
         microseconds_since_last_second = 20 * num_of_20_microsecond_increments
         # Get the datetime of Jan 1 2012 as the start date
@@ -323,7 +324,7 @@ class RawDustEvent:
         self.impact_time = met_to_j2000ns(met)
 
     def _set_sample_trigger_times(
-        self, packet: space_packet_parser.parser.Packet
+        self, packet: space_packet_parser.packets.CCSDSPacket
     ) -> None:
         """
         Calculate the actual sample trigger time.
@@ -333,7 +334,7 @@ class RawDustEvent:
 
         Parameters
         ----------
-        packet : space_packet_parser.parser.Packet
+        packet : space_packet_parser.packets.CCSDSPacket
             The IDEX FPGA header packet info.
 
         Notes
@@ -353,15 +354,11 @@ class RawDustEvent:
         rather than the number of samples before triggering.
         """
         # Retrieve the number of samples of high gain delay
-        high_gain_delay = packet.data["IDX__TXHDRADC0IDELAY"].raw_value
+        high_gain_delay = packet["IDX__TXHDRADC0IDELAY"]
 
         # Retrieve number of low/high sample pre-trigger blocks
-        num_low_sample_pretrigger_blocks = packet.data[
-            "IDX__TXHDRLSPREBLOCKS"
-        ].derived_value
-        num_high_sample_pretrigger_blocks = packet.data[
-            "IDX__TXHDRHSPREBLOCKS"
-        ].derived_value
+        num_low_sample_pretrigger_blocks = packet["IDX__TXHDRLSPREBLOCKS"]
+        num_high_sample_pretrigger_blocks = packet["IDX__TXHDRHSPREBLOCKS"]
 
         # Calculate the low and high sample trigger times based on the high gain delay
         # and the number of high sample/low sample pretrigger blocks
@@ -488,18 +485,20 @@ class RawDustEvent:
         )
         return time_high_sr_data
 
-    def _populate_bit_strings(self, packet: space_packet_parser.parser.Packet) -> None:
+    def _populate_bit_strings(
+        self, packet: space_packet_parser.packets.CCSDSPacket
+    ) -> None:
         """
         Parse IDEX data packets to populate bit strings.
 
         Parameters
         ----------
-        packet : space_packet_parser.parser.Packet
+        packet : space_packet_parser.packets.CCSDSPacket
             A single science data packet for one of the 6.
             IDEX observables.
         """
-        scitype = packet.data["IDX__SCI0TYPE"].raw_value
-        raw_science_bits = packet.data["IDX__SCI0RAW"].raw_value
+        scitype = packet["IDX__SCI0TYPE"]
+        raw_science_bits = convert_to_binary_string(packet["IDX__SCI0RAW"])
         self._append_raw_data(scitype, raw_science_bits)
 
     def process(self) -> xr.Dataset:
