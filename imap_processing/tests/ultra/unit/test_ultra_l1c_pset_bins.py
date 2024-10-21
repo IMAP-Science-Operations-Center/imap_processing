@@ -4,7 +4,7 @@ import cdflib
 import numpy as np
 import pytest
 import spiceypy as spice
-from matplotlib import pyplot as plt
+from cdflib import CDF
 
 from imap_processing import imap_module_directory
 from imap_processing.ultra.l1c.ultra_l1c_pset_bins import (
@@ -162,25 +162,25 @@ def test_et_helio_exposure_times(kernels):
         build_spatial_bins()
     )
 
-    # Plot the exposure for the given energy bin
-    plt.imshow(exposure_3d[:, :, 0], aspect='auto', origin='lower')
-    colorbar = plt.colorbar()
-    plt.gca().invert_yaxis()
-    colorbar.set_label('Seconds')
-    plt.xlabel('Azimuth (deg)')
-    plt.ylabel('Elevation (deg)')
-
-    # Set xticks and yticks
-    xticks = np.linspace(0, exposure_3d.shape[1], 9)  # 8 intervals
-    xticklabels = np.linspace(0, 360, 9)  # Azimuth range
-    plt.xticks(xticks, labels=np.round(xticklabels, 1))
-
-    yticks = np.linspace(0, exposure_3d.shape[0], 9)  # 8 intervals
-    yticklabels = np.linspace(-90, 90, 9)  # Elevation range
-    plt.yticks(yticks, labels=np.round(yticklabels, 1))
-
-    plt.show()
-
-    # Check the dimensions of the exposure_3d array
     assert exposure_3d.shape == (len(el_bin_midpoints), len(az_bin_midpoints), len(energy_midpoints))
 
+    cdf_files = [
+        ("dps_exposure_helio_45_E1.cdf", "dps_exposure_helio_45_E1"),
+        ("dps_exposure_helio_45_E12.cdf", "dps_exposure_helio_45_E12"),
+        ("dps_exposure_helio_45_E24.cdf", "dps_exposure_helio_45_E24")
+    ]
+
+    cdf_directory = imap_module_directory / "tests" / "ultra" / "test_data" / "l1"
+
+    exposures = []
+
+    for file_name, var_name in cdf_files:
+        file_path = cdf_directory / file_name
+        with CDF(file_path) as cdf_file:
+            exposure_data = cdf_file.varget(var_name)
+            transposed_exposure = np.transpose(exposure_data, (2, 1, 0))
+            exposures.append(transposed_exposure)
+
+    np.array_equal(exposures[0], exposure_3d[:, :, 0])
+    np.array_equal(exposures[1], exposure_3d[:, :, 1])
+    np.array_equal(exposures[2], exposure_3d[:, :, 2])
