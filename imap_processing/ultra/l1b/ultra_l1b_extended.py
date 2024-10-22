@@ -706,10 +706,6 @@ def determine_species_pulse_height(
         Species bin.
     """
     # PH event TOF normalization to Z axis
-    # yaxis - ctof (2048 - number of adc)
-    # either 151 row from top or 151 row from bottom
-    # xaxis - ph (4096 - number of adc)
-    # either 138 column from left or 138 column from right
     ctof = get_ctof(tof, path_length)
     # TODO: need lookup tables
     # placeholder
