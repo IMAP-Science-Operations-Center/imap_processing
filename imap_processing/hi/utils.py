@@ -98,7 +98,7 @@ def parse_filename_like(filename_like: str) -> re.Match:
         r"^(?P<mission>imap)_"  # Required mission
         r"(?P<instrument>[^_]+)_"  # Required instrument
         r"(?P<data_level>[^_]+)_"  # Required data level
-        r"((?P<sensor_num>\d{2})sensor-)?"  # Optional sensor number
+        r"((?P<sensor>\d{2}sensor)?-)?"  # Optional sensor number
         r"(?P<descriptor>[^_]+)"  # Required descriptor
         r"(_(?P<start_date>\d{8}))?"  # Optional start date
         r"(-repoint(?P<repointing>\d{5}))?"  # Optional repointing field
