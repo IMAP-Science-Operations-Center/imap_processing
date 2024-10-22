@@ -52,13 +52,14 @@ def kernels(spice_test_data_path):
 
 def test_build_energy_bins():
     """Tests build_energy_bins function."""
-    energy_bin_edges = build_energy_bins()
+    energy_bin_edges, energy_midpoints = build_energy_bins()
     energy_bin_start = energy_bin_edges[:-1]
     energy_bin_end = energy_bin_edges[1:]
 
     assert energy_bin_start[0] == 0
     assert energy_bin_start[1] == 3.385
     assert len(energy_bin_edges) == 25
+    assert energy_midpoints[0] == (energy_bin_start[0] + energy_bin_end[0])/2
 
     # Comparison to expected values.
     np.testing.assert_allclose(energy_bin_end[1], 4.137, atol=1e-4)
@@ -111,7 +112,7 @@ def test_get_histogram(test_data):
     az_bin_edges, el_bin_edges, az_bin_midpoints, el_bin_midpoints = (
         build_spatial_bins()
     )
-    energy_bin_edges = build_energy_bins()
+    energy_bin_edges, _ = build_energy_bins()
 
     hist = get_histogram(v, energy, az_bin_edges, el_bin_edges, energy_bin_edges)
 
@@ -154,10 +155,8 @@ def test_et_helio_exposure_times(kernels):
     with cdflib.CDF(constant_exposure) as cdf_file:
         sc_exposure = cdf_file.varget(f"dps_grid45")
 
-    # Call the function to get the computed 3D exposure array
     exposure_3d = get_helio_exposure_times(mid_time, sc_exposure)
 
-    # Rebuild the bin edges and midpoints for validation
     energy_bin_edges, energy_midpoints = build_energy_bins()
     az_bin_edges, el_bin_edges, az_bin_midpoints, el_bin_midpoints = (
         build_spatial_bins()
