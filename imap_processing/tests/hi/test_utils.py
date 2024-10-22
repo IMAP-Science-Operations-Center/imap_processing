@@ -30,7 +30,7 @@ def test_hiapid():
     "test_str, compare_dict",
     [
         (
-            "imap_hi_l1b_sensor45-de",
+            "imap_hi_l1b_45sensor-de",
             {
                 "mission": "imap",
                 "instrument": "hi",
@@ -51,7 +51,7 @@ def test_hiapid():
             },
         ),
         (
-            "imap_hi_l1c_sensor90-pset_20250415_v001.cdf",
+            "imap_hi_l1c_90sensor-pset_20250415_v001.cdf",
             {
                 "mission": "imap",
                 "instrument": "hi",
@@ -63,7 +63,7 @@ def test_hiapid():
                 "extension": "cdf",
             },
         ),
-        ("foo_hi_l1c_sensor90-pset_20250415_v001.cdf", None),
+        ("foo_hi_l1c_90sensor-pset_20250415_v001.cdf", None),
         ("imap_hi_l1c", None),
     ],
 )
@@ -81,9 +81,9 @@ def test_parse_filename_like(test_str, compare_dict):
 @pytest.mark.parametrize(
     "test_str, expected",
     [
-        ("imap_hi_l1b_sensor45-de", 45),
-        ("imap_hi_l1c_sensor90-pset_20250415_v001.cdf", 90),
-        ("imap_hi_l1c_sensor{number}", None),
+        ("imap_hi_l1b_45sensor-de", 45),
+        ("imap_hi_l1c_90sensor-pset_20250415_v001.cdf", 90),
+        ("imap_hi_l1c_{number}sensor", None),
     ],
 )
 def test_parse_sensor_number(test_str, expected):
