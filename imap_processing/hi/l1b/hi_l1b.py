@@ -8,7 +8,12 @@ import xarray as xr
 
 from imap_processing import imap_module_directory
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
-from imap_processing.hi.utils import HIAPID, HiConstants, create_dataset_variables
+from imap_processing.hi.utils import (
+    HIAPID,
+    HiConstants,
+    create_dataset_variables,
+    parse_filename_like,
+)
 from imap_processing.spice.geometry import SpiceFrame, instrument_pointing
 from imap_processing.spice.time import j2000ns_to_j2000s
 from imap_processing.utils import convert_raw_to_eu
@@ -56,12 +61,12 @@ def hi_l1b(l1a_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
     logger.info(
         f"Running Hi L1B processing on dataset: {l1a_dataset.attrs['Logical_source']}"
     )
-    logical_source_parts = l1a_dataset.attrs["Logical_source"].split("_")
+    logical_source_parts = parse_filename_like(l1a_dataset.attrs["Logical_source"])
     # TODO: apid is not currently stored in all L1A data but should be.
     #    Use apid to determine what L1B processing function to call
 
     # Housekeeping processing
-    if logical_source_parts[-1].endswith("hk"):
+    if logical_source_parts["descriptor"].endswith("hk"):
         # if packet_enum in (HIAPID.H45_APP_NHK, HIAPID.H90_APP_NHK):
         packet_enum = HIAPID(l1a_dataset["pkt_apid"].data[0])
         conversion_table_path = str(
@@ -78,7 +83,7 @@ def hi_l1b(l1a_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
         )
 
         l1b_dataset.attrs.update(ATTR_MGR.get_global_attributes("imap_hi_l1b_hk_attrs"))
-    elif logical_source_parts[-1].endswith("de"):
+    elif logical_source_parts["descriptor"].endswith("de"):
         l1b_dataset = annotate_direct_events(l1a_dataset)
     else:
         raise NotImplementedError(
@@ -86,12 +91,8 @@ def hi_l1b(l1a_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
             f"{l1a_dataset.attrs['Logical_source']}"
         )
     # Update global attributes
-    # TODO: write a function that extracts the sensor from Logical_source
-    #    some functionality can be found in imap_data_access.file_validation but
-    #    only works on full file names
-    sensor_str = logical_source_parts[-1].split("-")[0]
     l1b_dataset.attrs["Logical_source"] = l1b_dataset.attrs["Logical_source"].format(
-        sensor=sensor_str
+        sensor=logical_source_parts["sensor"]
     )
     # TODO: revisit this
     l1b_dataset.attrs["Data_version"] = data_version
