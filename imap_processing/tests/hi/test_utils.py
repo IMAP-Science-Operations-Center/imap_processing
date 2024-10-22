@@ -5,7 +5,12 @@ import pytest
 import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
-from imap_processing.hi.utils import HIAPID, create_dataset_variables, full_dataarray
+from imap_processing.hi.utils import (
+    HIAPID,
+    create_dataset_variables,
+    full_dataarray,
+    parse_sensor_number,
+)
 
 
 def test_hiapid():
@@ -18,6 +23,24 @@ def test_hiapid():
     hi_apid = HIAPID["H90_SCI_CNT"]
     assert hi_apid.value == 833
     assert hi_apid.sensor == "90sensor"
+
+
+@pytest.mark.parametrize(
+    "test_str, expected",
+    [
+        ("imap_hi_l1b_sensor45-de", 45),
+        ("imap_hi_l1c_sensor90-pset_20250415_v001.cdf", 90),
+        ("imap_hi_l1c_sensor{number}", None),
+    ],
+)
+def test_parse_sensor_number(test_str, expected):
+    """Test coverage for parse_sensor_number function"""
+    if expected:
+        sensor_number = parse_sensor_number(test_str)
+        assert sensor_number == expected
+    else:
+        with pytest.raises(ValueError, match=r"String 'sensor\(45|90\)' not found.*"):
+            _ = parse_sensor_number(test_str)
 
 
 @pytest.mark.parametrize(
