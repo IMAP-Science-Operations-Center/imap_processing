@@ -98,7 +98,7 @@ def parse_filename_like(filename_like: str) -> re.Match:
         r"^(?P<mission>imap)_"  # Required mission
         r"(?P<instrument>[^_]+)_"  # Required instrument
         r"(?P<data_level>[^_]+)_"  # Required data level
-        r"(?:sensor(?P<sensor_num>\d{2})-)?"  # Optional sensor number
+        r"((?P<sensor_num>\d{2})sensor-)?"  # Optional sensor number
         r"(?P<descriptor>[^_]+)"  # Required descriptor
         r"(_(?P<start_date>\d{8}))?"  # Optional start date
         r"(-repoint(?P<repointing>\d{5}))?"  # Optional repointing field
@@ -119,7 +119,7 @@ def parse_sensor_number(full_string: str) -> int:
     Parse the sensor number from a string.
 
     This function uses regex to match any portion of the input string
-    containing "sensor(45|90)".
+    containing "(45|90)sensor".
 
     Parameters
     ----------
@@ -131,7 +131,7 @@ def parse_sensor_number(full_string: str) -> int:
     sensor_number : int
       The integer sensor number. For IMAP-Hi this is 45 or 90.
     """
-    regex_str = r".*?sensor(?P<sensor_num>(45|90)).*?"
+    regex_str = r".*(?P<sensor_num>(45|90))sensor.*?"
     match = re.match(regex_str, full_string)
     if match is None:
         raise ValueError(
