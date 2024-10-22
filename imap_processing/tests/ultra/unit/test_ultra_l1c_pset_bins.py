@@ -59,7 +59,7 @@ def test_build_energy_bins():
     assert energy_bin_start[0] == 0
     assert energy_bin_start[1] == 3.385
     assert len(energy_bin_edges) == 25
-    assert energy_midpoints[0] == (energy_bin_start[0] + energy_bin_end[0])/2
+    assert energy_midpoints[0] == (energy_bin_start[0] + energy_bin_end[0]) / 2
 
     # Comparison to expected values.
     np.testing.assert_allclose(energy_bin_end[1], 4.137, atol=1e-4)
@@ -153,7 +153,7 @@ def test_et_helio_exposure_times(kernels):
     mid_time = np.average([start_time, end_time])
 
     with cdflib.CDF(constant_exposure) as cdf_file:
-        sc_exposure = cdf_file.varget(f"dps_grid45")
+        sc_exposure = cdf_file.varget("dps_grid45")
 
     exposure_3d = get_helio_exposure_times(mid_time, sc_exposure)
 
@@ -162,12 +162,16 @@ def test_et_helio_exposure_times(kernels):
         build_spatial_bins()
     )
 
-    assert exposure_3d.shape == (len(el_bin_midpoints), len(az_bin_midpoints), len(energy_midpoints))
+    assert exposure_3d.shape == (
+        len(el_bin_midpoints),
+        len(az_bin_midpoints),
+        len(energy_midpoints),
+    )
 
     cdf_files = [
         ("dps_exposure_helio_45_E1.cdf", "dps_exposure_helio_45_E1"),
         ("dps_exposure_helio_45_E12.cdf", "dps_exposure_helio_45_E12"),
-        ("dps_exposure_helio_45_E24.cdf", "dps_exposure_helio_45_E24")
+        ("dps_exposure_helio_45_E24.cdf", "dps_exposure_helio_45_E24"),
     ]
 
     cdf_directory = imap_module_directory / "tests" / "ultra" / "test_data" / "l1"
@@ -193,12 +197,14 @@ def test_get_pointing_frame_sensitivity():
     constant_sensitivity = BASE_PATH / "dps_sensitivity45.cdf"
     spins_per_pointing = 5760
     sensitivity = get_pointing_frame_sensitivity(
-        constant_sensitivity, spins_per_pointing, "45",
+        constant_sensitivity,
+        spins_per_pointing,
+        "45",
     )
 
     assert sensitivity.shape == (90, 720, 360)
 
     with cdflib.CDF(constant_sensitivity) as cdf_file:
-        expected_sensitivity = cdf_file.varget(f"dps_sensitivity45") * spins_per_pointing
+        expected_sensitivity = cdf_file.varget("dps_sensitivity45") * spins_per_pointing
 
     assert np.array_equal(sensitivity, expected_sensitivity)

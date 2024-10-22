@@ -1,12 +1,12 @@
 """Module to create bins for pointing sets."""
 
+import typing
 from pathlib import Path
 
 import cdflib
 import numpy as np
-from numpy.typing import NDArray
 import spiceypy as spice
-import typing
+from numpy.typing import NDArray
 
 from imap_processing.spice.kernels import ensure_spice
 from imap_processing.ultra.constants import UltraConstants
@@ -120,11 +120,14 @@ def cartesian_to_spherical(
     return np.degrees(az), np.degrees(el), magnitude_v
 
 
-def spherical_to_cartesian(r: np.ndarray, theta: np.ndarray, phi: np.ndarray):
+def spherical_to_cartesian(
+    r: np.ndarray, theta: np.ndarray, phi: np.ndarray
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Convert spherical coordinates to Cartesian coordinates.
 
-    Parameters:
+    Parameters
+    ----------
     r : np.ndarray
         Radius.
     theta : np.ndarray
@@ -132,7 +135,8 @@ def spherical_to_cartesian(r: np.ndarray, theta: np.ndarray, phi: np.ndarray):
     phi : array-like or float
         Elevation angle in radians.
 
-    Returns:
+    Returns
+    -------
     x, y, z : tuple
         Cartesian coordinates.
     """
@@ -229,7 +233,7 @@ def get_helio_exposure_times(
         A 3D array with dimensions (az, el, energy).
 
     Notes
-    -------
+    -----
     These calculations are performed once per pointing.
     """
     # Get bins and midpoints.
@@ -238,24 +242,22 @@ def get_helio_exposure_times(
         build_spatial_bins()
     )
     # Initialize the exposure grid.
-    exposure_3d = np.zeros((len(el_bin_midpoints),
-                            len(az_bin_midpoints),
-                            len(energy_midpoints)))
+    exposure_3d = np.zeros(
+        (len(el_bin_midpoints), len(az_bin_midpoints), len(energy_midpoints))
+    )
 
     # Create a 3D Cartesian grid from spherical coordinates
     # using azimuth and elevation midpoints.
-    az_grid, el_grid =  np.meshgrid(az_bin_midpoints, el_bin_midpoints[::-1])
+    az_grid, el_grid = np.meshgrid(az_bin_midpoints, el_bin_midpoints[::-1])
 
     # Radial distance.
     r = np.ones(el_grid.shape)
-    x, y, z = spherical_to_cartesian(r,
-                                     np.radians(az_grid),
-                                     np.radians(el_grid))
+    x, y, z = spherical_to_cartesian(r, np.radians(az_grid), np.radians(el_grid))
 
     # Reshape and combine the Cartesian coordinates into a 2D array.
-    cartesian = np.vstack([x.flatten(order='F'),
-                       y.flatten(order='F'),
-                       z.flatten(order='F')])
+    cartesian = np.vstack(
+        [x.flatten(order="F"), y.flatten(order="F"), z.flatten(order="F")]
+    )
 
     # Spacecraft velocity in the pointing (DPS) frame wrt heliosphere.
     state, lt = spice.spkezr("IMAP", time, "IMAP_DPS", "NONE", "SUN")
@@ -266,17 +268,21 @@ def get_helio_exposure_times(
     for i, energy_midpoint in enumerate(energy_midpoints):
         # Convert the midpoint energy to a velocity (km/s).
         # Based on kinetic energy equation: E = 1/2 * m * v^2.
-        energy_velocity = np.sqrt(2 * energy_midpoint * UltraConstants.KEV_J / UltraConstants.MASS_H) / 1e3
+        energy_velocity = (
+            np.sqrt(2 * energy_midpoint * UltraConstants.KEV_J / UltraConstants.MASS_H)
+            / 1e3
+        )
 
         # Use Compton-Getting to transform the velocity wrt spacecraft
         # to the velocity wrt heliosphere.
         # energy_velocity * cartesian -> apply the magnitude of the velocity
         # to every position on the grid in the despun grid.
-        helio_velocity = spacecraft_velocity.reshape(3, 1) + \
-                         energy_velocity * cartesian
+        helio_velocity = spacecraft_velocity.reshape(3, 1) + energy_velocity * cartesian
 
         # Normalized vectors representing the direction of the heliocentric velocity.
-        helio_normalized = helio_velocity.T / np.linalg.norm(helio_velocity.T, axis=1, keepdims=True)
+        helio_normalized = helio_velocity.T / np.linalg.norm(
+            helio_velocity.T, axis=1, keepdims=True
+        )
         # Converts vectors from Cartesian coordinates (x, y, z)
         # into spherical coordinates
         az, el, _ = cartesian_to_spherical(-helio_normalized)
@@ -292,16 +298,15 @@ def get_helio_exposure_times(
         # A 1D array of linear indices used to track the bin_id.
         idx = el_idx + az_idx * az_grid.shape[0]
         # Bins the transposed sc_exposure array.
-        binned_exposure = sc_exposure.T.flatten(order='F')[idx]
+        binned_exposure = sc_exposure.T.flatten(order="F")[idx]
         # Reshape the binned exposure.
-        exposure_3d[:, :, i] = binned_exposure.reshape(az_grid.shape, order='F')
+        exposure_3d[:, :, i] = binned_exposure.reshape(az_grid.shape, order="F")
 
     return exposure_3d
 
 
 def get_pointing_frame_sensitivity(
-        constant_sensitivity: Path,
-        n_spins: int, sensor: str
+    constant_sensitivity: Path, n_spins: int, sensor: str
 ) -> NDArray:
     """
     Compute a 3D array of the sensitivity.
