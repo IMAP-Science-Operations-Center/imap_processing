@@ -577,8 +577,6 @@ def process_swapi_science(
     # TODO: add others like below once add_global_attribute is fixed
     cdf_manager.add_global_attribute("Data_version", data_version)
     l1_global_attrs = cdf_manager.get_global_attributes("imap_swapi_l1_sci")
-    l1_global_attrs["Sweep_table"] = f"{sci_dataset['sweep_table'].data[0]}"
-    l1_global_attrs["Plan_id"] = f"{sci_dataset['plan_id_science'].data[0]}"
     l1_global_attrs["Apid"] = f"{sci_dataset['pkt_apid'].data[0]}"
 
     dataset = xr.Dataset(
@@ -608,6 +606,43 @@ def process_swapi_science(
 
     # Add quality flags to the dataset
     dataset["swp_l1a_flags"] = swp_flags
+
+    # Add other support data
+    dataset["sweep_table"] = xr.DataArray(
+        good_sweep_sci["sweep_table"].data.reshape(total_full_sweeps, 12)[:, 0],
+        name="sweep_table",
+        dims=["epoch"],
+        attrs=cdf_manager.get_variable_attributes("sweep_table"),
+    )
+    dataset["plan_id"] = xr.DataArray(
+        good_sweep_sci["plan_id_science"].data.reshape(total_full_sweeps, 12)[:, 0],
+        name="plan_id",
+        dims=["epoch"],
+        attrs=cdf_manager.get_variable_attributes("plan_id"),
+    )
+    # Add these additional housekeeping support data
+    #   SWP_HK.LUT_CHOICE - Which LUT is in use
+    #   SWP_HK.FPGA_TYPE - Type number of the FPGA
+    #   SWP_HK.FPGA_REV - Revision number of the FPGA
+    dataset["lut_choice"] = xr.DataArray(
+        good_sweep_hk_data["lut_choice"].data.reshape(total_full_sweeps, 12)[:, 0],
+        name="lut_choice",
+        dims=["epoch"],
+        attrs=cdf_manager.get_variable_attributes("lut_choice"),
+    )
+    dataset["fpga_type"] = xr.DataArray(
+        good_sweep_hk_data["fpga_type"].data.reshape(total_full_sweeps, 12)[:, 0],
+        name="fpga_type",
+        dims=["epoch"],
+        attrs=cdf_manager.get_variable_attributes("fpga_type"),
+    )
+    dataset["fpga_rev"] = xr.DataArray(
+        good_sweep_hk_data["fpga_rev"].data.reshape(total_full_sweeps, 12)[:, 0],
+        name="fpga_rev",
+        dims=["epoch"],
+        attrs=cdf_manager.get_variable_attributes("fpga_rev"),
+    )
+
     # ===================================================================
     # Step 4: Calculate uncertainty
     # ===================================================================

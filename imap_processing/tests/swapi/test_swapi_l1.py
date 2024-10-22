@@ -179,8 +179,6 @@ def test_swapi_l1_cdf(swapi_l0_test_data_path):
     processed_data = swapi_l1(test_packet_file, data_version="v001")
 
     assert processed_data[0].attrs["Apid"] == f"{SWAPIAPID.SWP_SCI}"
-    assert processed_data[0].attrs["Plan_id"] == "1"
-    assert processed_data[0].attrs["Sweep_table"] == "1"
 
     # Test CDF File
     cdf_filename = "imap_swapi_l1_sci_20240924_v001.cdf"
