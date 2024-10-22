@@ -153,7 +153,7 @@ def test_process_swapi_science(decom_test_data):
     # Test that we calculated uncertainty correctly
     np.testing.assert_allclose(
         np.sqrt(processed_data["swp_pcem_counts"][0]),
-        processed_data["swp_pcem_err_plus"][0],
+        processed_data["swp_pcem_counts_err_plus"][0],
     )
 
     # make PLAN_ID data incorrect. Now processed data should have less sweeps

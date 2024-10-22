@@ -607,7 +607,7 @@ def process_swapi_science(
     )
 
     # Add quality flags to the dataset
-    dataset["swp_flags"] = swp_flags
+    dataset["swp_l1a_flags"] = swp_flags
     # ===================================================================
     # Step 4: Calculate uncertainty
     # ===================================================================
@@ -619,32 +619,32 @@ def process_swapi_science(
     # Above uncertaintly formula will change in the future.
     # Replace it with actual formula once SWAPI provides it.
     # Right now, we are using sqrt(count) as a placeholder
-    dataset["swp_pcem_err_plus"] = xr.DataArray(
+    dataset["swp_pcem_counts_err_plus"] = xr.DataArray(
         np.sqrt(swp_pcem_counts),
         dims=["epoch", "energy"],
         attrs=cdf_manager.get_variable_attributes("pcem_uncertainty"),
     )
-    dataset["swp_pcem_err_minus"] = xr.DataArray(
+    dataset["swp_pcem_counts_err_minus"] = xr.DataArray(
         np.sqrt(swp_pcem_counts),
         dims=["epoch", "energy"],
         attrs=cdf_manager.get_variable_attributes("pcem_uncertainty"),
     )
-    dataset["swp_scem_err_plus"] = xr.DataArray(
+    dataset["swp_scem_counts_err_plus"] = xr.DataArray(
         np.sqrt(swp_scem_counts),
         dims=["epoch", "energy"],
         attrs=cdf_manager.get_variable_attributes("scem_uncertainty"),
     )
-    dataset["swp_scem_err_minus"] = xr.DataArray(
+    dataset["swp_scem_counts_err_minus"] = xr.DataArray(
         np.sqrt(swp_scem_counts),
         dims=["epoch", "energy"],
         attrs=cdf_manager.get_variable_attributes("scem_uncertainty"),
     )
-    dataset["swp_coin_err_plus"] = xr.DataArray(
+    dataset["swp_coin_counts_err_plus"] = xr.DataArray(
         np.sqrt(swp_coin_counts),
         dims=["epoch", "energy"],
         attrs=cdf_manager.get_variable_attributes("coin_uncertainty"),
     )
-    dataset["swp_coin_err_minus"] = xr.DataArray(
+    dataset["swp_coin_counts_err_minus"] = xr.DataArray(
         np.sqrt(swp_coin_counts),
         dims=["epoch", "energy"],
         attrs=cdf_manager.get_variable_attributes("coin_uncertainty"),
