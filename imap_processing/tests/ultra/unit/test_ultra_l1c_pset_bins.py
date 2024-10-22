@@ -1,4 +1,4 @@
-"Tests bins for pointing sets"
+"Tests pointing sets"
 
 import cdflib
 import numpy as np

@@ -1,4 +1,4 @@
-"""Module to create bins for pointing sets."""
+"""Module to create pointing sets."""
 
 import typing
 from pathlib import Path
