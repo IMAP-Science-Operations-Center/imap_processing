@@ -14,6 +14,7 @@ from imap_processing.ultra.l1c.ultra_l1c_pset_bins import (
     get_helio_exposure_times,
     get_histogram,
     get_pointing_frame_exposure_times,
+    get_pointing_frame_sensitivity,
 )
 
 BASE_PATH = imap_module_directory / "ultra" / "lookup_tables"
@@ -184,3 +185,21 @@ def test_et_helio_exposure_times(kernels):
     np.array_equal(exposures[0], exposure_3d[:, :, 0])
     np.array_equal(exposures[1], exposure_3d[:, :, 1])
     np.array_equal(exposures[2], exposure_3d[:, :, 2])
+
+
+def test_get_pointing_frame_sensitivity():
+    """Tests get_pointing_frame_sensitivity function."""
+
+    # TODO: energy bins need to be modified from N=90 to N=24.
+    constant_sensitivity = BASE_PATH / "dps_sensitivity45.cdf"
+    spins_per_pointing = 5760
+    sensitivity = get_pointing_frame_sensitivity(
+        constant_sensitivity, spins_per_pointing, "45",
+    )
+
+    assert sensitivity.shape == (90, 720, 360)
+
+    with cdflib.CDF(constant_sensitivity) as cdf_file:
+        expected_sensitivity = cdf_file.varget(f"dps_sensitivity45") * spins_per_pointing
+
+    assert np.array_equal(sensitivity, expected_sensitivity)

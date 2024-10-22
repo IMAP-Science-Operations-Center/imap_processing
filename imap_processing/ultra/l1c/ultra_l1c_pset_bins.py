@@ -298,3 +298,31 @@ def get_helio_exposure_times(
         exposure_3d[:, :, i] = binned_exposure.reshape(az_grid.shape, order='F')
 
     return exposure_3d
+
+
+# TODO: will mean sensitivity be L2 or L1C?
+def get_pointing_frame_sensitivity(
+        constant_sensitivity: Path,
+        n_spins: int, sensor: str
+) -> NDArray:
+    """
+    Compute a 3D array of the sensitivity.
+
+    Parameters
+    ----------
+    constant_sensitivity : Path
+        Path to file containing constant sensitivity data.
+    n_spins : int
+        Number of spins per pointing.
+    sensor : str
+        Sensor (45 or 90).
+
+    Returns
+    -------
+    sensitivity : np.ndarray
+        A 3D array with dimensions (az, el, energy).
+    """
+    with cdflib.CDF(constant_sensitivity) as cdf_file:
+        sensitivity = cdf_file.varget(f"dps_sensitivity{sensor}") * n_spins
+
+    return sensitivity
