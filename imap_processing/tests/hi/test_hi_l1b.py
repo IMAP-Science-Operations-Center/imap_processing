@@ -179,7 +179,7 @@ def test_compute_hae_coordinates(mock_instrument_pointing, sensor_number):
     out_ds = compute_hae_coordinates(fake_dataset)
     assert "hae_latitude" in out_ds.data_vars
     assert out_ds.hae_latitude.shape == fake_dataset.epoch.shape
-    assert all(out_ds.hae_latitude.values == sensor_number)
+    np.testing.assert_allclose(out_ds.hae_latitude.values, sensor_number)
     assert "hae_longitude" in out_ds.data_vars
     assert out_ds.hae_longitude.shape == fake_dataset.epoch.shape
-    assert all(out_ds.hae_longitude.values == sensor_number)
+    np.testing.assert_allclose(out_ds.hae_longitude.values, sensor_number)

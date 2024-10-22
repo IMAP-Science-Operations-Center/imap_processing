@@ -257,7 +257,7 @@ def compute_hae_coordinates(dataset: xr.Dataset) -> xr.Dataset:
     """
     Compute HAE latitude and longitude.
 
-    Adds the new variables "hae_latitude" and "hae_longitude", "delta_t_ac1" to
+    Adds the new variables "hae_latitude" and "hae_longitude" to
     the input xarray.Dataset and returns the updated xarray.Dataset.
 
     Parameters
