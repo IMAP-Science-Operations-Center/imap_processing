@@ -13,6 +13,7 @@ from imap_processing.hi.utils import (
     HiConstants,
     create_dataset_variables,
     parse_filename_like,
+    parse_sensor_number,
 )
 from imap_processing.spice.geometry import SpiceFrame, instrument_pointing
 from imap_processing.spice.time import j2000ns_to_j2000s
@@ -282,10 +283,7 @@ def compute_hae_coordinates(dataset: xr.Dataset) -> xr.Dataset:
     )
     out_ds = dataset.assign(new_data_vars)
     et = j2000ns_to_j2000s(out_ds.epoch.values)
-    # TODO: implement a Hi parser for getting the sensor number
-    sensor_number = int(
-        dataset.attrs["Logical_source"].split("_")[-1].split("-")[0][0:2]
-    )
+    sensor_number = parse_sensor_number(dataset.attrs["Logical_source"])
     # TODO: For now, we are using SPICE to compute the look direction for each
     #   direct event. This will eventually be replaced by the algorithm Paul
     #   Janzen provided in the Hi Algorithm Document which should be faster
