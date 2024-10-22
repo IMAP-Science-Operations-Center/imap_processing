@@ -1,16 +1,21 @@
 """Test coverage for imap_processing.hi.l1b.hi_l1b.py"""
 
+from unittest import mock
+
 import numpy as np
 import pytest
 import xarray as xr
 
+from imap_processing.cdf.utils import load_cdf
 from imap_processing.hi.l1a.hi_l1a import hi_l1a
 from imap_processing.hi.l1b.hi_l1b import (
     CoincidenceBitmap,
     compute_coincidence_type_and_time_deltas,
+    compute_hae_coordinates,
     hi_l1b,
 )
-from imap_processing.hi.utils import HIAPID, HiConstants
+from imap_processing.hi.utils import HiConstants
+from imap_processing.spice.geometry import SpiceFrame
 
 
 def test_hi_l1b_hk(hi_l0_test_data_path):
@@ -25,16 +30,19 @@ def test_hi_l1b_hk(hi_l0_test_data_path):
     assert l1b_dataset.attrs["Logical_source"] == "imap_hi_l1b_45sensor-hk"
 
 
-def test_hi_l1b_de(create_de_data, tmp_path):
+@pytest.mark.external_kernel()
+@pytest.mark.use_test_metakernel("imap_ena_sim_metakernel.template")
+def test_hi_l1b_de(hi_l1a_test_data_path):
     """Test coverage for imap_processing.hi.hi_l1b.hi_l1b() with
     direct events L1A as input"""
-    # TODO: once things are more stable, check in an L1A DE file as test data
+    l1a_test_file_path = (
+        hi_l1a_test_data_path / "imap_hi_l1a_45sensor-de_20250415_v000.cdf"
+    )
     # Process using test data
-    bin_data_path = create_de_data(HIAPID.H45_SCI_DE.value)
     data_version = "001"
-    processed_data = hi_l1a(packet_file_path=bin_data_path, data_version=data_version)
+    l1a_dataset = load_cdf(l1a_test_file_path)
 
-    l1b_dataset = hi_l1b(processed_data[0], data_version=data_version)
+    l1b_dataset = hi_l1b(l1a_dataset, data_version=data_version)
     assert l1b_dataset.attrs["Logical_source"] == "imap_hi_l1b_45sensor-de"
     assert len(l1b_dataset.data_vars) == 14
 
@@ -142,3 +150,36 @@ def test_compute_coincidence_type_and_time_deltas(synthetic_trigger_id_and_tof_d
             np.bitwise_and(updated_dataset.coincidence_type, CoincidenceBitmap.C2),
         ),
     )
+
+
+@pytest.mark.parametrize("sensor_number", [45, 90])
+@mock.patch("imap_processing.hi.l1b.hi_l1b.instrument_pointing")
+def test_compute_hae_coordinates(mock_instrument_pointing, sensor_number):
+    """Test coverage for compute_hae_coordinates function."""
+
+    # Mock out the instrument_pointing function to avoid needing kernels
+    def side_effect_func(et, inst_frame: SpiceFrame, to_frame):
+        """
+        Side effect function to replace `geometry.instrument_pointing`.
+
+        The function signature matches the signature of `instrument_pointing`.
+        The output is the same type and shape as what `instrument_pointing` returns
+        but is filled with values that match the instrument sensor number.
+        """
+        return np.full((et.size, 2), 45 if "45" in inst_frame.name else 90)
+
+    mock_instrument_pointing.side_effect = side_effect_func
+
+    # Make a fake dataset with epoch and Logical_source
+    fake_dataset = xr.Dataset(
+        attrs={"Logical_source": f"imap_hi_l1a_{sensor_number}sensor-de"},
+        coords={"epoch": xr.DataArray(np.arange(200), name="epoch", dims=["epoch"])},
+    )
+
+    out_ds = compute_hae_coordinates(fake_dataset)
+    assert "hae_latitude" in out_ds.data_vars
+    assert out_ds.hae_latitude.shape == fake_dataset.epoch.shape
+    np.testing.assert_allclose(out_ds.hae_latitude.values, sensor_number)
+    assert "hae_longitude" in out_ds.data_vars
+    assert out_ds.hae_longitude.shape == fake_dataset.epoch.shape
+    np.testing.assert_allclose(out_ds.hae_longitude.values, sensor_number)

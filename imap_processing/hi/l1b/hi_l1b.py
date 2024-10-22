@@ -9,6 +9,8 @@ import xarray as xr
 from imap_processing import imap_module_directory
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.hi.utils import HIAPID, HiConstants, create_dataset_variables
+from imap_processing.spice.geometry import SpiceFrame, instrument_pointing
+from imap_processing.spice.time import j2000ns_to_j2000s
 from imap_processing.utils import convert_raw_to_eu
 
 
@@ -111,11 +113,10 @@ def annotate_direct_events(l1a_dataset: xr.Dataset) -> xr.Dataset:
         L1B direct event data.
     """
     l1b_dataset = compute_coincidence_type_and_time_deltas(l1a_dataset)
+    l1b_dataset = compute_hae_coordinates(l1b_dataset)
     l1b_de_var_names = [
         "esa_energy_step",
         "spin_phase",
-        "hae_latitude",
-        "hae_longitude",
         "quality_flag",
         "nominal_bin",
     ]
@@ -160,7 +161,7 @@ def compute_coincidence_type_and_time_deltas(dataset: xr.Dataset) -> xr.Dataset:
             "delta_t_c1c2",
         ],
         len(dataset.epoch),
-        "hi_de_{0}",
+        att_manager_lookup_str="hi_de_{0}",
     )
     out_ds = dataset.assign(new_data_vars)
 
@@ -248,5 +249,49 @@ def compute_coincidence_type_and_time_deltas(dataset: xr.Dataset) -> xr.Dataset:
     # ********** delta_t_c1c2 = (t_c2 - t_c1) **********
     # Table: all rows, column 3
     out_ds.delta_t_c1c2.values[tof3_valid] = tof_3_ns[tof3_valid]
+
+    return out_ds
+
+
+def compute_hae_coordinates(dataset: xr.Dataset) -> xr.Dataset:
+    """
+    Compute HAE latitude and longitude.
+
+    Adds the new variables "hae_latitude" and "hae_longitude" to
+    the input xarray.Dataset and returns the updated xarray.Dataset.
+
+    Parameters
+    ----------
+    dataset : xarray.Dataset
+        The partial L1B dataset that has had coincidence type, time deltas, and
+        spin phase computed and added to the L1A data.
+
+    Returns
+    -------
+    xarray.Dataset
+        Updated xarray.Dataset with 2 new variables added.
+    """
+    new_data_vars = create_dataset_variables(
+        [
+            "hae_latitude",
+            "hae_longitude",
+        ],
+        len(dataset.epoch),
+        att_manager_lookup_str="hi_de_{0}",
+    )
+    out_ds = dataset.assign(new_data_vars)
+    et = j2000ns_to_j2000s(out_ds.epoch.values)
+    # TODO: implement a Hi parser for getting the sensor number
+    sensor_number = int(
+        dataset.attrs["Logical_source"].split("_")[-1].split("-")[0][0:2]
+    )
+    # TODO: For now, we are using SPICE to compute the look direction for each
+    #   direct event. This will eventually be replaced by the algorithm Paul
+    #   Janzen provided in the Hi Algorithm Document which should be faster
+    pointing_coordinates = instrument_pointing(
+        et, SpiceFrame[f"IMAP_HI_{sensor_number}"], SpiceFrame.ECLIPJ2000
+    )
+    out_ds.hae_latitude.values = pointing_coordinates[:, 0]
+    out_ds.hae_longitude.values = pointing_coordinates[:, 1]
 
     return out_ds

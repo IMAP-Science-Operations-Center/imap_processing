@@ -36,8 +36,8 @@ def test_imap_state(et, use_test_metakernel):
 
 
 @pytest.mark.external_kernel()
-@pytest.mark.metakernel("imap_ena_sim_metakernel.template")
-def test_imap_state_ecliptic(use_test_metakernel):
+@pytest.mark.use_test_metakernel("imap_ena_sim_metakernel.template")
+def test_imap_state_ecliptic():
     """Tests retrieving IMAP state in the ECLIPJ2000 frame"""
     state = imap_state(798033670)
     assert state.shape == (6,)
