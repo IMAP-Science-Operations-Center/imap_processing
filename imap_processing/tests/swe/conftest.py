@@ -1,3 +1,4 @@
+import pandas as pd
 import pytest
 
 from imap_processing import imap_module_directory
@@ -33,3 +34,43 @@ def decom_test_data_derived():
         packet_file, xtce_document, use_derived_value=True
     )
     return datasets_by_apid[SWEAPID.SWE_SCIENCE]
+
+
+@pytest.fixture(scope="session")
+def l1a_validation_df():
+    """Read validation data from file"""
+    l1_val_path = imap_module_directory / "tests/swe/l1_validation"
+    filename = "swe_l0_unpacked-data_20240510_v001_VALIDATION_L1A.dat"
+
+    # Define column names for validation data
+    column_names = [
+        "shcoarse",
+        "raw_cnt_cem_1",
+        "raw_cnt_cem_2",
+        "raw_cnt_cem_3",
+        "raw_cnt_cem_4",
+        "raw_cnt_cem_5",
+        "raw_cnt_cem_6",
+        "raw_cnt_cem_7",
+        "decom_cnt_cem_1",
+        "decom_cnt_cem_2",
+        "decom_cnt_cem_3",
+        "decom_cnt_cem_4",
+        "decom_cnt_cem_5",
+        "decom_cnt_cem_6",
+        "decom_cnt_cem_7",
+    ]
+
+    # Read the data, specifying na_values and delimiter
+    df = pd.read_csv(
+        l1_val_path / filename,
+        skiprows=10,  # Skip the first 10 rows of comments
+        sep=r"\s*,\s*",  # Regex to handle spaces and commas as delimiters
+        names=column_names,
+        na_values=["", " "],  # Treat empty strings or spaces as NaN
+        engine="python",
+    )
+
+    # Fill NaNs with the previous value
+    df["shcoarse"] = df["shcoarse"].ffill()
+    return df
