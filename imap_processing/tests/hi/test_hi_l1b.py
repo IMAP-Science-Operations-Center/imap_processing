@@ -106,7 +106,7 @@ def synthetic_trigger_id_and_tof_data():
 def test_compute_coincidence_type_and_time_deltas(synthetic_trigger_id_and_tof_data):
     """Test coverage for
     `imap_processing.hi.hi_l1b.compute_coincidence_type_and_time_deltas`."""
-    updated_dataset = compute_coincidence_type_and_time_deltas(
+    new_vars = compute_coincidence_type_and_time_deltas(
         synthetic_trigger_id_and_tof_data[0]
     )
     for var_name in [
@@ -116,38 +116,38 @@ def test_compute_coincidence_type_and_time_deltas(synthetic_trigger_id_and_tof_d
         "delta_t_bc1",
         "delta_t_c1c2",
     ]:
-        assert var_name in updated_dataset.data_vars
+        assert var_name in new_vars
     # verify coincidence type values
     coincidence_hist, bins = np.histogram(
-        updated_dataset.coincidence_type, bins=np.arange(17)
+        new_vars["coincidence_type"], bins=np.arange(17)
     )
     np.testing.assert_array_equal(
         coincidence_hist, synthetic_trigger_id_and_tof_data[1]
     )
     # verify delta_t values are valid in the correct locations
     np.testing.assert_array_equal(
-        updated_dataset.delta_t_ab != updated_dataset.delta_t_ab.FILLVAL,
-        updated_dataset.coincidence_type >= 12,
+        new_vars["delta_t_ab"] != new_vars["delta_t_ab"].FILLVAL,
+        new_vars["coincidence_type"] >= 12,
     )
     np.testing.assert_array_equal(
-        updated_dataset.delta_t_ac1 != updated_dataset.delta_t_ac1.FILLVAL,
+        new_vars["delta_t_ac1"] != new_vars["delta_t_ac1"].FILLVAL,
         np.logical_and(
-            np.bitwise_and(updated_dataset.coincidence_type, CoincidenceBitmap.A.value),
-            np.bitwise_and(updated_dataset.coincidence_type, CoincidenceBitmap.C1),
+            np.bitwise_and(new_vars["coincidence_type"], CoincidenceBitmap.A.value),
+            np.bitwise_and(new_vars["coincidence_type"], CoincidenceBitmap.C1),
         ),
     )
     np.testing.assert_array_equal(
-        updated_dataset.delta_t_bc1 != updated_dataset.delta_t_bc1.FILLVAL,
+        new_vars["delta_t_bc1"] != new_vars["delta_t_bc1"].FILLVAL,
         np.logical_and(
-            np.bitwise_and(updated_dataset.coincidence_type, CoincidenceBitmap.B.value),
-            np.bitwise_and(updated_dataset.coincidence_type, CoincidenceBitmap.C1),
+            np.bitwise_and(new_vars["coincidence_type"], CoincidenceBitmap.B.value),
+            np.bitwise_and(new_vars["coincidence_type"], CoincidenceBitmap.C1),
         ),
     )
     np.testing.assert_array_equal(
-        updated_dataset.delta_t_c1c2 != updated_dataset.delta_t_c1c2.FILLVAL,
+        new_vars["delta_t_c1c2"] != new_vars["delta_t_c1c2"].FILLVAL,
         np.logical_and(
-            np.bitwise_and(updated_dataset.coincidence_type, CoincidenceBitmap.C1),
-            np.bitwise_and(updated_dataset.coincidence_type, CoincidenceBitmap.C2),
+            np.bitwise_and(new_vars["coincidence_type"], CoincidenceBitmap.C1),
+            np.bitwise_and(new_vars["coincidence_type"], CoincidenceBitmap.C2),
         ),
     )
 
@@ -176,10 +176,10 @@ def test_compute_hae_coordinates(mock_instrument_pointing, sensor_number):
         coords={"epoch": xr.DataArray(np.arange(200), name="epoch", dims=["epoch"])},
     )
 
-    out_ds = compute_hae_coordinates(fake_dataset)
-    assert "hae_latitude" in out_ds.data_vars
-    assert out_ds.hae_latitude.shape == fake_dataset.epoch.shape
-    np.testing.assert_allclose(out_ds.hae_latitude.values, sensor_number)
-    assert "hae_longitude" in out_ds.data_vars
-    assert out_ds.hae_longitude.shape == fake_dataset.epoch.shape
-    np.testing.assert_allclose(out_ds.hae_longitude.values, sensor_number)
+    new_vars = compute_hae_coordinates(fake_dataset)
+    assert "hae_latitude" in new_vars
+    assert new_vars["hae_latitude"].shape == fake_dataset.epoch.shape
+    np.testing.assert_allclose(new_vars["hae_latitude"].values, sensor_number)
+    assert "hae_longitude" in new_vars
+    assert new_vars["hae_longitude"].shape == fake_dataset.epoch.shape
+    np.testing.assert_allclose(new_vars["hae_longitude"].values, sensor_number)
