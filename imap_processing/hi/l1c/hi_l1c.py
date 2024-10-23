@@ -6,7 +6,7 @@ import numpy as np
 import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
-from imap_processing.hi.utils import full_dataarray
+from imap_processing.hi.utils import full_dataarray, parse_filename_like
 
 logger = logging.getLogger(__name__)
 
@@ -64,9 +64,9 @@ def generate_pset_dataset(de_dataset: xr.Dataset) -> xr.Dataset:
     pset_dataset : xarray.Dataset
         Ready to be written to CDF.
     """
-    sensor_str = de_dataset.attrs["Logical_source"].split("_")[-1].split("-")[0]
+    logical_source_parts = parse_filename_like(de_dataset.attrs["Logical_source"])
     n_esa_step = de_dataset.esa_step.data.size
-    pset_dataset = allocate_pset_dataset(n_esa_step, sensor_str)
+    pset_dataset = allocate_pset_dataset(n_esa_step, logical_source_parts["sensor"])
     # TODO: Stored epoch value needs to be consistent across ENA instruments.
     #    SPDF says this should be the center of the time bin, but instrument
     #    teams may disagree.

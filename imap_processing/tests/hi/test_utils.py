@@ -5,7 +5,13 @@ import pytest
 import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
-from imap_processing.hi.utils import HIAPID, create_dataset_variables, full_dataarray
+from imap_processing.hi.utils import (
+    HIAPID,
+    create_dataset_variables,
+    full_dataarray,
+    parse_filename_like,
+    parse_sensor_number,
+)
 
 
 def test_hiapid():
@@ -18,6 +24,76 @@ def test_hiapid():
     hi_apid = HIAPID["H90_SCI_CNT"]
     assert hi_apid.value == 833
     assert hi_apid.sensor == "90sensor"
+
+
+@pytest.mark.parametrize(
+    "test_str, compare_dict",
+    [
+        (
+            "imap_hi_l1b_45sensor-de",
+            {
+                "mission": "imap",
+                "instrument": "hi",
+                "data_level": "l1b",
+                "sensor": "45sensor",
+                "descriptor": "de",
+            },
+        ),
+        (
+            "imap_hi_l1a_hist_20250415_v001",
+            {
+                "mission": "imap",
+                "instrument": "hi",
+                "data_level": "l1a",
+                "descriptor": "hist",
+                "start_date": "20250415",
+                "version": "001",
+            },
+        ),
+        (
+            "imap_hi_l1c_90sensor-pset_20250415_v001.cdf",
+            {
+                "mission": "imap",
+                "instrument": "hi",
+                "data_level": "l1c",
+                "sensor": "90sensor",
+                "descriptor": "pset",
+                "start_date": "20250415",
+                "version": "001",
+                "extension": "cdf",
+            },
+        ),
+        ("foo_hi_l1c_90sensor-pset_20250415_v001.cdf", None),
+        ("imap_hi_l1c", None),
+    ],
+)
+def test_parse_filename_like(test_str, compare_dict):
+    """Test coverage for parse_filename_like function"""
+    if compare_dict:
+        match = parse_filename_like(test_str)
+        for key, value in compare_dict.items():
+            assert match[key] == value
+    else:
+        with pytest.raises(ValueError, match="Filename like string did not contain"):
+            _ = parse_filename_like(test_str)
+
+
+@pytest.mark.parametrize(
+    "test_str, expected",
+    [
+        ("imap_hi_l1b_45sensor-de", 45),
+        ("imap_hi_l1c_90sensor-pset_20250415_v001.cdf", 90),
+        ("imap_hi_l1c_{number}sensor", None),
+    ],
+)
+def test_parse_sensor_number(test_str, expected):
+    """Test coverage for parse_sensor_number function"""
+    if expected:
+        sensor_number = parse_sensor_number(test_str)
+        assert sensor_number == expected
+    else:
+        with pytest.raises(ValueError, match=r"String 'sensor\(45|90\)' not found.*"):
+            _ = parse_sensor_number(test_str)
 
 
 @pytest.mark.parametrize(
