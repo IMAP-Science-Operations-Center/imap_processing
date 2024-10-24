@@ -3,9 +3,12 @@
 import typing
 
 import numpy as np
-import spiceypy as spice
 
-from imap_processing.spice.geometry import SpiceFrame, frame_transform
+from imap_processing.spice.geometry import (
+    SpiceFrame,
+    frame_transform,
+    imap_state,
+)
 from imap_processing.spice.kernels import ensure_spice
 
 
@@ -51,10 +54,10 @@ def get_particle_velocity(
     )
 
     # Spacecraft velocity in the pointing (DPS) frame wrt heliosphere.
-    state, lt = spice.spkezr("IMAP", time, "IMAP_DPS", "NONE", "SUN")
+    state = imap_state(time, ref_frame=SpiceFrame.IMAP_DPS)
 
     # Extract the velocity part of the state vector
-    spacecraft_velocity = state[0][3:6]
+    spacecraft_velocity = state[:, 3:6]
 
     # Apply Compton-Getting.
     # Particle velocity in the DPS frame wrt to the heliosphere
