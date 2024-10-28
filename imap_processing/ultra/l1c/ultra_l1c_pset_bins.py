@@ -1,18 +1,17 @@
 """Module to create pointing sets."""
 
-import typing
 from pathlib import Path
 
 import cdflib
 import numpy as np
-import spiceypy as spice
 from numpy.typing import NDArray
 
 from imap_processing.spice.geometry import (
+    SpiceFrame,
     cartesian_to_spherical,
+    imap_state,
     spherical_to_cartesian,
 )
-from imap_processing.spice.kernels import ensure_spice
 from imap_processing.ultra.constants import UltraConstants
 
 # TODO: add species binning.
@@ -148,19 +147,17 @@ def get_pointing_frame_exposure_times(
     return exposure
 
 
-@ensure_spice
-@typing.no_type_check
 def get_helio_exposure_times(
     time: np.ndarray,
     sc_exposure: np.ndarray,
-) -> np.ndarray:
+) -> NDArray:
     """
     Compute a 3D array of the exposure in the helio frame.
 
     Parameters
     ----------
     time : np.ndarray
-        Median time of pointing.
+        Median time of pointing in J2000 seconds.
     sc_exposure : np.ndarray
         Spacecraft exposure.
 
@@ -197,13 +194,13 @@ def get_helio_exposure_times(
         cartesian_coords[..., 2],
     )
 
-    # Reshape and combine the Cartesian coordinates into a 2D array.
+    # Reshape and combine the Cartesian coordinates into a 3D array.
     cartesian = np.vstack(
         [x.flatten(order="F"), y.flatten(order="F"), z.flatten(order="F")]
     )
 
     # Spacecraft velocity in the pointing (DPS) frame wrt heliosphere.
-    state, lt = spice.spkezr("IMAP", time, "IMAP_DPS", "NONE", "SUN")
+    state = imap_state(time, ref_frame=SpiceFrame.IMAP_DPS)
 
     # Extract the velocity part of the state vector
     spacecraft_velocity = state[3:6]
