@@ -1,12 +1,9 @@
 """Pytest plugin module for test data paths"""
 
-import sys
-from pathlib import Path
-
 import numpy as np
 import pytest
 
-from imap_processing import decom
+from imap_processing import decom, imap_module_directory
 from imap_processing.ultra.l0.decom_ultra import process_ultra_apids
 from imap_processing.ultra.l0.ultra_utils import (
     ULTRA_AUX,
@@ -20,7 +17,7 @@ from imap_processing.utils import group_by_apid
 def ccsds_path():
     """Returns the ccsds directory."""
     return (
-        Path(sys.modules[__name__.split(".")[0]].__file__).parent
+        imap_module_directory
         / "tests"
         / "ultra"
         / "test_data"
@@ -33,7 +30,7 @@ def ccsds_path():
 def ccsds_path_events():
     """Returns the ccsds directory."""
     return (
-        Path(sys.modules[__name__.split(".")[0]].__file__).parent
+        imap_module_directory
         / "tests"
         / "ultra"
         / "test_data"
@@ -46,7 +43,7 @@ def ccsds_path_events():
 def ccsds_path_theta_0():
     """Returns the ccsds directory."""
     return (
-        Path(sys.modules[__name__.split(".")[0]].__file__).parent
+        imap_module_directory
         / "tests"
         / "ultra"
         / "test_data"
@@ -60,7 +57,7 @@ def ccsds_path_theta_0():
 def ccsds_path_tof():
     """Returns the ccsds directory."""
     return (
-        Path(sys.modules[__name__.split(".")[0]].__file__).parent
+        imap_module_directory
         / "tests"
         / "ultra"
         / "test_data"
@@ -73,7 +70,7 @@ def ccsds_path_tof():
 def xtce_path():
     """Returns the xtce image rates directory."""
     return (
-        Path(sys.modules[__name__.split(".")[0]].__file__).parent
+        imap_module_directory
         / "ultra"
         / "packet_definitions"
         / "ULTRA_SCI_COMBINED.xml"
@@ -87,14 +84,7 @@ def rates_test_path():
         "ultra45_raw_sc_ultraimgrates_Ultra45_EM_SwRI_Cal_Run7_ThetaScan_"
         "20220530T225054.csv"
     )
-    return (
-        Path(sys.modules[__name__.split(".")[0]].__file__).parent
-        / "tests"
-        / "ultra"
-        / "test_data"
-        / "l0"
-        / filename
-    )
+    return imap_module_directory / "tests" / "ultra" / "test_data" / "l0" / filename
 
 
 @pytest.fixture()
@@ -104,14 +94,7 @@ def aux_test_path():
         "ultra45_raw_sc_auxdata_Ultra45_EM_SwRI_Cal_Run7_ThetaScan_"
         "20220530T225054.csv"
     )
-    return (
-        Path(sys.modules[__name__.split(".")[0]].__file__).parent
-        / "tests"
-        / "ultra"
-        / "test_data"
-        / "l0"
-        / filename
-    )
+    return imap_module_directory / "tests" / "ultra" / "test_data" / "l0" / filename
 
 
 @pytest.fixture()
@@ -121,14 +104,7 @@ def events_test_path():
         "ultra45_raw_sc_ultrarawimgevent_FM45_7P_Phi00_BeamCal_"
         "LinearScan_phi004_theta-001_20230821T121304.csv"
     )
-    return (
-        Path(sys.modules[__name__.split(".")[0]].__file__).parent
-        / "tests"
-        / "ultra"
-        / "test_data"
-        / "l0"
-        / filename
-    )
+    return imap_module_directory / "tests" / "ultra" / "test_data" / "l0" / filename
 
 
 @pytest.fixture()
@@ -138,14 +114,7 @@ def tof_test_path():
         "ultra45_raw_sc_enaphxtofhangimg_FM45_TV_Cycle6_Hot_Ops_"
         "Front212_20240124T063837.csv"
     )
-    return (
-        Path(sys.modules[__name__.split(".")[0]].__file__).parent
-        / "tests"
-        / "ultra"
-        / "test_data"
-        / "l0"
-        / filename
-    )
+    return imap_module_directory / "tests" / "ultra" / "test_data" / "l0" / filename
 
 
 @pytest.fixture()
@@ -154,12 +123,7 @@ def decom_test_data(request, xtce_path):
     apid = request.param["apid"]
     filename = request.param["filename"]
     ccsds_path = (
-        Path(sys.modules[__name__.split(".")[0]].__file__).parent
-        / "tests"
-        / "ultra"
-        / "test_data"
-        / "l0"
-        / filename
+        imap_module_directory / "tests" / "ultra" / "test_data" / "l0" / filename
     )
 
     packets = decom.decom_packets(ccsds_path, xtce_path)
@@ -176,14 +140,7 @@ def events_fsw_comparison_theta_0():
         "ultra45_raw_sc_ultrarawimg_withFSWcalcs_FM45_40P_Phi28p5_"
         "BeamCal_LinearScan_phi2850_theta-000_20240207T102740.csv"
     )
-    return (
-        Path(sys.modules[__name__.split(".")[0]].__file__).parent
-        / "tests"
-        / "ultra"
-        / "test_data"
-        / "l0"
-        / filename
-    )
+    return imap_module_directory / "tests" / "ultra" / "test_data" / "l0" / filename
 
 
 @pytest.fixture()
