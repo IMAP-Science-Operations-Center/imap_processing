@@ -68,52 +68,6 @@ class HiConstants:
     TOF3_BAD_VALUES = (1023,)
 
 
-def parse_filename_like(filename_like: str) -> re.Match:
-    """
-    Parse a filename like string.
-
-    This function is based off of the more strict regex parsing of IMAP science
-    product filenames found in the `imap_data_access` package `ScienceFilePath`
-    class. This function implements a more relaxed regex that can be used on
-    `Logical_source` or `Logical_file_id` found in the CDF file. The required
-    components in the input string are `mission`, `instrument`, `data_level`,
-    and `descriptor`.
-
-    Parameters
-    ----------
-    filename_like : str
-        A filename like string. This includes `Logical_source` or `Logical_file_id`
-        strings.
-
-    Returns
-    -------
-    match : re.Match
-        A dictionary like re.Match object resulting from parsing the input string.
-
-    Raises
-    ------
-    ValueError if the regex fails to match the input string.
-    """
-    regex_str = (
-        r"^(?P<mission>imap)_"  # Required mission
-        r"(?P<instrument>[^_]+)_"  # Required instrument
-        r"(?P<data_level>[^_]+)_"  # Required data level
-        r"((?P<sensor>\d{2}sensor)?-)?"  # Optional sensor number
-        r"(?P<descriptor>[^_]+)"  # Required descriptor
-        r"(_(?P<start_date>\d{8}))?"  # Optional start date
-        r"(-repoint(?P<repointing>\d{5}))?"  # Optional repointing field
-        r"(?:_v(?P<version>\d{3}))?"  # Optional version
-        r"(?:\.(?P<extension>cdf|pkts))?$"  # Optional extension
-    )
-    match = re.match(regex_str, filename_like)
-    if match is None:
-        raise ValueError(
-            "Filename like string did not contain required fields"
-            "including mission, instrument, data_level, and descriptor."
-        )
-    return match
-
-
 def parse_sensor_number(full_string: str) -> int:
     """
     Parse the sensor number from a string.

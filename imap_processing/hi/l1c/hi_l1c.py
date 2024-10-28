@@ -6,7 +6,8 @@ import numpy as np
 import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
-from imap_processing.hi.utils import full_dataarray, parse_filename_like
+from imap_processing.cdf.utils import parse_filename_like
+from imap_processing.hi.utils import full_dataarray
 
 logger = logging.getLogger(__name__)
 

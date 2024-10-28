@@ -8,11 +8,11 @@ import xarray as xr
 
 from imap_processing import imap_module_directory
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
+from imap_processing.cdf.utils import parse_filename_like
 from imap_processing.hi.utils import (
     HIAPID,
     HiConstants,
     create_dataset_variables,
-    parse_filename_like,
     parse_sensor_number,
 )
 from imap_processing.spice.geometry import SpiceFrame, instrument_pointing
