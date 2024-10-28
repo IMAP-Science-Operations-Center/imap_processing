@@ -219,15 +219,20 @@ def get_helio_exposure_times(
         spherical_coords = cartesian_to_spherical(-helio_normalized)
         az, el = spherical_coords[..., 0], spherical_coords[..., 1]
 
-        # Compute a 2D histogram of azimuth and elevation.
-        hist, az_edges, el_edges = np.histogram2d(
-            az.flatten(), el.flatten(),
-            bins=[az_bin_edges, el_bin_edges],
-            weights=sc_exposure.T.flatten(order="F")
-        )
+        # Bin the coordinates.
+        az_idx = np.digitize(az, az_bin_edges) - 1
+        el_idx = np.digitize(el, el_bin_edges[::-1]) - 1
 
-        hist = np.flip(hist.T, axis=1)
-        exposure_3d[:, :, i] = hist
+        # Ensure az_idx and el_idx are within bounds.
+        az_idx = np.clip(az_idx, 0, len(az_bin_edges) - 2)
+        el_idx = np.clip(el_idx, 0, len(el_bin_edges) - 2)
+
+        # A 1D array of linear indices used to track the bin_id.
+        idx = el_idx + az_idx * az_grid.shape[0]
+        # Bins the transposed sc_exposure array.
+        binned_exposure = sc_exposure.T.flatten(order="F")[idx]
+        # Reshape the binned exposure.
+        exposure_3d[:, :, i] = binned_exposure.reshape(az_grid.shape, order="F")
 
     return exposure_3d
 
