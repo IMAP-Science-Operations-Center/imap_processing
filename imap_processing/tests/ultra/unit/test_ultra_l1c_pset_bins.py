@@ -10,6 +10,7 @@ from imap_processing import imap_module_directory
 from imap_processing.ultra.l1c.ultra_l1c_pset_bins import (
     build_energy_bins,
     build_spatial_bins,
+    cartesian_to_spherical,
     get_helio_exposure_times,
     get_histogram,
     get_pointing_frame_exposure_times,
@@ -89,6 +90,21 @@ def test_build_spatial_bins():
     np.testing.assert_allclose(el_bin_midpoints[-1], 89.75, atol=1e-4)
 
 
+def test_cartesian_to_spherical(test_data):
+    """Tests cartesian_to_spherical function."""
+    v, _ = test_data
+
+    az_sc, el_sc, r = cartesian_to_spherical(v)
+
+    # MATLAB code outputs:
+    np.testing.assert_allclose(
+        np.unique(np.radians(az_sc)), np.array([1.31300, 2.34891]), atol=1e-05, rtol=0
+    )
+    np.testing.assert_allclose(
+        np.unique(np.radians(el_sc)), np.array([-0.88901, -0.70136]), atol=1e-05, rtol=0
+    )
+
+
 def test_get_histogram(test_data):
     """Tests get_histogram function."""
     v, energy = test_data
@@ -155,7 +171,6 @@ def test_et_helio_exposure_times(kernels):
     cdf_files = [
         ("dps_exposure_helio_45_E1.cdf", "dps_exposure_helio_45_E1"),
         ("dps_exposure_helio_45_E12.cdf", "dps_exposure_helio_45_E12"),
-        ("dps_exposure_helio_45_E24.cdf", "dps_exposure_helio_45_E24"),
     ]
 
     cdf_directory = imap_module_directory / "tests" / "ultra" / "test_data" / "l1"
@@ -169,9 +184,8 @@ def test_et_helio_exposure_times(kernels):
             transposed_exposure = np.transpose(exposure_data, (2, 1, 0))
             exposures.append(transposed_exposure)
 
-    np.array_equal(exposures[0], exposure_3d[:, :, 0])
-    np.array_equal(exposures[1], exposure_3d[:, :, 1])
-    np.array_equal(exposures[2], exposure_3d[:, :, 2])
+    assert np.array_equal(np.squeeze(exposures[0]), exposure_3d[:, :, 0])
+    assert np.array_equal(np.squeeze(exposures[1]), exposure_3d[:, :, 11])
 
 
 def test_get_pointing_frame_sensitivity():
