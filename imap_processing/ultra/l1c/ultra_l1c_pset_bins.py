@@ -188,16 +188,7 @@ def get_helio_exposure_times(
     r = np.ones(el_grid.shape)
     spherical_coords = np.stack((r, np.radians(az_grid), np.radians(el_grid)), axis=-1)
     cartesian_coords = spherical_to_cartesian(spherical_coords)
-    x, y, z = (
-        cartesian_coords[..., 0],
-        cartesian_coords[..., 1],
-        cartesian_coords[..., 2],
-    )
-
-    # Reshape and combine the Cartesian coordinates into a 3D array.
-    cartesian = np.vstack(
-        [x.flatten(order="F"), y.flatten(order="F"), z.flatten(order="F")]
-    )
+    cartesian = cartesian_coords.reshape(-1, 3, order="F").T
 
     # Spacecraft velocity in the pointing (DPS) frame wrt heliosphere.
     state = imap_state(time, ref_frame=SpiceFrame.IMAP_DPS)
