@@ -10,7 +10,6 @@ from imap_processing import imap_module_directory
 from imap_processing.ultra.l1c.ultra_l1c_pset_bins import (
     build_energy_bins,
     build_spatial_bins,
-    cartesian_to_spherical,
     get_helio_exposure_times,
     get_histogram,
     get_pointing_frame_exposure_times,
@@ -88,21 +87,6 @@ def test_build_spatial_bins():
     assert len(el_bin_midpoints) == 360
     np.testing.assert_allclose(el_bin_midpoints[0], -89.75, atol=1e-4)
     np.testing.assert_allclose(el_bin_midpoints[-1], 89.75, atol=1e-4)
-
-
-def test_cartesian_to_spherical(test_data):
-    """Tests cartesian_to_spherical function."""
-    v, _ = test_data
-
-    az_sc, el_sc, r = cartesian_to_spherical(v)
-
-    # MATLAB code outputs:
-    np.testing.assert_allclose(
-        np.unique(np.radians(az_sc)), np.array([1.31300, 2.34891]), atol=1e-05, rtol=0
-    )
-    np.testing.assert_allclose(
-        np.unique(np.radians(el_sc)), np.array([-0.88901, -0.70136]), atol=1e-05, rtol=0
-    )
 
 
 def test_get_histogram(test_data):

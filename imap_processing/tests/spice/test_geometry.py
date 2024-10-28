@@ -5,6 +5,7 @@ import pandas as pd
 import pytest
 import spiceypy as spice
 
+from imap_processing.spice.geometry import cartesian_to_spherical
 from imap_processing.spice.geometry import (
     SpiceBody,
     SpiceFrame,
@@ -335,3 +336,18 @@ def test_basis_vectors():
                 SpiceFrame.ECLIPJ2000,
             ),
         )
+
+
+def test_cartesian_to_spherical(test_data):
+    """Tests cartesian_to_spherical function."""
+    v, _ = test_data
+
+    az_sc, el_sc, r = cartesian_to_spherical(v)
+
+    # MATLAB code outputs:
+    np.testing.assert_allclose(
+        np.unique(np.radians(az_sc)), np.array([1.31300, 2.34891]), atol=1e-05, rtol=0
+    )
+    np.testing.assert_allclose(
+        np.unique(np.radians(el_sc)), np.array([-0.88901, -0.70136]), atol=1e-05, rtol=0
+    )

@@ -10,6 +10,7 @@ from numpy.typing import NDArray
 
 from imap_processing.spice.kernels import ensure_spice
 from imap_processing.ultra.constants import UltraConstants
+from imap_processing.spice.geometry import cartesian_to_spherical, spherical_to_cartesian
 
 # TODO: add species binning.
 
@@ -73,78 +74,6 @@ def build_spatial_bins(
     el_bin_midpoints = el_bin_edges[:-1] + spacing / 2  # Midpoints between edges
 
     return az_bin_edges, el_bin_edges, az_bin_midpoints, el_bin_midpoints
-
-
-def cartesian_to_spherical(
-    v: NDArray,
-) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-    """
-    Convert cartesian coordinates to spherical coordinates.
-
-    Parameters
-    ----------
-    v : np.ndarray
-        A NumPy array with shape (n, 3) where each
-        row represents a vector
-        with x, y, z-components.
-
-    Returns
-    -------
-    az : np.ndarray
-        The azimuth angles in degrees.
-    el : np.ndarray
-        The elevation angles in degrees.
-    r : np.ndarray
-        The radii, or magnitudes, of the vectors.
-    """
-    vx = v[:, 0]
-    vy = v[:, 1]
-    vz = v[:, 2]
-
-    # Magnitude of the velocity vector
-    magnitude_v = np.sqrt(vx**2 + vy**2 + vz**2)
-
-    vhat_x = -vx / magnitude_v
-    vhat_y = -vy / magnitude_v
-    vhat_z = -vz / magnitude_v
-
-    # Elevation angle (angle from the z-axis, range: [-pi/2, pi/2])
-    el = np.arcsin(vhat_z)
-
-    # Azimuth angle (angle in the xy-plane, range: [0, 2*pi])
-    az = np.arctan2(vhat_y, vhat_x)
-
-    # Ensure azimuth is from 0 to 2PI
-    az = az % (2 * np.pi)
-
-    return np.degrees(az), np.degrees(el), magnitude_v
-
-
-def spherical_to_cartesian(
-    r: np.ndarray, theta: np.ndarray, phi: np.ndarray
-) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-    """
-    Convert spherical coordinates to Cartesian coordinates.
-
-    Parameters
-    ----------
-    r : np.ndarray
-        Radius.
-    theta : np.ndarray
-        Azimuth angle in radians.
-    phi : array-like or float
-        Elevation angle in radians.
-
-    Returns
-    -------
-    x, y, z : tuple
-        Cartesian coordinates.
-    """
-    x = r * np.cos(phi) * np.cos(theta)
-    y = r * np.cos(phi) * np.sin(theta)
-    z = r * np.sin(phi)
-
-    return x, y, z
 
 
 def get_histogram(
