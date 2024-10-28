@@ -14,12 +14,12 @@ import typing
 from enum import IntEnum
 from pathlib import Path
 from typing import Union
-from numpy.typing import NDArray
 
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
 import spiceypy as spice
+from numpy.typing import NDArray
 
 from imap_processing.spice.kernels import ensure_spice
 
@@ -494,7 +494,7 @@ def basis_vectors(
 
 def cartesian_to_spherical(
     v: NDArray,
-) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+) -> NDArray:
     """
     Convert cartesian coordinates to spherical coordinates.
 
@@ -507,12 +507,8 @@ def cartesian_to_spherical(
 
     Returns
     -------
-    az : np.ndarray
-        The azimuth angles in degrees.
-    el : np.ndarray
-        The elevation angles in degrees.
-    r : np.ndarray
-        The radii, or magnitudes, of the vectors.
+    spherical_coords : np.ndarray
+        Spherical coordinate.
     """
     vx = v[:, 0]
     vy = v[:, 1]
@@ -533,32 +529,35 @@ def cartesian_to_spherical(
 
     # Ensure azimuth is from 0 to 2PI
     az = az % (2 * np.pi)
+    spherical_coords = np.stack((np.degrees(az), np.degrees(el), magnitude_v), axis=-1)
 
-    return np.degrees(az), np.degrees(el), magnitude_v
+    return spherical_coords
 
 
-def spherical_to_cartesian(
-    r: np.ndarray, theta: np.ndarray, phi: np.ndarray
-) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+def spherical_to_cartesian(spherical_coords: NDArray) -> NDArray:
     """
     Convert spherical coordinates to Cartesian coordinates.
 
     Parameters
     ----------
-    r : np.ndarray
-        Radius.
-    theta : np.ndarray
-        Azimuth angle in radians.
-    phi : array-like or float
-        Elevation angle in radians.
+    spherical_coords : np.ndarray
+        A NumPy array with shape (n, 3) where each
+        row represents a vector
+        with r, theta, phi-components.
 
     Returns
     -------
-    x, y, z : tuple
+    cartesian_coords : np.ndarray
         Cartesian coordinates.
     """
+    r = spherical_coords[..., 0]
+    theta = spherical_coords[..., 1]
+    phi = spherical_coords[..., 2]
+
     x = r * np.cos(phi) * np.cos(theta)
     y = r * np.cos(phi) * np.sin(theta)
     z = r * np.sin(phi)
 
-    return x, y, z
+    cartesian_coords = np.stack((x, y, z), axis=-1)
+
+    return cartesian_coords

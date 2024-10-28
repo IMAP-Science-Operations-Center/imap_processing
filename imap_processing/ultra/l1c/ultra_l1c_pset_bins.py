@@ -8,9 +8,12 @@ import numpy as np
 import spiceypy as spice
 from numpy.typing import NDArray
 
+from imap_processing.spice.geometry import (
+    cartesian_to_spherical,
+    spherical_to_cartesian,
+)
 from imap_processing.spice.kernels import ensure_spice
 from imap_processing.ultra.constants import UltraConstants
-from imap_processing.spice.geometry import cartesian_to_spherical, spherical_to_cartesian
 
 # TODO: add species binning.
 
@@ -104,7 +107,12 @@ def get_histogram(
     hist : np.ndarray
         A 3D histogram array.
     """
-    az, el, _ = cartesian_to_spherical(v)
+    spherical_coords = cartesian_to_spherical(v)
+    az, el, _ = (
+        spherical_coords[..., 0],
+        spherical_coords[..., 1],
+        spherical_coords[..., 2],
+    )
 
     # 3D binning.
     hist, _ = np.histogramdd(
@@ -181,7 +189,13 @@ def get_helio_exposure_times(
 
     # Radial distance.
     r = np.ones(el_grid.shape)
-    x, y, z = spherical_to_cartesian(r, np.radians(az_grid), np.radians(el_grid))
+    spherical_coords = np.stack((r, np.radians(az_grid), np.radians(el_grid)), axis=-1)
+    cartesian_coords = spherical_to_cartesian(spherical_coords)
+    x, y, z = (
+        cartesian_coords[..., 0],
+        cartesian_coords[..., 1],
+        cartesian_coords[..., 2],
+    )
 
     # Reshape and combine the Cartesian coordinates into a 2D array.
     cartesian = np.vstack(
@@ -214,7 +228,8 @@ def get_helio_exposure_times(
         )
         # Converts vectors from Cartesian coordinates (x, y, z)
         # into spherical coordinates
-        az, el, _ = cartesian_to_spherical(-helio_normalized)
+        spherical_coords = cartesian_to_spherical(-helio_normalized)
+        az, el = spherical_coords[..., 0], spherical_coords[..., 1]
 
         # Bin the coordinates.
         az_idx = np.digitize(az, az_bin_edges) - 1

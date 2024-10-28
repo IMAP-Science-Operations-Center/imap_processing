@@ -5,11 +5,11 @@ import pandas as pd
 import pytest
 import spiceypy as spice
 
-from imap_processing.spice.geometry import cartesian_to_spherical
 from imap_processing.spice.geometry import (
     SpiceBody,
     SpiceFrame,
     basis_vectors,
+    cartesian_to_spherical,
     frame_transform,
     get_instrument_spin_phase,
     get_rotation_matrix,
@@ -18,6 +18,7 @@ from imap_processing.spice.geometry import (
     get_spin_data,
     imap_state,
     instrument_pointing,
+    spherical_to_cartesian,
 )
 from imap_processing.spice.kernels import ensure_spice
 
@@ -102,10 +103,10 @@ def test_get_spacecraft_spin_phase_value_error(query_met_times, fake_spin_data):
         _ = get_spacecraft_spin_phase(query_met_times)
 
 
-@pytest.mark.usefixtures("use_fake_spin_data_for_time")
-def test_get_spin_data(use_fake_spin_data_for_time):
+@pytest.mark.usefixtures("_set_spin_data_filepath")
+def test_get_spin_data():
     """Test get_spin_data() with generated spin data."""
-    use_fake_spin_data_for_time(453051323.0 - 56120)
+
     spin_data = get_spin_data()
 
     (
@@ -253,7 +254,7 @@ def test_frame_transform_exceptions():
         match="Mismatch in number of position vectors and Ephemeris times provided.",
     ):
         frame_transform(
-            1,
+            np.arange(2),
             np.arange(9).reshape((3, 3)),
             SpiceFrame.ECLIPJ2000,
             SpiceFrame.IMAP_HIT,
@@ -339,10 +340,23 @@ def test_basis_vectors():
 
 
 def test_cartesian_to_spherical(test_data):
+def test_cartesian_to_spherical():
     """Tests cartesian_to_spherical function."""
-    v, _ = test_data
+    v = np.array(
+        [
+            [-186.5575, -707.5707, 618.0569],
+            [508.5697, -516.0282, 892.6931],
+            [508.5697, -516.0282, 892.6931],
+            [508.5697, -516.0282, 892.6931],
+        ]
+    )
 
-    az_sc, el_sc, r = cartesian_to_spherical(v)
+    spherical_coords = cartesian_to_spherical(v)
+    az_sc, el_sc, _ = (
+        spherical_coords[..., 0],
+        spherical_coords[..., 1],
+        spherical_coords[..., 2],
+    )
 
     # MATLAB code outputs:
     np.testing.assert_allclose(
@@ -351,3 +365,23 @@ def test_cartesian_to_spherical(test_data):
     np.testing.assert_allclose(
         np.unique(np.radians(el_sc)), np.array([-0.88901, -0.70136]), atol=1e-05, rtol=0
     )
+
+
+def test_spherical_to_cartesian():
+    """Tests cartesian_to_spherical function."""
+    spherical_coords = np.array([[1.0, 0.0, np.pi / 2], [2.0, np.pi / 4, np.pi / 4]])
+
+    expected_x = 1.0 * np.cos(np.pi / 2) * np.cos(0.0)
+    expected_y = 1.0 * np.cos(np.pi / 2) * np.sin(0.0)
+    expected_z = 1.0 * np.sin(np.pi / 2)
+
+    cartesian_coords = spherical_to_cartesian(spherical_coords)
+    x, y, z = (
+        cartesian_coords[..., 0],
+        cartesian_coords[..., 1],
+        cartesian_coords[..., 2],
+    )
+
+    np.testing.assert_allclose(x[0], expected_x, atol=1e-5)
+    np.testing.assert_allclose(y[0], expected_y, atol=1e-5)
+    np.testing.assert_allclose(z[0], expected_z, atol=1e-5)
