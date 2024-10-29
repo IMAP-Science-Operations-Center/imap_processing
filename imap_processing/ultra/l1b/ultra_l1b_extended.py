@@ -253,9 +253,7 @@ def get_ph_tof_and_back_positions(
     return tof, t2, xb, yb
 
 
-def get_path_length(
-    front_position: tuple, back_position: tuple, d: np.ndarray
-) -> NDArray:
+def get_path_length(front_position: tuple, back_position: tuple, d: float) -> float:
     """
     Calculate the path length.
 
@@ -265,15 +263,15 @@ def get_path_length(
         Front position (xf,yf) (hundredths of a millimeter).
     back_position : tuple of floats
         Back position (xb,yb) (hundredths of a millimeter).
-    d : np.ndarray
+    d : float
         Distance from slit to foil (hundredths of a millimeter).
 
     Returns
     -------
-    path_length : np.ndarray
+    path_length : float
         Path length (r) (hundredths of a millimeter).
     """
-    path_length = np.sqrt(
+    path_length: float = np.sqrt(
         (front_position[0] - back_position[0]) ** 2
         + (front_position[1] - back_position[1]) ** 2
         + (d) ** 2
