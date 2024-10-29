@@ -3,7 +3,6 @@
 import cdflib
 import numpy as np
 import pytest
-import spiceypy as spice
 from cdflib import CDF
 
 from imap_processing import imap_module_directory
@@ -30,24 +29,6 @@ def test_data():
     v = np.column_stack((vx_sc, vy_sc, vz_sc))
 
     return v, energy
-
-
-@pytest.fixture()
-def kernels(spice_test_data_path):
-    """List SPICE kernels."""
-    required_kernels = [
-        "imap_science_0001.tf",
-        "imap_sclk_0000.tsc",
-        "sim_1yr_imap_attitude.bc",
-        "imap_wkcp.tf",
-        "naif0012.tls",
-        "sim_1yr_imap_pointing_frame.bc",
-        "de440s.bsp",
-        "imap_spk_demo.bsp",
-    ]
-    kernels = [str(spice_test_data_path / kernel) for kernel in required_kernels]
-
-    return kernels
 
 
 def test_build_energy_bins():
@@ -143,10 +124,10 @@ def test_get_pointing_frame_exposure_times():
 
 
 @pytest.mark.external_kernel()
-def test_et_helio_exposure_times(kernels):
+@pytest.mark.use_test_metakernel("imap_ena_sim_metakernel.template")
+def test_et_helio_exposure_times():
     """Tests get_helio_exposure_times function."""
 
-    spice.furnsh(kernels)
     constant_exposure = BASE_PATH / "dps_grid45_compressed.cdf"
     start_time = 829485054.185627
     end_time = 829567884.185627

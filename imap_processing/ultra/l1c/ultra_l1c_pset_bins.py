@@ -215,11 +215,13 @@ def get_helio_exposure_times(
             helio_velocity.T, axis=1, keepdims=True
         )
         # Converts vectors from Cartesian coordinates (x, y, z)
-        # into spherical coordinates
+        # into spherical coordinates.
+        # The negtaive helio_normalized reorients vectors to align with the spacecraft's
+        # perspective of viewing particles moving in its direction.
         spherical_coords = cartesian_to_spherical(-helio_normalized)
         az, el = spherical_coords[..., 0], spherical_coords[..., 1]
 
-        # Bin the coordinates.
+        # Assign values from sc_exposure directly to bins.
         az_idx = np.digitize(az, az_bin_edges) - 1
         el_idx = np.digitize(el, el_bin_edges[::-1]) - 1
 
