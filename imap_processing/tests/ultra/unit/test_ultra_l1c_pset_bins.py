@@ -136,6 +136,7 @@ def test_et_helio_exposure_times():
     cdf_files = [
         ("dps_exposure_helio_45_E1.cdf", "dps_exposure_helio_45_E1"),
         ("dps_exposure_helio_45_E12.cdf", "dps_exposure_helio_45_E12"),
+        ("dps_exposure_helio_45_E24.cdf", "dps_exposure_helio_45_E24"),
     ]
 
     cdf_directory = imap_module_directory / "tests" / "ultra" / "test_data" / "l1"
@@ -151,6 +152,7 @@ def test_et_helio_exposure_times():
 
     assert np.array_equal(np.squeeze(exposures[0]), exposure_3d[:, :, 0])
     assert np.array_equal(np.squeeze(exposures[1]), exposure_3d[:, :, 11])
+    assert np.array_equal(np.squeeze(exposures[2]), exposure_3d[:, :, 23])
 
 
 def test_get_pointing_frame_sensitivity():
