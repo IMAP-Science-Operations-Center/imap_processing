@@ -129,14 +129,28 @@ def calculate_de(de_dataset: xr.Dataset, name: str) -> xr.Dataset:
         {key: de_dataset[dataset_key] for key, dataset_key in zip(keys, dataset_keys)}
     )
 
-    de_dict["vx_ultra"], de_dict["vy_ultra"], de_dict["vz_ultra"] = (
-        get_particle_velocity(
-            (de_dict["x_front"], de_dict["y_front"]),
-            (de_dict["x_back"], de_dict["y_back"]),
-            de_dict["front_back_distance"],
-            de_dict["tof_start_stop"],
-        )
+    vx_ultra, vy_ultra, vz_ultra = get_particle_velocity(
+        (de_dict["x_front"], de_dict["y_front"]),
+        (de_dict["x_back"], de_dict["y_back"]),
+        de_dict["front_back_distance"],
+        de_dict["tof_start_stop"],
     )
+
+    # We need to fill velocities that have negative tof values.
+    de_dict["vx_ultra"] = np.full_like(
+        vx_ultra, np.finfo(np.float64).min, dtype=np.float64
+    )
+    de_dict["vy_ultra"] = np.full_like(
+        vy_ultra, np.finfo(np.float64).min, dtype=np.float64
+    )
+    de_dict["vz_ultra"] = np.full_like(
+        vz_ultra, np.finfo(np.float64).min, dtype=np.float64
+    )
+
+    condition = de_dict["tof_start_stop"] > 0
+    de_dict["vx_ultra"][condition] = vx_ultra[condition]
+    de_dict["vy_ultra"][condition] = vy_ultra[condition]
+    de_dict["vz_ultra"][condition] = vz_ultra[condition]
 
     energy = np.concatenate((ph_energy, ssd_energy))
     de_dict["energy"] = energy[combined_indices]
@@ -144,14 +158,13 @@ def calculate_de(de_dataset: xr.Dataset, name: str) -> xr.Dataset:
     species = np.concatenate((ph_bin, ssd_bin))
     de_dict["species"] = species[combined_indices]
 
+    # Annotated Events.
+    # TODO: since the pointing (dps) frame is not for this timerange this will not work.
     # position = np.stack(
     #     (de_dict["vx_ultra"], de_dict["vy_ultra"], de_dict["vz_ultra"]), axis=-1
     # )
     #
     # ultra_frame = getattr(SpiceFrame, f"IMAP_ULTRA_{sensor}")
-
-    # Annotated Events.
-    # TODO: since the pointing (dps) frame is not for this timerange this will not work.
     # sc_velocity, sc_dps_velocity, helio_velocity = get_annotated_particle_velocity(
     #     de_dataset.data_vars["EVENTTIMES"],
     #     position,
@@ -159,6 +172,7 @@ def calculate_de(de_dataset: xr.Dataset, name: str) -> xr.Dataset:
     #     SpiceFrame.IMAP_DPS,
     #     SpiceFrame.IMAP_SPACECRAFT,
     # )
+    # TODO: this is a temporary fix.
     sc_velocity = np.zeros((len(de_dict["epoch"]), 3))
     sc_dps_velocity = np.zeros((len(de_dict["epoch"]), 3))
     helio_velocity = np.zeros((len(de_dict["epoch"]), 3))
