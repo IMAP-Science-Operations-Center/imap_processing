@@ -115,7 +115,7 @@ def annotate_direct_events(l1a_dataset: xr.Dataset) -> xr.Dataset:
         L1B direct event data.
     """
     l1b_dataset = l1a_dataset.copy()
-    l1b_dataset.update(compute_coincidence_type_and_time_deltas(l1a_dataset))
+    l1b_dataset.update(compute_coincidence_type_and_time_deltas(l1b_dataset))
     l1b_dataset.update(compute_hae_coordinates(l1b_dataset))
     l1b_de_var_names = [
         "esa_energy_step",
@@ -124,7 +124,7 @@ def annotate_direct_events(l1a_dataset: xr.Dataset) -> xr.Dataset:
         "nominal_bin",
     ]
     new_data_vars = create_dataset_variables(
-        l1b_de_var_names, l1a_dataset["epoch"].size, att_manager_lookup_str="hi_de_{0}"
+        l1b_de_var_names, l1b_dataset["epoch"].size, att_manager_lookup_str="hi_de_{0}"
     )
     l1b_dataset.update(new_data_vars)
     l1b_dataset = l1b_dataset.drop_vars(
