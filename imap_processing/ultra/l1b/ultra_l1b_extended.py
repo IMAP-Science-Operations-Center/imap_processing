@@ -252,7 +252,9 @@ def get_ph_tof_and_back_positions(
     return tof, t2, xb, yb
 
 
-def get_path_length(front_position: tuple, back_position: tuple, d: float) -> float:
+def get_path_length(
+    front_position: tuple, back_position: tuple, d: np.ndarray
+) -> NDArray:
     """
     Calculate the path length.
 
@@ -262,15 +264,15 @@ def get_path_length(front_position: tuple, back_position: tuple, d: float) -> fl
         Front position (xf,yf) (hundredths of a millimeter).
     back_position : tuple of floats
         Back position (xb,yb) (hundredths of a millimeter).
-    d : float
+    d : np.ndarray
         Distance from slit to foil (hundredths of a millimeter).
 
     Returns
     -------
-    path_length : float
+    path_length : np.ndarray
         Path length (r) (hundredths of a millimeter).
     """
-    path_length: float = np.sqrt(
+    path_length = np.sqrt(
         (front_position[0] - back_position[0]) ** 2
         + (front_position[1] - back_position[1]) ** 2
         + (d) ** 2
@@ -435,8 +437,8 @@ def get_coincidence_positions(
 
 
 def get_particle_velocity(
-    front_position: tuple[float, float],
-    back_position: tuple[float, float],
+    front_position: tuple[NDArray, NDArray],
+    back_position: tuple[NDArray, NDArray],
     d: np.ndarray,
     tof: np.ndarray,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:

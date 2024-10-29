@@ -14,7 +14,7 @@ from imap_processing.spice.kernels import ensure_spice
 
 @ensure_spice
 @typing.no_type_check
-def get_particle_velocity(
+def get_annotated_particle_velocity(
     time: np.ndarray,
     instrument_velocity: np.ndarray,
     instrument_frame: SpiceFrame,
