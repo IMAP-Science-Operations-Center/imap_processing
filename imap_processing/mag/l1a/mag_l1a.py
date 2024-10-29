@@ -282,6 +282,13 @@ def generate_dataset(
         np.dtype("datetime64[ns]"), copy=False
     )
 
+    compression = xr.DataArray(
+        np.arange(2),
+        name="compression",
+        dims=["compression"],
+        attrs=attribute_manager.get_variable_attributes("compression_attrs")
+    )
+
     direction = xr.DataArray(
         np.arange(4),
         name="direction",
@@ -303,6 +310,13 @@ def generate_dataset(
         name="vectors",
         dims=["epoch", "direction"],
         attrs=attribute_manager.get_variable_attributes("vector_attrs"),
+    )
+
+    compression_flags = xr.DataArray(
+        np.zeros((len(time_data), 2)),
+        name="compression_flags",
+        dims=["epoch", "compression"],
+        attrs=attribute_manager.get_variable_attributes("compression_flags_attrs"),
     )
 
     output = xr.Dataset(

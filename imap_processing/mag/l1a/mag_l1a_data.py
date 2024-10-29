@@ -187,6 +187,11 @@ class MagL1a:
         List of missing sequence numbers in the day
     start_time : numpy.datetime64
         Start time of the day, in ns since J2000 epoch
+    compression_flags : np.ndarray
+        Array of flags to indication compression and width for all timestamps in the
+        L1A file. Shaped like (n, 2) where n is the number of vectors. First value
+        is a boolean for compressed/uncompressed, second vector is a number between 0-20
+        if the data is compressed, which is the width in bits of the compressed data.
 
     Methods
     -------
@@ -212,6 +217,7 @@ class MagL1a:
     most_recent_sequence: int = field(init=False)
     missing_sequences: list[int] = field(default_factory=list)
     start_time: np.datetime64 = field(init=False)
+    compression_flags: np.ndarray = field(init=False)
 
     def __post_init__(self, starting_packet: MagL1aPacketProperties) -> None:
         """
@@ -230,6 +236,13 @@ class MagL1a:
         # most_recent_sequence is the sequence number of the packet used to initialize
         # the object
         self.most_recent_sequence = starting_packet.src_seq_ctr
+
+        # Initialize the compression flags array with the first packet's compression
+        if not starting_packet.compression:
+            self.compression_flags = np.zeros((self.vectors.shape[0], 2), dtype=np.int8)
+
+        else:
+            self.compression_flags = np.ones((self.vectors.shape[0], 2), dtype=np.int8)
 
     def append_vectors(
         self, additional_vectors: np.ndarray, packet_properties: MagL1aPacketProperties

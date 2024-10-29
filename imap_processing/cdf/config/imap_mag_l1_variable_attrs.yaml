@@ -78,6 +78,25 @@ direction_attrs:
     DISPLAY_TYPE: time_series
     LABLAXIS: Magnetic field vector
 
+compression_attrs:
+  <<: *default_coords
+  CATDESC: Flag indicating if the vector is compressed, and the compression width
+  FIELDNAM: Compression flag and bit width
+  FORMAT: I2
+  VALIDMAX: 21
+  VALIDMIN: 0
+  DISPLAY_TYPE: no_plot
+
+compression_flag_attrs:
+  <<: *support_default
+  CATDESC: Compression information per time stamp, includes a flag and the compression width
+  FIELDNAM: Compression information per time stamp
+  DEPEND_1: compression
+  FORMAT: I2
+  VALIDMAX: 21
+  VALIDMIN: 0
+
+
 PUS_SPARE1:
     <<: *support_default
     CATDESC: Spare header from ESA Standard
