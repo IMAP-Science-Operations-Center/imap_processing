@@ -1,5 +1,6 @@
 """Calculates Extended Raw Events for ULTRA L1b."""
 
+# TODO: Come back and add in FSW logic.
 import logging
 from enum import Enum
 from typing import ClassVar
@@ -647,7 +648,7 @@ def get_energy_ssd(de_dataset: xarray.Dataset, ssd: np.ndarray) -> NDArray[np.fl
     return energy_norm
 
 
-def get_ctof(tof: np.ndarray, path_length: np.ndarray) -> NDArray:
+def get_ctof(tof: np.ndarray, path_length: np.ndarray, type: str) -> NDArray:
     """
     Calculate the corrected TOF.
 
@@ -664,14 +665,18 @@ def get_ctof(tof: np.ndarray, path_length: np.ndarray) -> NDArray:
         Time of flight (tenths of a nanosecond).
     path_length : np.ndarray
         Path length (r) (hundredths of a millimeter).
+    type : str
+        Type of event, either "ph" or "ssd".
 
     Returns
     -------
     ctof : np.ndarray
         Corrected TOF (tenths of a ns).
     """
+    dmin_ctof = getattr(UltraConstants, f"DMIN_{type}_CTOF")
+
     # Multiply times 100 to convert to hundredths of a millimeter.
-    ctof = tof * UltraConstants.DMIN * 100 / path_length
+    ctof = tof * dmin_ctof * 100 / path_length
 
     return ctof
 
@@ -708,7 +713,7 @@ def determine_species_pulse_height(
         Species bin.
     """
     # PH event TOF normalization to Z axis
-    ctof = get_ctof(tof, path_length)
+    ctof = get_ctof(tof, path_length, "PH")
     # TODO: need lookup tables
     # placeholder
     bin = np.zeros(len(ctof))
@@ -751,7 +756,7 @@ def determine_species_ssd(
         Species bin.
     """
     # SSD event TOF normalization to Z axis
-    ctof = get_ctof(tof, path_length)
+    ctof = get_ctof(tof, path_length, "SSD")
 
     bin = np.zeros(len(ctof))  # placeholder
 

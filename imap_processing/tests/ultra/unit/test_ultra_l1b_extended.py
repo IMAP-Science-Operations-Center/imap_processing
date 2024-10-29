@@ -298,17 +298,27 @@ def test_get_ctof(yf_fixture):
     """Tests get_ctof function."""
     df_filt, _, _ = yf_fixture
 
-    df_ph_ssd = df_filt[
-        df_filt["StopType"].isin([StopType.SSD.value, StopType.PH.value])
-    ]
+    df_ph = df_filt[df_filt["StopType"].isin([StopType.PH.value])]
 
-    ctof = get_ctof(
-        df_ph_ssd["TOF"].astype("float").to_numpy(),
-        df_ph_ssd["r"].astype("float").to_numpy(),
+    df_ssd = df_filt[df_filt["StopType"].isin([StopType.SSD.value])]
+
+    ph_ctof = get_ctof(
+        df_ph["TOF"].astype("float").to_numpy(),
+        df_ph["r"].astype("float").to_numpy(),
+        "PH",
+    )
+
+    ssd_ctof = get_ctof(
+        df_ssd["TOF"].astype("float").to_numpy(),
+        df_ssd["r"].astype("float").to_numpy(),
+        "SSD",
     )
 
     np.testing.assert_allclose(
-        ctof, df_ph_ssd["cTOF"].astype("float"), atol=1e-05, rtol=0
+        ph_ctof, df_ph["cTOF"].astype("float"), atol=1e-05, rtol=0
+    )
+    np.testing.assert_allclose(
+        ssd_ctof, df_ssd["cTOF"].astype("float"), atol=1e-05, rtol=0
     )
 
 

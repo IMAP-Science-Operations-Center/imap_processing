@@ -3,10 +3,6 @@
 import numpy as np
 import xarray as xr
 
-from imap_processing.spice.geometry import SpiceFrame
-from imap_processing.ultra.l1b.ultra_l1b_annotated import (
-    get_annotated_particle_velocity,
-)
 from imap_processing.ultra.l1b.ultra_l1b_extended import (
     StopType,
     determine_species_pulse_height,
@@ -73,7 +69,10 @@ def calculate_de(de_dataset: xr.Dataset, name: str) -> xr.Dataset:
     )
     ph_r = get_path_length((xf[ph_indices], ph_yf), (ph_xb, ph_yb), ph_d)
     ph_bin = determine_species_pulse_height(ph_energy, ph_tof, ph_r)
-    ph_etof, ph_xc = get_coincidence_positions(de_dataset, ph_t2, f"ultra{sensor}")
+    ph_etof, ph_xc = get_coincidence_positions(
+        de_dataset.isel(epoch=ph_indices), ph_t2, f"ultra{sensor}"
+    )
+    ph_ctof = get_ctof(ph_tof, ph_r, "PH")
 
     # SSD
     ssd_indices = np.nonzero(np.isin(de_dataset["STOP_TYPE"], StopType.SSD.value))[0]
@@ -92,6 +91,7 @@ def calculate_de(de_dataset: xr.Dataset, name: str) -> xr.Dataset:
         ssd_tof,
         ssd_r,
     )
+    ssd_ctof = get_ctof(ssd_tof, ssd_r, "SSD")
 
     # Combine ph_yb and ssd_yb along with their indices
     combined_indices = np.argsort(np.concatenate((ph_indices, ssd_indices)))
@@ -112,11 +112,9 @@ def calculate_de(de_dataset: xr.Dataset, name: str) -> xr.Dataset:
     de_dict["tof_start_stop"] = tof[combined_indices]
     etof = np.concatenate((ph_etof, np.zeros(len(ssd_indices))))
     de_dict["tof_stop_coin"] = etof[combined_indices]
-    ctof = get_ctof(
-        de_dict["tof_start_stop"],
-        de_dict["path_length"],
-    )
-    de_dict["tof_corrected"] = ctof
+
+    ctof = np.concatenate((ph_ctof, ssd_ctof))
+    de_dict["tof_corrected"] = ctof[combined_indices]
 
     keys = [
         "coincidence_type",
@@ -146,20 +144,24 @@ def calculate_de(de_dataset: xr.Dataset, name: str) -> xr.Dataset:
     species = np.concatenate((ph_bin, ssd_bin))
     de_dict["species"] = species[combined_indices]
 
-    position = np.stack(
-        (de_dict["vx_ultra"], de_dict["vy_ultra"], de_dict["vz_ultra"]), axis=-1
-    )
-
-    ultra_frame = getattr(SpiceFrame, f"IMAP_ULTRA_{sensor}")
+    # position = np.stack(
+    #     (de_dict["vx_ultra"], de_dict["vy_ultra"], de_dict["vz_ultra"]), axis=-1
+    # )
+    #
+    # ultra_frame = getattr(SpiceFrame, f"IMAP_ULTRA_{sensor}")
 
     # Annotated Events.
-    sc_velocity, sc_dps_velocity, helio_velocity = get_annotated_particle_velocity(
-        de_dataset.data_vars["EVENTTIMES"],
-        position,
-        ultra_frame,
-        SpiceFrame.IMAP_DPS,
-        SpiceFrame.IMAP_SPACECRAFT,
-    )
+    # TODO: since the pointing (dps) frame is not for this timerange this will not work.
+    # sc_velocity, sc_dps_velocity, helio_velocity = get_annotated_particle_velocity(
+    #     de_dataset.data_vars["EVENTTIMES"],
+    #     position,
+    #     ultra_frame,
+    #     SpiceFrame.IMAP_DPS,
+    #     SpiceFrame.IMAP_SPACECRAFT,
+    # )
+    sc_velocity = np.zeros((len(de_dict["epoch"]), 3))
+    sc_dps_velocity = np.zeros((len(de_dict["epoch"]), 3))
+    helio_velocity = np.zeros((len(de_dict["epoch"]), 3))
 
     de_dict["vx_sc"], de_dict["vy_sc"], de_dict["vz_sc"] = (
         sc_velocity[:, 0],

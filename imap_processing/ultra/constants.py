@@ -52,11 +52,11 @@ class UltraConstants:
     DF: float = 3.39  # Distance from slit to foil [mm]
 
     # Derived constants
-    DMIN: float = (
+    DMIN_PH_CTOF: float = (
         Z_DS - (2**0.5) * DF
     )  # Minimum distance between front and back detectors [mm]
-    DMIN_SSD_CTOF: float = (DMIN**2) / (
-        DMIN - Z_DSTOP
+    DMIN_SSD_CTOF: float = (DMIN_PH_CTOF**2) / (
+        DMIN_PH_CTOF - Z_DSTOP
     )  # SSD-specific correction to DMIN [mm]
 
     # Conversion factors
