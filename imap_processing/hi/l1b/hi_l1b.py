@@ -155,7 +155,7 @@ def compute_coincidence_type_and_time_deltas(
     Returns
     -------
     new_vars : dict[str, xarray.DataArray]
-        Keys are variable names and values are new populated `xarray.DataArray`s.
+        Keys are variable names and values are new populated `xarray.DataArray`.
     """
     new_vars = create_dataset_variables(
         [
@@ -273,8 +273,8 @@ def compute_hae_coordinates(dataset: xr.Dataset) -> dict[str, xr.DataArray]:
 
     Returns
     -------
-    new_vars : dict[str, xr.DataArray]
-        Keys are variable names and values are `xarray.DataArray`s.
+    new_vars : dict[str, xarray.DataArray]
+        Keys are variable names and values are `xarray.DataArray`.
     """
     new_vars = create_dataset_variables(
         [
