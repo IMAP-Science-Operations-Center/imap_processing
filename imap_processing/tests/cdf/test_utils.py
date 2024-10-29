@@ -135,7 +135,7 @@ def test_parents_injection(test_dataset):
             },
         ),
         (
-            "imap_hi_l1c_90sensor-pset_20250415_v001.cdf",
+            "imap_hi_l1c_90sensor-pset_20250415-repoint12345_v001.cdf",
             {
                 "mission": "imap",
                 "instrument": "hi",
@@ -143,6 +143,7 @@ def test_parents_injection(test_dataset):
                 "sensor": "90sensor",
                 "descriptor": "pset",
                 "start_date": "20250415",
+                "repointing": "12345",
                 "version": "001",
                 "extension": "cdf",
             },
