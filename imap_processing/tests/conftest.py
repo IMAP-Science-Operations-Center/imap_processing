@@ -297,14 +297,24 @@ def _unset_metakernel_path(monkeypatch):
 
 
 @pytest.fixture()
-def _set_spin_data_filepath(monkeypatch, tmpdir, generate_spin_data):
+def use_test_spin_data_csv(monkeypatch):
+    """Sets the SPIN_DATA_FILEPATH environment variable to input path."""
+
+    def wrapped_set_spin_data_filepath(path: Path):
+        monkeypatch.setenv("SPIN_DATA_FILEPATH", str(path))
+
+    return wrapped_set_spin_data_filepath
+
+
+@pytest.fixture()
+def _set_spin_data_filepath(use_test_spin_data_csv, tmpdir, generate_spin_data):
     """Set the SPIN_DATA_FILEPATH environment variable"""
     # SWE test data time minus 56120 seconds to get mid-night time
     start_time = 453051323.0 - 56120
     spin_df = generate_spin_data(start_time)
     spin_csv_file_path = tmpdir / "spin_data.spin.csv"
     spin_df.to_csv(spin_csv_file_path, index=False)
-    monkeypatch.setenv("SPIN_DATA_FILEPATH", str(spin_csv_file_path))
+    use_test_spin_data_csv(spin_csv_file_path)
 
 
 @pytest.fixture()
