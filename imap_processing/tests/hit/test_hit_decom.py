@@ -225,6 +225,8 @@ def test_decom_hit(sci_dataset):
     """
     # TODO: complete this test once the function is complete
     updated_dataset = decom_hit(sci_dataset)
-    print(updated_dataset)
+    print(updated_dataset["sectorates"][0])
+    print(updated_dataset["sectorates"].shape)
+    print(updated_dataset["hdr_minute_cnt"])
     assert "count_rates_binary" in updated_dataset
     assert "hdr_unit_num" in updated_dataset

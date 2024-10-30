@@ -94,11 +94,6 @@ COUNTS_DATA_STRUCTURE = {
     "l4bgrates": HITPacking(16, 384, (24,)),  # all range foreground rates
 }
 
-# Define data structure for pulse height event data
-PHA_DATA_STRUCTURE = {
-    # field: bit_length, section_length, shape
-    "pha_records": HITPacking(2, 29344, (917,)),
-}
 
 # Define the pattern of grouping flags in a complete science frame.
 FLAG_PATTERN = np.array([1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2])
@@ -139,13 +134,13 @@ def parse_count_rates(sci_dataset: xr.Dataset) -> None:
     Parse binary count rates data and update dataset.
 
     This function parses the binary count rates data,
-    stored as count_rates_binary in the dataset,
+    stored as count_rates_raw in the dataset,
     according to data structure details provided in
     COUNTS_DATA_STRUCTURE. The parsed data, representing
     integers, is added to the dataset as new data
     fields.
 
-    Note: count_rates_binary is added to the dataset by
+    Note: count_rates_raw is added to the dataset by
     the assemble_science_frames function, which organizes
     the binary science data packets by science frames.
 
@@ -155,7 +150,7 @@ def parse_count_rates(sci_dataset: xr.Dataset) -> None:
         Xarray dataset containing HIT science packets
         from a CCSDS file.
     """
-    counts_binary = sci_dataset.count_rates_binary
+    counts_binary = sci_dataset.count_rates_raw
     # initialize the starting bit for the sections of data
     section_start = 0
     # Decommutate binary data for each counts data field
@@ -181,9 +176,7 @@ def parse_count_rates(sci_dataset: xr.Dataset) -> None:
         #  - status bits needs to be further parsed (table 10 in algorithm doc)
         #  - subcommutate sectorates
         #  - decompress data
-        #  - Follow up with HIT team about erates and evrates.
-        #    (i.e.Should these be arrays containing all the sub fields
-        #    or should each subfield be it's own data field/array)
+        #  - For erates and evrates - each subfield should be it's own data field/array)
 
         # Get dims for data variables (yaml file not created yet)
         if len(field_meta.shape) > 1:
@@ -335,8 +328,8 @@ def assemble_science_frames(sci_dataset: xr.Dataset) -> xr.Dataset:
         The first six packets contain count rates data
         The last 14 packets contain pulse height event data
 
-    These groups are added to the dataset as count_rates_binary
-    and pha_binary.
+    These groups are added to the dataset as count_rates_raw
+    and pha_raw.
 
     Parameters
     ----------
@@ -401,16 +394,14 @@ def assemble_science_frames(sci_dataset: xr.Dataset) -> xr.Dataset:
         pha.append("".join(science_data_frame[6:]))
         # Get first packet's epoch for the science frame
         epoch_per_science_frame = np.append(epoch_per_science_frame, epoch_data[idx])
-        # TODO: Filter ccsds header fields to only include packets from the
-        #  valid science frames. Doesn't need to be grouped by frames though
 
     # Add new data variables to the dataset
     sci_dataset = sci_dataset.drop_vars("epoch")
     sci_dataset.coords["epoch"] = epoch_per_science_frame
-    sci_dataset["count_rates_binary"] = xr.DataArray(
-        count_rates, dims=["epoch"], name="count_rates_binary"
+    sci_dataset["count_rates_raw"] = xr.DataArray(
+        count_rates, dims=["epoch"], name="count_rates_raw"
     )
-    sci_dataset["pha_binary"] = xr.DataArray(pha, dims=["epoch"], name="pha_binary")
+    sci_dataset["pha_raw"] = xr.DataArray(pha, dims=["epoch"], name="pha_raw")
     return sci_dataset
 
 
@@ -465,8 +456,5 @@ def decom_hit(sci_dataset: xr.Dataset) -> xr.Dataset:
 
     # Parse count rates data from binary and add to dataset
     parse_count_rates(sci_dataset)
-
-    # TODO:
-    #  Parse binary PHA data and add to dataset (function call)
 
     return sci_dataset
