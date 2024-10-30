@@ -252,7 +252,7 @@ def test_frame_transform_exceptions():
         match="Mismatch in number of position vectors and Ephemeris times provided.",
     ):
         frame_transform(
-            np.arange(2),
+            1,
             np.arange(9).reshape((3, 3)),
             SpiceFrame.ECLIPJ2000,
             SpiceFrame.IMAP_HIT,

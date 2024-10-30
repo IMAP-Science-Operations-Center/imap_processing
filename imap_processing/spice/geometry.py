@@ -348,10 +348,11 @@ def frame_transform(
                 f"Invalid position shape: {position.shape}. "
                 f"Each input position vector must have 3 elements."
             )
-        if not len(position) == len(et):
+        if not len(position) == np.asarray(et).size:
             raise ValueError(
                 "Mismatch in number of position vectors and Ephemeris times provided."
-                f"Position has {len(position)} elements and et has {len(et)} elements."
+                f"Position has {len(position)} elements and et has "
+                f"{np.asarray(et).size} elements."
             )
 
     # rotate will have shape = (3, 3) or (n, 3, 3)
