@@ -15,7 +15,11 @@ from imap_processing.hi.utils import (
     create_dataset_variables,
     parse_sensor_number,
 )
-from imap_processing.spice.geometry import SpiceFrame, instrument_pointing
+from imap_processing.spice.geometry import (
+    SpiceFrame,
+    get_instrument_spin_phase,
+    instrument_pointing,
+)
 from imap_processing.spice.time import j2000ns_to_j2000s
 from imap_processing.utils import convert_raw_to_eu
 
@@ -116,10 +120,10 @@ def annotate_direct_events(l1a_dataset: xr.Dataset) -> xr.Dataset:
     """
     l1b_dataset = l1a_dataset.copy()
     l1b_dataset.update(compute_coincidence_type_and_time_deltas(l1b_dataset))
+    l1b_dataset.update(compute_instrument_spin_phase(l1b_dataset))
     l1b_dataset.update(compute_hae_coordinates(l1b_dataset))
     l1b_de_var_names = [
         "esa_energy_step",
-        "spin_phase",
         "quality_flag",
         "nominal_bin",
     ]
@@ -255,6 +259,35 @@ def compute_coincidence_type_and_time_deltas(
     # Table: all rows, column 3
     new_vars["delta_t_c1c2"].values[tof3_valid] = tof_3_ns[tof3_valid]
 
+    return new_vars
+
+
+def compute_instrument_spin_phase(dataset: xr.Dataset) -> dict[str, xr.DataArray]:
+    """
+    Compute instrument spin-phase for each direct event.
+
+    Parameters
+    ----------
+    dataset : xarray.Dataset
+        Direct event data to compute instrument spin-phase for.
+
+    Returns
+    -------
+    new_vars : dict[str, xarray.DataArray]
+        Dictionary containing new "spin_phase" variable.
+    """
+    new_vars = create_dataset_variables(
+        [
+            "spin_phase",
+        ],
+        len(dataset.epoch),
+        att_manager_lookup_str="hi_de_{0}",
+    )
+    sensor_number = parse_sensor_number(dataset.attrs["Logical_source"])
+    new_vars["spin_phase"].values = get_instrument_spin_phase(
+        j2000ns_to_j2000s(dataset.event_met.values),
+        SpiceFrame[f"IMAP_HI_{sensor_number}"],
+    )
     return new_vars
 
 
