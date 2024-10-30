@@ -390,7 +390,6 @@ class MagL1a:
             return MagL1a.process_compressed_vectors(
                 vector_data.astype(np.uint8), primary_count, secondary_count
             )
-        # first byte is the header containing compression width
 
         # If the vectors are uncompressed, we need them to be int32, as there are
         # bitshifting operations. Either way, the return type should be int32.

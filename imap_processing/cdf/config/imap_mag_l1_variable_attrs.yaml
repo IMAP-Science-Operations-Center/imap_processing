@@ -35,7 +35,6 @@ vector_attrs:
     LABLAXIS: Magnetic field vector data
     FILLVAL: 9223372036854775807
     FORMAT: I3
-#    LABL_PTR_1: direction_label
 
 mag_support_attrs: &support_default
     <<: *default
