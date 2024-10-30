@@ -125,6 +125,12 @@ def generate_dataset(
         dims=["direction"],
         attrs=attribute_manager.get_variable_attributes("raw_direction_attrs"),
     )
+    direction_label = xr.DataArray(
+        direction.astype(str),
+        name="direction_label",
+        dims=["direction_label"],
+        attrs=attribute_manager.get_variable_attributes("direction_label"),
+    )
 
     # TODO: Epoch here refers to the start of the sample. Confirm that this is
     # what mag is expecting, and if it is, CATDESC needs to be updated.
@@ -145,7 +151,11 @@ def generate_dataset(
     logical_id = f"imap_mag_l1a_{mode.value.lower()}-raw"
 
     output = xr.Dataset(
-        coords={"epoch": epoch_time, "direction": direction},
+        coords={
+            "epoch": epoch_time,
+            "direction": direction,
+            "direction_label": direction_label,
+        },
         attrs=attribute_manager.get_global_attributes(logical_id),
     )
 

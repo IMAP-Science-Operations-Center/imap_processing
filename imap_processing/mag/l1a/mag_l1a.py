@@ -167,7 +167,7 @@ def process_packets(
             mag_l0.ccsds_header.SRC_SEQ_CTR,
             mag_l0.COMPRESSION,
             mago_is_primary,
-            mag_l0.VECTORS[0],
+            int(mag_l0.VECTORS[0]),
         )
 
         secondary_packet_data = dataclasses.replace(
@@ -175,7 +175,7 @@ def process_packets(
             start_time=secondary_start_time,
             vectors_per_second=mag_l0.SEC_VECSEC,
             pus_ssubtype=mag_l0.PUS_SSUBTYPE,
-            first_byte=mag_l0.VECTORS[0],
+            first_byte=int(mag_l0.VECTORS[0]),
         )
         # now we know the number of secs of data in the packet, and the data rates of
         # each sensor, we can calculate how much data is in this packet and where the
@@ -325,11 +325,27 @@ def generate_dataset(
         attrs=attribute_manager.get_variable_attributes("compression_flags_attrs"),
     )
 
+    direction_label = xr.DataArray(
+        direction.astype(str),
+        name="direction_label",
+        dims=["direction_label"],
+        attrs=attribute_manager.get_variable_attributes("direction_label"),
+    )
+
+    compression_label = xr.DataArray(
+        compression.astype(str),
+        name="compression_label",
+        dims=["compression_label"],
+        attrs=attribute_manager.get_variable_attributes("compression_label"),
+    )
+
     output = xr.Dataset(
         coords={
             "epoch": epoch_time,
             "direction": direction,
             "compression": compression,
+            "direction_label": direction_label,
+            "compression_label": compression_label,
         },
         attrs=attribute_manager.get_global_attributes(logical_file_id),
     )
