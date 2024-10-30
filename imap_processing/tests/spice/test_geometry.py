@@ -8,6 +8,7 @@ import spiceypy as spice
 from imap_processing.spice.geometry import (
     SpiceBody,
     SpiceFrame,
+    basis_vectors,
     frame_transform,
     get_instrument_spin_phase,
     get_rotation_matrix,
@@ -17,6 +18,7 @@ from imap_processing.spice.geometry import (
     imap_state,
     instrument_pointing,
 )
+from imap_processing.spice.kernels import ensure_spice
 
 
 @pytest.mark.parametrize(
@@ -306,3 +308,20 @@ def test_instrument_pointing(furnish_kernels):
             et, SpiceFrame.IMAP_HI_90, SpiceFrame.ECLIPJ2000, cartesian=True
         )
         assert ins_pointing.shape == (3, 3)
+
+
+@pytest.mark.external_kernel()
+@pytest.mark.use_test_metakernel("imap_ena_sim_metakernel.template")
+def test_basis_vectors():
+    """Test coverage for basis_vectors()."""
+    # This call to SPICE needs to be wrapped with `ensure_spice` so that kernels
+    # get furnished automatically
+    et = ensure_spice(spice.utc2et)("2025-09-30T12:00:00.000")
+    # test input of float
+    sc_axes = basis_vectors(et, SpiceFrame.IMAP_SPACECRAFT, SpiceFrame.IMAP_SPACECRAFT)
+    np.testing.assert_array_equal(sc_axes, np.eye(3))
+    # test array of et input
+    sc_axes = basis_vectors(
+        np.arange(10) + et, SpiceFrame.IMAP_SPACECRAFT, SpiceFrame.ECLIPJ2000
+    )
+    assert sc_axes.shape == (10, 3, 3)
