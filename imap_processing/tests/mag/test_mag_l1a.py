@@ -803,7 +803,7 @@ def test_mag_l1a_data():
     start_time = TimeTuple(10000, 0)
 
     packet_properties = MagL1aPacketProperties(
-        435954628, start_time, test_vecsec, 1, 0, 0, 1
+        435954628, start_time, test_vecsec, 1, 0, 0, 1, 0
     )
     mag_l1a = MagL1a(True, True, 10000, test_vectors, packet_properties)
 
@@ -812,8 +812,18 @@ def test_mag_l1a_data():
     )
 
     new_seq = 5
+    compression = 1
+    # equal to 01001011, should resolve to a width of 18 (first 6 bits)
+    compression_width_header = 75
     new_properties = MagL1aPacketProperties(
-        435954628, TimeTuple(10400, 0), test_vecsec, 0, new_seq, 0, 1
+        435954628,
+        TimeTuple(10400, 0),
+        test_vecsec,
+        0,
+        new_seq,
+        compression,
+        1,
+        compression_width_header,
     )
     mag_l1a.append_vectors(new_vectors, new_properties)
 
@@ -832,6 +842,12 @@ def test_mag_l1a_data():
         ),
     )
     assert mag_l1a.missing_sequences == [1, 2, 3, 4]
+
+    assert mag_l1a.compression_flags.shape == (6, 2)
+    assert np.array_equal(
+        mag_l1a.compression_flags,
+        np.array([[0, 0], [0, 0], [0, 0], [0, 0], [1, 18], [1, 18]], dtype=np.uint8),
+    )
 
 
 def test_mag_l1a():
@@ -854,3 +870,23 @@ def test_mag_l1a():
 
     for data in output_data:
         assert data.attrs["Data_version"] == "v001"
+
+    assert "vectors" in output_data[-1].variables.keys()
+    assert "compression_flags" in output_data[-1].variables.keys()
+
+    assert output_data[-1]["vectors"].data.shape[1] == 4
+    assert output_data[-1]["compression_flags"].data.shape[1] == 2
+    assert (
+        output_data[-1]["vectors"].data.shape[0]
+        == output_data[-1]["compression_flags"].data.shape[0]
+    )
+
+
+def test_mag_packet_properties():
+    # equal to 01001011
+    test_byte = 75
+    packet_properties = MagL1aPacketProperties(
+        435954628, TimeTuple(10000, 0), 2, 1, 0, 1, 1, test_byte
+    )
+
+    assert packet_properties.compression_width == 18

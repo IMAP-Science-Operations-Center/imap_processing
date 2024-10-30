@@ -1,14 +1,3 @@
-# <=== Label Attributes ===>
-# LABL_PTR_i expects VAR_TYPE of metadata with char data type.
-# We need to define this if we have DEPEND_1 or more.
-# TODO: I am not sure what the FIELDNAM should be.
-# I tried best to match this: https://spdf.gsfc.nasa.gov/istp_guide/variables.html#Metadata_eg1
-direction_label:
-  CATDESC: magnetic field vector data
-  FIELDNAM: Magnetic Field Vector
-  FORMAT: A3
-  VAR_TYPE: metadata
-
 default_attrs: &default
   # Assumed values for all variable attrs unless overwritten
   DEPEND_0: epoch
@@ -46,6 +35,7 @@ vector_attrs:
     LABLAXIS: Magnetic field vector data
     FILLVAL: 9223372036854775807
     FORMAT: I3
+#    LABL_PTR_1: direction_label
 
 mag_support_attrs: &support_default
     <<: *default
@@ -87,7 +77,7 @@ compression_attrs:
   VALIDMIN: 0
   DISPLAY_TYPE: no_plot
 
-compression_flag_attrs:
+compression_flags_attrs:
   <<: *support_default
   CATDESC: Compression information per time stamp, includes a flag and the compression width
   FIELDNAM: Compression information per time stamp
@@ -95,7 +85,8 @@ compression_flag_attrs:
   FORMAT: I2
   VALIDMAX: 21
   VALIDMIN: 0
-
+  LABL_AXIS: compression
+  DISPLAY_TYPE: no_plot
 
 PUS_SPARE1:
     <<: *support_default

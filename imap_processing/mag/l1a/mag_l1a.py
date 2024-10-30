@@ -159,7 +159,7 @@ def process_packets(
             )
         ).astype("datetime64[D]")
 
-        primary_packet_data = MagL1aPacketProperties(
+        primary_packet_properties = MagL1aPacketProperties(
             mag_l0.SHCOARSE,
             primary_start_time,
             mag_l0.PRI_VECSEC,
@@ -167,28 +167,30 @@ def process_packets(
             mag_l0.ccsds_header.SRC_SEQ_CTR,
             mag_l0.COMPRESSION,
             mago_is_primary,
+            mag_l0.VECTORS[0],
         )
 
         secondary_packet_data = dataclasses.replace(
-            primary_packet_data,
+            primary_packet_properties,
             start_time=secondary_start_time,
             vectors_per_second=mag_l0.SEC_VECSEC,
             pus_ssubtype=mag_l0.PUS_SSUBTYPE,
+            first_byte=mag_l0.VECTORS[0],
         )
         # now we know the number of secs of data in the packet, and the data rates of
         # each sensor, we can calculate how much data is in this packet and where the
         # byte boundaries are.
         primary_vectors, secondary_vectors = MagL1a.process_vector_data(
             mag_l0.VECTORS,  # type: ignore
-            primary_packet_data.total_vectors,
+            primary_packet_properties.total_vectors,
             secondary_packet_data.total_vectors,
             mag_l0.COMPRESSION,
         )
 
         primary_timestamped_vectors = MagL1a.calculate_vector_time(
             primary_vectors,
-            primary_packet_data.vectors_per_second,
-            primary_packet_data.start_time,
+            primary_packet_properties.vectors_per_second,
+            primary_packet_properties.start_time,
         )
         secondary_timestamped_vectors = MagL1a.calculate_vector_time(
             secondary_vectors,
@@ -208,7 +210,7 @@ def process_packets(
                 primary_timestamped_vectors
                 if mago_is_primary
                 else secondary_timestamped_vectors,
-                primary_packet_data if mago_is_primary else secondary_packet_data,
+                primary_packet_properties if mago_is_primary else secondary_packet_data,
             )
         else:
             mago[mago_day].append_vectors(
@@ -217,7 +219,7 @@ def process_packets(
                     if mago_is_primary
                     else secondary_timestamped_vectors
                 ),
-                primary_packet_data if mago_is_primary else secondary_packet_data,
+                primary_packet_properties if mago_is_primary else secondary_packet_data,
             )
 
         if magi_day not in magi:
@@ -228,7 +230,9 @@ def process_packets(
                 primary_timestamped_vectors
                 if not mago_is_primary
                 else secondary_timestamped_vectors,
-                primary_packet_data if not mago_is_primary else secondary_packet_data,
+                primary_packet_properties
+                if not mago_is_primary
+                else secondary_packet_data,
             )
         else:
             magi[magi_day].append_vectors(
@@ -237,7 +241,9 @@ def process_packets(
                     if not mago_is_primary
                     else secondary_timestamped_vectors
                 ),
-                primary_packet_data if not mago_is_primary else secondary_packet_data,
+                primary_packet_properties
+                if not mago_is_primary
+                else secondary_packet_data,
             )
 
     return {"mago": mago, "magi": magi}
@@ -286,7 +292,7 @@ def generate_dataset(
         np.arange(2),
         name="compression",
         dims=["compression"],
-        attrs=attribute_manager.get_variable_attributes("compression_attrs")
+        attrs=attribute_manager.get_variable_attributes("compression_attrs"),
     )
 
     direction = xr.DataArray(
@@ -313,18 +319,23 @@ def generate_dataset(
     )
 
     compression_flags = xr.DataArray(
-        np.zeros((len(time_data), 2)),
+        single_file_l1a.compression_flags,
         name="compression_flags",
         dims=["epoch", "compression"],
         attrs=attribute_manager.get_variable_attributes("compression_flags_attrs"),
     )
 
     output = xr.Dataset(
-        coords={"epoch": epoch_time, "direction": direction},
+        coords={
+            "epoch": epoch_time,
+            "direction": direction,
+            "compression": compression,
+        },
         attrs=attribute_manager.get_global_attributes(logical_file_id),
     )
 
     output["vectors"] = vectors
+    output["compression_flags"] = compression_flags
 
     # TODO: Put is_mago and active in the header
 
