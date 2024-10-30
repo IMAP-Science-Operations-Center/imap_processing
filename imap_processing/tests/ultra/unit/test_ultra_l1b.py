@@ -73,7 +73,7 @@ def test_create_dataset(mock_data_l1b_dict):
     assert "epoch" in dataset.coords
     assert dataset.coords["epoch"].dtype == "datetime64[ns]"
     assert dataset.attrs["Logical_source"] == "imap_ultra_l1b_45sensor-de"
-    assert dataset["x_front"].attrs["UNITS"] == "mm"
+    assert dataset["x_front"].attrs["UNITS"] == "mm / 100"
     np.testing.assert_array_equal(dataset["x_front"], np.zeros(3))
 
 
