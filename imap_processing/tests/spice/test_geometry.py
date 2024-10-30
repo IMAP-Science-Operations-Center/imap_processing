@@ -321,7 +321,15 @@ def test_basis_vectors():
     sc_axes = basis_vectors(et, SpiceFrame.IMAP_SPACECRAFT, SpiceFrame.IMAP_SPACECRAFT)
     np.testing.assert_array_equal(sc_axes, np.eye(3))
     # test array of et input
-    sc_axes = basis_vectors(
-        np.arange(10) + et, SpiceFrame.IMAP_SPACECRAFT, SpiceFrame.ECLIPJ2000
-    )
+    et_array = np.arange(10) + et
+    sc_axes = basis_vectors(et_array, SpiceFrame.IMAP_SPACECRAFT, SpiceFrame.ECLIPJ2000)
     assert sc_axes.shape == (10, 3, 3)
+    # Verify that for each time, the basis matrix is the transpose of the
+    # rotation matrix
+    for et, basis_matrix in zip(et_array, sc_axes):
+        np.testing.assert_array_equal(
+            basis_matrix,
+            get_rotation_matrix(
+                et, SpiceFrame.IMAP_SPACECRAFT, SpiceFrame.ECLIPJ2000
+            ).T,
+        )
