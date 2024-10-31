@@ -115,6 +115,8 @@ class MagL1aPacketProperties:
         Science Data Compression Flag from level 0
     mago_is_primary : int
         1 if mago is designated the primary sensor, otherwise 0
+    first_byte : int
+        First byte of the vector data. Needed to compute compression_width.
     seconds_per_packet : int
         Number of seconds of data in this packet - calculated as pus_ssubtype + 1
     total_vectors : int
@@ -224,6 +226,7 @@ class MagL1a:
     unpack_one_vector()
     decode_fib_zig_zag()
     twos_complement()
+    update_compression_array()
     """
 
     is_mago: bool
