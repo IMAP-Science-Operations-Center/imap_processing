@@ -17,7 +17,7 @@ from imap_processing.utils import packet_file_to_datasets
 def packet_filepath():
     """Set path to test data file"""
     return (
-        imap_module_directory / "tests/hit/test_data/imap_hit_l0_hk_20100105_v001.pkts"
+        imap_module_directory / "tests/hit/test_data/imap_hit_l0_raw_20100105_v001.pkts"
     )
 
 
