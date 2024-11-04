@@ -12,18 +12,21 @@ from imap_processing.mag.l1b.mag_l1b import mag_l1b, mag_l1b_processing
 def mag_l1a_dataset():
     epoch = xr.DataArray(np.arange(20), name="epoch", dims=["epoch"])
     direction = xr.DataArray(np.arange(4), name="direction", dims=["direction"])
+    compression = xr.DataArray(np.arange(2), name="compression", dims=["compression"])
     vectors = xr.DataArray(
         np.zeros((20, 4)),
         dims=["epoch", "direction"],
         coords={"epoch": epoch, "direction": direction},
     )
+    compression_flags = xr.DataArray(np.zeros((20, 2)), dims=["epoch", "compression"])
 
     vectors[0, :] = np.array([1, 1, 1, 0])
 
     output_dataset = xr.Dataset(
-        coords={"epoch": epoch, "direction": direction},
+        coords={"epoch": epoch, "direction": direction, "compression": compression},
     )
     output_dataset["vectors"] = vectors
+    output_dataset["compression_flags"] = compression_flags
 
     return output_dataset
 
@@ -76,3 +79,40 @@ def test_cdf_output():
     output_path = write_cdf(l1b_dataset)
 
     assert Path.exists(output_path)
+
+
+def test_mag_compression_scale(mag_l1a_dataset):
+    test_calibration = np.array(
+        [
+            [2.2972202, 0.0, 0.0],
+            [0.00348625, 2.23802879, 0.0],
+            [-0.00250788, -0.00888437, 2.24950008],
+        ]
+    )
+    mag_l1a_dataset["vectors"][0, :] = np.array([1, 1, 1, 0])
+    mag_l1a_dataset["vectors"][1, :] = np.array([1, 1, 1, 0])
+    mag_l1a_dataset["vectors"][2, :] = np.array([1, 1, 1, 0])
+    mag_l1a_dataset["vectors"][3, :] = np.array([1, 1, 1, 0])
+
+    mag_l1a_dataset["compression_flags"][0, :] = np.array([1, 16])
+    mag_l1a_dataset["compression_flags"][1, :] = np.array([0, 0])
+    mag_l1a_dataset["compression_flags"][2, :] = np.array([1, 18])
+    mag_l1a_dataset["compression_flags"][3, :] = np.array([1, 14])
+
+    mag_l1a_dataset.attrs["Logical_source"] = ["imap_mag_l1a_norm-mago"]
+    output = mag_l1b(mag_l1a_dataset, "v001")
+
+    calibrated_vectors = np.matmul(np.array([1, 1, 1]), test_calibration)
+    # 16 bit width is the standard
+    assert np.allclose(output["vectors"].data[0][:3], calibrated_vectors)
+    # uncompressed data is uncorrected
+    assert np.allclose(output["vectors"].data[1][:3], calibrated_vectors)
+
+    # width of 18 should be multiplied by 1/4
+    scaled_vectors = calibrated_vectors * 1 / 4
+    # should be corrected
+    assert np.allclose(output["vectors"].data[2][:3], scaled_vectors)
+
+    # width of 14 should be multiplied by 4
+    scaled_vectors = calibrated_vectors * 4
+    assert np.allclose(output["vectors"].data[3][:3], scaled_vectors)
