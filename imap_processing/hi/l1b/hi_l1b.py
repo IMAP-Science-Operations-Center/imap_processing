@@ -290,11 +290,15 @@ def de_nominal_bin_and_spin_phase(dataset: xr.Dataset) -> dict[str, xr.DataArray
     # spacecraft spin-phase, not instrument spin-phase, so the same is done here.
     met_querry_times = j2000ns_to_j2000s(dataset.event_met.values)
     imap_spin_phase = get_spacecraft_spin_phase(met_querry_times)
-    new_vars["nominal_bin"].values = (imap_spin_phase * 360 / 4).astype(np.uint8)
+    new_vars["nominal_bin"].values = np.asarray(imap_spin_phase * 360 / 4).astype(
+        np.uint8
+    )
 
     sensor_number = parse_sensor_number(dataset.attrs["Logical_source"])
-    new_vars["spin_phase"].values = get_instrument_spin_phase(
-        met_querry_times, SpiceFrame[f"IMAP_HI_{sensor_number}"]
+    new_vars["spin_phase"].values = np.asarray(
+        get_instrument_spin_phase(
+            met_querry_times, SpiceFrame[f"IMAP_HI_{sensor_number}"]
+        )
     ).astype(np.float32)
     return new_vars
 
