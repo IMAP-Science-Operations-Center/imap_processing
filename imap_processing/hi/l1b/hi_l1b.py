@@ -264,7 +264,7 @@ def compute_coincidence_type_and_time_deltas(
 
 def de_nominal_bin_and_spin_phase(dataset: xr.Dataset) -> dict[str, xr.DataArray]:
     """
-    Compute instrument spin-phase and nominal bin for each direct event.
+    Compute nominal bin and instrument spin-phase for each direct event.
 
     Parameters
     ----------
