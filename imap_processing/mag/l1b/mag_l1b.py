@@ -4,7 +4,6 @@ from pathlib import Path
 
 import numpy as np
 import xarray as xr
-from numpy.core.multiarray import ndarray
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import load_cdf
@@ -100,7 +99,7 @@ def update_vector(
     input_vector: np.ndarray,
     input_compression: np.ndarray,
     calibration_matrix: xr.DataArray,
-) -> tuple[ndarray, ndarray]:
+) -> tuple[np.ndarray, np.ndarray]:
     """
     Apply calibration and compression scaling to vector.
 
