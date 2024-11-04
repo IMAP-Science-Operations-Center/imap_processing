@@ -159,11 +159,11 @@ def test_compute_coincidence_type_and_time_deltas(synthetic_trigger_id_and_tof_d
 
 @mock.patch("imap_processing.hi.l1b.hi_l1b.parse_sensor_number", return_value=90)
 @mock.patch("imap_processing.hi.l1b.hi_l1b.get_instrument_spin_phase")
-def test_compute_instrument_spin_phase(parse_sensor_number_mock, instrument_phase_mock):
+def test_compute_instrument_spin_phase(instrument_phase_mock, parse_sensor_number_mock):
     """Test coverage for compute_instrument_spin_phase."""
     # set the get_instrument_spin_phase mock to return an array of values between
     # 0 and 1
-    parse_sensor_number_mock.side_effect = lambda x, y: np.linspace(0, 1, len(x))
+    instrument_phase_mock.side_effect = lambda x, y: np.linspace(0, 1, len(x))
 
     # generate a fake dataset with epoch coordinate and event_met variable
     de_list_length = 100
