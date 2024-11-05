@@ -137,7 +137,8 @@ def process_housekeeping_data(
     Updates the housekeeping dataset with a single 2D leak_i
     variable. Also updates the dataset attributes, coordinates
     and data variable dimensions according to specifications in
-    a cdf yaml file.
+    a cdf yaml file. This function is used for both L1A and L1B
+    housekeeping data products.
 
     Parameters
     ----------

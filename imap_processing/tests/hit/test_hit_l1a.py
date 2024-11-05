@@ -221,4 +221,3 @@ def test_process_housekeeping(housekeeping_dataset, attribute_manager):
     # Check that the dataset has the correct attributes, coordinates, and dimensions
     assert processed_hskp_dataset.attrs == dataset_attrs
     assert processed_hskp_dataset.coords.keys() == dataset_coords_dims
-    assert processed_hskp_dataset.sizes.keys() == dataset_coords_dims

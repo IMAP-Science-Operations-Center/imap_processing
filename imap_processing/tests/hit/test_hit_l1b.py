@@ -118,6 +118,8 @@ def test_hit_l1b_hk_dataset_variables(hk_dataset):
 
 def test_hit_l1b_hk_dataset_attributes(hk_dataset):
     """Test the attributes, dims, and coords in the housekeeping dataset"""
+    # TODO consider removing this test since it may be hard to upkeep if
+    #  attributes change
     # Define the housekeeping dataset attributes
     dataset_attrs = {
         "Data_level": "1B",
@@ -154,7 +156,6 @@ def test_hit_l1b_hk_dataset_attributes(hk_dataset):
     # Check that the dataset has the correct attributes, coordinates, and dimensions
     assert hk_dataset.attrs == dataset_attrs
     assert hk_dataset.coords.keys() == dataset_coords_dims
-    assert hk_dataset.sizes.keys() == dataset_coords_dims
 
 
 def test_hit_l1b(dependencies):

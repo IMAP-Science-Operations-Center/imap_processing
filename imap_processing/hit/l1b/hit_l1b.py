@@ -42,7 +42,6 @@ def hit_l1b(dependencies: dict, data_version: str) -> list[xr.Dataset]:
     # Create L1B datasets
     datasets: list = []
     if "imap_hit_l0_raw" in dependencies:
-        logger.info("Creating HIT L1B housekeeping dataset")
         # Unpack ccsds file to xarray datasets
         packet_file = dependencies["imap_hit_l0_raw"]
         datasets_by_apid = get_datasets_by_apid(packet_file, derived=True)
