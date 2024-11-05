@@ -43,7 +43,7 @@ def swapi_l2(l1_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
     # Load the CDF attributes
     cdf_manager = ImapCdfAttributes()
     cdf_manager.add_instrument_global_attrs("swapi")
-    cdf_manager.load_variable_attributes("imap_swapi_variable_attrs.yaml")
+    cdf_manager.add_instrument_variable_attrs(instrument="swapi", level=None)
 
     # Copy over only certain variables from L1 to L2 dataset
     l1_data_keys = [

@@ -263,7 +263,7 @@ def create_dataset(de_data_list: list, packet_met_time: list) -> xr.Dataset:
     # Load the CDF attributes
     attr_mgr = ImapCdfAttributes()
     attr_mgr.add_instrument_global_attrs("hi")
-    attr_mgr.load_variable_attributes("imap_hi_variable_attrs.yaml")
+    attr_mgr.add_instrument_variable_attrs(instrument="hi", level=None)
     # uncomment this once Maxine's PR is merged
     # attr_mgr.add_global_attribute("Data_version", data_version)
 

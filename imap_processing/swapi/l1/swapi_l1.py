@@ -480,7 +480,7 @@ def process_swapi_science(
     # ====================================================
     cdf_manager = ImapCdfAttributes()
     cdf_manager.add_instrument_global_attrs("swapi")
-    cdf_manager.load_variable_attributes("imap_swapi_variable_attrs.yaml")
+    cdf_manager.add_instrument_variable_attrs(instrument="swapi", level=None)
 
     # ===================================================================
     # Quality flags
