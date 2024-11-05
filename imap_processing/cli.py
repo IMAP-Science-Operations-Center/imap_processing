@@ -557,7 +557,7 @@ class Hit(ProcessInstrument):
         elif self.data_level == "l1b":
             data_dict = {}
             for dependency in dependencies:
-                if "imap_hit_l0_raw" in dependency:
+                if "imap_hit_l0_raw" in str(dependency):
                     # Add path to CCSDS file to process housekeeping
                     data_dict["imap_hit_l0_raw"] = dependency
                 else:
