@@ -102,6 +102,29 @@ FLAG_PATTERN = np.array([1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 FRAME_SIZE = len(FLAG_PATTERN)
 
 
+def subcom_sectorates(sectorates: xr.DataArray, hdr_min_count: int) -> xr.DataArray:
+    """
+    Subcommutate sectorates data.
+
+    Parameters
+    ----------
+    sectorates : xr.DataArray
+        Sectorates data for a science frame.
+    hdr_min_count : int
+        Header min count value for the same science frame.
+
+    Returns
+    -------
+    subcom_sectorates : xr.DataArray
+        Subcommutated sectorates data.
+    """
+
+    # TODO: Compute hdr min count mod 10
+    # get the species and energy range from hdr_min_count_mod_10
+    # assign the sectorate data to the corresponding species and energy range
+    # determine how to organize this and what to pass back...
+
+
 def parse_data(bin_str: str, bits_per_index: int, start: int, end: int) -> list:
     """
     Parse binary data.
