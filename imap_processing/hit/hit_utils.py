@@ -10,7 +10,9 @@ from enum import IntEnum
 import numpy as np
 import xarray as xr
 
+from imap_processing import imap_module_directory
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
+from imap_processing.utils import packet_file_to_datasets
 
 
 class HitAPID(IntEnum):
@@ -30,6 +32,38 @@ class HitAPID(IntEnum):
     HIT_HSKP = 1251
     HIT_SCIENCE = 1252
     HIT_IALRT = 1253
+
+
+def get_datasets_by_apid(
+    packet_file: str, derived: bool = False
+) -> dict[int, xr.Dataset]:
+    """
+    Get datasets by APID from a CCSDS packet file.
+
+    Parameters
+    ----------
+    packet_file : str
+        Path to the CCSDS data packet file.
+    derived : bool, optional
+        Flag to use derived values, by default False.
+        Only set to True to get engineering units for L1B
+        housekeeping data product.
+
+    Returns
+    -------
+    datasets_by_apid : dict[int, xr.Dataset]
+        Dictionary of xarray datasets by APID.
+    """
+    # Unpack ccsds file
+    packet_definition = (
+        imap_module_directory / "hit/packet_definitions/hit_packet_definitions.xml"
+    )
+    datasets_by_apid: dict[int, xr.Dataset] = packet_file_to_datasets(
+        packet_file=packet_file,
+        xtce_packet_definition=packet_definition,
+        use_derived_value=derived,
+    )
+    return datasets_by_apid
 
 
 def get_attribute_manager(data_version: str, level: str) -> ImapCdfAttributes:
@@ -94,16 +128,16 @@ def concatenate_leak_variables(
     return updated_dataset
 
 
-def process_housekeeping(
+def process_housekeeping_data(
     dataset: xr.Dataset, attr_mgr: ImapCdfAttributes, logical_source: str
 ) -> xr.Dataset:
     """
     Will process housekeeping dataset for CDF product.
 
-    Updates the housekeeping dataset a single leak_i variable
-    as a 2D array. Also updates the dataset attributes,
-    coordinates and data variable dimensions according to
-    specifications in a cdf yaml file.
+    Updates the housekeeping dataset with a single 2D leak_i
+    variable. Also updates the dataset attributes, coordinates
+    and data variable dimensions according to specifications in
+    a cdf yaml file.
 
     Parameters
     ----------
