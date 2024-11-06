@@ -17,12 +17,13 @@ are described below. It is assumed that steps (1) through (4) in the :ref:`git &
 are already completed.
 
 The three repositories are expected to be released at different cadences:
+
 * The ``imap_processing`` repository is released on a monthly cadence (typically the last day of the month, but can
-vary depending on the availability of developers time to make the release.
+  vary depending on the availability of developers time to make the release.
 * The ``sds_data_manager`` repository is released on a as-needed basis, typically when enough changes have been made
-since the last release to justify a new release.
+  since the last release to justify a new release.
 * The ``imap-data-access`` repository is released whenever a new feature or bug fix is implemented, since this
-repository acts as a dependency of ``imap_processing`` and is used by external users.
+  repository acts as a dependency of ``imap_processing`` and is used by external users.
 
 
 Note: We use the ``imap_processing`` repository as an example in these instructions, but this can be applied to the
