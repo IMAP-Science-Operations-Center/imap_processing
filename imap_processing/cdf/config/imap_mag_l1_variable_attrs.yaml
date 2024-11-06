@@ -33,10 +33,9 @@ default_coords: &default_coords
 raw_vector_attrs:
   <<: *default_coords
   CATDESC: Raw unprocessed magnetic field vector data in bytes
+  DEPEND_0: epoch
   DEPEND_1: direction
   LABL_PTR_1: direction_label
-  LABL_PTR_2: direction_label # TODO: I don't think this is necessary, remove if needed
-  # post-cdflib update.
   FIELDNAM: Magnetic Field Vector
   FORMAT: I3
 
