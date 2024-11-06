@@ -46,7 +46,7 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/vmartinez-cu"><img src="https://avatars.githubusercontent.com/u/39746325?v=4?s=100" width="100px;" alt="vmartinez-cu"/><br /><sub><b>vmartinez-cu</b></sub></a><br /></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/subagonsouth"><img src="https://avatars.githubusercontent.com/u/16110870?v=4?s=100" width="100px;" alt="Tim Plummer"/><br /><sub><b>Tim Plummer</b></sub></a><br /></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/daralynnrhode"><img src="https://avatars.githubusercontent.com/u/143308810?v=4?s=100" width="100px;" alt="Daralynn Rhode"/><br /><sub><b>Daralynn Rhode</b></sub></a><br /></td>
-      <td align="center" valign="top" width="14.28%"><a href="https://github.com/anamanica"><img src="https://avatars.githubusercontent.com/u/171708990?v=4?s=100" width="100px;" alt="anamanica"/><br /><sub><b>anamanica</b></sub></a><br />></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/anamanica"><img src="https://avatars.githubusercontent.com/u/171708990?v=4?s=100" width="100px;" alt="anamanica"/><br /><sub><b>anamanica</b></sub></a><br /></td>
     </tr>
   </tbody>
 </table>
