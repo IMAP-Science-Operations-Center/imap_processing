@@ -13,11 +13,10 @@ Software Releases
 This project uses a workflow in which releases are made off of a 'version branch' (e.g. ``v0.1.x``), as depicted in the
 diagram shown in the :ref:`git & GitHub Workflow <git-and-github-workflow>` page. This includes both 'nominal releases'
 (i.e. new features to be released to the public) and 'patches' (i.e. bug fixes to the version branch). These workflows
-are described below. It is assumed that steps (1) through (4) in the
-:ref:`git & GitHub Workflow <git-and-github-workflow>` are already completed.
+are described below. It is assumed that steps (1) through (4) in the :ref:`git & GitHub Workflow <git-and-github-workflow>`
+are already completed.
 
 The three repositories are expected to be released at different cadences:
-
 * The ``imap_processing`` repository is released on a monthly cadence (typically the last day of the month, but can
 vary depending on the availability of developers time to make the release.
 * The ``sds_data_manager`` repository is released on a as-needed basis, typically when enough changes have been made
@@ -26,8 +25,8 @@ since the last release to justify a new release.
 repository acts as a dependency of ``imap_processing`` and is used by external users.
 
 
-*Note: We use the ``imap_processing`` repository as an example in these instructions, but this can be applied to the
-other repositories as well.*
+Note: We use the ``imap_processing`` repository as an example in these instructions, but this can be applied to the
+other repositories as well.
 
 .. _nominal-releases:
 
