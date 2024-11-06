@@ -36,17 +36,17 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/tech3371"><img src="https://avatars.githubusercontent.com/u/36522642?v=4?s=100" width="100px;" alt="Tenzin Choedon"/><br /><sub><b>Tenzin Choedon</b></sub></a><br /></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/laspsandoval"><img src="https://avatars.githubusercontent.com/u/46567335?v=4?s=100" width="100px;" alt="Laura Sandoval"/><br /><sub><b>Laura Sandoval</b></sub></a><br /></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/sdhoyt"><img src="https://avatars.githubusercontent.com/u/7146374?v=4?s=100" width="100px;" alt="Sean Hoyt"/><br /><sub><b>Sean Hoyt</b></sub></a><br /></td>
-      <td align="center" valign="top" width="14.28%"><a href="https://github.com/GFMoraga"><img src="https://avatars.githubusercontent.com/u/104743000?v=4?s=100" width="100px;" alt="Gabriel Moraga"/><br /><sub><b>Gabriel M.</b></sub></a><br /></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/GFMoraga"><img src="https://avatars.githubusercontent.com/u/104743000?v=4?s=100" width="100px;" alt="Gabriel Moraga"/><br /><sub><b>Gabriel Moraga</b></sub></a><br /></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/bourque"><img src="https://avatars.githubusercontent.com/u/2250769?v=4?s=100" width="100px;" alt="Matthew Bourque"/><br /><sub><b>Matthew Bourque</b></sub></a><br /></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/maxinelasp"><img src="https://avatars.githubusercontent.com/u/117409426?v=4?s=100" width="100px;" alt="Maxine Hartnett"/><br /><sub><b>Maxine Hartnett</b></sub></a><br /></td>
     </tr>
     <tr>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/bryan-harter"><img src="https://avatars.githubusercontent.com/u/41062454?v=4?s=100" width="100px;" alt="Bryan Harter"/><br /><sub><b>Bryan Harter</b></sub></a><br /></td>
-      <td align="center" valign="top" width="14.28%"><a href="https://github.com/mstrumik"><img src="https://avatars.githubusercontent.com/u/142874888?v=4?s=100" width="100px;" alt="Marek Strumik"/><br /><sub><b>mstrumik</b></sub></a><br /></td>
-      <td align="center" valign="top" width="14.28%"><a href="https://github.com/vmartinez-cu"><img src="https://avatars.githubusercontent.com/u/39746325?v=4?s=100" width="100px;" alt="Veronica Martinez"/><br /><sub><b>vmartinez-cu</b></sub></a><br /></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/mstrumik"><img src="https://avatars.githubusercontent.com/u/142874888?v=4?s=100" width="100px;" alt="Marek Strumik"/><br /><sub><b>Marek Strumik</b></sub></a><br /></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/vmartinez-cu"><img src="https://avatars.githubusercontent.com/u/39746325?v=4?s=100" width="100px;" alt="Veronica Martinez"/><br /><sub><b>Veronica Martinez-cu</b></sub></a><br /></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/subagonsouth"><img src="https://avatars.githubusercontent.com/u/16110870?v=4?s=100" width="100px;" alt="Tim Plummer"/><br /><sub><b>Tim Plummer</b></sub></a><br /></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/daralynnrhode"><img src="https://avatars.githubusercontent.com/u/143308810?v=4?s=100" width="100px;" alt="Daralynn Rhode"/><br /><sub><b>Daralynn Rhode</b></sub></a><br /></td>
-      <td align="center" valign="top" width="14.28%"><a href="https://github.com/anamanica"><img src="https://avatars.githubusercontent.com/u/171708990?v=4?s=100" width="100px;" alt="Ana Manica"/><br /><sub><b>anamanica</b></sub></a><br /></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/anamanica"><img src="https://avatars.githubusercontent.com/u/171708990?v=4?s=100" width="100px;" alt="Ana Manica"/><br /><sub><b>Ana Manica</b></sub></a><br /></td>
     </tr>
   </tbody>
 </table>
