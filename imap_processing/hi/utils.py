@@ -1,5 +1,6 @@
 """IMAP-Hi utils functions."""
 
+import re
 from collections.abc import Sequence
 from dataclasses import dataclass
 from enum import IntEnum
@@ -65,6 +66,32 @@ class HiConstants:
     TOF1_BAD_VALUES = (511, 1023)
     TOF2_BAD_VALUES = (1023,)
     TOF3_BAD_VALUES = (1023,)
+
+
+def parse_sensor_number(full_string: str) -> int:
+    """
+    Parse the sensor number from a string.
+
+    This function uses regex to match any portion of the input string
+    containing "(45|90)sensor".
+
+    Parameters
+    ----------
+    full_string : str
+        A string containing sensor number.
+
+    Returns
+    -------
+    sensor_number : int
+      The integer sensor number. For IMAP-Hi this is 45 or 90.
+    """
+    regex_str = r".*(?P<sensor_num>(45|90))sensor.*?"
+    match = re.match(regex_str, full_string)
+    if match is None:
+        raise ValueError(
+            f"String 'sensor(45|90)' not found in input string: '{full_string}'"
+        )
+    return int(match["sensor_num"])
 
 
 def full_dataarray(

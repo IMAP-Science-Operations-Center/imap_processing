@@ -303,8 +303,6 @@ def get_spacecraft_to_instrument_spin_phase_offset(instrument: SpiceFrame) -> fl
     return offset_lookup[instrument]
 
 
-@typing.no_type_check
-@ensure_spice
 def frame_transform(
     et: Union[float, npt.NDArray],
     position: npt.NDArray,
@@ -350,10 +348,11 @@ def frame_transform(
                 f"Invalid position shape: {position.shape}. "
                 f"Each input position vector must have 3 elements."
             )
-        if not len(position) == len(et):
+        if not len(position) == np.asarray(et).size:
             raise ValueError(
                 "Mismatch in number of position vectors and Ephemeris times provided."
-                f"Position has {len(position)} elements and et has {len(et)} elements."
+                f"Position has {len(position)} elements and et has "
+                f"{np.asarray(et).size} elements."
             )
 
     # rotate will have shape = (3, 3) or (n, 3, 3)
@@ -369,6 +368,8 @@ def frame_transform(
     return result
 
 
+@typing.no_type_check
+@ensure_spice
 def get_rotation_matrix(
     et: Union[float, npt.NDArray],
     from_frame: SpiceFrame,
@@ -443,3 +444,48 @@ def instrument_pointing(
     if isinstance(et, typing.Collection):
         return np.rad2deg([spice.reclat(vec)[1:] for vec in pointing])
     return np.rad2deg(spice.reclat(pointing)[1:])
+
+
+def basis_vectors(
+    et: Union[float, npt.NDArray],
+    from_frame: SpiceFrame,
+    to_frame: SpiceFrame,
+) -> npt.NDArray:
+    """
+    Get the basis vectors of the `from_frame` expressed in the `to_frame`.
+
+    The rotation matrix defining a frame transform are the basis vectors of
+    the `from_frame` expressed in the `to_frame`. This function just transposes
+    each rotation matrix retrieved from the `get_rotation_matrix` function so
+    that basis vectors can be indexed 0 for x, 1 for y, and 2 for z.
+
+    Parameters
+    ----------
+    et : float or np.ndarray
+        Ephemeris time(s) for which to get the rotation matrices.
+    from_frame : SpiceFrame
+        Reference frame to transform from.
+    to_frame : SpiceFrame
+        Reference frame to transform to.
+
+    Returns
+    -------
+    basis_vectors : np.ndarray
+        If `et` is a float, the returned basis vector matrix is of shape `(3, 3)`. If
+        `et` is a np.ndarray, the returned basis vector matrix is of shape `(n, 3, 3)`
+        where `n` matches the number of elements in et and basis vectors are the rows
+        of the 3 by 3 matrices.
+
+    Examples
+    --------
+    >>> from imap_processing.spice.geometry import basis_vectors
+    ... from imap_processing.spice.time import j2000ns_to_j2000s
+    ... et = j2000ns_to_j2000s(dataset.epoch.values)
+    ... basis_vectors = basis_vectors(
+    ...     et, SpiceFrame.IMAP_SPACECRAFT, SpiceFrame.ECLIPJ2000
+    ... )
+    ... spacecraft_x = basis_vectors[:, 0]
+    ... spacecraft_y = basis_vectors[:, 1]
+    ... spacecraft_z = basis_vectors[:, 2]
+    """
+    return np.moveaxis(get_rotation_matrix(et, from_frame, to_frame), -1, -2)

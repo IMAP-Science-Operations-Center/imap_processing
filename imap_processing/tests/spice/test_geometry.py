@@ -8,6 +8,7 @@ import spiceypy as spice
 from imap_processing.spice.geometry import (
     SpiceBody,
     SpiceFrame,
+    basis_vectors,
     frame_transform,
     get_instrument_spin_phase,
     get_rotation_matrix,
@@ -17,6 +18,7 @@ from imap_processing.spice.geometry import (
     imap_state,
     instrument_pointing,
 )
+from imap_processing.spice.kernels import ensure_spice
 
 
 @pytest.mark.parametrize(
@@ -99,10 +101,10 @@ def test_get_spacecraft_spin_phase_value_error(query_met_times, fake_spin_data):
         _ = get_spacecraft_spin_phase(query_met_times)
 
 
-@pytest.mark.usefixtures("_set_spin_data_filepath")
-def test_get_spin_data():
+@pytest.mark.usefixtures("use_fake_spin_data_for_time")
+def test_get_spin_data(use_fake_spin_data_for_time):
     """Test get_spin_data() with generated spin data."""
-
+    use_fake_spin_data_for_time(453051323.0 - 56120)
     spin_data = get_spin_data()
 
     (
@@ -250,7 +252,7 @@ def test_frame_transform_exceptions():
         match="Mismatch in number of position vectors and Ephemeris times provided.",
     ):
         frame_transform(
-            np.arange(2),
+            1,
             np.arange(9).reshape((3, 3)),
             SpiceFrame.ECLIPJ2000,
             SpiceFrame.IMAP_HIT,
@@ -306,3 +308,30 @@ def test_instrument_pointing(furnish_kernels):
             et, SpiceFrame.IMAP_HI_90, SpiceFrame.ECLIPJ2000, cartesian=True
         )
         assert ins_pointing.shape == (3, 3)
+
+
+@pytest.mark.external_kernel()
+@pytest.mark.use_test_metakernel("imap_ena_sim_metakernel.template")
+def test_basis_vectors():
+    """Test coverage for basis_vectors()."""
+    # This call to SPICE needs to be wrapped with `ensure_spice` so that kernels
+    # get furnished automatically
+    et = ensure_spice(spice.utc2et)("2025-09-30T12:00:00.000")
+    # test input of float
+    sc_axes = basis_vectors(et, SpiceFrame.IMAP_SPACECRAFT, SpiceFrame.IMAP_SPACECRAFT)
+    np.testing.assert_array_equal(sc_axes, np.eye(3))
+    # test array of et input
+    et_array = np.arange(10) + et
+    sc_axes = basis_vectors(et_array, SpiceFrame.IMAP_SPACECRAFT, SpiceFrame.ECLIPJ2000)
+    assert sc_axes.shape == (10, 3, 3)
+    # Verify that for each time, the basis vectors are correct
+    for et, basis_matrix in zip(et_array, sc_axes):
+        np.testing.assert_array_equal(
+            basis_matrix,
+            frame_transform(
+                et * np.ones(3),
+                np.eye(3),
+                SpiceFrame.IMAP_SPACECRAFT,
+                SpiceFrame.ECLIPJ2000,
+            ),
+        )

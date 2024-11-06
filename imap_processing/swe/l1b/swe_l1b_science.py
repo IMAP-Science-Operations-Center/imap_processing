@@ -7,8 +7,8 @@ import numpy.typing as npt
 import pandas as pd
 import xarray as xr
 
-from imap_processing import imap_module_directory
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
+from imap_processing.swe.utils.swe_utils import read_lookup_table
 
 logger = logging.getLogger(__name__)
 
@@ -41,32 +41,28 @@ esa_voltage_row_index_dict = {
 }
 
 
-def read_lookup_table(table_index_value: int) -> pd.DataFrame:
+def get_esa_dataframe(esa_table_number: int) -> pd.DataFrame:
     """
     Read lookup table from file.
 
     Parameters
     ----------
-    table_index_value : int
+    esa_table_number : int
         ESA table index number.
 
     Returns
     -------
-    pandas.DataFrame
-        Line from lookup table todo check.
+    esa_steps : pandas.DataFrame
+        ESA table_number and its associated values.
     """
-    # This is equivalent of os.path.join in Path
-    lookup_table_filepath = imap_module_directory / "swe/l1b/swe_esa_lookup_table.csv"
-    lookup_table = pd.read_csv(
-        lookup_table_filepath,
-    )
+    if esa_table_number not in [0, 1]:
+        raise ValueError(f"Unknown ESA table number {esa_table_number}")
 
-    if table_index_value == 0:
-        return lookup_table.loc[lookup_table["table_index"] == 0]
-    elif table_index_value == 1:
-        return lookup_table.loc[lookup_table["table_index"] == 1]
-    else:
-        raise ValueError("Error: Invalid table index value")
+    # Get the lookup table DataFrame
+    lookup_table = read_lookup_table()
+
+    esa_steps = lookup_table.loc[lookup_table["table_index"] == esa_table_number]
+    return esa_steps
 
 
 def deadtime_correction(counts: np.ndarray, acq_duration: int) -> npt.NDArray:
@@ -99,7 +95,7 @@ def deadtime_correction(counts: np.ndarray, acq_duration: int) -> npt.NDArray:
     counts : numpy.ndarray
         Counts data before deadtime corrections.
     acq_duration : int
-        This is ACQ_DURATION from science packet.
+        This is ACQ_DURATION from science packet. acq_duration is in microseconds.
 
     Returns
     -------
@@ -108,10 +104,10 @@ def deadtime_correction(counts: np.ndarray, acq_duration: int) -> npt.NDArray:
     """
     # deadtime is 360 ns
     deadtime = 360e-9
-    correct = 1.0 - (deadtime * counts / (acq_duration / 1000.0))
+    correct = 1.0 - (deadtime * (counts / (acq_duration * 1e-6)))
     correct = np.maximum(0.1, correct)
     corrected_count = np.divide(counts, correct)
-    return corrected_count
+    return corrected_count.astype(np.float64)
 
 
 def convert_counts_to_rate(data: np.ndarray, acq_duration: int) -> npt.NDArray:
@@ -125,17 +121,17 @@ def convert_counts_to_rate(data: np.ndarray, acq_duration: int) -> npt.NDArray:
     data : numpy.ndarray
         Counts data.
     acq_duration : int
-        Acquisition duration. acq_duration is in millieseconds.
+        Acquisition duration. acq_duration is in microseconds.
 
     Returns
     -------
     numpy.ndarray
         Count rates array in seconds.
     """
-    # convert milliseconds to seconds
-    # Todo: check with SWE team about int or float types.
-    acq_duration = int(acq_duration / 1000.0)
-    return data / acq_duration
+    # convert microseconds to seconds
+    acq_duration_sec = acq_duration * 1e-6
+    count_rate = data / acq_duration_sec
+    return count_rate.astype(np.float64)
 
 
 def calculate_calibration_factor(time: int) -> None:
@@ -220,7 +216,7 @@ def populate_full_cycle_data(
     full_cycle_ds : xarray.Dataset
         Full cycle data and its acquisition times.
     """
-    esa_lookup_table = read_lookup_table(esa_table_num)
+    esa_lookup_table = get_esa_dataframe(esa_table_num)
 
     # If esa lookup table number is 0, then populate using esa lookup table data
     # with information that esa step ramps up in even column and ramps down

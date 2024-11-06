@@ -12,6 +12,7 @@ from imap_processing.utils import convert_to_binary_string
 # Structure to hold binary details for a
 # section of science data. Used to unpack
 # binary data.
+
 HITPacking = namedtuple(
     "HITPacking",
     [
