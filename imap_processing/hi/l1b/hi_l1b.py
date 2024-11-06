@@ -288,8 +288,8 @@ def de_nominal_bin_and_spin_phase(dataset: xr.Dataset) -> dict[str, xr.DataArray
     # nominal_bin is the index number of the 90 4-degree bins that each DE would
     # be binned into in the histogram packet. The Hi histogram data is binned by
     # spacecraft spin-phase, not instrument spin-phase, so the same is done here.
-    met_querry_times = j2000ns_to_j2000s(dataset.event_met.values)
-    imap_spin_phase = get_spacecraft_spin_phase(met_querry_times)
+    met_query_times = j2000ns_to_j2000s(dataset.event_met.values)
+    imap_spin_phase = get_spacecraft_spin_phase(met_query_times)
     new_vars["nominal_bin"].values = np.asarray(imap_spin_phase * 360 / 4).astype(
         np.uint8
     )
@@ -297,7 +297,7 @@ def de_nominal_bin_and_spin_phase(dataset: xr.Dataset) -> dict[str, xr.DataArray
     sensor_number = parse_sensor_number(dataset.attrs["Logical_source"])
     new_vars["spin_phase"].values = np.asarray(
         get_instrument_spin_phase(
-            met_querry_times, SpiceFrame[f"IMAP_HI_{sensor_number}"]
+            met_query_times, SpiceFrame[f"IMAP_HI_{sensor_number}"]
         )
     ).astype(np.float32)
     return new_vars
