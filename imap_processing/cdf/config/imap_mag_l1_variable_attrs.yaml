@@ -35,6 +35,8 @@ raw_vector_attrs:
   CATDESC: Raw unprocessed magnetic field vector data in bytes
   DEPEND_1: direction
   LABL_PTR_1: direction_label
+  LABL_PTR_2: direction_label # TODO: I don't think this is necessary, remove if needed
+  # post-cdflib update.
   FIELDNAM: Magnetic Field Vector
   FORMAT: I3
 

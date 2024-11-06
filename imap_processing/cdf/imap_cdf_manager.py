@@ -17,8 +17,14 @@ class ImapCdfAttributes(CdfAttributeManager):  # type: ignore [misc]
 
     def __init__(self) -> None:
         """Set the path to the config directory."""
-        super().__init__(use_defaults=True)
         self.source_dir = Path(__file__).parent / "config"
+
+        # TODO: Overwriting schema is not working.
+        super().__init__(
+            variable_schema_layers=[self.source_dir / "imap_variable_schema.yaml"],
+            use_defaults=True,
+        )
+
         # Load constants attrs that everyone uses
         self.load_variable_attributes(self.source_dir / "imap_constant_attrs.yaml")
         self.load_global_attributes(
