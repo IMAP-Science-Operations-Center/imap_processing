@@ -115,11 +115,16 @@ class MagL1aPacketProperties:
         Science Data Compression Flag from level 0
     mago_is_primary : int
         1 if mago is designated the primary sensor, otherwise 0
+    first_byte : int
+        First byte of the vector data. Needed to compute compression_width.
     seconds_per_packet : int
         Number of seconds of data in this packet - calculated as pus_ssubtype + 1
     total_vectors : int
         Total number of vectors in this packet - calculated as
         seconds_per_packet * vecsec
+    compression_width : int
+        Value between 0-20 indicating the width of the compressed data. If the packet
+        is uncompressed, this defaults to 0.
     """
 
     shcoarse: int
@@ -129,23 +134,38 @@ class MagL1aPacketProperties:
     src_seq_ctr: int  # From ccsds header
     compression: int
     mago_is_primary: int
+    first_byte: InitVar[int]
     seconds_per_packet: int = field(init=False)
     total_vectors: int = field(init=False)
+    compression_width: int = field(init=False)
 
-    def __post_init__(self, pus_ssubtype: int) -> None:
+    def __post_init__(self, pus_ssubtype: int, first_byte: int) -> None:
         """
-        Calculate seconds_per_packet and total_vectors.
+        Calculate seconds_per_packet, total_vectors, and compression_width.
 
         Parameters
         ----------
         pus_ssubtype : int
             PUS Service Subtype, used to determine the seconds of data in the packet.
+        first_byte : int
+            First byte from the vectors. Needed to compute compression_width, and only
+            really needed if compression == 1. The header is the first byte of the
+            vector data. The compression width is the first 6 bits of that byte.
         """
         # seconds of data in this packet is the SUBTYPE plus 1
         self.seconds_per_packet = pus_ssubtype + 1
 
         # VECSEC is already decoded in mag_l0
         self.total_vectors = self.seconds_per_packet * self.vectors_per_second
+
+        if self.compression == 1:
+            header_bin = bin(first_byte)
+            # first two values in the string are "0b"
+            # going from the end because if the byte starts with zeros, they aren't
+            # included by bin().
+            self.compression_width = int(header_bin[2:-2], 2)
+        else:
+            self.compression_width = 0
 
 
 @dataclass
@@ -187,6 +207,11 @@ class MagL1a:
         List of missing sequence numbers in the day
     start_time : numpy.datetime64
         Start time of the day, in ns since J2000 epoch
+    compression_flags : np.ndarray
+        Array of flags to indication compression and width for all timestamps in the
+        L1A file. Shaped like (n, 2) where n is the number of vectors. First value
+        is a boolean for compressed/uncompressed, second vector is a number between 0-20
+        if the data is compressed, which is the width in bits of the compressed data.
 
     Methods
     -------
@@ -201,6 +226,7 @@ class MagL1a:
     unpack_one_vector()
     decode_fib_zig_zag()
     twos_complement()
+    update_compression_array()
     """
 
     is_mago: bool
@@ -212,6 +238,7 @@ class MagL1a:
     most_recent_sequence: int = field(init=False)
     missing_sequences: list[int] = field(default_factory=list)
     start_time: np.datetime64 = field(init=False)
+    compression_flags: np.ndarray | None = field(init=False, default=None)
 
     def __post_init__(self, starting_packet: MagL1aPacketProperties) -> None:
         """
@@ -230,6 +257,7 @@ class MagL1a:
         # most_recent_sequence is the sequence number of the packet used to initialize
         # the object
         self.most_recent_sequence = starting_packet.src_seq_ctr
+        self.update_compression_array(starting_packet, self.vectors.shape[0])
 
     def append_vectors(
         self, additional_vectors: np.ndarray, packet_properties: MagL1aPacketProperties
@@ -256,6 +284,34 @@ class MagL1a:
                 range(self.most_recent_sequence + 1, vector_sequence)
             )
         self.most_recent_sequence = vector_sequence
+        self.update_compression_array(packet_properties, additional_vectors.shape[0])
+
+    def update_compression_array(
+        self, packet_properties: MagL1aPacketProperties, length: int
+    ) -> None:
+        """
+        Create or update compression_flags with 1 flag per timestamp.
+
+        If the compression for the packet is true, the second value in the array is the
+        compression width. Otherwise, it is zero.
+
+        Parameters
+        ----------
+        packet_properties : MagL1aPacketProperties
+            Packet properties that define compression flag and compression width.
+        length : int
+            Length of new array to add or append to the compression_flags attribute.
+            This is expected to be the length of the vector array.
+        """
+        new_flags = np.full(
+            (length, 2),
+            [packet_properties.compression, packet_properties.compression_width],
+            dtype=np.int8,
+        )
+        if self.compression_flags is None:
+            self.compression_flags = new_flags
+        else:
+            self.compression_flags = np.concatenate([self.compression_flags, new_flags])
 
     @staticmethod
     def calculate_vector_time(

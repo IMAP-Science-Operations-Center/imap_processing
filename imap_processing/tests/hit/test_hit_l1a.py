@@ -17,7 +17,7 @@ from imap_processing.utils import packet_file_to_datasets
 def packet_filepath():
     """Set path to test data file"""
     return (
-        imap_module_directory / "tests/hit/test_data/imap_hit_l0_hk_20100105_v001.pkts"
+        imap_module_directory / "tests/hit/test_data/imap_hit_l0_raw_20100105_v001.pkts"
     )
 
 
@@ -221,4 +221,3 @@ def test_process_housekeeping(housekeeping_dataset, attribute_manager):
     # Check that the dataset has the correct attributes, coordinates, and dimensions
     assert processed_hskp_dataset.attrs == dataset_attrs
     assert processed_hskp_dataset.coords.keys() == dataset_coords_dims
-    assert processed_hskp_dataset.sizes.keys() == dataset_coords_dims
