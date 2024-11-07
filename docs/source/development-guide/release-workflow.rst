@@ -42,12 +42,13 @@ Nominal releases
 #. Make any release-specific commits to the new version branch using the nominal ``git add``/``git commit`` cycle. This
    may include commits that add release notes, or update version numbers in various configurations.
 #. Push the version branch to the main ``IMAP-Science-Operations-Center`` ``imap_processing`` repo (i.e. ``upstream``).
-#. Create a `new release <https://github.com/IMAP-Science-Operations-Center/imap_processing/releases>`_, using the
-   version branch as the ``Target`` branch. Assign a new tag with the specific version number, including the patch
-   number (e.g. ``v0.1.0``).
 #. If there have been release-specific commits, In GitHub, create a pull request that merges the version branch into
    ``dev``. Proceed with the nominal review & merge process described in steps (10) and (11) in the :ref:`git & GitHub
    Workflow <git-and-github-workflow>` section.
+#. Create a `new release <https://github.com/IMAP-Science-Operations-Center/imap_processing/releases>`_. Under "Choose a
+   tag", create a new tag with the same name as the version branch (e.g. ``v0.1.0``). For "Release title", also use the
+   name of the version branch (e.g. ``v0.1.0``). In the description box, include appropriate highlights and release
+   notes (you can use a previous release for an example of how this should be formatted).
 
 
 Patches
