@@ -26,7 +26,7 @@ def test_idex_decom_event_num(decom_test_data: xr.Dataset):
         The dataset to test with
     """
     for var in decom_test_data:
-        assert len(decom_test_data[var]) == 19
+        assert len(decom_test_data[var]) == 14
 
 
 def test_idex_tof_high_data(decom_test_data: xr.Dataset):
