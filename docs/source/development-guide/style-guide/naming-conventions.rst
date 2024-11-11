@@ -21,7 +21,7 @@ The general filename convention is as follows::
   * CoDICE: ``l0``, ``l1a``, ``l1b``, ``l2``, ``l3``
   * GLOWS: ``l0``, ``l1a``, ``l1b``, ``l2``, ``l3a``, ``l3b``, ``l3c``, ``l3d``
   * HIT: ``l0``, ``l1a``, ``l1b``, ``l2``, ``l3``
-  * IDEX: ``l0``, ``l1a``, ``l1b``, ``l2``, ``l3``
+  * IDEX: ``l0``, ``l1a``, ``l1b``, ``l2a``, ``l2b``, ``l3``
   * IMAP-Hi: ``l0``, ``l1a``, ``l1b``, ``l1c``, ``l2``, ``l3``
   * IMAP-Lo: ``l0``, ``l1a``, ``l1b``, ``l1c``, ``l2``
   * IMAP-Ultra: ``l0``, ``l1a``, ``l1b``, ``l1c``, ``l2``, ``l3``
@@ -35,8 +35,9 @@ The general filename convention is as follows::
   descriptors for each instrument:
 
   * CoDICE: ``hskp``, ``lo-counters-aggregated``, ``lo-counters-singles``, ``hi-counters-aggregated``,
-    ``hi-counters-singles``, ``lo-sw-priority``, ``lo-nsw-priority``, ``lo-sw-angular``, ``lo-nsw-angular``, ``lo-pha``,
-    ``hi-pha``, ``lo-sw-species``, ``lo-nsw-species``, ``hi-omni``, ``hi-sectored``, ``lo-ialirt``, ``hi-ialirt``
+    ``hi-counters-singles``, ``hi-priorities``, ``lo-sw-priority``, ``lo-nsw-priority``, ``lo-sw-angular``,
+    ``lo-nsw-angular``, ``lo-pha``, ``hi-pha``, ``lo-sw-species``, ``lo-nsw-species``, ``hi-omni``, ``hi-sectored``,
+    ``lo-ialirt``, ``hi-ialirt``
   * GLOWS: ``histogram``, ``de``
   * HIT: TBD
   * IDEX: ``sci``

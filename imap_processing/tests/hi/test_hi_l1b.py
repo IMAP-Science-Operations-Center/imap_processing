@@ -12,7 +12,7 @@ from imap_processing.hi.l1b.hi_l1b import (
     CoincidenceBitmap,
     compute_coincidence_type_and_time_deltas,
     compute_hae_coordinates,
-    compute_instrument_spin_phase,
+    de_nominal_bin_and_spin_phase,
     hi_l1b,
 )
 from imap_processing.hi.utils import HiConstants
@@ -159,14 +159,22 @@ def test_compute_coincidence_type_and_time_deltas(synthetic_trigger_id_and_tof_d
 
 @mock.patch("imap_processing.hi.l1b.hi_l1b.parse_sensor_number", return_value=90)
 @mock.patch("imap_processing.hi.l1b.hi_l1b.get_instrument_spin_phase")
-def test_compute_instrument_spin_phase(instrument_phase_mock, parse_sensor_number_mock):
-    """Test coverage for compute_instrument_spin_phase."""
+@mock.patch("imap_processing.hi.l1b.hi_l1b.get_spacecraft_spin_phase")
+def test_de_nominal_bin_and_spin_phase(
+    spacecraft_phase_moc, instrument_phase_mock, parse_sensor_number_mock
+):
+    """Test coverage for de_nominal_bin_and_spin_phase."""
+    # set the spacecraft_phase_mock to return an array of values between 0 and 1
+    # that is rolled 30 places for easy testing
+    spacecraft_phase_roll = 30
+    spacecraft_phase_moc.side_effect = lambda x: np.roll(
+        np.arange(0, 1, 1 / len(x)), spacecraft_phase_roll
+    )
     # set the get_instrument_spin_phase mock to return an array of values between
     # 0 and 1
-    instrument_phase_mock.side_effect = lambda x, y: np.linspace(0, 1, len(x))
-
+    instrument_phase_mock.side_effect = lambda x, y: np.arange(0, 1, 1 / len(x))
     # generate a fake dataset with epoch coordinate and event_met variable
-    de_list_length = 100
+    de_list_length = 720
     synthetic_ds = xr.Dataset(
         coords={
             "epoch": xr.DataArray(
@@ -179,12 +187,21 @@ def test_compute_instrument_spin_phase(instrument_phase_mock, parse_sensor_numbe
         attrs={"Logical_source": "foo_source"},
     )
 
-    spin_phase_var = compute_instrument_spin_phase(synthetic_ds)
-    assert "spin_phase" in spin_phase_var
-    assert spin_phase_var["spin_phase"].shape == (de_list_length,)
+    new_vars = de_nominal_bin_and_spin_phase(synthetic_ds)
+    # Check spin_phase
+    assert "spin_phase" in new_vars
+    assert new_vars["spin_phase"].shape == (de_list_length,)
     np.testing.assert_array_equal(
-        spin_phase_var["spin_phase"].values, np.linspace(0, 1, de_list_length)
+        new_vars["spin_phase"].values,
+        np.linspace(0, 1, de_list_length + 1, dtype=np.float32)[:-1],
     )
+    # Check nominal_bin
+    assert "nominal_bin" in new_vars
+    expected_nominal_bin = np.roll(
+        np.digitize(np.arange(0, 360, 360 / de_list_length), np.arange(90) * 4) - 1,
+        spacecraft_phase_roll,
+    )
+    np.testing.assert_array_equal(new_vars["nominal_bin"].values, expected_nominal_bin)
 
 
 @pytest.mark.parametrize("sensor_number", [45, 90])

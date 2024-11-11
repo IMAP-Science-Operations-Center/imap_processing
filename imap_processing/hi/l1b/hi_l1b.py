@@ -18,6 +18,7 @@ from imap_processing.hi.utils import (
 from imap_processing.spice.geometry import (
     SpiceFrame,
     get_instrument_spin_phase,
+    get_spacecraft_spin_phase,
     instrument_pointing,
 )
 from imap_processing.spice.time import j2000ns_to_j2000s
@@ -120,12 +121,11 @@ def annotate_direct_events(l1a_dataset: xr.Dataset) -> xr.Dataset:
     """
     l1b_dataset = l1a_dataset.copy()
     l1b_dataset.update(compute_coincidence_type_and_time_deltas(l1b_dataset))
-    l1b_dataset.update(compute_instrument_spin_phase(l1b_dataset))
+    l1b_dataset.update(de_nominal_bin_and_spin_phase(l1b_dataset))
     l1b_dataset.update(compute_hae_coordinates(l1b_dataset))
     l1b_de_var_names = [
         "esa_energy_step",
         "quality_flag",
-        "nominal_bin",
     ]
     new_data_vars = create_dataset_variables(
         l1b_de_var_names, l1b_dataset["epoch"].size, att_manager_lookup_str="hi_de_{0}"
@@ -262,9 +262,9 @@ def compute_coincidence_type_and_time_deltas(
     return new_vars
 
 
-def compute_instrument_spin_phase(dataset: xr.Dataset) -> dict[str, xr.DataArray]:
+def de_nominal_bin_and_spin_phase(dataset: xr.Dataset) -> dict[str, xr.DataArray]:
     """
-    Compute instrument spin-phase for each direct event.
+    Compute nominal bin and instrument spin-phase for each direct event.
 
     Parameters
     ----------
@@ -279,15 +279,27 @@ def compute_instrument_spin_phase(dataset: xr.Dataset) -> dict[str, xr.DataArray
     new_vars = create_dataset_variables(
         [
             "spin_phase",
+            "nominal_bin",
         ],
         len(dataset.epoch),
         att_manager_lookup_str="hi_de_{0}",
     )
-    sensor_number = parse_sensor_number(dataset.attrs["Logical_source"])
-    new_vars["spin_phase"].values = get_instrument_spin_phase(
-        j2000ns_to_j2000s(dataset.event_met.values),
-        SpiceFrame[f"IMAP_HI_{sensor_number}"],
+
+    # nominal_bin is the index number of the 90 4-degree bins that each DE would
+    # be binned into in the histogram packet. The Hi histogram data is binned by
+    # spacecraft spin-phase, not instrument spin-phase, so the same is done here.
+    met_query_times = j2000ns_to_j2000s(dataset.event_met.values)
+    imap_spin_phase = get_spacecraft_spin_phase(met_query_times)
+    new_vars["nominal_bin"].values = np.asarray(imap_spin_phase * 360 / 4).astype(
+        np.uint8
     )
+
+    sensor_number = parse_sensor_number(dataset.attrs["Logical_source"])
+    new_vars["spin_phase"].values = np.asarray(
+        get_instrument_spin_phase(
+            met_query_times, SpiceFrame[f"IMAP_HI_{sensor_number}"]
+        )
+    ).astype(np.float32)
     return new_vars
 
 
