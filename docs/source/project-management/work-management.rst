@@ -13,14 +13,15 @@ The SDC uses Github issues to track work. These issues are organized into two ty
     - used to track the progress of each instrument/data level and infrastructure features (ie. Reprocessing high-level task)
     - tasks should be fairly static throughout development and will only change if an instrument changes their data products or levels
     - used to track the progress of implementation tasks
-    - managed in the high-level board
+    - managed in the `high-level board <https://github.com/orgs/IMAP-Science-Operations-Center/projects/2/views/32>`_
     - labeled with the "Repo: Parent Issue" GitHub label
 - Implementation tasks
     - define work that needs to be implemented
     - each task should be small enough to be handled in a single PR
     - organized as sub-tasks under high-level tasks
     - should be added to high-level tasks as soon as they are identified
-    - should have work estimates tied to each task
+    - do not need to be tied to a release board until you're ready to plan for the work to be done
+    - should have work estimates tied to each task in real-time estimates
     - managed in the release boards
 
 The below image shows an example of a high-level task with sub-tasks for implementation tasks:
@@ -52,7 +53,7 @@ Release Board
 ~~~~~~~~~~~~~
 
 The `release board <https://github.com/orgs/IMAP-Science-Operations-Center/projects/2/views/30>`_ allows for more detailed planning for the the current and upcoming release.
-Any tasks in the current release board that are not completed by the end of the release will be pushed to the next release.
+Any tasks in the current release board that are not completed by the end of the release will be pushed to the next release, but it acts as an estimate for work that will be completed that month.
 If all tasks are completed for an instrument in the current release, tasks from the next release can be pulled in to the current release board.
 
 Backlog Grooming
