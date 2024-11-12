@@ -168,10 +168,12 @@ def test_l1a_data_array_values(test_l1a_data: xr.Dataset, validation_data: Path)
             )
 
 def test_l1a_multiple_packets():
-    """"""
+    """Tests that an input L0 file containing multiple APIDs can be processed."""
 
-    # TODO: Need to add some sort of check here, for now just make sure the file can be processed
-    dataset = process_codice_l1a(file_path=TEST_L0_FILE, data_version="001")
+    # TODO: Could add some more checks here
+    processed_datasets = process_codice_l1a(file_path=TEST_L0_FILE, data_version="001")
+
+    assert len(processed_datasets) == 18
 
 
 @pytest.mark.parametrize(

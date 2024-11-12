@@ -5,10 +5,8 @@ This module processes decommutated CoDICE packets and creates L1a data products.
 
 Notes
 -----
-    from imap_processing.codice.codice_l0 import decom_packets
     from imap_processing.codice.codice_l1a import process_codice_l1a
-    packets = decom_packets(packet_file)
-    dataset = process_codice_l1a(packets)
+    processed_datasets = process_codice_l1a(path_to_l0_file)
 """
 
 from __future__ import annotations
@@ -573,9 +571,13 @@ def get_params(dataset: xr.Dataset) -> tuple[int, int, int, int]:
 
 
 def log_dataset_info(datasets):
-    """"""
+    """Logs info about the input data to help with tracking and/or debugging
 
-    # TODO: Fill out the docstring here
+    Parameters
+    ----------
+    datasets : dict[int, xarray.Dataset]
+        Mapping from apid to ``xarray`` dataset, one dataset per apid.
+    """
 
     launch_time = np.datetime64("2010-01-01T00:01:06.184", "ns")
     logger.info("\nThis input file contains the following APIDs:\n")
