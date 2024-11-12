@@ -7,7 +7,7 @@ from imap_processing import imap_module_directory
 
 
 def test_idex_decom_length(decom_test_data: xr.Dataset):
-    """Verify that there are 6 data variables in the output.
+    """Verify that there are 42 data variables in the output.
 
     Parameters
     ----------
