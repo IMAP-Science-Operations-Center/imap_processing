@@ -367,7 +367,7 @@ def combine_segmented_packets(dataset: xr.Dataset) -> xr.Dataset:
     # Mark the segment splits with comma to identify padding bits
     # when parsing the binary
     dataset["events"] = [
-        ",".join(dataset["data"].values[start : end + 1])
+        "".join(dataset["data"].values[start : end + 1])
         for start, end in zip(seg_starts, seg_ends)
     ]
     # drop any group of segmented packets that aren't sequential
