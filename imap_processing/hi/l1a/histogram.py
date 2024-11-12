@@ -94,7 +94,7 @@ def allocate_histogram_dataset(num_packets: int) -> xr.Dataset:
     """
     attr_mgr = ImapCdfAttributes()
     attr_mgr.add_instrument_global_attrs(instrument="hi")
-    attr_mgr.load_variable_attributes("imap_hi_variable_attrs.yaml")
+    attr_mgr.add_instrument_variable_attrs(instrument="hi", level=None)
     # preallocate the xr.DataArrays for all CDF attributes based on number of packets
     coords = dict()
     coords["epoch"] = xr.DataArray(

@@ -94,7 +94,7 @@ def allocate_pset_dataset(n_esa_steps: int, sensor_str: str) -> xr.Dataset:
     """
     attr_mgr = ImapCdfAttributes()
     attr_mgr.add_instrument_global_attrs("hi")
-    attr_mgr.load_variable_attributes("imap_hi_variable_attrs.yaml")
+    attr_mgr.add_instrument_variable_attrs(instrument="hi", level=None)
 
     # preallocate coordinates xr.DataArrays
     coords = dict()

@@ -45,7 +45,7 @@ class CoincidenceBitmap(IntEnum):
 logger = logging.getLogger(__name__)
 ATTR_MGR = ImapCdfAttributes()
 ATTR_MGR.add_instrument_global_attrs("hi")
-ATTR_MGR.load_variable_attributes("imap_hi_variable_attrs.yaml")
+ATTR_MGR.add_instrument_variable_attrs(instrument="hi", level=None)
 
 
 def hi_l1b(l1a_dataset: xr.Dataset, data_version: str) -> xr.Dataset:

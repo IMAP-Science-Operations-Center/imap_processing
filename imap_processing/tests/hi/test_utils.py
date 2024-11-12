@@ -59,7 +59,7 @@ def test_full_dataarray(name, shape, expected_shape):
         "spin_angle_bin": xr.DataArray(np.arange(360)),
     }
     cdf_manager = ImapCdfAttributes()
-    cdf_manager.load_variable_attributes("imap_hi_variable_attrs.yaml")
+    cdf_manager.add_instrument_variable_attrs(instrument="hi", level=None)
 
     dataarray = full_dataarray(
         name, cdf_manager.get_variable_attributes(f"hi_pset_{name}"), coords, shape
@@ -83,7 +83,7 @@ def test_create_dataset_variables(var_names, shape, lookup_str):
     assert len(l1b_de_vars) == len(var_names)
     attr_mgr = ImapCdfAttributes()
     attr_mgr.add_instrument_global_attrs("hi")
-    attr_mgr.load_variable_attributes("imap_hi_variable_attrs.yaml")
+    attr_mgr.add_instrument_variable_attrs(instrument="hi", level=None)
 
     for var_name, data_array in l1b_de_vars.items():
         attrs = attr_mgr.get_variable_attributes(

@@ -182,6 +182,9 @@ def test_process_housekeeping(housekeeping_dataset, attribute_manager):
 
     # Define the dataset attributes
     dataset_attrs = {
+        "Acknowledgement": "Please acknowledge the IMAP Mission Principal "
+        "Investigator, Prof. David J. McComas of Princeton "
+        "University.\n",
         "Data_level": "1A",
         "Data_type": "L1A_HK>Level-1A Housekeeping",
         "Data_version": "001",
@@ -199,6 +202,10 @@ def test_process_housekeeping(housekeeping_dataset, attribute_manager):
         "PI_affiliation": "Princeton University",
         "PI_name": "Prof. David J. McComas",
         "Project": "STP>Solar Terrestrial Probes",
+        "Rules_of_use": "All IMAP data products are publicly released and citable for "
+        "use in publications. Please consult the IMAP team "
+        "publications and personnel for further details on "
+        "production, processing, and usage of these data.\n",
         "Source_name": "IMAP>Interstellar Mapping and Acceleration Probe",
         "TEXT": "The High-energy Ion Telescope (HIT) measures the elemental "
         "composition, energy spectra, angle distributions, and arrival "
