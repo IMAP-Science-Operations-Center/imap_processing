@@ -141,8 +141,11 @@ class CoDICEL1aPipeline:
         for name in self.config["coords"]:
             if name == "epoch":
                 # The number of epoch values to store depends on how many packets were able to be processed
-                values = [epoch for epoch, packet_data in zip(self.dataset.epoch.data, self.data) if
-                          packet_data is not None]
+                values = [
+                    epoch
+                    for epoch, packet_data in zip(self.dataset.epoch.data, self.data)
+                    if packet_data is not None
+                ]
             elif name == "inst_az":
                 values = np.arange(self.config["num_positions"])
             elif name == "spin_sector":
@@ -175,7 +178,6 @@ class CoDICEL1aPipeline:
         processed_dataset : xarray.Dataset
             The 'final' ``xarray`` dataset.
         """
-
         # Remove packets that were not able to be processed from the data
         # TODO: This may be modified depending on how it is decided to handle dropped packets
         #       Discuss with Joey
@@ -365,7 +367,9 @@ class CoDICEL1aPipeline:
         if self.config["instrument"] == "lo":
             for packet_data in self.raw_data:
                 if packet_data:
-                    reshaped_packet_data = np.array(packet_data, dtype=np.uint32).reshape(
+                    reshaped_packet_data = np.array(
+                        packet_data, dtype=np.uint32
+                    ).reshape(
                         (
                             self.config["num_counters"],
                             self.config["num_positions"],
@@ -382,7 +386,9 @@ class CoDICEL1aPipeline:
         elif self.config["instrument"] == "hi":
             for packet_data in self.raw_data:
                 if packet_data:
-                    reshaped_packet_data = np.array(packet_data, dtype=np.uint32).reshape(
+                    reshaped_packet_data = np.array(
+                        packet_data, dtype=np.uint32
+                    ).reshape(
                         (
                             self.config["num_counters"],
                             self.config["num_energy_steps"],
@@ -415,7 +421,6 @@ class CoDICEL1aPipeline:
         data_version : str
             Version of the data product being created.
         """
-
         # Set the packet dataset so that it can be easily called from various
         # methods
         self.dataset = dataset
@@ -571,14 +576,14 @@ def log_dataset_info(datasets):
     """"""
 
     launch_time = np.datetime64("2010-01-01T00:01:06.184", "ns")
-    print("\nThis input file contains the following APIDs:\n")
+    logger.info("\nThis input file contains the following APIDs:\n")
     for apid in datasets:
         num_packets = len(datasets[apid].epoch.data)
         time_deltas = [np.timedelta64(item, "ns") for item in datasets[apid].epoch.data]
         times = [launch_time + delta for delta in time_deltas]
         start = np.datetime_as_string(times[0])
         end = np.datetime_as_string(times[-1])
-        print(
+        logger.info(
             f"{CODICEAPID(apid).name}: {num_packets} packets spanning {start} to {end}"
         )
 
@@ -608,16 +613,16 @@ def process_codice_l1a(file_path: Path, data_version: str) -> xr.Dataset:
     for apid in datasets:
         dataset = datasets[apid]
         # logger.info(f"\nProcessing {CODICEAPID(apid).name} packet")
-        print(f"\nProcessing {CODICEAPID(apid).name} packet")
+        logger.info(f"\nProcessing {CODICEAPID(apid).name} packet")
 
         if apid == CODICEAPID.COD_NHK:
             processed_dataset = create_hskp_dataset(dataset, data_version)
-            print(f"\nFinal data product:\n{processed_dataset}\n")
+            logger.info(f"\nFinal data product:\n{processed_dataset}\n")
 
         # This needs to be checked
         elif apid in [CODICEAPID.COD_LO_PHA, CODICEAPID.COD_HI_PHA]:
             processed_dataset = create_event_dataset(apid, dataset, data_version)
-            print(f"\nFinal data product:\n{processed_dataset}\n")
+            logger.info(f"\nFinal data product:\n{processed_dataset}\n")
 
         elif apid in constants.APIDS_FOR_SCIENCE_PROCESSING:
             # Extract the data
@@ -634,13 +639,15 @@ def process_codice_l1a(file_path: Path, data_version: str) -> xr.Dataset:
             pipeline.define_coordinates()
             processed_dataset = pipeline.define_data_variables()
 
-            print(f"\nFinal data product:\n{processed_dataset}\n")
+            logger.info(f"\nFinal data product:\n{processed_dataset}\n")
 
-        elif apid in [CODICEAPID.COD_HI_INST_COUNTS_PRIORITIES, CODICEAPID.COD_HI_IAL, CODICEAPID.COD_LO_IAL]:
-            print('Need to implement')
+        elif apid in [
+            CODICEAPID.COD_HI_INST_COUNTS_PRIORITIES,
+            CODICEAPID.COD_HI_IAL,
+            CODICEAPID.COD_LO_IAL,
+        ]:
+            logger.info("Still need to properly implement")
             procesed_dataset = None
-
-        # logger.info(f"\nFinal data product:\n{processed_dataset}\n")
 
     return processed_dataset
 
@@ -649,7 +656,23 @@ if __name__ == "__main__":
     from imap_processing import imap_module_directory
 
     TEST_DATA_PATH = imap_module_directory / "tests" / "codice" / "data"
-    file_path = TEST_DATA_PATH / "imap_codice_l0_raw_20240901_v001.pkts"
-    # file_path = TEST_DATA_PATH / "imap_codice_l0_lo-counters-aggregated_20240429_v001.pkts"
-
-    dataset = process_codice_l1a(file_path, "001")
+    # file_path = TEST_DATA_PATH / "imap_codice_l0_raw_20240901_v001.pkts"
+    TEST_PACKETS = [
+        # TEST_DATA_PATH / "imap_codice_l0_hskp_20100101_v001.pkts",
+        TEST_DATA_PATH / "imap_codice_l0_hi-counters-aggregated_20240429_v001.pkts",
+        # TEST_DATA_PATH / "imap_codice_l0_hi-counters-singles_20240429_v001.pkts",
+        TEST_DATA_PATH / "imap_codice_l0_hi-omni_20240429_v001.pkts",
+        TEST_DATA_PATH / "imap_codice_l0_hi-sectored_20240429_v001.pkts",
+        TEST_DATA_PATH / "imap_codice_l0_hi-pha_20240429_v001.pkts",
+        TEST_DATA_PATH / "imap_codice_l0_lo-counters-aggregated_20240429_v001.pkts",
+        TEST_DATA_PATH / "imap_codice_l0_lo-counters-singles_20240429_v001.pkts",
+        TEST_DATA_PATH / "imap_codice_l0_lo-sw-angular_20240429_v001.pkts",
+        TEST_DATA_PATH / "imap_codice_l0_lo-nsw-angular_20240429_v001.pkts",
+        TEST_DATA_PATH / "imap_codice_l0_lo-sw-priority_20240429_v001.pkts",
+        TEST_DATA_PATH / "imap_codice_l0_lo-nsw-priority_20240429_v001.pkts",
+        TEST_DATA_PATH / "imap_codice_l0_lo-sw-species_20240429_v001.pkts",
+        TEST_DATA_PATH / "imap_codice_l0_lo-nsw-species_20240429_v001.pkts",
+        TEST_DATA_PATH / "imap_codice_l0_lo-pha_20240429_v001.pkts",
+    ]
+    for file_path in TEST_PACKETS:
+        dataset = process_codice_l1a(file_path, "001")

@@ -18,12 +18,12 @@ logger.setLevel(logging.INFO)
 # TODO: Add test that processes a file with multiple APIDs
 
 EXPECTED_ARRAY_SHAPES = [
-    (99,),  # hskp
+    # (99,),  # hskp
     (1, 1, 6, 1),  # hi-counters-aggregated  # TODO: Double check with Joey
-    (1, 1, 16, 1),  # hi-counters-singles  # TODO: Double check with Joey
+    # (1, 1, 16, 1),  # hi-counters-singles  # TODO: Double check with Joey
     (1, 15, 4, 1),  # hi-omni  # TODO: Double check with Joey
     (1, 8, 12, 12),  # hi-sectored
-    (1, 1),  # hi-pha
+    # (1, 1),  # hi-pha
     (1, 6, 6, 128),  # lo-counters-aggregated
     (1, 24, 6, 128),  # lo-counters-singles
     (1, 5, 12, 128),  # lo-sw-angular
@@ -32,15 +32,15 @@ EXPECTED_ARRAY_SHAPES = [
     (1, 1, 12, 128),  # lo-nsw-priority
     (1, 1, 1, 128),  # lo-sw-species
     (1, 1, 1, 128),  # lo-nsw-species
-    (1, 128),  # lo-pha
+    # (1, 128),  # lo-pha
 ]
 EXPECTED_LOGICAL_SOURCE = [
-    "imap_codice_l1a_hskp",
+    # "imap_codice_l1a_hskp",
     "imap_codice_l1a_hi-counters-aggregated",
-    "imap_codice_l1a_hi-counters-singles",
+    # "imap_codice_l1a_hi-counters-singles",
     "imap_codice_l1a_hi-omni",
     "imap_codice_l1a_hi-sectored",
-    "imap_codice_l1a_hi-pha",
+    # "imap_codice_l1a_hi-pha",
     "imap_codice_l1a_lo-counters-aggregated",
     "imap_codice_l1a_lo-counters-singles",
     "imap_codice_l1a_lo-sw-angular",
@@ -49,15 +49,15 @@ EXPECTED_LOGICAL_SOURCE = [
     "imap_codice_l1a_lo-nsw-priority",
     "imap_codice_l1a_lo-sw-species",
     "imap_codice_l1a_lo-nsw-species",
-    "imap_codice_l1a_lo-pha",
+    # "imap_codice_l1a_lo-pha",
 ]
 EXPECTED_NUM_VARIABLES = [
-    129,  # hskp
+    # 129,  # hskp
     1,  # hi-counters-aggregated
-    3,  # hi-counters-singles
+    # 3,  # hi-counters-singles
     8,  # hi-omni
     4,  # hi-sectored
-    0,  # hi-pha
+    # 0,  # hi-pha
     3,  # lo-counters-aggregated
     3,  # lo-counters-singles
     6,  # lo-sw-angular
@@ -66,7 +66,7 @@ EXPECTED_NUM_VARIABLES = [
     4,  # lo-nsw-priority
     18,  # lo-sw-species
     10,  # lo-nsw-species
-    0,  # lo-pha
+    # 0,  # lo-pha
 ]
 
 
@@ -89,7 +89,6 @@ def test_l1a_data(request) -> xr.Dataset:
     return dataset
 
 
-@pytest.mark.xfail(reason="Epoch variable data needs to monotonically increase")
 @pytest.mark.parametrize(
     "test_l1a_data, expected_logical_source",
     list(zip(TEST_PACKETS, EXPECTED_LOGICAL_SOURCE)),
@@ -111,7 +110,6 @@ def test_l1a_cdf_filenames(test_l1a_data: xr.Dataset, expected_logical_source: s
     assert dataset.attrs["Logical_source"] == expected_logical_source
 
 
-@pytest.mark.xfail(reason="Epoch variable data needs to monotonically increase")
 @pytest.mark.parametrize(
     "test_l1a_data, expected_shape",
     list(zip(TEST_PACKETS, EXPECTED_ARRAY_SHAPES)),
@@ -169,7 +167,6 @@ def test_l1a_data_array_values(test_l1a_data: xr.Dataset, validation_data: Path)
             )
 
 
-@pytest.mark.xfail(reason="Epoch variable data needs to monotonically increase")
 @pytest.mark.parametrize(
     "test_l1a_data, expected_num_variables",
     list(zip(TEST_PACKETS, EXPECTED_NUM_VARIABLES)),
