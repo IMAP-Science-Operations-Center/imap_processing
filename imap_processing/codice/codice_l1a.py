@@ -118,6 +118,7 @@ class CoDICEL1aPipeline:
         # It does work for all of:
         #     lo-sw-priority (4), lo-nsw-priority(4)
         # To get around this, just use empty lists for the packets that can't be decompressed
+        # TODO: Discuss this with Joey
 
         self.raw_data = []
         for packet_data in science_values:
@@ -139,7 +140,9 @@ class CoDICEL1aPipeline:
 
         for name in self.config["coords"]:
             if name == "epoch":
-                values = self.dataset.epoch.data
+                # The number of epoch values to store depends on how many packets were able to be processed
+                values = [epoch for epoch, packet_data in zip(self.dataset.epoch.data, self.data) if
+                          packet_data is not None]
             elif name == "inst_az":
                 values = np.arange(self.config["num_positions"])
             elif name == "spin_sector":
@@ -172,31 +175,40 @@ class CoDICEL1aPipeline:
         processed_dataset : xarray.Dataset
             The 'final' ``xarray`` dataset.
         """
+
+        # Remove packets that were not able to be processed from the data
+        # TODO: This may be modified depending on how it is decided to handle dropped packets
+        #       Discuss with Joey
+        self.data = [packet for packet in self.data if packet is not None]
+
         # Create the main dataset to hold all the variables
         dataset = xr.Dataset(
             coords=self.coords,
             attrs=self.cdf_attrs.get_global_attributes(self.config["dataset_name"]),
         )
 
-        all_data = np.stack(self.data)
+        # If no packets were able to be processed, create empty dataset for now
+        # TODO: This may be modified depending on how it is decided to handle dropped packets
+        #       Discuss with Joey
+        if self.data:
+            all_data = np.stack(self.data)
+            for counter, variable_name in zip(
+                range(all_data.shape[1]), self.config["variable_names"]
+            ):
+                counter_data = all_data[:, counter, :, :, :]
 
-        for counter, variable_name in zip(
-            range(all_data.shape[1]), self.config["variable_names"]
-        ):
-            counter_data = all_data[:, counter, :, :, :]
+                # Get the CDF attributes
+                descriptor = self.config["dataset_name"].split("imap_codice_l1a_")[-1]
+                cdf_attrs_key = f"{descriptor}-{variable_name}"
+                attrs = self.cdf_attrs.get_variable_attributes(cdf_attrs_key)
 
-            # Get the CDF attributes
-            descriptor = self.config["dataset_name"].split("imap_codice_l1a_")[-1]
-            cdf_attrs_key = f"{descriptor}-{variable_name}"
-            attrs = self.cdf_attrs.get_variable_attributes(cdf_attrs_key)
-
-            # Create the CDF data variable
-            dataset[variable_name] = xr.DataArray(
-                counter_data,
-                name=variable_name,
-                dims=self.config["dims"],
-                attrs=attrs,
-            )
+                # Create the CDF data variable
+                dataset[variable_name] = xr.DataArray(
+                    counter_data,
+                    name=variable_name,
+                    dims=self.config["dims"],
+                    attrs=attrs,
+                )
 
         # Add support data variables based on data product
         dataset = self.define_support_variables(dataset)
@@ -352,29 +364,38 @@ class CoDICEL1aPipeline:
         # [<num_positions>,<num_spin_sectors>,<num_energy_steps>]
         if self.config["instrument"] == "lo":
             for packet_data in self.raw_data:
-                reshaped_packet_data = np.array(packet_data, dtype=np.uint32).reshape(
-                    (
-                        self.config["num_counters"],
-                        self.config["num_positions"],
-                        self.config["num_spin_sectors"],
-                        self.config["num_energy_steps"],
+                if packet_data:
+                    reshaped_packet_data = np.array(packet_data, dtype=np.uint32).reshape(
+                        (
+                            self.config["num_counters"],
+                            self.config["num_positions"],
+                            self.config["num_spin_sectors"],
+                            self.config["num_energy_steps"],
+                        )
                     )
-                )
-                self.data.append(reshaped_packet_data)
+                    self.data.append(reshaped_packet_data)
+                else:
+                    self.data.append(None)
 
         # For CoDICE-hi, data are a 3D array with a shape representing
         # [<num_energy_steps>,<num_positions>,<num_spin_sectors>]
         elif self.config["instrument"] == "hi":
             for packet_data in self.raw_data:
-                reshaped_packet_data = np.array(packet_data, dtype=np.uint32).reshape(
-                    (
-                        self.config["num_counters"],
-                        self.config["num_energy_steps"],
-                        self.config["num_positions"],
-                        self.config["num_spin_sectors"],
+                if packet_data:
+                    reshaped_packet_data = np.array(packet_data, dtype=np.uint32).reshape(
+                        (
+                            self.config["num_counters"],
+                            self.config["num_energy_steps"],
+                            self.config["num_positions"],
+                            self.config["num_spin_sectors"],
+                        )
                     )
-                )
-                self.data.append(reshaped_packet_data)
+                    self.data.append(reshaped_packet_data)
+                else:
+                    self.data.append(None)
+
+        # TODO: What to do if no packets are able to be processed?
+        #       Discuss with Joey
 
         # No longer need to keep the raw data around
         del self.raw_data
@@ -394,6 +415,7 @@ class CoDICEL1aPipeline:
         data_version : str
             Version of the data product being created.
         """
+
         # Set the packet dataset so that it can be easily called from various
         # methods
         self.dataset = dataset
@@ -590,13 +612,14 @@ def process_codice_l1a(file_path: Path, data_version: str) -> xr.Dataset:
 
         if apid == CODICEAPID.COD_NHK:
             processed_dataset = create_hskp_dataset(dataset, data_version)
+            print(f"\nFinal data product:\n{processed_dataset}\n")
 
         # This needs to be checked
-        # elif apid in [CODICEAPID.COD_LO_PHA, CODICEAPID.COD_HI_PHA]:
-        #     dataset = create_event_dataset(apid, packet_dataset, data_version)
+        elif apid in [CODICEAPID.COD_LO_PHA, CODICEAPID.COD_HI_PHA]:
+            processed_dataset = create_event_dataset(apid, dataset, data_version)
+            print(f"\nFinal data product:\n{processed_dataset}\n")
 
-        # if apid in constants.APIDS_FOR_SCIENCE_PROCESSING:
-        if apid in [CODICEAPID.COD_LO_SW_PRIORITY_COUNTS]:
+        elif apid in constants.APIDS_FOR_SCIENCE_PROCESSING:
             # Extract the data
             science_values = [packet.data for packet in dataset.data]
 
@@ -611,8 +634,13 @@ def process_codice_l1a(file_path: Path, data_version: str) -> xr.Dataset:
             pipeline.define_coordinates()
             processed_dataset = pipeline.define_data_variables()
 
-    # logger.info(f"\nFinal data product:\n{processed_dataset}\n")
-    print(f"\nFinal data product:\n{processed_dataset}\n")
+            print(f"\nFinal data product:\n{processed_dataset}\n")
+
+        elif apid in [CODICEAPID.COD_HI_INST_COUNTS_PRIORITIES, CODICEAPID.COD_HI_IAL, CODICEAPID.COD_LO_IAL]:
+            print('Need to implement')
+            procesed_dataset = None
+
+        # logger.info(f"\nFinal data product:\n{processed_dataset}\n")
 
     return processed_dataset
 
@@ -622,6 +650,6 @@ if __name__ == "__main__":
 
     TEST_DATA_PATH = imap_module_directory / "tests" / "codice" / "data"
     file_path = TEST_DATA_PATH / "imap_codice_l0_raw_20240901_v001.pkts"
-    # file_path = TEST_DATA_PATH / "imap_codice_l0_hi-counters-aggregated_20240429_v001.pkts"
+    # file_path = TEST_DATA_PATH / "imap_codice_l0_lo-counters-aggregated_20240429_v001.pkts"
 
     dataset = process_codice_l1a(file_path, "001")

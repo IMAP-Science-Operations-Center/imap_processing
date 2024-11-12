@@ -124,7 +124,7 @@ DATA_PRODUCT_CONFIGURATIONS = {
         "instrument": "hi",
         "num_counters": 3,
         "num_energy_steps": 1,  # TODO: Double check with Joey
-        "num_positions": 16,  # TODO: Double check with Joey
+        "num_positions": 12,  # TODO: Double check with Joey
         "num_spin_sectors": 1,
         "support_variables": [],  # No support variables for this one
         "variable_names": HI_INST_COUNTS_SINGLES_VARIABLE_NAMES,
