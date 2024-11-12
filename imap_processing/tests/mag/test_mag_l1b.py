@@ -18,7 +18,9 @@ def mag_l1a_dataset():
         dims=["epoch", "direction"],
         coords={"epoch": epoch, "direction": direction},
     )
-    compression_flags = xr.DataArray(np.zeros((20, 2)), dims=["epoch", "compression"])
+    compression_flags = xr.DataArray(
+        np.zeros((20, 2), dtype=np.int8), dims=["epoch", "compression"]
+    )
 
     vectors[0, :] = np.array([1, 1, 1, 0])
 
@@ -93,10 +95,10 @@ def test_mag_compression_scale(mag_l1a_dataset):
     mag_l1a_dataset["vectors"][2, :] = np.array([1, 1, 1, 0])
     mag_l1a_dataset["vectors"][3, :] = np.array([1, 1, 1, 0])
 
-    mag_l1a_dataset["compression_flags"][0, :] = np.array([1, 16])
-    mag_l1a_dataset["compression_flags"][1, :] = np.array([0, 0])
-    mag_l1a_dataset["compression_flags"][2, :] = np.array([1, 18])
-    mag_l1a_dataset["compression_flags"][3, :] = np.array([1, 14])
+    mag_l1a_dataset["compression_flags"][0, :] = np.array([1, 16], dtype=np.int8)
+    mag_l1a_dataset["compression_flags"][1, :] = np.array([0, 0], dtype=np.int8)
+    mag_l1a_dataset["compression_flags"][2, :] = np.array([1, 18], dtype=np.int8)
+    mag_l1a_dataset["compression_flags"][3, :] = np.array([1, 14], dtype=np.int8)
 
     mag_l1a_dataset.attrs["Logical_source"] = ["imap_mag_l1a_norm-mago"]
     output = mag_l1b(mag_l1a_dataset, "v001")
