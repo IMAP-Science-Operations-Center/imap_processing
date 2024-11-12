@@ -10,7 +10,7 @@ import xarray as xr
 from imap_processing.cdf.utils import load_cdf, write_cdf
 from imap_processing.codice.codice_l1a import process_codice_l1a
 
-from .conftest import TEST_PACKETS, VALIDATION_DATA
+from .conftest import TEST_L0_FILE, TEST_PACKETS, VALIDATION_DATA
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -76,13 +76,14 @@ def test_l1a_data(request) -> xr.Dataset:
 
     Returns
     -------
-    dataset : xarray.Dataset
+    dataset : list[xarray.Dataset]
         A ``xarray`` dataset containing the test data
     """
 
-    dataset = process_codice_l1a(file_path=request.param, data_version="001")
+    processed_datasets = process_codice_l1a(file_path=request.param, data_version="001")
+    dataset = processed_datasets[0]  # These tests are for individual APIDs, so we only expect one item
 
-    # Write the dataset to a CDF so it can be manually inspected as well
+    # Write the dataset to a CDF so that it can be manually inspected as well
     file_path = write_cdf(dataset)
     logger.info(f"CDF file written to {file_path}")
 
@@ -165,6 +166,12 @@ def test_l1a_data_array_values(test_l1a_data: xr.Dataset, validation_data: Path)
             np.testing.assert_array_equal(
                 validation_data[variable].data, generated_dataset[variable].data[0]
             )
+
+def test_l1a_multiple_packets():
+    """"""
+
+    # TODO: Need to add some sort of check here, for now just make sure the file can be processed
+    dataset = process_codice_l1a(file_path=TEST_L0_FILE, data_version="001")
 
 
 @pytest.mark.parametrize(

@@ -575,6 +575,8 @@ def get_params(dataset: xr.Dataset) -> tuple[int, int, int, int]:
 def log_dataset_info(datasets):
     """"""
 
+    # TODO: Fill out the docstring here
+
     launch_time = np.datetime64("2010-01-01T00:01:06.184", "ns")
     logger.info("\nThis input file contains the following APIDs:\n")
     for apid in datasets:
@@ -588,7 +590,7 @@ def log_dataset_info(datasets):
         )
 
 
-def process_codice_l1a(file_path: Path, data_version: str) -> xr.Dataset:
+def process_codice_l1a(file_path: Path, data_version: str) -> list[xr.Dataset]:
     """
     Will process CoDICE l0 data to create l1a data products.
 
@@ -601,14 +603,18 @@ def process_codice_l1a(file_path: Path, data_version: str) -> xr.Dataset:
 
     Returns
     -------
-    processed_dataset : xarray.Dataset
-        The ``xarray`` dataset containing the science data and supporting metadata.
+    processed_datasets : list[xarray.Dataset]
+        A list of the ``xarray`` datasets containing the science data and
+        supporting metadata.
     """
     # Decom the packets, group data by APID, and sort by time
     datasets = decom_packets(file_path)
 
     # Log some information about the contents of the data
     log_dataset_info(datasets)
+
+    # Placeholder to hold the final, processed datasets
+    processed_datasets = []
 
     for apid in datasets:
         dataset = datasets[apid]
@@ -649,30 +655,6 @@ def process_codice_l1a(file_path: Path, data_version: str) -> xr.Dataset:
             logger.info("Still need to properly implement")
             procesed_dataset = None
 
-    return processed_dataset
+        processed_datasets.append(processed_dataset)
 
-
-if __name__ == "__main__":
-    from imap_processing import imap_module_directory
-
-    TEST_DATA_PATH = imap_module_directory / "tests" / "codice" / "data"
-    # file_path = TEST_DATA_PATH / "imap_codice_l0_raw_20240901_v001.pkts"
-    TEST_PACKETS = [
-        # TEST_DATA_PATH / "imap_codice_l0_hskp_20100101_v001.pkts",
-        TEST_DATA_PATH / "imap_codice_l0_hi-counters-aggregated_20240429_v001.pkts",
-        # TEST_DATA_PATH / "imap_codice_l0_hi-counters-singles_20240429_v001.pkts",
-        TEST_DATA_PATH / "imap_codice_l0_hi-omni_20240429_v001.pkts",
-        TEST_DATA_PATH / "imap_codice_l0_hi-sectored_20240429_v001.pkts",
-        TEST_DATA_PATH / "imap_codice_l0_hi-pha_20240429_v001.pkts",
-        TEST_DATA_PATH / "imap_codice_l0_lo-counters-aggregated_20240429_v001.pkts",
-        TEST_DATA_PATH / "imap_codice_l0_lo-counters-singles_20240429_v001.pkts",
-        TEST_DATA_PATH / "imap_codice_l0_lo-sw-angular_20240429_v001.pkts",
-        TEST_DATA_PATH / "imap_codice_l0_lo-nsw-angular_20240429_v001.pkts",
-        TEST_DATA_PATH / "imap_codice_l0_lo-sw-priority_20240429_v001.pkts",
-        TEST_DATA_PATH / "imap_codice_l0_lo-nsw-priority_20240429_v001.pkts",
-        TEST_DATA_PATH / "imap_codice_l0_lo-sw-species_20240429_v001.pkts",
-        TEST_DATA_PATH / "imap_codice_l0_lo-nsw-species_20240429_v001.pkts",
-        TEST_DATA_PATH / "imap_codice_l0_lo-pha_20240429_v001.pkts",
-    ]
-    for file_path in TEST_PACKETS:
-        dataset = process_codice_l1a(file_path, "001")
+    return processed_datasets

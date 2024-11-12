@@ -2,6 +2,8 @@ from imap_processing import imap_module_directory
 
 TEST_DATA_PATH = imap_module_directory / "tests" / "codice" / "data"
 
+TEST_L0_FILE = TEST_DATA_PATH / "imap_codice_l0_raw_20240901_v001.pkts"
+
 TEST_PACKETS = [
     # TEST_DATA_PATH / "imap_codice_l0_hskp_20100101_v001.pkts",
     TEST_DATA_PATH / "imap_codice_l0_hi-counters-aggregated_20240429_v001.pkts",
