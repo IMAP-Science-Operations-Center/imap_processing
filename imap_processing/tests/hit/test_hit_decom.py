@@ -4,6 +4,9 @@ import numpy as np
 import pytest
 
 from imap_processing import imap_module_directory
+from imap_processing.hit.hit_utils import (
+    HitAPID,
+)
 from imap_processing.hit.l0.decom_hit import (
     assemble_science_frames,
     decom_hit,
@@ -12,6 +15,7 @@ from imap_processing.hit.l0.decom_hit import (
     is_sequential,
     parse_count_rates,
     parse_data,
+    subcom_sectorates,
     update_ccsds_header_dims,
 )
 from imap_processing.utils import packet_file_to_datasets
@@ -32,7 +36,7 @@ def sci_dataset():
         xtce_packet_definition=packet_definition,
     )
 
-    science_dataset = datasets_by_apid[1252]
+    science_dataset = datasets_by_apid[HitAPID.HIT_SCIENCE]
     return science_dataset
 
 
@@ -213,8 +217,48 @@ def test_assemble_science_frames(sci_dataset):
     """Test the assemble_science_frames function."""
     updated_dataset = update_ccsds_header_dims(sci_dataset)
     updated_dataset = assemble_science_frames(updated_dataset)
-    assert "count_rates_binary" in updated_dataset
-    assert "pha_binary" in updated_dataset
+    assert "count_rates_raw" in updated_dataset
+    assert "pha_raw" in updated_dataset
+
+
+def test_subcom_sectorates(sci_dataset):
+    """Test the subcom_sectorates function.
+
+    This function organizes the sector rates data
+    into new variables for each species and adds
+    them to the dataset.
+    """
+
+    # Prepare the input needed for the function to be called
+    sci_dataset = update_ccsds_header_dims(sci_dataset)
+    sci_dataset = assemble_science_frames(sci_dataset)
+    parse_count_rates(sci_dataset)
+
+    # Call the function to be tested
+    subcom_sectorates(sci_dataset)
+
+    # Check if the dataset has the expected new variables
+    for species in ["H", "4He", "CNO", "NeMgSi", "Fe"]:
+        assert species in sci_dataset
+        assert f"{species}_energy_min" in sci_dataset
+        assert f"{species}_energy_max" in sci_dataset
+
+    # Check the shape of the new variables
+    for species in ["H", "4He", "CNO", "NeMgSi", "Fe"]:
+        assert sci_dataset[species][0].shape == (86, 8, 15)
+        if species == "H":
+            assert sci_dataset[species].shape == (3, 86, 8, 15)
+            assert sci_dataset[f"{species}_energy_min"].shape == (3,)
+        elif species in ("4He", "CNO", "NeMgSi"):
+            assert sci_dataset[species].shape == (2, 86, 8, 15)
+            assert sci_dataset[f"{species}_energy_min"].shape == (2,)
+        elif species == "Fe":
+            assert sci_dataset[species].shape == (1, 86, 8, 15)
+            assert sci_dataset[f"{species}_energy_min"].shape == (1,)
+        assert (
+            sci_dataset[f"{species}_energy_max"].shape
+            == sci_dataset[f"{species}_energy_min"].shape
+        )
 
 
 def test_decom_hit(sci_dataset):
@@ -225,8 +269,12 @@ def test_decom_hit(sci_dataset):
     """
     # TODO: complete this test once the function is complete
     updated_dataset = decom_hit(sci_dataset)
-    print(updated_dataset["sectorates"][0])
-    print(updated_dataset["sectorates"].shape)
-    print(updated_dataset["hdr_minute_cnt"])
-    assert "count_rates_binary" in updated_dataset
-    assert "hdr_unit_num" in updated_dataset
+    # Check if the dataset has the expected new variables
+    # Check that binary science data exists
+    assert "count_rates_raw" in updated_dataset
+    assert "pha_raw" in updated_dataset
+    # Check that sector rates data has been organized
+    for species in ["H", "4He", "CNO", "NeMgSi", "Fe"]:
+        assert species in updated_dataset
+        assert f"{species}_energy_min" in updated_dataset
+        assert f"{species}_energy_max" in updated_dataset
