@@ -197,7 +197,7 @@ def xtce_excel_file(tmp_path):
     states = {
         "packetName": ["TEST_PACKET"] * 2,
         "mnemonic": ["VAR_STATE"] * 2,
-        "value": [0, 1],
+        "value": [0, "0x1"],
         "state": ["OFF", "ON"],
     }
 

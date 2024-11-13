@@ -391,8 +391,39 @@ class XTCEGenerator:
         ]
         for _, state_row in state_sheet.iterrows():
             enumeration = Et.SubElement(enumeration_list, "xtce:Enumeration")
-            enumeration.attrib["value"] = str(state_row["value"])
-            enumeration.attrib["label"] = str(state_row["state"])
+            converted_state = self._convert_state_to_int(state_row)
+            enumeration.attrib["value"] = str(converted_state["value"])
+            enumeration.attrib["label"] = str(converted_state["state"])
+
+    def _convert_state_to_int(self, state: dict) -> dict:
+        """
+        Convert a telemetry state value to an integer if it's a hexadecimal string.
+
+        Some telemetry state values are documented as a hex string,
+        which space packet parser cannot handle. If the value of a
+        state is a hex string, convert it to an integer.
+
+        Parameters
+        ----------
+        state : dict
+            Dictionary with telemetry state and value.
+
+        Returns
+        -------
+        dict
+            The dictionary for the state.
+        """
+        value = state["value"]
+        # convert hex string to int
+        if isinstance(value, str) and value.startswith("0x"):
+            state["value"] = int(value, 16)
+            return state
+        # return if already an int
+        elif isinstance(value, int):
+            return state
+        # raise error if value is neither a hex string or integer
+        else:
+            raise ValueError(f"Invalid value of {value} for state {state['state']}")
 
     def to_xml(self, output_xml_path: Path) -> None:
         """
