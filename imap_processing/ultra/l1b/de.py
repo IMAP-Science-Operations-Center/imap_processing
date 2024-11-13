@@ -136,23 +136,6 @@ def calculate_de(de_dataset: xr.Dataset, name: str) -> xr.Dataset:
         de_dict["tof_start_stop"],
     )
 
-    # We need to fill velocities that have negative tof values.
-    de_dict["vx_ultra"] = np.full_like(
-        vx_ultra, np.finfo(np.float64).min, dtype=np.float64
-    )
-    de_dict["vy_ultra"] = np.full_like(
-        vy_ultra, np.finfo(np.float64).min, dtype=np.float64
-    )
-    de_dict["vz_ultra"] = np.full_like(
-        vz_ultra, np.finfo(np.float64).min, dtype=np.float64
-    )
-
-    # We need to fill velocities that have negative tof values.
-    fill_velocity_mask = de_dict["tof_start_stop"] <= 0
-    vx_ultra[fill_velocity_mask] = np.finfo(np.float64).min
-    vy_ultra[fill_velocity_mask] = np.finfo(np.float64).min
-    vz_ultra[fill_velocity_mask] = np.finfo(np.float64).min
-
     de_dict["vx_ultra"] = vx_ultra
     de_dict["vy_ultra"] = vy_ultra
     de_dict["vz_ultra"] = vz_ultra
@@ -178,9 +161,9 @@ def calculate_de(de_dataset: xr.Dataset, name: str) -> xr.Dataset:
     #     SpiceFrame.IMAP_SPACECRAFT,
     # )
     # TODO: this is a temporary fix.
-    sc_velocity = np.zeros((len(de_dict["epoch"]), 3))
-    sc_dps_velocity = np.zeros((len(de_dict["epoch"]), 3))
-    helio_velocity = np.zeros((len(de_dict["epoch"]), 3))
+    sc_velocity = np.full((len(de_dict["epoch"]), 3), np.nan)
+    sc_dps_velocity = np.full((len(de_dict["epoch"]), 3), np.nan)
+    helio_velocity = np.full((len(de_dict["epoch"]), 3), np.nan)
 
     de_dict["vx_sc"], de_dict["vy_sc"], de_dict["vz_sc"] = (
         sc_velocity[:, 0],

@@ -489,9 +489,9 @@ def get_particle_velocity(
     vhat_y = -v_y / magnitude_v
     vhat_z = -v_z / magnitude_v
 
-    vhat_x[tof < 0] = np.iinfo(np.int64).min  # used as fillvals
-    vhat_y[tof < 0] = np.iinfo(np.int64).min
-    vhat_z[tof < 0] = np.iinfo(np.int64).min
+    vhat_x[tof < 0] = np.nan  # used as fillvals
+    vhat_y[tof < 0] = np.nan
+    vhat_z[tof < 0] = np.nan
 
     return vhat_x, vhat_y, vhat_z
 
