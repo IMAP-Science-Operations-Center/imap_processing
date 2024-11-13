@@ -63,7 +63,6 @@ x_front:
   FIELDNAM: Event x-position on front foil
   LABLAXIS: x front position
   UNITS: mm / 100
-  dtype: float32
 
 y_front:
   <<: *default_float32
@@ -71,7 +70,6 @@ y_front:
   FIELDNAM: Event y-position on front foil
   LABLAXIS: y front position
   UNITS: mm / 100
-  dtype: float32
 
 x_back:
   <<: *default_float32
@@ -79,7 +77,6 @@ x_back:
   FIELDNAM: x_back
   LABLAXIS: x back position
   UNITS: mm / 100
-  dtype: float32
 
 y_back:
   <<: *default_float32
@@ -87,7 +84,6 @@ y_back:
   FIELDNAM: y_back
   LABLAXIS: y back position
   UNITS: mm / 100
-  dtype: float32
 
 x_coin:
   <<: *default_float32
@@ -95,7 +91,6 @@ x_coin:
   FIELDNAM: x_coin
   LABLAXIS: x coincidence position
   UNITS: mm / 100
-  dtype: float32
 
 tof_start_stop:
   <<: *default_float32
@@ -103,7 +98,6 @@ tof_start_stop:
   FIELDNAM: tof_start_stop
   LABLAXIS: tof start stop
   UNITS: nanosecond / 10
-  dtype: float32
 
 tof_stop_coin:
   <<: *default_float32
@@ -111,7 +105,6 @@ tof_stop_coin:
   FIELDNAM: tof_stop_coin
   LABLAXIS: tof stop coin
   UNITS: nanosecond / 10
-  dtype: float32
 
 tof_corrected:
   <<: *default_float32
@@ -119,7 +112,6 @@ tof_corrected:
   FIELDNAM: tof_corrected
   LABLAXIS: tof corrected
   UNITS: nanosecond / 10
-  dtype: float32
 
 event_type:
   <<: *default_uint8
@@ -127,7 +119,6 @@ event_type:
   FIELDNAM: Event type
   LABLAXIS: event type
   UNITS: " "
-  dtype: uint8
 
 coincidence_type:
   <<: *default_uint8
@@ -135,7 +126,6 @@ coincidence_type:
   FIELDNAM: Coincidence type
   LABLAXIS: coincidence type
   UNITS: " "
-  dtype: uint8
 
 start_type:
   <<: *default_uint8
@@ -143,7 +133,6 @@ start_type:
   FIELDNAM: Start type
   LABLAXIS: start type
   UNITS: " "
-  dtype: uint8
 
 vx_ultra:
   <<: *default_float32
@@ -151,7 +140,6 @@ vx_ultra:
   FIELDNAM: vx_ultra
   LABLAXIS: vx ultra
   UNITS: " "
-  dtype: float32
 
 vy_ultra:
   <<: *default_float32
@@ -159,7 +147,6 @@ vy_ultra:
   FIELDNAM: vy_ultra
   LABLAXIS: vy ultra
   UNITS: " "
-  dtype: float32
 
 vz_ultra:
   <<: *default_float32
@@ -167,7 +154,6 @@ vz_ultra:
   FIELDNAM: vz_ultra
   LABLAXIS: vz ultra
   UNITS: " "
-  dtype: float32
 
 energy:
   <<: *default_float32
@@ -175,7 +161,6 @@ energy:
   FIELDNAM: energy
   LABLAXIS: energy
   UNITS: keV
-  dtype: float32
 
 species:
   <<: *default_uint8
@@ -183,7 +168,6 @@ species:
   FIELDNAM: species
   LABLAXIS: species
   UNITS: " "
-  dtype: uint8
 
 front_back_distance:
   <<: *default_float32
@@ -191,7 +175,6 @@ front_back_distance:
   FIELDNAM: front_back_distance
   LABLAXIS: front_back_distance
   UNITS: mm / 100
-  dtype: float32
 
 path_length:
   <<: *default_float32
@@ -199,7 +182,6 @@ path_length:
   FIELDNAM: path_length
   LABLAXIS: path_length
   UNITS: mm / 100
-  dtype: float32
 
 event_efficiency:
   <<: *default_float32
@@ -207,7 +189,6 @@ event_efficiency:
   FIELDNAM: event_efficiency
   LABLAXIS: event efficiency
   UNITS: " "
-  dtype: float32
 
 vx_sc:
   <<: *default_float32
@@ -215,7 +196,6 @@ vx_sc:
   FIELDNAM: vx_sc
   LABLAXIS: vx sc
   UNITS: " "
-  dtype: float32
 
 vy_sc:
   <<: *default_float32
@@ -223,7 +203,6 @@ vy_sc:
   FIELDNAM: vy_sc
   LABLAXIS: vy sc
   UNITS: " "
-  dtype: float32
 
 vz_sc:
   <<: *default_float32
@@ -231,7 +210,6 @@ vz_sc:
   FIELDNAM: vz_sc
   LABLAXIS: vz sc
   UNITS: " "
-  dtype: float32
 
 vx_dps_sc:
   <<: *default_float32
@@ -239,7 +217,6 @@ vx_dps_sc:
   FIELDNAM: vx_dps_sc
   LABLAXIS: vx dps sc
   UNITS: " "
-  dtype: float32
 
 vy_dps_sc:
   <<: *default_float32
@@ -247,7 +224,6 @@ vy_dps_sc:
   FIELDNAM: vy_dps_sc
   LABLAXIS: vy dps sc
   UNITS: " "
-  dtype: float32
 
 vz_dps_sc:
   <<: *default_float32
@@ -255,7 +231,6 @@ vz_dps_sc:
   FIELDNAM: vz_dps_sc
   LABLAXIS: vz dps sc
   UNITS: " "
-  dtype: float32
 
 vx_dps_helio:
   <<: *default_float32
@@ -263,7 +238,6 @@ vx_dps_helio:
   FIELDNAM: vx_dps_helio
   LABLAXIS: vx dps helio
   UNITS: " "
-  dtype: float32
 
 vy_dps_helio:
   <<: *default_float32
@@ -271,7 +245,6 @@ vy_dps_helio:
   FIELDNAM: vy_dps_helio
   LABLAXIS: vy dps helio
   UNITS: " "
-  dtype: float32
 
 vz_dps_helio:
   <<: *default_float32
@@ -279,7 +252,6 @@ vz_dps_helio:
   FIELDNAM: vz_dps_helio
   LABLAXIS: vz dps helio
   UNITS: " "
-  dtype: float32
 
 de_event_met:
   <<: *default_int64
