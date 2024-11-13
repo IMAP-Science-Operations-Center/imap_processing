@@ -158,7 +158,7 @@ def rescale_vector(
     if not compression_flags[0]:
         return input_vector
     else:
-        factor = float(2 ** (16 - compression_flags[1]))
+        factor = np.float_power(2, (16 - compression_flags[1]))
         return input_vector * factor  # type: ignore
 
 

@@ -171,4 +171,4 @@ def generate_dataset(
                 attrs=attribute_manager.get_variable_attributes(key),
             )
 
-    return output.drop_duplicates("epoch")
+    return output
