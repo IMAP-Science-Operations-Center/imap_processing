@@ -1,128 +1,106 @@
 """Decommutate HIT CCSDS science data."""
 
-from collections import namedtuple
-
 import numpy as np
 import xarray as xr
 
+from imap_processing.hit.l0.constants import (
+    COUNTS_DATA_STRUCTURE,
+    FLAG_PATTERN,
+    FRAME_SIZE,
+    MOD_10_MAPPING,
+)
 from imap_processing.utils import convert_to_binary_string
 
-# TODO: Consider moving global values into a config file
 
-# Structure to hold binary details for a
-# section of science data. Used to unpack
-# binary data.
-
-HITPacking = namedtuple(
-    "HITPacking",
-    [
-        "bit_length",
-        "section_length",
-        "shape",
-    ],
-)
-
-# Define data structure for counts rates data
-COUNTS_DATA_STRUCTURE = {
-    # field: bit_length, section_length, shape
-    # ------------------------------------------
-    # science frame header
-    "hdr_unit_num": HITPacking(2, 2, (1,)),
-    "hdr_frame_version": HITPacking(6, 6, (1,)),
-    "hdr_status_bits": HITPacking(8, 8, (1,)),
-    "hdr_minute_cnt": HITPacking(8, 8, (1,)),
-    # ------------------------------------------
-    # spare bits. Contains no data
-    "spare": HITPacking(24, 24, (1,)),
-    # ------------------------------------------
-    # erates - contains livetime counters
-    "livetime": HITPacking(16, 16, (1,)),  # livetime counter
-    "num_trig": HITPacking(16, 16, (1,)),  # number of triggers
-    "num_reject": HITPacking(16, 16, (1,)),  # number of rejected events
-    "num_acc_w_pha": HITPacking(
-        16, 16, (1,)
-    ),  # number of accepted events with PHA data
-    "num_acc_no_pha": HITPacking(16, 16, (1,)),  # number of events without PHA data
-    "num_haz_trig": HITPacking(16, 16, (1,)),  # number of triggers with hazard flag
-    "num_haz_reject": HITPacking(
-        16, 16, (1,)
-    ),  # number of rejected events with hazard flag
-    "num_haz_acc_w_pha": HITPacking(
-        16, 16, (1,)
-    ),  # number of accepted hazard events with PHA data
-    "num_haz_acc_no_pha": HITPacking(
-        16, 16, (1,)
-    ),  # number of hazard events without PHA data
-    # -------------------------------------------
-    "sngrates": HITPacking(16, 1856, (2, 58)),  # single rates
-    # -------------------------------------------
-    # evprates - contains event processing rates
-    "nread": HITPacking(16, 16, (1,)),  # events read from event fifo
-    "nhazard": HITPacking(16, 16, (1,)),  # events tagged with hazard flag
-    "nadcstim": HITPacking(16, 16, (1,)),  # adc-stim events
-    "nodd": HITPacking(16, 16, (1,)),  # odd events
-    "noddfix": HITPacking(16, 16, (1,)),  # odd events that were fixed in sw
-    "nmulti": HITPacking(
-        16, 16, (1,)
-    ),  # events with multiple hits in a single detector
-    "nmultifix": HITPacking(16, 16, (1,)),  # multi events that were fixed in sw
-    "nbadtraj": HITPacking(16, 16, (1,)),  # bad trajectory
-    "nl2": HITPacking(16, 16, (1,)),  # events sorted into L12 event category
-    "nl3": HITPacking(16, 16, (1,)),  # events sorted into L123 event category
-    "nl4": HITPacking(16, 16, (1,)),  # events sorted into L1423 event category
-    "npen": HITPacking(16, 16, (1,)),  # events sorted into penetrating event category
-    "nformat": HITPacking(16, 16, (1,)),  # nothing currently goes in this slot
-    "naside": HITPacking(16, 16, (1,)),  # A-side events
-    "nbside": HITPacking(16, 16, (1,)),  # B-side events
-    "nerror": HITPacking(16, 16, (1,)),  # events that caused a processing error
-    "nbadtags": HITPacking(
-        16, 16, (1,)
-    ),  # events with inconsistent tags vs pulse heights
-    # -------------------------------------------
-    # other count rates
-    "coinrates": HITPacking(16, 416, (26,)),  # coincidence rates
-    "bufrates": HITPacking(16, 512, (32,)),  # priority buffer rates
-    "l2fgrates": HITPacking(16, 2112, (132,)),  # range 2 foreground rates
-    "l2bgrates": HITPacking(16, 192, (12,)),  # range 2 background rates
-    "l3fgrates": HITPacking(16, 2672, (167,)),  # range 3 foreground rates
-    "l3bgrates": HITPacking(16, 192, (12,)),  # range 3 background rates
-    "penfgrates": HITPacking(16, 528, (33,)),  # range 4 foreground rates
-    "penbgrates": HITPacking(16, 240, (15,)),  # range 4 background rates
-    "ialirtrates": HITPacking(16, 320, (20,)),  # ialirt rates
-    "sectorates": HITPacking(16, 1920, (120,)),  # sectored rates
-    "l4fgrates": HITPacking(16, 768, (48,)),  # all range foreground rates
-    "l4bgrates": HITPacking(16, 384, (24,)),  # all range foreground rates
-}
-
-
-# Define the pattern of grouping flags in a complete science frame.
-FLAG_PATTERN = np.array([1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2])
-
-# Define size of science frame (num of packets)
-FRAME_SIZE = len(FLAG_PATTERN)
-
-
-def subcom_sectorates(sectorates: xr.DataArray, hdr_min_count: int) -> xr.DataArray:
+def subcom_sectorates(sci_dataset: xr.Dataset) -> None:
     """
     Subcommutate sectorates data.
 
+    Sector rates data contains rates for 5 species and 10
+    energy ranges. This function subcommutates the sector
+    rates data by organizing the rates by species and
+    reshaping the data into 8x15 arrays for declination and
+    azimuth. Which species and energy range the data belongs
+    to is determined by taking the mod 10 value of the
+    corresponding header minute count value in the dataset.
+    A mapping of mod 10 values to species and energy ranges
+    is provided in constants.py.
+
+    MOD_10_MAPPING = {
+        0: {"species": "H", "energy_min": 1.8, "energy_max": 3.6},
+        1: {"species": "H", "energy_min": 4, "energy_max": 6},
+        2: {"species": "H", "energy_min": 6, "energy_max": 10},
+        3: {"species": "4He", "energy_min": 4, "energy_max": 6},
+        ...
+        9: {"species": "Fe", "energy_min": 4, "energy_max": 12}}
+
+    The reshaped data is added to the dataset as new data fields
+    named according to their species. They have 4 dimensions:
+    energy index, epoch, declination, and azimuth. The energy index
+    dimension is used to distinguish between the different energy ranges
+    the data belongs to. The energy min and max values for each species
+    are also added to the dataset as new data fields.
+
     Parameters
     ----------
-    sectorates : xr.DataArray
-        Sectorates data for a science frame.
-    hdr_min_count : int
-        Header min count value for the same science frame.
-
-    Returns
-    -------
-    subcom_sectorates : xr.DataArray
-        Subcommutated sectorates data.
+    sci_dataset : xr.Dataset
+        Xarray dataset containing parsed HIT science data.
     """
+    # TODO:
+    #  - Update to use fill values defined in attribute manager which
+    #    isn't passed into this module nor defined for L1A sci data yet
+    #  - Determine naming convention for species data fields in dataset
+    #    (i.e. h, H, hydrogen, Hydrogen, etc.)
+    #  - Remove raw sectorates data from dataset after processing is complete?
+    #  - consider moving this function to hit_l1a.py
 
-    # TODO: Compute hdr min count mod 10
-    # get the species and energy range from hdr_min_count_mod_10
-    # assign the sectorate data to the corresponding species and energy range
-    # determine how to organize this and what to pass back...
+    # Calculate mod 10 values
+    hdr_min_count_mod_10 = sci_dataset.hdr_minute_cnt.values % 10
+
+    # Get mod 10 mapping to determine species and energy range for each science frame
+    data_by_species_and_energy_range = MOD_10_MAPPING.copy()
+    # Add 8x15 arrays with fill values for all science frames for each species and
+    # energy range
+    for value in data_by_species_and_energy_range.values():
+        num_frames = len(hdr_min_count_mod_10)
+        value["rates"] = np.full((num_frames, 8, 15), fill_value=np.nan)
+
+    # Reshape sector rates data to 8x15 for declination and azimuth
+    # and update rates for frames where data is available
+    reshaped_rates = sci_dataset["sectorates"].values.reshape(-1, 8, 15)
+    for i, mod_10 in enumerate(hdr_min_count_mod_10):
+        data_by_species_and_energy_range[mod_10]["rates"][i] = reshaped_rates[i]
+
+    # H has 3 energy ranges, 4He, CNO, NeMgSi have 2, and Fe has 1.
+    # Aggregate sector rates and energy min/max values for each species.
+    # First, initialize dictionaries to store rates and min/max energy values by species
+    data_by_species: dict = {
+        species: {"rates": [], "energy_min": [], "energy_max": []}
+        for species in ["H", "4He", "CNO", "NeMgSi", "Fe"]
+    }
+    for value in data_by_species_and_energy_range.values():
+        species = value["species"]
+        data_by_species[species]["rates"].append(value["rates"])
+        data_by_species[species]["energy_min"].append(value["energy_min"])
+        data_by_species[species]["energy_max"].append(value["energy_max"])
+
+    # Add sector rates by species to the dataset
+    for species, data in data_by_species.items():
+        sci_dataset[species] = xr.DataArray(
+            data=np.array(data["rates"]),
+            dims=[f"{species}_energy_index", "epoch", "declination", "azimuth"],
+            name=species,
+        )
+        sci_dataset[f"{species}_energy_min"] = xr.DataArray(
+            data=np.array(data["energy_min"]),
+            dims=[f"{species}_energy_index"],
+            name=f"{species}_energy_min",
+        )
+        sci_dataset[f"{species}_energy_max"] = xr.DataArray(
+            data=np.array(data["energy_max"]),
+            dims=[f"{species}_energy_index"],
+            name=f"{species}_energy_max",
+        )
 
 
 def parse_data(bin_str: str, bits_per_index: int, start: int, end: int) -> list:
@@ -195,11 +173,7 @@ def parse_count_rates(sci_dataset: xr.Dataset) -> None:
                 low_gain = data[1::2]  # Items at odd indices 1, 3, 5, etc.
                 parsed_data[i] = [high_gain, low_gain]
 
-        # TODO
-        #  - status bits needs to be further parsed (table 10 in algorithm doc)
-        #  - subcommutate sectorates
-        #  - decompress data
-        #  - For erates and evrates - each subfield should be it's own data field/array)
+        # TODO: status bits needs to be further parsed (table 10 in algorithm doc)
 
         # Get dims for data variables (yaml file not created yet)
         if len(field_meta.shape) > 1:
@@ -479,5 +453,12 @@ def decom_hit(sci_dataset: xr.Dataset) -> xr.Dataset:
 
     # Parse count rates data from binary and add to dataset
     parse_count_rates(sci_dataset)
+
+    # Further organize sector rates by species type
+    subcom_sectorates(sci_dataset)
+
+    # TODO:
+    #  -decompress data
+    #  -clean up dataset - remove raw binary data? Any other fields to remove?
 
     return sci_dataset
