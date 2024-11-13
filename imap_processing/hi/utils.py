@@ -1,6 +1,8 @@
 """IMAP-Hi utils functions."""
 
+import re
 from collections.abc import Sequence
+from dataclasses import dataclass
 from enum import IntEnum
 from typing import Optional, Union
 
@@ -32,6 +34,64 @@ class HIAPID(IntEnum):
             "45sensor" or "90sensor".
         """
         return self.name[1:3] + "sensor"
+
+
+@dataclass(frozen=True)
+class HiConstants:
+    """
+    Constants for Hi instrument.
+
+    Attributes
+    ----------
+    TOF1_TICK_DUR : int
+        Duration of Time-of-Flight 1 clock tick in nanoseconds.
+    TOF2_TICK_DUR : int
+        Duration of Time-of-Flight 2 clock tick in nanoseconds.
+    TOF3_TICK_DUR : int
+        Duration of Time-of-Flight 3 clock tick in nanoseconds.
+    TOF1_BAD_VALUES : tuple[int]
+        Tuple of values indicating TOF1 does not contain a valid time.
+    TOF2_BAD_VALUES : tuple[int]
+        Tuple of values indicating TOF2 does not contain a valid time.
+    TOF3_BAD_VALUES : tuple[int]
+        Tuple of values indicating TOF3 does not contain a valid time.
+    """
+
+    TOF1_TICK_DUR = 1  # 1 ns
+    TOF2_TICK_DUR = 1  # 1 ns
+    TOF3_TICK_DUR = 0.5  # 0.5 ns
+
+    # These values are stored in the TOF telemetry when the TOF timer
+    # does not have valid data.
+    TOF1_BAD_VALUES = (511, 1023)
+    TOF2_BAD_VALUES = (1023,)
+    TOF3_BAD_VALUES = (1023,)
+
+
+def parse_sensor_number(full_string: str) -> int:
+    """
+    Parse the sensor number from a string.
+
+    This function uses regex to match any portion of the input string
+    containing "(45|90)sensor".
+
+    Parameters
+    ----------
+    full_string : str
+        A string containing sensor number.
+
+    Returns
+    -------
+    sensor_number : int
+      The integer sensor number. For IMAP-Hi this is 45 or 90.
+    """
+    regex_str = r".*(?P<sensor_num>(45|90))sensor.*?"
+    match = re.match(regex_str, full_string)
+    if match is None:
+        raise ValueError(
+            f"String 'sensor(45|90)' not found in input string: '{full_string}'"
+        )
+    return int(match["sensor_num"])
 
 
 def full_dataarray(
@@ -114,7 +174,7 @@ def create_dataset_variables(
     """
     attr_mgr = ImapCdfAttributes()
     attr_mgr.add_instrument_global_attrs("hi")
-    attr_mgr.load_variable_attributes("imap_hi_variable_attrs.yaml")
+    attr_mgr.add_instrument_variable_attrs(instrument="hi", level=None)
 
     new_variables = dict()
     for var in variable_names:

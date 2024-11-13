@@ -5,7 +5,12 @@ import pytest
 import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
-from imap_processing.hi.utils import HIAPID, create_dataset_variables, full_dataarray
+from imap_processing.hi.utils import (
+    HIAPID,
+    create_dataset_variables,
+    full_dataarray,
+    parse_sensor_number,
+)
 
 
 def test_hiapid():
@@ -18,6 +23,24 @@ def test_hiapid():
     hi_apid = HIAPID["H90_SCI_CNT"]
     assert hi_apid.value == 833
     assert hi_apid.sensor == "90sensor"
+
+
+@pytest.mark.parametrize(
+    "test_str, expected",
+    [
+        ("imap_hi_l1b_45sensor-de", 45),
+        ("imap_hi_l1c_90sensor-pset_20250415_v001.cdf", 90),
+        ("imap_hi_l1c_{number}sensor", None),
+    ],
+)
+def test_parse_sensor_number(test_str, expected):
+    """Test coverage for parse_sensor_number function"""
+    if expected:
+        sensor_number = parse_sensor_number(test_str)
+        assert sensor_number == expected
+    else:
+        with pytest.raises(ValueError, match=r"String 'sensor\(45|90\)' not found.*"):
+            _ = parse_sensor_number(test_str)
 
 
 @pytest.mark.parametrize(
@@ -36,7 +59,7 @@ def test_full_dataarray(name, shape, expected_shape):
         "spin_angle_bin": xr.DataArray(np.arange(360)),
     }
     cdf_manager = ImapCdfAttributes()
-    cdf_manager.load_variable_attributes("imap_hi_variable_attrs.yaml")
+    cdf_manager.add_instrument_variable_attrs(instrument="hi", level=None)
 
     dataarray = full_dataarray(
         name, cdf_manager.get_variable_attributes(f"hi_pset_{name}"), coords, shape
@@ -60,7 +83,7 @@ def test_create_dataset_variables(var_names, shape, lookup_str):
     assert len(l1b_de_vars) == len(var_names)
     attr_mgr = ImapCdfAttributes()
     attr_mgr.add_instrument_global_attrs("hi")
-    attr_mgr.load_variable_attributes("imap_hi_variable_attrs.yaml")
+    attr_mgr.add_instrument_variable_attrs(instrument="hi", level=None)
 
     for var_name, data_array in l1b_de_vars.items():
         attrs = attr_mgr.get_variable_attributes(

@@ -5,6 +5,7 @@ import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.spice.time import met_to_j2000ns
+from imap_processing.utils import convert_to_binary_string
 
 # TODO: read LOOKED_UP_DURATION_OF_TICK from
 # instrument status summary later. This value
@@ -262,7 +263,7 @@ def create_dataset(de_data_list: list, packet_met_time: list) -> xr.Dataset:
     # Load the CDF attributes
     attr_mgr = ImapCdfAttributes()
     attr_mgr.add_instrument_global_attrs("hi")
-    attr_mgr.load_variable_attributes("imap_hi_variable_attrs.yaml")
+    attr_mgr.add_instrument_variable_attrs(instrument="hi", level=None)
     # uncomment this once Maxine's PR is merged
     # attr_mgr.add_global_attribute("Data_version", data_version)
 
@@ -328,8 +329,9 @@ def science_direct_event(packets_data: xr.Dataset) -> xr.Dataset:
     # end of the list. This way, I don't need to flatten
     # the list later.
     for i, data in enumerate(packets_data["de_tof"].data):
+        binary_str_val = convert_to_binary_string(data)
         # break binary stream data into unit of 48-bits
-        event_48bits_list = break_into_bits_size(data)
+        event_48bits_list = break_into_bits_size(binary_str_val)
         # parse 48-bits into meaningful data such as metaevent or direct event
         de_data_list.extend([parse_direct_event(event) for event in event_48bits_list])
         # add packet time to packet_met_time

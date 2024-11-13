@@ -22,12 +22,12 @@ def met_to_j2000ns(
 
     Parameters
     ----------
-    met : array_like
+    met : float, numpy.ndarray
         Number of seconds since epoch according to the spacecraft clock.
 
     Returns
     -------
-    array_like or scalar, int64
+    numpy.ndarray[numpy.int64]
         The mission elapsed time converted to nanoseconds since the J2000 epoch.
 
     Notes
@@ -42,6 +42,26 @@ def met_to_j2000ns(
     """
     sclk_ticks = np.asarray(met, dtype=float) / TICK_DURATION
     return np.asarray(_sct2e_wrapper(sclk_ticks) * 1e9, dtype=np.int64)
+
+
+def j2000ns_to_j2000s(j2000ns: npt.ArrayLike) -> npt.NDArray[float]:
+    """
+    Convert the J2000 epoch nanoseconds to J2000 epoch seconds.
+
+    The common CDF coordinate `epoch` stores J2000 nanoseconds. SPICE requires
+    J2000 seconds be used. This is a common function to do that conversion.
+
+    Parameters
+    ----------
+    j2000ns : float, numpy.ndarray
+        Number of nanoseconds since the J2000 epoch.
+
+    Returns
+    -------
+    numpy.ndarray[float]
+        Number of seconds since the J2000 epoch.
+    """
+    return np.asarray(j2000ns, dtype=np.float64) / 1e9
 
 
 @typing.no_type_check

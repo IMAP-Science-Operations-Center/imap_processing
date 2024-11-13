@@ -1,7 +1,7 @@
 .. _data-access-api:
 
-Data Access API
-===============
+Data Access
+===========
 
 The `imap-data-access <https://github.com/IMAP-Science-Operations-Center/imap-data-access>`_
 repository provides programmatic access and a command-line utility for

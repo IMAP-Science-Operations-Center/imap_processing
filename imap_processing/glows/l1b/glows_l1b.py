@@ -71,6 +71,12 @@ def glows_l1b(input_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
             dims=["bins"],
             attrs=cdf_attrs.get_variable_attributes("bins_attrs"),
         )
+        bin_label = xr.DataArray(
+            bin_data.data.astype(str),
+            name="bins_label",
+            dims=["bins_label"],
+            attrs=cdf_attrs.get_variable_attributes("bins_label"),
+        )
 
         output_dataarrays = process_histogram(input_dataset)
         # TODO: Is it ok to copy the dimensions from the input dataset?
@@ -79,6 +85,7 @@ def glows_l1b(input_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
             coords={
                 "epoch": data_epoch,
                 "bins": bin_data,
+                "bins_label": bin_label,
                 "bad_angle_flags": bad_flag_data,
                 "flag_dim": flag_data,
                 "ecliptic": eclipic_data,
@@ -107,6 +114,13 @@ def glows_l1b(input_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
             dims=["within_the_second"],
             attrs=cdf_attrs.get_variable_attributes("within_the_second"),
         )
+        # Add the within_the_second label to the xr.Dataset coordinates
+        within_the_second_label = xr.DataArray(
+            input_dataset["within_the_second"].data.astype(str),
+            name="within_the_second_label",
+            dims=["within_the_second_label"],
+            attrs=cdf_attrs.get_variable_attributes("within_the_second_label"),
+        )
 
         flag_data = xr.DataArray(
             np.arange(11),
@@ -119,6 +133,7 @@ def glows_l1b(input_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
             coords={
                 "epoch": data_epoch,
                 "within_the_second": within_the_second_data,
+                "within_the_second_label": within_the_second_label,
                 "flag_dim": flag_data,
             },
             attrs=cdf_attrs.get_global_attributes("imap_glows_l1b_de"),

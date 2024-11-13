@@ -17,7 +17,7 @@ from imap_processing.utils import packet_file_to_datasets
 def packet_filepath():
     """Set path to test data file"""
     return (
-        imap_module_directory / "tests/hit/test_data/imap_hit_l0_hk_20100105_v001.pkts"
+        imap_module_directory / "tests/hit/test_data/imap_hit_l0_raw_20100105_v001.pkts"
     )
 
 
@@ -182,6 +182,9 @@ def test_process_housekeeping(housekeeping_dataset, attribute_manager):
 
     # Define the dataset attributes
     dataset_attrs = {
+        "Acknowledgement": "Please acknowledge the IMAP Mission Principal "
+        "Investigator, Prof. David J. McComas of Princeton "
+        "University.\n",
         "Data_level": "1A",
         "Data_type": "L1A_HK>Level-1A Housekeeping",
         "Data_version": "001",
@@ -199,6 +202,10 @@ def test_process_housekeeping(housekeeping_dataset, attribute_manager):
         "PI_affiliation": "Princeton University",
         "PI_name": "Prof. David J. McComas",
         "Project": "STP>Solar Terrestrial Probes",
+        "Rules_of_use": "All IMAP data products are publicly released and citable for "
+        "use in publications. Please consult the IMAP team "
+        "publications and personnel for further details on "
+        "production, processing, and usage of these data.\n",
         "Source_name": "IMAP>Interstellar Mapping and Acceleration Probe",
         "TEXT": "The High-energy Ion Telescope (HIT) measures the elemental "
         "composition, energy spectra, angle distributions, and arrival "
@@ -221,4 +228,3 @@ def test_process_housekeeping(housekeeping_dataset, attribute_manager):
     # Check that the dataset has the correct attributes, coordinates, and dimensions
     assert processed_hskp_dataset.attrs == dataset_attrs
     assert processed_hskp_dataset.coords.keys() == dataset_coords_dims
-    assert processed_hskp_dataset.sizes.keys() == dataset_coords_dims

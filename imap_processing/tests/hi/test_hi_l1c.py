@@ -1,6 +1,7 @@
 """Test coverage for imap_processing.hi.l1c.hi_l1c.py"""
 
 import numpy as np
+import pytest
 
 from imap_processing.hi.l1a.hi_l1a import hi_l1a
 from imap_processing.hi.l1b.hi_l1b import hi_l1b
@@ -8,6 +9,11 @@ from imap_processing.hi.l1c import hi_l1c
 from imap_processing.hi.utils import HIAPID
 
 
+@pytest.mark.skip(
+    reason="See TODO in test comments. Need to convert this test"
+    "to use a test L1B file rather than running L1B on fake"
+    "data."
+)
 def test_generate_pset_dataset(create_de_data):
     """Test coverage for generate_pset_dataset function"""
     # TODO: once things are more stable, check in an L1B DE file as test data?

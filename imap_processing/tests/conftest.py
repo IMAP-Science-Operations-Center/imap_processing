@@ -90,13 +90,27 @@ def _download_de440s(spice_test_data_path):
 def pytest_collection_modifyitems(items):
     """
     The use of this hook allows modification of test `Items` after tests have
-    been collected. In this case, it automatically adds the _download_de440s
-    fixture to any test marked with the `external_kernel`.
+    been collected. In this case, it automatically adds fixtures based on the
+    following table:
+
+    +---------------------+---------------------+
+    | pytest mark         | fixture added       |
+    +=====================+=====================+
+    | external_kernel     | _download_de440s    |
+    | use_test_metakernel | use_test_metakernel |
+    +---------------------+---------------------+
+
+    Notes
+    -----
+    See the following link for details about this function, also known as a
+    pytest hook:
     https://docs.pytest.org/en/stable/reference/reference.html#pytest.hookspec.pytest_collection_modifyitems
     """
     for item in items:
         if item.get_closest_marker("external_kernel") is not None:
             item.fixturenames.append("_download_de440s")
+        if item.get_closest_marker("use_test_metakernel") is not None:
+            item.fixturenames.append("use_test_metakernel")
 
 
 @pytest.fixture(scope="session")
@@ -257,11 +271,11 @@ def use_test_metakernel(
         ...     pass
 
     2. Specify a different metakernel template
-        >>> @pytest.mark.metakernel("other_template_mk.template")
-        ... def test_my_spicey_func(use_test_metakernel):
+        >>> @pytest.mark.use_test_metakernel("other_template_mk.template")
+        ... def test_my_spicey_func():
         ...     pass
     """
-    marker = request.node.get_closest_marker("metakernel")
+    marker = request.node.get_closest_marker("use_test_metakernel")
     if marker is None:
         yield session_test_metakernel
     else:
@@ -283,19 +297,55 @@ def _unset_metakernel_path(monkeypatch):
 
 
 @pytest.fixture()
-def _set_spin_data_filepath(monkeypatch, tmpdir, generate_spin_data):
-    """Set the SPIN_DATA_FILEPATH environment variable"""
-    # SWE test data time minus 56120 seconds to get mid-night time
-    start_time = 453051323.0 - 56120
-    spin_df = generate_spin_data(start_time)
-    spin_csv_file_path = tmpdir / "spin_data.spin.csv"
-    spin_df.to_csv(spin_csv_file_path, index=False)
-    monkeypatch.setenv("SPIN_DATA_FILEPATH", str(spin_csv_file_path))
+def use_test_spin_data_csv(monkeypatch):
+    """Sets the SPIN_DATA_FILEPATH environment variable to input path."""
+
+    def wrapped_set_spin_data_filepath(path: Path):
+        monkeypatch.setenv("SPIN_DATA_FILEPATH", str(path))
+
+    return wrapped_set_spin_data_filepath
+
+
+@pytest.fixture()
+def use_fake_spin_data_for_time(
+    request, use_test_spin_data_csv, tmpdir, generate_spin_data
+):
+    """
+    Generate and use fake spin data for testing.
+
+    Returns
+    -------
+    callable
+        Returns a callable function that takes start_met and optionally end_met
+        as inputs, generates fake spin data, writes the data to a csv file,
+        and sets the SPIN_DATA_FILEPATH environment variable to point to the
+        fake spin data file.
+    """
+
+    def wrapped_set_spin_data_filepath(
+        start_met: float, end_met: Optional[int] = None
+    ) -> pd.DataFrame:
+        """
+        Generate and use fake spin data for testing.
+        Parameters
+        ----------
+        start_met : int
+            Provides the start time in Mission Elapsed Time (MET).
+        end_met : int
+            Provides the end time in MET. If not provided, default to one day
+            from start time.
+        """
+        spin_df = generate_spin_data(start_met, end_met=end_met)
+        spin_csv_file_path = tmpdir / "spin_data.spin.csv"
+        spin_df.to_csv(spin_csv_file_path, index=False)
+        use_test_spin_data_csv(spin_csv_file_path)
+
+    return wrapped_set_spin_data_filepath
 
 
 @pytest.fixture()
 def generate_spin_data():
-    def make_data(start_met: int, end_met: Optional[int] = None) -> pd.DataFrame:
+    def make_data(start_met: float, end_met: Optional[float] = None) -> pd.DataFrame:
         """
         Generate a spin table CSV covering one or more days.
         Spin table contains the following fields:
@@ -310,14 +360,14 @@ def generate_spin_data():
             thruster_firing
             )
         This function creates spin data using start MET and end MET time.
-        Each spin start data uses the nominal 15 second spin period. The spins that
+        Each spin start data uses the nominal 15-second spin period. The spins that
         occur from 00:00(Mid-night) to 00:10 UTC are marked with flags for
         thruster firing, invalid spin period, and invalid spin phase.
         Parameters
         ----------
-        start_met : int
+        start_met : float
             Provides the start time in Mission Elapsed Time (MET).
-        end_met : int
+        end_met : float
             Provides the end time in MET. If not provided, default to one day
             from start time.
         Returns
@@ -330,7 +380,8 @@ def generate_spin_data():
             end_met = start_met + 86400
 
         # Create spin start second data of 15 seconds increment
-        spin_start_sec = np.arange(start_met, end_met + 1, 15)
+        spin_start_sec = np.arange(np.floor(start_met), end_met + 1, 15)
+        spin_start_subsec = int((start_met - spin_start_sec[0]) * 1000)
 
         nspins = len(spin_start_sec)
 
@@ -338,7 +389,9 @@ def generate_spin_data():
             {
                 "spin_number": np.arange(nspins, dtype=np.uint32),
                 "spin_start_sec": spin_start_sec,
-                "spin_start_subsec": np.zeros(nspins, dtype=np.uint32),
+                "spin_start_subsec": np.full(
+                    nspins, spin_start_subsec, dtype=np.uint32
+                ),
                 "spin_period_sec": np.full(nspins, 15.0, dtype=np.float32),
                 "spin_period_valid": np.ones(nspins, dtype=np.uint8),
                 "spin_phase_valid": np.ones(nspins, dtype=np.uint8),
@@ -348,7 +401,7 @@ def generate_spin_data():
         )
 
         # Convert spin_start_sec to datetime to set repointing times flags
-        spin_start_dates = met_to_j2000ns(spin_start_sec)
+        spin_start_dates = met_to_j2000ns(spin_start_sec + spin_start_subsec / 1000)
         spin_start_dates = cdflib.cdfepoch.to_datetime(spin_start_dates)
 
         # Convert DatetimeIndex to Series for using .dt accessor

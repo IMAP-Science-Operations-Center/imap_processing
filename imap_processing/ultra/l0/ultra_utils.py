@@ -26,7 +26,7 @@ class PacketProperties(NamedTuple):
 
 # Define PacketProperties instances directly in the module namespace
 ULTRA_AUX = PacketProperties(
-    apid=[880, 994],
+    apid=[880, 944],
     logical_source=["imap_ultra_l1a_45sensor-aux", "imap_ultra_l1a_90sensor-aux"],
     addition_to_logical_desc="Auxiliary",
     width=None,
@@ -279,11 +279,11 @@ def append_fillval(decom_data: dict, packet):  # type: ignore[no-untyped-def]
     ----------
     decom_data : dict
         Parsed data.
-    packet : space_packet_parser.parser.Packet
+    packet : space_packet_parser.packets.CCSDSPacket
         Packet.
     """
     for key in decom_data:
-        if (key not in packet.header.keys()) and (key not in packet.data.keys()):
+        if (key not in packet.header.keys()) and (key not in packet.user_data.keys()):
             decom_data[key].append(np.iinfo(np.int64).min)
 
 

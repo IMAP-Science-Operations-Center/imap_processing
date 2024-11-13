@@ -15,6 +15,7 @@ Instruments
 .. toctree::
    :maxdepth: 1
 
+   cli
    codice
    glows
    hi
@@ -25,7 +26,18 @@ Instruments
    swapi
    swe
    ultra
+
+Utilities
+---------
+In addition to top level modules for each instrument, there are a couple of
+tob level modules which contain utility code common to all instruments.
+
+.. toctree::
+   :maxdepth: 1
+
    cdf
+   spice
+
 
 Utility functions can be found in modules within the top package level.
 

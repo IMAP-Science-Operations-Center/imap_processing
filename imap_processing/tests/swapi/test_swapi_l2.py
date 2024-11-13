@@ -17,5 +17,6 @@ def test_swapi_l2_cdf(swapi_l0_test_data_path):
 
     # Test uncertainty variables are as expected
     np.testing.assert_array_equal(
-        l2_dataset["swp_pcem_unc_plus"], l1_dataset["swp_pcem_err_plus"] / TIME_PER_BIN
+        l2_dataset["swp_pcem_rate_err_plus"],
+        l1_dataset["swp_pcem_counts_err_plus"] / TIME_PER_BIN,
     )

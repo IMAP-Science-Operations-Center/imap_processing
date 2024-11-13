@@ -42,10 +42,7 @@ class CcsdsData:
     def __init__(self, packet_header: dict):
         attributes = [field.name for field in fields(self)]
 
-        for key, item in packet_header.items():
-            value = (
-                item.derived_value if item.derived_value is not None else item.raw_value
-            )
+        for key, value in packet_header.items():
             if key in attributes:
                 setattr(self, key, value)
             else:

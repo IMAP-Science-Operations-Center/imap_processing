@@ -114,17 +114,7 @@ class HistogramL0(GlowsL0):
     ELAVG: int
     ELVAR: int
     EVENTS: int
-    HISTOGRAM_DATA: bytearray
-
-    def __post_init__(self) -> None:
-        """Convert HISTOGRAM_DATA attribute from string to bytearray if needed."""
-        if isinstance(self.HISTOGRAM_DATA, str):
-            # Convert string output from space_packet_parser to bytearray
-            self.HISTOGRAM_DATA = bytearray(
-                int(self.HISTOGRAM_DATA, 2).to_bytes(
-                    len(self.HISTOGRAM_DATA) // 8, "big"
-                )
-            )
+    HISTOGRAM_DATA: bytes
 
 
 @dataclass

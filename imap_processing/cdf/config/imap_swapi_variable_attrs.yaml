@@ -82,6 +82,17 @@ rate_default: &rate_default
   VAR_TYPE: data
   SCALETYP: linear
 
+metadata_default: &metadata_default
+  DEPEND_0: epoch
+  DISPLAY_TYPE: time_series
+  FILLVAL: 4294967295
+  FORMAT: I2
+  UNITS: " "
+  VALIDMIN: 0
+  VALIDMAX: 15
+  VAR_TYPE: support_data
+  SCALETYP: linear
+
 pcem_counts:
   <<: *counts_default
   CATDESC: Primary Channel Electron Multiplier (CEM)  Counts
@@ -135,3 +146,33 @@ coin_rate:
   CATDESC: Coincidence Rates
   FIELDNAM: Coincidence Rates
   LABLAXIS: coin_rate
+
+sweep_table:
+  <<: *metadata_default
+  CATDESC: Sweep table ID.
+  FIELDNAM: Sweep Table
+  LABLAXIS: ID
+
+plan_id:
+  <<: *metadata_default
+  CATDESC: Plan ID.
+  FIELDNAM: Plan ID
+  LABLAXIS: ID
+
+lut_choice:
+  <<: *metadata_default
+  CATDESC: Which LUT is in use.
+  FIELDNAM: LUT Choice
+  LABLAXIS: lut_choice
+
+fpga_type:
+  <<: *metadata_default
+  CATDESC: Type number of the FPGA.
+  FIELDNAM: FPGA Type
+  LABLAXIS: fpga_type
+
+fpga_rev:
+  <<: *metadata_default
+  CATDESC: Revision number of the FPGA.
+  FIELDNAM: FPGA Revision
+  LABLAXIS: fpga_rev

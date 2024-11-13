@@ -157,6 +157,13 @@ hi_de_tof_3:
     the direct event. 1023 is the value used to indicate no event was registered.
 
 # ======= L1A HIST Section =======
+# <=== Label Attributes ===>
+# LABL_PTR_i expects VAR_TYPE of metadata with char data type
+hi_hist_angle_label:
+  CATDESC: Angle bin centers for histogram data.
+  FIELDNAM: ANGLE
+  FORMAT: A5
+  VAR_TYPE: metadata
 
 hi_hist_angle:
   SCALE_TYPE: linear
@@ -183,8 +190,8 @@ hi_hist_counters:
   FIELDNAM: "{counter_name} histogram"
   VALIDMAX: 4095
   DEPEND_1: angle
+  LABL_PTR_1: angle_label
   FORMAT: I4
-  LABLAXIS: "{counter_name}"
 
 # ======= L1B DE Section =======
 hi_de_coincidence_type:

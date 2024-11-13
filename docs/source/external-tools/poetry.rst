@@ -3,7 +3,7 @@
 Poetry
 ======
 
-We are using `Poetry <https://python-poetry.org/docs/>`_ for the dependency management in both ``sds-data-manager`` and ``imap_processing``. All dependency management should go through Poetry.
+We are using `Poetry <https://python-poetry.org/docs/>`_ for the dependency management in both ``sds-data-manager`` and ``imap_processing``. All dependency management should go through Poetry, following our standard :ref:`poetry-environment`.
 
 .. _poetry-overview-link:
 
@@ -84,10 +84,13 @@ Installing and the Poetry Shell
 To install the Poetry project, you can use the `install <https://python-poetry.org/docs/cli/#install>`_ command::
 
     # We use dynamic versioning, which requires a plugin to be installed first
-    poetry self add "poetry-dynamic-versioning[plugin]"
+    poetry self add poetry-dynamic-versioning
 
     # Install main dependencies and any dependency groups which are installed by default
     poetry install
+
+    # Install all extras
+    poetry install --all-extras
 
     # install without specific dependency groups
     poetry install --without test,docs

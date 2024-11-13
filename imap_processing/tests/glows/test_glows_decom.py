@@ -1,7 +1,6 @@
 from collections import namedtuple
 
 import pytest
-from space_packet_parser.parser import ParsedDataItem
 
 from imap_processing.ccsds.ccsds_data import CcsdsData
 
@@ -66,26 +65,26 @@ def test_bad_header():
 def test_header(decom_test_data):
     expected_hist = CcsdsData(
         {
-            "VERSION": ParsedDataItem("VERSION", 0, unit=None),
-            "TYPE": ParsedDataItem("TYPE", 0, unit=None),
-            "SEC_HDR_FLG": ParsedDataItem("SEC_HDR_FLG", 1, unit=None),
-            "PKT_APID": ParsedDataItem("PKT_APID", 1480, unit=None),
-            "SEQ_FLGS": ParsedDataItem("SEQ_FLGS", 3, unit=None),
-            "SRC_SEQ_CTR": ParsedDataItem("SRC_SEQ_CTR", 0, unit=None),
-            "PKT_LEN": ParsedDataItem("PKT_LEN", 3663, unit=None),
+            "VERSION": 0,
+            "TYPE": 0,
+            "SEC_HDR_FLG": 1,
+            "PKT_APID": 1480,
+            "SEQ_FLGS": 3,
+            "SRC_SEQ_CTR": 0,
+            "PKT_LEN": 3663,
         }
     )
 
     assert expected_hist == decom_test_data[0][0].ccsds_header
     expected_de = CcsdsData(
         {
-            "VERSION": ParsedDataItem("VERSION", 0, unit=None),
-            "TYPE": ParsedDataItem("TYPE", 0, unit=None),
-            "SEC_HDR_FLG": ParsedDataItem("SEC_HDR_FLG", 1, unit=None),
-            "PKT_APID": ParsedDataItem("PKT_APID", 1481, unit=None),
-            "SEQ_FLGS": ParsedDataItem("SEQ_FLGS", 3, unit=None),
-            "SRC_SEQ_CTR": ParsedDataItem("SRC_SEQ_CTR", 0, unit=None),
-            "PKT_LEN": ParsedDataItem("PKT_LEN", 2775, unit=None),
+            "VERSION": 0,
+            "TYPE": 0,
+            "SEC_HDR_FLG": 1,
+            "PKT_APID": 1481,
+            "SEQ_FLGS": 3,
+            "SRC_SEQ_CTR": 0,
+            "PKT_LEN": 2775,
         }
     )
 
@@ -94,21 +93,19 @@ def test_header(decom_test_data):
 
 def test_bytearrays(decom_test_data):
     for hist_test_data in decom_test_data[0]:
-        assert isinstance(hist_test_data.HISTOGRAM_DATA, bytearray)
+        assert isinstance(hist_test_data.HISTOGRAM_DATA, bytes)
 
     for de_test_data in decom_test_data[1]:
-        assert isinstance(de_test_data.DE_DATA, bytearray)
-
-    # print(decom_test_data[0][0].HISTOGRAM_DATA[:32].hex())
+        assert isinstance(de_test_data.DE_DATA, bytes)
 
     # first 32 bytes, from original binary string of the first test histogram packet
-    expected_value_hist_partial = bytearray.fromhex(
+    expected_value_hist_partial = bytes.fromhex(
         "1D1E1E1D1D1E1E1E1E1D1D1E1F1D1E1E1F1D1E1E1F1E1E1E1F1F1E1E1E1F1F1E"
     )
 
     assert decom_test_data[0][0].HISTOGRAM_DATA[:32] == expected_value_hist_partial
 
-    expected_value_de_partial = bytearray.fromhex(
+    expected_value_de_partial = bytes.fromhex(
         "033B8512033B8511001E74D6033B851300010100B71B444400372B0109CB07D7"
     )
 

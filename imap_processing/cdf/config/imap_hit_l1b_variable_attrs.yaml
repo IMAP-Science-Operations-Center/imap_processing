@@ -33,6 +33,15 @@ adc_channels:   # adc_channels is a dependency for leak_i data variable
   LABLAXIS: Channel
   FORMAT: I2
 
+# <=== Label Attributes ===>
+# LABL_PTR_i expects VAR_TYPE of metadata with char data type
+
+adc_channels_label:
+  CATDESC: Analog Digital Converter Channels
+  FIELDNAM: ADC Channels
+  FORMAT: A2
+  VAR_TYPE: metadata
+
 
 # <=== Data Variable Attributes ===>
 #TODO is DEPEND_0 needed for no_plot variables in housekeeping?

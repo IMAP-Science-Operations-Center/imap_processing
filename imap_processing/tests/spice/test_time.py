@@ -5,7 +5,7 @@ import pytest
 import spiceypy as spice
 
 from imap_processing.spice import IMAP_SC_ID
-from imap_processing.spice.time import _sct2e_wrapper, met_to_j2000ns
+from imap_processing.spice.time import _sct2e_wrapper, j2000ns_to_j2000s, met_to_j2000ns
 
 
 def test_met_to_j2000ns(furnish_time_kernels):
@@ -23,6 +23,23 @@ def test_met_to_j2000ns(furnish_time_kernels):
     j2000ns = met_to_j2000ns(met)
     assert j2000ns.dtype == np.int64
     np.testing.assert_array_equal(j2000ns, np.array(et * 1e9))
+
+
+def test_j2000ns_to_j2000s(furnish_time_kernels):
+    """Test coverage for j2000ns_to_j2000s function."""
+    # Use spice to come up with reasonable J2000 values
+    utc = "2025-09-23T00:00:00.000"
+    # Test single value input
+    et = spice.str2et(utc)
+    epoch = int(et * 1e9)
+    j2000s = j2000ns_to_j2000s(epoch)
+    assert j2000s == et
+    # Test array input
+    epoch = (np.arange(et, et + 10000, 100) * 1e9).astype(np.int64)
+    j2000s = j2000ns_to_j2000s(epoch)
+    np.testing.assert_array_equal(
+        j2000s, np.arange(et, et + 10000, 100, dtype=np.float64)
+    )
 
 
 @pytest.mark.parametrize("sclk_ticks", [0.0, np.arange(10)])

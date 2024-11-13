@@ -6,6 +6,7 @@ import numpy as np
 import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
+from imap_processing.hit.l0.decom_hit import is_sequential
 from imap_processing.lo.l0.decompression_tables.decompression_tables import (
     CASE_DECODER,
     DE_BIT_SHIFT,
@@ -17,6 +18,7 @@ from imap_processing.lo.l0.utils.bit_decompression import (
     Decompress,
     decompress_int,
 )
+from imap_processing.utils import convert_to_binary_string
 
 HistPacking = namedtuple(
     "HistPacking",
@@ -70,7 +72,7 @@ def parse_histogram(dataset: xr.Dataset, attr_mgr: ImapCdfAttributes) -> xr.Data
     dataset : xr.Dataset
         Parsed and decompressed histogram data.
     """
-    hist_bin = dataset.sci_cnt
+    hist_bin = [convert_to_binary_string(data) for data in dataset.sci_cnt.values]
 
     # initialize the starting bit for the sections of data
     section_start = 0
@@ -83,7 +85,7 @@ def parse_histogram(dataset: xr.Dataset, attr_mgr: ImapCdfAttributes) -> xr.Data
             decompress(
                 bin_str, data_meta.bit_length, section_start, data_meta.section_length
             )
-            for bin_str in hist_bin.values
+            for bin_str in hist_bin
         ]
 
         # add on the epoch length (equal to number of packets) to the
@@ -320,3 +322,88 @@ def parse_de_bin(
         << bit_shift
     )
     return parsed_int
+
+
+def combine_segmented_packets(dataset: xr.Dataset) -> xr.Dataset:
+    """
+    Combine segmented packets.
+
+    If the number of bits needed to pack the direct events exceeds the
+    maximum number of bits allowed in a packet, the direct events
+    will be spread across multiple packets. This function will combine
+    the segmented binary into a single binary string for each epoch.
+
+    Parameters
+    ----------
+    dataset : xr.Dataset
+        Lo science direct events from packets_to_dataset function.
+
+    Returns
+    -------
+    dataset : xr.Dataset
+        Updated dataset with any segmented direct events combined.
+    """
+    seq_flgs = dataset.seq_flgs.values
+    seq_ctrs = dataset.src_seq_ctr.values
+
+    # Find the start and end of each segment of direct events
+    # 1 = start of a group of segmented packet
+    # 2 = end of a group of segmented packets
+    # 3 = unsegmented packet
+    seg_starts = np.nonzero((seq_flgs == 1) | (seq_flgs == 3))[0]
+    seg_ends = np.nonzero((seq_flgs == 2) | (seq_flgs == 3))[0]
+    # Swap the epoch dimension for the shcoarse
+    # the epoch dimension will be reduced to the
+    # first epoch in each segment
+    dataset.coords["shcoarse"] = dataset["shcoarse"]
+    dataset = dataset.swap_dims({"epoch": "shcoarse"})
+
+    # Find the valid groups of segmented packets
+    # returns a list of booleans for each group of segmented packets
+    # where true means the group is valid
+    valid_groups = find_valid_groups(seq_ctrs, seg_starts, seg_ends)
+
+    # Combine the segmented packets into a single binary string
+    # Mark the segment splits with comma to identify padding bits
+    # when parsing the binary
+    dataset["events"] = [
+        ",".join(dataset["data"].values[start : end + 1])
+        for start, end in zip(seg_starts, seg_ends)
+    ]
+    # drop any group of segmented packets that aren't sequential
+    dataset["events"] = dataset["events"].values[valid_groups]
+
+    # Update the epoch to the first epoch in the segment
+    dataset.coords["epoch"] = dataset["epoch"].values[seg_starts]
+    # drop any group of segmented epochs that aren't sequential
+    dataset.coords["epoch"] = dataset["epoch"].values[valid_groups]
+
+    return dataset
+
+
+def find_valid_groups(
+    seq_ctrs: np.ndarray, seg_starts: np.ndarray, seg_ends: np.ndarray
+) -> list[np.bool_]:
+    """
+    Find the valid groups of segmented packets.
+
+    Parameters
+    ----------
+    seq_ctrs : np.ndarray
+        Sequence counters from the CCSDS header.
+    seg_starts : np.ndarray
+        Start index of each group of segmented direct event packet.
+    seg_ends : np.ndarray
+        End index of each group of segmented direct event packet.
+
+    Returns
+    -------
+    valid_groups : list[np.bool_]
+        Valid groups of segmented packets.
+    """
+    # Check if the sequence counters from the CCSDS header are sequential
+    grouped_seq_ctrs = [
+        np.array(seq_ctrs[start : end + 1]) for start, end in zip(seg_starts, seg_ends)
+    ]
+    valid_groups = [is_sequential(seq_ctrs) for seq_ctrs in grouped_seq_ctrs]
+    return valid_groups

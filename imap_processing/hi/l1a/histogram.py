@@ -4,6 +4,7 @@ import numpy as np
 import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
+from imap_processing.utils import convert_to_binary_string
 
 # define the names of the 24 counter arrays
 # contained in the histogram packet
@@ -59,10 +60,11 @@ def create_dataset(input_ds: xr.Dataset) -> xr.Dataset:
     # TODO: Look into avoiding the for-loops below
     #       It seems like we could try to reshape the arrays and do some numpy
     #       broadcasting rather than for-loops directly here
-    for i_epoch, counters_binary_data in enumerate(input_ds["counters"].data):
+    for i_epoch, counters_bytes_data in enumerate(input_ds["counters"].data):
+        binary_str_val = convert_to_binary_string(counters_bytes_data)
         # unpack 24 arrays of 90 12-bit unsigned integers
         counter_ints = [
-            int(counters_binary_data[i * 12 : (i + 1) * 12], 2) for i in range(90 * 24)
+            int(binary_str_val[i * 12 : (i + 1) * 12], 2) for i in range(90 * 24)
         ]
         # populate the dataset with the unpacked integers
         for i_counter, counter in enumerate(
@@ -92,7 +94,7 @@ def allocate_histogram_dataset(num_packets: int) -> xr.Dataset:
     """
     attr_mgr = ImapCdfAttributes()
     attr_mgr.add_instrument_global_attrs(instrument="hi")
-    attr_mgr.load_variable_attributes("imap_hi_variable_attrs.yaml")
+    attr_mgr.add_instrument_variable_attrs(instrument="hi", level=None)
     # preallocate the xr.DataArrays for all CDF attributes based on number of packets
     coords = dict()
     coords["epoch"] = xr.DataArray(
@@ -108,7 +110,18 @@ def allocate_histogram_dataset(num_packets: int) -> xr.Dataset:
         dims=["angle"],
         attrs=attr_mgr.get_variable_attributes("hi_hist_angle"),
     )
+
     data_vars = dict()
+    # Generate label variables
+    data_vars["angle_label"] = xr.DataArray(
+        coords["angle"].values.astype(str),
+        name="angle_label",
+        dims=["angle"],
+        attrs=attr_mgr.get_variable_attributes(
+            "hi_hist_angle_label", check_schema=False
+        ),
+    )
+    # Other data variables
     data_vars["ccsds_met"] = xr.DataArray(
         np.empty(num_packets, dtype=np.uint32),
         dims=["epoch"],

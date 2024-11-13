@@ -43,14 +43,19 @@ def swapi_l2(l1_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
     # Load the CDF attributes
     cdf_manager = ImapCdfAttributes()
     cdf_manager.add_instrument_global_attrs("swapi")
-    cdf_manager.load_variable_attributes("imap_swapi_variable_attrs.yaml")
+    cdf_manager.add_instrument_variable_attrs(instrument="swapi", level=None)
 
     # Copy over only certain variables from L1 to L2 dataset
     l1_data_keys = [
         "epoch",
         "energy",
         "energy_label",
-        "swp_flags",
+        "swp_l1a_flags",
+        "sweep_table",
+        "plan_id",
+        "lut_choice",
+        "fpga_type",
+        "fpga_rev",
     ]
     l2_dataset = l1_dataset[l1_data_keys]
 
@@ -74,29 +79,41 @@ def swapi_l2(l1_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
     l2_dataset["swp_coin_rate"].attrs = cdf_manager.get_variable_attributes("coin_rate")
 
     # update uncertainty
-    l2_dataset["swp_pcem_unc_plus"] = l1_dataset["swp_pcem_err_plus"] / TIME_PER_BIN
-    l2_dataset["swp_pcem_unc_minus"] = l1_dataset["swp_pcem_err_minus"] / TIME_PER_BIN
-    l2_dataset["swp_scem_unc_plus"] = l1_dataset["swp_scem_err_plus"] / TIME_PER_BIN
-    l2_dataset["swp_scem_unc_minus"] = l1_dataset["swp_scem_err_minus"] / TIME_PER_BIN
-    l2_dataset["swp_coin_unc_plus"] = l1_dataset["swp_coin_err_plus"] / TIME_PER_BIN
-    l2_dataset["swp_coin_unc_minus"] = l1_dataset["swp_coin_err_minus"] / TIME_PER_BIN
+    l2_dataset["swp_pcem_rate_err_plus"] = (
+        l1_dataset["swp_pcem_counts_err_plus"] / TIME_PER_BIN
+    )
+    l2_dataset["swp_pcem_rate_err_minus"] = (
+        l1_dataset["swp_pcem_counts_err_minus"] / TIME_PER_BIN
+    )
+    l2_dataset["swp_scem_rate_err_plus"] = (
+        l1_dataset["swp_scem_counts_err_plus"] / TIME_PER_BIN
+    )
+    l2_dataset["swp_scem_rate_err_minus"] = (
+        l1_dataset["swp_scem_counts_err_minus"] / TIME_PER_BIN
+    )
+    l2_dataset["swp_coin_rate_err_plus"] = (
+        l1_dataset["swp_coin_counts_err_plus"] / TIME_PER_BIN
+    )
+    l2_dataset["swp_coin_rate_err_minus"] = (
+        l1_dataset["swp_coin_counts_err_minus"] / TIME_PER_BIN
+    )
     # update attrs
-    l2_dataset["swp_pcem_unc_plus"].attrs = cdf_manager.get_variable_attributes(
+    l2_dataset["swp_pcem_rate_err_plus"].attrs = cdf_manager.get_variable_attributes(
         "pcem_uncertainty"
     )
-    l2_dataset["swp_pcem_unc_minus"].attrs = cdf_manager.get_variable_attributes(
+    l2_dataset["swp_pcem_rate_err_minus"].attrs = cdf_manager.get_variable_attributes(
         "pcem_uncertainty"
     )
-    l2_dataset["swp_scem_unc_plus"].attrs = cdf_manager.get_variable_attributes(
+    l2_dataset["swp_scem_rate_err_plus"].attrs = cdf_manager.get_variable_attributes(
         "scem_uncertainty"
     )
-    l2_dataset["swp_scem_unc_minus"].attrs = cdf_manager.get_variable_attributes(
+    l2_dataset["swp_scem_rate_err_minus"].attrs = cdf_manager.get_variable_attributes(
         "scem_uncertainty"
     )
-    l2_dataset["swp_coin_unc_plus"].attrs = cdf_manager.get_variable_attributes(
+    l2_dataset["swp_coin_rate_err_plus"].attrs = cdf_manager.get_variable_attributes(
         "coin_uncertainty"
     )
-    l2_dataset["swp_coin_unc_minus"].attrs = cdf_manager.get_variable_attributes(
+    l2_dataset["swp_coin_rate_err_minus"].attrs = cdf_manager.get_variable_attributes(
         "coin_uncertainty"
     )
 
