@@ -12,6 +12,7 @@ from imap_processing.hi.l1b.hi_l1b import (
     CoincidenceBitmap,
     compute_coincidence_type_and_time_deltas,
     compute_hae_coordinates,
+    de_esa_energy_step,
     de_nominal_bin_and_spin_phase,
     hi_l1b,
 )
@@ -235,3 +236,20 @@ def test_compute_hae_coordinates(mock_instrument_pointing, sensor_number):
     assert "hae_longitude" in new_vars
     assert new_vars["hae_longitude"].shape == fake_dataset.epoch.shape
     np.testing.assert_allclose(new_vars["hae_longitude"].values, sensor_number)
+
+
+def test_de_esa_energy_step():
+    """Test coverage for de_esa_energy_step function."""
+    n_epoch = 20
+    fake_dataset = xr.Dataset(
+        coords={
+            "epoch": xr.DataArray(np.arange(n_epoch), name="epoch", dims=["epoch"])
+        },
+        data_vars={"esa_step": xr.DataArray(np.arange(n_epoch) % 9, dims=["epoch"])},
+    )
+    esa_energy_step_var = de_esa_energy_step(fake_dataset)
+    # TODO: The below check is for the temporary implementation and should be
+    #    removed when the function is update.
+    np.testing.assert_array_equal(
+        esa_energy_step_var["esa_energy_step"].values, fake_dataset.esa_step.values
+    )

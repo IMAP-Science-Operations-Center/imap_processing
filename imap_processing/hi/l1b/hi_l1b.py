@@ -123,14 +123,14 @@ def annotate_direct_events(l1a_dataset: xr.Dataset) -> xr.Dataset:
     l1b_dataset.update(compute_coincidence_type_and_time_deltas(l1b_dataset))
     l1b_dataset.update(de_nominal_bin_and_spin_phase(l1b_dataset))
     l1b_dataset.update(compute_hae_coordinates(l1b_dataset))
-    l1b_de_var_names = [
-        "esa_energy_step",
-        "quality_flag",
-    ]
-    new_data_vars = create_dataset_variables(
-        l1b_de_var_names, l1b_dataset["epoch"].size, att_manager_lookup_str="hi_de_{0}"
+    l1b_dataset.update(de_esa_energy_step(l1b_dataset))
+    l1b_dataset.update(
+        create_dataset_variables(
+            ["quality_flag"],
+            l1b_dataset["epoch"].size,
+            att_manager_lookup_str="hi_de_{0}",
+        )
     )
-    l1b_dataset.update(new_data_vars)
     l1b_dataset = l1b_dataset.drop_vars(
         ["tof_1", "tof_2", "tof_3", "de_tag", "ccsds_met", "meta_event_met"]
     )
@@ -339,5 +339,34 @@ def compute_hae_coordinates(dataset: xr.Dataset) -> dict[str, xr.DataArray]:
     )
     new_vars["hae_latitude"].values = pointing_coordinates[:, 0]
     new_vars["hae_longitude"].values = pointing_coordinates[:, 1]
+
+    return new_vars
+
+
+def de_esa_energy_step(dataset: xr.Dataset) -> dict[str, xr.DataArray]:
+    """
+    Compute esa_energy_step for each direct event.
+
+    TODO: For now this function just returns the esa_step from the input dataset.
+        Eventually, it will take L1B housekeeping data and determine the esa
+        energy steps from that data.
+
+    Parameters
+    ----------
+    dataset : xarray.Dataset
+        The partial L1B dataset.
+
+    Returns
+    -------
+    new_vars : dict[str, xarray.DataArray]
+        Keys are variable names and values are `xarray.DataArray`.
+    """
+    new_vars = create_dataset_variables(
+        ["esa_energy_step"],
+        len(dataset.epoch),
+        att_manager_lookup_str="hi_de_{0}",
+    )
+    # TODO: Implement this algorithm
+    new_vars["esa_energy_step"].values = dataset.esa_step.values
 
     return new_vars
