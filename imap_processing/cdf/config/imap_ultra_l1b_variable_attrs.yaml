@@ -213,21 +213,21 @@ vz_sc:
 
 vx_dps_sc:
   <<: *default_float32
-  CATDESC: x-component of the velocity vector of the ena in the DPS frame at rest WRT spacecraft (velocity w/ spacecraft frame subtracted)
+  CATDESC: x-component of the velocity vector of the ena in the DPS frame at rest WRT spacecraft.
   FIELDNAM: vx_dps_sc
   LABLAXIS: vx dps sc
   UNITS: " "
 
 vy_dps_sc:
   <<: *default_float32
-  CATDESC: y-component of the velocity vector of the ena in the DPS frame at rest WRT spacecraft (velocity w/ spacecraft frame subtracted)
+  CATDESC: y-component of the velocity vector of the ena in the DPS frame at rest WRT spacecraft.
   FIELDNAM: vy_dps_sc
   LABLAXIS: vy dps sc
   UNITS: " "
 
 vz_dps_sc:
   <<: *default_float32
-  CATDESC: z-component of the velocity vector of the ena in the DPS frame at rest WRT spacecraft (velocity w/ spacecraft frame subtracted)
+  CATDESC: z-component of the velocity vector of the ena in the DPS frame at rest WRT spacecraft.
   FIELDNAM: vz_dps_sc
   LABLAXIS: vz dps sc
   UNITS: " "
