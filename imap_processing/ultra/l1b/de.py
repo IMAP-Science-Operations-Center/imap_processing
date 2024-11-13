@@ -3,6 +3,7 @@
 import numpy as np
 import xarray as xr
 
+from imap_processing.cdf.utils import parse_filename_like
 from imap_processing.ultra.l1b.ultra_l1b_extended import (
     StopType,
     determine_species_pulse_height,
@@ -39,7 +40,7 @@ def calculate_de(de_dataset: xr.Dataset, name: str) -> xr.Dataset:
         Dataset containing the data.
     """
     de_dict = {}
-    sensor = name.split("_l1b_")[1].split("sensor-de")[0]
+    sensor = parse_filename_like(name)["sensor"][0:2]
 
     # Drop events with invalid start type.
     de_dataset = de_dataset.where(
@@ -146,10 +147,15 @@ def calculate_de(de_dataset: xr.Dataset, name: str) -> xr.Dataset:
         vz_ultra, np.finfo(np.float64).min, dtype=np.float64
     )
 
-    condition = de_dict["tof_start_stop"] > 0
-    de_dict["vx_ultra"][condition] = vx_ultra[condition]
-    de_dict["vy_ultra"][condition] = vy_ultra[condition]
-    de_dict["vz_ultra"][condition] = vz_ultra[condition]
+    # We need to fill velocities that have negative tof values.
+    fill_velocity_mask = de_dict["tof_start_stop"] <= 0
+    vx_ultra[fill_velocity_mask] = np.finfo(np.float64).min
+    vy_ultra[fill_velocity_mask] = np.finfo(np.float64).min
+    vz_ultra[fill_velocity_mask] = np.finfo(np.float64).min
+
+    de_dict["vx_ultra"] = vx_ultra
+    de_dict["vy_ultra"] = vy_ultra
+    de_dict["vz_ultra"] = vz_ultra
 
     energy = np.concatenate((ph_energy, ssd_energy))
     de_dict["energy"] = energy[combined_indices]
