@@ -437,7 +437,7 @@ def get_coincidence_positions(
     return etof, xc_array * 100
 
 
-def get_particle_velocity(
+def get_unit_vector(
     front_position: tuple[NDArray, NDArray],
     back_position: tuple[NDArray, NDArray],
     d: np.ndarray,

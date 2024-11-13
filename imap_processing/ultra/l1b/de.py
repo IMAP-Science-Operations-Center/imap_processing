@@ -14,11 +14,11 @@ from imap_processing.ultra.l1b.ultra_l1b_extended import (
     get_energy_ssd,
     get_front_x_position,
     get_front_y_position,
-    get_particle_velocity,
     get_path_length,
     get_ph_tof_and_back_positions,
     get_ssd_back_position_and_tof_offset,
     get_ssd_tof,
+    get_unit_vector,
 )
 from imap_processing.ultra.utils.ultra_l1_utils import create_dataset
 
@@ -30,14 +30,14 @@ def calculate_de(de_dataset: xr.Dataset, name: str) -> xr.Dataset:
     Parameters
     ----------
     de_dataset : xarray.Dataset
-        Dataset containing direct event data.
+        L1a dataset containing direct event data.
     name : str
-        Name of the dataset.
+        Name of the l1a dataset.
 
     Returns
     -------
     dataset : xarray.Dataset
-        Dataset containing the data.
+        L1b de dataset.
     """
     de_dict = {}
     sensor = parse_filename_like(name)["sensor"][0:2]
@@ -129,7 +129,7 @@ def calculate_de(de_dataset: xr.Dataset, name: str) -> xr.Dataset:
         {key: de_dataset[dataset_key] for key, dataset_key in zip(keys, dataset_keys)}
     )
 
-    vx_ultra, vy_ultra, vz_ultra = get_particle_velocity(
+    vx_ultra, vy_ultra, vz_ultra = get_unit_vector(
         (de_dict["x_front"], de_dict["y_front"]),
         (de_dict["x_back"], de_dict["y_back"]),
         de_dict["front_back_distance"],

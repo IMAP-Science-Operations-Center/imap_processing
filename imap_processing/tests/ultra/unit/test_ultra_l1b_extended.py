@@ -17,11 +17,11 @@ from imap_processing.ultra.l1b.ultra_l1b_extended import (
     get_energy_ssd,
     get_front_x_position,
     get_front_y_position,
-    get_particle_velocity,
     get_path_length,
     get_ph_tof_and_back_positions,
     get_ssd_back_position_and_tof_offset,
     get_ssd_tof,
+    get_unit_vector,
 )
 
 
@@ -213,8 +213,8 @@ def test_calculate_etof_xc(de_dataset, yf_fixture):
     )
 
 
-def test_get_particle_velocity(de_dataset, yf_fixture):
-    """Tests get_particle_velocity function."""
+def test_get_unit_vector(de_dataset, yf_fixture):
+    """Tests get_unit_vector function."""
     df_filt, _, _ = yf_fixture
 
     ph_indices = np.nonzero(
@@ -229,7 +229,7 @@ def test_get_particle_velocity(de_dataset, yf_fixture):
     test_d = ph_rows["d"].astype("float").values
     test_tof = ph_rows["TOF"].astype("float").values
 
-    vhat_x, vhat_y, vhat_z = get_particle_velocity(
+    vhat_x, vhat_y, vhat_z = get_unit_vector(
         (test_xf, test_yf),
         (test_xb, test_yb),
         test_d,
