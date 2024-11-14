@@ -42,6 +42,20 @@ def calculate_de(de_dataset: xr.Dataset, name: str) -> xr.Dataset:
     de_dict = {}
     sensor = parse_filename_like(name)["sensor"][0:2]
 
+    # Instantiate arrays
+    yb = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float64)
+    xb = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float64)
+    xc = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float64)
+    yf = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float64)
+    d = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float64)
+    r = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float64)
+    tof = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float64)
+    etof = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float64)
+    ctof = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float64)
+    energy = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float64)
+    species_bin = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.int64)
+    t2 = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.int64)
+
     # Drop events with invalid start type.
     de_dataset = de_dataset.where(
         de_dataset["START_TYPE"] != np.iinfo(np.int64).min, drop=True
@@ -58,64 +72,65 @@ def calculate_de(de_dataset: xr.Dataset, name: str) -> xr.Dataset:
     ph_indices = np.nonzero(
         np.isin(de_dataset["STOP_TYPE"], [StopType.Top.value, StopType.Bottom.value])
     )[0]
-    ph_tof, ph_t2, ph_xb, ph_yb = get_ph_tof_and_back_positions(
-        de_dataset, xf, f"ultra{sensor}"
+    tof[ph_indices], t2[ph_indices], xb[ph_indices], yb[ph_indices] = (
+        get_ph_tof_and_back_positions(de_dataset, xf, f"ultra{sensor}")
     )
-    ph_d, ph_yf = get_front_y_position(de_dataset["START_TYPE"].data[ph_indices], ph_yb)
-    ph_energy = get_energy_pulse_height(
+    d[ph_indices], yf[ph_indices] = get_front_y_position(
+        de_dataset["START_TYPE"].data[ph_indices], yb[ph_indices]
+    )
+    energy[ph_indices] = get_energy_pulse_height(
         de_dataset["STOP_TYPE"].data[ph_indices],
         de_dataset["ENERGY_PH"].data[ph_indices],
-        ph_xb,
-        ph_yb,
+        xb[ph_indices],
+        yb[ph_indices],
     )
-    ph_r = get_path_length((xf[ph_indices], ph_yf), (ph_xb, ph_yb), ph_d)
-    ph_bin = determine_species_pulse_height(ph_energy, ph_tof, ph_r)
-    ph_etof, ph_xc = get_coincidence_positions(
-        de_dataset.isel(epoch=ph_indices), ph_t2, f"ultra{sensor}"
+    r[ph_indices] = get_path_length(
+        (xf[ph_indices], yf[ph_indices]),
+        (xb[ph_indices], yb[ph_indices]),
+        d[ph_indices],
     )
-    ph_ctof = get_ctof(ph_tof, ph_r, "PH")
+    species_bin[ph_indices] = determine_species_pulse_height(
+        energy[ph_indices], tof[ph_indices], r[ph_indices]
+    )
+    etof[ph_indices], xc[ph_indices] = get_coincidence_positions(
+        de_dataset.isel(epoch=ph_indices), t2[ph_indices], f"ultra{sensor}"
+    )
+    ctof[ph_indices] = get_ctof(tof[ph_indices], r[ph_indices], "PH")
 
     # SSD
     ssd_indices = np.nonzero(np.isin(de_dataset["STOP_TYPE"], StopType.SSD.value))[0]
-    ssd_tof = get_ssd_tof(de_dataset, xf)
-    ssd_yb, ssd_tof_offset, ssd_number = get_ssd_back_position_and_tof_offset(
-        de_dataset
+    tof[ssd_indices] = get_ssd_tof(de_dataset, xf)
+    yb[ssd_indices], _, ssd_number = get_ssd_back_position_and_tof_offset(de_dataset)
+    xc[ssd_indices] = np.zeros(len(ssd_indices))
+    xb[ssd_indices] = np.zeros(len(ssd_indices))
+    etof[ssd_indices] = np.zeros(len(ssd_indices))
+    d[ssd_indices], yf[ssd_indices] = get_front_y_position(
+        de_dataset["START_TYPE"].data[ssd_indices], yb[ssd_indices]
     )
-    ssd_xb = np.zeros(len(ssd_yb))
-    ssd_d, ssd_yf = get_front_y_position(
-        de_dataset["START_TYPE"].data[ssd_indices], ssd_yb
+    energy[ssd_indices] = get_energy_ssd(de_dataset, ssd_number)
+    r[ssd_indices] = get_path_length(
+        (xf[ssd_indices], yf[ssd_indices]),
+        (xb[ssd_indices], yb[ssd_indices]),
+        d[ssd_indices],
     )
-    ssd_energy = get_energy_ssd(de_dataset, ssd_number)
-    ssd_r = get_path_length((xf[ssd_indices], ssd_yf), (ssd_xb, ssd_yb), ssd_d)
-    ssd_bin = determine_species_ssd(
-        ssd_energy,
-        ssd_tof,
-        ssd_r,
+    species_bin[ssd_indices] = determine_species_ssd(
+        energy[ssd_indices],
+        tof[ssd_indices],
+        r[ssd_indices],
     )
-    ssd_ctof = get_ctof(ssd_tof, ssd_r, "SSD")
+    ctof[ssd_indices] = get_ctof(tof[ssd_indices], r[ssd_indices], "SSD")
 
     # Combine ph_yb and ssd_yb along with their indices
-    combined_indices = np.argsort(np.concatenate((ph_indices, ssd_indices)))
     de_dict["x_front"] = xf
-    yb = np.concatenate((ph_yb, ssd_yb))
-    de_dict["y_back"] = yb[combined_indices]
-    xb = np.concatenate((ph_xb, ssd_xb))
-    de_dict["x_back"] = xb[combined_indices]
-    xcoin = np.concatenate((ph_xc, np.zeros(len(ssd_indices))))
-    de_dict["x_coin"] = xcoin[combined_indices]
-    yf = np.concatenate((ph_yf, ssd_yf))
-    de_dict["y_front"] = yf[combined_indices]
-    d = np.concatenate((ph_d, ssd_d))
-    de_dict["front_back_distance"] = d[combined_indices]
-    r = np.concatenate((ph_r, ssd_r))
-    de_dict["path_length"] = r[combined_indices]
-    tof = np.concatenate((ph_tof, ssd_tof))
-    de_dict["tof_start_stop"] = tof[combined_indices]
-    etof = np.concatenate((ph_etof, np.zeros(len(ssd_indices))))
-    de_dict["tof_stop_coin"] = etof[combined_indices]
-
-    ctof = np.concatenate((ph_ctof, ssd_ctof))
-    de_dict["tof_corrected"] = ctof[combined_indices]
+    de_dict["y_back"] = yb
+    de_dict["x_back"] = xb
+    de_dict["x_coin"] = xc
+    de_dict["y_front"] = yf
+    de_dict["front_back_distance"] = d
+    de_dict["path_length"] = r
+    de_dict["tof_start_stop"] = tof
+    de_dict["tof_stop_coin"] = etof
+    de_dict["tof_corrected"] = ctof
 
     keys = [
         "coincidence_type",
@@ -139,12 +154,8 @@ def calculate_de(de_dataset: xr.Dataset, name: str) -> xr.Dataset:
     de_dict["vx_ultra"] = vx_ultra
     de_dict["vy_ultra"] = vy_ultra
     de_dict["vz_ultra"] = vz_ultra
-
-    energy = np.concatenate((ph_energy, ssd_energy))
-    de_dict["energy"] = energy[combined_indices]
-
-    species = np.concatenate((ph_bin, ssd_bin))
-    de_dict["species"] = species[combined_indices]
+    de_dict["energy"] = energy
+    de_dict["species"] = species_bin
 
     # Annotated Events.
     # TODO: since the pointing (dps) frame is not for this timerange this will not work.
@@ -182,7 +193,9 @@ def calculate_de(de_dataset: xr.Dataset, name: str) -> xr.Dataset:
     )
 
     # TODO: TBD.
-    de_dict["event_efficiency"] = np.zeros(len(de_dict["epoch"]), dtype=np.float64)
+    de_dict["event_efficiency"] = np.full(
+        len(de_dataset["epoch"]), np.nan, dtype=np.nan
+    )
 
     dataset = create_dataset(de_dict, name, "l1b")
 
