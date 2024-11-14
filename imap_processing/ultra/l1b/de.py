@@ -43,18 +43,18 @@ def calculate_de(de_dataset: xr.Dataset, name: str) -> xr.Dataset:
     sensor = parse_filename_like(name)["sensor"][0:2]
 
     # Instantiate arrays
-    yb = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float64)
-    xb = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float64)
-    xc = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float64)
-    yf = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float64)
+    yf = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float32)
+    xb = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float32)
+    yb = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float32)
+    xc = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float32)
     d = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float64)
-    r = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float64)
-    tof = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float64)
-    etof = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float64)
-    ctof = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float64)
-    energy = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float64)
-    species_bin = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.int64)
-    t2 = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.int64)
+    r = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float32)
+    tof = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float32)
+    etof = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float32)
+    ctof = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float32)
+    energy = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float32)
+    species_bin = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.uint8)
+    t2 = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float32)
 
     # Drop events with invalid start type.
     de_dataset = de_dataset.where(
@@ -121,16 +121,16 @@ def calculate_de(de_dataset: xr.Dataset, name: str) -> xr.Dataset:
     ctof[ssd_indices] = get_ctof(tof[ssd_indices], r[ssd_indices], "SSD")
 
     # Combine ph_yb and ssd_yb along with their indices
-    de_dict["x_front"] = xf
-    de_dict["y_back"] = yb
-    de_dict["x_back"] = xb
-    de_dict["x_coin"] = xc
+    de_dict["x_front"] = xf.astype(np.float32)
     de_dict["y_front"] = yf
-    de_dict["front_back_distance"] = d
-    de_dict["path_length"] = r
+    de_dict["x_back"] = xb
+    de_dict["y_back"] = yb
+    de_dict["x_coin"] = xc
     de_dict["tof_start_stop"] = tof
     de_dict["tof_stop_coin"] = etof
     de_dict["tof_corrected"] = ctof
+    de_dict["front_back_distance"] = d
+    de_dict["path_length"] = r
 
     keys = [
         "coincidence_type",
@@ -151,9 +151,9 @@ def calculate_de(de_dataset: xr.Dataset, name: str) -> xr.Dataset:
         de_dict["tof_start_stop"],
     )
 
-    de_dict["vx_ultra"] = vx_ultra
-    de_dict["vy_ultra"] = vy_ultra
-    de_dict["vz_ultra"] = vz_ultra
+    de_dict["vx_ultra"] = vx_ultra.astype(np.float32)
+    de_dict["vy_ultra"] = vy_ultra.astype(np.float32)
+    de_dict["vz_ultra"] = vz_ultra.astype(np.float32)
     de_dict["energy"] = energy
     de_dict["species"] = species_bin
 
@@ -194,7 +194,7 @@ def calculate_de(de_dataset: xr.Dataset, name: str) -> xr.Dataset:
 
     # TODO: TBD.
     de_dict["event_efficiency"] = np.full(
-        len(de_dataset["epoch"]), np.nan, dtype=np.nan
+        len(de_dataset["epoch"]), np.nan, dtype=np.float32
     )
 
     dataset = create_dataset(de_dict, name, "l1b")
