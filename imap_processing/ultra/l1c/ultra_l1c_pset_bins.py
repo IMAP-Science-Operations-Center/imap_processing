@@ -109,7 +109,7 @@ def get_histogram(
     Note:
     -----
     The histogram will now work properly for overlapping energy bins, i.e.
-    the same value can fall into multiple bins if the intervals overlap.
+    the same energy value can fall into multiple bins if the intervals overlap.
     """
     spherical_coords = cartesian_to_spherical(vhat)
     az, el, _ = (
