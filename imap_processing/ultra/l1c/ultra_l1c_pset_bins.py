@@ -219,7 +219,7 @@ def get_helio_exposure_times(
             / 1e3
         )
 
-        # Use Compton-Getting to transform the velocity wrt spacecraft
+        # Use Galilean Transform to transform the velocity wrt spacecraft
         # to the velocity wrt heliosphere.
         # energy_velocity * cartesian -> apply the magnitude of the velocity
         # to every position on the grid in the despun grid.
