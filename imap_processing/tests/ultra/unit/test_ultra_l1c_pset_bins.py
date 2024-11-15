@@ -33,12 +33,12 @@ def test_data():
 def test_build_energy_bins():
     """Tests build_energy_bins function."""
     energy_bin_edges, energy_midpoints = build_energy_bins()
-    energy_bin_start = energy_bin_edges[:-1]
-    energy_bin_end = energy_bin_edges[1:]
+    energy_bin_start = [interval[0] for interval in energy_bin_edges]
+    energy_bin_end = [interval[1] for interval in energy_bin_edges]
 
     assert energy_bin_start[0] == 0
     assert energy_bin_start[1] == 3.385
-    assert len(energy_bin_edges) == 25
+    assert len(energy_bin_edges) == 24
     assert energy_midpoints[0] == (energy_bin_start[0] + energy_bin_end[0]) / 2
 
     # Comparison to expected values.
@@ -84,7 +84,7 @@ def test_get_histogram(test_data):
     assert hist.shape == (
         len(az_bin_edges) - 1,
         len(el_bin_edges) - 1,
-        len(energy_bin_edges) - 1,
+        len(energy_bin_edges),
     )
 
 

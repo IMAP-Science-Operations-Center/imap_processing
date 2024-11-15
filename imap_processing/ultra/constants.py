@@ -62,3 +62,8 @@ class UltraConstants:
     # Conversion factors
     KEV_J = 1.602180000000000e-16  # 1.6021766339999e-16 # keV to joules
     MASS_H = 1.6735575e-27  # Mass of a hydrogen atom in kilograms.
+
+    # Energy bin constants
+    ALPHA = 0.2  # deltaE/E
+    ENERGY_START = 3.385  # energy start for the Ultra grids
+    N_BINS = 23  # number of energy bins

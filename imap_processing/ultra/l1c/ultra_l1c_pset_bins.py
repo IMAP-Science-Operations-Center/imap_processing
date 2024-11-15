@@ -17,44 +17,44 @@ from imap_processing.ultra.constants import UltraConstants
 # TODO: add species binning.
 
 
-def build_energy_bins() -> tuple[np.ndarray, np.ndarray]:
+def build_energy_bins() -> tuple[list[tuple[float, float]], np.ndarray]:
     """
     Build energy bin boundaries.
 
     Returns
     -------
-    energy_bin_edges : np.ndarray
-        Array of energy bin edges.
+    intervals : list[tuple[float, float]]
+        Energy bins.
     energy_midpoints : np.ndarray
         Array of energy bin midpoints.
     """
-    # TODO: these value will almost certainly change.
-    alpha = 0.2  # deltaE/E
-    energy_start = 3.385  # energy start for the Ultra grids
-    n_bins = 23  # number of energy bins
-
     # Calculate energy step
-    energy_step = (1 + alpha / 2) / (1 - alpha / 2)
+    energy_step = (1 + UltraConstants.ALPHA / 2) / (1 - UltraConstants.ALPHA / 2)
 
     # Create energy bins.
-    energy_bin_edges = energy_start * energy_step ** np.arange(n_bins + 1)
+    energy_bin_edges = UltraConstants.ENERGY_START * energy_step ** np.arange(UltraConstants.N_BINS + 1)
     # Add a zero to the left side for outliers and round to nearest 3 decimal places.
     energy_bin_edges = np.around(np.insert(energy_bin_edges, 0, 0), 3)
     energy_midpoints = (energy_bin_edges[:-1] + energy_bin_edges[1:]) / 2
 
-    return energy_bin_edges, energy_midpoints
+    intervals = [(float(energy_bin_edges[i]), float(energy_bin_edges[i + 1])) for i in range(len(energy_bin_edges) - 1)]
+
+    return intervals, energy_midpoints
 
 
 def build_spatial_bins(
-    spacing: float = 0.5,
+    az_spacing: float = 0.5,
+    el_spacing: float = 0.5,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """
     Build spatial bin boundaries for azimuth and elevation.
 
     Parameters
     ----------
-    spacing : float, optional
-        The bin spacing in degrees (default is 0.5 degrees).
+    az_spacing : float, optional
+        The azimuth bin spacing in degrees (default is 0.5 degrees).
+    el_spacing : float, optional
+        The elevation bin spacing in degrees (default is 0.5 degrees).
 
     Returns
     -------
@@ -68,57 +68,72 @@ def build_spatial_bins(
         Array of elevation bin midpoint values.
     """
     # Azimuth bins from 0 to 360 degrees.
-    az_bin_edges = np.arange(0, 360 + spacing, spacing)
-    az_bin_midpoints = az_bin_edges[:-1] + spacing / 2  # Midpoints between edges
+    az_bin_edges = np.arange(0, 360 + az_spacing, az_spacing)
+    az_bin_midpoints = az_bin_edges[:-1] + az_spacing / 2  # Midpoints between edges
 
     # Elevation bins from -90 to 90 degrees.
-    el_bin_edges = np.arange(-90, 90 + spacing, spacing)
-    el_bin_midpoints = el_bin_edges[:-1] + spacing / 2  # Midpoints between edges
+    el_bin_edges = np.arange(-90, 90 + el_spacing, el_spacing)
+    el_bin_midpoints = el_bin_edges[:-1] + el_spacing / 2  # Midpoints between edges
 
     return az_bin_edges, el_bin_edges, az_bin_midpoints, el_bin_midpoints
 
 
 def get_histogram(
-    v: tuple[np.ndarray, np.ndarray, np.ndarray],
+    vhat: tuple[np.ndarray, np.ndarray, np.ndarray],
     energy: np.ndarray,
     az_bin_edges: np.ndarray,
     el_bin_edges: np.ndarray,
-    energy_bin_edges: np.ndarray,
+    energy_bin_edges: list[tuple[float, float]],
 ) -> NDArray:
     """
     Compute a 3D histogram of the particle data.
 
     Parameters
     ----------
-    v : tuple[np.ndarray, np.ndarray, np.ndarray]
-        The x,y,z-components of the velocity vector.
+    vhat : tuple[np.ndarray, np.ndarray, np.ndarray]
+        The x,y,z-components of the unit velocity vector.
     energy : np.ndarray
         The particle energy.
     az_bin_edges : np.ndarray
         Array of azimuth bin boundary values.
     el_bin_edges : np.ndarray
         Array of elevation bin boundary values.
-    energy_bin_edges : np.ndarray
+    energy_bin_edges : list[tuple[float, float]]
         Array of energy bin edges.
 
     Returns
     -------
     hist : np.ndarray
         A 3D histogram array.
+
+    Note:
+    -----
+    The histogram will now work properly for overlapping energy bins, i.e.
+    the same value can fall into multiple bins if the intervals overlap.
     """
-    spherical_coords = cartesian_to_spherical(v)
+    spherical_coords = cartesian_to_spherical(vhat)
     az, el, _ = (
         spherical_coords[..., 0],
         spherical_coords[..., 1],
         spherical_coords[..., 2],
     )
 
-    # 3D binning.
-    hist, _ = np.histogramdd(
-        sample=(az, el, energy), bins=[az_bin_edges, el_bin_edges, energy_bin_edges]
-    )
+    # Initialize histogram
+    hist_total = np.zeros((len(az_bin_edges) - 1,
+                           len(el_bin_edges) - 1,
+                           len(energy_bin_edges)))
 
-    return hist
+    for i, (e_min, e_max) in enumerate(energy_bin_edges):
+        # Filter data for current energy bin.
+        mask = (energy >= e_min) & (energy < e_max)
+        hist, _ = np.histogramdd(
+            sample=(az[mask], el[mask], energy[mask]),
+            bins=[az_bin_edges, el_bin_edges, [e_min, e_max]]
+        )
+        # Assign 2D histogram to current energy bin.
+        hist_total[:, :, i] = hist[:, :, 0]
+
+    return hist_total
 
 
 def get_pointing_frame_exposure_times(
