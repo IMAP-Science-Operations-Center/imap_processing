@@ -112,10 +112,9 @@ def get_histogram(
     the same energy value can fall into multiple bins if the intervals overlap.
     """
     spherical_coords = cartesian_to_spherical(vhat)
-    az, el, _ = (
+    az, el = (
         spherical_coords[..., 0],
         spherical_coords[..., 1],
-        spherical_coords[..., 2],
     )
 
     # Initialize histogram

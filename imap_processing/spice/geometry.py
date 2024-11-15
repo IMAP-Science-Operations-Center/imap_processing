@@ -510,12 +510,12 @@ def cartesian_to_spherical(
     spherical_coords : np.ndarray
         Spherical coordinate.
     """
-    vx = v[:, 0]
-    vy = v[:, 1]
-    vz = v[:, 2]
+    vx = v[..., 0]
+    vy = v[..., 1]
+    vz = v[..., 2]
 
     # Magnitude of the velocity vector
-    magnitude_v = np.sqrt(vx**2 + vy**2 + vz**2)
+    magnitude_v = np.sqrt(np.sum(v**2, axis=-1))
 
     vhat_x = -vx / magnitude_v
     vhat_y = -vy / magnitude_v
