@@ -186,7 +186,7 @@ def get_helio_exposure_times(
     These calculations are performed once per pointing.
     """
     # Get bins and midpoints.
-    energy_bin_edges, energy_midpoints = build_energy_bins()
+    _, energy_midpoints = build_energy_bins()
     az_bin_edges, el_bin_edges, az_bin_midpoints, el_bin_midpoints = (
         build_spatial_bins()
     )
