@@ -518,9 +518,29 @@ class HistogramL1B:
     # - Bad angle algorithm using SPICE locations
     # - Move ancillary file to AWS
 
-    def __post_init__(self, filter_temperature_variance, hv_voltage_variance,
-                      spin_period_variance, pulse_length_variance) -> None:
-        """Will process data."""
+    def __post_init__(
+        self,
+        filter_temperature_variance: np.double,
+        hv_voltage_variance: np.double,
+        spin_period_variance: np.double,
+        pulse_length_variance: np.double,
+    ) -> None:
+        """
+        Will process data.
+
+        The input variance values are used to calculate the output standard deviation.
+
+        Parameters
+        ----------
+        filter_temperature_variance : numpy.double
+            Encoded filter temperature variance.
+        hv_voltage_variance : numpy.double
+            Encoded HV voltage variance.
+        spin_period_variance : numpy.double
+            Encoded spin period variance.
+        pulse_length_variance : numpy.double
+            Encoded pulse length variance.
+        """
         # self.histogram_flag_array = np.zeros((2,))
 
         # TODO: These pieces will need to be filled in from SPICE kernels. For now,
