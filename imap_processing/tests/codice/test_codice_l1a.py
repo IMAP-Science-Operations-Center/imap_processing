@@ -15,124 +15,162 @@ from .conftest import TEST_L0_FILE, TEST_PACKETS, VALIDATION_DATA
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-# TODO: Add test that processes a file with multiple APIDs
-
 EXPECTED_ARRAY_SHAPES = [
-    # (99,),  # hskp
-    (1, 1, 6, 1),  # hi-counters-aggregated  # TODO: Double check with Joey
-    # (1, 1, 16, 1),  # hi-counters-singles  # TODO: Double check with Joey
-    (1, 15, 4, 1),  # hi-omni  # TODO: Double check with Joey
-    (1, 8, 12, 12),  # hi-sectored
-    # (1, 1),  # hi-pha
-    (1, 6, 6, 128),  # lo-counters-aggregated
-    (1, 24, 6, 128),  # lo-counters-singles
-    (1, 5, 12, 128),  # lo-sw-angular
-    (1, 19, 12, 128),  # lo-nsw-angular
-    (1, 1, 12, 128),  # lo-sw-priority
-    (1, 1, 12, 128),  # lo-nsw-priority
-    (1, 1, 1, 128),  # lo-sw-species
-    (1, 1, 1, 128),  # lo-nsw-species
-    # (1, 128),  # lo-pha
+    (),  # hi-ialirt  # TODO: Need to implement
+    (),  # lo-ialirt  # TODO: Need to implement
+    (31778,),  # hskp
+    (36, 6, 6, 128),  # lo-counters-aggregated
+    (41, 24, 6, 128),  # lo-counters-singles
+    (35, 1, 12, 128),  # lo-sw-priority
+    (43, 1, 12, 128),  # lo-nsw-priority
+    (40, 1, 1, 128),  # lo-sw-species
+    (41, 1, 1, 128),  # lo-nsw-species
+    (38, 5, 12, 128),  # lo-sw-angular
+    (37, 19, 12, 128),  # lo-nsw-angular
+    (77, 1, 6, 1),  # hi-counters-aggregated  # TODO: Double check with Joey
+    (31, 1, 12, 1),  # hi-counters-singles  # TODO: Double check with Joey
+    (33, 15, 4, 1),  # hi-omni  # TODO: Double check with Joey
+    (35, 8, 12, 12),  # hi-sectored
+    (),  # hi-priority  # TODO: Need to implement
+    (),  # lo-pha  # TODO: Need to implement
+    (),  # hi-pha  # TODO: Need to implement
 ]
-EXPECTED_LOGICAL_SOURCE = [
-    # "imap_codice_l1a_hskp",
-    "imap_codice_l1a_hi-counters-aggregated",
-    # "imap_codice_l1a_hi-counters-singles",
-    "imap_codice_l1a_hi-omni",
-    "imap_codice_l1a_hi-sectored",
-    # "imap_codice_l1a_hi-pha",
+
+EXPECTED_LOGICAL_SOURCES = [
+    "imap_codice_l1a_hi-ialirt",
+    "imap_codice_l1a_lo-ialirt",
+    "imap_codice_l1a_hskp",
     "imap_codice_l1a_lo-counters-aggregated",
     "imap_codice_l1a_lo-counters-singles",
-    "imap_codice_l1a_lo-sw-angular",
-    "imap_codice_l1a_lo-nsw-angular",
     "imap_codice_l1a_lo-sw-priority",
     "imap_codice_l1a_lo-nsw-priority",
     "imap_codice_l1a_lo-sw-species",
     "imap_codice_l1a_lo-nsw-species",
-    # "imap_codice_l1a_lo-pha",
+    "imap_codice_l1a_lo-sw-angular",
+    "imap_codice_l1a_lo-nsw-angular",
+    "imap_codice_l1a_hi-counters-aggregated",
+    "imap_codice_l1a_hi-counters-singles",
+    "imap_codice_l1a_hi-omni",
+    "imap_codice_l1a_hi-sectored",
+    "imap_codice_l1a_hi-priority",
+    "imap_codice_l1a_lo-pha",
+    "imap_codice_l1a_hi-pha",
 ]
+
 EXPECTED_NUM_VARIABLES = [
-    # 129,  # hskp
-    1,  # hi-counters-aggregated
-    # 3,  # hi-counters-singles
-    8,  # hi-omni
-    4,  # hi-sectored
-    # 0,  # hi-pha
+    0,  # hi-ialirt  # TODO: Need to implement
+    0,  # lo-ialirt  # TODO: Need to implement
+    148,  # hskp
     3,  # lo-counters-aggregated
     3,  # lo-counters-singles
-    6,  # lo-sw-angular
-    3,  # lo-nsw-angular
     7,  # lo-sw-priority
     4,  # lo-nsw-priority
     18,  # lo-sw-species
     10,  # lo-nsw-species
-    # 0,  # lo-pha
+    6,  # lo-sw-angular
+    3,  # lo-nsw-angular
+    1,  # hi-counters-aggregated
+    3,  # hi-counters-singles
+    8,  # hi-omni
+    4,  # hi-sectored
+    0,  # hi-priority  # TODO: Need to implement
+    0,  # lo-pha  # TODO: Need to implement
+    0,  # hi-pha  # TODO: Need to implement
 ]
 
 
-@pytest.fixture(params=TEST_PACKETS)
-def test_l1a_data(request) -> xr.Dataset:
+@pytest.fixture(scope="session")
+def test_l1a_data() -> xr.Dataset:
     """Return a ``xarray`` dataset containing test data.
 
     Returns
     -------
-    dataset : list[xarray.Dataset]
-        A ``xarray`` dataset containing the test data
+    processed_datasets : list[xarray.Dataset]
+        A list of ``xarray`` datasets containing the test data
     """
 
-    processed_datasets = process_codice_l1a(file_path=request.param, data_version="001")
-    dataset = processed_datasets[0]  # These tests are for individual APIDs, so we only expect one item
+    processed_datasets = process_codice_l1a(file_path=TEST_L0_FILE, data_version="001")
 
-    # Write the dataset to a CDF so that it can be manually inspected as well
-    file_path = write_cdf(dataset)
-    logger.info(f"CDF file written to {file_path}")
-
-    return dataset
+    return processed_datasets
 
 
-@pytest.mark.parametrize(
-    "test_l1a_data, expected_logical_source",
-    list(zip(TEST_PACKETS, EXPECTED_LOGICAL_SOURCE)),
-    indirect=["test_l1a_data"],
-)
-def test_l1a_cdf_filenames(test_l1a_data: xr.Dataset, expected_logical_source: str):
-    """Tests that the ``process_codice_l1a`` function generates datasets
-    with the expected logical source.
-
-    Parameters
-    ----------
-    test_l1a_data : xarray.Dataset
-        A ``xarray`` dataset containing the test data
-    expected_logical_source : str
-        The expected CDF filename
-    """
-
-    dataset = test_l1a_data
-    assert dataset.attrs["Logical_source"] == expected_logical_source
-
-
-@pytest.mark.parametrize(
-    "test_l1a_data, expected_shape",
-    list(zip(TEST_PACKETS, EXPECTED_ARRAY_SHAPES)),
-    indirect=["test_l1a_data"],
-)
-def test_l1a_data_array_shape(test_l1a_data: xr.Dataset, expected_shape: tuple):
+@pytest.mark.parametrize("index", range(len(EXPECTED_ARRAY_SHAPES)))
+def test_l1a_data_array_shape(test_l1a_data, index):
     """Tests that the data arrays in the generated CDFs have the expected shape.
 
     Parameters
     ----------
-    test_l1a_data : xarray.Dataset
-        A ``xarray`` dataset containing the test data
-    expected_shape : tuple
-        The expected shape of the data array
+    test_l1a_data : list[xarray.Dataset]
+        A list of ``xarray`` datasets containing the test data
+    index : int
+        The index of the list to test
     """
 
-    dataset = test_l1a_data
-    for variable in dataset:
+    processed_dataset = test_l1a_data[index]
+    expected_shape = EXPECTED_ARRAY_SHAPES[index]
+
+    # Mark currently broken/unsupported datasets as expected to fail
+    # TODO: Remove these once they are supported
+    if index in [0, 1, 15]:
+        pytest.xfail("Data product is currently unsupported")
+
+    for variable in processed_dataset:
         if variable in ["energy_table", "acquisition_time_per_step"]:
-            assert dataset[variable].data.shape == (128,)
+            assert processed_dataset[variable].data.shape == (128,)
         else:
-            assert dataset[variable].data.shape == expected_shape
+            assert processed_dataset[variable].data.shape == expected_shape
+
+
+@pytest.mark.parametrize("index", range(len(EXPECTED_LOGICAL_SOURCES)))
+def test_l1a_logical_sources(test_l1a_data, index):
+    """Tests that the Logical source of the dataset is what is expected.
+
+    Since the logical source gets set by ``write_cdf``, this also tests that
+    the dataset can be written to a file.
+
+    Parameters
+    ----------
+    test_l1a_data : list[xarray.Dataset]
+        A list of ``xarray`` datasets containing the test data
+    index : int
+        The index of the list to test
+    """
+
+    processed_dataset = test_l1a_data[index]
+    expected_logical_source = EXPECTED_LOGICAL_SOURCES[index]
+
+    # Mark currently broken/unsupported datasets as expected to fail
+    # TODO: Remove these once they are supported
+    if index in [0, 1, 15, 16, 17]:
+        pytest.xfail("Data product is currently unsupported")
+
+    # Write the dataset to a file to set the logical source attribute
+    _ = write_cdf(processed_dataset)
+
+    assert processed_dataset.attrs["Logical_source"] == expected_logical_source
+
+
+@pytest.mark.parametrize("index", range(len(EXPECTED_NUM_VARIABLES)))
+def test_l1a_num_variables(test_l1a_data, index):
+    """Tests that the data arrays in the generated CDFs have the expected number
+    of variables.
+
+    Parameters
+    ----------
+    test_l1a_data : list[xarray.Dataset]
+        A list of ``xarray`` datasets containing the test data
+    index : int
+        The index of the list to test
+    """
+
+    processed_dataset = test_l1a_data[index]
+
+    # Mark currently broken/unsupported datasets as expected to fail
+    # TODO: Remove these once they are supported
+    if index in [0, 1, 15]:
+        pytest.xfail("Data product is currently unsupported")
+
+    assert len(processed_dataset) == EXPECTED_NUM_VARIABLES[index]
 
 
 @pytest.mark.skip("Awaiting validation data")
@@ -167,30 +205,11 @@ def test_l1a_data_array_values(test_l1a_data: xr.Dataset, validation_data: Path)
                 validation_data[variable].data, generated_dataset[variable].data[0]
             )
 
+
 def test_l1a_multiple_packets():
     """Tests that an input L0 file containing multiple APIDs can be processed."""
 
-    # TODO: Could add some more checks here
     processed_datasets = process_codice_l1a(file_path=TEST_L0_FILE, data_version="001")
 
+    # TODO: Could add some more checks here?
     assert len(processed_datasets) == 18
-
-
-@pytest.mark.parametrize(
-    "test_l1a_data, expected_num_variables",
-    list(zip(TEST_PACKETS, EXPECTED_NUM_VARIABLES)),
-    indirect=["test_l1a_data"],
-)
-def test_l1a_num_variables(test_l1a_data: xr.Dataset, expected_num_variables: int):
-    """Tests that the data arrays in the generated CDFs have the expected size.
-
-    Parameters
-    ----------
-    test_l1a_data : xarray.Dataset
-        A ``xarray`` dataset containing the test data
-    expected_num_variables : int
-        The expected number of data variables in the CDF
-    """
-
-    dataset = test_l1a_data
-    assert len(dataset) == expected_num_variables
