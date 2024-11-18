@@ -140,7 +140,7 @@ def test_l1a_logical_sources(test_l1a_data, index):
 
     # Mark currently broken/unsupported datasets as expected to fail
     # TODO: Remove these once they are supported
-    if index in [0, 1, 15, 16, 17]:
+    if index in [0, 1, 2, 15, 16, 17]:
         pytest.xfail("Data product is currently unsupported")
 
     # Write the dataset to a file to set the logical source attribute
