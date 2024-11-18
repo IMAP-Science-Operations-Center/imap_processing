@@ -468,28 +468,3 @@ def decom_hit(sci_dataset: xr.Dataset) -> xr.Dataset:
     #  -clean up dataset - remove raw binary data? Any other fields to remove?
 
     return sci_dataset
-
-
-# from imap_processing import imap_module_directory
-# from imap_processing.utils import packet_file_to_datasets
-# from pathlib import Path
-#
-# if __name__ == "__main__":
-#     packet_definition = (
-#         imap_module_directory / "hit/packet_definitions/hit_packet_definitions.xml"
-#     )
-#
-#     # L0 file path
-#     packet_file = Path(imap_module_directory / "tests/hit/test_data/sci_sample.ccsds")
-#
-#     datasets_by_apid = packet_file_to_datasets(
-#         packet_file=packet_file,
-#         xtce_packet_definition=packet_definition,
-#     )
-#
-#     science_dataset = datasets_by_apid[1252]
-#     updated_dataset = decom_hit(science_dataset)
-#     print(updated_dataset["H"].shape)
-#     print(updated_dataset["H"][0].shape)
-#     print(updated_dataset["H"][0])
-#     # print(updated_dataset["H"])
