@@ -245,15 +245,14 @@ def test_subcom_sectorates(sci_dataset):
 
     # Check the shape of the new variables
     for species in ["H", "4He", "CNO", "NeMgSi", "Fe"]:
-        assert sci_dataset[species][0].shape == (86, 8, 15)
         if species == "H":
-            assert sci_dataset[species].shape == (3, 86, 8, 15)
+            assert sci_dataset[species].shape == (86, 3, 8, 15)
             assert sci_dataset[f"{species}_energy_min"].shape == (3,)
         elif species in ("4He", "CNO", "NeMgSi"):
-            assert sci_dataset[species].shape == (2, 86, 8, 15)
+            assert sci_dataset[species].shape == (86, 2, 8, 15)
             assert sci_dataset[f"{species}_energy_min"].shape == (2,)
         elif species == "Fe":
-            assert sci_dataset[species].shape == (1, 86, 8, 15)
+            assert sci_dataset[species].shape == (86, 1, 8, 15)
             assert sci_dataset[f"{species}_energy_min"].shape == (1,)
         assert (
             sci_dataset[f"{species}_energy_max"].shape

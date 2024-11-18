@@ -36,7 +36,7 @@ def subcom_sectorates(sci_dataset: xr.Dataset) -> None:
 
     The reshaped data is added to the dataset as new data fields
     named according to their species. They have 4 dimensions:
-    energy index, epoch, declination, and azimuth. The energy index
+    epoch, energy index, declination, and azimuth. The energy index
     dimension is used to distinguish between the different energy ranges
     the data belongs to. The energy min and max values for each species
     are also added to the dataset as new data fields.
@@ -51,22 +51,22 @@ def subcom_sectorates(sci_dataset: xr.Dataset) -> None:
     #    isn't passed into this module nor defined for L1A sci data yet
     #  - Determine naming convention for species data fields in dataset
     #    (i.e. h, H, hydrogen, Hydrogen, etc.)
-    #  - Remove raw sectorates data from dataset after processing is complete?
+    #  - Remove raw "sectorates" data from dataset after processing is complete?
     #  - consider moving this function to hit_l1a.py
 
     # Calculate mod 10 values
     hdr_min_count_mod_10 = sci_dataset.hdr_minute_cnt.values % 10
 
-    # Get mod 10 mapping to determine species and energy range for each science frame
-    data_by_species_and_energy_range = MOD_10_MAPPING.copy()
-    # Add 8x15 arrays with fill values for all science frames for each species and
-    # energy range
-    for value in data_by_species_and_energy_range.values():
-        num_frames = len(hdr_min_count_mod_10)
-        value["rates"] = np.full((num_frames, 8, 15), fill_value=np.nan)
+    # Reference mod 10 mapping to initialize data structure for species and
+    # energy ranges and add 8x15 arrays with fill values for each science frame.
+    num_frames = len(hdr_min_count_mod_10)
+    data_by_species_and_energy_range = {
+        key: {**value, "rates": np.full((num_frames, 8, 15), fill_value=np.nan)}
+        for key, value in MOD_10_MAPPING.items()
+    }
 
     # Reshape sector rates data to 8x15 for declination and azimuth
-    # and update rates for frames where data is available
+    # and update rates for science frames where data is available
     reshaped_rates = sci_dataset["sectorates"].values.reshape(-1, 8, 15)
     for i, mod_10 in enumerate(hdr_min_count_mod_10):
         data_by_species_and_energy_range[mod_10]["rates"][i] = reshaped_rates[i]
@@ -78,6 +78,7 @@ def subcom_sectorates(sci_dataset: xr.Dataset) -> None:
         species: {"rates": [], "energy_min": [], "energy_max": []}
         for species in ["H", "4He", "CNO", "NeMgSi", "Fe"]
     }
+
     for value in data_by_species_and_energy_range.values():
         species = value["species"]
         data_by_species[species]["rates"].append(value["rates"])
@@ -86,9 +87,14 @@ def subcom_sectorates(sci_dataset: xr.Dataset) -> None:
 
     # Add sector rates by species to the dataset
     for species, data in data_by_species.items():
+        # Rates data has shape: energy_index, epoch, declination, azimuth
+        # Convert rates to numpy array and transpose axes to get
+        # shape: epoch, energy_index, declination, azimuth
+        rates_data = np.transpose(np.array(data["rates"]), axes=(1, 0, 2, 3))
+
         sci_dataset[species] = xr.DataArray(
-            data=np.array(data["rates"]),
-            dims=[f"{species}_energy_index", "epoch", "declination", "azimuth"],
+            data=rates_data,
+            dims=["epoch", f"{species}_energy_index", "declination", "azimuth"],
             name=species,
         )
         sci_dataset[f"{species}_energy_min"] = xr.DataArray(
@@ -462,3 +468,28 @@ def decom_hit(sci_dataset: xr.Dataset) -> xr.Dataset:
     #  -clean up dataset - remove raw binary data? Any other fields to remove?
 
     return sci_dataset
+
+
+# from imap_processing import imap_module_directory
+# from imap_processing.utils import packet_file_to_datasets
+# from pathlib import Path
+#
+# if __name__ == "__main__":
+#     packet_definition = (
+#         imap_module_directory / "hit/packet_definitions/hit_packet_definitions.xml"
+#     )
+#
+#     # L0 file path
+#     packet_file = Path(imap_module_directory / "tests/hit/test_data/sci_sample.ccsds")
+#
+#     datasets_by_apid = packet_file_to_datasets(
+#         packet_file=packet_file,
+#         xtce_packet_definition=packet_definition,
+#     )
+#
+#     science_dataset = datasets_by_apid[1252]
+#     updated_dataset = decom_hit(science_dataset)
+#     print(updated_dataset["H"].shape)
+#     print(updated_dataset["H"][0].shape)
+#     print(updated_dataset["H"][0])
+#     # print(updated_dataset["H"])
