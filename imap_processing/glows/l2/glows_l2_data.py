@@ -120,4 +120,4 @@ class HistogramL2:
         numpy.ndarray
             Lightcurve of size (bins).
         """
-        return np.zeros(3600)
+        return np.zeros(3600)  # type: ignore[no-any-return]
