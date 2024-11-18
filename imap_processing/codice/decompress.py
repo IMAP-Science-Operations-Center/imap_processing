@@ -115,7 +115,6 @@ def decompress(compressed_bytes: bytes, algorithm: IntEnum) -> list[int]:
     decompressed_values : list[int]
         The 24- or 32-bit decompressed values.
     """
-
     # Apply the appropriate decompression algorithm
     if algorithm == CoDICECompression.NO_COMPRESSION:
         decompressed_values = list(compressed_bytes)
