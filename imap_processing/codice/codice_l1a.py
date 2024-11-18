@@ -11,7 +11,9 @@ Notes
 
 from __future__ import annotations
 
+import ast
 import logging
+import lzma
 from pathlib import Path
 from typing import Any
 
@@ -103,27 +105,22 @@ class CoDICEL1aPipeline:
         elif self.config["instrument"] == "hi":
             compression_algorithm = constants.HI_COMPRESSION_ID_LOOKUP[self.view_id]
 
-        # Decompress the binary string into a list of integers
-        # With the simluated data that I have, nominal decompression doesn't
-        # work at all for the following data products:
-        #     lo-sw-species(4), lo-nsw-species(4), lo-sw-angular(4), lo-nsw-angular(4),
-        #     hi-omni(4), hi-sectored(4)
-        #
-        # It does work for (some of):
-        #     lo-counters-aggregated(5), lo-counters-singles(5), hi-counters-aggregated(5),
-        #     hi-counters-singles(5)
-        #
-        # It does work for all of:
-        #     lo-sw-priority (4), lo-nsw-priority(4)
-        # To get around this, just use empty lists for the packets that can't be decompressed
-        # TODO: Discuss this with Joey
-
         self.raw_data = []
-        for packet_data in science_values:
-            values = eval(str(packet_data))  # convert from numpy array to byte object
+        for i, packet_data in enumerate(science_values):
+            values = ast.literal_eval(
+                str(packet_data)
+            )  # convert from numpy array to byte object
+            # Some packets are not able to be decompressed because of packet
+            # continuation. For those that can't be processed, just use empty
+            # list for now
+            # TODO: Implement support for packet continuation (see issue #1155)
             try:
                 decompressed_values = decompress(values, compression_algorithm)
-            except:
+            except lzma.LZMAError:
+                logger.warning(
+                    f'Cannot decompress {self.config["dataset_name"]} packet '
+                    f'{i+1} with compression algorithm {compression_algorithm}'
+                )
                 decompressed_values = []
 
             self.raw_data.append(decompressed_values)
@@ -138,7 +135,8 @@ class CoDICEL1aPipeline:
 
         for name in self.config["coords"]:
             if name == "epoch":
-                # The number of epoch values to store depends on how many packets were able to be processed
+                # The number of epoch values to store depends on how many
+                # packets were able to be processed
                 values = [
                     epoch
                     for epoch, packet_data in zip(self.dataset.epoch.data, self.data)
@@ -177,9 +175,10 @@ class CoDICEL1aPipeline:
             The 'final' ``xarray`` dataset.
         """
         # Remove packets that were not able to be processed from the data
-        # TODO: This may be modified depending on how it is decided to handle dropped packets
-        #       Discuss with Joey
-        self.data = [packet for packet in self.data if packet is not None]
+        # TODO: This will change when continuation packets are supported
+        self.data: list[xr.Dataset] = [
+            packet for packet in self.data if packet is not None
+        ]
 
         # Create the main dataset to hold all the variables
         dataset = xr.Dataset(
@@ -188,8 +187,7 @@ class CoDICEL1aPipeline:
         )
 
         # If no packets were able to be processed, create empty dataset for now
-        # TODO: This may be modified depending on how it is decided to handle dropped packets
-        #       Discuss with Joey
+        # TODO: # TODO: This will change when continuation packets are supported
         if self.data:
             all_data = np.stack(self.data)
             for counter, variable_name in zip(
@@ -570,15 +568,15 @@ def get_params(dataset: xr.Dataset) -> tuple[int, int, int, int]:
     return table_id, plan_id, plan_step, view_id
 
 
-def log_dataset_info(datasets):
-    """Logs info about the input data to help with tracking and/or debugging
+def log_dataset_info(datasets: dict[int, xr.Dataset]) -> None:
+    """
+    Log info about the input data to help with tracking and/or debugging.
 
     Parameters
     ----------
     datasets : dict[int, xarray.Dataset]
         Mapping from apid to ``xarray`` dataset, one dataset per apid.
     """
-
     launch_time = np.datetime64("2010-01-01T00:01:06.184", "ns")
     logger.info("\nThis input file contains the following APIDs:\n")
     for apid in datasets:
@@ -620,7 +618,6 @@ def process_codice_l1a(file_path: Path, data_version: str) -> list[xr.Dataset]:
 
     for apid in datasets:
         dataset = datasets[apid]
-        # logger.info(f"\nProcessing {CODICEAPID(apid).name} packet")
         logger.info(f"\nProcessing {CODICEAPID(apid).name} packet")
 
         if apid == CODICEAPID.COD_NHK:
@@ -655,7 +652,10 @@ def process_codice_l1a(file_path: Path, data_version: str) -> list[xr.Dataset]:
             CODICEAPID.COD_LO_IAL,
         ]:
             logger.info("Still need to properly implement")
-            procesed_dataset = None
+            processed_dataset = None
+
+        else:
+            continue
 
         processed_datasets.append(processed_dataset)
 
