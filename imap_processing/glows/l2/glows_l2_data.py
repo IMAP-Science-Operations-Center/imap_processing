@@ -1,3 +1,5 @@
+"""Module containing the class definition for the HistogramL2 class."""
+
 from dataclasses import InitVar, dataclass, field
 
 import numpy as np
@@ -6,6 +8,8 @@ import numpy as np
 @dataclass
 class HistogramL2:
     """
+    Dataclass describing Histogram L2 data variables and methods.
+
     This class collects multiple HistogramL1B classes into one L2 per observational day.
 
     flight_software_version
@@ -52,11 +56,13 @@ class HistogramL2:
     spacecraft_velocity_variance
         standard deviation for IMAP velocity components [km/s]
     spin_axis_orientation_average
-        observational-day-averaged spin-axis ecliptic longitude ⟨λ⟩ and lati- tude ⟨φ⟩ [deg]
+        observational-day-averaged spin-axis ecliptic longitude and latitude [deg]
     spacecraft_location_average
-        observational-day-averaged Cartesian ecliptic coordinates ⟨X⟩, ⟨Y ⟩, ⟨Z⟩ [km] of IMAP
+        observational-day-averaged Cartesian ecliptic coordinates ⟨X⟩, ⟨Y ⟩, ⟨Z⟩ [km]
+        of IMAP
     spacecraft_velocity_average
-        observational-day-averaged values ⟨VX ⟩, ⟨VY ⟩, ⟨VZ ⟩ of IMAP velocity components [km/s] (Cartesian ecliptic frame)
+        observational-day-averaged values ⟨VX ⟩, ⟨VY ⟩, ⟨VZ ⟩ of IMAP velocity
+        components [km/s] (Cartesian ecliptic frame)
     bad_time_flag_occurrences
         numbers of occurrences of blocks for each bad-time flag during observational day
     """
@@ -90,6 +96,14 @@ class HistogramL2:
     histogram: InitVar[np.ndarray]
 
     def __post_init__(self, histogram: np.ndarray) -> None:
+        """
+        Post-initialization method to generate the daily light curve from one histogram.
+
+        Parameters
+        ----------
+        histogram : numpy.ndarray
+            Histogram data from L1B, of shape (bins,) where bins is nominally 3600.
+        """
         self.daily_lightcurve = self.generate_lightcurve(histogram)
 
     def generate_lightcurve(self, histogram: np.ndarray) -> np.ndarray:
@@ -98,12 +112,12 @@ class HistogramL2:
 
         Parameters
         ----------
-        histogram
+        histogram : numpy.ndarray
+            Histogram data from L1B, of shape (bins,) where bins is nominally 3600.
 
         Returns
         -------
-
+        numpy.ndarray
+            Lightcurve of size (bins).
         """
-
         return np.zeros(3600)
-
