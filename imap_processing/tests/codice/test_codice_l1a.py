@@ -1,7 +1,6 @@
 """Tests the L1a processing for decommutated CoDICE data"""
 
 import logging
-from pathlib import Path
 
 import numpy as np
 import pytest
@@ -10,7 +9,7 @@ import xarray as xr
 from imap_processing.cdf.utils import load_cdf, write_cdf
 from imap_processing.codice.codice_l1a import process_codice_l1a
 
-from .conftest import TEST_L0_FILE, TEST_PACKETS, VALIDATION_DATA
+from .conftest import TEST_L0_FILE, VALIDATION_DATA
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -174,12 +173,8 @@ def test_l1a_num_variables(test_l1a_data, index):
 
 
 @pytest.mark.skip("Awaiting validation data")
-@pytest.mark.parametrize(
-    "test_l1a_data, validation_data",
-    list(zip(TEST_PACKETS, VALIDATION_DATA)),
-    indirect=["test_l1a_data"],
-)
-def test_l1a_data_array_values(test_l1a_data: xr.Dataset, validation_data: Path):
+@pytest.mark.parametrize("index", range(len(VALIDATION_DATA)))
+def test_l1a_data_array_values(test_l1a_data: xr.Dataset, index):
     """Tests that the generated L1a CDF contents are valid.
 
     Once proper validation files are acquired, this test function should point
@@ -188,21 +183,21 @@ def test_l1a_data_array_values(test_l1a_data: xr.Dataset, validation_data: Path)
 
     Parameters
     ----------
-    test_l1a_data : xarray.Dataset
-        A ``xarray`` dataset containing the test data
-    validataion_data : pathlib.Path
-        The path to the file containing the validation data
+    test_l1a_data : list[xarray.Dataset]
+        A list of ``xarray`` datasets containing the test data
+    index : int
+        The index of the list to test
     """
 
     generated_dataset = test_l1a_data
-    validation_dataset = load_cdf(validation_data)
+    validation_dataset = load_cdf(VALIDATION_DATA[index])
 
     # Ensure the processed data matches the validation data
     for variable in validation_dataset:
         assert variable in generated_dataset
         if variable != "epoch":
             np.testing.assert_array_equal(
-                validation_data[variable].data, generated_dataset[variable].data[0]
+                validation_dataset[variable].data, generated_dataset[variable].data[0]
             )
 
 
