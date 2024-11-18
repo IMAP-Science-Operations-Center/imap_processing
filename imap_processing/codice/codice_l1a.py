@@ -1,7 +1,7 @@
 """
 Perform CoDICE l1a processing.
 
-This module processes decommutated CoDICE packets and creates L1a data products.
+This module processes CoDICE L0 files and creates L1a data products.
 
 Notes
 -----
@@ -127,7 +127,7 @@ class CoDICEL1aPipeline:
 
     def define_coordinates(self) -> None:
         """
-        Create ``xr.DataArrays`` for the coords needed in the final dataset.
+        Create ``xr.DataArray``s for the coords needed in the final dataset.
 
         The coordinates for the dataset depend on the data product being made.
         """
@@ -396,9 +396,6 @@ class CoDICEL1aPipeline:
                 else:
                     self.data.append(None)
 
-        # TODO: What to do if no packets are able to be processed?
-        #       Discuss with Joey
-
         # No longer need to keep the raw data around
         del self.raw_data
 
@@ -616,19 +613,22 @@ def process_codice_l1a(file_path: Path, data_version: str) -> list[xr.Dataset]:
     # Placeholder to hold the final, processed datasets
     processed_datasets = []
 
+    # Process each APID separately
     for apid in datasets:
         dataset = datasets[apid]
         logger.info(f"\nProcessing {CODICEAPID(apid).name} packet")
 
+        # Housekeeping data
         if apid == CODICEAPID.COD_NHK:
             processed_dataset = create_hskp_dataset(dataset, data_version)
             logger.info(f"\nFinal data product:\n{processed_dataset}\n")
 
-        # This needs to be checked
+        # Event data
         elif apid in [CODICEAPID.COD_LO_PHA, CODICEAPID.COD_HI_PHA]:
             processed_dataset = create_event_dataset(apid, dataset, data_version)
             logger.info(f"\nFinal data product:\n{processed_dataset}\n")
 
+        # Everything else
         elif apid in constants.APIDS_FOR_SCIENCE_PROCESSING:
             # Extract the data
             science_values = [packet.data for packet in dataset.data]
@@ -646,15 +646,18 @@ def process_codice_l1a(file_path: Path, data_version: str) -> list[xr.Dataset]:
 
             logger.info(f"\nFinal data product:\n{processed_dataset}\n")
 
+        # TODO: Still need to implement I-ALiRT and hi-priorities data products
         elif apid in [
             CODICEAPID.COD_HI_INST_COUNTS_PRIORITIES,
             CODICEAPID.COD_HI_IAL,
             CODICEAPID.COD_LO_IAL,
         ]:
-            logger.info("Still need to properly implement")
+            logger.info("\tStill need to properly implement")
             processed_dataset = None
 
+        # For APIDs that don't require processing
         else:
+            logger.info(f"\t{apid} does not require processing")
             continue
 
         processed_datasets.append(processed_dataset)
