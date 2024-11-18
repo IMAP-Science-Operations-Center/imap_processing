@@ -127,7 +127,7 @@ class CoDICEL1aPipeline:
 
     def define_coordinates(self) -> None:
         """
-        Create ``xr.DataArray``s for the coords needed in the final dataset.
+        Create ``xr.DataArrays`` for the coords needed in the final dataset.
 
         The coordinates for the dataset depend on the data product being made.
         """
