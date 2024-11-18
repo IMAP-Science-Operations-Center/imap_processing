@@ -75,7 +75,10 @@ def test_parse_count_rates(sci_dataset):
     count_rate_vars = [
         "hdr_unit_num",
         "hdr_frame_version",
-        "hdr_status_bits",
+        "hdr_dynamic_threshold_state",
+        "hdr_leak_conv",
+        "hdr_heater_duty_cycle",
+        "hdr_code_ok",
         "hdr_minute_cnt",
         "spare",
         "livetime",

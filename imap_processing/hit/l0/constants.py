@@ -37,7 +37,10 @@ COUNTS_DATA_STRUCTURE = {
     # science frame header
     "hdr_unit_num": HITPacking(2, 2, (1,)),
     "hdr_frame_version": HITPacking(6, 6, (1,)),
-    "hdr_status_bits": HITPacking(8, 8, (1,)),
+    "hdr_dynamic_threshold_state": HITPacking(2, 2, (1,)),
+    "hdr_leak_conv": HITPacking(1, 1, (1,)),
+    "hdr_heater_duty_cycle": HITPacking(4, 4, (1,)),
+    "hdr_code_ok": HITPacking(1, 1, (1,)),
     "hdr_minute_cnt": HITPacking(8, 8, (1,)),
     # ------------------------------------------
     # spare bits. Contains no data

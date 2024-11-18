@@ -179,8 +179,6 @@ def parse_count_rates(sci_dataset: xr.Dataset) -> None:
                 low_gain = data[1::2]  # Items at odd indices 1, 3, 5, etc.
                 parsed_data[i] = [high_gain, low_gain]
 
-        # TODO: status bits needs to be further parsed (table 10 in algorithm doc)
-
         # Get dims for data variables (yaml file not created yet)
         if len(field_meta.shape) > 1:
             dims = ["epoch", "gain", f"{field}_index"]
