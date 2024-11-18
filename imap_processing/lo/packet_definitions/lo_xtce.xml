@@ -36,10 +36,10 @@
 			<xtce:EnumeratedParameterType name="ILO_BOOT_HK.BIST_STAT" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="32" encoding="unsigned" />
 				<xtce:EnumerationList>
-					<xtce:Enumeration value="0x0" label="OK" />
-					<xtce:Enumeration value="0x1" label="DBUS_FAIL" />
-					<xtce:Enumeration value="0x2" label="ABUS_FAIL" />
-					<xtce:Enumeration value="0x4" label="SDRAM_FAIL" />
+					<xtce:Enumeration value="0" label="OK" />
+					<xtce:Enumeration value="1" label="DBUS_FAIL" />
+					<xtce:Enumeration value="2" label="ABUS_FAIL" />
+					<xtce:Enumeration value="4" label="SDRAM_FAIL" />
 				</xtce:EnumerationList>
 			</xtce:EnumeratedParameterType>
 			<xtce:IntegerParameterType name="ILO_BOOT_HK.BIST_ABUS" signed="false">
@@ -63,19 +63,19 @@
 			<xtce:EnumeratedParameterType name="ILO_BOOT_HK.IMG_1_STAT" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="32" encoding="unsigned" />
 				<xtce:EnumerationList>
-					<xtce:Enumeration value="0x0" label="OK" />
-					<xtce:Enumeration value="0x10" label="CHKSUM_INVALID" />
-					<xtce:Enumeration value="0x20" label="LEN_INVALID" />
-					<xtce:Enumeration value="0x40" label="MAGIC_INVALID" />
+					<xtce:Enumeration value="0" label="OK" />
+					<xtce:Enumeration value="16" label="CHKSUM_INVALID" />
+					<xtce:Enumeration value="32" label="LEN_INVALID" />
+					<xtce:Enumeration value="64" label="MAGIC_INVALID" />
 				</xtce:EnumerationList>
 			</xtce:EnumeratedParameterType>
 			<xtce:EnumeratedParameterType name="ILO_BOOT_HK.IMG_2_STAT" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="32" encoding="unsigned" />
 				<xtce:EnumerationList>
-					<xtce:Enumeration value="0x0" label="OK" />
-					<xtce:Enumeration value="0x10" label="CHKSUM_INVALID" />
-					<xtce:Enumeration value="0x20" label="LEN_INVALID" />
-					<xtce:Enumeration value="0x40" label="MAGIC_INVALID" />
+					<xtce:Enumeration value="0" label="OK" />
+					<xtce:Enumeration value="16" label="CHKSUM_INVALID" />
+					<xtce:Enumeration value="32" label="LEN_INVALID" />
+					<xtce:Enumeration value="64" label="MAGIC_INVALID" />
 				</xtce:EnumerationList>
 			</xtce:EnumeratedParameterType>
 			<xtce:IntegerParameterType name="ILO_BOOT_HK.SPARE_0" signed="false">
@@ -470,13 +470,13 @@
 			<xtce:EnumeratedParameterType name="ILO_BOOT_HK.CMD_LAST_OPCODE" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="16" encoding="unsigned" />
 				<xtce:EnumerationList>
-					<xtce:Enumeration value="0xB000" label="BOOT_NOOP" />
-					<xtce:Enumeration value="0xB001" label="BOOT_MODE_SET" />
-					<xtce:Enumeration value="0xB002" label="BOOT_MEM_DUMP" />
-					<xtce:Enumeration value="0xB003" label="BOOT_MEM_LOAD" />
-					<xtce:Enumeration value="0xB004" label="BOOT_MEM_CHKSUM" />
-					<xtce:Enumeration value="0xB005" label="BOOT_JUMP" />
-					<xtce:Enumeration value="0xB006" label="BOOT_BOOT_IMG" />
+					<xtce:Enumeration value="45056" label="BOOT_NOOP" />
+					<xtce:Enumeration value="45057" label="BOOT_MODE_SET" />
+					<xtce:Enumeration value="45058" label="BOOT_MEM_DUMP" />
+					<xtce:Enumeration value="45059" label="BOOT_MEM_LOAD" />
+					<xtce:Enumeration value="45060" label="BOOT_MEM_CHKSUM" />
+					<xtce:Enumeration value="45061" label="BOOT_JUMP" />
+					<xtce:Enumeration value="45062" label="BOOT_BOOT_IMG" />
 				</xtce:EnumerationList>
 			</xtce:EnumeratedParameterType>
 			<xtce:IntegerParameterType name="ILO_BOOT_HK.CMD_RESULT" signed="false">
@@ -642,84 +642,84 @@
 			<xtce:EnumeratedParameterType name="ILO_APP_NHK.CMD_LAST_OPCODE" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="16" encoding="unsigned" />
 				<xtce:EnumerationList>
-					<xtce:Enumeration value="0x1000" label="ILO_NOOP" />
-					<xtce:Enumeration value="0x1001" label="ILO_RESET" />
-					<xtce:Enumeration value="0x1002" label="ILO_SHUTDOWN" />
-					<xtce:Enumeration value="0x1003" label="ILO_MODE_SET" />
-					<xtce:Enumeration value="0x1004" label="ILO_PARAM_SET" />
-					<xtce:Enumeration value="0x1005" label="ILO_PARAM_STORE" />
-					<xtce:Enumeration value="0x1006" label="ILO_PARAM_LOAD" />
-					<xtce:Enumeration value="0x1007" label="ILO_HEAT_CNFG" />
-					<xtce:Enumeration value="0x1008" label="ILO_HEAT_CTRL" />
-					<xtce:Enumeration value="0x1100" label="ILO_TLM_RATE" />
-					<xtce:Enumeration value="0x1101" label="ILO_LATCHED_CLR" />
-					<xtce:Enumeration value="0x1102" label="ILO_EVENT_CTRL" />
-					<xtce:Enumeration value="0x1103" label="ILO_MARKER_SET" />
-					<xtce:Enumeration value="0x1200" label="ILO_FDR_CNFG" />
-					<xtce:Enumeration value="0x1201" label="ILO_SAFE" />
-					<xtce:Enumeration value="0x1202" label="ILO_SAFE_CLR" />
-					<xtce:Enumeration value="0x1300" label="ILO_RTS_START" />
-					<xtce:Enumeration value="0x1301" label="ILO_RTS_STOP" />
-					<xtce:Enumeration value="0x1400" label="ILO_MEM_PEEK" />
-					<xtce:Enumeration value="0x1401" label="ILO_MEM_POKE" />
-					<xtce:Enumeration value="0x1402" label="ILO_MEM_DUMP" />
-					<xtce:Enumeration value="0x1403" label="ILO_MRAM_WP" />
-					<xtce:Enumeration value="0x1404" label="ILO_MEM_LOAD" />
-					<xtce:Enumeration value="0x1405" label="ILO_MEM_COPY" />
-					<xtce:Enumeration value="0x1406" label="ILO_MEM_CHKSUM" />
-					<xtce:Enumeration value="0x1407" label="ILO_EDAC_TEST" />
-					<xtce:Enumeration value="0x1500" label="ILO_SENSOR_PWR" />
-					<xtce:Enumeration value="0x1501" label="ILO_SCI_CNFG" />
-					<xtce:Enumeration value="0x1502" label="ILO_SCI_INJ_EVENTS" />
-					<xtce:Enumeration value="0x1600" label="ILO_REG_PEEK" />
-					<xtce:Enumeration value="0x1601" label="ILO_REG_POKE" />
-					<xtce:Enumeration value="0x1602" label="ILO_IFB_CTRL" />
-					<xtce:Enumeration value="0x1603" label="ILO_IFB_DATA_INT" />
-					<xtce:Enumeration value="0x1604" label="ILO_IFB_STAR_ADJ" />
-					<xtce:Enumeration value="0x1605" label="ILO_IFB_OSCOPE" />
-					<xtce:Enumeration value="0x1800" label="ILO_TOF_HVPS_CTRL" />
-					<xtce:Enumeration value="0x1801" label="ILO_PAC_OCP" />
-					<xtce:Enumeration value="0x1802" label="ILO_PAC_RMP" />
-					<xtce:Enumeration value="0x1803" label="ILO_PAC_RMP_RAW" />
-					<xtce:Enumeration value="0x1804" label="ILO_PAC_RMP_REL" />
-					<xtce:Enumeration value="0x1805" label="ILO_MCP_OCP" />
-					<xtce:Enumeration value="0x1806" label="ILO_MCP_RMP" />
-					<xtce:Enumeration value="0x1807" label="ILO_MCP_RMP_RAW" />
-					<xtce:Enumeration value="0x1808" label="ILO_MCP_RMP_REL" />
-					<xtce:Enumeration value="0x1707" label="ILO_TOF_BD_CTRL" />
-					<xtce:Enumeration value="0x1708" label="ILO_TOF_THRESH" />
-					<xtce:Enumeration value="0x1709" label="ILO_TOF_STIM_CTRL" />
-					<xtce:Enumeration value="0x170A" label="ILO_TOF_STIM_CNFG" />
-					<xtce:Enumeration value="0x170B" label="ILO_TOF_DATA_REQ" />
-					<xtce:Enumeration value="0x170C" label="ILO_TOF_FAST_DATA_REQ" />
-					<xtce:Enumeration value="0x1900" label="ILO_PIVOT_STEP" />
-					<xtce:Enumeration value="0x1901" label="ILO_PIVOT_STEP_CUMUL_CNT" />
-					<xtce:Enumeration value="0x1902" label="ILO_PIVOT_STEP_CANCEL" />
-					<xtce:Enumeration value="0x1903" label="ILO_PIVOT_POW_IDLE_EN" />
-					<xtce:Enumeration value="0x1904" label="ILO_PIVOT_POW_IDLE_EX" />
-					<xtce:Enumeration value="0x1905" label="ILO_PIVOT_ACCEL" />
-					<xtce:Enumeration value="0x1906" label="ILO_PIVOT_MICRO_STEP" />
-					<xtce:Enumeration value="0x1907" label="ILO_PIVOT_CURR_CTRL" />
-					<xtce:Enumeration value="0x1A00" label="ILO_HVPS_MST" />
-					<xtce:Enumeration value="0x1A01" label="ILO_HVPS_RAW_CMD" />
-					<xtce:Enumeration value="0x1A02" label="ILO_HVPS_ADC_CTRL" />
-					<xtce:Enumeration value="0x1A03" label="ILO_HVPS_EN" />
-					<xtce:Enumeration value="0x1A04" label="ILO_HVPS_DS" />
-					<xtce:Enumeration value="0x1A05" label="ILO_ESA_N_RMP" />
-					<xtce:Enumeration value="0x1A06" label="ILO_ESA_N_RMP_REL" />
-					<xtce:Enumeration value="0x1A07" label="ILO_ESA_N_RMP_RAW" />
-					<xtce:Enumeration value="0x1A08" label="ILO_ESA_P_RMP" />
-					<xtce:Enumeration value="0x1A09" label="ILO_ESA_P_RMP_REL" />
-					<xtce:Enumeration value="0x1A0A" label="ILO_ESA_P_RMP_RAW" />
-					<xtce:Enumeration value="0x1A0B" label="ILO_DEF_N_RMP" />
-					<xtce:Enumeration value="0x1A0C" label="ILO_DEF_N_RMP_REL" />
-					<xtce:Enumeration value="0x1A0D" label="ILO_DEF_N_RMP_RAW" />
-					<xtce:Enumeration value="0x1A0E" label="ILO_DEF_P_RMP" />
-					<xtce:Enumeration value="0x1A0F" label="ILO_DEF_P_RMP_REL" />
-					<xtce:Enumeration value="0x1A10" label="ILO_DEF_P_RMP_RAW" />
-					<xtce:Enumeration value="0x1A11" label="ILO_PMT_RMP" />
-					<xtce:Enumeration value="0x1A12" label="ILO_PMT_RMP_REL" />
-					<xtce:Enumeration value="0x1A13" label="ILO_PMT_RMP_RAW" />
+					<xtce:Enumeration value="4096" label="ILO_NOOP" />
+					<xtce:Enumeration value="4097" label="ILO_RESET" />
+					<xtce:Enumeration value="4098" label="ILO_SHUTDOWN" />
+					<xtce:Enumeration value="4099" label="ILO_MODE_SET" />
+					<xtce:Enumeration value="4100" label="ILO_PARAM_SET" />
+					<xtce:Enumeration value="4101" label="ILO_PARAM_STORE" />
+					<xtce:Enumeration value="4102" label="ILO_PARAM_LOAD" />
+					<xtce:Enumeration value="4103" label="ILO_HEAT_CNFG" />
+					<xtce:Enumeration value="4104" label="ILO_HEAT_CTRL" />
+					<xtce:Enumeration value="4352" label="ILO_TLM_RATE" />
+					<xtce:Enumeration value="4353" label="ILO_LATCHED_CLR" />
+					<xtce:Enumeration value="4354" label="ILO_EVENT_CTRL" />
+					<xtce:Enumeration value="4355" label="ILO_MARKER_SET" />
+					<xtce:Enumeration value="4608" label="ILO_FDR_CNFG" />
+					<xtce:Enumeration value="4609" label="ILO_SAFE" />
+					<xtce:Enumeration value="4610" label="ILO_SAFE_CLR" />
+					<xtce:Enumeration value="4864" label="ILO_RTS_START" />
+					<xtce:Enumeration value="4865" label="ILO_RTS_STOP" />
+					<xtce:Enumeration value="5120" label="ILO_MEM_PEEK" />
+					<xtce:Enumeration value="5121" label="ILO_MEM_POKE" />
+					<xtce:Enumeration value="5122" label="ILO_MEM_DUMP" />
+					<xtce:Enumeration value="5123" label="ILO_MRAM_WP" />
+					<xtce:Enumeration value="5124" label="ILO_MEM_LOAD" />
+					<xtce:Enumeration value="5125" label="ILO_MEM_COPY" />
+					<xtce:Enumeration value="5126" label="ILO_MEM_CHKSUM" />
+					<xtce:Enumeration value="5127" label="ILO_EDAC_TEST" />
+					<xtce:Enumeration value="5376" label="ILO_SENSOR_PWR" />
+					<xtce:Enumeration value="5377" label="ILO_SCI_CNFG" />
+					<xtce:Enumeration value="5378" label="ILO_SCI_INJ_EVENTS" />
+					<xtce:Enumeration value="5632" label="ILO_REG_PEEK" />
+					<xtce:Enumeration value="5633" label="ILO_REG_POKE" />
+					<xtce:Enumeration value="5634" label="ILO_IFB_CTRL" />
+					<xtce:Enumeration value="5635" label="ILO_IFB_DATA_INT" />
+					<xtce:Enumeration value="5636" label="ILO_IFB_STAR_ADJ" />
+					<xtce:Enumeration value="5637" label="ILO_IFB_OSCOPE" />
+					<xtce:Enumeration value="6144" label="ILO_TOF_HVPS_CTRL" />
+					<xtce:Enumeration value="6145" label="ILO_PAC_OCP" />
+					<xtce:Enumeration value="6146" label="ILO_PAC_RMP" />
+					<xtce:Enumeration value="6147" label="ILO_PAC_RMP_RAW" />
+					<xtce:Enumeration value="6148" label="ILO_PAC_RMP_REL" />
+					<xtce:Enumeration value="6149" label="ILO_MCP_OCP" />
+					<xtce:Enumeration value="6150" label="ILO_MCP_RMP" />
+					<xtce:Enumeration value="6151" label="ILO_MCP_RMP_RAW" />
+					<xtce:Enumeration value="6152" label="ILO_MCP_RMP_REL" />
+					<xtce:Enumeration value="5895" label="ILO_TOF_BD_CTRL" />
+					<xtce:Enumeration value="5896" label="ILO_TOF_THRESH" />
+					<xtce:Enumeration value="5897" label="ILO_TOF_STIM_CTRL" />
+					<xtce:Enumeration value="5898" label="ILO_TOF_STIM_CNFG" />
+					<xtce:Enumeration value="5899" label="ILO_TOF_DATA_REQ" />
+					<xtce:Enumeration value="5900" label="ILO_TOF_FAST_DATA_REQ" />
+					<xtce:Enumeration value="6400" label="ILO_PIVOT_STEP" />
+					<xtce:Enumeration value="6401" label="ILO_PIVOT_STEP_CUMUL_CNT" />
+					<xtce:Enumeration value="6402" label="ILO_PIVOT_STEP_CANCEL" />
+					<xtce:Enumeration value="6403" label="ILO_PIVOT_POW_IDLE_EN" />
+					<xtce:Enumeration value="6404" label="ILO_PIVOT_POW_IDLE_EX" />
+					<xtce:Enumeration value="6405" label="ILO_PIVOT_ACCEL" />
+					<xtce:Enumeration value="6406" label="ILO_PIVOT_MICRO_STEP" />
+					<xtce:Enumeration value="6407" label="ILO_PIVOT_CURR_CTRL" />
+					<xtce:Enumeration value="6656" label="ILO_HVPS_MST" />
+					<xtce:Enumeration value="6657" label="ILO_HVPS_RAW_CMD" />
+					<xtce:Enumeration value="6658" label="ILO_HVPS_ADC_CTRL" />
+					<xtce:Enumeration value="6659" label="ILO_HVPS_EN" />
+					<xtce:Enumeration value="6660" label="ILO_HVPS_DS" />
+					<xtce:Enumeration value="6661" label="ILO_ESA_N_RMP" />
+					<xtce:Enumeration value="6662" label="ILO_ESA_N_RMP_REL" />
+					<xtce:Enumeration value="6663" label="ILO_ESA_N_RMP_RAW" />
+					<xtce:Enumeration value="6664" label="ILO_ESA_P_RMP" />
+					<xtce:Enumeration value="6665" label="ILO_ESA_P_RMP_REL" />
+					<xtce:Enumeration value="6666" label="ILO_ESA_P_RMP_RAW" />
+					<xtce:Enumeration value="6667" label="ILO_DEF_N_RMP" />
+					<xtce:Enumeration value="6668" label="ILO_DEF_N_RMP_REL" />
+					<xtce:Enumeration value="6669" label="ILO_DEF_N_RMP_RAW" />
+					<xtce:Enumeration value="6670" label="ILO_DEF_P_RMP" />
+					<xtce:Enumeration value="6671" label="ILO_DEF_P_RMP_REL" />
+					<xtce:Enumeration value="6672" label="ILO_DEF_P_RMP_RAW" />
+					<xtce:Enumeration value="6673" label="ILO_PMT_RMP" />
+					<xtce:Enumeration value="6674" label="ILO_PMT_RMP_REL" />
+					<xtce:Enumeration value="6675" label="ILO_PMT_RMP_RAW" />
 				</xtce:EnumerationList>
 			</xtce:EnumeratedParameterType>
 			<xtce:IntegerParameterType name="ILO_APP_NHK.ITF_ERR_CNT" signed="false">
@@ -2595,8 +2595,8 @@
 			<xtce:EnumeratedParameterType name="ILO_APP_NHK.PCC_CUMULATIVE_CNT_SGN_PRI" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="8" encoding="unsigned" />
 				<xtce:EnumerationList>
-					<xtce:Enumeration value="0x2B" label="POSITIVE" />
-					<xtce:Enumeration value="0x2D" label="NEGATIVE" />
+					<xtce:Enumeration value="43" label="POSITIVE" />
+					<xtce:Enumeration value="45" label="NEGATIVE" />
 				</xtce:EnumerationList>
 			</xtce:EnumeratedParameterType>
 			<xtce:IntegerParameterType name="ILO_APP_NHK.PCC_CUMULATIVE_CNT_RED" signed="false">
@@ -2611,8 +2611,8 @@
 			<xtce:EnumeratedParameterType name="ILO_APP_NHK.PCC_CUMULATIVE_CNT_SGN_RED" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="8" encoding="unsigned" />
 				<xtce:EnumerationList>
-					<xtce:Enumeration value="0x2B" label="POSITIVE" />
-					<xtce:Enumeration value="0x2D" label="NEGATIVE" />
+					<xtce:Enumeration value="43" label="POSITIVE" />
+					<xtce:Enumeration value="45" label="NEGATIVE" />
 				</xtce:EnumerationList>
 			</xtce:EnumeratedParameterType>
 			<xtce:IntegerParameterType name="ILO_APP_NHK.PCC_CURRENT_STEP_CNT_PRI" signed="false">
@@ -2636,27 +2636,27 @@
 			<xtce:EnumeratedParameterType name="ILO_APP_NHK.PCC_CURRENT_SETPT_PRI" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="16" encoding="unsigned" />
 				<xtce:EnumerationList>
-					<xtce:Enumeration value="0x31" label="PRI_500_MA" />
-					<xtce:Enumeration value="0x32" label="PRI_600_MA" />
-					<xtce:Enumeration value="0x33" label="PRI_700_MA" />
-					<xtce:Enumeration value="0x34" label="PRI_800_MA" />
-					<xtce:Enumeration value="0x35" label="PRI_700_MA" />
-					<xtce:Enumeration value="0x36" label="PRI_700_MA" />
-					<xtce:Enumeration value="0x37" label="PRI_700_MA" />
-					<xtce:Enumeration value="0x38" label="PRI_700_MA" />
+					<xtce:Enumeration value="49" label="PRI_500_MA" />
+					<xtce:Enumeration value="50" label="PRI_600_MA" />
+					<xtce:Enumeration value="51" label="PRI_700_MA" />
+					<xtce:Enumeration value="52" label="PRI_800_MA" />
+					<xtce:Enumeration value="53" label="PRI_700_MA" />
+					<xtce:Enumeration value="54" label="PRI_700_MA" />
+					<xtce:Enumeration value="55" label="PRI_700_MA" />
+					<xtce:Enumeration value="56" label="PRI_700_MA" />
 				</xtce:EnumerationList>
 			</xtce:EnumeratedParameterType>
 			<xtce:EnumeratedParameterType name="ILO_APP_NHK.PCC_CURRENT_SETPT_RED" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="16" encoding="unsigned" />
 				<xtce:EnumerationList>
-					<xtce:Enumeration value="0x31" label="RED_500_MA" />
-					<xtce:Enumeration value="0x32" label="RED_600_MA" />
-					<xtce:Enumeration value="0x33" label="RED_700_MA" />
-					<xtce:Enumeration value="0x34" label="RED_800_MA" />
-					<xtce:Enumeration value="0x35" label="RED_700_MA" />
-					<xtce:Enumeration value="0x36" label="RED_700_MA" />
-					<xtce:Enumeration value="0x37" label="RED_700_MA" />
-					<xtce:Enumeration value="0x38" label="RED_700_MA" />
+					<xtce:Enumeration value="49" label="RED_500_MA" />
+					<xtce:Enumeration value="50" label="RED_600_MA" />
+					<xtce:Enumeration value="51" label="RED_700_MA" />
+					<xtce:Enumeration value="52" label="RED_800_MA" />
+					<xtce:Enumeration value="53" label="RED_700_MA" />
+					<xtce:Enumeration value="54" label="RED_700_MA" />
+					<xtce:Enumeration value="55" label="RED_700_MA" />
+					<xtce:Enumeration value="56" label="RED_700_MA" />
 				</xtce:EnumerationList>
 			</xtce:EnumeratedParameterType>
 			<xtce:EnumeratedParameterType name="ILO_APP_NHK.PCC_PRI_ACTIVE" signed="false">
