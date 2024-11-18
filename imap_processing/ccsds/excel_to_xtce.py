@@ -415,12 +415,12 @@ class XTCEGenerator:
             The dictionary for the state.
         """
         value = state["value"]
-        # convert hex string to int
-        if isinstance(value, str) and value.startswith("0x"):
-            state["value"] = int(value, 16)
-            return state
         # return if already an int
-        elif isinstance(value, int):
+        if isinstance(value, int):
+            return state
+        # convert hex string to int
+        elif isinstance(value, str) and value.startswith("0x"):
+            state["value"] = int(value, 16)
             return state
         # raise error if value is neither a hex string or integer
         else:
