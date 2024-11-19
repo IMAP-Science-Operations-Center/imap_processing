@@ -64,6 +64,7 @@
 				<xtce:EnumerationList>
 					<xtce:Enumeration value="0" label="OFF" />
 					<xtce:Enumeration value="1" label="ON" />
+					<xtce:Enumeration value="2" label="NONE" />
 				</xtce:EnumerationList>
 			</xtce:EnumeratedParameterType>
 			<xtce:IntegerParameterType name="TEST_PACKET2.SHCOARSE" signed="false">
