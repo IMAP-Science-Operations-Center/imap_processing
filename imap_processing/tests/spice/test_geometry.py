@@ -368,18 +368,27 @@ def test_cartesian_to_spherical():
 
 def test_spherical_to_cartesian():
     """Tests cartesian_to_spherical function."""
-    spherical_coords = np.array([[1.0, 0.0, np.pi / 2], [2.0, np.pi / 4, np.pi / 4]])
 
-    expected_x = 1.0 * np.cos(np.pi / 2) * np.cos(0.0)
-    expected_y = 1.0 * np.cos(np.pi / 2) * np.sin(0.0)
-    expected_z = 1.0 * np.sin(np.pi / 2)
+    test_points = [
+        [1.0, 0.0, 0.0],  # Test Point 1
+        [1.0, 0.0, np.pi / 2],  # Test Point 2
+        [1.0, np.pi / 2, np.pi / 2],  # Test Point 3
+        [1.0, np.pi, np.pi],  # Test Point 4
+        [2.0, np.pi / 4, np.pi / 3]  # Test Point 5
+    ]
 
-    cartesian_coords = spherical_to_cartesian(spherical_coords)
+    cartesian_coords = spherical_to_cartesian(np.array([[np.pi / 2, np.pi / 2, 0.5]]))
+    test = spice.sphrec(np.pi / 2, np.pi / 2, 0.5)
+
     x, y, z = (
         cartesian_coords[..., 0],
         cartesian_coords[..., 1],
         cartesian_coords[..., 2],
     )
+
+    expected_x = 1.0 * np.cos(np.pi / 2) * np.cos(0.0)
+    expected_y = 1.0 * np.cos(np.pi / 2) * np.sin(0.0)
+    expected_z = 1.0 * np.sin(np.pi / 2)
 
     np.testing.assert_allclose(x[0], expected_x, atol=1e-5)
     np.testing.assert_allclose(y[0], expected_y, atol=1e-5)

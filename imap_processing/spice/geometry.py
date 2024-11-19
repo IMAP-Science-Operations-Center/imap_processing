@@ -552,12 +552,12 @@ def spherical_to_cartesian(spherical_coords: NDArray) -> NDArray:
         Cartesian coordinates.
     """
     r = spherical_coords[..., 0]
-    theta = spherical_coords[..., 1]
-    phi = spherical_coords[..., 2]
+    phi = spherical_coords[..., 1]
+    theta = spherical_coords[..., 2]
 
-    x = r * np.cos(phi) * np.cos(theta)
-    y = r * np.cos(phi) * np.sin(theta)
-    z = r * np.sin(phi)
+    x = r * np.sin(phi) * np.cos(theta)
+    y = r * np.sin(phi) * np.sin(theta)
+    z = r * np.cos(phi)
 
     cartesian_coords = np.stack((x, y, z), axis=-1)
 
