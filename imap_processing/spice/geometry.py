@@ -510,26 +510,22 @@ def cartesian_to_spherical(
     spherical_coords : np.ndarray
         Spherical coordinate.
     """
-    vx = v[..., 0]
-    vy = v[..., 1]
-    vz = v[..., 2]
-
     # Magnitude of the velocity vector
-    magnitude_v = np.sqrt(np.sum(v**2, axis=-1))
+    magnitude_v = np.linalg.norm(v, axis=-1, keepdims=True)
 
-    vhat_x = -vx / magnitude_v
-    vhat_y = -vy / magnitude_v
-    vhat_z = -vz / magnitude_v
+    vhat = -v / magnitude_v
 
     # Elevation angle (angle from the z-axis, range: [-pi/2, pi/2])
-    el = np.arcsin(vhat_z)
+    el = np.arcsin(vhat[..., 2])
 
     # Azimuth angle (angle in the xy-plane, range: [0, 2*pi])
-    az = np.arctan2(vhat_y, vhat_x)
+    az = np.arctan2(vhat[..., 1], vhat[..., 0])
 
     # Ensure azimuth is from 0 to 2PI
     az = az % (2 * np.pi)
-    spherical_coords = np.stack((np.degrees(az), np.degrees(el), magnitude_v), axis=-1)
+    spherical_coords = np.stack(
+        (np.degrees(az), np.degrees(el), np.squeeze(magnitude_v)), axis=-1
+    )
 
     return spherical_coords
 
