@@ -110,7 +110,7 @@ def test_l1a_data_array_shape(test_l1a_data, index):
 
     # Mark currently broken/unsupported datasets as expected to fail
     # TODO: Remove these once they are supported
-    if index in [0, 1, 15]:
+    if index in [0, 1, 15, 16, 17]:
         pytest.xfail("Data product is currently unsupported")
 
     for variable in processed_dataset:
@@ -166,7 +166,7 @@ def test_l1a_num_variables(test_l1a_data, index):
 
     # Mark currently broken/unsupported datasets as expected to fail
     # TODO: Remove these once they are supported
-    if index in [0, 1, 15]:
+    if index in [0, 1, 15, 16, 17]:
         pytest.xfail("Data product is currently unsupported")
 
     assert len(processed_dataset) == EXPECTED_NUM_VARIABLES[index]

@@ -114,6 +114,7 @@ class CoDICEL1aPipeline:
             # continuation. For those that can't be processed, just use empty
             # list for now
             # TODO: Implement support for packet continuation (see issue #1155)
+            # TODO: Make sure all possible decompression errors are caught
             try:
                 decompressed_values = decompress(values, compression_algorithm)
             except lzma.LZMAError:
@@ -137,6 +138,8 @@ class CoDICEL1aPipeline:
             if name == "epoch":
                 # The number of epoch values to store depends on how many
                 # packets were able to be processed
+                # TODO: This may be resolved once continuation packets are
+                #       supported
                 values = [
                     epoch
                     for epoch, packet_data in zip(self.dataset.epoch.data, self.data)
@@ -187,9 +190,15 @@ class CoDICEL1aPipeline:
         )
 
         # If no packets were able to be processed, create empty dataset for now
-        # TODO: # TODO: This will change when continuation packets are supported
+        # TODO: This will change when continuation packets are supported
         if self.data:
             all_data = np.stack(self.data)
+
+            # The dimension of all data is (epoch, num_counters, num_positions,
+            # num_spin_sectors, num_energy_steps) (or may be slightly different
+            # depending on the data product). In any case, iterate over the
+            # num_counters dimension to isolate the data for each counter so
+            # that it can be placed in a CDF data variable.
             for counter, variable_name in zip(
                 range(all_data.shape[1]), self.config["variable_names"]
             ):
