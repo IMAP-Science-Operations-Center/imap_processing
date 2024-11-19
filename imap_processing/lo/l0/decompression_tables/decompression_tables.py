@@ -63,7 +63,7 @@ CASE_DECODER = {
     (1, 0): VariableFields(True, True, True, False, False, False),
     (2, 0): VariableFields(True, True, False, False, False, True),
     (3, 0): VariableFields(True, False, False, False, False, False),
-    (4, 1): VariableFields(True, False, False, False, False, True),
+    (4, 1): VariableFields(True, False, True, False, False, True),
     (4, 0): VariableFields(True, False, False, True, False, False),
     (5, 0): VariableFields(True, False, True, False, False, False),
     (6, 1): VariableFields(True, False, False, False, False, True),
