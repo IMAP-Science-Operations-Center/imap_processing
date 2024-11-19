@@ -352,8 +352,7 @@ def test_cartesian_to_spherical():
     )
 
     spherical_coords = cartesian_to_spherical(v)
-    az_sc, el_sc, _ = (
-        spherical_coords[..., 0],
+    az_sc, el_sc = (
         spherical_coords[..., 1],
         spherical_coords[..., 2],
     )

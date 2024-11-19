@@ -508,7 +508,12 @@ def cartesian_to_spherical(
     Returns
     -------
     spherical_coords : np.ndarray
-        Spherical coordinate.
+        A NumPy array with shape (n, 3), where each row contains
+        the spherical coordinates (r, azimuth, elevation):
+
+        - r : Distance of the point from the origin.
+        - azimuth : angle in the xy-plane in radians [0, 2*pi].
+        - elevation : angle from the z-axis in radians [-pi/2, pi/2].
     """
     # Magnitude of the velocity vector
     magnitude_v = np.linalg.norm(v, axis=-1, keepdims=True)
@@ -524,7 +529,7 @@ def cartesian_to_spherical(
     # Ensure azimuth is from 0 to 2PI
     az = az % (2 * np.pi)
     spherical_coords = np.stack(
-        (np.degrees(az), np.degrees(el), np.squeeze(magnitude_v)), axis=-1
+        (np.squeeze(magnitude_v), np.degrees(az), np.degrees(el)), axis=-1
     )
 
     return spherical_coords

@@ -32,12 +32,17 @@ def build_energy_bins() -> tuple[list[tuple[float, float]], np.ndarray]:
     energy_step = (1 + UltraConstants.ALPHA / 2) / (1 - UltraConstants.ALPHA / 2)
 
     # Create energy bins.
-    energy_bin_edges = UltraConstants.ENERGY_START * energy_step ** np.arange(UltraConstants.N_BINS + 1)
+    energy_bin_edges = UltraConstants.ENERGY_START * energy_step ** np.arange(
+        UltraConstants.N_BINS + 1
+    )
     # Add a zero to the left side for outliers and round to nearest 3 decimal places.
     energy_bin_edges = np.around(np.insert(energy_bin_edges, 0, 0), 3)
     energy_midpoints = (energy_bin_edges[:-1] + energy_bin_edges[1:]) / 2
 
-    intervals = [(float(energy_bin_edges[i]), float(energy_bin_edges[i + 1])) for i in range(len(energy_bin_edges) - 1)]
+    intervals = [
+        (float(energy_bin_edges[i]), float(energy_bin_edges[i + 1]))
+        for i in range(len(energy_bin_edges) - 1)
+    ]
 
     return intervals, energy_midpoints
 
@@ -106,28 +111,28 @@ def get_histogram(
     hist : np.ndarray
         A 3D histogram array.
 
-    Note:
+    Notes
     -----
     The histogram will now work properly for overlapping energy bins, i.e.
     the same energy value can fall into multiple bins if the intervals overlap.
     """
     spherical_coords = cartesian_to_spherical(vhat)
     az, el = (
-        spherical_coords[..., 0],
         spherical_coords[..., 1],
+        spherical_coords[..., 2],
     )
 
     # Initialize histogram
-    hist_total = np.zeros((len(az_bin_edges) - 1,
-                           len(el_bin_edges) - 1,
-                           len(energy_bin_edges)))
+    hist_total = np.zeros(
+        (len(az_bin_edges) - 1, len(el_bin_edges) - 1, len(energy_bin_edges))
+    )
 
     for i, (e_min, e_max) in enumerate(energy_bin_edges):
         # Filter data for current energy bin.
         mask = (energy >= e_min) & (energy < e_max)
         hist, _ = np.histogramdd(
             sample=(az[mask], el[mask], energy[mask]),
-            bins=[az_bin_edges, el_bin_edges, [e_min, e_max]]
+            bins=[az_bin_edges, el_bin_edges, [e_min, e_max]],
         )
         # Assign 2D histogram to current energy bin.
         hist_total[:, :, i] = hist[:, :, 0]
@@ -233,7 +238,7 @@ def get_helio_exposure_times(
         # The negtaive helio_normalized reorients vectors to align with the spacecraft's
         # perspective of viewing particles moving in its direction.
         spherical_coords = cartesian_to_spherical(-helio_normalized)
-        az, el = spherical_coords[..., 0], spherical_coords[..., 1]
+        az, el = spherical_coords[..., 1], spherical_coords[..., 2]
 
         # Assign values from sc_exposure directly to bins.
         az_idx = np.digitize(az, az_bin_edges) - 1
