@@ -18,13 +18,11 @@ def subcom_sectorates(sci_dataset: xr.Dataset) -> None:
 
     Sector rates data contains rates for 5 species and 10
     energy ranges. This function subcommutates the sector
-    rates data by organizing the rates by species and
-    reshaping the data into 8x15 arrays for declination and
-    azimuth. Which species and energy range the data belongs
-    to is determined by taking the mod 10 value of the
-    corresponding header minute count value in the dataset.
-    A mapping of mod 10 values to species and energy ranges
-    is provided in constants.py.
+    rates data by organizing the rates by species. Which
+    species and energy range the data belongs to is determined
+    by taking the mod 10 value of the corresponding header
+    minute count value in the dataset. A mapping of mod 10
+    values to species and energy ranges is provided in constants.py.
 
     MOD_10_MAPPING = {
         0: {"species": "H", "energy_min": 1.8, "energy_max": 3.6},
@@ -34,12 +32,12 @@ def subcom_sectorates(sci_dataset: xr.Dataset) -> None:
         ...
         9: {"species": "Fe", "energy_min": 4, "energy_max": 12}}
 
-    The reshaped data is added to the dataset as new data fields
-    named according to their species. They have 4 dimensions:
-    epoch, energy index, declination, and azimuth. The energy index
-    dimension is used to distinguish between the different energy ranges
-    the data belongs to. The energy min and max values for each species
-    are also added to the dataset as new data fields.
+    The data is added to the dataset as new data fields named
+    according to their species. They have 4 dimensions: epoch
+    energy index, declination, and azimuth. The energy index
+    dimension is used to distinguish between the different energy
+    ranges the data belongs to. The energy min and max values for
+    each species are also added to the dataset as new data fields.
 
     Parameters
     ----------
@@ -65,18 +63,18 @@ def subcom_sectorates(sci_dataset: xr.Dataset) -> None:
         for key, value in MOD_10_MAPPING.items()
     }
 
-    # Reshape sector rates data to 8x15 for declination and azimuth
-    # and update rates for science frames where data is available
-    reshaped_rates = sci_dataset["sectorates"].values.reshape(-1, 8, 15)
+    # Update rates for science frames where data is available
     for i, mod_10 in enumerate(hdr_min_count_mod_10):
-        data_by_species_and_energy_range[mod_10]["rates"][i] = reshaped_rates[i]
+        data_by_species_and_energy_range[mod_10]["rates"][i] = sci_dataset[
+            "sectorates"
+        ].values[i]
 
     # H has 3 energy ranges, 4He, CNO, NeMgSi have 2, and Fe has 1.
     # Aggregate sector rates and energy min/max values for each species.
     # First, initialize dictionaries to store rates and min/max energy values by species
     data_by_species: dict = {
-        species: {"rates": [], "energy_min": [], "energy_max": []}
-        for species in ["H", "4He", "CNO", "NeMgSi", "Fe"]
+        value["species"]: {"rates": [], "energy_min": [], "energy_max": []}
+        for value in data_by_species_and_energy_range.values()
     }
 
     for value in data_by_species_and_energy_range.values():
@@ -181,7 +179,12 @@ def parse_count_rates(sci_dataset: xr.Dataset) -> None:
 
         # Get dims for data variables (yaml file not created yet)
         if len(field_meta.shape) > 1:
-            dims = ["epoch", "gain", f"{field}_index"]
+            if "sectorates" in field:
+                # Reshape data to 8x15 for declination and azimuth look directions
+                parsed_data = np.array(parsed_data).reshape((-1, *field_meta.shape))
+                dims = ["epoch", "declination", "azimuth"]
+            elif "sngrates" in field:
+                dims = ["epoch", "gain", f"{field}_index"]
         elif field_meta.shape[0] > 1:
             dims = ["epoch", f"{field}_index"]
         else:
