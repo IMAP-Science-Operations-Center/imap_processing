@@ -177,6 +177,10 @@ def parse_count_rates(sci_dataset: xr.Dataset) -> None:
                 low_gain = data[1::2]  # Items at odd indices 1, 3, 5, etc.
                 parsed_data[i] = [high_gain, low_gain]
 
+        # Decompress data where needed
+        if all(x not in field for x in ["hdr", "spare", "pha"]):
+            parsed_data = np.vectorize(decompress_rates)(parsed_data)
+
         # Get dims for data variables (yaml file not created yet)
         if len(field_meta.shape) > 1:
             if "sectorates" in field:
@@ -407,6 +411,49 @@ def assemble_science_frames(sci_dataset: xr.Dataset) -> xr.Dataset:
     )
     sci_dataset["pha_raw"] = xr.DataArray(pha, dims=["epoch"], name="pha_raw")
     return sci_dataset
+
+
+def decompress_rates(
+    packed: int, num_mantissa_bits: int = 12, num_exponent_bits: int = 4
+) -> int:
+    """
+    Will decompress rates data from 16 bits to 32 bits.
+
+    This function decompresses the rates data from the binary
+    format to integers. The data is compressed using a fixed
+    point representation with a 4-bit exponent and a 12-bit
+    mantissa. Numbers up to 212 are uncompressed.
+
+    Parameters
+    ----------
+    packed : int
+        Compressed integer.
+    num_mantissa_bits : int, optional
+        Number of bits for the mantissa, by default 12.
+    num_exponent_bits : int, optional
+        Number of bits for the exponent, by default 4.
+
+    Returns
+    -------
+    out : int
+        Decompressed integer.
+    """
+    # Number of bits for the compressed integer is 16
+    output_mask = 0xFFFF  # 0xffff for 16 bit
+
+    # Right bit shift, packed is the compressed integer
+    power = packed >> num_mantissa_bits
+
+    if power > 1:
+        out = (packed & (output_mask >> num_exponent_bits)) | (
+            0x0001 << num_mantissa_bits
+        )
+        out = out << (power - 1)
+    else:
+        # compressed and uncompressed values are the same
+        out = packed
+
+    return out
 
 
 def decom_hit(sci_dataset: xr.Dataset) -> xr.Dataset:
