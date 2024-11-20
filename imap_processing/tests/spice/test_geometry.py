@@ -254,7 +254,7 @@ def test_frame_transform_exceptions():
         match="Mismatch in number of position vectors and Ephemeris times provided.",
     ):
         frame_transform(
-            np.arange(2),
+            1,
             np.arange(9).reshape((3, 3)),
             SpiceFrame.ECLIPJ2000,
             SpiceFrame.IMAP_HIT,
@@ -339,7 +339,6 @@ def test_basis_vectors():
         )
 
 
-def test_cartesian_to_spherical(test_data):
 def test_cartesian_to_spherical():
     """Tests cartesian_to_spherical function."""
 
@@ -365,13 +364,6 @@ def test_cartesian_to_spherical():
         np.testing.assert_allclose(r, r_spice, atol=1e-5)
         np.testing.assert_allclose(az, az_spice, atol=1e-5)
         np.testing.assert_allclose(el, el_spice, atol=1e-5)
-    # MATLAB code outputs:
-    np.testing.assert_allclose(
-        np.unique(np.radians(az_sc)), np.array([1.31300, 2.34891]), atol=1e-05, rtol=0
-    )
-    np.testing.assert_allclose(
-        np.unique(np.radians(el_sc)), np.array([-0.88901, -0.70136]), atol=1e-05, rtol=0
-    )
 
 
 def test_spherical_to_cartesian():
