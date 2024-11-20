@@ -326,14 +326,14 @@ def generate_dataset(
     )
 
     direction_label = xr.DataArray(
-        direction.astype(str),
+        direction.values.astype(str),
         name="direction_label",
         dims=["direction_label"],
         attrs=attribute_manager.get_variable_attributes("direction_label"),
     )
 
     compression_label = xr.DataArray(
-        compression.astype(str),
+        compression.values.astype(str),
         name="compression_label",
         dims=["compression_label"],
         attrs=attribute_manager.get_variable_attributes("compression_label"),
@@ -354,5 +354,7 @@ def generate_dataset(
     output["compression_flags"] = compression_flags
 
     # TODO: Put is_mago and active in the header
+    print("L1A attrs")
+    print(output["direction"].attrs)
 
     return output

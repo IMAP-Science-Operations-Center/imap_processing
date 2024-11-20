@@ -64,6 +64,8 @@ def mag_l1b_processing(input_dataset: xr.Dataset) -> xr.Dataset:
     """
     # TODO: There is a time alignment step that will add a lot of complexity.
     # This needs to be done once we have some SPICE time data.
+    mag_attributes = ImapCdfAttributes()
+    mag_attributes.add_instrument_variable_attrs("mag", "l1")
 
     dims = [["direction"], ["compression"]]
     new_dims = [["direction"], ["compression"]]
@@ -90,6 +92,14 @@ def mag_l1b_processing(input_dataset: xr.Dataset) -> xr.Dataset:
 
     output_dataset = input_dataset.copy()
     output_dataset["vectors"].data = l1b_fields[0].data
+    print("Attributes: ======")
+    print(output_dataset["direction"].attrs)
+
+    output_dataset["epoch"].attrs = mag_attributes.get_variable_attributes("epoch")
+    output_dataset["direction"].attrs = mag_attributes.get_variable_attributes("direction_attrs")
+    output_dataset["compression"].attrs = mag_attributes.get_variable_attributes("compression_attrs")
+    output_dataset["direction_label"].attrs = mag_attributes.get_variable_attributes("direction_label")
+    output_dataset["compression_label"].attrs = mag_attributes.get_variable_attributes("compression_label")
 
     # TODO add/update attributes
     return output_dataset
