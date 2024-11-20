@@ -13,6 +13,19 @@ def mag_l1a_dataset():
     epoch = xr.DataArray(np.arange(20), name="epoch", dims=["epoch"])
     direction = xr.DataArray(np.arange(4), name="direction", dims=["direction"])
     compression = xr.DataArray(np.arange(2), name="compression", dims=["compression"])
+
+    direction_label = xr.DataArray(
+        direction.values.astype(str),
+        name="direction_label",
+        dims=["direction_label"],
+    )
+
+    compression_label = xr.DataArray(
+        compression.values.astype(str),
+        name="compression_label",
+        dims=["compression_label"],
+    )
+
     vectors = xr.DataArray(
         np.zeros((20, 4)),
         dims=["epoch", "direction"],
@@ -29,6 +42,8 @@ def mag_l1a_dataset():
     )
     output_dataset["vectors"] = vectors
     output_dataset["compression_flags"] = compression_flags
+    output_dataset["direction_label"] = direction_label
+    output_dataset["compression_label"] = compression_label
 
     return output_dataset
 
