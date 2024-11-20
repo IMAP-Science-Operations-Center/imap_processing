@@ -5,8 +5,10 @@ import xarray as xr
 
 from imap_processing.hit.l0.constants import (
     COUNTS_DATA_STRUCTURE,
+    EXPONENT_BITS,
     FLAG_PATTERN,
     FRAME_SIZE,
+    MANTISSA_BITS,
     MOD_10_MAPPING,
 )
 from imap_processing.utils import convert_to_binary_string
@@ -179,7 +181,7 @@ def parse_count_rates(sci_dataset: xr.Dataset) -> None:
 
         # Decompress data where needed
         if all(x not in field for x in ["hdr", "spare", "pha"]):
-            parsed_data = np.vectorize(decompress_rates)(parsed_data)
+            parsed_data = np.vectorize(decompress_rates_16_to_32)(parsed_data)
 
         # Get dims for data variables (yaml file not created yet)
         if len(field_meta.shape) > 1:
@@ -216,7 +218,7 @@ def is_sequential(counters: np.ndarray) -> np.bool_:
     return np.all(np.diff(counters) == 1)
 
 
-def find_valid_starting_indices(flags: np.ndarray, counters: np.ndarray) -> np.ndarray:
+def get_valid_starting_indices(flags: np.ndarray, counters: np.ndarray) -> np.ndarray:
     """
     Find valid starting indices for science frames.
 
@@ -243,9 +245,6 @@ def find_valid_starting_indices(flags: np.ndarray, counters: np.ndarray) -> np.n
     valid_indices : np.ndarray
         Array of valid indices for science frames.
     """
-    # TODO: consider combining functions to get valid indices to reduce
-    #  code tracing
-
     # Use sliding windows to compare segments of the array (20 packets) with the
     # pattern. This generates an array of overlapping sub-arrays, each of length
     # 20, from the flags array and is used to slide the "window" across the array
@@ -256,38 +255,11 @@ def find_valid_starting_indices(flags: np.ndarray, counters: np.ndarray) -> np.n
     # Get the starting indices of matches
     match_indices = np.where(matches)[0]
     # Filter for only indices from valid science frames with sequential counters
-    valid_indices = get_valid_indices(match_indices, counters, FRAME_SIZE)
+    sequential_check = [
+        is_sequential(counters[idx : idx + FRAME_SIZE]) for idx in match_indices
+    ]
+    valid_indices: np.ndarray = np.array(match_indices[sequential_check], dtype=int)
     return valid_indices
-
-
-def get_valid_indices(
-    indices: np.ndarray, counters: np.ndarray, size: int
-) -> np.ndarray:
-    """
-    Get valid indices for science frames.
-
-    Check if the packet sequence counters for the science frames
-    are sequential. If they are, the science frame is valid and
-    an updated array of valid indices is returned.
-
-    Parameters
-    ----------
-    indices : np.ndarray
-        Array of indices where the packet grouping flags match the pattern.
-    counters : np.ndarray
-        Array of packet sequence counters.
-    size : int
-        Size of science frame. 20 packets per science frame.
-
-    Returns
-    -------
-    valid_indices : np.ndarray
-        Array of valid indices for science frames.
-    """
-    # Check if the packet sequence counters are sequential by getting an array
-    # of boolean values where True indicates the counters are sequential.
-    sequential_check = [is_sequential(counters[idx : idx + size]) for idx in indices]
-    return indices[sequential_check]
 
 
 def update_ccsds_header_dims(sci_dataset: xr.Dataset) -> xr.Dataset:
@@ -370,7 +342,7 @@ def assemble_science_frames(sci_dataset: xr.Dataset) -> xr.Dataset:
     total_packets = len(epoch_data)
 
     # Find starting indices for valid science frames
-    starting_indices = find_valid_starting_indices(seq_flgs, seq_ctrs)
+    starting_indices = get_valid_starting_indices(seq_flgs, seq_ctrs)
 
     # Check for extra packets at start and end of file
     # TODO: Will need to handle these extra packets when processing multiple files
@@ -413,47 +385,51 @@ def assemble_science_frames(sci_dataset: xr.Dataset) -> xr.Dataset:
     return sci_dataset
 
 
-def decompress_rates(
-    packed: int, num_mantissa_bits: int = 12, num_exponent_bits: int = 4
-) -> int:
+def decompress_rates_16_to_32(packed: int) -> int:
     """
     Will decompress rates data from 16 bits to 32 bits.
 
     This function decompresses the rates data from the binary
-    format to integers. The data is compressed using a fixed
-    point representation with a 4-bit exponent and a 12-bit
-    mantissa. Numbers up to 212 are uncompressed.
+    format to integers. The compressed integer (packed) combines
+    two parts:
+
+    1. Mantissa: Represents the significant digits of the value.
+    2. Exponent: Determines how much to scale the mantissa (using powers of 2).
+
+    These parts are packed together into a single 16-bit integer.
+    Numbers up to 212 are uncompressed.
 
     Parameters
     ----------
     packed : int
-        Compressed integer.
-    num_mantissa_bits : int, optional
-        Number of bits for the mantissa, by default 12.
-    num_exponent_bits : int, optional
-        Number of bits for the exponent, by default 4.
+        Compressed 16-bit integer.
 
     Returns
     -------
-    out : int
+    decompressed_int : int
         Decompressed integer.
     """
-    # Number of bits for the compressed integer is 16
-    output_mask = 0xFFFF  # 0xffff for 16 bit
+    # In compressed formats, the exponent and mantissa are tightly packed together.
+    # The mask ensures you correctly separate the mantissa (useful for reconstructing
+    # the value) from the exponent (used for scaling).
+    # set to 16 bits
+    output_mask = 0xFFFF
 
-    # Right bit shift, packed is the compressed integer
-    power = packed >> num_mantissa_bits
+    # Packed is the compressed integer
+    # Right bit shift to get the exponent
+    power = packed >> MANTISSA_BITS
 
+    # Decompress the data depending on the value of the exponent
     if power > 1:
-        out = (packed & (output_mask >> num_exponent_bits)) | (
-            0x0001 << num_mantissa_bits
+        decompressed_int = (packed & (output_mask >> EXPONENT_BITS)) | (
+            0x0001 << MANTISSA_BITS
         )
-        out = out << (power - 1)
+        decompressed_int = decompressed_int << (power - 1)
     else:
-        # compressed and uncompressed values are the same
-        out = packed
+        # The compressed and uncompressed values are the same
+        decompressed_int = packed
 
-    return out
+    return int(decompressed_int)
 
 
 def decom_hit(sci_dataset: xr.Dataset) -> xr.Dataset:
@@ -512,7 +488,6 @@ def decom_hit(sci_dataset: xr.Dataset) -> xr.Dataset:
     subcom_sectorates(sci_dataset)
 
     # TODO:
-    #  -decompress data
-    #  -clean up dataset - remove raw binary data? Any other fields to remove?
+    #  -clean up dataset - remove raw binary data, raw sectorates? Any other fields?
 
     return sci_dataset
