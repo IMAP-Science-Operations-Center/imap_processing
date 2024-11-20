@@ -158,7 +158,6 @@ def process_packets(
                 "timedelta64[ns]"
             )
         ).astype("datetime64[D]")
-        print(f"primary day {primary_day}")
         primary_packet_properties = MagL1aPacketProperties(
             mag_l0.SHCOARSE,
             primary_start_time,
@@ -284,13 +283,7 @@ def generate_dataset(
 
     # TODO: Just leave time in datetime64 type with vector as dtype object to avoid this
     # Get the timestamp from the end of the vector
-    print(f"Non-converted time data: {single_file_l1a.vectors[0, 4]}")
-
     time_data = single_file_l1a.vectors[:, 4]
-    print(f"Non-converted time data: {single_file_l1a.vectors[0, 4]}")
-    print(f"Time data: {time_data[0]}")
-    # 813937846703151488
-    # 813937846703151488
 
     compression = xr.DataArray(
         np.arange(2),
@@ -333,14 +326,14 @@ def generate_dataset(
         direction.values.astype(str),
         name="direction_label",
         dims=["direction_label"],
-        attrs=attribute_manager.get_variable_attributes("direction_label"),
+        attrs=attribute_manager.get_variable_attributes("direction_label", check_schema=False),
     )
 
     compression_label = xr.DataArray(
         compression.values.astype(str),
         name="compression_label",
         dims=["compression_label"],
-        attrs=attribute_manager.get_variable_attributes("compression_label"),
+        attrs=attribute_manager.get_variable_attributes("compression_label", check_schema=False),
     )
 
     output = xr.Dataset(

@@ -101,10 +101,10 @@ def mag_l1b_processing(input_dataset: xr.Dataset) -> xr.Dataset:
         "compression_attrs"
     )
     output_dataset["direction_label"].attrs = mag_attributes.get_variable_attributes(
-        "direction_label"
+        "direction_label", check_schema=False
     )
     output_dataset["compression_label"].attrs = mag_attributes.get_variable_attributes(
-        "compression_label"
+        "compression_label", check_schema=False
     )
 
     return output_dataset
