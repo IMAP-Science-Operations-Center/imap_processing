@@ -37,6 +37,8 @@ def test_allocate_pset_dataset():
 
     assert dataset.epoch.size == 1
     assert dataset.spin_angle_bin.size == 3600
+    assert dataset.esa_energy_step.size == n_esa_steps
+    assert dataset.calibration_prod.size == n_calibration_prods
     np.testing.assert_array_equal(dataset.despun_z.data.shape, (1, 3))
     np.testing.assert_array_equal(dataset.hae_latitude.data.shape, (1, 3600))
     np.testing.assert_array_equal(dataset.hae_longitude.data.shape, (1, 3600))
