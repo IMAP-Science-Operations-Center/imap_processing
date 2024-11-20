@@ -312,6 +312,20 @@ hi_pset_esa_energy_step:
   VAR_TYPE: support_data
   dtype: uint8
 
+hi_pset_calibration_prod:
+  CATDESC: Calibration product number
+  FIELDNAM: Coincidence types are combined into various calibration products
+  FILLVAL: 65535
+  FORMAT: I1
+  LABLAXIS: Calibration Prod
+  UNITS: " "
+  SCALE_TYP: linear
+  MONOTON: INCREASE
+  VALIDMIN: 0
+  VALIDMAX: 4
+  VAR_TYPE: support_data
+  dtype: uint8
+
 hi_pset_spin_angle_bin:
   CATDESC: 0.1 degree spin angle bins
   FIELDNAM: Spin angle bin index
@@ -377,9 +391,11 @@ hi_pset_counts:
   FIELDNAM: Binned DE counts
   DEPEND_0: epoch
   DEPEND_1: esa_energy_step
-  DEPEND_2: spin_angle_bin
+  DEPEND_2: calibration_prod
+  DEPEND_3: spin_angle_bin
   LABL_PTR_1: esa_energy_step_label
-  LABL_PTR_2: spin_bin_label
+  LABL_PTR_2: calibration_prod_label
+  LABL_PTR_3: spin_bin_label
   DISPLAY_TYPE: stack_plot
   FORMAT: I5
 
@@ -389,9 +405,11 @@ hi_pset_exposure_times:
   FIELDNAM: Bin exposure times
   DEPEND_0: epoch
   DEPEND_1: esa_energy_step
-  DEPEND_2: spin_angle_bin
+  DEPEND_2: calibration_prod
+  DEPEND_3: spin_angle_bin
   LABL_PTR_1: esa_energy_step_label
-  LABL_PTR_2: spin_bin_label
+  LABL_PTR_2: calibration_prod_label
+  LABL_PTR_3: spin_bin_label
   UNITS: sec
   DISPLAY_TYPE: stack_plot
   FORMAT: F6.2
@@ -402,9 +420,11 @@ hi_pset_background_rates:
   FIELDNAM: Background count rates
   DEPEND_0: epoch
   DEPEND_1: esa_energy_step
-  DEPEND_2: spin_angle_bin
+  DEPEND_2: calibration_prod
+  DEPEND_3: spin_angle_bin
   LABL_PTR_1: esa_energy_step_label
-  LABL_PTR_2: spin_bin_label
+  LABL_PTR_2: calibration_prod_label
+  LABL_PTR_3: spin_bin_label
   UNITS: counts / s
   DISPLAY_TYPE: stack_plot
   FORMAT: F4.2
@@ -415,9 +435,11 @@ hi_pset_background_rates_uncertainty:
   FIELDNAM: Background count rate uncertainties
   DEPEND_0: epoch
   DEPEND_1: esa_energy_step
-  DEPEND_2: spin_angle_bin
+  DEPEND_2: calibration_prod
+  DEPEND_3: spin_angle_bin
   LABL_PTR_1: esa_energy_step_label
-  LABL_PTR_2: spin_bin_label
+  LABL_PTR_2: calibration_prod_label
+  LABL_PTR_3: spin_bin_label
   UNITS: counts / s
   DISPLAY_TYPE: stack_plot
   FORMAT: F4.2
@@ -432,6 +454,12 @@ hi_pset_spin_bin_label:
 hi_pset_esa_energy_step_label:
   CATDESC: Label esa step
   FIELDNAM: Label esa step
+  FORMAT: A4
+  VAR_TYPE: metadata
+
+hi_pset_calibration_prod_label:
+  CATDESC: Label calibration product
+  FIELDNAM: Label calibration product
   FORMAT: A4
   VAR_TYPE: metadata
 
