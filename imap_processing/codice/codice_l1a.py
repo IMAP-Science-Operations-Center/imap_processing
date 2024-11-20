@@ -13,7 +13,6 @@ from __future__ import annotations
 
 import ast
 import logging
-import lzma
 from pathlib import Path
 from typing import Any
 
@@ -106,24 +105,17 @@ class CoDICEL1aPipeline:
             compression_algorithm = constants.HI_COMPRESSION_ID_LOOKUP[self.view_id]
 
         self.raw_data = []
-        for i, packet_data in enumerate(science_values):
-            values = ast.literal_eval(
-                str(packet_data)
-            )  # convert from numpy array to byte object
-            # Some packets are not able to be decompressed because of packet
-            # continuation. For those that can't be processed, just use empty
-            # list for now
-            # TODO: Implement support for packet continuation (see issue #1155)
-            # TODO: Make sure all possible decompression errors are caught
-            try:
-                decompressed_values = decompress(values, compression_algorithm)
-            except lzma.LZMAError:
-                logger.warning(
-                    f'Cannot decompress {self.config["dataset_name"]} packet '
-                    f'{i+1} with compression algorithm {compression_algorithm}'
-                )
-                decompressed_values = []
+        for packet_data, byte_count in zip(
+            science_values, self.dataset.byte_count.data
+        ):
+            # Convert from numpy array to byte object
+            values = ast.literal_eval(str(packet_data))
 
+            # Only use the values up to the byte count. Bytes after this are
+            # used as padding and are not needed
+            values = values[:byte_count]
+
+            decompressed_values = decompress(values, compression_algorithm)
             self.raw_data.append(decompressed_values)
 
     def define_coordinates(self) -> None:
@@ -136,15 +128,7 @@ class CoDICEL1aPipeline:
 
         for name in self.config["coords"]:
             if name == "epoch":
-                # The number of epoch values to store depends on how many
-                # packets were able to be processed
-                # TODO: This may be resolved once continuation packets are
-                #       supported
-                values = [
-                    epoch
-                    for epoch, packet_data in zip(self.dataset.epoch.data, self.data)
-                    if packet_data is not None
-                ]
+                values = self.dataset.epoch.data
             elif name == "inst_az":
                 values = np.arange(self.config["num_positions"])
             elif name == "spin_sector":
@@ -177,45 +161,37 @@ class CoDICEL1aPipeline:
         processed_dataset : xarray.Dataset
             The 'final' ``xarray`` dataset.
         """
-        # Remove packets that were not able to be processed from the data
-        # TODO: This will change when continuation packets are supported
-        self.data: list[xr.Dataset] = [
-            packet for packet in self.data if packet is not None
-        ]
-
         # Create the main dataset to hold all the variables
         dataset = xr.Dataset(
             coords=self.coords,
             attrs=self.cdf_attrs.get_global_attributes(self.config["dataset_name"]),
         )
 
-        # If no packets were able to be processed, create empty dataset for now
-        # TODO: This will change when continuation packets are supported
-        if self.data:
-            all_data = np.stack(self.data)
+        # Stack the data so that it is easier to reshape and iterate over
+        all_data = np.stack(self.data)
 
-            # The dimension of all data is (epoch, num_counters, num_positions,
-            # num_spin_sectors, num_energy_steps) (or may be slightly different
-            # depending on the data product). In any case, iterate over the
-            # num_counters dimension to isolate the data for each counter so
-            # that it can be placed in a CDF data variable.
-            for counter, variable_name in zip(
-                range(all_data.shape[1]), self.config["variable_names"]
-            ):
-                counter_data = all_data[:, counter, :, :, :]
+        # The dimension of all data is (epoch, num_counters, num_positions,
+        # num_spin_sectors, num_energy_steps) (or may be slightly different
+        # depending on the data product). In any case, iterate over the
+        # num_counters dimension to isolate the data for each counter so
+        # that it can be placed in a CDF data variable.
+        for counter, variable_name in zip(
+            range(all_data.shape[1]), self.config["variable_names"]
+        ):
+            counter_data = all_data[:, counter, :, :, :]
 
-                # Get the CDF attributes
-                descriptor = self.config["dataset_name"].split("imap_codice_l1a_")[-1]
-                cdf_attrs_key = f"{descriptor}-{variable_name}"
-                attrs = self.cdf_attrs.get_variable_attributes(cdf_attrs_key)
+            # Get the CDF attributes
+            descriptor = self.config["dataset_name"].split("imap_codice_l1a_")[-1]
+            cdf_attrs_key = f"{descriptor}-{variable_name}"
+            attrs = self.cdf_attrs.get_variable_attributes(cdf_attrs_key)
 
-                # Create the CDF data variable
-                dataset[variable_name] = xr.DataArray(
-                    counter_data,
-                    name=variable_name,
-                    dims=self.config["dims"],
-                    attrs=attrs,
-                )
+            # Create the CDF data variable
+            dataset[variable_name] = xr.DataArray(
+                counter_data,
+                name=variable_name,
+                dims=self.config["dims"],
+                attrs=attrs,
+            )
 
         # Add support data variables based on data product
         dataset = self.define_support_variables(dataset)

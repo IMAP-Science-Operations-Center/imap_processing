@@ -18,18 +18,18 @@ EXPECTED_ARRAY_SHAPES = [
     (),  # hi-ialirt  # TODO: Need to implement
     (),  # lo-ialirt  # TODO: Need to implement
     (31778,),  # hskp
-    (36, 6, 6, 128),  # lo-counters-aggregated
-    (41, 24, 6, 128),  # lo-counters-singles
-    (35, 1, 12, 128),  # lo-sw-priority
-    (43, 1, 12, 128),  # lo-nsw-priority
-    (40, 1, 1, 128),  # lo-sw-species
-    (41, 1, 1, 128),  # lo-nsw-species
-    (38, 5, 12, 128),  # lo-sw-angular
-    (37, 19, 12, 128),  # lo-nsw-angular
-    (77, 1, 6, 1),  # hi-counters-aggregated  # TODO: Double check with Joey
-    (31, 1, 12, 1),  # hi-counters-singles  # TODO: Double check with Joey
-    (33, 15, 4, 1),  # hi-omni  # TODO: Double check with Joey
-    (35, 8, 12, 12),  # hi-sectored
+    (77, 6, 6, 128),  # lo-counters-aggregated
+    (77, 24, 6, 128),  # lo-counters-singles
+    (77, 1, 12, 128),  # lo-sw-priority
+    (77, 1, 12, 128),  # lo-nsw-priority
+    (77, 1, 1, 128),  # lo-sw-species
+    (77, 1, 1, 128),  # lo-nsw-species
+    (77, 5, 12, 128),  # lo-sw-angular
+    (77, 19, 12, 128),  # lo-nsw-angular
+    (77, 1, 6, 1),  # hi-counters-aggregated
+    (77, 1, 12, 1),  # hi-counters-singles
+    (77, 15, 4, 1),  # hi-omni
+    (77, 8, 12, 12),  # hi-sectored
     (),  # hi-priority  # TODO: Need to implement
     (),  # lo-pha  # TODO: Need to implement
     (),  # hi-pha  # TODO: Need to implement
