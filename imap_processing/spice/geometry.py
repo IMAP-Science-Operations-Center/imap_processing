@@ -542,9 +542,12 @@ def spherical_to_cartesian(spherical_coords: NDArray) -> NDArray:
     Parameters
     ----------
     spherical_coords : np.ndarray
-        A NumPy array with shape (n, 3) where each
-        row represents a vector
-        with r, theta, phi-components.
+        A NumPy array with shape (n, 3), where each row contains
+        the spherical coordinates (r, azimuth, elevation):
+
+        - r : Distance of the point from the origin.
+        - azimuth : angle in the xy-plane in radians [0, 2*pi].
+        - elevation : angle from the z-axis in radians [-pi/2, pi/2].
 
     Returns
     -------
@@ -552,12 +555,12 @@ def spherical_to_cartesian(spherical_coords: NDArray) -> NDArray:
         Cartesian coordinates.
     """
     r = spherical_coords[..., 0]
-    phi = spherical_coords[..., 1]
-    theta = spherical_coords[..., 2]
+    azimuth = spherical_coords[..., 1]
+    elevation = spherical_coords[..., 2]
 
-    x = r * np.sin(phi) * np.cos(theta)
-    y = r * np.sin(phi) * np.sin(theta)
-    z = r * np.cos(phi)
+    x = r * np.cos(elevation) * np.cos(azimuth)
+    y = r * np.cos(elevation) * np.sin(azimuth)
+    z = r * np.sin(elevation)
 
     cartesian_coords = np.stack((x, y, z), axis=-1)
 

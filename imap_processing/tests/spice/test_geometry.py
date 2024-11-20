@@ -366,30 +366,23 @@ def test_cartesian_to_spherical():
     )
 
 
-def test_spherical_to_cartesian():
-    """Tests cartesian_to_spherical function."""
+def test_spherical_to_cartesian_meshgrid():
+    """Tests spherical_to_cartesian function."""
 
-    test_points = [
-        [1.0, 0.0, 0.0],  # Test Point 1
-        [1.0, 0.0, np.pi / 2],  # Test Point 2
-        [1.0, np.pi / 2, np.pi / 2],  # Test Point 3
-        [1.0, np.pi, np.pi],  # Test Point 4
-        [2.0, np.pi / 4, np.pi / 3]  # Test Point 5
-    ]
+    azimuth = np.linspace(0, 2 * np.pi, 50)
+    elevation = np.linspace(-np.pi / 2, np.pi / 2, 50)
+    theta, elev = np.meshgrid(azimuth, elevation)
+    r = 1.0
 
-    cartesian_coords = spherical_to_cartesian(np.array([[np.pi / 2, np.pi / 2, 0.5]]))
-    test = spice.sphrec(np.pi / 2, np.pi / 2, 0.5)
-
-    x, y, z = (
-        cartesian_coords[..., 0],
-        cartesian_coords[..., 1],
-        cartesian_coords[..., 2],
+    spherical_points = np.stack(
+        (r * np.ones_like(theta).ravel(), theta.ravel(), elev.ravel()), axis=-1
     )
 
-    expected_x = 1.0 * np.cos(np.pi / 2) * np.cos(0.0)
-    expected_y = 1.0 * np.cos(np.pi / 2) * np.sin(0.0)
-    expected_z = 1.0 * np.sin(np.pi / 2)
+    # Convert elevation to colatitude for SPICE
+    colat = np.pi / 2 - spherical_points[:, 2]
 
-    np.testing.assert_allclose(x[0], expected_x, atol=1e-5)
-    np.testing.assert_allclose(y[0], expected_y, atol=1e-5)
-    np.testing.assert_allclose(z[0], expected_z, atol=1e-5)
+    for i in range(len(colat)):
+        cartesian_coords = spherical_to_cartesian(np.array([spherical_points[i]]))
+        spice_coords = spice.sphrec(r, colat[i], spherical_points[i, 1])
+
+        np.testing.assert_allclose(cartesian_coords[0], spice_coords, atol=1e-5)
