@@ -304,8 +304,6 @@ def get_spacecraft_to_instrument_spin_phase_offset(instrument: SpiceFrame) -> fl
     return offset_lookup[instrument]
 
 
-@typing.no_type_check
-@ensure_spice
 def frame_transform(
     et: Union[float, npt.NDArray],
     position: npt.NDArray,
@@ -371,6 +369,8 @@ def frame_transform(
     return result
 
 
+@typing.no_type_check
+@ensure_spice
 def get_rotation_matrix(
     et: Union[float, npt.NDArray],
     from_frame: SpiceFrame,
