@@ -235,9 +235,7 @@ def get_helio_exposure_times(
         )
         # Converts vectors from Cartesian coordinates (x, y, z)
         # into spherical coordinates.
-        # The negtaive helio_normalized reorients vectors to align with the spacecraft's
-        # perspective of viewing particles moving in its direction.
-        spherical_coords = cartesian_to_spherical(-helio_normalized)
+        spherical_coords = cartesian_to_spherical(helio_normalized)
         az, el = spherical_coords[..., 1], spherical_coords[..., 2]
 
         # Assign values from sc_exposure directly to bins.
