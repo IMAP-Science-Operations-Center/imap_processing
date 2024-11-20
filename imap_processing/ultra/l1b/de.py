@@ -4,6 +4,10 @@ import numpy as np
 import xarray as xr
 
 from imap_processing.cdf.utils import parse_filename_like
+from imap_processing.spice.geometry import SpiceFrame
+from imap_processing.ultra.l1b.ultra_l1b_annotated import (
+    get_annotated_particle_velocity,
+)
 from imap_processing.ultra.l1b.ultra_l1b_extended import (
     StopType,
     determine_species_pulse_height,
@@ -53,6 +57,8 @@ def calculate_de(de_dataset: xr.Dataset, name: str) -> xr.Dataset:
     etof = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float32)
     ctof = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float32)
     energy = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float32)
+    # TODO: uint8 fills with zeros instead of nans.
+    #  Confirm with Ultra team what fill values and dtype we want.
     species_bin = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.uint8)
     t2 = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float32)
 
@@ -158,23 +164,18 @@ def calculate_de(de_dataset: xr.Dataset, name: str) -> xr.Dataset:
     de_dict["species"] = species_bin
 
     # Annotated Events.
-    # TODO: since the pointing (dps) frame is not for this timerange this will not work.
-    # position = np.stack(
-    #     (de_dict["vx_ultra"], de_dict["vy_ultra"], de_dict["vz_ultra"]), axis=-1
-    # )
-    #
-    # ultra_frame = getattr(SpiceFrame, f"IMAP_ULTRA_{sensor}")
-    # sc_velocity, sc_dps_velocity, helio_velocity = get_annotated_particle_velocity(
-    #     de_dataset.data_vars["EVENTTIMES"],
-    #     position,
-    #     ultra_frame,
-    #     SpiceFrame.IMAP_DPS,
-    #     SpiceFrame.IMAP_SPACECRAFT,
-    # )
-    # TODO: this is a temporary fix.
-    sc_velocity = np.full((len(de_dict["epoch"]), 3), np.nan)
-    sc_dps_velocity = np.full((len(de_dict["epoch"]), 3), np.nan)
-    helio_velocity = np.full((len(de_dict["epoch"]), 3), np.nan)
+    position = np.stack(
+        (de_dict["vx_ultra"], de_dict["vy_ultra"], de_dict["vz_ultra"]), axis=-1
+    )
+
+    ultra_frame = getattr(SpiceFrame, f"IMAP_ULTRA_{sensor}")
+    sc_velocity, sc_dps_velocity, helio_velocity = get_annotated_particle_velocity(
+        de_dataset.data_vars["EVENTTIMES"],
+        position,
+        ultra_frame,
+        SpiceFrame.IMAP_DPS,
+        SpiceFrame.IMAP_SPACECRAFT,
+    )
 
     de_dict["vx_sc"], de_dict["vy_sc"], de_dict["vz_sc"] = (
         sc_velocity[:, 0],

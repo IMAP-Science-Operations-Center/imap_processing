@@ -1,7 +1,5 @@
 """Calculates Annotated Events for ULTRA L1b."""
 
-import typing
-
 import numpy as np
 
 from imap_processing.spice.geometry import (
@@ -9,11 +7,8 @@ from imap_processing.spice.geometry import (
     frame_transform,
     imap_state,
 )
-from imap_processing.spice.kernels import ensure_spice
 
 
-@ensure_spice
-@typing.no_type_check
 def get_annotated_particle_velocity(
     time: np.ndarray,
     instrument_velocity: np.ndarray,

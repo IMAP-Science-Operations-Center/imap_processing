@@ -1,5 +1,7 @@
 """Tests Extended Raw Events for ULTRA L1b."""
 
+from unittest import mock
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -17,8 +19,26 @@ def df_filt(de_dataset, events_fsw_comparison_theta_0):
     return df_filt
 
 
-def test_calculate_de(de_dataset, df_filt):
+@mock.patch("imap_processing.ultra.l1b.de.get_annotated_particle_velocity")
+def test_calculate_de(mock_get_annotated_particle_velocity, de_dataset, df_filt):
     """Tests calculate_de function."""
+
+    # Mock get_annotated_particle_velocity to avoid needing kernels
+    def side_effect_func(event_times, position, ultra_frame, dps_frame, sc_frame):
+        """
+        Mock behavior of get_annotated_particle_velocity.
+
+        Returns NaN-filled arrays matching the expected output shape.
+        """
+        num_events = event_times.size
+        return (
+            np.full((num_events, 3), np.nan),  # sc_velocity
+            np.full((num_events, 3), np.nan),  # sc_dps_velocity
+            np.full((num_events, 3), np.nan),  # helio_velocity
+        )
+
+    mock_get_annotated_particle_velocity.side_effect = side_effect_func
+
     dataset = calculate_de(de_dataset, "imap_ultra_l1b_45sensor-de")
 
     # Front and back positions
@@ -68,48 +88,17 @@ def test_calculate_de(de_dataset, df_filt):
         rtol=1e-2,
     )
 
-    # Spacecraft and heliocentric velocities (nan comparisons)
-    assert np.allclose(
-        dataset["vx_sc"].data, np.full(len(de_dataset["epoch"]), np.nan), equal_nan=True
-    )
-    assert np.allclose(
-        dataset["vy_sc"].data, np.full(len(de_dataset["epoch"]), np.nan), equal_nan=True
-    )
-    assert np.allclose(
-        dataset["vz_sc"].data, np.full(len(de_dataset["epoch"]), np.nan), equal_nan=True
-    )
+    assert dataset["vx_sc"].shape == (len(de_dataset["epoch"]),)
+    assert dataset["vy_sc"].shape == (len(de_dataset["epoch"]),)
+    assert dataset["vz_sc"].shape == (len(de_dataset["epoch"]),)
 
-    assert np.allclose(
-        dataset["vx_dps_sc"].data,
-        np.full(len(de_dataset["epoch"]), np.nan),
-        equal_nan=True,
-    )
-    assert np.allclose(
-        dataset["vy_dps_sc"].data,
-        np.full(len(de_dataset["epoch"]), np.nan),
-        equal_nan=True,
-    )
-    assert np.allclose(
-        dataset["vz_dps_sc"].data,
-        np.full(len(de_dataset["epoch"]), np.nan),
-        equal_nan=True,
-    )
+    assert dataset["vx_dps_sc"].shape == (len(de_dataset["epoch"]),)
+    assert dataset["vy_dps_sc"].shape == (len(de_dataset["epoch"]),)
+    assert dataset["vz_dps_sc"].shape == (len(de_dataset["epoch"]),)
 
-    assert np.allclose(
-        dataset["vx_dps_helio"].data,
-        np.full(len(de_dataset["epoch"]), np.nan),
-        equal_nan=True,
-    )
-    assert np.allclose(
-        dataset["vy_dps_helio"].data,
-        np.full(len(de_dataset["epoch"]), np.nan),
-        equal_nan=True,
-    )
-    assert np.allclose(
-        dataset["vz_dps_helio"].data,
-        np.full(len(de_dataset["epoch"]), np.nan),
-        equal_nan=True,
-    )
+    assert dataset["vx_dps_helio"].shape == (len(de_dataset["epoch"]),)
+    assert dataset["vy_dps_helio"].shape == (len(de_dataset["epoch"]),)
+    assert dataset["vz_dps_helio"].shape == (len(de_dataset["epoch"]),)
 
     # Event efficiency
     assert np.allclose(
