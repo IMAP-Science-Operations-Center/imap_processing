@@ -341,22 +341,33 @@ def test_basis_vectors():
 
 def test_cartesian_to_spherical(test_data):
 def test_cartesian_to_spherical():
-    """Tests cartesian_to_spherical function."""
-    v = np.array(
+    """Tests cartesian_to_spherical function.."""
+
+    # TODO: make a grid.
+    cartesian_points = np.array(
         [
-            [-186.5575, -707.5707, 618.0569],
-            [508.5697, -516.0282, 892.6931],
-            [508.5697, -516.0282, 892.6931],
-            [508.5697, -516.0282, 892.6931],
+            [1.0, 0.0, 0.0],
+            [0.0, 1.0, 0.0],
+            [0.0, 0.0, 1.0],
+            [-1.0, -1.0, 0.0],
+            [1.0, 1.0, 1.0],
         ]
     )
 
-    spherical_coords = cartesian_to_spherical(v)
-    az_sc, el_sc = (
-        spherical_coords[..., 1],
-        spherical_coords[..., 2],
-    )
+    for point in cartesian_points:
+        r, az, el = cartesian_to_spherical(point)
+        r_spice, colat_spice, slong_spice = spice.recsph(point)
 
+        # Convert SPICE co-latitude to elevation
+        el_spice = 90 - np.degrees(colat_spice)
+        az_spice = np.degrees(slong_spice)
+
+        # Normalize azimuth to [0, 360]
+        az_spice = az_spice % 360
+
+        np.testing.assert_allclose(r, r_spice, atol=1e-5)
+        np.testing.assert_allclose(az, az_spice, atol=1e-5)
+        np.testing.assert_allclose(el, el_spice, atol=1e-5)
     # MATLAB code outputs:
     np.testing.assert_allclose(
         np.unique(np.radians(az_sc)), np.array([1.31300, 2.34891]), atol=1e-05, rtol=0
@@ -366,7 +377,7 @@ def test_cartesian_to_spherical():
     )
 
 
-def test_spherical_to_cartesian_meshgrid():
+def test_spherical_to_cartesian():
     """Tests spherical_to_cartesian function."""
 
     azimuth = np.linspace(0, 2 * np.pi, 50)

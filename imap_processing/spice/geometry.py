@@ -518,7 +518,7 @@ def cartesian_to_spherical(
     # Magnitude of the velocity vector
     magnitude_v = np.linalg.norm(v, axis=-1, keepdims=True)
 
-    vhat = -v / magnitude_v
+    vhat = v / magnitude_v
 
     # Elevation angle (angle from the z-axis, range: [-pi/2, pi/2])
     el = np.arcsin(vhat[..., 2])
