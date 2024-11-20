@@ -111,3 +111,8 @@ FLAG_PATTERN = np.array([1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 
 # Define size of science frame (num of packets)
 FRAME_SIZE = len(FLAG_PATTERN)
+
+# Define the number of bits in the mantissa and exponent for
+# decompressing data
+MANTISSA_BITS = 12
+EXPONENT_BITS = 4
