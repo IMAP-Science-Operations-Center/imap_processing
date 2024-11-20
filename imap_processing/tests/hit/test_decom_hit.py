@@ -10,8 +10,8 @@ from imap_processing.hit.hit_utils import (
 from imap_processing.hit.l0.decom_hit import (
     assemble_science_frames,
     decom_hit,
-    find_valid_starting_indices,
-    get_valid_indices,
+    decompress_rates_16_to_32,
+    get_valid_starting_indices,
     is_sequential,
     parse_count_rates,
     parse_data,
@@ -34,6 +34,7 @@ def sci_dataset():
     datasets_by_apid = packet_file_to_datasets(
         packet_file=packet_file,
         xtce_packet_definition=packet_definition,
+        use_derived_value=False,
     )
 
     science_dataset = datasets_by_apid[HitAPID.HIT_SCIENCE]
@@ -61,8 +62,6 @@ def test_parse_data():
 
 def test_parse_count_rates(sci_dataset):
     """Test the parse_count_rates function."""
-
-    # TODO: complete this test once the function is complete
 
     # Update ccsds header fields to use sc_tick as dimension
     sci_dataset = update_ccsds_header_dims(sci_dataset)
@@ -135,7 +134,7 @@ def test_is_sequential():
         assert True
 
 
-def test_find_valid_starting_indices():
+def test_get_valid_starting_indices():
     """Test the find_valid_starting_indices function."""
     flags = np.array(
         [
@@ -177,33 +176,11 @@ def test_find_valid_starting_indices():
         ]
     )
     counters = np.arange(35)
-    result = find_valid_starting_indices(flags, counters)
+    result = get_valid_starting_indices(flags, counters)
     # The only valid starting index for a science frame
     # in the flags array is 15.
     assert len(result) == 1
     assert result[0] == 15
-
-
-def test_get_valid_indices():
-    """Test the get_valid_indices function."""
-    # Array of starting indices for science frames
-    # in the science data
-    indices = np.array([0, 20, 40])
-    # Array of counters
-    counters = np.arange(60)
-    # Array of valid indices where the packets in the science
-    # frame have corresponding counters in sequential order
-    result = get_valid_indices(indices, counters, 20)
-    # All indices are valid with sequential counters
-    assert len(result) == 3
-
-    # Test array with invalid indices (use smaller sample size)
-    indices = np.array([0, 5, 10])
-    # Array of counters (missing counters 6-8)
-    counters = np.array([0, 1, 2, 3, 4, 5, 9, 10, 11, 12, 13, 14, 15, 16, 17])
-    result = get_valid_indices(indices, counters, 5)
-    # Only indices 0 and 10 are valid with sequential counters
-    assert len(result) == 2
 
 
 def test_update_ccsds_header_dims(sci_dataset):
@@ -261,6 +238,24 @@ def test_subcom_sectorates(sci_dataset):
             sci_dataset[f"{species}_energy_max"].shape
             == sci_dataset[f"{species}_energy_min"].shape
         )
+
+
+def test_decompress_rates_16_to_32():
+    """Test the decompress_rates_16_to_32 function.
+
+    This function decompresses a 16-bit packed integer
+    to a 32-bit integer. Used to decompress rates data.
+    """
+    test_cases = [
+        (0, 0),  # Test with zero
+        (15, 15),  # Test with packed integer with no scaling
+        (4096, 4096),  # Test with packed integer with power = 1
+        (64188, 112132096),  # Test with packed integer requiring scaling
+        (65535, 134201344),  # Test with maximum 16-bit value
+        (62218, 79855616),  # Test with arbitrary packed integer
+    ]
+    for packed, expected in test_cases:
+        assert decompress_rates_16_to_32(packed) == expected
 
 
 def test_decom_hit(sci_dataset):
