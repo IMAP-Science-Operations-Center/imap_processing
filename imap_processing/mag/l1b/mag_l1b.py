@@ -92,16 +92,21 @@ def mag_l1b_processing(input_dataset: xr.Dataset) -> xr.Dataset:
 
     output_dataset = input_dataset.copy()
     output_dataset["vectors"].data = l1b_fields[0].data
-    print("Attributes: ======")
-    print(output_dataset["direction"].attrs)
 
     output_dataset["epoch"].attrs = mag_attributes.get_variable_attributes("epoch")
-    output_dataset["direction"].attrs = mag_attributes.get_variable_attributes("direction_attrs")
-    output_dataset["compression"].attrs = mag_attributes.get_variable_attributes("compression_attrs")
-    output_dataset["direction_label"].attrs = mag_attributes.get_variable_attributes("direction_label")
-    output_dataset["compression_label"].attrs = mag_attributes.get_variable_attributes("compression_label")
+    output_dataset["direction"].attrs = mag_attributes.get_variable_attributes(
+        "direction_attrs"
+    )
+    output_dataset["compression"].attrs = mag_attributes.get_variable_attributes(
+        "compression_attrs"
+    )
+    output_dataset["direction_label"].attrs = mag_attributes.get_variable_attributes(
+        "direction_label"
+    )
+    output_dataset["compression_label"].attrs = mag_attributes.get_variable_attributes(
+        "compression_label"
+    )
 
-    # TODO add/update attributes
     return output_dataset
 
 

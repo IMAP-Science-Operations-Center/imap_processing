@@ -158,7 +158,7 @@ def process_packets(
                 "timedelta64[ns]"
             )
         ).astype("datetime64[D]")
-
+        print(f"primary day {primary_day}")
         primary_packet_properties = MagL1aPacketProperties(
             mag_l0.SHCOARSE,
             primary_start_time,
@@ -284,9 +284,13 @@ def generate_dataset(
 
     # TODO: Just leave time in datetime64 type with vector as dtype object to avoid this
     # Get the timestamp from the end of the vector
-    time_data = single_file_l1a.vectors[:, 4].astype(
-        np.dtype("datetime64[ns]"), copy=False
-    )
+    print(f"Non-converted time data: {single_file_l1a.vectors[0, 4]}")
+
+    time_data = single_file_l1a.vectors[:, 4]
+    print(f"Non-converted time data: {single_file_l1a.vectors[0, 4]}")
+    print(f"Time data: {time_data[0]}")
+    # 813937846703151488
+    # 813937846703151488
 
     compression = xr.DataArray(
         np.arange(2),
@@ -344,17 +348,14 @@ def generate_dataset(
             "epoch": epoch_time,
             "direction": direction,
             "compression": compression,
-            "direction_label": direction_label,
-            "compression_label": compression_label,
         },
         attrs=attribute_manager.get_global_attributes(logical_file_id),
     )
-
+    output["direction_label"] = direction_label
+    output["compression_label"] = compression_label
     output["vectors"] = vectors
     output["compression_flags"] = compression_flags
 
     # TODO: Put is_mago and active in the header
-    print("L1A attrs")
-    print(output["direction"].attrs)
 
     return output

@@ -17,7 +17,7 @@ default_attrs: &default
 default_coords: &default_coords
   # Assumed values for all coordinate attrs unless overwritten
   FORMAT: F2.4  # Float with 4 digits
-  VAR_TYPE: data
+  VAR_TYPE: support_data
   DISPLAY_TYPE: time_series
   FILLVAL: -9223372036854775808
   VALIDMIN: -9223372036854775808
@@ -33,14 +33,12 @@ mag_metadata_attrs: &metadata_default
     VAR_TYPE: metadata
 
 direction_label:
-  <<: *default_coords
   CATDESC: magnetic field vector data
   FIELDNAM: Magnetic Field Vector
   FORMAT: A3
   VAR_TYPE: metadata
 
 compression_label:
-  <<: *default_coords
   CATDESC: Compression and width
   FIELDNAM: Compression and width
   FORMAT: A2

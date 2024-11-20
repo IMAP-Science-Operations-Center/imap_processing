@@ -154,11 +154,12 @@ def generate_dataset(
         coords={
             "epoch": epoch_time,
             "direction": direction,
-            "direction_label": direction_label,
         },
         attrs=attribute_manager.get_global_attributes(logical_id),
     )
-
+    output["direction_label"] = direction_label
+    print("dir atts")
+    print(attribute_manager.get_variable_attributes("direction_label"))
     output["raw_vectors"] = raw_vectors
 
     for key, value in support_data.items():
