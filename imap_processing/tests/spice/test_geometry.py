@@ -341,18 +341,15 @@ def test_basis_vectors():
 
 def test_cartesian_to_spherical(test_data):
 def test_cartesian_to_spherical():
-    """Tests cartesian_to_spherical function.."""
+    """Tests cartesian_to_spherical function."""
 
-    # TODO: make a grid.
-    cartesian_points = np.array(
-        [
-            [1.0, 0.0, 0.0],
-            [0.0, 1.0, 0.0],
-            [0.0, 0.0, 1.0],
-            [-1.0, -1.0, 0.0],
-            [1.0, 1.0, 1.0],
-        ]
-    )
+    step = 0.05
+    x = np.arange(-1, 1 + step, step)
+    y = np.arange(-1, 1 + step, step)
+    z = np.arange(-1, 1 + step, step)
+    x, y, z = np.meshgrid(x, y, z)
+
+    cartesian_points = np.stack((x.ravel(), y.ravel(), z.ravel()), axis=-1)
 
     for point in cartesian_points:
         r, az, el = cartesian_to_spherical(point)
