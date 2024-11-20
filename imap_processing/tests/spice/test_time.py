@@ -2,17 +2,19 @@
 
 import numpy as np
 import pytest
-import spiceypy
+import spiceypy as spice
 
 from imap_processing.spice import IMAP_SC_ID
 from imap_processing.spice.time import (
     TICK_DURATION,
     _sct2e_wrapper,
+    et_to_utc,
     j2000ns_to_j2000s,
     met_to_datetime64,
     met_to_j2000ns,
     met_to_sclkticks,
     met_to_utc,
+    str_to_et
 )
 
 
@@ -28,13 +30,13 @@ def test_met_to_sclkticks(met):
 def test_met_to_j2000ns(furnish_time_kernels):
     """Test coverage for met_to_j2000ns function."""
     utc = "2026-01-01T00:00:00.125"
-    et = spiceypy.str2et(utc)
-    sclk_str = spiceypy.sce2s(IMAP_SC_ID, et)
+    et = spice.str2et(utc)
+    sclk_str = spice.sce2s(IMAP_SC_ID, et)
     seconds, ticks = sclk_str.split("/")[1].split(":")
     # There is some floating point error calculating tick duration from 1 clock
     # tick so average over many clock ticks for better accuracy
     spice_tick_duration = (
-        spiceypy.sct2e(IMAP_SC_ID, 1e12) - spiceypy.sct2e(IMAP_SC_ID, 0)
+        spice.sct2e(IMAP_SC_ID, 1e12) - spice.sct2e(IMAP_SC_ID, 0)
     ) / 1e12
     met = float(seconds) + float(ticks) * spice_tick_duration
     j2000ns = met_to_j2000ns(met)
@@ -47,7 +49,7 @@ def test_j2000ns_to_j2000s(furnish_time_kernels):
     # Use spice to come up with reasonable J2000 values
     utc = "2025-09-23T00:00:00.000"
     # Test single value input
-    et = spiceypy.str2et(utc)
+    et = spice.str2et(utc)
     epoch = int(et * 1e9)
     j2000s = j2000ns_to_j2000s(epoch)
     assert j2000s == et
@@ -122,3 +124,47 @@ def test_sct2e_wrapper(sclk_ticks):
         assert isinstance(et, float)
     else:
         assert len(et) == len(sclk_ticks)
+
+
+def test_str_to_et(furnish_time_kernels):
+    """Test coverage for string to et conversion function."""
+    utc = "2017-07-14T19:46:00"
+    # Test single value input
+    expected_et = 553333629.1837274
+    actual_et = str_to_et(utc)
+    assert expected_et == actual_et
+
+    # Test list input
+    list_of_utc = [
+        "2017-08-14T19:46:00.000",
+        "2017-09-14T19:46:00.000",
+        "2017-10-14T19:46:00.000",
+    ]
+    # TODO: would this ^ be more of a realistic expectation as an array rather than a
+    # list?
+    expected_et_array = np.array(
+        (556012029.1829445, 558690429.1824446, 561282429.1823651)
+    )
+    actual_et_array = str_to_et(list_of_utc)
+    assert np.array_equal(expected_et_array, actual_et_array)
+
+
+def test_et_to_utc(furnish_time_kernels):
+    """Test coverage for et to utc conversion function."""
+    et = 553333629.1837274
+    # Test single value input
+    expected_utc = "2017-07-14T19:46:00.000"
+    actual_utc = et_to_utc(et)
+    assert expected_utc == actual_utc
+
+    # Test array input
+    array_of_et = np.array((556012029.1829445, 558690429.1824446, 561282429.1823651))
+    expected_utc_array = np.array(
+        (
+            "2017-08-14T19:46:00.000",
+            "2017-09-14T19:46:00.000",
+            "2017-10-14T19:46:00.000",
+        )
+    )
+    actual_utc_array = et_to_utc(array_of_et)
+    assert np.array_equal(expected_utc_array, actual_utc_array)
