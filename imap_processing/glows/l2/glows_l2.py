@@ -44,7 +44,7 @@ def generate_l2(l1b_dataset: xr.Dataset) -> HistogramL2:
     # most of the values from L1B are averaged over a day
 
     # TODO filter bad times out
-    good_data = filter_good_times(l1b_dataset, np.ones((17,)))
+    good_data = l1b_dataset.isel(epoch=return_good_times(l1b_dataset['flags'], np.ones((17,))))
 
     # one dataset collects multiple epoch values which need to be averaged down into
     # one value.
@@ -64,8 +64,6 @@ def generate_l2(l1b_dataset: xr.Dataset) -> HistogramL2:
                    'flight_software_version':
                        l1b_dataset['flight_software_version'].data[0],
                    }
-
-
 
     for field in all_variables:
         var_name = field.name
@@ -131,15 +129,14 @@ def create_l2_dataset(histogram_l2: HistogramL2,
                       attrs: ImapCdfAttributes) -> xr.Dataset:
     pass
 
-def filter_good_times(input: xr.Dataset, active_flags: np.ndarray) -> xr.Dataset:
-    # Loop through all times in the dataset and remove all the times that are bad
-    # due to flags
-    print(input['flags'].data.shape)
-    if len(active_flags) != input['flags'].shape[1]:
-        print("Active flags don't matched expected length")
-    # TODO: come back and check that this works
-    good_times = np.where(active_flags == input['flags'].data[1])[0]
-    print(good_times)
 
-    print(input.isel(epoch=good_times))
-    return input.isel(epoch=good_times)
+def return_good_times(flags: xr.DataArray, active_flags: np.ndarray) -> np.ndarray:
+    if len(active_flags) != flags.shape[1]:
+        print("Active flags don't matched expected length")
+
+    # A good time is where all the active flags are equal to one.
+    # Here, we mask the active indices using active_flags, and then return the times
+    # where all the active indices == 1.
+    good_times = np.where(np.all(flags[:, active_flags == 1] == 1, axis=1))[0]
+
+    return good_times
