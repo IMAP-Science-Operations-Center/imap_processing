@@ -1,3 +1,5 @@
+from unittest import mock
+
 import numpy as np
 import pytest
 import xarray as xr
@@ -101,11 +103,28 @@ def test_ultra_l1b_rates(mock_data_l1a_rates_dict):
 
 @pytest.mark.external_kernel()
 @pytest.mark.use_test_metakernel("imap_ena_sim_metakernel.template")
-def test_ultra_l1b_de(de_dataset):
+@mock.patch("imap_processing.ultra.l1b.de.get_annotated_particle_velocity")
+def test_ultra_l1b_de(mock_get_annotated_particle_velocity, de_dataset):
     """Tests that L1b data is created."""
     data_dict = {}
     data_dict[de_dataset.attrs["Logical_source"]] = de_dataset
     data_dict["imap_ultra_l1a_45sensor-aux"] = de_dataset
+
+    # Mock get_annotated_particle_velocity to avoid needing kernels
+    def side_effect_func(event_times, position, ultra_frame, dps_frame, sc_frame):
+        """
+        Mock behavior of get_annotated_particle_velocity.
+
+        Returns NaN-filled arrays matching the expected output shape.
+        """
+        num_events = event_times.size
+        return (
+            np.full((num_events, 3), np.nan),  # sc_velocity
+            np.full((num_events, 3), np.nan),  # sc_dps_velocity
+            np.full((num_events, 3), np.nan),  # helio_velocity
+        )
+
+    mock_get_annotated_particle_velocity.side_effect = side_effect_func
     output_datasets = ultra_l1b(data_dict, data_version="001")
 
     assert len(output_datasets) == 1
