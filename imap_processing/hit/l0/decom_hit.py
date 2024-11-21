@@ -420,11 +420,22 @@ def decompress_rates_16_to_32(packed: int) -> int:
     power = packed >> MANTISSA_BITS
 
     # Decompress the data depending on the value of the exponent
+    # If the exponent (power) extracted from the packed 16-bit integer is greater
+    # than 1, the compressed value needs to be decompressed by reconstructing the
+    # integer using the mantissa and exponent. If the condition is false, the
+    # compressed and uncompressed values are considered the same.
     if power > 1:
-        decompressed_int = (packed & (output_mask >> EXPONENT_BITS)) | (
-            0x0001 << MANTISSA_BITS
-        )
-        decompressed_int = decompressed_int << (power - 1)
+        # Retrieve the "mantissa" portion of the packed value by masking out the
+        # exponent bits
+        mantissa_mask = output_mask >> EXPONENT_BITS
+        mantissa = packed & mantissa_mask
+
+        # Shift the mantissa to the left by 1 to account for the hidden bit
+        # (always set to 1)
+        mantissa_with_hidden_bit = mantissa | (0x0001 << MANTISSA_BITS)
+
+        # Scale the mantissa by the exponent by shifting it to the left by (power - 1)
+        decompressed_int = mantissa_with_hidden_bit << (power - 1)
     else:
         # The compressed and uncompressed values are the same
         decompressed_int = packed
