@@ -326,14 +326,18 @@ def generate_dataset(
         direction.values.astype(str),
         name="direction_label",
         dims=["direction_label"],
-        attrs=attribute_manager.get_variable_attributes("direction_label", check_schema=False),
+        attrs=attribute_manager.get_variable_attributes(
+            "direction_label", check_schema=False
+        ),
     )
 
     compression_label = xr.DataArray(
         compression.values.astype(str),
         name="compression_label",
         dims=["compression_label"],
-        attrs=attribute_manager.get_variable_attributes("compression_label", check_schema=False),
+        attrs=attribute_manager.get_variable_attributes(
+            "compression_label", check_schema=False
+        ),
     )
 
     output = xr.Dataset(
