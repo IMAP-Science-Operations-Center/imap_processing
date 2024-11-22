@@ -240,22 +240,24 @@ def test_subcom_sectorates(sci_dataset):
         )
 
 
-def test_decompress_rates_16_to_32():
-    """Test the decompress_rates_16_to_32 function.
-
-    This function decompresses a 16-bit packed integer
-    to a 32-bit integer. Used to decompress rates data.
-    """
-    test_cases = [
+@pytest.mark.parametrize(
+    "packed, expected",
+    [
         (0, 0),  # Test with zero
         (15, 15),  # Test with packed integer with no scaling
         (4096, 4096),  # Test with packed integer with power = 1
         (64188, 112132096),  # Test with packed integer requiring scaling
         (65535, 134201344),  # Test with maximum 16-bit value
         (62218, 79855616),  # Test with arbitrary packed integer
-    ]
-    for packed, expected in test_cases:
-        assert decompress_rates_16_to_32(packed) == expected
+    ],
+)
+def test_decompress_rates_16_to_32(packed, expected):
+    """Test the decompress_rates_16_to_32 function.
+
+    This function decompresses a 16-bit packed integer
+    to a 32-bit integer. Used to decompress rates data.
+    """
+    assert decompress_rates_16_to_32(packed) == expected
 
 
 def test_decom_hit(sci_dataset):
