@@ -24,10 +24,9 @@ def packet_filepath():
 @pytest.fixture(scope="module")
 def attribute_manager():
     """Create the attribute manager"""
-    attr_mgr = ImapCdfAttributes()
-    attr_mgr.add_instrument_global_attrs(instrument="hit")
-    attr_mgr.add_instrument_variable_attrs(instrument="hit", level="l1a")
-    attr_mgr.add_global_attribute("Data_version", "001")
+    data_version = "001"
+    level = "L1A"
+    attr_mgr = get_attribute_manager(data_version, level)
     return attr_mgr
 
 
@@ -49,7 +48,7 @@ def test_get_datasets_by_apid(packet_filepath):
 
 def test_get_attribute_manager():
     data_version = "001"
-    level = "L1A"
+    level = "l1a"
     attr_mgr = get_attribute_manager(data_version, level)
 
     assert isinstance(attr_mgr, ImapCdfAttributes)
