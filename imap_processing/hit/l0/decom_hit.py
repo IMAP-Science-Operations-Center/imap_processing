@@ -389,15 +389,14 @@ def decompress_rates_16_to_32(packed: int) -> int:
     """
     Will decompress rates data from 16 bits to 32 bits.
 
-    This function decompresses the rates data from the binary
-    format to integers. The compressed integer (packed) combines
+    This function decompresses the rates data from 16-bit integers
+    to 32-bit integers. The compressed integer (packed) combines
     two parts:
 
     1. Mantissa: Represents the significant digits of the value.
     2. Exponent: Determines how much to scale the mantissa (using powers of 2).
 
     These parts are packed together into a single 16-bit integer.
-    Numbers up to 212 are uncompressed.
 
     Parameters
     ----------
