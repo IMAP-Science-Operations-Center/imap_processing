@@ -25,7 +25,7 @@ def packet_filepath():
 def attribute_manager():
     """Create the attribute manager"""
     data_version = "001"
-    level = "L1A"
+    level = "l1a"
     attr_mgr = get_attribute_manager(data_version, level)
     return attr_mgr
 
