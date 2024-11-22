@@ -424,6 +424,7 @@ def decompress_rates_16_to_32(packed: int) -> int:
     # than 1, the compressed value needs to be decompressed by reconstructing the
     # integer using the mantissa and exponent. If the condition is false, the
     # compressed and uncompressed values are considered the same.
+    decompressed_int: int
     if power > 1:
         # Retrieve the "mantissa" portion of the packed value by masking out the
         # exponent bits
@@ -440,7 +441,7 @@ def decompress_rates_16_to_32(packed: int) -> int:
         # The compressed and uncompressed values are the same
         decompressed_int = packed
 
-    return int(decompressed_int)
+    return decompressed_int
 
 
 def decom_hit(sci_dataset: xr.Dataset) -> xr.Dataset:
