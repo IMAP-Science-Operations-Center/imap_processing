@@ -18,7 +18,7 @@ def test_idex_decom_length(decom_test_data: xr.Dataset):
 
 
 def test_idex_decom_event_num(decom_test_data: xr.Dataset):
-    """Verify that 19 impacts were gathered by the test data.
+    """Verify that 14 impacts were gathered by the test data.
 
     Parameters
     ----------
