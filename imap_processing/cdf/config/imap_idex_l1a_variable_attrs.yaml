@@ -15,7 +15,7 @@ l1_data_base: &l1_data_base
   VALIDMAX: *data_max
   DISPLAY_TYPE: spectrogram
   DEPEND_0: epoch
-  FORMAT: ""
+  FORMAT: I12
   UNITS: dN
   VAR_TYPE: data
   # VAR_PURPOSE: PRIMARY
@@ -59,14 +59,13 @@ trigger_base: &trigger_base
   FILLVAL: *int_fillval
   LABLAXIS: ""
   FORMAT: I12
-  UNITS: ""
+  UNITS: " "
 
 # TODO: All of these have var_notes in idex_cef_attrs. Should I add these?
 low_sr_attrs:
   <<:  *sample_rate_base
   CATDESC: Low sample rate time steps for a dust event.
   FIELDNAM: Low Sample Rate Time
-  FILLVAL: *int_fillval
   VAR_NOTES: The low sample rate in microseconds. Steps are approximately 1/4.025
              microseconds in duration. Used by the Ion_Grid, Target_Low, and
              Target_High variables.
@@ -143,7 +142,7 @@ event_number:
   FIELDNAM: Event Number
   VALIDMAX: 65535
   LABLAXIS: Event Number
-  UNITS: ""
+  UNITS: " "
 
 tof_high_trigger_level:
   <<: *trigger_base
@@ -151,7 +150,7 @@ tof_high_trigger_level:
   FIELDNAM: TOF High Trigger Level
   CATDESC: Trigger level for the TOF High Channel
   LABLAXIS: Level
-  UNITS: ""
+  UNITS: " "
 
 tof_high_trigger_num_max_1_2:
   <<: *trigger_base
@@ -159,7 +158,7 @@ tof_high_trigger_num_max_1_2:
   FIELDNAM: TOF High Double Pulse Max Samples
   CATDESC: Maximum number of samples between pulse 1 and 2 for TOF. High double pulse triggering.
   LABLAXIS: Samples Number
-  UNITS: "" # "samples" in idex_packet_parser...?
+  UNITS: " " # "samples" in idex_packet_parser...?
 
 tof_high_trigger_num_min_1_2:
   <<: *trigger_base
@@ -167,7 +166,7 @@ tof_high_trigger_num_min_1_2:
   FIELDNAM: TOF High Double Pulse Min Samples
   CATDESC: Minimum number of samples between pulse 1 and 2 for TOF High. Double pulse triggering.
   LABLAXIS: Samples Number
-  UNITS: "" # "samples" in idex_packet_parser...?
+  UNITS: " " # "samples" in idex_packet_parser...?
 
 tof_high_trigger_num_min_1:
   <<: *trigger_base
@@ -175,7 +174,7 @@ tof_high_trigger_num_min_1:
   FIELDNAM: TOF High Pulse 1 Min Samples
   CATDESC: Minimum number of samples for pulse 1 for TOF High single and double pulse triggering.
   LABLAXIS: Samples Number
-  UNITS: "" # "samples" in idex_packet_parser...?
+  UNITS: " " # "samples" in idex_packet_parser...?
 
 tof_high_trigger_num_max_1:
   <<: *trigger_base
@@ -183,7 +182,7 @@ tof_high_trigger_num_max_1:
   FIELDNAM: TOF High Pulse 1 Max Samples
   CATDESC: Maximum number of samples for pulse 1 for TOF High single and double pulse triggering.
   LABLAXIS: Samples Number
-  UNITS: "" # "samples" in idex_packet_parser...?
+  UNITS: " " # "samples" in idex_packet_parser...?
 
 tof_high_trigger_num_min_2:
   <<: *trigger_base
@@ -191,7 +190,7 @@ tof_high_trigger_num_min_2:
   FIELDNAM: TOF High Pulse 2 Min Samples
   CATDESC: Minimum number of samples for pulse 2 for TOF High single and double pulse triggering.
   LABLAXIS: Samples Number
-  UNITS: "" # "samples" in idex_packet_parser...?
+  UNITS: " " # "samples" in idex_packet_parser...?
 
 tof_high_trigger_num_max_2:
   <<: *trigger_base
@@ -199,7 +198,7 @@ tof_high_trigger_num_max_2:
   FIELDNAM: TOF High Pulse 2 Max Samples
   CATDESC: Maximum number of samples for pulse 2 for TOF High single and double pulse triggering.
   LABLAXIS: Samples Number
-  UNITS: "" # "samples" in idex_packet_parser...?
+  UNITS: " " # "samples" in idex_packet_parser...?
 
 tof_low_trigger_level:
   <<: *trigger_base
@@ -207,7 +206,7 @@ tof_low_trigger_level:
   FIELDNAM: TOF Low Trigger Level
   CATDESC: Trigger level for the TOF Low Channel
   LABLAXIS: Level
-  UNITS: "" # "samples" in idex_packet_parser...?
+  UNITS: " " # "samples" in idex_packet_parser...?
 
 tof_low_trigger_num_max_1_2:
   <<: *trigger_base
@@ -215,7 +214,7 @@ tof_low_trigger_num_max_1_2:
   FIELDNAM: TOF Low Double Pulse Max Samples
   CATDESC: Maximum number of samples between pulse 1 and 2 for TOF Low double pulse triggering.
   LABLAXIS: Samples Number
-  UNITS: "" # "samples" in idex_packet_parser...?
+  UNITS: " " # "samples" in idex_packet_parser...?
 
 tof_low_trigger_num_min_1_2:
   <<: *trigger_base
@@ -223,7 +222,7 @@ tof_low_trigger_num_min_1_2:
   FIELDNAM: TOF Low Double Pulse Min Samples
   CATDESC: Minimum number of samples between pulse 1 and 2 for TOF Low double pulse triggering.
   LABLAXIS: Samples Number
-  UNITS: "" # "samples" in idex_packet_parser...?
+  UNITS: " " # "samples" in idex_packet_parser...?
 
 tof_low_trigger_num_min_1:
   <<: *trigger_base
@@ -231,7 +230,7 @@ tof_low_trigger_num_min_1:
   FIELDNAM: TOF Low Pulse 1 Min Samples
   CATDESC: Minimum number of samples for pulse 1 for TOF Low single and double pulse triggering.
   LABLAXIS: Samples Number
-  UNITS: "" # "samples" in idex_packet_parser...?
+  UNITS: " " # "samples" in idex_packet_parser...?
 
 tof_low_trigger_num_max_1:
   <<: *trigger_base
@@ -239,7 +238,7 @@ tof_low_trigger_num_max_1:
   FIELDNAM: TOF Low Pulse 1 Max Samples
   CATDESC: Maximum number of samples for pulse 1 for TOF Low single and double pulse triggering.
   LABLAXIS: Samples Number
-  UNITS: "" # "samples" in idex_packet_parser...?
+  UNITS: " " # "samples" in idex_packet_parser...?
 
 tof_low_trigger_num_min_2 :
   <<: *trigger_base
@@ -247,7 +246,7 @@ tof_low_trigger_num_min_2 :
   FIELDNAM: TOF Low Pulse 2 Min Samples
   CATDESC: Minimum number of samples for pulse 2 for TOF Low single and double pulse triggering.
   LABLAXIS: Samples Number
-  UNITS: "" # "samples" in idex_packet_parser...?
+  UNITS: " " # "samples" in idex_packet_parser...?
 
 tof_low_trigger_num_max_2:
   <<: *trigger_base
@@ -255,7 +254,7 @@ tof_low_trigger_num_max_2:
   FIELDNAM: TOF Low Pulse 2 Max Samples
   CATDESC: Maximum number of samples for pulse 2 for TOF Low single and double pulse triggering.
   LABLAXIS: Samples Number
-  UNITS: "" # "samples" in idex_packet_parser...?
+  UNITS: " " # "samples" in idex_packet_parser...?
 
 tof_mid_trigger_level:
   <<: *trigger_base
@@ -263,7 +262,7 @@ tof_mid_trigger_level:
   FIELDNAM: TOF Mid Trigger Level
   CATDESC: Trigger level for the TOF Mid Channel
   LABLAXIS: Level
-  UNITS: "" # "samples" in idex_packet_parser...?
+  UNITS: " " # "samples" in idex_packet_parser...?
 
 tof_mid_trigger_num_max_1_2:
   <<: *trigger_base
@@ -271,7 +270,7 @@ tof_mid_trigger_num_max_1_2:
   FIELDNAM: TOF Mid Double Pulse Max Samples
   CATDESC: Maximum number of samples between pulse 1 and 2 for TOF Mid double pulse triggering.
   LABLAXIS: Samples Number
-  UNITS: "" # "samples" in idex_packet_parser...?
+  UNITS: " " # "samples" in idex_packet_parser...?
 
 tof_mid_trigger_num_min_1_2:
   <<: *trigger_base
@@ -279,7 +278,7 @@ tof_mid_trigger_num_min_1_2:
   FIELDNAM: TOF Mid Double Pulse Min Samples
   CATDESC: Minimum number of samples between pulse 1 and 2 for TOF Mid double pulse triggering.
   LABLAXIS: Samples Number
-  UNITS: "" # "samples" in idex_packet_parser...?
+  UNITS: " " # "samples" in idex_packet_parser...?
 
 tof_mid_trigger_num_min_1:
   <<: *trigger_base
@@ -287,7 +286,7 @@ tof_mid_trigger_num_min_1:
   FIELDNAM: TOF Mid Pulse 1 Min Samples
   CATDESC: Minimum number of samples for pulse 1 for TOF Mid single and double pulse triggering.
   LABLAXIS: Samples Number
-  UNITS: "" # "samples" in idex_packet_parser...?
+  UNITS: " " # "samples" in idex_packet_parser...?
 
 tof_mid_trigger_num_max_1:
   <<: *trigger_base
@@ -295,7 +294,7 @@ tof_mid_trigger_num_max_1:
   FIELDNAM: TOF Mid Pulse 1 Max Samples
   CATDESC: Maximum number of samples for pulse 1 for TOF Mid single and double pulse triggering.
   LABLAXIS: Samples Number
-  UNITS: "" # "samples" in idex_packet_parser...?
+  UNITS: " " # "samples" in idex_packet_parser...?
 
 tof_mid_trigger_num_min_2:
   <<: *trigger_base
@@ -303,7 +302,7 @@ tof_mid_trigger_num_min_2:
   FIELDNAM: TOF Mid Pulse 2 Min Samples
   CATDESC: Minimum number of samples for pulse 2 for TOF Mid single and double pulse triggering.
   LABLAXIS: Samples Number
-  UNITS: "" # "samples" in idex_packet_parser...?
+  UNITS: " " # "samples" in idex_packet_parser...?
 
 tof_mid_trigger_num_max_2:
   <<: *trigger_base
@@ -311,7 +310,7 @@ tof_mid_trigger_num_max_2:
   FIELDNAM: TOF Mid Pulse 2 Max Samples
   CATDESC: Maximum number of samples for pulse 2 for TOF Mid single and double pulse triggering.
   LABLAXIS: Samples Number
-  UNITS: "" # "samples" in idex_packet_parser...?
+  UNITS: " " # "samples" in idex_packet_parser...?
 
 low_sample_coincidence_mode_blocks:
   <<: *trigger_base
@@ -319,7 +318,7 @@ low_sample_coincidence_mode_blocks:
   FIELDNAM: LS Coincidence Mode Blocks
   CATDESC: Number of blocks coincidence window is enabled after low sample trigger.
   LABLAXIS: Blocks Number
-  UNITS: "" # "blocks" in idex_packet_parser...?
+  UNITS: " " # "blocks" in idex_packet_parser...?
 
 low_sample_trigger_polarity:
   <<: *trigger_base
@@ -327,7 +326,7 @@ low_sample_trigger_polarity:
   FIELDNAM: LS Trigger Polarity
   CATDESC: The trigger polarity for low sample (0 = normal, 1 = inverted)
   LABLAXIS: Polarity
-  UNITS: ""
+  UNITS: " "
 
 low_sample_trigger_level:
   <<: *trigger_base
@@ -335,7 +334,7 @@ low_sample_trigger_level:
   FIELDNAM: LS Trigger Level
   CATDESC: Trigger level for the low sample
   LABLAXIS: Level
-  UNITS: ""
+  UNITS: " "
 
 low_sample_trigger_num_min:
   <<: *trigger_base
@@ -343,7 +342,7 @@ low_sample_trigger_num_min:
   FIELDNAM: LS Trigger Min Num Samples
   CATDESC: The minimum number of samples above/below the trigger level for triggering the low sample.
   LABLAXIS: Samples Number
-  UNITS: "" # "samples" in idex_packet_parser...?
+  UNITS: " " # "samples" in idex_packet_parser...?
 
 low_sample_trigger_mode:
   <<: *trigger_base
@@ -351,7 +350,7 @@ low_sample_trigger_mode:
   FIELDNAM: LS Trigger Mode Enabled
   CATDESC: Low sample trigger mode (0=disabled, 1=enabled)
   LABLAXIS: Mode
-  UNITS: ""
+  UNITS: " "
 
 tof_low_trigger_mode:
   <<: *trigger_base
@@ -359,7 +358,7 @@ tof_low_trigger_mode:
   FIELDNAM: TOF Low Trigger Mode Enabled
   CATDESC: TOF Low trigger mode (0=disabled, 1=enabled)
   LABLAXIS: Mode
-  UNITS: ""
+  UNITS: " "
 
 tof_mid_trigger_mode:
   <<: *trigger_base
@@ -367,7 +366,7 @@ tof_mid_trigger_mode:
   FIELDNAM: TOF Mid Trigger Mode Enabled
   CATDESC: TOF Mid trigger mode (0=disabled, 1=enabled)
   LABLAXIS: Mode
-  UNITS: ""
+  UNITS: " "
 
 tof_high_trigger_mode:
   <<: *trigger_base
@@ -375,7 +374,7 @@ tof_high_trigger_mode:
   FIELDNAM: TOF High Trigger Mode Enabled
   CATDESC: TOF High trigger mode (0=disabled, 1=threshold mode, 2=single pulse mode, 3=double pulse mode).
   LABLAXIS: Mode
-  UNITS: ""
+  UNITS: " "
 
 detector_voltage:
   <<: *trigger_base
