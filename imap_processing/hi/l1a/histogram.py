@@ -9,29 +9,29 @@ from imap_processing.utils import convert_to_binary_string
 # define the names of the 24 counter arrays
 # contained in the histogram packet
 QUALIFIED_COUNTERS = (
-    "qual_ab",
-    "qual_c1c2",
-    "qual_ac1",
-    "qual_bc1",
-    "qual_abc1",
-    "qual_ac1c2",
-    "qual_bc1c2",
-    "qual_abc1c2",
+    "ab_qualified",
+    "c1c2_qualified",
+    "ac1_qualified",
+    "bc1_qualified",
+    "abc1_qualified",
+    "ac1c2_qualified",
+    "bc1c2_qualified",
+    "abc1c2_qualified",
 )
 LONG_COUNTERS = (
-    "long_a",
-    "long_b",
-    "long_c",
-    "long_ab",
-    "long_c1c2",
-    "long_ac1",
-    "long_bc1",
-    "long_abc1",
-    "long_ac1c2",
-    "long_bc1c2",
-    "long_abc1c2",
+    "a_first_only",
+    "b_first_only",
+    "c_first_only",
+    "ab_long",
+    "c1c2_long",
+    "ac1_long",
+    "bc1_long",
+    "abc1_long",
+    "ac1c2_long",
+    "bc1c2_long",
+    "abc1c2_long",
 )
-TOTAL_COUNTERS = ("total_a", "total_b", "total_c", "fee_de_sent", "fee_de_recd")
+TOTAL_COUNTERS = ("a_total", "b_total", "c_total", "fee_de_recd", "fee_de_sent")
 
 
 def create_dataset(input_ds: xr.Dataset) -> xr.Dataset:
@@ -50,29 +50,24 @@ def create_dataset(input_ds: xr.Dataset) -> xr.Dataset:
     """
     dataset = allocate_histogram_dataset(len(input_ds.epoch))
 
-    # TODO: Move into the allocate dataset function?
+    # TODO: Move into the allocate dataset function. Ticket: #700
     dataset["epoch"].data[:] = input_ds["epoch"].data
-    dataset["ccsds_met"].data = input_ds["ccsds_met"].data
+    dataset["ccsds_met"].data = input_ds["shcoarse"].data
     dataset["esa_stepping_num"].data = input_ds["esa_step"].data
+    dataset["num_of_spins"].data = input_ds["num_of_spins"].data
 
-    # unpack the packets data into the Dataset
-    # (npackets, 24 * 90 * 12)
+    # unpack the counter binary blobs into the Dataset
     # TODO: Look into avoiding the for-loops below
     #       It seems like we could try to reshape the arrays and do some numpy
-    #       broadcasting rather than for-loops directly here
-    for i_epoch, counters_bytes_data in enumerate(input_ds["counters"].data):
-        binary_str_val = convert_to_binary_string(counters_bytes_data)
-        # unpack 24 arrays of 90 12-bit unsigned integers
-        counter_ints = [
-            int(binary_str_val[i * 12 : (i + 1) * 12], 2) for i in range(90 * 24)
-        ]
-        # populate the dataset with the unpacked integers
-        for i_counter, counter in enumerate(
-            (*QUALIFIED_COUNTERS, *LONG_COUNTERS, *TOTAL_COUNTERS)
-        ):
-            dataset[counter][i_epoch] = counter_ints[
-                i_counter * 90 : (i_counter + 1) * 90
+    #       broadcasting rather than for-loops directly here. Ticket: #700
+    for i_epoch in range(input_ds["epoch"].size):
+        for counter in (*QUALIFIED_COUNTERS, *LONG_COUNTERS, *TOTAL_COUNTERS):
+            binary_str_val = convert_to_binary_string(input_ds[counter].data[i_epoch])
+            # unpack array of 90 12-bit unsigned integers
+            counter_ints = [
+                int(binary_str_val[i * 12 : (i + 1) * 12], 2) for i in range(90)
             ]
+            dataset[counter][i_epoch] = counter_ints
 
     return dataset
 
@@ -128,6 +123,11 @@ def allocate_histogram_dataset(num_packets: int) -> xr.Dataset:
         attrs=attr_mgr.get_variable_attributes("hi_hist_ccsds_met"),
     )
     data_vars["esa_stepping_num"] = xr.DataArray(
+        np.empty(num_packets, dtype=np.uint8),
+        dims=["epoch"],
+        attrs=attr_mgr.get_variable_attributes("hi_hist_esa_step"),
+    )
+    data_vars["num_of_spins"] = xr.DataArray(
         np.empty(num_packets, dtype=np.uint8),
         dims=["epoch"],
         attrs=attr_mgr.get_variable_attributes("hi_hist_esa_step"),

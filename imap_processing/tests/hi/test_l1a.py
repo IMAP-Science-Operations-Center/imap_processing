@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 
 from imap_processing.cdf.utils import write_cdf
 from imap_processing.hi.l1a import histogram as hist
@@ -47,11 +46,11 @@ def test_app_nhk_decom(hi_l0_test_data_path):
     """Test housekeeping data"""
 
     # Unpack housekeeping data
-    bin_data_path = hi_l0_test_data_path / "20231030_H45_APP_NHK.bin"
+    bin_data_path = hi_l0_test_data_path / "H90_NHK_20241104.bin"
     processed_data = hi_l1a(packet_file_path=bin_data_path, data_version="001")
 
-    assert np.unique(processed_data[0]["pkt_apid"].values) == HIAPID.H45_APP_NHK.value
-    assert processed_data[0].attrs["Logical_source"] == "imap_hi_l1a_45sensor-hk"
+    assert np.unique(processed_data[0]["pkt_apid"].values) == HIAPID.H90_APP_NHK.value
+    assert processed_data[0].attrs["Logical_source"] == "imap_hi_l1a_90sensor-hk"
     assert processed_data[0].attrs["Data_version"] == "001"
     # TODO: compare with validation data once we have it
 
@@ -60,26 +59,21 @@ def test_app_nhk_decom(hi_l0_test_data_path):
 
     # TODO: ask Vivek about this date mismatch between the file name
     # and the data. May get resolved when we have good sample data.
-    assert cem_raw_cdf_filepath.name == "imap_hi_l1a_45sensor-hk_20100313_v001.cdf"
+    assert cem_raw_cdf_filepath.name == "imap_hi_l1a_90sensor-hk_20241105_v001.cdf"
 
 
-@pytest.mark.skip(
-    reason="Need new test data with monotonically increasing epoch values"
-)
 def test_app_hist_decom(hi_l0_test_data_path):
     """Test histogram (SCI_CNT) data"""
-    bin_data_path = hi_l0_test_data_path / "20231030_H45_SCI_CNT.bin"
+    bin_data_path = hi_l0_test_data_path / "H90_sci_cnt_20241104.bin"
     processed_data = hi_l1a(packet_file_path=bin_data_path, data_version="001")
 
-    assert processed_data[0].attrs["Logical_source"] == "imap_hi_l1a_45sensor-hist"
+    assert processed_data[0].attrs["Logical_source"] == "imap_hi_l1a_90sensor-hist"
     # TODO: compare with validation data once we have it
-    # TODO: Dropping duplicates to ignore ISTP for now. Need to update test data
-    processed_data[0] = processed_data[0].sortby("epoch").groupby("epoch").first()
 
     # Write CDF
     cem_raw_cdf_filepath = write_cdf(processed_data[0])
 
-    assert cem_raw_cdf_filepath.name.startswith("imap_hi_l1a_45sensor-hist_")
+    assert cem_raw_cdf_filepath.name.startswith("imap_hi_l1a_90sensor-hist_")
 
 
 def test_allocate_histogram_dataset():

@@ -184,6 +184,12 @@ hi_hist_ccsds_met:
 hi_hist_esa_step:
   <<: *hi_esa_step
 
+hi_hist_num_of_spins:
+  <<: *default_uint8
+  CATDESC: Number of spins included in histograms for this packet
+  FIELDNAM: Number of spins
+  LABLAXIS: Num spins
+
 hi_hist_counters:
   <<: *default_uint16
   CATDESC: Angular histogram of {counter_name} type events
