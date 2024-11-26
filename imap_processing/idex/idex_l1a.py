@@ -2,6 +2,16 @@
 Perform IDEX L1a Processing.
 
 This module processes decommutated IDEX packets and creates L1a data products.
+
+Examples
+--------
+.. code-block:: python
+
+    from imap_processing.idex.idex_l1a import PacketParser
+
+    l0_file = "imap_processing/tests/idex/imap_idex_l0_sci_20231214_v001.pkts"
+    l1a_data = PacketParser(l0_file, data_version)
+    l1a_data.write_l1a_cdf()
 """
 
 import logging
@@ -102,15 +112,6 @@ class PacketParser:
         The path and filename to the L0 file to read.
     data_version : str
         The version of the data product being created.
-
-    Examples
-    --------
-    .. code-block:: python
-
-        from imap_processing.idex.idex_l1a import PacketParser
-        l0_file = "imap_processing/tests/idex/imap_idex_l0_sci_12142023_v001.pkts"
-        l1a_data = PacketParser(l0_file, data_version)
-        l1a_data.write_l1a_cdf()
     """
 
     def __init__(self, packet_file: Union[str, Path], data_version: str) -> None:

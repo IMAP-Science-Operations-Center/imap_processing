@@ -318,7 +318,7 @@ low_sample_coincidence_mode_blocks:
   FIELDNAM: LS Coincidence Mode Blocks
   CATDESC: Number of blocks coincidence window is enabled after low sample trigger.
   LABLAXIS: Blocks Number
-  UNITS: " " # "blocks" in idex_packet_parser...?
+  UNITS: " "
 
 low_sample_trigger_polarity:
   <<: *trigger_base
