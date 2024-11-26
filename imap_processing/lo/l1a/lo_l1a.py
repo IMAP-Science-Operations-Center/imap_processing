@@ -118,7 +118,7 @@ def add_dataset_attrs(
             data=np.arange(1, 8, dtype=np.uint8),
             name="esa_step",
             dims=["esa_step"],
-            attrs=attr_mgr.get_variable_attributes("esa_step"),
+            attrs=attr_mgr.get_variable_attributes("esa_step_coord"),
         )
         esa_step_label = xr.DataArray(
             esa_step.values.astype(str),
