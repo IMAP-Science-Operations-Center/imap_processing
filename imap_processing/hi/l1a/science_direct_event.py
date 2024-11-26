@@ -336,7 +336,7 @@ def science_direct_event(packets_data: xr.Dataset) -> xr.Dataset:
         de_data_list.extend([parse_direct_event(event) for event in event_48bits_list])
         # add packet time to packet_met_time
         packet_met_time.extend(
-            [packets_data["ccsds_met"].data[i]] * len(event_48bits_list)
+            [packets_data["shcoarse"].data[i]] * len(event_48bits_list)
         )
 
     # create dataset

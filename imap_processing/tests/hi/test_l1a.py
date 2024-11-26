@@ -6,37 +6,20 @@ from imap_processing.hi.l1a.hi_l1a import hi_l1a
 from imap_processing.hi.utils import HIAPID
 
 
-def test_sci_de_decom(create_de_data):
+def test_sci_de_decom(hi_l0_test_data_path):
     """Test science direct event data"""
 
-    # Process using test data
-    processed_data = hi_l1a(
-        packet_file_path=create_de_data(HIAPID.H45_SCI_DE.value), data_version="001"
-    )
+    bin_data_path = hi_l0_test_data_path / "H90_sci_de_20241104.bin"
+    processed_data = hi_l1a(bin_data_path, data_version="001")
 
-    assert processed_data[0].attrs["Logical_source"] == "imap_hi_l1a_45sensor-de"
+    assert processed_data[0].attrs["Logical_source"] == "imap_hi_l1a_90sensor-de"
     assert processed_data[0].attrs["Data_version"] == "001"
 
-    # unique ESA steps should be [1, 2]
-    assert np.array_equal(
-        np.sort(np.unique(processed_data[0]["esa_step"].values)),
-        np.array([1, 2]),
-    )
-    # unique trigger_id should be [1, 2, 3]
-    assert np.array_equal(
-        np.sort(np.unique(processed_data[0]["trigger_id"].values)), np.array([1, 2, 3])
-    )
-    # tof_x should be in this range [0, 1023]
-    assert processed_data[0]["tof_1"].min() >= 0
-    assert processed_data[0]["tof_1"].max() <= 1023
-    assert processed_data[0]["tof_2"].min() >= 0
-    assert processed_data[0]["tof_2"].max() <= 1023
-    assert processed_data[0]["tof_3"].min() >= 0
-    assert processed_data[0]["tof_3"].max() <= 1023
+    # TODO: Verify correct unpacking of sample data. Issue: #1186
 
     # Write to CDF
-    cdf_filename = "imap_hi_l1a_45sensor-de_20230927_v001.cdf"
-    # TODO: Dropping duplicates to ignore ISTP for now. Need to update test data
+    cdf_filename = "imap_hi_l1a_90sensor-de_20241105_v001.cdf"
+    # TODO: Dropping duplicates to ignore ISTP for now. Should be fixed by #1186
     processed_data[0] = processed_data[0].sortby("epoch").groupby("epoch").first()
     cdf_filepath = write_cdf(processed_data[0])
     assert cdf_filepath.name == cdf_filename
@@ -52,7 +35,7 @@ def test_app_nhk_decom(hi_l0_test_data_path):
     assert np.unique(processed_data[0]["pkt_apid"].values) == HIAPID.H90_APP_NHK.value
     assert processed_data[0].attrs["Logical_source"] == "imap_hi_l1a_90sensor-hk"
     assert processed_data[0].attrs["Data_version"] == "001"
-    # TODO: compare with validation data once we have it
+    # TODO: compare with validation data once we have it. Issue: #1184
 
     # Write CDF
     cem_raw_cdf_filepath = write_cdf(processed_data[0], istp=False)
@@ -68,7 +51,7 @@ def test_app_hist_decom(hi_l0_test_data_path):
     processed_data = hi_l1a(packet_file_path=bin_data_path, data_version="001")
 
     assert processed_data[0].attrs["Logical_source"] == "imap_hi_l1a_90sensor-hist"
-    # TODO: compare with validation data once we have it
+    # TODO: compare with validation data once we have it. Issue: #1185
 
     # Write CDF
     cem_raw_cdf_filepath = write_cdf(processed_data[0])
