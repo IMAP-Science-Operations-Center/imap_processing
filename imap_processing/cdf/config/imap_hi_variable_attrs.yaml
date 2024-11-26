@@ -313,8 +313,8 @@ hi_pset_esa_energy_step:
   dtype: uint8
 
 hi_pset_calibration_prod:
-  CATDESC: Calibration product number
-  FIELDNAM: Coincidence types are combined into various calibration products
+  CATDESC: Coincidence types are combined into various calibration products
+  FIELDNAM: Calibration product number
   FILLVAL: 65535
   FORMAT: I1
   LABLAXIS: Calibration Prod
