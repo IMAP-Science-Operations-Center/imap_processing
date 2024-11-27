@@ -9,104 +9,8 @@ from imap_processing.hit.l0.constants import (
     FLAG_PATTERN,
     FRAME_SIZE,
     MANTISSA_BITS,
-    MOD_10_MAPPING,
 )
 from imap_processing.utils import convert_to_binary_string
-
-
-def subcom_sectorates(sci_dataset: xr.Dataset) -> None:
-    """
-    Subcommutate sectorates data.
-
-    Sector rates data contains rates for 5 species and 10
-    energy ranges. This function subcommutates the sector
-    rates data by organizing the rates by species. Which
-    species and energy range the data belongs to is determined
-    by taking the mod 10 value of the corresponding header
-    minute count value in the dataset. A mapping of mod 10
-    values to species and energy ranges is provided in constants.py.
-
-    MOD_10_MAPPING = {
-        0: {"species": "H", "energy_min": 1.8, "energy_max": 3.6},
-        1: {"species": "H", "energy_min": 4, "energy_max": 6},
-        2: {"species": "H", "energy_min": 6, "energy_max": 10},
-        3: {"species": "4He", "energy_min": 4, "energy_max": 6},
-        ...
-        9: {"species": "Fe", "energy_min": 4, "energy_max": 12}}
-
-    The data is added to the dataset as new data fields named
-    according to their species. They have 4 dimensions: epoch
-    energy index, declination, and azimuth. The energy index
-    dimension is used to distinguish between the different energy
-    ranges the data belongs to. The energy min and max values for
-    each species are also added to the dataset as new data fields.
-
-    Parameters
-    ----------
-    sci_dataset : xr.Dataset
-        Xarray dataset containing parsed HIT science data.
-    """
-    # TODO:
-    #  - Update to use fill values defined in attribute manager which
-    #    isn't passed into this module nor defined for L1A sci data yet
-    #  - Determine naming convention for species data fields in dataset
-    #    (i.e. h, H, hydrogen, Hydrogen, etc.)
-    #  - Remove raw "sectorates" data from dataset after processing is complete?
-    #  - consider moving this function to hit_l1a.py
-
-    # Calculate mod 10 values
-    hdr_min_count_mod_10 = sci_dataset.hdr_minute_cnt.values % 10
-
-    # Reference mod 10 mapping to initialize data structure for species and
-    # energy ranges and add 8x15 arrays with fill values for each science frame.
-    num_frames = len(hdr_min_count_mod_10)
-    data_by_species_and_energy_range = {
-        key: {**value, "rates": np.full((num_frames, 8, 15), fill_value=np.nan)}
-        for key, value in MOD_10_MAPPING.items()
-    }
-
-    # Update rates for science frames where data is available
-    for i, mod_10 in enumerate(hdr_min_count_mod_10):
-        data_by_species_and_energy_range[mod_10]["rates"][i] = sci_dataset[
-            "sectorates"
-        ].values[i]
-
-    # H has 3 energy ranges, 4He, CNO, NeMgSi have 2, and Fe has 1.
-    # Aggregate sector rates and energy min/max values for each species.
-    # First, initialize dictionaries to store rates and min/max energy values by species
-    data_by_species: dict = {
-        value["species"]: {"rates": [], "energy_min": [], "energy_max": []}
-        for value in data_by_species_and_energy_range.values()
-    }
-
-    for value in data_by_species_and_energy_range.values():
-        species = value["species"]
-        data_by_species[species]["rates"].append(value["rates"])
-        data_by_species[species]["energy_min"].append(value["energy_min"])
-        data_by_species[species]["energy_max"].append(value["energy_max"])
-
-    # Add sector rates by species to the dataset
-    for species, data in data_by_species.items():
-        # Rates data has shape: energy_index, epoch, declination, azimuth
-        # Convert rates to numpy array and transpose axes to get
-        # shape: epoch, energy_index, declination, azimuth
-        rates_data = np.transpose(np.array(data["rates"]), axes=(1, 0, 2, 3))
-
-        sci_dataset[species] = xr.DataArray(
-            data=rates_data,
-            dims=["epoch", f"{species}_energy_index", "declination", "azimuth"],
-            name=species,
-        )
-        sci_dataset[f"{species}_energy_min"] = xr.DataArray(
-            data=np.array(data["energy_min"]),
-            dims=[f"{species}_energy_index"],
-            name=f"{species}_energy_min",
-        )
-        sci_dataset[f"{species}_energy_max"] = xr.DataArray(
-            data=np.array(data["energy_max"]),
-            dims=[f"{species}_energy_index"],
-            name=f"{species}_energy_max",
-        )
 
 
 def parse_data(bin_str: str, bits_per_index: int, start: int, end: int) -> list:
@@ -495,10 +399,7 @@ def decom_hit(sci_dataset: xr.Dataset) -> xr.Dataset:
     # Parse count rates data from binary and add to dataset
     parse_count_rates(sci_dataset)
 
-    # Further organize sector rates by species type
-    subcom_sectorates(sci_dataset)
-
-    # TODO:
-    #  -clean up dataset - remove raw binary data, raw sectorates? Any other fields?
+    # Remove raw binary data not needed in the dataset
+    sci_dataset = sci_dataset.drop_vars(["count_rates_raw", "science_data"])
 
     return sci_dataset
