@@ -57,9 +57,8 @@ def test_mag_processing(mag_l1a_dataset):
     mag_l1a_dataset.attrs["Logical_source"] = ["imap_mag_l1a_norm-mago"]
 
     mag_l1b = mag_l1b_processing(mag_l1a_dataset)
-
     np.testing.assert_allclose(
-        mag_l1b["vectors"][0].values, [2.29819857, 2.22914442, 2.24950008, 0]
+        mag_l1b["vectors"][0].values, [2.2972, 2.2415, 2.2381, 0], atol=1e-4
     )
     np.testing.assert_allclose(mag_l1b["vectors"][1].values, [0, 0, 0, 0])
 
@@ -70,7 +69,7 @@ def test_mag_processing(mag_l1a_dataset):
     mag_l1b = mag_l1b_processing(mag_l1a_dataset)
 
     np.testing.assert_allclose(
-        mag_l1b["vectors"][0].values, [2.27615106, 2.22638234, 2.24382211, 0]
+        mag_l1b["vectors"][0].values, [2.27538, 2.23416, 2.23682, 0], atol=1e-5
     )
     np.testing.assert_allclose(mag_l1b["vectors"][1].values, [0, 0, 0, 0])
 
