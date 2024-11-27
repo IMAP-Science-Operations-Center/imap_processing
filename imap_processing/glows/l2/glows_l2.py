@@ -45,6 +45,9 @@ def generate_l2(l1b_dataset: xr.Dataset) -> HistogramL2:
 
     # TODO filter bad times out
     good_data = l1b_dataset.isel(epoch=return_good_times(l1b_dataset['flags'], np.ones((17,))))
+    # todo: bad angle filter too
+
+    # TODO: if there are no good times, assign -1 and 0 to outputs
 
     # one dataset collects multiple epoch values which need to be averaged down into
     # one value.
@@ -67,10 +70,13 @@ def generate_l2(l1b_dataset: xr.Dataset) -> HistogramL2:
 
     for field in all_variables:
         var_name = field.name
+        # averages: L1B averages: dict_keys(['filter_temperature_average', 'hv_voltage_average', 'spin_period_average', 'pulse_length_average', 'spin_period_ground_average', 'position_angle_offset_average', 'spin_axis_orientation_average', 'spacecraft_location_average', 'spacecraft_velocity_average', 'counter'])
         if 'average' in var_name:
             var_outputs[var_name] = l1b_dataset[var_name].mean(dim="epoch").data
             var_outputs[var_name.replace('average', 'std_dev')] = l1b_dataset[var_name].std(dim="epoch").data
 
+    # TODO For tomorrow: Implement generate_l2_data
+    # l1b stuff is done
     output = HistogramL2(**var_outputs)
 
     return output

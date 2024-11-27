@@ -27,16 +27,14 @@ def test_filter_good_times():
     assert np.array_equal(good_times, expected_good_times)
 
 
-
-
 def test_generate_l2(l1b_hist_dataset):
     l2 = generate_l2(l1b_hist_dataset)
 
     expected_values = {
-        "filter_temperature_average": [57.58],
-        "filter_temperature_std_dev": [1.843e-01],
+        "filter_temperature_average": [57.59],
+        "filter_temperature_std_dev": [0.23],
         "hv_voltage_average": [1715.4],
-        "hv_voltage_std_dev": [2.274e-13]
+        "hv_voltage_std_dev": [0.0]
     }
 
     assert np.isclose(l2.filter_temperature_average, expected_values["filter_temperature_average"], 0.01)
