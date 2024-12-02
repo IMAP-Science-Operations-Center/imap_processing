@@ -4,7 +4,6 @@ import numpy as np
 import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
-from imap_processing.utils import convert_to_binary_string
 
 # define the names of the 24 counter arrays
 # contained in the histogram packet
@@ -57,17 +56,23 @@ def create_dataset(input_ds: xr.Dataset) -> xr.Dataset:
     dataset["num_of_spins"].data = input_ds["num_of_spins"].data
 
     # unpack the counter binary blobs into the Dataset
-    # TODO: Look into avoiding the for-loops below
-    #       It seems like we could try to reshape the arrays and do some numpy
-    #       broadcasting rather than for-loops directly here. Ticket: #700
-    for i_epoch in range(input_ds["epoch"].size):
-        for counter in (*QUALIFIED_COUNTERS, *LONG_COUNTERS, *TOTAL_COUNTERS):
-            binary_str_val = convert_to_binary_string(input_ds[counter].data[i_epoch])
-            # unpack array of 90 12-bit unsigned integers
-            counter_ints = [
-                int(binary_str_val[i * 12 : (i + 1) * 12], 2) for i in range(90)
-            ]
-            dataset[counter][i_epoch] = counter_ints
+    for counter in (*QUALIFIED_COUNTERS, *LONG_COUNTERS, *TOTAL_COUNTERS):
+        # Interpret bytestrings for all epochs of current counter as uint8 array
+        counter_uint8 = np.frombuffer(input_ds[counter].data.sum(), dtype=np.uint8)
+        # Split into triplets of upper-byte, split-byte and lower-byte arrays
+        upper_uint8, split_unit8, lower_uint8 = np.reshape(
+            counter_uint8, (3, -1), order="F"
+        ).astype(np.uint16)
+        # Compute even indexed uint12 values from upper-byte and first 4-bits of
+        # split-byte
+        even_uint12 = (upper_uint8 << 4) + (split_unit8 >> 4)
+        # Compute odd indexed uint12 values from lower 4-bits of split-byte and
+        # lower-byte
+        odd_uint12 = ((split_unit8 & (2**4 - 1)) << 8) + lower_uint8
+        combined = np.reshape(np.column_stack((even_uint12, odd_uint12)), (-1, 90))
+        # Assign dataset counter data
+        dataset[counter].data = combined
+        pass
 
     return dataset
 
