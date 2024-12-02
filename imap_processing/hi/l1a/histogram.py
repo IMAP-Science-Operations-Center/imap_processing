@@ -40,20 +40,15 @@ def create_dataset(input_ds: xr.Dataset) -> xr.Dataset:
     Parameters
     ----------
     input_ds : xarray.Dataset
-        Dataset of packets.
+        Dataset of packets generated using the
+        `imap_processing.utils.packet_file_to_datasets` function.
 
     Returns
     -------
     dataset : xarray.Dataset
         Dataset with all metadata field data in xr.DataArray.
     """
-    dataset = allocate_histogram_dataset(len(input_ds.epoch))
-
-    # TODO: Move into the allocate dataset function. Ticket: #700
-    dataset["epoch"].data[:] = input_ds["epoch"].data
-    dataset["ccsds_met"].data = input_ds["shcoarse"].data
-    dataset["esa_stepping_num"].data = input_ds["esa_step"].data
-    dataset["num_of_spins"].data = input_ds["num_of_spins"].data
+    dataset = update_packet_dataset(input_ds)
 
     # unpack the counter binary blobs into the Dataset
     for counter in (*QUALIFIED_COUNTERS, *LONG_COUNTERS, *TOTAL_COUNTERS):
@@ -77,84 +72,87 @@ def create_dataset(input_ds: xr.Dataset) -> xr.Dataset:
     return dataset
 
 
-def allocate_histogram_dataset(num_packets: int) -> xr.Dataset:
+def update_packet_dataset(dataset: xr.Dataset) -> xr.Dataset:
     """
-    Allocate empty xarray.Dataset for specified number of Hi Histogram packets.
+    Update dataset generated from ccsds to match L1A CDF definition.
 
     Parameters
     ----------
-    num_packets : int
-        The number of Hi Histogram packets to allocate space for
-        in the xarray.Dataset.
+    dataset : xarray.Dataset
+        Dataset read in from IMAP-Hi histogram CCSDS data.
 
     Returns
     -------
     dataset : xarray.Dataset
-        Empty xarray.Dataset ready to be filled with packet data.
+        Updated xarray.Dataset ready to be filled with histogram counter data.
     """
     attr_mgr = ImapCdfAttributes()
     attr_mgr.add_instrument_global_attrs(instrument="hi")
     attr_mgr.add_instrument_variable_attrs(instrument="hi", level=None)
-    # preallocate the xr.DataArrays for all CDF attributes based on number of packets
-    coords = dict()
-    coords["epoch"] = xr.DataArray(
-        np.empty(num_packets, dtype="datetime64[ns]"),
-        name="epoch",
-        dims=["epoch"],
-        attrs=attr_mgr.get_variable_attributes("epoch"),
-    )
-    # Histogram data is binned in 90, 4-degree bins
-    coords["angle"] = xr.DataArray(
-        np.arange(2, 360, 4),
-        name="angle",
-        dims=["angle"],
-        attrs=attr_mgr.get_variable_attributes("hi_hist_angle"),
-    )
 
-    data_vars = dict()
-    # Generate label variables
-    data_vars["angle_label"] = xr.DataArray(
-        coords["angle"].values.astype(str),
+    dataset.epoch.attrs.update(
+        attr_mgr.get_variable_attributes("epoch"),
+    )
+    # Add the hist_angle coordinate
+    # Histogram data is binned in 90, 4-degree bins
+    attrs = attr_mgr.get_variable_attributes("hi_hist_angle")
+    dataset.coords.update(
+        {
+            "angle": xr.DataArray(
+                np.arange(2, 360, 4),
+                name="angle",
+                dims=["angle"],
+                attrs=attrs,
+            )
+        }
+    )
+    # Rename shcoarse variable
+    dataset = dataset.rename_vars({"shcoarse": "ccsds_met"})
+    # Update existing variable attributes
+    for var_name in [
+        "version",
+        "type",
+        "sec_hdr_flg",
+        "pkt_apid",
+        "seq_flgs",
+        "src_seq_ctr",
+        "pkt_len",
+        "ccsds_met",
+        "esa_step",
+        "num_of_spins",
+        "cksum",
+    ]:
+        attrs = attr_mgr.get_variable_attributes(f"hi_hist_{var_name}")
+        dataset.data_vars[var_name].attrs.update(attrs)
+
+    new_vars = dict()
+    # Allocate xarray.DataArray objects for the 90-element histogram counters
+    default_counter_attrs = attr_mgr.get_variable_attributes(
+        "hi_hist_counters", check_schema=False
+    )
+    for counter_name in (*QUALIFIED_COUNTERS, *LONG_COUNTERS, *TOTAL_COUNTERS):
+        # Inject counter name into generic counter attributes
+        counter_attrs = default_counter_attrs.copy()
+        dtype = counter_attrs.pop("dtype")
+        for key, val in counter_attrs.items():
+            if isinstance(val, str) and "{counter_name}" in val:
+                counter_attrs[key] = val.format(counter_name=counter_name)
+        new_vars[counter_name] = xr.DataArray(
+            data=np.empty((dataset.epoch.size, dataset.angle.size), dtype=dtype),
+            dims=["epoch", "angle"],
+            attrs=counter_attrs,
+        )
+
+    # Generate label variable for angle coordinate
+    new_vars["angle_label"] = xr.DataArray(
+        dataset.coords["angle"].values.astype(str),
         name="angle_label",
         dims=["angle"],
         attrs=attr_mgr.get_variable_attributes(
             "hi_hist_angle_label", check_schema=False
         ),
     )
-    # Other data variables
-    data_vars["ccsds_met"] = xr.DataArray(
-        np.empty(num_packets, dtype=np.uint32),
-        dims=["epoch"],
-        attrs=attr_mgr.get_variable_attributes("hi_hist_ccsds_met"),
-    )
-    data_vars["esa_stepping_num"] = xr.DataArray(
-        np.empty(num_packets, dtype=np.uint8),
-        dims=["epoch"],
-        attrs=attr_mgr.get_variable_attributes("hi_hist_esa_step"),
-    )
-    data_vars["num_of_spins"] = xr.DataArray(
-        np.empty(num_packets, dtype=np.uint8),
-        dims=["epoch"],
-        attrs=attr_mgr.get_variable_attributes("hi_hist_esa_step"),
-    )
 
-    # Allocate xarray.DataArray objects for the 24 90-element histogram counters
-    default_counter_attrs = attr_mgr.get_variable_attributes("hi_hist_counters")
-    for counter_name in (*QUALIFIED_COUNTERS, *LONG_COUNTERS, *TOTAL_COUNTERS):
-        # Inject counter name into generic counter attributes
-        counter_attrs = default_counter_attrs.copy()
-        for key, val in counter_attrs.items():
-            if isinstance(val, str) and "{counter_name}" in val:
-                counter_attrs[key] = val.format(counter_name=counter_name)
-        data_vars[counter_name] = xr.DataArray(
-            data=np.empty((num_packets, len(coords["angle"])), np.uint16),
-            dims=["epoch", "angle"],
-            attrs=counter_attrs,
-        )
-
-    dataset = xr.Dataset(
-        data_vars=data_vars,
-        coords=coords,
-        attrs=attr_mgr.get_global_attributes("imap_hi_l1a_hist_attrs"),
-    )
+    dataset.update(new_vars)
+    dataset.attrs.update(attr_mgr.get_global_attributes("imap_hi_l1a_hist_attrs"))
     return dataset
