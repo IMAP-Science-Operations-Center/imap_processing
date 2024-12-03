@@ -1,8 +1,8 @@
 import numpy as np
 
 from imap_processing.cdf.utils import write_cdf
-from imap_processing.hi.l1a import histogram as hist
 from imap_processing.hi.l1a.hi_l1a import hi_l1a
+from imap_processing.hi.l1a.histogram import unpack_hist_counter
 from imap_processing.hi.utils import HIAPID
 
 
@@ -59,19 +59,15 @@ def test_app_hist_decom(hi_l0_test_data_path):
     assert cem_raw_cdf_filepath.name.startswith("imap_hi_l1a_90sensor-hist_")
 
 
-def test_allocate_histogram_dataset():
-    """Test hi.l1a.histogram.allocate_histogram_dataset()"""
-    n_packets = 5
-    dataset = hist.allocate_histogram_dataset(n_packets)
-
-    assert dataset.attrs["Data_type"] == "L1A_HIST>Level-1A Histogram"
-    assert dataset.sizes["epoch"] == n_packets
-    assert dataset.sizes["angle"] == 90
-    for var_name in (
-        "ccsds_met",
-        "esa_stepping_num",
-        *hist.QUALIFIED_COUNTERS,
-        *hist.LONG_COUNTERS,
-        *hist.TOTAL_COUNTERS,
-    ):
-        assert var_name in dataset
+def test_unpack_hist_counter():
+    """Test hi.l1a.histogram.unpack_hist_counter()"""
+    # To ensure correct unpacking, use expected values with ones in the upper
+    # and lower parts of the 12-bit numbers
+    expected = (np.arange(180).reshape((2, 90)) + 2**10).astype(">u2")
+    # convert each expected uint16 to a 12-bit bitstring and join
+    bin_str = "".join([f"{val:012b}" for val in expected.ravel()])
+    # convert the bitstring to a bytes object
+    bytes_array = int(bin_str, 2).to_bytes(len(bin_str) // 8, byteorder="big")
+    output_array = unpack_hist_counter(bytes_array)
+    np.testing.assert_array_equal(output_array, expected)
+    assert output_array.dtype == np.uint16
