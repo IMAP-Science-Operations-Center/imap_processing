@@ -132,7 +132,7 @@ def unpack_hist_counter(counter_bytes: bytes) -> NDArray[np.uint16]:
 
     Returns
     -------
-    output_array : numpy.ndarray[np.uint16]
+    output_array : numpy.ndarray[numpy.unit16]
         The unpacked 12-bit unsigned integers for the input bytes. The
         output array has a shape of (n, 90) where n is the number of SCI_CNT
         packets in the input dataset.
