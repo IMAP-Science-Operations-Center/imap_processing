@@ -346,16 +346,16 @@ class CoDICEL1aPipeline:
         # For CoDICE-lo, data are a 3D arrays with a shape representing
         # [<num_positions>,<num_spin_sectors>,<num_energy_steps>]
         if self.config["instrument"] == "lo":
-            for packet_data in self.raw_data:
+            for packet_data in self.raw_data: #self.raw_data = appended data
                 if packet_data:
                     reshaped_packet_data = np.array(
                         packet_data, dtype=np.uint32
                     ).reshape(
                         (
-                            self.config["num_counters"],
-                            self.config["num_positions"],
-                            self.config["num_spin_sectors"],
-                            self.config["num_energy_steps"],
+                            self.config["num_counters"], #9 (species)
+                            self.config["num_positions"], #1
+                            self.config["num_spin_sectors"], #1
+                            self.config["num_energy_steps"], #128
                         )
                     )
                     self.data.append(reshaped_packet_data)
