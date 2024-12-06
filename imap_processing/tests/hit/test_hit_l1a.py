@@ -86,7 +86,7 @@ def test_compare_validation_data(sci_packet_filepath):
     l1a_counts_data = processed_datasets[0]
 
     validation_data = pd.read_csv(
-        imap_module_directory / "tests/hit/test_data/sci_sample_raw1.csv"
+        imap_module_directory / "tests/hit/validation_data/sci_sample_raw1.csv"
     )
 
     def consolidate_rate_columns(data, rate_columns):
