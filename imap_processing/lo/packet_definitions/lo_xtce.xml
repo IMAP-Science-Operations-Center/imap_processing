@@ -2592,7 +2592,7 @@
 			<xtce:IntegerParameterType name="ILO_SCI_DE.SHCOARSE" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="32" encoding="unsigned" />
 			</xtce:IntegerParameterType>
-			<xtce:BinaryParameterType name="ILO_SCI_DE.PACKETDATA">
+			<xtce:BinaryParameterType name="ILO_SCI_DE.DATA">
 				<xtce:BinaryDataEncoding bitOrder="mostSignificantBitFirst">
 					<xtce:SizeInBits>
 						<xtce:DynamicValue>
@@ -7414,7 +7414,7 @@
 			<xtce:Parameter name="ILO_SCI_DE.SHCOARSE" parameterTypeRef="ILO_SCI_DE.SHCOARSE" shortDescription="CCSDS Secondary Header MET">
 				<xtce:LongDescription>CCSDS Secondary Header MET</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="ILO_SCI_DE.PACKETDATA" parameterTypeRef="ILO_SCI_DE.PACKETDATA" shortDescription="DE Packet Data">
+			<xtce:Parameter name="ILO_SCI_DE.DATA" parameterTypeRef="ILO_SCI_DE.DATA" shortDescription="DE Packet Data">
 				<xtce:LongDescription>DE Packet Data</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="ILO_STAR.SHCOARSE" parameterTypeRef="ILO_STAR.SHCOARSE" shortDescription="CCSDS Secondary Header MET">
@@ -9388,7 +9388,7 @@ stim delay [ns] = stim_delay reg value * 20.8ns 0x0 = 0ns 0x8 = 166.4ns 0xF = 31
 				</xtce:BaseContainer>
 				<xtce:EntryList>
 					<xtce:ParameterRefEntry parameterRef="ILO_SCI_DE.SHCOARSE" />
-					<xtce:ParameterRefEntry parameterRef="ILO_SCI_DE.PACKETDATA" />
+					<xtce:ParameterRefEntry parameterRef="ILO_SCI_DE.DATA" />
 				</xtce:EntryList>
 			</xtce:SequenceContainer>
 			<xtce:SequenceContainer name="ILO_STAR">
