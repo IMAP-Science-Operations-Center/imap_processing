@@ -2,22 +2,39 @@
 
 import numpy as np
 import pytest
-import spiceypy as spice
+import spiceypy
 
 from imap_processing.spice import IMAP_SC_ID
-from imap_processing.spice.time import _sct2e_wrapper, j2000ns_to_j2000s, met_to_j2000ns
+from imap_processing.spice.time import (
+    TICK_DURATION,
+    _sct2e_wrapper,
+    j2000ns_to_j2000s,
+    met_to_datetime64,
+    met_to_j2000ns,
+    met_to_sclkticks,
+    met_to_utc,
+)
+
+
+@pytest.mark.parametrize("met", [1, np.arange(10)])
+def test_met_to_sclkticks(met):
+    """Test coverage for met_to_sclkticks."""
+    # Tick duration is 20us as specified in imap_sclk_0000.tsc
+    expected = met * 1 / 20e-6
+    ticks = met_to_sclkticks(met)
+    np.testing.assert_array_equal(ticks, expected)
 
 
 def test_met_to_j2000ns(furnish_time_kernels):
     """Test coverage for met_to_j2000ns function."""
     utc = "2026-01-01T00:00:00.125"
-    et = spice.str2et(utc)
-    sclk_str = spice.sce2s(IMAP_SC_ID, et)
+    et = spiceypy.str2et(utc)
+    sclk_str = spiceypy.sce2s(IMAP_SC_ID, et)
     seconds, ticks = sclk_str.split("/")[1].split(":")
     # There is some floating point error calculating tick duration from 1 clock
     # tick so average over many clock ticks for better accuracy
     spice_tick_duration = (
-        spice.sct2e(IMAP_SC_ID, 1e12) - spice.sct2e(IMAP_SC_ID, 0)
+        spiceypy.sct2e(IMAP_SC_ID, 1e12) - spiceypy.sct2e(IMAP_SC_ID, 0)
     ) / 1e12
     met = float(seconds) + float(ticks) * spice_tick_duration
     j2000ns = met_to_j2000ns(met)
@@ -30,7 +47,7 @@ def test_j2000ns_to_j2000s(furnish_time_kernels):
     # Use spice to come up with reasonable J2000 values
     utc = "2025-09-23T00:00:00.000"
     # Test single value input
-    et = spice.str2et(utc)
+    et = spiceypy.str2et(utc)
     epoch = int(et * 1e9)
     j2000s = j2000ns_to_j2000s(epoch)
     assert j2000s == et
@@ -39,6 +56,61 @@ def test_j2000ns_to_j2000s(furnish_time_kernels):
     j2000s = j2000ns_to_j2000s(epoch)
     np.testing.assert_array_equal(
         j2000s, np.arange(et, et + 10000, 100, dtype=np.float64)
+    )
+
+
+@pytest.mark.parametrize(
+    "expected_utc, precision",
+    [
+        ("2024-01-01T00:00:00.000", 3),
+        (
+            [
+                "2024-01-01T00:00:00.000555",
+                "2025-09-23T00:00:00.000111",
+                "2040-11-14T10:23:48.156980",
+            ],
+            6,
+        ),
+    ],
+)
+def test_met_to_utc(furnish_time_kernels, expected_utc, precision):
+    """Test coverage for met_to_utc function."""
+    if isinstance(expected_utc, list):
+        et_arr = spiceypy.str2et(expected_utc)
+        sclk_ticks = np.array([spiceypy.sce2c(IMAP_SC_ID, et) for et in et_arr])
+    else:
+        et = spiceypy.str2et(expected_utc)
+        sclk_ticks = spiceypy.sce2c(IMAP_SC_ID, et)
+    met = sclk_ticks * TICK_DURATION
+    utc = met_to_utc(met, precision=precision)
+    np.testing.assert_array_equal(utc, expected_utc)
+
+
+@pytest.mark.parametrize(
+    "utc",
+    [
+        "2024-01-01T00:00:00.000",
+        [
+            "2024-01-01T00:00:00.000",
+            "2025-09-23T00:00:00.000",
+            "2040-11-14T10:23:48.15698",
+        ],
+    ],
+)
+def test_met_to_datetime64(furnish_time_kernels, utc):
+    """Test coverage for met_to_datetime64 function."""
+    if isinstance(utc, list):
+        expected_dt64 = np.array([np.datetime64(utc_str) for utc_str in utc])
+        et_arr = spiceypy.str2et(utc)
+        sclk_ticks = np.array([spiceypy.sce2c(IMAP_SC_ID, et) for et in et_arr])
+    else:
+        expected_dt64 = np.asarray(np.datetime64(utc))
+        et = spiceypy.str2et(utc)
+        sclk_ticks = spiceypy.sce2c(IMAP_SC_ID, et)
+    met = sclk_ticks * TICK_DURATION
+    dt64 = met_to_datetime64(met)
+    np.testing.assert_array_equal(
+        dt64.astype("datetime64[us]"), expected_dt64.astype("datetime64[us]")
     )
 
 

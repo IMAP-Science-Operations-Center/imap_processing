@@ -13,13 +13,9 @@ from cdflib.xarray.cdf_to_xarray import ISTP_TO_XARRAY_ATTRS
 
 import imap_processing
 from imap_processing._version import __version__, __version_tuple__  # noqa: F401
+from imap_processing.spice.time import J2000_EPOCH
 
 logger = logging.getLogger(__name__)
-
-
-# Reference start time (launch time or epoch)
-# DEFAULT_EPOCH = np.datetime64("2010-01-01T00:01:06.184", "ns")
-J2000_EPOCH = np.datetime64("2000-01-01T11:58:55.816", "ns")
 
 
 def load_cdf(
@@ -96,6 +92,8 @@ def write_cdf(
     # Logical_source looks like "imap_swe_l2_counts-1min"
     instrument, data_level, descriptor = dataset.attrs["Logical_source"].split("_")[1:]
     # Convert J2000 epoch referenced data to datetime64
+    # TODO: This implementation of epoch to time string results in an error of
+    #       5 seconds due to 5 leap-second occurrences since the J2000 epoch.
     dt64 = J2000_EPOCH + dataset["epoch"].values[0].astype("timedelta64[ns]")
     start_time = np.datetime_as_string(dt64, unit="D").replace("-", "")
 
