@@ -93,7 +93,7 @@ def subcom_sectorates(sci_dataset: xr.Dataset) -> None:
     """
     # TODO:
     #  - Update to use fill values defined in attribute manager which
-    #    isn't passed into this module nor defined for L1A sci data yet
+    #    isn't defined for L1A science data yet
 
     # Calculate mod 10 values
     hdr_min_count_mod_10 = sci_dataset.hdr_minute_cnt.values % 10
