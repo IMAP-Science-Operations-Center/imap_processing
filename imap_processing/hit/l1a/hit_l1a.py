@@ -94,9 +94,6 @@ def subcom_sectorates(sci_dataset: xr.Dataset) -> None:
     # TODO:
     #  - Update to use fill values defined in attribute manager which
     #    isn't passed into this module nor defined for L1A sci data yet
-    #  - Determine naming convention for species data fields in dataset
-    #    (i.e. h, H, hydrogen, Hydrogen, etc.)
-    #  - consider moving this function to hit_l1a.py
 
     # Calculate mod 10 values
     hdr_min_count_mod_10 = sci_dataset.hdr_minute_cnt.values % 10
@@ -105,7 +102,7 @@ def subcom_sectorates(sci_dataset: xr.Dataset) -> None:
     # energy ranges and add 8x15 arrays with fill values for each science frame.
     num_frames = len(hdr_min_count_mod_10)
     data_by_species_and_energy_range = {
-        key: {**value, "rates": np.full((num_frames, 8, 15), fill_value=np.nan)}
+        key: {**value, "rates": np.full((num_frames, 8, 15), fill_value=-1, dtype=int)}
         for key, value in MOD_10_MAPPING.items()
     }
 
@@ -130,16 +127,17 @@ def subcom_sectorates(sci_dataset: xr.Dataset) -> None:
         data_by_species[species]["energy_max"].append(value["energy_max"])
 
     # Add sector rates by species to the dataset
-    for species, data in data_by_species.items():
+    for species_type, data in data_by_species.items():
         # Rates data has shape: energy_index, epoch, declination, azimuth
         # Convert rates to numpy array and transpose axes to get
         # shape: epoch, energy_index, declination, azimuth
         rates_data = np.transpose(np.array(data["rates"]), axes=(1, 0, 2, 3))
 
-        sci_dataset[species] = xr.DataArray(
+        species = species_type.lower()
+        sci_dataset[f"{species}_counts_sectored"] = xr.DataArray(
             data=rates_data,
             dims=["epoch", f"{species}_energy_index", "declination", "azimuth"],
-            name=species,
+            name=f"{species}_counts_sectored",
         )
         sci_dataset[f"{species}_energy_min"] = xr.DataArray(
             data=np.array(data["energy_min"]),
@@ -200,6 +198,7 @@ def process_science(
     # print(sci_dataset["H"][0])
 
     # Split the science data into count rates and event datasets
+    # TODO: remove spare bits from count rates dataset
     # TODO: what else to include in pha? ccsds header info?
     pha_raw_dataset = xr.Dataset(
         {"pha_raw": sci_dataset["pha_raw"]}, coords={"epoch": sci_dataset["epoch"]}
