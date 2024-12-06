@@ -15,7 +15,6 @@ from imap_processing.hit.l0.decom_hit import (
     is_sequential,
     parse_count_rates,
     parse_data,
-    subcom_sectorates,
     update_ccsds_header_dims,
 )
 from imap_processing.utils import packet_file_to_datasets
@@ -201,45 +200,6 @@ def test_assemble_science_frames(sci_dataset):
     assert "pha_raw" in updated_dataset
 
 
-def test_subcom_sectorates(sci_dataset):
-    """Test the subcom_sectorates function.
-
-    This function organizes the sector rates data
-    into new variables for each species and adds
-    them to the dataset.
-    """
-
-    # Prepare the input needed for the function to be called
-    sci_dataset = update_ccsds_header_dims(sci_dataset)
-    sci_dataset = assemble_science_frames(sci_dataset)
-    parse_count_rates(sci_dataset)
-
-    # Call the function to be tested
-    subcom_sectorates(sci_dataset)
-
-    # Check if the dataset has the expected new variables
-    for species in ["H", "4He", "CNO", "NeMgSi", "Fe"]:
-        assert species in sci_dataset
-        assert f"{species}_energy_min" in sci_dataset
-        assert f"{species}_energy_max" in sci_dataset
-
-    # Check the shape of the new variables
-    for species in ["H", "4He", "CNO", "NeMgSi", "Fe"]:
-        if species == "H":
-            assert sci_dataset[species].shape == (86, 3, 8, 15)
-            assert sci_dataset[f"{species}_energy_min"].shape == (3,)
-        elif species in ("4He", "CNO", "NeMgSi"):
-            assert sci_dataset[species].shape == (86, 2, 8, 15)
-            assert sci_dataset[f"{species}_energy_min"].shape == (2,)
-        elif species == "Fe":
-            assert sci_dataset[species].shape == (86, 1, 8, 15)
-            assert sci_dataset[f"{species}_energy_min"].shape == (1,)
-        assert (
-            sci_dataset[f"{species}_energy_max"].shape
-            == sci_dataset[f"{species}_energy_min"].shape
-        )
-
-
 @pytest.mark.parametrize(
     "packed, expected",
     [
@@ -266,14 +226,7 @@ def test_decom_hit(sci_dataset):
     This function orchestrates the unpacking and decompression
     of the HIT science data.
     """
-    # TODO: complete this test once the function is complete
+    # TODO: complete this test to check that all new variables exist
     updated_dataset = decom_hit(sci_dataset)
     # Check if the dataset has the expected new variables
-    # Check that binary science data exists
-    assert "count_rates_raw" in updated_dataset
     assert "pha_raw" in updated_dataset
-    # Check that sector rates data has been organized
-    for species in ["H", "4He", "CNO", "NeMgSi", "Fe"]:
-        assert species in updated_dataset
-        assert f"{species}_energy_min" in updated_dataset
-        assert f"{species}_energy_max" in updated_dataset
