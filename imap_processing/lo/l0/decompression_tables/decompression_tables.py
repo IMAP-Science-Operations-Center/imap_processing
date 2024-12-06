@@ -13,6 +13,16 @@ DE_BIT_SHIFT = {
     "pos": 0,
 }
 
+# Named tuple for all the packet fields in the
+# direct event packet that need to be parsed
+# but are not part of the compressed DE data.
+PacketFields = namedtuple(
+    "PacketFields",
+    [
+        "passes",
+    ],
+)
+
 # Named tuple for all the fixed fields in the
 # direct event. These fields will always be transmitted.
 FixedFields = namedtuple(
@@ -39,6 +49,11 @@ VariableFields = namedtuple(
         "pos",
     ],
 )
+
+# number of bits for each packet field
+# passes: 32 bits
+PACKET_FIELD_BITS = PacketFields(32)
+
 # number of bits for each fixed field
 # coincidence_type: 4 bits
 # de_time: 12 bits
@@ -54,6 +69,7 @@ FIXED_FIELD_BITS = FixedFields(4, 12, 3, 1)
 # cksm: 4 bits
 # pos: 2 bits
 VARIABLE_FIELD_BITS = VariableFields(10, 9, 9, 6, 4, 2)
+
 
 # Variable fields that are transmitted for each case and mode.
 # (case, mode): tof0, tof1, tof2, tof3, cksm, pos
