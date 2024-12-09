@@ -170,6 +170,9 @@
 				<xtce:LongDescription>CCSDS Packet Length (number of bytes after Packet length minus 1)</xtce:LongDescription>
 			</xtce:Parameter>
 			<!-- CoDICE LO -->
+			<xtce:Parameter name="COD_LO_SHCOARSE" parameterTypeRef="uint32">
+				<xtce:LongDescription>CODICE LO MET at End of Data Acquisition</xtce:LongDescription>
+			</xtce:Parameter>
 			<xtce:Parameter name="COD_LO_ACQ" parameterTypeRef="uint32">
 				<xtce:LongDescription>CODICE LO MET at End of Data Acquisition</xtce:LongDescription>
 			</xtce:Parameter>
@@ -250,6 +253,7 @@
 				</xtce:BaseContainer>
 				<xtce:EntryList>
 					<!-- CoDICE LO -->
+					<xtce:ParameterRefEntry parameterRef="COD_LO_SHCOARSE"/>
 					<xtce:ParameterRefEntry parameterRef="COD_LO_ACQ"/>
 					<xtce:ParameterRefEntry parameterRef="COD_LO_STATUS"/>
 					<xtce:ParameterRefEntry parameterRef="COD_LO_COUNTER"/>

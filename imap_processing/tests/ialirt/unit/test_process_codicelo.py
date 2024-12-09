@@ -21,7 +21,7 @@ def xtce_codicelo_path():
 
 @pytest.fixture(scope="session")
 def binary_packet_path():
-    """Returns the xtce auxiliary directory."""
+    """Returns the xtce directory."""
     return (
         imap_module_directory
         / "tests"
@@ -34,7 +34,7 @@ def binary_packet_path():
 
 @pytest.fixture(scope="session")
 def codicelo_test_data():
-    """Returns the xtce auxiliary directory."""
+    """Returns the test data directory."""
     data_path = (
         imap_module_directory
         / "tests"
@@ -61,9 +61,9 @@ def test_find_groups(xarray_data):
     """Tests find_groups"""
 
     grouped_data = find_groups(xarray_data)
-    group_1_data = grouped_data["src_seq_ctr"].values[grouped_data["group"] == 1]
+    group_1_data = grouped_data["cod_lo_counter"].values[grouped_data["group"] == 1]
 
-    np.testing.assert_array_equal(group_1_data, np.arange(240))
+    np.testing.assert_array_equal(group_1_data, np.arange(233))
 
 
 def test_append_cod_lo_data(xarray_data):
@@ -73,28 +73,29 @@ def test_append_cod_lo_data(xarray_data):
     unique_groups = np.unique(grouped_data["group"])
     for group in unique_groups:
         mask = grouped_data["group"] == group
-        group_data = grouped_data.sel(group=mask)
-        expected_src_seq_ctr = np.repeat(group_data["src_seq_ctr"].values, 15)
+        filtered_indices = np.where(mask)[0]
+        group_data = grouped_data.isel(epoch=filtered_indices)
+        expected_cod_lo_counter = np.repeat(group_data["cod_lo_counter"].values, 15)
         appended_data = append_cod_lo_data(group_data)
         assert np.array_equal(
-            appended_data["src_seq_ctr"].values, expected_src_seq_ctr.astype(int)
+            appended_data["cod_lo_counter"].values, expected_cod_lo_counter.astype(int)
         )
 
 
 def test_process_codicelo(xarray_data, codicelo_test_data, caplog):
     """Tests process_codicelo."""
     codicelo_product = process_codicelo(xarray_data)
-    assert codicelo_product == {}
+    assert codicelo_product == [{}]
 
     indices = (xarray_data["cod_lo_acq"] != 0).values.nonzero()[0]
-    xarray_data["src_seq_ctr"].values[indices[0] : indices[0] + 240] = (
-        np.random.permutation(240)
+    xarray_data["cod_lo_counter"].values[indices[0] : indices[0] + 233] = (
+        np.random.permutation(233)
     )
 
     with caplog.at_level("WARNING"):
         process_codicelo(xarray_data)
 
     assert any(
-        "does not contain all values from 0 to 239 without duplicates" in message
+        "does not contain all values from 0 to 232 without duplicates" in message
         for message in caplog.text.splitlines()
     )

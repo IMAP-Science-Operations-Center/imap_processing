@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 def find_groups(data: xr.Dataset) -> xr.Dataset:
     """
-    Find all occurrences of the sequential set of 240 values 0-239.
+    Find all occurrences of the sequential set of 233 values 0-232.
 
     If a value is missing, or we are starting/ending
     in the middle of a sequence we do not count that as a valid group.
@@ -26,19 +26,22 @@ def find_groups(data: xr.Dataset) -> xr.Dataset:
     grouped_data : xr.Dataset
         Grouped data.
     """
-    subcom_range = (0, 239)
+    subcom_range = (0, 232)
 
     data = data.sortby("cod_lo_acq", ascending=True)
 
-    # Use src_seq_ctr == 0 to define the beginning of the group.
+    # Use cod_lo_counter == 0 to define the beginning of the group.
     # Find cod_lo_acq at this index and use it as the beginning time for the group.
-    start_sc_ticks = data["cod_lo_acq"][(data["src_seq_ctr"] == subcom_range[0])]
+    start_sc_ticks = data["cod_lo_acq"][(data["cod_lo_counter"] == subcom_range[0])]
     start_sc_tick = start_sc_ticks.min()
-    # Use src_seq_ctr == 239 to define the end of the group.
-    last_sc_ticks = data["cod_lo_acq"][([data["src_seq_ctr"] == subcom_range[-1]][-1])]
+    # Use cod_lo_counter == 232 to define the end of the group.
+    last_sc_ticks = data["cod_lo_acq"][
+        ([data["cod_lo_counter"] == subcom_range[-1]][-1])
+    ]
     last_sc_tick = last_sc_ticks.max()
 
-    # Filter out data before the first src_seq_ctr=0 and after the last src_seq_ctr=239.
+    # Filter out data before the first cod_lo_counter=0 and
+    # after the last cod_lo_counter=232.
     grouped_data = data.where(
         (data["cod_lo_acq"] >= start_sc_tick) & (data["cod_lo_acq"] <= last_sc_tick),
         drop=True,
@@ -77,7 +80,7 @@ def append_cod_lo_data(dataset: xr.Dataset) -> xr.Dataset:
     appended_data = np.empty((0, num_cod_lo_rows))
 
     # Stack the cod_lo_data values into a single array.
-    for ctr in dataset["src_seq_ctr"]:
+    for ctr in dataset["cod_lo_counter"]:
         row = np.array(
             [
                 dataset[f"cod_lo_data_{i:02}"][int(ctr)].item()
@@ -130,20 +133,24 @@ def process_codicelo(xarray_data: xr.Dataset) -> list[dict]:
     codicelo_data: list[dict[str, Any]] = [{}]
 
     for group in unique_groups:
-        # Src_seq_ctr values for the group should be 0-239 with no duplicates.
-        subcom_values = grouped_data["src_seq_ctr"][
+        # cod_lo_counter values for the group should be 0-232 with no duplicates.
+        subcom_values = grouped_data["cod_lo_counter"][
             (grouped_data["group"] == group).values
         ]
 
-        # Ensure no duplicates and all values from 0 to 239 are present
-        if not np.array_equal(subcom_values, np.arange(240)):
+        # Ensure no duplicates and all values from 0 to 232 are present
+        if not np.array_equal(subcom_values, np.arange(233)):
             logger.warning(
                 f"Group {group} does not contain all values from 0 to "
-                f"239 without duplicates."
+                f"232 without duplicates."
             )
             continue
 
-        append_cod_lo_data(grouped_data)
+        mask = grouped_data["group"] == group
+        filtered_indices = np.where(mask)[0]
+        group_data = grouped_data.isel(epoch=filtered_indices)
+
+        append_cod_lo_data(group_data)
 
         # TODO: calculate species counts
         # TODO: calculate rates

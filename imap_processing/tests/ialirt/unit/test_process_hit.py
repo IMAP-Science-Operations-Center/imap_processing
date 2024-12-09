@@ -20,7 +20,7 @@ def xtce_hit_path():
 
 @pytest.fixture(scope="session")
 def binary_packet_path():
-    """Returns the xtce auxiliary directory."""
+    """Returns the xtce directory."""
     return (
         imap_module_directory
         / "tests"
@@ -33,7 +33,7 @@ def binary_packet_path():
 
 @pytest.fixture(scope="session")
 def hit_test_data():
-    """Returns the xtce auxiliary directory."""
+    """Returns the test data directory."""
     data_path = (
         imap_module_directory
         / "tests"
