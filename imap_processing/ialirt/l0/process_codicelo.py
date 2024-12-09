@@ -63,7 +63,7 @@ def find_groups(data: xr.Dataset) -> xr.Dataset:
 
 def append_cod_lo_data(dataset: xr.Dataset) -> xr.Dataset:
     """
-    Append the cod_lo_## data values and create a xarray.
+    Append the cod_lo_## data values and create an xarray.
 
     Parameters
     ----------
@@ -77,24 +77,17 @@ def append_cod_lo_data(dataset: xr.Dataset) -> xr.Dataset:
     """
     # Number of codice lo data rows
     num_cod_lo_rows = 15
-    appended_data = np.empty((0, num_cod_lo_rows))
+    cod_lo_data = np.stack(
+        [dataset[f"cod_lo_data_{i:02}"].values for i in range(num_cod_lo_rows)], axis=1
+    )
 
-    # Stack the cod_lo_data values into a single array.
-    for ctr in dataset["cod_lo_counter"]:
-        row = np.array(
-            [
-                dataset[f"cod_lo_data_{i:02}"][int(ctr)].item()
-                for i in range(num_cod_lo_rows)
-            ]
-        )
-        appended_data = np.vstack([appended_data, row])
+    repeated_data = {
+        var: np.repeat(dataset[var].values, num_cod_lo_rows)
+        for var in dataset.data_vars
+        if not var.startswith("cod_lo_data_")
+    }
 
-    # Repeat the other data values to match the number of cod_lo_data rows.
-    repeated_data = {}
-    for var in dataset.data_vars:
-        if not var.startswith("cod_lo_data_"):
-            repeated_data[var] = np.repeat(dataset[var].values, num_cod_lo_rows)
-    repeated_data["cod_lo_appended"] = appended_data.flatten()
+    repeated_data["cod_lo_appended"] = cod_lo_data.flatten()
     repeated_epoch = np.repeat(dataset["epoch"].values, num_cod_lo_rows)
 
     appended_dataset = xr.Dataset(
