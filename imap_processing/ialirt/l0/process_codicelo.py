@@ -57,6 +57,46 @@ def find_groups(data: xr.Dataset) -> xr.Dataset:
     return grouped_data
 
 
+def append_cod_lo_data(dataset: xr.Dataset) -> xr.Dataset:
+    """
+    Append the cod_lo_## data values and create a xarray.
+
+    Parameters
+    ----------
+    dataset : xr.Dataset
+        Original dataset of group.
+
+    Returns
+    -------
+    appended_dataset : xr.Dataset
+        Dataset with cod_lo_## stacked.
+    """
+    # Number of codice lo data rows
+    num_cod_lo_rows = 15
+    appended_data = np.empty((0, num_cod_lo_rows))
+
+    # Stack the cod_lo_data values into a single array.
+    for ctr in dataset["src_seq_ctr"]:
+        row = np.array([dataset[f"cod_lo_data_{i:02}"][int(ctr)].item() for i in range(num_cod_lo_rows)])
+        appended_data = np.vstack([appended_data, row])
+
+    # Repeat the other data values to match the number of cod_lo_data rows.
+    repeated_data = {}
+    for var in dataset.data_vars:
+        if not var.startswith("cod_lo_data_"):
+            repeated_data[var] = np.repeat(dataset[var].values, num_cod_lo_rows)
+    repeated_data["cod_lo_appended"] = (("epoch",), appended_data.flatten())
+    repeated_epoch = np.repeat(dataset["epoch"].values, num_cod_lo_rows)
+
+    # Create an appended dataset.
+    appended_dataset = xr.Dataset(
+        data_vars={name: (("epoch",), values) for name, values in repeated_data.items()},
+        coords={"epoch": repeated_epoch}
+    )
+
+    return appended_dataset
+
+
 def process_codicelo(xarray_data: xr.Dataset) -> list[dict]:
     """
     Create data dictionary.
@@ -88,11 +128,7 @@ def process_codicelo(xarray_data: xr.Dataset) -> list[dict]:
                 f"239 without duplicates.")
             continue
 
-        appended_data = np.empty((0, 15))
-
-        for ctr in grouped_data["src_seq_ctr"]:
-            row = np.array([grouped_data[f"cod_lo_data_{i:02}"][int(ctr)].item() for i in range(15)])
-            appended_data = np.vstack([appended_data, row])
+        appended_dataset = append_cod_lo_data(grouped_data)
 
         # TODO: import function to calculate species counts (pg 27 of Algorithm Document)
         # TODO: calculate rates (assume 4 minutes per group)
