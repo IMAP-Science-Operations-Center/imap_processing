@@ -1,12 +1,11 @@
 import numpy as np
-import pandas as pd
 import pytest
 
 from imap_processing import imap_module_directory
 from imap_processing.cdf.utils import load_cdf
 from imap_processing.ialirt.l0.process_codicelo import (
-    find_groups,
     append_cod_lo_data,
+    find_groups,
     process_codicelo,
 )
 from imap_processing.utils import packet_file_to_datasets
@@ -15,19 +14,21 @@ from imap_processing.utils import packet_file_to_datasets
 @pytest.fixture(scope="session")
 def xtce_codicelo_path():
     """Returns the xtce directory."""
-    return imap_module_directory / "ialirt" / "packet_definitions" / "ialirt_codicelo.xml"
+    return (
+        imap_module_directory / "ialirt" / "packet_definitions" / "ialirt_codicelo.xml"
+    )
 
 
 @pytest.fixture(scope="session")
 def binary_packet_path():
     """Returns the xtce auxiliary directory."""
-    return  (
+    return (
         imap_module_directory
         / "tests"
         / "ialirt"
         / "test_data"
         / "l0"
-        / "lo_fsw_view_0_ccsds.bin"
+        / "apid01152.tlm"
     )
 
 
@@ -40,7 +41,7 @@ def codicelo_test_data():
         / "ialirt"
         / "test_data"
         / "l0"
-        / "imap_codice_l1a_lo-ialirt_20240429164800_v0.0.0.cdf"
+        / "imap_codice_l1a_lo-ialirt_20241110193700_v0.0.0.cdf"
     )
     data = load_cdf(data_path)
 
@@ -59,12 +60,10 @@ def xarray_data(binary_packet_path, xtce_codicelo_path):
 def test_find_groups(xarray_data):
     """Tests find_groups"""
 
-    filtered_data = find_groups(xarray_data)
-    group_1_data = filtered_data["src_seq_ctr"].values[filtered_data["group"] == 1]
+    grouped_data = find_groups(xarray_data)
+    group_1_data = grouped_data["src_seq_ctr"].values[grouped_data["group"] == 1]
 
-    np.testing.assert_array_equal(
-        group_1_data, np.arange(240)
-    )
+    np.testing.assert_array_equal(group_1_data, np.arange(240))
 
 
 def test_append_cod_lo_data(xarray_data):
@@ -73,19 +72,29 @@ def test_append_cod_lo_data(xarray_data):
     grouped_data = find_groups(xarray_data)
     unique_groups = np.unique(grouped_data["group"])
     for group in unique_groups:
-        appended_data = append_cod_lo_data(xarray_data)
+        mask = grouped_data["group"] == group
+        group_data = grouped_data.sel(group=mask)
+        expected_src_seq_ctr = np.repeat(group_data["src_seq_ctr"].values, 15)
+        appended_data = append_cod_lo_data(group_data)
+        assert np.array_equal(
+            appended_data["src_seq_ctr"].values, expected_src_seq_ctr.astype(int)
+        )
 
 
-        print('hi')
-
-
-def test_process_codicelo(xarray_data, codicelo_test_data):
-    """Tests process_hit."""
-
-    # Tests that it functions normally
+def test_process_codicelo(xarray_data, codicelo_test_data, caplog):
+    """Tests process_codicelo."""
     codicelo_product = process_codicelo(xarray_data)
+    assert codicelo_product == {}
 
-    print('hi')
+    indices = (xarray_data["cod_lo_acq"] != 0).values.nonzero()[0]
+    xarray_data["src_seq_ctr"].values[indices[0] : indices[0] + 240] = (
+        np.random.permutation(240)
+    )
 
+    with caplog.at_level("WARNING"):
+        process_codicelo(xarray_data)
 
-
+    assert any(
+        "does not contain all values from 0 to 239 without duplicates" in message
+        for message in caplog.text.splitlines()
+    )

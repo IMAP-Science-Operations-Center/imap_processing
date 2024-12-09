@@ -1,6 +1,7 @@
 """Functions to support CoDICE Lo processing."""
 
 import logging
+from typing import Any
 
 import numpy as np
 import xarray as xr
@@ -77,7 +78,12 @@ def append_cod_lo_data(dataset: xr.Dataset) -> xr.Dataset:
 
     # Stack the cod_lo_data values into a single array.
     for ctr in dataset["src_seq_ctr"]:
-        row = np.array([dataset[f"cod_lo_data_{i:02}"][int(ctr)].item() for i in range(num_cod_lo_rows)])
+        row = np.array(
+            [
+                dataset[f"cod_lo_data_{i:02}"][int(ctr)].item()
+                for i in range(num_cod_lo_rows)
+            ]
+        )
         appended_data = np.vstack([appended_data, row])
 
     # Repeat the other data values to match the number of cod_lo_data rows.
@@ -85,13 +91,12 @@ def append_cod_lo_data(dataset: xr.Dataset) -> xr.Dataset:
     for var in dataset.data_vars:
         if not var.startswith("cod_lo_data_"):
             repeated_data[var] = np.repeat(dataset[var].values, num_cod_lo_rows)
-    repeated_data["cod_lo_appended"] = (("epoch",), appended_data.flatten())
+    repeated_data["cod_lo_appended"] = appended_data.flatten()
     repeated_epoch = np.repeat(dataset["epoch"].values, num_cod_lo_rows)
 
-    # Create an appended dataset.
     appended_dataset = xr.Dataset(
-        data_vars={name: (("epoch",), values) for name, values in repeated_data.items()},
-        coords={"epoch": repeated_epoch}
+        data_vars={name: ("epoch", values) for name, values in repeated_data.items()},
+        coords={"epoch": repeated_epoch},
     )
 
     return appended_dataset
@@ -99,22 +104,30 @@ def append_cod_lo_data(dataset: xr.Dataset) -> xr.Dataset:
 
 def process_codicelo(xarray_data: xr.Dataset) -> list[dict]:
     """
-    Create data dictionary.
+    Create final data products.
 
     Parameters
     ----------
-    xarray_data : dict(xr.Dataset)
-        Dictionary of xarray data including a single
-        set for processing.
+    xarray_data : xr.Dataset
+        Parsed data.
 
     Returns
     -------
-    codicelo_data : dict
-        Dictionary final data product.
+    codicelo_data : list[dict]
+        Dictionary of final data product.
+
+    Notes
+    -----
+    This function is incomplete and will need to be updated to include the
+    necessary calculations and data products.
+    - Calculate species counts (pg 27 of Algorithm Document)
+    - Calculate rates (assume 4 minutes per group)
+    - Calculate L2 CoDICE pseudodensities (pg 37 of Algorithm Document)
+    - Calculate the public data products
     """
     grouped_data = find_groups(xarray_data)
     unique_groups = np.unique(grouped_data["group"])
-    codicelo_data = {}
+    codicelo_data: list[dict[str, Any]] = [{}]
 
     for group in unique_groups:
         # Src_seq_ctr values for the group should be 0-239 with no duplicates.
@@ -124,15 +137,17 @@ def process_codicelo(xarray_data: xr.Dataset) -> list[dict]:
 
         # Ensure no duplicates and all values from 0 to 239 are present
         if not np.array_equal(subcom_values, np.arange(240)):
-            logger.warning(f"Group {group} does not contain all values from 0 to "
-                f"239 without duplicates.")
+            logger.warning(
+                f"Group {group} does not contain all values from 0 to "
+                f"239 without duplicates."
+            )
             continue
 
-        appended_dataset = append_cod_lo_data(grouped_data)
+        append_cod_lo_data(grouped_data)
 
-        # TODO: import function to calculate species counts (pg 27 of Algorithm Document)
-        # TODO: calculate rates (assume 4 minutes per group)
-        # TODO: import function that calculates L2 CoDICE pseudodensities (pg 37 of Algorithm Document)
+        # TODO: calculate species counts
+        # TODO: calculate rates
+        # TODO: calculate L2 CoDICE pseudodensities
         # TODO: calculate the public data products
 
     return codicelo_data
