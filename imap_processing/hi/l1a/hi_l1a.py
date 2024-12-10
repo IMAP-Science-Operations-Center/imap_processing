@@ -33,7 +33,7 @@ def hi_l1a(packet_file_path: Union[str, Path], data_version: str) -> list[xr.Dat
         List of processed xarray dataset.
     """
     packet_def_file = (
-        imap_module_directory / "hi/packet_definitions/TLM_HI_COMBINED_20241121.xml"
+        imap_module_directory / "hi/packet_definitions/TLM_HI_COMBINED_SCI.xml"
     )
     datasets_by_apid = packet_file_to_datasets(
         packet_file=packet_file_path, xtce_packet_definition=packet_def_file
