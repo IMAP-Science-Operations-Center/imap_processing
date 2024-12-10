@@ -2,7 +2,7 @@
 
 import numpy as np
 import pytest
-import spiceypy as spice
+import spiceypy
 
 from imap_processing.spice import IMAP_SC_ID
 from imap_processing.spice.time import (
@@ -14,7 +14,7 @@ from imap_processing.spice.time import (
     met_to_j2000ns,
     met_to_sclkticks,
     met_to_utc,
-    str_to_et
+    str_to_et,
 )
 
 
@@ -30,13 +30,13 @@ def test_met_to_sclkticks(met):
 def test_met_to_j2000ns(furnish_time_kernels):
     """Test coverage for met_to_j2000ns function."""
     utc = "2026-01-01T00:00:00.125"
-    et = spice.str2et(utc)
-    sclk_str = spice.sce2s(IMAP_SC_ID, et)
+    et = spiceypy.str2et(utc)
+    sclk_str = spiceypy.sce2s(IMAP_SC_ID, et)
     seconds, ticks = sclk_str.split("/")[1].split(":")
     # There is some floating point error calculating tick duration from 1 clock
     # tick so average over many clock ticks for better accuracy
     spice_tick_duration = (
-        spice.sct2e(IMAP_SC_ID, 1e12) - spice.sct2e(IMAP_SC_ID, 0)
+        spiceypy.sct2e(IMAP_SC_ID, 1e12) - spiceypy.sct2e(IMAP_SC_ID, 0)
     ) / 1e12
     met = float(seconds) + float(ticks) * spice_tick_duration
     j2000ns = met_to_j2000ns(met)
@@ -49,7 +49,7 @@ def test_j2000ns_to_j2000s(furnish_time_kernels):
     # Use spice to come up with reasonable J2000 values
     utc = "2025-09-23T00:00:00.000"
     # Test single value input
-    et = spice.str2et(utc)
+    et = spiceypy.str2et(utc)
     epoch = int(et * 1e9)
     j2000s = j2000ns_to_j2000s(epoch)
     assert j2000s == et
