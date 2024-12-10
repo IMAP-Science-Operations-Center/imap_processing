@@ -8,11 +8,13 @@ Reference: https://spiceypy.readthedocs.io/en/main/documentation.html.
 
 import logging
 import typing
+from typing import Union
 
 import numpy as np
 import spiceypy as spice
 from numpy import ndarray
 
+from imap_processing.spice.geometry import SpiceBody
 from imap_processing.spice.kernels import ensure_spice
 from imap_processing.spice.time import et_to_utc, str_to_et
 
@@ -20,16 +22,28 @@ from imap_processing.spice.time import et_to_utc, str_to_et
 logger = logging.getLogger(__name__)
 
 
-def calculate_doppler() -> int:
+@typing.no_type_check
+def calculate_doppler(
+    observation_time: Union[float, np.ndarray],
+) -> Union[int, ndarray[float]]:
     """
     Calculate the doppler shift. Placeholder for now.
 
+    Parameters
+    ----------
+    observation_time : float or np.ndarray
+        Time at which the state of the target relative to the observer
+        is to be computed. Expressed as ephemeris time, seconds past J2000 TDB.
+
     Returns
     -------
-    doppler : int
+    doppler : float or np.ndarray[float]
         Doppler shift. Currently a throwaway value.
     """
-    return 1
+    if isinstance(observation_time, np.ndarray):
+        return np.ones(len(observation_time), dtype=float)
+    else:
+        return 1
 
 
 @typing.no_type_check
@@ -61,16 +75,16 @@ def latitude_longitude_to_ecef(
     longitude_radians = np.deg2rad(longitude)
 
     # Retrieve Earth's radii from SPICE
-    # https://spiceypy.readthedocs.io/en/main/documentation.html#spiceypy.spiceypy.
-    # (url cont.) bodvrd
+    # https://spiceypy.readthedocs.io/en/main/documentation.html#spiceypy.spiceypy.bod
+    # (url cont.) vrd
     radii = spice.bodvrd("EARTH", "RADII", 3)[1]
     equatorial_radius = radii[0]  # Equatorial radius in km
     polar_radius = radii[2]  # Polar radius in km
     flattening = (equatorial_radius - polar_radius) / equatorial_radius
 
     # Convert geodetic coordinates to rectangular coordinates
-    # https://spiceypy.readthedocs.io/en/main/documentation.html#spiceypy.spiceypy.
-    # (url cont.) georec
+    # https://spiceypy.readthedocs.io/en/main/documentation.html#spiceypy.spiceypy.geo
+    # (url cont.) rec
     rect_coords = spice.georec(
         longitude_radians, latitude_radians, altitude, equatorial_radius, flattening
     )
@@ -84,8 +98,8 @@ def calculate_azimuth_and_elevation(
     longitude: float,
     latitude: float,
     altitude: float,
-    observation_time: float,
-    target: str = "IMAP",
+    observation_time: Union[float, np.ndarray],
+    target: SpiceBody = SpiceBody.IMAP.name,
 ) -> tuple:
     """
     Calculate azimuth and elevation.
@@ -100,7 +114,7 @@ def calculate_azimuth_and_elevation(
         to south.
     altitude : float
         Altitude in kilometers.
-    observation_time : float
+    observation_time : float or np.ndarray
         Time at which the state of the target relative to the observer
         is to be computed. Expressed as ephemeris time, seconds past J2000 TDB.
     target : str (Optional)
@@ -108,36 +122,54 @@ def calculate_azimuth_and_elevation(
 
     Returns
     -------
-    azimuth : float
+    azimuth : np.ndarray
         Azimuth in degrees.
-    elevation : float
+    elevation : np.ndarray
         Elevation in degrees.
     """
     observer_position_ecef = latitude_longitude_to_ecef(longitude, latitude, altitude)
 
-    # https://spiceypy.readthedocs.io/en/main/documentation.html#spiceypy.spiceypy.
-    # (url cont.) azlcpo
-    azel_results = spice.azlcpo(
-        method="Ellipsoid",  # Only method supported
-        target=target,  # target ephemeris object
-        et=observation_time,  # time of observation
-        abcorr="LT+S",  # Aberration correction
-        azccw=False,  # Azimuth measured clockwise from the positive y-axis
-        # TODO: why not clockwise?
-        elplsz=True,  # Elevation increases from the XY plane toward +Z
-        obspos=observer_position_ecef,  # observer position relative to center of motion
-        obsctr="EARTH",  # Name of the center of motion
-        obsref="IAU_EARTH",  # Body-fixed, body-centered reference frame wrt observer's
-        # center
-    )
+    if not isinstance(observation_time, np.ndarray):
+        azel_results = spice.azlcpo(
+            method="Ellipsoid",  # Only method supported
+            target=target,  # target ephemeris object
+            et=observation_time,  # time of observation
+            abcorr="LT+S",  # Aberration correction
+            azccw=False,  # Azimuth measured clockwise from the positive y-axis
+            elplsz=True,  # Elevation increases from the XY plane toward +Z
+            obspos=observer_position_ecef,
+            # observer position relative to center of motion
+            obsctr="EARTH",  # Name of the center of motion
+            obsref="IAU_EARTH",
+            # Body-fixed, body-centered reference frame wrt observer's
+            # center
+        )
+        return np.rad2deg(azel_results[0][1]), np.rad2deg(azel_results[0][2])
+    else:
+        azimuth = []
+        elevation = []
 
-    # codespell:ignore convrt
-    azimuth = spice.convrt(azel_results[0][1], "RADIANS", "DEGREES")
-    elevation = spice.convrt(azel_results[0][2], "RADIANS", "DEGREES")
-    # TODO: potentially use the velocity components returned from azlcpo to calculate
-    # TODO: doppler
+        # https://spiceypy.readthedocs.io/en/main/documentation.html#spiceypy.spiceypy.azlcpo
+        for timestamp in observation_time:
+            azel_results = spice.azlcpo(
+                method="Ellipsoid",  # Only method supported
+                target=target,  # target ephemeris object
+                et=timestamp,  # time of observation
+                abcorr="LT+S",  # Aberration correction
+                azccw=False,  # Azimuth measured clockwise from the positive y-axis
+                elplsz=True,  # Elevation increases from the XY plane toward +Z
+                obspos=observer_position_ecef,  # observer pos. to center of motion
+                obsctr="EARTH",  # Name of the center of motion
+                obsref="IAU_EARTH",  # Body-fixed, body-centered reference frame wrt
+                # observer's center
+            )
+            azimuth.append(np.rad2deg(azel_results[0][1]))
+            elevation.append(np.rad2deg(azel_results[0][2]))
 
-    return azimuth, elevation
+        # TODO: potentially use the velocity components returned from azlcpo to
+        # TODO: calculate doppler
+
+        return np.asarray(azimuth), np.asarray(elevation)
 
 
 def build_output(
@@ -146,7 +178,7 @@ def build_output(
     altitude: float,
     time_endpoints: tuple[str, str],
     time_step: float,
-) -> dict[str, list]:
+) -> dict[str, np.ndarray]:
     """
     Build the output dictionary containing time, azimuth, elevation, and doppler.
 
@@ -165,31 +197,26 @@ def build_output(
 
     Returns
     -------
-    output_dict: dict[str, list]
+    output_dict: dict[str, np.ndarray]
         Keys are time, azimuth, elevation and doppler. Values are calculated for every
         timestamp between start_utc_input and stop_utc_input, spaced by time_step.
     """
-    output_dict: dict[str, list] = {
-        "time": [],
-        "azimuth": [],
-        "elevation": [],
-        "doppler": [],
-    }
+    output_dict: dict[str, np.ndarray] = {}
 
     start_et_input = str_to_et(time_endpoints[0])
     stop_et_input = str_to_et(time_endpoints[1])
+    time_range = np.arange(start_et_input, stop_et_input, time_step)
 
     # For now, assume that kernel management will be handled by ensure spice
+    # for obs_time in np.arange(start_et_input, stop_et_input, time_step):
+    azimuth, elevation = calculate_azimuth_and_elevation(
+        longitude, latitude, altitude, time_range
+    )
 
-    for obs_time in np.arange(start_et_input, stop_et_input, time_step):
-        azimuth, elevation = calculate_azimuth_and_elevation(
-            longitude, latitude, altitude, obs_time
-        )
-
-        output_dict["time"].append(et_to_utc(obs_time, format_str="ISOC"))
-        output_dict["azimuth"].append(azimuth)
-        output_dict["elevation"].append(elevation)
-        output_dict["doppler"].append(calculate_doppler())
+    output_dict["time"] = et_to_utc(time_range, format_str="ISOC")
+    output_dict["azimuth"] = azimuth
+    output_dict["elevation"] = elevation
+    output_dict["doppler"] = calculate_doppler(time_range)
 
     logger.info(
         f"Calculated azimuth, elevation and doppler for time range from "

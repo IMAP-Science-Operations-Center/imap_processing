@@ -86,7 +86,7 @@ def test_get_pointing_frame_exposure_times():
 
 @pytest.mark.external_kernel()
 @pytest.mark.use_test_metakernel("imap_ena_sim_metakernel.template")
-def test_et_helio_exposure_times():
+def test_get_helio_exposure_times():
     """Tests get_helio_exposure_times function."""
 
     constant_exposure = BASE_PATH / "dps_grid45_compressed.cdf"

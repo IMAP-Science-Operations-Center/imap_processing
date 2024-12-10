@@ -47,7 +47,7 @@ def _autoclear_spice():
 
 @pytest.fixture(scope="session")
 def _download_external_kernels(spice_test_data_path):
-    """This fixture downloads the de440s.bsp and pck00010.tpc kernels into the
+    """This fixture downloads the de440s.bsp and pck00011.tpc kernels into the
     tests/spice/test_data directory if they do not already exist there. The
     fixture is not intended to be used directly. It is automatically added to
     tests marked with "external_kernel" in the hook below."""

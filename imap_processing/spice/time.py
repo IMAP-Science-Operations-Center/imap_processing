@@ -1,7 +1,7 @@
 """Time conversion functions that rely on SPICE."""
 
 import typing
-from collections.abc import Collection
+from collections.abc import Collection, Iterable
 from typing import Union
 
 import numpy as np
@@ -168,7 +168,7 @@ def _sct2e_wrapper(
 @typing.no_type_check
 @ensure_spice
 def str_to_et(
-    time_str: Union[str, list[str]],
+    time_str: Union[str, Iterable[str]],
 ) -> Union[float, np.ndarray]:
     """
     Convert string to ephemeris time.
@@ -179,7 +179,7 @@ def str_to_et(
 
     Parameters
     ----------
-    time_str : str or Collection[str]
+    time_str : str or Iterable[str]
         Input string(s) to be converted to ephemeris time.
 
     Returns
@@ -187,20 +187,20 @@ def str_to_et(
     ephemeris_time: np.ndarray
         Ephemeris time, seconds past J2000.
     """
-    if isinstance(time_str, list):
-        return np.array([spice.str2et(t) for t in time_str])
-    else:
+    if isinstance(time_str, str):
         return spice.str2et(time_str)
+    else:
+        return np.array([spice.str2et(t) for t in time_str])
 
 
 @typing.no_type_check
 @ensure_spice
 def et_to_utc(
-    et: Union[float, np.ndarray],
+    et: Union[float, Iterable[float]],
     format_str: str = "ISOC",
     precision: int = 3,
     utclen: int = 24,
-) -> Union[str, Collection[str]]:
+) -> Union[str, np.ndarray]:
     """
     Convert ephemeris time to UTC.
 
@@ -210,7 +210,7 @@ def et_to_utc(
 
     Parameters
     ----------
-    et : float or np.ndarray
+    et : float or Iterable[float]
         Input ephemeris time(s) to be converted to UTC.
     format_str : str
         Format of the output time string. Default is "ISOC". All options:
@@ -228,10 +228,7 @@ def et_to_utc(
 
     Returns
     -------
-    utc_time : str or Collection[str]
+    utc_time : str or np.ndarray
         UTC time(s).
     """
-    if isinstance(et, np.ndarray):
-        return np.array([spice.et2utc(t, format_str, precision, utclen) for t in et])
-    else:
-        return spice.et2utc(et, format_str, precision, utclen)
+    return spice.et2utc(et, format_str, precision, utclen)

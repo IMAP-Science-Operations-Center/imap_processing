@@ -140,12 +140,23 @@ def test_str_to_et(furnish_time_kernels):
         "2017-09-14T19:46:00.000",
         "2017-10-14T19:46:00.000",
     ]
-    # TODO: would this ^ be more of a realistic expectation as an array rather than a
-    # list?
+
     expected_et_array = np.array(
         (556012029.1829445, 558690429.1824446, 561282429.1823651)
     )
     actual_et_array = str_to_et(list_of_utc)
+    assert np.array_equal(expected_et_array, actual_et_array)
+
+    # Test array input
+    array_of_utc = np.array(
+        [
+            "2017-08-14T19:46:00.000",
+            "2017-09-14T19:46:00.000",
+            "2017-10-14T19:46:00.000",
+        ]
+    )
+
+    actual_et_array = str_to_et(array_of_utc)
     assert np.array_equal(expected_et_array, actual_et_array)
 
 
