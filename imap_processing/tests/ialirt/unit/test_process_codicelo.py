@@ -61,9 +61,12 @@ def test_find_groups(xarray_data):
     """Tests find_groups"""
 
     grouped_data = find_groups(xarray_data)
-    group_1_data = grouped_data["cod_lo_counter"].values[grouped_data["group"] == 1]
-
-    np.testing.assert_array_equal(group_1_data, np.arange(233))
+    unique_groups = np.unique(grouped_data["group"])
+    for group in unique_groups:
+        group_data = grouped_data["cod_lo_counter"].values[
+            grouped_data["group"] == group
+        ]
+        np.testing.assert_array_equal(group_data, np.arange(233))
 
 
 def test_append_cod_lo_data(xarray_data):
