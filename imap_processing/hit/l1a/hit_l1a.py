@@ -149,6 +149,18 @@ def subcom_sectorates(sci_dataset: xr.Dataset) -> None:
             dims=[f"{species}_energy_index"],
             name=f"{species}_energy_max",
         )
+        # add energy index coordinate to the dataset
+        sci_dataset.coords[f"{species}_energy_index"] = xr.DataArray(
+            np.arange(sci_dataset.sizes[f"{species}_energy_index"]),
+            dims=[f"{species}_energy_index"],
+            name=f"{species}_energy_index",
+        )
+
+    # TODO: fix issues with fe_counts_sectored. The array has shape
+    #      (epoch: 28, fe_energy_index: 1, declination: 8, azimuth: 15),
+    #      but when writing to CDF, cdflib doesn't recognize the dimensions correctly
+    #      It thinks there are only 3 dimensions and doesn't use the correct ones.
+    #      Are dimensions of 1 ignored?
 
 
 def process_science(
@@ -185,21 +197,8 @@ def process_science(
     subcom_sectorates(sci_dataset)
 
     # print(sci_dataset.data_vars)
-    # print(sci_dataset["sc_tick"])
-    # index = sci_dataset['sc_tick'].values.tolist().index(377990)
-    # print(index)
-    # print(sci_dataset['sc_tick'][index])
-    # print(sci_dataset['sc_tick'][:15])
-    # print(sci_dataset['livetime'].shape)
-    # print(sci_dataset['livetime'][:])
-    # print(sci_dataset['livetime'][7:])
-    # print(sci_dataset["H"].shape)
-    # print(sci_dataset["H"][0].shape)
-    # print(sci_dataset["H"][0])
 
     # Split the science data into count rates and event datasets
-    # TODO: remove spare bits from count rates dataset
-    # TODO: what else to include in pha? ccsds header info?
     pha_raw_dataset = xr.Dataset(
         {"pha_raw": sci_dataset["pha_raw"]}, coords={"epoch": sci_dataset["epoch"]}
     )
@@ -214,21 +213,29 @@ def process_science(
         [count_rates_dataset, pha_raw_dataset], logical_sources
     ):
         dataset.attrs = attr_mgr.get_global_attributes(logical_source)
-        # TODO: add CDF attributes once they're defined for L1A science data
 
-        # # Assign attributes and dimensions to each data array in the Dataset
-        # for field in dataset.data_vars.keys():
-        #     # Create a dict of dimensions using the DEPEND_I keys in the
-        #     # attributes
-        #     dims = {
-        #         key: value
-        #         for key, value in attr_mgr.get_variable_attributes(field).items()
-        #         if "DEPEND" in key
-        #     }
-        #     dataset[field].attrs = attr_mgr.get_variable_attributes(field)
-        #     dataset[field].assign_coords(dims)
-        #
+        # TODO: Add CDF attributes to yaml once they're defined for L1A science data
+        # Assign attributes and dimensions to each data array in the Dataset
+        for field in dataset.data_vars.keys():
+            try:
+                # Create a dict of dimensions using the DEPEND_I keys in the
+                # attributes
+                dims = {
+                    key: value
+                    for key, value in attr_mgr.get_variable_attributes(field).items()
+                    if "DEPEND" in key
+                }
+                dataset[field].attrs = attr_mgr.get_variable_attributes(field)
+                dataset[field].assign_coords(dims)
+            except KeyError:
+                print(f"Field {field} not found in attribute manager.")
+                logger.warning(f"Field {field} not found in attribute manager.")
+
         dataset.epoch.attrs = attr_mgr.get_variable_attributes("epoch")
+        # Remove DEPEND_0 attribute from epoch variable added by attr_mgr.
+        # Not required for epoch
+        del dataset["epoch"].attrs["DEPEND_0"]
+
         datasets.append(dataset)
 
         logger.info(f"HIT L1A dataset created for {logical_source}")
