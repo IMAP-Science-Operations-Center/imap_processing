@@ -105,7 +105,7 @@ def parse_count_rates(sci_dataset: xr.Dataset) -> None:
         for dim in dims:
             if dim not in sci_dataset.coords:
                 sci_dataset.coords[dim] = xr.DataArray(
-                    np.arange(sci_dataset.dims[dim]), dims=[dim], name=dim
+                    np.arange(sci_dataset.sizes[dim]), dims=[dim], name=dim
                 )
 
         # increment the start of the next section of data to parse
