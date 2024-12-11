@@ -101,6 +101,13 @@ def parse_count_rates(sci_dataset: xr.Dataset) -> None:
             dims = ["epoch"]
 
         sci_dataset[field] = xr.DataArray(parsed_data, dims=dims, name=field)
+        # Add dimensions to coordinates
+        for dim in dims:
+            if dim not in sci_dataset.coords:
+                sci_dataset.coords[dim] = xr.DataArray(
+                    np.arange(sci_dataset.dims[dim]), dims=[dim], name=dim
+                )
+
         # increment the start of the next section of data to parse
         section_start += field_meta.section_length
 
@@ -399,7 +406,7 @@ def decom_hit(sci_dataset: xr.Dataset) -> xr.Dataset:
     # Parse count rates data from binary and add to dataset
     parse_count_rates(sci_dataset)
 
-    # Remove raw binary data not needed in the dataset
-    sci_dataset = sci_dataset.drop_vars(["count_rates_raw", "science_data"])
+    # Remove raw binary data and unused spare bits from dataset
+    sci_dataset = sci_dataset.drop_vars(["count_rates_raw", "science_data", "spare"])
 
     return sci_dataset
