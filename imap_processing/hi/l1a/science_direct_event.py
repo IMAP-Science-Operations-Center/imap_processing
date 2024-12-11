@@ -125,11 +125,12 @@ def create_dataset(de_data_dict: dict[str, npt.ArrayLike]) -> xr.Dataset:
     dataset : xarray.Dataset
         Xarray dataset.
     """
-    # Compute the epoch for each event
+    # Compute the meta-event MET in nanoseconds
     de_data_dict["meta_event_met"] = (
         np.array(de_data_dict.pop("meta_seconds")) * SECOND_TO_NS
         + np.array(de_data_dict.pop("meta_subseconds")) * MILLISECOND_TO_NS
     )
+    # Compute the MET of each event in nanoseconds
     # event MET = meta_event_met + de_clock + 1/2 de_clock_tick
     # See Hi Algorithm Document section 2.2.5
     half_tick_ns = LOOKED_UP_DURATION_OF_TICK / 2 * MICROSECOND_TO_NS
@@ -141,14 +142,12 @@ def create_dataset(de_data_dict: dict[str, npt.ArrayLike]) -> xr.Dataset:
         + half_tick_ns
     )
 
-    # uncomment this once Maxine's PR is merged
-    # attr_mgr.add_global_attribute("Data_version", data_version)
-
     # Load the CDF attributes
     attr_mgr = ImapCdfAttributes()
     attr_mgr.add_instrument_global_attrs("hi")
     attr_mgr.add_instrument_variable_attrs(instrument="hi", level=None)
 
+    # check_schema=False keeps DEPEND_0 = '' from being auto added
     epoch_attrs = attr_mgr.get_variable_attributes("epoch", check_schema=False)
     epoch_attrs["CATDESC"] = (
         "Direct Event time, number of nanoseconds since J2000 with leap "
