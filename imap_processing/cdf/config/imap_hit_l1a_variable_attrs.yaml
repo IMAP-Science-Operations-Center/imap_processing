@@ -21,6 +21,7 @@ default_uint8_attrs: &default_uint8
   VALIDMIN: 0
   VALIDMAX: 255
   dtype: uint8
+  DEPEND_0: sc_tick
 
 default_uint16_attrs: &default_uint16
   <<: *default
@@ -29,6 +30,7 @@ default_uint16_attrs: &default_uint16
   VALIDMIN: 0
   VALIDMAX: 65535
   dtype: uint16
+  DEPEND_0: sc_tick
 
 hk_support_attrs: &support_default
   <<: *default
