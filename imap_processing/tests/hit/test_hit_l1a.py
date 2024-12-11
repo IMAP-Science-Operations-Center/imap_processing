@@ -33,14 +33,12 @@ def test_subcom_sectorates(sci_packet_filepath):
     """Test the subcom_sectorates function.
 
     This function organizes the sector rates data
-    into new variables for each species and adds
-    them to the dataset.
+    by species and adds the data as new variables
+    to the dataset.
     """
 
-    # Unpack ccsds file to xarray datasets
+    # Unpack and decompress ccsds file to xarray datasets
     sci_dataset = get_datasets_by_apid(sci_packet_filepath)[HitAPID.HIT_SCIENCE]
-
-    # Decommutate and decompress the science data
     sci_dataset = decom_hit(sci_dataset)
 
     # Call the function to be tested
@@ -50,12 +48,12 @@ def test_subcom_sectorates(sci_packet_filepath):
     frames = sci_dataset["epoch"].shape[0]
 
     # Check if the dataset has the expected new variables
-    for species in ["h", "4he", "cno", "nemgsi", "fe"]:
+    for species in ["h", "he4", "cno", "nemgsi", "fe"]:
         assert f"{species}_counts_sectored" in sci_dataset
         assert f"{species}_energy_min" in sci_dataset
         assert f"{species}_energy_max" in sci_dataset
 
-        # Check the shape of the new variables
+        # Check the shape of the new data variables
         if species == "h":
             assert sci_dataset[f"{species}_counts_sectored"].shape == (frames, 3, 8, 15)
             assert sci_dataset[f"{species}_energy_min"].shape == (3,)
@@ -82,14 +80,20 @@ def test_compare_validation_data(sci_packet_filepath):
     sci_packet_filepath : str
         Path to ccsds file for science data
     """
+    # Process the sample data
     processed_datasets = hit_l1a(sci_packet_filepath, "001")
     l1a_counts_data = processed_datasets[0]
 
+    # Read in the validation data
     validation_data = pd.read_csv(
         imap_module_directory / "tests/hit/validation_data/sci_sample_raw1.csv"
     )
 
+    # Helper functions for this test
     def consolidate_rate_columns(data, rate_columns):
+        # The validation data isn't organized by arrays.
+        # Each value is in a separate column.
+        # Aggregate related data into arrays.
         for new_col, prefix in rate_columns.items():
             columns = [col for col in data.columns if prefix in col]
             data[new_col] = data[columns].apply(lambda row: row.values, axis=1)
@@ -125,17 +129,18 @@ def test_compare_validation_data(sci_packet_filepath):
 
     def process_sectorates(data):
         # Add species and energy index to the data frame for each science frame
-        # First find the mod value for each science frame which is the first index
-        # in the sectorates_by_mod_val array with a value instead of a blank space
+        # First find the mod value for each science frame which equals the first index
+        # in the sectorates_by_mod_val array that has a value instead of a blank space
         data["mod_10"] = data["sectorates_by_mod_val"].apply(
             lambda row: next((i for i, value in enumerate(row) if value != " "), None)
         )
+        # Mapping of mod value to species and energy index
         species_energy = {
             0: {"species": "H", "energy_idx": 0},
             1: {"species": "H", "energy_idx": 1},
             2: {"species": "H", "energy_idx": 2},
-            3: {"species": "4He", "energy_idx": 0},
-            4: {"species": "4He", "energy_idx": 1},
+            3: {"species": "He4", "energy_idx": 0},
+            4: {"species": "He4", "energy_idx": 1},
             5: {"species": "CNO", "energy_idx": 0},
             6: {"species": "CNO", "energy_idx": 1},
             7: {"species": "NeMgSi", "energy_idx": 0},
@@ -156,17 +161,16 @@ def test_compare_validation_data(sci_packet_filepath):
         return data
 
     def compare_data(expected_data, actual_data, skip):
+        # Compare the processed data to the validation data
         for field in expected_data.columns:
             if field not in [
                 "sc_tick",
                 "hdr_status_bits",
-                "sectorates_by_mod_val",
                 "species",
-                "species_energy",
                 "energy_idx",
             ]:
                 assert field in l1a_counts_data.data_vars.keys()
-            if field not in skip:
+            if field not in ignore:
                 for frame in range(expected_data.shape[0]):
                     if field == "species":
                         species = expected_data[field][frame]
@@ -207,7 +211,7 @@ def test_compare_validation_data(sci_packet_filepath):
 
     # Fields to skip in comparison. CCSDS headers plus a few others that are not
     # relevant to the comparison.
-    skip = [
+    ignore = [
         "version",
         "type",
         "sec_hdr_flg",
@@ -221,10 +225,8 @@ def test_compare_validation_data(sci_packet_filepath):
     ]
 
     # Compare processed data to validation data
-    validation_data.columns = (
-        validation_data.columns.str.lower()
-    )  # Lowercase names for comparison
-    compare_data(validation_data, l1a_counts_data, skip)
+    validation_data.columns = validation_data.columns.str.lower()
+    compare_data(validation_data, l1a_counts_data, ignore)
 
     # TODO: add validation for hdr_status_bits once validation data has been updated
     #  to include this field broken out into its subfields
