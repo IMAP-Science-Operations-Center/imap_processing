@@ -8,7 +8,6 @@ import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.spice.time import met_to_j2000ns
-from imap_processing.utils import convert_to_binary_string
 
 # TODO: read LOOKED_UP_DURATION_OF_TICK from
 # instrument status summary later. This value
@@ -22,7 +21,7 @@ MILLISECOND_TO_NS = 1e6
 MICROSECOND_TO_NS = 1e3
 
 
-def parse_direct_events(de_data: bytes) -> dict[str, list]:
+def parse_direct_events(de_data: bytes) -> dict[str, npt.ArrayLike]:
     """
     Parse event data from a binary blob.
 
@@ -75,40 +74,26 @@ def parse_direct_events(de_data: bytes) -> dict[str, list]:
     Dict[str, list]
         Parsed event data.
     """
-    de_dict = defaultdict(list)
-    binary_str_val = convert_to_binary_string(de_data)
-    for event_data in break_into_bits_size(binary_str_val):
-        # parse direct event
-        de_dict["trigger_id"].append(int(event_data[:2], 2))
-        de_dict["de_tag"].append(int(event_data[2:18], 2))
-        de_dict["tof_1"].append(int(event_data[18:28], 2))
-        de_dict["tof_2"].append(int(event_data[28:38], 2))
-        de_dict["tof_3"].append(int(event_data[38:48], 2))
+    # Each DE consists of 6-bytes. Considering the data as 3 2-byte words,
+    # each word contains the following:
+    # word_0: 2-bits of Trigger ID, upper 14-bits of de_tag
+    # word_1: lower 2-bits of de_tag, upper 10-bits tof_1, upper 4-bits of tof_2
+    # word_3: lower 6-bits of tof_2, 10-bits of tof_3
+    # Interpret binary blob as uint16 array and reshape to (3, n)
+    data_uint16 = np.reshape(
+        np.frombuffer(de_data, dtype=">u2"), (3, -1), order="F"
+    ).astype(np.uint16)
+
+    de_dict = dict()
+    de_dict["trigger_id"] = (data_uint16[0] >> (6 + 8)).astype(np.uint8)
+    de_dict["de_tag"] = (data_uint16[0] << 2) + (data_uint16[1] >> (6 + 8))
+    de_dict["tof_1"] = (data_uint16[1] & int(b"00111111_11110000", 2)) >> 4
+    de_dict["tof_2"] = ((data_uint16[1] & int(b"00000000_00001111", 2)) << 6) + (
+        data_uint16[2] >> (2 + 8)
+    )
+    de_dict["tof_3"] = data_uint16[2] & int(b"00000011_11111111", 2)
 
     return de_dict
-
-
-def break_into_bits_size(binary_data: str) -> list:
-    """
-    Break binary stream data into 48-bits.
-
-    Parameters
-    ----------
-    binary_data : str
-        Binary data.
-
-    Returns
-    -------
-    list
-        List of 48-bits.
-    """
-    # TODO: ask Paul what to do if the length of
-    # binary_data is not a multiple of 48
-    field_bit_length = 48
-    return [
-        binary_data[i : i + field_bit_length]
-        for i in range(0, len(binary_data), field_bit_length)
-    ]
 
 
 def create_dataset(de_data_dict: dict[str, npt.ArrayLike]) -> xr.Dataset:

@@ -1,4 +1,36 @@
-from imap_processing.hi.l1a.science_direct_event import create_dataset
+import numpy as np
+
+from imap_processing.hi.l1a.science_direct_event import (
+    create_dataset,
+    parse_direct_events,
+)
+
+
+def test_parse_direct_events():
+    """Test coverage for parse_direct_events function."""
+    # Generate fake, binary blob using random numbers
+    np.random.seed(2)
+    n_events = 10_000
+    exp_dict = dict()
+    exp_dict["trigger_id"] = np.random.randint(1, 4, size=n_events, dtype=np.uint8)
+    exp_dict["de_tag"] = np.random.randint(0, 2**16, size=n_events, dtype=np.uint16)
+    exp_dict["tof_1"] = np.random.randint(0, 2**10, size=n_events, dtype=np.uint16)
+    exp_dict["tof_2"] = np.random.randint(0, 2**10, size=n_events, dtype=np.uint16)
+    exp_dict["tof_3"] = np.random.randint(0, 2**10, size=n_events, dtype=np.uint16)
+
+    bin_str = ""
+    for i in range(n_events):
+        bin_str += f"{exp_dict["trigger_id"][i]:02b}"
+        bin_str += f"{exp_dict["de_tag"][i]:016b}"
+        bin_str += f"{exp_dict["tof_1"][i]:010b}"
+        bin_str += f"{exp_dict["tof_2"][i]:010b}"
+        bin_str += f"{exp_dict["tof_3"][i]:010b}"
+
+    bytes_obj = bytes([int(bin_str[i : i + 8], 2) for i in range(0, len(bin_str), 8)])
+    de_dict = parse_direct_events(bytes_obj)
+
+    for key in exp_dict.keys():
+        np.testing.assert_array_equal(de_dict[key], exp_dict[key])
 
 
 def test_create_dataset():
