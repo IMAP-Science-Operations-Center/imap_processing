@@ -126,12 +126,33 @@ hi_esa_step: &hi_esa_step
     outer ESA surfaces.
 
 # ======= L1A DE Section =======
+hi_de_src_seq_ctr:
+  <<: *default_ccsds_src_seq_ctr
+
+hi_de_pkt_len:
+  <<: *default_ccsds_pkt_len
+
 hi_de_ccsds_met:
   <<: *hi_ccsds_met
 
+hi_de_last_spin_num:
+  <<: *default_uint8
+  CATDESC: Spin number (1-based) for the first spin in the packet
+  FIELDNAM: last spin
+  FORMAT: I2
+  LABLAXIS: last spin
+  VALIDMAX: 15
+
+hi_de_spin_invalids:
+  <<: *default_uint8
+  CATDESC: Binary mask where a 1-bit indicates an invalid spin for coresponding spin in packet
+  FIELDNAM: spin flags
+  FORMAT: I3
+  LABLAXIS: spin flag
+
 hi_de_de_tag:
   <<: *default_uint16
-  CATDESC: Ticks (nominally 2 ms) since last meta-event
+  CATDESC: Ticks (nominally 1999us) since last meta-event
   FIELDNAM: Direct Event Time Tag
   LABLAXIS: DE Time Tag
 
