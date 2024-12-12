@@ -130,46 +130,32 @@ def calculate_azimuth_and_elevation(
     observer_position_ecef = latitude_longitude_to_ecef(longitude, latitude, altitude)
 
     if not isinstance(observation_time, np.ndarray):
+        observation_time = [observation_time]
+
+    azimuth = []
+    elevation = []
+
+    # https://spiceypy.readthedocs.io/en/main/documentation.html#spiceypy.spiceypy.azlcpo
+    for timestamp in observation_time:
         azel_results = spice.azlcpo(
             method="Ellipsoid",  # Only method supported
             target=target,  # target ephemeris object
-            et=observation_time,  # time of observation
+            et=timestamp,  # time of observation
             abcorr="LT+S",  # Aberration correction
             azccw=False,  # Azimuth measured clockwise from the positive y-axis
             elplsz=True,  # Elevation increases from the XY plane toward +Z
-            obspos=observer_position_ecef,
-            # observer position relative to center of motion
+            obspos=observer_position_ecef,  # observer pos. to center of motion
             obsctr="EARTH",  # Name of the center of motion
-            obsref="IAU_EARTH",
-            # Body-fixed, body-centered reference frame wrt observer's
-            # center
+            obsref="IAU_EARTH",  # Body-fixed, body-centered reference frame wrt
+            # observer's center
         )
-        return np.rad2deg(azel_results[0][1]), np.rad2deg(azel_results[0][2])
-    else:
-        azimuth = []
-        elevation = []
+        azimuth.append(np.rad2deg(azel_results[0][1]))
+        elevation.append(np.rad2deg(azel_results[0][2]))
 
-        # https://spiceypy.readthedocs.io/en/main/documentation.html#spiceypy.spiceypy.azlcpo
-        for timestamp in observation_time:
-            azel_results = spice.azlcpo(
-                method="Ellipsoid",  # Only method supported
-                target=target,  # target ephemeris object
-                et=timestamp,  # time of observation
-                abcorr="LT+S",  # Aberration correction
-                azccw=False,  # Azimuth measured clockwise from the positive y-axis
-                elplsz=True,  # Elevation increases from the XY plane toward +Z
-                obspos=observer_position_ecef,  # observer pos. to center of motion
-                obsctr="EARTH",  # Name of the center of motion
-                obsref="IAU_EARTH",  # Body-fixed, body-centered reference frame wrt
-                # observer's center
-            )
-            azimuth.append(np.rad2deg(azel_results[0][1]))
-            elevation.append(np.rad2deg(azel_results[0][2]))
+    # TODO: potentially use the velocity components returned from azlcpo to
+    # TODO: calculate doppler
 
-        # TODO: potentially use the velocity components returned from azlcpo to
-        # TODO: calculate doppler
-
-        return np.asarray(azimuth), np.asarray(elevation)
+    return np.asarray(azimuth), np.asarray(elevation)
 
 
 def build_output(
