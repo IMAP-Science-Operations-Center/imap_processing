@@ -226,7 +226,64 @@ def test_decom_hit(sci_dataset):
     This function orchestrates the unpacking and decompression
     of the HIT science data.
     """
-    # TODO: complete this test to check that all new variables exist
     updated_dataset = decom_hit(sci_dataset)
-    # Check if the dataset has the expected new variables
-    assert "pha_raw" in updated_dataset
+    # Check if the dataset has the expected data variables
+    sci_fields = [
+        "version",
+        "type",
+        "sec_hdr_flg",
+        "pkt_apid",
+        "seq_flgs",
+        "src_seq_ctr",
+        "pkt_len",
+        "pha_raw",
+        "hdr_unit_num",
+        "hdr_frame_version",
+        "hdr_dynamic_threshold_state",
+        "hdr_leak_conv",
+        "hdr_heater_duty_cycle",
+        "hdr_code_ok",
+        "hdr_minute_cnt",
+        "livetime",
+        "num_trig",
+        "num_reject",
+        "num_acc_w_pha",
+        "num_acc_no_pha",
+        "num_haz_trig",
+        "num_haz_reject",
+        "num_haz_acc_w_pha",
+        "num_haz_acc_no_pha",
+        "sngrates",
+        "nread",
+        "nhazard",
+        "nadcstim",
+        "nodd",
+        "noddfix",
+        "nmulti",
+        "nmultifix",
+        "nbadtraj",
+        "nl2",
+        "nl3",
+        "nl4",
+        "npen",
+        "nformat",
+        "naside",
+        "nbside",
+        "nerror",
+        "nbadtags",
+        "coinrates",
+        "bufrates",
+        "l2fgrates",
+        "l2bgrates",
+        "l3fgrates",
+        "l3bgrates",
+        "penfgrates",
+        "penbgrates",
+        "ialirtrates",
+        "sectorates",
+        "l4fgrates",
+        "l4bgrates",
+    ]
+
+    for field in sci_fields:
+        assert field in updated_dataset
