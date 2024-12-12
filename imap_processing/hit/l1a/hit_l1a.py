@@ -88,12 +88,16 @@ def subcom_sectorates(sci_dataset: xr.Dataset) -> None:
 
     Parameters
     ----------
-    sci_dataset : xr.Dataset
+    sci_dataset : xarray.Dataset
         Xarray dataset containing parsed HIT science data.
     """
     # TODO:
     #  - Update to use fill values defined in attribute manager which
     #    isn't defined for L1A science data yet
+    #  - fix issues with fe_counts_sectored. The array has shape
+    #      (epoch: 28, fe_energy_index: 1, declination: 8, azimuth: 15),
+    #      but cdflib drops second dimension of size 1 and recognizes
+    #      only 3 total dimensions. Are dimensions of 1 ignored?
 
     # Calculate mod 10 values
     hdr_min_count_mod_10 = sci_dataset.hdr_minute_cnt.values % 10
@@ -155,12 +159,6 @@ def subcom_sectorates(sci_dataset: xr.Dataset) -> None:
             dims=[f"{species}_energy_index"],
             name=f"{species}_energy_index",
         )
-
-    # TODO: fix issues with fe_counts_sectored. The array has shape
-    #      (epoch: 28, fe_energy_index: 1, declination: 8, azimuth: 15),
-    #      but when writing to CDF, cdflib doesn't recognize the dimensions correctly
-    #      It thinks there are only 3 dimensions and doesn't use the correct ones.
-    #      Are dimensions of 1 ignored?
 
 
 def process_science(
