@@ -52,11 +52,11 @@ def lo_l1a(dependency: Path, data_version: str) -> list[xr.Dataset]:
     attr_mgr.add_instrument_variable_attrs(instrument="lo", level="l1a")
     attr_mgr.add_global_attribute("Data_version", data_version)
 
-    logger.info(
-        f"\nProcessing {LoAPID(LoAPID.ILO_SCI_CNT).name} "
-        f"packet (APID: {LoAPID.ILO_SCI_CNT.value})"
-    )
     if LoAPID.ILO_SCI_CNT in datasets_by_apid:
+        logger.info(
+            f"\nProcessing {LoAPID(LoAPID.ILO_SCI_CNT).name} "
+            f"packet (APID: {LoAPID.ILO_SCI_CNT.value})"
+        )
         logical_source = "imap_lo_l1a_histogram"
         datasets_by_apid[LoAPID.ILO_SCI_CNT] = parse_histogram(
             datasets_by_apid[LoAPID.ILO_SCI_CNT], attr_mgr
@@ -65,6 +65,10 @@ def lo_l1a(dependency: Path, data_version: str) -> list[xr.Dataset]:
             datasets_by_apid[LoAPID.ILO_SCI_CNT], attr_mgr, logical_source
         )
     if LoAPID.ILO_SCI_DE in datasets_by_apid:
+        logger.info(
+            f"\nProcessing {LoAPID(LoAPID.ILO_SCI_DE).name} "
+            f"packet (APID: {LoAPID.ILO_SCI_DE.value})"
+        )
         logical_source = "imap_lo_l1a_de"
         datasets_by_apid[LoAPID.ILO_SCI_DE]["data"] = xr.DataArray(
             [
@@ -114,6 +118,7 @@ def add_dataset_attrs(
     # TODO: may want up split up these if statements into their
     # own functions
     if logical_source == "imap_lo_l1a_histogram":
+        # Create coordinates for the dataset
         azimuth_60 = xr.DataArray(
             data=np.arange(0, 6, dtype=np.uint8),
             name="azimuth_60",
@@ -152,6 +157,7 @@ def add_dataset_attrs(
             attrs=attr_mgr.get_variable_attributes("esa_step_label"),
         )
 
+        # Get attributes for shcoarse and epoch
         dataset.shcoarse.attrs.update(attr_mgr.get_variable_attributes("shcoarse"))
         dataset.epoch.attrs.update(attr_mgr.get_variable_attributes("epoch"))
 
@@ -179,6 +185,7 @@ def add_dataset_attrs(
             ]
         )
     elif logical_source == "imap_lo_l1a_de":
+        # Create the coordinates for the dataset
         direct_events = xr.DataArray(
             data=np.arange(sum(dataset["de_count"].values), dtype=np.uint16),
             name="direct_events",
@@ -197,8 +204,7 @@ def add_dataset_attrs(
             direct_events=direct_events,
             direct_events_label=direct_events_label,
         )
-
-        # dataset.shcoarse.attrs.update(attr_mgr.get_variable_attributes("shcoarse"))
+        # add the epoch and global attributes
         dataset.epoch.attrs.update(attr_mgr.get_variable_attributes("epoch"))
         dataset.attrs.update(attr_mgr.get_global_attributes(logical_source))
         dataset = dataset.drop_vars(
