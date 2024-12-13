@@ -105,6 +105,7 @@ def subcom_sectorates(sci_dataset: xr.Dataset) -> None:
     # Reference mod 10 mapping to initialize data structure for species and
     # energy ranges and add 8x15 arrays with fill values for each science frame.
     num_frames = len(hdr_min_count_mod_10)
+    # TODO: add more specific dtype for rates (ex. int16) once this is defined by HIT
     data_by_species_and_energy_range = {
         key: {**value, "rates": np.full((num_frames, 8, 15), fill_value=-1, dtype=int)}
         for key, value in MOD_10_MAPPING.items()
@@ -144,18 +145,18 @@ def subcom_sectorates(sci_dataset: xr.Dataset) -> None:
             name=f"{species}_counts_sectored",
         )
         sci_dataset[f"{species}_energy_min"] = xr.DataArray(
-            data=np.array(data["energy_min"]),
+            data=np.array(data["energy_min"], dtype=np.int8),
             dims=[f"{species}_energy_index"],
             name=f"{species}_energy_min",
         )
         sci_dataset[f"{species}_energy_max"] = xr.DataArray(
-            data=np.array(data["energy_max"]),
+            data=np.array(data["energy_max"], dtype=np.int8),
             dims=[f"{species}_energy_index"],
             name=f"{species}_energy_max",
         )
         # add energy index coordinate to the dataset
         sci_dataset.coords[f"{species}_energy_index"] = xr.DataArray(
-            np.arange(sci_dataset.sizes[f"{species}_energy_index"]),
+            np.arange(sci_dataset.sizes[f"{species}_energy_index"], dtype=np.int8),
             dims=[f"{species}_energy_index"],
             name=f"{species}_energy_index",
         )
