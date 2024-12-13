@@ -18,17 +18,18 @@ def test_parse_direct_events():
     exp_dict["tof_2"] = np.random.randint(0, 2**10, size=n_events, dtype=np.uint16)
     exp_dict["tof_3"] = np.random.randint(0, 2**10, size=n_events, dtype=np.uint16)
 
+    # Encode the random events data into a bit-string
     bin_str = ""
     for i in range(n_events):
-        bin_str += f"{exp_dict["trigger_id"][i]:02b}"
-        bin_str += f"{exp_dict["de_tag"][i]:016b}"
-        bin_str += f"{exp_dict["tof_1"][i]:010b}"
-        bin_str += f"{exp_dict["tof_2"][i]:010b}"
-        bin_str += f"{exp_dict["tof_3"][i]:010b}"
-
+        bin_str += f"{exp_dict["trigger_id"][i]:02b}"  # 2-bits for trigger_id
+        bin_str += f"{exp_dict["de_tag"][i]:016b}"  # 16-bits for de_tag
+        bin_str += f"{exp_dict["tof_1"][i]:010b}"  # 10-bits for tof_1
+        bin_str += f"{exp_dict["tof_2"][i]:010b}"  # 10-bits for tof_2
+        bin_str += f"{exp_dict["tof_3"][i]:010b}"  # 10-bits for tof_3
+    # Convert the bit-string into a bytes object
     bytes_obj = bytes([int(bin_str[i : i + 8], 2) for i in range(0, len(bin_str), 8)])
+    # Parse the fake events and check values
     de_dict = parse_direct_events(bytes_obj)
-
     for key in exp_dict.keys():
         np.testing.assert_array_equal(de_dict[key], exp_dict[key])
 

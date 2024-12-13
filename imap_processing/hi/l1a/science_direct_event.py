@@ -77,7 +77,7 @@ def parse_direct_events(de_data: bytes) -> dict[str, npt.ArrayLike]:
     # Each DE consists of 6-bytes. Considering the data as 3 2-byte words,
     # each word contains the following:
     # word_0: 2-bits of Trigger ID, upper 14-bits of de_tag
-    # word_1: lower 2-bits of de_tag, upper 10-bits tof_1, upper 4-bits of tof_2
+    # word_1: lower 2-bits of de_tag, 10-bits tof_1, upper 4-bits of tof_2
     # word_3: lower 6-bits of tof_2, 10-bits of tof_3
     # Interpret binary blob as uint16 array and reshape to (3, n)
     data_uint16 = np.reshape(
