@@ -78,6 +78,7 @@ class XTCEGenerator:
     """
 
     def __init__(self, path_to_excel_file: Path):
+        self.source_file = path_to_excel_file.name
         # Read in all sheets from the excel file
         self.sheets = pd.read_excel(path_to_excel_file, sheet_name=None)
         # Set up the packet mapping from packetName to Apid
@@ -123,6 +124,7 @@ class XTCEGenerator:
             ].values[0]
         )
         header.attrib["author"] = "IMAP SDC"
+        header.attrib["source_file"] = self.source_file
 
         # Create the TelemetryMetaData element
         self._telemetry_metadata = Et.SubElement(root, "xtce:TelemetryMetaData")

@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='utf-8'?>
 <xtce:SpaceSystem xmlns:xtce="http://www.omg.org/space/xtce" name="Test Instrument">
-	<xtce:Header date="2024-07-26 00:00:00" version="v1.2" author="IMAP SDC" />
+	<xtce:Header date="2024-07-26 00:00:00" version="v1.2" author="IMAP SDC" source_file="excel_to_xtce_test_file.xlsx" />
 	<xtce:TelemetryMetaData>
 		<xtce:ParameterTypeSet>
 			<xtce:IntegerParameterType name="VERSION" signed="false">
