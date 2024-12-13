@@ -17,11 +17,11 @@ from imap_processing.ultra.l1b.ultra_l1b_extended import (
     get_energy_ssd,
     get_front_x_position,
     get_front_y_position,
-    get_particle_velocity,
     get_path_length,
     get_ph_tof_and_back_positions,
     get_ssd_back_position_and_tof_offset,
     get_ssd_tof,
+    get_unit_vector,
 )
 
 
@@ -213,8 +213,8 @@ def test_calculate_etof_xc(de_dataset, yf_fixture):
     )
 
 
-def test_get_particle_velocity(de_dataset, yf_fixture):
-    """Tests get_particle_velocity function."""
+def test_get_unit_vector(de_dataset, yf_fixture):
+    """Tests get_unit_vector function."""
     df_filt, _, _ = yf_fixture
 
     ph_indices = np.nonzero(
@@ -229,7 +229,7 @@ def test_get_particle_velocity(de_dataset, yf_fixture):
     test_d = ph_rows["d"].astype("float").values
     test_tof = ph_rows["TOF"].astype("float").values
 
-    vhat_x, vhat_y, vhat_z = get_particle_velocity(
+    vhat_x, vhat_y, vhat_z = get_unit_vector(
         (test_xf, test_yf),
         (test_xb, test_yb),
         test_d,
@@ -298,17 +298,27 @@ def test_get_ctof(yf_fixture):
     """Tests get_ctof function."""
     df_filt, _, _ = yf_fixture
 
-    df_ph_ssd = df_filt[
-        df_filt["StopType"].isin([StopType.SSD.value, StopType.PH.value])
-    ]
+    df_ph = df_filt[df_filt["StopType"].isin([StopType.PH.value])]
 
-    ctof = get_ctof(
-        df_ph_ssd["TOF"].astype("float").to_numpy(),
-        df_ph_ssd["r"].astype("float").to_numpy(),
+    df_ssd = df_filt[df_filt["StopType"].isin([StopType.SSD.value])]
+
+    ph_ctof = get_ctof(
+        df_ph["TOF"].astype("float").to_numpy(),
+        df_ph["r"].astype("float").to_numpy(),
+        "PH",
+    )
+
+    ssd_ctof = get_ctof(
+        df_ssd["TOF"].astype("float").to_numpy(),
+        df_ssd["r"].astype("float").to_numpy(),
+        "SSD",
     )
 
     np.testing.assert_allclose(
-        ctof, df_ph_ssd["cTOF"].astype("float"), atol=1e-05, rtol=0
+        ph_ctof, df_ph["cTOF"].astype("float"), atol=1e-05, rtol=0
+    )
+    np.testing.assert_allclose(
+        ssd_ctof, df_ssd["cTOF"].astype("float"), atol=1e-05, rtol=0
     )
 
 

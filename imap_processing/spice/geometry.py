@@ -19,6 +19,7 @@ import numpy as np
 import numpy.typing as npt
 import pandas as pd
 import spiceypy as spice
+from numpy.typing import NDArray
 
 from imap_processing.spice.kernels import ensure_spice
 
@@ -325,8 +326,11 @@ def frame_transform(
         Ephemeris time(s) corresponding to position(s).
     position : np.ndarray
         <x, y, z> vector or array of vectors in reference frame `from_frame`.
-        A single position vector may be provided for multiple `et` query times
-        but only a single position vector can be provided for a single `et`.
+        There are several possible shapes for the input position and et:
+        1. A single position vector may be provided for multiple `et` query times
+        2. A single `et` may be provided for multiple position vectors,
+        3. The same number of `et` and position vectors may be provided.
+        But it is not allowed to have n position vectors and m `et`, where n != m.
     from_frame : SpiceFrame
         Reference frame of input vector(s).
     to_frame : SpiceFrame
@@ -349,11 +353,13 @@ def frame_transform(
                 f"Each input position vector must have 3 elements."
             )
         if not len(position) == np.asarray(et).size:
-            raise ValueError(
-                "Mismatch in number of position vectors and Ephemeris times provided."
-                f"Position has {len(position)} elements and et has "
-                f"{np.asarray(et).size} elements."
-            )
+            if np.asarray(et).size != 1:
+                raise ValueError(
+                    "Mismatch in number of position vectors and "
+                    "Ephemeris times provided."
+                    f"Position has {len(position)} elements and et has "
+                    f"{np.asarray(et).size} elements."
+                )
 
     # rotate will have shape = (3, 3) or (n, 3, 3)
     # position will have shape = (3,) or (n, 3)
@@ -489,3 +495,93 @@ def basis_vectors(
     ... spacecraft_z = basis_vectors[:, 2]
     """
     return np.moveaxis(get_rotation_matrix(et, from_frame, to_frame), -1, -2)
+
+
+def cartesian_to_spherical(
+    v: NDArray,
+    degrees: bool = True,
+) -> NDArray:
+    """
+    Convert cartesian coordinates to spherical coordinates.
+
+    Parameters
+    ----------
+    v : np.ndarray
+        A NumPy array with shape (n, 3) where each
+        row represents a vector
+        with x, y, z-components.
+    degrees : bool
+        If True, the azimuth and elevation angles are returned in degrees.
+        Defaults to True.
+
+    Returns
+    -------
+    spherical_coords : np.ndarray
+        A NumPy array with shape (n, 3), where each row contains
+        the spherical coordinates (r, azimuth, elevation):
+
+        - r : Distance of the point from the origin.
+        - azimuth : angle in the xy-plane
+          In degrees if degrees parameter is True (by default):
+          output range=[0, 360],
+          otherwise in radians if degrees parameter is False:
+          output range=[0, 2*pi].
+        - elevation : angle from the z-axis
+          In degrees if degrees parameter is True (by default):
+          output range=[0, 180],
+          otherwise in radians if degrees parameter is False:
+          output range=[-pi/2, pi/2].
+    """
+    # Magnitude of the velocity vector
+    magnitude_v = np.linalg.norm(v, axis=-1, keepdims=True)
+
+    vhat = v / magnitude_v
+
+    # Elevation angle (angle from the z-axis, range: [-pi/2, pi/2])
+    el = np.arcsin(vhat[..., 2])
+
+    # Azimuth angle (angle in the xy-plane, range: [0, 2*pi])
+    az = np.arctan2(vhat[..., 1], vhat[..., 0])
+
+    # Ensure azimuth is from 0 to 2PI
+    az = az % (2 * np.pi)
+
+    if degrees:
+        az = np.degrees(az)
+        el = np.degrees(el)
+
+    spherical_coords = np.stack((np.squeeze(magnitude_v), az, el), axis=-1)
+
+    return spherical_coords
+
+
+def spherical_to_cartesian(spherical_coords: NDArray) -> NDArray:
+    """
+    Convert spherical coordinates to Cartesian coordinates.
+
+    Parameters
+    ----------
+    spherical_coords : np.ndarray
+        A NumPy array with shape (n, 3), where each row contains
+        the spherical coordinates (r, azimuth, elevation):
+
+        - r : Distance of the point from the origin.
+        - azimuth : angle in the xy-plane in radians [0, 2*pi].
+        - elevation : angle from the z-axis in radians [-pi/2, pi/2].
+
+    Returns
+    -------
+    cartesian_coords : np.ndarray
+        Cartesian coordinates.
+    """
+    r = spherical_coords[..., 0]
+    azimuth = spherical_coords[..., 1]
+    elevation = spherical_coords[..., 2]
+
+    x = r * np.cos(elevation) * np.cos(azimuth)
+    y = r * np.cos(elevation) * np.sin(azimuth)
+    z = r * np.sin(elevation)
+
+    cartesian_coords = np.stack((x, y, z), axis=-1)
+
+    return cartesian_coords

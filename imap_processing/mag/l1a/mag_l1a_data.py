@@ -9,7 +9,6 @@ from math import floor
 import numpy as np
 import numpy.typing as npt
 
-from imap_processing.cdf.utils import J2000_EPOCH
 from imap_processing.mag.constants import (
     AXIS_COUNT,
     FIBONACCI_SEQUENCE,
@@ -17,7 +16,7 @@ from imap_processing.mag.constants import (
     MAX_FINE_TIME,
     RANGE_BIT_WIDTH,
 )
-from imap_processing.spice.time import met_to_j2000ns
+from imap_processing.spice.time import J2000_EPOCH, met_to_j2000ns
 
 
 @dataclass

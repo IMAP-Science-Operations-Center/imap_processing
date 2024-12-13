@@ -76,6 +76,7 @@ filterwarnings = [
 ]
 markers = [
     "external_kernel: marks tests as requiring external SPICE kernels (deselect with '-m \"not external_kernel\"')",
+    "use_test_metakernel: Mark test to use a test metakernel"
 ]
 
 

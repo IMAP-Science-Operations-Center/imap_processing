@@ -94,9 +94,9 @@ def _apply_lzma_lossless(compressed_bytes: bytes) -> bytes:
     return lzma_decompressed_values
 
 
-def decompress(compressed_binary: str, algorithm: IntEnum) -> list[int]:
+def decompress(compressed_bytes: bytes, algorithm: IntEnum) -> list[int]:
     """
-    Perform decompression on a binary string into a list of integers.
+    Perform decompression on a byte stream into a list of integers.
 
     Apply the appropriate decompression algorithm(s) based on the value
     of the ``algorithm`` attribute. One or more individual algorithms may be
@@ -104,8 +104,8 @@ def decompress(compressed_binary: str, algorithm: IntEnum) -> list[int]:
 
     Parameters
     ----------
-    compressed_binary : str
-        The compressed binary string.
+    compressed_bytes : bytes
+        The compressed byte stream.
     algorithm : int
         The algorithm to apply. Supported algorithms are provided in the
         ``codice_utils.CoDICECompression`` class.
@@ -115,11 +115,6 @@ def decompress(compressed_binary: str, algorithm: IntEnum) -> list[int]:
     decompressed_values : list[int]
         The 24- or 32-bit decompressed values.
     """
-    # Convert the binary string to a byte stream
-    compressed_bytes = int(compressed_binary, 2).to_bytes(
-        (len(compressed_binary) + 7) // 8, byteorder="big"
-    )
-
     # Apply the appropriate decompression algorithm
     if algorithm == CoDICECompression.NO_COMPRESSION:
         decompressed_values = list(compressed_bytes)

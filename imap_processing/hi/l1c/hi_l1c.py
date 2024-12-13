@@ -115,6 +115,20 @@ def allocate_pset_dataset(n_esa_steps: int, sensor_str: str) -> xr.Dataset:
         dims=["esa_energy_step"],
         attrs=attrs,
     )
+    # TODO: define calibration product number to coincidence type mapping and
+    #     use the number of calibration products here. I believe it will be 5
+    #     0 for any, 1-4, for the number of detector hits.
+    n_calibration_prod = 5
+    attrs = attr_mgr.get_variable_attributes(
+        "hi_pset_calibration_prod", check_schema=False
+    ).copy()
+    dtype = attrs.pop("dtype")
+    coords["calibration_prod"] = xr.DataArray(
+        np.arange(n_calibration_prod, dtype=dtype),
+        name="calibration_prod",
+        dims=["calibration_prod"],
+        attrs=attrs,
+    )
     # spin angle bins are 0.1 degree bins for full 360 degree spin
     attrs = attr_mgr.get_variable_attributes(
         "hi_pset_spin_angle_bin", check_schema=False
@@ -155,6 +169,14 @@ def allocate_pset_dataset(n_esa_steps: int, sensor_str: str) -> xr.Dataset:
         dims=["esa_energy_step"],
         attrs=attr_mgr.get_variable_attributes(
             "hi_pset_esa_energy_step_label", check_schema=False
+        ),
+    )
+    data_vars["calibration_prod_label"] = xr.DataArray(
+        coords["calibration_prod"].values.astype(str),
+        name="calibration_prod_label",
+        dims=["calibration_prod"],
+        attrs=attr_mgr.get_variable_attributes(
+            "hi_pset_calibration_prod_label", check_schema=False
         ),
     )
     data_vars["spin_bin_label"] = xr.DataArray(

@@ -1,5 +1,6 @@
 """Calculates Extended Raw Events for ULTRA L1b."""
 
+# TODO: Come back and add in FSW logic.
 import logging
 from enum import Enum
 from typing import ClassVar
@@ -252,7 +253,9 @@ def get_ph_tof_and_back_positions(
     return tof, t2, xb, yb
 
 
-def get_path_length(front_position: tuple, back_position: tuple, d: float) -> float:
+def get_path_length(
+    front_position: tuple, back_position: tuple, d: np.ndarray
+) -> NDArray:
     """
     Calculate the path length.
 
@@ -262,15 +265,15 @@ def get_path_length(front_position: tuple, back_position: tuple, d: float) -> fl
         Front position (xf,yf) (hundredths of a millimeter).
     back_position : tuple of floats
         Back position (xb,yb) (hundredths of a millimeter).
-    d : float
+    d : np.ndarray
         Distance from slit to foil (hundredths of a millimeter).
 
     Returns
     -------
-    path_length : float
+    path_length : np.ndarray
         Path length (r) (hundredths of a millimeter).
     """
-    path_length: float = np.sqrt(
+    path_length = np.sqrt(
         (front_position[0] - back_position[0]) ** 2
         + (front_position[1] - back_position[1]) ** 2
         + (d) ** 2
@@ -434,9 +437,9 @@ def get_coincidence_positions(
     return etof, xc_array * 100
 
 
-def get_particle_velocity(
-    front_position: tuple[float, float],
-    back_position: tuple[float, float],
+def get_unit_vector(
+    front_position: tuple[NDArray, NDArray],
+    back_position: tuple[NDArray, NDArray],
     d: np.ndarray,
     tof: np.ndarray,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
@@ -486,9 +489,9 @@ def get_particle_velocity(
     vhat_y = -v_y / magnitude_v
     vhat_z = -v_z / magnitude_v
 
-    vhat_x[tof < 0] = np.iinfo(np.int64).min  # used as fillvals
-    vhat_y[tof < 0] = np.iinfo(np.int64).min
-    vhat_z[tof < 0] = np.iinfo(np.int64).min
+    vhat_x[tof < 0] = np.nan  # used as fillvals
+    vhat_y[tof < 0] = np.nan
+    vhat_z[tof < 0] = np.nan
 
     return vhat_x, vhat_y, vhat_z
 
@@ -645,7 +648,7 @@ def get_energy_ssd(de_dataset: xarray.Dataset, ssd: np.ndarray) -> NDArray[np.fl
     return energy_norm
 
 
-def get_ctof(tof: np.ndarray, path_length: np.ndarray) -> NDArray:
+def get_ctof(tof: np.ndarray, path_length: np.ndarray, type: str) -> NDArray:
     """
     Calculate the corrected TOF.
 
@@ -662,14 +665,18 @@ def get_ctof(tof: np.ndarray, path_length: np.ndarray) -> NDArray:
         Time of flight (tenths of a nanosecond).
     path_length : np.ndarray
         Path length (r) (hundredths of a millimeter).
+    type : str
+        Type of event, either "ph" or "ssd".
 
     Returns
     -------
     ctof : np.ndarray
         Corrected TOF (tenths of a ns).
     """
+    dmin_ctof = getattr(UltraConstants, f"DMIN_{type}_CTOF")
+
     # Multiply times 100 to convert to hundredths of a millimeter.
-    ctof = tof * UltraConstants.DMIN * 100 / path_length
+    ctof = tof * dmin_ctof * 100 / path_length
 
     return ctof
 
@@ -706,7 +713,7 @@ def determine_species_pulse_height(
         Species bin.
     """
     # PH event TOF normalization to Z axis
-    ctof = get_ctof(tof, path_length)
+    ctof = get_ctof(tof, path_length, "PH")
     # TODO: need lookup tables
     # placeholder
     bin = np.zeros(len(ctof))
@@ -749,7 +756,7 @@ def determine_species_ssd(
         Species bin.
     """
     # SSD event TOF normalization to Z axis
-    ctof = get_ctof(tof, path_length)
+    ctof = get_ctof(tof, path_length, "SSD")
 
     bin = np.zeros(len(ctof))  # placeholder
 
