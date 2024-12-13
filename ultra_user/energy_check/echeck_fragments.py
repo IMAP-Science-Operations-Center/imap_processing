@@ -4,16 +4,43 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import importlib
 
 import imap_processing.ultra.constants as constants
+import ultra_user.energy_check.event_dataset as ed
+import ultra_user.pipeline.test_data as td
+import imap_processing.ultra.l1b.ultra_l1b_extended as l1b_ext
+import ultra_user.energy_check.de_extended_calcs as de_calcs
+
+importlib.reload(ed)
+importlib.reload(td)
+importlib.reload(de_calcs)
+
+d = ed.EventDataset()
+dtest = td.de_dataset()
+
+l1b=de_calcs.get_1bdict(dtest)
+v = np.asarray(l1b["v"])
+v_mag = l1b["v_mag"]
+
+v_mag0=np.sqrt(np.sum((v*v),0))
+
+ehist,echan = np.histogram(l1b["energy"],bins=20,range = (20,60))
+vhist,vchan = np.histogram(v_mag,bins=20,range = (20,60))
 
 
 
+d.ctof_ph_plot()
+
+v0 = d.get_v_ctof()
+v1 = d.get_v_r()
 
 
-testcsv = "imap_processing/tests/ultra/test_data/l0/ultra45_raw_sc_ultrarawimg_withFSWcalcs_FM45_40P_Phi28p5_BeamCal_LinearScan_phi2850_theta-000_20240207T102740.csv"
-
-df = pd.read_csv(testcsv)
+################# older fragments
+ctof = d.get_cTOF()
+ph = d.get_ph_or_e()
+bin = d.get_cTOF_bin()
+f = pd.read_csv(testcsv)
 df_filt = df[df["StartType"] != -1]
 
 cTOF = df_filt["cTOF"].astype("float").values
