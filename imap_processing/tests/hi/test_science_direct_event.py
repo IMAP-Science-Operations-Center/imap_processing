@@ -4,7 +4,6 @@ from imap_processing.hi.l1a.science_direct_event import create_dataset
 def test_create_dataset():
     """Test create_dataset"""
     # dummy data to test create_dataset
-    # dummy data to test create_dataset
     data_dict = {
         "trigger_id": [1, 2, 3],
         "tof_1": [512, 512, 512],

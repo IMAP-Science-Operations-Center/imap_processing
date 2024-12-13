@@ -61,7 +61,7 @@ def parse_direct_events(de_data: bytes) -> dict[str, list]:
     IMAP-Hi like to process it still to investigate the data.
     Example of what it will look like if no hit was registered.
 
-    |        (start_bitmask_data, 1023, 1023, 1023, de_tag)
+    |        (start_bitmask_data, de_tag, 1023, 1023, 1023)
     |        start_bitmask_data will be 1 or 2 or 3.
 
     Parameters
@@ -225,6 +225,8 @@ def science_direct_event(packets_data: xr.Dataset) -> xr.Dataset:
             "meta_seconds": "meta_seconds",
             "meta_subseconds": "meta_subseconds",
         }.items():
+            # Repeat the ith packet from_key value N times, where N is the
+            # number of events in the ith packet.
             de_data_dict[to_key].extend(
                 [packets_data[from_key].data[i]] * len(parsed_de_data["de_tag"])
             )
