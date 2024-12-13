@@ -9,8 +9,12 @@ import xarray as xr
 from imap_processing import imap_module_directory
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.lo.l0.lo_apid import LoAPID
-from imap_processing.lo.l0.lo_science import parse_histogram
-from imap_processing.utils import packet_file_to_datasets
+from imap_processing.lo.l0.lo_science import (
+    combine_segmented_packets,
+    parse_events,
+    parse_histogram,
+)
+from imap_processing.utils import convert_to_binary_string, packet_file_to_datasets
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -60,8 +64,29 @@ def lo_l1a(dependency: Path, data_version: str) -> list[xr.Dataset]:
         datasets_by_apid[LoAPID.ILO_SCI_CNT] = add_dataset_attrs(
             datasets_by_apid[LoAPID.ILO_SCI_CNT], attr_mgr, logical_source
         )
+    if LoAPID.ILO_SCI_DE in datasets_by_apid:
+        logical_source = "imap_lo_l1a_de"
+        datasets_by_apid[LoAPID.ILO_SCI_DE]["data"] = xr.DataArray(
+            [
+                convert_to_binary_string(data)
+                for data in datasets_by_apid[LoAPID.ILO_SCI_DE]["data"].values
+            ],
+            dims=datasets_by_apid[LoAPID.ILO_SCI_DE]["data"].dims,
+            attrs=datasets_by_apid[LoAPID.ILO_SCI_DE]["data"].attrs,
+        )
 
-    good_apids = [LoAPID.ILO_SCI_CNT]
+        datasets_by_apid[LoAPID.ILO_SCI_DE] = combine_segmented_packets(
+            datasets_by_apid[LoAPID.ILO_SCI_DE]
+        )
+
+        datasets_by_apid[LoAPID.ILO_SCI_DE] = parse_events(
+            datasets_by_apid[LoAPID.ILO_SCI_DE], attr_mgr
+        )
+        datasets_by_apid[LoAPID.ILO_SCI_DE] = add_dataset_attrs(
+            datasets_by_apid[LoAPID.ILO_SCI_DE], attr_mgr, logical_source
+        )
+
+    good_apids = [LoAPID.ILO_SCI_CNT, LoAPID.ILO_SCI_DE]
     logger.info(f"\nReturning datasets: {[LoAPID(apid) for apid in good_apids]}")
     return [datasets_by_apid[good_apid] for good_apid in good_apids]
 
@@ -151,6 +176,43 @@ def add_dataset_attrs(
                 "seq_flgs",
                 "src_seq_ctr",
                 "pkt_len",
+            ]
+        )
+    elif logical_source == "imap_lo_l1a_de":
+        direct_events = xr.DataArray(
+            data=np.arange(sum(dataset["de_count"].values), dtype=np.uint16),
+            name="direct_events",
+            dims=["direct_events"],
+            attrs=attr_mgr.get_variable_attributes("direct_events"),
+        )
+
+        direct_events_label = xr.DataArray(
+            direct_events.values.astype(str),
+            name="direct_events_label",
+            dims=["direct_events_label"],
+            attrs=attr_mgr.get_variable_attributes("direct_events_label"),
+        )
+
+        dataset = dataset.assign_coords(
+            direct_events=direct_events,
+            direct_events_label=direct_events_label,
+        )
+
+        # dataset.shcoarse.attrs.update(attr_mgr.get_variable_attributes("shcoarse"))
+        dataset.epoch.attrs.update(attr_mgr.get_variable_attributes("epoch"))
+        dataset.attrs.update(attr_mgr.get_global_attributes(logical_source))
+        dataset = dataset.drop_vars(
+            [
+                "version",
+                "type",
+                "sec_hdr_flg",
+                "pkt_apid",
+                "seq_flgs",
+                "src_seq_ctr",
+                "pkt_len",
+                "shcoarse",
+                "data",
+                "events",
             ]
         )
 

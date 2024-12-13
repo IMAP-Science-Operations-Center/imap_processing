@@ -239,6 +239,7 @@ def parse_events(dataset: xr.Dataset, attr_mgr: ImapCdfAttributes) -> xr.Dataset
 
             pointing_de += 1
 
+    del dataset.attrs["bit_pos"]
     logger.info("\n Returning Lo L1A Direct Events Dataset")
     return dataset
 
