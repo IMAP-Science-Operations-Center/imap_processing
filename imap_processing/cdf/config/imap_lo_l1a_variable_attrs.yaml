@@ -51,6 +51,7 @@ de_default_attrs: &de_default
   <<: *default
   VAR_TYPE: support_data
   DEPEND_1: direct_events
+  LABL_PTR_1: direct_events_label
 
 hist_az_60_default: &hist_az_60_default
   <<: *default_uint32
@@ -127,7 +128,6 @@ direct_events:
   CATDESC: Index of number of direct events for pointing
   FIELDNAM: direct_events
   LABLAXIS: DE
-  LABL_PTR_1: direct_events_label
 
 ## Fields
 de_time:
@@ -147,7 +147,6 @@ esa_step:
   VALIDMAX: 7
   FORMAT: I1
   CATDESC: Energy Step
-  DEPEND_1: direct_events
   FIELDNAM: Energy Step
   LABLAXIS: ESA
 
