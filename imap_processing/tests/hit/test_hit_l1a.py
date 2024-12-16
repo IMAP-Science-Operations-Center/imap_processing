@@ -211,6 +211,8 @@ def test_compare_validation_data(sci_packet_filepath):
 
     # Fields to skip in comparison. CCSDS headers plus a few others that are not
     # relevant to the comparison.
+    # The CCSDS header fields contain data per packet in the dataset, but the
+    # validation data has a value per science frame so skipping comparison for now
     ignore = [
         "version",
         "type",

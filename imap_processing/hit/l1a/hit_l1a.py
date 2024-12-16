@@ -195,8 +195,6 @@ def process_science(
     # Organize sector rates by species type
     subcom_sectorates(sci_dataset)
 
-    # print(sci_dataset.data_vars)
-
     # Split the science data into count rates and event datasets
     pha_raw_dataset = xr.Dataset(
         {"pha_raw": sci_dataset["pha_raw"]}, coords={"epoch": sci_dataset["epoch"]}
