@@ -64,8 +64,6 @@ class SpiceFrame(IntEnum):
     IMAP_GLOWS = -43750
 
 
-# TODO: Update boresight for in-situ instruments
-# TODO: Confirm ENA boresight vectors
 BORESIGHT_LOOKUP = {
     SpiceFrame.IMAP_LO: np.array([0, -1, 0]),
     SpiceFrame.IMAP_HI_45: np.array([0, 1, 0]),
