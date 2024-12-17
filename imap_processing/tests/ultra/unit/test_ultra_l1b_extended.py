@@ -4,13 +4,13 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from imap_processing.ultra.constants import UltraConstants
 from imap_processing.ultra.l1b.ultra_l1b_extended import (
     CoinType,
     StartType,
     StopType,
     calculate_etof_xc,
     determine_species_pulse_height,
-    determine_species_ssd,
     get_coincidence_positions,
     get_ctof,
     get_energy_pulse_height,
@@ -334,14 +334,18 @@ def test_determine_species_ph(yf_fixture):
     df_filt, _, _ = yf_fixture
     df_ph = df_filt[np.isin(df_filt["StopType"], [StopType.PH.value])]
 
-    bin = determine_species_pulse_height(
-        df_ph["Energy"].astype("float").to_numpy(),
+    species_bin = determine_species_pulse_height(
         df_ph["TOF"].astype("float").to_numpy(),
         df_ph["r"].astype("float").to_numpy(),
     )
 
-    # TODO: add in bin values.
-    np.testing.assert_allclose(bin, np.zeros(len(bin)), atol=1e-05, rtol=0)
+    h_indices = np.where(species_bin == "H")[0]
+    ctof_indices = np.where(
+        (df_ph["cTOF"].astype("float") > UltraConstants.SPECIES_MIN)
+        & (df_ph["cTOF"].astype("float") < UltraConstants.SPECIES_MAX)
+    )[0]
+
+    np.testing.assert_array_equal(h_indices, ctof_indices)
 
 
 def test_determine_species_ssd(yf_fixture):
@@ -349,11 +353,15 @@ def test_determine_species_ssd(yf_fixture):
     df_filt, _, _ = yf_fixture
     df_ssd = df_filt[np.isin(df_filt["StopType"], [StopType.SSD.value])]
 
-    bin = determine_species_ssd(
-        df_ssd["Energy"].astype("float").to_numpy(),
+    species_bin = determine_species_pulse_height(
         df_ssd["TOF"].astype("float").to_numpy(),
         df_ssd["r"].astype("float").to_numpy(),
     )
 
-    # TODO: add in bin values.
-    np.testing.assert_allclose(bin, np.zeros(len(bin)), atol=1e-05, rtol=0)
+    h_indices = np.where(species_bin == "H")[0]
+    ctof_indices = np.where(
+        (df_ssd["cTOF"].astype("float") > UltraConstants.SPECIES_MIN)
+        & (df_ssd["cTOF"].astype("float") < UltraConstants.SPECIES_MAX)
+    )[0]
+
+    np.testing.assert_array_equal(h_indices, ctof_indices)

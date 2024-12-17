@@ -690,9 +690,7 @@ def get_ctof(
     return ctof, magnitude_v
 
 
-def determine_species_pulse_height(
-    energy: np.ndarray, tof: np.ndarray, path_length: np.ndarray
-) -> NDArray:
+def determine_species_pulse_height(tof: np.ndarray, path_length: np.ndarray) -> NDArray:
     """
     Determine the species for pulse-height events.
 
@@ -709,8 +707,6 @@ def determine_species_pulse_height(
 
     Parameters
     ----------
-    energy : np.ndarray
-        Energy from the SSD event (keV).
     tof : np.ndarray
         Time of flight of the SSD event (tenths of a nanosecond).
     path_length : np.ndarray
@@ -718,22 +714,23 @@ def determine_species_pulse_height(
 
     Returns
     -------
-    bin : np.array
+    species_bin : np.array
         Species bin.
     """
     # PH event TOF normalization to Z axis
-    ctof = get_ctof(tof, path_length, "PH")
-    # TODO: need lookup tables
-    # placeholder
-    bin = np.zeros(len(ctof))
-    # bin = PHxTOFSpecies[ctof, energy]
+    ctof, _ = get_ctof(tof, path_length, "PH")
+    # Initialize bin array
+    species_bin = np.full(len(ctof), np.nan, dtype="object")
 
-    return bin
+    # Assign "H" to bins where cTOF is within the specified range
+    species_bin[
+        (ctof > UltraConstants.SPECIES_MIN) & (ctof < UltraConstants.SPECIES_MAX)
+    ] = "H"
+
+    return species_bin
 
 
-def determine_species_ssd(
-    energy: np.ndarray, tof: np.ndarray, path_length: np.ndarray
-) -> NDArray:
+def determine_species_ssd(tof: np.ndarray, path_length: np.ndarray) -> NDArray:
     """
     Determine the species for SSD events.
 
@@ -752,8 +749,6 @@ def determine_species_ssd(
 
     Parameters
     ----------
-    energy : np.ndarray
-        Energy from the SSD event (keV).
     tof : np.ndarray
         Time of flight of the SSD event (tenths of a nanosecond).
     path_length : np.ndarray
@@ -761,20 +756,18 @@ def determine_species_ssd(
 
     Returns
     -------
-    bin : np.ndarray
+    species_bin : np.ndarray
         Species bin.
     """
     # SSD event TOF normalization to Z axis
-    ctof = get_ctof(tof, path_length, "SSD")
+    ctof, _ = get_ctof(tof, path_length, "SSD")
 
-    bin = np.zeros(len(ctof))  # placeholder
+    # Initialize bin array
+    species_bin = np.full(len(ctof), "unknown", dtype="str")
 
-    # TODO: get these lookup tables
-    # if r < get_image_params("PathSteepThresh"):
-    #     # bin = ExTOFSpeciesSteep[energy, ctof]
-    # elif r < get_image_params("PathMediumThresh"):
-    #     # bin = ExTOFSpeciesMedium[energy, ctof]
-    # else:
-    #     # bin = ExTOFSpeciesFlat[energy, ctof]
+    # Assign "H" to bins where cTOF is within the specified range
+    species_bin[
+        (ctof > UltraConstants.SPECIES_MIN) & (ctof < UltraConstants.SPECIES_MAX)
+    ] = "H"
 
-    return bin
+    return species_bin
