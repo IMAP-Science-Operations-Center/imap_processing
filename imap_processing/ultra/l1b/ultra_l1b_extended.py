@@ -435,11 +435,12 @@ def get_coincidence_positions(
     return etof, xc_array * 100
 
 
-def get_unit_vector(
+def get_velocity_vector(
     front_position: tuple[NDArray, NDArray],
     back_position: tuple[NDArray, NDArray],
     d: np.ndarray,
     tof: np.ndarray,
+    type: str,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Determine the particle velocity.
@@ -460,6 +461,8 @@ def get_unit_vector(
         Distance from slit to foil (hundredths of a millimeter).
     tof : np.array
         Time of flight (tenths of a nanosecond).
+    type : str
+        Type of data (PH or SSD).
 
     Returns
     -------
@@ -646,7 +649,9 @@ def get_energy_ssd(de_dataset: xarray.Dataset, ssd: np.ndarray) -> NDArray[np.fl
     return energy_norm
 
 
-def get_ctof(tof: np.ndarray, path_length: np.ndarray, type: str) -> NDArray:
+def get_ctof(
+    tof: np.ndarray, path_length: np.ndarray, type: str
+) -> tuple[NDArray, NDArray]:
     """
     Calculate the corrected TOF.
 
@@ -664,19 +669,25 @@ def get_ctof(tof: np.ndarray, path_length: np.ndarray, type: str) -> NDArray:
     path_length : np.ndarray
         Path length (r) (hundredths of a millimeter).
     type : str
-        Type of event, either "ph" or "ssd".
+        Type of event, either "PH" or "SSD".
 
     Returns
     -------
     ctof : np.ndarray
         Corrected TOF (tenths of a ns).
+    magnitude_v : np.ndarray
+        Magnitude of the particle velocity (tenths of a ns / mm).
     """
     dmin_ctof = getattr(UltraConstants, f"DMIN_{type}_CTOF")
 
     # Multiply times 100 to convert to hundredths of a millimeter.
     ctof = tof * dmin_ctof * 100 / path_length
 
-    return ctof
+    # Calculate the magnitude of the particle velocity.
+    # TODO: what units?
+    magnitude_v = dmin_ctof / ctof * 10e3
+
+    return ctof, magnitude_v
 
 
 def determine_species_pulse_height(
