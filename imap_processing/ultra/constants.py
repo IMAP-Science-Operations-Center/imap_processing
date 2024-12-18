@@ -67,3 +67,7 @@ class UltraConstants:
     ALPHA = 0.2  # deltaE/E
     ENERGY_START = 3.385  # energy start for the Ultra grids
     N_BINS = 23  # number of energy bins
+
+    # Constants for species determination
+    SPECIES_MIN = 50
+    SPECIES_MAX = 200
