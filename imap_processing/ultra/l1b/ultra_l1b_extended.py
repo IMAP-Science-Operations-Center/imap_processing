@@ -435,12 +435,11 @@ def get_coincidence_positions(
     return etof, xc_array * 100
 
 
-def get_velocity_vector(
+def get_unit_vector(
     front_position: tuple[NDArray, NDArray],
     back_position: tuple[NDArray, NDArray],
     d: np.ndarray,
     tof: np.ndarray,
-    type: str,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Determine the particle velocity.
@@ -461,8 +460,6 @@ def get_velocity_vector(
         Distance from slit to foil (hundredths of a millimeter).
     tof : np.array
         Time of flight (tenths of a nanosecond).
-    type : str
-        Type of data (PH or SSD).
 
     Returns
     -------
@@ -683,23 +680,21 @@ def get_ctof(
     # Multiply times 100 to convert to hundredths of a millimeter.
     ctof = tof * dmin_ctof * 100 / path_length
 
-    # Calculate the magnitude of the particle velocity.
-    # TODO: what units?
-    magnitude_v = dmin_ctof / ctof * 10e3
+    # Convert from mm/0.1ns to km/s.
+    magnitude_v = dmin_ctof / ctof * 1e4
 
     return ctof, magnitude_v
 
 
-def determine_species_pulse_height(tof: np.ndarray, path_length: np.ndarray) -> NDArray:
+def determine_species(tof: np.ndarray, path_length: np.ndarray, type: str) -> NDArray:
     """
     Determine the species for pulse-height events.
 
-    Species is determined from the particle energy and velocity.
+    Species is determined from the particle velocity.
     For velocity, the particle TOF is normalized with respect
     to a fixed distance dmin between the front and back detectors.
     The normalized TOF is termed the corrected TOF (ctof).
-    Particle species are determined from
-    the energy and ctof using a lookup table.
+    Particle species are determined from ctof using thresholds.
 
     Further description is available on pages 42-44 of
     IMAP-Ultra Flight Software Specification document
@@ -711,59 +706,18 @@ def determine_species_pulse_height(tof: np.ndarray, path_length: np.ndarray) -> 
         Time of flight of the SSD event (tenths of a nanosecond).
     path_length : np.ndarray
         Path length (r) (hundredths of a millimeter).
+    type : str
+        Type of data (PH or SSD).
 
     Returns
     -------
     species_bin : np.array
         Species bin.
     """
-    # PH event TOF normalization to Z axis
-    ctof, _ = get_ctof(tof, path_length, "PH")
+    # Event TOF normalization to Z axis
+    ctof, _ = get_ctof(tof, path_length, type)
     # Initialize bin array
-    species_bin = np.full(len(ctof), np.nan, dtype="object")
-
-    # Assign "H" to bins where cTOF is within the specified range
-    species_bin[
-        (ctof > UltraConstants.SPECIES_MIN) & (ctof < UltraConstants.SPECIES_MAX)
-    ] = "H"
-
-    return species_bin
-
-
-def determine_species_ssd(tof: np.ndarray, path_length: np.ndarray) -> NDArray:
-    """
-    Determine the species for SSD events.
-
-    Species is determined from the particle's energy and velocity.
-    For velocity, the particle's TOF is normalized with respect
-    to a fixed distance dmin between the front and back detectors.
-    For SSD events, an adjustment is also made to the path length
-    to account for the shorter distances that such events
-    travel to reach the detector. The normalized TOF is termed
-    the corrected tof (ctof). Particle species are determined from
-    the energy and cTOF using a lookup table.
-
-    Further description is available on pages 42-44 of
-    IMAP-Ultra Flight Software Specification document
-    (7523-9009_Rev_-.pdf).
-
-    Parameters
-    ----------
-    tof : np.ndarray
-        Time of flight of the SSD event (tenths of a nanosecond).
-    path_length : np.ndarray
-        Path length (r) (hundredths of a millimeter).
-
-    Returns
-    -------
-    species_bin : np.ndarray
-        Species bin.
-    """
-    # SSD event TOF normalization to Z axis
-    ctof, _ = get_ctof(tof, path_length, "SSD")
-
-    # Initialize bin array
-    species_bin = np.full(len(ctof), "unknown", dtype="str")
+    species_bin = np.full(len(ctof), "UNKNOWN", dtype="U10")
 
     # Assign "H" to bins where cTOF is within the specified range
     species_bin[

@@ -163,10 +163,13 @@ energy:
   UNITS: keV
 
 species:
-  <<: *default_uint8
-  CATDESC: Species bin (0-255).
-  FIELDNAM: species
-  LABLAXIS: species
+  <<: *default
+  DISPLAY_TYPE: no_plot
+  CATDESC: Label species type.
+  FIELDNAM: Label species type.
+  FILLVAL: "UNKNOWN"
+  FORMAT: A8
+  dtype: str
   UNITS: " "
 
 front_back_distance:

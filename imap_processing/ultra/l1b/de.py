@@ -10,8 +10,7 @@ from imap_processing.ultra.l1b.ultra_l1b_annotated import (
 )
 from imap_processing.ultra.l1b.ultra_l1b_extended import (
     StopType,
-    determine_species_pulse_height,
-    determine_species_ssd,
+    determine_species,
     get_coincidence_positions,
     get_ctof,
     get_energy_pulse_height,
@@ -59,7 +58,7 @@ def calculate_de(de_dataset: xr.Dataset, name: str) -> xr.Dataset:
     energy = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float32)
     # TODO: uint8 fills with zeros instead of nans.
     #  Confirm with Ultra team what fill values and dtype we want.
-    species_bin = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.uint8)
+    species_bin = np.full(len(de_dataset["epoch"]), "UNKNOWN", dtype="U10")
     t2 = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float32)
 
     # Drop events with invalid start type.
@@ -95,13 +94,11 @@ def calculate_de(de_dataset: xr.Dataset, name: str) -> xr.Dataset:
         (xb[ph_indices], yb[ph_indices]),
         d[ph_indices],
     )
-    species_bin[ph_indices] = determine_species_pulse_height(
-        energy[ph_indices], tof[ph_indices], r[ph_indices]
-    )
+    species_bin[ph_indices] = determine_species(tof[ph_indices], r[ph_indices], "PH")
     etof[ph_indices], xc[ph_indices] = get_coincidence_positions(
         de_dataset.isel(epoch=ph_indices), t2[ph_indices], f"ultra{sensor}"
     )
-    ctof[ph_indices] = get_ctof(tof[ph_indices], r[ph_indices], "PH")
+    ctof[ph_indices], _ = get_ctof(tof[ph_indices], r[ph_indices], "PH")
 
     # SSD
     ssd_indices = np.nonzero(np.isin(de_dataset["STOP_TYPE"], StopType.SSD.value))[0]
@@ -119,12 +116,10 @@ def calculate_de(de_dataset: xr.Dataset, name: str) -> xr.Dataset:
         (xb[ssd_indices], yb[ssd_indices]),
         d[ssd_indices],
     )
-    species_bin[ssd_indices] = determine_species_ssd(
-        energy[ssd_indices],
-        tof[ssd_indices],
-        r[ssd_indices],
+    species_bin[ssd_indices] = determine_species(
+        tof[ssd_indices], r[ssd_indices], "SSD"
     )
-    ctof[ssd_indices] = get_ctof(tof[ssd_indices], r[ssd_indices], "SSD")
+    ctof[ssd_indices], _ = get_ctof(tof[ssd_indices], r[ssd_indices], "SSD")
 
     # Combine ph_yb and ssd_yb along with their indices
     de_dict["x_front"] = xf.astype(np.float32)

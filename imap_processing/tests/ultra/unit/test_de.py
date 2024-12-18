@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from imap_processing.ultra.constants import UltraConstants
 from imap_processing.ultra.l1b.de import calculate_de
 
 
@@ -66,9 +67,13 @@ def test_calculate_de(mock_get_annotated_particle_velocity, de_dataset, df_filt)
 
     # Energies and species
     assert np.allclose(dataset["energy"], df_filt["Energy"].astype("float"))
-    assert np.allclose(
-        dataset["species"], np.full(len(de_dataset["epoch"]), np.nan, dtype=np.uint8)
-    )
+    species_array = dataset["species"][
+        np.where(
+            (dataset["tof_corrected"] > UltraConstants.SPECIES_MIN)
+            & (dataset["tof_corrected"] < UltraConstants.SPECIES_MAX)
+        )[0]
+    ]
+    assert np.all(species_array == "H")
 
     # Velocities in various frames
     test_tof = dataset["tof_start_stop"]

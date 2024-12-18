@@ -10,7 +10,7 @@ from imap_processing.ultra.l1b.ultra_l1b_extended import (
     StartType,
     StopType,
     calculate_etof_xc,
-    determine_species_pulse_height,
+    determine_species,
     get_coincidence_positions,
     get_ctof,
     get_energy_pulse_height,
@@ -21,7 +21,7 @@ from imap_processing.ultra.l1b.ultra_l1b_extended import (
     get_ph_tof_and_back_positions,
     get_ssd_back_position_and_tof_offset,
     get_ssd_tof,
-    get_velocity_vector,
+    get_unit_vector,
 )
 
 
@@ -229,7 +229,7 @@ def test_get_unit_vector(de_dataset, yf_fixture):
     test_d = ph_rows["d"].astype("float").values
     test_tof = ph_rows["TOF"].astype("float").values
 
-    vhat_x, vhat_y, vhat_z = get_velocity_vector(
+    vhat_x, vhat_y, vhat_z = get_unit_vector(
         (test_xf, test_yf),
         (test_xb, test_yb),
         test_d,
@@ -329,39 +329,34 @@ def test_get_ctof(yf_fixture):
     )
 
 
-def test_determine_species_ph(yf_fixture):
-    """Tests determine_species_ph function."""
+def test_determine_species(yf_fixture):
+    """Tests determine_species function."""
     df_filt, _, _ = yf_fixture
     df_ph = df_filt[np.isin(df_filt["StopType"], [StopType.PH.value])]
+    df_ssd = df_filt[np.isin(df_filt["StopType"], [StopType.SSD.value])]
 
-    species_bin = determine_species_pulse_height(
+    species_bin_ph = determine_species(
         df_ph["TOF"].astype("float").to_numpy(),
         df_ph["r"].astype("float").to_numpy(),
+        "PH",
+    )
+    species_bin_ssd = determine_species(
+        df_ssd["TOF"].astype("float").to_numpy(),
+        df_ssd["r"].astype("float").to_numpy(),
+        "SSD",
     )
 
-    h_indices = np.where(species_bin == "H")[0]
-    ctof_indices = np.where(
+    h_indices_ph = np.where(species_bin_ph == "H")[0]
+    ctof_indices_ph = np.where(
         (df_ph["cTOF"].astype("float") > UltraConstants.SPECIES_MIN)
         & (df_ph["cTOF"].astype("float") < UltraConstants.SPECIES_MAX)
     )[0]
 
-    np.testing.assert_array_equal(h_indices, ctof_indices)
-
-
-def test_determine_species_ssd(yf_fixture):
-    """Tests determine_species_ssd function."""
-    df_filt, _, _ = yf_fixture
-    df_ssd = df_filt[np.isin(df_filt["StopType"], [StopType.SSD.value])]
-
-    species_bin = determine_species_pulse_height(
-        df_ssd["TOF"].astype("float").to_numpy(),
-        df_ssd["r"].astype("float").to_numpy(),
-    )
-
-    h_indices = np.where(species_bin == "H")[0]
-    ctof_indices = np.where(
+    h_indices_ssd = np.where(species_bin_ssd == "H")[0]
+    ctof_indices_ssd = np.where(
         (df_ssd["cTOF"].astype("float") > UltraConstants.SPECIES_MIN)
         & (df_ssd["cTOF"].astype("float") < UltraConstants.SPECIES_MAX)
     )[0]
 
-    np.testing.assert_array_equal(h_indices, ctof_indices)
+    np.testing.assert_array_equal(h_indices_ph, ctof_indices_ph)
+    np.testing.assert_array_equal(h_indices_ssd, ctof_indices_ssd)
