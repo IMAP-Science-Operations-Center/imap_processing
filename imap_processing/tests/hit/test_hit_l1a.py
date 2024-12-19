@@ -29,16 +29,7 @@ def sci_packet_filepath():
     return imap_module_directory / "tests/hit/test_data/sci_sample1.ccsds"
 
 
-@pytest.fixture()
-def hk_dataset(packet_filepath):
-    """Get the housekeeping dataset"""
-    datasets = hit_l1a(packet_filepath, "001")
-    for dataset in datasets:
-        if dataset.attrs["Logical_source"] == "imap_hit_l1a_hk":
-            return dataset
-
-
-def test_validate_l1a_housekeeping_data(hk_dataset):
+def test_validate_l1a_housekeeping_data(hk_packet_filepath):
     """Validate the housekeeping dataset created by the L1A processing.
 
     Compares the processed housekeeping data with expected values from
@@ -49,6 +40,10 @@ def test_validate_l1a_housekeeping_data(hk_dataset):
     hk_dataset : xr.Dataset
         Housekeeping dataset created by the L1A processing.
     """
+    datasets = hit_l1a(hk_packet_filepath, "001")
+    for dataset in datasets:
+        if dataset.attrs["Logical_source"] == "imap_hit_l1a_hk":
+            hk_dataset = dataset
 
     # Load the validation data
     validation_file = (
@@ -151,7 +146,7 @@ def test_subcom_sectorates(sci_packet_filepath):
         )
 
 
-def test_compare_validation_data(sci_packet_filepath):
+def test_validate_l1a_counts_data(sci_packet_filepath):
     """Compare the output of the L1A processing to the validation data.
 
     This test compares the counts data product with the validation data.
