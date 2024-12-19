@@ -18,6 +18,11 @@ def hi_l1a_test_data_path(hi_test_data_path):
     return hi_test_data_path / "l1a"
 
 
+@pytest.fixture(scope="session")
+def hi_l1b_test_data_path(hi_test_data_path):
+    return hi_test_data_path / "l1b"
+
+
 def create_metaevent(esa_step, met_subseconds, met_seconds):
     start_bitmask_data = 0  # META
     return (
