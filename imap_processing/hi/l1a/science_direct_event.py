@@ -48,21 +48,6 @@ def parse_direct_events(de_data: bytes) -> dict[str, npt.ArrayLike]:
     If there is no event record for certain ESA step, then both packets will
     contain 0-bits in DE_TOF.
 
-    In direct event data, if no hit is registered, the tof_x field in
-    the DE to a value of negative one. However, since the field is described as a
-    "10-bit unsigned counter," it cannot actually store negative numbers.
-    Instead, the value negative is represented by the maximum value that can
-    be stored in a 10-bit unsigned integer, which is 0x3FF (in hexadecimal)
-    or 1023 in decimal. This value is used as a special marker to
-    indicate that no hit was registered. Ideally, the system should
-    not be able to register a hit with a value of 1023 for all
-    tof_1, tof_2, tof_3, because this is in case of an error. But,
-    IMAP-Hi like to process it still to investigate the data.
-    Example of what it will look like if no hit was registered.
-
-    |        (start_bitmask_data, de_tag, 1023, 1023, 1023)
-    |        start_bitmask_data will be 1 or 2 or 3.
-
     Parameters
     ----------
     de_data : bytes
@@ -74,22 +59,27 @@ def parse_direct_events(de_data: bytes) -> dict[str, npt.ArrayLike]:
     Dict[str, list]
         Parsed event data.
     """
-    # Each DE consists of 6-bytes. Considering the data as 3 2-byte words,
+    # The de_data is a binary blob with Nx6 bytes of data where N = number of
+    # direct events encoded into the binary blob. Interpreting the data as
+    # big-endian uint16 data and reshaping into a (3, -1) ndarray results
+    # in an array with shape (3, N). Indexing the first axis of that array
+    # (e.g. data_uint16[i]) gives the ith 2-bytes of data for each of the N
+    # direct events.
+    # Considering the 6-bytes of data for each DE as 3 2-byte words,
     # each word contains the following:
     # word_0: 2-bits of Trigger ID, upper 14-bits of de_tag
     # word_1: lower 2-bits of de_tag, 10-bits tof_1, upper 4-bits of tof_2
-    # word_3: lower 6-bits of tof_2, 10-bits of tof_3
-    # Interpret binary blob as uint16 array and reshape to (3, n)
+    # word_2: lower 6-bits of tof_2, 10-bits of tof_3
     data_uint16 = np.reshape(
         np.frombuffer(de_data, dtype=">u2"), (3, -1), order="F"
     ).astype(np.uint16)
 
     de_dict = dict()
-    de_dict["trigger_id"] = (data_uint16[0] >> (6 + 8)).astype(np.uint8)
-    de_dict["de_tag"] = (data_uint16[0] << 2) + (data_uint16[1] >> (6 + 8))
+    de_dict["trigger_id"] = (data_uint16[0] >> 14).astype(np.uint8)
+    de_dict["de_tag"] = (data_uint16[0] << 2) + (data_uint16[1] >> 14)
     de_dict["tof_1"] = (data_uint16[1] & int(b"00111111_11110000", 2)) >> 4
     de_dict["tof_2"] = ((data_uint16[1] & int(b"00000000_00001111", 2)) << 6) + (
-        data_uint16[2] >> (2 + 8)
+        data_uint16[2] >> 10
     )
     de_dict["tof_3"] = data_uint16[2] & int(b"00000011_11111111", 2)
 
