@@ -7,9 +7,9 @@ from imap_processing.hi.l1c import hi_l1c
 from imap_processing.hi.utils import HIAPID
 
 
-def test_generate_pset_dataset(hi_l1b_test_data_path):
+def test_generate_pset_dataset(hi_l1_test_data_path):
     """Test coverage for generate_pset_dataset function"""
-    l1b_de_path = hi_l1b_test_data_path / "imap_hi_l1b_45sensor-de_20250415_v001.cdf"
+    l1b_de_path = hi_l1_test_data_path / "imap_hi_l1b_45sensor-de_20250415_v999.cdf"
     l1b_dataset = load_cdf(l1b_de_path)
     l1c_dataset = hi_l1c.generate_pset_dataset(l1b_dataset)
 
