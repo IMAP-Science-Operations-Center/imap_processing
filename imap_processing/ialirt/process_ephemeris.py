@@ -23,30 +23,6 @@ logger = logging.getLogger(__name__)
 
 
 @typing.no_type_check
-def calculate_doppler(
-    observation_time: Union[float, np.ndarray],
-) -> Union[int, ndarray[float]]:
-    """
-    Calculate the doppler shift. Placeholder for now.
-
-    Parameters
-    ----------
-    observation_time : float or np.ndarray
-        Time at which the state of the target relative to the observer
-        is to be computed. Expressed as ephemeris time, seconds past J2000 TDB.
-
-    Returns
-    -------
-    doppler : float or np.ndarray[float]
-        Doppler shift. Currently a throwaway value.
-    """
-    if isinstance(observation_time, np.ndarray):
-        return np.ones(len(observation_time), dtype=float)
-    else:
-        return 1
-
-
-@typing.no_type_check
 @ensure_spice
 def latitude_longitude_to_ecef(
     longitude: float, latitude: float, altitude: float
@@ -99,7 +75,7 @@ def calculate_azimuth_and_elevation(
     latitude: float,
     altitude: float,
     observation_time: Union[float, np.ndarray],
-    target: SpiceBody = SpiceBody.IMAP.name,
+    target: str = SpiceBody.IMAP.name,
 ) -> tuple:
     """
     Calculate azimuth and elevation.
@@ -127,7 +103,9 @@ def calculate_azimuth_and_elevation(
     elevation : np.ndarray
         Elevation in degrees.
     """
-    observer_position_ecef = latitude_longitude_to_ecef(longitude, latitude, altitude)
+    ground_station_position_ecef = latitude_longitude_to_ecef(
+        longitude, latitude, altitude
+    )
 
     if not isinstance(observation_time, np.ndarray):
         observation_time = [observation_time]
@@ -144,7 +122,7 @@ def calculate_azimuth_and_elevation(
             abcorr="LT+S",  # Aberration correction
             azccw=False,  # Azimuth measured clockwise from the positive y-axis
             elplsz=True,  # Elevation increases from the XY plane toward +Z
-            obspos=observer_position_ecef,  # observer pos. to center of motion
+            obspos=ground_station_position_ecef,  # observer pos. to center of motion
             obsctr="EARTH",  # Name of the center of motion
             obsref="IAU_EARTH",  # Body-fixed, body-centered reference frame wrt
             # observer's center
@@ -156,6 +134,65 @@ def calculate_azimuth_and_elevation(
     # TODO: calculate doppler
 
     return np.asarray(azimuth), np.asarray(elevation)
+
+
+@typing.no_type_check
+def calculate_doppler(
+    longitude: float,
+    latitude: float,
+    altitude: float,
+    observation_time: Union[float, np.ndarray],
+    target: str = SpiceBody.IMAP.name,
+) -> Union[float, ndarray[float]]:
+    """
+    Calculate the doppler velocity.
+
+    Notes about the spkezr function:
+    The function returns the state of the target (state) and the light time.
+    The first three components of state represent the x-, y- and z-components of the
+    target's position; the last three components form the corresponding velocity vector.
+
+    Parameters
+    ----------
+        longitude : float
+        Longitude in decimal degrees. Positive east of prime meridian,
+        negative to west.
+    latitude : float
+        Latitude in decimal degrees. Positive north of equator, negative
+        to south.
+    altitude : float
+        Altitude in kilometers.
+    observation_time : float or np.ndarray
+        Time at which the state of the target relative to the observer
+        is to be computed. Expressed as ephemeris time, seconds past J2000 TDB.
+    target : str (Optional)
+        The target body. Default is "IMAP".
+
+    Returns
+    -------
+    doppler : float or np.ndarray[float]
+        Doppler velocity in kilometers per second.
+    """
+    ground_station_position_ecef = latitude_longitude_to_ecef(
+        longitude, latitude, altitude
+    )
+
+    if not isinstance(observation_time, np.ndarray):
+        observation_time = [observation_time]
+
+    # TODO: consider improving vectorizing this for loop by moving everything besides
+    #  the spkezr outside of the for loop,
+    # TODO: which would require the axis argument
+    # TODO: error handling with a try/except block
+    doppler = []
+
+    for timestamp in observation_time:
+        state, light_time = spice.spkezr(target, timestamp, "ITRF93", "LT+S", "EARTH")
+        # re-orient spacecraft position relative to the ground station
+        state = state - np.pad(ground_station_position_ecef, (0, 3), "constant")
+        doppler.append(np.sum(state[3:6] * state[0:3]) / np.linalg.norm(state[0:3]))
+
+    return np.asarray(doppler)
 
 
 def build_output(
