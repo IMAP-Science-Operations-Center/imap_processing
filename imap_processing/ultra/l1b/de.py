@@ -56,8 +56,7 @@ def calculate_de(de_dataset: xr.Dataset, name: str) -> xr.Dataset:
     etof = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float32)
     ctof = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float32)
     energy = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float32)
-    # TODO: uint8 fills with zeros instead of nans.
-    #  Confirm with Ultra team what fill values and dtype we want.
+    #  TODO: Confirm with Ultra team what fill values and dtype we want.
     species_bin = np.full(len(de_dataset["epoch"]), "UNKNOWN", dtype="U10")
     t2 = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float32)
 

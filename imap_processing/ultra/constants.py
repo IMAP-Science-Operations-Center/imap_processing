@@ -68,6 +68,6 @@ class UltraConstants:
     ENERGY_START = 3.385  # energy start for the Ultra grids
     N_BINS = 23  # number of energy bins
 
-    # Constants for species determination
-    SPECIES_MIN = 50
-    SPECIES_MAX = 200
+    # Constants for species determination based on ctof range.
+    CTOF_SPECIES_MIN = 50
+    CTOF_SPECIES_MAX = 200

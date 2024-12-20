@@ -348,14 +348,14 @@ def test_determine_species(yf_fixture):
 
     h_indices_ph = np.where(species_bin_ph == "H")[0]
     ctof_indices_ph = np.where(
-        (df_ph["cTOF"].astype("float") > UltraConstants.SPECIES_MIN)
-        & (df_ph["cTOF"].astype("float") < UltraConstants.SPECIES_MAX)
+        (df_ph["cTOF"].astype("float") > UltraConstants.CTOF_SPECIES_MIN)
+        & (df_ph["cTOF"].astype("float") < UltraConstants.CTOF_SPECIES_MAX)
     )[0]
 
     h_indices_ssd = np.where(species_bin_ssd == "H")[0]
     ctof_indices_ssd = np.where(
-        (df_ssd["cTOF"].astype("float") > UltraConstants.SPECIES_MIN)
-        & (df_ssd["cTOF"].astype("float") < UltraConstants.SPECIES_MAX)
+        (df_ssd["cTOF"].astype("float") > UltraConstants.CTOF_SPECIES_MIN)
+        & (df_ssd["cTOF"].astype("float") < UltraConstants.CTOF_SPECIES_MAX)
     )[0]
 
     np.testing.assert_array_equal(h_indices_ph, ctof_indices_ph)

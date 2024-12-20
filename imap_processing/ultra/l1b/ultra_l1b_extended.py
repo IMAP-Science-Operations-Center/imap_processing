@@ -652,7 +652,7 @@ def get_ctof(
     tof: np.ndarray, path_length: np.ndarray, type: str
 ) -> tuple[NDArray, NDArray]:
     """
-    Calculate the corrected TOF.
+    Calculate the corrected TOF and the magnitude of the particle velocity.
 
     The corrected TOF (ctof) is the TOF normalized with respect
     to a fixed distance dmin between the front and back detectors.
@@ -675,7 +675,7 @@ def get_ctof(
     ctof : np.ndarray
         Corrected TOF (tenths of a ns).
     magnitude_v : np.ndarray
-        Magnitude of the particle velocity (tenths of a ns / mm).
+        Magnitude of the particle velocity (km/s).
     """
     dmin_ctof = getattr(UltraConstants, f"DMIN_{type}_CTOF")
 
@@ -723,7 +723,8 @@ def determine_species(tof: np.ndarray, path_length: np.ndarray, type: str) -> ND
 
     # Assign "H" to bins where cTOF is within the specified range
     species_bin[
-        (ctof > UltraConstants.SPECIES_MIN) & (ctof < UltraConstants.SPECIES_MAX)
+        (ctof > UltraConstants.CTOF_SPECIES_MIN)
+        & (ctof < UltraConstants.CTOF_SPECIES_MAX)
     ] = "H"
 
     return species_bin
