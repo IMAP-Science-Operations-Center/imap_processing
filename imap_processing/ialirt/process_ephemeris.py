@@ -59,8 +59,7 @@ def latitude_longitude_to_ecef(
     flattening = (equatorial_radius - polar_radius) / equatorial_radius
 
     # Convert geodetic coordinates to rectangular coordinates
-    # https://spiceypy.readthedocs.io/en/main/documentation.html#spiceypy.spiceypy.geo
-    # (url cont.) rec
+    # https://spiceypy.readthedocs.io/en/main/documentation.html#spiceypy.spiceypy.georec
     rect_coords = spice.georec(
         longitude_radians, latitude_radians, altitude, equatorial_radius, flattening
     )
@@ -187,6 +186,7 @@ def calculate_doppler(
     doppler = []
 
     for timestamp in observation_time:
+        # https://spiceypy.readthedocs.io/en/main/documentation.html#spiceypy.spiceypy.spkezr
         state, light_time = spice.spkezr(target, timestamp, "ITRF93", "LT+S", "EARTH")
         # re-orient spacecraft position relative to the ground station
         state = state - np.pad(ground_station_position_ecef, (0, 3), "constant")
