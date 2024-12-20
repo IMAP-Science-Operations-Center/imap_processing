@@ -37,10 +37,11 @@ def test_validate_l1a_housekeeping_data(hk_packet_filepath):
 
     Parameters
     ----------
-    hk_dataset : xr.Dataset
-        Housekeeping dataset created by the L1A processing.
+    hk_packet_filepath : str
+        File path to housekeeping ccsds file
     """
     datasets = hit_l1a(hk_packet_filepath, "001")
+    hk_dataset = None
     for dataset in datasets:
         if dataset.attrs["Logical_source"] == "imap_hit_l1a_hk":
             hk_dataset = dataset
