@@ -11,6 +11,7 @@ import ultra_user.energy_check.event_dataset as ed
 import ultra_user.pipeline.test_data as td
 import imap_processing.ultra.l1b.ultra_l1b_extended as l1b_ext
 import ultra_user.energy_check.de_extended_calcs as de_calcs
+plt.interactive(True)
 
 importlib.reload(ed)
 importlib.reload(td)
@@ -26,8 +27,17 @@ v_mag = l1b["v_mag"]
 v_mag0=np.sqrt(np.sum((v*v),0))
 
 ehist,echan = np.histogram(l1b["energy"],bins=20,range = (20,60))
-vhist,vchan = np.histogram(v_mag,bins=20,range = (20,60))
+vhist,vchan = np.histogram(v_mag,bins=20,range = (100,5000))
 
+plt.plot(vchan[1:],vhist)
+plt.xlabel("Velocity (km/s)")
+plt.title("Histogram of test dataset")
+plt.show()
+
+plt.plot(echan[1:],ehist)
+plt.xlabel("Energy (keV)")
+plt.title("Histogram of test dataset")
+plt.show()
 
 
 d.ctof_ph_plot()

@@ -8,7 +8,7 @@ l1a = td.de_dataset()
 
 l1b=de_calcs.get_1bdict(l1a)
 #pkldir = '/Users/demajr1/tmp/'
-pkldir = 'data/pkls'
+pkldir = 'data/pkls/'
 
 
 pkfile = open(pkldir+'dataset_from_csv.pkl',"wb")

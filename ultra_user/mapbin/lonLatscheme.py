@@ -54,3 +54,6 @@ class LonLatScheme(binscheme.BinScheme):
     def getnm(self, bin_number):
         return ((bin_number % self.nlon),
                 np.floor(bin_number * self.dlon / (self.lon_range[1] - self.lon_range[0])))
+
+    def asGrid(self,bins:np.ndarray):
+        return np.reshape(bins,(self.nlon,self.nlat))
