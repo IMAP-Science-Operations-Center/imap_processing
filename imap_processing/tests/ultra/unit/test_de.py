@@ -69,8 +69,8 @@ def test_calculate_de(mock_get_annotated_particle_velocity, de_dataset, df_filt)
     assert np.allclose(dataset["energy"], df_filt["Energy"].astype("float"))
     species_array = dataset["species"][
         np.where(
-            (dataset["tof_corrected"] > UltraConstants.SPECIES_MIN)
-            & (dataset["tof_corrected"] < UltraConstants.SPECIES_MAX)
+            (dataset["tof_corrected"] > UltraConstants.CTOF_SPECIES_MIN)
+            & (dataset["tof_corrected"] < UltraConstants.CTOF_SPECIES_MAX)
         )[0]
     ]
     assert np.all(species_array == "H")
