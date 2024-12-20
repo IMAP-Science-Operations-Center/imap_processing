@@ -18,14 +18,14 @@ EXPECTED_ARRAY_SHAPES = [
     (),  # hi-ialirt  # TODO: Need to implement
     (),  # lo-ialirt  # TODO: Need to implement
     (31778,),  # hskp
-    (77, 6, 6, 128),  # lo-counters-aggregated
-    (77, 24, 6, 128),  # lo-counters-singles
-    (77, 1, 12, 128),  # lo-sw-priority
-    (77, 1, 12, 128),  # lo-nsw-priority
-    (77, 1, 1, 128),  # lo-sw-species
-    (77, 1, 1, 128),  # lo-nsw-species
-    (77, 5, 12, 128),  # lo-sw-angular
-    (77, 19, 12, 128),  # lo-nsw-angular
+    (77, 128, 6, 6),  # lo-counters-aggregated
+    (77, 128, 24, 6),  # lo-counters-singles
+    (77, 128, 1, 12),  # lo-sw-priority
+    (77, 128, 1, 12),  # lo-nsw-priority
+    (77, 128, 1, 1),  # lo-sw-species
+    (77, 128, 1, 1),  # lo-nsw-species
+    (77, 128, 5, 12),  # lo-sw-angular
+    (77, 128, 19, 12),  # lo-nsw-angular
     (77, 1, 6, 1),  # hi-counters-aggregated
     (77, 1, 12, 1),  # hi-counters-singles
     (77, 15, 4, 1),  # hi-omni

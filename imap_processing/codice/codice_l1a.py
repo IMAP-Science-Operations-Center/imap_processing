@@ -129,12 +129,12 @@ class CoDICEL1aPipeline:
         for name in self.config["coords"]:
             if name == "epoch":
                 values = self.dataset.epoch.data
+            elif name == "esa_step":
+                values = np.arange(self.config["num_energy_steps"])
             elif name == "inst_az":
                 values = np.arange(self.config["num_positions"])
             elif name == "spin_sector":
                 values = np.arange(self.config["num_spin_sectors"])
-            elif name == "esa_step":
-                values = np.arange(self.config["num_energy_steps"])
             else:
                 # TODO: Need to implement other types of coords
                 continue
@@ -170,8 +170,8 @@ class CoDICEL1aPipeline:
         # Stack the data so that it is easier to reshape and iterate over
         all_data = np.stack(self.data)
 
-        # The dimension of all data is (epoch, num_counters, num_positions,
-        # num_spin_sectors, num_energy_steps) (or may be slightly different
+        # The dimension of all data is (epoch, num_counters, num_energy_steps,
+        # num_positions, num_spin_sectors) (or may be slightly different
         # depending on the data product). In any case, iterate over the
         # num_counters dimension to isolate the data for each counter so
         # that it can be placed in a CDF data variable.
@@ -353,9 +353,9 @@ class CoDICEL1aPipeline:
                     ).reshape(
                         (
                             self.config["num_counters"],
+                            self.config["num_energy_steps"],
                             self.config["num_positions"],
                             self.config["num_spin_sectors"],
-                            self.config["num_energy_steps"],
                         )
                     )
                     self.data.append(reshaped_packet_data)
