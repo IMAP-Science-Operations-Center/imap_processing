@@ -1,4 +1,4 @@
-"""Functions to support CoDICE Lo processing."""
+"""Functions to support I-ALiRT CoDICE Lo processing."""
 
 import logging
 from typing import Any
