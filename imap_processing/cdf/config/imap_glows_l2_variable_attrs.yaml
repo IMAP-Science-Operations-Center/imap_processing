@@ -1,0 +1,4 @@
+int_fillval: &int_fillval -9223372036854775808
+max_uint32: &max_uint32 4294967295
+max_uint32_min_one: &max_uint32_min_one 4294967294
+max_uint16: &max_uint16 65535
