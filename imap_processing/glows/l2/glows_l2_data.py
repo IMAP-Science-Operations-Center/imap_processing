@@ -78,10 +78,15 @@ class DailyLightcurve:
         self.photon_flux = self.raw_histograms / self.exposure_times
         self.flux_uncertainties = self.raw_uncertainties / self.exposure_times
 
-        self.spin_angle = l1b_data["imap_spin_angle_bin_cntr"].data
+        # TODO: Average this, or should they all be the same?
+        self.spin_angle = np.average(l1b_data["imap_spin_angle_bin_cntr"].data, axis=0)
 
         # TODO: is the first number here ok? Would it change mid-obs day?
         self.number_of_bins = l1b_data["number_of_bins_per_histogram"].data[0]
+
+        self.histogram_flag_array = np.zeros(self.number_of_bins)
+        self.ecliptic_lon = np.zeros(self.number_of_bins)
+        self.ecliptic_lat = np.zeros(self.number_of_bins)
 
     @staticmethod
     def calculate_exposure_times(
@@ -142,9 +147,9 @@ class HistogramL2:
     identifier : int
         unique Level-2 histogram identifier
     start_time : numpy.double
-        UTC start time of a given observational day
+        J2000 start time of a given observational day
     end_time : numpy.double
-        UTC end time of a given observational day
+        J2000 end time of a given observational day
     daily_lightcurve : numpy.ndarray
         arrays for observational-day-accumulated lightcurve
     filter_temperature_average : numpy.ndarray

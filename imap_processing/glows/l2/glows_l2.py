@@ -11,7 +11,7 @@ from imap_processing.glows.l1b.glows_l1b_data import HistogramL1B
 from imap_processing.glows.l2.glows_l2_data import DailyLightcurve, HistogramL2
 
 
-def glows_l2(input_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
+def glows_l2(input_dataset: xr.Dataset, data_version: str) -> list[xr.Dataset]:
     """
     Will process GLoWS L2 data from L1 data.
 
@@ -33,13 +33,12 @@ def glows_l2(input_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
     cdf_attrs.add_global_attribute("Data_version", data_version)
 
     split_data = split_data_by_observational_day(input_dataset)
-    l2_values = []
+    l2_output = []
     for data in split_data:
         l2 = generate_l2(data)
-        l2_values.append(create_l2_dataset(l2, cdf_attrs))
+        l2_output.append(create_l2_dataset(l2, cdf_attrs))
 
-    # TODO: Process Histogram L2 dataclass into xarray dataset
-    return xr.Dataset()
+    return l2_output
 
 
 # TODO: filter good times out
@@ -92,9 +91,14 @@ def generate_l2(l1b_dataset: xr.Dataset) -> HistogramL2:
     for field in all_variables:
         var_name = field.name
         if "average" in var_name:
-            var_outputs[var_name] = l1b_dataset[var_name].mean(dim="epoch").data
+            # This results in a scalar value, so `keepdims=True` ensures we keep the
+            # epoch dimension.
+            var_outputs[var_name] = (
+                l1b_dataset[var_name].mean(dim="epoch", keepdims=True).data
+            )
+
             var_outputs[var_name.replace("average", "std_dev")] = (
-                l1b_dataset[var_name].std(dim="epoch").data
+                l1b_dataset[var_name].std(dim="epoch", keepdims=True).data
             )
 
     # l1b stuff is done
@@ -186,7 +190,77 @@ def create_l2_dataset(
     xarray.Dataset
         L2 dataset for output to CDF file.
     """
-    pass
+    # Each L2 file only has one timestamp.
+    # TODO: If we want this to point to the start time, we need to set the attribute
+    #  variable BIN_LOCATION to 0. Otherwise, we need this to be halfway between start
+    #  time and end time.
+    time_data = np.array([histogram_l2.start_time], dtype=np.float64)
+    epoch_time = xr.DataArray(
+        time_data,
+        name="epoch",
+        dims=["epoch"],
+        attrs=attrs.get_variable_attributes("epoch"),
+    )
+
+    bins = xr.DataArray(
+        np.arange(histogram_l2.daily_lightcurve.number_of_bins),
+        name="bins",
+        dims=["bins"],
+        attrs=attrs.get_variable_attributes("test"),
+    )
+
+    eclipic_data = xr.DataArray(
+        np.arange(3),
+        name="ecliptic",
+        dims=["ecliptic"],
+        attrs=attrs.get_variable_attributes("test"),
+    )
+
+    output = xr.Dataset(
+        coords={"epoch": epoch_time, "bins": bins, "ecliptic": eclipic_data},
+        attrs=attrs.get_global_attributes("imap_glows_l2_hist"),
+    )
+
+    ecliptic_variables = [
+        "spacecraft_location_average",
+        "spacecraft_location_std_dev",
+        "spacecraft_velocity_average",
+        "spacecraft_velocity_std_dev",
+    ]
+    for key, value in dataclasses.asdict(histogram_l2).items():
+        if key in ecliptic_variables:
+            output[key] = xr.DataArray(
+                value,
+                dims=["epoch", "ecliptic"],
+                attrs=attrs.get_variable_attributes("test"),
+            )
+
+        elif key != "daily_lightcurve":
+            if type(value) != np.ndarray:
+                value = np.array([value])
+            output[key] = xr.DataArray(
+                value,
+                dims=["epoch"],
+                attrs=attrs.get_variable_attributes("test"),
+            )
+
+    for key, value in dataclasses.asdict(histogram_l2.daily_lightcurve).items():
+        value = np.array([value])
+        if key == "number_of_bins":
+            # number_of_bins does not have n_bins dimensions.
+            output[key] = xr.DataArray(
+                value,
+                dims=["epoch"],
+                attrs=attrs.get_variable_attributes("test"),
+            )
+        else:
+            output[key] = xr.DataArray(
+                value,
+                dims=["epoch", "bins"],
+                attrs=attrs.get_variable_attributes("test"),
+            )
+
+    return output
 
 
 def return_good_times(flags: xr.DataArray, active_flags: NDArray) -> NDArray:

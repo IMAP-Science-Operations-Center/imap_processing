@@ -39,3 +39,10 @@ imap_glows_l1b_de:
   Data_type: L1B_de>Level-1B Direct Events
   Logical_source: imap_glows_l1b_de
   Logical_source_description: IMAP Mission GLOWS Instrument Level-1B Direct Events Data.
+
+imap_glows_l2_hist:
+  <<: *instrument_base
+  Data_level: L2
+  Data_type: L2_hist>Level-2 histogram
+  Logical_source: imap_glows_l2_hist
+  Logical_source_description: IMAP Mission GLOWS Instrument Level-2 Histogram Data.
