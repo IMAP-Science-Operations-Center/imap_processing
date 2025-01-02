@@ -13,6 +13,7 @@ from imap_processing.ultra.l1b.ultra_l1b_extended import (
     determine_species,
     get_coincidence_positions,
     get_ctof,
+    get_de_velocity,
     get_energy_pulse_height,
     get_energy_ssd,
     get_front_x_position,
@@ -247,6 +248,43 @@ def test_get_unit_vector(de_dataset, yf_fixture):
     )
     assert vhat_z[test_tof > 0] == pytest.approx(
         -df_filt["vhatZ"].iloc[ph_indices].astype("float").values[test_tof > 0],
+        rel=1e-2,
+    )
+
+
+def test_get_de_velocity(de_dataset, yf_fixture):
+    """Tests get_de_velocity function."""
+    df_filt, _, _ = yf_fixture
+
+    ph_indices = np.nonzero(
+        np.isin(de_dataset["STOP_TYPE"], [StopType.Top.value, StopType.Bottom.value])
+    )[0]
+
+    ph_rows = df_filt.iloc[ph_indices]
+    test_xf = ph_rows["Xf"].astype("float").values
+    test_yf = ph_rows["Yf"].astype("float").values
+    test_xb = ph_rows["Xb"].astype("float").values
+    test_yb = ph_rows["Yb"].astype("float").values
+    test_d = ph_rows["d"].astype("float").values
+    test_tof = ph_rows["TOF"].astype("float").values
+
+    v_x, v_y, v_z = get_de_velocity(
+        (test_xf, test_yf),
+        (test_xb, test_yb),
+        test_d,
+        test_tof,
+    )
+
+    assert v_x[test_tof > 0] == pytest.approx(
+        df_filt["vx"].iloc[ph_indices].astype("float").values[test_tof > 0],
+        rel=1e-2,
+    )
+    assert v_y[test_tof > 0] == pytest.approx(
+        df_filt["vy"].iloc[ph_indices].astype("float").values[test_tof > 0],
+        rel=1e-2,
+    )
+    assert v_z[test_tof > 0] == pytest.approx(
+        df_filt["vz"].iloc[ph_indices].astype("float").values[test_tof > 0],
         rel=1e-2,
     )
 

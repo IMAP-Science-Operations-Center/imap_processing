@@ -496,6 +496,61 @@ def get_unit_vector(
     return vhat_x, vhat_y, vhat_z
 
 
+def get_de_velocity(
+    front_position: tuple[NDArray, NDArray],
+    back_position: tuple[NDArray, NDArray],
+    d: np.ndarray,
+    tof: np.ndarray,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """
+    Determine the particle velocity.
+
+    The equation is: velocity = ((xf - xb), (yf - yb), d).
+
+    Further description is available on pages 39 of
+    IMAP-Ultra Flight Software Specification document
+    (7523-9009_Rev_-.pdf).
+
+    Parameters
+    ----------
+    front_position : tuple
+        Front position (xf,yf) (hundredths of a millimeter).
+    back_position : tuple
+        Back position (xb,yb) (hundredths of a millimeter).
+    d : np.array
+        Distance from slit to foil (hundredths of a millimeter).
+    tof : np.array
+        Time of flight (tenths of a nanosecond).
+
+    Returns
+    -------
+    vhat_x : np.array
+        Normalized component of the velocity vector in x direction.
+    vhat_y : np.array
+        Normalized component of the velocity vector in y direction.
+    vhat_z : np.array
+        Normalized component of the velocity vector in z direction.
+    """
+    if tof[tof < 0].any():
+        logger.info("Negative tof values found.")
+
+    # distances in .1 mm
+    delta_x = (front_position[0] - back_position[0]) * 0.1
+    delta_y = (front_position[1] - back_position[1]) * 0.1
+    delta_z = d * 0.1
+
+    # Convert from 0.1mm/0.1ns to km/s.
+    v_x = delta_x / tof * 1e3
+    v_y = delta_y / tof * 1e3
+    v_z = delta_z / tof * 1e3
+
+    v_x[tof < 0] = np.nan  # used as fillvals
+    v_y[tof < 0] = np.nan
+    v_z[tof < 0] = np.nan
+
+    return v_x, v_y, v_z
+
+
 def get_ssd_tof(de_dataset: xarray.Dataset, xf: np.ndarray) -> NDArray[np.float64]:
     """
     Calculate back xb, yb position for the SSDs.
