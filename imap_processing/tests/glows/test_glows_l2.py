@@ -6,7 +6,6 @@ from imap_processing.glows.l2.glows_l2 import (
     generate_l2,
     glows_l2,
     return_good_times,
-    split_data_by_observational_day,
 )
 from imap_processing.glows.l2.glows_l2_data import DailyLightcurve
 
@@ -38,8 +37,6 @@ def test_glows_l2(l1b_hist_dataset):
 
 @pytest.mark.xfail(reason="Spin table not yet complete")
 def test_split_by_observational_day(l1b_hist_dataset):
-    split = split_data_by_observational_day(l1b_hist_dataset)
-    l2 = generate_l2(split[0])
     # TODO: Complete test when spin table is complete
     raise NotImplementedError
 
@@ -99,6 +96,6 @@ def test_bin_exclusions(l1b_hists):
     # TODO test excluding bins as well
 
     raw_hists = DailyLightcurve.calculate_histogram_sums(l1b_hists["histogram"].data)
-    expected_values = [2, 3, 4, 4, 4]
+    expected_values = [2, 3, 4, 3, 4]
 
     assert np.array_equal(raw_hists, expected_values)

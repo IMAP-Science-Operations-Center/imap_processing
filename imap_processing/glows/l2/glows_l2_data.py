@@ -20,6 +20,8 @@ class DailyLightcurve:
         values of spin angle [deg] for bin centers (measured from the north)
     photon_flux : numpy.ndarray
         observational-day-averaged photon flux [Rayleigh]
+    raw_histograms : numpy.ndarray
+        sum of histograms across all timestamps
     exposure_times : numpy.ndarray
         exposure times for bins [s]
     flux_uncertainties : numpy.ndarray
@@ -32,6 +34,8 @@ class DailyLightcurve:
         ecliptic latitude of bin centers [deg]
     number_of_bins : int
         number of bins in lightcurve
+    raw_uncertainties : numpy.ndarray
+        statistical uncertainties for raw histograms (sqrt of self.raw_histograms)
     l1b_data : xarray.Dataset
         L1B data filtered by good times, good angles, and good bins.
     """
@@ -73,16 +77,19 @@ class DailyLightcurve:
             l1b_data, exposure_times_per_timestamp
         )
         self.raw_uncertainties = np.sqrt(self.raw_histograms)
+        self.photon_flux = np.zeros(len(self.raw_histograms))
+        self.flux_uncertainties = np.zeros(len(self.raw_histograms))
 
         # TODO: Only where exposure counts != 0
-        self.photon_flux = self.raw_histograms / self.exposure_times
-        self.flux_uncertainties = self.raw_uncertainties / self.exposure_times
+        if len(self.exposure_times) != 0:
+            self.photon_flux = self.raw_histograms / self.exposure_times
+            self.flux_uncertainties = self.raw_uncertainties / self.exposure_times
 
         # TODO: Average this, or should they all be the same?
         self.spin_angle = np.average(l1b_data["imap_spin_angle_bin_cntr"].data, axis=0)
 
         # TODO: is the first number here ok? Would it change mid-obs day?
-        self.number_of_bins = l1b_data["number_of_bins_per_histogram"].data[0]
+        self.number_of_bins = len(self.spin_angle)
 
         self.histogram_flag_array = np.zeros(self.number_of_bins)
         self.ecliptic_lon = np.zeros(self.number_of_bins)

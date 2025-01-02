@@ -59,12 +59,10 @@ def generate_l2(l1b_dataset: xr.Dataset) -> HistogramL2:
         L2 data in the form of a HistogramL2 dataclass.
     """
     # most of the values from L1B are averaged over a day
-
     good_data = l1b_dataset.isel(
         epoch=return_good_times(l1b_dataset["flags"], np.ones((17,)))
     )
     # todo: bad angle filter
-    # TODO: if there are no good times, assign -1 and 0 to outputs
     # TODO filter bad bins out. Needs to happen here while everything is still
     # per-timestamp.
 
@@ -74,19 +72,29 @@ def generate_l2(l1b_dataset: xr.Dataset) -> HistogramL2:
 
     daily_lightcurve = DailyLightcurve(good_data)
 
-    # Generate outputs that are passed in directly from L1B
     var_outputs = {
         "total_l1b_inputs": len(good_data["epoch"]),
         "number_of_good_l1b_inputs": len(good_data["epoch"]),
         # TODO replace post-filter
         "identifier": 100,  # TODO: retrieve from spin table
-        "start_time": good_data["epoch"].data[0],
-        "end_time": good_data["epoch"].data[-1],
         # TODO fill this in
-        "bad_time_flag_occurrences": None,
+        "bad_time_flag_occurrences": np.zeros((1, 17)),
         # Accumulate all the histograms from good times from the day into one
         "daily_lightcurve": daily_lightcurve,
     }
+
+    if len(good_data["epoch"]) != 0:
+        # Generate outputs that are passed in directly from L1B
+        var_outputs["start_time"] = good_data["epoch"].data[0]
+        var_outputs["end_time"] = good_data["epoch"].data[-1]
+
+    else:
+        # No good times in the file
+        var_outputs["start_time"] = l1b_dataset["imap_start_time"].data[0]
+        var_outputs["end_time"] = (
+            l1b_dataset["imap_start_time"].data[0]
+            + l1b_dataset["imap_time_offset"].data[0]
+        )
 
     for field in all_variables:
         var_name = field.name
@@ -154,20 +162,12 @@ def split_data_by_observational_day(input_dataset: xr.Dataset) -> list[xr.Datase
     # days within the time range of the file and when those observational days
     # start and stop
 
-    day_ends = [
-        input_dataset["epoch"].data[0],
-        input_dataset["epoch"].data[100],
-        input_dataset["epoch"].data[-1],
-    ]
-    print(day_ends)
-
-    # TODO: this slice is inclusive on the start and end for some reason. When you
-    #  replace this slice with the real spin data, figure that out.
-    data_by_day = [
-        input_dataset.sel(epoch=slice(day_ends[i], day_ends[i + 1]))
-        for i in range(len(day_ends) - 1)
-    ]
-    return data_by_day
+    # Note: slice is inclusive on both sides.
+    # data_by_day = [
+    #     input_dataset.sel(epoch=slice(day_ends[i], day_ends[i + 1]))
+    #     for i in range(len(day_ends) - 1)
+    # ]
+    return [input_dataset]
 
 
 def create_l2_dataset(
@@ -195,29 +195,54 @@ def create_l2_dataset(
     #  variable BIN_LOCATION to 0. Otherwise, we need this to be halfway between start
     #  time and end time.
     time_data = np.array([histogram_l2.start_time], dtype=np.float64)
+    # TODO: Create CDF attributes
     epoch_time = xr.DataArray(
         time_data,
         name="epoch",
         dims=["epoch"],
-        attrs=attrs.get_variable_attributes("epoch"),
+        attrs=attrs.get_variable_attributes("epoch", check_schema=False),
     )
 
     bins = xr.DataArray(
         np.arange(histogram_l2.daily_lightcurve.number_of_bins),
         name="bins",
         dims=["bins"],
-        attrs=attrs.get_variable_attributes("test"),
+        attrs=attrs.get_variable_attributes("bins_dim", check_schema=False),
+    )
+
+    bins_label = xr.DataArray(
+        -1,
+        name="bins_label",
+        attrs=attrs.get_variable_attributes("bins_label", check_schema=False),
+    )
+
+    flags = xr.DataArray(
+        np.ones(17),
+        dims=["flags"],
+        attrs=attrs.get_variable_attributes("flags_dim", check_schema=False),
+    )
+
+    flags_label = xr.DataArray(
+        -1,
+        name="flags_label",
+        attrs=attrs.get_variable_attributes("flags_label", check_schema=False),
     )
 
     eclipic_data = xr.DataArray(
         np.arange(3),
         name="ecliptic",
         dims=["ecliptic"],
-        attrs=attrs.get_variable_attributes("test"),
+        attrs=attrs.get_variable_attributes("ecliptic_dim", check_schema=False),
     )
 
     output = xr.Dataset(
-        coords={"epoch": epoch_time, "bins": bins, "ecliptic": eclipic_data},
+        data_vars={"bins_label": bins_label, "flags_label": flags_label},
+        coords={
+            "epoch": epoch_time,
+            "bins": bins,
+            "flags": flags,
+            "ecliptic": eclipic_data,
+        },
         attrs=attrs.get_global_attributes("imap_glows_l2_hist"),
     )
 
@@ -227,37 +252,44 @@ def create_l2_dataset(
         "spacecraft_velocity_average",
         "spacecraft_velocity_std_dev",
     ]
+
     for key, value in dataclasses.asdict(histogram_l2).items():
         if key in ecliptic_variables:
             output[key] = xr.DataArray(
                 value,
                 dims=["epoch", "ecliptic"],
-                attrs=attrs.get_variable_attributes("test"),
+                attrs=attrs.get_variable_attributes(key),
+            )
+        elif key == "bad_time_flag_occurrences":
+            output[key] = xr.DataArray(
+                value,
+                dims=["epoch", "flags"],
+                attrs=attrs.get_variable_attributes(key),
             )
 
         elif key != "daily_lightcurve":
+            val = value
             if type(value) != np.ndarray:
-                value = np.array([value])
+                val = np.array([value])
             output[key] = xr.DataArray(
-                value,
+                val,
                 dims=["epoch"],
-                attrs=attrs.get_variable_attributes("test"),
+                attrs=attrs.get_variable_attributes(key),
             )
 
     for key, value in dataclasses.asdict(histogram_l2.daily_lightcurve).items():
-        value = np.array([value])
         if key == "number_of_bins":
             # number_of_bins does not have n_bins dimensions.
             output[key] = xr.DataArray(
-                value,
+                np.array([value]),
                 dims=["epoch"],
-                attrs=attrs.get_variable_attributes("test"),
+                attrs=attrs.get_variable_attributes(key),
             )
         else:
             output[key] = xr.DataArray(
-                value,
+                np.array([value]),
                 dims=["epoch", "bins"],
-                attrs=attrs.get_variable_attributes("test"),
+                attrs=attrs.get_variable_attributes(key),
             )
 
     return output
