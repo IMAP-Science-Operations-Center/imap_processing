@@ -78,17 +78,17 @@ def test_calculate_de(mock_get_annotated_particle_velocity, de_dataset, df_filt)
     # Velocities in various frames
     test_tof = dataset["tof_start_stop"]
     assert np.allclose(
-        dataset["vx_ultra"][test_tof > 0],
+        dataset["unit_vector_velocity"][:, 0][test_tof > 0],
         -df_filt["vhatX"].astype("float").values[test_tof > 0],
         rtol=1e-2,
     )
     assert np.allclose(
-        dataset["vy_ultra"][test_tof > 0],
+        dataset["unit_vector_velocity"][:, 1][test_tof > 0],
         -df_filt["vhatY"].astype("float").values[test_tof > 0],
         rtol=1e-2,
     )
     assert np.allclose(
-        dataset["vz_ultra"][test_tof > 0],
+        dataset["unit_vector_velocity"][:, 2][test_tof > 0],
         -df_filt["vhatZ"].astype("float").values[test_tof > 0],
         rtol=1e-2,
     )

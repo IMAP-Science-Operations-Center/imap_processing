@@ -56,7 +56,6 @@ def calculate_de(de_dataset: xr.Dataset, name: str) -> xr.Dataset:
     etof = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float32)
     ctof = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float32)
     energy = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float32)
-    #  TODO: Confirm with Ultra team what fill values and dtype we want.
     species_bin = np.full(len(de_dataset["epoch"]), "UNKNOWN", dtype="U10")
     t2 = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float32)
 
@@ -150,17 +149,13 @@ def calculate_de(de_dataset: xr.Dataset, name: str) -> xr.Dataset:
         de_dict["front_back_distance"],
         de_dict["tof_start_stop"],
     )
+    de_dict["unit_vector_velocity"] = np.column_stack((vx_ultra, vy_ultra, vz_ultra))
 
-    de_dict["vx_ultra"] = vx_ultra.astype(np.float32)
-    de_dict["vy_ultra"] = vy_ultra.astype(np.float32)
-    de_dict["vz_ultra"] = vz_ultra.astype(np.float32)
     de_dict["energy"] = energy
     de_dict["species"] = species_bin
 
     # Annotated Events.
-    position = np.stack(
-        (de_dict["vx_ultra"], de_dict["vy_ultra"], de_dict["vz_ultra"]), axis=-1
-    )
+    position = np.stack((vx_ultra, vy_ultra, vz_ultra), axis=-1)
 
     ultra_frame = getattr(SpiceFrame, f"IMAP_ULTRA_{sensor}")
     sc_velocity, sc_dps_velocity, helio_velocity = get_annotated_particle_velocity(

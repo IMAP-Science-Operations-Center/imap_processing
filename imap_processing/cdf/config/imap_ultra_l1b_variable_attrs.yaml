@@ -134,25 +134,11 @@ start_type:
   LABLAXIS: start type
   UNITS: " "
 
-vx_ultra:
+unit_vector_velocity:
   <<: *default_float32
-  CATDESC: Normalized component of the velocity vector in x direction in the instrument frame.
-  FIELDNAM: vx_ultra
-  LABLAXIS: vx ultra
-  UNITS: " "
-
-vy_ultra:
-  <<: *default_float32
-  CATDESC: Normalized component of the velocity vector in y direction in the instrument frame.
-  FIELDNAM: vy_ultra
-  LABLAXIS: vy ultra
-  UNITS: " "
-
-vz_ultra:
-  <<: *default_float32
-  CATDESC: Normalized component of the velocity vector in z direction in the instrument frame.
-  FIELDNAM: vz_ultra
-  LABLAXIS: vz ultra
+  CATDESC: Normalized component of the velocity vector in x, y, and z directions in the instrument frame.
+  FIELDNAM: v_ultra
+  LABLAXIS: v ultra
   UNITS: " "
 
 energy:
