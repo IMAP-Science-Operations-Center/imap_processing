@@ -10,6 +10,7 @@ import xarray
 from numpy import ndarray
 from numpy.typing import NDArray
 
+from imap_processing.spice.geometry import cartesian_to_spherical
 from imap_processing.ultra.constants import UltraConstants
 from imap_processing.ultra.l1b.lookup_utils import (
     get_back_position,
@@ -808,3 +809,34 @@ def determine_species(tof: np.ndarray, path_length: np.ndarray, type: str) -> ND
     ] = "H"
 
     return species_bin
+
+
+def get_de_az_el(v: tuple[NDArray, NDArray, NDArray]) -> tuple[NDArray, NDArray]:
+    """
+    Compute azimuth (phi) angles and elevation (theta).
+
+    Parameters
+    ----------
+    v : np.ndarray
+        A NumPy array with shape (n, 3) where each
+        row represents a vector
+        with x, y, z-components.
+
+    Returns
+    -------
+    spherical_coords : np.ndarray
+        A NumPy array with shape (n, 3), where each row contains
+        the spherical coordinates (r, azimuth, elevation):
+
+        - azimuth : angle in the xy-plane
+          In radians:
+          output range=[0, 2*pi].
+        - elevation : angle from the z-axis
+          In radians:
+          output range=[-pi/2, pi/2].
+    """
+    # Compute azimuth (phi) angles and elevation (theta)
+    v_array = np.column_stack(v)
+    spherical_coords = cartesian_to_spherical(v_array, degrees=False)
+
+    return spherical_coords[:, 1], spherical_coords[:, 2]

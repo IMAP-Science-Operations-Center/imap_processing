@@ -13,6 +13,7 @@ from imap_processing.ultra.l1b.ultra_l1b_extended import (
     determine_species,
     get_coincidence_positions,
     get_ctof,
+    get_de_az_el,
     get_de_energy_kev,
     get_de_velocity,
     get_energy_pulse_height,
@@ -437,3 +438,29 @@ def test_determine_species(yf_fixture):
 
     np.testing.assert_array_equal(h_indices_ph, ctof_indices_ph)
     np.testing.assert_array_equal(h_indices_ssd, ctof_indices_ssd)
+
+
+def test_get_de_az_el(de_dataset, yf_fixture):
+    """Tests get_get_de_az_el function."""
+    df_filt, _, _ = yf_fixture
+    df_filt = df_filt[df_filt["event_theta"].astype("str") != "FILL"]
+    df_filt = df_filt[df_filt["TOF"].astype("float") >= 0]
+    df_ph = df_filt[np.isin(df_filt["StopType"], [StopType.PH.value])]
+
+    test_xf = df_ph["Xf"].astype("float").values
+    test_yf = df_ph["Yf"].astype("float").values
+    test_xb = df_ph["Xb"].astype("float").values
+    test_yb = df_ph["Yb"].astype("float").values
+    test_d = df_ph["d"].astype("float").values
+    test_tof = df_ph["TOF"].astype("float").values
+
+    v = get_de_velocity(
+        (test_xf, test_yf),
+        (test_xb, test_yb),
+        test_d,
+        test_tof,
+    )
+    az, _ = get_de_az_el(v)
+    expected_phi = df_ph["event_phi"].astype("float")
+
+    np.testing.assert_allclose(az, expected_phi % (2 * np.pi), atol=1e-03, rtol=0)
