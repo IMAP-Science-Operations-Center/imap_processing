@@ -3,19 +3,17 @@
 import cdflib
 import numpy as np
 import pytest
-import spiceypy as spice
 from cdflib import CDF
 
 from imap_processing import imap_module_directory
 from imap_processing.ultra.l1c.ultra_l1c_pset_bins import (
     build_energy_bins,
-    build_spatial_bins,
-    cartesian_to_spherical,
     get_helio_exposure_times,
     get_histogram,
     get_pointing_frame_exposure_times,
     get_pointing_frame_sensitivity,
 )
+from imap_processing.ultra.utils.spatial_utils import build_spatial_bins
 
 BASE_PATH = imap_module_directory / "ultra" / "lookup_tables"
 
@@ -32,77 +30,21 @@ def test_data():
     return v, energy
 
 
-@pytest.fixture()
-def kernels(spice_test_data_path):
-    """List SPICE kernels."""
-    required_kernels = [
-        "imap_science_0001.tf",
-        "imap_sclk_0000.tsc",
-        "sim_1yr_imap_attitude.bc",
-        "imap_wkcp.tf",
-        "naif0012.tls",
-        "sim_1yr_imap_pointing_frame.bc",
-        "de440s.bsp",
-        "imap_spk_demo.bsp",
-    ]
-    kernels = [str(spice_test_data_path / kernel) for kernel in required_kernels]
-
-    return kernels
-
-
 def test_build_energy_bins():
     """Tests build_energy_bins function."""
     energy_bin_edges, energy_midpoints = build_energy_bins()
-    energy_bin_start = energy_bin_edges[:-1]
-    energy_bin_end = energy_bin_edges[1:]
+    energy_bin_start = [interval[0] for interval in energy_bin_edges]
+    energy_bin_end = [interval[1] for interval in energy_bin_edges]
 
     assert energy_bin_start[0] == 0
     assert energy_bin_start[1] == 3.385
-    assert len(energy_bin_edges) == 25
+    assert len(energy_bin_edges) == 24
     assert energy_midpoints[0] == (energy_bin_start[0] + energy_bin_end[0]) / 2
 
     # Comparison to expected values.
     np.testing.assert_allclose(energy_bin_end[1], 4.137, atol=1e-4)
     np.testing.assert_allclose(energy_bin_start[-1], 279.810, atol=1e-4)
     np.testing.assert_allclose(energy_bin_end[-1], 341.989, atol=1e-4)
-
-
-def test_build_spatial_bins():
-    """Tests build_spatial_bins function."""
-    az_bin_edges, el_bin_edges, az_bin_midpoints, el_bin_midpoints = (
-        build_spatial_bins()
-    )
-
-    assert az_bin_edges[0] == 0
-    assert az_bin_edges[-1] == 360
-    assert len(az_bin_edges) == 721
-
-    assert el_bin_edges[0] == -90
-    assert el_bin_edges[-1] == 90
-    assert len(el_bin_edges) == 361
-
-    assert len(az_bin_midpoints) == 720
-    np.testing.assert_allclose(az_bin_midpoints[0], 0.25, atol=1e-4)
-    np.testing.assert_allclose(az_bin_midpoints[-1], 359.75, atol=1e-4)
-
-    assert len(el_bin_midpoints) == 360
-    np.testing.assert_allclose(el_bin_midpoints[0], -89.75, atol=1e-4)
-    np.testing.assert_allclose(el_bin_midpoints[-1], 89.75, atol=1e-4)
-
-
-def test_cartesian_to_spherical(test_data):
-    """Tests cartesian_to_spherical function."""
-    v, _ = test_data
-
-    az_sc, el_sc, r = cartesian_to_spherical(v)
-
-    # MATLAB code outputs:
-    np.testing.assert_allclose(
-        np.unique(np.radians(az_sc)), np.array([1.31300, 2.34891]), atol=1e-05, rtol=0
-    )
-    np.testing.assert_allclose(
-        np.unique(np.radians(el_sc)), np.array([-0.88901, -0.70136]), atol=1e-05, rtol=0
-    )
 
 
 def test_get_histogram(test_data):
@@ -119,7 +61,7 @@ def test_get_histogram(test_data):
     assert hist.shape == (
         len(az_bin_edges) - 1,
         len(el_bin_edges) - 1,
-        len(energy_bin_edges) - 1,
+        len(energy_bin_edges),
     )
 
 
@@ -143,10 +85,10 @@ def test_get_pointing_frame_exposure_times():
 
 
 @pytest.mark.external_kernel()
-def test_et_helio_exposure_times(kernels):
+@pytest.mark.use_test_metakernel("imap_ena_sim_metakernel.template")
+def test_get_helio_exposure_times():
     """Tests get_helio_exposure_times function."""
 
-    spice.furnsh(kernels)
     constant_exposure = BASE_PATH / "dps_grid45_compressed.cdf"
     start_time = 829485054.185627
     end_time = 829567884.185627
@@ -185,9 +127,9 @@ def test_et_helio_exposure_times(kernels):
             transposed_exposure = np.transpose(exposure_data, (2, 1, 0))
             exposures.append(transposed_exposure)
 
-    np.array_equal(exposures[0], exposure_3d[:, :, 0])
-    np.array_equal(exposures[1], exposure_3d[:, :, 1])
-    np.array_equal(exposures[2], exposure_3d[:, :, 2])
+    assert np.array_equal(np.squeeze(exposures[0]), exposure_3d[:, :, 0])
+    assert np.array_equal(np.squeeze(exposures[1]), exposure_3d[:, :, 11])
+    assert np.array_equal(np.squeeze(exposures[2]), exposure_3d[:, :, 23])
 
 
 def test_get_pointing_frame_sensitivity():

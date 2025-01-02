@@ -4,24 +4,24 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from imap_processing.ultra.constants import UltraConstants
 from imap_processing.ultra.l1b.ultra_l1b_extended import (
     CoinType,
     StartType,
     StopType,
     calculate_etof_xc,
-    determine_species_pulse_height,
-    determine_species_ssd,
+    determine_species,
     get_coincidence_positions,
     get_ctof,
     get_energy_pulse_height,
     get_energy_ssd,
     get_front_x_position,
     get_front_y_position,
-    get_particle_velocity,
     get_path_length,
     get_ph_tof_and_back_positions,
     get_ssd_back_position_and_tof_offset,
     get_ssd_tof,
+    get_unit_vector,
 )
 
 
@@ -213,8 +213,8 @@ def test_calculate_etof_xc(de_dataset, yf_fixture):
     )
 
 
-def test_get_particle_velocity(de_dataset, yf_fixture):
-    """Tests get_particle_velocity function."""
+def test_get_unit_vector(de_dataset, yf_fixture):
+    """Tests get_unit_vector function."""
     df_filt, _, _ = yf_fixture
 
     ph_indices = np.nonzero(
@@ -229,7 +229,7 @@ def test_get_particle_velocity(de_dataset, yf_fixture):
     test_d = ph_rows["d"].astype("float").values
     test_tof = ph_rows["TOF"].astype("float").values
 
-    vhat_x, vhat_y, vhat_z = get_particle_velocity(
+    vhat_x, vhat_y, vhat_z = get_unit_vector(
         (test_xf, test_yf),
         (test_xb, test_yb),
         test_d,
@@ -254,7 +254,7 @@ def test_get_particle_velocity(de_dataset, yf_fixture):
 def test_get_ssd_tof(de_dataset, yf_fixture):
     """Tests get_ssd_tof function."""
     df_filt, _, _ = yf_fixture
-    df_ssd = df_filt[df_filt["StopType"].isin(StopType.SSD.value)]
+    df_ssd = df_filt[np.isin(df_filt["StopType"], [StopType.SSD.value])]
     test_xf = df_filt["Xf"].astype("float").values
 
     ssd_tof = get_ssd_tof(de_dataset, test_xf)
@@ -267,7 +267,7 @@ def test_get_ssd_tof(de_dataset, yf_fixture):
 def test_get_energy_ssd(de_dataset, yf_fixture):
     """Tests get_energy_ssd function."""
     df_filt, _, _ = yf_fixture
-    df_ssd = df_filt[df_filt["StopType"].isin(StopType.SSD.value)]
+    df_ssd = df_filt[np.isin(df_filt["StopType"], [StopType.SSD.value])]
     _, _, ssd_number = get_ssd_back_position_and_tof_offset(de_dataset)
     energy = get_energy_ssd(de_dataset, ssd_number)
     test_energy = df_ssd["Energy"].astype("float")
@@ -278,7 +278,7 @@ def test_get_energy_ssd(de_dataset, yf_fixture):
 def test_get_energy_pulse_height(de_dataset, yf_fixture):
     """Tests get_energy_ssd function."""
     df_filt, _, _ = yf_fixture
-    df_ph = df_filt[df_filt["StopType"].isin(StopType.PH.value)]
+    df_ph = df_filt[np.isin(df_filt["StopType"], [StopType.PH.value])]
     ph_indices = np.nonzero(
         np.isin(de_dataset["STOP_TYPE"], [StopType.Top.value, StopType.Bottom.value])
     )[0]
@@ -297,46 +297,66 @@ def test_get_energy_pulse_height(de_dataset, yf_fixture):
 def test_get_ctof(yf_fixture):
     """Tests get_ctof function."""
     df_filt, _, _ = yf_fixture
+    df_filt = df_filt[df_filt["eTOF"].astype("str") != "FILL"]
+    df_filt = df_filt[df_filt["cTOF"].astype("float") > 0]
 
-    df_ph_ssd = df_filt[
-        df_filt["StopType"].isin([StopType.SSD.value, StopType.PH.value])
-    ]
+    df_ph = df_filt[np.isin(df_filt["StopType"], [StopType.PH.value])]
+    df_ssd = df_filt[np.isin(df_filt["StopType"], [StopType.SSD.value])]
 
-    ctof = get_ctof(
-        df_ph_ssd["TOF"].astype("float").to_numpy(),
-        df_ph_ssd["r"].astype("float").to_numpy(),
+    ph_ctof, ph_magnitude_v = get_ctof(
+        df_ph["TOF"].astype("float").to_numpy(),
+        df_ph["r"].astype("float").to_numpy(),
+        "PH",
+    )
+
+    ssd_ctof, ssd_magnitude_v = get_ctof(
+        df_ssd["TOF"].astype("float").to_numpy(),
+        df_ssd["r"].astype("float").to_numpy(),
+        "SSD",
     )
 
     np.testing.assert_allclose(
-        ctof, df_ph_ssd["cTOF"].astype("float"), atol=1e-05, rtol=0
+        ph_ctof, df_ph["cTOF"].astype("float"), atol=1e-05, rtol=0
+    )
+    np.testing.assert_allclose(
+        ssd_ctof, df_ssd["cTOF"].astype("float"), atol=1e-05, rtol=0
+    )
+    np.testing.assert_allclose(
+        ph_magnitude_v, df_ph["vmag"].astype("float"), atol=1e-01, rtol=0
+    )
+    np.testing.assert_allclose(
+        ssd_magnitude_v, df_ssd["vmag"].astype("float"), atol=1e-01, rtol=0
     )
 
 
-def test_determine_species_ph(yf_fixture):
-    """Tests determine_species_ph function."""
+def test_determine_species(yf_fixture):
+    """Tests determine_species function."""
     df_filt, _, _ = yf_fixture
-    df_ph = df_filt[df_filt["StopType"].isin(StopType.PH.value)]
+    df_ph = df_filt[np.isin(df_filt["StopType"], [StopType.PH.value])]
+    df_ssd = df_filt[np.isin(df_filt["StopType"], [StopType.SSD.value])]
 
-    bin = determine_species_pulse_height(
-        df_ph["Energy"].astype("float").to_numpy(),
+    species_bin_ph = determine_species(
         df_ph["TOF"].astype("float").to_numpy(),
         df_ph["r"].astype("float").to_numpy(),
+        "PH",
     )
-
-    # TODO: add in bin values.
-    np.testing.assert_allclose(bin, np.zeros(len(bin)), atol=1e-05, rtol=0)
-
-
-def test_determine_species_ssd(yf_fixture):
-    """Tests determine_species_ssd function."""
-    df_filt, _, _ = yf_fixture
-    df_ssd = df_filt[df_filt["StopType"].isin(StopType.SSD.value)]
-
-    bin = determine_species_ssd(
-        df_ssd["Energy"].astype("float").to_numpy(),
+    species_bin_ssd = determine_species(
         df_ssd["TOF"].astype("float").to_numpy(),
         df_ssd["r"].astype("float").to_numpy(),
+        "SSD",
     )
 
-    # TODO: add in bin values.
-    np.testing.assert_allclose(bin, np.zeros(len(bin)), atol=1e-05, rtol=0)
+    h_indices_ph = np.where(species_bin_ph == "H")[0]
+    ctof_indices_ph = np.where(
+        (df_ph["cTOF"].astype("float") > UltraConstants.CTOF_SPECIES_MIN)
+        & (df_ph["cTOF"].astype("float") < UltraConstants.CTOF_SPECIES_MAX)
+    )[0]
+
+    h_indices_ssd = np.where(species_bin_ssd == "H")[0]
+    ctof_indices_ssd = np.where(
+        (df_ssd["cTOF"].astype("float") > UltraConstants.CTOF_SPECIES_MIN)
+        & (df_ssd["cTOF"].astype("float") < UltraConstants.CTOF_SPECIES_MAX)
+    )[0]
+
+    np.testing.assert_array_equal(h_indices_ph, ctof_indices_ph)
+    np.testing.assert_array_equal(h_indices_ssd, ctof_indices_ssd)

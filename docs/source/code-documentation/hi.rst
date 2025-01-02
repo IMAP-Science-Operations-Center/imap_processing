@@ -10,15 +10,6 @@ This is the IMAP-Hi instrument module, which contains the code for processing da
 The processing code is divided into several submodules, each of which is
 used to process different level of data.
 
-Level 0 Processing code.
-
-.. autosummary::
-    :toctree: generated/
-    :template: autosummary.rst
-    :recursive:
-
-    l0.decom_hi
-
 Level 1A Processing code.
 
 .. autosummary::

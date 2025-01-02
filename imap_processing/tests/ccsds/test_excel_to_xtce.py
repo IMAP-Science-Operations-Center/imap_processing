@@ -195,10 +195,10 @@ def xtce_excel_file(tmp_path):
     }
 
     states = {
-        "packetName": ["TEST_PACKET"] * 2,
-        "mnemonic": ["VAR_STATE"] * 2,
-        "value": [0, 1],
-        "state": ["OFF", "ON"],
+        "packetName": ["TEST_PACKET"] * 3,
+        "mnemonic": ["VAR_STATE"] * 3,
+        "value": [0, 1, "0x2"],
+        "state": ["OFF", "ON", "NONE"],
     }
 
     # Write the DataFrame to an excel file

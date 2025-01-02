@@ -161,13 +161,12 @@ def process_hit(xarray_data: xr.Dataset) -> list[dict]:
 
     Parameters
     ----------
-    xarray_data : dict(xr.Dataset)
-        Dictionary of xarray data including a single
-        set for processing.
+    xarray_data : xr.Dataset
+        Parsed data.
 
     Returns
     -------
-    hit_data : dict
+    hit_data : list[dict]
         Dictionary final data product.
     """
     hit_data = []
@@ -182,10 +181,11 @@ def process_hit(xarray_data: xr.Dataset) -> list[dict]:
 
         # Ensure no duplicates and all values from 0 to 59 are present
         if not np.array_equal(subcom_values, np.arange(60)):
-            raise ValueError(
+            logger.warning(
                 f"Group {group} does not contain all values from 0 to "
                 f"59 without duplicates."
             )
+            continue
 
         fast_rate_1 = grouped_data["hit_fast_rate_1"][
             (grouped_data["group"] == group).values

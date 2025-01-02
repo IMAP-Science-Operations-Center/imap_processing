@@ -4,6 +4,7 @@
 #       https://github.com/IMAP-Science-Operations-Center/imap_processing/pull/711#discussion_r1690212527
 
 # TODO: Add any missing CATDESCs
+# TODO: Make sure housekeeping attributes are consistent with latest telemetry definition
 
 # <=== Defaults ===>
 default_attrs: &default
@@ -751,7 +752,7 @@ spin_bin_index:
     FIELDNAM: Spin Bin Index
     VAR_TYPE: support_data
 
-optics_hv_cmd_err_cnt:
+optc_hv_cmd_err_cnt:
     <<: *default
     LABLAXIS: OPTICS_HV_CMD_ERR_CNT
     FIELDNAM: Optics HV - Number of command errors
@@ -763,27 +764,25 @@ spare_1:
     FIELDNAM: Spare for alignment
     VAR_TYPE: support_data
 
-optics_hv_arm_err_cnt:
+optc_hv_arm_err_cnt:
     <<: *default
     LABLAXIS: OPTICS_HV_ARM_ERR_CNT
     FIELDNAM: Optics HV - Number of arm errors
     VAR_TYPE: support_data
 
-optics_hv_master_enable:
+optc_hv_master_en:
     <<: *default
     LABLAXIS: OPTICS_HV_MASTER_ENABLE
     FIELDNAM: Optics HV - Master Enable
     VAR_TYPE: support_data
 
-optics_hv_n15kv_enable:
-    <<: *default
-    LABLAXIS: OPTICS_HV_N15KV_ENABLE
-    FIELDNAM: Optics HV - p15KV Enable
+iobulk_en:
+    LABLAXIS: OPTICS_HV_P15KV_ENABLE
+    FIELDNAM: Optics HV - P15KV Enable
     VAR_TYPE: support_data
 
-optics_hv_esa_b_enable:
-    <<: *default
-    LABLAXIS: OPTICS_HV_ESA_B_ENABLE
+esab_en:
+    LABLAXIS: OPTICS_HV_ESAB_ENABLE
     FIELDNAM: Optics HV - ESA B Enable
     VAR_TYPE: support_data
 
@@ -793,9 +792,8 @@ spare_2:
     FIELDNAM: Spare (was Optics HV - ESA B Range)
     VAR_TYPE: support_data
 
-optics_hv_esa_a_enable:
-    <<: *default
-    LABLAXIS: OPTICS_HV_ESA_A_ENABLE
+esaa_en:
+    LABLAXIS: OPTICS_HV_ESAA_ENABLE
     FIELDNAM: Optics HV - ESA A Enable
     VAR_TYPE: support_data
 
@@ -805,43 +803,43 @@ spare_3:
     FIELDNAM: Spare (was Optics HV - ESA A Range)
     VAR_TYPE: support_data
 
-sensor_hv_cmd_err_cnt:
+snsr_hv_cmd_err_cnt:
     <<: *default
     LABLAXIS: SENSOR_HV_CMD_ERR_CNT
     FIELDNAM: Sensor HV -  Number of command errors
     VAR_TYPE: support_data
 
-sensor_hv_arm_err_cnt:
+snsr_hv_arm_err_cnt:
     <<: *default
     LABLAXIS: SENSOR_HV_ARM_ERR_CNT
     FIELDNAM: Sensor HV - Number of Arm errors
     VAR_TYPE: support_data
 
-sensor_hv_master_enable:
+snsr_hv_master_en:
     <<: *default
     LABLAXIS: SENSOR_HV_MASTER_ENABLE
     FIELDNAM: Sensor HV - Master Enable
     VAR_TYPE: support_data
 
-sensor_hv_apd_bias_enable:
+apdb_en:
     <<: *default
     LABLAXIS: SENSOR_HV_APD_BIAS_ENABLE
     FIELDNAM: Sensor HV - APD Bias Enable
     VAR_TYPE: support_data
 
-sensor_hv_p6kv_enable:
+sbulk_en:
     <<: *default
     LABLAXIS: SENSOR_HV_P6KV_ENABLE
     FIELDNAM: Sensor HV - p6KV Enable
     VAR_TYPE: support_data
 
-sensor_hv_stop_mcp_enable:
+stpmcp_en:
     <<: *default
     LABLAXIS: SENSOR_HV_STOP_MCP_ENABLE
     FIELDNAM: Sensor HV - Stop MCP Enable
     VAR_TYPE: support_data
 
-sensor_hv_start_mcp_enable:
+strmcp_en:
     <<: *default
     LABLAXIS: SENSOR_HV_START_MCP_ENABLE
     FIELDNAM: Sensor HV - Start MCP Enable
@@ -853,61 +851,61 @@ spare_4:
     FIELDNAM: Spare for alignment
     VAR_TYPE: support_data
 
-optics_hv_dac_esa_a:
+esaa_dac:
     <<: *default
     LABLAXIS: OPTICS_HV_DAC_ESA_A
     FIELDNAM: Optics HV - ESA A DAC
     VAR_TYPE: support_data
 
-optics_hv_dac_esa_b:
+esab_dac:
     <<: *default
     LABLAXIS: OPTICS_HV_DAC_ESA_B
     FIELDNAM: Optics HV -  ESA B DAC
     VAR_TYPE: support_data
 
-optics_hv_dac_ionbulk:
+iobulk_dac:
     <<: *default
     LABLAXIS: OPTICS_HV_DAC_IONBULK
     FIELDNAM: Optics HV - Ion Bulk DAC
     VAR_TYPE: support_data
 
-sensor_hv_dac_ssdo:
+ssdo_dac:
     <<: *default
     LABLAXIS: SENSOR_HV_DAC_SSDO
     FIELDNAM: Sensor HV - SSDO Enable
     VAR_TYPE: support_data
 
-sensor_hv_dac_ssdb:
+ssdb_dac:
     <<: *default
     LABLAXIS: SENSOR_HV_DAC_SSDB
     FIELDNAM: Sensor HV - SSD Bias Enable
     VAR_TYPE: support_data
 
-sensor_hv_dac_apdb:
+apdb_dac:
     <<: *default
     LABLAXIS: SENSOR_HV_DAC_APDB
     FIELDNAM: Sensor HV - ADP Bias Enable
     VAR_TYPE: support_data
 
-sensor_hv_dac_apdb2:
+apdb2_dac:
     <<: *default
     LABLAXIS: SENSOR_HV_DAC_APDB2
     FIELDNAM: Sensor HV - ADP Bias 2 Enable
     VAR_TYPE: support_data
 
-sensor_hv_dac_start_mcp:
+strmcp_dac:
     <<: *default
     LABLAXIS: SENSOR_HV_DAC_START_MCP
     FIELDNAM: Sensor HV - Start MCP DAC
     VAR_TYPE: support_data
 
-sensor_hv_dac_stop_mcp:
+stpmcp_dac:
     <<: *default
     LABLAXIS: SENSOR_HV_DAC_STOP_MCP
     FIELDNAM: Sensor HV - Stop MCP DAC
     VAR_TYPE: support_data
 
-sensor_hv_dac_stop_optics_grid:
+stpog_dac:
     <<: *default
     LABLAXIS: SENSOR_HV_DAC_STOP_OPTICS_GRID
     FIELDNAM: Sensor HV - Stop Optics Grid DAC
@@ -1312,11 +1310,25 @@ heater_output_state:
     CATDESC: Indicates the current state of the physical heater output
     VAR_TYPE: support_data
 
+heater_output_state_2:
+    <<: *default
+    LABLAXIS: HEATER_OUTPUT_STATE_2
+    FIELDNAM: State of the heater output 2
+    CATDESC: Indicates the current state of the physical heater output
+    VAR_TYPE: support_data
+
 spare_5:
     <<: *default
     LABLAXIS: SPARE_5
     FIELDNAM: Spare for alignment
     CATDESC: Spare for alignment
+    VAR_TYPE: support_data
+
+cpu_idle:
+    <<: *default
+    LABLAXIS: CPU_IDLE
+    FIELDNAM: CPU Idle Percent
+    CATDESC: CPU Idle Percent
     VAR_TYPE: support_data
 
 cdh_processor_t:
@@ -1349,9 +1361,112 @@ snsr_hvps_t:
     FIELDNAM: CoDICE – Sensor HVPS Temp monitor
     VAR_TYPE: support_data
 
+fee_apd_3p3_digital_v:
+    <<: *default
+    LABLAXIS: FEE_APD_3P3_DIGITAL_V
+    FIELDNAM: FEE; APD Side +3.3V Digital
+    VAR_TYPE: support_data
+
+fee_apd_5p0_analog_v:
+    <<: *default
+    LABLAXIS: FEE_APD_5P0_ANALOG_V
+    FIELDNAM: FEE; APD Side +5.0V Analog
+    VAR_TYPE: support_data
+
+fee_apd_t:
+    <<: *default
+    LABLAXIS: FEE_APD_T
+    FIELDNAM: FEE; APD Side Temperature
+    VAR_TYPE: support_data
+
+fee_apd_12p0_analog_v:
+    <<: *default
+    LABLAXIS: FEE_APD_12P0_ANALOG_V
+    FIELDNAM: FEE; APD Side +12.0V Analog
+    VAR_TYPE: support_data
+
+fee_apd_eb_temp_1_t:
+    <<: *default
+    LABLAXIS: FEE_APD_EB_TEMP_1_T
+    FIELDNAM: FEE; AEB Temp Sensor 1
+    VAR_TYPE: support_data
+
+fee_apd_eb_temp_2_t:
+    <<: *default
+    LABLAXIS: FEE_APD_EB_TEMP_2_T
+    FIELDNAM: FEE; AEB Temp Sensor 2
+    VAR_TYPE: support_data
+
+fee_apd_eb_temp_3_t:
+    <<: *default
+    LABLAXIS: FEE_APD_EB_TEMP_3_T
+    FIELDNAM: FEE; AEB Temp Sensor 3
+    VAR_TYPE: support_data
+
+fee_apd_eb_temp_4_t:
+    <<: *default
+    LABLAXIS: FEE_APD_EB_TEMP_4_T
+    FIELDNAM: FEE; AEB Temp Sensor 4
+    VAR_TYPE: support_data
+
+fee_ssd_3p3_digital_v:
+    <<: *default
+    LABLAXIS: FEE_SSD_3P3_DIGITAL_V
+    FIELDNAM: FEE; SSD Side +3.3V Digital
+    VAR_TYPE: support_data
+
+fee_ssd_5p0_analog_v:
+    <<: *default
+    LABLAXIS: FEE_SSD_5P0_ANALOG_V
+    FIELDNAM: FEE; SSD Side +5.0V Analog
+    VAR_TYPE: support_data
+
+fee_ssd_t:
+    <<: *default
+    LABLAXIS: FEE_SSD_T
+    FIELDNAM: FEE; SSD Side Temperature
+    VAR_TYPE: support_data
+
+fee_ssd_12p0_analog_v:
+    <<: *default
+    LABLAXIS: FEE_SSD_12P0_ANALOG_V
+    FIELDNAM: FEE; SSD Side +12.0V Analog
+    VAR_TYPE: support_data
+
+fee_ssd_eb_temp_1_t:
+    <<: *default
+    LABLAXIS: FEE_SSD_EB_TEMP_1_T
+    FIELDNAM: FEE; SEB Temp Sensor 1
+    VAR_TYPE: support_data
+
+fee_ssd_eb_temp_2_t:
+    <<: *default
+    LABLAXIS: FEE_SSD_EB_TEMP_2_T
+    FIELDNAM: FEE; SEB Temp Sensor 2
+    VAR_TYPE: support_data
+
+fee_ssd_eb_temp_3_t:
+    <<: *default
+    LABLAXIS: FEE_SSD_EB_TEMP_3_T
+    FIELDNAM: FEE; SEB Temp Sensor 3
+    VAR_TYPE: support_data
+
+fee_ssd_eb_temp_4_t:
+    <<: *default
+    LABLAXIS: FEE_SSD_EB_TEMP_4_T
+    FIELDNAM: FEE; SEB Temp Sensor 4
+    VAR_TYPE: support_data
+
 spare_6:
     <<: *default
     LABLAXIS: SPARE_6
     FIELDNAM: Spare for alignment
     CATDESC: Spare for alignment
+    VAR_TYPE: support_data
+
+chksum:
+    <<: *default
+    LABLAXIS: CHKSUM
+    FIELDNAM: Packet Checksum
+    CATDESC: Packet Checksum
     VAR_TYPE: support_data

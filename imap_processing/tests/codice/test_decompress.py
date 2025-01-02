@@ -10,14 +10,14 @@ from imap_processing.codice.utils import CoDICECompression
 
 # Test the algorithms using input value of 234 (picked randomly)
 lzma_bytes = lzma.compress((234).to_bytes(1, byteorder="big"))
-LZMA_EXAMPLE = "".join(format(byte, "08b") for byte in lzma_bytes)
+# LZMA_EXAMPLE = "".join(format(byte, "08b") for byte in lzma_bytes)
 TEST_DATA = [
-    ("11101010", CoDICECompression.NO_COMPRESSION, [234]),
-    ("11101010", CoDICECompression.LOSSY_A, [221184]),
-    ("11101010", CoDICECompression.LOSSY_B, [1441792]),
-    (LZMA_EXAMPLE, CoDICECompression.LOSSLESS, [234]),
-    (LZMA_EXAMPLE, CoDICECompression.LOSSY_A_LOSSLESS, [221184]),
-    (LZMA_EXAMPLE, CoDICECompression.LOSSY_B_LOSSLESS, [1441792]),
+    (b"\xea", CoDICECompression.NO_COMPRESSION, [234]),
+    (b"\xea", CoDICECompression.LOSSY_A, [212992]),
+    (b"\xea", CoDICECompression.LOSSY_B, [1310720]),
+    (lzma_bytes, CoDICECompression.LOSSLESS, [234]),
+    (lzma_bytes, CoDICECompression.LOSSY_A_LOSSLESS, [212992]),
+    (lzma_bytes, CoDICECompression.LOSSY_B_LOSSLESS, [1310720]),
 ]
 
 

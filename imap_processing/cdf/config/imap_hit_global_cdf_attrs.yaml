@@ -18,6 +18,20 @@ imap_hit_l1a_hk:
     Logical_source: imap_hit_l1a_hk
     Logical_source_description: IMAP Mission HIT Instrument Level-1A Housekeeping Data.
 
+imap_hit_l1a_count-rates:
+    <<: *instrument_base
+    Data_level: 1A
+    Data_type: L1A_counts>Level-1A Count Rates
+    Logical_source: imap_hit_l1a_count-rates
+    Logical_source_description: IMAP Mission HIT Instrument Level-1A Count Rates Data.
+
+imap_hit_l1a_pulse-height-events:
+    <<: *instrument_base
+    Data_level: 1A
+    Data_type: L1A_pha>Level-1A Pulse Height Events
+    Logical_source: imap_hit_l1a_pulse-height-events
+    Logical_source_description: IMAP Mission HIT Instrument Level-1A Pulse Height Events Data.
+
   # L1b
 imap_hit_l1b_hk:
     <<: *instrument_base

@@ -46,45 +46,48 @@ def _autoclear_spice():
 
 
 @pytest.fixture(scope="session")
-def _download_de440s(spice_test_data_path):
-    """This fixture downloads the de440s.bsp kernel into the
-    tests/spice/test_data directory if it does not already exist there. The
+def _download_external_kernels(spice_test_data_path):
+    """This fixture downloads the de440s.bsp and pck00011.tpc kernels into the
+    tests/spice/test_data directory if they do not already exist there. The
     fixture is not intended to be used directly. It is automatically added to
     tests marked with "external_kernel" in the hook below."""
     logger = logging.getLogger(__name__)
-    kernel_url = (
-        "https://naif.jpl.nasa.gov/pub/naif/generic_kernels/spk/planets/de440s.bsp"
-    )
-    kernel_name = kernel_url.split("/")[-1]
-    local_filepath = spice_test_data_path / kernel_name
+    kernel_urls = [
+        "https://naif.jpl.nasa.gov/pub/naif/generic_kernels/spk/planets/de440s.bsp",
+        "https://naif.jpl.nasa.gov/pub/naif/generic_kernels/pck/pck00011.tpc",
+    ]
 
-    if local_filepath.exists():
-        return
-    allowed_attempts = 3
-    for attempt_number in range(allowed_attempts):
-        try:
-            with requests.get(kernel_url, stream=True, timeout=30) as r:
-                r.raise_for_status()
-                with open(local_filepath, "wb") as f:
-                    for chunk in r.iter_content(chunk_size=8192):
-                        f.write(chunk)
-            logger.info("Cached kernel file to %s", local_filepath)
-            break
-        except requests.exceptions.RequestException as error:
-            logger.info(f"Request failed. {error}")
-            if attempt_number < allowed_attempts:
-                logger.info(
-                    f"Trying again, retries left "
-                    f"{allowed_attempts - attempt_number}, "
-                    f"Exception: {error}"
-                )
-                time.sleep(1)
-            else:
-                logger.error(
-                    f"Failed to download file after {allowed_attempts} "
-                    f"attempts, Final Error: {error}"
-                )
-                raise
+    for kernel_url in kernel_urls:
+        kernel_name = kernel_url.split("/")[-1]
+        local_filepath = spice_test_data_path / kernel_name
+
+        if local_filepath.exists():
+            continue
+        allowed_attempts = 3
+        for attempt_number in range(allowed_attempts):
+            try:
+                with requests.get(kernel_url, stream=True, timeout=30) as r:
+                    r.raise_for_status()
+                    with open(local_filepath, "wb") as f:
+                        for chunk in r.iter_content(chunk_size=8192):
+                            f.write(chunk)
+                logger.info("Cached kernel file to %s", local_filepath)
+                continue
+            except requests.exceptions.RequestException as error:
+                logger.info(f"Request failed. {error}")
+                if attempt_number < allowed_attempts:
+                    logger.info(
+                        f"Trying again, retries left "
+                        f"{allowed_attempts - attempt_number}, "
+                        f"Exception: {error}"
+                    )
+                    time.sleep(1)
+                else:
+                    logger.error(
+                        f"Failed to download file {kernel_name} after "
+                        f"{allowed_attempts} attempts, Final Error: {error}"
+                    )
+                    raise
 
 
 def pytest_collection_modifyitems(items):
@@ -93,12 +96,12 @@ def pytest_collection_modifyitems(items):
     been collected. In this case, it automatically adds fixtures based on the
     following table:
 
-    +---------------------+---------------------+
-    | pytest mark         | fixture added       |
-    +=====================+=====================+
-    | external_kernel     | _download_de440s    |
-    | use_test_metakernel | use_test_metakernel |
-    +---------------------+---------------------+
+    +---------------------+----------------------------+
+    | pytest mark         | fixture added              |
+    +=====================+============================+
+    | external_kernel     | _download_external_kernels |
+    | use_test_metakernel | use_test_metakernel        |
+    +---------------------+----------------------------+
 
     Notes
     -----
@@ -108,7 +111,7 @@ def pytest_collection_modifyitems(items):
     """
     for item in items:
         if item.get_closest_marker("external_kernel") is not None:
-            item.fixturenames.append("_download_de440s")
+            item.fixturenames.append("_download_external_kernels")
         if item.get_closest_marker("use_test_metakernel") is not None:
             item.fixturenames.append("use_test_metakernel")
 

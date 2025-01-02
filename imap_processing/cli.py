@@ -45,6 +45,7 @@ from imap_processing.hi.l1c import hi_l1c
 from imap_processing.hit.l1a.hit_l1a import hit_l1a
 from imap_processing.hit.l1b.hit_l1b import hit_l1b
 from imap_processing.idex.idex_l1a import PacketParser
+from imap_processing.idex.idex_l1b import idex_l1b
 from imap_processing.lo.l1a import lo_l1a
 from imap_processing.lo.l1b import lo_l1b
 from imap_processing.lo.l1c import lo_l1c
@@ -600,15 +601,23 @@ class Idex(ProcessInstrument):
         print(f"Processing IDEX {self.data_level}")
         datasets: list[xr.Dataset] = []
 
-        if self.data_level == "l1":
+        if self.data_level == "l1a":
             if len(dependencies) > 1:
                 raise ValueError(
-                    f"Unexpected dependencies found for IDEX L1:"
+                    f"Unexpected dependencies found for IDEX L1a:"
                     f"{dependencies}. Expected only one dependency."
                 )
             # read CDF file
-
-            datasets = PacketParser(dependencies[0], self.version).data
+            datasets = [PacketParser(dependencies[0], self.version).data]
+        elif self.data_level == "l1b":
+            if len(dependencies) > 1:
+                raise ValueError(
+                    f"Unexpected dependencies found for IDEX L1b:"
+                    f"{dependencies}. Expected only one dependency."
+                )
+            # process data
+            dependency = load_cdf(dependencies[0])
+            datasets = [idex_l1b(dependency, self.version)]
         return datasets
 
 

@@ -76,6 +76,7 @@ filterwarnings = [
 ]
 markers = [
     "external_kernel: marks tests as requiring external SPICE kernels (deselect with '-m \"not external_kernel\"')",
+    "use_test_metakernel: Mark test to use a test metakernel"
 ]
 
 
@@ -86,7 +87,8 @@ lint.select = ["B", "D", "E", "F", "I", "N", "S", "W", "PL", "PT", "UP", "RUF"]
 # PLR2004: Magic value in comparison
 # RUF200: pyproject missing field (poetry doesn't follow the spec)
 # PLR0915: too-many-statements error
-lint.ignore = ["D104", "PLR2004", "RUF200", "S311", "PLR0915"]
+# RUF002: `−` (MINUS SIGN). Did you mean `-` (HYPHEN-MINUS) error
+lint.ignore = ["D104", "PLR2004", "RUF200", "S311", "PLR0915", "RUF002"]
 
 [tool.ruff.lint.per-file-ignores]
 # S603 unchecked input in subprocess call is fine in our tests
@@ -127,7 +129,9 @@ exclude = ['__init__' ] # don't report on objects that match any of these regex
 disable_error_code = ['import-not-found', # Unable to locate module or package specified
                 'import-untyped', # The import lacks type information
                 'no-untyped-call', # Function calls are only made to functions that are fully typed
-                'type-arg' ] # Requires type arguments to be specified in list[] and dict[]
+                'type-arg', # Requires type arguments to be specified in list[] and dict[]
+                'union-attr', # Item "float" of "float | Any" has no attribute "reshape"
+              ]
 strict = true
 explicit_package_bases = true
 follow_imports = 'skip' #may want to remove

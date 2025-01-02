@@ -7,11 +7,10 @@ import numpy as np
 import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
-from imap_processing.cdf.utils import J2000_EPOCH
 from imap_processing.glows.l0.decom_glows import decom_packets
 from imap_processing.glows.l0.glows_l0_data import DirectEventL0
 from imap_processing.glows.l1a.glows_l1a_data import DirectEventL1A, HistogramL1A
-from imap_processing.spice.time import met_to_j2000ns
+from imap_processing.spice.time import J2000_EPOCH, met_to_j2000ns
 
 
 def create_glows_attr_obj(data_version: str) -> ImapCdfAttributes:

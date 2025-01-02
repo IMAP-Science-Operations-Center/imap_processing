@@ -64,6 +64,8 @@ def mag_l1b_processing(input_dataset: xr.Dataset) -> xr.Dataset:
     """
     # TODO: There is a time alignment step that will add a lot of complexity.
     # This needs to be done once we have some SPICE time data.
+    mag_attributes = ImapCdfAttributes()
+    mag_attributes.add_instrument_variable_attrs("mag", "l1")
 
     dims = [["direction"], ["compression"]]
     new_dims = [["direction"], ["compression"]]
@@ -91,7 +93,20 @@ def mag_l1b_processing(input_dataset: xr.Dataset) -> xr.Dataset:
     output_dataset = input_dataset.copy()
     output_dataset["vectors"].data = l1b_fields[0].data
 
-    # TODO add/update attributes
+    output_dataset["epoch"].attrs = mag_attributes.get_variable_attributes("epoch")
+    output_dataset["direction"].attrs = mag_attributes.get_variable_attributes(
+        "direction_attrs"
+    )
+    output_dataset["compression"].attrs = mag_attributes.get_variable_attributes(
+        "compression_attrs"
+    )
+    output_dataset["direction_label"].attrs = mag_attributes.get_variable_attributes(
+        "direction_label", check_schema=False
+    )
+    output_dataset["compression_label"].attrs = mag_attributes.get_variable_attributes(
+        "compression_label", check_schema=False
+    )
+
     return output_dataset
 
 
@@ -158,7 +173,7 @@ def rescale_vector(
     if not compression_flags[0]:
         return input_vector
     else:
-        factor = float(2 ** (16 - compression_flags[1]))
+        factor = np.float_power(2, (16 - compression_flags[1]))
         return input_vector * factor  # type: ignore
 
 
@@ -187,6 +202,6 @@ def calibrate_vector(
     updated_vector = input_vector.copy()
 
     updated_vector[:3] = np.matmul(
-        input_vector[:3], calibration_matrix.values[:, :, int(input_vector[3])]
+        calibration_matrix.values[:, :, int(input_vector[3])], input_vector[:3]
     )
     return updated_vector

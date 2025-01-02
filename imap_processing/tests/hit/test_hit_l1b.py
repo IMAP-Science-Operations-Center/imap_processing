@@ -1,3 +1,4 @@
+import pandas as pd
 import pytest
 import xarray as xr
 
@@ -163,6 +164,81 @@ def test_hit_l1b_hk_dataset_attributes(hk_dataset):
     # Check that the dataset has the correct attributes, coordinates, and dimensions
     assert hk_dataset.attrs == dataset_attrs
     assert hk_dataset.coords.keys() == dataset_coords_dims
+
+
+def test_validate_l1b_housekeeping_data(hk_dataset):
+    """Validate the housekeeping dataset created by the L1B processing.
+
+    Parameters
+    ----------
+    hk_dataset : xr.Dataset
+        Housekeeping dataset created by the L1B processing.
+    """
+    # TODO: finish test. HIT will provide an updated validation file to fix issues:
+    #  - some fields have strings as values but in the processed data they're integers
+    #  - Some columns have blank cells where there should be data
+
+    # Load the validation data
+    validation_file = (
+        imap_module_directory / "tests/hit/validation_data/hskp_sample_eu.csv"
+    )
+    validation_data = pd.read_csv(validation_file)
+    validation_data.columns = validation_data.columns.str.lower().str.strip()
+
+    # Get a list of leak columns in ascending order
+    # (LEAK_I_00, LEAK_I_01, ..., LEAK_I_63)
+    # and group values into a single column
+    leak_columns = [
+        col for col in validation_data.columns if col.startswith("leak_i_")
+    ][::-1]
+    validation_data["leak_i"] = validation_data[leak_columns].apply(
+        lambda row: row.values, axis=1
+    )
+    validation_data.drop(columns=leak_columns, inplace=True)
+
+    # Define the keys that should have dropped from the housekeeping dataset
+    dropped_fields = {
+        "pkt_apid",
+        "sc_tick",
+        "version",
+        "type",
+        "sec_hdr_flg",
+        "seq_flgs",
+        "src_seq_ctr",
+        "pkt_len",
+        "hskp_spare1",
+        "hskp_spare2",
+        "hskp_spare3",
+        "hskp_spare4",
+        "hskp_spare5",
+    }
+
+    # Check that dropped variables are not in the dataset
+    assert set(dropped_fields).isdisjoint(set(hk_dataset.data_vars.keys()))
+
+    # TODO: uncomment block after new validation data is provided
+    # Define the keys that should be ignored in the validation
+    # like ccsds headers
+    # ignore_validation_fields = {
+    #     "ccsds_version",
+    #     "ccsds_type",
+    #     "ccsds_sec_hdr_flag",
+    #     "ccsds_appid",
+    #     "ccsds_grp_flag",
+    #     "ccsds_seq_cnt",
+    #     "ccsds_length",
+    #     "sc_tick",
+    # }
+
+    # # Compare the housekeeping dataset with the expected validation data
+    # for field in validation_data.columns:
+    #     if field not in ignore_validation_fields:
+    #         print(field)
+    #         assert field in hk_dataset.data_vars.keys()
+    #         for pkt in range(validation_data.shape[0]):
+    #             assert np.array_equal(
+    #                 hk_dataset[field][pkt].data, validation_data[field][pkt]
+    #             )
 
 
 def test_hit_l1b(dependencies):

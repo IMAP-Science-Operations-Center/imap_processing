@@ -51,6 +51,7 @@ de_default_attrs: &de_default
   <<: *default
   VAR_TYPE: support_data
   DEPEND_1: direct_events
+  LABL_PTR_1: direct_events_label
 
 hist_az_60_default: &hist_az_60_default
   <<: *default_uint32
@@ -58,6 +59,8 @@ hist_az_60_default: &hist_az_60_default
   DEPEND_0: epoch
   DEPEND_1: azimuth_60
   DEPEND_2: esa_step
+  LABL_PTR_1: azimuth_60_label
+  LABL_PTR_2: esa_step_label
 
 hist_az_6_default: &hist_az_6_default
   <<: *default_uint32
@@ -65,6 +68,8 @@ hist_az_6_default: &hist_az_6_default
   DEPEND_0: epoch
   DEPEND_1: azimuth_6
   DEPEND_2: esa_step
+  LABL_PTR_1: azimuth_6_label
+  LABL_PTR_2: esa_step_label
 
 spin_default_attrs: &spin_default
   <<: *default
@@ -88,7 +93,7 @@ esa_step_label:
    FORMAT: A1
    VAR_TYPE: metadata
 
-esa_step:
+esa_step_coord:
   <<: *coord_default
   <<: *default_uint8
   VALIDMIN: 1
@@ -111,6 +116,12 @@ shcoarse:
 
 # Direct Events Attributes
 ## Coordinates
+direct_events_label:
+   CATDESC: Direct Events
+   FIELDNAM: DE
+   FORMAT: A15
+   VAR_TYPE: metadata
+
 direct_events:
   <<: *de_default
   <<: *default_uint32
@@ -128,6 +139,16 @@ de_time:
   FIELDNAM: Direct Event Time
   UNITS: microseconds
   LABLAXIS: DE time
+
+esa_step:
+  <<: *de_default
+  <<: *default_uint8
+  VALIDMIN: 1
+  VALIDMAX: 7
+  FORMAT: I1
+  CATDESC: Energy Step
+  FIELDNAM: Energy Step
+  LABLAXIS: ESA
 
 mode:
   <<: *de_default
@@ -204,11 +225,22 @@ coincidence_type:
 de_count:
   <<: *default
   <<: *default_uint16
+  VAR_TYPE: data
   VALIDMAX: 32767
   DEPEND_0: epoch
   CATDESC: Direct Event Counts
   FIELDNAM: Direct Event Count
   LABLAXIS: Direct Event Count
+
+passes:
+  <<: *default
+  <<: *default_uint16
+  VAR_TYPE: data
+  VALIDMAX: 32767
+  DEPEND_0: epoch
+  CATDESC: Passes through raw data
+  FIELDNAM: Direct Event Passes
+  LABLAXIS: Direct Event Passes
 # Direct Events Attributes - END
 
 # Histogram Attributes
@@ -250,133 +282,111 @@ start_a:
   <<: *hist_az_60_default
   CATDESC: Anode A Singles count
   FIELDNAM: Anode A Singles Count
-  LABLAXIS: anode A singles counts
 
 start_c:
   <<: *hist_az_60_default
   CATDESC: Anode C Singles count
   FIELDNAM: Anode C Singles count
-  LABLAXIS: anode c singles count
 
 stop_b0:
   <<: *hist_az_60_default
   CATDESC: Ion B0 Singles count
   FIELDNAM: Ion B0 Singles count
-  LABLAXIS: ion B0 singles count
 
 stop_b3:
   <<: *hist_az_60_default
   CATDESC: Ion B3 Singles count
   FIELDNAM: Ion B3 Singles count
-  LABLAXIS: ion B3 singles count
 
 tof0_count:
   <<: *hist_az_60_default
   CATDESC: Time of Flight 0 count
   FIELDNAM: Time of Flight 0 count
-  LABLAXIS: ToF 0 count
 
 tof1_count:
   <<: *hist_az_60_default
   CATDESC: Time of Flight 1 count
   FIELDNAM: Time of Flight 1 count
-  LABLAXIS: ToF 1 count
 
 tof2_count:
   <<: *hist_az_60_default
   CATDESC: Time of Flight 2 count
   FIELDNAM: Time of Flight 2 count
-  LABLAXIS: ToF 2 count
 
 tof3_count:
   <<: *hist_az_60_default
   CATDESC: Time of Flight 3 count
   FIELDNAM: Time of Flight 3 count
-  LABLAXIS: ToF 3 count
 
 tof0_tof1:
   <<: *hist_az_6_default
   catdesc: Triple Coincidence 0/1 count
   FIELDNAM: Triple Coincidence 0/1 count
-  LABLAXIS: triple coincidence 0/1 count
 
 tof0_tof2:
   <<: *hist_az_6_default
   CATDESC: Triple Coincidence 0/2 count
   FIELDNAM: Triple Coincidence 0/2 count
-  LABLAXIS: triple coincidence 0/2 count
 
 tof1_tof2:
   <<: *hist_az_6_default
   catdesc: Triple Coincidence 1/2 count
   FIELDNAM: Triple Coincidence 1/2 count
-  LABLAXIS: triple 1/2 coincidence count
 
 silver:
   <<: *hist_az_6_default
   CATDESC: Triple Coincidence silver count
   FIELDNAM: Triple Coincidence silver count
-  LABLAXIS: triple coincidence silver count
 
 disc_tof0:
   <<: *hist_az_60_default
   CATDESC: Discarded Time of Flight 0 count
   FIELDNAM: Discarded Time of Flight 0 count
-  LABLAXIS: discarded ToF 0 count
 
 disc_tof1:
   <<: *hist_az_60_default
   CATDESC: Discarded Time of Flight 1 count
   FIELDNAM: Discarded Time of Flight 1 count
-  LABLAXIS: discarded ToF 1 count
 
 disc_tof2:
   <<: *hist_az_60_default
   CATDESC: Discarded Time of Flight 2 count
   FIELDNAM: Discarded Time of Flight 2 count
-  LABLAXIS: discarded ToF 2 count
 
 disc_tof3:
   <<: *hist_az_60_default
   CATDESC: Discarded Time of Flight 3 count
   FIELDNAM: Discarded Time of Flight 3 count
-  LABLAXIS: discarded ToF 3 count
 
 pos0:
   <<: *hist_az_60_default
   CATDESC: Position 0 count
   FIELDNAM: Position 0 count
-  LABLAXIS: position 0 count
 
 pos1:
   <<: *hist_az_60_default
   CATDESC: Position 1 count
   FIELDNAM: Position 1 count
-  LABLAXIS: position 1 count
 
 pos2:
   <<: *hist_az_60_default
   CATDESC: Position 2 count
   FIELDNAM: Position 2 count
-  LABLAXIS: position 2 count
 
 pos3:
   <<: *hist_az_60_default
   CATDESC: Position 3 count
   FIELDNAM: Position 3 count
-  LABLAXIS: position 3 count
 
 hydrogen:
   <<: *hist_az_6_default
   CATDESC: Hydrogen count
   FIELDNAM: Hydrogen count
-  LABLAXIS: hydrogen count
 
 oxygen:
   <<: *hist_az_6_default
   CATDESC: Oxygen count
   FIELDNAM: Oxygen count
-  LABLAXIS: oxygen count
 # Histogram Attributes - END
 
 # Star Sensor Attributes

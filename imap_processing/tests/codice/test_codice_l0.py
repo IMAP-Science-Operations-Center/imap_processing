@@ -37,7 +37,7 @@ def decom_test_data() -> xr.Dataset:
 
     packet_file = Path(
         f"{imap_module_directory}/tests/codice/data/"
-        f"imap_codice_l0_hskp_20100101_v001.pkts"
+        f"imap_codice_l0_raw_20241110_v001.pkts"
     )
 
     packet = codice_l0.decom_packets(packet_file)[1136]
@@ -69,6 +69,9 @@ def validation_data() -> pd.core.frame.DataFrame:
     return validation_data
 
 
+@pytest.mark.xfail(
+    reason="Need to update to validate against new validation CDFs. See issue #1154."
+)
 def test_eu_hskp_data(
     decom_test_data: xr.Dataset,
     validation_data: pd.core.frame.DataFrame,
@@ -106,6 +109,9 @@ def test_eu_hskp_data(
             assert round(eu_val, 5) == round(validation_val, 5)
 
 
+@pytest.mark.xfail(
+    reason="Need to update to validate against new validation CDFs. See issue #1154."
+)
 def test_raw_hskp_data(
     decom_test_data: xr.Dataset,
     validation_data: pd.core.frame.DataFrame,
@@ -140,5 +146,5 @@ def test_total_packets_in_data_file(decom_test_data: xr.Dataset):
         The decommutated housekeeping packet
     """
 
-    total_packets = 99
+    total_packets = 31778
     assert len(decom_test_data.epoch) == total_packets

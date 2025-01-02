@@ -39,6 +39,7 @@ def test_l1b_data(request) -> xr.Dataset:
     return dataset
 
 
+@pytest.mark.skip("Awaiting proper implementation of L1B")
 @pytest.mark.parametrize(
     "test_l1b_data, expected_logical_source",
     list(zip(TEST_L1A_FILES, EXPECTED_LOGICAL_SOURCE)),

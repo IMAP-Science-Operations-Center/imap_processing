@@ -91,7 +91,7 @@ def test_packet_file_to_datasets(use_derived_value, expected_mode):
         packet_files, packet_definition, use_derived_value=use_derived_value
     )
     # 3 apids in the test data
-    assert len(datasets_by_apid) == 4
+    assert len(datasets_by_apid) == 2
     data = datasets_by_apid[1188]
     assert data["sec_hdr_flg"].dtype == np.uint8
     assert data["pkt_apid"].dtype == np.uint16
@@ -99,7 +99,7 @@ def test_packet_file_to_datasets(use_derived_value, expected_mode):
 
 
 def test_packet_file_to_datasets_flat_definition():
-    test_file = "tests/idex/imap_idex_l0_raw_20230725_v001.pkts"
+    test_file = "tests/idex/imap_idex_l0_raw_20231214_v001.pkts"
     packet_files = imap_module_directory / test_file
     packet_definition = (
         imap_module_directory / "idex/packet_definitions/idex_packet_definition.xml"
