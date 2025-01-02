@@ -13,6 +13,7 @@ from imap_processing.ultra.l1b.ultra_l1b_extended import (
     determine_species,
     get_coincidence_positions,
     get_ctof,
+    get_de_energy_kev,
     get_de_velocity,
     get_energy_pulse_height,
     get_energy_ssd,
@@ -300,6 +301,44 @@ def test_get_ssd_tof(de_dataset, yf_fixture):
     np.testing.assert_allclose(
         ssd_tof, df_ssd["TOF"].astype("float"), atol=1e-05, rtol=0
     )
+
+
+def test_get_de_energy_kev(de_dataset, yf_fixture):
+    """Tests get_de_energy_kev function."""
+    df_filt, _, _ = yf_fixture
+    df_ph = df_filt[np.isin(df_filt["StopType"], [StopType.PH.value])]
+
+    species_bin_ph = determine_species(
+        df_ph["TOF"].astype("float").to_numpy(),
+        df_ph["r"].astype("float").to_numpy(),
+        "PH",
+    )
+    ph_indices = np.nonzero(
+        np.isin(de_dataset["STOP_TYPE"], [StopType.Top.value, StopType.Bottom.value])
+    )[0]
+    ph_rows = df_filt.iloc[ph_indices]
+    test_xf = ph_rows["Xf"].astype("float").values
+    test_yf = ph_rows["Yf"].astype("float").values
+    test_xb = ph_rows["Xb"].astype("float").values
+    test_yb = ph_rows["Yb"].astype("float").values
+    test_d = ph_rows["d"].astype("float").values
+    test_tof = ph_rows["TOF"].astype("float").values
+
+    v = get_de_velocity(
+        (test_xf, test_yf),
+        (test_xb, test_yb),
+        test_d,
+        test_tof,
+    )
+
+    energy = get_de_energy_kev(v, species_bin_ph)
+    index_hydrogen = np.where(species_bin_ph == "H")
+    actual_energy = energy[index_hydrogen[0]]
+
+    df_ph = df_ph[df_ph["energy_revised"].astype("str") != "FILL"]
+    expected_energy = df_ph["energy_revised"].astype("float")
+
+    np.testing.assert_allclose(actual_energy, expected_energy, atol=1e-05, rtol=0)
 
 
 def test_get_energy_ssd(de_dataset, yf_fixture):

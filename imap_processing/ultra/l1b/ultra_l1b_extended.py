@@ -503,13 +503,7 @@ def get_de_velocity(
     tof: np.ndarray,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
-    Determine the particle velocity.
-
-    The equation is: velocity = ((xf - xb), (yf - yb), d).
-
-    Further description is available on pages 39 of
-    IMAP-Ultra Flight Software Specification document
-    (7523-9009_Rev_-.pdf).
+    Determine the direct event velocity.
 
     Parameters
     ----------
@@ -524,12 +518,12 @@ def get_de_velocity(
 
     Returns
     -------
-    vhat_x : np.array
-        Normalized component of the velocity vector in x direction.
-    vhat_y : np.array
-        Normalized component of the velocity vector in y direction.
-    vhat_z : np.array
-        Normalized component of the velocity vector in z direction.
+    v_x : np.array
+        Velocity component in the x direction (km/s).
+    v_y : np.array
+        Velocity component in the y direction (km/s).
+    v_z : np.array
+        Velocity component in the z direction (km/s).
     """
     if tof[tof < 0].any():
         logger.info("Negative tof values found.")
@@ -598,6 +592,37 @@ def get_ssd_tof(de_dataset: xarray.Dataset, xf: np.ndarray) -> NDArray[np.float6
 
     # Convert TOF to tenths of a nanosecond.
     return np.asarray(tof, dtype=np.float64)
+
+
+def get_de_energy_kev(v: tuple[NDArray, NDArray, NDArray], species: NDArray) -> NDArray:
+    """
+    Calculate the direct event energy.
+
+    Parameters
+    ----------
+    v : tuple[NDArray, NDArray, NDArray]
+        Velocity components in the x,y,z direction (km/s).
+    species : NDArray
+        Species of the particle.
+
+    Returns
+    -------
+    energy : NDArray
+        Energy of the direct event in keV.
+    """
+    vv = np.asarray(v) * 1e3  # convert km/s to m/s
+    # Compute the sum of squares.
+    v2 = np.sum((vv * vv), 0)
+
+    index_hydrogen = np.where(species == "H")
+    energy = np.full_like(v2, np.nan)
+
+    # 1/2 mv^2 in Joules, convert to keV
+    energy[index_hydrogen] = (
+        0.5 * UltraConstants.MASS_H * v2[index_hydrogen] * UltraConstants.J_KEV
+    )
+
+    return energy
 
 
 def get_energy_pulse_height(

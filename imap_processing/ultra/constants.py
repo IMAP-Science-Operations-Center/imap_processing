@@ -61,6 +61,7 @@ class UltraConstants:
 
     # Conversion factors
     KEV_J = 1.602180000000000e-16  # 1.6021766339999e-16 # keV to joules
+    J_KEV = 6.242e15  # joules to keV
     MASS_H = 1.6735575e-27  # Mass of a hydrogen atom in kilograms.
 
     # Energy bin constants
