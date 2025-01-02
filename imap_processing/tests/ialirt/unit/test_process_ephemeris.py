@@ -118,6 +118,8 @@ def test_build_output(furnish_kernels):
         "naif0012.tls",
         "pck00011.tpc",
         "de440s.bsp",
+        "imap_spk_demo.bsp",
+        "earth_1962_240827_2124_combined.bpc",
     ]
     with furnish_kernels(kernels):
         output_dict = process_ephemeris.build_output(

@@ -84,7 +84,8 @@ BORESIGHT_LOOKUP = {
 @ensure_spice
 def imap_state(
     et: Union[np.ndarray, float],
-    ref_frame: SpiceFrame = SpiceFrame.ECLIPJ2000,
+    ref_frame: str = SpiceFrame.ECLIPJ2000.name,
+    abcorr: str = "NONE",
     observer: SpiceBody = SpiceBody.SUN,
 ) -> np.ndarray:
     """
@@ -96,10 +97,12 @@ def imap_state(
     ----------
     et : np.ndarray or float
         Epoch time(s) [J2000 seconds] to get the IMAP state for.
-    ref_frame : SpiceFrame
+    ref_frame : str (Optional)
         Reference frame which the IMAP state is expressed in. Default is
-        SpiceFrame.ECLIPJ2000.
-    observer : SpiceBody
+        SpiceFrame.ECLIPJ2000.name.
+    abcorr : str (Optional)
+        Aberration correction flag. Default is "NONE".
+    observer : SpiceBody (Optional)
         Observing body. Default is SpiceBody.SUN.
 
     Returns
@@ -108,9 +111,7 @@ def imap_state(
      The Cartesian state vector representing the position and velocity of the
      IMAP spacecraft.
     """
-    state, _ = spice.spkezr(
-        SpiceBody.IMAP.name, et, ref_frame.name, "NONE", observer.name
-    )
+    state, _ = spice.spkezr(SpiceBody.IMAP.name, et, ref_frame, abcorr, observer.name)
     return np.asarray(state)
 
 

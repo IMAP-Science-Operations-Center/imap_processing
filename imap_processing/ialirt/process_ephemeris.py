@@ -14,7 +14,7 @@ import numpy as np
 import spiceypy as spice
 from numpy import ndarray
 
-from imap_processing.spice.geometry import SpiceBody
+from imap_processing.spice.geometry import SpiceBody, imap_state
 from imap_processing.spice.kernels import ensure_spice
 from imap_processing.spice.time import et_to_utc, str_to_et
 
@@ -129,9 +129,6 @@ def calculate_azimuth_and_elevation(
         azimuth.append(np.rad2deg(azel_results[0][1]))
         elevation.append(np.rad2deg(azel_results[0][2]))
 
-    # TODO: potentially use the velocity components returned from azlcpo to
-    # TODO: calculate doppler
-
     return np.asarray(azimuth), np.asarray(elevation)
 
 
@@ -141,19 +138,18 @@ def calculate_doppler(
     latitude: float,
     altitude: float,
     observation_time: Union[float, np.ndarray],
-    target: str = SpiceBody.IMAP.name,
 ) -> Union[float, ndarray[float]]:
     """
     Calculate the doppler velocity.
 
-    Notes about the spkezr function:
+    Notes about the spkezr function (wrapped in imap_state):
     The function returns the state of the target (state) and the light time.
     The first three components of state represent the x-, y- and z-components of the
     target's position; the last three components form the corresponding velocity vector.
 
     Parameters
     ----------
-        longitude : float
+    longitude : float
         Longitude in decimal degrees. Positive east of prime meridian,
         negative to west.
     latitude : float
@@ -164,8 +160,6 @@ def calculate_doppler(
     observation_time : float or np.ndarray
         Time at which the state of the target relative to the observer
         is to be computed. Expressed as ephemeris time, seconds past J2000 TDB.
-    target : str (Optional)
-        The target body. Default is "IMAP".
 
     Returns
     -------
@@ -176,21 +170,24 @@ def calculate_doppler(
         longitude, latitude, altitude
     )
 
-    if not isinstance(observation_time, np.ndarray):
-        observation_time = [observation_time]
-
-    # TODO: consider improving vectorizing this for loop by moving everything besides
-    #  the spkezr outside of the for loop,
-    # TODO: which would require the axis argument
-    # TODO: error handling with a try/except block
-    doppler = []
-
-    for timestamp in observation_time:
-        # https://spiceypy.readthedocs.io/en/main/documentation.html#spiceypy.spiceypy.spkezr
-        state, light_time = spice.spkezr(target, timestamp, "ITRF93", "LT+S", "EARTH")
-        # re-orient spacecraft position relative to the ground station
-        state = state - np.pad(ground_station_position_ecef, (0, 3), "constant")
-        doppler.append(np.sum(state[3:6] * state[0:3]) / np.linalg.norm(state[0:3]))
+    # find position and velocity relative to the center of the earth using spice spkezr
+    # https://spiceypy.readthedocs.io/en/main/documentation.html#spiceypy.spiceypy.spkezr
+    state = imap_state(
+        et=observation_time, ref_frame="ITRF93", abcorr="LT+S", observer=SpiceBody.EARTH
+    )
+    # shifting position by subtracting ground station location relative to the center
+    # of the earth
+    state = state - np.pad(ground_station_position_ecef, (0, 3), "constant")
+    ax = int(state.ndim == 2)
+    # calculate radial velocity
+    if isinstance(observation_time, np.ndarray):
+        doppler = np.sum(state[:, 3:6] * state[:, 0:3], axis=ax) / np.linalg.norm(
+            state[:, 0:3], axis=ax
+        )
+    else:
+        doppler = np.sum(state[3:6] * state[0:3], axis=ax) / np.linalg.norm(
+            state[0:3], axis=ax
+        )
 
     return np.asarray(doppler)
 
@@ -230,8 +227,7 @@ def build_output(
     stop_et_input = str_to_et(time_endpoints[1])
     time_range = np.arange(start_et_input, stop_et_input, time_step)
 
-    # For now, assume that kernel management will be handled by ensure spice
-    # for obs_time in np.arange(start_et_input, stop_et_input, time_step):
+    # For now, assume that kernel management will be handled by ensure_spice
     azimuth, elevation = calculate_azimuth_and_elevation(
         longitude, latitude, altitude, time_range
     )
@@ -239,7 +235,9 @@ def build_output(
     output_dict["time"] = et_to_utc(time_range, format_str="ISOC")
     output_dict["azimuth"] = azimuth
     output_dict["elevation"] = elevation
-    output_dict["doppler"] = calculate_doppler(time_range)
+    output_dict["doppler"] = calculate_doppler(
+        longitude, latitude, altitude, time_range
+    )
 
     logger.info(
         f"Calculated azimuth, elevation and doppler for time range from "
