@@ -257,18 +257,12 @@ def test_get_unit_vector(de_dataset, yf_fixture):
 def test_get_de_velocity(de_dataset, yf_fixture):
     """Tests get_de_velocity function."""
     df_filt, _, _ = yf_fixture
+    df_ph = df_filt[np.isin(df_filt["StopType"], [StopType.PH.value])]
 
-    ph_indices = np.nonzero(
-        np.isin(de_dataset["STOP_TYPE"], [StopType.Top.value, StopType.Bottom.value])
-    )[0]
-
-    ph_rows = df_filt.iloc[ph_indices]
-    test_xf = ph_rows["Xf"].astype("float").values
-    test_yf = ph_rows["Yf"].astype("float").values
-    test_xb = ph_rows["Xb"].astype("float").values
-    test_yb = ph_rows["Yb"].astype("float").values
-    test_d = ph_rows["d"].astype("float").values
-    test_tof = ph_rows["TOF"].astype("float").values
+    test_xf, test_yf, test_xb, test_yb, test_d, test_tof = (
+        df_ph[col].astype("float").values
+        for col in ["Xf", "Yf", "Xb", "Yb", "d", "TOF"]
+    )
 
     v_x, v_y, v_z = get_de_velocity(
         (test_xf, test_yf),
@@ -278,15 +272,15 @@ def test_get_de_velocity(de_dataset, yf_fixture):
     )
 
     assert v_x[test_tof > 0] == pytest.approx(
-        df_filt["vx"].iloc[ph_indices].astype("float").values[test_tof > 0],
+        df_ph["vx"].astype("float").values[test_tof > 0],
         rel=1e-2,
     )
     assert v_y[test_tof > 0] == pytest.approx(
-        df_filt["vy"].iloc[ph_indices].astype("float").values[test_tof > 0],
+        df_ph["vy"].astype("float").values[test_tof > 0],
         rel=1e-2,
     )
     assert v_z[test_tof > 0] == pytest.approx(
-        df_filt["vz"].iloc[ph_indices].astype("float").values[test_tof > 0],
+        df_ph["vz"].astype("float").values[test_tof > 0],
         rel=1e-2,
     )
 
@@ -308,22 +302,17 @@ def test_get_de_energy_kev(de_dataset, yf_fixture):
     """Tests get_de_energy_kev function."""
     df_filt, _, _ = yf_fixture
     df_ph = df_filt[np.isin(df_filt["StopType"], [StopType.PH.value])]
+    df_ph = df_ph[df_ph["energy_revised"].astype("str") != "FILL"]
 
     species_bin_ph = determine_species(
         df_ph["TOF"].astype("float").to_numpy(),
         df_ph["r"].astype("float").to_numpy(),
         "PH",
     )
-    ph_indices = np.nonzero(
-        np.isin(de_dataset["STOP_TYPE"], [StopType.Top.value, StopType.Bottom.value])
-    )[0]
-    ph_rows = df_filt.iloc[ph_indices]
-    test_xf = ph_rows["Xf"].astype("float").values
-    test_yf = ph_rows["Yf"].astype("float").values
-    test_xb = ph_rows["Xb"].astype("float").values
-    test_yb = ph_rows["Yb"].astype("float").values
-    test_d = ph_rows["d"].astype("float").values
-    test_tof = ph_rows["TOF"].astype("float").values
+    test_xf, test_yf, test_xb, test_yb, test_d, test_tof = (
+        df_ph[col].astype("float").values
+        for col in ["Xf", "Yf", "Xb", "Yb", "d", "TOF"]
+    )
 
     v = get_de_velocity(
         (test_xf, test_yf),
@@ -335,8 +324,6 @@ def test_get_de_energy_kev(de_dataset, yf_fixture):
     energy = get_de_energy_kev(v, species_bin_ph)
     index_hydrogen = np.where(species_bin_ph == "H")
     actual_energy = energy[index_hydrogen[0]]
-
-    df_ph = df_ph[df_ph["energy_revised"].astype("str") != "FILL"]
     expected_energy = df_ph["energy_revised"].astype("float")
 
     np.testing.assert_allclose(actual_energy, expected_energy, atol=1e-05, rtol=0)
@@ -441,18 +428,18 @@ def test_determine_species(yf_fixture):
 
 
 def test_get_de_az_el(de_dataset, yf_fixture):
-    """Tests get_get_de_az_el function."""
+    """Tests get_de_az_el function."""
     df_filt, _, _ = yf_fixture
-    df_filt = df_filt[df_filt["event_theta"].astype("str") != "FILL"]
-    df_filt = df_filt[df_filt["TOF"].astype("float") >= 0]
+    df_filt = df_filt[
+        (df_filt["event_theta"].astype("str") != "FILL")
+        & (df_filt["TOF"].astype("float") >= 0)
+    ]
     df_ph = df_filt[np.isin(df_filt["StopType"], [StopType.PH.value])]
 
-    test_xf = df_ph["Xf"].astype("float").values
-    test_yf = df_ph["Yf"].astype("float").values
-    test_xb = df_ph["Xb"].astype("float").values
-    test_yb = df_ph["Yb"].astype("float").values
-    test_d = df_ph["d"].astype("float").values
-    test_tof = df_ph["TOF"].astype("float").values
+    test_xf, test_yf, test_xb, test_yb, test_d, test_tof = (
+        df_ph[col].astype("float").values
+        for col in ["Xf", "Yf", "Xb", "Yb", "d", "TOF"]
+    )
 
     v = get_de_velocity(
         (test_xf, test_yf),
