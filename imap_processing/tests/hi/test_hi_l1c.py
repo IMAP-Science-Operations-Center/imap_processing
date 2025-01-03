@@ -5,6 +5,7 @@ from unittest import mock
 import numpy as np
 import pytest
 
+from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import load_cdf, write_cdf
 from imap_processing.hi.l1c import hi_l1c
 from imap_processing.hi.utils import HIAPID
@@ -49,6 +50,16 @@ def test_empty_pset_dataset():
     assert dataset.spin_angle_bin.size == 3600
     assert dataset.esa_energy_step.size == n_esa_steps
     assert dataset.calibration_prod.size == n_calibration_prods
+
+    # verify that attrs defined in hi_pset_epoch have overwritten default
+    # epoch attributes
+    attr_mgr = ImapCdfAttributes()
+    attr_mgr.add_instrument_global_attrs("hi")
+    attr_mgr.add_instrument_variable_attrs(instrument="hi", level=None)
+    pset_epoch_attrs = attr_mgr.get_variable_attributes("hi_pset_epoch")
+    for k, v in pset_epoch_attrs.items():
+        assert k in dataset.epoch.attrs
+        assert dataset.epoch.attrs[k] == v
 
 
 @pytest.mark.parametrize("sensor_str", ["90sensor", "45sensor"])
