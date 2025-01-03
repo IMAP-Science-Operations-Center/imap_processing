@@ -41,7 +41,12 @@ def create_dataset(data_dict: dict, name: str, level: str) -> xr.Dataset:
     for key in data_dict.keys():
         if key == "epoch":
             continue
-        elif "velocity" in key:
+        elif key in [
+            "direct_event_velocity",
+            "velocity_sc",
+            "velocity_dps_sc",
+            "velocity_dps_helio",
+        ]:
             dataset[key] = xr.DataArray(
                 data_dict[key],
                 dims=["epoch", "component"],

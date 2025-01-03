@@ -438,65 +438,6 @@ def get_coincidence_positions(
     return etof, xc_array * 100
 
 
-def get_unit_vector(
-    front_position: tuple[NDArray, NDArray],
-    back_position: tuple[NDArray, NDArray],
-    d: np.ndarray,
-    tof: np.ndarray,
-) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-    """
-    Determine the particle velocity.
-
-    The equation is: velocity = ((xf - xb), (yf - yb), d).
-
-    Further description is available on pages 39 of
-    IMAP-Ultra Flight Software Specification document
-    (7523-9009_Rev_-.pdf).
-
-    Parameters
-    ----------
-    front_position : tuple
-        Front position (xf,yf) (hundredths of a millimeter).
-    back_position : tuple
-        Back position (xb,yb) (hundredths of a millimeter).
-    d : np.array
-        Distance from slit to foil (hundredths of a millimeter).
-    tof : np.array
-        Time of flight (tenths of a nanosecond).
-
-    Returns
-    -------
-    vhat_x : np.array
-        Normalized component of the velocity vector in x direction.
-    vhat_y : np.array
-        Normalized component of the velocity vector in y direction.
-    vhat_z : np.array
-        Normalized component of the velocity vector in z direction.
-    """
-    if tof[tof < 0].any():
-        logger.info("Negative tof values found.")
-
-    delta_x = front_position[0] - back_position[0]
-    delta_y = front_position[1] - back_position[1]
-
-    v_x = delta_x / tof
-    v_y = delta_y / tof
-    v_z = d / tof
-
-    # Magnitude of the velocity vector
-    magnitude_v = np.sqrt(v_x**2 + v_y**2 + v_z**2)
-
-    vhat_x = -v_x / magnitude_v
-    vhat_y = -v_y / magnitude_v
-    vhat_z = -v_z / magnitude_v
-
-    vhat_x[tof < 0] = np.nan  # used as fillvals
-    vhat_y[tof < 0] = np.nan
-    vhat_z[tof < 0] = np.nan
-
-    return vhat_x, vhat_y, vhat_z
-
-
 def get_de_velocity(
     front_position: tuple[NDArray, NDArray],
     back_position: tuple[NDArray, NDArray],
