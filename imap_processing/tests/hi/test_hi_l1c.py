@@ -1,12 +1,17 @@
 """Test coverage for imap_processing.hi.l1c.hi_l1c.py"""
 
+from unittest import mock
+
 import numpy as np
+import pytest
 
 from imap_processing.cdf.utils import load_cdf, write_cdf
 from imap_processing.hi.l1c import hi_l1c
 from imap_processing.hi.utils import HIAPID
 
 
+@pytest.mark.external_kernel()
+@pytest.mark.use_test_metakernel("imap_ena_sim_metakernel.template")
 def test_generate_pset_dataset(hi_l1_test_data_path):
     """Test coverage for generate_pset_dataset function"""
     l1b_de_path = hi_l1_test_data_path / "imap_hi_l1b_45sensor-de_20250415_v999.cdf"
@@ -44,3 +49,20 @@ def test_empty_pset_dataset():
     assert dataset.spin_angle_bin.size == 3600
     assert dataset.esa_energy_step.size == n_esa_steps
     assert dataset.calibration_prod.size == n_calibration_prods
+
+
+@mock.patch(
+    "imap_processing.hi.l1c.hi_l1c.frame_transform", return_value=np.array([1, 0, 0])
+)
+def test_pset_geometry(mock_frame_transform):
+    """Test coverage for pset_geometry function"""
+    geometry_vars = hi_l1c.pset_geometry(0)
+
+    assert "despun_z" in geometry_vars
+    np.testing.assert_array_equal(
+        geometry_vars["despun_z"].data, mock_frame_transform()[np.newaxis, :]
+    )
+
+    assert "hae_latitude" in geometry_vars
+    assert "hae_longitude" in geometry_vars
+    # TODO: Test filled in hae lat/lon values

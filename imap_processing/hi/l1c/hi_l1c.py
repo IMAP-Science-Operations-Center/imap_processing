@@ -8,6 +8,8 @@ import xarray as xr
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import parse_filename_like
 from imap_processing.hi.utils import create_dataset_variables, full_dataarray
+from imap_processing.spice.geometry import SpiceFrame, frame_transform
+from imap_processing.spice.time import j2000ns_to_j2000s
 
 logger = logging.getLogger(__name__)
 
@@ -73,7 +75,7 @@ def generate_pset_dataset(de_dataset: xr.Dataset) -> xr.Dataset:
         np.int64
     )
 
-    pset_dataset.update(pset_geometry())
+    pset_dataset.update(pset_geometry(pset_dataset.epoch.data[0]))
 
     # TODO: The following section will go away as PSET algorithms to populate
     #    these variables are written.
@@ -204,9 +206,14 @@ def empty_pset_dataset(n_esa_steps: int, sensor_str: str) -> xr.Dataset:
     return dataset
 
 
-def pset_geometry() -> dict[str, xr.DataArray]:
+def pset_geometry(pset_epoch: int) -> dict[str, xr.DataArray]:
     """
     Calculate PSET geometry variables.
+
+    Parameters
+    ----------
+    pset_epoch : int
+        Pointing set epoch time for which to calculate PSET geometry.
 
     Returns
     -------
@@ -216,7 +223,14 @@ def pset_geometry() -> dict[str, xr.DataArray]:
     geometry_vars = create_dataset_variables(
         ["despun_z"], (1, 3), att_manager_lookup_str="hi_pset_{0}"
     )
-    # TODO: Calculate despun_z
+    despun_z = frame_transform(
+        j2000ns_to_j2000s(pset_epoch),
+        np.array([0, 0, 1]),
+        SpiceFrame.IMAP_DPS,
+        SpiceFrame.ECLIPJ2000,
+    )
+    geometry_vars["despun_z"].values = despun_z[np.newaxis, :].astype(np.float32)
+
     geometry_vars.update(
         create_dataset_variables(
             ["hae_latitude", "hae_longitude"],
