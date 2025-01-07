@@ -524,7 +524,7 @@ def cartesian_to_spherical(
           output range=[0, 360],
           otherwise in radians if degrees parameter is False:
           output range=[0, 2*pi].
-        - elevation : angle from the z-axis
+        - elevation : angle from the xy-plane
           In degrees if degrees parameter is True (by default):
           output range=[0, 180],
           otherwise in radians if degrees parameter is False:
@@ -535,7 +535,7 @@ def cartesian_to_spherical(
 
     vhat = v / magnitude_v
 
-    # Elevation angle (angle from the z-axis, range: [-pi/2, pi/2])
+    # Elevation angle (angle from the xy-plane, range: [-pi/2, pi/2])
     el = np.arcsin(vhat[..., 2])
 
     # Azimuth angle (angle in the xy-plane, range: [0, 2*pi])
@@ -565,7 +565,7 @@ def spherical_to_cartesian(spherical_coords: NDArray) -> NDArray:
 
         - r : Distance of the point from the origin.
         - azimuth : angle in the xy-plane in radians [0, 2*pi].
-        - elevation : angle from the z-axis in radians [-pi/2, pi/2].
+        - elevation : angle from the xy-plane in radians [-pi/2, pi/2].
 
     Returns
     -------

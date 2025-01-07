@@ -51,18 +51,28 @@ def test_empty_pset_dataset():
     assert dataset.calibration_prod.size == n_calibration_prods
 
 
+@pytest.mark.parametrize("sensor_str", ["90sensor", "45sensor"])
 @mock.patch(
-    "imap_processing.hi.l1c.hi_l1c.frame_transform", return_value=np.array([1, 0, 0])
+    "imap_processing.hi.l1c.hi_l1c.frame_transform", side_effect=lambda a, b, c, d: b
 )
-def test_pset_geometry(mock_frame_transform):
+def test_pset_geometry(mock_frame_transform, sensor_str):
     """Test coverage for pset_geometry function"""
-    geometry_vars = hi_l1c.pset_geometry(0)
+    geometry_vars = hi_l1c.pset_geometry(0, sensor_str)
 
     assert "despun_z" in geometry_vars
-    np.testing.assert_array_equal(
-        geometry_vars["despun_z"].data, mock_frame_transform()[np.newaxis, :]
-    )
+    np.testing.assert_array_equal(geometry_vars["despun_z"].data, [[0, 0, 1]])
 
     assert "hae_latitude" in geometry_vars
     assert "hae_longitude" in geometry_vars
-    # TODO: Test filled in hae lat/lon values
+    # frame_transform is mocked to return the input vectors. For Hi-90, we
+    # expect hae_latitude to be 0, and for Hi-45 we expect -45. Both sensors
+    # have an expected longitude to be 0.1 degree steps starting at 0.05
+    expected_latitude = 0 if sensor_str == "90sensor" else -45
+    np.testing.assert_array_equal(
+        geometry_vars["hae_latitude"].data, np.full((1, 3600), expected_latitude)
+    )
+    np.testing.assert_allclose(
+        geometry_vars["hae_longitude"].data,
+        np.arange(0.05, 360, 0.1, dtype=np.float32).reshape((1, 3600)),
+        atol=4e-05,
+    )

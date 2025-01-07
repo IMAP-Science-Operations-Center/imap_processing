@@ -8,7 +8,12 @@ import xarray as xr
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import parse_filename_like
 from imap_processing.hi.utils import create_dataset_variables, full_dataarray
-from imap_processing.spice.geometry import SpiceFrame, frame_transform
+from imap_processing.spice.geometry import (
+    SpiceFrame,
+    cartesian_to_spherical,
+    frame_transform,
+    spherical_to_cartesian,
+)
 from imap_processing.spice.time import j2000ns_to_j2000s
 
 logger = logging.getLogger(__name__)
@@ -75,7 +80,9 @@ def generate_pset_dataset(de_dataset: xr.Dataset) -> xr.Dataset:
         np.int64
     )
 
-    pset_dataset.update(pset_geometry(pset_dataset.epoch.data[0]))
+    pset_dataset.update(
+        pset_geometry(pset_dataset.epoch.data[0], logical_source_parts["sensor"])
+    )
 
     # TODO: The following section will go away as PSET algorithms to populate
     #    these variables are written.
@@ -206,7 +213,7 @@ def empty_pset_dataset(n_esa_steps: int, sensor_str: str) -> xr.Dataset:
     return dataset
 
 
-def pset_geometry(pset_epoch: int) -> dict[str, xr.DataArray]:
+def pset_geometry(pset_epoch: int, sensor_str: str) -> dict[str, xr.DataArray]:
     """
     Calculate PSET geometry variables.
 
@@ -214,6 +221,8 @@ def pset_geometry(pset_epoch: int) -> dict[str, xr.DataArray]:
     ----------
     pset_epoch : int
         Pointing set epoch time for which to calculate PSET geometry.
+    sensor_str : str
+        '45sensor' or '90sensor'.
 
     Returns
     -------
@@ -231,6 +240,24 @@ def pset_geometry(pset_epoch: int) -> dict[str, xr.DataArray]:
     )
     geometry_vars["despun_z"].values = despun_z[np.newaxis, :].astype(np.float32)
 
+    # Calculate hae_latitude and hae_longitude of the spin bins
+    # define the azimuth/elevation coordinates in the Pointing Frame (DPS)
+    # TODO: get the sensor's true elevation using SPICE?
+    el = 0 if "90" in sensor_str else -45
+    dps_az_el = np.array(
+        [
+            np.ones(3600),
+            np.deg2rad(np.arange(0.05, 360, 0.1)),
+            np.full(3600, np.deg2rad(el)),
+        ]
+    ).T
+    dps_cartesian = spherical_to_cartesian(dps_az_el)
+    # Transform DPS Cartesian coords into HAE Ecliptic
+    hae_eclip_cartesian = frame_transform(
+        pset_epoch, dps_cartesian, SpiceFrame.IMAP_DPS, SpiceFrame.ECLIPJ2000
+    )
+    hae_az_el = cartesian_to_spherical(hae_eclip_cartesian, degrees=True)
+
     geometry_vars.update(
         create_dataset_variables(
             ["hae_latitude", "hae_longitude"],
@@ -238,5 +265,10 @@ def pset_geometry(pset_epoch: int) -> dict[str, xr.DataArray]:
             att_manager_lookup_str="hi_pset_{0}",
         )
     )
-    # TODO: Calculate HAE Lat/Lon
+    geometry_vars["hae_longitude"].values = hae_az_el[:, 1].astype(np.float32)[
+        np.newaxis, :
+    ]
+    geometry_vars["hae_latitude"].values = hae_az_el[:, 2].astype(np.float32)[
+        np.newaxis, :
+    ]
     return geometry_vars
