@@ -128,7 +128,9 @@ def empty_pset_dataset(n_esa_steps: int, sensor_str: str) -> xr.Dataset:
     coords = dict()
     # epoch coordinate has only 1 entry for pointing set
     epoch_attrs = attr_mgr.get_variable_attributes("epoch")
-    epoch_attrs.update(attr_mgr.get_variable_attributes("hi_pset_epoch"))
+    epoch_attrs.update(
+        attr_mgr.get_variable_attributes("hi_pset_epoch", check_schema=False)
+    )
     coords["epoch"] = xr.DataArray(
         np.empty(1, dtype=np.int64),  # TODO: get dtype from cdf attrs?
         name="epoch",
