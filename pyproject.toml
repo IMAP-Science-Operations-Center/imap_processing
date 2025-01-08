@@ -2,15 +2,14 @@
 requires = ["poetry-core>=1.0.0", "poetry-dynamic-versioning>=1.0.0,<2.0.0"]
 build-backend = "poetry_dynamic_versioning.backend"
 
-[tool.poetry]
+[project]
 name = "imap-processing"
 # Gets updated dynamically by the poetry-dynamic-versioning plugin
-version = "0.0.0"
+dynamic = [ "version" ]
 description = "IMAP Science Operations Center Processing"
-authors = ["IMAP SDC Developers <imap-sdc@lists.lasp.colorado.edu>"]
+authors = [{name="IMAP SDC Developers", email="imap-sdc@lists.lasp.colorado.edu"},]
 readme = "README.md"
-include = ["imap_processing/_version.py"]
-license = "MIT"
+license = {text = "MIT"}
 keywords = ["IMAP", "SDC", "SOC", "Science Operations"]
 classifiers = [
     "Development Status :: 3 - Alpha",
@@ -29,11 +28,18 @@ classifiers = [
     "Operating System :: Unix",
     "Operating System :: MacOS",
 ]
+requires-python = ">=3.9,<4"
+
+[tool.poetry]
+include = ["imap_processing/_version.py"]
+version = "0.0.0"
+
+[tool.poetry.requires-plugins]
+poetry-dynamic-versioning = { version = ">=1.0.0,<2.0.0", extras = ["plugin"] }
 
 [tool.poetry.dependencies]
 cdflib = "^1.3.1"
 imap-data-access = ">=0.10.1"
-python = ">=3.9,<4"
 space_packet_parser = "^5.0.1"
 spiceypy = ">=6.0.0"
 xarray = '>=2023.0.0'
@@ -106,7 +112,7 @@ imap_xtce = 'imap_processing.ccsds.excel_to_xtce:main'
 ignore-words-list = "livetime"
 
 [tool.poetry-dynamic-versioning]
-enable = true
+enable = false
 vcs = "git"
 
 [tool.poetry-dynamic-versioning.files."imap_processing/_version.py"]
