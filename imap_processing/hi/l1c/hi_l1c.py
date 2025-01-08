@@ -79,10 +79,9 @@ def generate_pset_dataset(de_dataset: xr.Dataset) -> xr.Dataset:
     pset_dataset.epoch.data[0] = np.mean(de_dataset.epoch.data[[0, -1]]).astype(
         np.int64
     )
+    pset_et = j2000ns_to_j2000s(pset_dataset.epoch.data[0])
 
-    pset_dataset.update(
-        pset_geometry(pset_dataset.epoch.data[0], logical_source_parts["sensor"])
-    )
+    pset_dataset.update(pset_geometry(pset_et, logical_source_parts["sensor"]))
 
     # TODO: The following section will go away as PSET algorithms to populate
     #    these variables are written.
@@ -213,14 +212,14 @@ def empty_pset_dataset(n_esa_steps: int, sensor_str: str) -> xr.Dataset:
     return dataset
 
 
-def pset_geometry(pset_epoch: int, sensor_str: str) -> dict[str, xr.DataArray]:
+def pset_geometry(pset_et: float, sensor_str: str) -> dict[str, xr.DataArray]:
     """
     Calculate PSET geometry variables.
 
     Parameters
     ----------
-    pset_epoch : int
-        Pointing set epoch time for which to calculate PSET geometry.
+    pset_et : float
+        Pointing set ephemeris time for which to calculate PSET geometry.
     sensor_str : str
         '45sensor' or '90sensor'.
 
@@ -233,7 +232,7 @@ def pset_geometry(pset_epoch: int, sensor_str: str) -> dict[str, xr.DataArray]:
         ["despun_z"], (1, 3), att_manager_lookup_str="hi_pset_{0}"
     )
     despun_z = frame_transform(
-        j2000ns_to_j2000s(pset_epoch),
+        pset_et,
         np.array([0, 0, 1]),
         SpiceFrame.IMAP_DPS,
         SpiceFrame.ECLIPJ2000,
@@ -254,7 +253,7 @@ def pset_geometry(pset_epoch: int, sensor_str: str) -> dict[str, xr.DataArray]:
     dps_cartesian = spherical_to_cartesian(dps_az_el)
     # Transform DPS Cartesian coords into HAE Ecliptic
     hae_eclip_cartesian = frame_transform(
-        pset_epoch, dps_cartesian, SpiceFrame.IMAP_DPS, SpiceFrame.ECLIPJ2000
+        pset_et, dps_cartesian, SpiceFrame.IMAP_DPS, SpiceFrame.ECLIPJ2000
     )
     hae_az_el = cartesian_to_spherical(hae_eclip_cartesian, degrees=True)
 
