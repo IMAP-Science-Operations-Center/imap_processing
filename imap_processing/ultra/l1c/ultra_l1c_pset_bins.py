@@ -175,7 +175,7 @@ def get_helio_exposure_times(
     cartesian = cartesian_coords.reshape(-1, 3, order="F").T
 
     # Spacecraft velocity in the pointing (DPS) frame wrt heliosphere.
-    state = imap_state(time, ref_frame=SpiceFrame.IMAP_DPS.name)
+    state = imap_state(time, ref_frame=SpiceFrame.IMAP_DPS)
 
     # Extract the velocity part of the state vector
     spacecraft_velocity = state[3:6]
