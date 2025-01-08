@@ -56,7 +56,9 @@ def test_empty_pset_dataset():
     attr_mgr = ImapCdfAttributes()
     attr_mgr.add_instrument_global_attrs("hi")
     attr_mgr.add_instrument_variable_attrs(instrument="hi", level=None)
-    pset_epoch_attrs = attr_mgr.get_variable_attributes("hi_pset_epoch")
+    pset_epoch_attrs = attr_mgr.get_variable_attributes(
+        "hi_pset_epoch", check_schema=False
+    )
     for k, v in pset_epoch_attrs.items():
         assert k in dataset.epoch.attrs
         assert dataset.epoch.attrs[k] == v
