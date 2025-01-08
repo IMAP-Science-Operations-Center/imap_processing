@@ -14,7 +14,7 @@ import numpy as np
 import spiceypy as spice
 from numpy import ndarray
 
-from imap_processing.spice.geometry import SpiceBody, imap_state
+from imap_processing.spice.geometry import SpiceBody, SpiceFrame, imap_state
 from imap_processing.spice.kernels import ensure_spice
 from imap_processing.spice.time import et_to_utc, str_to_et
 
@@ -173,21 +173,18 @@ def calculate_doppler(
     # find position and velocity relative to the center of the earth using spice spkezr
     # https://spiceypy.readthedocs.io/en/main/documentation.html#spiceypy.spiceypy.spkezr
     state = imap_state(
-        et=observation_time, ref_frame="ITRF93", abcorr="LT+S", observer=SpiceBody.EARTH
+        et=observation_time,
+        ref_frame=SpiceFrame.ITRF93,
+        abcorr="LT+S",
+        observer=SpiceBody.EARTH,
     )
     # shifting position by subtracting ground station location relative to the center
     # of the earth
-    state = state - np.pad(ground_station_position_ecef, (0, 3), "constant")
-    ax = int(state.ndim == 2)
+    state[..., 0:3] -= ground_station_position_ecef
     # calculate radial velocity
-    if isinstance(observation_time, np.ndarray):
-        doppler = np.sum(state[:, 3:6] * state[:, 0:3], axis=ax) / np.linalg.norm(
-            state[:, 0:3], axis=ax
-        )
-    else:
-        doppler = np.sum(state[3:6] * state[0:3], axis=ax) / np.linalg.norm(
-            state[0:3], axis=ax
-        )
+    doppler = np.sum(state[..., 3:6] * state[..., 0:3], axis=-1) / np.linalg.norm(
+        state[..., 0:3], axis=-1
+    )
 
     return np.asarray(doppler)
 
