@@ -52,11 +52,16 @@ def test_empty_pset_dataset():
 
 
 @pytest.mark.parametrize("sensor_str", ["90sensor", "45sensor"])
+@mock.patch("imap_processing.spice.geometry.frame_transform")
 @mock.patch("imap_processing.hi.l1c.hi_l1c.frame_transform")
-def test_pset_geometry(mock_frame_transform, sensor_str):
+def test_pset_geometry(mock_frame_transform, mock_geom_frame_transform, sensor_str):
     """Test coverage for pset_geometry function"""
-    # Mock frame transform to simply return the input position vectors (no transform)
+    # pset_geometry uses both frame_transform and frame_transform_az_el. By mocking
+    # the frame_transform imported into hi_l1c as well as the geometry.frame_transform
+    # the underlying need for SPICE kernels is remove. Mock them both to just return
+    # the input position vectors.
     mock_frame_transform.side_effect = lambda et, pos, from_frame, to_frame: pos
+    mock_geom_frame_transform.side_effect = lambda et, pos, from_frame, to_frame: pos
 
     geometry_vars = hi_l1c.pset_geometry(0, sensor_str)
 

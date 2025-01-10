@@ -10,9 +10,8 @@ from imap_processing.cdf.utils import parse_filename_like
 from imap_processing.hi.utils import create_dataset_variables, full_dataarray
 from imap_processing.spice.geometry import (
     SpiceFrame,
-    cartesian_to_spherical,
     frame_transform,
-    spherical_to_cartesian,
+    frame_transform_az_el,
 )
 from imap_processing.spice.time import j2000ns_to_j2000s
 
@@ -246,17 +245,13 @@ def pset_geometry(pset_et: float, sensor_str: str) -> dict[str, xr.DataArray]:
     el = 0 if "90" in sensor_str else -45
     dps_az_el = np.array(
         [
-            np.ones(3600),
-            np.deg2rad(np.arange(0.05, 360, 0.1)),
-            np.full(3600, np.deg2rad(el)),
+            np.arange(0.05, 360, 0.1),
+            np.full(3600, el),
         ]
     ).T
-    dps_cartesian = spherical_to_cartesian(dps_az_el)
-    # Transform DPS Cartesian coords into HAE Ecliptic
-    hae_eclip_cartesian = frame_transform(
-        pset_et, dps_cartesian, SpiceFrame.IMAP_DPS, SpiceFrame.ECLIPJ2000
+    hae_az_el = frame_transform_az_el(
+        pset_et, dps_az_el, SpiceFrame.IMAP_DPS, SpiceFrame.ECLIPJ2000, degrees=True
     )
-    hae_az_el = cartesian_to_spherical(hae_eclip_cartesian, degrees=True)
 
     geometry_vars.update(
         create_dataset_variables(
@@ -265,10 +260,10 @@ def pset_geometry(pset_et: float, sensor_str: str) -> dict[str, xr.DataArray]:
             att_manager_lookup_str="hi_pset_{0}",
         )
     )
-    geometry_vars["hae_longitude"].values = hae_az_el[:, 1].astype(np.float32)[
+    geometry_vars["hae_longitude"].values = hae_az_el[:, 0].astype(np.float32)[
         np.newaxis, :
     ]
-    geometry_vars["hae_latitude"].values = hae_az_el[:, 2].astype(np.float32)[
+    geometry_vars["hae_latitude"].values = hae_az_el[:, 1].astype(np.float32)[
         np.newaxis, :
     ]
     return geometry_vars
