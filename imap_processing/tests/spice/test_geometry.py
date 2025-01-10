@@ -1,5 +1,7 @@
 """Tests coverage for imap_processing/spice/geometry.py"""
 
+from unittest import mock
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -11,6 +13,7 @@ from imap_processing.spice.geometry import (
     basis_vectors,
     cartesian_to_spherical,
     frame_transform,
+    frame_transform_az_el,
     get_instrument_spin_phase,
     get_rotation_matrix,
     get_spacecraft_spin_phase,
@@ -285,6 +288,50 @@ def test_frame_transform_exceptions():
             SpiceFrame.ECLIPJ2000,
             SpiceFrame.IMAP_HIT,
         )
+
+
+@pytest.mark.parametrize(
+    "az_range, el_range",
+    [
+        (
+            np.arange(0, 2 * np.pi, np.pi / 50),
+            np.arange(-np.pi / 2, np.pi / 2, np.pi / 50),
+        ),
+        (np.pi / 2, np.pi / 2),
+    ],
+)
+@mock.patch("imap_processing.spice.geometry.get_rotation_matrix")
+def test_frame_transform_az_el(mock_get_rotation_matrix, az_range, el_range):
+    """Test transforming azimuth and elevation between frames"""
+    et = 0
+    az, el = np.meshgrid(az_range, el_range)
+    az_el = np.squeeze(np.vstack((az.flatten(), el.flatten())).T)
+
+    # Mock get_rotation_matrix to return a 90-degree rotation in xy-plane
+    mock_get_rotation_matrix.side_effect = (
+        lambda t, from_frame, to_frame: np.broadcast_to(
+            [[0, -1, 0], [1, 0, 0], [0, 0, 1]], (3, 3)
+        )
+    )
+
+    to_az_el_radians = frame_transform_az_el(
+        et, az_el, SpiceFrame.IMAP_DPS, SpiceFrame.ECLIPJ2000, degrees=False
+    )
+    to_az_el_degrees = frame_transform_az_el(
+        et, np.degrees(az_el), SpiceFrame.IMAP_DPS, SpiceFrame.ECLIPJ2000, degrees=True
+    )
+
+    expected_az = np.asarray(az_el[..., 0] + np.pi / 2)
+    expected_az[expected_az > 2 * np.pi] -= 2 * np.pi
+    np.testing.assert_allclose(to_az_el_radians[..., 0], expected_az, atol=1e-14)
+    np.testing.assert_allclose(to_az_el_radians[..., 1], az_el[..., 1], atol=1e-14)
+    # Check degrees
+    np.testing.assert_allclose(
+        to_az_el_degrees[..., 0], np.degrees(expected_az), atol=1e-14
+    )
+    np.testing.assert_allclose(
+        to_az_el_degrees[..., 1], np.degrees(az_el[..., 1]), atol=1e-14
+    )
 
 
 def test_get_rotation_matrix(furnish_kernels):

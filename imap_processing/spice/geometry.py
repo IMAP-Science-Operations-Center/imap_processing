@@ -376,6 +376,51 @@ def frame_transform(
     return result
 
 
+def frame_transform_az_el(
+    et: Union[float, npt.NDArray],
+    az_el: npt.NDArray,
+    from_frame: SpiceFrame,
+    to_frame: SpiceFrame,
+    degrees: bool = True,
+) -> npt.NDArray:
+    """
+    Transform azimuth and elevation coordinates between reference frames.
+
+    Parameters
+    ----------
+    et : float or np.ndarray
+        Ephemeris time(s) corresponding to position(s).
+    az_el :  np.ndarray
+        <azimuth, elevation> vector or array of vectors in reference frame `from_frame`.
+        There are several possible shapes for the input az_el and et:
+        1. A single az_el vector may be provided for multiple `et` query times
+        2. A single `et` may be provided for multiple az_el vectors,
+        3. The same number of `et` and az_el vectors may be provided.
+        It is not allowed to have n az_el vectors and m `et`, where n != m.
+    from_frame : SpiceFrame
+        Reference frame of input coordinates.
+    to_frame : SpiceFrame
+        Reference frame of output coordinates.
+    degrees : bool
+        If True, azimuth and elevation input and output will be in degrees.
+
+    Returns
+    -------
+    to_frame_az_el : np.ndarray
+        Azimuth/elevation coordinates in reference frame `to_frame`.
+    """
+    # Convert input az/el to Cartesian vectors
+    spherical_coords_in = np.array(
+        [np.ones_like(az_el[..., 0]), az_el[..., 0], az_el[..., 1]]
+    ).T
+    from_frame_cartesian = spherical_to_cartesian(spherical_coords_in, degrees=degrees)
+    # Transform to to_frame
+    to_frame_cartesian = frame_transform(et, from_frame_cartesian, from_frame, to_frame)
+    # Convert to spherical and extract azimuth/elevation
+    to_frame_az_el = cartesian_to_spherical(to_frame_cartesian, degrees=degrees)
+    return to_frame_az_el[..., 1:3]
+
+
 @typing.no_type_check
 @ensure_spice
 def get_rotation_matrix(
@@ -557,7 +602,7 @@ def cartesian_to_spherical(
     return spherical_coords
 
 
-def spherical_to_cartesian(spherical_coords: NDArray) -> NDArray:
+def spherical_to_cartesian(spherical_coords: NDArray, degrees: bool = False) -> NDArray:
     """
     Convert spherical coordinates to Cartesian coordinates.
 
@@ -570,6 +615,9 @@ def spherical_to_cartesian(spherical_coords: NDArray) -> NDArray:
         - r : Distance of the point from the origin.
         - azimuth : angle in the xy-plane in radians [0, 2*pi].
         - elevation : angle from the xy-plane in radians [-pi/2, pi/2].
+    degrees : bool
+        Set to True if input azimuth and elevation angles are in degrees.
+        Defaults to False.
 
     Returns
     -------
@@ -579,6 +627,10 @@ def spherical_to_cartesian(spherical_coords: NDArray) -> NDArray:
     r = spherical_coords[..., 0]
     azimuth = spherical_coords[..., 1]
     elevation = spherical_coords[..., 2]
+
+    if degrees:
+        azimuth = np.radians(azimuth)
+        elevation = np.radians(elevation)
 
     x = r * np.cos(elevation) * np.cos(azimuth)
     y = r * np.cos(elevation) * np.sin(azimuth)
