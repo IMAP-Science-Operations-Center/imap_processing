@@ -80,7 +80,8 @@ def generate_pset_dataset(de_dataset: xr.Dataset) -> xr.Dataset:
         np.int64
     )
     pset_et = j2000ns_to_j2000s(pset_dataset.epoch.data[0])
-
+    # Calculate and add despun_z, hae_latitude, and hae_longitude variables to
+    # the pset_dataset
     pset_dataset.update(pset_geometry(pset_et, logical_source_parts["sensor"]))
 
     # TODO: The following section will go away as PSET algorithms to populate

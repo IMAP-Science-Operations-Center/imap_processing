@@ -52,11 +52,12 @@ def test_empty_pset_dataset():
 
 
 @pytest.mark.parametrize("sensor_str", ["90sensor", "45sensor"])
-@mock.patch(
-    "imap_processing.hi.l1c.hi_l1c.frame_transform", side_effect=lambda a, b, c, d: b
-)
+@mock.patch("imap_processing.hi.l1c.hi_l1c.frame_transform")
 def test_pset_geometry(mock_frame_transform, sensor_str):
     """Test coverage for pset_geometry function"""
+    # Mock frame transform to simply return the input position vectors (no transform)
+    mock_frame_transform.side_effect = lambda et, pos, from_frame, to_frame: pos
+
     geometry_vars = hi_l1c.pset_geometry(0, sensor_str)
 
     assert "despun_z" in geometry_vars
