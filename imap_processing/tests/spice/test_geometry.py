@@ -450,12 +450,25 @@ def test_spherical_to_cartesian():
     spherical_points = np.stack(
         (r * np.ones_like(theta).ravel(), theta.ravel(), elev.ravel()), axis=-1
     )
+    spherical_points_degrees = np.stack(
+        (
+            r * np.ones_like(theta).ravel(),
+            np.degrees(theta.ravel()),
+            np.degrees(elev.ravel()),
+        ),
+        axis=-1,
+    )
 
     # Convert elevation to colatitude for SPICE
     colat = np.pi / 2 - spherical_points[:, 2]
+
+    cartesian_from_degrees = spherical_to_cartesian(
+        spherical_points_degrees, degrees=True
+    )
 
     for i in range(len(colat)):
         cartesian_coords = spherical_to_cartesian(np.array([spherical_points[i]]))
         spice_coords = spice.sphrec(r, colat[i], spherical_points[i, 1])
 
         np.testing.assert_allclose(cartesian_coords[0], spice_coords, atol=1e-5)
+        np.testing.assert_allclose(cartesian_from_degrees[i], spice_coords, atol=1e-5)
