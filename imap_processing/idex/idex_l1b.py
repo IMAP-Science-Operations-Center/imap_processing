@@ -16,6 +16,7 @@ Examples
 
 import logging
 from enum import Enum
+from typing import Union
 
 import pandas as pd
 import xarray as xr
@@ -36,6 +37,33 @@ class ConversionFactors(float, Enum):
     Target_Low = 1.58e1
     Target_High = 1.63e-1
     Ion_Grid = 7.46e-4
+
+
+class TriggerMode(Enum):
+    """Enum class for conversion factor values."""
+
+    Threshold = 1
+    SinglePulse = 2
+    DoublePulse = 3
+
+    @staticmethod
+    def get_mode_label(mode: int, channel: str) -> str:
+        """
+        Return trigger mode label.
+
+        Parameters
+        ----------
+        mode : int
+            Raw mode value.
+        channel : str
+            Channel gain level.
+
+        Returns
+        -------
+        str
+            Mode label.
+        """
+        return f"{channel.upper()}{TriggerMode(mode).name}"
 
 
 def idex_l1b(l1a_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
@@ -82,10 +110,20 @@ def idex_l1b(l1a_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
         dims=["epoch"],
         attrs=idex_attrs.get_variable_attributes("epoch"),
     )
+
+    trigger_settings = get_trigger_mode_and_level(l1a_dataset)
+    if trigger_settings:
+        trigger_settings["triggerlevel"].attrs = idex_attrs.get_variable_attributes(
+            "trigger_level"
+        )
+        trigger_settings["triggermode"].attrs = idex_attrs.get_variable_attributes(
+            "trigger_mode"
+        )
+
     # Create l1b Dataset
     l1b_dataset = xr.Dataset(
         coords={"epoch": epoch_da},
-        data_vars=processed_vars | waveforms_converted,
+        data_vars=processed_vars | waveforms_converted | trigger_settings,
         attrs=idex_attrs.get_global_attributes("imap_idex_l1b_sci"),
     )
     # Convert variables
@@ -94,19 +132,16 @@ def idex_l1b(l1a_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
         conversion_table_path=var_information_path,
         packet_name="IDEX_SCI",
     )
+    prefixes = ["shcoarse", "shfine", "time_high_sample", "time_low_sample"]
     vars_to_copy = [
-        "shcoarse",
-        "shfine",
-        "time_high_sr",
-        "time_low_sr",
-        "time_high_sr_label",
-        "time_low_sr_label",
+        var
+        for var in l1a_dataset.variables
+        if any(prefix in var for prefix in prefixes)
     ]
     # Copy arrays from the l1a_dataset that do not need l1b processing
     for var in vars_to_copy:
         l1b_dataset[var] = l1a_dataset[var].copy()
 
-    # TODO: Add TriggerMode and TriggerLevel attr
     # TODO: Spice data?
 
     logger.info("IDEX L1B science data processing completed.")
@@ -190,3 +225,102 @@ def convert_waveforms(
         )
 
     return waveforms_pc
+
+
+def get_trigger_mode_and_level(
+    l1a_dataset: xr.Dataset,
+) -> Union[dict[str, xr.DataArray], dict]:
+    """
+    Determine the trigger mode and threshold level for each event.
+
+    Parameters
+    ----------
+    l1a_dataset : xarray.Dataset
+        IDEX L1a dataset containing the six waveform arrays and instrument settings.
+
+    Returns
+    -------
+    dict
+        A dictionary containing the trigger mode and level values.
+    """
+    # low, mid, and high gain channels
+    channels = ["lg", "mg", "hg"]
+    # 10 bit mask
+    mask = 0b1111111111
+    trigger_modes = []
+    trigger_levels = []
+
+    def compute_trigger_values(
+        trigger_mode: int, trigger_controls: int, gain_channel: str
+    ) -> Union[tuple[str, Union[int, float]], tuple[None, None]]:
+        """
+        Compute the trigger mode label and threshold level.
+
+        Parameters
+        ----------
+        trigger_mode : float
+            Raw trigger mode value.
+        trigger_controls : int
+            Raw trigger control values.
+        gain_channel : float
+            Gain channel (low, mid, or high).
+
+        Returns
+        -------
+        tuple
+            Mode label and threshold level.
+        """
+        # If the trigger mode is zero, then the channel did not trigger the event and
+        # therefore there is no threshold level
+        if trigger_mode == 0:
+            return None, None
+
+        mode_label = TriggerMode.get_mode_label(mode=trigger_mode, channel=gain_channel)
+        # The trigger control variable is 32 bits with the first 10 bits representing
+        # the Threshold level.
+        # Bit-shift right 22 places and use a 10-bit mask to extract the level value.
+        threshold_level = float((trigger_controls >> 22) & mask)
+
+        # If it is the high gain channel multiply the level by the conversion factor.
+        # TODO: determine why the idex team is only doing this for the high gain channel
+        if gain_channel == "hg":
+            threshold_level *= ConversionFactors["TOF_High"]
+        return mode_label, threshold_level
+
+    for channel in channels:
+        # Get all the modes and controls for each event for the current channel
+        modes = l1a_dataset[f"idx__txhdr{channel}trigmode"].copy()
+        controls = l1a_dataset[f"idx__txhdr{channel}trigctrl1"].copy()
+
+        # Apply the function across the arrays
+        mode_array, level_array = xr.apply_ufunc(
+            compute_trigger_values,
+            modes,
+            controls,
+            channel,
+            output_core_dims=([], []),
+            vectorize=True,
+            output_dtypes=[object, float],
+        )
+        trigger_modes.append(mode_array.rename("trigger_mode"))
+        trigger_levels.append(level_array.rename("trigger_level"))
+
+    try:
+        # There should be an array of modes and threshold levels for each channel.
+        # At each index (event) only one of the three arrays should have a value that is
+        # not 'None' because each event can only be triggered by one channel.
+        # By merging the three arrays, we get value for each event.
+        merged_modes = xr.merge([trigger_modes[0], xr.merge(trigger_modes[1:])])
+        merged_levels = xr.merge([trigger_levels[0], xr.merge(trigger_levels[1:])])
+
+        return {
+            "triggermode": merged_modes.trigger_mode,
+            "triggerlevel": merged_levels.trigger_level,
+        }
+
+    except xr.MergeError as e:
+        raise ValueError(
+            f"Only one channel can trigger a dust event. Please make sure "
+            f"there is only one valid trigger value per event. This "
+            f"caused Merge Error: {e}"
+        ) from e

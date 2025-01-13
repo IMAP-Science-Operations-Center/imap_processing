@@ -77,33 +77,44 @@ def test_calculate_de(mock_get_annotated_particle_velocity, de_dataset, df_filt)
 
     # Velocities in various frames
     test_tof = dataset["tof_start_stop"]
+    test_ph = dataset["event_type"]
+    test_species = dataset["species"]
+    condition = (test_tof > 0) & (test_ph < 8)
     assert np.allclose(
-        dataset["vx_ultra"][test_tof > 0],
-        -df_filt["vhatX"].astype("float").values[test_tof > 0],
+        dataset["direct_event_velocity"][:, 0].values[condition],
+        df_filt["vx"].astype("float").values[condition],
         rtol=1e-2,
     )
     assert np.allclose(
-        dataset["vy_ultra"][test_tof > 0],
-        -df_filt["vhatY"].astype("float").values[test_tof > 0],
+        dataset["direct_event_velocity"][:, 1].values[condition],
+        df_filt["vy"].astype("float").values[condition],
         rtol=1e-2,
     )
     assert np.allclose(
-        dataset["vz_ultra"][test_tof > 0],
-        -df_filt["vhatZ"].astype("float").values[test_tof > 0],
+        dataset["direct_event_velocity"][:, 2].values[condition],
+        df_filt["vz"].astype("float").values[condition],
+        rtol=1e-2,
+    )
+    assert np.allclose(
+        dataset["velocity_magnitude"].values[condition],
+        df_filt["vmag"].astype("float").values[condition],
+        rtol=1e-2,
+    )
+    condition = (test_tof > 0) & (test_ph < 8) & (test_species == "H")
+    assert np.allclose(
+        dataset["tof_energy"].values[condition],
+        df_filt["energy_revised"].astype("float").values[condition],
+        rtol=1e-2,
+    )
+    assert np.allclose(
+        dataset["azimuth"].values[condition],
+        df_filt["event_phi"].astype("float").values[condition] % (2 * np.pi),
         rtol=1e-2,
     )
 
-    assert dataset["vx_sc"].shape == (len(de_dataset["epoch"]),)
-    assert dataset["vy_sc"].shape == (len(de_dataset["epoch"]),)
-    assert dataset["vz_sc"].shape == (len(de_dataset["epoch"]),)
-
-    assert dataset["vx_dps_sc"].shape == (len(de_dataset["epoch"]),)
-    assert dataset["vy_dps_sc"].shape == (len(de_dataset["epoch"]),)
-    assert dataset["vz_dps_sc"].shape == (len(de_dataset["epoch"]),)
-
-    assert dataset["vx_dps_helio"].shape == (len(de_dataset["epoch"]),)
-    assert dataset["vy_dps_helio"].shape == (len(de_dataset["epoch"]),)
-    assert dataset["vz_dps_helio"].shape == (len(de_dataset["epoch"]),)
+    assert dataset["velocity_sc"].shape == (len(de_dataset["epoch"]), 3)
+    assert dataset["velocity_dps_sc"].shape == (len(de_dataset["epoch"]), 3)
+    assert dataset["velocity_dps_helio"].shape == (len(de_dataset["epoch"]), 3)
 
     # Event efficiency
     assert np.allclose(

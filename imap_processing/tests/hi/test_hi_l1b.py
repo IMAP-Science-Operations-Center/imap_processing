@@ -35,14 +35,14 @@ def test_hi_l1b_hk(hi_l0_test_data_path):
 @pytest.mark.external_kernel()
 @pytest.mark.use_test_metakernel("imap_ena_sim_metakernel.template")
 def test_hi_l1b_de(
-    hi_l1a_test_data_path, spice_test_data_path, use_fake_spin_data_for_time
+    hi_l1_test_data_path, spice_test_data_path, use_fake_spin_data_for_time
 ):
     """Test coverage for imap_processing.hi.hi_l1b.hi_l1b() with
     direct events L1A as input"""
     # Start MET time of spin for simulated input data is 482372988
     use_fake_spin_data_for_time(482372988)
     l1a_test_file_path = (
-        hi_l1a_test_data_path / "imap_hi_l1a_45sensor-de_20250415_v000.cdf"
+        hi_l1_test_data_path / "imap_hi_l1a_45sensor-de_20250415_v999.cdf"
     )
     # Process using test data
     data_version = "001"

@@ -134,30 +134,31 @@ start_type:
   LABLAXIS: start type
   UNITS: " "
 
-vx_ultra:
+direct_event_velocity:
   <<: *default_float32
-  CATDESC: Normalized component of the velocity vector in x direction in the instrument frame.
-  FIELDNAM: vx_ultra
-  LABLAXIS: vx ultra
-  UNITS: " "
+  CATDESC: Direct event velocity vector in x, y, and z directions in the instrument frame.
+  DEPEND_1: component
+  FIELDNAM: v_ultra
+  LABLAXIS: v ultra
+  UNITS: "km/s"
 
-vy_ultra:
+velocity_magnitude:
   <<: *default_float32
-  CATDESC: Normalized component of the velocity vector in y direction in the instrument frame.
-  FIELDNAM: vy_ultra
-  LABLAXIS: vy ultra
-  UNITS: " "
-
-vz_ultra:
-  <<: *default_float32
-  CATDESC: Normalized component of the velocity vector in z direction in the instrument frame.
-  FIELDNAM: vz_ultra
-  LABLAXIS: vz ultra
-  UNITS: " "
+  CATDESC: Magnitude of the particle velocity.
+  FIELDNAM: vmag_ultra
+  LABLAXIS: vmag ultra
+  UNITS: "km/s"
 
 energy:
   <<: *default_float32
   CATDESC: Energy measured using the pulse height from the stop anode (DN) or Energy measured using the SSD (keV) depending on eventtype.
+  FIELDNAM: energy
+  LABLAXIS: energy
+  UNITS: keV
+
+tof_energy:
+  <<: *default_float32
+  CATDESC: Energy measured using kinetic energy equation.
   FIELDNAM: energy
   LABLAXIS: energy
   UNITS: keV
@@ -186,6 +187,20 @@ path_length:
   LABLAXIS: path_length
   UNITS: mm / 100
 
+azimuth:
+  <<: *default_float32
+  CATDESC: Azimuth.
+  FIELDNAM: azimuth
+  LABLAXIS: azimuth
+  UNITS: radians
+
+elevation:
+  <<: *default_float32
+  CATDESC: Elevation.
+  FIELDNAM: elevation
+  LABLAXIS: elevation
+  UNITS: radians
+
 event_efficiency:
   <<: *default_float32
   CATDESC: Estimated event efficiency for this path through the instrument.
@@ -193,67 +208,28 @@ event_efficiency:
   LABLAXIS: event efficiency
   UNITS: " "
 
-vx_sc:
+velocity_sc:
   <<: *default_float32
-  CATDESC: x-component of the velocity vector of the ena in the spacecraft frame.
-  FIELDNAM: vx_sc
-  LABLAXIS: vx sc
+  CATDESC: x,y,z-components of the velocity vector of the ena in the spacecraft frame.
+  DEPEND_1: component
+  FIELDNAM: v_sc
+  LABLAXIS: v sc
   UNITS: " "
 
-vy_sc:
+velocity_dps_sc:
   <<: *default_float32
-  CATDESC: y-component of the velocity vector of the ena in the spacecraft frame.
-  FIELDNAM: vy_sc
-  LABLAXIS: vy sc
+  CATDESC: x,y,z-components of the velocity vector of the ena in the DPS frame at rest WRT spacecraft.
+  DEPEND_1: component
+  FIELDNAM: v_dps_sc
+  LABLAXIS: v dps sc
   UNITS: " "
 
-vz_sc:
+velocity_dps_helio:
   <<: *default_float32
-  CATDESC: z-component of the velocity vector of the ena in the spacecraft frame.
-  FIELDNAM: vz_sc
-  LABLAXIS: vz sc
-  UNITS: " "
-
-vx_dps_sc:
-  <<: *default_float32
-  CATDESC: x-component of the velocity vector of the ena in the DPS frame at rest WRT spacecraft.
-  FIELDNAM: vx_dps_sc
-  LABLAXIS: vx dps sc
-  UNITS: " "
-
-vy_dps_sc:
-  <<: *default_float32
-  CATDESC: y-component of the velocity vector of the ena in the DPS frame at rest WRT spacecraft.
-  FIELDNAM: vy_dps_sc
-  LABLAXIS: vy dps sc
-  UNITS: " "
-
-vz_dps_sc:
-  <<: *default_float32
-  CATDESC: z-component of the velocity vector of the ena in the DPS frame at rest WRT spacecraft.
-  FIELDNAM: vz_dps_sc
-  LABLAXIS: vz dps sc
-  UNITS: " "
-
-vx_dps_helio:
-  <<: *default_float32
-  CATDESC: x-component of the velocity vector of the ena in the DPS frame at rest WRT heliosphere.
-  FIELDNAM: vx_dps_helio
-  LABLAXIS: vx dps helio
-  UNITS: " "
-
-vy_dps_helio:
-  <<: *default_float32
-  CATDESC: y-component of the velocity vector of the ena in the DPS frame at rest WRT heliosphere.
-  FIELDNAM: vy_dps_helio
-  LABLAXIS: vy dps helio
-  UNITS: " "
-
-vz_dps_helio:
-  <<: *default_float32
-  CATDESC: z-component of the velocity vector of the ena in the DPS frame at rest WRT heliosphere.
-  FIELDNAM: vz_dps_helio
-  LABLAXIS: vz dps helio
+  CATDESC: x,y,z-components of the velocity vector of the ena in the DPS frame at rest WRT heliosphere.
+  DEPEND_1: component
+  FIELDNAM: v_dps_helio
+  LABLAXIS: v dps helio
   UNITS: " "
 
 de_event_met:

@@ -105,19 +105,33 @@ class PacketParser:
         idex_attrs = get_idex_attrs(data_version)
         self.data.attrs = idex_attrs.get_global_attributes("imap_idex_l1a_sci")
 
-        # NOTE: LABL_PTR_1 should be CDF_CHAR.
-        self.data["time_low_sr_label"] = xr.DataArray(
-            self.data.time_low_sr_dim.values.astype(str),
-            name="time_low_sr_label",
-            dims=["time_low_sr_label"],
-            attrs=idex_attrs.get_variable_attributes("time_low_sr_label"),
+        # Add high and low sample rate coords
+        self.data["time_low_sample_rate_index"] = xr.DataArray(
+            np.arange(len(self.data["time_low_sample_rate"][0])),
+            name="time_low_sample_rate_index",
+            dims=["time_low_sample_rate_index"],
+            attrs=idex_attrs.get_variable_attributes("time_low_sample_rate_index"),
         )
 
-        self.data["time_high_sr_label"] = xr.DataArray(
-            self.data.time_high_sr_dim.values.astype(str),
-            name="time_high_sr_label",
-            dims=["time_high_sr_label"],
-            attrs=idex_attrs.get_variable_attributes("time_high_sr_label"),
+        self.data["time_high_sample_rate_index"] = xr.DataArray(
+            np.arange(len(self.data["time_high_sample_rate"][0])),
+            name="time_high_sample_rate_index",
+            dims=["time_high_sample_rate_index"],
+            attrs=idex_attrs.get_variable_attributes("time_high_sample_rate_index"),
+        )
+        # NOTE: LABL_PTR_1 should be CDF_CHAR.
+        self.data["time_low_sample_rate_label"] = xr.DataArray(
+            self.data.time_low_sample_rate_index.values.astype(str),
+            name="time_low_sample_rate_label",
+            dims=["time_low_sample_rate_index"],
+            attrs=idex_attrs.get_variable_attributes("time_low_sample_rate_label"),
+        )
+
+        self.data["time_high_sample_rate_label"] = xr.DataArray(
+            self.data.time_high_sample_rate_index.values.astype(str),
+            name="time_high_sample_rate_label",
+            dims=["time_high_sample_rate_index"],
+            attrs=idex_attrs.get_variable_attributes("time_high_sample_rate_label"),
         )
 
         logger.info("IDEX L1A science data processing completed.")
@@ -432,14 +446,15 @@ class RawDustEvent:
 
         Returns
         -------
-        time_low_sr_data : numpy.ndarray
+        time_low_sample_rate_data : numpy.ndarray
             Low time sample data array.
         """
-        time_low_sr_init = np.linspace(0, num_samples, num_samples)
-        time_low_sr_data = (
-            self.LOW_SAMPLE_RATE * time_low_sr_init - self.low_sample_trigger_time
+        time_low_sample_rate_init = np.linspace(0, num_samples, num_samples)
+        time_low_sample_rate_data = (
+            self.LOW_SAMPLE_RATE * time_low_sample_rate_init
+            - self.low_sample_trigger_time
         )
-        return time_low_sr_data
+        return time_low_sample_rate_data
 
     def _calc_high_sample_resolution(self, num_samples: int) -> npt.NDArray:
         """
@@ -458,14 +473,15 @@ class RawDustEvent:
 
         Returns
         -------
-        time_high_sr_data : numpy.ndarray
+        time_high_sample_rate_data : numpy.ndarray
             High sample time data array.
         """
-        time_high_sr_init = np.linspace(0, num_samples, num_samples)
-        time_high_sr_data = (
-            self.HIGH_SAMPLE_RATE * time_high_sr_init - self.high_sample_trigger_time
+        time_high_sample_rate_init = np.linspace(0, num_samples, num_samples)
+        time_high_sample_rate_data = (
+            self.HIGH_SAMPLE_RATE * time_high_sample_rate_init
+            - self.high_sample_trigger_time
         )
-        return time_high_sr_data
+        return time_high_sample_rate_data
 
     def _populate_bit_strings(
         self, packet: space_packet_parser.packets.CCSDSPacket
@@ -510,81 +526,79 @@ class RawDustEvent:
             )
 
         # Process the 6 primary data variables
-        tof_high_xr = xr.DataArray(
+        tof_high = xr.DataArray(
             name="TOF_High",
             data=[self._parse_high_sample_waveform(self.TOF_High_bits)],
-            dims=("epoch", "time_high_sr_dim"),
+            dims=("epoch", "time_high_sample_rate_index"),
             attrs=idex_attrs.get_variable_attributes("tof_high_attrs"),
         )
-        tof_low_xr = xr.DataArray(
+        tof_low = xr.DataArray(
             name="TOF_Low",
             data=[self._parse_high_sample_waveform(self.TOF_Low_bits)],
-            dims=("epoch", "time_high_sr_dim"),
+            dims=("epoch", "time_high_sample_rate_index"),
             attrs=idex_attrs.get_variable_attributes("tof_low_attrs"),
         )
-        tof_mid_xr = xr.DataArray(
+        tof_mid = xr.DataArray(
             name="TOF_Mid",
             data=[self._parse_high_sample_waveform(self.TOF_Mid_bits)],
-            dims=("epoch", "time_high_sr_dim"),
+            dims=("epoch", "time_high_sample_rate_index"),
             attrs=idex_attrs.get_variable_attributes("tof_mid_attrs"),
         )
-        target_high_xr = xr.DataArray(
+        target_high = xr.DataArray(
             name="Target_High",
             data=[self._parse_low_sample_waveform(self.Target_High_bits)],
-            dims=("epoch", "time_low_sr_dim"),
+            dims=("epoch", "time_low_sample_rate_index"),
             attrs=idex_attrs.get_variable_attributes("target_high_attrs"),
         )
-        target_low_xr = xr.DataArray(
+        target_low = xr.DataArray(
             name="Target_Low",
             data=[self._parse_low_sample_waveform(self.Target_Low_bits)],
-            dims=("epoch", "time_low_sr_dim"),
+            dims=("epoch", "time_low_sample_rate_index"),
             attrs=idex_attrs.get_variable_attributes("target_low_attrs"),
         )
-        ion_grid_xr = xr.DataArray(
+        ion_grid = xr.DataArray(
             name="Ion_Grid",
             data=[self._parse_low_sample_waveform(self.Ion_Grid_bits)],
-            dims=("epoch", "time_low_sr_dim"),
+            dims=("epoch", "time_low_sample_rate_index"),
             attrs=idex_attrs.get_variable_attributes("ion_grid_attrs"),
         )
 
         # Determine the 3 coordinate variables
-        epoch_xr = xr.DataArray(
+        epoch = xr.DataArray(
             name="epoch",
             data=[self.impact_time],
             dims=("epoch"),
             attrs=idex_attrs.get_variable_attributes("epoch"),
         )
 
-        time_low_sr_xr = xr.DataArray(
-            name="time_low_sr",
-            data=[self._calc_low_sample_resolution(len(target_low_xr[0]))],
-            dims=("epoch", "time_low_sr_dim"),
-            attrs=idex_attrs.get_variable_attributes("low_sr_attrs"),
+        time_low_sample_rate = xr.DataArray(
+            name="time_low_sample_rate",
+            data=[self._calc_low_sample_resolution(len(target_low[0]))],
+            dims=("epoch", "time_low_sample_rate_index"),
+            attrs=idex_attrs.get_variable_attributes("low_sample_rate_attrs"),
         )
 
-        time_high_sr_xr = xr.DataArray(
-            name="time_high_sr",
-            data=[self._calc_high_sample_resolution(len(tof_low_xr[0]))],
-            dims=("epoch", "time_high_sr_dim"),
-            attrs=idex_attrs.get_variable_attributes("high_sr_attrs"),
+        time_high_sample_rate = xr.DataArray(
+            name="time_high_sample_rate",
+            data=[self._calc_high_sample_resolution(len(tof_low[0]))],
+            dims=("epoch", "time_high_sample_rate_index"),
+            attrs=idex_attrs.get_variable_attributes("high_sample_rate_attrs"),
         )
 
         # Combine to return a dataset object
         dataset = xr.Dataset(
             data_vars={
-                "TOF_Low": tof_low_xr,
-                "TOF_High": tof_high_xr,
-                "TOF_Mid": tof_mid_xr,
-                "Target_High": target_high_xr,
-                "Target_Low": target_low_xr,
-                "Ion_Grid": ion_grid_xr,
+                "TOF_Low": tof_low,
+                "TOF_High": tof_high,
+                "TOF_Mid": tof_mid,
+                "Target_High": target_high,
+                "Target_Low": target_low,
+                "Ion_Grid": ion_grid,
+                "time_low_sample_rate": time_low_sample_rate,
+                "time_high_sample_rate": time_high_sample_rate,
             }
             | trigger_vars,
-            coords={
-                "epoch": epoch_xr,
-                "time_low_sr": time_low_sr_xr,
-                "time_high_sr": time_high_sr_xr,
-            },
+            coords={"epoch": epoch},
         )
 
         return dataset

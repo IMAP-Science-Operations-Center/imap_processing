@@ -47,14 +47,15 @@ def _autoclear_spice():
 
 @pytest.fixture(scope="session")
 def _download_external_kernels(spice_test_data_path):
-    """This fixture downloads the de440s.bsp and pck00011.tpc kernels into the
-    tests/spice/test_data directory if they do not already exist there. The
-    fixture is not intended to be used directly. It is automatically added to
-    tests marked with "external_kernel" in the hook below."""
+    """This fixture downloads externally-located kernels into the tests/spice/test_data
+    directory if they do not already exist there. The fixture is not intended to be
+    used directly. It is automatically added to tests marked with "external_kernel"
+    in the hook below."""
     logger = logging.getLogger(__name__)
     kernel_urls = [
         "https://naif.jpl.nasa.gov/pub/naif/generic_kernels/spk/planets/de440s.bsp",
         "https://naif.jpl.nasa.gov/pub/naif/generic_kernels/pck/pck00011.tpc",
+        "https://naif.jpl.nasa.gov/pub/naif/generic_kernels/pck/earth_1962_240827_2124_combined.bpc",
     ]
 
     for kernel_url in kernel_urls:

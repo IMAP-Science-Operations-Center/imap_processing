@@ -14,36 +14,12 @@ import numpy as np
 import spiceypy as spice
 from numpy import ndarray
 
-from imap_processing.spice.geometry import SpiceBody
+from imap_processing.spice.geometry import SpiceBody, SpiceFrame, imap_state
 from imap_processing.spice.kernels import ensure_spice
 from imap_processing.spice.time import et_to_utc, str_to_et
 
 # Logger setup
 logger = logging.getLogger(__name__)
-
-
-@typing.no_type_check
-def calculate_doppler(
-    observation_time: Union[float, np.ndarray],
-) -> Union[int, ndarray[float]]:
-    """
-    Calculate the doppler shift. Placeholder for now.
-
-    Parameters
-    ----------
-    observation_time : float or np.ndarray
-        Time at which the state of the target relative to the observer
-        is to be computed. Expressed as ephemeris time, seconds past J2000 TDB.
-
-    Returns
-    -------
-    doppler : float or np.ndarray[float]
-        Doppler shift. Currently a throwaway value.
-    """
-    if isinstance(observation_time, np.ndarray):
-        return np.ones(len(observation_time), dtype=float)
-    else:
-        return 1
 
 
 @typing.no_type_check
@@ -83,8 +59,7 @@ def latitude_longitude_to_ecef(
     flattening = (equatorial_radius - polar_radius) / equatorial_radius
 
     # Convert geodetic coordinates to rectangular coordinates
-    # https://spiceypy.readthedocs.io/en/main/documentation.html#spiceypy.spiceypy.geo
-    # (url cont.) rec
+    # https://spiceypy.readthedocs.io/en/main/documentation.html#spiceypy.spiceypy.georec
     rect_coords = spice.georec(
         longitude_radians, latitude_radians, altitude, equatorial_radius, flattening
     )
@@ -99,7 +74,7 @@ def calculate_azimuth_and_elevation(
     latitude: float,
     altitude: float,
     observation_time: Union[float, np.ndarray],
-    target: SpiceBody = SpiceBody.IMAP.name,
+    target: str = SpiceBody.IMAP.name,
 ) -> tuple:
     """
     Calculate azimuth and elevation.
@@ -127,7 +102,9 @@ def calculate_azimuth_and_elevation(
     elevation : np.ndarray
         Elevation in degrees.
     """
-    observer_position_ecef = latitude_longitude_to_ecef(longitude, latitude, altitude)
+    ground_station_position_ecef = latitude_longitude_to_ecef(
+        longitude, latitude, altitude
+    )
 
     if not isinstance(observation_time, np.ndarray):
         observation_time = [observation_time]
@@ -144,7 +121,7 @@ def calculate_azimuth_and_elevation(
             abcorr="LT+S",  # Aberration correction
             azccw=False,  # Azimuth measured clockwise from the positive y-axis
             elplsz=True,  # Elevation increases from the XY plane toward +Z
-            obspos=observer_position_ecef,  # observer pos. to center of motion
+            obspos=ground_station_position_ecef,  # observer pos. to center of motion
             obsctr="EARTH",  # Name of the center of motion
             obsref="IAU_EARTH",  # Body-fixed, body-centered reference frame wrt
             # observer's center
@@ -152,10 +129,64 @@ def calculate_azimuth_and_elevation(
         azimuth.append(np.rad2deg(azel_results[0][1]))
         elevation.append(np.rad2deg(azel_results[0][2]))
 
-    # TODO: potentially use the velocity components returned from azlcpo to
-    # TODO: calculate doppler
-
     return np.asarray(azimuth), np.asarray(elevation)
+
+
+@typing.no_type_check
+def calculate_doppler(
+    longitude: float,
+    latitude: float,
+    altitude: float,
+    observation_time: Union[float, np.ndarray],
+) -> Union[float, ndarray[float]]:
+    """
+    Calculate the doppler velocity.
+
+    Notes about the spkezr function (wrapped in imap_state):
+    The function returns the state of the target (state) and the light time.
+    The first three components of state represent the x-, y- and z-components of the
+    target's position; the last three components form the corresponding velocity vector.
+
+    Parameters
+    ----------
+    longitude : float
+        Longitude in decimal degrees. Positive east of prime meridian,
+        negative to west.
+    latitude : float
+        Latitude in decimal degrees. Positive north of equator, negative
+        to south.
+    altitude : float
+        Altitude in kilometers.
+    observation_time : float or np.ndarray
+        Time at which the state of the target relative to the observer
+        is to be computed. Expressed as ephemeris time, seconds past J2000 TDB.
+
+    Returns
+    -------
+    doppler : float or np.ndarray[float]
+        Doppler velocity in kilometers per second.
+    """
+    ground_station_position_ecef = latitude_longitude_to_ecef(
+        longitude, latitude, altitude
+    )
+
+    # find position and velocity relative to the center of the earth using spice spkezr
+    # https://spiceypy.readthedocs.io/en/main/documentation.html#spiceypy.spiceypy.spkezr
+    state = imap_state(
+        et=observation_time,
+        ref_frame=SpiceFrame.ITRF93,
+        abcorr="LT+S",
+        observer=SpiceBody.EARTH,
+    )
+    # shifting position by subtracting ground station location relative to the center
+    # of the earth
+    state[..., 0:3] -= ground_station_position_ecef
+    # calculate radial velocity
+    doppler = np.sum(state[..., 3:6] * state[..., 0:3], axis=-1) / np.linalg.norm(
+        state[..., 0:3], axis=-1
+    )
+
+    return np.asarray(doppler)
 
 
 def build_output(
@@ -193,8 +224,7 @@ def build_output(
     stop_et_input = str_to_et(time_endpoints[1])
     time_range = np.arange(start_et_input, stop_et_input, time_step)
 
-    # For now, assume that kernel management will be handled by ensure spice
-    # for obs_time in np.arange(start_et_input, stop_et_input, time_step):
+    # For now, assume that kernel management will be handled by ensure_spice
     azimuth, elevation = calculate_azimuth_and_elevation(
         longitude, latitude, altitude, time_range
     )
@@ -202,7 +232,9 @@ def build_output(
     output_dict["time"] = et_to_utc(time_range, format_str="ISOC")
     output_dict["azimuth"] = azimuth
     output_dict["elevation"] = elevation
-    output_dict["doppler"] = calculate_doppler(time_range)
+    output_dict["doppler"] = calculate_doppler(
+        longitude, latitude, altitude, time_range
+    )
 
     logger.info(
         f"Calculated azimuth, elevation and doppler for time range from "
