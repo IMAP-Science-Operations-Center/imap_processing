@@ -1,4 +1,4 @@
-"""Functions to support I-ALiRT CoDICE Lo processing."""
+"""Functions to support I-ALiRT CoDICE Hi processing."""
 
 import logging
 from typing import Any
