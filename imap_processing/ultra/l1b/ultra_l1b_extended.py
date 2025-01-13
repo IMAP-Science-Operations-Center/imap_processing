@@ -772,7 +772,7 @@ def get_de_az_el(v: tuple[NDArray, NDArray, NDArray]) -> tuple[NDArray, NDArray]
         - azimuth : angle in the xy-plane
           In radians:
           output range=[0, 2*pi].
-        - elevation : angle from the z-axis
+        - elevation : angle from the xy-plane
           In radians:
           output range=[-pi/2, pi/2].
     """

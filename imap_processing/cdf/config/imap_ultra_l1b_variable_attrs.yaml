@@ -137,6 +137,7 @@ start_type:
 direct_event_velocity:
   <<: *default_float32
   CATDESC: Direct event velocity vector in x, y, and z directions in the instrument frame.
+  DEPEND_1: component
   FIELDNAM: v_ultra
   LABLAXIS: v ultra
   UNITS: "km/s"
@@ -210,6 +211,7 @@ event_efficiency:
 velocity_sc:
   <<: *default_float32
   CATDESC: x,y,z-components of the velocity vector of the ena in the spacecraft frame.
+  DEPEND_1: component
   FIELDNAM: v_sc
   LABLAXIS: v sc
   UNITS: " "
@@ -217,6 +219,7 @@ velocity_sc:
 velocity_dps_sc:
   <<: *default_float32
   CATDESC: x,y,z-components of the velocity vector of the ena in the DPS frame at rest WRT spacecraft.
+  DEPEND_1: component
   FIELDNAM: v_dps_sc
   LABLAXIS: v dps sc
   UNITS: " "
@@ -224,6 +227,7 @@ velocity_dps_sc:
 velocity_dps_helio:
   <<: *default_float32
   CATDESC: x,y,z-components of the velocity vector of the ena in the DPS frame at rest WRT heliosphere.
+  DEPEND_1: component
   FIELDNAM: v_dps_helio
   LABLAXIS: v dps helio
   UNITS: " "

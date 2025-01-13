@@ -184,17 +184,9 @@ def calculate_de(de_dataset: xr.Dataset, name: str) -> xr.Dataset:
         SpiceFrame.IMAP_SPACECRAFT,
     )
 
-    de_dict["velocity_sc"] = np.column_stack(
-        (sc_velocity[:, 0], sc_velocity[:, 1], sc_velocity[:, 2])
-    )
-
-    de_dict["velocity_dps_sc"] = np.column_stack(
-        (sc_dps_velocity[:, 0], sc_dps_velocity[:, 1], sc_dps_velocity[:, 2])
-    )
-
-    de_dict["velocity_dps_helio"] = np.column_stack(
-        (helio_velocity[:, 0], helio_velocity[:, 1], helio_velocity[:, 2])
-    )
+    de_dict["velocity_sc"] = sc_velocity
+    de_dict["velocity_dps_sc"] = sc_dps_velocity
+    de_dict["velocity_dps_helio"] = helio_velocity
 
     # TODO: TBD.
     de_dict["event_efficiency"] = np.full(
