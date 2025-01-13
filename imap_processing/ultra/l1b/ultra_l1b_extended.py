@@ -443,7 +443,7 @@ def get_de_velocity(
     back_position: tuple[NDArray, NDArray],
     d: np.ndarray,
     tof: np.ndarray,
-) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+) -> NDArray:
     """
     Determine the direct event velocity.
 
@@ -460,12 +460,8 @@ def get_de_velocity(
 
     Returns
     -------
-    v_x : np.array
-        Velocity component in the x direction (km/s).
-    v_y : np.array
-        Velocity component in the y direction (km/s).
-    v_z : np.array
-        Velocity component in the z direction (km/s).
+    velocities : np.ndarray
+        N x 3 array of velocity components (vx, vy, vz) in km/s.
     """
     if tof[tof < 0].any():
         logger.info("Negative tof values found.")
@@ -484,7 +480,9 @@ def get_de_velocity(
     v_y[tof < 0] = np.nan
     v_z[tof < 0] = np.nan
 
-    return v_x, v_y, v_z
+    velocities = np.vstack((v_x, v_y, v_z)).T
+
+    return velocities
 
 
 def get_ssd_tof(de_dataset: xarray.Dataset, xf: np.ndarray) -> NDArray[np.float64]:
@@ -536,25 +534,25 @@ def get_ssd_tof(de_dataset: xarray.Dataset, xf: np.ndarray) -> NDArray[np.float6
     return np.asarray(tof, dtype=np.float64)
 
 
-def get_de_energy_kev(v: tuple[NDArray, NDArray, NDArray], species: NDArray) -> NDArray:
+def get_de_energy_kev(v: np.ndarray, species: np.ndarray) -> NDArray:
     """
     Calculate the direct event energy.
 
     Parameters
     ----------
-    v : tuple[NDArray, NDArray, NDArray]
-        Velocity components in the x,y,z direction (km/s).
-    species : NDArray
+    v : np.ndarray
+        N x 3 array of velocity components (vx, vy, vz) in km/s.
+    species : np.ndarray
         Species of the particle.
 
     Returns
     -------
-    energy : NDArray
+    energy : np.ndarray
         Energy of the direct event in keV.
     """
-    vv = np.asarray(v) * 1e3  # convert km/s to m/s
+    vv = v * 1e3  # convert km/s to m/s
     # Compute the sum of squares.
-    v2 = np.sum((vv * vv), 0)
+    v2 = np.sum(vv**2, axis=1)
 
     index_hydrogen = np.where(species == "H")
     energy = np.full_like(v2, np.nan)
@@ -752,7 +750,7 @@ def determine_species(tof: np.ndarray, path_length: np.ndarray, type: str) -> ND
     return species_bin
 
 
-def get_de_az_el(v: tuple[NDArray, NDArray, NDArray]) -> tuple[NDArray, NDArray]:
+def get_de_az_el(v: NDArray) -> tuple[NDArray, NDArray]:
     """
     Compute azimuth (phi) angles and elevation (theta).
 
@@ -777,7 +775,6 @@ def get_de_az_el(v: tuple[NDArray, NDArray, NDArray]) -> tuple[NDArray, NDArray]
           output range=[-pi/2, pi/2].
     """
     # Compute azimuth (phi) angles and elevation (theta)
-    v_array = np.column_stack(v)
-    spherical_coords = cartesian_to_spherical(v_array, degrees=False)
+    spherical_coords = cartesian_to_spherical(v, degrees=False)
 
     return spherical_coords[:, 1], spherical_coords[:, 2]
