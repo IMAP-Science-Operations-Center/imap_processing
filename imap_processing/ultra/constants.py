@@ -60,7 +60,7 @@ class UltraConstants:
     )  # SSD-specific correction to DMIN [mm]
 
     # Conversion factors
-    KEV_J = 1.6021766e-16  # keV to joules
+    KEV_J = 1.602177e-16  # keV to joules
     J_KEV = 1 / KEV_J  # joules to keV
     MASS_H = 1.6735575e-27  # Mass of a hydrogen atom in kilograms.
 
