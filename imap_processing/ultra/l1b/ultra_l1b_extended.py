@@ -467,14 +467,15 @@ def get_de_velocity(
         logger.info("Negative tof values found.")
 
     # distances in .1 mm
-    delta_x = (front_position[0] - back_position[0]) * 0.1
-    delta_y = (front_position[1] - back_position[1]) * 0.1
-    delta_z = d * 0.1
+    delta_v = np.empty((len(d), 3), dtype=np.float32)
+    delta_v[:, 0] = (front_position[0] - back_position[0]) * 0.1
+    delta_v[:, 1] = (front_position[1] - back_position[1]) * 0.1
+    delta_v[:, 2] = d * 0.1
 
     # Convert from 0.1mm/0.1ns to km/s.
-    v_x = delta_x / tof * 1e3
-    v_y = delta_y / tof * 1e3
-    v_z = delta_z / tof * 1e3
+    v_x = delta_v[:, 0] / tof * 1e3
+    v_y = delta_v[:, 1] / tof * 1e3
+    v_z = delta_v[:, 2] / tof * 1e3
 
     v_x[tof < 0] = np.nan  # used as fillvals
     v_y[tof < 0] = np.nan
