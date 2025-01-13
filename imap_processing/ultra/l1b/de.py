@@ -151,26 +151,16 @@ def calculate_de(de_dataset: xr.Dataset, name: str) -> xr.Dataset:
         {key: de_dataset[dataset_key] for key, dataset_key in zip(keys, dataset_keys)}
     )
 
-    vx_ultra, vy_ultra, vz_ultra = get_de_velocity(
+    v = get_de_velocity(
         (de_dict["x_front"], de_dict["y_front"]),
         (de_dict["x_back"], de_dict["y_back"]),
         de_dict["front_back_distance"],
         de_dict["tof_start_stop"],
     )
-    de_dict["direct_event_velocity"] = np.column_stack(
-        (
-            vx_ultra.astype(np.float32),
-            vy_ultra.astype(np.float32),
-            vz_ultra.astype(np.float32),
-        )
-    )
+    de_dict["direct_event_velocity"] = v.astype(np.float32)
 
-    de_dict["tof_energy"] = get_de_energy_kev(
-        (vx_ultra, vy_ultra, vz_ultra), species_bin
-    )
-    de_dict["azimuth"], de_dict["elevation"] = get_de_az_el(
-        (vx_ultra, vy_ultra, vz_ultra)
-    )
+    de_dict["tof_energy"] = get_de_energy_kev(v, species_bin)
+    de_dict["azimuth"], de_dict["elevation"] = get_de_az_el(v)
     de_dict["energy"] = energy
     de_dict["species"] = species_bin
 
