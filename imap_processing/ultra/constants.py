@@ -75,6 +75,7 @@ class UltraConstants:
 
     # TODO: this is a temporary place for this.
     # Thresholds for culling based on counts.
-    CULLING_THRESHOLD_0_10_KEV = 100
-    CULLING_THRESHOLD_10_20_KEV = 100
-    CULLING_THRESHOLD_GE_20_KEV = 100
+    COUNTS_THRESHOLD_0_10_KEV = 100
+    COUNTS_THRESHOLD_10_20_KEV = 100
+    COUNTS_THRESHOLD_GE_20_KEV = 100
+    CULLING_ENERGY_BINS = [0, 10, 20, 1e5]
