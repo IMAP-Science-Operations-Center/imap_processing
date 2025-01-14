@@ -1,4 +1,8 @@
 """Culls Events for ULTRA L1b."""
+# TODO: Add "bad attitude times" to the culling process.
+# TODO: Implement threshold calculations.
+# TODO: Add rates data.
+# TODO:
 
 import numpy as np
 from numpy.typing import NDArray
@@ -86,7 +90,7 @@ def flag_spin(met: NDArray, energy: NDArray) -> NDArray:
     quality_flags_data : NDArray
         Quality flags.
     """
-    quality_flags_data = np.zeros(len(met), np.uint16)
+    quality_flags_data = np.full(len(met), ImapUltraFlags.NONE.value, dtype=np.uint16)
 
     # Flag negative energies.
     quality_flags_data[energy < 0] |= ImapUltraFlags.NEG.value
@@ -102,7 +106,6 @@ def flag_spin(met: NDArray, energy: NDArray) -> NDArray:
 
     for energy_idx, spin_idx in np.ndindex(hist.shape):
         if hist[energy_idx][spin_idx] > UltraConstants.COUNTS_THRESHOLDS[energy_idx]:
-            # Create a mask for data points in the current high-count bin
             mask = (energy_bin_idx == energy_idx) & (spin_bin_idx == spin_idx)
             quality_flags_data[mask] |= ImapUltraFlags.HIGHCOUNTS.value
 

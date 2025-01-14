@@ -20,7 +20,7 @@ def test_quality_flags():
     assert ImapLoFlags.NEG == 2**1
     assert ImapUltraFlags.BADSPIN == 2**2
     assert ImapLoFlags.BADSPIN == 2**2
-    assert ImapUltraFlags.FLAG1 == 2**3
+    assert ImapUltraFlags.HIGHCOUNTS == 2**3
     assert ImapLoFlags.FLAG2 == 2**3
     assert HitFlags.FLAG3 == 2**2
 
@@ -29,12 +29,12 @@ def test_quality_flags():
         ImapUltraFlags.INF
         | ImapUltraFlags.NEG
         | ImapUltraFlags.BADSPIN
-        | ImapUltraFlags.FLAG1
+        | ImapUltraFlags.HIGHCOUNTS
     )
     assert flag & ImapUltraFlags.INF
     assert flag & ImapUltraFlags.BADSPIN
-    assert flag & ImapUltraFlags.FLAG1
-    assert flag.name == "INF|NEG|BADSPIN|FLAG1"
+    assert flag & ImapUltraFlags.HIGHCOUNTS
+    assert flag.name == "INF|NEG|BADSPIN|HIGHCOUNTS"
     assert flag.value == 15
 
     # Test combined flags for Lo
