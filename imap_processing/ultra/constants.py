@@ -72,3 +72,9 @@ class UltraConstants:
     # Constants for species determination based on ctof range.
     CTOF_SPECIES_MIN = 50
     CTOF_SPECIES_MAX = 200
+
+    # TODO: this is a temporary place for this.
+    # Thresholds for culling based on counts.
+    CULLING_THRESHOLD_0_10_KEV = 100
+    CULLING_THRESHOLD_10_20_KEV = 100
+    CULLING_THRESHOLD_GE_20_KEV = 100

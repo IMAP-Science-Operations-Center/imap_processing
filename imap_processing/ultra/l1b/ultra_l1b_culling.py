@@ -1,42 +1,26 @@
 import numpy as np
 
 # from imap_processing.ultra.l1b.ultra_l1b_extended import the energy equation here
+from imap_processing.spice.geometry import get_spacecraft_spin_phase, get_spin_data
+from imap_processing.quality_flags import ImapUltraFlags
 
 
-def get_spin(met, energy) -> list:
-    for time in met:
-        # Get the nearest spin start and duration prior to the event
-        spin_start = aux_spin_starts[aux_spin_starts <= time][-1]
-        duration = np.array(decom_aux["DURATION"])[aux_spin_starts <= time][-1]
+def get_spin(met) -> list:
 
-        # Find the events
-        event_indices = np.where(np.array(decom_events["SHCOARSE"]) == time)
+    # TODO: error handling for out of range spins
+    spin_df = get_spin_data()
 
-        for event_index in event_indices[0]:
-            phase_angle = decom_events["PHASE_ANGLE"][event_index]
-
-            durations.append(duration)
-            spin_starts.append(spin_start)
-
-            # If there were no events, the time is set to 'SHCOARSE'
-            if decom_events["COUNT"][event_index] == 0:
-                event_times.append(decom_events["SHCOARSE"][event_index])
-            else:
-                event_times.append(spin_start + (duration / 1000) * (phase_angle / 720))
-
-    decom_events["DURATION"] = durations
-    decom_events["TIMESPINSTART"] = spin_starts
-    decom_events["EVENTTIMES"] = event_times
-
-    return (
-        energy,
-        counts,
+    last_spin_indices = (
+        np.searchsorted(spin_df["spin_start_time"], met, side="right") - 1
     )
+    spin = spin_df["spin_number"].values[last_spin_indices]
+    spin_start_time = spin_df["spin_start_time"].values[last_spin_indices]
+    spin_duration = spin_df["spin_period_sec"].values[last_spin_indices]
+
+    return spin# TODO, spin_start_time, spin_duration
 
 
-def get_energy_histogram(
-    energy: np.ndarray,
-) -> NDArray:
+def get_energy_histogram(spin, energy):
     """
     Compute a 3D histogram of the particle data.
 
@@ -58,10 +42,31 @@ def get_energy_histogram(
     hist : np.ndarray
         A 3D histogram array.
     """
-    energy_bin_edges = [0, 10, 20]
-    spin_times = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+
+    spin_edges = np.unique(spin)
+    spin_edges = np.append(spin_edges, spin_edges[-1] + 1)
+    energy_bin_edges = [-1e5, 0, 10, 20, 1e5]
 
     # 2D binning.
-    hist, _ = np.histogramdd(sample=(energy), bins=[energy_bin_edges])
+    hist, _ = np.histogramdd(sample=(energy, spin),
+                          bins=[energy_bin_edges, spin_edges])
 
-    return hist
+    return hist, spin_edges, energy_bin_edges
+
+
+def flag_spin(l1b_de_dataset):
+
+    quality_flags_data = np.zeros(len(l1b_de_dataset["de_event_met"]), np.uint16)
+    quality_flags_data[l1b_de_dataset["energy"] < 0] |= ImapUltraFlags.NEG.value
+
+    spin = get_spin(l1b_de_dataset["de_event_met"])
+    hist, spin_edges, energy_bin_edges = get_energy_histogram(spin, l1b_de_dataset["energy"])
+
+    energy_bin_idx = np.digitize(l1b_de_dataset["energy"], bins=energy_bin_edges) - 1
+    spin_bin_idx = np.digitize(spin, bins=spin_edges) - 1
+
+    for spin_idx, energy_idx in np.ndindex(hist.shape):
+        if hist[energy_idx, spin_idx] > 100:  # Threshold for quality flag
+            # Find all data points corresponding to this bin
+            mask = (energy_bin_idx == energy_idx) & (spin_bin_idx == spin_idx)
+            quality_flags_data[mask] |= ImapUltraFlags.BADSPIN.value
