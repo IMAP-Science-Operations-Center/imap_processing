@@ -44,7 +44,7 @@ class ImapUltraFlags(FlagNameMixin):
     INF = CommonFlags.INF  # bit 0
     NEG = CommonFlags.NEG  # bit 1
     BADSPIN = ENAFlags.BADSPIN  # bit 2
-    FLAG1 = 2**3  # bit 2
+    HIGHCOUNTS = 2**3  # bit 3
 
 
 class ImapLoFlags(FlagNameMixin):
@@ -54,7 +54,7 @@ class ImapLoFlags(FlagNameMixin):
     INF = CommonFlags.INF  # bit 0
     NEG = CommonFlags.NEG  # bit 1
     BADSPIN = ENAFlags.BADSPIN  # bit 2
-    FLAG2 = 2**3  # bit 2
+    FLAG2 = 2**3  # bit 3
 
 
 class HitFlags(

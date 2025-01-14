@@ -1,6 +1,7 @@
 """Module for constants and useful shared classes used in Ultra."""
 
 from dataclasses import dataclass
+from typing import ClassVar
 
 
 @dataclass(frozen=True)
@@ -75,7 +76,5 @@ class UltraConstants:
 
     # TODO: this is a temporary place for this.
     # Thresholds for culling based on counts.
-    COUNTS_THRESHOLD_0_10_KEV = 100
-    COUNTS_THRESHOLD_10_20_KEV = 100
-    COUNTS_THRESHOLD_GE_20_KEV = 100
-    CULLING_ENERGY_BINS = [0, 10, 20, 1e5]
+    CULLING_ENERGY_BIN_EDGES: ClassVar[list] = [-1e5, 0, 10, 20, 1e5]
+    COUNTS_THRESHOLDS: ClassVar[list] = [0, 100, 100, 100]
