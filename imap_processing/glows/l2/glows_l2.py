@@ -7,6 +7,7 @@ import xarray as xr
 from numpy.typing import NDArray
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
+from imap_processing.glows import FLAG_LENGTH
 from imap_processing.glows.l1b.glows_l1b_data import HistogramL1B
 from imap_processing.glows.l2.glows_l2_data import DailyLightcurve, HistogramL2
 
@@ -60,7 +61,7 @@ def generate_l2(l1b_dataset: xr.Dataset) -> HistogramL2:
     """
     # most of the values from L1B are averaged over a day
     good_data = l1b_dataset.isel(
-        epoch=return_good_times(l1b_dataset["flags"], np.ones((17,)))
+        epoch=return_good_times(l1b_dataset["flags"], np.ones((FLAG_LENGTH,)))
     )
     # todo: bad angle filter
     # TODO filter bad bins out. Needs to happen here while everything is still
@@ -78,7 +79,7 @@ def generate_l2(l1b_dataset: xr.Dataset) -> HistogramL2:
         # TODO replace post-filter
         "identifier": 100,  # TODO: retrieve from spin table
         # TODO fill this in
-        "bad_time_flag_occurrences": np.zeros((1, 17)),
+        "bad_time_flag_occurrences": np.zeros((1, FLAG_LENGTH)),
         # Accumulate all the histograms from good times from the day into one
         "daily_lightcurve": daily_lightcurve,
     }
@@ -217,7 +218,7 @@ def create_l2_dataset(
     )
 
     flags = xr.DataArray(
-        np.ones(17),
+        np.ones(FLAG_LENGTH),
         dims=["flags"],
         attrs=attrs.get_variable_attributes("flags_dim", check_schema=False),
     )
