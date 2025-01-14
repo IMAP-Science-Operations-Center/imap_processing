@@ -2,7 +2,6 @@
 # TODO: Add "bad attitude times" to the culling process.
 # TODO: Implement threshold calculations.
 # TODO: Add rates data.
-# TODO:
 
 import numpy as np
 from numpy.typing import NDArray
