@@ -407,7 +407,12 @@ def frame_transform_az_el(
     Returns
     -------
     to_frame_az_el : np.ndarray
-        Azimuth/elevation coordinates in reference frame `to_frame`.
+        Azimuth/elevation coordinates in reference frame `to_frame`. This
+        output coordinate vector will have shape (2,) if a single `az_el` position
+        vector and single `et` time are input. Otherwise, it will have shape (n, 2)
+        where n is the number of input position vector or ephemeris times. The last
+        axis of the output vector contains azimuth in the 0th position and elevation
+        in the 1st position.
     """
     # Convert input az/el to Cartesian vectors
     spherical_coords_in = np.array(
