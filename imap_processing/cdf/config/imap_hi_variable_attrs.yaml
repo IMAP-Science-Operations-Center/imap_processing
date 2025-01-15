@@ -55,6 +55,54 @@ default_float32_attrs: &default_float32
   VALIDMAX: 3.4028235e+38
   dtype: float32
 
+default_ccsds_version: &default_ccsds_version
+  <<: *default_uint8
+  CATDESC: CCSDS packet version number
+  FIELDNAM: CCSDS version
+  VAR_TYPE: support_data
+
+default_ccsds_type: &default_ccsds_type
+  <<: *default_uint8
+  CATDESC: CCSDS packet type
+  FIELDNAM: CCSDS type
+  VAR_TYPE: support_data
+
+default_ccsds_sec_hdr_flg: &default_ccsds_sec_hdr_flg
+  <<: *default_uint8
+  CATDESC: CCSDS secondary header flag
+  FIELDNAM: CCSDS secondary header flag
+  VAR_TYPE: support_data
+
+default_ccsds_pkt_apid: &default_ccsds_pkt_apid
+  <<: *default_uint16
+  CATDESC: CCSDS application process ID
+  FIELDNAM: CCSDS APID
+  VAR_TYPE: support_data
+
+default_ccsds_seq_flgs: &default_ccsds_seq_flgs
+  <<: *default_uint8
+  CATDESC: CCSDS sequence flags
+  FIELDNAM: CCSDS sequence flags
+  VAR_TYPE: support_data
+
+default_ccsds_src_seq_ctr: &default_ccsds_src_seq_ctr
+  <<: *default_uint16
+  CATDESC: CCSDS source sequence counter
+  FIELDNAM: CCSDS sequence counter
+  VAR_TYPE: support_data
+
+default_ccsds_pkt_len: &default_ccsds_pkt_len
+  <<: *default_uint16
+  CATDESC: CCSDS packet length
+  FIELDNAM: CCSDS packet length
+  VAR_TYPE: support_data
+
+default_ccsds_cksum: &default_ccsds_cksum
+  <<: *default_uint16
+  CATDESC: CCSDS packet checksum
+  FIELDNAM: CCSDS packet checksum
+  VAR_TYPE: support_data
+
 default_ccsds_met: &hi_ccsds_met
   <<: *default_uint32
   CATDESC: CCSDS mission elapsed time (MET). 32-bit integer value that represents the MET in seconds.
@@ -78,12 +126,33 @@ hi_esa_step: &hi_esa_step
     outer ESA surfaces.
 
 # ======= L1A DE Section =======
+hi_de_src_seq_ctr:
+  <<: *default_ccsds_src_seq_ctr
+
+hi_de_pkt_len:
+  <<: *default_ccsds_pkt_len
+
 hi_de_ccsds_met:
   <<: *hi_ccsds_met
 
+hi_de_last_spin_num:
+  <<: *default_uint8
+  CATDESC: Spin number (1-based) for the first spin in the packet
+  FIELDNAM: last spin
+  FORMAT: I2
+  LABLAXIS: last spin
+  VALIDMAX: 15
+
+hi_de_spin_invalids:
+  <<: *default_uint8
+  CATDESC: Binary mask where a 1-bit indicates an invalid spin for coresponding spin in packet
+  FIELDNAM: spin flags
+  FORMAT: I3
+  LABLAXIS: spin flag
+
 hi_de_de_tag:
   <<: *default_uint16
-  CATDESC: Ticks (nominally 2 ms) since last meta-event
+  CATDESC: Ticks (nominally 1999us) since last meta-event
   FIELDNAM: Direct Event Time Tag
   LABLAXIS: DE Time Tag
 
@@ -178,11 +247,38 @@ hi_hist_angle:
   VAR_TYPE: support_data
   dtype: uint16
 
+hi_hist_version:
+  <<: *default_ccsds_version
+
+hi_hist_type:
+  <<: *default_ccsds_type
+
+hi_hist_sec_hdr_flg:
+  <<: *default_ccsds_sec_hdr_flg
+
+hi_hist_pkt_apid:
+  <<: *default_ccsds_pkt_apid
+
+hi_hist_seq_flgs:
+  <<: *default_ccsds_seq_flgs
+
+hi_hist_src_seq_ctr:
+  <<: *default_ccsds_src_seq_ctr
+
+hi_hist_pkt_len:
+  <<: *default_ccsds_pkt_len
+
 hi_hist_ccsds_met:
   <<: *hi_ccsds_met
 
 hi_hist_esa_step:
   <<: *hi_esa_step
+
+hi_hist_num_of_spins:
+  <<: *default_uint8
+  CATDESC: Number of spins included in histograms for this packet
+  FIELDNAM: Number of spins
+  LABLAXIS: Num spins
 
 hi_hist_counters:
   <<: *default_uint16
@@ -192,6 +288,9 @@ hi_hist_counters:
   DEPEND_1: angle
   LABL_PTR_1: angle_label
   FORMAT: I4
+
+hi_hist_cksum:
+  <<: *default_ccsds_cksum
 
 # ======= L1B DE Section =======
 hi_de_coincidence_type:
@@ -301,6 +400,11 @@ hi_de_nominal_bin:
 
 # ======= L1C PSET Section =======
 
+# Define override values for epoch as defined in imap_constant_attrs.yaml
+hi_pset_epoch:
+  CATDESC: Midpoint time of pointing, number of nanoseconds since J2000 with leap seconds included
+  BIN_LOCATION: 0.5
+
 hi_pset_esa_energy_step:
   <<: *default_esa_energy_step
   LABLAXIS: Energy Step
@@ -309,6 +413,20 @@ hi_pset_esa_energy_step:
   VALIDMAX: 12
   SCALE_TYP: linear
   MONOTON: INCREASE
+  VAR_TYPE: support_data
+  dtype: uint8
+
+hi_pset_calibration_prod:
+  CATDESC: Coincidence types are combined into various calibration products
+  FIELDNAM: Calibration product number
+  FILLVAL: 65535
+  FORMAT: I1
+  LABLAXIS: Calibration Prod
+  UNITS: " "
+  SCALE_TYP: linear
+  MONOTON: INCREASE
+  VALIDMIN: 0
+  VALIDMAX: 4
   VAR_TYPE: support_data
   dtype: uint8
 
@@ -377,9 +495,11 @@ hi_pset_counts:
   FIELDNAM: Binned DE counts
   DEPEND_0: epoch
   DEPEND_1: esa_energy_step
-  DEPEND_2: spin_angle_bin
+  DEPEND_2: calibration_prod
+  DEPEND_3: spin_angle_bin
   LABL_PTR_1: esa_energy_step_label
-  LABL_PTR_2: spin_bin_label
+  LABL_PTR_2: calibration_prod_label
+  LABL_PTR_3: spin_bin_label
   DISPLAY_TYPE: stack_plot
   FORMAT: I5
 
@@ -389,9 +509,11 @@ hi_pset_exposure_times:
   FIELDNAM: Bin exposure times
   DEPEND_0: epoch
   DEPEND_1: esa_energy_step
-  DEPEND_2: spin_angle_bin
+  DEPEND_2: calibration_prod
+  DEPEND_3: spin_angle_bin
   LABL_PTR_1: esa_energy_step_label
-  LABL_PTR_2: spin_bin_label
+  LABL_PTR_2: calibration_prod_label
+  LABL_PTR_3: spin_bin_label
   UNITS: sec
   DISPLAY_TYPE: stack_plot
   FORMAT: F6.2
@@ -402,9 +524,11 @@ hi_pset_background_rates:
   FIELDNAM: Background count rates
   DEPEND_0: epoch
   DEPEND_1: esa_energy_step
-  DEPEND_2: spin_angle_bin
+  DEPEND_2: calibration_prod
+  DEPEND_3: spin_angle_bin
   LABL_PTR_1: esa_energy_step_label
-  LABL_PTR_2: spin_bin_label
+  LABL_PTR_2: calibration_prod_label
+  LABL_PTR_3: spin_bin_label
   UNITS: counts / s
   DISPLAY_TYPE: stack_plot
   FORMAT: F4.2
@@ -415,9 +539,11 @@ hi_pset_background_rates_uncertainty:
   FIELDNAM: Background count rate uncertainties
   DEPEND_0: epoch
   DEPEND_1: esa_energy_step
-  DEPEND_2: spin_angle_bin
+  DEPEND_2: calibration_prod
+  DEPEND_3: spin_angle_bin
   LABL_PTR_1: esa_energy_step_label
-  LABL_PTR_2: spin_bin_label
+  LABL_PTR_2: calibration_prod_label
+  LABL_PTR_3: spin_bin_label
   UNITS: counts / s
   DISPLAY_TYPE: stack_plot
   FORMAT: F4.2
@@ -432,6 +558,12 @@ hi_pset_spin_bin_label:
 hi_pset_esa_energy_step_label:
   CATDESC: Label esa step
   FIELDNAM: Label esa step
+  FORMAT: A4
+  VAR_TYPE: metadata
+
+hi_pset_calibration_prod_label:
+  CATDESC: Label calibration product
+  FIELDNAM: Label calibration product
   FORMAT: A4
   VAR_TYPE: metadata
 

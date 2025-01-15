@@ -8,6 +8,84 @@ For a more general introduction to CDF files, see :ref:`CDF Introduction`.
 
 For sample code that will generate a file that matches the below guidelines, see :ref:`IMAP xarray_to_cdf Example`
 
+*********************************************************
+Required Attributes of ISTP Compliant CDF File Components
+*********************************************************
+CDF files are composed of these main components: Global Attributes, Data Variables, Support Data Variables, and Metadata Variables. Each of these components has a set of required attributes that must be included in the CDF file.
+
+Required Global Attributes
+==========================
+
+* Data_level
+* Data_type
+* Data_version
+* Descriptor
+* Discipline
+* Instrument_type
+* Logical_file_id
+* Logical_source
+* Logical_source_description
+* Mission_group
+* PI_affiliation
+* PI_name
+* Project
+* Source_name
+* TEXT
+
+Section :ref:`global-attributes` provides more information on each of these attributes.
+
+Required Data Attributes
+========================
+
+* CATDESC
+* DEPEND_0
+* DEPEND_i (if applicable)
+* DISPLAY_TYPE
+* FIELDNAM
+* FILLVAL
+* FORMAT or FORM_PTR. Required to have at least one of these attributes.
+* LABLAXIS or LABL_PTR_i. Required to have at least one of these attributes.
+* UNITS or UNIT_PTR. Required to have at least one of these attributes.
+* VALIDMIN
+* VALIDMAX
+* VAR_TYPE = “data”
+
+Section :ref:`data-attributes` provides more information on each of these attributes.
+
+Required Support Data Attributes
+================================
+
+* CATDESC
+* DEPEND_0 (if time varying)
+* FIELDNAM
+* FILLVAL (if time varying)
+* FORMAT or FORM_PTR. Required to have at least one of these attributes.
+* SI_CONVERSION
+* UNITS/UNIT_PTR
+* VALIDMIN (if time varying)
+* VALIDMAX (if time varying)
+* VAR_TYPE = “support_data”
+
+Variables appearing in a data variable's ``DEPEND_i`` attribute require a minimal set of their own attributes to fulfill their role in supporting the data variable.
+
+Section :ref:`data-attributes` provides more information on each of these attributes.
+
+Required Metadata Data Attributes
+=================================
+
+* CATDESC
+* DEPEND_0 (if time varying)
+* FIELDNAM
+* FILLVAL (if time varying)
+* FORMAT or FORM_PTR. Required to have at least one of these attributes.
+* VAR_TYPE = “metadata”
+
+Section :ref:`data-attributes` provides more information on each of these attributes.
+
+See :ref:`metadata-attributes` for more information on metadata data attributes for ``LABL_PTR_i``.
+
+.. _global-attributes:
+
 *****************
 Global Attributes
 *****************
@@ -20,7 +98,7 @@ ISTP Compliant Global Attributes are listed here: `https://spdf.gsfc.nasa.gov/is
 
 ``Data_type``
 =============
-This attribute is used by CDF file writing software to create a filename. It is a combination of the following filename components: ``mode``, ``data level``, and optional data product ``descriptor``.  It contains both the short form and the long form of the name, separated by a '>' (e.g. ``L1A-norm>Level-1A normal rate``)
+It is a combination of the following filename components: ``data level``, and data product ``descriptor``.  It contains both the short form and the long form of the name, separated by a ``>`` (e.g. ``L1A_norm>Level-1A normal rate``). The short form is separated by a ``_``.
 
 ``Data_version``
 ================
@@ -28,20 +106,22 @@ This attribute identifies the version of a particular CDF data file. (e.g. ``v00
 
 ``Descriptor``
 ==============
-This attribute identifies the name of the instrument or sensor that collected the data.  Both a long name and a short name are given.  For any data file, only a single value is allowed.
+This attribute identifies the name of the instrument or sensor that collected the data. Note that this is not the same as ``descriptor`` from ``Data_type``, but the name of the instrument that collected the data.
+
+Both a long name and a short name are given.  For any data file, only a single value is allowed.
 
 For IMAP, one of the following must be used:
 
-* IDEX>Interstellar Dust Experiment
-* SWE>Solar Wind Electrons
-* SWAPI>Solar wind and Pickup Ions
 * CoDICE>Compact Dual Ion Composition Experiment
-* MAG>Magnetometer
-* HIT>High-energy Ion Telescope
 * GLOWS>GLObal Solar Wind Structure
+* HIT>High-energy Ion Telescope
+* IDEX>Interstellar Dust Experiment
 * IMAP-Hi>Interstellar Mapping and Acceleration Probe High
 * IMAP-Lo>Interstellar Mapping and Acceleration Probe Low
 * IMAP-Ultra>Interstellar Mapping and Acceleration Probe Ultra
+* MAG>Magnetometer
+* SWAPI>Solar wind and Pickup Ions
+* SWE>Solar Wind Electrons
 
 ``Discipline``
 ==============
@@ -71,7 +151,9 @@ This attribute determines the file naming convention and is used by CDA Web.  It
 
 * Source_name - (e.g. ``imap``)
 * Descriptor - (e.g. the instrument, see above)
-* Data_type - (e.g. the mode, data level, and descriptor)
+* Data_type - (e.g. data level, and descriptor)
+
+These three attributes can be ordered in different ways based on the user's filename convention. SPDF uses default naming conventions of ``source_datatype_descriptor_yyyyMMdd`` but IMAP uses this convention, ``source_descriptor_datatype_yyyyMMdd_vNNN``. For example, ``source_datatype_descriptor_yyyyMMdd`` would result in filename convention like this, ``imap_l1a_norm-raw_mag_20241122``, whereas ``source_descriptor_datatype_yyyyMMdd_vNNN`` would result in filename convention like this, ``imap_mag_l1a_norm-raw_20241122_v001``. See :ref:`naming-conventions` for more details of IMAP filename convention.
 
 ``Logical_source_description``
 ==============================
@@ -179,8 +261,10 @@ Given a current list of leap seconds, conversion between TT and UTC is straightf
 
 It is proposed that the required data variables ``VALIDMIN`` and ``VALIDMAX`` are given values corresponding to the dates ``1990-01-01T00:00:00`` and ``2100-01-01T00:00:00`` as these are well outside any expected valid times.
 
-Required Data Attributes
-------------------------
+.. _data-attributes:
+
+Data Attributes
+---------------
 
 ``CATDESC``
 ^^^^^^^^^^^
@@ -291,22 +375,22 @@ For example, for a variable ``energy_level`` that is the ``DEPEND_i`` of a parti
 
 In the case of the ``DEPEND_0`` ``timetag`` variable, ``DELTA_PLUS_VAR`` and ``DELTA_MINUS_VAR`` together with the ``timetag`` identify the time interval over which the data was sampled, integrated, or otherwise regarded as representative of. ``DELTA_PLUS_VAR`` and ``DELTA_MINUS_VAR`` variables require ``FIELDNAM``, ``UNITS`` and ``SI_CONVERSION`` attributes; in principle, these could differ from those of the ``DEPEND_i`` parent. They also require ``VAR_TYPE=SUPPORT_DATA``. Other standard attributes might be helpful.
 
-Required Support Attributes
-----------------------------
-Variables appearing in a data variable's ``DEPEND_i`` attribute require a minimal set of their own attributes to fulfill their role in supporting the data variable.
+.. _metadata-attributes:
+
+Metadata Data
+=============
+When data has more than one dimension, in addition to ``DEPEND_i``, it requires to have ``LABL_PTR_i``
+attributes for each extra dimension of the data. ``LABL_PTR_i`` of corresponding ``DEPEND_i`` will
+required to have these attributes:
 
 * CATDESC
-* DEPEND_0 (if time varying)
 * FIELDNAM
-* FILLVAL (if time varying)
-* FORMAT/FORM_PTR
-* SI_CONVERSION
-* UNITS/UNIT_PTR
-* VALIDMIN (if time varying)
-* VALIDMAX (if time varying)
-* VAR_TYPE = “support_data”
+* FORMAT
+* VAR_TYPE = “metadata”
 
-These attributes are otherwise the same as described in the above section for data variables
+In this case, ``FORMAT`` is required to be of character type. For example, ``FORMAT: A10`` indicating that the data is a string of 10 characters.
+
+This is used to label the axes of the data in a plot. For example, if the data is a 2D plot of energy vs. time, the ``LABL_PTR_1`` would be the energy axis. Time is already labeled by the ``DEPEND_0`` attribute.
 
 **************************
 Variable Naming Convention

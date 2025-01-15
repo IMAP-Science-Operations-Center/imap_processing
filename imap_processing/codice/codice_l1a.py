@@ -1,18 +1,17 @@
 """
 Perform CoDICE l1a processing.
 
-This module processes decommutated CoDICE packets and creates L1a data products.
+This module processes CoDICE L0 files and creates L1a data products.
 
 Notes
 -----
-    from imap_processing.codice.codice_l0 import decom_packets
     from imap_processing.codice.codice_l1a import process_codice_l1a
-    packets = decom_packets(packet_file)
-    dataset = process_codice_l1a(packets)
+    processed_datasets = process_codice_l1a(path_to_l0_file)
 """
 
 from __future__ import annotations
 
+import ast
 import logging
 from pathlib import Path
 from typing import Any
@@ -28,12 +27,10 @@ from imap_processing.codice import constants
 from imap_processing.codice.codice_l0 import decom_packets
 from imap_processing.codice.decompress import decompress
 from imap_processing.codice.utils import CODICEAPID
-from imap_processing.utils import convert_to_binary_string
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-# TODO: Add support for decomming multiple APIDs from a single file
 # TODO: Determine what should go in event data CDF and how it should be
 #       structured.
 
@@ -87,23 +84,39 @@ class CoDICEL1aPipeline:
         self.plan_step = plan_step
         self.view_id = view_id
 
-    def decompress_data(self, science_values: str) -> None:
+    def decompress_data(self, science_values: list[str]) -> None:
         """
         Perform decompression on the data.
 
-        The science data within the packet is a compressed, binary string of
+        The science data within the packet is a compressed byte string of
         values. Apply the appropriate decompression algorithm to get an array
         of decompressed values.
 
         Parameters
         ----------
-        science_values : str
-            A string of binary data representing the science values of the data.
+        science_values : list[str]
+            A list of byte strings representing the science values of the data
+            for each packet.
         """
-        compression_algorithm = constants.LO_COMPRESSION_ID_LOOKUP[self.view_id]
+        # The compression algorithm depends on the instrument and view ID
+        if self.config["instrument"] == "lo":
+            compression_algorithm = constants.LO_COMPRESSION_ID_LOOKUP[self.view_id]
+        elif self.config["instrument"] == "hi":
+            compression_algorithm = constants.HI_COMPRESSION_ID_LOOKUP[self.view_id]
 
-        # Decompress the binary string into a list of integers
-        self.data = decompress(science_values, compression_algorithm)
+        self.raw_data = []
+        for packet_data, byte_count in zip(
+            science_values, self.dataset.byte_count.data
+        ):
+            # Convert from numpy array to byte object
+            values = ast.literal_eval(str(packet_data))
+
+            # Only use the values up to the byte count. Bytes after this are
+            # used as padding and are not needed
+            values = values[:byte_count]
+
+            decompressed_values = decompress(values, compression_algorithm)
+            self.raw_data.append(decompressed_values)
 
     def define_coordinates(self) -> None:
         """
@@ -115,13 +128,13 @@ class CoDICEL1aPipeline:
 
         for name in self.config["coords"]:
             if name == "epoch":
-                values = self.packet_dataset.epoch
+                values = self.dataset.epoch.data
+            elif name == "esa_step":
+                values = np.arange(self.config["num_energy_steps"])
             elif name == "inst_az":
                 values = np.arange(self.config["num_positions"])
             elif name == "spin_sector":
                 values = np.arange(self.config["num_spin_sectors"])
-            elif name == "esa_step":
-                values = np.arange(self.config["num_energy_steps"])
             else:
                 # TODO: Need to implement other types of coords
                 continue
@@ -145,7 +158,7 @@ class CoDICEL1aPipeline:
 
         Returns
         -------
-        dataset : xarray.Dataset
+        processed_dataset : xarray.Dataset
             The 'final' ``xarray`` dataset.
         """
         # Create the main dataset to hold all the variables
@@ -154,12 +167,18 @@ class CoDICEL1aPipeline:
             attrs=self.cdf_attrs.get_global_attributes(self.config["dataset_name"]),
         )
 
-        # Create a data variable for each counter
-        for variable_data, variable_name in zip(
-            self.data, self.config["variable_names"]
+        # Stack the data so that it is easier to reshape and iterate over
+        all_data = np.stack(self.data)
+
+        # The dimension of all data is (epoch, num_counters, num_energy_steps,
+        # num_positions, num_spin_sectors) (or may be slightly different
+        # depending on the data product). In any case, iterate over the
+        # num_counters dimension to isolate the data for each counter so
+        # that it can be placed in a CDF data variable.
+        for counter, variable_name in zip(
+            range(all_data.shape[1]), self.config["variable_names"]
         ):
-            # Reshape to 4 dimensions to allow for epoch dimension
-            reshaped_variable_data = np.expand_dims(variable_data, axis=0)
+            counter_data = all_data[:, counter, :, :, :]
 
             # Get the CDF attributes
             descriptor = self.config["dataset_name"].split("imap_codice_l1a_")[-1]
@@ -168,7 +187,7 @@ class CoDICEL1aPipeline:
 
             # Create the CDF data variable
             dataset[variable_name] = xr.DataArray(
-                reshaped_variable_data,
+                counter_data,
                 name=variable_name,
                 dims=self.config["dims"],
                 attrs=attrs,
@@ -322,32 +341,51 @@ class CoDICEL1aPipeline:
         3D arrays representing dimensions such as spin sectors, positions, and
         energies (depending on the data product).
         """
+        self.data = []
+
         # For CoDICE-lo, data are a 3D arrays with a shape representing
         # [<num_positions>,<num_spin_sectors>,<num_energy_steps>]
         if self.config["instrument"] == "lo":
-            self.data = np.array(self.data, dtype=np.uint32).reshape(
-                (
-                    self.config["num_counters"],
-                    self.config["num_positions"],
-                    self.config["num_spin_sectors"],
-                    self.config["num_energy_steps"],
-                )
-            )
+            for packet_data in self.raw_data:
+                if packet_data:
+                    reshaped_packet_data = np.array(
+                        packet_data, dtype=np.uint32
+                    ).reshape(
+                        (
+                            self.config["num_counters"],
+                            self.config["num_energy_steps"],
+                            self.config["num_positions"],
+                            self.config["num_spin_sectors"],
+                        )
+                    )
+                    self.data.append(reshaped_packet_data)
+                else:
+                    self.data.append(None)
 
         # For CoDICE-hi, data are a 3D array with a shape representing
         # [<num_energy_steps>,<num_positions>,<num_spin_sectors>]
         elif self.config["instrument"] == "hi":
-            self.data = np.array(self.data, dtype=np.uint32).reshape(
-                (
-                    self.config["num_counters"],
-                    self.config["num_energy_steps"],
-                    self.config["num_positions"],
-                    self.config["num_spin_sectors"],
-                )
-            )
+            for packet_data in self.raw_data:
+                if packet_data:
+                    reshaped_packet_data = np.array(
+                        packet_data, dtype=np.uint32
+                    ).reshape(
+                        (
+                            self.config["num_counters"],
+                            self.config["num_energy_steps"],
+                            self.config["num_positions"],
+                            self.config["num_spin_sectors"],
+                        )
+                    )
+                    self.data.append(reshaped_packet_data)
+                else:
+                    self.data.append(None)
+
+        # No longer need to keep the raw data around
+        del self.raw_data
 
     def set_data_product_config(
-        self, apid: int, packet: xr.Dataset, data_version: str
+        self, apid: int, dataset: xr.Dataset, data_version: str
     ) -> None:
         """
         Set the various settings for defining the data products.
@@ -356,14 +394,14 @@ class CoDICEL1aPipeline:
         ----------
         apid : int
             The APID of interest.
-        packet : xarray.Dataset
-            A packet for the APID of interest.
+        dataset : xarray.Dataset
+            The dataset for the APID of interest.
         data_version : str
             Version of the data product being created.
         """
         # Set the packet dataset so that it can be easily called from various
         # methods
-        self.packet_dataset = packet
+        self.dataset = dataset
 
         # Set various configurations of the data product
         self.config: dict[str, Any] = constants.DATA_PRODUCT_CONFIGURATIONS.get(apid)  # type: ignore
@@ -473,7 +511,7 @@ def create_hskp_dataset(
     return dataset
 
 
-def get_params(packet: xr.Dataset) -> tuple[int, int, int, int]:
+def get_params(dataset: xr.Dataset) -> tuple[int, int, int, int]:
     """
     Return the four 'main' parameters used for l1a processing.
 
@@ -483,8 +521,10 @@ def get_params(packet: xr.Dataset) -> tuple[int, int, int, int]:
 
     Parameters
     ----------
-    packet : xarray.Dataset
-        A packet for the APID of interest.
+    dataset : xarray.Dataset
+        The dataset for the APID of interest. We expect each packet in the
+        dataset to have the same values for the four main parameters, so the
+        first index of the dataset can be used to determine them.
 
     Returns
     -------
@@ -502,15 +542,37 @@ def get_params(packet: xr.Dataset) -> tuple[int, int, int, int]:
     view_id : int
         Provides information about how data was collapsed and/or compressed.
     """
-    table_id = int(packet.table_id.data)
-    plan_id = int(packet.plan_id.data)
-    plan_step = int(packet.plan_step.data)
-    view_id = int(packet.view_id.data)
+    table_id = int(dataset.table_id.data[0])
+    plan_id = int(dataset.plan_id.data[0])
+    plan_step = int(dataset.plan_step.data[0])
+    view_id = int(dataset.view_id.data[0])
 
     return table_id, plan_id, plan_step, view_id
 
 
-def process_codice_l1a(file_path: Path, data_version: str) -> xr.Dataset:
+def log_dataset_info(datasets: dict[int, xr.Dataset]) -> None:
+    """
+    Log info about the input data to help with tracking and/or debugging.
+
+    Parameters
+    ----------
+    datasets : dict[int, xarray.Dataset]
+        Mapping from apid to ``xarray`` dataset, one dataset per apid.
+    """
+    launch_time = np.datetime64("2010-01-01T00:01:06.184", "ns")
+    logger.info("\nThis input file contains the following APIDs:\n")
+    for apid in datasets:
+        num_packets = len(datasets[apid].epoch.data)
+        time_deltas = [np.timedelta64(item, "ns") for item in datasets[apid].epoch.data]
+        times = [launch_time + delta for delta in time_deltas]
+        start = np.datetime_as_string(times[0])
+        end = np.datetime_as_string(times[-1])
+        logger.info(
+            f"{CODICEAPID(apid).name}: {num_packets} packets spanning {start} to {end}"
+        )
+
+
+def process_codice_l1a(file_path: Path, data_version: str) -> list[xr.Dataset]:
     """
     Will process CoDICE l0 data to create l1a data products.
 
@@ -523,38 +585,66 @@ def process_codice_l1a(file_path: Path, data_version: str) -> xr.Dataset:
 
     Returns
     -------
-    dataset : xarray.Dataset
-        The ``xarray`` dataset containing the science data and supporting metadata.
+    processed_datasets : list[xarray.Dataset]
+        A list of the ``xarray`` datasets containing the science data and
+        supporting metadata.
     """
     # Decom the packets, group data by APID, and sort by time
     datasets = decom_packets(file_path)
 
+    # Log some information about the contents of the data
+    log_dataset_info(datasets)
+
+    # Placeholder to hold the final, processed datasets
+    processed_datasets = []
+
+    # Process each APID separately
     for apid in datasets:
-        packet_dataset = datasets[apid]
+        dataset = datasets[apid]
         logger.info(f"\nProcessing {CODICEAPID(apid).name} packet")
 
+        # Housekeeping data
         if apid == CODICEAPID.COD_NHK:
-            dataset = create_hskp_dataset(packet_dataset, data_version)
+            processed_dataset = create_hskp_dataset(dataset, data_version)
+            logger.info(f"\nFinal data product:\n{processed_dataset}\n")
 
+        # Event data
         elif apid in [CODICEAPID.COD_LO_PHA, CODICEAPID.COD_HI_PHA]:
-            dataset = create_event_dataset(apid, packet_dataset, data_version)
+            processed_dataset = create_event_dataset(apid, dataset, data_version)
+            logger.info(f"\nFinal data product:\n{processed_dataset}\n")
 
+        # Everything else
         elif apid in constants.APIDS_FOR_SCIENCE_PROCESSING:
             # Extract the data
-            science_values = packet_dataset.data.data[0]
-            science_values = convert_to_binary_string(science_values)
+            science_values = [packet.data for packet in dataset.data]
 
             # Get the four "main" parameters for processing
-            table_id, plan_id, plan_step, view_id = get_params(packet_dataset)
+            table_id, plan_id, plan_step, view_id = get_params(dataset)
 
             # Run the pipeline to create a dataset for the product
             pipeline = CoDICEL1aPipeline(table_id, plan_id, plan_step, view_id)
-            pipeline.set_data_product_config(apid, packet_dataset, data_version)
+            pipeline.set_data_product_config(apid, dataset, data_version)
             pipeline.decompress_data(science_values)
             pipeline.reshape_data()
             pipeline.define_coordinates()
-            dataset = pipeline.define_data_variables()
+            processed_dataset = pipeline.define_data_variables()
 
-    logger.info(f"\nFinal data product:\n{dataset}\n")
+            logger.info(f"\nFinal data product:\n{processed_dataset}\n")
 
-    return dataset
+        # TODO: Still need to implement I-ALiRT and hi-priorities data products
+        elif apid in [
+            CODICEAPID.COD_HI_INST_COUNTS_PRIORITIES,
+            CODICEAPID.COD_HI_IAL,
+            CODICEAPID.COD_LO_IAL,
+        ]:
+            logger.info("\tStill need to properly implement")
+            processed_dataset = None
+
+        # For APIDs that don't require processing
+        else:
+            logger.info(f"\t{apid} does not require processing")
+            continue
+
+        processed_datasets.append(processed_dataset)
+
+    return processed_datasets

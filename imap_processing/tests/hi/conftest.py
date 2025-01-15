@@ -14,8 +14,8 @@ def hi_l0_test_data_path(hi_test_data_path):
 
 
 @pytest.fixture(scope="session")
-def hi_l1a_test_data_path(hi_test_data_path):
-    return hi_test_data_path / "l1a"
+def hi_l1_test_data_path(hi_test_data_path):
+    return hi_test_data_path / "l1"
 
 
 def create_metaevent(esa_step, met_subseconds, met_seconds):

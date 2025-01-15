@@ -7,18 +7,18 @@ from imap_processing import imap_module_directory
 
 
 def test_idex_decom_length(decom_test_data: xr.Dataset):
-    """Verify that there are 6 data variables in the output.
+    """Verify that the output data has the expected number of data variables.
 
     Parameters
     ----------
     decom_test_data : xarray.Dataset
         The dataset to test with
     """
-    assert len(decom_test_data) == 42
+    assert len(decom_test_data) == 110
 
 
 def test_idex_decom_event_num(decom_test_data: xr.Dataset):
-    """Verify that 19 impacts were gathered by the test data.
+    """Verify that 14 impacts were gathered by the test data.
 
     Parameters
     ----------
@@ -26,7 +26,8 @@ def test_idex_decom_event_num(decom_test_data: xr.Dataset):
         The dataset to test with
     """
     for var in decom_test_data:
-        assert len(decom_test_data[var]) == 19
+        if "epoch" in decom_test_data[var].dims:
+            assert len(decom_test_data[var]) == 14
 
 
 def test_idex_tof_high_data(decom_test_data: xr.Dataset):

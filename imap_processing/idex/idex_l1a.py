@@ -2,10 +2,19 @@
 Perform IDEX L1a Processing.
 
 This module processes decommutated IDEX packets and creates L1a data products.
+
+Examples
+--------
+.. code-block:: python
+
+    from imap_processing.idex.idex_l1a import PacketParser
+
+    l0_file = "imap_processing/tests/idex/imap_idex_l0_sci_20231214_v001.pkts"
+    l1a_data = PacketParser(l0_file, data_version)
+    l1a_data.write_l1a_cdf()
 """
 
 import logging
-from collections import namedtuple
 from enum import IntEnum
 from pathlib import Path
 from typing import Union
@@ -21,59 +30,6 @@ from imap_processing.spice.time import met_to_j2000ns
 from imap_processing.utils import convert_to_binary_string
 
 logger = logging.getLogger(__name__)
-
-# TODO: Generate quicklook plots
-
-# Create a large dictionary of values from the FPGA header that need to be
-# captured into the CDF file.  They are lumped together because they share
-# similar attributes.
-# Notes about the variables are set here, acting as comments and will also be
-# placed into the CDF in the VAR_NOTES attribute.
-TRIGGER_DESCRIPTION = namedtuple(
-    "TRIGGER_DESCRIPTION",
-    ["name", "packet_name"],
-)
-TRIGGER_DESCRIPTION_DICT = {
-    trigger.name: trigger
-    for trigger in [
-        TRIGGER_DESCRIPTION("event_number", "IDX__TXHDREVTNUM"),
-        TRIGGER_DESCRIPTION("tof_high_trigger_level", "IDX__TXHDRHGTRIGLVL"),
-        TRIGGER_DESCRIPTION("tof_high_trigger_num_max_1_2", "IDX__TXHDRHGTRIGNMAX12"),
-        TRIGGER_DESCRIPTION("tof_high_trigger_num_min_1_2", "IDX__TXHDRHGTRIGNMIN12"),
-        TRIGGER_DESCRIPTION("tof_high_trigger_num_min_1", "IDX__TXHDRHGTRIGNMIN1"),
-        TRIGGER_DESCRIPTION("tof_high_trigger_num_max_1", "IDX__TXHDRHGTRIGNMAX1"),
-        TRIGGER_DESCRIPTION("tof_high_trigger_num_min_2", "IDX__TXHDRHGTRIGNMIN2"),
-        TRIGGER_DESCRIPTION("tof_high_trigger_num_max_2", "IDX__TXHDRHGTRIGNMAX2"),
-        TRIGGER_DESCRIPTION("tof_low_trigger_level", "IDX__TXHDRLGTRIGLVL"),
-        TRIGGER_DESCRIPTION("tof_low_trigger_num_max_1_2", "IDX__TXHDRLGTRIGNMAX12"),
-        TRIGGER_DESCRIPTION("tof_low_trigger_num_min_1_2", "IDX__TXHDRLGTRIGNMIN12"),
-        TRIGGER_DESCRIPTION("tof_low_trigger_num_min_1", "IDX__TXHDRLGTRIGNMIN1"),
-        TRIGGER_DESCRIPTION("tof_low_trigger_num_max_1", "IDX__TXHDRLGTRIGNMAX1"),
-        TRIGGER_DESCRIPTION("tof_low_trigger_num_min_2", "IDX__TXHDRLGTRIGNMIN2"),
-        TRIGGER_DESCRIPTION("tof_low_trigger_num_max_2", "IDX__TXHDRLGTRIGNMAX2"),
-        TRIGGER_DESCRIPTION("tof_mid_trigger_level", "IDX__TXHDRMGTRIGLVL"),
-        TRIGGER_DESCRIPTION("tof_mid_trigger_num_max_1_2", "IDX__TXHDRMGTRIGNMAX12"),
-        TRIGGER_DESCRIPTION("tof_mid_trigger_num_min_1_2", "IDX__TXHDRMGTRIGNMIN12"),
-        TRIGGER_DESCRIPTION("tof_mid_trigger_num_min_1", "IDX__TXHDRMGTRIGNMIN1"),
-        TRIGGER_DESCRIPTION("tof_mid_trigger_num_max_1", "IDX__TXHDRMGTRIGNMAX1"),
-        TRIGGER_DESCRIPTION("tof_mid_trigger_num_min_2", "IDX__TXHDRMGTRIGNMIN2"),
-        TRIGGER_DESCRIPTION("tof_mid_trigger_num_max_2", "IDX__TXHDRMGTRIGNMAX2"),
-        TRIGGER_DESCRIPTION("low_sample_coincidence_mode_blocks", "IDX__TXHDRLSTRIGCMBLOCKS"), # noqa
-        TRIGGER_DESCRIPTION("low_sample_trigger_polarity", "IDX__TXHDRLSTRIGPOL"),
-        TRIGGER_DESCRIPTION("low_sample_trigger_level", "IDX__TXHDRLSTRIGLVL"),
-        TRIGGER_DESCRIPTION("low_sample_trigger_num_min", "IDX__TXHDRLSTRIGNMIN"),
-        TRIGGER_DESCRIPTION("low_sample_trigger_mode", "IDX__TXHDRLSTRIGMODE"),
-        TRIGGER_DESCRIPTION("tof_low_trigger_mode", "IDX__TXHDRLSTRIGMODE"),
-        TRIGGER_DESCRIPTION("tof_mid_trigger_mode", "IDX__TXHDRMGTRIGMODE"),
-        TRIGGER_DESCRIPTION("tof_high_trigger_mode", "IDX__TXHDRHGTRIGMODE"),
-        TRIGGER_DESCRIPTION("detector_voltage", "IDX__TXHDRHVPSHKCH0"),
-        TRIGGER_DESCRIPTION("sensor_voltage", "IDX__TXHDRHVPSHKCH1"),
-        TRIGGER_DESCRIPTION("target_voltage", "IDX__TXHDRHVPSHKCH2"),
-        TRIGGER_DESCRIPTION("reflectron_voltage", "IDX__TXHDRHVPSHKCH3"),
-        TRIGGER_DESCRIPTION("rejection_voltage", "IDX__TXHDRHVPSHKCH4"),
-        TRIGGER_DESCRIPTION("detector_current", "IDX__TXHDRHVPSHKCH5"),
-    ]
-}  # fmt: skip
 
 
 class Scitype(IntEnum):
@@ -102,15 +58,6 @@ class PacketParser:
         The path and filename to the L0 file to read.
     data_version : str
         The version of the data product being created.
-
-    Examples
-    --------
-    .. code-block:: python
-
-        from imap_processing.idex.idex_l1a import PacketParser
-        l0_file = "imap_processing/tests/idex/imap_idex_l0_sci_20230725_v001.pkts"
-        l1a_data = PacketParser(l0_file, data_version)
-        l1a_data.write_l1a_cdf()
     """
 
     def __init__(self, packet_file: Union[str, Path], data_version: str) -> None:
@@ -157,6 +104,37 @@ class PacketParser:
         self.data = xr.concat(processed_dust_impact_list, dim="epoch")
         idex_attrs = get_idex_attrs(data_version)
         self.data.attrs = idex_attrs.get_global_attributes("imap_idex_l1a_sci")
+
+        # Add high and low sample rate coords
+        self.data["time_low_sample_rate_index"] = xr.DataArray(
+            np.arange(len(self.data["time_low_sample_rate"][0])),
+            name="time_low_sample_rate_index",
+            dims=["time_low_sample_rate_index"],
+            attrs=idex_attrs.get_variable_attributes("time_low_sample_rate_index"),
+        )
+
+        self.data["time_high_sample_rate_index"] = xr.DataArray(
+            np.arange(len(self.data["time_high_sample_rate"][0])),
+            name="time_high_sample_rate_index",
+            dims=["time_high_sample_rate_index"],
+            attrs=idex_attrs.get_variable_attributes("time_high_sample_rate_index"),
+        )
+        # NOTE: LABL_PTR_1 should be CDF_CHAR.
+        self.data["time_low_sample_rate_label"] = xr.DataArray(
+            self.data.time_low_sample_rate_index.values.astype(str),
+            name="time_low_sample_rate_label",
+            dims=["time_low_sample_rate_index"],
+            attrs=idex_attrs.get_variable_attributes("time_low_sample_rate_label"),
+        )
+
+        self.data["time_high_sample_rate_label"] = xr.DataArray(
+            self.data.time_high_sample_rate_index.values.astype(str),
+            name="time_high_sample_rate_label",
+            dims=["time_high_sample_rate_index"],
+            attrs=idex_attrs.get_variable_attributes("time_high_sample_rate_label"),
+        )
+
+        logger.info("IDEX L1A science data processing completed.")
 
 
 class RawDustEvent:
@@ -246,13 +224,15 @@ class RawDustEvent:
         self.high_sample_trigger_time = 0
         self._set_sample_trigger_times(header_packet)
 
-        # Iterate through the trigger description dictionary and pull out the values
-        self.trigger_values = {
-            trigger.name: header_packet[trigger.packet_name].raw_value
-            for trigger in TRIGGER_DESCRIPTION_DICT.values()
+        # Iterate through every telemetry item not in the header and pull out the values
+        self.telemetry_items = {
+            key.lower(): val
+            for key, val in header_packet.items()
+            if key not in header_packet.header.keys()
         }
+
         logger.debug(
-            f"trigger_values:\n{self.trigger_values}"
+            f"telemetry_items:\n{self.telemetry_items}"
         )  # Log values here in case of error
 
         # Initialize the binary data received from future packets
@@ -353,12 +333,28 @@ class RawDustEvent:
         The header has information about the number of blocks before triggering,
         rather than the number of samples before triggering.
         """
-        # Retrieve the number of samples of high gain delay
-        high_gain_delay = packet["IDX__TXHDRADC0IDELAY"]
+        # Retrieve the number of samples for high gain delay
+
+        # packet['IDX__TXHDRSAMPDELAY'] is a 32-bit value, with the last 10 bits
+        # representing the high gain sample delay and the first 2 bits used for padding.
+        # To extract the high gain bits, the bitwise right shift (>> 20) moves the bits
+        # 20 positions to the right, and the mask (0b1111111111) keeps only the least
+        # significant 10 bits.
+        high_gain_delay = (packet["IDX__TXHDRSAMPDELAY"] >> 22) & 0b1111111111
+        n_blocks = packet["IDX__TXHDRBLOCKS"]
 
         # Retrieve number of low/high sample pre-trigger blocks
-        num_low_sample_pretrigger_blocks = packet["IDX__TXHDRLSPREBLOCKS"]
-        num_high_sample_pretrigger_blocks = packet["IDX__TXHDRHSPREBLOCKS"]
+
+        # packet['IDX__TXHDRBLOCKS'] is a 32-bit value:
+        # Bits 21-26 represent the number of low sampling pre-trigger blocks.
+        #   We can extract this by shifting right by 6 bits and applying a mask to keep
+        #   the last 6 bits.
+        # Bits 13-16 represent the number of high sampling pre-trigger blocks.
+        #   We can extract this by shifting right by 16 bits and applying a mask to keep
+        #   the last 4 bits.
+
+        num_low_sample_pretrigger_blocks = (n_blocks >> 6) & 0b111111
+        num_high_sample_pretrigger_blocks = (n_blocks >> 16) & 0b1111
 
         # Calculate the low and high sample trigger times based on the high gain delay
         # and the number of high sample/low sample pretrigger blocks
@@ -411,7 +407,7 @@ class RawDustEvent:
         Will process the low sample waveform.
 
         Parse a binary string representing a low sample waveform
-        Data arrives in 32 bit chunks, divided up into:
+        Data arrives in 32-bit chunks, divided up into:
             * 8 bits of padding
             * 2x12 bits of integer data.
 
@@ -450,14 +446,15 @@ class RawDustEvent:
 
         Returns
         -------
-        time_low_sr_data : numpy.ndarray
+        time_low_sample_rate_data : numpy.ndarray
             Low time sample data array.
         """
-        time_low_sr_init = np.linspace(0, num_samples, num_samples)
-        time_low_sr_data = (
-            self.LOW_SAMPLE_RATE * time_low_sr_init - self.low_sample_trigger_time
+        time_low_sample_rate_init = np.linspace(0, num_samples, num_samples)
+        time_low_sample_rate_data = (
+            self.LOW_SAMPLE_RATE * time_low_sample_rate_init
+            - self.low_sample_trigger_time
         )
-        return time_low_sr_data
+        return time_low_sample_rate_data
 
     def _calc_high_sample_resolution(self, num_samples: int) -> npt.NDArray:
         """
@@ -476,14 +473,15 @@ class RawDustEvent:
 
         Returns
         -------
-        time_high_sr_data : numpy.ndarray
+        time_high_sample_rate_data : numpy.ndarray
             High sample time data array.
         """
-        time_high_sr_init = np.linspace(0, num_samples, num_samples)
-        time_high_sr_data = (
-            self.HIGH_SAMPLE_RATE * time_high_sr_init - self.high_sample_trigger_time
+        time_high_sample_rate_init = np.linspace(0, num_samples, num_samples)
+        time_high_sample_rate_data = (
+            self.HIGH_SAMPLE_RATE * time_high_sample_rate_init
+            - self.high_sample_trigger_time
         )
-        return time_high_sr_data
+        return time_high_sample_rate_data
 
     def _populate_bit_strings(
         self, packet: space_packet_parser.packets.CCSDSPacket
@@ -514,96 +512,93 @@ class RawDustEvent:
         dataset : xarray.Dataset
             A Dataset object containing the data from a single impact.
         """
-        # Create object for CDF attrs
+        # Create an object for CDF attrs
         idex_attrs = self.cdf_attrs
 
-        # Gather the huge number of trigger info metadata
+        # Gather the huge amount of metadata info
         trigger_vars = {}
-        for var, value in self.trigger_values.items():
-            trigger_desc = TRIGGER_DESCRIPTION_DICT[var]
+        for var, value in self.telemetry_items.items():
             trigger_vars[var] = xr.DataArray(
                 name=var,
                 data=[value],
                 dims=("epoch"),
-                attrs=idex_attrs.get_variable_attributes(trigger_desc.name),
+                attrs=idex_attrs.get_variable_attributes(var),
             )
 
         # Process the 6 primary data variables
-        tof_high_xr = xr.DataArray(
+        tof_high = xr.DataArray(
             name="TOF_High",
             data=[self._parse_high_sample_waveform(self.TOF_High_bits)],
-            dims=("epoch", "time_high_ssr_dim"),
+            dims=("epoch", "time_high_sample_rate_index"),
             attrs=idex_attrs.get_variable_attributes("tof_high_attrs"),
         )
-        tof_low_xr = xr.DataArray(
+        tof_low = xr.DataArray(
             name="TOF_Low",
             data=[self._parse_high_sample_waveform(self.TOF_Low_bits)],
-            dims=("epoch", "time_high_sr"),
+            dims=("epoch", "time_high_sample_rate_index"),
             attrs=idex_attrs.get_variable_attributes("tof_low_attrs"),
         )
-        tof_mid_xr = xr.DataArray(
+        tof_mid = xr.DataArray(
             name="TOF_Mid",
             data=[self._parse_high_sample_waveform(self.TOF_Mid_bits)],
-            dims=("epoch", "time_high_sr"),
+            dims=("epoch", "time_high_sample_rate_index"),
             attrs=idex_attrs.get_variable_attributes("tof_mid_attrs"),
         )
-        target_high_xr = xr.DataArray(
+        target_high = xr.DataArray(
             name="Target_High",
             data=[self._parse_low_sample_waveform(self.Target_High_bits)],
-            dims=("epoch", "time_low_sr"),
+            dims=("epoch", "time_low_sample_rate_index"),
             attrs=idex_attrs.get_variable_attributes("target_high_attrs"),
         )
-        target_low_xr = xr.DataArray(
+        target_low = xr.DataArray(
             name="Target_Low",
             data=[self._parse_low_sample_waveform(self.Target_Low_bits)],
-            dims=("epoch", "time_low_sr"),
+            dims=("epoch", "time_low_sample_rate_index"),
             attrs=idex_attrs.get_variable_attributes("target_low_attrs"),
         )
-        ion_grid_xr = xr.DataArray(
+        ion_grid = xr.DataArray(
             name="Ion_Grid",
             data=[self._parse_low_sample_waveform(self.Ion_Grid_bits)],
-            dims=("epoch", "time_low_sr"),
+            dims=("epoch", "time_low_sample_rate_index"),
             attrs=idex_attrs.get_variable_attributes("ion_grid_attrs"),
         )
 
         # Determine the 3 coordinate variables
-        epoch_xr = xr.DataArray(
+        epoch = xr.DataArray(
             name="epoch",
             data=[self.impact_time],
             dims=("epoch"),
             attrs=idex_attrs.get_variable_attributes("epoch"),
         )
 
-        time_low_sr_xr = xr.DataArray(
-            name="time_low_sr",
-            data=[self._calc_low_sample_resolution(len(target_low_xr[0]))],
-            dims=("epoch", "time_low_sr_dim"),
-            attrs=idex_attrs.get_variable_attributes("low_sr_attrs"),
+        time_low_sample_rate = xr.DataArray(
+            name="time_low_sample_rate",
+            data=[self._calc_low_sample_resolution(len(target_low[0]))],
+            dims=("epoch", "time_low_sample_rate_index"),
+            attrs=idex_attrs.get_variable_attributes("low_sample_rate_attrs"),
         )
 
-        time_high_sr_xr = xr.DataArray(
-            name="time_high_sr",
-            data=[self._calc_high_sample_resolution(len(tof_low_xr[0]))],
-            dims=("epoch", "time_high_sr_dim"),
-            attrs=idex_attrs.get_variable_attributes("high_sr_attrs"),
+        time_high_sample_rate = xr.DataArray(
+            name="time_high_sample_rate",
+            data=[self._calc_high_sample_resolution(len(tof_low[0]))],
+            dims=("epoch", "time_high_sample_rate_index"),
+            attrs=idex_attrs.get_variable_attributes("high_sample_rate_attrs"),
         )
 
         # Combine to return a dataset object
         dataset = xr.Dataset(
             data_vars={
-                "TOF_Low": tof_low_xr,
-                "TOF_High": tof_high_xr,
-                "TOF_Mid": tof_mid_xr,
-                "Target_High": target_high_xr,
-                "Target_Low": target_low_xr,
-                "Ion_Grid": ion_grid_xr,
+                "TOF_Low": tof_low,
+                "TOF_High": tof_high,
+                "TOF_Mid": tof_mid,
+                "Target_High": target_high,
+                "Target_Low": target_low,
+                "Ion_Grid": ion_grid,
+                "time_low_sample_rate": time_low_sample_rate,
+                "time_high_sample_rate": time_high_sample_rate,
             }
             | trigger_vars,
-            coords={
-                "epoch": epoch_xr,
-                "time_low_sr": time_low_sr_xr,
-                "time_high_sr": time_high_sr_xr,
-            },
+            coords={"epoch": epoch},
         )
 
         return dataset

@@ -181,3 +181,5 @@ data/
 # Ignore specific SPICE kernels that get downloaded from NAIF automatically for tests
 # marked with @pytest.mark.external_kernel
 **/de440*.bsp
+**/pck0001*.tpc
+**/earth_**_combined.bpc

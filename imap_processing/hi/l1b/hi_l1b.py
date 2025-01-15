@@ -15,7 +15,12 @@ from imap_processing.hi.utils import (
     create_dataset_variables,
     parse_sensor_number,
 )
-from imap_processing.spice.geometry import SpiceFrame, instrument_pointing
+from imap_processing.spice.geometry import (
+    SpiceFrame,
+    get_instrument_spin_phase,
+    get_spacecraft_spin_phase,
+    instrument_pointing,
+)
 from imap_processing.spice.time import j2000ns_to_j2000s
 from imap_processing.utils import convert_raw_to_eu
 
@@ -40,7 +45,7 @@ class CoincidenceBitmap(IntEnum):
 logger = logging.getLogger(__name__)
 ATTR_MGR = ImapCdfAttributes()
 ATTR_MGR.add_instrument_global_attrs("hi")
-ATTR_MGR.load_variable_attributes("imap_hi_variable_attrs.yaml")
+ATTR_MGR.add_instrument_variable_attrs(instrument="hi", level=None)
 
 
 def hi_l1b(l1a_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
@@ -114,18 +119,18 @@ def annotate_direct_events(l1a_dataset: xr.Dataset) -> xr.Dataset:
     l1b_dataset : xarray.Dataset
         L1B direct event data.
     """
-    l1b_dataset = compute_coincidence_type_and_time_deltas(l1a_dataset)
-    l1b_dataset = compute_hae_coordinates(l1b_dataset)
-    l1b_de_var_names = [
-        "esa_energy_step",
-        "spin_phase",
-        "quality_flag",
-        "nominal_bin",
-    ]
-    new_data_vars = create_dataset_variables(
-        l1b_de_var_names, l1a_dataset["epoch"].size, att_manager_lookup_str="hi_de_{0}"
+    l1b_dataset = l1a_dataset.copy()
+    l1b_dataset.update(compute_coincidence_type_and_time_deltas(l1b_dataset))
+    l1b_dataset.update(de_nominal_bin_and_spin_phase(l1b_dataset))
+    l1b_dataset.update(compute_hae_coordinates(l1b_dataset))
+    l1b_dataset.update(de_esa_energy_step(l1b_dataset))
+    l1b_dataset.update(
+        create_dataset_variables(
+            ["quality_flag"],
+            l1b_dataset["epoch"].size,
+            att_manager_lookup_str="hi_de_{0}",
+        )
     )
-    l1b_dataset = l1b_dataset.assign(new_data_vars)
     l1b_dataset = l1b_dataset.drop_vars(
         ["tof_1", "tof_2", "tof_3", "de_tag", "ccsds_met", "meta_event_met"]
     )
@@ -135,26 +140,28 @@ def annotate_direct_events(l1a_dataset: xr.Dataset) -> xr.Dataset:
     return l1b_dataset
 
 
-def compute_coincidence_type_and_time_deltas(dataset: xr.Dataset) -> xr.Dataset:
+def compute_coincidence_type_and_time_deltas(
+    dataset: xr.Dataset,
+) -> dict[str, xr.DataArray]:
     """
     Compute coincidence type and time deltas.
 
-    Adds the new variables "coincidence_type", "delta_t_ab", "delta_t_ac1",
-    "delta_t_bc1", and "delta_t_c1c2" to the input xarray.Dataset and returns
-    the updated xarray.Dataset.
+    Generates the new variables "coincidence_type", "delta_t_ab", "delta_t_ac1",
+    "delta_t_bc1", and "delta_t_c1c2" and returns a dictionary with the new
+    variables that can be added to the input dataset by calling the
+    xarray.Dataset.update method.
 
     Parameters
     ----------
     dataset : xarray.Dataset
-        The L1A/B dataset that results from reading in the L1A CDF and
-        allocating the new L1B DataArrays.
+        The L1A/B dataset that results from reading in a Hi L1A DE CDF.
 
     Returns
     -------
-    xarray.Dataset
-        Updated xarray.Dataset with 5 new variables added.
+    new_vars : dict[str, xarray.DataArray]
+        Keys are variable names and values are new populated `xarray.DataArray`.
     """
-    new_data_vars = create_dataset_variables(
+    new_vars = create_dataset_variables(
         [
             "coincidence_type",
             "delta_t_ab",
@@ -165,7 +172,7 @@ def compute_coincidence_type_and_time_deltas(dataset: xr.Dataset) -> xr.Dataset:
         len(dataset.epoch),
         att_manager_lookup_str="hi_de_{0}",
     )
-    out_ds = dataset.assign(new_data_vars)
+    out_ds = dataset.assign(new_vars)
 
     # compute masks needed for coincidence type and delta t calculations
     a_first = out_ds.trigger_id.values == TriggerId.A
@@ -186,12 +193,12 @@ def compute_coincidence_type_and_time_deltas(dataset: xr.Dataset) -> xr.Dataset:
     # |      2      |      B      |     A,B     |     B,C1    |    C1,C2    |
     # |      3      |      C1     |     A,C1    |     B,C1    |    C1,C2    |
     # Set coincidence type bitmask
-    out_ds.coincidence_type[a_first | tof1_valid] |= CoincidenceBitmap.A
-    out_ds.coincidence_type[
+    new_vars["coincidence_type"][a_first | tof1_valid] |= CoincidenceBitmap.A
+    new_vars["coincidence_type"][
         b_first | (a_first & tof1_valid) | (c_first & tof2_valid)
     ] |= CoincidenceBitmap.B
-    out_ds.coincidence_type[c_first | tof2_valid] |= CoincidenceBitmap.C1
-    out_ds.coincidence_type[tof3_valid] |= CoincidenceBitmap.C2
+    new_vars["coincidence_type"][c_first | tof2_valid] |= CoincidenceBitmap.C1
+    new_vars["coincidence_type"][tof3_valid] |= CoincidenceBitmap.C2
 
     # Table denoting how TOF is interpreted for each Trigger ID
     # -----------------------------------------------------------------------
@@ -209,58 +216,99 @@ def compute_coincidence_type_and_time_deltas(dataset: xr.Dataset) -> xr.Dataset:
     # # ********** delta_t_ab = (t_b - t_a) **********
     # Table: row 1, column 1
     a_and_tof1 = a_first & tof1_valid
-    out_ds.delta_t_ab.values[a_and_tof1] = tof_1_ns[a_and_tof1]
+    new_vars["delta_t_ab"].values[a_and_tof1] = tof_1_ns[a_and_tof1]
     # Table: row 2, column 1
     b_and_tof1 = b_first & tof1_valid
-    out_ds.delta_t_ab.values[b_and_tof1] = -1 * tof_1_ns[b_and_tof1]
+    new_vars["delta_t_ab"].values[b_and_tof1] = -1 * tof_1_ns[b_and_tof1]
     # Table: row 3, column 1 and 2
     # delta_t_ab = (t_b - t_c1) - (t_a - t_c1) = (t_b - t_a)
     c_and_tof1and2 = c_first & tof1and2_valid
-    out_ds.delta_t_ab.values[c_and_tof1and2] = (
+    new_vars["delta_t_ab"].values[c_and_tof1and2] = (
         tof_2_ns[c_and_tof1and2] - tof_1_ns[c_and_tof1and2]
     )
 
     # ********** delta_t_ac1 = (t_c1 - t_a) **********
     # Table: row 1, column 2
     a_and_tof2 = a_first & tof2_valid
-    out_ds.delta_t_ac1.values[a_and_tof2] = tof_2_ns[a_and_tof2]
+    new_vars["delta_t_ac1"].values[a_and_tof2] = tof_2_ns[a_and_tof2]
     # Table: row 2, column 1 and 2
     # delta_t_ac1 = (t_c1 - t_b) - (t_a - t_b) = (t_c1 - t_a)
     b_and_tof1and2 = b_first & tof1and2_valid
-    out_ds.delta_t_ac1.values[b_and_tof1and2] = (
+    new_vars["delta_t_ac1"].values[b_and_tof1and2] = (
         tof_2_ns[b_and_tof1and2] - tof_1_ns[b_and_tof1and2]
     )
     # Table: row 3, column 1
     c_and_tof1 = c_first & tof1_valid
-    out_ds.delta_t_ac1.values[c_and_tof1] = -1 * tof_1_ns[c_and_tof1]
+    new_vars["delta_t_ac1"].values[c_and_tof1] = -1 * tof_1_ns[c_and_tof1]
 
     # ********** delta_t_bc1 = (t_c1 - t_b) **********
     # Table: row 1, column 1 and 2
     # delta_t_bc1 = (t_c1 - t_a) - (t_b - t_a) => (t_c1 - t_b)
     a_and_tof1and2 = a_first & tof1and2_valid
-    out_ds.delta_t_bc1.values[a_and_tof1and2] = (
+    new_vars["delta_t_bc1"].values[a_and_tof1and2] = (
         tof_2_ns[a_and_tof1and2] - tof_1_ns[a_and_tof1and2]
     )
     # Table: row 2, column 2
     b_and_tof2 = b_first & tof2_valid
-    out_ds.delta_t_bc1.values[b_and_tof2] = tof_2_ns[b_and_tof2]
+    new_vars["delta_t_bc1"].values[b_and_tof2] = tof_2_ns[b_and_tof2]
     # Table: row 3, column 2
     c_and_tof2 = c_first & tof2_valid
-    out_ds.delta_t_bc1.values[c_and_tof2] = -1 * tof_2_ns[c_and_tof2]
+    new_vars["delta_t_bc1"].values[c_and_tof2] = -1 * tof_2_ns[c_and_tof2]
 
     # ********** delta_t_c1c2 = (t_c2 - t_c1) **********
     # Table: all rows, column 3
-    out_ds.delta_t_c1c2.values[tof3_valid] = tof_3_ns[tof3_valid]
+    new_vars["delta_t_c1c2"].values[tof3_valid] = tof_3_ns[tof3_valid]
 
-    return out_ds
+    return new_vars
 
 
-def compute_hae_coordinates(dataset: xr.Dataset) -> xr.Dataset:
+def de_nominal_bin_and_spin_phase(dataset: xr.Dataset) -> dict[str, xr.DataArray]:
+    """
+    Compute nominal bin and instrument spin-phase for each direct event.
+
+    Parameters
+    ----------
+    dataset : xarray.Dataset
+        Direct event data to compute instrument spin-phase for.
+
+    Returns
+    -------
+    new_vars : dict[str, xarray.DataArray]
+        Dictionary containing new "spin_phase" variable.
+    """
+    new_vars = create_dataset_variables(
+        [
+            "spin_phase",
+            "nominal_bin",
+        ],
+        len(dataset.epoch),
+        att_manager_lookup_str="hi_de_{0}",
+    )
+
+    # nominal_bin is the index number of the 90 4-degree bins that each DE would
+    # be binned into in the histogram packet. The Hi histogram data is binned by
+    # spacecraft spin-phase, not instrument spin-phase, so the same is done here.
+    met_query_times = j2000ns_to_j2000s(dataset.event_met.values)
+    imap_spin_phase = get_spacecraft_spin_phase(met_query_times)
+    new_vars["nominal_bin"].values = np.asarray(imap_spin_phase * 360 / 4).astype(
+        np.uint8
+    )
+
+    sensor_number = parse_sensor_number(dataset.attrs["Logical_source"])
+    new_vars["spin_phase"].values = np.asarray(
+        get_instrument_spin_phase(
+            met_query_times, SpiceFrame[f"IMAP_HI_{sensor_number}"]
+        )
+    ).astype(np.float32)
+    return new_vars
+
+
+def compute_hae_coordinates(dataset: xr.Dataset) -> dict[str, xr.DataArray]:
     """
     Compute HAE latitude and longitude.
 
-    Adds the new variables "hae_latitude" and "hae_longitude" to
-    the input xarray.Dataset and returns the updated xarray.Dataset.
+    The HAE coordinates are returned in a dictionary that can be added to the
+    input dataset using the `.update()` method.
 
     Parameters
     ----------
@@ -270,10 +318,10 @@ def compute_hae_coordinates(dataset: xr.Dataset) -> xr.Dataset:
 
     Returns
     -------
-    xarray.Dataset
-        Updated xarray.Dataset with 2 new variables added.
+    new_vars : dict[str, xarray.DataArray]
+        Keys are variable names and values are `xarray.DataArray`.
     """
-    new_data_vars = create_dataset_variables(
+    new_vars = create_dataset_variables(
         [
             "hae_latitude",
             "hae_longitude",
@@ -281,8 +329,7 @@ def compute_hae_coordinates(dataset: xr.Dataset) -> xr.Dataset:
         len(dataset.epoch),
         att_manager_lookup_str="hi_de_{0}",
     )
-    out_ds = dataset.assign(new_data_vars)
-    et = j2000ns_to_j2000s(out_ds.epoch.values)
+    et = j2000ns_to_j2000s(dataset.epoch.values)
     sensor_number = parse_sensor_number(dataset.attrs["Logical_source"])
     # TODO: For now, we are using SPICE to compute the look direction for each
     #   direct event. This will eventually be replaced by the algorithm Paul
@@ -290,7 +337,36 @@ def compute_hae_coordinates(dataset: xr.Dataset) -> xr.Dataset:
     pointing_coordinates = instrument_pointing(
         et, SpiceFrame[f"IMAP_HI_{sensor_number}"], SpiceFrame.ECLIPJ2000
     )
-    out_ds.hae_latitude.values = pointing_coordinates[:, 0]
-    out_ds.hae_longitude.values = pointing_coordinates[:, 1]
+    new_vars["hae_latitude"].values = pointing_coordinates[:, 0]
+    new_vars["hae_longitude"].values = pointing_coordinates[:, 1]
 
-    return out_ds
+    return new_vars
+
+
+def de_esa_energy_step(dataset: xr.Dataset) -> dict[str, xr.DataArray]:
+    """
+    Compute esa_energy_step for each direct event.
+
+    TODO: For now this function just returns the esa_step from the input dataset.
+        Eventually, it will take L1B housekeeping data and determine the esa
+        energy steps from that data.
+
+    Parameters
+    ----------
+    dataset : xarray.Dataset
+        The partial L1B dataset.
+
+    Returns
+    -------
+    new_vars : dict[str, xarray.DataArray]
+        Keys are variable names and values are `xarray.DataArray`.
+    """
+    new_vars = create_dataset_variables(
+        ["esa_energy_step"],
+        len(dataset.epoch),
+        att_manager_lookup_str="hi_de_{0}",
+    )
+    # TODO: Implement this algorithm
+    new_vars["esa_energy_step"].values = dataset.esa_step.values
+
+    return new_vars

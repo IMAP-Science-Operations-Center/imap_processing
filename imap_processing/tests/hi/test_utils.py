@@ -48,7 +48,7 @@ def test_parse_sensor_number(test_str, expected):
     [
         ("despun_z", (1, 3), (1, 3)),
         ("hae_latitude", None, (1, 360)),
-        ("counts", None, (1, 10, 360)),
+        ("counts", None, (1, 10, 5, 360)),
     ],
 )
 def test_full_dataarray(name, shape, expected_shape):
@@ -56,10 +56,11 @@ def test_full_dataarray(name, shape, expected_shape):
     coords = {
         "epoch": xr.DataArray(np.array([0])),
         "esa_energy_step": xr.DataArray(np.arange(10)),
+        "calibration_prod": xr.DataArray(np.arange(5)),
         "spin_angle_bin": xr.DataArray(np.arange(360)),
     }
     cdf_manager = ImapCdfAttributes()
-    cdf_manager.load_variable_attributes("imap_hi_variable_attrs.yaml")
+    cdf_manager.add_instrument_variable_attrs(instrument="hi", level=None)
 
     dataarray = full_dataarray(
         name, cdf_manager.get_variable_attributes(f"hi_pset_{name}"), coords, shape
@@ -83,7 +84,7 @@ def test_create_dataset_variables(var_names, shape, lookup_str):
     assert len(l1b_de_vars) == len(var_names)
     attr_mgr = ImapCdfAttributes()
     attr_mgr.add_instrument_global_attrs("hi")
-    attr_mgr.load_variable_attributes("imap_hi_variable_attrs.yaml")
+    attr_mgr.add_instrument_variable_attrs(instrument="hi", level=None)
 
     for var_name, data_array in l1b_de_vars.items():
         attrs = attr_mgr.get_variable_attributes(

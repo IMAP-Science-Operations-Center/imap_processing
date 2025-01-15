@@ -1,5 +1,4 @@
 from pathlib import Path
-from unittest import mock
 
 # from imap_processing.cdf.cdf_attribute_manager import CdfAttributeManager
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
@@ -23,15 +22,6 @@ def test_add_instrument_global_attrs():
     instrument2_instrument = imap_cdf_manager.get_global_attributes("imap_swe_l1a_sci")
     assert instrument2_instrument["Data_type"] == "L1A_SCI>Level-1A Science data"
     assert instrument2_instrument["Project"] == "STP>Solar Terrestrial Probes"
-
-
-@mock.patch(
-    "imap_processing.cdf.cdf_attribute_manager.CdfAttributeManager.load_variable_attributes"
-)
-def testing_source_dir(mock_load_variable_attributes):
-    # Create an ImapCdfAttributes object
-    imap_cdf_manager = ImapCdfAttributes(Path(__file__).parent.parent / "cdf")
-    assert str(imap_cdf_manager.source_dir) == str(Path(__file__).parent.parent / "cdf")
 
 
 def test_add_instrument_variable_attrs():

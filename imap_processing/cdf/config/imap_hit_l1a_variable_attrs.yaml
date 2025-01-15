@@ -2,7 +2,7 @@
 # TODO: update label_axis and min/max with values provided by instrument team.
 
 # <=== Defaults ===>
-# Assumed values for all variable attrs unless overwritten
+# Default values for variable attrs unless overwritten
 default_attrs: &default
   DEPEND_0: epoch
   DISPLAY_TYPE: time_series
@@ -13,6 +13,24 @@ default_attrs: &default
   VAR_TYPE: data
   UNITS: ' '
   SCALETYP: linear
+
+default_uint8_attrs: &default_uint8
+  <<: *default
+  FILLVAL: 255
+  FORMAT: I3
+  VALIDMIN: 0
+  VALIDMAX: 255
+  dtype: uint8
+  DEPEND_0: sc_tick
+
+default_uint16_attrs: &default_uint16
+  <<: *default
+  FILLVAL: 65535
+  FORMAT: I5
+  VALIDMIN: 0
+  VALIDMAX: 65535
+  dtype: uint16
+  DEPEND_0: sc_tick
 
 hk_support_attrs: &support_default
   <<: *default
@@ -46,6 +64,50 @@ adc_channels_label:
 # <=== Data Variable Attributes ===>
 #TODO is DEPEND_0 needed for no_plot variables in housekeeping?
 
+# CCSDS header variables
+version:
+  <<: *default_uint8
+  CATDESC: CCSDS packet version number
+  FIELDNAM: CCSDS version
+  VAR_TYPE: support_data
+
+type:
+  <<: *default_uint8
+  CATDESC: CCSDS packet type
+  FIELDNAM: CCSDS type
+  VAR_TYPE: support_data
+
+sec_hdr_flg:
+  <<: *default_uint8
+  CATDESC: CCSDS secondary header flag
+  FIELDNAM: CCSDS secondary header flag
+  VAR_TYPE: support_data
+
+pkt_apid:
+  <<: *default_uint16
+  CATDESC: CCSDS application process ID
+  FIELDNAM: CCSDS APID
+  VAR_TYPE: support_data
+
+seq_flgs:
+  <<: *default_uint8
+  CATDESC: CCSDS sequence flags
+  FIELDNAM: CCSDS sequence flags
+  VAR_TYPE: support_data
+
+src_seq_ctr:
+  <<: *default_uint16
+  CATDESC: CCSDS source sequence counter
+  FIELDNAM: CCSDS sequence counter
+  VAR_TYPE: support_data
+
+pkt_len:
+  <<: *default_uint16
+  CATDESC: CCSDS packet length
+  FIELDNAM: CCSDS packet length
+  VAR_TYPE: support_data
+
+# Housekeeping variables
 fsw_version_a:
   <<: *support_default
   VALIDMAX: 3

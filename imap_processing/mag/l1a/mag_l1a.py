@@ -8,7 +8,6 @@ import numpy as np
 import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
-from imap_processing.cdf.utils import J2000_EPOCH
 from imap_processing.mag.constants import DataMode, PrimarySensor
 from imap_processing.mag.l0 import decom_mag
 from imap_processing.mag.l0.mag_l0_data import MagL0
@@ -17,7 +16,7 @@ from imap_processing.mag.l1a.mag_l1a_data import (
     MagL1aPacketProperties,
     TimeTuple,
 )
-from imap_processing.spice.time import met_to_j2000ns
+from imap_processing.spice.time import J2000_EPOCH, met_to_j2000ns
 
 logger = logging.getLogger(__name__)
 
@@ -158,8 +157,7 @@ def process_packets(
                 "timedelta64[ns]"
             )
         ).astype("datetime64[D]")
-
-        primary_packet_data = MagL1aPacketProperties(
+        primary_packet_properties = MagL1aPacketProperties(
             mag_l0.SHCOARSE,
             primary_start_time,
             mag_l0.PRI_VECSEC,
@@ -167,28 +165,30 @@ def process_packets(
             mag_l0.ccsds_header.SRC_SEQ_CTR,
             mag_l0.COMPRESSION,
             mago_is_primary,
+            int(mag_l0.VECTORS[0]),
         )
 
         secondary_packet_data = dataclasses.replace(
-            primary_packet_data,
+            primary_packet_properties,
             start_time=secondary_start_time,
             vectors_per_second=mag_l0.SEC_VECSEC,
             pus_ssubtype=mag_l0.PUS_SSUBTYPE,
+            first_byte=int(mag_l0.VECTORS[0]),
         )
         # now we know the number of secs of data in the packet, and the data rates of
         # each sensor, we can calculate how much data is in this packet and where the
         # byte boundaries are.
         primary_vectors, secondary_vectors = MagL1a.process_vector_data(
             mag_l0.VECTORS,  # type: ignore
-            primary_packet_data.total_vectors,
+            primary_packet_properties.total_vectors,
             secondary_packet_data.total_vectors,
             mag_l0.COMPRESSION,
         )
 
         primary_timestamped_vectors = MagL1a.calculate_vector_time(
             primary_vectors,
-            primary_packet_data.vectors_per_second,
-            primary_packet_data.start_time,
+            primary_packet_properties.vectors_per_second,
+            primary_packet_properties.start_time,
         )
         secondary_timestamped_vectors = MagL1a.calculate_vector_time(
             secondary_vectors,
@@ -208,7 +208,7 @@ def process_packets(
                 primary_timestamped_vectors
                 if mago_is_primary
                 else secondary_timestamped_vectors,
-                primary_packet_data if mago_is_primary else secondary_packet_data,
+                primary_packet_properties if mago_is_primary else secondary_packet_data,
             )
         else:
             mago[mago_day].append_vectors(
@@ -217,7 +217,7 @@ def process_packets(
                     if mago_is_primary
                     else secondary_timestamped_vectors
                 ),
-                primary_packet_data if mago_is_primary else secondary_packet_data,
+                primary_packet_properties if mago_is_primary else secondary_packet_data,
             )
 
         if magi_day not in magi:
@@ -228,7 +228,9 @@ def process_packets(
                 primary_timestamped_vectors
                 if not mago_is_primary
                 else secondary_timestamped_vectors,
-                primary_packet_data if not mago_is_primary else secondary_packet_data,
+                primary_packet_properties
+                if not mago_is_primary
+                else secondary_packet_data,
             )
         else:
             magi[magi_day].append_vectors(
@@ -237,7 +239,9 @@ def process_packets(
                     if not mago_is_primary
                     else secondary_timestamped_vectors
                 ),
-                primary_packet_data if not mago_is_primary else secondary_packet_data,
+                primary_packet_properties
+                if not mago_is_primary
+                else secondary_packet_data,
             )
 
     return {"mago": mago, "magi": magi}
@@ -278,8 +282,13 @@ def generate_dataset(
 
     # TODO: Just leave time in datetime64 type with vector as dtype object to avoid this
     # Get the timestamp from the end of the vector
-    time_data = single_file_l1a.vectors[:, 4].astype(
-        np.dtype("datetime64[ns]"), copy=False
+    time_data = single_file_l1a.vectors[:, 4]
+
+    compression = xr.DataArray(
+        np.arange(2),
+        name="compression",
+        dims=["compression"],
+        attrs=attribute_manager.get_variable_attributes("compression_attrs"),
     )
 
     direction = xr.DataArray(
@@ -305,12 +314,43 @@ def generate_dataset(
         attrs=attribute_manager.get_variable_attributes("vector_attrs"),
     )
 
-    output = xr.Dataset(
-        coords={"epoch": epoch_time, "direction": direction},
-        attrs=attribute_manager.get_global_attributes(logical_file_id),
+    compression_flags = xr.DataArray(
+        single_file_l1a.compression_flags,
+        name="compression_flags",
+        dims=["epoch", "compression"],
+        attrs=attribute_manager.get_variable_attributes("compression_flags_attrs"),
     )
 
+    direction_label = xr.DataArray(
+        direction.values.astype(str),
+        name="direction_label",
+        dims=["direction_label"],
+        attrs=attribute_manager.get_variable_attributes(
+            "direction_label", check_schema=False
+        ),
+    )
+
+    compression_label = xr.DataArray(
+        compression.values.astype(str),
+        name="compression_label",
+        dims=["compression_label"],
+        attrs=attribute_manager.get_variable_attributes(
+            "compression_label", check_schema=False
+        ),
+    )
+
+    output = xr.Dataset(
+        coords={
+            "epoch": epoch_time,
+            "direction": direction,
+            "compression": compression,
+        },
+        attrs=attribute_manager.get_global_attributes(logical_file_id),
+    )
+    output["direction_label"] = direction_label
+    output["compression_label"] = compression_label
     output["vectors"] = vectors
+    output["compression_flags"] = compression_flags
 
     # TODO: Put is_mago and active in the header
 

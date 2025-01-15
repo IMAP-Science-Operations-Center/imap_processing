@@ -64,9 +64,11 @@ def mag_l1b_processing(input_dataset: xr.Dataset) -> xr.Dataset:
     """
     # TODO: There is a time alignment step that will add a lot of complexity.
     # This needs to be done once we have some SPICE time data.
+    mag_attributes = ImapCdfAttributes()
+    mag_attributes.add_instrument_variable_attrs("mag", "l1")
 
-    dims = [["direction"]]
-    new_dims = [["direction"]]
+    dims = [["direction"], ["compression"]]
+    new_dims = [["direction"], ["compression"]]
     # TODO: This should definitely be loaded from AWS
     calibration_dataset = load_cdf(
         Path(__file__).parent / "imap_calibration_mag_20240229_v01.cdf"
@@ -78,8 +80,9 @@ def mag_l1b_processing(input_dataset: xr.Dataset) -> xr.Dataset:
         calibration_matrix = calibration_dataset["MFITOURFI"]
 
     l1b_fields = xr.apply_ufunc(
-        calibrate,
+        update_vector,
         input_dataset["vectors"],
+        input_dataset["compression_flags"],
         input_core_dims=dims,
         output_core_dims=new_dims,
         vectorize=True,
@@ -88,13 +91,93 @@ def mag_l1b_processing(input_dataset: xr.Dataset) -> xr.Dataset:
     )
 
     output_dataset = input_dataset.copy()
-    output_dataset["vectors"] = l1b_fields
+    output_dataset["vectors"].data = l1b_fields[0].data
 
-    # TODO add/update attributes
+    output_dataset["epoch"].attrs = mag_attributes.get_variable_attributes("epoch")
+    output_dataset["direction"].attrs = mag_attributes.get_variable_attributes(
+        "direction_attrs"
+    )
+    output_dataset["compression"].attrs = mag_attributes.get_variable_attributes(
+        "compression_attrs"
+    )
+    output_dataset["direction_label"].attrs = mag_attributes.get_variable_attributes(
+        "direction_label", check_schema=False
+    )
+    output_dataset["compression_label"].attrs = mag_attributes.get_variable_attributes(
+        "compression_label", check_schema=False
+    )
+
     return output_dataset
 
 
-def calibrate(
+def update_vector(
+    input_vector: np.ndarray,
+    input_compression: np.ndarray,
+    calibration_matrix: xr.DataArray,
+) -> tuple[np.ndarray, np.ndarray]:
+    """
+    Apply calibration and compression scaling to vector.
+
+    This calls, in sequence, calibrate_vector and rescale_vector to apply L1B processing
+    to the input vector.
+
+    Parameters
+    ----------
+    input_vector : numpy.ndarray
+        One input vector to update, looking like (x, y, z, range).
+    input_compression : numpy.ndarray
+        Compression flags corresponding to the vector, looking like (is_compressed,
+        compression_width).
+    calibration_matrix : xr.DataArray
+        DataArray containing the full set of calibration matrices, for each range.
+        Size is ((3, 3, 4)).
+
+    Returns
+    -------
+    tuple[numpy.ndarray, numpy.ndarray]
+        Updated vector and the same compression flags.
+    """
+    vector = calibrate_vector(input_vector, calibration_matrix)
+    return rescale_vector(vector, input_compression), input_compression
+
+
+def rescale_vector(
+    input_vector: np.ndarray, compression_flags: np.ndarray
+) -> np.ndarray:
+    """
+    Rescale vector based on compression flags.
+
+    If the first value of compression_flags is zero, this just returns the input_vector
+    unchanged. Otherwise, the vector is scaled using the compression width, which is
+    the second part of compression_flags.
+
+    The vector is scaled using the following equation:
+    M = 2 ^ (16-width)
+    output_vector = input_vector * M
+
+    Therefore, for a 16 bit width, the same vector is returned.
+
+    Parameters
+    ----------
+    input_vector : numpy.ndarray
+        One input vector to update, looking like (x, y, z, range).
+    compression_flags : numpy.ndarray
+        Compression flags corresponding to the vector, looking like (is_compressed,
+        compression_width).
+
+    Returns
+    -------
+    output_vector : numpy.ndarray
+        Updated vector.
+    """
+    if not compression_flags[0]:
+        return input_vector
+    else:
+        factor = np.float_power(2, (16 - compression_flags[1]))
+        return input_vector * factor  # type: ignore
+
+
+def calibrate_vector(
     input_vector: np.ndarray, calibration_matrix: xr.DataArray = None
 ) -> np.ndarray:
     """
@@ -119,7 +202,6 @@ def calibrate(
     updated_vector = input_vector.copy()
 
     updated_vector[:3] = np.matmul(
-        input_vector[:3], calibration_matrix.values[:, :, int(input_vector[3])]
+        calibration_matrix.values[:, :, int(input_vector[3])], input_vector[:3]
     )
-
     return updated_vector

@@ -1,5 +1,6 @@
 """Calculates Extended Raw Events for ULTRA L1b."""
 
+# TODO: Come back and add in FSW logic.
 import logging
 from enum import Enum
 from typing import ClassVar
@@ -9,6 +10,7 @@ import xarray
 from numpy import ndarray
 from numpy.typing import NDArray
 
+from imap_processing.spice.geometry import cartesian_to_spherical
 from imap_processing.ultra.constants import UltraConstants
 from imap_processing.ultra.l1b.lookup_utils import (
     get_back_position,
@@ -252,7 +254,9 @@ def get_ph_tof_and_back_positions(
     return tof, t2, xb, yb
 
 
-def get_path_length(front_position: tuple, back_position: tuple, d: float) -> float:
+def get_path_length(
+    front_position: tuple, back_position: tuple, d: np.ndarray
+) -> NDArray:
     """
     Calculate the path length.
 
@@ -262,15 +266,15 @@ def get_path_length(front_position: tuple, back_position: tuple, d: float) -> fl
         Front position (xf,yf) (hundredths of a millimeter).
     back_position : tuple of floats
         Back position (xb,yb) (hundredths of a millimeter).
-    d : float
+    d : np.ndarray
         Distance from slit to foil (hundredths of a millimeter).
 
     Returns
     -------
-    path_length : float
+    path_length : np.ndarray
         Path length (r) (hundredths of a millimeter).
     """
-    path_length: float = np.sqrt(
+    path_length = np.sqrt(
         (front_position[0] - back_position[0]) ** 2
         + (front_position[1] - back_position[1]) ** 2
         + (d) ** 2
@@ -434,20 +438,14 @@ def get_coincidence_positions(
     return etof, xc_array * 100
 
 
-def get_particle_velocity(
-    front_position: tuple[float, float],
-    back_position: tuple[float, float],
+def get_de_velocity(
+    front_position: tuple[NDArray, NDArray],
+    back_position: tuple[NDArray, NDArray],
     d: np.ndarray,
     tof: np.ndarray,
-) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+) -> NDArray:
     """
-    Determine the particle velocity.
-
-    The equation is: velocity = ((xf - xb), (yf - yb), d).
-
-    Further description is available on pages 39 of
-    IMAP-Ultra Flight Software Specification document
-    (7523-9009_Rev_-.pdf).
+    Determine the direct event velocity.
 
     Parameters
     ----------
@@ -462,35 +460,30 @@ def get_particle_velocity(
 
     Returns
     -------
-    vhat_x : np.array
-        Normalized component of the velocity vector in x direction.
-    vhat_y : np.array
-        Normalized component of the velocity vector in y direction.
-    vhat_z : np.array
-        Normalized component of the velocity vector in z direction.
+    velocities : np.ndarray
+        N x 3 array of velocity components (vx, vy, vz) in km/s.
     """
     if tof[tof < 0].any():
         logger.info("Negative tof values found.")
 
-    delta_x = front_position[0] - back_position[0]
-    delta_y = front_position[1] - back_position[1]
+    # distances in .1 mm
+    delta_v = np.empty((len(d), 3), dtype=np.float32)
+    delta_v[:, 0] = (front_position[0] - back_position[0]) * 0.1
+    delta_v[:, 1] = (front_position[1] - back_position[1]) * 0.1
+    delta_v[:, 2] = d * 0.1
 
-    v_x = delta_x / tof
-    v_y = delta_y / tof
-    v_z = d / tof
+    # Convert from 0.1mm/0.1ns to km/s.
+    v_x = delta_v[:, 0] / tof * 1e3
+    v_y = delta_v[:, 1] / tof * 1e3
+    v_z = delta_v[:, 2] / tof * 1e3
 
-    # Magnitude of the velocity vector
-    magnitude_v = np.sqrt(v_x**2 + v_y**2 + v_z**2)
+    v_x[tof < 0] = np.nan  # used as fillvals
+    v_y[tof < 0] = np.nan
+    v_z[tof < 0] = np.nan
 
-    vhat_x = -v_x / magnitude_v
-    vhat_y = -v_y / magnitude_v
-    vhat_z = -v_z / magnitude_v
+    velocities = np.vstack((v_x, v_y, v_z)).T
 
-    vhat_x[tof < 0] = np.iinfo(np.int64).min  # used as fillvals
-    vhat_y[tof < 0] = np.iinfo(np.int64).min
-    vhat_z[tof < 0] = np.iinfo(np.int64).min
-
-    return vhat_x, vhat_y, vhat_z
+    return velocities
 
 
 def get_ssd_tof(de_dataset: xarray.Dataset, xf: np.ndarray) -> NDArray[np.float64]:
@@ -540,6 +533,37 @@ def get_ssd_tof(de_dataset: xarray.Dataset, xf: np.ndarray) -> NDArray[np.float6
 
     # Convert TOF to tenths of a nanosecond.
     return np.asarray(tof, dtype=np.float64)
+
+
+def get_de_energy_kev(v: np.ndarray, species: np.ndarray) -> NDArray:
+    """
+    Calculate the direct event energy.
+
+    Parameters
+    ----------
+    v : np.ndarray
+        N x 3 array of velocity components (vx, vy, vz) in km/s.
+    species : np.ndarray
+        Species of the particle.
+
+    Returns
+    -------
+    energy : np.ndarray
+        Energy of the direct event in keV.
+    """
+    vv = v * 1e3  # convert km/s to m/s
+    # Compute the sum of squares.
+    v2 = np.sum(vv**2, axis=1)
+
+    index_hydrogen = np.where(species == "H")
+    energy = np.full_like(v2, np.nan)
+
+    # 1/2 mv^2 in Joules, convert to keV
+    energy[index_hydrogen] = (
+        0.5 * UltraConstants.MASS_H * v2[index_hydrogen] * UltraConstants.J_KEV
+    )
+
+    return energy
 
 
 def get_energy_pulse_height(
@@ -645,9 +669,11 @@ def get_energy_ssd(de_dataset: xarray.Dataset, ssd: np.ndarray) -> NDArray[np.fl
     return energy_norm
 
 
-def get_ctof(tof: np.ndarray, path_length: np.ndarray) -> NDArray:
+def get_ctof(
+    tof: np.ndarray, path_length: np.ndarray, type: str
+) -> tuple[NDArray, NDArray]:
     """
-    Calculate the corrected TOF.
+    Calculate the corrected TOF and the magnitude of the particle velocity.
 
     The corrected TOF (ctof) is the TOF normalized with respect
     to a fixed distance dmin between the front and back detectors.
@@ -662,30 +688,36 @@ def get_ctof(tof: np.ndarray, path_length: np.ndarray) -> NDArray:
         Time of flight (tenths of a nanosecond).
     path_length : np.ndarray
         Path length (r) (hundredths of a millimeter).
+    type : str
+        Type of event, either "PH" or "SSD".
 
     Returns
     -------
     ctof : np.ndarray
         Corrected TOF (tenths of a ns).
+    magnitude_v : np.ndarray
+        Magnitude of the particle velocity (km/s).
     """
+    dmin_ctof = getattr(UltraConstants, f"DMIN_{type}_CTOF")
+
     # Multiply times 100 to convert to hundredths of a millimeter.
-    ctof = tof * UltraConstants.DMIN * 100 / path_length
+    ctof = tof * dmin_ctof * 100 / path_length
 
-    return ctof
+    # Convert from mm/0.1ns to km/s.
+    magnitude_v = dmin_ctof / ctof * 1e4
+
+    return ctof, magnitude_v
 
 
-def determine_species_pulse_height(
-    energy: np.ndarray, tof: np.ndarray, path_length: np.ndarray
-) -> NDArray:
+def determine_species(tof: np.ndarray, path_length: np.ndarray, type: str) -> NDArray:
     """
     Determine the species for pulse-height events.
 
-    Species is determined from the particle energy and velocity.
+    Species is determined from the particle velocity.
     For velocity, the particle TOF is normalized with respect
     to a fixed distance dmin between the front and back detectors.
     The normalized TOF is termed the corrected TOF (ctof).
-    Particle species are determined from
-    the energy and ctof using a lookup table.
+    Particle species are determined from ctof using thresholds.
 
     Further description is available on pages 42-44 of
     IMAP-Ultra Flight Software Specification document
@@ -693,72 +725,57 @@ def determine_species_pulse_height(
 
     Parameters
     ----------
-    energy : np.ndarray
-        Energy from the SSD event (keV).
     tof : np.ndarray
         Time of flight of the SSD event (tenths of a nanosecond).
     path_length : np.ndarray
         Path length (r) (hundredths of a millimeter).
+    type : str
+        Type of data (PH or SSD).
 
     Returns
     -------
-    bin : np.array
+    species_bin : np.array
         Species bin.
     """
-    # PH event TOF normalization to Z axis
-    ctof = get_ctof(tof, path_length)
-    # TODO: need lookup tables
-    # placeholder
-    bin = np.zeros(len(ctof))
-    # bin = PHxTOFSpecies[ctof, energy]
+    # Event TOF normalization to Z axis
+    ctof, _ = get_ctof(tof, path_length, type)
+    # Initialize bin array
+    species_bin = np.full(len(ctof), "UNKNOWN", dtype="U10")
 
-    return bin
+    # Assign "H" to bins where cTOF is within the specified range
+    species_bin[
+        (ctof > UltraConstants.CTOF_SPECIES_MIN)
+        & (ctof < UltraConstants.CTOF_SPECIES_MAX)
+    ] = "H"
+
+    return species_bin
 
 
-def determine_species_ssd(
-    energy: np.ndarray, tof: np.ndarray, path_length: np.ndarray
-) -> NDArray:
+def get_de_az_el(v: NDArray) -> tuple[NDArray, NDArray]:
     """
-    Determine the species for SSD events.
-
-    Species is determined from the particle's energy and velocity.
-    For velocity, the particle's TOF is normalized with respect
-    to a fixed distance dmin between the front and back detectors.
-    For SSD events, an adjustment is also made to the path length
-    to account for the shorter distances that such events
-    travel to reach the detector. The normalized TOF is termed
-    the corrected tof (ctof). Particle species are determined from
-    the energy and cTOF using a lookup table.
-
-    Further description is available on pages 42-44 of
-    IMAP-Ultra Flight Software Specification document
-    (7523-9009_Rev_-.pdf).
+    Compute azimuth (phi) angles and elevation (theta).
 
     Parameters
     ----------
-    energy : np.ndarray
-        Energy from the SSD event (keV).
-    tof : np.ndarray
-        Time of flight of the SSD event (tenths of a nanosecond).
-    path_length : np.ndarray
-        Path length (r) (hundredths of a millimeter).
+    v : np.ndarray
+        A NumPy array with shape (n, 3) where each
+        row represents a vector
+        with x, y, z-components.
 
     Returns
     -------
-    bin : np.ndarray
-        Species bin.
+    spherical_coords : np.ndarray
+        A NumPy array with shape (n, 3), where each row contains
+        the spherical coordinates (r, azimuth, elevation):
+
+        - azimuth : angle in the xy-plane
+          In radians:
+          output range=[0, 2*pi].
+        - elevation : angle from the xy-plane
+          In radians:
+          output range=[-pi/2, pi/2].
     """
-    # SSD event TOF normalization to Z axis
-    ctof = get_ctof(tof, path_length)
+    # Compute azimuth (phi) angles and elevation (theta)
+    spherical_coords = cartesian_to_spherical(v, degrees=False)
 
-    bin = np.zeros(len(ctof))  # placeholder
-
-    # TODO: get these lookup tables
-    # if r < get_image_params("PathSteepThresh"):
-    #     # bin = ExTOFSpeciesSteep[energy, ctof]
-    # elif r < get_image_params("PathMediumThresh"):
-    #     # bin = ExTOFSpeciesMedium[energy, ctof]
-    # else:
-    #     # bin = ExTOFSpeciesFlat[energy, ctof]
-
-    return bin
+    return spherical_coords[:, 1], spherical_coords[:, 2]

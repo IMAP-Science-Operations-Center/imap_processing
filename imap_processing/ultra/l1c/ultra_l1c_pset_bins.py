@@ -1,188 +1,108 @@
 """Module to create pointing sets."""
 
-import typing
 from pathlib import Path
 
 import cdflib
 import numpy as np
-import spiceypy as spice
 from numpy.typing import NDArray
 
-from imap_processing.spice.kernels import ensure_spice
+from imap_processing.spice.geometry import (
+    SpiceFrame,
+    cartesian_to_spherical,
+    imap_state,
+    spherical_to_cartesian,
+)
 from imap_processing.ultra.constants import UltraConstants
+from imap_processing.ultra.utils.spatial_utils import build_spatial_bins
 
 # TODO: add species binning.
 
 
-def build_energy_bins() -> tuple[np.ndarray, np.ndarray]:
+def build_energy_bins() -> tuple[list[tuple[float, float]], np.ndarray]:
     """
     Build energy bin boundaries.
 
     Returns
     -------
-    energy_bin_edges : np.ndarray
-        Array of energy bin edges.
+    intervals : list[tuple[float, float]]
+        Energy bins.
     energy_midpoints : np.ndarray
         Array of energy bin midpoints.
     """
-    # TODO: these value will almost certainly change.
-    alpha = 0.2  # deltaE/E
-    energy_start = 3.385  # energy start for the Ultra grids
-    n_bins = 23  # number of energy bins
-
     # Calculate energy step
-    energy_step = (1 + alpha / 2) / (1 - alpha / 2)
+    energy_step = (1 + UltraConstants.ALPHA / 2) / (1 - UltraConstants.ALPHA / 2)
 
     # Create energy bins.
-    energy_bin_edges = energy_start * energy_step ** np.arange(n_bins + 1)
+    energy_bin_edges = UltraConstants.ENERGY_START * energy_step ** np.arange(
+        UltraConstants.N_BINS + 1
+    )
     # Add a zero to the left side for outliers and round to nearest 3 decimal places.
     energy_bin_edges = np.around(np.insert(energy_bin_edges, 0, 0), 3)
     energy_midpoints = (energy_bin_edges[:-1] + energy_bin_edges[1:]) / 2
 
-    return energy_bin_edges, energy_midpoints
+    intervals = [
+        (float(energy_bin_edges[i]), float(energy_bin_edges[i + 1]))
+        for i in range(len(energy_bin_edges) - 1)
+    ]
 
-
-def build_spatial_bins(
-    spacing: float = 0.5,
-) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-    """
-    Build spatial bin boundaries for azimuth and elevation.
-
-    Parameters
-    ----------
-    spacing : float, optional
-        The bin spacing in degrees (default is 0.5 degrees).
-
-    Returns
-    -------
-    az_bin_edges : np.ndarray
-        Array of azimuth bin boundary values.
-    el_bin_edges : np.ndarray
-        Array of elevation bin boundary values.
-    az_bin_midpoints : np.ndarray
-        Array of azimuth bin midpoint values.
-    el_bin_midpoints : np.ndarray
-        Array of elevation bin midpoint values.
-    """
-    # Azimuth bins from 0 to 360 degrees.
-    az_bin_edges = np.arange(0, 360 + spacing, spacing)
-    az_bin_midpoints = az_bin_edges[:-1] + spacing / 2  # Midpoints between edges
-
-    # Elevation bins from -90 to 90 degrees.
-    el_bin_edges = np.arange(-90, 90 + spacing, spacing)
-    el_bin_midpoints = el_bin_edges[:-1] + spacing / 2  # Midpoints between edges
-
-    return az_bin_edges, el_bin_edges, az_bin_midpoints, el_bin_midpoints
-
-
-def cartesian_to_spherical(
-    v: NDArray,
-) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-    """
-    Convert cartesian coordinates to spherical coordinates.
-
-    Parameters
-    ----------
-    v : np.ndarray
-        A NumPy array with shape (n, 3) where each
-        row represents a vector
-        with x, y, z-components.
-
-    Returns
-    -------
-    az : np.ndarray
-        The azimuth angles in degrees.
-    el : np.ndarray
-        The elevation angles in degrees.
-    r : np.ndarray
-        The radii, or magnitudes, of the vectors.
-    """
-    vx = v[:, 0]
-    vy = v[:, 1]
-    vz = v[:, 2]
-
-    # Magnitude of the velocity vector
-    magnitude_v = np.sqrt(vx**2 + vy**2 + vz**2)
-
-    vhat_x = -vx / magnitude_v
-    vhat_y = -vy / magnitude_v
-    vhat_z = -vz / magnitude_v
-
-    # Elevation angle (angle from the z-axis, range: [-pi/2, pi/2])
-    el = np.arcsin(vhat_z)
-
-    # Azimuth angle (angle in the xy-plane, range: [0, 2*pi])
-    az = np.arctan2(vhat_y, vhat_x)
-
-    # Ensure azimuth is from 0 to 2PI
-    az = az % (2 * np.pi)
-
-    return np.degrees(az), np.degrees(el), magnitude_v
-
-
-def spherical_to_cartesian(
-    r: np.ndarray, theta: np.ndarray, phi: np.ndarray
-) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-    """
-    Convert spherical coordinates to Cartesian coordinates.
-
-    Parameters
-    ----------
-    r : np.ndarray
-        Radius.
-    theta : np.ndarray
-        Azimuth angle in radians.
-    phi : array-like or float
-        Elevation angle in radians.
-
-    Returns
-    -------
-    x, y, z : tuple
-        Cartesian coordinates.
-    """
-    x = r * np.cos(phi) * np.cos(theta)
-    y = r * np.cos(phi) * np.sin(theta)
-    z = r * np.sin(phi)
-
-    return x, y, z
+    return intervals, energy_midpoints
 
 
 def get_histogram(
-    v: tuple[np.ndarray, np.ndarray, np.ndarray],
+    vhat: tuple[np.ndarray, np.ndarray, np.ndarray],
     energy: np.ndarray,
     az_bin_edges: np.ndarray,
     el_bin_edges: np.ndarray,
-    energy_bin_edges: np.ndarray,
+    energy_bin_edges: list[tuple[float, float]],
 ) -> NDArray:
     """
     Compute a 3D histogram of the particle data.
 
     Parameters
     ----------
-    v : tuple[np.ndarray, np.ndarray, np.ndarray]
-        The x,y,z-components of the velocity vector.
+    vhat : tuple[np.ndarray, np.ndarray, np.ndarray]
+        The x,y,z-components of the unit velocity vector.
     energy : np.ndarray
         The particle energy.
     az_bin_edges : np.ndarray
         Array of azimuth bin boundary values.
     el_bin_edges : np.ndarray
         Array of elevation bin boundary values.
-    energy_bin_edges : np.ndarray
+    energy_bin_edges : list[tuple[float, float]]
         Array of energy bin edges.
 
     Returns
     -------
     hist : np.ndarray
         A 3D histogram array.
-    """
-    az, el, _ = cartesian_to_spherical(v)
 
-    # 3D binning.
-    hist, _ = np.histogramdd(
-        sample=(az, el, energy), bins=[az_bin_edges, el_bin_edges, energy_bin_edges]
+    Notes
+    -----
+    The histogram will now work properly for overlapping energy bins, i.e.
+    the same energy value can fall into multiple bins if the intervals overlap.
+    """
+    spherical_coords = cartesian_to_spherical(vhat)
+    az, el = (
+        spherical_coords[..., 1],
+        spherical_coords[..., 2],
     )
 
-    return hist
+    # Initialize histogram
+    hist_total = np.zeros(
+        (len(az_bin_edges) - 1, len(el_bin_edges) - 1, len(energy_bin_edges))
+    )
+
+    for i, (e_min, e_max) in enumerate(energy_bin_edges):
+        # Filter data for current energy bin.
+        mask = (energy >= e_min) & (energy < e_max)
+        hist, _ = np.histogramdd(
+            sample=(az[mask], el[mask], energy[mask]),
+            bins=[az_bin_edges, el_bin_edges, [e_min, e_max]],
+        )
+        # Assign 2D histogram to current energy bin.
+        hist_total[:, :, i] = hist[:, :, 0]
+
+    return hist_total
 
 
 def get_pointing_frame_exposure_times(
@@ -211,19 +131,17 @@ def get_pointing_frame_exposure_times(
     return exposure
 
 
-@ensure_spice
-@typing.no_type_check
 def get_helio_exposure_times(
     time: np.ndarray,
     sc_exposure: np.ndarray,
-) -> np.ndarray:
+) -> NDArray:
     """
     Compute a 3D array of the exposure in the helio frame.
 
     Parameters
     ----------
     time : np.ndarray
-        Median time of pointing.
+        Median time of pointing in J2000 seconds.
     sc_exposure : np.ndarray
         Spacecraft exposure.
 
@@ -237,7 +155,7 @@ def get_helio_exposure_times(
     These calculations are performed once per pointing.
     """
     # Get bins and midpoints.
-    energy_bin_edges, energy_midpoints = build_energy_bins()
+    _, energy_midpoints = build_energy_bins()
     az_bin_edges, el_bin_edges, az_bin_midpoints, el_bin_midpoints = (
         build_spatial_bins()
     )
@@ -252,15 +170,12 @@ def get_helio_exposure_times(
 
     # Radial distance.
     r = np.ones(el_grid.shape)
-    x, y, z = spherical_to_cartesian(r, np.radians(az_grid), np.radians(el_grid))
-
-    # Reshape and combine the Cartesian coordinates into a 2D array.
-    cartesian = np.vstack(
-        [x.flatten(order="F"), y.flatten(order="F"), z.flatten(order="F")]
-    )
+    spherical_coords = np.stack((r, np.radians(az_grid), np.radians(el_grid)), axis=-1)
+    cartesian_coords = spherical_to_cartesian(spherical_coords)
+    cartesian = cartesian_coords.reshape(-1, 3, order="F").T
 
     # Spacecraft velocity in the pointing (DPS) frame wrt heliosphere.
-    state, lt = spice.spkezr("IMAP", time, "IMAP_DPS", "NONE", "SUN")
+    state = imap_state(time, ref_frame=SpiceFrame.IMAP_DPS)
 
     # Extract the velocity part of the state vector
     spacecraft_velocity = state[3:6]
@@ -273,7 +188,7 @@ def get_helio_exposure_times(
             / 1e3
         )
 
-        # Use Compton-Getting to transform the velocity wrt spacecraft
+        # Use Galilean Transform to transform the velocity wrt spacecraft
         # to the velocity wrt heliosphere.
         # energy_velocity * cartesian -> apply the magnitude of the velocity
         # to every position on the grid in the despun grid.
@@ -284,10 +199,11 @@ def get_helio_exposure_times(
             helio_velocity.T, axis=1, keepdims=True
         )
         # Converts vectors from Cartesian coordinates (x, y, z)
-        # into spherical coordinates
-        az, el, _ = cartesian_to_spherical(-helio_normalized)
+        # into spherical coordinates.
+        spherical_coords = cartesian_to_spherical(helio_normalized)
+        az, el = spherical_coords[..., 1], spherical_coords[..., 2]
 
-        # Bin the coordinates.
+        # Assign values from sc_exposure directly to bins.
         az_idx = np.digitize(az, az_bin_edges) - 1
         el_idx = np.digitize(el, el_bin_edges[::-1]) - 1
 

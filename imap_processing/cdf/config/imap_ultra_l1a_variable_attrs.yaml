@@ -25,6 +25,7 @@ ultra_support_attrs:
   VALIDMAX: 9223372036854775807
   VAR_TYPE: support_data
   DISPLAY_TYPE: time_series
+  DEPEND_0: epoch
 
 string_base_attrs:
   CATDESC: string metadata

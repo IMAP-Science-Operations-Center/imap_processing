@@ -52,13 +52,23 @@ class UltraConstants:
     DF: float = 3.39  # Distance from slit to foil [mm]
 
     # Derived constants
-    DMIN: float = (
+    DMIN_PH_CTOF: float = (
         Z_DS - (2**0.5) * DF
     )  # Minimum distance between front and back detectors [mm]
-    DMIN_SSD_CTOF: float = (DMIN**2) / (
-        DMIN - Z_DSTOP
+    DMIN_SSD_CTOF: float = (DMIN_PH_CTOF**2) / (
+        DMIN_PH_CTOF - Z_DSTOP
     )  # SSD-specific correction to DMIN [mm]
 
     # Conversion factors
-    KEV_J = 1.602180000000000e-16  # 1.6021766339999e-16 # keV to joules
+    KEV_J = 1.602177e-16  # keV to joules
+    J_KEV = 1 / KEV_J  # joules to keV
     MASS_H = 1.6735575e-27  # Mass of a hydrogen atom in kilograms.
+
+    # Energy bin constants
+    ALPHA = 0.2  # deltaE/E
+    ENERGY_START = 3.385  # energy start for the Ultra grids
+    N_BINS = 23  # number of energy bins
+
+    # Constants for species determination based on ctof range.
+    CTOF_SPECIES_MIN = 50
+    CTOF_SPECIES_MAX = 200

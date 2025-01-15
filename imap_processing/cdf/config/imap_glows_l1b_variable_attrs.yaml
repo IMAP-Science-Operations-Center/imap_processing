@@ -251,13 +251,13 @@ filter_temperature_average:
   LABLAXIS: Avgd Temperature
   VALIDMAX: 255
 
-filter_temperature_variance:
+filter_temperature_std_dev:
   <<: *support_data_defaults
-  CATDESC: spin-block-averaged variance of filter temperature
-  FIELDNAM: Variance of filter temperature
+  CATDESC: spin-block-averaged std_dev of filter temperature
+  FIELDNAM: std_dev of filter temperature
   FILLVAL: *max_uint32
   FORMAT: I6
-  LABLAXIS: Variance
+  LABLAXIS: std_dev
   VALIDMAX: *max_uint16
 
 hv_voltage_average:
@@ -269,12 +269,12 @@ hv_voltage_average:
   LABLAXIS: Avg voltage
   VALIDMAX: *max_uint16
 
-hv_voltage_variance:
+hv_voltage_std_dev:
   <<: *support_data_defaults
-  CATDESC: variance of  HV voltage on the CEM, uint encoded
-  FIELDNAM: HV voltage variance
+  CATDESC: std_dev of  HV voltage on the CEM, uint encoded
+  FIELDNAM: HV voltage std_dev
   FILLVAL: *int_fillval
-  LABLAXIS: Variance
+  LABLAXIS: std_dev
   VALIDMAX: *max_uint32
 
 spin_period_average:
@@ -291,13 +291,13 @@ spin_period_average:
   VALIDMIN: 45000 # TBC 14.63 s where 20.9712 s = 65535, rounded down
   VAR_TYPE: support_data
 
-spin_period_variance:
+spin_period_std_dev:
   <<: *support_data_defaults
-  CATDESC: spin-block-averaged variance of spin period
-  FIELDNAM: variance of spin period
+  CATDESC: spin-block-averaged std_dev of spin period
+  FIELDNAM: std_dev of spin period
   FILLVAL: *int_fillval
   FORMAT: I10
-  LABLAXIS: Variance
+  LABLAXIS: std_dev
   VALIDMAX: *max_uint32
 
 # TODO review these
@@ -315,13 +315,13 @@ spin_period_ground_average:
   VALIDMIN: 45000 # TBC 14.63 s where 20.9712 s = 65535, rounded down
   VAR_TYPE: support_data
 
-spin_period_ground_variance:
+spin_period_ground_std_dev:
   <<: *support_data_defaults
-  CATDESC: spin-block-averaged variance of spin period on ground
-  FIELDNAM: ground variance of spin period
+  CATDESC: spin-block-averaged std_dev of spin period on ground
+  FIELDNAM: ground std_dev of spin period
   FILLVAL: *int_fillval
   FORMAT: I10
-  LABLAXIS: Variance
+  LABLAXIS: std_dev
   VALIDMAX: *max_uint32
 
 pulse_length_average:
@@ -333,13 +333,13 @@ pulse_length_average:
   LABLAXIS: Avg pulse len
   VALIDMAX: 255
 
-pulse_length_variance:
+pulse_length_std_dev:
   <<: *support_data_defaults
-  CATDESC: spin-block-averaged variance of pulse length
-  FIELDNAM: Variance of pulse length
+  CATDESC: spin-block-averaged std_dev of pulse length
+  FIELDNAM: std_dev of pulse length
   FILLVAL: *max_uint32
   FORMAT: I10
-  LABLAXIS: Variance
+  LABLAXIS: std_dev
   VALIDMAX: *max_uint16
 
 position_angle_offset_average:
@@ -350,21 +350,21 @@ position_angle_offset_average:
   FORMAT: I4
   LABLAXIS: Avg pos angle
 
-position_angle_offset_variance:
+position_angle_offset_std_dev:
   <<: *support_data_defaults
-  CATDESC: spin-block averaged variance of position angle offset
-  FIELDNAM: Variance of position angle offset
+  CATDESC: spin-block averaged std_dev of position angle offset
+  FIELDNAM: std_dev of position angle offset
   FILLVAL: *max_uint16
   FORMAT: I4
-  LABLAXIS: Variance
+  LABLAXIS: std_dev
 
-spin_axis_orientation_variance:
+spin_axis_orientation_std_dev:
   <<: *support_data_defaults
-  CATDESC: spin-block averaged variance of spin axis orientation
-  FIELDNAM: Variance of spin axis orientation
+  CATDESC: spin-block averaged std_dev of spin axis orientation
+  FIELDNAM: std_dev of spin axis orientation
   FILLVAL: *max_uint16
   FORMAT: I4
-  LABLAXIS: Variance
+  LABLAXIS: std_dev
 
 spin_axis_orientation_average:
   <<: *support_data_defaults
@@ -383,14 +383,14 @@ spacecraft_location_average:
   FORMAT: I4
   LABLAXIS: Avg spacecraft location
 
-spacecraft_location_variance:
+spacecraft_location_std_dev:
   <<: *support_data_defaults
   DEPEND_1: ecliptic
-  CATDESC: spin-block averaged variance of spacecraft location
-  FIELDNAM: Variance of spacecraft location
+  CATDESC: spin-block averaged std_dev of spacecraft location
+  FIELDNAM: std_dev of spacecraft location
   FILLVAL: *max_uint16
   FORMAT: I4
-  LABLAXIS: Variance
+  LABLAXIS: std_dev
 
 spacecraft_velocity_average:
   <<: *support_data_defaults
@@ -401,14 +401,14 @@ spacecraft_velocity_average:
   FORMAT: I4
   LABLAXIS: Avg spacecraft velocity
 
-spacecraft_velocity_variance:
+spacecraft_velocity_std_dev:
   <<: *support_data_defaults
   DEPEND_1: ecliptic
-  CATDESC: spin-block averaged variance of spacecraft velocity
-  FIELDNAM: Variance of spacecraft velocity
+  CATDESC: spin-block averaged std_dev of spacecraft velocity
+  FIELDNAM: std_dev of spacecraft velocity
   FILLVAL: *max_uint16
   FORMAT: I4
-  LABLAXIS: Variance
+  LABLAXIS: std_dev
 
 # End of not-in--dicts in generate_de_dataset
 

@@ -1,109 +1,16 @@
 """Decommutate HIT CCSDS science data."""
 
-from collections import namedtuple
-
 import numpy as np
 import xarray as xr
 
-from imap_processing.utils import convert_to_binary_string
-
-# TODO: Consider moving global values into a config file
-
-# Structure to hold binary details for a
-# section of science data. Used to unpack
-# binary data.
-HITPacking = namedtuple(
-    "HITPacking",
-    [
-        "bit_length",
-        "section_length",
-        "shape",
-    ],
+from imap_processing.hit.l0.constants import (
+    COUNTS_DATA_STRUCTURE,
+    EXPONENT_BITS,
+    FLAG_PATTERN,
+    FRAME_SIZE,
+    MANTISSA_BITS,
 )
-
-# Define data structure for counts rates data
-COUNTS_DATA_STRUCTURE = {
-    # field: bit_length, section_length, shape
-    # ------------------------------------------
-    # science frame header
-    "hdr_unit_num": HITPacking(2, 2, (1,)),
-    "hdr_frame_version": HITPacking(6, 6, (1,)),
-    "hdr_status_bits": HITPacking(8, 8, (1,)),
-    "hdr_minute_cnt": HITPacking(8, 8, (1,)),
-    # ------------------------------------------
-    # spare bits. Contains no data
-    "spare": HITPacking(24, 24, (1,)),
-    # ------------------------------------------
-    # erates - contains livetime counters
-    "livetime": HITPacking(16, 16, (1,)),  # livetime counter
-    "num_trig": HITPacking(16, 16, (1,)),  # number of triggers
-    "num_reject": HITPacking(16, 16, (1,)),  # number of rejected events
-    "num_acc_w_pha": HITPacking(
-        16, 16, (1,)
-    ),  # number of accepted events with PHA data
-    "num_acc_no_pha": HITPacking(16, 16, (1,)),  # number of events without PHA data
-    "num_haz_trig": HITPacking(16, 16, (1,)),  # number of triggers with hazard flag
-    "num_haz_reject": HITPacking(
-        16, 16, (1,)
-    ),  # number of rejected events with hazard flag
-    "num_haz_acc_w_pha": HITPacking(
-        16, 16, (1,)
-    ),  # number of accepted hazard events with PHA data
-    "num_haz_acc_no_pha": HITPacking(
-        16, 16, (1,)
-    ),  # number of hazard events without PHA data
-    # -------------------------------------------
-    "sngrates": HITPacking(16, 1856, (2, 58)),  # single rates
-    # -------------------------------------------
-    # evprates - contains event processing rates
-    "nread": HITPacking(16, 16, (1,)),  # events read from event fifo
-    "nhazard": HITPacking(16, 16, (1,)),  # events tagged with hazard flag
-    "nadcstim": HITPacking(16, 16, (1,)),  # adc-stim events
-    "nodd": HITPacking(16, 16, (1,)),  # odd events
-    "noddfix": HITPacking(16, 16, (1,)),  # odd events that were fixed in sw
-    "nmulti": HITPacking(
-        16, 16, (1,)
-    ),  # events with multiple hits in a single detector
-    "nmultifix": HITPacking(16, 16, (1,)),  # multi events that were fixed in sw
-    "nbadtraj": HITPacking(16, 16, (1,)),  # bad trajectory
-    "nl2": HITPacking(16, 16, (1,)),  # events sorted into L12 event category
-    "nl3": HITPacking(16, 16, (1,)),  # events sorted into L123 event category
-    "nl4": HITPacking(16, 16, (1,)),  # events sorted into L1423 event category
-    "npen": HITPacking(16, 16, (1,)),  # events sorted into penetrating event category
-    "nformat": HITPacking(16, 16, (1,)),  # nothing currently goes in this slot
-    "naside": HITPacking(16, 16, (1,)),  # A-side events
-    "nbside": HITPacking(16, 16, (1,)),  # B-side events
-    "nerror": HITPacking(16, 16, (1,)),  # events that caused a processing error
-    "nbadtags": HITPacking(
-        16, 16, (1,)
-    ),  # events with inconsistent tags vs pulse heights
-    # -------------------------------------------
-    # other count rates
-    "coinrates": HITPacking(16, 416, (26,)),  # coincidence rates
-    "bufrates": HITPacking(16, 512, (32,)),  # priority buffer rates
-    "l2fgrates": HITPacking(16, 2112, (132,)),  # range 2 foreground rates
-    "l2bgrates": HITPacking(16, 192, (12,)),  # range 2 background rates
-    "l3fgrates": HITPacking(16, 2672, (167,)),  # range 3 foreground rates
-    "l3bgrates": HITPacking(16, 192, (12,)),  # range 3 background rates
-    "penfgrates": HITPacking(16, 528, (33,)),  # range 4 foreground rates
-    "penbgrates": HITPacking(16, 240, (15,)),  # range 4 background rates
-    "ialirtrates": HITPacking(16, 320, (20,)),  # ialirt rates
-    "sectorates": HITPacking(16, 1920, (120,)),  # sectored rates
-    "l4fgrates": HITPacking(16, 768, (48,)),  # all range foreground rates
-    "l4bgrates": HITPacking(16, 384, (24,)),  # all range foreground rates
-}
-
-# Define data structure for pulse height event data
-PHA_DATA_STRUCTURE = {
-    # field: bit_length, section_length, shape
-    "pha_records": HITPacking(2, 29344, (917,)),
-}
-
-# Define the pattern of grouping flags in a complete science frame.
-FLAG_PATTERN = np.array([1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2])
-
-# Define size of science frame (num of packets)
-FRAME_SIZE = len(FLAG_PATTERN)
+from imap_processing.utils import convert_to_binary_string
 
 
 def parse_data(bin_str: str, bits_per_index: int, start: int, end: int) -> list:
@@ -138,13 +45,13 @@ def parse_count_rates(sci_dataset: xr.Dataset) -> None:
     Parse binary count rates data and update dataset.
 
     This function parses the binary count rates data,
-    stored as count_rates_binary in the dataset,
+    stored as count_rates_raw in the dataset,
     according to data structure details provided in
     COUNTS_DATA_STRUCTURE. The parsed data, representing
     integers, is added to the dataset as new data
     fields.
 
-    Note: count_rates_binary is added to the dataset by
+    Note: count_rates_raw is added to the dataset by
     the assemble_science_frames function, which organizes
     the binary science data packets by science frames.
 
@@ -154,7 +61,7 @@ def parse_count_rates(sci_dataset: xr.Dataset) -> None:
         Xarray dataset containing HIT science packets
         from a CCSDS file.
     """
-    counts_binary = sci_dataset.count_rates_binary
+    counts_binary = sci_dataset.count_rates_raw
     # initialize the starting bit for the sections of data
     section_start = 0
     # Decommutate binary data for each counts data field
@@ -176,23 +83,34 @@ def parse_count_rates(sci_dataset: xr.Dataset) -> None:
                 low_gain = data[1::2]  # Items at odd indices 1, 3, 5, etc.
                 parsed_data[i] = [high_gain, low_gain]
 
-        # TODO
-        #  - status bits needs to be further parsed (table 10 in algorithm doc)
-        #  - subcommutate sectorates
-        #  - decompress data
-        #  - Follow up with HIT team about erates and evrates.
-        #    (i.e.Should these be arrays containing all the sub fields
-        #    or should each subfield be it's own data field/array)
+        # Decompress data where needed
+        if all(x not in field for x in ["hdr", "spare", "pha"]):
+            parsed_data = np.vectorize(decompress_rates_16_to_32)(parsed_data)
 
         # Get dims for data variables (yaml file not created yet)
         if len(field_meta.shape) > 1:
-            dims = ["epoch", "gain", f"{field}_index"]
+            if "sectorates" in field:
+                # Reshape data to 8x15 for declination and azimuth look directions
+                parsed_data = np.array(parsed_data).reshape((-1, *field_meta.shape))
+                dims = ["epoch", "declination", "azimuth"]
+            elif "sngrates" in field:
+                dims = ["epoch", "gain", f"{field}_index"]
         elif field_meta.shape[0] > 1:
             dims = ["epoch", f"{field}_index"]
         else:
             dims = ["epoch"]
 
         sci_dataset[field] = xr.DataArray(parsed_data, dims=dims, name=field)
+        # Add dimensions to coordinates
+        # TODO: confirm that dtype int16 is correct
+        for dim in dims:
+            if dim not in sci_dataset.coords:
+                sci_dataset.coords[dim] = xr.DataArray(
+                    np.arange(sci_dataset.sizes[dim], dtype=np.int16),
+                    dims=[dim],
+                    name=dim,
+                )
+
         # increment the start of the next section of data to parse
         section_start += field_meta.section_length
 
@@ -214,7 +132,7 @@ def is_sequential(counters: np.ndarray) -> np.bool_:
     return np.all(np.diff(counters) == 1)
 
 
-def find_valid_starting_indices(flags: np.ndarray, counters: np.ndarray) -> np.ndarray:
+def get_valid_starting_indices(flags: np.ndarray, counters: np.ndarray) -> np.ndarray:
     """
     Find valid starting indices for science frames.
 
@@ -241,9 +159,6 @@ def find_valid_starting_indices(flags: np.ndarray, counters: np.ndarray) -> np.n
     valid_indices : np.ndarray
         Array of valid indices for science frames.
     """
-    # TODO: consider combining functions to get valid indices to reduce
-    #  code tracing
-
     # Use sliding windows to compare segments of the array (20 packets) with the
     # pattern. This generates an array of overlapping sub-arrays, each of length
     # 20, from the flags array and is used to slide the "window" across the array
@@ -254,38 +169,11 @@ def find_valid_starting_indices(flags: np.ndarray, counters: np.ndarray) -> np.n
     # Get the starting indices of matches
     match_indices = np.where(matches)[0]
     # Filter for only indices from valid science frames with sequential counters
-    valid_indices = get_valid_indices(match_indices, counters, FRAME_SIZE)
+    sequential_check = [
+        is_sequential(counters[idx : idx + FRAME_SIZE]) for idx in match_indices
+    ]
+    valid_indices: np.ndarray = np.array(match_indices[sequential_check], dtype=int)
     return valid_indices
-
-
-def get_valid_indices(
-    indices: np.ndarray, counters: np.ndarray, size: int
-) -> np.ndarray:
-    """
-    Get valid indices for science frames.
-
-    Check if the packet sequence counters for the science frames
-    are sequential. If they are, the science frame is valid and
-    an updated array of valid indices is returned.
-
-    Parameters
-    ----------
-    indices : np.ndarray
-        Array of indices where the packet grouping flags match the pattern.
-    counters : np.ndarray
-        Array of packet sequence counters.
-    size : int
-        Size of science frame. 20 packets per science frame.
-
-    Returns
-    -------
-    valid_indices : np.ndarray
-        Array of valid indices for science frames.
-    """
-    # Check if the packet sequence counters are sequential by getting an array
-    # of boolean values where True indicates the counters are sequential.
-    sequential_check = [is_sequential(counters[idx : idx + size]) for idx in indices]
-    return indices[sequential_check]
 
 
 def update_ccsds_header_dims(sci_dataset: xr.Dataset) -> xr.Dataset:
@@ -334,8 +222,8 @@ def assemble_science_frames(sci_dataset: xr.Dataset) -> xr.Dataset:
         The first six packets contain count rates data
         The last 14 packets contain pulse height event data
 
-    These groups are added to the dataset as count_rates_binary
-    and pha_binary.
+    These groups are added to the dataset as count_rates_raw
+    and pha_raw.
 
     Parameters
     ----------
@@ -368,7 +256,7 @@ def assemble_science_frames(sci_dataset: xr.Dataset) -> xr.Dataset:
     total_packets = len(epoch_data)
 
     # Find starting indices for valid science frames
-    starting_indices = find_valid_starting_indices(seq_flgs, seq_ctrs)
+    starting_indices = get_valid_starting_indices(seq_flgs, seq_ctrs)
 
     # Check for extra packets at start and end of file
     # TODO: Will need to handle these extra packets when processing multiple files
@@ -400,17 +288,73 @@ def assemble_science_frames(sci_dataset: xr.Dataset) -> xr.Dataset:
         pha.append("".join(science_data_frame[6:]))
         # Get first packet's epoch for the science frame
         epoch_per_science_frame = np.append(epoch_per_science_frame, epoch_data[idx])
-        # TODO: Filter ccsds header fields to only include packets from the
-        #  valid science frames. Doesn't need to be grouped by frames though
 
     # Add new data variables to the dataset
     sci_dataset = sci_dataset.drop_vars("epoch")
     sci_dataset.coords["epoch"] = epoch_per_science_frame
-    sci_dataset["count_rates_binary"] = xr.DataArray(
-        count_rates, dims=["epoch"], name="count_rates_binary"
+    sci_dataset["count_rates_raw"] = xr.DataArray(
+        count_rates, dims=["epoch"], name="count_rates_raw"
     )
-    sci_dataset["pha_binary"] = xr.DataArray(pha, dims=["epoch"], name="pha_binary")
+    sci_dataset["pha_raw"] = xr.DataArray(pha, dims=["epoch"], name="pha_raw")
     return sci_dataset
+
+
+def decompress_rates_16_to_32(packed: int) -> int:
+    """
+    Will decompress rates data from 16 bits to 32 bits.
+
+    This function decompresses the rates data from 16-bit integers
+    to 32-bit integers. The compressed integer (packed) combines
+    two parts:
+
+    1. Mantissa: Represents the significant digits of the value.
+    2. Exponent: Determines how much to scale the mantissa (using powers of 2).
+
+    These parts are packed together into a single 16-bit integer.
+
+    Parameters
+    ----------
+    packed : int
+        Compressed 16-bit integer.
+
+    Returns
+    -------
+    decompressed_int : int
+        Decompressed integer.
+    """
+    # In compressed formats, the exponent and mantissa are tightly packed together.
+    # The mask ensures you correctly separate the mantissa (useful for reconstructing
+    # the value) from the exponent (used for scaling).
+    # set to 16 bits
+    output_mask = 0xFFFF
+
+    # Packed is the compressed integer
+    # Right bit shift to get the exponent
+    power = packed >> MANTISSA_BITS
+
+    # Decompress the data depending on the value of the exponent
+    # If the exponent (power) extracted from the packed 16-bit integer is greater
+    # than 1, the compressed value needs to be decompressed by reconstructing the
+    # integer using the mantissa and exponent. If the condition is false, the
+    # compressed and uncompressed values are considered the same.
+    decompressed_int: int
+    if power > 1:
+        # Retrieve the "mantissa" portion of the packed value by masking out the
+        # exponent bits
+        mantissa_mask = output_mask >> EXPONENT_BITS
+        mantissa = packed & mantissa_mask
+
+        # Shift the mantissa to the left by 1 to account for the hidden bit
+        # (always set to 1)
+        mantissa_with_hidden_bit = mantissa | (0x0001 << MANTISSA_BITS)
+
+        # Scale the mantissa by the exponent by shifting it to the left by (power - 1)
+        decompressed_int = mantissa_with_hidden_bit << (power - 1)
+    else:
+        # The compressed and uncompressed values are the same
+        decompressed_int = packed
+
+    return decompressed_int
 
 
 def decom_hit(sci_dataset: xr.Dataset) -> xr.Dataset:
@@ -465,7 +409,7 @@ def decom_hit(sci_dataset: xr.Dataset) -> xr.Dataset:
     # Parse count rates data from binary and add to dataset
     parse_count_rates(sci_dataset)
 
-    # TODO:
-    #  Parse binary PHA data and add to dataset (function call)
+    # Remove raw binary data and unused spare bits from dataset
+    sci_dataset = sci_dataset.drop_vars(["count_rates_raw", "science_data", "spare"])
 
     return sci_dataset

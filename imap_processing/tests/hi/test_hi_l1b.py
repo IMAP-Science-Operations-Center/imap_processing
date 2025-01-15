@@ -12,6 +12,8 @@ from imap_processing.hi.l1b.hi_l1b import (
     CoincidenceBitmap,
     compute_coincidence_type_and_time_deltas,
     compute_hae_coordinates,
+    de_esa_energy_step,
+    de_nominal_bin_and_spin_phase,
     hi_l1b,
 )
 from imap_processing.hi.utils import HiConstants
@@ -22,21 +24,25 @@ def test_hi_l1b_hk(hi_l0_test_data_path):
     """Test coverage for imap_processing.hi.hi_l1b.hi_l1b() with
     housekeeping L1A as input"""
     # TODO: once things are more stable, check in an L1A HK file as test data
-    bin_data_path = hi_l0_test_data_path / "20231030_H45_APP_NHK.bin"
+    bin_data_path = hi_l0_test_data_path / "H90_NHK_20241104.bin"
     data_version = "001"
     processed_data = hi_l1a(packet_file_path=bin_data_path, data_version=data_version)
 
     l1b_dataset = hi_l1b(processed_data[0], data_version=data_version)
-    assert l1b_dataset.attrs["Logical_source"] == "imap_hi_l1b_45sensor-hk"
+    assert l1b_dataset.attrs["Logical_source"] == "imap_hi_l1b_90sensor-hk"
 
 
 @pytest.mark.external_kernel()
 @pytest.mark.use_test_metakernel("imap_ena_sim_metakernel.template")
-def test_hi_l1b_de(hi_l1a_test_data_path):
+def test_hi_l1b_de(
+    hi_l1_test_data_path, spice_test_data_path, use_fake_spin_data_for_time
+):
     """Test coverage for imap_processing.hi.hi_l1b.hi_l1b() with
     direct events L1A as input"""
+    # Start MET time of spin for simulated input data is 482372988
+    use_fake_spin_data_for_time(482372988)
     l1a_test_file_path = (
-        hi_l1a_test_data_path / "imap_hi_l1a_45sensor-de_20250415_v000.cdf"
+        hi_l1_test_data_path / "imap_hi_l1a_45sensor-de_20250415_v999.cdf"
     )
     # Process using test data
     data_version = "001"
@@ -106,7 +112,7 @@ def synthetic_trigger_id_and_tof_data():
 def test_compute_coincidence_type_and_time_deltas(synthetic_trigger_id_and_tof_data):
     """Test coverage for
     `imap_processing.hi.hi_l1b.compute_coincidence_type_and_time_deltas`."""
-    updated_dataset = compute_coincidence_type_and_time_deltas(
+    new_vars = compute_coincidence_type_and_time_deltas(
         synthetic_trigger_id_and_tof_data[0]
     )
     for var_name in [
@@ -116,40 +122,87 @@ def test_compute_coincidence_type_and_time_deltas(synthetic_trigger_id_and_tof_d
         "delta_t_bc1",
         "delta_t_c1c2",
     ]:
-        assert var_name in updated_dataset.data_vars
+        assert var_name in new_vars
     # verify coincidence type values
     coincidence_hist, bins = np.histogram(
-        updated_dataset.coincidence_type, bins=np.arange(17)
+        new_vars["coincidence_type"], bins=np.arange(17)
     )
     np.testing.assert_array_equal(
         coincidence_hist, synthetic_trigger_id_and_tof_data[1]
     )
     # verify delta_t values are valid in the correct locations
     np.testing.assert_array_equal(
-        updated_dataset.delta_t_ab != updated_dataset.delta_t_ab.FILLVAL,
-        updated_dataset.coincidence_type >= 12,
+        new_vars["delta_t_ab"] != new_vars["delta_t_ab"].FILLVAL,
+        new_vars["coincidence_type"] >= 12,
     )
     np.testing.assert_array_equal(
-        updated_dataset.delta_t_ac1 != updated_dataset.delta_t_ac1.FILLVAL,
+        new_vars["delta_t_ac1"] != new_vars["delta_t_ac1"].FILLVAL,
         np.logical_and(
-            np.bitwise_and(updated_dataset.coincidence_type, CoincidenceBitmap.A.value),
-            np.bitwise_and(updated_dataset.coincidence_type, CoincidenceBitmap.C1),
+            np.bitwise_and(new_vars["coincidence_type"], CoincidenceBitmap.A.value),
+            np.bitwise_and(new_vars["coincidence_type"], CoincidenceBitmap.C1),
         ),
     )
     np.testing.assert_array_equal(
-        updated_dataset.delta_t_bc1 != updated_dataset.delta_t_bc1.FILLVAL,
+        new_vars["delta_t_bc1"] != new_vars["delta_t_bc1"].FILLVAL,
         np.logical_and(
-            np.bitwise_and(updated_dataset.coincidence_type, CoincidenceBitmap.B.value),
-            np.bitwise_and(updated_dataset.coincidence_type, CoincidenceBitmap.C1),
+            np.bitwise_and(new_vars["coincidence_type"], CoincidenceBitmap.B.value),
+            np.bitwise_and(new_vars["coincidence_type"], CoincidenceBitmap.C1),
         ),
     )
     np.testing.assert_array_equal(
-        updated_dataset.delta_t_c1c2 != updated_dataset.delta_t_c1c2.FILLVAL,
+        new_vars["delta_t_c1c2"] != new_vars["delta_t_c1c2"].FILLVAL,
         np.logical_and(
-            np.bitwise_and(updated_dataset.coincidence_type, CoincidenceBitmap.C1),
-            np.bitwise_and(updated_dataset.coincidence_type, CoincidenceBitmap.C2),
+            np.bitwise_and(new_vars["coincidence_type"], CoincidenceBitmap.C1),
+            np.bitwise_and(new_vars["coincidence_type"], CoincidenceBitmap.C2),
         ),
     )
+
+
+@mock.patch("imap_processing.hi.l1b.hi_l1b.parse_sensor_number", return_value=90)
+@mock.patch("imap_processing.hi.l1b.hi_l1b.get_instrument_spin_phase")
+@mock.patch("imap_processing.hi.l1b.hi_l1b.get_spacecraft_spin_phase")
+def test_de_nominal_bin_and_spin_phase(
+    spacecraft_phase_moc, instrument_phase_mock, parse_sensor_number_mock
+):
+    """Test coverage for de_nominal_bin_and_spin_phase."""
+    # set the spacecraft_phase_mock to return an array of values between 0 and 1
+    # that is rolled 30 places for easy testing
+    spacecraft_phase_roll = 30
+    spacecraft_phase_moc.side_effect = lambda x: np.roll(
+        np.arange(0, 1, 1 / len(x)), spacecraft_phase_roll
+    )
+    # set the get_instrument_spin_phase mock to return an array of values between
+    # 0 and 1
+    instrument_phase_mock.side_effect = lambda x, y: np.arange(0, 1, 1 / len(x))
+    # generate a fake dataset with epoch coordinate and event_met variable
+    de_list_length = 720
+    synthetic_ds = xr.Dataset(
+        coords={
+            "epoch": xr.DataArray(
+                np.arange(de_list_length), name="epoch", dims=["epoch"]
+            )
+        },
+        data_vars={
+            "event_met": xr.DataArray(np.arange(de_list_length), dims=["epoch"])
+        },
+        attrs={"Logical_source": "foo_source"},
+    )
+
+    new_vars = de_nominal_bin_and_spin_phase(synthetic_ds)
+    # Check spin_phase
+    assert "spin_phase" in new_vars
+    assert new_vars["spin_phase"].shape == (de_list_length,)
+    np.testing.assert_array_equal(
+        new_vars["spin_phase"].values,
+        np.linspace(0, 1, de_list_length + 1, dtype=np.float32)[:-1],
+    )
+    # Check nominal_bin
+    assert "nominal_bin" in new_vars
+    expected_nominal_bin = np.roll(
+        np.digitize(np.arange(0, 360, 360 / de_list_length), np.arange(90) * 4) - 1,
+        spacecraft_phase_roll,
+    )
+    np.testing.assert_array_equal(new_vars["nominal_bin"].values, expected_nominal_bin)
 
 
 @pytest.mark.parametrize("sensor_number", [45, 90])
@@ -176,10 +229,27 @@ def test_compute_hae_coordinates(mock_instrument_pointing, sensor_number):
         coords={"epoch": xr.DataArray(np.arange(200), name="epoch", dims=["epoch"])},
     )
 
-    out_ds = compute_hae_coordinates(fake_dataset)
-    assert "hae_latitude" in out_ds.data_vars
-    assert out_ds.hae_latitude.shape == fake_dataset.epoch.shape
-    np.testing.assert_allclose(out_ds.hae_latitude.values, sensor_number)
-    assert "hae_longitude" in out_ds.data_vars
-    assert out_ds.hae_longitude.shape == fake_dataset.epoch.shape
-    np.testing.assert_allclose(out_ds.hae_longitude.values, sensor_number)
+    new_vars = compute_hae_coordinates(fake_dataset)
+    assert "hae_latitude" in new_vars
+    assert new_vars["hae_latitude"].shape == fake_dataset.epoch.shape
+    np.testing.assert_allclose(new_vars["hae_latitude"].values, sensor_number)
+    assert "hae_longitude" in new_vars
+    assert new_vars["hae_longitude"].shape == fake_dataset.epoch.shape
+    np.testing.assert_allclose(new_vars["hae_longitude"].values, sensor_number)
+
+
+def test_de_esa_energy_step():
+    """Test coverage for de_esa_energy_step function."""
+    n_epoch = 20
+    fake_dataset = xr.Dataset(
+        coords={
+            "epoch": xr.DataArray(np.arange(n_epoch), name="epoch", dims=["epoch"])
+        },
+        data_vars={"esa_step": xr.DataArray(np.arange(n_epoch) % 9, dims=["epoch"])},
+    )
+    esa_energy_step_var = de_esa_energy_step(fake_dataset)
+    # TODO: The below check is for the temporary implementation and should be
+    #    removed when the function is update.
+    np.testing.assert_array_equal(
+        esa_energy_step_var["esa_energy_step"].values, fake_dataset.esa_step.values
+    )

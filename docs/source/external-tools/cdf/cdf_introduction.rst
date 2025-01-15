@@ -55,12 +55,12 @@ Variables are the data stored within a file.  They have a few key characteristic
 Attributes
 ----------
 
-Attributes are essentially (key=value) pairs inside the CDF, similar to a python dictionary object.  For example - *Mission=IMAP*, or *Instrument=IDEX*.
+Attributes are essentially (key=value) pairs inside the CDF, similar to a python dictionary object. It stores detailed information about data variable.
 
 Attributes come in two forms:
 
-* **Variable Attributes** - Attributes can be attached to a Variable if they only describe a particular data variable.
-* **Global Attributes** - If they are not attached to a variable, they describe the file in it's entirety.
+* **Variable Attributes** - Attributes can be attached to a Variable if they only describe a particular data variable. For example - *Units=dN*, or *LABLAXIS=Counts*.
+* **Global Attributes** - If they are not attached to a variable, they describe the file in it's entirety. It stores high level information that may be shared by many data files. For example - *Mission=IMAP*, or *Instrument=IDEX*.
 
 
 ISTP Compliance

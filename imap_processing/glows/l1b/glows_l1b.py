@@ -6,6 +6,7 @@ import numpy as np
 import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
+from imap_processing.glows import FLAG_LENGTH
 from imap_processing.glows.l1b.glows_l1b_data import DirectEventL1B, HistogramL1B
 
 
@@ -45,7 +46,7 @@ def glows_l1b(input_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
 
     if "hist" in logical_source:
         flag_data = xr.DataArray(
-            np.arange(17),
+            np.arange(FLAG_LENGTH),
             name="flag_dim",
             dims=["flag_dim"],
             attrs=cdf_attrs.get_variable_attributes("flag_dim"),
@@ -255,10 +256,10 @@ def process_histogram(l1a: xr.Dataset) -> xr.Dataset:
         "imap_spin_angle_bin_cntr": ["bins"],
         "histogram_flag_array": ["bad_angle_flags", "bins"],
         "spacecraft_location_average": ["ecliptic"],
-        "spacecraft_location_variance": ["ecliptic"],
+        "spacecraft_location_std_dev": ["ecliptic"],
         "spacecraft_velocity_average": ["ecliptic"],
-        "spacecraft_velocity_variance": ["ecliptic"],
-        "flags": ["flag_dim", "bins"],
+        "spacecraft_velocity_std_dev": ["ecliptic"],
+        "flags": ["flag_dim"],
     }
 
     # For each attribute, retrieve the dims from output_dimension_mapping or use an

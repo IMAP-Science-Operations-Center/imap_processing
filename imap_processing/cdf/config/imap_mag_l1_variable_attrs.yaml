@@ -1,14 +1,5 @@
 # <=== Label Attributes ===>
 # LABL_PTR_i expects VAR_TYPE of metadata with char data type.
-# We need to define this if we have DEPEND_1 or more.
-# TODO: I am not sure what the FIELDNAM should be.
-# I tried best to match this: https://spdf.gsfc.nasa.gov/istp_guide/variables.html#Metadata_eg1
-direction_label:
-  CATDESC: magnetic field vector data
-  FIELDNAM: Magnetic Field Vector
-  FORMAT: A3
-  VAR_TYPE: metadata
-
 default_attrs: &default
   # Assumed values for all variable attrs unless overwritten
   DEPEND_0: epoch
@@ -23,29 +14,12 @@ default_attrs: &default
 default_coords: &default_coords
   # Assumed values for all coordinate attrs unless overwritten
   FORMAT: F2.4  # Float with 4 digits
-  VAR_TYPE: data
+  VAR_TYPE: support_data
   DISPLAY_TYPE: time_series
   FILLVAL: -9223372036854775808
   VALIDMIN: -9223372036854775808
   VALIDMAX: 9223372036854775807
   UNITS: counts
-
-raw_vector_attrs:
-  <<: *default_coords
-  CATDESC: Raw unprocessed magnetic field vector data in bytes
-  DEPEND_1: direction
-  LABL_PTR_1: direction_label
-  FIELDNAM: Magnetic Field Vector
-  FORMAT: I3
-
-vector_attrs:
-    <<: *default_coords
-    CATDESC: Magnetic field vector with x y z and sensor range varying by time
-    DEPEND_1: direction
-    FIELDNAM: Magnetic Field Vector
-    LABLAXIS: Magnetic field vector data
-    FILLVAL: 9223372036854775807
-    FORMAT: I3
 
 mag_support_attrs: &support_default
     <<: *default
@@ -54,6 +28,35 @@ mag_support_attrs: &support_default
 mag_metadata_attrs: &metadata_default
     <<: *default
     VAR_TYPE: metadata
+
+direction_label:
+  CATDESC: magnetic field vector data
+  FIELDNAM: Magnetic Field Vector
+  FORMAT: A3
+  VAR_TYPE: metadata
+
+compression_label:
+  CATDESC: Compression and width
+  FIELDNAM: Compression and width
+  FORMAT: A2
+  VAR_TYPE: metadata
+
+raw_vector_attrs:
+  <<: *default
+  CATDESC: Raw unprocessed magnetic field vector data in bytes
+  DEPEND_1: direction
+  LABL_PTR_1: direction_label
+  FIELDNAM: Magnetic Field Vector
+  FORMAT: I3
+
+vector_attrs:
+    <<: *default
+    CATDESC: Magnetic field vector with x y z and sensor range varying by time
+    DEPEND_1: direction
+    FIELDNAM: Magnetic Field Vector
+    LABL_PTR_1: direction_label
+    FILLVAL: 9223372036854775807
+    FORMAT: I3
 
 mag_flag_attrs:
     <<: *default
@@ -77,6 +80,28 @@ direction_attrs:
     VAR_TYPE: support_data
     DISPLAY_TYPE: time_series
     LABLAXIS: Magnetic field vector
+
+compression_attrs:
+  <<: *default_coords
+  CATDESC: Flag indicating if the vector is compressed, and the compression width
+  FIELDNAM: Compression flag and bit width
+  FORMAT: I2
+  VAR_TYPE: support_data
+  VALIDMAX: 21
+  VALIDMIN: 0
+  DISPLAY_TYPE: no_plot
+
+compression_flags_attrs:
+  <<: *support_default
+  CATDESC: Compression information per time stamp, includes a flag and the compression width
+  FIELDNAM: Compression information per time stamp
+  DEPEND_0: epoch
+  DEPEND_1: compression
+  FORMAT: I2
+  VALIDMAX: 21
+  VALIDMIN: 0
+  LABL_PTR_1: compression_label
+  DISPLAY_TYPE: no_plot
 
 PUS_SPARE1:
     <<: *support_default

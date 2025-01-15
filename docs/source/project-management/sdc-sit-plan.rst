@@ -21,7 +21,7 @@ Timeline                                        Step
 Start of development
 ^^^^^^^^^^^^^^^^^^^^
 
-Over the course of development, the SDC adds steps to the SIT test procedures. This requires a coordinated effort among all SDC developers to document test steps as new features are introduced. Taking an incremental approach allows for better documentation as more complexity is added throughout the course of development. For information on how the SDC tracks requirements in Github, please read the :ref:`Requirement and Issue Tracking <requirement-and-issue-tracking>` documentation.
+Over the course of development, the SDC adds steps to the SIT test procedures. This requires a coordinated effort among all SDC developers to document test steps as new features are introduced. Taking an incremental approach allows for better documentation as more complexity is added throughout the course of development. For information on how the SDC tracks requirements in Github, please read the :ref:`Work Management <work-management>` documentation.
 
 
 ~4 weeks prior to test
