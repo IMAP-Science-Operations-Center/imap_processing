@@ -84,7 +84,7 @@ File naming examples
 
 An L1B MAG rotation matrix ancillary file:
 
-* ``imap_mag_l1b-rotation-calibration-file_[launch date]_v001.cdf``
+* ``imap_mag_l1b-rotation-calibration_[launch date]_v001.cdf``
 
 This file is assumed to be valid for all times.
 
