@@ -73,7 +73,9 @@ def get_energy_histogram(
     return hist, spin_edges
 
 
-def flag_spin(eventtimes_met: NDArray, energy: NDArray) -> NDArray:
+def flag_spin(
+    eventtimes_met: NDArray, energy: NDArray
+) -> tuple[NDArray, NDArray, NDArray]:
     """
     Flag data based on counts and negative energies.
 
@@ -88,6 +90,10 @@ def flag_spin(eventtimes_met: NDArray, energy: NDArray) -> NDArray:
     -------
     quality_flags : NDArray
         Quality flags.
+    appended_spin : NDArray
+        Spin data.
+    appended_energy : NDArray
+        Energy midpoint data.
     """
     spin, _, _ = get_spin(eventtimes_met)
     hist, spin_edges = get_energy_histogram(spin, energy)
@@ -95,8 +101,8 @@ def flag_spin(eventtimes_met: NDArray, energy: NDArray) -> NDArray:
         hist.shape[0] * hist.shape[1], ImapUltraFlags.NONE.value, dtype=np.uint16
     )
 
-    appended_spin = []
-    appended_energy = []
+    appended_spin = np.empty(0, dtype=np.uint16)
+    appended_energy = np.empty(0, dtype=np.float64)
 
     for energy_idx in range(hist.shape[0]):
         # Counts for each spin at this energy
@@ -112,7 +118,9 @@ def flag_spin(eventtimes_met: NDArray, energy: NDArray) -> NDArray:
             + UltraConstants.CULLING_ENERGY_BIN_EDGES[energy_idx + 1]
         ) / 2
 
-        appended_spin.extend(np.unique(spin).tolist())
-        appended_energy.extend([energy_midpoint] * len(np.unique(spin)))
+        appended_spin = np.concatenate((appended_spin, np.unique(spin)))
+        appended_energy = np.concatenate(
+            (appended_energy, np.full(len(np.unique(spin)), energy_midpoint))
+        )
 
     return quality_flags, appended_spin, appended_energy

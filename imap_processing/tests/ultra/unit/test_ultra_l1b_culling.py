@@ -91,23 +91,10 @@ def test_flag_spin(use_fake_spin_data_for_time, l1b_de_dataset):
     flag = ImapUltraFlags(quality_flags[0])
     assert flag.name == "HIGHCOUNTS"
 
-    spin_1 = quality_flags[spin == 1]
+    flagged_indices = np.unique(spin)[hist[0, :] > 0]
+    unflagged_indices = np.setdiff1d(np.unique(spin), flagged_indices)
+    assert np.all(quality_flags[flagged_indices] == ImapUltraFlags.HIGHCOUNTS.value)
+    assert np.all(quality_flags[unflagged_indices] == ImapUltraFlags.NONE.value)
 
-    components = []
-    for flag in ImapUltraFlags:
-        if quality_flags[np.where(quality_flags == 10)][0] & flag.value:
-            components.append(flag.name)
-    assert components == ["NEG", "HIGHCOUNTS"]
-
-    energy_bin_idx = (
-        np.digitize(energy, bins=UltraConstants.CULLING_ENERGY_BIN_EDGES) - 1
-    )
-    spin_bin_idx = np.digitize(spin_number, bins=spin_edges) - 1
-
-    for energy_idx, spin_idx in np.ndindex(hist.shape):
-        if hist[energy_idx][spin_idx] > UltraConstants.COUNTS_THRESHOLDS[energy_idx]:
-            mask = (energy_bin_idx == energy_idx) & (spin_bin_idx == spin_idx)
-            assert np.all(
-                (quality_flags[mask] & ImapUltraFlags.HIGHCOUNTS.value)
-                == ImapUltraFlags.HIGHCOUNTS.value
-            )
+    # Only HIGHCOUNT bits were set
+    assert np.all(quality_flags == quality_flags & ImapUltraFlags.HIGHCOUNTS)
