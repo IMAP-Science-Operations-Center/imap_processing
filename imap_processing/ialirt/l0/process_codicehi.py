@@ -1,4 +1,4 @@
-"""Functions to support I-ALiRT CoDICE Lo processing."""
+"""Functions to support I-ALiRT CoDICE Hi processing."""
 
 import logging
 from typing import Any
@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 def find_groups(data: xr.Dataset) -> xr.Dataset:
     """
-    Find all occurrences of the sequential set of 233 values 0-232.
+    Find all occurrences of the sequential set of 234 values 0-233.
 
     If a value is missing, or we are starting/ending
     in the middle of a sequence we do not count that as a valid group.
@@ -19,40 +19,40 @@ def find_groups(data: xr.Dataset) -> xr.Dataset:
     Parameters
     ----------
     data : xr.Dataset
-        CoDICE Lo Dataset.
+        CoDICE Hi Dataset.
 
     Returns
     -------
     grouped_data : xr.Dataset
         Grouped data.
     """
-    subcom_range = (0, 232)
+    subcom_range = (0, 233)
 
-    data = data.sortby("cod_lo_acq", ascending=True)
+    data = data.sortby("cod_hi_acq", ascending=True)
 
-    # Use cod_lo_counter == 0 to define the beginning of the group.
-    # Find cod_lo_acq at this index and use it as the beginning time for the group.
-    start_sc_ticks = data["cod_lo_acq"][(data["cod_lo_counter"] == subcom_range[0])]
+    # Use cod_hi_counter == 0 to define the beginning of the group.
+    # Find cod_hi_acq at this index and use it as the beginning time for the group.
+    start_sc_ticks = data["cod_hi_acq"][(data["cod_hi_counter"] == subcom_range[0])]
     start_sc_tick = start_sc_ticks.min()
-    # Use cod_lo_counter == 232 to define the end of the group.
-    last_sc_ticks = data["cod_lo_acq"][
-        ([data["cod_lo_counter"] == subcom_range[-1]][-1])
+    # Use cod_hi_counter == 233 to define the end of the group.
+    last_sc_ticks = data["cod_hi_acq"][
+        ([data["cod_hi_counter"] == subcom_range[-1]][-1])
     ]
     last_sc_tick = last_sc_ticks.max()
 
-    # Filter out data before the first cod_lo_counter=0 and
-    # after the last cod_lo_counter=232 and cod_lo_counter values != 0-232.
+    # Filter out data before the first cod_hi_counter=0 and
+    # after the last cod_hi_counter=233 and cod_hi_counter values != 0-233.
     grouped_data = data.where(
-        (data["cod_lo_acq"] >= start_sc_tick)
-        & (data["cod_lo_acq"] <= last_sc_tick)
-        & (data["cod_lo_counter"] >= subcom_range[0])
-        & (data["cod_lo_counter"] <= subcom_range[-1]),
+        (data["cod_hi_acq"] >= start_sc_tick)
+        & (data["cod_hi_acq"] <= last_sc_tick)
+        & (data["cod_hi_counter"] >= subcom_range[0])
+        & (data["cod_hi_counter"] <= subcom_range[-1]),
         drop=True,
     )
 
-    # Assign labels based on the cod_lo_acq times.
+    # Assign labels based on the cod_hi_acq times.
     group_labels = np.searchsorted(
-        start_sc_ticks, grouped_data["cod_lo_acq"], side="right"
+        start_sc_ticks, grouped_data["cod_hi_acq"], side="right"
     )
     # Example:
     # grouped_data.coords
@@ -64,9 +64,9 @@ def find_groups(data: xr.Dataset) -> xr.Dataset:
     return grouped_data
 
 
-def append_cod_lo_data(dataset: xr.Dataset) -> xr.Dataset:
+def append_cod_hi_data(dataset: xr.Dataset) -> xr.Dataset:
     """
-    Append the cod_lo_## data values and create an xarray.
+    Append the cod_hi_## data values and create an xarray.
 
     Parameters
     ----------
@@ -76,22 +76,22 @@ def append_cod_lo_data(dataset: xr.Dataset) -> xr.Dataset:
     Returns
     -------
     appended_dataset : xr.Dataset
-        Dataset with cod_lo_## stacked.
+        Dataset with cod_hi_## stacked.
     """
-    # Number of codice lo data rows
-    num_cod_lo_rows = 15
-    cod_lo_data = np.stack(
-        [dataset[f"cod_lo_data_{i:02}"].values for i in range(num_cod_lo_rows)], axis=1
+    # Number of codice hi data rows
+    num_cod_hi_rows = 5
+    cod_hi_data = np.stack(
+        [dataset[f"cod_hi_data_{i:02}"].values for i in range(num_cod_hi_rows)], axis=1
     )
 
     repeated_data = {
-        var: np.repeat(dataset[var].values, num_cod_lo_rows)
+        var: np.repeat(dataset[var].values, num_cod_hi_rows)
         for var in dataset.data_vars
-        if not var.startswith("cod_lo_data_")
+        if not var.startswith("cod_hi_data_")
     }
 
-    repeated_data["cod_lo_appended"] = cod_lo_data.flatten()
-    repeated_epoch = np.repeat(dataset["epoch"].values, num_cod_lo_rows)
+    repeated_data["cod_hi_appended"] = cod_hi_data.flatten()
+    repeated_epoch = np.repeat(dataset["epoch"].values, num_cod_hi_rows)
 
     appended_dataset = xr.Dataset(
         data_vars={name: ("epoch", values) for name, values in repeated_data.items()},
@@ -101,7 +101,7 @@ def append_cod_lo_data(dataset: xr.Dataset) -> xr.Dataset:
     return appended_dataset
 
 
-def process_codicelo(xarray_data: xr.Dataset) -> list[dict]:
+def process_codicehi(xarray_data: xr.Dataset) -> list[dict]:
     """
     Create final data products.
 
@@ -112,7 +112,7 @@ def process_codicelo(xarray_data: xr.Dataset) -> list[dict]:
 
     Returns
     -------
-    codicelo_data : list[dict]
+    codicehi_data : list[dict]
         Dictionary of final data product.
 
     Notes
@@ -126,19 +126,19 @@ def process_codicelo(xarray_data: xr.Dataset) -> list[dict]:
     """
     grouped_data = find_groups(xarray_data)
     unique_groups = np.unique(grouped_data["group"])
-    codicelo_data: list[dict[str, Any]] = [{}]
+    codicehi_data: list[dict[str, Any]] = [{}]
 
     for group in unique_groups:
-        # cod_lo_counter values for the group should be 0-232 with no duplicates.
-        subcom_values = grouped_data["cod_lo_counter"][
+        # cod_hi_counter values for the group should be 0-233 with no duplicates.
+        subcom_values = grouped_data["cod_hi_counter"][
             (grouped_data["group"] == group).values
         ]
 
-        # Ensure no duplicates and all values from 0 to 232 are present
-        if not np.array_equal(subcom_values, np.arange(233)):
+        # Ensure no duplicates and all values from 0 to 233 are present
+        if not np.array_equal(subcom_values, np.arange(234)):
             logger.warning(
                 f"Group {group} does not contain all values from 0 to "
-                f"232 without duplicates."
+                f"233 without duplicates."
             )
             continue
 
@@ -146,11 +146,11 @@ def process_codicelo(xarray_data: xr.Dataset) -> list[dict]:
         filtered_indices = np.where(mask)[0]
         group_data = grouped_data.isel(epoch=filtered_indices)
 
-        append_cod_lo_data(group_data)
+        append_cod_hi_data(group_data)
 
         # TODO: calculate species counts
         # TODO: calculate rates
         # TODO: calculate L2 CoDICE pseudodensities
         # TODO: calculate the public data products
 
-    return codicelo_data
+    return codicehi_data

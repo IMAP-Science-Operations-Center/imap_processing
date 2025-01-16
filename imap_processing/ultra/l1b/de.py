@@ -13,6 +13,9 @@ from imap_processing.ultra.l1b.ultra_l1b_extended import (
     determine_species,
     get_coincidence_positions,
     get_ctof,
+    get_de_az_el,
+    get_de_energy_kev,
+    get_de_velocity,
     get_energy_pulse_height,
     get_energy_ssd,
     get_front_x_position,
@@ -21,7 +24,6 @@ from imap_processing.ultra.l1b.ultra_l1b_extended import (
     get_ph_tof_and_back_positions,
     get_ssd_back_position_and_tof_offset,
     get_ssd_tof,
-    get_unit_vector,
 )
 from imap_processing.ultra.utils.ultra_l1_utils import create_dataset
 
@@ -55,8 +57,8 @@ def calculate_de(de_dataset: xr.Dataset, name: str) -> xr.Dataset:
     tof = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float32)
     etof = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float32)
     ctof = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float32)
+    magnitude_v = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float32)
     energy = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float32)
-    #  TODO: Confirm with Ultra team what fill values and dtype we want.
     species_bin = np.full(len(de_dataset["epoch"]), "UNKNOWN", dtype="U10")
     t2 = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float32)
 
@@ -97,7 +99,9 @@ def calculate_de(de_dataset: xr.Dataset, name: str) -> xr.Dataset:
     etof[ph_indices], xc[ph_indices] = get_coincidence_positions(
         de_dataset.isel(epoch=ph_indices), t2[ph_indices], f"ultra{sensor}"
     )
-    ctof[ph_indices], _ = get_ctof(tof[ph_indices], r[ph_indices], "PH")
+    ctof[ph_indices], magnitude_v[ph_indices] = get_ctof(
+        tof[ph_indices], r[ph_indices], "PH"
+    )
 
     # SSD
     ssd_indices = np.nonzero(np.isin(de_dataset["STOP_TYPE"], StopType.SSD.value))[0]
@@ -118,7 +122,9 @@ def calculate_de(de_dataset: xr.Dataset, name: str) -> xr.Dataset:
     species_bin[ssd_indices] = determine_species(
         tof[ssd_indices], r[ssd_indices], "SSD"
     )
-    ctof[ssd_indices], _ = get_ctof(tof[ssd_indices], r[ssd_indices], "SSD")
+    ctof[ssd_indices], magnitude_v[ssd_indices] = get_ctof(
+        tof[ssd_indices], r[ssd_indices], "SSD"
+    )
 
     # Combine ph_yb and ssd_yb along with their indices
     de_dict["x_front"] = xf.astype(np.float32)
@@ -129,6 +135,7 @@ def calculate_de(de_dataset: xr.Dataset, name: str) -> xr.Dataset:
     de_dict["tof_start_stop"] = tof
     de_dict["tof_stop_coin"] = etof
     de_dict["tof_corrected"] = ctof
+    de_dict["velocity_magnitude"] = magnitude_v
     de_dict["front_back_distance"] = d
     de_dict["path_length"] = r
 
@@ -144,48 +151,32 @@ def calculate_de(de_dataset: xr.Dataset, name: str) -> xr.Dataset:
         {key: de_dataset[dataset_key] for key, dataset_key in zip(keys, dataset_keys)}
     )
 
-    vx_ultra, vy_ultra, vz_ultra = get_unit_vector(
+    v = get_de_velocity(
         (de_dict["x_front"], de_dict["y_front"]),
         (de_dict["x_back"], de_dict["y_back"]),
         de_dict["front_back_distance"],
         de_dict["tof_start_stop"],
     )
+    de_dict["direct_event_velocity"] = v.astype(np.float32)
 
-    de_dict["vx_ultra"] = vx_ultra.astype(np.float32)
-    de_dict["vy_ultra"] = vy_ultra.astype(np.float32)
-    de_dict["vz_ultra"] = vz_ultra.astype(np.float32)
+    de_dict["tof_energy"] = get_de_energy_kev(v, species_bin)
+    de_dict["azimuth"], de_dict["elevation"] = get_de_az_el(v)
     de_dict["energy"] = energy
     de_dict["species"] = species_bin
 
     # Annotated Events.
-    position = np.stack(
-        (de_dict["vx_ultra"], de_dict["vy_ultra"], de_dict["vz_ultra"]), axis=-1
-    )
-
     ultra_frame = getattr(SpiceFrame, f"IMAP_ULTRA_{sensor}")
     sc_velocity, sc_dps_velocity, helio_velocity = get_annotated_particle_velocity(
-        de_dataset.data_vars["EVENTTIMES"],
-        position,
+        de_dataset.data_vars["EVENTTIMES"].values,
+        de_dict["direct_event_velocity"],
         ultra_frame,
         SpiceFrame.IMAP_DPS,
         SpiceFrame.IMAP_SPACECRAFT,
     )
 
-    de_dict["vx_sc"], de_dict["vy_sc"], de_dict["vz_sc"] = (
-        sc_velocity[:, 0],
-        sc_velocity[:, 1],
-        sc_velocity[:, 2],
-    )
-    de_dict["vx_dps_sc"], de_dict["vy_dps_sc"], de_dict["vz_dps_sc"] = (
-        sc_dps_velocity[:, 0],
-        sc_dps_velocity[:, 1],
-        sc_dps_velocity[:, 2],
-    )
-    de_dict["vx_dps_helio"], de_dict["vy_dps_helio"], de_dict["vz_dps_helio"] = (
-        helio_velocity[:, 0],
-        helio_velocity[:, 1],
-        helio_velocity[:, 2],
-    )
+    de_dict["velocity_sc"] = sc_velocity
+    de_dict["velocity_dps_sc"] = sc_dps_velocity
+    de_dict["velocity_dps_helio"] = helio_velocity
 
     # TODO: TBD.
     de_dict["event_efficiency"] = np.full(

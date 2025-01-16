@@ -204,5 +204,4 @@ def calibrate_vector(
     updated_vector[:3] = np.matmul(
         calibration_matrix.values[:, :, int(input_vector[3])], input_vector[:3]
     )
-
     return updated_vector

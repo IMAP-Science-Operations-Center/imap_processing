@@ -10,6 +10,7 @@ import xarray
 from numpy import ndarray
 from numpy.typing import NDArray
 
+from imap_processing.spice.geometry import cartesian_to_spherical
 from imap_processing.ultra.constants import UltraConstants
 from imap_processing.ultra.l1b.lookup_utils import (
     get_back_position,
@@ -437,20 +438,14 @@ def get_coincidence_positions(
     return etof, xc_array * 100
 
 
-def get_unit_vector(
+def get_de_velocity(
     front_position: tuple[NDArray, NDArray],
     back_position: tuple[NDArray, NDArray],
     d: np.ndarray,
     tof: np.ndarray,
-) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+) -> NDArray:
     """
-    Determine the particle velocity.
-
-    The equation is: velocity = ((xf - xb), (yf - yb), d).
-
-    Further description is available on pages 39 of
-    IMAP-Ultra Flight Software Specification document
-    (7523-9009_Rev_-.pdf).
+    Determine the direct event velocity.
 
     Parameters
     ----------
@@ -465,35 +460,30 @@ def get_unit_vector(
 
     Returns
     -------
-    vhat_x : np.array
-        Normalized component of the velocity vector in x direction.
-    vhat_y : np.array
-        Normalized component of the velocity vector in y direction.
-    vhat_z : np.array
-        Normalized component of the velocity vector in z direction.
+    velocities : np.ndarray
+        N x 3 array of velocity components (vx, vy, vz) in km/s.
     """
     if tof[tof < 0].any():
         logger.info("Negative tof values found.")
 
-    delta_x = front_position[0] - back_position[0]
-    delta_y = front_position[1] - back_position[1]
+    # distances in .1 mm
+    delta_v = np.empty((len(d), 3), dtype=np.float32)
+    delta_v[:, 0] = (front_position[0] - back_position[0]) * 0.1
+    delta_v[:, 1] = (front_position[1] - back_position[1]) * 0.1
+    delta_v[:, 2] = d * 0.1
 
-    v_x = delta_x / tof
-    v_y = delta_y / tof
-    v_z = d / tof
+    # Convert from 0.1mm/0.1ns to km/s.
+    v_x = delta_v[:, 0] / tof * 1e3
+    v_y = delta_v[:, 1] / tof * 1e3
+    v_z = delta_v[:, 2] / tof * 1e3
 
-    # Magnitude of the velocity vector
-    magnitude_v = np.sqrt(v_x**2 + v_y**2 + v_z**2)
+    v_x[tof < 0] = np.nan  # used as fillvals
+    v_y[tof < 0] = np.nan
+    v_z[tof < 0] = np.nan
 
-    vhat_x = -v_x / magnitude_v
-    vhat_y = -v_y / magnitude_v
-    vhat_z = -v_z / magnitude_v
+    velocities = np.vstack((v_x, v_y, v_z)).T
 
-    vhat_x[tof < 0] = np.nan  # used as fillvals
-    vhat_y[tof < 0] = np.nan
-    vhat_z[tof < 0] = np.nan
-
-    return vhat_x, vhat_y, vhat_z
+    return velocities
 
 
 def get_ssd_tof(de_dataset: xarray.Dataset, xf: np.ndarray) -> NDArray[np.float64]:
@@ -543,6 +533,37 @@ def get_ssd_tof(de_dataset: xarray.Dataset, xf: np.ndarray) -> NDArray[np.float6
 
     # Convert TOF to tenths of a nanosecond.
     return np.asarray(tof, dtype=np.float64)
+
+
+def get_de_energy_kev(v: np.ndarray, species: np.ndarray) -> NDArray:
+    """
+    Calculate the direct event energy.
+
+    Parameters
+    ----------
+    v : np.ndarray
+        N x 3 array of velocity components (vx, vy, vz) in km/s.
+    species : np.ndarray
+        Species of the particle.
+
+    Returns
+    -------
+    energy : np.ndarray
+        Energy of the direct event in keV.
+    """
+    vv = v * 1e3  # convert km/s to m/s
+    # Compute the sum of squares.
+    v2 = np.sum(vv**2, axis=1)
+
+    index_hydrogen = np.where(species == "H")
+    energy = np.full_like(v2, np.nan)
+
+    # 1/2 mv^2 in Joules, convert to keV
+    energy[index_hydrogen] = (
+        0.5 * UltraConstants.MASS_H * v2[index_hydrogen] * UltraConstants.J_KEV
+    )
+
+    return energy
 
 
 def get_energy_pulse_height(
@@ -728,3 +749,33 @@ def determine_species(tof: np.ndarray, path_length: np.ndarray, type: str) -> ND
     ] = "H"
 
     return species_bin
+
+
+def get_de_az_el(v: NDArray) -> tuple[NDArray, NDArray]:
+    """
+    Compute azimuth (phi) angles and elevation (theta).
+
+    Parameters
+    ----------
+    v : np.ndarray
+        A NumPy array with shape (n, 3) where each
+        row represents a vector
+        with x, y, z-components.
+
+    Returns
+    -------
+    spherical_coords : np.ndarray
+        A NumPy array with shape (n, 3), where each row contains
+        the spherical coordinates (r, azimuth, elevation):
+
+        - azimuth : angle in the xy-plane
+          In radians:
+          output range=[0, 2*pi].
+        - elevation : angle from the xy-plane
+          In radians:
+          output range=[-pi/2, pi/2].
+    """
+    # Compute azimuth (phi) angles and elevation (theta)
+    spherical_coords = cartesian_to_spherical(v, degrees=False)
+
+    return spherical_coords[:, 1], spherical_coords[:, 2]

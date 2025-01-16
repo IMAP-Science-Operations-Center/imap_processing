@@ -8,6 +8,12 @@ import xarray as xr
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import parse_filename_like
 from imap_processing.hi.utils import create_dataset_variables, full_dataarray
+from imap_processing.spice.geometry import (
+    SpiceFrame,
+    frame_transform,
+    frame_transform_az_el,
+)
+from imap_processing.spice.time import j2000ns_to_j2000s
 
 logger = logging.getLogger(__name__)
 
@@ -72,8 +78,10 @@ def generate_pset_dataset(de_dataset: xr.Dataset) -> xr.Dataset:
     pset_dataset.epoch.data[0] = np.mean(de_dataset.epoch.data[[0, -1]]).astype(
         np.int64
     )
-
-    pset_dataset.update(pset_geometry())
+    pset_et = j2000ns_to_j2000s(pset_dataset.epoch.data[0])
+    # Calculate and add despun_z, hae_latitude, and hae_longitude variables to
+    # the pset_dataset
+    pset_dataset.update(pset_geometry(pset_et, logical_source_parts["sensor"]))
 
     # TODO: The following section will go away as PSET algorithms to populate
     #    these variables are written.
@@ -118,11 +126,15 @@ def empty_pset_dataset(n_esa_steps: int, sensor_str: str) -> xr.Dataset:
     # preallocate coordinates xr.DataArrays
     coords = dict()
     # epoch coordinate has only 1 entry for pointing set
+    epoch_attrs = attr_mgr.get_variable_attributes("epoch")
+    epoch_attrs.update(
+        attr_mgr.get_variable_attributes("hi_pset_epoch", check_schema=False)
+    )
     coords["epoch"] = xr.DataArray(
         np.empty(1, dtype=np.int64),  # TODO: get dtype from cdf attrs?
         name="epoch",
         dims=["epoch"],
-        attrs=attr_mgr.get_variable_attributes("epoch"),
+        attrs=epoch_attrs,
     )
     attrs = attr_mgr.get_variable_attributes(
         "hi_pset_esa_energy_step", check_schema=False
@@ -204,9 +216,16 @@ def empty_pset_dataset(n_esa_steps: int, sensor_str: str) -> xr.Dataset:
     return dataset
 
 
-def pset_geometry() -> dict[str, xr.DataArray]:
+def pset_geometry(pset_et: float, sensor_str: str) -> dict[str, xr.DataArray]:
     """
     Calculate PSET geometry variables.
+
+    Parameters
+    ----------
+    pset_et : float
+        Pointing set ephemeris time for which to calculate PSET geometry.
+    sensor_str : str
+        '45sensor' or '90sensor'.
 
     Returns
     -------
@@ -216,7 +235,28 @@ def pset_geometry() -> dict[str, xr.DataArray]:
     geometry_vars = create_dataset_variables(
         ["despun_z"], (1, 3), att_manager_lookup_str="hi_pset_{0}"
     )
-    # TODO: Calculate despun_z
+    despun_z = frame_transform(
+        pset_et,
+        np.array([0, 0, 1]),
+        SpiceFrame.IMAP_DPS,
+        SpiceFrame.ECLIPJ2000,
+    )
+    geometry_vars["despun_z"].values = despun_z[np.newaxis, :].astype(np.float32)
+
+    # Calculate hae_latitude and hae_longitude of the spin bins
+    # define the azimuth/elevation coordinates in the Pointing Frame (DPS)
+    # TODO: get the sensor's true elevation using SPICE?
+    el = 0 if "90" in sensor_str else -45
+    dps_az_el = np.array(
+        [
+            np.arange(0.05, 360, 0.1),
+            np.full(3600, el),
+        ]
+    ).T
+    hae_az_el = frame_transform_az_el(
+        pset_et, dps_az_el, SpiceFrame.IMAP_DPS, SpiceFrame.ECLIPJ2000, degrees=True
+    )
+
     geometry_vars.update(
         create_dataset_variables(
             ["hae_latitude", "hae_longitude"],
@@ -224,5 +264,10 @@ def pset_geometry() -> dict[str, xr.DataArray]:
             att_manager_lookup_str="hi_pset_{0}",
         )
     )
-    # TODO: Calculate HAE Lat/Lon
+    geometry_vars["hae_longitude"].values = hae_az_el[:, 0].astype(np.float32)[
+        np.newaxis, :
+    ]
+    geometry_vars["hae_latitude"].values = hae_az_el[:, 1].astype(np.float32)[
+        np.newaxis, :
+    ]
     return geometry_vars

@@ -400,6 +400,11 @@ hi_de_nominal_bin:
 
 # ======= L1C PSET Section =======
 
+# Define override values for epoch as defined in imap_constant_attrs.yaml
+hi_pset_epoch:
+  CATDESC: Midpoint time of pointing, number of nanoseconds since J2000 with leap seconds included
+  BIN_LOCATION: 0.5
+
 hi_pset_esa_energy_step:
   <<: *default_esa_energy_step
   LABLAXIS: Energy Step

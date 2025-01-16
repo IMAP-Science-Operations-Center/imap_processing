@@ -1,14 +1,5 @@
-# TODO: Some currently blank attributes may be removed once
-#       cdf_attribute_manager.py is updated to only check required attributes.
-#       See comment here:
-#       https://github.com/IMAP-Science-Operations-Center/imap_processing/pull/711#discussion_r1690212527
-
-# TODO: Add any missing CATDESCs
-# TODO: Make sure housekeeping attributes are consistent with latest telemetry definition
-
 # <=== Defaults ===>
 default_attrs: &default
-    CATDESC: " "
     DEPEND_0: epoch
     DISPLAY_TYPE: no_plot
     FIELDNAM: " "
@@ -19,6 +10,11 @@ default_attrs: &default
     VALIDMIN: -9223372036854775808
     VALIDMAX: 9223372036854775807
     VAR_TYPE: data
+
+hskp_attrs: &hskp_default
+    <<: *default
+    DEPEND_0: epoch
+    VAR_TYPE: support_data
 
 # <=== Coordinates ===>
 esa_step:
@@ -655,922 +651,894 @@ lo-nsw-species-cnoplus:
     LABL_PTR_2: spin_sector
     LABL_PTR_3: esa_step
 
-# <=== Housekeeping Attributes ===>
+# <=== CCSDS Header Attributes ===>
 version:
-    <<: *default
+    <<: *hskp_default
     CATDESC: CCSDS Packet Version Number (always 0)
     FIELDNAM: Version
     LABLAXIS: VERSION
-    VAR_TYPE: support_data
 
 type:
-    <<: *default
+    <<: *hskp_default
     CATDESC: CCSDS Packet Type Indicator (0=telemetry)
     FIELDNAM: Type
     LABLAXIS: TYPE
-    VAR_TYPE: support_data
 
 sec_hdr_flg:
-    <<: *default
+    <<: *hskp_default
     CATDESC: CCSDS Packet Secondary Header Flag (always 1)
     FIELDNAM: Secondary Header Flag
     LABLAXIS: SEC_HDR_FLG
-    VAR_TYPE: support_data
 
 pkt_apid:
-    <<: *default
+    <<: *hskp_default
     CATDESC: CCSDS Packet Application Process ID
     FIELDNAM: Packet APID
     LABLAXIS: PKT_APID
-    VAR_TYPE: support_data
 
 seq_flgs:
-    <<: *default
+    <<: *hskp_default
     CATDESC: CCSDS Packet Grouping Flags (3=not part of group)
     FIELDNAM: Grouping Flags
     LABLAXIS: SEQ_FLGS
-    VAR_TYPE: support_data
 
 src_seq_ctr:
-    <<: *default
+    <<: *hskp_default
     CATDESC: CCSDS Packet Sequence Count (increments with each new packet)
     FIELDNAM: Packet Sequence Count
     LABLAXIS: SRC_SEQ_CTR
-    VAR_TYPE: support_data
 
 pkt_len:
-    <<: *default
+    <<: *hskp_default
     CATDESC: CCSDS Packet Length (number of bytes after Packet length minus 1)
     FIELDNAM: Packet Length
     LABLAXIS: PKT_LEN
-    VAR_TYPE: support_data
 
 shcoarse:
-    <<: *default
+    <<: *hskp_default
     CATDESC: Secondary Header - Whole-seconds part of SCLK
     FIELDNAM: S/C Time - Seconds
     LABLAXIS: SHCOARSE
-    VAR_TYPE: support_data
 
 packet_version:
-    <<: *default
+    <<: *hskp_default
+    CATDESC: Packet Version
     FIELDNAM: Packet Version
     LABLAXIS: PACKET_VERSION
     VAR_NOTES: Packet version - this will be incremented each time the format of the packet changes.
-    VAR_TYPE: support_data
 
+chksum:
+    <<: *hskp_default
+    CATDESC: Packet Checksum
+    LABLAXIS: CHKSUM
+    FIELDNAM: Packet Checksum
+
+# <=== Housekeeping Attributes ===>
 cmdexe:
-    <<: *default
-    lablaxis: CMDEXE
+    <<: *hskp_default
+    LABLAXIS: CMDEXE
     FIELDNAM: Number of commands executed
+    CATDESC: Number of commands executed. See VAR_NOTES for more details.
     VAR_NOTES: Number of commands that have been executed. Counts 0-255, then rolls over to 0.  Reset via CLR_LATCHED_SINGLE(COMMAND_COUNTS) [also resets cmdjrct, cmdacc, itf_error counts)
-    VAR_TYPE: support_data
 
 cmdrjct:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: CMDRJCT
     FIELDNAM: Number of commands rejected
+    CATDESC: Number of commands rejected. See VAR_NOTES for more details.
     VAR_NOTES: Number of commands that have been rejected. Counts 0-255, then rolls over to 0.  Reset via CLR_LATCHED_SINGLE(COMMAND_COUNTS) [also resets cmdexe, cmdacc, itf_error counts)
-    VAR_TYPE: support_data
 
 last_opcode:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: LAST_OPCODE
     FIELDNAM: Last executed opcode
     CATDESC: Opcode of the last executed command
-    VAR_TYPE: support_data
 
 mode:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: MODE
     FIELDNAM: Instrument Mode
     CATDESC: Current operating mode
-    VAR_TYPE: support_data
 
 memop_state:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: MEMOP_STATE
     FIELDNAM: Memory Operation State
     CATDESC: State of the memory-operations handler
-    VAR_TYPE: support_data
 
 memdump_state:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: MEMDUMP_STATE
     FIELDNAM: Memory Dump State
     CATDESC: State of the memory-dump handler (busy/idle)
-    VAR_TYPE: support_data
 
 itf_err_cnt:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: ITF_ERR_CNT
     FIELDNAM: Number of ITF errors encountered
+    CATDESC: Number of ITF Errors detected. See VAR_NOTES for more details.
     VAR_NOTES: Number of ITF Errors that have been detected; counts 0-3, then rolls over to 0.   Reset via CLR_LATCHED_SINGLE(COMMAND_COUNTS) [also resets cmdexe, cmdjrct, cmdacc counts)
-    VAR_TYPE: support_data
 
 spin_cnt:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: SPIN_CNT
     FIELDNAM: Number of spin pulses received
     CATDESC: Number of spin pulses received
-    VAR_TYPE: support_data
 
 missed_pps_cnt:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: MISSED_PPS_CNT
     FIELDNAM: Number of missed PPS pulses
+    CATDESC: Number of missed PPS pulses. See VAR_NOTES for more details.
     VAR_NOTES: Number of missed PPS pulses.  Counts 0-3, then freezes at 3.  Reset via CLR_LATCHED_SINGLE(PPS_STATS)
-    VAR_TYPE: support_data
 
 wdog_timeout_cnt:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: WDOG_TIMEOUT_CNT
     FIELDNAM: Number of watchdog timeouts since last reset
     CATDESC: Number of times the watchdog has timed out.
-    VAR_TYPE: support_data
 
 hv_plug:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: HV_PLUG
     FIELDNAM: Status of the HV Disable Plug
+    CATDESC: Status of the HV plugs. See VAR_NOTES for more details.
     VAR_NOTES: Current status of the HV SAFE/DISABLE plugs -- "SAFE" - all HVPS outputs provide 1/10 the commanded voltage; "DIS" - all HVPS outputs provide 0V, regardless of commanded voltage; "FULL" - HVPS outputs provide the full commanded voltage
-    VAR_TYPE: support_data
 
 cmd_fifo_overrun_cnt:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: CMD_FIFO_OVERRUN_CNT
     FIELDNAM: Number of Command FIFO Overruns
-    VAR_TYPE: support_data
+    CATDESC: Number of Command FIFO Overruns
 
 cmd_fifo_underrun_cnt:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: CMD_FIFO_UNDERRUN_CNT
     FIELDNAM: Number of Command FIFO Underruns
-    VAR_TYPE: support_data
+    CATDESC: Number of Command FIFO Underruns
 
 cmd_fifo_parity_err_cnt:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: CMD_FIFO_PARITY_ERR_CNT
     FIELDNAM: Number of Command FIFO Parity Errors
-    VAR_TYPE: support_data
+    CATDESC: Number of Command FIFO Parity Errors
 
 cmd_fifo_frame_err_cnt:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: CMD_FIFO_FRAME_ERR_CNT
     FIELDNAM: Number of Command FIFO Frame Errors
-    VAR_TYPE: support_data
+    CATDESC: Number of Command FIFO Frame Errors
 
 tlm_fifo_overrun_cnt:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: TLM_FIFO_OVERRUN_CNT
     FIELDNAM: Number of Telemetry FIFO Overruns
-    VAR_TYPE: support_data
+    CATDESC: Number of Telemetry FIFO Overruns
 
 spin_bin_period:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: SPIN_BIN_PERIOD
     FIELDNAM: Spin Bin Period
-    VAR_TYPE: support_data
+    CATDESC: Spin Bin Period
 
 spin_period_timer:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: SPIN_PERIOD_TIMER
     FIELDNAM: Spin Period Timer
-    VAR_TYPE: support_data
+    CATDESC: Spin Period Timer
 
 spin_timestamp_seconds:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: SPIN_TIMESTAMP_SECONDS
     FIELDNAM: Full-seconds timestamp of the most recent spin pulse
-    VAR_TYPE: support_data
+    CATDESC: Full-seconds timestamp of the most recent spin pulse
 
 spin_timestamp_subseconds:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: SPIN_TIMESTAMP_SUBSECONDS
     FIELDNAM: Sub-seconds timestamp of the most recent spin pulse
-    VAR_TYPE: support_data
+    CATDESC: Sub-seconds timestamp of the most recent spin pulse
 
 spin_bin_index:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: SPIN_BIN_INDEX
     FIELDNAM: Spin Bin Index
-    VAR_TYPE: support_data
+    CATDESC: Spin Bin Index
 
 optc_hv_cmd_err_cnt:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: OPTICS_HV_CMD_ERR_CNT
     FIELDNAM: Optics HV - Number of command errors
-    VAR_TYPE: support_data
+    CATDESC: Optics HV - Number of command errors
 
 spare_1:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: SPARE_1
     FIELDNAM: Spare for alignment
-    VAR_TYPE: support_data
+    CATDESC: Spare for alignment
 
 optc_hv_arm_err_cnt:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: OPTICS_HV_ARM_ERR_CNT
     FIELDNAM: Optics HV - Number of arm errors
-    VAR_TYPE: support_data
+    CATDESC: Optics HV - Number of arm errors
 
 optc_hv_master_en:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: OPTICS_HV_MASTER_ENABLE
     FIELDNAM: Optics HV - Master Enable
-    VAR_TYPE: support_data
+    CATDESC: Optics HV - Master Enable
 
 iobulk_en:
+    <<: *hskp_default
     LABLAXIS: OPTICS_HV_P15KV_ENABLE
     FIELDNAM: Optics HV - P15KV Enable
-    VAR_TYPE: support_data
+    CATDESC: Optics HV - P15KV Enable
 
 esab_en:
+    <<: *hskp_default
     LABLAXIS: OPTICS_HV_ESAB_ENABLE
     FIELDNAM: Optics HV - ESA B Enable
-    VAR_TYPE: support_data
+    CATDESC: Optics HV - ESA B Enable
 
 spare_2:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: SPARE_2
     FIELDNAM: Spare (was Optics HV - ESA B Range)
-    VAR_TYPE: support_data
+    CATDESC: Spare (was Optics HV - ESA B Range)
 
 esaa_en:
+    <<: *hskp_default
     LABLAXIS: OPTICS_HV_ESAA_ENABLE
     FIELDNAM: Optics HV - ESA A Enable
-    VAR_TYPE: support_data
+    CATDESC: Optics HV - ESA A Enable
 
 spare_3:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: SPARE_3
     FIELDNAM: Spare (was Optics HV - ESA A Range)
-    VAR_TYPE: support_data
+    CATDESC: Spare (was Optics HV - ESA A Range)
 
 snsr_hv_cmd_err_cnt:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: SENSOR_HV_CMD_ERR_CNT
     FIELDNAM: Sensor HV -  Number of command errors
-    VAR_TYPE: support_data
+    CATDESC: Sensor HV -  Number of command errors
 
 snsr_hv_arm_err_cnt:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: SENSOR_HV_ARM_ERR_CNT
     FIELDNAM: Sensor HV - Number of Arm errors
-    VAR_TYPE: support_data
+    CATDESC: Sensor HV - Number of Arm errors
 
 snsr_hv_master_en:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: SENSOR_HV_MASTER_ENABLE
     FIELDNAM: Sensor HV - Master Enable
-    VAR_TYPE: support_data
+    CATDESC: Sensor HV - Master Enable
 
 apdb_en:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: SENSOR_HV_APD_BIAS_ENABLE
     FIELDNAM: Sensor HV - APD Bias Enable
-    VAR_TYPE: support_data
+    CATDESC: Sensor HV - APD Bias Enable
 
 sbulk_en:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: SENSOR_HV_P6KV_ENABLE
     FIELDNAM: Sensor HV - p6KV Enable
-    VAR_TYPE: support_data
+    CATDESC: Sensor HV - p6KV Enable
 
 stpmcp_en:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: SENSOR_HV_STOP_MCP_ENABLE
     FIELDNAM: Sensor HV - Stop MCP Enable
-    VAR_TYPE: support_data
+    CATDESC: Sensor HV - Stop MCP Enable
 
 strmcp_en:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: SENSOR_HV_START_MCP_ENABLE
     FIELDNAM: Sensor HV - Start MCP Enable
-    VAR_TYPE: support_data
+    CATDESC: Sensor HV - Start MCP Enable
 
 spare_4:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: SPARE_4
     FIELDNAM: Spare for alignment
-    VAR_TYPE: support_data
+    CATDESC: Spare for alignment
 
 esaa_dac:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: OPTICS_HV_DAC_ESA_A
     FIELDNAM: Optics HV - ESA A DAC
-    VAR_TYPE: support_data
+    CATDESC: Optics HV - ESA A DAC
 
 esab_dac:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: OPTICS_HV_DAC_ESA_B
     FIELDNAM: Optics HV -  ESA B DAC
-    VAR_TYPE: support_data
+    CATDESC: Optics HV -  ESA B DAC
 
 iobulk_dac:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: OPTICS_HV_DAC_IONBULK
     FIELDNAM: Optics HV - Ion Bulk DAC
-    VAR_TYPE: support_data
+    CATDESC: Optics HV - Ion Bulk DAC
 
 ssdo_dac:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: SENSOR_HV_DAC_SSDO
     FIELDNAM: Sensor HV - SSDO Enable
-    VAR_TYPE: support_data
+    CATDESC: Sensor HV - SSDO Enable
 
 ssdb_dac:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: SENSOR_HV_DAC_SSDB
     FIELDNAM: Sensor HV - SSD Bias Enable
-    VAR_TYPE: support_data
+    CATDESC: Sensor HV - SSD Bias Enable
 
 apdb_dac:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: SENSOR_HV_DAC_APDB
     FIELDNAM: Sensor HV - ADP Bias Enable
-    VAR_TYPE: support_data
+    CATDESC: Sensor HV - ADP Bias Enable
 
 apdb2_dac:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: SENSOR_HV_DAC_APDB2
     FIELDNAM: Sensor HV - ADP Bias 2 Enable
-    VAR_TYPE: support_data
+    CATDESC: Sensor HV - ADP Bias 2 Enable
 
 strmcp_dac:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: SENSOR_HV_DAC_START_MCP
     FIELDNAM: Sensor HV - Start MCP DAC
-    VAR_TYPE: support_data
+    CATDESC: Sensor HV - Start MCP DAC
 
 stpmcp_dac:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: SENSOR_HV_DAC_STOP_MCP
     FIELDNAM: Sensor HV - Stop MCP DAC
-    VAR_TYPE: support_data
+    CATDESC: Sensor HV - Stop MCP DAC
 
 stpog_dac:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: SENSOR_HV_DAC_STOP_OPTICS_GRID
     FIELDNAM: Sensor HV - Stop Optics Grid DAC
-    VAR_TYPE: support_data
+    CATDESC: Sensor HV - Stop Optics Grid DAC
 
 sbulk_vmon:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: SBULK_VMON
     FIELDNAM: HVPS – V1 -- Sensor Bulk Voltage Monitor
-    VAR_TYPE: support_data
+    CATDESC: HVPS – V1 -- Sensor Bulk Voltage Monitor
 
 ssdo_vmon:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: SSDO_VMON
     FIELDNAM: HVPS – V2 -- SSD Optics Voltage Monitor
-    VAR_TYPE: support_data
+    CATDESC: HVPS – V2 -- SSD Optics Voltage Monitor
 
 ssdb_vmon:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: SSDB_VMON
     FIELDNAM: HVPS – V3 -- SSD Bias Voltage Monitor
-    VAR_TYPE: support_data
+    CATDESC: HVPS – V3 -- SSD Bias Voltage Monitor
 
 apdb1_vmon:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: APDB1_VMON
     FIELDNAM: HVPS – V4 -- APD1 Bias Voltage Monitor
-    VAR_TYPE: support_data
+    CATDESC: HVPS – V4 -- APD1 Bias Voltage Monitor
 
 apdb2_vmon:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: APDB2_VMON
     FIELDNAM: HVPS – V5 -- APD1 Bias Voltage Monitor
-    VAR_TYPE: support_data
+    CATDESC: HVPS – V5 -- APD1 Bias Voltage Monitor
 
 iobulk_vmon:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: IOBULK_VMON
     FIELDNAM: HVPS – V6 -- IO Bulk Voltage Monitor
-    VAR_TYPE: support_data
+    CATDESC: HVPS – V6 -- IO Bulk Voltage Monitor
 
 esaa_hi_vmon:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: ESAA_HI_VMON
     FIELDNAM: HVPS – V7 -- ESA A High Range Voltage Monitor
-    VAR_TYPE: support_data
+    CATDESC: HVPS – V7 -- ESA A High Range Voltage Monitorf
 
 spare_62:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: SPARE_62
     FIELDNAM: Spare (was ESAA_LO_VMON)
-    VAR_TYPE: support_data
+    CATDESC: Spare (was ESAA_LO_VMON)
 
 strmcp_vmon:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: STRMCP_VMON
     FIELDNAM: HVPS – V9 -- Start MCP Voltage Monitor
-    VAR_TYPE: support_data
+    CATDESC: HVPS – V9 -- Start MCP Voltage Monitor
 
 stpmcp_vmon:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: STPMCP_VMON
     FIELDNAM: HVPS – V10 -- Stop MCP Voltage Monitor
-    VAR_TYPE: support_data
+    CATDESC: HVPS – V10 -- Stop MCP Voltage Monitor
 
 stpog_vmon:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: STPOG_VMON
     FIELDNAM: HVPS – V11 -- Stop Optics Grid Voltage Monitor
-    VAR_TYPE: support_data
+    CATDESC: HVPS – V11 -- Stop Optics Grid Voltage Monitor
 
 apdb1_imon:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: APDB1_IMON
     FIELDNAM: HVPS – V12 -- APD1 Bias Current Monitor
-    VAR_TYPE: support_data
+    CATDESC: HVPS – V12 -- APD1 Bias Current Monitor
 
 esab_hi_vmon:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: ESAB_HI_VMON
     FIELDNAM: HVPS – V13 -- ESA A High Range Voltage Monitor
-    VAR_TYPE: support_data
+    CATDESC: HVPS – V13 -- ESA A High Range Voltage Monitor
 
 spare_68:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: SPARE_68
     FIELDNAM: Spare (was ESAB_LO_VMON)
-    VAR_TYPE: support_data
+    CATDESC: Spare (was ESAB_LO_VMON)
 
 apdb2_imon:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: APDB2_IMON
     FIELDNAM: HVPS – V15 -- APD2 Bias Current Monitor
-    VAR_TYPE: support_data
+    CATDESC: HVPS – V15 -- APD2 Bias Current Monitor
 
 ssdb_imon:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: SSDB_IMON
     FIELDNAM: HVPS – V16 -- SSD Bias Current Monitor
-    VAR_TYPE: support_data
+    CATDESC: HVPS – V16 -- SSD Bias Current Monitor
 
 stpmcp_imon:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: STPMCP_IMON
     FIELDNAM: HVPS – I1 -- Stop MCP Current Monitor
-    VAR_TYPE: support_data
+    CATDESC: HVPS – I1 -- Stop MCP Current Monitor
 
 iobulk_imon:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: IOBULK_IMON
     FIELDNAM: HVPS – I2 -- IO Bulk Current Monitor
-    VAR_TYPE: support_data
+    CATDESC: HVPS – I2 -- IO Bulk Current Monitor
 
 strmcp_imon:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: STRMCP_IMON
     FIELDNAM: HVPS – I3 -- Start MCP Current Monitor
-    VAR_TYPE: support_data
+    CATDESC: HVPS – I3 -- Start MCP Current Monitor
 
 mdm25p_14_t:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: MDM25P_14_T
     FIELDNAM: System Temperature 1 -- MDM25P – 14 Temperature
-    VAR_TYPE: support_data
+    CATDESC: System Temperature 1 -- MDM25P – 14 Temperature
 
 mdm25p_15_t:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: MDM25P_15_T
     FIELDNAM: System Temperature 2 -- MDM25P – 15 Temperature
-    VAR_TYPE: support_data
+    CATDESC: System Temperature 2 -- MDM25P – 15 Temperature
 
 mdm25p_16_t:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: MDM25P_16_T
     FIELDNAM: System Temperature 3 -- MDM25P – 16 Temperature
-    VAR_TYPE: support_data
+    CATDESC: System Temperature 3 -- MDM25P – 16 Temperature
 
 mdm51p_27_t:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: MDM51P_27_T
     FIELDNAM: LO Temperature -- MDM51P – 27 Temperature
-    VAR_TYPE: support_data
+    CATDESC: LO Temperature -- MDM51P – 27 Temperature
 
 io_hvps_t:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: IO_HVPS_T
     FIELDNAM: HVPS Temperature -- IO-HVPS Temperature
-    VAR_TYPE: support_data
+    CATDESC: HVPS Temperature -- IO-HVPS Temperature
 
 lvps_12v_t:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: LVPS_12V_T
     FIELDNAM: LVPS Temperature 1 -- LVPS – 12V Temperature
-    VAR_TYPE: support_data
+    CATDESC: LVPS Temperature 1 -- LVPS – 12V Temperature
 
 lvps_5v_t:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: LVPS_5V_T
     FIELDNAM: LVPS Temperature 2 -- LVPS – 5V Temperature
-    VAR_TYPE: support_data
+    CATDESC: LVPS Temperature 2 -- LVPS – 5V Temperature
 
 lvps_3p3v_t:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: LVPS_3P3V_T
     FIELDNAM: LVPS Temperature 3 -- LVPS – +3.3V Temperature
-    VAR_TYPE: support_data
+    CATDESC: LVPS Temperature 3 -- LVPS – +3.3V Temperature
 
 lvps_3p3v:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: LVPS_3P3V
     FIELDNAM: LVPS – Digital V1 -- LVPS – +3.3V
-    VAR_TYPE: support_data
+    CATDESC: LVPS – Digital V1 -- LVPS – +3.3V
 
 lvps_5v:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: LVPS_5V
     FIELDNAM: LVPS – Digital V2 -- LVPS – +5V
-    VAR_TYPE: support_data
+    CATDESC: LVPS – Digital V2 -- LVPS – +5V
 
 lvps_n5v:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: LVPS_N5V
     FIELDNAM: LVPS – Digital V3 -- LVPS – -5V
-    VAR_TYPE: support_data
+    CATDESC: LVPS – Digital V3 -- LVPS – -5V
 
 lvps_12v:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: LVPS_12V
     FIELDNAM: LVPS – Digital V4 -- LVPS – +12V
-    VAR_TYPE: support_data
+    CATDESC: LVPS – Digital V4 -- LVPS – +12V
 
 lvps_n12v:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: LVPS_N12V
     FIELDNAM: LVPS – Digital V5 -- LVPS – -12V
-    VAR_TYPE: support_data
+    CATDESC: LVPS – Digital V5 -- LVPS – -12V
 
 lvps_3p3v_i:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: LVPS_3P3V_I
     FIELDNAM: LVPS – Digital I1 -- LVPS – +3.3V Current
-    VAR_TYPE: support_data
+    CATDESC: LVPS – Digital I1 -- LVPS – +3.3V Current
 
 lvps_5v_i:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: LVPS_5V_I
     FIELDNAM: LVPS – Digital I2 -- LVPS – +5V Current
-    VAR_TYPE: support_data
+    CATDESC: LVPS – Digital I2 -- LVPS – +5V Current
 
 lvps_n5v_i:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: LVPS_N5V_I
     FIELDNAM: LVPS – Digital I3 -- LVPS – -5V Current
-    VAR_TYPE: support_data
+    CATDESC: LVPS – Digital I3 -- LVPS – -5V Current
 
 lvps_12v_i:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: LVPS_12V_I
     FIELDNAM: LVPS – Digital I4 -- LVPS – +12V Current
-    VAR_TYPE: support_data
+    CATDESC: LVPS – Digital I4 -- LVPS – +12V Current
 
 lvps_n12v_i:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: LVPS_N12V_I
     FIELDNAM: LVPS – Digital I5 -- LVPS – -12V Current
-    VAR_TYPE: support_data
+    CATDESC: LVPS – Digital I5 -- LVPS – -12V Current
 
 cdh_1p5v:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: CDH_1P5V
     FIELDNAM: CDH – + 1.5V
-    VAR_TYPE: support_data
+    CATDESC: CDH – + 1.5V
 
 cdh_1p8v:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: CDH_1P8V
     FIELDNAM: CDH – +1.8V
-    VAR_TYPE: support_data
+    CATDESC: CDH – +1.8V
 
 cdh_3p3v:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: CDH_3P3V
     FIELDNAM: CDH – +3.3V
-    VAR_TYPE: support_data
+    CATDESC: CDH – +3.3V
 
 cdh_12v:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: CDH_12V
     FIELDNAM: CDH – +12V
-    VAR_TYPE: support_data
+    CATDESC: CDH – +12V
 
 cdh_n12v:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: CDH_N12V
     FIELDNAM: CDH – -12V
-    VAR_TYPE: support_data
+    CATDESC: CDH – -12V
 
 cdh_5v:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: CDH_5V
     FIELDNAM: CDH – +5V
-    VAR_TYPE: support_data
+    CATDESC: CDH – +5V
 
 cdh_5v_adc:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: CDH_5V_ADC
     FIELDNAM: CDH – Analog Ref -- CDH – +5V ADC
-    VAR_TYPE: support_data
+    CATDESC: CDH – Analog Ref -- CDH – +5V ADC
 
 tbd_hvps_1_if_err_cnt:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: TBD_HVPS_1_IF_ERR_CNT
     FIELDNAM: TBD - Placeholder for HVPS 1 Interface error counts
-    VAR_TYPE: support_data
+    CATDESC: TBD - Placeholder for HVPS 1 Interface error counts
 
 tbd_hvps_2_if_err_cnt:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: TBD_HVPS_2_IF_ERR_CNT
     FIELDNAM: TBD - Placeholder for HVPS 2 Interface error counts
-    VAR_TYPE: support_data
+    CATDESC: TBD - Placeholder for HVPS 2 Interface error counts
 
 tbd_fee_1_if_err_cnt:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: TBD_FEE_1_IF_ERR_CNT
     FIELDNAM: TBD - Placeholder for FEE 1 Interface error counts
-    VAR_TYPE: support_data
+    CATDESC: TBD - Placeholder for FEE 1 Interface error counts
 
 tbd_fee_2_if_err_cnt:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: TBD_FEE_2_IF_ERR_CNT
     FIELDNAM: TBD - Placeholder for FEE 2 Interface error counts
-    VAR_TYPE: support_data
+    CATDESC: TBD - Placeholder for FEE 2 Interface error counts
 
 tbd_macro_status:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: TBD_MACRO_STATUS
     FIELDNAM: TBD - Placeholder for Macro status
-    VAR_TYPE: support_data
+    CATDESC: TBD - Placeholder for Macro status
 
 fdc_trigger_cnt_fsw:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: FDC_TRIGGER_CNT_FSW
     FIELDNAM: Indicates whether any CATEGORY 1 limits have triggered
+    CATDESC: Indicates any CATEGORY 1 limits triggered. See VAR_NOTES for more details.
     VAR_NOTES: Indicates whether any CATEGORY 1 limits have triggered -- 2 bits -- 0=No triggers; 1=One trigger; 2=Two triggers; 3=More than two triggers
-    VAR_TYPE: support_data
 
 fdc_trigger_cnt_hvps:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: FDC_TRIGGER_CNT_HVPS
     FIELDNAM: Indicates whether any CATEGORY 2 limits have triggered
     CATDESC: Indicates whether any CATEGORY 2 limits have triggered
-    VAR_TYPE: support_data
 
 fdc_trigger_cnt_cdh:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: FDC_TRIGGER_CNT_CDH
     FIELDNAM: Indicates whether any CATEGORY 3 limits have triggered
     CATDESC: Indicates whether any CATEGORY 3 limits have triggered
-    VAR_TYPE: support_data
 
 fdc_trigger_cnt_fee:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: FDC_TRIGGER_CNT_FEE
     FIELDNAM: Indicates whether any CATEGORY 4 limits have triggered
     CATDESC: Indicates whether any CATEGORY 4 limits have triggered
-    VAR_TYPE: support_data
 
 fdc_trigger_cnt_spare1:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: FDC_TRIGGER_CNT_SPARE1
     FIELDNAM: Indicates whether any CATEGORY 5 limits have triggered
     CATDESC: Indicates whether any CATEGORY 5 limits have triggered
-    VAR_TYPE: support_data
 
 fdc_trigger_cnt_spare2:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: FDC_TRIGGER_CNT_SPARE2
     FIELDNAM: Indicates whether any CATEGORY 6 limits have triggered
     CATDESC: Indicates whether any CATEGORY 6 limits have triggered
-    VAR_TYPE: support_data
 
 fdc_trigger_cnt_spare3:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: FDC_TRIGGER_CNT_SPARE3
     FIELDNAM: Indicates whether any CATEGORY 7 limits have triggered
     CATDESC: Indicates whether any CATEGORY 7 limits have triggered
-    VAR_TYPE: support_data
 
 fdc_trigger_cnt_spare4:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: FDC_TRIGGER_CNT_SPARE4
     FIELDNAM: Indicates whether any CATEGORY 8 limits have triggered
     CATDESC: Indicates whether any CATEGORY 8 limits have triggered
-    VAR_TYPE: support_data
 
 fdc_last_trigger_minmax:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: FDC_LAST_TRIGGER_MINMAX
     FIELDNAM: Indicates whether the most recent trigger was a minimum or maximum limit
     CATDESC: Indicates whether the most recent trigger was a minimum or maximum limit
-    VAR_TYPE: support_data
 
 fdc_last_trigger_id:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: FDC_LAST_TRIGGER_ID
     FIELDNAM: Indicates the ID of the most recent FDC trigger
     CATDESC: Indicates the ID of the most recent FDC trigger
-    VAR_TYPE: support_data
 
 fdc_last_trigger_action:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: FDC_LAST_TRIGGER_ACTION
     FIELDNAM: Indicates the action that was taken for the most recent FDC trigger
     CATDESC: Indicates the action that was taken for the most recent FDC trigger
-    VAR_TYPE: support_data
 
 round_robin_index:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: ROUND_ROBIN_INDEX
     FIELDNAM: Round Robin Parameter Report Index
+    CATDESC: Index for Round Robin parameter reporting. See VAR_NOTES for more details.
     VAR_NOTES: Current index for the Round Robin parameter reporting.  The Round Robin mechanism reports one value from the Parameter Table each time this packet is generated.
-    VAR_TYPE: support_data
 
 round_robin_value:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: ROUND_ROBIN_VALUE
     FIELDNAM: Round Robin Parameter Report Value
     CATDESC: Parameter value corresponding to the current Round_Robin_Index value.
-    VAR_TYPE: support_data
 
 heater_control_state:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: HEATER_CONTROL_STATE
     FIELDNAM: State of the heater controller
     CATDESC: Indicates whether FSW control of the operational heater is enabled
-    VAR_TYPE: support_data
 
 heater_output_state:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: HEATER_OUTPUT_STATE
     FIELDNAM: State of the heater output
     CATDESC: Indicates the current state of the physical heater output
-    VAR_TYPE: support_data
 
 heater_output_state_2:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: HEATER_OUTPUT_STATE_2
     FIELDNAM: State of the heater output 2
     CATDESC: Indicates the current state of the physical heater output
-    VAR_TYPE: support_data
 
 spare_5:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: SPARE_5
     FIELDNAM: Spare for alignment
     CATDESC: Spare for alignment
-    VAR_TYPE: support_data
 
 cpu_idle:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: CPU_IDLE
     FIELDNAM: CPU Idle Percent
     CATDESC: CPU Idle Percent
-    VAR_TYPE: support_data
 
 cdh_processor_t:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: CDH_PROCESSOR_T
     FIELDNAM: CDH – Processor Temp monitor
-    VAR_TYPE: support_data
+    CATDESC: CDH – Processor Temp monitor
 
 cdh_1p8v_ldo_t:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: CDH_1P8V_LDO_T
     FIELDNAM: CDH – +1.8V LDO Temp monitor
-    VAR_TYPE: support_data
+    CATDESC: CDH – +1.8V LDO Temp monitor
 
 cdh_1p5v_ldo_t:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: CDH_1P5V_LDO_T
     FIELDNAM: CDH – +1.5V LDO Temp monitor
-    VAR_TYPE: support_data
+    CATDESC: CDH – +1.5V LDO Temp monitor
 
 cdh_sdram_t:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: CDH_SDRAM_T
     FIELDNAM: CDH – SDRAM Temp monitor
-    VAR_TYPE: support_data
+    CATDESC: CDH – SDRAM Temp monitor
 
 snsr_hvps_t:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: SNSR_HVPS_T
     FIELDNAM: CoDICE – Sensor HVPS Temp monitor
-    VAR_TYPE: support_data
+    CATDESC: CoDICE – Sensor HVPS Temp monitor
 
 fee_apd_3p3_digital_v:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: FEE_APD_3P3_DIGITAL_V
     FIELDNAM: FEE; APD Side +3.3V Digital
-    VAR_TYPE: support_data
+    CATDESC: FEE; APD Side +3.3V Digital
 
 fee_apd_5p0_analog_v:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: FEE_APD_5P0_ANALOG_V
     FIELDNAM: FEE; APD Side +5.0V Analog
-    VAR_TYPE: support_data
+    CATDESC: FEE; APD Side +5.0V Analog
 
 fee_apd_t:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: FEE_APD_T
     FIELDNAM: FEE; APD Side Temperature
-    VAR_TYPE: support_data
+    CATDESC: FEE; APD Side Temperature
 
 fee_apd_12p0_analog_v:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: FEE_APD_12P0_ANALOG_V
     FIELDNAM: FEE; APD Side +12.0V Analog
-    VAR_TYPE: support_data
+    CATDESC: FEE; APD Side +12.0V Analog
 
 fee_apd_eb_temp_1_t:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: FEE_APD_EB_TEMP_1_T
     FIELDNAM: FEE; AEB Temp Sensor 1
-    VAR_TYPE: support_data
+    CATDESC: FEE; AEB Temp Sensor 1
 
 fee_apd_eb_temp_2_t:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: FEE_APD_EB_TEMP_2_T
     FIELDNAM: FEE; AEB Temp Sensor 2
-    VAR_TYPE: support_data
+    CATDESC: FEE; AEB Temp Sensor 2
 
 fee_apd_eb_temp_3_t:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: FEE_APD_EB_TEMP_3_T
     FIELDNAM: FEE; AEB Temp Sensor 3
-    VAR_TYPE: support_data
+    CATDESC: FEE; AEB Temp Sensor 3
 
 fee_apd_eb_temp_4_t:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: FEE_APD_EB_TEMP_4_T
     FIELDNAM: FEE; AEB Temp Sensor 4
-    VAR_TYPE: support_data
+    CATDESC: FEE; AEB Temp Sensor 4
 
 fee_ssd_3p3_digital_v:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: FEE_SSD_3P3_DIGITAL_V
     FIELDNAM: FEE; SSD Side +3.3V Digital
-    VAR_TYPE: support_data
+    CATDESC: FEE; SSD Side +3.3V Digital
 
 fee_ssd_5p0_analog_v:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: FEE_SSD_5P0_ANALOG_V
     FIELDNAM: FEE; SSD Side +5.0V Analog
-    VAR_TYPE: support_data
+    CATDESC: FEE; SSD Side +5.0V Analog
 
 fee_ssd_t:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: FEE_SSD_T
     FIELDNAM: FEE; SSD Side Temperature
-    VAR_TYPE: support_data
+    CATDESC: FEE; SSD Side Temperature
 
 fee_ssd_12p0_analog_v:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: FEE_SSD_12P0_ANALOG_V
     FIELDNAM: FEE; SSD Side +12.0V Analog
-    VAR_TYPE: support_data
+    CATDESC: FEE; SSD Side +12.0V Analog
 
 fee_ssd_eb_temp_1_t:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: FEE_SSD_EB_TEMP_1_T
     FIELDNAM: FEE; SEB Temp Sensor 1
-    VAR_TYPE: support_data
+    CATDESC: FEE; SEB Temp Sensor 1
 
 fee_ssd_eb_temp_2_t:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: FEE_SSD_EB_TEMP_2_T
     FIELDNAM: FEE; SEB Temp Sensor 2
-    VAR_TYPE: support_data
+    CATDESC: FEE; SEB Temp Sensor 2
 
 fee_ssd_eb_temp_3_t:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: FEE_SSD_EB_TEMP_3_T
     FIELDNAM: FEE; SEB Temp Sensor 3
-    VAR_TYPE: support_data
+    CATDESC: FEE; SEB Temp Sensor 3
 
 fee_ssd_eb_temp_4_t:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: FEE_SSD_EB_TEMP_4_T
     FIELDNAM: FEE; SEB Temp Sensor 4
-    VAR_TYPE: support_data
+    CATDESC: FEE; SEB Temp Sensor 4
 
 spare_6:
-    <<: *default
+    <<: *hskp_default
     LABLAXIS: SPARE_6
     FIELDNAM: Spare for alignment
     CATDESC: Spare for alignment
-    VAR_TYPE: support_data
-
-chksum:
-    <<: *default
-    LABLAXIS: CHKSUM
-    FIELDNAM: Packet Checksum
-    CATDESC: Packet Checksum
-    VAR_TYPE: support_data

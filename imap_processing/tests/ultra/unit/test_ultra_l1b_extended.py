@@ -13,6 +13,9 @@ from imap_processing.ultra.l1b.ultra_l1b_extended import (
     determine_species,
     get_coincidence_positions,
     get_ctof,
+    get_de_az_el,
+    get_de_energy_kev,
+    get_de_velocity,
     get_energy_pulse_height,
     get_energy_ssd,
     get_front_x_position,
@@ -21,7 +24,6 @@ from imap_processing.ultra.l1b.ultra_l1b_extended import (
     get_ph_tof_and_back_positions,
     get_ssd_back_position_and_tof_offset,
     get_ssd_tof,
-    get_unit_vector,
 )
 
 
@@ -213,41 +215,42 @@ def test_calculate_etof_xc(de_dataset, yf_fixture):
     )
 
 
-def test_get_unit_vector(de_dataset, yf_fixture):
-    """Tests get_unit_vector function."""
+def test_get_de_velocity(de_dataset, yf_fixture):
+    """Tests get_de_velocity function."""
     df_filt, _, _ = yf_fixture
+    df_ph = df_filt[np.isin(df_filt["StopType"], [StopType.PH.value])]
 
-    ph_indices = np.nonzero(
-        np.isin(de_dataset["STOP_TYPE"], [StopType.Top.value, StopType.Bottom.value])
-    )[0]
+    test_xf, test_yf, test_xb, test_yb, test_d, test_tof = (
+        df_ph[col].astype("float").values
+        for col in ["Xf", "Yf", "Xb", "Yb", "d", "TOF"]
+    )
 
-    ph_rows = df_filt.iloc[ph_indices]
-    test_xf = ph_rows["Xf"].astype("float").values
-    test_yf = ph_rows["Yf"].astype("float").values
-    test_xb = ph_rows["Xb"].astype("float").values
-    test_yb = ph_rows["Yb"].astype("float").values
-    test_d = ph_rows["d"].astype("float").values
-    test_tof = ph_rows["TOF"].astype("float").values
-
-    vhat_x, vhat_y, vhat_z = get_unit_vector(
+    v = get_de_velocity(
         (test_xf, test_yf),
         (test_xb, test_yb),
         test_d,
         test_tof,
     )
-    # FSW test data should be negative and not have an analysis
-    # for negative tof values.
-    assert vhat_x[test_tof > 0] == pytest.approx(
-        -df_filt["vhatX"].iloc[ph_indices].astype("float").values[test_tof > 0],
-        rel=1e-2,
+
+    v_x, v_y, v_z = v[:, 0], v[:, 1], v[:, 2]
+
+    np.testing.assert_allclose(
+        v_x[test_tof > 0],
+        df_ph["vx"].astype("float").values[test_tof > 0],
+        atol=1e-01,
+        rtol=0,
     )
-    assert vhat_y[test_tof > 0] == pytest.approx(
-        -df_filt["vhatY"].iloc[ph_indices].astype("float").values[test_tof > 0],
-        rel=1e-2,
+    np.testing.assert_allclose(
+        v_y[test_tof > 0],
+        df_ph["vy"].astype("float").values[test_tof > 0],
+        atol=1e-01,
+        rtol=0,
     )
-    assert vhat_z[test_tof > 0] == pytest.approx(
-        -df_filt["vhatZ"].iloc[ph_indices].astype("float").values[test_tof > 0],
-        rel=1e-2,
+    np.testing.assert_allclose(
+        v_z[test_tof > 0],
+        df_ph["vz"].astype("float").values[test_tof > 0],
+        atol=1e-01,
+        rtol=0,
     )
 
 
@@ -262,6 +265,37 @@ def test_get_ssd_tof(de_dataset, yf_fixture):
     np.testing.assert_allclose(
         ssd_tof, df_ssd["TOF"].astype("float"), atol=1e-05, rtol=0
     )
+
+
+def test_get_de_energy_kev(de_dataset, yf_fixture):
+    """Tests get_de_energy_kev function."""
+    df_filt, _, _ = yf_fixture
+    df_ph = df_filt[np.isin(df_filt["StopType"], [StopType.PH.value])]
+    df_ph = df_ph[df_ph["energy_revised"].astype("str") != "FILL"]
+
+    species_bin_ph = determine_species(
+        df_ph["TOF"].astype("float").to_numpy(),
+        df_ph["r"].astype("float").to_numpy(),
+        "PH",
+    )
+    test_xf, test_yf, test_xb, test_yb, test_d, test_tof = (
+        df_ph[col].astype("float").values
+        for col in ["Xf", "Yf", "Xb", "Yb", "d", "TOF"]
+    )
+
+    v = get_de_velocity(
+        (test_xf, test_yf),
+        (test_xb, test_yb),
+        test_d,
+        test_tof,
+    )
+
+    energy = get_de_energy_kev(v, species_bin_ph)
+    index_hydrogen = np.where(species_bin_ph == "H")
+    actual_energy = energy[index_hydrogen[0]]
+    expected_energy = df_ph["energy_revised"].astype("float")
+
+    np.testing.assert_allclose(actual_energy, expected_energy, atol=1e-01, rtol=0)
 
 
 def test_get_energy_ssd(de_dataset, yf_fixture):
@@ -360,3 +394,29 @@ def test_determine_species(yf_fixture):
 
     np.testing.assert_array_equal(h_indices_ph, ctof_indices_ph)
     np.testing.assert_array_equal(h_indices_ssd, ctof_indices_ssd)
+
+
+def test_get_de_az_el(de_dataset, yf_fixture):
+    """Tests get_de_az_el function."""
+    df_filt, _, _ = yf_fixture
+    df_filt = df_filt[
+        (df_filt["event_theta"].astype("str") != "FILL")
+        & (df_filt["TOF"].astype("float") >= 0)
+    ]
+    df_ph = df_filt[np.isin(df_filt["StopType"], [StopType.PH.value])]
+
+    test_xf, test_yf, test_xb, test_yb, test_d, test_tof = (
+        df_ph[col].astype("float").values
+        for col in ["Xf", "Yf", "Xb", "Yb", "d", "TOF"]
+    )
+
+    v = get_de_velocity(
+        (test_xf, test_yf),
+        (test_xb, test_yb),
+        test_d,
+        test_tof,
+    )
+    az, _ = get_de_az_el(v)
+    expected_phi = df_ph["event_phi"].astype("float")
+
+    np.testing.assert_allclose(az, expected_phi % (2 * np.pi), atol=1e-03, rtol=0)

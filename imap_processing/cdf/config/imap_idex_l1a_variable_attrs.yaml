@@ -38,13 +38,13 @@ l1a_data_base: &l1a_data_base
 
 l1a_tof_base: &l1a_tof_base
   <<: *l1a_data_base
-  DEPEND_1: time_high_sr
-  LABL_PTR_1: time_high_sr_label
+  DEPEND_1: time_high_sample_rate
+  LABL_PTR_1: time_high_sample_rate_label
 
 l1a_target_base: &l1a_target_base
   <<: *l1a_data_base
-  DEPEND_1: time_low_sr
-  LABL_PTR_1: time_low_sr_label
+  DEPEND_1: time_low_sample_rate
+  LABL_PTR_1: time_low_sample_rate_label
 
 sample_rate_base: &sample_rate_base
   DISPLAY_TYPE: no_plot
@@ -76,20 +76,20 @@ trigger_base: &trigger_base
   UNITS: " "
 
 # <=== LABL_PTR_i Attributes ===>
-time_high_sr_label:
+time_high_sample_rate_label:
   CATDESC: High sample rate time steps for a dust event.
   FIELDNAM: High Sample Rate Time
   FORMAT: A5
   VAR_TYPE: metadata
 
-time_low_sr_label:
+time_low_sample_rate_label:
   CATDESC: Low sample rate time steps for a dust event.
   FIELDNAM: Low Sample Rate Time
   FORMAT: A5
   VAR_TYPE: metadata
 
 # <=== Instrument Setting Attributes ===>
-low_sr_attrs:
+low_sample_rate_attrs:
   <<:  *sample_rate_base
   CATDESC: Low sample rate time steps for a dust event.
   FIELDNAM: Low Sample Rate Time
@@ -97,13 +97,37 @@ low_sr_attrs:
              microseconds in duration. Used by the Ion_Grid, Target_Low, and
              Target_High variables.
 
-high_sr_attrs:
+high_sample_rate_attrs:
   <<:  *sample_rate_base
   CATDESC: High sample rate time steps for a dust event.
   FIELDNAM: High Sample Rate Time
   VAR_NOTES: The high sample rate in microseconds. Steps are approximately 1/260
     microseconds in duration. Used by the TOF_High, TOF_Mid, and
     TOF_Low variables.
+
+time_low_sample_rate_index:
+  CATDESC: Low sampling rate time index
+  FIELDNAM: Low sample rate
+  FILLVAL: *int_fillval
+  FORMAT: I3
+  LABLAXIS: Sample Rate
+  SCALE_TYP: linear
+  UNITS: " "
+  VALIDMAX: 511
+  VALIDMIN: 0
+  VAR_TYPE: support_data
+
+time_high_sample_rate_index:
+  CATDESC: High sampling rate time index
+  FIELDNAM: Low sample rate
+  FILLVAL: *int_fillval
+  FORMAT: I3
+  LABLAXIS: Sample Rate
+  SCALE_TYP: linear
+  UNITS: " "
+  VALIDMAX: 8188
+  VALIDMIN: 0
+  VAR_TYPE: support_data
 
 tof_high_attrs:
   <<: *l1a_tof_base

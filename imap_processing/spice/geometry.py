@@ -44,6 +44,7 @@ class SpiceFrame(IntEnum):
     # Standard SPICE Frames
     J2000 = spice.irfnum("J2000")
     ECLIPJ2000 = spice.irfnum("ECLIPJ2000")
+    ITRF93 = 13000
     # IMAP Pointing Frame (Despun) as defined in imap_science_0001.tf
     IMAP_DPS = -43901
     # IMAP specific as defined in imap_wkcp.tf
@@ -85,6 +86,7 @@ BORESIGHT_LOOKUP = {
 def imap_state(
     et: Union[np.ndarray, float],
     ref_frame: SpiceFrame = SpiceFrame.ECLIPJ2000,
+    abcorr: str = "NONE",
     observer: SpiceBody = SpiceBody.SUN,
 ) -> np.ndarray:
     """
@@ -96,10 +98,12 @@ def imap_state(
     ----------
     et : np.ndarray or float
         Epoch time(s) [J2000 seconds] to get the IMAP state for.
-    ref_frame : SpiceFrame
+    ref_frame : SpiceFrame (Optional)
         Reference frame which the IMAP state is expressed in. Default is
         SpiceFrame.ECLIPJ2000.
-    observer : SpiceBody
+    abcorr : str (Optional)
+        Aberration correction flag. Default is "NONE".
+    observer : SpiceBody (Optional)
         Observing body. Default is SpiceBody.SUN.
 
     Returns
@@ -109,7 +113,7 @@ def imap_state(
      IMAP spacecraft.
     """
     state, _ = spice.spkezr(
-        SpiceBody.IMAP.name, et, ref_frame.name, "NONE", observer.name
+        SpiceBody.IMAP.name, et, ref_frame.name, abcorr, observer.name
     )
     return np.asarray(state)
 
@@ -372,6 +376,56 @@ def frame_transform(
     return result
 
 
+def frame_transform_az_el(
+    et: Union[float, npt.NDArray],
+    az_el: npt.NDArray,
+    from_frame: SpiceFrame,
+    to_frame: SpiceFrame,
+    degrees: bool = True,
+) -> npt.NDArray:
+    """
+    Transform azimuth and elevation coordinates between reference frames.
+
+    Parameters
+    ----------
+    et : float or np.ndarray
+        Ephemeris time(s) corresponding to position(s).
+    az_el :  np.ndarray
+        <azimuth, elevation> vector or array of vectors in reference frame `from_frame`.
+        There are several possible shapes for the input az_el and et:
+        1. A single az_el vector may be provided for multiple `et` query times
+        2. A single `et` may be provided for multiple az_el vectors,
+        3. The same number of `et` and az_el vectors may be provided.
+        It is not allowed to have n az_el vectors and m `et`, where n != m.
+    from_frame : SpiceFrame
+        Reference frame of input coordinates.
+    to_frame : SpiceFrame
+        Reference frame of output coordinates.
+    degrees : bool
+        If True, azimuth and elevation input and output will be in degrees.
+
+    Returns
+    -------
+    to_frame_az_el : np.ndarray
+        Azimuth/elevation coordinates in reference frame `to_frame`. This
+        output coordinate vector will have shape (2,) if a single `az_el` position
+        vector and single `et` time are input. Otherwise, it will have shape (n, 2)
+        where n is the number of input position vector or ephemeris times. The last
+        axis of the output vector contains azimuth in the 0th position and elevation
+        in the 1st position.
+    """
+    # Convert input az/el to Cartesian vectors
+    spherical_coords_in = np.array(
+        [np.ones_like(az_el[..., 0]), az_el[..., 0], az_el[..., 1]]
+    ).T
+    from_frame_cartesian = spherical_to_cartesian(spherical_coords_in, degrees=degrees)
+    # Transform to to_frame
+    to_frame_cartesian = frame_transform(et, from_frame_cartesian, from_frame, to_frame)
+    # Convert to spherical and extract azimuth/elevation
+    to_frame_az_el = cartesian_to_spherical(to_frame_cartesian, degrees=degrees)
+    return to_frame_az_el[..., 1:3]
+
+
 @typing.no_type_check
 @ensure_spice
 def get_rotation_matrix(
@@ -524,7 +578,7 @@ def cartesian_to_spherical(
           output range=[0, 360],
           otherwise in radians if degrees parameter is False:
           output range=[0, 2*pi].
-        - elevation : angle from the z-axis
+        - elevation : angle from the xy-plane
           In degrees if degrees parameter is True (by default):
           output range=[0, 180],
           otherwise in radians if degrees parameter is False:
@@ -535,7 +589,7 @@ def cartesian_to_spherical(
 
     vhat = v / magnitude_v
 
-    # Elevation angle (angle from the z-axis, range: [-pi/2, pi/2])
+    # Elevation angle (angle from the xy-plane, range: [-pi/2, pi/2])
     el = np.arcsin(vhat[..., 2])
 
     # Azimuth angle (angle in the xy-plane, range: [0, 2*pi])
@@ -553,7 +607,7 @@ def cartesian_to_spherical(
     return spherical_coords
 
 
-def spherical_to_cartesian(spherical_coords: NDArray) -> NDArray:
+def spherical_to_cartesian(spherical_coords: NDArray, degrees: bool = False) -> NDArray:
     """
     Convert spherical coordinates to Cartesian coordinates.
 
@@ -565,7 +619,10 @@ def spherical_to_cartesian(spherical_coords: NDArray) -> NDArray:
 
         - r : Distance of the point from the origin.
         - azimuth : angle in the xy-plane in radians [0, 2*pi].
-        - elevation : angle from the z-axis in radians [-pi/2, pi/2].
+        - elevation : angle from the xy-plane in radians [-pi/2, pi/2].
+    degrees : bool
+        Set to True if input azimuth and elevation angles are in degrees.
+        Defaults to False.
 
     Returns
     -------
@@ -575,6 +632,10 @@ def spherical_to_cartesian(spherical_coords: NDArray) -> NDArray:
     r = spherical_coords[..., 0]
     azimuth = spherical_coords[..., 1]
     elevation = spherical_coords[..., 2]
+
+    if degrees:
+        azimuth = np.radians(azimuth)
+        elevation = np.radians(elevation)
 
     x = r * np.cos(elevation) * np.cos(azimuth)
     y = r * np.cos(elevation) * np.sin(azimuth)

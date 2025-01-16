@@ -31,13 +31,13 @@ l1b_data_base: &l1b_data_base
 
 l1b_tof_base: &l1b_tof_base
   <<: *l1b_data_base
-  DEPEND_1: time_high_sr
-  LABL_PTR_1: time_high_sr_label
+  DEPEND_1: time_high_sample_rate
+  LABL_PTR_1: time_high_sample_rate_label
 
 l1b_target_base: &l1b_target_base
   <<: *l1b_data_base
-  DEPEND_1: time_low_sr
-  LABL_PTR_1: time_low_sr_label
+  DEPEND_1: time_low_sample_rate
+  LABL_PTR_1: time_low_sample_rate_label
 
 trigger_base: &trigger_base
   <<: *l1b_data_base
@@ -46,6 +46,16 @@ trigger_base: &trigger_base
   UNITS: " "
 
 # <=== Instrument Setting Attributes ===>
+trigger_mode:
+  <<: *string_base
+  FIELDNAM: Trigger Mode
+  CATDESC: Channel and mode that triggered the event
+
+trigger_level:
+  <<: *string_base
+  FIELDNAM: Trigger Level
+  CATDESC: Threshold signal level that triggered the event
+
 tof_high:
   <<: *l1b_tof_base
   CATDESC: Time of flight waveform on the high-gain channel

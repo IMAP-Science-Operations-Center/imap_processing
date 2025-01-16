@@ -7,20 +7,46 @@ from imap_processing.ialirt import process_ephemeris
 from imap_processing.spice.time import str_to_et
 
 
-def test_calculate_doppler():
+@pytest.mark.external_kernel()
+def test_calculate_doppler(furnish_kernels):
     """
     Test the calculate_doppler() function.
     """
-    assert process_ephemeris.calculate_doppler(805794429.1837295) == 1
+    longitude = -71.41  # longitude in degrees
+    latitude = -33.94  # latitude in degrees
+    altitude = 0.157  # altitude in kilometers
+    # test single observation time
+    observation_time = 843307269.1823885  # "2026-09-22T00:00:00.000"
+
+    kernels = [
+        "pck00011.tpc",
+        "imap_spk_demo.bsp",
+        "de440s.bsp",
+        "earth_1962_240827_2124_combined.bpc",
+    ]
+    with furnish_kernels(kernels):
+        doppler_result = process_ephemeris.calculate_doppler(
+            longitude, latitude, altitude, observation_time
+        )
+    assert doppler_result is not None
+
+    # test array of observation times
+    time_endpoints = ("2026 SEP 22 00:00:00", "2026 SEP 22 23:59:59")
+    time_interval = int(1e3)  # seconds between data points
+    observation_time = np.arange(
+        str_to_et(time_endpoints[0]), str_to_et(time_endpoints[1]), time_interval
+    )
+    with furnish_kernels(kernels):
+        doppler_result = process_ephemeris.calculate_doppler(
+            longitude, latitude, altitude, observation_time
+        )
+    assert doppler_result is not None
 
 
 @pytest.mark.external_kernel()
 def test_latitude_longitude_to_ecef(furnish_kernels):
     """
     Test the latitude_longitude_to_ecef() function.
-
-    Test data is from https://naif.jpl.nasa.gov/pub/naif/toolkit_docs/C/cspice/
-    georec_c.html.
     """
     longitude = 118.0  # degrees
     latitude = 30.0  # degrees
@@ -92,6 +118,8 @@ def test_build_output(furnish_kernels):
         "naif0012.tls",
         "pck00011.tpc",
         "de440s.bsp",
+        "imap_spk_demo.bsp",
+        "earth_1962_240827_2124_combined.bpc",
     ]
     with furnish_kernels(kernels):
         output_dict = process_ephemeris.build_output(
