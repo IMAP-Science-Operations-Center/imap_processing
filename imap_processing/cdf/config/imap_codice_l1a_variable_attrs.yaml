@@ -9,6 +9,7 @@
 # <=== Defaults ===>
 default_attrs: &default
     CATDESC: " "
+    DEPEND_0: epoch
     DISPLAY_TYPE: no_plot
     FIELDNAM: " "
     FILLVAL: -9223372036854775808
@@ -21,7 +22,6 @@ default_attrs: &default
 
 # <=== Coordinates ===>
 esa_step:
-    <<: *default
     CATDESC: Energy per charge (E/q) sweeping step
     FIELDNAM: Energy Index
     FILLVAL: 254
@@ -35,12 +35,12 @@ esa_step:
     VAR_TYPE: support_data
 
 inst_az:
-    <<: *default
     CATDESC: Instrument Azimuth Index
     FIELDNAM: Azimuth Index
     FILLVAL: 254
     FORMAT: I3
     LABLAXIS: Azimuth Index
+    SCALETYP: linear
     SI_CONVERSION: " > "
     UNITS: " "
     VALIDMIN: 0
@@ -48,12 +48,12 @@ inst_az:
     VAR_TYPE: support_data
 
 spin_sector:
-    <<: *default
     CATDESC: Spin sector indicating range of spin angles
     FIELDNAM: Spin Sector Index
     FILLVAL: 254
     FORMAT: I3
     LABLAXIS: Spin Sector
+    SCALETYP: linear
     SI_CONVERSION: " > "
     UNITS: " "
     VALIDMIN: 0
@@ -63,7 +63,6 @@ spin_sector:
 # <=== Dataset Variable Attributes ===>
 # The following are set in multiple data products
 acquisition_time_per_step:
-    <<: *default
     CATDESC: Acquisition time for each step of energy
     DEPEND_1: esa_step
     FIELDNAM: Acquisition Time
@@ -80,7 +79,6 @@ acquisition_time_per_step:
 counters_attrs: &counters
     <<: *default
     CATDESC: Fill in at creation
-    DEPEND_0: epoch
     DISPLAY_TYPE: time_series
     FIELDNAM: Fill in at creation
     FORMAT: I7
@@ -94,7 +92,6 @@ counters_attrs: &counters
 data_quality:
     <<: *default
     CATDESC: Indicates whether data quality is suspect (1).
-    DEPEND_0: epoch
     DISPLAY_TYPE: time_series
     FIELDNAM: Data Quality
     FILLVAL: 255
@@ -108,7 +105,6 @@ data_quality:
     VAR_TYPE: data
 
 energy_table:
-    <<: *default
     CATDESC: ElectroStatic Analyzer Energy Values
     DEPEND_1: esa_step
     FIELDNAM: Energy Table
@@ -124,7 +120,6 @@ energy_table:
 nso_half_spin:
     <<: *default
     CATDESC: When No Scan Operation (NSO) was activated
-    DEPEND_0: epoch
     DISPLAY_TYPE: time_series
     FIELDNAM: NSO Mode
     FILLVAL: 255
@@ -141,7 +136,6 @@ nso_half_spin:
 rgfo_half_spin:
     <<: *default
     CATDESC: When Reduced Gain Factor Operation (RGFO) was activated
-    DEPEND_0: epoch
     DISPLAY_TYPE: time_series
     FIELDNAM: RGFO Mode
     FILLVAL: 255
@@ -158,7 +152,6 @@ rgfo_half_spin:
 spin_period:
     <<: *default
     CATDESC: The spin period as reported by the spacecraft.
-    DEPEND_0: epoch
     DISPLAY_TYPE: time_series
     FIELDNAM: Spin Period
     FILLVAL: 1.0e+31
@@ -174,7 +167,6 @@ spin_period:
 st_bias_gain_mode:
     <<: *default
     CATDESC: Suprathermal Bias Gain Mode
-    DEPEND_0: epoch
     DISPLAY_TYPE: " "
     FIELDNAM: Suprathermal Bias Gain Mode
     FILLVAL: 255
@@ -191,7 +183,6 @@ st_bias_gain_mode:
 sw_bias_gain_mode:
     <<: *default
     CATDESC: Solarwind Bias Gain Mode
-    DEPEND_0: epoch
     DISPLAY_TYPE: " "
     FIELDNAM: Solarwind Bias Gain Mode
     FILLVAL: 255
@@ -361,7 +352,6 @@ lo-sw-angular-hplus:
     <<: *counters
     CATDESC: Sunward H+ Species
     FIELDNAM: SW - H+
-    DEPEND_0: epoch
     DEPEND_1: esa_step
     DEPEND_2: inst_az
     DEPEND_3: spin_sector
@@ -373,7 +363,6 @@ lo-sw-angular-heplusplus:
     <<: *counters
     CATDESC: Sunward He++ Species
     FIELDNAM: SW - He++
-    DEPEND_0: epoch
     DEPEND_1: esa_step
     DEPEND_2: inst_az
     DEPEND_3: spin_sector
@@ -385,7 +374,6 @@ lo-sw-angular-oplus6:
     <<: *counters
     CATDESC: Sunward O+6 Species
     FIELDNAM: SW - O+6
-    DEPEND_0: epoch
     DEPEND_1: esa_step
     DEPEND_2: inst_az
     DEPEND_3: spin_sector
@@ -397,7 +385,6 @@ lo-sw-angular-fe_loq:
     <<: *counters
     CATDESC: Sunward Fe lowQ Species
     FIELDNAM: SW - Fe lowQ
-    DEPEND_0: epoch
     DEPEND_1: esa_step
     DEPEND_2: inst_az
     DEPEND_3: spin_sector
@@ -409,7 +396,6 @@ lo-nsw-angular-heplusplus:
     <<: *counters
     CATDESC: Non-sunward He++ Species
     FIELDNAM: NSW - He++
-    DEPEND_0: epoch
     DEPEND_1: esa_step
     DEPEND_2: inst_az
     DEPEND_3: spin_sector
