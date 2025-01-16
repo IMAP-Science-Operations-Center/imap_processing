@@ -11,14 +11,14 @@ from imap_processing.spice.geometry import get_spin_data
 from imap_processing.ultra.constants import UltraConstants
 
 
-def get_spin(met: NDArray) -> tuple[NDArray, NDArray, NDArray]:
+def get_spin(eventtimes_met: NDArray) -> tuple[NDArray, NDArray, NDArray]:
     """
     Get spin parameters for each event.
 
     Parameters
     ----------
-    met : NDArray
-        Mission Elaspsed Time.
+    eventtimes_met : NDArray
+        Event Times in Mission Elapsed Time.
 
     Returns
     -------
@@ -32,7 +32,7 @@ def get_spin(met: NDArray) -> tuple[NDArray, NDArray, NDArray]:
     spin_df = get_spin_data()
 
     last_spin_indices = (
-        np.searchsorted(spin_df["spin_start_time"], met, side="right") - 1
+        np.searchsorted(spin_df["spin_start_time"], eventtimes_met, side="right") - 1
     )
     spin_number = spin_df["spin_number"].values[last_spin_indices]
     spin_start_time = spin_df["spin_start_time"].values[last_spin_indices]
@@ -73,39 +73,46 @@ def get_energy_histogram(
     return hist, spin_edges
 
 
-def flag_spin(met: NDArray, energy: NDArray) -> NDArray:
+def flag_spin(eventtimes_met: NDArray, energy: NDArray) -> NDArray:
     """
     Flag data based on counts and negative energies.
 
     Parameters
     ----------
-    met : NDArray
-        Mission Elapsed Time.
+    eventtimes_met : NDArray
+        Event Times in Mission Elapsed Time.
     energy : NDArray
         Energy data.
 
     Returns
     -------
-    quality_flags_data : NDArray
+    quality_flags : NDArray
         Quality flags.
     """
-    quality_flags_data = np.full(len(met), ImapUltraFlags.NONE.value, dtype=np.uint16)
-
-    # Flag negative energies.
-    quality_flags_data[energy < 0] |= ImapUltraFlags.NEG.value
-
-    spin, _, _ = get_spin(met)
+    spin, _, _ = get_spin(eventtimes_met)
     hist, spin_edges = get_energy_histogram(spin, energy)
-
-    # Map data points to bins
-    energy_bin_idx = (
-        np.digitize(energy, bins=UltraConstants.CULLING_ENERGY_BIN_EDGES) - 1
+    quality_flags = np.full(
+        hist.shape[0] * hist.shape[1], ImapUltraFlags.NONE.value, dtype=np.uint16
     )
-    spin_bin_idx = np.digitize(spin, bins=spin_edges) - 1
 
-    for energy_idx, spin_idx in np.ndindex(hist.shape):
-        if hist[energy_idx][spin_idx] > UltraConstants.COUNTS_THRESHOLDS[energy_idx]:
-            mask = (energy_bin_idx == energy_idx) & (spin_bin_idx == spin_idx)
-            quality_flags_data[mask] |= ImapUltraFlags.HIGHCOUNTS.value
+    appended_spin = []
+    appended_energy = []
 
-    return quality_flags_data
+    for energy_idx in range(hist.shape[0]):
+        # Counts for each spin at this energy
+        spin_counts = hist[energy_idx][:]
+        # Indices where the counts exceed the threshold
+        indices = np.nonzero(spin_counts > UltraConstants.COUNTS_THRESHOLDS[energy_idx])
+        flattened_indices = energy_idx * hist.shape[1] + indices[0]
+        quality_flags[flattened_indices] |= ImapUltraFlags.HIGHCOUNTS.value
+
+        # Calculate the energy midpoint for each bin
+        energy_midpoint = (
+            UltraConstants.CULLING_ENERGY_BIN_EDGES[energy_idx]
+            + UltraConstants.CULLING_ENERGY_BIN_EDGES[energy_idx + 1]
+        ) / 2
+
+        appended_spin.extend(np.unique(spin).tolist())
+        appended_energy.extend([energy_midpoint] * len(np.unique(spin)))
+
+    return quality_flags, appended_spin, appended_energy

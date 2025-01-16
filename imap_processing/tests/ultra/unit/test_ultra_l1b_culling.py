@@ -14,24 +14,24 @@ from imap_processing.ultra.l1b.ultra_l1b_culling import (
 def test_get_spin(use_fake_spin_data_for_time, l1b_de_dataset):
     """Tests get_spin function."""
     use_fake_spin_data_for_time(
-        l1b_de_dataset["de_event_met"][0], l1b_de_dataset["de_event_met"][-1]
+        l1b_de_dataset["event_times"][0], l1b_de_dataset["event_times"][-1]
     )
     spin_number, spin_start_time, spin_duration = get_spin(
-        l1b_de_dataset["de_event_met"]
+        l1b_de_dataset["event_times"]
     )
 
     assert len(np.unique(spin_number)) == len(np.unique(spin_start_time))
-    assert np.all(l1b_de_dataset["de_event_met"].values >= spin_start_time)
+    assert np.all(l1b_de_dataset["event_times"].values >= spin_start_time)
 
 
 def test_get_energy_histogram(use_fake_spin_data_for_time, l1b_de_dataset):
     """Tests get_energy_histogram function."""
 
     use_fake_spin_data_for_time(
-        l1b_de_dataset["de_event_met"][0], l1b_de_dataset["de_event_met"][-1]
+        l1b_de_dataset["event_times"][0], l1b_de_dataset["event_times"][-1]
     )
 
-    spin_number, _, _ = get_spin(l1b_de_dataset["de_event_met"])
+    spin_number, _, _ = get_spin(l1b_de_dataset["event_times"])
     hist, _ = get_energy_histogram(spin_number, l1b_de_dataset["energy"].values)
 
     assert hist.shape == (4, 15)
@@ -79,24 +79,23 @@ def test_flag_spin(use_fake_spin_data_for_time, l1b_de_dataset):
     """Tests flag_spin function."""
 
     use_fake_spin_data_for_time(
-        l1b_de_dataset["de_event_met"][0], l1b_de_dataset["de_event_met"][-1]
+        l1b_de_dataset["event_times"][0], l1b_de_dataset["event_times"][-1]
     )
 
-    spin_number, _, _ = get_spin(l1b_de_dataset["de_event_met"])
+    spin_number, _, _ = get_spin(l1b_de_dataset["event_times"])
     energy = l1b_de_dataset["energy"].values
     hist, spin_edges = get_energy_histogram(spin_number, energy)
 
-    quality_flags_data = flag_spin(l1b_de_dataset["de_event_met"], energy)
-    assert np.all(
-        quality_flags_data[energy < 0] & ImapUltraFlags.NEG.value
-        == ImapUltraFlags.NEG.value
-    )
+    quality_flags, spin, energy = flag_spin(l1b_de_dataset["event_times"], energy)
 
-    flag = ImapUltraFlags(quality_flags_data[0])
+    flag = ImapUltraFlags(quality_flags[0])
     assert flag.name == "HIGHCOUNTS"
+
+    spin_1 = quality_flags[spin == 1]
+
     components = []
     for flag in ImapUltraFlags:
-        if quality_flags_data[np.where(quality_flags_data == 10)][0] & flag.value:
+        if quality_flags[np.where(quality_flags == 10)][0] & flag.value:
             components.append(flag.name)
     assert components == ["NEG", "HIGHCOUNTS"]
 
@@ -109,6 +108,6 @@ def test_flag_spin(use_fake_spin_data_for_time, l1b_de_dataset):
         if hist[energy_idx][spin_idx] > UltraConstants.COUNTS_THRESHOLDS[energy_idx]:
             mask = (energy_bin_idx == energy_idx) & (spin_bin_idx == spin_idx)
             assert np.all(
-                (quality_flags_data[mask] & ImapUltraFlags.HIGHCOUNTS.value)
+                (quality_flags[mask] & ImapUltraFlags.HIGHCOUNTS.value)
                 == ImapUltraFlags.HIGHCOUNTS.value
             )
