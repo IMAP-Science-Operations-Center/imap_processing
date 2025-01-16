@@ -222,7 +222,6 @@ class CoDICEL1aPipeline:
             "nso_half_spin",
             "sw_bias_gain_mode",
             "st_bias_gain_mode",
-            "spin_period",
         ]
 
         for variable_name in self.config["support_variables"]:
@@ -250,6 +249,13 @@ class CoDICEL1aPipeline:
                 variable_data = self.dataset.suspect.data
                 dims = ["epoch"]
                 attrs = self.cdf_attrs.get_variable_attributes("data_quality")
+
+            # Spin period requires the application of a conversion factor
+            # See Table B.5 in the algorithm document
+            elif variable_name == "spin_period":
+                variable_data = self.dataset.spin_period.data * 0.00032
+                dims = ["epoch"]
+                attrs = self.cdf_attrs.get_variable_attributes("spin_period")
 
             # TODO: Still need to implement
             elif variable_name == "spin_sector_pairs":
