@@ -69,8 +69,8 @@ accommodate different needs. This is more of a rule of thumb than a strict requi
 
 * ``<instrument>``: The instrument name associated with the ancillary file
 * ``<description>``: A descriptive name for the ancillary file which distinguishes between
-  other ancillary files used by the instrument. Rather than "mag-ancillary" or "mag-calibration", this should be similar to
-  "mag-rotation-matrices" or "mag-l2pre-calibration." Multiple words should be split by hyphens.
+  other ancillary files used by the instrument. Rather than "ancillary" or "calibration", this should be similar to
+  "rotation-matrices" or "l2pre-calibration." Multiple words should be split by hyphens.
 * ``<start_date>``: The start time of the validity of the ancillary file, in the format "YYYYMMDD". This is required for
   all file types. For universal ancillary files, the start time should be the mission launch date.
 * ``<end_date>``: The end time of the validity of the ancillary file, in the format "YYYYMMDD". This is optional for files,
