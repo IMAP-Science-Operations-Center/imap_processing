@@ -6,14 +6,14 @@
 import numpy as np
 from numpy.typing import NDArray
 
-from imap_processing.quality_flags import ImapUltraFlags
+from imap_processing.quality_flags import ImapHkUltraFlags
 from imap_processing.spice.geometry import get_spin_data
 from imap_processing.ultra.constants import UltraConstants
 
 
-def get_spin(eventtimes_met: NDArray) -> tuple[NDArray, NDArray, NDArray]:
+def get_spin(eventtimes_met: NDArray) -> NDArray:
     """
-    Get spin parameters for each event.
+    Get spin number for each event.
 
     Parameters
     ----------
@@ -23,11 +23,7 @@ def get_spin(eventtimes_met: NDArray) -> tuple[NDArray, NDArray, NDArray]:
     Returns
     -------
     spin_number : NDArray
-        Spin number from Universal Spin Table.
-    spin_start_time : NDArray
-        Spin start time from Universal Spin Table.
-    spin_duration : NDArray
-        Spin duration from Universal Spin Table.
+        Spin number at each event derived the from Universal Spin Table.
     """
     spin_df = get_spin_data()
 
@@ -35,17 +31,15 @@ def get_spin(eventtimes_met: NDArray) -> tuple[NDArray, NDArray, NDArray]:
         np.searchsorted(spin_df["spin_start_time"], eventtimes_met, side="right") - 1
     )
     spin_number = spin_df["spin_number"].values[last_spin_indices]
-    spin_start_time = spin_df["spin_start_time"].values[last_spin_indices]
-    spin_duration = spin_df["spin_period_sec"].values[last_spin_indices]
 
-    return spin_number, spin_start_time, spin_duration
+    return spin_number
 
 
 def get_energy_histogram(
     spin_number: NDArray, energy: NDArray
 ) -> tuple[NDArray, NDArray]:
     """
-    Compute a 2D histogram of the counts.
+    Compute a 2D histogram of the counts binned by energy and spin number.
 
     Parameters
     ----------
@@ -57,18 +51,26 @@ def get_energy_histogram(
     Returns
     -------
     hist : NDArray
-        A 2D histogram array.
+        A 2D histogram array containing the
+        count rate per spin at each energy bin.
     spin_edges : NDArray
         Edges of the spin number bins.
     """
-    spin_edges = np.unique(spin_number)
-    spin_edges = np.append(spin_edges, spin_edges[-1] + 1)
+    spin_df = get_spin_data()
 
-    # 2D binning.
+    spin_edges = np.unique(spin_number)
+    spin_edges = np.append(spin_edges, spin_edges.max() + 1)
+
+    # Counts per spin at each energy bin.
     hist, _ = np.histogramdd(
         sample=(energy, spin_number),
         bins=[UltraConstants.CULLING_ENERGY_BIN_EDGES, spin_edges],
     )
+
+    # Count rate per spin at each energy bin.
+    for i in range(hist.shape[1]):
+        spin_duration = spin_df.spin_period_sec[spin_df.spin_number == i]
+        hist[:, i] /= spin_duration.values[0]
 
     return hist, spin_edges
 
@@ -95,22 +97,24 @@ def flag_spin(
     appended_energy : NDArray
         Energy midpoint data.
     """
-    spin, _, _ = get_spin(eventtimes_met)
+    spin = get_spin(eventtimes_met)
     hist, spin_edges = get_energy_histogram(spin, energy)
     quality_flags = np.full(
-        hist.shape[0] * hist.shape[1], ImapUltraFlags.NONE.value, dtype=np.uint16
+        hist.shape[0] * hist.shape[1], ImapHkUltraFlags.NONE.value, dtype=np.uint16
     )
 
     appended_spin = np.empty(0, dtype=np.uint16)
     appended_energy = np.empty(0, dtype=np.float64)
 
     for energy_idx in range(hist.shape[0]):
-        # Counts for each spin at this energy
-        spin_counts = hist[energy_idx][:]
+        # Count rates for each spin at this energy
+        spin_count_rates = hist[energy_idx][:]
         # Indices where the counts exceed the threshold
-        indices = np.nonzero(spin_counts > UltraConstants.COUNTS_THRESHOLDS[energy_idx])
+        indices = np.nonzero(
+            spin_count_rates > UltraConstants.COUNT_RATES_THRESHOLDS[energy_idx]
+        )
         flattened_indices = energy_idx * hist.shape[1] + indices[0]
-        quality_flags[flattened_indices] |= ImapUltraFlags.HIGHCOUNTS.value
+        quality_flags[flattened_indices] |= ImapHkUltraFlags.HIGHCOUNTS.value
 
         # Calculate the energy midpoint for each bin
         energy_midpoint = (

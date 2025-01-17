@@ -77,4 +77,4 @@ class UltraConstants:
     # TODO: this is a temporary place for this.
     # Thresholds for culling based on counts.
     CULLING_ENERGY_BIN_EDGES: ClassVar[list] = [-1e5, 0, 10, 20, 1e5]
-    COUNTS_THRESHOLDS: ClassVar[list] = [0, 100, 100, 100]
+    COUNT_RATES_THRESHOLDS: ClassVar[list] = [0, 100, 100, 100]

@@ -37,14 +37,11 @@ class ENAFlags(FlagNameMixin):
     BADSPIN = 2**2  # bit 2, Bad spin
 
 
-class ImapUltraFlags(FlagNameMixin):
-    """IMAP Ultra flags."""
+class ImapHkUltraFlags(FlagNameMixin):
+    """IMAP Ultra HK flags."""
 
     NONE = CommonFlags.NONE
-    INF = CommonFlags.INF  # bit 0
-    NEG = CommonFlags.NEG  # bit 1
-    BADSPIN = ENAFlags.BADSPIN  # bit 2
-    HIGHCOUNTS = 2**3  # bit 3
+    HIGHCOUNTS = 2**0  # bit 0
 
 
 class ImapLoFlags(FlagNameMixin):
