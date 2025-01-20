@@ -640,7 +640,6 @@ flags:
   FIELDNAM: Flags for histogram information
   LABLAXIS: flags
   DEPEND_1: flag_dim
-  DEPEND_2: bins
   VALIDMIN: 0
   VALIDMAX: 1
   FORMAT: I1
