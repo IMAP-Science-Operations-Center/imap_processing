@@ -35,7 +35,7 @@ def test_glows_l2(l1b_hist_dataset):
     assert np.allclose(l2["filter_temperature_average"].values, [57.6], rtol=0.1)
 
 
-@pytest.mark.xfail(reason="Spin table not yet complete")
+@pytest.mark.skip(reason="Spin table not yet complete")
 def test_split_by_observational_day(l1b_hist_dataset):
     # TODO: Complete test when spin table is complete
     raise NotImplementedError
