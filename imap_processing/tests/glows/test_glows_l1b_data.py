@@ -76,10 +76,8 @@ def test_glows_l1b_de():
 
 def test_validation_data_histogram(l1a_dataset):
     hist_day_one = l1a_dataset[0]
-    hist_day_two = l1a_dataset[1]
 
-    l1b_day_one = glows_l1b(hist_day_one, "v001")
-    l1b_day_two = glows_l1b(hist_day_two, "v001")
+    l1b = glows_l1b(hist_day_one, "v001")
 
     validation_data = (
         Path(__file__).parent
@@ -123,17 +121,10 @@ def test_validation_data_histogram(l1a_dataset):
     }
 
     for index, validation_output in enumerate(out["output"]):
-        if validation_output["imap_start_time"] < 54259215:
-            # day of 2011-09-20
-            l1b = l1b_day_one
-            l1b_index = index
-        else:
-            l1b_index = index - l1b_day_one.epoch.size
-            l1b = l1b_day_two
 
         assert np.equal(
             validation_output["imap_start_time"],
-            l1b.isel(epoch=l1b_index).imap_start_time.data,
+            l1b.isel(epoch=index).imap_start_time.data,
         )
 
         for key in validation_output:
@@ -141,14 +132,16 @@ def test_validation_data_histogram(l1a_dataset):
                 continue
 
             np.testing.assert_array_almost_equal(
-                l1b[expected_matching_columns[key]].isel(epoch=l1b_index).data,
+                l1b[expected_matching_columns[key]].isel(epoch=index).data,
                 validation_output[key],
                 decimal=1,
             )
 
+    assert len(out["output"]) == len(l1b.epoch)
+
 
 def test_validation_data_de(l1a_dataset):
-    de_data = l1a_dataset[2]
+    de_data = l1a_dataset[1]
 
     l1b = glows_l1b(de_data, "v001")
     validation_data = (

@@ -8,7 +8,7 @@ import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.glows.l0.decom_glows import decom_packets
-from imap_processing.glows.l0.glows_l0_data import DirectEventL0
+from imap_processing.glows.l0.glows_l0_data import DirectEventL0, HistogramL0
 from imap_processing.glows.l1a.glows_l1a_data import DirectEventL1A, HistogramL1A
 from imap_processing.spice.time import J2000_EPOCH, met_to_j2000ns
 
@@ -67,13 +67,16 @@ def glows_l1a(packet_filepath: Path, data_version: str) -> list[xr.Dataset]:
     de_by_day = process_de_l0(de_l0)
     hists_by_day = defaultdict(list)
 
+    obs_days = determine_observational_day(hist_l0)
+
     # TODO: Make this its own function?
     for hist in hist_l0:
         hist_l1a = HistogramL1A(hist)
         # Split by IMAP start time
-        # TODO: Should this be MET?
-        hist_day = (J2000_EPOCH + met_to_j2000ns(hist.SEC)).astype("datetime64[D]")
-        hists_by_day[hist_day].append(hist_l1a)
+        # TODO: Should be by observational day
+        # hist_day = (J2000_EPOCH + met_to_j2000ns(hist.SEC)).astype("datetime64[D]")
+        # hists_by_day[hist_day].append(hist_l1a)
+        hists_by_day[0].append(hist_l1a)
 
     # Generate CDF files for each day
     output_datasets = []
@@ -87,6 +90,31 @@ def glows_l1a(packet_filepath: Path, data_version: str) -> list[xr.Dataset]:
 
     return output_datasets
 
+
+def determine_observational_day(hist_l0: list[HistogramL0]) -> list:
+    """
+    Find the timestamps for each observational day.
+
+    This function temporarily uses the is_night flag to determine the start of a new
+    observational day, but should eventually use the spin table APIs.
+
+    Parameters
+    ----------
+    hist_l0 : list[HistogramL0]
+        List of HistogramL0 objects.
+
+    Returns
+    -------
+    list
+        List of start times for each observational day.
+    """
+
+    for hist in hist_l0:
+        flags = hist.FLAGS
+        print(type(flags))
+        print(f"Flags: {format(flags, '016b')}")
+
+    return []
 
 def process_de_l0(
     de_l0: list[DirectEventL0],
