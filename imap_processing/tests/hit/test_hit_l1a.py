@@ -239,7 +239,18 @@ def test_validate_l1a_counts_data(sci_packet_filepath):
         return data
 
     def compare_data(expected_data, actual_data, skip):
-        # Compare the processed data to the validation data
+        """Compare the processed data to the validation data.
+
+        Parameters
+        ----------
+        expected_data : pd.DataFrame
+            Validation data extracted from a csv file
+        actual_data : xr.Dataset
+            Processed data from l1a processing
+        skip : list
+            Fields to skip in comparison
+        """
+        # Compare the validation data to the processed data
         for field in expected_data.columns:
             if field not in [
                 "sc_tick",
@@ -308,6 +319,8 @@ def test_validate_l1a_counts_data(sci_packet_filepath):
 
     # TODO: add validation for CCSDS fields? currently validation data only has
     #  one value per frame and the processed data has one value per packet.
+    # TODO: add validation for uncertainty fields. validation data doesn't contain
+    #  these fields.
 
 
 def test_hit_l1a(hk_packet_filepath, sci_packet_filepath):

@@ -162,6 +162,69 @@ def subcom_sectorates(sci_dataset: xr.Dataset) -> None:
         )
 
 
+# Calculate uncertainties for count rates
+def calculate_uncertainties(dataset: xr.Dataset) -> xr.Dataset:
+    """
+    Calculate uncertainties for each counts data variable in the dataset.
+
+    Calculate the upper and lower uncertainties. The uncertainty for
+    the raw Lev1A HIT data will be calculated as asymmetric Poisson
+    uncertainty as prescribed in Gehrels 1986 (DOI: 10.1086/164079).
+    See section 5.5 in the algorithm document for details.
+
+    The upper uncertainty will be calculated as
+        DELTA_PLUS = sqrt(counts + 1) + 1
+
+    The lower uncertainty will be calculated as
+        DELTA_MINUS = sqrt(counts)
+
+    Parameters
+    ----------
+    dataset : xarray.Dataset
+        The dataset containing counts data.
+
+    Returns
+    -------
+    dataset : xarray.Dataset
+        The dataset with added uncertainties for each counts data variable.
+    """
+    # Variables that aren't count data and should be ignored in the calculation
+    ignore_vars = [
+        "version",
+        "type",
+        "sec_hdr_flg",
+        "pkt_apid",
+        "seq_flgs",
+        "src_seq_ctr",
+        "pkt_len",
+        "hdr_unit_num",
+        "hdr_frame_version",
+        "hdr_dynamic_threshold_state",
+        "hdr_leak_conv",
+        "hdr_heater_duty_cycle",
+        "hdr_code_ok",
+        "hdr_minute_cnt",
+        "livetime",
+        "h_energy_min",
+        "h_energy_max",
+        "he4_energy_min",
+        "he4_energy_max",
+        "cno_energy_min",
+        "cno_energy_max",
+        "nemgsi_energy_min",
+        "nemgsi_energy_max",
+        "fe_energy_min",
+        "fe_energy_max",
+    ]
+
+    # Calculate uncertainties for each counts data variable
+    for var in dataset.data_vars:
+        if var not in ignore_vars:
+            dataset[f"{var}_delta_plus"] = np.sqrt(dataset[var] + 1) + 1
+            dataset[f"{var}_delta_minus"] = np.sqrt(dataset[var])
+    return dataset
+
+
 def process_science(
     dataset: xr.Dataset, attr_mgr: ImapCdfAttributes
 ) -> list[xr.Dataset]:
@@ -200,6 +263,9 @@ def process_science(
         {"pha_raw": sci_dataset["pha_raw"]}, coords={"epoch": sci_dataset["epoch"]}
     )
     count_rates_dataset = sci_dataset.drop_vars("pha_raw")
+
+    # Calculate uncertainties for count rates
+    count_rates_dataset = calculate_uncertainties(count_rates_dataset)
 
     # Logical sources for the two products.
     logical_sources = ["imap_hit_l1a_count-rates", "imap_hit_l1a_pulse-height-events"]
