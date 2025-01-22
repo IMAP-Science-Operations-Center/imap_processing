@@ -91,25 +91,19 @@ class CoDICEL1aPipeline:
         """
         Calculate and return the values to be used for `epoch`.
 
-        On CoDICE, the epoch values are derived from the `acq_start_seconds`
-        field in the packet.
+        On CoDICE, the epoch values are derived from the `acq_start_seconds` and
+        `acq_start_subseconds` fields in the packet. Note that the
+        `acq_start_subseconds` field needs to be converted from microseconds to
+        seconds
 
         Returns
         -------
         epoch : NDArray[int]
             List of epoch values.
         """
-        # Convert the acq_start_subseconds field from microseconds to seconds
-        subseconds = [value / 1000000 for value in self.dataset.acq_start_subseconds]
-
-        # Combine the acq_start_seconds and acq_start_subseconds fields to
-        # get the true acquisition start time
-        acq_start_times = np.add(
-            self.dataset.acq_start_seconds.data, subseconds
-        ).tolist()
-
-        # Calculate epoch
-        epoch = met_to_j2000ns(acq_start_times)
+        epoch = met_to_j2000ns(
+            self.dataset.acq_start_seconds + self.dataset.acq_start_subseconds / 1e6
+        )
 
         return epoch
 
