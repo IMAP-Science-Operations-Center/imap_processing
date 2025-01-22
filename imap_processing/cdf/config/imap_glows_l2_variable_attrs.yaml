@@ -1,0 +1,358 @@
+int_fillval: &int_fillval -9223372036854775808
+max_uint32: &max_uint32 4294967295
+max_uint32_min_one: &max_uint32_min_one 4294967294
+max_uint16: &max_uint16 65535
+min_epoch: &min_epoch -315575942816000000
+
+bins_label:
+  CATDESC: Histogram bin number
+  FIELDNAM: Bin number
+  FORMAT: A4
+  VAR_TYPE: metadata
+
+flags_label:
+  CATDESC: Flags for histogram information
+  FIELDNAM: Flags for histogram information
+  FORMAT: A4
+  VAR_TYPE: metadata
+
+default_attrs: &default_attrs
+  # TODO: Remove unneeded attributes once SAMMI is fixed
+  RESOLUTION: ' '
+  DISPLAY_TYPE: no_plot
+  TIME_BASE: J2000
+  TIME_SCALE: Terrestrial Time
+  REFERENCE_POSITION: Rotating Earth Geoid
+  UNITS: ' '
+  FILLVAL: *int_fillval
+  VALIDMIN: *min_epoch
+
+support_data_defaults: &support_data_defaults
+  <<: *default_attrs
+  DEPEND_0: epoch
+  VALIDMIN: 0
+  VALIDMAX: 1
+  DISPLAY_TYPE: time_series
+  VAR_TYPE: support_data
+  FORMAT: I10
+  RESOLUTION: ISO8601
+
+time_data_defaults: &time_data_defaults
+  <<: *support_data_defaults
+  FILLVAL: *int_fillval
+  FORMAT: F16.6
+  UNITS: seconds
+  VALIDMAX: 4294967295.0
+  VALIDMIN: 0.0
+
+lightcurve_defaults: &lightcurve_defaults
+  <<: *support_data_defaults
+  DEPEND_1: bins
+  DISPLAY_TYPE: time_series
+  VAR_TYPE: data
+  LABL_PTR_1: bins_label
+
+bins_dim:
+  <<: *default_attrs
+  VALIDMIN: 0
+  VALIDMAX: 3599
+  CATDESC: Histogram bin number
+  FIELDNAM: Bin number
+  FORMAT: I5
+  VAR_TYPE: support_data
+  LABLAXIS: Counts
+  FILLVAL: -32768
+  MONOTON: INCREASE
+  SCALETYP: linear
+
+flags_dim:
+  <<: *default_attrs
+  FILLVAL: -1
+  CATDESC: Flags for histogram information
+  FIELDNAM: Flags for histogram information
+  UNITS: ' '
+  FORMAT: I2
+  LABLAXIS: Flags
+  VALIDMAX: 1
+  VALIDMIN: 0
+  VAR_TYPE: support_data
+
+ecliptic_dim:
+  <<: *default_attrs
+  # TODO: Update validmin and validmax
+  VALIDMIN: *int_fillval
+  VALIDMAX: *max_uint32
+  CATDESC: Cartesian Ecliptic X, Y, Z coordinates for the spacecraft in KM
+  FIELDNAM: Cartesian Ecliptic X, Y, Z coordinates
+  LABLAXIS: Ecliptic Coordinates
+  UNITS: km
+  FILLVAL: *int_fillval
+  VAR_TYPE: support_data
+  FORMAT: F6.6
+
+number_of_good_l1b_inputs:
+  <<: *support_data_defaults
+  CATDESC: Number of good time L1B inputs
+  FIELDNAM: Number of good time L1B inputs per observation day
+  FILLVAL: -1
+  FORMAT: I5
+  VALIDMAX: 99999
+
+total_l1b_inputs:
+  <<: *support_data_defaults
+  CATDESC: Total number of L1B times
+  FIELDNAM: Total number of L1B times per observation day
+  FILLVAL: -1
+  FORMAT: I5
+  VALIDMAX: 99999
+
+identifier:
+  <<: *support_data_defaults
+  CATDESC: Spin pointing number
+  FIELDNAM: Offical spin pointing number to identify observation day
+  FILLVAL: -1
+  FORMAT: I5
+  VALIDMAX: 99999
+
+start_time:
+  <<: *time_data_defaults
+  CATDESC: Start time
+  FIELDNAM: Start time of the observation day
+
+end_time:
+  <<: *time_data_defaults
+  CATDESC: End time
+  FIELDNAM: End time of the observation day
+
+filter_temperature_average:
+  <<: *support_data_defaults
+  CATDESC: spin-block-averaged filter temperature
+  FIELDNAM: Average filter temperature
+  FILLVAL: *max_uint16
+  FORMAT: I4
+  LABLAXIS: Avgd Temperature
+  VALIDMAX: 255
+
+filter_temperature_std_dev:
+  <<: *support_data_defaults
+  CATDESC: spin-block-averaged std_dev of filter temperature
+  FIELDNAM: std_dev of filter temperature
+  FILLVAL: *max_uint32
+  FORMAT: I6
+  LABLAXIS: std_dev
+  VALIDMAX: *max_uint16
+
+hv_voltage_average:
+  <<: *support_data_defaults
+  CATDESC: spin-block-averaged CEM voltage
+  FIELDNAM: averaged CEM voltage
+  FILLVAL: *max_uint32
+  FORMAT: I6
+  LABLAXIS: Avg voltage
+  VALIDMAX: *max_uint16
+
+hv_voltage_std_dev:
+  <<: *support_data_defaults
+  CATDESC: std_dev of  HV voltage on the CEM, uint encoded
+  FIELDNAM: HV voltage std_dev
+  FILLVAL: *int_fillval
+  LABLAXIS: std_dev
+  VALIDMAX: *max_uint32
+
+spin_period_average:
+  <<: *support_data_defaults
+  CATDESC: spin-block-averaged spin period
+  DEPEND_0: epoch
+  DISPLAY_TYPE: time_series
+  FIELDNAM: average spin period
+  FILLVAL: *max_uint32
+  FORMAT: I6
+  LABLAXIS: Spin period
+  UNITS: ' '
+  VALIDMAX: 50000 # TBC 15.38 s where 20.9712 s = 65535, rounded up
+  VALIDMIN: 45000 # TBC 14.63 s where 20.9712 s = 65535, rounded down
+  VAR_TYPE: support_data
+
+spin_period_std_dev:
+  <<: *support_data_defaults
+  CATDESC: spin-block-averaged std_dev of spin period
+  FIELDNAM: std_dev of spin period
+  FILLVAL: *int_fillval
+  FORMAT: I10
+  LABLAXIS: std_dev
+  VALIDMAX: *max_uint32
+
+# TODO review these
+spin_period_ground_average:
+  <<: *support_data_defaults
+  CATDESC: spin-block-averaged spin period on ground
+  DEPEND_0: epoch
+  DISPLAY_TYPE: time_series
+  FIELDNAM: ground average spin period
+  FILLVAL: *max_uint32
+  FORMAT: I6
+  LABLAXIS: Spin period
+  UNITS: ' '
+  VALIDMAX: 50000 # TBC 15.38 s where 20.9712 s = 65535, rounded up
+  VALIDMIN: 45000 # TBC 14.63 s where 20.9712 s = 65535, rounded down
+  VAR_TYPE: support_data
+
+spin_period_ground_std_dev:
+  <<: *support_data_defaults
+  CATDESC: spin-block-averaged std_dev of spin period on ground
+  FIELDNAM: ground std_dev of spin period
+  FILLVAL: *int_fillval
+  FORMAT: I10
+  LABLAXIS: std_dev
+  VALIDMAX: *max_uint32
+
+pulse_length_average:
+  <<: *support_data_defaults
+  CATDESC: spin-block-averaged pulse length
+  FIELDNAM: Averaged pulse length
+  FILLVAL: *max_uint16
+  FORMAT: I4
+  LABLAXIS: Avg pulse len
+  VALIDMAX: 255
+
+pulse_length_std_dev:
+  <<: *support_data_defaults
+  CATDESC: spin-block-averaged std_dev of pulse length
+  FIELDNAM: std_dev of pulse length
+  FILLVAL: *max_uint32
+  FORMAT: I10
+  LABLAXIS: std_dev
+  VALIDMAX: *max_uint16
+
+position_angle_offset_average:
+  <<: *support_data_defaults
+  CATDESC: obs day averaged position angle offset
+  FIELDNAM: Averaged position angle offset
+  FILLVAL: *max_uint16
+  FORMAT: I4
+  LABLAXIS: Avg pos angle
+
+position_angle_offset_std_dev:
+  <<: *support_data_defaults
+  CATDESC: obs day averaged std_dev of position angle offset
+  FIELDNAM: std_dev of position angle offset
+  FILLVAL: *max_uint16
+  FORMAT: I4
+  LABLAXIS: std_dev
+
+spin_axis_orientation_std_dev:
+  <<: *support_data_defaults
+  CATDESC: obs day averaged std_dev of spin axis orientation
+  FIELDNAM: std_dev of spin axis orientation
+  FILLVAL: *max_uint16
+  FORMAT: I4
+  LABLAXIS: std_dev
+
+spin_axis_orientation_average:
+  <<: *support_data_defaults
+  CATDESC: obs day averaged spin axis orientation
+  FIELDNAM: Averaged spin axis orientation
+  FILLVAL: *max_uint16
+  FORMAT: I4
+  LABLAXIS: Avg spin axis orientation
+
+spacecraft_location_average:
+  <<: *support_data_defaults
+  DEPEND_1: ecliptic
+  CATDESC: obs day averaged spacecraft location
+  FIELDNAM: Averaged spacecraft location
+  FILLVAL: *max_uint16
+  FORMAT: I4
+  LABLAXIS: Avg spacecraft location
+
+spacecraft_location_std_dev:
+  <<: *support_data_defaults
+  DEPEND_1: ecliptic
+  CATDESC: obs day averaged std_dev of spacecraft location
+  FIELDNAM: std_dev of spacecraft location
+  FILLVAL: *max_uint16
+  FORMAT: I4
+  LABLAXIS: std_dev
+
+spacecraft_velocity_average:
+  <<: *support_data_defaults
+  DEPEND_1: ecliptic
+  CATDESC: obs day averaged spacecraft velocity
+  FIELDNAM: Averaged spacecraft velocity
+  FILLVAL: *max_uint16
+  FORMAT: I4
+  LABLAXIS: Avg spacecraft velocity
+
+spacecraft_velocity_std_dev:
+  <<: *support_data_defaults
+  DEPEND_1: ecliptic
+  CATDESC: obs day averaged std_dev of spacecraft velocity
+  FIELDNAM: std_dev of spacecraft velocity
+  FILLVAL: *max_uint16
+  FORMAT: I4
+  LABLAXIS: std_dev
+
+bad_time_flag_occurrences:
+  <<: *support_data_defaults
+  CATDESC: Occurrences of bad time flag
+  FIELDNAM: Occurrences of bad time flag during observation day
+  DEPEND_1: flags
+  LABL_PTR_1: flags_label
+  VALIDMIN: 0
+  VALIDMAX: 1
+  FILLVAL: -128
+  FORMAT: I2
+  LABLAXIS: Flag
+
+spin_angle:
+  <<: *lightcurve_defaults
+  CATDESC: Spin angle for bin centers
+  FIELDNAM: Spin angle for bin centers measured from the North
+  UNITS: degrees
+  VALIDMAX: 360
+
+photon_flux:
+  <<: *lightcurve_defaults
+  CATDESC: observational-day-averaged photon flux
+  FIELDNAM: Averaged photon flux
+  UNITS: Rayleigh
+
+raw_histograms:
+  <<: *lightcurve_defaults
+  CATDESC: Summed raw histogram data
+  FIELDNAM: Raw histogram data
+
+exposure_times:
+  <<: *lightcurve_defaults
+  CATDESC: Spin-block-averaged exposure times per bin
+  FIELDNAM: Exposure time per bin
+
+flux_uncertainties:
+  <<: *lightcurve_defaults
+  CATDESC: Statistical uncertainties in the photon flux
+  FIELDNAM: Photon flux uncertainties
+
+histogram_flag_array:
+  <<: *lightcurve_defaults
+  CATDESC: Per-bin flag array
+  FIELDNAM: Bin flag array
+
+ecliptic_lon:
+  <<: *lightcurve_defaults
+  CATDESC: Ecliptic longitude of bin centers
+  FIELDNAM: Ecliptic longitude
+
+ecliptic_lat:
+  <<: *lightcurve_defaults
+  CATDESC: Ecliptic latitude of bin centers
+  FIELDNAM: Ecliptic latitude
+
+number_of_bins:
+  <<: *support_data_defaults
+  CATDESC: Number of bins in the histogram
+  FIELDNAM: Number of bins
+
+raw_uncertainties:
+  <<: *lightcurve_defaults
+  CATDESC: Uncertainties in the raw histogram data
+  FIELDNAM: Raw histogram uncertainties

@@ -239,11 +239,20 @@ class CoDICEL1aPipeline:
         dataset : xarray.Dataset
             ``xarray`` dataset for the data product, with added support variables.
         """
+        # These variables can be gathered from the packet data
+        packet_data_variables = [
+            "rgfo_half_spin",
+            "nso_half_spin",
+            "sw_bias_gain_mode",
+            "st_bias_gain_mode",
+        ]
+
         for variable_name in self.config["support_variables"]:
+            # These variables require reading in external tables
             if variable_name == "energy_table":
                 variable_data = self.get_energy_table()
                 dims = ["esa_step"]
-                attrs = self.cdf_attrs.get_variable_attributes("esa_step")
+                attrs = self.cdf_attrs.get_variable_attributes("energy_table")
 
             elif variable_name == "acquisition_time_per_step":
                 variable_data = self.get_acquisition_times()
@@ -252,9 +261,27 @@ class CoDICEL1aPipeline:
                     "acquisition_time_per_step"
                 )
 
-            else:
-                # TODO: Need to implement methods to gather and set other
-                #       support attributes
+            elif variable_name in packet_data_variables:
+                variable_data = self.dataset[variable_name].data
+                dims = ["epoch"]
+                attrs = self.cdf_attrs.get_variable_attributes(variable_name)
+
+            # Data quality is named differently in packet data and needs to be
+            # treated slightly differently
+            elif variable_name == "data_quality":
+                variable_data = self.dataset.suspect.data
+                dims = ["epoch"]
+                attrs = self.cdf_attrs.get_variable_attributes("data_quality")
+
+            # Spin period requires the application of a conversion factor
+            # See Table B.5 in the algorithm document
+            elif variable_name == "spin_period":
+                variable_data = self.dataset.spin_period.data * 0.00032
+                dims = ["epoch"]
+                attrs = self.cdf_attrs.get_variable_attributes("spin_period")
+
+            # TODO: Still need to implement
+            elif variable_name == "spin_sector_pairs":
                 continue
 
             # Add variable to the dataset

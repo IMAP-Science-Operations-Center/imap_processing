@@ -6,6 +6,7 @@ import numpy as np
 import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
+from imap_processing.glows import FLAG_LENGTH
 from imap_processing.glows.l1b.glows_l1b_data import DirectEventL1B, HistogramL1B
 
 
@@ -45,7 +46,7 @@ def glows_l1b(input_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
 
     if "hist" in logical_source:
         flag_data = xr.DataArray(
-            np.arange(17),
+            np.arange(FLAG_LENGTH),
             name="flag_dim",
             dims=["flag_dim"],
             attrs=cdf_attrs.get_variable_attributes("flag_dim"),

@@ -1,6 +1,7 @@
 """Module for constants and useful shared classes used in Ultra."""
 
 from dataclasses import dataclass
+from typing import ClassVar
 
 
 @dataclass(frozen=True)
@@ -72,3 +73,8 @@ class UltraConstants:
     # Constants for species determination based on ctof range.
     CTOF_SPECIES_MIN = 50
     CTOF_SPECIES_MAX = 200
+
+    # TODO: this is a temporary place for this.
+    # Thresholds for culling based on counts.
+    CULLING_ENERGY_BIN_EDGES: ClassVar[list] = [-1e5, 0, 10, 20, 1e5]
+    COUNT_RATES_THRESHOLDS: ClassVar[list] = [0, 100, 100, 100]

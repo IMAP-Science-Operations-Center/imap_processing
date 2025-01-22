@@ -7,12 +7,34 @@ import pytest
 import xarray as xr
 
 from imap_processing.cdf.utils import load_cdf, write_cdf
+from imap_processing.codice import constants
 from imap_processing.codice.codice_l1a import process_codice_l1a
 
 from .conftest import TEST_L0_FILE, VALIDATION_DATA
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
+
+DESCRIPTORS = [
+    "hi-ialirt",
+    "lo-ialirt",
+    "hskp",
+    "lo-counters-aggregated",
+    "lo-counters-singles",
+    "lo-sw-priority",
+    "lo-nsw-priority",
+    "lo-sw-species",
+    "lo-nsw-species",
+    "lo-sw-angular",
+    "lo-nsw-angular",
+    "hi-counters-aggregated",
+    "hi-counters-singles",
+    "hi-omni",
+    "hi-sectored",
+    "hi-priority",
+    "lo-pha",
+    "hi-pha",
+]
 
 EXPECTED_ARRAY_SHAPES = [
     (),  # hi-ialirt  # TODO: Need to implement
@@ -35,43 +57,22 @@ EXPECTED_ARRAY_SHAPES = [
     (),  # hi-pha  # TODO: Need to implement
 ]
 
-EXPECTED_LOGICAL_SOURCES = [
-    "imap_codice_l1a_hi-ialirt",
-    "imap_codice_l1a_lo-ialirt",
-    "imap_codice_l1a_hskp",
-    "imap_codice_l1a_lo-counters-aggregated",
-    "imap_codice_l1a_lo-counters-singles",
-    "imap_codice_l1a_lo-sw-priority",
-    "imap_codice_l1a_lo-nsw-priority",
-    "imap_codice_l1a_lo-sw-species",
-    "imap_codice_l1a_lo-nsw-species",
-    "imap_codice_l1a_lo-sw-angular",
-    "imap_codice_l1a_lo-nsw-angular",
-    "imap_codice_l1a_hi-counters-aggregated",
-    "imap_codice_l1a_hi-counters-singles",
-    "imap_codice_l1a_hi-omni",
-    "imap_codice_l1a_hi-sectored",
-    "imap_codice_l1a_hi-priority",
-    "imap_codice_l1a_lo-pha",
-    "imap_codice_l1a_hi-pha",
-]
-
 EXPECTED_NUM_VARIABLES = [
     0,  # hi-ialirt  # TODO: Need to implement
     0,  # lo-ialirt  # TODO: Need to implement
     148,  # hskp
     3,  # lo-counters-aggregated
-    3,  # lo-counters-singles
-    7,  # lo-sw-priority
-    4,  # lo-nsw-priority
-    18,  # lo-sw-species
-    10,  # lo-nsw-species
-    6,  # lo-sw-angular
-    3,  # lo-nsw-angular
+    9,  # lo-counters-singles
+    13,  # lo-sw-priority
+    10,  # lo-nsw-priority
+    24,  # lo-sw-species
+    16,  # lo-nsw-species
+    12,  # lo-sw-angular
+    9,  # lo-nsw-angular
     1,  # hi-counters-aggregated
     3,  # hi-counters-singles
-    8,  # hi-omni
-    4,  # hi-sectored
+    10,  # hi-omni
+    6,  # hi-sectored
     0,  # hi-priority  # TODO: Need to implement
     0,  # lo-pha  # TODO: Need to implement
     0,  # hi-pha  # TODO: Need to implement
@@ -114,13 +115,27 @@ def test_l1a_data_array_shape(test_l1a_data, index):
         pytest.xfail("Data product is currently unsupported")
 
     for variable in processed_dataset:
+        # For variables with energy dimensions
         if variable in ["energy_table", "acquisition_time_per_step"]:
             assert processed_dataset[variable].data.shape == (128,)
+        # For "support" variables with epoch dimensions
+        elif variable in [
+            "rgfo_half_spin",
+            "nso_half_spin",
+            "sw_bias_gain_mode",
+            "st_bias_gain_mode",
+            "data_quality",
+            "spin_period",
+        ]:
+            assert processed_dataset[variable].data.shape == (
+                len(processed_dataset["epoch"].data),
+            )
+        # For counter variables
         else:
             assert processed_dataset[variable].data.shape == expected_shape
 
 
-@pytest.mark.parametrize("index", range(len(EXPECTED_LOGICAL_SOURCES)))
+@pytest.mark.parametrize("index", range(len(DESCRIPTORS)))
 def test_l1a_logical_sources(test_l1a_data, index):
     """Tests that the Logical source of the dataset is what is expected.
 
@@ -136,7 +151,7 @@ def test_l1a_logical_sources(test_l1a_data, index):
     """
 
     processed_dataset = test_l1a_data[index]
-    expected_logical_source = EXPECTED_LOGICAL_SOURCES[index]
+    expected_logical_source = f"imap_codice_l1a_{DESCRIPTORS[index]}"
 
     # Mark currently broken/unsupported datasets as expected to fail
     # TODO: Remove these once they are supported
@@ -150,9 +165,11 @@ def test_l1a_logical_sources(test_l1a_data, index):
 
 
 @pytest.mark.parametrize("index", range(len(EXPECTED_NUM_VARIABLES)))
-def test_l1a_num_variables(test_l1a_data, index):
-    """Tests that the data arrays in the generated CDFs have the expected number
-    of variables.
+def test_l1a_num_data_variables(test_l1a_data, index):
+    """Tests that the generated CDFs have the expected number of data variables.
+
+    These data variables include counter data (e.g. hplus, heplus, etc.) as well
+    as any "support" variables (e.g. data_quality, spin_period, etc.).
 
     Parameters
     ----------
@@ -172,14 +189,9 @@ def test_l1a_num_variables(test_l1a_data, index):
     assert len(processed_dataset) == EXPECTED_NUM_VARIABLES[index]
 
 
-@pytest.mark.skip("Awaiting validation data")
 @pytest.mark.parametrize("index", range(len(VALIDATION_DATA)))
 def test_l1a_data_array_values(test_l1a_data: xr.Dataset, index):
-    """Tests that the generated L1a CDF contents are valid.
-
-    Once proper validation files are acquired, this test function should point
-    to those. This function currently just serves as a framework for validating
-    files, but does not actually validate them.
+    """Tests that the generated L1a CDF data array contents are valid.
 
     Parameters
     ----------
@@ -189,16 +201,34 @@ def test_l1a_data_array_values(test_l1a_data: xr.Dataset, index):
         The index of the list to test
     """
 
-    generated_dataset = test_l1a_data
-    validation_dataset = load_cdf(VALIDATION_DATA[index])
+    descriptor = DESCRIPTORS[index]
 
-    # Ensure the processed data matches the validation data
-    for variable in validation_dataset:
-        assert variable in generated_dataset
-        if variable != "epoch":
+    # Mark currently broken/unsupported datasets as expected to fail
+    # TODO: Remove these once they are supported
+    if index in [0, 1, 15, 16, 17]:
+        pytest.xfail("Data product is currently unsupported")
+
+    # TODO: Currently only lo-(n)sw-angular data can be validated, expand this
+    #       to other data products as I validate them.
+    if descriptor in ["lo-sw-angular", "lo-nsw-angular"]:
+        counters = getattr(
+            constants, f'{descriptor.upper().replace("-","_")}_VARIABLE_NAMES'
+        )
+        processed_dataset = test_l1a_data[index]
+        validation_dataset = load_cdf(VALIDATION_DATA[index])
+
+        # Joey says that the shape of the data arrays (i.e. how they are
+        # arranged) does not need to follow a specific order, and the SDC can
+        # decide to arrange them how we see fit. As such, the shape of the CDFs
+        # that SDC produces may not match the validation data. To get around
+        # this, compare the sum of the values of the data arrays.
+        for counter in counters:
             np.testing.assert_array_equal(
-                validation_dataset[variable].data, generated_dataset[variable].data[0]
+                getattr(processed_dataset, counter).data.sum(),
+                getattr(validation_dataset, counter).data.sum(),
             )
+    else:
+        pytest.xfail(f"Still need to implement validation for {descriptor}")
 
 
 def test_l1a_multiple_packets():

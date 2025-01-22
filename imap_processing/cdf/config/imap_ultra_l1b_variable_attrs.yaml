@@ -92,6 +92,13 @@ x_coin:
   LABLAXIS: x coincidence position
   UNITS: mm / 100
 
+event_times:
+  <<: *default_float32
+  CATDESC: time of event as calculated using aux and de l1a packets
+  FIELDNAM: event_times
+  LABLAXIS: event times
+  UNITS: seconds
+
 tof_start_stop:
   <<: *default_float32
   CATDESC: Particle time of flight from start to stop

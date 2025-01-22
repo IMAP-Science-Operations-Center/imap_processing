@@ -1,5 +1,7 @@
 """Pytest plugin module for test data paths"""
 
+from unittest import mock
+
 import numpy as np
 import pytest
 
@@ -10,6 +12,7 @@ from imap_processing.ultra.l0.ultra_utils import (
     ULTRA_EVENTS,
 )
 from imap_processing.ultra.l1a import ultra_l1a
+from imap_processing.ultra.l1b.de import calculate_de
 from imap_processing.utils import group_by_apid
 
 
@@ -165,3 +168,29 @@ def de_dataset(ccsds_path_theta_0, xtce_path):
         dataset["START_TYPE"] != np.iinfo(np.int64).min, drop=True
     )
     return l1a_de_dataset
+
+
+@pytest.fixture()
+@mock.patch("imap_processing.ultra.l1b.de.get_annotated_particle_velocity")
+def l1b_de_dataset(mock_get_annotated_particle_velocity, de_dataset):
+    """L1B test data"""
+
+    # Mock get_annotated_particle_velocity to avoid needing kernels
+    def side_effect_func(event_times, position, ultra_frame, dps_frame, sc_frame):
+        """
+        Mock behavior of get_annotated_particle_velocity.
+
+        Returns NaN-filled arrays matching the expected output shape.
+        """
+        num_events = event_times.size
+        return (
+            np.full((num_events, 3), np.nan),  # sc_velocity
+            np.full((num_events, 3), np.nan),  # sc_dps_velocity
+            np.full((num_events, 3), np.nan),  # helio_velocity
+        )
+
+    mock_get_annotated_particle_velocity.side_effect = side_effect_func
+
+    dataset = calculate_de(de_dataset, "imap_ultra_l1b_45sensor-de")
+
+    return dataset

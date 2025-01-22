@@ -26,7 +26,7 @@ def hk_packet_filepath():
 @pytest.fixture(scope="module")
 def sci_packet_filepath():
     """Set path to test data file"""
-    return imap_module_directory / "tests/hit/test_data/sci_sample1.ccsds"
+    return imap_module_directory / "tests/hit/test_data/sci_sample.ccsds"
 
 
 def test_validate_l1a_housekeeping_data(hk_packet_filepath):
@@ -164,7 +164,7 @@ def test_validate_l1a_counts_data(sci_packet_filepath):
 
     # Read in the validation data
     validation_data = pd.read_csv(
-        imap_module_directory / "tests/hit/validation_data/sci_sample_raw1.csv"
+        imap_module_directory / "tests/hit/validation_data/sci_sample_raw.csv"
     )
 
     # Helper functions for this test
@@ -243,7 +243,6 @@ def test_validate_l1a_counts_data(sci_packet_filepath):
         for field in expected_data.columns:
             if field not in [
                 "sc_tick",
-                "hdr_status_bits",
                 "species",
                 "energy_idx",
             ]:
@@ -300,16 +299,12 @@ def test_validate_l1a_counts_data(sci_packet_filepath):
         "src_seq_ctr",
         "pkt_len",
         "sc_tick",
-        "hdr_status_bits",
         "energy_idx",
     ]
 
     # Compare processed data to validation data
     validation_data.columns = validation_data.columns.str.lower()
     compare_data(validation_data, l1a_counts_data, ignore)
-
-    # TODO: add validation for hdr_status_bits once validation data has been updated
-    #  to include this field broken out into its subfields
 
     # TODO: add validation for CCSDS fields? currently validation data only has
     #  one value per frame and the processed data has one value per packet.

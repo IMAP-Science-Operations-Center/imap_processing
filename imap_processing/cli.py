@@ -38,6 +38,7 @@ from imap_processing.cdf.utils import load_cdf, write_cdf
 from imap_processing.codice import codice_l1a, codice_l1b
 from imap_processing.glows.l1a.glows_l1a import glows_l1a
 from imap_processing.glows.l1b.glows_l1b import glows_l1b
+from imap_processing.glows.l2.glows_l2 import glows_l2
 from imap_processing.hi.l1a import hi_l1a
 from imap_processing.hi.l1b import hi_l1b
 from imap_processing.hi.l1c import hi_l1c
@@ -481,6 +482,15 @@ class Glows(ProcessInstrument):
                 )
             input_dataset = load_cdf(dependencies[0])
             datasets = [glows_l1b(input_dataset, self.version)]
+
+        if self.data_level == "l2":
+            if len(dependencies) > 1:
+                raise ValueError(
+                    f"Unexpected dependencies found for GLOWS L2:"
+                    f"{dependencies}. Expected only one input dependency."
+                )
+            input_dataset = load_cdf(dependencies[0])
+            datasets = glows_l2(input_dataset, self.version)
 
         return datasets
 
