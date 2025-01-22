@@ -32,7 +32,7 @@ def mock_data_l1a_rates_dict():
 
 
 @pytest.fixture()
-def mock_data_l1a_de_aux_dict():
+def mock_data_l1a_de_aux_rates_dict():
     # Create sample data for the xarray Dataset
     epoch = np.arange(
         "2024-02-07T15:28:37", "2024-02-07T15:28:42", dtype="datetime64[s]"
@@ -53,6 +53,7 @@ def mock_data_l1a_de_aux_dict():
     data_dict = {
         "imap_ultra_l1a_45sensor-de": dataset,
         "imap_ultra_l1a_45sensor-aux": dataset,
+        "imap_ultra_l1a_45sensor-rates": dataset,
     }
 
     return data_dict
@@ -79,9 +80,9 @@ def test_create_dataset(mock_data_l1b_dict):
     np.testing.assert_array_equal(dataset["x_front"], np.zeros(3))
 
 
-def test_ultra_l1b_rates(mock_data_l1a_rates_dict):
+def test_ultra_l1b_rates(mock_data_l1a_de_aux_rates_dict):
     """Tests that L1b data is created."""
-    output_datasets = ultra_l1b(mock_data_l1a_rates_dict, data_version="001")
+    output_datasets = ultra_l1b(mock_data_l1a_de_aux_rates_dict, data_version="001")
 
     assert len(output_datasets) == 3
     assert (
@@ -109,6 +110,7 @@ def test_ultra_l1b_de(mock_get_annotated_particle_velocity, de_dataset):
     data_dict = {}
     data_dict[de_dataset.attrs["Logical_source"]] = de_dataset
     data_dict["imap_ultra_l1a_45sensor-aux"] = de_dataset
+    data_dict["imap_ultra_l1a_45sensor-rates"] = de_dataset
 
     # Mock get_annotated_particle_velocity to avoid needing kernels
     def side_effect_func(event_times, position, ultra_frame, dps_frame, sc_frame):
@@ -135,7 +137,7 @@ def test_ultra_l1b_de(mock_get_annotated_particle_velocity, de_dataset):
     )
 
 
-def test_ultra_l1b_error(mock_data_l1a_rates_dict):
+def test_ultra_l1b_error(mock_data_l1a_de_aux_rates_dict):
     """Tests that L1a data throws an error."""
     mock_data_l1a_rates_dict["bad_key"] = mock_data_l1a_rates_dict.pop(
         "imap_ultra_l1a_45sensor-rates"
