@@ -108,13 +108,13 @@ def determine_observational_day(hist_l0: list[HistogramL0]) -> list:
     list
         List of start times for each observational day.
     """
-
     for hist in hist_l0:
         flags = hist.FLAGS
         print(type(flags))
         print(f"Flags: {format(flags, '016b')}")
 
     return []
+
 
 def process_de_l0(
     de_l0: list[DirectEventL0],

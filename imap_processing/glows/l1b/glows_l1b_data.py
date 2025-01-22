@@ -619,16 +619,16 @@ class HistogramL1B:
 
         Parameters
         ----------
-        flags : int
-            16 bit integer containing the flags to deserialize.
+        raw : int
+            16 bit integer containing the on-board flags to deserialize.
 
         Returns
         -------
-        np.ndarray
-            Array of flags.
+        flags : np.ndarray
+            Array of flags as a boolean.
         """
-        flags = [
-            bool((raw >> i) & 1) for i in range(10)
-        ]
+        # there are only 10 flags in the on-board flag array, additional flags are added
+        # later.
+        flags: np.ndarray = np.array([bool((raw >> i) & 1) for i in range(10)])
 
         return flags

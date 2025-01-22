@@ -5,7 +5,11 @@ import numpy as np
 import pytest
 
 from imap_processing.glows.l1b.glows_l1b import glows_l1b
-from imap_processing.glows.l1b.glows_l1b_data import AncillaryParameters, DirectEventL1B
+from imap_processing.glows.l1b.glows_l1b_data import (
+    AncillaryParameters,
+    DirectEventL1B,
+    HistogramL1B,
+)
 
 
 def test_glows_l1b_ancillary_file():
@@ -121,7 +125,6 @@ def test_validation_data_histogram(l1a_dataset):
     }
 
     for index, validation_output in enumerate(out["output"]):
-
         assert np.equal(
             validation_output["imap_start_time"],
             l1b.isel(epoch=index).imap_start_time.data,
@@ -178,3 +181,16 @@ def test_validation_data_de(l1a_dataset):
                 np.testing.assert_array_almost_equal(
                     l1b[key].isel(epoch=index).data, validation_output[key], decimal=1
                 )
+
+
+@pytest.mark.parametrize(
+    "flags, expected",
+    [
+        (0, np.zeros(10)),
+        (64, np.array([0, 0, 0, 0, 0, 0, 1, 0, 0, 0])),
+        (65, np.array([1, 0, 0, 0, 0, 0, 1, 0, 0, 0])),
+    ],
+)
+def test_deserialize_flags(flags, expected):
+    output = HistogramL1B.deserialize_flags(flags)
+    assert np.array_equal(output, expected)
