@@ -99,15 +99,12 @@ def test_ultra_l1b_de(l1b_datasets):
     prefix = "imap_ultra_l1b_45sensor"
     suffixes = ["de", "extendedspin", "cullingmask", "badtimes"]
 
-    for suffix in suffixes:
-        expected_logical_source = f"{prefix}-{suffix}"
-        assert (
-            l1b_datasets[expected_logical_source].attrs["Logical_source"]
-            == expected_logical_source
-        )
+    for i in range(len(suffixes)):
+        expected_logical_source = f"{prefix}-{suffixes[i]}"
+        assert l1b_datasets[i].attrs["Logical_source"] == expected_logical_source
 
     assert (
-        l1b_datasets["imap_ultra_l1b_45sensor-de"].attrs["Logical_source_description"]
+        l1b_datasets[0].attrs["Logical_source_description"]
         == "IMAP-Ultra Instrument Level-1B Direct Event Data."
     )
 

@@ -39,7 +39,7 @@ def test_data(use_fake_spin_data_for_time):
 
 def test_get_spin(use_fake_spin_data_for_time, l1b_datasets):
     """Tests get_spin function."""
-    de_dataset = l1b_datasets["imap_ultra_l1b_45sensor-de"]
+    de_dataset = l1b_datasets[0]
     use_fake_spin_data_for_time(
         de_dataset["event_times"][0], de_dataset["event_times"][-1]
     )
