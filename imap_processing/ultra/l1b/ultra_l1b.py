@@ -28,7 +28,7 @@ def ultra_l1b(data_dict: dict, data_version: str) -> list[xr.Dataset]:
     instrument_id = 45 if any("45" in key for key in data_dict.keys()) else 90
 
     if (
-        f"imap_ultra_l1a_{instrument_id}sensor-aux" in data_dict
+        f"imap_ultra_l1a_{instrument_id}sensor-hk" in data_dict
         and f"imap_ultra_l1a_{instrument_id}sensor-de" in data_dict
         and f"imap_ultra_l1a_{instrument_id}sensor-rates" in data_dict
     ):
@@ -38,7 +38,7 @@ def ultra_l1b(data_dict: dict, data_version: str) -> list[xr.Dataset]:
             data_version,
         )
         extendedspin_dataset = calculate_extendedspin(
-            data_dict[f"imap_ultra_l1a_{instrument_id}sensor-aux"],
+            data_dict[f"imap_ultra_l1a_{instrument_id}sensor-hk"],
             data_dict[f"imap_ultra_l1a_{instrument_id}sensor-rates"],
             de_dataset,
             f"imap_ultra_l1b_{instrument_id}sensor-extendedspin",

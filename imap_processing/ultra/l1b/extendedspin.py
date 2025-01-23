@@ -7,7 +7,7 @@ from imap_processing.ultra.utils.ultra_l1_utils import create_dataset
 
 
 def calculate_extendedspin(
-    aux_dataset: xr.Dataset,
+    hk_dataset: xr.Dataset,
     rates_dataset: xr.Dataset,
     de_dataset: xr.Dataset,
     name: str,
@@ -18,8 +18,8 @@ def calculate_extendedspin(
 
     Parameters
     ----------
-    aux_dataset : xarray.Dataset
-        Dataset containing l1a aux data.
+    hk_dataset : xarray.Dataset
+        Dataset containing l1a hk data.
     rates_dataset : xarray.Dataset
         Dataset containing l1a rates data.
     de_dataset : xarray.Dataset

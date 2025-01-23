@@ -195,12 +195,12 @@ def aux_dataset(ccsds_path_theta_0, xtce_path):
     decom_ultra_aux = process_ultra_apids(
         grouped_data[ULTRA_AUX.apid[0]], ULTRA_AUX.apid[0]
     )
-    l1a_rates_dataset = ultra_l1a.create_dataset(
+    l1a_aux_dataset = ultra_l1a.create_dataset(
         {
             ULTRA_AUX.apid[0]: decom_ultra_aux,
         }
     )
-    return l1a_rates_dataset
+    return l1a_aux_dataset
 
 
 @pytest.fixture()
@@ -212,7 +212,8 @@ def l1b_datasets(
 
     data_dict = {}
     data_dict[de_dataset.attrs["Logical_source"]] = de_dataset
-    data_dict["imap_ultra_l1a_45sensor-aux"] = aux_dataset
+    # TODO: this is a placeholder for the hk dataset.
+    data_dict["imap_ultra_l1a_45sensor-hk"] = aux_dataset
     data_dict["imap_ultra_l1a_45sensor-rates"] = rates_dataset
     use_fake_spin_data_for_time(
         de_dataset["EVENTTIMES"][0], de_dataset["EVENTTIMES"][-1]
