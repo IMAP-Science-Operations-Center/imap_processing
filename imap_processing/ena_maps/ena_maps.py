@@ -25,6 +25,13 @@ class TilingType(Enum):
     ABSTRACT = "Abstract"
 
 
+class IndexMatchMethod(Enum):
+    """Enumeration of the types of index matching methods used in the ENA maps."""
+
+    PUSH = "Push"
+    PULL = "Pull"
+
+
 # Define the pointing set classes
 class PointingSet(ABC):
     """
@@ -362,7 +369,11 @@ class RectangularMap(AbstractMap):
         # Initialize empty data dictionary to store map data
         self.data_dict: dict[str, NDArray] = {}
 
-    def match_pset_coords_to_indices(self, pointing_set: PointingSet) -> NDArray:
+    def match_pset_coords_to_indices(
+        self,
+        pointing_set: PointingSet,
+        method: IndexMatchMethod = IndexMatchMethod.PUSH,
+    ) -> NDArray:
         """
         Get indices of map grid corresponding to az/el points in the pointing set.
 
@@ -372,6 +383,8 @@ class RectangularMap(AbstractMap):
             The pointing set to match to the map grid.
             Must contain the azimuth and elevation of all points in the attribute
             az_el_points, which is a 2D array of shape (num_points, 2).
+        method : IndexMatchMethod, optional
+            The method of index matching to use. Default is IndexMatchMethod.PUSH.
 
         Returns
         -------
@@ -379,6 +392,11 @@ class RectangularMap(AbstractMap):
             Indices of the map grid corresponding to each points in the pointing set.
             1D array of shape (num_points,) where each element is the index of the
             raveled map grid.
+
+        Raises
+        ------
+        NotImplementedError
+            If the index matching method is not implemented. See Notes.
 
         Notes
         -----
@@ -392,20 +410,32 @@ class RectangularMap(AbstractMap):
         frame and binned to the edges of the pointing set grid.
         # TODO: Implement the "pull" method of index matching.
         """
-        if pointing_set.reference_frame != self.reference_frame:
-            pointing_set.project_to_frame(self.reference_frame)
+        if method == IndexMatchMethod.PUSH:
+            if pointing_set.reference_frame != self.reference_frame:
+                pointing_set.project_to_frame(self.reference_frame)
 
-        az_indices = np.digitize(pointing_set.az_el_points[:, 0], self.az_bin_edges) - 1
-        el_indices = np.digitize(pointing_set.az_el_points[:, 1], self.el_bin_edges) - 1
-        flat_indices = np.ravel_multi_index(
-            multi_index=(az_indices, el_indices),
-            dims=(len(self.az_axis_bin_centers), len(self.el_axis_bin_centers)),
-            order=self.order,
-        )
+            az_indices = (
+                np.digitize(pointing_set.az_el_points[:, 0], self.az_bin_edges) - 1
+            )
+            el_indices = (
+                np.digitize(pointing_set.az_el_points[:, 1], self.el_bin_edges) - 1
+            )
+            flat_indices = np.ravel_multi_index(
+                multi_index=(az_indices, el_indices),
+                dims=(len(self.az_axis_bin_centers), len(self.el_axis_bin_centers)),
+                order=self.order,
+            )
+
+        else:
+            raise NotImplementedError(
+                "The 'pull' method of index matching is not yet implemented."
+            )
         return flat_indices
 
     def project_pset_values_to_map(
-        self, pointing_set: PointingSet, value_keys: list[str] | None = None
+        self,
+        pointing_set: PointingSet,
+        value_keys: list[tuple[str, IndexMatchMethod]] | None = None,
     ) -> None:
         """
         Project a pointing set's values to the map grid.
@@ -414,11 +444,13 @@ class RectangularMap(AbstractMap):
         ----------
         pointing_set : PointingSet
             The pointing set containing the values to project to the map.
-        value_keys : list[str], optional
-            The keys of the values to project to the map.
+        value_keys : list[tuple[str, IndexMatchMethod]] | None
+            The keys of the values to project to the map, and method of index matching.
+            Ex.: [("counts", IndexMatchMethod.PUSH), ("flux", IndexMatchMethod.PULL)]
             data_vars named each key must be present, and of the same dimensionality in
             each pointing set which is to be projected to the map.
-            Default is None, in which case all data_vars in the pointing set are used.
+            Default is None, in which case all data_vars in the pointing set are used,
+            with the "push" method of index matching.
 
         Raises
         ------
@@ -426,15 +458,18 @@ class RectangularMap(AbstractMap):
             If a value key is not found in the pointing set.
         """
         if value_keys is None:
-            value_keys = pointing_set.data.data_vars.keys()
+            value_keys = [
+                (key, IndexMatchMethod.PUSH)
+                for key in pointing_set.data.data_vars.keys()
+            ]
 
-        for value_key in value_keys:
+        for value_key, _ in value_keys:
             if value_key not in pointing_set.data.data_vars:
                 raise ValueError(f"Value key {value_key} not found in pointing set.")
 
         # Determine the indices of the map grid that correspond to the pointing set
         matched_indices = self.match_pset_coords_to_indices(pointing_set)
-        for value_key in value_keys:
+        for value_key, method in value_keys:
             # If multiple spatial axes present
             # (i.e (az, el) for rectangular coordinate PSET),
             # flatten them in the values array to match the raveled indices
@@ -449,14 +484,19 @@ class RectangularMap(AbstractMap):
                 output_shape = (self.num_points, *raveled_pset_data.shape[1:])
                 self.data_dict[value_key] = np.zeros(output_shape)
 
-            pointing_projected_values = map_utils.bin_single_array_at_indices(
-                value_array=raveled_pset_data,
-                projection_grid_shape=(
-                    len(self.az_axis_bin_centers),
-                    len(self.el_axis_bin_centers),
-                ),
-                projection_indices=matched_indices,
-            )
+            if method == IndexMatchMethod.PUSH:
+                pointing_projected_values = map_utils.bin_single_array_at_indices(
+                    value_array=raveled_pset_data,
+                    projection_grid_shape=(
+                        len(self.az_axis_bin_centers),
+                        len(self.el_axis_bin_centers),
+                    ),
+                    projection_indices=matched_indices,
+                )
+            else:
+                raise NotImplementedError(
+                    "The 'pull' method of index matching is not yet implemented."
+                )
             self.data_dict[value_key] += pointing_projected_values
 
     def __repr__(self) -> str:
