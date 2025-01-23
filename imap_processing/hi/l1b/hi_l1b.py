@@ -193,12 +193,12 @@ def compute_coincidence_type_and_time_deltas(
     # |      2      |      B      |     A,B     |     B,C1    |    C1,C2    |
     # |      3      |      C1     |     A,C1    |     B,C1    |    C1,C2    |
     # Set coincidence type bitmask
-    new_vars["coincidence_type"][a_first | tof1_valid] |= CoincidenceBitmap.A
+    new_vars["coincidence_type"][a_first | tof1_valid] |= np.uint8(CoincidenceBitmap.A)
     new_vars["coincidence_type"][
         b_first | (a_first & tof1_valid) | (c_first & tof2_valid)
-    ] |= CoincidenceBitmap.B
-    new_vars["coincidence_type"][c_first | tof2_valid] |= CoincidenceBitmap.C1
-    new_vars["coincidence_type"][tof3_valid] |= CoincidenceBitmap.C2
+    ] |= np.uint8(CoincidenceBitmap.B)
+    new_vars["coincidence_type"][c_first | tof2_valid] |= np.uint8(CoincidenceBitmap.C1)
+    new_vars["coincidence_type"][tof3_valid] |= np.uint8(CoincidenceBitmap.C2)
 
     # Table denoting how TOF is interpreted for each Trigger ID
     # -----------------------------------------------------------------------
