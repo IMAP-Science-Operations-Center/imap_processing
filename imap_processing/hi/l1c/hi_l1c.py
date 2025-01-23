@@ -1,9 +1,14 @@
 """IMAP-HI l1c processing module."""
 
+from __future__ import annotations
+
 import logging
+from collections.abc import Iterable
+from pathlib import Path
 
 import numpy as np
 import xarray as xr
+import yaml
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import parse_filename_like
@@ -45,8 +50,8 @@ def hi_l1c(dependencies: list, data_version: str) -> xr.Dataset:
 
     # TODO: I am not sure what the input for Goodtimes will be so for now,
     #    If the input is an xarray Dataset, do pset processing
-    if len(dependencies) == 1 and isinstance(dependencies[0], xr.Dataset):
-        l1c_dataset = generate_pset_dataset(dependencies[0])
+    if len(dependencies) == 2 and isinstance(dependencies[0], xr.Dataset):
+        l1c_dataset = generate_pset_dataset(dependencies[0], dependencies[1])
     else:
         raise NotImplementedError(
             "Input dependencies not recognized for l1c pset processing."
@@ -57,7 +62,9 @@ def hi_l1c(dependencies: list, data_version: str) -> xr.Dataset:
     return l1c_dataset
 
 
-def generate_pset_dataset(de_dataset: xr.Dataset) -> xr.Dataset:
+def generate_pset_dataset(
+    de_dataset: xr.Dataset, calibration_prod_config_path: Path
+) -> xr.Dataset:
     """
     Generate IMAP-Hi l1c pset xarray dataset from l1b product.
 
@@ -65,15 +72,30 @@ def generate_pset_dataset(de_dataset: xr.Dataset) -> xr.Dataset:
     ----------
     de_dataset : xarray.Dataset
         IMAP-Hi l1b de product.
+    calibration_prod_config_path : Path
+        Calibration product configuration file.
 
     Returns
     -------
     pset_dataset : xarray.Dataset
         Ready to be written to CDF.
     """
+    logger.info(
+        f"Generating IMAP-Hi l1c pset dataset for product "
+        f"{de_dataset.attrs['Logical_file_id']}"
+    )
     logical_source_parts = parse_filename_like(de_dataset.attrs["Logical_source"])
     n_esa_step = len(np.unique(de_dataset.esa_step.data))
-    pset_dataset = empty_pset_dataset(n_esa_step, logical_source_parts["sensor"])
+    # read calibration product configuration file
+    calibration_prod_config = CalibrationProductConfig.from_yaml(
+        calibration_prod_config_path
+    )
+
+    pset_dataset = empty_pset_dataset(
+        n_esa_step,
+        calibration_prod_config.number_of_products,
+        logical_source_parts["sensor"],
+    )
     # For ISTP, epoch should be the center of the time bin.
     pset_dataset.epoch.data[0] = np.mean(de_dataset.epoch.data[[0, -1]]).astype(
         np.int64
@@ -103,7 +125,9 @@ def generate_pset_dataset(de_dataset: xr.Dataset) -> xr.Dataset:
     return pset_dataset
 
 
-def empty_pset_dataset(n_esa_steps: int, sensor_str: str) -> xr.Dataset:
+def empty_pset_dataset(
+    n_esa_steps: int, n_cal_prods: int, sensor_str: str
+) -> xr.Dataset:
     """
     Allocate an empty xarray.Dataset with appropriate pset coordinates.
 
@@ -111,6 +135,8 @@ def empty_pset_dataset(n_esa_steps: int, sensor_str: str) -> xr.Dataset:
     ----------
     n_esa_steps : int
         Number of Electrostatic Analyzer steps to allocate.
+    n_cal_prods : int
+        Number of calibration products to allocate.
     sensor_str : str
         '45sensor' or '90sensor'.
 
@@ -146,16 +172,13 @@ def empty_pset_dataset(n_esa_steps: int, sensor_str: str) -> xr.Dataset:
         dims=["esa_energy_step"],
         attrs=attrs,
     )
-    # TODO: define calibration product number to coincidence type mapping and
-    #     use the number of calibration products here. I believe it will be 5
-    #     0 for any, 1-4, for the number of detector hits.
-    n_calibration_prod = 5
+
     attrs = attr_mgr.get_variable_attributes(
         "hi_pset_calibration_prod", check_schema=False
     ).copy()
     dtype = attrs.pop("dtype")
     coords["calibration_prod"] = xr.DataArray(
-        np.arange(n_calibration_prod, dtype=dtype),
+        np.arange(n_cal_prods, dtype=dtype),
         name="calibration_prod",
         dims=["calibration_prod"],
         attrs=attrs,
@@ -271,3 +294,113 @@ def pset_geometry(pset_et: float, sensor_str: str) -> dict[str, xr.DataArray]:
         np.newaxis, :
     ]
     return geometry_vars
+
+
+class CalibrationProductConfig(list):
+    """
+    A Class for Hi Calibration Product Configuration.
+
+    Parameters
+    ----------
+    iterable : Iterable
+        An iterable containing time varying calibration product configurations.
+    """
+
+    # Define required top level keys as a class attribute
+    required_top_level_keys = (
+        "description",
+        "valid_date",
+        "product_list",
+    )
+    # Define required calibration product configuration keys as a class attribute
+    required_cal_prod_keys = (
+        "index",
+        "coincidence_type_bin_strings",
+        "tof_ab_range",
+        "tof_ac1_range",
+        "tof_bc1_range",
+        "tof_c1c2_range",
+    )
+
+    def __init__(self, iterable: Iterable) -> None:
+        """
+        Instantiate the configuration list and validate the configuration.
+
+        Parameters
+        ----------
+        iterable : Iterable
+            An iterable containing time varying calibration product configurations.
+        """
+        super().__init__(iterable)
+        self._validate()
+
+    def _validate(self) -> None:
+        """
+        Validate the current configuration.
+
+        Raises
+        ------
+        KeyError : Raised when a required key is not present in the current
+            configuration.
+        """
+        for entry_index, entry in enumerate(self):
+            for k1 in self.required_top_level_keys:
+                if k1 not in entry:
+                    raise KeyError(f"Missing required key {k1} in entry {entry_index}")
+            for cal_prod_index, cal_prod_def in enumerate(entry["product_list"]):
+                for k2 in self.required_cal_prod_keys:
+                    if k2 not in cal_prod_def:
+                        raise KeyError(
+                            f"Missing required key {k2} in calibration product "
+                            f"definition {cal_prod_index} in entry {entry_index}"
+                        )
+        # TODO: Validate date strings
+        # TODO: Validate same number of calibration products for all dates???
+        # TODO: Validate number of ESA entries in TOF range lists
+
+    @classmethod
+    def from_yaml(cls, config_path: Path) -> CalibrationProductConfig:
+        """
+        Instantiate an instance of the class from a YAML file.
+
+        Parameters
+        ----------
+        config_path : Path
+            Location of YAML configuration file.
+
+        Returns
+        -------
+        config : CalibrationProductConfig
+            Matches input YAML configuration.
+
+        Raises
+        ------
+        KeyError : Raised when a required key is not present in the input YAML.
+        """
+        logger.info(
+            f"Loading calibration product configuration from {config_path.name}",
+        )
+        with open(config_path) as f:
+            try:
+                config = cls(yaml.safe_load(f))
+            except yaml.YAMLError as exc:
+                logger.exception(exc)
+            except KeyError as exc:
+                logger.exception(exc)
+                raise KeyError(
+                    f"Invalid configuration specified in YAML file: {config_path}"
+                ) from exc
+        return config
+
+    @property
+    def number_of_products(self) -> int:
+        """
+        Get the number of calibration products in the current configuration.
+
+        Returns
+        -------
+        number_of_products : int
+            The maximum number of calibration products defined in the list of
+            calibration product definitions.
+        """
+        return max([len(entry["product_list"]) for entry in self])

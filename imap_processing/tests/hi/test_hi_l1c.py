@@ -11,13 +11,20 @@ from imap_processing.hi.l1c import hi_l1c
 from imap_processing.hi.utils import HIAPID
 
 
+@pytest.fixture(scope="module")
+def hi_test_cal_prod_config_path(hi_l1_test_data_path):
+    return hi_l1_test_data_path / "imap_hi_calibration_prod_config_v00.yaml"
+
+
 @pytest.mark.external_kernel()
 @pytest.mark.use_test_metakernel("imap_ena_sim_metakernel.template")
-def test_generate_pset_dataset(hi_l1_test_data_path):
+def test_generate_pset_dataset(hi_l1_test_data_path, hi_test_cal_prod_config_path):
     """Test coverage for generate_pset_dataset function"""
     l1b_de_path = hi_l1_test_data_path / "imap_hi_l1b_45sensor-de_20250415_v999.cdf"
     l1b_dataset = load_cdf(l1b_de_path)
-    l1c_dataset = hi_l1c.generate_pset_dataset(l1b_dataset)
+    l1c_dataset = hi_l1c.generate_pset_dataset(
+        l1b_dataset, hi_test_cal_prod_config_path
+    )
 
     assert l1c_dataset.epoch.data[0] == np.mean(l1b_dataset.epoch.data[[0, -1]]).astype(
         np.int64
@@ -32,7 +39,7 @@ def test_generate_pset_dataset(hi_l1_test_data_path):
         "background_rates",
         "background_rates_uncertainty",
     ]:
-        np.testing.assert_array_equal(l1c_dataset[var].data.shape, (1, 9, 5, 3600))
+        np.testing.assert_array_equal(l1c_dataset[var].data.shape, (1, 9, 2, 3600))
 
     # Test ISTP compliance by writing CDF
     l1c_dataset.attrs["Data_version"] = 1
@@ -44,7 +51,7 @@ def test_empty_pset_dataset():
     n_esa_steps = 9
     n_calibration_prods = 5
     sensor_str = HIAPID.H90_SCI_DE.sensor
-    dataset = hi_l1c.empty_pset_dataset(n_esa_steps, sensor_str)
+    dataset = hi_l1c.empty_pset_dataset(n_esa_steps, n_calibration_prods, sensor_str)
 
     assert dataset.epoch.size == 1
     assert dataset.spin_angle_bin.size == 3600
@@ -95,3 +102,29 @@ def test_pset_geometry(mock_frame_transform, mock_geom_frame_transform, sensor_s
         np.arange(0.05, 360, 0.1, dtype=np.float32).reshape((1, 3600)),
         atol=4e-05,
     )
+
+
+class TestCalibrationProductConfig:
+    """A class containing test coverage for CalibrationProductConfig"""
+
+    def test_invalid_top_level_config(self):
+        """Test coverage for an invalid top level configuration dictionary"""
+        with pytest.raises(KeyError, match="Missing required key*"):
+            hi_l1c.CalibrationProductConfig([{"foo": 1}])
+
+    def test_invalid_cal_prod_config(self):
+        """Test coverage for an invalid top level configuration dictionary"""
+        invalid_config = [
+            {
+                "description": "foo",
+                "valid_date": "2024-01-01T00:00:00",
+                "product_list": [{"invalid": 1}],
+            }
+        ]
+        with pytest.raises(KeyError, match="Missing required key index"):
+            hi_l1c.CalibrationProductConfig(invalid_config)
+
+    def test_from_yaml(self, hi_test_cal_prod_config_path):
+        """Test class factory function from YAML file."""
+        config = hi_l1c.CalibrationProductConfig.from_yaml(hi_test_cal_prod_config_path)
+        assert config.number_of_products == 1
