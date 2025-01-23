@@ -13,7 +13,9 @@ from imap_processing.hi.utils import HIAPID
 
 @pytest.fixture(scope="module")
 def hi_test_cal_prod_config_path(hi_l1_test_data_path):
-    return hi_l1_test_data_path / "imap_hi_calibration_prod_config_v00.yaml"
+    return (
+        hi_l1_test_data_path / "imap_hi_pset-calibration-prod-config_20240101_v001.yaml"
+    )
 
 
 @pytest.mark.external_kernel()
@@ -127,4 +129,4 @@ class TestCalibrationProductConfig:
     def test_from_yaml(self, hi_test_cal_prod_config_path):
         """Test class factory function from YAML file."""
         config = hi_l1c.CalibrationProductConfig.from_yaml(hi_test_cal_prod_config_path)
-        assert config.number_of_products == 1
+        assert config.number_of_products == 2

@@ -533,7 +533,14 @@ class Hi(ProcessInstrument):
             dependencies = [load_cdf(dependency) for dependency in dependencies]
             datasets = [hi_l1b.hi_l1b(dependencies[0], self.version)]
         elif self.data_level == "l1c":
-            dependencies = [load_cdf(dependency) for dependency in dependencies]
+            # TODO: Add PSET calibration product config file dependency and remove
+            #    below injected dependency
+            dependencies.append(
+                Path(__file__).parent
+                / "tests/hi/test_data/l1"
+                / "imap_hi_pset-calibration-prod-config_20240101_v001.yaml"
+            )
+            dependencies[0] = load_cdf(dependencies[0])
             datasets = [hi_l1c.hi_l1c(dependencies, self.version)]
         else:
             raise NotImplementedError(

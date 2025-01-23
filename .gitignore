@@ -182,4 +182,4 @@ data/
 # marked with @pytest.mark.external_kernel
 **/de440*.bsp
 **/pck0001*.tpc
-**/earth_**_combined.bpc
+**/earth_*_combined.bpc

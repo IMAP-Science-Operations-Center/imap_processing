@@ -447,7 +447,7 @@ hi_pset_calibration_prod:
   SCALE_TYP: linear
   MONOTON: INCREASE
   VALIDMIN: 0
-  VALIDMAX: 4
+  VALIDMAX: 9
   VAR_TYPE: support_data
   dtype: uint8
 
