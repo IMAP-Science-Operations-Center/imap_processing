@@ -4,6 +4,7 @@ from unittest import mock
 
 import numpy as np
 import pytest
+import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import load_cdf, write_cdf
@@ -16,6 +17,22 @@ def hi_test_cal_prod_config_path(hi_l1_test_data_path):
     return (
         hi_l1_test_data_path / "imap_hi_pset-calibration-prod-config_20240101_v001.yaml"
     )
+
+
+@mock.patch("imap_processing.hi.l1c.hi_l1c.generate_pset_dataset")
+def test_hi_l1c(mock_generate_pset_dataset, hi_test_cal_prod_config_path):
+    """Test coverage for hi_l1c function"""
+    mock_generate_pset_dataset.return_value = xr.Dataset(attrs={"Data_version": None})
+    pset = hi_l1c.hi_l1c(
+        [xr.Dataset(), hi_test_cal_prod_config_path], data_version="99"
+    )
+    assert pset.attrs["Data_version"] == "99"
+
+
+def test_hi_l1c_not_implemented():
+    """Test coverage for hi_l1c function with unrecognized dependencies"""
+    with pytest.raises(NotImplementedError):
+        hi_l1c.hi_l1c([None, None], "0")
 
 
 @pytest.mark.external_kernel()

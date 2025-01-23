@@ -51,7 +51,7 @@ def hi_l1c(dependencies: list, data_version: str) -> xr.Dataset:
     # TODO: I am not sure what the input for Goodtimes will be so for now,
     #    If the input is an xarray Dataset, do pset processing
     if len(dependencies) == 2 and isinstance(dependencies[0], xr.Dataset):
-        l1c_dataset = generate_pset_dataset(dependencies[0], dependencies[1])
+        l1c_dataset = generate_pset_dataset(*dependencies)
     else:
         raise NotImplementedError(
             "Input dependencies not recognized for l1c pset processing."
