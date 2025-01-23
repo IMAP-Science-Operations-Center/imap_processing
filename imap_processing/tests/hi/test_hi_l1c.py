@@ -147,3 +147,14 @@ class TestCalibrationProductConfig:
         """Test class factory function from YAML file."""
         config = hi_l1c.CalibrationProductConfig.from_yaml(hi_test_cal_prod_config_path)
         assert config.number_of_products == 2
+
+    @mock.patch(
+        "imap_processing.hi.l1c.hi_l1c.CalibrationProductConfig._validate",
+        side_effect=KeyError("Test message"),
+    )
+    def test_from_yaml_exceptions(self, mock_validate, hi_test_cal_prod_config_path):
+        """Test coverage for factory function from_yaml exception handling."""
+        with pytest.raises(
+            KeyError, match="Invalid configuration specified in YAML file*"
+        ):
+            hi_l1c.CalibrationProductConfig.from_yaml(hi_test_cal_prod_config_path)

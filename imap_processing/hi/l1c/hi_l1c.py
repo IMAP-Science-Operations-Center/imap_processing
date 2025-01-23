@@ -383,8 +383,6 @@ class CalibrationProductConfig(list):
         with open(config_path) as f:
             try:
                 config = cls(yaml.safe_load(f))
-            except yaml.YAMLError as exc:
-                logger.exception(exc)
             except KeyError as exc:
                 logger.exception(exc)
                 raise KeyError(
