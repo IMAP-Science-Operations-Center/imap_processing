@@ -32,21 +32,25 @@ def create_dataset(
     cdf_manager.add_instrument_variable_attrs("ultra", level)
     cdf_manager.add_global_attribute("Data_version", data_version)
 
-    if name in {f"imap_ultra_l1b_{x}sensor-de" for x in [45, 90]}:
+    if "spin_number" in data_dict.keys():
+        coords = {
+            "spin_number": data_dict["spin_number"],
+            "median_rate_energy": data_dict["median_rate_energy"],
+        }
+        default_dimension = "spin_number"
+
+    else:
         epoch_time = xr.DataArray(
             data_dict["epoch"],
             name="epoch",
             dims=["epoch"],
             attrs=cdf_manager.get_variable_attributes("epoch"),
         )
-        coords = {"epoch": epoch_time, "component": ["vx", "vy", "vz"]}
+        if name in {f"imap_ultra_l1b_{x}sensor-de" for x in [45, 90]}:
+            coords = {"epoch": epoch_time, "component": ["vx", "vy", "vz"]}
+        else:
+            coords = {"epoch": epoch_time}
         default_dimension = "epoch"
-    else:
-        coords = {
-            "spin_number": data_dict["spin_number"],
-            "median_rate_energy": data_dict["median_rate_energy"],
-        }
-        default_dimension = "spin_number"
 
     dataset = xr.Dataset(
         coords=coords,

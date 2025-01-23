@@ -61,7 +61,10 @@ def mock_data_l1b_extendedspin_dict():
 def test_create_extendedspin_dataset(mock_data_l1b_extendedspin_dict):
     """Tests that dataset is created as expected."""
     dataset = create_dataset(
-        mock_data_l1b_extendedspin_dict, "imap_ultra_l1b_45sensor-extendedspin", "l1b"
+        mock_data_l1b_extendedspin_dict,
+        "imap_ultra_l1b_45sensor-extendedspin",
+        "l1b",
+        "001",
     )
 
     assert "spin_number" in dataset.coords
@@ -70,13 +73,15 @@ def test_create_extendedspin_dataset(mock_data_l1b_extendedspin_dict):
     assert dataset.attrs["Logical_source"] == "imap_ultra_l1b_45sensor-extendedspin"
     assert dataset["quality_ena_rates"].attrs["UNITS"] == " "
     np.testing.assert_array_equal(
-        dataset["quality_ena_rates"], np.zeros((3, 2), dtype="uint16")
+        dataset["quality_ena_rates"], np.zeros((2, 3), dtype="uint16")
     )
 
 
 def test_create_de_dataset(mock_data_l1b_de_dict):
     """Tests that dataset is created as expected."""
-    dataset = create_dataset(mock_data_l1b_de_dict, "imap_ultra_l1b_45sensor-de", "l1b")
+    dataset = create_dataset(
+        mock_data_l1b_de_dict, "imap_ultra_l1b_45sensor-de", "l1b", "001"
+    )
 
     assert "epoch" in dataset.coords
     assert dataset.coords["epoch"].dtype == "datetime64[ns]"
@@ -94,7 +99,7 @@ def test_ultra_l1b_de(l1b_datasets):
     prefix = "imap_ultra_l1b_45sensor"
     suffixes = ["de", "extendedspin", "cullingmask", "badtimes"]
 
-    for suffix in enumerate(suffixes):
+    for suffix in suffixes:
         expected_logical_source = f"{prefix}-{suffix}"
         assert (
             l1b_datasets[expected_logical_source].attrs["Logical_source"]
