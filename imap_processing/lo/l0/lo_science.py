@@ -439,3 +439,42 @@ def find_valid_groups(
     ]
     valid_groups = [is_sequential(seq_ctrs) for seq_ctrs in grouped_seq_ctrs]
     return valid_groups
+
+
+def organize_spin_data(dataset: xr.Dataset) -> xr.Dataset:
+    """
+    Organize the spin data for Lo.
+
+    Parameters
+    ----------
+    dataset : xr.Dataset
+        Lo science direct events from packets_to_dataset function.
+
+    Returns
+    -------
+    dataset : xr.Dataset
+        Updated dataset with the spin data organized.
+    """
+    # Get the spin data fields
+    spin_fields = [
+        "start_sec_spin",
+        "start_subsec_spin",
+        "esa_neg_dac_spin",
+        "esa_pos_dac_spin",
+        "valid_period_spin",
+        "valid_phase_spin",
+        "period_source_spin",
+    ]
+
+    for spin_field in spin_fields:
+        packet_fields = [f"{spin_field}_{i}" for i in range(1, 29)]
+        # Combine the spin data fields along a new dimension
+        combined_spin_data = xr.concat(
+            [dataset[field] for field in packet_fields], dim="spin"
+        )
+        # Assign the combined data back to the dataset
+        dataset[spin_field] = combined_spin_data
+        dataset = dataset.drop_vars(packet_fields)
+
+    print(dataset.data_vars)
+    return dataset
