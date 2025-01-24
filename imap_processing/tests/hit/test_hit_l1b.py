@@ -6,13 +6,25 @@ from imap_processing import imap_module_directory
 from imap_processing.hit.l1a import hit_l1a
 from imap_processing.hit.l1b import hit_l1b
 
+# TODO: Packet files are per apid at the moment so the tests currently
+#  reflect this. Eventually, HIT will provide a packet file with all apids
+#  and the tests will need to be updated.
+
 
 @pytest.fixture(scope="module")
 def packet_filepath():
     """Set path to test data file"""
+    # TODO: Update this path when HIT provides a packet file with all apids.
+    #  Current test file only has the housekeeping apid is available.
     return (
         imap_module_directory / "tests/hit/test_data/imap_hit_l0_raw_20100105_v001.pkts"
     )
+
+
+@pytest.fixture(scope="module")
+def sci_packet_filepath():
+    """Set path to test data file"""
+    return imap_module_directory / "tests/hit/test_data/sci_sample.ccsds"
 
 
 @pytest.fixture()
@@ -22,13 +34,18 @@ def dependencies(packet_filepath):
     data_dict = {"imap_hit_l0_raw": packet_filepath}
     # Add L1A datasets
     l1a_datasets = hit_l1a.hit_l1a(packet_filepath, "001")
+    l1a_datasets.extend(
+        hit_l1a.hit_l1a(
+            imap_module_directory / "tests/hit/test_data/sci_sample.ccsds", "001"
+        )
+    )
     for dataset in l1a_datasets:
         data_dict[dataset.attrs["Logical_source"]] = dataset
     return data_dict
 
 
 @pytest.fixture()
-def hk_dataset(dependencies):
+def l1b_hk_dataset(dependencies):
     """Get the housekeeping dataset"""
     datasets = hit_l1b.hit_l1b(dependencies, "001")
     for dataset in datasets:
@@ -36,7 +53,74 @@ def hk_dataset(dependencies):
             return dataset
 
 
-def test_hit_l1b_hk_dataset_variables(hk_dataset):
+@pytest.fixture()
+def l1b_standard_rates_dataset(dependencies):
+    """Get the standard rates dataset"""
+    datasets = hit_l1b.hit_l1b(dependencies, "001")
+    for dataset in datasets:
+        if dataset.attrs["Logical_source"] == "imap_hit_l1b_standard-rates":
+            return dataset
+
+
+@pytest.fixture()
+def l1a_counts_dataset(sci_packet_filepath):
+    """Get L1A counts dataset to test l1b processing functions"""
+    l1a_datasets = hit_l1a.hit_l1a(sci_packet_filepath, "001")
+    for dataset in l1a_datasets:
+        if dataset.attrs["Logical_source"] == "imap_hit_l1a_count-rates":
+            return dataset
+
+
+def test_process_standard_rates_data(l1a_counts_dataset):
+    """Test function for processing standard rates data"""
+    l1b_standard_rates_dataset = hit_l1b.process_standard_rates_data(l1a_counts_dataset)
+
+    # Check that a xarray dataset with the correct logical source is returned
+    assert isinstance(l1b_standard_rates_dataset, xr.Dataset)
+
+    # Define the data variables that should be present in the dataset
+    valid_data_vars = {
+        "sngrates",
+        "coinrates",
+        "pbufrates",
+        "l2fgrates",
+        "l2bgrates",
+        "l3fgrates",
+        "l3bgrates",
+        "penfgrates",
+        "penbgrates",
+        "ialirtrates",
+        "l4fgrates",
+        "l4bgrates",
+    }
+
+    valid_coords = [
+        "epoch",
+        "gain",
+        "sngrates_index",
+        "coinrates_index",
+        "pbufrates_index",
+        "l2fgrates_index",
+        "l2bgrates_index",
+        "l3fgrates_index",
+        "l3bgrates_index",
+        "penfgrates_index",
+        "penbgrates_index",
+        "ialirtrates_index",
+        "l4fgrates_index",
+        "l4bgrates_index",
+    ]
+
+    # Check that the dataset has the correct variables
+    assert valid_data_vars == set(
+        l1b_standard_rates_dataset.data_vars.keys()
+    ), "Data variables mismatch"
+    assert valid_coords == list(
+        l1b_standard_rates_dataset.coords
+    ), "Coordinates mismatch"
+
+
+def test_hit_l1b_hk_dataset_variables(l1b_hk_dataset):
     """Test the variables in the housekeeping dataset"""
     # Define the keys that should have dropped from the housekeeping dataset
     dropped_keys = {
@@ -113,60 +197,17 @@ def test_hit_l1b_hk_dataset_variables(hk_dataset):
         "mode",
     }
     # Check that the dataset has the correct variables
-    assert valid_keys == set(hk_dataset.data_vars.keys())
-    assert set(dropped_keys).isdisjoint(set(hk_dataset.data_vars.keys()))
-
-
-def test_hit_l1b_hk_dataset_attributes(hk_dataset):
-    """Test the attributes, dims, and coords in the housekeeping dataset"""
-    # TODO consider removing this test since it may be hard to upkeep if
-    #  attributes change
-    # Define the housekeeping dataset attributes
-    dataset_attrs = {
-        "Acknowledgement": "Please acknowledge the IMAP Mission Principal "
-        "Investigator, Prof. David J. McComas of Princeton "
-        "University.\n",
-        "Data_level": "1B",
-        "Data_type": "L1B_HK>Level-1B Housekeeping",
-        "Data_version": "001",
-        "Descriptor": "HIT>IMAP High-energy Ion Telescope",
-        "Discipline": "Solar Physics>Heliospheric Physics",
-        "File_naming_convention": "source_descriptor_datatype_yyyyMMdd_vNNN",
-        "HTTP_LINK": "https://imap.princeton.edu/",
-        "Instrument_type": "Particles (space)",
-        "LINK_TITLE": "IMAP The Interstellar Mapping and Acceleration Probe",
-        "Logical_file_id": None,
-        "Logical_source": "imap_hit_l1b_hk",
-        "Logical_source_description": "IMAP Mission HIT Instrument Level-1B "
-        "Housekeeping Data.",
-        "Mission_group": "IMAP",
-        "PI_affiliation": "Princeton University",
-        "PI_name": "Prof. David J. McComas",
-        "Project": "STP>Solar Terrestrial Probes",
-        "Rules_of_use": "All IMAP data products are publicly released and citable for "
-        "use in publications. Please consult the IMAP team "
-        "publications and personnel for further details on "
-        "production, processing, and usage of these data.\n",
-        "Source_name": "IMAP>Interstellar Mapping and Acceleration Probe",
-        "TEXT": "The High-energy Ion Telescope (HIT) measures the elemental "
-        "composition, energy spectra, angle distributions, and arrival "
-        "times of high-energy ions. HIT delivers full-sky coverage from "
-        "a wide instrument field-of-view (FOV) to enable a high resolution "
-        "of ion measurements, such as observing shock-accelerated ions, "
-        "determining the origin of the solar energetic particles (SEPs) "
-        "spectra, and resolving particle transport in the heliosphere. "
-        "See https://imap.princeton.edu/instruments/hit for more details.\n",
-    }
+    assert valid_keys == set(l1b_hk_dataset.data_vars.keys())
+    assert set(dropped_keys).isdisjoint(set(l1b_hk_dataset.data_vars.keys()))
 
     # Define the coordinates and dimensions. Both have equivalent values
     dataset_coords_dims = {"epoch", "adc_channels", "adc_channels_label"}
 
-    # Check that the dataset has the correct attributes, coordinates, and dimensions
-    assert hk_dataset.attrs == dataset_attrs
-    assert hk_dataset.coords.keys() == dataset_coords_dims
+    # Check that the dataset has the correct coordinates, and dimensions
+    assert l1b_hk_dataset.coords.keys() == dataset_coords_dims
 
 
-def test_validate_l1b_housekeeping_data(hk_dataset):
+def test_validate_l1b_hk_data(l1b_hk_dataset):
     """Validate the housekeeping dataset created by the L1B processing.
 
     Parameters
@@ -214,7 +255,7 @@ def test_validate_l1b_housekeeping_data(hk_dataset):
     }
 
     # Check that dropped variables are not in the dataset
-    assert set(dropped_fields).isdisjoint(set(hk_dataset.data_vars.keys()))
+    assert set(dropped_fields).isdisjoint(set(l1b_hk_dataset.data_vars.keys()))
 
     # TODO: uncomment block after new validation data is provided
     # Define the keys that should be ignored in the validation
@@ -254,6 +295,8 @@ def test_hit_l1b(dependencies):
     # TODO: update assertions after science data processing is completed
     datasets = hit_l1b.hit_l1b(dependencies, "001")
 
-    assert len(datasets) == 1
-    assert isinstance(datasets[0], xr.Dataset)
+    assert len(datasets) == 2
+    for dataset in datasets:
+        assert isinstance(dataset, xr.Dataset)
     assert datasets[0].attrs["Logical_source"] == "imap_hit_l1b_hk"
+    assert datasets[1].attrs["Logical_source"] == "imap_hit_l1b_standard-rates"
