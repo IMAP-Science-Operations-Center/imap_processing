@@ -56,6 +56,7 @@ def l1b_hk_dataset(dependencies):
 @pytest.fixture()
 def l1b_standard_rates_dataset(dependencies):
     """Get the standard rates dataset"""
+    # TODO: use this fixture in future unit test to validate the standard rates dataset
     datasets = hit_l1b.hit_l1b(dependencies, "001")
     for dataset in datasets:
         if dataset.attrs["Logical_source"] == "imap_hit_l1b_standard-rates":
