@@ -537,8 +537,8 @@ def basis_vectors(
     Examples
     --------
     >>> from imap_processing.spice.geometry import basis_vectors
-    ... from imap_processing.spice.time import j2000ns_to_j2000s
-    ... et = j2000ns_to_j2000s(dataset.epoch.values)
+    ... from imap_processing.spice.time import tt_ns_to_et
+    ... et = tt_ns_to_et(dataset.epoch.values)
     ... basis_vectors = basis_vectors(
     ...     et, SpiceFrame.IMAP_SPACECRAFT, SpiceFrame.ECLIPJ2000
     ... )
