@@ -10,9 +10,8 @@ import numpy as np
 import xarray as xr
 from numpy.typing import NDArray
 
-from imap_processing.ena_maps import map_utils
+from imap_processing.ena_maps.utils import map_utils, spatial_utils
 from imap_processing.spice import geometry
-from imap_processing.ultra.utils import spatial_utils
 
 logger = logging.getLogger(__name__)
 

@@ -150,15 +150,20 @@ class TestRectangularMap:
         np.testing.assert_equal(rm.num_points, int(360 * 180 / 4))
 
     @pytest.mark.usefixtures("_setup_ultra_l1c_pset_products")
+    @pytest.mark.parametrize("map_spacing_deg", [2, 5, 10])
+    @pytest.mark.parametrize("ravel_order", ["C", "F"])
     @mock.patch("imap_processing.spice.geometry.frame_transform_az_el")
-    def test_match_pset_coords_to_indices_push_method(self, mock_frame_transform_az_el):
+    def test_match_pset_coords_to_indices_push_method(
+        self, mock_frame_transform_az_el, map_spacing_deg, ravel_order
+    ):
         """Test matching PSET coordinates to map indices using the "push" method"""
 
-        # Mock frame_transform to return the az and el, shifted by 0.1 radians
+        # Mock frame_transform to return the az and el, shifted by +13 degrees for luck
         def rotate_az_el_slightly(az_el):
-            # az_el[:, 0] += 0.001
-            # az_el[:, 0] = az_el[:, 0] % (2 * np.pi)
-            # az_el[:, 1] = ((az_el[:, 1] + (np.pi / 2)) % np.pi) - (np.pi / 2)
+            az_el += np.deg2rad(13)
+            # Wrap az to [0, 2*pi) and el to [-pi/2, pi/2) radians
+            az_el[:, 0] = az_el[:, 0] % (2 * np.pi)
+            az_el[:, 1] = ((az_el[:, 1] + (np.pi / 2)) % np.pi) - (np.pi / 2)
             return az_el
 
         mock_frame_transform_az_el.side_effect = (
@@ -167,11 +172,10 @@ class TestRectangularMap:
             )
         )
         rm = ena_maps.RectangularMap(
-            spacing_deg=10,
+            spacing_deg=map_spacing_deg,
             spice_frame=geometry.SpiceFrame.ECLIPJ2000,
-            order="C",
+            order=ravel_order,
         )
-        # orig_pset_az_el = self.ultra_psets[0].az_el_points
         # Find the indices of the map that match the PSET's az and el coordinates
         matched_indices = rm.match_pset_coords_to_indices(
             self.ultra_psets[0], ena_maps.IndexMatchMethod.PUSH
@@ -182,5 +186,7 @@ class TestRectangularMap:
         matched_map_az_el = rm.az_el_points[matched_indices]
         rotated_pset_az_el = self.ultra_psets[0].az_el_points
         np.testing.assert_allclose(
-            matched_map_az_el[:, 1], rotated_pset_az_el[:, 1], atol=np.deg2rad(10)
+            matched_map_az_el[:, 1],
+            rotated_pset_az_el[:, 1],
+            atol=np.deg2rad(map_spacing_deg / 2),
         )
