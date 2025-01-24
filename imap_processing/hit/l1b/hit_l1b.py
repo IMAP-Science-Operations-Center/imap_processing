@@ -27,7 +27,7 @@ def hit_l1b(dependencies: dict, data_version: str) -> list[xr.Dataset]:
     ----------
     dependencies : dict
         Dictionary of dependencies that are L1A xarray datasets
-        for science data and a file path string to a CCSDS file
+        for science data and a file path string to an L0 file
         for housekeeping data.
     data_version : str
         Version of the data product being created.
@@ -35,7 +35,7 @@ def hit_l1b(dependencies: dict, data_version: str) -> list[xr.Dataset]:
     Returns
     -------
     processed_data : list[xarray.Dataset]
-        List of L1B datasets. Total of four datasets.
+        List of four L1B datasets.
     """
     # Create the attribute manager for this data level
     attr_mgr = get_attribute_manager(data_version, "l1b")
@@ -71,8 +71,8 @@ def process_science_data(
     Process L1A raw counts data to create L1B science data for
     CDF creation. This function will create three L1B science
     datasets: standard rates, summed rates, and sectored rates.
-    The function will update dataset attributes, coordinates
-    and data variable dimensions according to specifications in
+    It will also update dataset attributes, coordinates and
+    data variable dimensions according to specifications in
     a CDF yaml file.
 
     Parameters
@@ -80,16 +80,16 @@ def process_science_data(
     raw_counts_dataset : xr.Dataset
         The L1A counts dataset.
     attr_mgr : AttributeManager
-        The attribute manager for the data level.
+        The attribute manager for the L1B data level.
 
     Returns
     -------
     dataset : list
-        The processed L1B science datasets.
+        The processed L1B science datasets as xarray datasets.
     """
     logger.info("Creating HIT L1B science datasets")
 
-    # Logical sources for the three l1b science products.
+    # Logical sources for the three L1B science products.
     # TODO: add logical sources for other l1b products once processing functions
     #  are written. "imap_hit_l1b_summed-rates", "imap_hit_l1b_sectored-rates"
     logical_sources = ["imap_hit_l1b_standard-rates"]
@@ -171,7 +171,7 @@ def process_standard_rates_data(raw_counts_dataset: xr.Dataset) -> xr.Dataset:
         {coord: raw_counts_dataset.coords[coord] for coord in coords}
     )
 
-    # Define list of fields from the raw_counts_dataset to calculate standard rates
+    # Define fields from the raw_counts_dataset to calculate standard rates from
     standard_rate_fields = [
         "sngrates",
         "coinrates",
