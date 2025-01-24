@@ -10,7 +10,11 @@ from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.glows.l0.decom_glows import decom_packets
 from imap_processing.glows.l0.glows_l0_data import DirectEventL0, HistogramL0
 from imap_processing.glows.l1a.glows_l1a_data import DirectEventL1A, HistogramL1A
-from imap_processing.spice.time import J2000_EPOCH, met_to_j2000ns
+from imap_processing.glows.l1b.glows_l1b_data import HistogramL1B
+from imap_processing.spice.time import (
+    met_to_datetime64,
+    met_to_j2000ns,
+)
 
 
 def create_glows_attr_obj(data_version: str) -> ImapCdfAttributes:
@@ -66,17 +70,20 @@ def glows_l1a(packet_filepath: Path, data_version: str) -> list[xr.Dataset]:
     # Create dictionaries to group data by day
     de_by_day = process_de_l0(de_l0)
     hists_by_day = defaultdict(list)
+    # Assume the observational day starts with the first packet, then find any new
+    # observation days.
+    # TODO: replace determine_observational_day with spin table API
+    obs_days = [hist_l0[0].SEC]
+    obs_days += determine_observational_day(hist_l0)
 
-    obs_days = determine_observational_day(hist_l0)
-
-    # TODO: Make this its own function?
     for hist in hist_l0:
         hist_l1a = HistogramL1A(hist)
-        # Split by IMAP start time
-        # TODO: Should be by observational day
-        # hist_day = (J2000_EPOCH + met_to_j2000ns(hist.SEC)).astype("datetime64[D]")
-        # hists_by_day[hist_day].append(hist_l1a)
-        hists_by_day[0].append(hist_l1a)
+        # Determine the day the histogram belongs to. This finds the observation
+        # day in obs_day that is nearest the histogram timestamp without going over.
+        hist_day = next(
+            (day for day in reversed(obs_days) if day <= hist.SEC), obs_days[-1]
+        )
+        hists_by_day[hist_day].append(hist_l1a)
 
     # Generate CDF files for each day
     output_datasets = []
@@ -108,12 +115,17 @@ def determine_observational_day(hist_l0: list[HistogramL0]) -> list:
     list
         List of start times for each observational day.
     """
+    prev_is_night = -1
+    obs_day_change = []
     for hist in hist_l0:
-        flags = hist.FLAGS
-        print(type(flags))
-        print(f"Flags: {format(flags, '016b')}")
+        flags = HistogramL1B.deserialize_flags(hist.FLAGS)
+        is_night = flags[6]
+        if prev_is_night and not is_night:
+            obs_day_change.append(hist.SEC)
 
-    return []
+        prev_is_night = is_night
+
+    return obs_day_change
 
 
 def process_de_l0(
@@ -139,7 +151,7 @@ def process_de_l0(
     de_by_day = dict()
 
     for de in de_l0:
-        de_day = (J2000_EPOCH + met_to_j2000ns(de.MET)).astype("datetime64[D]")
+        de_day = (met_to_datetime64(de.MET)).astype("datetime64[D]")
         if de_day not in de_by_day:
             de_by_day[de_day] = [DirectEventL1A(de)]
         # Putting not first data int o last direct event list.
@@ -343,7 +355,7 @@ def generate_histogram_dataset(
         Dataset containing the GLOWS L1A histogram CDF output.
     """
     # Store timestamps for each HistogramL1A object.
-    time_data = np.zeros(len(hist_l1a_list), dtype="datetime64[ns]")
+    time_data = np.zeros(len(hist_l1a_list), dtype="int64")
     # TODO Add daily average of histogram counts
     # TODO compute average temperature etc
     # Data in lists, for each of the 25 time varying datapoints in HistogramL1A

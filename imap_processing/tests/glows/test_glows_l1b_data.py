@@ -10,6 +10,7 @@ from imap_processing.glows.l1b.glows_l1b_data import (
     DirectEventL1B,
     HistogramL1B,
 )
+from imap_processing.spice.time import met_to_j2000ns
 
 
 def test_glows_l1b_ancillary_file():
@@ -79,9 +80,8 @@ def test_glows_l1b_de():
 
 
 def test_validation_data_histogram(l1a_dataset):
-    hist_day_one = l1a_dataset[0]
-
-    l1b = glows_l1b(hist_day_one, "v001")
+    l1b = [glows_l1b(l1a_dataset[0], "v001"), glows_l1b(l1a_dataset[1], "v001")]
+    end_time = l1b[0]["epoch"].data[-1]
 
     validation_data = (
         Path(__file__).parent
@@ -124,27 +124,30 @@ def test_validation_data_histogram(l1a_dataset):
         # "spacecraft_velocity_std_dev": "spacecraft_velocity_std_dev",
     }
 
-    for index, validation_output in enumerate(out["output"]):
+    for validation_output in out["output"]:
+        epoch_val = met_to_j2000ns(validation_output["imap_start_time"])
+
+        # Validation data spans the two obs days, so this selects the correct output
+        dataset_index = 1 if epoch_val > end_time else 0
+        datapoint = l1b[dataset_index].sel(epoch=epoch_val)
+
         assert np.equal(
             validation_output["imap_start_time"],
-            l1b.isel(epoch=index).imap_start_time.data,
+            datapoint.imap_start_time.data,
         )
 
         for key in validation_output:
             if key not in expected_matching_columns.keys():
                 continue
-
             np.testing.assert_array_almost_equal(
-                l1b[expected_matching_columns[key]].isel(epoch=index).data,
+                datapoint[expected_matching_columns[key]].data,
                 validation_output[key],
                 decimal=1,
             )
 
-    assert len(out["output"]) == len(l1b.epoch)
-
 
 def test_validation_data_de(l1a_dataset):
-    de_data = l1a_dataset[1]
+    de_data = l1a_dataset[2]
 
     l1b = glows_l1b(de_data, "v001")
     validation_data = (
