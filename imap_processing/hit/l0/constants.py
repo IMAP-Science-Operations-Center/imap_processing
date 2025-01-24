@@ -92,7 +92,7 @@ COUNTS_DATA_STRUCTURE = {
     # -------------------------------------------
     # other count rates
     "coinrates": HITPacking(16, 416, (26,)),  # coincidence rates
-    "bufrates": HITPacking(16, 512, (32,)),  # priority buffer rates
+    "pbufrates": HITPacking(16, 512, (32,)),  # priority buffer rates
     "l2fgrates": HITPacking(16, 2112, (132,)),  # range 2 foreground rates
     "l2bgrates": HITPacking(16, 192, (12,)),  # range 2 background rates
     "l3fgrates": HITPacking(16, 2672, (167,)),  # range 3 foreground rates

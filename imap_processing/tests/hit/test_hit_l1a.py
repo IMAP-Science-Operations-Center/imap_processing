@@ -265,7 +265,7 @@ def test_validate_l1a_counts_data(sci_packet_filepath):
 
     rate_columns = {
         "coinrates": "COINRATES_",
-        "bufrates": "BUFRATES_",
+        "pbufrates": "BUFRATES_",
         "l2fgrates": "L2FGRATES_",
         "l2bgrates": "L2BGRATES_",
         "l3fgrates": "L3FGRATES_",
