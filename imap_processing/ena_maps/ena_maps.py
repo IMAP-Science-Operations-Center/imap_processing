@@ -201,8 +201,8 @@ class UltraPointingSet(PointingSet):
         )
         self.num_points = self.az_el_points.shape[0]
 
-        # Must also store the bin edges for the pointing set to allow for "pull" method
-        # of index matching
+        # Also store the bin edges for the pointing set to allow for "pull" method
+        # of index matching (not yet implemented)
         self.az_bin_edges = az_bin_edges_input
         self.el_bin_edges = el_bin_edges_input
 
