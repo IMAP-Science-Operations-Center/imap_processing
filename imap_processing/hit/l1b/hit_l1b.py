@@ -41,35 +41,39 @@ def hit_l1b(dependencies: dict, data_version: str) -> list[xr.Dataset]:
     attr_mgr = get_attribute_manager(data_version, "l1b")
 
     # Create L1B datasets
-    datasets: list = []
+    l1b_datasets: list = []
     if "imap_hit_l0_raw" in dependencies:
         # Unpack ccsds file to xarray datasets
         packet_file = dependencies["imap_hit_l0_raw"]
         datasets_by_apid = get_datasets_by_apid(packet_file, derived=True)
-        # Process housekeeping to l1b.
-        datasets.append(
+        # Process housekeeping to L1B.
+        l1b_datasets.append(
             process_housekeeping_data(
                 datasets_by_apid[HitAPID.HIT_HSKP], attr_mgr, "imap_hit_l1b_hk"
             )
         )
         logger.info("HIT L1B housekeeping dataset created")
     if "imap_hit_l1a_count-rates" in dependencies:
-        # Process science data to L1B
+        # Process science data to L1B datasets
         l1a_counts_dataset = dependencies["imap_hit_l1a_count-rates"]
-        # Process standard rates
-        datasets.append(process_standard_rates_data(l1a_counts_dataset, attr_mgr))
-        # TODO: Process summed rates
-        # TODO: Process sectored rates
-        pass
+        l1b_datasets.extend(process_science_data(l1a_counts_dataset, attr_mgr))
+        logger.info("HIT L1B science datasets created")
 
-    return datasets
+    return l1b_datasets
 
 
-def process_standard_rates_data(
+def process_science_data(
     raw_counts_dataset: xr.Dataset, attr_mgr: ImapCdfAttributes
-) -> xr.Dataset:
+) -> list[xr.Dataset]:
     """
-    Will process L1B standard rates data from raw L1A counts data.
+    Will create L1B science datasets for CDF products.
+
+    Process L1A raw counts data to create L1B science data for
+    CDF creation. This function will create three L1B science
+    datasets: standard rates, summed rates, and sectored rates.
+    The function will update dataset attributes, coordinates
+    and data variable dimensions according to specifications in
+    a CDF yaml file.
 
     Parameters
     ----------
@@ -77,6 +81,68 @@ def process_standard_rates_data(
         The L1A counts dataset.
     attr_mgr : AttributeManager
         The attribute manager for the data level.
+
+    Returns
+    -------
+    dataset : list
+        The processed L1B science datasets.
+    """
+    logger.info("Creating HIT L1B science datasets")
+
+    # Logical sources for the three l1b science products.
+    # TODO: add logical sources for other l1b products once processing functions
+    #  are written. "imap_hit_l1b_summed-rates", "imap_hit_l1b_sectored-rates"
+    logical_sources = ["imap_hit_l1b_standard-rates"]
+
+    # TODO: Write functions to create the following datasets
+    #  Process summed rates dataset
+    #  Process sectored rates dataset
+
+    # Create a standard rates dataset
+    standard_rates_dataset = process_standard_rates_data(raw_counts_dataset)
+
+    l1b_science_datasets = []
+    # Update attributes and dimensions
+    for dataset, logical_source in zip([standard_rates_dataset], logical_sources):
+        dataset.attrs = attr_mgr.get_global_attributes(logical_source)
+
+        # TODO: Add CDF attributes to yaml once they're defined for L1B science data
+        # Assign attributes and dimensions to each data array in the Dataset
+        for field in dataset.data_vars.keys():
+            try:
+                # Create a dict of dimensions using the DEPEND_I keys in the
+                # attributes
+                dims = {
+                    key: value
+                    for key, value in attr_mgr.get_variable_attributes(field).items()
+                    if "DEPEND" in key
+                }
+                dataset[field].attrs = attr_mgr.get_variable_attributes(field)
+                dataset[field].assign_coords(dims)
+            except KeyError:
+                print(f"Field {field} not found in attribute manager.")
+                logger.warning(f"Field {field} not found in attribute manager.")
+
+        dataset.epoch.attrs = attr_mgr.get_variable_attributes("epoch")
+        # Remove DEPEND_0 attribute from epoch variable added by attr_mgr.
+        # Not required for epoch
+        del dataset["epoch"].attrs["DEPEND_0"]
+
+        l1b_science_datasets.append(dataset)
+
+        logger.info(f"HIT L1B dataset created for {logical_source}")
+
+    return l1b_science_datasets
+
+
+def process_standard_rates_data(raw_counts_dataset: xr.Dataset) -> xr.Dataset:
+    """
+    Will process L1B standard rates data from raw L1A counts data.
+
+    Parameters
+    ----------
+    raw_counts_dataset : xr.Dataset
+        The L1A counts dataset.
 
     Returns
     -------
@@ -132,5 +198,5 @@ def process_standard_rates_data(
             base_var in var for base_var in standard_rate_fields
         ):
             l1b_standard_rates_dataset[var] = raw_counts_dataset[var] / livetime
-    raw_counts_dataset.attrs.update(attr_mgr.get_attrs("imap_hit_l1b_standard-rates"))
+
     return l1b_standard_rates_dataset
