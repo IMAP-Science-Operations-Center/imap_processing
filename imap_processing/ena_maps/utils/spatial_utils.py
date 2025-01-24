@@ -100,6 +100,7 @@ def build_az_el_grid(  # noqa: PLR0913
     output_degrees: bool = False,
     centered_azimuth: bool = False,
     centered_elevation: bool = True,
+    reversed_elevation: bool = False,
 ) -> tuple[NDArray, NDArray, NDArray, NDArray, NDArray, NDArray]:
     """
     Build a 2D grid of azimuth and elevation angles, and their 1D bin edges.
