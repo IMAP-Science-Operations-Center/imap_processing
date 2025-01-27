@@ -478,6 +478,7 @@ def organize_spin_data(dataset: xr.Dataset) -> xr.Dataset:
         )
         # Assign the combined data back to the dataset
         dataset[spin_field] = combined_spin_data.transpose()
+        # Drop the individual spin data fields
         dataset = dataset.drop_vars(packet_fields)
 
     print(dataset.data_vars)
