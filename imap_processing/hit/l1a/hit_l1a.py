@@ -228,10 +228,11 @@ def process_science(
                 print(f"Field {field} not found in attribute manager.")
                 logger.warning(f"Field {field} not found in attribute manager.")
 
-        dataset.epoch.attrs = attr_mgr.get_variable_attributes("epoch")
-        # Remove DEPEND_0 attribute from epoch variable added by attr_mgr.
-        # Not required for epoch
-        del dataset["epoch"].attrs["DEPEND_0"]
+        # Skip schema check for epoch to prevent attr_mgr from adding the
+        # DEPEND_0 attribute which isn't required for epoch
+        dataset.epoch.attrs = attr_mgr.get_variable_attributes(
+            "epoch", check_schema=False
+        )
 
         datasets.append(dataset)
 
