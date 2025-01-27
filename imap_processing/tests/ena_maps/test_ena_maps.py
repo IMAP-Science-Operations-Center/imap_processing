@@ -120,11 +120,12 @@ class TestRectangularMap:
         """Setup fixture data as class attributes"""
         self.l1c_spatial_bin_spacing_deg = l1c_pset_products["spacing"]
         self.l1c_pset_products = l1c_pset_products["products"]
+        self.pset_order = "C"
         self.ultra_psets = [
             ena_maps.UltraPointingSet(
                 reference_frame=geometry.SpiceFrame.IMAP_DPS,
                 l1c_dataset=l1c_product,
-                order="C",
+                order=self.pset_order,
             )
             for l1c_product in self.l1c_pset_products
         ]
@@ -134,7 +135,7 @@ class TestRectangularMap:
         rm = ena_maps.RectangularMap(
             spacing_deg=2,
             spice_frame=geometry.SpiceFrame.ECLIPJ2000,
-            order="C",
+            order=self.pset_order,
         )
 
         # Check that the map is empty
@@ -144,7 +145,7 @@ class TestRectangularMap:
         assert rm.reference_frame == geometry.SpiceFrame.ECLIPJ2000
 
         # Check that the order is correctly set
-        assert rm.order == "C"
+        assert rm.order == self.pset_order
 
         # Check the number of points is (360/2) * (180/2)
         np.testing.assert_equal(rm.num_points, int(360 * 180 / 4))
@@ -156,7 +157,11 @@ class TestRectangularMap:
     def test_match_pset_coords_to_indices_push_method(
         self, mock_frame_transform_az_el, map_spacing_deg, ravel_order
     ):
-        """Test matching PSET coordinates to map indices using the "push" method"""
+        """
+        Test matching PSET coordinates to RectangularMap indices using "push" method.
+
+        Parameterize by map_spacing_deg and ravel_order.
+        """
 
         # Mock frame_transform to return the az and el, shifted by +13 degrees for luck
         def rotate_az_el_slightly(az_el):
@@ -171,22 +176,71 @@ class TestRectangularMap:
                 az_el
             )
         )
-        rm = ena_maps.RectangularMap(
+        rectangular_map = ena_maps.RectangularMap(
             spacing_deg=map_spacing_deg,
             spice_frame=geometry.SpiceFrame.ECLIPJ2000,
             order=ravel_order,
         )
         # Find the indices of the map that match the PSET's az and el coordinates
-        matched_indices = rm.match_pset_coords_to_indices(
+        matched_indices = rectangular_map.match_pset_coords_to_indices(
             self.ultra_psets[0], ena_maps.IndexMatchMethod.PUSH
         )
 
         # The found az and el points should be the same as the input az and el points
         # to within the spacing of the map
-        matched_map_az_el = rm.az_el_points[matched_indices]
+        matched_map_az_el = rectangular_map.az_el_points[matched_indices]
         rotated_pset_az_el = self.ultra_psets[0].az_el_points
         np.testing.assert_allclose(
             matched_map_az_el[:, 1],
             rotated_pset_az_el[:, 1],
             atol=np.deg2rad(map_spacing_deg / 2),
+        )
+
+    @pytest.mark.usefixtures("_setup_ultra_l1c_pset_products")
+    @mock.patch("imap_processing.spice.geometry.frame_transform_az_el")
+    def test_project_pset_values_to_map_push_method(self, mock_frame_transform_az_el):
+        """
+        Test projection of PSET values to RectangularMap w "push" index matching method.
+
+        If frame_transform_az_el is mocked to return the az and el unchanged, and the
+        map has the same spacing as the PSETs, then the map should have the same values
+        as the PSETs, summed.
+        """
+        index_matching_method = ena_maps.IndexMatchMethod.PUSH
+
+        pset_ravel_order = self.pset_order
+        pset_spacing_deg = self.ultra_psets[0].spacing_deg
+
+        # Mock frame_transform to return the az and el unchanged
+        mock_frame_transform_az_el.side_effect = (
+            lambda et, az_el, from_frame, to_frame, degrees: az_el
+        )
+
+        rectangular_map = ena_maps.RectangularMap(
+            spacing_deg=pset_spacing_deg,
+            spice_frame=geometry.SpiceFrame.ECLIPJ2000,
+            order=pset_ravel_order,
+        )
+
+        # Project each PSET's values to the map
+        for ultra_pset in self.ultra_psets:
+            rectangular_map.project_pset_values_to_map(
+                ultra_pset,
+                value_keys=[
+                    ("counts", index_matching_method),
+                    ("exposure_time", index_matching_method),
+                ],
+            )
+
+        # Check that the map has been updated
+        assert rectangular_map.data_dict != {}
+
+        # Check that the map has the same values as the PSETs, summed
+        simple_summed_pset_counts = np.sum(
+            [pset["counts"].values for pset in self.l1c_pset_products], axis=0
+        ).reshape(rectangular_map.data_dict["counts"].shape, order=pset_ravel_order)
+
+        np.testing.assert_allclose(
+            rectangular_map.data_dict["counts"],
+            simple_summed_pset_counts,
         )
