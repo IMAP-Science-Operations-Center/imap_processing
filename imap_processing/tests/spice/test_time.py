@@ -11,11 +11,11 @@ from imap_processing.spice.time import (
     et_to_utc,
     met_to_datetime64,
     met_to_sclkticks,
-    met_to_tt_ns,
+    met_to_ttj2000ns,
     met_to_utc,
-    sct_to_tt,
+    sct_to_ttj2000s,
     str_to_et,
-    tt_ns_to_et,
+    ttj2000ns_to_et,
 )
 
 
@@ -28,8 +28,8 @@ def test_met_to_sclkticks(met):
     np.testing.assert_array_equal(ticks, expected)
 
 
-def test_met_to_tt_ns(furnish_time_kernels):
-    """Test coverage for met_to_tt_ns function."""
+def test_met_to_ttj2000ns(furnish_time_kernels):
+    """Test coverage for met_to_ttj2000ns function."""
     utc = "2026-01-01T00:00:00.125"
     et = spiceypy.str2et(utc)
     spicey_tt = spiceypy.unitim(et, "ET", "TT")
@@ -41,26 +41,26 @@ def test_met_to_tt_ns(furnish_time_kernels):
         spiceypy.sct2e(IMAP_SC_ID, 1e12) - spiceypy.sct2e(IMAP_SC_ID, 0)
     ) / 1e12
     met = float(seconds) + float(ticks) * spice_tick_duration
-    tt = met_to_tt_ns(met)
+    tt = met_to_ttj2000ns(met)
     assert tt.dtype == np.int64
     np.testing.assert_array_equal(tt, np.array(spicey_tt * 1e9))
 
 
-def test_tt_ns_to_et(furnish_time_kernels):
-    """Test coverage for tt_ns_to_et function."""
+def test_ttj2000ns_to_et(furnish_time_kernels):
+    """Test coverage for ttj2000ns_to_et function."""
     # Use spice to come up with reasonable J2000 values
     utc = "2025-09-23T00:00:00.000"
     # Test single value input
     et = spiceypy.str2et(utc)
     epoch = int(spiceypy.unitim(et, "ET", "TT") * 1e9)
-    j2000s = tt_ns_to_et(epoch)
+    j2000s = ttj2000ns_to_et(epoch)
     assert j2000s == et
     # Test array input
     ets = np.arange(et, et + 10000, 100)
     epoch = np.array([spiceypy.unitim(et, "ET", "TT") * 1e9 for et in ets]).astype(
         np.int64
     )
-    j2000s = tt_ns_to_et(epoch)
+    j2000s = ttj2000ns_to_et(epoch)
     np.testing.assert_array_equal(j2000s, ets)
 
 
@@ -130,9 +130,9 @@ def test_sct2e_wrapper(sclk_ticks):
 
 
 @pytest.mark.parametrize("sclk_ticks", [0.0, np.arange(10)])
-def test_sct_to_tt(sclk_ticks):
-    """Test for `sct_to_tt` function."""
-    tt = sct_to_tt(sclk_ticks)
+def test_sct_to_ttj2000s(sclk_ticks):
+    """Test for `sct_to_ttj2000s` function."""
+    tt = sct_to_ttj2000s(sclk_ticks)
     if isinstance(sclk_ticks, float):
         assert isinstance(tt, float)
     else:
