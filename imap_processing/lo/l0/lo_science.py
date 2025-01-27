@@ -445,10 +445,14 @@ def organize_spin_data(dataset: xr.Dataset) -> xr.Dataset:
     """
     Organize the spin data for Lo.
 
+    The spin data is spread across 28 fields. This function
+    combines each of those fields into 2D arrays for each
+    epoch and spin.
+
     Parameters
     ----------
     dataset : xr.Dataset
-        Lo science direct events from packets_to_dataset function.
+        Lo spin data from packets_to_dataset function.
 
     Returns
     -------
