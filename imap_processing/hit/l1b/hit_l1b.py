@@ -172,6 +172,11 @@ def process_standard_rates_data(raw_counts_dataset: xr.Dataset) -> xr.Dataset:
         {coord: raw_counts_dataset.coords[coord] for coord in coords}
     )
 
+    # Add dynamic threshold field
+    l1b_standard_rates_dataset["dynamic_threshold_state"] = raw_counts_dataset[
+        "hdr_dynamic_threshold_state"
+    ]
+
     # Define fields from the raw_counts_dataset to calculate standard rates from
     standard_rate_fields = [
         "sngrates",

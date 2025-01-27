@@ -93,6 +93,7 @@ def test_process_standard_rates_data(l1a_counts_dataset):
         "ialirtrates",
         "l4fgrates",
         "l4bgrates",
+        "dynamic_threshold_state",
     }
 
     valid_coords = [
