@@ -60,7 +60,11 @@ def lo_l1a(dependency: Path, data_version: str) -> list[xr.Dataset]:
         )
         logical_source = "imap_lo_l1a_spin"
         datasets_by_apid[LoAPID.ILO_SPIN] = organize_spin_data(
-            datasets_by_apid[LoAPID.ILO_SPIN]
+            datasets_by_apid[LoAPID.ILO_SPIN], attr_mgr
+        )
+
+        datasets_by_apid[LoAPID.ILO_SPIN] = add_dataset_attrs(
+            datasets_by_apid[LoAPID.ILO_SPIN], attr_mgr, logical_source
         )
     if LoAPID.ILO_SCI_CNT in datasets_by_apid:
         logger.info(
@@ -126,8 +130,36 @@ def add_dataset_attrs(
         Data with attributes added.
     """
     # TODO: may want up split up these if statements into their
-    # own functions
-    if logical_source == "imap_lo_l1a_histogram":
+    #  own functions
+    if logical_source == "imap_lo_l1a_spin":
+        spin = xr.DataArray(
+            data=np.arange(0, 29, dtype=np.uint8),
+            name="spin",
+            dims=["spin"],
+            attrs=attr_mgr.get_variable_attributes("spin"),
+        )
+        spin_label = xr.DataArray(
+            data=spin.values.astype(str),
+            name="spin_label",
+            dims=["spin_label"],
+            attrs=attr_mgr.get_variable_attributes("spin_label"),
+        )
+
+        dataset = dataset.assign_coords(spin=spin, spin_label=spin_label)
+        dataset.attrs.update(attr_mgr.get_global_attributes(logical_source))
+        dataset = dataset.drop_vars(
+            [
+                "version",
+                "type",
+                "sec_hdr_flg",
+                "pkt_apid",
+                "seq_flgs",
+                "src_seq_ctr",
+                "pkt_len",
+            ]
+        )
+
+    elif logical_source == "imap_lo_l1a_histogram":
         # Create coordinates for the dataset
         azimuth_60 = xr.DataArray(
             data=np.arange(0, 6, dtype=np.uint8),
