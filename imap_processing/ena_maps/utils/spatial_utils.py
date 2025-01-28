@@ -170,6 +170,11 @@ class AzElSkyGrid:
         Whether the elevation grid should be reversed, by default False.
         If False, the elevation grid will be from -pi/2 to pi/2 radians (-90 to 90 deg).
         If True, the elevation grid will be from pi/2 to -pi/2 radians (90 to -90 deg).
+
+    Raises
+    ------
+    ValueError
+        If the spacing is not positive or does not divide evenly into pi radians.
     """
 
     def __init__(
