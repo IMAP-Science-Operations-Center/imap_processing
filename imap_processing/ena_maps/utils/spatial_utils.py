@@ -13,7 +13,7 @@ def build_spatial_bins(
     el_spacing: float = 0.5,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """
-    Build spatial bin boundaries for azimuth and elevation.
+    Build spatial bin boundaries for azimuth and elevation (input/output angles in deg).
 
     Parameters
     ----------
@@ -25,13 +25,13 @@ def build_spatial_bins(
     Returns
     -------
     az_bin_edges : np.ndarray
-        Array of azimuth bin boundary values.
+        Array of azimuth bin boundary values in degrees.
     el_bin_edges : np.ndarray
-        Array of elevation bin boundary values.
+        Array of elevation bin boundary values in degrees.
     az_bin_midpoints : np.ndarray
-        Array of azimuth bin midpoint values.
+        Array of azimuth bin midpoint values in degrees.
     el_bin_midpoints : np.ndarray
-        Array of elevation bin midpoint values.
+        Array of elevation bin midpoint values in degrees.
     """
     # Azimuth bins from 0 to 360 degrees.
     az_bin_edges = np.arange(0, 360 + az_spacing, az_spacing)
@@ -150,6 +150,10 @@ class AzElSkyGrid:
     """
     Representation of a 2D grid of azimuth and elevation angles covering the sky.
 
+    All angles are stored internally in radians, but can be accessed in degrees, by
+    appending "_degrees" to the attribute name. For example, `spacing` in radians
+    can be accessed as `spacing_degrees` in degrees.
+
     Parameters
     ----------
     spacing_deg : float, optional
@@ -166,110 +170,85 @@ class AzElSkyGrid:
         Whether the elevation grid should be reversed, by default False.
         If False, the elevation grid will be from -pi/2 to pi/2 radians (-90 to 90 deg).
         If True, the elevation grid will be from pi/2 to -pi/2 radians (90 to -90 deg).
-    angular_units : {'deg', 'rad'}, optional
-        The angular units of the grid's values. By default 'deg'.
-        If 'deg', the grid will be in degrees, if 'rad', the grid will be in radians.
     """
 
-    def __init__(  # noqa: PLR0913
+    def __init__(
         self,
         spacing_deg: float = 0.5,
         centered_azimuth: bool = False,
         centered_elevation: bool = True,
         reversed_elevation: bool = False,
-        angular_units: typing.Literal["deg"] | typing.Literal["rad"] = "deg",
     ) -> None:
-        if angular_units not in ("deg", "rad"):
-            raise ValueError("angular_units must be 'deg' or 'rad'.")
-
         # Store grid properties
-        self.angular_units = angular_units
         self.centered_azimuth = centered_azimuth
         self.centered_elevation = centered_elevation
         self.reversed_elevation = reversed_elevation
 
         # Internally, work in radians, regardless of desired output units
         # If angular_units == deg, conversion will be done at the end
-        self.spacing_radians = np.deg2rad(spacing_deg)
+        self.spacing = np.deg2rad(spacing_deg)
 
         # Ensure valid grid spacing (positive, divides evenly into pi radians)
-        if self.spacing_radians <= 0:
+        if self.spacing <= 0:
             raise ValueError("Spacing must be positive valued, non-zero.")
 
-        if not np.isclose((np.pi / self.spacing_radians) % 1, 0):
+        if not np.isclose((np.pi / self.spacing) % 1, 0):
             raise ValueError("Spacing must divide evenly into pi radians.")
 
-        # Create the bin edges for azimuth and elevation.
+        # build_spacial_bins creates the bin edges and centers for azimuth and elevation
         # E.g. for spacing=1, az_bin_edges = [0, 1, 2, ..., 359, 360] deg.
-        self.az_bin_edges = np.linspace(
-            0, 2 * np.pi, int(2 * np.pi / self.spacing_radians) + 1
-        )
-        self.el_bin_edges = np.linspace(  # [-90, -89, ..., 89, 90] deg.
-            -np.pi / 2, np.pi / 2, int(np.pi / self.spacing_radians) + 1
+        (az_bin_edges, el_bin_edges, az_bin_midpoints, el_bin_midpoints) = (
+            build_spatial_bins(az_spacing=spacing_deg, el_spacing=spacing_deg)
         )
 
-        # Create the 2D grid of azimuth and elevation angles at center of each bin.
-        # These ranges are offset by half the spacing and are
-        # one element shorter than the bin edges.
-        self.az_range = np.arange(  # [0.5, 1.5, ..., 359.5] deg.
-            self.spacing_radians / 2, 2 * np.pi, self.spacing_radians
-        )
-        self.el_range = np.arange(  # [-89.5, ..., 89.5] deg.
-            self.spacing_radians / 2, np.pi, self.spacing_radians
-        )
+        # Store the bin edges and midpoints in radians
+        self.az_bin_edges = np.deg2rad(az_bin_edges)
+        self.el_bin_edges = np.deg2rad(el_bin_edges)
+        self.az_bin_midpoints = np.deg2rad(az_bin_midpoints)
+        self.el_bin_midpoints = np.deg2rad(el_bin_midpoints)
+
+        # By default, build_spacial_bins creates bins from az=0->360 and el=-90->90.
         if centered_azimuth:
-            self.az_range = self.az_range - np.pi
-        if centered_elevation:
-            self.el_range = self.el_range - np.pi / 2
+            self.az_bin_midpoints = self.az_bin_midpoints - np.pi
+        if not centered_elevation:
+            self.el_bin_midpoints = self.el_bin_midpoints + np.pi / 2
 
         # If desired, reverse the elevation range so that the grid is in the order
         # defined by the Ultra prototype code (`build_dps_grid.m`).
         if self.reversed_elevation:
-            self.el_range = self.el_range[::-1]
+            self.el_bin_midpoints = self.el_bin_midpoints[::-1]
             self.el_bin_edges = self.el_bin_edges[::-1]
 
         # Deriving our az/el grids with indexing "ij" allows for ravel_multi_index
         # to work correctly with 1D digitized indices in each az and el,
         # using the same ravel order ('C' or 'F') as the grid points were unwrapped.
         self.az_grid, self.el_grid = np.meshgrid(
-            self.az_range, self.el_range, indexing="ij"
+            self.az_bin_midpoints, self.el_bin_midpoints, indexing="ij"
         )
 
         # Keep track of number of points on the grid
         self.grid_shape = self.az_grid.shape
         self.grid_size = self.az_grid.size
 
-        if angular_units == "deg":
-            self.az_range = np.rad2deg(self.az_range)
-            self.el_range = np.rad2deg(self.el_range)
-            self.az_grid = np.rad2deg(self.az_grid)
-            self.el_grid = np.rad2deg(self.el_grid)
-            self.az_bin_edges = np.rad2deg(self.az_bin_edges)
-            self.el_bin_edges = np.rad2deg(self.el_bin_edges)
+        # Create degree property attributes for all radian attributes
+        self.__init_properties__()
 
-    def to_degrees(self) -> None:
-        """Change the angular units of the grid to degrees."""
-        if self.angular_units == "deg":
-            return
-        self.az_range = np.rad2deg(self.az_range)
-        self.el_range = np.rad2deg(self.el_range)
-        self.az_grid = np.rad2deg(self.az_grid)
-        self.el_grid = np.rad2deg(self.el_grid)
-        self.az_bin_edges = np.rad2deg(self.az_bin_edges)
-        self.el_bin_edges = np.rad2deg(self.el_bin_edges)
-        self.angular_units = "deg"
-
-    def to_radians(self) -> None:
-        """Change the angular units of the grid to radians."""
-        if self.angular_units == "rad":
-            return
-        self.az_range = np.deg2rad(self.az_range)
-        self.el_range = np.deg2rad(self.el_range)
-        self.az_grid = np.deg2rad(self.az_grid)
-        self.el_grid = np.deg2rad(self.el_grid)
-        self.az_bin_edges = np.deg2rad(self.az_bin_edges)
-        self.el_bin_edges = np.deg2rad(self.el_bin_edges)
-        self.angular_units = "rad"
+    def __init_properties__(self) -> None:
+        """Automatically generate degree properties for all radian attributes."""
+        for name in [
+            "spacing",
+            "az_bin_midpoints",
+            "el_bin_midpoints",
+            "az_bin_edges",
+            "el_bin_edges",
+            "az_grid",
+            "el_grid",
+        ]:
+            setattr(
+                self.__class__,
+                f"{name}_degrees",
+                property(lambda self, n=name: np.rad2deg(getattr(self, n))),  # type: ignore[misc]
+            )
 
     def __repr__(self) -> str:
         """
@@ -281,6 +260,6 @@ class AzElSkyGrid:
             A string representation of the AzElSkyGrid.
         """
         return (
-            f"AzElSkyGrid with a spacing of {self.spacing_radians} rad = "
-            f"{np.rad2deg(self.spacing_radians)} deg. {self.grid_shape} Grid."
+            f"AzElSkyGrid with a spacing of {self.spacing:.4e} radians. "
+            f"{self.grid_shape} Grid."
         )
