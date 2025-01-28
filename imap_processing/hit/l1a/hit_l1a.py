@@ -188,7 +188,7 @@ def calculate_uncertainties(dataset: xr.Dataset) -> xr.Dataset:
     dataset : xarray.Dataset
         The dataset with added uncertainties for each counts data variable.
     """
-    # Variables that aren't count data and should be ignored in the calculation
+    # Variables that aren't counts data and should be ignored in the calculation
     ignore_vars = [
         "version",
         "type",
@@ -217,11 +217,13 @@ def calculate_uncertainties(dataset: xr.Dataset) -> xr.Dataset:
         "fe_energy_max",
     ]
 
+    # Counts data that need uncertainties calculated
+    count_vars = set(dataset.data_vars) - set(ignore_vars)
+
     # Calculate uncertainties for each counts data variable
-    for var in dataset.data_vars:
-        if var not in ignore_vars:
-            dataset[f"{var}_delta_plus"] = np.sqrt(dataset[var] + 1) + 1
-            dataset[f"{var}_delta_minus"] = np.sqrt(dataset[var])
+    for var in count_vars:
+        dataset[f"{var}_delta_plus"] = np.sqrt(dataset[var] + 1) + 1
+        dataset[f"{var}_delta_minus"] = np.sqrt(dataset[var])
     return dataset
 
 
