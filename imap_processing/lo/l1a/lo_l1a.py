@@ -11,6 +11,7 @@ from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.lo.l0.lo_apid import LoAPID
 from imap_processing.lo.l0.lo_science import (
     combine_segmented_packets,
+    organize_spin_data,
     parse_events,
     parse_histogram,
 )
@@ -52,6 +53,15 @@ def lo_l1a(dependency: Path, data_version: str) -> list[xr.Dataset]:
     attr_mgr.add_instrument_variable_attrs(instrument="lo", level="l1a")
     attr_mgr.add_global_attribute("Data_version", data_version)
 
+    if LoAPID.ILO_SPIN in datasets_by_apid:
+        logger.info(
+            f"\nProcessing {LoAPID(LoAPID.ILO_SPIN).name} "
+            f"packet (APID: {LoAPID.ILO_SPIN.value})"
+        )
+        logical_source = "imap_lo_l1a_spin"
+        datasets_by_apid[LoAPID.ILO_SPIN] = organize_spin_data(
+            datasets_by_apid[LoAPID.ILO_SPIN]
+        )
     if LoAPID.ILO_SCI_CNT in datasets_by_apid:
         logger.info(
             f"\nProcessing {LoAPID(LoAPID.ILO_SCI_CNT).name} "
