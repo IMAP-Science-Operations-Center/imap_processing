@@ -140,9 +140,12 @@ def fake_spin_data():
 
     for spin_field in spin_fields:
         packet_fields = [f"{spin_field}_{i}" for i in range(1, 29)]
+        fake_array_val = 0
         for packet_field in packet_fields:
-            dataset[packet_field] = xr.DataArray(np.array([0, 1]), dims="epoch")
-
+            dataset[packet_field] = xr.DataArray(
+                np.array([fake_array_val, fake_array_val + 1]), dims="epoch"
+            )
+            fake_array_val += 2
     return dataset
 
 
@@ -308,13 +311,34 @@ def test_organize_spin_data(fake_spin_data):
             acq_start_subsec=(["epoch"], np.array([0, 0])),
             acq_end_sec=(["epoch"], np.array([0, 0])),
             acq_end_subsec=(["epoch"], np.array([0, 0])),
-            start_sec_spin=(["epoch", "spin"], np.array([[0] * 28, [1] * 28])),
-            start_subsec_spin=(["epoch", "spin"], np.array([[0] * 28, [1] * 28])),
-            esa_neg_dac_spin=(["epoch", "spin"], np.array([[0] * 28, [1] * 28])),
-            esa_pos_dac_spin=(["epoch", "spin"], np.array([[0] * 28, [1] * 28])),
-            valid_period_spin=(["epoch", "spin"], np.array([[0] * 28, [1] * 28])),
-            valid_phase_spin=(["epoch", "spin"], np.array([[0] * 28, [1] * 28])),
-            period_source_spin=(["epoch", "spin"], np.array([[0] * 28, [1] * 28])),
+            start_sec_spin=(
+                ["epoch", "spin"],
+                np.array([np.arange(0, 56, 2), np.arange(1, 57, 2)]),
+            ),
+            start_subsec_spin=(
+                ["epoch", "spin"],
+                np.array([np.arange(0, 56, 2), np.arange(1, 57, 2)]),
+            ),
+            esa_neg_dac_spin=(
+                ["epoch", "spin"],
+                np.array([np.arange(0, 56, 2), np.arange(1, 57, 2)]),
+            ),
+            esa_pos_dac_spin=(
+                ["epoch", "spin"],
+                np.array([np.arange(0, 56, 2), np.arange(1, 57, 2)]),
+            ),
+            valid_period_spin=(
+                ["epoch", "spin"],
+                np.array([np.arange(0, 56, 2), np.arange(1, 57, 2)]),
+            ),
+            valid_phase_spin=(
+                ["epoch", "spin"],
+                np.array([np.arange(0, 56, 2), np.arange(1, 57, 2)]),
+            ),
+            period_source_spin=(
+                ["epoch", "spin"],
+                np.array([np.arange(0, 56, 2), np.arange(1, 57, 2)]),
+            ),
         ),
         coords=dict(epoch=(["epoch"], np.array([0, 1]))),
     )
