@@ -105,11 +105,8 @@ def flag_spin(
     energy_midpoints = (bin_edges[:-1] + bin_edges[1:]) / 2
     spin = np.unique(spin)
 
-    for energy_idx in range(hist.shape[0]):
-        # Count rates for each spin at this energy
-        spin_count_rates = hist[energy_idx][:]
-        # Indices where the counts exceed the threshold
-        indices = spin_count_rates > UltraConstants.COUNT_RATES_THRESHOLDS[energy_idx]
-        quality_flags[energy_idx, indices] |= ImapRatesUltraFlags.HIGHCOUNTS.value
+    # Indices where the counts exceed the threshold
+    indices = hist > np.array(UltraConstants.COUNT_RATES_THRESHOLDS)[:, np.newaxis]
+    quality_flags[indices] |= ImapRatesUltraFlags.HIGHCOUNTS.value
 
     return quality_flags, spin, energy_midpoints
