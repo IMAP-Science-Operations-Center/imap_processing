@@ -480,12 +480,11 @@ def organize_spin_data(dataset: xr.Dataset, attr_mgr: ImapCdfAttributes) -> xr.D
         )
         # Assign the combined data back to the dataset
         dataset[spin_field] = xr.DataArray(
-            combined_spin_data.transpose(),
-            dims=("epoch", "spin"),
+            combined_spin_data,
+            dims=["spin"],
             attrs=attr_mgr.get_variable_attributes(spin_field),
         )
         # Drop the individual spin data fields
         dataset = dataset.drop_vars(packet_fields)
 
-    print(dataset.data_vars)
     return dataset
