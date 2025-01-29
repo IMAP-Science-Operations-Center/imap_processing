@@ -86,7 +86,7 @@ def generate_pset_dataset(
     logical_source_parts = parse_filename_like(de_dataset.attrs["Logical_source"])
     n_esa_step = len(np.unique(de_dataset.esa_step.data))
     # read calibration product configuration file
-    config_df = CalibrationProductConfig.read_csv(calibration_prod_config_path)
+    config_df = CalibrationProductConfig.from_csv(calibration_prod_config_path)
 
     pset_dataset = empty_pset_dataset(
         n_esa_step,
@@ -304,9 +304,11 @@ class CalibrationProductConfig:
         Object to run validation and use accessor functions on.
     """
 
-    required_columns = (
+    index_columns = (
         "cal_prod_num",
         "esa_energy_step",
+    )
+    required_columns = (
         "coincidence_type_list",
         "tof_ab_low",
         "tof_ab_high",
@@ -335,6 +337,11 @@ class CalibrationProductConfig:
         ------
         AttributeError : If the dataframe does not pass validation.
         """
+        for index_name in self.index_columns:
+            if index_name in df.index:
+                raise AttributeError(
+                    f"Required index {index_name} not present in dataframe."
+                )
         # Verify that the Dataframe has all the required columns
         for col in self.required_columns:
             if col not in df.columns:
@@ -343,7 +350,7 @@ class CalibrationProductConfig:
         #   product numbers
 
     @classmethod
-    def read_csv(cls, path: Path) -> pd.DataFrame:
+    def from_csv(cls, path: Path) -> pd.DataFrame:
         """
         Read configuration CSV file into a pandas.DataFrame.
 
@@ -359,7 +366,7 @@ class CalibrationProductConfig:
         """
         return pd.read_csv(
             path,
-            index_col=False,
+            index_col=cls.index_columns,
             converters={"coincidence_type_list": lambda s: s.split("|")},
             comment="#",
         )
@@ -375,4 +382,4 @@ class CalibrationProductConfig:
             The maximum number of calibration products defined in the list of
             calibration product definitions.
         """
-        return len(self._obj["cal_prod_num"].unique())
+        return len(self._obj.index.unique(level="cal_prod_num"))

@@ -139,12 +139,12 @@ class TestCalibrationProductConfig:
             with pytest.raises(AttributeError, match="Required column*"):
                 _ = df.cal_prod_config.number_of_products
 
-    def test_read_csv(self, hi_test_cal_prod_config_path):
+    def test_from_csv(self, hi_test_cal_prod_config_path):
         """Test coverage for read_csv function."""
-        df = CalibrationProductConfig.read_csv(hi_test_cal_prod_config_path)
-        assert isinstance(df["coincidence_type_list"][0], list)
+        df = CalibrationProductConfig.from_csv(hi_test_cal_prod_config_path)
+        assert isinstance(df["coincidence_type_list"][0, 1], list)
 
     def test_number_of_products(self, hi_test_cal_prod_config_path):
         """Test coverage for number of products accessor."""
-        df = CalibrationProductConfig.read_csv(hi_test_cal_prod_config_path)
+        df = CalibrationProductConfig.from_csv(hi_test_cal_prod_config_path)
         assert df.cal_prod_config.number_of_products == 2
