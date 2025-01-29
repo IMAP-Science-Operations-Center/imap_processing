@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 import numpy as np
 import pandas as pd
 
@@ -45,7 +47,22 @@ def test_swe_l1b(decom_test_data_derived):
         )
 
 
-def test_cdf_creation(l1b_validation_df):
+@patch(
+    "imap_processing.swe.l1b.swe_l1b_science.read_in_flight_cal_data",
+    return_value=pd.DataFrame(
+        {
+            "met_time": [452051300, 454051900],
+            "cem1": [1, 1],
+            "cem2": [1, 1],
+            "cem3": [1, 1],
+            "cem4": [1, 1],
+            "cem5": [1, 1],
+            "cem6": [1, 1],
+            "cem7": [1, 1],
+        }
+    ),
+)
+def test_cdf_creation(mock_read_in_flight_cal_data, l1b_validation_df):
     """Test that CDF file is created and has the correct name."""
     test_data_path = "tests/swe/l0_data/2024051010_SWE_SCIENCE_packet.bin"
     l1a_datasets = swe_l1a(imap_module_directory / test_data_path, "002")

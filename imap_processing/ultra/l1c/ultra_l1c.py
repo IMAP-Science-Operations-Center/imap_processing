@@ -31,9 +31,8 @@ def ultra_l1c(data_dict: dict, data_version: str) -> list[xr.Dataset]:
         histogram_dataset = calculate_histogram(
             data_dict[f"imap_ultra_l1a_{instrument_id}sensor-histogram"],
             f"imap_ultra_l1c_{instrument_id}sensor-histogram",
+            data_version,
         )
-        # TODO: move these to use ImapCdfAttributes().add_global_attribute()
-        histogram_dataset.attrs["Data_version"] = data_version
         output_datasets = [histogram_dataset]
     elif (
         f"imap_ultra_l1b_{instrument_id}sensor-cullingmask" in data_dict
@@ -43,8 +42,8 @@ def ultra_l1c(data_dict: dict, data_version: str) -> list[xr.Dataset]:
         pset_dataset = calculate_pset(
             data_dict[f"imap_ultra_l1b_{instrument_id}sensor-de"],
             f"imap_ultra_l1c_{instrument_id}sensor-pset",
+            data_version,
         )
-        pset_dataset.attrs["Data_version"] = data_version
         output_datasets = [pset_dataset]
     else:
         raise ValueError("Data dictionary does not contain the expected keys.")

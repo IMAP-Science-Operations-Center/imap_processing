@@ -10,7 +10,7 @@ from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.glows.l0.decom_glows import decom_packets
 from imap_processing.glows.l0.glows_l0_data import DirectEventL0
 from imap_processing.glows.l1a.glows_l1a_data import DirectEventL1A, HistogramL1A
-from imap_processing.spice.time import J2000_EPOCH, met_to_j2000ns
+from imap_processing.spice.time import TTJ2000_EPOCH, met_to_ttj2000ns
 
 
 def create_glows_attr_obj(data_version: str) -> ImapCdfAttributes:
@@ -72,7 +72,7 @@ def glows_l1a(packet_filepath: Path, data_version: str) -> list[xr.Dataset]:
         hist_l1a = HistogramL1A(hist)
         # Split by IMAP start time
         # TODO: Should this be MET?
-        hist_day = (J2000_EPOCH + met_to_j2000ns(hist.SEC)).astype("datetime64[D]")
+        hist_day = (TTJ2000_EPOCH + met_to_ttj2000ns(hist.SEC)).astype("datetime64[D]")
         hists_by_day[hist_day].append(hist_l1a)
 
     # Generate CDF files for each day
@@ -111,7 +111,7 @@ def process_de_l0(
     de_by_day = dict()
 
     for de in de_l0:
-        de_day = (J2000_EPOCH + met_to_j2000ns(de.MET)).astype("datetime64[D]")
+        de_day = (TTJ2000_EPOCH + met_to_ttj2000ns(de.MET)).astype("datetime64[D]")
         if de_day not in de_by_day:
             de_by_day[de_day] = [DirectEventL1A(de)]
         # Putting not first data int o last direct event list.
@@ -186,7 +186,7 @@ def generate_de_dataset(
 
     for index, de in enumerate(de_l1a_list):
         # Set the timestamp to the first timestamp of the direct event list
-        epoch_time = met_to_j2000ns(de.l0.MET).astype("datetime64[ns]")
+        epoch_time = met_to_ttj2000ns(de.l0.MET).astype("datetime64[ns]")
 
         # determine if the length of the direct_events numpy array is long enough,
         # and extend the direct_events length dimension if necessary.
@@ -352,7 +352,7 @@ def generate_histogram_dataset(
 
     for index, hist in enumerate(hist_l1a_list):
         # TODO: Should this be MET?
-        epoch_time = met_to_j2000ns(hist.imap_start_time.to_seconds())
+        epoch_time = met_to_ttj2000ns(hist.imap_start_time.to_seconds())
         hist_data[index] = hist.histogram
 
         support_data["flags_set_onboard"].append(hist.flags["flags_set_onboard"])

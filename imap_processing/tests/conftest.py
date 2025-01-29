@@ -17,7 +17,7 @@ import requests
 import spiceypy as spice
 
 from imap_processing import imap_module_directory
-from imap_processing.spice.time import met_to_j2000ns
+from imap_processing.spice.time import met_to_ttj2000ns
 
 
 @pytest.fixture(autouse=True)
@@ -405,7 +405,7 @@ def generate_spin_data():
         )
 
         # Convert spin_start_sec to datetime to set repointing times flags
-        spin_start_dates = met_to_j2000ns(spin_start_sec + spin_start_subsec / 1000)
+        spin_start_dates = met_to_ttj2000ns(spin_start_sec + spin_start_subsec / 1000)
         spin_start_dates = cdflib.cdfepoch.to_datetime(spin_start_dates)
 
         # Convert DatetimeIndex to Series for using .dt accessor

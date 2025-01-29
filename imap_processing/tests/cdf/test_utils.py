@@ -13,7 +13,7 @@ from imap_processing.cdf.utils import (
     parse_filename_like,
     write_cdf,
 )
-from imap_processing.spice.time import met_to_j2000ns
+from imap_processing.spice.time import met_to_ttj2000ns
 
 
 @pytest.fixture()
@@ -34,7 +34,7 @@ def test_dataset():
         {
             "epoch": (
                 "epoch",
-                met_to_j2000ns([1, 2, 3]),
+                met_to_ttj2000ns([1, 2, 3]),
             )
         },
         attrs=swe_attrs.get_global_attributes("imap_swe_l1a_sci")

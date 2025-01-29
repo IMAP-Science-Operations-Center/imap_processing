@@ -29,6 +29,8 @@ ELECTRON_MASS = 9.10938356e-31  # kg
 
 # See doc string of calculate_phase_space_density() for more details.
 VELOCITY_CONVERSION_FACTOR = 1.237e31
+# See doc string of calculate_flux() for more details.
+FLUX_CONVERSION_FACTOR = 6.187e30
 
 
 def get_particle_energy() -> npt.NDArray:
@@ -56,33 +58,33 @@ def calculate_phase_space_density(l1b_dataset: xr.Dataset) -> xr.Dataset:
     """
     Convert counts to phase space density.
 
-    Calculate phase space density, fv, in units of s^3/ (cm^6 * ster).
-        fv = 2 * (C/tau) / (G * v^4)
-        where:
-            C / tau = corrected count rate. L1B science data.
-            G = geometric factor, in (cm^2 * ster). 7 CEMS value.
-            v = electron speed, computed from energy, in cm/s.
-                We need to use this formula to convert energy to speed:
-                    E = 0.5 * m * v^2
-                    where E is electron energy, in eV
-                    (result from get_particle_energy() function),
-                    m is mass of electron (9.10938356e-31 kg),
-                    and v is what we want to calculate. Reorganizing above
-                    formula result in v = sqrt(2 * E / m). This will be used
-                    to calculate electron speed, v.
+    Calculate phase space density is represented by this symbol, fv.
+    Its unit is s^3/ (cm^6 * ster).
 
-                Now to convert electron speed units to cm/s:
-                    v = sqrt(2 * E / m)
-                      = sqrt(2 * E(eV) * 1.60219e-19(J/eV) / 9.10938e-31 kg)
-                        where J = kg * m^2 / s^2.
-                      = sqrt(2 * 1.60219 * 10e−19 m^2/s^2 * E(eV) / 9.10938e-31)
-                      = sqrt(2 * 1.60219 * 10e−19 * 10e4 cm^2/s^2 * E(eV) / 9.10938e-31)
-                      = sqrt(3.20438 * 10e-15 * E(eV) / 9.10938e-31) cm/s
-                      = sqrt( (3.20438 * 10e-15 / 9.10938e-31) * E(eV) ) cm/s
-        fv = 2 * (C/tau) / (G * v^4)
-           = 2 * (C/tau) / (G * (sqrt( (3.20438 * 10e-15 / 9.10938e-31) * E(eV) ))^4)
-           = 2 * (C/tau) / (G * (sqrt(3.5176e16)^4 * E(eV)^2)
-           = 2 * (C/tau) / (G * 1.237e31 * E(eV)^2)
+    The formula to calculate phase space density,
+
+    Where:
+        C / tau = corrected count rate which in the input L1B science data.
+        G = geometric factor, in (cm^2 * ster). 7 CEMs geometric factor value.
+        eV = eV in electron-volts, calculated by get_particle_energy().
+        E = Energy in Joules. eV * 1.60219e-19(J/eV).
+        m = mass of electron (9.10938356e-31 kg).
+        s = second.
+        v = sqrt(2 * E / m). Electron speed, computed from energy. In cm/s.
+        J = kg * m^2 / s^2. J for joules.
+        fv = phase space density.
+
+    v   = sqrt(2 * E / m)
+        = sqrt(2 * eV * 1.60219e-19(J/eV) / 9.10938e-31 kg)
+        = sqrt(2 * 1.60219 * 10e−19 m^2/s^2 * eV / 9.10938e-31)
+        = sqrt(2 * 1.60219 * 10e−19 * 10e4 cm^2/s^2 * eV / 9.10938e-31)
+        = sqrt(3.20438 * 10e-15 * eV / 9.10938e-31) cm/s
+        = sqrt((3.20438 * 10e-15 / 9.10938e-31) * eV) cm/s
+
+    fv  = 2 * (C/tau) / (G * v^4)
+        = 2 * (C/tau) / (G * (sqrt( (3.20438 * 10e-15 / 9.10938e-31) * eV ))^4)
+        = 2 * (C/tau) / (G * (sqrt(3.5176e16)^4 * eV^2)
+        = 2 * (C/tau) / (G * 1.237e31 * eV^2)
         Ruth Skoug also got the same result, 1.237e31.
 
     Parameters
@@ -111,7 +113,7 @@ def calculate_phase_space_density(l1b_dataset: xr.Dataset) -> xr.Dataset:
     particle_energy_data = particle_energy_data.reshape(-1, 24, 30)
 
     # Calculate phase space density using formula:
-    #   2 * (C/tau) / (G * 1.237e31 * E(eV)^2)
+    #   2 * (C/tau) / (G * 1.237e31 * eV^2)
     # See doc string for more details.
     density = (2 * l1b_dataset["science_data"]) / (
         GEOMETRIC_FACTORS[np.newaxis, np.newaxis, np.newaxis, :]
@@ -136,22 +138,36 @@ def calculate_flux(l1b_dataset: xr.Dataset) -> npt.NDArray:
     """
     Calculate flux.
 
-    To get flux, j = 2 * m * E * f
-        where:
-        f = calculate_phase_space_density() result
-        m - mass of electron
-        E - energy in joules. E(eV) * 1.60219e-19(J/eV)
+    Flux is represented by this symbol, j. Its unit is
+    1 / (2 * eV * cm^2 * s * ster).
 
-    To convert flux units:
-        j = 2 * m * E * f
-          = 2 * 9.10938356e-31 kg * E(eV) * 1.60219e-19(J/eV) * (s^3/ (cm^6 * ster)
-          = 2 * 9.10938356e-31 kg * E(eV) * 1.60219e-19 (kg * m^2 / s^2) *
-            (s^3 / (cm^6 * ster)
-          = 2 * 9.10938356e-31 * E(eV) * 1.60219e-19  kg^2 * ( 10^4 cm^2 / s^2) *
-            (s^3 / (cm^6 * ster)
-          = 2 * 9.10938356e-31 * E(eV) * 1.60219e-19 * 10^4 ((kg^2 * cm^2 * s^3) /
-            (s^2 * cm^6 * ster))
-        TODO: ask Ruth Skoug what units to use for flux and work out remaining units.
+    The formula to calculate flux,
+
+    Where:
+        fv = the phase space density of solar wind electrons
+            given by calculate_phase_space_density() result.
+        eV = Energy in electron-volts, calculated by get_particle_energy().
+        E  = Energy in Joules. eV * 1.60219e-19(J/eV).
+        v  = sqrt( (3.20438 * 10e-15 / 9.10938e-31) * eV ) cm/s. See
+            calculate_phase_space_density() for this calculation.
+        j  = flux factor.
+
+    Flux units workout:
+    j   = (fv * v^4) / (2 * eV)
+        = ((s^3 / (cm^6 * ster)) * (cm^4/s^4)) / (2 * eV)
+        = ((s^3 * cm^4) / (cm^6 * s^4 * ster)) / (2 * eV)
+        = (1 / (cm^2 * s * ster)) / (2 * eV)
+        = 1 / (2 * eV * cm^2 * s * ster)
+
+    Flux conversion factor workout:
+    j   = (fv * v^4) / (2 * eV)
+        = ( fv * (sqrt( (3.20438 * 10e-15 / 9.10938e-31) * eV )^4) ) / (2 * eV)
+        = ( fv * ((3.20438 * 10e-15 / 9.10938e-31) * eV)^1/2) ^ 4 ) / (2 * eV)
+        = ( fv * (3.20438 * 10e-15 / 9.10938e-31)^2 * eV^2) ) / (2 * eV)
+        = ( fv * 1.237e31 * eV^2) ) / (2 * eV)
+        = ( fv * 1.237e31 * eV ) / 2
+        = (fv * 6.187e30 * eV)
+        Ruth Skoug confirmed this factor, 6.187e30.
 
     Parameters
     ----------
@@ -164,13 +180,9 @@ def calculate_flux(l1b_dataset: xr.Dataset) -> npt.NDArray:
         Flux values.
     """
     phase_space_density_ds = calculate_phase_space_density(l1b_dataset)
-    # TODO: update this once Ruth sends the correct conversion factors.
     flux = (
-        2
-        * ELECTRON_MASS
+        FLUX_CONVERSION_FACTOR
         * phase_space_density_ds["energy_in_eV"].data[:, :, :, np.newaxis]
-        * 1.60219e-19
-        * 10e4
         * phase_space_density_ds["phase_space_density"].data
     )
     return flux
@@ -201,7 +213,7 @@ def swe_l2(l1b_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
     # calculate spin phase
     spin_phase = get_spacecraft_spin_phase(
         query_met_times=data_acq_time,
-    ).reshape(-1, 24, 30, 7)
+    ).reshape(-1, 24, 30)
     # TODO: organize flux data by energy and spin_phase.
     # My understanding from conversation with Ruth is that this is the hardest part
     # and last part of the L2 processing.
@@ -210,7 +222,7 @@ def swe_l2(l1b_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
     return xr.Dataset(
         {
             "flux": (["epoch", "energy", "spin_phase", "cem"], flux),
-            "spin_phase": (["epoch", "energy", "spin_phase", "cem"], spin_phase),
+            "spin_phase": (["epoch", "energy", "spin_phase"], spin_phase),
         },
         coords=l1b_dataset.coords,
     )

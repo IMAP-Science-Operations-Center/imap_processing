@@ -10,9 +10,10 @@ from imap_processing.ultra.l0.decom_ultra import process_ultra_apids
 from imap_processing.ultra.l0.ultra_utils import (
     ULTRA_AUX,
     ULTRA_EVENTS,
+    ULTRA_RATES,
 )
 from imap_processing.ultra.l1a import ultra_l1a
-from imap_processing.ultra.l1b.de import calculate_de
+from imap_processing.ultra.l1b.ultra_l1b import ultra_l1b
 from imap_processing.utils import group_by_apid
 
 
@@ -171,9 +172,52 @@ def de_dataset(ccsds_path_theta_0, xtce_path):
 
 
 @pytest.fixture()
+def rates_dataset(ccsds_path_theta_0, xtce_path):
+    """L1A test data"""
+    packets = decom.decom_packets(ccsds_path_theta_0, xtce_path)
+    grouped_data = group_by_apid(packets)
+    decom_ultra_rates = process_ultra_apids(
+        grouped_data[ULTRA_RATES.apid[0]], ULTRA_RATES.apid[0]
+    )
+    l1a_rates_dataset = ultra_l1a.create_dataset(
+        {
+            ULTRA_RATES.apid[0]: decom_ultra_rates,
+        }
+    )
+    return l1a_rates_dataset
+
+
+@pytest.fixture()
+def aux_dataset(ccsds_path_theta_0, xtce_path):
+    """L1A test data"""
+    packets = decom.decom_packets(ccsds_path_theta_0, xtce_path)
+    grouped_data = group_by_apid(packets)
+    decom_ultra_aux = process_ultra_apids(
+        grouped_data[ULTRA_AUX.apid[0]], ULTRA_AUX.apid[0]
+    )
+    l1a_aux_dataset = ultra_l1a.create_dataset(
+        {
+            ULTRA_AUX.apid[0]: decom_ultra_aux,
+        }
+    )
+    return l1a_aux_dataset
+
+
+@pytest.fixture()
 @mock.patch("imap_processing.ultra.l1b.de.get_annotated_particle_velocity")
-def l1b_de_dataset(mock_get_annotated_particle_velocity, de_dataset):
+def l1b_datasets(
+    mock_get_annotated_particle_velocity, de_dataset, use_fake_spin_data_for_time
+):
     """L1B test data"""
+
+    data_dict = {}
+    data_dict[de_dataset.attrs["Logical_source"]] = de_dataset
+    # TODO: this is a placeholder for the hk dataset.
+    data_dict["imap_ultra_l1a_45sensor-hk"] = aux_dataset
+    data_dict["imap_ultra_l1a_45sensor-rates"] = rates_dataset
+    use_fake_spin_data_for_time(
+        de_dataset["EVENTTIMES"][0], de_dataset["EVENTTIMES"][-1]
+    )
 
     # Mock get_annotated_particle_velocity to avoid needing kernels
     def side_effect_func(event_times, position, ultra_frame, dps_frame, sc_frame):
@@ -191,6 +235,6 @@ def l1b_de_dataset(mock_get_annotated_particle_velocity, de_dataset):
 
     mock_get_annotated_particle_velocity.side_effect = side_effect_func
 
-    dataset = calculate_de(de_dataset, "imap_ultra_l1b_45sensor-de")
+    output_datasets = ultra_l1b(data_dict, data_version="001")
 
-    return dataset
+    return output_datasets

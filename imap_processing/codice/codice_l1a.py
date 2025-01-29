@@ -27,7 +27,7 @@ from imap_processing.codice import constants
 from imap_processing.codice.codice_l0 import decom_packets
 from imap_processing.codice.decompress import decompress
 from imap_processing.codice.utils import CODICEAPID
-from imap_processing.spice.time import met_to_j2000ns
+from imap_processing.spice.time import met_to_ttj2000ns
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -101,7 +101,7 @@ class CoDICEL1aPipeline:
         epoch : NDArray[int]
             List of epoch values.
         """
-        epoch = met_to_j2000ns(
+        epoch = met_to_ttj2000ns(
             self.dataset.acq_start_seconds + self.dataset.acq_start_subseconds / 1e6
         )
 

@@ -21,7 +21,7 @@ from imap_processing.spice.geometry import (
     get_spacecraft_spin_phase,
     instrument_pointing,
 )
-from imap_processing.spice.time import j2000ns_to_j2000s
+from imap_processing.spice.time import ttj2000ns_to_et
 from imap_processing.utils import convert_raw_to_eu
 
 
@@ -288,17 +288,15 @@ def de_nominal_bin_and_spin_phase(dataset: xr.Dataset) -> dict[str, xr.DataArray
     # nominal_bin is the index number of the 90 4-degree bins that each DE would
     # be binned into in the histogram packet. The Hi histogram data is binned by
     # spacecraft spin-phase, not instrument spin-phase, so the same is done here.
-    met_query_times = j2000ns_to_j2000s(dataset.event_met.values)
-    imap_spin_phase = get_spacecraft_spin_phase(met_query_times)
+    met_seconds = dataset.event_met.values.astype(np.float64) / 1e9
+    imap_spin_phase = get_spacecraft_spin_phase(met_seconds)
     new_vars["nominal_bin"].values = np.asarray(imap_spin_phase * 360 / 4).astype(
         np.uint8
     )
 
     sensor_number = parse_sensor_number(dataset.attrs["Logical_source"])
     new_vars["spin_phase"].values = np.asarray(
-        get_instrument_spin_phase(
-            met_query_times, SpiceFrame[f"IMAP_HI_{sensor_number}"]
-        )
+        get_instrument_spin_phase(met_seconds, SpiceFrame[f"IMAP_HI_{sensor_number}"])
     ).astype(np.float32)
     return new_vars
 
@@ -329,7 +327,7 @@ def compute_hae_coordinates(dataset: xr.Dataset) -> dict[str, xr.DataArray]:
         len(dataset.epoch),
         att_manager_lookup_str="hi_de_{0}",
     )
-    et = j2000ns_to_j2000s(dataset.epoch.values)
+    et = ttj2000ns_to_et(dataset.epoch.values)
     sensor_number = parse_sensor_number(dataset.attrs["Logical_source"])
     # TODO: For now, we are using SPICE to compute the look direction for each
     #   direct event. This will eventually be replaced by the algorithm Paul

@@ -227,6 +227,8 @@ class ProcessInstrument(ABC):
     ----------
     data_level : str
         The data level to process (e.g. ``l1a``).
+    data_descriptor : str
+        The descriptor of the data to process (e.g. ``sci``).
     dependency_str : str
         A string representation of the dependencies for the instrument in the
         format: "[{
@@ -249,6 +251,7 @@ class ProcessInstrument(ABC):
     def __init__(
         self,
         data_level: str,
+        data_descriptor: str,
         dependency_str: str,
         start_date: str,
         end_date: str,
@@ -256,6 +259,7 @@ class ProcessInstrument(ABC):
         upload_to_sdc: bool,
     ) -> None:
         self.data_level = data_level
+        self.descriptor = data_descriptor
 
         # Convert string into a dictionary
         self.dependencies = loads(dependency_str.replace("'", '"'))
@@ -397,6 +401,8 @@ class ProcessInstrument(ABC):
             A list of datasets (products) produced by do_processing method.
         """
         logger.info("Writing products to local storage")
+        logger.info("Parent files: %s", self._dependency_list)
+
         products = [
             write_cdf(dataset, parent_files=self._dependency_list)
             for dataset in datasets
@@ -744,13 +750,20 @@ class Swapi(ProcessInstrument):
         datasets: list[xr.Dataset] = []
 
         if self.data_level == "l1":
-            if len(dependencies) > 1:
+            # For science, we expect l0 raw file and L1 housekeeping file
+            if self.descriptor == "sci" and len(dependencies) != 2:
                 raise ValueError(
-                    f"Unexpected dependencies found for SWAPI L1:"
+                    f"Unexpected dependencies found for SWAPI L1 science:"
+                    f"{dependencies}. Expected only two dependencies."
+                )
+            # For housekeeping, we expect only L0 raw file
+            if self.descriptor == "hk" and len(dependencies) != 1:
+                raise ValueError(
+                    f"Unexpected dependencies found for SWAPI L1 housekeeping:"
                     f"{dependencies}. Expected only one dependency."
                 )
-            # process data
-            datasets = [swapi_l1(dependencies[0], self.version)]
+            # process science or housekeeping data
+            datasets = swapi_l1(dependencies, self.version)
         elif self.data_level == "l2":
             if len(dependencies) > 1:
                 raise ValueError(
@@ -802,6 +815,7 @@ class Swe(ProcessInstrument):
                 )
             # read CDF file
             l1a_dataset = load_cdf(dependencies[0])
+            # TODO: read lookup table and in-flight calibration data here.
             datasets = [swe_l1b(l1a_dataset, data_version=self.version)]
         else:
             print("Did not recognize data level. No processing done.")
@@ -871,6 +885,7 @@ def main() -> None:
     cls = getattr(sys.modules[__name__], args.instrument.capitalize())
     instrument = cls(
         args.data_level,
+        args.descriptor,
         args.dependency,
         args.start_date,
         args.end_date,

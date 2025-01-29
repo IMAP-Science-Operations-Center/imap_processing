@@ -101,7 +101,9 @@ def test_codice(mock_codice_l1a, mock_instrument_dependencies):
         "'start_date': '20230822'"
         "}]"
     )
-    instrument = Codice("l1a", dependency_str, "20230822", "20230822", "v001", True)
+    instrument = Codice(
+        "l1a", "hskp", dependency_str, "20230822", "20230822", "v001", True
+    )
     instrument.process()
     assert mocks["mock_query"].call_count == 1
     assert mocks["mock_download"].call_count == 1
@@ -134,7 +136,7 @@ def test_hi_l1(mock_instrument_dependencies, data_level, n_prods):
             "}]"
         )
         instrument = Hi(
-            data_level, dependency_str, "20231212", "20231213", "v005", True
+            data_level, "sci", dependency_str, "20231212", "20231213", "v005", True
         )
         instrument.process()
         assert mocks["mock_query"].call_count == 1
@@ -161,7 +163,9 @@ def test_ultra_l1a(mock_ultra_l1a, mock_instrument_dependencies):
         "'start_date': '20240207'"
         "}]"
     )
-    instrument = Ultra("l1a", dependency_str, "20240207", "20240208", "v001", True)
+    instrument = Ultra(
+        "l1a", "raw", dependency_str, "20240207", "20240208", "v001", True
+    )
     instrument.process()
     assert mocks["mock_query"].call_count == 1
     assert mocks["mock_download"].call_count == 1
@@ -178,7 +182,7 @@ def test_ultra_l1b(mock_ultra_l1b, mock_instrument_dependencies):
     mock_ultra_l1b.return_value = ["l1b_dataset0", "l1b_dataset1"]
     mocks["mock_write_cdf"].side_effect = ["/path/to/product0", "/path/to/product1"]
 
-    instrument = Ultra("l1b", "[]", "20240207", "20240208", "v001", True)
+    instrument = Ultra("l1b", "de", "[]", "20240207", "20240208", "v001", True)
     instrument.process()
     assert mocks["mock_query"].call_count == 0
     assert mocks["mock_download"].call_count == 0
@@ -195,7 +199,7 @@ def test_ultra_l1c(mock_ultra_l1c, mock_instrument_dependencies):
     mock_ultra_l1c.return_value = ["l1c_dataset0", "l1c_dataset1"]
     mocks["mock_write_cdf"].side_effect = ["/path/to/product0", "/path/to/product1"]
 
-    instrument = Ultra("l1c", "[]", "20240207", "20240208", "v001", True)
+    instrument = Ultra("l1c", "pset", "[]", "20240207", "20240208", "v001", True)
     instrument.process()
     assert mocks["mock_query"].call_count == 0
     assert mocks["mock_download"].call_count == 0
@@ -221,7 +225,7 @@ def test_hit_l1a(mock_hit_l1a, mock_instrument_dependencies):
         "'start_date': '20100105'"
         "}]"
     )
-    instrument = Hit("l1a", dependency_str, "20100105", "20100101", "v001", True)
+    instrument = Hit("l1a", "raw", dependency_str, "20100105", "20100101", "v001", True)
     instrument.process()
     assert mocks["mock_query"].call_count == 1
     assert mocks["mock_download"].call_count == 1

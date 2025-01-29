@@ -158,6 +158,41 @@ def get_spin_data() -> pd.DataFrame:
     return spin_df
 
 
+def get_spin_angle(
+    spin_phases: Union[float, npt.NDArray],
+    degrees: bool = False,
+) -> Union[float, npt.NDArray]:
+    """
+    Convert spin_phases to radians or degrees.
+
+    Parameters
+    ----------
+    spin_phases : float or np.ndarray
+        Instrument or spacecraft spin phases. Spin phase is a
+        floating point number in the range [0, 1) corresponding to the
+        spin angle / 360.
+    degrees : bool
+        If degrees parameter is True, return angle in degrees otherwise return angle in
+        radians. Default is False.
+
+    Returns
+    -------
+    spin_phases : float or np.ndarray
+        Spin angle in degrees or radians for the input query times.
+    """
+    if np.any(spin_phases < 0) or np.any(spin_phases > 1):
+        raise ValueError(
+            f"Spin phases, {spin_phases} are outside of the expected spin phase range, "
+            f"[0, 1) "
+        )
+    if degrees:
+        # Convert to degrees
+        return spin_phases * 360
+    else:
+        # Convert to radians
+        return spin_phases * 2 * np.pi
+
+
 def get_spacecraft_spin_phase(
     query_met_times: Union[float, npt.NDArray],
 ) -> Union[float, npt.NDArray]:
@@ -239,8 +274,7 @@ def get_spacecraft_spin_phase(
 
 
 def get_instrument_spin_phase(
-    query_met_times: Union[float, npt.NDArray],
-    instrument: SpiceFrame,
+    query_met_times: Union[float, npt.NDArray], instrument: SpiceFrame
 ) -> Union[float, npt.NDArray]:
     """
     Get the instrument spin phase for the input query times.
@@ -537,8 +571,8 @@ def basis_vectors(
     Examples
     --------
     >>> from imap_processing.spice.geometry import basis_vectors
-    ... from imap_processing.spice.time import j2000ns_to_j2000s
-    ... et = j2000ns_to_j2000s(dataset.epoch.values)
+    ... from imap_processing.spice.time import ttj2000ns_to_et
+    ... et = ttj2000ns_to_et(dataset.epoch.values)
     ... basis_vectors = basis_vectors(
     ...     et, SpiceFrame.IMAP_SPACECRAFT, SpiceFrame.ECLIPJ2000
     ... )
@@ -644,3 +678,64 @@ def spherical_to_cartesian(spherical_coords: NDArray, degrees: bool = False) -> 
     cartesian_coords = np.stack((x, y, z), axis=-1)
 
     return cartesian_coords
+
+
+def cartesian_to_latitudinal(coords: NDArray, degrees: bool = False) -> NDArray:
+    """
+    Convert cartesian coordinates to latitudinal coordinates in radians.
+
+    This is a vectorized wrapper around `spiceypy.reclat`
+    "Convert from rectangular coordinates to latitudinal coordinates."
+    https://naif.jpl.nasa.gov/pub/naif/toolkit_docs/C/cspice/reclat_c.html
+
+    Parameters
+    ----------
+    coords : np.ndarray
+        Either shape (n, 3) or (3) where the last dimension represents a vector
+        with x, y, z-components.
+    degrees : bool
+        If True, the longitude and latitude coords are returned in degrees.
+        Defaults to False.
+
+    Returns
+    -------
+    np.ndarray
+        A NumPy array with shape (n, 3) or (3), where the last dimension contains
+        the latitudinal coordinates (radius, longitude, latitude).
+    """
+    # If coords is 1d, add another dimension
+    while coords.ndim < 2:
+        coords = np.expand_dims(coords, axis=0)
+    latitudinal_coords = np.array([spice.reclat(vec) for vec in coords])
+
+    if degrees:
+        latitudinal_coords[..., 1:] = np.degrees(latitudinal_coords[..., 1:])
+    # Return array of latitudinal and remove the first dimension if it is 1.
+    return np.squeeze(latitudinal_coords)
+
+
+def solar_longitude(
+    et: Union[np.ndarray, float],
+    degrees: bool = False,
+) -> Union[float, npt.NDArray]:
+    """
+    Compute the solar longitude of the Imap Spacecraft.
+
+    Parameters
+    ----------
+    et : float or np.ndarray
+        Ephemeris time(s) to at which to compute solar longitude.
+    degrees : bool
+        If True, the longitude is returned in degrees.
+        Defaults to False.
+
+    Returns
+    -------
+    float or np.ndarray
+        The solar longitude at the specified times.
+    """
+    # Get position of IMAP in ecliptic frame
+    imap_pos = imap_state(et, observer=SpiceBody.SUN)[..., 0:3]
+    lat_coords = cartesian_to_latitudinal(imap_pos, degrees=degrees)[..., 1]
+
+    return float(lat_coords) if lat_coords.size == 1 else lat_coords

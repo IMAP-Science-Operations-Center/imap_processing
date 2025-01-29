@@ -11,6 +11,7 @@ from imap_processing.spice.geometry import (
     SpiceBody,
     SpiceFrame,
     basis_vectors,
+    cartesian_to_latitudinal,
     cartesian_to_spherical,
     frame_transform,
     frame_transform_az_el,
@@ -18,9 +19,11 @@ from imap_processing.spice.geometry import (
     get_rotation_matrix,
     get_spacecraft_spin_phase,
     get_spacecraft_to_instrument_spin_phase_offset,
+    get_spin_angle,
     get_spin_data,
     imap_state,
     instrument_pointing,
+    solar_longitude,
     spherical_to_cartesian,
 )
 from imap_processing.spice.kernels import ensure_spice
@@ -97,6 +100,20 @@ def test_get_spacecraft_spin_phase(query_met_times, expected, fake_spin_data):
         assert spin_phases.shape == expected.shape
     # Test the value
     np.testing.assert_array_almost_equal(spin_phases, expected)
+
+
+def test_get_spin_angle():
+    """Test get_spin_angle() with fake spin phases."""
+    test_spin_phases = np.ones(10) * 0.5
+    # Expected values for spin angles in degrees and radians if spin phase is 0.5
+    expected_deg = 180
+    expected_rad = np.pi
+    # Get spin angles in degrees and radians
+    spin_phases_deg = get_spin_angle(test_spin_phases, degrees=True)
+    spin_phases_rad = get_spin_angle(test_spin_phases, degrees=False)
+    # Test conversions
+    assert np.all(spin_phases_deg == expected_deg)
+    assert np.all(spin_phases_rad == expected_rad)
 
 
 @pytest.mark.parametrize("query_met_times", [-1, 165])
@@ -425,18 +442,11 @@ def test_cartesian_to_spherical():
 
     for point in cartesian_points:
         r, az, el = cartesian_to_spherical(point)
-        r_spice, colat_spice, slong_spice = spice.recsph(point)
+        range, ra, dec = spice.recrad(point)
 
-        # Convert SPICE co-latitude to elevation
-        el_spice = 90 - np.degrees(colat_spice)
-        az_spice = np.degrees(slong_spice)
-
-        # Normalize azimuth to [0, 360]
-        az_spice = az_spice % 360
-
-        np.testing.assert_allclose(r, r_spice, atol=1e-5)
-        np.testing.assert_allclose(az, az_spice, atol=1e-5)
-        np.testing.assert_allclose(el, el_spice, atol=1e-5)
+        np.testing.assert_allclose(r, range, atol=1e-5)
+        np.testing.assert_allclose(az, np.degrees(ra), atol=1e-5)
+        np.testing.assert_allclose(el, np.degrees(dec), atol=1e-5)
 
 
 def test_spherical_to_cartesian():
@@ -472,3 +482,40 @@ def test_spherical_to_cartesian():
 
         np.testing.assert_allclose(cartesian_coords[0], spice_coords, atol=1e-5)
         np.testing.assert_allclose(cartesian_from_degrees[i], spice_coords, atol=1e-5)
+
+
+def test_cartesian_to_latitudinal():
+    """Test cartesian_to_latitudinal()."""
+    # example cartesian coords
+    coords = np.ones(3)
+
+    # test with one coord vector
+    lat_coords = cartesian_to_latitudinal(coords, degrees=True)
+    assert lat_coords.shape == (3,)
+    assert lat_coords[1] == 45
+    assert lat_coords[2] == 35.264389682754654
+
+    # Test with multiple coord vectors
+    coords = np.tile(coords, (10, 1))
+    lat_coords = cartesian_to_latitudinal(coords, degrees=True)
+    assert lat_coords.shape == (10, 3)
+
+
+@mock.patch("imap_processing.spice.geometry.imap_state")
+def test_solar_longitude(mock_state):
+    """Test solar_longitude()."""
+
+    mock_state.side_effect = (
+        lambda t, observer: np.ones(6) if (isinstance(t, int)) else np.ones((len(t), 6))
+    )
+    # example et time
+    et = 798033670
+
+    # test for one time interval
+    lon = solar_longitude(et, degrees=True)
+    assert lon == 45
+
+    # Test with multiple time intervals
+    et = np.tile(et, (10, 1))
+    lon = solar_longitude(et, degrees=True)
+    assert lon.shape == (10,)

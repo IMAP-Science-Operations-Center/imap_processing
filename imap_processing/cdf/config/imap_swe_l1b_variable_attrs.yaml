@@ -105,16 +105,14 @@ science_data:
     Dividing max counts by acq_duration gave validmax
 
 sci_step_acq_time_sec:
-  CATDESC: Acquisition time organized by voltage step and spin sector and CEM
+  CATDESC: Acquisition time organized by voltage step and spin sector
   DEPEND_0: epoch
   DEPEND_1: energy
   DEPEND_2: angle
-  DEPEND_3: cem
   LABL_PTR_1: energy_label
   LABL_PTR_2: angle_label
-  LABL_PTR_3: cem_label
   DISPLAY_TYPE: spectrogram
-  FIELDNAM: Acquisition by volt step and spin sector and CEM
+  FIELDNAM: Acquisition by volt step and spin sector
   FILLVAL: -1.0000000E+31
   UNITS: sec
   VAR_TYPE: support_data

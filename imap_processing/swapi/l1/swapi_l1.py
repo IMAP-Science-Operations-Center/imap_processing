@@ -9,6 +9,7 @@ import xarray as xr
 
 from imap_processing import imap_module_directory
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
+from imap_processing.cdf.utils import load_cdf
 from imap_processing.quality_flags import SWAPIFlags
 from imap_processing.swapi.swapi_utils import SWAPIAPID, SWAPIMODE
 from imap_processing.utils import packet_file_to_datasets
@@ -485,12 +486,19 @@ def process_swapi_science(
     # ===================================================================
     # Quality flags
     # ===================================================================
-    quality_flags_data = np.zeros((total_full_sweeps, 72), np.uint16)
+    quality_flags_data = np.zeros((total_full_sweeps, 72), dtype=np.uint16)
 
     # Add science data quality flags
-    quality_flags_data[pcem_compression_flags == 1] |= SWAPIFlags.SWP_PCEM_COMP.value
-    quality_flags_data[scem_compression_flags == 1] |= SWAPIFlags.SWP_SCEM_COMP.value
-    quality_flags_data[coin_compression_flags == 1] |= SWAPIFlags.SWP_COIN_COMP.value
+    # Have to match datatype to bitwise OR
+    quality_flags_data[pcem_compression_flags == 1] |= np.uint16(
+        SWAPIFlags.SWP_PCEM_COMP
+    )
+    quality_flags_data[scem_compression_flags == 1] |= np.uint16(
+        SWAPIFlags.SWP_SCEM_COMP
+    )
+    quality_flags_data[coin_compression_flags == 1] |= np.uint16(
+        SWAPIFlags.SWP_COIN_COMP
+    )
 
     # Add housekeeping-derived quality flags
     # --------------------------------------
@@ -536,10 +544,10 @@ def process_swapi_science(
         # Use getattr to dynamically access the flag in SWAPIFlags class
         flag_to_set = getattr(SWAPIFlags, flag_name)
         # set the quality flag for each data
-        quality_flags_data[current_flag == 1] |= flag_to_set.value
+        quality_flags_data[current_flag == 1] |= np.uint16(flag_to_set)
 
     swp_flags = xr.DataArray(
-        quality_flags_data,
+        quality_flags_data.astype(np.uint16),
         dims=["epoch", "energy"],
         attrs=cdf_manager.get_variable_attributes("flags_default"),
     )
@@ -555,7 +563,7 @@ def process_swapi_science(
         epoch_values,
         name="epoch",
         dims=["epoch"],
-        attrs=cdf_manager.get_variable_attributes("epoch"),
+        attrs=cdf_manager.get_variable_attributes("epoch", check_schema=False),
     )
 
     # There are 72 energy steps
@@ -563,14 +571,14 @@ def process_swapi_science(
         np.arange(72),
         name="energy",
         dims=["energy"],
-        attrs=cdf_manager.get_variable_attributes("energy"),
+        attrs=cdf_manager.get_variable_attributes("energy", check_schema=False),
     )
     # LABL_PTR_1 should be CDF_CHAR.
     energy_label = xr.DataArray(
         energy.values.astype(str),
         name="energy_label",
         dims=["energy_label"],
-        attrs=cdf_manager.get_variable_attributes("energy_label"),
+        attrs=cdf_manager.get_variable_attributes("energy_label", check_schema=False),
     )
 
     # Add other global attributes
@@ -691,14 +699,14 @@ def process_swapi_science(
     return dataset
 
 
-def swapi_l1(file_path: str, data_version: str) -> xr.Dataset:
+def swapi_l1(dependencies: list, data_version: str) -> xr.Dataset:
     """
     Will process SWAPI level 0 data to level 1.
 
     Parameters
     ----------
-    file_path : str
-        Path to SWAPI L0 file.
+    dependencies : list
+        Input dependencies needed for L1 processing.
     data_version : str
         Version of the data product being created.
 
@@ -710,27 +718,48 @@ def swapi_l1(file_path: str, data_version: str) -> xr.Dataset:
     xtce_definition = (
         f"{imap_module_directory}/swapi/packet_definitions/swapi_packet_definition.xml"
     )
-    datasets = packet_file_to_datasets(
-        file_path, xtce_definition, use_derived_value=False
-    )
+    l0_unpacked_dict = {}
+    l1_hk_ds = None
+    for file_path in dependencies:
+        if file_path.suffix == ".pkts":
+            l0_unpacked_dict = packet_file_to_datasets(
+                file_path, xtce_definition, use_derived_value=False
+            )
+        if file_path.suffix == ".cdf":
+            l1_hk_ds = load_cdf(file_path)
+
     processed_data = []
 
-    for apid, ds_data in datasets.items():
-        # Right now, we only process SWP_HK and SWP_SCI
-        # other packets are not process in this processing pipeline
-        # If appId is science, then the file should contain all data of science appId
+    # Right now, we only process SWP_HK and SWP_SCI.
+    # Other apId are not processed in this processing pipeline.
 
-        if apid == SWAPIAPID.SWP_SCI.value:
-            sci_dataset = process_swapi_science(
-                ds_data, datasets[SWAPIAPID.SWP_HK], data_version
-            )
-            processed_data.append(sci_dataset)
-        if apid == SWAPIAPID.SWP_HK.value:
-            # Add HK datalevel attrs
-            hk_attrs = ImapCdfAttributes()
-            hk_attrs.add_instrument_global_attrs("swapi")
-            hk_attrs.add_global_attribute("Data_version", data_version)
-            ds_data.attrs.update(hk_attrs.get_global_attributes("imap_swapi_l1_hk"))
-            processed_data.append(ds_data)
+    # Len of dependencies is 2 and l0_unpacked_dict[SWAPIAPID.SWP_HK] is not None
+    if (
+        len(dependencies) == 2
+        and l0_unpacked_dict.get(SWAPIAPID.SWP_SCI, None) is not None
+    ):
+        # process science data
+        sci_dataset = process_swapi_science(
+            l0_unpacked_dict[SWAPIAPID.SWP_SCI], l1_hk_ds, data_version
+        )
+        processed_data.append(sci_dataset)
+
+    elif len(dependencies) == 1 and l0_unpacked_dict[SWAPIAPID.SWP_HK]:
+        hk_ds = l0_unpacked_dict[SWAPIAPID.SWP_HK]
+        # Add HK datalevel attrs
+        imap_attrs = ImapCdfAttributes()
+        imap_attrs.add_instrument_global_attrs("swapi")
+        imap_attrs.add_global_attribute("Data_version", data_version)
+        imap_attrs.add_instrument_variable_attrs(instrument="swapi", level=None)
+        hk_ds.attrs.update(imap_attrs.get_global_attributes("imap_swapi_l1_hk"))
+        hk_common_attrs = imap_attrs.get_variable_attributes("hk_attrs")
+        hk_ds["epoch"].attrs.update(
+            imap_attrs.get_variable_attributes("epoch", check_schema=False)
+        )
+
+        # Add attrs to HK data variables
+        for var_name in hk_ds.data_vars:
+            hk_ds[var_name].attrs.update(hk_common_attrs)
+        processed_data.append(hk_ds)
 
     return processed_data
