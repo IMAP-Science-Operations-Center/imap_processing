@@ -15,10 +15,13 @@ def mock_l1c_pset_product(
     stripe_center_lon: int = 0,
     timestr: str = "2025-01-01T00:00:00",
     head: str = "45",
-):
-    """Mock the L1C PSET product.
+) -> xr.Dataset:
+    """
+    Mock the L1C PSET product with recognizable but unrealistic counts.
 
-    Will be an xarray.Dataset with at least the variables and shapes:
+    This is not meant to perfectly mimic the real data, but to provide a
+    recognizable structure for L2 testing purposes.
+    Function will produce an xarray.Dataset with at least the variables and shapes:
     counts: (num_lat_bins, num_lon_bins, num_energy_bins)
     exposure_time: (num_lat_bins, num_lon_bins)
     sensitivity: (num_lat_bins, num_lon_bins, num_energy_bins)
@@ -30,6 +33,52 @@ def mock_l1c_pset_product(
     head: Either '45' or '90'. Default is '45'.
 
     as well as the epoch (assumed to be a single time for each product).
+
+    The counts are generated along a stripe, centered at a given longitude.
+    This stripe can be thought of as a 'vertical' line if the lon/az axis is plotted
+    as the x-axis and the lat/el axis is plotted as the y-axis. See the figure below.
+
+    ^  Elevation/Latitude
+    |
+    |    000000000000002468642000000000000000000000000000000
+    |    000000000000002468642000000000000000000000000000000
+    |    000000000000002468642000000000000000000000000000000
+    |    000000000000002468642000000000000000000000000000000
+    |    000000000000002468642000000000000000000000000000000
+    |    000000000000002468642000000000000000000000000000000
+    |    000000000000002468642000000000000000000000000000000
+    --------------------------------------------------------->
+    Azimuth/Longitude ->
+
+    Fig. 1: Example of the '90' sensor head stripe
+
+    To distinguish between the two sensor heads, the counts are halved in the '45' head
+    at latitudes above 0 degrees.
+
+    ^  Elevation/Latitude
+    |
+    |    000000000000000000000000000123432100000000000000000
+    |    000000000000000000000000000123432100000000000000000
+    |    000000000000000000000000000123432100000000000000000
+    |    000000000000000000000000000123432100000000000000000
+    |    000000000000000000000000000246864200000000000000000
+    |    000000000000000000000000000246864200000000000000000
+    |    000000000000000000000000000246864200000000000000000
+    --------------------------------------------------------->
+    Azimuth/Longitude ->
+
+    Fig. 2: Example of the '45' sensor head stripe
+
+    Parameters
+    ----------
+    spacing_deg : float, optional
+        The bin spacing in degrees (default is 0.5 degrees).
+    stripe_center_lon : int, optional
+        The center longitude of the stripe in degrees (default is 0).
+    timestr : str, optional
+        The time string for the epoch (default is "2025-01-01T00:00:00").
+    head : str, optional
+        The sensor head (either '45' or '90') (default is '45').
     """
     num_lat_bins = int(180 / spacing_deg)
     num_lon_bins = int(360 / spacing_deg)
@@ -54,12 +103,7 @@ def mock_l1c_pset_product(
             distance_scaling=20,
             lon_bin=lon_bin,
             central_lon_bin=stripe_center_lon_bin,
-        )
-        / 1,
-        # If you want to reduce counts at the poles, divide by this instead:
-        # (
-        #     np.exp(1E-4 * (lat_bin - (num_lat_bins // 2))**2)
-        # ),
+        ),
         shape=grid_shape,
     )
 
@@ -71,10 +115,10 @@ def mock_l1c_pset_product(
         ] = 1
     else:
         counts[
-            stripe_center_lon_bin : stripe_center_lon_bin + int(70 / spacing_deg),
+            :,
             : int(90 / spacing_deg),
             :,
-        ] *= 0.1
+        ] *= 0.5
         counts = counts.astype(int)
         exposure_time[
             stripe_center_lon_bin : stripe_center_lon_bin + int(70 / spacing_deg),
