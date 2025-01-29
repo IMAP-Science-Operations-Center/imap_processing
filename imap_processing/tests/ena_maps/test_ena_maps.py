@@ -56,7 +56,7 @@ class TestUltraPointingSet:
 
         for ultra_pset in ultra_psets:
             # Check tiling is rectangular
-            assert ultra_pset.tiling_type == ena_maps.TilingType.RECTANGULAR
+            assert ultra_pset.tiling_type == ena_maps.SkyTilingType.RECTANGULAR
 
             # Check that the reference frame is correctly set
             assert ultra_pset.reference_frame == geometry.SpiceFrame.IMAP_DPS

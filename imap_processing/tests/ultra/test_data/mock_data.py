@@ -118,7 +118,7 @@ def mock_l1c_pset_product(
             :,
             : int(90 / spacing_deg),
             :,
-        ] *= 0.5
+        ] / 2
         counts = counts.astype(int)
         exposure_time[
             stripe_center_lon_bin : stripe_center_lon_bin + int(70 / spacing_deg),

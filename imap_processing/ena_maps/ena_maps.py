@@ -16,7 +16,7 @@ from imap_processing.spice import geometry
 logger = logging.getLogger(__name__)
 
 
-class TilingType(Enum):
+class SkyTilingType(Enum):
     """Enumeration of the types of tiling used in the ENA maps."""
 
     RECTANGULAR = "Rectangular"
@@ -25,7 +25,32 @@ class TilingType(Enum):
 
 
 class IndexMatchMethod(Enum):
-    """Enumeration of the types of index matching methods used in the ENA maps."""
+    """
+    Enumeration of the types of index matching methods used in the ENA maps.
+
+    Notes
+    -----
+    Index matching is the process of determining which pixels in a map grid correspond
+    to which pixels in a pointing set grid. The Ultra instrument team has determined
+    that they must support two methods of index matching for rectangular grid maps:
+
+    **Push Method**
+
+    The "push" method takes each pixel in a pointing set and transforms its coordinates
+    to the frame of the map, then determines into which pixel in the map grid the
+    projected pointing set pixel falls.
+    This method ensures that all pointing set pixels (and thus all counts) are
+    captured in the map, but does not ensure that all pixels in the map receive data.
+
+    **Pull Method**
+
+    The "pull" method takes each pixel in the map grid and transforms its coordinates
+    to the frame of the pointing set, then determines into which pixel in the
+    pointing set grid the projected map pixel falls.
+    This method ensures that all pixels in the map receive data, but can result in
+    some pointing set pixels not being captured in the map, and others being captured
+    multiple times.
+    """
 
     PUSH = "Push"
     PULL = "Pull"
@@ -138,7 +163,7 @@ class UltraPointingSet(PointingSet):
         # aspects of the Ultra PSET.
         # NOTE: This may be changed to Healpix tessellation in the future
 
-        self.tiling_type = TilingType.RECTANGULAR
+        self.tiling_type = SkyTilingType.RECTANGULAR
 
         # Ensure 1D axes grids are uniformly spaced,
         # then set spacing based on data's azimuth bin spacing.
@@ -155,31 +180,17 @@ class UltraPointingSet(PointingSet):
             )
         self.spacing_deg = az_bin_delta[0]
 
-        # Build the azimuth and elevation grids and check that
-        # the 1D axes match the dataset.
-        (
-            az_axis_bin_centers_input,
-            el_axis_bin_centers_input,
-            az_grid_input,
-            el_grid_input,
-            az_bin_edges_input,
-            el_bin_edges_input,
-        ) = spatial_utils.build_az_el_grid(
-            spacing=self.spacing_deg,
-            input_degrees=True,
-            output_degrees=False,
-            centered_azimuth=False,
-            centered_elevation=True,
+        # Build the azimuth and elevation grids with an AzElSkyGrid object
+        # and check that the 1D axes match the dataset's az and el.
+        input_grid = spatial_utils.AzElSkyGrid(
+            spacing_deg=self.spacing_deg,
         )
 
         for dim, constructed_bins in zip(
             ["azimuth", "elevation"],
-            [az_axis_bin_centers_input, el_axis_bin_centers_input],
+            [input_grid.az_bin_midpoints, input_grid.el_bin_midpoints],
         ):
             if not np.allclose(
-                # TODO: Consider removing the sort and the inversion in spatial_utils
-                # The constructed el bins may be inverted (+90deg -> -90deg),
-                # so compare a sorted version of the bins
                 sorted(np.rad2deg(constructed_bins)),
                 self.data[f"{dim}_bin_center"],
                 atol=1e-10,
@@ -196,14 +207,18 @@ class UltraPointingSet(PointingSet):
         # column 0 (az_el_points[:, 0]) is the azimuth of that point and
         # column 1 (az_el_points[:, 1]) is the elevation of that point.
         self.az_el_points = np.column_stack(
-            (az_grid_input.ravel(order=order), el_grid_input.ravel(order=order))
+            (
+                input_grid.az_grid.ravel(order=order),
+                input_grid.el_grid.ravel(order=order),
+            )
         )
         self.num_points = self.az_el_points.shape[0]
 
         # Also store the bin edges for the pointing set to allow for "pull" method
-        # of index matching (not yet implemented)
-        self.az_bin_edges = az_bin_edges_input
-        self.el_bin_edges = el_bin_edges_input
+        # of index matching (not yet implemented).
+        # These are 1D arrays of different lengths and cannot be stacked.
+        self.az_bin_edges = input_grid.az_bin_edges
+        self.el_bin_edges = input_grid.el_bin_edges
 
     @property
     def reference_frame(self) -> geometry.SpiceFrame:
@@ -284,7 +299,7 @@ class AbstractMap(ABC):
 
     @abstractmethod
     def __init__(self) -> None:
-        self.tiling_type = TilingType.ABSTRACT
+        self.tiling_type = SkyTilingType.ABSTRACT
 
     @abstractmethod
     def match_pset_coords_to_indices(self, pointing_set: PointingSet) -> None:
@@ -333,37 +348,26 @@ class RectangularMap(AbstractMap):
         spice_frame: geometry.SpiceFrame,
         order: typing.Literal["C"] | typing.Literal["F"] = "F",
     ):
-        # Define the core properties of the map
-        self.tiling_type = TilingType.RECTANGULAR
+        # Define the core properties of the map:
+        self.tiling_type = SkyTilingType.RECTANGULAR  # Type of tiling of the sky
         self.spacing_deg = spacing_deg
         self.reference_frame = spice_frame
         self.order = order
-
-        # Build the azimuth and elevation grids and the solid angle grid
-        (
-            self.az_axis_bin_centers,
-            self.el_axis_bin_centers,
-            self.az_grid,
-            self.el_grid,
-            self.az_bin_edges,
-            self.el_bin_edges,
-        ) = spatial_utils.build_az_el_grid(
-            spacing=self.spacing_deg,
-            input_degrees=True,
-            output_degrees=False,
-            centered_azimuth=False,
-            centered_elevation=True,
+        self.sky_grid = spatial_utils.AzElSkyGrid(
+            spacing_deg=self.spacing_deg,
         )
+
+        # Solid angles of each pixel in the map grid in units of steradians
         self.solid_angle_grid = spatial_utils.build_solid_angle_map(
-            spacing=self.spacing_deg, input_degrees=True, output_degrees=False
+            spacing_deg=self.spacing_deg,
         )
 
         # Unwrap the az, el, solid angle grids to series of points tiling the sky
-        az_points = self.az_grid.ravel(order=self.order)
-        el_points = self.el_grid.ravel(order=self.order)
+        az_points = self.sky_grid.az_grid.ravel(order=self.order)
+        el_points = self.sky_grid.el_grid.ravel(order=self.order)
         self.az_el_points = np.column_stack((az_points, el_points))
-        self.num_points = self.az_el_points.shape[0]
         self.solid_angle_points = self.solid_angle_grid.ravel(order=self.order)
+        self.num_points = self.az_el_points.shape[0]
 
         # Initialize empty data dictionary to store map data
         self.data_dict: dict[str, NDArray] = {}
@@ -414,14 +418,19 @@ class RectangularMap(AbstractMap):
                 pointing_set.project_to_frame(self.reference_frame)
 
             az_indices = (
-                np.digitize(pointing_set.az_el_points[:, 0], self.az_bin_edges) - 1
+                np.digitize(pointing_set.az_el_points[:, 0], self.sky_grid.az_bin_edges)
+                - 1
             )
             el_indices = (
-                np.digitize(pointing_set.az_el_points[:, 1], self.el_bin_edges) - 1
+                np.digitize(pointing_set.az_el_points[:, 1], self.sky_grid.el_bin_edges)
+                - 1
             )
             flat_indices = np.ravel_multi_index(
                 multi_index=(az_indices, el_indices),
-                dims=(len(self.az_axis_bin_centers), len(self.el_axis_bin_centers)),
+                dims=(
+                    len(self.sky_grid.az_bin_midpoints),
+                    len(self.sky_grid.el_bin_midpoints),
+                ),
                 order=self.order,
             )
 
@@ -487,8 +496,8 @@ class RectangularMap(AbstractMap):
                 pointing_projected_values = map_utils.bin_single_array_at_indices(
                     value_array=raveled_pset_data,
                     projection_grid_shape=(
-                        len(self.az_axis_bin_centers),
-                        len(self.el_axis_bin_centers),
+                        len(self.sky_grid.az_bin_midpoints),
+                        len(self.sky_grid.el_bin_midpoints),
                     ),
                     projection_indices=matched_indices,
                 )
