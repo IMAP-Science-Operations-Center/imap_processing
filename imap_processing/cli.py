@@ -538,7 +538,7 @@ class Hi(ProcessInstrument):
             dependencies.append(
                 Path(__file__).parent
                 / "tests/hi/test_data/l1"
-                / "imap_hi_pset-calibration-prod-config_20240101_v001.yaml"
+                / "imap_his_pset-calibration-prod-config_20240101_v001.csv"
             )
             dependencies[0] = load_cdf(dependencies[0])
             datasets = [hi_l1c.hi_l1c(dependencies, self.version)]

@@ -3,19 +3,21 @@
 from unittest import mock
 
 import numpy as np
+import pandas as pd
 import pytest
 import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import load_cdf, write_cdf
 from imap_processing.hi.l1c import hi_l1c
+from imap_processing.hi.l1c.hi_l1c import CalibrationProductConfig
 from imap_processing.hi.utils import HIAPID
 
 
 @pytest.fixture(scope="module")
 def hi_test_cal_prod_config_path(hi_l1_test_data_path):
     return (
-        hi_l1_test_data_path / "imap_hi_pset-calibration-prod-config_20240101_v001.yaml"
+        hi_l1_test_data_path / "imap_his_pset-calibration-prod-config_20240101_v001.csv"
     )
 
 
@@ -124,37 +126,25 @@ def test_pset_geometry(mock_frame_transform, mock_geom_frame_transform, sensor_s
 
 
 class TestCalibrationProductConfig:
-    """A class containing test coverage for CalibrationProductConfig"""
+    """
+    All test coverage for the pd.DataFrame accessor extension "cal_prod_config".
+    """
 
-    def test_invalid_top_level_config(self):
-        """Test coverage for an invalid top level configuration dictionary"""
-        with pytest.raises(KeyError, match="Missing required key*"):
-            hi_l1c.CalibrationProductConfig([{"foo": 1}])
+    def test_wrong_columns(self):
+        """Test coverage for a dataframe with the wrong columns."""
+        required_columns = CalibrationProductConfig.required_columns
+        for exclude_column_name in required_columns:
+            include_columns = set(required_columns) - {exclude_column_name}
+            df = pd.DataFrame({col: [1, 2, 3] for col in include_columns})
+            with pytest.raises(AttributeError, match="Required column*"):
+                _ = df.cal_prod_config.number_of_products
 
-    def test_invalid_cal_prod_config(self):
-        """Test coverage for an invalid top level configuration dictionary"""
-        invalid_config = [
-            {
-                "description": "foo",
-                "valid_date": "2024-01-01T00:00:00",
-                "product_list": [{"invalid": 1}],
-            }
-        ]
-        with pytest.raises(KeyError, match="Missing required key index"):
-            hi_l1c.CalibrationProductConfig(invalid_config)
+    def test_read_csv(self, hi_test_cal_prod_config_path):
+        """Test coverage for read_csv function."""
+        df = CalibrationProductConfig.read_csv(hi_test_cal_prod_config_path)
+        assert isinstance(df["coincidence_type_list"][0], list)
 
-    def test_from_yaml(self, hi_test_cal_prod_config_path):
-        """Test class factory function from YAML file."""
-        config = hi_l1c.CalibrationProductConfig.from_yaml(hi_test_cal_prod_config_path)
-        assert config.number_of_products == 2
-
-    @mock.patch(
-        "imap_processing.hi.l1c.hi_l1c.CalibrationProductConfig._validate",
-        side_effect=KeyError("Test message"),
-    )
-    def test_from_yaml_exceptions(self, mock_validate, hi_test_cal_prod_config_path):
-        """Test coverage for factory function from_yaml exception handling."""
-        with pytest.raises(
-            KeyError, match="Invalid configuration specified in YAML file*"
-        ):
-            hi_l1c.CalibrationProductConfig.from_yaml(hi_test_cal_prod_config_path)
+    def test_number_of_products(self, hi_test_cal_prod_config_path):
+        """Test coverage for number of products accessor."""
+        df = CalibrationProductConfig.read_csv(hi_test_cal_prod_config_path)
+        assert df.cal_prod_config.number_of_products == 2

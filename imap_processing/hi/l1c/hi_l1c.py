@@ -3,12 +3,11 @@
 from __future__ import annotations
 
 import logging
-from collections.abc import Iterable
 from pathlib import Path
 
 import numpy as np
+import pandas as pd
 import xarray as xr
-import yaml
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import parse_filename_like
@@ -87,13 +86,11 @@ def generate_pset_dataset(
     logical_source_parts = parse_filename_like(de_dataset.attrs["Logical_source"])
     n_esa_step = len(np.unique(de_dataset.esa_step.data))
     # read calibration product configuration file
-    calibration_prod_config = CalibrationProductConfig.from_yaml(
-        calibration_prod_config_path
-    )
+    config_df = CalibrationProductConfig.read_csv(calibration_prod_config_path)
 
     pset_dataset = empty_pset_dataset(
         n_esa_step,
-        calibration_prod_config.number_of_products,
+        config_df.cal_prod_config.number_of_products,
         logical_source_parts["sensor"],
     )
     # For ISTP, epoch should be the center of the time bin.
@@ -296,99 +293,76 @@ def pset_geometry(pset_et: float, sensor_str: str) -> dict[str, xr.DataArray]:
     return geometry_vars
 
 
-class CalibrationProductConfig(list):
+@pd.api.extensions.register_dataframe_accessor("cal_prod_config")
+class CalibrationProductConfig:
     """
-    A Class for Hi Calibration Product Configuration.
+    Register custom accessor for calibration product configuration DataFrames.
 
     Parameters
     ----------
-    iterable : Iterable
-        An iterable containing time varying calibration product configurations.
+    pandas_obj : pandas.DataFrame
+        Object to run validation and use accessor functions on.
     """
 
-    # Define required top level keys as a class attribute
-    required_top_level_keys = (
-        "description",
-        "valid_date",
-        "product_list",
-    )
-    # Define required calibration product configuration keys as a class attribute
-    required_cal_prod_keys = (
-        "index",
-        "coincidence_type_bin_strings",
-        "tof_ab_range",
-        "tof_ac1_range",
-        "tof_bc1_range",
-        "tof_c1c2_range",
+    required_columns = (
+        "cal_prod_num",
+        "esa_energy_step",
+        "coincidence_type_list",
+        "tof_ab_low",
+        "tof_ab_high",
+        "tof_ac1_low",
+        "tof_ac1_high",
+        "tof_bc1_low",
+        "tof_bc1_high",
+        "tof_c1c2_low",
+        "tof_c1c2_high",
     )
 
-    def __init__(self, iterable: Iterable) -> None:
-        """
-        Instantiate the configuration list and validate the configuration.
+    def __init__(self, pandas_obj: pd.DataFrame) -> None:
+        self._validate(pandas_obj)
+        self._obj = pandas_obj
 
-        Parameters
-        ----------
-        iterable : Iterable
-            An iterable containing time varying calibration product configurations.
-        """
-        super().__init__(iterable)
-        self._validate()
-
-    def _validate(self) -> None:
+    def _validate(self, df: pd.DataFrame) -> None:
         """
         Validate the current configuration.
 
+        Parameters
+        ----------
+        df : pandas.DataFrame
+            Object to validate.
+
         Raises
         ------
-        KeyError : Raised when a required key is not present in the current
-            configuration.
+        AttributeError : If the dataframe does not pass validation.
         """
-        for entry_index, entry in enumerate(self):
-            for k1 in self.required_top_level_keys:
-                if k1 not in entry:
-                    raise KeyError(f"Missing required key {k1} in entry {entry_index}")
-            for cal_prod_index, cal_prod_def in enumerate(entry["product_list"]):
-                for k2 in self.required_cal_prod_keys:
-                    if k2 not in cal_prod_def:
-                        raise KeyError(
-                            f"Missing required key {k2} in calibration product "
-                            f"definition {cal_prod_index} in entry {entry_index}"
-                        )
-        # TODO: Validate date strings
-        # TODO: Validate same number of calibration products for all dates???
-        # TODO: Validate number of ESA entries in TOF range lists
+        # Verify that the Dataframe has all the required columns
+        for col in self.required_columns:
+            if col not in df.columns:
+                raise AttributeError(f"Required column {col} not present in dataframe.")
+        # TODO: Verify that the same ESA energy steps exist in all unique calibration
+        #   product numbers
 
     @classmethod
-    def from_yaml(cls, config_path: Path) -> CalibrationProductConfig:
+    def read_csv(cls, path: Path) -> pd.DataFrame:
         """
-        Instantiate an instance of the class from a YAML file.
+        Read configuration CSV file into a pandas.DataFrame.
 
         Parameters
         ----------
-        config_path : Path
-            Location of YAML configuration file.
+        path : Path
+            Location of the Calibration Product configuration CSV file.
 
         Returns
         -------
-        config : CalibrationProductConfig
-            Matches input YAML configuration.
-
-        Raises
-        ------
-        KeyError : Raised when a required key is not present in the input YAML.
+        dataframe : pandas.DataFrame
+            Validated calibration product configuration data frame.
         """
-        logger.info(
-            f"Loading calibration product configuration from {config_path.name}",
+        return pd.read_csv(
+            path,
+            index_col=False,
+            converters={"coincidence_type_list": lambda s: s.split("|")},
+            comment="#",
         )
-        with open(config_path) as f:
-            try:
-                config = cls(yaml.safe_load(f))
-            except KeyError as exc:
-                logger.exception(exc)
-                raise KeyError(
-                    f"Invalid configuration specified in YAML file: {config_path}"
-                ) from exc
-        return config
 
     @property
     def number_of_products(self) -> int:
@@ -401,4 +375,4 @@ class CalibrationProductConfig(list):
             The maximum number of calibration products defined in the list of
             calibration product definitions.
         """
-        return max([len(entry["product_list"]) for entry in self])
+        return len(self._obj["cal_prod_num"].unique())
