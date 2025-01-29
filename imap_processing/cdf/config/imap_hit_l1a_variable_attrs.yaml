@@ -97,7 +97,7 @@ adc_channels_label:
   VAR_TYPE: metadata
 
 
-# <=== Data Variable Attributes ===>
+# <=== Housekeeping Data Variable Attributes ===>
 
 # CCSDS header variables
 version:
