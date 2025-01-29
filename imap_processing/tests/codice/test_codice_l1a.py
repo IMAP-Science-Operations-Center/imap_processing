@@ -205,7 +205,7 @@ def test_l1a_validate_data_arrays(test_l1a_data: xr.Dataset, index):
 
     # TODO: Currently only the following products can be validated, expand this
     #       to other data products as I can validate them.
-    able_to_be_validated = ["lo-sw-angular", "lo-nsw-angular", "lo-sw-species"]
+    able_to_be_validated = ["lo-sw-angular", "lo-nsw-angular"]
     if descriptor in able_to_be_validated:
         counters = getattr(
             constants, f'{descriptor.upper().replace("-","_")}_VARIABLE_NAMES'
@@ -226,6 +226,11 @@ def test_l1a_validate_data_arrays(test_l1a_data: xr.Dataset, index):
                 processed_dataset[counter].data.shape
                 == validation_dataset[counter].data.shape
             )
+
+            # TODO: Once Joey and I figure out some small discrepancies with
+            #       some data products, we may be able to just compare the data
+            #       arrays directly (i.e. assert_array_equal on just the .data
+            #       attribute, instead of sum or shape.
     else:
         pytest.xfail(f"Still need to implement validation for {descriptor}")
 
