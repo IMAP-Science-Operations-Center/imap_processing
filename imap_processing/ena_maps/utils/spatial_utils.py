@@ -45,30 +45,25 @@ def build_spatial_bins(
 
 
 def build_solid_angle_map(
-    spacing: float, input_degrees: bool = True, output_degrees: bool = False
+    spacing_deg: float,
 ) -> NDArray:
     """
-    Build a solid angle map for a given spacing in degrees.
+    Build a solid angle map in steradians for a given spacing in degrees.
 
     Parameters
     ----------
-    spacing : float
-        The bin spacing in the specified units.
-    input_degrees : bool, optional
-        If True, the input spacing is in degrees
-        (default is True for radians).
-    output_degrees : bool, optional
-        If True, the output solid angle map is in square degrees
-        (default is False for steradians).
+    spacing_deg : float
+        The bin spacing in degrees.
 
     Returns
     -------
     solid_angle_grid : np.ndarray
-        The solid angle map grid in steradians (default) or square degrees.
+        The solid angle map grid in steradians.
         First index is latitude/el, second index is longitude/az.
     """
-    if input_degrees:
-        spacing = np.deg2rad(spacing)
+    # Degrees are the preferred input units of angle, given map definitions,
+    # but we'll convert to radians for internal calculations and output steradians.
+    spacing = np.deg2rad(spacing_deg)
 
     if spacing <= 0:
         raise ValueError("Spacing must be positive valued, non-zero.")
@@ -86,14 +81,11 @@ def build_solid_angle_map(
         solid_angle_by_latitude[np.newaxis, :], (2 * np.pi) / spacing, axis=0
     )
 
-    if output_degrees:
-        solid_angle_grid *= (180 / np.pi) ** 2
-
     return solid_angle_grid
 
 
 @typing.no_type_check
-def rewrap_even_spaced_el_az_grid(
+def rewrap_even_spaced_az_el_grid(
     raveled_values: NDArray,
     shape: tuple[int] | None = None,
     extra_axis: bool = False,

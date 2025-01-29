@@ -43,15 +43,10 @@ def test_build_spatial_bins():
 def test_build_solid_angle_map_integration(spacing):
     """Test build_solid_angle_map function integrates to 4 pi steradians."""
     solid_angle_map_steradians = spatial_utils.build_solid_angle_map(
-        spacing, input_degrees=True, output_degrees=False
+        spacing_deg=spacing
     )
-    assert np.isclose(np.sum(solid_angle_map_steradians), 4 * np.pi, atol=0, rtol=1e-9)
-
-    solid_angle_map_sqdeg = spatial_utils.build_solid_angle_map(
-        np.deg2rad(spacing), input_degrees=False, output_degrees=True
-    )
-    assert np.isclose(
-        np.sum(solid_angle_map_sqdeg), 4 * np.pi * (180 / np.pi) ** 2, atol=0, rtol=1e-9
+    np.testing.assert_allclose(
+        np.sum(solid_angle_map_steradians), 4 * np.pi, atol=0, rtol=1e-9
     )
 
 
@@ -59,7 +54,7 @@ def test_build_solid_angle_map_integration(spacing):
 def test_build_solid_angle_map_equal_at_equal_el(spacing):
     """Test build_solid_angle_map function produces equal solid angle at equal el."""
     solid_angle_map = spatial_utils.build_solid_angle_map(
-        spacing, input_degrees=True, output_degrees=False
+        spacing, input_degrees=True, output_sqdeg=False
     )
     el_grid = spatial_utils.AzElSkyGrid(
         spacing_deg=spacing,
@@ -79,19 +74,19 @@ def test_build_solid_angle_map_invalid_spacing(spacing, match_str):
     """Test build_solid_angle_map function raises error for invalid spacing."""
     with pytest.raises(ValueError, match=match_str):
         _ = spatial_utils.build_solid_angle_map(
-            spacing, input_degrees=True, output_degrees=False
+            spacing, input_degrees=True, output_sqdeg=False
         )
 
 
-def test_rewrap_even_spaced_el_az_grid_1d():
-    """Test rewrap_even_spaced_el_az_grid function, without extra axis."""
+def test_rewrap_even_spaced_az_el_grid_1d():
+    """Test rewrap_even_spaced_az_el_grid function, without extra axis."""
     orig_shape = (180 * 12, 360 * 12)
     orig_grid = np.fromfunction(lambda i, j: i**2 + j, orig_shape, dtype=int)
     raveled_values = orig_grid.ravel(order="F")
-    rewrapped_grid_infer_shape = spatial_utils.rewrap_even_spaced_el_az_grid(
+    rewrapped_grid_infer_shape = spatial_utils.rewrap_even_spaced_az_el_grid(
         raveled_values
     )
-    rewrapped_grid_known_shape = spatial_utils.rewrap_even_spaced_el_az_grid(
+    rewrapped_grid_known_shape = spatial_utils.rewrap_even_spaced_az_el_grid(
         raveled_values, shape=orig_shape
     )
 
@@ -99,15 +94,15 @@ def test_rewrap_even_spaced_el_az_grid_1d():
     assert np.array_equal(rewrapped_grid_known_shape, orig_grid)
 
 
-def test_rewrap_even_spaced_el_az_grid_2d():
-    """Test rewrap_even_spaced_el_az_grid function, with extra axis."""
+def test_rewrap_even_spaced_az_el_grid_2d():
+    """Test rewrap_even_spaced_az_el_grid function, with extra axis."""
     orig_shape = (180 * 12, 360 * 12, 5)
     orig_grid = np.fromfunction(lambda i, j, k: i**2 + j + k, orig_shape, dtype=int)
     raveled_values = orig_grid.reshape(-1, 5, order="F")
-    rewrapped_grid_infer_shape = spatial_utils.rewrap_even_spaced_el_az_grid(
+    rewrapped_grid_infer_shape = spatial_utils.rewrap_even_spaced_az_el_grid(
         raveled_values, extra_axis=True
     )
-    rewrapped_grid_known_shape = spatial_utils.rewrap_even_spaced_el_az_grid(
+    rewrapped_grid_known_shape = spatial_utils.rewrap_even_spaced_az_el_grid(
         raveled_values, shape=orig_shape, extra_axis=True
     )
     assert raveled_values.shape == (180 * 12 * 360 * 12, 5)
