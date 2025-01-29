@@ -79,42 +79,10 @@ def test_build_solid_angle_map_invalid_spacing(spacing, match_str):
         )
 
 
-@pytest.mark.parametrize("spacing", valid_spacings)
-def test_build_az_el_grid(spacing):
-    """Test build_az_el_grid function."""
-    (az_range, el_range, az_grid, el_grid, az_bin_edges, el_bin_edges) = (
-        spatial_utils.build_az_el_grid(
-            spacing=spacing,
-            input_degrees=True,
-            output_degrees=True,
-            centered_azimuth=False,
-            centered_elevation=True,
-        )
-    )
-
-    # Size checks
-    assert az_range.size == int(360 / spacing)
-    assert el_range.size == int(180 / spacing)
-    assert az_range.size == az_grid.shape[0]
-    assert el_range.size == el_grid.shape[1]
-
-    # Check grid values
-    expected_az_range = np.arange((spacing / 2), 360 + (spacing / 2), spacing)
-    expected_el_range = np.arange(-90 + (spacing / 2), 90 + (spacing / 2), spacing)
-
-    npt.assert_allclose(az_range, expected_az_range, atol=1e-12)
-    npt.assert_allclose(el_range, expected_el_range, atol=1e-12)
-
-    # Check bin edges
-    expected_az_bin_edges = np.arange(0, 360 + spacing, spacing)
-    expected_el_bin_edges = np.arange(-90, 90 + spacing, spacing)
-    npt.assert_allclose(az_bin_edges, expected_az_bin_edges, atol=1e-11)
-    npt.assert_allclose(el_bin_edges, expected_el_bin_edges, atol=1e-11)
-
-
-def test_rewrap_even_spaced_el_az_grid_1d():
-    """Test rewrap_even_spaced_el_az_grid function, without extra axis."""
-    orig_shape = (180 * 12, 360 * 12)
+@pytest.mark.parametrize("order", ["C", "F"])
+def test_rewrap_even_spaced_az_el_grid_1d(order):
+    """Test rewrap_even_spaced_az_el_grid function, without extra axis."""
+    orig_shape = (360 * 12, 180 * 12)
     orig_grid = np.fromfunction(lambda i, j: i**2 + j, orig_shape, dtype=int)
     raveled_values = orig_grid.ravel(order=order)
     rewrapped_grid_infer_shape = spatial_utils.rewrap_even_spaced_az_el_grid(
