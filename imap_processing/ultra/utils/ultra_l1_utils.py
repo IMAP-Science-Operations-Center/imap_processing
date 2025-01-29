@@ -46,7 +46,7 @@ def create_dataset(
             dims=["epoch"],
             attrs=cdf_manager.get_variable_attributes("epoch"),
         )
-        if name in {f"imap_ultra_l1b_{x}sensor-de" for x in [45, 90]}:
+        if "sensor-de" in name:
             coords = {"epoch": epoch_time, "component": ["vx", "vy", "vz"]}
         else:
             coords = {"epoch": epoch_time}
