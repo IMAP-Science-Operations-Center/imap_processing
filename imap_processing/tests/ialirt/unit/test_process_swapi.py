@@ -47,7 +47,7 @@ def xarray_data(binary_packet_path, xtce_swapi_path):
     apid = 1187
 
     xarray_data = packet_file_to_datasets(
-        binary_packet_path, xtce_swapi_path, use_derived_value=False
+        binary_packet_path, xtce_swapi_path, use_derived_value=True
     )[apid]
     return xarray_data
 
@@ -55,35 +55,30 @@ def xarray_data(binary_packet_path, xtce_swapi_path):
 def test_decom_packets(xarray_data, swapi_test_data):
     """This function checks that all instrument parameters are accounted for."""
 
-    swapi_acq = xarray_data["swapi_acq"]
-    swapi_flag = xarray_data["swapi_flag"]
-    swapi_reserved = xarray_data["swapi_reserved"]
-    swapi_seq = xarray_data["swapi_seq"]
-    swapi_version = xarray_data["swapi_version"]
-    swapi_coin_1 = xarray_data["swapi_coin_1"]
-    swapi_coin_2 = xarray_data["swapi_coin_2"]
-    swapi_coin_3 = xarray_data["swapi_coin_3"]
-    swapi_coin_4 = xarray_data["swapi_coin_4"]
-    swapi_coin_5 = xarray_data["swapi_coin_5"]
-    swapi_coin_6 = xarray_data["swapi_coin_6"]
-    swapi_spare = xarray_data["swapi_spare"]
+    # TODO: confirm w/ SWAPI team validity_enum flag can be
+    #  consistent with other instruments.
+    fields_to_test = {
+        "swapi_reserved": "INST_RES_ST",
+        "swapi_seq": "SEQ_NUMBER",
+        "swapi_version": "SWEEP_TABLE",
+        "swapi_coin_1": "COIN_CNT0",
+        "swapi_coin_2": "COIN_CNT1",
+        "swapi_coin_3": "COIN_CNT2",
+        "swapi_coin_4": "COIN_CNT3",
+        "swapi_coin_5": "COIN_CNT4",
+        "swapi_coin_6": "COIN_CNT5",
+        "swapi_spare": "SPARE",
+    }
+    _, index, test_index = np.intersect1d(
+        xarray_data["swapi_acq"], swapi_test_data["ACQ_TIME"], return_indices=True
+    )
 
-    expected_swapi_acq = swapi_test_data["ACQ_TIME"]
-    expected_swapi_flag = swapi_test_data["I_ALIRT_STATUS"]
-    expected_swapi_reserved = swapi_test_data["INST_RES_ST"]
-    expected_swapi_seq = swapi_test_data["SEQ_NUMBER"]
-    expected_swapi_version = swapi_test_data["SWEEP_TABLE"]
-    expected_swapi_coin_1 = swapi_test_data["COIN_CNT0"]
-    expected_swapi_coin_2 = swapi_test_data["COIN_CNT1"]
-    expected_swapi_coin_3 = swapi_test_data["COIN_CNT2"]
-    expected_swapi_coin_4 = swapi_test_data["COIN_CNT3"]
-    expected_swapi_coin_5 = swapi_test_data["COIN_CNT4"]
-    expected_swapi_coin_6 = swapi_test_data["COIN_CNT5"]
-    expected_swapi_spare = swapi_test_data["SPARE"]
+    for xarray_field, test_field in fields_to_test.items():
+        actual_values = xarray_data[xarray_field].values[index]
+        expected_values = swapi_test_data[test_field].values[test_index]
 
-    matching_indices = np.nonzero(
-        np.isin(xarray_data["swapi_acq"], swapi_test_data["ACQ_TIME"])
-    )[0]
-    assert np.all(swapi_flag[matching_indices] == expected_swapi_flag)
-
-    print("hi")
+        # Assert that all values match
+        assert np.all(actual_values == expected_values), (
+            f"Mismatch found in {xarray_field}: "
+            f"actual {actual_values}, expected {expected_values}"
+        )
