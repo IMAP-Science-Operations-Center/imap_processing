@@ -2,7 +2,7 @@
 
 import numpy as np
 import pytest
-import spiceypy as spice
+import spiceypy
 
 from imap_processing.spice.geometry import SpiceFrame
 from imap_processing.ultra.l1b.ultra_l1b_annotated import (
@@ -31,9 +31,9 @@ def kernels(spice_test_data_path):
 @pytest.mark.external_kernel()
 def test_get_particle_velocity(spice_test_data_path, kernels):
     """Tests get_particle_velocity function."""
-    spice.furnsh(kernels)
+    spiceypy.furnsh(kernels)
 
-    pointing_cover = spice.ckcov(
+    pointing_cover = spiceypy.ckcov(
         str(spice_test_data_path / "sim_1yr_imap_pointing_frame.bc"),
         SpiceFrame.IMAP_DPS.value,
         True,
@@ -42,7 +42,7 @@ def test_get_particle_velocity(spice_test_data_path, kernels):
         "TDB",
     )
     # Get start and end time of first interval
-    start, _ = spice.wnfetd(pointing_cover, 0)
+    start, _ = spiceypy.wnfetd(pointing_cover, 0)
 
     times = np.array([start])
     instrument_velocity = np.array([[41.18609, -471.24467, -832.8784]])
@@ -71,7 +71,7 @@ def test_get_particle_velocity(spice_test_data_path, kernels):
     magnitude_sc_90 = np.linalg.norm(sc_velocity_90)
     magnitude_dps_45 = np.linalg.norm(sc_dps_velocity_45)
     magnitude_dps_90 = np.linalg.norm(sc_dps_velocity_90)
-    state, lt = spice.spkezr("IMAP", times, "IMAP_DPS", "NONE", "SUN")
+    state, lt = spiceypy.spkezr("IMAP", times, "IMAP_DPS", "NONE", "SUN")
 
     assert np.allclose(magnitude_sc_45, magnitude_sc_90, atol=1e-6)
     assert np.allclose(magnitude_dps_45, magnitude_dps_90, atol=1e-6)

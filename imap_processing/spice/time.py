@@ -1,4 +1,4 @@
-"""Time conversion functions that rely on SPICE."""
+"""Time conversion functions that rely on SPICEYPY."""
 
 import typing
 from collections.abc import Collection, Iterable
@@ -6,7 +6,7 @@ from typing import Union
 
 import numpy as np
 import numpy.typing as npt
-import spiceypy as spice
+import spiceypy
 
 from imap_processing.spice import IMAP_SC_ID
 from imap_processing.spice.kernels import ensure_spice
@@ -94,7 +94,7 @@ def ttj2000ns_to_et(tt_ns: npt.ArrayLike) -> npt.NDArray[float]:
     """
     tt_seconds = np.asarray(tt_ns, dtype=np.float64) / 1e9
     vectorized_unitim = np.vectorize(
-        spice.unitim, [float], excluded=["insys", "outsys"]
+        spiceypy.unitim, [float], excluded=["insys", "outsys"]
     )
     return vectorized_unitim(tt_seconds, "TT", "ET")
 
@@ -122,7 +122,7 @@ def met_to_utc(met: npt.ArrayLike, precision: int = 9) -> npt.NDArray[str]:
     """
     sclk_ticks = met_to_sclkticks(met)
     et = _sct2e_wrapper(sclk_ticks)
-    return spice.et2utc(et, "ISOC", prec=precision)
+    return spiceypy.et2utc(et, "ISOC", prec=precision)
 
 
 def met_to_datetime64(
@@ -169,9 +169,9 @@ def _sct2e_wrapper(
         Ephemeris time, seconds past J2000.
     """
     if isinstance(sclk_ticks, Collection):
-        return np.array([spice.sct2e(IMAP_SC_ID, s) for s in sclk_ticks])
+        return np.array([spiceypy.sct2e(IMAP_SC_ID, s) for s in sclk_ticks])
     else:
-        return spice.sct2e(IMAP_SC_ID, sclk_ticks)
+        return spiceypy.sct2e(IMAP_SC_ID, sclk_ticks)
 
 
 @typing.no_type_check
@@ -200,10 +200,13 @@ def sct_to_ttj2000s(
     """
     if isinstance(sclk_ticks, Collection):
         return np.array(
-            [spice.unitim(spice.sct2e(IMAP_SC_ID, s), "ET", "TT") for s in sclk_ticks]
+            [
+                spiceypy.unitim(spiceypy.sct2e(IMAP_SC_ID, s), "ET", "TT")
+                for s in sclk_ticks
+            ]
         )
     else:
-        return spice.unitim(spice.sct2e(IMAP_SC_ID, sclk_ticks), "ET", "TT")
+        return spiceypy.unitim(spiceypy.sct2e(IMAP_SC_ID, sclk_ticks), "ET", "TT")
 
 
 @typing.no_type_check
@@ -229,9 +232,9 @@ def str_to_et(
         Ephemeris time, seconds past J2000.
     """
     if isinstance(time_str, str):
-        return spice.str2et(time_str)
+        return spiceypy.str2et(time_str)
     else:
-        return np.array([spice.str2et(t) for t in time_str])
+        return np.array([spiceypy.str2et(t) for t in time_str])
 
 
 @typing.no_type_check
@@ -272,4 +275,4 @@ def et_to_utc(
     utc_time : str or np.ndarray
         UTC time(s).
     """
-    return spice.et2utc(et, format_str, precision, utclen)
+    return spiceypy.et2utc(et, format_str, precision, utclen)

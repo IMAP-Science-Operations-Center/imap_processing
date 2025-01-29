@@ -14,7 +14,7 @@ import numpy as np
 import pandas as pd
 import pytest
 import requests
-import spiceypy as spice
+import spiceypy
 
 from imap_processing import imap_module_directory
 from imap_processing.spice.time import met_to_ttj2000ns
@@ -42,7 +42,7 @@ def _autoclear_spice():
     prevent the kernel pool from interfering with future tests. Option autouse
     ensures this is run after every test."""
     yield
-    spice.kclear()
+    spiceypy.kclear()
 
 
 @pytest.fixture(scope="session")
@@ -125,22 +125,22 @@ def spice_test_data_path(imap_tests_path):
 @pytest.fixture()
 def furnish_time_kernels(spice_test_data_path):
     """Furnishes (temporarily) the testing LSK and SCLK"""
-    spice.kclear()
+    spiceypy.kclear()
     test_lsk = spice_test_data_path / "naif0012.tls"
     test_sclk = spice_test_data_path / "imap_sclk_0000.tsc"
-    spice.furnsh(str(test_lsk))
-    spice.furnsh(str(test_sclk))
+    spiceypy.furnsh(str(test_lsk))
+    spiceypy.furnsh(str(test_sclk))
     yield test_lsk, test_sclk
-    spice.kclear()
+    spiceypy.kclear()
 
 
 @pytest.fixture()
 def furnish_sclk(spice_test_data_path):
     """Furnishes (temporarily) the SCLK for JPSS stored in the package data directory"""
     test_sclk = spice_test_data_path / "imap_sclk_0000.tsc"
-    spice.furnsh(str(test_sclk))
+    spiceypy.furnsh(str(test_sclk))
     yield test_sclk
-    spice.kclear()
+    spiceypy.kclear()
 
 
 @pytest.fixture()
@@ -149,7 +149,9 @@ def furnish_kernels(spice_test_data_path):
 
     @contextmanager
     def furnish_kernels(kernels: list[Path]):
-        with spice.KernelPool([str(spice_test_data_path / k) for k in kernels]) as pool:
+        with spiceypy.KernelPool(
+            [str(spice_test_data_path / k) for k in kernels]
+        ) as pool:
             yield pool
 
     return furnish_kernels
@@ -228,7 +230,7 @@ def session_test_metakernel(monkeypatch_session, tmpdir_factory, spice_test_data
     -----
     - This fixture needs to `scope=session` so that the SPICE_METAKERNEL
     environment variable is available for other fixtures that require time
-    conversions using spice.
+    conversions using spiceypy.
     - No furnishing of kernels occur as part of this fixture. This allows other
     fixtures with lesser scope or individual tests to override the environment
     variable as needed. Use the `metakernel_path_not_set` fixture in tests that
@@ -240,7 +242,7 @@ def session_test_metakernel(monkeypatch_session, tmpdir_factory, spice_test_data
     make_metakernel_from_kernels(metakernel_path, kernels_to_load)
     monkeypatch_session.setenv("SPICE_METAKERNEL", str(metakernel_path))
     yield str(metakernel_path)
-    spice.kclear()
+    spiceypy.kclear()
 
 
 @pytest.fixture()
@@ -290,7 +292,7 @@ def use_test_metakernel(
         make_metakernel_from_kernels(metakernel_path, kernels_to_load)
         monkeypatch.setenv("SPICE_METAKERNEL", str(metakernel_path))
         yield str(metakernel_path)
-    spice.kclear()
+    spiceypy.kclear()
 
 
 @pytest.fixture()

@@ -1,5 +1,5 @@
 """
-Functions for computing geometry, many of which use SPICE.
+Functions for computing geometry, many of which use SPICEYPY.
 
 Paradigms for developing this module:
 
@@ -18,7 +18,7 @@ from typing import Union
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
-import spiceypy as spice
+import spiceypy
 from numpy.typing import NDArray
 
 from imap_processing.spice.kernels import ensure_spice
@@ -33,17 +33,17 @@ class SpiceBody(IntEnum):
     # IMAP Pointing Frame (Despun) as defined in imap_science_0001.tf
     IMAP_DPS = -43901
     # Standard NAIF bodies
-    SOLAR_SYSTEM_BARYCENTER = spice.bodn2c("SOLAR_SYSTEM_BARYCENTER")
-    SUN = spice.bodn2c("SUN")
-    EARTH = spice.bodn2c("EARTH")
+    SOLAR_SYSTEM_BARYCENTER = spiceypy.bodn2c("SOLAR_SYSTEM_BARYCENTER")
+    SUN = spiceypy.bodn2c("SUN")
+    EARTH = spiceypy.bodn2c("EARTH")
 
 
 class SpiceFrame(IntEnum):
     """Enum containing SPICE IDs for reference frames, defined in imap_wkcp.tf."""
 
     # Standard SPICE Frames
-    J2000 = spice.irfnum("J2000")
-    ECLIPJ2000 = spice.irfnum("ECLIPJ2000")
+    J2000 = spiceypy.irfnum("J2000")
+    ECLIPJ2000 = spiceypy.irfnum("ECLIPJ2000")
     ITRF93 = 13000
     # IMAP Pointing Frame (Despun) as defined in imap_science_0001.tf
     IMAP_DPS = -43901
@@ -112,7 +112,7 @@ def imap_state(
      The Cartesian state vector representing the position and velocity of the
      IMAP spacecraft.
     """
-    state, _ = spice.spkezr(
+    state, _ = spiceypy.spkezr(
         SpiceBody.IMAP.name, et, ref_frame.name, abcorr, observer.name
     )
     return np.asarray(state)
@@ -353,8 +353,8 @@ def frame_transform(
     calls for each input time and position vector to perform the transform.
     The matrix multiplication step is done using `numpy.matmul` rather than
     `spice.mxv`.
-    >>> rotation_matrix = spice.pxform(from_frame, to_frame, et)
-    ... result = spice.mxv(rotation_matrix, position)
+    >>> rotation_matrix = spiceypy.pxform(from_frame, to_frame, et)
+    ... result = spiceypy.mxv(rotation_matrix, position)
 
     Parameters
     ----------
@@ -492,7 +492,7 @@ def get_rotation_matrix(
         where `n` matches the number of elements in et.
     """
     vec_pxform = np.vectorize(
-        spice.pxform,
+        spiceypy.pxform,
         excluded=["fromstr", "tostr"],
         signature="(),(),()->(3,3)",
         otypes=[np.float64],
@@ -534,8 +534,8 @@ def instrument_pointing(
     if cartesian:
         return pointing
     if isinstance(et, typing.Collection):
-        return np.rad2deg([spice.reclat(vec)[1:] for vec in pointing])
-    return np.rad2deg(spice.reclat(pointing)[1:])
+        return np.rad2deg([spiceypy.reclat(vec)[1:] for vec in pointing])
+    return np.rad2deg(spiceypy.reclat(pointing)[1:])
 
 
 def basis_vectors(
@@ -706,7 +706,7 @@ def cartesian_to_latitudinal(coords: NDArray, degrees: bool = False) -> NDArray:
     # If coords is 1d, add another dimension
     while coords.ndim < 2:
         coords = np.expand_dims(coords, axis=0)
-    latitudinal_coords = np.array([spice.reclat(vec) for vec in coords])
+    latitudinal_coords = np.array([spiceypy.reclat(vec) for vec in coords])
 
     if degrees:
         latitudinal_coords[..., 1:] = np.degrees(latitudinal_coords[..., 1:])

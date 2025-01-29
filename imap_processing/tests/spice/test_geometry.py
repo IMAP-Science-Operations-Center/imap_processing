@@ -5,7 +5,7 @@ from unittest import mock
 import numpy as np
 import pandas as pd
 import pytest
-import spiceypy as spice
+import spiceypy
 
 from imap_processing.spice.geometry import (
     SpiceBody,
@@ -253,7 +253,7 @@ def test_frame_transform(et_strings, position, from_frame, to_frame, furnish_ker
     ]
     with furnish_kernels(kernels):
         # Test single et and position calculation
-        et = np.array([spice.utc2et(et_str) for et_str in et_strings])
+        et = np.array([spiceypy.utc2et(et_str) for et_str in et_strings])
         et_arg = et[0] if len(et) == 1 else et
         result = frame_transform(et_arg, position, from_frame, to_frame)
         # check the result shape before modifying for value checking.
@@ -275,8 +275,8 @@ def test_frame_transform(et_strings, position, from_frame, to_frame, furnish_ker
             position = np.broadcast_to(position, (len(et), 3))
             result = np.broadcast_to(result, (len(et), 3))
         for spice_et, spice_position, test_result in zip(et, position, result):
-            rotation_matrix = spice.pxform(from_frame.name, to_frame.name, spice_et)
-            spice_result = spice.mxv(rotation_matrix, spice_position)
+            rotation_matrix = spiceypy.pxform(from_frame.name, to_frame.name, spice_et)
+            spice_result = spiceypy.mxv(rotation_matrix, spice_position)
             np.testing.assert_allclose(test_result, spice_result, atol=1e-12)
 
 
@@ -361,7 +361,7 @@ def test_get_rotation_matrix(furnish_kernels):
         "sim_1yr_imap_pointing_frame.bc",
     ]
     with furnish_kernels(kernels):
-        et = spice.utc2et("2025-09-30T12:00:00.000")
+        et = spiceypy.utc2et("2025-09-30T12:00:00.000")
         # test input of float
         rotation = get_rotation_matrix(
             et, SpiceFrame.IMAP_IDEX, SpiceFrame.IMAP_SPACECRAFT
@@ -383,7 +383,7 @@ def test_instrument_pointing(furnish_kernels):
         "sim_1yr_imap_pointing_frame.bc",
     ]
     with furnish_kernels(kernels):
-        et = spice.utc2et("2025-06-12T12:00:00.000")
+        et = spiceypy.utc2et("2025-06-12T12:00:00.000")
         # Single et input
         ins_pointing = instrument_pointing(
             et, SpiceFrame.IMAP_HI_90, SpiceFrame.ECLIPJ2000
@@ -408,7 +408,7 @@ def test_basis_vectors():
     """Test coverage for basis_vectors()."""
     # This call to SPICE needs to be wrapped with `ensure_spice` so that kernels
     # get furnished automatically
-    et = ensure_spice(spice.utc2et)("2025-09-30T12:00:00.000")
+    et = ensure_spice(spiceypy.utc2et)("2025-09-30T12:00:00.000")
     # test input of float
     sc_axes = basis_vectors(et, SpiceFrame.IMAP_SPACECRAFT, SpiceFrame.IMAP_SPACECRAFT)
     np.testing.assert_array_equal(sc_axes, np.eye(3))
@@ -442,7 +442,7 @@ def test_cartesian_to_spherical():
 
     for point in cartesian_points:
         r, az, el = cartesian_to_spherical(point)
-        range, ra, dec = spice.recrad(point)
+        range, ra, dec = spiceypy.recrad(point)
 
         np.testing.assert_allclose(r, range, atol=1e-5)
         np.testing.assert_allclose(az, np.degrees(ra), atol=1e-5)
@@ -478,7 +478,7 @@ def test_spherical_to_cartesian():
 
     for i in range(len(colat)):
         cartesian_coords = spherical_to_cartesian(np.array([spherical_points[i]]))
-        spice_coords = spice.sphrec(r, colat[i], spherical_points[i, 1])
+        spice_coords = spiceypy.sphrec(r, colat[i], spherical_points[i, 1])
 
         np.testing.assert_allclose(cartesian_coords[0], spice_coords, atol=1e-5)
         np.testing.assert_allclose(cartesian_from_degrees[i], spice_coords, atol=1e-5)

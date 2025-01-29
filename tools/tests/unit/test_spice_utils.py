@@ -1,7 +1,7 @@
 from pathlib import Path
 
 import pytest
-import spiceypy as spice
+import spiceypy
 
 from tools.spice.spice_utils import (
     list_all_constants,
@@ -47,7 +47,7 @@ def test_list_loaded_kernels(kernels):
     """Tests the ``list_loaded_kernels`` function"""
     directory = Path(__file__).parent.parent / "test_data" / "spice"
 
-    with spice.KernelPool(kernels):
+    with spiceypy.KernelPool(kernels):
         result = list_loaded_kernels()
 
     expected = [
@@ -68,7 +68,7 @@ def test_list_all_constants():
     directory = Path(__file__).parent.parent / "test_data" / "spice"
     kernels = list_files_with_extensions(directory, [".tsc"])
 
-    with spice.KernelPool(kernels):
+    with spiceypy.KernelPool(kernels):
         result = list_all_constants()
 
     # Expected keys
