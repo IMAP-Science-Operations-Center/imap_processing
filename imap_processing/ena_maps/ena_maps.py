@@ -1,5 +1,7 @@
 """Define classes for handling pointing sets and maps for ENA data."""
 
+from __future__ import annotations
+
 import logging
 import pathlib
 import typing
