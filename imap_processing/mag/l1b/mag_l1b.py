@@ -4,12 +4,13 @@ from pathlib import Path
 
 import numpy as np
 import xarray as xr
+from xarray import Dataset
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import load_cdf
 
 
-def mag_l1b(input_dataset: xr.Dataset, version: str) -> xr.Dataset:
+def mag_l1b(input_dataset: xr.Dataset, version: str) -> Dataset:
     """
     Will process MAG L1B data from L1A data.
 
@@ -28,6 +29,9 @@ def mag_l1b(input_dataset: xr.Dataset, version: str) -> xr.Dataset:
     # TODO:
     # Read in calibration file
     # multiply all vectors by calibration file
+    if "raw" in input_dataset.attrs["Logical_source"]:
+        # Raw files should not be processed in L1B.
+        raise ValueError("Raw L1A file passed into L1B. Unable to process.")
 
     output_dataset = mag_l1b_processing(input_dataset)
     attribute_manager = ImapCdfAttributes()
@@ -64,6 +68,7 @@ def mag_l1b_processing(input_dataset: xr.Dataset) -> xr.Dataset:
     """
     # TODO: There is a time alignment step that will add a lot of complexity.
     # This needs to be done once we have some SPICE time data.
+
     mag_attributes = ImapCdfAttributes()
     mag_attributes.add_instrument_variable_attrs("mag", "l1")
 
