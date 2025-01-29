@@ -89,7 +89,7 @@ def rewrap_even_spaced_az_el_grid(
     raveled_values: NDArray,
     shape: tuple[int] | None = None,
     extra_axis: bool = False,
-    order: typing.Literal["C"] | typing.Literal["F"] = "F",
+    order: typing.Literal["C"] | typing.Literal["F"] = "C",
 ) -> NDArray:
     """
     Take an unwrapped (raveled) 1D array and reshapes it into a 2D el/az grid.
@@ -111,7 +111,7 @@ def rewrap_even_spaced_az_el_grid(
         If True, input is a 2D array with latter axis being 'extra', non-spatial axis.
         This axis (e.g. energy bins) will be preserved in the reshaped grid.
     order : {'C', 'F'}, optional
-        The order in which to rewrap the values, by default 'F' for Fortran order.
+        The order in which to rewrap the values, by default 'C'.
 
     Returns
     -------
