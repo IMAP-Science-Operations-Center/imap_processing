@@ -126,10 +126,12 @@ def rewrap_even_spaced_az_el_grid(
     Raises
     ------
     ValueError
-        If the input is not a 1D array or 2D array with an extra axis.
+        If the input is not a 1D array or 2D array with an 'extra' non-spatial axis.
     """
     if raveled_values.ndim > 2:
-        raise ValueError("Input must be a 1D array or 2D array with extra axis.")
+        raise ValueError(
+            "Input must be a 1D array or 2D array with only one spatial axis as axis 0."
+        )
 
     # We can infer the shape if its evenly spaced and 2D
     if not shape:
@@ -145,9 +147,7 @@ class AzElSkyGrid:
     """
     Representation of a 2D grid of azimuth and elevation angles covering the sky.
 
-    All angles are stored internally in radians, but can be accessed in degrees, by
-    appending "_degrees" to the attribute name. For example, `spacing` in radians
-    can be accessed as `spacing_degrees` in degrees.
+    All angles are stored internally in radians.
 
     Parameters
     ----------
@@ -185,7 +185,6 @@ class AzElSkyGrid:
         self.reversed_elevation = reversed_elevation
 
         # Internally, work in radians, regardless of desired output units
-        # If angular_units == deg, conversion will be done at the end
         self.spacing = np.deg2rad(spacing_deg)
 
         # Ensure valid grid spacing (positive, divides evenly into pi radians)
