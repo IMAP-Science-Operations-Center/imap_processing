@@ -133,7 +133,7 @@ def add_dataset_attrs(
     #  own functions
     if logical_source == "imap_lo_l1a_spin":
         spin = xr.DataArray(
-            data=np.arange(0, 29, dtype=np.uint8),
+            data=np.arange(0, 28, dtype=np.uint8),
             name="spin",
             dims=["spin"],
             attrs=attr_mgr.get_variable_attributes("spin"),

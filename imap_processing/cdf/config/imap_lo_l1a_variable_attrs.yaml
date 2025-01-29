@@ -426,6 +426,11 @@ spin:
   VAR_TYPE: support_data
   LABLAXIS: spin numbers
 
+spin_label:
+  CATDESC: Spin numbers in pointing
+  FIELDNAM: Spin numbers
+  FORMAT: A3
+  VAR_TYPE: metadata
 
 ## Spin Fields
 num_completed:
@@ -445,7 +450,7 @@ acq_end:
   UNITS: ns
   LABLAXIS: acquisition end
 
-spin_seconds:
+start_sec_spin:
   <<: *spin_default
   <<: *default_uint32
   CATDESC: Spin Start Seconds Time
@@ -453,42 +458,42 @@ spin_seconds:
   UNITS: ns
   LABLAXIS: spin start seconds time
 
-spin_subseconds:
+start_subsec_spin:
   <<: *spin_default
   <<: *default_uint32
   CATDESC: Spin Start Sub-Seconds Time
   FIELDNAM: Spin Start Sub-Seconds Time
   LABLAXIS: spin start sub-seconds time
 
-esa_p_dac:
+esa_pos_dac_spin:
   <<: *spin_default
   <<: *default_uint32
   CATDESC: Positive ESA Set Point
   FIELDNAM: Positive ESA Set Point
   LABLAXIS: Positive ESA Set Point
 
-esa_n_dac:
+esa_neg_dac_spin:
   <<: *spin_default
   <<: *default_uint32
   CATDESC: Negative ESA Set Point
   FIELDNAM: Negative ESA Set Point
   LABLAXIS: Negative ESA Set Point
 
-val_period:
+valid_period_spin:
   <<: *spin_default
   <<: *default_uint32
   CATDESC: Valid Spin Period
   FIELDNAM: Valid Spin Period
   LABLAXIS: valid spin period
 
-val_spin:
+valid_phase_spin:
   <<: *spin_default
   <<: *default_uint32
   CATDESC: Valid Spin Phase
   FIELDNAM: Valid Spin Phase
   LABLAXIS: valid spin phase
 
-source:
+period_source_spin:
   <<: *spin_default
   <<: *default_uint32
   CATDESC: Spin Period Source
