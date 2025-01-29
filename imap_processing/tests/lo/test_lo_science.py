@@ -302,7 +302,7 @@ def test_validate_parse_events(sample_data, attr_mgr):
     assert dataset["passes"].values == 8
 
 
-def test_organize_spin_data(fake_spin_data):
+def test_organize_spin_data(fake_spin_data, attr_mgr):
     # Arrange
     expected_dataset = xr.Dataset(
         data_vars=dict(
@@ -344,7 +344,7 @@ def test_organize_spin_data(fake_spin_data):
     )
 
     # Act
-    organized_data = organize_spin_data(fake_spin_data)
+    organized_data = organize_spin_data(fake_spin_data, attr_mgr)
 
     # Assert
     xr.testing.assert_equal(organized_data, expected_dataset)
