@@ -352,7 +352,7 @@ def frame_transform(
     This function is a vectorized equivalent to performing the following SPICE
     calls for each input time and position vector to perform the transform.
     The matrix multiplication step is done using `numpy.matmul` rather than
-    `spice.mxv`.
+    `spiceypy.mxv`.
     >>> rotation_matrix = spiceypy.pxform(from_frame, to_frame, et)
     ... result = spiceypy.mxv(rotation_matrix, position)
 
