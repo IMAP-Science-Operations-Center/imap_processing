@@ -143,7 +143,7 @@
 				<xtce:UnitSet />
 			</xtce:IntegerParameterType>
 						<!-- Enumerated Data Types -->
-			<xtce:EnumeratedParameterType name="valid_status" signed="false">
+			<xtce:EnumeratedParameterType name="validity_enum" signed="false">
                 <xtce:UnitSet/>
                 <xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned"/>
                 <xtce:EnumerationList>
@@ -185,8 +185,12 @@
 			<xtce:Parameter name="SWAPI_ACQ" parameterTypeRef="uint32">
 				<xtce:LongDescription>SWAPI Acquisition Time</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="SWAPI_FLAG" parameterTypeRef="valid_status">
-				<xtce:LongDescription>1 = valid, 0 = invalid</xtce:LongDescription>
+			<xtce:Parameter name="SWAPI_FLAG" parameterTypeRef="validity_enum">
+				<xtce:LongDescription>
+                    Valid bit:
+                    '1' -- valid,
+                    '0' -- invalid
+                </xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWAPI_RESERVED" parameterTypeRef="uint15">
 				<xtce:LongDescription>SWAPI Instrument Reserved</xtce:LongDescription>
