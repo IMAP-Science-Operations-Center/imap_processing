@@ -441,14 +441,39 @@ num_completed:
   FIELDNAM: Number of spins completed
   LABLAXIS: number of spins completed
 
-acq_end:
+acq_start_sec:
+  <<: *default_uint32
+  DEPEND_0: epoch
+  VAR_TYPE: support_data
+  CATDESC: Acquisition Start
+  FIELDNAM: Acquisition Start Seconds
+  UNITS: ns
+  LABLAXIS: acquisition start seconds
+
+acq_start_subsec:
+  <<: *default_uint32
+  DEPEND_0: epoch
+  VAR_TYPE: support_data
+  CATDESC: Acquisition Start
+  FIELDNAM: Acquisition Start Sub-Seconds
+  LABLAXIS: acquisition start sub-seconds
+
+acq_end_sec:
   <<: *default_uint32
   DEPEND_0: epoch
   VAR_TYPE: support_data
   CATDESC: Acquisition End
-  FIELDNAM: Acquisition End
+  FIELDNAM: Acquisition End Seconds
   UNITS: ns
-  LABLAXIS: acquisition end
+  LABLAXIS: acquisition end seconds
+
+acq_end_subsec:
+    <<: *default_uint32
+    DEPEND_0: epoch
+    VAR_TYPE: support_data
+    CATDESC: Acquisition End
+    FIELDNAM: Acquisition End Sub-Seconds
+    LABLAXIS: acquisition end sub-seconds
 
 start_sec_spin:
   <<: *spin_default

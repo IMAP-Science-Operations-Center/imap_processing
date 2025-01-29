@@ -104,7 +104,7 @@ def lo_l1a(dependency: Path, data_version: str) -> list[xr.Dataset]:
             datasets_by_apid[LoAPID.ILO_SCI_DE], attr_mgr, logical_source
         )
 
-    good_apids = [LoAPID.ILO_SCI_CNT, LoAPID.ILO_SCI_DE]
+    good_apids = [LoAPID.ILO_SPIN, LoAPID.ILO_SCI_CNT, LoAPID.ILO_SCI_DE]
     logger.info(f"\nReturning datasets: {[LoAPID(apid) for apid in good_apids]}")
     return [datasets_by_apid[good_apid] for good_apid in good_apids]
 
@@ -131,9 +131,15 @@ def add_dataset_attrs(
     """
     # TODO: may want up split up these if statements into their
     #  own functions
+    # Get global attributes
+    dataset.attrs.update(attr_mgr.get_global_attributes(logical_source))
+    # Get attributes for shcoarse and epoch
+    dataset.shcoarse.attrs.update(attr_mgr.get_variable_attributes("shcoarse"))
+    dataset.epoch.attrs.update(attr_mgr.get_variable_attributes("epoch"))
+
     if logical_source == "imap_lo_l1a_spin":
         spin = xr.DataArray(
-            data=np.arange(0, 28, dtype=np.uint8),
+            data=np.arange(0, len(dataset.start_sec_spin.values), dtype=np.uint16),
             name="spin",
             dims=["spin"],
             attrs=attr_mgr.get_variable_attributes("spin"),
@@ -141,12 +147,27 @@ def add_dataset_attrs(
         spin_label = xr.DataArray(
             data=spin.values.astype(str),
             name="spin_label",
-            dims=["spin_label"],
+            dims=["spin"],
             attrs=attr_mgr.get_variable_attributes("spin_label"),
         )
 
         dataset = dataset.assign_coords(spin=spin, spin_label=spin_label)
-        dataset.attrs.update(attr_mgr.get_global_attributes(logical_source))
+        dataset.num_completed.attrs.update(
+            attr_mgr.get_variable_attributes("num_completed")
+        )
+        dataset.acq_start_sec.attrs.update(
+            attr_mgr.get_variable_attributes("acq_start_sec")
+        )
+        dataset.acq_start_subsec.attrs.update(
+            attr_mgr.get_variable_attributes("acq_start_subsec")
+        )
+        dataset.acq_end_sec.attrs.update(
+            attr_mgr.get_variable_attributes("acq_end_sec")
+        )
+        dataset.acq_end_subsec.attrs.update(
+            attr_mgr.get_variable_attributes("acq_end_subsec")
+        )
+
         dataset = dataset.drop_vars(
             [
                 "version",
@@ -156,6 +177,7 @@ def add_dataset_attrs(
                 "seq_flgs",
                 "src_seq_ctr",
                 "pkt_len",
+                "chksum",
             ]
         )
 
@@ -199,10 +221,6 @@ def add_dataset_attrs(
             attrs=attr_mgr.get_variable_attributes("esa_step_label"),
         )
 
-        # Get attributes for shcoarse and epoch
-        dataset.shcoarse.attrs.update(attr_mgr.get_variable_attributes("shcoarse"))
-        dataset.epoch.attrs.update(attr_mgr.get_variable_attributes("epoch"))
-
         dataset = dataset.assign_coords(
             azimuth_60=azimuth_60,
             azimuth_60_label=azimuth_60_label,
@@ -211,7 +229,6 @@ def add_dataset_attrs(
             esa_step=esa_step,
             esa_step_label=esa_step_label,
         )
-        dataset.attrs.update(attr_mgr.get_global_attributes(logical_source))
         # remove the binary field and CCSDS header from the dataset
         dataset = dataset.drop_vars(
             [
@@ -247,8 +264,6 @@ def add_dataset_attrs(
             direct_events_label=direct_events_label,
         )
         # add the epoch and global attributes
-        dataset.epoch.attrs.update(attr_mgr.get_variable_attributes("epoch"))
-        dataset.attrs.update(attr_mgr.get_global_attributes(logical_source))
         dataset = dataset.drop_vars(
             [
                 "version",
