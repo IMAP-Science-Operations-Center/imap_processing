@@ -154,11 +154,12 @@ def get_helio_exposure_times(
     -----
     These calculations are performed once per pointing.
     """
-    # Get bins and midpoints.
+    # Get bins and midpoints, and convert from radians to degrees.
     _, energy_midpoints = build_energy_bins()
     az_bin_edges, el_bin_edges, az_bin_midpoints, el_bin_midpoints = (
-        build_spatial_bins()
+        np.rad2deg(angle_radians) for angle_radians in (build_spatial_bins())
     )
+
     # Initialize the exposure grid.
     exposure_3d = np.zeros(
         (len(el_bin_midpoints), len(az_bin_midpoints), len(energy_midpoints))

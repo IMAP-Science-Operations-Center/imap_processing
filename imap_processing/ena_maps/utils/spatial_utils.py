@@ -9,39 +9,48 @@ from numpy.typing import NDArray
 
 
 def build_spatial_bins(
-    az_spacing: float = 0.5,
-    el_spacing: float = 0.5,
+    az_spacing_deg: float = 0.5,
+    el_spacing_deg: float = 0.5,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """
-    Build spatial bin boundaries for azimuth and elevation (input/output angles in deg).
+    Build spatial bin boundaries for azimuth and elevation.
+
+    Input angles in degrees for consistency with map inputs,
+    output angles in radians for internal use.
 
     Parameters
     ----------
-    az_spacing : float, optional
+    az_spacing_deg : float, optional
         The azimuth bin spacing in degrees (default is 0.5 degrees).
-    el_spacing : float, optional
+    el_spacing_deg : float, optional
         The elevation bin spacing in degrees (default is 0.5 degrees).
 
     Returns
     -------
     az_bin_edges : np.ndarray
-        Array of azimuth bin boundary values in degrees.
+        Array of azimuth bin boundary values in radians.
     el_bin_edges : np.ndarray
-        Array of elevation bin boundary values in degrees.
+        Array of elevation bin boundary values in radians.
     az_bin_midpoints : np.ndarray
-        Array of azimuth bin midpoint values in degrees.
+        Array of azimuth bin midpoint values in radians.
     el_bin_midpoints : np.ndarray
-        Array of elevation bin midpoint values in degrees.
+        Array of elevation bin midpoint values in radians.
     """
     # Azimuth bins from 0 to 360 degrees.
-    az_bin_edges = np.arange(0, 360 + az_spacing, az_spacing)
-    az_bin_midpoints = az_bin_edges[:-1] + az_spacing / 2  # Midpoints between edges
+    az_bin_edges = np.arange(0, 360 + az_spacing_deg, az_spacing_deg)
+    az_bin_midpoints = az_bin_edges[:-1] + az_spacing_deg / 2  # Midpoints between edges
 
     # Elevation bins from -90 to 90 degrees.
-    el_bin_edges = np.arange(-90, 90 + el_spacing, el_spacing)
-    el_bin_midpoints = el_bin_edges[:-1] + el_spacing / 2  # Midpoints between edges
+    el_bin_edges = np.arange(-90, 90 + el_spacing_deg, el_spacing_deg)
+    el_bin_midpoints = el_bin_edges[:-1] + el_spacing_deg / 2  # Midpoints between edges
 
-    return az_bin_edges, el_bin_edges, az_bin_midpoints, el_bin_midpoints
+    # Convert all angles to radians and return them
+    return (
+        np.deg2rad(az_bin_edges),
+        np.deg2rad(el_bin_edges),
+        np.deg2rad(az_bin_midpoints),
+        np.deg2rad(el_bin_midpoints),
+    )
 
 
 def build_solid_angle_map(
@@ -88,7 +97,6 @@ def build_solid_angle_map(
 def rewrap_even_spaced_az_el_grid(
     raveled_values: NDArray,
     shape: tuple[int] | None = None,
-    extra_axis: bool = False,
     order: typing.Literal["C"] | typing.Literal["F"] = "C",
 ) -> NDArray:
     """
@@ -107,9 +115,6 @@ def rewrap_even_spaced_az_el_grid(
     shape : tuple[int], optional
         The shape of the original grid, if known, by default None.
         If None, the shape will be inferred from the size of the input array.
-    extra_axis : bool, optional
-        If True, input is a 2D array with latter axis being 'extra', non-spatial axis.
-        This axis (e.g. energy bins) will be preserved in the reshaped grid.
     order : {'C', 'F'}, optional
         The order in which to rewrap the values, by default 'C'.
 
@@ -123,9 +128,7 @@ def rewrap_even_spaced_az_el_grid(
     ValueError
         If the input is not a 1D array or 2D array with an extra axis.
     """
-    if raveled_values.ndim not in (1, 2) or (
-        raveled_values.ndim == 2 and not extra_axis
-    ):
+    if raveled_values.ndim > 2:
         raise ValueError("Input must be a 1D array or 2D array with extra axis.")
 
     # We can infer the shape if its evenly spaced and 2D
@@ -133,7 +136,7 @@ def rewrap_even_spaced_az_el_grid(
         spacing_deg = 1 / np.sqrt(raveled_values.shape[0] / (360 * 180))
         shape = (int(180 // spacing_deg), int(360 // spacing_deg))
 
-    if extra_axis:
+    if raveled_values.ndim == 2:
         shape = (shape[0], shape[1], raveled_values.shape[1])
     return raveled_values.reshape(shape, order=order)
 
@@ -194,15 +197,13 @@ class AzElSkyGrid:
 
         # build_spacial_bins creates the bin edges and centers for azimuth and elevation
         # E.g. for spacing=1, az_bin_edges = [0, 1, 2, ..., 359, 360] deg.
-        (az_bin_edges, el_bin_edges, az_bin_midpoints, el_bin_midpoints) = (
-            build_spatial_bins(az_spacing=spacing_deg, el_spacing=spacing_deg)
-        )
-
-        # Store the bin edges and midpoints in radians
-        self.az_bin_edges = np.deg2rad(az_bin_edges)
-        self.el_bin_edges = np.deg2rad(el_bin_edges)
-        self.az_bin_midpoints = np.deg2rad(az_bin_midpoints)
-        self.el_bin_midpoints = np.deg2rad(el_bin_midpoints)
+        # However returned values are in radians.
+        (
+            self.az_bin_edges,
+            self.el_bin_edges,
+            self.az_bin_midpoints,
+            self.el_bin_midpoints,
+        ) = build_spatial_bins(az_spacing_deg=spacing_deg, el_spacing_deg=spacing_deg)
 
         # By default, build_spacial_bins creates bins from az=0->360 and el=-90->90.
         if centered_azimuth:
@@ -226,26 +227,6 @@ class AzElSkyGrid:
         # Keep track of number of points on the grid
         self.grid_shape = self.az_grid.shape
         self.grid_size = self.az_grid.size
-
-        # Create degree property attributes for all radian attributes
-        self.__init_properties__()
-
-    def __init_properties__(self) -> None:
-        """Automatically generate degree properties for all radian attributes."""
-        for name in [
-            "spacing",
-            "az_bin_midpoints",
-            "el_bin_midpoints",
-            "az_bin_edges",
-            "el_bin_edges",
-            "az_grid",
-            "el_grid",
-        ]:
-            setattr(
-                self.__class__,
-                f"{name}_degrees",
-                property(lambda self, n=name: np.rad2deg(getattr(self, n))),  # type: ignore[misc]
-            )
 
     def __repr__(self) -> str:
         """
