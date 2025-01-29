@@ -61,8 +61,6 @@ def test_build_solid_angle_map_equal_at_equal_el(spacing):
     )
     el_grid = spatial_utils.AzElSkyGrid(
         spacing_deg=spacing,
-        centered_azimuth=False,
-        centered_elevation=True,
         reversed_elevation=False,
     ).el_grid
     for unique_el in np.unique(el_grid):
@@ -126,8 +124,6 @@ class TestAzElSkyGrid:
     def test_instantiate_and_values(self, spacing):
         grid = spatial_utils.AzElSkyGrid(
             spacing_deg=spacing,
-            centered_azimuth=False,
-            centered_elevation=True,
             reversed_elevation=False,
         )
 

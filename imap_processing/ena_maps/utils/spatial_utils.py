@@ -148,19 +148,13 @@ class AzElSkyGrid:
     Representation of a 2D grid of azimuth and elevation angles covering the sky.
 
     All angles are stored internally in radians.
+    Azimuth is within the range [0, 2*pi) radians,
+    elevation is within the range [-pi/2, pi/2) radians.
 
     Parameters
     ----------
     spacing_deg : float, optional
         Spacing of the grid in degrees, by default 0.5.
-    centered_azimuth : bool, optional
-        Whether the azimuth grid should be centered around 0 degrees/0 radians,
-        i.e. from -pi to pi radians, by default False.
-        If True, the azimuth grid will be from -pi to pi radians.
-    centered_elevation : bool, optional
-        Whether the elevation grid should be centered around 0 degrees/0 radians,
-        i.e. from -pi/2 to pi/2 radians, by default True.
-        If False, the elevation grid will be from 0 to pi radians.
     reversed_elevation : bool, optional
         Whether the elevation grid should be reversed, by default False.
         If False, the elevation grid will be from -pi/2 to pi/2 radians (-90 to 90 deg).
@@ -175,13 +169,9 @@ class AzElSkyGrid:
     def __init__(
         self,
         spacing_deg: float = 0.5,
-        centered_azimuth: bool = False,
-        centered_elevation: bool = True,
         reversed_elevation: bool = False,
     ) -> None:
         # Store grid properties
-        self.centered_azimuth = centered_azimuth
-        self.centered_elevation = centered_elevation
         self.reversed_elevation = reversed_elevation
 
         # Internally, work in radians, regardless of desired output units
@@ -203,12 +193,6 @@ class AzElSkyGrid:
             self.az_bin_midpoints,
             self.el_bin_midpoints,
         ) = build_spatial_bins(az_spacing_deg=spacing_deg, el_spacing_deg=spacing_deg)
-
-        # By default, build_spacial_bins creates bins from az=0->360 and el=-90->90.
-        if centered_azimuth:
-            self.az_bin_midpoints = self.az_bin_midpoints - np.pi
-        if not centered_elevation:
-            self.el_bin_midpoints = self.el_bin_midpoints + np.pi / 2
 
         # If desired, reverse the elevation range so that the grid is in the order
         # defined by the Ultra prototype code (`build_dps_grid.m`).
