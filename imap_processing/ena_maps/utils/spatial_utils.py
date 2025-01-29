@@ -100,13 +100,13 @@ def rewrap_even_spaced_az_el_grid(
     order: typing.Literal["C"] | typing.Literal["F"] = "C",
 ) -> NDArray:
     """
-    Take an unwrapped (raveled) 1D array and reshapes it into a 2D el/az grid.
+    Take an unwrapped (raveled) 1D array and reshapes it into a 2D az/el grid.
 
     Assumes the following must be true of the original grid:
     1. Grid was evenly spaced in angular space,
     2. Grid had the same spacing in both azimuth and elevation.
-    3. Elevation is the 0th axis (and extends a total of 180 degrees),
-    4. Azimuth is the 1st axis (and extends a total of 360 degrees).
+    3. Azimuth is axis 0 (and extends a total of 360 degrees).
+    4. Elevation is axis 1 (and extends a total of 180 degrees),
 
     Parameters
     ----------
@@ -136,7 +136,7 @@ def rewrap_even_spaced_az_el_grid(
     # We can infer the shape if its evenly spaced and 2D
     if not shape:
         spacing_deg = 1 / np.sqrt(raveled_values.shape[0] / (360 * 180))
-        shape = (int(180 // spacing_deg), int(360 // spacing_deg))
+        shape = (int(360 // spacing_deg), int(180 // spacing_deg))
 
     if raveled_values.ndim == 2:
         shape = (shape[0], shape[1], raveled_values.shape[1])
