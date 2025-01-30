@@ -78,6 +78,7 @@ def mag_l1b_processing(input_dataset: xr.Dataset) -> xr.Dataset:
     calibration_dataset = load_cdf(
         Path(__file__).parent / "imap_calibration_mag_20240229_v01.cdf"
     )
+    # TODO: add time shift
     # TODO: Check validity of time range for calibration
     if "mago" in input_dataset.attrs["Logical_source"][0]:
         calibration_matrix = calibration_dataset["MFOTOURFO"]
@@ -142,6 +143,10 @@ def update_vector(
     tuple[numpy.ndarray, numpy.ndarray]
         Updated vector and the same compression flags.
     """
+    vector = rescale_vector(input_vector, input_compression)
+    cal_vector = calibrate_vector(vector, calibration_matrix)
+    return cal_vector, input_compression
+
     vector = calibrate_vector(input_vector, calibration_matrix)
     return rescale_vector(vector, input_compression), input_compression
 
@@ -205,8 +210,7 @@ def calibrate_vector(
         Calibrated vector.
     """
     updated_vector = input_vector.copy()
-
-    updated_vector[:3] = np.matmul(
+    updated_vector[:3] = np.dot(
         calibration_matrix.values[:, :, int(input_vector[3])], input_vector[:3]
     )
     return updated_vector

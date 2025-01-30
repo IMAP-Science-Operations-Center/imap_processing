@@ -16,7 +16,8 @@ from imap_processing.mag.constants import (
     MAX_FINE_TIME,
     RANGE_BIT_WIDTH,
 )
-from imap_processing.spice.time import TTJ2000_EPOCH, met_to_ttj2000ns
+from imap_processing.spice.time import TTJ2000_EPOCH, met_to_ttj2000ns, \
+    met_to_datetime64
 
 
 @dataclass
@@ -24,7 +25,7 @@ class TimeTuple:
     """
     Class for storing fine time/coarse time for MAG data.
 
-    Course time is mission SCLK in seconds. Fine time is 16bit unsigned sub-second
+    Coarse time is mission SCLK in seconds. Fine time is 16bit unsigned sub-second
     counter.
 
     Attributes
@@ -204,7 +205,7 @@ class MagL1a:
         Sequence number of the most recent packet added to the object
     missing_sequences : list[int]
         List of missing sequence numbers in the day
-    start_time : numpy.datetime64
+    start_time : int64
         Start time of the day, in ns since J2000 epoch
     compression_flags : np.ndarray
         Array of flags to indication compression and width for all timestamps in the
@@ -249,9 +250,8 @@ class MagL1a:
             The packet properties for the first packet in the day, including start time.
         """
         # TODO should this be from starting_packet
-        self.start_time = (TTJ2000_EPOCH + met_to_ttj2000ns(self.shcoarse)).astype(
-            "datetime64[D]"
-        )
+        # TODO should be from coarse and fine
+        self.start_time = np.int64(met_to_ttj2000ns(starting_packet.shcoarse))
         self.packet_definitions = {self.start_time: starting_packet}
         # most_recent_sequence is the sequence number of the packet used to initialize
         # the object
@@ -338,7 +338,8 @@ class MagL1a:
             cdf.utils.met_to_j2000ns.
         """
         timedelta = np.timedelta64(int(1 / vectors_per_sec * 1e9), "ns")
-        # TODO: validate that start_time from SHCOARSE is precise enough
+        # TODO: From finetime and coarsetime, depends per packet
+        # This is not right, fix that
         start_time_ns = met_to_ttj2000ns(start_time.to_seconds())
 
         # Calculate time skips for each vector in ns

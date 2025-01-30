@@ -8,7 +8,7 @@ from imap_processing.cdf.utils import load_cdf, write_cdf
 from imap_processing.mag.l1b.mag_l1b import (
     calibrate_vector,
     mag_l1b,
-    mag_l1b_processing,
+    mag_l1b_processing, rescale_vector,
 )
 
 
@@ -38,8 +38,10 @@ def mag_l1a_dataset():
     compression_flags = xr.DataArray(
         np.zeros((20, 2), dtype=np.int8), dims=["epoch", "compression"]
     )
+    compression_flags[1, :] = np.array([1, 18], dtype=np.int8)
 
     vectors[0, :] = np.array([1, 1, 1, 0])
+    vectors[1, :] = np.array([7982,48671,-68090,0])
 
     output_dataset = xr.Dataset(
         coords={"epoch": epoch, "direction": direction, "compression": compression},
@@ -60,7 +62,10 @@ def test_mag_processing(mag_l1a_dataset):
     np.testing.assert_allclose(
         mag_l1b["vectors"][0].values, [2.2972, 2.2415, 2.2381, 0], atol=1e-4
     )
-    np.testing.assert_allclose(mag_l1b["vectors"][1].values, [0, 0, 0, 0])
+    np.testing.assert_allclose(mag_l1b["vectors"][1].values, [4584.1029091, 27238.73161294, -38405.22240195,      0.        ])
+    print(f"MY vector is: {mag_l1b['vectors'][1].values}")
+
+    # np.testing.assert_allclose(mag_l1b["vectors"][1].values, [0, 0, 0, 0])
 
     assert mag_l1b["vectors"].values.shape == mag_l1a_dataset["vectors"].values.shape
 
@@ -138,6 +143,19 @@ def test_mag_compression_scale(mag_l1a_dataset):
     assert np.allclose(output["vectors"].data[3][:3], scaled_vectors)
 
 
+def test_rescale_vector():
+    # From algo document examples
+    vector = np.array([10, -2000, 0])
+    expected_vector = np.array([2.5, -500, 0])
+    output = rescale_vector(vector, [1, 18])
+    assert np.allclose(output, expected_vector)
+
+    vector = np.array([32766, -2, 1])
+    expected_vector = np.array([65532, -4, 2])
+    output = rescale_vector(vector, [1, 15])
+    assert np.allclose(output, expected_vector)
+
+
 def test_calibrate_vector():
     # from MFOTOURFO
     cal_array = np.array(
@@ -163,6 +181,15 @@ def test_calibrate_vector():
     calibration_matrix = xr.DataArray(cal_array)
 
     cal_vector = calibrate_vector(np.array([1.0, 1.0, 1.0, 0]), calibration_matrix)
+
     expected_vector = np.array([2.2972, 2.2415, 2.2381, 0])
 
     assert np.allclose(cal_vector, expected_vector, atol=1e-4)
+
+    cal_vector = calibrate_vector(np.array([1.1, -2., 3., 1]), calibration_matrix)
+    expected_vector = np.array([(0.081202, -0.144636, 0.217628, 1)])
+    assert np.allclose(cal_vector, expected_vector, atol=1e-4)
+
+    cal_vector =  calibrate_vector(rescale_vector(np.array([7982,48671,-68090,0]), (1, 18)), calibration_matrix)
+    print(f"HERE IS MY VECTOR: {cal_vector}")
+    expected_vector =  [  4584.1029091,  27238.73161294, -38405.22240195,      0.        ]
