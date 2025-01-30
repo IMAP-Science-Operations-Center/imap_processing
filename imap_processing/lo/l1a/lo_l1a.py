@@ -139,7 +139,7 @@ def add_dataset_attrs(
 
     if logical_source == "imap_lo_l1a_spin":
         spin = xr.DataArray(
-            data=np.arange(0, len(dataset.start_sec_spin.values), dtype=np.uint16),
+            data=np.arange(0, 28, dtype=np.uint16),
             name="spin",
             dims=["spin"],
             attrs=attr_mgr.get_variable_attributes("spin"),
@@ -147,7 +147,7 @@ def add_dataset_attrs(
         spin_label = xr.DataArray(
             data=spin.values.astype(str),
             name="spin_label",
-            dims=["spin"],
+            dims=["spin_label"],
             attrs=attr_mgr.get_variable_attributes("spin_label"),
         )
 
@@ -180,6 +180,8 @@ def add_dataset_attrs(
                 "chksum",
             ]
         )
+
+        print(dataset.data_vars)
 
     elif logical_source == "imap_lo_l1a_histogram":
         # Create coordinates for the dataset

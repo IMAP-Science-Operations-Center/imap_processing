@@ -474,14 +474,14 @@ def organize_spin_data(dataset: xr.Dataset, attr_mgr: ImapCdfAttributes) -> xr.D
 
     for spin_field in spin_fields:
         packet_fields = [f"{spin_field}_{i}" for i in range(1, 29)]
-        # Combine the spin data fields along a new dimension and flatten them
-        combined_spin_data = np.ravel(
-            np.column_stack([dataset[field].values for field in packet_fields])
+        # Combine the spin data fields along a new dimension
+        combined_spin_data = xr.concat(
+            [dataset[field] for field in packet_fields], dim="spin"
         )
         # Assign the combined data back to the dataset
         dataset[spin_field] = xr.DataArray(
-            combined_spin_data,
-            dims=["spin"],
+            combined_spin_data.transpose(),
+            dims=["epoch", "spin"],
             attrs=attr_mgr.get_variable_attributes(spin_field),
         )
         # Drop the individual spin data fields

@@ -73,8 +73,10 @@ hist_az_6_default: &hist_az_6_default
 
 spin_default_attrs: &spin_default
   <<: *default
-  VAR_TYPE: support_data
+  VAR_TYPE: data
+  DEPEND_0: epoch
   DEPEND_1: spin
+  LABL_PTR_1: spin_label
 
 
 # Re-used Coordinate
@@ -481,47 +483,47 @@ start_sec_spin:
   CATDESC: Spin Start Seconds Time
   FIELDNAM: Spin Start Seconds Time
   UNITS: ns
-  LABLAXIS: spin start seconds time
+  #LABLAXIS: spin start seconds time
 
 start_subsec_spin:
   <<: *spin_default
   <<: *default_uint32
   CATDESC: Spin Start Sub-Seconds Time
   FIELDNAM: Spin Start Sub-Seconds Time
-  LABLAXIS: spin start sub-seconds time
+  #LABLAXIS: spin start sub-seconds time
 
 esa_pos_dac_spin:
   <<: *spin_default
   <<: *default_uint32
   CATDESC: Positive ESA Set Point
   FIELDNAM: Positive ESA Set Point
-  LABLAXIS: Positive ESA Set Point
+  #LABLAXIS: Positive ESA Set Point
 
 esa_neg_dac_spin:
   <<: *spin_default
   <<: *default_uint32
   CATDESC: Negative ESA Set Point
   FIELDNAM: Negative ESA Set Point
-  LABLAXIS: Negative ESA Set Point
+  #LABLAXIS: Negative ESA Set Point
 
 valid_period_spin:
   <<: *spin_default
   <<: *default_uint32
   CATDESC: Valid Spin Period
   FIELDNAM: Valid Spin Period
-  LABLAXIS: valid spin period
+  #LABLAXIS: valid spin period
 
 valid_phase_spin:
   <<: *spin_default
   <<: *default_uint32
   CATDESC: Valid Spin Phase
   FIELDNAM: Valid Spin Phase
-  LABLAXIS: valid spin phase
+  #LABLAXIS: valid spin phase
 
 period_source_spin:
   <<: *spin_default
   <<: *default_uint32
   CATDESC: Spin Period Source
   FIELDNAM: Spin Period Source
-  LABLAXIS: spin period source
+  #LABLAXIS: spin period source
 # Spin Attributes - END
