@@ -97,7 +97,7 @@ def flag_attitude(eventtimes_met: NDArray) -> tuple[NDArray, NDArray, NDArray, N
     spin_period = spin_df.loc[spin_df.spin_number.isin(spins), "spin_period_sec"]
     spin_starttime = spin_df.loc[spin_df.spin_number.isin(spins), "spin_start_time"]
     spin_rates = 60 / spin_period  # 60 seconds in a minute
-    indices = spin_rates > np.array(UltraConstants.RPM)
+    indices = spin_rates > np.array(UltraConstants.CULLING_RPM)
 
     quality_flags = np.full(
         spin_rates.shape, ImapAttitudeUltraFlags.NONE.value, dtype=np.uint16
@@ -107,15 +107,18 @@ def flag_attitude(eventtimes_met: NDArray) -> tuple[NDArray, NDArray, NDArray, N
     return quality_flags, spin_rates, spin_period, spin_starttime
 
 
-def get_n_sigma(counts: NDArray, sigma: int = 6) -> NDArray:
+def get_n_sigma(counts: NDArray, count_rates: NDArray, sigma: int = 6) -> NDArray:
     """
-    Calculate n sigma.
+    Use Poisson statistics for the STD calc (STD = sqrt(mean counts per spin)).
 
     Parameters
     ----------
     counts : NDArray
         A 2D histogram array containing the
         counts per spin at each energy bin.
+    count_rates : NDArray
+        A 2D histogram array containing the
+        count rates per spin at each energy bin.
     sigma : int (default=6)
         The number of sigma.
 
@@ -124,7 +127,9 @@ def get_n_sigma(counts: NDArray, sigma: int = 6) -> NDArray:
     six_sigma_per_energy : NDArray
         Six sigma per energy.
     """
-    sigma_per_energy = np.std(counts, axis=1)
+    # Do not include spins with 0 counts/spin in n sigma calculation.
+    masked_count_rates = np.ma.masked_where(counts == 0, count_rates)
+    sigma_per_energy = np.sqrt(masked_count_rates.mean(axis=1).data)
     n_sigma_per_energy = sigma * sigma_per_energy
 
     return n_sigma_per_energy
@@ -132,7 +137,7 @@ def get_n_sigma(counts: NDArray, sigma: int = 6) -> NDArray:
 
 def flag_spin(
     eventtimes_met: NDArray, energy: NDArray, sigma: int = 6
-) -> tuple[NDArray, NDArray, NDArray]:
+) -> tuple[NDArray, NDArray, NDArray, NDArray]:
     """
     Flag data based on counts and negative energies.
 
@@ -149,25 +154,35 @@ def flag_spin(
     -------
     quality_flags : NDArray
         Quality flags.
-    appended_spin : NDArray
+    spin : NDArray
         Spin data.
-    appended_energy : NDArray
+    energy_midpoints : NDArray
         Energy midpoint data.
+    n_sigma_per_energy_reshape : NDArray
+        N sigma per energy.
     """
     spin = get_spin(eventtimes_met)
-    hist, spin_edges, counts = get_energy_histogram(spin, energy)
-    n_sigma_per_energy = get_n_sigma(counts, sigma=sigma)
-    quality_flags = np.full(hist.shape, ImapRatesUltraFlags.NONE.value, dtype=np.uint16)
+    count_rates, spin_edges, counts = get_energy_histogram(spin, energy)
+    quality_flags = np.full(
+        count_rates.shape, ImapRatesUltraFlags.NONE.value, dtype=np.uint16
+    )
+
+    # Zero counts/spin/energy level
+    quality_flags[counts == 0] |= ImapRatesUltraFlags.ZEROCOUNTS.value
+    n_sigma_per_energy = get_n_sigma(counts, count_rates, sigma=sigma)
 
     bin_edges = np.array(UltraConstants.CULLING_ENERGY_BIN_EDGES)
     energy_midpoints = (bin_edges[:-1] + bin_edges[1:]) / 2
-    spin = np.unique(spin)
 
     # Indices where the counts exceed the threshold
-    indices = hist > np.array(UltraConstants.COUNT_RATES_THRESHOLDS)[:, np.newaxis]
-    quality_flags[indices] |= ImapRatesUltraFlags.HIGHCOUNTS.value
+    indices_n_sigma = count_rates > n_sigma_per_energy[:, np.newaxis]
+    quality_flags[indices_n_sigma] |= ImapRatesUltraFlags.HIGHRATES.value
 
-    indices_n_sigma = counts > n_sigma_per_energy[:, np.newaxis]
-    quality_flags[indices_n_sigma] |= ImapRatesUltraFlags.SIXSIGMA.value
+    n_sigma_per_energy_reshape = n_sigma_per_energy[:, np.newaxis] * np.ones_like(
+        count_rates
+    )
+    energy_midpoints_reshape = energy_midpoints[:, np.newaxis] * np.ones_like(
+        count_rates
+    )
 
-    return quality_flags, spin, energy_midpoints
+    return quality_flags, spin, energy_midpoints_reshape, n_sigma_per_energy_reshape

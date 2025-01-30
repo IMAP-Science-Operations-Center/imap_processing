@@ -88,14 +88,15 @@ def test_get_n_sigma():
     """Tests get_six_sigma function."""
 
     counts = np.random.poisson(lam=3, size=(4, 5760))
-    n_sigma_per_energy = get_n_sigma(counts)
+    n_sigma_per_energy = get_n_sigma(counts, counts / 15, 6)
     # Average counts/spin for first energy level.
-    mean = np.mean(counts[0])
-    squared_diffs = (counts[0] - mean) ** 2
-    variance = np.sum(squared_diffs) / (len(counts[0]) - 1)
+    # Use Poisson statistics for the STD calc (STD = sqrt(mean counts per spin))
+    selected_counts = counts[0][counts[0] != 0]
+    mean_counts = np.mean(selected_counts / 15)
+    poisson_std = np.sqrt(mean_counts)
 
     np.testing.assert_allclose(
-        n_sigma_per_energy[0], 6 * np.sqrt(variance), atol=1e-2, rtol=0
+        n_sigma_per_energy[0], 6 * poisson_std, atol=1e-2, rtol=0
     )
 
 
@@ -103,17 +104,14 @@ def test_flag_spin(test_data):
     """Tests flag_spin function."""
 
     time, _, energy, expected_counts = test_data
-    quality_flags, spin, energy = flag_spin(time, energy, 1)
-    # n_sigma_per_energy = get_n_sigma(expected_counts, 1)
-    # TODO: stopped here
-    flag = ImapRatesUltraFlags(quality_flags[0, :][expected_counts[0, :] / 15 > 0])
-    assert flag.name == "HIGHCOUNTS"
+    quality_flags, spin, energy, _ = flag_spin(time, energy, 1)
+    n_sigma_per_energy = get_n_sigma(expected_counts, expected_counts / 15, 1)
 
-    assert np.all(flag == ImapRatesUltraFlags.HIGHCOUNTS.value)
+    # At the first energy level were the rates > threshold and the counts > 6 sigma?
     assert np.all(
-        quality_flags[0, :][expected_counts[0, :] / 15 <= 0]
-        == ImapRatesUltraFlags.NONE.value
+        quality_flags[expected_counts == 0] == ImapRatesUltraFlags.ZEROCOUNTS.value
     )
-
-    # Only HIGHCOUNT bits were set
-    assert np.all(quality_flags == quality_flags & ImapRatesUltraFlags.HIGHCOUNTS)
+    high_rates_flag = quality_flags[
+        expected_counts / 15 > n_sigma_per_energy[:, np.newaxis]
+    ]
+    assert np.all(high_rates_flag == ImapRatesUltraFlags.HIGHRATES.value)

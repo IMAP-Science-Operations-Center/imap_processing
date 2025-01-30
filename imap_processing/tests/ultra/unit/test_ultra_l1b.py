@@ -90,7 +90,7 @@ def test_create_de_dataset(mock_data_l1b_de_dict):
     np.testing.assert_array_equal(dataset["x_front"], np.zeros(3))
 
 
-def test_ultra_l1b_de(l1b_datasets):
+def test_ultra_l1b(l1b_datasets):
     """Tests that L1b data is created."""
 
     assert len(l1b_datasets) == 4
