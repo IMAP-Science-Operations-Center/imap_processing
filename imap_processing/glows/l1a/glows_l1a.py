@@ -119,7 +119,7 @@ def determine_observational_day(hist_l0: list[HistogramL0]) -> list:
     obs_day_change = []
     for hist in hist_l0:
         flags = HistogramL1B.deserialize_flags(hist.FLAGS)
-        is_night = flags[6]
+        is_night: int = int(flags[6])
         if prev_is_night and not is_night:
             obs_day_change.append(hist.SEC)
 
