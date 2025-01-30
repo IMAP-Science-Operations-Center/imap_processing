@@ -147,18 +147,18 @@ class CoDICEL1aPipeline:
 
         The coordinates for the dataset depend on the data product being made.
         """
-        # TODO: Probably don't need a separate self.config["coords"] list
-        #       self.config["coords"] is just the same as self.config["dims"]
-        #       but with "epoch" at the beginning
         self.coords = {}
 
-        for name in self.config["coords"]:
+        coord_names = ["epoch", *list(self.config["dims"].keys())]
+
+        for name in coord_names:
             if name == "epoch":
                 values = self.calculate_epoch_values()
             elif name in ["esa_step", "inst_az", "spin_sector"]:
                 values = np.arange(self.config["dims"][name])
             else:
-                # TODO: Need to implement other types of coords
+                # TODO: May need to implement other types of coords for Hi
+                #       and/or event data products
                 continue
 
             coord = xr.DataArray(
@@ -203,7 +203,7 @@ class CoDICEL1aPipeline:
             # Dynamically determine the slicing required to extract the counter
             # data, since the number of dimensions may vary. The counter
             # dimension is always the first
-            slicing = [slice(None)] * all_data.ndim
+            slicing: list[Any] = [slice(None)] * all_data.ndim
             slicing[1] = counter
 
             # Extract the counter data

@@ -12,9 +12,6 @@ PUI = PickUp Ion
 ESA = ElectroStatic Analyzer
 """
 
-# TODO: What to do in the case of a value of 255 in LOSSY_A and LOSSY_B
-#       compression? (Joey uses 0x100000000)
-
 from collections import OrderedDict
 
 from imap_processing.codice.utils import CODICEAPID, CoDICECompression
@@ -83,16 +80,8 @@ HI_INST_COUNTS_SINGLES_VARIABLE_NAMES = ["tcr", "ssdo", "stssd"]
 HI_OMNI_SPECIES_VARIABLE_NAMES = ["h", "he3", "he4", "c", "o", "ne_mg_si", "fe", "uh"]
 HI_SECT_SPECIES_VARIABLE_NAMES = ["h", "he3he4", "cno", "fe"]
 
-# TODO: Hi products shape should be energy x ssd index x spin sector (8*12*12)
 DATA_PRODUCT_CONFIGURATIONS = {
     CODICEAPID.COD_HI_INST_COUNTS_AGGREGATED: {
-        "coords": [
-            "epoch",
-            "inst_az",
-            "spin_sector",
-            "esa_step",
-            "energy_label",
-        ],  # TODO: These will likely change
         "dataset_name": "imap_codice_l1a_hi-counters-aggregated",
         "dims": OrderedDict(
             [("esa_step", 1), ("inst_az", 6), ("spin_sector", 1)]
@@ -103,13 +92,6 @@ DATA_PRODUCT_CONFIGURATIONS = {
         "variable_names": HI_INST_COUNTS_AGGREGATED_VARIABLE_NAMES,
     },
     CODICEAPID.COD_HI_INST_COUNTS_SINGLES: {
-        "coords": [
-            "epoch",
-            "inst_az",
-            "spin_sector",
-            "esa_step",
-            "energy_label",
-        ],  # TODO: These will likely change
         "dataset_name": "imap_codice_l1a_hi-counters-singles",
         "dims": OrderedDict(
             [("esa_step", 1), ("inst_az", 12), ("spin_sector", 1)]
@@ -120,13 +102,6 @@ DATA_PRODUCT_CONFIGURATIONS = {
         "variable_names": HI_INST_COUNTS_SINGLES_VARIABLE_NAMES,
     },
     CODICEAPID.COD_HI_OMNI_SPECIES_COUNTS: {
-        "coords": [
-            "epoch",
-            "inst_az",
-            "spin_sector",
-            "esa_step",
-            "energy_label",
-        ],  # TODO: These will likely change
         "dataset_name": "imap_codice_l1a_hi-omni",
         "dims": OrderedDict(
             [("esa_step", 15), ("inst_az", 4), ("spin_sector", 1)]
@@ -137,13 +112,6 @@ DATA_PRODUCT_CONFIGURATIONS = {
         "variable_names": HI_OMNI_SPECIES_VARIABLE_NAMES,
     },
     CODICEAPID.COD_HI_SECT_SPECIES_COUNTS: {
-        "coords": [
-            "epoch",
-            "inst_az",
-            "spin_sector",
-            "esa_step",
-            "energy_label",
-        ],  # TODO: These will likely change
         "dataset_name": "imap_codice_l1a_hi-sectored",
         "dims": OrderedDict(
             [("esa_step", 8), ("inst_az", 12), ("spin_sector", 12)]
@@ -154,13 +122,6 @@ DATA_PRODUCT_CONFIGURATIONS = {
         "variable_names": HI_SECT_SPECIES_VARIABLE_NAMES,
     },
     CODICEAPID.COD_LO_INST_COUNTS_AGGREGATED: {
-        "coords": [
-            "epoch",
-            "inst_az",
-            "spin_sector",
-            "esa_step",
-            "energy_label",
-        ],  # TODO: These will likely change
         "dataset_name": "imap_codice_l1a_lo-counters-aggregated",
         "dims": OrderedDict([("esa_step", 128), ("inst_az", 6), ("spin_sector", 6)]),
         "instrument": "lo",
@@ -172,13 +133,6 @@ DATA_PRODUCT_CONFIGURATIONS = {
         "variable_names": LO_INST_COUNTS_AGGREGATED_VARIABLE_NAMES,
     },
     CODICEAPID.COD_LO_INST_COUNTS_SINGLES: {
-        "coords": [
-            "epoch",
-            "inst_az",
-            "spin_sector",
-            "esa_step",
-            "energy_label",
-        ],  # TODO: These will likely change
         "dataset_name": "imap_codice_l1a_lo-counters-singles",
         "dims": OrderedDict([("esa_step", 128), ("inst_az", 24), ("spin_sector", 6)]),
         "instrument": "lo",
@@ -197,7 +151,6 @@ DATA_PRODUCT_CONFIGURATIONS = {
         "variable_names": LO_INST_COUNTS_SINGLES_VARIABLE_NAMES,
     },
     CODICEAPID.COD_LO_SW_ANGULAR_COUNTS: {
-        "coords": ["epoch", "inst_az", "spin_sector", "esa_step"],
         "dataset_name": "imap_codice_l1a_lo-sw-angular",
         "dims": OrderedDict([("inst_az", 5), ("spin_sector", 12), ("esa_step", 128)]),
         "instrument": "lo",
@@ -215,7 +168,6 @@ DATA_PRODUCT_CONFIGURATIONS = {
         "variable_names": LO_SW_ANGULAR_VARIABLE_NAMES,
     },
     CODICEAPID.COD_LO_NSW_ANGULAR_COUNTS: {
-        "coords": ["epoch", "inst_az", "spin_sector", "esa_step"],
         "dataset_name": "imap_codice_l1a_lo-nsw-angular",
         "dims": OrderedDict([("inst_az", 19), ("spin_sector", 12), ("esa_step", 128)]),
         "instrument": "lo",
@@ -233,7 +185,6 @@ DATA_PRODUCT_CONFIGURATIONS = {
         "variable_names": LO_NSW_ANGULAR_VARIABLE_NAMES,
     },
     CODICEAPID.COD_LO_SW_PRIORITY_COUNTS: {
-        "coords": ["epoch", "inst_az", "spin_sector", "esa_step", "energy_label"],
         "dataset_name": "imap_codice_l1a_lo-sw-priority",
         "dims": OrderedDict([("esa_step", 128), ("inst_az", 1), ("spin_sector", 12)]),
         "instrument": "lo",
@@ -251,7 +202,6 @@ DATA_PRODUCT_CONFIGURATIONS = {
         "variable_names": LO_SW_PRIORITY_VARIABLE_NAMES,
     },
     CODICEAPID.COD_LO_NSW_PRIORITY_COUNTS: {
-        "coords": ["epoch", "inst_az", "spin_sector", "esa_step", "energy_label"],
         "dataset_name": "imap_codice_l1a_lo-nsw-priority",
         "dims": OrderedDict([("esa_step", 128), ("inst_az", 1), ("spin_sector", 12)]),
         "instrument": "lo",
@@ -269,7 +219,6 @@ DATA_PRODUCT_CONFIGURATIONS = {
         "variable_names": LO_NSW_PRIORITY_VARIABLE_NAMES,
     },
     CODICEAPID.COD_LO_SW_SPECIES_COUNTS: {
-        "coords": ["epoch", "inst_az", "esa_step"],
         "dataset_name": "imap_codice_l1a_lo-sw-species",
         "dims": OrderedDict([("inst_az", 1), ("esa_step", 128)]),
         "instrument": "lo",
@@ -287,7 +236,6 @@ DATA_PRODUCT_CONFIGURATIONS = {
         "variable_names": LO_SW_SPECIES_VARIABLE_NAMES,
     },
     CODICEAPID.COD_LO_NSW_SPECIES_COUNTS: {
-        "coords": ["epoch", "inst_az", "spin_sector", "esa_step", "energy_label"],
         "dataset_name": "imap_codice_l1a_lo-nsw-species",
         "dims": OrderedDict([("esa_step", 128), ("inst_az", 1), ("spin_sector", 1)]),
         "instrument": "lo",
