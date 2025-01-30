@@ -15,7 +15,7 @@ from imap_processing.glows.l1a.glows_l1a_data import (
     StatusData,
 )
 from imap_processing.glows.utils.constants import DirectEvent, GlowsConstants, TimeTuple
-from imap_processing.spice.time import met_to_j2000ns
+from imap_processing.spice.time import met_to_ttj2000ns
 
 
 @pytest.fixture()
@@ -541,7 +541,7 @@ def test_expected_hist_results(l1a_dataset):
     ]
 
     for data in out["output"]:
-        epoch_val = met_to_j2000ns(
+        epoch_val = met_to_ttj2000ns(
             TimeTuple(
                 data["imap_start_time"]["seconds"],
                 data["imap_start_time"]["subseconds"],

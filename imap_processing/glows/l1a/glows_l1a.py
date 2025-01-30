@@ -83,6 +83,7 @@ def glows_l1a(packet_filepath: Path, data_version: str) -> list[xr.Dataset]:
         hist_day = next(
             (day for day in reversed(obs_days) if day <= hist.SEC), obs_days[-1]
         )
+        hists_by_day[hist_day].append(hist_l1a)
 
     # Generate CDF files for each day
     output_datasets = []

@@ -10,7 +10,7 @@ from imap_processing.glows.l1b.glows_l1b_data import (
     DirectEventL1B,
     HistogramL1B,
 )
-from imap_processing.spice.time import met_to_j2000ns
+from imap_processing.spice.time import met_to_ttj2000ns
 
 
 def test_glows_l1b_ancillary_file():
@@ -125,7 +125,7 @@ def test_validation_data_histogram(l1a_dataset):
     }
 
     for validation_output in out["output"]:
-        epoch_val = met_to_j2000ns(validation_output["imap_start_time"])
+        epoch_val = met_to_ttj2000ns(validation_output["imap_start_time"])
 
         # Validation data spans the two obs days, so this selects the correct output
         dataset_index = 1 if epoch_val > end_time else 0
