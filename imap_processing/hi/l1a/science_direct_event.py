@@ -7,7 +7,7 @@ import numpy._typing as npt
 import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
-from imap_processing.spice.time import met_to_j2000ns
+from imap_processing.spice.time import met_to_ttj2000ns
 
 # TODO: read LOOKED_UP_DURATION_OF_TICK from
 # instrument status summary later. This value
@@ -129,7 +129,7 @@ def create_dataset(de_data_dict: dict[str, npt.ArrayLike]) -> xr.Dataset:
         "seconds included"
     )
     epoch = xr.DataArray(
-        met_to_j2000ns(de_data_dict["event_met"] / 1e9),
+        met_to_ttj2000ns(de_data_dict["event_met"] / 1e9),
         name="epoch",
         dims=["epoch"],
         attrs=epoch_attrs,

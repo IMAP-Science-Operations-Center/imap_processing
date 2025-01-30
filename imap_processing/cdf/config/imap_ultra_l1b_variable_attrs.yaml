@@ -313,16 +313,17 @@ rate_rejected_events:
   # TODO: come back to format
   UNITS: 1/s
 
-quality_hk:
-  <<: *default
-  CATDESC: Spin filter derived from Ultra housekeeping. Bitwise flagging used to filter the spin.
-  FIELDNAM: quality_hk
-  LABLAXIS: quality hk
-  # TODO: come back to format
+quality_ena_rates:
+  <<: *default_uint16
+  CATDESC: Spin filter derived from Ultra ena rates. Bitwise flagging used to filter the spin.
+  FIELDNAM: quality_ena_rates
+  LABLAXIS: quality_ena_rates
+  DEPEND_0: spin_number
+  DEPEND_1: median_rate_energy
   UNITS: " "
 
 quality_attitude:
-  <<: *default
+  <<: *default_uint16
   CATDESC: Spin filter derived from IMAP attitude. Bitwise flagging used to filter the spin.
   FIELDNAM: quality_attitude
   LABLAXIS: quality attitude
@@ -330,7 +331,7 @@ quality_attitude:
   UNITS: " "
 
 quality_instruments:
-  <<: *default
+  <<: *default_uint16
   CATDESC: Spin filter derived from instruments other than Ultra. Bitwise flagging used to filter the spin.
   FIELDNAM: quality_instruments
   LABLAXIS: quality instruments

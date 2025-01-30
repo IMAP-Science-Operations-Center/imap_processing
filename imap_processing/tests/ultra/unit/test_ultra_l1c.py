@@ -68,7 +68,7 @@ def mock_data_l1c_dict():
 def test_create_dataset(mock_data_l1c_dict):
     """Tests that dataset is created as expected."""
     dataset = create_dataset(
-        mock_data_l1c_dict, "imap_ultra_l1c_45sensor-histogram", "l1c"
+        mock_data_l1c_dict, "imap_ultra_l1c_45sensor-histogram", "l1c", "001"
     )
 
     assert "epoch" in dataset.coords

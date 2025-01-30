@@ -4,7 +4,7 @@ import logging
 import os
 from typing import Optional
 
-import spiceypy as spice
+import spiceypy
 
 logger = logging.getLogger(__name__)
 
@@ -58,11 +58,11 @@ def list_loaded_kernels(extensions: Optional[list[str]] = None) -> list:
     result : list
         A list of kernel filenames.
     """
-    count = spice.ktotal("ALL")
+    count = spiceypy.ktotal("ALL")
     result = []
 
     for i in range(count):
-        file, _, _, _ = spice.kdata(i, "ALL")
+        file, _, _, _ = spiceypy.kdata(i, "ALL")
         # Append the file if no specific extensions are provided
         if extensions is None:
             result.append(file)
@@ -88,18 +88,18 @@ def list_all_constants() -> dict:
     # start = 0, Which component to start retrieving for `name'.
     # room = 1000, The largest number of values to return.
     # n = 81, Number of values returned for `name'.
-    kernel_vars = spice.gnpool("*", 0, 1000, 81)
+    kernel_vars = spiceypy.gnpool("*", 0, 1000, 81)
 
     result = {}
     for kernel_var in sorted(kernel_vars):
         # retrieve data about a kernel variable
-        n, kernel_type = spice.dtpool(kernel_var)
+        n, kernel_type = spiceypy.dtpool(kernel_var)
         # numerical data type
         if kernel_type == "N":
-            values = spice.gdpool(kernel_var, 0, n)
+            values = spiceypy.gdpool(kernel_var, 0, n)
             result[kernel_var] = values
         # character data type
         elif kernel_type == "C":
-            values = spice.gcpool(kernel_var, 0, n, 81)
+            values = spiceypy.gcpool(kernel_var, 0, n, 81)
             result[kernel_var] = values
     return result

@@ -8,7 +8,7 @@ import numpy as np
 import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
-from imap_processing.spice.time import met_to_j2000ns
+from imap_processing.spice.time import met_to_ttj2000ns
 
 
 def lo_l1c(dependencies: dict, data_version: str) -> list[Path]:
@@ -86,7 +86,7 @@ def create_datasets(
     #  and relative L1A DE time to calculate the absolute DE time,
     #  this epoch conversion will go away and the time in the DE dataclass
     #  can be used direction
-    epoch_converted_time = [met_to_j2000ns(1)]
+    epoch_converted_time = [met_to_ttj2000ns(1)]
 
     # Create a data array for the epoch time
     # TODO: might need to update the attrs to use new YAML file
