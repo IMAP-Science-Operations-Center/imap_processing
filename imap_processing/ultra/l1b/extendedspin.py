@@ -59,7 +59,7 @@ def calculate_extendedspin(
     extendedspin_dict["ena_rates"] = count_rates
     extendedspin_dict["ena_rates_threshold"] = n_sigma_per_energy
     extendedspin_dict["spin_start_time"] = spin_starttime
-    extendedspin_dict["avg_spin_period"] = spin_period
+    extendedspin_dict["spin_period"] = spin_period
     extendedspin_dict["spin_rate"] = spin_rates
     extendedspin_dict["quality_attitude"] = attitude_qf
     extendedspin_dict["quality_ena_rates"] = rates_qf

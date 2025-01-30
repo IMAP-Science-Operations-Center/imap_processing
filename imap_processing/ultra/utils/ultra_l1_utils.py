@@ -78,6 +78,12 @@ def create_dataset(
                 dims=["epoch", "component"],
                 attrs=cdf_manager.get_variable_attributes(key),
             )
+        elif key == "ena_rates_threshold":
+            dataset[key] = xr.DataArray(
+                data_dict[key],
+                dims=["median_rate_energy"],
+                attrs=cdf_manager.get_variable_attributes(key),
+            )
         elif key in rates_keys:
             dataset[key] = xr.DataArray(
                 data_dict[key],
