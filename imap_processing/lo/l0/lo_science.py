@@ -481,5 +481,4 @@ def organize_spin_data(dataset: xr.Dataset) -> xr.Dataset:
         # Drop the individual spin data fields
         dataset = dataset.drop_vars(packet_fields)
 
-    print(dataset.data_vars)
     return dataset
