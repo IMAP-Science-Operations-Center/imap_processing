@@ -42,8 +42,15 @@ l1b_target_base: &l1b_target_base
 trigger_base: &trigger_base
   <<: *l1b_data_base
   DISPLAY_TYPE: no_plot
-  CATDESC: ""
   UNITS: " "
+
+spice_base: &spice_base
+  <<: *l1b_data_base
+  VAR_TYPE: data
+  VALIDMIN: -180
+  VALIDMAX: 360
+  DISPLAY_TYPE: time_series
+  UNITS: Degrees
 
 # <=== Instrument Setting Attributes ===>
 trigger_mode:
@@ -334,3 +341,75 @@ current_neg2p5v_bus:
   CATDESC: Negative current reading on -2.5V bus on LVPS Board (ADC 1 channel 7)
   LABLAXIS: Current
   UNITS: A
+
+# <=== Spice Data Attributes ===>
+# TODO: Get actual validmin and vaildmax for ephemeris attrs
+ephemeris_position_x:
+  <<: *spice_base
+  FIELDNAM: Position X
+  CATDESC: Cartesian coordinate X positions for the IMAP spacecraft in the ECLIPJ2000 frame.
+  LABLAXIS: Position X
+  UNITS: km
+
+ephemeris_position_y:
+  <<: *spice_base
+  FIELDNAM: Position Y
+  CATDESC: Cartesian coordinate Y positions for the IMAP spacecraft in the ECLIPJ2000 frame.
+  LABLAXIS: Position Y
+  UNITS: km
+
+ephemeris_position_z:
+  <<: *spice_base
+  FIELDNAM: Position Z
+  CATDESC: Cartesian coordinate Z positions for the IMAP spacecraft in the ECLIPJ2000 frame.
+  LABLAXIS: Position Z
+  UNITS: km
+
+ephemeris_velocity_x:
+  <<: *spice_base
+  FIELDNAM: Velocity X
+  CATDESC: Velocity X positions for the IMAP spacecraft in the ECLIPJ2000 frame.
+  LABLAXIS: Velocity X
+  UNITS: km/s
+
+ephemeris_velocity_y:
+  <<: *spice_base
+  FIELDNAM: Velocity Y
+  CATDESC: Velocity Y positions for the IMAP spacecraft in the ECLIPJ2000 frame.
+  LABLAXIS: Velocity Y
+  UNITS: km/s
+
+ephemeris_velocity_z:
+  <<: *spice_base
+  FIELDNAM: Velocity Z
+  CATDESC: Velocity Z positions for the IMAP spacecraft in the ECLIPJ2000 frame.
+  LABLAXIS: Velocity Z
+  UNITS: km/s
+
+right_ascension:
+  <<: *spice_base
+  VALIDMIN: 0
+  FIELDNAM: Right Ascension
+  CATDESC: Right ascension of the IMAP spacecraft position as observed from Earth in the ECLIPJ2000 reference frame.
+  LABLAXIS: Right Ascension
+
+declination:
+  <<: *spice_base
+  FIELDNAM: Declination
+  CATDESC: Declination of the IMAP spacecraft position as observed from Earth in the ECLIPJ2000 reference frame.
+  LABLAXIS: Declination
+
+spin_phase:
+  <<: *spice_base
+  VALIDMIN: 0
+  FIELDNAM: Spin Phase
+  CATDESC: IMAP Spin Phase
+  LABLAXIS: Spin Phase
+
+solar_longitude:
+  <<: *spice_base
+  VALIDMAX: 180
+  FIELDNAM: Solar Longitude
+  CATDESC: Solar Longitude of the IMAP spacecraft
+  LABLAXIS: Solar Longitude
+

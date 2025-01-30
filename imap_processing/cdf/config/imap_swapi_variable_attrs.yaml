@@ -93,6 +93,21 @@ metadata_default: &metadata_default
   VAR_TYPE: support_data
   SCALETYP: linear
 
+# Minimum attrs setting for HK data
+hk_attrs: &hk_attrs
+  CATDESC: Housekeeping data
+  FIELDNAM: Housekeeping
+  LABLAXIS: Values
+  DEPEND_0: epoch
+  DISPLAY_TYPE: time_series
+  FILLVAL: 4294967295
+  FORMAT: I19
+  UNITS: " "
+  VALIDMIN: 0
+  VALIDMAX: 9223372036854769664
+  VAR_TYPE: support_data
+  SCALETYP: linear
+
 pcem_counts:
   <<: *counts_default
   CATDESC: Primary Channel Electron Multiplier (CEM)  Counts
@@ -138,7 +153,7 @@ pcem_rate:
 scem_rate:
   <<: *rate_default
   CATDESC: Secondary Channel Electron Multiplier (CEM) Rates
-  FIELDNnam: Secondary CEM Rates
+  FIELDNAM: Secondary CEM Rates
   LABLAXIS: scem_rate
 
 coin_rate:

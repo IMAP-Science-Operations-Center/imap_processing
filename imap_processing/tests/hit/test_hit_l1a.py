@@ -8,7 +8,12 @@ from imap_processing.hit.hit_utils import (
     HitAPID,
     get_datasets_by_apid,
 )
-from imap_processing.hit.l1a.hit_l1a import decom_hit, hit_l1a, subcom_sectorates
+from imap_processing.hit.l1a.hit_l1a import (
+    calculate_uncertainties,
+    decom_hit,
+    hit_l1a,
+    subcom_sectorates,
+)
 
 # TODO: Packet files are per apid at the moment so the tests currently
 #  reflect this. Eventually, HIT will provide a packet file with all apids
@@ -147,6 +152,43 @@ def test_subcom_sectorates(sci_packet_filepath):
         )
 
 
+def test_calculate_uncertainties():
+    """Test the calculate_uncertainties function.
+
+    This function calculates the uncertainties for the counts data.
+    """
+
+    # Create a sample dataset
+    data = {
+        "counts": (("epoch", "index"), np.array([[10, 20], [0, 1]])),
+        "version": (("epoch",), np.array([1, 1])),
+    }
+    dataset = xr.Dataset(data)
+
+    # Calculate uncertainties
+    result = calculate_uncertainties(dataset)
+
+    # Expected uncertainties
+    #   DELTA_PLUS = sqrt(counts + 1) + 1
+    #   DELTA_MINUS = sqrt(counts)
+    expected_delta_plus = np.array(
+        [[np.sqrt(11) + 1, np.sqrt(21) + 1], [np.sqrt(1) + 1, np.sqrt(2) + 1]]
+    )
+    expected_delta_minus = np.array(
+        [[np.sqrt(10), np.sqrt(20)], [np.sqrt(0), np.sqrt(1)]]
+    )
+
+    # Assertions
+    np.testing.assert_array_almost_equal(
+        result["counts_delta_plus"].values, expected_delta_plus
+    )
+    np.testing.assert_array_almost_equal(
+        result["counts_delta_minus"].values, expected_delta_minus
+    )
+    assert "version_delta_plus" not in result
+    assert "version_delta_minus" not in result
+
+
 def test_validate_l1a_counts_data(sci_packet_filepath):
     """Compare the output of the L1A processing to the validation data.
 
@@ -239,7 +281,18 @@ def test_validate_l1a_counts_data(sci_packet_filepath):
         return data
 
     def compare_data(expected_data, actual_data, skip):
-        # Compare the processed data to the validation data
+        """Compare the processed data to the validation data.
+
+        Parameters
+        ----------
+        expected_data : pd.DataFrame
+            Validation data extracted from a csv file
+        actual_data : xr.Dataset
+            Processed data from l1a processing
+        skip : list
+            Fields to skip in comparison
+        """
+        # Compare the validation data to the processed data
         for field in expected_data.columns:
             if field not in [
                 "sc_tick",
@@ -265,7 +318,7 @@ def test_validate_l1a_counts_data(sci_packet_filepath):
 
     rate_columns = {
         "coinrates": "COINRATES_",
-        "bufrates": "BUFRATES_",
+        "pbufrates": "BUFRATES_",
         "l2fgrates": "L2FGRATES_",
         "l2bgrates": "L2BGRATES_",
         "l3fgrates": "L3FGRATES_",
@@ -308,6 +361,8 @@ def test_validate_l1a_counts_data(sci_packet_filepath):
 
     # TODO: add validation for CCSDS fields? currently validation data only has
     #  one value per frame and the processed data has one value per packet.
+    # TODO: add validation for uncertainty fields. validation data doesn't contain
+    #  these fields.
 
 
 def test_hit_l1a(hk_packet_filepath, sci_packet_filepath):

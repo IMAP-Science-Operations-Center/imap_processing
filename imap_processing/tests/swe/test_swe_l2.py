@@ -108,8 +108,23 @@ def test_calculate_flux():
     assert type(flux) == np.ndarray
 
 
+@patch(
+    "imap_processing.swe.l1b.swe_l1b_science.read_in_flight_cal_data",
+    return_value=pd.DataFrame(
+        {
+            "met_time": [453050300, 453077900],
+            "cem1": [1, 1],
+            "cem2": [1, 1],
+            "cem3": [1, 1],
+            "cem4": [1, 1],
+            "cem5": [1, 1],
+            "cem6": [1, 1],
+            "cem7": [1, 1],
+        }
+    ),
+)
 @pytest.mark.usefixtures("use_fake_spin_data_for_time")
-def test_swe_l2(use_fake_spin_data_for_time):
+def test_swe_l2(mock_read_in_flight_cal_data, use_fake_spin_data_for_time):
     """Test L2 processing."""
     data_start_time = 453051293.099714
     data_end_time = 453066734
@@ -122,4 +137,5 @@ def test_swe_l2(use_fake_spin_data_for_time):
     l2_dataset = swe_l2(l1b_dataset, "002")
 
     assert type(l2_dataset) == xr.Dataset
-    assert l2_dataset["spin_phase"].shape == (6, 24, 30, 7)
+    assert l2_dataset["spin_phase"].shape == (6, 24, 30)
+    assert l2_dataset["flux"].shape == (6, 24, 30, 7)

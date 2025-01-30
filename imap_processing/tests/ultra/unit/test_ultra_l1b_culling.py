@@ -3,7 +3,7 @@
 import numpy as np
 import pytest
 
-from imap_processing.quality_flags import ImapHkUltraFlags
+from imap_processing.quality_flags import ImapRatesUltraFlags
 from imap_processing.ultra.constants import UltraConstants
 from imap_processing.ultra.l1b.ultra_l1b_culling import (
     flag_spin,
@@ -37,19 +37,17 @@ def test_data(use_fake_spin_data_for_time):
     return time, spin_number, energy, expected_counts
 
 
-def test_get_spin(use_fake_spin_data_for_time, l1b_de_dataset):
+def test_get_spin(use_fake_spin_data_for_time, l1b_datasets):
     """Tests get_spin function."""
+    de_dataset = l1b_datasets[0]
     use_fake_spin_data_for_time(
-        l1b_de_dataset["event_times"][0], l1b_de_dataset["event_times"][-1]
+        de_dataset["event_times"][0], de_dataset["event_times"][-1]
     )
-    spin_number = get_spin(l1b_de_dataset["event_times"])
+    spin_number = get_spin(de_dataset["event_times"])
 
-    assert len(spin_number) == len(l1b_de_dataset["event_times"])
+    assert len(spin_number) == len(de_dataset["event_times"])
     expected_num_spins = np.ceil(
-        (
-            l1b_de_dataset["event_times"].values[-1]
-            - l1b_de_dataset["event_times"].values[0]
-        )
+        (de_dataset["event_times"].values[-1] - de_dataset["event_times"].values[0])
         / 15
     )
     assert np.array_equal(len(np.unique(spin_number)), expected_num_spins)
@@ -71,13 +69,14 @@ def test_flag_spin(test_data):
     time, _, energy, expected_counts = test_data
     quality_flags, spin, energy = flag_spin(time, energy)
 
-    flag = ImapHkUltraFlags(quality_flags[1])
+    flag = ImapRatesUltraFlags(quality_flags[0, :][expected_counts[0, :] / 15 > 0])
     assert flag.name == "HIGHCOUNTS"
 
-    flagged_indices = np.unique(spin)[expected_counts[0, :] / 15 > 0]
-    unflagged_indices = np.setdiff1d(np.unique(spin), flagged_indices)
-    assert np.all(quality_flags[flagged_indices] == ImapHkUltraFlags.HIGHCOUNTS.value)
-    assert np.all(quality_flags[unflagged_indices] == ImapHkUltraFlags.NONE.value)
+    assert np.all(flag == ImapRatesUltraFlags.HIGHCOUNTS.value)
+    assert np.all(
+        quality_flags[0, :][expected_counts[0, :] / 15 <= 0]
+        == ImapRatesUltraFlags.NONE.value
+    )
 
     # Only HIGHCOUNT bits were set
-    assert np.all(quality_flags == quality_flags & ImapHkUltraFlags.HIGHCOUNTS)
+    assert np.all(quality_flags == quality_flags & ImapRatesUltraFlags.HIGHCOUNTS)

@@ -23,6 +23,17 @@ import xarray as xr
 
 from imap_processing import imap_module_directory
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
+from imap_processing.spice.geometry import (
+    SpiceBody,
+    SpiceFrame,
+    cartesian_to_spherical,
+    get_spacecraft_spin_phase,
+    get_spin_angle,
+    imap_state,
+    instrument_pointing,
+    solar_longitude,
+)
+from imap_processing.spice.time import ttj2000ns_to_et
 from imap_processing.utils import convert_raw_to_eu
 
 logger = logging.getLogger(__name__)
@@ -110,6 +121,9 @@ def idex_l1b(l1a_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
         dims=["epoch"],
         attrs=idex_attrs.get_variable_attributes("epoch"),
     )
+    # Get spice data and save them as xr.DataArrays in the output. Spice data is not
+    # used for calculations yet but are saved in the CDF for reference.
+    spice_data = get_spice_data(l1a_dataset, idex_attrs)
 
     trigger_settings = get_trigger_mode_and_level(l1a_dataset)
     if trigger_settings:
@@ -123,7 +137,7 @@ def idex_l1b(l1a_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
     # Create l1b Dataset
     l1b_dataset = xr.Dataset(
         coords={"epoch": epoch_da},
-        data_vars=processed_vars | waveforms_converted | trigger_settings,
+        data_vars=processed_vars | waveforms_converted | trigger_settings | spice_data,
         attrs=idex_attrs.get_global_attributes("imap_idex_l1b_sci"),
     )
     # Convert variables
@@ -324,3 +338,62 @@ def get_trigger_mode_and_level(
             f"there is only one valid trigger value per event. This "
             f"caused Merge Error: {e}"
         ) from e
+
+
+def get_spice_data(
+    l1a_dataset: xr.Dataset, idex_attrs: ImapCdfAttributes
+) -> dict[str, xr.DataArray]:
+    """
+    Use spice to query ephemeris, attitude, celestial coordinates for each dust event.
+
+    Parameters
+    ----------
+    l1a_dataset : xarray.Dataset
+        IDEX L1a dataset containing the six waveform arrays and instrument settings.
+    idex_attrs : ImapCdfAttributes
+        CDF attribute manager object.
+
+    Returns
+    -------
+    dict
+        Spice array names and xr.DataArrays.
+    """
+    # convert 'epoch' from nanoseconds to seconds since j2000
+    et = ttj2000ns_to_et(l1a_dataset["epoch"].data)
+    # Get 'shcoarse' (Mission Elapsed Time)
+    met = l1a_dataset["shcoarse"].data
+    # Get spacecraft spin phase in degrees
+    spin_phase = get_spacecraft_spin_phase(query_met_times=met)
+    imap_spin_phase = get_spin_angle(spin_phase, degrees=True)
+    # Get position and velocity of IMAP in ecliptic frame
+    ephemeris = imap_state(et, observer=SpiceBody.SUN)
+    # Get Idex pointing in the j2000 equatorial frame
+    idex_pointing = instrument_pointing(
+        et, SpiceFrame.IMAP_IDEX, SpiceFrame.J2000, cartesian=True
+    )
+    solar_lon = solar_longitude(et, degrees=True)
+
+    range_ra_and_dec = cartesian_to_spherical(idex_pointing)
+
+    spice_data = {
+        "ephemeris_position_x": ephemeris[:, 0],
+        "ephemeris_position_y": ephemeris[:, 1],
+        "ephemeris_position_z": ephemeris[:, 2],
+        "ephemeris_velocity_x": ephemeris[:, 3],
+        "ephemeris_velocity_y": ephemeris[:, 4],
+        "ephemeris_velocity_z": ephemeris[:, 5],
+        "right_ascension": range_ra_and_dec[:, 1],
+        "declination": range_ra_and_dec[:, 2],
+        "spin_phase": imap_spin_phase,
+        "solar_longitude": solar_lon,
+    }
+
+    for name, array in spice_data.items():
+        spice_data[name] = xr.DataArray(
+            name=name,
+            data=array,
+            dims="epoch",
+            attrs=idex_attrs.get_variable_attributes(name),
+        )
+
+    return spice_data

@@ -1,47 +1,21 @@
+from unittest.mock import patch
+
 import numpy as np
+import pandas as pd
 import pytest
 
-from imap_processing import imap_module_directory
 from imap_processing.swe.l1a.swe_science import swe_science
 from imap_processing.swe.l1b.swe_l1b_science import (
+    apply_in_flight_calibration,
     get_indices_of_full_cycles,
 )
-from imap_processing.swe.utils.swe_utils import SWEAPID
-from imap_processing.utils import packet_file_to_datasets
 
 
 @pytest.fixture(scope="session")
-def l1a_test_data():
-    """Read test data from file"""
-    # NOTE: data was provided in this sequence in both bin and validation data
-    # from instrument team.
-    # Packet 1 has spin 4's data
-    # Packet 2 has spin 1's data
-    # Packet 3 has spin 2's data
-    # Packet 4 has spin 3's data
-    # moved packet 1 to bottom to show data in order.
-    packet_files = [
-        imap_module_directory
-        / "tests/swe/l0_data/20230927173253_SWE_SCIENCE_packet.bin",
-        imap_module_directory
-        / "tests/swe/l0_data/20230927173308_SWE_SCIENCE_packet.bin",
-        imap_module_directory
-        / "tests/swe/l0_data/20230927173323_SWE_SCIENCE_packet.bin",
-        imap_module_directory
-        / "tests/swe/l0_data/20230927173238_SWE_SCIENCE_packet.bin",
-    ]
-    dataset = packet_file_to_datasets(packet_files[0], use_derived_value=False)[
-        SWEAPID.SWE_SCIENCE
-    ]
-    for packet_file in packet_files[1:]:
-        dataset.merge(
-            packet_file_to_datasets(packet_file, use_derived_value=False)[
-                SWEAPID.SWE_SCIENCE
-            ]
-        )
-    # Get unpacked science data
-    unpacked_data = swe_science(dataset, "001")
-    return unpacked_data
+def l1a_test_data(decom_test_data):
+    """Read test data from file and process to l1a"""
+    processed_data = swe_science(decom_test_data, "001")
+    return processed_data
 
 
 def test_get_full_cycle_data_indices():
@@ -62,4 +36,49 @@ def test_get_full_cycle_data_indices():
     np.testing.assert_array_equal(filtered_q, np.array([]))
 
 
-# TODO: Add more tests
+@patch(
+    "imap_processing.swe.l1b.swe_l1b_science.read_in_flight_cal_data",
+    return_value=pd.DataFrame(
+        {
+            "met_time": [453051300, 453051900],
+            "cem1": [1, 2],
+            "cem2": [1, 2],
+            "cem3": [1, 2],
+            "cem4": [1, 2],
+            "cem5": [1, 2],
+            "cem6": [1, 2],
+            "cem7": [1, 2],
+        }
+    ),
+)
+def test_in_flight_calibration_factor(mock_read_in_flight_cal_data, l1a_test_data):
+    """Test that the L1B processing is working as expected."""
+    # create sample data
+
+    input_time = 453051355.0
+    input_count = 19967
+    one_full_cycle_data = np.full((24, 30, 7), input_count)
+    acquisition_time = np.full((24, 30), input_time)
+
+    # Test that calibration factor is within correct range given test data
+    expected_cal_factor = 1 + ((2 - 1) / (453051900 - 453051300)) * (
+        input_time - 453051300
+    )
+
+    calibrated_count = apply_in_flight_calibration(
+        one_full_cycle_data,
+        acquisition_time,
+    )
+
+    np.testing.assert_allclose(
+        calibrated_count,
+        np.full((24, 30, 7), input_count * expected_cal_factor),
+        rtol=1e-9,
+    )
+
+    # Check for value outside of calibration time range
+    input_time = 1.0
+    acquisition_time = np.full((24, 30), input_time)
+
+    with pytest.raises(ValueError, match="Acquisition min/max times: "):
+        apply_in_flight_calibration(one_full_cycle_data, acquisition_time)

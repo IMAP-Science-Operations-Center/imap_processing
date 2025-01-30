@@ -6,7 +6,7 @@
 import numpy as np
 from numpy.typing import NDArray
 
-from imap_processing.quality_flags import ImapHkUltraFlags
+from imap_processing.quality_flags import ImapRatesUltraFlags
 from imap_processing.spice.geometry import get_spin_data
 from imap_processing.ultra.constants import UltraConstants
 
@@ -99,32 +99,14 @@ def flag_spin(
     """
     spin = get_spin(eventtimes_met)
     hist, spin_edges = get_energy_histogram(spin, energy)
-    quality_flags = np.full(
-        hist.shape[0] * hist.shape[1], ImapHkUltraFlags.NONE.value, dtype=np.uint16
-    )
+    quality_flags = np.full(hist.shape, ImapRatesUltraFlags.NONE.value, dtype=np.uint16)
 
-    appended_spin = np.empty(0, dtype=np.uint16)
-    appended_energy = np.empty(0, dtype=np.float64)
+    bin_edges = np.array(UltraConstants.CULLING_ENERGY_BIN_EDGES)
+    energy_midpoints = (bin_edges[:-1] + bin_edges[1:]) / 2
+    spin = np.unique(spin)
 
-    for energy_idx in range(hist.shape[0]):
-        # Count rates for each spin at this energy
-        spin_count_rates = hist[energy_idx][:]
-        # Indices where the counts exceed the threshold
-        indices = np.nonzero(
-            spin_count_rates > UltraConstants.COUNT_RATES_THRESHOLDS[energy_idx]
-        )
-        flattened_indices = energy_idx * hist.shape[1] + indices[0]
-        quality_flags[flattened_indices] |= ImapHkUltraFlags.HIGHCOUNTS.value
+    # Indices where the counts exceed the threshold
+    indices = hist > np.array(UltraConstants.COUNT_RATES_THRESHOLDS)[:, np.newaxis]
+    quality_flags[indices] |= ImapRatesUltraFlags.HIGHCOUNTS.value
 
-        # Calculate the energy midpoint for each bin
-        energy_midpoint = (
-            UltraConstants.CULLING_ENERGY_BIN_EDGES[energy_idx]
-            + UltraConstants.CULLING_ENERGY_BIN_EDGES[energy_idx + 1]
-        ) / 2
-
-        appended_spin = np.concatenate((appended_spin, np.unique(spin)))
-        appended_energy = np.concatenate(
-            (appended_energy, np.full(len(np.unique(spin)), energy_midpoint))
-        )
-
-    return quality_flags, appended_spin, appended_energy
+    return quality_flags, spin, energy_midpoints

@@ -5,12 +5,13 @@ from unittest import mock
 import numpy as np
 import pandas as pd
 import pytest
-import spiceypy as spice
+import spiceypy
 
 from imap_processing.spice.geometry import (
     SpiceBody,
     SpiceFrame,
     basis_vectors,
+    cartesian_to_latitudinal,
     cartesian_to_spherical,
     frame_transform,
     frame_transform_az_el,
@@ -18,9 +19,11 @@ from imap_processing.spice.geometry import (
     get_rotation_matrix,
     get_spacecraft_spin_phase,
     get_spacecraft_to_instrument_spin_phase_offset,
+    get_spin_angle,
     get_spin_data,
     imap_state,
     instrument_pointing,
+    solar_longitude,
     spherical_to_cartesian,
 )
 from imap_processing.spice.kernels import ensure_spice
@@ -97,6 +100,20 @@ def test_get_spacecraft_spin_phase(query_met_times, expected, fake_spin_data):
         assert spin_phases.shape == expected.shape
     # Test the value
     np.testing.assert_array_almost_equal(spin_phases, expected)
+
+
+def test_get_spin_angle():
+    """Test get_spin_angle() with fake spin phases."""
+    test_spin_phases = np.ones(10) * 0.5
+    # Expected values for spin angles in degrees and radians if spin phase is 0.5
+    expected_deg = 180
+    expected_rad = np.pi
+    # Get spin angles in degrees and radians
+    spin_phases_deg = get_spin_angle(test_spin_phases, degrees=True)
+    spin_phases_rad = get_spin_angle(test_spin_phases, degrees=False)
+    # Test conversions
+    assert np.all(spin_phases_deg == expected_deg)
+    assert np.all(spin_phases_rad == expected_rad)
 
 
 @pytest.mark.parametrize("query_met_times", [-1, 165])
@@ -236,7 +253,7 @@ def test_frame_transform(et_strings, position, from_frame, to_frame, furnish_ker
     ]
     with furnish_kernels(kernels):
         # Test single et and position calculation
-        et = np.array([spice.utc2et(et_str) for et_str in et_strings])
+        et = np.array([spiceypy.utc2et(et_str) for et_str in et_strings])
         et_arg = et[0] if len(et) == 1 else et
         result = frame_transform(et_arg, position, from_frame, to_frame)
         # check the result shape before modifying for value checking.
@@ -258,8 +275,8 @@ def test_frame_transform(et_strings, position, from_frame, to_frame, furnish_ker
             position = np.broadcast_to(position, (len(et), 3))
             result = np.broadcast_to(result, (len(et), 3))
         for spice_et, spice_position, test_result in zip(et, position, result):
-            rotation_matrix = spice.pxform(from_frame.name, to_frame.name, spice_et)
-            spice_result = spice.mxv(rotation_matrix, spice_position)
+            rotation_matrix = spiceypy.pxform(from_frame.name, to_frame.name, spice_et)
+            spice_result = spiceypy.mxv(rotation_matrix, spice_position)
             np.testing.assert_allclose(test_result, spice_result, atol=1e-12)
 
 
@@ -344,7 +361,7 @@ def test_get_rotation_matrix(furnish_kernels):
         "sim_1yr_imap_pointing_frame.bc",
     ]
     with furnish_kernels(kernels):
-        et = spice.utc2et("2025-09-30T12:00:00.000")
+        et = spiceypy.utc2et("2025-09-30T12:00:00.000")
         # test input of float
         rotation = get_rotation_matrix(
             et, SpiceFrame.IMAP_IDEX, SpiceFrame.IMAP_SPACECRAFT
@@ -366,7 +383,7 @@ def test_instrument_pointing(furnish_kernels):
         "sim_1yr_imap_pointing_frame.bc",
     ]
     with furnish_kernels(kernels):
-        et = spice.utc2et("2025-06-12T12:00:00.000")
+        et = spiceypy.utc2et("2025-06-12T12:00:00.000")
         # Single et input
         ins_pointing = instrument_pointing(
             et, SpiceFrame.IMAP_HI_90, SpiceFrame.ECLIPJ2000
@@ -391,7 +408,7 @@ def test_basis_vectors():
     """Test coverage for basis_vectors()."""
     # This call to SPICE needs to be wrapped with `ensure_spice` so that kernels
     # get furnished automatically
-    et = ensure_spice(spice.utc2et)("2025-09-30T12:00:00.000")
+    et = ensure_spice(spiceypy.utc2et)("2025-09-30T12:00:00.000")
     # test input of float
     sc_axes = basis_vectors(et, SpiceFrame.IMAP_SPACECRAFT, SpiceFrame.IMAP_SPACECRAFT)
     np.testing.assert_array_equal(sc_axes, np.eye(3))
@@ -425,18 +442,11 @@ def test_cartesian_to_spherical():
 
     for point in cartesian_points:
         r, az, el = cartesian_to_spherical(point)
-        r_spice, colat_spice, slong_spice = spice.recsph(point)
+        range, ra, dec = spiceypy.recrad(point)
 
-        # Convert SPICE co-latitude to elevation
-        el_spice = 90 - np.degrees(colat_spice)
-        az_spice = np.degrees(slong_spice)
-
-        # Normalize azimuth to [0, 360]
-        az_spice = az_spice % 360
-
-        np.testing.assert_allclose(r, r_spice, atol=1e-5)
-        np.testing.assert_allclose(az, az_spice, atol=1e-5)
-        np.testing.assert_allclose(el, el_spice, atol=1e-5)
+        np.testing.assert_allclose(r, range, atol=1e-5)
+        np.testing.assert_allclose(az, np.degrees(ra), atol=1e-5)
+        np.testing.assert_allclose(el, np.degrees(dec), atol=1e-5)
 
 
 def test_spherical_to_cartesian():
@@ -468,7 +478,44 @@ def test_spherical_to_cartesian():
 
     for i in range(len(colat)):
         cartesian_coords = spherical_to_cartesian(np.array([spherical_points[i]]))
-        spice_coords = spice.sphrec(r, colat[i], spherical_points[i, 1])
+        spice_coords = spiceypy.sphrec(r, colat[i], spherical_points[i, 1])
 
         np.testing.assert_allclose(cartesian_coords[0], spice_coords, atol=1e-5)
         np.testing.assert_allclose(cartesian_from_degrees[i], spice_coords, atol=1e-5)
+
+
+def test_cartesian_to_latitudinal():
+    """Test cartesian_to_latitudinal()."""
+    # example cartesian coords
+    coords = np.ones(3)
+
+    # test with one coord vector
+    lat_coords = cartesian_to_latitudinal(coords, degrees=True)
+    assert lat_coords.shape == (3,)
+    assert lat_coords[1] == 45
+    assert lat_coords[2] == 35.264389682754654
+
+    # Test with multiple coord vectors
+    coords = np.tile(coords, (10, 1))
+    lat_coords = cartesian_to_latitudinal(coords, degrees=True)
+    assert lat_coords.shape == (10, 3)
+
+
+@mock.patch("imap_processing.spice.geometry.imap_state")
+def test_solar_longitude(mock_state):
+    """Test solar_longitude()."""
+
+    mock_state.side_effect = (
+        lambda t, observer: np.ones(6) if (isinstance(t, int)) else np.ones((len(t), 6))
+    )
+    # example et time
+    et = 798033670
+
+    # test for one time interval
+    lon = solar_longitude(et, degrees=True)
+    assert lon == 45
+
+    # Test with multiple time intervals
+    et = np.tile(et, (10, 1))
+    lon = solar_longitude(et, degrees=True)
+    assert lon.shape == (10,)

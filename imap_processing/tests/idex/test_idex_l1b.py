@@ -11,14 +11,18 @@ from imap_processing import imap_module_directory
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import write_cdf
 from imap_processing.idex.idex_l1b import (
+    get_spice_data,
     get_trigger_mode_and_level,
     idex_l1b,
     unpack_instrument_settings,
 )
+from imap_processing.tests.idex import conftest
+from imap_processing.tests.idex.conftest import get_spice_data_side_effect_func
 
 
 @pytest.fixture(scope="module")
-def l1b_dataset(decom_test_data: xr.Dataset) -> xr.Dataset:
+@mock.patch("imap_processing.idex.idex_l1b.get_spice_data")
+def l1b_dataset(mock_get_spice_data, decom_test_data: xr.Dataset) -> xr.Dataset:
     """Return a ``xarray`` dataset containing test data.
 
     Returns
@@ -26,8 +30,30 @@ def l1b_dataset(decom_test_data: xr.Dataset) -> xr.Dataset:
     dataset : xr.Dataset
         A ``xarray`` dataset containing the test data
     """
+
+    mock_get_spice_data.side_effect = get_spice_data_side_effect_func
+
     dataset = idex_l1b(decom_test_data, data_version="001")
     return dataset
+
+
+@pytest.fixture()
+def mock_spice_functions():
+    """Mock spice functions to avoid loading kernels."""
+    with (
+        mock.patch("imap_processing.idex.idex_l1b.imap_state") as mock_state,
+        mock.patch(
+            "imap_processing.idex.idex_l1b.instrument_pointing"
+        ) as mock_pointing,
+        mock.patch("imap_processing.idex.idex_l1b.solar_longitude") as mock_lon,
+    ):
+        mock_state.side_effect = lambda t, observer: np.ones((len(t), 6))
+        mock_pointing.side_effect = lambda t, instrument, to_frame, cartesian: np.ones(
+            (len(t), 3)
+        )
+        mock_lon.side_effect = lambda t, degrees: np.ones(len(t))
+
+        yield mock_state, mock_pointing, mock_lon
 
 
 def test_l1b_cdf_filenames(l1b_dataset: xr.Dataset):
@@ -185,3 +211,38 @@ def test_get_trigger_settings_failure(decom_test_data):
 
     with pytest.raises(ValueError, match=error_ms):
         get_trigger_mode_and_level(decom_test_data)
+
+
+@pytest.mark.usefixtures("use_fake_spin_data_for_time")
+def test_get_spice_data(
+    mock_spice_functions,
+    use_fake_spin_data_for_time,
+    decom_test_data,
+    furnish_kernels,
+):
+    """
+    Test the get_spice_data() function.
+
+    Parameters
+    ----------
+    decom_test_data : xarray.Dataset
+        L1a dataset
+    """
+    kernels = ["naif0012.tls"]
+    times = decom_test_data["shcoarse"].data
+    use_fake_spin_data_for_time(np.min(times), np.max(times))
+
+    # Mock attribute manager variable attrs
+    idex_attrs = ImapCdfAttributes()
+
+    with (
+        furnish_kernels(kernels),
+        mock.patch.object(idex_attrs, "get_variable_attributes") as mock_attrs,
+    ):
+        mock_attrs.return_value = {"CATDESC": "Test var"}
+
+        spice_data = get_spice_data(decom_test_data, idex_attrs)
+
+    for array in conftest.SPICE_ARRAYS:
+        assert array in spice_data
+        assert len(spice_data[array]) == len(decom_test_data["epoch"])

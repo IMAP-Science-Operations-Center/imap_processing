@@ -107,7 +107,7 @@ def test_xarray_rates(decom_test_data):
 
     # # Spot check metadata data and attributes
     # j2000_time = (
-    #     np.datetime64("2024-02-07T15:28:37.184000", "ns") - J2000_EPOCH
+    #     np.datetime64("2024-02-07T15:28:37.184000", "ns") - TTJ2000_EPOCH
     # ).astype(np.int64)
     # specific_epoch_data = dataset.sel(epoch=j2000_time)["START_RF"]
     # startrf_list = specific_epoch_data.values.tolist()
@@ -147,7 +147,7 @@ def test_xarray_tof(decom_test_data):
 
     # # Spot check metadata data and attributes
     # j2000_time = (
-    #     np.datetime64("2024-02-07T15:28:36.184000", "ns") - J2000_EPOCH
+    #     np.datetime64("2024-02-07T15:28:36.184000", "ns") - TTJ2000_EPOCH
     # ).astype(np.int64)
     # specific_epoch_data = dataset.sel(epoch=j2000_time, sid=0)["PACKETDATA"]
     # packetdata_attr = dataset.variables["PACKETDATA"].attrs
@@ -196,7 +196,7 @@ def test_xarray_events(decom_test_data, decom_ultra_aux, events_test_path):
 
     # # Spot check metadata data and attributes
     # j2000_time = (
-    #     np.datetime64("2024-02-07T15:28:37.184000", "ns") - J2000_EPOCH
+    #     np.datetime64("2024-02-07T15:28:37.184000", "ns") - TTJ2000_EPOCH
     # ).astype(np.int64)
     # specific_epoch_data = dataset.sel(epoch=j2000_time)["COIN_TYPE"]
     # cointype_list = specific_epoch_data.values.tolist()

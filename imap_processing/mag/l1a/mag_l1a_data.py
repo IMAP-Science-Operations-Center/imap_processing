@@ -16,7 +16,7 @@ from imap_processing.mag.constants import (
     MAX_FINE_TIME,
     RANGE_BIT_WIDTH,
 )
-from imap_processing.spice.time import J2000_EPOCH, met_to_j2000ns
+from imap_processing.spice.time import TTJ2000_EPOCH, met_to_ttj2000ns
 
 
 @dataclass
@@ -249,7 +249,7 @@ class MagL1a:
             The packet properties for the first packet in the day, including start time.
         """
         # TODO should this be from starting_packet
-        self.start_time = (J2000_EPOCH + met_to_j2000ns(self.shcoarse)).astype(
+        self.start_time = (TTJ2000_EPOCH + met_to_ttj2000ns(self.shcoarse)).astype(
             "datetime64[D]"
         )
         self.packet_definitions = {self.start_time: starting_packet}
@@ -339,7 +339,7 @@ class MagL1a:
         """
         timedelta = np.timedelta64(int(1 / vectors_per_sec * 1e9), "ns")
         # TODO: validate that start_time from SHCOARSE is precise enough
-        start_time_ns = met_to_j2000ns(start_time.to_seconds())
+        start_time_ns = met_to_ttj2000ns(start_time.to_seconds())
 
         # Calculate time skips for each vector in ns
         times = np.reshape(

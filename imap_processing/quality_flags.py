@@ -47,8 +47,8 @@ class ImapAttitudeUltraFlags(FlagNameMixin):
     FLAG1 = 2**3  # bit 3
 
 
-class ImapHkUltraFlags(FlagNameMixin):
-    """IMAP Ultra HK flags."""
+class ImapRatesUltraFlags(FlagNameMixin):
+    """IMAP Ultra Rates flags."""
 
     NONE = CommonFlags.NONE
     HIGHCOUNTS = 2**0  # bit 0

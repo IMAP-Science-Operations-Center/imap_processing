@@ -10,7 +10,7 @@ import pandas as pd
 import xarray as xr
 from space_packet_parser import definitions, encodings, parameters
 
-from imap_processing.spice.time import met_to_j2000ns
+from imap_processing.spice.time import met_to_ttj2000ns
 
 logger = logging.getLogger(__name__)
 
@@ -295,7 +295,7 @@ def packet_file_to_datasets(
         # The time key is always the first key in the data dictionary on IMAP
         time_key = next(iter(data.keys()))
         # Convert to J2000 time and use that as our primary dimension
-        time_data = met_to_j2000ns(data[time_key])
+        time_data = met_to_ttj2000ns(data[time_key])
         ds = xr.Dataset(
             {
                 key.lower(): (

@@ -12,7 +12,7 @@ from imap_processing.mag.l1a.mag_l1a_data import (
     MagL1aPacketProperties,
     TimeTuple,
 )
-from imap_processing.spice.time import met_to_j2000ns
+from imap_processing.spice.time import met_to_ttj2000ns
 
 
 @pytest.fixture()
@@ -775,7 +775,7 @@ def test_calculate_vector_time():
 
     test_data = MagL1a.calculate_vector_time(test_vectors, test_vecsec, start_time)
 
-    converted_start_time_ns = met_to_j2000ns(start_time.to_seconds())
+    converted_start_time_ns = met_to_ttj2000ns(start_time.to_seconds())
 
     skips_ns = np.timedelta64(int(1 / test_vecsec * 1e9), "ns")
     expected_data = np.array(

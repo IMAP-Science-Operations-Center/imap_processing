@@ -27,6 +27,7 @@ from imap_processing.codice import constants
 from imap_processing.codice.codice_l0 import decom_packets
 from imap_processing.codice.decompress import decompress
 from imap_processing.codice.utils import CODICEAPID
+from imap_processing.spice.time import met_to_ttj2000ns
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -57,6 +58,8 @@ class CoDICEL1aPipeline:
 
     Methods
     -------
+    calculate_epoch_values()
+        Calculate and return the values to be used for `epoch`.
     decompress_data(science_values)
         Perform decompression on the data.
     define_coordinates()
@@ -83,6 +86,26 @@ class CoDICEL1aPipeline:
         self.plan_id = plan_id
         self.plan_step = plan_step
         self.view_id = view_id
+
+    def calculate_epoch_values(self) -> NDArray[int]:
+        """
+        Calculate and return the values to be used for `epoch`.
+
+        On CoDICE, the epoch values are derived from the `acq_start_seconds` and
+        `acq_start_subseconds` fields in the packet. Note that the
+        `acq_start_subseconds` field needs to be converted from microseconds to
+        seconds
+
+        Returns
+        -------
+        epoch : NDArray[int]
+            List of epoch values.
+        """
+        epoch = met_to_ttj2000ns(
+            self.dataset.acq_start_seconds + self.dataset.acq_start_subseconds / 1e6
+        )
+
+        return epoch
 
     def decompress_data(self, science_values: list[str]) -> None:
         """
@@ -128,7 +151,7 @@ class CoDICEL1aPipeline:
 
         for name in self.config["coords"]:
             if name == "epoch":
-                values = self.dataset.epoch.data
+                values = self.calculate_epoch_values()
             elif name == "esa_step":
                 values = np.arange(self.config["num_energy_steps"])
             elif name == "inst_az":

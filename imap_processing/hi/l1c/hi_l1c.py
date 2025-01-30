@@ -13,7 +13,7 @@ from imap_processing.spice.geometry import (
     frame_transform,
     frame_transform_az_el,
 )
-from imap_processing.spice.time import j2000ns_to_j2000s
+from imap_processing.spice.time import ttj2000ns_to_et
 
 logger = logging.getLogger(__name__)
 
@@ -78,7 +78,7 @@ def generate_pset_dataset(de_dataset: xr.Dataset) -> xr.Dataset:
     pset_dataset.epoch.data[0] = np.mean(de_dataset.epoch.data[[0, -1]]).astype(
         np.int64
     )
-    pset_et = j2000ns_to_j2000s(pset_dataset.epoch.data[0])
+    pset_et = ttj2000ns_to_et(pset_dataset.epoch.data[0])
     # Calculate and add despun_z, hae_latitude, and hae_longitude variables to
     # the pset_dataset
     pset_dataset.update(pset_geometry(pset_et, logical_source_parts["sensor"]))
