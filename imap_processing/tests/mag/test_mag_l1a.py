@@ -12,7 +12,7 @@ from imap_processing.mag.l1a.mag_l1a_data import (
     MagL1aPacketProperties,
     TimeTuple,
 )
-from imap_processing.spice.time import met_to_ttj2000ns
+from imap_processing.spice.time import TTJ2000_EPOCH, met_to_ttj2000ns
 
 
 @pytest.fixture()
@@ -319,7 +319,6 @@ def test_different_vector_rates(
     )
     l1 = process_packets([l0])
     expected_day = np.datetime64("2023-11-30")
-
     assert len(l1["magi"][expected_day].vectors) == 16
     assert len(l1["mago"][expected_day].vectors) == 32
 
@@ -764,6 +763,11 @@ def test_time_tuple():
     test_add = example_time_tuple + (1000 / MAX_FINE_TIME)
 
     assert test_add == TimeTuple(439067319, 83)
+
+    test_time_tuple = TimeTuple(10, 0)
+
+    print(TTJ2000_EPOCH + np.timedelta64(test_time_tuple.to_j2000ns(), "ns"))
+    # assert test_time_tuple.to_j2000ns() == expected_j2000ns
 
 
 def test_calculate_vector_time():

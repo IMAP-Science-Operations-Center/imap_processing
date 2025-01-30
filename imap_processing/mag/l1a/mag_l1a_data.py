@@ -16,8 +16,7 @@ from imap_processing.mag.constants import (
     MAX_FINE_TIME,
     RANGE_BIT_WIDTH,
 )
-from imap_processing.spice.time import TTJ2000_EPOCH, met_to_ttj2000ns, \
-    met_to_datetime64
+from imap_processing.spice.time import met_to_ttj2000ns
 
 
 @dataclass
@@ -25,19 +24,20 @@ class TimeTuple:
     """
     Class for storing fine time/coarse time for MAG data.
 
-    Coarse time is mission SCLK in seconds. Fine time is 16bit unsigned sub-second
+    Coarse time is MET in seconds. Fine time is 16bit unsigned sub-second
     counter.
 
     Attributes
     ----------
     coarse_time : int
-        Coarse time in seconds.
+        Coarse time in seconds (MET).
     fine_time : int
-        Subsecond.
+        Subsecond counter, equal to fine_time/max_int16 seconds.
 
     Methods
     -------
     to_seconds()
+    to_j2000ns()
     """
 
     coarse_time: int
@@ -79,6 +79,20 @@ class TimeTuple:
             Time in seconds.
         """
         return float(self.coarse_time + self.fine_time / MAX_FINE_TIME)
+
+    def to_j2000ns(self) -> np.int64:
+        """
+        Convert time tuple into J2000ns.
+
+        Returns
+        -------
+        j2000ns : np.int64
+            Time in nanoseconds since J2000 epoch.
+
+        """
+        coarse_j2000ns = np.int64(met_to_ttj2000ns(self.coarse_time))
+        fine_ns = np.int64(self.fine_time / MAX_FINE_TIME * 1e9)
+        return coarse_j2000ns + fine_ns
 
 
 @dataclass

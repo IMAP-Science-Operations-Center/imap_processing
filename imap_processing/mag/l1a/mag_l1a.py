@@ -16,7 +16,10 @@ from imap_processing.mag.l1a.mag_l1a_data import (
     MagL1aPacketProperties,
     TimeTuple,
 )
-from imap_processing.spice.time import TTJ2000_EPOCH, met_to_ttj2000ns
+from imap_processing.spice.time import (
+    et_to_utc,
+    ttj2000ns_to_et,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -147,18 +150,17 @@ def process_packets(
 
         mago_is_primary = mag_l0.PRI_SENS == PrimarySensor.MAGO.value
 
+        print("time", ttj2000ns_to_et(primary_start_time.to_j2000ns()).dtype)
         primary_day = (
-            TTJ2000_EPOCH
-            + met_to_ttj2000ns(primary_start_time.to_seconds()).astype(
-                "timedelta64[ns]"
-            )
+            et_to_utc(ttj2000ns_to_et([primary_start_time.to_j2000ns()]))[0]
         ).astype("datetime64[D]")
         secondary_day = (
-            TTJ2000_EPOCH
-            + met_to_ttj2000ns(secondary_start_time.to_seconds()).astype(
-                "timedelta64[ns]"
-            )
+            et_to_utc(ttj2000ns_to_et([secondary_start_time.to_j2000ns()]))[0]
         ).astype("datetime64[D]")
+
+        print(et_to_utc(ttj2000ns_to_et([primary_start_time.to_j2000ns()])))
+        print(f"Primary day: {primary_day}")
+
         primary_packet_properties = MagL1aPacketProperties(
             mag_l0.SHCOARSE,
             primary_start_time,
