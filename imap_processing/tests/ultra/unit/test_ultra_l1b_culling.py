@@ -17,6 +17,7 @@ from imap_processing.ultra.l1b.ultra_l1b_culling import (
 @pytest.fixture()
 def test_data(use_fake_spin_data_for_time):
     """Fixture to compute and return test data."""
+
     time = np.arange(0, 32, 2)
     spin_number = np.array([0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 2])
     energy = np.array([5, 5, 5, 5, 5, 5, 5, 5, 5, 15, 15, 25, -2, -2, -2, 2])
@@ -41,6 +42,7 @@ def test_data(use_fake_spin_data_for_time):
 
 def test_get_spin(use_fake_spin_data_for_time, l1b_datasets):
     """Tests get_spin function."""
+
     de_dataset = l1b_datasets[0]
     use_fake_spin_data_for_time(
         de_dataset["event_times"][0], de_dataset["event_times"][-1]

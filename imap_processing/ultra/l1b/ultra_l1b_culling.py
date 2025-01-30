@@ -173,16 +173,10 @@ def flag_spin(
 
     bin_edges = np.array(UltraConstants.CULLING_ENERGY_BIN_EDGES)
     energy_midpoints = (bin_edges[:-1] + bin_edges[1:]) / 2
+    spin = np.unique(spin)
 
     # Indices where the counts exceed the threshold
     indices_n_sigma = count_rates > n_sigma_per_energy[:, np.newaxis]
     quality_flags[indices_n_sigma] |= ImapRatesUltraFlags.HIGHRATES.value
 
-    n_sigma_per_energy_reshape = n_sigma_per_energy[:, np.newaxis] * np.ones_like(
-        count_rates
-    )
-    energy_midpoints_reshape = energy_midpoints[:, np.newaxis] * np.ones_like(
-        count_rates
-    )
-
-    return quality_flags, spin, energy_midpoints_reshape, n_sigma_per_energy_reshape
+    return quality_flags, spin, energy_midpoints, n_sigma_per_energy

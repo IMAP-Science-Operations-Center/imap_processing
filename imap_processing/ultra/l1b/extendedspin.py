@@ -40,13 +40,11 @@ def calculate_extendedspin(
         Dataset containing the data.
     """
     extendedspin_dict = {}
-    rates_qf, _, energy_midpoints, n_sigma_per_energy = flag_spin(
+    rates_qf, spin, energy_midpoints, n_sigma_per_energy = flag_spin(
         de_dataset["event_times"].values,
         de_dataset["energy"].values,
     )
-    spin_number, spin_start_time, spin_duration = get_spin(
-        de_dataset["event_times"].values
-    )
+    spin_number = get_spin(de_dataset["event_times"].values)
     count_rates, _, counts = get_energy_histogram(
         spin_number, de_dataset["energy"].values
     )
@@ -55,7 +53,7 @@ def calculate_extendedspin(
     )
 
     # These will be the coordinates.
-    extendedspin_dict["spin_number"] = spin_number
+    extendedspin_dict["spin_number"] = spin
     extendedspin_dict["median_rate_energy"] = energy_midpoints
 
     extendedspin_dict["ena_rates"] = count_rates
