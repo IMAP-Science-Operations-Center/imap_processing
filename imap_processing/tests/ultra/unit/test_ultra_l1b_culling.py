@@ -3,11 +3,13 @@
 import numpy as np
 import pytest
 
-from imap_processing.quality_flags import ImapRatesUltraFlags
+from imap_processing.quality_flags import ImapAttitudeUltraFlags, ImapRatesUltraFlags
 from imap_processing.ultra.constants import UltraConstants
 from imap_processing.ultra.l1b.ultra_l1b_culling import (
+    flag_attitude,
     flag_spin,
     get_energy_histogram,
+    get_n_sigma,
     get_spin,
 )
 
@@ -58,17 +60,52 @@ def test_get_energy_histogram(test_data):
 
     _, spin_number, energy, expected_counts = test_data
 
-    hist, _ = get_energy_histogram(spin_number, energy)
+    hist, _, counts = get_energy_histogram(spin_number, energy)
 
+    assert np.all(counts == expected_counts)
     assert np.all(hist == expected_counts / 15)
+
+
+def test_flag_attitude(use_fake_spin_data_for_time, l1b_datasets):
+    """Tests flag_attitude function."""
+
+    de_dataset = l1b_datasets[0]
+    use_fake_spin_data_for_time(
+        de_dataset["event_times"][0], de_dataset["event_times"][-1]
+    )
+    quality_flags, spin_rates, spin_period, spin_start_time = flag_attitude(
+        de_dataset["event_times"].values
+    )
+
+    flag = ImapAttitudeUltraFlags(quality_flags[0])
+    assert flag.name == "SPINRATE"
+    assert np.all(quality_flags == ImapAttitudeUltraFlags.SPINRATE.value)
+    assert np.all(spin_rates == 60 / spin_period)
+    assert np.all(np.diff(spin_start_time) == 15)
+
+
+def test_get_n_sigma():
+    """Tests get_six_sigma function."""
+
+    counts = np.random.poisson(lam=3, size=(4, 5760))
+    n_sigma_per_energy = get_n_sigma(counts)
+    # Average counts/spin for first energy level.
+    mean = np.mean(counts[0])
+    squared_diffs = (counts[0] - mean) ** 2
+    variance = np.sum(squared_diffs) / (len(counts[0]) - 1)
+
+    np.testing.assert_allclose(
+        n_sigma_per_energy[0], 6 * np.sqrt(variance), atol=1e-2, rtol=0
+    )
 
 
 def test_flag_spin(test_data):
     """Tests flag_spin function."""
 
     time, _, energy, expected_counts = test_data
-    quality_flags, spin, energy = flag_spin(time, energy)
-
+    quality_flags, spin, energy = flag_spin(time, energy, 1)
+    # n_sigma_per_energy = get_n_sigma(expected_counts, 1)
+    # TODO: stopped here
     flag = ImapRatesUltraFlags(quality_flags[0, :][expected_counts[0, :] / 15 > 0])
     assert flag.name == "HIGHCOUNTS"
 
