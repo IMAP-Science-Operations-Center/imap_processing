@@ -55,6 +55,9 @@ def test_ttj2000ns_to_et(furnish_time_kernels):
     epoch = int(spiceypy.unitim(et, "ET", "TT") * 1e9)
     j2000s = ttj2000ns_to_et(epoch)
     assert j2000s == et
+    # Test for bug when spiceypy tries to iterate over 0-d array returned by
+    # np.vectorize for the scalar case
+    assert not spiceypy.support_types.is_iterable(et)
     # Test array input
     ets = np.arange(et, et + 10000, 100)
     epoch = np.array([spiceypy.unitim(et, "ET", "TT") * 1e9 for et in ets]).astype(
@@ -146,6 +149,7 @@ def test_str_to_et(furnish_time_kernels):
     expected_et = 553333629.1837274
     actual_et = str_to_et(utc)
     assert expected_et == actual_et
+    assert isinstance(actual_et, float)
 
     # Test list input
     list_of_utc = [
