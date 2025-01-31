@@ -12,8 +12,6 @@ PUI = PickUp Ion
 ESA = ElectroStatic Analyzer
 """
 
-from collections import OrderedDict
-
 from imap_processing.codice.utils import CODICEAPID, CoDICECompression
 
 APIDS_FOR_SCIENCE_PROCESSING = [
@@ -83,9 +81,11 @@ HI_SECT_SPECIES_VARIABLE_NAMES = ["h", "he3he4", "cno", "fe"]
 DATA_PRODUCT_CONFIGURATIONS = {
     CODICEAPID.COD_HI_INST_COUNTS_AGGREGATED: {
         "dataset_name": "imap_codice_l1a_hi-counters-aggregated",
-        "dims": OrderedDict(
-            [("esa_step", 1), ("inst_az", 6), ("spin_sector", 1)]
-        ),  # TODO: Double check with Joey
+        "dims": {
+            "esa_step": 1,
+            "inst_az": 6,
+            "spin_sector": 1,
+        },  # TODO: Double check with Joey
         "instrument": "hi",
         "num_counters": 1,
         "support_variables": [],  # TODO: Double check with Joey
@@ -93,9 +93,11 @@ DATA_PRODUCT_CONFIGURATIONS = {
     },
     CODICEAPID.COD_HI_INST_COUNTS_SINGLES: {
         "dataset_name": "imap_codice_l1a_hi-counters-singles",
-        "dims": OrderedDict(
-            [("esa_step", 1), ("inst_az", 12), ("spin_sector", 1)]
-        ),  # TODO: Double check with Joey
+        "dims": {
+            "esa_step": 1,
+            "inst_az": 12,
+            "spin_sector": 1,
+        },  # TODO: Double check with Joey
         "instrument": "hi",
         "num_counters": 3,
         "support_variables": [],  # No support variables for this one
@@ -103,9 +105,11 @@ DATA_PRODUCT_CONFIGURATIONS = {
     },
     CODICEAPID.COD_HI_OMNI_SPECIES_COUNTS: {
         "dataset_name": "imap_codice_l1a_hi-omni",
-        "dims": OrderedDict(
-            [("esa_step", 15), ("inst_az", 4), ("spin_sector", 1)]
-        ),  # TODO: Double check with Joey
+        "dims": {
+            "esa_step": 15,
+            "inst_az": 4,
+            "spin_sector": 1,
+        },  # TODO: Double check with Joey
         "instrument": "hi",
         "num_counters": 8,
         "support_variables": ["data_quality", "spin_period"],
@@ -113,9 +117,11 @@ DATA_PRODUCT_CONFIGURATIONS = {
     },
     CODICEAPID.COD_HI_SECT_SPECIES_COUNTS: {
         "dataset_name": "imap_codice_l1a_hi-sectored",
-        "dims": OrderedDict(
-            [("esa_step", 8), ("inst_az", 12), ("spin_sector", 12)]
-        ),  # TODO: Double check with Joey
+        "dims": {
+            "esa_step": 8,
+            "inst_az": 12,
+            "spin_sector": 12,
+        },  # TODO: Double check with Joey
         "instrument": "hi",
         "num_counters": 4,
         "support_variables": ["data_quality", "spin_period"],
@@ -123,7 +129,7 @@ DATA_PRODUCT_CONFIGURATIONS = {
     },
     CODICEAPID.COD_LO_INST_COUNTS_AGGREGATED: {
         "dataset_name": "imap_codice_l1a_lo-counters-aggregated",
-        "dims": OrderedDict([("esa_step", 128), ("inst_az", 6), ("spin_sector", 6)]),
+        "dims": {"esa_step": 128, "inst_az": 6, "spin_sector": 6},
         "instrument": "lo",
         "num_counters": 1,
         "support_variables": [
@@ -134,7 +140,7 @@ DATA_PRODUCT_CONFIGURATIONS = {
     },
     CODICEAPID.COD_LO_INST_COUNTS_SINGLES: {
         "dataset_name": "imap_codice_l1a_lo-counters-singles",
-        "dims": OrderedDict([("esa_step", 128), ("inst_az", 24), ("spin_sector", 6)]),
+        "dims": {"esa_step": 128, "inst_az": 24, "spin_sector": 6},
         "instrument": "lo",
         "num_counters": 1,
         "support_variables": [
@@ -152,7 +158,7 @@ DATA_PRODUCT_CONFIGURATIONS = {
     },
     CODICEAPID.COD_LO_SW_ANGULAR_COUNTS: {
         "dataset_name": "imap_codice_l1a_lo-sw-angular",
-        "dims": OrderedDict([("inst_az", 5), ("spin_sector", 12), ("esa_step", 128)]),
+        "dims": {"inst_az": 5, "spin_sector": 12, "esa_step": 128},
         "instrument": "lo",
         "num_counters": 4,
         "support_variables": [
@@ -169,7 +175,7 @@ DATA_PRODUCT_CONFIGURATIONS = {
     },
     CODICEAPID.COD_LO_NSW_ANGULAR_COUNTS: {
         "dataset_name": "imap_codice_l1a_lo-nsw-angular",
-        "dims": OrderedDict([("inst_az", 19), ("spin_sector", 12), ("esa_step", 128)]),
+        "dims": {"inst_az": 19, "spin_sector": 12, "esa_step": 128},
         "instrument": "lo",
         "num_counters": 1,
         "support_variables": [
@@ -186,7 +192,7 @@ DATA_PRODUCT_CONFIGURATIONS = {
     },
     CODICEAPID.COD_LO_SW_PRIORITY_COUNTS: {
         "dataset_name": "imap_codice_l1a_lo-sw-priority",
-        "dims": OrderedDict([("esa_step", 128), ("inst_az", 1), ("spin_sector", 12)]),
+        "dims": {"esa_step": 128, "inst_az": 1, "spin_sector": 12},
         "instrument": "lo",
         "num_counters": 5,
         "support_variables": [
@@ -203,7 +209,7 @@ DATA_PRODUCT_CONFIGURATIONS = {
     },
     CODICEAPID.COD_LO_NSW_PRIORITY_COUNTS: {
         "dataset_name": "imap_codice_l1a_lo-nsw-priority",
-        "dims": OrderedDict([("esa_step", 128), ("inst_az", 1), ("spin_sector", 12)]),
+        "dims": {"esa_step": 128, "inst_az": 1, "spin_sector": 12},
         "instrument": "lo",
         "num_counters": 2,
         "support_variables": [
@@ -220,7 +226,7 @@ DATA_PRODUCT_CONFIGURATIONS = {
     },
     CODICEAPID.COD_LO_SW_SPECIES_COUNTS: {
         "dataset_name": "imap_codice_l1a_lo-sw-species",
-        "dims": OrderedDict([("inst_az", 1), ("esa_step", 128)]),
+        "dims": {"inst_az": 1, "esa_step": 128},
         "instrument": "lo",
         "num_counters": 16,
         "support_variables": [
@@ -237,7 +243,7 @@ DATA_PRODUCT_CONFIGURATIONS = {
     },
     CODICEAPID.COD_LO_NSW_SPECIES_COUNTS: {
         "dataset_name": "imap_codice_l1a_lo-nsw-species",
-        "dims": OrderedDict([("esa_step", 128), ("inst_az", 1), ("spin_sector", 1)]),
+        "dims": {"esa_step": 128, "inst_az": 1, "spin_sector": 1},
         "instrument": "lo",
         "num_counters": 8,
         "support_variables": [

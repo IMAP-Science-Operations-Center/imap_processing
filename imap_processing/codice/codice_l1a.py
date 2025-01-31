@@ -200,14 +200,8 @@ class CoDICEL1aPipeline:
         for counter, variable_name in zip(
             range(all_data.shape[1]), self.config["variable_names"]
         ):
-            # Dynamically determine the slicing required to extract the counter
-            # data, since the number of dimensions may vary. The counter
-            # dimension is always the first
-            slicing: list[Any] = [slice(None)] * all_data.ndim
-            slicing[1] = counter
-
             # Extract the counter data
-            counter_data = all_data[tuple(slicing)]
+            counter_data = all_data[:, counter, ...]
 
             # Get the CDF attributes
             descriptor = self.config["dataset_name"].split("imap_codice_l1a_")[-1]
@@ -414,13 +408,10 @@ class CoDICEL1aPipeline:
 
         # For each packet/epoch, reshape the data along these dimensions
         for packet_data in self.raw_data:
-            if packet_data:
-                reshaped_packet_data = np.array(packet_data, dtype=np.uint32).reshape(
-                    reshape_dims
-                )
-                self.data.append(reshaped_packet_data)
-            else:
-                self.data.append(None)
+            reshaped_packet_data = np.array(packet_data, dtype=np.uint32).reshape(
+                reshape_dims
+            )
+            self.data.append(reshaped_packet_data)
 
         # No longer need to keep the raw data around
         del self.raw_data
