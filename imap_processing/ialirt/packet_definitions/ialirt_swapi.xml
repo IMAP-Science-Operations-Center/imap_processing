@@ -6,10 +6,6 @@
 			<!-- This file was manually created using content from:
 			I-ALiRT Packet Definitions: https://lasp.colorado.edu/galaxy/x/44nKCQ
             -->
-			<xtce:IntegerParameterType name="uint0" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="0" encoding="unsigned" />
-				<xtce:UnitSet />
-			</xtce:IntegerParameterType>
 			<xtce:IntegerParameterType name="uint1" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
 				<xtce:UnitSet />
@@ -26,40 +22,12 @@
 				<xtce:IntegerDataEncoding sizeInBits="4" encoding="unsigned" />
 				<xtce:UnitSet />
 			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="uint5" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="5" encoding="unsigned" />
-				<xtce:UnitSet />
-			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="uint6" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="6" encoding="unsigned" />
-				<xtce:UnitSet />
-			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="uint7" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="7" encoding="unsigned" />
-				<xtce:UnitSet />
-			</xtce:IntegerParameterType>
 			<xtce:IntegerParameterType name="uint8" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="8" encoding="unsigned" />
 				<xtce:UnitSet />
 			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="uint9" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="9" encoding="unsigned" />
-				<xtce:UnitSet />
-			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="uint10" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="10" encoding="unsigned" />
-				<xtce:UnitSet />
-			</xtce:IntegerParameterType>
 			<xtce:IntegerParameterType name="uint11" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="11" encoding="unsigned" />
-				<xtce:UnitSet />
-			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="uint12" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned" />
-				<xtce:UnitSet />
-			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="uint13" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="13" encoding="unsigned" />
 				<xtce:UnitSet />
 			</xtce:IntegerParameterType>
 			<xtce:IntegerParameterType name="uint14" signed="false">
@@ -74,81 +42,17 @@
 				<xtce:IntegerDataEncoding sizeInBits="16" encoding="unsigned" />
 				<xtce:UnitSet />
 			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="uint17" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="17" encoding="unsigned" />
-				<xtce:UnitSet />
-			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="uint18" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="18" encoding="unsigned" />
-				<xtce:UnitSet />
-			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="uint19" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="19" encoding="unsigned" />
-				<xtce:UnitSet />
-			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="uint20" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="20" encoding="unsigned" />
-				<xtce:UnitSet />
-			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="uint21" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="21" encoding="unsigned" />
-				<xtce:UnitSet />
-			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="uint22" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="22" encoding="unsigned" />
-				<xtce:UnitSet />
-			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="uint23" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="23" encoding="unsigned" />
-				<xtce:UnitSet />
-			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="uint24" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="24" encoding="unsigned" />
-				<xtce:UnitSet />
-			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="uint25" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="25" encoding="unsigned" />
-				<xtce:UnitSet />
-			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="uint26" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="26" encoding="unsigned" />
-				<xtce:UnitSet />
-			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="uint27" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="27" encoding="unsigned" />
-				<xtce:UnitSet />
-			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="uint28" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="28" encoding="unsigned" />
-				<xtce:UnitSet />
-			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="uint29" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="29" encoding="unsigned" />
-				<xtce:UnitSet />
-			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="uint30" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="30" encoding="unsigned" />
-				<xtce:UnitSet />
-			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="uint31" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="31" encoding="unsigned" />
-				<xtce:UnitSet />
-			</xtce:IntegerParameterType>
 			<xtce:IntegerParameterType name="uint32" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="32" encoding="unsigned" />
 				<xtce:UnitSet />
 			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="uint48" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="48" encoding="unsigned" />
-				<xtce:UnitSet />
-			</xtce:IntegerParameterType>
 						<!-- Enumerated Data Types -->
-			<xtce:EnumeratedParameterType name="validity_enum" signed="false">
+			<xtce:EnumeratedParameterType name="swapi_validity_enum" signed="false">
                 <xtce:UnitSet/>
                 <xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned"/>
                 <xtce:EnumerationList>
-                    <xtce:Enumeration label="INVALID" value="0"/>
-                    <xtce:Enumeration label="VALID" value="1"/>
+                    <xtce:Enumeration label="VALID" value="0"/>
+                    <xtce:Enumeration label="INVALID" value="1"/>
                 </xtce:EnumerationList>
             </xtce:EnumeratedParameterType>
 		</xtce:ParameterTypeSet>
@@ -185,7 +89,7 @@
 			<xtce:Parameter name="SWAPI_ACQ" parameterTypeRef="uint32">
 				<xtce:LongDescription>SWAPI Acquisition Time</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="SWAPI_FLAG" parameterTypeRef="validity_enum">
+			<xtce:Parameter name="SWAPI_FLAG" parameterTypeRef="swapi_validity_enum">
 				<xtce:LongDescription>
                     Valid bit:
                     '1' -- valid,

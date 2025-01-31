@@ -58,6 +58,7 @@ def test_decom_packets(xarray_data, swapi_test_data):
     # TODO: confirm w/ SWAPI team validity_enum flag can be
     #  consistent with other instruments.
     fields_to_test = {
+        "swapi_flag": "I_ALIRT_STATUS",
         "swapi_reserved": "INST_RES_ST",
         "swapi_seq": "SEQ_NUMBER",
         "swapi_version": "SWEEP_TABLE",
