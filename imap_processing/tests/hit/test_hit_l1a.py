@@ -1,3 +1,5 @@
+import re
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -195,6 +197,10 @@ def test_validate_l1a_counts_data(sci_packet_filepath):
     This test compares the counts data product with the validation data.
     The PHA data product is not validated since it's not being decommutated.
 
+    Since the validation data is structured differently than the processed data,
+    This test prepares the validation data for comparison by consolidating the
+    data into arrays and renaming columns to match the processed data.
+
     Parameters
     ----------
     sci_packet_filepath : str
@@ -209,59 +215,125 @@ def test_validate_l1a_counts_data(sci_packet_filepath):
         imap_module_directory / "tests/hit/validation_data/sci_sample_raw.csv"
     )
 
-    # Read in the validation data for uncertainty fields contained in separate CSV files
-    validation_delta_plus_data = pd.read_csv(
-        imap_module_directory
-        / "tests/hit/validation_data/sci_sample_raw_delta_plus_v2.csv"
-    )
-    # validation_delta_minus_data = pd.read_csv(
-    #     imap_module_directory
-    #     / "tests/hit/validation_data/sci_sample_raw_delta_minus_v2.csv"
-    # )
-
     # Helper functions for this test
     def consolidate_rate_columns(data, rate_columns):
-        # The validation data isn't organized by arrays.
-        # Each value is in a separate column.
-        # Aggregate related data into arrays.
+        # The validation data isn't organized by arrays. Each value
+        # is in a separate column.
+
+        # Aggregate related data into arrays to match processed data.
+        # Note: each rate column has a corresponding delta plus and
+        # delta minus column for uncertainty values.
+
         for new_col, prefix in rate_columns.items():
-            columns = [col for col in data.columns if prefix in col]
-            data[new_col] = data[columns].apply(lambda row: row.values, axis=1)
+            pattern_rates = re.compile(rf"^{prefix}\d+$")
+            pattern_delta_plus = re.compile(rf"^{prefix}\d+_DELTA_PLUS$")
+            pattern_delta_minus = re.compile(rf"^{prefix}\d+_DELTA_MINUS$")
+            # Aggregate columns using the regex patterns
+            data[f"{new_col}"] = data.filter(regex=pattern_rates).apply(
+                lambda row: row.values, axis=1
+            )
+            data[f"{new_col}_delta_plus"] = data.filter(regex=pattern_delta_plus).apply(
+                lambda row: row.values, axis=1
+            )
+            data[f"{new_col}_delta_minus"] = data.filter(
+                regex=pattern_delta_minus
+            ).apply(lambda row: row.values, axis=1)
             if new_col == "sectorates":
-                # Differentiate between the sectorate columns with three and
-                # five digits in the name. Those with three digits contain the
-                # sectorate value for the science frame and those with five digits
-                # are the sectorate values with the mod value appended to the end.
-                # The mod value determines the species and energy range for that
-                # science frame
+                # Differentiate between the sectorate columns that have three digits and
+                # those that have four digits in the name. Those with three digits
+                # (i.e. SECTORATE_000) contain the sectorate value for the science frame
+                # and those with four digits (i.e. SECTORATES_000_0) are the sectorate
+                # values with the mod 10 value appended to it (i.e. 0 in this example)
+                # The mod 10 value is used to determine the species and energy range the
+                # sector rates represent in the science frame.
+
+                # Get columns that match the pattern for sectorates with three digits
                 sectorates_three_digits = data.filter(
-                    regex=r"^SECTORATES_\d{3}(?!_\d).*$"
+                    regex=r"^SECTORATES_\d{3}$"
                 ).columns
-                sectorates_five_digits = data.filter(
-                    regex=r"^SECTORATES_\d{3}_\d{1}.*$"
+
+                sectorates_delta_plus_three_digits = data.filter(
+                    regex=r"^SECTORATES_\d{3}_DELTA_PLUS$"
                 ).columns
+
+                sectorates_delta_minus_three_digits = data.filter(
+                    regex=r"^SECTORATES_\d{3}_DELTA_MINUS$"
+                ).columns
+
+                # Add the sectorates data as 2D arrays to the data frame
                 data["sectorates"] = data[sectorates_three_digits].apply(
                     lambda row: row.values.reshape(8, 15), axis=1
                 )
-                data["sectorates_by_mod_val"] = data[sectorates_five_digits].apply(
+                data["sectorates_delta_plus"] = data[
+                    sectorates_delta_plus_three_digits
+                ].apply(lambda row: row.values.reshape(8, 15), axis=1)
+                data["sectorates_delta_minus"] = data[
+                    sectorates_delta_minus_three_digits
+                ].apply(lambda row: row.values.reshape(8, 15), axis=1)
+
+                # Consolidate the fields that include the mod value in the
+                # column name. The mod value will be extracted later to
+                # determine the species and energy range the sector rates
+                # data correspond to.
+                sectorates_four_digits = data.filter(
+                    regex=r"^SECTORATES_\d{3}_\d{1}$"
+                ).columns
+
+                data["sectorates_by_mod_val"] = data[sectorates_four_digits].apply(
                     lambda row: row.values, axis=1
                 )
-            data.drop(columns=columns, inplace=True)
+                data.drop(
+                    columns=data.filter(regex=r"^SECTORATES_\d{3}_\d{1}.*$").columns,
+                    inplace=True,
+                )
+            # Drop the original columns
+            data.drop(columns=data.filter(regex=pattern_rates).columns, inplace=True)
+            data.drop(
+                columns=data.filter(regex=pattern_delta_plus).columns, inplace=True
+            )
+            data.drop(
+                columns=data.filter(regex=pattern_delta_minus).columns, inplace=True
+            )
+
         return data
 
     def process_single_rates(data):
-        # Combine the single rates for high and low gain into a 2D array
+        # Combine the single rates for high and low gain into 2D arrays
         data["sngrates"] = data.apply(
             lambda row: np.array([row["sngrates_hg"], row["sngrates_lg"]]), axis=1
         )
-        data.drop(columns=["sngrates_hg", "sngrates_lg"], inplace=True)
+        data["sngrates_delta_plus"] = data.apply(
+            lambda row: np.array(
+                [row["sngrates_hg_delta_plus"], row["sngrates_lg_delta_plus"]]
+            ),
+            axis=1,
+        )
+        data["sngrates_delta_minus"] = data.apply(
+            lambda row: np.array(
+                [row["sngrates_hg_delta_minus"], row["sngrates_lg_delta_minus"]]
+            ),
+            axis=1,
+        )
+        data.drop(
+            columns=[
+                "sngrates_hg",
+                "sngrates_lg",
+                "sngrates_hg_delta_plus",
+                "sngrates_lg_delta_plus",
+                "sngrates_hg_delta_minus",
+                "sngrates_lg_delta_minus",
+            ],
+            inplace=True,
+        )
         return data
 
-    def process_sectorates(data):
-        # Add species and energy index to the data frame for each science frame
-        # First find the mod value for each science frame which equals the first index
-        # in the sectorates_by_mod_val array that has a value instead of a nan
-        print(data["sectorates_by_mod_val"][0][0])
+    def add_species_energy(data):
+        # Add species and energy index to the validation data for each
+        # row (i.e. science frame).
+
+        # First find the mod value for each science frame which equals the
+        # first index in the sectorates_by_mod_val array with a value
+        # instead of a nan or empty string.
         data["mod_10"] = data["sectorates_by_mod_val"].apply(
             lambda row: next(
                 (i for i, value in enumerate(row) if pd.notna(value) and value != " "),
@@ -269,8 +341,7 @@ def test_validate_l1a_counts_data(sci_packet_filepath):
             )
         )
 
-        # Mapping of mod value to species and energy index
-        species_energy = {
+        mod_value_to_species_energy_map = {
             0: {"species": "H", "energy_idx": 0},
             1: {"species": "H", "energy_idx": 1},
             2: {"species": "H", "energy_idx": 2},
@@ -285,12 +356,14 @@ def test_validate_l1a_counts_data(sci_packet_filepath):
         # Use the mod 10 value to determine the species and energy index
         # for each science frame and add this information to the data frame
         data["species"] = data["mod_10"].apply(
-            lambda row: species_energy[row]["species"].lower()
+            lambda row: mod_value_to_species_energy_map[row]["species"].lower()
             if row is not None
             else None
         )
         data["energy_idx"] = data["mod_10"].apply(
-            lambda row: species_energy[row]["energy_idx"] if row is not None else None
+            lambda row: mod_value_to_species_energy_map[row]["energy_idx"]
+            if row is not None
+            else None
         )
 
         data.drop(columns=["sectorates_by_mod_val", "mod_10"], inplace=True)
@@ -303,12 +376,12 @@ def test_validate_l1a_counts_data(sci_packet_filepath):
         ----------
         expected_data : pd.DataFrame
             Validation data extracted from a csv file
+            and reformatted for comparison
         actual_data : xr.Dataset
-            Processed data from l1a processing
+            Processed counts data from l1a processing
         skip : list
             Fields to skip in comparison
         """
-        # Compare the validation data to the processed data
         for field in expected_data.columns:
             if field not in [
                 "sc_tick",
@@ -316,21 +389,15 @@ def test_validate_l1a_counts_data(sci_packet_filepath):
                 "energy_idx",
             ]:
                 assert field in l1a_counts_data.data_vars.keys()
-            if field not in ignore:
+            if field not in skip:
                 for frame in range(expected_data.shape[0]):
                     if field == "species":
+                        # Compare sector rates data.
+                        # Use species and energy index for this comparison
                         species = expected_data[field][frame]
                         energy_idx = expected_data["energy_idx"][frame]
 
-                        # Sector rates that are integers
-                        # assert np.array_equal(
-                        #     actual_data[f"{species}_counts_sectored"][frame][
-                        #         energy_idx
-                        #     ].data,
-                        #     expected_data["sectorates"][frame],
-                        # )
-
-                        # Sector rate uncertainty fields that are floats
+                        # Sector rate uncertainties (float values)
                         if "sectorates_delta_plus" in expected_data.columns:
                             np.testing.assert_allclose(
                                 actual_data[f"{species}_counts_sectored_delta_plus"][
@@ -342,31 +409,44 @@ def test_validate_l1a_counts_data(sci_packet_filepath):
                                 err_msg=f"Mismatch in {species}_counts_sectored_delta_"
                                 f"plus at frame {frame}, energy_idx {energy_idx}",
                             )
+
+                        if "sectorates_delta_minus" in expected_data.columns:
+                            np.testing.assert_allclose(
+                                actual_data[f"{species}_counts_sectored_delta_minus"][
+                                    frame
+                                ][energy_idx].data,
+                                expected_data["sectorates_delta_minus"][frame],
+                                rtol=1e-7,
+                                atol=1e-8,
+                                err_msg=f"Mismatch in {species}_counts_sectored_delta_"
+                                f"minus at frame {frame}, energy_idx {energy_idx}",
+                            )
                         else:
+                            # Sector rate data (integer values)
                             np.testing.assert_allclose(
                                 actual_data[f"{species}_counts_sectored"][frame][
                                     energy_idx
                                 ].data,
                                 expected_data["sectorates"][frame],
-                                rtol=1e-7,  # relative tolerance
-                                atol=1e-8,  # absolute tolerance
+                                rtol=1e-7,
+                                atol=1e-8,
                                 err_msg=f"Mismatch in {species}_counts_sectored at"
                                 f"frame {frame}, energy_idx {energy_idx}",
                             )
 
                     else:
-                        # assert np.array_equal(
-                        #     actual_data[field][frame].data,
-                        #     expected_data[field][frame]
-                        # )
+                        # Compare other fields
                         np.testing.assert_allclose(
                             actual_data[field][frame].data,
                             expected_data[field][frame],
-                            rtol=1e-7,  # relative tolerance
-                            atol=1e-8,  # absolute tolerance
+                            rtol=1e-7,
+                            atol=1e-8,
                             err_msg=f"Mismatch in {field} at frame {frame}",
                         )
 
+    # Rate columns in the validation data that need to be
+    # aggregated into arrays and renamed to match the
+    # processed data. The keys are the new column names.
     rate_columns = {
         "coinrates": "COINRATES_",
         "pbufrates": "BUFRATES_",
@@ -384,8 +464,8 @@ def test_validate_l1a_counts_data(sci_packet_filepath):
         "sngrates_lg": "SNGRATES_LG_",
     }
 
-    # Rename some columns to match the processed data
-    update_columns = {
+    # Other columns to rename to match the processed data
+    rename_columns = {
         "CCSDS_VERSION": "version",
         "CCSDS_TYPE": "type",
         "CCSDS_SEC_HDR_FLAG": "sec_hdr_flg",
@@ -402,29 +482,16 @@ def test_validate_l1a_counts_data(sci_packet_filepath):
 
     # Prepare validation data for comparison with processed data
     validation_data.columns = validation_data.columns.str.strip()
-    validation_data.rename(columns=update_columns, inplace=True)
+    validation_data.rename(columns=rename_columns, inplace=True)
     validation_data = consolidate_rate_columns(validation_data, rate_columns)
     validation_data = process_single_rates(validation_data)
-    validation_data = process_sectorates(validation_data)
+    validation_data = add_species_energy(validation_data)
+    validation_data.columns = validation_data.columns.str.lower()
 
-    # Prepare uncertainty validation data for comparison with processed data
-    validation_delta_plus_data.columns = validation_delta_plus_data.columns.str.strip()
-    validation_delta_plus_data.rename(columns=update_columns, inplace=True)
-    validation_delta_plus_data = consolidate_rate_columns(
-        validation_delta_plus_data, rate_columns
-    )
-    validation_delta_plus_data = process_single_rates(validation_delta_plus_data)
-    validation_delta_plus_data = process_sectorates(validation_delta_plus_data)
-    validation_delta_plus_data.rename(
-        columns=lambda x: f"{x}_delta_plus" if x.endswith("rates") else x, inplace=True
-    )
-    validation_delta_plus_data.columns = validation_delta_plus_data.columns.str.lower()
-
-    # Fields to skip in comparison. CCSDS headers plus a few others that are not
-    # relevant to the comparison.
+    # Fields to skip in comparison. CCSDS headers plus a few others.
     # The CCSDS header fields contain data per packet in the dataset, but the
-    # validation data has a value per science frame so skipping comparison for now
-    ignore = [
+    # validation data has one value per science frame.
+    skip_fields = [
         "version",
         "type",
         "sec_hdr_flg",
@@ -436,68 +503,12 @@ def test_validate_l1a_counts_data(sci_packet_filepath):
         "energy_idx",
     ]
 
-    delta_plus_vars = [
-        "sngrates_delta_plus",
-        "coinrates_delta_plus",
-        "pbufrates_delta_plus",
-        "l2fgrates_delta_plus",
-        "l2bgrates_delta_plus",
-        "l3fgrates_delta_plus",
-        "l3bgrates_delta_plus",
-        "penfgrates_delta_plus",
-        "penbgrates_delta_plus",
-        "ialirtrates_delta_plus",
-        "sectorrates_delta_plus",
-        "l4fgrates_delta_plus",
-        "l4bgrates_delta_plus",
-        "num_trig_delta_plus",
-        "num_reject_delta_plus",
-        "num_acc_w_pha_delta_plus",
-        "num_acc_no_pha_delta_plus",
-        "num_haz_trig_delta_plus",
-        "num_haz_reject_delta_plus",
-        "num_haz_acc_w_pha_delta_plus",
-        "num_haz_acc_no_pha_delta_plus",
-        "nread_delta_plus",
-        "nhazard_delta_plus",
-        "nadcstim_delta_plus",
-        "nodd_delta_plus",
-        "noddfix_delta_plus",
-        "nmulti_delta_plus",
-        "nmultifix_delta_plus",
-        "nbadtraj_delta_plus",
-        "nl2_delta_plus",
-        "nl3_delta_plus",
-        "nl4_delta_plus",
-        "npen_delta_plus",
-        "nformat_delta_plus",
-        "naside_delta_plus",
-        "nbside_delta_plus",
-        "nerror_delta_plus",
-        "nbadtags_delta_plus",
-        "h_counts_sectored_delta_plus",
-        "he4_counts_sectored_delta_plus",
-        "cno_counts_sectored_delta_plus",
-        "nemgsi_counts_sectored_delta_plus",
-        "fe_counts_sectored_delta_plus",
-        "sectorates_delta_plus",
-        "species",
-        "energy_idx",
-    ]
-    ignore_delta_plus = validation_delta_plus_data.columns.difference(delta_plus_vars)
-    validation_delta_plus_data.drop(columns=ignore_delta_plus, inplace=True)
-
-    # validation_delta_plus_data = validation_delta_plus_data[delta_plus_vars]
-    validation_delta_plus_data.columns = validation_delta_plus_data.columns.str.lower()
-    compare_data(validation_delta_plus_data, l1a_counts_data, ignore)
-
     # Compare processed data to validation data
-    print(validation_data.columns)
-    validation_data.columns = validation_data.columns.str.lower()
-    compare_data(validation_data, l1a_counts_data, ignore)
+    compare_data(validation_data, l1a_counts_data, skip_fields)
 
-    # TODO: add validation for CCSDS fields? currently validation data only has
-    #  one value per frame and the processed data has one value per packet.
+    # TODO: add validation for SC_TICK field. currently validation data only has
+    #  one value per frame (from first packet in the frame) and the processed data
+    #  has one value per packet.
 
 
 def test_hit_l1a(hk_packet_filepath, sci_packet_filepath):
@@ -527,6 +538,3 @@ def test_hit_l1a(hk_packet_filepath, sci_packet_filepath):
                 processed_datasets[1].attrs["Logical_source"]
                 == "imap_hit_l1a_pulse-height-events"
             )
-    # for k in list(processed_datasets[0].data_vars.keys()):
-    #     print(k)
-    print(processed_datasets[0])
