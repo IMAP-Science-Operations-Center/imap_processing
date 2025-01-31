@@ -47,7 +47,7 @@ COUNTS_DATA_STRUCTURE = {
     "spare": HITPacking(24, 24, (1,)),
     # ------------------------------------------
     # erates - contains livetime counters
-    "livetime": HITPacking(16, 16, (1,)),  # livetime counter
+    "livetime_counter": HITPacking(16, 16, (1,)),  # livetime counter
     "num_trig": HITPacking(16, 16, (1,)),  # number of triggers
     "num_reject": HITPacking(16, 16, (1,)),  # number of rejected events
     "num_acc_w_pha": HITPacking(

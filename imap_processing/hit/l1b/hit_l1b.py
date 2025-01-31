@@ -194,13 +194,13 @@ def process_standard_rates_data(raw_counts_dataset: xr.Dataset) -> xr.Dataset:
     ]
 
     # Calculate livetime from the livetime counter
-    livetime = raw_counts_dataset["livetime"] / 270
+    livetime = raw_counts_dataset["livetime_counter"] / 270
 
     # Calculate standard rates by dividing the raw counts by livetime for
     # data variables with names that contain a substring from a defined
     # list of field names.
     for var in raw_counts_dataset.data_vars:
-        if var != "livetime" and any(
+        if var != "livetime_counter" and any(
             base_var in var for base_var in standard_rate_fields
         ):
             l1b_standard_rates_dataset[var] = raw_counts_dataset[var] / livetime
