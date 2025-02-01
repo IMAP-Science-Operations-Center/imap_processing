@@ -20,6 +20,7 @@ from imap_processing.lo.l0.utils.bit_decompression import (
     Decompress,
     decompress_int,
 )
+from imap_processing.spice.time import met_to_ttj2000ns
 from imap_processing.utils import convert_to_binary_string
 
 logger = logging.getLogger(__name__)
@@ -471,6 +472,11 @@ def organize_spin_data(dataset: xr.Dataset, attr_mgr: ImapCdfAttributes) -> xr.D
         "valid_phase_spin",
         "period_source_spin",
     ]
+
+    # Set epoch to the acq_start time
+    acq_start = dataset.acq_start_sec.values + (0.1 * dataset.acq_start_subsec.values)
+    epoch = met_to_ttj2000ns(acq_start)
+    dataset = dataset.assign_coords(epoch=("epoch", epoch))
 
     for spin_field in spin_fields:
         packet_fields = [f"{spin_field}_{i}" for i in range(1, 29)]

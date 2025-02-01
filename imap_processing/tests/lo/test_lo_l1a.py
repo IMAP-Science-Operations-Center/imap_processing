@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 
 from imap_processing import imap_module_directory
 from imap_processing.lo.l1a.lo_l1a import lo_l1a
@@ -9,7 +10,11 @@ def test_lo_l1a():
     dependency = (
         imap_module_directory / "tests/lo/test_pkts/imap_lo_l0_raw_20240803_v002.pkts"
     )
-    expected_logical_source = ["imap_lo_l1a_histogram", "imap_lo_l1a_de"]
+    expected_logical_source = [
+        "imap_lo_l1a_spin",
+        "imap_lo_l1a_histogram",
+        "imap_lo_l1a_de",
+    ]
     output_dataset = lo_l1a(dependency, "001")
 
     # Assert
@@ -54,4 +59,56 @@ def test_lo_l1a_dataset():
     output_datasets = lo_l1a(dependency, "001")
 
     # Assert
-    np.testing.assert_array_equal(hist_fields_lower, output_datasets[0].data_vars)
+    np.testing.assert_array_equal(hist_fields_lower, output_datasets[1].data_vars)
+
+
+def test_validate_spin_data():
+    # Arrange
+    dependency = (
+        imap_module_directory / "tests/lo/test_pkts/imap_lo_l0_raw_20240803_v002.pkts"
+    )
+    validation_path = (
+        imap_module_directory / "tests/lo/validation_data/"
+        "Instrument_FM1_T104_R129_20240803_ILO_SPIN_EU.csv"
+    )
+    validation_data = pd.read_csv(validation_path)
+
+    spin_fields = [
+        "shcoarse",
+        "num_completed",
+        "acq_start_sec",
+        "acq_start_subsec",
+        "acq_end_sec",
+        "acq_end_subsec",
+        "start_sec_spin",
+        "start_subsec_spin",
+        "esa_neg_dac_spin",
+        "esa_pos_dac_spin",
+        "valid_period_spin",
+        "valid_phase_spin",
+        "period_source_spin",
+    ]
+
+    # Act
+    output_dataset = lo_l1a(dependency, "001")
+
+    # Assert
+    for field in spin_fields:
+        # The validation data contains a duplicate set of columns for the same values.
+        # They are formatted as column_prefix_<spin> and column_prefix[<spin>]
+        # adding a condition to remove the one with [ when combining those columns into
+        # a list to combine the spins in the validation data into a single list
+        validation_fields = [
+            col
+            for col in validation_data.columns
+            if col.startswith(field.upper()) and "[" not in col
+        ]
+
+        if len(validation_fields) > 1:
+            validation_vals = np.array(
+                [row for row in validation_data[validation_fields].values]
+            )
+        else:
+            validation_vals = validation_data[validation_fields[0]].values
+
+        np.testing.assert_array_equal(output_dataset[0][field].values, validation_vals)

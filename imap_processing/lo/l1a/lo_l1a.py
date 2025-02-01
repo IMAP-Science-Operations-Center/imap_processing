@@ -180,8 +180,11 @@ def add_dataset_attrs(
                 "chksum",
             ]
         )
-
-        print(dataset.data_vars)
+        # An empty DEPEND_0 is being added to support_data
+        # variables that should only have DEPEND_1
+        # Removing Depend_0 here.
+        # Should look for a fix to this issue
+        del dataset["spin"].attrs["DEPEND_0"]
 
     elif logical_source == "imap_lo_l1a_histogram":
         # Create coordinates for the dataset
@@ -245,6 +248,14 @@ def add_dataset_attrs(
                 "pkt_len",
             ]
         )
+        # An empty DEPEND_0 is being added to support_data
+        # variables that should only have DEPEND_1
+        # Removing Depend_0 here.
+        # Should look for a fix to this issue
+        del dataset["azimuth_60"].attrs["DEPEND_0"]
+        del dataset["azimuth_6"].attrs["DEPEND_0"]
+        del dataset["esa_step"].attrs["DEPEND_0"]
+
     elif logical_source == "imap_lo_l1a_de":
         # Create the coordinates for the dataset
         direct_events = xr.DataArray(
@@ -280,5 +291,17 @@ def add_dataset_attrs(
                 "events",
             ]
         )
+
+        del dataset["direct_events"].attrs["DEPEND_0"]
+        del dataset["coincidence_type"].attrs["DEPEND_0"]
+        del dataset["de_time"].attrs["DEPEND_0"]
+        del dataset["mode"].attrs["DEPEND_0"]
+        del dataset["esa_step"].attrs["DEPEND_0"]
+        del dataset["tof0"].attrs["DEPEND_0"]
+        del dataset["tof1"].attrs["DEPEND_0"]
+        del dataset["tof2"].attrs["DEPEND_0"]
+        del dataset["tof3"].attrs["DEPEND_0"]
+        del dataset["pos"].attrs["DEPEND_0"]
+        del dataset["cksm"].attrs["DEPEND_0"]
 
     return dataset
