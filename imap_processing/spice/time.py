@@ -171,7 +171,7 @@ def met_to_datetime64(
     numpy.ndarray[str]
         The mission elapsed time converted to UTC string.
     """
-    return np.array(met_to_utc(met), dtype=np.datetime64)
+    return np.array(met_to_utc(met), dtype=np.datetime64)[()]
 
 
 @typing.no_type_check
