@@ -91,13 +91,8 @@ def subcom_sectorates(sci_dataset: xr.Dataset) -> None:
     sci_dataset : xarray.Dataset
         Xarray dataset containing parsed HIT science data.
     """
-    # TODO:
-    #  - Update to use fill values defined in attribute manager which
-    #    isn't defined for L1A science data yet
-    #  - fix issues with fe_counts_sectored. The array has shape
-    #      (epoch: 28, fe_energy_index: 1, declination: 8, azimuth: 15),
-    #      but cdflib drops second dimension of size 1 and recognizes
-    #      only 3 total dimensions. Are dimensions of 1 ignored?
+    # Fill value for missing data
+    fillval = -1.00e31
 
     # Calculate mod 10 values
     hdr_min_count_mod_10 = sci_dataset.hdr_minute_cnt.values % 10
@@ -105,9 +100,11 @@ def subcom_sectorates(sci_dataset: xr.Dataset) -> None:
     # Reference mod 10 mapping to initialize data structure for species and
     # energy ranges and add 8x15 arrays with fill values for each science frame.
     num_frames = len(hdr_min_count_mod_10)
-    # TODO: add more specific dtype for rates (ex. int16) once this is defined by HIT
     data_by_species_and_energy_range = {
-        key: {**value, "rates": np.full((num_frames, 8, 15), fill_value=-1, dtype=int)}
+        key: {
+            **value,
+            "rates": np.full((num_frames, 8, 15), fill_value=fillval, dtype=np.float64),
+        }
         for key, value in MOD_10_MAPPING.items()
     }
 
@@ -162,7 +159,6 @@ def subcom_sectorates(sci_dataset: xr.Dataset) -> None:
         )
 
 
-# Calculate uncertainties for count rates
 def calculate_uncertainties(dataset: xr.Dataset) -> xr.Dataset:
     """
     Calculate uncertainties for each counts data variable in the dataset.
@@ -188,7 +184,7 @@ def calculate_uncertainties(dataset: xr.Dataset) -> xr.Dataset:
     dataset : xarray.Dataset
         The dataset with added uncertainties for each counts data variable.
     """
-    # Variables that aren't counts data and should be ignored in the calculation
+    # Variables that aren't counts data and should be skipped in the calculation
     ignore_vars = [
         "version",
         "type",
@@ -204,7 +200,7 @@ def calculate_uncertainties(dataset: xr.Dataset) -> xr.Dataset:
         "hdr_heater_duty_cycle",
         "hdr_code_ok",
         "hdr_minute_cnt",
-        "livetime",
+        "livetime_counter",
         "h_energy_min",
         "h_energy_max",
         "he4_energy_min",
@@ -220,10 +216,21 @@ def calculate_uncertainties(dataset: xr.Dataset) -> xr.Dataset:
     # Counts data that need uncertainties calculated
     count_vars = set(dataset.data_vars) - set(ignore_vars)
 
-    # Calculate uncertainties for each counts data variable
+    # Calculate uncertainties for counts data variables.
+    # Arrays with fill values (i.e. missing data) are skipped in this calculation
+    # but are kept in the new data arrays to retain shape and dimensions.
     for var in count_vars:
-        dataset[f"{var}_delta_plus"] = np.sqrt(dataset[var] + 1) + 1
-        dataset[f"{var}_delta_minus"] = np.sqrt(dataset[var])
+        mask = dataset[var] != -1.00e31  # mask of arrays without fill values
+        dataset[f"{var}_delta_plus"] = xr.DataArray(
+            np.where(
+                mask, (np.sqrt(dataset[var] + 1) + 1).astype(np.float32), dataset[var]
+            ),
+            dims=dataset[var].dims,
+        )
+        dataset[f"{var}_delta_minus"] = xr.DataArray(
+            np.where(mask, np.sqrt(dataset[var]).astype(np.float32), dataset[var]),
+            dims=dataset[var].dims,
+        )
     return dataset
 
 
