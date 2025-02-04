@@ -78,6 +78,12 @@ def consolidate_rate_columns(data, rate_columns):
     between sectorate columns with three digits and those with four
     digits in their names.
 
+    SECTORATES_000 SECTORATES_000_0 SECTORATES_000_1 SECTORATES_000_2...SECTORATES_120_9
+        0	 	 	 	0
+        0	 	 	 	 	             0
+        0	 	 	 	 	 	                          0
+        :
+
     Columns with three digits (e.g., SECTORATE_000) contain sectorate
     values for the science frame, with 120 such columns in the validation
     data. These will be organized into an array named "sectorates".
@@ -118,12 +124,12 @@ def consolidate_rate_columns(data, rate_columns):
         data[f"{new_col}"] = data.filter(regex=pattern_rates).apply(
             lambda row: row.values, axis=1
         )
-        data[f"{new_col}_delta_plus"] = data.filter(regex=pattern_delta_plus).apply(
-            lambda row: row.values, axis=1
-        )
-        data[f"{new_col}_delta_minus"] = data.filter(regex=pattern_delta_minus).apply(
-            lambda row: row.values, axis=1
-        )
+        data[f"{new_col}_delta_plus"] = data.filter(
+            regex=pattern_delta_plus.pattern
+        ).apply(lambda row: row.values, axis=1)
+        data[f"{new_col}_delta_minus"] = data.filter(
+            regex=pattern_delta_minus.pattern
+        ).apply(lambda row: row.values, axis=1)
         if new_col == "sectorates":
             # Get columns that match the pattern for sectorates with three digits
             sectorates_three_digits = data.filter(regex=r"^SECTORATES_\d{3}$").columns
@@ -163,9 +169,15 @@ def consolidate_rate_columns(data, rate_columns):
                 inplace=True,
             )
         # Drop the original columns
-        data.drop(columns=data.filter(regex=pattern_rates).columns, inplace=True)
-        data.drop(columns=data.filter(regex=pattern_delta_plus).columns, inplace=True)
-        data.drop(columns=data.filter(regex=pattern_delta_minus).columns, inplace=True)
+        data.drop(
+            columns=data.filter(regex=pattern_rates.pattern).columns, inplace=True
+        )
+        data.drop(
+            columns=data.filter(regex=pattern_delta_plus.pattern).columns, inplace=True
+        )
+        data.drop(
+            columns=data.filter(regex=pattern_delta_minus.pattern).columns, inplace=True
+        )
 
     return data
 
@@ -295,8 +307,12 @@ def compare_data(expected_data, actual_data, skip):
         if field not in skip:
             for frame in range(expected_data.shape[0]):
                 if field == "species":
-                    # Compare sector rates data.
-                    # Use species and energy index for this comparison
+                    # Compare sector rates data using species and energy index.
+                    # The species and energy index fields are only present in the
+                    # validation data. In the actual data, sector rates are organized
+                    # by species in 4D arrays with energy index as a dimension.
+                    # i.e. h_counts_sectored has shape
+                    #      (epoch, h_energy_index, declination, azimuth).
                     species = expected_data[field][frame]
                     energy_idx = expected_data["energy_idx"][frame]
 
