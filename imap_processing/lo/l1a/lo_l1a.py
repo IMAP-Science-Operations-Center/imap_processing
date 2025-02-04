@@ -291,7 +291,10 @@ def add_dataset_attrs(
                 "events",
             ]
         )
-
+        # An empty DEPEND_0 is being added to support_data
+        # variables that should only have DEPEND_1
+        # Removing Depend_0 here.
+        # Should look for a fix to this issue
         del dataset["direct_events"].attrs["DEPEND_0"]
         del dataset["coincidence_type"].attrs["DEPEND_0"]
         del dataset["de_time"].attrs["DEPEND_0"]
