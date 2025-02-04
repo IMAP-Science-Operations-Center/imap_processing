@@ -477,18 +477,22 @@ def organize_spin_data(dataset: xr.Dataset, attr_mgr: ImapCdfAttributes) -> xr.D
     acq_start = dataset.acq_start_sec.values + (0.1 * dataset.acq_start_subsec.values)
     epoch = met_to_ttj2000ns(acq_start)
     dataset = dataset.assign_coords(epoch=("epoch", epoch))
-
     for spin_field in spin_fields:
+        # Get the field attributes
+        field_attrs = attr_mgr.get_variable_attributes(spin_field, check_schema=False)
+        dtype = field_attrs.pop("dtype")
+
         packet_fields = [f"{spin_field}_{i}" for i in range(1, 29)]
         # Combine the spin data fields along a new dimension
         combined_spin_data = xr.concat(
-            [dataset[field] for field in packet_fields], dim="spin"
+            [dataset[field].astype(dtype) for field in packet_fields], dim="spin"
         )
+
         # Assign the combined data back to the dataset
         dataset[spin_field] = xr.DataArray(
             combined_spin_data.transpose(),
             dims=["epoch", "spin"],
-            attrs=attr_mgr.get_variable_attributes(spin_field),
+            attrs=field_attrs,
         )
         # Drop the individual spin data fields
         dataset = dataset.drop_vars(packet_fields)
