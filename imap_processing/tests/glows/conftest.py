@@ -46,7 +46,7 @@ def l1a_dataset(packet_path):
 
 @pytest.fixture()
 def l1b_hist_dataset(l1a_dataset):
-    return glows_l1b(l1a_dataset[0], "v001")
+    return glows_l1b(l1a_dataset[1], "v001")
 
 
 @pytest.fixture()

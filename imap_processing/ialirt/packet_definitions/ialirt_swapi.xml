@@ -1,0 +1,170 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<xtce:SpaceSystem xmlns:xtce="http://www.omg.org/space/xtce" name="ialirt">
+	<xtce:Header date="2023-08-24T07:53:00MST" version="1.0" author="IMAP SDC" />
+	<xtce:TelemetryMetaData>
+		<xtce:ParameterTypeSet>
+			<!-- This file was manually created using content from:
+			I-ALiRT Packet Definitions: https://lasp.colorado.edu/galaxy/x/44nKCQ
+            -->
+			<xtce:IntegerParameterType name="uint1" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
+				<xtce:UnitSet />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint2" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="2" encoding="unsigned" />
+				<xtce:UnitSet />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint3" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="3" encoding="unsigned" />
+				<xtce:UnitSet />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint4" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="4" encoding="unsigned" />
+				<xtce:UnitSet />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint8" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="8" encoding="unsigned" />
+				<xtce:UnitSet />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint11" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="11" encoding="unsigned" />
+				<xtce:UnitSet />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint14" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="14" encoding="unsigned" />
+				<xtce:UnitSet />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint15" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="15" encoding="unsigned" />
+				<xtce:UnitSet />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint16" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="16" encoding="unsigned" />
+				<xtce:UnitSet />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint32" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="32" encoding="unsigned" />
+				<xtce:UnitSet />
+			</xtce:IntegerParameterType>
+						<!-- Enumerated Data Types -->
+			<xtce:EnumeratedParameterType name="swapi_validity_enum" signed="false">
+                <xtce:UnitSet/>
+                <xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned"/>
+                <xtce:EnumerationList>
+                    <xtce:Enumeration label="VALID" value="0"/>
+                    <xtce:Enumeration label="INVALID" value="1"/>
+                </xtce:EnumerationList>
+            </xtce:EnumeratedParameterType>
+		</xtce:ParameterTypeSet>
+        <xtce:ParameterSet>
+            <!-- Within the ParameterSet, utilize the data types defined in the ParameterTypeSet to create variables
+            with their respective data types. -->
+
+            <!--CCSDS Header Elements-->
+			<xtce:Parameter name="VERSION" parameterTypeRef="uint3">
+				<xtce:LongDescription>CCSDS Packet Version Number (always 0)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="TYPE" parameterTypeRef="uint1">
+				<xtce:LongDescription>CCSDS Packet Type Indicator (0=telemetry)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SEC_HDR_FLG" parameterTypeRef="uint1">
+				<xtce:LongDescription>CCSDS Packet Secondary Header Flag (always 1)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PKT_APID" parameterTypeRef="uint11">
+				<xtce:LongDescription>CCSDS Packet Application Process ID</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SEQ_FLGS" parameterTypeRef="uint2">
+				<xtce:LongDescription>CCSDS Packet Grouping Flags (3=not part of group)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SRC_SEQ_CTR" parameterTypeRef="uint14">
+				<xtce:LongDescription>CCSDS Packet Sequence Count (increments with each new packet)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PKT_LEN" parameterTypeRef="uint16">
+				<xtce:LongDescription>CCSDS Packet Length (number of bytes after Packet length minus 1)</xtce:LongDescription>
+			</xtce:Parameter>
+			<!-- SWAPI -->
+			<xtce:Parameter name="SWAPI_SHCOARSE" parameterTypeRef="uint32">
+				<xtce:LongDescription>SWAPI MET at End of Data Acquisition</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWAPI_ACQ" parameterTypeRef="uint32">
+				<xtce:LongDescription>SWAPI Acquisition Time</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWAPI_FLAG" parameterTypeRef="swapi_validity_enum">
+				<xtce:LongDescription>
+                    Valid bit:
+                    '1' -- valid,
+                    '0' -- invalid
+                </xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWAPI_RESERVED" parameterTypeRef="uint15">
+				<xtce:LongDescription>SWAPI Instrument Reserved</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWAPI_SEQ" parameterTypeRef="uint4">
+				<xtce:LongDescription>Sequence Number in Table</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWAPI_VERSION" parameterTypeRef="uint4">
+				<xtce:LongDescription>Sweep Table Version Number</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWAPI_COIN_1" parameterTypeRef="uint16">
+				<xtce:LongDescription>Coincidence Counts During the First 1/6 Sec</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWAPI_COIN_2" parameterTypeRef="uint16">
+				<xtce:LongDescription>Coincidence Counts During the Second 1/6 Sec</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWAPI_COIN_3" parameterTypeRef="uint16">
+				<xtce:LongDescription>Coincidence Counts During the Third 1/6 Sec</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWAPI_COIN_4" parameterTypeRef="uint16">
+				<xtce:LongDescription>Coincidence Counts During the Fourth 1/6 Sec</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWAPI_COIN_5" parameterTypeRef="uint16">
+				<xtce:LongDescription>Coincidence Counts During the Fifth 1/6 Sec</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWAPI_COIN_6" parameterTypeRef="uint16">
+				<xtce:LongDescription>Coincidence Counts During the Sixth 1/6 Sec</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWAPI_SPARE" parameterTypeRef="uint8">
+				<xtce:LongDescription>Spare</xtce:LongDescription>
+			</xtce:Parameter>
+			<!-- SWAPI -->
+		</xtce:ParameterSet>
+		<!-- End metadata -->
+		<xtce:ContainerSet>
+			<xtce:SequenceContainer name="CCSDSPacket" >
+				<xtce:EntryList>
+					<xtce:ParameterRefEntry parameterRef="VERSION" />
+					<xtce:ParameterRefEntry parameterRef="TYPE" />
+					<xtce:ParameterRefEntry parameterRef="SEC_HDR_FLG" />
+					<xtce:ParameterRefEntry parameterRef="PKT_APID" />
+					<xtce:ParameterRefEntry parameterRef="SEQ_FLGS" />
+					<xtce:ParameterRefEntry parameterRef="SRC_SEQ_CTR" />
+					<xtce:ParameterRefEntry parameterRef="PKT_LEN" />
+				</xtce:EntryList>
+			</xtce:SequenceContainer>
+			<xtce:SequenceContainer name="IALiRTPacket">
+				<xtce:BaseContainer containerRef="CCSDSPacket">
+					<xtce:RestrictionCriteria>
+						<xtce:Comparison parameterRef="PKT_APID" value="1187" useCalibratedValue="false" />
+					</xtce:RestrictionCriteria>
+				</xtce:BaseContainer>
+				<xtce:EntryList>
+					<!-- SWAPI -->
+					<xtce:ParameterRefEntry parameterRef="SWAPI_SHCOARSE"/>
+					<xtce:ParameterRefEntry parameterRef="SWAPI_ACQ"/>
+					<xtce:ParameterRefEntry parameterRef="SWAPI_FLAG"/>
+					<xtce:ParameterRefEntry parameterRef="SWAPI_RESERVED"/>
+					<xtce:ParameterRefEntry parameterRef="SWAPI_SEQ"/>
+					<xtce:ParameterRefEntry parameterRef="SWAPI_VERSION"/>
+					<xtce:ParameterRefEntry parameterRef="SWAPI_COIN_1"/>
+					<xtce:ParameterRefEntry parameterRef="SWAPI_COIN_2"/>
+					<xtce:ParameterRefEntry parameterRef="SWAPI_COIN_3"/>
+					<xtce:ParameterRefEntry parameterRef="SWAPI_COIN_4"/>
+					<xtce:ParameterRefEntry parameterRef="SWAPI_COIN_5"/>
+					<xtce:ParameterRefEntry parameterRef="SWAPI_COIN_6"/>
+					<xtce:ParameterRefEntry parameterRef="SWAPI_SPARE"/>
+					<!-- SWAPI -->
+				</xtce:EntryList>
+			</xtce:SequenceContainer>
+		</xtce:ContainerSet>
+	</xtce:TelemetryMetaData>
+</xtce:SpaceSystem>

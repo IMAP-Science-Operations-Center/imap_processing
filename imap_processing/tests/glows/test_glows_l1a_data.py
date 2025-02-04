@@ -8,12 +8,14 @@ import pandas as pd
 import pytest
 
 from imap_processing.glows import __version__
+from imap_processing.glows.l1a.glows_l1a import glows_l1a
 from imap_processing.glows.l1a.glows_l1a_data import (
     DirectEventL1A,
     HistogramL1A,
     StatusData,
 )
 from imap_processing.glows.utils.constants import DirectEvent, GlowsConstants, TimeTuple
+from imap_processing.spice.time import met_to_ttj2000ns
 
 
 @pytest.fixture()
@@ -36,6 +38,22 @@ def test_histogram_list(histogram_test_data, decom_test_data):
 
     assert len(histogram_test_data.histogram) == 3600
     assert sum(histogram_test_data.histogram) == histl0.EVENTS
+
+
+def test_histogram_obs_day(packet_path):
+    l1a = glows_l1a(packet_path, "v001")
+
+    assert len(l1a) == 3
+
+    assert "hist" in l1a[0].attrs["Logical_source"]
+    assert "hist" in l1a[1].attrs["Logical_source"]
+
+    # Numbers pulled from the validation data.
+    # this test assumes that the "is_night" flag switching from true to false is the
+    # start of the observation day.
+
+    assert np.array_equal(l1a[0]["imap_start_time"].data[0], 54232215.0)
+    assert np.array_equal(l1a[1]["imap_start_time"].data[0], 54232455.0)
 
 
 def test_histogram_attributes(histogram_test_data):
@@ -488,7 +506,8 @@ def test_expected_de_results(l1a_test_data):
 
 
 def test_expected_hist_results(l1a_dataset):
-    hist = l1a_dataset[0]
+    end_time = l1a_dataset[0]["epoch"].data[-1]
+
     validation_data = (
         Path(__file__).parent / "validation_data" / "glows_l1a_hist_validation.json"
     )
@@ -521,15 +540,24 @@ def test_expected_hist_results(l1a_dataset):
         "pulse_length_variance",
     ]
 
-    for index, data in enumerate(out["output"]):
+    for data in out["output"]:
+        epoch_val = met_to_ttj2000ns(
+            TimeTuple(
+                data["imap_start_time"]["seconds"],
+                data["imap_start_time"]["subseconds"],
+            ).to_seconds()
+        )
+
+        # Validation data spans the two obs days, so this selects the correct output
+        dataset_index = 1 if epoch_val > end_time else 0
+        datapoint = l1a_dataset[dataset_index].sel(epoch=epoch_val)
+
         for field in time_fields.keys():
             expected_time = (
                 data[field]["seconds"]
                 + data[field]["subseconds"] / GlowsConstants.SUBSECOND_LIMIT
             )
-            assert np.array_equal(
-                expected_time, hist.isel(epoch=index)[time_fields[field]].data
-            )
+            assert np.array_equal(expected_time, datapoint[time_fields[field]].data)
 
         for field in compare_fields:
-            assert np.array_equal(data[field], hist.isel(epoch=index)[field].data)
+            assert np.array_equal(data[field], datapoint[field].data)

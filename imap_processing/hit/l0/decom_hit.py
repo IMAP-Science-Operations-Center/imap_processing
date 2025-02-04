@@ -129,7 +129,7 @@ def is_sequential(counters: np.ndarray) -> np.bool_:
     bool
         True if the sequence counters are sequential, False otherwise.
     """
-    return np.all(np.diff(counters) == 1)
+    return np.all((np.diff(counters) % 16384) == 1)
 
 
 def get_valid_starting_indices(flags: np.ndarray, counters: np.ndarray) -> np.ndarray:

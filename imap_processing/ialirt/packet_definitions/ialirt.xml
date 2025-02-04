@@ -159,6 +159,14 @@
                     <xtce:Enumeration label="VALID" value="1"/>
                 </xtce:EnumerationList>
             </xtce:EnumeratedParameterType>
+			<xtce:EnumeratedParameterType name="swapi_validity_enum" signed="false">
+                <xtce:UnitSet/>
+                <xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned"/>
+                <xtce:EnumerationList>
+                    <xtce:Enumeration label="VALID" value="0"/>
+                    <xtce:Enumeration label="INVALID" value="1"/>
+                </xtce:EnumerationList>
+            </xtce:EnumeratedParameterType>
 			<xtce:EnumeratedParameterType name="catbed_enum" signed="false">
                 <xtce:UnitSet/>
                 <xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned"/>
@@ -434,8 +442,8 @@
 			<xtce:Parameter name="SWAPI_ACQ" parameterTypeRef="uint32">
 				<xtce:LongDescription>SWAPI Acquisition Time</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="SWAPI_FLAG" parameterTypeRef="instrument_status">
-				<xtce:LongDescription>1 = nominal, 0 = off-nominal</xtce:LongDescription>
+			<xtce:Parameter name="SWAPI_FLAG" parameterTypeRef="swapi_validity_enum">
+				<xtce:LongDescription>1 = valid, 0 = invalid</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWAPI_RESERVED" parameterTypeRef="uint15">
 				<xtce:LongDescription>SWAPI Instrument Reserved</xtce:LongDescription>
@@ -446,23 +454,23 @@
 			<xtce:Parameter name="SWAPI_VERSION" parameterTypeRef="uint4">
 				<xtce:LongDescription>Sweep Table Version Number</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="SWAPI_STEP_1" parameterTypeRef="uint16">
-				<xtce:LongDescription>Coincidence Counts Step 1</xtce:LongDescription>
+			<xtce:Parameter name="SWAPI_COIN_1" parameterTypeRef="uint16">
+				<xtce:LongDescription>Coincidence Counts During the First 1/6 Sec</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="SWAPI_STEP_2" parameterTypeRef="uint16">
-				<xtce:LongDescription>Coincidence Counts Step 2</xtce:LongDescription>
+			<xtce:Parameter name="SWAPI_COIN_2" parameterTypeRef="uint16">
+				<xtce:LongDescription>Coincidence Counts During the Second 1/6 Sec</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="SWAPI_STEP_3" parameterTypeRef="uint16">
-				<xtce:LongDescription>Coincidence Counts Step 3</xtce:LongDescription>
+			<xtce:Parameter name="SWAPI_COIN_3" parameterTypeRef="uint16">
+				<xtce:LongDescription>Coincidence Counts During the Third 1/6 Sec</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="SWAPI_STEP_4" parameterTypeRef="uint16">
-				<xtce:LongDescription>Coincidence Counts Step 4</xtce:LongDescription>
+			<xtce:Parameter name="SWAPI_COIN_4" parameterTypeRef="uint16">
+				<xtce:LongDescription>Coincidence Counts During the Fourth 1/6 Sec</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="SWAPI_STEP_5" parameterTypeRef="uint16">
-				<xtce:LongDescription>Coincidence Counts Step 5</xtce:LongDescription>
+			<xtce:Parameter name="SWAPI_COIN_5" parameterTypeRef="uint16">
+				<xtce:LongDescription>Coincidence Counts During the Fifth 1/6 Sec</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="SWAPI_STEP_6" parameterTypeRef="uint16">
-				<xtce:LongDescription>Coincidence Counts Step 6</xtce:LongDescription>
+			<xtce:Parameter name="SWAPI_COIN_6" parameterTypeRef="uint16">
+				<xtce:LongDescription>Coincidence Counts During the Sixth 1/6 Sec</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWAPI_SPARE" parameterTypeRef="uint8">
 				<xtce:LongDescription>Spare</xtce:LongDescription>
@@ -676,12 +684,12 @@
 					<xtce:ParameterRefEntry parameterRef="SWAPI_RESERVED"/>
 					<xtce:ParameterRefEntry parameterRef="SWAPI_SEQ"/>
 					<xtce:ParameterRefEntry parameterRef="SWAPI_VERSION"/>
-					<xtce:ParameterRefEntry parameterRef="SWAPI_STEP_1"/>
-					<xtce:ParameterRefEntry parameterRef="SWAPI_STEP_2"/>
-					<xtce:ParameterRefEntry parameterRef="SWAPI_STEP_3"/>
-					<xtce:ParameterRefEntry parameterRef="SWAPI_STEP_4"/>
-					<xtce:ParameterRefEntry parameterRef="SWAPI_STEP_5"/>
-					<xtce:ParameterRefEntry parameterRef="SWAPI_STEP_6"/>
+					<xtce:ParameterRefEntry parameterRef="SWAPI_COIN_1"/>
+					<xtce:ParameterRefEntry parameterRef="SWAPI_COIN_2"/>
+					<xtce:ParameterRefEntry parameterRef="SWAPI_COIN_3"/>
+					<xtce:ParameterRefEntry parameterRef="SWAPI_COIN_4"/>
+					<xtce:ParameterRefEntry parameterRef="SWAPI_COIN_5"/>
+					<xtce:ParameterRefEntry parameterRef="SWAPI_COIN_6"/>
 					<xtce:ParameterRefEntry parameterRef="SWAPI_SPARE"/>
 					<!-- SWAPI -->
 					<!-- CoDICE HI -->

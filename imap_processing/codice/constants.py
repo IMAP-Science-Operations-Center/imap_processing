@@ -12,9 +12,6 @@ PUI = PickUp Ion
 ESA = ElectroStatic Analyzer
 """
 
-# TODO: What to do in the case of a value of 255 in LOSSY_A and LOSSY_B
-#       compression? (Joey uses 0x100000000)
-
 from imap_processing.codice.utils import CODICEAPID, CoDICECompression
 
 APIDS_FOR_SCIENCE_PROCESSING = [
@@ -81,115 +78,60 @@ HI_INST_COUNTS_SINGLES_VARIABLE_NAMES = ["tcr", "ssdo", "stssd"]
 HI_OMNI_SPECIES_VARIABLE_NAMES = ["h", "he3", "he4", "c", "o", "ne_mg_si", "fe", "uh"]
 HI_SECT_SPECIES_VARIABLE_NAMES = ["h", "he3he4", "cno", "fe"]
 
-# TODO: Hi products shape should be energy x ssd index x spin sector (8*12*12)
 DATA_PRODUCT_CONFIGURATIONS = {
     CODICEAPID.COD_HI_INST_COUNTS_AGGREGATED: {
-        "coords": [
-            "epoch",
-            "inst_az",
-            "spin_sector",
-            "esa_step",
-            "energy_label",
-        ],  # TODO: These will likely change
         "dataset_name": "imap_codice_l1a_hi-counters-aggregated",
-        "dims": [
-            "epoch",
-            "esa_step",
-            "inst_az",
-            "spin_sector",
-        ],  # TODO: These will likely change
+        "dims": {
+            "esa_step": 1,
+            "inst_az": 6,
+            "spin_sector": 1,
+        },  # TODO: Double check with Joey
         "instrument": "hi",
         "num_counters": 1,
-        "num_energy_steps": 1,  # TODO: Double check with Joey
-        "num_positions": 6,  # TODO: Double check with Joey
-        "num_spin_sectors": 1,
         "support_variables": [],  # TODO: Double check with Joey
         "variable_names": HI_INST_COUNTS_AGGREGATED_VARIABLE_NAMES,
     },
     CODICEAPID.COD_HI_INST_COUNTS_SINGLES: {
-        "coords": [
-            "epoch",
-            "inst_az",
-            "spin_sector",
-            "esa_step",
-            "energy_label",
-        ],  # TODO: These will likely change
         "dataset_name": "imap_codice_l1a_hi-counters-singles",
-        "dims": [
-            "epoch",
-            "esa_step",
-            "inst_az",
-            "spin_sector",
-        ],  # TODO: These will likely change
+        "dims": {
+            "esa_step": 1,
+            "inst_az": 12,
+            "spin_sector": 1,
+        },  # TODO: Double check with Joey
         "instrument": "hi",
         "num_counters": 3,
-        "num_energy_steps": 1,  # TODO: Double check with Joey
-        "num_positions": 12,  # TODO: Double check with Joey
-        "num_spin_sectors": 1,
         "support_variables": [],  # No support variables for this one
         "variable_names": HI_INST_COUNTS_SINGLES_VARIABLE_NAMES,
     },
     CODICEAPID.COD_HI_OMNI_SPECIES_COUNTS: {
-        "coords": [
-            "epoch",
-            "inst_az",
-            "spin_sector",
-            "esa_step",
-            "energy_label",
-        ],  # TODO: These will likely change
         "dataset_name": "imap_codice_l1a_hi-omni",
-        "dims": [
-            "epoch",
-            "esa_step",
-            "inst_az",
-            "spin_sector",
-        ],  # TODO: These will likely change
+        "dims": {
+            "esa_step": 15,
+            "inst_az": 4,
+            "spin_sector": 1,
+        },  # TODO: Double check with Joey
         "instrument": "hi",
         "num_counters": 8,
-        "num_energy_steps": 15,  # TODO: Double check with Joey
-        "num_positions": 4,  # TODO: Double check with Joey
-        "num_spin_sectors": 1,
         "support_variables": ["data_quality", "spin_period"],
         "variable_names": HI_OMNI_SPECIES_VARIABLE_NAMES,
     },
     CODICEAPID.COD_HI_SECT_SPECIES_COUNTS: {
-        "coords": [
-            "epoch",
-            "inst_az",
-            "spin_sector",
-            "esa_step",
-            "energy_label",
-        ],  # TODO: These will likely change
         "dataset_name": "imap_codice_l1a_hi-sectored",
-        "dims": [
-            "epoch",
-            "esa_step",
-            "inst_az",
-            "spin_sector",
-        ],  # TODO: These will likely change
+        "dims": {
+            "esa_step": 8,
+            "inst_az": 12,
+            "spin_sector": 12,
+        },  # TODO: Double check with Joey
         "instrument": "hi",
         "num_counters": 4,
-        "num_energy_steps": 8,
-        "num_positions": 12,
-        "num_spin_sectors": 12,
         "support_variables": ["data_quality", "spin_period"],
         "variable_names": HI_SECT_SPECIES_VARIABLE_NAMES,
     },
     CODICEAPID.COD_LO_INST_COUNTS_AGGREGATED: {
-        "coords": [
-            "epoch",
-            "inst_az",
-            "spin_sector",
-            "esa_step",
-            "energy_label",
-        ],  # TODO: These will likely change
         "dataset_name": "imap_codice_l1a_lo-counters-aggregated",
-        "dims": ["epoch", "esa_step", "inst_az", "spin_sector"],
+        "dims": {"esa_step": 128, "inst_az": 6, "spin_sector": 6},
         "instrument": "lo",
         "num_counters": 1,
-        "num_energy_steps": 128,
-        "num_positions": 6,
-        "num_spin_sectors": 6,
         "support_variables": [
             "energy_table",
             "acquisition_time_per_step",
@@ -197,20 +139,10 @@ DATA_PRODUCT_CONFIGURATIONS = {
         "variable_names": LO_INST_COUNTS_AGGREGATED_VARIABLE_NAMES,
     },
     CODICEAPID.COD_LO_INST_COUNTS_SINGLES: {
-        "coords": [
-            "epoch",
-            "inst_az",
-            "spin_sector",
-            "esa_step",
-            "energy_label",
-        ],  # TODO: These will likely change
         "dataset_name": "imap_codice_l1a_lo-counters-singles",
-        "dims": ["epoch", "esa_step", "inst_az", "spin_sector"],
+        "dims": {"esa_step": 128, "inst_az": 24, "spin_sector": 6},
         "instrument": "lo",
         "num_counters": 1,
-        "num_energy_steps": 128,
-        "num_positions": 24,
-        "num_spin_sectors": 6,
         "support_variables": [
             "spin_sector_pairs",
             "energy_table",
@@ -225,14 +157,10 @@ DATA_PRODUCT_CONFIGURATIONS = {
         "variable_names": LO_INST_COUNTS_SINGLES_VARIABLE_NAMES,
     },
     CODICEAPID.COD_LO_SW_ANGULAR_COUNTS: {
-        "coords": ["epoch", "energy_label", "esa_step", "inst_az", "spin_sector"],
         "dataset_name": "imap_codice_l1a_lo-sw-angular",
-        "dims": ["epoch", "esa_step", "inst_az", "spin_sector"],
+        "dims": {"inst_az": 5, "spin_sector": 12, "esa_step": 128},
         "instrument": "lo",
         "num_counters": 4,
-        "num_energy_steps": 128,
-        "num_positions": 5,
-        "num_spin_sectors": 12,
         "support_variables": [
             "energy_table",
             "acquisition_time_per_step",
@@ -246,14 +174,10 @@ DATA_PRODUCT_CONFIGURATIONS = {
         "variable_names": LO_SW_ANGULAR_VARIABLE_NAMES,
     },
     CODICEAPID.COD_LO_NSW_ANGULAR_COUNTS: {
-        "coords": ["epoch", "inst_az", "spin_sector", "esa_step", "energy_label"],
         "dataset_name": "imap_codice_l1a_lo-nsw-angular",
-        "dims": ["epoch", "esa_step", "inst_az", "spin_sector"],
+        "dims": {"inst_az": 19, "spin_sector": 12, "esa_step": 128},
         "instrument": "lo",
         "num_counters": 1,
-        "num_energy_steps": 128,
-        "num_positions": 19,
-        "num_spin_sectors": 12,
         "support_variables": [
             "energy_table",
             "acquisition_time_per_step",
@@ -267,14 +191,10 @@ DATA_PRODUCT_CONFIGURATIONS = {
         "variable_names": LO_NSW_ANGULAR_VARIABLE_NAMES,
     },
     CODICEAPID.COD_LO_SW_PRIORITY_COUNTS: {
-        "coords": ["epoch", "inst_az", "spin_sector", "esa_step", "energy_label"],
         "dataset_name": "imap_codice_l1a_lo-sw-priority",
-        "dims": ["epoch", "esa_step", "inst_az", "spin_sector"],
+        "dims": {"esa_step": 128, "inst_az": 1, "spin_sector": 12},
         "instrument": "lo",
         "num_counters": 5,
-        "num_energy_steps": 128,
-        "num_positions": 1,
-        "num_spin_sectors": 12,
         "support_variables": [
             "energy_table",
             "acquisition_time_per_step",
@@ -288,14 +208,10 @@ DATA_PRODUCT_CONFIGURATIONS = {
         "variable_names": LO_SW_PRIORITY_VARIABLE_NAMES,
     },
     CODICEAPID.COD_LO_NSW_PRIORITY_COUNTS: {
-        "coords": ["epoch", "inst_az", "spin_sector", "esa_step", "energy_label"],
         "dataset_name": "imap_codice_l1a_lo-nsw-priority",
-        "dims": ["epoch", "esa_step", "inst_az", "spin_sector"],
+        "dims": {"esa_step": 128, "inst_az": 1, "spin_sector": 12},
         "instrument": "lo",
         "num_counters": 2,
-        "num_energy_steps": 128,
-        "num_positions": 1,
-        "num_spin_sectors": 12,
         "support_variables": [
             "energy_table",
             "acquisition_time_per_step",
@@ -309,14 +225,10 @@ DATA_PRODUCT_CONFIGURATIONS = {
         "variable_names": LO_NSW_PRIORITY_VARIABLE_NAMES,
     },
     CODICEAPID.COD_LO_SW_SPECIES_COUNTS: {
-        "coords": ["epoch", "inst_az", "spin_sector", "esa_step", "energy_label"],
         "dataset_name": "imap_codice_l1a_lo-sw-species",
-        "dims": ["epoch", "esa_step", "inst_az", "spin_sector"],
+        "dims": {"inst_az": 1, "esa_step": 128},
         "instrument": "lo",
         "num_counters": 16,
-        "num_energy_steps": 128,
-        "num_positions": 1,
-        "num_spin_sectors": 1,
         "support_variables": [
             "energy_table",
             "acquisition_time_per_step",
@@ -330,14 +242,10 @@ DATA_PRODUCT_CONFIGURATIONS = {
         "variable_names": LO_SW_SPECIES_VARIABLE_NAMES,
     },
     CODICEAPID.COD_LO_NSW_SPECIES_COUNTS: {
-        "coords": ["epoch", "inst_az", "spin_sector", "esa_step", "energy_label"],
         "dataset_name": "imap_codice_l1a_lo-nsw-species",
-        "dims": ["epoch", "esa_step", "inst_az", "spin_sector"],
+        "dims": {"esa_step": 128, "inst_az": 1, "spin_sector": 1},
         "instrument": "lo",
         "num_counters": 8,
-        "num_energy_steps": 128,
-        "num_positions": 1,
-        "num_spin_sectors": 1,
         "support_variables": [
             "energy_table",
             "acquisition_time_per_step",

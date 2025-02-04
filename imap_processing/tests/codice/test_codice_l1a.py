@@ -44,10 +44,10 @@ EXPECTED_ARRAY_SHAPES = [
     (77, 128, 24, 6),  # lo-counters-singles
     (77, 128, 1, 12),  # lo-sw-priority
     (77, 128, 1, 12),  # lo-nsw-priority
-    (77, 128, 1, 1),  # lo-sw-species
+    (77, 1, 128),  # lo-sw-species
     (77, 128, 1, 1),  # lo-nsw-species
-    (77, 128, 5, 12),  # lo-sw-angular
-    (77, 128, 19, 12),  # lo-nsw-angular
+    (77, 5, 12, 128),  # lo-sw-angular
+    (77, 19, 12, 128),  # lo-nsw-angular
     (77, 1, 6, 1),  # hi-counters-aggregated
     (77, 1, 12, 1),  # hi-counters-singles
     (77, 15, 4, 1),  # hi-omni
@@ -190,7 +190,7 @@ def test_l1a_num_data_variables(test_l1a_data, index):
 
 
 @pytest.mark.parametrize("index", range(len(VALIDATION_DATA)))
-def test_l1a_data_array_values(test_l1a_data: xr.Dataset, index):
+def test_l1a_validate_data_arrays(test_l1a_data: xr.Dataset, index):
     """Tests that the generated L1a CDF data array contents are valid.
 
     Parameters
@@ -203,29 +203,21 @@ def test_l1a_data_array_values(test_l1a_data: xr.Dataset, index):
 
     descriptor = DESCRIPTORS[index]
 
-    # Mark currently broken/unsupported datasets as expected to fail
-    # TODO: Remove these once they are supported
-    if index in [0, 1, 15, 16, 17]:
-        pytest.xfail("Data product is currently unsupported")
-
-    # TODO: Currently only lo-(n)sw-angular data can be validated, expand this
-    #       to other data products as I validate them.
-    if descriptor in ["lo-sw-angular", "lo-nsw-angular"]:
+    # TODO: Currently only the following products can be validated, expand this
+    #       to other data products as I can validate them.
+    able_to_be_validated = ["lo-sw-angular", "lo-nsw-angular"]
+    if descriptor in able_to_be_validated:
         counters = getattr(
             constants, f'{descriptor.upper().replace("-","_")}_VARIABLE_NAMES'
         )
         processed_dataset = test_l1a_data[index]
         validation_dataset = load_cdf(VALIDATION_DATA[index])
 
-        # Joey says that the shape of the data arrays (i.e. how they are
-        # arranged) does not need to follow a specific order, and the SDC can
-        # decide to arrange them how we see fit. As such, the shape of the CDFs
-        # that SDC produces may not match the validation data. To get around
-        # this, compare the sum of the values of the data arrays.
         for counter in counters:
-            np.testing.assert_array_equal(
-                getattr(processed_dataset, counter).data.sum(),
-                getattr(validation_dataset, counter).data.sum(),
+            # Ensure the data arrays are equal
+            np.testing.assert_equal(
+                processed_dataset[counter].data,
+                validation_dataset[counter].data,
             )
     else:
         pytest.xfail(f"Still need to implement validation for {descriptor}")

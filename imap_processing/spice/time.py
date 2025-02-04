@@ -23,6 +23,36 @@ TICK_DURATION = 2e-5  # 20 microseconds as defined in imap_sclk_0000.tsc
 TTJ2000_EPOCH = np.datetime64("2000-01-01T11:58:55.816", "ns")
 
 
+@typing.no_type_check
+def _vectorize(pyfunc: typing.Callable, **vectorize_kwargs) -> typing.Callable:
+    """
+    Convert 0-D arrays from numpy.vectorize to scalars.
+
+    For details on numpy.vectorize, see
+    https://numpy.org/doc/stable/reference/generated/numpy.vectorize.html
+
+    Parameters
+    ----------
+    pyfunc : callable
+        A python function or method.
+    **vectorize_kwargs :
+        Keyword arguments to pass to numpy.vectorize.
+
+    Returns
+    -------
+    out : callable
+        A vectorized function.
+    """
+    vectorized_func = np.vectorize(pyfunc, **vectorize_kwargs)
+
+    def wrapper(*args, **kwargs):  # numpydoc ignore=GL08
+        # Calling the vectorized function with [()] will convert 0-D arrays
+        # to scalars
+        return vectorized_func(*args, **kwargs)[()]
+
+    return wrapper
+
+
 def met_to_sclkticks(met: npt.ArrayLike) -> npt.NDArray[float]:
     """
     Convert Mission Elapsed Time (MET) to floating point spacecraft clock ticks.
@@ -93,8 +123,8 @@ def ttj2000ns_to_et(tt_ns: npt.ArrayLike) -> npt.NDArray[float]:
         Number of seconds since the J2000 epoch in the TDB timescale.
     """
     tt_seconds = np.asarray(tt_ns, dtype=np.float64) / 1e9
-    vectorized_unitim = np.vectorize(
-        spiceypy.unitim, [float], excluded=["insys", "outsys"]
+    vectorized_unitim = _vectorize(
+        spiceypy.unitim, otypes=[float], excluded=["insys", "outsys"]
     )
     return vectorized_unitim(tt_seconds, "TT", "ET")
 
@@ -141,9 +171,7 @@ def met_to_datetime64(
     numpy.ndarray[str]
         The mission elapsed time converted to UTC string.
     """
-    if isinstance(met, typing.Iterable):
-        return np.asarray([np.datetime64(utc) for utc in met_to_utc(met)])
-    return np.datetime64(met_to_utc(met))
+    return np.array(met_to_utc(met), dtype=np.datetime64)[()]
 
 
 @typing.no_type_check
@@ -168,16 +196,14 @@ def _sct2e_wrapper(
     ephemeris_time: np.ndarray
         Ephemeris time, seconds past J2000.
     """
-    if isinstance(sclk_ticks, Collection):
-        return np.array([spiceypy.sct2e(IMAP_SC_ID, s) for s in sclk_ticks])
-    else:
-        return spiceypy.sct2e(IMAP_SC_ID, sclk_ticks)
+    vectorized_sct2e = _vectorize(spiceypy.sct2e, otypes=[float], excluded=[0])
+    return vectorized_sct2e(IMAP_SC_ID, sclk_ticks)
 
 
 @typing.no_type_check
 @ensure_spice
 def sct_to_ttj2000s(
-    sclk_ticks: Union[float, Collection[float]],
+    sclk_ticks: Union[float, Iterable[float]],
 ) -> Union[float, np.ndarray]:
     """
     Convert encoded spacecraft clock "ticks" to terrestrial time (TT).
@@ -190,7 +216,7 @@ def sct_to_ttj2000s(
 
     Parameters
     ----------
-    sclk_ticks : Union[float, Collection[float]]
+    sclk_ticks : Union[float, Iterable[float]]
         Input sclk ticks value(s) to be converted to ephemeris time.
 
     Returns
@@ -198,15 +224,12 @@ def sct_to_ttj2000s(
     terrestrial_time: np.ndarray[float]
         Terrestrial time, seconds past J2000.
     """
-    if isinstance(sclk_ticks, Collection):
-        return np.array(
-            [
-                spiceypy.unitim(spiceypy.sct2e(IMAP_SC_ID, s), "ET", "TT")
-                for s in sclk_ticks
-            ]
-        )
-    else:
+
+    def conversion(sclk_ticks):  # numpydoc ignore=GL08
         return spiceypy.unitim(spiceypy.sct2e(IMAP_SC_ID, sclk_ticks), "ET", "TT")
+
+    vectorized_func = _vectorize(conversion, otypes=[float])
+    return vectorized_func(sclk_ticks)
 
 
 @typing.no_type_check
@@ -231,10 +254,8 @@ def str_to_et(
     ephemeris_time: np.ndarray
         Ephemeris time, seconds past J2000.
     """
-    if isinstance(time_str, str):
-        return spiceypy.str2et(time_str)
-    else:
-        return np.array([spiceypy.str2et(t) for t in time_str])
+    vectorized_str2et = _vectorize(spiceypy.str2et, otypes=[float])
+    return vectorized_str2et(time_str)
 
 
 @typing.no_type_check

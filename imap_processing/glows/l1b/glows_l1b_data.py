@@ -611,3 +611,26 @@ class HistogramL1B:
             A tuple containing each attribute value in the class.
         """
         return tuple(getattr(self, out.name) for out in dataclasses.fields(self))
+
+    @staticmethod
+    def deserialize_flags(raw: int) -> np.ndarray[int]:
+        """
+        Deserialize the flags into a list.
+
+        Parameters
+        ----------
+        raw : int
+            16 bit integer containing the on-board flags to deserialize.
+
+        Returns
+        -------
+        flags : np.ndarray
+            Array of flags as a boolean.
+        """
+        # there are only 10 flags in the on-board flag array, additional flags are added
+        # later.
+        flags: np.ndarray[bool] = np.array(
+            [bool((raw >> i) & 1) for i in range(10)], dtype=bool
+        )
+
+        return flags
