@@ -7,7 +7,7 @@ import numpy as np
 from numpy.typing import NDArray
 
 from imap_processing.quality_flags import ImapRatesUltraFlags
-from imap_processing.spice.spin import get_spin_data
+from imap_processing.spice.spin import get_spin_data, interpolate_spin_data
 from imap_processing.ultra.constants import UltraConstants
 
 
@@ -25,14 +25,8 @@ def get_spin(eventtimes_met: NDArray) -> NDArray:
     spin_number : NDArray
         Spin number at each event derived the from Universal Spin Table.
     """
-    spin_df = get_spin_data()
-
-    last_spin_indices = (
-        np.searchsorted(spin_df["spin_start_time"], eventtimes_met, side="right") - 1
-    )
-    spin_number = spin_df["spin_number"].values[last_spin_indices]
-
-    return spin_number
+    spin_df = interpolate_spin_data(eventtimes_met)
+    return spin_df["spin_number"].values
 
 
 def get_energy_histogram(
