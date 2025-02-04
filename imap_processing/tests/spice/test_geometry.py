@@ -3,7 +3,6 @@
 from unittest import mock
 
 import numpy as np
-import pandas as pd
 import pytest
 import spiceypy
 
@@ -15,12 +14,8 @@ from imap_processing.spice.geometry import (
     cartesian_to_spherical,
     frame_transform,
     frame_transform_az_el,
-    get_instrument_spin_phase,
     get_rotation_matrix,
-    get_spacecraft_spin_phase,
     get_spacecraft_to_instrument_spin_phase_offset,
-    get_spin_angle,
-    get_spin_data,
     imap_state,
     instrument_pointing,
     solar_longitude,
@@ -51,130 +46,6 @@ def test_imap_state_ecliptic():
     """Tests retrieving IMAP state in the ECLIPJ2000 frame"""
     state = imap_state(798033670)
     assert state.shape == (6,)
-
-
-@pytest.fixture()
-def fake_spin_data(monkeypatch, spice_test_data_path):
-    """Generate fake spin dataframe for testing"""
-    fake_spin_path = spice_test_data_path / "fake_spin_data.csv"
-    monkeypatch.setenv("SPIN_DATA_FILEPATH", str(fake_spin_path))
-    return fake_spin_path
-
-
-@pytest.mark.parametrize(
-    "query_met_times, expected",
-    [
-        (15, 0.0),  # Scalar test
-        (np.array([15.1, 30.1]), np.array([0.1 / 15, 0.1 / 15])),  # Array test
-        (np.array([]), None),  # Empty array test
-        (np.array([50]), np.array([5 / 15])),  # Single element array test
-        # The first spin has thruster firing set, but should return valid value
-        (5.0, 5 / 15),
-        # Test invalid spin period flag causes nan
-        (106.0, np.nan),
-        # Test invalid spin phase flag causes nans
-        (np.array([121, 122, 123]), np.full(3, np.nan)),
-        # Test that invalid spin period causes nans
-        (np.array([110, 111]), np.full(2, np.nan)),
-        # Test for time in missing spin
-        (65, np.nan),
-        (np.array([65.1, 66]), np.full(2, np.nan)),
-        # Combined test
-        (
-            np.array([7.5, 30, 61, 75, 106, 121, 136]),
-            np.array([0.5, 0, np.nan, 0, np.nan, np.nan, 1 / 15]),
-        ),
-    ],
-)
-def test_get_spacecraft_spin_phase(query_met_times, expected, fake_spin_data):
-    """Test get_spacecraft_spin_phase() with generated spin data."""
-    # Call the function
-    spin_phases = get_spacecraft_spin_phase(query_met_times=query_met_times)
-
-    # Test the returned type
-    if isinstance(expected, float):
-        assert isinstance(spin_phases, float), "Spin phase must be a float."
-    elif expected is None:
-        assert len(spin_phases) == 0, "Spin phase must be empty."
-    else:
-        assert spin_phases.shape == expected.shape
-    # Test the value
-    np.testing.assert_array_almost_equal(spin_phases, expected)
-
-
-def test_get_spin_angle():
-    """Test get_spin_angle() with fake spin phases."""
-    test_spin_phases = np.ones(10) * 0.5
-    # Expected values for spin angles in degrees and radians if spin phase is 0.5
-    expected_deg = 180
-    expected_rad = np.pi
-    # Get spin angles in degrees and radians
-    spin_phases_deg = get_spin_angle(test_spin_phases, degrees=True)
-    spin_phases_rad = get_spin_angle(test_spin_phases, degrees=False)
-    # Test conversions
-    assert np.all(spin_phases_deg == expected_deg)
-    assert np.all(spin_phases_rad == expected_rad)
-
-
-@pytest.mark.parametrize("query_met_times", [-1, 165])
-def test_get_spacecraft_spin_phase_value_error(query_met_times, fake_spin_data):
-    """Test get_spacecraft_spin_phase() for raising ValueError."""
-    with pytest.raises(ValueError, match="Query times"):
-        _ = get_spacecraft_spin_phase(query_met_times)
-
-
-@pytest.mark.usefixtures("use_fake_spin_data_for_time")
-def test_get_spin_data(use_fake_spin_data_for_time):
-    """Test get_spin_data() with generated spin data."""
-    use_fake_spin_data_for_time(453051323.0 - 56120)
-    spin_data = get_spin_data()
-
-    (
-        np.testing.assert_array_equal(spin_data["spin_number"], np.arange(5761)),
-        "One day should have 5,761 records of 15 seconds when including end_met.",
-    )
-    assert isinstance(spin_data, pd.DataFrame), "Return type must be pandas.DataFrame."
-
-    assert set(spin_data.columns) == {
-        "spin_number",
-        "spin_start_sec",
-        "spin_start_subsec",
-        "spin_period_sec",
-        "spin_period_valid",
-        "spin_phase_valid",
-        "spin_period_source",
-        "thruster_firing",
-        "spin_start_time",
-    }, "Spin data must have the specified fields."
-
-
-@pytest.mark.parametrize(
-    "instrument",
-    [
-        SpiceFrame.IMAP_LO,
-        SpiceFrame.IMAP_HI_45,
-        SpiceFrame.IMAP_HI_90,
-        SpiceFrame.IMAP_ULTRA_45,
-        SpiceFrame.IMAP_ULTRA_90,
-        SpiceFrame.IMAP_SWAPI,
-        SpiceFrame.IMAP_IDEX,
-        SpiceFrame.IMAP_CODICE,
-        SpiceFrame.IMAP_HIT,
-        SpiceFrame.IMAP_SWE,
-        SpiceFrame.IMAP_GLOWS,
-        SpiceFrame.IMAP_MAG,
-    ],
-)
-def test_get_instrument_spin_phase(instrument, fake_spin_data):
-    """Test coverage for get_instrument_spin_phase()"""
-    met_times = np.array([7.5, 30, 61, 75, 106, 121, 136])
-    expected_nan_mask = np.array([False, False, True, False, True, True, False])
-    inst_phase = get_instrument_spin_phase(met_times, instrument)
-    assert inst_phase.shape == met_times.shape
-    np.testing.assert_array_equal(np.isnan(inst_phase), expected_nan_mask)
-    assert np.logical_and(
-        0 <= inst_phase[~expected_nan_mask], inst_phase[~expected_nan_mask] < 1
-    ).all()
 
 
 @pytest.mark.parametrize(
