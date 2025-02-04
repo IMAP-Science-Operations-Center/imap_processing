@@ -214,23 +214,11 @@ def test_l1a_validate_data_arrays(test_l1a_data: xr.Dataset, index):
         validation_dataset = load_cdf(VALIDATION_DATA[index])
 
         for counter in counters:
-            # Ensure the data array values are equal by calculating the sum of
-            # each and comparing the result
-            np.testing.assert_array_equal(
-                processed_dataset[counter].data.sum(),
-                validation_dataset[counter].data.sum(),
+            # Ensure the data arrays are equal
+            np.testing.assert_equal(
+                processed_dataset[counter].data,
+                validation_dataset[counter].data,
             )
-
-            # Ensure the data array shapes are equal
-            assert (
-                processed_dataset[counter].data.shape
-                == validation_dataset[counter].data.shape
-            )
-
-            # TODO: Once Joey and I figure out some small discrepancies with
-            #       some data products, we may be able to just compare the data
-            #       arrays directly (i.e. assert_array_equal on just the .data
-            #       attribute, instead of sum or shape.
     else:
         pytest.xfail(f"Still need to implement validation for {descriptor}")
 
