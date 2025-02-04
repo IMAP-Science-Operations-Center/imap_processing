@@ -19,6 +19,9 @@ logger = logging.getLogger(__name__)
 
 # TODO review logging levels to use (debug vs. info)
 
+# Fill value for missing data
+fillval = -1.00e31
+
 
 def hit_l1a(packet_file: str, data_version: str) -> list[xr.Dataset]:
     """
@@ -91,19 +94,17 @@ def subcom_sectorates(sci_dataset: xr.Dataset) -> None:
     sci_dataset : xarray.Dataset
         Xarray dataset containing parsed HIT science data.
     """
-    # Fill value for missing data
-    fillval = -1.00e31
-
     # Calculate mod 10 values
     hdr_min_count_mod_10 = sci_dataset.hdr_minute_cnt.values % 10
 
     # Reference mod 10 mapping to initialize data structure for species and
     # energy ranges and add 8x15 arrays with fill values for each science frame.
     num_frames = len(hdr_min_count_mod_10)
+    # TODO: add more specific dtype for rates (ex. int16) once this is defined by HIT
     data_by_species_and_energy_range = {
         key: {
             **value,
-            "rates": np.full((num_frames, 8, 15), fill_value=fillval, dtype=np.float64),
+            "rates": np.full((num_frames, 8, 15), fill_value=fillval, dtype=int),
         }
         for key, value in MOD_10_MAPPING.items()
     }
@@ -220,7 +221,7 @@ def calculate_uncertainties(dataset: xr.Dataset) -> xr.Dataset:
     # Arrays with fill values (i.e. missing data) are skipped in this calculation
     # but are kept in the new data arrays to retain shape and dimensions.
     for var in count_vars:
-        mask = dataset[var] != -1.00e31  # mask of arrays without fill values
+        mask = dataset[var] != fillval  # mask of arrays without fill values
         dataset[f"{var}_delta_plus"] = xr.DataArray(
             np.where(
                 mask, (np.sqrt(dataset[var] + 1) + 1).astype(np.float32), dataset[var]
