@@ -17,9 +17,11 @@ from imap_processing.hi.utils import (
 )
 from imap_processing.spice.geometry import (
     SpiceFrame,
+    instrument_pointing,
+)
+from imap_processing.spice.spin import (
     get_instrument_spin_phase,
     get_spacecraft_spin_phase,
-    instrument_pointing,
 )
 from imap_processing.spice.time import ttj2000ns_to_et
 from imap_processing.utils import convert_raw_to_eu

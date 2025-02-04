@@ -7,7 +7,7 @@ import numpy as np
 from numpy.typing import NDArray
 
 from imap_processing.quality_flags import ImapRatesUltraFlags
-from imap_processing.spice.geometry import get_spin_data
+from imap_processing.spice.spin import get_spin_data
 from imap_processing.ultra.constants import UltraConstants
 
 

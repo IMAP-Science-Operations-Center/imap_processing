@@ -27,12 +27,11 @@ from imap_processing.spice.geometry import (
     SpiceBody,
     SpiceFrame,
     cartesian_to_spherical,
-    get_spacecraft_spin_phase,
-    get_spin_angle,
     imap_state,
     instrument_pointing,
     solar_longitude,
 )
+from imap_processing.spice.spin import get_spacecraft_spin_phase, get_spin_angle
 from imap_processing.spice.time import ttj2000ns_to_et
 from imap_processing.utils import convert_raw_to_eu
 
