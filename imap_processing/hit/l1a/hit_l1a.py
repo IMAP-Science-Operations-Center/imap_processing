@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 # TODO review logging levels to use (debug vs. info)
 
 # Fill value for missing data
-fillval = -1.00e31
+fillval = -9223372036854775808
 
 
 def hit_l1a(packet_file: str, data_version: str) -> list[xr.Dataset]:
