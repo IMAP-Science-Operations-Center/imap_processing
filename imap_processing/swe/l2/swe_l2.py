@@ -229,11 +229,14 @@ def swe_l2(l1b_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
         attrs=cdf_attributes.get_global_attributes("imap_swe_l2_sci"),
     )
 
+    phase_space_density = calculate_phase_space_density(l1b_dataset)[
+        "phase_space_density"
+    ]
     # Phase space density in the spin sector. This is carrying over for L3 purposes.
     # TODO: later, we will calculate and organize phase space density in the
     # spin angle bins.
     dataset["phase_space_density_spin_sector"] = xr.DataArray(
-        calculate_phase_space_density(l1b_dataset)["phase_space_density"],
+        phase_space_density,
         name="phase_space_density_spin_sector",
         dims=["epoch", "esa_step", "spin_sector", "cem_id"],
         attrs=cdf_attributes.get_variable_attributes("phase_space_density_spin_sector"),
@@ -241,8 +244,9 @@ def swe_l2(l1b_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
 
     # Flux in the spin sector. This is carrying over for L3 purposes.
     # TODO: later, we will calculate and organize flux in the spin angle bins.
+    flux = calculate_flux(l1b_dataset)
     dataset["flux_spin_sector"] = xr.DataArray(
-        calculate_flux(l1b_dataset),
+        flux,
         name="flux_spin_sector",
         dims=["epoch", "esa_step", "spin_sector", "cem_id"],
         attrs=cdf_attributes.get_variable_attributes("flux_spin_sector"),
@@ -256,6 +260,7 @@ def swe_l2(l1b_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
     # L1B dataset stores it by (epoch, esa_step, spin_sector, cem_id).
     data_acq_time = l1b_dataset["acquisition_time"].data.flatten()
 
+    print(data_acq_time.shape)
     # calculate spin phase
     get_spacecraft_spin_phase(
         query_met_times=data_acq_time,

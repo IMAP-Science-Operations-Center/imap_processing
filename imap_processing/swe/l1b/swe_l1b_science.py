@@ -328,14 +328,9 @@ def populate_full_cycle_data(
 
             # Each quarter cycle data should have same acquisition start time coarse
             # and fine value. We will use that as base time to calculate each
-            # acquisition time for each count data. Acquisition time of each count
-            # data point will be calculated using this formula:
+            # acquisition time for each count data.
             #   base_quarter_cycle_acq_time = acq_start_coarse +
             #                                 acq_start_fine / 1000000
-            #   each_count_acq_time = base_quarter_cycle_acq_time +
-            #                         (step * ( acq_duration + settle_duration) / 1000 )
-            # where step goes from 0 to 179, acq_start_coarse is in seconds and
-            # acq_start_fine is in microseconds and acq_duration is in milliseconds.
             base_quarter_cycle_acq_time = (
                 l1a_data["acq_start_coarse"].data[packet_index + index]
                 + l1a_data["acq_start_fine"].data[packet_index + index] / 1000000
@@ -356,10 +351,18 @@ def populate_full_cycle_data(
                 full_cycle_data[esa_voltage_row_index][column_index] = corrected_counts[
                     step
                 ]
-                # Put acquisition time in acquisition_times array
+                # Acquisition time of each count data point will be calculated
+                # using this formula:
+                #   each_count_acq_time = base_quarter_cycle_acq_time +
+                #            (step * ( acq_duration + settle_duration) / 1000 )
+                # where step goes from 0 to 179, acq_start_coarse is in seconds and
+                # acq_start_fine is in microseconds and acq_duration is in milliseconds.
+                # To calculate center time of data acquisition time, we will add
+                #   each_count_acq_time + (acq_duration / 1000) / 2
                 acquisition_times[esa_voltage_row_index][column_index] = (
                     base_quarter_cycle_acq_time
                     + (step * (acq_duration + settle_duration) / 1000)
+                    + (acq_duration / 1000) / 2
                 )
                 # Store acquisition duration for later calculation
                 acq_duration_arr[esa_voltage_row_index][column_index] = acq_duration
