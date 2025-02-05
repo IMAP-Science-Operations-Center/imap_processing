@@ -225,10 +225,6 @@ def test_validate_l1a_counts_data(sci_packet_filepath, validation_data):
         Preloaded validation data
     """
 
-    # TODO: add validation for SC_TICK field. currently validation data only has
-    #  one value per frame (from first packet in the frame) and the processed data
-    #  has one value per packet.
-
     # Process the sample data
     processed_datasets = hit_l1a(sci_packet_filepath, "001")
     l1a_counts_data = processed_datasets[0]
@@ -247,7 +243,6 @@ def test_validate_l1a_counts_data(sci_packet_filepath, validation_data):
         "seq_flgs",
         "src_seq_ctr",
         "pkt_len",
-        "sc_tick",
         "energy_idx",
     ]
 

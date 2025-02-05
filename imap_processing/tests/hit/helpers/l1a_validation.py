@@ -25,22 +25,6 @@ def prepare_validation_data(validation_data):
     pd.DataFrame
         Validation data formatted for comparison with processed data
     """
-    rate_columns = {
-        "coinrates": "COINRATES_",
-        "pbufrates": "BUFRATES_",
-        "l2fgrates": "L2FGRATES_",
-        "l2bgrates": "L2BGRATES_",
-        "l3fgrates": "L3FGRATES_",
-        "l3bgrates": "L3BGRATES_",
-        "penfgrates": "PENFGRATES_",
-        "penbgrates": "PENBGRATES_",
-        "sectorates": "SECTORATES_",
-        "l4fgrates": "L4FGRATES_",
-        "l4bgrates": "L4BGRATES_",
-        "ialirtrates": "IALIRTRATES_",
-        "sngrates_hg": "SNGRATES_HG_",
-        "sngrates_lg": "SNGRATES_LG_",
-    }
 
     rename_columns = {
         "CCSDS_VERSION": "version",
@@ -50,6 +34,7 @@ def prepare_validation_data(validation_data):
         "CCSDS_GRP_FLAG": "seq_flgs",
         "CCSDS_SEQ_CNT": "src_seq_ctr",
         "CCSDS_LENGTH": "pkt_len",
+        "SC_TICK": "sc_tick_by_frame",
         "CODE_OK": "hdr_code_ok",
         "HEATER_DUTY_CYCLE": "hdr_heater_duty_cycle",
         "LEAK_CONV": "hdr_leak_conv",
@@ -59,14 +44,14 @@ def prepare_validation_data(validation_data):
 
     validation_data.columns = validation_data.columns.str.strip()
     validation_data.rename(columns=rename_columns, inplace=True)
-    validation_data = consolidate_rate_columns(validation_data, rate_columns)
+    validation_data = consolidate_rate_columns(validation_data)
     validation_data = process_single_rates(validation_data)
     validation_data = add_species_energy(validation_data)
     validation_data.columns = validation_data.columns.str.lower()
     return validation_data
 
 
-def consolidate_rate_columns(data, rate_columns):
+def consolidate_rate_columns(data):
     """Consolidate related data into arrays to match processed data.
 
     The validation data has each value in a separate column. This
@@ -106,15 +91,28 @@ def consolidate_rate_columns(data, rate_columns):
     data : pd.DataFrame
         Validation data
 
-    rate_columns : dict
-        Dictionary of rate columns and their prefixes in the
-        validation data
-
     Returns
     -------
     pd.DataFrame
         Validation data with rate columns consolidated into arrays
     """
+
+    rate_columns = {
+        "coinrates": "COINRATES_",
+        "pbufrates": "BUFRATES_",
+        "l2fgrates": "L2FGRATES_",
+        "l2bgrates": "L2BGRATES_",
+        "l3fgrates": "L3FGRATES_",
+        "l3bgrates": "L3BGRATES_",
+        "penfgrates": "PENFGRATES_",
+        "penbgrates": "PENBGRATES_",
+        "sectorates": "SECTORATES_",
+        "l4fgrates": "L4FGRATES_",
+        "l4bgrates": "L4BGRATES_",
+        "ialirtrates": "IALIRTRATES_",
+        "sngrates_hg": "SNGRATES_HG_",
+        "sngrates_lg": "SNGRATES_LG_",
+    }
 
     for new_col, prefix in rate_columns.items():
         # Aggregate columns using regex patterns
@@ -295,9 +293,16 @@ def compare_data(expected_data, actual_data, skip):
     skip : list
         Fields to skip in comparison
     """
+    # The actual data has sc_tick values for each packet, rather
+    # than each science frame. Get the sc_tick values for each
+    # frame to compare with the validation data which has one
+    # sc_tick value per frame.
+    sc_tick = actual_data.sc_tick.values
+    sc_tick_by_frame = sc_tick[::20]
+
     for field in expected_data.columns:
         if field not in [
-            "sc_tick",
+            "sc_tick_by_frame",
             "species",
             "energy_idx",
         ]:
@@ -311,8 +316,10 @@ def compare_data(expected_data, actual_data, skip):
                     # The species and energy index fields are only present in the
                     # validation data. In the actual data, sector rates are organized
                     # by species in 4D arrays with energy index as a dimension.
-                    # i.e. h_counts_sectored has shape
-                    #      (epoch, h_energy_index, declination, azimuth).
+                    #    i.e. h_counts_sectored has shape
+                    #         (epoch, h_energy_index, declination, azimuth).
+                    # species and energy index are used to find the correct
+                    # array of sector rate data from the actual data for comparison.
                     species = expected_data[field][frame]
                     energy_idx = expected_data["energy_idx"][frame]
 
@@ -352,6 +359,11 @@ def compare_data(expected_data, actual_data, skip):
                             err_msg=f"Mismatch in {species}_counts_sectored at"
                             f"frame {frame}, energy_idx {energy_idx}",
                         )
+                elif field == "sc_tick_by_frame":
+                    # Compare sc_tick values by science frame
+                    assert np.array_equal(
+                        sc_tick_by_frame[frame], expected_data[field][frame]
+                    ), f"Mismatch in {field} at frame {frame}"
 
                 else:
                     # Compare other fields
