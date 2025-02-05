@@ -221,15 +221,19 @@ def calculate_uncertainties(dataset: xr.Dataset) -> xr.Dataset:
     # Arrays with fill values (i.e. missing data) are skipped in this calculation
     # but are kept in the new data arrays to retain shape and dimensions.
     for var in count_vars:
-        mask = dataset[var] != fillval  # mask of arrays without fill values
+        mask = dataset[var] != fillval  # Mask for valid values
+        # Ensure that the values are positive before taking the square root
+        safe_values_plus = np.maximum(dataset[var] + 1, 0).astype(np.float32)
+        safe_values_minus = np.maximum(dataset[var], 0).astype(np.float32)
+
         dataset[f"{var}_delta_plus"] = xr.DataArray(
             np.where(
-                mask, (np.sqrt(dataset[var] + 1) + 1).astype(np.float32), dataset[var]
+                mask, np.sqrt(safe_values_plus) + 1, dataset[var].astype(np.float32)
             ),
             dims=dataset[var].dims,
         )
         dataset[f"{var}_delta_minus"] = xr.DataArray(
-            np.where(mask, np.sqrt(dataset[var]).astype(np.float32), dataset[var]),
+            np.where(mask, np.sqrt(safe_values_minus), dataset[var].astype(np.float32)),
             dims=dataset[var].dims,
         )
     return dataset
