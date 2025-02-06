@@ -95,6 +95,8 @@ def _download_external_kernels(spice_test_data_path):
 def _download_test_data(test_data_paths):
     """"""
 
+    logger = logging.getLogger(__name__)
+
     for test_data_path in test_data_paths:
         source = test_data_path[0]
         destination = test_data_path[1]
@@ -106,11 +108,11 @@ def _download_test_data(test_data_paths):
             if response.status_code == 200:
                 with open(destination, "wb") as file:
                     file.write(response.content)
-                print(f"Downloaded file: {source}")
+                logger.info(f"Downloaded file: {source}")
             else:
-                print(f"Failed to download file: {response.status_code}")
+                logger.error(f"Failed to download file: {response.status_code}")
         else:
-            print(f"File already exists: {source}")
+            logger.info(f"File already exists: {destination}")
 
 
 @pytest.fixture(scope="session")

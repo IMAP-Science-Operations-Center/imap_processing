@@ -1,5 +1,3 @@
-import pytest
-
 from imap_processing import imap_module_directory
 
 TEST_DATA_PATH = imap_module_directory / "tests" / "codice" / "data"
@@ -43,22 +41,3 @@ VALIDATION_DATA = [
     TEST_DATA_PATH / "validation" / "imap_codice_l1a_lo-pha_20241110193700_v0.0.0.cdf",
     TEST_DATA_PATH / "validation" / "imap_codice_l1a_hi-pha_20241110193700_v0.0.0.cdf",
 ]  # fmt: skip
-
-# # Download CoDICE L0 test data if necessary and write it to the appropriate directory
-# if not TEST_L0_FILE.exists():
-#     response = requests.get(
-#         "https://api.dev.imap-mission.com/download/test_data/imap_codice_l0_raw_20241110_v001.pkts"
-#     )
-#     if response.status_code == 200:
-#         with open(TEST_L0_FILE, "wb") as file:
-#             file.write(response.content)
-#         print(f"Downloaded file: {TEST_L0_FILE}")
-#     else:
-#         print(f"Failed to download file: {response.status_code}")
-
-
-@pytest.fixture(scope="session")
-def download_codice_test_data(_download_test_data):
-    """"""
-
-    return "foo"
