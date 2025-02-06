@@ -62,10 +62,11 @@ def test_get_energy_histogram(test_data):
 
     _, spin_number, energy, expected_counts = test_data
 
-    hist, _, counts = get_energy_histogram(spin_number, energy)
+    hist, _, counts, duration = get_energy_histogram(spin_number, energy)
 
     assert np.all(counts == expected_counts)
     assert np.all(hist == expected_counts / 15)
+    assert duration == 15
 
 
 def test_flag_attitude(use_fake_spin_data_for_time, l1b_datasets):
@@ -89,17 +90,16 @@ def test_flag_attitude(use_fake_spin_data_for_time, l1b_datasets):
 def test_get_n_sigma():
     """Tests get_six_sigma function."""
 
-    counts = np.random.poisson(lam=3, size=(4, 5760))
-    n_sigma_per_energy = get_n_sigma(counts, counts / 15, 6)
-    # Average counts/spin for first energy level.
-    # Use Poisson statistics for the STD calc (STD = sqrt(mean counts per spin))
-    selected_counts = counts[0][counts[0] != 0]
-    mean_counts = np.mean(selected_counts / 15)
-    poisson_std = np.sqrt(mean_counts)
+    counts = np.array([[16, 4, 1], [0, 0, 0], [1, 1, 1], [2, 0, 5]])
+    threshold = get_n_sigma(counts / 15, 15, 6)
 
-    np.testing.assert_allclose(
-        n_sigma_per_energy[0], 6 * poisson_std, atol=1e-2, rtol=0
-    )
+    assert np.all(threshold >= 3 / 15)
+    mean = np.mean(counts[0] / 15)
+    squared_differences = (counts[0] / 15 - mean) ** 2
+    variance = np.mean(squared_differences)
+    std_dev = np.sqrt(variance)
+
+    np.testing.assert_allclose(mean + std_dev * 6, threshold[0], atol=1e-2, rtol=0)
 
 
 def test_flag_spin(test_data):
@@ -107,13 +107,11 @@ def test_flag_spin(test_data):
 
     time, _, energy, expected_counts = test_data
     quality_flags, spin, energy, _ = flag_spin(time, energy, 1)
-    n_sigma_per_energy = get_n_sigma(expected_counts, expected_counts / 15, 1)
+    threshold = get_n_sigma(expected_counts / 15, 15, 1)
 
-    # At the first energy level were the rates > threshold and the counts > 6 sigma?
+    # At the first energy level were the rates > threshold and the counts > threshold?
     assert np.all(
         quality_flags[expected_counts == 0] == ImapRatesUltraFlags.ZEROCOUNTS.value
     )
-    high_rates_flag = quality_flags[
-        expected_counts / 15 > n_sigma_per_energy[:, np.newaxis]
-    ]
+    high_rates_flag = quality_flags[expected_counts / 15 > threshold[:, np.newaxis]]
     assert np.all(high_rates_flag == ImapRatesUltraFlags.HIGHRATES.value)

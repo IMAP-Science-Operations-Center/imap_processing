@@ -28,7 +28,7 @@ def get_spin(eventtimes_met: NDArray) -> NDArray:
 
 def get_energy_histogram(
     spin_number: NDArray, energy: NDArray
-) -> tuple[NDArray, NDArray, NDArray]:
+) -> tuple[NDArray, NDArray, NDArray, float]:
     """
     Compute a 2D histogram of the counts binned by energy and spin number.
 
@@ -49,6 +49,8 @@ def get_energy_histogram(
     counts : NDArray
         A 2D histogram array containing the
         counts per spin at each energy bin.
+    mean_duration : float
+        Mean duration of the spin.
     """
     spin_df = get_spin_data()
 
@@ -62,13 +64,17 @@ def get_energy_histogram(
     )
 
     counts = hist.copy()
+    total_spin_duration = 0
 
     # Count rate per spin at each energy bin.
     for i in range(hist.shape[1]):
         spin_duration = spin_df.spin_period_sec[spin_df.spin_number == i]
         hist[:, i] /= spin_duration.values[0]
+        total_spin_duration += spin_duration.sum()
 
-    return hist, spin_edges, counts
+    mean_duration = total_spin_duration / hist.shape[1]
+
+    return hist, spin_edges, counts, mean_duration
 
 
 def flag_attitude(eventtimes_met: NDArray) -> tuple[NDArray, NDArray, NDArray, NDArray]:
@@ -107,32 +113,32 @@ def flag_attitude(eventtimes_met: NDArray) -> tuple[NDArray, NDArray, NDArray, N
     return quality_flags, spin_rates, spin_period, spin_starttime
 
 
-def get_n_sigma(counts: NDArray, count_rates: NDArray, sigma: int = 6) -> NDArray:
+def get_n_sigma(count_rates: NDArray, mean_duration: float, sigma: int = 6) -> NDArray:
     """
-    Use Poisson statistics for the STD calc (STD = sqrt(mean counts per spin)).
+    Calculate the threshold for the HIGHRATES flag.
 
     Parameters
     ----------
-    counts : NDArray
-        A 2D histogram array containing the
-        counts per spin at each energy bin.
     count_rates : NDArray
         A 2D histogram array containing the
         count rates per spin at each energy bin.
+    mean_duration : float
+        Mean duration of the spins.
     sigma : int (default=6)
         The number of sigma.
 
     Returns
     -------
-    six_sigma_per_energy : NDArray
-        Six sigma per energy.
+    threshold : NDArray
+        Threshold for applying HIGHRATES flag.
     """
-    # Do not include spins with 0 counts/spin in n sigma calculation.
-    masked_count_rates = np.ma.masked_where(counts == 0, count_rates)
-    sigma_per_energy = np.sqrt(masked_count_rates.mean(axis=1).data)
+    sigma_per_energy = np.std(count_rates, axis=1)
     n_sigma_per_energy = sigma * sigma_per_energy
+    mean_per_energy = np.mean(count_rates, axis=1)
+    # Must have a HIGHRATES threshold of at least 3 counts per spin.
+    threshold = np.maximum(mean_per_energy + n_sigma_per_energy, 3 / mean_duration)
 
-    return n_sigma_per_energy
+    return threshold
 
 
 def flag_spin(
@@ -162,21 +168,21 @@ def flag_spin(
         N sigma per energy.
     """
     spin = get_spin(eventtimes_met)
-    count_rates, spin_edges, counts = get_energy_histogram(spin, energy)
+    count_rates, spin_edges, counts, duration = get_energy_histogram(spin, energy)
     quality_flags = np.full(
         count_rates.shape, ImapRatesUltraFlags.NONE.value, dtype=np.uint16
     )
 
     # Zero counts/spin/energy level
     quality_flags[counts == 0] |= ImapRatesUltraFlags.ZEROCOUNTS.value
-    n_sigma_per_energy = get_n_sigma(counts, count_rates, sigma=sigma)
+    threshold = get_n_sigma(count_rates, duration, sigma=sigma)
 
     bin_edges = np.array(UltraConstants.CULLING_ENERGY_BIN_EDGES)
     energy_midpoints = (bin_edges[:-1] + bin_edges[1:]) / 2
     spin = np.unique(spin)
 
     # Indices where the counts exceed the threshold
-    indices_n_sigma = count_rates > n_sigma_per_energy[:, np.newaxis]
+    indices_n_sigma = count_rates > threshold[:, np.newaxis]
     quality_flags[indices_n_sigma] |= ImapRatesUltraFlags.HIGHRATES.value
 
-    return quality_flags, spin, energy_midpoints, n_sigma_per_energy
+    return quality_flags, spin, energy_midpoints, threshold
