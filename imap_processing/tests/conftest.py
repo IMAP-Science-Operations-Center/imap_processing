@@ -139,7 +139,7 @@ def pytest_collection_modifyitems(items):
     +=====================+============================+
     | external_kernel     | _download_external_kernels |
     | use_test_metakernel | use_test_metakernel        |
-    | download_test_data  | _download_test_data        |
+    | external_test_data  | _download_test_data        |
     +---------------------+----------------------------+
 
     Notes
@@ -151,7 +151,7 @@ def pytest_collection_modifyitems(items):
     markers_to_fixtures = {
         "external_kernel": "_download_external_kernels",
         "use_test_metakernel": "use_test_metakernel",
-        "download_test_data": "_download_test_data",
+        "external_test_data": "_download_test_data",
     }
 
     for item in items:

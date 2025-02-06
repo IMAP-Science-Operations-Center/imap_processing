@@ -15,6 +15,8 @@ from .conftest import TEST_L0_FILE, VALIDATION_DATA
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
+pytestmark = pytest.mark.external_test_data
+
 DESCRIPTORS = [
     "hi-ialirt",
     "lo-ialirt",
@@ -79,7 +81,6 @@ EXPECTED_NUM_VARIABLES = [
 ]
 
 
-@pytest.mark.download_test_data()
 @pytest.fixture(scope="session")
 def test_l1a_data() -> xr.Dataset:
     """Return a ``xarray`` dataset containing test data.
@@ -95,7 +96,6 @@ def test_l1a_data() -> xr.Dataset:
     return processed_datasets
 
 
-@pytest.mark.download_test_data()
 @pytest.mark.parametrize("index", range(len(EXPECTED_ARRAY_SHAPES)))
 def test_l1a_data_array_shape(test_l1a_data, index):
     """Tests that the data arrays in the generated CDFs have the expected shape.
@@ -137,7 +137,6 @@ def test_l1a_data_array_shape(test_l1a_data, index):
             assert processed_dataset[variable].data.shape == expected_shape
 
 
-@pytest.mark.download_test_data()
 @pytest.mark.parametrize("index", range(len(DESCRIPTORS)))
 def test_l1a_logical_sources(test_l1a_data, index):
     """Tests that the Logical source of the dataset is what is expected.
@@ -167,7 +166,6 @@ def test_l1a_logical_sources(test_l1a_data, index):
     assert processed_dataset.attrs["Logical_source"] == expected_logical_source
 
 
-@pytest.mark.download_test_data()
 @pytest.mark.parametrize("index", range(len(EXPECTED_NUM_VARIABLES)))
 def test_l1a_num_data_variables(test_l1a_data, index):
     """Tests that the generated CDFs have the expected number of data variables.
@@ -193,7 +191,6 @@ def test_l1a_num_data_variables(test_l1a_data, index):
     assert len(processed_dataset) == EXPECTED_NUM_VARIABLES[index]
 
 
-@pytest.mark.download_test_data()
 @pytest.mark.parametrize("index", range(len(VALIDATION_DATA)))
 def test_l1a_validate_data_arrays(test_l1a_data: xr.Dataset, index):
     """Tests that the generated L1a CDF data array contents are valid.
@@ -228,7 +225,6 @@ def test_l1a_validate_data_arrays(test_l1a_data: xr.Dataset, index):
         pytest.xfail(f"Still need to implement validation for {descriptor}")
 
 
-@pytest.mark.download_test_data()
 def test_l1a_multiple_packets():
     """Tests that an input L0 file containing multiple APIDs can be processed."""
 
