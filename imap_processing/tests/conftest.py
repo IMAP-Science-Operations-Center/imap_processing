@@ -91,7 +91,7 @@ def _download_external_kernels(spice_test_data_path):
                     raise
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="session", autouse=True)
 def _download_test_data(test_data_paths):
     """"""
 
