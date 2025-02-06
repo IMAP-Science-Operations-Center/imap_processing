@@ -12,6 +12,8 @@ from imap_processing.codice import codice_l0
 from imap_processing.codice.codice_l1a import create_hskp_dataset
 from imap_processing.utils import convert_raw_to_eu
 
+pytestmark = pytest.mark.external_test_data
+
 # Define the CCSDS header fields (which will be ignored in these tests)
 CCSDS_HEADER_FIELDS = [
     "shcoarse",
