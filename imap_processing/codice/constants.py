@@ -192,7 +192,7 @@ DATA_PRODUCT_CONFIGURATIONS = {
     },
     CODICEAPID.COD_LO_SW_PRIORITY_COUNTS: {
         "dataset_name": "imap_codice_l1a_lo-sw-priority",
-        "dims": {"esa_step": 128, "inst_az": 1, "spin_sector": 12},
+        "dims": {"spin_sector": 12, "esa_step": 128},
         "instrument": "lo",
         "num_counters": 5,
         "support_variables": [
@@ -209,7 +209,7 @@ DATA_PRODUCT_CONFIGURATIONS = {
     },
     CODICEAPID.COD_LO_NSW_PRIORITY_COUNTS: {
         "dataset_name": "imap_codice_l1a_lo-nsw-priority",
-        "dims": {"esa_step": 128, "inst_az": 1, "spin_sector": 12},
+        "dims": {"spin_sector": 12, "esa_step": 128},
         "instrument": "lo",
         "num_counters": 2,
         "support_variables": [
@@ -226,7 +226,7 @@ DATA_PRODUCT_CONFIGURATIONS = {
     },
     CODICEAPID.COD_LO_SW_SPECIES_COUNTS: {
         "dataset_name": "imap_codice_l1a_lo-sw-species",
-        "dims": {"inst_az": 1, "esa_step": 128},
+        "dims": {"spin_sector": 1, "esa_step": 128},
         "instrument": "lo",
         "num_counters": 16,
         "support_variables": [
@@ -243,7 +243,7 @@ DATA_PRODUCT_CONFIGURATIONS = {
     },
     CODICEAPID.COD_LO_NSW_SPECIES_COUNTS: {
         "dataset_name": "imap_codice_l1a_lo-nsw-species",
-        "dims": {"esa_step": 128, "inst_az": 1, "spin_sector": 1},
+        "dims": {"spin_sector": 1, "esa_step": 128},
         "instrument": "lo",
         "num_counters": 8,
         "support_variables": [
