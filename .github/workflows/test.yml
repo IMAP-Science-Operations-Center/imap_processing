@@ -49,7 +49,7 @@ jobs:
           if [ "$RUN_EXTERNAL_KERNEL_MARK" = "true" ] || [ "$RUN_DOWNLOAD_TEST_DATA" = "true" ]; then
             poetry run pytest --color=yes --cov --cov-report=xml
           else
-            poetry run pytest --color=yes --cov --cov-report=xml -m "not external_kernel"
+            poetry run pytest --color=yes --cov --cov-report=xml -m "not external_kernel and not external_test_data"
           fi
 
       - name: Upload coverage reports to Codecov
