@@ -1,3 +1,5 @@
+import pytest
+
 from imap_processing import imap_module_directory
 
 TEST_DATA_PATH = imap_module_directory / "tests" / "codice" / "data"
@@ -41,3 +43,9 @@ VALIDATION_DATA = [
     TEST_DATA_PATH / "validation" / "imap_codice_l1a_lo-pha_20241110193700_v0.0.0.cdf",
     TEST_DATA_PATH / "validation" / "imap_codice_l1a_hi-pha_20241110193700_v0.0.0.cdf",
 ]  # fmt: skip
+
+
+@pytest.fixture(scope="session")
+def ensure_test_data_download(_download_test_data):
+    """"""
+    pass
