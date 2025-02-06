@@ -9,8 +9,12 @@ import numpy.typing as npt
 import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
-from imap_processing.spice.spin import get_spacecraft_spin_phase
-from imap_processing.swe.utils.swe_utils import read_lookup_table
+from imap_processing.spice.geometry import SpiceFrame
+from imap_processing.spice.spin import get_instrument_spin_phase
+from imap_processing.swe.utils.swe_utils import (
+    ESA_VOLTAGE_ROW_INDEX_DICT,
+    read_lookup_table,
+)
 
 # TODO: add these to instrument status summary
 ENERGY_CONVERSION_FACTOR = 4.75
@@ -32,6 +36,8 @@ ELECTRON_MASS = 9.10938356e-31  # kg
 VELOCITY_CONVERSION_FACTOR = 1.237e31
 # See doc string of calculate_flux() for more details.
 FLUX_CONVERSION_FACTOR = 6.187e30
+
+CEM_DETECTORS_ANGLE = np.array([-63, -42, -21, 0, 21, 42, 63])
 
 
 def get_particle_energy() -> npt.NDArray:
@@ -216,12 +222,39 @@ def swe_l2(l1b_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
     cdf_attributes.add_instrument_variable_attrs("swe", "l2")
     cdf_attributes.add_global_attribute("Data_version", data_version)
 
+    # Energy values in eV.
+    energy_xr = xr.DataArray(
+        np.array(list(ESA_VOLTAGE_ROW_INDEX_DICT.keys())) * ENERGY_CONVERSION_FACTOR,
+        name="energy",
+        dims=["energy"],
+        attrs=cdf_attributes.get_variable_attributes("energy"),
+    )
+
+    # Angle of each CEM detectors.
+    inst_el_xr = xr.DataArray(
+        CEM_DETECTORS_ANGLE,
+        name="inst_el",
+        dims=["inst_el"],
+        attrs=cdf_attributes.get_variable_attributes("inst_el"),
+    )
+
+    # Spin Angle bins storing bin center values.
+    inst_az_xr = xr.DataArray(
+        np.arange(6, 360, 12),
+        name="inst_az",
+        dims=["inst_az"],
+        attrs=cdf_attributes.get_variable_attributes("inst_az"),
+    )
+
     dataset = xr.Dataset(
         coords={
             "epoch": l1b_dataset["epoch"],
             "esa_step": l1b_dataset["esa_step"],
+            "energy": energy_xr,
             "spin_sector": l1b_dataset["spin_sector"],
+            "inst_az": inst_az_xr,
             "cem_id": l1b_dataset["cem_id"],
+            "inst_el": inst_el_xr,
             "esa_step_label": l1b_dataset["esa_step_label"],
             "spin_sector_label": l1b_dataset["spin_sector_label"],
             "cem_id_label": l1b_dataset["cem_id_label"],
@@ -229,12 +262,13 @@ def swe_l2(l1b_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
         attrs=cdf_attributes.get_global_attributes("imap_swe_l2_sci"),
     )
 
+    ############################################################
+    # Calculate phase space density and flux. Store data in shape
+    # (epoch, esa_step, spin_sector, cem_id). This is for L3 purposes.
+    ############################################################
     phase_space_density = calculate_phase_space_density(l1b_dataset)[
         "phase_space_density"
     ]
-    # Phase space density in the spin sector. This is carrying over for L3 purposes.
-    # TODO: later, we will calculate and organize phase space density in the
-    # spin angle bins.
     dataset["phase_space_density_spin_sector"] = xr.DataArray(
         phase_space_density,
         name="phase_space_density_spin_sector",
@@ -242,8 +276,6 @@ def swe_l2(l1b_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
         attrs=cdf_attributes.get_variable_attributes("phase_space_density_spin_sector"),
     )
 
-    # Flux in the spin sector. This is carrying over for L3 purposes.
-    # TODO: later, we will calculate and organize flux in the spin angle bins.
     flux = calculate_flux(l1b_dataset)
     dataset["flux_spin_sector"] = xr.DataArray(
         flux,
@@ -258,11 +290,14 @@ def swe_l2(l1b_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
     # TODO: remaining L2 work.
     # Calculate spin phase using SWE acquisition_time calculated in l1b.
     # L1B dataset stores it by (epoch, esa_step, spin_sector, cem_id).
+    # To calculate center time of data acquisition time, we will add
+    #   acquisition_time + (acq_duration / 1000) / 2
     data_acq_time = l1b_dataset["acquisition_time"].data.flatten()
 
     print(data_acq_time.shape)
     # calculate spin phase
-    get_spacecraft_spin_phase(
+    get_instrument_spin_phase(
         query_met_times=data_acq_time,
+        instrument=SpiceFrame.IMAP_SWE,
     ).reshape(-1, 24, 30)
     return dataset

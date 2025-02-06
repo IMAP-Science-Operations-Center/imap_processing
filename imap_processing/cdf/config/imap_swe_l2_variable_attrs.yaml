@@ -11,17 +11,45 @@ esa_step:
   VALIDMIN: 0
   VAR_TYPE: support_data
 
-spin_angle:
-  CATDESC: Spin angle. Angle resolution is 12 degree nominally
-  FIELDNAM: spin angle
+energy:
+  CATDESC: Energy of the particle in eV
+  FIELDNAM: Energy (eV)
+  FILLVAL: -9223370000000000000
+  FORMAT: E5.4
+  LABLAXIS: Energy
+  SCALE_TYP: linear
+  UNITS: eV
+  VALIDMAX: 2000.0
+  VALIDMIN: 0.0
+  VAR_TYPE: support_data
+
+spin_sector:
+  CATDESC: Spin sector. 30 measurements nominally
+  FIELDNAM: Spin Sector
   FILLVAL: -9223370000000000000
   FORMAT: I2
-  LABLAXIS: Angle
+  LABLAXIS: Spin Sector
   SCALE_TYP: linear
-  UNITS: "Degree"
+  UNITS: " "
   VALIDMAX: 29
   VALIDMIN: 0
   VAR_TYPE: support_data
+
+inst_az:
+  CATDESC: Spin angle bins. Angle resolution is 12 degree nominally
+  FIELDNAM: spin angle
+  FILLVAL: -9223370000000000000
+  FORMAT: I3
+  LABLAXIS: Angle
+  SCALE_TYP: linear
+  UNITS: "Degree"
+  VALIDMAX: 360
+  VALIDMIN: 0
+  VAR_TYPE: support_data
+  VAR_NOTES: >
+    Bin CENTERS  - Assuming 0.5 sec measurements and a spin starting
+    at Angle=0, these are the angles at the middle of each measurement
+    bin.
 
 cem_id:
   CATDESC: Data of each CEM detectors
@@ -36,16 +64,16 @@ cem_id:
   VAR_NOTES: " "
   VAR_TYPE: support_data
 
-spin_sector:
-  CATDESC: Spin sector. 30 measurements nominally
-  FIELDNAM: Spin Sector
+inst_el:
+  CATDESC: Angle of each CEM detectors
+  FIELDNAM: CEM Angle
   FILLVAL: -9223370000000000000
-  FORMAT: I2
-  LABLAXIS: Spin Sector
+  FORMAT: E14.7
+  LABLAXIS: Angle
   SCALE_TYP: linear
-  UNITS: " "
-  VALIDMAX: 29
-  VALIDMIN: 0
+  UNITS: Degree
+  VALIDMAX: 63
+  VALIDMIN: -63
   VAR_TYPE: support_data
 
 cycle:

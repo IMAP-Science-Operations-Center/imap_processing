@@ -8,37 +8,12 @@ import pandas as pd
 import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
-from imap_processing.swe.utils.swe_utils import read_lookup_table
+from imap_processing.swe.utils.swe_utils import (
+    ESA_VOLTAGE_ROW_INDEX_DICT,
+    read_lookup_table,
+)
 
 logger = logging.getLogger(__name__)
-
-# ESA voltage and index in the final data table
-esa_voltage_row_index_dict = {
-    0.56: 0,
-    0.78: 1,
-    1.08: 2,
-    1.51: 3,
-    2.10: 4,
-    2.92: 5,
-    4.06: 6,
-    5.64: 7,
-    7.85: 8,
-    10.92: 9,
-    15.19: 10,
-    21.13: 11,
-    29.39: 12,
-    40.88: 13,
-    56.87: 14,
-    79.10: 15,
-    110.03: 16,
-    153.05: 17,
-    212.89: 18,
-    296.14: 19,
-    411.93: 20,
-    572.99: 21,
-    797.03: 22,
-    1108.66: 23,
-}
 
 
 def get_esa_dataframe(esa_table_number: int) -> pd.DataFrame:
@@ -342,7 +317,7 @@ def populate_full_cycle_data(
                 # Get esa voltage value from esa lookup table and
                 # use that to get row index in full data array
                 esa_voltage_value = esa_lookup_table.loc[esa_step_number]["esa_v"]
-                esa_voltage_row_index = esa_voltage_row_index_dict[esa_voltage_value]
+                esa_voltage_row_index = ESA_VOLTAGE_ROW_INDEX_DICT[esa_voltage_value]
 
                 # every six steps, increment column index
                 if esa_step_number % 6 == 0:
@@ -357,12 +332,9 @@ def populate_full_cycle_data(
                 #            (step * ( acq_duration + settle_duration) / 1000 )
                 # where step goes from 0 to 179, acq_start_coarse is in seconds and
                 # acq_start_fine is in microseconds and acq_duration is in milliseconds.
-                # To calculate center time of data acquisition time, we will add
-                #   each_count_acq_time + (acq_duration / 1000) / 2
                 acquisition_times[esa_voltage_row_index][column_index] = (
                     base_quarter_cycle_acq_time
                     + (step * (acq_duration + settle_duration) / 1000)
-                    + (acq_duration / 1000) / 2
                 )
                 # Store acquisition duration for later calculation
                 acq_duration_arr[esa_voltage_row_index][column_index] = acq_duration
