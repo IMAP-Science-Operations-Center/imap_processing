@@ -1,3 +1,5 @@
+from contextlib import nullcontext as does_not_raise
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -86,18 +88,35 @@ def test_get_spacecraft_spin_phase(query_met_times, expected, fake_spin_data):
     np.testing.assert_array_almost_equal(spin_phases, expected)
 
 
-def test_get_spin_angle():
+@pytest.mark.parametrize(
+    "spin_phases, degrees, expected, context",
+    [
+        (np.arange(0, 1, 0.1), True, np.arange(0, 1, 0.1) * 360, does_not_raise()),
+        (
+            np.arange(0, 1, 0.1),
+            False,
+            np.arange(0, 1, 0.1) * 2 * np.pi,
+            does_not_raise(),
+        ),
+        (
+            np.array([0, 1]),
+            True,
+            None,
+            pytest.raises(ValueError, match="Spin phases *"),
+        ),
+        (
+            np.array([-1, 0]),
+            False,
+            None,
+            pytest.raises(ValueError, match="Spin phases *"),
+        ),
+    ],
+)
+def test_get_spin_angle(spin_phases, degrees, expected, context):
     """Test get_spin_angle() with fake spin phases."""
-    test_spin_phases = np.ones(10) * 0.5
-    # Expected values for spin angles in degrees and radians if spin phase is 0.5
-    expected_deg = 180
-    expected_rad = np.pi
-    # Get spin angles in degrees and radians
-    spin_phases_deg = get_spin_angle(test_spin_phases, degrees=True)
-    spin_phases_rad = get_spin_angle(test_spin_phases, degrees=False)
-    # Test conversions
-    assert np.all(spin_phases_deg == expected_deg)
-    assert np.all(spin_phases_rad == expected_rad)
+    with context:
+        spin_angles = get_spin_angle(spin_phases, degrees=degrees)
+        np.testing.assert_array_equal(spin_angles, expected)
 
 
 @pytest.mark.parametrize("query_met_times", [-1, 165])

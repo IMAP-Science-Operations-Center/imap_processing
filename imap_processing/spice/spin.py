@@ -165,7 +165,7 @@ def get_spin_angle(
     spin_phases : float or np.ndarray
         Spin angle in degrees or radians for the input query times.
     """
-    if np.any(spin_phases < 0) or np.any(spin_phases > 1):
+    if np.any(spin_phases < 0) or np.any(spin_phases >= 1):
         raise ValueError(
             f"Spin phases, {spin_phases} are outside of the expected spin phase range, "
             f"[0, 1) "
