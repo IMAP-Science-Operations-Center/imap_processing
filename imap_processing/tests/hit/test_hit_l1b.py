@@ -475,7 +475,7 @@ def test_validate_l1b_hk_data(l1b_hk_dataset):
 
     # Load the validation data
     validation_file = (
-        imap_module_directory / "tests/hit/validation_data/hskp_sample_eu.csv"
+        imap_module_directory / "tests/hit/validation_data/hskp_sample_eu_v2.csv"
     )
     validation_data = pd.read_csv(validation_file)
     validation_data.columns = validation_data.columns.str.lower().str.strip()
@@ -494,12 +494,10 @@ def test_validate_l1b_hk_data(l1b_hk_dataset):
     # Define the keys that should have dropped from the housekeeping dataset
     dropped_fields = {
         "pkt_apid",
-        "sc_tick",
         "version",
         "type",
         "sec_hdr_flg",
         "seq_flgs",
-        "src_seq_ctr",
         "pkt_len",
         "hskp_spare1",
         "hskp_spare2",
@@ -514,26 +512,25 @@ def test_validate_l1b_hk_data(l1b_hk_dataset):
     # TODO: uncomment block after new validation data is provided
     # Define the keys that should be ignored in the validation
     # like ccsds headers
-    # ignore_validation_fields = {
-    #     "ccsds_version",
-    #     "ccsds_type",
-    #     "ccsds_sec_hdr_flag",
-    #     "ccsds_appid",
-    #     "ccsds_grp_flag",
-    #     "ccsds_seq_cnt",
-    #     "ccsds_length",
-    #     "sc_tick",
-    # }
+    ignore_validation_fields = {
+        "ccsds_version",
+        "ccsds_type",
+        "ccsds_sec_hdr_flag",
+        "ccsds_appid",
+        "ccsds_grp_flag",
+        "ccsds_seq_cnt",
+        "ccsds_length",
+    }
 
-    # # Compare the housekeeping dataset with the expected validation data
-    # for field in validation_data.columns:
-    #     if field not in ignore_validation_fields:
-    #         print(field)
-    #         assert field in hk_dataset.data_vars.keys()
-    #         for pkt in range(validation_data.shape[0]):
-    #             assert np.array_equal(
-    #                 hk_dataset[field][pkt].data, validation_data[field][pkt]
-    #             )
+    # Compare the housekeeping dataset with the expected validation data
+    for field in validation_data.columns:
+        if field not in ignore_validation_fields:
+            print(field)
+            assert field in l1b_hk_dataset.data_vars.keys()
+            for pkt in range(validation_data.shape[0]):
+                assert np.array_equal(
+                    l1b_hk_dataset[field][pkt].data, validation_data[field][pkt]
+                ), f"Mismatch in {field} at frame {pkt}"
 
 
 def test_validate_l1b_standard_rates_data(l1b_standard_rates_dataset):
