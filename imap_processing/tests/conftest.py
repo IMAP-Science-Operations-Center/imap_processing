@@ -91,7 +91,7 @@ def _download_external_kernels(spice_test_data_path):
                     raise
 
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(scope="session")
 def _download_test_data(test_data_paths):
     """"""
 
@@ -140,8 +140,8 @@ def pytest_collection_modifyitems(items):
     | pytest mark         | fixture added              |
     +=====================+============================+
     | external_kernel     | _download_external_kernels |
-    | use_test_metakernel | use_test_metakernel        |
     | external_test_data  | _download_test_data        |
+    | use_test_metakernel | use_test_metakernel        |
     +---------------------+----------------------------+
 
     Notes
@@ -152,8 +152,8 @@ def pytest_collection_modifyitems(items):
     """
     markers_to_fixtures = {
         "external_kernel": "_download_external_kernels",
-        "use_test_metakernel": "use_test_metakernel",
         "external_test_data": "_download_test_data",
+        "use_test_metakernel": "use_test_metakernel",
     }
 
     for item in items:

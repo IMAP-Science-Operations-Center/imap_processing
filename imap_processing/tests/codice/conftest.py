@@ -1,5 +1,3 @@
-import pytest
-
 from imap_processing import imap_module_directory
 
 TEST_DATA_PATH = imap_module_directory / "tests" / "codice" / "data"

@@ -28,7 +28,7 @@ CCSDS_HEADER_FIELDS = [
 
 
 @pytest.fixture(scope="session")
-def decom_test_data() -> xr.Dataset:
+def decom_test_data(_download_test_data) -> xr.Dataset:
     """Read test data from file and return a decommutated housekeeping packet.
 
     Returns
