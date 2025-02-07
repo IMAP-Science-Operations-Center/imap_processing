@@ -129,8 +129,8 @@ def test_met_to_datetime64(furnish_time_kernels, utc):
 
 
 @pytest.mark.parametrize("sclk_ticks", [0.0, np.arange(10)])
-def test_sct2e_wrapper(sclk_ticks):
-    """Test for `_sct2e_wrapper` function."""
+def test_sct_to_et(sclk_ticks):
+    """Test for `sct_to_et` function."""
     et = sct_to_et(sclk_ticks)
     if isinstance(sclk_ticks, float):
         assert isinstance(et, float)
