@@ -1,5 +1,6 @@
 """IMAP-Hi direct event processing."""
 
+import logging
 from collections import defaultdict
 
 import numpy as np
@@ -19,6 +20,9 @@ DE_CLOCK_TICK_US = 1999
 SECOND_TO_NS = 1e9
 MILLISECOND_TO_NS = 1e6
 MICROSECOND_TO_NS = 1e3
+HALF_CLOCK_TICK_NS = DE_CLOCK_TICK_US * MICROSECOND_TO_NS / 2
+
+logger = logging.getLogger(__name__)
 
 
 def parse_direct_events(de_data: bytes) -> dict[str, npt.ArrayLike]:
@@ -132,11 +136,9 @@ def create_dataset(de_data_dict: dict[str, npt.ArrayLike]) -> xr.Dataset:
     # Compute the MET of each event in nanoseconds
     # event MET = meta_event_met + de_clock
     # See Hi Algorithm Document section 2.2.5
-    half_tick_ns = DE_CLOCK_TICK_US / 2 * MICROSECOND_TO_NS
     event_met_array = np.array(
-        meta_event_met_ns[de_data_dict["packet_index"]]
-        + np.array(de_data_dict["de_tag"]) * DE_CLOCK_TICK_US * MICROSECOND_TO_NS
-        + half_tick_ns,
+        meta_event_met_ns[de_data_dict["ccsds_index"]]
+        + np.array(de_data_dict["de_tag"]) * DE_CLOCK_TICK_US * MICROSECOND_TO_NS,
         dtype=event_met_attrs.pop("dtype"),
     )
     event_met = xr.DataArray(
@@ -208,8 +210,8 @@ def science_direct_event(packets_data: xr.Dataset) -> xr.Dataset:
         parsed_de_data = parse_direct_events(data)
         for key, new_data in parsed_de_data.items():
             de_data_dict[key].extend(new_data)
-        # Record the packet index for each DE
-        de_data_dict["packet_index"].extend([i] * len(parsed_de_data["de_tag"]))
+        # Record the ccsds packet index for each DE
+        de_data_dict["ccsds_index"].extend([i] * len(parsed_de_data["de_tag"]))
 
     # create dataset
     return create_dataset(de_data_dict)

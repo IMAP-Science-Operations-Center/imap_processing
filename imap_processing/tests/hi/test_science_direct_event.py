@@ -53,7 +53,7 @@ def test_create_dataset():
         "tof_2": [450] * n_events,
         "tof_3": [450] * n_events,
         "de_tag": [i for i in range(n_events)],
-        "packet_index": [int(i / n_events * n_packets) for i in range(n_events)],
+        "ccsds_index": [int(i / n_events * n_packets) for i in range(n_events)],
     }
 
     # Test for good data
