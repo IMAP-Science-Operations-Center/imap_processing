@@ -201,6 +201,56 @@ def calculate_flux(l1b_dataset: xr.Dataset) -> npt.NDArray:
     return flux
 
 
+def put_data_in_bins(
+    data: np.ndarray, angle_bin_indices: npt.NDArray[np.int_]
+) -> npt.NDArray:
+    """
+    Put data in bins.
+
+    Parameters
+    ----------
+    data : numpy.ndarray
+        Data to put in bins.
+    angle_bin_indices : numpy.ndarray
+        Indices of angle bins to put data in.
+
+    Returns
+    -------
+    numpy.ndarray
+        Data in bins.
+    """
+    binned_data = np.full(data.shape, np.nan)
+    full_cycle_data = data.shape[0]
+    energy_step = data.shape[1]
+    angle_bin = data.shape[2]
+    # For each full cycle data
+    for cycle in range(full_cycle_data):
+        # For each energy step
+        for energy in range(energy_step):
+            # For each angle bin
+            for angle in range(angle_bin):
+                # Find all data of current energy step row that has
+                # same angle bin index. Then calculate mean of all
+                # data for each 7 CEMs data. Then put that mean in
+                # its angle bin.
+                angle_indices = np.where(angle_bin_indices[cycle, energy] == angle)
+                data_mean = np.mean(data[cycle, energy, angle_indices], axis=1)
+                binned_data[cycle, energy, angle] = data_mean
+                # store indices in binned_data
+                # binned_data[cycle, energy, angle] = angle_indices
+                if cycle == 5 and len(angle_indices[0]) > 0:
+                    # print(
+                    #     f"cycle: {cycle}, energy: {energy}, angle: {angle},"
+                    #     f" angle_indices: {angle_indices[0]}"
+                    # )
+                    # print("data: ", data[cycle, energy, angle_indices].shape)
+                    # np.mean across 7 CEMs.
+                    # print(data_mean)
+                    continue
+    # print(binned_data.shape)
+    return binned_data
+
+
 def swe_l2(l1b_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
     """
     Will process data to L2.
@@ -337,9 +387,17 @@ def swe_l2(l1b_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
     )
     spin_angle_bins_indices = spin_angle_bins_indices - 1
 
-    # Now, take flux data and put it in its spin angle bins using the indices.
-    # TODO: do this
+    # Set energy bins index for each data counts to be same as input data.
+    energy_steps = np.arange(24)
+    total_angle_bins = 30
+    total_full_cycle_data = l1b_dataset["science_data"].shape[0]
+    energy_bins_indices = np.tile(
+        energy_steps, (total_angle_bins, total_full_cycle_data)
+    ).T
+    energy_bins_indices = energy_bins_indices.reshape(-1, 24, 30)
 
+    # TODO: take flux data and put it in its spin angle bins using the indices.
+    put_data_in_bins(flux, spin_angle_bins_indices)
     # print(pd.DataFrame(inst_spin_angle[0], columns=np.arange(30)
     # ).to_csv("spin_angle.csv"))
     # print(pd.DataFrame(spin_angle_bins_indices[0], columns=np.arange(30)
