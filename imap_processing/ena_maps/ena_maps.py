@@ -23,7 +23,6 @@ class SkyTilingType(Enum):
 
     RECTANGULAR = "Rectangular"
     HEALPIX = "Healpix"
-    ABSTRACT = "Abstract"
 
 
 class IndexMatchMethod(Enum):
@@ -67,13 +66,13 @@ class PointingSet(ABC):
     ----------
     dataset : xr.Dataset
         Dataset containing the pointing set data.
-    reference_frame : geometry.SpiceFrame
+    pset_frame : geometry.SpiceFrame
         The reference Spice frame of the pointing set.
     """
 
     @abstractmethod
-    def __init__(self, dataset: xr.Dataset, reference_frame: geometry.SpiceFrame):
-        self.reference_frame = reference_frame
+    def __init__(self, dataset: xr.Dataset, pset_frame: geometry.SpiceFrame):
+        self.pset_frame = pset_frame
         self.num_points = 0
         self.az_el_points = np.zeros((self.num_points, 2))
         self.data = xr.Dataset()
@@ -103,7 +102,7 @@ class PointingSet(ABC):
         str
             String representation of the pointing set.
         """
-        return f"{self.__class__} PointingSet(reference_frame={self.reference_frame})"
+        return f"{self.__class__} PointingSet(pset_frame={self.pset_frame})"
 
 
 class UltraPointingSet(PointingSet):
@@ -121,7 +120,7 @@ class UltraPointingSet(PointingSet):
             - 'elevation_bin_center' : elevation bin center values
         Some data_vars may additionally be indexed by energy bin;
         however, only the spatial axes are used in this class.
-    reference_frame : geometry.SpiceFrame
+    pset_frame : geometry.SpiceFrame
         The reference Spice frame of the pointing set. Default is IMAP_DPS.
     order : {'C', 'F'}, optional
         The order of the grid to be used in any raveling processes.
@@ -139,13 +138,13 @@ class UltraPointingSet(PointingSet):
     def __init__(
         self,
         l1c_dataset: xr.Dataset | pathlib.Path | str,
-        reference_frame: geometry.SpiceFrame = geometry.SpiceFrame.IMAP_DPS,
+        pset_frame: geometry.SpiceFrame = geometry.SpiceFrame.IMAP_DPS,
         order: typing.Literal["C"] | typing.Literal["F"] = "F",
     ):
         # History of reference frames to which the pointing set has been projected
         # Current frame is the last element in the list, accessed as @property
-        self.reference_frame_history = [
-            reference_frame,
+        self.pset_frame_history = [
+            pset_frame,
         ]
 
         # Read in the data and store the xarray dataset as data attr
@@ -223,7 +222,7 @@ class UltraPointingSet(PointingSet):
         self.el_bin_edges = input_grid.el_bin_edges
 
     @property
-    def reference_frame(self) -> geometry.SpiceFrame:
+    def pset_frame(self) -> geometry.SpiceFrame:
         """
         Return the current reference frame of the pointing set.
 
@@ -233,7 +232,7 @@ class UltraPointingSet(PointingSet):
             The current reference frame of the pointing set: the frame in which its
             azimuth and elevation points are defined.
         """
-        return self.reference_frame_history[-1]
+        return self.pset_frame_history[-1]
 
     def project_to_frame(
         self, out_frame: geometry.SpiceFrame, event_time: float | None = None
@@ -253,18 +252,18 @@ class UltraPointingSet(PointingSet):
         -----
         This method modifies the pointing set in place, updating the
         reference frame and the azimuth and elevation points.
-        It also appends the new reference frame to the reference_frame_history.
+        It also appends the new reference frame to the pset_frame_history.
         """
         if event_time is None:
             event_time = self.epoch
 
         # Check if the frame is already in the desired frame
-        if self.reference_frame == out_frame:
+        if self.pset_frame == out_frame:
             logger.info(f"Pointing set is already in frame {out_frame}.")
             return
 
         logger.info(
-            f"Projecting pointing set from reference frame {self.reference_frame}"
+            f"Projecting pointing set from reference frame {self.pset_frame}"
             f"to frame {out_frame} at event time {event_time}."
         )
 
@@ -272,12 +271,12 @@ class UltraPointingSet(PointingSet):
         self.az_el_points = geometry.frame_transform_az_el(
             et=event_time,
             az_el=self.az_el_points,
-            from_frame=self.reference_frame,
+            from_frame=self.pset_frame,
             to_frame=out_frame,
             degrees=False,
         )
 
-        self.reference_frame_history.append(out_frame)
+        self.pset_frame_history.append(out_frame)
 
     def __repr__(self) -> str:
         """
@@ -289,8 +288,8 @@ class UltraPointingSet(PointingSet):
             String representation of the UltraPointingSet.
         """
         return (
-            f"UltraPointingSet\n\t(reference_frame="
-            f"{self.reference_frame}, epoch={self.epoch}, "
+            f"UltraPointingSet\n\t(pset_frame="
+            f"{self.pset_frame}, epoch={self.epoch}, "
             f"num_points={self.num_points})"
         )
 
@@ -301,7 +300,7 @@ class AbstractMap(ABC):
 
     @abstractmethod
     def __init__(self) -> None:
-        self.tiling_type = SkyTilingType.ABSTRACT
+        pass
 
     @abstractmethod
     def match_pset_coords_to_indices(self, pointing_set: PointingSet) -> None:
@@ -324,7 +323,7 @@ class AbstractMap(ABC):
         str
             String representation of the map.
         """
-        return f"{self.__class__} Map(tiling_type={self.tiling_type}.)"
+        return f"{self.__class__} Map)"
 
 
 class RectangularMap(AbstractMap):
@@ -416,7 +415,7 @@ class RectangularMap(AbstractMap):
         # TODO: Implement the "pull" method of index matching.
         """
         if method == IndexMatchMethod.PUSH:
-            if pointing_set.reference_frame != self.reference_frame:
+            if pointing_set.pset_frame != self.reference_frame:
                 pointing_set.project_to_frame(self.reference_frame)
 
             az_indices = (

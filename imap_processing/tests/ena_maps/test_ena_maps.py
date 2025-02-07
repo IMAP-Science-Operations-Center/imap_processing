@@ -49,7 +49,7 @@ class TestUltraPointingSet:
         """Test instantiation of UltraPointingSet"""
         ultra_psets = [
             ena_maps.UltraPointingSet(
-                reference_frame=geometry.SpiceFrame.IMAP_DPS,
+                pset_frame=geometry.SpiceFrame.IMAP_DPS,
                 l1c_dataset=l1c_product,
                 order="C",
             )
@@ -61,7 +61,7 @@ class TestUltraPointingSet:
             assert ultra_pset.tiling_type == ena_maps.SkyTilingType.RECTANGULAR
 
             # Check that the reference frame is correctly set
-            assert ultra_pset.reference_frame == geometry.SpiceFrame.IMAP_DPS
+            assert ultra_pset.pset_frame == geometry.SpiceFrame.IMAP_DPS
 
             # Check the number of points is (360/0.5) * (180/0.5)
             np.testing.assert_equal(
@@ -79,7 +79,7 @@ class TestUltraPointingSet:
 
         ultra_psets = [
             ena_maps.UltraPointingSet(
-                reference_frame=geometry.SpiceFrame.IMAP_DPS,
+                pset_frame=geometry.SpiceFrame.IMAP_DPS,
                 l1c_dataset=l1c_product,
                 order="C",
             )
@@ -91,12 +91,12 @@ class TestUltraPointingSet:
 
             # First projection inverts position vectors
             ultra_pset.project_to_frame(geometry.SpiceFrame.ECLIPJ2000)
-            assert ultra_pset.reference_frame == geometry.SpiceFrame.ECLIPJ2000
+            assert ultra_pset.pset_frame == geometry.SpiceFrame.ECLIPJ2000
 
             # Second projection inverts position vectors back to original
             # (check equal to original)
             ultra_pset.project_to_frame(geometry.SpiceFrame.IMAP_ULTRA_90)
-            assert ultra_pset.reference_frame == geometry.SpiceFrame.IMAP_ULTRA_90
+            assert ultra_pset.pset_frame == geometry.SpiceFrame.IMAP_ULTRA_90
             np.testing.assert_allclose(
                 ultra_pset.az_el_points, original_pset.az_el_points
             )
@@ -104,11 +104,11 @@ class TestUltraPointingSet:
             # Third projection inverts position vectors again
             # (check not equal to original)
             ultra_pset.project_to_frame(geometry.SpiceFrame.J2000)
-            assert ultra_pset.reference_frame == geometry.SpiceFrame.J2000
+            assert ultra_pset.pset_frame == geometry.SpiceFrame.J2000
             assert not np.allclose(ultra_pset.az_el_points, original_pset.az_el_points)
 
             # Check that the history attribute has been updated (current frame last)
-            assert ultra_pset.reference_frame_history == [
+            assert ultra_pset.pset_frame_history == [
                 geometry.SpiceFrame.IMAP_DPS,
                 geometry.SpiceFrame.ECLIPJ2000,
                 geometry.SpiceFrame.IMAP_ULTRA_90,
@@ -125,7 +125,7 @@ class TestRectangularMap:
         self.pset_order = "C"
         self.ultra_psets = [
             ena_maps.UltraPointingSet(
-                reference_frame=geometry.SpiceFrame.IMAP_DPS,
+                pset_frame=geometry.SpiceFrame.IMAP_DPS,
                 l1c_dataset=l1c_product,
                 order=self.pset_order,
             )
