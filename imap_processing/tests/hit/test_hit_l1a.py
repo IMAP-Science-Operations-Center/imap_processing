@@ -14,9 +14,9 @@ from imap_processing.hit.l1a.hit_l1a import (
     hit_l1a,
     subcom_sectorates,
 )
-from imap_processing.tests.hit.helpers.l1a_validation import (
+from imap_processing.tests.hit.helpers.l1_validation import (
     compare_data,
-    prepare_validation_data,
+    prepare_counts_validation_data,
 )
 
 # TODO: Packet files are per apid at the moment so the tests currently
@@ -230,7 +230,7 @@ def test_validate_l1a_counts_data(sci_packet_filepath, validation_data):
     l1a_counts_data = processed_datasets[0]
 
     # Prepare validation data for comparison with processed data
-    validation_data = prepare_validation_data(validation_data)
+    validation_data = prepare_counts_validation_data(validation_data)
 
     # Fields to skip in comparison. CCSDS headers plus a few others.
     # The CCSDS header fields contain data per packet in the dataset, but the

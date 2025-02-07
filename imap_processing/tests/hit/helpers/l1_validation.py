@@ -1,19 +1,39 @@
-"""helper functions for HIT unit tests"""
+"""helper functions for HIT L1 unit tests"""
 
 import re
 
 import numpy as np
 import pandas as pd
 
+# Dictionary of columns to consolidate
+#    key = new column name
+#    value = prefix of column names in the validation data
+rate_columns = {
+    "coinrates": "COINRATES_",
+    "pbufrates": "BUFRATES_",
+    "l2fgrates": "L2FGRATES_",
+    "l2bgrates": "L2BGRATES_",
+    "l3fgrates": "L3FGRATES_",
+    "l3bgrates": "L3BGRATES_",
+    "penfgrates": "PENFGRATES_",
+    "penbgrates": "PENBGRATES_",
+    "sectorates": "SECTORATES_",
+    "l4fgrates": "L4FGRATES_",
+    "l4bgrates": "L4BGRATES_",
+    "ialirtrates": "IALIRTRATES_",
+    "sngrates_hg": "SNGRATES_HG_",
+    "sngrates_lg": "SNGRATES_LG_",
+}
 
-# <=== HELPER FUNCTIONS FOR L1A COUNTS DATA VALIDATION ===>
-def prepare_validation_data(validation_data):
+
+# <=== HELPER FUNCTIONS FOR L1 DATA VALIDATION ===>
+def prepare_counts_validation_data(validation_data):
     """Prepare validation data for comparison with processed data.
 
-    The L1A science validation data is organized by columns with each
-    value in a separate column. This function consolidates related data
-    into arrays to match the processed data. It also renames columns
-    to match the processed data.
+    The L1A counts validation data is organized with each value in a
+    separate column. This function consolidates related data into
+    arrays to match the processed data. It also renames columns to
+    match the processed data.
 
     Parameters
     ----------
@@ -44,14 +64,44 @@ def prepare_validation_data(validation_data):
 
     validation_data.columns = validation_data.columns.str.strip()
     validation_data.rename(columns=rename_columns, inplace=True)
-    validation_data = consolidate_rate_columns(validation_data)
+    validation_data = consolidate_rate_columns(validation_data, rate_columns)
     validation_data = process_single_rates(validation_data)
     validation_data = add_species_energy(validation_data)
     validation_data.columns = validation_data.columns.str.lower()
     return validation_data
 
 
-def consolidate_rate_columns(data):
+def prepare_standard_rates_validation_data(validation_data):
+    """Prepare validation data for comparison with processed data.
+
+    The L1B standard rates validation data is organized with each
+    value in a separate column. This function consolidates related
+    data into arrays to match the processed data. It also renames
+    columns to match the processed data.
+
+    Parameters
+    ----------
+    validation_data : pd.DataFrame
+        Validation data extracted from a csv file
+
+    Returns
+    -------
+    pd.DataFrame
+        Validation data formatted for comparison with processed data
+    """
+
+    # Prepare validation data for comparison with processed data
+    validation_data.columns = validation_data.columns.str.strip()
+    validation_data = consolidate_rate_columns(
+        validation_data, {k: v for k, v in rate_columns.items() if k != "sectorates"}
+    )
+    validation_data = process_single_rates(validation_data)
+    validation_data.columns = validation_data.columns.str.lower()
+
+    return validation_data
+
+
+def consolidate_rate_columns(data, rate_columns):
     """Consolidate related data into arrays to match processed data.
 
     The validation data has each value in a separate column. This
@@ -91,35 +141,24 @@ def consolidate_rate_columns(data):
     data : pd.DataFrame
         Validation data
 
+    rate_columns : dict
+        Dictionary of rate columns to consolidate. The key is the new
+        column name and the value is the prefix of the column names in
+        the validation data with data that need to be aggregated into
+        arrays.
+
     Returns
     -------
     pd.DataFrame
         Validation data with rate columns consolidated into arrays
     """
 
-    rate_columns = {
-        "coinrates": "COINRATES_",
-        "pbufrates": "BUFRATES_",
-        "l2fgrates": "L2FGRATES_",
-        "l2bgrates": "L2BGRATES_",
-        "l3fgrates": "L3FGRATES_",
-        "l3bgrates": "L3BGRATES_",
-        "penfgrates": "PENFGRATES_",
-        "penbgrates": "PENBGRATES_",
-        "sectorates": "SECTORATES_",
-        "l4fgrates": "L4FGRATES_",
-        "l4bgrates": "L4BGRATES_",
-        "ialirtrates": "IALIRTRATES_",
-        "sngrates_hg": "SNGRATES_HG_",
-        "sngrates_lg": "SNGRATES_LG_",
-    }
-
     for new_col, prefix in rate_columns.items():
         # Aggregate columns using regex patterns
         pattern_rates = re.compile(rf"^{prefix}\d+$")
         pattern_delta_plus = re.compile(rf"^{prefix}\d+_DELTA_PLUS$")
         pattern_delta_minus = re.compile(rf"^{prefix}\d+_DELTA_MINUS$")
-        data[f"{new_col}"] = data.filter(regex=pattern_rates).apply(
+        data[f"{new_col}"] = data.filter(regex=pattern_rates.pattern).apply(
             lambda row: row.values, axis=1
         )
         data[f"{new_col}_delta_plus"] = data.filter(
