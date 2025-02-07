@@ -151,7 +151,7 @@ def met_to_utc(met: npt.ArrayLike, precision: int = 9) -> npt.NDArray[str]:
         fractional seconds precision as specified by the precision keyword.
     """
     sclk_ticks = met_to_sclkticks(met)
-    et = _sct2e_wrapper(sclk_ticks)
+    et = sct_to_et(sclk_ticks)
     return spiceypy.et2utc(et, "ISOC", prec=precision)
 
 
@@ -176,7 +176,7 @@ def met_to_datetime64(
 
 @typing.no_type_check
 @ensure_spice
-def _sct2e_wrapper(
+def sct_to_et(
     sclk_ticks: Union[float, Collection[float]],
 ) -> Union[float, np.ndarray]:
     """
