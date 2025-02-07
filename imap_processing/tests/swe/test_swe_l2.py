@@ -128,7 +128,7 @@ def test_calculate_flux():
 def test_swe_l2(mock_read_in_flight_cal_data, use_fake_spin_data_for_time):
     """Test L2 processing."""
     data_start_time = 453051293.099714
-    data_end_time = 453066734
+    data_end_time = 453070000.0
     use_fake_spin_data_for_time(data_start_time, data_end_time)
 
     test_data_path = "tests/swe/l0_data/2024051010_SWE_SCIENCE_packet.bin"

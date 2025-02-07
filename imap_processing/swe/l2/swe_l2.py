@@ -10,7 +10,7 @@ import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.spice.geometry import SpiceFrame
-from imap_processing.spice.spin import get_instrument_spin_phase
+from imap_processing.spice.spin import get_instrument_spin_phase, get_spin_angle
 from imap_processing.swe.utils.swe_utils import (
     ESA_VOLTAGE_ROW_INDEX_DICT,
     read_lookup_table,
@@ -287,17 +287,61 @@ def swe_l2(l1b_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
     # Carry over acquisition times for L3 purposes.
     dataset["acquisition_time"] = l1b_dataset["acquisition_time"]
 
-    # TODO: remaining L2 work.
     # Calculate spin phase using SWE acquisition_time calculated in l1b.
-    # L1B dataset stores it by (epoch, esa_step, spin_sector, cem_id).
+    # L1B dataset stores it by (epoch, esa_step, spin_sector).
     # To calculate center time of data acquisition time, we will add
     #   acquisition_time + (acq_duration / 1000) / 2
-    data_acq_time = l1b_dataset["acquisition_time"].data.flatten()
+    # acq_duration is in milliseconds and is stored in L1B dataset by
+    # (epoch, cycle). acq_duration should be same for all esa_steps in
+    # a full sweep. We will take the first acq_duration value for each
+    # full sweep. This center time calculation is done to get the center
+    # angle of the data.
+    acq_duration = l1b_dataset["acq_duration"].data[:, 0] / 2000
+    data_acq_time = (
+        l1b_dataset["acquisition_time"].data + acq_duration[:, np.newaxis, np.newaxis]
+    )
 
-    print(data_acq_time.shape)
     # calculate spin phase
-    get_instrument_spin_phase(
-        query_met_times=data_acq_time,
+    inst_spin_phase = get_instrument_spin_phase(
+        query_met_times=data_acq_time.flatten(),
         instrument=SpiceFrame.IMAP_SWE,
-    ).reshape(-1, 24, 30)
+    )
+
+    inst_spin_angle = get_spin_angle(inst_spin_phase, degrees=True).reshape(-1, 24, 30)
+    # Spin angle bins range is little different from spin angle bins.
+    # Spin angle bins are centered like:
+    #   [ 6, 18, 30, 42, 54, 66, 78, 90, 102, 114, 126, 138, 150, 162, 174,
+    #   186, 198, 210, 222, 234, 246, 258, 270, 282, 294, 306, 318, 330,
+    #   342, 354]
+    # Where does an input angle goes into which bins is determined by the
+    # following logic:
+    #   phi_begin <= center - 6
+    #   phi_center = 6
+    #   phi_end < center + 6
+    # For example, if input_angle is 8.4, we would put in spin angle bin 6.
+    # To make binning easier, we will use following bin ranges:
+    #   [0, 12, 24, 36, 48, 60, 72, 84, 96, 108, 120, 132, 144, 156, 168,
+    #   180, 192, 204, 216, 228, 240, 252, 264, 276, 288, 300, 312, 324,
+    #   336, 348]
+    # SWE want to use right side of np.searchsorted, a[i-1] <= v < a[i].
+    # Index of spin angle bins and spin angle range should match.
+    # For example,
+    #   np.searchsorted(x, [6], side="right") -> [1]. Bin center test.
+    #   np.searchsorted(x, [8.4], side="right"] -> [1]. Bin center edge test.
+    #   np.searchsorted(x, [12], side="right") -> [2]. Bin end test.
+    #   np.searchsorted(x, [0], side="right") -> [1]. Bin start test.
+    # [i-1] gives the correct bin index for all the above tests.
+    spin_angle_bins_range = np.arange(0, 360, 12)
+    spin_angle_bins_indices = np.searchsorted(
+        spin_angle_bins_range, inst_spin_angle, side="right"
+    )
+    spin_angle_bins_indices = spin_angle_bins_indices - 1
+
+    # Now, take flux data and put it in its spin angle bins using the indices.
+    # TODO: do this
+
+    # print(pd.DataFrame(inst_spin_angle[0], columns=np.arange(30)
+    # ).to_csv("spin_angle.csv"))
+    # print(pd.DataFrame(spin_angle_bins_indices[0], columns=np.arange(30)
+    # ).to_csv("spin_angle_bins.csv"))
     return dataset

@@ -36,7 +36,7 @@ spin_sector:
   VAR_TYPE: support_data
 
 inst_az:
-  CATDESC: Spin angle bins. Angle resolution is 12 degree nominally
+  CATDESC: Spin angle bins in instrument frame. Angle resolution is 12 degree nominally
   FIELDNAM: spin angle
   FILLVAL: -9223370000000000000
   FORMAT: I3
