@@ -90,7 +90,8 @@ def test_packet_file_to_datasets(use_derived_value, expected_mode):
     datasets_by_apid = utils.packet_file_to_datasets(
         packet_files, packet_definition, use_derived_value=use_derived_value
     )
-    # 3 apids in the test data
+    # 2 apids in the SWAPI test data that we decommutate
+    # (2 others are not included in the XTCE definition, but are in the raw packet file)
     assert len(datasets_by_apid) == 2
     data = datasets_by_apid[1188]
     assert data["sec_hdr_flg"].dtype == np.uint8
