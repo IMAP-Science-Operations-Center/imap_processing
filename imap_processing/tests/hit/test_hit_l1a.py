@@ -279,4 +279,3 @@ def test_hit_l1a(hk_packet_filepath, sci_packet_filepath):
                 processed_datasets[1].attrs["Logical_source"]
                 == "imap_hit_l1a_pulse-height-events"
             )
-    print(processed_datasets[0].coords)
