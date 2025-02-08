@@ -84,7 +84,7 @@ def subcom_sectorates(sci_dataset: xr.Dataset) -> None:
 
     The data is added to the dataset as new data fields named
     according to their species. They have 4 dimensions: epoch
-    energy index, declination, and azimuth. The energy index
+    energy index, declination, and inclination. The energy index
     dimension is used to distinguish between the different energy
     ranges the data belongs to. The energy min and max values for
     each species are also added to the dataset as new data fields.
@@ -131,15 +131,15 @@ def subcom_sectorates(sci_dataset: xr.Dataset) -> None:
 
     # Add sector rates by species to the dataset
     for species_type, data in data_by_species.items():
-        # Rates data has shape: energy_index, epoch, declination, azimuth
+        # Rates data has shape: energy_index, epoch, declination, inclination
         # Convert rates to numpy array and transpose axes to get
-        # shape: epoch, energy_index, declination, azimuth
+        # shape: epoch, energy_index, declination, inclination
         rates_data = np.transpose(np.array(data["rates"]), axes=(1, 0, 2, 3))
 
         species = species_type.lower()
         sci_dataset[f"{species}_counts_sectored"] = xr.DataArray(
             data=rates_data,
-            dims=["epoch", f"{species}_energy_index", "declination", "azimuth"],
+            dims=["epoch", f"{species}_energy_index", "declination", "inclination"],
             name=f"{species}_counts_sectored",
         )
         sci_dataset[f"{species}_energy_min"] = xr.DataArray(
