@@ -116,7 +116,7 @@ class TestUltraPointingSet:
             ]
 
 
-class TestRectangularMap:
+class TestRectangularSkyMap:
     @pytest.fixture(autouse=True)
     def _setup_ultra_l1c_pset_products(self, l1c_pset_products):
         """Setup fixture data as class attributes"""
@@ -133,8 +133,8 @@ class TestRectangularMap:
         ]
 
     def test_instantiate(self):
-        """Test instantiation of RectangularMap"""
-        rm = ena_maps.RectangularMap(
+        """Test instantiation of RectangularSkyMap"""
+        rm = ena_maps.RectangularSkyMap(
             spacing_deg=2,
             spice_frame=geometry.SpiceFrame.ECLIPJ2000,
             order=self.pset_order,
@@ -160,7 +160,7 @@ class TestRectangularMap:
         self, mock_frame_transform_az_el, map_spacing_deg, ravel_order
     ):
         """
-        Test matching PSET coordinates to RectangularMap indices using "push" method.
+        Test matching PSET coordinates to RectangularSkyMap indices using "push" method.
 
         Parameterize by map_spacing_deg and ravel_order.
         """
@@ -178,7 +178,7 @@ class TestRectangularMap:
                 az_el
             )
         )
-        rectangular_map = ena_maps.RectangularMap(
+        rectangular_map = ena_maps.RectangularSkyMap(
             spacing_deg=map_spacing_deg,
             spice_frame=geometry.SpiceFrame.ECLIPJ2000,
             order=ravel_order,
@@ -202,7 +202,7 @@ class TestRectangularMap:
     @mock.patch("imap_processing.spice.geometry.frame_transform_az_el")
     def test_project_pset_values_to_map_push_method(self, mock_frame_transform_az_el):
         """
-        Test projection of PSET values to RectangularMap w "push" index matching method.
+        Test projection of PSET values to Rect. Map w "push" index matching method.
 
         If frame_transform_az_el is mocked to return the az and el unchanged, and the
         map has the same spacing as the PSETs, then the map should have the same values
@@ -218,7 +218,7 @@ class TestRectangularMap:
             lambda et, az_el, from_frame, to_frame, degrees: az_el
         )
 
-        rectangular_map = ena_maps.RectangularMap(
+        rectangular_map = ena_maps.RectangularSkyMap(
             spacing_deg=pset_spacing_deg,
             spice_frame=geometry.SpiceFrame.ECLIPJ2000,
             order=pset_ravel_order,

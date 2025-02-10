@@ -27,7 +27,7 @@ class SkyTilingType(Enum):
 
 class IndexMatchMethod(Enum):
     """
-    Enumeration of the types of index matching methods used in the ENA maps.
+    Enumeration of the types of index matching methods used in the ENA sky maps.
 
     Notes
     -----
@@ -60,7 +60,7 @@ class IndexMatchMethod(Enum):
 # Define the pointing set classes
 class PointingSet(ABC):
     """
-    Abstract class to contain pointing set (PSET) data in the context of ENA maps.
+    Abstract class to contain pointing set (PSET) data in the context of ENA sky maps.
 
     Parameters
     ----------
@@ -295,8 +295,8 @@ class UltraPointingSet(PointingSet):
 
 
 # Define the Map classes
-class AbstractMap(ABC):
-    """Abstract base class to contain map data in the context of ENA maps."""
+class AbstractSkyMap(ABC):
+    """Abstract base class to contain map data in the context of ENA sky maps."""
 
     @abstractmethod
     def __init__(self) -> None:
@@ -326,7 +326,7 @@ class AbstractMap(ABC):
         return f"{self.__class__} Map)"
 
 
-class RectangularMap(AbstractMap):
+class RectangularSkyMap(AbstractSkyMap):
     """
     Map which tiles the sky with a 2D rectangular grid of azimuth/elevation pixels.
 
@@ -510,15 +510,15 @@ class RectangularMap(AbstractMap):
 
     def __repr__(self) -> str:
         """
-        Return a string representation of the RectangularMap.
+        Return a string representation of the RectangularSkyMap.
 
         Returns
         -------
         str
-            String representation of the RectangularMap.
+            String representation of the RectangularSkyMap.
         """
         return (
-            "RectangularMap\n\t(reference_frame="
+            "RectangularSkyMap\n\t(reference_frame="
             f"{self.reference_frame.name} ({self.reference_frame.value}), "
             f"spacing_deg={self.spacing_deg}, num_points={self.num_points})"
         )
