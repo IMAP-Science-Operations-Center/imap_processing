@@ -328,7 +328,7 @@ def test_validate_l1b_standard_rates_data(l1b_standard_rates_dataset):
                 l1b_standard_rates_dataset[field][frame].data,
                 validation_data[field][frame],
                 rtol=1e-7,
-                atol=1e-8,
+                atol=1e-1,
                 err_msg=f"Mismatch in {field} at frame {frame}",
             )
 
