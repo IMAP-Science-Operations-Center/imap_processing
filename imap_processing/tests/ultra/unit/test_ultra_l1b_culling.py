@@ -1,5 +1,7 @@
 """Tests Culling for ULTRA L1b."""
 
+from datetime import timedelta
+
 import numpy as np
 import pytest
 
@@ -40,21 +42,13 @@ def test_data(use_fake_spin_data_for_time):
     return time, spin_number, energy, expected_counts
 
 
-def test_get_spin(use_fake_spin_data_for_time, l1b_datasets):
+def test_get_spin(use_fake_spin_data_for_time):
     """Tests get_spin function."""
+    one_day = timedelta(days=1).total_seconds()
+    use_fake_spin_data_for_time(0, one_day)
+    spin_number = get_spin(np.array([0, int(one_day)]))
 
-    de_dataset = l1b_datasets[0]
-    use_fake_spin_data_for_time(
-        de_dataset["event_times"][0], de_dataset["event_times"][-1]
-    )
-    spin_number = get_spin(de_dataset["event_times"])
-
-    assert len(spin_number) == len(de_dataset["event_times"])
-    expected_num_spins = np.ceil(
-        (de_dataset["event_times"].values[-1] - de_dataset["event_times"].values[0])
-        / 15
-    )
-    assert np.array_equal(len(np.unique(spin_number)), expected_num_spins)
+    assert np.array_equal(spin_number.max(), int(one_day) / 15)
 
 
 def test_get_energy_histogram(test_data):
@@ -69,15 +63,13 @@ def test_get_energy_histogram(test_data):
     assert duration == 15
 
 
-def test_flag_attitude(use_fake_spin_data_for_time, l1b_datasets):
+def test_flag_attitude(use_fake_spin_data_for_time):
     """Tests flag_attitude function."""
 
-    de_dataset = l1b_datasets[0]
-    use_fake_spin_data_for_time(
-        de_dataset["event_times"][0], de_dataset["event_times"][-1]
-    )
+    one_day = timedelta(days=1).total_seconds()
+    use_fake_spin_data_for_time(0, one_day)
     quality_flags, spin_rates, spin_period, spin_start_time = flag_attitude(
-        de_dataset["event_times"].values
+        np.array([0, int(one_day)])
     )
 
     flag = ImapAttitudeUltraFlags(quality_flags[0])

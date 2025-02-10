@@ -27,7 +27,9 @@ def calculate_badtimes(
     """
     badtimes_dict = {}
     badtimes_dict["spin_number"] = extendedspin_dataset["spin_number"]
-    badtimes_dict["median_rate_energy"] = extendedspin_dataset["median_rate_energy"]
+    badtimes_dict["energy_bin_geometric_mean"] = extendedspin_dataset[
+        "energy_bin_geometric_mean"
+    ]
 
     # TODO: add more data to badtimes_dict.
 

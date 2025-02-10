@@ -32,15 +32,10 @@ def ultra_l1b(data_dict: dict, data_version: str) -> list[xr.Dataset]:
         and f"imap_ultra_l1a_{instrument_id}sensor-de" in data_dict
         and f"imap_ultra_l1a_{instrument_id}sensor-rates" in data_dict
     ):
-        de_dataset = calculate_de(
-            data_dict[f"imap_ultra_l1a_{instrument_id}sensor-de"],
-            f"imap_ultra_l1b_{instrument_id}sensor-de",
-            data_version,
-        )
         extendedspin_dataset = calculate_extendedspin(
+            data_dict[f"imap_ultra_l1a_{instrument_id}sensor-de"],
             data_dict[f"imap_ultra_l1a_{instrument_id}sensor-hk"],
             data_dict[f"imap_ultra_l1a_{instrument_id}sensor-rates"],
-            de_dataset,
             f"imap_ultra_l1b_{instrument_id}sensor-extendedspin",
             data_version,
         )
@@ -55,8 +50,17 @@ def ultra_l1b(data_dict: dict, data_version: str) -> list[xr.Dataset]:
             data_version,
         )
         output_datasets.extend(
-            [de_dataset, extendedspin_dataset, cullingmask_dataset, badtimes_dataset]
+            [extendedspin_dataset, cullingmask_dataset, badtimes_dataset]
         )
+    elif f"imap_ultra_l1a_{instrument_id}sensor-de" in data_dict:
+        de_dataset = calculate_de(
+            data_dict[f"imap_ultra_l1a_{instrument_id}sensor-de"],
+            f"imap_ultra_l1b_{instrument_id}sensor-de",
+            data_version,
+        )
+
+        output_datasets.append(de_dataset)
+
     else:
         raise ValueError("Data dictionary does not contain the expected keys.")
 

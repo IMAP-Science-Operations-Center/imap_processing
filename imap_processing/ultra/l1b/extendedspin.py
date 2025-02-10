@@ -54,7 +54,7 @@ def calculate_extendedspin(
 
     # These will be the coordinates.
     extendedspin_dict["spin_number"] = spin
-    extendedspin_dict["median_rate_energy"] = energy_midpoints
+    extendedspin_dict["energy_bin_geometric_mean"] = energy_midpoints
 
     extendedspin_dict["ena_rates"] = count_rates
     extendedspin_dict["ena_rates_threshold"] = n_sigma_per_energy

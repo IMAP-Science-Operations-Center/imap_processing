@@ -75,7 +75,9 @@ class UltraConstants:
     CTOF_SPECIES_MAX = 200
 
     # RPMs for the Ultra instrument.
-    CULLING_RPM = 2.0
+    # TODO: this is a placeholder.
+    CULLING_RPM_MIN = 2.0
+    CULLING_RPM_MAX = 6.0
 
     # Thresholds for culling based on counts.
     CULLING_ENERGY_BIN_EDGES: ClassVar[list] = [-1e5, 0, 10, 20, 1e5]

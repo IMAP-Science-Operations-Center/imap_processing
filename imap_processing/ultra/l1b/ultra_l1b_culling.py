@@ -1,10 +1,12 @@
 """Culls Events for ULTRA L1b."""
 
+from datetime import timedelta
+
 import numpy as np
 from numpy.typing import NDArray
 
 from imap_processing.quality_flags import ImapAttitudeUltraFlags, ImapRatesUltraFlags
-from imap_processing.spice.spin import get_spin_data, interpolate_spin_data
+from imap_processing.spice.spin import get_spin_data
 from imap_processing.ultra.constants import UltraConstants
 
 
@@ -22,7 +24,16 @@ def get_spin(eventtimes_met: NDArray) -> NDArray:
     spin_number : NDArray
         Spin number at each event derived the from Universal Spin Table.
     """
-    spin_df = interpolate_spin_data(eventtimes_met)
+    spin_df = get_spin_data()
+    # Make certain to obtain the spin data for the entire time range of the event data.
+    one_day = timedelta(days=1).total_seconds()
+    lower_bound = np.float64(eventtimes_met.min()) - one_day
+    upper_bound = np.float64(eventtimes_met.max()) + one_day
+    indices = (spin_df.spin_start_sec >= lower_bound) & (
+        spin_df.spin_start_sec <= upper_bound
+    )
+    spin_df = spin_df[indices]
+
     return spin_df["spin_number"].values
 
 
@@ -103,7 +114,9 @@ def flag_attitude(eventtimes_met: NDArray) -> tuple[NDArray, NDArray, NDArray, N
     spin_period = spin_df.loc[spin_df.spin_number.isin(spins), "spin_period_sec"]
     spin_starttime = spin_df.loc[spin_df.spin_number.isin(spins), "spin_start_time"]
     spin_rates = 60 / spin_period  # 60 seconds in a minute
-    indices = spin_rates > np.array(UltraConstants.CULLING_RPM)
+    indices = (spin_rates > UltraConstants.CULLING_RPM_MIN) & (
+        spin_rates < UltraConstants.CULLING_RPM_MAX
+    )
 
     quality_flags = np.full(
         spin_rates.shape, ImapAttitudeUltraFlags.NONE.value, dtype=np.uint16
@@ -178,7 +191,7 @@ def flag_spin(
     threshold = get_n_sigma(count_rates, duration, sigma=sigma)
 
     bin_edges = np.array(UltraConstants.CULLING_ENERGY_BIN_EDGES)
-    energy_midpoints = (bin_edges[:-1] + bin_edges[1:]) / 2
+    energy_midpoints = np.sqrt(bin_edges[:-1] * bin_edges[1:])
     spin = np.unique(spin)
 
     # Indices where the counts exceed the threshold

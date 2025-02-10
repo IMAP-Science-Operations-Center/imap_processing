@@ -318,7 +318,7 @@ ena_rates:
   FIELDNAM: ena_rates
   LABLAXIS: ena_rates
   DEPEND_0: spin_number
-  DEPEND_1: median_rate_energy
+  DEPEND_1: energy_bin_geometric_mean
   UNITS: " "
 
 ena_rates_threshold:
@@ -327,7 +327,7 @@ ena_rates_threshold:
   FIELDNAM: ena_rates_threshold
   LABLAXIS: ena_rates_threshold
   DEPEND_0: spin_number
-  DEPEND_1: median_rate_energy
+  DEPEND_1: energy_bin_geometric_mean
   UNITS: " "
 
 quality_ena_rates:
@@ -336,7 +336,7 @@ quality_ena_rates:
   FIELDNAM: quality_ena_rates
   LABLAXIS: quality_ena_rates
   DEPEND_0: spin_number
-  DEPEND_1: median_rate_energy
+  DEPEND_1: energy_bin_geometric_mean
   UNITS: " "
 
 quality_attitude:
