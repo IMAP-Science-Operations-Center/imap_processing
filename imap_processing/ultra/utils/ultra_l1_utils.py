@@ -47,7 +47,13 @@ def create_dataset(
             attrs=cdf_manager.get_variable_attributes("epoch"),
         )
         if "sensor-de" in name:
-            coords = {"epoch": epoch_time, "component": ["vx", "vy", "vz"]}
+            component = xr.DataArray(
+                ["vx", "vy", "vz"],
+                name="component",
+                dims=["component"],
+                attrs=cdf_manager.get_variable_attributes("component"),
+            )
+            coords = {"epoch": epoch_time, "component": component}
         else:
             coords = {"epoch": epoch_time}
         default_dimension = "epoch"

@@ -9,6 +9,13 @@ default_attrs: &default
   VAR_TYPE: data
   UNITS: " "
 
+component:
+  CATDESC: Velocity components (vx, vy, vz)
+  FIELDNAM: component
+  LABLAXIS: component
+  FORMAT: A3
+  VAR_TYPE: metadata
+
 default_uint8_attrs: &default_uint8
   <<: *default
   FILLVAL: 255
