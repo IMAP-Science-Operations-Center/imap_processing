@@ -314,7 +314,7 @@ def test_validate_l1b_standard_rates_data(l1b_standard_rates_dataset):
 
     validation_data = pd.read_csv(
         imap_module_directory
-        / "tests/hit/validation_data/hit_l1b_standard_sample2_nsrl_v4.csv"
+        / "tests/hit/validation_data/hit_l1b_standard_sample2_nsrl_v4_rounded.csv"
     )
 
     validation_data = prepare_standard_rates_validation_data(validation_data)
