@@ -7,6 +7,7 @@ from unittest import mock
 
 import numpy as np
 import pytest
+import xarray as xr
 
 from imap_processing.ena_maps import ena_maps
 from imap_processing.spice import geometry
@@ -69,6 +70,9 @@ class TestUltraPointingSet:
                 int(360 * 180 / (self.l1c_spatial_bin_spacing_deg**2)),
             )
 
+            # Check the repr exists
+            assert "UltraPointingSet" in repr(ultra_pset)
+
     @pytest.mark.usefixtures("_setup_ultra_l1c_pset_products")
     @mock.patch("imap_processing.spice.geometry.frame_transform")
     def test_project_to_frame(self, mock_frame_transform):
@@ -115,6 +119,43 @@ class TestUltraPointingSet:
                 geometry.SpiceFrame.J2000,
             ]
 
+    @pytest.mark.usefixtures("_setup_ultra_l1c_pset_products")
+    def test_uneven_spacing_raises_error(self):
+        """Test that uneven spacing in az/el raises ValueError"""
+
+        # Create dataset with uneven az spacing
+        uneven_az_dataset = xr.Dataset()
+        uneven_az_dataset["epoch"] = 1
+        uneven_az_dataset["azimuth_bin_center"] = np.array([0, 5, 15, 20, 30])
+        uneven_az_dataset["elevation_bin_center"] = np.arange(5)
+
+        with pytest.raises(ValueError, match="Azimuth bin spacing is not uniform"):
+            ena_maps.UltraPointingSet(
+                pset_frame=geometry.SpiceFrame.IMAP_DPS,
+                l1c_dataset=uneven_az_dataset,
+            )
+
+        uneven_az_dataset["azimuth_bin_center"] = np.arange(5)
+        uneven_az_dataset["elevation_bin_center"] = np.array([0, 5, 15, 20, 30])
+
+        with pytest.raises(ValueError, match="Elevation bin spacing is not uniform"):
+            ena_maps.UltraPointingSet(
+                pset_frame=geometry.SpiceFrame.IMAP_DPS,
+                l1c_dataset=uneven_az_dataset,
+            )
+
+        # Even but not the same spacing between az and el
+        uneven_az_dataset["azimuth_bin_center"] = np.arange(5)
+        uneven_az_dataset["elevation_bin_center"] = np.arange(5) * 2
+
+        with pytest.raises(
+            ValueError, match="Azimuth and elevation bin spacing do not match:"
+        ):
+            ena_maps.UltraPointingSet(
+                pset_frame=geometry.SpiceFrame.IMAP_DPS,
+                l1c_dataset=uneven_az_dataset,
+            )
+
 
 class TestRectangularSkyMap:
     @pytest.fixture(autouse=True)
@@ -151,6 +192,9 @@ class TestRectangularSkyMap:
 
         # Check the number of points is (360/2) * (180/2)
         np.testing.assert_equal(rm.num_points, int(360 * 180 / 4))
+
+        # Check the repr exists
+        assert "RectangularSkyMap" in repr(rm)
 
     @pytest.mark.usefixtures("_setup_ultra_l1c_pset_products")
     @pytest.mark.parametrize("map_spacing_deg", [2, 5, 10])
@@ -246,3 +290,24 @@ class TestRectangularSkyMap:
             rectangular_map.data_dict["counts"],
             simple_summed_pset_counts,
         )
+
+    @pytest.mark.usefixtures("_setup_ultra_l1c_pset_products")
+    @mock.patch("imap_processing.spice.geometry.frame_transform_az_el")
+    def test_project_pset_values_to_map_pull_method(self, mock_frame_transform_az_el):
+        """Test projection to Rect. Map fails w "pull" index matching method."""
+
+        index_matching_method = ena_maps.IndexMatchMethod.PULL
+        rectangular_map = ena_maps.RectangularSkyMap(
+            spacing_deg=10,
+            spice_frame=geometry.SpiceFrame.ECLIPJ2000,
+            order=self.pset_order,
+        )
+
+        with pytest.raises(NotImplementedError):
+            rectangular_map.project_pset_values_to_map(
+                self.ultra_psets[0],
+                value_keys=[
+                    ("counts", index_matching_method),
+                    ("exposure_time", index_matching_method),
+                ],
+            )

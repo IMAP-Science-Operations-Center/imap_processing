@@ -72,6 +72,7 @@ class PointingSet(ABC):
 
     @abstractmethod
     def __init__(self, dataset: xr.Dataset, pset_frame: geometry.SpiceFrame):
+        """Abstract method to initialize the pointing set object."""
         self.pset_frame = pset_frame
         self.num_points = 0
         self.az_el_points = np.zeros((self.num_points, 2))
