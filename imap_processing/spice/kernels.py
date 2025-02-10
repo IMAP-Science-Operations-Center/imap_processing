@@ -454,7 +454,7 @@ def _create_rotation_matrix(et_times: np.ndarray) -> NDArray:
 
 def furnish_time_kernel() -> None:
     """Furnish the time kernels."""
-    spice_test_data_path = imap_module_directory / "tests/spice/test_data"
+    spice_test_data_path = imap_module_directory / "spice/default_data"
 
     # TODO: we need to load these kernels from EFS volumen that is
     # mounted to batch volume and extend this to generate metakernell
