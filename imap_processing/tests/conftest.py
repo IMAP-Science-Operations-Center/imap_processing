@@ -93,7 +93,11 @@ def _download_external_kernels(spice_test_data_path):
 
 @pytest.fixture(scope="session")
 def _download_test_data(test_data_paths):
-    """"""
+    """This fixture downloads externally-located test data files into a specific
+    location. The list of files and their storage locations are specified in
+    the `test_data_paths` parameter, which is a list of tuples; the zeroth
+    element being the source of the test file in the AWS S3 bucket, and the
+    first element being the location in which to store the downloaded file."""
 
     logger = logging.getLogger(__name__)
 
@@ -117,6 +121,8 @@ def _download_test_data(test_data_paths):
 
 @pytest.fixture(scope="session")
 def test_data_paths():
+    """Defines a list of test data files to download from the AWS S3 bucket
+    and the corresponding location in which to store the downloaded file"""
     test_data_path_list = [
         (
             "https://api.dev.imap-mission.com/download/test_data/imap_codice_l0_raw_20241110_v001.pkts",
