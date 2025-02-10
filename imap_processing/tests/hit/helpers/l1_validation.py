@@ -332,11 +332,6 @@ def compare_data(
     skip : list
         Fields to skip in comparison
     """
-    # Get the sc_tick values for each frame in the actual data
-    # to compare with the validation data
-    sc_tick = actual_data.sc_tick.values
-    sc_tick_by_frame = sc_tick[::20]
-
     for field in expected_data.columns:
         if field not in [
             "sc_tick_by_frame",
@@ -392,6 +387,10 @@ def compare_data(
                             f"frame {frame}, energy_idx {energy_idx}",
                         )
                 elif field == "sc_tick_by_frame":
+                    # Get the sc_tick values for each frame in the actual data
+                    # to compare with the validation data
+                    sc_tick = actual_data.sc_tick.values
+                    sc_tick_by_frame = sc_tick[::20]
                     assert np.array_equal(
                         sc_tick_by_frame[frame], expected_data[field][frame]
                     ), f"Mismatch in {field} at frame {frame}"

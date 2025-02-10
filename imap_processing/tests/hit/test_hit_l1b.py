@@ -314,25 +314,23 @@ def test_validate_l1b_standard_rates_data(l1b_standard_rates_dataset):
 
     validation_data = pd.read_csv(
         imap_module_directory
-        / "tests/hit/validation_data/hit_l1b_standard_sample2_nsrl_v3.csv"
+        / "tests/hit/validation_data/hit_l1b_standard_sample2_nsrl_v4.csv"
     )
 
     validation_data = prepare_standard_rates_validation_data(validation_data)
 
     for field in validation_data.columns:
-        # TODO: replace if statement with assertion that field is in dataset after
-        #  HIT provides updated validation data that only includes fields that are
-        #  in the dataset. Or use compare_data helper function which has this
-        #  assertion.
-        if field in l1b_standard_rates_dataset.data_vars:
-            for frame in range(validation_data.shape[0]):
-                np.testing.assert_allclose(
-                    l1b_standard_rates_dataset[field][frame].data,
-                    validation_data[field][frame],
-                    rtol=1e-7,
-                    atol=1e-8,
-                    err_msg=f"Mismatch in {field} at frame {frame}",
-                )
+        assert (
+            field in l1b_standard_rates_dataset.data_vars.keys()
+        ), f"Field {field} not found in actual data variables"
+        for frame in range(validation_data.shape[0]):
+            np.testing.assert_allclose(
+                l1b_standard_rates_dataset[field][frame].data,
+                validation_data[field][frame],
+                rtol=1e-7,
+                atol=1e-8,
+                err_msg=f"Mismatch in {field} at frame {frame}",
+            )
 
 
 def test_hit_l1b(dependencies):
