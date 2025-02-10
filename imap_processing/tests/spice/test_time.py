@@ -7,12 +7,12 @@ import spiceypy
 from imap_processing.spice import IMAP_SC_ID
 from imap_processing.spice.time import (
     TICK_DURATION,
-    _sct2e_wrapper,
     et_to_utc,
     met_to_datetime64,
     met_to_sclkticks,
     met_to_ttj2000ns,
     met_to_utc,
+    sct_to_et,
     sct_to_ttj2000s,
     str_to_et,
     ttj2000ns_to_et,
@@ -129,9 +129,9 @@ def test_met_to_datetime64(furnish_time_kernels, utc):
 
 
 @pytest.mark.parametrize("sclk_ticks", [0.0, np.arange(10)])
-def test_sct2e_wrapper(sclk_ticks):
-    """Test for `_sct2e_wrapper` function."""
-    et = _sct2e_wrapper(sclk_ticks)
+def test_sct_to_et(sclk_ticks):
+    """Test for `sct_to_et` function."""
+    et = sct_to_et(sclk_ticks)
     if isinstance(sclk_ticks, float):
         assert isinstance(et, float)
     else:

@@ -52,7 +52,7 @@ def mock_data_l1b_extendedspin_dict():
     quality = np.zeros((2, 3), dtype="uint16")
     data_dict = {
         "spin_number": spin,
-        "median_rate_energy": energy,
+        "energy_bin_geometric_mean": energy,
         "quality_ena_rates": quality,
     }
     return data_dict
@@ -68,7 +68,7 @@ def test_create_extendedspin_dataset(mock_data_l1b_extendedspin_dict):
     )
 
     assert "spin_number" in dataset.coords
-    assert "median_rate_energy" in dataset.coords
+    assert "energy_bin_geometric_mean" in dataset.coords
     assert dataset.coords["spin_number"].dtype == "uint32"
     assert dataset.attrs["Logical_source"] == "imap_ultra_l1b_45sensor-extendedspin"
     assert dataset["quality_ena_rates"].attrs["UNITS"] == " "
@@ -90,7 +90,7 @@ def test_create_de_dataset(mock_data_l1b_de_dict):
     np.testing.assert_array_equal(dataset["x_front"], np.zeros(3))
 
 
-def test_ultra_l1b_de(l1b_datasets):
+def test_ultra_l1b(l1b_datasets):
     """Tests that L1b data is created."""
 
     assert len(l1b_datasets) == 4
