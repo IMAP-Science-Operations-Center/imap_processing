@@ -2,6 +2,7 @@
 
 from collections import defaultdict
 from pathlib import Path
+from typing import Optional
 
 import numpy as np
 import xarray as xr
@@ -87,8 +88,8 @@ def glows_l1a(packet_filepath: Path, data_version: str) -> list[xr.Dataset]:
 
     # Generate CDF files for each day
     output_datasets = []
-    for hist_l1a_list in hists_by_day.values():
-        dataset = generate_histogram_dataset(hist_l1a_list, glows_attrs)
+    for obs_day, hist_l1a_list in hists_by_day.items():
+        dataset = generate_histogram_dataset(hist_l1a_list, glows_attrs, obs_day)
         output_datasets.append(dataset)
 
     for de_l1a_list in de_by_day.values():
@@ -337,7 +338,9 @@ def generate_de_dataset(
 
 
 def generate_histogram_dataset(
-    hist_l1a_list: list[HistogramL1A], glows_cdf_attributes: ImapCdfAttributes
+    hist_l1a_list: list[HistogramL1A],
+    glows_cdf_attributes: ImapCdfAttributes,
+    obs_day: Optional[int] = None,
 ) -> xr.Dataset:
     """
     Generate a dataset for GLOWS L1A histogram data CDF files.
@@ -348,6 +351,9 @@ def generate_histogram_dataset(
         List of HistogramL1A objects for a given day.
     glows_cdf_attributes : ImapCdfAttributes
         Object containing l1a CDF attributes for instrument glows.
+    obs_day : int, optional
+        Observational day counter. If supplied, it will be included in the
+        output file name.
 
     Returns
     -------
@@ -424,6 +430,15 @@ def generate_histogram_dataset(
         attrs=glows_cdf_attributes.get_variable_attributes("bins_attrs"),
     )
 
+    bin_label = xr.DataArray(
+        bins.data.astype(str),
+        name="bins_label",
+        dims=["bins_label"],
+        attrs=glows_cdf_attributes.get_variable_attributes(
+            "bins_label", check_schema=False
+        ),
+    )
+
     hist = xr.DataArray(
         hist_data,
         name="histogram",
@@ -435,9 +450,12 @@ def generate_histogram_dataset(
     )
 
     attrs = glows_cdf_attributes.get_global_attributes("imap_glows_l1a_hist")
+    if obs_day:
+        # this needs to be 5 digits, so truncate it from the temporary obs day
+        attrs["Repointing"] = int(str(obs_day)[-5:])
 
     output = xr.Dataset(
-        coords={"epoch": epoch_time, "bins": bins},
+        coords={"epoch": epoch_time, "bins": bins, "bins_label": bin_label},
         attrs=attrs,
     )
 
