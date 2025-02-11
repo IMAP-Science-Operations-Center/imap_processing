@@ -73,7 +73,165 @@ hk_default_attrs: &hk_default
   VALIDMAX: 4095
   FORMAT: I4
 
-# <=== Coordinates ===>
+counts_support_attrs: &counts_support_default
+  <<: *default
+  DISPLAY_TYPE: no_plot
+  VAR_TYPE: ignore_data
+
+
+# <=== Counts Coordinates ===>
+sc_tick:
+  <<: *default_uint32
+  CATDESC: Raw spacecraft tick time per integration
+  FIELDNAM: Spacecraft Tick
+  LABLAXIS: SC_Tick
+  FORMAT: I10
+  VAR_TYPE: support_data
+  DISPLAY_TYPE: no_plot
+  UNITS: ''
+  SCALETYP: linear
+
+declination:
+    <<: *counts_support_default
+    CATDESC: Declination
+    FIELDNAM: Declination
+    LABLAXIS: Declination
+    FORMAT: F5.1
+
+inclination:
+    <<: *counts_support_default
+    CATDESC: Inclination
+    FIELDNAM: Inclination
+    LABLAXIS: Inclination
+    FORMAT: F5.1
+
+gain:
+    <<: *counts_support_default
+    CATDESC: Single rates gain. 0=low, 1=high
+    FIELDNAM: Gain
+    LABLAXIS: Gain
+    FORMAT: I2
+
+sngrates_index:
+    <<: *counts_support_default
+    CATDESC: Single rates index
+    FIELDNAM: SNGRATES Index
+    LABLAXIS: SNGRATES Index
+    FORMAT: I12
+
+coinrates_index:
+  <<: *counts_support_default
+  CATDESC: Coincidence rates index
+  FIELDNAM: COINRATES index
+  LABLAXIS: COINRATES index
+  FORMAT: I12
+
+pbufrates_index:
+  <<: *counts_support_default
+  CATDESC: Priority buffer rates index
+  FIELDNAM: pbufrates Index
+  LABLAXIS: pbufrates Index
+  FORMAT: I12
+
+l2fgrates_index:
+  <<: *counts_support_default
+  CATDESC: l2fgrates index
+  FIELDNAM: l2fgrates Index
+  LABLAXIS: l2fgrates Index
+  FORMAT: I12
+
+l2bgrates_index:
+  <<: *counts_support_default
+  CATDESC: l2bgrates index
+  FIELDNAM: l2bgrates Index
+  LABLAXIS: l2bgrates Index
+  FORMAT: I12
+
+l3fgrates_index:
+  <<: *counts_support_default
+  CATDESC: l3fgrates index
+  FIELDNAM: l3fgrates Index
+  LABLAXIS: l3fgrates Index
+  FORMAT: I12
+
+l3bgrates_index:
+  <<: *counts_support_default
+  CATDESC: l3bgrates index
+  FIELDNAM: l3bgrates Index
+  LABLAXIS: l3bgrates Index
+  FORMAT: I12
+
+penfgrates_index:
+  <<: *counts_support_default
+  CATDESC: penfgrates index
+  FIELDNAM: penfgrates Index
+  LABLAXIS: penfgrates Index
+  FORMAT: I12
+
+penbgrates_index:
+  <<: *counts_support_default
+  CATDESC: penbgrates index
+  FIELDNAM: penbgrates Index
+  LABLAXIS: penbgrates Index
+  FORMAT: I12
+
+ialirtrates_index:
+  <<: *counts_support_default
+  CATDESC: ialirtrates index
+  FIELDNAM: ialirtrates Index
+  LABLAXIS: ialirtrates Index
+  FORMAT: I12
+
+l4fgrates_index:
+  <<: *counts_support_default
+  CATDESC: l4fgrates index
+  FIELDNAM: l4fgrates Index
+  LABLAXIS: l4fgrates Index
+  FORMAT: I12
+
+l4bgrates_index:
+  <<: *counts_support_default
+  CATDESC: l4bgrates index
+  FIELDNAM: l4bgrates Index
+  LABLAXIS: l4bgrates Index
+  FORMAT: I12
+
+h_energy_index:
+  <<: *counts_support_default
+  CATDESC: h energy index
+  FIELDNAM: h energy Index
+  LABLAXIS: h energy Index
+  FORMAT: I12
+
+he4_energy_index:
+  <<: *counts_support_default
+  CATDESC: he4 energy index
+  FIELDNAM: he4 energy Index
+  LABLAXIS: he4 energy Index
+  FORMAT: I12
+
+cno_energy_index:
+  <<: *counts_support_default
+  CATDESC: cno energy index
+  FIELDNAM: cno energy Index
+  LABLAXIS: cno energy Index
+  FORMAT: I12
+
+nemgsi_energy_index:
+  <<: *counts_support_default
+  CATDESC: nemgsi energy index
+  FIELDNAM: nemgsi energy Index
+  LABLAXIS: nemgsi energy Index
+  FORMAT: I12
+
+fe_energy_index:
+  <<: *counts_support_default
+  CATDESC: fe energy index
+  FIELDNAM: fe energy Index
+  LABLAXIS: fe energy Index
+  FORMAT: I12
+
+# <=== Housekeeping Coordinates ===>
 adc_channels:   # adc_channels is a dependency for leak_i data variable
   DISPLAY_TYPE: no_plot
   FILLVAL: -9223372036854775808
@@ -87,7 +245,7 @@ adc_channels:   # adc_channels is a dependency for leak_i data variable
   LABLAXIS: Channel
   FORMAT: I2
 
-# <=== Label Attributes ===>
+# <=== Housekeeping Label Attributes ===>
 # LABL_PTR_i expects VAR_TYPE of metadata with char data type
 
 adc_channels_label:
