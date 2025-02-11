@@ -88,7 +88,6 @@ class TimeTuple:
         -------
         j2000ns : np.int64
             Time in nanoseconds since J2000 epoch.
-
         """
         coarse_j2000ns = np.int64(met_to_ttj2000ns(self.coarse_time))
         fine_ns = np.int64(self.fine_time / MAX_FINE_TIME * 1e9)
@@ -248,10 +247,10 @@ class MagL1a:
     shcoarse: int
     vectors: np.ndarray
     starting_packet: InitVar[MagL1aPacketProperties]
-    packet_definitions: dict[np.datetime64, MagL1aPacketProperties] = field(init=False)
+    packet_definitions: dict[np.int64, MagL1aPacketProperties] = field(init=False)
     most_recent_sequence: int = field(init=False)
     missing_sequences: list[int] = field(default_factory=list)
-    start_time: np.datetime64 = field(init=False)
+    start_time: np.int64 = field(init=False)
     compression_flags: np.ndarray | None = field(init=False, default=None)
 
     def __post_init__(self, starting_packet: MagL1aPacketProperties) -> None:
@@ -263,8 +262,6 @@ class MagL1a:
         starting_packet : MagL1aPacketProperties
             The packet properties for the first packet in the day, including start time.
         """
-        # TODO should this be from starting_packet
-        # TODO should be from coarse and fine
         self.start_time = np.int64(met_to_ttj2000ns(starting_packet.shcoarse))
         self.packet_definitions = {self.start_time: starting_packet}
         # most_recent_sequence is the sequence number of the packet used to initialize
@@ -353,8 +350,7 @@ class MagL1a:
         """
         timedelta = np.timedelta64(int(1 / vectors_per_sec * 1e9), "ns")
         # TODO: From finetime and coarsetime, depends per packet
-        # This is not right, fix that
-        start_time_ns = met_to_ttj2000ns(start_time.to_seconds())
+        start_time_ns = start_time.to_j2000ns()
 
         # Calculate time skips for each vector in ns
         times = np.reshape(

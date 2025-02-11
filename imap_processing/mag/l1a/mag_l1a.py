@@ -150,16 +150,12 @@ def process_packets(
 
         mago_is_primary = mag_l0.PRI_SENS == PrimarySensor.MAGO.value
 
-        print("time", ttj2000ns_to_et(primary_start_time.to_j2000ns()).dtype)
         primary_day = (
             et_to_utc(ttj2000ns_to_et([primary_start_time.to_j2000ns()]))[0]
         ).astype("datetime64[D]")
         secondary_day = (
             et_to_utc(ttj2000ns_to_et([secondary_start_time.to_j2000ns()]))[0]
         ).astype("datetime64[D]")
-
-        print(et_to_utc(ttj2000ns_to_et([primary_start_time.to_j2000ns()])))
-        print(f"Primary day: {primary_day}")
 
         primary_packet_properties = MagL1aPacketProperties(
             mag_l0.SHCOARSE,
