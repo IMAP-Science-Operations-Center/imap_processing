@@ -303,7 +303,7 @@ def test_different_vector_rates(
     uncompressed_vector_bytearray, expected_vectors, raw_compressed_vectors
 ):
     current_directory = Path(__file__).parent
-    test_file = current_directory / "mag_l1_test_data.pkts"
+    test_file = current_directory / "validation" / "mag_l1_test_data.pkts"
     # Test file contains only normal packets
     l0 = decom_packets(test_file)["norm"][0]
 
@@ -401,7 +401,7 @@ def test_padding_uncompressed(expected_vectors):
 
 def test_compare_validation_data():
     current_directory = Path(__file__).parent
-    test_file = current_directory / "mag_l1_test_data.pkts"
+    test_file = current_directory / "validation" / "mag_l1_test_data.pkts"
     # Test file contains only normal packets
     l0 = decom_packets(test_file)
     l1 = process_packets(l0["norm"])
@@ -413,7 +413,9 @@ def test_compare_validation_data():
     assert len(l1_mago.vectors) == 96
     assert len(l1_magi.vectors) == 96
 
-    validation_data = pd.read_csv(current_directory / "mag_l1a_test_output.csv")
+    validation_data = pd.read_csv(
+        current_directory / "validation" / "mag_l1a_test_output.csv"
+    )
 
     # Validation data does not have differing timestamps
     for index in validation_data.index:
@@ -856,7 +858,7 @@ def test_mag_l1a_data():
 
 def test_mag_l1a():
     current_directory = Path(__file__).parent
-    test_file = current_directory / "mag_l1_test_data.pkts"
+    test_file = current_directory / "validation" / "mag_l1_test_data.pkts"
 
     output_data = mag_l1a(test_file, "v001")
 

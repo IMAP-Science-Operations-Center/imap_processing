@@ -20,12 +20,14 @@ def cdf_attrs():
 
 def test_mag_decom():
     current_directory = Path(__file__).parent
-    burst_test_file = current_directory / "mag_l0_test_data.pkts"
+    burst_test_file = current_directory / "validation" / "mag_l0_test_data.pkts"
     packets = decom_packets(str(burst_test_file))
 
     l0 = packets["burst"] + packets["norm"]
 
-    expected_output = pd.read_csv(current_directory / "mag_l0_test_output.csv")
+    expected_output = pd.read_csv(
+        current_directory / "validation" / "mag_l0_test_output.csv"
+    )
     for index, test in enumerate(l0):
         assert test.ccsds_header.PKT_APID == expected_output["PHAPID"][index]
         assert test.ccsds_header.SRC_SEQ_CTR == expected_output["PHSEQCNT"][index]
@@ -59,7 +61,7 @@ def test_mag_decom():
 
 def test_mag_raw_xarray(cdf_attrs):
     current_directory = Path(__file__).parent
-    burst_test_file = current_directory / "mag_l0_test_data.pkts"
+    burst_test_file = current_directory / "validation" / "mag_l0_test_data.pkts"
     packets = decom_packets(str(burst_test_file))
     l0_norm = packets["norm"]
     l0_burst = packets["burst"]
@@ -94,7 +96,7 @@ def test_mag_raw_xarray(cdf_attrs):
 
 def test_mag_raw_cdf_generation(cdf_attrs):
     current_directory = Path(__file__).parent
-    test_file = current_directory / "mag_l0_test_data.pkts"
+    test_file = current_directory / "validation" / "mag_l0_test_data.pkts"
     packets = decom_packets(str(test_file))
     l0_norm = packets["norm"]
     l0_burst = packets["burst"]
