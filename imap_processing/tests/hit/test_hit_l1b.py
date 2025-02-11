@@ -314,7 +314,7 @@ def test_validate_l1b_standard_rates_data(l1b_standard_rates_dataset):
 
     validation_data = pd.read_csv(
         imap_module_directory
-        / "tests/hit/validation_data/hit_l1b_standard_sample2_nsrl_v4_rounded.csv"
+        / "tests/hit/validation_data/hit_l1b_standard_sample2_nsrl_v4_3decimals.csv"
     )
 
     validation_data = prepare_standard_rates_validation_data(validation_data)
@@ -328,7 +328,7 @@ def test_validate_l1b_standard_rates_data(l1b_standard_rates_dataset):
                 l1b_standard_rates_dataset[field][frame].data,
                 validation_data[field][frame],
                 rtol=1e-7,
-                atol=1e-1,
+                atol=1e-3,
                 err_msg=f"Mismatch in {field} at frame {frame}",
             )
 
