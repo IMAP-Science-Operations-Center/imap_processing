@@ -475,8 +475,7 @@ def organize_spin_data(dataset: xr.Dataset, attr_mgr: ImapCdfAttributes) -> xr.D
 
     # Set epoch to the acq_start time
     # acq_start_sec is in units of seconds
-    # acq_start_subsec is in units of microseconds after using the 1e-6 conversion from
-    # the raw telemetry data
+    # acq_start_subsec is in units of microseconds
     acq_start = dataset.acq_start_sec + (1e-6 * dataset.acq_start_subsec)
     epoch = met_to_ttj2000ns(acq_start)
     dataset = dataset.assign_coords(epoch=("epoch", epoch))
