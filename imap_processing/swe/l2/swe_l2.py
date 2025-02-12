@@ -219,7 +219,7 @@ def put_data_in_bins(
     numpy.ndarray
         Data in bins.
     """
-    binned_data = np.full(data.shape, np.nan)
+    binned_data = np.full((data.shape[0], 24, 30), np.nan)
     full_cycle_data = data.shape[0]
     energy_step = data.shape[1]
     angle_bin = data.shape[2]
@@ -234,19 +234,23 @@ def put_data_in_bins(
                 # data for each 7 CEMs data. Then put that mean in
                 # its angle bin.
                 angle_indices = np.where(angle_bin_indices[cycle, energy] == angle)
-                data_mean = np.mean(data[cycle, energy, angle_indices], axis=1)
+                # TODO: undo this after binning work is checked
+                # data_mean = np.mean(data[cycle, energy, angle_indices], axis=1)
+                data_mean = np.mean(data[cycle, energy, angle_indices])
+                # print(data_mean)
                 binned_data[cycle, energy, angle] = data_mean
                 # store indices in binned_data
                 # binned_data[cycle, energy, angle] = angle_indices
                 if cycle == 5 and len(angle_indices[0]) > 0:
                     # print(
-                    #     f"cycle: {cycle}, energy: {energy}, angle: {angle},"
-                    #     f" angle_indices: {angle_indices[0]}"
+                    #     f"cycle: {cycle}, energy: {energy}, angle: {angle}"
                     # )
+                    # # print(f"angle: ", data[cycle, energy, angle_indices])
+                    # print(f"angle indices: ", angle_indices)
                     # print("data: ", data[cycle, energy, angle_indices].shape)
-                    # np.mean across 7 CEMs.
+                    # # np.mean across 7 CEMs.
                     # print(data_mean)
-                    continue
+                    pass
     # print(binned_data.shape)
     return binned_data
 
@@ -340,13 +344,13 @@ def swe_l2(l1b_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
     # Calculate spin phase using SWE acquisition_time calculated in l1b.
     # L1B dataset stores it by (epoch, esa_step, spin_sector).
     # To calculate center time of data acquisition time, we will add
-    #   acquisition_time + (acq_duration / 1000) / 2
-    # acq_duration is in milliseconds and is stored in L1B dataset by
+    #   acquisition_time + (acq_duration / 1000000) / 2
+    # acq_duration is in microseconds and is stored in L1B dataset by
     # (epoch, cycle). acq_duration should be same for all esa_steps in
     # a full sweep. We will take the first acq_duration value for each
     # full sweep. This center time calculation is done to get the center
     # angle of the data.
-    acq_duration = l1b_dataset["acq_duration"].data[:, 0] / 2000
+    acq_duration = l1b_dataset["acq_duration"].data[:, 0] / 2000000
     data_acq_time = (
         l1b_dataset["acquisition_time"].data + acq_duration[:, np.newaxis, np.newaxis]
     )
@@ -386,20 +390,36 @@ def swe_l2(l1b_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
         spin_angle_bins_range, inst_spin_angle, side="right"
     )
     spin_angle_bins_indices = spin_angle_bins_indices - 1
+    # print(spin_angle_bins_indices[0])
+    print(l1b_dataset["acq_duration"].data[0])
+    print(l1b_dataset["settle_duration"].data[0])
 
-    # Set energy bins index for each data counts to be same as input data.
-    energy_steps = np.arange(24)
-    total_angle_bins = 30
-    total_full_cycle_data = l1b_dataset["science_data"].shape[0]
-    energy_bins_indices = np.tile(
-        energy_steps, (total_angle_bins, total_full_cycle_data)
-    ).T
-    energy_bins_indices = energy_bins_indices.reshape(-1, 24, 30)
+    # # Set energy bins index for each data counts to be same as input data.
+    # energy_steps = np.arange(24)
+    # total_angle_bins = 30
+    # total_full_cycle_data = l1b_dataset["science_data"].shape[0]
+    # energy_bins_indices = np.tile(
+    #     energy_steps, (total_angle_bins, total_full_cycle_data)
+    # ).T
+    # energy_bins_indices = energy_bins_indices.reshape(-1, 24, 30)
 
     # TODO: take flux data and put it in its spin angle bins using the indices.
-    put_data_in_bins(flux, spin_angle_bins_indices)
-    # print(pd.DataFrame(inst_spin_angle[0], columns=np.arange(30)
-    # ).to_csv("spin_angle.csv"))
-    # print(pd.DataFrame(spin_angle_bins_indices[0], columns=np.arange(30)
-    # ).to_csv("spin_angle_bins.csv"))
+    binned_data = put_data_in_bins(flux, spin_angle_bins_indices)
+    print(binned_data[0])
+    # print(
+    #     pd.DataFrame(inst_spin_angle[0],
+    # columns=np.arange(30)).to_csv("spin_angle.csv")
+    # )
+    # print(
+    #     pd.DataFrame(spin_angle_bins_indices[0], columns=np.arange(30)).to_csv(
+    #         "spin_angle_bins.csv"
+    #     )
+    # )
+    # print(pd.DataFrame(binned_data[0],
+    # columns=np.arange(30)).to_csv("binned_data.csv"))
+    # print(
+    #     pd.DataFrame(
+    #         l1b_dataset["acquisition_time"].data[0], columns=np.arange(30)
+    #     ).to_csv("acquisition_time.csv")
+    # )
     return dataset

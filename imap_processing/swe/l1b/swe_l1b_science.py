@@ -329,12 +329,12 @@ def populate_full_cycle_data(
                 # Acquisition time of each count data point will be calculated
                 # using this formula:
                 #   each_count_acq_time = base_quarter_cycle_acq_time +
-                #            (step * ( acq_duration + settle_duration) / 1000 )
+                #            (step * ( acq_duration + settle_duration) / 1000000 )
                 # where step goes from 0 to 179, acq_start_coarse is in seconds and
-                # acq_start_fine is in microseconds and acq_duration is in milliseconds.
+                # acq_start_fine is in microseconds and acq_duration is in microseconds.
                 acquisition_times[esa_voltage_row_index][column_index] = (
                     base_quarter_cycle_acq_time
-                    + (step * (acq_duration + settle_duration) / 1000)
+                    + (step * (acq_duration + settle_duration) / 1000000)
                 )
                 # Store acquisition duration for later calculation
                 acq_duration_arr[esa_voltage_row_index][column_index] = acq_duration
