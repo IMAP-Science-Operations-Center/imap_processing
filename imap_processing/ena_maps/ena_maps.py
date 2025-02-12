@@ -18,6 +18,8 @@ from imap_processing.spice import geometry
 logger = logging.getLogger(__name__)
 
 
+# Define ravel order for unravelling, multi-indexing of rectangular grids.
+# Must be done as explicit typing Literal for mypy to accept it.
 RAVEL_ORDER = typing.cast(typing.Literal["C", "F"], "C")
 
 
@@ -129,9 +131,6 @@ class UltraPointingSet(PointingSet):
         however, only the spatial axes are used in this class.
     spice_reference_frame : geometry.SpiceFrame
         The reference Spice frame of the pointing set. Default is IMAP_DPS.
-    order : {'C', 'F'}, optional
-        The order of the grid to be used in any raveling processes.
-        Default is 'F' (Fortran-style ordering).
 
     Raises
     ------
@@ -146,7 +145,6 @@ class UltraPointingSet(PointingSet):
         self,
         l1c_dataset: xr.Dataset | pathlib.Path | str,
         spice_reference_frame: geometry.SpiceFrame = geometry.SpiceFrame.IMAP_DPS,
-        order: typing.Literal["C"] | typing.Literal["F"] = "F",
     ):
         # History of reference frames to which the pointing set has been projected
         # Current frame is the last element in the list, accessed as @property
@@ -216,8 +214,8 @@ class UltraPointingSet(PointingSet):
         # column 1 (az_el_points[:, 1]) is the elevation of that point.
         self.az_el_points = np.column_stack(
             (
-                self.sky_grid.az_grid.ravel(order=order),
-                self.sky_grid.el_grid.ravel(order=order),
+                self.sky_grid.az_grid.ravel(order=RAVEL_ORDER),
+                self.sky_grid.el_grid.ravel(order=RAVEL_ORDER),
             )
         )
         self.num_points = self.az_el_points.shape[0]
@@ -345,22 +343,17 @@ class RectangularSkyMap(AbstractSkyMap):
         The spacing of the rectangular grid in degrees.
     spice_frame : geometry.SpiceFrame
         The reference Spice frame of the map.
-    order : {'C', 'F'}, optional
-        The order of the grid to be used in any raveling processes.
-        Default is 'F' (Fortran-style ordering).
     """
 
     def __init__(
         self,
         spacing_deg: float,
         spice_frame: geometry.SpiceFrame,
-        order: typing.Literal["C"] | typing.Literal["F"] = "F",
     ):
         # Define the core properties of the map:
         self.tiling_type = SkyTilingType.RECTANGULAR  # Type of tiling of the sky
         self.spacing_deg = spacing_deg
         self.spice_reference_frame = spice_frame
-        self.order = order
         self.sky_grid = spatial_utils.AzElSkyGrid(
             spacing_deg=self.spacing_deg,
         )
@@ -371,10 +364,10 @@ class RectangularSkyMap(AbstractSkyMap):
         )
 
         # Unwrap the az, el, solid angle grids to series of points tiling the sky
-        az_points = self.sky_grid.az_grid.ravel(order=self.order)
-        el_points = self.sky_grid.el_grid.ravel(order=self.order)
+        az_points = self.sky_grid.az_grid.ravel(order=RAVEL_ORDER)
+        el_points = self.sky_grid.el_grid.ravel(order=RAVEL_ORDER)
         self.az_el_points = np.column_stack((az_points, el_points))
-        self.solid_angle_points = self.solid_angle_grid.ravel(order=self.order)
+        self.solid_angle_points = self.solid_angle_grid.ravel(order=RAVEL_ORDER)
         self.num_points = self.az_el_points.shape[0]
 
         # Initialize empty data dictionary to store map data
@@ -439,7 +432,7 @@ class RectangularSkyMap(AbstractSkyMap):
                     len(self.sky_grid.az_bin_midpoints),
                     len(self.sky_grid.el_bin_midpoints),
                 ),
-                order=self.order,
+                order=RAVEL_ORDER,
             )
 
         else:
@@ -492,7 +485,7 @@ class RectangularSkyMap(AbstractSkyMap):
             raveled_pset_data = np.reshape(
                 np.array(pointing_set.data[value_key]),
                 (pointing_set.num_points, -1),
-                order=self.order,
+                order=RAVEL_ORDER,
             )
 
             if value_key not in self.data_dict:
@@ -559,8 +552,11 @@ def match_indices(
     Then, the transformed pixel centers are matched to the 1D indices of the spatial
     pixels in the output frame, either in an unwrapped rectangular grid or a Healpix
     tessellation of the sky.
+
     This function always "pushes" the pixels of the input object to corresponding pixels
-    in the output object's unwrapped rectangular grid or healpix tessellation.
+    in the output object's unwrapped rectangular grid or healpix tessellation;
+    however, by swapping the input and output objects, one can apply the "pull" method
+    of index  matching.
 
     Parameters
     ----------
