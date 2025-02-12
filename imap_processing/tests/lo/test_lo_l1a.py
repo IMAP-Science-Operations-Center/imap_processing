@@ -88,27 +88,30 @@ def test_validate_spin_data():
         "valid_phase_spin",
         "period_source_spin",
     ]
+    # The validation data contains a duplicate set of columns for the same values.
+    # They are formatted as column_prefix_<spin> and column_prefix[<spin>]
+    # adding a condition to remove the one with [ before combining those columns into
+    # a list
+    bad_fields = [col for col in validation_data.columns if "[" in col]
+    validation_data = validation_data.drop(bad_fields, axis=1)
+
+    # The validation contains columns for each of the 28 spins in the packet, so these
+    # need to be combined into a single list for the comparison
+    for field in spin_fields:
+        matching_columns = [
+            col for col in validation_data.columns if col.startswith(field.upper())
+        ]
+        if len(matching_columns) > 1:
+            validation_data[field.upper()] = validation_data[
+                matching_columns
+            ].values.tolist()
+            validation_data = validation_data.drop(matching_columns, axis=1)
 
     # Act
     output_dataset = lo_l1a(dependency, "001")
 
     # Assert
     for field in spin_fields:
-        # The validation data contains a duplicate set of columns for the same values.
-        # They are formatted as column_prefix_<spin> and column_prefix[<spin>]
-        # adding a condition to remove the one with [ when combining those columns into
-        # a list to combine the spins in the validation data into a single list
-        validation_fields = [
-            col
-            for col in validation_data.columns
-            if col.startswith(field.upper()) and "[" not in col
-        ]
-
-        if len(validation_fields) > 1:
-            validation_vals = np.array(
-                [row for row in validation_data[validation_fields].values]
-            )
-        else:
-            validation_vals = validation_data[validation_fields[0]].values
-
-        np.testing.assert_array_equal(output_dataset[0][field].values, validation_vals)
+        np.testing.assert_array_equal(
+            output_dataset[0][field], validation_data[field.upper()].values.tolist()
+        )

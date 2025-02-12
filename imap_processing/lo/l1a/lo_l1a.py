@@ -139,7 +139,7 @@ def add_dataset_attrs(
 
     if logical_source == "imap_lo_l1a_spin":
         spin = xr.DataArray(
-            data=np.arange(0, 28, dtype=np.uint16),
+            data=np.arange(0, 28, dtype=np.uint8),
             name="spin",
             dims=["spin"],
             attrs=attr_mgr.get_variable_attributes("spin"),
@@ -183,7 +183,7 @@ def add_dataset_attrs(
         # An empty DEPEND_0 is being added to support_data
         # variables that should only have DEPEND_1
         # Removing Depend_0 here.
-        # Should look for a fix to this issue
+        # TODO: Should look for a fix to this issue
         del dataset["spin"].attrs["DEPEND_0"]
 
     elif logical_source == "imap_lo_l1a_histogram":
@@ -251,7 +251,7 @@ def add_dataset_attrs(
         # An empty DEPEND_0 is being added to support_data
         # variables that should only have DEPEND_1
         # Removing Depend_0 here.
-        # Should look for a fix to this issue
+        # TODO: Should look for a fix to this issue
         del dataset["azimuth_60"].attrs["DEPEND_0"]
         del dataset["azimuth_6"].attrs["DEPEND_0"]
         del dataset["esa_step"].attrs["DEPEND_0"]
@@ -294,17 +294,20 @@ def add_dataset_attrs(
         # An empty DEPEND_0 is being added to support_data
         # variables that should only have DEPEND_1
         # Removing Depend_0 here.
-        # Should look for a fix to this issue
-        del dataset["direct_events"].attrs["DEPEND_0"]
-        del dataset["coincidence_type"].attrs["DEPEND_0"]
-        del dataset["de_time"].attrs["DEPEND_0"]
-        del dataset["mode"].attrs["DEPEND_0"]
-        del dataset["esa_step"].attrs["DEPEND_0"]
-        del dataset["tof0"].attrs["DEPEND_0"]
-        del dataset["tof1"].attrs["DEPEND_0"]
-        del dataset["tof2"].attrs["DEPEND_0"]
-        del dataset["tof3"].attrs["DEPEND_0"]
-        del dataset["pos"].attrs["DEPEND_0"]
-        del dataset["cksm"].attrs["DEPEND_0"]
+        # TODO: Should look for a fix to this issue
+        for var in [
+            "direct_events",
+            "coincidence_type",
+            "de_time",
+            "mode",
+            "esa_step",
+            "tof0",
+            "tof1",
+            "tof2",
+            "tof3",
+            "pos",
+            "cksm",
+        ]:
+            dataset[var].attrs.pop("DEPEND_0")
 
     return dataset
