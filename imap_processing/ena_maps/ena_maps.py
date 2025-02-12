@@ -66,14 +66,14 @@ class PointingSet(ABC):
     ----------
     dataset : xr.Dataset
         Dataset containing the pointing set data.
-    pset_frame : geometry.SpiceFrame
+    spice_reference_frame : geometry.SpiceFrame
         The reference Spice frame of the pointing set.
     """
 
     @abstractmethod
-    def __init__(self, dataset: xr.Dataset, pset_frame: geometry.SpiceFrame):
+    def __init__(self, dataset: xr.Dataset, spice_reference_frame: geometry.SpiceFrame):
         """Abstract method to initialize the pointing set object."""
-        self.pset_frame = pset_frame
+        self.spice_reference_frame = spice_reference_frame
         self.num_points = 0
         self.az_el_points = np.zeros((self.num_points, 2))
         self.data = xr.Dataset()
@@ -103,7 +103,10 @@ class PointingSet(ABC):
         str
             String representation of the pointing set.
         """
-        return f"{self.__class__} PointingSet(pset_frame={self.pset_frame})"
+        return (
+            f"{self.__class__} PointingSet"
+            f"(spice_reference_frame={self.spice_reference_frame})"
+        )
 
 
 class UltraPointingSet(PointingSet):
@@ -121,7 +124,7 @@ class UltraPointingSet(PointingSet):
             - 'elevation_bin_center' : elevation bin center values
         Some data_vars may additionally be indexed by energy bin;
         however, only the spatial axes are used in this class.
-    pset_frame : geometry.SpiceFrame
+    spice_reference_frame : geometry.SpiceFrame
         The reference Spice frame of the pointing set. Default is IMAP_DPS.
     order : {'C', 'F'}, optional
         The order of the grid to be used in any raveling processes.
@@ -139,13 +142,13 @@ class UltraPointingSet(PointingSet):
     def __init__(
         self,
         l1c_dataset: xr.Dataset | pathlib.Path | str,
-        pset_frame: geometry.SpiceFrame = geometry.SpiceFrame.IMAP_DPS,
+        spice_reference_frame: geometry.SpiceFrame = geometry.SpiceFrame.IMAP_DPS,
         order: typing.Literal["C"] | typing.Literal["F"] = "F",
     ):
         # History of reference frames to which the pointing set has been projected
         # Current frame is the last element in the list, accessed as @property
-        self.pset_frame_history = [
-            pset_frame,
+        self.spice_reference_frame_history = [
+            spice_reference_frame,
         ]
 
         # Read in the data and store the xarray dataset as data attr
@@ -184,13 +187,13 @@ class UltraPointingSet(PointingSet):
 
         # Build the azimuth and elevation grids with an AzElSkyGrid object
         # and check that the 1D axes match the dataset's az and el.
-        input_grid = spatial_utils.AzElSkyGrid(
+        self.sky_grid = spatial_utils.AzElSkyGrid(
             spacing_deg=self.spacing_deg,
         )
 
         for dim, constructed_bins in zip(
             ["azimuth", "elevation"],
-            [input_grid.az_bin_midpoints, input_grid.el_bin_midpoints],
+            [self.sky_grid.az_bin_midpoints, self.sky_grid.el_bin_midpoints],
         ):
             if not np.allclose(
                 sorted(np.rad2deg(constructed_bins)),
@@ -210,8 +213,8 @@ class UltraPointingSet(PointingSet):
         # column 1 (az_el_points[:, 1]) is the elevation of that point.
         self.az_el_points = np.column_stack(
             (
-                input_grid.az_grid.ravel(order=order),
-                input_grid.el_grid.ravel(order=order),
+                self.sky_grid.az_grid.ravel(order=order),
+                self.sky_grid.el_grid.ravel(order=order),
             )
         )
         self.num_points = self.az_el_points.shape[0]
@@ -219,11 +222,11 @@ class UltraPointingSet(PointingSet):
         # Also store the bin edges for the pointing set to allow for "pull" method
         # of index matching (not yet implemented).
         # These are 1D arrays of different lengths and cannot be stacked.
-        self.az_bin_edges = input_grid.az_bin_edges
-        self.el_bin_edges = input_grid.el_bin_edges
+        self.az_bin_edges = self.sky_grid.az_bin_edges
+        self.el_bin_edges = self.sky_grid.el_bin_edges
 
     @property
-    def pset_frame(self) -> geometry.SpiceFrame:
+    def spice_reference_frame(self) -> geometry.SpiceFrame:
         """
         Return the current reference frame of the pointing set.
 
@@ -233,7 +236,7 @@ class UltraPointingSet(PointingSet):
             The current reference frame of the pointing set: the frame in which its
             azimuth and elevation points are defined.
         """
-        return self.pset_frame_history[-1]
+        return self.spice_reference_frame_history[-1]
 
     def project_to_frame(
         self, out_frame: geometry.SpiceFrame, event_time: float | None = None
@@ -253,18 +256,18 @@ class UltraPointingSet(PointingSet):
         -----
         This method modifies the pointing set in place, updating the
         reference frame and the azimuth and elevation points.
-        It also appends the new reference frame to the pset_frame_history.
+        It also appends the new reference frame to the spice_reference_frame_history.
         """
         if event_time is None:
             event_time = self.epoch
 
         # Check if the frame is already in the desired frame
-        if self.pset_frame == out_frame:
+        if self.spice_reference_frame == out_frame:
             logger.info(f"Pointing set is already in frame {out_frame}.")
             return
 
         logger.info(
-            f"Projecting pointing set from reference frame {self.pset_frame}"
+            f"Projecting pointing set from reference frame {self.spice_reference_frame}"
             f"to frame {out_frame} at event time {event_time}."
         )
 
@@ -272,12 +275,12 @@ class UltraPointingSet(PointingSet):
         self.az_el_points = geometry.frame_transform_az_el(
             et=event_time,
             az_el=self.az_el_points,
-            from_frame=self.pset_frame,
+            from_frame=self.spice_reference_frame,
             to_frame=out_frame,
             degrees=False,
         )
 
-        self.pset_frame_history.append(out_frame)
+        self.spice_reference_frame_history.append(out_frame)
 
     def __repr__(self) -> str:
         """
@@ -289,8 +292,8 @@ class UltraPointingSet(PointingSet):
             String representation of the UltraPointingSet.
         """
         return (
-            f"UltraPointingSet\n\t(pset_frame="
-            f"{self.pset_frame}, epoch={self.epoch}, "
+            f"UltraPointingSet\n\t(spice_reference_frame="
+            f"{self.spice_reference_frame}, epoch={self.epoch}, "
             f"num_points={self.num_points})"
         )
 
@@ -353,7 +356,7 @@ class RectangularSkyMap(AbstractSkyMap):
         # Define the core properties of the map:
         self.tiling_type = SkyTilingType.RECTANGULAR  # Type of tiling of the sky
         self.spacing_deg = spacing_deg
-        self.reference_frame = spice_frame
+        self.spice_reference_frame = spice_frame
         self.order = order
         self.sky_grid = spatial_utils.AzElSkyGrid(
             spacing_deg=self.spacing_deg,
@@ -416,8 +419,8 @@ class RectangularSkyMap(AbstractSkyMap):
         # TODO: Implement the "pull" method of index matching.
         """
         if method == IndexMatchMethod.PUSH:
-            if pointing_set.pset_frame != self.reference_frame:
-                pointing_set.project_to_frame(self.reference_frame)
+            if pointing_set.spice_reference_frame != self.spice_reference_frame:
+                pointing_set.project_to_frame(self.spice_reference_frame)
 
             az_indices = (
                 np.digitize(pointing_set.az_el_points[:, 0], self.sky_grid.az_bin_edges)
@@ -520,9 +523,175 @@ class RectangularSkyMap(AbstractSkyMap):
         """
         return (
             "RectangularSkyMap\n\t(reference_frame="
-            f"{self.reference_frame.name} ({self.reference_frame.value}), "
+            f"{self.spice_reference_frame.name} ({self.spice_reference_frame.value}), "
             f"spacing_deg={self.spacing_deg}, num_points={self.num_points})"
         )
+
+
+# TODO:
+# Extract method to match indices from (either type of) object 1
+# to (either type of) object 2. Remove redundant matching code on Map class.
+
+# Each object will need:
+# Spice Frame
+# Pixel centers in az, el
+# Tiling Type
+# IF RECTANGULAR:
+#   Az, el bin edges
+# IF HEALPIX:
+#   Nside
+
+
+def match_indices(
+    spatial_object_input_frame: PointingSet | AbstractSkyMap,
+    spatial_object_output_frame: PointingSet | AbstractSkyMap,
+    event_time: float | None = None,
+) -> NDArray:
+    """
+    Find the output indices corresponding to each input index between 2 spatial objects.
+
+    First, the pixel center coordinates of the input spatial object are
+    transformed from the Spice coordinate frame of the input object to their
+    corresponding coordinates in the Spice frame of the output object.
+    Then, the transformed pixel centers are matched to the 1D indices of the spatial
+    pixels in the output frame, either in an unwrapped rectangular grid or a Healpix
+    tessellation of the sky.
+    This function always "pushes" the pixels of the input object to corresponding pixels
+    in the output object's unwrapped rectangular grid or healpix tessellation.
+
+    Parameters
+    ----------
+    spatial_object_input_frame : PointingSet | AbstractSkyMap
+        An object containing 1D spatial pixel centers in azimuth and elevation,
+        which will be matched to 1D indices of spatial pixels in the output frame.
+        Must contain the Spice frame in which the pixel centers are defined.
+    spatial_object_output_frame : PointingSet | AbstractSkyMap
+        The object containing a grid or tessellation of spatial pixels
+        into which the input spatial pixel centers will 'land', and be matched to
+        corresponding pixel 1D indices in the output frame.
+    event_time : float, optional
+        The event time at which to project the input spatial object to the output frame.
+        This can be manually specified, e.g., for converting between Maps which do not
+        contain an epoch value.
+        The default value is None, in which case the event time of the PointingSet
+        object is used.
+
+    Returns
+    -------
+    flat_indices_input_grid_output_frame : NDArray
+        1D array of pixel indices of the output object corresponding to each pixel in
+        the input object. The length of the array is equal to the number of pixels in
+        the input object, and may contain 0 or >1 occurrences of the same output index.
+
+    Raises
+    ------
+    ValueError
+        If both input and output objects are PointingSet objects.
+    ValueError
+        If the event time is not specified and both objects are SkyMaps.
+    NotImplementedError
+        If the output tiling type is HEALPIX. Will be implemented in the future.
+    ValueError
+        If the tiling type of the output frame is not RECTANGULAR or HEALPIX.
+    """
+    if isinstance(spatial_object_input_frame, PointingSet) and isinstance(
+        spatial_object_output_frame, PointingSet
+    ):
+        raise ValueError("Cannot match indices between two PointingSet objects.")
+
+    # If event_time is not specified, use event_time of the PointingSet, if present.
+    if event_time is None:
+        if isinstance(spatial_object_input_frame, PointingSet):
+            event_time = spatial_object_input_frame.data["epoch"].values
+        elif isinstance(spatial_object_output_frame, PointingSet):
+            event_time = spatial_object_output_frame.data["epoch"].values
+        else:
+            raise ValueError(
+                "Event time must be specified if both objects are SkyMaps."
+            )
+
+    obj1_az_el_points_frame1 = spatial_object_input_frame.az_el_points
+
+    # If the two objects are not already in the same frame,
+    # project the input pixel centers to the output frame.
+    if (
+        spatial_object_input_frame.spice_reference_frame
+        is not spatial_object_output_frame.spice_reference_frame
+    ):
+        obj1_az_el_points_frame2 = geometry.frame_transform_az_el(
+            et=event_time,
+            az_el=obj1_az_el_points_frame1,
+            from_frame=spatial_object_input_frame.spice_reference_frame,
+            to_frame=spatial_object_output_frame.spice_reference_frame,
+            degrees=False,
+        )
+    else:
+        obj1_az_el_points_frame2 = obj1_az_el_points_frame1
+
+    obj1_az_el_points_frame2 = geometry.frame_transform_az_el(
+        et=event_time,
+        az_el=obj1_az_el_points_frame1,
+        from_frame=spatial_object_input_frame.spice_reference_frame,
+        to_frame=spatial_object_output_frame.spice_reference_frame,
+        degrees=False,
+    )
+
+    # The way indices are matched depends on the tiling type of the 2nd object
+    if spatial_object_output_frame.tiling_type is SkyTilingType.RECTANGULAR:
+        # To match to a rectangular grid, we need to digitize the transformed az, el
+        # pixel centers onto the bin edges of the output frame's grid, then
+        # use ravel_multi_index to get the 1D indices of the pixels in the output frame.
+        az_indices = (
+            np.digitize(
+                obj1_az_el_points_frame2[:, 0],
+                spatial_object_output_frame.sky_grid.az_bin_edges,
+            )
+            - 1
+        )
+        el_indices = (
+            np.digitize(
+                obj1_az_el_points_frame2[:, 1],
+                spatial_object_output_frame.sky_grid.el_bin_edges,
+            )
+            - 1
+        )
+        flat_indices_input_grid_output_frame = np.ravel_multi_index(
+            multi_index=(az_indices, el_indices),
+            dims=(
+                len(spatial_object_output_frame.sky_grid.az_bin_midpoints),
+                len(spatial_object_output_frame.sky_grid.el_bin_midpoints),
+            ),
+        )
+
+    elif spatial_object_output_frame.tiling_type is SkyTilingType.HEALPIX:
+        # To match to a Healpix tessellation, we need to use the healpy function ang2pix
+        # which directly returns the index on the output frame's Healpix tessellation.
+        """
+        Leaving this as a placeholder for now, so we don't yet
+        need to add a healpy dependency. It will look something like the
+        following code, much simpler than the rectangular case:
+
+        ```python
+        import healpy as hp
+        flat_indices_input_grid_output_frame = hp.ang2pix(
+            nside=spatial_object_output_frame.nside,
+            theta=np.rad2deg(obj1_az_el_points_frame2[:, 0]),  # Lon
+            phi=np.rad2deg(obj1_az_el_points_frame2[:, 1]),  # Lat
+            nest=False,
+            lonlat=True,
+        )
+        ```
+        """
+        raise NotImplementedError(
+            "Index matching for output tiling type Healpix is not yet implemented."
+        )
+
+    else:
+        raise ValueError(
+            "Tiling type of the output frame must be either RECTANGULAR or HEALPIX."
+        )
+
+    return flat_indices_input_grid_output_frame
 
 
 # TODO:
