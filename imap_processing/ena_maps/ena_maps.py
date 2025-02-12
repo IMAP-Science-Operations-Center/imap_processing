@@ -18,6 +18,9 @@ from imap_processing.spice import geometry
 logger = logging.getLogger(__name__)
 
 
+RAVEL_ORDER = typing.cast(typing.Literal["C", "F"], "C")
+
+
 class SkyTilingType(Enum):
     """Enumeration of the types of tiling used in the ENA maps."""
 
@@ -661,6 +664,7 @@ def match_indices(
                 len(spatial_object_output_frame.sky_grid.az_bin_midpoints),
                 len(spatial_object_output_frame.sky_grid.el_bin_midpoints),
             ),
+            order=RAVEL_ORDER,
         )
 
     elif spatial_object_output_frame.tiling_type is SkyTilingType.HEALPIX:
