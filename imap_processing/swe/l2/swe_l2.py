@@ -201,45 +201,57 @@ def calculate_flux(l1b_dataset: xr.Dataset) -> npt.NDArray:
     return flux
 
 
-def put_data_in_bins(
+def put_data_into_angle_bins(
     data: np.ndarray, angle_bin_indices: npt.NDArray[np.int_]
 ) -> npt.NDArray:
     """
-    Put data in bins.
+    Put data in its angle bins.
 
-    SWE data will need to bin data in 30 angle bins. This function will
-    walk through each full cycle data and keep energy step same for each
-    data but put data in its angle bin.
+    This function bins SWE data into 30 predefined angle bins
+    while preserving the original energy step structure. For each
+    full cycle, it assigns data to the corresponding angle bin
+    based on the provided indices.
+
+    Since multiple data points may fall into the same angle bin,
+    the function accumulates values and computes the average across
+    all 7 CEMs, ensuring that each bin contains a representative
+    mean value while maintaining the 7 CEM structure.
 
     Parameters
     ----------
     data : numpy.ndarray
-        Data to put in bins.
+        Data to put in bins. Shape: (full_cycle_data, energy_step, angle_bin, 7).
     angle_bin_indices : numpy.ndarray
-        Indices of angle bins to put data in.
+        Indices of angle bins to put data in. Shape:
+        (full_cycle_data, energy_step, angle_bin).
 
     Returns
     -------
     numpy.ndarray
-        Data in bins.
+        Data in bins. Shape: (full_cycle_data, 24, 30, 7).
     """
-    binned_data = np.full((data.shape[0], 24, 30, 7), np.nan)
-    full_cycle_data = data.shape[0]
-    energy_step = data.shape[1]
-    angle_bin = data.shape[2]
-    # For each full cycle data
-    for cycle in range(full_cycle_data):
-        # For each energy step
-        for energy in range(energy_step):
-            # For each angle bin
-            for angle in range(angle_bin):
-                # Find all data of current energy step row that has
-                # same angle bin index. Then calculate mean of all
-                # data for each 7 CEMs data. Then put that mean in
-                # its angle bin.
-                angle_indices = np.where(angle_bin_indices[cycle, energy] == angle)
-                data_mean = np.mean(data[cycle, energy, angle_indices], axis=1)
-                binned_data[cycle, energy, angle] = data_mean
+    # Initialize with zeros instead of NaN because np.add.at() does not
+    # work with nan values. It results in nan + value = nan
+    binned_data = np.zeros((data.shape[0], 24, 30, 7), dtype=np.float64)
+
+    time_indices = np.arange(data.shape[0])[:, None, None]
+    energy_indices = np.arange(data.shape[1])[None, :, None]
+    angle_indices = angle_bin_indices
+
+    # Use np.add.at() to accumulate values into bins
+    np.add.at(binned_data, (time_indices, energy_indices, angle_indices), data)
+
+    # Count occurrences in each bin to compute the mean.
+    # Ensure float dtype for division
+    bin_counts = np.zeros_like(binned_data, dtype=float)
+    np.add.at(bin_counts, (time_indices, energy_indices, angle_indices), 1)
+
+    # Compute the mean while avoiding division by zero
+    with np.errstate(invalid="ignore", divide="ignore"):
+        # Replace zero counts with NaN to indicate no data in the bin
+        # because zero counts could be valid data.
+        binned_data /= np.where(bin_counts == 0, np.nan, bin_counts)
+
     return binned_data
 
 
@@ -351,15 +363,23 @@ def swe_l2(l1b_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
     # Carry over acquisition times for L3 purposes.
     dataset["acquisition_time"] = l1b_dataset["acquisition_time"]
 
-    # Calculate spin phase using SWE acquisition_time calculated in l1b.
-    # L1B dataset stores it by (epoch, esa_step, spin_sector).
-    # To calculate center time of data acquisition time, we will add
+    # Calculate spin phase using SWE acquisition_time from the
+    # L1B dataset. The L1B dataset stores acquisition_time with
+    # dimensions (epoch, esa_step, spin_sector).
+    #
+    # To determine the center acquisition time, we adjust the
+    # recorded acquisition_time as follows:
     #   acquisition_time + (acq_duration / 1000000) / 2
-    # acq_duration is in microseconds and is stored in L1B dataset by
-    # (epoch, cycle). acq_duration should be same for all esa_steps in
-    # a full sweep. We will take the first acq_duration value for each
-    # full sweep. This center time calculation is done to get the center
-    # angle of the data.
+    #
+    # Here, acq_duration is given in microseconds and is stored
+    # in the L1B dataset with dimensions (epoch, cycle). Since acq_duration
+    # remains the same for all quarter cycles within a full sweep,
+    # we use the first acq_duration value for each full sweep to perform
+    # this adjustment.
+    #
+    # This center time calculation is necessary to accurately determine
+    # the center angle of the data.
+
     acq_duration = l1b_dataset["acq_duration"].data[:, 0] / 2000000
     data_acq_time = (
         l1b_dataset["acquisition_time"].data + acq_duration[:, np.newaxis, np.newaxis]
@@ -372,54 +392,54 @@ def swe_l2(l1b_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
     )
 
     inst_spin_angle = get_spin_angle(inst_spin_phase, degrees=True).reshape(-1, 24, 30)
-    # Spin angle bins range is little different from spin angle bins.
-    # Spin angle bins are centered like:
+    # The spin angle bins are centered at:
     #   [ 6, 18, 30, 42, 54, 66, 78, 90, 102, 114, 126, 138, 150, 162, 174,
-    #   186, 198, 210, 222, 234, 246, 258, 270, 282, 294, 306, 318, 330,
-    #   342, 354]
-    # Where does an input angle goes into which bins is determined by the
-    # following logic:
-    #   phi_begin <= center - 6
-    #   phi_center = 6
-    #   phi_end < center + 6
-    # For example, if input_angle is 8.4, we would put in spin angle bin 6.
-    # To make binning easier, we will use following bin ranges:
+    #     186, 198, 210, 222, 234, 246, 258, 270, 282, 294, 306, 318, 330,
+    #     342, 354]
+    #
+    # An input angle is assigned to a bin based on the following conditions:
+    #   - phi_begin <= center - 6
+    #   - phi_center = 6
+    #   - phi_end < center + 6
+    #
+    # For example, if the input angle is 8.4, it falls within the bin centered at 6.
+    #
+    # To make binning easier, we define bin edges as:
     #   [0, 12, 24, 36, 48, 60, 72, 84, 96, 108, 120, 132, 144, 156, 168,
-    #   180, 192, 204, 216, 228, 240, 252, 264, 276, 288, 300, 312, 324,
-    #   336, 348]
-    # SWE want to use right side of np.searchsorted, a[i-1] <= v < a[i].
-    # Index of spin angle bins and spin angle range should match.
-    # For example,
-    #   np.searchsorted(x, [6], side="right") -> [1]. Bin center test.
-    #   np.searchsorted(x, [8.4], side="right"] -> [1]. Bin center edge test.
-    #   np.searchsorted(x, [12], side="right") -> [2]. Bin end test.
-    #   np.searchsorted(x, [0], side="right") -> [1]. Bin start test.
-    # [i-1] gives the correct bin index for all the above tests.
+    #    180, 192, 204, 216, 228, 240, 252, 264, 276, 288, 300, 312, 324,
+    #    336, 348]
+    #
+    # SWE uses the right-side behavior of `np.searchsorted`, where `a[i-1] <= v < a[i]`.
+    #
+    # Example test cases:
+    #   - `np.searchsorted(x, [6], side="right") -> [1]` (Bin center test)
+    #   - `np.searchsorted(x, [8.4], side="right") -> [1]` (Edge case near center)
+    #   - `np.searchsorted(x, [12], side="right") -> [2]` (Bin end test)
+    #   - `np.searchsorted(x, [0], side="right") -> [1]` (Bin start test)
+    #
+    # Using `i-1` ensures that all input angles are assigned to the correct bin.
+
     spin_angle_bins_range = np.arange(0, 360, 12)
     spin_angle_bins_indices = np.searchsorted(
         spin_angle_bins_range, inst_spin_angle, side="right"
     )
     spin_angle_bins_indices = spin_angle_bins_indices - 1
 
-    # # Set energy bins index for each data counts to be same as input data.
-    # energy_steps = np.arange(24)
-    # total_angle_bins = 30
-    # total_full_cycle_data = l1b_dataset["science_data"].shape[0]
-    # energy_bins_indices = np.tile(
-    #     energy_steps, (total_angle_bins, total_full_cycle_data)
-    # ).T
-    # energy_bins_indices = energy_bins_indices.reshape(-1, 24, 30)
-
-    # TODO: take flux data and put it in its spin angle bins using the indices.
-    binned_data = put_data_in_bins(flux, spin_angle_bins_indices)
+    # Put flux data in its spin angle bins using the indices.
+    flux_binned_data = put_data_into_angle_bins(flux, spin_angle_bins_indices)
     dataset["flux"] = xr.DataArray(
-        binned_data,
+        flux_binned_data,
         name="flux",
         dims=["epoch", "energy", "inst_az", "inst_el"],
         attrs=cdf_attributes.get_variable_attributes("flux"),
     )
+
+    # Put phase space density data in its spin angle bins using the indices.
+    phase_space_density_binned_data = put_data_into_angle_bins(
+        phase_space_density.data, spin_angle_bins_indices
+    )
     dataset["phase_space_density"] = xr.DataArray(
-        put_data_in_bins(phase_space_density.data, spin_angle_bins_indices),
+        phase_space_density_binned_data,
         name="phase_space_density",
         dims=["epoch", "energy", "inst_az", "inst_el"],
         attrs=cdf_attributes.get_variable_attributes("phase_space_density"),
