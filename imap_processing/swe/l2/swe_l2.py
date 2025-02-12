@@ -246,11 +246,10 @@ def put_data_into_angle_bins(
     bin_counts = np.zeros_like(binned_data, dtype=float)
     np.add.at(bin_counts, (time_indices, energy_indices, angle_indices), 1)
 
-    # Compute the mean while avoiding division by zero
-    with np.errstate(invalid="ignore", divide="ignore"):
-        # Replace zero counts with NaN to indicate no data in the bin
-        # because zero counts could be valid data.
-        binned_data /= np.where(bin_counts == 0, np.nan, bin_counts)
+    # Compute the mean. Replace zero counts with NaN to indicate no data in the bin
+    # because zero counts could be valid data.
+    bin_counts[bin_counts == 0] = np.nan
+    binned_data /= bin_counts
 
     return binned_data
 
@@ -365,7 +364,9 @@ def swe_l2(l1b_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
 
     # Calculate spin phase using SWE acquisition_time from the
     # L1B dataset. The L1B dataset stores acquisition_time with
-    # dimensions (epoch, esa_step, spin_sector).
+    # dimensions (epoch, esa_step, spin_sector). Use center time
+    # to calculate spin phase. This center time calculation is
+    # necessary to accurately determine the center angle of the data.
     #
     # To determine the center acquisition time, we adjust the
     # recorded acquisition_time as follows:
@@ -376,21 +377,19 @@ def swe_l2(l1b_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
     # remains the same for all quarter cycles within a full sweep,
     # we use the first acq_duration value for each full sweep to perform
     # this adjustment.
-    #
-    # This center time calculation is necessary to accurately determine
-    # the center angle of the data.
 
     acq_duration = l1b_dataset["acq_duration"].data[:, 0] / 2000000
     data_acq_time = (
         l1b_dataset["acquisition_time"].data + acq_duration[:, np.newaxis, np.newaxis]
     )
 
-    # calculate spin phase
+    # Calculate spin phase
     inst_spin_phase = get_instrument_spin_phase(
         query_met_times=data_acq_time.flatten(),
         instrument=SpiceFrame.IMAP_SWE,
     )
 
+    # Convert spin phase to spin angle in degrees.
     inst_spin_angle = get_spin_angle(inst_spin_phase, degrees=True).reshape(-1, 24, 30)
     # The spin angle bins are centered at:
     #   [ 6, 18, 30, 42, 54, 66, 78, 90, 102, 114, 126, 138, 150, 162, 174,
@@ -417,7 +416,8 @@ def swe_l2(l1b_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
     #   - `np.searchsorted(x, [12], side="right") -> [2]` (Bin end test)
     #   - `np.searchsorted(x, [0], side="right") -> [1]` (Bin start test)
     #
-    # Using `i-1` ensures that all input angles are assigned to the correct bin.
+    # Using `i-1` ensures that all input angles are assigned to the correct bin of
+    # centered angle bins.
 
     spin_angle_bins_range = np.arange(0, 360, 12)
     spin_angle_bins_indices = np.searchsorted(
