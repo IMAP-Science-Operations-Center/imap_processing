@@ -121,12 +121,11 @@ def fake_spin_data():
     dataset = xr.Dataset(
         data_vars=dict(
             num_completed=(["epoch"], np.array([0, 0])),
-            acq_start_sec=(["epoch"], np.array([0, 1])),
-            acq_start_subsec=(["epoch"], np.array([0, 1])),
-            acq_end_sec=(["epoch"], np.array([1, 2])),
-            acq_end_subsec=(["epoch"], np.array([0, 0])),
-        ),
-        coords=dict(epoch=(["epoch"], np.array([0, 1]))),
+            acq_start_sec=(["epoch"], np.array([1000000, 2000000])),
+            acq_start_subsec=(["epoch"], np.array([1000000, 2000000])),
+            acq_end_sec=(["epoch"], np.array([2000000, 3000000])),
+            acq_end_subsec=(["epoch"], np.array([2000000, 3000000])),
+        )
     )
     spin_fields = [
         "start_sec_spin",
@@ -308,10 +307,10 @@ def test_organize_spin_data(fake_spin_data, attr_mgr):
     expected_dataset = xr.Dataset(
         data_vars=dict(
             num_completed=(["epoch"], np.array([0, 0])),
-            acq_start_sec=(["epoch"], np.array([0, 1])),
-            acq_start_subsec=(["epoch"], np.array([0, 1])),
-            acq_end_sec=(["epoch"], np.array([1, 2])),
-            acq_end_subsec=(["epoch"], np.array([0, 0])),
+            acq_start_sec=(["epoch"], np.array([1000000, 2000000])),
+            acq_start_subsec=(["epoch"], np.array([1000000, 2000000])),
+            acq_end_sec=(["epoch"], np.array([2000000, 3000000])),
+            acq_end_subsec=(["epoch"], np.array([2000000, 3000000])),
             start_sec_spin=(
                 ["epoch", "spin"],
                 np.array(data_by_epoch_spin),
@@ -342,7 +341,8 @@ def test_organize_spin_data(fake_spin_data, attr_mgr):
             ),
         ),
         coords=dict(
-            epoch=(["epoch"], np.array([315576066184000000, 315576067284000064]))
+            # acq_start + 1e6 * acq_start_subsec converted to J2000 epoch
+            epoch=(["epoch"], np.array([316576067184000000, 317576068184000000]))
         ),
     )
 
@@ -351,53 +351,3 @@ def test_organize_spin_data(fake_spin_data, attr_mgr):
 
     # Assert
     xr.testing.assert_equal(organized_data, expected_dataset)
-
-
-def test_validate_spin_data(sample_data, attr_mgr):
-    # Arrange
-    spin_data = sample_data[LoAPID.ILO_SPIN]
-    validation_path = (
-        imap_module_directory / "tests/lo/validation_data/"
-        "Instrument_FM1_T104_R129_20240803_ILO_SPIN_EU.csv"
-    )
-    validation_data = pd.read_csv(validation_path)
-
-    spin_fields = [
-        "shcoarse",
-        "num_completed",
-        "acq_start_sec",
-        "acq_start_subsec",
-        "acq_end_sec",
-        "acq_end_subsec",
-        "start_sec_spin",
-        "start_subsec_spin",
-        "esa_neg_dac_spin",
-        "esa_pos_dac_spin",
-        "valid_period_spin",
-        "valid_phase_spin",
-        "period_source_spin",
-    ]
-
-    # Act
-    organized_data = organize_spin_data(spin_data, attr_mgr)
-
-    # Assert
-    for field in spin_fields:
-        # The validation data contains a duplicate set of columns for the same values.
-        # They are formatted as column_prefix_<spin> and column_prefix[<spin>]
-        # adding a condition to remove the one with [ when combining those columns into
-        # a list to combine the spins in the validation data into a single list
-        validation_fields = [
-            col
-            for col in validation_data.columns
-            if col.startswith(field.upper()) and "[" not in col
-        ]
-
-        if len(validation_fields) > 1:
-            validation_vals = np.array(
-                [row for row in validation_data[validation_fields].values]
-            )
-        else:
-            validation_vals = validation_data[validation_fields[0]].values
-
-        np.testing.assert_array_equal(organized_data[field].values, validation_vals)

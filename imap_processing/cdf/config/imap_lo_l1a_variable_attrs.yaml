@@ -449,7 +449,7 @@ acq_start_sec:
   VAR_TYPE: support_data
   CATDESC: Acquisition start
   FIELDNAM: Acquisition start seconds
-  UNITS: ns
+  UNITS: s
   LABLAXIS: Acquisition start seconds
 
 acq_start_subsec:
@@ -458,6 +458,7 @@ acq_start_subsec:
   VAR_TYPE: support_data
   CATDESC: Acquisition start
   FIELDNAM: Acquisition start sub-seconds
+  UNITS: ms
   LABLAXIS: Acquisition start sub-seconds
 
 acq_end_sec:
@@ -466,7 +467,7 @@ acq_end_sec:
   VAR_TYPE: support_data
   CATDESC: Acquisition end
   FIELDNAM: Acquisition end seconds
-  UNITS: ns
+  UNITS: s
   LABLAXIS: Acquisition end seconds
 
 acq_end_subsec:
@@ -475,6 +476,7 @@ acq_end_subsec:
     VAR_TYPE: support_data
     CATDESC: Acquisition end
     FIELDNAM: Acquisition end sub-seconds
+    UNITS: ms
     LABLAXIS: Acquisition end sub-seconds
 
 start_sec_spin:
@@ -482,13 +484,14 @@ start_sec_spin:
   <<: *default_uint32
   CATDESC: Spin start seconds time
   FIELDNAM: Spin start seconds time
-  UNITS: ns
+  UNITS: s
 
 start_subsec_spin:
   <<: *spin_default
   <<: *default_uint32
   CATDESC: Spin start sub-seconds time
   FIELDNAM: Spin start sub-seconds time
+  UNITS: ms
 
 esa_pos_dac_spin:
   <<: *spin_default
