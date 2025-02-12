@@ -108,6 +108,24 @@ cem_id_label:
   FORMAT: A1
   VAR_TYPE: metadata
 
+energy_label:
+  CATDESC: Energy of the particle in eV
+  FIELDNAM: Energy
+  FORMAT: A5
+  VAR_TYPE: metadata
+
+inst_az_label:
+  CATDESC: Spin angle bins in instrument frame. Angle resolution is 12 degree nominally
+  FIELDNAM: Spin Angle
+  FORMAT: A3
+  VAR_TYPE: metadata
+
+inst_el_label:
+  CATDESC: Angle of each CEM detectors
+  FIELDNAM: CEM Angle
+  FORMAT: A3
+  VAR_TYPE: metadata
+
 # <=== Data Variables ===>
 # Default Attrs for all data variables unless overridden
 
@@ -135,7 +153,24 @@ phase_space_density_spin_sector:
   DISPLAY_TYPE: spectrogram
   FIELDNAM: Phase Space Density
   FILLVAL: -1.0000000E+31
-  UNITS: " "
+  UNITS: s^3/ (cm^6 * ster)
+  VALIDMAX: 0.000015514
+  VALIDMIN: 0
+  VAR_TYPE: data
+
+phase_space_density:
+  CATDESC: Phase space density organized by energy(eV) and spin angle and CEM angle
+  DEPEND_0: epoch
+  DEPEND_1: energy
+  DEPEND_2: inst_az
+  DEPEND_3: inst_el
+  LABL_PTR_1: energy_label
+  LABL_PTR_2: inst_az_label
+  LABL_PTR_3: inst_el_label
+  DISPLAY_TYPE: spectrogram
+  FIELDNAM: Phase Space Density
+  FILLVAL: -1.0000000E+31
+  UNITS: s^3/ (cm^6 * ster)
   VALIDMAX: 0.000015514
   VALIDMIN: 0
   VAR_TYPE: data
@@ -152,7 +187,24 @@ flux_spin_sector:
   DISPLAY_TYPE: spectrogram
   FIELDNAM: Flux
   FILLVAL: -1.0000000E+31
-  UNITS: " "
+  UNITS: 1 / (2 * eV * cm^2 * s * ster)
+  VALIDMAX: 0.000015514
+  VALIDMIN: 0
+  VAR_TYPE: data
+
+flux:
+  CATDESC: Flux organized by energy(eV) and spin angle and CEM angle
+  DEPEND_0: epoch
+  DEPEND_1: energy
+  DEPEND_2: inst_az
+  DEPEND_3: inst_el
+  LABL_PTR_1: energy_label
+  LABL_PTR_2: inst_az_label
+  LABL_PTR_3: inst_el_label
+  DISPLAY_TYPE: spectrogram
+  FIELDNAM: Flux
+  FILLVAL: -1.0000000E+31
+  UNITS: 1 / (2 * eV * cm^2 * s * ster)
   VALIDMAX: 0.000015514
   VALIDMIN: 0
   VAR_TYPE: data

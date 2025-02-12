@@ -207,6 +207,10 @@ def put_data_in_bins(
     """
     Put data in bins.
 
+    SWE data will need to bin data in 30 angle bins. This function will
+    walk through each full cycle data and keep energy step same for each
+    data but put data in its angle bin.
+
     Parameters
     ----------
     data : numpy.ndarray
@@ -219,7 +223,7 @@ def put_data_in_bins(
     numpy.ndarray
         Data in bins.
     """
-    binned_data = np.full((data.shape[0], 24, 30), np.nan)
+    binned_data = np.full((data.shape[0], 24, 30, 7), np.nan)
     full_cycle_data = data.shape[0]
     energy_step = data.shape[1]
     angle_bin = data.shape[2]
@@ -234,24 +238,8 @@ def put_data_in_bins(
                 # data for each 7 CEMs data. Then put that mean in
                 # its angle bin.
                 angle_indices = np.where(angle_bin_indices[cycle, energy] == angle)
-                # TODO: undo this after binning work is checked
-                # data_mean = np.mean(data[cycle, energy, angle_indices], axis=1)
-                data_mean = np.mean(data[cycle, energy, angle_indices])
-                # print(data_mean)
+                data_mean = np.mean(data[cycle, energy, angle_indices], axis=1)
                 binned_data[cycle, energy, angle] = data_mean
-                # store indices in binned_data
-                # binned_data[cycle, energy, angle] = angle_indices
-                if cycle == 5 and len(angle_indices[0]) > 0:
-                    # print(
-                    #     f"cycle: {cycle}, energy: {energy}, angle: {angle}"
-                    # )
-                    # # print(f"angle: ", data[cycle, energy, angle_indices])
-                    # print(f"angle indices: ", angle_indices)
-                    # print("data: ", data[cycle, energy, angle_indices].shape)
-                    # # np.mean across 7 CEMs.
-                    # print(data_mean)
-                    pass
-    # print(binned_data.shape)
     return binned_data
 
 
@@ -284,12 +272,25 @@ def swe_l2(l1b_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
         attrs=cdf_attributes.get_variable_attributes("energy"),
     )
 
+    energy_label = xr.DataArray(
+        np.array(list(ESA_VOLTAGE_ROW_INDEX_DICT.keys())).astype(str),
+        name="energy_label",
+        dims=["energy"],
+        attrs=cdf_attributes.get_variable_attributes("energy_label"),
+    )
+
     # Angle of each CEM detectors.
     inst_el_xr = xr.DataArray(
         CEM_DETECTORS_ANGLE,
         name="inst_el",
         dims=["inst_el"],
         attrs=cdf_attributes.get_variable_attributes("inst_el"),
+    )
+    inst_el_label = xr.DataArray(
+        CEM_DETECTORS_ANGLE.astype(str),
+        name="inst_el_label",
+        dims=["inst_el"],
+        attrs=cdf_attributes.get_variable_attributes("inst_el_label"),
     )
 
     # Spin Angle bins storing bin center values.
@@ -298,6 +299,12 @@ def swe_l2(l1b_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
         name="inst_az",
         dims=["inst_az"],
         attrs=cdf_attributes.get_variable_attributes("inst_az"),
+    )
+    inst_az_label = xr.DataArray(
+        np.arange(6, 360, 12).astype(str),
+        name="inst_az_label",
+        dims=["inst_az"],
+        attrs=cdf_attributes.get_variable_attributes("inst_az_label"),
     )
 
     dataset = xr.Dataset(
@@ -310,8 +317,11 @@ def swe_l2(l1b_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
             "cem_id": l1b_dataset["cem_id"],
             "inst_el": inst_el_xr,
             "esa_step_label": l1b_dataset["esa_step_label"],
+            "energy_label": energy_label,
             "spin_sector_label": l1b_dataset["spin_sector_label"],
+            "inst_az_label": inst_az_label,
             "cem_id_label": l1b_dataset["cem_id_label"],
+            "inst_el_label": inst_el_label,
         },
         attrs=cdf_attributes.get_global_attributes("imap_swe_l2_sci"),
     )
@@ -390,9 +400,6 @@ def swe_l2(l1b_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
         spin_angle_bins_range, inst_spin_angle, side="right"
     )
     spin_angle_bins_indices = spin_angle_bins_indices - 1
-    # print(spin_angle_bins_indices[0])
-    print(l1b_dataset["acq_duration"].data[0])
-    print(l1b_dataset["settle_duration"].data[0])
 
     # # Set energy bins index for each data counts to be same as input data.
     # energy_steps = np.arange(24)
@@ -405,21 +412,17 @@ def swe_l2(l1b_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
 
     # TODO: take flux data and put it in its spin angle bins using the indices.
     binned_data = put_data_in_bins(flux, spin_angle_bins_indices)
-    print(binned_data[0])
-    # print(
-    #     pd.DataFrame(inst_spin_angle[0],
-    # columns=np.arange(30)).to_csv("spin_angle.csv")
-    # )
-    # print(
-    #     pd.DataFrame(spin_angle_bins_indices[0], columns=np.arange(30)).to_csv(
-    #         "spin_angle_bins.csv"
-    #     )
-    # )
-    # print(pd.DataFrame(binned_data[0],
-    # columns=np.arange(30)).to_csv("binned_data.csv"))
-    # print(
-    #     pd.DataFrame(
-    #         l1b_dataset["acquisition_time"].data[0], columns=np.arange(30)
-    #     ).to_csv("acquisition_time.csv")
-    # )
+    dataset["flux"] = xr.DataArray(
+        binned_data,
+        name="flux",
+        dims=["epoch", "energy", "inst_az", "inst_el"],
+        attrs=cdf_attributes.get_variable_attributes("flux"),
+    )
+    dataset["phase_space_density"] = xr.DataArray(
+        put_data_in_bins(phase_space_density.data, spin_angle_bins_indices),
+        name="phase_space_density",
+        dims=["epoch", "energy", "inst_az", "inst_el"],
+        attrs=cdf_attributes.get_variable_attributes("phase_space_density"),
+    )
+
     return dataset
