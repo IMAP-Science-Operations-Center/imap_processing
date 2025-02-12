@@ -474,7 +474,7 @@ def organize_spin_data(dataset: xr.Dataset, attr_mgr: ImapCdfAttributes) -> xr.D
     ]
 
     # Set epoch to the acq_start time
-    acq_start = dataset.acq_start_sec.values + (0.1 * dataset.acq_start_subsec.values)
+    acq_start = dataset.acq_start_sec + (1e-6 * dataset.acq_start_subsec)
     epoch = met_to_ttj2000ns(acq_start)
     dataset = dataset.assign_coords(epoch=("epoch", epoch))
     for spin_field in spin_fields:
