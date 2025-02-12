@@ -56,6 +56,19 @@ spin_sector:
     VALIDMAX: 12
     VAR_TYPE: support_data
 
+spin_sector_pairs:
+    CATDESC: Spin sector Pairs
+    FIELDNAM: Spin Sector Pairs
+    FILLVAL: -1
+    FORMAT: I1
+    LABLAXIS: " "
+    SCALETYP: linear
+    SI_CONVERSION: " > "
+    UNITS: " "
+    VALIDMIN: 0
+    VALIDMAX: 6
+    VAR_TYPE: support_data
+
 # <=== Dataset Variable Attributes ===>
 # The following are set in multiple data products
 acquisition_time_per_step:
@@ -324,13 +337,47 @@ hi-sectored-fe:
     LABL_PTR_3: spin_sector
 
 # lo-counters-aggregated
-lo-counters-aggregated-aggregated:
+lo-counters-aggregated-TCR:
     <<: *counters
-    CATDESC: Aggregated Rates
-    FIELDNAM: Rates - Aggregated
-    LABL_PTR_1: inst_az
-    LABL_PTR_2: spin_sector
-    LABL_PTR_3: esa_step
+    CATDESC: Triple Coincidence Rate
+    FIELDNAM: TCR
+    LABL_PTR_1: spin_sector
+    LABL_PTR_2: esa_step
+
+lo-counters-aggregated-DCR:
+    <<: *counters
+    CATDESC: Double Coincidence Rate
+    FIELDNAM: DCR
+    LABL_PTR_1: spin_sector
+    LABL_PTR_2: esa_step
+
+lo-counters-aggregated-STA:
+    <<: *counters
+    CATDESC: Start-A
+    FIELDNAM: STA
+    LABL_PTR_1: spin_sector
+    LABL_PTR_2: esa_step
+
+lo-counters-aggregated-STB:
+    <<: *counters
+    CATDESC: Start-B
+    FIELDNAM: STB
+    LABL_PTR_1: spin_sector
+    LABL_PTR_2: esa_step
+
+lo-counters-aggregated-SP:
+    <<: *counters
+    CATDESC: Stop
+    FIELDNAM: SP
+    LABL_PTR_1: spin_sector
+    LABL_PTR_2: esa_step
+
+lo-counters-aggregated-TotalPositionCount:
+    <<: *counters
+    CATDESC: Total Position Count
+    FIELDNAM: Total Position Count
+    LABL_PTR_1: spin_sector
+    LABL_PTR_2: esa_step
 
 # lo-counters-singles
 lo-counters-singles-apd_singles:

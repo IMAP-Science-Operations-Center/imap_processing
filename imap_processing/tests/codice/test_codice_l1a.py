@@ -41,8 +41,8 @@ EXPECTED_ARRAY_SHAPES = [
     (),  # hi-ialirt  # TODO: Need to implement
     (),  # lo-ialirt  # TODO: Need to implement
     (31778,),  # hskp
-    (77, 128, 6, 6),  # lo-counters-aggregated
-    (77, 128, 24, 6),  # lo-counters-singles
+    (77, 6, 128),  # lo-counters-aggregated
+    (77, 24, 6, 128),  # lo-counters-singles
     (77, 12, 128),  # lo-sw-priority
     (77, 12, 128),  # lo-nsw-priority
     (77, 1, 128),  # lo-sw-species
@@ -62,7 +62,7 @@ EXPECTED_NUM_VARIABLES = [
     0,  # hi-ialirt  # TODO: Need to implement
     0,  # lo-ialirt  # TODO: Need to implement
     148,  # hskp
-    3,  # lo-counters-aggregated
+    14,  # lo-counters-aggregated
     9,  # lo-counters-singles
     13,  # lo-sw-priority
     10,  # lo-nsw-priority
@@ -207,6 +207,8 @@ def test_l1a_validate_data_arrays(test_l1a_data: xr.Dataset, index):
     # TODO: Currently only the following products can be validated, expand this
     #       to other data products as I can validate them.
     able_to_be_validated = [
+        "lo-counters-aggregated",
+        "lo-counters-singles",
         "lo-sw-angular",
         "lo-nsw-angular",
         "lo-sw-priority",

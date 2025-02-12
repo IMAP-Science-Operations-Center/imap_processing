@@ -284,9 +284,12 @@ class CoDICEL1aPipeline:
                 dims = ["epoch"]
                 attrs = self.cdf_attrs.get_variable_attributes("spin_period")
 
-            # TODO: Still need to implement
+            # TODO: Need to figure out how to generate these data instead of
+            #       hard coding it
             elif variable_name == "spin_sector_pairs":
-                continue
+                variable_data = np.array(["0", "3", "6", "9", "1", "1"])
+                dims = ["epoch"]
+                attrs = self.cdf_attrs.get_variable_attributes("spin_sector_pairs")
 
             # Add variable to the dataset
             dataset[variable_name] = xr.DataArray(

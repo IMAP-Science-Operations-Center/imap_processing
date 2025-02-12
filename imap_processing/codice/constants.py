@@ -31,8 +31,7 @@ APIDS_FOR_SCIENCE_PROCESSING = [
 
 
 # CDF-friendly names for lo data products
-LO_INST_COUNTS_AGGREGATED_VARIABLE_NAMES = ["aggregated"]
-LO_INST_COUNTS_SINGLES_VARIABLE_NAMES = ["apd_singles"]
+LO_COUNTERS_SINGLES_VARIABLE_NAMES = ["apd_singles"]
 LO_SW_ANGULAR_VARIABLE_NAMES = ["hplus", "heplusplus", "oplus6", "fe_loq"]
 LO_NSW_ANGULAR_VARIABLE_NAMES = ["heplusplus"]
 LO_SW_PRIORITY_VARIABLE_NAMES = [
@@ -77,6 +76,45 @@ HI_INST_COUNTS_AGGREGATED_VARIABLE_NAMES = ["aggregated"]
 HI_INST_COUNTS_SINGLES_VARIABLE_NAMES = ["tcr", "ssdo", "stssd"]
 HI_OMNI_SPECIES_VARIABLE_NAMES = ["h", "he3", "he4", "c", "o", "ne_mg_si", "fe", "uh"]
 HI_SECT_SPECIES_VARIABLE_NAMES = ["h", "he3he4", "cno", "fe"]
+
+# lo-counters-aggregated data product variables are dynamically determined
+# TODO: Try to convince Joey to move to lower case variable names with
+#       underscores?
+LO_COUNTERS_AGGREGATED_ACTIVE_VARIABLES = {
+    "TCR": True,
+    "DCR": True,
+    "TOFPlusAPD": False,
+    "TOFOnly": False,
+    "PositionPlusAPD": False,
+    "PositionOnly": False,
+    "STAorSTBPlusAPD": False,
+    "STAorSTBOnly": False,
+    "Reserved1": False,
+    "Reserved2": False,
+    "SPOnly": False,
+    "APDOnly": False,
+    "LowTOFCutoff": False,
+    "STA": True,
+    "STB": True,
+    "SP": True,
+    "TotalPositionCount": True,
+    "InvalidPositionCount": False,
+    "ASIC1FlagInvalid": False,
+    "ASIC2FlagInvalid": False,
+    "ASIC1ChannelInvalid": False,
+    "ASIC2ChannelInvalid": False,
+    "TEC4TimeoutTOFNoPos": False,
+    "TEC4TimeoutPosNoTOF": False,
+    "TEC4TimeoutNoPosTOF": False,
+    "TEC5TimeoutTOFNoPos": False,
+    "TEC5TimeoutPosNoTOF": False,
+    "TEC5TimeoutNoPosTOF": False,
+}
+LO_COUNTERS_AGGREGATED_VARIABLE_NAMES = [
+    item
+    for item in LO_COUNTERS_AGGREGATED_ACTIVE_VARIABLES
+    if LO_COUNTERS_AGGREGATED_ACTIVE_VARIABLES[item] is True
+]
 
 # TODO: Possibly move to consistent order of dimensions with other instruments
 #       TBD after discussion with Joey and at the Science Team Meeting in Feb
@@ -131,22 +169,10 @@ DATA_PRODUCT_CONFIGURATIONS = {
     },
     CODICEAPID.COD_LO_INST_COUNTS_AGGREGATED: {
         "dataset_name": "imap_codice_l1a_lo-counters-aggregated",
-        "dims": {"esa_step": 128, "inst_az": 6, "spin_sector": 6},
+        "dims": {"spin_sector_pairs": 6, "esa_step": 128},
         "instrument": "lo",
-        "num_counters": 1,
+        "num_counters": 6,
         "support_variables": [
-            "energy_table",
-            "acquisition_time_per_step",
-        ],  # TODO: Double check with Joey
-        "variable_names": LO_INST_COUNTS_AGGREGATED_VARIABLE_NAMES,
-    },
-    CODICEAPID.COD_LO_INST_COUNTS_SINGLES: {
-        "dataset_name": "imap_codice_l1a_lo-counters-singles",
-        "dims": {"esa_step": 128, "inst_az": 24, "spin_sector": 6},
-        "instrument": "lo",
-        "num_counters": 1,
-        "support_variables": [
-            "spin_sector_pairs",
             "energy_table",
             "acquisition_time_per_step",
             "rgfo_half_spin",
@@ -156,7 +182,24 @@ DATA_PRODUCT_CONFIGURATIONS = {
             "data_quality",
             "spin_period",
         ],
-        "variable_names": LO_INST_COUNTS_SINGLES_VARIABLE_NAMES,
+        "variable_names": LO_COUNTERS_AGGREGATED_VARIABLE_NAMES,
+    },
+    CODICEAPID.COD_LO_INST_COUNTS_SINGLES: {
+        "dataset_name": "imap_codice_l1a_lo-counters-singles",
+        "dims": {"inst_az": 24, "spin_sector_pairs": 6, "esa_step": 128},
+        "instrument": "lo",
+        "num_counters": 1,
+        "support_variables": [
+            "energy_table",
+            "acquisition_time_per_step",
+            "rgfo_half_spin",
+            "nso_half_spin",
+            "sw_bias_gain_mode",
+            "st_bias_gain_mode",
+            "data_quality",
+            "spin_period",
+        ],
+        "variable_names": LO_COUNTERS_SINGLES_VARIABLE_NAMES,
     },
     CODICEAPID.COD_LO_SW_ANGULAR_COUNTS: {
         "dataset_name": "imap_codice_l1a_lo-sw-angular",
