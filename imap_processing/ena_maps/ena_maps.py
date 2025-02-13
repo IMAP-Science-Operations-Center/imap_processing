@@ -44,7 +44,7 @@ class IndexMatchMethod(Enum):
 
     The "push" method takes each pixel in a pointing set and transforms its coordinates
     to the frame of the map, then determines into which pixel in the map grid the
-    projected pointing set pixel falls.
+    transformed pointing set pixel falls.
     This method ensures that all pointing set pixels (and thus all counts) are
     captured in the map, but does not ensure that all pixels in the map receive data.
 
@@ -52,7 +52,7 @@ class IndexMatchMethod(Enum):
 
     The "pull" method takes each pixel in the map grid and transforms its coordinates
     to the frame of the pointing set, then determines into which pixel in the
-    pointing set grid the projected map pixel falls.
+    pointing set grid the transformed map pixel falls.
     This method ensures that all pixels in the map receive data, but can result in
     some pointing set pixels not being captured in the map, and others being captured
     multiple times.
@@ -93,7 +93,7 @@ def match_coords_to_indices(
         into which the input spatial pixel centers will 'land', and be matched to
         corresponding pixel 1D indices in the output frame.
     event_time : float, optional
-        The event time at which to project the input spatial object to the output frame.
+        Event time at which to transform the input spatial object to the output frame.
         This can be manually specified, e.g., for converting between Maps which do not
         contain an epoch value.
         The default value is None, in which case the event time of the PointingSet
@@ -136,7 +136,7 @@ def match_coords_to_indices(
     obj1_az_el_points_frame1 = spatial_object_input_frame.az_el_points
 
     # If the two objects are not already in the same frame,
-    # project the input pixel centers to the output frame.
+    # transform the input pixel centers to the output frame.
     if (
         spatial_object_input_frame.spice_reference_frame
         is not spatial_object_output_frame.spice_reference_frame
@@ -447,6 +447,10 @@ class RectangularSkyMap(AbstractSkyMap):
     ) -> None:
         """
         Project a pointing set's values to the map grid.
+
+        Here, the term "project" refers to the process of determining which pixels in
+        the map grid correspond to which pixels in the pointing set grid, and then
+        binning the values at those indices from the pointing set to the map.
 
         Parameters
         ----------
