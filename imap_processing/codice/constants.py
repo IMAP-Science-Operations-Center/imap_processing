@@ -112,9 +112,9 @@ LO_COUNTERS_AGGREGATED_ACTIVE_VARIABLES = {
     "TEC5TimeoutNoPosTOF": False,
 }
 LO_COUNTERS_AGGREGATED_VARIABLE_NAMES = [
-    item
-    for item in LO_COUNTERS_AGGREGATED_ACTIVE_VARIABLES
-    if LO_COUNTERS_AGGREGATED_ACTIVE_VARIABLES[item] is True
+    name
+    for name, is_active in LO_COUNTERS_AGGREGATED_ACTIVE_VARIABLES.items()
+    if is_active
 ]
 
 # TODO: Possibly move to consistent order of dimensions with other instruments
