@@ -2,6 +2,7 @@
 
 import logging
 
+import numpy as np
 import pytest
 import xarray as xr
 
@@ -156,7 +157,7 @@ def test_l1a_logical_sources(test_l1a_data, index):
 
     # Mark currently broken/unsupported datasets as expected to fail
     # TODO: Remove these once they are supported
-    if index in [0, 1, 2, 15, 16, 17]:
+    if index in [0, 1, 15, 16, 17]:
         pytest.xfail("Data product is currently unsupported")
 
     # Write the dataset to a file to set the logical source attribute
@@ -204,6 +205,9 @@ def test_l1a_validate_data_arrays(test_l1a_data: xr.Dataset, index):
 
     descriptor = DESCRIPTORS[index]
 
+    if descriptor == "hskp":
+        pytest.skip("Housekeeping data is validated in a separate test")
+
     # TODO: Currently only the following products can be validated, expand this
     #       to other data products as I can validate them.
     able_to_be_validated = [
@@ -235,6 +239,53 @@ def test_l1a_validate_data_arrays(test_l1a_data: xr.Dataset, index):
 
     else:
         pytest.xfail(f"Still need to implement validation for {descriptor}")
+
+
+def test_l1a_validate_hskp_data(test_l1a_data):
+    """Tests that the L1a housekeeping data is valid"""
+
+    # Housekeeping data is the 2nd element in the list of test products
+    hskp_data = test_l1a_data[2]
+    validation_hskp_filepath = VALIDATION_DATA[2]
+
+    # Load the validation housekeeping data
+    validation_hskp_data = load_cdf(validation_hskp_filepath)
+
+    # These variables are present in the decommed test data, but not present in
+    # the validation data
+    # TODO: Ask Joey if these can be removed from the L1a housekeeping CDFs
+    exclude_variables = [
+        "spare_1",
+        "spare_2",
+        "spare_3",
+        "spare_4",
+        "spare_5",
+        "spare_6",
+        "spare_62",
+        "spare_68",
+    ]
+
+    # These variables are named differently between the decommed test_data and
+    # the validation data
+    # TODO: Ask Joey if this is expected
+    exclude_variables.extend(
+        [
+            "chksum",
+            "version",
+            "type",
+            "sec_hdr_flg",
+            "pkt_apid",
+            "seq_flgs",
+            "src_seq_ctr",
+            "pkt_len",
+        ]
+    )
+
+    for variable in hskp_data:
+        if variable not in exclude_variables:
+            np.testing.assert_array_equal(
+                hskp_data[variable], validation_hskp_data[variable.upper()]
+            )
 
 
 def test_l1a_multiple_packets():
