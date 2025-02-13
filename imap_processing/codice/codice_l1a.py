@@ -156,6 +156,13 @@ class CoDICEL1aPipeline:
                 values = self.calculate_epoch_values()
             elif name in ["esa_step", "inst_az", "spin_sector"]:
                 values = np.arange(self.config["dims"][name])
+            elif name == "spin_sector_pairs":
+                # TODO: Need to ask Joey about this. Somehow he managed to use
+                #       strings as coordinates in his validation data, even
+                #       though that is not allowed.
+                #       Ideally these should read "0-30 deg", "30-60 deg", etc.
+                #       For now, just use bogus integers
+                values = np.array([0, 3, 6, 9, 1, 1])
             else:
                 # TODO: May need to implement other types of coords for Hi
                 #       and/or event data products
@@ -283,13 +290,6 @@ class CoDICEL1aPipeline:
                 variable_data = self.dataset.spin_period.data * 0.00032
                 dims = ["epoch"]
                 attrs = self.cdf_attrs.get_variable_attributes("spin_period")
-
-            # TODO: Need to figure out how to generate these data instead of
-            #       hard coding it
-            elif variable_name == "spin_sector_pairs":
-                variable_data = np.array(["0", "3", "6", "9", "1", "1"])
-                dims = ["epoch"]
-                attrs = self.cdf_attrs.get_variable_attributes("spin_sector_pairs")
 
             # Add variable to the dataset
             dataset[variable_name] = xr.DataArray(

@@ -341,42 +341,42 @@ lo-counters-aggregated-TCR:
     <<: *counters
     CATDESC: Triple Coincidence Rate
     FIELDNAM: TCR
-    LABL_PTR_1: spin_sector
+    LABL_PTR_1: spin_sector_pairs
     LABL_PTR_2: esa_step
 
 lo-counters-aggregated-DCR:
     <<: *counters
     CATDESC: Double Coincidence Rate
     FIELDNAM: DCR
-    LABL_PTR_1: spin_sector
+    LABL_PTR_1: spin_sector_pairs
     LABL_PTR_2: esa_step
 
 lo-counters-aggregated-STA:
     <<: *counters
     CATDESC: Start-A
     FIELDNAM: STA
-    LABL_PTR_1: spin_sector
+    LABL_PTR_1: spin_sector_pairs
     LABL_PTR_2: esa_step
 
 lo-counters-aggregated-STB:
     <<: *counters
     CATDESC: Start-B
     FIELDNAM: STB
-    LABL_PTR_1: spin_sector
+    LABL_PTR_1: spin_sector_pairs
     LABL_PTR_2: esa_step
 
 lo-counters-aggregated-SP:
     <<: *counters
     CATDESC: Stop
     FIELDNAM: SP
-    LABL_PTR_1: spin_sector
+    LABL_PTR_1: spin_sector_pairs
     LABL_PTR_2: esa_step
 
 lo-counters-aggregated-TotalPositionCount:
     <<: *counters
     CATDESC: Total Position Count
     FIELDNAM: Total Position Count
-    LABL_PTR_1: spin_sector
+    LABL_PTR_1: spin_sector_pairs
     LABL_PTR_2: esa_step
 
 # lo-counters-singles
@@ -385,7 +385,7 @@ lo-counters-singles-apd_singles:
     CATDESC: Single Rates (APD)
     FIELDNAM: Rates - Single (APD)
     LABL_PTR_1: inst_az
-    LABL_PTR_2: spin_sector
+    LABL_PTR_2: spin_sector_pairs
     LABL_PTR_3: esa_step
 
 # lo-sw-angular
