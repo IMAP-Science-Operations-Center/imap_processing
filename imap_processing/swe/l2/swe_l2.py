@@ -391,6 +391,15 @@ def swe_l2(l1b_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
 
     # Convert spin phase to spin angle in degrees.
     inst_spin_angle = get_spin_angle(inst_spin_phase, degrees=True).reshape(-1, 24, 30)
+
+    # Save spin angle in dataset per SWE request.
+    dataset["inst_az_spin_sector"] = xr.DataArray(
+        inst_spin_angle,
+        name="inst_az_spin_sector",
+        dims=["epoch", "energy", "inst_az"],
+        attrs=cdf_attributes.get_variable_attributes("inst_az_spin_sector"),
+    )
+
     # The spin angle bins are centered at:
     #   [ 6, 18, 30, 42, 54, 66, 78, 90, 102, 114, 126, 138, 150, 162, 174,
     #     186, 198, 210, 222, 234, 246, 258, 270, 282, 294, 306, 318, 330,

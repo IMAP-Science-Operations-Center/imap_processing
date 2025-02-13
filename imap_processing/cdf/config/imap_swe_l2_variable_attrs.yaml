@@ -39,12 +39,12 @@ inst_az:
   CATDESC: Spin angle bins in instrument frame. Angle resolution is 12 degree nominally
   FIELDNAM: spin angle
   FILLVAL: -9223370000000000000
-  FORMAT: I3
+  FORMAT: E5.4
   LABLAXIS: Angle
   SCALE_TYP: linear
   UNITS: "Degree"
-  VALIDMAX: 360
-  VALIDMIN: 0
+  VALIDMAX: 359.999
+  VALIDMIN: 0.00
   VAR_TYPE: support_data
   VAR_NOTES: >
     Bin CENTERS  - Assuming 0.5 sec measurements and a spin starting
@@ -68,7 +68,7 @@ inst_el:
   CATDESC: Angle of each CEM detectors
   FIELDNAM: CEM Angle
   FILLVAL: -9223370000000000000
-  FORMAT: E14.7
+  FORMAT: I2
   LABLAXIS: Angle
   SCALE_TYP: linear
   UNITS: Degree
@@ -127,19 +127,22 @@ inst_el_label:
   VAR_TYPE: metadata
 
 # <=== Data Variables ===>
-# Default Attrs for all data variables unless overridden
 
-default_attrs: &default
+inst_az_spin_sector:
+  CATDESC: Spin angle organized by voltage step and spin sector
   DEPEND_0: epoch
-  DISPLAY_TYPE: 'no_plot'
-  LABLAXIS: ' '
-  FILLVAL: -9223372036854775808
-  FORMAT: I19
-  UNITS: ' '
-  VALIDMIN: 0
-  VALIDMAX: 9223372036854769664
-  VAR_TYPE: support_data
-  SCALETYP: linear
+  DEPEND_1: esa_step
+  DEPEND_2: spin_sector
+  LABL_PTR_1: esa_step_label
+  LABL_PTR_2: spin_sector_label
+  DISPLAY_TYPE: spectrogram
+  FIELDNAM: Spin Angle
+  FILLVAL: -1.0000000E+31
+  FORMAT: E4.5
+  UNITS: Degree
+  VALIDMAX: 359.99
+  VALIDMIN: 0.0
+  VAR_TYPE: data
 
 phase_space_density_spin_sector:
   CATDESC: Phase space density organized by voltage step and spin sector and CEM
@@ -154,6 +157,7 @@ phase_space_density_spin_sector:
   FIELDNAM: Phase Space Density
   FILLVAL: -1.0000000E+31
   UNITS: s^3/ (cm^6 * ster)
+  FORMAT: E14.7
   VALIDMAX: 0.000015514
   VALIDMIN: 0
   VAR_TYPE: data
@@ -171,6 +175,7 @@ phase_space_density:
   FIELDNAM: Phase Space Density
   FILLVAL: -1.0000000E+31
   UNITS: s^3/ (cm^6 * ster)
+  FORMAT: E14.7
   VALIDMAX: 0.000015514
   VALIDMIN: 0
   VAR_TYPE: data
@@ -188,6 +193,7 @@ flux_spin_sector:
   FIELDNAM: Flux
   FILLVAL: -1.0000000E+31
   UNITS: 1 / (2 * eV * cm^2 * s * ster)
+  FORMAT: E14.7
   VALIDMAX: 0.000015514
   VALIDMIN: 0
   VAR_TYPE: data
@@ -205,6 +211,7 @@ flux:
   FIELDNAM: Flux
   FILLVAL: -1.0000000E+31
   UNITS: 1 / (2 * eV * cm^2 * s * ster)
+  FORMAT: E14.7
   VALIDMAX: 0.000015514
   VALIDMIN: 0
   VAR_TYPE: data
@@ -219,6 +226,9 @@ acquisition_time:
   DISPLAY_TYPE: spectrogram
   FIELDNAM: Acquisition time by volt step and spin sector
   FILLVAL: -1.0000000E+31
+  FORMAT: I20
+  VALIDMAX: 9223372036854775807
+  VALIDMIN: 0
   UNITS: sec
   VAR_TYPE: support_data
   VAR_NOTES: >
