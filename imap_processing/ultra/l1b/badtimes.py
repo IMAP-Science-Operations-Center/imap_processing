@@ -1,12 +1,15 @@
 """Calculate Badtimes."""
 
+import numpy as np
 import xarray as xr
-
-from imap_processing.ultra.utils.ultra_l1_utils import create_dataset
+from numpy.typing import NDArray
 
 
 def calculate_badtimes(
-    extendedspin_dataset: xr.Dataset, name: str, data_version: str
+    extendedspin_dataset: xr.Dataset,
+    cullingmask_spins: NDArray,
+    name: str,
+    data_version: str,
 ) -> xr.Dataset:
     """
     Create dataset with defined datatypes for Badtimes Data.
@@ -15,6 +18,8 @@ def calculate_badtimes(
     ----------
     extendedspin_dataset : xarray.Dataset
         Dataset containing the data.
+    cullingmask_spins : NDArray
+        Dataset containing the culled data.
     name : str
         Name of the dataset.
     data_version : str
@@ -25,14 +30,8 @@ def calculate_badtimes(
     badtimes_dataset : xarray.Dataset
         Dataset containing the data.
     """
-    badtimes_dict = {}
-    badtimes_dict["spin_number"] = extendedspin_dataset["spin_number"]
-    badtimes_dict["energy_bin_geometric_mean"] = extendedspin_dataset[
-        "energy_bin_geometric_mean"
-    ]
+    spins = np.setdiff1d(extendedspin_dataset["spin_number"].values, cullingmask_spins)
 
-    # TODO: add more data to badtimes_dict.
-
-    badtimes_dataset = create_dataset(badtimes_dict, name, "l1b", data_version)
+    badtimes_dataset = extendedspin_dataset.sel(spin_number=spins)
 
     return badtimes_dataset
