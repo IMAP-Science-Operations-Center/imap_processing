@@ -1,3 +1,5 @@
+# TODO: Remove SI_CONVERSION?
+
 # <=== Defaults ===>
 default_attrs: &default
     DEPEND_0: epoch
@@ -69,6 +71,13 @@ spin_sector_pairs:
     VALIDMIN: 0
     VALIDMAX: 6
     VAR_TYPE: support_data
+
+# <=== Labels ===>
+spin_sector_pairs_label:
+    CATDESC: Spin sector Pairs
+    FIELDNAM: Spin Sector Pairs
+    FORMAT: A11
+    VAR_TYPE: metadata
 
 # <=== Dataset Variable Attributes ===>
 # The following are set in multiple data products
@@ -358,7 +367,7 @@ lo-counters-aggregated-TCR:
     FIELDNAM: Event A - Triple Coincidence Rate
     DEPEND_1: spin_sector_pairs
     DEPEND_2: esa_step
-    LABL_PTR_1: spin_sector_pairs
+    LABL_PTR_1: spin_sector_pairs_label
     LABL_PTR_2: esa_step
 
 lo-counters-aggregated-DCR:
@@ -367,7 +376,7 @@ lo-counters-aggregated-DCR:
     FIELDNAM: Event B - Double Coincidence Rate
     DEPEND_1: spin_sector_pairs
     DEPEND_2: esa_step
-    LABL_PTR_1: spin_sector_pairs
+    LABL_PTR_1: spin_sector_pairs_label
     LABL_PTR_2: esa_step
 
 lo-counters-aggregated-TOFPlusAPD:
@@ -376,7 +385,7 @@ lo-counters-aggregated-TOFPlusAPD:
     FIELDNAM: Event C - TOF + APD
     DEPEND_1: spin_sector_pairs
     DEPEND_2: esa_step
-    LABL_PTR_1: spin_sector_pairs
+    LABL_PTR_1: spin_sector_pairs_label
     LABL_PTR_2: esa_step
 
 lo-counters-aggregated-TOFOnly:
@@ -385,7 +394,7 @@ lo-counters-aggregated-TOFOnly:
     FIELDNAM: Event D - TOF Only
     DEPEND_1: spin_sector_pairs
     DEPEND_2: esa_step
-    LABL_PTR_1: spin_sector_pairs
+    LABL_PTR_1: spin_sector_pairs_label
     LABL_PTR_2: esa_step
 
 lo-counters-aggregated-PositionPlusAPD:
@@ -394,7 +403,7 @@ lo-counters-aggregated-PositionPlusAPD:
     FIELDNAM: Event E - Position + APD
     DEPEND_1: spin_sector_pairs
     DEPEND_2: esa_step
-    LABL_PTR_1: spin_sector_pairs
+    LABL_PTR_1: spin_sector_pairs_label
     LABL_PTR_2: esa_step
 
 lo-counters-aggregated-PositionOnly:
@@ -403,7 +412,7 @@ lo-counters-aggregated-PositionOnly:
     FIELDNAM: Event F - Position Only
     DEPEND_1: spin_sector_pairs
     DEPEND_2: esa_step
-    LABL_PTR_1: spin_sector_pairs
+    LABL_PTR_1: spin_sector_pairs_label
     LABL_PTR_2: esa_step
 
 lo-counters-aggregated-STAorSTBPlusAPD:
@@ -412,7 +421,7 @@ lo-counters-aggregated-STAorSTBPlusAPD:
     FIELDNAM: Event G - STA or STB + APD
     DEPEND_1: spin_sector_pairs
     DEPEND_2: esa_step
-    LABL_PTR_1: spin_sector_pairs
+    LABL_PTR_1: spin_sector_pairs_label
     LABL_PTR_2: esa_step
 
 lo-counters-aggregated-STAorSTBOnly:
@@ -421,7 +430,7 @@ lo-counters-aggregated-STAorSTBOnly:
     FIELDNAM: Event H - STA or STB Only
     DEPEND_1: spin_sector_pairs
     DEPEND_2: esa_step
-    LABL_PTR_1: spin_sector_pairs
+    LABL_PTR_1: spin_sector_pairs_label
     LABL_PTR_2: esa_step
 
 lo-counters-aggregated-Reserved1:
@@ -430,7 +439,7 @@ lo-counters-aggregated-Reserved1:
     FIELDNAM: Reserved 1
     DEPEND_1: spin_sector_pairs
     DEPEND_2: esa_step
-    LABL_PTR_1: spin_sector_pairs
+    LABL_PTR_1: spin_sector_pairs_label
     LABL_PTR_2: esa_step
 
 lo-counters-aggregated-Reserved2:
@@ -439,7 +448,7 @@ lo-counters-aggregated-Reserved2:
     FIELDNAM: Reserved 2
     DEPEND_1: spin_sector_pairs
     DEPEND_2: esa_step
-    LABL_PTR_1: spin_sector_pairs
+    LABL_PTR_1: spin_sector_pairs_label
     LABL_PTR_2: esa_step
 
 lo-counters-aggregated-SPOnly:
@@ -448,7 +457,7 @@ lo-counters-aggregated-SPOnly:
     FIELDNAM: Event K - SP Only
     DEPEND_1: spin_sector_pairs
     DEPEND_2: esa_step
-    LABL_PTR_1: spin_sector_pairs
+    LABL_PTR_1: spin_sector_pairs_label
     LABL_PTR_2: esa_step
 
 lo-counters-aggregated-APDOnly:
@@ -457,7 +466,7 @@ lo-counters-aggregated-APDOnly:
     FIELDNAM: Event L - APD Only
     DEPEND_1: spin_sector_pairs
     DEPEND_2: esa_step
-    LABL_PTR_1: spin_sector_pairs
+    LABL_PTR_1: spin_sector_pairs_label
     LABL_PTR_2: esa_step
 
 lo-counters-aggregated-LowTOFCutoff:
@@ -466,7 +475,7 @@ lo-counters-aggregated-LowTOFCutoff:
     FIELDNAM: Low TOF Cutoff
     DEPEND_1: spin_sector_pairs
     DEPEND_2: esa_step
-    LABL_PTR_1: spin_sector_pairs
+    LABL_PTR_1: spin_sector_pairs_label
     LABL_PTR_2: esa_step
 
 lo-counters-aggregated-STA:
@@ -475,7 +484,7 @@ lo-counters-aggregated-STA:
     FIELDNAM: Singles - Start-A (STA)
     DEPEND_1: spin_sector_pairs
     DEPEND_2: esa_step
-    LABL_PTR_1: spin_sector_pairs
+    LABL_PTR_1: spin_sector_pairs_label
     LABL_PTR_2: esa_step
 
 lo-counters-aggregated-STB:
@@ -484,7 +493,7 @@ lo-counters-aggregated-STB:
     FIELDNAM: Singles - Start-B (STB)
     DEPEND_1: spin_sector_pairs
     DEPEND_2: esa_step
-    LABL_PTR_1: spin_sector_pairs
+    LABL_PTR_1: spin_sector_pairs_label
     LABL_PTR_2: esa_step
 
 lo-counters-aggregated-SP:
@@ -493,7 +502,7 @@ lo-counters-aggregated-SP:
     FIELDNAM: Singles - Stop (SP)
     DEPEND_1: spin_sector_pairs
     DEPEND_2: esa_step
-    LABL_PTR_1: spin_sector_pairs
+    LABL_PTR_1: spin_sector_pairs_label
     LABL_PTR_2: esa_step
 
 lo-counters-aggregated-TotalPositionCount:
@@ -502,7 +511,7 @@ lo-counters-aggregated-TotalPositionCount:
     FIELDNAM: Singles - Total Position Count
     DEPEND_1: spin_sector_pairs
     DEPEND_2: esa_step
-    LABL_PTR_1: spin_sector_pairs
+    LABL_PTR_1: spin_sector_pairs_label
     LABL_PTR_2: esa_step
 
 lo-counters-aggregated-InvalidPositionCount:
@@ -511,7 +520,7 @@ lo-counters-aggregated-InvalidPositionCount:
     FIELDNAM: Singles - Invalid Position Count
     DEPEND_1: spin_sector_pairs
     DEPEND_2: esa_step
-    LABL_PTR_1: spin_sector_pairs
+    LABL_PTR_1: spin_sector_pairs_label
     LABL_PTR_2: esa_step
 
 lo-counters-aggregated-ASIC1FlagInvalid:
@@ -520,7 +529,7 @@ lo-counters-aggregated-ASIC1FlagInvalid:
     FIELDNAM: ASIC 1 Flag Invalid Count
     DEPEND_1: spin_sector_pairs
     DEPEND_2: esa_step
-    LABL_PTR_1: spin_sector_pairs
+    LABL_PTR_1: spin_sector_pairs_label
     LABL_PTR_2: esa_step
 
 lo-counters-aggregated-ASIC2FlagInvalid:
@@ -529,7 +538,7 @@ lo-counters-aggregated-ASIC2FlagInvalid:
     FIELDNAM: ASIC 2 Flag Invalid Count
     DEPEND_1: spin_sector_pairs
     DEPEND_2: esa_step
-    LABL_PTR_1: spin_sector_pairs
+    LABL_PTR_1: spin_sector_pairs_label
     LABL_PTR_2: esa_step
 
 lo-counters-aggregated-ASIC1ChannelInvalid:
@@ -538,7 +547,7 @@ lo-counters-aggregated-ASIC1ChannelInvalid:
     FIELDNAM: ASIC 1 Channel Invalid Count
     DEPEND_1: spin_sector_pairs
     DEPEND_2: esa_step
-    LABL_PTR_1: spin_sector_pairs
+    LABL_PTR_1: spin_sector_pairs_label
     LABL_PTR_2: esa_step
 
 lo-counters-aggregated-ASIC2ChannelInvalid:
@@ -547,7 +556,7 @@ lo-counters-aggregated-ASIC2ChannelInvalid:
     FIELDNAM: ASIC 2 Channel Invalid Count
     DEPEND_1: spin_sector_pairs
     DEPEND_2: esa_step
-    LABL_PTR_1: spin_sector_pairs
+    LABL_PTR_1: spin_sector_pairs_label
     LABL_PTR_2: esa_step
 
 lo-counters-aggregated-TEC4TimeoutTOFNoPos:
@@ -556,7 +565,7 @@ lo-counters-aggregated-TEC4TimeoutTOFNoPos:
     FIELDNAM: TEC-4 Timeout Count; TOF, No Position
     DEPEND_1: spin_sector_pairs
     DEPEND_2: esa_step
-    LABL_PTR_1: spin_sector_pairs
+    LABL_PTR_1: spin_sector_pairs_label
     LABL_PTR_2: esa_step
 
 lo-counters-aggregated-TEC4TimeoutPosNoTOF:
@@ -565,7 +574,7 @@ lo-counters-aggregated-TEC4TimeoutPosNoTOF:
     FIELDNAM: TEC-4 Timeout Count; Position, No TOF
     DEPEND_1: spin_sector_pairs
     DEPEND_2: esa_step
-    LABL_PTR_1: spin_sector_pairs
+    LABL_PTR_1: spin_sector_pairs_label
     LABL_PTR_2: esa_step
 
 lo-counters-aggregated-TEC4TimeoutNoPosTOF:
@@ -574,7 +583,7 @@ lo-counters-aggregated-TEC4TimeoutNoPosTOF:
     FIELDNAM: TEC-4 Timeout Count; No Position or TOF
     DEPEND_1: spin_sector_pairs
     DEPEND_2: esa_step
-    LABL_PTR_1: spin_sector_pairs
+    LABL_PTR_1: spin_sector_pairs_label
     LABL_PTR_2: esa_step
 
 lo-counters-aggregated-TEC5TimeoutTOFNoPos:
@@ -583,7 +592,7 @@ lo-counters-aggregated-TEC5TimeoutTOFNoPos:
     FIELDNAM: TEC-5 Timeout Count; TOF, No Position
     DEPEND_1: spin_sector_pairs
     DEPEND_2: esa_step
-    LABL_PTR_1: spin_sector_pairs
+    LABL_PTR_1: spin_sector_pairs_label
     LABL_PTR_2: esa_step
 
 lo-counters-aggregated-TEC5TimeoutPosNoTOF:
@@ -592,7 +601,7 @@ lo-counters-aggregated-TEC5TimeoutPosNoTOF:
     FIELDNAM: TEC-5 Timeout Count; Position, No TOF
     DEPEND_1: spin_sector_pairs
     DEPEND_2: esa_step
-    LABL_PTR_1: spin_sector_pairs
+    LABL_PTR_1: spin_sector_pairs_label
     LABL_PTR_2: esa_step
 
 lo-counters-aggregated-TEC5TimeoutNoPosTOF:
@@ -601,7 +610,7 @@ lo-counters-aggregated-TEC5TimeoutNoPosTOF:
     FIELDNAM: TEC-5 Timeout Count; No Position or TOF
     DEPEND_1: spin_sector_pairs
     DEPEND_2: esa_step
-    LABL_PTR_1: spin_sector_pairs
+    LABL_PTR_1: spin_sector_pairs_label
     LABL_PTR_2: esa_step
 
 # lo-counters-singles
@@ -609,8 +618,11 @@ lo-counters-singles-apd_singles:
     <<: *counters
     CATDESC: Single Rates (APD)
     FIELDNAM: Rates - Single (APD)
+    DEPEND_1: inst_az
+    DEPEND_2: spin_sector_pairs
+    DEPEND_3: esa_step
     LABL_PTR_1: inst_az
-    LABL_PTR_2: spin_sector_pairs
+    LABL_PTR_2: spin_sector_pairs_label
     LABL_PTR_3: esa_step
 
 # lo-sw-angular
