@@ -7,7 +7,7 @@ from imap_processing.ultra.l1b.cullingmask import calculate_cullingmask
 
 
 def test_calculate_badtimes():
-    """Test calculate_badtimes for rates culling."""
+    """Test calculate_badtimes."""
 
     spin_numbers = np.array([0, 1, 2, 3])
     energy_bins = np.array([10, 20, 30, 40])
