@@ -11,16 +11,21 @@ import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import parse_filename_like
-from imap_processing.hi.l1a.science_direct_event import DE_CLOCK_TICK_S
+from imap_processing.hi.l1a.science_direct_event import DE_CLOCK_TICK_S, HALF_CLOCK_TICK_S
 from imap_processing.hi.utils import (
     CoincidenceBitmap,
     create_dataset_variables,
     full_dataarray,
+    parse_sensor_number,
 )
 from imap_processing.spice.geometry import (
     SpiceFrame,
     frame_transform,
     frame_transform_az_el,
+)
+from imap_processing.spice.spin import (
+    get_instrument_spin_phase,
+    get_spin_data,
 )
 from imap_processing.spice.time import ttj2000ns_to_et
 
@@ -105,6 +110,8 @@ def generate_pset_dataset(
     # Calculate and add despun_z, hae_latitude, and hae_longitude variables to
     # the pset_dataset
     pset_dataset.update(pset_geometry(pset_et, logical_source_parts["sensor"]))
+    # Calculate and add the exposure time to the pset_dataset
+    pset_dataset.update(pset_exposure(pset_dataset.coords, de_dataset))
 
     # TODO: The following section will go away as PSET algorithms to populate
     #    these variables are written.
@@ -113,7 +120,6 @@ def generate_pset_dataset(
     attr_mgr.add_instrument_variable_attrs(instrument="hi", level=None)
     for var_name in [
         "counts",
-        "exposure_times",
         "background_rates",
         "background_rates_uncertainty",
     ]:
@@ -300,6 +306,92 @@ def pset_geometry(pset_et: float, sensor_str: str) -> dict[str, xr.DataArray]:
     return geometry_vars
 
 
+def pset_exposure(
+    pset_coords: dict[str, xr.DataArray], l1b_de_dataset: xr.Dataset
+) -> dict[str, xr.DataArray]:
+    """
+    Calculate PSET exposure time.
+
+    Parameters
+    ----------
+    pset_coords : dict[str, xr.DataArray]
+        The PSET coordinates from the xr.Dataset.
+    l1b_de_dataset : xr.Dataset
+        The L1B dataset for the pointing being processed.
+
+    Returns
+    -------
+    dict[str, xr.DataArray]
+        Dictionary containing new exposure_times DataArray to be added to the PSET
+        dataset.
+    """
+    # Extract the sensor number (45 or 90) for computing spin phase
+    sensor_number = parse_sensor_number(l1b_de_dataset.attrs["Logical_source"])
+
+    # Generate exposure time variable filled with zeros
+    exposure_var = create_dataset_variables(
+        ["exposure_times"],
+        pset_coords,
+        att_manager_lookup_str="hi_pset_{0}",
+        fill_value=0,
+    )
+
+    data_subset = find_second_de_packet_data(l1b_de_dataset.drop_dims("event_met"))
+
+    # Get the pandas dataframe with spin data
+    spin_df = get_spin_data()
+
+    # Loop over each of the CCSDS data rows that have been identified as the second
+    # packet at an ESA step.
+    for _, subset in data_subset.groupby("epoch"):
+        # Find the spin_table entry with the start time nearest to the CCSDS MET.
+        # The CCSDS packet gets created just AFTER the final spin in the 8-spin
+        # ESA step group so this match is the end time. The start time is
+        # 8-spins earlier.
+        end_time_ind = abs(
+            spin_df.spin_start_met.to_numpy() - subset["ccsds_met"].values
+        ).argmin()
+        clock_tick_mets = np.arange(
+            spin_df.spin_start_met.to_numpy()[end_time_ind - 8],
+            spin_df.spin_start_met.to_numpy()[end_time_ind],
+            DE_CLOCK_TICK_S,
+            dtype=float,
+        )
+
+        # Add 1/2 clock tick and compute spin-phase
+        spin_phases = get_instrument_spin_phase(
+            clock_tick_mets + HALF_CLOCK_TICK_S,
+            SpiceFrame[f"IMAP_HI_{sensor_number}"],
+        )
+
+        # The final clock-tick bin has less exposure time because the next spin
+        # will trigger FSW to change ESA steps part way through that time. To
+        # account for this in exposure time calculation, assign an array of
+        # weights to use when binnig the clock-ticks to spin-bins. Weights are
+        # fractional clock ticks. All weights are 1 except for the last one in
+        # the array.
+        clock_tick_weights = np.ones_like(clock_tick_mets, dtype=float)
+        clock_tick_weights[-1] = (
+            (spin_df.spin_start_met.to_numpy()[end_time_ind] - clock_tick_mets[-1])
+            / DE_CLOCK_TICK_S
+        )
+
+        # Remove ticks not in good times/angles
+        good_mask = good_time_and_phase_mask(clock_tick_mets, spin_phases)
+        clock_tick_mets = clock_tick_mets[good_mask]
+        spin_phases = spin_phases[good_mask]
+        clock_tick_weights = clock_tick_weights[good_mask]
+
+        # Bin exposure times into appropriate esa_energy_step
+
+    # TODO: Account for flyback time
+    # TODO: Handle partial final tick
+    # TODO: Overcount map
+    # 2D bin into in esa-step, spin-angle-bins
+
+    return exposure_var
+
+
 def find_second_de_packet_data(l1b_dataset: xr.Dataset) -> xr.Dataset:
     """
     Find the telemetry entries for the second packet at an ESA step.
@@ -415,6 +507,28 @@ def get_de_clock_ticks_for_esa_step(
         spin_start_mets[end_time_ind] - clock_tick_mets[-1]
     ) / DE_CLOCK_TICK_S
     return clock_tick_mets, clock_tick_weights
+
+
+def good_time_and_phase_mask(
+    tick_mets: np.ndarray, spin_phases: np.ndarray
+) -> np.ndarray:
+    """
+    Filter out the clock tick times that are not in good times and angles.
+
+    Parameters
+    ----------
+    tick_mets : np.ndarray
+        Clock-tick MET times.
+    spin_phases : np.ndarray
+        Spin phases for each clock tick.
+
+    Returns
+    -------
+    keep_mask : np.ndarray
+        Boolean mask indicating which clock ticks are in good times/phases.
+    """
+    # TODO: Implement this once we have Goodtimes data product defined.
+    return np.full_like(tick_mets, True, dtype=bool)
 
 
 @pd.api.extensions.register_dataframe_accessor("cal_prod_config")
