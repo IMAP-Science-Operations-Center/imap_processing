@@ -40,8 +40,8 @@ def find_groups(data: xr.Dataset) -> xr.Dataset:
     ]
     last_sc_tick = last_sc_ticks.max()
 
-    # Filter out data before the first cod_lo_counter=0 and
-    # after the last cod_lo_counter=232 and cod_lo_counter values != 0-232.
+    # Filter out data before the first counter=0 and after the last counter=232
+    # and counter values != 0-232.
     grouped_data = data.where(
         (data["acquisition_time"] >= start_sc_tick)
         & (data["acquisition_time"] <= last_sc_tick)
@@ -83,14 +83,16 @@ def append_cod_lo_data(dataset: xr.Dataset) -> xr.Dataset:
     cod_lo_data = np.stack(
         [dataset[f"data_{i:02}"].values for i in range(num_cod_lo_rows)], axis=1
     )
+    print(cod_lo_data.shape)  # (233, 15)
 
     repeated_data = {
         var: np.repeat(dataset[var].values, num_cod_lo_rows)
         for var in dataset.data_vars
         if not var.startswith("data_")
     }
+    print(repeated_data)  # All of the other CCSDS fields except data_xx
 
-    repeated_data["data"] = cod_lo_data.flatten()
+    repeated_data["data"] = cod_lo_data.flatten()  # (3495,)
     repeated_epoch = np.repeat(dataset["epoch"].values, num_cod_lo_rows)
 
     appended_dataset = xr.Dataset(
@@ -119,18 +121,23 @@ def process_codicelo(xarray_data: xr.Dataset) -> list[dict]:
     -----
     This function is incomplete and will need to be updated to include the
     necessary calculations and data products.
-    - Calculate species counts (pg 27 of Algorithm Document)
     - Calculate rates (assume 4 minutes per group)
     - Calculate L2 CoDICE pseudodensities (pg 37 of Algorithm Document)
     - Calculate the public data products
     """
     grouped_data = find_groups(xarray_data)
+    # print(grouped_data.group.data.shape)  # 17941
     unique_groups = np.unique(grouped_data["group"])
+    # print(unique_groups)  # List of [1-77]
     codicelo_data: list[dict[str, Any]] = []
 
     for group in unique_groups:
+        print("\n")
+        print(f"Group: {group}")
+        print("\n")
         # counter values for the group should be 0-232 with no duplicates.
         subcom_values = grouped_data["counter"][(grouped_data["group"] == group).values]
+        # print(subcom_values)  # List of [0. - 232.] (in float)
 
         # Ensure no duplicates and all values from 0 to 232 are present
         if not np.array_equal(subcom_values, np.arange(233)):
@@ -142,7 +149,9 @@ def process_codicelo(xarray_data: xr.Dataset) -> list[dict]:
 
         mask = grouped_data["group"] == group
         filtered_indices = np.where(mask)[0]
+        # print(len(filtered_indices))  # List of indices that correspond to group (length is 233)
         group_data = grouped_data.isel(epoch=filtered_indices)
+        # print(group_data.data_01.data.shape)  # 233
 
         codicelo_data.append(append_cod_lo_data(group_data))
 

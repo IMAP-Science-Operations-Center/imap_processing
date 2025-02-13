@@ -647,14 +647,16 @@ def process_codice_l1a(file_path: Path, data_version: str) -> list[xr.Dataset]:
         # I-ALiRT data
         if apid == CODICEAPID.COD_LO_IAL:
             ialirt_dataset = process_codicelo(dataset)
-            science_values = [packet.data.astype(int) for packet in ialirt_dataset]
-            table_id, plan_id, plan_step, view_id = 0, 0, 0, 0
-            pipeline = CoDICEL1aPipeline(table_id, plan_id, plan_step, view_id)
-            pipeline.set_data_product_config(apid, dataset, data_version)
-            pipeline.raw_data = []
-            for packet_data in science_values:
-                pipeline.raw_data.append(packet_data.data)
-            print(pipeline.__dict__["raw_data"][0].shape)
+            print(ialirt_dataset[0])
+            print(ialirt_dataset[0].data.shape)
+            # science_values = [packet.data.astype(int) for packet in ialirt_dataset]
+            # table_id, plan_id, plan_step, view_id = 0, 0, 0, 0
+            # pipeline = CoDICEL1aPipeline(table_id, plan_id, plan_step, view_id)
+            # pipeline.set_data_product_config(apid, dataset, data_version)
+            # pipeline.raw_data = []
+            # for packet_data in science_values:
+            #     pipeline.raw_data.append(packet_data.data)
+            # print(pipeline.__dict__["raw_data"][0].shape)
 
         # # Everything else
         # elif apid in constants.APIDS_FOR_SCIENCE_PROCESSING:
