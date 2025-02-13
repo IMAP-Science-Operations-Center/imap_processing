@@ -78,6 +78,7 @@ HI_OMNI_SPECIES_VARIABLE_NAMES = ["h", "he3", "he4", "c", "o", "ne_mg_si", "fe",
 HI_SECT_SPECIES_VARIABLE_NAMES = ["h", "he3he4", "cno", "fe"]
 
 # lo-counters-aggregated data product variables are dynamically determined
+# based on the number of active counters
 # TODO: Try to convince Joey to move to lower case variable names with
 #       underscores?
 LO_COUNTERS_AGGREGATED_ACTIVE_VARIABLES = {
@@ -171,7 +172,9 @@ DATA_PRODUCT_CONFIGURATIONS = {
         "dataset_name": "imap_codice_l1a_lo-counters-aggregated",
         "dims": {"spin_sector_pairs": 6, "esa_step": 128},
         "instrument": "lo",
-        "num_counters": 6,
+        "num_counters": len(
+            LO_COUNTERS_AGGREGATED_VARIABLE_NAMES
+        ),  # The number of counters depencds on the number of active counters
         "support_variables": [
             "energy_table",
             "acquisition_time_per_step",

@@ -62,7 +62,7 @@ EXPECTED_NUM_VARIABLES = [
     0,  # hi-ialirt  # TODO: Need to implement
     0,  # lo-ialirt  # TODO: Need to implement
     148,  # hskp
-    14,  # lo-counters-aggregated
+    8 + len(constants.LO_COUNTERS_AGGREGATED_VARIABLE_NAMES),  # lo-counters-aggregated
     9,  # lo-counters-singles
     13,  # lo-sw-priority
     10,  # lo-nsw-priority

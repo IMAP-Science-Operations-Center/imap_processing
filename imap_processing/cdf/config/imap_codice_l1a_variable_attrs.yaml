@@ -56,6 +56,7 @@ spin_sector:
     VALIDMAX: 12
     VAR_TYPE: support_data
 
+# TODO: These values will likely change, check with Joey
 spin_sector_pairs:
     CATDESC: Spin sector Pairs
     FIELDNAM: Spin Sector Pairs
@@ -95,6 +96,20 @@ counters_attrs: &counters
     UNITS: counts
     VALIDMIN: 0
     VALIDMAX: 8388607  # max value for a signed 24-bit integer
+    VAR_TYPE: data
+
+events_attrs: &events
+    <<: *default
+    CATDESC: Fill in at creation
+    DISPLAY_TYPE: time_series
+    FIELDNAM: Fill in at creation
+    FILLVAL: -1
+    FORMAT: I8
+    SCALETYP: linear
+    SI_CONVERSION: " > "
+    UNITS: counts
+    VALIDMIN: 0
+    VALIDMAX: 16777216  # max value for a signed 32-bit integer
     VAR_TYPE: data
 
 data_quality:
@@ -338,44 +353,254 @@ hi-sectored-fe:
 
 # lo-counters-aggregated
 lo-counters-aggregated-TCR:
-    <<: *counters
+    <<: *events
     CATDESC: Triple Coincidence Rate
-    FIELDNAM: TCR
+    FIELDNAM: Event A - Triple Coincidence Rate
+    DEPEND_1: spin_sector_pairs
+    DEPEND_2: esa_step
     LABL_PTR_1: spin_sector_pairs
     LABL_PTR_2: esa_step
 
 lo-counters-aggregated-DCR:
-    <<: *counters
+    <<: *events
     CATDESC: Double Coincidence Rate
-    FIELDNAM: DCR
+    FIELDNAM: Event B - Double Coincidence Rate
+    DEPEND_1: spin_sector_pairs
+    DEPEND_2: esa_step
+    LABL_PTR_1: spin_sector_pairs
+    LABL_PTR_2: esa_step
+
+lo-counters-aggregated-TOFPlusAPD:
+    <<: *events
+    CATDESC: TOF + APD
+    FIELDNAM: Event C - TOF + APD
+    DEPEND_1: spin_sector_pairs
+    DEPEND_2: esa_step
+    LABL_PTR_1: spin_sector_pairs
+    LABL_PTR_2: esa_step
+
+lo-counters-aggregated-TOFOnly:
+    <<: *events
+    CATDESC: TOF Only
+    FIELDNAM: Event D - TOF Only
+    DEPEND_1: spin_sector_pairs
+    DEPEND_2: esa_step
+    LABL_PTR_1: spin_sector_pairs
+    LABL_PTR_2: esa_step
+
+lo-counters-aggregated-PositionPlusAPD:
+    <<: *events
+    CATDESC: Position + APD
+    FIELDNAM: Event E - Position + APD
+    DEPEND_1: spin_sector_pairs
+    DEPEND_2: esa_step
+    LABL_PTR_1: spin_sector_pairs
+    LABL_PTR_2: esa_step
+
+lo-counters-aggregated-PositionOnly:
+    <<: *events
+    CATDESC: Position Only
+    FIELDNAM: Event F - Position Only
+    DEPEND_1: spin_sector_pairs
+    DEPEND_2: esa_step
+    LABL_PTR_1: spin_sector_pairs
+    LABL_PTR_2: esa_step
+
+lo-counters-aggregated-STAorSTBPlusAPD:
+    <<: *events
+    CATDESC: STA or STB + APD
+    FIELDNAM: Event G - STA or STB + APD
+    DEPEND_1: spin_sector_pairs
+    DEPEND_2: esa_step
+    LABL_PTR_1: spin_sector_pairs
+    LABL_PTR_2: esa_step
+
+lo-counters-aggregated-STAorSTBOnly:
+    <<: *events
+    CATDESC: STA or STB Only
+    FIELDNAM: Event H - STA or STB Only
+    DEPEND_1: spin_sector_pairs
+    DEPEND_2: esa_step
+    LABL_PTR_1: spin_sector_pairs
+    LABL_PTR_2: esa_step
+
+lo-counters-aggregated-Reserved1:
+    <<: *events
+    CATDESC: Reserved
+    FIELDNAM: Reserved 1
+    DEPEND_1: spin_sector_pairs
+    DEPEND_2: esa_step
+    LABL_PTR_1: spin_sector_pairs
+    LABL_PTR_2: esa_step
+
+lo-counters-aggregated-Reserved2:
+    <<: *events
+    CATDESC: Reserved
+    FIELDNAM: Reserved 2
+    DEPEND_1: spin_sector_pairs
+    DEPEND_2: esa_step
+    LABL_PTR_1: spin_sector_pairs
+    LABL_PTR_2: esa_step
+
+lo-counters-aggregated-SPOnly:
+    <<: *events
+    CATDESC: SP Only
+    FIELDNAM: Event K - SP Only
+    DEPEND_1: spin_sector_pairs
+    DEPEND_2: esa_step
+    LABL_PTR_1: spin_sector_pairs
+    LABL_PTR_2: esa_step
+
+lo-counters-aggregated-APDOnly:
+    <<: *events
+    CATDESC: APD Only
+    FIELDNAM: Event L - APD Only
+    DEPEND_1: spin_sector_pairs
+    DEPEND_2: esa_step
+    LABL_PTR_1: spin_sector_pairs
+    LABL_PTR_2: esa_step
+
+lo-counters-aggregated-LowTOFCutoff:
+    <<: *events
+    CATDESC: Low TOF Cutoff
+    FIELDNAM: Low TOF Cutoff
+    DEPEND_1: spin_sector_pairs
+    DEPEND_2: esa_step
     LABL_PTR_1: spin_sector_pairs
     LABL_PTR_2: esa_step
 
 lo-counters-aggregated-STA:
-    <<: *counters
-    CATDESC: Start-A
-    FIELDNAM: STA
+    <<: *events
+    CATDESC: Start A
+    FIELDNAM: Singles - Start-A (STA)
+    DEPEND_1: spin_sector_pairs
+    DEPEND_2: esa_step
     LABL_PTR_1: spin_sector_pairs
     LABL_PTR_2: esa_step
 
 lo-counters-aggregated-STB:
-    <<: *counters
-    CATDESC: Start-B
-    FIELDNAM: STB
+    <<: *events
+    CATDESC: Start B
+    FIELDNAM: Singles - Start-B (STB)
+    DEPEND_1: spin_sector_pairs
+    DEPEND_2: esa_step
     LABL_PTR_1: spin_sector_pairs
     LABL_PTR_2: esa_step
 
 lo-counters-aggregated-SP:
-    <<: *counters
+    <<: *events
     CATDESC: Stop
-    FIELDNAM: SP
+    FIELDNAM: Singles - Stop (SP)
+    DEPEND_1: spin_sector_pairs
+    DEPEND_2: esa_step
     LABL_PTR_1: spin_sector_pairs
     LABL_PTR_2: esa_step
 
 lo-counters-aggregated-TotalPositionCount:
-    <<: *counters
+    <<: *events
     CATDESC: Total Position Count
-    FIELDNAM: Total Position Count
+    FIELDNAM: Singles - Total Position Count
+    DEPEND_1: spin_sector_pairs
+    DEPEND_2: esa_step
+    LABL_PTR_1: spin_sector_pairs
+    LABL_PTR_2: esa_step
+
+lo-counters-aggregated-InvalidPositionCount:
+    <<: *events
+    CATDESC: Invalid Position Count
+    FIELDNAM: Singles - Invalid Position Count
+    DEPEND_1: spin_sector_pairs
+    DEPEND_2: esa_step
+    LABL_PTR_1: spin_sector_pairs
+    LABL_PTR_2: esa_step
+
+lo-counters-aggregated-ASIC1FlagInvalid:
+    <<: *events
+    CATDESC: ASIC 1 Flag Invalid
+    FIELDNAM: ASIC 1 Flag Invalid Count
+    DEPEND_1: spin_sector_pairs
+    DEPEND_2: esa_step
+    LABL_PTR_1: spin_sector_pairs
+    LABL_PTR_2: esa_step
+
+lo-counters-aggregated-ASIC2FlagInvalid:
+    <<: *events
+    CATDESC: ASIC 2 Flag Invalid
+    FIELDNAM: ASIC 2 Flag Invalid Count
+    DEPEND_1: spin_sector_pairs
+    DEPEND_2: esa_step
+    LABL_PTR_1: spin_sector_pairs
+    LABL_PTR_2: esa_step
+
+lo-counters-aggregated-ASIC1ChannelInvalid:
+    <<: *events
+    CATDESC: ASIC 1 Channel Invalid
+    FIELDNAM: ASIC 1 Channel Invalid Count
+    DEPEND_1: spin_sector_pairs
+    DEPEND_2: esa_step
+    LABL_PTR_1: spin_sector_pairs
+    LABL_PTR_2: esa_step
+
+lo-counters-aggregated-ASIC2ChannelInvalid:
+    <<: *events
+    CATDESC: ASIC 2 Channel Invalid
+    FIELDNAM: ASIC 2 Channel Invalid Count
+    DEPEND_1: spin_sector_pairs
+    DEPEND_2: esa_step
+    LABL_PTR_1: spin_sector_pairs
+    LABL_PTR_2: esa_step
+
+lo-counters-aggregated-TEC4TimeoutTOFNoPos:
+    <<: *events
+    CATDESC: TEC-4 Timeout TOF no Position
+    FIELDNAM: TEC-4 Timeout Count; TOF, No Position
+    DEPEND_1: spin_sector_pairs
+    DEPEND_2: esa_step
+    LABL_PTR_1: spin_sector_pairs
+    LABL_PTR_2: esa_step
+
+lo-counters-aggregated-TEC4TimeoutPosNoTOF:
+    <<: *events
+    CATDESC: TEC-4 Timeout Position no TOF
+    FIELDNAM: TEC-4 Timeout Count; Position, No TOF
+    DEPEND_1: spin_sector_pairs
+    DEPEND_2: esa_step
+    LABL_PTR_1: spin_sector_pairs
+    LABL_PTR_2: esa_step
+
+lo-counters-aggregated-TEC4TimeoutNoPosTOF:
+    <<: *events
+    CATDESC: TEC-4 Timeout No Position or TOF
+    FIELDNAM: TEC-4 Timeout Count; No Position or TOF
+    DEPEND_1: spin_sector_pairs
+    DEPEND_2: esa_step
+    LABL_PTR_1: spin_sector_pairs
+    LABL_PTR_2: esa_step
+
+lo-counters-aggregated-TEC5TimeoutTOFNoPos:
+    <<: *events
+    CATDESC: TEC-5 Timeout TOF no Position
+    FIELDNAM: TEC-5 Timeout Count; TOF, No Position
+    DEPEND_1: spin_sector_pairs
+    DEPEND_2: esa_step
+    LABL_PTR_1: spin_sector_pairs
+    LABL_PTR_2: esa_step
+
+lo-counters-aggregated-TEC5TimeoutPosNoTOF:
+    <<: *events
+    CATDESC: TEC-5 Timeout Position no TOF
+    FIELDNAM: TEC-5 Timeout Count; Position, No TOF
+    DEPEND_1: spin_sector_pairs
+    DEPEND_2: esa_step
+    LABL_PTR_1: spin_sector_pairs
+    LABL_PTR_2: esa_step
+
+lo-counters-aggregated-TEC5TimeoutNoPosTOF:
+    <<: *events
+    CATDESC: TEC-5 Timeout No Position or TOF
+    FIELDNAM: TEC-5 Timeout Count; No Position or TOF
+    DEPEND_1: spin_sector_pairs
+    DEPEND_2: esa_step
     LABL_PTR_1: spin_sector_pairs
     LABL_PTR_2: esa_step
 
