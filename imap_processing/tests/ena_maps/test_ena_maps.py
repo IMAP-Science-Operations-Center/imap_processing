@@ -6,6 +6,7 @@ from unittest import mock
 
 import numpy as np
 import pytest
+import xarray as xr
 
 from imap_processing.ena_maps import ena_maps
 from imap_processing.spice import geometry
@@ -36,282 +37,177 @@ def l1c_pset_products():
     }
 
 
-# class TestUltraPointingSet:
-#     @pytest.fixture(autouse=True)
-#     def _setup_ultra_l1c_pset_products(self, l1c_pset_products):
-#         """Setup fixture data as class attributes"""
-#         self.l1c_spatial_bin_spacing_deg = l1c_pset_products["spacing"]
-#         self.l1c_pset_products = l1c_pset_products["products"]
+class TestUltraPointingSet:
+    @pytest.fixture(autouse=True)
+    def _setup_ultra_l1c_pset_products(self, l1c_pset_products):
+        """Setup fixture data as class attributes"""
+        self.l1c_spatial_bin_spacing_deg = l1c_pset_products["spacing"]
+        self.l1c_pset_products = l1c_pset_products["products"]
 
-#     @pytest.mark.usefixtures("_setup_ultra_l1c_pset_products")
-#     def test_instantiate(self):
-#         """Test instantiation of UltraPointingSet"""
-#         ultra_psets = [
-#             ena_maps.UltraPointingSet(
-#                 pset_frame=geometry.SpiceFrame.IMAP_DPS,
-#                 l1c_dataset=l1c_product,
-#                 order="C",
-#             )
-#             for l1c_product in self.l1c_pset_products
-#         ]
+    @pytest.mark.usefixtures("_setup_ultra_l1c_pset_products")
+    def test_instantiate(self):
+        """Test instantiation of UltraPointingSet"""
+        ultra_psets = [
+            ena_maps.UltraPointingSet(
+                spice_reference_frame=geometry.SpiceFrame.IMAP_DPS,
+                l1c_dataset=l1c_product,
+            )
+            for l1c_product in self.l1c_pset_products
+        ]
 
-#         for ultra_pset in ultra_psets:
-#             # Check tiling is rectangular
-#             assert ultra_pset.tiling_type == ena_maps.SkyTilingType.RECTANGULAR
+        for ultra_pset in ultra_psets:
+            # Check tiling is rectangular
+            assert ultra_pset.tiling_type == ena_maps.SkyTilingType.RECTANGULAR
 
-#             # Check that the reference frame is correctly set
-#             assert ultra_pset.pset_frame == geometry.SpiceFrame.IMAP_DPS
+            # Check that the reference frame is correctly set
+            assert ultra_pset.spice_reference_frame == geometry.SpiceFrame.IMAP_DPS
 
-#             # Check the number of points is (360/0.5) * (180/0.5)
-#             np.testing.assert_equal(
-#                 ultra_pset.num_points,
-#                 int(360 * 180 / (self.l1c_spatial_bin_spacing_deg**2)),
-#             )
+            # Check the number of points is (360/0.5) * (180/0.5)
+            np.testing.assert_equal(
+                ultra_pset.num_points,
+                int(360 * 180 / (self.l1c_spatial_bin_spacing_deg**2)),
+            )
 
-#             # Check the repr exists
-#             assert "UltraPointingSet" in repr(ultra_pset)
+            # Check the repr exists
+            assert "UltraPointingSet" in repr(ultra_pset)
 
-#     @pytest.mark.usefixtures("_setup_ultra_l1c_pset_products")
-#     @mock.patch("imap_processing.spice.geometry.frame_transform")
-#     def test_project_to_frame(self, mock_frame_transform):
-#         """Test projection of UltraPointingSet to a new frame"""
+    @pytest.mark.usefixtures("_setup_ultra_l1c_pset_products")
+    def test_uneven_spacing_raises_error(self):
+        """Test that uneven spacing in az/el raises ValueError"""
 
-#         # Mock frame_transform to return the negative of the input position vectors
-#         mock_frame_transform.side_effect = lambda et, pos, from_frame, to_frame: -pos
+        # Create dataset with uneven az spacing
+        uneven_az_dataset = xr.Dataset()
+        uneven_az_dataset["epoch"] = 1
+        uneven_az_dataset["azimuth_bin_center"] = np.array([0, 5, 15, 20, 30])
+        uneven_az_dataset["elevation_bin_center"] = np.arange(5)
 
-#         ultra_psets = [
-#             ena_maps.UltraPointingSet(
-#                 pset_frame=geometry.SpiceFrame.IMAP_DPS,
-#                 l1c_dataset=l1c_product,
-#                 order="C",
-#             )
-#             for l1c_product in self.l1c_pset_products
-#         ]
+        with pytest.raises(ValueError, match="Azimuth bin spacing is not uniform"):
+            ena_maps.UltraPointingSet(
+                spice_reference_frame=geometry.SpiceFrame.IMAP_DPS,
+                l1c_dataset=uneven_az_dataset,
+            )
 
-#         for ultra_pset in ultra_psets:
-#             original_pset = deepcopy(ultra_pset)
+        uneven_az_dataset["azimuth_bin_center"] = np.arange(5)
+        uneven_az_dataset["elevation_bin_center"] = np.array([0, 5, 15, 20, 30])
 
-#             # First projection inverts position vectors
-#             ultra_pset.project_to_frame(geometry.SpiceFrame.ECLIPJ2000)
-#             assert ultra_pset.pset_frame == geometry.SpiceFrame.ECLIPJ2000
+        with pytest.raises(ValueError, match="Elevation bin spacing is not uniform"):
+            ena_maps.UltraPointingSet(
+                spice_reference_frame=geometry.SpiceFrame.IMAP_DPS,
+                l1c_dataset=uneven_az_dataset,
+            )
 
-#             # Second projection inverts position vectors back to original
-#             # (check equal to original)
-#             ultra_pset.project_to_frame(geometry.SpiceFrame.IMAP_ULTRA_90)
-#             assert ultra_pset.pset_frame == geometry.SpiceFrame.IMAP_ULTRA_90
-#             np.testing.assert_allclose(
-#                 ultra_pset.az_el_points, original_pset.az_el_points
-#             )
+        # Even but not the same spacing between az and el
+        uneven_az_dataset["azimuth_bin_center"] = np.arange(5)
+        uneven_az_dataset["elevation_bin_center"] = np.arange(5) * 2
 
-#             # Third projection inverts position vectors again
-#             # (check not equal to original)
-#             ultra_pset.project_to_frame(geometry.SpiceFrame.J2000)
-#             assert ultra_pset.pset_frame == geometry.SpiceFrame.J2000
-# assert not np.allclose(
-#     ultra_pset.az_el_points, original_pset.az_el_points)
-
-#             # Check that the history attribute has been updated (current frame last)
-#             assert ultra_pset.pset_frame_history == [
-#                 geometry.SpiceFrame.IMAP_DPS,
-#                 geometry.SpiceFrame.ECLIPJ2000,
-#                 geometry.SpiceFrame.IMAP_ULTRA_90,
-#                 geometry.SpiceFrame.J2000,
-#             ]
-
-#     @pytest.mark.usefixtures("_setup_ultra_l1c_pset_products")
-#     def test_uneven_spacing_raises_error(self):
-#         """Test that uneven spacing in az/el raises ValueError"""
-
-#         # Create dataset with uneven az spacing
-#         uneven_az_dataset = xr.Dataset()
-#         uneven_az_dataset["epoch"] = 1
-#         uneven_az_dataset["azimuth_bin_center"] = np.array([0, 5, 15, 20, 30])
-#         uneven_az_dataset["elevation_bin_center"] = np.arange(5)
-
-#         with pytest.raises(ValueError, match="Azimuth bin spacing is not uniform"):
-#             ena_maps.UltraPointingSet(
-#                 pset_frame=geometry.SpiceFrame.IMAP_DPS,
-#                 l1c_dataset=uneven_az_dataset,
-#             )
-
-#         uneven_az_dataset["azimuth_bin_center"] = np.arange(5)
-#         uneven_az_dataset["elevation_bin_center"] = np.array([0, 5, 15, 20, 30])
-
-#         with pytest.raises(ValueError, match="Elevation bin spacing is not uniform"):
-#             ena_maps.UltraPointingSet(
-#                 pset_frame=geometry.SpiceFrame.IMAP_DPS,
-#                 l1c_dataset=uneven_az_dataset,
-#             )
-
-#         # Even but not the same spacing between az and el
-#         uneven_az_dataset["azimuth_bin_center"] = np.arange(5)
-#         uneven_az_dataset["elevation_bin_center"] = np.arange(5) * 2
-
-#         with pytest.raises(
-#             ValueError, match="Azimuth and elevation bin spacing do not match:"
-#         ):
-#             ena_maps.UltraPointingSet(
-#                 pset_frame=geometry.SpiceFrame.IMAP_DPS,
-#                 l1c_dataset=uneven_az_dataset,
-#             )
+        with pytest.raises(
+            ValueError, match="Azimuth and elevation bin spacing do not match:"
+        ):
+            ena_maps.UltraPointingSet(
+                spice_reference_frame=geometry.SpiceFrame.IMAP_DPS,
+                l1c_dataset=uneven_az_dataset,
+            )
 
 
-# class TestRectangularSkyMap:
-#     @pytest.fixture(autouse=True)
-#     def _setup_ultra_l1c_pset_products(self, l1c_pset_products):
-#         """Setup fixture data as class attributes"""
-#         self.l1c_spatial_bin_spacing_deg = l1c_pset_products["spacing"]
-#         self.l1c_pset_products = l1c_pset_products["products"]
-#         self.pset_order = "C"
-#         self.ultra_psets = [
-#             ena_maps.UltraPointingSet(
-#                 pset_frame=geometry.SpiceFrame.IMAP_DPS,
-#                 l1c_dataset=l1c_product,
-#                 order=self.pset_order,
-#             )
-#             for l1c_product in self.l1c_pset_products
-#         ]
+class TestRectangularSkyMap:
+    @pytest.fixture(autouse=True)
+    def _setup_ultra_l1c_pset_products(self, l1c_pset_products):
+        """Setup fixture data as class attributes"""
+        self.l1c_spatial_bin_spacing_deg = l1c_pset_products["spacing"]
+        self.l1c_pset_products = l1c_pset_products["products"]
+        self.ultra_psets = [
+            ena_maps.UltraPointingSet(
+                spice_reference_frame=geometry.SpiceFrame.IMAP_DPS,
+                l1c_dataset=l1c_product,
+            )
+            for l1c_product in self.l1c_pset_products
+        ]
 
-#     def test_instantiate(self):
-#         """Test instantiation of RectangularSkyMap"""
-#         rm = ena_maps.RectangularSkyMap(
-#             spacing_deg=2,
-#             spice_frame=geometry.SpiceFrame.ECLIPJ2000,
-#             order=self.pset_order,
-#         )
+    def test_instantiate(self):
+        """Test instantiation of RectangularSkyMap"""
+        rm = ena_maps.RectangularSkyMap(
+            spacing_deg=2,
+            spice_frame=geometry.SpiceFrame.ECLIPJ2000,
+        )
 
-#         # Check that the map is empty
-#         assert rm.data_dict == {}
+        # Check that the map is empty
+        assert rm.data_dict == {}
 
-#         # Check that the reference frame is correctly set
-#         assert rm.reference_frame == geometry.SpiceFrame.ECLIPJ2000
+        # Check that the reference frame is correctly set
+        assert rm.spice_reference_frame == geometry.SpiceFrame.ECLIPJ2000
 
-#         # Check that the order is correctly set
-#         assert rm.order == self.pset_order
+        # Check the number of points is (360/2) * (180/2)
+        np.testing.assert_equal(rm.num_points, int(360 * 180 / 4))
 
-#         # Check the number of points is (360/2) * (180/2)
-#         np.testing.assert_equal(rm.num_points, int(360 * 180 / 4))
+        # Check the repr exists
+        assert "RectangularSkyMap" in repr(rm)
 
-#         # Check the repr exists
-#         assert "RectangularSkyMap" in repr(rm)
+    @pytest.mark.usefixtures("_setup_ultra_l1c_pset_products")
+    @mock.patch("imap_processing.spice.geometry.frame_transform_az_el")
+    def test_project_pset_values_to_map_push_method(self, mock_frame_transform_az_el):
+        """
+        Test projection of PSET values to Rect. Map w "push" index matching method.
 
-#     @pytest.mark.usefixtures("_setup_ultra_l1c_pset_products")
-#     @pytest.mark.parametrize("map_spacing_deg", [2, 5, 10])
-#     @pytest.mark.parametrize("ravel_order", ["C", "F"])
-#     @mock.patch("imap_processing.spice.geometry.frame_transform_az_el")
-#     def test_match_pset_coords_to_indices_push_method(
-#         self, mock_frame_transform_az_el, map_spacing_deg, ravel_order
-#     ):
-#         """
-#         Test matching PSET coordinates to RectangularSkyMap
-#         indices using "push" method.
+        If frame_transform_az_el is mocked to return the az and el unchanged, and the
+        map has the same spacing as the PSETs, then the map should have
+        the same values as the PSETs, summed.
+        """
+        index_matching_method = ena_maps.IndexMatchMethod.PUSH
 
-#         Parameterize by map_spacing_deg and ravel_order.
-#         """
+        pset_spacing_deg = self.ultra_psets[0].spacing_deg
 
-#         # Mock frame_transform to return the az and el,
-#         # shifted by +13 degrees for luck
-#         def rotate_az_el_slightly(az_el):
-#             az_el += np.deg2rad(13)
-#             # Wrap az to [0, 2*pi) and el to [-pi/2, pi/2) radians
-#             az_el[:, 0] = az_el[:, 0] % (2 * np.pi)
-#             az_el[:, 1] = ((az_el[:, 1] + (np.pi / 2)) % np.pi) - (np.pi / 2)
-#             return az_el
+        # Mock frame_transform to return the az and el unchanged
+        mock_frame_transform_az_el.side_effect = (
+            lambda et, az_el, from_frame, to_frame, degrees: az_el
+        )
 
-#         mock_frame_transform_az_el.side_effect = (
-#             lambda et, az_el, from_frame, to_frame, degrees: rotate_az_el_slightly(
-#                 az_el
-#             )
-#         )
-#         rectangular_map = ena_maps.RectangularSkyMap(
-#             spacing_deg=map_spacing_deg,
-#             spice_frame=geometry.SpiceFrame.ECLIPJ2000,
-#             order=ravel_order,
-#         )
-#         # Find the indices of the map that match the PSET's az and el coordinates
-#         matched_indices = rectangular_map.match_pset_coords_to_indices(
-#             self.ultra_psets[0], ena_maps.IndexMatchMethod.PUSH
-#         )
+        rectangular_map = ena_maps.RectangularSkyMap(
+            spacing_deg=pset_spacing_deg,
+            spice_frame=geometry.SpiceFrame.ECLIPJ2000,
+        )
 
-#         # The found az and el points should be the same as the input az and el points
-#         # to within the spacing of the map
-#         matched_map_az_el = rectangular_map.az_el_points[matched_indices]
-#         rotated_pset_az_el = self.ultra_psets[0].az_el_points
-#         np.testing.assert_allclose(
-#             matched_map_az_el[:, 1],
-#             rotated_pset_az_el[:, 1],
-#             atol=np.deg2rad(map_spacing_deg / 2),
-#         )
+        # Project each PSET's values to the map
+        for ultra_pset in self.ultra_psets:
+            rectangular_map.project_pset_values_to_map(
+                ultra_pset,
+                value_keys=[
+                    ("counts", index_matching_method),
+                    ("exposure_time", index_matching_method),
+                ],
+            )
 
-#     @pytest.mark.usefixtures("_setup_ultra_l1c_pset_products")
-#     @mock.patch("imap_processing.spice.geometry.frame_transform_az_el")
-#     def test_project_pset_values_to_map_push_method(self, mock_frame_transform_az_el):
-#         """
-#         Test projection of PSET values to Rect. Map w "push" index matching method.
+        # Check that the map has been updated
+        assert rectangular_map.data_dict != {}
 
-#         If frame_transform_az_el is mocked to return the az and el unchanged, and the
-#         map has the same spacing as the PSETs, then the map should have
-#         the same values as the PSETs, summed.
-#         """
-#         index_matching_method = ena_maps.IndexMatchMethod.PUSH
+        # Check that the map has the same values as the PSETs, summed
+        simple_summed_pset_counts = np.sum(
+            [pset["counts"].values for pset in self.l1c_pset_products], axis=0
+        ).reshape(rectangular_map.data_dict["counts"].shape)
 
-#         pset_ravel_order = self.pset_order
-#         pset_spacing_deg = self.ultra_psets[0].spacing_deg
+        np.testing.assert_allclose(
+            rectangular_map.data_dict["counts"],
+            simple_summed_pset_counts,
+        )
 
-#         # Mock frame_transform to return the az and el unchanged
-#         mock_frame_transform_az_el.side_effect = (
-#             lambda et, az_el, from_frame, to_frame, degrees: az_el
-#         )
+    @pytest.mark.usefixtures("_setup_ultra_l1c_pset_products")
+    @mock.patch("imap_processing.spice.geometry.frame_transform_az_el")
+    def test_project_pset_values_to_map_pull_method(self, mock_frame_transform_az_el):
+        """Test projection to Rect. Map fails w "pull" index matching method."""
 
-#         rectangular_map = ena_maps.RectangularSkyMap(
-#             spacing_deg=pset_spacing_deg,
-#             spice_frame=geometry.SpiceFrame.ECLIPJ2000,
-#             order=pset_ravel_order,
-#         )
+        index_matching_method = ena_maps.IndexMatchMethod.PULL
+        rectangular_map = ena_maps.RectangularSkyMap(
+            spacing_deg=10,
+            spice_frame=geometry.SpiceFrame.ECLIPJ2000,
+        )
 
-#         # Project each PSET's values to the map
-#         for ultra_pset in self.ultra_psets:
-#             rectangular_map.project_pset_values_to_map(
-#                 ultra_pset,
-#                 value_keys=[
-#                     ("counts", index_matching_method),
-#                     ("exposure_time", index_matching_method),
-#                 ],
-#             )
-
-#         # Check that the map has been updated
-#         assert rectangular_map.data_dict != {}
-
-#         # Check that the map has the same values as the PSETs, summed
-#         simple_summed_pset_counts = np.sum(
-#             [pset["counts"].values for pset in self.l1c_pset_products], axis=0
-#         ).reshape(rectangular_map.data_dict["counts"].shape, order=pset_ravel_order)
-
-#         np.testing.assert_allclose(
-#             rectangular_map.data_dict["counts"],
-#             simple_summed_pset_counts,
-#         )
-
-#     @pytest.mark.usefixtures("_setup_ultra_l1c_pset_products")
-#     @mock.patch("imap_processing.spice.geometry.frame_transform_az_el")
-#     def test_project_pset_values_to_map_pull_method(self, mock_frame_transform_az_el):
-#         """Test projection to Rect. Map fails w "pull" index matching method."""
-
-#         index_matching_method = ena_maps.IndexMatchMethod.PULL
-#         rectangular_map = ena_maps.RectangularSkyMap(
-#             spacing_deg=10,
-#             spice_frame=geometry.SpiceFrame.ECLIPJ2000,
-#             order=self.pset_order,
-#         )
-
-#         with pytest.raises(NotImplementedError):
-#             rectangular_map.project_pset_values_to_map(
-#                 self.ultra_psets[0],
-#                 value_keys=[
-#                     ("counts", index_matching_method),
-#                     ("exposure_time", index_matching_method),
-#                 ],
-#             )
+        with pytest.raises(NotImplementedError):
+            rectangular_map.project_pset_values_to_map(
+                self.ultra_psets[0],
+                value_keys=[
+                    ("counts", index_matching_method),
+                    ("exposure_time", index_matching_method),
+                ],
+            )
 
 
 class TestIndexMatching:
@@ -379,6 +275,17 @@ class TestIndexMatching:
         assert len(flat_indices_input_grid_output_frame) == len(manual_az_el_coords)
         np.testing.assert_equal(
             flat_indices_input_grid_output_frame, expected_output_pixel
+        )
+
+        # Check that the map's az/el points at the matched indices
+        # are the same as the input az/el points to within the spacing of the map
+        matched_map_az_el = mock_rect_map.az_el_points[
+            flat_indices_input_grid_output_frame
+        ]
+        np.testing.assert_allclose(
+            matched_map_az_el[:, 0],
+            mock_pset_input_frame.az_el_points[:, 0],
+            atol=np.deg2rad(map_spacing_deg),
         )
 
     def test_match_coords_to_indices_pset_to_healpix_map_other_map(
