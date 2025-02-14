@@ -12,7 +12,7 @@ from imap_processing.mag.l1a.mag_l1a_data import (
     MagL1aPacketProperties,
     TimeTuple,
 )
-from imap_processing.spice.time import TTJ2000_EPOCH, met_to_ttj2000ns
+from imap_processing.spice.time import met_to_ttj2000ns
 
 
 @pytest.fixture()
@@ -498,10 +498,6 @@ def test_compressed_vector_data(expected_vectors, raw_compressed_vectors):
         dtype=np.uint8,
     )
 
-    print("LENNNNN")
-    print(len(headers + primary_compressed + secondary_compressed + padding) / 8)
-    print(len(input_data) / 8)
-
     # In this step, input_data is automatically padded to a byte boundary by adding
     # zeros to the end
     input_data = np.packbits(input_data)
@@ -516,8 +512,33 @@ def test_compressed_vector_data(expected_vectors, raw_compressed_vectors):
 
     assert primary_with_range.shape[0] == 16
     assert secondary_with_range.shape[0] == 16
-    print(f"primary with range: {primary_with_range}")
-    print(f"secondary with range: {secondary_with_range}")
+    assert np.array_equal(primary_with_range, primary_expected)
+    assert np.array_equal(secondary_with_range, secondary_expected)
+
+    # testing the case where a spare byte is included at the end.
+    end_padding = "000000000000"
+
+    input_data = np.array(
+        [
+            int(i)
+            for i in headers
+            + primary_compressed
+            + secondary_compressed
+            + padding
+            + range_primary
+            + range_secondary
+            + end_padding
+        ],
+        dtype=np.uint8,
+    )
+
+    input_data = np.packbits(input_data)
+    (primary_with_range, secondary_with_range) = MagL1a.process_compressed_vectors(
+        input_data, 16, 16
+    )
+
+    assert primary_with_range.shape[0] == 16
+    assert secondary_with_range.shape[0] == 16
     assert np.array_equal(primary_with_range, primary_expected)
     assert np.array_equal(secondary_with_range, secondary_expected)
 
@@ -772,11 +793,6 @@ def test_time_tuple():
     test_add = example_time_tuple + (1000 / MAX_FINE_TIME)
 
     assert test_add == TimeTuple(439067319, 83)
-
-    test_time_tuple = TimeTuple(10, 0)
-
-    print(TTJ2000_EPOCH + np.timedelta64(test_time_tuple.to_j2000ns(), "ns"))
-    # assert test_time_tuple.to_j2000ns() == expected_j2000ns
 
 
 def test_calculate_vector_time():
