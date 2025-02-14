@@ -291,10 +291,8 @@ class UltraPointingSet(PointingSet):
 
         # Read in the data and store the xarray dataset as data attr
         if isinstance(l1c_dataset, (str, pathlib.Path)):
-            self.path: str | None = str(l1c_dataset)
-            self.data = xr.open_dataset(l1c_dataset)
+            self.data = load_cdf(l1c_dataset)
         elif isinstance(l1c_dataset, xr.Dataset):
-            self.path = None
             self.data = l1c_dataset
 
         # A PSET must have a single epoch
