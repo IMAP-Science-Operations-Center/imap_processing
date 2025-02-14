@@ -103,7 +103,7 @@ def flag_attitude(eventtimes_met: NDArray) -> tuple[NDArray, NDArray, NDArray, N
     spin_period = spin_df.loc[spin_df.spin_number.isin(spins), "spin_period_sec"]
     spin_starttime = spin_df.loc[spin_df.spin_number.isin(spins), "spin_start_time"]
     spin_rates = 60 / spin_period  # 60 seconds in a minute
-    indices = (spin_rates < UltraConstants.CULLING_RPM_MIN) & (
+    indices = (spin_rates < UltraConstants.CULLING_RPM_MIN) | (
         spin_rates > UltraConstants.CULLING_RPM_MAX
     )
 

@@ -43,13 +43,15 @@ def test_data(use_fake_spin_data_for_time):
 def test_get_spin(use_fake_spin_data_for_time):
     """Tests get_spin function."""
 
-    start = 4.45015658e08
-    stop = 4.45015873e08
+    nspins = 5
+    spin_period = 15
+    start = 0
+    stop = start + (nspins + 1) * spin_period
     use_fake_spin_data_for_time(start, stop)
     spin_number = get_spin(np.linspace(start, stop, num=20))
 
     assert len(spin_number) == len(np.linspace(start, stop, num=20))
-    expected_num_spins = np.ceil((stop - start) / 15)
+    expected_num_spins = np.ceil((stop - start) / 15) + 1
     assert np.array_equal(len(np.unique(spin_number)), expected_num_spins)
 
 

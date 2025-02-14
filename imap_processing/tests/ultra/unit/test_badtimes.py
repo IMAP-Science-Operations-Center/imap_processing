@@ -24,9 +24,10 @@ def test_calculate_badtimes():
 
     quality_ena_rates[:, 0] |= ImapRatesUltraFlags.ZEROCOUNTS.value
     quality_ena_rates[0, 1] |= ImapRatesUltraFlags.ZEROCOUNTS.value
-    quality_ena_rates[0, 3] |= ImapRatesUltraFlags.ZEROCOUNTS.value
     quality_ena_rates[0, 2] |= ImapRatesUltraFlags.HIGHRATES.value
-    quality_ena_rates[0, 3] |= ImapRatesUltraFlags.HIGHRATES.value
+    quality_ena_rates[0, 3] |= (
+        ImapRatesUltraFlags.ZEROCOUNTS.value | ImapRatesUltraFlags.HIGHRATES.value
+    )
 
     ds = xr.Dataset(
         {
@@ -42,9 +43,14 @@ def test_calculate_badtimes():
         },
     )
 
-    culling_ds = calculate_cullingmask(ds, name="test", data_version="v1")
+    culling_ds = calculate_cullingmask(
+        ds, name="imap_ultra_l1b_45sensor-badtimes", data_version="v1"
+    )
     badtimes_ds = calculate_badtimes(
-        ds, culling_ds["spin_number"].values, name="test", data_version="v1"
+        ds,
+        culling_ds["spin_number"].values,
+        name="imap_ultra_l1b_45sensor-badtimes",
+        data_version="v1",
     )
 
     assert not np.any(

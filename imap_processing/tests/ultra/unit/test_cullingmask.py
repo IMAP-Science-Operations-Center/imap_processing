@@ -36,7 +36,9 @@ def test_calculate_cullingmask_attitude():
         },
     )
 
-    result_ds = calculate_cullingmask(ds, name="test", data_version="v1")
+    result_ds = calculate_cullingmask(
+        ds, name="imap_ultra_l1b_45sensor-cullingmask", data_version="v1"
+    )
 
     np.testing.assert_array_equal(result_ds["spin_number"].values, np.array([0]))
 
@@ -58,9 +60,10 @@ def test_calculate_cullingmask_rates():
 
     quality_ena_rates[:, 0] |= ImapRatesUltraFlags.ZEROCOUNTS.value
     quality_ena_rates[0, 1] |= ImapRatesUltraFlags.ZEROCOUNTS.value
-    quality_ena_rates[0, 3] |= ImapRatesUltraFlags.ZEROCOUNTS.value
     quality_ena_rates[0, 2] |= ImapRatesUltraFlags.HIGHRATES.value
-    quality_ena_rates[0, 3] |= ImapRatesUltraFlags.HIGHRATES.value
+    quality_ena_rates[0, 3] |= (
+        ImapRatesUltraFlags.ZEROCOUNTS.value | ImapRatesUltraFlags.HIGHRATES.value
+    )
 
     ds = xr.Dataset(
         {
@@ -76,7 +79,9 @@ def test_calculate_cullingmask_rates():
         },
     )
 
-    result_ds = calculate_cullingmask(ds, name="test", data_version="v1")
+    result_ds = calculate_cullingmask(
+        ds, name="imap_ultra_l1b_45sensor-cullingmask", data_version="v1"
+    )
 
     expected_spins = np.array([1])
     np.testing.assert_array_equal(result_ds["spin_number"].values, expected_spins)
