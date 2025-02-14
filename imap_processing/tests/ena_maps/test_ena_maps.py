@@ -170,10 +170,8 @@ class TestRectangularSkyMap:
         for ultra_pset in self.ultra_psets:
             rectangular_map.project_pset_values_to_map(
                 ultra_pset,
-                value_keys=[
-                    ("counts", index_matching_method),
-                    ("exposure_time", index_matching_method),
-                ],
+                value_keys=["counts", "exposure_time"],
+                index_match_method=index_matching_method,
             )
 
         # Check that the map has been updated
@@ -203,10 +201,8 @@ class TestRectangularSkyMap:
         with pytest.raises(NotImplementedError):
             rectangular_map.project_pset_values_to_map(
                 self.ultra_psets[0],
-                value_keys=[
-                    ("counts", index_matching_method),
-                    ("exposure_time", index_matching_method),
-                ],
+                value_keys=["counts", "exposure_time"],
+                index_match_method=index_matching_method,
             )
 
 

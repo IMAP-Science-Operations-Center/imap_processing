@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import logging
 import pathlib
-import typing
 from abc import ABC, abstractmethod
 from enum import Enum
 
@@ -12,15 +11,11 @@ import numpy as np
 import xarray as xr
 from numpy.typing import NDArray
 
+from imap_processing.cdf.utils import load_cdf
 from imap_processing.ena_maps.utils import map_utils, spatial_utils
 from imap_processing.spice import geometry
 
 logger = logging.getLogger(__name__)
-
-
-# Define ravel order for unravelling, multi-indexing of rectangular grids.
-# Must be done as explicit typing Literal for mypy to accept it.
-RAVEL_ORDER = typing.cast(typing.Literal["C", "F"], "C")
 
 
 class SkyTilingType(Enum):
@@ -63,8 +58,8 @@ class IndexMatchMethod(Enum):
 
 
 def match_coords_to_indices(
-    spatial_object_input_frame: PointingSet | AbstractSkyMap,
-    spatial_object_output_frame: PointingSet | AbstractSkyMap,
+    input_object: PointingSet | AbstractSkyMap,
+    output_object: PointingSet | AbstractSkyMap,
     event_time: float | None = None,
 ) -> NDArray:
     """
@@ -82,13 +77,18 @@ def match_coords_to_indices(
     however, by swapping the input and output objects, one can apply the "pull" method
     of index  matching.
 
+    At present, the allowable inputs are either:
+    - A PointingSet object and a SkyMap object, in either order of input/output.
+    The event time will be taken from the PointingSet object.
+    - Two SkyMap objects, in which case the event time must be specified.
+
     Parameters
     ----------
-    spatial_object_input_frame : PointingSet | AbstractSkyMap
+    input_object : PointingSet | AbstractSkyMap
         An object containing 1D spatial pixel centers in azimuth and elevation,
         which will be matched to 1D indices of spatial pixels in the output frame.
         Must contain the Spice frame in which the pixel centers are defined.
-    spatial_object_output_frame : PointingSet | AbstractSkyMap
+    output_object : PointingSet | AbstractSkyMap
         The object containing a grid or tessellation of spatial pixels
         into which the input spatial pixel centers will 'land', and be matched to
         corresponding pixel 1D indices in the output frame.
@@ -104,7 +104,8 @@ def match_coords_to_indices(
     flat_indices_input_grid_output_frame : NDArray
         1D array of pixel indices of the output object corresponding to each pixel in
         the input object. The length of the array is equal to the number of pixels in
-        the input object, and may contain 0 or >1 occurrences of the same output index.
+        the input object, and may contain 0, 1, or multiple occurrences of the same
+        output index.
 
     Raises
     ------
@@ -117,77 +118,60 @@ def match_coords_to_indices(
     ValueError
         If the tiling type of the output frame is not RECTANGULAR or HEALPIX.
     """
-    if isinstance(spatial_object_input_frame, PointingSet) and isinstance(
-        spatial_object_output_frame, PointingSet
-    ):
+    if isinstance(input_object, PointingSet) and isinstance(output_object, PointingSet):
         raise ValueError("Cannot match indices between two PointingSet objects.")
 
     # If event_time is not specified, use event_time of the PointingSet, if present.
     if event_time is None:
-        if isinstance(spatial_object_input_frame, PointingSet):
-            event_time = spatial_object_input_frame.data["epoch"].values
-        elif isinstance(spatial_object_output_frame, PointingSet):
-            event_time = spatial_object_output_frame.data["epoch"].values
+        if isinstance(input_object, PointingSet):
+            event_time = input_object.data["epoch"].values
+        elif isinstance(output_object, PointingSet):
+            event_time = output_object.data["epoch"].values
         else:
             raise ValueError(
                 "Event time must be specified if both objects are SkyMaps."
             )
 
-    obj1_az_el_points_frame1 = spatial_object_input_frame.az_el_points
+    # Az/El pixel center coords of the input object in its own frame
+    input_obj_az_el_input_frame = input_object.az_el_points
 
-    # If the two objects are not already in the same frame,
-    # transform the input pixel centers to the output frame.
-    if (
-        spatial_object_input_frame.spice_reference_frame
-        is not spatial_object_output_frame.spice_reference_frame
-    ):
-        obj1_az_el_points_frame2 = geometry.frame_transform_az_el(
-            et=event_time,
-            az_el=obj1_az_el_points_frame1,
-            from_frame=spatial_object_input_frame.spice_reference_frame,
-            to_frame=spatial_object_output_frame.spice_reference_frame,
-            degrees=False,
-        )
-    else:
-        obj1_az_el_points_frame2 = obj1_az_el_points_frame1
-
-    obj1_az_el_points_frame2 = geometry.frame_transform_az_el(
+    # Transform the input pixel centers to the output frame
+    input_obj_az_el_output_frame = geometry.frame_transform_az_el(
         et=event_time,
-        az_el=obj1_az_el_points_frame1,
-        from_frame=spatial_object_input_frame.spice_reference_frame,
-        to_frame=spatial_object_output_frame.spice_reference_frame,
+        az_el=input_obj_az_el_input_frame,
+        from_frame=input_object.spice_reference_frame,
+        to_frame=output_object.spice_reference_frame,
         degrees=False,
     )
 
     # The way indices are matched depends on the tiling type of the 2nd object
-    if spatial_object_output_frame.tiling_type is SkyTilingType.RECTANGULAR:
+    if output_object.tiling_type is SkyTilingType.RECTANGULAR:
         # To match to a rectangular grid, we need to digitize the transformed az, el
         # pixel centers onto the bin edges of the output frame's grid, then
         # use ravel_multi_index to get the 1D indices of the pixels in the output frame.
         az_indices = (
             np.digitize(
-                obj1_az_el_points_frame2[:, 0],
-                spatial_object_output_frame.sky_grid.az_bin_edges,
+                input_obj_az_el_output_frame[:, 0],
+                output_object.sky_grid.az_bin_edges,
             )
             - 1
         )
         el_indices = (
             np.digitize(
-                obj1_az_el_points_frame2[:, 1],
-                spatial_object_output_frame.sky_grid.el_bin_edges,
+                input_obj_az_el_output_frame[:, 1],
+                output_object.sky_grid.el_bin_edges,
             )
             - 1
         )
         flat_indices_input_grid_output_frame = np.ravel_multi_index(
             multi_index=(az_indices, el_indices),
             dims=(
-                len(spatial_object_output_frame.sky_grid.az_bin_midpoints),
-                len(spatial_object_output_frame.sky_grid.el_bin_midpoints),
+                len(output_object.sky_grid.az_bin_midpoints),
+                len(output_object.sky_grid.el_bin_midpoints),
             ),
-            order=RAVEL_ORDER,
         )
 
-    elif spatial_object_output_frame.tiling_type is SkyTilingType.HEALPIX:
+    elif output_object.tiling_type is SkyTilingType.HEALPIX:
         # To match to a Healpix tessellation, we need to use the healpy function ang2pix
         # which directly returns the index on the output frame's Healpix tessellation.
         """
@@ -348,8 +332,8 @@ class UltraPointingSet(PointingSet):
         # column 1 (az_el_points[:, 1]) is the elevation of that point.
         self.az_el_points = np.column_stack(
             (
-                self.sky_grid.az_grid.ravel(order=RAVEL_ORDER),
-                self.sky_grid.el_grid.ravel(order=RAVEL_ORDER),
+                self.sky_grid.az_grid.ravel(),
+                self.sky_grid.el_grid.ravel(),
             )
         )
         self.num_points = self.az_el_points.shape[0]
@@ -429,10 +413,10 @@ class RectangularSkyMap(AbstractSkyMap):
         )
 
         # Unwrap the az, el, solid angle grids to series of points tiling the sky
-        az_points = self.sky_grid.az_grid.ravel(order=RAVEL_ORDER)
-        el_points = self.sky_grid.el_grid.ravel(order=RAVEL_ORDER)
+        az_points = self.sky_grid.az_grid.ravel()
+        el_points = self.sky_grid.el_grid.ravel()
         self.az_el_points = np.column_stack((az_points, el_points))
-        self.solid_angle_points = self.solid_angle_grid.ravel(order=RAVEL_ORDER)
+        self.solid_angle_points = self.solid_angle_grid.ravel()
         self.num_points = self.az_el_points.shape[0]
 
         # Initialize empty data dictionary to store map data
@@ -441,7 +425,8 @@ class RectangularSkyMap(AbstractSkyMap):
     def project_pset_values_to_map(
         self,
         pointing_set: PointingSet,
-        value_keys: list[tuple[str, IndexMatchMethod]] | None = None,
+        value_keys: list[str] | None = None,
+        index_match_method: IndexMatchMethod = IndexMatchMethod.PUSH,
     ) -> None:
         """
         Project a pointing set's values to the map grid.
@@ -455,12 +440,14 @@ class RectangularSkyMap(AbstractSkyMap):
         pointing_set : PointingSet
             The pointing set containing the values to project to the map.
         value_keys : list[tuple[str, IndexMatchMethod]] | None
-            The keys of the values to project to the map, and method of index matching.
-            Ex.: [("counts", IndexMatchMethod.PUSH), ("flux", IndexMatchMethod.PULL)]
+            The keys of the values to project to the map.
+            Ex.: ["counts", "flux"]
             data_vars named each key must be present, and of the same dimensionality in
             each pointing set which is to be projected to the map.
-            Default is None, in which case all data_vars in the pointing set are used,
-            with the "push" method of index matching.
+            Default is None, in which case all data_vars in the pointing set are used.
+        index_match_method : IndexMatchMethod, optional
+            The method of index matching to use for all values.
+            Default is IndexMatchMethod.PUSH.
 
         Raises
         ------
@@ -468,30 +455,27 @@ class RectangularSkyMap(AbstractSkyMap):
             If a value key is not found in the pointing set.
         """
         if value_keys is None:
-            value_keys = [
-                (key, IndexMatchMethod.PUSH)
-                for key in pointing_set.data.data_vars.keys()
-            ]
+            value_keys = list(pointing_set.data.data_vars.keys())
 
-        for value_key, _ in value_keys:
+        for value_key in value_keys:
             if value_key not in pointing_set.data.data_vars:
                 raise ValueError(f"Value key {value_key} not found in pointing set.")
 
         # Determine the indices of the sky map grid that correspond to
         # each pixel in the pointing set.
-        matched_indices_push = match_coords_to_indices(
-            spatial_object_input_frame=pointing_set,
-            spatial_object_output_frame=self,
-        )
+        if index_match_method is IndexMatchMethod.PUSH:
+            matched_indices_push = match_coords_to_indices(
+                input_object=pointing_set,
+                output_object=self,
+            )
 
-        for value_key, method in value_keys:
+        for value_key in value_keys:
             # If multiple spatial axes present
             # (i.e (az, el) for rectangular coordinate PSET),
             # flatten them in the values array to match the raveled indices
             raveled_pset_data = np.reshape(
                 np.array(pointing_set.data[value_key]),
                 (pointing_set.num_points, -1),
-                order=RAVEL_ORDER,
             )
 
             if value_key not in self.data_dict:
@@ -499,7 +483,7 @@ class RectangularSkyMap(AbstractSkyMap):
                 output_shape = (self.num_points, *raveled_pset_data.shape[1:])
                 self.data_dict[value_key] = np.zeros(output_shape)
 
-            if method == IndexMatchMethod.PUSH:
+            if index_match_method is IndexMatchMethod.PUSH:
                 pointing_projected_values = map_utils.bin_single_array_at_indices(
                     value_array=raveled_pset_data,
                     projection_grid_shape=(
@@ -532,10 +516,6 @@ class RectangularSkyMap(AbstractSkyMap):
 
 # TODO:
 # Add pulling index matching in match_pset_coords_to_indices
-
-# TODO:
-# Add ability to push some, pull other indices in project_pset_values_to_map
-# dict{"value_key": (array, "push"| "pull")}
 
 # TODO:
 # Check units of time which will be read in. Do we need to add j2000ns_to_j2000s?
