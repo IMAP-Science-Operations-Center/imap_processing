@@ -67,7 +67,6 @@ def test_mag_processing(mag_l1a_dataset):
         mag_l1b["vectors"][1].values,
         [4584.1029091, 27238.73161294, -38405.22240195, 0.0],
     )
-    print(f"MY vector is: {mag_l1b['vectors'][1].values}")
 
     # np.testing.assert_allclose(mag_l1b["vectors"][1].values, [0, 0, 0, 0])
 
@@ -80,7 +79,6 @@ def test_mag_processing(mag_l1a_dataset):
     np.testing.assert_allclose(
         mag_l1b["vectors"][0].values, [2.27538, 2.23416, 2.23682, 0], atol=1e-5
     )
-    np.testing.assert_allclose(mag_l1b["vectors"][1].values, [0, 0, 0, 0])
 
     assert mag_l1b["vectors"].values.shape == mag_l1a_dataset["vectors"].values.shape
 
@@ -190,14 +188,16 @@ def test_calibrate_vector():
 
     expected_vector = np.array([2.2972, 2.2415, 2.2381, 0])
 
-    assert np.allclose(cal_vector, expected_vector, atol=1e-4)
+    assert np.allclose(cal_vector, expected_vector, atol=1e-9)
 
     cal_vector = calibrate_vector(np.array([1.1, -2.0, 3.0, 1]), calibration_matrix)
     expected_vector = np.array([(0.081202, -0.144636, 0.217628, 1)])
-    assert np.allclose(cal_vector, expected_vector, atol=1e-4)
+    assert np.allclose(cal_vector, expected_vector, atol=1e-9)
 
     cal_vector = calibrate_vector(
         rescale_vector(np.array([7982, 48671, -68090, 0]), (1, 18)), calibration_matrix
     )
     print(f"HERE IS MY VECTOR: {cal_vector}")
     expected_vector = [4584.1029091, 27238.73161294, -38405.22240195, 0.0]
+
+    assert np.allclose(cal_vector, expected_vector, atol=1e-9)

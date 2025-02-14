@@ -483,6 +483,7 @@ def test_compressed_vector_data(expected_vectors, raw_compressed_vectors):
     expected_range_secondary = [3, 0, 0, 0, 0, 0, 0, 0, 1, 1, 2, 2, 3, 3, 3, 1]
     # 16 bit width with range section
     headers = "01000010"
+    end_padding = "0000"
     input_data = np.array(
         [
             int(i)
@@ -492,9 +493,14 @@ def test_compressed_vector_data(expected_vectors, raw_compressed_vectors):
             + padding
             + range_primary
             + range_secondary
+            + end_padding
         ],
         dtype=np.uint8,
     )
+
+    print("LENNNNN")
+    print(len(headers + primary_compressed + secondary_compressed + padding) / 8)
+    print(len(input_data) / 8)
 
     # In this step, input_data is automatically padded to a byte boundary by adding
     # zeros to the end
@@ -510,7 +516,8 @@ def test_compressed_vector_data(expected_vectors, raw_compressed_vectors):
 
     assert primary_with_range.shape[0] == 16
     assert secondary_with_range.shape[0] == 16
-
+    print(f"primary with range: {primary_with_range}")
+    print(f"secondary with range: {secondary_with_range}")
     assert np.array_equal(primary_with_range, primary_expected)
     assert np.array_equal(secondary_with_range, secondary_expected)
 

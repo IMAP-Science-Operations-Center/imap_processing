@@ -627,7 +627,7 @@ class MagL1a:
             (expected_range_data_length - end_padding) * has_range_data_section
         )
 
-        # Cut off the first vector width and the end range data section if it exists.
+        # Cut off the first vector width and the range data section.
         vector_bits = bit_array[first_vector_width - 1 : end_vector]
 
         # Shift the bit array over one to the left, then sum them up. This is used to
@@ -742,7 +742,7 @@ class MagL1a:
             primary_count,
             uncompressed_vector_size,
             compression_width,
-        )
+        )[0]
 
         # Secondary vector processing
         first_secondary_vector = MagL1a.unpack_one_vector(
@@ -758,8 +758,7 @@ class MagL1a:
         secondary_split_bits = np.split(
             vector_bits[: secondary_boundaries[-1]], secondary_boundaries[:-1]
         )[1:]
-
-        secondary_vectors = MagL1a._process_vector_section(
+        secondary_process_vectors = MagL1a._process_vector_section(
             vector_bits,
             secondary_split_bits,
             secondary_boundaries[-1],
@@ -768,21 +767,28 @@ class MagL1a:
             uncompressed_vector_size,
             compression_width,
         )
+        secondary_vectors = secondary_process_vectors[0]
+
+        # The range data length has 2 bits per vector, minus 2 for the uncompressed
+        # first vectors in the primary and secondary sensors.
+        # Then, the range data length is padded to the nearest 8 bits.
+        end_vector = ((secondary_process_vectors[1] + first_vector_width) + 7) // 8 * 8
 
         # If there is a range data section, it describes all the data, compressed or
         # uncompressed.
         if has_range_data_section:
+            range_bits = bit_array[end_vector:]
             primary_vectors = MagL1a.process_range_data_section(
-                bit_array[end_vector : end_vector + (primary_count - 1) * 2],
+                range_bits[: (primary_count - 1) * 2],
                 primary_vectors,
             )
             secondary_vectors = MagL1a.process_range_data_section(
-                bit_array[
-                    end_vector + (primary_count - 1) * 2 : end_vector
-                    + (primary_count + secondary_count - 2) * 2
+                range_bits[
+                    (primary_count - 1) * 2 : (primary_count + secondary_count - 2) * 2
                 ],
                 secondary_vectors,
             )
+
         return primary_vectors, secondary_vectors
 
     @staticmethod
@@ -794,7 +800,7 @@ class MagL1a:
         vector_count: int,
         uncompressed_vector_size: int,
         compression_width: int,
-    ) -> np.ndarray:
+    ) -> tuple[np.ndarray, int]:
         """
         Generate a section of vector data, primary or secondary.
 
@@ -820,20 +826,34 @@ class MagL1a:
 
         Returns
         -------
-        numpy.ndarray
-            An array of processed vectors.
+        (numpy.ndarray, int)
+            A tuple consisting of: an array of processed vectors, and the index of the
+            end of the last vector. In a fully compressed case, this will be the same
+            as last_index.
         """
+        compressed_count = math.ceil(len(split_bits) / AXIS_COUNT) + 1
+        uncompressed_count = vector_count - compressed_count
+
+        # will have either 0 or 8 extra bits
+        # what if there is padding at the end of the vectors? keep that in mind
+        # If we have more splits than vectors, we have included part of the range
+        # data section. Drop those values and update end_vector.
+        if len(split_bits) > (vector_count - 1) * AXIS_COUNT:
+            split_bits = split_bits[: (vector_count - 1) * AXIS_COUNT]
+            last_index -= 8
+
+        end = last_index + uncompressed_vector_size * uncompressed_count
+
         vector_diffs = list(map(MagL1a.decode_fib_zig_zag, split_bits))
+        # if we got more than the expected length, we may have gotten some of the range
+        # data section.
+
         vectors = MagL1a.convert_diffs_to_vectors(
             first_vector, vector_diffs, vector_count
         )
         # If we are missing any vectors from primary_split_bits, we know we have
         # uncompressed vectors to process.
-        compressed_count = math.ceil(len(split_bits) / AXIS_COUNT) + 1
-        uncompressed_count = vector_count - compressed_count
-
         if uncompressed_count:
-            end = last_index + uncompressed_vector_size * uncompressed_count
             uncompressed_vectors = vector_bits[last_index : end + 1]
 
             for i in range(uncompressed_count):
@@ -847,8 +867,11 @@ class MagL1a:
                 )
                 vectors[i + compressed_count] = decoded_vector
                 vectors[i + compressed_count][3] = vectors[0][3]
+            # If there is an extra byte, this is from the range data section.
+            if len(vector_bits[last_index:]) - end == 8:
+                end -= 8
 
-        return vectors
+        return (vectors, end)
 
     @staticmethod
     def process_range_data_section(
@@ -881,7 +904,6 @@ class MagL1a:
                 "Incorrect length for range_data, there should be two bits per vector, "
                 "excluding the first."
             )
-
         updated_vectors: np.ndarray = np.copy(vectors)
         range_str = "".join([str(i) for i in range_data])
         for i in range(len(vectors) - 1):
