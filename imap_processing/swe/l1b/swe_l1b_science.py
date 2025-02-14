@@ -326,7 +326,7 @@ def populate_full_cycle_data(
                 full_cycle_data[esa_voltage_row_index][column_index] = corrected_counts[
                     step
                 ]
-                # Acquisition time of each count data point will be calculated
+                # Acquisition time (in seconds) of each count data point will be
                 # using this formula:
                 #   each_count_acq_time = base_quarter_cycle_acq_time +
                 #            (step * ( acq_duration + settle_duration) / 1000000 )

@@ -235,19 +235,18 @@ def put_data_into_angle_bins(
     binned_data = np.zeros((data.shape[0], 24, 30, 7), dtype=np.float64)
 
     time_indices = np.arange(data.shape[0])[:, None, None]
-    energy_indices = np.arange(data.shape[1])[None, :, None]
-    angle_indices = angle_bin_indices
+    energy_indices = np.arange(24)[None, :, None]
 
     # Use np.add.at() to accumulate values into bins
-    np.add.at(binned_data, (time_indices, energy_indices, angle_indices), data)
+    np.add.at(binned_data, (time_indices, energy_indices, angle_bin_indices), data)
 
     # Count occurrences in each bin to compute the mean.
     # Ensure float dtype for division
     bin_counts = np.zeros_like(binned_data, dtype=float)
-    np.add.at(bin_counts, (time_indices, energy_indices, angle_indices), 1)
+    np.add.at(bin_counts, (time_indices, energy_indices, angle_bin_indices), 1)
 
     # Compute the mean. Replace zero counts with NaN to indicate no data in the bin
-    # because zero counts could be valid data.
+    # because zero physical counts could be valid data.
     bin_counts[bin_counts == 0] = np.nan
     binned_data /= bin_counts
 
@@ -306,13 +305,13 @@ def swe_l2(l1b_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
 
     # Spin Angle bins storing bin center values.
     inst_az_xr = xr.DataArray(
-        np.arange(6, 360, 12),
+        np.arange(0, 360, 12) + 6,
         name="inst_az",
         dims=["inst_az"],
         attrs=cdf_attributes.get_variable_attributes("inst_az"),
     )
     inst_az_label = xr.DataArray(
-        np.arange(6, 360, 12).astype(str),
+        inst_az_xr.values.astype(str),
         name="inst_az_label",
         dims=["inst_az"],
         attrs=cdf_attributes.get_variable_attributes("inst_az_label"),
@@ -385,7 +384,7 @@ def swe_l2(l1b_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
 
     # Calculate spin phase
     inst_spin_phase = get_instrument_spin_phase(
-        query_met_times=data_acq_time.flatten(),
+        query_met_times=data_acq_time.ravel(),
         instrument=SpiceFrame.IMAP_SWE,
     )
 
@@ -428,9 +427,9 @@ def swe_l2(l1b_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
     # Using `i-1` ensures that all input angles are assigned to the correct bin of
     # centered angle bins.
 
-    spin_angle_bins_range = np.arange(0, 360, 12)
+    spin_angle_bin_edges = np.arange(0, 360, 12)
     spin_angle_bins_indices = np.searchsorted(
-        spin_angle_bins_range, inst_spin_angle, side="right"
+        spin_angle_bin_edges, inst_spin_angle, side="right"
     )
     spin_angle_bins_indices = spin_angle_bins_indices - 1
 
