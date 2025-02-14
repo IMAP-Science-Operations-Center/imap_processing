@@ -253,6 +253,60 @@ def put_data_into_angle_bins(
     return binned_data
 
 
+def find_angle_bin_indices(
+    inst_spin_angle: np.ndarray,
+    spin_angle_bin_edges: np.ndarray,
+) -> npt.NDArray[np.int_]:
+    """
+    Find angle bin indices.
+
+    The spin angle bins are centered at:
+      [ 6, 18, 30, 42, 54, 66, 78, 90, 102, 114, 126, 138, 150, 162, 174,
+        186, 198, 210, 222, 234, 246, 258, 270, 282, 294, 306, 318, 330,
+        342, 354]
+
+    An input angle is assigned to a bin based on the following conditions:
+      - phi_begin <= center - 6
+      - phi_center = 6
+      - phi_end < center + 6
+
+    For example, if the input angle is 8.4, it falls within the bin centered at 6.
+
+    To make binning easier, we define bin edges as:
+      [0, 12, 24, 36, 48, 60, 72, 84, 96, 108, 120, 132, 144, 156, 168,
+       180, 192, 204, 216, 228, 240, 252, 264, 276, 288, 300, 312, 324,
+       336, 348]
+
+    SWE uses the right-side behavior of `np.searchsorted`, where `a[i-1] <= v < a[i]`.
+
+    Example test cases:
+      - `np.searchsorted(x, [6], side="right") -> [1]` (Bin center test)
+      - `np.searchsorted(x, [8.4], side="right") -> [1]` (Edge case near center)
+      - `np.searchsorted(x, [12], side="right") -> [2]` (Bin end test)
+      - `np.searchsorted(x, [0], side="right") -> [1]` (Bin start test)
+
+    Using `i-1` ensures that all input angles are assigned to the correct bin of
+    centered angle bins.
+
+    Parameters
+    ----------
+    inst_spin_angle : numpy.ndarray
+        Instrument spin angle.
+    spin_angle_bin_edges : numpy.ndarray
+        Spin angle bin edges to use for binning.
+
+    Returns
+    -------
+    spin_angle_bins_indices : numpy.ndarray
+        Spin angle bin indices.
+    """
+    spin_angle_bins_indices = np.searchsorted(
+        spin_angle_bin_edges, inst_spin_angle, side="right"
+    )
+    spin_angle_bins_indices = spin_angle_bins_indices - 1
+    return spin_angle_bins_indices
+
+
 def swe_l2(l1b_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
     """
     Will process data to L2.
@@ -399,39 +453,9 @@ def swe_l2(l1b_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
         attrs=cdf_attributes.get_variable_attributes("inst_az_spin_sector"),
     )
 
-    # The spin angle bins are centered at:
-    #   [ 6, 18, 30, 42, 54, 66, 78, 90, 102, 114, 126, 138, 150, 162, 174,
-    #     186, 198, 210, 222, 234, 246, 258, 270, 282, 294, 306, 318, 330,
-    #     342, 354]
-    #
-    # An input angle is assigned to a bin based on the following conditions:
-    #   - phi_begin <= center - 6
-    #   - phi_center = 6
-    #   - phi_end < center + 6
-    #
-    # For example, if the input angle is 8.4, it falls within the bin centered at 6.
-    #
-    # To make binning easier, we define bin edges as:
-    #   [0, 12, 24, 36, 48, 60, 72, 84, 96, 108, 120, 132, 144, 156, 168,
-    #    180, 192, 204, 216, 228, 240, 252, 264, 276, 288, 300, 312, 324,
-    #    336, 348]
-    #
-    # SWE uses the right-side behavior of `np.searchsorted`, where `a[i-1] <= v < a[i]`.
-    #
-    # Example test cases:
-    #   - `np.searchsorted(x, [6], side="right") -> [1]` (Bin center test)
-    #   - `np.searchsorted(x, [8.4], side="right") -> [1]` (Edge case near center)
-    #   - `np.searchsorted(x, [12], side="right") -> [2]` (Bin end test)
-    #   - `np.searchsorted(x, [0], side="right") -> [1]` (Bin start test)
-    #
-    # Using `i-1` ensures that all input angles are assigned to the correct bin of
-    # centered angle bins.
-
-    spin_angle_bin_edges = np.arange(0, 360, 12)
-    spin_angle_bins_indices = np.searchsorted(
-        spin_angle_bin_edges, inst_spin_angle, side="right"
+    spin_angle_bins_indices = find_angle_bin_indices(
+        inst_spin_angle, np.arange(0, 360, 12)
     )
-    spin_angle_bins_indices = spin_angle_bins_indices - 1
 
     # Put flux data in its spin angle bins using the indices.
     flux_binned_data = put_data_into_angle_bins(flux, spin_angle_bins_indices)
