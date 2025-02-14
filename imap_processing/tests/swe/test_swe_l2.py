@@ -114,105 +114,29 @@ def test_calculate_flux():
 def test_find_angle_bin_indices():
     """Test find_angle_bin_indices function."""
     spin_angle_bin_center = np.arange(6, 360, 12)
-    spin_angle_bin_edges = np.arange(0, 360, 12)
 
-    start_angles = [0, 12, 24, 36, 48, 60, 72, 84, 96, 108]
-    expected_angle_bin_indices = np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
-    angle_bin_indices = find_angle_bin_indices(start_angles, spin_angle_bin_edges)
+    # List with various start, middle, end angles or
+    # far left or far right edge angles
+    start_angles = [0, 0.11, 3, 6, 11.99, 12, 355]
+    expected_angle_bin_indices = np.array([0, 0, 0, 0, 0, 1, 29])
+    angle_bin_indices = find_angle_bin_indices(start_angles)
     np.testing.assert_array_equal(angle_bin_indices, expected_angle_bin_indices)
     # Test that angle bin indices lands in correct center bin
     np.testing.assert_array_equal(
         spin_angle_bin_center[angle_bin_indices],
-        np.array([6, 18, 30, 42, 54, 66, 78, 90, 102, 114]),
-    )
-
-    middle_angles = [6, 18, 30, 42, 54, 66, 78, 90, 102, 114]
-    expected_angle_bin_indices = np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
-    angle_bin_indices = find_angle_bin_indices(middle_angles, spin_angle_bin_edges)
-    np.testing.assert_array_equal(angle_bin_indices, expected_angle_bin_indices)
-    # Test that angle bin indices lands in correct center bin
-    np.testing.assert_array_equal(
-        spin_angle_bin_center[angle_bin_indices],
-        np.array([6, 18, 30, 42, 54, 66, 78, 90, 102, 114]),
-    )
-
-    end_angles = [12, 24, 36, 48, 60, 72, 84, 96, 108, 120]
-    expected_angle_bin_indices = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
-    angle_bin_indices = find_angle_bin_indices(end_angles, spin_angle_bin_edges)
-    np.testing.assert_array_equal(angle_bin_indices, expected_angle_bin_indices)
-    # Test that angle bin indices lands in correct center bin
-    np.testing.assert_array_equal(
-        spin_angle_bin_center[angle_bin_indices],
-        np.array([18, 30, 42, 54, 66, 78, 90, 102, 114, 126]),
-    )
-
-    left_middle_angles = [3, 15, 27, 39, 51, 63, 75, 87, 99, 111]
-    expected_angle_bin_indices = np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
-    angle_bin_indices = find_angle_bin_indices(left_middle_angles, spin_angle_bin_edges)
-    np.testing.assert_array_equal(angle_bin_indices, expected_angle_bin_indices)
-    # Test that angle bin indices lands in correct center bin
-    np.testing.assert_array_equal(
-        spin_angle_bin_center[angle_bin_indices],
-        np.array([6, 18, 30, 42, 54, 66, 78, 90, 102, 114]),
-    )
-
-    right_middle_angles = [9, 21, 33, 45, 57, 69, 81, 93, 105, 117]
-    expected_angle_bin_indices = np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
-    angle_bin_indices = find_angle_bin_indices(
-        right_middle_angles, spin_angle_bin_edges
-    )
-    np.testing.assert_array_equal(angle_bin_indices, expected_angle_bin_indices)
-    # Test that angle bin indices lands in correct center bin
-    np.testing.assert_array_equal(
-        spin_angle_bin_center[angle_bin_indices],
-        np.array([6, 18, 30, 42, 54, 66, 78, 90, 102, 114]),
-    )
-
-    far_left_edge_angles = [0.5, 12.5, 24.5, 36.5, 48.5, 60.5, 72.5, 84.5, 96.5, 108.5]
-    expected_angle_bin_indices = np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
-    angle_bin_indices = find_angle_bin_indices(
-        far_left_edge_angles, spin_angle_bin_edges
-    )
-    np.testing.assert_array_equal(angle_bin_indices, expected_angle_bin_indices)
-    # Test that angle bin indices lands in correct center bin
-    np.testing.assert_array_equal(
-        spin_angle_bin_center[angle_bin_indices],
-        np.array([6, 18, 30, 42, 54, 66, 78, 90, 102, 114]),
-    )
-
-    far_right_edge_angles = [
-        11.99,
-        23.99,
-        35.99,
-        47.99,
-        59.99,
-        71.99,
-        83.99,
-        95.99,
-        107.99,
-        119.99,
-    ]
-    expected_angle_bin_indices = np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
-    angle_bin_indices = find_angle_bin_indices(
-        far_right_edge_angles, spin_angle_bin_edges
-    )
-    np.testing.assert_array_equal(angle_bin_indices, expected_angle_bin_indices)
-    # Test that angle bin indices lands in correct center bin
-    np.testing.assert_array_equal(
-        spin_angle_bin_center[angle_bin_indices],
-        np.array([6, 18, 30, 42, 54, 66, 78, 90, 102, 114]),
+        np.array([6, 6, 6, 6, 6, 18, 354]),
     )
 
     # Test for angles that are outside the range
     with pytest.raises(
         ValueError, match=r"Input angle values must be in the range \[0, 360\)"
     ):
-        find_angle_bin_indices(np.array([-1]), spin_angle_bin_edges)
+        find_angle_bin_indices(np.array([-1]))
 
     with pytest.raises(
         ValueError, match=r"Input angle values must be in the range \[0, 360\)"
     ):
-        find_angle_bin_indices(np.array([360]), spin_angle_bin_edges)
+        find_angle_bin_indices(np.array([360]))
 
 
 def test_put_data_into_angle_bins():

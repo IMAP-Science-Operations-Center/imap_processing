@@ -255,7 +255,6 @@ def put_data_into_angle_bins(
 
 def find_angle_bin_indices(
     inst_spin_angle: np.ndarray,
-    spin_angle_bin_edges: np.ndarray,
 ) -> npt.NDArray[np.int_]:
     """
     Find angle bin indices.
@@ -292,14 +291,13 @@ def find_angle_bin_indices(
     ----------
     inst_spin_angle : numpy.ndarray
         Instrument spin angle.
-    spin_angle_bin_edges : numpy.ndarray
-        Spin angle bin edges to use for binning.
 
     Returns
     -------
     spin_angle_bins_indices : numpy.ndarray
         Spin angle bin indices.
     """
+    spin_angle_bin_edges = np.arange(0, 360, 12)
     # Ensure that inst_spin_angle is np.array for below conditions
     # check to work properly.
     inst_spin_angle = np.array(inst_spin_angle)
@@ -460,9 +458,7 @@ def swe_l2(l1b_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
         attrs=cdf_attributes.get_variable_attributes("inst_az_spin_sector"),
     )
 
-    spin_angle_bins_indices = find_angle_bin_indices(
-        inst_spin_angle, np.arange(0, 360, 12)
-    )
+    spin_angle_bins_indices = find_angle_bin_indices(inst_spin_angle)
 
     # Put flux data in its spin angle bins using the indices.
     flux_binned_data = put_data_into_angle_bins(flux, spin_angle_bins_indices)
