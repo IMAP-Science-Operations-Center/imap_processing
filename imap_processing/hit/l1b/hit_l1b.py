@@ -93,11 +93,10 @@ def process_science_data(
 
     # Logical sources for the three L1B science products.
     # TODO: add logical sources for other l1b products once processing functions
-    #  are written. "imap_hit_l1b_summed-rates", "imap_hit_l1b_sectored-rates"
-    logical_sources = ["imap_hit_l1b_standard-rates"]
+    #  are written. ""imap_hit_l1b_sectored-rates"
+    logical_sources = ["imap_hit_l1b_standard-rates", "imap_hit_l1b_summed-rates"]
 
     # TODO: Write functions to create the following datasets
-    #  Process summed rates dataset
     #  Process sectored rates dataset
 
     # Calculate livetime from the livetime counter
@@ -106,9 +105,14 @@ def process_science_data(
     # Create a standard rates dataset
     standard_rates_dataset = process_standard_rates_data(raw_counts_dataset, livetime)
 
+    # Create a summed rates dataset
+    summed_rates_dataset = process_summed_rates_data(raw_counts_dataset, livetime)
+
     l1b_science_datasets = []
     # Update attributes and dimensions
-    for dataset, logical_source in zip([standard_rates_dataset], logical_sources):
+    for dataset, logical_source in zip(
+        [standard_rates_dataset, summed_rates_dataset], logical_sources
+    ):
         dataset.attrs = attr_mgr.get_global_attributes(logical_source)
 
         # TODO: Add CDF attributes to yaml once they're defined for L1B science data
@@ -215,11 +219,225 @@ def process_standard_rates_data(
     return l1b_standard_rates_dataset
 
 
+def create_particle_data_arrays(
+    dataset: xr.Dataset,
+    particle: str,
+    energy_ranges: dict,
+    raw_counts_dataset: xr.Dataset,
+) -> xr.Dataset:
+    """
+    Create data arrays for a given particle.
+
+    Parameters
+    ----------
+    dataset : xr.Dataset
+        The dataset to add the data arrays to.
+
+    particle : str
+        The particle name.
+
+    energy_ranges : list
+        List of energy range dictionaries for the particle.
+        Used to define the shape of the data arrays.
+
+    raw_counts_dataset : xr.Dataset
+        The L1A counts dataset. Used to define the shape of the data arrays.
+
+    Returns
+    -------
+    dataset : xr.Dataset
+        The dataset with the added data arrays.
+    """
+    dataset[f"{particle}"] = xr.DataArray(
+        data=np.zeros(
+            (raw_counts_dataset.sizes["epoch"], len(energy_ranges)), dtype=np.float32
+        ),
+        dims=["epoch", f"{particle}_energy_index"],
+        name=f"{particle}",
+    )
+    dataset[f"{particle}_delta_minus"] = xr.DataArray(
+        data=np.zeros(
+            (raw_counts_dataset.sizes["epoch"], len(energy_ranges)), dtype=np.float32
+        ),
+        dims=["epoch", f"{particle}_energy_index"],
+        name=f"{particle}_delta_minus",
+    )
+    dataset[f"{particle}_delta_plus"] = xr.DataArray(
+        data=np.zeros(
+            (raw_counts_dataset.sizes["epoch"], len(energy_ranges)), dtype=np.float32
+        ),
+        dims=["epoch", f"{particle}_energy_index"],
+        name=f"{particle}_delta_plus",
+    )
+    dataset.coords[f"{particle}_energy_index"] = xr.DataArray(
+        np.arange(len(energy_ranges), dtype=np.int8),
+        dims=[f"{particle}_energy_index"],
+        name=f"{particle}_energy_index",
+    )
+    return dataset
+
+
+def calculate_summed_counts(
+    raw_counts_dataset: xr.Dataset, count_indices: dict
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """
+    Calculate summed counts for a given energy range.
+
+    Parameters
+    ----------
+    raw_counts_dataset : xr.Dataset
+        The L1A counts dataset that contains the l2fgrates, l3fgrates,
+        and penfgrates data variables with the particle counts data
+        needed for the calculation.
+
+    count_indices : dict
+        A dictionary containing the indices for particle counts to sum for a given
+        energy range.
+        R2=Indices for L2FGRATES, R3=Indices for L3FGRATES, R4=Indices for PENFGRATES.
+
+    Returns
+    -------
+    summed_counts : np.ndarray
+        The summed counts.
+
+    summed_counts_delta_minus : np.ndarray
+        The summed counts for delta minus uncertainty.
+
+    summed_counts_delta_plus : np.ndarray
+        The summed counts for delta plus uncertainty.
+    """
+    summed_counts = np.zeros(raw_counts_dataset.sizes["epoch"], dtype=np.float32)
+    summed_counts_delta_minus = np.zeros(
+        raw_counts_dataset.sizes["epoch"], dtype=np.float32
+    )
+    summed_counts_delta_plus = np.zeros(
+        raw_counts_dataset.sizes["epoch"], dtype=np.float32
+    )
+    if "R2" in count_indices:
+        summed_counts += raw_counts_dataset["l2fgrates"][:, count_indices["R2"]].sum(
+            axis=1
+        )
+        summed_counts_delta_minus += raw_counts_dataset["l2fgrates"][
+            :, count_indices["R2"]
+        ].sum(axis=1)
+        summed_counts_delta_plus += raw_counts_dataset["l2fgrates"][
+            :, count_indices["R2"]
+        ].sum(axis=1)
+    if "R3" in count_indices:
+        summed_counts += raw_counts_dataset["l3fgrates"][:, count_indices["R3"]].sum(
+            axis=1
+        )
+        summed_counts_delta_minus += raw_counts_dataset["l3fgrates"][
+            :, count_indices["R3"]
+        ].sum(axis=1)
+        summed_counts_delta_plus += raw_counts_dataset["l3fgrates"][
+            :, count_indices["R3"]
+        ].sum(axis=1)
+    if "R4" in count_indices:
+        summed_counts += raw_counts_dataset["penfgrates"][:, count_indices["R4"]].sum(
+            axis=1
+        )
+        summed_counts_delta_minus += raw_counts_dataset["penfgrates"][
+            :, count_indices["R4"]
+        ].sum(axis=1)
+        summed_counts_delta_plus += raw_counts_dataset["penfgrates"][
+            :, count_indices["R4"]
+        ].sum(axis=1)
+    return summed_counts, summed_counts_delta_minus, summed_counts_delta_plus
+
+
+def add_rates_to_dataset(
+    dataset: xr.Dataset,
+    particle: str,
+    index: int,
+    summed_counts: dict,
+    livetime: float,
+) -> xr.Dataset:
+    """
+    Add summed rates to the dataset.
+
+    Parameters
+    ----------
+    dataset : xr.Dataset
+        The dataset to add the rates to.
+
+    particle : str
+        The particle name.
+
+    index : int
+        The index of the energy range.
+
+    summed_counts : dict
+        A dictionary containing the summed counts.
+
+    livetime : float
+        The livetime.
+
+    Returns
+    -------
+    dataset: xr.Dataset
+        The dataset with the added rates.
+    """
+    dataset[f"{particle}"][:, index] = summed_counts["summed_counts"] / livetime
+    dataset[f"{particle}_delta_minus"][:, index] = (
+        summed_counts["summed_counts_delta_minus"] / livetime
+    )
+    dataset[f"{particle}_delta_plus"][:, index] = (
+        summed_counts["summed_counts_delta_plus"] / livetime
+    )
+    return dataset
+
+
+def add_energy_variables(
+    dataset: xr.Dataset, particle: str, energy_min: np.ndarray, energy_max: np.ndarray
+) -> xr.Dataset:
+    """
+    Add energy min and max variables to the dataset.
+
+    Parameters
+    ----------
+    dataset : xr.Dataset
+        The dataset to add the energy variables to.
+    particle : str
+        The particle name.
+    energy_min : np.ndarray
+        The minimum energy values for each energy range.
+    energy_max : np.ndarray
+        The maximum energy values for each energy range.
+
+    Returns
+    -------
+    xr.Dataset
+        The dataset with the added energy variables.
+    """
+    dataset[f"{particle}_energy_min"] = xr.DataArray(
+        data=np.array(energy_min, dtype=np.int8),
+        dims=[f"{particle}_energy_index"],
+        name=f"{particle}_energy_min",
+    )
+    dataset[f"{particle}_energy_max"] = xr.DataArray(
+        data=np.array(energy_max, dtype=np.int8),
+        dims=[f"{particle}_energy_index"],
+        name=f"{particle}_energy_max",
+    )
+    return dataset
+
+
 def process_summed_rates_data(
     raw_counts_dataset: xr.Dataset, livetime: float
 ) -> xr.Dataset:
     """
     Will process L1B summed rates data from raw L1A counts data.
+
+    This function calculates summed rates for each particle type and energy range.
+    The counts that are summed come from the l2fgrates, l3fgrates, and penfgrates
+    data variables in the L1A counts data. These variables represent counts
+    of different detector penetration ranges (Range 2, Range 3, and Range 4
+    respectively). Only the energy ranges specified in the
+    PARTICLE_ENERGY_RANGE_MAPPING dictionary are included in this product.
+
+    The summed rates are calculated by summing the counts for each energy range and
+    dividing by the livetime.
 
     Parameters
     ----------
@@ -237,122 +455,48 @@ def process_summed_rates_data(
     # Create a new dataset to store the L1B standard rates
     l1b_summed_rates_dataset = xr.Dataset()
 
-    # Assign the epoch coordinate from the raw_counts_dataset
+    # Assign the epoch coordinate from the l1a dataset
     l1b_summed_rates_dataset = l1b_summed_rates_dataset.assign_coords(
         {"epoch": raw_counts_dataset.coords["epoch"]}
     )
 
-    # Add dynamic threshold field
+    # Add the dynamic threshold field from the l1a dataset
     l1b_summed_rates_dataset["dynamic_threshold_state"] = raw_counts_dataset[
         "hdr_dynamic_threshold_state"
     ]
 
     # Calculate summed rates for each particle and add them to the dataset
     for particle, energy_ranges in PARTICLE_ENERGY_RANGE_MAPPING.items():
-        # Create a new data array for each particle
-        l1b_summed_rates_dataset[f"{particle}"] = xr.DataArray(
-            data=np.zeros(
-                (raw_counts_dataset.sizes["epoch"], len(energy_ranges)),
-                dtype=np.float32,
-            ),
-            dims=["epoch", f"{particle}_energy_index"],
-            name=f"{particle}",
+        l1b_summed_rates_dataset = create_particle_data_arrays(
+            l1b_summed_rates_dataset, particle, energy_ranges, raw_counts_dataset
         )
 
-        # Create a new data array for each particle's uncertainty
-        l1b_summed_rates_dataset[f"{particle}_delta_minus"] = xr.DataArray(
-            data=np.zeros(
-                (raw_counts_dataset.sizes["epoch"], len(energy_ranges)),
-                dtype=np.float32,
-            ),
-            dims=["epoch", f"{particle}_energy_index"],
-            name=f"{particle}",
+        energy_min, energy_max = (
+            np.zeros(len(energy_ranges), dtype=np.float32),
+            np.zeros(len(energy_ranges), dtype=np.float32),
         )
-        l1b_summed_rates_dataset[f"{particle}_delta_plus"] = xr.DataArray(
-            data=np.zeros(
-                (raw_counts_dataset.sizes["epoch"], len(energy_ranges)),
-                dtype=np.float32,
-            ),
-            dims=["epoch", f"{particle}_energy_index"],
-            name=f"{particle}",
-        )
-
-        # Add an index coordinate for each particle
-        l1b_summed_rates_dataset.coords[f"{particle}_energy_index"] = xr.DataArray(
-            np.arange(
-                l1b_summed_rates_dataset.sizes[f"{particle}_energy_index"],
-                dtype=np.int8,
-            ),
-            dims=[f"{particle}_index"],
-            name=f"{particle}_index",
-        )
-
-        energy_min = np.zeros(len(energy_ranges), dtype=np.float32)
-        energy_max = np.zeros(len(energy_ranges), dtype=np.float32)
         for i, energy_range in enumerate(energy_ranges):
-            summed_counts = np.zeros(
-                raw_counts_dataset.sizes["epoch"], dtype=np.float32
+            summed_counts, summed_counts_delta_minus, summed_counts_delta_plus = (
+                calculate_summed_counts(raw_counts_dataset, energy_range)
             )
-            summed_counts_delta_minus = np.zeros(
-                raw_counts_dataset.sizes["epoch"], dtype=np.float32
+            l1b_summed_rates_dataset = add_rates_to_dataset(
+                l1b_summed_rates_dataset,
+                particle,
+                i,
+                {
+                    "summed_counts": summed_counts,
+                    "summed_counts_delta_minus": summed_counts_delta_minus,
+                    "summed_counts_delta_plus": summed_counts_delta_plus,
+                },
+                livetime,
             )
-            summed_counts_delta_plus = np.zeros(
-                raw_counts_dataset.sizes["epoch"], dtype=np.float32
+            energy_min[i], energy_max[i] = (
+                energy_range["energy_min"],
+                energy_range["energy_max"],
             )
-            if "R2" in energy_range:
-                summed_counts += raw_counts_dataset["l2fgrates"][
-                    :, energy_range["R2"]
-                ].sum(axis=1)
-                summed_counts_delta_minus += raw_counts_dataset["l2fgrates"][
-                    :, energy_range["R2"]
-                ].sum(axis=1)
-                summed_counts_delta_plus += raw_counts_dataset["l2fgrates"][
-                    :, energy_range["R2"]
-                ].sum(axis=1)
-            if "R3" in energy_range:
-                summed_counts += raw_counts_dataset["l3fgrates"][
-                    :, energy_range["R3"]
-                ].sum(axis=1)
-                summed_counts_delta_minus += raw_counts_dataset["l3fgrates"][
-                    :, energy_range["R3"]
-                ].sum(axis=1)
-                summed_counts_delta_plus += raw_counts_dataset["l3fgrates"][
-                    :, energy_range["R3"]
-                ].sum(axis=1)
-            if "R4" in energy_range:
-                summed_counts += raw_counts_dataset["penfgrates"][
-                    :, energy_range["R4"]
-                ].sum(axis=1)
-                summed_counts_delta_minus += raw_counts_dataset["penfgrates"][
-                    :, energy_range["R4"]
-                ].sum(axis=1)
-                summed_counts_delta_plus += raw_counts_dataset["penfgrates"][
-                    :, energy_range["R4"]
-                ].sum(axis=1)
-            # Add rates to the dataset (counts / livetime)
-            l1b_summed_rates_dataset[f"{particle}"][:, i] = summed_counts / livetime
-            l1b_summed_rates_dataset[f"{particle}_delta_minus"][:, i] = (
-                summed_counts_delta_minus / livetime
-            )
-            l1b_summed_rates_dataset[f"{particle}_delta_plus"][:, i] = (
-                summed_counts_delta_plus / livetime
-            )
-            energy_min[i] = energy_range["energy_min"]
-            energy_max[i] = energy_range["energy_max"]
 
-        # Add energy min and max variables
-        l1b_summed_rates_dataset[f"{particle}_energy_min"] = xr.DataArray(
-            data=np.array(energy_min, dtype=np.int8),
-            dims=[f"{particle}_energy_index"],
-            name=f"{particle}_energy_min",
+        l1b_summed_rates_dataset = add_energy_variables(
+            l1b_summed_rates_dataset, particle, energy_min, energy_max
         )
-        l1b_summed_rates_dataset[f"{particle}_energy_max"] = xr.DataArray(
-            data=np.array(energy_max, dtype=np.int8),
-            dims=[f"{particle}_energy_index"],
-            name=f"{particle}_energy_max",
-        )
-
-    # print(l1b_summed_rates_dataset)
-    # print(l1b_summed_rates_dataset["h"][22:32])
 
     return l1b_summed_rates_dataset
