@@ -151,6 +151,29 @@ def test_frame_transform(et_strings, position, from_frame, to_frame, furnish_ker
             np.testing.assert_allclose(test_result, spice_result, atol=1e-12)
 
 
+@pytest.mark.parametrize(
+    "spice_frame",
+    [
+        SpiceFrame.IMAP_DPS,
+        SpiceFrame.IMAP_SPACECRAFT,
+        SpiceFrame.ECLIPJ2000,
+    ],
+)
+@pytest.mark.parametrize(
+    "position",
+    [
+        np.array([1, 0, 0]),
+        np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]]),
+        np.random.rand(10, 3),
+    ],
+)
+def test_frame_transform_same_frame(position, spice_frame):
+    """Test that frame_transform returns position when input/output frames are same."""
+    position = np.array([1, 0, 0])
+    result = frame_transform(0, position, spice_frame, spice_frame)
+    np.testing.assert_array_equal(result, position)
+
+
 def test_frame_transform_exceptions():
     """Test that the proper exceptions get raised when input arguments are invalid."""
     with pytest.raises(
@@ -220,6 +243,45 @@ def test_frame_transform_az_el(mock_get_rotation_matrix, az_range, el_range):
     np.testing.assert_allclose(
         to_az_el_degrees[..., 1], np.degrees(az_el[..., 1]), atol=1e-14
     )
+
+
+@pytest.mark.parametrize(
+    "spice_frame",
+    [
+        SpiceFrame.IMAP_DPS,
+        SpiceFrame.IMAP_SPACECRAFT,
+        SpiceFrame.ECLIPJ2000,
+    ],
+)
+@pytest.mark.parametrize("degrees_bool", [True, False])
+def test_frame_transform_az_el_same_frame(spice_frame, degrees_bool):
+    """Test that frame_transform returns az/el when input/output frames are same."""
+    az_el_points = np.array(
+        [
+            [0, -90],
+            [0, 0],
+            [0, 89.999999],
+            [90, -90],
+            [90, 0],
+            [90, 89.999999],
+            [180, -90],
+            [180, 0],
+            [180, 89.999999],
+            [270, -90],
+            [270, 0],
+            [270, 89.999999],
+            [359.999999, -90],
+            [359.999999, 0],
+            [359.999999, 89.999999],
+            [360, 90],
+        ]
+    )
+    if not degrees_bool:
+        az_el_points = np.deg2rad(az_el_points)
+    result = frame_transform_az_el(
+        0, az_el_points, spice_frame, spice_frame, degrees=degrees_bool
+    )
+    np.testing.assert_allclose(result, az_el_points)
 
 
 def test_get_rotation_matrix(furnish_kernels):
@@ -376,8 +438,8 @@ def test_cartesian_to_latitudinal():
 def test_solar_longitude(mock_state):
     """Test solar_longitude()."""
 
-    mock_state.side_effect = (
-        lambda t, observer: np.ones(6) if (isinstance(t, int)) else np.ones((len(t), 6))
+    mock_state.side_effect = lambda t, observer: (
+        np.ones(6) if (isinstance(t, int)) else np.ones((len(t), 6))
     )
     # example et time
     et = 798033670

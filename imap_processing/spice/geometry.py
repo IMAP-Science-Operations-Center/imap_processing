@@ -209,6 +209,10 @@ def frame_transform(
                     f"{np.asarray(et).size} elements."
                 )
 
+    # If from_frame and to_frame are the same, no rotation needed
+    if from_frame == to_frame:
+        return position
+
     # rotate will have shape = (3, 3) or (n, 3, 3)
     # position will have shape = (3,) or (n, 3)
     rotate = get_rotation_matrix(et, from_frame, to_frame)
