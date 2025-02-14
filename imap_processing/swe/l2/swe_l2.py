@@ -300,6 +300,13 @@ def find_angle_bin_indices(
     spin_angle_bins_indices : numpy.ndarray
         Spin angle bin indices.
     """
+    # Ensure that inst_spin_angle is np.array for below conditions
+    # check to work properly.
+    inst_spin_angle = np.array(inst_spin_angle)
+    # Check that there are no angle values outside the range [0, 360).
+    if np.any((inst_spin_angle < 0) | (inst_spin_angle >= 360)):
+        raise ValueError("Input angle values must be in the range [0, 360)")
+
     spin_angle_bins_indices = np.searchsorted(
         spin_angle_bin_edges, inst_spin_angle, side="right"
     )

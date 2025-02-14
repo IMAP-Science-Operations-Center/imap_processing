@@ -70,6 +70,10 @@ def test_interpolate_spin_data(query_met_times, expected, fake_spin_data):
             np.array([7.5, 30, 61, 75, 106, 121, 136]),
             np.array([0.5, 0, np.nan, 0, np.nan, np.nan, 1 / 15]),
         ),
+        # Test that this spin phase range [0, 1) is valid which
+        # is same as [0, 360) degree angle. At 15 seconds the spacecraft
+        # has completed a full spin
+        (np.array([0, 15]), np.zeros(2)),
     ],
 )
 def test_get_spacecraft_spin_phase(query_met_times, expected, fake_spin_data):
