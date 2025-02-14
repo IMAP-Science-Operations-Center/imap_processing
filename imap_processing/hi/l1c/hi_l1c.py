@@ -84,12 +84,11 @@ def generate_pset_dataset(
         f"{de_dataset.attrs['Logical_file_id']}"
     )
     logical_source_parts = parse_filename_like(de_dataset.attrs["Logical_source"])
-    n_esa_step = len(np.unique(de_dataset.esa_step.data))
     # read calibration product configuration file
     config_df = CalibrationProductConfig.from_csv(calibration_prod_config_path)
 
     pset_dataset = empty_pset_dataset(
-        n_esa_step,
+        de_dataset.esa_energy_step.data,
         config_df.cal_prod_config.number_of_products,
         logical_source_parts["sensor"],
     )
@@ -123,15 +122,15 @@ def generate_pset_dataset(
 
 
 def empty_pset_dataset(
-    n_esa_steps: int, n_cal_prods: int, sensor_str: str
+    l1b_energy_steps: np.ndarray, n_cal_prods: int, sensor_str: str
 ) -> xr.Dataset:
     """
     Allocate an empty xarray.Dataset with appropriate pset coordinates.
 
     Parameters
     ----------
-    n_esa_steps : int
-        Number of Electrostatic Analyzer steps to allocate.
+    l1b_energy_steps : np.ndarray
+        The array of esa_energy_step data from the L1B DE product.
     n_cal_prods : int
         Number of calibration products to allocate.
     sensor_str : str
@@ -159,12 +158,15 @@ def empty_pset_dataset(
         dims=["epoch"],
         attrs=epoch_attrs,
     )
+    # Create the esa_energy_step coordinate
     attrs = attr_mgr.get_variable_attributes(
         "hi_pset_esa_energy_step", check_schema=False
     ).copy()
     dtype = attrs.pop("dtype")
+    # Find the unique, non-zero esa_energy_steps from the L1B data
+    esa_energy_steps = np.array(sorted(set(l1b_energy_steps) - {0}), dtype=dtype)
     coords["esa_energy_step"] = xr.DataArray(
-        np.full(n_esa_steps, attrs["FILLVAL"], dtype=dtype),
+        esa_energy_steps,
         name="esa_energy_step",
         dims=["esa_energy_step"],
         attrs=attrs,

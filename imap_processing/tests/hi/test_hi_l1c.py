@@ -69,14 +69,18 @@ def test_generate_pset_dataset(hi_l1_test_data_path, hi_test_cal_prod_config_pat
 
 def test_empty_pset_dataset():
     """Test coverage for empty_pset_dataset function"""
-    n_esa_steps = 9
+    n_energy_steps = 8
+    l1b_esa_energy_steps = np.arange(n_energy_steps + 1).repeat(2)
     n_calibration_prods = 5
     sensor_str = HIAPID.H90_SCI_DE.sensor
-    dataset = hi_l1c.empty_pset_dataset(n_esa_steps, n_calibration_prods, sensor_str)
+    dataset = hi_l1c.empty_pset_dataset(l1b_esa_energy_steps, n_calibration_prods, sensor_str)
 
     assert dataset.epoch.size == 1
     assert dataset.spin_angle_bin.size == 3600
-    assert dataset.esa_energy_step.size == n_esa_steps
+    assert dataset.esa_energy_step.size == n_energy_steps
+    np.testing.assert_array_equal(
+        dataset.esa_energy_step.data, np.arange(n_energy_steps) + 1
+    )
     assert dataset.calibration_prod.size == n_calibration_prods
 
     # verify that attrs defined in hi_pset_epoch have overwritten default
