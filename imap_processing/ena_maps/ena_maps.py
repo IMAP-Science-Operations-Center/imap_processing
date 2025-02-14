@@ -275,7 +275,7 @@ class UltraPointingSet(PointingSet):
 
         # Read in the data and store the xarray dataset as data attr
         if isinstance(l1c_dataset, (str, pathlib.Path)):
-            self.data = load_cdf(l1c_dataset)
+            self.data = load_cdf(pathlib.Path(l1c_dataset))
         elif isinstance(l1c_dataset, xr.Dataset):
             self.data = l1c_dataset
 
