@@ -73,7 +73,9 @@ def test_empty_pset_dataset():
     l1b_esa_energy_steps = np.arange(n_energy_steps + 1).repeat(2)
     n_calibration_prods = 5
     sensor_str = HIAPID.H90_SCI_DE.sensor
-    dataset = hi_l1c.empty_pset_dataset(l1b_esa_energy_steps, n_calibration_prods, sensor_str)
+    dataset = hi_l1c.empty_pset_dataset(
+        l1b_esa_energy_steps, n_calibration_prods, sensor_str
+    )
 
     assert dataset.epoch.size == 1
     assert dataset.spin_angle_bin.size == 3600
