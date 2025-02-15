@@ -5,9 +5,6 @@ import xarray as xr
 
 from imap_processing import imap_module_directory
 from imap_processing.hit.l1a import hit_l1a
-from imap_processing.tests.hit.helpers.l1_validation import (
-    prepare_standard_rates_validation_data,
-)
 from imap_processing.hit.l1b.hit_l1b import (
     PARTICLE_ENERGY_RANGE_MAPPING,
     add_energy_variables,
@@ -17,6 +14,9 @@ from imap_processing.hit.l1b.hit_l1b import (
     hit_l1b,
     process_standard_rates_data,
     process_summed_rates_data,
+)
+from imap_processing.tests.hit.helpers.l1_validation import (
+    prepare_standard_rates_validation_data,
 )
 
 # TODO: Packet files are per apid at the moment so the tests currently
@@ -253,7 +253,7 @@ def test_create_particle_data_arrays():
 
 
 def test_process_summed_rates_data(l1a_counts_dataset, livetime):
-    """Test function for processing summed rates data"""
+    """Test the variables in the summed rates dataset"""
 
     l1b_summed_rates_dataset = process_summed_rates_data(l1a_counts_dataset, livetime)
 
@@ -295,7 +295,7 @@ def test_process_summed_rates_data(l1a_counts_dataset, livetime):
 
 
 def test_process_standard_rates_data(l1a_counts_dataset, livetime):
-    """Test function for processing standard rates data"""
+    """Test the variables in the standard rates dataset"""
     l1b_standard_rates_dataset = process_standard_rates_data(
         l1a_counts_dataset, livetime
     )
