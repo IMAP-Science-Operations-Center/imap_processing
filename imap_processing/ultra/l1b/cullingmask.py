@@ -30,7 +30,8 @@ def calculate_cullingmask(
     valid_index = (
         extendedspin_dataset["quality_attitude"] & ImapAttitudeUltraFlags.SPINRATE.value
     ) == 0
-    good_attitude_dataset = extendedspin_dataset.where(valid_index, drop=True)
+    good_spin = extendedspin_dataset["spin_number"].values[valid_index]
+    good_attitude_dataset = extendedspin_dataset.sel(spin_number=good_spin)
 
     # If the rates at any energy level are too high then throw out the entire spin.
     high_rates_mask = (

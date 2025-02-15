@@ -83,5 +83,5 @@ def test_calculate_cullingmask_rates():
         ds, name="imap_ultra_l1b_45sensor-cullingmask", data_version="v1"
     )
 
-    expected_spins = np.array([1])
+    expected_spins = np.array([0, 1])
     np.testing.assert_array_equal(result_ds["spin_number"].values, expected_spins)
