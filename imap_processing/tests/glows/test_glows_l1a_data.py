@@ -1,25 +1,21 @@
+import ast
 import dataclasses
+import json
 from pathlib import Path
 
+import numpy as np
+import pandas as pd
 import pytest
 
-from imap_processing.glows import version
-from imap_processing.glows.l0 import decom_glows
-from imap_processing.glows.l1.glows_l1a_data import (
+from imap_processing.glows import __version__
+from imap_processing.glows.l1a.glows_l1a import glows_l1a
+from imap_processing.glows.l1a.glows_l1a_data import (
     DirectEventL1A,
     HistogramL1A,
     StatusData,
 )
-from imap_processing.glows.utils.constants import DirectEvent, TimeTuple
-
-
-@pytest.fixture(scope="module")
-def decom_test_data():
-    """Read test data from file"""
-    current_directory = Path(__file__).parent
-    packet_path = current_directory / "glows_test_packet_20110921_v01.pkts"
-    data_packet_list = decom_glows.decom_packets(packet_path)
-    return data_packet_list
+from imap_processing.glows.utils.constants import DirectEvent, GlowsConstants, TimeTuple
+from imap_processing.spice.time import met_to_ttj2000ns
 
 
 @pytest.fixture()
@@ -40,8 +36,24 @@ def test_histogram_list(histogram_test_data, decom_test_data):
     """Test size of histogram data"""
     histl0 = decom_test_data[0][0]
 
-    assert len(histogram_test_data.histograms) == 3600
-    assert sum(histogram_test_data.histograms) == histl0.EVENTS
+    assert len(histogram_test_data.histogram) == 3600
+    assert sum(histogram_test_data.histogram) == histl0.EVENTS
+
+
+def test_histogram_obs_day(packet_path):
+    l1a = glows_l1a(packet_path, "v001")
+
+    assert len(l1a) == 3
+
+    assert "hist" in l1a[0].attrs["Logical_source"]
+    assert "hist" in l1a[1].attrs["Logical_source"]
+
+    # Numbers pulled from the validation data.
+    # this test assumes that the "is_night" flag switching from true to false is the
+    # start of the observation day.
+
+    assert np.array_equal(l1a[0]["imap_start_time"].data[0], 54232215.0)
+    assert np.array_equal(l1a[1]["imap_start_time"].data[0], 54232455.0)
 
 
 def test_histogram_attributes(histogram_test_data):
@@ -49,12 +61,24 @@ def test_histogram_attributes(histogram_test_data):
 
     expected_block_header = {
         "flight_software_version": 131329,
-        "ground_software_version": version,
+        "ground_software_version": __version__,
         "pkts_file_name": "glows_test_packet_20110921_v01.pkts",
         "seq_count_in_pkts_file": 0,
     }
 
-    assert histogram_test_data.block_header == expected_block_header
+    assert (
+        histogram_test_data.flight_software_version
+        == expected_block_header["flight_software_version"]
+    )
+    assert (
+        histogram_test_data.ground_software_version
+        == expected_block_header["ground_software_version"]
+    )
+    assert histogram_test_data.pkts_file_name == expected_block_header["pkts_file_name"]
+    assert (
+        histogram_test_data.seq_count_in_pkts_file
+        == expected_block_header["seq_count_in_pkts_file"]
+    )
     assert histogram_test_data.last_spin_id == 0
 
     assert histogram_test_data.imap_start_time == TimeTuple(54232215, 0)
@@ -251,7 +275,6 @@ def test_combine_direct_events(decom_test_data):
     assert de1.direct_events
 
     # l0 attribute should not be equal, but everything else should be
-    assert de1.block_header == expected.block_header
     assert de1.de_data == expected.de_data
     assert de1.most_recent_seq == 1
     assert de1.missing_seq == []
@@ -361,3 +384,180 @@ def test_generate_status_data():
 
     output = StatusData(test2)
     assert dataclasses.asdict(output) == expected
+
+
+def test_expected_de_results(l1a_test_data):
+    _, de_data = l1a_test_data
+
+    # Validation data is generated from the code sent over by GLOWS team. Contains the
+    # first 20 packets
+    validation_data = pd.read_csv(
+        Path(__file__).parent
+        / "validation_data"
+        / "direct_events_validation_data_l1a.csv",
+        converters={"de_data": ast.literal_eval},
+    )
+    assert validation_data.index.size == 5703
+
+    for index in validation_data.index:
+        de = de_data[validation_data["packet_counter"][index]]
+
+        assert (
+            de.l0.ccsds_header.SRC_SEQ_CTR
+            == validation_data["seq_count_in_pkts_file"][index]
+        )
+        assert (
+            de.status_data.imap_sclk_last_pps
+            == validation_data["imap_sclk_last_pps"][index]
+        )
+        assert (
+            de.status_data.glows_sclk_last_pps
+            == validation_data["glows_sclk_last_pps"][index]
+        )
+        assert (
+            de.status_data.glows_ssclk_last_pps
+            == validation_data["glows_ssclk_last_pps"][index]
+        )
+        assert (
+            de.status_data.imap_sclk_next_pps
+            == validation_data["imap_sclk_next_pps"][index]
+        )
+        assert (
+            de.status_data.catbed_heater_active
+            == validation_data["catbed_heater_active"][index]
+        )
+        assert (
+            de.status_data.spin_period_valid
+            == validation_data["spin_period_valid"][index]
+        )
+        assert (
+            de.status_data.spin_phase_at_next_pps_valid
+            == validation_data["spin_phase_at_next_pps_valid"][index]
+        )
+        assert (
+            de.status_data.spin_period_source
+            == validation_data["spin_period_source"][index]
+        )
+        assert de.status_data.spin_period == validation_data["spin_period"][index]
+        assert (
+            de.status_data.spin_phase_at_next_pps
+            == validation_data["spin_phase_at_next_pps"][index]
+        )
+        assert (
+            de.status_data.number_of_completed_spins
+            == validation_data["number_of_completed_spins"][index]
+        )
+        assert (
+            de.status_data.filter_temperature
+            == validation_data["filter_temperature"][index]
+        )
+        assert de.status_data.hv_voltage == validation_data["hv_voltage"][index]
+        assert (
+            de.status_data.glows_time_on_pps_valid
+            == validation_data["glows_time_on_pps_valid"][index]
+        )
+        assert (
+            de.status_data.time_status_valid
+            == validation_data["time_status_valid"][index]
+        )
+        assert (
+            de.status_data.housekeeping_valid
+            == validation_data["housekeeping_valid"][index]
+        )
+        assert (
+            de.status_data.is_pps_autogenerated
+            == validation_data["is_pps_autogenerated"][index]
+        )
+        assert (
+            de.status_data.hv_test_in_progress
+            == validation_data["hv_test_in_progress"][index]
+        )
+        assert (
+            de.status_data.pulse_test_in_progress
+            == validation_data["pulse_test_in_progress"][index]
+        )
+        assert (
+            de.status_data.memory_error_detected
+            == validation_data["memory_error_detected"][index]
+        )
+
+        assert de.l0.LEN == validation_data["number_of_de_packets"][index]
+
+        assert (
+            de.direct_events[
+                validation_data["de_data_counter"][index]
+            ].timestamp.seconds
+            == validation_data["de_data"][index][0]
+        )
+        assert (
+            de.direct_events[
+                validation_data["de_data_counter"][index]
+            ].timestamp.subseconds
+            == validation_data["de_data"][index][1]
+        )
+        assert (
+            de.direct_events[validation_data["de_data_counter"][index]].impulse_length
+            == validation_data["de_data"][index][2]
+        )
+        assert (
+            de.direct_events[validation_data["de_data_counter"][index]].multi_event
+            == validation_data["de_data"][index][3]
+        )
+
+
+def test_expected_hist_results(l1a_dataset):
+    end_time = l1a_dataset[0]["epoch"].data[-1]
+
+    validation_data = (
+        Path(__file__).parent / "validation_data" / "glows_l1a_hist_validation.json"
+    )
+    with open(validation_data) as f:
+        out = json.load(f)
+
+    # mapping from validation data names to dataset names
+    time_fields = {
+        "glows_start_time": "glows_start_time",
+        "glows_end_time_offset": "glows_time_offset",
+        "imap_start_time": "imap_start_time",
+        "imap_end_time_offset": "imap_time_offset",
+    }
+
+    # block header and flags are handled differently, so not tested here
+    compare_fields = [
+        "first_spin_id",
+        "last_spin_id",
+        "number_of_spins_per_block",
+        "number_of_bins_per_histogram",
+        "histogram",
+        "number_of_events",
+        "filter_temperature_average",
+        "filter_temperature_variance",
+        "hv_voltage_average",
+        "hv_voltage_variance",
+        "spin_period_average",
+        "spin_period_variance",
+        "pulse_length_average",
+        "pulse_length_variance",
+    ]
+
+    for data in out["output"]:
+        epoch_val = met_to_ttj2000ns(
+            TimeTuple(
+                data["imap_start_time"]["seconds"],
+                data["imap_start_time"]["subseconds"],
+            ).to_seconds()
+        )
+
+        # Validation data spans the two obs days, so this selects the correct output
+        dataset_index = 1 if epoch_val > end_time else 0
+        datapoint = l1a_dataset[dataset_index].sel(epoch=epoch_val)
+
+        for field in time_fields.keys():
+            expected_time = (
+                data[field]["seconds"]
+                + data[field]["subseconds"] / GlowsConstants.SUBSECOND_LIMIT
+            )
+            assert np.array_equal(expected_time, datapoint[time_fields[field]].data)
+
+        for field in compare_fields:
+            assert np.array_equal(data[field], datapoint[field].data)

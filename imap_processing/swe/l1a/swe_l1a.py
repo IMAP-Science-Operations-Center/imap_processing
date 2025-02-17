@@ -2,20 +2,21 @@
 
 import logging
 
-from imap_processing.swe.l0 import decom_swe
+import xarray as xr
+
+from imap_processing import imap_module_directory
 from imap_processing.swe.l1a.swe_science import swe_science
 from imap_processing.swe.utils.swe_utils import (
     SWEAPID,
-    create_dataset,
-    filename_descriptors,
 )
-from imap_processing.utils import group_by_apid, sort_by_time
+from imap_processing.utils import packet_file_to_datasets
 
 logger = logging.getLogger(__name__)
 
 
-def swe_l1a(file_path):
-    """Process SWE l0 data into l1a data.
+def swe_l1a(packet_file: str, data_version: str) -> xr.Dataset:
+    """
+    Will process SWE l0 data into l1a data.
 
     Receive all L0 data file. Based on appId, it
     call its function to process. If appId is science, it requires more work
@@ -23,40 +24,30 @@ def swe_l1a(file_path):
 
     Parameters
     ----------
-    file_path: pathlib.Path
-        Path where data is downloaded
+    packet_file : str
+        Path where the raw packet file is stored.
+    data_version : str
+        Data version to write to CDF files and the Data_version CDF attribute.
+        Should be in the format Vxxx.
 
     Returns
     -------
     List
-        List of xarray.Dataset
+        List of xarray.Dataset.
     """
-    packets = decom_swe.decom_packets(file_path)
+    xtce_document = (
+        f"{imap_module_directory}/swe/packet_definitions/swe_packet_definition.xml"
+    )
+    datasets_by_apid = packet_file_to_datasets(
+        packet_file, xtce_document, use_derived_value=False
+    )
 
-    processed_data = []
-    # group data by appId
-    grouped_data = group_by_apid(packets)
-
-    for apid in grouped_data.keys():
-        # If appId is science, then the file should contain all data of science appId
-        if apid == SWEAPID.SWE_SCIENCE:
-            # sort data by acquisition time
-            sorted_packets = sort_by_time(grouped_data[apid], "ACQ_START_COARSE")
-            logger.debug(
-                "Processing science data for [%s] packets", len(sorted_packets)
-            )
-            data = swe_science(decom_data=sorted_packets)
-        else:
-            # If it's not science, we unpack, organize and save it as a dataset.
-            sorted_packets = sort_by_time(grouped_data[apid], "SHCOARSE")
-            data = create_dataset(packets=sorted_packets)
-
-        # TODO: add this mode and descriptor into the global attributes directly
-        # write data to CDF
-        mode = f"{data['APP_MODE'].data[0]}-" if apid == SWEAPID.SWE_APP_HK else ""
-        descriptor = f"{mode}{filename_descriptors.get(apid)}"
-        # Update the global descriptor
-        data.attrs["descriptor"] = descriptor
-
-        processed_data.append(data)
-    return processed_data
+    if SWEAPID.SWE_SCIENCE not in datasets_by_apid:
+        logger.info("No science data found in packet file.")
+        return []
+    # TODO: figure out how to handle non-science data
+    return [
+        swe_science(
+            l0_dataset=datasets_by_apid[SWEAPID.SWE_SCIENCE], data_version=data_version
+        )
+    ]

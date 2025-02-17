@@ -1,3 +1,4 @@
+import numpy as np
 import pytest
 
 from imap_processing.lo.l0.utils.bit_decompression import (
@@ -10,9 +11,9 @@ from imap_processing.lo.l0.utils.bit_decompression import (
 @pytest.mark.parametrize(
     ("decompression", "compressed_value", "expected_decompressed_int"),
     [
-        (Decompress.DECOMPRESS8TO16, 209, 9537),
-        (Decompress.DECOMPRESS8TO12, 205, 1229),
-        (Decompress.DECOMPRESS12TO16, 4068, 62908),
+        (Decompress.DECOMPRESS8TO16, [209, 250], [13426, 54336]),
+        (Decompress.DECOMPRESS8TO12, [205], [1388]),
+        (Decompress.DECOMPRESS12TO16, [4068], [63170]),
     ],
 )
 def test_decompress_int(decompression, compressed_value, expected_decompressed_int):
@@ -24,7 +25,7 @@ def test_decompress_int(decompression, compressed_value, expected_decompressed_i
     )
 
     ## Assert
-    assert expected_decompressed_int == decompressed_int
+    np.testing.assert_equal(decompressed_int, expected_decompressed_int)
 
 
 def test_decompress_int_invalid_decompression():

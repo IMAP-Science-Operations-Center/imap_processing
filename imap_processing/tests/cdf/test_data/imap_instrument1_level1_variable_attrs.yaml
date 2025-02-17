@@ -1,0 +1,23 @@
+default_attrs: &default
+  # Assumed values for all variable attrs unless overwritten
+  DEPEND_0: test_depend
+  DISPLAY_TYPE: test_display_type
+  FILLVAL: -10
+  FORMAT: I1
+  VALIDMIN: 0
+  VALIDMAX: 10
+  VAR_TYPE: test_var_type
+
+test_field_1:
+  <<: *default
+  CATDESC: test time
+  FIELDNAM: test_field_1
+  LABLAXIS: test_labaxis
+  UNITS: test_units
+  VAR_TYPE: test_variable_type
+  SCALETYP: test_scaletyp
+  MONOTON: test_monoton
+  TIME_BASE: 10
+  TIME_SCALE: test_time_scale
+  REFERENCE_POSITION: test_reference_position
+  NOT_REQUIRED: test_not_required

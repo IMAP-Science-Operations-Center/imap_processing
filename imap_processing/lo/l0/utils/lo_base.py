@@ -2,21 +2,24 @@
 
 from dataclasses import dataclass, fields
 
+from space_packet_parser import packets
+
 from imap_processing.ccsds.ccsds_data import CcsdsData
 
 
 @dataclass
 class LoBase:
-    """Data structure for common values across histogram and direct events data.
+    """
+    Data structure for common values across histogram and direct events data.
 
     Attributes
     ----------
     ground_sw_version : str
-        Ground software version
+        Ground software version.
     packet_file_name : str
-        File name of the source packet
+        File name of the source packet.
     ccsds_header : CcsdsData
-        CCSDS header data
+        CCSDS header data.
 
     Methods
     -------
@@ -28,18 +31,19 @@ class LoBase:
     packet_file_name: str
     ccsds_header: CcsdsData
 
-    def set_attributes(self, packet):
-        """Set dataclass attributes with packet data.
+    def set_attributes(self, packet: packets.CCSDSPacket) -> None:
+        """
+        Set dataclass attributes with packet data.
 
         Parameters
         ----------
-        packet : dict
+        packet : space_packet_parser.packets.CCSDSPacket
             A single Lo L0 packet from space packet parser.
         """
         attributes = [field.name for field in fields(self)]
 
         # For each item in packet, assign it to the matching attribute in the class.
-        for key, item in packet.data.items():
+        for key, item in packet.user_data.items():
             value = (
                 item.derived_value if item.derived_value is not None else item.raw_value
             )

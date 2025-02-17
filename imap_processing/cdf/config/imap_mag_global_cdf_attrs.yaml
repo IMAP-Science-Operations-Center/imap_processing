@@ -1,0 +1,97 @@
+default: &default
+  Descriptor:
+    MAG>Magnetometer
+  TEXT: >
+    The IMAP magnetometer (MAG consists of a pair of identical magnetometers
+    which each measure the magnetic field in three directions in the vicinity of
+    the spacecraft.
+    MAG will contribute to our understanding of the acceleration and transport
+    of charged particles in the heliosphere.
+    MAG design and assembly is led by Imperial College, London. See
+    https://imap.princeton.edu/instruments/mag for more details.
+  Instrument_type: MAG>Magnetometer
+
+imap_mag_l1a_norm-raw:
+    <<: *default
+    Data_type: L1A_norm-raw>Level-1A raw normal rate
+    Logical_source: imap_mag_l1a_norm-raw
+    Logical_source_description: IMAP Mission MAG Normal Rate Instrument Level-1A Data.
+    Data_level: L1A
+
+imap_mag_l1a_burst-raw:
+    <<: *default
+    Data_type: L1A_burst-raw>Level-1A raw burst rate
+    Logical_source: imap_mag_l1a_burst-raw
+    Logical_source_description: IMAP Mission MAG Burst Rate Instrument Level-1A Data.
+    Data_level: L1A
+
+imap_mag_l1a_norm-mago:
+    <<: *default
+    Data_type: L1A_norm-mago>Level 1A MAGo normal rate
+    Logical_source: imap_mag_l1a_norm-mago
+    Logical_source_description: IMAP Mission MAGo Normal Rate Instrument Level-1A Data.
+    Data_level: L1A
+
+imap_mag_l1a_norm-magi:
+    <<: *default
+    Data_type: L1A_norm-magi>Level 1A MAGi normal rate
+    Logical_source: imap_mag_l1a_norm-magi
+    Logical_source_description: IMAP Mission MAGi Normal Rate Instrument Level-1A Data.
+    Data_level: L1A
+
+imap_mag_l1a_burst-mago:
+    <<: *default
+    Data_type: L1A_burst-mago>Level 1A MAGo burst rate
+    Logical_source: imap_mag_l1a_burst-mago
+    Logical_source_description: IMAP Mission MAGo Burst Rate Instrument Level-1A Data.
+    Data_level: L1A
+
+imap_mag_l1a_burst-magi:
+    <<: *default
+    Data_type: L1A_burst-magi>Level 1A MAGi burst rate
+    Logical_source: imap_mag_l1a_burst-magi
+    Logical_source_description: IMAP Mission MAGi Burst Rate Instrument Level-1A Data.
+    Data_level: L1A
+
+imap_mag_l1b_norm-mago:
+    <<: *default
+    Data_type: L1B_norm-mago>Level 1B MAGo normal rate
+    Logical_source: imap_mag_l1b_norm-mago
+    Logical_source_description: IMAP Mission MAGo Normal Rate Instrument Level-1B Data.
+    Data_level: L1B
+
+imap_mag_l1b_norm-magi:
+    <<: *default
+    Data_type: L1B_norm-magi>Level 1B MAGi normal rate
+    Logical_source: imap_mag_l1b_norm-magi
+    Logical_source_description: IMAP Mission MAGi Normal Rate Instrument Level-1B Data.
+    Data_level: L1B
+
+imap_mag_l1b_burst-mago:
+    <<: *default
+    Data_type: L1B_burst-mago>Level 1B MAGo burst rate
+    Logical_source: imap_mag_l1b_burst-mago
+    Logical_source_description: IMAP Mission MAGo Burst Rate Instrument Level-1B Data.
+    Data_level: L1B
+
+imap_mag_l1b_burst-magi:
+    <<: *default
+    Data_type: L1B_burst-magi>Level 1B MAGi burst rate
+    Logical_source: imap_mag_l1b_burst-magi
+    Logical_source_description: IMAP Mission MAGi Burst Rate Instrument Level-1B Data.
+    Data_level: L1B
+
+imap_mag_l1c_norm-mago:
+    <<: *default
+    Data_type: L1C_norm-mago>Level 1C MAGo normal rate
+    Logical_source: imap_mag_l1c_norm-mago
+    Logical_source_description: IMAP Mission MAGo Normal Rate Instrument Level-1C Data.
+    Data_level: L1C
+
+imap_mag_l1c_norm-magi:
+    <<: *default
+    Data_type: L1C_norm-magi>Level 1C MAGi normal rate
+    Logical_source: imap_mag_l1c_norm-magi
+    Logical_source_description: IMAP Mission MAGi Normal Rate Instrument Level-1C Data.
+    Data_level: L1C
+

@@ -1,0 +1,51 @@
+# YAML entries at the root level are always returned from the global attribute
+# manager as long as they are defined in the global attribute schema. Instrument
+# level global attributes are thus defined at the root level.
+
+Descriptor: &desc
+  Hi>IMAP High-Energy (IMAP-Hi) Energetic Neutral Atom Imager
+TEXT: &txt >
+  IMAP-Hi consists of two identical, single-pixel high-energy energetic
+  neutral atom (ENA) imagers mounted at fixed angles of 90 and 45 degrees
+  relative to the spacecraft spin axis. These imagers measure neutral atoms
+  entering our solar system from the outer edge of the heliosphere as they
+  move towards the Sun. See https://imap.princeton.edu/instruments/imap-hi for
+  more details.
+Instrument_type: Particles (space)
+
+# -------------- Product specific global attributes defined below --------------
+imap_hi_l1a_de_attrs:
+    Data_level: 1A
+    Data_type: L1A_DE>Level-1A Direct Event
+    Logical_source: imap_hi_l1a_{sensor}-de
+    Logical_source_description: IMAP-Hi Instrument Level-1A Direct Event Data.
+
+imap_hi_l1a_hist_attrs:
+    Data_level: 1A
+    Data_type: L1A_HIST>Level-1A Histogram
+    Logical_source: imap_hi_l1a_{sensor}-hist
+    Logical_source_description: IMAP-Hi Instrument Level-1A Histogram Data.
+
+imap_hi_l1b_de_attrs:
+    Data_level: 1B
+    Data_type: L1B_DE>Level-1B Direct Event
+    Logical_source: imap_hi_l1b_{sensor}-de
+    Logical_source_description: IMAP-Hi Instrument Level-1B Direct Event Data.
+
+imap_hi_l1a_hk_attrs:
+    Data_level: 1A
+    Data_type: L1A_HK>Level-1A Housekeeping
+    Logical_source: imap_hi_l1a_{sensor}-hk
+    Logical_source_description: IMAP-Hi Instrument Level-1A Housekeeping Data.
+
+imap_hi_l1b_hk_attrs:
+    Data_level: 1B
+    Data_type: L1B_HK>Level-1B Housekeeping
+    Logical_source: imap_hi_l1b_{sensor}-hk
+    Logical_source_description: IMAP-Hi Instrument Level-1B Housekeeping Data.
+
+imap_hi_l1c_pset_attrs:
+    Data_level: 1C
+    Data_type: L1C_PSET>Level-1C Pointing Set
+    Logical_source: imap_hi_l1c_{sensor}-pset
+    Logical_source_description: IMAP-Hi Instrument Level-1C Pointing Set Data.

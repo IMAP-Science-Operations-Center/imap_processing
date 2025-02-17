@@ -1,0 +1,13 @@
+# This file acts as an overwrite option for the variable schema described by SAMMI.
+# SAMMI generally has good defaults and its schema should be used, but this is a place
+# to override those defaults if necessary.
+
+# This is only required while issue #7 is incomplete.
+attribute_key:
+  LABLAXIS:
+      description: >
+        should be a short character string (approximately 10 characters, but preferably 6 characters - more only if absolutely required for clarity) which can be used to label a y-axis for a plot or to provide a heading for a data listing.
+        Only one of LABLAXIS or LABL_PTR_i should be present.
+      required: false # not required if using LABL_PTR_i
+      valid_values: null
+      alternate: LABL_PTR_1

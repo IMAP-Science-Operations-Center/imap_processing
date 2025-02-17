@@ -1,4 +1,5 @@
-"""Decompress CoDICE science data.
+"""
+Will decompress CoDICE science data.
 
 For CoDICE, there are 3 forms of compression:
 
@@ -25,9 +26,6 @@ References
     This information was provided via email from Greg Dunn on Oct 23, 2023
 """
 
-# TODO: Add support for performing decompression of a list of values instead of
-# a single value
-
 import lzma
 from enum import IntEnum
 
@@ -35,63 +33,74 @@ from imap_processing.codice.constants import LOSSY_A_TABLE, LOSSY_B_TABLE
 from imap_processing.codice.utils import CoDICECompression
 
 
-def _apply_lossy_a(compressed_value: int) -> int:
-    """Apply 8-bit to 32-bit Lossy A decompression algorithm.
+def _apply_lossy_a(compressed_bytes: bytes) -> list[int]:
+    """
+    Apply 8-bit to 32-bit Lossy A decompression algorithm.
 
     The Lossy A algorithm uses a lookup table imported into this module.
 
     Parameters
     ----------
-    compressed_value : int
-        The compressed 8-bit value
+    compressed_bytes : bytes
+        The compressed byte stream.
 
     Returns
     -------
-    int
-        The 24- or 32-bit decompressed value
+    decompressed_values : list[int]
+        The 24- or 32-bit decompressed values.
     """
-    return LOSSY_A_TABLE[compressed_value]
+    compressed_values = list(compressed_bytes)
+    decompressed_values = [
+        LOSSY_A_TABLE[item - 1] if item > 0 else 0 for item in compressed_values
+    ]
+    return decompressed_values
 
 
-def _apply_lossy_b(compressed_value: int) -> int:
-    """Apply 8-bit to 32-bit Lossy B decompression algorithm.
+def _apply_lossy_b(compressed_bytes: bytes) -> list[int]:
+    """
+    Apply 8-bit to 32-bit Lossy B decompression algorithm.
 
     The Lossy B algorithm uses a lookup table imported into this module.
 
     Parameters
     ----------
-    compressed_value : int
-        The compressed 8-bit value
+    compressed_bytes : bytes
+        The compressed byte stream.
 
     Returns
     -------
-    int
-        The 24- or 32-bit decompressed value
+    decompressed_values : list[int]
+        The 24- or 32-bit decompressed values.
     """
-    return LOSSY_B_TABLE[compressed_value]
+    compressed_values = list(compressed_bytes)
+    decompressed_values = [
+        LOSSY_B_TABLE[item - 1] if item > 0 else 0 for item in compressed_values
+    ]
+    return decompressed_values
 
 
-def _apply_lzma_lossless(compressed_value: int) -> int:
-    """Apply LZMA lossless decompression algorithm.
+def _apply_lzma_lossless(compressed_bytes: bytes) -> bytes:
+    """
+    Apply LZMA lossless decompression algorithm.
 
     Parameters
     ----------
-    compressed_value : int
-        The compressed 8-bit value
+    compressed_bytes : bytes
+        The compressed byte stream.
 
     Returns
     -------
-    decompressed_value : int
-        The 24- or 32-bit decompressed value
+    lzma_decompressed_values : bytes
+        The 24- or 32-bit lzma decompressed values.
     """
-    decompressed_value = lzma.decompress(compressed_value)
-    decompressed_value = int.from_bytes(decompressed_value, byteorder="big")
+    lzma_decompressed_values = lzma.decompress(compressed_bytes)
 
-    return decompressed_value
+    return lzma_decompressed_values
 
 
-def decompress(compressed_value: int, algorithm: IntEnum) -> int:
-    """Decompress the value.
+def decompress(compressed_bytes: bytes, algorithm: IntEnum) -> list[int]:
+    """
+    Perform decompression on a byte stream into a list of integers.
 
     Apply the appropriate decompression algorithm(s) based on the value
     of the ``algorithm`` attribute. One or more individual algorithms may be
@@ -99,32 +108,34 @@ def decompress(compressed_value: int, algorithm: IntEnum) -> int:
 
     Parameters
     ----------
-    compressed_value : int
-        The 8-bit compressed value to decompress
+    compressed_bytes : bytes
+        The compressed byte stream.
     algorithm : int
         The algorithm to apply. Supported algorithms are provided in the
-        ``codice_utils.CoDICECompression`` class
+        ``codice_utils.CoDICECompression`` class.
 
     Returns
     -------
-    decompressed_value : int
-        The 24- or 32-bit decompressed value
+    decompressed_values : list[int]
+        The 24- or 32-bit decompressed values.
     """
+    # Apply the appropriate decompression algorithm
     if algorithm == CoDICECompression.NO_COMPRESSION:
-        decompressed_value = compressed_value
+        decompressed_values = list(compressed_bytes)
     elif algorithm == CoDICECompression.LOSSY_A:
-        decompressed_value = _apply_lossy_a(compressed_value)
+        decompressed_values = _apply_lossy_a(compressed_bytes)
     elif algorithm == CoDICECompression.LOSSY_B:
-        decompressed_value = _apply_lossy_b(compressed_value)
+        decompressed_values = _apply_lossy_b(compressed_bytes)
     elif algorithm == CoDICECompression.LOSSLESS:
-        decompressed_value = _apply_lzma_lossless(compressed_value)
+        decompressed_bytes = _apply_lzma_lossless(compressed_bytes)
+        decompressed_values = list(decompressed_bytes)
     elif algorithm == CoDICECompression.LOSSY_A_LOSSLESS:
-        decompressed_value = _apply_lzma_lossless(compressed_value)
-        decompressed_value = _apply_lossy_a(decompressed_value)
+        decompressed_bytes = _apply_lzma_lossless(compressed_bytes)
+        decompressed_values = _apply_lossy_a(decompressed_bytes)
     elif algorithm == CoDICECompression.LOSSY_B_LOSSLESS:
-        decompressed_value = _apply_lzma_lossless(compressed_value)
-        decompressed_value = _apply_lossy_b(decompressed_value)
+        decompressed_bytes = _apply_lzma_lossless(compressed_bytes)
+        decompressed_values = _apply_lossy_b(decompressed_bytes)
     else:
         raise ValueError(f"{algorithm} is not supported")
 
-    return decompressed_value
+    return decompressed_values

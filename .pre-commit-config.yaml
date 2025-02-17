@@ -32,3 +32,14 @@ repos:
       - id: poetry-check
       - id: poetry-lock
         args: [--no-update]
+  - repo: https://github.com/numpy/numpydoc
+    rev: 'v1.7.0'
+    hooks:
+      - id: numpydoc-validation
+        exclude: '^imap_processing/tests/|.*test.*'
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: 'v1.10.1'
+    hooks:
+      - id: mypy
+        exclude: .*(tests|docs).*
+        additional_dependencies: [ numpy==1.26.4 ]

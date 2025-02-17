@@ -1,0 +1,121 @@
+default_attrs: &default
+  # Assumed values for all variable attrs unless overwritten
+  DISPLAY_TYPE: time_series
+  FILLVAL: -9223372036854775808
+  FORMAT: F19.3
+  VALIDMIN: 0
+  DEPEND_0: epoch
+  VALIDMAX: 9223372036854775807
+  VAR_TYPE: data
+  UNITS: ' '
+
+direction_vec_label:
+  CATDESC: Directional vector for each direct event
+  FIELDNAM: Direction Vector (X, Y, Z)
+  FORMAT: A3
+  VAR_TYPE: metadata
+
+esa_step:
+  <<: *default
+  VALIDMIN: 1
+  VALIDMAX: 7
+  CATDESC: Energy Step
+  DEPEND_0: epoch
+  FIELDNAM: Energy Step
+  FORMAT: I1
+  LABLAXIS: ESA
+
+mode:
+  <<: *default
+  VALIDMAX: 1
+  CATDESC: Energy Stepping Mode. 0 = high-throughput, 1 = high-resolution
+  FIELDNAM: ESA Mode
+  FORMAT: I1
+  VAR_TYPE: data
+  LABLAXIS: ESA Mode
+
+tof0:
+  <<: *default
+  CATDESC: Time of Flight
+  FIELDNAM: Time of Flight 2
+  FILLVAL: -1.0000000E+31
+  UNITS: ns
+  LABLAXIS: ToF 0
+
+tof1:
+  <<: *default
+  CATDESC: Time of Flight
+  FIELDNAM: Time of Flight 1
+  FILLVAL: -1.0000000E+31
+  UNITS: ns
+  LABLAXIS: ToF 1
+
+tof2:
+  <<: *default
+  CATDESC: Time of Flight
+  FIELDNAM: Time of Flight 2
+  FILLVAL: -1.0000000E+31
+  UNITS: ns
+  LABLAXIS: ToF 2
+
+tof3:
+  <<: *default
+  CATDESC: Time of Flight
+  FIELDNAM: Time of Flight 3
+  FILLVAL: -1.0000000E+31
+  UNITS: ns
+  LABLAXIS: ToF 3
+
+coincidence_type:
+  <<: *default
+  VALIDMAX: 14
+  CATDESC: Coincidence type for the direct event
+  FIELDNAM: Coincidence type
+  FORMAT: I2
+  LABLAXIS: coincidence type
+
+pos:
+  <<: *default
+  VALIDMAX: 4
+  CATDESC: Stop position
+  FIELDNAM: Stop Position
+  FORMAT: I1
+  LABLAXIS: Stop Position
+
+coincidence:
+  <<: *default
+  VALIDMAX: 2
+  CATDESC: Species of Direct Event. 0=light, 1=heavy, 2=other
+  FIELDNAM: Species
+  FORMAT: I1
+  LABLAXIS: Species
+
+badtime:
+  <<: *default
+  VALIDMIN: 1
+  VALIDMAX: 2
+  CATDESC: Flag if DE measured in badtime 1 = yes, 2 = no
+  FIELDNAM: Badtime Flag
+  FORMAT: I1
+  LABLAXIS: Badtime flag
+
+direction_vec:
+  FORMAT: I1
+  VALIDMIN: 0
+  DEPEND_1: direction_vec
+  CATDESC: Direction Vector Position (X, Y, Z)
+  FIELDNAM: Direction Vector Position
+  VALIDMAX: 2
+  VAR_TYPE: support_data
+  UNITS: ' '
+  LABLAXIS: (X, Y, Z)
+
+direction:
+  <<: *default
+  VALIDMAX: 1
+  CATDESC: Directional vector for each direct event
+  FIELDNAM: Direction
+  DEPEND_1: direction_vec
+  FORMAT: I1
+  LABLAXIS: Direction
+  LABL_PTR_1: direction_vec_label

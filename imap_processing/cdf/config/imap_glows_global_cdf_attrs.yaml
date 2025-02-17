@@ -1,0 +1,48 @@
+instrument_base: &instrument_base
+  Descriptor: GLOWS>GLObal Solar Wind Structure
+  TEXT: >
+    The GLObal Solar Wind Structure (GLOWS) is a non-imaging single-pixel Lyman-alpha
+    photometer to investigate the global heliolatitudinal structure of the solar wind
+    and its evolution during the solar cycle. Additionally, GLOWS investigates the
+    distribution of interstellar neutral hydrogen (ISN H) and the solar radiation
+    pressure acting on ISN H. The objectives of GLOWS are accomplished by observation
+    of the modulation of heliospheric backscatter glow of ISN H (the helioglow)
+    along a scanning circle in the sky.
+    GLOWS design and assembly is led by the Space Research Center, Warsaw, Poland
+    (CBK PAN). See https://imap.princeton.edu/instruments/glows for more details.
+  Instrument_type: Imagers (space)
+
+imap_glows_l1a_hist:
+  <<: *instrument_base
+  Data_level: L1A
+  Data_type: L1A_hist>Level-1A histogram
+  Logical_source: imap_glows_l1a_hist
+  Logical_source_description: IMAP Mission GLOWS Histogram Level-1A Data.
+
+imap_glows_l1a_de:
+  <<: *instrument_base
+  Data_level: L1A
+  Data_type: L1A_de>Level-1A direct event
+  Logical_source: imap_glows_l1a_de
+  Logical_source_description: IMAP Mission GLOWS Direct Event Level-1A Data.
+
+imap_glows_l1b_hist:
+  <<: *instrument_base
+  Data_level: L1B
+  Data_type: L1B_hist>Level-1B histogram
+  Logical_source: imap_glows_l1b_hist
+  Logical_source_description: IMAP Mission GLOWS Instrument Level-1B Histogram Data.
+
+imap_glows_l1b_de:
+  <<: *instrument_base
+  Data_level: L1B
+  Data_type: L1B_de>Level-1B Direct Events
+  Logical_source: imap_glows_l1b_de
+  Logical_source_description: IMAP Mission GLOWS Instrument Level-1B Direct Events Data.
+
+imap_glows_l2_hist:
+  <<: *instrument_base
+  Data_level: L2
+  Data_type: L2_hist>Level-2 histogram
+  Logical_source: imap_glows_l2_hist
+  Logical_source_description: IMAP Mission GLOWS Instrument Level-2 Histogram Data.

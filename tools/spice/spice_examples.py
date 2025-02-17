@@ -1,56 +1,63 @@
-"""Annotated Events: project events in instrument frame to reference systems.
+"""
+Annotated Events: project events in instrument frame to reference systems.
 
-Reference: https://spiceypy.readthedocs.io/en/main/documentation.html.
+References
+----------
+https://spiceypy.readthedocs.io/en/main/documentation.html.
 """
 
 import logging
 
-import spiceypy as spice
+import numpy.typing as npt
+import spiceypy
 
 # Logger setup
 logger = logging.getLogger(__name__)
 
 
-def get_attitude_timerange(ck_kernel, id):
-    """Get attitude timerange using the ck kernel.
+def get_attitude_timerange(ck_kernel: str, id: int) -> tuple:
+    """
+    Get attitude timerange using the ck kernel.
 
     Parameters
     ----------
-    ck_kernel: str
+    ck_kernel : str
         Directory of the ck kernel.
-    id: int
+    id : int
         ID of the instrument or spacecraft body.
 
     Returns
     -------
-    start: float
+    start : float
         Start time in ET.
-    end: float
+    end : float
         End time in ET.
 
-    NOTE: ck_kernel refers to the kernel containing attitude data.
+    Notes
+    -----
+    ck_kernel refers to the kernel containing attitude data.
     """
     # Get the first CK path
     ck_path = ck_kernel[0]
 
     # Get the coverage window
     # https://spiceypy.readthedocs.io/en/main/documentation.html#spiceypy.spiceypy.ckcov
-    cover = spice.ckcov(ck_path, int(id), True, "SEGMENT", 0, "TDB")
+    cover = spiceypy.ckcov(ck_path, int(id), True, "SEGMENT", 0, "TDB")
 
     # TODO: Deal with gaps in coverage. For now, we use one interval.
     # How we interpolate may change when using type 2 kernels.
     # https://spiceypy.readthedocs.io/en/main/documentation.html#spiceypy.spiceypy.wncard
-    spice.wncard(cover)
+    spiceypy.wncard(cover)
 
     # Retrieve the start and end times of the coverage interval
     interval = 0
     # https://spiceypy.readthedocs.io/en/main/documentation.html#spiceypy.spiceypy.wnfetd
-    start, end = spice.wnfetd(cover, interval)
+    start, end = spiceypy.wnfetd(cover, interval)
 
     # Convert start and end times from ET to UTC for human readability
     # https://spiceypy.readthedocs.io/en/main/documentation.html#spiceypy.spiceypy.et2utc
-    start_utc = spice.et2utc(start, "C", 0)
-    end_utc = spice.et2utc(end, "C", 0)
+    start_utc = spiceypy.et2utc(start, "C", 0)
+    end_utc = spiceypy.et2utc(end, "C", 0)
 
     logger.info(f"Coverage Interval for ID {id}:")
     logger.info(f"Start Time (UTC): {start_utc}")
@@ -59,20 +66,25 @@ def get_attitude_timerange(ck_kernel, id):
     return start, end
 
 
-def _get_particle_velocity(direct_events):
-    """Get the particle velocity in the heliosphere frame.
+def _get_particle_velocity(
+    direct_events: dict,
+) -> npt.NDArray:
+    """
+    Get the particle velocity in the heliosphere frame.
 
     Parameters
     ----------
-    direct_events: dict
+    direct_events : dict
         Dictionary of direct events.
 
     Returns
     -------
-    vultra_heliosphere_frame: np.ndarray
+    vultra_heliosphere_frame : numpy.ndarray
         Particle velocity in the heliosphere frame.
 
-    #Note: Using a single event time/velocity for now.
+    Notes
+    -----
+    Using a single event time/velocity for now.
     This of course will change.
     """
     time = direct_events["tdb"]
@@ -82,13 +94,13 @@ def _get_particle_velocity(direct_events):
     # https://spiceypy.readthedocs.io/en/main/documentation.html#spiceypy.spiceypy.mxv
     # https://spiceypy.readthedocs.io/en/main/
     # documentation.html#spiceypy.spiceypy.pxform
-    dps_velocity = spice.mxv(
-        spice.pxform("IMAP_ULTRA_45", "IMAP_DPS", time), ultra_velocity
+    dps_velocity = spiceypy.mxv(
+        spiceypy.pxform("IMAP_ULTRA_45", "IMAP_DPS", time), ultra_velocity
     )
 
     # Spacecraft velocity in the DPS frame wrt the heliosphere
     # https://spiceypy.readthedocs.io/en/main/documentation.html#spiceypy.spiceypy.spkezr
-    state, lt = spice.spkezr("IMAP", time, "IMAP_DPS", "NONE", "SUN")
+    state, lt = spiceypy.spkezr("IMAP", time, "IMAP_DPS", "NONE", "SUN")
 
     # Extract the velocity part of the state vector
     imap_dps_velocity = state[3:6]
@@ -99,17 +111,18 @@ def _get_particle_velocity(direct_events):
     return ultra_velocity_heliosphere_frame
 
 
-def build_annotated_events(direct_events, kernels):
-    """Build annotated events.
+def build_annotated_events(direct_events: dict, kernels: list) -> None:
+    """
+    Build annotated events.
 
     Parameters
     ----------
-    direct_events: dict
+    direct_events : dict
         Dictionary of direct events.
-    kernels: list
+    kernels : list
         List of kernels to be loaded.
     """
-    with spice.KernelPool(kernels):
+    with spiceypy.KernelPool(kernels):
         # Hack: create time for IMAP_DPS frame
         # dps = despun reference frame.
         # TODO: compute the mean z-axis for a given pointing and
@@ -121,10 +134,10 @@ def build_annotated_events(direct_events, kernels):
         # together a memo on how this will work.
 
         # https://spiceypy.readthedocs.io/en/main/documentation.html#spiceypy.spiceypy.pdpool
-        spice.pdpool("FRAME_-43906_FREEZE_EPOCH", [802094471.0])
+        spiceypy.pdpool("FRAME_-43906_FREEZE_EPOCH", [802094471.0])
 
         # https://spiceypy.readthedocs.io/en/main/documentation.html#spiceypy.spiceypy.et2utc
-        time_event = spice.et2utc(direct_events["tdb"], "C", 0)
+        time_event = spiceypy.et2utc(direct_events["tdb"], "C", 0)
 
         logger.info(f"Time (UTC): {time_event}")
 

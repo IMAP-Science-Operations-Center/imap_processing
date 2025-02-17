@@ -1,0 +1,179 @@
+default_attrs: &default
+  # Assumed values for all variable attrs unless overwritten
+  DISPLAY_TYPE: time_series
+  FILLVAL: -9223372036854775808
+  FORMAT: F19.3
+  VALIDMIN: 0
+  DEPEND_0: epoch
+  VALIDMAX: 9223372036854775807
+  VAR_TYPE: data
+  UNITS: ' '
+
+# Non-epoch Coordinates
+esa_step_label:
+  CATDESC: ESA Steps
+  FIELDNAM: ESA Steps
+  FORMAT: A1
+  VAR_TYPE: metadata
+
+esa_step:
+  VALIDMIN: 1
+  VALIDMAX: 7
+  FILLVAL: -9223372036854775808
+  CATDESC: Energy Step
+  DEPEND_1: esa_step
+  FIELDNAM: Energy Step
+  UNITS: ' '
+  FORMAT: I1
+  VAR_TYPE: support_data
+  LABLAXIS: ESA
+  LABL_PTR_1: esa_step_label
+
+pointing_bins_label:
+  CATDESC: Pointing bins
+  FIELDNAM: Pointing bins
+  FORMAT: A4
+  VAR_TYPE: metadata
+
+pointing_bins:
+  VALIDMIN: 0
+  VALIDMAX: 3599
+  FILLVAL: -9223372036854775808
+  CATDESC: Pointing bins
+  DEPEND_1: pointing_bins
+  FIELDNAM: Pointing Bins
+  UNITS: ' '
+  FORMAT: I4
+  VAR_TYPE: support_data
+  LABLAXIS: pointing bins
+  LABL_PTR_1: pointing_bins_label
+
+pointing_start:
+  <<: *default
+  CATDESC: MET of start of pointing
+  FIELDNAM: Pointing start time
+  FORMAT: I12
+  UNITS: s
+  LABLAXIS: pointing start time
+
+pointing_end:
+  <<: *default
+  CATDESC: MET of end of pointing
+  FIELDNAM: Pointing end time
+  FORMAT: I12
+  UNITS: s
+  LABLAXIS: pointing end time
+
+mode:
+  <<: *default
+  CATDESC: Science Mode for Pointing
+  FIELDNAM: Science Mode
+  FORMAT: I12
+  LABLAXIS: science mode
+
+pivot_angle:
+  <<: *default
+  VALIDMAX: 360
+  CATDESC: Pivot angle for pointing
+  FIELDNAM: Pivot angle
+  FORMAT: I12
+  UNITS: degrees
+  LABLAXIS: pivot angle
+
+triples_counts:
+  <<: *default
+  CATDESC: Counts for triple coincidence events
+  DEPEND_1: pointing_bins
+  DEPEND_2: esa_step
+  FIELDNAM: triples coincidence counts
+  FORMAT: I12
+  LABLAXIS: triples coincidence counts
+  LABL_PTR_1: pointing_bins_label
+  LABL_PTR_2: esa_step_label
+
+triples_rates:
+  <<: *default
+  CATDESC: Count rates for triple coincidence events
+  DEPEND_1: pointing_bins
+  DEPEND_2: esa_step
+  FILLVAL: -1.0000000E+31
+  FIELDNAM: triple coincidence count rates
+  LABLAXIS: triple coincidence count rates
+  LABL_PTR_1: pointing_bins_label
+  LABL_PTR_2: esa_step_label
+
+doubles_counts:
+  <<: *default
+  CATDESC: "Counts for double coincidence events"
+  DEPEND_1: pointing_bins
+  DEPEND_2: esa_step
+  FIELDNAM: Double coincidence counts
+  FORMAT: I12
+  LABLAXIS: double coincidence counts
+  LABL_PTR_1: pointing_bins_label
+  LABL_PTR_2: esa_step_label
+
+doubles_rates:
+  <<: *default
+  CATDESC: Count rates for double coincidence events
+  DEPEND_1: pointing_bins
+  DEPEND_2: esa_step
+  FILLVAL: -1.0000000E+31
+  FIELDNAM: double coincidence count rates
+  LABLAXIS: double coincidence count rates
+  LABL_PTR_1: pointing_bins_label
+  LABL_PTR_2: esa_step_label
+
+hydrogen_counts:
+  <<: *default
+  CATDESC: Counts for Hydrogen events
+  DEPEND_1: pointing_bins
+  DEPEND_2: esa_step
+  FIELDNAM: Hydrogen counts
+  FORMAT: I12
+  LABLAXIS: H counts
+  LABL_PTR_1: pointing_bins_label
+  LABL_PTR_2: esa_step_label
+
+hydrogen_rates:
+  <<: *default
+  CATDESC: Count rates for Hydrogen events
+  DEPEND_1: pointing_bins
+  DEPEND_2: esa_step
+  FILLVAL: -1.0000000E+31
+  FIELDNAM: Hydrogen count rates
+  LABLAXIS: H coincidence count rates
+  LABL_PTR_1: pointing_bins_label
+  LABL_PTR_2: esa_step_label
+
+oxygen_counts:
+  <<: *default
+  CATDESC: Count rates for Oxygen events
+  DEPEND_1: pointing_bins
+  DEPEND_2: esa_step
+  FORMAT: I12
+  FIELDNAM: Oxygen count rates
+  LABLAXIS: O count rates
+  LABL_PTR_1: pointing_bins_label
+  LABL_PTR_2: esa_step_label
+
+oxygen_rates:
+  <<: *default
+  CATDESC : Count rates for Oxygen events
+  DEPEND_1 : pointing_bins
+  DEPEND_2 : esa_step
+  FILLVAL: -1.0000000E+31
+  FIELDNAM : Oxygen count rates
+  LABLAXIS : O count rates
+  LABL_PTR_1: pointing_bins_label
+  LABL_PTR_2: esa_step_label
+
+exposure_time:
+  <<: *default
+  CATDESC: Exposure times by ESA step
+  DEPEND_1: esa_step
+  FILLVAL: -1.0000000E+31
+  FIELDNAM: Exposure Times
+  UNITS: "s"
+  LABLAXIS: exposure times
+  LABL_PTR_1: esa_step_label

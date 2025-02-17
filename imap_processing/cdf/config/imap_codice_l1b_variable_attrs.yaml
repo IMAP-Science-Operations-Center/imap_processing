@@ -1,0 +1,391 @@
+# <=== Defaults ===>
+default_attrs: &default
+    CATDESC: ""
+    DISPLAY_TYPE: no_plot
+    FIELDNAM: ""
+    FILLVAL: -9223372036854775808
+    FORMAT: I12
+    LABLAXIS: ""
+    REFERENCE_POSITION: ""
+    RESOLUTION: ""
+    SCALETYP: linear
+    TIME_BASE: ""
+    TIME_SCALE: ""
+    UNITS: dN
+    VALIDMIN: -9223372036854775808
+    VALIDMAX: 9223372036854775807
+    VAR_TYPE: data
+
+codice_support_attrs: &support_default
+    <<: *default
+    VAR_TYPE: support_data
+
+# <=== Coordinates ===>
+energy_attrs:
+    <<: *default
+    CATDESC: Energy per charge (E/q) sweeping step
+    FIELDNAM: Energy step
+    FORMAT: I3
+    LABLAXIS: energy step
+    UNITS: ' '
+    VALIDMIN: 0
+    VALIDMAX: 127
+    VAR_TYPE: support_data
+
+inst_az_attrs:
+    <<: *default
+    CATDESC: Azimuth
+    FIELDNAM: Azimuth
+    FORMAT: I2
+    LABLAXIS: Azimuth
+    UNITS: ' '
+    VALIDMIN: 0
+    VALIDMAX: 31
+    VAR_TYPE: support_data
+
+spin_sector_attrs:
+    <<: *default
+    CATDESC: Spin sector indicating range of spin angles
+    FIELDNAM: Spin sector
+    FORMAT: I4
+    LABLAXIS: spin sector
+    UNITS: ' '
+    VALIDMIN: 0
+    VALIDMAX: 1152
+    VAR_TYPE: support_data
+
+# <=== Labels ===>
+energy_label:
+    CATDESC: Energy per charge (E/q) sweeping step
+    DISPLAY_TYPE: ""
+    FIELDNAM: Energy step
+    FILLVAL: ""
+    FORMAT: A3
+    LABLAXIS: ""
+    REFERENCE_POSITION: ""
+    RESOLUTION: ""
+    TIME_BASE: ""
+    TIME_SCALE: ""
+    UNITS: ""
+    VALIDMAX: ""
+    VALIDMIN: ""
+    VAR_TYPE: metadata
+
+# <=== Dataset Attributes ===>
+acquisition_times_attrs:
+    <<: *default
+    CATDESC: Time of acquisition for the energy step
+    DEPEND_1: energy
+    FIELDNAM: Acquisition Time
+    FILLVAL: .NAN
+    FORMAT: F10.3
+    LABLAXIS: Acq Time
+    UNITS: ms
+    VALIDMIN: 0
+    VALIDMAX: 1000
+    VAR_TYPE: support_data
+
+counters_attrs: &counters
+    <<: *default
+    CATDESC: Fill in at creation
+    DEPEND_0: epoch
+    DEPEND_1: energy
+    DISPLAY_TYPE: time_series
+    FIELDNAM: Fill in at creation
+    LABL_PTR_1: energy_label
+    UNITS: counts
+    VALIDMIN: 0
+    VALIDMAX: 8388607  # max value for a signed 24-bit integer
+
+esa_sweep_attrs:
+    <<: *default
+    CATDESC: ElectroStatic Analyzer Energy Values
+    DEPEND_1: energy
+    FIELDNAM: ESA Voltage
+    FORMAT: I19
+    LABLAXIS: ESA V
+    UNITS: V
+    VALIDMIN: 0
+    VAR_TYPE: support_data
+
+# <=== Data Variable Attributes ===>
+# hi-counters-aggregated
+hi_counters_aggregated-aggregated:
+    <<: *counters
+    CATDESC: Aggregated Rates
+    FIELDNAM: Rates - Aggregated
+
+# hi-counters-singles
+hi_counters_singles-tcr:
+    <<: *counters
+    CATDESC: TCR Rates
+    FIELDNAM: Rates - Event A (TCR)
+
+hi_counters_singles-ssdo:
+    <<: *counters
+    CATDESC: SSDO Rates
+    FIELDNAM: Rates - Event E (SSDO)
+
+hi_counters_singles-stssd:
+    <<: *counters
+    CATDESC: STSSD Rates
+    FIELDNAM: Rates - Event G (STSSD)
+
+# hi-omni
+hi_omni-h:
+    <<: *counters
+    CATDESC: Omnidirectional H Rates
+    FIELDNAM: H
+
+hi_omni-he3:
+    <<: *counters
+    CATDESC: Omnidirectional He3 Rates
+    FIELDNAM: He3
+
+hi_omni-he4:
+    <<: *counters
+    CATDESC: Omnidirectional He4 Rates
+    FIELDNAM: He4
+
+hi_omni-c:
+    <<: *counters
+    CATDESC: Omnidirectional C Rates
+    FIELDNAM: C
+
+hi_omni-o:
+    <<: *counters
+    CATDESC: Omnidirectional O Rates
+    FIELDNAM: O
+
+hi_omni-ne_mg_si:
+    <<: *counters
+    CATDESC: Omnidirectional Ne_Mg_Si Rates
+    FIELDNAM: Ne_Mg_Si
+
+hi_omni-fe:
+    <<: *counters
+    CATDESC: Omnidirectional Fe Rates
+    FIELDNAM: Fe
+
+hi_omni-uh:
+    <<: *counters
+    CATDESC: Omnidirectional UH Rates
+    FIELDNAM: UH
+
+# hi-sectored
+hi_sectored-h:
+    <<: *counters
+    CATDESC: Sectored H Rates
+    FIELDNAM: H
+
+hi_sectored-he3he4:
+    <<: *counters
+    CATDESC: Sectored He3He4 Rates
+    FIELDNAM: He3He4
+
+hi_sectored-cno:
+    <<: *counters
+    CATDESC: Sectored CNO Rates
+    FIELDNAM: CNO
+
+hi_sectored-fe:
+    <<: *counters
+    CATDESC: Sectored Fe Rates
+    FIELDNAM: Fe
+
+# lo-counters-aggregated
+lo_counters_aggregated-aggregated:
+    <<: *counters
+    CATDESC: Aggregated Rates
+    FIELDNAM: Rates - Aggregated
+
+# lo-counters-singles
+lo_counters_singles-apd_singles:
+    <<: *counters
+    CATDESC: Single Rates (APD)
+    FIELDNAM: Rates - Single (APD)
+
+# lo-sw-angular
+lo_sw_angular-hplus:
+    <<: *counters
+    CATDESC: Sunward H+ Species
+    FIELDNAM: SW - H+
+
+lo_sw_angular-heplusplus:
+    <<: *counters
+    CATDESC: Sunward He++ Species
+    FIELDNAM: SW - He++
+
+lo_sw_angular-oplus6:
+    <<: *counters
+    CATDESC: Sunward O+6 Species
+    FIELDNAM: SW - O+6
+
+lo_sw_angular-fe_loq:
+    <<: *counters
+    CATDESC: Sunward Fe lowQ Species
+    FIELDNAM: SW - Fe lowQ
+
+lo_nsw_angular-heplusplus:
+    <<: *counters
+    CATDESC: Non-sunward He++ Species
+    FIELDNAM: NSW - He++
+
+# lo-sw-priority
+lo_sw_priority-p0_tcrs:
+    <<: *counters
+    CATDESC: Sunward Sector Triple Coincidence Pickup Ions Priority
+    FIELDNAM: SW Sector Triple Coincidence PUI's
+
+lo_sw_priority-p1_hplus:
+    <<: *counters
+    CATDESC: Sunward Sector H+ Priority
+    FIELDNAM: SW Sector H+
+
+lo_sw_priority-p2_heplusplus:
+    <<: *counters
+    CATDESC: Sunward Sector He++ Priority
+    FIELDNAM: SW Sector He++
+
+lo_sw_priority-p3_heavies:
+    <<: *counters
+    CATDESC: Sunward Sector High Charge State Heavies Priority
+    FIELDNAM: SW Sector High Charge State Heavies
+
+lo_sw_priority-p4_dcrs:
+    <<: *counters
+    CATDESC: Sunward Sector Double Coincidence Pickup Ions Priority
+    FIELDNAM: SW Sector Double Coincidence PUI's
+
+# lo-nsw-priority
+lo_nsw_priority-p5_heavies:
+    <<: *counters
+    CATDESC: Non-sunward Sector Heavies Priority
+    FIELDNAM: NSW Sector Heavies
+
+lo_nsw_priority-p6_hplus_heplusplus:
+    <<: *counters
+    CATDESC: Non-sunward H+ and He++ Priority
+    FIELDNAM: NSW H+ and He++
+
+# lo-sw-species
+lo_sw_species-hplus:
+    <<: *counters
+    CATDESC: H+ Sunward Species
+    FIELDNAM: SW - H+
+
+lo_sw_species-heplusplus:
+    <<: *counters
+    CATDESC: He++ Sunward Species
+    FIELDNAM: SW - He++
+
+lo_sw_species-cplus4:
+    <<: *counters
+    CATDESC: C+4 Sunward Species
+    FIELDNAM: SW - C+4
+
+lo_sw_species-cplus5:
+    <<: *counters
+    CATDESC: C+5 Sunward Species
+    FIELDNAM: SW - C+5
+
+lo_sw_species-cplus6:
+    <<: *counters
+    CATDESC: C+6 Sunward Species
+    FIELDNAM: SW - C+6
+
+lo_sw_species-oplus5:
+    <<: *counters
+    CATDESC: O+5 Sunward Species
+    FIELDNAM: SW - O+5
+
+lo_sw_species-oplus6:
+    <<: *counters
+    CATDESC: O+6 Sunward Species
+    FIELDNAM: SW - O+6
+
+lo_sw_species-oplus7:
+    <<: *counters
+    CATDESC: O+7 Sunward Species
+    FIELDNAM: SW - O+7
+
+lo_sw_species-oplus8:
+    <<: *counters
+    CATDESC: O+8 Sunward Species
+    FIELDNAM: SW - O+8
+
+lo_sw_species-ne:
+    <<: *counters
+    CATDESC: Ne Sunward Species
+    FIELDNAM: SW - Ne
+
+lo_sw_species-mg:
+    <<: *counters
+    CATDESC: Mg Sunward Species
+    FIELDNAM: SW - Mg
+
+lo_sw_species-si:
+    <<: *counters
+    CATDESC: Si Sunward Species
+    FIELDNAM: SW - Si
+
+lo_sw_species-fe_loq:
+    <<: *counters
+    CATDESC: Fe lowQ Sunward Species
+    FIELDNAM: SW - Fe lowQ
+
+lo_sw_species-fe_hiq:
+    <<: *counters
+    CATDESC: Fe highQ Sunward Species
+    FIELDNAM: SW - Fe highQ
+
+lo_sw_species-heplus:
+    <<: *counters
+    CATDESC: He+ Pickup Ion Sunward Species
+    FIELDNAM: SW - He+ (PUI)
+
+lo_sw_species-cnoplus:
+    <<: *counters
+    CATDESC: CNO+ Pickup Ion Sunward Species
+    FIELDNAM: SW - CNO+ (PUI)
+
+# lo-nsw-species
+lo_nsw_species-hplus:
+    <<: *counters
+    CATDESC: H+ Non-sunward Species
+    FIELDNAM: NSW - H+
+
+lo_nsw_species-heplusplus:
+    <<: *counters
+    CATDESC: He++ Non-sunward Species
+    FIELDNAM: NSW - He++
+
+lo_nsw_species-c:
+    <<: *counters
+    CATDESC: C Non-sunward Species
+    FIELDNAM: NSW - C
+
+lo_nsw_species-o:
+    <<: *counters
+    CATDESC: O Non-sunward Species
+    FIELDNAM: NSW - O
+
+lo_nsw_species-ne_si_mg:
+    <<: *counters
+    CATDESC: Ne-Si-Mg Non-sunward Species
+    FIELDNAM: NSW - Ne_Si_Mg
+
+lo_nsw_species-fe:
+    <<: *counters
+    CATDESC: Fe Non-sunward Species
+    FIELDNAM: NSW - Fe
+
+lo_nsw_species-heplus:
+    <<: *counters
+    CATDESC: He+ Non-sunward Species
+    FIELDNAM: NSW - He+
+
+lo_nsw_species-cnoplus:
+    <<: *counters
+    CATDESC: CNO+ Non-sunward Species
+    FIELDNAM: NSW - CNO+

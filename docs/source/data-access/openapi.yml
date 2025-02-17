@@ -1,0 +1,176 @@
+openapi: 3.0.0
+servers:
+  - description: Development IMAP SDC Server
+host: https://api.dev.imap-mission.com/
+info:
+  version: "0.1.0"
+  title: IMAP SDC API
+  description: Describes the API endpoints for interacting with the IMAP SDC
+
+paths:
+
+  '/upload/{filepath}':
+    get:
+      tags:
+        - Upload
+      summary: Upload a science file to the SDC
+      parameters:
+        - name: filepath
+          in: path
+          required: true
+          description: |
+            The full path to the file to upload, relative to the ``IMAP_DATA_DIR`` environment variable or the user's
+            current working directory. (e.g. ``{IMAP_DATA_DIR}/imap/swe/l0/2024/01/imap_swe_l0_sci_20240105_20240105_v00-01.pkts``).
+            The filename must be a valid IMAP filename that follows the conventions described
+            `here <https://imap-processing.readthedocs.io/en/latest/development-guide/style-guide/naming-conventions.html#data-product-file-naming-conventions>`_.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful upload
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                  format: uri
+        '400':
+          description: Invalid or missing filename
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+        '409':
+          description: File already exists
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+
+
+  '/download/{filepath}':
+    get:
+      tags:
+        - Download
+      summary: Download a file from the SDC
+      operationId: download
+      parameters:
+        - in: path
+          name: filepath
+          description: |
+            The full path to the file to download (e.g.
+            ``imap/swe/l0/2024/01/imap_swe_l0_sci_20240105_20240105_v00-01.pkts``). The filename must be a valid IMAP
+            filename that follows the conventions described
+            `here <https://imap-processing.readthedocs.io/en/latest/development-guide/style-guide/naming-conventions.html#data-product-file-naming-conventions>`_.
+          required: true
+          schema:
+            type: string
+      responses:
+        '302':
+          description: Successful download
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                  format: uri
+        '400':
+          description: Missing filename
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                  format: uri
+        '404':
+          description: File not found
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                  format: uri
+
+  '/query':
+    get:
+      tags:
+        - Query
+      summary: Query for file metadata
+      operationId: query
+      parameters:
+        - in: query
+          name: instrument
+          description: |
+            The instrument of interest (e.g. ``mag``). Supported instruments are listed
+            `here <https://imap-processing.readthedocs.io/en/latest/development-guide/style-guide/naming-conventions.html#data-product-file-naming-conventions>`_.
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: data_level
+          description: |
+            The level of data product (e.g. ``l1a``). Supported levels are listed
+            `here <https://imap-processing.readthedocs.io/en/latest/development-guide/style-guide/naming-conventions.html#data-product-file-naming-conventions>`_.
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: descriptor
+          description: |
+            The descriptor of interest (e.g. ``burst``). Supported descriptors are listed
+            `here <https://imap-processing.readthedocs.io/en/latest/development-guide/style-guide/naming-conventions.html#data-product-file-naming-conventions>`_.
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: start_date
+          description: Search for all files with a start date on or after this time, in the format ``YYYYMMDD``.
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: end_date
+          description: Search for all files with a start date on or before this time, in the format ``YYYYMMDD``.
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: version
+          description: The version of data product in the format ``vNNN`` (e.g. ``v001``). You can also choose to
+            query ``--version latest`` in order to receive the most recent version of a file.
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: extension
+          description: The file extension of interest (e.g. ``cdf``). Supported extensions include ``pkts`` and ``cdf``.
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful query
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                  format: uri
+        '400':
+          description: Unsuccessful query
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                  format: uri

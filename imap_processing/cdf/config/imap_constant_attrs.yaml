@@ -1,0 +1,35 @@
+# By default the time is assumed to correspond to instantaneous time or
+# center of accumulation/measurement period. But if, for some good reason,
+# time corresponds to the beginning or end or any other part of
+# accumulation/measurement period, that has to be stated in CATDESC.
+epoch:
+  CATDESC: Time, number of nanoseconds since J2000 with leap seconds included
+  FIELDNAM: epoch
+  LABLAXIS: epoch
+  FILLVAL: -9223372036854775808
+  FORMAT: " " # Supposedly not required, fails in xarray_to_cdf
+  VALIDMIN: -9223372036854775808
+  VALIDMAX: 9223372036854775807
+  UNITS: ns
+  VAR_TYPE: support_data
+  SCALETYP: linear
+  MONOTON: INCREASE
+  TIME_BASE: J2000
+  TIME_SCALE: Terrestrial Time
+  REFERENCE_POSITION: Rotating Earth Geoid
+  RESOLUTION: ' '
+  DISPLAY_TYPE: time_series
+
+# <=== Data Variables ===>
+# Default Attrs for all metadata variables unless overridden
+metadata_attrs:
+  DEPEND_0: epoch
+  DISPLAY_TYPE: 'no_plot'
+  LABLAXIS: ' '
+  FILLVAL: -9223372036854775808
+  FORMAT: I19
+  UNITS: ' '
+  VALIDMIN: 0
+  VALIDMAX: 9223372036854769664
+  VAR_TYPE: support_data
+  SCALETYP: linear

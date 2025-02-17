@@ -1,0 +1,17 @@
+# Reference for sections: https://spdf.gsfc.nasa.gov/istp_guide/gattributes.html
+# Reference from IBEX: https://spdf.gsfc.nasa.gov/pub/software/cdawlib/0SKELTABLES/ibex_h3_ena_lo_r08_omni_f3-gdf-maps_5yr_00000000_v01.skt
+Project: STP>Solar Terrestrial Probes
+Source_name: IMAP>Interstellar Mapping and Acceleration Probe
+Discipline: Solar Physics>Heliospheric Physics
+Mission_group: IMAP
+PI_name: Prof. David J. McComas
+PI_affiliation: Princeton University
+File_naming_convention: source_descriptor_datatype_yyyyMMdd_vNNN
+Acknowledgement: >
+  Please acknowledge the IMAP Mission Principal Investigator, Prof. David J. McComas of Princeton University.
+Rules_of_use: >
+  All IMAP data products are publicly released and citable for use in publications.
+  Please consult the IMAP team publications and personnel for further details
+  on production, processing, and usage of these data.
+LINK_TITLE: IMAP The Interstellar Mapping and Acceleration Probe
+HTTP_LINK: https://imap.princeton.edu/

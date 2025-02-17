@@ -1,4 +1,5 @@
-"""Perform CoDICE L0 processing.
+"""
+Perform CoDICE L0 processing.
 
 This module contains a function to decommutate CoDICE CCSDS packets using
 XTCE packet definitions.
@@ -6,9 +7,8 @@ XTCE packet definitions.
 For more information on this process and the latest versions of the packet
 definitions, see https://lasp.colorado.edu/galaxy/display/IMAP/CoDICE.
 
-Use
----
-
+Notes
+-----
     from imap_processing.codice.codice_l0 import decom_packets
     packet_file = '/path/to/raw_ccsds_20230822_122700Z_idle.bin'
     packet_list = decom_packets(packet_file)
@@ -16,21 +16,15 @@ Use
 
 from pathlib import Path
 
-from imap_processing import decom, imap_module_directory
+import xarray as xr
 
-PACKET_TO_XTCE_MAPPING = {
-    "raw_ccsds_20230822_122700Z_idle.bin": "P_COD_NHK.xml",
-    "lo_fsw_view_3_ccsds.bin": "P_COD_LO_PRIORITY_COUNTS.xml",
-    "lo_fsw_view_4_ccsds.bin": "P_COD_LO_PRIORITY_COUNTS.xml",
-    "lo_fsw_view_5_ccsds.bin": "P_COD_LO_SW_SPECIES_COUNTS.xml",
-    "lo_fsw_view_6_ccsds.bin": "P_COD_LO_NSW_SPECIES_COUNTS.xml",
-    "lo_fsw_view_7_ccsds.bin": "P_COD_LO_SW_ANGULAR_COUNTS.xml",
-    "lo_fsw_view_8_ccsds.bin": "P_COD_LO_NSW_ANGULAR_COUNTS.xml",
-}
+from imap_processing import imap_module_directory
+from imap_processing.utils import packet_file_to_datasets
 
 
-def decom_packets(packet_file: Path) -> list:
-    """Decom CoDICE data packets using CoDICE packet definition.
+def decom_packets(packet_file: Path) -> dict[int, xr.Dataset]:
+    """
+    Decom CoDICE data packets using CoDICE packet definition.
 
     Parameters
     ----------
@@ -39,10 +33,22 @@ def decom_packets(packet_file: Path) -> list:
 
     Returns
     -------
-    list : list
-        all the unpacked data.
+    datasets : dict[int, xarray.Dataset]
+        Mapping from apid to ``xarray`` dataset, one dataset per apid.
     """
-    xtce_document = Path(
-        f"{imap_module_directory}/codice/packet_definitions/{PACKET_TO_XTCE_MAPPING[packet_file.name]}"
+    # TODO: Currently need to use the 'old' packet definition for housekeeping
+    #       because the simulated housekeeping data being used has various
+    #       mis-matches from the telemetry definition. This may be updated
+    #       once new simulated housekeeping data are acquired.
+    if "hskp" in str(packet_file):
+        xtce_filename = "P_COD_NHK.xml"
+    else:
+        xtce_filename = "codice_packet_definition.xml"
+    xtce_packet_definition = Path(
+        f"{imap_module_directory}/codice/packet_definitions/{xtce_filename}"
     )
-    return decom.decom_packets(packet_file, xtce_document)
+    datasets: dict[int, xr.Dataset] = packet_file_to_datasets(
+        packet_file, xtce_packet_definition
+    )
+
+    return datasets

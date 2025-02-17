@@ -1,0 +1,33 @@
+instrument_base: &instrument_base
+  Descriptor: SWAPI>Solar Wind and Pickup Ion
+  TEXT: >
+    The Solar Wind and Pickup Ion (SWAPI) instrument measures several different
+    elements of the solar wind, including hydrogen (H) and helium (He) ions,
+    and, on occasion, heavy ions produced by large events from the Sun. See
+    https://imap.princeton.edu/instruments/swapi for more details. SWAPI level-1
+    data contains primary, secondary, coincidence counts per ESA voltage step and
+    time. Level-2 data contains the same data as level-1 but counts are converted
+    to rates by dividing counts by time.
+  Instrument_type: Particles (space)
+
+imap_swapi_l1_sci:
+  <<: *instrument_base
+  # NOTE: Right now, this Data_level is required to produce valid CDF
+  Data_level: "1"
+  Data_type: L1_SCI>Level-1 Science data
+  Logical_source: imap_swapi_l1_sci
+  Logical_source_description: SWAPI Instrument Level-1 Science Data
+
+imap_swapi_l1_hk:
+  <<: *instrument_base
+  Data_level: "1"
+  Data_type: L1_HK>Level-1B Housekeeping data
+  Logical_source: imap_swapi_l1_hk
+  Logical_source_description: SWAPI Instrument Level-1 Housekeeping Data
+
+imap_swapi_l2_sci:
+  <<: *instrument_base
+  Data_level: "2"
+  Data_type: L2_SCI>Level-2 Science data
+  Logical_source: imap_swapi_l2_sci
+  Logical_source_description: SWAPI Instrument Level-1 Science Data

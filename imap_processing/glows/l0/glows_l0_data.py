@@ -1,13 +1,14 @@
 """Contains data classes to support GLOWS L0 processing."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from imap_processing.ccsds.ccsds_data import CcsdsData
 
 
 @dataclass
 class GlowsL0:
-    """Data structure for common values across histogram and direct events data.
+    """
+    Data structure for common values across histogram and direct events data.
 
     Attributes
     ----------
@@ -26,7 +27,8 @@ class GlowsL0:
 
 @dataclass
 class HistogramL0(GlowsL0):
-    """Data structure for storing GLOWS histogram packet data.
+    """
+    Data structure for storing GLOWS histogram packet data.
 
     Attributes
     ----------
@@ -112,22 +114,13 @@ class HistogramL0(GlowsL0):
     ELAVG: int
     ELVAR: int
     EVENTS: int
-    HISTOGRAM_DATA: bytearray
-
-    def __post_init__(self):
-        """Convert HISTOGRAM_DATA attribute from string to bytearray if needed."""
-        if isinstance(self.HISTOGRAM_DATA, str):
-            # Convert string output from space_packet_parser to bytearray
-            self.HISTOGRAM_DATA = bytearray(
-                int(self.HISTOGRAM_DATA, 2).to_bytes(
-                    len(self.HISTOGRAM_DATA) // 8, "big"
-                )
-            )
+    HISTOGRAM_DATA: bytes
 
 
 @dataclass
 class DirectEventL0(GlowsL0):
-    """Data structure for storing GLOWS direct event packet data.
+    """
+    Data structure for storing GLOWS direct event packet data.
 
     Attributes
     ----------
@@ -150,19 +143,16 @@ class DirectEventL0(GlowsL0):
 
     Methods
     -------
-    within_same_sequence
-        Compare two DirectEventL0 objects and see if MET and LEN are equal (meaning they
-        are in the same sequence)
-
+    within_same_sequence(other)
     """
 
     MET: int
     SEC: int
     LEN: int
     SEQ: int
-    DE_DATA: bytearray
+    DE_DATA: bytearray = field(repr=False)  # Do not include in print
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """Convert from string to bytearray if DE_DATA is a string of ones and zeros."""
         if isinstance(self.DE_DATA, str):
             # Convert string output from space_packet_parser to bytearray
@@ -170,26 +160,25 @@ class DirectEventL0(GlowsL0):
                 int(self.DE_DATA, 2).to_bytes(len(self.DE_DATA) // 8, "big")
             )
 
-    def within_same_sequence(self, other):
+    def within_same_sequence(self, other: "DirectEventL0") -> bool:
         """
         Compare fields for L0 which should be the same for packets within one sequence.
 
-        This method compares the IMAP time (MET) and packet length (LEN) fields.
+        This method compares the IMAP time (SEC) and packet length (LEN) fields.
 
         Parameters
         ----------
-        other
+        other : DirectEventL0
             Another instance of DirectEventL0 to compare to.
 
         Returns
         -------
-        True if the MET and LEN fields match, False otherwise.
+        bool
+            True if the SEC and LEN fields match, False otherwise.
         """
         if not isinstance(other, DirectEventL0):
             return False
 
         # Time and overall packet length should match
-        if self.MET == other.MET and self.LEN == other.LEN:
-            return True
-
-        return False
+        # TODO: What other fields need to match?
+        return self.SEC == other.SEC and self.LEN == other.LEN

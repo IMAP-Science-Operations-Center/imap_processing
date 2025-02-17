@@ -1,0 +1,212 @@
+instrument_base: &instrument_base
+  Descriptor: &desc
+    CoDICE>Compact Dual Ion Composition Experiment
+  TEXT: &txt >
+    The Compact Dual Ion Composition Experiment (CoDICE) will measure the distributions and composition of interstellar
+    pickup ions (PUIs), particles that make it through the heliosheath into the heliosphere. CoDICE also collects and
+    characterizes solar wind ions including the mass and composition of highly energized particles (called suprathermal)
+    from the Sun. CoDICE combines an electrostatic analyzer (ESA) with a Time-Of-Flight versus Energy (TOF / E)
+    subsystem to simultaneously measure the velocity, arrival direction, ionic charge state, and mass of specific
+    species of ions in the LISM. CoDICE also has a path for higher energy particles to skip the ESA but still get
+    measured by the common TOF / E system. These measurements are critical in determining the Local Interstellar Medium
+    (LISM) composition and flow properties, the origin of the enigmatic suprathermal tails on the solar wind
+    distributions and advance understanding of the acceleration of particles in the heliosphere.
+  Instrument_type: Particles (space)
+
+# L1a
+imap_codice_l1a_hskp:
+    <<: *instrument_base
+    Data_level: 1A
+    Data_type: L1A_hskp->Level-1A Housekeeping Data
+    Logical_source: imap_codice_l1a_hskp
+    Logical_source_description: IMAP Mission CoDICE Instrument Level-1A Housekeeping Data.
+
+imap_codice_l1a_hi-counters-aggregated:
+    <<: *instrument_base
+    Data_level: 1A
+    Data_type: L1A_hi-counters-aggregated->Level-1A Hi Aggregated Instrument Counts Data
+    Logical_source: imap_codice_l1a_hi-counters-aggregated
+    Logical_source_description: IMAP Mission CoDICE Hi Level-1A Aggregated Instrument Counts Data.
+
+imap_codice_l1a_hi-counters-singles:
+    <<: *instrument_base
+    Data_level: 1A
+    Data_type: L1A_hi-counters-singles->Level-1A Hi Single Instrument Counts Data
+    Logical_source: imap_codice_l1a_hi-counters-singles
+    Logical_source_description: IMAP Mission CoDICE Hi Level-1A Single Instrument Counts Data.
+
+imap_codice_l1a_hi-omni:
+    <<: *instrument_base
+    Data_level: 1A
+    Data_type: L1A_hi-omni->Level-1A Hi Omnidirectional Data
+    Logical_source: imap_codice_l1a_hi-omni
+    Logical_source_description: IMAP Mission CoDICE Hi Level-1A Omnidirectional Data.
+
+imap_codice_l1a_hi-sectored:
+    <<: *instrument_base
+    Data_level: 1A
+    Data_type: L1A_hi-sectored->Level-1A Hi Sectored Data
+    Logical_source: imap_codice_l1a_hi-sectored
+    Logical_source_description: IMAP Mission CoDICE Hi Level-1A Sectored Data.
+
+imap_codice_l1a_hi-pha:
+    <<: *instrument_base
+    Data_level: 1A
+    Data_type: L1A_hi-pha->Level-1A Hi Event Data
+    Logical_source: imap_codice_l1a_hi-pha
+    Logical_source_description: IMAP Mission CoDICE Hi Level-1A Event Data.
+
+imap_codice_l1a_lo-counters-aggregated:
+    <<: *instrument_base
+    Data_level: 1A
+    Data_type: L1A_lo-counters-aggregated->Level-1A Lo Aggregated Instrument Counts Data
+    Logical_source: imap_codice_l1a_lo-counters-aggregated
+    Logical_source_description: IMAP Mission CoDICE Lo Level-1A Aggregated Instrument Counts Data.
+
+imap_codice_l1a_lo-counters-singles:
+    <<: *instrument_base
+    Data_level: 1A
+    Data_type: L1A_lo-counters-singles->Level-1A Lo Single Instrument Counts Data
+    Logical_source: imap_codice_l1a_lo-counters-singles
+    Logical_source_description: IMAP Mission CoDICE Lo Level-1A Single Instrument Counts Data.
+
+imap_codice_l1a_lo-sw-angular:
+    <<: *instrument_base
+    Data_level: 1A
+    Data_type: L1A_lo-sw-angular->Level-1A Lo Sunward Angular Counts Data
+    Logical_source: imap_codice_l1a_lo-sw-angular
+    Logical_source_description: IMAP Mission CoDICE Lo Level-1A Sunward Angular Counts Data.
+
+imap_codice_l1a_lo-nsw-angular:
+    <<: *instrument_base
+    Data_level: 1A
+    Data_type: L1A_lo-nsw-angular->Level-1A Lo Non-Sunward Angular Counts Data
+    Logical_source: imap_codice_l1a_lo-nsw-angular
+    Logical_source_description: IMAP Mission CoDICE Lo Level-1A Non-Sunward Angular Counts Data.
+
+imap_codice_l1a_lo-sw-priority:
+    <<: *instrument_base
+    Data_level: 1A
+    Data_type: L1A_lo-sw-priority->Level-1A Lo Sunward Priority Counts Data
+    Logical_source: imap_codice_l1a_lo-sw-priority
+    Logical_source_description: IMAP Mission CoDICE Lo Level-1A Sunward Priority Counts Data.
+
+imap_codice_l1a_lo-nsw-priority:
+    <<: *instrument_base
+    Data_level: 1A
+    Data_type: L1A_lo-nsw-priority->Level-1A Lo Non-Sunward Priority Counts Data
+    Logical_source: imap_codice_l1a_lo-nsw-priority
+    Logical_source_description: IMAP Mission CoDICE Lo Level-1A Non-Sunward Priority Counts Data.
+
+imap_codice_l1a_lo-sw-species:
+    <<: *instrument_base
+    Data_level: 1A
+    Data_type: L1A_lo-sw-species->Level-1A Lo Sunward Species Counts Data
+    Logical_source: imap_codice_l1a_lo-sw-species
+    Logical_source_description: IMAP Mission CoDICE Lo Level-1A Sunward Species Counts Data.
+
+imap_codice_l1a_lo-nsw-species:
+    <<: *instrument_base
+    Data_level: 1A
+    Data_type: L1A_lo-nsw-species->Level-1A Lo Non-Sunward Species Counts Data
+    Logical_source: imap_codice_l1a_lo-nsw-species
+    Logical_source_description: IMAP Mission CoDICE Lo Level-1A Non-Sunward Species Counts Data.
+
+imap_codice_l1a_lo-pha:
+    <<: *instrument_base
+    Data_level: 1A
+    Data_type: L1A_lo-pha->Level-1A Lo Event Data
+    Logical_source: imap_codice_l1a_lo-pha
+    Logical_source_description: IMAP Mission CoDICE Lo Level-1A Event Data.
+
+# L1b
+imap_codice_l1b_hskp:
+    <<: *instrument_base
+    Data_level: 1B
+    Data_type: L1B_hskp->Level-1B Housekeeping Data
+    Logical_source: imap_codice_l1b_hskp
+    Logical_source_description: IMAP Mission CoDICE Instrument Level-1B Housekeeping Data.
+
+imap_codice_l1b_hi_counters_aggregated:
+    <<: *instrument_base
+    Data_level: 1B
+    Data_type: L1B_hi-counters-aggregated->Level-1B Hi Aggregated Instrument Rates Data
+    Logical_source: imap_codice_l1b_hi-counters-aggregated
+    Logical_source_description: IMAP Mission CoDICE Hi Level-1B Aggregated Instrument Rates Data.
+
+imap_codice_l1b_hi_counters_singles:
+    <<: *instrument_base
+    Data_level: 1B
+    Data_type: L1B_hi-counters-singles->Level-1B Hi Single Instrument Rates Data
+    Logical_source: imap_codice_l1b_hi-counters-singles
+    Logical_source_description: IMAP Mission CoDICE Hi Level-1B Single Instrument Rates Data.
+
+imap_codice_l1b_hi_omni:
+    <<: *instrument_base
+    Data_level: 1B
+    Data_type: L1B_hi-omni->Level-1B Hi Omnidirectional Data
+    Logical_source: imap_codice_l1b_hi-omni
+    Logical_source_description: IMAP Mission CoDICE Hi Level-1B Omnidirectional Data.
+
+imap_codice_l1b_hi_sectored:
+    <<: *instrument_base
+    Data_level: 1B
+    Data_type: L1B_hi-sectored->Level-1B Hi Sectored Data
+    Logical_source: imap_codice_l1b_hi-sectored
+    Logical_source_description: IMAP Mission CoDICE Hi Level-1B Sectored Data.
+
+imap_codice_l1b_lo_counters_aggregated:
+    <<: *instrument_base
+    Data_level: 1B
+    Data_type: L1B_lo-counters-aggregated->Level-1B Lo Aggregated Instrument Rates Data
+    Logical_source: imap_codice_l1b_lo-counters-aggregated
+    Logical_source_description: IMAP Mission CoDICE Lo Level-1B Aggregated Instrument Rates Data.
+
+imap_codice_l1b_lo_counters_singles:
+    <<: *instrument_base
+    Data_level: 1B
+    Data_type: L1B_lo-counters-aggregated->Level-1B Lo Single Instrument Rates Data
+    Logical_source: imap_codice_l1b_lo-counters-singles
+    Logical_source_description: IMAP Mission CoDICE Lo Level-1B Single Instrument Rates Data.
+
+imap_codice_l1b_lo_sw_angular:
+    <<: *instrument_base
+    Data_level: 1B
+    Data_type: L1B_lo-sw-angular->Level-1B Lo Sunward Angular Rates Data
+    Logical_source: imap_codice_l1b_lo-sw-angular
+    Logical_source_description: IMAP Mission CoDICE Lo Level-1B Sunward Angular Rates Data.
+
+imap_codice_l1b_lo_nsw_angular:
+    <<: *instrument_base
+    Data_level: 1B
+    Data_type: L1B_lo-nsw-angular->Level-1B Lo Non-Sunward Angular Rates Data
+    Logical_source: imap_codice_l1b_lo-nsw-angular
+    Logical_source_description: IMAP Mission CoDICE Lo Level-1B Non-Sunward Angular Rates Data.
+
+imap_codice_l1b_lo_sw_priority:
+    <<: *instrument_base
+    Data_level: 1B
+    Data_type: L1B_lo-sw-priority->Level-1B Lo Sunward Priority Rates Data
+    Logical_source: imap_codice_l1b_lo-sw-priority
+    Logical_source_description: IMAP Mission CoDICE Lo Level-1B Sunward Priority Rates Data.
+
+imap_codice_l1b_lo_nsw_priority:
+    <<: *instrument_base
+    Data_level: 1B
+    Data_type: L1B_lo-nsw-priority->Level-1B Lo Non-Sunward Priority Rates Data
+    Logical_source: imap_codice_l1b_lo-nsw-priority
+    Logical_source_description: IMAP Mission CoDICE Lo Level-1B Non-Sunward Priority Rates Data.
+
+imap_codice_l1b_lo_sw_species:
+    <<: *instrument_base
+    Data_level: 1B
+    Data_type: L1B_lo-sw-species->Level-1B Lo Sunward Species Rates Data
+    Logical_source: imap_codice_l1b_lo-sw-species
+    Logical_source_description: IMAP Mission CoDICE Lo Level-1B Sunward Species Rates Data.
+
+imap_codice_l1b_lo_nsw_species:
+    <<: *instrument_base
+    Data_level: 1B
+    Data_type: L1B_lo-nsw-species->Level-1B Lo Non-Sunward Species Rates Data
+    Logical_source: imap_codice_l1b_lo-nsw-species
+    Logical_source_description: IMAP Mission CoDICE Lo Level-1B Non-Sunward Species Rates Data.

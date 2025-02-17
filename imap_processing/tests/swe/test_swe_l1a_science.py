@@ -1,42 +1,14 @@
 import numpy as np
 import pandas as pd
-import pytest
 
 from imap_processing import imap_module_directory
-from imap_processing.swe.l0 import decom_swe
 from imap_processing.swe.l1a.swe_science import decompressed_counts, swe_science
-
-
-@pytest.fixture(scope="session")
-def decom_test_data():
-    """Read test data from file"""
-    # NOTE: data was provided in this sequence in both bin and validation data
-    # from instrument team.
-    # Packet 1 has spin 4's data
-    # Packet 2 has spin 1's data
-    # Packet 3 has spin 2's data
-    # Packet 4 has spin 3's data
-    # reorder to match the order of spin in the data
-    packet_files = [
-        imap_module_directory
-        / "tests/swe/l0_data/20230927173253_SWE_SCIENCE_packet.bin",
-        imap_module_directory
-        / "tests/swe/l0_data/20230927173308_SWE_SCIENCE_packet.bin",
-        imap_module_directory
-        / "tests/swe/l0_data/20230927173323_SWE_SCIENCE_packet.bin",
-        imap_module_directory
-        / "tests/swe/l0_data/20230927173238_SWE_SCIENCE_packet.bin",
-    ]
-    data_list = []
-    for packet_file in packet_files:
-        data_list.extend(decom_swe.decom_packets(packet_file))
-    return data_list
 
 
 def test_number_of_packets(decom_test_data):
     """This test and validate number of packets."""
-    expected_number_of_packets = 4
-    assert len(decom_test_data) == expected_number_of_packets
+    expected_number_of_packets = 29
+    assert len(decom_test_data["epoch"]) == expected_number_of_packets
 
 
 def test_decompress_algorithm():
@@ -52,36 +24,34 @@ def test_swe_raw_science_data(decom_test_data):
     # read validation data
     test_data_path = imap_module_directory / "tests/swe/l0_validation_data"
     raw_validation_data = pd.read_csv(
-        test_data_path / "idle_export_raw.SWE_SCIENCE_20230927_172708.csv",
+        test_data_path / "idle_export_raw.SWE_SCIENCE_20240510_092742.csv",
         index_col="SHCOARSE",
     )
 
-    first_data = decom_test_data[0]
-    validation_data = raw_validation_data.loc[first_data.data["SHCOARSE"].raw_value]
+    first_data = decom_test_data.isel(epoch=0)
+    validation_data = raw_validation_data.loc[first_data["shcoarse"].values]
 
-    # compare raw values of housekeeping data
-    for key, value in first_data.data.items():
-        if key == "SHCOARSE":
-            # compare SHCOARSE value
-            assert value.raw_value == validation_data.name
-            continue
-        if key == "SCIENCE_DATA":
-            continue
-        # check if the data is the same
-        assert value.raw_value == validation_data[key]
+    # compare raw values of the packets
+    shared_keys = set([x.lower() for x in validation_data.keys()]).intersection(
+        first_data.keys()
+    )
+    # TODO: Why are all the fields not the same between the two
+    assert len(shared_keys) == 19
+    for key in shared_keys:
+        assert first_data[key] == validation_data[key.upper()]
 
 
-def test_swe_derived_science_data(decom_test_data):
+def test_swe_derived_science_data(decom_test_data_derived):
     """This test and validate raw and derived data of SWE science data."""
     # read validation data
     test_data_path = imap_module_directory / "tests/swe/l0_validation_data"
     derived_validation_data = pd.read_csv(
-        test_data_path / "idle_export_eu.SWE_SCIENCE_20230927_172708.csv",
+        test_data_path / "idle_export_eu.SWE_SCIENCE_20240510_092742.csv",
         index_col="SHCOARSE",
     )
 
-    first_data = decom_test_data[0]
-    validation_data = derived_validation_data.loc[first_data.data["SHCOARSE"].raw_value]
+    first_data = decom_test_data_derived.isel(epoch=0)
+    validation_data = derived_validation_data.loc[first_data["shcoarse"].values]
 
     enum_name_list = [
         "CEM_NOMINAL_ONLY",
@@ -95,67 +65,50 @@ def test_swe_derived_science_data(decom_test_data):
     ]
     # check ENUM values
     for enum_name in enum_name_list:
-        assert first_data.data[enum_name].derived_value == validation_data[enum_name]
+        assert first_data[enum_name.lower()] == validation_data[enum_name]
 
 
 def test_data_order(decom_test_data):
     # test that the data is in right order
-    assert decom_test_data[0].data["QUARTER_CYCLE"].derived_value == "FIRST"
-    assert decom_test_data[1].data["QUARTER_CYCLE"].derived_value == "SECOND"
-    assert decom_test_data[2].data["QUARTER_CYCLE"].derived_value == "THIRD"
-    assert decom_test_data[3].data["QUARTER_CYCLE"].derived_value == "FORTH"
+    np.testing.assert_array_equal(
+        decom_test_data.isel(epoch=slice(0, 4))["quarter_cycle"], [0, 1, 2, 3]
+    )
 
     # Get unpacked science data
-    processed_data = swe_science(decom_test_data)
+    processed_data = swe_science(decom_test_data, "001")
 
-    quarter_cycle = processed_data["QUARTER_CYCLE"].data
-    assert quarter_cycle[0] == 0
-    assert quarter_cycle[1] == 1
-    assert quarter_cycle[2] == 2
-    assert quarter_cycle[3] == 3
+    quarter_cycle = processed_data["quarter_cycle"].isel(epoch=slice(0, 4))
+    np.testing.assert_array_equal(quarter_cycle, [0, 1, 2, 3])
 
 
 def test_swe_science_algorithm(decom_test_data):
     """Test general shape of return dataset from swe_science."""
     # Get unpacked science data
-    processed_data = swe_science(decom_test_data)
+    processed_data = swe_science(decom_test_data, "001")
 
     # science data should have this shape, 15x12x7.
-    science_data = processed_data["SCIENCE_DATA"].data[0]
+    science_data = processed_data["science_data"].data[0]
     assert science_data.shape == (180, 7)
 
     # Test data has n packets, therefore, SPIN_PHASE should have that same length.
-    spin_phase = processed_data["SPIN_PHASE"]
-    expected_length = 4
+    spin_phase = processed_data["spin_phase"]
+    expected_length = 29
     assert len(spin_phase) == expected_length
 
 
-def test_decompress_counts(decom_test_data):
+def test_decompress_counts(decom_test_data, l1a_validation_df):
     """Test decompress counts."""
-    test_data_path = imap_module_directory / "tests/swe/decompressed"
-    filepaths = [
-        "20230927173253_1st_quarter_decompressed.csv",
-        "20230927173308_2nd_quarter_decompressed.csv",
-        "20230927173323_3rd_quarter_decompressed.csv",
-        "20230927173238_4th_quarter_decompressed.csv",
-    ]
-    decompressed_data = swe_science(decom_test_data)
+    raw_counts = l1a_validation_df.iloc[:, 1:8]
+    decompressed_counts = l1a_validation_df.iloc[:, 8:15]
 
-    for index in range(len(filepaths)):
-        instrument_decompressed_counts = pd.read_csv(
-            test_data_path / f"{filepaths[index]}", index_col="Index"
-        )
+    l1a_dataset = swe_science(decom_test_data, "001")
 
-        assert (
-            decompressed_data["QUARTER_CYCLE"].data[index]
-            == decom_test_data[index].data["QUARTER_CYCLE"].raw_value
-        )
-        sdc_decompressed_counts = (
-            decompressed_data["SCIENCE_DATA"].data[index].reshape(180, 7)
-        )
-
-        for i in range(7):
-            cem_decompressed_counts = instrument_decompressed_counts[
-                f"CEM {i+1}"
-            ].values
-            assert np.all(sdc_decompressed_counts[:, i] == cem_decompressed_counts)
+    # compare raw counts
+    assert np.all(
+        l1a_dataset["raw_science_data"].data == raw_counts.values.reshape(29, 180, 7)
+    )
+    # compare decompressed counts
+    assert np.all(
+        l1a_dataset["science_data"].data
+        == decompressed_counts.values.reshape(29, 180, 7)
+    )

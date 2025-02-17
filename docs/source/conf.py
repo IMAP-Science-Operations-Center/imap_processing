@@ -85,21 +85,44 @@ intersphinx_mapping = {
     "pytest": ("https://pytest.org/en/stable/", None),
     "python": ("https://docs.python.org/3/", None),
     "xarray": ("https://docs.xarray.dev/en/stable/", None),
+    "space_packet_parser": (
+        "https://space-packet-parser.readthedocs.io/en/stable/",
+        None,
+    ),
 }
 
 # Reference targets not found
 nitpicky = True
 
 # Some inherited method targets aren't found through intersphinx
+# TODO: comeback and clean this up later
 nitpick_ignore_regex = [
     (r"py:.*", r".*APID\..*"),
+    (r"py:.*", r".*Scitype.*"),
+    (r"py:.*", r".*Mode.*"),
+    (r"py:.*", r".*SWAPIMODE.*"),
+    (r"py:.*", r".*TriggerDescription.*"),
     (r"py:.*", r".*IntEnum.*"),
     (r"py:.*", r".*space_packet_parser.*"),
     (r"py:.*", r".*CoDICECompression.*"),
     (r"py:.*", r".*.lo.l0.utils.*"),
     (r"py:.*", r".*.lo.l0.data_classes.*"),
+    (r"py:.*", r".*.hi.l1b.hi_l1b.CoincidenceBitmap.*"),
+    (r"py:.*", r".*.hi.l1b.hi_l1b.TriggerId.*"),
     (r"py:.*", r".*.hit.l0.utils.*"),
     (r"py:.*", r".*.hit.l0.data_classes.*"),
+    (r"py:.*", r".*.hit.l1a.*"),
+    (r"py:.*", r".*InitVar*"),
+    (r"py:.*", r".*.glows.utils.constants.TimeTuple.*"),
+    (r"py:.*", r".*glows.utils.constants.DirectEvent.*"),
+    (r"py:.*", r".*numpy.int.*"),
+    (r"py:.*", r".*np.ndarray.*"),
+    (r"py:.*", r".*numpy._typing._array_like._ScalarType_co.*"),
+    (r"py:.*", r".*idex.l1a.TRIGGER_DESCRIPTION.*"),
+    (r"py:.*", r".*.spice.geometry.SpiceBody.*"),
+    (r"py:.*", r".*.spice.geometry.SpiceFrame.*"),
+    (r"py:class", r"numpy._typing.*"),
+    (r"py:class", r"^numpy\.(u?int(?:8|16|32|64))$"),
 ]
 
 # Ignore the inherited members from the <instrument>APID IntEnum class

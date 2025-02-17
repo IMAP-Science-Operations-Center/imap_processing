@@ -2,8 +2,9 @@ from pathlib import Path
 
 import numpy as np
 import pytest
-import spiceypy as spice
+import spiceypy
 
+from imap_processing import imap_module_directory
 from tools.spice.spice_examples import (
     _get_particle_velocity,
     build_annotated_events,
@@ -28,6 +29,12 @@ def kernels(kernel_directory):
     #  in the test_data/spice directory.
     kernels = list_files_with_extensions(
         kernel_directory, [".tsc", ".tls", ".tf", ".bsp", ".ck"]
+    )
+    # Some kernels were moved into imap_processing package
+    kernels.extend(
+        list_files_with_extensions(
+            imap_module_directory / "tests/spice/test_data", [".tsc", ".tls"]
+        )
     )
     return kernels
 
@@ -56,7 +63,7 @@ def direct_events():
 def test_get_attitude_timerange(kernels, kernel_directory):
     """Tests get_attitude_timerange function."""
 
-    with spice.KernelPool(kernels):
+    with spiceypy.KernelPool(kernels):
         ck_kernel = list_files_with_extensions(kernel_directory, [".ck"])
         start, end = get_attitude_timerange(ck_kernel, -43000)
 
@@ -67,14 +74,14 @@ def test_get_attitude_timerange(kernels, kernel_directory):
 def test_get_particle_velocity(direct_events, kernels, kernel_directory):
     """Tests the get_particle_velocity function."""
 
-    with spice.KernelPool(kernels):
+    with spiceypy.KernelPool(kernels):
         _get_particle_velocity(direct_events)
 
 
 @pytest.mark.xfail(reason="Download NAIF kernels")
 def test_build_annotated_events(direct_events, kernels, kernel_directory):
     """Tests the build_annotated_events function."""
-    spice.kclear()
+    spiceypy.kclear()
     kernels = list_files_with_extensions(
         kernel_directory, [".tsc", ".tls", ".tf", ".bsp", ".ck"]
     )

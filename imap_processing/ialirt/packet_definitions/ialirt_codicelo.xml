@@ -1,0 +1,281 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<xtce:SpaceSystem xmlns:xtce="http://www.omg.org/space/xtce" name="ialirt">
+	<xtce:Header date="2023-08-24T07:53:00MST" version="1.0" author="IMAP SDC" />
+	<xtce:TelemetryMetaData>
+		<xtce:ParameterTypeSet>
+			<!-- This file was manually created using content from:
+			I-ALiRT Packet Definitions: https://lasp.colorado.edu/galaxy/x/44nKCQ
+            -->
+			<xtce:IntegerParameterType name="uint0" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="0" encoding="unsigned" />
+				<xtce:UnitSet />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint1" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
+				<xtce:UnitSet />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint2" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="2" encoding="unsigned" />
+				<xtce:UnitSet />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint3" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="3" encoding="unsigned" />
+				<xtce:UnitSet />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint4" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="4" encoding="unsigned" />
+				<xtce:UnitSet />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint5" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="5" encoding="unsigned" />
+				<xtce:UnitSet />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint6" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="6" encoding="unsigned" />
+				<xtce:UnitSet />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint7" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="7" encoding="unsigned" />
+				<xtce:UnitSet />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint8" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="8" encoding="unsigned" />
+				<xtce:UnitSet />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint9" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="9" encoding="unsigned" />
+				<xtce:UnitSet />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint10" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="10" encoding="unsigned" />
+				<xtce:UnitSet />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint11" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="11" encoding="unsigned" />
+				<xtce:UnitSet />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint12" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned" />
+				<xtce:UnitSet />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint13" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="13" encoding="unsigned" />
+				<xtce:UnitSet />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint14" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="14" encoding="unsigned" />
+				<xtce:UnitSet />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint15" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="15" encoding="unsigned" />
+				<xtce:UnitSet />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint16" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="16" encoding="unsigned" />
+				<xtce:UnitSet />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint17" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="17" encoding="unsigned" />
+				<xtce:UnitSet />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint18" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="18" encoding="unsigned" />
+				<xtce:UnitSet />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint19" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="19" encoding="unsigned" />
+				<xtce:UnitSet />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint20" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="20" encoding="unsigned" />
+				<xtce:UnitSet />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint21" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="21" encoding="unsigned" />
+				<xtce:UnitSet />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint22" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="22" encoding="unsigned" />
+				<xtce:UnitSet />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint23" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="23" encoding="unsigned" />
+				<xtce:UnitSet />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint24" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="24" encoding="unsigned" />
+				<xtce:UnitSet />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint25" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="25" encoding="unsigned" />
+				<xtce:UnitSet />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint26" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="26" encoding="unsigned" />
+				<xtce:UnitSet />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint27" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="27" encoding="unsigned" />
+				<xtce:UnitSet />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint28" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="28" encoding="unsigned" />
+				<xtce:UnitSet />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint29" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="29" encoding="unsigned" />
+				<xtce:UnitSet />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint30" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="30" encoding="unsigned" />
+				<xtce:UnitSet />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint31" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="31" encoding="unsigned" />
+				<xtce:UnitSet />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint32" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="32" encoding="unsigned" />
+				<xtce:UnitSet />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint48" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="48" encoding="unsigned" />
+				<xtce:UnitSet />
+			</xtce:IntegerParameterType>
+		</xtce:ParameterTypeSet>
+        <xtce:ParameterSet>
+            <!-- Within the ParameterSet, utilize the data types defined in the ParameterTypeSet to create variables
+            with their respective data types. -->
+
+            <!--CCSDS Header Elements-->
+			<xtce:Parameter name="VERSION" parameterTypeRef="uint3">
+				<xtce:LongDescription>CCSDS Packet Version Number (always 0)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="TYPE" parameterTypeRef="uint1">
+				<xtce:LongDescription>CCSDS Packet Type Indicator (0=telemetry)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SEC_HDR_FLG" parameterTypeRef="uint1">
+				<xtce:LongDescription>CCSDS Packet Secondary Header Flag (always 1)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PKT_APID" parameterTypeRef="uint11">
+				<xtce:LongDescription>CCSDS Packet Application Process ID</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SEQ_FLGS" parameterTypeRef="uint2">
+				<xtce:LongDescription>CCSDS Packet Grouping Flags (3=not part of group)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SRC_SEQ_CTR" parameterTypeRef="uint14">
+				<xtce:LongDescription>CCSDS Packet Sequence Count (increments with each new packet)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PKT_LEN" parameterTypeRef="uint16">
+				<xtce:LongDescription>CCSDS Packet Length (number of bytes after Packet length minus 1)</xtce:LongDescription>
+			</xtce:Parameter>
+			<!-- CoDICE LO -->
+			<xtce:Parameter name="COD_LO_SHCOARSE" parameterTypeRef="uint32">
+				<xtce:LongDescription>CODICE LO MET at End of Data Acquisition</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="COD_LO_ACQ" parameterTypeRef="uint32">
+				<xtce:LongDescription>CODICE LO MET at End of Data Acquisition</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="COD_LO_STATUS" parameterTypeRef="uint8">
+				<xtce:LongDescription>CODICE LO Status</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="COD_LO_COUNTER" parameterTypeRef="uint8">
+				<xtce:LongDescription>CODICE LO Counter</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="COD_LO_DATA_00" parameterTypeRef="uint8">
+				<xtce:LongDescription>CODICE LO Data_00</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="COD_LO_DATA_01" parameterTypeRef="uint8">
+				<xtce:LongDescription>CODICE LO Data_01</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="COD_LO_DATA_02" parameterTypeRef="uint8">
+				<xtce:LongDescription>CODICE LO Data_02</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="COD_LO_DATA_03" parameterTypeRef="uint8">
+				<xtce:LongDescription>CODICE LO Data_03</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="COD_LO_DATA_04" parameterTypeRef="uint8">
+				<xtce:LongDescription>CODICE LO Data_04</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="COD_LO_DATA_05" parameterTypeRef="uint8">
+				<xtce:LongDescription>CODICE LO Data_05</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="COD_LO_DATA_06" parameterTypeRef="uint8">
+				<xtce:LongDescription>CODICE LO Data_06</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="COD_LO_DATA_07" parameterTypeRef="uint8">
+				<xtce:LongDescription>CODICE LO Data_07</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="COD_LO_DATA_08" parameterTypeRef="uint8">
+				<xtce:LongDescription>CODICE LO Data_08</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="COD_LO_DATA_09" parameterTypeRef="uint8">
+				<xtce:LongDescription>CODICE LO Data_09</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="COD_LO_DATA_10" parameterTypeRef="uint8">
+				<xtce:LongDescription>CODICE LO Data_10</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="COD_LO_DATA_11" parameterTypeRef="uint8">
+				<xtce:LongDescription>CODICE LO Data_11</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="COD_LO_DATA_12" parameterTypeRef="uint8">
+				<xtce:LongDescription>CODICE LO Data_12</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="COD_LO_DATA_13" parameterTypeRef="uint8">
+				<xtce:LongDescription>CODICE LO Data_13</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="COD_LO_DATA_14" parameterTypeRef="uint8">
+				<xtce:LongDescription>CODICE LO Data_14</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="COD_LO_SPARE_0" parameterTypeRef="uint8">
+				<xtce:LongDescription>CODICE LO Spare 0</xtce:LongDescription>
+			</xtce:Parameter>
+			<!-- CoDICE LO -->
+		</xtce:ParameterSet>
+		<!-- End metadata -->
+		<xtce:ContainerSet>
+			<xtce:SequenceContainer name="CCSDSPacket" >
+				<xtce:EntryList>
+					<xtce:ParameterRefEntry parameterRef="VERSION" />
+					<xtce:ParameterRefEntry parameterRef="TYPE" />
+					<xtce:ParameterRefEntry parameterRef="SEC_HDR_FLG" />
+					<xtce:ParameterRefEntry parameterRef="PKT_APID" />
+					<xtce:ParameterRefEntry parameterRef="SEQ_FLGS" />
+					<xtce:ParameterRefEntry parameterRef="SRC_SEQ_CTR" />
+					<xtce:ParameterRefEntry parameterRef="PKT_LEN" />
+				</xtce:EntryList>
+			</xtce:SequenceContainer>
+			<xtce:SequenceContainer name="IALiRTPacket">
+				<xtce:BaseContainer containerRef="CCSDSPacket">
+					<xtce:RestrictionCriteria>
+						<xtce:Comparison parameterRef="PKT_APID" value="1152" useCalibratedValue="false" />
+					</xtce:RestrictionCriteria>
+				</xtce:BaseContainer>
+				<xtce:EntryList>
+					<!-- CoDICE LO -->
+					<xtce:ParameterRefEntry parameterRef="COD_LO_SHCOARSE"/>
+					<xtce:ParameterRefEntry parameterRef="COD_LO_ACQ"/>
+					<xtce:ParameterRefEntry parameterRef="COD_LO_STATUS"/>
+					<xtce:ParameterRefEntry parameterRef="COD_LO_COUNTER"/>
+					<xtce:ParameterRefEntry parameterRef="COD_LO_DATA_00"/>
+					<xtce:ParameterRefEntry parameterRef="COD_LO_DATA_01"/>
+					<xtce:ParameterRefEntry parameterRef="COD_LO_DATA_02"/>
+					<xtce:ParameterRefEntry parameterRef="COD_LO_DATA_03"/>
+					<xtce:ParameterRefEntry parameterRef="COD_LO_DATA_04"/>
+					<xtce:ParameterRefEntry parameterRef="COD_LO_DATA_05"/>
+					<xtce:ParameterRefEntry parameterRef="COD_LO_DATA_06"/>
+					<xtce:ParameterRefEntry parameterRef="COD_LO_DATA_07"/>
+					<xtce:ParameterRefEntry parameterRef="COD_LO_DATA_08"/>
+					<xtce:ParameterRefEntry parameterRef="COD_LO_DATA_09"/>
+					<xtce:ParameterRefEntry parameterRef="COD_LO_DATA_10"/>
+					<xtce:ParameterRefEntry parameterRef="COD_LO_DATA_11"/>
+					<xtce:ParameterRefEntry parameterRef="COD_LO_DATA_12"/>
+					<xtce:ParameterRefEntry parameterRef="COD_LO_DATA_13"/>
+					<xtce:ParameterRefEntry parameterRef="COD_LO_DATA_14"/>
+					<xtce:ParameterRefEntry parameterRef="COD_LO_SPARE_0"/>
+					<!-- CoDICE LO -->
+				</xtce:EntryList>
+			</xtce:SequenceContainer>
+		</xtce:ContainerSet>
+	</xtce:TelemetryMetaData>
+</xtce:SpaceSystem>

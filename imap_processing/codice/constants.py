@@ -1,66 +1,266 @@
-"""Contains constants variables to support CoDICE processing.
+"""
+Contains constants variables to support CoDICE processing.
 
 The ``plan_id``, ``plan_step``, and ``view_id`` mentioned in this module are
 derived from the packet data.
 
-Acronyms
---------
+Notes
+-----
 SW = SunWard
 NSW = Non-SunWard
 PUI = PickUp Ion
 ESA = ElectroStatic Analyzer
 """
 
-from imap_processing.codice.utils import CoDICECompression
+from imap_processing.codice.utils import CODICEAPID, CoDICECompression
 
-# CDF-friendly FIELDNAMES and VARNAMES for lo-sw-angular-counts data product
-LO_SW_ANGULAR_NAMES = [
-    ("hplus", "SW - H+"),
-    ("heplusplus", "SW - He++"),
-    ("oplus6", "SW - O+6"),
-    ("fe-loq", "SW - Fe lowQ"),
+APIDS_FOR_SCIENCE_PROCESSING = [
+    CODICEAPID.COD_HI_INST_COUNTS_AGGREGATED,
+    CODICEAPID.COD_HI_INST_COUNTS_SINGLES,
+    CODICEAPID.COD_HI_OMNI_SPECIES_COUNTS,
+    CODICEAPID.COD_HI_SECT_SPECIES_COUNTS,
+    CODICEAPID.COD_LO_INST_COUNTS_AGGREGATED,
+    CODICEAPID.COD_LO_INST_COUNTS_SINGLES,
+    CODICEAPID.COD_LO_SW_ANGULAR_COUNTS,
+    CODICEAPID.COD_LO_NSW_ANGULAR_COUNTS,
+    CODICEAPID.COD_LO_SW_PRIORITY_COUNTS,
+    CODICEAPID.COD_LO_NSW_PRIORITY_COUNTS,
+    CODICEAPID.COD_LO_SW_SPECIES_COUNTS,
+    CODICEAPID.COD_LO_NSW_SPECIES_COUNTS,
 ]
 
-# CDF-friendly FIELDNAMES and VARNAMES for lo-sw-priority-counts data product
-LO_SW_PRIORITY_NAMES = [
-    ("p0-tcrs", "SW Sector Triple Coincidence PUI's"),
-    ("p1-hplus", "SW Sector H+"),
-    ("p2-heplusplus", "SW Sector He++"),
-    ("p3-heavies", "SW Sector High Charge State Heavies"),
-    ("p4-dcrs", "SW Sector Double Coincidence PUI's"),
+
+# CDF-friendly names for lo data products
+LO_INST_COUNTS_AGGREGATED_VARIABLE_NAMES = ["aggregated"]
+LO_INST_COUNTS_SINGLES_VARIABLE_NAMES = ["apd_singles"]
+LO_SW_ANGULAR_VARIABLE_NAMES = ["hplus", "heplusplus", "oplus6", "fe_loq"]
+LO_NSW_ANGULAR_VARIABLE_NAMES = ["heplusplus"]
+LO_SW_PRIORITY_VARIABLE_NAMES = [
+    "p0_tcrs",
+    "p1_hplus",
+    "p2_heplusplus",
+    "p3_heavies",
+    "p4_dcrs",
+]
+LO_NSW_PRIORITY_VARIABLE_NAMES = ["p5_heavies", "p6_hplus_heplusplus"]
+LO_SW_SPECIES_VARIABLE_NAMES = [
+    "hplus",
+    "heplusplus",
+    "cplus4",
+    "cplus5",
+    "cplus6",
+    "oplus5",
+    "oplus6",
+    "oplus7",
+    "oplus8",
+    "ne",
+    "mg",
+    "si",
+    "fe_loq",
+    "fe_hiq",
+    "heplus",
+    "cnoplus",
+]
+LO_NSW_SPECIES_VARIABLE_NAMES = [
+    "hplus",
+    "heplusplus",
+    "c",
+    "o",
+    "ne_si_mg",
+    "fe",
+    "heplus",
+    "cnoplus",
 ]
 
-# CDF-friendly FIELDNAMES and VARNAMES for lo-sw-species-counts data product
-LO_SW_SPECIES_NAMES = [
-    ("hplus", "SW - H+"),
-    ("heplusplus", "SW - He++"),
-    ("cplus4", "SW - C+4"),
-    ("cplus5", "SW - C+5"),
-    ("cplus6", "SW - C+6"),
-    ("oplus5", "SW - O+5"),
-    ("oplus6", "SW - O+6"),
-    ("oplus7", "SW - O+7"),
-    ("oplus8", "SW - O+8"),
-    ("ne", "SW - Ne"),
-    ("mg", "SW - Mg"),
-    ("si", "SW - Si"),
-    ("fe-loq", "SW - Fe lowQ"),
-    ("fe-hiq", "SW - Fe highQ"),
-    ("heplus", "SW - He+ (PUI)"),
-    ("cnoplus", "SW - CNO+ (PUI)"),
-]
+# CDF-friendly names for hi data products
+HI_INST_COUNTS_AGGREGATED_VARIABLE_NAMES = ["aggregated"]
+HI_INST_COUNTS_SINGLES_VARIABLE_NAMES = ["tcr", "ssdo", "stssd"]
+HI_OMNI_SPECIES_VARIABLE_NAMES = ["h", "he3", "he4", "c", "o", "ne_mg_si", "fe", "uh"]
+HI_SECT_SPECIES_VARIABLE_NAMES = ["h", "he3he4", "cno", "fe"]
 
-# CDF-friendly FIELDNAMES and VARNAMES for lo-nsw-species-counts data product
-LO_NSW_SPECIES_NAMES = [
-    ("hplus", "NSW - H+"),
-    ("heplusplus", "NSW - He++"),
-    ("c", "NSW - C"),
-    ("o", "NSW - O"),
-    ("ne-si-mg", "NSW - Ne_Si_Mg"),
-    ("fe", "NSW - Fe"),
-    ("heplus", "NSW - He+"),
-    ("cnoplus", "NSW - CNO+"),
-]
+# TODO: Possibly move to consistent order of dimensions with other instruments
+#       TBD after discussion with Joey and at the Science Team Meeting in Feb
+DATA_PRODUCT_CONFIGURATIONS = {
+    CODICEAPID.COD_HI_INST_COUNTS_AGGREGATED: {
+        "dataset_name": "imap_codice_l1a_hi-counters-aggregated",
+        "dims": {
+            "esa_step": 1,
+            "inst_az": 6,
+            "spin_sector": 1,
+        },  # TODO: Double check with Joey
+        "instrument": "hi",
+        "num_counters": 1,
+        "support_variables": [],  # TODO: Double check with Joey
+        "variable_names": HI_INST_COUNTS_AGGREGATED_VARIABLE_NAMES,
+    },
+    CODICEAPID.COD_HI_INST_COUNTS_SINGLES: {
+        "dataset_name": "imap_codice_l1a_hi-counters-singles",
+        "dims": {
+            "esa_step": 1,
+            "inst_az": 12,
+            "spin_sector": 1,
+        },  # TODO: Double check with Joey
+        "instrument": "hi",
+        "num_counters": 3,
+        "support_variables": [],  # No support variables for this one
+        "variable_names": HI_INST_COUNTS_SINGLES_VARIABLE_NAMES,
+    },
+    CODICEAPID.COD_HI_OMNI_SPECIES_COUNTS: {
+        "dataset_name": "imap_codice_l1a_hi-omni",
+        "dims": {
+            "esa_step": 15,
+            "inst_az": 4,
+            "spin_sector": 1,
+        },  # TODO: Double check with Joey
+        "instrument": "hi",
+        "num_counters": 8,
+        "support_variables": ["data_quality", "spin_period"],
+        "variable_names": HI_OMNI_SPECIES_VARIABLE_NAMES,
+    },
+    CODICEAPID.COD_HI_SECT_SPECIES_COUNTS: {
+        "dataset_name": "imap_codice_l1a_hi-sectored",
+        "dims": {
+            "esa_step": 8,
+            "inst_az": 12,
+            "spin_sector": 12,
+        },  # TODO: Double check with Joey
+        "instrument": "hi",
+        "num_counters": 4,
+        "support_variables": ["data_quality", "spin_period"],
+        "variable_names": HI_SECT_SPECIES_VARIABLE_NAMES,
+    },
+    CODICEAPID.COD_LO_INST_COUNTS_AGGREGATED: {
+        "dataset_name": "imap_codice_l1a_lo-counters-aggregated",
+        "dims": {"esa_step": 128, "inst_az": 6, "spin_sector": 6},
+        "instrument": "lo",
+        "num_counters": 1,
+        "support_variables": [
+            "energy_table",
+            "acquisition_time_per_step",
+        ],  # TODO: Double check with Joey
+        "variable_names": LO_INST_COUNTS_AGGREGATED_VARIABLE_NAMES,
+    },
+    CODICEAPID.COD_LO_INST_COUNTS_SINGLES: {
+        "dataset_name": "imap_codice_l1a_lo-counters-singles",
+        "dims": {"esa_step": 128, "inst_az": 24, "spin_sector": 6},
+        "instrument": "lo",
+        "num_counters": 1,
+        "support_variables": [
+            "spin_sector_pairs",
+            "energy_table",
+            "acquisition_time_per_step",
+            "rgfo_half_spin",
+            "nso_half_spin",
+            "sw_bias_gain_mode",
+            "st_bias_gain_mode",
+            "data_quality",
+            "spin_period",
+        ],
+        "variable_names": LO_INST_COUNTS_SINGLES_VARIABLE_NAMES,
+    },
+    CODICEAPID.COD_LO_SW_ANGULAR_COUNTS: {
+        "dataset_name": "imap_codice_l1a_lo-sw-angular",
+        "dims": {"inst_az": 5, "spin_sector": 12, "esa_step": 128},
+        "instrument": "lo",
+        "num_counters": 4,
+        "support_variables": [
+            "energy_table",
+            "acquisition_time_per_step",
+            "rgfo_half_spin",
+            "nso_half_spin",
+            "sw_bias_gain_mode",
+            "st_bias_gain_mode",
+            "data_quality",
+            "spin_period",
+        ],
+        "variable_names": LO_SW_ANGULAR_VARIABLE_NAMES,
+    },
+    CODICEAPID.COD_LO_NSW_ANGULAR_COUNTS: {
+        "dataset_name": "imap_codice_l1a_lo-nsw-angular",
+        "dims": {"inst_az": 19, "spin_sector": 12, "esa_step": 128},
+        "instrument": "lo",
+        "num_counters": 1,
+        "support_variables": [
+            "energy_table",
+            "acquisition_time_per_step",
+            "rgfo_half_spin",
+            "nso_half_spin",
+            "sw_bias_gain_mode",
+            "st_bias_gain_mode",
+            "data_quality",
+            "spin_period",
+        ],
+        "variable_names": LO_NSW_ANGULAR_VARIABLE_NAMES,
+    },
+    CODICEAPID.COD_LO_SW_PRIORITY_COUNTS: {
+        "dataset_name": "imap_codice_l1a_lo-sw-priority",
+        "dims": {"spin_sector": 12, "esa_step": 128},
+        "instrument": "lo",
+        "num_counters": 5,
+        "support_variables": [
+            "energy_table",
+            "acquisition_time_per_step",
+            "rgfo_half_spin",
+            "nso_half_spin",
+            "sw_bias_gain_mode",
+            "st_bias_gain_mode",
+            "data_quality",
+            "spin_period",
+        ],
+        "variable_names": LO_SW_PRIORITY_VARIABLE_NAMES,
+    },
+    CODICEAPID.COD_LO_NSW_PRIORITY_COUNTS: {
+        "dataset_name": "imap_codice_l1a_lo-nsw-priority",
+        "dims": {"spin_sector": 12, "esa_step": 128},
+        "instrument": "lo",
+        "num_counters": 2,
+        "support_variables": [
+            "energy_table",
+            "acquisition_time_per_step",
+            "rgfo_half_spin",
+            "nso_half_spin",
+            "sw_bias_gain_mode",
+            "st_bias_gain_mode",
+            "data_quality",
+            "spin_period",
+        ],
+        "variable_names": LO_NSW_PRIORITY_VARIABLE_NAMES,
+    },
+    CODICEAPID.COD_LO_SW_SPECIES_COUNTS: {
+        "dataset_name": "imap_codice_l1a_lo-sw-species",
+        "dims": {"spin_sector": 1, "esa_step": 128},
+        "instrument": "lo",
+        "num_counters": 16,
+        "support_variables": [
+            "energy_table",
+            "acquisition_time_per_step",
+            "rgfo_half_spin",
+            "nso_half_spin",
+            "sw_bias_gain_mode",
+            "st_bias_gain_mode",
+            "data_quality",
+            "spin_period",
+        ],
+        "variable_names": LO_SW_SPECIES_VARIABLE_NAMES,
+    },
+    CODICEAPID.COD_LO_NSW_SPECIES_COUNTS: {
+        "dataset_name": "imap_codice_l1a_lo-nsw-species",
+        "dims": {"spin_sector": 1, "esa_step": 128},
+        "instrument": "lo",
+        "num_counters": 8,
+        "support_variables": [
+            "energy_table",
+            "acquisition_time_per_step",
+            "rgfo_half_spin",
+            "nso_half_spin",
+            "sw_bias_gain_mode",
+            "st_bias_gain_mode",
+            "data_quality",
+            "spin_period",
+        ],
+        "variable_names": LO_NSW_SPECIES_VARIABLE_NAMES,
+    },
+}
 
 # Compression ID lookup table for Lo data products
 # The key is the view_id and the value is the ID for the compression algorithm
@@ -91,25 +291,6 @@ HI_COMPRESSION_ID_LOOKUP = {
     7: CoDICECompression.LOSSY_A_LOSSLESS,
     8: CoDICECompression.LOSSY_A_LOSSLESS,
     9: CoDICECompression.LOSSY_A_LOSSLESS,
-}
-
-# Collapse table ID lookup table for Lo data products
-# The key is the view_id and the value is the ID for the collapse table
-LO_COLLAPSE_TABLE_ID_LOOKUP = {0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6, 7: 7, 8: 8}
-
-# Collapse table ID lookup table for Hi data products
-# The key is the view_id and the value is the ID for the collapse table
-Hi_COLLAPSE_TABLE_ID_LOOKUP = {
-    0: 8,
-    1: 9,
-    2: 10,
-    3: 0,
-    4: 1,
-    5: 2,
-    6: 4,
-    7: 5,
-    8: 6,
-    9: 7,
 }
 
 # ESA Sweep table ID lookup table
@@ -452,6 +633,7 @@ LOSSY_A_TABLE = {
     252: 475136,
     253: 491520,
     254: 507904,
+    255: 999999,
 }
 
 LOSSY_B_TABLE = {
@@ -710,4 +892,5 @@ LOSSY_B_TABLE = {
     252: 6815744,
     253: 7340032,
     254: 7864320,
+    255: 9999999,
 }

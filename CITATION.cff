@@ -12,6 +12,7 @@ authors:
 repository-code: >-
   https://github.com/IMAP-Science-Operations-Center/imap_processing
 url: 'https://imap-processing.readthedocs.io/en/latest/'
+repository: 'https://zenodo.org/record/11168295'
 abstract: >-
   The Interstellar Mapping and Acceleration Probe (IMAP) is
   a project aimed at studying the interstellar medium and
@@ -39,3 +40,7 @@ keywords:
   - interstellar medium
   - Energetic Neutral Atom (ENA)
 license: MIT
+identifiers:
+  - description: "All archived versions of imap_processing."
+    type: doi
+    value: 10.5281/zenodo.11168295

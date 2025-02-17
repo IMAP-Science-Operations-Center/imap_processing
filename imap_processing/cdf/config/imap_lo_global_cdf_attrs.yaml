@@ -1,0 +1,90 @@
+instrument_base: &instrument_base
+  Descriptor:
+    Lo>IMAP Low-Energy (IMAP-Lo) Energetic Neutral Atom Imager
+  TEXT: >
+    IMAP-Lo is a single-pixel neutral atom imager that delivers energy and position measurements of low-energy Interstellar Neutral (ISN) atoms tracked over the ecliptic longitude >180deg and global maps of energetic neutral atoms (ENAs). Mounted on a pivot platform, IMAP-Lo tracks the flow of these ions through the local interstellar medium (LISM) to precisely determine the species-dependent flow speed, temperature, and direction of the LISM that surrounds, interacts with, and determines the outer boundaries of the global heliosphere. IMAP-Lo uses the pivoting field of view (FOV) to view variable angles out to 90deg from the spin axis. This assists IMAP-Lo to pinpoint the intersection between the ISN inflow speed and longitude to uniquely determine the LISM flow vector. Data from IMAP-Lo will help us be able to see from inside the heliosphere what it is like just outside the solar system, our local neighborhood.
+  Instrument_type: "Particles (space)"
+
+imap_lo_l1a_de:
+  <<: *instrument_base
+  Data_level: 1A
+  Data_type: L1A_de>Level-1A Science Direct Events
+  Logical_source: imap_lo_l1a_de
+  Logical_source_description: IMAP Mission IMAP-Lo Instrument Level-1A Data
+
+imap_lo_l1a_histogram:
+  <<: *instrument_base
+  Data_level: 1A
+  Data_type: L1A_histogram>Level-1A Science Counts
+  Logical_source: imap_lo_l1a_histogram
+  Logical_source_description: IMAP Mission IMAP-Lo Instrument Level-1A Data
+
+imap_lo_l1a_star:
+  <<: *instrument_base
+  Data_level: 1A
+  Data_type: L1A_star>Level-1A Star Sensor
+  Logical_source: imap_lo_l1a_star
+  Logical_source_description: IMAP Mission IMAP-Lo Instrument Level-1A Data
+
+imap_lo_l1a_spin:
+  <<: *instrument_base
+  Data_level: 1A
+  Data_type: L1A_star>Level-1A Spin
+  Logical_source: imap_lo_l1a_spin
+  Logical_source_description: IMAP Mission IMAP-Lo Instrument Level-1A Data
+
+imap_lo_l1b_badtimes:
+  <<: *instrument_base
+  Data_level: 1B
+  Data_type: L1B_badtimes>Level-1B Badtimes
+  Logical_source: imap_lo_l1b_badtimes
+  Logical_source_description: IMAP Mission IMAP-Lo Instrument Level-1B Data
+
+imap_lo_l1b_de:
+  <<: *instrument_base
+  Data_level: 1B
+  Data_type: L1B_de>Level-1B Annotated Direct Events
+  Logical_source: imap_lo_l1b_de
+  Logical_source_description: IMAP Mission IMAP-Lo Instrument Level-1B Data
+
+imap_lo_l1b_monitorrates:
+  <<: *instrument_base
+  Data_level: 1B
+  Data_type: L1B_monitorrates>Level-1B Monitor Rates
+  Logical_source: imap_lo_l1b_monitorrates
+  Logical_source_description: IMAP Mission IMAP-Lo Instrument Level-1B Data
+
+imap_lo_l1b_histogramrates:
+  <<: *instrument_base
+  Data_level: 1B
+  Data_type: L1B_histogramrates>Level-1B Histogram Rates
+  Logical_source: imap_lo_l1b_histogramrrates
+  Logical_source_description: IMAP Mission IMAP-Lo Instrument Level-1B Data
+
+imap_lo_l1b_derates:
+  <<: *instrument_base
+  Data_level: 1B
+  Data_type: L1B_derates>Level-1B Direct Event Rates
+  Logical_source: imap_lo_l1b_derates
+  Logical_source_description: IMAP Mission IMAP-Lo Instrument Level-1B Data
+
+imap_lo_l1b_prostar:
+  <<: *instrument_base
+  Data_level: 1B
+  Data_type: L1B_prostar>Level-1B Processed Star Sensor
+  Logical_source: imap_lo_l1b_prostar
+  Logical_source_description: IMAP Mission IMAP-Lo Instrument Level-1B Data
+
+imap_lo_l1c_goodtimes:
+  <<: *instrument_base
+  Data_level: 1C
+  Data_type: L1C_goodtimes>Level-1C Goodtimes List
+  Logical_source: imap_lo_l1c_goodtimes
+  Logical_source_description: IMAP Mission IMAP-Lo Instrument Level-1C Data
+
+imap_lo_l1c_pset:
+  <<: *instrument_base
+  Data_level: 1C
+  Data_type: L1C_pset>Level-1C Pointing Set
+  Logical_source: imap_lo_l1c_pset
+  Logical_source_description: IMAP Mission IMAP-Lo Instrument Level-1C Data

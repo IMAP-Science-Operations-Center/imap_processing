@@ -1,0 +1,100 @@
+instrument_base: &instrument_base
+  Descriptor: Ultra>IMAP Ultra-Energy (IMAP-Ultra) Energetic Neutral Atom Imager
+  TEXT: >
+    Ultra captures images of very energetic neutral atoms, particularly hydrogen (H) atoms,
+    produced in the solar system at the heliosheath, the region where the solar wind slows,
+    compresses, and becomes much hotter as it meets the interstellar medium (ISM).
+    The instrument also measures the distribution of solar wind electrons and protons, and
+    the magnetic field. See https://imap.princeton.edu/instruments/ultra for more details.
+  Instrument_type: "Particles (space)"
+
+# TODO: revisit this to be more specific
+imap_ultra_l1a_sci:
+    <<: *instrument_base
+    Data_level: 1A
+    Data_type: L1A_SCI>Level-1A Science data
+    Logical_source: imap_ultra_l1a_sci
+    Logical_source_description: IMAP-Ultra Instrument Level-1A Science Data.
+
+imap_ultra_l1b_45sensor-de:
+    <<: *instrument_base
+    Data_level: 1B
+    Data_type: L1B_45Sensor-DE>Level-1B Direct Events for Ultra45
+    Logical_source: imap_ultra_l1b_45sensor-de
+    Logical_source_description: IMAP-Ultra Instrument Level-1B Direct Event Data.
+
+imap_ultra_l1b_90sensor-de:
+    <<: *instrument_base
+    Data_level: 1B
+    Data_type: L1B_90Sensor-DE>Level-1B Direct Events for Ultra90
+    Logical_source: imap_ultra_l1b_90sensor-de
+    Logical_source_description: IMAP-Ultra Instrument Level-1B Direct Event Data.
+
+imap_ultra_l1b_45sensor-extendedspin:
+    <<: *instrument_base
+    Data_level: 1B
+    Data_type: L1B_45Sensor-ExtendedSpin>Level-1B Extended Spin for Ultra45
+    Logical_source: imap_ultra_l1b_45sensor-extendedspin
+    Logical_source_description: IMAP-Ultra Instrument Level-1B Extended Spin Data.
+
+imap_ultra_l1b_90sensor-extendedspin:
+    <<: *instrument_base
+    Data_type: L1B_90Sensor-ExtendedSpin>Level-1B Extended Spin for Ultra90
+    Logical_source: imap_ultra_l1b_90sensor-extendedspin
+    Logical_source_description: IMAP-Ultra Instrument Level-1B Extended Spin Data.
+
+imap_ultra_l1b_45sensor-cullingmask:
+    <<: *instrument_base
+    Data_level: 1B
+    Data_type: L1B_45Sensor-CullingMask>Level-1B Culling Mask for Ultra45
+    Logical_source: imap_ultra_l1b_45sensor-cullingmask
+    Logical_source_description: IMAP-Ultra Instrument Level-1B Culling Mask Data.
+
+imap_ultra_l1b_90sensor-cullingmask:
+    <<: *instrument_base
+    Data_level: 1B
+    Data_type: L1B_90Sensor-CullingMask>Level-1B Culling Mask for Ultra90
+    Logical_source: imap_ultra_l1b_90sensor-cullingmask
+    Logical_source_description: IMAP-Ultra Instrument Level-1B Culling Mask Data.
+
+imap_ultra_l1b_45sensor-badtimes:
+    <<: *instrument_base
+    Data_level: 1B
+    Data_type: L1B_45Sensor-Badtimes>Level-1B Badtimes for Ultra45
+    Logical_source: imap_ultra_l1b_45sensor-badtimes
+    Logical_source_description: IMAP-Ultra Instrument Level-1B Badtimes Data.
+
+imap_ultra_l1b_90sensor-badtimes:
+    <<: *instrument_base
+    Data_level: 1B
+    Data_type: L1B_90Sensor-Badtimes>Level-1B Badtimes for Ultra90
+    Logical_source: imap_ultra_l1b_90sensor-badtimes
+    Logical_source_description: IMAP-Ultra Instrument Level-1B Badtimes Data.
+
+imap_ultra_l1c_45sensor-pset:
+    <<: *instrument_base
+    Data_level: 1C
+    Data_type: L1C_45Sensor-PSET>Level-1C Pointing Set Grid for Ultra45
+    Logical_source: imap_ultra_l1c_45sensor-pset
+    Logical_source_description: IMAP-Ultra Instrument Level-1C Pointing Set Grid Exposure Data.
+
+imap_ultra_l1c_90sensor-pset:
+    <<: *instrument_base
+    Data_level: 1C
+    Data_type: L1C_90Sensor-PSET>Level-1C Pointing Set Grid for Ultra90
+    Logical_source: imap_ultra_l1c_90sensor-pset
+    Logical_source_description: IMAP-Ultra Instrument Level-1C Pointing Set Grid Exposure Data.
+
+imap_ultra_l1c_45sensor-histogram:
+    <<: *instrument_base
+    Data_level: 1C
+    Data_type: L1C_45Sensor-Histogram>Level-1C Histogram for Ultra45
+    Logical_source: imap_ultra_l1c_45sensor-histogram
+    Logical_source_description: IMAP-Ultra Instrument Level-1C Pointing Set Grid Histogram Data.
+
+imap_ultra_l1c_90sensor-histogram:
+    <<: *instrument_base
+    Data_level: 1C
+    Data_type: L1C_45Sensor-Histogram>Level-1C Histogram for Ultra90
+    Logical_source: imap_ultra_l1c_90sensor-histogram
+    Logical_source_description: IMAP-Ultra Instrument Level-1C Pointing Set Grid Histogram Data.

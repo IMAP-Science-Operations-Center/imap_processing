@@ -4,21 +4,28 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from imap_processing.ultra.l0.decom_ultra import decom_ultra_apids
 from imap_processing.ultra.l0.ultra_utils import ULTRA_TOF
 
-
-@pytest.fixture()
-def decom_ultra(ccsds_path_tof, xtce_path):
-    """Data for decom_ultra"""
-    data_packet_list = decom_ultra_apids(ccsds_path_tof, xtce_path, ULTRA_TOF.apid[0])
-    return data_packet_list
+# TODO: discuss with instrument team incomplete set of SIDs
 
 
-def test_tof_decom(decom_ultra, tof_test_path):
+@pytest.mark.parametrize(
+    "decom_test_data",
+    [
+        pytest.param(
+            {
+                "apid": ULTRA_TOF.apid[0],
+                "filename": "FM45_TV_Cycle6_Hot_Ops_" "Front212_20240124T063837.CCSDS",
+            }
+        )
+    ],
+    indirect=True,
+)
+def test_tof_decom(decom_test_data, tof_test_path):
     """This function reads validation data and checks that decom data
     matches validation data for image rate packet"""
 
+    decom_ultra, _ = decom_test_data
     df = pd.read_csv(tof_test_path, index_col="SequenceCount")
 
     np.testing.assert_array_equal(df.Spin, decom_ultra["SPIN"].flatten())

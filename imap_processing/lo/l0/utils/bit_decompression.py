@@ -7,7 +7,7 @@ import numpy as np
 
 
 class Decompress(Enum):
-    """Decompression options."""
+    """The decompression options."""
 
     DECOMPRESS8TO12 = "8_to_12"
     DECOMPRESS8TO16 = "8_to_16"
@@ -17,7 +17,8 @@ class Decompress(Enum):
 # Load all decompression tables into a dictionary.
 DECOMPRESSION_TABLES = {
     enum: np.loadtxt(
-        Path(__file__).parent.parent / f"decompression_tables/{enum.value}_bit.csv",
+        Path(__file__).parent.parent
+        / f"decompression_tables/log10_{enum.value}_bit_uncompress.csv",
         delimiter=",",
         skiprows=1,
     )
@@ -25,22 +26,25 @@ DECOMPRESSION_TABLES = {
 }
 
 
-def decompress_int(compressed_value, decompression, decompression_lookup):
+def decompress_int(
+    compressed_values: list, decompression: Decompress, decompression_lookup: dict
+) -> list[int]:
+    # No idea what the correct type is for the return. Mypy says it is Any
     """
-    Decompress a data field using a specified bit conversion.
+    Will decompress a data field using a specified bit conversion.
 
     Parameters
     ----------
-    compressed_value : int
-        A compressed integer.
+    compressed_values : list
+        Compressed integers.
     decompression : Decompress
         The decompression to use.
     decompression_lookup : dict
-        dictionary containing all the decompression tables
+        Dictionary containing all the decompression tables.
 
     Returns
     -------
-    decompressed : int
+    decompressed : list[int]
         The decompressed integer.
     """
     valid_decompression = [
@@ -55,4 +59,6 @@ def decompress_int(compressed_value, decompression, decompression_lookup):
             + "Decompress.DECOMPRESS8TO12"
         )
     data = decompression_lookup[decompression]
-    return data[compressed_value][1]
+    # use 2 for Mean column in table
+    decompressed: list[int] = data[compressed_values, 2]
+    return decompressed

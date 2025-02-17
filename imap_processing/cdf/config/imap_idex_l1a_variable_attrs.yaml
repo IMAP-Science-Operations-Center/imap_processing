@@ -1,0 +1,792 @@
+int_fillval: &int_fillval -9223372036854775808
+
+max_uint32: &max_uint32 4294967295
+max_uint16: &max_uint16 65535
+max_uint8: &max_uint8 255
+
+data_min: &data_min 0
+data_max: &data_max 4096
+
+sample_rate_min: &sample_rate_min -130
+sample_rate_max: &sample_rate_max 130
+
+int_maxval: &int_maxval 9223372036854775807
+
+# <=== Base Attributes ===>
+string_base_attrs: &string_base
+  CATDESC: " "
+  FIELDNAM: " "
+  FORMAT: A3
+  LABLAXIS: "none"
+  VAR_TYPE: metadata
+  DISPLAY_TYPE: no_plot
+  DEPEND_0: epoch
+  UNITS: " "
+
+l1a_data_base: &l1a_data_base
+  VALIDMIN: *data_min
+  VALIDMAX: *data_max
+  DISPLAY_TYPE: spectrogram
+  DEPEND_0: epoch
+  FORMAT: I12
+  UNITS: dN
+  VAR_TYPE: data
+  CATDESC: ""
+  FIELDNAM: ""
+  FILLVAL: *int_fillval
+  LABLAXIS: ""
+
+l1a_tof_base: &l1a_tof_base
+  <<: *l1a_data_base
+  DEPEND_1: time_high_sample_rate
+  LABL_PTR_1: time_high_sample_rate_label
+
+l1a_target_base: &l1a_target_base
+  <<: *l1a_data_base
+  DEPEND_1: time_low_sample_rate
+  LABL_PTR_1: time_low_sample_rate_label
+
+sample_rate_base: &sample_rate_base
+  DISPLAY_TYPE: no_plot
+  CATDESC: ""
+  FIELDNAM: ""
+  FILLVAL: -1.0e+31
+  VALIDMIN: *sample_rate_min
+  VALIDMAX: *sample_rate_max
+  DEPEND_0: epoch
+  FORMAT: F64.5
+  LABLAXIS: Time
+  UNITS: microseconds
+  VAR_TYPE: support_data # Not in attrs file
+  VAR_NOTES:  The number of microseconds since the event.
+              0 is the start of data collection, negative
+              numbers represent data collected prior to a dust event
+
+trigger_base: &trigger_base
+  VALIDMIN: 0
+  VALIDMAX: *max_uint32
+  DEPEND_0: epoch
+  DISPLAY_TYPE: no_plot
+  CATDESC: ""
+  FIELDNAM: ""
+  VAR_TYPE: support_data
+  FILLVAL: *int_fillval
+  LABLAXIS: ""
+  FORMAT: I10
+  UNITS: " "
+
+# <=== LABL_PTR_i Attributes ===>
+time_high_sample_rate_label:
+  CATDESC: High sample rate time steps for a dust event.
+  FIELDNAM: High Sample Rate Time
+  FORMAT: A5
+  VAR_TYPE: metadata
+
+time_low_sample_rate_label:
+  CATDESC: Low sample rate time steps for a dust event.
+  FIELDNAM: Low Sample Rate Time
+  FORMAT: A5
+  VAR_TYPE: metadata
+
+# <=== Instrument Setting Attributes ===>
+low_sample_rate_attrs:
+  <<:  *sample_rate_base
+  CATDESC: Low sample rate time steps for a dust event.
+  FIELDNAM: Low Sample Rate Time
+  VAR_NOTES: The low sample rate in microseconds. Steps are approximately 1/4.025
+             microseconds in duration. Used by the Ion_Grid, Target_Low, and
+             Target_High variables.
+
+high_sample_rate_attrs:
+  <<:  *sample_rate_base
+  CATDESC: High sample rate time steps for a dust event.
+  FIELDNAM: High Sample Rate Time
+  VAR_NOTES: The high sample rate in microseconds. Steps are approximately 1/260
+    microseconds in duration. Used by the TOF_High, TOF_Mid, and
+    TOF_Low variables.
+
+time_low_sample_rate_index:
+  CATDESC: Low sampling rate time index
+  FIELDNAM: Low sample rate
+  FILLVAL: *int_fillval
+  FORMAT: I3
+  LABLAXIS: Sample Rate
+  SCALE_TYP: linear
+  UNITS: " "
+  VALIDMAX: 511
+  VALIDMIN: 0
+  VAR_TYPE: support_data
+
+time_high_sample_rate_index:
+  CATDESC: High sampling rate time index
+  FIELDNAM: Low sample rate
+  FILLVAL: *int_fillval
+  FORMAT: I3
+  LABLAXIS: Sample Rate
+  SCALE_TYP: linear
+  UNITS: " "
+  VALIDMAX: 8188
+  VALIDMIN: 0
+  VAR_TYPE: support_data
+
+tof_high_attrs:
+  <<: *l1a_tof_base
+  CATDESC: Time of flight waveform on the high-gain channel
+  FIELDNAM: High Gain Time of Flight
+  LABLAXIS: TOF High Ampl.
+  VAR_NOTES: High gain channel of the time-of-flight signal.
+        Sampled at 260 Megasamples per second, with a 10-bit resolution.
+        Data is used to quantify dust composition.
+
+tof_mid_attrs:
+  <<: *l1a_tof_base
+  CATDESC: Time of flight waveform on the mid-gain channel
+  FIELDNAM: Mid Gain Time of Flight
+  LABLAXIS: TOF Mid Ampl.
+  VAR_NOTES: Mid gain channel of the time-of-flight signal.
+        Sampled at 260 Megasamples per second, with a 10-bit resolution.
+        Data is used to quantify dust composition.
+
+tof_low_attrs:
+  <<: *l1a_tof_base
+  FILLVAL: *int_fillval
+  CATDESC: Time of flight waveform on the low-gain channel
+  FIELDNAM: Low Gain Time of Flight
+  LABLAXIS: TOF Low Ampl.
+  VAR_NOTES: Low gain channel of the time-of-flight signal.
+        Sampled at 260 Megasamples per second, with a 10-bit resolution.
+        Data is used to quantify dust composition.
+
+
+target_low_attrs:
+  <<: *l1a_target_base
+  CATDESC: Target low charge sensitive amplifier waveform
+  FIELDNAM: Low Target Signal
+  LABLAXIS: Low Target Ampl.
+  VAR_NOTES: Low gain channel of IDEX's target signal.
+        Sampled at 3.75 Msps with 12-bit resolution.
+        Data is used to quantify dust charge.
+
+target_high_attrs:
+  <<: *l1a_target_base
+  CATDESC: Ion grid charge sensitive amplifier waveform
+  FIELDNAM: High Target Signal
+  LABLAXIS: High Target Ampl.
+  VAR_NOTES: High gain channel of IDEX's target signal.
+        Sampled at 3.75 Msps with 12-bit resolution.
+        Data is used to quantify dust charge.
+
+ion_grid_attrs:
+  <<: *l1a_target_base
+  CATDESC: Ion grid charge sensitive amplifier waveform data
+  FIELDNAM: Ion Grid Signal
+  LABLAXIS: Ion Grid Ampl.
+  VAR_NOTES: This is the ion grid signal from IDEX.
+        Sampled at 3.75 Msps with 12-bit resolution.
+        Data is used to quantify dust charge.
+
+shcoarse:
+  <<: *trigger_base
+  CATDESC: Time of packet generation (not data acquisition), as integer seconds since epoch
+  FIELDNAM: Secondary header coarse time
+  LABLAXIS: Packet Generation Time (Coarse)
+  UNITS: seconds
+
+shfine:
+  <<: *trigger_base
+  CATDESC: Time of packet generation, each DN represents 20usec within current second
+  FIELDNAM: Secondary header fine time
+  VALIDMAX: *max_uint16
+  LABLAXIS: Packet Generation Time (Fine)
+  UNITS: seconds
+
+checksum:
+  <<: *trigger_base
+  CATDESC: CRC 16 Checksum
+  FIELDNAM: Checksum
+  UNITS: " "
+
+idx__sci0aid:
+  <<: *trigger_base
+  CATDESC: Accountability identifier for this event
+  FIELDNAM: Accountability identifier
+  LABLAXIS: Accountability ID
+
+idx__sci0type:
+  <<: *trigger_base
+  CATDESC: Packet data content type
+  FIELDNAM: Packet data content type
+  VALIDMAX: *max_uint8
+
+idx__sci0cont:
+  <<: *trigger_base
+  CATDESC: Channels included in downlink
+  FIELDNAM: Downlink channels
+  VALIDMAX: *max_uint8
+
+idx__sci0spare1:
+  <<: *trigger_base
+  CATDESC: Spare for alignment
+  FIELDNAM: Sci spare 1
+  VALIDMAX: 8191
+  LABLAXIS: Sci Spare 1
+
+idx__sci0pack:
+  <<: *string_base
+  CATDESC: Flag indicating if data was bit-packed (Always 0b1)
+  FIELDNAM: Data packed flag
+
+idx__sci0frag:
+  <<:  *string_base
+  CATDESC: Flag indicating if data was fragmented
+  FIELDNAM: Data fragmented flag
+
+idx__sci0comp:
+  <<: *string_base
+  CATDESC: Flag indicating if data was compressed
+  FIELDNAM: Data compression flag
+
+idx__sci0evtnum:
+  <<: *trigger_base
+  CATDESC: Event number
+  FIELDNAM: Event number
+  VALIDMAX: *max_uint16
+  LABLAXIS: Event Number
+
+idx__sci0cat:
+  <<: *trigger_base
+  CATDESC: Category assigned to this event (for most recent processing operation)
+  FIELDNAM: Category
+  VALIDMAX: *max_uint16
+  LABLAXIS: Category
+
+idx__sci0qual:
+  <<: *trigger_base
+  CATDESC: Quality factor assigned to this category
+  FIELDNAM: Quality factor
+  VALIDMAX: *max_uint8
+  LABLAXIS: Quality factor
+
+idx__sci0fragoff:
+  <<: *trigger_base
+  CATDESC: Starting offset for this data when reconstructing data that spans multiple packets (fragmented)
+  FIELDNAM: Fragmentation offset
+  VALIDMAX: *max_uint16
+  LABLAXIS: Offset
+
+idx__sci0ver:
+  <<: *trigger_base
+  CATDESC: Science CSC version number for this header
+  FIELDNAM: Version number
+  VALIDMAX: *max_uint16
+  LABLAXIS: Version number
+
+idx__sci0time32:
+  <<: *trigger_base
+  CATDESC: Event time
+  FIELDNAM: Event time
+  LABLAXIS: Event time
+
+idx__sci0spare2:
+  <<: *trigger_base
+  CATDESC: Spare for alignment
+  FIELDNAM: Sci spare 2
+  LABLAXIS: Sci Spare 2
+
+idx__sci0spare3:
+  <<: *trigger_base
+  CATDESC: Spare for alignment
+  FIELDNAM: Sci spare 3
+  LABLAXIS: Sci Spare 3
+
+idx__sci0spare4:
+  <<: *trigger_base
+  CATDESC: Spare for alignment
+  FIELDNAM: Sci spare 4
+  LABLAXIS: Sci Spare 4
+
+idx__txhdrscievtlen:
+  <<: *trigger_base
+  CATDESC: Length of raw sci data in memory for this event (all 6 channels), in dwords
+  FIELDNAM: Data length
+  LABLAXIS: Data length
+
+idx__txhdrsp00:
+  <<: *trigger_base
+  CATDESC: Spare for alignment
+  FIELDNAM: Spare 0
+  VALIDMAX: *max_uint16
+  LABLAXIS: Spare 0
+
+idx__txhdrtimesec1:
+  <<: *trigger_base
+  CATDESC: Trigger time, bits 31:16 of the coarse timestamp (integer seconds since epoch)
+  FIELDNAM: Trigger time
+  VALIDMAX: *max_uint16
+  LABLAXIS: Trigger Time
+
+idx__txhdrtimesec2:
+  <<: *trigger_base
+  CATDESC: Trigger time, bits 15:0 of the coarse timestamp (integer seconds since epoch)
+  FIELDNAM: Trigger time
+  VALIDMAX: *max_uint16
+  LABLAXIS: Trigger Time
+
+idx__txhdrtimesubs:
+  <<: *trigger_base
+  CATDESC: Trigger time, subseconds field
+  FIELDNAM: Trigger time
+  VALIDMAX: *max_uint16
+  LABLAXIS: Trigger time
+
+idx__txhdrsp01:
+  <<: *trigger_base
+  CATDESC: Spare for alignment
+  FIELDNAM: Spare 1
+  VALIDMAX: 1
+  LABLAXIS: Spare 1
+
+idx__txhdrtrigoffset:
+  <<: *trigger_base
+  CATDESC: Trigger offset
+  FIELDNAM: Trigger offset
+  VALIDMAX: 7
+  LABLAXIS: Trigger offset
+
+idx__txhdrsp02:
+  <<: *trigger_base
+  CATDESC: Spare for alignment
+  FIELDNAM: Spare 2
+  VALIDMAX: 1
+  LABLAXIS: Spare 2
+
+idx__txhdrtrigid:
+  <<: *trigger_base
+  CATDESC: Identifies which channel(s) caused this event to be captured (multiple concurrent triggers are possible)
+  FIELDNAM: Trigger ID
+  VALIDMAX: 1024
+  LABLAXIS: Trigger ID
+
+idx__txhdrevtnum:
+  <<: *trigger_base
+  CATDESC: Event number, an incrementing counter to uniquely identify one event in dataset
+  FIELDNAM: Event Number
+  VALIDMAX: *max_uint16
+  LABLAXIS: Event Number
+
+idx__txhdrblocks:
+  <<: *trigger_base
+  CATDESC: Defines size of pre/post trigger blocks
+  FIELDNAM: Trigger block sizes
+  LABLAXIS: Trigger block sizes
+
+idx__txhdrhgtrigctrl1:
+  <<: *trigger_base
+  CATDESC: Settings for High Gain TOF ADC triggering, part 1
+  FIELDNAM: High gain TOF trigger settings
+  LABLAXIS: Trigger settings
+
+idx__txhdrhgtrigctrl2:
+  <<: *trigger_base
+  CATDESC: Settings for High Gain TOF ADC triggering, part 2
+  FIELDNAM: High gain TOF trigger settings continued
+  LABLAXIS: Trigger settings
+
+idx__txhdrlgtrigctrl1:
+  <<: *trigger_base
+  CATDESC: Settings for Low Gain TOF ADC triggering, part 1
+  FIELDNAM: Low gain TOF trigger settings
+  LABLAXIS: Trigger settings
+
+idx__txhdrlgtrigctrl2:
+  <<: *trigger_base
+  CATDESC: Settings for Low Gain TOF ADC triggering, part 2
+  FIELDNAM: Low gain TOF trigger settings continued
+  LABLAXIS: Trigger settings
+
+idx__txhdrmgtrigctrl1:
+  <<: *trigger_base
+  CATDESC: Settings for Mid Gain TOF ADC triggering, part 1
+  FIELDNAM: Mid gain TOF trigger settings
+  LABLAXIS: Trigger settings
+
+idx__txhdrmgtrigctrl2:
+  <<: *trigger_base
+  CATDESC: Settings for Mid Gain TOF ADC triggering, part 2
+  FIELDNAM: Mid gain TOF trigger settings continued
+  LABLAXIS: Trigger settings
+
+idx__txhdrsp03:
+  <<: *trigger_base
+  CATDESC: Spare for alignment
+  FIELDNAM: Spare 3
+  VALIDMAX: 1
+  LABLAXIS: Spare 3
+
+idx__txhdrlsadc:
+  <<: *trigger_base
+  CATDESC: Settings for Low Speed (target) ADC triggering
+  FIELDNAM: Low Speed ADC triggering
+  VALIDMAX: 16777215
+  LABLAXIS: ADC Triggering
+
+idx__txhdrpolstat:
+  <<: *string_base
+  CATDESC: HVPS polarity status, "cation" mode (0) or "anion" mode (1)
+  FIELDNAM: HVPS polarity status
+
+idx__txhdrsp04:
+  <<: *trigger_base
+  CATDESC: Spare for alignment
+  FIELDNAM: Spare 4
+  VALIDMAX: 4194303
+  LABLAXIS: Spare 4
+
+idx__txhdrpolctrl:
+  <<: *string_base
+  CATDESC: Reading from HVPS polarity
+  FIELDNAM: HVPS polarity reading
+
+idx__txhdrcoinena:
+  <<: *string_base
+  CATDESC: LS coincidence enabled
+  FIELDNAM: LS coincidence enabled
+
+idx__txhdrlstrigmode:
+  <<: *string_base
+  CATDESC: Trigger mode for low speed (target) channel
+  FIELDNAM: LS trigger mode
+
+idx__txhdrmgtrigmode:
+  <<: *trigger_base
+  CATDESC: Trigger mode for mid-gain TOF channel
+  FIELDNAM: MG trigger mode
+  VALIDMAX: 3
+  LABLAXIS: Trigger Mode
+
+idx__txhdrlgtrigmode:
+  <<: *trigger_base
+  CATDESC: Trigger mode for low-gain TOF channel
+  FIELDNAM: LG trigger mode
+  VALIDMAX: 3
+  LABLAXIS: Trigger Mode
+
+idx__txhdrhgtrigmode:
+  <<: *trigger_base
+  CATDESC: Trigger mode for high-gain TOF channel
+  FIELDNAM: HG trigger mode
+  VALIDMAX: 3
+  LABLAXIS: Trigger Mode
+
+idx__txhdrsp05:
+  <<: *trigger_base
+  CATDESC: Spare for alignment
+  FIELDNAM: Spare 5
+  LABLAXIS: Spare 5
+
+idx__txhdrsp06:
+  <<: *trigger_base
+  CATDESC: Spare for alignment
+  FIELDNAM: Spare 6
+  LABLAXIS: Spare 6
+
+idx__txhdrsp07:
+  <<: *trigger_base
+  CATDESC: Spare for alignment
+  FIELDNAM: Spare 7
+  LABLAXIS: Spare 7
+
+idx__txhdrsp08:
+  <<: *trigger_base
+  CATDESC: Spare for alignment
+  FIELDNAM: Spare 8
+  LABLAXIS: Spare 8
+
+idx__txhdrtofmax:
+  <<: *trigger_base
+  CATDESC: Maximum HS ADC readings when first trigger happened
+  FIELDNAM: Maximum HS readings
+  LABLAXIS: Max HS Reading
+
+idx__txhdrtofmin:
+  <<: *trigger_base
+  CATDESC: Minimum HS ADC readings when first trigger happened
+  FIELDNAM: Minimum HS readings
+  LABLAXIS: Min HS Reading
+
+idx__txhdrls0maxmin:
+  <<: *trigger_base
+  CATDESC: LS ADC channel 0 min and max when first trigger happened
+  FIELDNAM: Maximum and Minimum channel 0 LS readings
+  LABLAXIS: LS Channel 0
+
+idx__txhdrls1maxmin:
+  <<: *trigger_base
+  CATDESC: LS ADC channel 1 min and max when first trigger happened
+  FIELDNAM: Maximum and Minimum channel 1 LS readings
+  LABLAXIS: LS Channel 1
+
+idx__txhdrls2maxmin:
+  <<: *trigger_base
+  CATDESC: LS ADC channel 2 min and max when first trigger happened
+  FIELDNAM: Maximum and Minimum channel 2 LS readings
+  LABLAXIS: LS Channel 2
+
+idx__txhdrfifodelay:
+  <<: *trigger_base
+  CATDESC: FPGA FIFO delay register when first trigger happened
+  FIELDNAM: FPGA FIFO delay register
+  LABLAXIS: Delay
+
+idx__txhdrsampdelay:
+  <<: *trigger_base
+  CATDESC: FPGA sample delay register when first trigger happened
+  FIELDNAM: FPGA sample register
+  LABLAXIS: Delay
+
+idx__txhdrtranscnt:
+  <<: *trigger_base
+  CATDESC: FPGA transition count register when first trigger happened
+  FIELDNAM: FPGA transition counts
+  LABLAXIS: Counts
+
+idx__txhdrprochkch01:
+  <<: *trigger_base
+  CATDESC: Last measurement in raw DN for Processor Board signal "current on the 1V POL" and "current on the 1.9V POL"
+  FIELDNAM: Measurements from channels 0 and 1 from Processor ADC
+  LABLAXIS: Processor ACD CH 0 and 1
+
+idx__txhdrprochkch23:
+  <<: *trigger_base
+  CATDESC: Last measurement in raw DN for Processor Board signal "ProcBd Temperature 1" and "ProcBd Temperature 2"
+  FIELDNAM: Measurements from channels 2 and 3 from Processor ADC
+  LABLAXIS: Processor ACD CH 2 and 3
+
+idx__txhdrprochkch45:
+  <<: *trigger_base
+  CATDESC: Last measurement in raw DN for Processor Board signal "voltage on 1V bus" and "FPGA Temperature"
+  FIELDNAM: Measurements from channels 4 and 5 from Processor ADC
+  LABLAXIS: Processor ACD CH 4 and 5
+
+idx__txhdrprochkch67:
+  <<: *trigger_base
+  CATDESC: Last measurement in raw DN for Processor Board signal "voltage on 1.9V bus" and "voltage on 3.3V bus"
+  FIELDNAM: Measurements from channels 6 and 7 from Processor ADC
+  LABLAXIS: Processor ACD CH 6 and 7
+
+idx__txhdrhvpshkch01:
+  <<: *trigger_base
+  CATDESC: Last measurement in raw DN for HVPS Board signal "Detector Voltage" and "Sensor Voltage"
+  FIELDNAM: Measurements from channels 0 and 1 from HVPS ADC
+  LABLAXIS: HVPS ADC CH 0 and 1
+
+idx__txhdrhvpshkch23:
+  <<: *trigger_base
+  CATDESC: Last measurement in raw DN for HVPS Board signal "Target Voltage" and "Reflectron Voltage"
+  FIELDNAM: Measurements from channels 2 and 3 from HVPS ADC
+  LABLAXIS: HVPS ADC CH 2 and 3
+
+idx__txhdrhvpshkch45:
+  <<: *trigger_base
+  CATDESC: Last measurement in raw DN for HVPS Board signal "Rejection Voltage" and "current for the HVPS detector"
+  FIELDNAM: Measurements from channels 4 and 5 from HVPS ADC
+  LABLAXIS: HVPS ADC CH 4 and 5
+
+idx__txhdrhvpshkch67:
+  <<: *trigger_base
+  CATDESC: Last measurement in raw DN for HVPS Board signal "positive current for the HVPS sensor" and "negative current for the HVPS sensor"
+  FIELDNAM: Measurements from channels 6 and 7 from HVPS ADC
+  LABLAXIS: HVPS ADC CH 6 and 7
+
+idx__txhdrlvhk0ch01:
+  <<: *trigger_base
+  CATDESC: Last measurement in raw DN for LVPS Board signal "voltage of +3.3V reference" and "voltage of +3.3V operational reference"
+  FIELDNAM: Measurements from channels 0 and 1 from LVPS ADC
+  LABLAXIS: LVPS ADC CH 0 and 1
+
+idx__txhdrlvhk0ch23:
+  <<: *trigger_base
+  CATDESC: Last measurement in raw DN for LVPS Board signal "voltage on -6V bus" and "voltage on +6V bus"
+  FIELDNAM: Measurements from channels 2 and 3 from LVPS ADC
+  LABLAXIS: LVPS ADC CH 2 and 3
+
+idx__txhdrlvhk0ch45:
+  <<: *trigger_base
+  CATDESC: Last measurement in raw DN for LVPS Board signal "voltage on +16V bus" and "voltage on +3.3V bus"
+  FIELDNAM: Measurements from channels 4 and 5 from LVPS ADC
+  LABLAXIS: LVPS ADC CH 4 and 5
+
+idx__txhdrlvhk0ch67:
+  <<: *trigger_base
+  CATDESC: Last measurement in raw DN for LVPS Board signal "voltage on -5V bus" and "voltage on +5V bus"
+  FIELDNAM: Measurements from channels 6 and 7 from LVPS ADC
+  LABLAXIS: LVPS ADC CH 6 and 7
+
+idx__txhdrlvhk1ch01:
+  <<: *trigger_base
+  CATDESC: Last measurement in raw DN for LVPS Board signal "current on +3.3V bus" and "current on 16V bus"
+  FIELDNAM: Measurements from channels 6 and 7 from LVPS ADC
+  LABLAXIS: LVPS ADC CH 6 and 7
+
+idx__txhdrlvhk1ch23:
+  <<: *trigger_base
+  CATDESC: Last measurement in raw DN for LVPS Board signal "current on +6V bus" and "current on -6V bus"
+  FIELDNAM: Measurements from channels 2 and 3 from LVPS ADC
+  LABLAXIS: LVPS ADC CH 2 and 3
+
+idx__txhdrlvhk1ch45:
+  <<: *trigger_base
+  CATDESC: Last measurement in raw DN for LVPS Board signal "current on +5V bus" and "current on -5V bus"
+  FIELDNAM: Measurements from channels 4 and 5 from LVPS ADC
+  LABLAXIS: LVPS ADC CH 4 and 5
+
+idx__txhdrlvhk1ch67:
+  <<: *trigger_base
+  CATDESC: Last measurement in raw DN for LVPS Board signal "current on +2.5V bus" and "current on -2.5V bus"
+  FIELDNAM: Measurements from channels 6 and 7 from LVPS ADC
+  LABLAXIS: LVPS ADC CH 6 and 7
+
+idx__txhdrlvhk2ch01:
+  <<: *trigger_base
+  CATDESC: Last measurement in raw DN for LVPS Board signal "primary target temperature" and "redundant target temperature"
+  FIELDNAM: Measurements from channels 0 and 1 from LVPS ADC
+  LABLAXIS: LVPS ADC CH 0 and 1
+
+idx__txhdrlvhk2ch23:
+  <<: *trigger_base
+  CATDESC: Last measurement in raw DN for LVPS Board signal "temperature of Decon-Actuator Board (DAB)" and "temperature of LVPS board"
+  FIELDNAM: Measurements from channels 2 and 3 from LVPS ADC
+  LABLAXIS: LVPS ADC CH 2 and 3
+
+idx__txhdrlvhk2ch45:
+  <<: *trigger_base
+  CATDESC: Last measurement in raw DN for LVPS Board signal "temperature of HVPS board (in EBox)" and "voltage on +2.5V bus"
+  FIELDNAM: Measurements from channels 4 and 5 from LVPS ADC
+  LABLAXIS: LVPS ADC CH 4 and 5
+
+idx__txhdrlvhk2ch67:
+  <<: *trigger_base
+  CATDESC: Last measurement in raw DN for LVPS Board signal "voltage on -2.5V bus" and "Spare"
+  FIELDNAM: Measurements from channels 6 and 7 from LVPS ADC
+  LABLAXIS: LVPS ADC CH 6 and 7
+
+idx__txhdrsp09:
+  <<: *trigger_base
+  CATDESC: Spare for alignment
+  FIELDNAM: Spare 9
+  LABLAXIS: Spare 9
+
+idx__txhdrsp10:
+  <<: *trigger_base
+  CATDESC: Spare for alignment
+  FIELDNAM: Spare 10
+  LABLAXIS: Spare 10
+
+idx__txhdrfswaidcopy:
+  <<: *trigger_base
+  CATDESC: Another copy of the AID
+  FIELDNAM: AID
+  LABLAXIS: AID
+
+idx__txhdrfswbincopy:
+  <<: *trigger_base
+  CATDESC: Another copy of the filter/bin
+  FIELDNAM: Filter/Bin
+  LABLAXIS: Filter/Bin
+
+idx__txhdrfswmajor:
+  <<: *trigger_base
+  CATDESC: Major version number for FSW
+  FIELDNAM: Major version
+  VALIDMAX: *max_uint8
+  LABLAXIS: Major Version
+
+idx__txhdrfswminor:
+  <<: *trigger_base
+  CATDESC: Minor version number for FSW
+  FIELDNAM: Minor version
+  VALIDMAX: *max_uint8
+  LABLAXIS: Minor Version
+
+idx__txhdrfswpatch:
+  <<: *trigger_base
+  CATDESC: Patch version number for FSW
+  FIELDNAM: Patch version
+  VALIDMAX: *max_uint16
+  LABLAXIS: Patch Version
+
+idx__txhdrfswhvstat:
+  <<: *trigger_base
+  CATDESC: HVPS polarity setting and status
+  FIELDNAM: HVPS polarity setting and status
+  LABLAXIS: HVPS Polarity
+
+idx__txhdrfswmem0:
+  <<: *trigger_base
+  CATDESC: Read from address specified in param table
+  FIELDNAM: Event Number
+  LABLAXIS: Event Number
+
+idx__txhdrfswmem1:
+  <<: *trigger_base
+  CATDESC: Read from address specified in param table
+
+idx__txhdrfswpt0:
+  <<: *trigger_base
+  CATDESC: Value copied from param table # TODO: get more detailed description
+
+idx__txhdrfswpt1:
+  <<: *trigger_base
+  CATDESC: Value copied from param table # TODO: get more detailed description
+
+idx__txhdrfswpt2:
+  <<: *trigger_base
+  CATDESC: Value copied from param table # TODO: get more detailed description
+
+idx__txhdrfswpt3:
+  <<: *trigger_base
+  CATDESC: Value copied from param table # TODO: get a more detailed description
+
+idx__txhdrfswpt4:
+  <<: *trigger_base
+  CATDESC: Value copied from param table # TODO: get a more detailed description
+
+idx__txhdrfswpt5:
+  <<: *trigger_base
+  CATDESC: Value copied from param table # TODO: get a more detailed description
+
+idx__txhdrfswpt6:
+  <<: *trigger_base
+  CATDESC: Value copied from param table # TODO: get a more detailed description
+
+idx__txhdrfswpt7:
+  <<: *trigger_base
+  CATDESC: Value copied from param table # TODO: get a more detailed description
+
+idx__txhdrfswpt8:
+  <<: *trigger_base
+  CATDESC: Value copied from param table # TODO: get a more detailed description
+
+idx__txhdrfswpt9:
+  <<: *trigger_base
+  CATDESC: Value copied from param table # TODO: get a more detailed description
+
+idx__txhdrfpgaver:
+  <<: *trigger_base
+  CATDESC: Version number of the FPGA version as date code
+  FIELDNAM: FPGA version number
+  LABLAXIS: Version
+
+idx__syncsci0pkt:
+  <<: *trigger_base
+  CATDESC: Synchronization marker
+  FIELDNAM: Synchronization marker
+  VALIDMAX: *max_uint16
+  LABLAXIS: Synchronization Marker
+
+idx__crcsci0pkt:
+  <<: *trigger_base
+  CATDESC: CRC CCITT-16
+  FIELDNAM: CRC CCITT-16
+  VALIDMAX: *max_uint16
+  LABLAXIS: CRC CCITT-16

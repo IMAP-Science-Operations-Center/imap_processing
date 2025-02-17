@@ -1,0 +1,8 @@
+{SPICE_TEST_DATA_PATH}/imap_sclk_0000.tsc
+{SPICE_TEST_DATA_PATH}/naif0012.tls
+{SPICE_TEST_DATA_PATH}/imap_spk_demo.bsp
+{SPICE_TEST_DATA_PATH}/sim_1yr_imap_attitude.bc
+{SPICE_TEST_DATA_PATH}/imap_wkcp.tf
+{SPICE_TEST_DATA_PATH}/de440s.bsp
+{SPICE_TEST_DATA_PATH}/imap_science_0001.tf
+{SPICE_TEST_DATA_PATH}/sim_1yr_imap_pointing_frame.bc

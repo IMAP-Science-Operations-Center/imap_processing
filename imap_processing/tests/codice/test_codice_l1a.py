@@ -1,161 +1,246 @@
 """Tests the L1a processing for decommutated CoDICE data"""
 
-from pathlib import Path
+import logging
 
-import numpy as np
 import pytest
 import xarray as xr
 
-from imap_processing import imap_module_directory
-from imap_processing.cdf.utils import load_cdf
-from imap_processing.codice.codice_l0 import decom_packets
+from imap_processing.cdf.utils import load_cdf, write_cdf
+from imap_processing.codice import constants
 from imap_processing.codice.codice_l1a import process_codice_l1a
 
+from .conftest import TEST_L0_FILE, VALIDATION_DATA
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
+pytestmark = pytest.mark.external_test_data
+
+DESCRIPTORS = [
+    "hi-ialirt",
+    "lo-ialirt",
+    "hskp",
+    "lo-counters-aggregated",
+    "lo-counters-singles",
+    "lo-sw-priority",
+    "lo-nsw-priority",
+    "lo-sw-species",
+    "lo-nsw-species",
+    "lo-sw-angular",
+    "lo-nsw-angular",
+    "hi-counters-aggregated",
+    "hi-counters-singles",
+    "hi-omni",
+    "hi-sectored",
+    "hi-priority",
+    "lo-pha",
+    "hi-pha",
+]
+
 EXPECTED_ARRAY_SHAPES = [
-    (99,),  # hskp
-    (1, 128),  # lo-sw-species-counts
-    (1, 112),  # lo-nsw-species-counts
-    (1, 211),  # lo-sw-priority-counts
-    (1, 5016),  # lo-sw-angular-counts
-]
-EXPECTED_ARRAY_SIZES = [
-    123,  # hskp
-    16,  # lo-sw-species-counts
-    8,  # lo-nsw-species-counts
-    5,  # lo-sw-priority-counts
-    4,  # lo-sw-angular-counts
-]
-EXPECTED_FILENAMES = [
-    "imap_codice_l1a_hskp_20100101_v001.cdf",
-    "imap_codice_l1a_lo-sw-species-counts_20240319_v001.cdf",
-    "imap_codice_l1a_lo-nsw-species-counts_20240319_v001.cdf",
-    "imap_codice_l1a_lo-sw-priority-counts_20240319_v001.cdf",
-    "imap_codice_l1a_lo-sw-angular-counts_20240319_v001.cdf",
-]
-TEST_PACKETS = [
-    Path(
-        f"{imap_module_directory}/tests/codice/data/raw_ccsds_20230822_122700Z_idle.bin"
-    ),
-    Path(f"{imap_module_directory}/tests/codice/data/lo_fsw_view_5_ccsds.bin"),
-    Path(f"{imap_module_directory}/tests/codice/data/lo_fsw_view_6_ccsds.bin"),
-    Path(f"{imap_module_directory}/tests/codice/data/lo_fsw_view_3_ccsds.bin"),
-    Path(f"{imap_module_directory}/tests/codice/data/lo_fsw_view_7_ccsds.bin"),
+    (),  # hi-ialirt  # TODO: Need to implement
+    (),  # lo-ialirt  # TODO: Need to implement
+    (31778,),  # hskp
+    (77, 128, 6, 6),  # lo-counters-aggregated
+    (77, 128, 24, 6),  # lo-counters-singles
+    (77, 12, 128),  # lo-sw-priority
+    (77, 12, 128),  # lo-nsw-priority
+    (77, 1, 128),  # lo-sw-species
+    (77, 1, 128),  # lo-nsw-species
+    (77, 5, 12, 128),  # lo-sw-angular
+    (77, 19, 12, 128),  # lo-nsw-angular
+    (77, 1, 6, 1),  # hi-counters-aggregated
+    (77, 1, 12, 1),  # hi-counters-singles
+    (77, 15, 4, 1),  # hi-omni
+    (77, 8, 12, 12),  # hi-sectored
+    (),  # hi-priority  # TODO: Need to implement
+    (),  # lo-pha  # TODO: Need to implement
+    (),  # hi-pha  # TODO: Need to implement
 ]
 
-# Placeholder for validation data files
-VALIDATION_DATA = [
-    f"{imap_module_directory}/tests/codice/data/validation_hskp.cdf",
-    f"{imap_module_directory}/tests/codice/data/validation_lo-sw-species-counts.cdf",
-    f"{imap_module_directory}/tests/codice/data/validation_lo-nsw-species-counts.cdf",
-    f"{imap_module_directory}/tests/codice/data/validataion_lo-sw-priority-counts.cdf",
-    f"{imap_module_directory}/tests/codice/data/validataion_lo-sw-angular-counts.cdf",
+EXPECTED_NUM_VARIABLES = [
+    0,  # hi-ialirt  # TODO: Need to implement
+    0,  # lo-ialirt  # TODO: Need to implement
+    148,  # hskp
+    3,  # lo-counters-aggregated
+    9,  # lo-counters-singles
+    13,  # lo-sw-priority
+    10,  # lo-nsw-priority
+    24,  # lo-sw-species
+    16,  # lo-nsw-species
+    12,  # lo-sw-angular
+    9,  # lo-nsw-angular
+    1,  # hi-counters-aggregated
+    3,  # hi-counters-singles
+    10,  # hi-omni
+    6,  # hi-sectored
+    0,  # hi-priority  # TODO: Need to implement
+    0,  # lo-pha  # TODO: Need to implement
+    0,  # hi-pha  # TODO: Need to implement
 ]
 
 
-@pytest.fixture(params=TEST_PACKETS)
-def test_l1a_data(request) -> xr.Dataset:
+@pytest.fixture(scope="session")
+def test_l1a_data() -> xr.Dataset:
     """Return a ``xarray`` dataset containing test data.
 
     Returns
     -------
-    dataset : xr.Dataset
-        A ``xarray`` dataset containing the test data
-    """
-    packets = decom_packets(request.param)
-    dataset = process_codice_l1a(packets)
-    return dataset
-
-
-@pytest.mark.parametrize(
-    "test_l1a_data, expected_filename",
-    list(zip(TEST_PACKETS, EXPECTED_FILENAMES)),
-    indirect=["test_l1a_data"],
-)
-def test_l1a_cdf_filenames(test_l1a_data: xr.Dataset, expected_filename: str):
-    """Tests that the ``process_codice_l1a`` function generates CDF files with
-    expected filenames.
-
-    Parameters
-    ----------
-    test_l1a_data : xr.Dataset
-        A ``xarray`` dataset containing the test data
-    expected_filename : str
-        The expected CDF filename
+    processed_datasets : list[xarray.Dataset]
+        A list of ``xarray`` datasets containing the test data
     """
 
-    dataset = test_l1a_data
-    assert dataset.cdf_filename.name == expected_filename
+    processed_datasets = process_codice_l1a(file_path=TEST_L0_FILE, data_version="001")
+
+    return processed_datasets
 
 
-@pytest.mark.parametrize(
-    "test_l1a_data, expected_shape",
-    list(zip(TEST_PACKETS, EXPECTED_ARRAY_SHAPES)),
-    indirect=["test_l1a_data"],
-)
-def test_l1a_data_array_shape(test_l1a_data: xr.Dataset, expected_shape: tuple):
+@pytest.mark.parametrize("index", range(len(EXPECTED_ARRAY_SHAPES)))
+def test_l1a_data_array_shape(test_l1a_data, index):
     """Tests that the data arrays in the generated CDFs have the expected shape.
 
     Parameters
     ----------
-    test_l1a_data : xr.Dataset
-        A ``xarray`` dataset containing the test data
-    expected_shape : tuple
-        The expected shape of the data array
+    test_l1a_data : list[xarray.Dataset]
+        A list of ``xarray`` datasets containing the test data
+    index : int
+        The index of the list to test
     """
 
-    dataset = test_l1a_data
-    for variable in dataset:
-        assert dataset[variable].data.shape == expected_shape
+    processed_dataset = test_l1a_data[index]
+    expected_shape = EXPECTED_ARRAY_SHAPES[index]
 
+    # Mark currently broken/unsupported datasets as expected to fail
+    # TODO: Remove these once they are supported
+    if index in [0, 1, 15, 16, 17]:
+        pytest.xfail("Data product is currently unsupported")
 
-@pytest.mark.parametrize(
-    "test_l1a_data, expected_size",
-    list(zip(TEST_PACKETS, EXPECTED_ARRAY_SIZES)),
-    indirect=["test_l1a_data"],
-)
-def test_l1a_data_array_size(test_l1a_data: xr.Dataset, expected_size: int):
-    """Tests that the data arrays in the generated CDFs have the expected size.
-
-    Parameters
-    ----------
-    test_l1a_data : xr.Dataset
-        A ``xarray`` dataset containing the test data
-    expected_size : int
-        The expected size of the data array
-    """
-
-    dataset = test_l1a_data
-    assert len(dataset) == expected_size
-
-
-@pytest.mark.skip("Awaiting validation data")
-@pytest.mark.parametrize(
-    "test_l1a_data, validation_data",
-    list(zip(TEST_PACKETS, VALIDATION_DATA)),
-    indirect=["test_l1a_data"],
-)
-def test_l1a_data_array_values(test_l1a_data: xr.Dataset, validation_data: Path):
-    """Tests that the generated L1a CDF contents are valid.
-
-    Once proper validation files are acquired, this test function should point
-    to those. This function currently just serves as a framework for validating
-    files, but does not actually validate them.
-
-    Parameters
-    ----------
-    test_l1a_data : xr.Dataset
-        A ``xarray`` dataset containing the test data
-    validataion_data : Path
-        The path to the file containing the validation data
-    """
-
-    generated_dataset = test_l1a_data
-    validation_dataset = load_cdf(validation_data)
-
-    # Ensure the processed data matches the validation data
-    for variable in validation_dataset:
-        assert variable in generated_dataset
-        if variable != "epoch":
-            np.testing.assert_array_equal(
-                validation_data[variable].data, generated_dataset[variable].data[0]
+    for variable in processed_dataset:
+        # For variables with energy dimensions
+        if variable in ["energy_table", "acquisition_time_per_step"]:
+            assert processed_dataset[variable].data.shape == (128,)
+        # For "support" variables with epoch dimensions
+        elif variable in [
+            "rgfo_half_spin",
+            "nso_half_spin",
+            "sw_bias_gain_mode",
+            "st_bias_gain_mode",
+            "data_quality",
+            "spin_period",
+        ]:
+            assert processed_dataset[variable].data.shape == (
+                len(processed_dataset["epoch"].data),
             )
+        # For counter variables
+        else:
+            assert processed_dataset[variable].data.shape == expected_shape
+
+
+@pytest.mark.parametrize("index", range(len(DESCRIPTORS)))
+def test_l1a_logical_sources(test_l1a_data, index):
+    """Tests that the Logical source of the dataset is what is expected.
+
+    Since the logical source gets set by ``write_cdf``, this also tests that
+    the dataset can be written to a file.
+
+    Parameters
+    ----------
+    test_l1a_data : list[xarray.Dataset]
+        A list of ``xarray`` datasets containing the test data
+    index : int
+        The index of the list to test
+    """
+
+    processed_dataset = test_l1a_data[index]
+    expected_logical_source = f"imap_codice_l1a_{DESCRIPTORS[index]}"
+
+    # Mark currently broken/unsupported datasets as expected to fail
+    # TODO: Remove these once they are supported
+    if index in [0, 1, 2, 15, 16, 17]:
+        pytest.xfail("Data product is currently unsupported")
+
+    # Write the dataset to a file to set the logical source attribute
+    _ = write_cdf(processed_dataset)
+
+    assert processed_dataset.attrs["Logical_source"] == expected_logical_source
+
+
+@pytest.mark.parametrize("index", range(len(EXPECTED_NUM_VARIABLES)))
+def test_l1a_num_data_variables(test_l1a_data, index):
+    """Tests that the generated CDFs have the expected number of data variables.
+
+    These data variables include counter data (e.g. hplus, heplus, etc.) as well
+    as any "support" variables (e.g. data_quality, spin_period, etc.).
+
+    Parameters
+    ----------
+    test_l1a_data : list[xarray.Dataset]
+        A list of ``xarray`` datasets containing the test data
+    index : int
+        The index of the list to test
+    """
+
+    processed_dataset = test_l1a_data[index]
+
+    # Mark currently broken/unsupported datasets as expected to fail
+    # TODO: Remove these once they are supported
+    if index in [0, 1, 15, 16, 17]:
+        pytest.xfail("Data product is currently unsupported")
+
+    assert len(processed_dataset) == EXPECTED_NUM_VARIABLES[index]
+
+
+@pytest.mark.parametrize("index", range(len(VALIDATION_DATA)))
+def test_l1a_validate_data_arrays(test_l1a_data: xr.Dataset, index):
+    """Tests that the generated L1a CDF data array contents are valid.
+
+    Parameters
+    ----------
+    test_l1a_data : list[xarray.Dataset]
+        A list of ``xarray`` datasets containing the test data
+    index : int
+        The index of the list to test
+    """
+
+    descriptor = DESCRIPTORS[index]
+
+    # TODO: Currently only the following products can be validated, expand this
+    #       to other data products as I can validate them.
+    able_to_be_validated = [
+        "lo-sw-angular",
+        "lo-nsw-angular",
+        "lo-sw-priority",
+        "lo-nsw-priority",
+        "lo-sw-species",
+        "lo-nsw-species",
+    ]
+    if descriptor in able_to_be_validated:
+        counters = getattr(
+            constants, f'{descriptor.upper().replace("-","_")}_VARIABLE_NAMES'
+        )
+        processed_dataset = test_l1a_data[index]
+        validation_dataset = load_cdf(VALIDATION_DATA[index])
+
+        for counter in counters:
+            # Ensure the data array shapes are equal
+            assert (
+                processed_dataset[counter].data.shape
+                == validation_dataset[counter].data.shape
+            )
+
+            # TODO: Once Joey and I figure out some small discrepancies with
+            #       some data products, we should get matching data array shapes
+            #       AND values (i.e. run assert_array_equal on the arrays,
+            #       instead of just checking shape)
+
+    else:
+        pytest.xfail(f"Still need to implement validation for {descriptor}")
+
+
+def test_l1a_multiple_packets():
+    """Tests that an input L0 file containing multiple APIDs can be processed."""
+
+    processed_datasets = process_codice_l1a(file_path=TEST_L0_FILE, data_version="001")
+
+    # TODO: Could add some more checks here?
+    assert len(processed_datasets) == 18

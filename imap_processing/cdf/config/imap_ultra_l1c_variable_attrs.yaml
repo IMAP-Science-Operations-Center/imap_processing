@@ -1,0 +1,121 @@
+default_attrs: &default
+  # Assumed values for all variable attrs unless overwritten
+  DEPEND_0: epoch
+  DISPLAY_TYPE: time_series
+  FILLVAL: -9223372036854775808
+  FORMAT: I12
+  VALIDMIN: -9223372036854775808
+  VALIDMAX: 9223372036854775807
+  VAR_TYPE: data
+
+spin_angle:
+  <<: *default
+  CATDESC: Angular bin defined by central location of the bin
+  FIELDNAM: spin_angle
+  LABLAXIS: spin angle
+  # TODO: come back to format
+  UNITS: degrees
+
+esa_step:
+  <<: *default
+  CATDESC: ESA step (0-10), nominally 9, but possibly 8 or 10, 0 is likely a background test. Energy bin.
+  FIELDNAM: esa_step
+  LABLAXIS: esa step
+  # TODO: come back to format
+  UNITS: " "
+
+time_bin:
+  <<: *default
+  CATDESC: Time bin defined by central location of the bin.
+  FIELDNAM: time_bin
+  LABLAXIS: time bin
+  # TODO: come back to format
+  UNITS: seconds
+
+species_bin:
+  <<: *default
+  CATDESC: Species bin defined by central location.
+  FIELDNAM: species_bin
+  LABLAXIS: species bin
+  # TODO: come back to format
+  UNITS: " "
+
+exposure_times:
+  <<: *default
+  CATDESC: Exposure time for a spin.
+  FIELDNAM: exposure_times
+  LABLAXIS: exposure times
+  # TODO: come back to format
+  UNITS: seconds
+
+sensitivity:
+  <<: *default
+  CATDESC: Calibration/sensitivity factor.
+  FIELDNAM: sensitivity
+  LABLAXIS: sensitivity
+  # TODO: come back to format
+  UNITS: counts/second
+
+counts:
+  <<: *default
+  CATDESC: Counts for a spin.
+  FIELDNAM: counts
+  LABLAXIS: counts
+  # TODO: come back to format
+  UNITS: counts
+
+background_rates:
+  <<: *default
+  CATDESC: Background rates. Background dominated by accidentals caused by a combination of UV light and misregistered low energy ENA events.
+  FIELDNAM: background_rates
+  LABLAXIS: background rates
+  # TODO: come back to format
+  UNITS: counts/second
+
+sid:
+  <<: *default
+  CATDESC: Science ID (always totals 8).
+  FIELDNAM: sid
+  LABLAXIS: sid
+  # TODO: come back to format
+  UNITS: " "
+
+row:
+  <<: *default
+  CATDESC: Row number.
+  FIELDNAM: row
+  LABLAXIS: row
+  # TODO: come back to format
+  UNITS: " "
+
+column:
+  <<: *default
+  CATDESC: Column number.
+  FIELDNAM: column
+  LABLAXIS: column
+  # TODO: come back to format
+  UNITS: " "
+
+spin:
+  <<: *default
+  CATDESC: Spin number at integration start.
+  FIELDNAM: spin
+  LABLAXIS: spin
+  # TODO: come back to format
+  UNITS: " "
+
+shcoarse:
+  <<: *default
+  CATDESC: CCSDS packet timestamp.
+  FIELDNAM: shcoarse
+  LABLAXIS: shcoarse
+  # TODO: come back to format
+  UNITS: seconds
+
+packetdata:
+  <<: *default
+  CATDESC: A 2D numpy array representing pixel values. Each pixel is stored as an unsigned 16-bit integer.
+  FIELDNAM: packetdata
+  LABLAXIS: packet data
+  # TODO: come back to format
+  UNITS: " "

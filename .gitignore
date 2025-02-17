@@ -1,5 +1,11 @@
 # Possible data directory files
 data/imap/
+# Ignore Excel files
+*.xlsx
+*.xls
+
+# poetry dynamic version creation
+_version.py
 
 # Documentation ignore
 docs/source/**/generated
@@ -168,3 +174,12 @@ cython_debug/
 
 # VSCode
 .vscode/
+
+# Data that is downloaded
+data/
+
+# Ignore specific SPICE kernels that get downloaded from NAIF automatically for tests
+# marked with @pytest.mark.external_kernel
+**/de440*.bsp
+**/pck0001*.tpc
+**/earth_*_combined.bpc

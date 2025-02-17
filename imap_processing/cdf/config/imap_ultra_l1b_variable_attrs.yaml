@@ -1,0 +1,363 @@
+default_attrs: &default
+  # Assumed values for all variable attrs unless overwritten
+  DEPEND_0: epoch
+  DISPLAY_TYPE: time_series
+  FILLVAL: -9223372036854775808
+  FORMAT: I12
+  VALIDMIN: -9223372036854775808
+  VALIDMAX: 9223372036854775807
+  VAR_TYPE: data
+  UNITS: " "
+
+component:
+  CATDESC: Velocity components (vx, vy, vz)
+  FIELDNAM: component
+  LABLAXIS: component
+  FORMAT: A3
+  VAR_TYPE: metadata
+
+default_uint8_attrs: &default_uint8
+  <<: *default
+  FILLVAL: 255
+  FORMAT: I3
+  VALIDMIN: 0
+  VALIDMAX: 255
+  dtype: uint8
+
+default_uint16_attrs: &default_uint16
+  <<: *default
+  FILLVAL: 65535
+  FORMAT: I5
+  VALIDMIN: 0
+  VALIDMAX: 65535
+  dtype: uint16
+
+default_uint32_attrs: &default_uint32
+  <<: *default
+  FILLVAL: 4294967295
+  FORMAT: I10
+  VALIDMIN: 0
+  VALIDMAX: 4294967295
+  dtype: uint32
+
+default_int64_attrs: &default_int64
+  <<: *default
+  FILLVAL: -9223372036854775808
+  FORMAT: I20
+  VALIDMIN: -9223372036854775808
+  VALIDMAX: 9223372036854775807
+  dtype: int64
+
+default_int32_attrs: &default_int32
+  <<: *default
+  FILLVAL: -2147483648
+  FORMAT: I10
+  VALIDMIN: -2147483648
+  VALIDMAX: 2147483647
+  dtype: int32
+
+default_float32_attrs: &default_float32
+  <<: *default
+  FILLVAL: .NAN
+  FORMAT: F12.6
+  VALIDMIN: -3.4028235e+38
+  VALIDMAX: 3.4028235e+38
+  dtype: float32
+
+x_front:
+  <<: *default_float32
+  CATDESC: x front position
+  FIELDNAM: Event x-position on front foil
+  LABLAXIS: x front position
+  UNITS: mm / 100
+
+y_front:
+  <<: *default_float32
+  CATDESC: y front position
+  FIELDNAM: Event y-position on front foil
+  LABLAXIS: y front position
+  UNITS: mm / 100
+
+x_back:
+  <<: *default_float32
+  CATDESC: x back position
+  FIELDNAM: x_back
+  LABLAXIS: x back position
+  UNITS: mm / 100
+
+y_back:
+  <<: *default_float32
+  CATDESC: y back position
+  FIELDNAM: y_back
+  LABLAXIS: y back position
+  UNITS: mm / 100
+
+x_coin:
+  <<: *default_float32
+  CATDESC: x coincidence position
+  FIELDNAM: x_coin
+  LABLAXIS: x coincidence position
+  UNITS: mm / 100
+
+event_times:
+  <<: *default_float32
+  CATDESC: time of event as calculated using aux and de l1a packets
+  FIELDNAM: event_times
+  LABLAXIS: event times
+  UNITS: seconds
+
+tof_start_stop:
+  <<: *default_float32
+  CATDESC: Particle time of flight from start to stop
+  FIELDNAM: tof_start_stop
+  LABLAXIS: tof start stop
+  UNITS: nanosecond / 10
+
+tof_stop_coin:
+  <<: *default_float32
+  CATDESC: Particle time of flight from stop to coincidence
+  FIELDNAM: tof_stop_coin
+  LABLAXIS: tof stop coin
+  UNITS: nanosecond / 10
+
+tof_corrected:
+  <<: *default_float32
+  CATDESC: Corrected time of flight
+  FIELDNAM: tof_corrected
+  LABLAXIS: tof corrected
+  UNITS: nanosecond / 10
+
+event_type:
+  <<: *default_uint8
+  CATDESC: Eventtype (1-2 top and bottom stop types; 8-15 ssd stop types)
+  FIELDNAM: Event type
+  LABLAXIS: event type
+  UNITS: " "
+
+coincidence_type:
+  <<: *default_uint8
+  CATDESC: Coincidence type for the direct event (1-2 top and bottom)
+  FIELDNAM: Coincidence type
+  LABLAXIS: coincidence type
+  UNITS: " "
+
+start_type:
+  <<: *default_uint8
+  CATDESC: Start type for the direct event (1-2 left and right)
+  FIELDNAM: Start type
+  LABLAXIS: start type
+  UNITS: " "
+
+direct_event_velocity:
+  <<: *default_float32
+  CATDESC: Direct event velocity vector in x, y, and z directions in the instrument frame.
+  DEPEND_1: component
+  FIELDNAM: v_ultra
+  LABLAXIS: v ultra
+  UNITS: "km/s"
+
+velocity_magnitude:
+  <<: *default_float32
+  CATDESC: Magnitude of the particle velocity.
+  FIELDNAM: vmag_ultra
+  LABLAXIS: vmag ultra
+  UNITS: "km/s"
+
+energy:
+  <<: *default_float32
+  CATDESC: Energy measured using the pulse height from the stop anode (DN) or Energy measured using the SSD (keV) depending on eventtype.
+  FIELDNAM: energy
+  LABLAXIS: energy
+  UNITS: keV
+
+tof_energy:
+  <<: *default_float32
+  CATDESC: Energy measured using kinetic energy equation.
+  FIELDNAM: energy
+  LABLAXIS: energy
+  UNITS: keV
+
+species:
+  <<: *default
+  DISPLAY_TYPE: no_plot
+  CATDESC: Label species type.
+  FIELDNAM: Label species type.
+  FILLVAL: "UNKNOWN"
+  FORMAT: A8
+  dtype: str
+  UNITS: " "
+
+front_back_distance:
+  <<: *default_float32
+  CATDESC: Distance front to back.
+  FIELDNAM: front_back_distance
+  LABLAXIS: front_back_distance
+  UNITS: mm / 100
+
+path_length:
+  <<: *default_float32
+  CATDESC: Path length.
+  FIELDNAM: path_length
+  LABLAXIS: path_length
+  UNITS: mm / 100
+
+azimuth:
+  <<: *default_float32
+  CATDESC: Azimuth.
+  FIELDNAM: azimuth
+  LABLAXIS: azimuth
+  UNITS: radians
+
+elevation:
+  <<: *default_float32
+  CATDESC: Elevation.
+  FIELDNAM: elevation
+  LABLAXIS: elevation
+  UNITS: radians
+
+event_efficiency:
+  <<: *default_float32
+  CATDESC: Estimated event efficiency for this path through the instrument.
+  FIELDNAM: event_efficiency
+  LABLAXIS: event efficiency
+  UNITS: " "
+
+velocity_sc:
+  <<: *default_float32
+  CATDESC: x,y,z-components of the velocity vector of the ena in the spacecraft frame.
+  DEPEND_1: component
+  FIELDNAM: v_sc
+  LABLAXIS: v sc
+  UNITS: " "
+
+velocity_dps_sc:
+  <<: *default_float32
+  CATDESC: x,y,z-components of the velocity vector of the ena in the DPS frame at rest WRT spacecraft.
+  DEPEND_1: component
+  FIELDNAM: v_dps_sc
+  LABLAXIS: v dps sc
+  UNITS: " "
+
+velocity_dps_helio:
+  <<: *default_float32
+  CATDESC: x,y,z-components of the velocity vector of the ena in the DPS frame at rest WRT heliosphere.
+  DEPEND_1: component
+  FIELDNAM: v_dps_helio
+  LABLAXIS: v dps helio
+  UNITS: " "
+
+de_event_met:
+  <<: *default_int64
+  CATDESC: Mission Elapsed Time (MET) of Direct Event
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: Mission Elapsed Time
+  LABLAXIS: DE MET
+  UNITS: ns
+  VAR_TYPE: support_data
+  SCALE_TYP: linear
+
+spin_start_time:
+  <<: *default
+  CATDESC: Spin start time from Universal Spin Table.
+  FIELDNAM: spin_start_time
+  LABLAXIS: spin start time
+  # TODO: come back to format
+  UNITS: s
+
+spin_period:
+  <<: *default
+  CATDESC: Spin period from Universal Spin Table.
+  FIELDNAM: spin_period
+  LABLAXIS: spin_period
+  UNITS: s
+
+spin_rate:
+  <<: *default
+  CATDESC: Spin rate from Universal Spin Table.
+  FIELDNAM: spin_rate
+  LABLAXIS: spin_rate
+  UNITS: rpm
+
+rate_start_pulses:
+  <<: *default
+  CATDESC: Rate of start pulses (/s).
+  FIELDNAM: rate_start_pulses
+  LABLAXIS: rate start pulses
+  # TODO: come back to format
+  UNITS: 1/s
+
+rate_stop_pulses:
+  <<: *default
+  CATDESC: Rate of stop pulses (/s).
+  FIELDNAM: rate_stop_pulses
+  LABLAXIS: rate stop pulses
+  # TODO: come back to format
+  UNITS: 1/s
+
+rate_coin_pulses:
+  <<: *default
+  CATDESC: Rate of coincidence pulses (/s).
+  FIELDNAM: rate_coin_pulses
+  LABLAXIS: rate coincidence pulses
+  # TODO: come back to format
+  UNITS: 1/s
+
+rate_processed_events:
+  <<: *default
+  CATDESC: Rate of processed events (/s).
+  FIELDNAM: rate_processed_events
+  LABLAXIS: rate processed events
+  # TODO: come back to format
+  UNITS: 1/s
+
+rate_rejected_events:
+  <<: *default
+  CATDESC: Rate of rejected events (/s).
+  FIELDNAM: rate_rejected_events
+  LABLAXIS: rate rejected events
+  # TODO: come back to format
+  UNITS: 1/s
+
+# Extendedspin attributes
+ena_rates:
+  <<: *default_float32
+  CATDESC: Rates calculated from de packet.
+  FIELDNAM: ena_rates
+  LABLAXIS: ena_rates
+  DEPEND_0: spin_number
+  DEPEND_1: energy_bin_geometric_mean
+  UNITS: " "
+
+ena_rates_threshold:
+  <<: *default_float32
+  CATDESC: Rates threshold used for flagging data.
+  FIELDNAM: ena_rates_threshold
+  LABLAXIS: ena_rates_threshold
+  DEPEND_0: spin_number
+  DEPEND_1: energy_bin_geometric_mean
+  UNITS: " "
+
+quality_ena_rates:
+  <<: *default_uint16
+  CATDESC: Spin filter derived from Ultra ena rates. Bitwise flagging used to filter the spin.
+  FIELDNAM: quality_ena_rates
+  LABLAXIS: quality_ena_rates
+  DEPEND_0: spin_number
+  DEPEND_1: energy_bin_geometric_mean
+  UNITS: " "
+
+quality_attitude:
+  <<: *default_uint16
+  CATDESC: Spin filter derived from IMAP attitude. Bitwise flagging used to filter the spin.
+  FIELDNAM: quality_attitude
+  LABLAXIS: quality attitude
+  # TODO: come back to format
+  UNITS: " "
+
+quality_instruments:
+  <<: *default_uint16
+  CATDESC: Spin filter derived from instruments other than Ultra. Bitwise flagging used to filter the spin.
+  FIELDNAM: quality_instruments
+  LABLAXIS: quality instruments
+  # TODO: come back to format
+  UNITS: " "

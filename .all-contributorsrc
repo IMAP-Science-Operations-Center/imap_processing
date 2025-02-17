@@ -125,7 +125,7 @@
     },
     {
       "login": "vmartinez-cu",
-      "name": "vmartinez-cu",
+      "name": "Veronica Martinez",
       "avatar_url": "https://avatars.githubusercontent.com/u/39746325?v=4",
       "profile": "https://github.com/vmartinez-cu",
       "contributions": [
@@ -141,6 +141,26 @@
       "contributions": [
         "review",
         "code"
+      ]
+    },
+    {
+      "login": "daralynnrhode",
+      "name": "Daralynn Rhode",
+      "avatar_url": "https://avatars.githubusercontent.com/u/143308810?v=4",
+      "profile": "https://github.com/daralynnrhode",
+      "contributions": [
+        "code",
+        "doc"
+      ]
+    },
+    {
+      "login": "anamanica",
+      "name": "anamanica",
+      "avatar_url": "https://avatars.githubusercontent.com/u/171708990?v=4",
+      "profile": "https://github.com/anamanica",
+      "contributions": [
+        "code",
+        "doc"
       ]
     }
   ],

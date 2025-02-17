@@ -1,125 +1,56 @@
 """Various utility classes and functions to support SWE processing."""
 
-import collections
-import dataclasses
 from enum import IntEnum
 
-import xarray as xr
+import pandas as pd
 
-from imap_processing.cdf.global_attrs import ConstantCoordinates
-from imap_processing.cdf.utils import calc_start_time
-from imap_processing.swe import swe_cdf_attrs
+from imap_processing import imap_module_directory
 
-
-class SWEAPID(IntEnum):
-    """Create ENUM for apid.
-
-    Parameters
-    ----------
-    IntEnum : IntEnum
-    """
-
-    SWE_APP_HK = 1330
-    SWE_EVTMSG = 1317
-    SWE_CEM_RAW = 1334
-    SWE_SCIENCE = 1344
-
-
-filename_descriptors = {
-    SWEAPID.SWE_APP_HK: "hk",
-    SWEAPID.SWE_EVTMSG: "evtmsg",
-    SWEAPID.SWE_CEM_RAW: "cemraw",
-    SWEAPID.SWE_SCIENCE: "sci",
+# ESA voltage and index in the final data table
+ESA_VOLTAGE_ROW_INDEX_DICT = {
+    0.56: 0,
+    0.78: 1,
+    1.08: 2,
+    1.51: 3,
+    2.10: 4,
+    2.92: 5,
+    4.06: 6,
+    5.64: 7,
+    7.85: 8,
+    10.92: 9,
+    15.19: 10,
+    21.13: 11,
+    29.39: 12,
+    40.88: 13,
+    56.87: 14,
+    79.10: 15,
+    110.03: 16,
+    153.05: 17,
+    212.89: 18,
+    296.14: 19,
+    411.93: 20,
+    572.99: 21,
+    797.03: 22,
+    1108.66: 23,
 }
 
 
-def add_metadata_to_array(data_packet, metadata_arrays):
-    """Add metadata to the metadata_arrays.
+class SWEAPID(IntEnum):
+    """Create ENUM for apid."""
 
-    Parameters
-    ----------
-    data_packet : space_packet_parser.parser.Packet
-        SWE data packet
-    metadata_arrays : dict
-        metadata arrays
+    SWE_SCIENCE = 1344
+
+
+def read_lookup_table() -> pd.DataFrame:
     """
-    for key, value in data_packet.header.items():
-        metadata_arrays.setdefault(key, []).append(value.raw_value)
-
-    for key, value in data_packet.data.items():
-        if key == "SCIENCE_DATA":
-            continue
-        elif key == "APP_MODE":
-            # We need to get derived value for this because it's used in
-            # filename.
-            metadata_arrays.setdefault(key, []).append(
-                value.raw_value
-                if value.derived_value is None
-                else str.lower(value.derived_value)
-            )
-        else:
-            metadata_arrays.setdefault(key, []).append(value.raw_value)
-
-    return metadata_arrays
-
-
-def create_dataset(packets):
-    """Create dataset for each metadata field.
-
-    Parameters
-    ----------
-    packets : list
-        packet list
+    Read lookup table.
 
     Returns
     -------
-    xr.dataset
-        dataset with all metadata field data in xr.DataArray
+    esa_table : pandas.DataFrame
+        ESA table.
     """
-    metadata_arrays = collections.defaultdict(list)
-
-    for data_packet in packets:
-        add_metadata_to_array(data_packet, metadata_arrays)
-
-    epoch_converted_time = [
-        calc_start_time(sc_time) for sc_time in metadata_arrays["SHCOARSE"]
-    ]
-    epoch_time = xr.DataArray(
-        epoch_converted_time,
-        name="epoch",
-        dims=["epoch"],
-        attrs=ConstantCoordinates.EPOCH,
-    )
-
-    dataset = xr.Dataset(
-        coords={"epoch": epoch_time},
-        attrs=swe_cdf_attrs.swe_l1a_global_attrs.output(),
-    )
-
-    # create xarray dataset for each metadata field
-    for key, value in metadata_arrays.items():
-        if key == "SHCOARSE":
-            continue
-        elif key == "APP_MODE":
-            dataset[key] = xr.DataArray(
-                value,
-                dims=["epoch"],
-                attrs=dataclasses.replace(
-                    swe_cdf_attrs.string_base,
-                    catdesc=key,
-                    fieldname=key,
-                ).output(),
-            )
-        else:
-            dataset[key] = xr.DataArray(
-                value,
-                dims=["epoch"],
-                attrs=dataclasses.replace(
-                    swe_cdf_attrs.swe_metadata_attrs,
-                    catdesc=key,
-                    fieldname=key,
-                    label_axis=key,
-                    depend_0="epoch",
-                ).output(),
-            )
-    return dataset
+    # Read lookup table
+    lookup_table_path = imap_module_directory / "swe/l1b/swe_esa_lookup_table.csv"
+    esa_table = pd.read_csv(lookup_table_path)
+    return esa_table

@@ -1,72 +1,38 @@
+from unittest.mock import patch
+
+import numpy as np
 import pandas as pd
-import pytest
 
 from imap_processing import imap_module_directory
 from imap_processing.cdf.utils import load_cdf, write_cdf
-from imap_processing.swe.l0 import decom_swe
 from imap_processing.swe.l1a.swe_l1a import swe_l1a
 from imap_processing.swe.l1a.swe_science import swe_science
 from imap_processing.swe.l1b.swe_l1b import swe_l1b
-from imap_processing.swe.utils.swe_utils import (
-    SWEAPID,
-    create_dataset,
+from imap_processing.swe.l1b.swe_l1b_science import (
+    convert_counts_to_rate,
+    deadtime_correction,
 )
-from imap_processing.utils import convert_raw_to_eu, group_by_apid
 
 
-@pytest.fixture(scope="session")
-def decom_test_data():
-    """Read test data from test folder"""
-    test_folder_path = "tests/swe/l0_data"
-    packet_files = list(imap_module_directory.glob(f"{test_folder_path}/*.bin"))
-
-    data_list = []
-    for packet_file in packet_files:
-        data_list.extend(decom_swe.decom_packets(packet_file))
-    return data_list
-
-
-def test_swe_l1b(decom_test_data):
-    """Test that calculate engineering unit(EU) is
-    matches validation data.
+def test_swe_l1b(decom_test_data_derived):
+    """Test that calculate engineering unit(EU) matches validation data.
 
     Parameters
     ----------
-    decom_test_data : list
-        List of packets
+    decom_test_data_derived : xarray.dataset
+        Dataset with derived values
     """
-    # SWE_APP_HK = 1330
-    # SWE_SCIENCE = 1344
-    grouped_data = group_by_apid(decom_test_data)
-    # Process science to l1a.
-    # because of test data being in the wrong
-    # order, we need to manually re-sort data
-    # into order.
-    sorted_packets = sorted(
-        grouped_data[1344], key=lambda x: x.data["QUARTER_CYCLE"].raw_value
-    )
-    science_l1a_ds = swe_science(sorted_packets)
-    # convert value from raw to engineering units as needed
-    conversion_table_path = (
-        imap_module_directory / "swe/l1b/engineering_unit_convert_table.csv"
-    )
-    # Look up packet name from APID
-    packet_name = SWEAPID.SWE_SCIENCE.name
-    # Convert raw data to engineering units as needed
-    science_l1b = convert_raw_to_eu(
-        science_l1a_ds,
-        conversion_table_path=conversion_table_path,
-        packet_name=packet_name,
-    )
+    science_l1a_ds = swe_science(decom_test_data_derived, "001")
 
     # read science validation data
     test_data_path = imap_module_directory / "tests/swe/l0_validation_data"
     eu_validation_data = pd.read_csv(
-        test_data_path / "idle_export_eu.SWE_SCIENCE_20230927_172708.csv",
+        test_data_path / "idle_export_eu.SWE_SCIENCE_20240510_092742.csv",
         index_col="SHCOARSE",
     )
-    second_data = sorted_packets[1]
-    validation_data = eu_validation_data.loc[second_data.data["SHCOARSE"].raw_value]
+
+    second_data = science_l1a_ds.isel(epoch=1)
+    validation_data = eu_validation_data.loc[second_data["shcoarse"].values]
 
     science_eu_field_list = [
         "SPIN_PHASE",
@@ -76,65 +42,56 @@ def test_swe_l1b(decom_test_data):
 
     # Test EU values for science data
     for field in science_eu_field_list:
-        assert round(science_l1b[field].data[1], 5) == round(validation_data[field], 5)
-
-    # process housekeeping data to l1a and create l1b
-    hk_l1a_ds = create_dataset(grouped_data[1330])
-    hk_l1b = convert_raw_to_eu(
-        hk_l1a_ds, conversion_table_path, SWEAPID.SWE_APP_HK.name
-    )
-
-    # read housekeeping validation data
-    eu_validation_data = pd.read_csv(
-        test_data_path / "data_derived.SWE_APP_HK_20230927_094839.csv",
-        index_col="SHCOARSE",
-    )
-    second_data = grouped_data[1330][1]
-    validation_data = eu_validation_data.loc[second_data.data["SHCOARSE"].raw_value]
-
-    # check that these field's calculated EU value matches with
-    # validation data's EU value.
-    eu_field_list = [
-        "HVPS_VBULK",
-        "HVPS_VCEM",
-        "HVPS_VESA",
-        "HVPS_VESA_LOW_RANGE",
-        "HVPS_ICEM",
-        "FEE_TEMP",
-        "SENSOR_TEMP",
-        "HVPS_TEMP",
-        "LVPS_BACK_BOARD_TEMP",
-    ]
-
-    # Check EU values from housekeeping data
-    for field in eu_field_list:
-        assert round(hk_l1b[field].data[1], 5) == round(validation_data[field], 5)
+        np.testing.assert_almost_equal(
+            second_data[field.lower()].values, validation_data[field], decimal=5
+        )
 
 
-def test_cdf_creation():
+@patch(
+    "imap_processing.swe.l1b.swe_l1b_science.read_in_flight_cal_data",
+    return_value=pd.DataFrame(
+        {
+            "met_time": [452051300, 454051900],
+            "cem1": [1, 1],
+            "cem2": [1, 1],
+            "cem3": [1, 1],
+            "cem4": [1, 1],
+            "cem5": [1, 1],
+            "cem6": [1, 1],
+            "cem7": [1, 1],
+        }
+    ),
+)
+def test_cdf_creation(mock_read_in_flight_cal_data, l1b_validation_df):
     """Test that CDF file is created and has the correct name."""
+    test_data_path = "tests/swe/l0_data/2024051010_SWE_SCIENCE_packet.bin"
+    l1a_datasets = swe_l1a(imap_module_directory / test_data_path, "002")
 
-    test_data_path = "tests/swe/l0_data/20230927100248_SWE_HK_packet.bin"
-    l1a_datasets = swe_l1a(imap_module_directory / test_data_path)
+    l1b_dataset = swe_l1b(l1a_datasets[0], "002")
 
-    # TODO: This creates an unbound local access error if we don't get any hk_l1a data
-    #       use the last dataset if we don't find any hk_l1a data for now
-    hk_l1a_data = l1a_datasets[-1]
-    for i in range(len(l1a_datasets)):
-        if l1a_datasets[i].attrs["descriptor"] == "sci":
-            hk_l1a_data = l1a_datasets[i]
-            break
+    sci_l1b_filepath = write_cdf(l1b_dataset[0])
 
-    hk_l1a_filepath = write_cdf(hk_l1a_data)
+    assert sci_l1b_filepath.name == "imap_swe_l1b_sci_20240510_v002.cdf"
+    # load the CDF file and compare the values
+    l1b_cdf_dataset = load_cdf(sci_l1b_filepath)
+    processed_science = l1b_cdf_dataset["science_data"].data
+    validation_science = l1b_validation_df.values[:, 1:].reshape(6, 24, 30, 7)
+    np.testing.assert_allclose(processed_science, validation_science, rtol=1e-7)
 
-    # TODO: replace "sci" with proper descriptor (previously lveng-hk)
-    assert hk_l1a_filepath.name == "imap_swe_l1a_sci_20230927_v001.cdf"
 
-    # reads data from CDF file and passes to l1b
-    l1a_cdf_dataset = load_cdf(hk_l1a_filepath, to_datetime=True)
-    l1b_dataset = swe_l1b(l1a_cdf_dataset)
-
-    hk_l1b_filepath = write_cdf(l1b_dataset)
-
-    # TODO: replace "sci" with proper descriptor (previously lveng-hk)
-    assert hk_l1b_filepath.name == "imap_swe_l1b_sci_20230927_v001.cdf"
+def test_count_rate():
+    x = np.array([1, 10, 100, 1000, 10000, 38911, 65535])
+    acq_duration = 80000
+    deatime_corrected = deadtime_correction(x, acq_duration)
+    count_rate = convert_counts_to_rate(deatime_corrected, acq_duration)
+    # Ruth provided the expected output for this test
+    expected_output = [
+        12.50005653,
+        125.00562805,
+        1250.56278121,
+        12556.50455087,
+        130890.05519127,
+        589631.73670132,
+        1161815.68783304,
+    ]
+    np.testing.assert_allclose(count_rate, expected_output, rtol=1e-7)

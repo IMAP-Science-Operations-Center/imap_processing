@@ -1,0 +1,415 @@
+int_fillval: &int_fillval -9223372036854775808
+
+max_uint16: &max_uint16 65535
+
+data_min: &data_min 0
+data_max: &data_max 4095
+
+# <=== Base Attributes ===>
+string_base_attrs: &string_base
+  CATDESC: " "
+  FIELDNAM: " "
+  FORMAT: A3
+  LABLAXIS: "none"
+  VAR_TYPE: metadata
+  DISPLAY_TYPE: no_plot
+  DEPEND_0: epoch
+  UNITS: " "
+
+l1b_data_base: &l1b_data_base
+  VALIDMIN: *data_min
+  VALIDMAX: *data_max
+  DISPLAY_TYPE: spectrogram
+  DEPEND_0: epoch
+  FORMAT: I12
+  UNITS: pC
+  VAR_TYPE: data
+  CATDESC: ""
+  FIELDNAM: ""
+  FILLVAL: *max_uint16
+  LABLAXIS: ""
+
+l1b_tof_base: &l1b_tof_base
+  <<: *l1b_data_base
+  DEPEND_1: time_high_sample_rate
+  LABL_PTR_1: time_high_sample_rate_label
+
+l1b_target_base: &l1b_target_base
+  <<: *l1b_data_base
+  DEPEND_1: time_low_sample_rate
+  LABL_PTR_1: time_low_sample_rate_label
+
+trigger_base: &trigger_base
+  <<: *l1b_data_base
+  DISPLAY_TYPE: no_plot
+  UNITS: " "
+
+spice_base: &spice_base
+  <<: *l1b_data_base
+  VAR_TYPE: data
+  VALIDMIN: -180
+  VALIDMAX: 360
+  DISPLAY_TYPE: time_series
+  UNITS: Degrees
+
+# <=== Instrument Setting Attributes ===>
+trigger_mode:
+  <<: *string_base
+  FIELDNAM: Trigger Mode
+  CATDESC: Channel and mode that triggered the event
+
+trigger_level:
+  <<: *string_base
+  FIELDNAM: Trigger Level
+  CATDESC: Threshold signal level that triggered the event
+
+tof_high:
+  <<: *l1b_tof_base
+  CATDESC: Time of flight waveform on the high-gain channel
+  FIELDNAM: High Gain Time of Flight
+  LABLAXIS: TOF High Ampl
+  VAR_NOTES: High gain channel of the time-of-flight signal.
+        Sampled at 260 Megasamples per second, with a 10-bit resolution.
+        Data is used to quantify dust composition.
+
+tof_mid:
+  <<: *l1b_tof_base
+  CATDESC: Time of flight waveform on the mid-gain channel
+  FIELDNAM: Mid Gain Time of Flight
+  LABLAXIS: TOF Mid Ampl
+  VAR_NOTES: Mid gain channel of the time-of-flight signal.
+        Sampled at 260 Megasamples per second, with a 10-bit resolution.
+        Data is used to quantify dust composition.
+
+tof_low:
+  <<: *l1b_tof_base
+  CATDESC: Time of flight waveform on the low-gain channel
+  FIELDNAM: Low Gain Time of Flight
+  LABLAXIS: TOF Low Ampl
+  VAR_NOTES: Low gain channel of the time-of-flight signal.
+        Sampled at 260 Megasamples per second, with a 10-bit resolution.
+        Data is used to quantify dust composition.
+
+
+target_low:
+  <<: *l1b_target_base
+  CATDESC: Target low charge sensitive amplifier waveform
+  FIELDNAM: Low Target Signal
+  LABLAXIS: Low Target Ampl
+  VAR_NOTES: Low gain channel of IDEX's target signal.
+        Sampled at 3.75 Msps with 12-bit resolution.
+        Data is used to quantify dust charge.
+
+target_high:
+  <<: *l1b_target_base
+  CATDESC: Ion grid charge sensitive amplifier waveform
+  FIELDNAM: High Target Signal
+  LABLAXIS: High Target Ampl
+  VAR_NOTES: High gain channel of IDEX's target signal.
+        Sampled at 3.75 Msps with 12-bit resolution.
+        Data is used to quantify dust charge.
+
+ion_grid:
+  <<: *l1b_target_base
+  CATDESC: Ion grid charge sensitive amplifier waveform data
+  FIELDNAM: Ion Grid Signal
+  LABLAXIS: Ion Grid Ampl
+  VAR_NOTES: This is the ion grid signal from IDEX.
+        Sampled at 3.75 Msps with 12-bit resolution.
+        Data is used to quantify dust charge.
+
+detector_voltage:
+  <<: *trigger_base
+  FIELDNAM: Detector Voltage
+  CATDESC: Voltage reading of Detector on HVPS Board (ADC Channel 0)
+  LABLAXIS: Voltage
+  UNITS: V
+
+sensor_voltage:
+  <<: *trigger_base
+  FIELDNAM: Sensor Voltage
+  CATDESC: Voltage reading of Detector on HVPS Board (ADC Channel 0)
+  LABLAXIS: Voltage
+  UNITS: V
+
+target_voltage:
+  <<: *trigger_base
+  FIELDNAM: Target Voltage
+  CATDESC: Voltage reading of Target on HVPS Board  (ADC Channel 2)
+  LABLAXIS: Voltage
+  UNITS: V
+
+reflectron_voltage:
+  <<: *trigger_base
+  FIELDNAM: Reflectron Voltage
+  CATDESC: Voltage reading of Reflectron on HVPS Board  (ADC Channel 3)
+  LABLAXIS: Voltage
+  UNITS: V
+
+rejection_voltage:
+  <<: *trigger_base
+  FIELDNAM: Rejection Voltage
+  CATDESC: Voltage reading of Rejection on HVPS Board (ADC Channel 4)
+  LABLAXIS: Voltage
+  UNITS: V
+
+current_hvps_sensor:
+  <<: *trigger_base
+  FIELDNAM: Detector Current
+  CATDESC: Reading of Detector current on HVPS Board (ADC Channel 5)
+  LABLAXIS: Current
+  UNITS: mA
+
+current_1v_pol:
+  <<: *trigger_base
+  FIELDNAM: 1V POL Current
+  CATDESC: High side current reading on 1.0V bus on Processor Board (ADC channel 0)
+  LABLAXIS: Current
+  UNITS: mA
+
+current_1p9v_pol:
+  <<: *trigger_base
+  FIELDNAM: 1.9V POL Current
+  CATDESC: High side current reading on 1.9V bus on Processor Board (ADC channel 1)
+  LABLAXIS: Current
+  UNITS: mA
+
+temperature_1:
+  <<: *trigger_base
+  FIELDNAM: ProcBd Temp1
+  CATDESC: Temperature reading near high speed ADCs on Processor Board (ADC channel 2)
+  LABLAXIS: Temperature
+  UNITS: C
+
+temperature_2:
+  <<: *trigger_base
+  FIELDNAM: ProcBd Temp2
+  CATDESC: Temperature reading near center of Processor Board (ADC channel 3)
+  LABLAXIS: Temperature
+  UNITS: C
+
+voltage_1v_bus:
+  <<: *trigger_base
+  FIELDNAM: 1V Voltage
+  CATDESC: Voltage reading of 1.0V bus on Processor Board (ADC channel 4)
+  LABLAXIS: Voltage
+  UNITS: V
+
+fpga_temperature:
+  <<: *trigger_base
+  FIELDNAM: FPGA Temp
+  CATDESC: Temperature reading on FPGA on Processor Board (ADC channel 5)
+  LABLAXIS: Temperature
+  UNITS: C
+
+voltage_1p9v_bus:
+  <<: *trigger_base
+  FIELDNAM: 1.9V Voltage
+  CATDESC: Voltage reading of 1.9V bus on Processor Board (ADC channel 6)
+  LABLAXIS: Voltage
+  UNITS: V
+
+voltage_3p3v_bus:
+  <<: *trigger_base
+  FIELDNAM: 3.3V Voltage
+  CATDESC: Voltage reading of 3.3V bus on Processor Board (ADC channel 7)
+  LABLAXIS: Voltage
+  UNITS: V
+
+positive_current_hvps:
+  <<: *trigger_base
+  FIELDNAM: Sensor IP
+  CATDESC: Reading of HVPS Sensor positive current (ADC Channel 6)
+  LABLAXIS: Current
+  UNITS: mA
+
+negative_current_hvps:
+  <<: *trigger_base
+  FIELDNAM: Sensor IN
+  CATDESC: Reading of HVPS Sensor negative current (ADC Channel 7)
+  LABLAXIS: Current
+  UNITS: mA
+
+voltage_3p3_ref:
+  <<: *trigger_base
+  FIELDNAM: P3.3VREF_HK
+  CATDESC: Positive voltage reading on +3.3V bus Housekeeping reference on LVPS Board (ADC 0 channel 0)
+  LABLAXIS: Voltage
+  UNITS: V
+
+voltage_3p3_op_ref:
+  <<: *trigger_base
+  FIELDNAM: P3.3VREF_OP
+  CATDESC: Positive voltage reading on +3.3V bus Operations reference on LVPS Board (ADC 0 channel 1)
+  LABLAXIS: Voltage
+  UNITS: V
+
+voltage_neg6v_bus:
+  <<: *trigger_base
+  FIELDNAM: N6V
+  CATDESC: Negative voltage reading on -6V bus on LVPS Board (ADC 0 channel 2)
+  LABLAXIS: Voltage
+  UNITS: V
+
+voltage_pos6v_bus:
+  <<: *trigger_base
+  FIELDNAM: P6V
+  CATDESC: Positive voltage reading on +6V bus on LVPS Board (ADC 0 channel 3)
+  LABLAXIS: Voltage
+  UNITS: V
+
+voltage_pos16v_bus:
+  <<: *trigger_base
+  FIELDNAM: P16V
+  CATDESC: Positive voltage reading on +16V bus on LVPS Board (ADC 0 channel 4)
+  LABLAXIS: Voltage
+  UNITS: V
+
+voltage_pos3p3v_bus:
+  <<: *trigger_base
+  FIELDNAM: P3.3V
+  CATDESC: Positive voltage reading on +3.3V bus on LVPS Board (ADC 0 channel 5)
+  LABLAXIS: Voltage
+  UNITS: V
+
+voltage_neg5v_bus:
+  <<: *trigger_base
+  FIELDNAM: N5V
+  CATDESC: Negative voltage reading on -5V bus on LVPS Board (ADC 0 channel 6)
+  LABLAXIS: Voltage
+  UNITS: V
+
+voltage_pos5v_bus:
+  <<: *trigger_base
+  FIELDNAM: P5V
+  CATDESC: Positive voltage reading on +5V bus on LVPS Board (ADC 0 channel 7)
+  LABLAXIS: Voltage
+  UNITS: V
+
+current_3p3_bus:
+  <<: *trigger_base
+  FIELDNAM: P3.3_IMON
+  CATDESC: Positive current reading on +3.3V bus on LVPS Board (ADC 1 channel 0)
+  LABLAXIS: Current
+  UNITS: A
+
+current_16v_bus:
+  <<: *trigger_base
+  FIELDNAM: P16V_IMON
+  CATDESC: Positive current reading on +16V bus on LVPS Board (ADC 1 channel 1)
+  LABLAXIS: Current
+  UNITS: A
+
+current_6v_bus:
+  <<: *trigger_base
+  FIELDNAM: P6V_IMON
+  CATDESC: Positive current reading on +6V bus on LVPS Board (ADC 1 channel 2)
+  LABLAXIS: Current
+  UNITS: A
+
+current_neg6v_bus:
+  <<: *trigger_base
+  FIELDNAM: N6V_IMON
+  CATDESC: Negative current reading on -6V bus on LVPS Board (ADC 1 channel 3)
+  LABLAXIS: Current
+  UNITS: A
+
+current_5v_bus:
+  <<: *trigger_base
+  FIELDNAM: P5V_IMON
+  CATDESC: Positive current reading on +5V bus on LVPS Board (ADC 1 channel 4)
+  LABLAXIS: Current
+  UNITS: A
+
+current_neg5v_bus:
+  <<: *trigger_base
+  FIELDNAM: N5V_IMON
+  CATDESC: Negative current reading on -5V bus on LVPS Board (ADC 1 channel 5)
+  LABLAXIS: Current
+  UNITS: A
+
+current_2p5v_bus:
+  <<: *trigger_base
+  FIELDNAM: P2.5V_IMON
+  CATDESC: Positive current reading on +2.5V bus on LVPS Board (ADC 1 channel 6)
+  LABLAXIS: Current
+  UNITS: A
+
+current_neg2p5v_bus:
+  <<: *trigger_base
+  FIELDNAM: N2.5V_IMON
+  CATDESC: Negative current reading on -2.5V bus on LVPS Board (ADC 1 channel 7)
+  LABLAXIS: Current
+  UNITS: A
+
+# <=== Spice Data Attributes ===>
+# TODO: Get actual validmin and vaildmax for ephemeris attrs
+ephemeris_position_x:
+  <<: *spice_base
+  FIELDNAM: Position X
+  CATDESC: Cartesian coordinate X positions for the IMAP spacecraft in the ECLIPJ2000 frame.
+  LABLAXIS: Position X
+  UNITS: km
+
+ephemeris_position_y:
+  <<: *spice_base
+  FIELDNAM: Position Y
+  CATDESC: Cartesian coordinate Y positions for the IMAP spacecraft in the ECLIPJ2000 frame.
+  LABLAXIS: Position Y
+  UNITS: km
+
+ephemeris_position_z:
+  <<: *spice_base
+  FIELDNAM: Position Z
+  CATDESC: Cartesian coordinate Z positions for the IMAP spacecraft in the ECLIPJ2000 frame.
+  LABLAXIS: Position Z
+  UNITS: km
+
+ephemeris_velocity_x:
+  <<: *spice_base
+  FIELDNAM: Velocity X
+  CATDESC: Velocity X positions for the IMAP spacecraft in the ECLIPJ2000 frame.
+  LABLAXIS: Velocity X
+  UNITS: km/s
+
+ephemeris_velocity_y:
+  <<: *spice_base
+  FIELDNAM: Velocity Y
+  CATDESC: Velocity Y positions for the IMAP spacecraft in the ECLIPJ2000 frame.
+  LABLAXIS: Velocity Y
+  UNITS: km/s
+
+ephemeris_velocity_z:
+  <<: *spice_base
+  FIELDNAM: Velocity Z
+  CATDESC: Velocity Z positions for the IMAP spacecraft in the ECLIPJ2000 frame.
+  LABLAXIS: Velocity Z
+  UNITS: km/s
+
+right_ascension:
+  <<: *spice_base
+  VALIDMIN: 0
+  FIELDNAM: Right Ascension
+  CATDESC: Right ascension of the IMAP spacecraft position as observed from Earth in the ECLIPJ2000 reference frame.
+  LABLAXIS: Right Ascension
+
+declination:
+  <<: *spice_base
+  FIELDNAM: Declination
+  CATDESC: Declination of the IMAP spacecraft position as observed from Earth in the ECLIPJ2000 reference frame.
+  LABLAXIS: Declination
+
+spin_phase:
+  <<: *spice_base
+  VALIDMIN: 0
+  FIELDNAM: Spin Phase
+  CATDESC: IMAP Spin Phase
+  LABLAXIS: Spin Phase
+
+solar_longitude:
+  <<: *spice_base
+  VALIDMAX: 180
+  FIELDNAM: Solar Longitude
+  CATDESC: Solar Longitude of the IMAP spacecraft
+  LABLAXIS: Solar Longitude
+

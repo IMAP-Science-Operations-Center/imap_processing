@@ -14,13 +14,13 @@ def test_ccsds_header(xtce_document):
 
     # Define what is expected in the XTCE document
     header_keys = [
-        ("VERSION", "UINT3"),
-        ("TYPE", "UINT1"),
-        ("SEC_HDR_FLG", "UINT1"),
-        ("PKT_APID", "UINT11"),
-        ("SEQ_FLGS", "UINT2"),
-        ("SRC_SEQ_CTR", "UINT14"),
-        ("PKT_LEN", "UINT16"),
+        ("VERSION", "3"),
+        ("TYPE", "1"),
+        ("SEC_HDR_FLG", "1"),
+        ("PKT_APID", "11"),
+        ("SEQ_FLGS", "2"),
+        ("SRC_SEQ_CTR", "14"),
+        ("PKT_LEN", "16"),
     ]
     header_entry_list = (
         "<xtce:EntryList>"
@@ -40,11 +40,22 @@ def test_ccsds_header(xtce_document):
 
     # Check that each header key is defined as a Parameter
     for key in header_keys:
-        assert (
-            f'<xtce:Parameter name="{key[0]}" parameterTypeRef="{key[1]}"' in document
-            or f'<xtce:Parameter name="{key[0]}" parameterTypeRef="{key[1].lower()}"'
+        # Format for old XTCE generation format
+        old_xtce_gen = (
+            f'<xtce:Parameter name="{key[0]}" parameterTypeRef="UINT{key[1]}"'
+            in document
+            or f'<xtce:Parameter name="{key[0]}" parameterTypeRef="uint{key[1]}"'
             in document
         )
+        # Format for new XTCE generation format
+        new_xtce_gen = (
+            f'<xtce:IntegerParameterType name="{key[0]}" signed="false">'
+            f"\n\t\t\t\t"
+            f'<xtce:IntegerDataEncoding sizeInBits="{key[1]}" '
+            f'encoding="unsigned" />' in document
+        )
+
+        assert any((old_xtce_gen, new_xtce_gen))
 
     # Check that the header is defined as a SequenceContainer in the XTCE file
     # First remove discrepancies in whitespace, tabs, and newlines

@@ -2,54 +2,89 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from imap_processing import decom
-from imap_processing.ultra.l0.decom_ultra import decom_ultra_apids
 from imap_processing.ultra.l0.ultra_utils import ULTRA_AUX
 from imap_processing.utils import group_by_apid
 
 
-@pytest.fixture()
-def decom_test_data(ccsds_path, xtce_path):
-    """Read test data from file"""
-    data_packet_list = decom.decom_packets(ccsds_path, xtce_path)
-    return data_packet_list
-
-
+@pytest.mark.parametrize(
+    "decom_test_data",
+    [
+        pytest.param(
+            {
+                "apid": ULTRA_AUX.apid[0],
+                "filename": "Ultra45_EM_SwRI_Cal_Run7_"
+                "ThetaScan_20220530T225054.CCSDS",
+            }
+        )
+    ],
+    indirect=True,
+)
 def test_aux_enumerated(decom_test_data):
     """Test if enumerated values derived correctly"""
+
+    _, packets = decom_test_data
 
     count = 0  # count number of packets with APID 880
     total_packets = 23
 
-    grouped_data = group_by_apid(decom_test_data)
+    grouped_data = group_by_apid(packets)
     apid_data = grouped_data[880]
 
     for packet in apid_data:
-        assert packet.data["SPINPERIODVALID"].derived_value == "INVALID"
-        assert packet.data["SPINPHASEVALID"].derived_value == "VALID"
-        assert packet.data["SPINPERIODSOURCE"].derived_value == "NOMINAL"
-        assert packet.data["CATBEDHEATERFLAG"].derived_value == "UNFLAGGED"
+        assert packet["SPINPERIODVALID"] == "INVALID"
+        assert packet["SPINPHASEVALID"] == "VALID"
+        assert packet["SPINPERIODSOURCE"] == "NOMINAL"
+        assert packet["CATBEDHEATERFLAG"] == "UNFLAGGED"
         count += 1
 
     assert count == total_packets
 
 
+@pytest.mark.parametrize(
+    "decom_test_data",
+    [
+        pytest.param(
+            {
+                "apid": ULTRA_AUX.apid[0],
+                "filename": "Ultra45_EM_SwRI_Cal_Run7_"
+                "ThetaScan_20220530T225054.CCSDS",
+            }
+        )
+    ],
+    indirect=True,
+)
 def test_aux_mode(decom_test_data):
     """Test if enumerated values derived correctly"""
 
-    for packet in decom_test_data:
-        if packet.header["PKT_APID"].derived_value == 880:
-            assert packet.data["HWMODE"].derived_value == "MODE0"
-            assert packet.data["IMCENB"].derived_value == "MODE0"
-            assert packet.data["LEFTDEFLECTIONCHARGE"].derived_value == "MODE0"
-            assert packet.data["RIGHTDEFLECTIONCHARGE"].derived_value == "MODE0"
+    _, packets = decom_test_data
+
+    for packet in packets:
+        if packet["PKT_APID"] == 880:
+            assert packet["HWMODE"] == "MODE0"
+            assert packet["IMCENB"] == "MODE0"
+            assert packet["LEFTDEFLECTIONCHARGE"] == "MODE0"
+            assert packet["RIGHTDEFLECTIONCHARGE"] == "MODE0"
 
 
-def test_aux_decom(ccsds_path, xtce_path, aux_test_path):
+@pytest.mark.parametrize(
+    "decom_test_data",
+    [
+        pytest.param(
+            {
+                "apid": ULTRA_AUX.apid[0],
+                "filename": "Ultra45_EM_SwRI_Cal_Run7_"
+                "ThetaScan_20220530T225054.CCSDS",
+            }
+        )
+    ],
+    indirect=True,
+)
+def test_aux_decom(decom_test_data, aux_test_path):
     """This function reads validation data and checks that
     decom data matches validation data for auxiliary packet"""
 
-    decom_ultra = decom_ultra_apids(ccsds_path, xtce_path, ULTRA_AUX.apid[0])
+    decom_ultra, _ = decom_test_data
+
     df = pd.read_csv(aux_test_path, index_col="MET")
 
     np.testing.assert_array_equal(df.SpinStartSeconds, decom_ultra["TIMESPINSTART"])

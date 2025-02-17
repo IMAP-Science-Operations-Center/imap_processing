@@ -10,3 +10,7 @@ coverage:
         target: 90%
         paths:
           - imap_processing/**/*.py
+
+# Ignore coverage of fixtures
+ignore:
+  - "**/conftest.py"

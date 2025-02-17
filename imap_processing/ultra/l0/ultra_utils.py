@@ -1,41 +1,64 @@
 """Contains data classes to support Ultra L0 processing."""
 
 from dataclasses import fields
-from typing import NamedTuple
+from typing import NamedTuple, Union
 
-from imap_processing.cdf.defaults import GlobalConstants
+import numpy as np
 
 
 class PacketProperties(NamedTuple):
     """Class that represents properties of the ULTRA packet type."""
 
     apid: list  # List of APIDs
-    width: int  # Width of binary data
-    block: int  # Number of values in each block.
+    logical_source: list  # List of logical sources
+    addition_to_logical_desc: str  # Description of the logical source
+    width: Union[int, None]  # Width of binary data (could be None).
+    block: Union[int, None]  # Number of values in each block (could be None).
     # This is important for decompressing the images and
     # a description is available on page 171 of IMAP-Ultra Flight
     # Software Specification document (7523-9009_Rev_-.pdf).
-    len_array: int  # Length of the array to be decompressed
-    mantissa_bit_length: int  # used to determine the level of
-    # precision that can be recovered from compressed data.
+    len_array: Union[
+        int, None
+    ]  # Length of the array to be decompressed (could be None).
+    mantissa_bit_length: Union[int, None]  # used to determine the level of
+    # precision that can be recovered from compressed data (could be None).
 
 
 # Define PacketProperties instances directly in the module namespace
 ULTRA_AUX = PacketProperties(
-    apid=[880, 994],
+    apid=[880, 944],
+    logical_source=["imap_ultra_l1a_45sensor-aux", "imap_ultra_l1a_90sensor-aux"],
+    addition_to_logical_desc="Auxiliary",
     width=None,
     block=None,
     len_array=None,
     mantissa_bit_length=None,
 )
 ULTRA_RATES = PacketProperties(
-    apid=[881, 945], width=5, block=16, len_array=48, mantissa_bit_length=12
+    apid=[881, 945],
+    logical_source=["imap_ultra_l1a_45sensor-rates", "imap_ultra_l1a_90sensor-rates"],
+    addition_to_logical_desc="Image Rates",
+    width=5,
+    block=16,
+    len_array=48,
+    mantissa_bit_length=12,
 )
 ULTRA_TOF = PacketProperties(
-    apid=[883, 947], width=4, block=15, len_array=None, mantissa_bit_length=4
+    apid=[883, 947],
+    logical_source=[
+        "imap_ultra_l1a_45sensor-histogram",
+        "imap_ultra_l1a_90sensor-histogram",
+    ],
+    addition_to_logical_desc="Time of Flight Images",
+    width=4,
+    block=15,
+    len_array=None,
+    mantissa_bit_length=4,
 )
 ULTRA_EVENTS = PacketProperties(
     apid=[896, 960],
+    logical_source=["imap_ultra_l1a_45sensor-de", "imap_ultra_l1a_90sensor-de"],
+    addition_to_logical_desc="Single Events",
     width=None,
     block=None,
     len_array=None,
@@ -247,28 +270,36 @@ RATES_KEYS = [
 ]
 
 
-def append_fillval(decom_data: dict, packet):
-    """Append fill values to all fields.
+def append_fillval(decom_data: dict, packet):  # type: ignore[no-untyped-def]
+    # ToDo, need packet param type
+    """
+    Append fill values to all fields.
 
     Parameters
     ----------
     decom_data : dict
         Parsed data.
-    packet : space_packet_parser.parser.Packet
+    packet : space_packet_parser.packets.CCSDSPacket
         Packet.
     """
     for key in decom_data:
-        if (key not in packet.header.keys()) and (key not in packet.data.keys()):
-            decom_data[key].append(GlobalConstants.INT_FILLVAL)
+        if (key not in packet.header.keys()) and (key not in packet.user_data.keys()):
+            decom_data[key].append(np.iinfo(np.int64).min)
 
 
-def parse_event(event_binary):
-    """Parse a binary string representing a single event.
+def parse_event(event_binary: str) -> dict:
+    """
+    Parse a binary string representing a single event.
 
     Parameters
     ----------
     event_binary : str
         Event binary string.
+
+    Returns
+    -------
+    fields_dict : dict
+        Dict of the fields for a single event.
     """
     fields_dict = {}
     for field, (start, end) in EVENT_FIELD_RANGES.items():
@@ -277,17 +308,18 @@ def parse_event(event_binary):
     return fields_dict
 
 
-def append_ccsds_fields(decom_data: dict, ccsds_data_object: object):
-    """Append CCSDS fields to event_data.
+def append_ccsds_fields(decom_data: dict, ccsds_data_object: object) -> None:
+    """
+    Append CCSDS fields to event_data.
 
     Parameters
     ----------
     decom_data : dict
         Parsed data.
-    ccsds_data_object : object
+    ccsds_data_object : DataclassInstance
         CCSDS data object.
     """
-    for field in fields(ccsds_data_object.__class__):
+    for field in fields(ccsds_data_object.__class__):  # type: ignore[arg-type]
         ccsds_key = field.name
         if ccsds_key not in decom_data:
             decom_data[ccsds_key] = []

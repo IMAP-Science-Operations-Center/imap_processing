@@ -2,6 +2,8 @@
 
 from dataclasses import dataclass
 
+import numpy as np
+
 
 @dataclass(frozen=True)
 class TimeTuple:
@@ -22,7 +24,7 @@ class TimeTuple:
     seconds: int
     subseconds: int
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """Add any subseconds over the limit into the seconds field."""
         final_seconds = self.seconds
         final_subseconds = self.subseconds
@@ -32,6 +34,19 @@ class TimeTuple:
 
         object.__setattr__(self, "seconds", final_seconds)
         object.__setattr__(self, "subseconds", final_subseconds)
+
+    def to_seconds(self) -> np.double:
+        """
+        Convert the TimeTuple to seconds.
+
+        Returns
+        -------
+        np.single
+            TimeTuple in seconds.
+        """
+        return np.double(
+            self.seconds + self.subseconds / GlowsConstants.SUBSECOND_LIMIT
+        )
 
 
 @dataclass(frozen=True)
@@ -72,3 +87,19 @@ class DirectEvent:
     timestamp: TimeTuple
     impulse_length: int
     multi_event: bool = False
+
+    def to_list(self) -> list:
+        """
+        Convert object to list [seconds, subseconds, impulse length, multievent].
+
+        Returns
+        -------
+        list
+            Converted object to list.
+        """
+        return [
+            self.timestamp.seconds,
+            self.timestamp.subseconds,
+            self.impulse_length,
+            self.multi_event,
+        ]

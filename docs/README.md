@@ -27,3 +27,13 @@ make -C docs html
 # View the documentation
 open docs/build/html/index.html
 ```
+
+Using make:
+
+```bash
+cd docs/
+# Cleans up old builds
+make clean
+# New build
+make html
+```

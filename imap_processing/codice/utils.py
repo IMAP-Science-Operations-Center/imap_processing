@@ -1,27 +1,15 @@
-"""Various classes and functions used throughout CoDICE processing.
+"""
+Various classes and functions used throughout CoDICE processing.
 
 This module contains utility classes and functions that are used by various
 other CoDICE processing modules.
 """
 
-import collections
-import dataclasses
 from enum import IntEnum
-
-import xarray as xr
-
-from imap_processing.cdf.global_attrs import ConstantCoordinates
-from imap_processing.cdf.utils import calc_start_time
-from imap_processing.codice import cdf_attrs
 
 
 class CODICEAPID(IntEnum):
-    """Create ENUM for CoDICE APIDs.
-
-    Parameters
-    ----------
-    IntEnum : IntEnum
-    """
+    """Create ENUM for CoDICE APIDs."""
 
     COD_AUT = 1120
     COD_BOOT_HK = 1121
@@ -41,28 +29,26 @@ class CODICEAPID(IntEnum):
     COD_DIAG_SYSVARS = 1150
     COD_LO_IAL = 1152
     COD_LO_PHA = 1153
-    COD_LO_INSTRUMENT_COUNTERS = 1154
     COD_LO_SW_PRIORITY_COUNTS = 1155
     COD_LO_SW_SPECIES_COUNTS = 1156
     COD_LO_NSW_SPECIES_COUNTS = 1157
     COD_LO_SW_ANGULAR_COUNTS = 1158
     COD_LO_NSW_ANGULAR_COUNTS = 1159
     COD_LO_NSW_PRIORITY_COUNTS = 1160
+    COD_LO_INST_COUNTS_AGGREGATED = 1161
+    COD_LO_INST_COUNTS_SINGLES = 1162
     COD_HI_IAL = 1168
     COD_HI_PHA = 1169
-    COD_HI_INSTRUMENT_COUNTERS = 1170
+    COD_HI_INST_COUNTS_AGGREGATED = 1170
+    COD_HI_INST_COUNTS_SINGLES = 1171
     COD_HI_OMNI_SPECIES_COUNTS = 1172
     COD_HI_SECT_SPECIES_COUNTS = 1173
+    COD_HI_INST_COUNTS_PRIORITIES = 1174
     COD_CSTOL_CONFIG = 2457
 
 
 class CoDICECompression(IntEnum):
-    """Create ENUM for CoDICE compression algorithms.
-
-    Parameters
-    ----------
-    IntEnum : IntEnum
-    """
+    """Create ENUM for CoDICE compression algorithms."""
 
     NO_COMPRESSION = 0
     LOSSY_A = 1
@@ -70,84 +56,3 @@ class CoDICECompression(IntEnum):
     LOSSLESS = 3
     LOSSY_A_LOSSLESS = 4
     LOSSY_B_LOSSLESS = 5
-
-
-def add_metadata_to_array(packet, metadata_arrays: dict) -> dict:
-    """Add metadata to the metadata_arrays.
-
-    Parameters
-    ----------
-    packet : space_packet_parser.parser.Packet
-        CODICE data packet
-    metadata_arrays : dict
-        Metadata arrays
-
-    Returns
-    -------
-    metadata_arrays : dict
-        Updated metadata arrays with values
-    """
-    ignore_list = [
-        "SPARE_1",
-        "SPARE_2",
-        "SPARE_3",
-        "SPARE_4",
-        "SPARE_5",
-        "SPARE_6",
-        "CHECKSUM",
-    ]
-
-    for key, value in packet.header.items():
-        metadata_arrays.setdefault(key, []).append(value.raw_value)
-
-    for key, value in packet.data.items():
-        if key not in ignore_list:
-            metadata_arrays.setdefault(key, []).append(value.raw_value)
-
-    return metadata_arrays
-
-
-def create_hskp_dataset(packets) -> xr.Dataset:
-    """Create dataset for each metadata field for housekeeping data.
-
-    Parameters
-    ----------
-    packets : list[space_packet_parser.parser.Packet]
-        The list of packets to process
-
-    Returns
-    -------
-    xarray.Dataset
-        xarray dataset containing the metadata
-    """
-    metadata_arrays = collections.defaultdict(list)
-
-    for packet in packets:
-        add_metadata_to_array(packet, metadata_arrays)
-
-    epoch = xr.DataArray(
-        [calc_start_time(item) for item in metadata_arrays["SHCOARSE"]],
-        name="epoch",
-        dims=["epoch"],
-        attrs=ConstantCoordinates.EPOCH,
-    )
-
-    dataset = xr.Dataset(
-        coords={"epoch": epoch},
-        attrs=cdf_attrs.l1a_hskp_attrs.output(),
-    )
-
-    for key, value in metadata_arrays.items():
-        dataset[key] = xr.DataArray(
-            value,
-            dims=["epoch"],
-            attrs=dataclasses.replace(
-                cdf_attrs.codice_metadata_attrs,
-                catdesc=key,
-                fieldname=key,
-                label_axis=key,
-                depend_0="epoch",
-            ).output(),
-        )
-
-    return dataset

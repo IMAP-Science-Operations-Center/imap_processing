@@ -11,7 +11,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [windows-2019, ubuntu-latest, macos-latest]
+        os: [windows-latest, ubuntu-latest, macos-latest]
         python-version: ['3.9', '3.10', '3.11', '3.12']
     defaults:
       run:
@@ -19,25 +19,39 @@ jobs:
 
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
+        with:
+          # We need the full history to generate the proper version number
+          fetch-depth: 0
+
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
       - uses: Gr1N/setup-poetry@v8
+        with:
+          poetry-version: "1.8.0"
 
 
       - name: Install dependencies and app
         run: |
+          # Need to install extra plugins first
+          poetry self add "poetry-dynamic-versioning[plugin]"
           poetry install --extras "test"
 
       - name: Testing
         id: test
+        env:
+          USE_EXTERNAL_DATA: ${{ contains(matrix.os, 'ubuntu') && matrix.python-version == '3.9' }}
         run: |
           # Ignore the network marks from the remote test environment
-          poetry run pytest --color=yes --cov --cov-report=xml
+          if [ "$USE_EXTERNAL_DATA" = "true" ]; then
+            poetry run pytest --color=yes --cov --cov-report=xml
+          else
+            poetry run pytest --color=yes --cov --cov-report=xml -m "not external_kernel and not external_test_data"
+          fi
 
       - name: Upload coverage reports to Codecov
-        uses: codecov/codecov-action@v4.0.1
+        uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}

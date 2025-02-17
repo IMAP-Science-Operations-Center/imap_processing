@@ -1,0 +1,193 @@
+# <=== Coordinates ===>
+energy:
+  CATDESC: Energy step id in lookup table
+  FIELDNAM: Energy Step
+  FILLVAL: -9223370000000000000
+  FORMAT: I2
+  LABLAXIS: Energy Step
+  SCALE_TYP: linear
+  UNITS: " "
+  VALIDMAX: 71
+  VALIDMIN: 0
+  VAR_TYPE: support_data
+
+# <=== LABL_PTR_i Attributes ===>
+energy_label:
+  CATDESC: Energy step id in lookup table
+  FIELDNAM: Energy Step
+  FORMAT: A2
+  VAR_TYPE: metadata
+
+# <=== Data Variables ===>
+counts_default: &counts_default
+  DEPEND_0: epoch
+  DEPEND_1: energy
+  DISPLAY_TYPE: spectrogram
+  LABL_PTR_1: energy_label
+  FILLVAL: 4294967295
+  FORMAT: I5
+  UNITS: counts
+  VALIDMIN: 0
+  VALIDMAX: 65535
+  VAR_TYPE: data
+  SCALETYP: linear
+
+flags_default:
+  CATDESC: Bitwise flag. There are 13 flags. See VAR_NOTES for more details.
+  FIELDNAM: Quality Flag
+  LABLAXIS: Flags
+  DEPEND_0: epoch
+  DEPEND_1: energy
+  DISPLAY_TYPE: spectrogram
+  LABL_PTR_1: energy_label
+  FILLVAL: 4294967295
+  FORMAT: I5
+  UNITS: ' '
+  VALIDMIN: 0
+  VALIDMAX: 32767
+  VAR_TYPE: data
+  SCALETYP: linear
+  VAR_NOTES: >
+    There are 13 flags in total, first three flags are from science packets
+    and remaining 10 flags are from housekeeping packets. Flags are stored
+    as bitwise flag. 32767 is the value when all 15-bits are 1s. Eg.
+    int('0111111111111111', 2). First two bits from right are saved to save defaults.
+    Then, the remaining 13 bits from right are used for 13 flags. The flags are
+    as follows, "OVR_T_ST", "UND_T_ST", "PCEM_CNT_ST", "SCEM_CNT_ST","PCEM_V_ST",
+    "PCEM_I_ST", "PCEM_INT_ST", "SCEM_V_ST", "SCEM_I_ST", "SCEM_INT_ST".
+
+uncertainty_default: &uncertainty_default
+  DEPEND_0: epoch
+  DEPEND_1: energy
+  DISPLAY_TYPE: spectrogram
+  LABL_PTR_1: energy_label
+  FILLVAL: -1.0000000E+31
+  FORMAT: E19.5
+  UNITS: counts
+  VALIDMIN: 0.0
+  VALIDMAX: 1.7976931348623157e+308 # TODO: find actual value
+  VAR_TYPE: data
+  SCALETYP: linear
+
+rate_default: &rate_default
+  DEPEND_0: epoch
+  DEPEND_1: energy
+  DISPLAY_TYPE: spectrogram
+  LABL_PTR_1: energy_label
+  FILLVAL: -1.0000000E+31
+  FORMAT: E19.5
+  UNITS: counts
+  VALIDMIN: 0.0
+  VALIDMAX: 1.7976931348623157e+308 # TODO: find actual value
+  VAR_TYPE: data
+  SCALETYP: linear
+
+metadata_default: &metadata_default
+  DEPEND_0: epoch
+  DISPLAY_TYPE: time_series
+  FILLVAL: 4294967295
+  FORMAT: I2
+  UNITS: " "
+  VALIDMIN: 0
+  VALIDMAX: 15
+  VAR_TYPE: support_data
+  SCALETYP: linear
+
+# Minimum attrs setting for HK data
+hk_attrs: &hk_attrs
+  CATDESC: Housekeeping data
+  FIELDNAM: Housekeeping
+  LABLAXIS: Values
+  DEPEND_0: epoch
+  DISPLAY_TYPE: time_series
+  FILLVAL: 4294967295
+  FORMAT: I19
+  UNITS: " "
+  VALIDMIN: 0
+  VALIDMAX: 9223372036854769664
+  VAR_TYPE: support_data
+  SCALETYP: linear
+
+pcem_counts:
+  <<: *counts_default
+  CATDESC: Primary Channel Electron Multiplier (CEM)  Counts
+  FIELDNAM: Primary CEM Counts
+  LABLAXIS: pcem_cnts
+
+scem_counts:
+  <<: *counts_default
+  CATDESC: Secondary Channel Electron Multiplier (CEM)  Counts
+  FIELDNAM: Secondary CEM Counts
+  LABLAXIS: scem_cnts
+
+coin_counts:
+  <<: *counts_default
+  CATDESC: Coincidence Counts
+  FIELDNAM: Coincidence CEM Counts
+  LABLAXIS: coin_cnts
+
+pcem_uncertainty:
+  <<: *uncertainty_default
+  CATDESC: Primary Channel Electron Multiplier (CEM) uncertainty
+  FIELDNAM: Primary CEM Uncertainty
+  LABLAXIS: pcem_unc
+
+scem_uncertainty:
+  <<: *uncertainty_default
+  CATDESC: Secondary Channel Electron Multiplier (CEM) uncertainty
+  FIELDNAM: Secondary CEM Uncertainty
+  LABLAXIS: scem_unc
+
+coin_uncertainty:
+  <<: *uncertainty_default
+  CATDESC: Coincidence uncertainty
+  FIELDNAM: Coincidence Uncertainty
+  LABLAXIS: coin_unc
+
+pcem_rate:
+  <<: *rate_default
+  CATDESC: Primary Channel Electron Multiplier (CEM) Rates
+  FIELDNAM: Primary CEM Rates
+  LABLAXIS: pcem_rate
+
+scem_rate:
+  <<: *rate_default
+  CATDESC: Secondary Channel Electron Multiplier (CEM) Rates
+  FIELDNAM: Secondary CEM Rates
+  LABLAXIS: scem_rate
+
+coin_rate:
+  <<: *rate_default
+  CATDESC: Coincidence Rates
+  FIELDNAM: Coincidence Rates
+  LABLAXIS: coin_rate
+
+sweep_table:
+  <<: *metadata_default
+  CATDESC: Sweep table ID.
+  FIELDNAM: Sweep Table
+  LABLAXIS: ID
+
+plan_id:
+  <<: *metadata_default
+  CATDESC: Plan ID.
+  FIELDNAM: Plan ID
+  LABLAXIS: ID
+
+lut_choice:
+  <<: *metadata_default
+  CATDESC: Which LUT is in use.
+  FIELDNAM: LUT Choice
+  LABLAXIS: lut_choice
+
+fpga_type:
+  <<: *metadata_default
+  CATDESC: Type number of the FPGA.
+  FIELDNAM: FPGA Type
+  LABLAXIS: fpga_type
+
+fpga_rev:
+  <<: *metadata_default
+  CATDESC: Revision number of the FPGA.
+  FIELDNAM: FPGA Revision
+  LABLAXIS: fpga_rev
