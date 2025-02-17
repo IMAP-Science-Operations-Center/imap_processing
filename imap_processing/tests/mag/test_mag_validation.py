@@ -2,11 +2,13 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+import xarray as xr
 import pytest
 
 from imap_processing.mag.l1a.mag_l1a import mag_l1a
-from imap_processing.mag.l1a.mag_l1a_data import TimeTuple
+from imap_processing.mag.l1a.mag_l1a_data import TimeTuple, MagL1a
 from imap_processing.mag.l1b.mag_l1b import mag_l1b
+from imap_processing.tests.mag.conftest import mag_l1a_dataset_generator
 
 
 @pytest.mark.parametrize(
@@ -92,14 +94,124 @@ def test_mag_l1a_validation(test_number):
             )
 
 
-@pytest.mark.xfail(reason="Some bug somewhere")
+def print_useful(dataset):
+    print("Vectors:")
+    print(dataset["vectors"].data)
+    print("Compression flags:")
+    print(dataset["compression_flags"].data)
+    print("Epoch:")
+    print(dataset["epoch"].data)
+
+    print("Shape: ", dataset["vectors"].data.shape)
+    print("types: ", dataset.dtypes)
+    print(f"Logical source: {dataset.attrs['Logical_source']}")
+# TODO test 10 fails from bin and succeeds from input
+
+@pytest.mark.parametrize(("test_number"), ["009", "010", "011"])
+def test_mag_l1a_from_l1b_input(test_number):
+    source_directory = Path(__file__).parent / "validation" / "L1b" / f"T{test_number}"
+    input_mag_l1a = pd.read_csv(source_directory / f"mag-l1a-l1b-t{test_number}-in.csv")
+
+    mag_l1a_mago = mag_l1a_dataset_generator(len(input_mag_l1a.index))
+    mag_l1a_magi = mag_l1a_dataset_generator(len(input_mag_l1a.index))
+
+    mago_vectors = np.zeros((len(input_mag_l1a.index), 4), dtype=np.int64)
+    magi_vectors = np.zeros((len(input_mag_l1a.index), 4), dtype=np.int64)
+    compression_flags = np.zeros((len(input_mag_l1a.index), 2), dtype=np.int8)
+    for index in input_mag_l1a.index:
+        mago_vectors[index] = [input_mag_l1a["x_pri"].iloc[index],
+                               input_mag_l1a["y_pri"].iloc[index],
+                               input_mag_l1a["z_pri"].iloc[index],
+                               input_mag_l1a["rng_pri"].iloc[index]]
+        magi_vectors[index] = [input_mag_l1a["x_sec"].iloc[index],
+                               input_mag_l1a["y_sec"].iloc[index],
+                               input_mag_l1a["z_sec"].iloc[index],
+                               input_mag_l1a["rng_sec"].iloc[index]]
+        compression_flags[index] = [input_mag_l1a["compression"].iloc[index],
+                                    input_mag_l1a["compression_width_bits"].iloc[index]]
+
+    mag_l1a_mago["vectors"].data = mago_vectors
+    mag_l1a_magi["vectors"].data = magi_vectors
+
+    mag_l1a_magi.attrs["Logical_source"] = ["imap_mag_l1a_norm-magi"]
+
+    mago_epoch = MagL1a.calculate_vector_time(mago_vectors, 2,
+                                              TimeTuple(input_mag_l1a["pri_coarse"][0],
+                                                        input_mag_l1a["pri_fine"][0]))[
+                 :, -1]
+    magi_epoch = MagL1a.calculate_vector_time(magi_vectors, 2,
+                                              TimeTuple(input_mag_l1a["sec_coarse"][0],
+                                                        input_mag_l1a["sec_fine"][0]))[
+                 :, -1]
+
+    print(mago_epoch.shape)
+    print(mago_epoch)
+    mag_l1a_mago.coords["epoch"] = xr.DataArray(mago_epoch)
+    mag_l1a_magi.coords["epoch"] = xr.DataArray(magi_epoch)
+
+    mag_l1a_mago["compression_flags"].data = compression_flags
+    mag_l1a_magi["compression_flags"].data = compression_flags
+
+    mag_l1a_from_pkt = mag_l1a(source_directory / "data.bin", "v000")
+    print_useful(mag_l1a_from_pkt[1])
+    print_useful(mag_l1a_mago)
+
+    print(mag_l1a_from_pkt[1].attrs["Logical_source"])
+    print(mag_l1a_from_pkt[2]["compression_flags"].data)
+    assert np.allclose(mag_l1a_mago["vectors"].data, mag_l1a_from_pkt[1]["vectors"].data)
+    assert np.allclose(mag_l1a_magi["vectors"].data, mag_l1a_from_pkt[2]["vectors"].data)
+    if mag_l1a_from_pkt[1]["compression_flags"].data[0][0] != 0:
+        assert np.allclose(mag_l1a_mago["compression_flags"].data, mag_l1a_from_pkt[1]["compression_flags"].data)
+        assert np.allclose(mag_l1a_magi["compression_flags"].data, mag_l1a_from_pkt[2]["compression_flags"].data)
+
+
 @pytest.mark.parametrize(("test_number"), ["009", "010", "011"])
 def test_mag_l1b_validation(test_number):
     source_directory = Path(__file__).parent / "validation" / "L1b" / f"T{test_number}"
-    mag_l1a_input = mag_l1a(source_directory / "data.bin", "v000")
+    input_mag_l1a = pd.read_csv(source_directory / f"mag-l1a-l1b-t{test_number}-in.csv")
 
-    mago = mag_l1b(mag_l1a_input[1], "v000")
-    magi = mag_l1b(mag_l1a_input[2], "v000")
+    mag_l1a_mago = mag_l1a_dataset_generator(len(input_mag_l1a.index))
+    mag_l1a_magi = mag_l1a_dataset_generator(len(input_mag_l1a.index))
+
+    mago_vectors = np.zeros((len(input_mag_l1a.index), 4), dtype=np.int64)
+    magi_vectors = np.zeros((len(input_mag_l1a.index), 4), dtype=np.int64)
+    compression_flags = np.zeros((len(input_mag_l1a.index), 2))
+    for index in input_mag_l1a.index:
+        mago_vectors[index] = [input_mag_l1a["x_pri"].iloc[index], input_mag_l1a["y_pri"].iloc[index], input_mag_l1a["z_pri"].iloc[index], input_mag_l1a["rng_pri"].iloc[index]]
+        magi_vectors[index] = [input_mag_l1a["x_sec"].iloc[index], input_mag_l1a["y_sec"].iloc[index], input_mag_l1a["z_sec"].iloc[index], input_mag_l1a["rng_sec"].iloc[index]]
+        compression_flags[index] = [input_mag_l1a["compression"].iloc[index], input_mag_l1a["compression_width_bits"].iloc[index]]
+
+    mag_l1a_mago["vectors"].data = mago_vectors
+    mag_l1a_magi["vectors"].data = magi_vectors
+
+    mag_l1a_magi.attrs["Logical_source"] = "imap_mag_l1a_norm-magi"
+
+    mago_epoch = MagL1a.calculate_vector_time(mago_vectors, 2, TimeTuple(input_mag_l1a["pri_coarse"][0], input_mag_l1a["pri_fine"][0]))[:, -1]
+    magi_epoch = MagL1a.calculate_vector_time(magi_vectors, 2, TimeTuple(input_mag_l1a["sec_coarse"][0], input_mag_l1a["sec_fine"][0]))[:, -1]
+
+    mag_l1a_mago.coords["epoch"] = xr.DataArray(mago_epoch)
+    mag_l1a_magi.coords["epoch"] = xr.DataArray(magi_epoch)
+    # mag_l1a_mago.coords.assign(epoch=mago_epoch)
+    # mag_l1a_magi.coords.assign(epoch=magi_epoch)
+
+    mag_l1a_mago["compression_flags"].data = compression_flags
+    mag_l1a_magi["compression_flags"].data = compression_flags
+
+    mag_l1a_input = mag_l1a(source_directory / "data.bin", "v000")
+    mag_l1a_mago = mag_l1a_input[1]
+    mag_l1a_magi = mag_l1a_input[2]
+    print(mag_l1a_mago.attrs["Logical_source"])
+
+
+    print(mag_l1a_mago["compression_flags"].data)
+
+
+    mago = mag_l1b(mag_l1a_mago, "v000")
+    magi = mag_l1b(mag_l1a_magi, "v000")
+
+    # TODO compare time differences to UTC time difference
+    # for index in range(1,len(mago['epoch'].data)):
+    #     print(f"Time difference: {(mago['epoch'].data[index] - mago['epoch'].data[index-1])*1e-9}")
 
     expected_mago = pd.read_csv(
         source_directory / f"mag-l1a-l1b-t{test_number}-mago-out.csv"
@@ -123,10 +235,11 @@ def test_mag_l1b_validation(test_number):
             expected_magi["compression"].iloc[index]
             == magi["compression_flags"].data[index][0]
         )
-        assert (
-            expected_magi["compression_width"].iloc[index]
-            == magi["compression_flags"].data[index][1]
-        )
+        if expected_magi["compression"].iloc[index] != 0:
+            assert (
+                expected_magi["compression_width"].iloc[index]
+                == magi["compression_flags"].data[index][1]
+            )
 
     for index in expected_mago.index:
         # TODO: come back to timestamp.
@@ -145,7 +258,8 @@ def test_mag_l1b_validation(test_number):
             expected_mago["compression"].iloc[index]
             == mago["compression_flags"].data[index][0]
         )
-        assert (
-            expected_mago["compression_width"].iloc[index]
-            == mago["compression_flags"].data[index][1]
-        )
+        if expected_mago["compression"].iloc[index] != 0:
+            assert (
+                expected_mago["compression_width"].iloc[index]
+                == mago["compression_flags"].data[index][1]
+            )

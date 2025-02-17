@@ -349,9 +349,7 @@ class MagL1a:
             cdf.utils.met_to_j2000ns.
         """
         timedelta = np.timedelta64(int(1 / vectors_per_sec * 1e9), "ns")
-        # TODO: From finetime and coarsetime, depends per packet
         start_time_ns = start_time.to_j2000ns()
-
         # Calculate time skips for each vector in ns
         times = np.reshape(
             np.arange(
