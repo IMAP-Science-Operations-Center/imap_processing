@@ -51,6 +51,6 @@ def mag_l1a_dataset_generator(length):
     output_dataset["compression_flags"] = compression_flags
     output_dataset["direction_label"] = direction_label
     output_dataset["compression_label"] = compression_label
-    output_dataset.attrs["Logical_source"] = "imap_mag_l1a_norm-mago"
+    output_dataset.attrs["Logical_source"] = ["imap_mag_l1a_norm-mago"]
 
     return output_dataset

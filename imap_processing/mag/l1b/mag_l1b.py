@@ -80,15 +80,17 @@ def mag_l1b_processing(input_dataset: xr.Dataset) -> xr.Dataset:
     )
     # TODO: add time shift
     # TODO: Check validity of time range for calibration
-    if "mago" in input_dataset.attrs["Logical_source"]:
+    source = input_dataset.attrs["Logical_source"]
+    if isinstance(source, list):
+        source = source[0]
+    if "mago" in source:
         calibration_matrix = calibration_dataset["MFOTOURFO"]
-        print("using mago calibration")
-    elif "magi" in input_dataset.attrs["Logical_source"]:
+    elif "magi" in source:
         calibration_matrix = calibration_dataset["MFITOURFI"]
-        print("using magi calibration")
     else:
         raise ValueError(
-            f"Calibration matrix not found, invalid logical source {input_dataset.attrs['Logical_source']}"
+            f"Calibration matrix not found, invalid logical source "
+            f"{input_dataset.attrs['Logical_source']}"
         )
 
     l1b_fields = xr.apply_ufunc(
@@ -102,88 +104,24 @@ def mag_l1b_processing(input_dataset: xr.Dataset) -> xr.Dataset:
         kwargs={"calibration_matrix": calibration_matrix},
     )
 
-    # TODO: Maybe don't copy here
-    # output_dataset = input_dataset.copy()
-    # output_dataset["vectors"].data = l1b_fields[0].data
-    #
-    # output_dataset["epoch"].attrs = mag_attributes.get_variable_attributes("epoch")
-    # output_dataset["direction"].attrs = mag_attributes.get_variable_attributes(
-    #     "direction_attrs"
-    # )
-    # output_dataset["compression"].attrs = mag_attributes.get_variable_attributes(
-    #     "compression_attrs"
-    # )
-    # output_dataset["direction_label"].attrs = mag_attributes.get_variable_attributes(
-    #     "direction_label", check_schema=False
-    # )
-    # output_dataset["compression_label"].attrs = mag_attributes.get_variable_attributes(
-    #     "compression_label", check_schema=False
-    # )
-    input_timedata = input_dataset["epoch"].data
-    compression = xr.DataArray(
-        np.arange(2),
-        name="compression",
-        dims=["compression"],
-        attrs=mag_attributes.get_variable_attributes("compression_attrs"),
+    output_dataset = input_dataset.copy()
+    output_dataset["vectors"].data = l1b_fields[0].data
+
+    output_dataset["epoch"].attrs = mag_attributes.get_variable_attributes("epoch")
+    output_dataset["direction"].attrs = mag_attributes.get_variable_attributes(
+        "direction_attrs"
+    )
+    output_dataset["compression"].attrs = mag_attributes.get_variable_attributes(
+        "compression_attrs"
+    )
+    output_dataset["direction_label"].attrs = mag_attributes.get_variable_attributes(
+        "direction_label", check_schema=False
+    )
+    output_dataset["compression_label"].attrs = mag_attributes.get_variable_attributes(
+        "compression_label", check_schema=False
     )
 
-    direction = xr.DataArray(
-        np.arange(4),
-        name="direction",
-        dims=["direction"],
-        attrs=mag_attributes.get_variable_attributes("direction_attrs"),
-    )
-
-    # TODO: Epoch here refers to the start of the sample. Confirm that this is
-    # what mag is expecting, and if it is, CATDESC needs to be updated.
-    epoch_time = xr.DataArray(
-        input_timedata,
-        name="epoch",
-        dims=["epoch"],
-        attrs=mag_attributes.get_variable_attributes("epoch"),
-    )
-
-    vectors = xr.DataArray(
-        l1b_fields[0].data,
-        name="vectors",
-        dims=["epoch", "direction"],
-        attrs=mag_attributes.get_variable_attributes("vector_attrs"),
-    )
-
-    compression_flags = input_dataset["compression_flags"]
-
-    direction_label = xr.DataArray(
-        direction.values.astype(str),
-        name="direction_label",
-        dims=["direction_label"],
-        attrs=mag_attributes.get_variable_attributes(
-            "direction_label", check_schema=False
-        ),
-    )
-
-    compression_label = xr.DataArray(
-        compression.values.astype(str),
-        name="compression_label",
-        dims=["compression_label"],
-        attrs=mag_attributes.get_variable_attributes(
-            "compression_label", check_schema=False
-        ),
-    )
-
-    output = xr.Dataset(
-        coords={
-            "epoch": epoch_time,
-            "direction": direction,
-            "compression": compression,
-        },
-        attrs=input_dataset.attrs,
-    )
-    output["direction_label"] = direction_label
-    output["compression_label"] = compression_label
-    output["vectors"] = vectors
-    output["compression_flags"] = compression_flags
-
-    return output
+    return output_dataset
 
 
 def update_vector(
@@ -247,13 +185,11 @@ def rescale_vector(
     output_vector : numpy.ndarray
         Updated vector.
     """
-    output_vector = input_vector.astype(np.float64)
+    output_vector: np.ndarray = input_vector.astype(np.float64)
 
     if compression_flags[0]:
         factor = np.float_power(2, (16 - compression_flags[1]))
-        print(f"Multiplying by factor: {factor}")
         output_vector[:3] = input_vector.astype(np.float64)[:3] * factor
-        print(f"Went from input {input_vector} to output {output_vector}")
 
     return output_vector
 
@@ -280,14 +216,11 @@ def calibrate_vector(
     updated_vector : numpy.ndarray
         Calibrated vector.
     """
-    updated_vector = input_vector.copy()
+    updated_vector: np.ndarray = input_vector.copy()
     if input_vector[3] % 1 != 0:
         raise ValueError("Range must be an integer.")
 
     range = int(input_vector[3])
     x_y_z = input_vector[:3]
-    print(f"going from {updated_vector}")
     updated_vector[:3] = np.dot(calibration_matrix.values[:, :, range], x_y_z)
-    print(f"To: {updated_vector}")
-    print(f"When applying: {calibration_matrix.values[:, :, range]}")
     return updated_vector
