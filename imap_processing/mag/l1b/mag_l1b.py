@@ -87,7 +87,9 @@ def mag_l1b_processing(input_dataset: xr.Dataset) -> xr.Dataset:
         calibration_matrix = calibration_dataset["MFITOURFI"]
         print("using magi calibration")
     else:
-        raise ValueError(f"Calibration matrix not found, invalid logical source {input_dataset.attrs['Logical_source']}")
+        raise ValueError(
+            f"Calibration matrix not found, invalid logical source {input_dataset.attrs['Logical_source']}"
+        )
 
     l1b_fields = xr.apply_ufunc(
         update_vector,
@@ -117,7 +119,7 @@ def mag_l1b_processing(input_dataset: xr.Dataset) -> xr.Dataset:
     # output_dataset["compression_label"].attrs = mag_attributes.get_variable_attributes(
     #     "compression_label", check_schema=False
     # )
-    input_timedata = input_dataset['epoch'].data
+    input_timedata = input_dataset["epoch"].data
     compression = xr.DataArray(
         np.arange(2),
         name="compression",
@@ -174,7 +176,7 @@ def mag_l1b_processing(input_dataset: xr.Dataset) -> xr.Dataset:
             "direction": direction,
             "compression": compression,
         },
-        attrs=input_dataset.attrs
+        attrs=input_dataset.attrs,
     )
     output["direction_label"] = direction_label
     output["compression_label"] = compression_label
@@ -214,7 +216,6 @@ def update_vector(
     vector = rescale_vector(input_vector, input_compression)
     cal_vector = calibrate_vector(vector, calibration_matrix)
     return cal_vector, input_compression
-
 
 
 def rescale_vector(
@@ -286,9 +287,7 @@ def calibrate_vector(
     range = int(input_vector[3])
     x_y_z = input_vector[:3]
     print(f"going from {updated_vector}")
-    updated_vector[:3] = np.dot(
-        calibration_matrix.values[:, :, range], x_y_z
-    )
+    updated_vector[:3] = np.dot(calibration_matrix.values[:, :, range], x_y_z)
     print(f"To: {updated_vector}")
     print(f"When applying: {calibration_matrix.values[:, :, range]}")
     return updated_vector

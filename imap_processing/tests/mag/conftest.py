@@ -5,6 +5,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 import xarray as xr
+
 from imap_processing.mag.l1a.mag_l1a import mag_l1a
 
 

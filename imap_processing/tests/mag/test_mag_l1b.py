@@ -1,10 +1,7 @@
 from pathlib import Path
 
 import numpy as np
-import pytest
 import xarray as xr
-
-from imap_processing.tests.mag.conftest import mag_l1a_dataset_generator
 
 from imap_processing.cdf.utils import load_cdf, write_cdf
 from imap_processing.mag.l1b.mag_l1b import (
@@ -13,7 +10,7 @@ from imap_processing.mag.l1b.mag_l1b import (
     mag_l1b_processing,
     rescale_vector,
 )
-
+from imap_processing.tests.mag.conftest import mag_l1a_dataset_generator
 
 
 def test_mag_processing():
