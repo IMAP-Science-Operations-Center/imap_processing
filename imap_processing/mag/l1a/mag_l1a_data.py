@@ -218,7 +218,7 @@ class MagL1a:
         Sequence number of the most recent packet added to the object
     missing_sequences : list[int]
         List of missing sequence numbers in the day
-    start_time : int64
+    start_time : numpy.int64
         Start time of the day, in ns since J2000 epoch
     compression_flags : np.ndarray
         Array of flags to indication compression and width for all timestamps in the
