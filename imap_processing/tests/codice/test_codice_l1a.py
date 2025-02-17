@@ -265,12 +265,10 @@ def test_l1a_validate_hskp_data(test_l1a_data):
         "spare_68",
     ]
 
-    # These variables are named differently between the decommed test_data and
-    # the validation data
-    # TODO: Ask Joey if this is expected
+    # These variables are not present in the validation data
+    # TODO: Ask joey if this is expected
     exclude_variables.extend(
         [
-            "chksum",
             "version",
             "type",
             "sec_hdr_flg",
@@ -278,6 +276,7 @@ def test_l1a_validate_hskp_data(test_l1a_data):
             "seq_flgs",
             "src_seq_ctr",
             "pkt_len",
+            "chksum",
         ]
     )
 
