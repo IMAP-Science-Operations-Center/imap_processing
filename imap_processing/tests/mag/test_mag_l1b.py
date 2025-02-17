@@ -148,6 +148,7 @@ def test_calibrate_vector():
     )
 
     calibration_matrix = xr.DataArray(cal_array)
+    # All cal vector comparisons were calculated by hand and confirmed by MAG team.
 
     cal_vector = calibrate_vector(np.array([1.0, 1.0, 1.0, 0]), calibration_matrix)
 
@@ -162,7 +163,6 @@ def test_calibrate_vector():
     cal_vector = calibrate_vector(
         rescale_vector(np.array([7982, 48671, -68090, 0]), (1, 18)), calibration_matrix
     )
-    print(f"HERE IS MY VECTOR: {cal_vector}")
     expected_vector = [4584.1029091, 27238.73161294, -38405.22240195, 0.0]
 
     assert np.allclose(cal_vector, expected_vector, atol=1e-9)

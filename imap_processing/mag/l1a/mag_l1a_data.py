@@ -86,7 +86,7 @@ class TimeTuple:
 
         Returns
         -------
-        j2000ns : np.int64
+        j2000ns : numpy.int64
             Time in nanoseconds since J2000 epoch.
         """
         coarse_j2000ns = np.int64(met_to_ttj2000ns(self.coarse_time))
@@ -218,7 +218,7 @@ class MagL1a:
         Sequence number of the most recent packet added to the object
     missing_sequences : list[int]
         List of missing sequence numbers in the day
-    start_time : int64
+    start_time : numpy.int64
         Start time of the day, in ns since J2000 epoch
     compression_flags : np.ndarray
         Array of flags to indication compression and width for all timestamps in the
