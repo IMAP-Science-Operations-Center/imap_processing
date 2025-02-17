@@ -27,19 +27,24 @@ def calculate_cullingmask(
         Dataset containing the data.
     """
     # If the spin rate was too high or low then the spin should be thrown out.
-    valid_index = (
-        extendedspin_dataset["quality_attitude"] & ImapAttitudeUltraFlags.SPINRATE.value
-    ) == 0
-    good_spin = extendedspin_dataset["spin_number"].values[valid_index]
-    good_attitude_dataset = extendedspin_dataset.sel(spin_number=good_spin)
-
     # If the rates at any energy level are too high then throw out the entire spin.
-    high_rates_mask = (
-        good_attitude_dataset["quality_ena_rates"] & ImapRatesUltraFlags.HIGHRATES.value
+    mask = (
+        (
+            extendedspin_dataset["quality_attitude"]
+            & ImapAttitudeUltraFlags.SPINRATE.value
+        )
         == 0
-    ).all(dim="energy_bin_geometric_mean")
-    filtered_dataset = good_attitude_dataset.sel(
-        spin_number=good_attitude_dataset["spin_number"][high_rates_mask]
+    ) & (
+        (
+            (
+                extendedspin_dataset["quality_ena_rates"]
+                & ImapRatesUltraFlags.HIGHRATES.value
+            )
+            == 0
+        ).all(dim="energy_bin_geometric_mean")
+    )
+    filtered_dataset = extendedspin_dataset.sel(
+        spin_number=extendedspin_dataset["spin_number"][mask]
     )
     dataset_dict = {
         **{var: filtered_dataset[var].values for var in filtered_dataset.data_vars},
