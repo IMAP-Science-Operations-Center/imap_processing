@@ -20,7 +20,7 @@ def calculate_badtimes(
     ----------
     extendedspin_dataset : xarray.Dataset
         Dataset containing the data.
-    cullingmask_spins : NDArray
+    cullingmask_spins : numpy.typing.NDArray
         Dataset containing the culled data.
     name : str
         Name of the dataset.
