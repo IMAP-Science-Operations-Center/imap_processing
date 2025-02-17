@@ -147,9 +147,6 @@ def update_vector(
     cal_vector = calibrate_vector(vector, calibration_matrix)
     return cal_vector, input_compression
 
-    vector = calibrate_vector(input_vector, calibration_matrix)
-    return rescale_vector(vector, input_compression), input_compression
-
 
 def rescale_vector(
     input_vector: np.ndarray, compression_flags: np.ndarray

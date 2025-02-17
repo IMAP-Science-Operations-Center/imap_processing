@@ -86,7 +86,7 @@ class TimeTuple:
 
         Returns
         -------
-        j2000ns : np.int64
+        j2000ns : numpy.int64
             Time in nanoseconds since J2000 epoch.
         """
         coarse_j2000ns = np.int64(met_to_ttj2000ns(self.coarse_time))
