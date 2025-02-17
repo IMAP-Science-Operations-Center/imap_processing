@@ -189,6 +189,10 @@ def frame_transform(
     result : np.ndarray
         3d Cartesian position vector(s) in reference frame `to_frame`.
     """
+    # If from_frame and to_frame are the same, no rotation needed
+    if from_frame == to_frame:
+        return position
+
     if position.ndim == 1:
         if not len(position) == 3:
             raise ValueError(
@@ -208,10 +212,6 @@ def frame_transform(
                     f"Position has {len(position)} elements and et has "
                     f"{np.asarray(et).size} elements."
                 )
-
-    # If from_frame and to_frame are the same, no rotation needed
-    if from_frame == to_frame:
-        return position
 
     # rotate will have shape = (3, 3) or (n, 3, 3)
     # position will have shape = (3,) or (n, 3)
