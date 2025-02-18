@@ -835,7 +835,6 @@ class MagL1a:
         uncompressed_count = vector_count - compressed_count
 
         # will have either 0 or 8 extra bits
-        # what if there is padding at the end of the vectors? keep that in mind
         # If we have more splits than vectors, we have included part of the range
         # data section. Drop those values and update end_vector.
         if len(split_bits) > (vector_count - 1) * AXIS_COUNT:
