@@ -8,6 +8,7 @@ import xarray as xr
 from imap_processing.mag.l1a.mag_l1a import mag_l1a
 from imap_processing.mag.l1a.mag_l1a_data import MagL1a, TimeTuple
 from imap_processing.mag.l1b.mag_l1b import mag_l1b
+from imap_processing.spice.time import str_to_et, ttj2000ns_to_et
 from imap_processing.tests.mag.conftest import mag_l1a_dataset_generator
 
 
@@ -146,8 +147,6 @@ def test_mag_l1b_validation(test_number):
     mago = mag_l1b(mag_l1a_mago, "v000")
     magi = mag_l1b(mag_l1a_magi, "v000")
 
-    # TODO compare time differences to UTC time difference
-
     expected_mago = pd.read_csv(
         source_directory / f"mag-l1a-l1b-t{test_number}-mago-out.csv"
     )
@@ -157,13 +156,22 @@ def test_mag_l1b_validation(test_number):
 
     for index in expected_magi.index:
         assert np.allclose(
-            expected_magi["x"].iloc[index], magi["vectors"].data[index][0], atol=1e-9
+            expected_magi["x"].iloc[index],
+            magi["vectors"].data[index][0],
+            atol=1e-9,
+            rtol=0,
         )
         assert np.allclose(
-            expected_magi["y"].iloc[index], magi["vectors"].data[index][1], atol=1e-9
+            expected_magi["y"].iloc[index],
+            magi["vectors"].data[index][1],
+            atol=1e-9,
+            rtol=0,
         )
         assert np.allclose(
-            expected_magi["z"].iloc[index], magi["vectors"].data[index][2], atol=1e-9
+            expected_magi["z"].iloc[index],
+            magi["vectors"].data[index][2],
+            atol=1e-9,
+            rtol=0,
         )
         assert expected_magi["range"].iloc[index] == magi["vectors"].data[index][3]
         assert (
@@ -176,17 +184,30 @@ def test_mag_l1b_validation(test_number):
                 == magi["compression_flags"].data[index][1]
             )
 
+        expected_time = str_to_et(expected_magi["t"].iloc[index])
+        magi_time = ttj2000ns_to_et(magi["epoch"].data[index])
+        assert np.allclose(expected_time, magi_time, atol=1e-6, rtol=0)
+
     for index in expected_mago.index:
         # TODO: come back to timestamp.
         # Can't compare UTC, coarse/fine don't work.
         assert np.allclose(
-            expected_mago["x"].iloc[index], mago["vectors"].data[index][0], atol=1e-9
+            expected_mago["x"].iloc[index],
+            mago["vectors"].data[index][0],
+            atol=1e-9,
+            rtol=0,
         )
         assert np.allclose(
-            expected_mago["y"].iloc[index], mago["vectors"].data[index][1], atol=1e-9
+            expected_mago["y"].iloc[index],
+            mago["vectors"].data[index][1],
+            atol=1e-9,
+            rtol=0,
         )
         assert np.allclose(
-            expected_mago["z"].iloc[index], mago["vectors"].data[index][2], atol=1e-9
+            expected_mago["z"].iloc[index],
+            mago["vectors"].data[index][2],
+            atol=1e-9,
+            rtol=0,
         )
         assert expected_mago["range"].iloc[index] == mago["vectors"].data[index][3]
         assert (
@@ -198,3 +219,7 @@ def test_mag_l1b_validation(test_number):
                 expected_mago["compression_width"].iloc[index]
                 == mago["compression_flags"].data[index][1]
             )
+
+        expected_time = str_to_et(expected_mago["t"].iloc[index])
+        mago_time = ttj2000ns_to_et(mago["epoch"].data[index])
+        assert np.allclose(expected_time, mago_time, atol=1e-6, rtol=0)
