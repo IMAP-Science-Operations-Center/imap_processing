@@ -24,11 +24,11 @@ def calculate_cullingmask(
     Returns
     -------
     cullingmask_dataset : xarray.Dataset
-        Dataset containing the data.
+        Dataset containing the extendedspin data that remains after culling.
     """
     # If the spin rate was too high or low then the spin should be thrown out.
     # If the rates at any energy level are too high then throw out the entire spin.
-    mask = (
+    good_mask = (
         (
             extendedspin_dataset["quality_attitude"]
             & ImapAttitudeUltraFlags.SPINRATE.value
@@ -44,13 +44,9 @@ def calculate_cullingmask(
         ).all(dim="energy_bin_geometric_mean")
     )
     filtered_dataset = extendedspin_dataset.sel(
-        spin_number=extendedspin_dataset["spin_number"][mask]
+        spin_number=extendedspin_dataset["spin_number"][good_mask]
     )
-    dataset_dict = {
-        **{var: filtered_dataset[var].values for var in filtered_dataset.data_vars},
-        **{coord: filtered_dataset[coord].values for coord in filtered_dataset.coords},
-    }
 
-    cullingmask_dataset = create_dataset(dataset_dict, name, "l1b", data_version)
+    cullingmask_dataset = create_dataset(filtered_dataset, name, "l1b", data_version)
 
     return cullingmask_dataset
