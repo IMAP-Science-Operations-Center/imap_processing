@@ -55,6 +55,14 @@ default_float32_attrs: &default_float32
   VALIDMAX: 3.4028235e+38
   dtype: float32
 
+default_float64_attrs: &default_float64
+  <<: *default
+  FILLVAL: .NAN
+  FORMAT: F10.2
+  VALIDMIN: -1.7976931348623157e+308
+  VALIDMAX: 1.7976931348623157e+308
+  dtype: float64
+
 default_ccsds_version: &default_ccsds_version
   <<: *default_uint8
   CATDESC: CCSDS packet version number
@@ -172,12 +180,12 @@ hi_de_meta_subseconds:
   VAR_TYPE: support_data
 
 hi_de_event_met:
-  <<: *default_int64
-  CATDESC: Mission Elapsed Time (MET) in nanoseconds of Direct Event
+  <<: *default_float64
+  CATDESC: Mission Elapsed Time (MET) in seconds of Direct Event
   DISPLAY_TYPE: no_plot
   FIELDNAM: Direct Event MET
   LABLAXIS: DE MET
-  UNITS: ns
+  UNITS: seconds
   VAR_TYPE: support_data
 
 hi_de_de_tag:

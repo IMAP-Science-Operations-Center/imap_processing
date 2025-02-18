@@ -16,11 +16,10 @@ from imap_processing.spice.time import met_to_ttj2000ns
 # it if needed. It stores information about how
 # fast the time was ticking. It is in microseconds.
 DE_CLOCK_TICK_US = 1999
+DE_CLOCK_TICK_S = DE_CLOCK_TICK_US / 1e6
+HALF_CLOCK_TICK_S = DE_CLOCK_TICK_S / 2
 
-SECOND_TO_NS = 1e9
-MILLISECOND_TO_NS = 1e6
-MICROSECOND_TO_NS = 1e3
-HALF_CLOCK_TICK_NS = DE_CLOCK_TICK_US * MICROSECOND_TO_NS / 2
+MILLISECOND_TO_S = 1e-3
 
 logger = logging.getLogger(__name__)
 
@@ -128,17 +127,17 @@ def create_dataset(de_data_dict: dict[str, npt.ArrayLike]) -> xr.Dataset:
     # For L1A DE, event_met is its own dimension, so we remove the DEPEND_0 attribute
     _ = event_met_attrs.pop("DEPEND_0")
 
-    # Compute the meta-event MET in nanoseconds
-    meta_event_met_ns = (
-        np.array(de_data_dict["meta_seconds"]) * SECOND_TO_NS
-        + np.array(de_data_dict["meta_subseconds"]) * MILLISECOND_TO_NS
+    # Compute the meta-event MET in seconds
+    meta_event_met = (
+        np.array(de_data_dict["meta_seconds"]).astype(np.float64)
+        + np.array(de_data_dict["meta_subseconds"]) * MILLISECOND_TO_S
     )
-    # Compute the MET of each event in nanoseconds
+    # Compute the MET of each event in seconds
     # event MET = meta_event_met + de_clock
     # See Hi Algorithm Document section 2.2.5
     event_met_array = np.array(
-        meta_event_met_ns[de_data_dict["ccsds_index"]]
-        + np.array(de_data_dict["de_tag"]) * DE_CLOCK_TICK_US * MICROSECOND_TO_NS,
+        meta_event_met[de_data_dict["ccsds_index"]]
+        + np.array(de_data_dict["de_tag"]) * DE_CLOCK_TICK_S,
         dtype=event_met_attrs.pop("dtype"),
     )
     event_met = xr.DataArray(
