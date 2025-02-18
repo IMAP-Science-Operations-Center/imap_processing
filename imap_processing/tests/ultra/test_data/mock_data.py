@@ -93,7 +93,9 @@ def mock_l1c_pset_product(
     def get_binomial_counts(distance_scaling, lon_bin, central_lon_bin):
         # Note, this is not quite correct, as it won't wrap around at 720
         distance_lon_bin = np.abs(lon_bin - central_lon_bin)
-        return np.random.binomial(
+
+        rng = np.random.default_rng(seed=42)
+        return rng.binomial(
             n=50,
             p=np.maximum(1 - (distance_lon_bin / distance_scaling), 0.01),
         )
