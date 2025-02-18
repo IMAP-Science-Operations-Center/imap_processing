@@ -41,6 +41,8 @@ def test_idex_tof_high_data(decom_test_data: xr.Dataset):
         The dataset to test with
     """
 
-    with open(f"{imap_module_directory}/tests/idex/impact_14_tof_high_data.txt") as f:
+    with open(
+        f"{imap_module_directory}/tests/idex/test_data/impact_14_tof_high_data.txt"
+    ) as f:
         data = np.array([int(line.rstrip("\n")) for line in f])
     assert (decom_test_data["TOF_High"][13].data == data).all()

@@ -9,6 +9,7 @@ import xarray as xr
 from imap_processing import imap_module_directory
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import parse_filename_like
+from imap_processing.hi.l1a.science_direct_event import HALF_CLOCK_TICK_NS, SECOND_TO_NS
 from imap_processing.hi.utils import (
     HIAPID,
     HiConstants,
@@ -17,11 +18,13 @@ from imap_processing.hi.utils import (
 )
 from imap_processing.spice.geometry import (
     SpiceFrame,
-    get_instrument_spin_phase,
-    get_spacecraft_spin_phase,
     instrument_pointing,
 )
-from imap_processing.spice.time import ttj2000ns_to_et
+from imap_processing.spice.spin import (
+    get_instrument_spin_phase,
+    get_spacecraft_spin_phase,
+)
+from imap_processing.spice.time import met_to_sclkticks, sct_to_et
 from imap_processing.utils import convert_raw_to_eu
 
 
@@ -120,19 +123,30 @@ def annotate_direct_events(l1a_dataset: xr.Dataset) -> xr.Dataset:
         L1B direct event data.
     """
     l1b_dataset = l1a_dataset.copy()
+    l1b_dataset.update(de_esa_energy_step(l1b_dataset))
     l1b_dataset.update(compute_coincidence_type_and_time_deltas(l1b_dataset))
     l1b_dataset.update(de_nominal_bin_and_spin_phase(l1b_dataset))
     l1b_dataset.update(compute_hae_coordinates(l1b_dataset))
-    l1b_dataset.update(de_esa_energy_step(l1b_dataset))
     l1b_dataset.update(
         create_dataset_variables(
             ["quality_flag"],
-            l1b_dataset["epoch"].size,
+            l1b_dataset["event_met"].size,
             att_manager_lookup_str="hi_de_{0}",
         )
     )
     l1b_dataset = l1b_dataset.drop_vars(
-        ["tof_1", "tof_2", "tof_3", "de_tag", "ccsds_met", "meta_event_met"]
+        [
+            "src_seq_ctr",
+            "pkt_len",
+            "last_spin_num",
+            "spin_invalids",
+            "meta_seconds",
+            "meta_subseconds",
+            "tof_1",
+            "tof_2",
+            "tof_3",
+            "de_tag",
+        ]
     )
 
     de_global_attrs = ATTR_MGR.get_global_attributes("imap_hi_l1b_de_attrs")
@@ -169,20 +183,19 @@ def compute_coincidence_type_and_time_deltas(
             "delta_t_bc1",
             "delta_t_c1c2",
         ],
-        len(dataset.epoch),
+        len(dataset.event_met),
         att_manager_lookup_str="hi_de_{0}",
     )
-    out_ds = dataset.assign(new_vars)
 
     # compute masks needed for coincidence type and delta t calculations
-    a_first = out_ds.trigger_id.values == TriggerId.A
-    b_first = out_ds.trigger_id.values == TriggerId.B
-    c_first = out_ds.trigger_id.values == TriggerId.C
+    a_first = dataset.trigger_id.values == TriggerId.A
+    b_first = dataset.trigger_id.values == TriggerId.B
+    c_first = dataset.trigger_id.values == TriggerId.C
 
-    tof1_valid = np.isin(out_ds.tof_1.values, HiConstants.TOF1_BAD_VALUES, invert=True)
-    tof2_valid = np.isin(out_ds.tof_2.values, HiConstants.TOF2_BAD_VALUES, invert=True)
+    tof1_valid = np.isin(dataset.tof_1.values, HiConstants.TOF1_BAD_VALUES, invert=True)
+    tof2_valid = np.isin(dataset.tof_2.values, HiConstants.TOF2_BAD_VALUES, invert=True)
     tof1and2_valid = tof1_valid & tof2_valid
-    tof3_valid = np.isin(out_ds.tof_3.values, HiConstants.TOF3_BAD_VALUES, invert=True)
+    tof3_valid = np.isin(dataset.tof_3.values, HiConstants.TOF3_BAD_VALUES, invert=True)
 
     # Table denoting how hit-first mask and valid TOF masks are used to set
     # coincidence type bitmask
@@ -209,9 +222,9 @@ def compute_coincidence_type_and_time_deltas(
     # |      3      |      C      |  t_a - t_c1 | t_b  - t_c1 | t_c2 - t_c1 |
 
     # Prepare for delta_t calculations by converting TOF values to nanoseconds
-    tof_1_ns = (out_ds.tof_1.values * HiConstants.TOF1_TICK_DUR).astype(np.int32)
-    tof_2_ns = (out_ds.tof_2.values * HiConstants.TOF2_TICK_DUR).astype(np.int32)
-    tof_3_ns = (out_ds.tof_3.values * HiConstants.TOF3_TICK_DUR).astype(np.int32)
+    tof_1_ns = (dataset.tof_1.values * HiConstants.TOF1_TICK_DUR).astype(np.int32)
+    tof_2_ns = (dataset.tof_2.values * HiConstants.TOF2_TICK_DUR).astype(np.int32)
+    tof_3_ns = (dataset.tof_3.values * HiConstants.TOF3_TICK_DUR).astype(np.int32)
 
     # # ********** delta_t_ab = (t_b - t_a) **********
     # Table: row 1, column 1
@@ -281,14 +294,17 @@ def de_nominal_bin_and_spin_phase(dataset: xr.Dataset) -> dict[str, xr.DataArray
             "spin_phase",
             "nominal_bin",
         ],
-        len(dataset.epoch),
+        len(dataset.event_met),
         att_manager_lookup_str="hi_de_{0}",
     )
 
     # nominal_bin is the index number of the 90 4-degree bins that each DE would
     # be binned into in the histogram packet. The Hi histogram data is binned by
     # spacecraft spin-phase, not instrument spin-phase, so the same is done here.
-    met_seconds = dataset.event_met.values.astype(np.float64) / 1e9
+    # We have to add 1/2 clock tick to MET time before getting spin phase
+    met_seconds = (
+        dataset.event_met.values.astype(np.float64) + HALF_CLOCK_TICK_NS
+    ) / SECOND_TO_NS
     imap_spin_phase = get_spacecraft_spin_phase(met_seconds)
     new_vars["nominal_bin"].values = np.asarray(imap_spin_phase * 360 / 4).astype(
         np.uint8
@@ -324,10 +340,15 @@ def compute_hae_coordinates(dataset: xr.Dataset) -> dict[str, xr.DataArray]:
             "hae_latitude",
             "hae_longitude",
         ],
-        len(dataset.epoch),
+        len(dataset.event_met),
         att_manager_lookup_str="hi_de_{0}",
     )
-    et = ttj2000ns_to_et(dataset.epoch.values)
+    # Per Section 2.2.5 of Algorithm Document, add 1/2 of tick duration
+    # to MET before computing pointing.
+    sclk_ticks = met_to_sclkticks(
+        (dataset.event_met.values + HALF_CLOCK_TICK_NS) / SECOND_TO_NS
+    )
+    et = sct_to_et(sclk_ticks)
     sensor_number = parse_sensor_number(dataset.attrs["Logical_source"])
     # TODO: For now, we are using SPICE to compute the look direction for each
     #   direct event. This will eventually be replaced by the algorithm Paul

@@ -6,6 +6,7 @@ import cdflib
 import numpy as np
 from numpy.typing import NDArray
 
+from imap_processing.ena_maps.utils.spatial_utils import build_spatial_bins
 from imap_processing.spice.geometry import (
     SpiceFrame,
     cartesian_to_spherical,
@@ -13,7 +14,6 @@ from imap_processing.spice.geometry import (
     spherical_to_cartesian,
 )
 from imap_processing.ultra.constants import UltraConstants
-from imap_processing.ultra.utils.spatial_utils import build_spatial_bins
 
 # TODO: add species binning.
 
@@ -154,11 +154,12 @@ def get_helio_exposure_times(
     -----
     These calculations are performed once per pointing.
     """
-    # Get bins and midpoints.
+    # Get bins and midpoints, and convert from radians to degrees.
     _, energy_midpoints = build_energy_bins()
     az_bin_edges, el_bin_edges, az_bin_midpoints, el_bin_midpoints = (
-        build_spatial_bins()
+        np.rad2deg(angle_radians) for angle_radians in (build_spatial_bins())
     )
+
     # Initialize the exposure grid.
     exposure_3d = np.zeros(
         (len(el_bin_midpoints), len(az_bin_midpoints), len(energy_midpoints))

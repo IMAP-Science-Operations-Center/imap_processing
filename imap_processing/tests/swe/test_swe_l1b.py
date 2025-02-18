@@ -67,9 +67,9 @@ def test_cdf_creation(mock_read_in_flight_cal_data, l1b_validation_df):
     test_data_path = "tests/swe/l0_data/2024051010_SWE_SCIENCE_packet.bin"
     l1a_datasets = swe_l1a(imap_module_directory / test_data_path, "002")
 
-    l1b_dataset = swe_l1b(l1a_datasets, "002")
+    l1b_dataset = swe_l1b(l1a_datasets[0], "002")
 
-    sci_l1b_filepath = write_cdf(l1b_dataset)
+    sci_l1b_filepath = write_cdf(l1b_dataset[0])
 
     assert sci_l1b_filepath.name == "imap_swe_l1b_sci_20240510_v002.cdf"
     # load the CDF file and compare the values

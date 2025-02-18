@@ -40,7 +40,7 @@ def test_hi_l1b_de(
     """Test coverage for imap_processing.hi.hi_l1b.hi_l1b() with
     direct events L1A as input"""
     # Start MET time of spin for simulated input data is 482372988
-    use_fake_spin_data_for_time(482372988)
+    use_fake_spin_data_for_time(482372987.999)
     l1a_test_file_path = (
         hi_l1_test_data_path / "imap_hi_l1a_45sensor-de_20250415_v999.cdf"
     )
@@ -50,7 +50,7 @@ def test_hi_l1b_de(
 
     l1b_dataset = hi_l1b(l1a_dataset, data_version=data_version)
     assert l1b_dataset.attrs["Logical_source"] == "imap_hi_l1b_45sensor-de"
-    assert len(l1b_dataset.data_vars) == 14
+    assert len(l1b_dataset.data_vars) == 15
 
 
 @pytest.fixture()
@@ -95,11 +95,11 @@ def synthetic_trigger_id_and_tof_data():
     )
     data = [arr[good_inds] for arr in data]
     data_vars = {
-        n: xr.DataArray(arr, dims=["epoch"]) for n, arr in zip(var_names, data)
+        n: xr.DataArray(arr, dims=["event_met"]) for n, arr in zip(var_names, data)
     }
     synthetic_l1a_ds = xr.Dataset(
         coords={
-            "epoch": xr.DataArray(
+            "event_met": xr.DataArray(
                 np.arange(data_vars["trigger_id"].size), name="epoch", dims=["epoch"]
             )
         },
@@ -226,15 +226,19 @@ def test_compute_hae_coordinates(mock_instrument_pointing, sensor_number):
     # Make a fake dataset with epoch and Logical_source
     fake_dataset = xr.Dataset(
         attrs={"Logical_source": f"imap_hi_l1a_{sensor_number}sensor-de"},
-        coords={"epoch": xr.DataArray(np.arange(200), name="epoch", dims=["epoch"])},
+        coords={
+            "event_met": xr.DataArray(
+                np.arange(200), name="event_met", dims=["event_met"]
+            )
+        },
     )
 
     new_vars = compute_hae_coordinates(fake_dataset)
     assert "hae_latitude" in new_vars
-    assert new_vars["hae_latitude"].shape == fake_dataset.epoch.shape
+    assert new_vars["hae_latitude"].shape == fake_dataset.event_met.shape
     np.testing.assert_allclose(new_vars["hae_latitude"].values, sensor_number)
     assert "hae_longitude" in new_vars
-    assert new_vars["hae_longitude"].shape == fake_dataset.epoch.shape
+    assert new_vars["hae_longitude"].shape == fake_dataset.event_met.shape
     np.testing.assert_allclose(new_vars["hae_longitude"].values, sensor_number)
 
 

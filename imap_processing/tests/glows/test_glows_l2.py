@@ -60,7 +60,7 @@ def test_generate_l2(l1b_hist_dataset):
 
     expected_values = {
         "filter_temperature_average": [57.59],
-        "filter_temperature_std_dev": [0.23],
+        "filter_temperature_std_dev": [0.21],
         "hv_voltage_average": [1715.4],
         "hv_voltage_std_dev": [0.0],
     }

@@ -35,7 +35,7 @@ def create_dataset(
     if "spin_number" in data_dict.keys():
         coords = {
             "spin_number": data_dict["spin_number"],
-            "median_rate_energy": data_dict["median_rate_energy"],
+            "energy_bin_geometric_mean": data_dict["energy_bin_geometric_mean"],
         }
         default_dimension = "spin_number"
 
@@ -47,7 +47,13 @@ def create_dataset(
             attrs=cdf_manager.get_variable_attributes("epoch"),
         )
         if "sensor-de" in name:
-            coords = {"epoch": epoch_time, "component": ["vx", "vy", "vz"]}
+            component = xr.DataArray(
+                ["vx", "vy", "vz"],
+                name="component",
+                dims=["component"],
+                attrs=cdf_manager.get_variable_attributes("component"),
+            )
+            coords = {"epoch": epoch_time, "component": component}
         else:
             coords = {"epoch": epoch_time}
         default_dimension = "epoch"
@@ -70,7 +76,7 @@ def create_dataset(
     }
 
     for key in data_dict.keys():
-        if key in ["epoch", "spin_number", "median_rate_energy"]:
+        if key in ["epoch", "spin_number", "energy_bin_geometric_mean"]:
             continue
         elif key in velocity_keys:
             dataset[key] = xr.DataArray(
@@ -78,10 +84,16 @@ def create_dataset(
                 dims=["epoch", "component"],
                 attrs=cdf_manager.get_variable_attributes(key),
             )
+        elif key == "ena_rates_threshold":
+            dataset[key] = xr.DataArray(
+                data_dict[key],
+                dims=["energy_bin_geometric_mean"],
+                attrs=cdf_manager.get_variable_attributes(key),
+            )
         elif key in rates_keys:
             dataset[key] = xr.DataArray(
                 data_dict[key],
-                dims=["median_rate_energy", "spin_number"],
+                dims=["energy_bin_geometric_mean", "spin_number"],
                 attrs=cdf_manager.get_variable_attributes(key),
             )
         else:

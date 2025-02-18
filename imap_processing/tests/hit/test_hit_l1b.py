@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 import pytest
 import xarray as xr
@@ -5,6 +6,9 @@ import xarray as xr
 from imap_processing import imap_module_directory
 from imap_processing.hit.l1a import hit_l1a
 from imap_processing.hit.l1b import hit_l1b
+from imap_processing.tests.hit.helpers.l1_validation import (
+    prepare_standard_rates_validation_data,
+)
 
 # TODO: Packet files are per apid at the moment so the tests currently
 #  reflect this. Eventually, HIT will provide a packet file with all apids
@@ -28,17 +32,14 @@ def sci_packet_filepath():
 
 
 @pytest.fixture()
-def dependencies(packet_filepath):
+def dependencies(packet_filepath, sci_packet_filepath):
     """Get dependencies for L1B processing"""
     # Create dictionary of dependencies and add CCSDS packet file
     data_dict = {"imap_hit_l0_raw": packet_filepath}
     # Add L1A datasets
     l1a_datasets = hit_l1a.hit_l1a(packet_filepath, "001")
-    l1a_datasets.extend(
-        hit_l1a.hit_l1a(
-            imap_module_directory / "tests/hit/test_data/sci_sample.ccsds", "001"
-        )
-    )
+    # TODO: Remove this when HIT provides a packet file with all apids.
+    l1a_datasets.extend(hit_l1a.hit_l1a(sci_packet_filepath, "001"))
     for dataset in l1a_datasets:
         data_dict[dataset.attrs["Logical_source"]] = dataset
     return data_dict
@@ -234,7 +235,7 @@ def test_hit_l1b_hk_dataset_variables(l1b_hk_dataset):
 
 
 def test_validate_l1b_hk_data(l1b_hk_dataset):
-    """Validate the housekeeping dataset created by the L1B processing.
+    """Test to validate the housekeeping dataset created by the L1B processing.
 
     Parameters
     ----------
@@ -306,6 +307,30 @@ def test_validate_l1b_hk_data(l1b_hk_dataset):
     #             assert np.array_equal(
     #                 hk_dataset[field][pkt].data, validation_data[field][pkt]
     #             )
+
+
+def test_validate_l1b_standard_rates_data(l1b_standard_rates_dataset):
+    """A test to validate the standard rates dataset created by the L1B processing."""
+
+    validation_data = pd.read_csv(
+        imap_module_directory
+        / "tests/hit/validation_data/hit_l1b_standard_sample2_nsrl_v4_3decimals.csv"
+    )
+
+    validation_data = prepare_standard_rates_validation_data(validation_data)
+
+    for field in validation_data.columns:
+        assert (
+            field in l1b_standard_rates_dataset.data_vars.keys()
+        ), f"Field {field} not found in actual data variables"
+        for frame in range(validation_data.shape[0]):
+            np.testing.assert_allclose(
+                l1b_standard_rates_dataset[field][frame].data,
+                validation_data[field][frame],
+                rtol=1e-7,
+                atol=1e-3,
+                err_msg=f"Mismatch in {field} at frame {frame}",
+            )
 
 
 def test_hit_l1b(dependencies):

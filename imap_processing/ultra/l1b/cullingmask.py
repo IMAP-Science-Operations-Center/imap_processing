@@ -27,7 +27,9 @@ def calculate_cullingmask(
     """
     cullingmask_dict = {}
     cullingmask_dict["spin_number"] = extendedspin_dataset["spin_number"]
-    cullingmask_dict["median_rate_energy"] = extendedspin_dataset["median_rate_energy"]
+    cullingmask_dict["energy_bin_geometric_mean"] = extendedspin_dataset[
+        "energy_bin_geometric_mean"
+    ]
 
     # TODO: add more data to cullingmask_dict.
 

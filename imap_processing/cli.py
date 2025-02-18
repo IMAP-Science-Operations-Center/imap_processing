@@ -288,8 +288,8 @@ class ProcessInstrument(ABC):
                 # TODO: Validate dep dict
                 # TODO: determine what dependency information is optional
                 return_query = imap_data_access.query(
-                    start_date=self.start_date,
-                    end_date=self.end_date,
+                    start_date=dependency["start_date"],
+                    end_date=dependency.get("end_date", None),
                     instrument=dependency["instrument"],
                     data_level=dependency["data_level"],
                     version=dependency["version"],
@@ -400,6 +400,10 @@ class ProcessInstrument(ABC):
         datasets : list[xarray.Dataset]
             A list of datasets (products) produced by do_processing method.
         """
+        if len(datasets) == 0:
+            logger.info("No products to write to CDF file.")
+            return
+
         logger.info("Writing products to local storage")
         logger.info("Parent files: %s", self._dependency_list)
 
@@ -533,7 +537,14 @@ class Hi(ProcessInstrument):
             dependencies = [load_cdf(dependency) for dependency in dependencies]
             datasets = [hi_l1b.hi_l1b(dependencies[0], self.version)]
         elif self.data_level == "l1c":
-            dependencies = [load_cdf(dependency) for dependency in dependencies]
+            # TODO: Add PSET calibration product config file dependency and remove
+            #    below injected dependency
+            dependencies.append(
+                Path(__file__).parent
+                / "tests/hi/test_data/l1"
+                / "imap_his_pset-calibration-prod-config_20240101_v001.csv"
+            )
+            dependencies[0] = load_cdf(dependencies[0])
             datasets = [hi_l1c.hi_l1c(dependencies, self.version)]
         else:
             raise NotImplementedError(
@@ -803,7 +814,7 @@ class Swe(ProcessInstrument):
                     f"Unexpected dependencies found for SWE L1A:"
                     f"{dependencies}. Expected only one dependency."
                 )
-            datasets = [swe_l1a(str(dependencies[0]), data_version=self.version)]
+            datasets = swe_l1a(str(dependencies[0]), data_version=self.version)
             # Right now, we only process science data. Therefore,
             # we expect only one dataset to be returned.
 
@@ -816,7 +827,7 @@ class Swe(ProcessInstrument):
             # read CDF file
             l1a_dataset = load_cdf(dependencies[0])
             # TODO: read lookup table and in-flight calibration data here.
-            datasets = [swe_l1b(l1a_dataset, data_version=self.version)]
+            datasets = swe_l1b(l1a_dataset, data_version=self.version)
         else:
             print("Did not recognize data level. No processing done.")
 

@@ -73,8 +73,10 @@ hist_az_6_default: &hist_az_6_default
 
 spin_default_attrs: &spin_default
   <<: *default
-  VAR_TYPE: support_data
+  VAR_TYPE: data
+  DEPEND_0: epoch
   DEPEND_1: spin
+  LABL_PTR_1: spin_label
 
 
 # Re-used Coordinate
@@ -424,8 +426,13 @@ spin:
   FIELDNAM: Spin numbers
   DEPEND_1: spin
   VAR_TYPE: support_data
-  LABLAXIS: spin numbers
+  LABLAXIS: Spin numbers
 
+spin_label:
+  CATDESC: Spin numbers in pointing
+  FIELDNAM: Spin numbers
+  FORMAT: A3
+  VAR_TYPE: metadata
 
 ## Spin Fields
 num_completed:
@@ -434,64 +441,85 @@ num_completed:
   VAR_TYPE: support_data
   CATDESC: Number of spins completed
   FIELDNAM: Number of spins completed
-  LABLAXIS: number of spins completed
+  LABLAXIS: Number of spins completed
 
-acq_end:
+acq_start_sec:
   <<: *default_uint32
   DEPEND_0: epoch
   VAR_TYPE: support_data
-  CATDESC: Acquisition End
-  FIELDNAM: Acquisition End
-  UNITS: ns
-  LABLAXIS: acquisition end
+  CATDESC: Acquisition start
+  FIELDNAM: Acquisition start seconds
+  UNITS: s
+  LABLAXIS: Acquisition start seconds
 
-spin_seconds:
+acq_start_subsec:
+  <<: *default_uint32
+  DEPEND_0: epoch
+  VAR_TYPE: support_data
+  CATDESC: Acquisition start
+  FIELDNAM: Acquisition start sub-seconds
+  UNITS: ms
+  LABLAXIS: Acquisition start sub-seconds
+
+acq_end_sec:
+  <<: *default_uint32
+  DEPEND_0: epoch
+  VAR_TYPE: support_data
+  CATDESC: Acquisition end
+  FIELDNAM: Acquisition end seconds
+  UNITS: s
+  LABLAXIS: Acquisition end seconds
+
+acq_end_subsec:
+    <<: *default_uint32
+    DEPEND_0: epoch
+    VAR_TYPE: support_data
+    CATDESC: Acquisition end
+    FIELDNAM: Acquisition end sub-seconds
+    UNITS: ms
+    LABLAXIS: Acquisition end sub-seconds
+
+start_sec_spin:
   <<: *spin_default
   <<: *default_uint32
-  CATDESC: Spin Start Seconds Time
-  FIELDNAM: Spin Start Seconds Time
-  UNITS: ns
-  LABLAXIS: spin start seconds time
+  CATDESC: Spin start seconds time
+  FIELDNAM: Spin start seconds time
+  UNITS: s
 
-spin_subseconds:
+start_subsec_spin:
   <<: *spin_default
   <<: *default_uint32
-  CATDESC: Spin Start Sub-Seconds Time
-  FIELDNAM: Spin Start Sub-Seconds Time
-  LABLAXIS: spin start sub-seconds time
+  CATDESC: Spin start sub-seconds time
+  FIELDNAM: Spin start sub-seconds time
+  UNITS: ms
 
-esa_p_dac:
+esa_pos_dac_spin:
   <<: *spin_default
   <<: *default_uint32
-  CATDESC: Positive ESA Set Point
-  FIELDNAM: Positive ESA Set Point
-  LABLAXIS: Positive ESA Set Point
+  CATDESC: Positive ESA set point
+  FIELDNAM: Positive ESA set point
 
-esa_n_dac:
+esa_neg_dac_spin:
   <<: *spin_default
   <<: *default_uint32
-  CATDESC: Negative ESA Set Point
-  FIELDNAM: Negative ESA Set Point
-  LABLAXIS: Negative ESA Set Point
+  CATDESC: Negative ESA set point
+  FIELDNAM: Negative ESA set point
 
-val_period:
+valid_period_spin:
   <<: *spin_default
   <<: *default_uint32
-  CATDESC: Valid Spin Period
-  FIELDNAM: Valid Spin Period
-  LABLAXIS: valid spin period
+  CATDESC: Valid spin period
+  FIELDNAM: Valid spin period
 
-val_spin:
+valid_phase_spin:
   <<: *spin_default
   <<: *default_uint32
-  CATDESC: Valid Spin Phase
-  FIELDNAM: Valid Spin Phase
-  LABLAXIS: valid spin phase
+  CATDESC: Valid spin phase
+  FIELDNAM: Valid spin phase
 
-source:
+period_source_spin:
   <<: *spin_default
   <<: *default_uint32
-  CATDESC: Spin Period Source
-  FIELDNAM: Spin Period Source
-  LABLAXIS: spin period source
+  CATDESC: Spin period source
+  FIELDNAM: Spin period source
 # Spin Attributes - END

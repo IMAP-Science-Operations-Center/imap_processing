@@ -44,14 +44,14 @@ def test_parse_sensor_number(test_str, expected):
 
 
 @pytest.mark.parametrize(
-    "name, shape, expected_shape",
+    "name, shape, fill_value, expected_shape",
     [
-        ("despun_z", (1, 3), (1, 3)),
-        ("hae_latitude", None, (1, 360)),
-        ("counts", None, (1, 10, 5, 360)),
+        ("despun_z", (1, 3), None, (1, 3)),
+        ("hae_latitude", None, 0, (1, 360)),
+        ("counts", None, None, (1, 10, 5, 360)),
     ],
 )
-def test_full_dataarray(name, shape, expected_shape):
+def test_full_dataarray(name, shape, fill_value, expected_shape):
     """Test coverage for full_dataarray function"""
     coords = {
         "epoch": xr.DataArray(np.array([0])),
@@ -61,25 +61,28 @@ def test_full_dataarray(name, shape, expected_shape):
     }
     cdf_manager = ImapCdfAttributes()
     cdf_manager.add_instrument_variable_attrs(instrument="hi", level=None)
+    attrs = cdf_manager.get_variable_attributes(f"hi_pset_{name}")
 
     dataarray = full_dataarray(
-        name, cdf_manager.get_variable_attributes(f"hi_pset_{name}"), coords, shape
+        name, attrs, coords=coords, shape=shape, fill_value=fill_value
     )
     assert dataarray.data.shape == expected_shape
+    expected_fill_value = fill_value if fill_value is not None else attrs["FILLVAL"]
+    np.testing.assert_array_equal(dataarray.data, expected_fill_value)
 
 
 @pytest.mark.parametrize(
-    "var_names, shape, lookup_str",
+    "var_names, shape, fill_value, lookup_str",
     [
-        (["delta_t_ab", "delta_t_ac1"], 5, "hi_de_{0}"),
-        (["hae_latitude"], (3, 5), "hi_pset_{0}"),
+        (["delta_t_ab", "delta_t_ac1"], 5, None, "hi_de_{0}"),
+        (["hae_latitude"], (3, 5), 0, "hi_pset_{0}"),
     ],
 )
-def test_create_dataset_variables(var_names, shape, lookup_str):
+def test_create_dataset_variables(var_names, shape, fill_value, lookup_str):
     """Test coverage for `imap_processing.hi.utils.create_dataset_variables`"""
     var_names = ["delta_t_ab", "delta_t_ac1", "delta_t_bc1"]
     l1b_de_vars = create_dataset_variables(
-        var_names, shape, att_manager_lookup_str="hi_de_{0}"
+        var_names, shape, fill_value=fill_value, att_manager_lookup_str="hi_de_{0}"
     )
     assert len(l1b_de_vars) == len(var_names)
     attr_mgr = ImapCdfAttributes()
@@ -95,3 +98,5 @@ def test_create_dataset_variables(var_names, shape, lookup_str):
             assert data_array.size == shape
         else:
             assert data_array.shape == shape
+        expected_fill_value = fill_value if fill_value is not None else attrs["FILLVAL"]
+        np.testing.assert_array_equal(data_array, expected_fill_value)

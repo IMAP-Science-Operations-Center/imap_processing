@@ -1,5 +1,5 @@
 # <=== Coordinates ===>
-energy:
+esa_step:
   CATDESC: Energy step id in lookup table
   FIELDNAM: energy step
   FILLVAL: -9223370000000000000
@@ -11,9 +11,9 @@ energy:
   VALIDMIN: 0
   VAR_TYPE: support_data
 
-angle:
+spin_sector:
   CATDESC: Spin angle step. Angle resolution is 12 degree nominally
-  FIELDNAM: spin angle
+  FIELDNAM: spin angle step
   FILLVAL: -9223370000000000000
   FORMAT: I2
   LABLAXIS: Angle
@@ -23,7 +23,7 @@ angle:
   VALIDMIN: 0
   VAR_TYPE: support_data
 
-cem:
+cem_id:
   CATDESC: Data rates of each CEM detectors
   FIELDNAM: rates
   FILLVAL: -9223370000000000000
@@ -38,7 +38,7 @@ cem:
 
 cycle:
   CATDESC: Full cycle data takes 4 spins' data
-  FIELDNAM: quater cycle
+  FIELDNAM: quarter cycle
   FILLVAL: -9223370000000000000
   FORMAT: I2
   LABLAXIS: Cycle
@@ -50,19 +50,19 @@ cycle:
 
 # <=== Label Attributes ===>
 # LABL_PTR_i expects VAR_TYPE of metadata with char data type
-energy_label:
+esa_step_label:
   CATDESC: Energy step id in lookup table
   FIELDNAM: Energy Step ID
   FORMAT: A2
   VAR_TYPE: metadata
 
-angle_label:
+spin_sector_label:
   CATDESC: Spin angle step. Angle resolution is 12 degree nominally
   FIELDNAM: 12 Degree Resolution
   FORMAT: A2
   VAR_TYPE: metadata
 
-cem_label:
+cem_id_label:
   CATDESC: Data rates of each CEM detectors
   FIELDNAM: CEM Rates
   FORMAT: A1
@@ -86,12 +86,12 @@ default_attrs: &default
 science_data:
   CATDESC: Electron count rates organized by voltage step and spin sector and CEM
   DEPEND_0: epoch
-  DEPEND_1: energy
-  DEPEND_2: angle
-  DEPEND_3: cem
-  LABL_PTR_1: energy_label
-  LABL_PTR_2: angle_label
-  LABL_PTR_3: cem_label
+  DEPEND_1: esa_step
+  DEPEND_2: spin_sector
+  DEPEND_3: cem_id
+  LABL_PTR_1: esa_step_label
+  LABL_PTR_2: spin_sector_label
+  LABL_PTR_3: cem_id_label
   DISPLAY_TYPE: spectrogram
   FIELDNAM: Counts rate by volt step and spin sector and CEM
   FORMAT: E14.7
@@ -104,20 +104,23 @@ science_data:
     Metadata field acq_duration is 17 uint. Max value of uint17 is 131071.
     Dividing max counts by acq_duration gave validmax
 
-sci_step_acq_time_sec:
+acquisition_time:
   CATDESC: Acquisition time organized by voltage step and spin sector
   DEPEND_0: epoch
-  DEPEND_1: energy
-  DEPEND_2: angle
-  LABL_PTR_1: energy_label
-  LABL_PTR_2: angle_label
+  DEPEND_1: esa_step
+  DEPEND_2: spin_sector
+  LABL_PTR_1: esa_step_label
+  LABL_PTR_2: spin_sector_label
   DISPLAY_TYPE: spectrogram
-  FIELDNAM: Acquisition by volt step and spin sector
+  FIELDNAM: Acquisition time by volt step and spin sector
   FILLVAL: -1.0000000E+31
   UNITS: sec
   VAR_TYPE: support_data
   VAR_NOTES: >
-    This stores acquisition times of each count data.
+    This stores the acquisition times of each measurement. This time is
+    calculated by combining ACQ_START_COARSE, ACQ_START_FINE,
+    acquisition duration and settle duration. It is time of each energy
+    step and each science measurement.
 
 shcoarse:
   <<: *default

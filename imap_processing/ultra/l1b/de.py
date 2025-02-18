@@ -49,6 +49,11 @@ def calculate_de(de_dataset: xr.Dataset, name: str, data_version: str) -> xr.Dat
     de_dict = {}
     sensor = parse_filename_like(name)["sensor"][0:2]
 
+    # Drop events with invalid start type.
+    de_dataset = de_dataset.where(
+        de_dataset["START_TYPE"] != np.iinfo(np.int64).min, drop=True
+    )
+
     # Instantiate arrays
     yf = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float32)
     xb = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float32)
@@ -64,12 +69,8 @@ def calculate_de(de_dataset: xr.Dataset, name: str, data_version: str) -> xr.Dat
     species_bin = np.full(len(de_dataset["epoch"]), "UNKNOWN", dtype="U10")
     t2 = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float32)
 
-    # Drop events with invalid start type.
-    de_dataset = de_dataset.where(
-        de_dataset["START_TYPE"] != np.iinfo(np.int64).min, drop=True
-    )
     # Define epoch.
-    de_dict["epoch"] = de_dataset["epoch"]
+    de_dict["epoch"] = de_dataset["epoch"].data
 
     xf = get_front_x_position(
         de_dataset["START_TYPE"].data,

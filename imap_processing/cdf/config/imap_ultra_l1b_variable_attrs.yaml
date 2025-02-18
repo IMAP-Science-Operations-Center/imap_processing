@@ -9,6 +9,13 @@ default_attrs: &default
   VAR_TYPE: data
   UNITS: " "
 
+component:
+  CATDESC: Velocity components (vx, vy, vz)
+  FIELDNAM: component
+  LABLAXIS: component
+  FORMAT: A3
+  VAR_TYPE: metadata
+
 default_uint8_attrs: &default_uint8
   <<: *default
   FILLVAL: 255
@@ -249,14 +256,6 @@ de_event_met:
   VAR_TYPE: support_data
   SCALE_TYP: linear
 
-spin_number:
-  <<: *default
-  CATDESC: Spin number from Universal Spin Table.
-  FIELDNAM: spin_number
-  LABLAXIS: spin_number
-  # TODO: come back to format
-  UNITS: " "
-
 spin_start_time:
   <<: *default
   CATDESC: Spin start time from Universal Spin Table.
@@ -265,13 +264,19 @@ spin_start_time:
   # TODO: come back to format
   UNITS: s
 
-avg_spin_period:
+spin_period:
   <<: *default
-  CATDESC: Average spin period from Universal Spin Table.
-  FIELDNAM: avg_spin_period
-  LABLAXIS: avg_spin_period
-  # TODO: come back to format
+  CATDESC: Spin period from Universal Spin Table.
+  FIELDNAM: spin_period
+  LABLAXIS: spin_period
   UNITS: s
+
+spin_rate:
+  <<: *default
+  CATDESC: Spin rate from Universal Spin Table.
+  FIELDNAM: spin_rate
+  LABLAXIS: spin_rate
+  UNITS: rpm
 
 rate_start_pulses:
   <<: *default
@@ -313,13 +318,32 @@ rate_rejected_events:
   # TODO: come back to format
   UNITS: 1/s
 
+# Extendedspin attributes
+ena_rates:
+  <<: *default_float32
+  CATDESC: Rates calculated from de packet.
+  FIELDNAM: ena_rates
+  LABLAXIS: ena_rates
+  DEPEND_0: spin_number
+  DEPEND_1: energy_bin_geometric_mean
+  UNITS: " "
+
+ena_rates_threshold:
+  <<: *default_float32
+  CATDESC: Rates threshold used for flagging data.
+  FIELDNAM: ena_rates_threshold
+  LABLAXIS: ena_rates_threshold
+  DEPEND_0: spin_number
+  DEPEND_1: energy_bin_geometric_mean
+  UNITS: " "
+
 quality_ena_rates:
   <<: *default_uint16
   CATDESC: Spin filter derived from Ultra ena rates. Bitwise flagging used to filter the spin.
   FIELDNAM: quality_ena_rates
   LABLAXIS: quality_ena_rates
   DEPEND_0: spin_number
-  DEPEND_1: median_rate_energy
+  DEPEND_1: energy_bin_geometric_mean
   UNITS: " "
 
 quality_attitude:

@@ -5,7 +5,12 @@ import numpy as np
 import pytest
 
 from imap_processing.glows.l1b.glows_l1b import glows_l1b
-from imap_processing.glows.l1b.glows_l1b_data import AncillaryParameters, DirectEventL1B
+from imap_processing.glows.l1b.glows_l1b_data import (
+    AncillaryParameters,
+    DirectEventL1B,
+    HistogramL1B,
+)
+from imap_processing.spice.time import met_to_ttj2000ns
 
 
 def test_glows_l1b_ancillary_file():
@@ -75,11 +80,8 @@ def test_glows_l1b_de():
 
 
 def test_validation_data_histogram(l1a_dataset):
-    hist_day_one = l1a_dataset[0]
-    hist_day_two = l1a_dataset[1]
-
-    l1b_day_one = glows_l1b(hist_day_one, "v001")
-    l1b_day_two = glows_l1b(hist_day_two, "v001")
+    l1b = [glows_l1b(l1a_dataset[0], "v001"), glows_l1b(l1a_dataset[1], "v001")]
+    end_time = l1b[0]["epoch"].data[-1]
 
     validation_data = (
         Path(__file__).parent
@@ -122,26 +124,23 @@ def test_validation_data_histogram(l1a_dataset):
         # "spacecraft_velocity_std_dev": "spacecraft_velocity_std_dev",
     }
 
-    for index, validation_output in enumerate(out["output"]):
-        if validation_output["imap_start_time"] < 54259215:
-            # day of 2011-09-20
-            l1b = l1b_day_one
-            l1b_index = index
-        else:
-            l1b_index = index - l1b_day_one.epoch.size
-            l1b = l1b_day_two
+    for validation_output in out["output"]:
+        epoch_val = met_to_ttj2000ns(validation_output["imap_start_time"])
+
+        # Validation data spans the two obs days, so this selects the correct output
+        dataset_index = 1 if epoch_val > end_time else 0
+        datapoint = l1b[dataset_index].sel(epoch=epoch_val)
 
         assert np.equal(
             validation_output["imap_start_time"],
-            l1b.isel(epoch=l1b_index).imap_start_time.data,
+            datapoint.imap_start_time.data,
         )
 
         for key in validation_output:
             if key not in expected_matching_columns.keys():
                 continue
-
             np.testing.assert_array_almost_equal(
-                l1b[expected_matching_columns[key]].isel(epoch=l1b_index).data,
+                datapoint[expected_matching_columns[key]].data,
                 validation_output[key],
                 decimal=1,
             )
@@ -185,3 +184,16 @@ def test_validation_data_de(l1a_dataset):
                 np.testing.assert_array_almost_equal(
                     l1b[key].isel(epoch=index).data, validation_output[key], decimal=1
                 )
+
+
+@pytest.mark.parametrize(
+    "flags, expected",
+    [
+        (0, np.zeros(10)),
+        (64, np.array([0, 0, 0, 0, 0, 0, 1, 0, 0, 0])),
+        (65, np.array([1, 0, 0, 0, 0, 0, 1, 0, 0, 0])),
+    ],
+)
+def test_deserialize_flags(flags, expected):
+    output = HistogramL1B.deserialize_flags(flags)
+    assert np.array_equal(output, expected)

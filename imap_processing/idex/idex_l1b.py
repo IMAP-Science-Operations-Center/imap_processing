@@ -27,12 +27,11 @@ from imap_processing.spice.geometry import (
     SpiceBody,
     SpiceFrame,
     cartesian_to_spherical,
-    get_spacecraft_spin_phase,
-    get_spin_angle,
     imap_state,
     instrument_pointing,
     solar_longitude,
 )
+from imap_processing.spice.spin import get_spacecraft_spin_phase, get_spin_angle
 from imap_processing.spice.time import ttj2000ns_to_et
 from imap_processing.utils import convert_raw_to_eu
 
@@ -40,7 +39,24 @@ logger = logging.getLogger(__name__)
 
 
 class ConversionFactors(float, Enum):
-    """Enum class for conversion factor values."""
+    """
+    Enum class for conversion factor values.
+
+    Attributes
+    ----------
+    TOF_High : float
+        Time of flight high conversion factor.
+    TOF_Low : float
+        Time of flight low conversion factor.
+    TOF_Mid : float
+        Time of flight mid conversion factor.
+    Target_Low : float
+        Target Low conversion factor.
+    Target_High : float
+        Target High conversion factor.
+    Ion_Grid : float
+        Ion Grid conversion factor.
+    """
 
     TOF_High = 2.89e-4
     TOF_Low = 5.14e-4
@@ -51,7 +67,18 @@ class ConversionFactors(float, Enum):
 
 
 class TriggerMode(Enum):
-    """Enum class for conversion factor values."""
+    """
+    Enum class for data collection trigger Modes.
+
+    Attributes
+    ----------
+    Threshold : int
+        Mode 1 - Triggers when signal reaches the threshold value.
+    SinglePulse : int
+        Mode 2 - Triggers when a single pulse is detected.
+    DoublePulse : int
+        Mode 3 - Triggers when two pulses are detected.
+    """
 
     Threshold = 1
     SinglePulse = 2
@@ -175,7 +202,7 @@ def unpack_instrument_settings(
     ----------
     l1a_dataset : xarray.Dataset
         IDEX L1a dataset containing the 6 waveform arrays.
-    var_information_df : pd.DataFrame
+    var_information_df : pandas.DataFrame
         Pandas data frame that contains information about each variable
         (e.g., bit-size, starting bit, and padding). This is used to unpack raw
         telemetry data from the input dataset (`l1a_dataset`).

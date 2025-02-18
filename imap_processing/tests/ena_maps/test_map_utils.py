@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from imap_processing.ena_maps import map_utils
+from imap_processing.ena_maps.utils import map_utils
 
 
 class TestENAMapMappingUtils:

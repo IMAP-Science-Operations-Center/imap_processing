@@ -25,6 +25,7 @@ import space_packet_parser
 import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
+from imap_processing.idex.decode import rice_decode
 from imap_processing.idex.idex_l0 import decom_packets
 from imap_processing.spice.time import met_to_ttj2000ns
 from imap_processing.utils import convert_to_binary_string
@@ -76,7 +77,6 @@ class PacketParser:
             Currently assumes one L0 file will generate exactly one L1a file.
         """
         decom_packet_list = decom_packets(packet_file)
-
         dust_events = {}
         for packet in decom_packet_list:
             if "IDX__SCI0TYPE" in packet:
@@ -137,6 +137,56 @@ class PacketParser:
         logger.info("IDEX L1A science data processing completed.")
 
 
+def _read_waveform_bits(waveform_raw: str, high_sample: bool = True) -> list[int]:
+    """
+    Convert the raw waveform binary string to ints.
+
+    Parse a binary string representing a waveform.
+    If the data is a high sample waveform:
+        - Data arrives in 32-bit chunks, divided up into:
+            * 2 bits of padding
+            * 3x10 bits of integer data.
+        - The very last four numbers are usually bad, so remove those.
+    If the data is a low sample waveform:
+        - Data arrives in 32-bit chunks, divided up into:
+            * 8 bits of padding
+            * 2x12 bits of integer data.
+
+    Parameters
+    ----------
+    waveform_raw : str
+        The binary string representing the waveform.
+    high_sample : bool
+        If true, parse the waveform according to the high sample pattern,
+        otherwise use the low sample pattern.
+
+    Returns
+    -------
+    ints : list
+        List of the waveform.
+    """
+    ints = []
+    if high_sample:
+        for i in range(0, len(waveform_raw), 32):
+            # 32-bit chunks, divided up into 2, 10, 10, 10
+            # skip first two bits
+            ints += [
+                int(waveform_raw[i + 2 : i + 12], 2),
+                int(waveform_raw[i + 12 : i + 22], 2),
+                int(waveform_raw[i + 22 : i + 32], 2),
+            ]
+        ints = ints[:-4]  # Remove last 4 numbers
+    else:
+        for i in range(0, len(waveform_raw), 32):
+            # 32-bit chunks, divided up into 8, 12, 12
+            # skip first eight bits
+            ints += [
+                int(waveform_raw[i + 8 : i + 20], 2),
+                int(waveform_raw[i + 20 : i + 32], 2),
+            ]
+    return ints
+
+
 class RawDustEvent:
     """
     Encapsulate IDEX Raw Dust Event.
@@ -161,6 +211,10 @@ class RawDustEvent:
         The number of samples in a "block" of low sample data.
     NUMBER_SAMPLES_PER_HIGH_SAMPLE_BLOCK: int
         The number of samples in a "block" of high sample data.
+    MAX_HIGH_BLOCKS: int
+        The maximum number of "blocks" for high sample data.
+    MAX_LOW_BLOCKS: int
+        The maximum number of "blocks" for low sample data.
 
     Methods
     -------
@@ -194,6 +248,9 @@ class RawDustEvent:
     NUMBER_SAMPLES_PER_HIGH_SAMPLE_BLOCK = (
         512  # The number of samples in a "block" of high sample data
     )
+    # Maximum amount of data
+    MAX_HIGH_BLOCKS = 16
+    MAX_LOW_BLOCKS = 64
 
     def __init__(
         self, header_packet: space_packet_parser.packets.CCSDSPacket, data_version: str
@@ -243,6 +300,7 @@ class RawDustEvent:
         self.Target_High_bits = ""
         self.Ion_Grid_bits = ""
 
+        self.compressed = self.telemetry_items["idx__sci0comp"]
         self.cdf_attrs = get_idex_attrs(data_version)
 
     def _append_raw_data(self, scitype: Scitype, bits: str) -> None:
@@ -375,11 +433,7 @@ class RawDustEvent:
         Will process the high sample waveform.
 
         Parse a binary string representing a high sample waveform.
-        Data arrives in 32 bit chunks, divided up into:
-            * 2 bits of padding
-            * 3x10 bits of integer data.
-
-        The very last 4 numbers are bad usually, so remove those.
+        If the data has been compressed, decompress using the RICE Golomb algorithm.
 
         Parameters
         ----------
@@ -391,25 +445,20 @@ class RawDustEvent:
         ints : list
             List of the high sample waveform.
         """
-        ints = []
-        for i in range(0, len(waveform_raw), 32):
-            # 32 bit chunks, divided up into 2, 10, 10, 10
-            # skip first two bits
-            ints += [
-                int(waveform_raw[i + 2 : i + 12], 2),
-                int(waveform_raw[i + 12 : i + 22], 2),
-                int(waveform_raw[i + 22 : i + 32], 2),
-            ]
-        return ints[:-4]  # Remove last 4 numbers
+        samples = self.MAX_HIGH_BLOCKS * self.NUMBER_SAMPLES_PER_HIGH_SAMPLE_BLOCK
+        if self.compressed.raw_value == 1:
+            ints = rice_decode(waveform_raw, nbit10=True, sample_count=samples)
+            ints = ints[:-3]
+        else:
+            ints = _read_waveform_bits(waveform_raw, high_sample=True)
+        return ints
 
     def _parse_low_sample_waveform(self, waveform_raw: str) -> list[int]:
         """
         Will process the low sample waveform.
 
         Parse a binary string representing a low sample waveform
-        Data arrives in 32-bit chunks, divided up into:
-            * 8 bits of padding
-            * 2x12 bits of integer data.
+        If the data has been compressed, decompress using the RICE Golomb algorithm.
 
         Parameters
         ----------
@@ -421,12 +470,11 @@ class RawDustEvent:
         ints : list
             List of processed low sample waveform.
         """
-        ints = []
-        for i in range(0, len(waveform_raw), 32):
-            ints += [
-                int(waveform_raw[i + 8 : i + 20], 2),
-                int(waveform_raw[i + 20 : i + 32], 2),
-            ]
+        samples = self.MAX_LOW_BLOCKS * self.NUMBER_SAMPLES_PER_LOW_SAMPLE_BLOCK
+        if self.compressed.raw_value == 1:
+            ints = rice_decode(waveform_raw, nbit10=False, sample_count=samples)
+        else:
+            ints = _read_waveform_bits(waveform_raw, high_sample=False)
         return ints
 
     def _calc_low_sample_resolution(self, num_samples: int) -> npt.NDArray:

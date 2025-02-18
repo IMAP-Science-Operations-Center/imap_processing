@@ -79,7 +79,7 @@ def test_parse_count_rates(sci_dataset):
         "hdr_code_ok",
         "hdr_minute_cnt",
         "spare",
-        "livetime",
+        "livetime_counter",
         "num_trig",
         "num_reject",
         "num_acc_w_pha",
@@ -125,12 +125,10 @@ def test_parse_count_rates(sci_dataset):
 
 def test_is_sequential():
     """Test the is_sequential function."""
-    counters = np.array([0, 1, 2, 3, 4])
-    if is_sequential(counters):
-        assert True
-    counters = np.array([0, 2, 3, 4, 5])
-    if not is_sequential(counters):
-        assert True
+    assert is_sequential(np.array([0, 1, 2, 3, 4]))
+    assert not is_sequential(np.array([0, 2, 3, 4, 5]))
+    # Wrap-around case
+    assert is_sequential(np.array([16382, 16383, 0, 1, 2]))
 
 
 def test_get_valid_starting_indices():
@@ -244,7 +242,7 @@ def test_decom_hit(sci_dataset):
         "hdr_heater_duty_cycle",
         "hdr_code_ok",
         "hdr_minute_cnt",
-        "livetime",
+        "livetime_counter",
         "num_trig",
         "num_reject",
         "num_acc_w_pha",

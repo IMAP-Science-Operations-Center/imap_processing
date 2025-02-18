@@ -11,7 +11,7 @@ import typing
 from typing import Union
 
 import numpy as np
-import spiceypy as spice
+import spiceypy
 from numpy import ndarray
 
 from imap_processing.spice.geometry import SpiceBody, SpiceFrame, imap_state
@@ -53,14 +53,14 @@ def latitude_longitude_to_ecef(
     # Retrieve Earth's radii from SPICE
     # https://spiceypy.readthedocs.io/en/main/documentation.html#spiceypy.spiceypy.bod
     # (url cont.) vrd
-    radii = spice.bodvrd("EARTH", "RADII", 3)[1]
+    radii = spiceypy.bodvrd("EARTH", "RADII", 3)[1]
     equatorial_radius = radii[0]  # Equatorial radius in km
     polar_radius = radii[2]  # Polar radius in km
     flattening = (equatorial_radius - polar_radius) / equatorial_radius
 
     # Convert geodetic coordinates to rectangular coordinates
     # https://spiceypy.readthedocs.io/en/main/documentation.html#spiceypy.spiceypy.georec
-    rect_coords = spice.georec(
+    rect_coords = spiceypy.georec(
         longitude_radians, latitude_radians, altitude, equatorial_radius, flattening
     )
 
@@ -114,7 +114,7 @@ def calculate_azimuth_and_elevation(
 
     # https://spiceypy.readthedocs.io/en/main/documentation.html#spiceypy.spiceypy.azlcpo
     for timestamp in observation_time:
-        azel_results = spice.azlcpo(
+        azel_results = spiceypy.azlcpo(
             method="Ellipsoid",  # Only method supported
             target=target,  # target ephemeris object
             et=timestamp,  # time of observation

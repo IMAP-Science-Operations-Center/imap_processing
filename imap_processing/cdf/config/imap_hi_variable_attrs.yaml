@@ -145,46 +145,52 @@ hi_de_last_spin_num:
 
 hi_de_spin_invalids:
   <<: *default_uint8
-  CATDESC: Binary mask where a 1-bit indicates an invalid spin for coresponding spin in packet
+  CATDESC: Binary mask where a 1-bit indicates an invalid spin for corresponding spin in packet
   FIELDNAM: spin flags
   FORMAT: I3
   LABLAXIS: spin flag
 
-hi_de_de_tag:
-  <<: *default_uint16
-  CATDESC: Ticks (nominally 1999us) since last meta-event
-  FIELDNAM: Direct Event Time Tag
-  LABLAXIS: DE Time Tag
-
 hi_de_esa_step:
   <<: *hi_esa_step
 
+hi_de_meta_seconds:
+  <<: *default_uint32
+  CATDESC: Coarse mission elapsed time (MET) of last meta-event
+  DISPLAY_TYPE: time_series
+  FIELDNAM: Coarse Meta-event MET
+  LABLAXIS: Coarse Meta MET
+  UNITS: seconds
+  VAR_TYPE: support_data
+
+hi_de_meta_subseconds:
+  <<: *default_uint16
+  CATDESC: Fine mission elapsed time (MET) of last meta-event
+  DISPLAY_TYPE: time_series
+  FIELDNAM: Fine Meta-event MET
+  LABLAXIS: Fine Meta MET
+  UNITS: ms
+  VAR_TYPE: support_data
+
 hi_de_event_met:
   <<: *default_int64
-  CATDESC: Mission Elapsed Time (MET) of Direct Event
+  CATDESC: Mission Elapsed Time (MET) in nanoseconds of Direct Event
   DISPLAY_TYPE: no_plot
-  FIELDNAM: Time since (TODO - what is the def of MET?)
+  FIELDNAM: Direct Event MET
   LABLAXIS: DE MET
   UNITS: ns
   VAR_TYPE: support_data
-  SCALE_TYP: linear
 
-hi_de_meta_event_met:
-  <<: *default_int64
-  CATDESC: Mission elapsed time (MET) of last meta-event
-  DISPLAY_TYPE: no_plot
-  FIELDNAM: Meta-event Mission Elapsed Time
-  LABLAXIS: Meta MET
-  UNITS: ns
-  VALIDMIN: 0
-  VALIDMAX: 4294967295
-  VAR_TYPE: support_data
-  SCALE_TYP: linear
-  dtype: int64
+hi_de_de_tag:
+  <<: *default_uint16
+  CATDESC: Ticks (nominally 1999us) since last meta-event
+  DEPEND_0: event_met
+  FIELDNAM: Direct Event Time Tag
+  LABLAXIS: DE Time Tag
 
 hi_de_trigger_id:
   <<: *default_uint8
   CATDESC: Trigger ID of the detector that was hit first
+  DEPEND_0: event_met
   FIELDNAM: Trigger ID
   FILLVAL: 0
   FORMAT: I1
@@ -197,6 +203,7 @@ hi_de_trigger_id:
 
 default_tof: &default_tof
   <<: *default_uint16
+  DEPEND_0: event_met
   FORMAT: I4
   UNITS: ticks
   VALIDMAX: 1023
@@ -224,6 +231,13 @@ hi_de_tof_3:
   VAR_NOTES: >
     Time of flight is 10-bit integer value that represents the time of flight of
     the direct event. 1023 is the value used to indicate no event was registered.
+
+hi_de_ccsds_index:
+  <<: *default_uint16
+  CATDESC: Zero-based index that associates an event with the packet it was encoded in.
+  DEPEND_0: event_met
+  FIELDNAM: Packet Index
+  LABLAXIS: Packet Index
 
 # ======= L1A HIST Section =======
 # <=== Label Attributes ===>
@@ -296,6 +310,7 @@ hi_hist_cksum:
 hi_de_coincidence_type:
   <<: *default_uint8
   CATDESC: Bitmap of detectors hit for Direct Event
+  DEPEND_0: event_met
   FIELDNAM: Coincidence Type
   FILLVAL: 0
   FORMAT: I2
@@ -322,6 +337,7 @@ hi_de_esa_energy_step:
 
 default_delta_t: &default_delta_t
   <<: *default_int32
+  DEPEND_0: event_met
   FORMAT: I3
   LABLAXIS: delta T
   UNITS: ns
@@ -351,6 +367,7 @@ hi_de_delta_t_c1c2:
 hi_de_spin_phase:
   <<: *default_float32
   CATDESC: Floating point spin phase
+  DEPEND_0: event_met
   FIELDNAM: Spin Phase
   FORMAT: F4.3
   LABLAXIS: Spin Phase
@@ -360,6 +377,7 @@ hi_de_spin_phase:
 hi_de_hae_latitude:
   <<: *default_float32
   CATDESC: Look direction HAE latitude
+  DEPEND_0: event_met
   FIELDNAM: Ecliptic Latitude
   FORMAT: F5.2
   LABLAXIS: Lat
@@ -370,6 +388,7 @@ hi_de_hae_latitude:
 hi_de_hae_longitude:
   <<: *default_float32
   CATDESC: Look direction HAE longitude
+  DEPEND_0: event_met
   FIELDNAM: Ecliptic Longitude
   FORMAT: F5.2
   LABLAXIS: Lon
@@ -380,6 +399,7 @@ hi_de_hae_longitude:
 hi_de_quality_flag:
   <<: *default_uint16
   CATDESC: Direct event bitwise quality flag
+  DEPEND_0: event_met
   FIELDNAM: DE quality flag
   FILLVAL: 65535
   FORMAT: I5
@@ -392,6 +412,7 @@ hi_de_quality_flag:
 hi_de_nominal_bin:
   <<: *default_uint8
   CATDESC: Corresponding histogram angle bin for this Direct Event
+  DEPEND_0: event_met
   FIELDNAM: Histogram Bin Number
   FORMAT: I2
   LABLAXIS: Hist Bin \#
@@ -426,7 +447,7 @@ hi_pset_calibration_prod:
   SCALE_TYP: linear
   MONOTON: INCREASE
   VALIDMIN: 0
-  VALIDMAX: 4
+  VALIDMAX: 9
   VAR_TYPE: support_data
   dtype: uint8
 

@@ -7,12 +7,12 @@ import spiceypy
 from imap_processing.spice import IMAP_SC_ID
 from imap_processing.spice.time import (
     TICK_DURATION,
-    _sct2e_wrapper,
     et_to_utc,
     met_to_datetime64,
     met_to_sclkticks,
     met_to_ttj2000ns,
     met_to_utc,
+    sct_to_et,
     sct_to_ttj2000s,
     str_to_et,
     ttj2000ns_to_et,
@@ -55,6 +55,9 @@ def test_ttj2000ns_to_et(furnish_time_kernels):
     epoch = int(spiceypy.unitim(et, "ET", "TT") * 1e9)
     j2000s = ttj2000ns_to_et(epoch)
     assert j2000s == et
+    # Test for bug when spiceypy tries to iterate over 0-d array returned by
+    # np.vectorize for the scalar case
+    assert not spiceypy.support_types.is_iterable(et)
     # Test array input
     ets = np.arange(et, et + 10000, 100)
     epoch = np.array([spiceypy.unitim(et, "ET", "TT") * 1e9 for et in ets]).astype(
@@ -109,20 +112,26 @@ def test_met_to_datetime64(furnish_time_kernels, utc):
         et_arr = spiceypy.str2et(utc)
         sclk_ticks = np.array([spiceypy.sce2c(IMAP_SC_ID, et) for et in et_arr])
     else:
-        expected_dt64 = np.asarray(np.datetime64(utc))
+        expected_dt64 = np.datetime64(utc)
         et = spiceypy.str2et(utc)
         sclk_ticks = spiceypy.sce2c(IMAP_SC_ID, et)
     met = sclk_ticks * TICK_DURATION
     dt64 = met_to_datetime64(met)
+
+    if isinstance(utc, list):
+        assert isinstance(dt64, np.ndarray)
+        assert dt64.dtype.name == "datetime64[ns]"
+    else:
+        assert isinstance(dt64, np.datetime64)
     np.testing.assert_array_equal(
         dt64.astype("datetime64[us]"), expected_dt64.astype("datetime64[us]")
     )
 
 
 @pytest.mark.parametrize("sclk_ticks", [0.0, np.arange(10)])
-def test_sct2e_wrapper(sclk_ticks):
-    """Test for `_sct2e_wrapper` function."""
-    et = _sct2e_wrapper(sclk_ticks)
+def test_sct_to_et(sclk_ticks):
+    """Test for `sct_to_et` function."""
+    et = sct_to_et(sclk_ticks)
     if isinstance(sclk_ticks, float):
         assert isinstance(et, float)
     else:
@@ -146,6 +155,7 @@ def test_str_to_et(furnish_time_kernels):
     expected_et = 553333629.1837274
     actual_et = str_to_et(utc)
     assert expected_et == actual_et
+    assert isinstance(actual_et, float)
 
     # Test list input
     list_of_utc = [

@@ -1,5 +1,5 @@
 """
-Functions for computing geometry, many of which use SPICE.
+Functions for computing geometry, many of which use SPICEYPY.
 
 Paradigms for developing this module:
 
@@ -9,16 +9,13 @@ Paradigms for developing this module:
 * Always return numpy arrays for vectorized calls.
 """
 
-import os
 import typing
 from enum import IntEnum
-from pathlib import Path
 from typing import Union
 
 import numpy as np
 import numpy.typing as npt
-import pandas as pd
-import spiceypy as spice
+import spiceypy
 from numpy.typing import NDArray
 
 from imap_processing.spice.kernels import ensure_spice
@@ -33,17 +30,17 @@ class SpiceBody(IntEnum):
     # IMAP Pointing Frame (Despun) as defined in imap_science_0001.tf
     IMAP_DPS = -43901
     # Standard NAIF bodies
-    SOLAR_SYSTEM_BARYCENTER = spice.bodn2c("SOLAR_SYSTEM_BARYCENTER")
-    SUN = spice.bodn2c("SUN")
-    EARTH = spice.bodn2c("EARTH")
+    SOLAR_SYSTEM_BARYCENTER = spiceypy.bodn2c("SOLAR_SYSTEM_BARYCENTER")
+    SUN = spiceypy.bodn2c("SUN")
+    EARTH = spiceypy.bodn2c("EARTH")
 
 
 class SpiceFrame(IntEnum):
     """Enum containing SPICE IDs for reference frames, defined in imap_wkcp.tf."""
 
     # Standard SPICE Frames
-    J2000 = spice.irfnum("J2000")
-    ECLIPJ2000 = spice.irfnum("ECLIPJ2000")
+    J2000 = spiceypy.irfnum("J2000")
+    ECLIPJ2000 = spiceypy.irfnum("ECLIPJ2000")
     ITRF93 = 13000
     # IMAP Pointing Frame (Despun) as defined in imap_science_0001.tf
     IMAP_DPS = -43901
@@ -112,195 +109,10 @@ def imap_state(
      The Cartesian state vector representing the position and velocity of the
      IMAP spacecraft.
     """
-    state, _ = spice.spkezr(
+    state, _ = spiceypy.spkezr(
         SpiceBody.IMAP.name, et, ref_frame.name, abcorr, observer.name
     )
     return np.asarray(state)
-
-
-def get_spin_data() -> pd.DataFrame:
-    """
-    Read spin file using environment variable and return spin data.
-
-    SPIN_DATA_FILEPATH environment variable would be a fixed value.
-    It could be s3 filepath that can be used to download the data
-    through API or it could be path EFS or Batch volume mount path.
-
-    Spin data should contain the following fields:
-        * spin_number
-        * spin_start_sec
-        * spin_start_subsec
-        * spin_period_sec
-        * spin_period_valid
-        * spin_phase_valid
-        * spin_period_source
-        * thruster_firing
-
-    Returns
-    -------
-    spin_data : pandas.DataFrame
-        Spin data.
-    """
-    spin_data_filepath = os.getenv("SPIN_DATA_FILEPATH")
-    if spin_data_filepath is not None:
-        path_to_spin_file = Path(spin_data_filepath)
-    else:
-        # Handle the case where the environment variable is not set
-        raise ValueError("SPIN_DATA_FILEPATH environment variable is not set.")
-
-    spin_df = pd.read_csv(path_to_spin_file, comment="#")
-    # Combine spin_start_sec and spin_start_subsec to get the spin start
-    # time in seconds. The spin start subseconds are in milliseconds.
-    spin_df["spin_start_time"] = (
-        spin_df["spin_start_sec"] + spin_df["spin_start_subsec"] / 1e3
-    )
-
-    return spin_df
-
-
-def get_spin_angle(
-    spin_phases: Union[float, npt.NDArray],
-    degrees: bool = False,
-) -> Union[float, npt.NDArray]:
-    """
-    Convert spin_phases to radians or degrees.
-
-    Parameters
-    ----------
-    spin_phases : float or np.ndarray
-        Instrument or spacecraft spin phases. Spin phase is a
-        floating point number in the range [0, 1) corresponding to the
-        spin angle / 360.
-    degrees : bool
-        If degrees parameter is True, return angle in degrees otherwise return angle in
-        radians. Default is False.
-
-    Returns
-    -------
-    spin_phases : float or np.ndarray
-        Spin angle in degrees or radians for the input query times.
-    """
-    if np.any(spin_phases < 0) or np.any(spin_phases > 1):
-        raise ValueError(
-            f"Spin phases, {spin_phases} are outside of the expected spin phase range, "
-            f"[0, 1) "
-        )
-    if degrees:
-        # Convert to degrees
-        return spin_phases * 360
-    else:
-        # Convert to radians
-        return spin_phases * 2 * np.pi
-
-
-def get_spacecraft_spin_phase(
-    query_met_times: Union[float, npt.NDArray],
-) -> Union[float, npt.NDArray]:
-    """
-    Get the spacecraft spin phase for the input query times.
-
-    Formula to calculate spin phase:
-        spin_phase = (query_met_times - spin_start_time) / spin_period_sec
-
-    Parameters
-    ----------
-    query_met_times : float or np.ndarray
-        Query times in Mission Elapsed Time (MET).
-
-    Returns
-    -------
-    spin_phase : float or np.ndarray
-        Spin phase for the input query times.
-    """
-    spin_df = get_spin_data()
-
-    # Ensure query_met_times is an array
-    query_met_times = np.asarray(query_met_times)
-    is_scalar = query_met_times.ndim == 0
-    if is_scalar:
-        # Force scalar to array because np.asarray() will not
-        # convert scalar to array
-        query_met_times = np.atleast_1d(query_met_times)
-    # Empty array check
-    if query_met_times.size == 0:
-        return query_met_times
-
-    # Create an empty array to store spin phase results
-    spin_phases = np.zeros_like(query_met_times)
-
-    # Find all spin time that are less or equal to query_met_times.
-    # To do that, use side right, a[i-1] <= v < a[i], in the searchsorted.
-    # Eg.
-    # >>> df['a']
-    # array([0, 15, 30, 45, 60])
-    # >>> np.searchsorted(df['a'], [0, 13, 15, 32, 70], side='right')
-    # array([1, 1, 2, 3, 5])
-    last_spin_indices = (
-        np.searchsorted(spin_df["spin_start_time"], query_met_times, side="right") - 1
-    )
-    # Make sure input times are within the bounds of spin data
-    spin_df_start_time = spin_df["spin_start_time"].values[0]
-    spin_df_end_time = (
-        spin_df["spin_start_time"].values[-1] + spin_df["spin_period_sec"].values[-1]
-    )
-    input_start_time = query_met_times.min()
-    input_end_time = query_met_times.max()
-    if input_start_time < spin_df_start_time or input_end_time >= spin_df_end_time:
-        raise ValueError(
-            f"Query times, {query_met_times} are outside of the spin data range, "
-            f"{spin_df_start_time, spin_df_end_time}."
-        )
-
-    # Calculate spin phase
-    spin_phases = (
-        query_met_times - spin_df["spin_start_time"].values[last_spin_indices]
-    ) / spin_df["spin_period_sec"].values[last_spin_indices]
-
-    # Check for invalid spin phase using below checks:
-    # 1. Check that the spin phase is in valid range, [0, 1).
-    # 2. Check invalid spin phase using spin_phase_valid,
-    #   spin_period_valid columns.
-    invalid_spin_phase_range = (spin_phases < 0) | (spin_phases >= 1)
-
-    invalid_spins = (spin_df["spin_phase_valid"].values[last_spin_indices] == 0) | (
-        spin_df["spin_period_valid"].values[last_spin_indices] == 0
-    )
-    bad_spin_phases = invalid_spin_phase_range | invalid_spins
-    spin_phases[bad_spin_phases] = np.nan
-
-    if is_scalar:
-        return spin_phases[0]
-    return spin_phases
-
-
-def get_instrument_spin_phase(
-    query_met_times: Union[float, npt.NDArray], instrument: SpiceFrame
-) -> Union[float, npt.NDArray]:
-    """
-    Get the instrument spin phase for the input query times.
-
-    Formula to calculate spin phase:
-        instrument_spin_phase = (spacecraft_spin_phase + instrument_spin_offset) % 1
-
-    Parameters
-    ----------
-    query_met_times : float or np.ndarray
-        Query times in Mission Elapsed Time (MET).
-    instrument : SpiceFrame
-        Instrument frame to calculate spin phase for.
-
-    Returns
-    -------
-    spin_phase : float or np.ndarray
-        Instrument spin phase for the input query times. Spin phase is a
-        floating point number in the range [0, 1) corresponding to the
-        spin angle / 360.
-    """
-    spacecraft_spin_phase = get_spacecraft_spin_phase(query_met_times)
-    instrument_spin_phase_offset = get_spacecraft_to_instrument_spin_phase_offset(
-        instrument
-    )
-    return (spacecraft_spin_phase + instrument_spin_phase_offset) % 1
 
 
 def get_spacecraft_to_instrument_spin_phase_offset(instrument: SpiceFrame) -> float:
@@ -352,9 +164,9 @@ def frame_transform(
     This function is a vectorized equivalent to performing the following SPICE
     calls for each input time and position vector to perform the transform.
     The matrix multiplication step is done using `numpy.matmul` rather than
-    `spice.mxv`.
-    >>> rotation_matrix = spice.pxform(from_frame, to_frame, et)
-    ... result = spice.mxv(rotation_matrix, position)
+    `spiceypy.mxv`.
+    >>> rotation_matrix = spiceypy.pxform(from_frame, to_frame, et)
+    ... result = spiceypy.mxv(rotation_matrix, position)
 
     Parameters
     ----------
@@ -377,6 +189,10 @@ def frame_transform(
     result : np.ndarray
         3d Cartesian position vector(s) in reference frame `to_frame`.
     """
+    # If from_frame and to_frame are the same, no rotation needed
+    if from_frame == to_frame:
+        return position
+
     if position.ndim == 1:
         if not len(position) == 3:
             raise ValueError(
@@ -492,7 +308,7 @@ def get_rotation_matrix(
         where `n` matches the number of elements in et.
     """
     vec_pxform = np.vectorize(
-        spice.pxform,
+        spiceypy.pxform,
         excluded=["fromstr", "tostr"],
         signature="(),(),()->(3,3)",
         otypes=[np.float64],
@@ -534,8 +350,8 @@ def instrument_pointing(
     if cartesian:
         return pointing
     if isinstance(et, typing.Collection):
-        return np.rad2deg([spice.reclat(vec)[1:] for vec in pointing])
-    return np.rad2deg(spice.reclat(pointing)[1:])
+        return np.rad2deg([spiceypy.reclat(vec)[1:] for vec in pointing])
+    return np.rad2deg(spiceypy.reclat(pointing)[1:])
 
 
 def basis_vectors(
@@ -706,7 +522,7 @@ def cartesian_to_latitudinal(coords: NDArray, degrees: bool = False) -> NDArray:
     # If coords is 1d, add another dimension
     while coords.ndim < 2:
         coords = np.expand_dims(coords, axis=0)
-    latitudinal_coords = np.array([spice.reclat(vec) for vec in coords])
+    latitudinal_coords = np.array([spiceypy.reclat(vec) for vec in coords])
 
     if degrees:
         latitudinal_coords[..., 1:] = np.degrees(latitudinal_coords[..., 1:])
