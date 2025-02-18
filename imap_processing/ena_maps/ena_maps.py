@@ -473,11 +473,9 @@ class RectangularSkyMap(AbstractSkyMap):
             # If multiple spatial axes present
             # (i.e (az, el) for rectangular coordinate PSET),
             # flatten them in the values array to match the raveled indices
-            raveled_pset_data = np.reshape(
-                np.array(pointing_set.data[value_key]),
-                (pointing_set.num_points, -1),
+            raveled_pset_data = pointing_set.data[value_key].data.reshape(
+                pointing_set.num_points, -1
             )
-
             if value_key not in self.data_dict:
                 # Initialize the map data array if it doesn't exist (values start at 0)
                 output_shape = (self.num_points, *raveled_pset_data.shape[1:])
