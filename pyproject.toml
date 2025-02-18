@@ -29,8 +29,6 @@ classifiers = [
     "Operating System :: Unix",
     "Operating System :: MacOS",
 ]
-# Exclude tests from build
-exclude = ["imap_processing/tests"]
 
 [tool.poetry.dependencies]
 cdflib = "^1.3.1"
