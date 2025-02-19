@@ -1,5 +1,8 @@
 """HIT L1B constants."""
 
+# Expected number of livestim pulses per integration time.
+# This is used to calculate the fractional livetime
+livestim_pulses = 270
 
 # For the L1B summed rates product, counts are summed by particle type,
 # energy range, and detector penetration range (Range 2, Range 3, and Range 4).

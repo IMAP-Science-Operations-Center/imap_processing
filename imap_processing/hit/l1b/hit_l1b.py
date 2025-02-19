@@ -13,7 +13,10 @@ from imap_processing.hit.hit_utils import (
     get_datasets_by_apid,
     process_housekeeping_data,
 )
-from imap_processing.hit.l1b.constants import PARTICLE_ENERGY_RANGE_MAPPING
+from imap_processing.hit.l1b.constants import (
+    PARTICLE_ENERGY_RANGE_MAPPING,
+    livestim_pulses,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -100,8 +103,8 @@ def process_science_data(
     # TODO: Write functions to create the following datasets
     #  Process sectored rates dataset
 
-    # Calculate livetime from the livetime counter
-    livetime = raw_counts_dataset["livetime_counter"] / 270
+    # Calculate fractional livetime from the livetime counter
+    livetime = raw_counts_dataset["livetime_counter"] / livestim_pulses
 
     # Create a standard rates dataset
     standard_rates_dataset = process_standard_rates_data(raw_counts_dataset, livetime)

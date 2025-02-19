@@ -1,5 +1,3 @@
-from collections import namedtuple
-
 import numpy as np
 import pandas as pd
 import pytest
@@ -9,6 +7,7 @@ from imap_processing import imap_module_directory
 from imap_processing.hit.l1a import hit_l1a
 from imap_processing.hit.l1b.hit_l1b import (
     PARTICLE_ENERGY_RANGE_MAPPING,
+    SummedCounts,
     add_energy_variables,
     add_rates_to_dataset,
     calculate_summed_counts,
@@ -182,7 +181,7 @@ def test_add_rates_to_dataset():
         }
     )
 
-    # Add a sample particle data array
+    # Add empty data arrays for a sample particle
     particle = "test_particle"
     dataset[particle] = xr.DataArray(
         data=np.zeros((10, 5), dtype=np.float32),
@@ -197,15 +196,14 @@ def test_add_rates_to_dataset():
         dims=["epoch", f"{particle}_energy_index"],
     )
 
-    # Define the summed counts in a namedtuple
-    SummedCounts = namedtuple(
-        "SummedCounts",
-        ["summed_counts", "summed_counts_delta_minus", "summed_counts_delta_plus"],
-    )
+    # Set the random seed for reproducibility
+    np.random.seed(42)
+
+    # Define the summed counts with random values in a namedtuple
     summed_counts = SummedCounts(
-        np.random.rand(10),
-        np.random.rand(10),
-        np.random.rand(10),
+        xr.DataArray(np.random.rand(10), dims=["epoch"]),
+        xr.DataArray(np.random.rand(10), dims=["epoch"]),
+        xr.DataArray(np.random.rand(10), dims=["epoch"]),
     )
 
     # Call the function
