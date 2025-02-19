@@ -93,7 +93,7 @@ def test_mag_l1a_validation(test_number):
             )
 
 
-@pytest.mark.parametrize(("test_number"), ["009", "010", "011"])
+@pytest.mark.parametrize(("test_number"), ["009", "010", "011", "012"])
 def test_mag_l1b_validation(test_number):
     source_directory = Path(__file__).parent / "validation" / "L1b" / f"T{test_number}"
     input_mag_l1a = pd.read_csv(source_directory / f"mag-l1a-l1b-t{test_number}-in.csv")

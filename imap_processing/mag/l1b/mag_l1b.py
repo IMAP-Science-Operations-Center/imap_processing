@@ -10,7 +10,9 @@ from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import load_cdf
 
 
-def mag_l1b(input_dataset: xr.Dataset, version: str) -> Dataset:
+def mag_l1b(
+    input_dataset: xr.Dataset, version: str, calibration_dataset: xr.Dataset = None
+) -> Dataset:
     """
     Will process MAG L1B data from L1A data.
 
@@ -20,6 +22,10 @@ def mag_l1b(input_dataset: xr.Dataset, version: str) -> Dataset:
         The input dataset to process.
     version : str
         The version of the output data.
+    calibration_dataset : xr.Dataset
+        The calibration dataset containing calibration matrices and timeshift values for
+        mago and magi.
+        When None, this defaults to the test calibration file.
 
     Returns
     -------
@@ -28,12 +34,18 @@ def mag_l1b(input_dataset: xr.Dataset, version: str) -> Dataset:
     """
     # TODO:
     # Read in calibration file
-    # multiply all vectors by calibration file
+
+    # TODO: This should definitely be loaded from AWS
+    if calibration_dataset is None:
+        calibration_dataset = load_cdf(
+            Path(__file__).parent / "imap_calibration_mag_20240229_v01.cdf"
+        )
+
     if "raw" in input_dataset.attrs["Logical_source"]:
         # Raw files should not be processed in L1B.
         raise ValueError("Raw L1A file passed into L1B. Unable to process.")
 
-    output_dataset = mag_l1b_processing(input_dataset)
+    output_dataset = mag_l1b_processing(input_dataset, calibration_dataset)
     attribute_manager = ImapCdfAttributes()
     attribute_manager.add_instrument_global_attrs("mag")
     attribute_manager.add_global_attribute("Data_version", version)
@@ -49,7 +61,9 @@ def mag_l1b(input_dataset: xr.Dataset, version: str) -> Dataset:
     return output_dataset
 
 
-def mag_l1b_processing(input_dataset: xr.Dataset) -> xr.Dataset:
+def mag_l1b_processing(
+    input_dataset: xr.Dataset, calibration_dataset: xr.Dataset
+) -> xr.Dataset:
     """
     Will process MAG L1B data from L1A data.
 
@@ -60,6 +74,9 @@ def mag_l1b_processing(input_dataset: xr.Dataset) -> xr.Dataset:
     ----------
     input_dataset : xr.Dataset
         The input dataset to process.
+    calibration_dataset : xr.Dataset
+        The calibration dataset containing calibration matrices and timeshift values for
+        mago and magi.
 
     Returns
     -------
@@ -74,10 +91,7 @@ def mag_l1b_processing(input_dataset: xr.Dataset) -> xr.Dataset:
 
     dims = [["direction"], ["compression"]]
     new_dims = [["direction"], ["compression"]]
-    # TODO: This should definitely be loaded from AWS
-    calibration_dataset = load_cdf(
-        Path(__file__).parent / "imap_calibration_mag_20240229_v01.cdf"
-    )
+
     # TODO: add time shift
     # TODO: Check validity of time range for calibration
     source = input_dataset.attrs["Logical_source"]
