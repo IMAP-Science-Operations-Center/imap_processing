@@ -1,3 +1,5 @@
+from collections import namedtuple
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -195,12 +197,16 @@ def test_add_rates_to_dataset():
         dims=["epoch", f"{particle}_energy_index"],
     )
 
-    # Define the summed counts
-    summed_counts = {
-        "summed_counts": np.random.rand(10),
-        "summed_counts_delta_minus": np.random.rand(10),
-        "summed_counts_delta_plus": np.random.rand(10),
-    }
+    # Define the summed counts in a namedtuple
+    SummedCounts = namedtuple(
+        "SummedCounts",
+        ["summed_counts", "summed_counts_delta_minus", "summed_counts_delta_plus"],
+    )
+    summed_counts = SummedCounts(
+        np.random.rand(10),
+        np.random.rand(10),
+        np.random.rand(10),
+    )
 
     # Call the function
     updated_dataset = add_rates_to_dataset(
@@ -210,15 +216,15 @@ def test_add_rates_to_dataset():
     # Check the results
     np.testing.assert_array_almost_equal(
         updated_dataset[particle][:, 0].values,
-        summed_counts["summed_counts"] / dataset["livetime"].values,
+        summed_counts.summed_counts / dataset["livetime"].values,
     )
     np.testing.assert_array_almost_equal(
         updated_dataset[f"{particle}_delta_minus"][:, 0].values,
-        summed_counts["summed_counts_delta_minus"] / dataset["livetime"].values,
+        summed_counts.summed_counts_delta_minus / dataset["livetime"].values,
     )
     np.testing.assert_array_almost_equal(
         updated_dataset[f"{particle}_delta_plus"][:, 0].values,
-        summed_counts["summed_counts_delta_plus"] / dataset["livetime"].values,
+        summed_counts.summed_counts_delta_plus / dataset["livetime"].values,
     )
 
 

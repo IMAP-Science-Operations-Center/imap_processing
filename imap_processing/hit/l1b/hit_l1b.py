@@ -1,6 +1,7 @@
 """IMAP-HIT L1B data processing."""
 
 import logging
+from typing import NamedTuple
 
 import numpy as np
 import xarray as xr
@@ -157,7 +158,8 @@ def process_standard_rates_data(
         The L1A counts dataset.
 
     livetime : xr.DataArray
-        The livetime calculated from the livetime counter.
+        1D array of livetime values calculated from the livetime counter.
+        Shape equals the number of epochs in the dataset.
 
     Returns
     -------
@@ -186,10 +188,13 @@ def process_standard_rates_data(
         {coord: raw_counts_dataset.coords[coord] for coord in coords}
     )
 
-    # Add dynamic threshold field
+    # Add dynamic threshold variable from the L1A raw counts dataset
     l1b_standard_rates_dataset["dynamic_threshold_state"] = raw_counts_dataset[
         "hdr_dynamic_threshold_state"
     ]
+    l1b_standard_rates_dataset["dynamic_threshold_state"].attrs = raw_counts_dataset[
+        "hdr_dynamic_threshold_state"
+    ].attrs
 
     # Define fields from the raw_counts_dataset to calculate standard rates from
     standard_rate_fields = [
@@ -226,7 +231,7 @@ def create_particle_data_arrays(
     epoch_size: int,
 ) -> xr.Dataset:
     """
-    Create data arrays for a given particle.
+    Create empty data arrays for a given particle.
 
     Parameters
     ----------
@@ -234,7 +239,24 @@ def create_particle_data_arrays(
         The dataset to add the data arrays to.
 
     particle : str
-        The particle name.
+        The particle name. Valid names are:
+            hydrogen
+            helium3
+            helium4
+            helium
+            carbon
+            nitrogen
+            oxygen
+            neon
+            sodium
+            magnesium
+            aluminum
+            silicon
+            sulfur
+            argon
+            calcium
+            iron
+            nickel
 
     num_energy_ranges : int
         Number of energy ranges for the particle.
@@ -327,15 +349,26 @@ def calculate_summed_counts(
     return summed_counts, summed_counts_delta_minus, summed_counts_delta_plus
 
 
+class SummedCounts(NamedTuple):
+    """A namedtuple to store summed counts and uncertainties."""
+
+    summed_counts: xr.DataArray
+    summed_counts_delta_minus: xr.DataArray
+    summed_counts_delta_plus: xr.DataArray
+
+
 def add_rates_to_dataset(
     dataset: xr.Dataset,
     particle: str,
     index: int,
-    summed_counts: dict,
+    summed_counts: SummedCounts,
     livetime: xr.DataArray,
 ) -> xr.Dataset:
     """
     Add summed rates to the dataset.
+
+    This function divides the summed counts by livetime to calculate
+    the rates for a given particle then adds the rates to the dataset.
 
     Parameters
     ----------
@@ -343,30 +376,49 @@ def add_rates_to_dataset(
         The dataset to add the rates to.
 
     particle : str
-        The particle name.
+        The particle name. Valid names are:
+            hydrogen
+            helium3
+            helium4
+            helium
+            carbon
+            nitrogen
+            oxygen
+            neon
+            sodium
+            magnesium
+            aluminum
+            silicon
+            sulfur
+            argon
+            calcium
+            iron
+            nickel
 
     index : int
         The index of the energy range.
 
-    summed_counts : dict
-        A dictionary containing the summed counts.
+    summed_counts : namedtuple
+        A namedtuple containing the summed counts.
+        SummedCounts(summed_counts, summed_counts_delta_minus,
+                    summed_counts_delta_plus).
 
     livetime : xr.DataArray
-        The livetime.
+        1D array of livetime values. Shape equals the number of epochs in the dataset.
 
     Returns
     -------
     dataset: xr.Dataset
         The dataset with the added rates.
     """
-    dataset[f"{particle}"][:, index] = (
-        summed_counts["summed_counts"] / livetime
-    ).astype(np.float32)
+    dataset[f"{particle}"][:, index] = (summed_counts.summed_counts / livetime).astype(
+        np.float32
+    )
     dataset[f"{particle}_delta_minus"][:, index] = (
-        summed_counts["summed_counts_delta_minus"] / livetime
+        summed_counts.summed_counts_delta_minus / livetime
     ).astype(np.float32)
     dataset[f"{particle}_delta_plus"][:, index] = (
-        summed_counts["summed_counts_delta_plus"] / livetime
+        summed_counts.summed_counts_delta_plus / livetime
     ).astype(np.float32)
     return dataset
 
@@ -431,7 +483,8 @@ def process_summed_rates_data(
         The L1A counts dataset.
 
     livetime : xr.DataArray
-        The livetime calculated from the livetime counter.
+        1D array of livetime values calculated from the livetime counter.
+        Shape equals the number of epochs in the dataset.
 
     Returns
     -------
@@ -446,10 +499,15 @@ def process_summed_rates_data(
         {"epoch": raw_counts_dataset.coords["epoch"]}
     )
 
-    # Add the dynamic threshold field from the l1a dataset
+    # TODO: dynamic threshold might not be needed for this product.
+    #  Need confirmation from HIT
+    # Add dynamic threshold variable from L1A raw counts dataset
     l1b_summed_rates_dataset["dynamic_threshold_state"] = raw_counts_dataset[
         "hdr_dynamic_threshold_state"
     ]
+    l1b_summed_rates_dataset["dynamic_threshold_state"].attrs = raw_counts_dataset[
+        "hdr_dynamic_threshold_state"
+    ].attrs
 
     # Calculate summed rates for each particle and add them to the dataset
     for particle, energy_ranges in PARTICLE_ENERGY_RANGE_MAPPING.items():
@@ -468,15 +526,17 @@ def process_summed_rates_data(
             summed_counts, summed_counts_delta_minus, summed_counts_delta_plus = (
                 calculate_summed_counts(raw_counts_dataset, energy_range)
             )
+
+            # Create namedtuple to store summed counts and uncertainties
+            summed_counts = SummedCounts(
+                summed_counts, summed_counts_delta_minus, summed_counts_delta_plus
+            )
+
             l1b_summed_rates_dataset = add_rates_to_dataset(
                 l1b_summed_rates_dataset,
                 particle,
                 i,
-                {
-                    "summed_counts": summed_counts,
-                    "summed_counts_delta_minus": summed_counts_delta_minus,
-                    "summed_counts_delta_plus": summed_counts_delta_plus,
-                },
+                summed_counts,
                 livetime,
             )
             energy_min[i], energy_max[i] = (

@@ -4,15 +4,19 @@
 # For the L1B summed rates product, counts are summed by particle type,
 # energy range, and detector penetration range (Range 2, Range 3, and Range 4).
 # See section 6.2 of the algorithm document for more details.
-# Indices for each penetration range are provided for each particle type
-# and energy range in the dictionary below. Counts at these indices will be
+
+# The counts to sum are in the L2FGRATES, L3FGRATES, and PENFGRATES data
+# variables in the L1A product. These variables represent different detector
+# ranges for each particle type and energy range.
+
+# Indices at each detector range are provided for each particle type
+# and energy range in the dictionary below and the counts at these indices will be
 # summed in l1B processing to produce the summed rates product.
 # R2 = Indices for Range 2 (L2FGRATES)
 # R3 = Indices for Range 3 (L3FGRATES)
 # R4 = Indices for Range 4 (PENFGRATES)
 # energy_units: MeV/n
 
-# TODO: rename particles to their full names? Waiting for confirmation from HIT
 PARTICLE_ENERGY_RANGE_MAPPING = {
     "hydrogen": [
         {
