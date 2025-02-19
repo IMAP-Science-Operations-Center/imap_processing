@@ -425,7 +425,8 @@ class RectangularSkyMap(AbstractSkyMap):
     def project_pset_values_to_map(
         self,
         pointing_set: PointingSet,
-        value_keys: list[str] | None = None,
+        pset_value_keys: list[str] | None = None,
+        skymap_value_keys: list[str] | None = None,
         index_match_method: IndexMatchMethod = IndexMatchMethod.PUSH,
     ) -> None:
         """
@@ -439,12 +440,16 @@ class RectangularSkyMap(AbstractSkyMap):
         ----------
         pointing_set : PointingSet
             The pointing set containing the values to project to the map.
-        value_keys : list[tuple[str, IndexMatchMethod]] | None
-            The keys of the values to project to the map.
+        pset_value_keys : list[tuple[str, IndexMatchMethod]] | None
+            The keys of the values in the PointingSet to project to the map.
             Ex.: ["counts", "flux"]
             data_vars named each key must be present, and of the same dimensionality in
             each pointing set which is to be projected to the map.
             Default is None, in which case all data_vars in the pointing set are used.
+        skymap_value_keys : list[str] | None
+            The keys to use for the projected values in the map.
+            Default is None, in which case the same keys as the pointing set are used.
+            If not None, must have the same length as pset_value_keys.
         index_match_method : IndexMatchMethod, optional
             The method of index matching to use for all values.
             Default is IndexMatchMethod.PUSH.
@@ -454,34 +459,44 @@ class RectangularSkyMap(AbstractSkyMap):
         ValueError
             If a value key is not found in the pointing set.
         """
-        if value_keys is None:
-            value_keys = list(pointing_set.data.data_vars.keys())
-
-        for value_key in value_keys:
-            if value_key not in pointing_set.data.data_vars:
-                raise ValueError(f"Value key {value_key} not found in pointing set.")
-
-        # Determine the indices of the sky map grid that correspond to
-        # each pixel in the pointing set.
-        if index_match_method is IndexMatchMethod.PUSH:
-            matched_indices_push = match_coords_to_indices(
-                input_object=pointing_set,
-                output_object=self,
+        if pset_value_keys is None:
+            pset_value_keys = list(pointing_set.data.data_vars.keys())
+        # If skymap_value_keys is not provided, use the same keys as the pointing set
+        if skymap_value_keys is None:
+            skymap_value_keys = pset_value_keys
+        # If it is provided, there must be one skymap value key for each pointing set
+        # value key
+        elif len(skymap_value_keys) != len(pset_value_keys):
+            raise ValueError(
+                "The number of pointing set value keys must match the number of "
+                "sky map value keys.\n"
+                f"Received Pointing Set Value Keys: {pset_value_keys}"
+                f"\nReceived Sky Map Value Keys: {skymap_value_keys}"
             )
 
-        for value_key in value_keys:
+        for pset_key in pset_value_keys:
+            if pset_key not in pointing_set.data.data_vars:
+                raise ValueError(f"Value key {pset_key} not found in pointing set.")
+
+        for pset_key, map_key in zip(pset_value_keys, skymap_value_keys):
             # If multiple spatial axes present
             # (i.e (az, el) for rectangular coordinate PSET),
             # flatten them in the values array to match the raveled indices
-            raveled_pset_data = pointing_set.data[value_key].data.reshape(
+            raveled_pset_data = pointing_set.data[pset_key].data.reshape(
                 pointing_set.num_points, -1
             )
-            if value_key not in self.data_dict:
+            if map_key not in self.data_dict:
                 # Initialize the map data array if it doesn't exist (values start at 0)
                 output_shape = (self.num_points, *raveled_pset_data.shape[1:])
-                self.data_dict[value_key] = np.zeros(output_shape)
+                self.data_dict[map_key] = np.zeros(output_shape)
 
             if index_match_method is IndexMatchMethod.PUSH:
+                # Determine the indices of the sky map grid that correspond to
+                # each pixel in the pointing set.
+                matched_indices_push = match_coords_to_indices(
+                    input_object=pointing_set,
+                    output_object=self,
+                )
                 pointing_projected_values = map_utils.bin_single_array_at_indices(
                     value_array=raveled_pset_data,
                     projection_grid_shape=(
@@ -490,11 +505,70 @@ class RectangularSkyMap(AbstractSkyMap):
                     ),
                     projection_indices=matched_indices_push,
                 )
+            elif index_match_method is IndexMatchMethod.PULL:
+                matched_indices_pull = match_coords_to_indices(
+                    input_object=self,
+                    output_object=pointing_set,
+                )
+                pointing_projected_values = raveled_pset_data[matched_indices_pull]
             else:
                 raise NotImplementedError(
-                    "The 'pull' method of index matching is not yet implemented."
+                    "Only PUSH and PULL index matching methods are supported."
                 )
-            self.data_dict[value_key] += pointing_projected_values
+            self.data_dict[map_key] += pointing_projected_values
+
+    def to_dataset(
+        self,
+        output_value_keys_dims: dict[str, list[str]],
+        global_attrs: dict[str, str] | None = None,
+    ) -> xr.Dataset:
+        """
+        Convert the map data to an xarray Dataset.
+
+        Parameters
+        ----------
+        output_value_keys_dims : dict[str, list[str]]
+            Dictionary of dimensions for each data variable in the map.
+            Keys are the data variable names, and values are lists of dimension names.
+        global_attrs : dict[str, str], optional
+            Dictionary of attributes to add to the dataset.
+            Default is None.
+
+        Returns
+        -------
+        xr.Dataset
+            The xarray Dataset containing the map data.
+        """
+        if global_attrs is None:
+            global_attrs = {}
+
+        dataset = xr.Dataset(attrs=global_attrs)
+
+        # Add azimuth, elevation grid as coordinates
+        dataset["azimuth_bin_center"] = xr.DataArray(
+            np.rad2deg(self.sky_grid.az_bin_midpoints),
+            dims=["azimuth_bin_center"],
+            attrs={"units": "degrees"},
+        )
+        dataset["elevation_bin_center"] = xr.DataArray(
+            np.rad2deg(self.sky_grid.el_bin_midpoints),
+            dims=["elevation_bin_center"],
+            attrs={"units": "degrees"},
+        )
+
+        for key in output_value_keys_dims.keys():
+            wrapped_data = spatial_utils.rewrap_even_spaced_az_el_grid(
+                self.data_dict[key]
+            )
+            # Flatten any length-1 dimensions
+            # TODO: this may need to be tweaked to handle epoch coordinate?
+            wrapped_data = np.squeeze(wrapped_data)
+            dataset[key] = xr.DataArray(
+                wrapped_data,
+                dims=output_value_keys_dims[key],
+            )
+
+        return dataset
 
     def __repr__(self) -> str:
         """
