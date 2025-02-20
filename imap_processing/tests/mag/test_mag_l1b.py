@@ -11,17 +11,19 @@ from imap_processing.mag.l1b.mag_l1b import (
     mag_l1b_processing,
     rescale_vector,
 )
-from imap_processing.tests.mag.conftest import mag_l1a_dataset_generator
+from imap_processing.tests.mag.conftest import (
+    mag_l1a_dataset_generator,
+)
 
 
-def test_mag_processing():
+def test_mag_processing(mag_test_calibration_data):
     mag_l1a_dataset = mag_l1a_dataset_generator(20)
     mag_l1a_dataset["compression_flags"].data[1, :] = np.array([1, 18], dtype=np.int8)
 
     mag_l1a_dataset["vectors"].data[0, :] = np.array([1, 1, 1, 0])
     mag_l1a_dataset["vectors"].data[1, :] = np.array([7982, 48671, -68090, 0])
 
-    mag_l1b = mag_l1b_processing(mag_l1a_dataset)
+    mag_l1b = mag_l1b_processing(mag_l1a_dataset, mag_test_calibration_data)
     np.testing.assert_allclose(
         mag_l1b["vectors"][0].values, [2.2972, 2.2415, 2.2381, 0], atol=1e-4
     )
@@ -36,7 +38,7 @@ def test_mag_processing():
 
     mag_l1a_dataset.attrs["Logical_source"] = ["imap_mag_l1a_norm-magi"]
 
-    mag_l1b = mag_l1b_processing(mag_l1a_dataset)
+    mag_l1b = mag_l1b_processing(mag_l1a_dataset, mag_test_calibration_data)
 
     np.testing.assert_allclose(
         mag_l1b["vectors"][0].values, [2.27538, 2.23416, 2.23682, 0], atol=1e-5
