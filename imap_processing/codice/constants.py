@@ -74,7 +74,7 @@ LO_NSW_SPECIES_VARIABLE_NAMES = [
 # CDF-friendly names for hi data products
 HI_INST_COUNTS_AGGREGATED_VARIABLE_NAMES = ["aggregated"]
 HI_INST_COUNTS_SINGLES_VARIABLE_NAMES = ["tcr", "ssdo", "stssd"]
-HI_OMNI_SPECIES_VARIABLE_NAMES = ["h", "he3", "he4", "c", "o", "ne_mg_si", "fe", "uh"]
+HI_OMNI_VARIABLE_NAMES = ["h", "he3", "he4", "c", "o", "ne_mg_si", "fe", "uh"]
 HI_SECT_SPECIES_VARIABLE_NAMES = ["h", "he3he4", "cno", "fe"]
 
 # lo-counters-aggregated data product variables are dynamically determined
@@ -154,7 +154,7 @@ DATA_PRODUCT_CONFIGURATIONS = {
         "instrument": "hi",
         "num_counters": 8,
         "support_variables": ["data_quality", "spin_period"],
-        "variable_names": HI_OMNI_SPECIES_VARIABLE_NAMES,
+        "variable_names": HI_OMNI_VARIABLE_NAMES,
     },
     CODICEAPID.COD_HI_SECT_SPECIES_COUNTS: {
         "dataset_name": "imap_codice_l1a_hi-sectored",

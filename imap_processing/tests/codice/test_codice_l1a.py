@@ -220,12 +220,15 @@ def test_l1a_validate_data_arrays(test_l1a_data: xr.Dataset, index):
         "lo-sw-species",
         "lo-nsw-species",
     ]
+    able_to_be_validated = ["hi-omni"]
     if descriptor in able_to_be_validated:
         counters = getattr(
             constants, f'{descriptor.upper().replace("-","_")}_VARIABLE_NAMES'
         )
         processed_dataset = test_l1a_data[index]
         validation_dataset = load_cdf(VALIDATION_DATA[index])
+
+        print(processed_dataset)
 
         for counter in counters:
             # Ensure the data array shapes are equal
