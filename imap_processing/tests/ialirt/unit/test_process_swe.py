@@ -104,3 +104,9 @@ def test_decom_packets(xarray_data, swe_test_data):
             f"Mismatch found in {xarray_field}: "
             f"actual {actual_values}, expected {expected_values}"
         )
+
+
+def test_process_swe(swe_test_data):
+    """Test processing for swe."""
+    ds = swe_test_data.to_xarray()
+    print('hi')
