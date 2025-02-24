@@ -27,7 +27,7 @@ import xarray as xr
 from numpy.typing import NDArray
 from scipy.integrate import quad
 from scipy.optimize import curve_fit
-from scipy.signal import find_peaks
+from scipy.signal import butter, detrend, filtfilt, find_peaks
 from scipy.special import erfc
 
 from imap_processing import imap_module_directory
@@ -537,8 +537,19 @@ def estimate_dust_mass(
     #         information soon.
     signal = np.array(target_signal.data)
     time = np.array(low_sampling_time.data)
+    mask = np.logical_and(
+        time >= BaselineNoiseTime.START,
+        time <= BaselineNoiseTime.STOP,
+    )
+    if not np.any(mask):
+        logger.warning(
+            "Unable to find baseline noise. "
+            f"There is no signal from {BaselineNoiseTime.START} to "
+            f"{BaselineNoiseTime.STOP} ns."
+        )
     if remove_noise:
-        pass
+        # Remove noise due to "microphonics"
+        signal = remove_signal_noise(time, signal, mask)
     # Time before image charge
     pre = -2.0
     # Get signal values where the time is before the image charge
@@ -628,3 +639,114 @@ def fit_impact(
     return constant_offset + np.heaviside(time - time_of_impact, 0) * (
         amplitude * exponent_1 * exponent_2
     )
+
+
+def remove_signal_noise(
+    time: np.ndarray, signal: np.ndarray, mask: np.ndarray
+) -> NDArray:
+    """
+    Remove linear, sine wave, and high frequency background noise from the input signal.
+
+    Parameters
+    ----------
+    time : np.ndarray
+        Time values for the signal.
+    signal : numpy.ndarray
+        Target or Ion Grid signal.
+    mask : numpy.ndarray
+        Boolean mask for the signal array to determine where the baseline noise is.
+
+    Returns
+    -------
+    numpy.ndarray
+        Signal with linear, sine wave, and high frequency background noise filtered out.
+    """
+    # Remove linear noise
+    signal = detrend(signal, type="linear")
+    # Remove sine wave Background
+    baseline_delined = signal[mask]
+    # Approximate initial values for the fit
+    amplitude: float = max(baseline_delined)
+    frequency = idex_constants.TARGET_NOISE_FREQUENCY
+    # Horizontal wave shift
+    phase_shift = 45
+    # Minimize function
+    p0 = [amplitude, frequency, phase_shift]
+    # Fit a sign wave to the baseline noise with initial best guesses of
+    # amplitude, period, and phase shift
+    try:
+        # Set epsfcn to 1e-10 to mimic what lmfit minimize does
+        param, _ = curve_fit(
+            sine_fit, time[mask], baseline_delined, p0=p0, maxfev=100_000, epsfcn=1e-10
+        )
+        # Remove the sine wave background from the signal
+        signal -= sine_fit(time, *param)
+    except RuntimeError as e:
+        logger.warning(f"Failed to fit background noise sine wave : {e}\n")
+
+    # Use the butterworth filter to smooth remaining noise and remove noise above
+    # desired cutoff
+    signal = butter_lowpass_filter(time, signal)
+    return signal
+
+
+def sine_fit(time: np.ndarray, a: float, f: float, p: float) -> NDArray:
+    """
+    Generate a sine wave with given amplitude, frequency, and phase.
+
+    Parameters
+    ----------
+    time : numpy.ndarray
+        Time points at which to evaluate the sine wave, in seconds.
+    a : float
+        Amplitude of the sine wave.
+    f : float
+        Frequency of the sine wave in Hz.
+    p : float
+        Phase shift of the sine wave in radians.
+
+    Returns
+    -------
+    numpy.ndarray
+        Sine wave values calculated at the input time points.
+    """
+    return a * np.sin(2 * np.pi * f * time + p)
+
+
+def butter_lowpass_filter(
+    time: np.ndarray,
+    signal: np.ndarray,
+    cutoff: float = idex_constants.TARGET_HIGH_FREQUENCY_CUTOFF,
+) -> NDArray:
+    """
+    Apply a Butterworth low-pass filter to remove high frequency noise from the signal.
+
+    Parameters
+    ----------
+    time : numpy.ndarray
+        Time values for the signal.
+    signal : numpy.ndarray
+        Target or Ion Grid signal.
+    cutoff : float
+        Frequency cutoff in Mhz (time is in microseconds).
+
+    Returns
+    -------
+    numpy.ndarray
+        Filtered signal.
+    """
+    # TODO: The IDEX team might be switching this function out for a different filter.
+    sample_period = time[1] - time[0]
+    # sampling frequency
+    fs = (time[-1] - time[0]) / sample_period  # Hz
+    # Calculate nyquist frequency
+    # It is the highest frequency for the sampling frequency
+    nyq = 0.5 * fs
+    # sine wave can be approx represented as quadratic
+    order = 2
+    # Normalize the nyquist frequency. It is expected to be between 0 and 1
+    normal_cutoff = cutoff / nyq
+    # Get the filter coefficients
+    b, a = butter(order, normal_cutoff, btype="low", analog=False)
+    y = filtfilt(b, a, signal)
+    return y

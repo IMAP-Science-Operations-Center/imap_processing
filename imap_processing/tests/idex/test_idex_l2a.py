@@ -10,14 +10,29 @@ from imap_processing.idex.idex_l1b import idex_l1b
 from imap_processing.idex.idex_l2a import (
     BaselineNoiseTime,
     analyze_peaks,
+    butter_lowpass_filter,
     calculate_kappa,
     calculate_snr,
     emg,
     estimate_dust_mass,
     fit_impact,
     idex_l2a,
+    remove_signal_noise,
     time_to_mass,
 )
+
+
+def mock_microphonics_noise(time: np.ndarray) -> np.ndarray:
+    """Function to mock signal noise (linear and sine wave) due to microphonics."""
+    noise_frequency = idex_constants.TARGET_NOISE_FREQUENCY
+    phase_shift = 45
+    amp = 10
+    # Create a sine wave signal
+    sine_signal = amp * np.sin(2 * np.pi * noise_frequency * time + phase_shift)
+    # Combine the sine wave signals with a linear signal to create noise
+    combined_sig = sine_signal + (time * 5)
+
+    return combined_sig
 
 
 @pytest.fixture(scope="module")
@@ -46,6 +61,42 @@ def test_l2a_cdf_filenames(l2a_dataset: xr.Dataset):
     """
     expected_src = "imap_idex_l2a_sci"
     assert l2a_dataset.attrs["Logical_source"] == expected_src
+
+
+def test_l2a_cdf_variables(l2a_dataset: xr.Dataset):
+    """Tests that the ``idex_l2a`` function generates datasets
+    with the expected variables.
+
+    Parameters
+    ----------
+    l2a_dataset : xr.Dataset
+        A ``xarray`` dataset containing the test data
+    """
+    expected_vars = [
+        "mass",
+        "target_low_fit_parameters",
+        "target_low_fit_imapct_charge",
+        "target_low_fit_imapct_mass_estimate",
+        "target_low_chi_squared",
+        "target_low_reduced_chi_squared",
+        "target_low_fit_results",
+        "target_high_fit_parameters",
+        "target_high_fit_imapct_charge",
+        "target_high_fit_imapct_mass_estimate",
+        "target_high_chi_squared",
+        "target_high_reduced_chi_squared",
+        "target_high_fit_results",
+        "ion_grid_fit_parameters",
+        "ion_grid_fit_imapct_charge",
+        "ion_grid_fit_imapct_mass_estimate",
+        "ion_grid_chi_squared",
+        "ion_grid_reduced_chi_squared",
+        "ion_grid_fit_results",
+    ]
+
+    cdf_vars = l2a_dataset.variables
+    for var in expected_vars:
+        assert var in cdf_vars
 
 
 def test_time_to_mass_zero_lag():
@@ -281,3 +332,70 @@ def test_estimate_dust_mass_no_noise_removal():
     assert chisqr <= 1e-12
 
     assert np.allclose(result, signal)
+
+
+def test_lowpass_filter():
+    """
+    Tests that the lowpass filter is filtering out high frequency signals.
+
+    Look at
+    https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.filtfilt.html#scipy.signal.filtfilt
+    for source of testing example.
+    """
+
+    time = np.linspace(-60, 60, 512)
+    # Calculate nyquist frequency to help get cutoff.
+    # This is the highest frequency that can be captured
+    time_between_samples = time[1] - time[0]
+    nqf = (1 / time_between_samples) / 2
+    # Choose cutoff of 0.125 times the Nyquist frequency
+    cutoff = nqf * 0.125
+    # Create two signals with different frequencies and combine them
+    low_freq = cutoff / 4  # Lower than cutoff
+    high_freq = nqf  # The nyquist frequency is much higher than the cutoff
+    # Create sine signals
+    signal_low = np.sin(2 * np.pi * low_freq * time)
+    signal_high = np.sin(2 * np.pi * high_freq * time)
+    combined_sig = signal_low + signal_high
+    # The filter should filter out the high frequency signal
+    filtered_sig = butter_lowpass_filter(time, combined_sig, cutoff)
+    # Assert that the filtered signal is relatively close to the original low
+    # frequency signal.
+    np.allclose(filtered_sig, signal_low)
+
+
+def test_remove_signal_noise():
+    """
+    Tests that remove_signal_noise() function is filtering out sine wave and linear
+    noise due to "microphonics"
+    """
+    start_time = -60
+    total_low_sampling_microseconds = 126.03  # see algorithm document.
+    num_samples = 512
+
+    # Create realistic low sampling time
+    time = np.linspace(
+        start_time, total_low_sampling_microseconds - start_time, num_samples
+    )
+
+    mask = time <= (start_time + total_low_sampling_microseconds) / 2
+    noisy_signal = mock_microphonics_noise(time)
+    # Filter signal
+    filtered_sig = remove_signal_noise(time, noisy_signal, mask)
+
+    np.allclose(filtered_sig, np.zeros_like(filtered_sig), atol=1e-2)
+
+
+def test_remove_signal_noise_no_sine_wave(caplog):
+    """
+    Tests that remove_signal_noise() function filters linear noise when there is no
+    sine wave.
+    """
+    time = np.linspace(-60, 60, 512)
+    # linear signal to create noise
+    signal = time * 10
+    mask = time <= 0.5
+    # Filter signal
+    filtered_sig = remove_signal_noise(time, signal, mask)
+    # Test that the filtered signal is close to zero
+    assert np.allclose(filtered_sig, np.zeros_like(filtered_sig), rtol=1e-24)
