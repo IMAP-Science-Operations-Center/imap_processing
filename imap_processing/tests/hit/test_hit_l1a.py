@@ -169,7 +169,7 @@ def test_validate_l1a_housekeeping_data(hk_packet_filepath):
         "type",
         "sec_hdr_flg",
         "seq_flgs",
-        "pkt_len",
+        "src_seq_ctr" "pkt_len",
         "hskp_spare1",
         "hskp_spare2",
         "hskp_spare3",
