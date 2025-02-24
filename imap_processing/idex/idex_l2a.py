@@ -19,12 +19,16 @@ Examples
 # ruff: noqa: PLR0913
 import logging
 from enum import IntEnum
+from typing import Union
 
 import numpy as np
 import pandas as pd
 import xarray as xr
 from numpy.typing import NDArray
+from scipy.integrate import quad
+from scipy.optimize import curve_fit
 from scipy.signal import find_peaks
+from scipy.special import erfc
 
 from imap_processing import imap_module_directory
 from imap_processing.idex import idex_constants
@@ -97,8 +101,30 @@ def idex_l2a(l1b_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
     peaks_2d = [find_peaks(tof, prominence=0.01)[0] for tof in tof_high]
     kappa = calculate_kappa(mass_scales, peaks_2d)
 
+    # Analyze peaks for estimating dust composition
+    peak_fits, area_under_fits = xr.apply_ufunc(
+        analyze_peaks,
+        tof_high,
+        hs_time,
+        np.arange(len(peaks_2d)),
+        kwargs={"peaks_2d": peaks_2d},
+        input_core_dims=[
+            ["time_high_sr_dim"],
+            ["time_high_sr_dim"],
+            [],
+        ],
+        # TODO: Determine dimension name
+        output_core_dims=[
+            ["time_of_flight", "peak_fit_parameters"],
+            ["time_of_flight"],
+        ],
+        vectorize=True,
+    )
+
     l2a_dataset = l1b_dataset.copy()
 
+    l2a_dataset["tof_peak_fit_parameters"] = peak_fits
+    l2a_dataset["tof_peak_area_under_fit"] = area_under_fits
     l2a_dataset["tof_peak_kappa"] = xr.DataArray(kappa, dims=["epoch"])
     l2a_dataset["tof_snr"] = xr.DataArray(snr, dims=["epoch"])
     l2a_dataset["mass"] = mass_scales_da
@@ -273,3 +299,176 @@ def calculate_snr(tof_high: xr.DataArray, hs_time: xr.DataArray) -> NDArray:
     tof_sigma = np.nanstd(baseline_noise, axis=1, ddof=1)
     # Return snr ratio
     return tof_max / tof_sigma
+
+
+def analyze_peaks(
+    tof_high: xr.DataArray,
+    high_sampling_time: xr.DataArray,
+    event_num: int,
+    peaks_2d: list[np.ndarray],
+) -> tuple[NDArray, NDArray]:
+    """
+    Fit an EMG curve to the Time of Flight data around each peak.
+
+    Parameters
+    ----------
+    tof_high : xarray.DataArray
+        The time of flight array.
+    high_sampling_time : xarray.DataArray
+        The high sampling time array.
+    event_num : int
+        Dust event number (for debugging purposes).
+    peaks_2d : list[numpy.ndarray]
+        Nested list of peak indices.
+
+    Returns
+    -------
+    params: numpy.ndarray
+        Array of the EMG fit parameters (mu, sigma, lambda) at the corresponding mu
+        time. Empty slots contain zeros.
+    area_under_emg : numpy.ndarray
+        Array of the area under the EMG curve at that time. Empty slots
+        contain zeros.
+    """
+    # Initialize arrays to store EMG fit results
+    # fit_params: (500, 3) array where the first dimension is the ion flight
+    # time and the second is EMG fit parameters (mu, sigma, lambda) for the peaks at
+    # that flight time.
+    # area_under_emg: (500) array storing the area under each EMG peak at the
+    # corresponding flight time.
+    # The Ion flight time can be used to get the estimated mass from the mass_scale
+    # array.
+    fit_params = np.zeros((500, 3))
+    area_under_emg = np.zeros(500)
+    for peak in peaks_2d[event_num]:
+        # Take a slice of 5 samples on either side of the peak
+        start = max(0, peak - 5)
+        end = min(len(tof_high), peak + 6)
+
+        time_slice = np.asarray(high_sampling_time[start:end].data)
+        tof_slice = np.asarray(tof_high[start:end].data)
+
+        param = fit_emg(time_slice, tof_slice, event_num)
+        if param is not None:
+            area = calculate_area_under_emg(time_slice, param)
+            # Center of fitted gaussian (time)
+            emg_mu = param[0]
+            # Round calculated time to the nearest int
+            # If that index is already taken, keep increasing the index by one
+            # until we find an empty slot.
+            # This ensures we don't overwrite existing data when we have multiple peaks
+            # close to the same flight time.
+            if emg_mu < 0:
+                logger.warning(
+                    f"Warning: The EMG fit resulted in a negative mu "
+                    f"(center of gaussian) value: {emg_mu}."
+                )
+
+            idx = max(0, round(emg_mu))
+            while np.all(fit_params[idx:] != 0) and idx < 500:
+                idx += 1
+            if idx < 500:
+                fit_params[idx] = param
+                area_under_emg[idx] = area
+            else:
+                logger.warning(
+                    f"Unable to find a slot for time: {idx}. Discarding value."
+                )
+
+    return fit_params, area_under_emg
+
+
+def fit_emg(
+    peak_time: np.ndarray, peak_signal: np.ndarray, event_num: int
+) -> Union[NDArray, None]:
+    """
+    Fit an exponentially modified gaussian function to the peak signal.
+
+    Parameters
+    ----------
+    peak_time : numpy.ndarray
+        TOF high +5 and -5 samples around peak.
+    peak_signal : numpy.ndarray
+        High sampling time array at +5 and -5 samples around peak.
+    event_num : int
+        Dust event number (for debugging purposes).
+
+    Returns
+    -------
+    param : numpy.ndarray or None
+        Fitted EMG optimal values for the parameters (popt) [mu, sigma, lambda]
+        if fit successful, None otherwise.
+    """
+    # Initial Guess for the parameters of the emg fit:
+    # center of gaussian
+    mu = peak_time[np.argmax(peak_signal)]
+    sigma = np.std(peak_time) / 10
+    # Decay rate
+    lam = 1 / (peak_time[-1] - peak_time[0])
+
+    p0 = [mu, sigma, lam]
+
+    try:
+        param, _ = curve_fit(emg, peak_time, peak_signal, p0=p0, maxfev=100_000)
+    except RuntimeError as e:
+        logger.warning(
+            f"Failed to fit EMG curve: {e}\n"
+            f"Time range: {peak_time[0]:.2f} to {peak_time[-1]:.2f}\n"
+            f"Signal range: {min(peak_signal):.2f} to {max(peak_signal):.2f}\n"
+            f"Event number: {event_num}\n"
+            "Returning None."
+        )
+        return None
+
+    return param
+
+
+def emg(time: np.ndarray, mu: float, sigma: float, lam: float) -> NDArray:
+    """
+    Define an exponentially modified gaussian function.
+
+    Parameters
+    ----------
+    time : numpy.ndarray
+        Time points at which to evaluate the EMG function.
+    mu : float
+       The distribution mean of the gaussian.
+    sigma : float
+       Distribution spread about the mean.
+    lam : float
+        Exponential decay rate.
+
+    Returns
+    -------
+    numpy.ndarray
+        EMG function values calculated at the input time points.
+    """
+    # A normally distributed gaussian with an exponential decay.
+    prefactor = lam / 2
+    exponent = np.exp(prefactor * (2 * mu + lam * sigma**2 - 2 * time))
+    erfc_part = erfc((mu + lam * sigma**2 - time) / (np.sqrt(2) * sigma))
+    return prefactor * exponent * erfc_part
+
+
+def calculate_area_under_emg(time_slice: np.ndarray, param: np.ndarray) -> float:
+    """
+    Calculate the area under the emg fit which is equal to the impact charge.
+
+    Parameters
+    ----------
+    time_slice : numpy.ndarray
+        Time values around the peak.
+    param : numpy.ndarray
+        Optimal parameters (mu, sigma, lam) for the emg curve fit.
+
+    Returns
+    -------
+    float
+        Total area under the emg curve.
+    """
+    # Extract EMG fit parameters: mu, sigma, lam
+    mu, sigma, lam = param
+    # Compute integral
+    area, _ = quad(emg, time_slice[0], time_slice[-1], args=(mu, sigma, lam))
+
+    return float(area)

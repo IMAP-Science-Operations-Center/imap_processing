@@ -3,13 +3,16 @@
 import numpy as np
 import pytest
 import xarray as xr
+from scipy.stats import exponnorm
 
 from imap_processing.idex import idex_constants
 from imap_processing.idex.idex_l1b import idex_l1b
 from imap_processing.idex.idex_l2a import (
     BaselineNoiseTime,
+    analyze_peaks,
     calculate_kappa,
     calculate_snr,
+    emg,
     idex_l2a,
     time_to_mass,
 )
@@ -165,3 +168,77 @@ def test_calculate_snr_warning(caplog):
         "Unable to find baseline noise" in message
         for message in caplog.text.splitlines()
     )
+
+
+@pytest.mark.filterwarnings("ignore:invalid")
+@pytest.mark.filterwarnings("ignore:overflow")
+def test_analyze_peaks_warning(caplog):
+    """Tests that analyze_peaks() throws warning if the emg curve fit fails."""
+    # Create a 2d list of peak indices
+    peaks = [[2, 3, 4]]
+    time = xr.DataArray(np.arange(10))
+    # When there is a flat signal for TOF, we expect the fit to fail and a
+    # warning to be logged.
+    tof = np.ones_like(time)
+    with caplog.at_level("WARNING"):
+        fit_params, area_under_curve = analyze_peaks(tof, time, 0, peaks)
+    assert any(
+        "Failed to fit EMG curve" in message for message in caplog.text.splitlines()
+    )
+
+    # The fit_params and area_under_curve arrays should be zero
+    assert np.all(fit_params == 0)
+    assert np.all(area_under_curve == 0)
+
+
+def test_emg():
+    """Tests that emg() calculates an expected exponentially modified gaussian"""
+    mu = 4
+    sigma = 2.0
+    lam = 1.0
+    time = xr.DataArray(np.arange(100))
+    # The scipy.stats.exponnorm function's location and scale parameters match directly
+    # with mu and sigma from the standard EMG function, while its shape parameter K is
+    # found by taking one divided by the product of sigma and lambda.
+    # see:
+    # https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.exponnorm.html
+    # for more details
+    k = 1 / (lam * sigma)
+    # Calculate the EMGs
+    g1 = exponnorm.pdf(time, k, loc=mu, scale=sigma)
+    g2 = emg(time, mu, sigma, lam)
+
+    assert np.allclose(g1, g2)
+
+
+def test_analyze_peaks_perfect_fits():
+    """Tests that analyze_peaks() returns the expected fit params and areas."""
+    event = 0
+    # Create a 2d list of peak indices
+    peak_1 = 7
+    peak_2 = 25
+    peak_3 = 80
+    # Create tof array of ones
+    time = xr.DataArray(np.arange(100))
+    tof = np.zeros(100)
+    # Only test peaks[0] this function is not vectorized but we pass in the full 2d peak
+    # array.
+    peaks = [np.asarray([peak_1, peak_2, peak_3]), np.asarray([])]
+    sigma = 2.0
+    lam = 1.0
+    # Create a tof array with an emg curve at each peak
+    for peak in peaks[event]:
+        # Create a perfect emg curve
+        mu = peak - 0.4
+        gauss = emg(time.data, mu, sigma, lam)
+        tof[peak - 5 : peak + 6] = gauss[peak - 5 : peak + 6]
+
+    fit_params, area_under_curve = analyze_peaks(tof, time, event, peaks)
+
+    for peak in peaks[event]:
+        mu = peak - 0.4
+        idx = round(mu)
+        # Test that the fitted parameters at the mass index match our input parameters
+        assert np.allclose(fit_params[idx], np.asarray([mu, sigma, lam]), rtol=1e-12)
+        # Test that there is a value greater than zero at this index
+        assert area_under_curve[idx] > 0
