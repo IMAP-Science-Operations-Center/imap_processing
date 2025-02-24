@@ -32,6 +32,7 @@ from scipy.special import erfc
 
 from imap_processing import imap_module_directory
 from imap_processing.idex import idex_constants
+from imap_processing.idex.idex_constants import ConversionFactors
 from imap_processing.idex.idex_l1a import get_idex_attrs
 
 logger = logging.getLogger(__name__)
@@ -83,6 +84,7 @@ def idex_l2a(l1b_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
 
     tof_high = l1b_dataset["TOF_High"]
     hs_time = l1b_dataset["time_high_sr"]
+    ls_time = l1b_dataset["time_low_sr"]
 
     # Load an array of known masses of ions
     atomic_masses_path = f"{imap_module_directory}/idex/atomic_masses.csv"
@@ -122,6 +124,29 @@ def idex_l2a(l1b_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
     )
 
     l2a_dataset = l1b_dataset.copy()
+
+    for waveform in ["Target_Low", "Target_High", "Ion_Grid"]:
+        # Convert back to raw DNs for more accurate fits
+        waveform_dn = l1b_dataset[waveform] / ConversionFactors[waveform]
+        # Get the dust mass estimates and fit results
+        fit_results = xr.apply_ufunc(
+            estimate_dust_mass,
+            ls_time,
+            waveform_dn,
+            input_core_dims=[["time_low_sr_dim"], ["time_low_sr_dim"]],
+            output_core_dims=[["fit_parameters"], [], [], [], ["time_low_sr_dim"]],
+            vectorize=True,
+            output_dtypes=[np.float64] * 6,
+        )
+        waveform_name = waveform.lower()
+        # Add variables
+        l2a_dataset[f"{waveform_name}_fit_parameters"] = fit_results[0]
+        l2a_dataset[f"{waveform_name}_fit_imapct_charge"] = fit_results[1]
+        # TODO: convert charge to mass
+        l2a_dataset[f"{waveform_name}_fit_imapct_mass_estimate"] = fit_results[1]
+        l2a_dataset[f"{waveform_name}_chi_squared"] = fit_results[2]
+        l2a_dataset[f"{waveform_name}_reduced_chi_squared"] = fit_results[3]
+        l2a_dataset[f"{waveform_name}_fit_results"] = fit_results[4]
 
     l2a_dataset["tof_peak_fit_parameters"] = peak_fits
     l2a_dataset["tof_peak_area_under_fit"] = area_under_fits
@@ -472,3 +497,134 @@ def calculate_area_under_emg(time_slice: np.ndarray, param: np.ndarray) -> float
     area, _ = quad(emg, time_slice[0], time_slice[-1], args=(mu, sigma, lam))
 
     return float(area)
+
+
+def estimate_dust_mass(
+    low_sampling_time: xr.DataArray,
+    target_signal: xr.DataArray,
+    remove_noise: bool = True,
+) -> tuple[NDArray, float, float, float, NDArray]:
+    """
+    Filter and fit the target or ion grid signals to get the total dust impact charge.
+
+    Parameters
+    ----------
+    low_sampling_time : xarray.DataArray
+        The low sampling time array.
+    target_signal : xarray.DataArray
+        Target signal data.
+    remove_noise : bool
+        If true, attempt to remove background noise, otherwise fit on the unfiltered
+        signal.
+
+    Returns
+    -------
+    param : numpy.ndarray
+        Optimal target signal fit values for the parameters (popt)
+        [time_of_impact, constant_offset, amplitude, rise_time, discharge_time]
+        if fit successful. None otherwise.
+    sig_amp : float
+        Signal amplitude, calculated as difference between fitted maximum signal
+        and baseline mean if fit successful. None otherwise.
+    chi_squared : float
+        Sum of squared residuals from the fit.
+    reduced_chi_squared : float
+        Chi-squared per degree of freedom.
+    result : numpy.ndarray
+        The model values evaluated at each time point.
+    """
+    # TODO: The IDEX team is iterating on this Function and will provide more
+    #         information soon.
+    signal = np.array(target_signal.data)
+    time = np.array(low_sampling_time.data)
+    if remove_noise:
+        pass
+    # Time before image charge
+    pre = -2.0
+    # Get signal values where the time is before the image charge
+    signal_before_imapact = signal[time < pre]
+    # Center the baseline signal around zero
+    signal_baseline = signal_before_imapact - np.mean(signal_before_imapact)
+
+    # Initial Guess for the parameters of the ion grid signal
+    time_of_impact = 0.0  # Time of dust hit
+    constant_offset = 0.0  # Initial baseline
+    amplitude: float = np.max(signal)  # Signal height
+    rise_time = 0.371  # How fast the signal rises (s)
+    discharge_time = 0.371  # How fast signal decays (s)
+
+    p0 = [time_of_impact, constant_offset, amplitude, rise_time, discharge_time]
+
+    try:
+        param, _ = curve_fit(
+            fit_impact,
+            time,
+            signal,
+            p0=p0,
+            maxfev=100_000,  # , epsfcn=1e-10
+        )
+    except RuntimeError as e:
+        logger.warning(
+            f"Failed to fit curve: {e}\n"
+            f"Time range: {time[0]:.2f} to {time[-1]:.2f}\n"
+            f"Signal range: {min(signal):.2f} to {max(signal):.2f}\n"
+            "Returning None."
+        )
+        return (
+            np.full(len(p0), np.nan),
+            np.nan,
+            np.nan,
+            np.nan,
+            np.full_like(time, np.nan),
+        )
+
+    impact_fit = fit_impact(time, *param)
+    # Calculate the resulting signal amplitude after removing baseline noise
+    sig_amp = max(impact_fit) - np.mean(signal_baseline)
+
+    # Calculate chi square and reduced chi square
+    chisqr = float(np.sum((signal - impact_fit) ** 2))
+    # To get reduced chi square divide by dof (number of points - number of params)
+    redchi = chisqr / (len(signal) - len(p0))
+
+    return param, float(sig_amp), chisqr, redchi, impact_fit
+
+
+def fit_impact(
+    time: np.ndarray,
+    time_of_impact: float,
+    constant_offset: float,
+    amplitude: float,
+    rise_time: float,
+    discharge_time: float,
+) -> NDArray:
+    """
+    Fit function for the Ion Grid and two target signals given by (Horanyi, 2014).
+
+    Y(t) = C₀ + H(t - t₀)[C₂(1 - e^(-(t-t₀)/τ₁))e^(-(t-t₀)/τ₂) - C₁]]
+
+    Parameters
+    ----------
+    time : np.ndarray
+        Time values for the signal.
+    time_of_impact : float
+        Time of dust impact.
+    constant_offset : float
+        Initial baseline noise.
+    amplitude : float
+        Signal height.
+    rise_time : float
+        How fast the signal rises (s).
+    discharge_time : float
+        How fast the signal decays (s).
+
+    Returns
+    -------
+    np.ndarray
+        Function values calculated at the input time points.
+    """
+    exponent_1 = 1.0 - np.exp(-(time - time_of_impact) / rise_time)
+    exponent_2 = np.exp(-(time - time_of_impact) / discharge_time)
+    return constant_offset + np.heaviside(time - time_of_impact, 0) * (
+        amplitude * exponent_1 * exponent_2
+    )

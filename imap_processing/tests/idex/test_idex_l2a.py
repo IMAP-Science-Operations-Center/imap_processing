@@ -13,6 +13,8 @@ from imap_processing.idex.idex_l2a import (
     calculate_kappa,
     calculate_snr,
     emg,
+    estimate_dust_mass,
+    fit_impact,
     idex_l2a,
     time_to_mass,
 )
@@ -242,3 +244,40 @@ def test_analyze_peaks_perfect_fits():
         assert np.allclose(fit_params[idx], np.asarray([mu, sigma, lam]), rtol=1e-12)
         # Test that there is a value greater than zero at this index
         assert area_under_curve[idx] > 0
+
+
+def test_estimate_dust_mass_no_noise_removal():
+    """
+    Test that estimate_dust_mass() is fitting the signal properly when there is no
+    noise removal.
+    """
+    pass
+    # TODO: The IDEX team is iterating on this function and will provide more
+    #  information soon.
+    start_time = -60
+    total_low_sampling_microseconds = 126.03  # see algorithm document.
+    num_samples = 512
+
+    # Create realistic low sampling time
+    time = xr.DataArray(
+        np.linspace(
+            start_time, total_low_sampling_microseconds - start_time, num_samples
+        )
+    )
+    signal = xr.DataArray(
+        fit_impact(
+            time.data,
+            time_of_impact=0.0,
+            constant_offset=1.0,
+            amplitude=10.0,
+            rise_time=0.371,
+            discharge_time=0.371,
+        )
+    )
+    param, sig_amp, chisqr, redchi, result = estimate_dust_mass(
+        time, signal, remove_noise=False
+    )
+    # Assert that the chi square value indicates a very good fit
+    assert chisqr <= 1e-12
+
+    assert np.allclose(result, signal)

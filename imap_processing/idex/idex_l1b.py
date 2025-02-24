@@ -15,27 +15,16 @@ Examples
 """
 
 import logging
-from enum import Enum
 
 import pandas as pd
 import xarray as xr
 
 from imap_processing import imap_module_directory
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
+from imap_processing.idex.idex_constants import ConversionFactors
 from imap_processing.utils import convert_raw_to_eu
 
 logger = logging.getLogger(__name__)
-
-
-class ConversionFactors(float, Enum):
-    """Enum class for conversion factor values."""
-
-    TOF_High = 2.89e-4
-    TOF_Low = 5.14e-4
-    TOF_Mid = 1.13e-2
-    Target_Low = 1.58e1
-    Target_High = 1.63e-1
-    Ion_Grid = 7.46e-4
 
 
 def idex_l1b(l1a_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
