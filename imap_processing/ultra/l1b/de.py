@@ -18,6 +18,7 @@ from imap_processing.ultra.l1b.ultra_l1b_extended import (
     get_de_velocity,
     get_energy_pulse_height,
     get_energy_ssd,
+    get_eventtimes,
     get_front_x_position,
     get_front_y_position,
     get_path_length,
@@ -77,6 +78,8 @@ def calculate_de(de_dataset: xr.Dataset, name: str, data_version: str) -> xr.Dat
         de_dataset["START_POS_TDC"].data,
     )
 
+    event_times, spin_starts, spin_period_sec = get_eventtimes(de_dataset)
+
     # Pulse height
     ph_indices = np.nonzero(
         np.isin(de_dataset["STOP_TYPE"], [StopType.Top.value, StopType.Bottom.value])
@@ -131,6 +134,9 @@ def calculate_de(de_dataset: xr.Dataset, name: str, data_version: str) -> xr.Dat
 
     # Combine ph_yb and ssd_yb along with their indices
     de_dict["x_front"] = xf.astype(np.float32)
+    de_dict["event_times"] = event_times
+    de_dict["spin_starts"] = spin_starts
+    de_dict["spin_period"] = spin_period_sec
     de_dict["y_front"] = yf
     de_dict["x_back"] = xb
     de_dict["y_back"] = yb
@@ -171,7 +177,7 @@ def calculate_de(de_dataset: xr.Dataset, name: str, data_version: str) -> xr.Dat
     # Annotated Events.
     ultra_frame = getattr(SpiceFrame, f"IMAP_ULTRA_{sensor}")
     sc_velocity, sc_dps_velocity, helio_velocity = get_annotated_particle_velocity(
-        de_dataset.data_vars["EVENTTIMES"].values,
+        event_times,
         de_dict["direct_event_velocity"],
         ultra_frame,
         SpiceFrame.IMAP_DPS,
