@@ -122,7 +122,7 @@ def initiate_data_arrays(decom_ultra: dict, apid: int) -> xr.Dataset:
 
 def get_event_time(decom_ultra_dict: dict) -> dict:
     """
-    Get event times using data from events and aux packets.
+    Get unique event IDs using data from events and aux packets.
 
     Parameters
     ----------
@@ -132,47 +132,26 @@ def get_event_time(decom_ultra_dict: dict) -> dict:
     Returns
     -------
     decom_events : dict
-        Ultra events data with calculated events timestamps.
-
-    Notes
-    -----
-    Equation for event time:
-    t = t_(spin start) + t_(spin start sub)/1000 +
-    t_(spin duration)/1000 * phase_angle/720
+        Ultra events data with calculated unique event IDs as 64-bit integers.
     """
-    event_times, durations, spin_starts = ([] for _ in range(3))
-    decom_aux = decom_ultra_dict[ULTRA_AUX.apid[0]]
     decom_events: dict = decom_ultra_dict[ULTRA_EVENTS.apid[0]]
 
-    timespinstart_array = np.array(decom_aux["TIMESPINSTART"])
-    timespinstartsub_array = np.array(decom_aux["TIMESPINSTARTSUB"]) / 1000
+    event_ids = []
+    packet_counters = {}
 
-    # spin start according to aux data
-    aux_spin_starts = timespinstart_array + timespinstartsub_array
+    for met in decom_events["SHCOARSE"]:
+        # Initialize the counter for a new packet (MET value)
+        if met not in packet_counters:
+            packet_counters[met] = 0
+        else:
+            packet_counters[met] += 1
 
-    for time in np.unique(decom_events["SHCOARSE"]):
-        # Get the nearest spin start and duration prior to the event
-        spin_start = aux_spin_starts[aux_spin_starts <= time][-1]
-        duration = np.array(decom_aux["DURATION"])[aux_spin_starts <= time][-1]
+        # Create the 64-bit event ID.
+        packet_base = np.uint64(met) << np.uint64(32)
+        event_id = packet_base | np.uint64(packet_counters[met])
+        event_ids.append(event_id)
 
-        # Find the events
-        event_indices = np.where(np.array(decom_events["SHCOARSE"]) == time)
-
-        for event_index in event_indices[0]:
-            phase_angle = decom_events["PHASE_ANGLE"][event_index]
-
-            durations.append(duration)
-            spin_starts.append(spin_start)
-
-            # If there were no events, the time is set to 'SHCOARSE'
-            if decom_events["COUNT"][event_index] == 0:
-                event_times.append(decom_events["SHCOARSE"][event_index])
-            else:
-                event_times.append(spin_start + (duration / 1000) * (phase_angle / 720))
-
-    decom_events["DURATION"] = durations
-    decom_events["TIMESPINSTART"] = spin_starts
-    decom_events["EVENTTIMES"] = event_times
+    decom_events["EVENTID"] = event_ids
 
     return decom_events
 

@@ -1,3 +1,4 @@
+import numpy as np
 import pytest
 
 from imap_processing import decom
@@ -9,7 +10,11 @@ from imap_processing.ultra.l0.ultra_utils import (
     ULTRA_RATES,
     ULTRA_TOF,
 )
-from imap_processing.ultra.l1a.ultra_l1a import create_dataset, ultra_l1a
+from imap_processing.ultra.l1a.ultra_l1a import (
+    create_dataset,
+    get_event_time,
+    ultra_l1a,
+)
 from imap_processing.utils import group_by_apid
 
 
@@ -336,3 +341,21 @@ def test_cdf_events(ccsds_path_theta_0, decom_ultra_aux, decom_test_data):
     assert set(dataset_events.attrs.keys()).issubset(
         set(input_xarray_events.attrs.keys())
     )
+
+
+def test_get_event_time():
+    """Test get_event_time"""
+    decom_ultra_dict = {
+        ULTRA_EVENTS.apid[0]: {"SHCOARSE": [445015662, 445015663, 445015664, 445015664]}
+    }
+    decom_events = get_event_time(decom_ultra_dict)
+    counters_for_met = []
+    for i in range(len(decom_events["EVENTID"])):
+        event_id = decom_events["EVENTID"][i]
+        met_extracted = event_id >> np.uint64(32)
+        assert met_extracted == np.uint64(
+            decom_ultra_dict[ULTRA_EVENTS.apid[0]]["SHCOARSE"][i]
+        )
+        counters_for_met.append(event_id & np.uint64(0xFFFFFFFF))
+
+    assert counters_for_met == [0, 0, 0, 1]
