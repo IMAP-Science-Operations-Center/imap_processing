@@ -153,9 +153,9 @@ def calculate_de(de_dataset: xr.Dataset, name: str, data_version: str) -> xr.Dat
         "start_type",
         "event_type",
         "de_event_met",
-        "event_times",
+        "phase_angle",
     ]
-    dataset_keys = ["COIN_TYPE", "START_TYPE", "STOP_TYPE", "SHCOARSE", "EVENTTIMES"]
+    dataset_keys = ["COIN_TYPE", "START_TYPE", "STOP_TYPE", "SHCOARSE", "PHASE_ANGLE"]
 
     de_dict.update(
         {key: de_dataset[dataset_key] for key, dataset_key in zip(keys, dataset_keys)}
