@@ -40,7 +40,7 @@ logger = logging.getLogger(__name__)
 
 class BaselineNoiseTime(IntEnum):
     """
-    Time range in nanoseconds that mark the baseline noise before a Dust impact.
+    Time range in microseconds that mark the baseline noise before a Dust impact.
 
     Attributes
     ----------
@@ -108,9 +108,11 @@ def idex_l2a(l1b_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
         analyze_peaks,
         tof_high,
         hs_time,
+        mass_scales_da,
         np.arange(len(peaks_2d)),
         kwargs={"peaks_2d": peaks_2d},
         input_core_dims=[
+            ["time_high_sr_dim"],
             ["time_high_sr_dim"],
             ["time_high_sr_dim"],
             [],
@@ -329,8 +331,9 @@ def calculate_snr(tof_high: xr.DataArray, hs_time: xr.DataArray) -> NDArray:
 def analyze_peaks(
     tof_high: xr.DataArray,
     high_sampling_time: xr.DataArray,
+    mass_scale: xr.DataArray,
     event_num: int,
-    peaks_2d: list[np.ndarray],
+    peaks_2d: np.ndarray,
 ) -> tuple[NDArray, NDArray]:
     """
     Fit an EMG curve to the Time of Flight data around each peak.
@@ -341,28 +344,29 @@ def analyze_peaks(
         The time of flight array.
     high_sampling_time : xarray.DataArray
         The high sampling time array.
+    mass_scale : xarray.DataArray
+        Time to mass scale.
     event_num : int
         Dust event number (for debugging purposes).
-    peaks_2d : list[numpy.ndarray]
+    peaks_2d : numpy.ndarray
         Nested list of peak indices.
 
     Returns
     -------
     params: numpy.ndarray
-        Array of the EMG fit parameters (mu, sigma, lambda) at the corresponding mu
-        time. Empty slots contain zeros.
+        Array of the EMG fit parameters (mu, sigma, lambda) at the corresponding mass.
+        Empty mass slots contain zeros.
+
     area_under_emg : numpy.ndarray
-        Array of the area under the EMG curve at that time. Empty slots
+        Array of the area under the EMG curve at that mass. Empty mass slots
         contain zeros.
     """
     # Initialize arrays to store EMG fit results
-    # fit_params: (500, 3) array where the first dimension is the ion flight
-    # time and the second is EMG fit parameters (mu, sigma, lambda) for the peaks at
-    # that flight time.
-    # area_under_emg: (500) array storing the area under each EMG peak at the
-    # corresponding flight time.
-    # The Ion flight time can be used to get the estimated mass from the mass_scale
-    # array.
+    # fit_params: (500, 3) array where the first dimension is the estimated ion mass (
+    # 0-499)
+    # and the second is EMG fit parameters (mu, sigma, lambda) for peaks at that mass
+    # area_under_emg: (500) array storing the area under each EMG peak at
+    # corresponding mass.
     fit_params = np.zeros((500, 3))
     area_under_emg = np.zeros(500)
     for peak in peaks_2d[event_num]:
@@ -376,28 +380,26 @@ def analyze_peaks(
         param = fit_emg(time_slice, tof_slice, event_num)
         if param is not None:
             area = calculate_area_under_emg(time_slice, param)
-            # Center of fitted gaussian (time)
-            emg_mu = param[0]
-            # Round calculated time to the nearest int
+            # Find the index where time is closest to mu
+            time_idx = np.argmin(np.abs(high_sampling_time.data - param[0]))
+            mass = mass_scale[time_idx]
+            # Round calculated mass to get the index
             # If that index is already taken, keep increasing the index by one
             # until we find an empty slot.
             # This ensures we don't overwrite existing data when we have multiple peaks
-            # close to the same flight time.
-            if emg_mu < 0:
-                logger.warning(
-                    f"Warning: The EMG fit resulted in a negative mu "
-                    f"(center of gaussian) value: {emg_mu}."
-                )
+            # close to the same mass number
+            if mass < 0:
+                logger.warning(f"Warning: Calculated a negative mass: {mass}.")
 
-            idx = max(0, round(emg_mu))
-            while np.all(fit_params[idx:] != 0) and idx < 500:
-                idx += 1
-            if idx < 500:
-                fit_params[idx] = param
-                area_under_emg[idx] = area
+            mass = max(0, round(mass))
+            while np.all(fit_params[mass:] != 0) and mass < 500:
+                mass += 1
+            if mass < 500:
+                fit_params[mass] = param
+                area_under_emg[mass] = area
             else:
                 logger.warning(
-                    f"Unable to find a slot for time: {idx}. Discarding value."
+                    f"Unable to find a slot for mass: {mass}. Discarding " f"value."
                 )
 
     return fit_params, area_under_emg

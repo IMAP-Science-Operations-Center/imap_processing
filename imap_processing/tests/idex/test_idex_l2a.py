@@ -233,8 +233,9 @@ def test_analyze_peaks_warning(caplog):
     # When there is a flat signal for TOF, we expect the fit to fail and a
     # warning to be logged.
     tof = np.ones_like(time)
+    mass_scale = np.ones_like(time)
     with caplog.at_level("WARNING"):
-        fit_params, area_under_curve = analyze_peaks(tof, time, 0, peaks)
+        fit_params, area_under_curve = analyze_peaks(tof, time, mass_scale, 0, peaks)
     assert any(
         "Failed to fit EMG curve" in message for message in caplog.text.splitlines()
     )
@@ -274,6 +275,7 @@ def test_analyze_peaks_perfect_fits():
     # Create tof array of ones
     time = xr.DataArray(np.arange(100))
     tof = np.zeros(100)
+    mass_scale = np.arange(100) + 0.5
     # Only test peaks[0] this function is not vectorized but we pass in the full 2d peak
     # array.
     peaks = [np.asarray([peak_1, peak_2, peak_3]), np.asarray([])]
@@ -286,15 +288,15 @@ def test_analyze_peaks_perfect_fits():
         gauss = emg(time.data, mu, sigma, lam)
         tof[peak - 5 : peak + 6] = gauss[peak - 5 : peak + 6]
 
-    fit_params, area_under_curve = analyze_peaks(tof, time, event, peaks)
+    fit_params, area_under_curve = analyze_peaks(tof, time, mass_scale, event, peaks)
 
     for peak in peaks[event]:
         mu = peak - 0.4
-        idx = round(mu)
+        mass = round(mass_scale[round(mu)])
         # Test that the fitted parameters at the mass index match our input parameters
-        assert np.allclose(fit_params[idx], np.asarray([mu, sigma, lam]), rtol=1e-12)
+        assert np.allclose(fit_params[mass], np.asarray([mu, sigma, lam]), rtol=1e-12)
         # Test that there is a value greater than zero at this index
-        assert area_under_curve[idx] > 0
+        assert area_under_curve[mass] > 0
 
 
 def test_estimate_dust_mass_no_noise_removal():
