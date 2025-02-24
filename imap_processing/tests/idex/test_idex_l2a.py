@@ -7,6 +7,7 @@ import xarray as xr
 from imap_processing.idex import idex_constants
 from imap_processing.idex.idex_l1b import idex_l1b
 from imap_processing.idex.idex_l2a import (
+    calculate_kappa,
     idex_l2a,
     time_to_mass,
 )
@@ -111,3 +112,21 @@ def test_time_to_mass_zero_correlation_warning(caplog):
         " TOF array and the expected mass times array" in message
         for message in caplog.text.splitlines()
     )
+
+
+def test_calculate_kappa():
+    """Tests the functionality of calculate_kappa()."""
+    # Create a 2d list of peak indices
+    peaks = [[0, 1], [1, 2], [0, 1, 2]]
+
+    # Create mass_scales array
+    mass_scales = np.array(
+        [
+            [1.2, 2.2, 3.2],  # The kappa value for peaks 0,1 should be .2
+            [1.4, 2.4, 3.4],  # The kappa value for peaks 1,2 should be .4
+            [1.7, 2.7, 3.7],  # The kappa value for peaks 2,3,4 should be -0.3
+        ]
+    )
+    kappas = calculate_kappa(mass_scales, peaks)
+
+    assert np.allclose(list(kappas), [0.2, 0.4, -0.3], rtol=1e-12)

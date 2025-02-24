@@ -23,6 +23,7 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 from numpy.typing import NDArray
+from scipy.signal import find_peaks
 
 from imap_processing import imap_module_directory
 from imap_processing.idex import idex_constants
@@ -73,9 +74,14 @@ def idex_l2a(l1b_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
         data=mass_scales,
         dims=("epoch", "time_high_sr_dim"),
     )
+    # Find peaks for each event. The peaks represent a TOF of an ion.
+    # Peaks_2d is a list of variable-length arrays
+    peaks_2d = [find_peaks(tof, prominence=0.01)[0] for tof in tof_high]
+    kappa = calculate_kappa(mass_scales, peaks_2d)
 
     l2a_dataset = l1b_dataset.copy()
 
+    l2a_dataset["tof_peak_kappa"] = xr.DataArray(kappa, dims=["epoch"])
     l2a_dataset["mass"] = mass_scales_da
     # Update global attributes
     idex_attrs = get_idex_attrs(data_version)
@@ -182,3 +188,30 @@ def time_to_mass(
     ) ** 2
 
     return best_stretch, best_shift, mass_scale
+
+
+def calculate_kappa(mass_scales: np.ndarray, peaks_2d: list) -> NDArray:
+    """
+    Calculate the kappa value for each peak.
+
+    Parameters
+    ----------
+    mass_scales : xarray.DataArray
+        Array containing the masses at each time value for each dust event.
+    peaks_2d : list
+        A Nested list of tof peak indices.
+
+    Returns
+    -------
+    numpy.ndarray
+        Average distance from the assigned peak to the nearest integer value.
+    """
+    #  Find the average deviation between each TOF peak's assigned mass value and its
+    #  nearest decimal value per spectrum.
+    kappas = np.asarray(
+        [
+            np.mean(mass_scale[peaks] - np.round(mass_scale[peaks]))
+            for mass_scale, peaks in zip(mass_scales, peaks_2d)
+        ]
+    )
+    return kappas
