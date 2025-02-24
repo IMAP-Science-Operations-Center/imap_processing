@@ -15,6 +15,9 @@ from imap_processing.tests.mag.conftest import mag_l1a_dataset_generator
 
 
 def test_mag_processing():
+    # All specific test values come from MAG team to accommodate various cases.
+    # Each vector is multiplied by the matrix in the calibration data for the given
+    # range to get the calibrated vector.
     mag_l1a_dataset = mag_l1a_dataset_generator(20)
     mag_l1a_dataset["compression_flags"].data[1, :] = np.array([1, 18], dtype=np.int8)
 
@@ -30,7 +33,7 @@ def test_mag_processing():
         [4584.1029091, 27238.73161294, -38405.22240195, 0.0],
     )
 
-    # np.testing.assert_allclose(mag_l1b["vectors"][1].values, [0, 0, 0, 0])
+    np.testing.assert_allclose(mag_l1b["vectors"][2].values, [0, 0, 0, 0])
 
     assert mag_l1b["vectors"].values.shape == mag_l1a_dataset["vectors"].values.shape
 
