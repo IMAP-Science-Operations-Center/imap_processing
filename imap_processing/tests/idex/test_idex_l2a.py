@@ -7,7 +7,9 @@ import xarray as xr
 from imap_processing.idex import idex_constants
 from imap_processing.idex.idex_l1b import idex_l1b
 from imap_processing.idex.idex_l2a import (
+    BaselineNoiseTime,
     calculate_kappa,
+    calculate_snr,
     idex_l2a,
     time_to_mass,
 )
@@ -130,3 +132,36 @@ def test_calculate_kappa():
     kappas = calculate_kappa(mass_scales, peaks)
 
     assert np.allclose(list(kappas), [0.2, 0.4, -0.3], rtol=1e-12)
+
+
+def test_calculate_snr():
+    """Tests the functionality of calculate_snr()."""
+    step = 0.5
+    max_tof = 10
+    time = np.arange(BaselineNoiseTime.START, 5, step)
+
+    # Create a baseline noise array with an std of 1 and mean of 1
+    baseline_noise = np.asarray([0, 0, 1, 2, 2])
+    signal_length = len(time) - len(baseline_noise)
+    tof_signal = np.full(int(signal_length), max_tof)
+
+    tof = np.tile(np.append(baseline_noise, tof_signal), (3, 1))
+    time = np.tile(time, (3, 1))
+
+    snr = calculate_snr(tof, time)
+
+    # Since std=1 and mean=1, SNR should be (max_tof - mean)/std
+    assert np.all(snr == (max_tof - 1))
+
+
+def test_calculate_snr_warning(caplog):
+    """Tests that calculate_snr() throws warning if no baseline noise is found."""
+    time = np.tile(np.arange(10), (3, 1))
+    tof = np.ones_like(time)
+
+    with caplog.at_level("WARNING"):
+        calculate_snr(tof, time)
+    assert any(
+        "Unable to find baseline noise" in message
+        for message in caplog.text.splitlines()
+    )

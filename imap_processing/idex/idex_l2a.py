@@ -18,6 +18,7 @@ Examples
 
 # ruff: noqa: PLR0913
 import logging
+from enum import IntEnum
 
 import numpy as np
 import pandas as pd
@@ -30,6 +31,22 @@ from imap_processing.idex import idex_constants
 from imap_processing.idex.idex_l1a import get_idex_attrs
 
 logger = logging.getLogger(__name__)
+
+
+class BaselineNoiseTime(IntEnum):
+    """
+    Time range in nanoseconds that mark the baseline noise before a Dust impact.
+
+    Attributes
+    ----------
+    STOP: int
+         Beginning of the baseline noise window.
+    START: int
+        End of the baseline noise window.
+    """
+
+    STOP = -5
+    START = -7
 
 
 def idex_l2a(l1b_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
@@ -74,6 +91,7 @@ def idex_l2a(l1b_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
         data=mass_scales,
         dims=("epoch", "time_high_sr_dim"),
     )
+    snr = calculate_snr(tof_high, hs_time)
     # Find peaks for each event. The peaks represent a TOF of an ion.
     # Peaks_2d is a list of variable-length arrays
     peaks_2d = [find_peaks(tof, prominence=0.01)[0] for tof in tof_high]
@@ -82,6 +100,7 @@ def idex_l2a(l1b_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
     l2a_dataset = l1b_dataset.copy()
 
     l2a_dataset["tof_peak_kappa"] = xr.DataArray(kappa, dims=["epoch"])
+    l2a_dataset["tof_snr"] = xr.DataArray(snr, dims=["epoch"])
     l2a_dataset["mass"] = mass_scales_da
     # Update global attributes
     idex_attrs = get_idex_attrs(data_version)
@@ -215,3 +234,42 @@ def calculate_kappa(mass_scales: np.ndarray, peaks_2d: list) -> NDArray:
         ]
     )
     return kappas
+
+
+def calculate_snr(tof_high: xr.DataArray, hs_time: xr.DataArray) -> NDArray:
+    """
+    Calculate the signal-to-noise ratio.
+
+    Parameters
+    ----------
+    tof_high : xarray.DataArray
+        The time of flight array.
+    hs_time : xarray.DataArray
+        The high sampling time array.
+
+    Returns
+    -------
+    numpy.ndarray
+        Signal-to-noise ratio at each event.
+    """
+    # Find indices where Time (High Sampling) is between -7 and -5 ns (no signal yet)
+    # To determine the baseline noise
+    baseline_noise = np.where(
+        np.logical_and(
+            hs_time >= BaselineNoiseTime.START, hs_time <= BaselineNoiseTime.STOP
+        ),
+        tof_high.data,
+        np.nan,
+    )
+    if np.all(np.isnan(baseline_noise)):
+        logger.warning(
+            "Unable to find baseline noise. "
+            f"There is no signal from {BaselineNoiseTime.START} to "
+            f"{BaselineNoiseTime.STOP} ns. Returning np.nan SNR values"
+        )
+        return np.zeros(len(hs_time))
+    # Get the max signal without baseline noise
+    tof_max = np.max(tof_high.data, axis=1) - np.nanmean(baseline_noise, axis=1)
+    tof_sigma = np.nanstd(baseline_noise, axis=1, ddof=1)
+    # Return snr ratio
+    return tof_max / tof_sigma
