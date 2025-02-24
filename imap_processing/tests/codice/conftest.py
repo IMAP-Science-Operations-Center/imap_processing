@@ -20,21 +20,24 @@ TEST_L1A_FILES = [
     TEST_DATA_PATH / "imap_codice_l1a_lo-nsw-species_20240429_v001.pkts",
 ]
 
-# Placeholder for validation data files
+# ruff: noqa
 VALIDATION_DATA = [
-    TEST_DATA_PATH / "validation_hskp.cdf",
-    TEST_DATA_PATH / "validation_hi-counters-aggregated.cdf",
-    TEST_DATA_PATH / "validation_hi-counters-singles.cdf",
-    TEST_DATA_PATH / "validation_hi-omni.cdf",
-    TEST_DATA_PATH / "validation_hi-sectored.cdf",
-    TEST_DATA_PATH / "validation_hi-pha.cdf",
-    TEST_DATA_PATH / "validation_lo-counters-aggregated.cdf",
-    TEST_DATA_PATH / "validation_lo-counters-singles.cdf",
-    TEST_DATA_PATH / "validation_lo-sw-angular.cdf",
-    TEST_DATA_PATH / "validation_lo-nsw-angular.cdf",
-    TEST_DATA_PATH / "validation_lo-sw-priority.cdf",
-    TEST_DATA_PATH / "validation_lo-nsw-priority.cdf",
-    TEST_DATA_PATH / "validation_lo-sw-species.cdf",
-    TEST_DATA_PATH / "validation_lo-nsw-species.cdf",
-    TEST_DATA_PATH / "validation_lo-pha.cdf",
-]
+    TEST_DATA_PATH / "validation" / "imap_codice_l1a_hi-ialirt_20241110193700_v0.0.0.cdf",
+    TEST_DATA_PATH / "validation" / "imap_codice_l1a_lo-ialirt_20241110193700_v0.0.0.cdf",
+    TEST_DATA_PATH / "validation" / "imap_codice_l1a_hskp_20241110193622_v0.0.0.cdf",
+    TEST_DATA_PATH / "validation" / "imap_codice_l1a_lo-counters-aggregated_20241110193700_v0.0.0.cdf",
+    TEST_DATA_PATH / "validation" / "imap_codice_l1a_lo-counters-singles_20241110193700_v0.0.0.cdf",
+    TEST_DATA_PATH / "validation" / "imap_codice_l1a_lo-sw-priority_20241110193700_v0.0.0.cdf",
+    TEST_DATA_PATH / "validation" / "imap_codice_l1a_lo-nsw-priority_20241110193700_v0.0.0.cdf",
+    TEST_DATA_PATH / "validation" / "imap_codice_l1a_lo-sw-species_20241110193700_v0.0.0.cdf",
+    TEST_DATA_PATH / "validation" / "imap_codice_l1a_lo-nsw-species_20241110193700_v0.0.0.cdf",
+    TEST_DATA_PATH / "validation" / "imap_codice_l1a_lo-sw-angular_20241110193700_v0.0.0.cdf",
+    TEST_DATA_PATH / "validation" / "imap_codice_l1a_lo-nsw-angular_20241110193700_v0.0.0.cdf",
+    TEST_DATA_PATH / "validation" / "imap_codice_l1a_hi-counters-aggregated_20241110193700_v0.0.0.cdf",
+    TEST_DATA_PATH / "validation" / "imap_codice_l1a_hi-counters-singles_20241110193700_v0.0.0.cdf",
+    TEST_DATA_PATH / "validation" / "imap_codice_l1a_hi-omni_20241110193700_v0.0.0.cdf",
+    TEST_DATA_PATH / "validation" / "imap_codice_l1a_hi-sectored_20241110193700_v0.0.0.cdf",
+    TEST_DATA_PATH / "validation" / "imap_codice_l1a_hi-priority_20241110193700_v0.0.0.cdf",
+    TEST_DATA_PATH / "validation" / "imap_codice_l1a_lo-pha_20241110193700_v0.0.0.cdf",
+    TEST_DATA_PATH / "validation" / "imap_codice_l1a_hi-pha_20241110193700_v0.0.0.cdf",
+]  # fmt: skip

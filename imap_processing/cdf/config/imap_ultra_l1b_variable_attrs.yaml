@@ -9,6 +9,13 @@ default_attrs: &default
   VAR_TYPE: data
   UNITS: " "
 
+component:
+  CATDESC: Velocity components (vx, vy, vz)
+  FIELDNAM: component
+  LABLAXIS: component
+  FORMAT: A3
+  VAR_TYPE: metadata
+
 default_uint8_attrs: &default_uint8
   <<: *default
   FILLVAL: 255
@@ -92,6 +99,13 @@ x_coin:
   LABLAXIS: x coincidence position
   UNITS: mm / 100
 
+event_times:
+  <<: *default_float32
+  CATDESC: time of event as calculated using aux and de l1a packets
+  FIELDNAM: event_times
+  LABLAXIS: event times
+  UNITS: seconds
+
 tof_start_stop:
   <<: *default_float32
   CATDESC: Particle time of flight from start to stop
@@ -134,30 +148,31 @@ start_type:
   LABLAXIS: start type
   UNITS: " "
 
-vx_ultra:
+direct_event_velocity:
   <<: *default_float32
-  CATDESC: Normalized component of the velocity vector in x direction in the instrument frame.
-  FIELDNAM: vx_ultra
-  LABLAXIS: vx ultra
-  UNITS: " "
+  CATDESC: Direct event velocity vector in x, y, and z directions in the instrument frame.
+  DEPEND_1: component
+  FIELDNAM: v_ultra
+  LABLAXIS: v ultra
+  UNITS: "km/s"
 
-vy_ultra:
+velocity_magnitude:
   <<: *default_float32
-  CATDESC: Normalized component of the velocity vector in y direction in the instrument frame.
-  FIELDNAM: vy_ultra
-  LABLAXIS: vy ultra
-  UNITS: " "
-
-vz_ultra:
-  <<: *default_float32
-  CATDESC: Normalized component of the velocity vector in z direction in the instrument frame.
-  FIELDNAM: vz_ultra
-  LABLAXIS: vz ultra
-  UNITS: " "
+  CATDESC: Magnitude of the particle velocity.
+  FIELDNAM: vmag_ultra
+  LABLAXIS: vmag ultra
+  UNITS: "km/s"
 
 energy:
   <<: *default_float32
   CATDESC: Energy measured using the pulse height from the stop anode (DN) or Energy measured using the SSD (keV) depending on eventtype.
+  FIELDNAM: energy
+  LABLAXIS: energy
+  UNITS: keV
+
+tof_energy:
+  <<: *default_float32
+  CATDESC: Energy measured using kinetic energy equation.
   FIELDNAM: energy
   LABLAXIS: energy
   UNITS: keV
@@ -186,6 +201,20 @@ path_length:
   LABLAXIS: path_length
   UNITS: mm / 100
 
+azimuth:
+  <<: *default_float32
+  CATDESC: Azimuth.
+  FIELDNAM: azimuth
+  LABLAXIS: azimuth
+  UNITS: radians
+
+elevation:
+  <<: *default_float32
+  CATDESC: Elevation.
+  FIELDNAM: elevation
+  LABLAXIS: elevation
+  UNITS: radians
+
 event_efficiency:
   <<: *default_float32
   CATDESC: Estimated event efficiency for this path through the instrument.
@@ -193,67 +222,28 @@ event_efficiency:
   LABLAXIS: event efficiency
   UNITS: " "
 
-vx_sc:
+velocity_sc:
   <<: *default_float32
-  CATDESC: x-component of the velocity vector of the ena in the spacecraft frame.
-  FIELDNAM: vx_sc
-  LABLAXIS: vx sc
+  CATDESC: x,y,z-components of the velocity vector of the ena in the spacecraft frame.
+  DEPEND_1: component
+  FIELDNAM: v_sc
+  LABLAXIS: v sc
   UNITS: " "
 
-vy_sc:
+velocity_dps_sc:
   <<: *default_float32
-  CATDESC: y-component of the velocity vector of the ena in the spacecraft frame.
-  FIELDNAM: vy_sc
-  LABLAXIS: vy sc
+  CATDESC: x,y,z-components of the velocity vector of the ena in the DPS frame at rest WRT spacecraft.
+  DEPEND_1: component
+  FIELDNAM: v_dps_sc
+  LABLAXIS: v dps sc
   UNITS: " "
 
-vz_sc:
+velocity_dps_helio:
   <<: *default_float32
-  CATDESC: z-component of the velocity vector of the ena in the spacecraft frame.
-  FIELDNAM: vz_sc
-  LABLAXIS: vz sc
-  UNITS: " "
-
-vx_dps_sc:
-  <<: *default_float32
-  CATDESC: x-component of the velocity vector of the ena in the DPS frame at rest WRT spacecraft.
-  FIELDNAM: vx_dps_sc
-  LABLAXIS: vx dps sc
-  UNITS: " "
-
-vy_dps_sc:
-  <<: *default_float32
-  CATDESC: y-component of the velocity vector of the ena in the DPS frame at rest WRT spacecraft.
-  FIELDNAM: vy_dps_sc
-  LABLAXIS: vy dps sc
-  UNITS: " "
-
-vz_dps_sc:
-  <<: *default_float32
-  CATDESC: z-component of the velocity vector of the ena in the DPS frame at rest WRT spacecraft.
-  FIELDNAM: vz_dps_sc
-  LABLAXIS: vz dps sc
-  UNITS: " "
-
-vx_dps_helio:
-  <<: *default_float32
-  CATDESC: x-component of the velocity vector of the ena in the DPS frame at rest WRT heliosphere.
-  FIELDNAM: vx_dps_helio
-  LABLAXIS: vx dps helio
-  UNITS: " "
-
-vy_dps_helio:
-  <<: *default_float32
-  CATDESC: y-component of the velocity vector of the ena in the DPS frame at rest WRT heliosphere.
-  FIELDNAM: vy_dps_helio
-  LABLAXIS: vy dps helio
-  UNITS: " "
-
-vz_dps_helio:
-  <<: *default_float32
-  CATDESC: z-component of the velocity vector of the ena in the DPS frame at rest WRT heliosphere.
-  FIELDNAM: vz_dps_helio
-  LABLAXIS: vz dps helio
+  CATDESC: x,y,z-components of the velocity vector of the ena in the DPS frame at rest WRT heliosphere.
+  DEPEND_1: component
+  FIELDNAM: v_dps_helio
+  LABLAXIS: v dps helio
   UNITS: " "
 
 de_event_met:
@@ -266,14 +256,6 @@ de_event_met:
   VAR_TYPE: support_data
   SCALE_TYP: linear
 
-spin_number:
-  <<: *default
-  CATDESC: Spin number from Universal Spin Table.
-  FIELDNAM: spin_number
-  LABLAXIS: spin_number
-  # TODO: come back to format
-  UNITS: " "
-
 spin_start_time:
   <<: *default
   CATDESC: Spin start time from Universal Spin Table.
@@ -282,13 +264,19 @@ spin_start_time:
   # TODO: come back to format
   UNITS: s
 
-avg_spin_period:
+spin_period:
   <<: *default
-  CATDESC: Average spin period from Universal Spin Table.
-  FIELDNAM: avg_spin_period
-  LABLAXIS: avg_spin_period
-  # TODO: come back to format
+  CATDESC: Spin period from Universal Spin Table.
+  FIELDNAM: spin_period
+  LABLAXIS: spin_period
   UNITS: s
+
+spin_rate:
+  <<: *default
+  CATDESC: Spin rate from Universal Spin Table.
+  FIELDNAM: spin_rate
+  LABLAXIS: spin_rate
+  UNITS: rpm
 
 rate_start_pulses:
   <<: *default
@@ -330,16 +318,36 @@ rate_rejected_events:
   # TODO: come back to format
   UNITS: 1/s
 
-quality_hk:
-  <<: *default
-  CATDESC: Spin filter derived from Ultra housekeeping. Bitwise flagging used to filter the spin.
-  FIELDNAM: quality_hk
-  LABLAXIS: quality hk
-  # TODO: come back to format
+# Extendedspin attributes
+ena_rates:
+  <<: *default_float32
+  CATDESC: Rates calculated from de packet.
+  FIELDNAM: ena_rates
+  LABLAXIS: ena_rates
+  DEPEND_0: spin_number
+  DEPEND_1: energy_bin_geometric_mean
+  UNITS: " "
+
+ena_rates_threshold:
+  <<: *default_float32
+  CATDESC: Rates threshold used for flagging data.
+  FIELDNAM: ena_rates_threshold
+  LABLAXIS: ena_rates_threshold
+  DEPEND_0: spin_number
+  DEPEND_1: energy_bin_geometric_mean
+  UNITS: " "
+
+quality_ena_rates:
+  <<: *default_uint16
+  CATDESC: Spin filter derived from Ultra ena rates. Bitwise flagging used to filter the spin.
+  FIELDNAM: quality_ena_rates
+  LABLAXIS: quality_ena_rates
+  DEPEND_0: spin_number
+  DEPEND_1: energy_bin_geometric_mean
   UNITS: " "
 
 quality_attitude:
-  <<: *default
+  <<: *default_uint16
   CATDESC: Spin filter derived from IMAP attitude. Bitwise flagging used to filter the spin.
   FIELDNAM: quality_attitude
   LABLAXIS: quality attitude
@@ -347,7 +355,7 @@ quality_attitude:
   UNITS: " "
 
 quality_instruments:
-  <<: *default
+  <<: *default_uint16
   CATDESC: Spin filter derived from instruments other than Ultra. Bitwise flagging used to filter the spin.
   FIELDNAM: quality_instruments
   LABLAXIS: quality instruments

@@ -1406,12 +1406,12 @@ files = [
 
 [[package]]
 name = "sammi-cdf"
-version = "0.1.2"
+version = "1.0.0"
 description = "A Python package to support metadata attriubte management for Space Weather data processing pipelines."
 optional = false
 python-versions = ">=3.9"
 files = [
-    {file = "sammi_cdf-0.1.2.tar.gz", hash = "sha256:bbf963ff573fe7180b54a67bce5f43386ba49ed2af5d733589e2e5649a1b2f15"},
+    {file = "sammi_cdf-1.0.0.tar.gz", hash = "sha256:dec77b2d2ae45dae32540f7db7b74b4444d22e73ce3e0e346342f36360f02f89"},
 ]
 
 [package.dependencies]
@@ -1421,7 +1421,7 @@ pyyaml = ">=5.3.1"
 dev = ["black (==24.1.1)", "coverage (>=5.0.3)", "coverage[toml] (==7.4.1)", "flake8 (==7.0.0)", "pytest (==8.0.0)", "pytest-astropy (==0.11.0)", "pytest-cov (==4.1.0)"]
 docs = ["sphinx (==7.2.6)", "sphinx-automodapi (==0.16.0)", "sphinx-copybutton (==0.5.2)"]
 style = ["black (==24.1.1)", "flake8 (==7.0.0)", "rstcheck (==6.2.0)"]
-test = ["coverage[toml] (==7.4.1)", "pytest (==8.0.0)", "pytest-astropy (==0.11.0)", "pytest-cov (==4.1.0)"]
+test = ["coverage[toml] (==7.4.1)", "pytest (==8.0.0)", "pytest-astropy (==0.11.0)", "pytest-cov (==4.1.0)", "requests-mock (==1.12.1)"]
 
 [[package]]
 name = "scipy"

@@ -1,5 +1,5 @@
 [build-system]
-requires = ["poetry-core>=1.0.0", "poetry-dynamic-versioning>=1.0.0,<2.0.0"]
+requires = ["poetry-core>=1.0.0,<2.0", "poetry-dynamic-versioning>=1.0.0,<2.0.0"]
 build-backend = "poetry_dynamic_versioning.backend"
 
 [tool.poetry]
@@ -39,7 +39,7 @@ spiceypy = ">=6.0.0"
 xarray = '>=2023.0.0'
 pyyaml = "^6.0.1"
 numpy = "<=3"
-sammi-cdf = "^0.1.2"
+sammi-cdf = "^1.0"
 
 # Optional dependencies
 numpydoc = {version="^1.5.0", optional=true}
@@ -77,6 +77,7 @@ filterwarnings = [
 ]
 markers = [
     "external_kernel: marks tests as requiring external SPICE kernels (deselect with '-m \"not external_kernel\"')",
+    "external_test_data: marks tests as requiring external test data (deselect with '-m \"not external_test_data\"')",
     "use_test_metakernel: Mark test to use a test metakernel"
 ]
 

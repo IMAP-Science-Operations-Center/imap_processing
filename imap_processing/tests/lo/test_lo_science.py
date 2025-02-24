@@ -8,6 +8,7 @@ from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.lo.l0.lo_apid import LoAPID
 from imap_processing.lo.l0.lo_science import (
     combine_segmented_packets,
+    organize_spin_data,
     parse_de_bin,
     parse_events,
     parse_fixed_fields,
@@ -112,6 +113,38 @@ def segmented_pkts_fake_data():
         ),
         coords=dict(epoch=(["epoch"], np.array([0, 0, 0, 0, 10, 20, 20, 20, 30, 30]))),
     )
+    return dataset
+
+
+@pytest.fixture()
+def fake_spin_data():
+    dataset = xr.Dataset(
+        data_vars=dict(
+            num_completed=(["epoch"], np.array([0, 0])),
+            acq_start_sec=(["epoch"], np.array([1000000, 2000000])),
+            acq_start_subsec=(["epoch"], np.array([1000000, 2000000])),
+            acq_end_sec=(["epoch"], np.array([2000000, 3000000])),
+            acq_end_subsec=(["epoch"], np.array([2000000, 3000000])),
+        )
+    )
+    spin_fields = [
+        "start_sec_spin",
+        "start_subsec_spin",
+        "esa_neg_dac_spin",
+        "esa_pos_dac_spin",
+        "valid_period_spin",
+        "valid_phase_spin",
+        "period_source_spin",
+    ]
+
+    for spin_field in spin_fields:
+        packet_fields = [f"{spin_field}_{i}" for i in range(1, 29)]
+        fake_array_val = 0
+        for packet_field in packet_fields:
+            dataset[packet_field] = xr.DataArray(
+                np.array([fake_array_val, fake_array_val + 28]), dims="epoch"
+            )
+            fake_array_val += 1
     return dataset
 
 
@@ -266,3 +299,55 @@ def test_validate_parse_events(sample_data, attr_mgr):
 
     assert dataset["de_count"].values == 1998
     assert dataset["passes"].values == 8
+
+
+def test_organize_spin_data(fake_spin_data, attr_mgr):
+    # Arrange
+    data_by_epoch_spin = np.arange(0, 56).reshape(2, 28)
+    expected_dataset = xr.Dataset(
+        data_vars=dict(
+            num_completed=(["epoch"], np.array([0, 0])),
+            acq_start_sec=(["epoch"], np.array([1000000, 2000000])),
+            acq_start_subsec=(["epoch"], np.array([1000000, 2000000])),
+            acq_end_sec=(["epoch"], np.array([2000000, 3000000])),
+            acq_end_subsec=(["epoch"], np.array([2000000, 3000000])),
+            start_sec_spin=(
+                ["epoch", "spin"],
+                np.array(data_by_epoch_spin),
+            ),
+            start_subsec_spin=(
+                ["epoch", "spin"],
+                np.array(data_by_epoch_spin),
+            ),
+            esa_neg_dac_spin=(
+                ["epoch", "spin"],
+                np.array(data_by_epoch_spin),
+            ),
+            esa_pos_dac_spin=(
+                ["epoch", "spin"],
+                np.array(data_by_epoch_spin),
+            ),
+            valid_period_spin=(
+                ["epoch", "spin"],
+                np.array(data_by_epoch_spin),
+            ),
+            valid_phase_spin=(
+                ["epoch", "spin"],
+                np.array(data_by_epoch_spin),
+            ),
+            period_source_spin=(
+                ["epoch", "spin"],
+                np.array(data_by_epoch_spin),
+            ),
+        ),
+        coords=dict(
+            # acq_start + 1e6 * acq_start_subsec converted to J2000 epoch
+            epoch=(["epoch"], np.array([316576067184000000, 317576068184000000]))
+        ),
+    )
+
+    # Act
+    organized_data = organize_spin_data(fake_spin_data, attr_mgr)
+
+    # Assert
+    xr.testing.assert_equal(organized_data, expected_dataset)

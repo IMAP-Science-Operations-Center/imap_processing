@@ -47,7 +47,7 @@ COUNTS_DATA_STRUCTURE = {
     "spare": HITPacking(24, 24, (1,)),
     # ------------------------------------------
     # erates - contains livetime counters
-    "livetime": HITPacking(16, 16, (1,)),  # livetime counter
+    "livetime_counter": HITPacking(16, 16, (1,)),  # livetime counter
     "num_trig": HITPacking(16, 16, (1,)),  # number of triggers
     "num_reject": HITPacking(16, 16, (1,)),  # number of rejected events
     "num_acc_w_pha": HITPacking(
@@ -92,7 +92,7 @@ COUNTS_DATA_STRUCTURE = {
     # -------------------------------------------
     # other count rates
     "coinrates": HITPacking(16, 416, (26,)),  # coincidence rates
-    "bufrates": HITPacking(16, 512, (32,)),  # priority buffer rates
+    "pbufrates": HITPacking(16, 512, (32,)),  # priority buffer rates
     "l2fgrates": HITPacking(16, 2112, (132,)),  # range 2 foreground rates
     "l2bgrates": HITPacking(16, 192, (12,)),  # range 2 background rates
     "l3fgrates": HITPacking(16, 2672, (167,)),  # range 3 foreground rates

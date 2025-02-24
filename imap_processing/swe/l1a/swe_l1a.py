@@ -42,7 +42,12 @@ def swe_l1a(packet_file: str, data_version: str) -> xr.Dataset:
         packet_file, xtce_document, use_derived_value=False
     )
 
+    if SWEAPID.SWE_SCIENCE not in datasets_by_apid:
+        logger.info("No science data found in packet file.")
+        return []
     # TODO: figure out how to handle non-science data
-    return swe_science(
-        l0_dataset=datasets_by_apid[SWEAPID.SWE_SCIENCE], data_version=data_version
-    )
+    return [
+        swe_science(
+            l0_dataset=datasets_by_apid[SWEAPID.SWE_SCIENCE], data_version=data_version
+        )
+    ]

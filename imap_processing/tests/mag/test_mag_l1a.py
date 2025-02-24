@@ -12,7 +12,7 @@ from imap_processing.mag.l1a.mag_l1a_data import (
     MagL1aPacketProperties,
     TimeTuple,
 )
-from imap_processing.spice.time import met_to_j2000ns
+from imap_processing.spice.time import met_to_ttj2000ns
 
 
 @pytest.fixture()
@@ -303,7 +303,7 @@ def test_different_vector_rates(
     uncompressed_vector_bytearray, expected_vectors, raw_compressed_vectors
 ):
     current_directory = Path(__file__).parent
-    test_file = current_directory / "mag_l1_test_data.pkts"
+    test_file = current_directory / "validation" / "mag_l1_test_data.pkts"
     # Test file contains only normal packets
     l0 = decom_packets(test_file)["norm"][0]
 
@@ -319,7 +319,6 @@ def test_different_vector_rates(
     )
     l1 = process_packets([l0])
     expected_day = np.datetime64("2023-11-30")
-
     assert len(l1["magi"][expected_day].vectors) == 16
     assert len(l1["mago"][expected_day].vectors) == 32
 
@@ -402,7 +401,7 @@ def test_padding_uncompressed(expected_vectors):
 
 def test_compare_validation_data():
     current_directory = Path(__file__).parent
-    test_file = current_directory / "mag_l1_test_data.pkts"
+    test_file = current_directory / "validation" / "mag_l1_test_data.pkts"
     # Test file contains only normal packets
     l0 = decom_packets(test_file)
     l1 = process_packets(l0["norm"])
@@ -414,7 +413,9 @@ def test_compare_validation_data():
     assert len(l1_mago.vectors) == 96
     assert len(l1_magi.vectors) == 96
 
-    validation_data = pd.read_csv(current_directory / "mag_l1a_test_output.csv")
+    validation_data = pd.read_csv(
+        current_directory / "validation" / "mag_l1a_test_output.csv"
+    )
 
     # Validation data does not have differing timestamps
     for index in validation_data.index:
@@ -482,6 +483,7 @@ def test_compressed_vector_data(expected_vectors, raw_compressed_vectors):
     expected_range_secondary = [3, 0, 0, 0, 0, 0, 0, 0, 1, 1, 2, 2, 3, 3, 3, 1]
     # 16 bit width with range section
     headers = "01000010"
+    end_padding = "0000"
     input_data = np.array(
         [
             int(i)
@@ -491,6 +493,7 @@ def test_compressed_vector_data(expected_vectors, raw_compressed_vectors):
             + padding
             + range_primary
             + range_secondary
+            + end_padding
         ],
         dtype=np.uint8,
     )
@@ -509,7 +512,33 @@ def test_compressed_vector_data(expected_vectors, raw_compressed_vectors):
 
     assert primary_with_range.shape[0] == 16
     assert secondary_with_range.shape[0] == 16
+    assert np.array_equal(primary_with_range, primary_expected)
+    assert np.array_equal(secondary_with_range, secondary_expected)
 
+    # testing the case where a spare byte is included at the end.
+    end_padding = "000000000000"
+
+    input_data = np.array(
+        [
+            int(i)
+            for i in headers
+            + primary_compressed
+            + secondary_compressed
+            + padding
+            + range_primary
+            + range_secondary
+            + end_padding
+        ],
+        dtype=np.uint8,
+    )
+
+    input_data = np.packbits(input_data)
+    (primary_with_range, secondary_with_range) = MagL1a.process_compressed_vectors(
+        input_data, 16, 16
+    )
+
+    assert primary_with_range.shape[0] == 16
+    assert secondary_with_range.shape[0] == 16
     assert np.array_equal(primary_with_range, primary_expected)
     assert np.array_equal(secondary_with_range, secondary_expected)
 
@@ -775,7 +804,7 @@ def test_calculate_vector_time():
 
     test_data = MagL1a.calculate_vector_time(test_vectors, test_vecsec, start_time)
 
-    converted_start_time_ns = met_to_j2000ns(start_time.to_seconds())
+    converted_start_time_ns = met_to_ttj2000ns(start_time.to_seconds())
 
     skips_ns = np.timedelta64(int(1 / test_vecsec * 1e9), "ns")
     expected_data = np.array(
@@ -852,7 +881,7 @@ def test_mag_l1a_data():
 
 def test_mag_l1a():
     current_directory = Path(__file__).parent
-    test_file = current_directory / "mag_l1_test_data.pkts"
+    test_file = current_directory / "validation" / "mag_l1_test_data.pkts"
 
     output_data = mag_l1a(test_file, "v001")
 

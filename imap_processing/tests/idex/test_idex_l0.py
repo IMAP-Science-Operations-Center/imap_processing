@@ -14,7 +14,7 @@ def test_idex_decom_length(decom_test_data: xr.Dataset):
     decom_test_data : xarray.Dataset
         The dataset to test with
     """
-    assert len(decom_test_data) == 106
+    assert len(decom_test_data) == 110
 
 
 def test_idex_decom_event_num(decom_test_data: xr.Dataset):
@@ -26,7 +26,8 @@ def test_idex_decom_event_num(decom_test_data: xr.Dataset):
         The dataset to test with
     """
     for var in decom_test_data:
-        assert len(decom_test_data[var]) == 14
+        if "epoch" in decom_test_data[var].dims:
+            assert len(decom_test_data[var]) == 14
 
 
 def test_idex_tof_high_data(decom_test_data: xr.Dataset):
@@ -40,6 +41,8 @@ def test_idex_tof_high_data(decom_test_data: xr.Dataset):
         The dataset to test with
     """
 
-    with open(f"{imap_module_directory}/tests/idex/impact_14_tof_high_data.txt") as f:
+    with open(
+        f"{imap_module_directory}/tests/idex/test_data/impact_14_tof_high_data.txt"
+    ) as f:
         data = np.array([int(line.rstrip("\n")) for line in f])
     assert (decom_test_data["TOF_High"][13].data == data).all()

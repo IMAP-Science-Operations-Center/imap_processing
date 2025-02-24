@@ -14,10 +14,10 @@ import numpy as np
 import pandas as pd
 import pytest
 import requests
-import spiceypy as spice
+import spiceypy
 
 from imap_processing import imap_module_directory
-from imap_processing.spice.time import met_to_j2000ns
+from imap_processing.spice.time import met_to_ttj2000ns
 
 
 @pytest.fixture(autouse=True)
@@ -42,19 +42,20 @@ def _autoclear_spice():
     prevent the kernel pool from interfering with future tests. Option autouse
     ensures this is run after every test."""
     yield
-    spice.kclear()
+    spiceypy.kclear()
 
 
 @pytest.fixture(scope="session")
 def _download_external_kernels(spice_test_data_path):
-    """This fixture downloads the de440s.bsp and pck00011.tpc kernels into the
-    tests/spice/test_data directory if they do not already exist there. The
-    fixture is not intended to be used directly. It is automatically added to
-    tests marked with "external_kernel" in the hook below."""
+    """This fixture downloads externally-located kernels into the tests/spice/test_data
+    directory if they do not already exist there. The fixture is not intended to be
+    used directly. It is automatically added to tests marked with "external_kernel"
+    in the hook below."""
     logger = logging.getLogger(__name__)
     kernel_urls = [
         "https://naif.jpl.nasa.gov/pub/naif/generic_kernels/spk/planets/de440s.bsp",
         "https://naif.jpl.nasa.gov/pub/naif/generic_kernels/pck/pck00011.tpc",
+        "https://naif.jpl.nasa.gov/pub/naif/generic_kernels/pck/earth_1962_240827_2124_combined.bpc",
     ]
 
     for kernel_url in kernel_urls:
@@ -90,6 +91,56 @@ def _download_external_kernels(spice_test_data_path):
                     raise
 
 
+@pytest.fixture(scope="session")
+def _download_test_data(test_data_paths):
+    """This fixture downloads externally-located test data files into a specific
+    location. The list of files and their storage locations are specified in
+    the `test_data_paths` parameter, which is a list of tuples; the zeroth
+    element being the source of the test file in the AWS S3 bucket, and the
+    first element being the location in which to store the downloaded file."""
+
+    logger = logging.getLogger(__name__)
+
+    for test_data_path in test_data_paths:
+        source = test_data_path[0]
+        destination = test_data_path[1]
+
+        # Download the test data if necessary and write it to the appropriate
+        # directory
+        if not destination.exists():
+            response = requests.get(source, timeout=60)
+            if response.status_code == 200:
+                with open(destination, "wb") as file:
+                    file.write(response.content)
+                logger.info(f"Downloaded file: {source}")
+            else:
+                logger.error(f"Failed to download file: {response.status_code}")
+        else:
+            logger.info(f"File already exists: {destination}")
+
+
+@pytest.fixture(scope="session")
+def test_data_paths():
+    """Defines a list of test data files to download from the AWS S3 bucket
+    and the corresponding location in which to store the downloaded file"""
+    test_data_path_list = [
+        (
+            "https://api.dev.imap-mission.com/download/test_data/imap_codice_l0_raw_20241110_v001.pkts",
+            imap_module_directory
+            / "tests"
+            / "codice"
+            / "data"
+            / "imap_codice_l0_raw_20241110_v001.pkts",
+        ),
+        (
+            "https://api.dev.imap-mission.com/download/test_data/imap_hi_l1a_45sensor-de_20250415_v999.cdf",
+            imap_module_directory
+            / "tests/hi/data/l1/imap_hi_l1a_45sensor-de_20250415_v999.cdf",
+        ),
+    ]
+    return test_data_path_list
+
+
 def pytest_collection_modifyitems(items):
     """
     The use of this hook allows modification of test `Items` after tests have
@@ -100,6 +151,7 @@ def pytest_collection_modifyitems(items):
     | pytest mark         | fixture added              |
     +=====================+============================+
     | external_kernel     | _download_external_kernels |
+    | external_test_data  | _download_test_data        |
     | use_test_metakernel | use_test_metakernel        |
     +---------------------+----------------------------+
 
@@ -109,11 +161,16 @@ def pytest_collection_modifyitems(items):
     pytest hook:
     https://docs.pytest.org/en/stable/reference/reference.html#pytest.hookspec.pytest_collection_modifyitems
     """
+    markers_to_fixtures = {
+        "external_kernel": "_download_external_kernels",
+        "external_test_data": "_download_test_data",
+        "use_test_metakernel": "use_test_metakernel",
+    }
+
     for item in items:
-        if item.get_closest_marker("external_kernel") is not None:
-            item.fixturenames.append("_download_external_kernels")
-        if item.get_closest_marker("use_test_metakernel") is not None:
-            item.fixturenames.append("use_test_metakernel")
+        for marker, fixture in markers_to_fixtures.items():
+            if item.get_closest_marker(marker) is not None:
+                item.fixturenames.append(fixture)
 
 
 @pytest.fixture(scope="session")
@@ -124,22 +181,22 @@ def spice_test_data_path(imap_tests_path):
 @pytest.fixture()
 def furnish_time_kernels(spice_test_data_path):
     """Furnishes (temporarily) the testing LSK and SCLK"""
-    spice.kclear()
+    spiceypy.kclear()
     test_lsk = spice_test_data_path / "naif0012.tls"
     test_sclk = spice_test_data_path / "imap_sclk_0000.tsc"
-    spice.furnsh(str(test_lsk))
-    spice.furnsh(str(test_sclk))
+    spiceypy.furnsh(str(test_lsk))
+    spiceypy.furnsh(str(test_sclk))
     yield test_lsk, test_sclk
-    spice.kclear()
+    spiceypy.kclear()
 
 
 @pytest.fixture()
 def furnish_sclk(spice_test_data_path):
     """Furnishes (temporarily) the SCLK for JPSS stored in the package data directory"""
     test_sclk = spice_test_data_path / "imap_sclk_0000.tsc"
-    spice.furnsh(str(test_sclk))
+    spiceypy.furnsh(str(test_sclk))
     yield test_sclk
-    spice.kclear()
+    spiceypy.kclear()
 
 
 @pytest.fixture()
@@ -148,7 +205,9 @@ def furnish_kernels(spice_test_data_path):
 
     @contextmanager
     def furnish_kernels(kernels: list[Path]):
-        with spice.KernelPool([str(spice_test_data_path / k) for k in kernels]) as pool:
+        with spiceypy.KernelPool(
+            [str(spice_test_data_path / k) for k in kernels]
+        ) as pool:
             yield pool
 
     return furnish_kernels
@@ -227,7 +286,7 @@ def session_test_metakernel(monkeypatch_session, tmpdir_factory, spice_test_data
     -----
     - This fixture needs to `scope=session` so that the SPICE_METAKERNEL
     environment variable is available for other fixtures that require time
-    conversions using spice.
+    conversions using spiceypy.
     - No furnishing of kernels occur as part of this fixture. This allows other
     fixtures with lesser scope or individual tests to override the environment
     variable as needed. Use the `metakernel_path_not_set` fixture in tests that
@@ -239,7 +298,7 @@ def session_test_metakernel(monkeypatch_session, tmpdir_factory, spice_test_data
     make_metakernel_from_kernels(metakernel_path, kernels_to_load)
     monkeypatch_session.setenv("SPICE_METAKERNEL", str(metakernel_path))
     yield str(metakernel_path)
-    spice.kclear()
+    spiceypy.kclear()
 
 
 @pytest.fixture()
@@ -289,7 +348,7 @@ def use_test_metakernel(
         make_metakernel_from_kernels(metakernel_path, kernels_to_load)
         monkeypatch.setenv("SPICE_METAKERNEL", str(metakernel_path))
         yield str(metakernel_path)
-    spice.kclear()
+    spiceypy.kclear()
 
 
 @pytest.fixture()
@@ -404,7 +463,7 @@ def generate_spin_data():
         )
 
         # Convert spin_start_sec to datetime to set repointing times flags
-        spin_start_dates = met_to_j2000ns(spin_start_sec + spin_start_subsec / 1000)
+        spin_start_dates = met_to_ttj2000ns(spin_start_sec + spin_start_subsec / 1000)
         spin_start_dates = cdflib.cdfepoch.to_datetime(spin_start_dates)
 
         # Convert DatetimeIndex to Series for using .dt accessor

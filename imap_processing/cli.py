@@ -38,6 +38,7 @@ from imap_processing.cdf.utils import load_cdf, write_cdf
 from imap_processing.codice import codice_l1a, codice_l1b
 from imap_processing.glows.l1a.glows_l1a import glows_l1a
 from imap_processing.glows.l1b.glows_l1b import glows_l1b
+from imap_processing.glows.l2.glows_l2 import glows_l2
 from imap_processing.hi.l1a import hi_l1a
 from imap_processing.hi.l1b import hi_l1b
 from imap_processing.hi.l1c import hi_l1c
@@ -226,6 +227,8 @@ class ProcessInstrument(ABC):
     ----------
     data_level : str
         The data level to process (e.g. ``l1a``).
+    data_descriptor : str
+        The descriptor of the data to process (e.g. ``sci``).
     dependency_str : str
         A string representation of the dependencies for the instrument in the
         format: "[{
@@ -248,6 +251,7 @@ class ProcessInstrument(ABC):
     def __init__(
         self,
         data_level: str,
+        data_descriptor: str,
         dependency_str: str,
         start_date: str,
         end_date: str,
@@ -255,6 +259,7 @@ class ProcessInstrument(ABC):
         upload_to_sdc: bool,
     ) -> None:
         self.data_level = data_level
+        self.descriptor = data_descriptor
 
         # Convert string into a dictionary
         self.dependencies = loads(dependency_str.replace("'", '"'))
@@ -283,8 +288,8 @@ class ProcessInstrument(ABC):
                 # TODO: Validate dep dict
                 # TODO: determine what dependency information is optional
                 return_query = imap_data_access.query(
-                    start_date=self.start_date,
-                    end_date=self.end_date,
+                    start_date=dependency["start_date"],
+                    end_date=dependency.get("end_date", None),
                     instrument=dependency["instrument"],
                     data_level=dependency["data_level"],
                     version=dependency["version"],
@@ -395,7 +400,13 @@ class ProcessInstrument(ABC):
         datasets : list[xarray.Dataset]
             A list of datasets (products) produced by do_processing method.
         """
+        if len(datasets) == 0:
+            logger.info("No products to write to CDF file.")
+            return
+
         logger.info("Writing products to local storage")
+        logger.info("Parent files: %s", self._dependency_list)
+
         products = [
             write_cdf(dataset, parent_files=self._dependency_list)
             for dataset in datasets
@@ -482,6 +493,15 @@ class Glows(ProcessInstrument):
             input_dataset = load_cdf(dependencies[0])
             datasets = [glows_l1b(input_dataset, self.version)]
 
+        if self.data_level == "l2":
+            if len(dependencies) > 1:
+                raise ValueError(
+                    f"Unexpected dependencies found for GLOWS L2:"
+                    f"{dependencies}. Expected only one input dependency."
+                )
+            input_dataset = load_cdf(dependencies[0])
+            datasets = glows_l2(input_dataset, self.version)
+
         return datasets
 
 
@@ -517,7 +537,14 @@ class Hi(ProcessInstrument):
             dependencies = [load_cdf(dependency) for dependency in dependencies]
             datasets = [hi_l1b.hi_l1b(dependencies[0], self.version)]
         elif self.data_level == "l1c":
-            dependencies = [load_cdf(dependency) for dependency in dependencies]
+            # TODO: Add PSET calibration product config file dependency and remove
+            #    below injected dependency
+            dependencies.append(
+                Path(__file__).parent
+                / "tests/hi/test_data/l1"
+                / "imap_his_pset-calibration-prod-config_20240101_v001.csv"
+            )
+            dependencies[0] = load_cdf(dependencies[0])
             datasets = [hi_l1c.hi_l1c(dependencies, self.version)]
         else:
             raise NotImplementedError(
@@ -734,13 +761,20 @@ class Swapi(ProcessInstrument):
         datasets: list[xr.Dataset] = []
 
         if self.data_level == "l1":
-            if len(dependencies) > 1:
+            # For science, we expect l0 raw file and L1 housekeeping file
+            if self.descriptor == "sci" and len(dependencies) != 2:
                 raise ValueError(
-                    f"Unexpected dependencies found for SWAPI L1:"
+                    f"Unexpected dependencies found for SWAPI L1 science:"
+                    f"{dependencies}. Expected only two dependencies."
+                )
+            # For housekeeping, we expect only L0 raw file
+            if self.descriptor == "hk" and len(dependencies) != 1:
+                raise ValueError(
+                    f"Unexpected dependencies found for SWAPI L1 housekeeping:"
                     f"{dependencies}. Expected only one dependency."
                 )
-            # process data
-            datasets = [swapi_l1(dependencies[0], self.version)]
+            # process science or housekeeping data
+            datasets = swapi_l1(dependencies, self.version)
         elif self.data_level == "l2":
             if len(dependencies) > 1:
                 raise ValueError(
@@ -780,7 +814,7 @@ class Swe(ProcessInstrument):
                     f"Unexpected dependencies found for SWE L1A:"
                     f"{dependencies}. Expected only one dependency."
                 )
-            datasets = [swe_l1a(str(dependencies[0]), data_version=self.version)]
+            datasets = swe_l1a(str(dependencies[0]), data_version=self.version)
             # Right now, we only process science data. Therefore,
             # we expect only one dataset to be returned.
 
@@ -792,7 +826,8 @@ class Swe(ProcessInstrument):
                 )
             # read CDF file
             l1a_dataset = load_cdf(dependencies[0])
-            datasets = [swe_l1b(l1a_dataset, data_version=self.version)]
+            # TODO: read lookup table and in-flight calibration data here.
+            datasets = swe_l1b(l1a_dataset, data_version=self.version)
         else:
             print("Did not recognize data level. No processing done.")
 
@@ -861,6 +896,7 @@ def main() -> None:
     cls = getattr(sys.modules[__name__], args.instrument.capitalize())
     instrument = cls(
         args.data_level,
+        args.descriptor,
         args.dependency,
         args.start_date,
         args.end_date,

@@ -46,4 +46,5 @@ def swe_l1b(l1a_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
     data = swe_l1b_science(eu_data, data_version)
     if data is None:
         logger.info("No data to write to CDF")
-    return data
+        return []
+    return [data]

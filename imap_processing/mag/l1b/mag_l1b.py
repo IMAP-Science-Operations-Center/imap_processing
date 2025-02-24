@@ -4,12 +4,13 @@ from pathlib import Path
 
 import numpy as np
 import xarray as xr
+from xarray import Dataset
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import load_cdf
 
 
-def mag_l1b(input_dataset: xr.Dataset, version: str) -> xr.Dataset:
+def mag_l1b(input_dataset: xr.Dataset, version: str) -> Dataset:
     """
     Will process MAG L1B data from L1A data.
 
@@ -28,6 +29,9 @@ def mag_l1b(input_dataset: xr.Dataset, version: str) -> xr.Dataset:
     # TODO:
     # Read in calibration file
     # multiply all vectors by calibration file
+    if "raw" in input_dataset.attrs["Logical_source"]:
+        # Raw files should not be processed in L1B.
+        raise ValueError("Raw L1A file passed into L1B. Unable to process.")
 
     output_dataset = mag_l1b_processing(input_dataset)
     attribute_manager = ImapCdfAttributes()
@@ -64,6 +68,7 @@ def mag_l1b_processing(input_dataset: xr.Dataset) -> xr.Dataset:
     """
     # TODO: There is a time alignment step that will add a lot of complexity.
     # This needs to be done once we have some SPICE time data.
+
     mag_attributes = ImapCdfAttributes()
     mag_attributes.add_instrument_variable_attrs("mag", "l1")
 
@@ -73,6 +78,7 @@ def mag_l1b_processing(input_dataset: xr.Dataset) -> xr.Dataset:
     calibration_dataset = load_cdf(
         Path(__file__).parent / "imap_calibration_mag_20240229_v01.cdf"
     )
+    # TODO: add time shift
     # TODO: Check validity of time range for calibration
     if "mago" in input_dataset.attrs["Logical_source"][0]:
         calibration_matrix = calibration_dataset["MFOTOURFO"]
@@ -137,8 +143,9 @@ def update_vector(
     tuple[numpy.ndarray, numpy.ndarray]
         Updated vector and the same compression flags.
     """
-    vector = calibrate_vector(input_vector, calibration_matrix)
-    return rescale_vector(vector, input_compression), input_compression
+    vector = rescale_vector(input_vector, input_compression)
+    cal_vector = calibrate_vector(vector, calibration_matrix)
+    return cal_vector, input_compression
 
 
 def rescale_vector(
@@ -200,9 +207,7 @@ def calibrate_vector(
         Calibrated vector.
     """
     updated_vector = input_vector.copy()
-
-    updated_vector[:3] = np.matmul(
+    updated_vector[:3] = np.dot(
         calibration_matrix.values[:, :, int(input_vector[3])], input_vector[:3]
     )
-
     return updated_vector

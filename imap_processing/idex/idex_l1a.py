@@ -25,8 +25,9 @@ import space_packet_parser
 import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
+from imap_processing.idex.decode import rice_decode
 from imap_processing.idex.idex_l0 import decom_packets
-from imap_processing.spice.time import met_to_j2000ns
+from imap_processing.spice.time import met_to_ttj2000ns
 from imap_processing.utils import convert_to_binary_string
 
 logger = logging.getLogger(__name__)
@@ -76,7 +77,6 @@ class PacketParser:
             Currently assumes one L0 file will generate exactly one L1a file.
         """
         decom_packet_list = decom_packets(packet_file)
-
         dust_events = {}
         for packet in decom_packet_list:
             if "IDX__SCI0TYPE" in packet:
@@ -105,22 +105,86 @@ class PacketParser:
         idex_attrs = get_idex_attrs(data_version)
         self.data.attrs = idex_attrs.get_global_attributes("imap_idex_l1a_sci")
 
-        # NOTE: LABL_PTR_1 should be CDF_CHAR.
-        self.data["time_low_sr_label"] = xr.DataArray(
-            self.data.time_low_sr_dim.values.astype(str),
-            name="time_low_sr_label",
-            dims=["time_low_sr_label"],
-            attrs=idex_attrs.get_variable_attributes("time_low_sr_label"),
+        # Add high and low sample rate coords
+        self.data["time_low_sample_rate_index"] = xr.DataArray(
+            np.arange(len(self.data["time_low_sample_rate"][0])),
+            name="time_low_sample_rate_index",
+            dims=["time_low_sample_rate_index"],
+            attrs=idex_attrs.get_variable_attributes("time_low_sample_rate_index"),
         )
 
-        self.data["time_high_sr_label"] = xr.DataArray(
-            self.data.time_high_sr_dim.values.astype(str),
-            name="time_high_sr_label",
-            dims=["time_high_sr_label"],
-            attrs=idex_attrs.get_variable_attributes("time_high_sr_label"),
+        self.data["time_high_sample_rate_index"] = xr.DataArray(
+            np.arange(len(self.data["time_high_sample_rate"][0])),
+            name="time_high_sample_rate_index",
+            dims=["time_high_sample_rate_index"],
+            attrs=idex_attrs.get_variable_attributes("time_high_sample_rate_index"),
+        )
+        # NOTE: LABL_PTR_1 should be CDF_CHAR.
+        self.data["time_low_sample_rate_label"] = xr.DataArray(
+            self.data.time_low_sample_rate_index.values.astype(str),
+            name="time_low_sample_rate_label",
+            dims=["time_low_sample_rate_index"],
+            attrs=idex_attrs.get_variable_attributes("time_low_sample_rate_label"),
+        )
+
+        self.data["time_high_sample_rate_label"] = xr.DataArray(
+            self.data.time_high_sample_rate_index.values.astype(str),
+            name="time_high_sample_rate_label",
+            dims=["time_high_sample_rate_index"],
+            attrs=idex_attrs.get_variable_attributes("time_high_sample_rate_label"),
         )
 
         logger.info("IDEX L1A science data processing completed.")
+
+
+def _read_waveform_bits(waveform_raw: str, high_sample: bool = True) -> list[int]:
+    """
+    Convert the raw waveform binary string to ints.
+
+    Parse a binary string representing a waveform.
+    If the data is a high sample waveform:
+        - Data arrives in 32-bit chunks, divided up into:
+            * 2 bits of padding
+            * 3x10 bits of integer data.
+        - The very last four numbers are usually bad, so remove those.
+    If the data is a low sample waveform:
+        - Data arrives in 32-bit chunks, divided up into:
+            * 8 bits of padding
+            * 2x12 bits of integer data.
+
+    Parameters
+    ----------
+    waveform_raw : str
+        The binary string representing the waveform.
+    high_sample : bool
+        If true, parse the waveform according to the high sample pattern,
+        otherwise use the low sample pattern.
+
+    Returns
+    -------
+    ints : list
+        List of the waveform.
+    """
+    ints = []
+    if high_sample:
+        for i in range(0, len(waveform_raw), 32):
+            # 32-bit chunks, divided up into 2, 10, 10, 10
+            # skip first two bits
+            ints += [
+                int(waveform_raw[i + 2 : i + 12], 2),
+                int(waveform_raw[i + 12 : i + 22], 2),
+                int(waveform_raw[i + 22 : i + 32], 2),
+            ]
+        ints = ints[:-4]  # Remove last 4 numbers
+    else:
+        for i in range(0, len(waveform_raw), 32):
+            # 32-bit chunks, divided up into 8, 12, 12
+            # skip first eight bits
+            ints += [
+                int(waveform_raw[i + 8 : i + 20], 2),
+                int(waveform_raw[i + 20 : i + 32], 2),
+            ]
+    return ints
 
 
 class RawDustEvent:
@@ -147,6 +211,10 @@ class RawDustEvent:
         The number of samples in a "block" of low sample data.
     NUMBER_SAMPLES_PER_HIGH_SAMPLE_BLOCK: int
         The number of samples in a "block" of high sample data.
+    MAX_HIGH_BLOCKS: int
+        The maximum number of "blocks" for high sample data.
+    MAX_LOW_BLOCKS: int
+        The maximum number of "blocks" for low sample data.
 
     Methods
     -------
@@ -180,6 +248,9 @@ class RawDustEvent:
     NUMBER_SAMPLES_PER_HIGH_SAMPLE_BLOCK = (
         512  # The number of samples in a "block" of high sample data
     )
+    # Maximum amount of data
+    MAX_HIGH_BLOCKS = 16
+    MAX_LOW_BLOCKS = 64
 
     def __init__(
         self, header_packet: space_packet_parser.packets.CCSDSPacket, data_version: str
@@ -229,6 +300,7 @@ class RawDustEvent:
         self.Target_High_bits = ""
         self.Ion_Grid_bits = ""
 
+        self.compressed = self.telemetry_items["idx__sci0comp"]
         self.cdf_attrs = get_idex_attrs(data_version)
 
     def _append_raw_data(self, scitype: Scitype, bits: str) -> None:
@@ -287,7 +359,7 @@ class RawDustEvent:
         # Get the datetime of Jan 1 2012 as the start date
         met = seconds_since_launch + microseconds_since_last_second * 1e-6
 
-        self.impact_time = met_to_j2000ns(met)
+        self.impact_time = met_to_ttj2000ns(met)
 
     def _set_sample_trigger_times(
         self, packet: space_packet_parser.packets.CCSDSPacket
@@ -361,11 +433,7 @@ class RawDustEvent:
         Will process the high sample waveform.
 
         Parse a binary string representing a high sample waveform.
-        Data arrives in 32 bit chunks, divided up into:
-            * 2 bits of padding
-            * 3x10 bits of integer data.
-
-        The very last 4 numbers are bad usually, so remove those.
+        If the data has been compressed, decompress using the RICE Golomb algorithm.
 
         Parameters
         ----------
@@ -377,25 +445,20 @@ class RawDustEvent:
         ints : list
             List of the high sample waveform.
         """
-        ints = []
-        for i in range(0, len(waveform_raw), 32):
-            # 32 bit chunks, divided up into 2, 10, 10, 10
-            # skip first two bits
-            ints += [
-                int(waveform_raw[i + 2 : i + 12], 2),
-                int(waveform_raw[i + 12 : i + 22], 2),
-                int(waveform_raw[i + 22 : i + 32], 2),
-            ]
-        return ints[:-4]  # Remove last 4 numbers
+        samples = self.MAX_HIGH_BLOCKS * self.NUMBER_SAMPLES_PER_HIGH_SAMPLE_BLOCK
+        if self.compressed.raw_value == 1:
+            ints = rice_decode(waveform_raw, nbit10=True, sample_count=samples)
+            ints = ints[:-3]
+        else:
+            ints = _read_waveform_bits(waveform_raw, high_sample=True)
+        return ints
 
     def _parse_low_sample_waveform(self, waveform_raw: str) -> list[int]:
         """
         Will process the low sample waveform.
 
         Parse a binary string representing a low sample waveform
-        Data arrives in 32-bit chunks, divided up into:
-            * 8 bits of padding
-            * 2x12 bits of integer data.
+        If the data has been compressed, decompress using the RICE Golomb algorithm.
 
         Parameters
         ----------
@@ -407,12 +470,11 @@ class RawDustEvent:
         ints : list
             List of processed low sample waveform.
         """
-        ints = []
-        for i in range(0, len(waveform_raw), 32):
-            ints += [
-                int(waveform_raw[i + 8 : i + 20], 2),
-                int(waveform_raw[i + 20 : i + 32], 2),
-            ]
+        samples = self.MAX_LOW_BLOCKS * self.NUMBER_SAMPLES_PER_LOW_SAMPLE_BLOCK
+        if self.compressed.raw_value == 1:
+            ints = rice_decode(waveform_raw, nbit10=False, sample_count=samples)
+        else:
+            ints = _read_waveform_bits(waveform_raw, high_sample=False)
         return ints
 
     def _calc_low_sample_resolution(self, num_samples: int) -> npt.NDArray:
@@ -432,14 +494,15 @@ class RawDustEvent:
 
         Returns
         -------
-        time_low_sr_data : numpy.ndarray
+        time_low_sample_rate_data : numpy.ndarray
             Low time sample data array.
         """
-        time_low_sr_init = np.linspace(0, num_samples, num_samples)
-        time_low_sr_data = (
-            self.LOW_SAMPLE_RATE * time_low_sr_init - self.low_sample_trigger_time
+        time_low_sample_rate_init = np.linspace(0, num_samples, num_samples)
+        time_low_sample_rate_data = (
+            self.LOW_SAMPLE_RATE * time_low_sample_rate_init
+            - self.low_sample_trigger_time
         )
-        return time_low_sr_data
+        return time_low_sample_rate_data
 
     def _calc_high_sample_resolution(self, num_samples: int) -> npt.NDArray:
         """
@@ -458,14 +521,15 @@ class RawDustEvent:
 
         Returns
         -------
-        time_high_sr_data : numpy.ndarray
+        time_high_sample_rate_data : numpy.ndarray
             High sample time data array.
         """
-        time_high_sr_init = np.linspace(0, num_samples, num_samples)
-        time_high_sr_data = (
-            self.HIGH_SAMPLE_RATE * time_high_sr_init - self.high_sample_trigger_time
+        time_high_sample_rate_init = np.linspace(0, num_samples, num_samples)
+        time_high_sample_rate_data = (
+            self.HIGH_SAMPLE_RATE * time_high_sample_rate_init
+            - self.high_sample_trigger_time
         )
-        return time_high_sr_data
+        return time_high_sample_rate_data
 
     def _populate_bit_strings(
         self, packet: space_packet_parser.packets.CCSDSPacket
@@ -510,81 +574,79 @@ class RawDustEvent:
             )
 
         # Process the 6 primary data variables
-        tof_high_xr = xr.DataArray(
+        tof_high = xr.DataArray(
             name="TOF_High",
             data=[self._parse_high_sample_waveform(self.TOF_High_bits)],
-            dims=("epoch", "time_high_sr_dim"),
+            dims=("epoch", "time_high_sample_rate_index"),
             attrs=idex_attrs.get_variable_attributes("tof_high_attrs"),
         )
-        tof_low_xr = xr.DataArray(
+        tof_low = xr.DataArray(
             name="TOF_Low",
             data=[self._parse_high_sample_waveform(self.TOF_Low_bits)],
-            dims=("epoch", "time_high_sr_dim"),
+            dims=("epoch", "time_high_sample_rate_index"),
             attrs=idex_attrs.get_variable_attributes("tof_low_attrs"),
         )
-        tof_mid_xr = xr.DataArray(
+        tof_mid = xr.DataArray(
             name="TOF_Mid",
             data=[self._parse_high_sample_waveform(self.TOF_Mid_bits)],
-            dims=("epoch", "time_high_sr_dim"),
+            dims=("epoch", "time_high_sample_rate_index"),
             attrs=idex_attrs.get_variable_attributes("tof_mid_attrs"),
         )
-        target_high_xr = xr.DataArray(
+        target_high = xr.DataArray(
             name="Target_High",
             data=[self._parse_low_sample_waveform(self.Target_High_bits)],
-            dims=("epoch", "time_low_sr_dim"),
+            dims=("epoch", "time_low_sample_rate_index"),
             attrs=idex_attrs.get_variable_attributes("target_high_attrs"),
         )
-        target_low_xr = xr.DataArray(
+        target_low = xr.DataArray(
             name="Target_Low",
             data=[self._parse_low_sample_waveform(self.Target_Low_bits)],
-            dims=("epoch", "time_low_sr_dim"),
+            dims=("epoch", "time_low_sample_rate_index"),
             attrs=idex_attrs.get_variable_attributes("target_low_attrs"),
         )
-        ion_grid_xr = xr.DataArray(
+        ion_grid = xr.DataArray(
             name="Ion_Grid",
             data=[self._parse_low_sample_waveform(self.Ion_Grid_bits)],
-            dims=("epoch", "time_low_sr_dim"),
+            dims=("epoch", "time_low_sample_rate_index"),
             attrs=idex_attrs.get_variable_attributes("ion_grid_attrs"),
         )
 
         # Determine the 3 coordinate variables
-        epoch_xr = xr.DataArray(
+        epoch = xr.DataArray(
             name="epoch",
             data=[self.impact_time],
             dims=("epoch"),
             attrs=idex_attrs.get_variable_attributes("epoch"),
         )
 
-        time_low_sr_xr = xr.DataArray(
-            name="time_low_sr",
-            data=[self._calc_low_sample_resolution(len(target_low_xr[0]))],
-            dims=("epoch", "time_low_sr_dim"),
-            attrs=idex_attrs.get_variable_attributes("low_sr_attrs"),
+        time_low_sample_rate = xr.DataArray(
+            name="time_low_sample_rate",
+            data=[self._calc_low_sample_resolution(len(target_low[0]))],
+            dims=("epoch", "time_low_sample_rate_index"),
+            attrs=idex_attrs.get_variable_attributes("low_sample_rate_attrs"),
         )
 
-        time_high_sr_xr = xr.DataArray(
-            name="time_high_sr",
-            data=[self._calc_high_sample_resolution(len(tof_low_xr[0]))],
-            dims=("epoch", "time_high_sr_dim"),
-            attrs=idex_attrs.get_variable_attributes("high_sr_attrs"),
+        time_high_sample_rate = xr.DataArray(
+            name="time_high_sample_rate",
+            data=[self._calc_high_sample_resolution(len(tof_low[0]))],
+            dims=("epoch", "time_high_sample_rate_index"),
+            attrs=idex_attrs.get_variable_attributes("high_sample_rate_attrs"),
         )
 
         # Combine to return a dataset object
         dataset = xr.Dataset(
             data_vars={
-                "TOF_Low": tof_low_xr,
-                "TOF_High": tof_high_xr,
-                "TOF_Mid": tof_mid_xr,
-                "Target_High": target_high_xr,
-                "Target_Low": target_low_xr,
-                "Ion_Grid": ion_grid_xr,
+                "TOF_Low": tof_low,
+                "TOF_High": tof_high,
+                "TOF_Mid": tof_mid,
+                "Target_High": target_high,
+                "Target_Low": target_low,
+                "Ion_Grid": ion_grid,
+                "time_low_sample_rate": time_low_sample_rate,
+                "time_high_sample_rate": time_high_sample_rate,
             }
             | trigger_vars,
-            coords={
-                "epoch": epoch_xr,
-                "time_low_sr": time_low_sr_xr,
-                "time_high_sr": time_high_sr_xr,
-            },
+            coords={"epoch": epoch},
         )
 
         return dataset

@@ -62,18 +62,17 @@ File naming convention
 
 The file name for each file should be the following format::
 
-    imap_<instrument>_<ancillary_name>_<start_date>_<end_date>_<version>.<extension>
+    imap_<instrument>_<description>_<start_date>_<end_date>_<version>.<extension>
 
 Since these names are only used in instrument processing, they are flexible and can be adapted to
 accommodate different needs. This is more of a rule of thumb than a strict requirement.
 
 * ``<instrument>``: The instrument name associated with the ancillary file
-* ``<ancillary_name>``: A descriptive name for the ancillary file which distinguishes between
-  other ancillary files used by the instrument. Rather than "mag-ancillary" or "mag-calibration", this should be similar to
-  "mag-rotation-matrices" or "mag-l2pre-calibration." Multiple words should be split by hyphens.
+* ``<description>``: A descriptive name for the ancillary file which distinguishes between
+  other ancillary files used by the instrument. Rather than "ancillary" or "calibration", this should be similar to
+  "rotation-matrices" or "l2pre-calibration." Multiple words should be split by hyphens.
 * ``<start_date>``: The start time of the validity of the ancillary file, in the format "YYYYMMDD". This is required for
-  time window ancillary files, and is optional for universal ancillary files, or files that should be applied in all time
-  ranges where there isn't a file with a higher version available.
+  all file types. For universal ancillary files, the start time should be the mission launch date.
 * ``<end_date>``: The end time of the validity of the ancillary file, in the format "YYYYMMDD". This is optional for files,
   with the understanding that if end_date is not provided, the file is valid until a file with a later start_date and no end_date.
 * ``<version>``: The version of the file, with the format `v000`. This version should be incremented with EVERY new file
@@ -85,7 +84,7 @@ File naming examples
 
 An L1B MAG rotation matrix ancillary file:
 
-* ``imap_mag_l1b-rotation-calibration-file_v001.cdf``
+* ``imap_mag_l1b-rotation-calibration_[launch date]_v001.cdf``
 
 This file is assumed to be valid for all times.
 

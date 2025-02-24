@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Any, Callable, Optional, Union, overload
 
 import numpy as np
-import spiceypy as spice
+import spiceypy
 from numpy.typing import NDArray
 from spiceypy.utils.exceptions import SpiceyError
 
@@ -145,7 +145,7 @@ def ensure_spice(
                     # Step 2.
                     if os.getenv("SPICE_METAKERNEL"):
                         metakernel_path = os.getenv("SPICE_METAKERNEL")
-                        spice.furnsh(metakernel_path)
+                        spiceypy.furnsh(metakernel_path)
                     else:
                         furnish_time_kernel()
                 except KeyError:
@@ -200,13 +200,13 @@ def open_spice_ck_file(pointing_frame_path: Path) -> Generator[int, None, None]:
     # and how that will affect appending to the pointing
     # frame kernel.
     if pointing_frame_path.exists():
-        handle = spice.dafopw(str(pointing_frame_path))
+        handle = spiceypy.dafopw(str(pointing_frame_path))
     else:
-        handle = spice.ckopn(str(pointing_frame_path), "CK", 0)
+        handle = spiceypy.ckopn(str(pointing_frame_path), "CK", 0)
     try:
         yield handle
     finally:
-        spice.ckcls(handle)
+        spiceypy.ckcls(handle)
 
 
 @ensure_spice
@@ -245,12 +245,12 @@ def create_pointing_frame(pointing_frame_path: Path, ck_path: Path) -> None:
     """
     # Get IDs.
     # https://spiceypy.readthedocs.io/en/main/documentation.html#spiceypy.spiceypy.gipool
-    id_imap_dps = spice.gipool("FRAME_IMAP_DPS", 0, 1)
-    id_imap_sclk = spice.gipool("CK_-43000_SCLK", 0, 1)
+    id_imap_dps = spiceypy.gipool("FRAME_IMAP_DPS", 0, 1)
+    id_imap_sclk = spiceypy.gipool("CK_-43000_SCLK", 0, 1)
 
     # Verify that only ck_path kernel is loaded.
-    count = spice.ktotal("ck")
-    loaded_ck_kernel, _, _, _ = spice.kdata(count - 1, "ck")
+    count = spiceypy.ktotal("ck")
+    loaded_ck_kernel, _, _, _ = spiceypy.kdata(count - 1, "ck")
 
     if count != 1 or str(ck_path) != loaded_ck_kernel:
         raise ValueError(f"Error: Expected CK kernel {ck_path}")
@@ -258,28 +258,28 @@ def create_pointing_frame(pointing_frame_path: Path, ck_path: Path) -> None:
     # If the pointing frame kernel already exists, find the last time.
     if pointing_frame_path.exists():
         # Get the last time in the pointing frame kernel.
-        pointing_cover = spice.ckcov(
+        pointing_cover = spiceypy.ckcov(
             str(pointing_frame_path), int(id_imap_dps), True, "SEGMENT", 0, "TDB"
         )
-        num_segments = spice.wncard(pointing_cover)
-        _, et_end_pointing_frame = spice.wnfetd(pointing_cover, num_segments - 1)
+        num_segments = spiceypy.wncard(pointing_cover)
+        _, et_end_pointing_frame = spiceypy.wnfetd(pointing_cover, num_segments - 1)
     else:
         et_end_pointing_frame = None
 
     # TODO: Query for .csv file to get the pointing start and end times.
     # TODO: Remove next four lines once query is added.
-    id_imap_spacecraft = spice.gipool("FRAME_IMAP_SPACECRAFT", 0, 1)
-    ck_cover = spice.ckcov(
+    id_imap_spacecraft = spiceypy.gipool("FRAME_IMAP_SPACECRAFT", 0, 1)
+    ck_cover = spiceypy.ckcov(
         str(ck_path), int(id_imap_spacecraft), True, "INTERVAL", 0, "TDB"
     )
-    num_intervals = spice.wncard(ck_cover)
+    num_intervals = spiceypy.wncard(ck_cover)
 
     with open_spice_ck_file(pointing_frame_path) as handle:
         # TODO: this will change to the number of pointings.
         for i in range(num_intervals):
             # Get the coverage window
             # TODO: this will change to pointing start and end time.
-            et_start, et_end = spice.wnfetd(ck_cover, i)
+            et_start, et_end = spiceypy.wnfetd(ck_cover, i)
             et_times = _get_et_times(et_start, et_end)
 
             # TODO: remove after query is added.
@@ -294,16 +294,16 @@ def create_pointing_frame(pointing_frame_path: Path, ck_path: Path) -> None:
 
             # Convert the rotation matrix to a quaternion.
             # https://spiceypy.readthedocs.io/en/main/documentation.html#spiceypy.spiceypy.m2q
-            q_avg = spice.m2q(rotation_matrix)
+            q_avg = spiceypy.m2q(rotation_matrix)
 
             # https://spiceypy.readthedocs.io/en/main/documentation.html#spiceypy.spiceypy.sce2c
             # Convert start and end times to SCLK.
-            sclk_begtim = spice.sce2c(int(id_imap_sclk), et_times[0])
-            sclk_endtim = spice.sce2c(int(id_imap_sclk), et_times[-1])
+            sclk_begtim = spiceypy.sce2c(int(id_imap_sclk), et_times[0])
+            sclk_endtim = spiceypy.sce2c(int(id_imap_sclk), et_times[-1])
 
             # Create the pointing frame kernel.
             # https://spiceypy.readthedocs.io/en/main/documentation.html#spiceypy.spiceypy.ckw02
-            spice.ckw02(
+            spiceypy.ckw02(
                 # Handle of an open CK file.
                 handle,
                 # Start time of the segment.
@@ -355,7 +355,7 @@ def _get_et_times(et_start: float, et_end: float) -> NDArray[np.float64]:
 
     # 1 spin/15 seconds; 10 quaternions / spin.
     num_samples = (et_end - et_start) / 15 * 10
-    # There were rounding errors when using spice.pxform so np.ceil and np.floor
+    # There were rounding errors when using spiceypy.pxform so np.ceil and np.floor
     # were used to ensure the start and end times were included in the array.
     et_times = np.linspace(
         np.ceil(et_start * 1e6) / 1e6, np.floor(et_end * 1e6) / 1e6, int(num_samples)
@@ -390,10 +390,10 @@ def _average_quaternions(et_times: np.ndarray) -> NDArray:
 
         # Rotation matrix from IMAP spacecraft frame to ECLIPJ2000.
         # https://spiceypy.readthedocs.io/en/main/documentation.html#spiceypy.spiceypy.pxform
-        body_rots = spice.pxform("IMAP_SPACECRAFT", "ECLIPJ2000", tdb)
+        body_rots = spiceypy.pxform("IMAP_SPACECRAFT", "ECLIPJ2000", tdb)
         # Convert rotation matrix to quaternion.
         # https://spiceypy.readthedocs.io/en/main/documentation.html#spiceypy.spiceypy.m2q
-        body_quat = spice.m2q(body_rots)
+        body_quat = spiceypy.m2q(body_rots)
 
         # Standardize the quaternion so that they may be compared.
         body_quat = body_quat * np.sign(body_quat[0])
@@ -440,7 +440,7 @@ def _create_rotation_matrix(et_times: np.ndarray) -> NDArray:
     # Converts the averaged quaternion (q_avg) into a rotation matrix
     # and get inertial z axis.
     # https://spiceypy.readthedocs.io/en/main/documentation.html#spiceypy.spiceypy.q2m
-    z_avg = spice.q2m(list(q_avg))[:, 2]
+    z_avg = spiceypy.q2m(list(q_avg))[:, 2]
     # y_avg is perpendicular to both z_avg and the standard Z-axis.
     y_avg = np.cross(z_avg, [0, 0, 1])
     # x_avg is perpendicular to y_avg and z_avg.
@@ -459,5 +459,5 @@ def furnish_time_kernel() -> None:
     # TODO: we need to load these kernels from EFS volumen that is
     # mounted to batch volume and extend this to generate metakernell
     # which is TBD.
-    spice.furnsh(str(spice_test_data_path / "imap_sclk_0000.tsc"))
-    spice.furnsh(str(spice_test_data_path / "naif0012.tls"))
+    spiceypy.furnsh(str(spice_test_data_path / "imap_sclk_0000.tsc"))
+    spiceypy.furnsh(str(spice_test_data_path / "naif0012.tls"))

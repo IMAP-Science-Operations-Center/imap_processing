@@ -11,6 +11,7 @@ from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.lo.l0.lo_apid import LoAPID
 from imap_processing.lo.l0.lo_science import (
     combine_segmented_packets,
+    organize_spin_data,
     parse_events,
     parse_histogram,
 )
@@ -52,6 +53,19 @@ def lo_l1a(dependency: Path, data_version: str) -> list[xr.Dataset]:
     attr_mgr.add_instrument_variable_attrs(instrument="lo", level="l1a")
     attr_mgr.add_global_attribute("Data_version", data_version)
 
+    if LoAPID.ILO_SPIN in datasets_by_apid:
+        logger.info(
+            f"\nProcessing {LoAPID(LoAPID.ILO_SPIN).name} "
+            f"packet (APID: {LoAPID.ILO_SPIN.value})"
+        )
+        logical_source = "imap_lo_l1a_spin"
+        datasets_by_apid[LoAPID.ILO_SPIN] = organize_spin_data(
+            datasets_by_apid[LoAPID.ILO_SPIN], attr_mgr
+        )
+
+        datasets_by_apid[LoAPID.ILO_SPIN] = add_dataset_attrs(
+            datasets_by_apid[LoAPID.ILO_SPIN], attr_mgr, logical_source
+        )
     if LoAPID.ILO_SCI_CNT in datasets_by_apid:
         logger.info(
             f"\nProcessing {LoAPID(LoAPID.ILO_SCI_CNT).name} "
@@ -90,7 +104,7 @@ def lo_l1a(dependency: Path, data_version: str) -> list[xr.Dataset]:
             datasets_by_apid[LoAPID.ILO_SCI_DE], attr_mgr, logical_source
         )
 
-    good_apids = [LoAPID.ILO_SCI_CNT, LoAPID.ILO_SCI_DE]
+    good_apids = [LoAPID.ILO_SPIN, LoAPID.ILO_SCI_CNT, LoAPID.ILO_SCI_DE]
     logger.info(f"\nReturning datasets: {[LoAPID(apid) for apid in good_apids]}")
     return [datasets_by_apid[good_apid] for good_apid in good_apids]
 
@@ -116,8 +130,63 @@ def add_dataset_attrs(
         Data with attributes added.
     """
     # TODO: may want up split up these if statements into their
-    # own functions
-    if logical_source == "imap_lo_l1a_histogram":
+    #  own functions
+    # Get global attributes
+    dataset.attrs.update(attr_mgr.get_global_attributes(logical_source))
+    # Get attributes for shcoarse and epoch
+    dataset.shcoarse.attrs.update(attr_mgr.get_variable_attributes("shcoarse"))
+    dataset.epoch.attrs.update(attr_mgr.get_variable_attributes("epoch"))
+
+    if logical_source == "imap_lo_l1a_spin":
+        spin = xr.DataArray(
+            data=np.arange(0, 28, dtype=np.uint8),
+            name="spin",
+            dims=["spin"],
+            attrs=attr_mgr.get_variable_attributes("spin"),
+        )
+        spin_label = xr.DataArray(
+            data=spin.values.astype(str),
+            name="spin_label",
+            dims=["spin_label"],
+            attrs=attr_mgr.get_variable_attributes("spin_label"),
+        )
+
+        dataset = dataset.assign_coords(spin=spin, spin_label=spin_label)
+        dataset.num_completed.attrs.update(
+            attr_mgr.get_variable_attributes("num_completed")
+        )
+        dataset.acq_start_sec.attrs.update(
+            attr_mgr.get_variable_attributes("acq_start_sec")
+        )
+        dataset.acq_start_subsec.attrs.update(
+            attr_mgr.get_variable_attributes("acq_start_subsec")
+        )
+        dataset.acq_end_sec.attrs.update(
+            attr_mgr.get_variable_attributes("acq_end_sec")
+        )
+        dataset.acq_end_subsec.attrs.update(
+            attr_mgr.get_variable_attributes("acq_end_subsec")
+        )
+
+        dataset = dataset.drop_vars(
+            [
+                "version",
+                "type",
+                "sec_hdr_flg",
+                "pkt_apid",
+                "seq_flgs",
+                "src_seq_ctr",
+                "pkt_len",
+                "chksum",
+            ]
+        )
+        # An empty DEPEND_0 is being added to support_data
+        # variables that should only have DEPEND_1
+        # Removing Depend_0 here.
+        # TODO: Should look for a fix to this issue
+        del dataset["spin"].attrs["DEPEND_0"]
+
+    elif logical_source == "imap_lo_l1a_histogram":
         # Create coordinates for the dataset
         azimuth_60 = xr.DataArray(
             data=np.arange(0, 6, dtype=np.uint8),
@@ -157,10 +226,6 @@ def add_dataset_attrs(
             attrs=attr_mgr.get_variable_attributes("esa_step_label"),
         )
 
-        # Get attributes for shcoarse and epoch
-        dataset.shcoarse.attrs.update(attr_mgr.get_variable_attributes("shcoarse"))
-        dataset.epoch.attrs.update(attr_mgr.get_variable_attributes("epoch"))
-
         dataset = dataset.assign_coords(
             azimuth_60=azimuth_60,
             azimuth_60_label=azimuth_60_label,
@@ -169,7 +234,6 @@ def add_dataset_attrs(
             esa_step=esa_step,
             esa_step_label=esa_step_label,
         )
-        dataset.attrs.update(attr_mgr.get_global_attributes(logical_source))
         # remove the binary field and CCSDS header from the dataset
         dataset = dataset.drop_vars(
             [
@@ -184,6 +248,14 @@ def add_dataset_attrs(
                 "pkt_len",
             ]
         )
+        # An empty DEPEND_0 is being added to support_data
+        # variables that should only have DEPEND_1
+        # Removing Depend_0 here.
+        # TODO: Should look for a fix to this issue
+        del dataset["azimuth_60"].attrs["DEPEND_0"]
+        del dataset["azimuth_6"].attrs["DEPEND_0"]
+        del dataset["esa_step"].attrs["DEPEND_0"]
+
     elif logical_source == "imap_lo_l1a_de":
         # Create the coordinates for the dataset
         direct_events = xr.DataArray(
@@ -205,8 +277,6 @@ def add_dataset_attrs(
             direct_events_label=direct_events_label,
         )
         # add the epoch and global attributes
-        dataset.epoch.attrs.update(attr_mgr.get_variable_attributes("epoch"))
-        dataset.attrs.update(attr_mgr.get_global_attributes(logical_source))
         dataset = dataset.drop_vars(
             [
                 "version",
@@ -221,5 +291,23 @@ def add_dataset_attrs(
                 "events",
             ]
         )
+        # An empty DEPEND_0 is being added to support_data
+        # variables that should only have DEPEND_1
+        # Removing Depend_0 here.
+        # TODO: Should look for a fix to this issue
+        for var in [
+            "direct_events",
+            "coincidence_type",
+            "de_time",
+            "mode",
+            "esa_step",
+            "tof0",
+            "tof1",
+            "tof2",
+            "tof3",
+            "pos",
+            "cksm",
+        ]:
+            dataset[var].attrs.pop("DEPEND_0")
 
     return dataset

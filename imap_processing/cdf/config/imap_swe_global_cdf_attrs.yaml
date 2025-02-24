@@ -22,3 +22,10 @@ imap_swe_l1b_sci:
   Data_type: L1B_SCI>Level-1B Science data
   Logical_source: imap_swe_l1b_sci
   Logical_source_description: SWE Instrument Level-1B Science Data
+
+imap_swe_l2_sci:
+  <<: *instrument_base
+  Data_level: 2
+  Data_type: L2_SCI>Level-2 Science data
+  Logical_source: imap_swe_l2_sci
+  Logical_source_description: SWE Instrument Level-2 Science Data

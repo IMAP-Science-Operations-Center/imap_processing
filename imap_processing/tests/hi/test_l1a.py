@@ -19,8 +19,6 @@ def test_sci_de_decom(hi_l0_test_data_path):
 
     # Write to CDF
     cdf_filename = "imap_hi_l1a_90sensor-de_20241105_v001.cdf"
-    # TODO: Dropping duplicates to ignore ISTP for now. Should be fixed by #1186
-    processed_data[0] = processed_data[0].sortby("epoch").groupby("epoch").first()
     cdf_filepath = write_cdf(processed_data[0])
     assert cdf_filepath.name == cdf_filename
 

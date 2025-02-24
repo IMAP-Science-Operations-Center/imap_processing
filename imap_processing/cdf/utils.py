@@ -13,7 +13,7 @@ from cdflib.xarray.cdf_to_xarray import ISTP_TO_XARRAY_ATTRS
 
 import imap_processing
 from imap_processing._version import __version__, __version_tuple__  # noqa: F401
-from imap_processing.spice.time import J2000_EPOCH
+from imap_processing.spice.time import TTJ2000_EPOCH
 
 logger = logging.getLogger(__name__)
 
@@ -94,7 +94,7 @@ def write_cdf(
     # Convert J2000 epoch referenced data to datetime64
     # TODO: This implementation of epoch to time string results in an error of
     #       5 seconds due to 5 leap-second occurrences since the J2000 epoch.
-    dt64 = J2000_EPOCH + dataset["epoch"].values[0].astype("timedelta64[ns]")
+    dt64 = TTJ2000_EPOCH + dataset["epoch"].values[0].astype("timedelta64[ns]")
     start_time = np.datetime_as_string(dt64, unit="D").replace("-", "")
 
     # Will now accept vXXX or XXX formats, as batch starter sends versions as vXXX.

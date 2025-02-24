@@ -39,3 +39,25 @@ imap_hit_l1b_hk:
     Data_type: L1B_HK>Level-1B Housekeeping
     Logical_source: imap_hit_l1b_hk
     Logical_source_description: IMAP Mission HIT Instrument Level-1B Housekeeping Data.
+
+imap_hit_l1b_standard-rates:
+    <<: *instrument_base
+    Data_level: 1B
+    Data_type: L1B_rates>Level-1B Standard Rates
+    Logical_source: imap_hit_l1b_standard-rates
+    Logical_source_description: IMAP Mission HIT Instrument Level-1B Standard Rates Data.
+
+imap_hit_l1b_summed-rates:
+    <<: *instrument_base
+    Data_level: 1B
+    Data_type: L1B_summed-rates>Level-1B Summed Rates
+    Logical_source: imap_hit_l1b_summed-rates
+    Logical_source_description: IMAP Mission HIT Instrument Level-1B Summed Rates Data.
+
+imap_hit_l1b_sectored-rates:
+    <<: *instrument_base
+    Data_level: 1B
+    Data_type: L1B_sectored-rates>Level-1B Sectored Rates
+    Logical_source: imap_hit_l1b_sectored-rates
+    Logical_source_description: IMAP Mission HIT Instrument Level-1B Sectored Rates Data.
+

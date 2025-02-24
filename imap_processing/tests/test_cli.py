@@ -6,7 +6,7 @@ from unittest import mock
 import pytest
 import xarray as xr
 
-from imap_processing.cli import Codice, Hi, Hit, Ultra, _validate_args, main
+from imap_processing.cli import Codice, Hi, Hit, Swe, Ultra, _validate_args, main
 
 
 @pytest.fixture()
@@ -101,7 +101,9 @@ def test_codice(mock_codice_l1a, mock_instrument_dependencies):
         "'start_date': '20230822'"
         "}]"
     )
-    instrument = Codice("l1a", dependency_str, "20230822", "20230822", "v001", True)
+    instrument = Codice(
+        "l1a", "hskp", dependency_str, "20230822", "20230822", "v001", True
+    )
     instrument.process()
     assert mocks["mock_query"].call_count == 1
     assert mocks["mock_download"].call_count == 1
@@ -134,7 +136,7 @@ def test_hi_l1(mock_instrument_dependencies, data_level, n_prods):
             "}]"
         )
         instrument = Hi(
-            data_level, dependency_str, "20231212", "20231213", "v005", True
+            data_level, "sci", dependency_str, "20231212", "20231213", "v005", True
         )
         instrument.process()
         assert mocks["mock_query"].call_count == 1
@@ -161,7 +163,9 @@ def test_ultra_l1a(mock_ultra_l1a, mock_instrument_dependencies):
         "'start_date': '20240207'"
         "}]"
     )
-    instrument = Ultra("l1a", dependency_str, "20240207", "20240208", "v001", True)
+    instrument = Ultra(
+        "l1a", "raw", dependency_str, "20240207", "20240208", "v001", True
+    )
     instrument.process()
     assert mocks["mock_query"].call_count == 1
     assert mocks["mock_download"].call_count == 1
@@ -178,7 +182,7 @@ def test_ultra_l1b(mock_ultra_l1b, mock_instrument_dependencies):
     mock_ultra_l1b.return_value = ["l1b_dataset0", "l1b_dataset1"]
     mocks["mock_write_cdf"].side_effect = ["/path/to/product0", "/path/to/product1"]
 
-    instrument = Ultra("l1b", "[]", "20240207", "20240208", "v001", True)
+    instrument = Ultra("l1b", "de", "[]", "20240207", "20240208", "v001", True)
     instrument.process()
     assert mocks["mock_query"].call_count == 0
     assert mocks["mock_download"].call_count == 0
@@ -195,7 +199,7 @@ def test_ultra_l1c(mock_ultra_l1c, mock_instrument_dependencies):
     mock_ultra_l1c.return_value = ["l1c_dataset0", "l1c_dataset1"]
     mocks["mock_write_cdf"].side_effect = ["/path/to/product0", "/path/to/product1"]
 
-    instrument = Ultra("l1c", "[]", "20240207", "20240208", "v001", True)
+    instrument = Ultra("l1c", "pset", "[]", "20240207", "20240208", "v001", True)
     instrument.process()
     assert mocks["mock_query"].call_count == 0
     assert mocks["mock_download"].call_count == 0
@@ -221,9 +225,37 @@ def test_hit_l1a(mock_hit_l1a, mock_instrument_dependencies):
         "'start_date': '20100105'"
         "}]"
     )
-    instrument = Hit("l1a", dependency_str, "20100105", "20100101", "v001", True)
+    instrument = Hit("l1a", "raw", dependency_str, "20100105", "20100101", "v001", True)
     instrument.process()
     assert mocks["mock_query"].call_count == 1
     assert mocks["mock_download"].call_count == 1
     assert mock_hit_l1a.call_count == 1
     assert mocks["mock_upload"].call_count == 2
+
+
+@mock.patch("imap_processing.cli.swe_l1a")
+def test_post_processing(mock_swe_l1a, mock_instrument_dependencies):
+    """Test coverage for post processing"""
+    mocks = mock_instrument_dependencies
+    mocks["mock_query"].return_value = [{"file_path": "/path/to/file0"}]
+    mocks["mock_download"].return_value = "dependency0"
+    # Return empty list to simulate no data to write
+    mock_swe_l1a.return_value = []
+
+    dependency_str = (
+        "[{"
+        "'instrument': 'hit',"
+        "'data_level': 'l0',"
+        "'descriptor': 'raw',"
+        "'version': 'v001',"
+        "'start_date': '20100105'"
+        "}]"
+    )
+    instrument = Swe("l1a", "raw", dependency_str, "20100105", "20100101", "v001", True)
+
+    # This function calls both the instrument.do_processing() and
+    # instrument.post_processing()
+    instrument.process()
+    assert mock_swe_l1a.call_count == 1
+    # This test is testing that no upload happened
+    assert mocks["mock_upload"].call_count == 0

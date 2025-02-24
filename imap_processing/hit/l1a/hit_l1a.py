@@ -19,6 +19,9 @@ logger = logging.getLogger(__name__)
 
 # TODO review logging levels to use (debug vs. info)
 
+# Fill value for missing data
+fillval = -9223372036854775808
+
 
 def hit_l1a(packet_file: str, data_version: str) -> list[xr.Dataset]:
     """
@@ -91,14 +94,6 @@ def subcom_sectorates(sci_dataset: xr.Dataset) -> None:
     sci_dataset : xarray.Dataset
         Xarray dataset containing parsed HIT science data.
     """
-    # TODO:
-    #  - Update to use fill values defined in attribute manager which
-    #    isn't defined for L1A science data yet
-    #  - fix issues with fe_counts_sectored. The array has shape
-    #      (epoch: 28, fe_energy_index: 1, declination: 8, azimuth: 15),
-    #      but cdflib drops second dimension of size 1 and recognizes
-    #      only 3 total dimensions. Are dimensions of 1 ignored?
-
     # Calculate mod 10 values
     hdr_min_count_mod_10 = sci_dataset.hdr_minute_cnt.values % 10
 
@@ -107,7 +102,10 @@ def subcom_sectorates(sci_dataset: xr.Dataset) -> None:
     num_frames = len(hdr_min_count_mod_10)
     # TODO: add more specific dtype for rates (ex. int16) once this is defined by HIT
     data_by_species_and_energy_range = {
-        key: {**value, "rates": np.full((num_frames, 8, 15), fill_value=-1, dtype=int)}
+        key: {
+            **value,
+            "rates": np.full((num_frames, 8, 15), fill_value=fillval, dtype=int),
+        }
         for key, value in MOD_10_MAPPING.items()
     }
 
@@ -162,6 +160,85 @@ def subcom_sectorates(sci_dataset: xr.Dataset) -> None:
         )
 
 
+def calculate_uncertainties(dataset: xr.Dataset) -> xr.Dataset:
+    """
+    Calculate uncertainties for each counts data variable in the dataset.
+
+    Calculate the upper and lower uncertainties. The uncertainty for
+    the raw Lev1A HIT data will be calculated as asymmetric Poisson
+    uncertainty as prescribed in Gehrels 1986 (DOI: 10.1086/164079).
+    See section 5.5 in the algorithm document for details.
+
+    The upper uncertainty will be calculated as
+        DELTA_PLUS = sqrt(counts + 1) + 1
+
+    The lower uncertainty will be calculated as
+        DELTA_MINUS = sqrt(counts)
+
+    Parameters
+    ----------
+    dataset : xarray.Dataset
+        The dataset containing counts data.
+
+    Returns
+    -------
+    dataset : xarray.Dataset
+        The dataset with added uncertainties for each counts data variable.
+    """
+    # Variables that aren't counts data and should be skipped in the calculation
+    ignore_vars = [
+        "version",
+        "type",
+        "sec_hdr_flg",
+        "pkt_apid",
+        "seq_flgs",
+        "src_seq_ctr",
+        "pkt_len",
+        "hdr_unit_num",
+        "hdr_frame_version",
+        "hdr_dynamic_threshold_state",
+        "hdr_leak_conv",
+        "hdr_heater_duty_cycle",
+        "hdr_code_ok",
+        "hdr_minute_cnt",
+        "livetime_counter",
+        "h_energy_min",
+        "h_energy_max",
+        "he4_energy_min",
+        "he4_energy_max",
+        "cno_energy_min",
+        "cno_energy_max",
+        "nemgsi_energy_min",
+        "nemgsi_energy_max",
+        "fe_energy_min",
+        "fe_energy_max",
+    ]
+
+    # Counts data that need uncertainties calculated
+    count_vars = set(dataset.data_vars) - set(ignore_vars)
+
+    # Calculate uncertainties for counts data variables.
+    # Arrays with fill values (i.e. missing data) are skipped in this calculation
+    # but are kept in the new data arrays to retain shape and dimensions.
+    for var in count_vars:
+        mask = dataset[var] != fillval  # Mask for valid values
+        # Ensure that the values are positive before taking the square root
+        safe_values_plus = np.maximum(dataset[var] + 1, 0).astype(np.float32)
+        safe_values_minus = np.maximum(dataset[var], 0).astype(np.float32)
+
+        dataset[f"{var}_delta_plus"] = xr.DataArray(
+            np.where(
+                mask, np.sqrt(safe_values_plus) + 1, dataset[var].astype(np.float32)
+            ),
+            dims=dataset[var].dims,
+        )
+        dataset[f"{var}_delta_minus"] = xr.DataArray(
+            np.where(mask, np.sqrt(safe_values_minus), dataset[var].astype(np.float32)),
+            dims=dataset[var].dims,
+        )
+    return dataset
+
+
 def process_science(
     dataset: xr.Dataset, attr_mgr: ImapCdfAttributes
 ) -> list[xr.Dataset]:
@@ -201,6 +278,9 @@ def process_science(
     )
     count_rates_dataset = sci_dataset.drop_vars("pha_raw")
 
+    # Calculate uncertainties for count rates
+    count_rates_dataset = calculate_uncertainties(count_rates_dataset)
+
     # Logical sources for the two products.
     logical_sources = ["imap_hit_l1a_count-rates", "imap_hit_l1a_pulse-height-events"]
 
@@ -228,10 +308,11 @@ def process_science(
                 print(f"Field {field} not found in attribute manager.")
                 logger.warning(f"Field {field} not found in attribute manager.")
 
-        dataset.epoch.attrs = attr_mgr.get_variable_attributes("epoch")
-        # Remove DEPEND_0 attribute from epoch variable added by attr_mgr.
-        # Not required for epoch
-        del dataset["epoch"].attrs["DEPEND_0"]
+        # Skip schema check for epoch to prevent attr_mgr from adding the
+        # DEPEND_0 attribute which isn't required for epoch
+        dataset.epoch.attrs = attr_mgr.get_variable_attributes(
+            "epoch", check_schema=False
+        )
 
         datasets.append(dataset)
 

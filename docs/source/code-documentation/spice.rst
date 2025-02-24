@@ -12,8 +12,9 @@ interpret IMAP science data. `imap_processing` does not directly interact with t
 but leverages the `spiceypy <https://github.com/AndrewAnnex/SpiceyPy>`_ python package which
 wraps the SPICE C library.
 
-The `imap_processing` spice module contains functions for kernel management, time conversions, and
-calculation of spacecraft and instrument geometry.
+The `imap_processing` spice module contains functions for kernel management, time conversions,
+calculation of spacecraft and instrument geometry, and utilities for querying spin and pointing
+table data.
 
 .. autosummary::
     :toctree: generated/
@@ -22,4 +23,5 @@ calculation of spacecraft and instrument geometry.
 
     kernels
     geometry
+    spin
     time

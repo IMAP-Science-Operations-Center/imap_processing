@@ -1,6 +1,6 @@
 # <=== Coordinates ===>
 
-spin_angle:
+spin_sector:
   CATDESC: 180 measurements per quarter cycle. See VAR_NOTES for details
   FIELDNAM: Spin Angle
   FILLVAL: -9223370000000000000
@@ -14,8 +14,8 @@ spin_angle:
     At this point, we don't know about energy or spin angle information.
   VAR_TYPE: support_data
 
-polar_angle:
-  CATDESC: This is angle of 7 CEMs
+cem_id:
+  CATDESC: This is id of 7 CEMs
   FIELDNAM: Polar Angle
   FILLVAL: -9223370000000000000
   FORMAT: I1
@@ -32,14 +32,14 @@ polar_angle:
 # We need to define this if we have DEPEND_1 or more.
 # TODO: I am not sure what the FIELDNAM should be.
 # I tried best to match this: https://spdf.gsfc.nasa.gov/istp_guide/variables.html#Metadata_eg1
-spin_angle_label:
+spin_sector_label:
   CATDESC: 180 measurements per quarter cycle
   FIELDNAM: Spin Angle
   FORMAT: A3
   VAR_TYPE: metadata
 
-polar_angle_label:
-  CATDESC: This is angle of 7 CEMs
+cem_id_label:
+  CATDESC: This is id of 7 CEMs
   FIELDNAM: CEM Counts
   FORMAT: A1
   VAR_TYPE: metadata
@@ -62,10 +62,10 @@ default_attrs: &default
 raw_counts:
   CATDESC: Raw Counts stored in 8bits length
   DEPEND_0: epoch
-  DEPEND_1: spin_angle
-  DEPEND_2: polar_angle
-  LABL_PTR_1: spin_angle_label
-  LABL_PTR_2: polar_angle_label
+  DEPEND_1: spin_sector
+  DEPEND_2: cem_id
+  LABL_PTR_1: spin_sector_label
+  LABL_PTR_2: cem_id_label
   DISPLAY_TYPE: spectrogram
   FIELDNAM: Raw Counts
   FORMAT: I3
@@ -78,10 +78,10 @@ raw_counts:
 science_data:
   CATDESC: Decompressed Counts
   DEPEND_0: epoch
-  DEPEND_1: spin_angle
-  DEPEND_2: polar_angle
-  LABL_PTR_1: spin_angle_label
-  LABL_PTR_2: polar_angle_label
+  DEPEND_1: spin_sector
+  DEPEND_2: cem_id
+  LABL_PTR_1: spin_sector_label
+  LABL_PTR_2: cem_id_label
   DISPLAY_TYPE: spectrogram
   FIELDNAM: Decompressed Counts
   FORMAT: I5

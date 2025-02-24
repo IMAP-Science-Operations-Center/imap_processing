@@ -1,5 +1,7 @@
 """Pytest plugin module for test data paths"""
 
+from unittest import mock
+
 import numpy as np
 import pytest
 
@@ -8,8 +10,10 @@ from imap_processing.ultra.l0.decom_ultra import process_ultra_apids
 from imap_processing.ultra.l0.ultra_utils import (
     ULTRA_AUX,
     ULTRA_EVENTS,
+    ULTRA_RATES,
 )
 from imap_processing.ultra.l1a import ultra_l1a
+from imap_processing.ultra.l1b.ultra_l1b import ultra_l1b
 from imap_processing.utils import group_by_apid
 
 
@@ -165,3 +169,72 @@ def de_dataset(ccsds_path_theta_0, xtce_path):
         dataset["START_TYPE"] != np.iinfo(np.int64).min, drop=True
     )
     return l1a_de_dataset
+
+
+@pytest.fixture()
+def rates_dataset(ccsds_path_theta_0, xtce_path):
+    """L1A test data"""
+    packets = decom.decom_packets(ccsds_path_theta_0, xtce_path)
+    grouped_data = group_by_apid(packets)
+    decom_ultra_rates = process_ultra_apids(
+        grouped_data[ULTRA_RATES.apid[0]], ULTRA_RATES.apid[0]
+    )
+    l1a_rates_dataset = ultra_l1a.create_dataset(
+        {
+            ULTRA_RATES.apid[0]: decom_ultra_rates,
+        }
+    )
+    return l1a_rates_dataset
+
+
+@pytest.fixture()
+def aux_dataset(ccsds_path_theta_0, xtce_path):
+    """L1A test data"""
+    packets = decom.decom_packets(ccsds_path_theta_0, xtce_path)
+    grouped_data = group_by_apid(packets)
+    decom_ultra_aux = process_ultra_apids(
+        grouped_data[ULTRA_AUX.apid[0]], ULTRA_AUX.apid[0]
+    )
+    l1a_aux_dataset = ultra_l1a.create_dataset(
+        {
+            ULTRA_AUX.apid[0]: decom_ultra_aux,
+        }
+    )
+    return l1a_aux_dataset
+
+
+@pytest.fixture()
+@mock.patch("imap_processing.ultra.l1b.de.get_annotated_particle_velocity")
+def l1b_datasets(
+    mock_get_annotated_particle_velocity, de_dataset, use_fake_spin_data_for_time
+):
+    """L1B test data"""
+
+    data_dict = {}
+    data_dict[de_dataset.attrs["Logical_source"]] = de_dataset
+    # TODO: this is a placeholder for the hk dataset.
+    data_dict["imap_ultra_l1a_45sensor-hk"] = aux_dataset
+    data_dict["imap_ultra_l1a_45sensor-rates"] = rates_dataset
+    use_fake_spin_data_for_time(
+        de_dataset["EVENTTIMES"][0], de_dataset["EVENTTIMES"][-1]
+    )
+
+    # Mock get_annotated_particle_velocity to avoid needing kernels
+    def side_effect_func(event_times, position, ultra_frame, dps_frame, sc_frame):
+        """
+        Mock behavior of get_annotated_particle_velocity.
+
+        Returns NaN-filled arrays matching the expected output shape.
+        """
+        num_events = event_times.size
+        return (
+            np.full((num_events, 3), np.nan),  # sc_velocity
+            np.full((num_events, 3), np.nan),  # sc_dps_velocity
+            np.full((num_events, 3), np.nan),  # helio_velocity
+        )
+
+    mock_get_annotated_particle_velocity.side_effect = side_effect_func
+
+    output_datasets = ultra_l1b(data_dict, data_version="001")
+
+    return output_datasets
