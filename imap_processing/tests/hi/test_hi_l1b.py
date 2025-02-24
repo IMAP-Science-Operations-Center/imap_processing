@@ -32,6 +32,7 @@ def test_hi_l1b_hk(hi_l0_test_data_path):
     assert l1b_dataset.attrs["Logical_source"] == "imap_hi_l1b_90sensor-hk"
 
 
+@pytest.mark.external_test_data()
 @pytest.mark.external_kernel()
 @pytest.mark.use_test_metakernel("imap_ena_sim_metakernel.template")
 def test_hi_l1b_de(

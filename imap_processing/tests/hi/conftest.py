@@ -5,7 +5,7 @@ import pytest
 
 @pytest.fixture(scope="session")
 def hi_test_data_path(imap_tests_path):
-    return imap_tests_path / "hi" / "test_data"
+    return imap_tests_path / "hi" / "data"
 
 
 @pytest.fixture(scope="session")

@@ -132,6 +132,11 @@ def test_data_paths():
             / "data"
             / "imap_codice_l0_raw_20241110_v001.pkts",
         ),
+        (
+            "https://api.dev.imap-mission.com/download/test_data/imap_hi_l1a_45sensor-de_20250415_v999.cdf",
+            imap_module_directory
+            / "tests/hi/data/l1/imap_hi_l1a_45sensor-de_20250415_v999.cdf",
+        ),
     ]
     return test_data_path_list
 

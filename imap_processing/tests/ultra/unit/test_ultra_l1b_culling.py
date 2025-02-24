@@ -40,20 +40,18 @@ def test_data(use_fake_spin_data_for_time):
     return time, spin_number, energy, expected_counts
 
 
-def test_get_spin(use_fake_spin_data_for_time, l1b_datasets):
+def test_get_spin(use_fake_spin_data_for_time):
     """Tests get_spin function."""
 
-    de_dataset = l1b_datasets[0]
-    use_fake_spin_data_for_time(
-        de_dataset["event_times"][0], de_dataset["event_times"][-1]
-    )
-    spin_number = get_spin(de_dataset["event_times"])
+    nspins = 5
+    spin_period = 15
+    start = 0
+    stop = start + (nspins + 1) * spin_period
+    use_fake_spin_data_for_time(start, stop)
+    spin_number = get_spin(np.linspace(start, stop, num=20))
 
-    assert len(spin_number) == len(de_dataset["event_times"])
-    expected_num_spins = np.ceil(
-        (de_dataset["event_times"].values[-1] - de_dataset["event_times"].values[0])
-        / 15
-    )
+    assert len(spin_number) == len(np.linspace(start, stop, num=20))
+    expected_num_spins = np.ceil((stop - start) / 15) + 1
     assert np.array_equal(len(np.unique(spin_number)), expected_num_spins)
 
 
@@ -69,20 +67,19 @@ def test_get_energy_histogram(test_data):
     assert duration == 15
 
 
-def test_flag_attitude(use_fake_spin_data_for_time, l1b_datasets):
+def test_flag_attitude(use_fake_spin_data_for_time):
     """Tests flag_attitude function."""
 
-    de_dataset = l1b_datasets[0]
-    use_fake_spin_data_for_time(
-        de_dataset["event_times"][0], de_dataset["event_times"][-1]
-    )
+    start = 4.45015658e08
+    stop = 4.45015873e08
+    use_fake_spin_data_for_time(start, stop)
     quality_flags, spin_rates, spin_period, spin_start_time = flag_attitude(
-        de_dataset["event_times"].values
+        np.linspace(start, stop, num=20)
     )
 
     flag = ImapAttitudeUltraFlags(quality_flags[0])
-    assert flag.name == "SPINRATE"
-    assert np.all(quality_flags == ImapAttitudeUltraFlags.SPINRATE.value)
+    assert flag.name == "NONE"
+    assert np.all(quality_flags == ImapAttitudeUltraFlags.NONE.value)
     assert np.all(spin_rates == 60 / spin_period)
     assert np.all(np.diff(spin_start_time) == 15)
 

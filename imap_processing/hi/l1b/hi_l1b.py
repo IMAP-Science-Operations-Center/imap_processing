@@ -9,7 +9,7 @@ import xarray as xr
 from imap_processing import imap_module_directory
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import parse_filename_like
-from imap_processing.hi.l1a.science_direct_event import HALF_CLOCK_TICK_NS, SECOND_TO_NS
+from imap_processing.hi.l1a.science_direct_event import HALF_CLOCK_TICK_S
 from imap_processing.hi.utils import (
     HIAPID,
     HiConstants,
@@ -302,9 +302,7 @@ def de_nominal_bin_and_spin_phase(dataset: xr.Dataset) -> dict[str, xr.DataArray
     # be binned into in the histogram packet. The Hi histogram data is binned by
     # spacecraft spin-phase, not instrument spin-phase, so the same is done here.
     # We have to add 1/2 clock tick to MET time before getting spin phase
-    met_seconds = (
-        dataset.event_met.values.astype(np.float64) + HALF_CLOCK_TICK_NS
-    ) / SECOND_TO_NS
+    met_seconds = dataset.event_met.values + HALF_CLOCK_TICK_S
     imap_spin_phase = get_spacecraft_spin_phase(met_seconds)
     new_vars["nominal_bin"].values = np.asarray(imap_spin_phase * 360 / 4).astype(
         np.uint8
@@ -345,9 +343,7 @@ def compute_hae_coordinates(dataset: xr.Dataset) -> dict[str, xr.DataArray]:
     )
     # Per Section 2.2.5 of Algorithm Document, add 1/2 of tick duration
     # to MET before computing pointing.
-    sclk_ticks = met_to_sclkticks(
-        (dataset.event_met.values + HALF_CLOCK_TICK_NS) / SECOND_TO_NS
-    )
+    sclk_ticks = met_to_sclkticks(dataset.event_met.values + HALF_CLOCK_TICK_S)
     et = sct_to_et(sclk_ticks)
     sensor_number = parse_sensor_number(dataset.attrs["Logical_source"])
     # TODO: For now, we are using SPICE to compute the look direction for each

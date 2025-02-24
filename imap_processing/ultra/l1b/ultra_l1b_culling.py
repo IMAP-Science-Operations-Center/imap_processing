@@ -103,14 +103,14 @@ def flag_attitude(eventtimes_met: NDArray) -> tuple[NDArray, NDArray, NDArray, N
     spin_period = spin_df.loc[spin_df.spin_number.isin(spins), "spin_period_sec"]
     spin_starttime = spin_df.loc[spin_df.spin_number.isin(spins), "spin_start_time"]
     spin_rates = 60 / spin_period  # 60 seconds in a minute
-    indices = (spin_rates > UltraConstants.CULLING_RPM_MIN) & (
-        spin_rates < UltraConstants.CULLING_RPM_MAX
+    bad_spin_rate_indices = (spin_rates < UltraConstants.CULLING_RPM_MIN) | (
+        spin_rates > UltraConstants.CULLING_RPM_MAX
     )
 
     quality_flags = np.full(
         spin_rates.shape, ImapAttitudeUltraFlags.NONE.value, dtype=np.uint16
     )
-    quality_flags[indices] |= ImapAttitudeUltraFlags.SPINRATE.value
+    quality_flags[bad_spin_rate_indices] |= ImapAttitudeUltraFlags.SPINRATE.value
 
     return quality_flags, spin_rates, spin_period, spin_starttime
 

@@ -51,6 +51,7 @@ def ultra_l1b(data_dict: dict, data_version: str) -> list[xr.Dataset]:
         )
         badtimes_dataset = calculate_badtimes(
             extendedspin_dataset,
+            cullingmask_dataset["spin_number"].values,
             f"imap_ultra_l1b_{instrument_id}sensor-badtimes",
             data_version,
         )
