@@ -109,6 +109,12 @@ def mock_l1c_pset_product(
     counts = counts.astype(int)
     sensitivity = np.ones(grid_shape)
 
+    # Determine the epoch, which is TT time in nanoseconds since J2000 epoch
+    tdb_et = ensure_spice(spice.str2et, time_kernels_only=True)(timestr)
+    tt_j2000ns = (
+        ensure_spice(spice.unitim, time_kernels_only=True)(tdb_et, "ET", "TT") * 1e9
+    )
+
     pset_product = xr.Dataset(
         {
             "counts": (
