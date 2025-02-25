@@ -44,7 +44,7 @@ def initiate_data_arrays(decom_ultra: dict, apid: int) -> xr.Dataset:
         index = ULTRA_EVENTS.apid.index(apid)
         logical_source = ULTRA_EVENTS.logical_source[index]
         addition_to_logical_desc = ULTRA_EVENTS.addition_to_logical_desc
-        raw_time = decom_ultra["EVENTTIMES"]
+        raw_time = decom_ultra["SHCOARSE"]
     elif apid in ULTRA_TOF.apid:
         index = ULTRA_TOF.apid.index(apid)
         logical_source = ULTRA_TOF.logical_source[index]
@@ -122,12 +122,12 @@ def initiate_data_arrays(decom_ultra: dict, apid: int) -> xr.Dataset:
 
 def get_event_time(decom_ultra_dict: dict) -> dict:
     """
-    Get unique event IDs using data from events and aux packets.
+    Get unique event IDs using data from events packets.
 
     Parameters
     ----------
     decom_ultra_dict : dict
-        Events and aux data.
+        Events data.
 
     Returns
     -------
@@ -146,9 +146,9 @@ def get_event_time(decom_ultra_dict: dict) -> dict:
         else:
             packet_counters[met] += 1
 
-        # Create the 64-bit event ID.
-        packet_base = np.uint64(met) << np.uint64(32)
-        event_id = packet_base | np.uint64(packet_counters[met])
+        # Create the 64-bit event ID using np.int64 instead of np.uint64.
+        packet_base = np.int64(met) << np.int64(32)
+        event_id = packet_base | np.int64(packet_counters[met])
         event_ids.append(event_id)
 
     decom_events["EVENTID"] = event_ids
