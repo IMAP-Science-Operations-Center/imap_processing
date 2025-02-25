@@ -129,6 +129,12 @@ def mock_l1c_pset_product(
 
     sensitivity = np.ones(grid_shape)
 
+    # Determine the epoch, which is TT time in nanoseconds since J2000 epoch
+    tdb_et = ensure_spice(spice.str2et, time_kernels_only=True)(timestr)
+    tt_j2000ns = (
+        ensure_spice(spice.unitim, time_kernels_only=True)(tdb_et, "ET", "TT") * 1e9
+    )
+
     pset_product = xr.Dataset(
         {
             "counts": (
@@ -143,7 +149,7 @@ def mock_l1c_pset_product(
                 ["azimuth_bin_center", "elevation_bin_center", "energy_bin_center"],
                 sensitivity,
             ),
-            "epoch": ensure_spice(spice.str2et, time_kernels_only=True)(timestr),
+            "epoch": tt_j2000ns,  # nanoseconds since J2000 epoch in TT
         },
         coords={
             "azimuth_bin_center": np.arange(0 + spacing_deg / 2, 360, spacing_deg),
