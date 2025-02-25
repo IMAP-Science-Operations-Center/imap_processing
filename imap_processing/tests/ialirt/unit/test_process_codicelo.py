@@ -1,3 +1,5 @@
+import pickle
+
 import numpy as np
 import pytest
 
@@ -30,6 +32,24 @@ def binary_packet_path():
         / "l0"
         / "apid01152.tlm"
     )
+
+
+@pytest.fixture(scope="session")
+def codicelo_decom_validation_data():
+    """Returns the test data directory."""
+    data_path = (
+        imap_module_directory
+        / "tests"
+        / "ialirt"
+        / "test_data"
+        / "l0"
+        / "imap_codice_l1a_lo-ialirt.pickle"
+    )
+
+    with open(data_path, "rb") as f:
+        data = pickle.load(f)
+
+    return data
 
 
 @pytest.fixture(scope="session")
@@ -71,7 +91,7 @@ def test_find_groups(codicelo_test_data):
         np.testing.assert_array_equal(group_data, np.arange(233))
 
 
-def test_append_cod_lo_data(codicelo_test_data):
+def test_append_cod_lo_data(codicelo_test_data, codicelo_decom_validation_data):
     """Tests append_cod_lo_data"""
 
     grouped_data = find_groups(codicelo_test_data)
