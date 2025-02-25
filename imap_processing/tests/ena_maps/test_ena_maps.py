@@ -16,7 +16,7 @@ from imap_processing.tests.ultra.test_data.mock_data import mock_l1c_pset_produc
 @pytest.fixture()
 def l1c_pset_products():
     """Make fake L1C Ultra PSET products for testing"""
-    l1c_spatial_bin_spacing_deg = 10
+    l1c_spatial_bin_spacing_deg = 2
     return {
         "spacing": l1c_spatial_bin_spacing_deg,
         "products": [
@@ -166,7 +166,7 @@ class TestRectangularSkyMap:
             spice_frame=geometry.SpiceFrame.ECLIPJ2000,
         )
 
-        # Project each PSET's values to the map
+        # Project each PSET's values to the map (push method)
         for ultra_pset in self.ultra_psets:
             rectangular_map.project_pset_values_to_map(
                 ultra_pset,
@@ -193,17 +193,54 @@ class TestRectangularSkyMap:
         """Test projection to Rect. Map fails w "pull" index matching method."""
 
         index_matching_method = ena_maps.IndexMatchMethod.PULL
+        skymap_spacing = 10
+
+        # Mock frame_transform to return the az and el unchanged
+        mock_frame_transform_az_el.side_effect = (
+            lambda et, az_el, from_frame, to_frame, degrees: az_el
+        )
         rectangular_map = ena_maps.RectangularSkyMap(
-            spacing_deg=10,
+            spacing_deg=skymap_spacing,
             spice_frame=geometry.SpiceFrame.ECLIPJ2000,
         )
 
-        with pytest.raises(NotImplementedError):
+        # Each map pixel will add the value of a single PSET pixel, so we'll start at 0
+        # and add 0, 1, 2, 3, ... to the map
+        expected_value_every_pixel = 0
+
+        # Another way to test this is that (if the PSET pixels are
+        # smaller than the SkyMap pixels) the sum of the counts in all PSETs should
+        # be (PSET_spacing / SkyMap_spacing)^2 times the sum of the counts in the SkyMap
+        total_pset_counts = np.zeros_like(self.ultra_psets[0].data["counts"].values)
+
+        # Project each PSET's values to the map (pull method)
+        for pset_num, ultra_pset in enumerate(self.ultra_psets):
+            # Set the counts to be 0 in the first PSET, 1 in the second, etc.
+            ultra_pset.data["counts"].values = np.full_like(
+                ultra_pset.data["counts"].values, pset_num
+            )
+
             rectangular_map.project_pset_values_to_map(
-                self.ultra_psets[0],
+                ultra_pset,
                 pset_value_keys=["counts", "exposure_time"],
                 index_match_method=index_matching_method,
             )
+            expected_value_every_pixel += pset_num
+
+            total_pset_counts += ultra_pset.data["counts"].values
+
+        # Check that the map has been updated
+        assert rectangular_map.data_dict != {}
+
+        np.testing.assert_allclose(
+            rectangular_map.data_dict["counts"],
+            expected_value_every_pixel,
+        )
+        downsample_ratio = skymap_spacing / self.l1c_spatial_bin_spacing_deg
+        np.testing.assert_allclose(
+            rectangular_map.data_dict["counts"].sum(),
+            total_pset_counts.sum() / (downsample_ratio**2),
+        )
 
 
 class TestIndexMatching:
