@@ -188,6 +188,38 @@ class TestRectangularSkyMap:
         )
 
     @pytest.mark.usefixtures("_setup_ultra_l1c_pset_products")
+    def test_project_pset_values_to_map_errors(self):
+        index_matching_method = ena_maps.IndexMatchMethod.PUSH
+        rectangular_map = ena_maps.RectangularSkyMap(
+            spacing_deg=1,
+            spice_frame=geometry.SpiceFrame.ECLIPJ2000,
+        )
+
+        # An error should be raised if a key is not found in the PSET
+        with pytest.raises(ValueError, match="Value key invalid not found"):
+            rectangular_map.project_pset_values_to_map(
+                self.ultra_psets[0],
+                pset_value_keys=["invalid"],
+                index_match_method=index_matching_method,
+            )
+
+        # An error should be raised if the number of pset_value_keys does not match
+        # the number of skymap_value_keys
+        with pytest.raises(
+            ValueError,
+            match=(
+                "The number of pointing set value keys must match the number of"
+                " sky map value keys."
+            ),
+        ):
+            rectangular_map.project_pset_values_to_map(
+                self.ultra_psets[0],
+                pset_value_keys=["counts", "exposure_time"],
+                skymap_value_keys=["counts_map"],
+                index_match_method=index_matching_method,
+            )
+
+    @pytest.mark.usefixtures("_setup_ultra_l1c_pset_products")
     @mock.patch("imap_processing.spice.geometry.frame_transform_az_el")
     def test_project_pset_values_to_map_pull_method(self, mock_frame_transform_az_el):
         """Test projection to Rect. Map fails w "pull" index matching method."""
