@@ -344,3 +344,39 @@ class TestIndexMatching:
         mock_other_map.tiling_type = "INVALID"
         with pytest.raises(ValueError, match="Tiling type of the output frame"):
             ena_maps.match_coords_to_indices(mock_pset_input_frame, mock_other_map)
+
+    def test_match_coords_to_indices_pset_to_pset_error(self):
+        mock_pset_input_frame = ena_maps.UltraPointingSet(
+            l1c_dataset=self.l1c_pset_products[0],
+            spice_reference_frame=geometry.SpiceFrame.IMAP_DPS,
+        )
+        mock_pset_output_frame = ena_maps.UltraPointingSet(
+            l1c_dataset=self.l1c_pset_products[1],
+            spice_reference_frame=geometry.SpiceFrame.IMAP_DPS,
+        )
+        with pytest.raises(
+            ValueError, match="Cannot match indices between two PointingSet objects"
+        ):
+            ena_maps.match_coords_to_indices(
+                mock_pset_input_frame, mock_pset_output_frame
+            )
+
+    def test_match_coords_to_indices_map_to_map_no_et_error(self):
+        mock_rect_map = ena_maps.RectangularSkyMap(
+            spacing_deg=2,
+            spice_frame=geometry.SpiceFrame.ECLIPJ2000,
+        )
+        mock_other_map = ena_maps.RectangularSkyMap(
+            spacing_deg=4,
+            spice_frame=geometry.SpiceFrame.ECLIPJ2000,
+        )
+        with pytest.raises(
+            ValueError,
+            match="Event time must be specified if both objects are SkyMaps.",
+        ):
+            ena_maps.match_coords_to_indices(mock_rect_map, mock_other_map)
+
+        # No error if event time is specified
+        _ = ena_maps.match_coords_to_indices(
+            mock_rect_map, mock_other_map, event_time=0
+        )
