@@ -14,6 +14,7 @@ from numpy.typing import NDArray
 from imap_processing.cdf.utils import load_cdf
 from imap_processing.ena_maps.utils import map_utils, spatial_utils
 from imap_processing.spice import geometry
+from imap_processing.spice.time import ttj2000ns_to_et
 
 logger = logging.getLogger(__name__)
 
@@ -96,6 +97,7 @@ def match_coords_to_indices(
         Event time at which to transform the input spatial object to the output frame.
         This can be manually specified, e.g., for converting between Maps which do not
         contain an epoch value.
+        If specified, must be in SPICE compatible ET.
         The default value is None, in which case the event time of the PointingSet
         object is used.
 
@@ -121,12 +123,14 @@ def match_coords_to_indices(
     if isinstance(input_object, PointingSet) and isinstance(output_object, PointingSet):
         raise ValueError("Cannot match indices between two PointingSet objects.")
 
-    # If event_time is not specified, use event_time of the PointingSet, if present.
+    # If event_time is not specified, use epoch of the PointingSet, if present.
+    # The epoch will be in units of terrestrial time (TT) J2000 nanoseconds,
+    # which must be converted to ephemeris time (ET) for SPICE.
     if event_time is None:
         if isinstance(input_object, PointingSet):
-            event_time = input_object.data["epoch"].values
+            event_time = ttj2000ns_to_et(input_object.data["epoch"].values)
         elif isinstance(output_object, PointingSet):
-            event_time = output_object.data["epoch"].values
+            event_time = ttj2000ns_to_et(output_object.data["epoch"].values)
         else:
             raise ValueError(
                 "Event time must be specified if both objects are SkyMaps."
@@ -492,6 +496,8 @@ class RectangularSkyMap(AbstractSkyMap):
                     input_object=pointing_set,
                     output_object=self,
                 )
+                # Bin the values at the matched indices. There may be multiple
+                # pointing set pixels that correspond to the same sky map pixel.
                 pointing_projected_values = map_utils.bin_single_array_at_indices(
                     value_array=raveled_pset_data,
                     projection_grid_shape=(
@@ -501,69 +507,20 @@ class RectangularSkyMap(AbstractSkyMap):
                     projection_indices=matched_indices_push,
                 )
             elif index_match_method is IndexMatchMethod.PULL:
+                # Determine the indices of the pointing set grid that correspond to
+                # each pixel in the sky map.
                 matched_indices_pull = match_coords_to_indices(
                     input_object=self,
                     output_object=pointing_set,
                 )
+                # We know that there will only be one value per sky map pixel,
+                # so we can use the matched indices directly
                 pointing_projected_values = raveled_pset_data[matched_indices_pull]
             else:
                 raise NotImplementedError(
                     "Only PUSH and PULL index matching methods are supported."
                 )
             self.data_dict[value_key] += pointing_projected_values
-
-    def to_dataset(
-        self,
-        output_value_keys_dims: dict[str, list[str]],
-        global_attrs: dict[str, str] | None = None,
-    ) -> xr.Dataset:
-        """
-        Convert the map data to an xarray Dataset.
-
-        Parameters
-        ----------
-        output_value_keys_dims : dict[str, list[str]]
-            Dictionary of dimensions for each data variable in the map.
-            Keys are the data variable names, and values are lists of dimension names.
-        global_attrs : dict[str, str], optional
-            Dictionary of attributes to add to the dataset.
-            Default is None.
-
-        Returns
-        -------
-        xr.Dataset
-            The xarray Dataset containing the map data.
-        """
-        if global_attrs is None:
-            global_attrs = {}
-
-        dataset = xr.Dataset(attrs=global_attrs)
-
-        # Add azimuth, elevation grid as coordinates
-        dataset["azimuth_bin_center"] = xr.DataArray(
-            np.rad2deg(self.sky_grid.az_bin_midpoints),
-            dims=["azimuth_bin_center"],
-            attrs={"units": "degrees"},
-        )
-        dataset["elevation_bin_center"] = xr.DataArray(
-            np.rad2deg(self.sky_grid.el_bin_midpoints),
-            dims=["elevation_bin_center"],
-            attrs={"units": "degrees"},
-        )
-
-        for key in output_value_keys_dims.keys():
-            wrapped_data = spatial_utils.rewrap_even_spaced_az_el_grid(
-                self.data_dict[key]
-            )
-            # Flatten any length-1 dimensions
-            # TODO: this may need to be tweaked to handle epoch coordinate?
-            wrapped_data = np.squeeze(wrapped_data)
-            dataset[key] = xr.DataArray(
-                wrapped_data,
-                dims=output_value_keys_dims[key],
-            )
-
-        return dataset
 
     def __repr__(self) -> str:
         """
@@ -579,10 +536,3 @@ class RectangularSkyMap(AbstractSkyMap):
             f"{self.spice_reference_frame.name} ({self.spice_reference_frame.value}), "
             f"spacing_deg={self.spacing_deg}, num_points={self.num_points})"
         )
-
-
-# TODO:
-# Add pulling index matching in match_pset_coords_to_indices
-
-# TODO:
-# Check units of time which will be read in. Do we need to add j2000ns_to_j2000s?
