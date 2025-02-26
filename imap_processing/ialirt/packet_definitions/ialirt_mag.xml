@@ -83,6 +83,9 @@
 				<xtce:LongDescription>CCSDS Packet Length (number of bytes after Packet length minus 1)</xtce:LongDescription>
 			</xtce:Parameter>
 			<!-- MAG -->
+			<xtce:Parameter name="MAG_SHCOARSE" parameterTypeRef="uint32">
+				<xtce:LongDescription>CODICE LO MET at End of Data Acquisition</xtce:LongDescription>
+			</xtce:Parameter>
 			<xtce:Parameter name="MAG_ACQ_TM_COARSE" parameterTypeRef="uint32">
 				<xtce:LongDescription>MAG Acquisition Time</xtce:LongDescription>
 			</xtce:Parameter>
@@ -118,6 +121,7 @@
 				</xtce:BaseContainer>
 				<xtce:EntryList>
 					<!-- MAG -->
+					<xtce:ParameterRefEntry parameterRef="MAG_SHCOARSE"/>
 					<xtce:ParameterRefEntry parameterRef="MAG_ACQ_TM_COARSE"/>
 					<xtce:ParameterRefEntry parameterRef="MAG_ACQ_TM_FINE"/>
 					<xtce:ParameterRefEntry parameterRef="MAG_STATUS"/>
