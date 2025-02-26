@@ -295,6 +295,49 @@ def pset_geometry(pset_et: float, sensor_str: str) -> dict[str, xr.DataArray]:
     return geometry_vars
 
 
+def find_second_de_packet_data(l1b_dataset: xr.Dataset) -> xr.Dataset:
+    """
+    Find the telemetry entries for the second packet at an ESA step.
+
+    Parameters
+    ----------
+    l1b_dataset : xr.Dataset
+        The L1B Direct Event Dataset for the current pointing.
+
+    Returns
+    -------
+    reduced_dataset : xr.Dataset
+        A dataset containing only the entries for the second packet at an ESA step.
+    """
+    # We should get two CCSDS packets per 8-spin ESA step.
+    # Get the indices of the packet before each ESA change.
+    esa_step = l1b_dataset["esa_step"].values
+    second_esa_packet_idx = np.append(
+        np.flatnonzero(np.diff(esa_step) != 0), len(esa_step) - 1
+    )
+    # Remove esa steps at 0 - these are calibrations
+    second_esa_packet_idx = second_esa_packet_idx[esa_step[second_esa_packet_idx] != 0]
+    # Remove indices where we don't have two consecutive packets at the same ESA
+    if second_esa_packet_idx[0] == 0:
+        logger.warning(
+            f"Removing packet 0 with ESA step: {esa_step[0]} from"
+            f"calculation of exposure time due to missing matched pair."
+        )
+        second_esa_packet_idx = second_esa_packet_idx[1:]
+    missing_esa_pair_mask = (
+        esa_step[second_esa_packet_idx - 1] != esa_step[second_esa_packet_idx]
+    )
+    if missing_esa_pair_mask.any():
+        logger.warning(
+            f"Removing {missing_esa_pair_mask.sum()} packets from exposure "
+            f"time calculation due to missing ESA step DE packet pairs."
+        )
+    second_esa_packet_idx = second_esa_packet_idx[~missing_esa_pair_mask]
+    # Reduce the dataset to just the second packet entries
+    data_subset = l1b_dataset.isel(epoch=second_esa_packet_idx)
+    return data_subset
+
+
 @pd.api.extensions.register_dataframe_accessor("cal_prod_config")
 class CalibrationProductConfig:
     """
