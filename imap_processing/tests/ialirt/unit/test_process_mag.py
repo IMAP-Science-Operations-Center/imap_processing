@@ -1,9 +1,11 @@
+import numpy as np
 import pandas as pd
 import pytest
+import xarray as xr
 
 from imap_processing import imap_module_directory
 from imap_processing.utils import packet_file_to_datasets
-from imap_processing.ialirt.l0.parse_mag import get_pkt_counter, get_science_data
+from imap_processing.ialirt.l0.parse_mag import get_pkt_counter, get_science_data, parse_packet, find_groups
 
 
 @pytest.fixture(scope="session")
@@ -50,10 +52,14 @@ def mag_test_data():
 def xarray_data(binary_packet_path, xtce_mag_path):
     """Create xarray data."""
     apid = 1001
-    return tuple(
+
+    xarray_data = tuple(
         packet_file_to_datasets(packet, xtce_mag_path, use_derived_value=False)[apid]
         for packet in binary_packet_path
     )
+
+    merged_xarray_data = xr.concat(xarray_data, dim="epoch")
+    return merged_xarray_data
 
 
 def test_get_pkt_counter(xarray_data):
@@ -64,16 +70,25 @@ def test_get_pkt_counter(xarray_data):
         assert pkt_counter == expected, f"Expected {expected}, got {pkt_counter}"
 
 
-def test_get_science_data(xarray_data):
+def test_get_science_data(xarray_data, mag_test_data):
     """Tests the get_science_data function."""
 
-    xarray_data_0, xarray_data_1, xarray_data_2, xarray_data_3,\
-        xarray_data_4, xarray_data_5, xarray_data_6, xarray_data_7= xarray_data
-
-    science_data_0 = get_science_data(int(xarray_data_0["mag_data"].values[0]), 0)
-    #science_data_1 = get_science_data(int(xarray_data_1["mag_data"].values[0]), 1)
-    science_data_2 = get_science_data(int(xarray_data_2["mag_status"].values[0]), 2)
-    #science_data_3 = get_science_data(int(xarray_data_3["mag_data"].values[0]), 3)
+    science_data_0 = get_science_data(int(xarray_data["mag_status"][0].values), 0)
+    science_data_1 = get_science_data(int(xarray_data["mag_status"][1].values), 1)
+    science_data_2 = get_science_data(int(xarray_data["mag_status"][2].values), 2)
+    science_data_3 = get_science_data(int(xarray_data["mag_status"][3].values), 3)
 
     print('hi')
+
+def test_find_groups(xarray_data):
+    """Tests the find_groups function."""
+    grouped_data = find_groups(xarray_data)
+
+    assert len(np.unique(grouped_data["mag_acq_tm_coarse"])) == len(
+        np.unique(grouped_data["group"]))
+
+
+def test_parse_packet(xarray_data):
+    """Tests the parse_packet function."""
+    parsed_packet = parse_packet(xarray_data)
 
