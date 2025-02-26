@@ -83,6 +83,39 @@ def find_groups(data: xr.Dataset) -> xr.Dataset:
     return data
 
 
+def to_signed_16(n):
+    """Convert unsigned 16-bit integer to signed 16-bit integer."""
+    n = n & 0xFFFF  # Ensure it's 16-bit
+    return n - (0x10000 if n & 0x8000 else 0)
+
+
+def concatenate_science_data(science_data, pkt_counter):
+    """Concatenate the science data for primary and secondary sensors."""
+
+    science0 = int(science_data[pkt_counter == 0])
+    science1 = int(science_data[pkt_counter == 1])
+    science2 = int(science_data[pkt_counter == 2])
+    science3 = int(science_data[pkt_counter == 3])
+
+    # Concatenate values and convert to signed 16-bit integers
+    priX = to_signed_16((science0[:, 0] << 8) | science0[:, 1])
+    priY = to_signed_16((science0[:, 2] << 8) | science1[:, 0])
+    priZ = to_signed_16((science1[:, 1] << 8) | science1[:, 2])
+
+    secX = to_signed_16((science2[:, 0] << 8) | science2[:, 1])
+    secY = to_signed_16((science2[:, 2] << 8) | science3[:, 0])
+    secZ = to_signed_16((science3[:, 1] << 8) | science3[:, 2])
+
+    return {
+        "priX": priX,
+        "priY": priY,
+        "priZ": priZ,
+        "secX": secX,
+        "secY": secY,
+        "secZ": secZ,
+    }
+
+
 def parse_packet(xarray_data: xr.Dataset):
     """Return science_data in the form of xarray."""
     logger.info("Calculating DE.")
@@ -104,6 +137,11 @@ def parse_packet(xarray_data: xr.Dataset):
             continue
 
         status_data = get_status_data(status_values, pkt_counter)
+
+        science_values = grouped_data["mag_data"][
+            (grouped_data["group"] == group).values
+        ]
+        science_data = concatenate_science_data(science_values, pkt_counter)
 
     # Concatenate the packets
 

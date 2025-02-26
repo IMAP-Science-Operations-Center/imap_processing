@@ -5,7 +5,7 @@ import xarray as xr
 
 from imap_processing import imap_module_directory
 from imap_processing.utils import packet_file_to_datasets
-from imap_processing.ialirt.l0.parse_mag import get_pkt_counter, get_science_data, parse_packet, find_groups
+from imap_processing.ialirt.l0.parse_mag import get_pkt_counter, get_status_data, parse_packet, find_groups
 
 
 @pytest.fixture(scope="session")
@@ -73,10 +73,10 @@ def test_get_pkt_counter(xarray_data):
 def test_get_science_data(xarray_data, mag_test_data):
     """Tests the get_science_data function."""
 
-    science_data_0 = get_science_data(int(xarray_data["mag_status"][0].values), 0)
-    science_data_1 = get_science_data(int(xarray_data["mag_status"][1].values), 1)
-    science_data_2 = get_science_data(int(xarray_data["mag_status"][2].values), 2)
-    science_data_3 = get_science_data(int(xarray_data["mag_status"][3].values), 3)
+    science_data_0 = get_status_data(int(xarray_data["mag_status"][0].values), 0)
+    science_data_1 = get_status_data(int(xarray_data["mag_status"][1].values), 1)
+    science_data_2 = get_status_data(int(xarray_data["mag_status"][2].values), 2)
+    science_data_3 = get_status_data(int(xarray_data["mag_status"][3].values), 3)
 
     print('hi')
 
