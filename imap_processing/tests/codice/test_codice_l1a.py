@@ -62,7 +62,7 @@ EXPECTED_ARRAY_SHAPES = [
 EXPECTED_NUM_VARIABLES = [
     0,  # hi-ialirt  # TODO: Need to implement
     0,  # lo-ialirt  # TODO: Need to implement
-    148,  # hskp
+    132,  # hskp
     8 + len(constants.LO_COUNTERS_AGGREGATED_VARIABLE_NAMES),  # lo-counters-aggregated
     9,  # lo-counters-singles
     13,  # lo-sw-priority
@@ -253,40 +253,10 @@ def test_l1a_validate_hskp_data(test_l1a_data):
     # Load the validation housekeeping data
     validation_hskp_data = load_cdf(validation_hskp_filepath)
 
-    # These variables are present in the decommed test data, but not present in
-    # the validation data
-    # TODO: Ask Joey if these can be removed from the L1a housekeeping CDFs
-    exclude_variables = [
-        "spare_1",
-        "spare_2",
-        "spare_3",
-        "spare_4",
-        "spare_5",
-        "spare_6",
-        "spare_62",
-        "spare_68",
-    ]
-
-    # These variables are not present in the validation data
-    # TODO: Ask joey if this is expected
-    exclude_variables.extend(
-        [
-            "version",
-            "type",
-            "sec_hdr_flg",
-            "pkt_apid",
-            "seq_flgs",
-            "src_seq_ctr",
-            "pkt_len",
-            "chksum",
-        ]
-    )
-
     for variable in hskp_data:
-        if variable not in exclude_variables:
-            np.testing.assert_array_equal(
-                hskp_data[variable], validation_hskp_data[variable.upper()]
-            )
+        np.testing.assert_array_equal(
+            hskp_data[variable], validation_hskp_data[variable.upper()]
+        )
 
 
 def test_l1a_multiple_packets():
