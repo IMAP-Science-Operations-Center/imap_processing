@@ -211,7 +211,6 @@ def test_l1a_validate_data_arrays(test_l1a_data: xr.Dataset, index):
     # TODO: Currently only the following products can be validated, expand this
     #       to other data products as I can validate them.
     able_to_be_validated = [
-        "lo-counters-aggregated",
         "lo-counters-singles",
         "lo-sw-angular",
         "lo-nsw-angular",
@@ -220,10 +219,7 @@ def test_l1a_validate_data_arrays(test_l1a_data: xr.Dataset, index):
         "lo-sw-species",
         "lo-nsw-species",
     ]
-    able_to_be_validated = ["lo-counters-aggregated"]
 
-    # Currently broken: lo-sw-priority, lo-nsw-priority, lo-nsw-angular
-    #                   lo-sw-angular, lo-counters-singles, lo-counters-aggregated
     if descriptor in able_to_be_validated:
         counters = getattr(
             constants, f'{descriptor.upper().replace("-","_")}_VARIABLE_NAMES'
@@ -232,21 +228,10 @@ def test_l1a_validate_data_arrays(test_l1a_data: xr.Dataset, index):
         validation_dataset = load_cdf(VALIDATION_DATA[index])
 
         for counter in counters:
-            # # Ensure the data array shapes are equal
-            # assert (
-            #     processed_dataset[counter].data.shape
-            #     == validation_dataset[counter].data.shape
-            # )
-
-            for epoch in range(0, len(processed_dataset[counter])):
-                for angle in range(0, len(processed_dataset[counter][epoch])):
-                    print(processed_dataset[counter][epoch][angle].data)
-                    print(validation_dataset[counter][epoch][angle].data)
-
-                    np.testing.assert_equal(
-                        processed_dataset[counter][epoch][angle].data,
-                        validation_dataset[counter][epoch][angle].data,
-                    )
+            # Ensure the data arrays are equal
+            np.testing.assert_equal(
+                processed_dataset[counter].data, validation_dataset[counter].data
+            )
 
     else:
         pytest.xfail(f"Still need to implement validation for {descriptor}")
