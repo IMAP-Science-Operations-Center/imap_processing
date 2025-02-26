@@ -465,7 +465,7 @@ hi_pset_spin_angle_bin:
   FILLVAL: 65535
   FORMAT: I3
   LABLAXIS: Bin Index
-  UNITS: deg
+  UNITS: " "
   SCALE_TYP: linear
   MONOTON: INCREASE
   VALIDMIN: 0
@@ -538,11 +538,9 @@ hi_pset_exposure_times:
   FIELDNAM: Bin exposure times
   DEPEND_0: epoch
   DEPEND_1: esa_energy_step
-  DEPEND_2: calibration_prod
-  DEPEND_3: spin_angle_bin
+  DEPEND_2: spin_angle_bin
   LABL_PTR_1: esa_energy_step_label
-  LABL_PTR_2: calibration_prod_label
-  LABL_PTR_3: spin_bin_label
+  LABL_PTR_2: spin_bin_label
   UNITS: sec
   DISPLAY_TYPE: stack_plot
   FORMAT: F6.2
