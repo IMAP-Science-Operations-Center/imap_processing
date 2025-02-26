@@ -547,12 +547,33 @@ def create_hskp_dataset(
         attrs=cdf_attrs.get_global_attributes("imap_codice_l1a_hskp"),
     )
 
-    for variable in packet:
-        attrs = cdf_attrs.get_variable_attributes(variable)
+    # These variables don't need to carry over from L0 to L1a
+    exclude_variables = [
+        "spare_1",
+        "spare_2",
+        "spare_3",
+        "spare_4",
+        "spare_5",
+        "spare_6",
+        "spare_62",
+        "spare_68",
+        "version",
+        "type",
+        "sec_hdr_flg",
+        "pkt_apid",
+        "seq_flgs",
+        "src_seq_ctr",
+        "pkt_len",
+        "chksum",
+    ]
 
-        dataset[variable] = xr.DataArray(
-            packet[variable].data, dims=["epoch"], attrs=attrs
-        )
+    for variable in packet:
+        if variable not in exclude_variables:
+            attrs = cdf_attrs.get_variable_attributes(variable)
+
+            dataset[variable] = xr.DataArray(
+                packet[variable].data, dims=["epoch"], attrs=attrs
+            )
 
     return dataset
 
