@@ -568,12 +568,14 @@ def create_hskp_dataset(
     ]
 
     for variable in packet:
-        if variable not in exclude_variables:
-            attrs = cdf_attrs.get_variable_attributes(variable)
+        if variable in exclude_variables:
+            continue
 
-            dataset[variable] = xr.DataArray(
-                packet[variable].data, dims=["epoch"], attrs=attrs
-            )
+        attrs = cdf_attrs.get_variable_attributes(variable)
+
+        dataset[variable] = xr.DataArray(
+            packet[variable].data, dims=["epoch"], attrs=attrs
+        )
 
     return dataset
 
