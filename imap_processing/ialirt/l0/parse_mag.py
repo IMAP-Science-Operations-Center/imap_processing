@@ -4,9 +4,13 @@ import logging
 
 import numpy as np
 import xarray as xr
-from dataclasses import astuple
 
-from imap_processing.ialirt.l0.mag_l0_ialirt_data import decode_packet0, decode_packet1, decode_packet2, decode_packet3
+from imap_processing.ialirt.l0.mag_l0_ialirt_data import (
+    decode_packet0,
+    decode_packet1,
+    decode_packet2,
+    decode_packet3,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -32,17 +36,23 @@ def get_pkt_counter(mag_status):
     return pkt_counter
 
 
-def get_science_data(status_values, pkt_counter):
+def get_status_data(status_values, pkt_counter):
     """Get the science data."""
+    decoders = {
+        0: decode_packet0,
+        1: decode_packet1,
+        2: decode_packet2,
+        3: decode_packet3,
+    }
 
-    packet_0 = decode_packet0(int(status_values[pkt_counter == 0]))
-    packet_1 = decode_packet1(int(status_values[pkt_counter == 1]))
-    packet_2 = decode_packet2(int(status_values[pkt_counter == 2]))
-    packet_3 = decode_packet3(int(status_values[pkt_counter == 3]))
-    print('hi')
+    combined_packets = {}
 
+    for pkt_num, decoder in decoders.items():
+        status_subset = status_values[pkt_counter == pkt_num]
+        decoded_packet = decoder(int(status_subset))
+        combined_packets.update(vars(decoded_packet))
 
-    return packet
+    return combined_packets
 
 
 def find_groups(data: xr.Dataset) -> xr.Dataset:
@@ -63,8 +73,9 @@ def find_groups(data: xr.Dataset) -> xr.Dataset:
     data = data.sortby("mag_acq_tm_coarse", ascending=True)
 
     # Get unique acquisition times and create group labels
-    unique_acq_times, group_labels = np.unique(data["mag_acq_tm_coarse"],
-                                               return_inverse=True)
+    unique_acq_times, group_labels = np.unique(
+        data["mag_acq_tm_coarse"], return_inverse=True
+    )
 
     # Assign group labels as a coordinate
     data["group"] = ("group", group_labels)
@@ -92,11 +103,8 @@ def parse_packet(xarray_data: xr.Dataset):
             )
             continue
 
-        science_data = get_science_data(status_values, pkt_counter)
+        status_data = get_status_data(status_values, pkt_counter)
 
     # Concatenate the packets
 
-    return science_data
-
-
-
+    return status_data
