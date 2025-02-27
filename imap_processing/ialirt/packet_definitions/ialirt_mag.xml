@@ -18,10 +18,6 @@
 				<xtce:IntegerDataEncoding sizeInBits="3" encoding="unsigned" />
 				<xtce:UnitSet />
 			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="uint6" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="6" encoding="unsigned" />
-				<xtce:UnitSet />
-			</xtce:IntegerParameterType>
 			<xtce:IntegerParameterType name="uint11" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="11" encoding="unsigned" />
 				<xtce:UnitSet />
@@ -34,10 +30,6 @@
 				<xtce:IntegerDataEncoding sizeInBits="16" encoding="unsigned" />
 				<xtce:UnitSet />
 			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="uint22" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="22" encoding="unsigned" />
-				<xtce:UnitSet />
-			</xtce:IntegerParameterType>
 			<xtce:IntegerParameterType name="uint24" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="24" encoding="unsigned" />
 				<xtce:UnitSet />
@@ -46,19 +38,8 @@
 				<xtce:IntegerDataEncoding sizeInBits="32" encoding="unsigned" />
 				<xtce:UnitSet />
 			</xtce:IntegerParameterType>
-						<!-- Enumerated Data Types -->
-			<xtce:EnumeratedParameterType name="instrument_status" signed="false">
-                <xtce:UnitSet/>
-                <xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned"/>
-                <xtce:EnumerationList>
-                    <xtce:Enumeration label="OFF-NOMINAL" value="0"/>
-                    <xtce:Enumeration label="NOMINAL" value="1"/>
-                </xtce:EnumerationList>
-            </xtce:EnumeratedParameterType>
 		</xtce:ParameterTypeSet>
         <xtce:ParameterSet>
-            <!-- Within the ParameterSet, utilize the data types defined in the ParameterTypeSet to create variables
-            with their respective data types. -->
 
             <!--CCSDS Header Elements-->
 			<xtce:Parameter name="VERSION" parameterTypeRef="uint3">
@@ -84,13 +65,13 @@
 			</xtce:Parameter>
 			<!-- MAG -->
 			<xtce:Parameter name="MAG_SHCOARSE" parameterTypeRef="uint32">
-				<xtce:LongDescription>CODICE LO MET at End of Data Acquisition</xtce:LongDescription>
+				<xtce:LongDescription>MAG MET at End of Data Acquisition</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="MAG_ACQ_TM_COARSE" parameterTypeRef="uint32">
-				<xtce:LongDescription>MAG Acquisition Time</xtce:LongDescription>
+				<xtce:LongDescription>MAG Coarse Acquisition Time</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="MAG_ACQ_TM_FINE" parameterTypeRef="uint16">
-				<xtce:LongDescription>MAG Acquisition Time</xtce:LongDescription>
+				<xtce:LongDescription>MAG Fine Acquisition Time</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="MAG_STATUS" parameterTypeRef="uint24">
 				<xtce:LongDescription>MAG Status</xtce:LongDescription>
