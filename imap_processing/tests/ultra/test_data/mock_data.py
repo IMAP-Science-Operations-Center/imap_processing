@@ -5,6 +5,7 @@ import spiceypy as spice
 import xarray as xr
 
 from imap_processing.spice.kernels import ensure_spice
+from imap_processing.spice.time import str_to_et
 from imap_processing.ultra.l1c.ultra_l1c_pset_bins import build_energy_bins
 
 DEFAULT_SPACING_DEG_L1C = 0.5
@@ -110,7 +111,7 @@ def mock_l1c_pset_product(
     sensitivity = np.ones(grid_shape)
 
     # Determine the epoch, which is TT time in nanoseconds since J2000 epoch
-    tdb_et = ensure_spice(spice.str2et, time_kernels_only=True)(timestr)
+    tdb_et = str_to_et(timestr)
     tt_j2000ns = (
         ensure_spice(spice.unitim, time_kernels_only=True)(tdb_et, "ET", "TT") * 1e9
     )
