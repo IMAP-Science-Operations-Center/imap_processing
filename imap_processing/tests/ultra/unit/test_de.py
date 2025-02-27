@@ -97,12 +97,12 @@ def test_calculate_de(l1b_datasets, df_filt):
         rtol=1e-2,
     )
     assert np.allclose(
-        l1b_de_dataset["azimuth"].values,
+        l1b_de_dataset["phi"].values,
         df_filt["phi"].astype("float").values,
         rtol=1e-2,
     )
     assert np.allclose(
-        l1b_de_dataset["elevation"].values,
+        l1b_de_dataset["theta"].values,
         df_filt["theta"].astype("float").values,
         rtol=1e-2,
     )

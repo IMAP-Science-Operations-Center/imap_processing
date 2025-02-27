@@ -186,8 +186,8 @@ def calculate_de(de_dataset: xr.Dataset, name: str, data_version: str) -> xr.Dat
     de_dict["velocity_magnitude"] = magnitude_v
     de_dict["front_back_distance"] = d
     de_dict["path_length"] = r
-    de_dict["azimuth"] = phi
-    de_dict["elevation"] = theta
+    de_dict["phi"] = phi
+    de_dict["theta"] = theta
 
     v = get_de_velocity(
         (de_dict["x_front"], de_dict["y_front"]),
