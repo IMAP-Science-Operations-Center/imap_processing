@@ -164,13 +164,13 @@ def decode_packet2(status: int) -> Packet2:
     Bits 8-0 → hkn8v5_current (9-bit value)
     """
     hkp8v5_warn = (status >> 20) & 0x01
-    kp8v5_danger = (status >> 19) & 0x01
+    hkp8v5_danger = (status >> 19) & 0x01
     hkp8v5c_warn = (status >> 18) & 0x01
     hkp8v5c_danger = (status >> 17) & 0x01
     hkn8v5 = ((status >> 9) & 0xFF) << 4
     hkn8v5_current = ((status >> 0) & 0x1FF) << 3
     return Packet2(
-        hkp8v5_warn, kp8v5_danger, hkp8v5c_warn, hkp8v5c_danger, hkn8v5, hkn8v5_current
+        hkp8v5_warn, hkp8v5_danger, hkp8v5c_warn, hkp8v5c_danger, hkn8v5, hkn8v5_current
     )
 
 
