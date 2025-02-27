@@ -82,38 +82,26 @@ def find_groups(data: xr.Dataset) -> xr.Dataset:
 
     return data
 
+import numpy as np
 
-def to_signed_16(n):
-    """Convert unsigned 16-bit integer to signed 16-bit integer."""
-    n = n & 0xFFFF  # Ensure it's 16-bit
-    return n - (0x10000 if n & 0x8000 else 0)
+def uint24_to_bytes(uint24_array):
+    """
+    Convert an array of uint24 values into bytes.
+    """
+    byte_array = np.zeros((len(uint24_array), 3), dtype=np.uint8)
+    byte_array[:, 0] = (uint24_array >> 16) & 0xFF  # Extract first byte
+    byte_array[:, 1] = (uint24_array >> 8) & 0xFF   # Extract second byte
+    byte_array[:, 2] = (uint24_array >> 0) & 0xFF   # Extract third byte
+    return byte_array
 
+def extract_magnetic_vectors(mag_data):
+    # Extract bytes from the first 24-bit value
+    byte2 = (mag_data[0] >> 16) & 0xFF  # Most significant byte
+    byte1 = (mag_data[0] >> 8) & 0xFF  # Middle byte
+    # Combine the two bytes: (MSB << 8) OR LSB
+    priX = (byte2 << 8) | byte1
 
-def concatenate_science_data(science_data, pkt_counter):
-    """Concatenate the science data for primary and secondary sensors."""
-
-    science0 = int(science_data[pkt_counter == 0])
-    science1 = int(science_data[pkt_counter == 1])
-    science2 = int(science_data[pkt_counter == 2])
-    science3 = int(science_data[pkt_counter == 3])
-
-    # Concatenate values and convert to signed 16-bit integers
-    priX = to_signed_16((science0[:, 0] << 8) | science0[:, 1])
-    priY = to_signed_16((science0[:, 2] << 8) | science1[:, 0])
-    priZ = to_signed_16((science1[:, 1] << 8) | science1[:, 2])
-
-    secX = to_signed_16((science2[:, 0] << 8) | science2[:, 1])
-    secY = to_signed_16((science2[:, 2] << 8) | science3[:, 0])
-    secZ = to_signed_16((science3[:, 1] << 8) | science3[:, 2])
-
-    return {
-        "priX": priX,
-        "priY": priY,
-        "priZ": priZ,
-        "secX": secX,
-        "secY": secY,
-        "secZ": secZ,
-    }
+    return priX
 
 
 def parse_packet(xarray_data: xr.Dataset):
@@ -141,8 +129,7 @@ def parse_packet(xarray_data: xr.Dataset):
         science_values = grouped_data["mag_data"][
             (grouped_data["group"] == group).values
         ]
-        science_data = concatenate_science_data(science_values, pkt_counter)
-
+        priX = extract_magnetic_vectors(science_values)
     # Concatenate the packets
 
     return status_data

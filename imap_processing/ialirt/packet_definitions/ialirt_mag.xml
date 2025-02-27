@@ -96,7 +96,7 @@
 				<xtce:LongDescription>MAG Status</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="MAG_DATA" parameterTypeRef="uint24">
-				<xtce:LongDescription>MAG Status</xtce:LongDescription>
+				<xtce:LongDescription>MAG Data</xtce:LongDescription>
 			</xtce:Parameter>
 			<!-- MAG -->
 		</xtce:ParameterSet>
