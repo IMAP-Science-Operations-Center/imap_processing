@@ -94,14 +94,43 @@ def uint24_to_bytes(uint24_array):
     byte_array[:, 2] = (uint24_array >> 0) & 0xFF   # Extract third byte
     return byte_array
 
-def extract_magnetic_vectors(mag_data):
-    # Extract bytes from the first 24-bit value
-    byte2 = (mag_data[0] >> 16) & 0xFF  # Most significant byte
-    byte1 = (mag_data[0] >> 8) & 0xFF  # Middle byte
-    # Combine the two bytes: (MSB << 8) OR LSB
-    priX = (byte2 << 8) | byte1
 
-    return priX
+import numpy as np
+
+
+def extract_magnetic_vectors(mag_data: np.ndarray) -> tuple[int, int, int, int, int, int]:
+
+    def get_bytes(val: int) -> list[int]:
+        # Extract the three bytes from a 24-bit value (big-endian order)
+        return [
+            (val >> 16) & 0xFF,  # Most significant byte (Byte2)
+            (val >> 8) & 0xFF,  # Middle byte (Byte1)
+            (val >> 0) & 0xFF  # Least significant byte (Byte0)
+        ]
+
+    # Convert each 24-bit value to its three constituent bytes
+    science0 = get_bytes(int(mag_data[0]))
+    science1 = get_bytes(int(mag_data[1]))
+    science2 = get_bytes(int(mag_data[2]))
+    science3 = get_bytes(int(mag_data[3]))
+
+    # Primary sensor:
+    # priX: combine first two bytes of Packet 0
+    priX = (science0[0] << 8) | science0[1]
+    # priY: combine the third byte of Packet 0 (as high byte) with the first byte of Packet 1 (as low byte)
+    priY = (science0[2] << 8) | science1[0]
+    # priZ: combine the second and third bytes of Packet 1
+    priZ = (science1[1] << 8) | science1[2]
+
+    # Secondary sensor:
+    # secX: combine the first two bytes of Packet 2
+    secX = (science2[0] << 8) | science2[1]
+    # secY: combine the third byte of Packet 2 with the first byte of Packet 3
+    secY = (science2[2] << 8) | science3[0]
+    # secZ: combine the second and third bytes of Packet 3
+    secZ = (science3[1] << 8) | science3[2]
+
+    return priX, priY, priZ, secX, secY, secZ
 
 
 def parse_packet(xarray_data: xr.Dataset):
