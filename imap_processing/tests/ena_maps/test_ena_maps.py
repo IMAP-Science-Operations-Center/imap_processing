@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from unittest import mock
 
+import healpy as hp
 import numpy as np
 import pytest
 import xarray as xr
@@ -275,6 +276,129 @@ class TestRectangularSkyMap:
         )
 
 
+class TestHealpixSkyMap:
+    @pytest.fixture(autouse=True)
+    def _setup_ultra_l1c_pset_products(self, l1c_pset_products):
+        """Setup fixture data as class attributes"""
+        self.l1c_spatial_bin_spacing_deg = l1c_pset_products["spacing"]
+        self.l1c_pset_products = l1c_pset_products["products"]
+        self.ultra_psets = [
+            ena_maps.UltraPointingSet(
+                spice_reference_frame=geometry.SpiceFrame.IMAP_DPS,
+                l1c_dataset=l1c_product,
+            )
+            for l1c_product in self.l1c_pset_products
+        ]
+
+    @pytest.mark.parametrize(
+        "nside",
+        [8, 16, 32],
+    )
+    @pytest.mark.parametrize("nested", [True, False], ids=["nested", "ring"])
+    def test_instantiate(self, nside, nested):
+        """Test instantiation of HealpixSkyMap"""
+        hp_map = ena_maps.HealpixSkyMap(
+            nside=nside,
+            spice_frame=geometry.SpiceFrame.ECLIPJ2000,
+            nested=nested,
+        )
+
+        # Check that the map is empty
+        assert hp_map.data_dict == {}
+
+        # Check that the reference frame is correctly set
+        assert hp_map.spice_reference_frame is geometry.SpiceFrame.ECLIPJ2000
+        # Check that the nside and nested properties are set correctly
+        np.testing.assert_equal(hp_map.nside, nside)
+        np.testing.assert_equal(hp_map.nested, nested)
+        # Check the number of points is 12 * nside^2
+        np.testing.assert_equal(hp_map.num_points, 12 * nside**2)
+        # There will be az, el values for each pixel
+        assert hp_map.az_el_points.shape == (hp_map.num_points, 2)
+        # The az must be in the range [0, 360) degrees
+        # and el in the range [-90, 90)
+        assert np.all(hp_map.az_el_points[:, 0] >= np.deg2rad(0))
+        assert np.all(hp_map.az_el_points[:, 0] < np.deg2rad(360))
+        assert np.all(hp_map.az_el_points[:, 1] >= -np.deg2rad(90))
+        assert np.all(hp_map.az_el_points[:, 1] < np.deg2rad(90))
+
+    @pytest.mark.usefixtures("_setup_ultra_l1c_pset_products")
+    @pytest.mark.parametrize(
+        "nside,degree_tolerance",
+        [
+            (8, 6),
+            (16, 2),
+            (32, 2),
+        ],
+    )
+    @pytest.mark.parametrize("nested", [True, False], ids=["nested", "ring"])
+    @mock.patch("imap_processing.spice.geometry.frame_transform_az_el")
+    def test_project_pset_values_to_map_push_method(
+        self, mock_frame_transform_az_el, nside, degree_tolerance, nested
+    ):
+        """
+        Test that PointingSet which contains bright spot pushes to correct spot in map.
+
+        Parameterized over nside, nested. The tolerance for lower nsides must be higher
+        because the Healpix pixels are larger.
+        """
+
+        # Mock frame_transform to return the az and el unchanged
+        mock_frame_transform_az_el.side_effect = (
+            lambda et, az_el, from_frame, to_frame, degrees: az_el
+        )
+
+        index_matching_method = ena_maps.IndexMatchMethod.PUSH
+
+        # Create a PointingSet with a bright spot
+        mock_pset_input_frame = ena_maps.UltraPointingSet(
+            l1c_dataset=self.l1c_pset_products[0],
+            spice_reference_frame=geometry.SpiceFrame.IMAP_DPS,
+        )
+        mock_pset_input_frame.data["counts"].values = np.zeros_like(
+            mock_pset_input_frame.data["counts"].values
+        )
+
+        input_bright_pixel_az_el_deg = (110, 55)
+        mock_pset_input_frame.data["counts"].values[
+            int(input_bright_pixel_az_el_deg[0] // mock_pset_input_frame.spacing_deg),
+            int(
+                (90 + input_bright_pixel_az_el_deg[1])
+                // mock_pset_input_frame.spacing_deg
+            ),
+            :,
+        ] = 1
+
+        # Create a Healpix map
+        hp_map = ena_maps.HealpixSkyMap(
+            nside=nside,
+            spice_frame=geometry.SpiceFrame.ECLIPJ2000,
+            nested=nested,
+        )
+
+        # Project the PointingSet to the Healpix map
+        hp_map.project_pset_values_to_map(
+            mock_pset_input_frame,
+            pset_value_keys=[
+                "counts",
+            ],
+            index_match_method=index_matching_method,
+        )
+
+        # Check that the map has been updated
+        assert hp_map.data_dict != {}
+
+        # Find the maximum value in the spatial pixel dimension of the healpix map
+        bright_hp_pixel_index = hp_map.data_dict["counts"][:, 0].argmax()
+        bright_hp_pixel_az_el = hp_map.az_el_points[bright_hp_pixel_index]
+
+        np.testing.assert_allclose(
+            bright_hp_pixel_az_el,
+            np.deg2rad(input_bright_pixel_az_el_deg),
+            atol=np.deg2rad(degree_tolerance),
+        )
+
+
 class TestIndexMatching:
     @pytest.fixture(autouse=True)
     def _setup_ultra_l1c_pset_products(self, l1c_pset_products):
@@ -328,15 +452,15 @@ class TestIndexMatching:
             ]
         )
 
-        # Mock the rectangular map and check the output values
-        mock_rect_map = ena_maps.RectangularSkyMap(
+        # Create the rectangular map and check the output values
+        rect_map = ena_maps.RectangularSkyMap(
             spacing_deg=map_spacing_deg,
             spice_frame=geometry.SpiceFrame.ECLIPJ2000,
         )
         flat_indices_input_grid_output_frame = ena_maps.match_coords_to_indices(
-            mock_pset_input_frame, mock_rect_map
+            mock_pset_input_frame, rect_map
         )
-        assert mock_rect_map.num_points == 360 * 180 / map_spacing_deg**2
+        assert rect_map.num_points == 360 * 180 / map_spacing_deg**2
         assert len(flat_indices_input_grid_output_frame) == len(manual_az_el_coords)
         np.testing.assert_equal(
             flat_indices_input_grid_output_frame, expected_output_pixel
@@ -344,38 +468,91 @@ class TestIndexMatching:
 
         # Check that the map's az/el points at the matched indices
         # are the same as the input az/el points to within the spacing of the map
-        matched_map_az_el = mock_rect_map.az_el_points[
-            flat_indices_input_grid_output_frame
-        ]
+        matched_map_az_el = rect_map.az_el_points[flat_indices_input_grid_output_frame]
         np.testing.assert_allclose(
             matched_map_az_el[:, 0],
             mock_pset_input_frame.az_el_points[:, 0],
             atol=np.deg2rad(map_spacing_deg),
         )
 
-    def test_match_coords_to_indices_pset_to_healpix_map_other_map(
+    @pytest.mark.parametrize(
+        "nside,degree_tolerance",
+        [
+            (8, 12),
+            (16, 6),
+            (32, 3),
+        ],
+        ids=["nside8", "nside16", "nside32"],
+    )
+    @pytest.mark.parametrize("nested", [True, False], ids=["nested", "ring"])
+    @mock.patch("imap_processing.spice.geometry.frame_transform_az_el")
+    def test_match_coords_to_indices_pset_to_healpix_map(
+        self, mock_frame_transform_az_el, nside, degree_tolerance, nested
+    ):
+        # Mock frame_transform to return the az and el unchanged
+        mock_frame_transform_az_el.side_effect = (
+            lambda et, az_el, from_frame, to_frame, degrees: az_el
+        )
+        hp_map = ena_maps.HealpixSkyMap(
+            nside=nside, spice_frame=geometry.SpiceFrame.ECLIPJ2000, nested=nested
+        )
+
+        # Make a PointingSet
+        mock_pset_input_frame = ena_maps.UltraPointingSet(
+            l1c_dataset=self.l1c_pset_products[0],
+            spice_reference_frame=geometry.SpiceFrame.IMAP_DPS,
+        )
+
+        # Match the PSET to the Healpix map
+        healpix_indices_of_rect_pixels = ena_maps.match_coords_to_indices(
+            mock_pset_input_frame, hp_map
+        )
+
+        # Check that the map's az/el points at the matched indices
+        # are the same as the input az/el points to within degree_tolerance,
+        # but we must ignore the polar regions and azimuthal wrap-around regions
+        rect_equatorial_elevations_mask = np.abs(
+            mock_pset_input_frame.az_el_points[:, 1]
+        ) < np.deg2rad(70)
+        rect_az_non_wraparound_mask = (
+            mock_pset_input_frame.az_el_points[:, 0] < np.deg2rad(350)
+        ) & (mock_pset_input_frame.az_el_points[:, 0] > np.deg2rad(10))
+        rect_good_az_el_mask = (
+            rect_equatorial_elevations_mask & rect_az_non_wraparound_mask
+        )
+        matched_map_az_el = np.deg2rad(
+            np.column_stack(
+                hp.pix2ang(
+                    nside=nside,
+                    ipix=healpix_indices_of_rect_pixels,
+                    nest=nested,
+                    lonlat=True,
+                )
+            )
+        )
+        np.testing.assert_allclose(
+            matched_map_az_el[rect_good_az_el_mask, 0],
+            mock_pset_input_frame.az_el_points[rect_good_az_el_mask, 0],
+            atol=np.deg2rad(degree_tolerance),
+        )
+
+    def test_match_coords_to_indices_pset_to_invalid_map(
         self,
     ):
         mock_pset_input_frame = ena_maps.UltraPointingSet(
             l1c_dataset=self.l1c_pset_products[0],
             spice_reference_frame=geometry.SpiceFrame.ECLIPJ2000,
         )
-
         # Until implemented, just change the tiling on a RectangularSkyMap
-        mock_hp_map = ena_maps.RectangularSkyMap(
+        mock_invalid_map = ena_maps.RectangularSkyMap(
             spacing_deg=2,
             spice_frame=geometry.SpiceFrame.ECLIPJ2000,
         )
-        mock_hp_map.tiling_type = ena_maps.SkyTilingType.HEALPIX
+        mock_invalid_map.tiling_type = "INVALID"
 
-        # Should raise NotImplementedError
-        with pytest.raises(NotImplementedError):
-            ena_maps.match_coords_to_indices(mock_pset_input_frame, mock_hp_map)
-
-        mock_other_map = mock_hp_map
-        mock_other_map.tiling_type = "INVALID"
+        # Should raise ValueError if the tiling type is invalid
         with pytest.raises(ValueError, match="Tiling type of the output frame"):
-            ena_maps.match_coords_to_indices(mock_pset_input_frame, mock_other_map)
+            ena_maps.match_coords_to_indices(mock_pset_input_frame, mock_invalid_map)
 
     def test_match_coords_to_indices_pset_to_pset_error(self):
         mock_pset_input_frame = ena_maps.UltraPointingSet(
