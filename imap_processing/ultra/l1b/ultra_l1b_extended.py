@@ -751,11 +751,11 @@ def determine_species(tof: np.ndarray, path_length: np.ndarray, type: str) -> ND
     return species_bin
 
 
-def get_theta_phi(
+def get_phi_theta(
     front_position: tuple, back_position: tuple, d: np.ndarray
 ) -> tuple[NDArray, NDArray]:
     """
-    Compute phi angles and theta.
+    Compute the instrument angles with range -90 -> 90 degrees.
 
     Further description is available on page 18 of
     the Ultra Algorithm Theoretical Basis Document.

@@ -238,14 +238,14 @@ elevation:
 
 phi:
   <<: *default_float32
-  CATDESC: Ultra instrument frame event phi.
+  CATDESC: Ultra instrument frame event phi (azimuth with range -90 -> 90).
   FIELDNAM: phi
   LABLAXIS: phi
   UNITS: degrees
 
 theta:
   <<: *default_float32
-  CATDESC: Ultra instrument frame event theta.
+  CATDESC: Ultra instrument frame event theta (elevation with range -90 -> 90).
   FIELDNAM: theta
   LABLAXIS: theta
   UNITS: degrees

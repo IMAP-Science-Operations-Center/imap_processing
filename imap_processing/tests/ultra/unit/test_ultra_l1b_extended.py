@@ -23,9 +23,9 @@ from imap_processing.ultra.l1b.ultra_l1b_extended import (
     get_front_y_position,
     get_path_length,
     get_ph_tof_and_back_positions,
+    get_phi_theta,
     get_ssd_back_position_and_tof_offset,
     get_ssd_tof,
-    get_theta_phi,
 )
 
 
@@ -402,8 +402,8 @@ def test_determine_species(test_fixture):
     np.testing.assert_array_equal(h_indices_ssd, ctof_indices_ssd)
 
 
-def test_get_theta_phi(yf_fixture):
-    """Tests get_theta_phi function."""
+def test_get_phi_theta(yf_fixture):
+    """Tests get_phi_theta function."""
     df_filt, d, _ = yf_fixture
 
     test_xf = df_filt["Xf"].astype("float").values
@@ -412,7 +412,7 @@ def test_get_theta_phi(yf_fixture):
     test_xb = df_filt["Xb"].astype("float").values
     test_yb = df_filt["Yb"].astype("float").values
 
-    phi, theta = get_theta_phi((test_xf, test_yf), (test_xb, test_yb), d)
+    phi, theta = get_phi_theta((test_xf, test_yf), (test_xb, test_yb), d)
     expected_phi = df_filt["phi"].astype("float")
     expected_theta = df_filt["theta"].astype("float")
 

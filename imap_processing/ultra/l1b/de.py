@@ -22,9 +22,9 @@ from imap_processing.ultra.l1b.ultra_l1b_extended import (
     get_front_y_position,
     get_path_length,
     get_ph_tof_and_back_positions,
+    get_phi_theta,
     get_ssd_back_position_and_tof_offset,
     get_ssd_tof,
-    get_theta_phi,
 )
 from imap_processing.ultra.utils.ultra_l1_utils import create_dataset
 
@@ -131,7 +131,7 @@ def calculate_de(de_dataset: xr.Dataset, name: str, data_version: str) -> xr.Dat
         (xb[ph_indices], yb[ph_indices]),
         d[ph_indices],
     )
-    phi[ph_indices], theta[ph_indices] = get_theta_phi(
+    phi[ph_indices], theta[ph_indices] = get_phi_theta(
         (xf[ph_indices], yf[ph_indices]),
         (xb[ph_indices], yb[ph_indices]),
         d[ph_indices],
@@ -159,7 +159,7 @@ def calculate_de(de_dataset: xr.Dataset, name: str, data_version: str) -> xr.Dat
         (xb[ssd_indices], yb[ssd_indices]),
         d[ssd_indices],
     )
-    phi[ssd_indices], theta[ssd_indices] = get_theta_phi(
+    phi[ssd_indices], theta[ssd_indices] = get_phi_theta(
         (xf[ssd_indices], yf[ssd_indices]),
         (xb[ssd_indices], yb[ssd_indices]),
         d[ssd_indices],
