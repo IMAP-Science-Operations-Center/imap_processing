@@ -147,12 +147,12 @@ def extract_magnetic_vectors(science_values: xr.DataArray) -> dict:
     sec_z = (science3[1] << 8) | science3[2]
 
     vectors = {
-        "PRI_X": pri_x,
-        "PRI_Y": pri_y,
-        "PRI_Z": pri_z,
-        "SEC_X": sec_x,
-        "SEC_Y": sec_y,
-        "SEC_Z": sec_z,
+        "pri_x": pri_x,
+        "pri_y": pri_y,
+        "pri_z": pri_z,
+        "sec_x": sec_x,
+        "sec_y": sec_y,
+        "sec_z": sec_z,
     }
 
     return vectors
@@ -193,10 +193,10 @@ def get_time(grouped_data: xr.Dataset, group: int, pkt_counter: xr.DataArray) ->
     ][pkt_counter == 2]
 
     time_data = {
-        "PRI_COARSETM": int(pri_coarsetm),
-        "PRI_FINTM": int(pri_fintm),
-        "SEC_COARSETM": int(sec_coarsetm),
-        "SEC_FINTM": int(sec_fintm),
+        "pri_coarsetm": int(pri_coarsetm),
+        "pri_fintm": int(pri_fintm),
+        "sec_coarsetm": int(sec_coarsetm),
+        "sec_fintm": int(sec_fintm),
     }
 
     return time_data
@@ -216,7 +216,7 @@ def parse_packet(xarray_data: xr.Dataset) -> list[dict]:
     mag_data : list[dict]
         Dictionaries of the parsed data product.
     """
-    logger.info("Calculating DE.")
+    logger.info("Parsing MAG.")
 
     grouped_data = find_groups(xarray_data)
     unique_groups = np.unique(grouped_data["group"])

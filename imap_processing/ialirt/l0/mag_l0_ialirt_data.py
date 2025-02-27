@@ -9,18 +9,18 @@ from dataclasses import dataclass
 class Packet0:
     """Dataclass for packet 0."""
 
-    HK1V5_WARN: int
-    HK1V5_DANGER: int
-    HK1V5C_WARN: int
-    HK1V5C_DANGER: int
-    HK1V8_WARN: int
-    HK1V8_DANGER: int
-    HK1V8C_WARN: int
-    HK1V8C_DANGER: int
-    FOB_SATURATED: int
-    FIB_SATURATED: int
-    MODE: int
-    ICU_TEMP: int
+    hk1v5_warn: int
+    hk1v5_danger: int
+    hk1v5c_warn: int
+    hk1v5c_danger: int
+    hk1v8_warn: int
+    hk1v8_danger: int
+    hk1v8c_warn: int
+    hk1v8c_danger: int
+    fob_saturated: int
+    fib_saturated: int
+    mode: int
+    icu_temp: int
 
 
 def decode_packet0(status: int) -> Packet0:
@@ -40,39 +40,40 @@ def decode_packet0(status: int) -> Packet0:
     Notes
     -----
     Bits 23-22 → Packet Number (2-bit value)
-    Bits 21-17 → HK1V5_WARN, HK1V5_DANGER, HK1V5C_WARN, HK1V5C_DANGER, HK1V8_WARN (5-bit value)
-    Bits 16-13 → HK1V8_DANGER, HK1V8C_WARN, HK1V8C_DANGER (4-bit value)
-    Bit  5 → FOB_SATURATED (1-bit value)
-    Bit  4 → FIB_SATURATED (1-bit value)
-    Bits 3-0 → MODE (4-bit value)
-    Bits 12-6 → ICU_TEMP (7-bit value)
+    Bits 21-17 → hk1v5_warn, hk1v5_danger, hk1v5c_warn, hk1v5c_danger,
+    hk1v8_warn (5-bit value)
+    Bits 16-13 → hk1v8_danger, hk1v8c_warn, hk1v8c_danger (4-bit value)
+    Bit  5 → fob_saturated (1-bit value)
+    Bit  4 → fib_saturated (1-bit value)
+    Bits 3-0 → mode (4-bit value)
+    Bits 12-6 → icu_temp (7-bit value)
     """
-    HK1V5_WARN = (status >> 20) & 0x01
-    HK1V5_DANGER = (status >> 19) & 0x01
-    HK1V5C_WARN = (status >> 18) & 0x01
-    HK1V5C_DANGER = (status >> 17) & 0x01
-    HK1V8_WARN = (status >> 16) & 0x01
-    HK1V8_DANGER = (status >> 15) & 0x01
-    HK1V8C_WARN = (status >> 14) & 0x01
-    HK1V8C_DANGER = (status >> 13) & 0x01
-    FOB_SATURATED = (status >> 5) & 0x01
-    FIB_SATURATED = (status >> 4) & 0x01
-    MODE = (status >> 0) & 0x0F
-    ICU_TEMP = ((status >> 6) & 0x7F) << 5
+    hk1v5_warn = (status >> 20) & 0x01
+    hk1v5_danger = (status >> 19) & 0x01
+    hk1v5c_warn = (status >> 18) & 0x01
+    hk1v5c_danger = (status >> 17) & 0x01
+    hk1v8_warn = (status >> 16) & 0x01
+    hk1v8_danger = (status >> 15) & 0x01
+    hk1v8c_warn = (status >> 14) & 0x01
+    hk1v8c_danger = (status >> 13) & 0x01
+    fob_saturated = (status >> 5) & 0x01
+    fib_saturated = (status >> 4) & 0x01
+    mode = (status >> 0) & 0x0F
+    icu_temp = ((status >> 6) & 0x7F) << 5
 
     return Packet0(
-        HK1V5_WARN,
-        HK1V5_DANGER,
-        HK1V5C_WARN,
-        HK1V5C_DANGER,
-        HK1V8_WARN,
-        HK1V8_DANGER,
-        HK1V8C_WARN,
-        HK1V8C_DANGER,
-        FOB_SATURATED,
-        FIB_SATURATED,
-        MODE,
-        ICU_TEMP,
+        hk1v5_warn,
+        hk1v5_danger,
+        hk1v5c_warn,
+        hk1v5c_danger,
+        hk1v8_warn,
+        hk1v8_danger,
+        hk1v8c_warn,
+        hk1v8c_danger,
+        fob_saturated,
+        fib_saturated,
+        mode,
+        icu_temp,
     )
 
 
@@ -80,13 +81,13 @@ def decode_packet0(status: int) -> Packet0:
 class Packet1:
     """Dataclass for packet 1."""
 
-    HK2V5_WARN: int
-    HK2V5_DANGER: int
-    HK2V5C_WARN: int
-    HK2V5C_DANGER: int
-    HK3V3: int
-    HK3V3_CURRENT: int
-    PRI_ISVALID: int
+    hk2v5_warn: int
+    hk2v5_danger: int
+    hk2v5c_warn: int
+    hk2v5c_danger: int
+    hk3v3: int
+    hk3v3_current: int
+    pri_isvalid: int
 
 
 def decode_packet1(status: int) -> Packet1:
@@ -105,27 +106,27 @@ def decode_packet1(status: int) -> Packet1:
 
     Notes
     -----
-    Bit  5 → pri_isValid (1-bit value)
-    Bits 4-1 → HK2V5_WARN, HK2V5_DANGER, HK2V5C_WARN, HK2V5C_DANGER (4-bit value)
-    Bits 16-9 → HK3V3 (8-bit value)
-    Bits 8-0 → HK3V3_CURRENT (9-bit value)
+    Bit  5 → pri_isvalid (1-bit value)
+    Bits 4-1 → hk2v5_warn, hk2v5_danger, hk2v5c_warn, hk2v5c_danger (4-bit value)
+    Bits 16-9 → hk3v3 (8-bit value)
+    Bits 8-0 → hk3v3_current (9-bit value)
     """
-    HK2V5_WARN = (status >> 20) & 0x01
-    HK2V5_DANGER = (status >> 19) & 0x01
-    HK2V5C_WARN = (status >> 18) & 0x01
-    HK2V5C_DANGER = (status >> 17) & 0x01
-    HK3V3 = ((status >> 9) & 0xFF) << 4
-    HK3V3_CURRENT = ((status >> 0) & 0x1FF) << 3
-    PRI_ISVALID = (status >> 21) & 0x01
+    hk2v5_warn = (status >> 20) & 0x01
+    hk2v5_danger = (status >> 19) & 0x01
+    hk2v5c_warn = (status >> 18) & 0x01
+    hk2v5c_danger = (status >> 17) & 0x01
+    hk3v3 = ((status >> 9) & 0xFF) << 4
+    hk3v3_current = ((status >> 0) & 0x1FF) << 3
+    pri_isvalid = (status >> 21) & 0x01
 
     return Packet1(
-        HK2V5_WARN,
-        HK2V5_DANGER,
-        HK2V5C_WARN,
-        HK2V5C_DANGER,
-        HK3V3,
-        HK3V3_CURRENT,
-        PRI_ISVALID,
+        hk2v5_warn,
+        hk2v5_danger,
+        hk2v5c_warn,
+        hk2v5c_danger,
+        hk3v3,
+        hk3v3_current,
+        pri_isvalid,
     )
 
 
@@ -133,12 +134,12 @@ def decode_packet1(status: int) -> Packet1:
 class Packet2:
     """Dataclass for packet 2."""
 
-    HKP8V5_WARN: int
-    HKP8V5_DANGER: int
-    HKP8V5C_WARN: int
-    HKP8V5C_DANGER: int
-    HKN8V5: int
-    HKN8V5_CURRENT: int
+    hkp8v5_warn: int
+    hkp8v5_danger: int
+    hkp8v5c_warn: int
+    hkp8v5c_danger: int
+    hkn8v5: int
+    hkn8v5_current: int
 
 
 def decode_packet2(status: int) -> Packet2:
@@ -159,17 +160,17 @@ def decode_packet2(status: int) -> Packet2:
     -----
     Bits 23-22 → Packet Number (2-bit value)
     Bits 21-17 → Various warning/danger flags (5-bit value)
-    Bits 16-9 → HKN8V5 (8-bit value)
-    Bits 8-0 → HKN8V5_CURRENT (9-bit value)
+    Bits 16-9 → hkn8v5 (8-bit value)
+    Bits 8-0 → hkn8v5_current (9-bit value)
     """
-    HKP8V5_WARN = (status >> 20) & 0x01
-    KP8V5_DANGER = (status >> 19) & 0x01
-    HKP8V5C_WARN = (status >> 18) & 0x01
-    HKP8V5C_DANGER = (status >> 17) & 0x01
-    HKN8V5 = ((status >> 9) & 0xFF) << 4
-    HKN8V5_CURRENT = ((status >> 0) & 0x1FF) << 3
+    hkp8v5_warn = (status >> 20) & 0x01
+    kp8v5_danger = (status >> 19) & 0x01
+    hkp8v5c_warn = (status >> 18) & 0x01
+    hkp8v5c_danger = (status >> 17) & 0x01
+    hkn8v5 = ((status >> 9) & 0xFF) << 4
+    hkn8v5_current = ((status >> 0) & 0x1FF) << 3
     return Packet2(
-        HKP8V5_WARN, KP8V5_DANGER, HKP8V5C_WARN, HKP8V5C_DANGER, HKN8V5, HKN8V5_CURRENT
+        hkp8v5_warn, kp8v5_danger, hkp8v5c_warn, hkp8v5c_danger, hkn8v5, hkn8v5_current
     )
 
 
@@ -177,12 +178,12 @@ def decode_packet2(status: int) -> Packet2:
 class Packet3:
     """Dataclass for packet 3."""
 
-    FOB_TEMP: int
-    FIB_TEMP: int
-    FOB_RANGE: int
-    FIB_RANGE: int
-    MULTBIT_ERRS: int
-    SEC_ISVALID: int
+    fob_temp: int
+    fib_temp: int
+    fob_range: int
+    fib_range: int
+    multbit_errs: int
+    sec_isvalid: int
 
 
 def decode_packet3(status: int) -> Packet3:
@@ -201,18 +202,18 @@ def decode_packet3(status: int) -> Packet3:
 
     Notes
     -----
-    Bits 20-13 → FOB_TEMP (8-bit value, shifted left by 4)
-    Bits 12-5 → FIB_TEMP (8-bit value, shifted left by 4)
-    Bits 4-3 → FOB_RANGE (2-bit value)
-    Bits 2-1 → FIB_RANGE (2-bit value)
-    Bit 0 → MULTBIT_ERRS (1-bit value)
-    Bit 5 → sec_isValid (1-bit value, overlapping with FIB_TEMP extraction)
+    Bits 20-13 → fob_temp (8-bit value, shifted left by 4)
+    Bits 12-5 → fib_temp (8-bit value, shifted left by 4)
+    Bits 4-3 → fob_range (2-bit value)
+    Bits 2-1 → fib_range (2-bit value)
+    Bit 0 → multbit_errs (1-bit value)
+    Bit 5 → sec_isvalid (1-bit value, overlapping with fib_temp extraction)
     """
-    FOB_TEMP = ((status >> 13) & 0xFF) << 4
-    FIB_TEMP = ((status >> 5) & 0xFF) << 4
-    FOB_RANGE = (status >> 3) & 0x03
-    FIB_RANGE = (status >> 1) & 0x03
-    MULTBIT_ERRS = (status >> 0) & 0x01
-    SEC_ISVALID = (status >> 21) & 0x01
+    fob_temp = ((status >> 13) & 0xFF) << 4
+    fib_temp = ((status >> 5) & 0xFF) << 4
+    fob_range = (status >> 3) & 0x03
+    fib_range = (status >> 1) & 0x03
+    multbit_errs = (status >> 0) & 0x01
+    sec_isvalid = (status >> 21) & 0x01
 
-    return Packet3(FOB_TEMP, FIB_TEMP, FOB_RANGE, FIB_RANGE, MULTBIT_ERRS, SEC_ISVALID)
+    return Packet3(fob_temp, fib_temp, fob_range, fib_range, multbit_errs, sec_isvalid)

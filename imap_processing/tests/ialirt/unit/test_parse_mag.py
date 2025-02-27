@@ -95,7 +95,7 @@ def test_get_status_data(xarray_data, mag_test_data):
     matching_row = mag_test_data[index]
 
     for key in status_data.keys():
-        assert status_data[key] == matching_row[key].values[0]
+        assert status_data[key] == matching_row[key.upper()].values[0]
 
 
 def test_get_time(xarray_data):
@@ -103,10 +103,10 @@ def test_get_time(xarray_data):
     grouped_data = find_groups(xarray_data)
     time_data = get_time(grouped_data, 0, np.array([0, 1, 2, 3]))
     assert time_data == {
-        "PRI_COARSETM": 461971382,
-        "PRI_FINTM": 1502,
-        "SEC_COARSETM": 461971382,
-        "SEC_FINTM": 1505,
+        "pri_coarsetm": 461971382,
+        "pri_fintm": 1502,
+        "sec_coarsetm": 461971382,
+        "sec_fintm": 1505,
     }
 
 
@@ -138,7 +138,7 @@ def test_parse_packet(xarray_data, mag_test_data):
     parsed_packets = parse_packet(xarray_data)
 
     for packet in parsed_packets:
-        index = packet["PRI_COARSETM"] == mag_test_data["PRI_COARSETM"]
+        index = packet["pri_coarsetm"] == mag_test_data["PRI_COARSETM"]
         matching_rows = mag_test_data[index]
 
         for key in packet.keys():
