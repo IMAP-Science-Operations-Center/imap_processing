@@ -142,4 +142,4 @@ def test_parse_packet(xarray_data, mag_test_data):
         matching_rows = mag_test_data[index]
 
         for key in packet.keys():
-            assert packet[key] == matching_rows[key].values[0]
+            assert packet[key] == matching_rows[key.upper()].values[0]
