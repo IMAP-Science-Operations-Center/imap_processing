@@ -428,8 +428,11 @@
 			</xtce:Parameter>
 			<!-- SWE -->
 			<!-- MAG -->
-			<xtce:Parameter name="MAG_ACQ" parameterTypeRef="uint48">
-				<xtce:LongDescription>MAG Acquisition Time</xtce:LongDescription>
+			<xtce:Parameter name="MAG_ACQ_TM_COARSE" parameterTypeRef="uint32">
+				<xtce:LongDescription>MAG Coarse Acquisition Time</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="MAG_ACQ_TM_FINE" parameterTypeRef="uint16">
+				<xtce:LongDescription>MAG Fine Acquisition Time</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="MAG_STATUS" parameterTypeRef="uint24">
 				<xtce:LongDescription>MAG Status</xtce:LongDescription>
@@ -674,7 +677,8 @@
 					<xtce:ParameterRefEntry parameterRef="SC_SPARE_3"/>
 					<!-- Spacecraft -->
 					<!-- MAG -->
-					<xtce:ParameterRefEntry parameterRef="MAG_ACQ"/>
+					<xtce:ParameterRefEntry parameterRef="MAG_ACQ_TM_COARSE"/>
+					<xtce:ParameterRefEntry parameterRef="MAG_ACQ_TM_FINE"/>
 					<xtce:ParameterRefEntry parameterRef="MAG_STATUS"/>
 					<xtce:ParameterRefEntry parameterRef="MAG_DATA"/>
 					<!-- MAG -->
