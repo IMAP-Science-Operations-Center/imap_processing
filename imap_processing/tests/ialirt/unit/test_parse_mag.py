@@ -6,8 +6,10 @@ import xarray as xr
 from imap_processing import imap_module_directory
 from imap_processing.ialirt.l0.parse_mag import (
     find_groups,
+    get_bytes,
     get_pkt_counter,
     get_status_data,
+    get_time,
     parse_packet,
 )
 from imap_processing.utils import packet_file_to_datasets
@@ -94,6 +96,41 @@ def test_get_status_data(xarray_data, mag_test_data):
 
     for key in status_data.keys():
         assert status_data[key] == matching_row[key].values[0]
+
+
+def test_get_time(xarray_data):
+    """Tests the get_time function."""
+    grouped_data = find_groups(xarray_data)
+    time_data = get_time(grouped_data, 0, np.array([0, 1, 2, 3]))
+    assert time_data == {
+        "PRI_COARSETM": 461971382,
+        "PRI_FINTM": 1502,
+        "SEC_COARSETM": 461971382,
+        "SEC_FINTM": 1505,
+    }
+
+
+def test_get_bytes():
+    """Tests the get_bytes function."""
+
+    test_cases = [
+        5797207,
+        5750698,
+        15921110,
+        2342918,
+        15797207,
+        5750697,
+        15921110,
+        2342918,
+    ]
+
+    for val in test_cases:
+        extracted = get_bytes(val)
+
+        # Reassemble 24-bit integer from three individual bytes.
+        reconstructed_value = (extracted[0] << 16) | (extracted[1] << 8) | extracted[2]
+
+        assert reconstructed_value == val
 
 
 def test_parse_packet(xarray_data, mag_test_data):
