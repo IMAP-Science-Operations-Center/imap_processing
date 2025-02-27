@@ -1,4 +1,4 @@
-"""Functions to support MAG processing."""
+"""Functions to support I-ALiRT MAG packet parsing."""
 
 import logging
 
@@ -15,29 +15,43 @@ from imap_processing.ialirt.l0.mag_l0_ialirt_data import (
 logger = logging.getLogger(__name__)
 
 
-def get_pkt_counter(mag_status):
+def get_pkt_counter(status_values: xr.DataArray) -> xr.DataArray:
     """
-    Get the packet number.
+    Get the packet counters.
 
     Parameters
     ----------
-    mag_status : NDArray
+    status_values : xr.DataArray
         Status data.
 
     Returns
     -------
-    pkt_counter : int
-        Packet counter.
+    pkt_counters : xr.DataArray
+        Packet counters.
     """
-    # mag_status is a 24‑bit unsigned field
+    # mag_status is a 24 bit unsigned field
     # The leading 2 bits of STATUS are a 2 bit 0-3 counter
-    pkt_counter = (mag_status >> 22) & 0x03
+    pkt_counter = (status_values >> 22) & 0x03
 
     return pkt_counter
 
 
-def get_status_data(status_values, pkt_counter):
-    """Get the science data."""
+def get_status_data(status_values: xr.DataArray, pkt_counters: xr.DataArray) -> dict:
+    """
+    Get the status data.
+
+    Parameters
+    ----------
+    status_values : xr.DataArray
+        Status data.
+    pkt_counters : xr.DataArray
+        Packet counters.
+
+    Returns
+    -------
+    combined_packets : dict
+        Decoded packets.
+    """
     decoders = {
         0: decode_packet0,
         1: decode_packet1,
@@ -48,7 +62,7 @@ def get_status_data(status_values, pkt_counter):
     combined_packets = {}
 
     for pkt_num, decoder in decoders.items():
-        status_subset = status_values[pkt_counter == pkt_num]
+        status_subset = status_values[pkt_counters == pkt_num]
         decoded_packet = decoder(int(status_subset))
         combined_packets.update(vars(decoded_packet))
 
@@ -62,7 +76,7 @@ def find_groups(data: xr.Dataset) -> xr.Dataset:
     Parameters
     ----------
     data : xr.Dataset
-        Dataset containing `mag_acq_tm_coarse`.
+        Packets dataset.
 
     Returns
     -------
@@ -73,77 +87,147 @@ def find_groups(data: xr.Dataset) -> xr.Dataset:
     data = data.sortby("mag_acq_tm_coarse", ascending=True)
 
     # Get unique acquisition times and create group labels
-    unique_acq_times, group_labels = np.unique(
-        data["mag_acq_tm_coarse"], return_inverse=True
-    )
+    _, group_labels = np.unique(data["mag_acq_tm_coarse"], return_inverse=True)
 
     # Assign group labels as a coordinate
     data["group"] = ("group", group_labels)
 
     return data
 
-import numpy as np
 
-def uint24_to_bytes(uint24_array):
+def get_bytes(val: int) -> list[int]:
     """
-    Convert an array of uint24 values into bytes.
+    Extract three bytes from a 24-bit integer.
+
+    Parameters
+    ----------
+    val : int
+        24-bit integer value.
+
+    Returns
+    -------
+    list[int]
+        List of three extracted bytes.
     """
-    byte_array = np.zeros((len(uint24_array), 3), dtype=np.uint8)
-    byte_array[:, 0] = (uint24_array >> 16) & 0xFF  # Extract first byte
-    byte_array[:, 1] = (uint24_array >> 8) & 0xFF   # Extract second byte
-    byte_array[:, 2] = (uint24_array >> 0) & 0xFF   # Extract third byte
-    return byte_array
+    return [
+        (val >> 16) & 0xFF,  # Most significant byte (Byte2)
+        (val >> 8) & 0xFF,  # Middle byte (Byte1)
+        (val >> 0) & 0xFF,  # Least significant byte (Byte0)
+    ]
 
 
-import numpy as np
+def extract_magnetic_vectors(science_values: xr.DataArray) -> dict:
+    """
+    Extract the magnetic vectors.
 
+    Parameters
+    ----------
+    science_values : xr.DataArray
+        Science data.
 
-def extract_magnetic_vectors(mag_data: np.ndarray) -> tuple[int, int, int, int, int, int]:
-
-    def get_bytes(val: int) -> list[int]:
-        # Extract the three bytes from a 24-bit value (big-endian order)
-        return [
-            (val >> 16) & 0xFF,  # Most significant byte (Byte2)
-            (val >> 8) & 0xFF,  # Middle byte (Byte1)
-            (val >> 0) & 0xFF  # Least significant byte (Byte0)
-        ]
-
+    Returns
+    -------
+    vectors : dict
+        Magnetic vectors.
+    """
     # Convert each 24-bit value to its three constituent bytes
-    science0 = get_bytes(int(mag_data[0]))
-    science1 = get_bytes(int(mag_data[1]))
-    science2 = get_bytes(int(mag_data[2]))
-    science3 = get_bytes(int(mag_data[3]))
+    science0 = get_bytes(int(science_values[0]))
+    science1 = get_bytes(int(science_values[1]))
+    science2 = get_bytes(int(science_values[2]))
+    science3 = get_bytes(int(science_values[3]))
 
     # Primary sensor:
-    # priX: combine first two bytes of Packet 0
-    priX = (science0[0] << 8) | science0[1]
-    # priY: combine the third byte of Packet 0 (as high byte) with the first byte of Packet 1 (as low byte)
-    priY = (science0[2] << 8) | science1[0]
-    # priZ: combine the second and third bytes of Packet 1
-    priZ = (science1[1] << 8) | science1[2]
+    pri_x = (science0[0] << 8) | science0[1]
+    pri_y = (science0[2] << 8) | science1[0]
+    pri_z = (science1[1] << 8) | science1[2]
 
     # Secondary sensor:
-    # secX: combine the first two bytes of Packet 2
-    secX = (science2[0] << 8) | science2[1]
-    # secY: combine the third byte of Packet 2 with the first byte of Packet 3
-    secY = (science2[2] << 8) | science3[0]
-    # secZ: combine the second and third bytes of Packet 3
-    secZ = (science3[1] << 8) | science3[2]
+    sec_x = (science2[0] << 8) | science2[1]
+    sec_y = (science2[2] << 8) | science3[0]
+    sec_z = (science3[1] << 8) | science3[2]
 
-    return priX, priY, priZ, secX, secY, secZ
+    vectors = {
+        "PRI_X": pri_x,
+        "PRI_Y": pri_y,
+        "PRI_Z": pri_z,
+        "SEC_X": sec_x,
+        "SEC_Y": sec_y,
+        "SEC_Z": sec_z,
+    }
+
+    return vectors
 
 
-def parse_packet(xarray_data: xr.Dataset):
-    """Return science_data in the form of xarray."""
+def get_time(grouped_data: xr.Dataset, group: int, pkt_counter: xr.DataArray) -> dict:
+    """
+    Get the time for the grouped data.
+
+    Parameters
+    ----------
+    grouped_data : xr.Dataset
+        Grouped data.
+    group : int
+        Group number.
+    pkt_counter : xr.DataArray
+        Packet counter.
+
+    Returns
+    -------
+    time_data : dict
+        Coarse and fine time for Primary and Secondary Sensors.
+    """
+    pri_coarsetm = grouped_data["mag_acq_tm_coarse"][
+        (grouped_data["group"] == group).values
+    ][pkt_counter == 0]
+
+    pri_fintm = grouped_data["mag_acq_tm_fine"][
+        (grouped_data["group"] == group).values
+    ][pkt_counter == 0]
+
+    sec_coarsetm = grouped_data["mag_acq_tm_coarse"][
+        (grouped_data["group"] == group).values
+    ][pkt_counter == 2]
+
+    sec_fintm = grouped_data["mag_acq_tm_fine"][
+        (grouped_data["group"] == group).values
+    ][pkt_counter == 2]
+
+    time_data = {
+        "PRI_COARSETM": int(pri_coarsetm),
+        "PRI_FINTM": int(pri_fintm),
+        "SEC_COARSETM": int(sec_coarsetm),
+        "SEC_FINTM": int(sec_fintm),
+    }
+
+    return time_data
+
+
+def parse_packet(xarray_data: xr.Dataset) -> list[dict]:
+    """
+    Parse the MAG packets.
+
+    Parameters
+    ----------
+    xarray_data : xr.Dataset
+        Packet data.
+
+    Returns
+    -------
+    mag_data : list[dict]
+        Dictionaries of the parsed data product.
+    """
     logger.info("Calculating DE.")
 
     grouped_data = find_groups(xarray_data)
     unique_groups = np.unique(grouped_data["group"])
+    mag_data = []
 
     for group in unique_groups:
+        # Get status values for each group.
         status_values = grouped_data["mag_status"][
             (grouped_data["group"] == group).values
         ]
+        # Get the packet counters for each group.
         pkt_counter = get_pkt_counter(status_values)
 
         if not np.array_equal(pkt_counter, np.arange(4)):
@@ -153,12 +237,18 @@ def parse_packet(xarray_data: xr.Dataset):
             )
             continue
 
+        # Get decoded status data.
         status_data = get_status_data(status_values, pkt_counter)
 
+        # Get science values for each group.
         science_values = grouped_data["mag_data"][
             (grouped_data["group"] == group).values
         ]
-        priX = extract_magnetic_vectors(science_values)
-    # Concatenate the packets
+        science_data = extract_magnetic_vectors(science_values)
 
-    return status_data
+        # Get time values for each group.
+        time_data = get_time(grouped_data, group, pkt_counter)
+
+        mag_data.append({**status_data, **science_data, **time_data})
+
+    return mag_data
