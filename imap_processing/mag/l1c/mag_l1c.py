@@ -1,9 +1,9 @@
 """MAG L1C processing module."""
-
+import numpy as np
 import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
-
+from imap_processing.spice.time import ttj2000ns_to_et, et_to_utc
 
 def mag_l1c(
     first_input_dataset: xr.Dataset, second_input_dataset: xr.Dataset, version: str
@@ -54,4 +54,37 @@ def mag_l1c(
 
     output_dataset.attrs = attribute_manager.get_global_attributes(logical_source)
 
-    return output_dataset
+    print(first_input_dataset.attrs['Logical_source'])
+    # TODO: sort first/second input into norm/burst
+    process_mag_l1c(first_input_dataset, second_input_dataset)
+
+    return []
+
+
+def process_mag_l1c(normal_mode_dataset: xr.Dataset, burst_mode_dataset: xr.Dataset):
+    # TODO:
+    # - determine expected timeline
+    # - copy NM data in
+    # - write interpolation step
+    # - copy output of interpolation into output
+    expected_nm_vectors_per_second = []
+    expected_timeline = normal_mode_dataset["epoch"].data
+    print(ttj2000ns_to_et(normal_mode_dataset['epoch'].data[0]))
+    print(ttj2000ns_to_et(burst_mode_dataset['epoch'].data[0]))
+    print(f"Difference: {normal_mode_dataset['epoch'].data[0] - burst_mode_dataset['epoch'].data[0]}")
+
+    output_dataset = normal_mode_dataset.copy(deep=True)
+    output_dataset["sample_interpolated"] = xr.DataArray(np.zeros(len(normal_mode_dataset)))
+
+
+    output_dataset
+
+
+    return normal_mode_dataset
+
+
+def find_gaps(epoch_data):
+    # given a dataarray of epoch values (from normal mode data) find any gaps of larger than 1 second.
+
+
+    return
