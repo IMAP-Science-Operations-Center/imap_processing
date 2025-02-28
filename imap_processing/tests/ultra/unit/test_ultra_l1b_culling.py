@@ -2,10 +2,12 @@
 
 import numpy as np
 import pytest
+import xarray as xr
 
 from imap_processing.quality_flags import ImapAttitudeUltraFlags, ImapRatesUltraFlags
 from imap_processing.ultra.constants import UltraConstants
 from imap_processing.ultra.l1b.ultra_l1b_culling import (
+    compare_aux_univ_spin_table,
     flag_attitude,
     flag_spin,
     get_energy_histogram,
@@ -39,6 +41,32 @@ def test_data(use_fake_spin_data_for_time):
 
     return time, spin_number, energy, expected_counts
 
+
+@pytest.fixture()
+def test_aux_dataset(use_fake_spin_data_for_time):
+    """Fixture to compute and return aux test data."""
+
+    epoch = np.arange(760591716184000000, 760591716184000000 + 7 * 15000000000, 15000000000)
+    spin_number = np.arange(7)
+    spin_start_time = np.arange(0, 105, 15)
+    spin_period_sec = np.full(7, 15)
+    spin_start_sec = np.arange(0, 105, 15)
+    spin_start_subsec = np.zeros(7)
+
+    test_aux_dataset = xr.Dataset(
+        data_vars={
+            "TIMESPINSTART": ("epoch", spin_start_sec),
+            "TIMESPINSTARTSUB": ("epoch", spin_start_subsec),
+            "DURATION": ("epoch", spin_period_sec),
+            "SPINNUMBER": ("epoch", spin_number),
+            "TIMESPINDATA": ("epoch", spin_start_time),
+            "SPINPERIOD": ("epoch", spin_period_sec),
+        },
+        coords={
+            "epoch": ("epoch", epoch)
+        })
+
+    return test_aux_dataset
 
 def test_get_spin(use_fake_spin_data_for_time):
     """Tests get_spin function."""
@@ -112,3 +140,14 @@ def test_flag_spin(test_data):
     )
     high_rates_flag = quality_flags[expected_counts / 15 > threshold[:, np.newaxis]]
     assert np.all(high_rates_flag == ImapRatesUltraFlags.HIGHRATES.value)
+
+
+def test_compare_aux_univ_spin_table(use_fake_spin_data_for_time,
+                                     test_aux_dataset):
+    """Tests compare_aux_univ_spin_table function."""
+    use_fake_spin_data_for_time(0,15*7)
+    spins = test_aux_dataset["SPINNUMBER"].values
+    spins = np.array([0,1,99])
+
+    result = compare_aux_univ_spin_table(test_aux_dataset,
+                                         spins)

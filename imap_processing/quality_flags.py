@@ -52,6 +52,7 @@ class ImapAttitudeUltraFlags(FlagNameMixin):
 
     NONE = CommonFlags.NONE
     SPINRATE = 2**0  # bit 0
+    AUXMISMATCH = 2**1  # bit 1 # aux packet does not match Universal Spin Table
 
 
 class ImapRatesUltraFlags(FlagNameMixin):

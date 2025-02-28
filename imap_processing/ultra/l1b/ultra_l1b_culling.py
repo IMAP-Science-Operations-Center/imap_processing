@@ -2,6 +2,7 @@
 
 import numpy as np
 from numpy.typing import NDArray
+import xarray as xr
 
 from imap_processing.quality_flags import ImapAttitudeUltraFlags, ImapRatesUltraFlags
 from imap_processing.spice.spin import get_spin_data, interpolate_spin_data
@@ -77,7 +78,8 @@ def get_energy_histogram(
     return hist, spin_edges, counts, mean_duration
 
 
-def flag_attitude(eventtimes_met: NDArray) -> tuple[NDArray, NDArray, NDArray, NDArray]:
+def flag_attitude(eventtimes_met: NDArray,
+                  aux_dataset: xr.Dataset) -> tuple[NDArray, NDArray, NDArray, NDArray]:
     """
     Flag data based on attitude.
 
@@ -85,6 +87,8 @@ def flag_attitude(eventtimes_met: NDArray) -> tuple[NDArray, NDArray, NDArray, N
     ----------
     eventtimes_met : NDArray
         Event Times in Mission Elapsed Time.
+    aux_dataset : xarray.Dataset
+        Auxiliary dataset.
 
     Returns
     -------
@@ -111,6 +115,8 @@ def flag_attitude(eventtimes_met: NDArray) -> tuple[NDArray, NDArray, NDArray, N
         spin_rates.shape, ImapAttitudeUltraFlags.NONE.value, dtype=np.uint16
     )
     quality_flags[bad_spin_rate_indices] |= ImapAttitudeUltraFlags.SPINRATE.value
+    mismatch_indices = compare_aux_univ_spin_table(aux_dataset, spins)
+    quality_flags[mismatch_indices] |= ImapAttitudeUltraFlags.AUXMISMATCH.value
 
     return quality_flags, spin_rates, spin_period, spin_starttime
 
@@ -188,3 +194,51 @@ def flag_spin(
     quality_flags[indices_n_sigma] |= ImapRatesUltraFlags.HIGHRATES.value
 
     return quality_flags, spin, energy_midpoints, threshold
+
+
+def compare_aux_univ_spin_table(
+    aux_dataset: xr.Dataset,
+    spins: NDArray,
+) -> NDArray:
+    """
+    Compare the auxiliary and Universal Spin Table.
+
+    Parameters
+    ----------
+    aux_dataset : xarray.Dataset
+        Auxiliary dataset.
+    spins : np.ndarray
+        Array of spin numbers to compare.
+
+    Returns
+    -------
+    mismatch_indices : np.ndarray
+        Boolean array indicating which spins have mismatches.
+    """
+    spin_df = get_spin_data()
+
+    indices_univ = np.nonzero(np.isin(spin_df["spin_number"].values, spins))[0]
+    indices_aux = np.nonzero(np.isin(aux_dataset["SPINNUMBER"].values, spins))[0]
+
+    if not len(indices_univ) == len(spins):
+        raise ValueError("Some spin numbers are missing from Universal Spin Table.")
+
+    if not len(indices_aux) == len(spins):
+        raise ValueError("Some spin numbers are missing from Aux Packet.")
+
+    fields_to_compare = [
+        ("TIMESPINSTART", "spin_start_sec"),
+        ("TIMESPINSTARTSUB", "spin_start_subsec"),
+        ("DURATION", "spin_period_sec"),
+        ("TIMESPINDATA", "spin_start_time"),
+        ("SPINPERIOD", "spin_period_sec"),
+    ]
+
+    mismatch_indices = np.zeros(len(indices_aux), dtype=bool)
+
+    for aux_field, spin_field in fields_to_compare:
+        aux_values = aux_dataset[aux_field].values[indices_aux]
+        spin_values = spin_df[spin_field].values[indices_univ]
+        mismatch_indices |= (aux_values != spin_values)
+
+    return mismatch_indices
