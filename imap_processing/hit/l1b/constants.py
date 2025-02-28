@@ -21,7 +21,7 @@ livestim_pulses = 270
 # energy_units: MeV/n
 
 PARTICLE_ENERGY_RANGE_MAPPING = {
-    "hydrogen": [
+    "h": [
         {
             "energy_min": 1.8,
             "energy_max": 3.6,
@@ -33,7 +33,7 @@ PARTICLE_ENERGY_RANGE_MAPPING = {
         {"energy_min": 6.0, "energy_max": 10.0, "R2": [], "R3": [6, 7], "R4": []},
         {"energy_min": 10.0, "energy_max": 15.0, "R2": [], "R3": [8, 9], "R4": [1]},
     ],
-    "helium3": [
+    "he3": [
         {
             "energy_min": 4.0,
             "energy_max": 6.0,
@@ -44,7 +44,7 @@ PARTICLE_ENERGY_RANGE_MAPPING = {
         {"energy_min": 6.0, "energy_max": 10.0, "R2": [], "R3": [15, 16], "R4": []},
         {"energy_min": 10.0, "energy_max": 15.0, "R2": [], "R3": [17, 18], "R4": []},
     ],
-    "helium4": [
+    "he4": [
         {
             "energy_min": 1.8,
             "energy_max": 3.6,
@@ -62,7 +62,7 @@ PARTICLE_ENERGY_RANGE_MAPPING = {
         {"energy_min": 6.0, "energy_max": 10.0, "R2": [], "R3": [26, 27], "R4": []},
         {"energy_min": 10.0, "energy_max": 15.0, "R2": [], "R3": [28, 29], "R4": [4]},
     ],
-    "helium": [
+    "he": [
         {
             "energy_min": 4.0,
             "energy_max": 6.0,
@@ -85,7 +85,7 @@ PARTICLE_ENERGY_RANGE_MAPPING = {
             "R4": [4],
         },
     ],
-    "carbon": [
+    "c": [
         {
             "energy_min": 4.0,
             "energy_max": 6.0,
@@ -103,7 +103,7 @@ PARTICLE_ENERGY_RANGE_MAPPING = {
         {"energy_min": 10.0, "energy_max": 15.0, "R2": [], "R3": [36, 37], "R4": []},
         {"energy_min": 15.0, "energy_max": 27.0, "R2": [], "R3": [38, 39], "R4": [7]},
     ],
-    "nitrogen": [
+    "n": [
         {
             "energy_min": 4.0,
             "energy_max": 6.0,
@@ -121,7 +121,7 @@ PARTICLE_ENERGY_RANGE_MAPPING = {
         {"energy_min": 10.0, "energy_max": 15.0, "R2": [], "R3": [46, 47], "R4": []},
         {"energy_min": 15.0, "energy_max": 27.0, "R2": [], "R3": [48, 49], "R4": [11]},
     ],
-    "oxygen": [
+    "o": [
         {
             "energy_min": 4.0,
             "energy_max": 6.0,
@@ -139,7 +139,7 @@ PARTICLE_ENERGY_RANGE_MAPPING = {
         {"energy_min": 10.0, "energy_max": 15.0, "R2": [], "R3": [56, 57], "R4": []},
         {"energy_min": 15.0, "energy_max": 27.0, "R2": [], "R3": [58, 59], "R4": []},
     ],
-    "neon": [
+    "ne": [
         {"energy_min": 4.0, "energy_max": 6.0, "R2": [57, 58, 59], "R3": [], "R4": []},
         {
             "energy_min": 6.0,
@@ -151,11 +151,11 @@ PARTICLE_ENERGY_RANGE_MAPPING = {
         {"energy_min": 10.0, "energy_max": 15.0, "R2": [62], "R3": [65, 66], "R4": []},
         {"energy_min": 15.0, "energy_max": 27.0, "R2": [], "R3": [67, 68], "R4": []},
     ],
-    "sodium": [
+    "na": [
         {"energy_min": 10.0, "energy_max": 15.0, "R2": [], "R3": [75, 76], "R4": []},
         {"energy_min": 15.0, "energy_max": 27.0, "R2": [], "R3": [77, 78], "R4": []},
     ],
-    "magnesium": [
+    "mg": [
         {"energy_min": 4.0, "energy_max": 6.0, "R2": [67, 68, 69], "R3": [], "R4": []},
         {
             "energy_min": 6.0,
@@ -173,12 +173,12 @@ PARTICLE_ENERGY_RANGE_MAPPING = {
         },
         {"energy_min": 15.0, "energy_max": 27.0, "R2": [], "R3": [87, 88], "R4": []},
     ],
-    "aluminum": [
+    "al": [
         {"energy_min": 6.0, "energy_max": 10.0, "R2": [], "R3": [94, 95], "R4": []},
         {"energy_min": 10.0, "energy_max": 15.0, "R2": [], "R3": [96, 97], "R4": []},
         {"energy_min": 15.0, "energy_max": 27.0, "R2": [], "R3": [98, 99], "R4": []},
     ],
-    "silicon": [
+    "si": [
         {"energy_min": 4.0, "energy_max": 6.0, "R2": [78, 79, 80], "R3": [], "R4": []},
         {
             "energy_min": 6.0,
@@ -203,7 +203,7 @@ PARTICLE_ENERGY_RANGE_MAPPING = {
             "R4": [26],
         },
     ],
-    "sulfur": [
+    "s": [
         {"energy_min": 4.0, "energy_max": 6.0, "R2": [88, 89, 90], "R3": [], "R4": []},
         {
             "energy_min": 6.0,
@@ -222,7 +222,7 @@ PARTICLE_ENERGY_RANGE_MAPPING = {
         {"energy_min": 15.0, "energy_max": 27.0, "R2": [], "R3": [120, 121], "R4": []},
         {"energy_min": 27.0, "energy_max": 40.0, "R2": [], "R3": [122, 123], "R4": []},
     ],
-    "argon": [
+    "ar": [
         {"energy_min": 4.0, "energy_max": 6.0, "R2": [98, 99, 100], "R3": [], "R4": []},
         {
             "energy_min": 6.0,
@@ -247,7 +247,7 @@ PARTICLE_ENERGY_RANGE_MAPPING = {
         },
         {"energy_min": 27.0, "energy_max": 40.0, "R2": [], "R3": [133, 134], "R4": []},
     ],
-    "calcium": [
+    "ca": [
         {
             "energy_min": 4.0,
             "energy_max": 6.0,
@@ -278,7 +278,7 @@ PARTICLE_ENERGY_RANGE_MAPPING = {
         },
         {"energy_min": 27.0, "energy_max": 40.0, "R2": [], "R3": [143, 144], "R4": []},
     ],
-    "iron": [
+    "fe": [
         {
             "energy_min": 4.0,
             "energy_max": 6.0,
@@ -309,7 +309,7 @@ PARTICLE_ENERGY_RANGE_MAPPING = {
         },
         {"energy_min": 27.0, "energy_max": 40.0, "R2": [], "R3": [153, 154], "R4": []},
     ],
-    "nickel": [
+    "ni": [
         {"energy_min": 10.0, "energy_max": 15.0, "R2": [], "R3": [159, 160], "R4": []},
         {"energy_min": 15.0, "energy_max": 27.0, "R2": [], "R3": [161, 162], "R4": []},
         {"energy_min": 27.0, "energy_max": 40.0, "R2": [], "R3": [163, 164], "R4": []},

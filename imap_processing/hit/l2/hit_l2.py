@@ -60,45 +60,27 @@ def process_summed_flux_data(l1b_summed_rates_dataset: xr.Dataset) -> xr.Dataset
     xr.Dataset
         The processed L2 summed flux dataset.
     """
-    # TODO: determine where to use attr manager
-    # TODO: determine where to pull ancillary data. Storing it locally for now
+    # TODO:
+    #  - determine where to use attr manager
+    #  - determine where to pull ancillary data. Storing it locally for now
+    #  - add check for dynamic_threshold_state to determine which ancillary table to use
 
     # Create a new dataset to store the L1B summed flux data
     l1b_summed_flux_dataset = l1b_summed_rates_dataset.copy(deep=True)
 
-    # Read in ancillary data which contains factors to convert L1B Summed count
-    # rate data to L2 fluxes
-    # (delta energy, geometry factor, efficiency, and b)
-    # See equation 11 in the HIT algorithm document.
-    # Load the validation data
+    # Load ancillary data which contains factors to convert L1B Summed count
+    # rates to L2 fluxes (delta energy, geometry factor, efficiency, and b)
     ancillary_file = (
         imap_module_directory
         / "hit/ancillary/imap_hit_l1b-to-l2-summed-factors-20250219_v002.csv"
     )
     ancillary_data = pd.read_csv(ancillary_file)
+
+    # Convert column names and species values to lowercase
     ancillary_data.columns = ancillary_data.columns.str.lower().str.strip()
+    ancillary_data["species"] = ancillary_data["species"].str.lower()
 
-    particle_names = {
-        "hydrogen": "H",
-        "helium3": "He3",
-        "helium4": "He4",
-        "helium": "He",
-        "carbon": "C",
-        "nitrogen": "N",
-        "oxygen": "O",
-        "neon": "Ne",
-        "sodium": "Na",
-        "magnesium": "Mg",
-        "aluminum": "Al",
-        "silicon": "Si",
-        "sulfur": "S",
-        "argon": "Ar",
-        "calcium": "Ca",
-        "iron": "Fe",
-        "nickel": "Ni",
-    }
-
-    # Calculate the summed flux using the ancillary table.
+    # Calculate the summed flux using the appropriate ancillary table.
     for var in l1b_summed_flux_dataset.data_vars:
         if var != "dynamic_threshold_state" and "energy_" not in var:
             print(var)
@@ -108,10 +90,9 @@ def process_summed_flux_data(l1b_summed_rates_dataset: xr.Dataset) -> xr.Dataset
                 species = str(var).split("_")[0]
             else:
                 species = var
-            species_abbrev = particle_names[species]
 
             # Get the ancillary data for the species
-            var_anc_data = ancillary_data[ancillary_data["species"] == species_abbrev]
+            var_anc_data = ancillary_data[ancillary_data["species"] == species]
 
             # Calculate the summed flux for each epoch and energy bin
             for epoch in range(l1b_summed_flux_dataset[var].shape[0]):
@@ -119,8 +100,8 @@ def process_summed_flux_data(l1b_summed_rates_dataset: xr.Dataset) -> xr.Dataset
                     energy_min = l1b_summed_flux_dataset[f"{species}_energy_min"][
                         i
                     ].values.item()
-                    # TODO add check for max too after a new ancillary file is provided
-                    #  fixing errors
+                    # TODO add check for max energy after updated ancillary file is
+                    #  provided fixing errors
                     # energy_max = l1b_summed_flux_dataset[f"{species}_energy_max"][
                     #     i
                     # ].values
@@ -139,6 +120,7 @@ def process_summed_flux_data(l1b_summed_rates_dataset: xr.Dataset) -> xr.Dataset
                     print(f"RATE: {l1b_summed_flux_dataset[var][epoch][i].values}")
 
                     # Calculate the summed flux for this energy bin
+                    # See equation 11 in the HIT algorithm document.
                     l1b_summed_flux_dataset[var][epoch][i] = (
                         rate / (60 * delta_e_factor * geometry_factor * efficiency)
                     ) - b
