@@ -50,6 +50,14 @@ def process_summed_flux_data(l1b_summed_rates_dataset: xr.Dataset) -> xr.Dataset
     """
     Will process L2 HIT summed flux data from L1B summed rates.
 
+    This function converts the L1B summed rates to L2 summed fluxes
+    using ancillary tables containing factors needed to calculate the
+    fluxes (energy bin width, geometry factor, efficiency, and b).
+
+    Flux equation 11 from the HIT algorithm document:
+      Summed Flux = (L1B Summed Rate) /
+                    (60 * Delta E * Geometry Factor * Efficiency) - b
+
     Parameters
     ----------
     l1b_summed_rates_dataset : xarray.Dataset
@@ -68,8 +76,8 @@ def process_summed_flux_data(l1b_summed_rates_dataset: xr.Dataset) -> xr.Dataset
     # Create a new dataset to store the L1B summed flux data
     l1b_summed_flux_dataset = l1b_summed_rates_dataset.copy(deep=True)
 
-    # Load ancillary data which contains factors to convert L1B Summed count
-    # rates to L2 fluxes (delta energy, geometry factor, efficiency, and b)
+    # Load ancillary data containing factors needed to convert L1B Summed count
+    # rates to L2 fluxes (energy bin width, geometry factor, efficiency, and b)
     ancillary_file = (
         imap_module_directory
         / "hit/ancillary/imap_hit_l1b-to-l2-summed-factors-20250219_v002.csv"
@@ -83,57 +91,34 @@ def process_summed_flux_data(l1b_summed_rates_dataset: xr.Dataset) -> xr.Dataset
     # Calculate the summed flux using the appropriate ancillary table.
     for var in l1b_summed_flux_dataset.data_vars:
         if var != "dynamic_threshold_state" and "energy_" not in var:
-            print(var)
             # Get the species name from the variable name
-            if "_delta_" in var:
-                # uncertainty variables (i.e. h_delta_plus, h_delta_minus)
-                species = str(var).split("_")[0]
-            else:
-                species = var
+            species = str(var).split("_")[0] if "_delta_" in var else var
 
             # Get the ancillary data for the species
             var_anc_data = ancillary_data[ancillary_data["species"] == species]
 
             # Calculate the summed flux for each epoch and energy bin
             for epoch in range(l1b_summed_flux_dataset[var].shape[0]):
-                for i, rate in enumerate(l1b_summed_flux_dataset[var][epoch].values):
-                    energy_min = l1b_summed_flux_dataset[f"{species}_energy_min"][
-                        i
-                    ].values.item()
-                    # TODO add check for max energy after updated ancillary file is
-                    #  provided fixing errors
-                    # energy_max = l1b_summed_flux_dataset[f"{species}_energy_max"][
-                    #     i
-                    # ].values
+                # TODO: Add check for energy max after updated ancillary file is
+                #  available fixing errors
+                # Get the energy min values for the current epoch
+                energy_min = l1b_summed_flux_dataset[f"{species}_energy_min"].values
 
-                    # Get the ancillary data for this energy bin range
-                    flux_factors = var_anc_data[
-                        var_anc_data["lower energy (mev)"].astype(np.float32)
-                        == energy_min
-                    ]
-                    delta_e_factor = flux_factors["delta e (mev)"].values[0]
-                    geometry_factor = flux_factors["geometry factor (cm2 sr)"].values[0]
-                    efficiency = flux_factors["efficiency"].values[0]
-                    b = flux_factors["b"].values[0]
-                    print(f"EPOCH: {epoch}")
-                    print(f"ENERGY_INDEX: {i}")
-                    print(f"RATE: {l1b_summed_flux_dataset[var][epoch][i].values}")
+                # Get the factors needed to convert the summed count rates to fluxes for
+                # all energy bins
+                flux_factors = var_anc_data.set_index(
+                    var_anc_data["lower energy (mev)"].astype(np.float32)
+                ).loc[energy_min]
+                delta_e_factor = flux_factors["delta e (mev)"].values
+                geometry_factor = flux_factors["geometry factor (cm2 sr)"].values
+                efficiency = flux_factors["efficiency"].values
+                b = flux_factors["b"].values
 
-                    # Calculate the summed flux for this energy bin
-                    # See equation 11 in the HIT algorithm document.
-                    l1b_summed_flux_dataset[var][epoch][i] = (
-                        rate / (60 * delta_e_factor * geometry_factor * efficiency)
-                    ) - b
-
-                    print(f"FLUX: {l1b_summed_flux_dataset[var][epoch][i].values}")
-                    print(energy_min)
-                    print(f"delta_e_factor: {delta_e_factor}")
-                    print(f"geometry_factor: {geometry_factor}")
-                    print(f"efficiency: {efficiency}")
-                    print(f"b: {b}\n")
-
-            print(l1b_summed_flux_dataset[species].shape)
-
+                # Calculate the summed flux for this energy bin
+                l1b_summed_flux_dataset[var][epoch] = (
+                    l1b_summed_flux_dataset[var][epoch]
+                    / (60 * delta_e_factor * geometry_factor * efficiency)
+                ) - b
     return l1b_summed_flux_dataset
 
 
