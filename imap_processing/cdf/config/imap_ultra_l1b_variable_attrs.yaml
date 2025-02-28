@@ -115,13 +115,13 @@ spin_starts:
 
 phase_angle:
   <<: *default_float32
-  CATDESC: Phase angle from the direct event packet.
+  CATDESC: Phase angle from the direct event packet in 1/2 degree increments (range is 0-719)
   FIELDNAM: phase_angle
   LABLAXIS: phase angle
-  UNITS: seconds
+  UNITS: degrees
 
 spin:
-  <<: *default_uint8
+  <<: *default_uint32
   CATDESC: Spin number.
   FIELDNAM: spin_number
   LABLAXIS: spin number

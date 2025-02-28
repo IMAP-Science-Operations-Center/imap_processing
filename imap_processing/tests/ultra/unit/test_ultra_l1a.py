@@ -12,7 +12,7 @@ from imap_processing.ultra.l0.ultra_utils import (
 )
 from imap_processing.ultra.l1a.ultra_l1a import (
     create_dataset,
-    get_event_time,
+    get_event_id,
     ultra_l1a,
 )
 from imap_processing.utils import group_by_apid
@@ -337,12 +337,12 @@ def test_cdf_events(ccsds_path_theta_0, decom_ultra_aux, decom_test_data):
     )
 
 
-def test_get_event_time():
-    """Test get_event_time"""
+def test_get_event_id():
+    """Test get_event_id"""
     decom_ultra_dict = {
         ULTRA_EVENTS.apid[0]: {"SHCOARSE": [445015662, 445015663, 445015664, 445015664]}
     }
-    decom_events = get_event_time(decom_ultra_dict)
+    decom_events = get_event_id(decom_ultra_dict)
     counters_for_met = []
     for i in range(len(decom_events["EVENTID"])):
         event_id = decom_events["EVENTID"][i]

@@ -120,7 +120,7 @@ def initiate_data_arrays(decom_ultra: dict, apid: int) -> xr.Dataset:
     return dataset
 
 
-def get_event_time(decom_ultra_dict: dict) -> dict:
+def get_event_id(decom_ultra_dict: dict) -> dict:
     """
     Get unique event IDs using data from events packets.
 
@@ -173,7 +173,7 @@ def create_dataset(decom_ultra_dict: dict) -> xr.Dataset:
     # Combine events and aux datasets so we can have proper event timestamps
     if ULTRA_EVENTS.apid[0] in decom_ultra_dict.keys():
         apid = ULTRA_EVENTS.apid[0]
-        decom_ultra = get_event_time(decom_ultra_dict)
+        decom_ultra = get_event_id(decom_ultra_dict)
     else:
         apid = next(iter(decom_ultra_dict.keys()))
         decom_ultra = decom_ultra_dict[apid]
