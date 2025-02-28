@@ -5,6 +5,7 @@ import pandas as pd
 import pytest
 import xarray as xr
 
+from imap_processing.cdf.utils import load_cdf
 from imap_processing.mag.l1a.mag_l1a import mag_l1a
 from imap_processing.mag.l1a.mag_l1a_data import MagL1a, TimeTuple
 from imap_processing.mag.l1b.mag_l1b import mag_l1b
@@ -93,9 +94,14 @@ def test_mag_l1a_validation(test_number):
             )
 
 
-@pytest.mark.parametrize(("test_number"), ["009", "010", "011"])
+@pytest.mark.parametrize(("test_number"), ["009", "010", "011", "012"])
 def test_mag_l1b_validation(test_number):
     source_directory = Path(__file__).parent / "validation" / "L1b" / f"T{test_number}"
+    cdf_file = source_directory / f"mag-l1a-l1b-t{test_number}-cal.cdf"
+    calibration_input = None
+    if cdf_file.exists():
+        calibration_input = load_cdf(cdf_file)
+
     input_mag_l1a = pd.read_csv(source_directory / f"mag-l1a-l1b-t{test_number}-in.csv")
 
     mag_l1a_mago = mag_l1a_dataset_generator(len(input_mag_l1a.index))
@@ -144,8 +150,8 @@ def test_mag_l1b_validation(test_number):
     mag_l1a_mago["compression_flags"].data = compression_flags
     mag_l1a_magi["compression_flags"].data = compression_flags
 
-    mago = mag_l1b(mag_l1a_mago, "v000")
-    magi = mag_l1b(mag_l1a_magi, "v000")
+    mago = mag_l1b(mag_l1a_mago, "v000", calibration_input)
+    magi = mag_l1b(mag_l1a_magi, "v000", calibration_input)
 
     expected_mago = pd.read_csv(
         source_directory / f"mag-l1a-l1b-t{test_number}-mago-out.csv"
@@ -186,6 +192,7 @@ def test_mag_l1b_validation(test_number):
 
         expected_time = str_to_et(expected_magi["t"].iloc[index])
         magi_time = ttj2000ns_to_et(magi["epoch"].data[index])
+
         assert np.allclose(expected_time, magi_time, atol=1e-6, rtol=0)
 
     for index in expected_mago.index:

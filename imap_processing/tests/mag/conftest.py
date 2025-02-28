@@ -6,6 +6,7 @@ import numpy as np
 import pytest
 import xarray as xr
 
+from imap_processing.cdf.utils import load_cdf
 from imap_processing.mag.l1a.mag_l1a import mag_l1a
 
 
@@ -54,3 +55,11 @@ def mag_l1a_dataset_generator(length):
     output_dataset.attrs["Logical_source"] = ["imap_mag_l1a_norm-mago"]
 
     return output_dataset
+
+
+@pytest.fixture()
+def mag_test_calibration_data():
+    imap_dir = Path(__file__).parent
+    cal_file = imap_dir / "validation" / "imap_calibration_mag_20240229_v01.cdf"
+    calibration_data = load_cdf(cal_file)
+    return calibration_data

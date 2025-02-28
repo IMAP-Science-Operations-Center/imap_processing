@@ -211,7 +211,6 @@ def test_l1a_validate_data_arrays(test_l1a_data: xr.Dataset, index):
     # TODO: Currently only the following products can be validated, expand this
     #       to other data products as I can validate them.
     able_to_be_validated = [
-        "lo-counters-aggregated",
         "lo-counters-singles",
         "lo-sw-angular",
         "lo-nsw-angular",
@@ -220,6 +219,7 @@ def test_l1a_validate_data_arrays(test_l1a_data: xr.Dataset, index):
         "lo-sw-species",
         "lo-nsw-species",
     ]
+
     if descriptor in able_to_be_validated:
         counters = getattr(
             constants, f'{descriptor.upper().replace("-","_")}_VARIABLE_NAMES'
@@ -228,16 +228,10 @@ def test_l1a_validate_data_arrays(test_l1a_data: xr.Dataset, index):
         validation_dataset = load_cdf(VALIDATION_DATA[index])
 
         for counter in counters:
-            # Ensure the data array shapes are equal
-            assert (
-                processed_dataset[counter].data.shape
-                == validation_dataset[counter].data.shape
+            # Ensure the data arrays are equal
+            np.testing.assert_equal(
+                processed_dataset[counter].data, validation_dataset[counter].data
             )
-
-            # TODO: Once Joey and I figure out some small discrepancies with
-            #       some data products, we should get matching data array shapes
-            #       AND values (i.e. run assert_array_equal on the arrays,
-            #       instead of just checking shape)
 
     else:
         pytest.xfail(f"Still need to implement validation for {descriptor}")

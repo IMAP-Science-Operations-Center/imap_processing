@@ -149,7 +149,7 @@ class CoDICEL1aPipeline:
         """
         self.coords = {}
 
-        coord_names = ["epoch", *list(self.config["dims"].keys())]
+        coord_names = ["epoch", *list(self.config["output_dims"].keys())]
 
         # These are labels unique to lo-counters products coordinates
         if self.config["dataset_name"] in [
@@ -162,7 +162,7 @@ class CoDICEL1aPipeline:
             if name == "epoch":
                 values = self.calculate_epoch_values()
             elif name in ["esa_step", "inst_az", "spin_sector", "spin_sector_pairs"]:
-                values = np.arange(self.config["dims"][name])
+                values = np.arange(self.config["output_dims"][name])
             elif name == "spin_sector_pairs_label":
                 values = np.array(
                     [
@@ -228,7 +228,7 @@ class CoDICEL1aPipeline:
 
             # The final CDF dimensions always has "epoch" as the first dimension,
             # followed by the dimensions for the specific data product
-            dims = ["epoch", *list(self.config["dims"].keys())]
+            dims = ["epoch", *list(self.config["output_dims"].keys())]
 
             # Create the CDF data variable
             dataset[variable_name] = xr.DataArray(
@@ -406,26 +406,40 @@ class CoDICEL1aPipeline:
 
         These data need to be divided up by species or priorities (or
         what I am calling "counters" as a general term), and re-arranged into
-        3D arrays representing dimensions such as spin sectors, positions, and
-        energies (depending on the data product).
+        4D arrays representing dimensions such as time, spin sectors, positions,
+        and energies (depending on the data product).
+
+        However, the existence and order of these dimensions can vary depending
+        on the specific data product, so we define this in the "input_dims"
+        and "output_dims" values configuration dictionary; the "input_dims"
+        defines how the dimensions are written into the packet data, while
+        "output_dims" defines how the dimensions should be written to the final
+        CDF product.
         """
         # This will contain the reshaped data for all counters
         self.data = []
 
-        # Typically, data are a 4D arrays with a shape representing some
-        # combination of <num_counters>, <num_positions>, <num_spin_sectors>,
-        # and <num_energy_steps>. However, the existence and order of these
-        # dimensions can vary depending on the specific data product, so we
-        # define this in the "dims" value configuration dictionary. The number
-        # of counters is the first dimension/axis.
-        reshape_dims = (self.config["num_counters"], *self.config["dims"].values())
+        # First reshape the data based on how it is written to the data array of
+        # the packet data. The number of counters is the first dimension / axis.
+        reshape_dims = (
+            self.config["num_counters"],
+            *self.config["input_dims"].values(),
+        )
 
-        # For each packet/epoch, reshape the data along these dimensions
+        # Then, transpose the data based on how the dimensions should be written
+        # to the CDF file. Since this is specific to each data product, we need
+        # to determine this dynamically based on the "output_dims" config.
+        input_keys = ["num_counters", *self.config["input_dims"].keys()]
+        output_keys = ["num_counters", *self.config["output_dims"].keys()]
+        transpose_axes = [input_keys.index(dim) for dim in output_keys]
+
         for packet_data in self.raw_data:
             reshaped_packet_data = np.array(packet_data, dtype=np.uint32).reshape(
                 reshape_dims
             )
-            self.data.append(reshaped_packet_data)
+            reshaped_cdf_data = np.transpose(reshaped_packet_data, axes=transpose_axes)
+
+            self.data.append(reshaped_cdf_data)
 
         # No longer need to keep the raw data around
         del self.raw_data
