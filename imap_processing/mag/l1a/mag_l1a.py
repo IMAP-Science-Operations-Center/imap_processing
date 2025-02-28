@@ -276,11 +276,6 @@ def generate_dataset(
     dataset : xarray.Dataset
         One xarray dataset with proper CDF attributes and shape containing MAG L1A data.
     """
-    # TODO: add:
-    # gaps_in_data global attr
-    # magl1avectordefinition data
-
-    # TODO: Just leave time in datetime64 type with vector as dtype object to avoid this
     # Get the timestamp from the end of the vector
     time_data = single_file_l1a.vectors[:, 4]
 
@@ -338,6 +333,13 @@ def generate_dataset(
             "compression_label", check_schema=False
         ),
     )
+    global_attributes = attribute_manager.get_global_attributes(logical_file_id)
+    global_attributes["is_mago"] = str(bool(single_file_l1a.is_mago))
+    global_attributes["is_active"] = str(bool(single_file_l1a.is_active))
+    global_attributes["vectors_per_second"] = (
+        single_file_l1a.vectors_per_second_attribute()
+    )
+    global_attributes["missing_sequences"] = single_file_l1a.missing_sequences
 
     output = xr.Dataset(
         coords={
@@ -345,13 +347,11 @@ def generate_dataset(
             "direction": direction,
             "compression": compression,
         },
-        attrs=attribute_manager.get_global_attributes(logical_file_id),
+        attrs=global_attributes,
     )
     output["direction_label"] = direction_label
     output["compression_label"] = compression_label
     output["vectors"] = vectors
     output["compression_flags"] = compression_flags
-
-    # TODO: Put is_mago and active in the header
 
     return output

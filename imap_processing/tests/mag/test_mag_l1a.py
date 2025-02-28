@@ -919,3 +919,41 @@ def test_mag_packet_properties():
     )
 
     assert packet_properties.compression_width == 18
+
+
+def test_changing_vecsec():
+    packet_one = MagL1aPacketProperties(
+        1000,
+        TimeTuple(1000, 0),
+        2,  # 2 vectors per second
+        1,  # 2 seconds of data
+        0,
+        0,
+        1,
+        0,
+    )
+    packet_two = MagL1aPacketProperties(
+        2000,
+        TimeTuple(2000, 0),
+        8,  # 8 vectors per second
+        1,  # 2 seconds of data
+        1,
+        0,
+        1,
+        0,
+    )
+
+    four_vectors = np.full((4, 5), [1, 2, 3, 4, 2])
+    sixteen_vectors = np.full((16, 5), [1, 2, 3, 4, 2])
+
+    mag_l1a = MagL1a(True, 1, 1, four_vectors, packet_one)
+    mag_l1a.append_vectors(sixteen_vectors, packet_two)
+
+    assert mag_l1a.vectors.shape[0] == 20
+    assert len(mag_l1a.packet_definitions.keys()) == 2
+    expected = [2, 8]
+    for index, value in enumerate(mag_l1a.packet_definitions.values()):
+        assert expected[index] == value.vectors_per_second
+
+    assert ":2," in mag_l1a.vectors_per_second_attribute()
+    assert ":8" in mag_l1a.vectors_per_second_attribute()

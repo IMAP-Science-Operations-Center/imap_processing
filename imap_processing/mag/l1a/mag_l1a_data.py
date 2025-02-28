@@ -252,7 +252,6 @@ class MagL1a:
     missing_sequences: list[int] = field(default_factory=list)
     start_time: np.int64 = field(init=False)
     compression_flags: np.ndarray | None = field(init=False, default=None)
-    vectors_per_second: np.ndarray = field(init=False, default=None)
 
     def __post_init__(self, starting_packet: MagL1aPacketProperties) -> None:
         """
@@ -269,9 +268,6 @@ class MagL1a:
         # the object
         self.most_recent_sequence = starting_packet.src_seq_ctr
         self.update_compression_array(starting_packet, self.vectors.shape[0])
-        self.vectors_per_second = np.full(
-            self.vectors.shape[0], starting_packet.vectors_per_second
-        )
 
     def append_vectors(
         self, additional_vectors: np.ndarray, packet_properties: MagL1aPacketProperties
@@ -289,7 +285,8 @@ class MagL1a:
         vector_sequence = packet_properties.src_seq_ctr
 
         self.vectors = np.concatenate([self.vectors, additional_vectors])
-        self.packet_definitions[self.start_time] = packet_properties
+        start_time = np.int64(met_to_ttj2000ns(packet_properties.shcoarse))
+        self.packet_definitions[start_time] = packet_properties
 
         # Every additional packet should be the next one in the sequence, if not, add
         # the missing sequence(s) to the gap data
@@ -299,14 +296,6 @@ class MagL1a:
             )
         self.most_recent_sequence = vector_sequence
         self.update_compression_array(packet_properties, additional_vectors.shape[0])
-        self.vectors_per_second = np.concatenate(
-            (
-                self.vectors_per_second,
-                np.full(
-                    additional_vectors.shape[0], packet_properties.vectors_per_second
-                ),
-            )
-        )
 
     def update_compression_array(
         self, packet_properties: MagL1aPacketProperties, length: int
@@ -1102,3 +1091,28 @@ class MagL1a:
         value = int((value >> 1) ^ (-(value & 1)))
 
         return value
+
+    def vectors_per_second_attribute(self) -> str:
+        """
+        Generate a string describing the vectors per second.
+
+        Format is {start time}:{vectors per second},{start time}:{vectors per second}
+        where it's only included if vectors per second changes.
+
+        Returns
+        -------
+        output_str : str
+            Output string describing the vectors per second in all the packets.
+        """
+        output_str = ""
+        last_vectors_per_second = None
+        for start_time, packet in self.packet_definitions.items():
+            vecsec = packet.vectors_per_second
+            if vecsec != last_vectors_per_second:
+                if output_str == "":
+                    output_str = f"{start_time}:{vecsec}"
+                else:
+                    output_str += f",{start_time}:{vecsec}"
+                last_vectors_per_second = vecsec
+
+        return output_str
