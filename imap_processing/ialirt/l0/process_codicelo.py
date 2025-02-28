@@ -41,12 +41,9 @@ def find_groups(data: xr.Dataset) -> xr.Dataset:
     last_sc_tick = last_sc_ticks.max()
 
     # Filter out data before the first cod_lo_counter=0 and
-    # after the last cod_lo_counter=232 and cod_lo_counter values != 0-232.
+    # after the last cod_lo_counter=232.
     grouped_data = data.where(
-        (data["cod_lo_acq"] >= start_sc_tick)
-        & (data["cod_lo_acq"] <= last_sc_tick)
-        & (data["cod_lo_counter"] >= subcom_range[0])
-        & (data["cod_lo_counter"] <= subcom_range[-1]),
+        (data["cod_lo_acq"] >= start_sc_tick) & (data["cod_lo_acq"] <= last_sc_tick),
         drop=True,
     )
 
