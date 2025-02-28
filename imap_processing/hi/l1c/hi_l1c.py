@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import re
 from pathlib import Path
 
 import numpy as np
@@ -12,6 +13,7 @@ import xarray as xr
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import parse_filename_like
 from imap_processing.hi.l1a.science_direct_event import DE_CLOCK_TICK_S
+from imap_processing.hi.l1b.hi_l1b import CoincidenceBitmap
 from imap_processing.hi.utils import create_dataset_variables, full_dataarray
 from imap_processing.spice.geometry import (
     SpiceFrame,
@@ -443,6 +445,7 @@ class CalibrationProductConfig:
     def __init__(self, pandas_obj: pd.DataFrame) -> None:
         self._validate(pandas_obj)
         self._obj = pandas_obj
+        self._add_coincidence_values_column()
 
     def _validate(self, df: pd.DataFrame) -> None:
         """
@@ -469,6 +472,18 @@ class CalibrationProductConfig:
         # TODO: Verify that the same ESA energy steps exist in all unique calibration
         #   product numbers
 
+    def _add_coincidence_values_column(self) -> None:
+        """Generate and add the coincidence_type_values column to the dataframe."""
+        # Add a column that consists of the coincidence type strings converted
+        # to integer values
+        self._obj["coincidence_type_values"] = self._obj.apply(
+            lambda row: [
+                coincidence_type_string_to_int(entry)
+                for entry in row["coincidence_type_list"]
+            ],
+            axis=1,
+        )
+
     @classmethod
     def from_csv(cls, path: Path) -> pd.DataFrame:
         """
@@ -484,12 +499,15 @@ class CalibrationProductConfig:
         dataframe : pandas.DataFrame
             Validated calibration product configuration data frame.
         """
-        return pd.read_csv(
+        df = pd.read_csv(
             path,
             index_col=cls.index_columns,
             converters={"coincidence_type_list": lambda s: s.split("|")},
             comment="#",
         )
+        # Force the _init_ method to run by using the namespace
+        _ = df.cal_prod_config.number_of_products
+        return df
 
     @property
     def number_of_products(self) -> int:
@@ -503,3 +521,23 @@ class CalibrationProductConfig:
             calibration product definitions.
         """
         return len(self._obj.index.unique(level="cal_prod_num"))
+
+
+def coincidence_type_string_to_int(coincidence_type_str: str) -> int:
+    """
+    Convert a coincidence type string to a coincidence type integer value.
+
+    Parameters
+    ----------
+    coincidence_type_str : str
+        The coincidence type string containing the list of detectors hit.
+        e.g. "AC1C2".
+
+    Returns
+    -------
+    coincidence_type : int
+        The integer value of the coincidence type.
+    """
+    pattern = r"|".join(c.name for c in CoincidenceBitmap)
+    matches = re.findall(pattern, coincidence_type_str)
+    return sum(CoincidenceBitmap[m] for m in matches)

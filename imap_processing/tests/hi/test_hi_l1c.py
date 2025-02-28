@@ -236,7 +236,37 @@ class TestCalibrationProductConfig:
         df = CalibrationProductConfig.from_csv(hi_test_cal_prod_config_path)
         assert isinstance(df["coincidence_type_list"][0, 1], list)
 
+    def test_added_coincidence_type_values_column(self, hi_test_cal_prod_config_path):
+        df = CalibrationProductConfig.from_csv(hi_test_cal_prod_config_path)
+        assert "coincidence_type_values" in df.columns
+        for _, row in df.iterrows():
+            for detect_string, val in zip(
+                row["coincidence_type_list"], row["coincidence_type_values"]
+            ):
+                assert val == hi_l1c.coincidence_type_string_to_int(detect_string)
+
     def test_number_of_products(self, hi_test_cal_prod_config_path):
         """Test coverage for number of products accessor."""
         df = CalibrationProductConfig.from_csv(hi_test_cal_prod_config_path)
         assert df.cal_prod_config.number_of_products == 2
+
+
+@pytest.mark.parametrize(
+    "sensor_hit_str, expected_val",
+    [
+        ("ABC1C2", 15),
+        ("ABC1", 14),
+        ("AB", 12),
+        ("AC1C2", 11),
+        ("AC1", 10),
+        ("A", 8),
+        ("BC1C2", 7),
+        ("BC1", 6),
+        ("B", 4),
+        ("C1C2", 3),
+        ("C1", 2),
+    ],
+)
+def test_coincidence_type_string_to_int(sensor_hit_str, expected_val):
+    """Test coverage for coincidence_type_string_to_int function"""
+    assert hi_l1c.coincidence_type_string_to_int(sensor_hit_str) == expected_val
