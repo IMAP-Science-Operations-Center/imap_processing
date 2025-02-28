@@ -571,13 +571,6 @@ def create_hskp_dataset(
         "spare_6",
         "spare_62",
         "spare_68",
-        "version",
-        "type",
-        "sec_hdr_flg",
-        "pkt_apid",
-        "seq_flgs",
-        "src_seq_ctr",
-        "pkt_len",
         "chksum",
     ]
 
