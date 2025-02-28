@@ -3,6 +3,7 @@
 import logging
 
 import numpy as np
+from numpy.typing import NDArray
 import xarray as xr
 
 from imap_processing.ialirt.l0.mag_l0_ialirt_data import (
@@ -69,6 +70,89 @@ def get_status_data(status_values: xr.DataArray, pkt_counters: xr.DataArray) -> 
     return combined_packets
 
 
+def unwrap_src_seq_ctr(src_seq_ctr: NDArray, mag_acq_tm_coarse: NDArray,
+                       pkt_counter: NDArray) -> NDArray:
+    """
+    Unwrap a 14-bit src_seq_ctr to handle counter rollovers.
+
+    The counter wraps at max_seq - 1 (default 16383 for 14-bit counters),
+    so the unwrapped version will be strictly increasing across rollovers.
+
+    Parameters
+    ----------
+    src_seq_ctr : NDArray
+        Source sequence counter values.
+
+    Returns
+    -------
+    unwrapped_seq : NDArray
+        Unwrapped sequence counter.
+    """
+    unwrapped_seq = src_seq_ctr.copy()
+    max_seq = 16384  # 2^14, max value + 1 for 14-bit counter
+
+    # Detect where the counter wraps
+    rollovers = np.diff(src_seq_ctr) < 0
+
+    # Create an array that increments by 1 at each rollover
+    rollover_count = np.zeros_like(src_seq_ctr, dtype=int)
+    rollover_count[1:] = np.cumsum(rollovers)
+
+    # Apply the unwrapping adjustment
+    unwrapped_seq += rollover_count * max_seq
+
+    return unwrapped_seq
+
+
+def sort_by_unwrapped_seq_and_pkt_counter(dataset: xr.Dataset, pkt_counter: xr.DataArray,
+                                          src_seq_ctr_name="src_seq_ctr") -> xr.Dataset:
+    """
+    Sort an xarray Dataset by unwrapped src_seq_ctr and pkt_counter.
+
+    Handles 14-bit counter wraparound (0-16383) by unwrapping src_seq_ctr
+    into a strictly increasing sequence.
+
+    Parameters
+    ----------
+    dataset : xr.Dataset
+        The dataset to sort.
+    pkt_counter : xr.DataArray
+        Packet counter (same length as dataset's epoch dimension).
+    src_seq_ctr_name : str, optional
+        Name of the src_seq_ctr variable in the dataset.
+
+    Returns
+    -------
+    xr.Dataset
+        Sorted dataset.
+    """
+    MAX_SEQ = 16384  # 2^14, max value + 1 for 14-bit counter
+
+    # Extract src_seq_ctr from dataset
+    src_seq_ctr = dataset[src_seq_ctr_name].values
+
+    # Initialize unwrapped sequence counter
+    unwrapped_seq = src_seq_ctr.copy()
+    rollover_count = 0
+
+    # Unwrap the sequence counter
+    for i in range(1, len(src_seq_ctr)):
+        if src_seq_ctr[i] < src_seq_ctr[i - 1]:
+            rollover_count += 1
+        unwrapped_seq[i] += rollover_count * MAX_SEQ
+
+    # Combine unwrapped sequence counter with pkt_counter into a sortable key
+    combined_key = list(zip(unwrapped_seq, pkt_counter.values))
+
+    # Sort indices based on combined key
+    sort_indices = np.argsort(combined_key)
+
+    # Apply sorting to the dataset
+    sorted_dataset = dataset.isel(epoch=sort_indices)
+
+    return sorted_dataset
+
+
 def find_groups(data: xr.Dataset) -> xr.Dataset:
     """
     Group data based on `mag_acq_tm_coarse` values.
@@ -83,8 +167,15 @@ def find_groups(data: xr.Dataset) -> xr.Dataset:
     grouped_data : xr.Dataset
         Grouped data with an additional "group" coordinate.
     """
-    # Ensure data is sorted by `mag_acq_tm_coarse`
+    pkt_range = (0, 3)
+
     data = data.sortby("mag_acq_tm_coarse", ascending=True)
+    status_values = data["mag_status"]
+
+    pkt_counter = get_pkt_counter(status_values)
+
+    # pkt_counter == 0 to define the beginning of the group.
+    src_seq_ctr = data["src_seq_ctr"]
 
     # Get unique acquisition times and create group labels
     _, group_labels = np.unique(data["mag_acq_tm_coarse"], return_inverse=True)

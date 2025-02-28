@@ -11,6 +11,7 @@ from imap_processing.ialirt.l0.parse_mag import (
     get_status_data,
     get_time,
     parse_packet,
+    unwrap_src_seq_ctr,
 )
 from imap_processing.utils import packet_file_to_datasets
 
@@ -74,6 +75,35 @@ def test_get_pkt_counter(xarray_data):
     status_values = xarray_data["mag_status"].values
     pkt_counter = get_pkt_counter(status_values)
     assert np.array_equal(pkt_counter, np.array([0, 1, 2, 3, 0, 1, 2, 3, 0]))
+
+
+def test_unwrap_src_seq_ctr(xarray_data):
+    """Tests the unwrap_src_seq_ctr function."""
+    # mag_acq_tm_coarse
+    # pkt_counter
+    # make certain it is in ascending order based on this
+    # 1. Simple sequence, no wrap
+    # src_seq_ctr_test_1 = np.array([0, 1, 2, 3, 4, 5, 6])
+    # mag_acq_tm_coarse_test_1 = np.array([461971382, 461971382, 461971383, 461971383, 461971386, 461971386,
+    #        461971386, 461971386, 461971390])
+    # pkt_counter_test_1 = np.array([0, 1, 2, 3, 0, 1, 2, 3, 0])
+
+    # 2. Sequence with a single rollover (14-bit, so rolls over after 16383)
+    src_seq_ctr_test_2 = np.array([16381, 16382, 16383, 0, 1, 2, 3, 4])
+    mag_acq_tm_coarse_2 = np.array([461971382, 461971382, 461971382, 461971382, 461971386, 461971386,
+           461971386, 461971386])
+    pkt_counter_test_2 = np.array([0, 1, 2, 3, 0, 1, 2, 3, 0])
+
+    # 4. Starts mid-sequence and rolls over
+    # src_seq_ctr_test_4 = np.array([408, 409, 410, 411, 412, 0, 1, 2])
+    # mag_acq_tm_coarse_4 = np.array([461971382, 461971382, 461971382, 461971382, 461971386, 461971386,
+    #        461971386, 461971386, 461971390])
+
+    # 5. Edge case — sequence of length 1 (no rollover possible)
+    # src_seq_ctr_test_5 = np.array([5])
+    # mag_acq_tm_coarse_5 = np.array([461971382])
+
+    unwrapped_src_seq_ctr = unwrap_src_seq_ctr(src_seq_ctr_test_2, mag_acq_tm_coarse_2, pkt_counter_test_2)
 
 
 def test_find_groups(xarray_data):
