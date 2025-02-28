@@ -50,7 +50,7 @@ def mag_l1a(packet_filepath: Path, data_version: str) -> list[xr.Dataset]:
     # Create attribute manager and add MAG L1A attributes and global variables
     attribute_manager = ImapCdfAttributes()
     attribute_manager.add_instrument_global_attrs("mag")
-    attribute_manager.add_instrument_variable_attrs("mag", "l1")
+    attribute_manager.add_instrument_variable_attrs("mag", "l1a")
 
     attribute_manager.add_global_attribute("Data_version", data_version)
     attribute_manager.add_global_attribute("Input_files", str(input_files))
