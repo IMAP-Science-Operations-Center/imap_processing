@@ -2,7 +2,6 @@
 
 import numpy as np
 import pytest
-import xarray as xr
 
 from imap_processing.quality_flags import ImapAttitudeUltraFlags, ImapRatesUltraFlags
 from imap_processing.ultra.constants import UltraConstants
@@ -39,13 +38,13 @@ def test_data(use_fake_spin_data_for_time):
             )
             expected_counts[energy_idx, spin_idx] = count
 
-    return time, spin_number, energy, expected_counts
+    return spin_number, energy, expected_counts
 
 
 def test_get_energy_histogram(test_data):
     """Tests get_energy_histogram function."""
 
-    _, spin_number, energy, expected_counts = test_data
+    spin_number, energy, expected_counts = test_data
 
     hist, _, counts, duration = get_energy_histogram(spin_number, energy)
 
@@ -58,10 +57,8 @@ def test_flag_attitude(use_fake_spin_data_for_time, test_aux_dataset):
     """Tests flag_attitude function."""
 
     use_fake_spin_data_for_time(0, 15 * 147)
-    spins = np.array([ 0,  0,  1,  2,  3,  3,  4,  5,  6,  6])
     quality_flags, spin_rates, spin_period, spin_start_time = flag_attitude(
-        test_aux_dataset["SPINNUMBER"].values,
-        test_aux_dataset
+        test_aux_dataset["SPINNUMBER"].values, test_aux_dataset
     )
 
     flag = ImapAttitudeUltraFlags(quality_flags[0])
@@ -89,7 +86,7 @@ def test_get_n_sigma():
 def test_flag_spin(test_data):
     """Tests flag_spin function."""
 
-    _, spin_number, energy, expected_counts = test_data
+    spin_number, energy, expected_counts = test_data
     quality_flags, spin, energy, _ = flag_spin(spin_number, energy, 1)
     threshold = get_n_sigma(expected_counts / 15, 15, 1)
 
@@ -101,17 +98,33 @@ def test_flag_spin(test_data):
     assert np.all(high_rates_flag == ImapRatesUltraFlags.HIGHRATES.value)
 
 
-def test_compare_aux_univ_spin_table(use_fake_spin_data_for_time,
-                                     test_aux_dataset):
+def test_compare_aux_univ_spin_table(use_fake_spin_data_for_time, test_aux_dataset):
     """Tests compare_aux_univ_spin_table function."""
     use_fake_spin_data_for_time(0, 15 * 147)
     spins = test_aux_dataset["SPINNUMBER"].values
     spin_df = get_spin_data()
 
-    result = compare_aux_univ_spin_table(test_aux_dataset,
-                                         spins,
-                                         spin_df)
+    result = compare_aux_univ_spin_table(test_aux_dataset, spins, spin_df)
 
-    assert np.all(result == np.array([False, False, False, False, False,
-                                      False, False, False, False, False,
-                                      False, False, False, False,  True]))
+    assert np.all(
+        result
+        == np.array(
+            [
+                False,
+                False,
+                False,
+                False,
+                False,
+                False,
+                False,
+                False,
+                False,
+                False,
+                False,
+                False,
+                False,
+                False,
+                True,
+            ]
+        )
+    )

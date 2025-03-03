@@ -1,9 +1,9 @@
 """Culls Events for ULTRA L1b."""
 
 import numpy as np
-from numpy.typing import NDArray
 import pandas as pd
 import xarray as xr
+from numpy.typing import NDArray
 
 from imap_processing.quality_flags import ImapAttitudeUltraFlags, ImapRatesUltraFlags
 from imap_processing.spice.spin import get_spin_data
@@ -61,8 +61,9 @@ def get_energy_histogram(
     return hist, spin_edges, counts, mean_duration
 
 
-def flag_attitude(spin_number: NDArray,
-                  aux_dataset: xr.Dataset) -> tuple[NDArray, NDArray, NDArray, NDArray]:
+def flag_attitude(
+    spin_number: NDArray, aux_dataset: xr.Dataset
+) -> tuple[NDArray, NDArray, NDArray, NDArray]:
     """
     Flag data based on attitude.
 
@@ -158,7 +159,9 @@ def flag_spin(
     n_sigma_per_energy_reshape : NDArray
         N sigma per energy.
     """
-    count_rates, spin_edges, counts, duration = get_energy_histogram(spin_number, energy)
+    count_rates, spin_edges, counts, duration = get_energy_histogram(
+        spin_number, energy
+    )
     quality_flags = np.full(
         count_rates.shape, ImapRatesUltraFlags.NONE.value, dtype=np.uint16
     )
@@ -179,9 +182,7 @@ def flag_spin(
 
 
 def compare_aux_univ_spin_table(
-    aux_dataset: xr.Dataset,
-    spins: NDArray,
-    spin_df: pd.DataFrame
+    aux_dataset: xr.Dataset, spins: NDArray, spin_df: pd.DataFrame
 ) -> NDArray:
     """
     Compare the auxiliary and Universal Spin Table.
@@ -192,6 +193,8 @@ def compare_aux_univ_spin_table(
         Auxiliary dataset.
     spins : np.ndarray
         Array of spin numbers to compare.
+    spin_df : pd.DataFrame
+        Universal Spin Table.
 
     Returns
     -------
@@ -218,6 +221,6 @@ def compare_aux_univ_spin_table(
         aux_values = filtered_aux[aux_field]
         spin_values = filtered_univ[spin_field].values
 
-        mismatch_indices |= (aux_values != spin_values)
+        mismatch_indices |= aux_values != spin_values
 
     return mismatch_indices
