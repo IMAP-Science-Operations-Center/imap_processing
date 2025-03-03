@@ -207,7 +207,9 @@ def test_aux_dataset():
 
     num_spins = 15
 
-    epoch = np.arange(760591716184000000, 760591716184000000 + num_spins * 15000000000, 15000000000)
+    epoch = np.arange(
+        760591716184000000, 760591716184000000 + num_spins * 15000000000, 15000000000
+    )
     spin_number = np.arange(127, 142)
     spin_start_time = np.arange(1905, 2115 + 15, 15)
     spin_period_sec = np.full(num_spins, 15)
@@ -224,9 +226,8 @@ def test_aux_dataset():
             "TIMESPINDATA": ("epoch", spin_start_time),
             "SPINPERIOD": ("epoch", spin_period_sec),
         },
-        coords={
-            "epoch": ("epoch", epoch)
-        })
+        coords={"epoch": ("epoch", epoch)},
+    )
 
     return test_aux_dataset
 
@@ -234,8 +235,11 @@ def test_aux_dataset():
 @pytest.fixture()
 @mock.patch("imap_processing.ultra.l1b.de.get_annotated_particle_velocity")
 def l1b_datasets(
-    mock_get_annotated_particle_velocity, de_dataset, use_fake_spin_data_for_time,
-    rates_dataset, test_aux_dataset
+    mock_get_annotated_particle_velocity,
+    de_dataset,
+    use_fake_spin_data_for_time,
+    rates_dataset,
+    test_aux_dataset,
 ):
     """L1B test data"""
 

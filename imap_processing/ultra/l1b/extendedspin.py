@@ -10,7 +10,7 @@ from imap_processing.ultra.l1b.ultra_l1b_culling import (
 from imap_processing.ultra.utils.ultra_l1_utils import create_dataset
 
 
-def calculate_extendedspin(
+def calculate_extendedspin(  # noqa: PLR0913
     aux_dataset: xr.Dataset,
     hk_dataset: xr.Dataset,
     rates_dataset: xr.Dataset,
@@ -50,8 +50,7 @@ def calculate_extendedspin(
         de_dataset["spin"].values, de_dataset["energy"].values
     )
     attitude_qf, spin_rates, spin_period, spin_starttime = flag_attitude(
-        de_dataset["spin"].values,
-        aux_dataset
+        de_dataset["spin"].values, aux_dataset
     )
 
     # These will be the coordinates.
