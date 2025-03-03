@@ -146,9 +146,14 @@ def get_event_id(decom_ultra_dict: dict) -> dict:
         else:
             packet_counters[met] += 1
 
-        # Create the 64-bit event ID using np.int64 instead of np.uint64.
-        packet_base = np.int64(met) << np.int64(32)
-        event_id = packet_base | np.int64(packet_counters[met])
+        # Left shift SHCOARSE (u32) by 31 bits, to make room for our event counters
+        # (31 rather than 32 to keep it positive in the int64 representation)
+        # Append the current number of events in this packet to the right-most bits
+        # This makes each event a unique value including the MET and event number
+        # in the packet
+        # NOTE: CDF does not allow for uint64 values,
+        # so we use int64 representation here
+        event_id = (np.int64(met) << np.int64(31)) | np.int64(packet_counters[met])
         event_ids.append(event_id)
 
     decom_events["EVENTID"] = event_ids
