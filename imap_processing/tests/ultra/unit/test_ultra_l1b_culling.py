@@ -105,26 +105,6 @@ def test_compare_aux_univ_spin_table(use_fake_spin_data_for_time, test_aux_datas
     spin_df = get_spin_data()
 
     result = compare_aux_univ_spin_table(test_aux_dataset, spins, spin_df)
+    expected = np.array([False] * 14 + [True])
 
-    assert np.all(
-        result
-        == np.array(
-            [
-                False,
-                False,
-                False,
-                False,
-                False,
-                False,
-                False,
-                False,
-                False,
-                False,
-                False,
-                False,
-                False,
-                False,
-                True,
-            ]
-        )
-    )
+    assert np.all(result == expected)
