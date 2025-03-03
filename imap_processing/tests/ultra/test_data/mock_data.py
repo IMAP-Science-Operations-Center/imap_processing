@@ -85,13 +85,14 @@ def mock_l1c_pset_product(
     stripe_center_lon_bin = int(stripe_center_lon / spacing_deg)
 
     _, energy_bin_midpoints = build_energy_bins()
-    energy_bin_midpoints = energy_bin_midpoints[1:]
     num_energy_bins = len(energy_bin_midpoints)
 
-    grid_shape = (num_lon_bins, num_lat_bins, num_energy_bins)
+    # 1 epoch x num_energy_bins x num_lon_bins x num_lat_bins
+    grid_shape = (1, num_energy_bins, num_lon_bins, num_lat_bins)
 
     def get_binomial_counts(distance_scaling, lon_bin, central_lon_bin):
-        # Note, this is not quite correct, as it won't wrap around at 720
+        # Note, this is not quite correct, as it won't wrap around at 360 degrees
+        # but it's all meant to provide a recognizable pattern for testing
         distance_lon_bin = np.abs(lon_bin - central_lon_bin)
 
         rng = np.random.default_rng(seed=42)
@@ -101,7 +102,7 @@ def mock_l1c_pset_product(
         )
 
     counts = np.fromfunction(
-        lambda lon_bin, lat_bin, energy_bin: get_binomial_counts(
+        lambda epoch, energy_bin, lon_bin, lat_bin: get_binomial_counts(
             distance_scaling=20,
             lon_bin=lon_bin,
             central_lon_bin=stripe_center_lon_bin,
@@ -109,30 +110,30 @@ def mock_l1c_pset_product(
         shape=grid_shape,
     )
 
-    exposure_time = np.zeros(grid_shape[:2]) + 0.1
+    exposure_time = np.zeros(grid_shape[2:]) + 0.1
     if head == "90":
         exposure_time[
             stripe_center_lon_bin : stripe_center_lon_bin + int(20 / spacing_deg),
             :,
         ] = 1
     else:
-        counts[
-            :,
-            : int(90 / spacing_deg),
-            :,
-        ] / 2
-        counts = counts.astype(int)
         exposure_time[
             stripe_center_lon_bin : stripe_center_lon_bin + int(70 / spacing_deg),
             : int(90 / spacing_deg),
         ] = 1
 
+    counts = counts.astype(int)
     sensitivity = np.ones(grid_shape)
 
     pset_product = xr.Dataset(
         {
             "counts": (
-                ["azimuth_bin_center", "elevation_bin_center", "energy_bin_center"],
+                [
+                    "epoch",
+                    "energy_bin_center",
+                    "azimuth_bin_center",
+                    "elevation_bin_center",
+                ],
                 counts,
             ),
             "exposure_time": (
@@ -140,12 +141,19 @@ def mock_l1c_pset_product(
                 exposure_time,
             ),
             "sensitivity": (
-                ["azimuth_bin_center", "elevation_bin_center", "energy_bin_center"],
+                [
+                    "epoch",
+                    "energy_bin_center",
+                    "azimuth_bin_center",
+                    "elevation_bin_center",
+                ],
                 sensitivity,
             ),
-            "epoch": ensure_spice(spice.str2et, time_kernels_only=True)(timestr),
         },
         coords={
+            "epoch": [
+                ensure_spice(spice.str2et, time_kernels_only=True)(timestr),
+            ],
             "azimuth_bin_center": np.arange(0 + spacing_deg / 2, 360, spacing_deg),
             "elevation_bin_center": np.arange(-90 + spacing_deg / 2, 90, spacing_deg),
             "energy_bin_center": energy_bin_midpoints,
