@@ -205,13 +205,15 @@ def aux_dataset(ccsds_path_theta_0, xtce_path):
 def test_aux_dataset():
     """Fixture to compute and return aux test data."""
 
-    epoch = np.arange(760591716184000000, 760591716184000000 + 7 * 15000000000, 15000000000)
-    spin_number = np.arange(127,142)
-    spin_start_time = np.arange(0, 105, 15)
-    spin_period_sec = np.full(7, 15)
+    num_spins = 15
+
+    epoch = np.arange(760591716184000000, 760591716184000000 + num_spins * 15000000000, 15000000000)
+    spin_number = np.arange(127, 142)
+    spin_start_time = np.arange(1905, 2115 + 15, 15)
+    spin_period_sec = np.full(num_spins, 15)
     spin_period_sec[-1] = 14
-    spin_start_sec = np.arange(0, 105, 15)
-    spin_start_subsec = np.zeros(7)
+    spin_start_sec = np.arange(1905, 2115 + 15, 15)
+    spin_start_subsec = np.zeros(num_spins)
 
     test_aux_dataset = xr.Dataset(
         data_vars={

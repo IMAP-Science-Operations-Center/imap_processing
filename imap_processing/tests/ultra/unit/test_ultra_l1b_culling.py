@@ -57,10 +57,10 @@ def test_get_energy_histogram(test_data):
 def test_flag_attitude(use_fake_spin_data_for_time, test_aux_dataset):
     """Tests flag_attitude function."""
 
-    use_fake_spin_data_for_time(0, 15 * 6)
+    use_fake_spin_data_for_time(0, 15 * 147)
     spins = np.array([ 0,  0,  1,  2,  3,  3,  4,  5,  6,  6])
     quality_flags, spin_rates, spin_period, spin_start_time = flag_attitude(
-        spins,
+        test_aux_dataset["SPINNUMBER"].values,
         test_aux_dataset
     )
 
@@ -112,4 +112,6 @@ def test_compare_aux_univ_spin_table(use_fake_spin_data_for_time,
                                          spins,
                                          spin_df)
 
-    assert np.all(result == np.array([False, False, False, False, False, False, True]))
+    assert np.all(result == np.array([False, False, False, False, False,
+                                      False, False, False, False, False,
+                                      False, False, False, False,  True]))
