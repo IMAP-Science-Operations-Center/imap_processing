@@ -346,10 +346,11 @@ def test_get_event_id():
     counters_for_met = []
     for i in range(len(decom_events["EVENTID"])):
         event_id = decom_events["EVENTID"][i]
-        met_extracted = event_id >> np.int64(32)
-        assert met_extracted == np.uint64(
+        met_extracted = event_id >> np.int64(31)
+
+        assert met_extracted == np.int64(
             decom_ultra_dict[ULTRA_EVENTS.apid[0]]["SHCOARSE"][i]
         )
-        counters_for_met.append(event_id & np.int64(0xFFFFFFFF))
+        counters_for_met.append(event_id & np.int64(0x7FFFFFFF))
 
     assert counters_for_met == [0, 0, 0, 1]
